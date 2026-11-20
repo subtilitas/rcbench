@@ -906,6 +906,14 @@ SCREENS = {
     # SETUP > WIRELESS on the BALANCE NODE entry: the node reporting, two
     # found by a scan, the first bound, its cell at 3.91V.
     "setup-wireless-bal": ("setup-wireless-bal.png", "setup", "dark"),
+    # SEARCH, opened by BOUND NODE of the power node: two nodes found, the
+    # first bound; the second tapped, its bind question open; and opened
+    # by SCAN FOR DIAL, the scan 7s from its end.
+    "setup-wireless-search": ("setup-wireless-search.png", "setup", "dark"),
+    "setup-wireless-search-bind": ("setup-wireless-search-bind.png",
+                                   "setup", "dark"),
+    "setup-wireless-search-scan": ("setup-wireless-search-scan.png",
+                                   "setup", "dark"),
     # RUDDER AUTO: SAFE on the bench's outputs, READY's PORT row red; its
     # SETTINGS list; on the rbmod carrier SAFE with the hold offered, the
     # ARM + START sequence waiting for the PROG 5V, and its read-back
@@ -999,6 +1007,8 @@ FIT_ONLY = {
     "help-setup-wireless-dial": (None, "setup", "dark"),
     "help-setup-wireless-pnode": (None, "setup", "dark"),
     "help-setup-wireless-bal": (None, "setup", "dark"),
+    "help-setup-wireless-search": (None, "setup", "dark"),
+    "help-setup-wireless-search-2": (None, "setup", "dark"),
     "help-outputs-2": (None, "outputs", "dark"),
     "help-outputs-port": (None, "outputs", "dark"),
     "help-outputs-port-2": (None, "outputs", "dark"),

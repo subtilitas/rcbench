@@ -534,6 +534,15 @@ bool bleu_scan(bleu_t *b, uint32_t now_ms);
 void bleu_scan_stop(bleu_t *b, uint32_t now_ms);
 
 /**
+ * @brief The time a running scan has left: BLEU_SCAN_MS from its start,
+ *        the whole of it before the host stack is asked to start it.
+ * @param b      The machine; NULL reads 0.
+ * @param now_ms The clock.
+ * @return The time left, ms: 0 with no scan running, at most BLEU_SCAN_MS.
+ */
+uint32_t bleu_scan_left_ms(const bleu_t *b, uint32_t now_ms);
+
+/**
  * @brief End the link as a failed GATT step (BLEU_ERR_GATT): the client
  *        found the peer's answer unusable, a PARAM it needs that would not
  *        read for one.  Disconnect, and connect again after BLEU_RETRY_MS.

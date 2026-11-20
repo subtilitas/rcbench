@@ -138,6 +138,10 @@ void stg_render(gfx_canvas_t *c, int buffer_index)
             draw_hub(c);
         }
         ui_setlist_draw_save(sl, c);
+        if (sl->open) {
+            /* Over the rows, as ui_setlist_render() draws it. */
+            ui_setlist_draw_choices(sl, c);
+        }
     }
     ui_textkey_render(&sl->tk, c);
 

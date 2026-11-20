@@ -128,6 +128,8 @@ typedef struct {
     bool      scan_done;  /**< a scan ended since ON: found is its */
     bool      scan_cut;   /**< that scan was stopped by a switch to ARMED */
     uint8_t   found_n;    /**< the nodes it found */
+    uint8_t   scan_left_s; /**< the running scan's time left, s, rounded
+                                up; 0 with none running */
     bal_dev_t found[BAL_FOUND_MAX]; /**< strongest first */
     uint16_t  hidden;     /**< other devices it heard */
     char      bound_addr[BAL_ADDR_MAX]; /**< the bound node, "" none */

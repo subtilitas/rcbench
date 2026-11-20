@@ -248,11 +248,12 @@ uint32_t ui_focus_ring_writes(void);
 bool ui_focus_collect(ui_screen_id_t route, ui_focus_list_t *out);
 
 /**
- * @brief Add the rows of @p sl and its strip, or what covers it: the open
- *        choice list, the leave warning's three buttons, or its keypad.
+ * @brief Add the rows of @p sl and its strip, or what covers it: the leave
+ *        warning's three buttons, or its keypad.
  * @param out The list.
  * @param sl  The setting list, open.
- * @return false while its keyboard is open: no focus then.
+ * @return false while its keyboard or a choice list is open: no focus
+ *         then.
  */
 bool ui_focus_add_setlist(ui_focus_list_t *out, struct ui_setlist *sl);
 

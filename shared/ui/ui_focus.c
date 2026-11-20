@@ -164,8 +164,8 @@ static bool refresh(void)
         f.back_index = s_cur.start;
         f.stepping = false;
     } else if (s_cur.list != f.list) {
-        /* Back to the list before, from a keypad, a choice list or a
-         * level down: on the item it was left on. */
+        /* Back to the list before, from a keypad, a question or a level
+         * down: on the item it was left on. */
         const bool back = s_cur.list == f.back_list;
         const int was = f.index;
         f.index = back ? f.back_index : s_cur.start;

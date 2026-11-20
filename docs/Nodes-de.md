@@ -604,16 +604,20 @@ erste Leistungsknoten EIN startet Bluetooth LE bis zum Neustart des
 Panels. Der Auswuchtknoten ist der vierte Client, Owner 3
 ([Auswuchten](Balance-de.md#messen-mit-dem-auswuchtknoten)).
 
-- **Suchen und binden.** KNOTEN SUCHEN sucht 10s lang und listet die Geräte,
-  deren Advertising den Knotendienst und in den Herstellerdaten die Rolle
-  Leistung nennt (`rcnode_adv_match()`, der Name nur, wo keine
-  Herstellerdaten kamen). Ein Auswuchtknoten wird nicht gelistet, mit oder
-  ohne Namen. GEBUNDENER KNOTEN, oder KNOTEN SUCHEN, solange es
-  `n GEFUNDEN` zeigt, öffnet die Liste, bis zu 6 Knoten und zuletzt
-  `AKTUALISIEREN`. Tippen bindet einen über seine Adresse, in SETUP
-  gehalten (`pnode_ble`, `pnode_name`), und sein erster Connect nimmt den
-  nächsten Zug des Hubs nach einem laufenden Versuch. GEBUNDENER KNOTEN
-  ohne Liste sagt auf dem Band, warum. Ein gebundener Knoten wird nach
+- **Suchen und binden.** KNOTEN SUCHEN öffnet SEARCH
+  ([Bildschirme](Screens-de.md#wireless-search)) und sucht 10s lang nach
+  den Geräten, deren Advertising den Knotendienst und in den
+  Herstellerdaten die Rolle Leistung nennt (`rcnode_adv_match()`, der Name
+  nur, wo keine Herstellerdaten kamen). Ein Auswuchtknoten wird nicht
+  gelistet, mit oder ohne Namen. GEBUNDENER KNOTEN öffnet SEARCH mit der
+  Liste der letzten Suche, ohne Suche. SEARCH zeigt die verbleibenden
+  Sekunden der Suche, dann bis zu 8 Knoten mit ihrem RSSI, den gebundenen
+  hervorgehoben, oder warum es keinen listet. Tippen auf einen Knoten
+  fragt `LEISTUNGSKNOTEN BINDEN?`; BINDEN bindet ihn über seine Adresse,
+  in SETUP gehalten (`pnode_ble`, `pnode_name`), und sein erster Connect
+  nimmt den nächsten Zug des Hubs nach einem laufenden Versuch. SEARCH
+  bleibt offen und hebt den Knoten hervor, sobald er gebunden ist. Ein
+  gebundener Knoten wird nach
   jedem Abbruch ohne Suche wieder verbunden, 1000ms nach dem Abbruch und
   nach einem gescheiterten Verbindungsaufbau im Backoff des Hubs. Hält
   der Connect eines anderen Clients den Hub, wartet der Connect des
@@ -621,11 +625,13 @@ Panels. Der Auswuchtknoten ist der vierte Client, Owner 3
   Versuch jedes anderen Clients, je 5000ms. Eine Suche bei ARMED wird
   abgelehnt, und eine laufende Suche endet beim
   Schalten auf ARMED.
-- **Ablehnungen.** Tippen auf KNOTEN SUCHEN während einer Suche zeigt
-  `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s` und startet keine. Der
+- **Ablehnungen.** Tippen auf KNOTEN SUCHEN oder AKTUALISIEREN während
+  einer Suche zeigt `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s` und
+  startet keine. BINDEN während einer Suche, oder nachdem sich die Liste
+  unter der Frage änderte, bindet nichts und zeigt die Texte unten. Der
   Frame gibt einen Befehl an den `blec`-Task weiter, und der Controller
   kann ihn dort noch ablehnen; die Ansicht zählt jede Ablehnung, und das
-  Band nennt sie. Eine Wahl, abgelehnt, weil zuerst eine Suche startete,
+  Band nennt sie. Eine Bindung, abgelehnt, weil zuerst eine Suche startete,
   zeigt `SUCHE LÄUFT: DEN KNOTEN NACH DEM ENDE WÄHLEN`, eine, abgelehnt,
   weil sich die Liste änderte,
   `KNOTEN NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`, und die Konsole

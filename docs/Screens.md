@@ -297,6 +297,7 @@ ARMED.
 | UPDATES, OPTIONS | 2 | as a settings list |
 | UPDATES, SINGLE UPDATES | 2 | the IOmcu section, its hold, the WIRELESS DEVICES entry; the heading, the C6 radio's hold, BACK |
 | UPDATES, the wireless devices' page | 1 | the three device rows, CANCEL UPDATE while an update runs, BACK |
+| SEARCH | 2 | the found list; the card, SCAN AGAIN |
 
 ![SETUP's guide at page 1](img/help-setup.png)
 
@@ -6279,8 +6280,8 @@ The DIAL entry's rows ([The M5Stack Dial](Dial.md#the-panel)):
 | Row | Values | Default | What it does |
 | --- | --- | --- | --- |
 | Dial | ON, OFF | OFF | the link to the bound Dial; OFF ends it without an error |
-| Scan for Dial | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | at `FOUND n` a tap opens Bound Dial's list; otherwise a tap scans 10s, and a switch to ARMED stops it; while ARMED it scans nothing and the band reads `NO DIAL SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; while a scan runs it starts none and the band reads `A SCAN IS RUNNING: IT ENDS WITHIN 10s`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO DIAL SCAN` |
-| Bound Dial | the bound Dial's name, else its address, else `NONE` | `NONE` | a tap lists the Dials the last scan found, `DIAL-3A10  -52dBm`, up to 6, the bound one marked, and `SCAN AGAIN` last; a tap on a Dial binds it and asks for a save, `SCAN AGAIN` scans as Scan for Dial does. With no list the band reads `NO DIAL LISTED: TAP SCAN FOR DIAL FIRST`, while a scan runs `A SCAN IS RUNNING: PICK THE DIAL WHEN IT ENDS` |
+| Scan for Dial | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | a tap opens SEARCH ([WIRELESS: SEARCH](#wireless-search)) and scans 10s; a switch to ARMED stops the scan; while ARMED it scans nothing and the band reads `NO DIAL SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; while a scan runs it starts none and the band reads `A SCAN IS RUNNING: IT ENDS WITHIN 10s`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO DIAL SCAN`. SEARCH opens in each case |
+| Bound Dial | the bound Dial's name, else its address, else `NONE` | `NONE` | a tap opens SEARCH on the last scan's list, without a scan |
 | Dial step, throttle | 0.5%, 1%, 2%, 5% | 1% | the throttle a detent moves on MOTOR & ESC |
 | Dial step, servo | 0.5°, 1°, 2°, 5° | 1° | the horn angle a detent moves on SERVO |
 
@@ -6302,8 +6303,8 @@ ESC's voltage, current, power and totals.
 | --- | --- | --- | --- |
 | Power node | ON, OFF | OFF | the link to the bound node; OFF ends it without an error |
 | INA228 source | WIRED, NODE | WIRED | WIRED: the IOmcu's INA228 on SENSORS; NODE: the power node's readings. Shown while the node is off too, so the source can go back to WIRED without switching the node on |
-| Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | at `FOUND n` a tap opens Bound node's list; otherwise a tap scans 10s, and a switch to ARMED stops it; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN`; while a scan runs, `A SCAN IS RUNNING: IT ENDS WITHIN 10s` |
-| Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap lists the power nodes the last scan found, `rcbench-pwr-3456  -58dBm`, up to 6, the bound one marked, and `SCAN AGAIN` last; a tap on a node binds it and asks for a save, `SCAN AGAIN` scans. A balance node is not listed. With no list the band reads `NO NODE LISTED: TAP SCAN FOR NODE FIRST`, while a scan runs `A SCAN IS RUNNING: PICK THE NODE WHEN IT ENDS`; a pick refused because the list changed reads `NODE NOT BOUND: THE LIST CHANGED, PICK IT AGAIN` |
+| Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | a tap opens SEARCH ([WIRELESS: SEARCH](#wireless-search)) and scans 10s for power nodes; a switch to ARMED stops the scan; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN`; while a scan runs, `A SCAN IS RUNNING: IT ENDS WITHIN 10s`. SEARCH opens in each case. A balance node is not listed |
+| Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap opens SEARCH on the last scan's list, without a scan |
 | Node battery | `3.92V`, `LOW 3.41V`, `NO CELL`, `READ FAILED`, `NOT LINKED` | | the cell voltage of the node's last STATUS, sent every 1000ms; `LOW` under 3.5V, `NO CELL` on USB alone |
 
 RESET POWER NODE sets Power node back to OFF and INA228 source to WIRED;
@@ -6344,14 +6345,61 @@ The BALANCE NODE entry's rows ([Balancing](Balance.md#measuring-with-the-balance
 | Row | Values | Default | What it does |
 | --- | --- | --- | --- |
 | Balance node | ON, OFF | OFF | the link to the bound node; OFF ends it, and its loss is no error: the node measures and drives nothing |
-| Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | at `FOUND n` a tap opens Bound node's list; otherwise a tap scans 10s for nodes that advertise the balance role, and a switch to ARMED stops it; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN`; while a scan runs, `A SCAN IS RUNNING: IT ENDS WITHIN 10s` |
-| Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap lists the nodes the last scan found, `rcbench-bal-3456  -58dBm`, up to 6, the bound one marked, and `SCAN AGAIN` last; a tap on a node binds it and asks for a save, `SCAN AGAIN` scans. With no list the band reads `NO NODE LISTED: TAP SCAN FOR NODE FIRST`, while a scan runs `A SCAN IS RUNNING: PICK THE NODE WHEN IT ENDS`; a pick refused because the list changed reads `NODE NOT BOUND: THE LIST CHANGED, PICK IT AGAIN` |
+| Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | a tap opens SEARCH ([WIRELESS: SEARCH](#wireless-search)) and scans 10s for nodes that advertise the balance role; a switch to ARMED stops the scan; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN`; while a scan runs, `A SCAN IS RUNNING: IT ENDS WITHIN 10s`. SEARCH opens in each case |
+| Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap opens SEARCH on the last scan's list, without a scan |
 | Node battery | `3.91V`, `3.40V LOW` (under 3.50V), `NO READING`, `--` | | the node's cell from the STATUS it sends on STREAM beside its reports; `--` before the first on a link |
 | Trial mass | 0.01g to 20.00g in 0.01g steps | 0.50g | the mass taped on for the trial runs of MOTOR & ESC > BALANCE |
 
 RESET BALANCE NODE sets Balance node back to OFF and Trial mass to 0.50g;
 the bound node stays. A node whose INFO names another role or protocol
 reads `ROLE r, PROTOCOL p` and its reports are not taken.
+
+### WIRELESS: SEARCH
+
+![SEARCH on the power node, two nodes found](img/setup-wireless-search.png)
+
+SEARCH finds and binds the Dial, the power node or the balance node.
+SCAN FOR DIAL and SCAN FOR NODE open it and ask for a scan of 10s;
+BOUND DIAL and BOUND NODE open it on the last scan's list without one. A
+scan the row refuses (ARMED, a scan running, Bluetooth not ready) says
+why on the band, and SEARCH opens on the last list. The home
+tag returns to SETUP > WIRELESS on the device's entry.
+
+| Part | Where, body coordinates | What it shows or does |
+| --- | --- | --- |
+| State line | x 16, y 12 | `SCANNING: 7s LEFT` while a scan runs, counted down from 10s; `FOUND n: TAP ONE TO BIND IT`; `NONE FOUND`; `STOPPED BY ARM`; `NO SCAN YET: TAP SCAN AGAIN` |
+| Found list | rows of 640 x 48px at a 52px pitch from x 16, y 44 | the devices the last scan found, strongest first, up to 8: the name, else the address, and the RSSI, `rcbench-pwr-3456  -58dBm`; the bound one lit in the accent colour. The controller empties the list when a scan starts and fills it when the scan ends |
+| Card | x 680, 328px wide, y 12 to 136 | the device's kind, its link state as on the left list, `BOUND` and the bound device's name, else its address, else `NONE` |
+| SCAN AGAIN | 328 x 56px at x 680, y 156 | a new scan of 10s with the rules of SCAN FOR DIAL and SCAN FOR NODE; grey while a scan runs, where a tap reads `A SCAN IS RUNNING: IT ENDS WITHIN 10s` |
+
+![SEARCH's bind question](img/setup-wireless-search-bind.png)
+
+A tap on a found device opens the bind question in place of the list,
+700 x 280px at x 162, y 100: `BIND POWER NODE?` (`BIND DIAL?`,
+`BIND BALANCE NODE?`), the device's name, its address and RSSI, the bound
+device it takes the place of, `SETUP KEEPS THE BIND AND ASKS FOR A SAVE`,
+then CANCEL and BIND, 300 x 56px each. CANCEL and the home tag close it
+and bind nothing. BIND asks the controller to bind the device by its
+place in the list; the question closes and SEARCH stays. The card and
+the lit row follow when the controller has bound it, and the panel keeps
+the address and the name in SETUP and asks for a save.
+
+BIND binds nothing, closes the question and says why on the band:
+
+- while a scan runs: `A SCAN IS RUNNING: PICK THE NODE WHEN IT ENDS`,
+  `A SCAN IS RUNNING: PICK THE DIAL WHEN IT ENDS` for the Dial;
+- when the tapped device is not at its place in the list:
+  `NODE NOT BOUND: THE LIST CHANGED, PICK IT AGAIN`,
+  `DIAL NOT BOUND: THE LIST CHANGED, PICK IT AGAIN` for the Dial.
+
+A tap on a device while a scan runs opens no question and reads the
+scan's text. A bind the controller refuses after BIND, behind a scan
+that started first or a list that changed, reads the same texts.
+
+A change of the device's view, an RSSI, the seconds left or the link
+state, repaints SEARCH. It closes no question and drops no press.
+
+![SEARCH during a scan for the Dial](img/setup-wireless-search-scan.png)
 
 ### SD CARD: which logs are written, and where
 

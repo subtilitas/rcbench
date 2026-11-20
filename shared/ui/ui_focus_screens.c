@@ -9,6 +9,7 @@
  * | SETUP | the hub's tiles and SAVE; a list's rows and strip; a split pane's entries first (settings_screen_focus()) |
  * | SERVO's hub | its eight tiles and SETTINGS, or the SETTINGS list (servo_hub_focus()) |
  * | OUTPUTS, board view | the protocol list's face, CLEAR ALL and the pins, or the open list (picker_screen_focus()) |
+ * | SEARCH | the found devices and SCAN AGAIN, or the bind question's CANCEL and BIND (wl_search_focus()) |
  *
  * Every other screen offers none: the Dial does there what it did before
  * the focus layer, on a bench screen the throttle or the horn.
@@ -23,6 +24,7 @@
 #include "picker_screen.h"
 #include "servo_screen.h"
 #include "settings_screen.h"
+#include "wl_search.h"
 
 /** @brief Slots the overview is asked for: more than its grid holds. */
 #define OVERVIEW_SLOTS 32
@@ -59,6 +61,8 @@ bool ui_focus_collect(ui_screen_id_t route, ui_focus_list_t *out)
         return servo_hub_focus(out);
     case SCREEN_OUTPUTS:
         return outputs_view_is_board() && picker_screen_focus(out);
+    case SCREEN_WL_SEARCH:
+        return wl_search_focus(out);
     default:
         return false;
     }

@@ -6,16 +6,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "busfault_screen.h"
-#include "coproc_update_screen.h"
-#include "files_screen.h"
-#include "layout_screen.h"
-#include "outputs_screen.h"
-#include "picker_screen.h"
-#include "supply_screen.h"
-#include "imu_screen.h"
-#include "upd_screen.h"
-#include "wifi_screen.h"
 #include "ui_screen.h"
 #include "ui_shot.h"
 #include "shot_hold.h"
@@ -24,16 +14,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "log_viewer_screen.h"
-#include "motor_screen.h"
-#include "analyser_screen.h"
-#include "balance_screen.h"
-#include "battery_screen.h"
 #include "servo_screen.h"
 #include "settings.h"
 #include "settings_screen.h"
-#include "overview_screen.h"
-#include "splash_screen.h"
 #include "ui_band.h"
 #include "ui_focus.h"
 #include "ui_router_int.h"
@@ -54,8 +37,9 @@
 
 static struct {
     ui_screen_id_t    current;  /**< the screen on top */
-    /** @brief The screen that opened the one on top through k_openers, for its home
-     * tag; SCREEN_COUNT when it was entered any other way. */
+    /** @brief The screen that opened the one on top through the openers
+     * (ui_router_opens()), for its home tag; SCREEN_COUNT when it was
+     * entered any other way. */
     ui_screen_id_t    opener;
     ui_screen_id_t    leaving_to;     /**< what goto() enters, during the
                                        *   old leave(); else SCREEN_COUNT */
@@ -161,100 +145,10 @@ static void guide_check(void);
 static void shot_service(void);
 static void guide_close(void);
 
-/*
- * The openers, each on a row of its own: a control on one screen that opens
- * another, whose home tag then returns to the opener.  OUTPUTS opens from the
- * TARGET row of MOTOR & ESC, from SETUP's OUTPUTS tile and from the PORT
- * list's `OUTPUTS: NO PIN` entry on SERVO's LIVE, SWEEP, TEST, LIMIT RUN,
- * RUDDER and RUDDER AUTO; SUPPLY from the caps button of SERVO's TEST and
- * from the supply row of LIMIT RUN's and RUDDER AUTO's READY cards; SETUP
- * from the ANGLE SOURCE list's AS5600 entry on RUDDER, RUDDER AUTO, TEST
- * and LIMIT RUN, from the red METER row of LIMIT RUN's and RUDDER AUTO's
- * READY cards and from IMU's IMU SETTINGS; SETUP's SD
- * CARD list from the footer's SETTINGS on LOGS and FILES; WI-FI from
- * UPDATES' button and LOGS' WI-FI button.  SETUP's WI-FI tile needs no row:
- * WI-FI's parent is SETUP.
- * A screen with no row here, or entered from a screen not on its row, leaves
- * to its tile's parent (ui_router_parent()): a SERVO function screen to the
- * SERVO hub.
- */
-static const struct {
-    ui_screen_id_t screen;  /**< the screen that is opened */
-    ui_screen_id_t opener;  /**< the screen that opens it */
-} k_openers[] = {
-    { SCREEN_OUTPUTS, SCREEN_MOTOR },
-    { SCREEN_OUTPUTS, SCREEN_SETUP },
-    { SCREEN_OUTPUTS, SCREEN_SERVO_LIVE },
-    { SCREEN_OUTPUTS, SCREEN_SERVO_SWEEP },
-    { SCREEN_OUTPUTS, SCREEN_SERVO_TEST },
-    { SCREEN_OUTPUTS, SCREEN_SERVO_LIMRUN },
-    { SCREEN_OUTPUTS, SCREEN_SERVO_RUDDER },
-    { SCREEN_OUTPUTS, SCREEN_SERVO_RAUTO },
-    { SCREEN_SUPPLY,  SCREEN_SERVO_TEST },
-    { SCREEN_SUPPLY,  SCREEN_SERVO_LIMRUN },
-    { SCREEN_SUPPLY,  SCREEN_SERVO_RAUTO },
-    { SCREEN_SETUP,   SCREEN_SERVO_RUDDER },
-    { SCREEN_SETUP,   SCREEN_SERVO_RAUTO },
-    { SCREEN_SETUP,   SCREEN_SERVO_TEST },
-    { SCREEN_SETUP,   SCREEN_SERVO_LIMRUN },
-    { SCREEN_WIFI,    SCREEN_UPDATES },
-    { SCREEN_WIFI,    SCREEN_LOGS },
-    { SCREEN_SETUP,   SCREEN_IMU },
-    { SCREEN_SETUP,   SCREEN_LOGS },
-    { SCREEN_SETUP,   SCREEN_FILES },
-};  /**< which screen opens which: the home tag of the opened one returns to its opener */
-
-/** @brief Whether @p opener opens screen @p id. */
-static bool opens(ui_screen_id_t opener, ui_screen_id_t id)
-{
-    for (size_t i = 0; i < sizeof(k_openers) / sizeof(k_openers[0]); ++i) {
-        if (k_openers[i].screen == id && k_openers[i].opener == opener) {
-            return true;
-        }
-    }
-    return false;
-}
-
-/** @brief Gives the table of screen @p id. */
-static const ui_screen_t *screen_for(ui_screen_id_t id)
-{
-    switch (id) {
-    case SCREEN_SPLASH:   return splash_screen();
-    case SCREEN_OVERVIEW: return overview_screen();
-    case SCREEN_MOTOR:    return motor_screen();
-    case SCREEN_SERVO:    return servo_screen();
-    case SCREEN_ANALYSER: return analyser_screen();
-    case SCREEN_BALANCE:  return balance_screen();
-    case SCREEN_BATTERY:  return battery_screen();
-    case SCREEN_LOGS:     return log_viewer_screen();
-    case SCREEN_SETUP:    return settings_screen();
-    case SCREEN_OUTPUTS:  return outputs_view_screen();
-    case SCREEN_SUPPLY:   return supply_screen();
-    case SCREEN_BUSFAULT: return busfault_screen();
-    case SCREEN_WIFI:     return wifi_screen();
-    case SCREEN_UPDATE:   return update_screen();
-    case SCREEN_COPROC_UPDATE: return coproc_update_screen();
-    case SCREEN_UPDATES:  return upd_screen();
-    case SCREEN_UPD_REMIND: return upd_remind_screen();
-    case SCREEN_FILES:    return files_screen();
-    case SCREEN_LAYOUT:   return layout_screen();
-    case SCREEN_IMU:      return imu_screen();
-    case SCREEN_SERVO_LIVE:   return servo_fn_screen(SERVO_FN_LIVE);
-    case SCREEN_SERVO_SWEEP:  return servo_fn_screen(SERVO_FN_SWEEP);
-    case SCREEN_SERVO_TEST:   return servo_fn_screen(SERVO_FN_TEST);
-    case SCREEN_SERVO_LIMRUN: return servo_fn_screen(SERVO_FN_LIMRUN);
-    case SCREEN_SERVO_RUDDER: return servo_fn_screen(SERVO_FN_RUDDER);
-    case SCREEN_SERVO_RAUTO:  return servo_fn_screen(SERVO_FN_RAUTO);
-    case SCREEN_SERVO_KST:    return servo_fn_screen(SERVO_FN_KST);
-    case SCREEN_SERVO_HITEC:  return servo_fn_screen(SERVO_FN_HITEC);
-    default:              return overview_screen();
-    }
-}
-
 /* Not inlined: tools/stack_check.py follows its title_now() call by name. */
 __attribute__((noinline)) const char *ui_router_title(ui_screen_id_t id)
 {
-    const ui_screen_t *s_ = screen_for(id);
+    const ui_screen_t *s_ = ui_router_screen(id);
     return (s_ == NULL) ? ""
            : (s_->title_now != NULL) ? s_->title_now()
            : (s_->title != NULL) ? s_->title : "";
@@ -267,13 +161,13 @@ void ui_router_init(void)
     s.opener = SCREEN_COUNT;
     s.leaving_to = SCREEN_COUNT;
     for (int id = 0; id < SCREEN_COUNT; ++id) {
-        const ui_screen_t *scr = screen_for((ui_screen_id_t)id);
+        const ui_screen_t *scr = ui_router_screen((ui_screen_id_t)id);
         if (scr != NULL && scr->reset != NULL) {
             scr->reset();
         }
     }
     s.current = SCREEN_SPLASH;
-    const ui_screen_t *scr = screen_for(s.current);
+    const ui_screen_t *scr = ui_router_screen(s.current);
     if (scr != NULL && scr->enter != NULL) {
         scr->enter();
     }
@@ -289,7 +183,7 @@ void ui_router_goto(ui_screen_id_t id)
     if (id < 0 || id >= SCREEN_COUNT || id == s.current) {
         return;
     }
-    const ui_screen_t *old = screen_for(s.current);
+    const ui_screen_t *old = ui_router_screen(s.current);
     s.leaving_to = id;
     if (old != NULL && old->leave != NULL) {
         old->leave();
@@ -297,10 +191,10 @@ void ui_router_goto(ui_screen_id_t id)
     s.leaving_to = SCREEN_COUNT;
     /* Holds for this one entry: a tile, a strip's tab or a route of the
      * application that enters the screen later finds no opener. */
-    s.opener = opens(s.current, id) ? s.current : SCREEN_COUNT;
+    s.opener = ui_router_opens(s.current, id) ? s.current : SCREEN_COUNT;
     s.current = id;
     ++s.nav_count;
-    const ui_screen_t *now = screen_for(id);
+    const ui_screen_t *now = ui_router_screen(id);
     if (now != NULL && now->enter != NULL) {
         now->enter();
     }
@@ -327,7 +221,7 @@ bool ui_screen_not_covered(void) { return false; }
 
 ui_screen_id_t ui_router_parent(ui_screen_id_t id)
 {
-    if (s.opener != SCREEN_COUNT && opens(s.opener, id)) {
+    if (s.opener != SCREEN_COUNT && ui_router_opens(s.opener, id)) {
         return s.opener;
     }
     if (servo_fn_of_screen(id) != SERVO_FN_HUB) {
@@ -343,31 +237,12 @@ void ui_router_invalidate(void)
     s.band_drawn = 0u;
     s.guide_drawn = 0u;
     ui_shot_invalidate();
-    splash_invalidate();
-    overview_invalidate();
-    motor_invalidate();
-    log_viewer_invalidate();
-    settings_screen_invalidate();
-    analyser_invalidate();
-    balance_invalidate();
-    battery_invalidate();
-    servo_invalidate();
-    outputs_screen_invalidate();
-    picker_screen_invalidate();
-    busfault_screen_invalidate();
-    coproc_update_screen_invalidate();
-    supply_invalidate();
-    wifi_screen_invalidate();
-    update_screen_invalidate();
-    upd_screen_invalidate();
-    files_screen_invalidate();
-    layout_screen_invalidate();
-    imu_screen_invalidate();
+    ui_router_screens_invalidate();
 }
 
 bool ui_router_shot_refused(void)
 {
-    const ui_screen_t *scr = screen_for(s.current);
+    const ui_screen_t *scr = ui_router_screen(s.current);
     return scr != NULL && scr->no_shot != NULL && scr->no_shot();
 }
 
@@ -376,7 +251,7 @@ bool ui_router_shot_gap(gfx_rect_t *out)
     /* A screen that cannot say whether a box covers it gets no hold: the
      * copy would show nothing and the popup would open after the question
      * has gone. */
-    const ui_screen_t *scr = screen_for(s.current);
+    const ui_screen_t *scr = ui_router_screen(s.current);
     if (!has_band(s.current) || scr == NULL || scr->covered == NULL) {
         return false;
     }
@@ -451,7 +326,7 @@ static void drop_notice(void)
  */
 static bool shot_screen_free(void)
 {
-    const ui_screen_t *scr = screen_for(s.current);
+    const ui_screen_t *scr = ui_router_screen(s.current);
     return scr != NULL && scr->covered != NULL && !scr->covered();
 }
 
@@ -518,7 +393,7 @@ void ui_router_tick(float dt_s)
     shot_over_settle();
     ui_shot_poll();
     shot_service();
-    const ui_screen_t *scr = screen_for(s.current);
+    const ui_screen_t *scr = ui_router_screen(s.current);
     if (scr != NULL && scr->tick != NULL) {
         scr->tick(dt_s);
     }
@@ -619,7 +494,7 @@ static bool has_band(ui_screen_id_t id)
 bool ui_router_guide_shown(void)
 {
     return has_band(s.current) && !ui_shot_open()
-           && ui_help_count(screen_for(s.current), s.status.armed) > 0;
+           && ui_help_count(ui_router_screen(s.current), s.status.armed) > 0;
 }
 
 bool ui_router_guide_open(void) { return s.guide; }
@@ -648,7 +523,7 @@ static void guide_open(void)
     s.guide       = true;
     s.guide_page  = 0;
     s.guide_press = false;
-    s.guide_set   = ui_help_set_key(screen_for(s.current), s.status.armed);
+    s.guide_set   = ui_help_set_key(ui_router_screen(s.current), s.status.armed);
     ui_help_watch_reset();
     release_owned();
     ui_router_invalidate();
@@ -660,7 +535,7 @@ static void guide_check(void)
 {
     if (s.guide
         && (!ui_router_guide_shown()
-            || ui_help_set_key(screen_for(s.current), s.status.armed)
+            || ui_help_set_key(ui_router_screen(s.current), s.status.armed)
                    != s.guide_set)) {
         guide_close();
     }
@@ -674,7 +549,7 @@ static void guide_check(void)
 static bool guide_page_now(ui_help_page_t *p)
 {
     return s.guide
-           && ui_help_page(screen_for(s.current), s.status.armed,
+           && ui_help_page(ui_router_screen(s.current), s.status.armed,
                            s.guide_page, p);
 }
 
@@ -691,7 +566,7 @@ bool ui_router_guide_now(ui_help_page_t *out)
  */
 static void guide_act(ui_help_hit_t btn)
 {
-    const int count = ui_help_count(screen_for(s.current), s.status.armed);
+    const int count = ui_help_count(ui_router_screen(s.current), s.status.armed);
     if (btn == UI_HELP_HIT_CLOSE) {
         guide_close();
     } else if (btn == UI_HELP_HIT_PREV && s.guide_page > 0) {
@@ -731,7 +606,7 @@ static bool has_home(ui_screen_id_t id)
  */
 static __attribute__((noinline)) void router_hand(touch_event_t evt)
 {
-    const ui_screen_t *scr = screen_for(s.current);
+    const ui_screen_t *scr = ui_router_screen(s.current);
     if (scr != NULL && scr->event != NULL) {
         /* Screens work in their own coordinates; the band's height is
          * removed here. */
@@ -754,7 +629,7 @@ static __attribute__((noinline)) bool router_safe_at(const touch_event_t *evt)
     if (evt->type != TOUCH_EVENT_DOWN || evt->point.y < UI_BAND_H) {
         return false;
     }
-    const ui_screen_t *scr = screen_for(s.current);
+    const ui_screen_t *scr = ui_router_screen(s.current);
     return scr != NULL && scr->safe_at != NULL
            && scr->safe_at(evt->point.x, evt->point.y - UI_BAND_H);
 }
@@ -804,7 +679,7 @@ static void help_open(ui_band_chip_t chip)
  */
 static __attribute__((noinline)) void router_back(void)
 {
-    const ui_screen_t *scr = screen_for(s.current);
+    const ui_screen_t *scr = ui_router_screen(s.current);
     const ui_screen_id_t to = ui_router_parent(s.current);
     if (scr != NULL && (scr->back != NULL || scr->hold != NULL)) {
         release_owned();
@@ -1218,7 +1093,7 @@ void ui_router_cancel_gestures(void)
     s.alert_press = false;
     memset(s.alert_ids, 0, sizeof(s.alert_ids));
     for (int id = 0; id < SCREEN_COUNT; ++id) {
-        const ui_screen_t *scr = screen_for((ui_screen_id_t)id);
+        const ui_screen_t *scr = ui_router_screen((ui_screen_id_t)id);
         if (scr != NULL && scr->cancel != NULL) {
             scr->cancel();
         }
@@ -1313,7 +1188,7 @@ static __attribute__((noinline)) void guide_render(gfx_canvas_t *c,
                                                    int buffer_index,
                                                    bool band)
 {
-    const ui_screen_t *scr = screen_for(s.current);
+    const ui_screen_t *scr = ui_router_screen(s.current);
     const unsigned buf = (unsigned)buffer_index & 1u;
     const int count = ui_help_count(scr, s.status.armed);
     const bool note = s.guide_page == 0
@@ -1334,7 +1209,7 @@ static __attribute__((noinline)) void guide_render(gfx_canvas_t *c,
 
 void ui_router_render(gfx_canvas_t *c, int buffer_index)
 {
-    const ui_screen_t *scr = screen_for(s.current);
+    const ui_screen_t *scr = ui_router_screen(s.current);
     if (scr == NULL || scr->render == NULL || c == NULL) {
         return;
     }

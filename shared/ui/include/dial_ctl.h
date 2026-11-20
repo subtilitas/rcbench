@@ -130,6 +130,8 @@ typedef struct {
     bool       scan_done;  /**< a scan ended since Dial ON: found is its */
     bool       scan_cut;   /**< that scan was stopped by a switch to ARMED */
     uint8_t    found_n;    /**< the Dials it found */
+    uint8_t    scan_left_s; /**< the running scan's time left, s, rounded
+                                 up; 0 with none running */
     dial_dev_t found[DIAL_FOUND_MAX]; /**< strongest first */
     uint16_t   hidden;     /**< other devices it heard */
     char       bound_addr[DIAL_ADDR_MAX]; /**< the bound Dial, "" none */
@@ -289,10 +291,11 @@ dial_link_t dial_ctl_link(const dial_ctl_t *c);
 
 /**
  * @brief What SETUP shows, as of the last call.
- * @param c   The controller; NULL gives an OFF view.
- * @param out Receives the view.
+ * @param c      The controller; NULL gives an OFF view.
+ * @param now_ms The clock, for the running scan's time left.
+ * @param out    Receives the view.
  */
-void dial_ctl_view(const dial_ctl_t *c, dial_view_t *out);
+void dial_ctl_view(const dial_ctl_t *c, uint32_t now_ms, dial_view_t *out);
 
 /**
  * @brief A step option of SET_DIAL_THR or SET_DIAL_SRV in tenths.

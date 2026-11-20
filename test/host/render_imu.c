@@ -18,6 +18,11 @@
  * setup-wireless-bal: WIRELESS on the BALANCE NODE entry, the node on and
  * reporting, a scan that found two nodes, the first bound, its cell at
  * 3.91V.
+ * setup-wireless-search: SEARCH from BOUND NODE of the power node, two
+ * nodes found, the first bound and connected.  setup-wireless-search-bind:
+ * the same with the second node tapped, the bind question open.
+ * setup-wireless-search-scan: SEARCH from SCAN FOR DIAL, the scan 7s from
+ * its end, nothing listed yet.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -35,6 +40,7 @@
 #include "ui_screen.h"
 #include "wireless_bal.h"
 #include "wireless_pane.h"
+#include "wl_search.h"
 
 bool render_imu_view(const char *view)
 {
@@ -175,9 +181,64 @@ static void pose_bal(void)
     settings_screen_open_on(SET_CAT_WIRELESS, WL_ENTRY_BAL);
 }
 
+/**
+ * @brief SEARCH from BOUND NODE of the power node: two nodes found, the
+ *        first bound and connected; with @p ask the second tapped.
+ * @param ask Open the bind question on the second node.
+ */
+static void pose_search(bool ask)
+{
+    pnode_view_t p;
+    memset(&p, 0, sizeof(p));
+    p.link = PNODE_LINK_UP;
+    p.scan_done = true;
+    p.found_n = 2u;
+    snprintf(p.found[0].addr, sizeof(p.found[0].addr), "7C:DF:A1:12:34:56 P");
+    snprintf(p.found[0].name, sizeof(p.found[0].name), "rcbench-pwr-3456");
+    p.found[0].rssi = -58;
+    snprintf(p.found[1].addr, sizeof(p.found[1].addr), "7C:DF:A1:12:9A:0E P");
+    snprintf(p.found[1].name, sizeof(p.found[1].name), "rcbench-pwr-9A0E");
+    p.found[1].rssi = -74;
+    snprintf(p.bound_addr, sizeof(p.bound_addr), "%s", p.found[0].addr);
+    snprintf(p.bound_name, sizeof(p.bound_name), "%s", p.found[0].name);
+    p.proto = 1u;
+    p.have_status = true;
+    p.vbat_mv = 3920u;
+    settings_set(SET_PNODE_EN, 1.0f);
+    wireless_pane_set_pnode(&p);
+    settings_screen_open_on(SET_CAT_WIRELESS, WL_ENTRY_PNODE);
+    wireless_pane_pnode_bind_row.tap();
+    if (ask) {
+        tap_rect(wl_search_row_rect(1));
+    }
+}
+
+/** @brief SEARCH from SCAN FOR DIAL: the scan 7s from its end, nothing
+ *         listed yet, no Dial bound. */
+static void pose_search_scan(void)
+{
+    dial_view_t d;
+    memset(&d, 0, sizeof(d));
+    d.link = DIAL_LINK_SCANNING;
+    d.scan_left_s = 7u;
+    settings_set(SET_DIAL_EN, 1.0f);
+    wireless_pane_set_dial(&d);
+    settings_screen_open_on(SET_CAT_WIRELESS, WL_ENTRY_DIAL);
+    wireless_pane_bind_row.tap();
+}
+
 void render_imu_pose(const char *view)
 {
     if (!render_imu_view(view)) {
+        return;
+    }
+    if (strcmp(view, "setup-wireless-search") == 0
+        || strcmp(view, "setup-wireless-search-bind") == 0) {
+        pose_search(strcmp(view, "setup-wireless-search-bind") == 0);
+        return;
+    }
+    if (strcmp(view, "setup-wireless-search-scan") == 0) {
+        pose_search_scan();
         return;
     }
     if (strcmp(view, "setup-wireless-dial") == 0) {

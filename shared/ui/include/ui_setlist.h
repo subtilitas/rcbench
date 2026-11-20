@@ -362,6 +362,15 @@ void ui_setlist_draw_strip(ui_setlist_t *sl, gfx_canvas_t *c);
 void ui_setlist_draw_save(ui_setlist_t *sl, gfx_canvas_t *c);
 
 /**
+ * @brief The open choice list over the rows, if one is open.  A host that
+ *        draws the list's parts itself, not through ui_setlist_render(),
+ *        draws it after the rows, the strip and SAVE.
+ * @param sl The list.
+ * @param c  The canvas.
+ */
+void ui_setlist_draw_choices(const ui_setlist_t *sl, gfx_canvas_t *c);
+
+/**
  * @brief The leave warning over the body down to the strip, and its three
  *        answers in the strip.
  * @param sl The list.

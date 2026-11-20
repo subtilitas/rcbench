@@ -571,25 +571,30 @@ starts Bluetooth LE until the panel restarts. The balance node is the
 fourth client, owner 3
 ([Balancing](Balance.md#measuring-with-the-balance-node)).
 
-- **Scan and bind.** SCAN FOR NODE scans 10s and lists the devices whose
-  advertising names the node service and the power role in its
+- **Search and bind.** SCAN FOR NODE opens SEARCH
+  ([Screens](Screens.md#wireless-search)) and scans 10s for the devices
+  whose advertising names the node service and the power role in its
   manufacturer data (`rcnode_adv_match()`, the name only where no
   manufacturer data came). A balance node is not listed, named or not.
-  BOUND NODE, or SCAN FOR NODE while it reads `FOUND n`, opens the list,
-  up to 6 nodes and `SCAN AGAIN` last. A tap binds one by its address,
-  kept in SETUP (`pnode_ble`, `pnode_name`), and its first connect takes
-  the hub's next turn after an attempt under way. BOUND NODE with no list
-  says why on the band. A bound node is connected again after each
+  BOUND NODE opens SEARCH on the last scan's list without a scan. SEARCH
+  shows the seconds the scan has left, then up to 8 nodes with their
+  RSSI, the bound one lit, or why it lists none. A tap on a node asks
+  `BIND POWER NODE?`; BIND binds it by its address, kept in SETUP
+  (`pnode_ble`, `pnode_name`), and its first connect takes the hub's next
+  turn after an attempt under way. SEARCH stays open and lights the node
+  once it is bound. A bound node is connected again after each
   drop without a scan, 1000ms after the drop and on the hub's backoff
   after a failed connect. While another client's connect holds the hub,
   the node's connect waits in the hub's queue and goes after at most one
   attempt of each other client, 5000ms each. A scan while ARMED is
   refused, and a scan that
   runs is stopped at the switch to ARMED.
-- **Refusals.** A tap on SCAN FOR NODE while a scan runs reads
-  `A SCAN IS RUNNING: IT ENDS WITHIN 10s` and asks for none. The frame
+- **Refusals.** A tap on SCAN FOR NODE or SCAN AGAIN while a scan runs
+  reads `A SCAN IS RUNNING: IT ENDS WITHIN 10s` and asks for none. BIND
+  while a scan runs, or after the list changed under the question, binds
+  nothing and reads the texts below. The frame
   passes a command to the `blec` task, and the controller can still refuse
-  it there; the view counts each refusal and the band names it. A pick
+  it there; the view counts each refusal and the band names it. A bind
   refused because a scan started first reads
   `A SCAN IS RUNNING: PICK THE NODE WHEN IT ENDS`, one refused because the
   list changed `NODE NOT BOUND: THE LIST CHANGED, PICK IT AGAIN`, and the

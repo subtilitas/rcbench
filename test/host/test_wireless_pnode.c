@@ -14,6 +14,8 @@
  */
 #include "settings_rig.h"
 
+#include "wl_search.h"
+
 /** @brief The band's status with the bench ARMED or SAFE. */
 static void set_armed(bool armed)
 {
@@ -109,31 +111,37 @@ TEST_CASE(a_node_scan_while_armed_is_refused_with_a_band_text)
     CHECK(!wireless_pane_take_dial(&d));
 }
 
-TEST_CASE(a_found_node_binds_by_its_row)
+TEST_CASE(a_found_node_shows_on_search_and_binds_by_its_row)
 {
     fresh_hub();
     const pnode_view_t v = two_found();
     wireless_pane_set_pnode(&v);
     const ui_setlist_custom_t *b = &wireless_pane_pnode_bind_row;
-    CHECK_EQ(b->choices(), 3);
-    CHECK_STR_EQ(b->choice(0), "rcbench-pwr-3401  -52dBm");
-    CHECK_STR_EQ(b->choice(1), "7C:DF:A1:12:34:02 P  -77dBm");
-    CHECK_STR_EQ(b->choice(2), TR(WL_SCAN_AGAIN));
-    CHECK_STR_EQ(b->choice(3), "");
-    CHECK_EQ(b->chosen(), 1);
+    CHECK(b->choices == NULL && b->pick == NULL);
+    CHECK(b->tap != NULL);
+    if (b->tap == NULL) {
+        return;
+    }
     pnode_cmd_t c;
     while (wireless_pane_take_pnode(&c)) { }
-    b->pick(0);
+    b->tap();
+    CHECK_EQ(ui_router_current(), SCREEN_WL_SEARCH);
+    CHECK(!wireless_pane_take_pnode(&c));
+    CHECK_EQ(wl_search_device()->kind, TX_PNODE_ENTRY);
+    wls_view_t s;
+    wl_search_view(&s);
+    CHECK_EQ(s.found_n, 2u);
+    char line[64];
+    CHECK_STR_EQ(wl_search_dev_line(&s.found[0], line, sizeof line),
+                 "rcbench-pwr-3401  -52dBm");
+    CHECK_STR_EQ(wl_search_dev_line(&s.found[1], line, sizeof line),
+                 "7C:DF:A1:12:34:02 P  -77dBm");
+    CHECK_STR_EQ(s.bound_addr, "7C:DF:A1:12:34:02 P");
+    /* The entry's bind by its row, as SEARCH's BIND asks it. */
+    wl_search_device()->bind(0u);
     CHECK(wireless_pane_take_pnode(&c));
     CHECK_EQ(c.kind, PNODE_CMD_BIND);
     CHECK_EQ(c.arg, 0u);
-    /* SCAN AGAIN scans; it is never a bind of index 2. */
-    b->pick(2);
-    CHECK(wireless_pane_take_pnode(&c));
-    CHECK_EQ(c.kind, PNODE_CMD_SCAN);
-    b->pick(3);
-    b->pick(-1);
-    CHECK(!wireless_pane_take_pnode(&c));
     char val[48];
     b->value_text(val, sizeof val);
     CHECK_STR_EQ(val, "7C:DF:A1:12:34:02 P");
@@ -141,15 +149,20 @@ TEST_CASE(a_found_node_binds_by_its_row)
     char want[48];
     snprintf(want, sizeof want, TR(DIAL_SCAN_FOUND), 2u);
     CHECK_STR_EQ(val, want);
+    /* A scan the switch to ARMED stopped says so. */
     pnode_view_t cut = two_found();
     cut.scan_cut = true;
     wireless_pane_set_pnode(&cut);
     wireless_pane_pnode_scan_row.value_text(val, sizeof val);
     CHECK_STR_EQ(val, TR(DIAL_SCAN_CUT));
+    /* No scan yet: nothing listed, and NONE bound. */
     wireless_pane_set_pnode(NULL);
-    CHECK_EQ(b->choices(), 0);
+    wl_search_view(&s);
+    CHECK_EQ(s.found_n, 0u);
     b->value_text(val, sizeof val);
     CHECK_STR_EQ(val, TR(DIAL_BIND_NONE));
+    wireless_pane_pnode_scan_row.value_text(val, sizeof val);
+    CHECK_STR_EQ(val, TR(DIAL_SCAN_GO));
 }
 
 TEST_CASE(the_battery_row_says_what_the_status_says)
@@ -308,12 +321,12 @@ TEST_CASE(the_source_row_says_why_while_armed)
     settings_set_armed(NULL);
 }
 
-/* SCAN FOR NODE reading FOUND n opens BOUND NODE's list, SCAN AGAIN
- * last; any other reading scans at a tap.  A full scan lists 6 devices and
- * SCAN AGAIN in the 7 rows a list holds, and no pick binds an index past
- * them.  SCAN AGAIN while ARMED is refused on the band.  BOUND NODE
- * with no list, or while a scan runs, says why on the band. */
-TEST_CASE(the_scan_row_opens_the_found_list_with_scan_again)
+/* SCAN FOR NODE opens SEARCH and asks for a scan; BOUND NODE
+ * opens it on the last list and asks for none.  While ARMED SCAN FOR
+ * NODE still opens SEARCH and asks for no scan, with the band's
+ * text.  A full scan lists all 8 devices, and the rows carry no choice
+ * list. */
+TEST_CASE(the_rows_open_search)
 {
     fresh_hub();
     pnode_cmd_t c;
@@ -322,84 +335,45 @@ TEST_CASE(the_scan_row_opens_the_found_list_with_scan_again)
     wireless_pane_set_pnode(&v);
     const ui_setlist_custom_t *sr = &wireless_pane_pnode_scan_row;
     const ui_setlist_custom_t *br = &wireless_pane_pnode_bind_row;
-    CHECK(sr->tap != NULL);
-    CHECK(sr->choices != NULL && br->tap != NULL);
-    if (sr->choices == NULL || br->tap == NULL) {
-        return;
-    }
-    CHECK_EQ(sr->choices(), 3);
-    for (int i = 0; i < 4; ++i) {
-        CHECK_STR_EQ(sr->choice(i), br->choice(i));
-    }
-    CHECK_EQ(sr->chosen(), br->chosen());
-    sr->pick(0);
-    CHECK(wireless_pane_take_pnode(&c));
-    CHECK_EQ(c.kind, PNODE_CMD_BIND);
-    CHECK_EQ(c.arg, 0u);
-    sr->pick(2);
+    CHECK(sr->choices == NULL && sr->choice == NULL && sr->pick == NULL);
+    CHECK(br->choices == NULL && br->choice == NULL && br->pick == NULL);
+    sr->tap();
+    CHECK_EQ(ui_router_current(), SCREEN_WL_SEARCH);
     CHECK(wireless_pane_take_pnode(&c));
     CHECK_EQ(c.kind, PNODE_CMD_SCAN);
-    /* SCAN AGAIN while ARMED. */
+    CHECK(!wireless_pane_take_pnode(&c));
+    ui_router_goto(SCREEN_SETUP);
+    br->tap();
+    CHECK_EQ(ui_router_current(), SCREEN_WL_SEARCH);
+    CHECK(!wireless_pane_take_pnode(&c));
+    /* SCAN FOR NODE while ARMED. */
+    ui_router_goto(SCREEN_SETUP);
     set_armed(true);
-    sr->pick(2);
+    sr->tap();
+    CHECK_EQ(ui_router_current(), SCREEN_WL_SEARCH);
     CHECK(!wireless_pane_take_pnode(&c));
     CHECK_STR_EQ(ui_router_alert(), TR(PNODE_SCAN_ARMED));
     set_armed(false);
-    /* STOPPED BY ARM, a scan running, none found, none yet: no list. */
-    v.scan_cut = true;
-    wireless_pane_set_pnode(&v);
-    CHECK_EQ(sr->choices(), 0);
-    CHECK_EQ(br->choices(), 3);
-    v = two_found();
-    v.link = PNODE_LINK_SCANNING;
-    wireless_pane_set_pnode(&v);
-    CHECK_EQ(sr->choices(), 0);
-    CHECK_EQ(br->choices(), 0);
-    br->tap();
-    CHECK_STR_EQ(ui_router_alert(), TR(NODE_BIND_SCANNING));
-    /* A pick from a list opened before the scan started. */
-    br->pick(0);
-    CHECK(!wireless_pane_take_pnode(&c));
-    v = two_found();
-    v.found_n = 0u;
-    wireless_pane_set_pnode(&v);
-    CHECK_EQ(sr->choices(), 0);
-    br->tap();
-    CHECK_STR_EQ(ui_router_alert(), TR(NODE_BIND_EMPTY));
-    wireless_pane_set_pnode(NULL);
-    CHECK_EQ(sr->choices(), 0);
-    CHECK_EQ(br->choices(), 0);
-    br->tap();
-    CHECK_STR_EQ(ui_router_alert(), TR(NODE_BIND_EMPTY));
-    CHECK(!wireless_pane_take_pnode(&c));
-    /* A full scan: 6 devices, SCAN AGAIN at row 6. */
+    /* A full scan: every device listed. */
     v = two_found();
     v.found_n = 8u;
     wireless_pane_set_pnode(&v);
-    CHECK_EQ(br->choices(), UI_SL_CHOICES_MAX);
-    CHECK_EQ(wireless_list_devices(8u), 6);
-    CHECK_STR_EQ(br->choice(6), TR(WL_SCAN_AGAIN));
-    CHECK_STR_EQ(br->choice(7), "");
-    br->pick(5);
+    wls_view_t s;
+    wl_search_view(&s);
+    CHECK_EQ(s.found_n, 8u);
+    wl_search_device()->bind(7u);
     CHECK(wireless_pane_take_pnode(&c));
     CHECK_EQ(c.kind, PNODE_CMD_BIND);
-    CHECK_EQ(c.arg, 5u);
-    br->pick(6);
-    CHECK(wireless_pane_take_pnode(&c));
-    CHECK_EQ(c.kind, PNODE_CMD_SCAN);
-    br->pick(7);
-    CHECK(!wireless_pane_take_pnode(&c));
-    CHECK_EQ(wireless_list_rows(false, 3u), 0);
-    CHECK_EQ(wireless_list_rows(true, 0u), 0);
-    CHECK_EQ(wireless_list_rows(true, 1u), 2);
+    CHECK_EQ(c.arg, 7u);
+    wireless_pane_set_pnode(NULL);
 }
 
 int main(void)
 {
     RUN(the_entry_shows_on_and_source_off_and_its_rows_on);
     RUN(a_node_scan_while_armed_is_refused_with_a_band_text);
-    RUN(a_found_node_binds_by_its_row);
-    RUN(the_scan_row_opens_the_found_list_with_scan_again);
+    RUN(a_found_node_shows_on_search_and_binds_by_its_row);
+    RUN(the_rows_open_search);
     RUN(the_battery_row_says_what_the_status_says);
     RUN(every_node_state_word_fits_25_cells_in_its_colour);
     RUN(reset_keeps_the_bound_node);
