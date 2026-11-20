@@ -137,6 +137,7 @@ SPELL_DE = (
     (r"\bARM \+ START\b", "Arm und Start"),
     (r"\bSETUP\b|\bSetup\b", "Sett-ap"),
     (r"\bLIVE\b|\bLive\b", "Laif"),
+    (r"\bRESERVE\b|\bReserve\b", "Resärwe"),
     (r"\b(IMU|PWM|SD|USB)\b", lambda m: " ".join(m.group(1))),
     (r"[›·]", ","),
     (r"\s+", " "),

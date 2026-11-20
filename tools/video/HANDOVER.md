@@ -129,7 +129,9 @@ python3 tools/make_video.py features --jobs 12 --keep build/video/parts \
   2026-11-19). Piper `kerstin` and Chatterbox Multilingual were rejected
   by ear, and Chatterbox also misread "XT60" and "74". `SPELL_DE` holds
   how German names are written for the speaker; the owner has not heard
-  its spellings ("Dail", "Sett-ap", "Laif", "Hai-Teck", "Tscha-Servo").
+  its spellings ("Dail", "Sett-ap", "Laif", "Hai-Teck", "Tscha-Servo"). The
+  owner chose "Resärwe" for "Reserve" by ear from five spellings
+  (2026-11-20).
 - `auto-rudder-de` is `auto-rudder` in German. Both come from one
   generator outside the tree; the German texts are a table by their
   English ones. A change to one storyboard goes into both.

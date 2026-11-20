@@ -735,7 +735,7 @@ def test_a_german_storyboard_is_written_out_for_a_german_speaker():
 
     said = video_voice.spoken("RESERVE 10%: 950 bis 2050us, 22.0° am IMU",
                               "de")
-    assert said == ("Reserve 10 Prozent: 950 bis 2050 Mikrosekunden, "
+    assert said == ("Resärwe 10 Prozent: 950 bis 2050 Mikrosekunden, "
                     "22.0 Grad am I M U")
     assert video_voice.spoken("hold 2 s", "en") == "hold 2 seconds"
     board = {"lang": "de", "scenes": [{"type": "end", "dur": 5,
