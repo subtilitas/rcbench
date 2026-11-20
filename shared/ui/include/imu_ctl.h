@@ -50,8 +50,9 @@ typedef struct {
     imu_cfg_t    cfg;            /**< SETUP's values, the bind's after one */
     bool         configured;     /**< a first imu_ctl_config() came */
     uint32_t     bind_seq;       /**< binds, counted */
-    bool         armed;          /**< the bench is ARMED (imu_ctl_live()) */
-    uint32_t     refused;        /**< scans refused while ARMED */
+    bool         armed;          /**< ARMED or an arm waits (imu_ctl_live()) */
+    uint32_t     refused;        /**< scans refused while armed, counted
+                                      (imu_view_t.scan_armed) */
     imu_ble_t    ble;            /**< the link */
     imu_sensor_t sensor;         /**< the sensor side */
 } imu_ctl_t;
@@ -85,9 +86,10 @@ void imu_ctl_radio(imu_ctl_t *c, imu_radio_t radio, const char *version,
  * @brief The bench's ARMED state.  While ARMED a SCAN is refused and a
  *        running scan is stopped at the next imu_ctl_step(): a scan holds
  *        the host stack's one scan or connect for BLEU_SCAN_MS, and a
- *        Dial that drops then could not come back.
+ *        Dial that drops then could not come back.  A refused SCAN counts
+ *        in imu_view_t.scan_armed, which the screen says on the band.
  * @param c     The controller; NULL does nothing.
- * @param armed Whether the bench is ARMED.
+ * @param armed Whether the bench is ARMED or an arm waits.
  */
 void imu_ctl_live(imu_ctl_t *c, bool armed);
 

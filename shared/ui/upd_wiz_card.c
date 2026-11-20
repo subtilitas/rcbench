@@ -317,7 +317,8 @@ static void names_of(const upd_wiz_t *w, const upd_wiz_tag_t *tags,
 /**
  * @brief The last card under its heading: the running version, the home
  *        network, the last job's result, the steps not connected, not
- *        updatable here (a device OFF on WIRELESS among them) and skipped,
+ *        updatable here (a device OFF on WIRELESS or without Bluetooth LE
+ *        among them) and skipped,
  *        and the notes on the reminder and RELEASES.
  * @param w the steps
  */
@@ -330,7 +331,7 @@ static void end_card(const upd_wiz_t *w)
         UPD_WIZ_TAG_NO_IMAGE, UPD_WIZ_TAG_BAD_IMAGE,
         UPD_WIZ_TAG_CHECK_FAILED, UPD_WIZ_TAG_USB_ONLY,
         UPD_WIZ_TAG_LINK_FAILED, UPD_WIZ_TAG_NOT_REPORTED,
-        UPD_WIZ_TAG_OFF,
+        UPD_WIZ_TAG_OFF, UPD_WIZ_TAG_NO_BLE,
     };
     static const upd_wiz_tag_t k_skipped[] = { UPD_WIZ_TAG_SKIPPED };
     const upd_view_t *v = upd_screen_view();

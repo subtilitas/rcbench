@@ -93,6 +93,10 @@ typedef struct {
     bool         off;        /**< bound, and the device's switch on
                                   WIRELESS is OFF: the panel runs no link
                                   to it                                   */
+    bool         no_ble;     /**< Bluetooth LE cannot link a device: the
+                                  C6's link failed or the host has no
+                                  sync with the C6 (not while its start
+                                  runs)                                   */
     bool         known;      /**< the device is connected and reported its
                                   version                                 */
     fw_version_t running;    /**< that version                            */

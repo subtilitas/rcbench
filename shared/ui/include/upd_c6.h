@@ -93,9 +93,23 @@ const char *upd_c6_reason(const upd_c6_view_t *v);
  *        last step is out, or the restart after a success is owed.
  * @param v the view; NULL is none
  * @return true for FW_C6_ROW_UPDATING and for FW_C6_ROW_BLOCKED with
- *         FW_C6_WHY_ENDING
+ *         FW_C6_WHY_ENDING or FW_C6_WHY_RESTART
  */
 bool upd_c6_holds(const upd_c6_view_t *v);
+
+/**
+ * @brief The alert for an ask an update refuses (fw_upd_refuses()), which
+ *        names the update that runs: "Supply output not switched on: the
+ *        Dial update is running."
+ * @param out     the line; empty when nothing is refused
+ * @param n       bytes of @p out
+ * @param running the update that runs (fw_upd_running())
+ * @param ask     FW_C6_ASK_SUPPLY_ON, FW_C6_ASK_PROG5V_ON or
+ *                FW_C6_ASK_SESSION; ARM has alerts of its own
+ * @return true when @p ask is refused and @p out holds its line
+ */
+bool upd_refusal_line(char *out, size_t n, fw_upd_t running,
+                      fw_c6_ask_t ask);
 
 /**
  * @brief The versions' line.

@@ -728,7 +728,7 @@ void log_rail_count(bench_totals_t *t, log_rail_t *r, float dt_s,
     }
     if (driving) {
         const uint8_t both = (uint8_t)(SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT);
-        t->run_s += dt;
+        bench_totals_add_time(t, dt);
         if ((r->ok & SUPPLY_OK_CURRENT) != 0u) {
             t->mah += (double)r->i * (double)dt * (1000.0 / 3600.0);
             t->counted |= BENCH_COUNTED_CHARGE;

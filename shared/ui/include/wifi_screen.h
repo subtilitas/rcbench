@@ -46,6 +46,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "fw_image.h"
 #include "ui_screen.h"
 #include "ui_textkey.h"
 
@@ -307,8 +308,10 @@ typedef struct {
     char           version[WIFI_VER_MAX + 1];  /**< the version of the image */
     uint32_t       written;    /**< FETCHING: bytes received              */
     uint32_t       total;  /**< FETCHING: bytes of the whole image */
-    /** FETCHING: the step and the time left; FETCH_FAILED: why, in one
-     *  line or two.  The application writes them (upd_result_text()). */
+    /** @brief FETCHING: the step and the time left; FETCH_FAILED: why, in
+     *  one line or two.  The application writes them (upd_result_text()).
+     *  FAILED: why the write failed, one line (update_fail_text()); empty
+     *  shows none. */
     char           what[96];
     char           why[96];  /**< the reason a download failed */
 } update_view_t;
@@ -318,6 +321,16 @@ typedef struct {
  * @param v The view, copied.
  */
 void update_screen_set(const update_view_t *v);
+
+/**
+ * @brief PANEL UPDATE's line under "Writing failed.": the reason the
+ *        install's console line names (fw_err_str()), in the operator's
+ *        language.
+ * @param e why the install failed; FW_OK and an unknown reason give
+ *          "Reason not known."
+ * @return the line
+ */
+const char *update_fail_text(fw_err_t e);
 
 /**
  * @brief True once CLOSE was tapped on a failed write or download; cleared when

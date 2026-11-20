@@ -28,7 +28,9 @@
  * that comes up by itself after a start: the IOmcu without a link
  * (CU_SEC_NO_LINK) and a bound device that is not connected.  A device
  * that is not bound, a bound device whose switch on WIRELESS is OFF (the
- * panel runs no link to it) and a step without an image never wait.
+ * panel runs no link to it), a bound device while Bluetooth LE cannot link
+ * one (the C6's link failed, or the host has no sync with the C6) and a
+ * step without an image never wait.
  *
  * The step's state is its own; its tag is the word its row shows.  A step
  * after the current one that is OPEN, HELD or FAILED reads LATER.  While
@@ -119,6 +121,9 @@ typedef enum {
     UPD_WIZ_TAG_NOT_CONNECTED,   /**< a bound device is not connected      */
     UPD_WIZ_TAG_NOT_BOUND,       /**< no device of the kind is bound       */
     UPD_WIZ_TAG_OFF,             /**< a bound device is OFF on WIRELESS    */
+    UPD_WIZ_TAG_NO_BLE,          /**< a bound device that is ON, and
+                                      Bluetooth LE cannot link it (no C6
+                                      link, no sync)                       */
 } upd_wiz_tag_t;
 
 /** @brief The last card's heading, while no step is current. */

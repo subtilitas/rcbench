@@ -652,12 +652,19 @@ static fw_gate_t fw_gate_now(bool armed)
 /**
  * @brief The update screen, drawn now: the install's loop runs no router
  *        tick.
+ * @param st      where the update stands
+ * @param version the image's version
+ * @param written bytes written
+ * @param total   the image's bytes
+ * @param why     UPDATE_FAILED: the reason's line (update_fail_text());
+ *                NULL for none
  */
 static void update_frame(update_state_t st, const char *version,
-                         uint32_t written, uint32_t total)
+                         uint32_t written, uint32_t total, const char *why)
 {
     update_view_t v = { .state = st, .written = written, .total = total };
     snprintf(v.version, sizeof(v.version), "%s", version);
+    snprintf(v.what, sizeof(v.what), "%s", why != NULL ? why : "");
     update_screen_set(&v);
     gfx_canvas_t *c = panel_canvas();
     if (c != NULL) {
@@ -693,7 +700,7 @@ static bool fw_install_run(void)
     atomic_store(&s_fw_installing, true);
     ui_router_goto(SCREEN_UPDATE);
     (void)wifi_screen_take();        /* the screen's leave: radio off */
-    update_frame(UPDATE_WRITING, info.version_text, 0u, bytes);
+    update_frame(UPDATE_WRITING, info.version_text, 0u, bytes, NULL);
 
     /* The radio goes first, and wholly: no request may be under way. */
     wifi_access_close(WA_OFF_INSTALL);
@@ -707,7 +714,9 @@ static bool fw_install_run(void)
     static fw_install_t in;
     fw_image_info_t running;
     (void)fw_ota_running(&running);
-    fw_err_t e = FW_ERR_BUSY;
+    /* The radio still up, or the gate shut since the hold: nothing is
+     * written. */
+    fw_err_t e = down ? FW_ERR_GATE : FW_ERR_RADIO;
     if (down && fw_gate_now(arm_live_or_coming()) == FW_GATE_OPEN) {
         e = fw_install_begin(&in, fw_ota_flash(), img, bytes,
                              fw_ota_slot_bytes(), &running);
@@ -729,26 +738,29 @@ static bool fw_install_run(void)
             do {
                 st = fw_install_step(&in, true);
                 update_frame(UPDATE_WRITING, info.version_text, in.done,
-                             bytes);
+                             bytes, NULL);
             } while (st == FW_INSTALL_RUNNING);
         }
         /* Only an image written whole and checked notes the update run:
          * a power cut before this line leaves no run. */
         (void)fw_ota_run_installed(st, info.version_text);
         if (st == FW_INSTALL_DONE) {
-            update_frame(UPDATE_RESTARTING, info.version_text, bytes, bytes);
+            update_frame(UPDATE_RESTARTING, info.version_text, bytes, bytes,
+                         NULL);
             fw_ota_note_restart(info.version_text);
             ESP_LOGI(TAG, "written and checked; restarting");
             vTaskDelay(pdMS_TO_TICKS(1500));
             esp_restart();
         }
     }
+    const fw_err_t why = (e != FW_OK) ? e : in.err;
     ESP_LOGE(TAG, "install of %s failed: %s", info.version_text,
-             fw_err_str((e != FW_OK) ? e : in.err));
+             fw_err_str(why));
     atomic_store(&s_fw_quiet_req, false);
     atomic_store(&s_fw_installing, false);
     wifi_access_release();
-    update_frame(UPDATE_FAILED, info.version_text, in.done, bytes);
+    update_frame(UPDATE_FAILED, info.version_text, in.done, bytes,
+                 update_fail_text(why));
     return true;
 }
 
@@ -1181,7 +1193,8 @@ void upd_service(bool armed, bool unsafe, uint32_t stops_now,
              * failed write, and PANEL UPDATE says the firmware stays. */
             ESP_LOGE(TAG, "GitHub: %s staged, no image to install", v.found);
             wifi_access_release();
-            update_frame(UPDATE_FAILED, v.found, 0u, f.total);
+            update_frame(UPDATE_FAILED, v.found, 0u, f.total,
+                         TR(UP_WHY_GONE));
         }
         return;
     }

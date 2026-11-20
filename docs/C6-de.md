@@ -183,7 +183,8 @@ Netzteilausgang und 5V der PROG-Ports aus, ohne Holen oder Ablegen einer
 Platinenzeichnung und ohne Programmierung, die einen Port belegt. Solange sie
 warten, lautet der Alarm `C6-Funk auf 2.13.0 aktualisiert. Neustart, sobald
 SAFE und alle Ausgänge aus sind.`, alle 30s erneut, und das Halten der Zeile
-bleibt grau.
+bleibt grau. Ein Tippen darauf zeigt `C6-Funk aktualisiert. Neustart, sobald
+SAFE und alle Ausgänge aus sind.`
 
 Vom Start des Updates bis zu diesem Neustart, und bis ein Schritt über seiner
 Grenze zurückkehrt, startet kein WLAN, Installation des Panels,
@@ -206,6 +207,15 @@ beide: Jede Task veröffentlicht ihr Flag, bevor sie das der anderen liest,
 also wird mindestens einer der beiden abgelehnt. Eine gestartete
 Programmierung zählt 2 000ms lang als belegter Port, oder bis der IOmcu den
 Port als belegt meldet. Die Dauer eines Updates ist nicht gemessen.
+
+Die anderen Updates lehnen dieselben drei Einschaltungen und Starts ab,
+solange sie laufen: das Update des IOmcu und das Update des Dial, des
+Leistungsknotens oder des Auswuchtknotens vom Halten bis zu seinem Ende. Der
+Alarm nennt das laufende Update, zum Beispiel `Netzteilausgang nicht
+eingeschaltet: Das Dial-Update läuft.`, `PROG-Ports 5V nicht eingeschaltet:
+Das IOmcu-Update läuft.` oder `Programmierung nicht gestartet: Das
+Leistungsknoten-Update läuft.`. ARM während des Updates eines Geräts lautet
+`ARMED gesperrt: Ein Update eines Funkgeräts läuft.`.
 
 Konsolenzeilen, Tag `rcbench`:
 

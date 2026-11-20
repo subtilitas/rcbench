@@ -77,7 +77,7 @@ fw_c6_row_t fw_c6_row(const fw_c6_feed_t *f, fw_c6_why_t *why)
     }
     if (f->restarting) {
         if (why != NULL) {
-            *why = FW_C6_WHY_ENDING;
+            *why = FW_C6_WHY_RESTART;
         }
         return FW_C6_ROW_BLOCKED;
     }
@@ -98,6 +98,23 @@ fw_c6_row_t fw_c6_row(const fw_c6_feed_t *f, fw_c6_why_t *why)
 bool fw_c6_refuses(bool busy, fw_c6_ask_t ask)
 {
     return busy && ask != FW_C6_ASK_OFF;
+}
+
+fw_upd_t fw_upd_running(bool c6, bool iomcu, fw_upd_t device)
+{
+    if (c6) {
+        return FW_UPD_C6;
+    }
+    if (iomcu) {
+        return FW_UPD_IOMCU;
+    }
+    return (device >= FW_UPD_DIAL && device <= FW_UPD_BAL) ? device
+                                                           : FW_UPD_NONE;
+}
+
+bool fw_upd_refuses(fw_upd_t running, fw_c6_ask_t ask)
+{
+    return fw_c6_refuses(running != FW_UPD_NONE, ask);
 }
 
 void fw_c6_prog_claim(fw_c6_prog_t *c, uint32_t now_ms)

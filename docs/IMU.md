@@ -87,7 +87,9 @@ ARMED.
 
 While the bench is ARMED, SCAN FOR SENSORS, SCAN AGAIN and SERVO's SEARCH
 FOR IMU start no scan and the band reads `NO IMU SCAN WHILE ARMED: SWITCH
-TO SAFE FIRST`. A scan that runs at the switch to ARMED is stopped; the
+TO SAFE FIRST`. The same holds while an arm waits: from the end of the
+ARM hold to the IOmcu's first ARMED report the found list opens, no scan
+runs and the band reads the same text. A scan that runs at the switch to ARMED is stopped; the
 list keeps what it heard until then. The Dial's and the nodes' scans
 follow the same rule ([Dial](Dial.md)).
 

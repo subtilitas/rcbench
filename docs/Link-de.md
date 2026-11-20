@@ -151,7 +151,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Das Protokoll verwendet Pages mit bis zu 32 Registern zu je sechzehn Bit.
 Gelesen und geschrieben wird in Registerfenstern. Der IOmcu sendet nur als Antwort auf eine Anfrage.
-Protokollversion 4.39. Die Major-Version ist Register 0 der Page 0. Die Major
+Protokollversion 4.40. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
@@ -1220,17 +1220,23 @@ Page TONE fügt kein Bit hinzu.
 Das rpm-Register trägt 0 bis 65.535rpm. Bei einer Drehzahl über 65.535rpm
 steht 65535 darin und Flag-Bit 2 ist gelöscht: eine Grenze, kein Messwert.
 Eine Drehzahl, die nichts gemessen hat, steht als 0 mit gelöschtem Bit 2
-darin. Das Register der höchsten rpm hat kein Gültig-Bit: 65535 steht für
-eine Spitze von 65.535rpm oder mehr. Das Panel zeigt und protokolliert beide
-Grenzen als `>65535`. Ein IOmcu mit Firmware 0.23.14 oder älter meldet eine
-Drehzahl über 65.535rpm als 65535 mit gesetztem Bit 2.
+darin. Das Register der höchsten rpm liest 65535 für eine Spitze über
+65.535rpm, mit gesetztem Flag-Bit 8 (seit 4.40): eine Grenze, kein
+Messwert. Mit gelöschtem Bit 8 ist es die Spitze, 65535 für genau
+65.535rpm. Das Panel zeigt beide Grenzen als `>65535` und protokolliert
+die der Drehzahl. Ein IOmcu mit Firmware 0.23.14 oder älter meldet eine
+Drehzahl über 65.535rpm als 65535 mit gesetztem Bit 2. Ein IOmcu mit 4.39
+oder älter setzt Bit 8 nie: Das Panel zeigt seine höchste Drehzahl von
+65535 als 65.535rpm.
 
 BENCH-Flags: Bit 0 Spannung gültig, Bit 1 Strom gültig, Bit 2 Drehzahl
 gültig, Bit 3 Temperatur des ESC gültig, Bit 4 Temperatur des Motors gültig,
 Bit 5 Spannung, Strom und Leistung sind die des INA228 und nicht die
 Telemetrie des ESC (seit 4.7), Bit 6 Ladung und Energie sind die Zähler des
 INA228, beim Schalten dieses Laufs auf ARMED gelöscht, und das Bauteil hat
-durchgehend geantwortet (seit 4.7), Bit 7 simuliert. Ohne Bit 6 zählt ein
+durchgehend geantwortet (seit 4.7), Bit 7 simuliert, Bit 8 die höchste
+Drehzahl liegt über 65.535rpm, und ihr Register ist eine Grenze (seit
+4.40). Ohne Bit 6 zählt ein
 Panel Ladung und Energie selbst aus dem Strom; mit Bit 6 zeigt das Panel
 dieses Builds die des INA228, in den Schritten von 0,01mAh und 0,01Wh der
 SENSE-Page aus einem Lesen jünger als 100ms, ab 100ms nach Laufbeginn. Die beiden Temperaturen haben getrennte Bits, weil sie aus

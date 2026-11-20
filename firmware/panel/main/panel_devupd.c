@@ -227,6 +227,21 @@ bool panel_devupd_busy(void)
     return devupd_gate_busy(&s_gate);
 }
 
+fw_upd_t panel_devupd_running(void)
+{
+    /* The device is stored before the request (devupd_gate_ask()), and
+     * the request read before the run: a gate that reads busy names the
+     * device its ask named. */
+    if (!devupd_gate_busy(&s_gate)) {
+        return FW_UPD_NONE;
+    }
+    static const fw_upd_t k_upd[DEV_N] = {
+        FW_UPD_DIAL, FW_UPD_PNODE, FW_UPD_BAL,
+    };
+    const unsigned d = atomic_load(&s_gate.dev);
+    return d < DEV_N ? k_upd[d] : FW_UPD_DIAL;
+}
+
 bool panel_devupd_known(void)
 {
     return atomic_load(&s_known);
@@ -670,6 +685,11 @@ void devupd_service(bool armed)
     taskEXIT_CRITICAL(&s_mux);
     const bool busy = devupd_gate_busy(&s_gate);
     const bool other = panel_c6_busy() || panel_cu_busy() || panel_fw_busy();
+    /* Bluetooth LE that cannot link a device: no device step waits for it
+     * in an update run.  Its start (STARTING) and a start not yet asked
+     * for (OFF) come to READY by themselves. */
+    const panel_ble_state_t ble = panel_ble_state();
+    const bool no_ble = ble == PANEL_BLE_NO_LINK || ble == PANEL_BLE_NO_SYNC;
     for (unsigned i = 0; i < DEV_N; ++i) {
         const dev_pub_t *d = &p.d[i];
         /* The frame asks alone, so the device it asked for is the one the
@@ -684,7 +704,7 @@ void devupd_service(bool armed)
         };
         const upd_dev_view_t v = {
             .row = devupd_row(&in), .bound = d->bound, .off = d->off,
-            .known = d->linked,
+            .no_ble = no_ble, .known = d->linked,
             .running = d->running, .have_image = d->img_ok,
             .carried = d->carried, .phase = mine ? p.phase : 0u,
             .percent = mine ? p.percent : 0u, .secs = mine ? p.secs : 0u,

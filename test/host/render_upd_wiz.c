@@ -237,6 +237,13 @@ static void fit_views(const char *view, wiz_pose_t *w)
         w->d[UPD_DEV_DIAL].row = DEVUPD_ROW_NOT_LINKED;
         w->d[UPD_DEV_DIAL].known = false;
         w->d[UPD_DEV_DIAL].off = true;
+    } else if (strcmp(view, "updates-wiz-no-ble") == 0) {
+        /* The power node bound and ON while Bluetooth LE cannot link
+         * it: the tag NO BLUETOOTH, named on the last card. */
+        w->d[UPD_DEV_PNODE].row = DEVUPD_ROW_NOT_LINKED;
+        w->d[UPD_DEV_PNODE].bound = true;
+        w->d[UPD_DEV_PNODE].known = false;
+        w->d[UPD_DEV_PNODE].no_ble = true;
     } else if (strcmp(view, "updates-wiz-all-current") == 0) {
         /* No power node bound: every step current. */
         w->d[UPD_DEV_PNODE].bound = false;

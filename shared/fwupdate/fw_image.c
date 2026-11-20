@@ -59,6 +59,8 @@ const char *fw_err_str(fw_err_t e)
     case FW_ERR_FLASH:     return "flash failed";
     case FW_ERR_BUSY:      return "another image is staged";
     case FW_ERR_QUIET:     return "the control task did not stand still";
+    case FW_ERR_RADIO:     return "the radio did not switch off";
+    case FW_ERR_GATE:      return "the bench does not allow a flash write";
     case FW_ERR_COUNT:
     default:               return "?";
     }

@@ -5,6 +5,7 @@ SPDX-License-Identifier: MIT
 
 import pathlib
 import re
+import shlex
 import shutil
 import subprocess
 
@@ -474,6 +475,50 @@ def test_a_shard_of_a_run_takes_its_share(tiny, capsys):
     listed = capsys.readouterr().out
     assert "4 mutants in 1 file(s), shard 1/2" in listed
     assert listed.count("limit.c:") == 4
+
+
+def test_a_run_lists_the_paths_named_first_at_its_head(tiny, capsys):
+    """main() orders the list by --first before it lists or shards it."""
+    repo, scratch, git = tiny
+    (repo / "shared" / "zone").mkdir()
+    (repo / "shared" / "zone" / "zone.c").write_text(
+        "int inside(int n)\n{\n    return n < 4;\n}\n")
+    assert mu.main(["--files", "shared/limit/limit.c",
+                    "shared/zone/zone.c", "--first", "shared/zone/",
+                    "--list"]) == 0
+    listed = [line.split()[0] for line in
+              capsys.readouterr().out.splitlines()[1:]]
+    # The 3 mutants of zone.c, then the 8 of limit.c, which sorts first.
+    assert listed == ["shared/zone/zone.c:3"] * 3 + [
+        "shared/limit/limit.c:5"] * 3 + ["shared/limit/limit.c:8"] * 3 + [
+        "shared/limit/limit.c:13", "shared/limit/limit.c:14"]
+
+
+def test_the_weekly_call_lists_shared_safety_first_in_every_shard(
+        monkeypatch, capsys):
+    """mutation.yml's own arguments, through main(), give the safety order.
+
+    The call is taken from the workflow as written, with --list put before
+    the files, for the first and the last shard.
+    """
+    step = weekly_step()
+    call = step[:step.index(" --files") + len(" --files")]
+    argv = shlex.split(call)[2:]
+    assert argv[-1] == "--files"
+    monkeypatch.chdir(mu.REPO)
+    files = sorted(p.relative_to(mu.REPO).as_posix()
+                   for d in ("safety", "outputs")
+                   for p in (mu.REPO / "shared" / d).rglob("*.[ch]"))
+    for shard in (0, SHARDS - 1):
+        args = [a.replace("$SHARD", str(shard)) for a in argv[:-1]]
+        assert mu.main([*args, "--list", "--files", *files]) == 0
+        paths = [line.split(":")[0].strip() for line in
+                 capsys.readouterr().out.splitlines()[1:]]
+        safety = [p for p in paths if p.startswith("shared/safety/")]
+        # Every safety mutant of the shard comes before the first other
+        # one, and the five named files lead in the order given.
+        assert safety and paths[:len(safety)] == safety
+        assert list(dict.fromkeys(safety))[:5] == SAFETY_FIRST[:5]
 
 
 def test_a_ceiling_on_survivors_sets_the_exit_code(tiny):

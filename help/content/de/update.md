@@ -32,7 +32,7 @@ Ein Fehler, Watchdog-Reset, Neustart oder Stromausfall vor der Übernahme stellt
 
 ![Das Schreiben schlug fehl](view:panel-update-failed)
 
-Ein fehlgeschlagener Schreibvorgang ändert die Startauswahl nicht; die bestehende Firmware läuft weiter. Nach einem Upload führt SCHLIESSEN zu der Seite zurück, die [WLAN](wifi.md) geöffnet hat: [SETUP](setup.md), [LOGS](logs.md) oder [Updates](updates.md). Nach einem Download führt es zu [Updates](updates.md) oder zum Menü.
+Ein fehlgeschlagener Schreibvorgang ändert die Startauswahl nicht; die bestehende Firmware läuft weiter. Die Zeile unter `Schreiben fehlgeschlagen.` nennt den Grund wie die Konsole, zum Beispiel `WLAN ging nicht innerhalb von 20s aus.` oder `Löschen, Schreiben oder Prüfen des Flash ist fehlgeschlagen.` Nach einem Upload führt SCHLIESSEN zu der Seite zurück, die [WLAN](wifi.md) geöffnet hat: [SETUP](setup.md), [LOGS](logs.md) oder [Updates](updates.md). Nach einem Download führt es zu [Updates](updates.md) oder zum Menü.
 
 ## Aktuelle Einschränkungen
 

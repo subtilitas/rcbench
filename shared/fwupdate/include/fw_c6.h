@@ -117,8 +117,11 @@ typedef enum {
     FW_C6_WHY_DEVICE,      /**< a wireless device's update runs on the C6 */
     FW_C6_WHY_PROG,        /**< a servo or ESC programmer holds a port, or
                                 a session's start is claimed              */
-    FW_C6_WHY_ENDING,      /**< a step of an ended update is still in a call,
-                                or the restart after a success is due     */
+    FW_C6_WHY_ENDING,      /**< a step of an ended update is still in a
+                                call                                      */
+    FW_C6_WHY_RESTART,     /**< the update ended UPDATED: the panel's
+                                restart is due, and waits for a bench
+                                SAFE with all outputs off                 */
 } fw_c6_why_t;
 
 /** @brief What the application knows for the row, once a frame. */
@@ -148,7 +151,7 @@ typedef struct {
 
 /**
  * @brief The row's state, in this order: no image, a bad image, an update
- *        running, a restart due (BLOCKED, FW_C6_WHY_ENDING), a failed link,
+ *        running, a restart due (BLOCKED, FW_C6_WHY_RESTART), a failed link,
  *        then the bench's reasons in fw_c6_why_t's order; else REINSTALL
  *        when the C6 reports the carried version, else READY.
  *
@@ -330,6 +333,45 @@ typedef enum {
  * @return true when the ask is refused; the caller says why
  */
 bool fw_c6_refuses(bool busy, fw_c6_ask_t ask);
+
+/** @brief Which update runs, for the asks it refuses (fw_upd_refuses()). */
+typedef enum {
+    FW_UPD_NONE = 0, /**< no update runs                                   */
+    FW_UPD_C6,       /**< the C6 radio's, from its start to the restart   */
+    FW_UPD_IOMCU,    /**< the IOmcu's, or the BUY of an image on trial     */
+    FW_UPD_DIAL,     /**< the Dial's, from its hold to its end             */
+    FW_UPD_PNODE,    /**< the power node's, from its hold to its end       */
+    FW_UPD_BAL,      /**< the balance node's, from its hold to its end     */
+} fw_upd_t;
+
+/**
+ * @brief The update that runs, the one a refusal names.  One update runs at
+ *        a time; were two to read busy, the C6's comes first, then the
+ *        IOmcu's, then a device's.
+ * @param c6     the C6 radio's update runs or its restart is due
+ * @param iomcu  the IOmcu's update or its BUY runs
+ * @param device the wireless device whose update runs, FW_UPD_DIAL,
+ *               FW_UPD_PNODE or FW_UPD_BAL; FW_UPD_NONE for none
+ * @return the update; FW_UPD_NONE when none runs
+ */
+fw_upd_t fw_upd_running(bool c6, bool iomcu, fw_upd_t device);
+
+/**
+ * @brief Whether @p ask is refused because an update runs.
+ *
+ * Every update refuses what fw_c6_refuses() refuses under the C6's update:
+ * the C6's ends in a restart of the panel, the IOmcu's in a restart of the
+ * IOmcu, and a wireless device's holds the device's own link (the Dial's
+ * stop, the nodes' readings) until its end.  What switches off or gives a
+ * port back is never refused.  This answers for the supply's ON, PROG 5V's
+ * ON and a programmer session's start; ARM under a device's or the IOmcu's
+ * update is judged where ARM is.
+ *
+ * @param running the update that runs (fw_upd_running())
+ * @param ask     what is asked
+ * @return true when the ask is refused; the caller names @p running
+ */
+bool fw_upd_refuses(fw_upd_t running, fw_c6_ask_t ask);
 
 /* ----------------------------------- a programmer session and the update */
 

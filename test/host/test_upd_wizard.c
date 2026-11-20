@@ -2,7 +2,7 @@
  * SETUP > UPDATES' step model (upd_wizard.c), the order of the steps: the
  * current step as the lowest that blocks and a running update as current
  * whatever its number, PANEL's check under it included; a bound device OFF
- * on WIRELESS never waiting; a failed install leaving PANEL FAILED; the
+ * on WIRELESS, or ON while Bluetooth LE cannot link it, never waiting; a failed install leaving PANEL FAILED; the
  * last card's three headings; a newer panel release making PANEL current again
  * from step 4 and reading LATER on the linked steps; PENDING blocking;
  * ABSENT waiting only in a run; SKIP passing a step until the mask
@@ -676,6 +676,57 @@ TEST_CASE(a_bound_device_off_on_wireless_is_absent_and_never_waits)
     }
 }
 
+/* CLEANUP item 2: a bound device that is ON while Bluetooth LE cannot link
+ * it (no C6 link, no sync): ABSENT with the tag NO BLUETOOTH, in a run too,
+ * and the last card is reached; with Bluetooth LE able to link it waits in
+ * a run.  OFF on WIRELESS and not bound keep their own tags; a device
+ * that reported its version and an update that holds its link are not
+ * touched. */
+TEST_CASE(a_bound_device_without_bluetooth_is_absent_and_never_waits)
+{
+    fx_t f;
+    for (unsigned d = 0u; d < UPD_DEV_COUNT; ++d) {
+        for (unsigned run = 0u; run < 2u; ++run) {
+            all_current(&f);
+            f.in.run = run != 0u;
+            f.d[d] = dev_of(DEVUPD_ROW_NOT_LINKED, true, false, K_OLD);
+            f.d[d].no_ble = true;
+            upd_wiz_t w = eval(&f);
+            CHECK_STEP(w, UPD_WIZ_DIAL + d, UPD_WIZ_ABSENT,
+                       UPD_WIZ_TAG_NO_BLE);
+            CHECK_EQ(w.current, UPD_WIZ_NONE);
+            CHECK(!w.can_skip);
+            CHECK_EQ(upd_wiz_end(&w), UPD_WIZ_END_NONE_OPEN);
+
+            f.d[d].no_ble = false;
+            w = eval(&f);
+            CHECK_STEP(w, UPD_WIZ_DIAL + d,
+                       run != 0u ? UPD_WIZ_WAITING : UPD_WIZ_ABSENT,
+                       UPD_WIZ_TAG_NOT_CONNECTED);
+
+            f.d[d].no_ble = true;
+            f.d[d].off = true;
+            w = eval(&f);
+            CHECK_STEP(w, UPD_WIZ_DIAL + d, UPD_WIZ_ABSENT, UPD_WIZ_TAG_OFF);
+            f.d[d].bound = false;
+            w = eval(&f);
+            CHECK_STEP(w, UPD_WIZ_DIAL + d, UPD_WIZ_ABSENT,
+                       UPD_WIZ_TAG_NOT_BOUND);
+
+            f.d[d] = dev_of(DEVUPD_ROW_READY, true, true, K_OLD);
+            f.d[d].no_ble = true;
+            w = eval(&f);
+            CHECK_STEP(w, UPD_WIZ_DIAL + d, UPD_WIZ_OPEN, UPD_WIZ_TAG_NEXT);
+
+            f.d[d] = dev_of(DEVUPD_ROW_UPDATING, true, false, K_OLD);
+            f.d[d].no_ble = true;
+            w = eval(&f);
+            CHECK_STEP(w, UPD_WIZ_DIAL + d, UPD_WIZ_RUNNING,
+                       UPD_WIZ_TAG_UPDATING);
+        }
+    }
+}
+
 /* A download that ended STAGED is the install running; the same download
  * after an install that failed (UPD_GOT_INSTALL) reads FAILED, blocks
  * nothing and leaves the next step current with its hold. */
@@ -885,6 +936,7 @@ int main(void)
     RUN(one_running_update_is_the_current_step_whatever_its_number);
     RUN(an_update_outranks_panels_check_as_the_current_step);
     RUN(a_bound_device_off_on_wireless_is_absent_and_never_waits);
+    RUN(a_bound_device_without_bluetooth_is_absent_and_never_waits);
     RUN(a_failed_install_leaves_panel_failed_and_the_next_step_current);
     RUN(the_end_heading_follows_the_steps);
     RUN(null_and_zeroed_inputs_give_six_absent_steps);

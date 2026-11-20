@@ -8,6 +8,13 @@ history is in git.
 
 ### Added
 
+- `tools/check_mutants.py`: `--check` holds the weekly mutation run's
+  figures in `mutation.yml`, `STATUS.md`, `CONTRIBUTING.md` and
+  `docs/Building*.md` to the mutants of the tree, run in CI; `--update`
+  writes them. The run reaches about 1,869 mutants of `shared/outputs`,
+  2,568 in all (428 a shard).
+- `test_mutate.py` runs `mutate.py` with `mutation.yml`'s own arguments
+  and fails when the run no longer lists `shared/safety` first.
 - `hardware/mechanical/`: `servo_standard.step`, a standard size servo with
   a round horn, black with the white print "Standard Servo", from an owner
   sketch with dimensions: case 40.5mm x 20.0mm x 36.3mm, 2 ears with 2 open
@@ -43,6 +50,21 @@ history is in git.
 
 ### Changed
 
+- The IOmcu's update and the update of the Dial, the power node and the
+  balance node refuse the supply's OUTPUT ON, PROG 5V ON and a programmer
+  session's start while they run, as the C6 radio's update does; the alert
+  names the running update.
+- UPDATES: a bound device that is ON while Bluetooth LE cannot link it (no
+  C6 link, no sync) never waits in an update run; its row reads
+  `NO BLUETOOTH` / `KEIN BLUETOOTH` and the last card names it.
+- PANEL UPDATE: a failed write names its reason under `Writing failed.`,
+  one line per reason the console names; a radio still on and a closed
+  flash gate have their own reasons.
+- C6 radio: a tap on the grey hold during the restart wait reads
+  `C6 radio updated. The panel restarts once SAFE with all outputs off.`
+- STATUS.md: `mutate.py` on `shared/safety/heartbeat.c` makes 45 mutants,
+  the suite fails on 42; the 3 others are named with the reason no input
+  tells them from the original.
 - RUDDER AUTO: MARGIN lies in the pulse length. 1000us and 2000us aim at
   TARGET itself, 20.0° at TARGET 20.0°; MARGIN p% writes a KST or
   Chaservo servo's PULSE LOWER 1000us - (N - 1000us) x p/100 and PULSE
@@ -107,6 +129,23 @@ history is in git.
   row a position. A run with one write a side takes 130s to 187s on the
   settle tests' curves, the search 42s to 49s of it
   ([AUTO end points](docs/Servo.md#auto-end-points)).
+- Host tests: `test_esc_link_run` holds the ESC_WIRE read copy's two
+  bounds without the restart in `absorb()`. A fetch counts its blocks by
+  the LEN it started with, and a block number from `LINK_ED_BACKUP` on
+  copies nothing into the copy or past it.
+
+### Fixed
+
+- IMU: a scan tapped after the ARM hold and before the IOmcu reports ARMED
+  reads `NO IMU SCAN WHILE ARMED: SWITCH TO SAFE FIRST` on the band. The
+  controller refused it with no text; it counts the refusal in the view
+  (`imu_view_t.scan_armed`).
+- Link protocol 4.40: BENCH flag bit 8, `LINK_BN_RPM_MAX_OVER`, marks a
+  peak speed above 65,535rpm. A peak of exactly 65,535rpm reads 65535 on
+  MOTOR & ESC, a peak above it `>65535`. From an IOmcu of 4.39 or older,
+  which never sets the bit, a peak of 65535 reads 65535.
+- The run's driving time (`bench_totals_t.run_ms`) sums whole ms: a float
+  sum of 50ms steps read 3,602.3s after 1h.
 
 ## 0.23.15 - 2026-11-18
 

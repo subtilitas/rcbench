@@ -48,6 +48,10 @@ typedef struct {
 /* A pin is GPIO 0 to 47, a PROG PORT 1 to 9, a file an 8.3 name of 12
  * cells, an output's role name 7 cells (outputs_role_name()'s buffer). */
 static const format_args_t k_args[] = {
+    /* A refusal under an update: the longest UPD_RUNS_ name. */
+    { TX_ALERT_SUPPLY_UPD,  { "Das Leistungsknoten-Update" } },
+    { TX_ALERT_P5_UPD,      { "Das Leistungsknoten-Update" } },
+    { TX_ALERT_PROG_UPD,    { "Das Leistungsknoten-Update" } },
     /* LOGS' footer messages: the name of a log the bench wrote. */
     { TX_LOG_CANNOT_OPEN,   { "ATEST001.CSV" } },
     { TX_LOG_IS_FOLDER,     { "ATEST001.CSV" } },

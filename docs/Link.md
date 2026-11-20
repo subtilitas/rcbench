@@ -136,7 +136,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 The protocol uses pages of up to 32 sixteen-bit registers, read and written in windows. The
-IOmcu transmits only in answer to a request. Protocol version 4.39. The
+IOmcu transmits only in answer to a request. Protocol version 4.40. The
 major version is register 0 of page 0. The major version changes when a register
 changes meaning or a page is renumbered. The minor version changes when a page or
 register is added at the end, where an older panel can ignore it.
@@ -1110,17 +1110,21 @@ adds no bit.
 
 The rpm register carries 0 to 65,535rpm. For a speed above 65,535rpm it
 reads 65535 with flag bit 2 clear: a bound, not a reading. A speed nothing
-measured reads 0 with bit 2 clear. The maximum rpm register has no valid
-bit: 65535 stands for a peak of 65,535rpm or more. The panel shows and logs
-both bounds as `>65535`. An IOmcu with firmware 0.23.14 or older reports a
-speed above 65,535rpm as 65535 with bit 2 set.
+measured reads 0 with bit 2 clear. The maximum rpm register reads 65535
+for a peak above 65,535rpm with flag bit 8 set (since 4.40): a bound, not a
+reading. With bit 8 clear it is the peak, 65535 for exactly 65,535rpm. The
+panel shows both bounds as `>65535` and logs the speed's. An IOmcu with
+firmware 0.23.14 or older reports a speed above 65,535rpm as 65535 with
+bit 2 set. An IOmcu of 4.39 or older never sets bit 8: the panel shows its
+maximum of 65535 as 65,535rpm.
 
 BENCH flags: bit 0 voltage valid, bit 1 current valid, bit 2: rpm valid, bit 3
 the ESC's temperature valid, bit 4 the motor's temperature valid, bit 5 the
 voltage, current and power are the INA228's and not the ESC's telemetry
 (since 4.7), bit 6 charge and energy are the INA228's accumulators, cleared
 at this run's switch to ARMED, with the part answering throughout (since 4.7), bit 7
-simulated. Without bit 6 a panel counts charge and energy itself from the
+simulated, bit 8 the maximum rpm is above 65,535rpm and its register a
+bound (since 4.40). Without bit 6 a panel counts charge and energy itself from the
 current; with it, this build's panel shows the INA228's, in SENSE's 0.01mAh
 and 0.01Wh steps from a SENSE read younger than 100ms, from 100ms into the run. The two temperatures have
 separate validity bits because they come from different sources, and one

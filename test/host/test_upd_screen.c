@@ -356,9 +356,13 @@ TEST_CASE(the_wait_names_the_c6_while_its_update_runs)
     CHECK_STR_EQ(a, "Wartet auf das Ende des C6-Updates.");
     ui_text_set_language(UI_LANG_EN);
 
-    /* The restart owed after the C6's update holds the gate as the
-     * update does. */
+    /* The restart owed after the C6's update, and its last step still in
+     * a call, hold the gate as the update does. */
     c6.row = FW_C6_ROW_BLOCKED;
+    c6.why = FW_C6_WHY_RESTART;
+    upd_c6_set(&c6);
+    upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+    CHECK_STR_EQ(a, "Waiting for the C6 radio update to finish.");
     c6.why = FW_C6_WHY_ENDING;
     upd_c6_set(&c6);
     upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
