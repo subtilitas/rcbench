@@ -138,6 +138,8 @@ SPELL_DE = (
     (r"\bSETUP\b|\bSetup\b", "Sett-ap"),
     (r"\bLIVE\b|\bLive\b", "Laif"),
     (r"\bRESERVE\b|\bReserve\b", "Resärwe"),
+    (r"\bGel-", "Gell-"),
+    (r"\bGecko Tape\b", "Gekko Tehp"),
     (r"\bSchubstange\b", "Schub Stange"),
     (r"\b(IMU|PWM|SD|USB)\b", lambda m: " ".join(m.group(1))),
     (r"[›·]", ","),

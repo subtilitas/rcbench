@@ -131,7 +131,8 @@ python3 tools/make_video.py features --jobs 12 --keep build/video/parts \
   how German names are written for the speaker; the owner has not heard
   its spellings ("Dail", "Sett-ap", "Laif", "Hai-Teck", "Tscha-Servo"). The
   owner chose "Resärwe" for "Reserve" by ear from five spellings and
-  "Schub Stange" for "Schubstange" from six (2026-11-20).
+  "Schub Stange" for "Schubstange" from six, and asked for "Gell-" for "Gel-" (2026-11-20). "Gecko
+  Tape" is written "Gekko Tehp"; the owner has not heard it.
 - `auto-rudder-de` is `auto-rudder` in German. Both come from one
   generator outside the tree; the German texts are a table by their
   English ones. A change to one storyboard goes into both.
