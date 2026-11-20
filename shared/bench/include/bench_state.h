@@ -498,8 +498,8 @@ typedef struct {
  */
 static inline void bench_totals_add_time(bench_totals_t *t, float dt_s)
 {
-    const uint32_t ms = (uint32_t)(dt_s * 1000.0f + 0.5f);
-    t->run_ms = (t->run_ms > UINT32_MAX - ms) ? UINT32_MAX : t->run_ms + ms;
+    const uint32_t step_ms = (uint32_t)(dt_s * 1000.0f + 0.5f);
+    t->run_ms = (t->run_ms > UINT32_MAX - step_ms) ? UINT32_MAX : t->run_ms + step_ms;
 }
 
 /**
