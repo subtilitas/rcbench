@@ -688,6 +688,80 @@ TEST_CASE(a_kept_slot_past_the_links_channels_starts_unbound)
     }
 }
 
+/*
+ * A 4.40 bench's motor stays bound across the update.  The binding model
+ * puts a motor on a channel of its own among channels 1 to 8 with the
+ * THROTTLE role on CHAN_CFG; the bank's throttle channel (8 under 4.40,
+ * 16 here) has no slot and reaches the motor through that role.  The
+ * slot, the role and the throttle command all come through, and the
+ * record saves as version 9 and reads back the same.
+ */
+TEST_CASE(a_4_40_motor_keeps_its_slot_and_its_throttle_after_the_update)
+{
+    out_store_t in;
+    out_store_cfg_defaults(&in);
+    static const struct { uint16_t driver, pin, rate; uint8_t ch; bool motor; }
+        k_bench[] = {
+            { LINK_DRIVER_DSHOT_BIDIR, 0u, 600u, 0u, true },
+            { LINK_DRIVER_PWM,         1u, 50u, 1u, true },
+            { LINK_DRIVER_PWM,         2u, 50u, 2u, false },
+            { LINK_DRIVER_PWM,         13u, 50u, 7u, false },
+        };
+    for (unsigned i = 0; i < 4u; ++i) {
+        uint16_t *r = &in.slots[i * LINK_OS_STRIDE];
+        r[LINK_OS_DRIVER]  = k_bench[i].driver;
+        r[LINK_OS_PIN]     = k_bench[i].pin;
+        r[LINK_OS_RANGE]   = LINK_OS_RANGE_OF(k_bench[i].ch, 1u);
+        r[LINK_OS_RATE_HZ] = k_bench[i].rate;
+        in.chan_cfg[k_bench[i].ch * LINK_CC_STRIDE + LINK_CC_ROLE] =
+            (uint16_t)(k_bench[i].motor ? LINK_CC_ROLE_THROTTLE
+                                      : LINK_CC_ROLE_SURFACE);
+    }
+    for (unsigned v = 3u; v <= 8u; ++v) {
+        out_store_t got;
+        CHECK(out_store_cfg_read((uint16_t)v, &in, &got));
+        CHECK_EQ(memcmp(got.slots, in.slots, sizeof(in.slots)), 0);
+        /* As main() restores it. */
+        uint16_t pages[LINK_OS_ALL];
+        memcpy(pages, got.slots, sizeof(got.slots));
+        memcpy(&pages[LINK_OS_COUNT], got.slots_hi, sizeof(got.slots_hi));
+        CHECK_EQ(outputs_slots_free_unwritable(pages), 0u);
+        uint16_t kept[LINK_CC_ALL], cfg[LINK_CC_ALL];
+        memcpy(kept, got.chan_cfg, sizeof(got.chan_cfg));
+        memcpy(&kept[LINK_CC_COUNT], got.chan_cfg_hi, sizeof(got.chan_cfg_hi));
+        outputs_chan_cfg_restore(cfg, kept);
+        CHECK_EQ(prog_port_slots_free(pages), 0u);
+        outputs_t o;
+        outputs_init(&o, 0u);
+        outputs_slots_apply(&o, pages);
+        outputs_chan_cfg_apply(&o, cfg);
+        for (unsigned i = 0; i < 4u; ++i) {
+            CHECK(o.slot[i].driver != OUT_DRIVER_NONE);
+            CHECK_EQ(o.slot[i].first_channel, k_bench[i].ch);
+            CHECK_EQ(o.channel[k_bench[i].ch].role == OUT_ROLE_THROTTLE,
+                     k_bench[i].motor);
+        }
+        /* The control page's throttle, as the IOmcu sets it: the bank's
+         * throttle channel and every channel with the THROTTLE role. */
+        (void)outputs_set(&o, (uint8_t)LINK_OUT_CHANNELS_ALL, 300u, 0u);
+        (void)outputs_set_role_channels(&o, OUT_ROLE_THROTTLE,
+                                        (uint8_t)(PROG_PORT_CHANNEL0
+                                                  + LINK_PG_PORTS_MAX),
+                                        300u, 0u);
+        for (unsigned i = 0; i < 4u; ++i) {
+            CHECK_EQ(outputs_command(&o, k_bench[i].ch) == 300u,
+                     k_bench[i].motor);
+        }
+        /* Saved as version 9 and read back the same. */
+        CHECK(out_store_rec_build(g_slot, sizeof(g_slot), OUT_STORE_VERSION,
+                                  4u, &got));
+        out_store_t back;
+        CHECK(out_store_cfg_read(OUT_STORE_VERSION,
+                                 g_slot + sizeof(out_store_hdr_t), &back));
+        CHECK_EQ(memcmp(&back, &got, sizeof(got)), 0);
+    }
+}
+
 /* The update to 4.41: a version 8 record in its two-page slot, read by this
  * build with slots 9 to 16 unbound, saved again as version 9 and read back
  * whole. */
@@ -916,6 +990,7 @@ int main(void)
     RUN(a_record_over_two_pages_is_whole_or_no_record);
     RUN(a_version_8_record_in_flash_is_read_and_saved_as_version_9);
     RUN(a_kept_slot_past_the_links_channels_starts_unbound);
+    RUN(a_4_40_motor_keeps_its_slot_and_its_throttle_after_the_update);
     RUN(a_version_7_record_belongs_to_the_one_page_layout);
     RUN(the_one_page_layouts_live_sector_is_kept_until_replaced);
     RUN(a_version_6_record_keeps_its_tap_and_gives_the_port_its_default_pin);

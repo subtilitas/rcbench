@@ -577,17 +577,19 @@ no pin, which `COMMIT_ALL` clears in all 16 slots.
 
 The output store keeps both halves in record version 9, 436 bytes in its
 512-byte slot (`shared/outputs/include/out_store_rec.h`). A record of
-version 8 or older reads with no slot past slot 8 and channels 9 to 16 as
-CHAN_CFG_HI starts; the first save writes version 9. A slot of such a
+version 8 or older reads with no slot past slot 8 and channels 9 to 16
+as CHAN_CFG_HI starts; the first save writes version 9. A slot of such a
 record whose run reaches past channel 8 starts unbound: under 4.40 its
 channels were the IOmcu's bench throttle (channel 9 counted from 1), its
-programming ports or no page's channel. A slot of any record whose run
-reaches past channel 16 starts unbound as well, and the bank configures no
-such slot however a page holds it: channels 17 to 21 of the bank are the
-bench throttle's and the programming ports'. An image older than
-4.41 reads no version 9 record: it starts from a one-page record of
-version 7 or older if the flash still holds one, and with an empty store
-otherwise.
+programming ports or no page's channel. A binding made on the panel
+holds no such slot: a motor sits on one of channels 1 to 8 with the
+THROTTLE role and keeps its slot, its role and the throttle command. A
+slot of any record whose run reaches past channel 16 starts unbound as
+well, and the bank configures no such slot however a page holds it:
+channels 17 to 21 of the bank are the bench throttle's and the
+programming ports'. An image older than 4.41 reads no version 9 record:
+it starts from a one-page record of version 7 or older if the flash
+still holds one, and with an empty store otherwise.
 
 `test_out16` holds the page rules at channels 8 and 9 and at 16 and 17,
 the binding over both halves, a 4.40 panel against a 4.41 IOmcu and the

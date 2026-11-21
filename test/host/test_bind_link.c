@@ -1372,6 +1372,34 @@ TEST_CASE(a_reading_is_one_of_four_things)
     CHECK_EQ(bus.exchanges, 1u);
 }
 
+/*
+ * A 4.41 panel reading a 4.40 IOmcu shows its motors as the 4.40 panel
+ * did.  The binding model puts every slot on channels 1 to 8, the motors
+ * (GP0 DSHOT600 BIDIR, GP1 MOTOR PWM) with the THROTTLE role: none on the
+ * 4.40 bank's channel 9, its throttle, which no slot renders.
+ */
+TEST_CASE(a_4_40_iomcus_motors_read_back_as_its_binding)
+{
+    fresh(40u);
+    for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
+        const uint16_t *r = &s_old.slots[s * LINK_OS_STRIDE];
+        CHECK(r[LINK_OS_DRIVER] == 0u
+              || (unsigned)LINK_OS_FIRST(r[LINK_OS_RANGE])
+                         + LINK_OS_CHANNELS(r[LINK_OS_RANGE])
+                     <= LINK_OUT_CHANNELS);
+    }
+    CHECK_EQ(s_old.cfg[0u * LINK_CC_STRIDE + LINK_CC_ROLE],
+             LINK_CC_ROLE_THROTTLE);
+    CHECK_EQ(s_old.cfg[1u * LINK_CC_STRIDE + LINK_CC_ROLE],
+             LINK_CC_ROLE_THROTTLE);
+    bind_reading_t rd;
+    CHECK_EQ(bind_link_read(&host, &k_port, 40u, BOARD, &rd), BIND_READ_OK);
+    CHECK_EQ(memcmp(rd.slots, s_old.slots, LINK_OS_COUNT * sizeof(uint16_t)),
+             0);
+    CHECK_EQ(memcmp(rd.cfg, s_old.cfg, LINK_CC_COUNT * sizeof(uint16_t)), 0);
+    CHECK_EQ(rd.slots[LINK_OS_COUNT + LINK_OS_DRIVER], 0u);
+}
+
 TEST_CASE(a_binding_is_written_only_over_pages_that_were_read)
 {
     outbind_t some, none, other;
@@ -2209,6 +2237,7 @@ int main(void)
     RUN(the_prepared_pages_start_from_defaults_or_from_what_is_given);
     RUN(a_commit_needs_its_ops_and_its_crc);
     RUN(a_reading_is_one_of_four_things);
+    RUN(a_4_40_iomcus_motors_read_back_as_its_binding);
     RUN(a_binding_is_written_only_over_pages_that_were_read);
     RUN(an_edit_is_written_whole_and_read_back);
     RUN(a_failed_write_neither_blanks_the_screen_nor_lets_a_tap_write);
