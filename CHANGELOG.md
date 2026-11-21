@@ -11,8 +11,9 @@ history is in git.
 - `hardware/mechanical/`: `rbmod_v2_smd.step` and `rbmod_v2.step`, the
   rbmod carrier board, version 2 (80.0mm x 89.0mm): the board with its 17
   surface-mounted parts, and the same with 7 connectors and 5 modules,
-  11.1mm over the board; J6 and J8 are not populated and not drawn. `_read_kicad_pcb.py` reads outline, holes and
-  footprints from the KiCad board file into `_rbmod_v2_data.py`; the
+  11.1mm over the board; J6 and J8 are not populated and not drawn.
+  `_read_kicad_pcb.py` reads outline, holes and footprints from the KiCad
+  board file into `_rbmod_v2_data.py`; the
   overlap check covers both models
   ([Mechanical parts](hardware/mechanical/README.md#rbmod-carrier-board-version-2)).
 - Link protocol 4.41: the IOmcu's bank has 16 slots and 16 channels.
