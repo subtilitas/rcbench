@@ -6,6 +6,28 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- Web flasher: a write to an ESP board keeps the board's settings. The
+  page reads the partition table from the merged image (0xC000 on the
+  panel, 0x8000 on the Dial, the nodes and the C6 radio) and writes every
+  byte except the data partitions of subtype nvs, nvs_keys, fat, spiffs
+  and littlefs: on the panel nvs 0xD000, 24,576 bytes, with its settings
+  and bindings; on the Dial nvs 0x9000 with its bound panel. otadata is
+  written, so the board starts ota_0 with the written application. A
+  "Keep settings" checkbox, on by default, in English and German, lists
+  the skipped ranges before WRITE; unticked, the page writes the whole
+  image from 0x0. The MD5 check covers each written range. A missing or
+  broken table, two tables, or a kept range that overlaps the bootloader,
+  the table, an application or another partition, or is not aligned to
+  4096 bytes, refuses "Keep settings" with the reason
+  ([flasher/README.md](flasher/README.md#keep-settings)).
+- Web flasher: no baud change on the ESP32's built-in USB Serial/JTAG
+  (USB ID 303A:1001). There the change reset the chip; the page stays at
+  115200 baud, which has no effect on that link. A USB-to-UART bridge
+  still gets 460800 baud.
+  The page's first load grows to 58.6kB, 385.3kB in all.
+
 ## 0.23.16 - 2026-11-21
 
 0.23.16 is a testing release. SETUP > WIRELESS opens a SEARCH screen from
@@ -64,7 +86,7 @@ The entries below cover the 11 pull requests merged since v0.23.15: #893 to
   firmware enters BOOTSEL when its serial port opens at 1200 baud. The page
   refuses an image whose chip differs from the board or from the detected
   chip, shows tag, size and SHA-256 before WRITE, and reports the failed
-  step with what to try. Size: 58.6kB at the first load, 385.3kB in all
+  step with what to try. Size: 50.3kB at the first load, 376.9kB in all
   ([flasher/README.md](flasher/README.md)).
 - `tools/flash_manifest.py`: picks the 6 newest releases and the newest
   stable one and writes the flasher's `fw/` folder from their assets, a
@@ -215,24 +237,6 @@ The entries below cover the 11 pull requests merged since v0.23.15: #893 to
 
 ### Fixed
 
-- Web flasher: a write to an ESP board keeps the board's settings. The
-  page reads the partition table from the merged image (0xC000 on the
-  panel, 0x8000 on the Dial, the nodes and the C6 radio) and writes every
-  byte except the data partitions of subtype nvs, nvs_keys, fat, spiffs
-  and littlefs: on the panel nvs 0xD000, 24,576 bytes, with its settings
-  and bindings; on the Dial nvs 0x9000 with its bound panel. otadata is
-  written, so the board starts ota_0 with the written application. A
-  "Keep settings" checkbox, on by default, in English and German, lists
-  the skipped ranges before WRITE; unticked, the page writes the whole
-  image from 0x0. The MD5 check covers each written range. A missing or
-  broken table, two tables, or a kept range that overlaps the bootloader,
-  the table, an application or another partition, or is not aligned to
-  4096 bytes, refuses "Keep settings" with the reason
-  ([flasher/README.md](flasher/README.md#keep-settings)).
-- Web flasher: no baud change on the ESP32's built-in USB Serial/JTAG
-  (USB ID 303A:1001). There the change reset the chip; the page stays at
-  115200 baud, which has no effect on that link. A USB-to-UART bridge
-  still gets 460800 baud.
 - `hardware/mechanical/core2350b.step` and the KiCad 3D model of
   `Core2350B_Waveshare_25.4x25.4mm`: the PSRAM is a SOP-8 150mil (body
   3.9mm x 4.9mm, 6.0mm over the leads), not a copy of the 5.3mm flash;
