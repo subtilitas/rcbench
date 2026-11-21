@@ -214,7 +214,7 @@ extern "C" {
  */
 #define SENSE_TRACE_STALL_MS   100u
 /** @brief PWM slots watched for a changed pulse: OUT_MAX_SLOTS. */
-#define SENSE_TRACE_SLOTS        8u
+#define SENSE_TRACE_SLOTS       16u
 /** @brief Trigger lines waiting for the console. */
 #define SENSE_TRACE_MARKS        8u
 /** @brief The trace's time unit: 0.1ms. */

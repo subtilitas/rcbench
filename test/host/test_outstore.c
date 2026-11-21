@@ -22,6 +22,7 @@
 
 #include "out_store_map.h"
 #include "out_store_rec.h"
+#include "outputs_pages.h"
 #include "prog_port.h"
 #include "sense_page.h"
 #include "tone_page.h"
@@ -467,32 +468,53 @@ TEST_CASE(each_record_version_carries_the_one_before_and_more)
     CHECK_EQ(out_store_cfg_size(6u), 176u);
     CHECK_EQ(out_store_cfg_size(7u), 208u);
     CHECK_EQ(out_store_cfg_size(8u), 288u);
-    CHECK_EQ(OUT_STORE_VERSION, 8u);
+    CHECK_EQ(out_store_cfg_size(9u), 416u);
+    CHECK_EQ(OUT_STORE_VERSION, 9u);
     CHECK_EQ(sizeof(((out_store_t *)0)->prog),
              PROG_PORT_KEPT_COUNT * sizeof(uint16_t));
     CHECK_EQ(out_store_cfg_size(OUT_STORE_VERSION), sizeof(out_store_t));
     CHECK_EQ(sizeof(out_store_t) % 4u, 0u);
     CHECK_EQ(out_store_cfg_size(2u), 0u);
-    CHECK_EQ(out_store_cfg_size(9u), 0u);
-    /* A header of 20 bytes: version 7 fits one 256-byte flash page, version
-     * 8 takes two. */
+    CHECK_EQ(out_store_cfg_size(10u), 0u);
+    /* A header of 20 bytes: version 7 fits one 256-byte flash page,
+     * versions 8 and 9 take two. */
     CHECK_EQ(out_store_rec_size(7u), 228u);
     CHECK_EQ(out_store_rec_size(8u), 308u);
-    CHECK_EQ(out_store_rec_size(9u), 0u);
+    CHECK_EQ(out_store_rec_size(9u), 436u);
+    CHECK_EQ(out_store_rec_size(10u), 0u);
     CHECK(out_store_rec_size(7u) <= OUT_STORE_SLOT_BYTES_V7);
     CHECK(out_store_rec_size(8u) > 256u);
-    CHECK(out_store_rec_size(8u) <= OUT_STORE_SLOT_BYTES);
+    CHECK(out_store_rec_size(9u) <= OUT_STORE_SLOT_BYTES);
     CHECK_EQ(OUT_STORE_SLOT_BYTES, 512u);
 }
 
-TEST_CASE(a_version_8_record_reads_back_whole)
+TEST_CASE(a_version_9_record_reads_back_whole)
 {
     out_store_t in;
     out_store_t out;
     numbered(&in, 0x1000u);
     memset(&out, 0, sizeof(out));
-    CHECK(out_store_cfg_read(8u, &in, &out));
+    CHECK(out_store_cfg_read(9u, &in, &out));
     CHECK_EQ(memcmp(&in, &out, sizeof(in)), 0);
+}
+
+/* A record from before protocol 4.41: everything it carries, no slot past
+ * slot 8, and channels 9 to 16 as CHAN_CFG_HI starts. */
+TEST_CASE(a_version_8_record_leaves_slots_9_to_16_unbound)
+{
+    out_store_t in;
+    out_store_t out;
+    numbered(&in, 0x1100u);
+    memset(&out, 0xA5, sizeof(out));
+    CHECK(out_store_cfg_read(8u, &in, &out));
+    CHECK_EQ(memcmp(&out, &in, offsetof(out_store_t, slots_hi)), 0);
+    uint16_t cc[LINK_CC_COUNT];
+    outputs_chan_cfg_defaults(cc);
+    CHECK_EQ(memcmp(out.chan_cfg_hi, cc, sizeof(cc)), 0);
+    CHECK_EQ(cc[LINK_CC_ROLE], LINK_CC_ROLE_SURFACE);
+    for (unsigned i = 0; i < LINK_OS_COUNT; ++i) {
+        CHECK_EQ(out.slots_hi[i], 0u);
+    }
 }
 
 /* A record from before the map: everything it carries; the map not in
@@ -518,11 +540,12 @@ TEST_CASE(a_version_7_record_keeps_everything_and_leaves_the_map_derived)
 /* A record as a save stages it: two pages, the record and then 0xFF. */
 static uint8_t g_slot[OUT_STORE_SLOT_BYTES];
 
+/* A record of the two-page layout: version 8 or 9. */
 static bool check8(uint32_t *seq)
 {
     uint16_t version = 0u;
-    return out_store_rec_check(g_slot, sizeof(g_slot), 8u, 8u, &version, seq)
-           && version == 8u;
+    return out_store_rec_check(g_slot, sizeof(g_slot), 8u, 9u, &version, seq)
+           && (version == 8u || version == 9u);
 }
 
 TEST_CASE(a_record_over_two_pages_is_whole_or_no_record)
@@ -534,12 +557,12 @@ TEST_CASE(a_record_over_two_pages_is_whole_or_no_record)
     uint32_t seq = 0u;
     CHECK(check8(&seq));
     CHECK_EQ(seq, 41u);
-    for (size_t b = out_store_rec_size(8u); b < sizeof(g_slot); ++b) {
+    for (size_t b = out_store_rec_size(9u); b < sizeof(g_slot); ++b) {
         CHECK_EQ(g_slot[b], 0xFFu);
     }
     /* Its configuration where the record says it is. */
     out_store_t back;
-    CHECK(out_store_cfg_read(8u, g_slot + sizeof(out_store_hdr_t), &back));
+    CHECK(out_store_cfg_read(9u, g_slot + sizeof(out_store_hdr_t), &back));
     CHECK_EQ(memcmp(&back, &cfg, sizeof(cfg)), 0);
     /* The first page programmed, the second not yet: no record. */
     uint8_t keep[OUT_STORE_SLOT_BYTES];
@@ -552,7 +575,7 @@ TEST_CASE(a_record_over_two_pages_is_whole_or_no_record)
     CHECK(!check8(&seq));
     /* One bit of the second page's configuration still erased. */
     memcpy(g_slot, keep, sizeof(keep));
-    for (size_t b = 300u; b < out_store_rec_size(8u); ++b) {
+    for (size_t b = 300u; b < out_store_rec_size(9u); ++b) {
         if (g_slot[b] != 0xFFu) {
             g_slot[b] = (uint8_t)(g_slot[b] | 0x01u
                                   | (uint8_t)~g_slot[b]);   /* all set */
@@ -567,16 +590,59 @@ TEST_CASE(a_record_over_two_pages_is_whole_or_no_record)
     /* The record whole again, and a slot too short to hold it. */
     memcpy(g_slot, keep, sizeof(keep));
     CHECK(check8(&seq));
-    CHECK(!out_store_rec_check(g_slot, 307u, 8u, 8u, NULL, NULL));
-    CHECK(!out_store_rec_check(g_slot, 10u, 8u, 8u, NULL, NULL));
-    CHECK(!out_store_rec_check(NULL, 512u, 8u, 8u, NULL, NULL));
-    CHECK(out_store_rec_check(g_slot, 308u, 8u, 8u, NULL, NULL));
+    CHECK(!out_store_rec_check(g_slot, 435u, 8u, 9u, NULL, NULL));
+    CHECK(!out_store_rec_check(g_slot, 10u, 8u, 9u, NULL, NULL));
+    CHECK(!out_store_rec_check(NULL, 512u, 8u, 9u, NULL, NULL));
+    CHECK(out_store_rec_check(g_slot, 436u, 8u, 9u, NULL, NULL));
+    /* An image of protocol 4.40 reads version 8 alone: no record. */
+    CHECK(!out_store_rec_check(g_slot, sizeof(g_slot), 8u, 8u, NULL, NULL));
     /* An erased slot is no record. */
     memset(g_slot, 0xFF, sizeof(g_slot));
     CHECK(!check8(&seq));
     CHECK(!out_store_rec_build(NULL, sizeof(g_slot), 8u, 1u, &cfg));
     CHECK(!out_store_rec_build(g_slot, 256u, 8u, 1u, &cfg));  /* too long */
-    CHECK(!out_store_rec_build(g_slot, sizeof(g_slot), 9u, 1u, &cfg));
+    CHECK(!out_store_rec_build(g_slot, sizeof(g_slot), 10u, 1u, &cfg));
+}
+
+/* The update to 4.41: a version 8 record in its two-page slot, read by this
+ * build with slots 9 to 16 unbound, saved again as version 9 and read back
+ * whole. */
+TEST_CASE(a_version_8_record_in_flash_is_read_and_saved_as_version_9)
+{
+    out_store_t cfg;
+    numbered(&cfg, 0x7000u);
+    CHECK(out_store_rec_build(g_slot, sizeof(g_slot), 8u, 12u, &cfg));
+    for (size_t b = out_store_rec_size(8u); b < sizeof(g_slot); ++b) {
+        CHECK_EQ(g_slot[b], 0xFFu);
+    }
+    uint16_t version = 0u;
+    uint32_t seq = 0u;
+    CHECK(out_store_rec_check(g_slot, sizeof(g_slot), OUT_STORE_VERSION_V8,
+                              OUT_STORE_VERSION, &version, &seq));
+    CHECK_EQ(version, 8u);
+    CHECK_EQ(seq, 12u);
+    out_store_t got;
+    CHECK(out_store_cfg_read(version, g_slot + sizeof(out_store_hdr_t),
+                             &got));
+    CHECK_EQ(memcmp(&got, &cfg, offsetof(out_store_t, slots_hi)), 0);
+    CHECK_EQ(got.slots_hi[LINK_OS_DRIVER], (uint16_t)LINK_DRIVER_NONE);
+    CHECK_EQ(got.chan_cfg_hi[LINK_CC_MAX_US], LINK_CC_DEFAULT_MAX);
+
+    /* Slot 9 bound and saved: a version 9 record, slot 9 read back. */
+    got.slots_hi[LINK_OS_DRIVER] = LINK_DRIVER_PWM;
+    got.slots_hi[LINK_OS_PIN] = 16u;
+    got.slots_hi[LINK_OS_RANGE] = LINK_OS_RANGE_OF(8u, 1u);
+    got.slots_hi[LINK_OS_RATE_HZ] = 50u;
+    CHECK(out_store_rec_build(g_slot, sizeof(g_slot), OUT_STORE_VERSION,
+                              seq + 1u, &got));
+    CHECK(out_store_rec_check(g_slot, sizeof(g_slot), OUT_STORE_VERSION_V8,
+                              OUT_STORE_VERSION, &version, &seq));
+    CHECK_EQ(version, 9u);
+    CHECK_EQ(seq, 13u);
+    out_store_t back;
+    CHECK(out_store_cfg_read(version, g_slot + sizeof(out_store_hdr_t),
+                             &back));
+    CHECK_EQ(memcmp(&back, &got, sizeof(got)), 0);
 }
 
 /* Each layout takes its own versions: a version 7 record that starts a
@@ -735,7 +801,7 @@ TEST_CASE(a_record_of_another_version_reads_as_nothing)
     memset(&out, 0x5A, sizeof(out));
     was = out;
     CHECK(!out_store_cfg_read(2u, &in, &out));
-    CHECK(!out_store_cfg_read(9u, &in, &out));
+    CHECK(!out_store_cfg_read(10u, &in, &out));
     CHECK(!out_store_cfg_read(7u, NULL, &out));
     CHECK_EQ(memcmp(&out, &was, sizeof(out)), 0);
     CHECK(!out_store_cfg_read(7u, &in, NULL));
@@ -760,9 +826,11 @@ int main(void)
     RUN(a_power_cut_during_a_save_leaves_the_record_before_it);
     RUN(a_power_cut_during_an_erase_leaves_the_live_record);
     RUN(each_record_version_carries_the_one_before_and_more);
-    RUN(a_version_8_record_reads_back_whole);
+    RUN(a_version_9_record_reads_back_whole);
+    RUN(a_version_8_record_leaves_slots_9_to_16_unbound);
     RUN(a_version_7_record_keeps_everything_and_leaves_the_map_derived);
     RUN(a_record_over_two_pages_is_whole_or_no_record);
+    RUN(a_version_8_record_in_flash_is_read_and_saved_as_version_9);
     RUN(a_version_7_record_belongs_to_the_one_page_layout);
     RUN(the_one_page_layouts_live_sector_is_kept_until_replaced);
     RUN(a_version_6_record_keeps_its_tap_and_gives_the_port_its_default_pin);

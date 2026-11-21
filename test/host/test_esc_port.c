@@ -80,6 +80,13 @@ TEST_CASE(a_slot_goes_to_the_line_and_comes_back)
     CHECK_EQ(esc_port_may_bind(&g_p, 0xFFu), 0xFFu);
     CHECK_EQ(esc_port_pins(&g_p), 0u);
     CHECK(!esc_port_supply_hold(&g_p));
+    /* A slot of OUTPUTS_HI (4.41), slot 11: its own bit, not slot 3's. */
+    g.pin[0][10] = 6u;
+    open_target(10u);
+    CHECK_EQ(esc_port_state(&g_p), LINK_ESC_OPEN);
+    CHECK_EQ(esc_port_may_bind(&g_p, 0xFFFFu), (uint16_t)~(1u << 10));
+    CHECK_EQ(cmd(LINK_ESC_OP_CLOSE), 0u);
+    CHECK_EQ(esc_port_may_bind(&g_p, 0xFFFFu), 0xFFFFu);
     CHECK_EQ(reg(LINK_EW_LINE) >> 8, ESC_PORT_NO_PIN);
     CHECK_EQ(reg(LINK_EW_TARGET), 0u);
     /* The supply was never touched by a session with no ENTER. */

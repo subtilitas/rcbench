@@ -1068,12 +1068,12 @@ uint8_t esc_port_pin_mask(const esc_port_t *p)
                          : 0u);
 }
 
-uint8_t esc_port_may_bind(const esc_port_t *p, uint8_t mask)
+uint16_t esc_port_may_bind(const esc_port_t *p, uint16_t mask)
 {
     if (p == NULL || !p->has_pin || (p->target & LINK_EW_TARGET_PORT) != 0u) {
         return mask;
     }
-    return (uint8_t)(mask & ~(1u << (p->target & 0x07u)));
+    return (uint16_t)(mask & ~(1u << (p->target & 0x0Fu)));
 }
 
 uint64_t esc_port_pins(const esc_port_t *p)
@@ -1105,7 +1105,7 @@ void esc_port_other(esc_port_t *p, uint8_t mask)
     }
 }
 
-uint8_t esc_port_slot_pin(const outputs_t *o, uint8_t slot, uint8_t bound)
+uint8_t esc_port_slot_pin(const outputs_t *o, uint8_t slot, uint16_t bound)
 {
     if (o == NULL || slot >= OUT_MAX_SLOTS || (bound & (1u << slot)) == 0u) {
         return ESC_PORT_NO_PIN;

@@ -30,16 +30,24 @@
  *      it is in force (protocol 4.25), and 12 per-channel current limits,
  *      0 until a page carries them.  308 bytes: the first version over
  *      one 256-byte flash page.
+ *   9  and OUTPUTS_HI and CHAN_CFG_HI, slots 9 to 16 and channels 9 to 16
+ *      (protocol 4.41).  436 bytes.  A version 8 or older record reads
+ *      with no slot bound past slot 8 and channels 9 to 16 as CHAN_CFG_HI
+ *      starts: surfaces at 1000 to 2000us.  An image older than 4.41
+ *      does not read a version 9 record: it finds no valid record of the
+ *      two-page layout, falls back to a one-page record of version 7 or
+ *      older if the sectors still hold one, and starts with an empty store
+ *      otherwise.
  *
  * Each version appends to the one before, so a record's configuration is
  * the version before's with fields after it.  A save always writes the
  * newest version.
  *
- * Slots.  Version 8 is written into slots of two flash pages
+ * Slots.  Versions 8 and 9 are written into slots of two flash pages
  * (OUT_STORE_SLOT_BYTES, 512 bytes): 8 a 4KiB sector, 16 in the store.
  * Versions 3 to 7 lie in slots of one page (OUT_STORE_SLOT_BYTES_V7), 16
  * a sector, and are read from that layout while the store holds no
- * version 8 record.
+ * record of version 8 or 9.
  *
  * The record.  A header -- magic, the count of 0 bits from the checksum
  * on and its complement, a CRC-16 from the version on, the version and
@@ -67,7 +75,8 @@ extern "C" {
  * @brief Record versions. A save writes OUT_STORE_VERSION; the older ones are
  *        read from records an earlier build wrote.
  */
-#define OUT_STORE_VERSION    8u
+#define OUT_STORE_VERSION    9u
+#define OUT_STORE_VERSION_V8 8u   /**< version 8, two-page slots */
 #define OUT_STORE_VERSION_V7 7u   /**< version 7, one-page slots */
 #define OUT_STORE_VERSION_V6 6u   /**< version 6, one-page slots */
 #define OUT_STORE_VERSION_V5 5u   /**< version 5, one-page slots */
@@ -101,10 +110,12 @@ typedef struct {
     uint16_t sense_map_set;            /**< 1: the map is in force        */
     uint16_t sense_limit[LINK_SM_CHANNELS]; /**< mA, 0 = none (4.27)      */
     uint16_t spare8;  /**< 0; a whole number of 32-bit words again        */
+    uint16_t slots_hi[LINK_OS_COUNT];    /**< OUTPUTS_HI (version 9)       */
+    uint16_t chan_cfg_hi[LINK_CC_COUNT]; /**< CHAN_CFG_HI (version 9)      */
 } out_store_t;
 
-/** @brief The slot a version 8 record is written into, and the one-page slot of
- *  versions 3 to 7. */
+/** @brief The slot a record of version 8 or 9 is written into, and the
+ *  one-page slot of versions 3 to 7. */
 #define OUT_STORE_SLOT_BYTES    512u
 #define OUT_STORE_SLOT_BYTES_V7 256u   /**< the one-page slot of versions 3 to 7 */
 
@@ -130,8 +141,8 @@ typedef struct {
 /**
  * @brief How many bytes of configuration a record of @p version carries, from
  *        the start of an out_store_t: 128 for version 3, 136 for 4, 160 for 5,
- *        176 for 6 (two of them the word prog_func), 208 for 7, 288 for 8.  0
- *        for a version this build does not read.
+ *        176 for 6 (two of them the word prog_func), 208 for 7, 288 for 8,
+ *        416 for 9.  0 for a version this build does not read.
  *
  * @param version Record version, one of the OUT_STORE_VERSION values.
  * @return Configuration size in bytes, or 0 for a version not read.
@@ -139,8 +150,8 @@ typedef struct {
 size_t out_store_cfg_size(uint16_t version);
 
 /**
- * @brief A whole record of @p version, head and configuration: 308 bytes for
- *        version 8, 228 for 7.  0 for a version not read.
+ * @brief A whole record of @p version, head and configuration: 436 bytes for
+ *        version 9, 308 for 8, 228 for 7.  0 for a version not read.
  *
  * @param version Record version, one of the OUT_STORE_VERSION values.
  * @return Record size in bytes, the head plus out_store_cfg_size(), or 0 for
@@ -173,9 +184,9 @@ bool out_store_rec_build(uint8_t *rec, size_t slot, uint16_t version,
  *        magic, version, zero count and checksum.
  *
  * On true, its version and sequence number.  A record longer than @p avail is
- * no record.  The two-page layout takes version 8 alone: a version 7 record
- * that happens to start a two-page slot is the layout before's, read with the
- * rest of its slots.
+ * no record.  The two-page layout takes versions 8 and 9 alone: a version 7
+ * record that happens to start a two-page slot is the layout before's, read
+ * with the rest of its slots.
  *
  * @param rec The bytes to check.
  * @param avail Number of bytes at @p rec.
@@ -192,7 +203,8 @@ bool out_store_rec_check(const uint8_t *rec, size_t avail,
 
 /**
  * @brief The configuration of a board that has stored nothing: no slot, the
- *        chan_cfg page zero, and each interface as its page starts -- the
+ *        chan_cfg page zero, chan_cfg_hi at CHAN_CFG_HI's defaults (surfaces,
+ *        1000 to 2000us), and each interface as its page starts -- the
  *        supply disabled at 19200 baud, both current monitors off at their
  *        defaults, the phase tap off at its defaults, programming port 0 on
  *        PROG_PORT_DEFAULT_PIN and the other ports without a pin.
@@ -205,7 +217,8 @@ void out_store_cfg_defaults(out_store_t *out);
  * @brief A record's configuration, as @p version wrote it at @p cfg
  *        (out_store_cfg_size() bytes), into @p out at the newest layout.
  *
- * What the version does not carry starts as its page does: the supply disabled
+ * What the version does not carry starts as its page does: no slot past slot
+ * 8 and channels 9 to 16 at CHAN_CFG_HI's defaults, the supply disabled
  * at the module's 19200 baud, both current monitors off at their defaults
  * (sense_page_defaults()), the phase tap off at its defaults
  * (tone_page_defaults()), programming port 0 on PROG_PORT_DEFAULT_PIN and the

@@ -72,7 +72,8 @@ int board_fix_out_index(const outbind_roles_t *r, unsigned gpio);
  *        output.
  *
  * @param r      The board's roles, or NULL for a board whose pins are chosen.
- * @param slots  LINK_OS_COUNT registers: the page as the write would leave it.
+ * @param slots  LINK_OS_ALL registers: OUTPUTS and OUTPUTS_HI as the write
+ *               would leave them.
  * @return       true when @p r is NULL or every slot whose driver is not
  *               LINK_DRIVER_NONE names a pin in roles.out; false otherwise,
  *               and for @p slots NULL with @p r set.

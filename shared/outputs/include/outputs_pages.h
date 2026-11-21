@@ -17,6 +17,14 @@
  * The register array is also what a read returns, so the page and the bank
  * are two views kept from disagreeing.
  *
+ * Two widths of array.  _defaults, _write,
+ * outputs_chan_cfg_set_throttle_range() and the role functions take one
+ * page: LINK_CC_COUNT, LINK_OS_COUNT or LINK_CH_COUNT registers, the first
+ * half or the _HI half alike (protocol 4.41).  Every function that judges
+ * or applies the bank takes both halves as one array, the page first and
+ * its _HI page after it: LINK_CC_ALL, LINK_OS_ALL or LINK_CH_ALL
+ * registers.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -121,7 +129,7 @@ void    outputs_slot_rates(const outputs_t *o, uint16_t servo_hz,
  * Works on a static copy of the bank, so it is not reentrant.
  *
  * @param o The bank.
- * @param chan_cfg The CHAN_CFG page to judge, LINK_CC_COUNT registers.
+ * @param chan_cfg The CHAN_CFG page to judge, LINK_CC_ALL registers.
  * @param servo_hz The SERVO frame rate in Hz.
  * @return 0 or LINK_NACK_BAD_VALUE. LINK_NACK_BAD_VALUE for NULL @p o or
  *         @p chan_cfg.
@@ -136,7 +144,7 @@ uint8_t outputs_chan_cfg_rate_check(const outputs_t *o,
  * Works on a static copy of the bank, so it is not reentrant.
  *
  * @param o The bank.
- * @param slots The OUTPUTS page to judge, LINK_OS_COUNT registers.
+ * @param slots The OUTPUTS page to judge, LINK_OS_ALL registers.
  * @param servo_hz The SERVO frame rate in Hz.
  * @return 0 or LINK_NACK_BAD_VALUE. LINK_NACK_BAD_VALUE for NULL @p o or
  *         @p slots.
@@ -166,7 +174,7 @@ uint8_t outputs_slots_rate_check(const outputs_t *o, const uint16_t *slots,
  *         for NULL @p o.
  */
 uint8_t outputs_pulse_check(const outputs_t *o, uint16_t servo_hz,
-                            uint16_t channels, uint16_t channels_hz);
+                            uint32_t channels, uint16_t channels_hz);
 
 /**
  * @brief outputs_pulse_check() of the bank a write would leave, judged on a
@@ -178,8 +186,8 @@ uint8_t outputs_pulse_check(const outputs_t *o, uint16_t servo_hz,
  * Works on a static copy of the bank, so it is not reentrant.
  *
  * @param o The bank.
- * @param chan_cfg The CHAN_CFG page to apply, LINK_CC_COUNT registers.
- * @param slots The OUTPUTS page to apply, LINK_OS_COUNT registers, or NULL to
+ * @param chan_cfg The CHAN_CFG page to apply, LINK_CC_ALL registers.
+ * @param slots The OUTPUTS page to apply, LINK_OS_ALL registers, or NULL to
  *        leave the slots as they are.
  * @param servo_hz The SERVO frame rate in Hz.
  * @return 0 or LINK_NACK_BAD_VALUE. LINK_NACK_BAD_VALUE for NULL @p o or
@@ -197,7 +205,7 @@ uint8_t outputs_chan_cfg_pulse_check(const outputs_t *o,
  * Works on a static copy of the bank, so it is not reentrant.
  *
  * @param o The bank.
- * @param slots The OUTPUTS page to apply, LINK_OS_COUNT registers.
+ * @param slots The OUTPUTS page to apply, LINK_OS_ALL registers.
  * @param servo_hz The SERVO frame rate in Hz.
  * @return 0 or LINK_NACK_BAD_VALUE. LINK_NACK_BAD_VALUE for NULL @p o or
  *         @p slots.
@@ -217,7 +225,7 @@ uint8_t outputs_slots_pulse_check(const outputs_t *o, const uint16_t *slots,
  * page reads back driver 0 for it.
  *
  * @param o The bank, whose channels are judged.
- * @param slots The OUTPUTS page, LINK_OS_COUNT registers. Changed in place.
+ * @param slots The OUTPUTS page, LINK_OS_ALL registers. Changed in place.
  * @return The number of slots whose driver was set to 0. 0 for NULL.
  */
 unsigned outputs_slots_free_long(const outputs_t *o, uint16_t *slots);
@@ -232,7 +240,7 @@ unsigned outputs_slots_free_long(const outputs_t *o, uint16_t *slots);
  * would bind GPIO 2.  The slot starts unbound and the page reads back
  * driver 0 for it.
  *
- * @param slots The OUTPUTS page, LINK_OS_COUNT registers. Changed in place.
+ * @param slots The OUTPUTS page, LINK_OS_ALL registers. Changed in place.
  * @return The number of slots whose driver was set to 0. 0 for NULL.
  */
 unsigned outputs_slots_free_unwritable(uint16_t *slots);
@@ -241,12 +249,12 @@ unsigned outputs_slots_free_unwritable(uint16_t *slots);
  * @brief The slots, one bit each, whose four OUTPUTS registers differ between
  * @p prev and @p next.
  *
- * @param prev The OUTPUTS page before the write, LINK_OS_COUNT registers.
- * @param next The OUTPUTS page after the write, LINK_OS_COUNT registers.
- * @return Bit n set for slot n when its registers differ. 0xFF when either
+ * @param prev The OUTPUTS page before the write, LINK_OS_ALL registers.
+ * @param next The OUTPUTS page after the write, LINK_OS_ALL registers.
+ * @return Bit n set for slot n when its registers differ. 0xFFFF when either
  *         pointer is NULL.
  */
-uint8_t outputs_slots_changed(const uint16_t *prev, const uint16_t *next);
+uint16_t outputs_slots_changed(const uint16_t *prev, const uint16_t *next);
 
 /**
  * @brief Whether an OUTPUTS write the bank has taken must be refused because
@@ -255,7 +263,7 @@ uint8_t outputs_slots_changed(const uint16_t *prev, const uint16_t *next);
  *        else 0.
  * @p watch is the slots the write changed plus the slots that were bound
  * before it, so a slot an earlier write or a restart left unbound does not
- * refuse a write that never touched it.  A @p watch of 0xFF covers every
+ * refuse a write that never touched it.  A @p watch of 0xFFFF covers every
  * slot.
  *
  * @param o The bank.
@@ -263,8 +271,8 @@ uint8_t outputs_slots_changed(const uint16_t *prev, const uint16_t *next);
  * @param bound_after Bit n set for each slot the silicon bound.
  * @return 0 or LINK_NACK_BAD_VALUE. LINK_NACK_BAD_VALUE for NULL @p o.
  */
-uint8_t outputs_bind_check(const outputs_t *o, uint8_t watch,
-                           uint8_t bound_after);
+uint8_t outputs_bind_check(const outputs_t *o, uint16_t watch,
+                           uint16_t bound_after);
 
 /**
  * @brief Whether a CHAN_CFG or OUTPUTS write is refused because the bench is
@@ -285,8 +293,8 @@ uint8_t outputs_bind_check(const outputs_t *o, uint8_t watch,
  *
  * A write of the page in force is taken on both.
  *
- * @param regs The page in force.
- * @param next The page as the write would leave it.
+ * @param regs The CHAN_CFG page in force, LINK_CC_ALL registers.
+ * @param next The page as the write would leave it, LINK_CC_ALL registers.
  * @param armed Whether the bench is armed.
  * @return 0 when the write is taken. LINK_NACK_BAD_VALUE when refused, and 0
  *         while @p armed is false or a pointer is NULL.
@@ -297,7 +305,7 @@ uint8_t outputs_chan_cfg_armed_check(const uint16_t *regs,
 /**
  * @brief The OUTPUTS write counterpart of outputs_chan_cfg_armed_check().
  *
- * @param regs The OUTPUTS page in force, LINK_OS_COUNT registers.
+ * @param regs The OUTPUTS page in force, LINK_OS_ALL registers.
  * @param next The OUTPUTS page as the write would leave it.
  * @param armed Whether the bench is armed.
  * @return LINK_NACK_BAD_VALUE for any change while @p armed, 0 otherwise or
@@ -344,7 +352,7 @@ uint8_t outputs_chan_cfg_write(uint16_t *regs, uint8_t off, uint8_t n,
  * the bank (outputs_set_endpoints()).
  *
  * @param o The bank. Nothing is done when NULL.
- * @param regs The CHAN_CFG page, LINK_CC_COUNT registers.
+ * @param regs The CHAN_CFG page, LINK_CC_ALL registers.
  */
 void    outputs_chan_cfg_apply(outputs_t *o, const uint16_t *regs);
 
@@ -355,8 +363,8 @@ void    outputs_chan_cfg_apply(outputs_t *o, const uint16_t *regs);
  * LINK_CC_SLEW_MAX; every other register is copied as kept.  Nothing without
  * both.
  *
- * @param regs Receives LINK_CC_COUNT registers.
- * @param saved The kept page, LINK_CC_COUNT registers.
+ * @param regs Receives LINK_CC_ALL registers.
+ * @param saved The kept page, LINK_CC_ALL registers.
  */
 void    outputs_chan_cfg_restore(uint16_t *regs, const uint16_t *saved);
 
@@ -398,7 +406,7 @@ void    outputs_slots_defaults(uint16_t *regs);
 
 /**
  * @brief Stores a window of the OUTPUTS page, refusing the whole window on an
- *        unknown driver or pin.
+ *        unknown driver, a pin or a channel range out of range.
  *
  * A pin conflict or a rate a driver cannot make is judged by
  * outputs_configure() when the page is applied, not here.
@@ -410,7 +418,8 @@ void    outputs_slots_defaults(uint16_t *regs);
  * @param in The @p n register values.
  * @return 0 when stored. LINK_NACK_BAD_RANGE for NULL pointers or a window past
  *         LINK_OS_COUNT. LINK_NACK_BAD_VALUE for a driver number this build
- *         does not know, or a pin above OUT_MAX_PIN.
+ *         does not know, a pin above OUT_MAX_PIN, or a RANGE whose first
+ *         channel and count reach past LINK_OUT_CHANNELS_ALL (4.41).
  */
 uint8_t outputs_slots_write(uint16_t *regs, uint8_t off, uint8_t n,
                             const uint16_t *in);
@@ -420,7 +429,7 @@ uint8_t outputs_slots_write(uint16_t *regs, uint8_t off, uint8_t n,
  *        in turn, and a refused slot is left cleared.
  *
  * @param o The bank. Nothing is done when NULL.
- * @param regs The OUTPUTS page, LINK_OS_COUNT registers.
+ * @param regs The OUTPUTS page, LINK_OS_ALL registers.
  */
 void    outputs_slots_apply(outputs_t *o, const uint16_t *regs);
 
@@ -477,7 +486,7 @@ uint64_t outputs_role_pins(const uint16_t *slots, const uint16_t *chan_cfg,
  *
  * Nothing is done when @p regs is NULL.
  *
- * @param regs The CHANNELS page, LINK_CH_COUNT registers, overwritten.
+ * @param regs The CHANNELS page, LINK_CH_ALL registers, overwritten.
  */
 void    outputs_channels_defaults(uint16_t *regs);
 
@@ -491,7 +500,7 @@ void    outputs_channels_defaults(uint16_t *regs);
  * commanded reading back at its role's rest, which is where it sits.
  *
  * @param o The bank. Nothing is done when NULL.
- * @param regs Receives LINK_CH_COUNT commands, each outputs_command().
+ * @param regs Receives LINK_CH_ALL commands, each outputs_command().
  */
 void    outputs_channels_from_bank(const outputs_t *o, uint16_t *regs);
 
@@ -505,9 +514,9 @@ void    outputs_channels_from_bank(const outputs_t *o, uint16_t *regs);
  * their registers.
  *
  * @param o    The bank, with @p now applied. Nothing is done when NULL.
- * @param was  The CHAN_CFG page before, LINK_CC_COUNT registers.
- * @param now  The CHAN_CFG page in force, LINK_CC_COUNT registers.
- * @param regs The CHANNELS page, LINK_CH_COUNT registers.
+ * @param was  The CHAN_CFG page before, LINK_CC_ALL registers.
+ * @param now  The CHAN_CFG page in force, LINK_CC_ALL registers.
+ * @param regs The CHANNELS page, LINK_CH_ALL registers.
  */
 void    outputs_channels_follow_roles(const outputs_t *o, const uint16_t *was,
                                       const uint16_t *now, uint16_t *regs);
@@ -527,10 +536,10 @@ uint8_t outputs_channels_write(uint16_t *regs, uint8_t off, uint8_t n,
                                const uint16_t *in);
 
 /**
- * @brief Commands every channel of the CHANNELS page into the bank.
+ * @brief Commands every channel of CHANNELS and CHANNELS_HI into the bank.
  *
  * @param o The bank. Nothing is done when NULL.
- * @param regs The CHANNELS page, LINK_CH_COUNT registers.
+ * @param regs The CHANNELS page, LINK_CH_ALL registers.
  * @param now_ms Current time in milliseconds, stamped on each channel.
  */
 void    outputs_channels_apply(outputs_t *o, const uint16_t *regs,

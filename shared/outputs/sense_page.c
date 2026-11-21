@@ -355,7 +355,7 @@ static bool pwm_surface(const sense_page_t *p, const outputs_t *o, uint8_t ch)
     return false;
 }
 
-void sense_page_bound(sense_page_t *p, uint8_t slots)
+void sense_page_bound(sense_page_t *p, uint16_t slots)
 {
     if (p != NULL) {
         p->bound = slots;
@@ -546,7 +546,7 @@ uint8_t sense_page_slots_check(const sense_page_t *p, const uint16_t *slots)
         return LINK_NACK_BAD_VALUE;
     }
     const uint64_t held = sense_page_held(p);
-    for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
+    for (unsigned s = 0; s < LINK_OUT_SLOTS_ALL; ++s) {
         const uint16_t *r = &slots[(size_t)s * LINK_OS_STRIDE];
         if (r[LINK_OS_DRIVER] != 0u && r[LINK_OS_PIN] <= OUT_MAX_PIN
             && (held & ((uint64_t)1u << r[LINK_OS_PIN])) != 0u) {

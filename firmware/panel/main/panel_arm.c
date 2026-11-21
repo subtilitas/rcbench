@@ -574,11 +574,15 @@ void service_arming(bool link_up)
  */
 static bool write_output_binding(const outbind_t *bind)
 {
-    uint16_t cfg[LINK_CC_COUNT];
-    uint16_t slots[LINK_OS_COUNT];
+    /* The binding model fills slots 1 to 8; slots 9 to 16 are sent unbound
+     * and channels 9 to 16 at their defaults, to a 4.41 IOmcu only. */
+    static uint16_t cfg[LINK_CC_ALL];
+    static uint16_t slots[LINK_OS_ALL];
     outbind_to_chan_cfg(bind, cfg, endpoints_min(&s_endpoints),
                         endpoints_max(&s_endpoints));
+    outputs_chan_cfg_defaults(&cfg[LINK_CC_COUNT]);
     (void)outbind_to_slots(bind, slots);
+    outputs_slots_defaults(&slots[LINK_OS_COUNT]);
 
     /*
      * The sequence is bind_link_write()'s: prepared and committed whole on an

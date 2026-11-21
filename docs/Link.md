@@ -136,7 +136,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 The protocol uses pages of up to 32 sixteen-bit registers, read and written in windows. The
-IOmcu transmits only in answer to a request. Protocol version 4.40. The
+IOmcu transmits only in answer to a request. Protocol version 4.41. The
 major version is register 0 of page 0. The major version changes when a register
 changes meaning or a page is renumbered. The minor version changes when a page or
 register is added at the end, where an older panel can ignore it.
@@ -253,7 +253,14 @@ requests and answers a repeat from its copy
 From 4.38 BIND (0x30) has register 1, `WHY`: the cause of the last refused
 binding write. An older IOmcu's BIND page has 1 register and refuses a read
 of register 1 with BAD_RANGE; the panel reads `WHY` from a 4.38 or later
-IOmcu only and shows `REFUSED` without a cause otherwise.
+IOmcu only and shows `REFUSED` without a cause otherwise. From 4.41 the
+bank has 16 slots and 16 channels: CHANNELS_HI, CHAN_CFG_HI and OUTPUTS_HI
+(0x3C to 0x3E) carry channels 9 to 16 and slots 9 to 16, BIND_CFG_HI and
+BIND_OUT_HI (0x3F, 0x40) prepare them, BIND register 2 `COMMIT_ALL` takes
+all four prepared pages, and SENSE_MAP's `WATCH` names outputs 9 to 16 as
+0x40 to 0x47. An older IOmcu refuses the five pages with BAD_PAGE and
+register 2 with BAD_RANGE; the panel sends them to a 4.41 or later IOmcu
+only ([Slots and channels 9 to 16](#slots-and-channels-9-to-16)).
 The IOmcu never reads the panel's minor; a page
 an older panel does not know is a page it never writes.
 
@@ -435,7 +442,7 @@ rest of another. The three pages make the change one step:
 | --- | --- | --- |
 | BIND_CFG | 32, as CHAN_CFG | a CHAN_CFG page that is not in force. A frame is checked by CHAN_CFG's value rules (role 0 or 1, slew 0 to 3000, endpoints 400 to 2500µs) and refused with BAD_VALUE, storing nothing, on a breach. No output changes |
 | BIND_OUT | 32, as OUTPUTS | an OUTPUTS page that is not in force. A frame is checked by OUTPUTS' value rules (a driver 0 to 4, a pin number up to 63) and refused with BAD_VALUE on a breach. No output changes |
-| BIND | 2: `COMMIT`, `WHY` | a write of `COMMIT` carries the CRC (cyclic redundancy check) of the 64 prepared registers. `COMMIT` reads the CRC of what is prepared. `WHY` (since 4.38) reads the cause of the last refused binding write, numbered in the [page map](#page-map) |
+| BIND | 2: `COMMIT`, `WHY`; 3 from 4.41 with `COMMIT_ALL` | a write of `COMMIT` carries the CRC (cyclic redundancy check) of the 64 prepared registers. `COMMIT` reads the CRC of what is prepared. `WHY` (since 4.38) reads the cause of the last refused binding write, numbered in the [page map](#page-map). `COMMIT_ALL` (since 4.41) takes the _HI pages as well: [Slots and channels 9 to 16](#slots-and-channels-9-to-16) |
 
 The CRC is CRC-16/CCITT-FALSE: polynomial 0x1021, seed 0xFFFF, no
 reflection, no final XOR, over the 32 BIND_CFG registers and then the 32
@@ -516,6 +523,70 @@ exchange, with the link taken down and the binding in force unchanged.
 sequence through a model of the 2-frame buffer with a 20ms deaf window
 opened at every 125µs, a frame lost at each of the 18 positions, the
 timeouts across the 2^32ms wrap.
+
+### Slots and channels 9 to 16
+
+From 4.41 the IOmcu's bank has 16 slots and 16 channels. Each output page
+has a second page with the same layout for the second eight:
+
+| Page | First eight | Second eight (4.41) |
+| --- | --- | --- |
+| Commands | CHANNELS (0x13), channels 1 to 8 | CHANNELS_HI (0x3C), channels 9 to 16 |
+| Channel set-up | CHAN_CFG (0x23), 4 registers a channel | CHAN_CFG_HI (0x3D) |
+| Slots | OUTPUTS (0x22), 4 registers a slot | OUTPUTS_HI (0x3E), slots 9 to 16 |
+| Prepared set-up | BIND_CFG (0x2E) | BIND_CFG_HI (0x3F) |
+| Prepared slots | BIND_OUT (0x2F) | BIND_OUT_HI (0x40) |
+
+Register r of a _HI page is register r of its first page for channel
+r + 9 (CHANNELS_HI), channel r / 4 + 9 (CHAN_CFG_HI) or slot r / 4 + 9
+(OUTPUTS_HI). The bench throttle's channel and the programming ports'
+channels lie past channel 16 in the IOmcu's bank and are on no page.
+
+Rules:
+
+- A window that runs past a page's end is refused with BAD_RANGE: a write
+  of channels 8 and 9 is two frames, one to each page.
+- A slot on either page renders any run of channels 1 to 16. A `RANGE`
+  whose first channel and count reach past channel 16 is refused with
+  BAD_VALUE, on OUTPUTS, OUTPUTS_HI, BIND_OUT and BIND_OUT_HI alike.
+- A write to either page is judged with the other page in force: a pin or
+  a channel that a slot of the other page already has is refused, and so
+  is every rule of [A binding taken whole](#a-binding-taken-whole), ARMED
+  included.
+- BIND register 2, `COMMIT_ALL`, takes the CRC-16/CCITT-FALSE of the four
+  prepared pages, 128 registers in the order BIND_CFG, BIND_OUT,
+  BIND_CFG_HI, BIND_OUT_HI, low byte first. It judges and puts all four in
+  force, or none, by the rules of `COMMIT`. `COMMIT` takes BIND_CFG and
+  BIND_OUT alone and keeps CHAN_CFG_HI and OUTPUTS_HI as they are in
+  force; what BIND_CFG_HI and BIND_OUT_HI hold is not taken.
+- SENSE_MAP's `WATCH` names output channels 9 to 16 as 0x40 to 0x47. 0x09
+  to 0x0F stay unassigned, because 0x10 is programming port 1.
+
+| Panel | IOmcu | A binding written |
+| --- | --- | --- |
+| 4.41 | 4.41 | SERVO `FRAME_HZ` = 0, 8 frames each to BIND_CFG, BIND_OUT, BIND_CFG_HI and BIND_OUT_HI, `COMMIT_ALL`: 34 exchanges. Read back as OUTPUTS, CHAN_CFG, OUTPUTS_HI and CHAN_CFG_HI |
+| 4.41 | 4.40 or older | as between two 4.40 builds: 18 exchanges to a 4.10 or later IOmcu. A binding with a slot from 9 to 16 bound is refused by the panel before anything is sent. The read asks for the first two pages only |
+| 4.40 or older | 4.41 | the panel writes BIND_CFG and BIND_OUT and `COMMIT`: slots 9 to 16 and channels 9 to 16 stay as they are in force |
+
+The panel's binding model holds slots 1 to 8 for the boards it has today.
+It sends slots 9 to 16 unbound and channels 9 to 16 as CHAN_CFG_HI starts,
+surfaces at 1000 to 2000µs. A reading from a 4.41 IOmcu with a slot from
+9 to 16 bound is a page no binding describes (`NO VALID ASSIGNMENT IN THE
+PAGES`): the panel shows it and writes nothing over it but a binding with
+no pin, which `COMMIT_ALL` clears in all 16 slots.
+
+The output store keeps both halves in record version 9, 436 bytes in its
+512-byte slot (`shared/outputs/include/out_store_rec.h`). A record of
+version 8 or older reads with no slot past slot 8 and channels 9 to 16 as
+CHAN_CFG_HI starts; the first save writes version 9. An image older than
+4.41 reads no version 9 record: it starts from a one-page record of
+version 7 or older if the flash still holds one, and with an empty store
+otherwise.
+
+`test_out16` holds the page rules at channels 8 and 9 and at 16 and 17,
+the binding over both halves, a 4.40 panel against a 4.41 IOmcu and the
+reverse; `test_outstore` reads a version 8 record back and saves it as
+version 9.
 
 ### Reads of at most 16 registers
 
@@ -1050,11 +1121,11 @@ per 5s offer.
 | 0x10 | CONTROL | read, write | ARM (0 switches to SAFE; 1 switches every output to ARMED; from 4.18 0x0002 switches the throttle channels to ARMED, 0x0004 the surfaces and the SERVO PWM programming ports, 0x0006 both; a DShot programming port is a throttle (since 4.28); any other value is refused with BAD_VALUE, [An arm for one role](#an-arm-for-one-role)), THROTTLE (0..10000, hundredths of a percent, and it commands every channel CHAN_CFG marks a throttle and every DShot programming port, since 4.28), MOTOR_POLES, CLEAR (write 0x5AFE to leave failsafe). Registers 0 to 2 are the frame that switches to ARMED |
 | 0x11 | LIMITS | | declared, not served |
 | 0x12 | FAILSAFE | | declared, not served |
-| 0x13 | CHANNELS | read, write | one command per output channel, 0..1000 of the channel's travel; eight channels. A read gives the command last written, or what the bank holds after boot, after a failsafe and for a channel whose role changed: the role's rest, 0 for a throttle and 500 for a surface |
+| 0x13 | CHANNELS | read, write | one command per output channel, 0..1000 of the channel's travel; channels 1 to 8. A read gives the command last written, or what the bank holds after boot, after a failsafe and for a channel whose role changed: the role's rest, 0 for a throttle and 500 for a surface |
 | 0x20 | BENCH | read | voltage (10mV), current (10mA), power (W), rpm (revolutions per minute), ESC (electronic speed controller) temperature and motor temperature (0.1°C, signed), charge (mAh), energy (0.1Wh), minimum voltage, maximum current, maximum power, maximum rpm, flags |
 | 0x21 | reserved | | not assigned; not to be reused |
-| 0x22 | OUTPUTS | read, write | per slot: driver (0 none, 1 PWM (pulse-width modulation), 2 PPM (pulse-position modulation), 3 DShot, 4 bidirectional DShot), pin, first channel and channel count in one register, rate in Hz (kbit/s for both DShot drivers); eight slots of four registers |
-| 0x23 | CHAN_CFG | read, write | per channel: role (0 throttle, 1 surface), slew (thousandths of the span per second, 0 to 3000, 0 = immediate; a higher value is refused with BAD_VALUE and nothing is stored (since 4.16); a slew above 3000 kept in the IOmcu's flash by an older build starts as 3000), minimum and maximum pulse in µs, 400 to 2500 and, on a channel a PWM slot renders, at most its frame minus 1µs (since 4.16); eight channels of four registers |
+| 0x22 | OUTPUTS | read, write | per slot: driver (0 none, 1 PWM (pulse-width modulation), 2 PPM (pulse-position modulation), 3 DShot, 4 bidirectional DShot), pin, first channel and channel count in one register, rate in Hz (kbit/s for both DShot drivers); slots 1 to 8 of four registers. A slot renders any run of channels 1 to 16; from 4.41 a run past channel 16 is refused with BAD_VALUE |
+| 0x23 | CHAN_CFG | read, write | per channel: role (0 throttle, 1 surface), slew (thousandths of the span per second, 0 to 3000, 0 = immediate; a higher value is refused with BAD_VALUE and nothing is stored (since 4.16); a slew above 3000 kept in the IOmcu's flash by an older build starts as 3000), minimum and maximum pulse in µs, 400 to 2500 and, on a channel a PWM slot renders, at most its frame minus 1µs (since 4.16); channels 1 to 8 of four registers |
 | 0x24 | CATALOGUE | read | the board's own pins, one register each: GPIO (general-purpose input/output) number in 6 bits, the pad number printed beside it in 6, what holds it in 4 (0 free, 1 heartbeat, 2 CAN, 3 flash, 4 debug, 5 sensor, 15 other); 32 slots, and a pad number of 0 means there is no pin in that slot |
 | 0x25 | SHAPE | read | where those pads are: outline width and height in 0.01mm, the corner pad 1 sits at and the pads in one row packed as (corner << 8) \| per side, the pitch in 0.01mm, and the distance from the edge to the center of a pad row. Two rows on one pitch, numbered away from pad 1 along its edge and back along the opposite one. All zero when the IOmcu has no shape for its board, which means it is listed and not drawn |
 | 0x26 | ARTWORK | read | what the board's drawing is, 9 registers (since 4.20; 7 before it): blocks of payload (0 when the IOmcu carries none), outline width and height in 0.01mm, format (0 none, 2 the board drawing; 1, an RGB565 photograph, is served by 4.19 and older only), payload length in two registers, a CRC (cyclic redundancy check) over the whole payload seeded zero, and an FNV-1a (Fowler-Noll-Vo) hash over it in two registers, low half first. [The board drawing](#the-board-drawing) has the layout |
@@ -1067,18 +1138,23 @@ per 5s offer.
 | 0x2D | TONE | read, write | the beeps of an ESC heard on one motor phase, through a series resistor and a zener clamp on one IOmcu GPIO, stamped by a PIO state machine at 26.7ns (since 4.8). Registers 0 to 3, one frame: enable (bit 0), the GPIO (default 22, pad 29), the lowest tone heard in Hz (50 to 2000, default 400) and the highest (above the lowest, to 6900, default 6500). Registers 4 to 7, one frame: the pitch change in percent that starts a new beep without a silence (0 splits on silence only, 50 at most, default 8), the silence that ends a beep in ms (1 to 100 and at least the period of the lowest tone, default 3), the tone periods that make a beep (1 to 64, default 3), and register 7 reserved. The reserved register reads 0 and takes only 0. Refused with BAD_VALUE: a value out of range, a combination the detector refuses (a silence shorter than the lowest tone's period), and, while the tap is enabled, a GPIO past the bank (63), reserved by the board, or an ADC (analog-to-digital converter) pin: GPIO 26 to GPIO 29 of the RP2350A and GPIO 40 to GPIO 47 of the RP2354B, which are not fault tolerant, and any GPIO on an IOmcu whose core 1 did not start at boot (no capture runs before a restart). Refused with BUSY (since 4.17; BAD_VALUE before it), while the tap is enabled: a GPIO bound to an output or held by SENSE, SUPPLY or a programming port, and a capture the IOmcu cannot start (core 1 in a pass, or no PIO state machine or DMA channel left by the outputs and the supply) ([A busy pin on the phase tap](#a-busy-pin-on-the-phase-tap)). The GPIO is no output's while the tap is enabled, and an OUTPUTS, SENSE or SUPPLY write that takes it is refused. A change is taken armed or not: the tap is an input and drives nothing. Registers 8 to 12, read only: flags (bit 0 the capture runs, bit 1 the tap is enabled and its pin could not be taken, bit 2 the capture ring or the state machine's FIFO overran since the capture started, bit 3 a run of bursts is under way, bit 4 the last window held a tone), the window number modulo 65536 (windows of 8ms), the last window's tone in 0.1Hz (0 for none) and the tone periods in it, and the number of the newest beep. The IOmcu keeps the last 64 beeps and numbers them 1 to 65535, then from 1 again; the newest number is 0 before the first beep. Register 13, EVT_SEL, is the one writable register after register 7 and is not kept: the number of the beep that registers 14 to 21 show. A read consumes no beep, so a reply lost on the link loses nothing. Registers 14 to 21, read only: EVT_SEL again while that beep is among the 64, else 0 with registers 15 to 21 reading 0; the beep's first rise in ms since the capture started (32 bit, registers 15 and 16, low first); its length to its last edge in 0.1ms; its mean pitch in 0.1Hz; its bursts; the carrier it was chopped at in 100Hz steps (0 unchopped); flags (bit 0 it began at a pitch change with no silence before it, bit 1 it ended at one). Registers 22 and 23, read only: beeps lost, and lows shorter than 500ns that the detector ignored, each modulo 65536. The capture's 8µs hold-off removes every low shorter than 8µs before the detector sees it, so register 23 reads 0 on the tap. The capture starts when the tap is enabled or its pin changes, and then empties the 64. Registers 0 to 6 are kept in the IOmcu's flash and the tap starts at boot. While the tap is disabled the pin is an input with its pull-down on (32 to 86kΩ), and it stays on while the tap runs. On the A2 stepping of the RP2350 the internal pull-down does not hold an open pin low (erratum RP2350-E9, about 2.2V); the tap's external 8.2kΩ pull-down to GND does |
 | 0x2E | BIND_CFG | read, write | a CHAN_CFG page prepared and not in force (since 4.10): the registers and the value rules of CHAN_CFG. [A binding taken whole](#a-binding-taken-whole) has the three pages |
 | 0x2F | BIND_OUT | read, write | an OUTPUTS page prepared and not in force (since 4.10): the registers and the value rules of OUTPUTS |
-| 0x30 | BIND | read, write | register 0 `COMMIT` (since 4.10): a write of the CRC-16 of the 64 prepared registers puts both prepared pages in force or neither; refused with BAD_VALUE for another value and for a page its own rules refuse. Reads the CRC of what is prepared. Register 1 `WHY` (since 4.38), read only: the cause of the last refused write to CHAN_CFG, OUTPUTS, BIND_CFG, BIND_OUT or BIND, and 0 once a later CHAN_CFG, OUTPUTS or BIND write is taken. 1 a register value outside its page's rules; 2 a `COMMIT` that does not name the CRC of the prepared pages; 3 the ESC_WIRE page holds an output; 4 a role, a throttle channel or a slot changes while ARMED; 5 on a board with soldered pins, a slot off the servo outputs; 6 a programming port's pin, bank channel or PWM slice; 7 a pin of the supply's PD mini; 8 a pin of the sensor bus; 9 the phase tap's pin; 10 a PWM slice shared with a surface at another frame rate; 11 an endpoint longer than its PWM slot's frame; 12 a driver did not bind (no PIO state machine, instruction memory, DMA channel or PWM slice free, or the pin refused); 13 the slots leave the supply's UART no PIO block. A write to it is refused with BAD_RANGE |
+| 0x30 | BIND | read, write | register 0 `COMMIT` (since 4.10): a write of the CRC-16 of the 64 prepared registers of BIND_CFG and BIND_OUT puts both prepared pages in force or neither, with CHAN_CFG_HI and OUTPUTS_HI as they are in force; refused with BAD_VALUE for another value and for a page its own rules refuse. Reads the CRC of what is prepared. Register 1 `WHY` (since 4.38), read only: the cause of the last refused write to CHAN_CFG, OUTPUTS, BIND_CFG, BIND_OUT or BIND, and 0 once a later CHAN_CFG, OUTPUTS or BIND write is taken. 1 a register value outside its page's rules; 2 a `COMMIT` that does not name the CRC of the prepared pages; 3 the ESC_WIRE page holds an output; 4 a role, a throttle channel or a slot changes while ARMED; 5 on a board with soldered pins, a slot off the servo outputs; 6 a programming port's pin, bank channel or PWM slice; 7 a pin of the supply's PD mini; 8 a pin of the sensor bus; 9 the phase tap's pin; 10 a PWM slice shared with a surface at another frame rate; 11 an endpoint longer than its PWM slot's frame; 12 a driver did not bind (no PIO state machine, instruction memory, DMA channel or PWM slice free, or the pin refused); 13 the slots leave the supply's UART no PIO block. A write to it is refused with BAD_RANGE. Register 2 `COMMIT_ALL` (since 4.41): a write of the CRC-16 of the 128 registers of BIND_CFG, BIND_OUT, BIND_CFG_HI and BIND_OUT_HI puts all four in force or none, by the rules of `COMMIT`; reads the CRC of the four |
 | 0x31 | SERVO_WIN | read | the last 4 complete 50ms windows of INA3221 CH1, newest first (since 4.11). Register 0: the newest window's number modulo 65536. Register 1: bit 0 a window has closed, bit 7 the capture's clipped bit. Registers 2 and 3: SERVO_SENSE's capture state and count. Then 4 entries of 6 registers, entry k from register 4 + 6 k for window number register 0 - k: mean, highest and lowest current (mA, signed), mean and lowest bus voltage (mV), and flags (bit 15 a window closed with this number, bit 8 current samples, bit 9 voltage samples, bit 10 a sample at the top of the range, bit 11 one at the bottom, bits 0 to 7 the samples at an end, held at 255). A clipped sample counts at the end of the range. Every write is refused with READ_ONLY. [The window ring](#the-window-ring) has the rules. Nothing is kept |
 | 0x32 | `KST` | read, write | the servo programming page: the programming protocol for KST and Chaservo servos on a programming port (since 4.12; a port and the supply since 4.13). A read gives 32 registers: state, flags and port, `SEQ`, operation and frames, result and refusal, the failing register, 4 register masks, the fingerprint, the measured half-cell and reply delay, and the servo image in 16 registers. The write page has 29 registers: the command in 0 to 3, sent as one frame; the staged image, unlock set and start check in 4 to 24; the image-view selector in 25; the supply voltage and current of an ENTER in 26 and 27; and the LEAVE_MS wait in 28. [The programming port for KST and Chaservo servos](LinkKST.md) has the rules. Nothing is kept |
 | 0x33 | PROG | read, write | the programming ports (since 4.13): 28 registers, 24 before 4.26. The port count, flags, the pulse switch and the servo tester's target in registers 0 to 3, then 5 registers a port for 4 ports: pin, command, slew and the two endpoints, then each port's FUNC in 24 to 27 (since 4.26). [The programming ports](#the-programming-ports) has the rules. Pin, slew, endpoints and FUNC are kept in the IOmcu's flash |
 | 0x34 | `HITEC` | read, write | raw transactions of the Hitec servo wire on a programming port (since 4.23). A read gives 32 registers: state, flags and port, `SEQ`, operation and transaction count, result and refusal, the capture's count and flags, the decoder's result, the decoded value, `VIEW`, the received bytes in 8 registers, and in 16 registers the bytes' start times or the run. A write takes 24: the command in registers 0 to 3, one frame, the staged transaction, decoder and POWER set points in 4 to 21, `VIEW` in 22, and the receive mode of a D series line in 23 (since 4.24). [The programming port for Hitec servos](LinkHitec.md) has the rules. Nothing is kept |
-| 0x35 | SENSE_MAP | read, write | up to 4 INA3221 at 0x40 to 0x43 on SENSE's bus (since 4.25). Register 0 the parts fitted, bit a for 0x40 + a; 1 `FAST`, the channel read every 1ms (0 to 11, 0xFF none); 2 to 13 each channel's shunt in 0.1mΩ (0 off, 50 to 10000); 14 to 25 what each channel measures (0 none, 0x01 to 0x08 an output channel, 0x10 to 0x13 a programming port, 0x20 the supply, 0x30 to 0x32 a board's own rail since 4.33); read only: 26 to 29 each part's die ID, 30 flags, 31 reserved. Registers 0 to 25 are kept in the IOmcu's flash. While the map is in force SENSE's ENABLE bit 1 and registers 8 to 10 mirror it. [The INA3221 map and windows](LinkSensors.md) has the rules |
+| 0x35 | SENSE_MAP | read, write | up to 4 INA3221 at 0x40 to 0x43 on SENSE's bus (since 4.25). Register 0 the parts fitted, bit a for 0x40 + a; 1 `FAST`, the channel read every 1ms (0 to 11, 0xFF none); 2 to 13 each channel's shunt in 0.1mΩ (0 off, 50 to 10000); 14 to 25 what each channel measures (0 none, 0x01 to 0x08 output channels 1 to 8, 0x40 to 0x47 output channels 9 to 16 since 4.41, 0x10 to 0x13 a programming port, 0x20 the supply, 0x30 to 0x32 a board's own rail since 4.33); read only: 26 to 29 each part's die ID, 30 flags, 31 reserved. Registers 0 to 25 are kept in the IOmcu's flash. While the map is in force SENSE's ENABLE bit 1 and registers 8 to 10 mirror it. [The INA3221 map and windows](LinkSensors.md) has the rules |
 | 0x36 | SENSE_LIMIT | read, write | a current limit per channel of SENSE_MAP (since 4.27); the IOmcu flags a limit passed and the panel answers it as an error. Registers 0 to 11 each channel's limit in mA (0 none, 1 to 32767), kept in the IOmcu's flash; read only: 12 `OVER`, bit c a window of channel c above its limit since the last read of the register, which clears it; 13 `OVER_COUNT`, channel windows over, modulo 65536; 14 and 15 reserved. 16 registers. [The INA3221 map and windows](LinkSensors.md#sense_limit) has the rules |
 | 0x37 | SENSE_WIN_A | read | channels 0 to 5's last 50ms window (since 4.25): the window number, flags, and 5 registers a channel: mean and highest current (mA, signed), mean and lowest bus voltage (mV), flags. Every write is refused with READ_ONLY. Nothing is kept |
 | 0x38 | SENSE_WIN_B | read | channels 6 to 11's, as SENSE_WIN_A (since 4.25) |
 | 0x39 | PROG_SUPPLY | read, write | the programming ports' own supply on a board that switches one with a pin of the IOmcu: the rbmod carrier's GPIO 21, the enable of its 5V buck M7 (since 4.32). Register 0: output, 1 on, 0 off. An ON is refused with NOT_ARMED without a live heartbeat, and with BAD_VALUE on a board without the switch and while a programming port holds the supply. An OFF is always taken; while a port writes to the servo's memory it waits for the write's end, 10,000ms after the OFF at most, and the port's own ON is refused after it until the port lets go. The output goes off when the heartbeat stops or the link goes silent, and an OFF waits for the end of a frame a port has on the wire, 12ms at most. Registers 1 to 3, read only: flags (bit 0 the board has the switch, bit 1 the pin switches the supply on, bit 2 a programming port holds it, bit 3 the panel's OFF waits for a port's write), the switching GPIO (255 without), and the voltage in mV (5000 on the carrier, 0 without). Register 4, panel: 1 written alone says the panel knows the page, refused with NOT_ARMED without a live heartbeat and with BAD_VALUE for any other value; it reads 0 from every start and from every loss of the heartbeat. A programming port switches the supply on only while it reads 1, so the ports of a panel before 4.32 never get it; the panel writes it whenever a read finds 0. Not kept: off at every start. On the carrier the KST and Hitec ports cycle this supply in place of the PD mini |
 | 0x3A | `ESC_WIRE` | read, write | an ESC's settings over its signal wire on a throttle slot's or DShot port's pin (since 4.34): state, line, result, operations ([The ESC settings pages](LinkEsc.md)) |
 | 0x3B | `ESC_DATA` | read, write | the block of the page, draft, name or text values `ESC_WIRE` names, 64B (since 4.34) |
+| 0x3C | CHANNELS_HI | read, write | channels 9 to 16, as CHANNELS (since 4.41): register c is channel c + 9 |
+| 0x3D | CHAN_CFG_HI | read, write | channels 9 to 16, as CHAN_CFG (since 4.41): four registers a channel. Before anything is written, and after a store record of version 8 or older, each channel is a surface at 1000 to 2000µs |
+| 0x3E | OUTPUTS_HI | read, write | slots 9 to 16, as OUTPUTS (since 4.41): four registers a slot. The two pages are judged as one bank: a pin or a channel two slots name is refused whichever page holds them |
+| 0x3F | BIND_CFG_HI | read, write | a CHAN_CFG_HI page prepared and not in force (since 4.41), as BIND_CFG |
+| 0x40 | BIND_OUT_HI | read, write | an OUTPUTS_HI page prepared and not in force (since 4.41), as BIND_OUT |
 | 0xE0 | `CONSOLE` | read, write | exists only in debug console builds (`IOMCU_CONSOLE`); no released image has it: [The bench console](BenchConsole.md#over-the-link-with-no-usb-on-the-iomcu) |
 | 0xF0 | UPDATE_CTL | read, write | the IOmcu's own firmware update (since 4.22; frozen across majors): 32 registers. Version, state, error, slot, slot sectors, next block, image size, then the command in register 8 with up to 3 arguments, and a SHA-256 digest in registers 16 to 31. A write that is not a command is refused with READ_ONLY. [Firmware update over the link](#firmware-update-over-the-link) has the rules. Nothing is kept |
 | 0xF1 | UPDATE_DATA | read, write | the 64 bytes of the block in hand, low byte first in each register (since 4.22; frozen across majors): 32 registers. FINISH takes the expected SHA-256 from registers 0 to 15. Nothing is kept |

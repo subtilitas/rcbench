@@ -26,30 +26,34 @@ void out_stage_init(out_stage_t *st, const uint16_t *cfg,
         memcpy(st->cfg, cfg, sizeof(st->cfg));
     } else {
         outputs_chan_cfg_defaults(st->cfg);
+        outputs_chan_cfg_defaults(&st->cfg[LINK_CC_COUNT]);
     }
     if (slots != NULL) {
         memcpy(st->slots, slots, sizeof(st->slots));
     } else {
         outputs_slots_defaults(st->slots);
+        outputs_slots_defaults(&st->slots[LINK_OS_COUNT]);
     }
 }
 
-uint8_t out_stage_cfg_write(out_stage_t *st, uint8_t off, uint8_t n,
-                            const uint16_t *in)
+uint8_t out_stage_cfg_write(out_stage_t *st, bool hi, uint8_t off,
+                            uint8_t n, const uint16_t *in)
 {
     if (st == NULL) {
         return LINK_NACK_BAD_RANGE;
     }
-    return outputs_chan_cfg_write(st->cfg, off, n, in);
+    return outputs_chan_cfg_write(&st->cfg[hi ? LINK_CC_COUNT : 0u], off, n,
+                                  in);
 }
 
-uint8_t out_stage_slots_write(out_stage_t *st, uint8_t off, uint8_t n,
-                              const uint16_t *in)
+uint8_t out_stage_slots_write(out_stage_t *st, bool hi, uint8_t off,
+                              uint8_t n, const uint16_t *in)
 {
     if (st == NULL) {
         return LINK_NACK_BAD_RANGE;
     }
-    return outputs_slots_write(st->slots, off, n, in);
+    return outputs_slots_write(&st->slots[hi ? LINK_OS_COUNT : 0u], off, n,
+                               in);
 }
 
 /**
@@ -70,19 +74,21 @@ static void read_window(const uint16_t *regs, unsigned count, uint8_t off,
     }
 }
 
-void out_stage_cfg_read(const out_stage_t *st, uint8_t off, uint8_t n,
-                        uint16_t *out)
+void out_stage_cfg_read(const out_stage_t *st, bool hi, uint8_t off,
+                        uint8_t n, uint16_t *out)
 {
     if (st != NULL && out != NULL) {
-        read_window(st->cfg, LINK_CC_COUNT, off, n, out);
+        read_window(&st->cfg[hi ? LINK_CC_COUNT : 0u], LINK_CC_COUNT, off, n,
+                    out);
     }
 }
 
-void out_stage_slots_read(const out_stage_t *st, uint8_t off, uint8_t n,
-                          uint16_t *out)
+void out_stage_slots_read(const out_stage_t *st, bool hi, uint8_t off,
+                          uint8_t n, uint16_t *out)
 {
     if (st != NULL && out != NULL) {
-        read_window(st->slots, LINK_OS_COUNT, off, n, out);
+        read_window(&st->slots[hi ? LINK_OS_COUNT : 0u], LINK_OS_COUNT, off,
+                    n, out);
     }
 }
 
@@ -115,44 +121,63 @@ uint16_t out_stage_crc(const uint16_t *cfg, const uint16_t *slots)
     return crc_regs(crc, slots, LINK_OS_COUNT);
 }
 
+uint16_t out_stage_crc_all(const uint16_t *cfg, const uint16_t *slots)
+{
+    if (cfg == NULL || slots == NULL) {
+        return 0u;
+    }
+    uint16_t crc = out_stage_crc(cfg, slots);
+    crc = crc_regs(crc, &cfg[LINK_CC_COUNT], LINK_CC_COUNT);
+    return crc_regs(crc, &slots[LINK_OS_COUNT], LINK_OS_COUNT);
+}
+
 uint16_t out_stage_held_crc(const out_stage_t *st)
 {
     return (st != NULL) ? out_stage_crc(st->cfg, st->slots) : 0u;
 }
 
+uint16_t out_stage_held_crc_all(const out_stage_t *st)
+{
+    return (st != NULL) ? out_stage_crc_all(st->cfg, st->slots) : 0u;
+}
+
 /** @brief The bank's channels from before a commit. */
 static out_channel_t s_held[OUT_MAX_CHANNELS];
+/** @brief The CHAN_CFG pages in force before a commit. */
+static uint16_t s_prev[LINK_CC_ALL];
+/** @brief The two CHAN_CFG pages a commit takes. */
+static uint16_t s_next_cfg[LINK_CC_ALL];
+/** @brief The two OUTPUTS pages a commit takes. */
+static uint16_t s_next_slots[LINK_OS_ALL];
 
-uint8_t out_stage_commit(const out_stage_t *st, uint16_t crc,
+/**
+ * @brief Takes @p cfg and then @p slots, both whole, or neither.
+ *
+ * @param cfg The CHAN_CFG pages to take, LINK_CC_ALL registers.
+ * @param slots The OUTPUTS pages to take, LINK_OS_ALL registers.
+ * @param cfg_in_force The CHAN_CFG pages in force, LINK_CC_ALL registers.
+ * @param ops The callbacks, checked by the caller.
+ * @param ctx Passed to each callback.
+ * @return 0 when both are in force, else the refusal.
+ */
+static uint8_t take_both(const uint16_t *cfg, const uint16_t *slots,
                          const uint16_t *cfg_in_force,
                          const out_stage_ops_t *ops, void *ctx)
 {
-    if (st == NULL || cfg_in_force == NULL || ops == NULL
-        || ops->take_cfg == NULL || ops->take_slots == NULL
-        || ops->put_cfg == NULL) {
-        return LINK_NACK_BAD_VALUE;
-    }
-    /* What is prepared is what the host meant only if it names the same
-     * check: a frame that never arrived, or pages prepared before a restart,
-     * leave something else here. */
-    if (crc != out_stage_held_crc(st)) {
-        return LINK_NACK_BAD_VALUE;
-    }
     /* Kept here, because take_cfg overwrites the page @p cfg_in_force
      * points at. */
-    uint16_t prev[LINK_CC_COUNT];
-    memcpy(prev, cfg_in_force, sizeof(prev));
+    memcpy(s_prev, cfg_in_force, sizeof(s_prev));
     if (ops->bank != NULL) {
         memcpy(s_held, ops->bank->channel, sizeof(s_held));
     }
 
     /* CHAN_CFG first: it says what a channel is, and a slot that starts
      * rendering a channel whose role has not arrived rests it wrongly. */
-    uint8_t nack = ops->take_cfg(ctx, st->cfg);
+    uint8_t nack = ops->take_cfg(ctx, cfg, slots);
     if (nack != 0u) {
         return nack;
     }
-    nack = ops->take_slots(ctx, st->slots);
+    nack = ops->take_slots(ctx, slots);
     if (nack != 0u) {
         /*
          * The channels as they were, not the old page applied again: a role
@@ -165,11 +190,66 @@ uint8_t out_stage_commit(const out_stage_t *st, uint16_t crc,
         if (ops->bank != NULL) {
             memcpy(ops->bank->channel, s_held, sizeof(s_held));
         }
-        ops->put_cfg(ctx, prev);
+        ops->put_cfg(ctx, s_prev);
         return nack;
     }
     if (ops->keep != NULL) {
         ops->keep(ctx);
     }
     return 0u;
+}
+
+/**
+ * @brief Whether the commit's arguments can be used.
+ *
+ * @param st The prepared pages.
+ * @param cfg The CHAN_CFG pages in force.
+ * @param slots The OUTPUTS pages in force.
+ * @param ops The callbacks.
+ * @return true when nothing required is NULL.
+ */
+static bool commit_args_ok(const out_stage_t *st, const uint16_t *cfg,
+                           const uint16_t *slots, const out_stage_ops_t *ops)
+{
+    return st != NULL && cfg != NULL && slots != NULL && ops != NULL
+           && ops->take_cfg != NULL && ops->take_slots != NULL
+           && ops->put_cfg != NULL;
+}
+
+uint8_t out_stage_commit(const out_stage_t *st, uint16_t crc,
+                         const uint16_t *cfg_in_force,
+                         const uint16_t *slots_in_force,
+                         const out_stage_ops_t *ops, void *ctx)
+{
+    if (!commit_args_ok(st, cfg_in_force, slots_in_force, ops)) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    /* What is prepared is what the host meant only if it names the same
+     * check: a frame that never arrived, or pages prepared before a restart,
+     * leave something else here. */
+    if (crc != out_stage_held_crc(st)) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    /* The first halves prepared, the _HI halves as they are in force. */
+    memcpy(s_next_cfg, cfg_in_force, sizeof(s_next_cfg));
+    memcpy(s_next_cfg, st->cfg, LINK_CC_COUNT * sizeof(uint16_t));
+    memcpy(s_next_slots, slots_in_force, sizeof(s_next_slots));
+    memcpy(s_next_slots, st->slots, LINK_OS_COUNT * sizeof(uint16_t));
+    return take_both(s_next_cfg, s_next_slots, cfg_in_force, ops, ctx);
+}
+
+uint8_t out_stage_commit_all(const out_stage_t *st, uint16_t crc,
+                             const uint16_t *cfg_in_force,
+                             const uint16_t *slots_in_force,
+                             const out_stage_ops_t *ops, void *ctx)
+{
+    if (!commit_args_ok(st, cfg_in_force, slots_in_force, ops)) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    if (crc != out_stage_held_crc_all(st)) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    memcpy(s_next_cfg, st->cfg, sizeof(s_next_cfg));
+    memcpy(s_next_slots, st->slots, sizeof(s_next_slots));
+    return take_both(s_next_cfg, s_next_slots, cfg_in_force, ops, ctx);
 }

@@ -36,7 +36,7 @@ bool board_fix_slots_ok(const outbind_roles_t *r, const uint16_t *slots)
     if (slots == NULL) {
         return false;
     }
-    for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
+    for (unsigned s = 0; s < LINK_OUT_SLOTS_ALL; ++s) {
         const uint16_t *slot = &slots[(size_t)s * LINK_OS_STRIDE];
         if (slot[LINK_OS_DRIVER] == (uint16_t)LINK_DRIVER_NONE) {
             continue;
@@ -142,8 +142,11 @@ void board_fix_store(const outbind_roles_t *r, out_store_t *cfg)
     if (r == NULL || cfg == NULL) {
         return;
     }
-    for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
-        uint16_t *slot = &cfg->slots[(size_t)s * LINK_OS_STRIDE];
+    for (unsigned s = 0; s < LINK_OUT_SLOTS_ALL; ++s) {
+        uint16_t *slot = (s < LINK_OUT_SLOTS)
+                             ? &cfg->slots[(size_t)s * LINK_OS_STRIDE]
+                             : &cfg->slots_hi[(size_t)(s - LINK_OUT_SLOTS)
+                                              * LINK_OS_STRIDE];
         if (slot[LINK_OS_DRIVER] != (uint16_t)LINK_DRIVER_NONE
             && board_fix_out_index(r, slot[LINK_OS_PIN]) < 0) {
             memset(slot, 0, sizeof(uint16_t) * LINK_OS_STRIDE);

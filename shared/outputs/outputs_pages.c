@@ -113,7 +113,7 @@ void outputs_chan_cfg_restore(uint16_t *regs, const uint16_t *saved)
     if (regs == NULL || saved == NULL) {
         return;
     }
-    for (unsigned i = 0; i < (unsigned)LINK_CC_COUNT; ++i) {
+    for (unsigned i = 0; i < (unsigned)LINK_CC_ALL; ++i) {
         const uint16_t v = saved[i];
         regs[i] = (i % LINK_CC_STRIDE == (unsigned)LINK_CC_SLEW
                    && v > LINK_CC_SLEW_MAX) ? (uint16_t)LINK_CC_SLEW_MAX : v;
@@ -126,7 +126,7 @@ uint8_t outputs_chan_cfg_armed_check(const uint16_t *regs,
     if (!armed || regs == NULL || next == NULL) {
         return 0u;
     }
-    for (unsigned c = 0; c < LINK_OUT_CHANNELS; ++c) {
+    for (unsigned c = 0; c < LINK_OUT_CHANNELS_ALL; ++c) {
         const uint16_t *was = &regs[(size_t)c * LINK_CC_STRIDE];
         const uint16_t *now = &next[(size_t)c * LINK_CC_STRIDE];
         if (was[LINK_CC_ROLE] != now[LINK_CC_ROLE]) {
@@ -176,7 +176,7 @@ void outputs_chan_cfg_apply(outputs_t *o, const uint16_t *regs)
     if (o == NULL || regs == NULL) {
         return;
     }
-    for (unsigned c = 0; c < LINK_OUT_CHANNELS; ++c) {
+    for (unsigned c = 0; c < LINK_OUT_CHANNELS_ALL; ++c) {
         const uint16_t *r = &regs[(size_t)c * LINK_CC_STRIDE];
         const out_role_t role = (r[LINK_CC_ROLE] == LINK_CC_ROLE_THROTTLE)
                                     ? OUT_ROLE_THROTTLE : OUT_ROLE_SURFACE;
@@ -312,7 +312,7 @@ static bool pulse_fits(const outputs_t *o, unsigned ch, uint16_t hz)
 }
 
 uint8_t outputs_pulse_check(const outputs_t *o, uint16_t servo_hz,
-                            uint16_t channels, uint16_t channels_hz)
+                            uint32_t channels, uint16_t channels_hz)
 {
     if (o == NULL) {
         return LINK_NACK_BAD_VALUE;
@@ -327,7 +327,7 @@ uint8_t outputs_pulse_check(const outputs_t *o, uint16_t servo_hz,
         }
     }
     for (unsigned ch = 0; ch < OUT_MAX_CHANNELS; ++ch) {
-        if ((channels & (1u << ch)) != 0u
+        if ((channels & (1uL << ch)) != 0u
             && !pulse_fits(o, ch, channels_hz)) {
             return LINK_NACK_BAD_VALUE;
         }
@@ -370,7 +370,7 @@ unsigned outputs_slots_free_long(const outputs_t *o, uint16_t *slots)
     s_trial = *o;
     outputs_slots_apply(&s_trial, slots);
     unsigned n = 0u;
-    for (unsigned i = 0; i < LINK_OUT_SLOTS; ++i) {
+    for (unsigned i = 0; i < LINK_OUT_SLOTS_ALL; ++i) {
         const out_slot_t *sl = &s_trial.slot[i];
         if (sl->driver == OUT_DRIVER_PWM
             && !pulse_fits(&s_trial, sl->first_channel, sl->rate_hz)) {
@@ -387,7 +387,7 @@ unsigned outputs_slots_free_unwritable(uint16_t *slots)
         return 0u;
     }
     unsigned n = 0u;
-    for (unsigned i = 0; i < LINK_OUT_SLOTS; ++i) {
+    for (unsigned i = 0; i < LINK_OUT_SLOTS_ALL; ++i) {
         uint16_t *r = &slots[(size_t)i * LINK_OS_STRIDE];
         if (r[LINK_OS_DRIVER] != 0u
             && (!known_driver(r[LINK_OS_DRIVER])
@@ -399,28 +399,30 @@ unsigned outputs_slots_free_unwritable(uint16_t *slots)
     return n;
 }
 
-uint8_t outputs_slots_changed(const uint16_t *prev, const uint16_t *next)
+uint16_t outputs_slots_changed(const uint16_t *prev, const uint16_t *next)
 {
-    uint8_t mask = 0u;
+    _Static_assert(LINK_OUT_SLOTS_ALL <= 16u,
+                   "a slot mask holds LINK_OUT_SLOTS_ALL bits");
+    uint16_t mask = 0u;
     if (prev == NULL || next == NULL) {
-        return 0xFFu;
+        return 0xFFFFu;
     }
-    for (unsigned i = 0; i < LINK_OS_COUNT; ++i) {
+    for (unsigned i = 0; i < LINK_OS_ALL; ++i) {
         if (prev[i] != next[i]) {
-            mask |= (uint8_t)(1u << (i / LINK_OS_STRIDE));
+            mask |= (uint16_t)(1u << (i / LINK_OS_STRIDE));
         }
     }
     return mask;
 }
 
-uint8_t outputs_bind_check(const outputs_t *o, uint8_t watch,
-                           uint8_t bound_after)
+uint8_t outputs_bind_check(const outputs_t *o, uint16_t watch,
+                           uint16_t bound_after)
 {
     if (o == NULL) {
         return LINK_NACK_BAD_VALUE;
     }
     for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
-        const uint8_t bit = (uint8_t)(1u << i);
+        const uint16_t bit = (uint16_t)(1u << i);
         if (o->slot[i].driver != OUT_DRIVER_NONE
             && (watch & bit) != 0u && (bound_after & bit) == 0u) {
             return LINK_NACK_BAD_VALUE;
@@ -450,10 +452,11 @@ uint8_t outputs_slots_write(uint16_t *regs, uint8_t off, uint8_t n,
     if ((unsigned)off + (unsigned)n > (unsigned)LINK_OS_COUNT) {
         return LINK_NACK_BAD_RANGE;
     }
-    /* Only the driver number is checkable without the bank.  A pin conflict
-     * or a rate a driver cannot make is a question for outputs_configure at
-     * apply, because it needs the other slots to answer.  An unknown driver
-     * is refused here so it never reaches the table lookup. */
+    /* Only the driver number, the pin's range and the channels' range are
+     * checkable without the bank.  A pin conflict or a rate a driver cannot
+     * make is a question for outputs_configure at apply, because it needs
+     * the other slots to answer.  An unknown driver is refused here so it
+     * never reaches the table lookup. */
     for (uint8_t i = 0; i < n; ++i) {
         const uint8_t field = (uint8_t)((off + i) % LINK_OS_STRIDE);
         if (field == LINK_OS_DRIVER && !known_driver(in[i])) {
@@ -463,6 +466,13 @@ uint8_t outputs_slots_write(uint16_t *regs, uint8_t off, uint8_t n,
          * pin above the top would be stored, truncated at apply, and drive a
          * different pin than the one the page reads back. */
         if (field == LINK_OS_PIN && in[i] > OUT_MAX_PIN) {
+            return LINK_NACK_BAD_VALUE;
+        }
+        /* Channels 1 to 16 are the link's (4.41); the bank's channels past
+         * them are the throttle's and the programming ports'. */
+        if (field == LINK_OS_RANGE
+            && (unsigned)LINK_OS_FIRST(in[i]) + LINK_OS_CHANNELS(in[i])
+                   > LINK_OUT_CHANNELS_ALL) {
             return LINK_NACK_BAD_VALUE;
         }
     }
@@ -485,10 +495,10 @@ void outputs_slots_apply(outputs_t *o, const uint16_t *regs)
      * first makes the page the single source of truth every time.
      */
     const out_slot_t none = { .driver = OUT_DRIVER_NONE };
-    for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
+    for (unsigned s = 0; s < LINK_OUT_SLOTS_ALL; ++s) {
         (void)outputs_configure(o, (uint8_t)s, &none);
     }
-    for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
+    for (unsigned s = 0; s < LINK_OUT_SLOTS_ALL; ++s) {
         const uint16_t *r = &regs[(size_t)s * LINK_OS_STRIDE];
         if (driver_of(r[LINK_OS_DRIVER]) == OUT_DRIVER_NONE) {
             continue;
@@ -520,7 +530,7 @@ void outputs_channels_defaults(uint16_t *regs)
     if (regs == NULL) {
         return;
     }
-    for (unsigned c = 0; c < LINK_CH_COUNT; ++c) {
+    for (unsigned c = 0; c < LINK_CH_ALL; ++c) {
         regs[c] = 0u;
     }
 }
@@ -530,7 +540,7 @@ void outputs_channels_from_bank(const outputs_t *o, uint16_t *regs)
     if (o == NULL || regs == NULL) {
         return;
     }
-    for (unsigned c = 0; c < LINK_CH_COUNT; ++c) {
+    for (unsigned c = 0; c < LINK_CH_ALL; ++c) {
         regs[c] = outputs_command(o, (uint8_t)c);
     }
 }
@@ -541,7 +551,7 @@ void outputs_channels_follow_roles(const outputs_t *o, const uint16_t *was,
     if (o == NULL || was == NULL || now == NULL || regs == NULL) {
         return;
     }
-    for (unsigned c = 0; c < LINK_OUT_CHANNELS && c < LINK_CH_COUNT; ++c) {
+    for (unsigned c = 0; c < LINK_CH_ALL; ++c) {
         const size_t r = (size_t)c * LINK_CC_STRIDE + LINK_CC_ROLE;
         if ((was[r] == LINK_CC_ROLE_THROTTLE)
             != (now[r] == LINK_CC_ROLE_THROTTLE)) {
@@ -572,12 +582,12 @@ uint8_t outputs_channels_write(uint16_t *regs, uint8_t off, uint8_t n,
 void outputs_channels_apply_n(outputs_t *o, const uint16_t *regs,
                               uint8_t first, uint8_t count, uint32_t now_ms)
 {
-    if (o == NULL || regs == NULL || (unsigned)first >= LINK_CH_COUNT) {
+    if (o == NULL || regs == NULL || (unsigned)first >= LINK_CH_ALL) {
         return;
     }
     unsigned last = (unsigned)first + count;
-    if (last > LINK_CH_COUNT) {
-        last = LINK_CH_COUNT;
+    if (last > LINK_CH_ALL) {
+        last = LINK_CH_ALL;
     }
     for (unsigned c = first; c < last; ++c) {
         (void)outputs_set(o, (uint8_t)c, regs[c], now_ms);
@@ -587,7 +597,7 @@ void outputs_channels_apply_n(outputs_t *o, const uint16_t *regs,
 void outputs_channels_apply(outputs_t *o, const uint16_t *regs,
                             uint32_t now_ms)
 {
-    outputs_channels_apply_n(o, regs, 0u, (uint8_t)LINK_CH_COUNT, now_ms);
+    outputs_channels_apply_n(o, regs, 0u, (uint8_t)LINK_CH_ALL, now_ms);
 }
 
 uint64_t outputs_role_pins(const uint16_t *slots, const uint16_t *chan_cfg,

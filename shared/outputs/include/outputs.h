@@ -42,11 +42,16 @@ extern "C" {
 /** @brief A command runs 0..OUT_SPAN across the channel's own travel. */
 #define OUT_SPAN            1000u
 
-/** @brief Channels in a bank. */
-#define OUT_MAX_CHANNELS    16u
+/**
+ * @brief Channels in a bank: on the IOmcu the link's 16 output channels,
+ *        the bench throttle's channel 16 and a channel for each of the 4
+ *        programming ports, 17 to 20.
+ */
+#define OUT_MAX_CHANNELS    21u
 
-/** @brief Slots in a bank: driver configurations, each rendering channels. */
-#define OUT_MAX_SLOTS        8u
+/** @brief Slots in a bank: driver configurations, each rendering channels;
+ *         the link's 16 (OUTPUTS and OUTPUTS_HI). */
+#define OUT_MAX_SLOTS       16u
 
 /**
  * @brief What a pulse driver may render, in microseconds.
@@ -282,8 +287,8 @@ bool outputs_set_slew(outputs_t *o, uint8_t ch, uint16_t per_s);
  *
  * @param o The bank.
  * @param regs The CHANNELS page, indexed by channel number.
- * @param first First channel to command, below LINK_CH_COUNT.
- * @param count Number of channels from @p first. Clipped at LINK_CH_COUNT.
+ * @param first First channel to command, below LINK_CH_ALL.
+ * @param count Number of channels from @p first. Clipped at LINK_CH_ALL.
  * @param now_ms Current time in milliseconds, stamped on each channel.
  */
 void outputs_channels_apply_n(outputs_t *o, const uint16_t *regs,
