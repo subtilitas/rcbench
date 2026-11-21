@@ -5,13 +5,16 @@ browser. It is served at `/rcbench/flash/` on the repository's GitHub Pages
 site, beside the configurator at `/rcbench/`.
 
 - **Panel**, an ESP32-P4, over Web Serial: the merged image of the chosen
-  release at 0x0. The page connects, detects the chip, writes, verifies and
-  resets. No offset and no file to pick.
+  release at 0x0, without its NVS (non-volatile storage) partition, so the
+  settings stay ("Keep settings", on by default). The page connects,
+  detects the chip, writes, verifies and resets. No offset and no file to
+  pick.
 - **IOmcu**, an RP2350, over WebUSB: the install image of the chosen release,
   through the boot ROM's PICOBOOT interface.
 - **Wireless devices** over Web Serial: the display node and the M5Stack
   Dial (ESP32-S3), the power node, the balance node and the panel's C6
-  radio (ESP32-C6). The merged image of the chosen release at 0x0.
+  radio (ESP32-C6). The merged image of the chosen release at 0x0, with
+  the same "Keep settings" rule.
 - **A local file** in place of a release image, for any of these boards.
 
 The page writes nothing before a press of WRITE. Before that it shows the
@@ -38,9 +41,74 @@ same site (see "How releases reach the page").
 | C6 radio of the panel, over header H4 and a USB-to-UART adapter ([C6](../docs/C6.md)) | ESP32-C6 | Web Serial | `rcbench-c6-merged-<esp_hosted version>.bin` | 0x0 |
 
 Every ESP image is a merged image: the bootloader, the partition table and
-the application, for 0x0. A merged image erases the settings in NVS
-(non-volatile storage) on the panel, as `esptool.py write_flash 0x0`
-does ([First run](../docs/FirstRun.md)).
+the application, for 0x0, with 0xFF in every gap. Written whole, as
+`esptool.py write_flash 0x0` writes it, it fills the NVS partition with
+0xFF and so erases the settings ([First run](../docs/FirstRun.md)).
+
+## Keep settings
+
+"Keep settings" (German "Einstellungen behalten") is a checkbox above
+WRITE for every ESP board. It is on when the page loads and again after a
+change of board.
+
+- **On:** the page reads the partition table from the image and writes
+  every byte of the image except the ranges of its data partitions of the
+  subtypes nvs (0x02), nvs_keys (0x04), fat (0x81), spiffs (0x82) and
+  littlefs (0x83). Before WRITE it lists each skipped range with name,
+  subtype, offset and size in bytes, and the offset of the table.
+- **Off:** the whole image from 0x0, as `esptool.py write_flash 0x0`
+  writes it: the settings and the bindings on the board are erased. The
+  page says so above WRITE.
+
+Each written range gets its own MD5 (Message-Digest 5) check, over exactly
+the bytes written there. A skipped range is neither written nor read.
+
+What each board keeps, from the tables of the v0.23.15 images:
+
+| Board | Table at | Kept | Holds | Written ranges |
+| --- | --- | --- | --- | --- |
+| Panel | 0xC000 | nvs 0xD000, 24,576 bytes | panel settings, Wi-Fi settings, the bound devices | 0x0 to 0xD000, 0x13000 to the end |
+| M5Stack Dial | 0x8000 | nvs 0x9000, 24,576 bytes | the bound panel (namespace `dial`, key `panel`) | 0x0 to 0x9000, 0xF000 to the end |
+| Display node, power node, balance node | 0x8000 | nvs 0x9000, 24,576 bytes | ESP-IDF's PHY calibration; the node firmware stores no setting of its own (`firmware/node`) | 0x0 to 0x9000, 0xF000 to the end |
+| C6 radio | 0x8000 | nvs 0x9000, 16,384 bytes | the entries of ESP-IDF's Wi-Fi driver and PHY calibration | 0x0 to 0x9000, 0xD000 to the end |
+
+The panel's `boardart` partition (0x7E0000, subtype 0x40) lies past the
+end of its image (7,572,864 bytes in v0.23.15): neither write touches it.
+
+**otadata is written.** Its bytes in a merged image are 0xFF, ESP-IDF's
+`ota_data_initial.bin`. With a blank otadata the bootloader starts ota_0,
+and ota_0 is where the merged image puts the application. A board that
+had taken an update over the air runs from ota_1 with an otadata that
+names ota_1; skipping otadata would leave that board on the old firmware
+in ota_1 after a write that verifies. otadata holds only the choice of
+slot, no setting.
+
+**Where the table is.** ESP-IDF puts the table at 0x8000 unless
+`CONFIG_PARTITION_TABLE_OFFSET` moves it; the panel moves it to 0xC000
+(`firmware/panel/sdkconfig.defaults`) to make room for its bootloader at
+0x2000. The page computes the end of the bootloader from its image header
+(segment lengths, checksum, appended SHA-256) and looks for the table at
+every 4096-byte step from there up to 0xF000. The table format follows
+`gen_esp32part.py` of ESP-IDF v6.1: entries of 32 bytes with the magic
+bytes 0xAA 0x50, an MD5 entry (0xEB 0xEB, 14 bytes 0xFF, the MD5 of the
+entries), an end marker of 32 bytes 0xFF, at most 0xC00 bytes.
+
+"Keep settings" refuses, with the reason, and WRITE stays disabled until
+the box is unticked, when:
+
+- the bootloader header is damaged or runs past the end of the image;
+- no table is found, the table has no MD5 entry, its MD5 does not match,
+  an entry lacks the magic bytes, or the end marker is missing;
+- the image holds two valid tables;
+- partitions overlap or start inside the sector of the table;
+- a kept range overlaps the bootloader, the table sector, an application
+  or any other partition (an ESP-IDF v6 bootloader entry included);
+- a kept range does not start and end on a 4096-byte sector: the flasher
+  stub erases whole sectors, so the written range next to it would erase
+  part of it.
+
+An image whose table has no such partition is written whole, and the page
+says so. A full write needs no table.
 
 The checks before WRITE:
 
@@ -89,14 +157,21 @@ address by the chip revision of an ESP32-P4, which a P4 of revision 3.0 or
 later needs; the panel build requires revision 3.1
 (`CONFIG_ESP32P4_REV_MIN_301` in `firmware/panel/sdkconfig.defaults`).
 0.7.1 is the newest release (2 November 2026). It loads on the first
-Connect: the first load of the page is 50.3kB.
+Connect: the first load of the page is 58.6kB.
 
 The flow: open the port at 115200 baud, reset into the boot ROM, sync,
-detect the chip, start the flasher stub, change to 460800 baud (the
-USB-Serial-JTAG of the ESP32-P4, -S3 and -C6 ignores the rate), write the
-image compressed at 0x0 with flash mode, frequency and size kept as in the
-image, read the MD5 (Message-Digest 5) of the written range from the stub
-and compare it with the MD5 of the image, hard reset.
+detect the chip, start the flasher stub, change to 460800 baud behind a
+USB-to-UART bridge, write each range of the write plan compressed at its
+offset with flash mode, frequency and size kept as in the image, read the
+MD5 of each written range from the stub and compare it with the MD5 of
+the same bytes of the image, hard reset.
+
+On the USB Serial/JTAG built into the ESP32-P4, -S3 and -C6 (USB ID
+303A:1001) the page stays at 115200 baud and sends no baud change. The
+rate has no effect there, and the change makes esptool-js reopen the
+port, which resets the chip: esptool-js then connects again and goes on
+at 115200 baud anyway. A panel connected that way writes 4,216,445
+compressed bytes of v0.23.15 in about 40s.
 
 ## RP2350: PICOBOOT over WebUSB
 
@@ -206,16 +281,17 @@ offer the IOmcu image alone.
 | `src/i18n.ts` | Strings in English and German. |
 | `src/boards.ts` | The boards, their chips, the image and chip checks. |
 | `src/manifest.ts` | Reader and checks of `index.json` and `manifest.json`. |
-| `src/esp.ts` | ESP32 flow on esptool-js. |
+| `src/esp.ts` | ESP32 flow on esptool-js, the baud rule. |
+| `src/partitions.ts` | The partition table of a merged image, the bootloader's end, the write plan of "Keep settings". |
 | `src/picoboot.ts` | PICOBOOT: command encoding, transfers, errors. |
 | `src/rp2350.ts` | RP2350 flow: plan, erase, write, read back, reboot. |
 | `src/uf2.ts` | UF2 reader. |
 | `src/bootsel.ts` | The 1200 baud request, the boot ROM device chooser. |
 | `src/digest.ts` | SHA-256 by Web Crypto, MD5. |
 | `public/licenses.txt` | Licences of the bundled code, written by `tools/licenses.ts`. |
-| `test/` | Unit tests, run by `node --test`. `fixtures.ts` builds synthetic UF2 and ESP images. |
-| `e2e/flow.spec.ts` | Playwright test of the whole flow to "done" for the panel, the Dial, the power node and the IOmcu, and the refusals. |
-| `e2e/fake-devices.js` | Fake Web Serial with an ESP32 boot ROM and flasher stub, an IOmcu port that leaves for BOOTSEL at 1200 baud, and a fake WebUSB RP2350 boot ROM. |
+| `test/` | Unit tests, run by `node --test`. `fixtures.ts` builds synthetic UF2 images, ESP images, partition tables and merged images, and holds the panel's partition table and bootloader header of v0.23.15. |
+| `e2e/flow.spec.ts` | Playwright test of the whole flow to "done" for the panel, the Dial, the power node and the IOmcu, the refusals, the NVS bytes after a write with and without "Keep settings", and the baud change on a USB-to-UART bridge only. |
+| `e2e/fake-devices.js` | Fake Web Serial with an ESP32 boot ROM and flasher stub that erases the 4096-byte sectors it writes, an IOmcu port that leaves for BOOTSEL at 1200 baud, and a fake WebUSB RP2350 boot ROM. |
 | `tools/size.ts` | Size check of the build. |
 | `tools/licenses.ts` | Writes and checks `public/licenses.txt`. |
 
@@ -241,7 +317,7 @@ python3 -m pytest ../test/tools/test_flash_manifest.py
 ```
 
 The size budget is the page's own; the configurator's budget does not count
-it. The build measures 50.3kB at the first load and 376.9kB in all, with
+it. The build measures 58.6kB at the first load and 385.3kB in all, with
 the flasher stubs of every chip esptool-js knows; the page loads the stub of
 the detected chip only.
 
@@ -257,8 +333,17 @@ the system setting.
 ## Limits
 
 - The browser test runs against fakes of the boot ROMs (`e2e/fake-devices.js`).
-- A board that stops answering after the change to 460800 baud is written
-  at 115200 baud: esptool-js connects again at the lower rate.
+- A board behind a USB-to-UART bridge that stops answering after the
+  change to 460800 baud is written at 115200 baud: esptool-js connects
+  again at the lower rate.
+- "Keep settings" keeps the NVS bytes whatever firmware wrote them. The
+  rcbench firmware erases the partition and starts on defaults when
+  `nvs_flash_init` returns `ESP_ERR_NVS_NO_FREE_PAGES` or
+  `ESP_ERR_NVS_NEW_VERSION_FOUND`; the panel runs on defaults when NVS
+  stays unusable after that.
+- The page looks for the partition table up to 0xF000 only. An image with
+  the table above 0xF000 gets the refusal "no partition table" and a full
+  write only.
 - The RP2350 boot ROM's limit for the length of one PICOBOOT transfer is not
   known; the page sends 64KiB, which picotool exceeds for an image above
   6.4MB.

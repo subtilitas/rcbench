@@ -1,7 +1,7 @@
 // State, events and rendering of the flasher page.
 
 import './style.css';
-import { BOARDS, boardById, checkImage, chipLabel, chipMatches, linkOf } from './boards.ts';
+import { BOARDS, BOOTLOADER_OFFSET, boardById, checkImage, chipLabel, chipMatches, linkOf } from './boards.ts';
 import type { Board } from './boards.ts';
 import { IOMCU_PORT_FILTER, pickBootrom, touch1200 } from './bootsel.ts';
 import { sha256Hex } from './digest.ts';
@@ -11,6 +11,8 @@ import { browserLang, hasKey, t } from './i18n.ts';
 import type { Key, Lang } from './i18n.ts';
 import { defaultRelease, readIndex, readManifest } from './manifest.ts';
 import type { ImageEntry, Manifest, ReleaseEntry } from './manifest.ts';
+import { hex, planWrite } from './partitions.ts';
+import type { PlanVerdict } from './partitions.ts';
 import { Picoboot } from './picoboot.ts';
 import { StepError, planBin, planUf2, runPlan } from './rp2350.ts';
 import { FAMILY, parseUf2 } from './uf2.ts';
@@ -52,6 +54,8 @@ const st = {
   connNote: null as Note | null,
   bootselNote: null as Note | null,
   busy: false,
+  /** "Keep settings": an ESP write leaves the NVS partitions of the image's table as they are. On at the start and on a new board. */
+  keep: true,
   result: null as Note | null,
   log: [] as string[],
   /** The last progress of the write in hand: rendered again after a re-render, a language switch for one. */
@@ -86,6 +90,23 @@ function storeLang(lang: Lang): void {
 }
 
 const boardUsable = (b: Board): boolean => !b.planned && (linkOf(b.chip) === 'serial' ? hasSerial : hasUsb);
+
+// ---- Write plan ----
+
+let planCache: { image: Img; keep: boolean; verdict: PlanVerdict } | null = null;
+
+/** The write plan of the ESP image in hand, or null for an RP2350 board or no image. */
+function espPlan(): PlanVerdict | null {
+  const img = st.image;
+  const chip = st.board.chip;
+  if (!img || chip === 'rp2350') return null;
+  if (planCache?.image !== img || planCache.keep !== st.keep) {
+    planCache = { image: img, keep: st.keep, verdict: planWrite(img.bytes, BOOTLOADER_OFFSET[chip], st.keep) };
+  }
+  return planCache.verdict;
+}
+
+const keptText = (v: PlanVerdict | null): string => (v?.ok ? v.plan.kept.map((k) => `${k.name} ${hex(k.offset)}+${hex(k.size)}`).join(', ') : '');
 
 // ---- Rendering ----
 
@@ -182,9 +203,27 @@ function progressView(): { pct: number; text: string } {
   };
 }
 
+function renderKeep(v: PlanVerdict): string {
+  const dis = st.busy ? ' disabled' : '';
+  let html = `<label class="opt"><input type="checkbox" id="keep"${st.keep ? ' checked' : ''}${dis}>`
+    + `<span><b>${esc(tr('keep'))}</b> <small>${esc(tr('keepSub'))}</small></span></label>`;
+  if (!v.ok) {
+    return html + `<div class="note bad" id="keep-note" role="alert"><p>${esc(tr(`keep_${v.reason}` as Key, { x: v.detail }))}</p>`
+      + `<p>${esc(tr('keepRefused'))}</p></div>`;
+  }
+  const { plan } = v;
+  if (plan.table === null) return html + `<p class="note info" id="keep-note">${esc(tr('keepOff'))}</p>`;
+  if (!plan.kept.length) return html + `<p class="note info" id="keep-note">${esc(tr('keepNone', { x: hex(plan.table) }))}</p>`;
+  const items = plan.kept.map((k) => `<li>${esc(tr('keepItem', { name: k.name, sub: k.subtype, offset: hex(k.offset), n: fmtBytes(k.size) }))}</li>`).join('');
+  return html + `<div class="note info" id="keep-note"><p>${esc(tr('keepList', { x: hex(plan.table) }))}</p>`
+    + `<ul id="keep-list">${items}</ul><p>${esc(tr('keepOta'))}</p></div>`;
+}
+
 function renderWrite(): string {
-  const ready = !!st.image && !!st.conn && !st.busy;
+  const plan = espPlan();
+  const ready = !!st.image && !!st.conn && !st.busy && (plan === null || plan.ok);
   let html = `<p class="muted">${esc(tr('writeHint'))}</p>`;
+  if (plan) html += renderKeep(plan);
   html += `<button type="button" class="act primary" id="write"${ready ? '' : ' disabled'}>${esc(tr('write'))}</button>`;
   if (!st.image) html += ` <span class="muted small">${esc(tr('needImage'))}</span>`;
   else if (!st.conn) html += ` <span class="muted small">${esc(tr('needConnect'))}</span>`;
@@ -427,10 +466,16 @@ async function write(): Promise<void> {
   };
   try {
     if (conn.kind === 'esp') {
-      await conn.session.write(img.bytes, (w, total) => show('write', Math.round((w / total) * img.bytes.length), img.bytes.length));
-      show('verify', 0, img.bytes.length);
-      await conn.session.verify(img.bytes);
-      show('verify', img.bytes.length, img.bytes.length);
+      const plan = espPlan();
+      // A refused plan never reaches this point: WRITE stays disabled for it.
+      if (!plan?.ok) throw new StepError('write', new Error(plan ? plan.reason : 'no plan'));
+      const chunks = plan.plan.ranges.map((r) => ({ address: r.offset, data: img.bytes.subarray(r.offset, r.offset + r.size) }));
+      const total = chunks.reduce((n, c) => n + c.data.length, 0);
+      for (const c of chunks) log(`write 0x${c.address.toString(16)}+0x${c.data.length.toString(16)}`);
+      await conn.session.write(chunks, (done) => show('write', done, total));
+      show('verify', 0, total);
+      await conn.session.verify(chunks);
+      show('verify', total, total);
       show('reset', 0, 1);
       await conn.session.reset();
     } else {
@@ -450,7 +495,8 @@ async function write(): Promise<void> {
     }
     st.conn = null;
     st.connLabel = '';
-    st.result = { kind: 'ok', text: tr('done', { file: img.name, s: ((performance.now() - t0) / 1000).toFixed(1) }) };
+    const kept = keptText(conn.kind === 'esp' ? espPlan() : null);
+    st.result = { kind: 'ok', text: tr('done', { file: img.name, s: ((performance.now() - t0) / 1000).toFixed(1) }) + (kept ? ` ${tr('doneKept', { x: kept })}` : '') };
   } catch (e) {
     st.result = failNote(e);
     await dropConn();
@@ -468,6 +514,7 @@ function onChange(ev: Event): void {
     const b = boardById(el.value);
     if (!b || st.busy) return;
     st.board = b;
+    st.keep = true;
     pickTag();
     st.connNote = null;
     st.bootselNote = null;
@@ -485,6 +532,11 @@ function onChange(ev: Event): void {
     st.tag = (el as unknown as HTMLSelectElement).value;
     st.chosenTag = st.tag;
     void loadReleaseImage();
+  } else if (el.id === 'keep') {
+    if (st.busy) return;
+    st.keep = el.checked;
+    st.result = null;
+    render();
   } else if (el.id === 'file' && el.files?.[0]) {
     void loadFile(el.files[0]);
   }
