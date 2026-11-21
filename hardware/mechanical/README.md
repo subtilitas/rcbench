@@ -19,6 +19,8 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `core2350b.py` | spec of the Waveshare Core2350B and its USB adapter board |
 | `es3c28p.py` | spec of the LCDWIKI ES3C28P, the display node's board: 2.8" display, ESP32-S3, sockets |
 | `rp2350_can.py`, `ina3221_module.py`, `dcdc_buck_mini.py`, `usbc_pd_trigger.py` | specs of 4 module boards, part by part: Waveshare RP2350-CAN, INA3221 board, Mini560 buck converter, USB-C PD trigger board |
+| `matek_mbec12s.py` | spec of the Matek mBEC12S buck converter, 6V to 60V in |
+| `ina228_node.py` | layout of the remote INA228 sensor node: INA228 module, buck converter and display in place |
 | `rbmod_v2.py` | spec of the rbmod carrier board, version 2: with its SMD parts, and with its connectors and modules |
 | `_read_kicad_pcb.py` | reads a KiCad board file's outline, holes, footprints, and the pads, tracks and vias of its 2 outer layers into a data file; the copper needs shapely |
 | `_rbmod_v2_data.py` | outline, holes, footprints and outer copper of the rbmod board, version 2, written by `_read_kicad_pcb.py` |
@@ -684,6 +686,53 @@ Limits:
   to the board, 3 chip parts of 0402 beside RESET that the photos show
   and the STEP file lacks, and the notches the panel's tabs leave in the
   edges.
+
+## Remote INA228 sensor node, layout
+
+The boards of the remote sensor node in the places a case will hold
+them: the [INA228 module](#ina228-module-with-xt90-connectors) at the
+bottom, the [display board](#display-node-board-lcdwiki-es3c28p) on top,
+a Matek mBEC12S buck converter between them. The node has no cell and no
+charger board: the converter feeds it with 5V from the measured line of
+6V to 60V. No part is changed; each is the model of its own spec, moved
+and turned. No case is drawn.
+
+| | |
+| --- | --- |
+| ![Sensor node layout](renders/ina228_node_layout.png) | ![Matek mBEC12S](renders/matek_mbec12s.png) |
+| `ina228_node_layout.step` | `matek_mbec12s.step` |
+
+| File | Content | Size, mm | Origin |
+| --- | --- | --- | --- |
+| `ina228_node_layout.step` | INA228 module, buck converter, display board; 1139 solids, 10.3MB | 86.4 x 50.0 x 23.7 | the INA228 module's: header pin 1 on the board's underside |
+| `matek_mbec12s.step` | Matek mBEC12S, black: 4 edge pads OUT, G, G, IN 2.54 apart, inductor with the print 100, diode SS56, converter chip, 3 capacitors, LED, 13 chip parts, 2 voltage pads, the print of both sides; 147 solids, 1.8MB | 18.0 x 15.0, 1.2 thick; 4.5 over all | the pad OUT on the board's edge, on the underside |
+
+| Part | x, mm | y, mm | z, mm |
+| --- | --- | --- | --- |
+| INA228 module | -58.4 to 25.0 | -4.2 to 44.4 | -1.1 to 11.5 |
+| Buck converter | -30.0 to -12.0 | 29.0 to 44.0 | 3.1 to 7.65 |
+| Display board | -59.1 to 27.3 | -4.9 to 45.1 | 12.0 to 22.6 |
+
+- The shunt with the minus bar (y 10.0 to 18.1) and the plus bar (y 22.5
+  to 27.6, its solder to 28.5 on the underside) carry the whole current.
+  The converter lies beside them, 0.5mm past the plus bar's solder and
+  1.5mm over the board, between the 2 connector housings. The strip it
+  lies in is 15.9mm wide, the converter 15.0mm. Its 4 pads face the plug
+  half.
+- The display's long side runs along the INA228 board's long side, the
+  centers of the 2 boards over each other, its USB Type-C socket at the
+  socket half's end. Its lowest part is 0.5mm over the connector
+  housings, which end 11.5mm over the board's underside.
+- Not drawn: wires and anything that holds the parts.
+
+The converter is drawn from 6 seller pictures, none in the repository:
+a top view with the dimensions 18mm, 15mm and 2.54mm printed on it, and
+a view of the underside. Part places are read from the top view by eye
+at 23px/mm, within about 0.5mm. Sellers' listings give 18 x 15 x 4.5mm
+and 2g. No height but the 4.5mm over all is known; the board's thickness
+is read off an angled picture. The half holes of the edge pads are not
+drawn. Output is 5V as delivered; a solder bridge on the pad 9V or 12V
+sets that voltage.
 
 ## Module boards of the rbmod carrier
 

@@ -35,7 +35,8 @@ MODELS = ("panel_7b", "ina228_xt90+ina228_xt90_case", "ina219_cjmcu219",
           "lipo_702030_380mah",
           "lipo_102540_1000mah", "servo_standard", "kst_x10", "wit_imu",
           "rbmod_v2_smd", "rbmod_v2", "rp2350_can", "ina3221_module",
-          "dcdc_buck_mini", "usbc_pd_trigger")
+          "dcdc_buck_mini", "usbc_pd_trigger", "matek_mbec12s",
+          "ina228_node_layout")
 SHARED = 1e-6           # mm3
 
 

@@ -8,6 +8,15 @@ history is in git.
 
 ### Added
 
+- `hardware/mechanical/`: `ina228_node_layout.step`, the boards of the
+  remote INA228 sensor node in place: the INA228 module with its 2 XT90PW
+  connectors at the bottom, the ES3C28P display board 0.5mm over the
+  connector housings, a Matek mBEC12S buck converter (6V to 60V in, 5V
+  out) beside the plus bar, not over the current path. 86.4mm x 50.0mm x
+  23.7mm over all, 1139 solids, no two sharing volume. `matek_mbec12s.step`
+  is the converter alone, 18.0mm x 15.0mm x 4.5mm, drawn from seller
+  pictures within about 0.5mm. No case is drawn
+  ([Mechanical parts](hardware/mechanical/README.md#remote-ina228-sensor-node-layout)).
 - `hardware/mechanical/`: the rbmod carrier's models carry the copper of
   the 2 outer layers, read from the board file by `_read_kicad_pcb.py`:
   280 pads, gold for their ENEPIG finish, and the tracks and vias in a
