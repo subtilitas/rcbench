@@ -4334,7 +4334,7 @@ Jede Zeile zeigt ein Symbol, den Namen und rechtsbündig die Größe
 
 | Zustand | Bedeutung |
 |---|---|
-| FEST | ein vom Prüfstand verwendeter Ordner: die beiden Aufzeichnungsordner, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF`, `BENCH/ESCW/CONF`, `BENCH/BALANCE` und ihre übergeordneten Ordner, darunter `BENCH` und `USER`. UMBENENNEN und VERSCHIEBEN sind gesperrt, weil der Inhalt dadurch vom erwarteten Pfad verschoben würde. NEU kann diese Ordner anlegen; LÖSCHEN kann einen leeren entfernen. Jeder Schreiber legt seinen Ordner vor dem Schreiben erneut an. Leser behandeln einen fehlenden Ordner wie auf einer neuen Karte |
+| FEST | ein vom Prüfstand verwendeter Ordner: die beiden Aufzeichnungsordner, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF`, `BENCH/ESCW/CONF`, `BENCH/BALANCE`, `BENCH/SETUP` und ihre übergeordneten Ordner, darunter `BENCH` und `USER`. UMBENENNEN und VERSCHIEBEN sind gesperrt, weil der Inhalt dadurch vom erwarteten Pfad verschoben würde. NEU kann diese Ordner anlegen; LÖSCHEN kann einen leeren entfernen. Jeder Schreiber legt seinen Ordner vor dem Schreiben erneut an. Leser behandeln einen fehlenden Ordner wie auf einer neuen Karte |
 | GESPERRT | die Vermerke der Programmierungen, `BENCH/KST/CONF/KST.TXT`, `BENCH/HITEC/CONF/HITEC.TXT` und `BENCH/ESCW/CONF/ESCW.TXT`, sowie ihre Dateien `KST.NEW`, `HITEC.NEW` und `ESCW.NEW` während des Schreibens. Nur INFO ist verfügbar |
 | WIRD GESCHRIEBEN | eine im Logger offene Datei. Nur INFO ist verfügbar |
 
@@ -6982,13 +6982,189 @@ Ordner gilt weiter; rechts vom Titel steht der Grund:
 | mehr als 2 Ordner | `A/B/C` (`A/B` wird genommen) | `Höchstens 2 Ordnerebenen` |
 | ein Zeichen außer A-Z, 0-9, `_` und `-` | `MY LOGS` | `Nur A-Z, 0-9, _ und -` |
 | ein Gerätename von Windows: CON, PRN, AUX, NUL, COM1 bis COM9, LPT1 bis LPT9 | `AUX/LOGS` | `Reservierter Name` |
-| ein Ordner der eigenen Dateien des Prüfstands: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW`, `BENCH/BALANCE` | `BENCH/KST` (`BENCH/KSTX` wird genommen) | `Für Prüfstand-Dateien reserviert` |
+| ein Ordner der eigenen Dateien des Prüfstands: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW`, `BENCH/BALANCE`, `BENCH/SETUP` | `BENCH/KST` (`BENCH/KSTX` wird genommen) | `Für Prüfstand-Dateien reserviert` |
 
 Jeder Ordnername, den das Panel nimmt, ist ein kurzer 8.3-Name von FAT (File
 Allocation Table), auf jedem Computer derselbe. Der längste Ordner hat 17
 Zeichen, `ABCDEFGH/12345678`. Ein ungültiger gespeicherter Ordner, etwa von einer anderen Firmware,
 wird nicht verwendet. Die Aufzeichnungen gehen stattdessen in den
 Vorgabeordner ihrer Art, und LOGS listet diesen Ordner.
+
+### SD CARD: die Sicherung der Einstellungen
+
+Das Panel hält seine Einstellungen im NVS (non-volatile storage) seines
+eigenen Flash. Ein vollständiges Flashen des Panels löscht das NVS und mit
+ihm die Bindungen von Dial, Knoten und IMU. Die Sicherung legt eine Kopie
+auf die Karte.
+
+![SD CARD am Ende der Liste: EINSTELLUNGEN SICHERN geschrieben](img/de/setup-card-backup.png)
+
+| Zeile | Antippen | Wert | Nimmt kein Antippen |
+| --- | --- | --- | --- |
+| Einstellungen sichern | schreibt die gespeicherten Einstellungen als `BENCH/SETUP/SETTINGS.TXT`; jedes Antippen ersetzt sie | `SCHREIBT`, `GESCHRIEBEN`, `KARTE VOLL` oder `FEHLER, CODE n` (Codes unten) | `Keine Karte`; `Änderungen nicht gespeichert: erst SAVE`, solange SAVE angeboten ist: Die Datei enthält, was der Speicher enthält, keine Änderung |
+| Einstellungen laden | öffnet BACKUP | keiner | `Nicht bei ARMED` |
+
+**Die Dateien.** Alle liegen in `BENCH/SETUP`, einem FEST-Ordner von
+[Files](#files):
+
+| Datei | Geschrieben |
+| --- | --- |
+| `SETTINGS.TXT` | von Einstellungen sichern |
+| `AUTO1.TXT` | bei jedem Schreiben der Einstellungen ins NVS mit eingesteckter Karte: die neueste Kopie |
+| `AUTO2.TXT`, `AUTO3.TXT` | die Kopien davor; die nächste Kopie entfernt `AUTO3.TXT` |
+| `AUTO.TMP`, `SETTINGS.TMP` | eine Datei, während sie geschrieben wird |
+
+Eine Datei wird zuerst ganz unter ihrem `.TMP`-Namen geschrieben. Erst dann
+rücken die Kopien weiter: `AUTO3.TXT` entfällt, `AUTO2.TXT` wird
+`AUTO3.TXT`, `AUTO1.TXT` wird `AUTO2.TXT`, die neue Datei wird `AUTO1.TXT`.
+Eine volle Karte oder ein fehlgeschlagenes Schreiben lässt die Kopien, wie
+sie waren. Geschrieben wird in der Logger-Task neben den Logs; Seiten und
+Control-Task warten nicht auf die Karte.
+
+**Die automatische Kopie.** Ein Speichern, das das NVS erreicht, während
+eine Karte eingehängt ist, schuldet eine Kopie; ein Speichern ohne Karte
+schreibt keine, und eine später eingesteckte Karte bekommt dafür keine.
+Eine Kopie, die die Karte nicht erreicht, steht einmal im Meldeband:
+`Einstellungskopie nicht geschrieben: Die Karte ist voll.` oder
+`Einstellungskopie nicht geschrieben: Karten-Code n.` Der nächste Fehler
+steht erst nach einer gelungenen Kopie wieder dort. Eine fehlgeschlagene
+Kopie ist kein Fehler des Prüfstands: Ausgänge, Netzteil und ARMED bleiben,
+wie sie sind. Sie kostet nichts, was der Prüfstand treibt, und die
+Einstellungen selbst liegen im NVS.
+
+**BACKUP.** Einstellungen laden öffnet die Seite, und sie liest den Ordner
+jedes Mal neu:
+
+![BACKUP: die Einstellungsdateien der Karte, die neueste gewählt](img/de/setup-backup.png)
+
+- Links eine Karte je Datei: ihr Name, das Datum ihrer `Written:`-Zeile und
+  die Panel-Version ihrer `Panel:`-Zeile. `Datum unbekannt` steht für eine
+  Datei, die geschrieben wurde, als die Uhr des Panels nicht gestellt war:
+  Das Panel hat keinen RTC-Baustein (real-time clock) und stellt seine Uhr
+  nur über eine NTP-Antwort (Network Time Protocol). Eine Datei, die keine
+  Einstellungsdatei ist, zeigt `Keine Einstellungsdatei: Code n` (Datei-Codes
+  unten).
+- Antippen wählt eine Datei. Rechts stehen Name, Datum und Version der
+  gewählten Datei.
+- 2s HALTEN ZUM LADEN lädt die gewählte Datei: 2s halten, wie bei jeder
+  Aktion, die viel ersetzt. Loslassen vor 2s zeigt `Halte 2s, um die
+  Einstellungsdatei zu laden.` im Meldeband. Die Taste nimmt keinen Druck
+  bei ARMED, ohne gewählte Datei und für eine Datei, die keine
+  Einstellungsdatei ist; die Zeile darüber nennt den Grund.
+- ZURÜCK oder das Home-Tag führt zurück zu SD CARD.
+
+Laden ersetzt alle Einstellungen: durch den Wert der Datei, wo eine Zeile
+einen gibt, sonst durch den Standardwert. Die Werte gelten sofort, wie eine
+Änderung, und das Speichern ins NVS wird angefordert: Es geschieht, sobald
+der Prüfstand ruht (siehe [Werte behalten](#werte-behalten)). Die Antwort
+steht an der Stelle der Liste:
+
+![Eine von Hand bearbeitete Datei geladen, drei Zeilen abgelehnt](img/de/setup-backup-loaded.png)
+
+`<Datei> geladen: n geändert, m abgelehnt`, dann jede abgelehnte Zeile:
+ihre Nummer, ihr Schlüssel, ihr Code und der Grund. Die ersten 16
+abgelehnten Zeilen bleiben erhalten; eine Zeile darunter zählt den Rest.
+Eine ganz abgelehnte Datei lädt nichts und zeigt `<Datei> abgelehnt: Code
+n, Zeile m.`
+
+**Das Angebot beim Start.** Ein Panel, das nur mit den Standardwerten
+startet (das NVS hielt keine Einstellungen oder nach einem Löschen die
+Standardwerte), liest beim ersten Einhängen der Karte deren neueste Datei.
+Hält diese andere Einstellungen, öffnet BACKUP über dem Menü, sobald der
+Prüfstand SAFE ist und das Menü zeigt:
+
+![Das Angebot beim Start](img/de/setup-backup-offer.png)
+
+Gewählt ist die neueste Datei: das späteste `Written:`-Datum, wo zwei
+Dateien eines haben, sonst `AUTO1.TXT`, `AUTO2.TXT`, `AUTO3.TXT`,
+`SETTINGS.TXT` in dieser Reihenfolge. 2s HALTEN ZUM LADEN lädt sie;
+ÜBERSPRINGEN oder das Home-Tag führt zurück ins Menü. Das Angebot kommt
+einmal je Start. Bis es beantwortet ist, wird keine automatische Kopie
+geschrieben, damit eine Kopie der Standardwerte keine gute Kopie
+weiterschiebt. Ein Speichern anderer Einstellungen, bevor das Angebot
+erscheint, beendet es.
+
+**Was die Datei enthält.** Jede Einstellung des Schemas (die Listen von
+SETUP, MOTOR & ESC > SETTINGS, SUPPLY, SERVO, die vier INA3221-Schlüssel
+von 0.21, die keine Liste zeigt, und die Einheiten) und jeden Text: den
+DUT-Namen, die beiden Aufzeichnungsordner und die Bindungen von IMU, Dial,
+Leistungsknoten und Balancierknoten, je eine Adresse und ein Name. Sensor
+SCL wird nicht geschrieben: Er folgt Sensor SDA.
+
+**Was sie nicht enthält.** Das WLAN-Heimnetz und sein Passwort,
+HOTSPOT-PASSWORT, ZUGANGSCODE und den Schalter des Zugangscodes. Sie liegen
+in einem anderen NVS-Speicher und bleiben draußen: Eine Karte wird von
+jedem Computer gelesen, in den sie kommt, und eine geladene Datei darf
+weder den Zugangscode abschalten noch ein Netz nennen, dem das Panel
+beitritt. BACKUP sagt das unter den Dateien. Nach einem vollständigen
+Flashen werden sie auf [WLAN](#wlan) neu gesetzt. Die Notizen des Panels
+zu einem Update (`fw_ota`) sind keine Einstellungen und bleiben ebenfalls
+draußen.
+
+**Das Format, Version 1.** Text, den ein Mensch liest und bearbeitet, eine
+Zeile je Einstellung:
+
+```
+rcbench settings, format 1
+Panel: 0.23.15
+Written: 2026-11-21 14:05:33 UTC
+# Not in this file: the Wi-Fi home network and its password,
+# HOTSPOT PASSWORD and ACCESS CODE.
+# One line a setting: <key> = <value>.  A setting without a line loads
+# its default.  Keep the last line, end.
+pack_cells = 6                  # Cells, 1 to 14S
+theme = DARK                    # Theme: DARK, LIGHT
+plot_pan1 = OFF                 # One finger pans: ON, OFF
+srv_dut = "SERVO"               # Device under test, for the report
+dial_ble = "D4:F9:8D:00:3A:10 R" # Bound Dial: BLE address and its type
+end
+```
+
+- Der Schlüssel ist der NVS-Schlüssel der Einstellung; der Kommentar nach
+  `#` nennt die Einstellung auf Englisch und ihren Bereich oder ihre
+  Optionen.
+- Eine Zahl hat so viele Nachkommastellen wie ihr Schritt; ein Schalter ist
+  `ON` oder `OFF`; eine Auswahl der englische Text ihrer Option; ein Text
+  steht in doppelten Anführungszeichen, `\"` und `\\` für ein
+  Anführungszeichen und einen Backslash, höchstens 23 Bytes.
+- Schlüssel und die Wörter von Schalter und Auswahl werden ohne Rücksicht
+  auf Groß- und Kleinschreibung gelesen. Leerzeichen und Tabs um Schlüssel
+  und Wert, leere Zeilen, Kommentare, LF und CR LF sowie eine
+  UTF-8-Bytereihenfolgemarke werden angenommen.
+- Die letzte Zeile, die nicht leer und kein Kommentar ist, lautet `end`.
+  Einer abgeschnittenen Datei fehlt sie, und sie wird ganz abgelehnt.
+- Eine Datei hat höchstens 24.576 Bytes; eine vom Panel geschriebene etwa
+  12.100.
+
+| Datei-Code | Ganz abgelehnt |
+| --- | --- |
+| 2 | mehr als 24.576 Bytes |
+| 3 | Zeile 1 ist nicht `rcbench settings, format n` |
+| 4 | das Format ist keine Zahl von 1 bis 999 |
+| 5 | ein Format über 1, von einem neueren Panel geschrieben |
+| 6 | kein `end` als letzte Zeile: Die Datei ist abgeschnitten |
+
+| Zeilen-Code | Grund | Die Zeile wird übersprungen, weil |
+| --- | --- | --- |
+| 1 | nicht Schlüssel = Wert | kein `=`, kein Schlüssel oder eine andere `<Wort>:`-Zeile |
+| 2 | unbekannter Schlüssel | keine Einstellung diesen Schlüssel hat |
+| 3 | Schlüssel doppelt | der Schlüssel schon eine Zeile hatte; die erste zählt |
+| 4 | Wert nicht lesbar | keine Zahl, keine Option der Auswahl, nicht ON oder OFF, ein Text ohne Anführungszeichen |
+| 5 | außerhalb des Bereichs | außerhalb des Bereichs, um einen halben Schritt oder mehr neben dem Raster, oder ein Pin, den die Zeile nicht nimmt |
+| 6 | Text zu lang | ein Text über 23 Bytes |
+| 7 | folgt einer anderen | `sns_scl`, der Sensor SDA folgt |
+| 8 | belegt, bleibt | eine Task die Einstellung hält, etwa der Servo-Programmierer einen Pin seines Ports; die Einstellung behält ihren Wert |
+
+| Karten-Code | Bedeutung |
+| --- | --- |
+| 1 | keine Karte |
+| 2 | die Karte ist voll |
+| 3 | die Karte nimmt keine Datei: schreibgeschützt, oder eine Datei trägt den Namen eines Ordners |
+| 4 | Schreiben, Umbenennen oder Entfernen fehlgeschlagen |
+| 5 | Lesen fehlgeschlagen |
+| 6 | die Datei ist weg |
+| 7 | die Datei hat mehr als 24.576 Bytes |
+| 8 | eine Anfrage, die der Ordner nicht nimmt |
 
 ### Werte behalten
 

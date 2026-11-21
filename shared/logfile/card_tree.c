@@ -40,8 +40,8 @@ card_dir_t card_make_dirs(const char *dir, card_make_fn make, void *ctx)
 
 /**
  * @brief The deepest folder of each area the bench keeps its own files in
- *        (card_bench_dir()): the programmers' CONF folders and the balance
- *        node's folder.
+ *        (card_bench_dir()): the programmers' CONF folders, the balance
+ *        node's folder and the settings' folder.
  *
  * A log folder in an area (BENCH/KST, BENCH/BALANCE) or below is refused.
  */
@@ -51,6 +51,7 @@ static const char *const k_bench_own[] = {
     CARD_HITEC_CONF,
     CARD_ESCW_CONF,
     CARD_BALANCE,
+    CARD_SETUP,
 };
 
 const char *card_bench_dir(size_t i)
@@ -103,7 +104,7 @@ static bool is_device(const char *name, size_t len)
  *
  * @param path  The upper-case path, folders separated by "/".
  * @return true for BENCH/ESC, BENCH/KST, BENCH/HITEC, BENCH/ESCW,
- *         BENCH/BALANCE and below.
+ *         BENCH/BALANCE, BENCH/SETUP and below.
  */
 static bool is_bench(const char *path)
 {

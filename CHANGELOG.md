@@ -8,6 +8,22 @@ history is in git.
 
 ### Added
 
+- Settings backup on the card, `BENCH/SETUP`. SETUP > SD CARD ends on Save
+  settings, which writes the stored settings as `SETTINGS.TXT`, and Load
+  settings, which opens BACKUP: the card's settings files with their date
+  and panel version, and HOLD 2s TO LOAD. A load replaces every setting
+  (the file's value, or the default where the file has none), lists each
+  refused line with its number, key and code, and asks for the save to NVS
+  (non-volatile storage). Each save to NVS with a card in also writes
+  `AUTO1.TXT` and moves the older copies on to `AUTO2.TXT` and `AUTO3.TXT`;
+  a copy that does not reach the card shows once in the alert band and
+  switches no output off. A panel that starts on the defaults offers the
+  card's newest file over the menu once SAFE. The file is text, format 1:
+  one `<key> = <value>` line a setting, the bindings of the IMU, the Dial
+  and the nodes among them; the Wi-Fi home network, its password, HOTSPOT
+  PASSWORD and ACCESS CODE are not in it
+  ([Screens](docs/Screens.md#sd-card-the-settings-backup)).
+- The SD CARD tile reads `LOGS, BROWSER WRITES, BACKUP`.
 - Web flasher at `/rcbench/flash/` on GitHub Pages (`flasher/`), English
   and German, Chrome or Edge on a desktop computer. It writes the panel
   (ESP32-P4), the display node and the M5Stack Dial (ESP32-S3), the power

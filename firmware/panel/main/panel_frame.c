@@ -41,6 +41,7 @@
 #include "panel_imu.h"
 #include "panel_main.h"
 #include "panel_perf.h"
+#include "panel_sbk.h"
 #include "panel_shot.h"
 #include "panel_trial.h"
 #include "pdmini.h"
@@ -896,8 +897,11 @@ void panel_frame_loop(void)
          */
         const bool quiet =
             flash_gate_open(arm_live_or_coming(), supplies_live_or_coming());
-        (void)settings_save_tick(quiet && !s_artbusy
-                                 && !atomic_load(&s_keeping));
+        const bool committed = settings_save_tick(quiet && !s_artbusy
+                                                  && !atomic_load(&s_keeping));
+        /* And the settings backup: a save to NVS just made is copied to
+         * the card, by the logger task (panel_sbk.h). */
+        panel_sbk_frame(committed, armed_now);
         /* And the ramp, from the task that owns the values, for the control
          * task to read on its next pump. */
         publish_throttle_ramp();

@@ -137,6 +137,10 @@ set(SRCS
     wireless_pnode.c
     wl_search.c
     wl_search_draw.c
+    sbk_ctl.c
+    sbk_screen.c
+    sbk_draw.c
+    sbk_rows.c
     settings_panes.c
     sensors_rows.c
     outputs_screen.c
