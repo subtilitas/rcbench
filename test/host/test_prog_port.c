@@ -95,9 +95,10 @@ TEST_CASE(a_page_starts_with_no_pin_on_any_port)
     CHECK_EQ(prog_port_pins(&pg), 0u);
     CHECK_EQ(prog_port_pwm(&pg), 0u);
     CHECK_EQ(prog_port_target(&pg), 0u);
-    /* A port's channel is above the CHANNELS page and the bench throttle. */
-    CHECK_EQ(prog_port_channel(0u), 9u);
-    CHECK_EQ(prog_port_channel(3u), 12u);
+    /* A port's channel is above the CHANNELS and CHANNELS_HI pages and the
+     * bench throttle's channel 16. */
+    CHECK_EQ(prog_port_channel(0u), 17u);
+    CHECK_EQ(prog_port_channel(3u), 20u);
     CHECK(prog_port_channel(LINK_PG_PORTS_MAX - 1u) < OUT_MAX_CHANNELS);
 }
 
@@ -172,10 +173,10 @@ TEST_CASE(the_kept_set_is_restored_through_the_pages_checks)
     CHECK_EQ(reg(LINK_PG_REG(0u, LINK_PG_SLEW)), 300u);
     CHECK_EQ(reg(LINK_PG_REG(0u, LINK_PG_MIN_US)), 400u);
     CHECK_EQ(reg(LINK_PG_REG(0u, LINK_PG_MAX_US)), 2500u);
-    CHECK_EQ(o.channel[9].min_us, 400u);
-    CHECK_EQ(o.channel[9].max_us, 2500u);
-    CHECK_EQ(o.channel[9].slew_per_s, 300u);
-    CHECK_EQ(o.channel[9].role, OUT_ROLE_SURFACE);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].min_us, 400u);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].max_us, 2500u);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].slew_per_s, 300u);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].role, OUT_ROLE_SURFACE);
     CHECK_EQ(reg(PIN1), 14u);
     CHECK_EQ(reg(LINK_PG_REG(1u, LINK_PG_MIN_US)), 1000u);
     CHECK_EQ(reg(LINK_PG_REG(1u, LINK_PG_MAX_US)), 2000u);
@@ -415,25 +416,25 @@ TEST_CASE(a_command_is_clamped_and_reaches_the_ports_channel)
     const uint16_t cmd = 750u;
     CHECK_EQ(prog_port_write(&pg, LINK_PG_REG(0u, LINK_PG_CMD), 1u, &cmd, &o,
                              0u, false, 1234u), 0u);
-    CHECK_EQ(o.channel[9].command, 750u);
-    CHECK_EQ(o.channel[9].last_command_ms, 1234u);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].command, 750u);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].last_command_ms, 1234u);
     CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_CMD), 1000u), 0u);
     CHECK_EQ(reg(LINK_PG_REG(0u, LINK_PG_CMD)), 1000u);
     CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_CMD), 1001u), 0u);
     CHECK_EQ(reg(LINK_PG_REG(0u, LINK_PG_CMD)), 1000u);
     CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_CMD), 0xFFFFu), 0u);
     CHECK_EQ(reg(LINK_PG_REG(0u, LINK_PG_CMD)), 1000u);
-    CHECK_EQ(o.channel[9].command, 1000u);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].command, 1000u);
     CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_CMD), 0u), 0u);
-    CHECK_EQ(o.channel[9].command, 0u);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].command, 0u);
     /* No other channel hears it. */
     CHECK_EQ(o.channel[0].last_command_ms, 0u);
     CHECK_EQ(o.channel[8].last_command_ms, 0u);
-    CHECK_EQ(o.channel[10].last_command_ms, 0u);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0 + 1u].last_command_ms, 0u);
     /* Armed too: a command is what an armed bank is for. */
     outputs_arm(&o, true, 0u);
     CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_CMD), 400u), 0u);
-    CHECK_EQ(o.channel[9].command, 400u);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].command, 400u);
 }
 
 TEST_CASE(the_endpoints_and_the_slew_are_held_to_the_channels_range)
@@ -447,19 +448,19 @@ TEST_CASE(the_endpoints_and_the_slew_are_held_to_the_channels_range)
     CHECK_EQ(reg(LINK_PG_REG(0u, LINK_PG_MAX_US)), 2000u);
     CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_MIN_US), 400u), 0u);
     CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_MAX_US), 2500u), 0u);
-    CHECK_EQ(o.channel[9].min_us, 400u);
-    CHECK_EQ(o.channel[9].max_us, 2500u);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].min_us, 400u);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].max_us, 2500u);
     CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_SLEW), 0xFFFFu), LINK_NACK_BAD_VALUE);
     CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_SLEW), LINK_CC_SLEW_MAX), 0u);
-    CHECK_EQ(o.channel[9].slew_per_s, LINK_CC_SLEW_MAX);
-    CHECK_EQ(o.channel[9].role, OUT_ROLE_SURFACE);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].slew_per_s, LINK_CC_SLEW_MAX);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].role, OUT_ROLE_SURFACE);
     /* A reversed pair is a reversed servo to the page; the channel renders
      * between the two as the CHANNELS page's does. */
     CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_MIN_US), 2500u), 0u);
     CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_MAX_US), 400u), 0u);
     CHECK_EQ(reg(LINK_PG_REG(0u, LINK_PG_MIN_US)), 2500u);
-    CHECK_EQ(o.channel[9].min_us, 400u);
-    CHECK_EQ(o.channel[9].max_us, 2500u);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].min_us, 400u);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].max_us, 2500u);
     /* Armed too. */
     outputs_arm(&o, true, 0u);
     CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_MIN_US), 900u), 0u);
@@ -475,7 +476,7 @@ TEST_CASE(a_slew_above_the_maximum_is_refused_and_stores_nothing)
     CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_SLEW), 0u), 0u);
     CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_SLEW), LINK_CC_SLEW_MAX), 0u);
     CHECK_EQ(reg(LINK_PG_REG(0u, LINK_PG_SLEW)), LINK_CC_SLEW_MAX);
-    CHECK_EQ(o.channel[9].slew_per_s, LINK_CC_SLEW_MAX);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].slew_per_s, LINK_CC_SLEW_MAX);
     const prog_port_t was = pg;
     const outputs_t bank = o;
     const uint16_t bad[] = { LINK_CC_SLEW_MAX + 1u, 10000u, 0xFFFFu };
@@ -492,7 +493,7 @@ TEST_CASE(a_slew_above_the_maximum_is_refused_and_stores_nothing)
     CHECK_EQ(memcmp(&bank, &o, sizeof(o)), 0);
     /* The last port's slew is judged as well. */
     CHECK_EQ(put(slew1, LINK_CC_SLEW_MAX), 0u);
-    CHECK_EQ(o.channel[10].slew_per_s, LINK_CC_SLEW_MAX);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0 + 1u].slew_per_s, LINK_CC_SLEW_MAX);
 }
 
 /* A slew kept above the maximum by a build before the limit starts as the
@@ -510,7 +511,7 @@ TEST_CASE(a_kept_slew_above_the_maximum_starts_as_the_maximum)
         kept[PROG_PORT_KEPT + 1u] = LINK_CC_SLEW_MAX;
         prog_port_restore_fn(&pg, kept, ALL_PWM, &o, 0u);
         CHECK_EQ(reg(LINK_PG_REG(0u, LINK_PG_SLEW)), LINK_CC_SLEW_MAX);
-        CHECK_EQ(o.channel[9].slew_per_s, LINK_CC_SLEW_MAX);
+        CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].slew_per_s, LINK_CC_SLEW_MAX);
         CHECK_EQ(reg(LINK_PG_REG(1u, LINK_PG_SLEW)), LINK_CC_SLEW_MAX);
         /* The rest of the port as kept. */
         CHECK_EQ(reg(PIN0), 13u);
@@ -539,10 +540,10 @@ TEST_CASE(a_refused_write_stores_none_of_its_registers)
              0u);
     CHECK_EQ(reg(LINK_PG_PWM), 1u);
     CHECK_EQ(reg(LINK_PG_TARGET), 1u);
-    CHECK_EQ(o.channel[9].command, 900u);
-    CHECK_EQ(o.channel[9].slew_per_s, 77u);
-    CHECK_EQ(o.channel[9].min_us, 800u);
-    CHECK_EQ(o.channel[9].max_us, 2200u);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].command, 900u);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].slew_per_s, 77u);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].min_us, 800u);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].max_us, 2200u);
     CHECK_EQ(reg(LINK_PG_FLAGS), LINK_PG_F_BOUND(0u));
 }
 
@@ -599,7 +600,7 @@ TEST_CASE(read_only_registers_the_page_end_and_absent_ports_are_refused)
  * takes a pin. */
 TEST_CASE(a_slot_is_refused_on_a_ports_pin_and_beside_it)
 {
-    uint16_t slots[LINK_OS_COUNT];
+    uint16_t slots[LINK_OS_ALL] = { 0 };
     memset(slots, 0, sizeof(slots));
     uint16_t *last = &slots[(LINK_OUT_SLOTS - 1u) * LINK_OS_STRIDE];
 
@@ -648,7 +649,7 @@ TEST_CASE(a_slot_is_refused_on_a_ports_pin_and_beside_it)
 /* A slot's channels stop below the ports' bank channels, at both ends. */
 TEST_CASE(a_slot_is_refused_on_a_ports_bank_channel)
 {
-    uint16_t slots[LINK_OS_COUNT];
+    uint16_t slots[LINK_OS_ALL] = { 0 };
     memset(slots, 0, sizeof(slots));
     uint16_t *last = &slots[(LINK_OUT_SLOTS - 1u) * LINK_OS_STRIDE];
     const uint8_t lo = (uint8_t)PROG_PORT_CHANNEL0;
@@ -719,14 +720,14 @@ TEST_CASE(a_write_is_taken_back_whole)
     CHECK_EQ(prog_port_write(&pg, PIN0, LINK_PG_STRIDE, frame, &o, 0u, false,
                              0u), 0u);
     CHECK_EQ(prog_port_pin(&pg, 0u), 14u);
-    CHECK_EQ(o.channel[9].min_us, 600u);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].min_us, 600u);
     prog_port_revert(&pg, &was, &o);
     CHECK_EQ(memcmp(&was, &pg, sizeof(pg)), 0);
     CHECK_EQ(prog_port_pin(&pg, 0u), 13u);
     CHECK_EQ(reg(LINK_PG_FLAGS), LINK_PG_F_BOUND(0u));
-    CHECK_EQ(o.channel[9].slew_per_s, 200u);
-    CHECK_EQ(o.channel[9].min_us, 1000u);
-    CHECK_EQ(o.channel[9].max_us, 2000u);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].slew_per_s, 200u);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].min_us, 1000u);
+    CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].max_us, 2000u);
     prog_port_revert(NULL, &was, &o);
     prog_port_revert(&pg, NULL, &o);
     prog_port_revert(&pg, &was, NULL);
@@ -770,7 +771,7 @@ TEST_CASE(a_pulsing_port_takes_no_endpoint_longer_than_its_frame)
         CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_MAX_US),
                      (uint16_t)(k[i].period - 1u)), 0u);
         CHECK_EQ(put(LINK_PG_PWM, 1u), 0u);
-        CHECK_EQ(prog_port_pwm_channels(&pg), (uint16_t)(1u << 9));
+        CHECK_EQ(prog_port_pwm_channels(&pg), (1uL << PROG_PORT_CHANNEL0));
         /* Pulsing: the period and one more are refused, on either end. */
         CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_MAX_US), k[i].period),
                  LINK_NACK_BAD_VALUE);
@@ -779,7 +780,7 @@ TEST_CASE(a_pulsing_port_takes_no_endpoint_longer_than_its_frame)
         CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_MIN_US), k[i].period),
                  LINK_NACK_BAD_VALUE);
         CHECK_EQ(reg(LINK_PG_REG(0u, LINK_PG_MAX_US)), k[i].period - 1u);
-        CHECK_EQ(o.channel[9].max_us, k[i].period - 1u);
+        CHECK_EQ(o.channel[PROG_PORT_CHANNEL0].max_us, k[i].period - 1u);
         /* The pulse and its range in one frame are judged together. */
         const uint16_t frame[2] = { 1u, 0u };
         CHECK_EQ(prog_port_write(&pg, LINK_PG_PWM, 1u, frame, &o, 0u, false,
@@ -802,7 +803,8 @@ TEST_CASE(a_pulsing_port_takes_no_endpoint_longer_than_its_frame)
     prog_port_rate(&pg, 50u);
     CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_MAX_US), 2500u), 0u);
     CHECK_EQ(put(LINK_PG_PWM, 3u), 0u);
-    CHECK_EQ(prog_port_pwm_channels(&pg), (uint16_t)((1u << 9) | (1u << 10)));
+    CHECK_EQ(prog_port_pwm_channels(&pg),
+             (1uL << PROG_PORT_CHANNEL0) | (1uL << (PROG_PORT_CHANNEL0 + 1u)));
     /* Every port that pulses is judged at its own rate: port 0, the
      * TARGET at 400Hz, at 2500us refuses a write to port 1 until it is
      * shortened; port 1 stays at 50Hz and takes 2500us. */
@@ -950,7 +952,8 @@ TEST_CASE(a_pin_does_not_move_onto_the_slice_of_a_target_at_its_own_rate)
     CHECK_EQ(put(PIN1, 28u), 0u);
     prog_port_bound(&pg, 3u);
     CHECK_EQ(prog_port_sliced_channels(&pg),
-             (uint16_t)((1u << 9) | (1u << 10)));
+             (1uL << PROG_PORT_CHANNEL0)
+                 | (1uL << (PROG_PORT_CHANNEL0 + 1u)));
     CHECK_EQ(put(PIN1, 14u), 0u);
     prog_port_rate(&pg, 0u);
     CHECK_EQ(put(PIN1, 28u), 0u);

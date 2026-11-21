@@ -908,8 +908,8 @@ gfx_color_t outputs_result_color(void)
  */
 static uint8_t pins_cap(const outbind_t *b, const outbind_proto_t *p)
 {
-    uint8_t cap = (p->max_pins < OUT_MAX_SLOTS) ? p->max_pins
-                                                : (uint8_t)OUT_MAX_SLOTS;
+    uint8_t cap = (p->max_pins < LINK_OUT_SLOTS) ? p->max_pins
+                                                 : (uint8_t)LINK_OUT_SLOTS;
     const uint8_t cells = outbind_cell_count(b->board);
     if (outbind_roles(b->board) != NULL && cells < cap) {
         cap = cells;

@@ -720,16 +720,16 @@ uint8_t prog_port_pwm(const prog_port_t *p)
     return (p != NULL) ? (uint8_t)p->regs[LINK_PG_PWM] : 0u;
 }
 
-uint16_t prog_port_pwm_channels(const prog_port_t *p)
+uint32_t prog_port_pwm_channels(const prog_port_t *p)
 {
-    uint16_t ch = 0u;
+    uint32_t ch = 0u;
 
     if (p == NULL) {
         return 0u;
     }
     for (unsigned port = 0; port < p->count; ++port) {
         if ((p->regs[LINK_PG_PWM] & (1u << port)) != 0u) {
-            ch |= (uint16_t)(1u << prog_port_channel((uint8_t)port));
+            ch |= (uint32_t)1u << prog_port_channel((uint8_t)port);
         }
     }
     return ch;
@@ -750,9 +750,9 @@ uint16_t prog_port_port_hz(const prog_port_t *p, uint8_t port)
     return port_hz(p->regs[LINK_PG_TARGET], p->hz, port);
 }
 
-uint16_t prog_port_sliced_channels(const prog_port_t *p)
+uint32_t prog_port_sliced_channels(const prog_port_t *p)
 {
-    uint16_t ch = 0u;
+    uint32_t ch = 0u;
 
     if (p == NULL) {
         return 0u;
@@ -764,7 +764,7 @@ uint16_t prog_port_sliced_channels(const prog_port_t *p)
                 && out_pwm_same_slice(
                     (uint8_t)p->regs[REG(a, LINK_PG_PIN)],
                     (uint8_t)p->regs[REG(b, LINK_PG_PIN)])) {
-                ch |= (uint16_t)(1u << prog_port_channel((uint8_t)a));
+                ch |= (uint32_t)1u << prog_port_channel((uint8_t)a);
             }
         }
     }
@@ -805,7 +805,7 @@ unsigned prog_port_slots_free(uint16_t *slots)
     if (slots == NULL) {
         return 0u;
     }
-    for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
+    for (unsigned s = 0; s < LINK_OUT_SLOTS_ALL; ++s) {
         uint16_t *r = &slots[(size_t)s * LINK_OS_STRIDE];
 
         if (slot_on_port_channel(r)) {
@@ -830,7 +830,7 @@ uint8_t prog_port_slots_check_yield(const prog_port_t *p,
     if (p == NULL) {
         return 0u;
     }
-    for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
+    for (unsigned s = 0; s < LINK_OUT_SLOTS_ALL; ++s) {
         const uint16_t *r = &slots[(size_t)s * LINK_OS_STRIDE];
 
         /* The ports' bank channels belong to the ports alone. */
@@ -866,7 +866,7 @@ uint8_t prog_port_slots_yield(const prog_port_t *p, const uint16_t *slots)
     if (p == NULL || slots == NULL) {
         return 0u;
     }
-    for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
+    for (unsigned s = 0; s < LINK_OUT_SLOTS_ALL; ++s) {
         const uint16_t *r = &slots[(size_t)s * LINK_OS_STRIDE];
 
         if (r[LINK_OS_DRIVER] != (uint16_t)OUT_DRIVER_PWM
@@ -935,5 +935,5 @@ _Static_assert(LINK_PG_FN_COUNT < 15 && LINK_PG_PORTS_MAX * 4u <= 16u,
                "a port's function does not fit its nibble of the kept word");
 _Static_assert(PROG_PORT_CHANNEL0 + LINK_PG_PORTS_MAX <= OUT_MAX_CHANNELS,
                "the bank has no channels for the programming ports");
-_Static_assert(PROG_PORT_CHANNEL0 > LINK_OUT_CHANNELS,
+_Static_assert(PROG_PORT_CHANNEL0 > LINK_OUT_CHANNELS_ALL,
                "a programming port's channel is a CHANNELS register");

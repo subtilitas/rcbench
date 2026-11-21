@@ -139,11 +139,11 @@ bool outputs_hw_bound(uint8_t slot)
 
 void outputs_hw_apply(const outputs_t *o, const uint16_t *rate_hz)
 {
-    out_render_apply(&s_render, o, rate_hz, 0xFFu);
+    out_render_apply(&s_render, o, rate_hz, 0xFFFFu);
 }
 
 void outputs_hw_apply_only(const outputs_t *o, const uint16_t *rate_hz,
-                           uint8_t may_bind)
+                           uint16_t may_bind)
 {
     out_render_apply(&s_render, o, rate_hz, may_bind);
 }

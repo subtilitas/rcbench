@@ -22,8 +22,9 @@
  */
 static bool target_name(uint16_t w, char *out, size_t n)
 {
-    if (w >= LINK_SM_WATCH_OUT(0) && w <= LINK_SM_WATCH_OUT(7)) {
-        snprintf(out, n, "out %u", (unsigned)(w - LINK_SM_WATCH_OUT(0) + 1u));
+    const int ch = link_sm_watch_out_of(w);
+    if (ch >= 0) {
+        snprintf(out, n, "out %u", (unsigned)ch + 1u);
         return true;
     }
     if (w >= LINK_SM_WATCH_PORT(0) && w <= LINK_SM_WATCH_PORT(3)) {

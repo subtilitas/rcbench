@@ -73,9 +73,9 @@ extern "C" {
 
 /** @brief The bank channel of port 0; port n has the next n-th.
  *
- * Above the 8
- *  channels of the CHANNELS page and the bench throttle's channel 8. */
-#define PROG_PORT_CHANNEL0 9u
+ * Above the 16 channels of the CHANNELS and CHANNELS_HI pages and the bench
+ * throttle's channel 16. */
+#define PROG_PORT_CHANNEL0 (LINK_OUT_CHANNELS_ALL + 1u)
 /** @brief A port's frame rate while the SERVO page names none. */
 #define PROG_PORT_RATE_HZ 50u
 /** @brief Port 0's pin on a board that has stored none: GP13, pad 17 of the
@@ -394,7 +394,7 @@ uint8_t prog_port_pwm(const prog_port_t *p);
  * @return Bit c set for each bank channel c of a port whose pulse is on; 0 for
  *         a NULL p.
  */
-uint16_t prog_port_pwm_channels(const prog_port_t *p);
+uint32_t prog_port_pwm_channels(const prog_port_t *p);
 
 /** @brief The bank channels of the ports whose pin shares a PWM slice with
  *        another port's pin, bit c for channel c: what servo_page_ports() is
@@ -404,7 +404,7 @@ uint16_t prog_port_pwm_channels(const prog_port_t *p);
  * @return Bit c set for each bank channel c of a port whose pin shares a PWM
  *         slice with another port's pin; 0 for a NULL p.
  */
-uint16_t prog_port_sliced_channels(const prog_port_t *p);
+uint32_t prog_port_sliced_channels(const prog_port_t *p);
 
 /** @brief The SERVO page's frame rate, 0 while it names none.
  *
@@ -450,7 +450,7 @@ uint8_t prog_port_channel(uint8_t port);
  *        LINK_PG_PORTS_MAX - 1).
  *
  * @param p     The port model, or NULL.
- * @param slots The OUTPUTS slot registers, LINK_OUT_SLOTS slots of
+ * @param slots The OUTPUTS slot registers, LINK_OUT_SLOTS_ALL slots of
  *              LINK_OS_STRIDE registers each.
  * @return 0 when the slots may be taken; LINK_NACK_BAD_VALUE for a NULL slots
  *         or a refused slot (see above). 0 for a NULL p.
@@ -515,7 +515,7 @@ void prog_port_unyield(prog_port_t *p, const prog_port_yield_t *was);
  *
  * Returns how many.
  *
- * @param slots The OUTPUTS slot registers, LINK_OUT_SLOTS slots of
+ * @param slots The OUTPUTS slot registers, LINK_OUT_SLOTS_ALL slots of
  *              LINK_OS_STRIDE registers each; a slot on a port's channel has
  *              its driver cleared in place.
  * @return The number of slots unbound; 0 for NULL slots.
