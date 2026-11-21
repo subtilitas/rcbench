@@ -692,7 +692,7 @@ RP2350-CAN, an INA3221 module, 2 mini buck converters and a USB-C PD
 | File | Content | Size, mm |
 | --- | --- | --- |
 | `rbmod_v2_smd.step` | the board with 129 holes and its 17 surface-mounted parts: 9 resistors 1206, 3 resistors 0402, 2 capacitors 0603, 1 capacitor 1210, 1 SMB diode, 1 SMC diode; 52 solids, 0.8MB | 80.0 x 89.0, 1.579 thick, parts to 2.5 over the board |
-| `rbmod_v2.step` | the same with 4 JST PH headers of 4 pins and 2 of 2 pins, a Molex Mini-Fit Jr header of 2 pins, 2 angled pin headers of 3 x 4 pins and the 5 modules; 334 solids, 3.6MB | 85.4 x 89.0; 12.8 over the board, 6.0 under its top side |
+| `rbmod_v2.step` | the same with 3 JST PH headers of 4 pins and 2 of 2 pins, 2 angled pin headers of 3 x 4 pins and the 5 modules; 324 solids, 3.8MB | 85.4 x 89.0; 11.1 over the board, 6.0 under its top side |
 
 Frame: origin at the outline's lower left corner seen from the top side,
 x to the right, y up, z = 0 on the top side.
@@ -701,7 +701,6 @@ Height over the board's top side, mm:
 
 | Part | Height |
 | --- | --- |
-| Molex Mini-Fit Jr header | 12.8 |
 | RP2350-CAN | 11.1 |
 | Mini buck converters | 8.6 |
 | Angled pin headers | 7.6 |
@@ -712,6 +711,11 @@ Height over the board's top side, mm:
 
 Past the outline: the RP2350-CAN reaches 1.1mm over the left edge, the
 angled headers' pins 4.3mm over the right edge.
+
+Not populated (owner, 2026-11-21): J6, a JST PH header of 4 pins at the
+lower edge, and J8, a Molex Mini-Fit Jr header of 2 pins beside it. The
+board file does not mark them; `DNP` in `rbmod_v2.py` names them. Their
+drilled pads are in the board, the parts are in neither model.
 
 Source: `rbmod.kicad_pcb` on the branch `rbmod_v2` of the owner's KiCad
 repository, commit `86d2301`, which is not in this repository.
@@ -732,9 +736,8 @@ Limits:
 
 - The SMD parts and the JST PH headers have their packages' nominal
   sizes. No part is measured on a board; no board is built.
-- Estimated, not from a maker's drawing: the Molex header as a housing of
-  5.4mm x 9.6mm x 12.8mm, the angled headers as a plastic bar of 2.54mm
-  with pins that end 15.12mm from the first row.
+- Estimated, not from a maker's drawing: the angled headers as a plastic
+  bar of 2.54mm with pins that end 15.12mm from the first row.
 - Copper, solder mask openings, print, vias and solder joints are not
   drawn. The board is green.
 - The mini buck converter's enable pad has a hole of 0.8mm. A header pin

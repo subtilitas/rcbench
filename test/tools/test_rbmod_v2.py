@@ -31,7 +31,7 @@ BOARD = """(kicad_pcb (general (thickness 1.2))
  (gr_circle (center 12 22) (end 13.5 22) (layer "Edge.Cuts"))
  (footprint "Lib:Part" (layer "F.Cu") (at 20 30 90)
   (property "Reference" "J2") (property "Value" "plug")
-  (attr through_hole)
+  (attr through_hole dnp)
   (fp_line (start -1 -2) (end 3 4) (layer "F.Fab"))
   (pad "1" thru_hole circle (at 0 0) (size 2 2) (drill 1))
   (pad "2" thru_hole circle (at 2 0 90) (size 2 2) (drill 0.8)))
@@ -59,6 +59,7 @@ def test_reader_turns_the_board_into_the_models_frame():
     assert data["holes"] == [(2.0, 28.0, 3.0)]
     chip, plug = data["footprints"]
     assert (chip["ref"], chip["smd"], chip["drills"]) == ("C1", True, [])
+    assert (chip["dnp"], plug["dnp"]) == (False, True)
     assert chip["at"] == (5.0, 5.0)
     assert (plug["ref"], plug["smd"], plug["turn"]) == ("J2", False, 90.0)
     # Turned 90 degrees counter-clockwise, pad 2 lies above pad 1.
@@ -94,7 +95,7 @@ def test_board_has_the_files_outline_and_holes():
 
 
 def test_parts_by_kind():
-    """17 surface-mounted parts, 9 connectors, 5 modules."""
+    """17 surface-mounted parts, 9 connectors, 5 modules; 2 left off."""
     refs = [fp["ref"] for fp in rbmod_v2.data.FOOTPRINTS]
     assert len(refs) == len(set(refs)) == 31
     smd = [fp["ref"] for fp in rbmod_v2.data.FOOTPRINTS if fp["smd"]]
@@ -102,8 +103,14 @@ def test_parts_by_kind():
     assert {r[0] for r in smd} == {"R", "C", "D"}
     rest = [r for r in refs if r not in smd]
     assert sorted(r[0] for r in rest) == ["J"] * 9 + ["M"] * 5
+    off = [fp for fp in rbmod_v2.data.FOOTPRINTS if rbmod_v2.unpopulated(fp)]
+    assert [fp["ref"] for fp in off] == ["J6", "J8"]
+    assert not any(fp["dnp"] for fp in rbmod_v2.data.FOOTPRINTS)
     for fp in rbmod_v2.data.FOOTPRINTS:
-        assert rbmod_v2.part(fp)
+        if fp not in off:
+            assert rbmod_v2.part(fp)
+    with pytest.raises(ValueError, match="no model of Molex"):
+        rbmod_v2.part(off[1])
 
 
 def test_an_unknown_footprint_is_refused():
@@ -113,16 +120,18 @@ def test_an_unknown_footprint_is_refused():
 
 
 def test_the_two_models_differ_by_the_through_hole_parts():
-    """52 solids with the SMD parts, 334 with connectors and modules."""
+    """52 solids with the SMD parts, 324 with connectors and modules."""
     built = rbmod_v2.parts(None)
     assert sorted(built) == ["rbmod_v2", "rbmod_v2_smd"]
     assert len(built["rbmod_v2_smd"]) == 52
-    assert len(built["rbmod_v2"]) == 334
+    assert len(built["rbmod_v2"]) == 324
     assert built["rbmod_v2"][:52] == built["rbmod_v2_smd"]
     assert extent(rbmod_v2.board() + rbmod_v2.placed(True))[5] == (
         pytest.approx(2.5))
     box = extent(rbmod_v2.placed(False))
-    assert (box[2], box[5]) == pytest.approx((-6.0, 12.8))
+    assert (box[2], box[5]) == pytest.approx((-6.0, 11.1))
+    # J6 and J8 are not populated: nothing stands on their pads.
+    assert box[1] == pytest.approx(6.87, abs=0.01)
 
 
 def test_smd_parts_lie_on_the_board_at_their_places():
@@ -172,7 +181,7 @@ def test_the_buck_converters_enable_pin_is_drawn_thin():
 
 
 def test_connectors():
-    """PH headers 6.0 high, Molex 12.8, angled pins past the edge."""
+    """PH headers 6.0 high, angled pins past the edge."""
     by = {fp["ref"]: fp for fp in rbmod_v2.data.FOOTPRINTS}
 
     def box(ref):
@@ -184,9 +193,6 @@ def test_connectors():
         (9.9, 4.5, 6.0))
     j3 = box("J3")
     assert j3[3] - j3[0] == pytest.approx(5.9)
-    j8 = box("J8")
-    assert (j8[3] - j8[0], j8[4] - j8[1], j8[5]) == pytest.approx(
-        (9.6, 5.4, 12.8))
     j1 = box("J1")
     assert j1[3] == pytest.approx(84.3, abs=0.01)
     assert j1[5] == pytest.approx(7.62)

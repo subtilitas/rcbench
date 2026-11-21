@@ -5,9 +5,10 @@
 
 writes hardware/mechanical/_NAME_data.py: the board's thickness, its
 outline and round cut-outs from Edge.Cuts, and each footprint with its
-place, its turn, whether it is surface-mounted, its drilled pads and the
-box of its F.Fab drawing. The board file is not in the repository; the
-data file is, so the model builds without it.
+place, its turn, whether it is surface-mounted, whether the file marks
+it as not populated, its drilled pads and the box of its F.Fab drawing.
+The board file is not in the repository; the data file is, so the model
+builds without it.
 
 Frame of the data: origin at the outline's lower left corner seen from
 the top side, x to the right, y up, mm. KiCad's y points down; a
@@ -158,6 +159,7 @@ def read(text):
             "ref": props["Reference"], "value": props["Value"],
             "footprint": fp[1], "at": at(fx, fy), "turn": turn,
             "smd": "smd" in (kid(fp, "attr") or []),
+            "dnp": "dnp" in (kid(fp, "attr") or []),
             "drills": sorted(drills),
             "fab": tuple(round(v, 4) for v in (
                 min(xs), min(ys), max(xs), max(ys))) if fab else None})

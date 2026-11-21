@@ -1,7 +1,7 @@
 """The rbmod carrier board, version 2: with its SMD parts, and complete.
 
     rbmod_v2_smd   the board with its 17 surface-mounted parts
-    rbmod_v2       the same with the 9 through-hole connectors and the
+    rbmod_v2       the same with 7 through-hole connectors and the
                    5 modules
 
 The carrier is 80.0 x 89.0mm with a notch of 4.4 x 13.0mm in its left
@@ -21,11 +21,15 @@ Drawn from package sizes, not from the board file: 1206 resistors
 the SMC diode 6.9 x 5.9 x 2.3 and 7.9 over its leads. The JST PH
 headers B2B-PH-K and B4B-PH-K follow hardware/kicad/modules/_jst_ph.py.
 
-Estimated: the Molex Mini-Fit Jr header 5566-02A as a housing of
-5.4 x 9.6mm, 12.8mm high, round its 2 pins 5.5mm apart; the angled
-3 x 4 pin headers as a plastic bar 2.54mm thick, 1.52mm behind the
-third row, with pins that end 15.12mm from the first row, the F.Fab
-drawing's reach. Neither is taken from a maker's drawing.
+Not populated (owner, 2026-11-21): J6, a JST PH header of 4 pins, and
+J8, a Molex Mini-Fit Jr header of 2 pins. The board file does not mark
+them; DNP names them here. Their drilled pads are in the board, the
+parts are in neither model.
+
+Estimated: the angled 3 x 4 pin headers as a plastic bar 2.54mm thick,
+1.52mm behind the third row, with pins that end 15.12mm from the first
+row, the F.Fab drawing's reach. They are not taken from a maker's
+drawing.
 
 Not drawn: copper, solder mask openings, print, vias, the modules'
 solder joints. The board is drawn green and 1.579mm thick, the board
@@ -55,7 +59,7 @@ JST = _board.kicad_spec("_jst_ph")
 MODULES = {"RP2350-CAN": "rp2350_can", "INA3221_Module": "ina3221_module",
            "DCDC_Buck_Mini_30x18mm_EN": "dcdc_buck_mini",
            "USBC_PD_Trigger_DIP3_30x20mm": "usbc_pd_trigger"}
-MOLEX = (5.4, 9.6, 12.8, 5.5)   # housing x, y, height; pin to pin
+DNP = ("J6", "J8")              # not populated (owner, 2026-11-21)
 THIN = 0.5                      # a header pin in a hole under 0.95
 ANGLED = (2.54, 1.52, 15.12)    # bar's thickness, its gap to the third
 #                                 row, the pins' reach from the first row
@@ -104,28 +108,6 @@ def angled_header():
                              z + half, p.GOLD))
             out.append(s.box(bar + thick, y - half, reach, y + half,
                              z - half, z + half, p.GOLD))
-    return out
-
-
-def molex_header():
-    """The Mini-Fit Jr header of 2 circuits, pin 1 at the origin.
-
-    Pin 2 lies 5.5 to -y. The housing is a shell with a wall of 0.9
-    round one chamber for each pin.
-    """
-    wide, deep, high, pitch = MOLEX
-    x0, x1 = -wide / 2, wide / 2
-    y0, y1 = -pitch / 2 - deep / 2, -pitch / 2 + deep / 2
-    wall, floor, pin = 0.9, 3.0, 0.45
-    out = [s.ext(s.rect(x0, y0, x1, y1), 0.0, floor, p.CREAM, holes=[
-               s.rect(-pin, y - pin, pin, y + pin) for y in (0.0, -pitch)]),
-           s.ext(s.rect(x0, y0, x1, y1), floor, high, p.CREAM, holes=[
-               s.rect(x0 + wall, y0 + wall, x1 - wall, -pitch / 2 - wall / 2),
-               s.rect(x0 + wall, -pitch / 2 + wall / 2, x1 - wall,
-                      y1 - wall)])]
-    for y in (0.0, -pitch):
-        out.append(s.box(-pin, y - pin, pin, y + pin, -3.5, high - 4.0,
-                         p.TIN))
     return out
 
 
@@ -178,11 +160,15 @@ def part(footprint):
         "JST_PH_B2B-PH-K_1x02_P2.00mm_Vertical": lambda: ph_header(2),
         "JST_PH_B4B-PH-K_1x04_P2.00mm_Vertical": lambda: ph_header(4),
         "PinHeader_3x04_P2.54mm_Horizontal": angled_header,
-        "Molex_Mini-Fit_Jr_5566-02A_2x01_P4.20mm_Vertical": molex_header,
     }
     if name not in made:
         raise ValueError(f"no model of {name}")
     return made[name]()
+
+
+def unpopulated(footprint):
+    """Whether the part is left off: marked in the file or named in DNP."""
+    return footprint["dnp"] or footprint["ref"] in DNP
 
 
 def board():
@@ -200,7 +186,7 @@ def placed(smd):
     """
     out = []
     for fp in data.FOOTPRINTS:
-        if fp["smd"] == smd:
+        if fp["smd"] == smd and not unpopulated(fp):
             out += s.place(part(fp), x=fp["at"][0], y=fp["at"][1],
                            turn=fp["turn"])
     return out
