@@ -1,13 +1,15 @@
 // The whole flow against fake devices: choose a board, the image of a
 // release, connect, WRITE, until the page reports the end. Each board type
 // once: the panel (ESP32-P4), the Dial (ESP32-S3), the power node (ESP32-C6)
-// and the IOmcu (RP2350 over PICOBOOT, put into BOOTSEL at 1200 baud).
+// and the IOmcu (RP2350 over PICOBOOT, put into BOOTSEL at 1200 baud). The
+// ESP images are merged images with a partition table; "keep settings" leaves
+// their NVS partition on the fake flash.
 
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { makeEspImage, makeUf2 } from '../test/fixtures.ts';
+import { NODE_PARTS, PANEL_TABLE_V0_23_15, makeEspImage, makeMerged, makeTable, makeUf2 } from '../test/fixtures.ts';
 import { FAMILY } from '../src/uf2.ts';
 
 const FAKES = fileURLToPath(new URL('./fake-devices.js', import.meta.url));
@@ -16,9 +18,11 @@ const sha = (b: Uint8Array): string => createHash('sha256').update(b).digest('he
 const TAG = 'v0.23.15';
 const OLD = 'v0.22.1';
 const IMAGES = {
-  panel: makeEspImage(18, { headerOffset: 0x2000, size: 0x2000 + 24_000 }),
-  dial: makeEspImage(9, { size: 20_002 }),
-  'node-pwr': makeEspImage(13, { size: 16_384 }),
+  // The panel's table of v0.23.15 at 0xC000: nvs 0xD000+0x6000.
+  panel: makeMerged({ chipId: 18, bootloaderOffset: 0x2000, tableOffset: 0xc000, table: PANEL_TABLE_V0_23_15, size: 0x20000 + 24_002 }),
+  // nvs 0x9000+0x6000.
+  dial: makeMerged({ chipId: 9, bootloaderOffset: 0, tableOffset: 0x8000, table: makeTable(NODE_PARTS), size: 0x20000 + 20_002 }),
+  'node-pwr': makeMerged({ chipId: 13, bootloaderOffset: 0, tableOffset: 0x8000, table: makeTable(NODE_PARTS), size: 0x20000 + 16_384 }),
   iomcu: makeUf2(0x10002000, 40, FAMILY.ABSOLUTE, true),
 };
 const FILES: Record<string, string> = {
@@ -255,4 +259,97 @@ test('a local file picked while the release list loads stays when the list arriv
   await expect(page.locator('input[name="src"][value="file"]')).toBeChecked();
   await expect(page.locator('#image')).toContainText('dial-local.bin');
   await expect(page.locator('#image')).toContainText(sha(IMAGES.dial));
+});
+
+type Fake = {
+  espFlash: Uint8Array; espOps: number[]; espWrites: [number, number][]; espMd5: [number, number][]; espBauds: number[];
+  flashHash: (k: string, s: number, l: number) => Promise<string>;
+};
+/** The state of the fake ESP after a write: the NVS bytes at 0xD000, the hashes of the two halves of the image, the commands. */
+const espState = (page: Page, len: number) => page.evaluate(async (n) => {
+  const x = (window as unknown as { __fake: Fake }).__fake;
+  return {
+    nvs: Array.from(new Set(x.espFlash.subarray(0xd000, 0x13000))),
+    all: await x.flashHash('esp', 0, n),
+    before: await x.flashHash('esp', 0, 0xd000),
+    after: await x.flashHash('esp', 0x13000, n - 0x13000),
+    writes: x.espWrites, md5: x.espMd5, ops: x.espOps, bauds: x.espBauds,
+  };
+}, len);
+const pad4 = (n: number): number => Math.ceil(n / 4) * 4;
+
+async function connectPanelWithNvs(page: Page): Promise<void> {
+  await setup(page, { esp: { chipId: 18 } });
+  await expectImage(page, FILES.panel!, IMAGES.panel);
+  // Settings on the board before the write: 24KiB of NVS at 0xD000.
+  await page.evaluate(() => { (window as unknown as { __fake: Fake }).__fake.espFlash.fill(0x42, 0xd000, 0x13000); });
+  await page.locator('#connect-esp').click();
+  await expect(page.locator('#conn-state')).toBeVisible({ timeout: 20_000 });
+}
+
+test('panel: keep settings is on, lists nvs at 0xD000, and the NVS bytes survive the write', async ({ page }) => {
+  await connectPanelWithNvs(page);
+  await expect(page.locator('#keep')).toBeChecked();
+  await expect(page.locator('#keep-list')).toContainText('nvs (nvs)');
+  await expect(page.locator('#keep-list')).toContainText('0xD000');
+  await expect(page.locator('#keep-list')).toContainText(isDe(page) ? '24.576 Bytes' : '24,576 bytes');
+  await expect(page.locator('#keep-note')).toContainText('0xC000');
+  await writeAndWait(page);
+  await expect(page.locator('#result')).toContainText('nvs 0xD000+0x6000');
+  const len = IMAGES.panel.length;
+  const f = await espState(page, len);
+  expect(f.nvs).toEqual([0x42]);
+  expect(f.before).toBe(sha(IMAGES.panel.subarray(0, 0xd000)));
+  expect(f.after).toBe(sha(IMAGES.panel.subarray(0x13000)));
+  expect(f.writes).toEqual([[0, 0xd000], [0x13000, pad4(len - 0x13000)]]);
+  // The verify covers exactly the written ranges.
+  expect(f.md5).toEqual([[0, 0xd000], [0x13000, pad4(len - 0x13000)]]);
+  // USB Serial/JTAG 303a:1001: no baud change command (0x0F), no host rate change.
+  expect(f.ops).not.toContain(0x0f);
+  expect(f.bauds).toEqual([]);
+});
+
+test('panel: keep settings off writes the whole image and erases the NVS bytes', async ({ page }) => {
+  await connectPanelWithNvs(page);
+  await page.locator('#keep').uncheck();
+  await expect(page.locator('#keep-note')).toContainText(label(page, 'erased', 'gelöscht'));
+  await expect(page.locator('#keep-list')).toHaveCount(0);
+  await writeAndWait(page);
+  const len = IMAGES.panel.length;
+  const f = await espState(page, len);
+  expect(f.nvs).toEqual([0xff]);
+  expect(f.all).toBe(sha(IMAGES.panel));
+  expect(f.writes).toEqual([[0, pad4(len)]]);
+  expect(f.md5).toEqual([[0, pad4(len)]]);
+});
+
+test('an image whose partition table is broken: keep settings refuses with the reason, a full write stays possible', async ({ page }) => {
+  await setup(page, { esp: { chipId: 18 } });
+  const broken = Uint8Array.from(IMAGES.panel);
+  broken[0xc000 + 8] ^= 0x01;
+  await page.locator('input[name="src"][value="file"]').check();
+  await page.locator('#file').setInputFiles({ name: 'panel-broken.bin', mimeType: 'application/octet-stream', buffer: Buffer.from(broken) });
+  await expect(page.locator('#image')).toContainText('panel-broken.bin');
+  await page.locator('#connect-esp').click();
+  await expect(page.locator('#conn-state')).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('#keep-note.bad')).toContainText('MD5');
+  await expect(page.locator('#keep-note.bad')).toContainText('0xC000');
+  await expect(page.locator('#write')).toBeDisabled();
+  await page.locator('#keep').uncheck();
+  await expect(page.locator('#write')).toBeEnabled();
+  const f = await espState(page, IMAGES.panel.length);
+  expect(f.ops).not.toContain(0x10);
+});
+
+test('a USB-to-UART bridge (1A86:55D3) gets the change to 460800 baud', async ({ page }) => {
+  await setup(page, { esp: { chipId: 13, usb: [0x1a86, 0x55d3] } });
+  await chooseBoard(page, 'node-pwr');
+  await expectImage(page, FILES['node-pwr']!, IMAGES['node-pwr']);
+  await page.locator('#connect-esp').click();
+  await expect(page.locator('#conn-state')).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('#keep-list')).toContainText('0x9000');
+  await writeAndWait(page);
+  const f = await espState(page, IMAGES['node-pwr'].length);
+  expect(f.ops).toContain(0x0f);
+  expect(f.bauds).toContain(460800);
 });

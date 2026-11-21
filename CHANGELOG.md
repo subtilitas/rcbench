@@ -29,6 +29,39 @@ history is in git.
   (SESSION_BLOCK, PPM_MAX, SLOT_PINS), or the check fails. CI runs
   `--check`.
 
+- `hardware/mechanical/`: `es3c28p.step`, the LCDWIKI ES3C28P of the
+  display node (50.0mm x 86.0mm, 10.6mm over all): board with 4 holes of
+  3.2mm, touch panel, display, both flat cables' folds, and on the back
+  the ESP32-S3, USB-C, microSD, the 5 wire sockets of 1.25mm pitch, BOOT,
+  RESET and 103 chip parts, from LCDWIKI's STEP file and outline drawing,
+  checked against tester photos within 0.3mm. The overlap check covers
+  it; it has no KiCad entry, as no carrier mounts the board
+  ([Mechanical parts](hardware/mechanical/README.md#display-node-board-lcdwiki-es3c28p)).
+- `hardware/kicad/tools/step_render.py`: `--from` picks the corner the
+  view looks from, `--suffix` names the PNGs of a second view.
+
+### Fixed
+
+- Web flasher: a write to an ESP board keeps the board's settings. The
+  page reads the partition table from the merged image (0xC000 on the
+  panel, 0x8000 on the Dial, the nodes and the C6 radio) and writes every
+  byte except the data partitions of subtype nvs, nvs_keys, fat, spiffs
+  and littlefs: on the panel nvs 0xD000, 24,576 bytes, with its settings
+  and bindings; on the Dial nvs 0x9000 with its bound panel. otadata is
+  written, so the board starts ota_0 with the written application. A
+  "Keep settings" checkbox, on by default, in English and German, lists
+  the skipped ranges before WRITE; unticked, the page writes the whole
+  image from 0x0. The MD5 check covers each written range. A missing or
+  broken table, two tables, or a kept range that overlaps the bootloader,
+  the table, an application or another partition, or is not aligned to
+  4096 bytes, refuses "Keep settings" with the reason
+  ([flasher/README.md](flasher/README.md#keep-settings)).
+- Web flasher: no baud change on the ESP32's built-in USB Serial/JTAG
+  (USB ID 303A:1001). There the change reset the chip; the page stays at
+  115200 baud, which has no effect on that link. A USB-to-UART bridge
+  still gets 460800 baud.
+  The page's first load grows to 58.6kB, 385.3kB in all.
+
 ## 0.23.16 - 2026-11-21
 
 0.23.16 is a testing release. SETUP > WIRELESS opens a SEARCH screen from
