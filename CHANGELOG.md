@@ -8,6 +8,14 @@ history is in git.
 
 ### Added
 
+- `hardware/mechanical/`: `rbmod_v2_smd.step` and `rbmod_v2.step`, the
+  rbmod carrier board, version 2 (80.0mm x 89.0mm): the board with its 17
+  surface-mounted parts, and the same with 7 connectors and 5 modules,
+  11.1mm over the board; J6 and J8 are not populated and not drawn.
+  `_read_kicad_pcb.py` reads outline, holes and footprints from the KiCad
+  board file into `_rbmod_v2_data.py`; the
+  overlap check covers both models
+  ([Mechanical parts](hardware/mechanical/README.md#rbmod-carrier-board-version-2)).
 - Link protocol 4.41: the IOmcu's bank has 16 slots and 16 channels.
   CHANNELS_HI, CHAN_CFG_HI and OUTPUTS_HI (0x3C to 0x3E) carry channels 9
   to 16 and slots 9 to 16, BIND_CFG_HI and BIND_OUT_HI (0x3F, 0x40)
@@ -60,6 +68,10 @@ history is in git.
 
 ### Changed
 
+- KiCad library: 4 module models have the real board's colour (owner,
+  2026-11-21) in place of green: the RP2350-CAN and the mini buck converter
+  blue, the INA3221 module and the USB-C PD trigger board black. The rbmod
+  model shows them so ([hardware/kicad/README.md](hardware/kicad/README.md)).
 - Flap drive model (`hardware/mechanical/_gen_flap_drive.py`): the wing's
   upper skin ends 4.45mm before the flap, so the flap turns 20.3 degrees
   up; a fairing, half an ellipsoid 35.5mm long, 10.2mm wide and 8.1mm

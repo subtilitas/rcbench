@@ -50,6 +50,14 @@ positions within about 0.2mm; the ESP32-C6-Zero's outline and pads follow
 Waveshare's drawing. Board thickness, inductor heights and the cells' wire
 length are estimated. The boost board does not name its enable pad; the one
 pad besides the 4 corner pads is it (owner, 2026-11-19).
+It holds 2 STEP models of the rbmod carrier board, version 2, 80.0mm x
+89.0mm: one with its 17 surface-mounted parts, one with 7 connectors and
+5 modules as well, 11.1mm high over the board. J6 and J8 are not populated
+(owner, 2026-11-21) and not drawn. Outline, holes and every
+part's place are read from the board file of the owner's KiCad repository
+(branch `rbmod_v2`, commit `86d2301`), which is not in this repository. The
+modules are the KiCad library's models. The angled pin headers are
+estimated; no board is built.
 It holds a STEP model of a standard size servo with a round horn, black with
 the white print "Standard Servo", from an owner sketch with dimensions: case
 40.5mm x 20.0mm x 36.3mm, mounting holes 49.5mm x 10.0mm apart. The horn's

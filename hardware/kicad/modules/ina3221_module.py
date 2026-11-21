@@ -156,6 +156,7 @@ SYMBOL = {
 # header pins.
 MODEL = {
     "mount": "header",
+    "color": "black",        # the real board (owner, 2026-11-21)
     "pins": [str(n) for n in range(1, 9)],
     "holes": [(x, y, 3.2) for x, y in MOUNT],
     "bodies": [("box", 14.4, 9.4, 18.4, 13.4, 0.9, "chip")]
