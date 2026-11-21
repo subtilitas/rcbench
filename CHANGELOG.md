@@ -56,6 +56,21 @@ history is in git.
 - `hardware/kicad/tools/step_render.py`: `--from` picks the corner the
   view looks from, `--suffix` names the PNGs of a second view.
 
+### Changed
+
+- Flap drive model (`hardware/mechanical/_gen_flap_drive.py`): the wing's
+  upper skin ends 4.45mm before the flap, so the flap turns 20.3 degrees
+  up; a fairing, half an ellipsoid 35.5mm long, 10.2mm wide and 8.1mm
+  high, covers the rod's slot (`flap_drive_wing.step`, 7 solids). The rod
+  end's neck is 2.4mm high and the arm's barrel 5.4mm across, which keeps
+  them apart at -45 degrees of the arm. `posed()` gives the parts at an
+  angle of the arm, and `--check` fails when two solids share volume at
+  neutral or at one of 8 angles from -45 to 75 degrees.
+- [hardware/kicad/README.md](hardware/kicad/README.md) limits the rule that
+  boards are drawn green to the box models: the five `detail` models keep the
+  real board's colour (owner, 2026-11-21, for the INA219 board, the charger
+  board, the boost board and the ESP32-C6-Zero).
+
 ### Fixed
 
 - Web flasher: a write to an ESP board keeps the board's settings. The
