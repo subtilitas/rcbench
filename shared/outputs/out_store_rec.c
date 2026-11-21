@@ -105,6 +105,23 @@ bool out_store_cfg_read(uint16_t version, const void *cfg, out_store_t *out)
     out_store_cfg_defaults(out);
     /* And over it, everything the record does carry. */
     memcpy(out, cfg, size);
+    if (version < OUT_STORE_VERSION) {
+        /*
+         * Before protocol 4.41 the link had channels 1 to 8.  A slot an
+         * older image kept with a run past them rendered that image's bank
+         * channels 8 and up -- its bench throttle, its programming ports or
+         * a channel no page commanded -- which here are channels 9 to 16 or
+         * this image's throttle and ports.  It starts unbound.
+         */
+        for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
+            uint16_t *r = &out->slots[(size_t)s * LINK_OS_STRIDE];
+            if ((unsigned)LINK_OS_FIRST(r[LINK_OS_RANGE])
+                    + LINK_OS_CHANNELS(r[LINK_OS_RANGE])
+                > LINK_OUT_CHANNELS) {
+                r[LINK_OS_DRIVER] = (uint16_t)LINK_DRIVER_NONE;
+            }
+        }
+    }
     return true;
 }
 

@@ -729,7 +729,7 @@ uint32_t prog_port_pwm_channels(const prog_port_t *p)
     }
     for (unsigned port = 0; port < p->count; ++port) {
         if ((p->regs[LINK_PG_PWM] & (1u << port)) != 0u) {
-            ch |= 1uL << prog_port_channel((uint8_t)port);
+            ch |= (uint32_t)1u << prog_port_channel((uint8_t)port);
         }
     }
     return ch;
@@ -764,7 +764,7 @@ uint32_t prog_port_sliced_channels(const prog_port_t *p)
                 && out_pwm_same_slice(
                     (uint8_t)p->regs[REG(a, LINK_PG_PIN)],
                     (uint8_t)p->regs[REG(b, LINK_PG_PIN)])) {
-                ch |= 1uL << prog_port_channel((uint8_t)a);
+                ch |= (uint32_t)1u << prog_port_channel((uint8_t)a);
             }
         }
     }

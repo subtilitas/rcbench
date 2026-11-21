@@ -217,6 +217,11 @@ void out_store_cfg_defaults(out_store_t *out);
  * @brief A record's configuration, as @p version wrote it at @p cfg
  *        (out_store_cfg_size() bytes), into @p out at the newest layout.
  *
+ * A record older than version 9 is of a link with channels 1 to 8: a slot
+ * in it whose RANGE reaches past channel 8 gets driver 0, because its
+ * channels meant that image's bench throttle, programming ports or no page's
+ * channel, and here are channels 9 to 16 or this image's throttle and ports.
+ *
  * What the version does not carry starts as its page does: no slot past slot
  * 8 and channels 9 to 16 at CHAN_CFG_HI's defaults, the supply disabled
  * at the module's 19200 baud, both current monitors off at their defaults

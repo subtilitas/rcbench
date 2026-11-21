@@ -18,7 +18,9 @@ history is in git.
   to a 4.41 IOmcu only, and its binding model still fills slots 1 to 8
   ([Link, Slots and channels 9 to 16](docs/Link.md#slots-and-channels-9-to-16)).
 - Output store record version 9 (436 bytes) keeps slots 9 to 16 and
-  channels 9 to 16. A version 8 record reads with slots 9 to 16 unbound;
+  channels 9 to 16. A version 8 record reads with slots 9 to 16 unbound
+  and with every slot whose channel run reaches past channel 8 unbound; a
+  kept or written slot whose run reaches past channel 16 is never bound;
   an IOmcu image older than 4.41 reads no version 9 record and starts with
   the bindings of a one-page record if the flash holds one, empty
   otherwise.

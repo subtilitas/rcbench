@@ -515,7 +515,9 @@ int main(void)
         memcpy(&s_state.slots[LINK_OS_COUNT], saved.slots_hi,
                sizeof(saved.slots_hi));
         /* A stored slot an OUTPUTS write refuses by value (a driver number
-         * the page does not know, a pin above GPIO 63) starts unbound. */
+         * the page does not know, a pin above GPIO 63, a channel run past
+         * channel 16 into the throttle's or the ports' bank channels)
+         * starts unbound. */
         (void)outputs_slots_free_unwritable(s_state.slots);
         /* A kept slew above LINK_CC_SLEW_MAX starts as that maximum, here
          * and in BIND_CFG, which is seeded from this below. */

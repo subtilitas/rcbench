@@ -181,7 +181,7 @@ static uint8_t rate_check(const servo_page_t *p, const outputs_t *o,
         return LINK_NACK_BAD_VALUE;
     }
     for (uint8_t ch = target_first(p); ch < target_end(p); ++ch) {
-        const uint32_t bit = (ch < 32u) ? (1uL << ch) : 0u;
+        const uint32_t bit = (ch < 32u) ? ((uint32_t)1u << ch) : 0u;
         if (hz != PROG_PORT_RATE_HZ && (p->sliced & bit) != 0u) {
             return LINK_NACK_BAD_VALUE;
         }

@@ -631,7 +631,15 @@ Der Ausgangsspeicher hält beide Hälften in Speichersatz-Version 9, 436
 Bytes in seinem 512-Byte-Slot (`shared/outputs/include/out_store_rec.h`).
 Ein Satz der Version 8 oder älter liest sich ohne Slot hinter Slot 8 und
 mit den Kanälen 9 bis 16, wie CHAN_CFG_HI startet; das erste Speichern
-schreibt Version 9. Ein Image älter als 4.41 liest keinen Satz der
+schreibt Version 9. Ein Slot eines solchen Satzes, dessen Folge über
+Kanal 8 hinausreicht, startet ungebunden: unter 4.40 waren seine Kanäle
+der Bench-Throttle des IOmcu (Kanal 9, von 1 gezählt), seine
+Programmierports oder ein Kanal keiner Page. Ein Slot eines beliebigen
+Satzes, dessen Folge über Kanal 16 hinausreicht, startet ebenfalls
+ungebunden, und die Bank richtet keinen solchen Slot ein, wie auch immer
+eine Page ihn hält: die Kanäle 17 bis 21 der Bank gehören dem
+Bench-Throttle und den Programmierports. Ein Image älter als 4.41 liest
+keinen Satz der
 Version 9: es startet aus einem Ein-Page-Satz der Version 7 oder älter,
 wenn der Flash noch einen hält, und sonst mit leerem Speicher.
 

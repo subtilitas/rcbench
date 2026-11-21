@@ -48,6 +48,20 @@
 uint16_t link_driver_of(out_driver_t d);
 
 /**
+ * @brief Whether a slot's RANGE register stays within the link's channels 1
+ *        to 16 (LINK_OUT_CHANNELS_ALL, protocol 4.41).
+ *
+ * The bank's channels past them are the bench throttle's (16) and the
+ * programming ports' (17 to 20): a slot that reaches one is refused when
+ * written, freed when restored and never configured.
+ *
+ * @param range The RANGE register: first channel in bits 15..8, count in
+ *        bits 7..0.
+ * @return true when first channel plus count is at most 16.
+ */
+bool outputs_range_ok(uint16_t range);
+
+/**
  * @brief The roles a CONTROL ARM value arms, as OUT_ROLE_BIT()s: OUT_ROLES_ALL
  *        for LINK_ARM_ALL, the named roles for a set of LINK_ARM_ROLES, and 0
  *        for 0 and for a value the page refuses (link_arm_value_ok()).
@@ -232,8 +246,9 @@ unsigned outputs_slots_free_long(const outputs_t *o, uint16_t *slots);
 
 /**
  * @brief A stored OUTPUTS page held to outputs_slots_write()'s value rules:
- *        every slot with a driver number the page does not know, or a pin
- *        above OUT_MAX_PIN (63), gets driver 0 in @p slots.
+ *        every slot with a driver number the page does not know, a pin
+ *        above OUT_MAX_PIN (63), or a RANGE past channel 16
+ *        (outputs_range_ok()), gets driver 0 in @p slots.
  *
  * A record that passes its CRC is not a page a write would have taken.
  * outputs_slots_apply() narrows the pin register to 8 bits, so pin 258
@@ -427,6 +442,10 @@ uint8_t outputs_slots_write(uint16_t *regs, uint8_t off, uint8_t n,
 /**
  * @brief Puts an OUTPUTS page into the bank: each configured slot is configured
  *        in turn, and a refused slot is left cleared.
+ *
+ * A slot with a pin above OUT_MAX_PIN or a RANGE past channel 16
+ * (outputs_range_ok()) is left cleared without asking the bank: the bank's
+ * channels 16 to 20 are the bench throttle's and the programming ports'.
  *
  * @param o The bank. Nothing is done when NULL.
  * @param regs The OUTPUTS page, LINK_OS_ALL registers.

@@ -60,6 +60,12 @@ static bool known_driver(uint16_t wire)
     return wire <= LINK_DRIVER_DSHOT_BIDIR;
 }
 
+bool outputs_range_ok(uint16_t range)
+{
+    return (unsigned)LINK_OS_FIRST(range) + LINK_OS_CHANNELS(range)
+           <= LINK_OUT_CHANNELS_ALL;
+}
+
 /* ------------------------------------------------------------ CHAN_CFG */
 
 void outputs_chan_cfg_defaults(uint16_t *regs)
@@ -327,7 +333,7 @@ uint8_t outputs_pulse_check(const outputs_t *o, uint16_t servo_hz,
         }
     }
     for (unsigned ch = 0; ch < OUT_MAX_CHANNELS; ++ch) {
-        if ((channels & (1uL << ch)) != 0u
+        if ((channels & ((uint32_t)1u << ch)) != 0u
             && !pulse_fits(o, ch, channels_hz)) {
             return LINK_NACK_BAD_VALUE;
         }
@@ -391,7 +397,8 @@ unsigned outputs_slots_free_unwritable(uint16_t *slots)
         uint16_t *r = &slots[(size_t)i * LINK_OS_STRIDE];
         if (r[LINK_OS_DRIVER] != 0u
             && (!known_driver(r[LINK_OS_DRIVER])
-                || r[LINK_OS_PIN] > OUT_MAX_PIN)) {
+                || r[LINK_OS_PIN] > OUT_MAX_PIN
+                || !outputs_range_ok(r[LINK_OS_RANGE]))) {
             r[LINK_OS_DRIVER] = 0u;
             ++n;
         }
@@ -470,9 +477,7 @@ uint8_t outputs_slots_write(uint16_t *regs, uint8_t off, uint8_t n,
         }
         /* Channels 1 to 16 are the link's (4.41); the bank's channels past
          * them are the throttle's and the programming ports'. */
-        if (field == LINK_OS_RANGE
-            && (unsigned)LINK_OS_FIRST(in[i]) + LINK_OS_CHANNELS(in[i])
-                   > LINK_OUT_CHANNELS_ALL) {
+        if (field == LINK_OS_RANGE && !outputs_range_ok(in[i])) {
             return LINK_NACK_BAD_VALUE;
         }
     }
@@ -506,6 +511,12 @@ void outputs_slots_apply(outputs_t *o, const uint16_t *regs)
         /* A pin register above the top is no pin: narrowed to 8 bits it
          * would name another GPIO.  The slot is left cleared. */
         if (r[LINK_OS_PIN] > OUT_MAX_PIN) {
+            continue;
+        }
+        /* Nor is a run past channel 16: the bank's channels after it are
+         * the bench throttle's and the programming ports', which no slot
+         * renders, however the page came to hold it. */
+        if (!outputs_range_ok(r[LINK_OS_RANGE])) {
             continue;
         }
         const out_slot_t cfg = {

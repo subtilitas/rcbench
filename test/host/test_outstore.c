@@ -453,6 +453,13 @@ static void numbered(out_store_t *c, uint16_t base)
     for (size_t i = 0; i < sizeof(*c) / sizeof(uint16_t); ++i) {
         w[i] = (uint16_t)(base + i);
     }
+    /* Each slot's run one channel of its own, inside every version's
+     * channels: slot s on channel s. */
+    for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
+        c->slots[s * LINK_OS_STRIDE + LINK_OS_RANGE] = LINK_OS_RANGE_OF(s, 1u);
+        c->slots_hi[s * LINK_OS_STRIDE + LINK_OS_RANGE] =
+            LINK_OS_RANGE_OF(8u + s, 1u);
+    }
 }
 
 /* Each version appends to the one before: 64 registers of bindings, then
@@ -602,6 +609,83 @@ TEST_CASE(a_record_over_two_pages_is_whole_or_no_record)
     CHECK(!out_store_rec_build(NULL, sizeof(g_slot), 8u, 1u, &cfg));
     CHECK(!out_store_rec_build(g_slot, 256u, 8u, 1u, &cfg));  /* too long */
     CHECK(!out_store_rec_build(g_slot, sizeof(g_slot), 10u, 1u, &cfg));
+}
+
+/*
+ * A slot whose channel run reaches the bank's channels past the link's
+ * starts unbound and drives nothing.  A record of version 8 or older is
+ * of a link with channels 1 to 8: a run past channel 8 meant that image's
+ * bench throttle (channel 8), its programming ports (9 to 12) or no page's
+ * channel.  A version 9 record, or any page, with a run past channel 16
+ * reaches this image's throttle (16) and ports (17 to 20).
+ */
+TEST_CASE(a_kept_slot_past_the_links_channels_starts_unbound)
+{
+    static const uint16_t k_old[] = {
+        LINK_OS_RANGE_OF(8u, 1u), LINK_OS_RANGE_OF(16u, 1u),
+        LINK_OS_RANGE_OF(7u, 2u), LINK_OS_RANGE_OF(12u, 1u),
+    };
+    for (unsigned v = 3u; v <= 8u; ++v) {
+        for (size_t k = 0; k < sizeof(k_old) / sizeof(k_old[0]); ++k) {
+            out_store_t in;
+            out_store_cfg_defaults(&in);
+            for (unsigned s = 0; s < 2u; ++s) {
+                uint16_t *r = &in.slots[s * LINK_OS_STRIDE];
+                r[LINK_OS_DRIVER]  = LINK_DRIVER_PWM;
+                r[LINK_OS_PIN]     = (uint16_t)(2u + s);
+                r[LINK_OS_RATE_HZ] = 50u;
+            }
+            in.slots[LINK_OS_RANGE] = LINK_OS_RANGE_OF(0u, 1u);
+            in.slots[LINK_OS_STRIDE + LINK_OS_RANGE] = k_old[k];
+            out_store_t out;
+            CHECK(out_store_cfg_read((uint16_t)v, &in, &out));
+            CHECK_EQ(out.slots[LINK_OS_DRIVER], LINK_DRIVER_PWM);
+            CHECK_EQ(out.slots[LINK_OS_STRIDE + LINK_OS_DRIVER],
+                     LINK_DRIVER_NONE);
+        }
+    }
+    /* Version 9: channel 16 is the last a slot renders; the boot frees a
+     * run past it and the bank never configures one. */
+    static const struct { uint16_t range; bool kept; } k_new[] = {
+        { LINK_OS_RANGE_OF(15u, 1u), true },  { LINK_OS_RANGE_OF(16u, 1u), false },
+        { LINK_OS_RANGE_OF(8u, 8u), true },   { LINK_OS_RANGE_OF(9u, 8u), false },
+        { LINK_OS_RANGE_OF(20u, 1u), false }, { LINK_OS_RANGE_OF(255u, 1u), false },
+    };
+    for (size_t k = 0; k < sizeof(k_new) / sizeof(k_new[0]); ++k) {
+        out_store_t in;
+        out_store_cfg_defaults(&in);
+        uint16_t *r = &in.slots_hi[7u * LINK_OS_STRIDE];      /* slot 16 */
+        const bool ppm = LINK_OS_CHANNELS(k_new[k].range) > 1u;
+        r[LINK_OS_DRIVER]  = ppm ? LINK_DRIVER_PPM : LINK_DRIVER_PWM;
+        r[LINK_OS_PIN]     = 20u;
+        r[LINK_OS_RANGE]   = k_new[k].range;
+        r[LINK_OS_RATE_HZ] = ppm ? 40u : 50u;
+        CHECK(out_store_rec_build(g_slot, sizeof(g_slot), OUT_STORE_VERSION,
+                                  3u, &in));
+        out_store_t got;
+        CHECK(out_store_cfg_read(OUT_STORE_VERSION,
+                                 g_slot + sizeof(out_store_hdr_t), &got));
+        /* As main() restores it: the two pages, held to the write rules. */
+        uint16_t pages[LINK_OS_ALL];
+        memcpy(pages, got.slots, sizeof(got.slots));
+        memcpy(&pages[LINK_OS_COUNT], got.slots_hi, sizeof(got.slots_hi));
+        CHECK_EQ(outputs_slots_free_unwritable(pages), k_new[k].kept ? 0u : 1u);
+        outputs_t o;
+        outputs_init(&o, 0u);
+        outputs_slots_apply(&o, pages);
+        CHECK_EQ(o.slot[15].driver != OUT_DRIVER_NONE, k_new[k].kept);
+        /* And the bank alone, handed the raw page, configures nothing past
+         * channel 16 either. */
+        memcpy(&pages[LINK_OS_COUNT], got.slots_hi, sizeof(got.slots_hi));
+        outputs_init(&o, 0u);
+        outputs_slots_apply(&o, pages);
+        CHECK_EQ(o.slot[15].driver != OUT_DRIVER_NONE, k_new[k].kept);
+        for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
+            CHECK(o.slot[i].driver == OUT_DRIVER_NONE
+                  || (unsigned)o.slot[i].first_channel + o.slot[i].channels
+                         <= LINK_OUT_CHANNELS_ALL);
+        }
+    }
 }
 
 /* The update to 4.41: a version 8 record in its two-page slot, read by this
@@ -831,6 +915,7 @@ int main(void)
     RUN(a_version_7_record_keeps_everything_and_leaves_the_map_derived);
     RUN(a_record_over_two_pages_is_whole_or_no_record);
     RUN(a_version_8_record_in_flash_is_read_and_saved_as_version_9);
+    RUN(a_kept_slot_past_the_links_channels_starts_unbound);
     RUN(a_version_7_record_belongs_to_the_one_page_layout);
     RUN(the_one_page_layouts_live_sector_is_kept_until_replaced);
     RUN(a_version_6_record_keeps_its_tap_and_gives_the_port_its_default_pin);
