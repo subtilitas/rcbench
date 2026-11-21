@@ -292,6 +292,13 @@ jobs:
       - name: The protocol modules stand alone
         run: python3 tools/check_protocols.py --check
 
+      # The PIO programs each board loads, counted from the .pio files, in
+      # a model of the RP2350's 3 blocks of 4 state machines and 32 words
+      # and its 16 DMA channels: a mix a board's table allows that does
+      # not fit, or one it refuses that fits, fails.
+      - name: Every board's PIO programs and DMA channels fit
+        run: python3 tools/pio_budget.py --check
+
       # The parser table in SECURITY.md against the parse functions in the
       # public headers.
       - name: SECURITY.md lists the parsers

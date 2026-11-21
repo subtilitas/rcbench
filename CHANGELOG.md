@@ -24,6 +24,37 @@ history is in git.
   PASSWORD and ACCESS CODE are not in it
   ([Screens](docs/Screens.md#sd-card-the-settings-backup)).
 - The SD CARD tile reads `LOGS, BROWSER WRITES, BACKUP`.
+- `tools/pio_budget.py`: counts every PIO (programmable input/output)
+  program in the `.pio` files under `protocols/` as pioasm 2.3.0 does and
+  loads each board's programs into a model of the RP2350's 3 blocks of 4
+  state machines and 32 words and 16 DMA (direct memory access) channels,
+  in boot order and placed as pico-sdk 2.3.0 places them. It prints per
+  block the words used and free and the state machines used, and the DMA
+  channels used, for the RP2350-CAN module, the rbmod carrier and the
+  planned remote servo node, and fails when a mix a board allows does not
+  fit. For the remote servo node it runs 23,552 slot orders with every
+  programming session. The capture ring's worst case is 8 plain DShot
+  outputs at 267,200 events/s, 30.7ms of ring against a 42ms flash window:
+  a plain DShot pad keeps its input enable, so its 32,000 edges a second
+  reach the ring. During a programming session the capture guarantee does
+  not hold: the session's pin carries its own edges, up to 1,843,200 a
+  second from the Hitec precharge sampler, and the measured figures are
+  marked invalid for the session; pass-through goes on, as MIRROR uses no
+  ring. The tool reports each session's ring use apart. A mix the remote
+  servo node's table refuses that fits the chip must break a named rule
+  (SESSION_BLOCK, PPM_MAX, SLOT_PINS), or the check fails. CI runs
+  `--check`.
+
+- `hardware/mechanical/`: `es3c28p.step`, the LCDWIKI ES3C28P of the
+  display node (50.0mm x 86.0mm, 10.6mm over all): board with 4 holes of
+  3.2mm, touch panel, display, both flat cables' folds, and on the back
+  the ESP32-S3, USB-C, microSD, the 5 wire sockets of 1.25mm pitch, BOOT,
+  RESET and 103 chip parts, from LCDWIKI's STEP file and outline drawing,
+  checked against tester photos within 0.3mm. The overlap check covers
+  it; it has no KiCad entry, as no carrier mounts the board
+  ([Mechanical parts](hardware/mechanical/README.md#display-node-board-lcdwiki-es3c28p)).
+- `hardware/kicad/tools/step_render.py`: `--from` picks the corner the
+  view looks from, `--suffix` names the PNGs of a second view.
 
 ### Fixed
 
