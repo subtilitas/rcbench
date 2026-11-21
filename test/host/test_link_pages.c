@@ -220,7 +220,7 @@ TEST_CASE(a_value_the_page_rejects_is_refused_with_a_reason)
  */
 TEST_CASE(a_refused_chan_cfg_write_stores_none_of_its_registers)
 {
-    uint16_t regs[LINK_CC_COUNT];
+    uint16_t regs[LINK_CC_ALL] = { 0 };
     outputs_chan_cfg_defaults(regs);
     /*
      * One channel, four registers.  The role and the slew differ from the
@@ -248,14 +248,14 @@ TEST_CASE(a_slew_above_the_maximum_is_refused_and_stores_nothing)
     const uint16_t ok[] = { 0u, 1u, LINK_CC_SLEW_MAX - 1u, LINK_CC_SLEW_MAX };
     const uint16_t bad[] = { LINK_CC_SLEW_MAX + 1u, 10000u, 65535u };
     for (unsigned i = 0; i < sizeof(ok) / sizeof(ok[0]); ++i) {
-        uint16_t regs[LINK_CC_COUNT];
+        uint16_t regs[LINK_CC_ALL] = { 0 };
         outputs_chan_cfg_defaults(regs);
         const uint16_t v = ok[i];
         CHECK_EQ(outputs_chan_cfg_write(regs, LINK_CC_SLEW, 1, &v), 0u);
         CHECK_EQ(regs[LINK_CC_SLEW], v);
     }
     for (unsigned i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
-        uint16_t regs[LINK_CC_COUNT];
+        uint16_t regs[LINK_CC_ALL] = { 0 };
         outputs_chan_cfg_defaults(regs);
         const uint16_t v = bad[i];
         CHECK_EQ(outputs_chan_cfg_write(regs, LINK_CC_SLEW, 1, &v),
@@ -263,7 +263,7 @@ TEST_CASE(a_slew_above_the_maximum_is_refused_and_stores_nothing)
         CHECK_EQ(regs[LINK_CC_SLEW], 0u);
     }
     /* The last channel's slew is judged as well. */
-    uint16_t regs[LINK_CC_COUNT];
+    uint16_t regs[LINK_CC_ALL] = { 0 };
     outputs_chan_cfg_defaults(regs);
     const uint16_t v = LINK_CC_SLEW_MAX + 1u;
     CHECK_EQ(outputs_chan_cfg_write(regs, LINK_CC_COUNT - LINK_CC_STRIDE
@@ -277,8 +277,8 @@ TEST_CASE(a_kept_slew_above_the_maximum_starts_as_the_maximum)
 {
     const uint16_t old[] = { LINK_CC_SLEW_MAX + 1u, 65535u };
     for (unsigned i = 0; i < sizeof(old) / sizeof(old[0]); ++i) {
-        uint16_t saved[LINK_CC_COUNT];
-        uint16_t regs[LINK_CC_COUNT];
+        uint16_t saved[LINK_CC_ALL] = { 0 };
+        uint16_t regs[LINK_CC_ALL] = { 0 };
         outputs_chan_cfg_defaults(saved);
         for (unsigned c = 0; c < LINK_OUT_CHANNELS; ++c) {
             uint16_t *r = &saved[c * LINK_CC_STRIDE];
@@ -307,13 +307,13 @@ TEST_CASE(a_kept_slew_above_the_maximum_starts_as_the_maximum)
         CHECK_EQ(regs[LINK_CC_COUNT - LINK_CC_STRIDE + LINK_CC_SLEW],
                  LINK_CC_SLEW_MAX);
         /* What starts is a page a write takes whole. */
-        uint16_t page[LINK_CC_COUNT];
+        uint16_t page[LINK_CC_ALL] = { 0 };
         outputs_chan_cfg_defaults(page);
         CHECK_EQ(outputs_chan_cfg_write(page, 0u, LINK_CC_COUNT, regs), 0u);
     }
     /* The maximum itself is kept as it is. */
-    uint16_t saved[LINK_CC_COUNT];
-    uint16_t regs[LINK_CC_COUNT];
+    uint16_t saved[LINK_CC_ALL] = { 0 };
+    uint16_t regs[LINK_CC_ALL] = { 0 };
     outputs_chan_cfg_defaults(saved);
     saved[LINK_CC_SLEW] = LINK_CC_SLEW_MAX;
     outputs_chan_cfg_restore(regs, saved);
@@ -327,7 +327,7 @@ TEST_CASE(a_kept_slew_above_the_maximum_starts_as_the_maximum)
 
 TEST_CASE(a_refused_slots_write_stores_none_of_its_registers)
 {
-    uint16_t regs[LINK_OS_COUNT];
+    uint16_t regs[LINK_OS_ALL] = { 0 };
     outputs_slots_defaults(regs);
     /*
      * Four registers across a slot boundary: slot 0's rate, then slot 1's
@@ -1359,8 +1359,8 @@ TEST_CASE(the_fault_bits_are_one_bit_each)
  */
 TEST_CASE(chan_cfg_under_an_armed_bank_takes_a_surfaces_range_and_no_more)
 {
-    uint16_t regs[LINK_CC_COUNT];
-    uint16_t next[LINK_CC_COUNT];
+    uint16_t regs[LINK_CC_ALL] = { 0 };
+    uint16_t next[LINK_CC_ALL] = { 0 };
     outputs_chan_cfg_defaults(regs);
     regs[LINK_CC_ROLE] = LINK_CC_ROLE_THROTTLE;      /* channel 0: a motor */
     regs[LINK_CC_MIN_US] = 1000u;
@@ -1421,8 +1421,8 @@ TEST_CASE(chan_cfg_under_an_armed_bank_takes_a_surfaces_range_and_no_more)
 
 TEST_CASE(outputs_under_an_armed_bank_takes_no_change)
 {
-    uint16_t regs[LINK_OS_COUNT];
-    uint16_t next[LINK_OS_COUNT];
+    uint16_t regs[LINK_OS_ALL] = { 0 };
+    uint16_t next[LINK_OS_ALL] = { 0 };
     outputs_slots_defaults(regs);
     regs[LINK_OS_DRIVER]  = (uint16_t)LINK_DRIVER_PWM;
     regs[LINK_OS_PIN]     = 0u;
@@ -1701,7 +1701,8 @@ TEST_CASE(the_status_page_counts_refused_frames_after_its_old_registers)
  */
 TEST_CASE(the_frozen_registers_keep_their_numbers)
 {
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 40u);
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 41u);
+    CHECK_EQ(LINK_MINOR_OUT16, 41u);
     CHECK_EQ(LINK_MINOR_RPM_MAX_OVER, 40u);
     CHECK_EQ(LINK_MINOR_WATCHDOG, 39u);
     CHECK_EQ(LINK_MINOR_BIND_WHY, 38u);

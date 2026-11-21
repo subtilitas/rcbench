@@ -64,7 +64,7 @@ void outputs_hw_apply(const outputs_t *o, const uint16_t *rate_hz);
  *                  released and left unbound.
  */
 void outputs_hw_apply_only(const outputs_t *o, const uint16_t *rate_hz,
-                           uint8_t may_bind);
+                           uint16_t may_bind);
 
 /**
  * @brief Bind one slot left out of an apply, as the bank has it, and move nothing

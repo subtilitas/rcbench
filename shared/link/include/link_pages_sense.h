@@ -576,8 +576,19 @@ enum {
 #define LINK_SM_DMOHM_MAX   10000u  /**< a shunt, 0.1mOhm, highest */
 /** @brief WATCH values. */
 #define LINK_SM_WATCH_NONE    0x00u
-/** @brief Output channel n, 0..7. */
-#define LINK_SM_WATCH_OUT(n)  (0x01u + (unsigned)(n)) 
+/**
+ * @brief Output channel n, 0..15: 0x01 to 0x08 for channels 1 to 8, and
+ *        (protocol 4.41) 0x40 to 0x47 for channels 9 to 16.
+ *
+ * 0x09 to 0x0F are free and 0x10 is LINK_SM_WATCH_PORT(0), so the second
+ * half starts a range of its own.  An IOmcu older than 4.41 refuses 0x40
+ * to 0x47 with BAD_VALUE.
+ */
+#define LINK_SM_WATCH_OUT(n) \
+    (((unsigned)(n) < 8u) ? (0x01u + (unsigned)(n)) \
+                          : (LINK_SM_WATCH_OUT_HI + (unsigned)(n) - 8u))
+/** @brief WATCH value of output channel 9 (4.41); 16 is 7 above it. */
+#define LINK_SM_WATCH_OUT_HI  0x40u
 /** @brief Programming port n, 0..3. */
 #define LINK_SM_WATCH_PORT(n) (0x10u + (unsigned)(n)) 
 #define LINK_SM_WATCH_SUPPLY  0x20u     /**< WATCH value: the supply */
@@ -598,6 +609,24 @@ enum {
 /** @brief FLAGS: the map has been written and is kept. */
 #define LINK_SM_IN_FORCE     0x0100u
 #define LINK_SM_DERIVED      0x0200u  /**< FLAGS: the map is SENSE's one part */
+
+/**
+ * @brief The output channel a WATCH value names, 0..15, or -1 for a value
+ *        that names none.
+ *
+ * @param w A WATCH value.
+ * @return The output channel, 0 to 15, or -1.
+ */
+static inline int link_sm_watch_out_of(unsigned w)
+{
+    if (w >= LINK_SM_WATCH_OUT(0u) && w <= LINK_SM_WATCH_OUT(7u)) {
+        return (int)(w - LINK_SM_WATCH_OUT(0u));
+    }
+    if (w >= LINK_SM_WATCH_OUT(8u) && w <= LINK_SM_WATCH_OUT(15u)) {
+        return (int)(w - LINK_SM_WATCH_OUT(8u)) + 8;
+    }
+    return -1;
+}
 
 /* --- the SENSE_WIN_A and SENSE_WIN_B pages (protocol 4.25): every
  *     channel's last complete 50ms window, channels 0 to 5 on A and 6 to

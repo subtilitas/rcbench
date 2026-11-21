@@ -45,8 +45,8 @@
 /* ------------------------------------------------------- the IOmcu */
 
 typedef struct {
-    uint16_t cfg[LINK_CC_COUNT];        /* CHAN_CFG in force            */
-    uint16_t slots[LINK_OS_COUNT];      /* OUTPUTS in force             */
+    uint16_t cfg[LINK_CC_ALL];          /* CHAN_CFG in force, both halves */
+    uint16_t slots[LINK_OS_ALL];        /* OUTPUTS in force, both halves  */
     out_stage_t stage;                  /* BIND_CFG and BIND_OUT        */
     uint16_t servo_hz;
     bool     armed;
@@ -58,8 +58,8 @@ typedef struct {
     unsigned takes;                     /* pages put in force           */
 
     /* The store: what is in force, 400ms after its last change. */
-    uint16_t saved_cfg[LINK_CC_COUNT];
-    uint16_t saved_slots[LINK_OS_COUNT];
+    uint16_t saved_cfg[LINK_CC_ALL];
+    uint16_t saved_slots[LINK_OS_ALL];
     bool     dirty;
     uint32_t changed_ms;
     unsigned saves;
@@ -109,9 +109,11 @@ static outputs_t s_bank;
 /* The two pages' whole-page rules, as firmware/iomcu/src/iomcu_pages.c orders
  * them, less the ones that need its silicon: refuse_slots stands for a
  * bind the silicon refuses. */
-static uint8_t take_cfg(void *ctx, const uint16_t *next)
+static uint8_t take_cfg(void *ctx, const uint16_t *next,
+                        const uint16_t *slots)
 {
     far_t *f = (far_t *)ctx;
+    (void)slots;
     if (outputs_chan_cfg_armed_check(f->cfg, next, f->armed) != 0u) {
         return LINK_NACK_BAD_VALUE;
     }
@@ -161,17 +163,17 @@ static uint8_t cfg_write(void *ctx, uint8_t off, uint8_t n,
                          const uint16_t *in)
 {
     far_t *f = (far_t *)ctx;
-    uint16_t next[LINK_CC_COUNT];
+    uint16_t next[LINK_CC_ALL];
     memcpy(next, f->cfg, sizeof(next));
     const uint8_t nack = outputs_chan_cfg_write(next, off, n, in);
-    return (nack != 0u) ? nack : take_cfg(f, next);
+    return (nack != 0u) ? nack : take_cfg(f, next, NULL);
 }
 
 static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
                            const uint16_t *in)
 {
     far_t *f = (far_t *)ctx;
-    uint16_t next[LINK_OS_COUNT];
+    uint16_t next[LINK_OS_ALL];
     memcpy(next, f->slots, sizeof(next));
     const uint8_t nack = outputs_slots_write(next, off, n, in);
     return (nack != 0u) ? nack : take_slots(f, next);
@@ -179,21 +181,21 @@ static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
 
 static void bcfg_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
-    out_stage_cfg_read(&((far_t *)ctx)->stage, off, n, out);
+    out_stage_cfg_read(&((far_t *)ctx)->stage, false, off, n, out);
 }
 static uint8_t bcfg_write(void *ctx, uint8_t off, uint8_t n,
                           const uint16_t *in)
 {
-    return out_stage_cfg_write(&((far_t *)ctx)->stage, off, n, in);
+    return out_stage_cfg_write(&((far_t *)ctx)->stage, false, off, n, in);
 }
 static void bout_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
-    out_stage_slots_read(&((far_t *)ctx)->stage, off, n, out);
+    out_stage_slots_read(&((far_t *)ctx)->stage, false, off, n, out);
 }
 static uint8_t bout_write(void *ctx, uint8_t off, uint8_t n,
                           const uint16_t *in)
 {
-    return out_stage_slots_write(&((far_t *)ctx)->stage, off, n, in);
+    return out_stage_slots_write(&((far_t *)ctx)->stage, false, off, n, in);
 }
 static void bind_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
@@ -210,7 +212,7 @@ static uint8_t bind_write(void *ctx, uint8_t off, uint8_t n,
     if (off != LINK_BD_COMMIT || n != 1u) {
         return LINK_NACK_BAD_RANGE;
     }
-    return out_stage_commit(&f->stage, in[0], f->cfg, &k_ops, f);
+    return out_stage_commit(&f->stage, in[0], f->cfg, f->slots, &k_ops, f);
 }
 
 static void servo_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
@@ -439,14 +441,18 @@ static void edited_binding(outbind_t *b)
 }
 
 typedef struct {
-    uint16_t cfg[LINK_CC_COUNT];
-    uint16_t slots[LINK_OS_COUNT];
+    uint16_t cfg[LINK_CC_ALL];
+    uint16_t slots[LINK_OS_ALL];
 } pages_t;
 
+/* The binding model fills the first halves; the _HI halves stay as they
+ * start. */
 static void pages_of(const outbind_t *b, pages_t *p)
 {
     outbind_to_chan_cfg(b, p->cfg, 1000u, 2000u);
+    outputs_chan_cfg_defaults(&p->cfg[LINK_CC_COUNT]);
     (void)outbind_to_slots(b, p->slots);
+    outputs_slots_defaults(&p->slots[LINK_OS_COUNT]);
 }
 
 static bool far_holds(const pages_t *p)
@@ -528,8 +534,9 @@ TEST_CASE(a_wide_write_goes_out_one_frame_per_exchange)
     CHECK_EQ(reply.page, LINK_PAGE_BIND_OUT);
     CHECK_EQ(reply.offset, 0);
     CHECK_EQ(reply.count, LINK_OS_COUNT);
-    CHECK(memcmp(reply.regs, s_new.slots, sizeof(s_new.slots)) == 0);
-    CHECK(memcmp(far.stage.slots, s_new.slots, sizeof(s_new.slots)) == 0);
+    const size_t page = LINK_OS_COUNT * sizeof(uint16_t);
+    CHECK(memcmp(reply.regs, s_new.slots, page) == 0);
+    CHECK(memcmp(far.stage.slots, s_new.slots, page) == 0);
     CHECK(!host.pending);
 }
 
@@ -733,7 +740,7 @@ TEST_CASE(a_binding_is_written_in_eighteen_exchanges_and_read_in_two)
     CHECK_EQ(s_keeps, 1u);
 
     bind_reading_t r;
-    CHECK_EQ(bind_link_read(&host, &k_port, BOARD, &r), BIND_READ_OK);
+    CHECK_EQ(bind_link_read(&host, &k_port, 40u, BOARD, &r), BIND_READ_OK);
     CHECK_EQ(bus.exchanges, 20u);
     /* Two requests, each answered by 8 data frames. */
     CHECK_EQ(bus.request_frames, 20u);
@@ -793,7 +800,8 @@ TEST_CASE(a_deaf_window_anywhere_delays_the_sequence_and_loses_nothing)
                 bus.deaf_to = at + 20u * TICKS_PER_MS;
                 const bind_write_t res = write_new(k_minor[m]);
                 bind_reading_t r;
-                const bind_read_t rd = bind_link_read(&host, &k_port, BOARD,
+                const bind_read_t rd = bind_link_read(&host, &k_port, 40u,
+                                                      BOARD,
                                                       &r);
                 ++runs;
                 if (res != BIND_WRITTEN || rd != BIND_READ_OK
@@ -828,7 +836,7 @@ TEST_CASE(a_slow_sequence_does_not_latch_the_silence_failsafe)
     const uint32_t t0 = now_ms();
     CHECK_EQ(write_new(10u), BIND_WRITTEN);
     bind_reading_t r;
-    CHECK_EQ(bind_link_read(&host, &k_port, BOARD, &r), BIND_READ_OK);
+    CHECK_EQ(bind_link_read(&host, &k_port, 40u, BOARD, &r), BIND_READ_OK);
     const uint32_t took = (uint32_t)(now_ms() - t0);
     CHECK(took > 2u * LINK_DEV_SILENCE_MS);
     CHECK(bus.longest_gap_ms <= 22u);
@@ -895,7 +903,7 @@ static bind_read_t settle_and_read(bind_reading_t *r)
 {
     run_ms(2000u);
     bus.quiet = false;
-    return bind_link_read(&host, &k_port, BOARD, r);
+    return bind_link_read(&host, &k_port, 40u, BOARD, r);
 }
 
 /*
@@ -1136,8 +1144,8 @@ TEST_CASE(a_refused_commit_leaves_each_channels_command_as_it_was)
     out_stage_t st;
     out_stage_init(&st, s_new.cfg, s_new.slots);
     far.refuse_slots = true;
-    CHECK_EQ(out_stage_commit(&st, out_stage_held_crc(&st), far.cfg, &ops,
-                              &far), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(out_stage_commit(&st, out_stage_held_crc(&st), far.cfg,
+                              far.slots, &ops, &far), LINK_NACK_BAD_VALUE);
     CHECK(far_holds(&s_old));
 }
 
@@ -1177,7 +1185,7 @@ TEST_CASE(a_commit_over_pages_prepared_in_part_is_refused)
 
 TEST_CASE(the_commit_crc_is_ccitt_false_over_low_byte_first)
 {
-    uint16_t cfg[LINK_CC_COUNT], slots[LINK_OS_COUNT];
+    uint16_t cfg[LINK_CC_ALL], slots[LINK_OS_ALL];
     memset(cfg, 0, sizeof(cfg));
     memset(slots, 0, sizeof(slots));
     /* 128 zero bytes from seed 0xFFFF, by the bitwise definition. */
@@ -1221,9 +1229,11 @@ TEST_CASE(the_commit_crc_is_ccitt_false_over_low_byte_first)
 TEST_CASE(the_prepared_pages_start_from_defaults_or_from_what_is_given)
 {
     out_stage_t st;
-    uint16_t cfg[LINK_CC_COUNT], slots[LINK_OS_COUNT];
+    uint16_t cfg[LINK_CC_ALL], slots[LINK_OS_ALL];
     outputs_chan_cfg_defaults(cfg);
+    outputs_chan_cfg_defaults(&cfg[LINK_CC_COUNT]);
     outputs_slots_defaults(slots);
+    outputs_slots_defaults(&slots[LINK_OS_COUNT]);
     memset(&st, 0xA5, sizeof(st));
     out_stage_init(&st, NULL, NULL);
     CHECK(memcmp(st.cfg, cfg, sizeof(cfg)) == 0);
@@ -1235,24 +1245,29 @@ TEST_CASE(the_prepared_pages_start_from_defaults_or_from_what_is_given)
     CHECK_EQ(out_stage_held_crc(&st), out_stage_crc(s_new.cfg, s_new.slots));
 
     uint16_t out[4] = { 9u, 9u, 9u, 9u };
-    out_stage_cfg_read(&st, 4u, 4u, out);
+    out_stage_cfg_read(&st, false, 4u, 4u, out);
     CHECK(memcmp(out, &s_new.cfg[4], sizeof(out)) == 0);
-    out_stage_slots_read(&st, 4u, 4u, out);
+    out_stage_slots_read(&st, false, 4u, 4u, out);
     CHECK(memcmp(out, &s_new.slots[4], sizeof(out)) == 0);
     /* Past the page reads 0 and writes nothing. */
-    out_stage_slots_read(&st, 30u, 4u, out);
+    out_stage_slots_read(&st, false, 30u, 4u, out);
     CHECK_EQ(out[2], 0u);
-    CHECK_EQ(out_stage_slots_write(&st, 30u, 4u, out), LINK_NACK_BAD_RANGE);
-    CHECK_EQ(out_stage_cfg_write(&st, 30u, 4u, out), LINK_NACK_BAD_RANGE);
-    CHECK_EQ(out_stage_cfg_write(NULL, 0u, 4u, out), LINK_NACK_BAD_RANGE);
-    CHECK_EQ(out_stage_slots_write(NULL, 0u, 4u, out), LINK_NACK_BAD_RANGE);
-    out_stage_cfg_read(NULL, 0u, 4u, out);
-    out_stage_slots_read(&st, 0u, 4u, NULL);
+    CHECK_EQ(out_stage_slots_write(&st, false, 30u, 4u, out),
+             LINK_NACK_BAD_RANGE);
+    CHECK_EQ(out_stage_cfg_write(&st, false, 30u, 4u, out),
+             LINK_NACK_BAD_RANGE);
+    CHECK_EQ(out_stage_cfg_write(NULL, false, 0u, 4u, out),
+             LINK_NACK_BAD_RANGE);
+    CHECK_EQ(out_stage_slots_write(NULL, false, 0u, 4u, out),
+             LINK_NACK_BAD_RANGE);
+    out_stage_cfg_read(NULL, false, 0u, 4u, out);
+    out_stage_slots_read(&st, false, 0u, 4u, NULL);
 
     /* A refused window stores none of its registers. */
     const uint16_t bad[4] = { LINK_DRIVER_PWM, 0x0100u, 0u, 50u };
     const uint16_t before = out_stage_held_crc(&st);
-    CHECK_EQ(out_stage_slots_write(&st, 0u, 4u, bad), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(out_stage_slots_write(&st, false, 0u, 4u, bad),
+             LINK_NACK_BAD_VALUE);
     CHECK_EQ(out_stage_held_crc(&st), before);
 }
 
@@ -1263,26 +1278,28 @@ TEST_CASE(a_commit_needs_its_ops_and_its_crc)
     out_stage_init(&st, s_new.cfg, s_new.slots);
     const uint16_t crc = out_stage_held_crc(&st);
     out_stage_ops_t ops = k_ops;
-    CHECK_EQ(out_stage_commit(NULL, crc, far.cfg, &ops, &far),
+    CHECK_EQ(out_stage_commit(NULL, crc, far.cfg, far.slots, &ops, &far),
              LINK_NACK_BAD_VALUE);
-    CHECK_EQ(out_stage_commit(&st, crc, NULL, &ops, &far),
+    CHECK_EQ(out_stage_commit(&st, crc, NULL, far.slots, &ops, &far),
              LINK_NACK_BAD_VALUE);
-    CHECK_EQ(out_stage_commit(&st, crc, far.cfg, NULL, &far),
+    CHECK_EQ(out_stage_commit(&st, crc, far.cfg, far.slots, NULL, &far),
              LINK_NACK_BAD_VALUE);
     ops.take_cfg = NULL;
-    CHECK_EQ(out_stage_commit(&st, crc, far.cfg, &ops, &far),
+    CHECK_EQ(out_stage_commit(&st, crc, far.cfg, far.slots, &ops, &far),
              LINK_NACK_BAD_VALUE);
     ops = k_ops;
     ops.take_slots = NULL;
-    CHECK_EQ(out_stage_commit(&st, crc, far.cfg, &ops, &far),
+    CHECK_EQ(out_stage_commit(&st, crc, far.cfg, far.slots, &ops, &far),
              LINK_NACK_BAD_VALUE);
     ops = k_ops;
     ops.put_cfg = NULL;
-    CHECK_EQ(out_stage_commit(&st, crc, far.cfg, &ops, &far),
+    CHECK_EQ(out_stage_commit(&st, crc, far.cfg, far.slots, &ops, &far),
              LINK_NACK_BAD_VALUE);
-    CHECK_EQ(out_stage_commit(&st, (uint16_t)(crc + 1u), far.cfg, &k_ops,
+    CHECK_EQ(out_stage_commit(&st, (uint16_t)(crc + 1u), far.cfg, far.slots,
+                              &k_ops,
                               &far), LINK_NACK_BAD_VALUE);
-    CHECK_EQ(out_stage_commit(&st, (uint16_t)(crc - 1u), far.cfg, &k_ops,
+    CHECK_EQ(out_stage_commit(&st, (uint16_t)(crc - 1u), far.cfg, far.slots,
+                              &k_ops,
                               &far), LINK_NACK_BAD_VALUE);
     CHECK(far_holds(&s_old));
     CHECK_EQ(far.takes, 0u);
@@ -1290,7 +1307,7 @@ TEST_CASE(a_commit_needs_its_ops_and_its_crc)
     /* keep is optional. */
     ops = k_ops;
     ops.keep = NULL;
-    CHECK_EQ(out_stage_commit(&st, crc, far.cfg, &ops, &far), 0u);
+    CHECK_EQ(out_stage_commit(&st, crc, far.cfg, far.slots, &ops, &far), 0u);
     CHECK(far_holds(&s_new));
     CHECK_EQ(s_keeps, 0u);
 }
@@ -1305,7 +1322,9 @@ TEST_CASE(a_reading_is_one_of_four_things)
     /* Read and nothing bound: a binding, and it can be edited. */
     pages_t none;
     outputs_chan_cfg_defaults(none.cfg);
+    outputs_chan_cfg_defaults(&none.cfg[LINK_CC_COUNT]);
     outputs_slots_defaults(none.slots);
+    outputs_slots_defaults(&none.slots[LINK_OS_COUNT]);
     CHECK_EQ(bind_link_classify(&r, BOARD, none.slots, none.cfg),
              BIND_READ_OK);
     CHECK(r.pages);
@@ -1337,20 +1356,48 @@ TEST_CASE(a_reading_is_one_of_four_things)
     CHECK_EQ(r.bind.board, 0x7777u);
 
     /* Over the link: a refused page and an unanswered one are not read. */
-    CHECK_EQ(bind_link_read(&host, &k_port, BOARD, &r), BIND_READ_OK);
-    CHECK_EQ(bind_link_read(NULL, &k_port, BOARD, &r), BIND_READ_NONE);
-    CHECK_EQ(bind_link_read(&host, &k_port, BOARD, NULL), BIND_READ_NONE);
+    CHECK_EQ(bind_link_read(&host, &k_port, 40u, BOARD, &r), BIND_READ_OK);
+    CHECK_EQ(bind_link_read(NULL, &k_port, 40u, BOARD, &r), BIND_READ_NONE);
+    CHECK_EQ(bind_link_read(&host, &k_port, 40u, BOARD, NULL), BIND_READ_NONE);
     bus.drop_request = 1;                       /* the CHAN_CFG request */
-    CHECK_EQ(bind_link_read(&host, &k_port, BOARD, &r), BIND_READ_NONE);
+    CHECK_EQ(bind_link_read(&host, &k_port, 40u, BOARD, &r), BIND_READ_NONE);
     /* With the link quiet the first read fails and the second is not sent. */
     const unsigned sent = bus.exchanges;
-    CHECK_EQ(bind_link_read(&host, &k_port, BOARD, &r), BIND_READ_NONE);
+    CHECK_EQ(bind_link_read(&host, &k_port, 40u, BOARD, &r), BIND_READ_NONE);
     CHECK_EQ(bus.exchanges, sent);
     /* An IOmcu that refuses a page. */
     fresh(10u);
     link_dev_init(&dev, k_pages, 1u, &far, now_ms());      /* SERVO only */
-    CHECK_EQ(bind_link_read(&host, &k_port, BOARD, &r), BIND_READ_NONE);
+    CHECK_EQ(bind_link_read(&host, &k_port, 40u, BOARD, &r), BIND_READ_NONE);
     CHECK_EQ(bus.exchanges, 1u);
+}
+
+/*
+ * A 4.41 panel reading a 4.40 IOmcu shows its motors as the 4.40 panel
+ * did.  The binding model puts every slot on channels 1 to 8, the motors
+ * (GP0 DSHOT600 BIDIR, GP1 MOTOR PWM) with the THROTTLE role: none on the
+ * 4.40 bank's channel 9, its throttle, which no slot renders.
+ */
+TEST_CASE(a_4_40_iomcus_motors_read_back_as_its_binding)
+{
+    fresh(40u);
+    for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
+        const uint16_t *r = &s_old.slots[s * LINK_OS_STRIDE];
+        CHECK(r[LINK_OS_DRIVER] == 0u
+              || (unsigned)LINK_OS_FIRST(r[LINK_OS_RANGE])
+                         + LINK_OS_CHANNELS(r[LINK_OS_RANGE])
+                     <= LINK_OUT_CHANNELS);
+    }
+    CHECK_EQ(s_old.cfg[0u * LINK_CC_STRIDE + LINK_CC_ROLE],
+             LINK_CC_ROLE_THROTTLE);
+    CHECK_EQ(s_old.cfg[1u * LINK_CC_STRIDE + LINK_CC_ROLE],
+             LINK_CC_ROLE_THROTTLE);
+    bind_reading_t rd;
+    CHECK_EQ(bind_link_read(&host, &k_port, 40u, BOARD, &rd), BIND_READ_OK);
+    CHECK_EQ(memcmp(rd.slots, s_old.slots, LINK_OS_COUNT * sizeof(uint16_t)),
+             0);
+    CHECK_EQ(memcmp(rd.cfg, s_old.cfg, LINK_CC_COUNT * sizeof(uint16_t)), 0);
+    CHECK_EQ(rd.slots[LINK_OS_COUNT + LINK_OS_DRIVER], 0u);
 }
 
 TEST_CASE(a_binding_is_written_only_over_pages_that_were_read)
@@ -1410,7 +1457,7 @@ static void panel_show(const bind_reading_t *r)
 static void panel_read(void)
 {
     bind_reading_t r;
-    (void)bind_link_read(&host, &k_port, BOARD, &r);
+    (void)bind_link_read(&host, &k_port, 40u, BOARD, &r);
     panel_show(&r);
 }
 
@@ -1698,7 +1745,7 @@ TEST_CASE(pages_no_binding_describes_are_shown_as_such_and_not_overwritten)
 {
     panel_fresh(10u);
     far_gets_odd_pages();
-    uint16_t odd_slots[LINK_OS_COUNT];
+    uint16_t odd_slots[LINK_OS_ALL];
     memcpy(odd_slots, far.slots, sizeof(odd_slots));
     panel_read();
     CHECK_EQ(outputs_screen_read_state(), BIND_READ_ODD);
@@ -1885,7 +1932,7 @@ TEST_CASE(an_older_coprocessor_left_mixed_is_not_overwritten_by_a_tap)
     CHECK_EQ(outbind_chosen_total(outputs_screen_binding()), 4);
     CHECK_EQ(outputs_screen_cell(idx(0), NULL, 0), OUTPUTS_CELL_TICKED);
 
-    uint16_t mixed[LINK_OS_COUNT];
+    uint16_t mixed[LINK_OS_ALL];
     memcpy(mixed, far.slots, sizeof(mixed));
     pick("SERVO PWM");
     tap_pin(4);
@@ -2190,6 +2237,7 @@ int main(void)
     RUN(the_prepared_pages_start_from_defaults_or_from_what_is_given);
     RUN(a_commit_needs_its_ops_and_its_crc);
     RUN(a_reading_is_one_of_four_things);
+    RUN(a_4_40_iomcus_motors_read_back_as_its_binding);
     RUN(a_binding_is_written_only_over_pages_that_were_read);
     RUN(an_edit_is_written_whole_and_read_back);
     RUN(a_failed_write_neither_blanks_the_screen_nor_lets_a_tap_write);

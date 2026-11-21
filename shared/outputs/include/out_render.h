@@ -308,7 +308,7 @@ void out_render_init(out_render_t *r);
  * @param may_bind Bit n set when slot n may be bound.
  */
 void out_render_apply(out_render_t *r, const outputs_t *o,
-                      const uint16_t *rate_hz, uint8_t may_bind);
+                      const uint16_t *rate_hz, uint16_t may_bind);
 
 /**
  * @brief Bind one slot an apply left out, as the bank has it, and move

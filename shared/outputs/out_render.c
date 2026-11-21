@@ -219,7 +219,7 @@ static void fresh(out_render_slot_t *st)
 }
 
 void out_render_apply(out_render_t *r, const outputs_t *o,
-                      const uint16_t *rate_hz, uint8_t may_bind)
+                      const uint16_t *rate_hz, uint16_t may_bind)
 {
     if (r == NULL || o == NULL || rate_hz == NULL) {
         return;

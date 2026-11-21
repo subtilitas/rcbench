@@ -290,8 +290,7 @@ static bool watches_target(uint16_t code, int target)
     if (code != (uint16_t)LINK_SM_WATCH_NONE && code == s_tester_rail) {
         return true;
     }
-    return code >= (uint16_t)LINK_SM_WATCH_OUT(0)
-           && code <= (uint16_t)LINK_SM_WATCH_OUT(7);
+    return link_sm_watch_out_of(code) >= 0;
 }
 
 void settings_sensors_map(settings_sensors_map_t *m)

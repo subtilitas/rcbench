@@ -22,8 +22,13 @@
 #include "link_pages.h"
 #include "outputs.h"
 #include "outputs_pages.h"
+#include "prog_port.h"
 #include "servo_page.h"
 #include "tick_wrap.h"
+
+/* The bank channels of programming ports 0 and 1. */
+#define P0 ((uint8_t)PROG_PORT_CHANNEL0)
+#define P1 ((uint8_t)(PROG_PORT_CHANNEL0 + 1u))
 
 static outputs_t    o;
 static servo_page_t pg;
@@ -123,14 +128,14 @@ TEST_CASE(a_frame_rate_of_0_is_judged_at_the_surfaces_own_rate)
 /*
  * Protocol 4.19: with the standard servo ports as target the rate is the
  * slots' alone.  A programming port whose pulse is on stays at 50Hz, so
- * channel 9 at 1000 to 2000us does not refuse 560Hz, and the slots take
+ * port 0's channel at 1000 to 2000us does not refuse 560Hz, and the slots take
  * the rate (servo_page_slots_hz()).
  */
 TEST_CASE(the_standard_target_does_not_judge_the_ports)
 {
     fresh(false);
-    CHECK(outputs_set_endpoints(&o, 9u, 1000u, 2000u));
-    servo_page_ports(&pg, (uint16_t)(1u << 9), 0u);
+    CHECK(outputs_set_endpoints(&o, P0, 1000u, 2000u));
+    servo_page_ports(&pg, (1uL << P0), 0u);
     CHECK_EQ(frame_hz(560u), 0u);
     CHECK_EQ(servo_page_hz(&pg), 560u);
     CHECK_EQ(servo_page_slots_hz(&pg), 560u);
@@ -155,7 +160,7 @@ TEST_CASE(a_port_targets_rate_is_independent_of_the_slots)
     pwm_slot(1u, 1u, 1u, 400u);   /* throttle, slice 0 */
     CHECK_EQ(frame_hz(560u), LINK_NACK_BAD_VALUE);
     CHECK_EQ(frame_hz(300u), LINK_NACK_BAD_VALUE);
-    CHECK(servo_page_target(&pg, &o, 9u, 1u));
+    CHECK(servo_page_target(&pg, &o, P0, 1u));
     CHECK_EQ(frame_hz(560u), 0u);
     CHECK_EQ(servo_page_hz(&pg), 560u);
     CHECK_EQ(servo_page_slots_hz(&pg), 0u);
@@ -174,7 +179,7 @@ TEST_CASE(a_port_targets_rate_is_independent_of_the_slots)
 
 /*
  * A port target whose pulse is on is judged against its own endpoints:
- * channel 9 at 1000 to 2000us refuses 560Hz (1784us) and 500Hz
+ * port 0's channel at 1000 to 2000us refuses 560Hz (1784us) and 500Hz
  * (1999us) and takes 499Hz; at 410 to 1110us, a 760us tail servo's,
  * 560Hz is taken, and at 1000 to 1784us as well, 1785us refused.  A
  * port whose pulse is off, and a pulsing port that is not the target, are
@@ -184,27 +189,27 @@ TEST_CASE(a_port_targets_rate_is_independent_of_the_slots)
 TEST_CASE(a_port_targets_rate_is_judged_against_its_endpoints)
 {
     fresh(false);
-    CHECK(outputs_set_endpoints(&o, 9u, 1000u, 2000u));
-    CHECK(outputs_set_endpoints(&o, 10u, 1000u, 2500u));
-    CHECK(servo_page_target(&pg, &o, 9u, 1u));
-    servo_page_ports(&pg, (uint16_t)(1u << 10), 0u);
+    CHECK(outputs_set_endpoints(&o, P0, 1000u, 2000u));
+    CHECK(outputs_set_endpoints(&o, P1, 1000u, 2500u));
+    CHECK(servo_page_target(&pg, &o, P0, 1u));
+    servo_page_ports(&pg, (1uL << P1), 0u);
     CHECK_EQ(frame_hz(560u), 0u);   /* the target does not pulse */
     CHECK_EQ(frame_hz(0u), 0u);
-    servo_page_ports(&pg, (uint16_t)((1u << 9) | (1u << 10)), 0u);
+    servo_page_ports(&pg, ((1uL << P0) | (1uL << P1)), 0u);
     CHECK_EQ(frame_hz(560u), LINK_NACK_BAD_VALUE);
     CHECK_EQ(frame_hz(500u), LINK_NACK_BAD_VALUE);
     CHECK_EQ(reg(LINK_SV_FRAME_HZ), 0u);
     CHECK_EQ(frame_hz(499u), 0u);
     CHECK_EQ(frame_hz(0u), 0u);
-    CHECK(outputs_set_endpoints(&o, 9u, 410u, 1110u));
+    CHECK(outputs_set_endpoints(&o, P0, 410u, 1110u));
     CHECK_EQ(frame_hz(560u), 0u);
     CHECK_EQ(frame_hz(0u), 0u);
     /* The edge: an endpoint of the frame's last count, 1784us at 560Hz,
      * fits; one microsecond more does not. */
-    CHECK(outputs_set_endpoints(&o, 9u, 1000u, 1784u));
+    CHECK(outputs_set_endpoints(&o, P0, 1000u, 1784u));
     CHECK_EQ(frame_hz(560u), 0u);
     CHECK_EQ(frame_hz(0u), 0u);
-    CHECK(outputs_set_endpoints(&o, 9u, 1000u, 1785u));
+    CHECK(outputs_set_endpoints(&o, P0, 1000u, 1785u));
     CHECK_EQ(frame_hz(560u), LINK_NACK_BAD_VALUE);
 }
 
@@ -217,8 +222,8 @@ TEST_CASE(a_port_targets_rate_is_judged_against_its_endpoints)
 TEST_CASE(a_port_sharing_a_slice_takes_only_50_hz)
 {
     fresh(false);
-    CHECK(servo_page_target(&pg, &o, 9u, 1u));
-    servo_page_ports(&pg, 0u, (uint16_t)((1u << 9) | (1u << 10)));
+    CHECK(servo_page_target(&pg, &o, P0, 1u));
+    servo_page_ports(&pg, 0u, ((1uL << P0) | (1uL << P1)));
     CHECK_EQ(frame_hz(300u), LINK_NACK_BAD_VALUE);
     CHECK_EQ(frame_hz(40u), LINK_NACK_BAD_VALUE);
     CHECK_EQ(frame_hz(560u), LINK_NACK_BAD_VALUE);
@@ -233,17 +238,17 @@ TEST_CASE(a_port_sharing_a_slice_takes_only_50_hz)
 }
 
 /*
- * A rate a refused change took comes back as it was, unchecked: port 9 at
- * 333Hz, the standard ports and port 9 again read 0, the restore 333.
+ * A rate a refused change took comes back as it was, unchecked: port 0 at
+ * 333Hz, the standard ports and port 0 again read 0, the restore 333.
  */
 TEST_CASE(a_restored_rate_is_the_rate_before)
 {
     fresh(false);
-    CHECK(servo_page_target(&pg, &o, 9u, 1u));
+    CHECK(servo_page_target(&pg, &o, P0, 1u));
     CHECK_EQ(frame_hz(333u), 0u);
     const uint16_t was = servo_page_hz(&pg);
     CHECK(servo_page_target(&pg, &o, 0u, 0u));
-    CHECK(servo_page_target(&pg, &o, 9u, 1u));
+    CHECK(servo_page_target(&pg, &o, P0, 1u));
     CHECK_EQ(servo_page_hz(&pg), 0u);
     servo_page_restore_hz(&pg, was);
     CHECK_EQ(servo_page_hz(&pg), 333u);
@@ -254,7 +259,7 @@ TEST_CASE(a_restored_rate_is_the_rate_before)
 /*
  * A change of target returns the rate to 0, so the new target starts at
  * its own rate and never at a faster one meant for the old: the standard
- * ports at 400Hz, then port 9, reads 0; port 9 at 300Hz, named again,
+ * ports at 400Hz, then port 0, reads 0; port 0 at 300Hz, named again,
  * keeps it; the standard ports again read 0.  Armed, with a sweep running,
  * the change also stops the sweep.
  */
@@ -262,10 +267,10 @@ TEST_CASE(a_target_change_returns_the_rate_to_0)
 {
     fresh(true);
     CHECK_EQ(frame_hz(400u), 0u);
-    CHECK(servo_page_target(&pg, &o, 9u, 1u));
+    CHECK(servo_page_target(&pg, &o, P0, 1u));
     CHECK_EQ(reg(LINK_SV_FRAME_HZ), 0u);
     CHECK_EQ(frame_hz(300u), 0u);
-    CHECK(servo_page_target(&pg, &o, 9u, 1u));
+    CHECK(servo_page_target(&pg, &o, P0, 1u));
     CHECK_EQ(reg(LINK_SV_FRAME_HZ), 300u);
     CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
     CHECK(servo_page_step(&pg, &o, T0 + 10u));
@@ -543,56 +548,56 @@ TEST_CASE(hold_keeps_the_surfaces_where_their_outputs_are)
 TEST_CASE(a_target_names_the_channels_the_sweep_commands)
 {
     fresh(true);
-    CHECK(outputs_set_role(&o, 9, OUT_ROLE_SURFACE));
+    CHECK(outputs_set_role(&o, P0, OUT_ROLE_SURFACE));
     CHECK(outputs_set(&o, 0, 500u, T0));
-    CHECK(servo_page_target(&pg, &o, 9u, 1u));
+    CHECK(servo_page_target(&pg, &o, P0, 1u));
     CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
     CHECK(servo_page_step(&pg, &o, T0 + 250u));
-    CHECK_EQ(o.channel[9].command, 900u);
+    CHECK_EQ(o.channel[P0].command, 900u);
     CHECK_EQ(o.channel[0].command, 500u);
     CHECK_EQ(o.channel[0].last_command_ms, T0);
-    CHECK_EQ(o.channel[10].last_command_ms, T0);
+    CHECK_EQ(o.channel[P1].last_command_ms, T0);
     /* The same target again changes nothing. */
-    CHECK(servo_page_target(&pg, &o, 9u, 1u));
+    CHECK(servo_page_target(&pg, &o, P0, 1u));
     CHECK_EQ(reg(LINK_SV_SWEEP), SWEEP_SINE);
     /* The hold is the port's too. */
     const uint16_t hold = LINK_SV_HOLD;
-    CHECK(outputs_set_slew(&o, 9, 200u));
+    CHECK(outputs_set_slew(&o, P0, 200u));
     for (uint32_t t = T0 + 250u; t <= T0 + 300u; ++t) {
         (void)servo_page_step(&pg, &o, t);
         outputs_step(&o, t);
     }
     CHECK_EQ(servo_page_write(&pg, LINK_SV_SWEEP, 1u, &hold, &o, T0 + 300u),
              0u);
-    CHECK_EQ(o.channel[9].command, outputs_actual(&o, 9));
+    CHECK_EQ(o.channel[P0].command, outputs_actual(&o, P0));
     CHECK_EQ(o.channel[0].command, 500u);
     /* Back to the standard servo ports: the held sweep is over, and the
      * port stays where its output is. */
-    const uint16_t at = outputs_actual(&o, 9);
+    const uint16_t at = outputs_actual(&o, P0);
     CHECK(servo_page_target(&pg, &o, 0u, 0u));
     CHECK_EQ(reg(LINK_SV_SWEEP), 0u);
-    CHECK_EQ(o.channel[9].command, at);
+    CHECK_EQ(o.channel[P0].command, at);
     const uint16_t resume = LINK_SV_RESUME;
     CHECK_EQ(servo_page_write(&pg, LINK_SV_SWEEP, 1u, &resume, &o, T0 + 301u),
              LINK_NACK_BAD_VALUE);
     CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0 + 400u), 0u);
     CHECK(servo_page_step(&pg, &o, T0 + 650u));
     CHECK_EQ(o.channel[0].command, 900u);
-    CHECK_EQ(o.channel[9].command, at);
+    CHECK_EQ(o.channel[P0].command, at);
     /* A running sweep moved to a port leaves the surfaces it moved where
      * their outputs are. */
     outputs_step(&o, T0 + 650u);
-    CHECK(servo_page_target(&pg, &o, 9u, 1u));
+    CHECK(servo_page_target(&pg, &o, P0, 1u));
     CHECK_EQ(reg(LINK_SV_SWEEP), 0u);
     CHECK_EQ(o.channel[0].command, outputs_actual(&o, 0));
     CHECK(!servo_page_step(&pg, &o, T0 + 700u));
     /* The last channel of the bank, and a range that runs off it. */
     CHECK(servo_page_target(&pg, &o, (uint8_t)(OUT_MAX_CHANNELS - 1u), 1u));
     CHECK(!servo_page_target(&pg, &o, (uint8_t)OUT_MAX_CHANNELS, 1u));
-    CHECK(!servo_page_target(&pg, &o, 9u, 8u));
+    CHECK(!servo_page_target(&pg, &o, P0, 5u));
     CHECK(!servo_page_target(&pg, &o, 255u, 255u));
     CHECK_EQ(pg.target_first, OUT_MAX_CHANNELS - 1u);
-    CHECK(!servo_page_target(NULL, &o, 9u, 1u));
+    CHECK(!servo_page_target(NULL, &o, P0, 1u));
     CHECK(!servo_page_target(&pg, NULL, 9u, 1u));
     /* A count of 0 is the standard servo ports whatever the first. */
     CHECK(servo_page_target(&pg, &o, 5u, 0u));

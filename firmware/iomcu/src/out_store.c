@@ -51,7 +51,7 @@
 #define STORE_SLOTS       (STORE_SECTORS * STORE_RECORDS)
 /**
  * @brief The one-page slots of version 7 and older, read until the first
- * version 8 record is written (out_store_rec.h).
+ * record of version 8 or later is written (out_store_rec.h).
  */
 #define STORE_V7_BYTES    OUT_STORE_SLOT_BYTES_V7
 /** @brief Version 7 slots in one sector. */
@@ -96,14 +96,14 @@ _Static_assert(STORE_V7_BYTES == FLASH_PAGE_SIZE
                && STORE_SLOT_BYTES == 2u * FLASH_PAGE_SIZE,
                "a record slot is one flash page before version 8, two from it");
 
-/* Written at OUT_STORE_VERSION; versions 3 to 7 are still read, so the
+/* Written at OUT_STORE_VERSION; versions 3 to 8 are still read, so the
  * output bindings, the supply's wiring, the sensor bus's set-up, the
  * phase tap's and the ports an earlier build saved survive the update
  * (out_store_rec.h). */
 
 /**
- * @brief Two flash pages hold a version 8 record, and a save programs both
- * in one window.
+ * @brief Two flash pages hold a record of version 8 or 9, and a save
+ * programs both in one window.
  *
  * The record's layout, its checksum and its zero count are
  * out_store_rec.c's (host-tested); the checksum is the link's, because a
@@ -171,7 +171,8 @@ static union {
 
 /**
  * @brief The live record of the layout before version 8, by sector, while the
- * store holds no version 8 record: never erased until the first one is written.
+ * store holds no record of the two-page layout: never erased until the first
+ * one is written.
  *
  * -1 for none.
  */
@@ -494,7 +495,7 @@ bool out_store_load(out_store_t *out)
     out_store_rec_t recs[STORE_V7_SLOTS];
     s_keep_sector = -1;
     int at = load_from(recs, STORE_SLOTS, STORE_RECORDS, STORE_SLOT_BYTES,
-                       OUT_STORE_VERSION, OUT_STORE_VERSION, out);
+                       OUT_STORE_VERSION_V8, OUT_STORE_VERSION, out);
     if (at >= 0) {
         /* Saved as it is. */
         s_saved = *out;
@@ -502,9 +503,9 @@ bool out_store_load(out_store_t *out)
         s_last_record = (uint8_t)at;
         return true;
     }
-    /* No version 8 record: one of version 7 or older in its one-page slot,
-     * kept until the first version 8 record is written.  The first save
-     * writes it in the new layout. */
+    /* No record of version 8 or 9: one of version 7 or older in its
+     * one-page slot, kept until the first record of the two-page layout is
+     * written.  The first save writes it in the new layout. */
     at = load_from(recs, STORE_V7_SLOTS, STORE_V7_RECORDS, STORE_V7_BYTES,
                    OUT_STORE_VERSION_V3, OUT_STORE_VERSION_V7, out);
     if (at >= 0) {
@@ -572,7 +573,7 @@ out_store_step_t out_store_tick(bool driving, uint32_t quiet_ms,
     }
 
     out_store_rec_t recs[STORE_SLOTS];
-    survey(recs, STORE_SLOTS, STORE_SLOT_BYTES, OUT_STORE_VERSION,
+    survey(recs, STORE_SLOTS, STORE_SLOT_BYTES, OUT_STORE_VERSION_V8,
            OUT_STORE_VERSION);
     out_store_write_t w;
     if (!out_store_map_write_keep(recs, STORE_SECTORS, STORE_RECORDS,
@@ -614,7 +615,7 @@ bool out_store_reclaim(bool driving, uint32_t quiet_ms)
         return false;
     }
     out_store_rec_t recs[STORE_SLOTS];
-    survey(recs, STORE_SLOTS, STORE_SLOT_BYTES, OUT_STORE_VERSION,
+    survey(recs, STORE_SLOTS, STORE_SLOT_BYTES, OUT_STORE_VERSION_V8,
            OUT_STORE_VERSION);
     const int stale = out_store_map_stale_keep(recs, STORE_SECTORS,
                                                STORE_RECORDS, s_keep_sector);

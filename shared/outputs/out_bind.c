@@ -721,11 +721,13 @@ static uint8_t count_pins(uint32_t pins, uint8_t width)
  *        page has.
  *
  * @param p  The protocol entry.
- * @return   The lower of @p p's max_pins and OUT_MAX_SLOTS.
+ * @return   The lower of @p p's max_pins and LINK_OUT_SLOTS, the slots of
+ *           the OUTPUTS page the binding model fills.
  */
 static uint8_t cap_of(const outbind_proto_t *p)
 {
-    return (p->max_pins < OUT_MAX_SLOTS) ? p->max_pins : (uint8_t)OUT_MAX_SLOTS;
+    return (p->max_pins < LINK_OUT_SLOTS) ? p->max_pins
+                                          : (uint8_t)LINK_OUT_SLOTS;
 }
 
 uint8_t outbind_chosen(const outbind_t *b)

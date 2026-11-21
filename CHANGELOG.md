@@ -15,6 +15,24 @@ history is in git.
   footprints from the KiCad board file into `_rbmod_v2_data.py`; the
   overlap check covers both models
   ([Mechanical parts](hardware/mechanical/README.md#rbmod-carrier-board-version-2)).
+- Link protocol 4.41: the IOmcu's bank has 16 slots and 16 channels.
+  CHANNELS_HI, CHAN_CFG_HI and OUTPUTS_HI (0x3C to 0x3E) carry channels 9
+  to 16 and slots 9 to 16, BIND_CFG_HI and BIND_OUT_HI (0x3F, 0x40)
+  prepare them, and BIND register 2 `COMMIT_ALL` takes all four prepared
+  pages as one. A slot's channel run ends at channel 16; SENSE_MAP's
+  `WATCH` names outputs 9 to 16 as 0x40 to 0x47. A 4.40 panel commits slots
+  1 to 8 and leaves the rest as they are; this panel sends the new pages
+  to a 4.41 IOmcu only, refuses an older IOmcu a slot whose channel run
+  reaches past channel 8, and its binding model still fills slots 1 to 8
+  ([Link, Slots and channels 9 to 16](docs/Link.md#slots-and-channels-9-to-16)).
+- Output store record version 9 (436 bytes) keeps slots 9 to 16 and
+  channels 9 to 16. A version 8 record reads with slots 9 to 16 unbound
+  and with every slot whose channel run reaches past channel 8 unbound; a
+  kept or written slot whose run reaches past channel 16 is never bound;
+  an IOmcu image older than 4.41 reads no version 9 record and starts with
+  the bindings of a one-page record if the flash holds one, empty
+  otherwise.
+
 - `tools/pio_budget.py`: counts every PIO (programmable input/output)
   program in the `.pio` files under `protocols/` as pioasm 2.3.0 does and
   loads each board's programs into a model of the RP2350's 3 blocks of 4
