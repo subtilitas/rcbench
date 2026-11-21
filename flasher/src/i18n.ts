@@ -118,6 +118,57 @@ const S = {
     'SCHREIBEN löscht, schreibt, liest zurück und startet das Board neu. Lass das Kabel stecken, bis die Seite das Ende meldet.',
   ],
   needImage: ['Choose an image first.', 'Wähle zuerst ein Image.'],
+  keep: ['Keep settings', 'Einstellungen behalten'],
+  keepSub: [
+    'the NVS (non-volatile storage) partition with the settings and the bindings is not written',
+    'die NVS-Partition (non-volatile storage) mit den Einstellungen und den Kopplungen wird nicht geschrieben',
+  ],
+  keepList: ['Not written, kept on the board (partition table at {x}):', 'Nicht geschrieben, bleibt auf dem Board (Partitionstabelle bei {x}):'],
+  keepItem: ['{name} ({sub}) at {offset}, {n} bytes', '{name} ({sub}) bei {offset}, {n} Bytes'],
+  keepOta: [
+    'otadata is written blank: the board starts ota_0, the slot with the written application.',
+    'otadata wird leer geschrieben: Das Board startet ota_0, den Slot mit der geschriebenen Anwendung.',
+  ],
+  keepNone: [
+    'The partition table at {x} has no settings partition: the whole image is written.',
+    'Die Partitionstabelle bei {x} hat keine Einstellungs-Partition: Das ganze Image wird geschrieben.',
+  ],
+  keepOff: [
+    'The whole image is written from 0x0, over the NVS partition: the settings and the bindings on the board are erased.',
+    'Das ganze Image wird ab 0x0 geschrieben, über die NVS-Partition: Die Einstellungen und die Kopplungen auf dem Board werden gelöscht.',
+  ],
+  keepRefused: [
+    'With "Keep settings" on, nothing is written. Untick it to write the whole image; that erases the settings.',
+    'Mit „Einstellungen behalten“ wird nichts geschrieben. Nimm den Haken weg, um das ganze Image zu schreiben; das löscht die Einstellungen.',
+  ],
+  keep_bootloader: [
+    'The bootloader header at {x} is damaged or runs past the end of the image, so the partition table cannot be found.',
+    'Der Bootloader-Header bei {x} ist beschädigt oder reicht über das Ende des Images, daher ist die Partitionstabelle nicht auffindbar.',
+  ],
+  'keep_no-table': [
+    'The image has no partition table between {x}, at steps of 4096 bytes.',
+    'Das Image hat keine Partitionstabelle zwischen {x}, in Schritten von 4096 Bytes.',
+  ],
+  'keep_two-tables': ['The image holds two partition tables, at {x}.', 'Das Image enthält zwei Partitionstabellen, bei {x}.'],
+  keep_end: ['The partition table at {x} has no end marker.', 'Die Partitionstabelle bei {x} hat keine Endmarke.'],
+  'keep_md5-missing': ['The partition table at {x} has no MD5 entry.', 'Die Partitionstabelle bei {x} hat keinen MD5-Eintrag.'],
+  keep_md5: [
+    'The MD5 entry of the partition table does not match its entries: {x} (read, computed).',
+    'Der MD5-Eintrag der Partitionstabelle passt nicht zu ihren Einträgen: {x} (gelesen, berechnet).',
+  ],
+  keep_magic: ['The partition table holds an entry without the magic bytes 0xAA50, at {x}.', 'Die Partitionstabelle enthält einen Eintrag ohne die Magic-Bytes 0xAA50, bei {x}.'],
+  keep_layout: [
+    'The partitions overlap or start inside the sector of the table: {x}.',
+    'Die Partitionen überlappen sich oder beginnen im Sektor der Tabelle: {x}.',
+  ],
+  keep_overlap: [
+    'The settings partition {x} overlaps the bootloader, the partition table or another partition.',
+    'Die Einstellungs-Partition {x} überlappt den Bootloader, die Partitionstabelle oder eine andere Partition.',
+  ],
+  keep_align: [
+    'The settings partition {x} does not start and end on a 4096-byte sector.',
+    'Die Einstellungs-Partition {x} beginnt und endet nicht auf einem 4096-Byte-Sektor.',
+  ],
   needConnect: ['Connect the board first.', 'Verbinde zuerst das Board.'],
   step_connect: ['Connect', 'Verbinden'],
   step_exclusive: ['Exclusive access', 'Exklusiver Zugriff'],
@@ -130,6 +181,7 @@ const S = {
   step_bootsel: ['BOOTSEL', 'BOOTSEL'],
   progress: ['{step}: {pct}%, {done} of {total} bytes, {s}s', '{step}: {pct} %, {done} von {total} Bytes, {s} s'],
   done: ['Done: {file} is written and verified, and the board restarts. {s}s in all.', 'Fertig: {file} ist geschrieben und geprüft, und das Board startet neu. {s} s insgesamt.'],
+  doneKept: ['Kept on the board: {x}.', 'Auf dem Board behalten: {x}.'],
   failed: ['Failed in step {step}: {x}', 'Fehlgeschlagen im Schritt {step}: {x}'],
   try_connect_serial: [
     'Try: a USB data cable, not a charge-only one. Hold BOOT, press and release RESET (or plug the cable in), release BOOT, connect again. On Windows, a board whose USB socket goes through a USB-to-UART bridge chip needs that chip\'s driver (CH343, CP210x). The 7-inch panel board has 2 USB-C sockets and either one works; its bridge chip is not known.',
