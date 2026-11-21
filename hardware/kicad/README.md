@@ -167,8 +167,8 @@ The renders are not checked by CI; run the command after changing a
 ## Core2350B
 
 The Waveshare Core2350B carries the RP2350B, 16MB flash, an optional
-2MB PSRAM (pseudo-static RAM) and a 6-pin flat cable socket for its USB
-adapter board. Its 64 plated holes form a 10 x 10 grid at 2.54mm
+PSRAM (pseudo-static RAM), 2MB on the B1 variant and 8MB on the B2, and
+a 6-pin flat cable socket for its USB adapter board. Its 64 plated holes form a 10 x 10 grid at 2.54mm
 without the middle 6 x 6; it has no castellations. Pad numbers are
 Waveshare's header pins: P1 pins 1-16 are pads 1-16 (left edge), P2
 pads 17-32 (top edge, at the flat cable socket), P3 pads 33-48 (bottom
@@ -182,7 +182,7 @@ The footprint takes 2.54mm headers: 1.0mm holes for a 0.64mm square pin
 (0.91mm across its corners), 1.7mm pads, 0.84mm of board between pads.
 The flash on the underside, about 1.9mm high, keeps the board off a
 carrier; on headers its underside stands 2.5mm over the carrier. F.Fab
-shows the flash and the PSRAM's place.
+shows the flash (5.3 x 5.3mm) and the PSRAM (3.9 x 4.9mm).
 
 The USB adapter board (USB-C, BOOT, RESET, 4 holes of 2.0mm) is not in
 the library. It plugs into the Core2350B through the 6-way flat cable

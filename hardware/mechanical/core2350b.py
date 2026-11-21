@@ -5,8 +5,8 @@ outline, holes and the place of its main parts come from that spec.
 This model adds the copper of the 64 plated holes (6 GND pads
 octagonal, as P shows them), the RP2350B, the regulator, the
 inductor, the crystal, the LED, the flat cable socket, 4 chip parts
-on the top side, the flash, the PSRAM and 29 chip parts on the
-underside, and the underside's print.
+on the top side, the flash, the PSRAM, their 16 tinned pads and 29
+chip parts on the underside, and the underside's print.
 
 The USB adapter board carries the USB Type-C socket, a flat cable
 socket for the 6-way cable to the Core2350B, the BOOT and RESET push
@@ -35,23 +35,50 @@ Sources:
     adapter board (Core2350B0-50.jpg, rectified by its 4 holes). P
     shows the Core2350B's adapter with D2's and M's layout turned by
     180 degrees, with the flat cable socket at the edge opposite the
-    USB socket, BOOT left of RESET, and a socket of 6 contacts.
+    USB socket, BOOT left of RESET, and a socket of 6 contacts. P's
+    underside is the B0 variant, without PSRAM.
+    U: Waveshare's photo d-Core2350B0-details-intro.jpg (waveshare.com/
+    wiki/Core2350B0; not in the repository), 960 x 682px, right board:
+    the underside with the PSRAM fitted, 15.3px per mm. Its holes fit
+    a 2.54mm grid with 0.34px (0.02mm) RMS (root mean square) error
+    over 61 holes. U gives the underside: the flash, the PSRAM, their
+    pads, the chip parts and the print. Each was read off a mm grid
+    laid on that fit and checked against P's underside (31.9px per mm,
+    44 holes, 0.64px RMS error), within about 0.2mm; the two agree
+    within 0.15mm.
 
-Packages by their look in P: RP2350B QFN 10 x 10mm with 80 leads at
-0.4mm; regulator SOT-23-5; flash SOIC-8 (small outline, 8 leads),
-5.3mm body, as S's part W25Q128JVSIQ is; crystal 2.5 x 2.0mm;
-LED 0603; chip parts 0402 and 0603. Their heights are the packages'
-nominal ones.
+    U and P show the underside turned by 90 degrees against a plain
+    flip of the top side: the top side's grid place (column c, row r,
+    both 0 to 9 from the top left) is U's (9 - r, 9 - c). The inner
+    GND pads at row 1, columns 3 and 6 of the top side lie at column 8,
+    rows 3 and 6 in U, and the chamfered corner moves from the top left
+    to the bottom right. In mm from the board's center, U's x is the
+    specs' -y and U's y is their -x.
+
+Packages by their look in P and U: RP2350B QFN 10 x 10mm with 80
+leads at 0.4mm; regulator SOT-23-5; flash SOIC-8 (small outline, 8
+leads), 5.3mm body, 7.9mm over the leads, as S's part W25Q128JVSIQ
+is; PSRAM SOP-8 (small outline package, 8 leads), 150mil: body 3.9 x
+4.9mm, 6.0mm over the leads; crystal 2.5 x 2.0mm; LED 0603; chip parts
+0402 and 0603. Their heights are the packages' nominal ones. The
+flash and the PSRAM sit on the same footprint: 4 tinned pads a side,
+0.6 x 2.25mm, from 2.25 to 4.5mm off the chip's center, long enough
+for both packages; P's empty PSRAM place shows it.
+
+S does not name the PSRAM. Assumed: AP Memory APS1604M-3SQR-SN (2MB,
+B1 variant) or APS6404L-3SQR-SN (8MB, B2), both SOP-8 150mil; their
+sizes are those of JEDEC (Joint Electron Device Engineering Council)
+outline MS-012 above. Which of the two U shows is unknown; the package
+is the same.
 
 Estimated, not measured: the Core2350B's thickness (1.6mm), its corner
 radius (0.5mm), its hole diameter (1.0mm) and ring (1.6mm); the
 inductor's height (1.0mm); the crystal's height (0.55mm); the flash's
-height (1.9mm); the flat cable socket's height on the Core2350B (taken
-as M's 1.90mm on the adapter) and how it splits into housing and lock;
-the PSRAM's package: P shows its place empty on a board without PSRAM,
-pads for an SOIC-8 of 5.3mm, and it is drawn as the flash; the push
-buttons' body (3.6 x 3.0mm, 1.5mm high) and cap (2.4mm across) within
-M's box.
+height (1.9mm); the PSRAM's part number and height (1.5mm); the pads'
+inner ends under the flash, which U does not show; the flat cable
+socket's height on the Core2350B (taken as M's 1.90mm on the adapter)
+and how it splits into housing and lock; the push buttons' body (3.6 x
+3.0mm, 1.5mm high) and cap (2.4mm across) within M's box.
 
 Not drawn: tracks and vias, the names printed beside the holes, the
 logo on the top side, the frames printed round parts, the flat cable,
@@ -89,21 +116,27 @@ OCTAGONS = [kicad.place(h, n) for h, names in enumerate(kicad.HEADERS, 1)
 # Top side, from the board's center, y down (P).
 CAPS_TOP = (((-6.6, -6.75), p.c0402), ((-6.6, -5.8), p.c0603),
             ((-6.6, -4.85), p.r0402), ((-0.17, -6.92), p.c0603))
-# Underside, as seen through the board from the top (P), each with its
-# turn: 0 along x, 90 along y.
+# Underside, as seen through the board from the top (U), each with its
+# turn: 0 along x, 90 along y. In U: the row of 14 under "Waveshare",
+# the column of 5 on the left, the 5 right of the flash, the row of 5
+# under the chips.
 UNDER_PARTS = (
     [((4.87, y), p.c0402, 0.0) for y in (7.13, 6.34, 5.56, 3.73, 2.51,
                                          1.72, -0.28, -0.98, -1.93, -2.80,
                                          -3.68, -4.46, -5.33)]
     + [((4.87, 0.68), p.c0603, 0.0)]
-    + [((x, 7.16), p.c0402, 0.0) for x in (2.86, 1.64, 0.25, -2.63, -3.85)]
-    + [((x, y), p.c0402, 0.0) for x, y in ((1.99, -4.72), (1.99, -5.50),
-                                           (-3.59, -4.72), (-3.59, -5.50))]
+    + [((x, 7.15), p.c0402, 0.0) for x in (2.82, 1.42, 0.06, -2.85, -4.20)]
+    + [((x, y), p.c0402, 0.0) for x, y in ((1.78, -4.72), (1.78, -5.52),
+                                           (-3.73, -4.78), (-3.73, -5.56))]
     + [((-2.54, -5.25), p.c0603, 90.0)]
-    + [((-6.81, y), p.r0402, 90.0) for y in (4.77, 3.38, 1.99, 0.68,
-                                             -0.71)])
+    + [((-6.75, y), p.r0402, 90.0) for y in (4.78, 3.33, 1.95, 0.61,
+                                             -0.85)])
 UNDER_PRINT = (("Waveshare", 6.7, -0.2, 1.0, 8.3, 90.0),
                ("Core2350B", 0.1, -7.0, 1.13, 9.2, 0.0))
+# The chips' footprint: pad length and width, and the pads' centers off
+# the chip's center along x (U).
+CHIP_PAD = (2.25, 0.6)
+CHIP_PAD_AT = 3.375
 FFC_H, LOCK_H = 1.9, 1.4
 
 
@@ -203,10 +236,18 @@ def soic8_wide():
 
 
 def underside():
-    """The parts and the print of the underside."""
+    """The parts and the print of the underside.
+
+    The chips stand on their pads.
+    """
     out = []
-    for part in (kicad.FLASH, kicad.PSRAM):
-        out += B.under(soic8_wide(), *part[0])
+    for part, chip in ((kicad.FLASH, soic8_wide()), (kicad.PSRAM,
+                                                     p.soic8())):
+        x, y = part[0]
+        out += B.under(s.place(chip, z=p.PAD), x, y)
+        for dx in (-CHIP_PAD_AT, CHIP_PAD_AT):
+            for dy in p.rows(4, 1.27):
+                out += B.under(p.pad(*CHIP_PAD), x + dx, y + dy)
     for (x, y), part, turn in UNDER_PARTS:
         out += B.under(part(), x, y, turn)
     return out + B.words(UNDER_PRINT, under=True)

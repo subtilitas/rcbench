@@ -170,6 +170,14 @@ history is in git.
 
 ### Fixed
 
+- `hardware/mechanical/core2350b.step` and the KiCad 3D model of
+  `Core2350B_Waveshare_25.4x25.4mm`: the PSRAM is a SOP-8 150mil (body
+  3.9mm x 4.9mm, 6.0mm over the leads), not a copy of the 5.3mm flash;
+  flash and PSRAM stand on their 16 tinned pads, 0.6mm x 2.25mm, which
+  reach 4.5mm from each chip's center; the left column of chip parts and
+  the parts right of the flash sit where Waveshare's underside photo
+  with the PSRAM fitted shows them, within about 0.2mm. The footprint's
+  fabrication layer draws the PSRAM's 3.9mm x 4.9mm body.
 - `hardware/kicad/`: the pin names under the ES3C28P JST PH headers stagger
   between 2 rows, 0.8mm apart; at 2.0mm pitch "IO14" and "IO21" printed
   over each other on `ES3C28P_GPIO`.
