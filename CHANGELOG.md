@@ -6,6 +6,51 @@ history is in git.
 
 ## Unreleased
 
+## 0.23.16 - 2026-11-21
+
+0.23.16 is a testing release. SETUP > WIRELESS opens a SEARCH screen from
+its scan and bound rows: the seconds left of a 10s scan, up to 8 found
+devices with their signal strength, and a question before it binds one.
+It takes the place of the found lists of the Dial and the nodes, which
+opened without being drawn. A web flasher at `/rcbench/flash/` writes the
+panel, the IOmcu and the wireless devices from Chrome or Edge on a desktop
+computer; on 2026-11-21 it wrote v0.23.15 to a panel of chip revision 3.2
+over the ESP32-P4's built-in USB (Universal Serial Bus) serial port, USB ID
+303A:1001: 7,572,864 bytes in 40s.
+RUDDER AUTO puts MARGIN into the pulse length and starts every run with
+LIMIT RUN's search, and SERVO LIVE gains a ZERO row. `hardware/` gains the
+Waveshare Core2350B and its USB adapter board as STEP models and a KiCad
+part, KiCad parts for the 4 JST PH sockets of the ES3C28P, and models of a
+standard size servo, the KST X10 with a flap drive and a WitMotion
+inertial sensor. Its minor number, 23, is odd. GitHub publishes it as a
+pre-release and does not mark it as latest. It runs on the ESP32-P4 panel,
+as 0.23.15 does; an ESP32-S3 panel stays on the 0.22 line and is not
+offered it. The link protocol is 4.40, up from 4.39 in 0.23.15: BENCH flag
+bit 8 marks a peak speed above 65,535rpm. The assets are
+`rcbench-panel-p4-v0.23.16.zip`, `rcbench-panel-p4-v0.23.16.bin`,
+`rcbench-iomcu-v0.23.16.zip`, `rcbench-iomcu-rbmod-v0.23.16.zip`,
+`rcbench-c6-2.13.0.bin`, `rcbench-c6-merged-2.13.0.bin`,
+`rcbench-node-pwr-0.23.16.bin`, `rcbench-node-pwr-merged-0.23.16.bin`,
+`rcbench-node-bal-0.23.16.bin`, `rcbench-node-bal-merged-0.23.16.bin`,
+`rcbench-node-display-merged-0.23.16.bin`, `rcbench-dial-0.23.16.bin`,
+`rcbench-dial-merged-0.23.16.bin` and `SHA256SUMS`. After the publish,
+`release.yml` starts `pages.yml` on `main`, which copies the images to the
+web flasher.
+
+A bench on 0.23.15 gets 0.23.16 over Wi-Fi: SETUP > UPDATES, RELEASES: TESTING,
+CHECK FOR UPDATES, then hold the install button for 2s. With RELEASES: STABLE the
+check reads `releases/latest`, which names 0.22.1, and offers nothing. At
+link-up the panel offers to update the IOmcu over CAN (Controller Area Network)
+when the IOmcu runs a different build. The panel carries the images of the
+Dial and of the power and balance nodes and sends them over Bluetooth LE from
+SETUP > UPDATES; the display node's image is loaded over USB. To set up a
+new bench, load both boards over USB as
+[First run, §1](docs/FirstRun.md#1-flash-both-boards) describes, or with
+the [web flasher](flasher/README.md).
+
+The entries below cover the 11 pull requests merged since v0.23.15: #893 to
+#903.
+
 ### Added
 
 - Settings backup on the card, `BENCH/SETUP`. SETUP > SD CARD ends on Save
