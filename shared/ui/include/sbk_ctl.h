@@ -118,9 +118,18 @@ size_t sbk_buffer_size(void);
 
 /**
  * @brief The answer to the request sbk_tick() handed out.
- * @param d The answer.
+ *
+ * @p armed is the bench's state in the frame that hands the answer in,
+ * which may be the first to see ARMED: a read for LOAD SETTINGS is put in
+ * force only when it is false, whatever the bench was when the read was
+ * asked for or at the last sbk_tick().  The other answers change no setting
+ * and drive nothing: a written file, a copy and a list are taken whatever
+ * @p armed says, and the restore offer opens only on a SAFE bench.
+ *
+ * @param d     The answer.
+ * @param armed Whether the bench is ARMED now.
  */
-void sbk_done(const sb_done_t *d);
+void sbk_done(const sb_done_t *d, bool armed);
 
 /** @brief Whether a request is under way. @return true while one is. */
 bool sbk_busy(void);

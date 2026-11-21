@@ -94,7 +94,7 @@ static void frames(int n)
         if (sbk_tick(&s_feed, &q)) {
             sb_done_t d;
             sb_run(&k_io, &q, sbk_buffer(), sbk_buffer_size(), &d);
-            sbk_done(&d);
+            sbk_done(&d, s_feed.armed);
         }
         ui_router_tick(0.016f);
     }

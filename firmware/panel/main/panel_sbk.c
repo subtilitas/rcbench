@@ -214,9 +214,11 @@ void panel_sbk_card_serve(void)
 
 void panel_sbk_frame(bool committed, bool armed)
 {
+    /* The answer with this frame's ARMED: a load that arrives in the first
+     * frame that sees ARMED is refused (sbk_done()). */
     if (s_req_out && atomic_load(&s_answered) == atomic_load(&s_sent)) {
         s_req_out = false;
-        sbk_done(&s_done);
+        sbk_done(&s_done, armed);
     }
     const sbk_feed_t feed = {
         .mounted = storage_mounted(),

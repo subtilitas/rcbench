@@ -7065,7 +7065,9 @@ steht an der Stelle der Liste:
 ihre Nummer, ihr Schlüssel, ihr Code und der Grund. Die ersten 16
 abgelehnten Zeilen bleiben erhalten; eine Zeile darunter zählt den Rest.
 Eine ganz abgelehnte Datei lädt nichts und zeigt `<Datei> abgelehnt: Code
-n, Zeile m.`
+n, Zeile m.` Eine Datei, deren Lesen in einem Frame endet, der den Prüfstand
+ARMED sieht, wird ebenfalls nicht geladen, wie auch immer der Prüfstand beim
+Halten stand: `<Datei> nicht geladen: Prüfstand ARMED.`
 
 **Das Angebot beim Start.** Ein Panel, das nur mit den Standardwerten
 startet (das NVS hielt keine Einstellungen oder nach einem Löschen die

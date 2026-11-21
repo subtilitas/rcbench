@@ -24,15 +24,27 @@ static sbk_feed_t g_feed;
 /** @brief Requests carried out. */
 static int g_requests;
 
-/** @brief One frame: the driver's request carried out by the "card task",
- *         and the router's tick. */
+/** @brief An answer the "card task" has and the next frame takes. */
+static sb_done_t g_done;
+/** @brief Whether g_done waits for that frame. */
+static bool g_answered;
+
+/**
+ * @brief One frame in panel_sbk_frame()'s order: the answer the card task
+ *        finished since the last frame handed in first, with this frame's
+ *        feed, then the tick and its request, which the card task carries
+ *        out before the next frame; then the router's tick.
+ */
 static void frame(float dt_s)
 {
+    if (g_answered) {
+        g_answered = false;
+        sbk_done(&g_done, g_feed.armed);
+    }
     sb_req_t q;
     if (sbk_tick(&g_feed, &q)) {
-        sb_done_t d;
-        sb_run(&k_io, &q, sbk_buffer(), sbk_buffer_size(), &d);
-        sbk_done(&d);
+        sb_run(&k_io, &q, sbk_buffer(), sbk_buffer_size(), &g_done);
+        g_answered = true;
         ++g_requests;
     }
     g_feed.committed = false;
@@ -100,6 +112,7 @@ static void start(bool defaults, bool card)
     g_feed.mounted = card;
     g_feed.wall_s = 1795269933;   /* 2026-11-21 14:05:33 UTC */
     g_requests = 0;
+    g_answered = false;
     ui_text_set_language(UI_LANG_EN);
     ui_router_init();
     for (int i = 0; i < SPLASH_STEP_COUNT; ++i) {
@@ -546,6 +559,27 @@ TEST_CASE(armed_or_no_card_loads_nothing)
     CHECK_EQ(sbk_load_state(), SBK_LOAD_IDLE);
 }
 
+TEST_CASE(a_file_read_in_the_frame_that_arms_is_not_put_in_force)
+{
+    fake_fresh();
+    put_backup("AUTO1.TXT", "x");
+    start(false, true);
+    settle();
+    sbk_screen_open(false);
+    settle();
+    /* SAFE when the read is handed out; the card task reads the file. */
+    sbk_ask_load(0);
+    frame(0.016f);
+    CHECK(g_answered);
+    /* The frame that hands the answer in is the first to see ARMED. */
+    g_feed.armed = true;
+    frame(0.016f);
+    CHECK_EQ(sbk_load_state(), SBK_LOAD_FAILED);
+    CHECK_EQ(sbk_load_why(NULL, NULL), SBK_WHY_ARMED);
+    CHECK_FEQ(settings_get(SET_BRIGHTNESS), 60.0f);
+    CHECK(!settings_dirty());
+}
+
 int main(void)
 {
     RUN(save_settings_writes_the_stored_settings_and_says_so);
@@ -558,5 +592,6 @@ int main(void)
     RUN(the_hold_loads_at_2000ms_and_not_at_1999ms);
     RUN(a_load_lists_each_refused_line_and_a_cut_file_loads_nothing);
     RUN(armed_or_no_card_loads_nothing);
+    RUN(a_file_read_in_the_frame_that_arms_is_not_put_in_force);
     return test_summary("sbk_screen");
 }

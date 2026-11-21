@@ -254,8 +254,13 @@ static void offer_read(const sb_done_t *d)
     }
 }
 
-/** @brief LOAD SETTINGS' read: parsed and put in force on a SAFE bench. */
-static void load_read(const sb_done_t *d)
+/**
+ * @brief LOAD SETTINGS' read: parsed and put in force on a SAFE bench.
+ * @param d     The answer.
+ * @param armed The bench's state now, from sbk_done()'s caller: the one
+ *              the values would go in force under.
+ */
+static void load_read(const sb_done_t *d, bool armed)
 {
     (void)snprintf(k.load_name, sizeof(k.load_name), "%s", d->name);
     k.load = SBK_LOAD_FAILED;
@@ -270,7 +275,7 @@ static void load_read(const sb_done_t *d)
         k.why_code = (uint8_t)e;
         return;
     }
-    if (k.armed) {
+    if (armed) {
         k.why = SBK_WHY_ARMED;
         return;
     }
@@ -281,8 +286,11 @@ static void load_read(const sb_done_t *d)
     k.load = SBK_LOAD_DONE;
 }
 
-void sbk_done(const sb_done_t *d)
+void sbk_done(const sb_done_t *d, bool armed)
 {
+    /* Before anything the answer brings on: the restore offer's opening
+     * reads it too. */
+    k.armed = armed;
     const bool check = k.busy_check;
     k.busy = false;
     k.busy_check = false;
@@ -308,7 +316,7 @@ void sbk_done(const sb_done_t *d)
         if (check) {
             offer_read(d);
         } else {
-            load_read(d);
+            load_read(d, armed);
         }
         break;
     case SB_REQ_NONE:
