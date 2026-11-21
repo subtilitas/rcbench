@@ -16,6 +16,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `lipo_charger_boost_5v.py` | spec of the lithium polymer charger board with 5V boost output |
 | `boost_5v_en.py` | spec of the 5V boost converter board with enable pad |
 | `esp32_c6_zero.py` | spec of the Waveshare ESP32-C6-Zero |
+| `core2350b.py` | spec of the Waveshare Core2350B and its USB adapter board |
 | `lipo_cells.py` | spec of two lithium polymer cells, 702030 and 102540, with wires and plug |
 | `kst_x10.py` | spec of the KST X10 wing servo, from a dimension drawing and photos |
 | `_gen_flap_drive.py` | builds a frame with counter bearing for the KST X10, its linkage and a slice of wing with a flap with OpenCASCADE, checks that no two solids share volume |
@@ -30,7 +31,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `_measure_step.py` | measures Waveshare's STEP file of the panel board with OpenCASCADE |
 | `_solid.py` | profiles of straight sides and arcs pushed along an axis, and round rods along a path of lines and arcs, turned and moved, as solids with flat, cylindrical and toroidal faces |
 | `_parts.py` | shapes of electronic parts: chip parts, leaded packages, wire sockets, USB sockets, card slot, buttons, pin header, shunt, both halves of the XT90PW |
-| `check_overlap.py` | fails when two solids share volume in the panel board's model, in the INA228 module with its case, in one of the 4 module boards, in a cell, in the standard servo, in the KST X10 or in the WitMotion sensor |
+| `check_overlap.py` | fails when two solids share volume in the panel board's model, in the INA228 module with its case, in one of the 5 module boards, in the Core2350B's USB adapter board, in a cell, in the standard servo, in the KST X10 or in the WitMotion sensor |
 | `check_panel_7b.py` | holds the panel board's model against Waveshare's STEP file |
 | `gen_models.py` | writes `models/` from the specs; `--check` fails on drift |
 | `_stl.py` | reads a binary STL and splits it into its closed parts |
@@ -492,10 +493,12 @@ python3 hardware/mechanical/_trace_ina228_print.py PHOTOS  # rewrite _ina228_pri
 
 ## Module boards and cells
 
-Four module boards and two lithium polymer cells, drawn part by part
-with the print of both sides. Each board's model is also the 3D model of
-its footprint in the [KiCad library](../kicad/README.md), in the same
-frame; the INA219 board stands on a 6-pin header there and is bare here.
+Five module boards, the Core2350B's USB adapter board and two lithium
+polymer cells, drawn part by part with the print of both sides. Each
+module board's model is also the 3D model of its footprint in the
+[KiCad library](../kicad/README.md), in the same frame; the INA219 board
+stands on a 6-pin header there and the Core2350B on four 2 x 8 headers,
+and both are bare here.
 
 | | | |
 | --- | --- | --- |
@@ -503,6 +506,8 @@ frame; the INA219 board stands on a 6-pin header there and is bare here.
 | `ina219_cjmcu219.step` | `lipo_charger_boost_5v.step` | `boost_5v_en.step` |
 | ![ESP32-C6-Zero](renders/esp32_c6_zero.png) | ![380mAh cell](renders/lipo_702030_380mah.png) | ![1000mAh cell](renders/lipo_102540_1000mah.png) |
 | `esp32_c6_zero.step` | `lipo_702030_380mah.step` | `lipo_102540_1000mah.step` |
+| ![Core2350B](renders/core2350b.png) | ![Core2350B USB adapter](renders/core2350b_usb_adapter.png) | |
+| `core2350b.step` | `core2350b_usb_adapter.step` | |
 
 | File | Content | Size, mm | Origin |
 | --- | --- | --- | --- |
@@ -510,13 +515,36 @@ frame; the INA219 board stands on a 6-pin header there and is bare here.
 | `lipo_charger_boost_5v.step` | charger board: 6 plated holes, chip (SOIC-8), inductor, 6 capacitors, 4 resistors, 4 LEDs, side push button, underside's white field with black names; 121 solids, 1.3MB | 15.2 x 24.0 x 1.6, inductor 3.0 over the board, button plunger 1.5 past the edge | hole 1 (OUT 5V) on the underside; x along the row, y from the LEDs to the row |
 | `boost_5v_en.step` | boost board: 4 plated corner holes, enable pad, chip (SOIC-8), inductor, 2 diodes (SMA), 3 capacitors, 3 resistors, print, underside's white field; 69 solids, 0.6MB | 13.7 x 21.7 x 1.6, inductor 3.0 over the board | IN+ hole on the underside; x towards IN-, y towards the outputs |
 | `esp32_c6_zero.step` | Waveshare ESP32-C6-Zero: 18 edge pads with holes and half holes, 7 underside pads, USB Type-C socket, chip (QFN, 40 leads), antenna, 2 buttons, LED, regulator, diode, crystal, 21 chip parts, print; 263 solids, 2.6MB | 18.0 x 23.5 x 1.6, socket 3.25 over the board and 1.21 past the edge | 5V pad's hole on the underside; x towards the TX pad, y towards the socket |
+| `core2350b.step` | Waveshare Core2350B: 64 plated holes (6 GND pads octagonal), RP2350B (QFN, 80 leads), regulator (SOT-23-5), inductor, crystal, LED, 6-way flat cable socket, 4 chip parts on the top side; flash and PSRAM (SOIC-8, 5.3mm body) and 29 chip parts on the underside, its print; 429 solids | 25.40 x 25.40 x 1.6, socket 1.9 over the board, flash 1.9 under it | pad 1's hole on the underside; x towards P2's corner GND, y away from P3; flat cable socket at +x +y |
+| `core2350b_usb_adapter.step` | the Core2350B's USB adapter board: USB Type-C socket, 6-way flat cable socket, BOOT and RESET buttons, LED, 5 chip parts, 4 holes of 2.0mm at 14.0mm, the slots of the socket's legs, print BOOT, RESET, PWR; 70 solids | 18.0 x 18.0 x 1.0, socket 3.25 over the board, its front 0.02 inside the edge | the board's center on its underside; x towards RESET, y towards the flat cable socket |
 | `lipo_702030_380mah.step` | cell, print 702030 3.7V 380mAh 1.406Wh: pouch with folded side seams, head under amber tape, print, 2 wires, plug; 40 solids | 20.0 x 31.0 x 7.0; wires 60 | middle of the width at the end away from the head, on the lower face; y towards the head, wires to -x |
 | `lipo_102540_1000mah.step` | cell, print 102540 3.7V 1000mAh: pouch, head under black tape, print, 2 wires, plug; 28 solids | 25.0 x 40.5 x 10.0; wires 60 | as the other cell |
 
 Sources: three owner photos on 5mm squared paper, of the top sides, the
 undersides and the cells on edge, which are not in the repository; for the
 ESP32-C6-Zero also Waveshare's dimension drawing and STEP file, which are
-not in the repository either. `_photo_grid.py`'s grid fit lies within
+not in the repository either.
+
+The Core2350B and its adapter come from Waveshare's documents, none of
+them in the repository: the Core2350B's dimension drawing (25.40mm
+square, 64 holes at 2.54mm) and schematic (the name of each hole);
+product photos of its top side and underside, whose holes fit the
+2.54mm grid within 0.02mm RMS (root mean square), so parts read off
+them lie within about 0.2mm; the dimension drawing of the RP2350-Tiny's
+adapter board (18.00mm square, holes 14.00mm apart, corner radius
+1.00mm) and its STEP file `RP2040-Tiny-Adapter V1.1.step`, which states
+no licence: board 1.00mm thick, holes 2.02mm, USB socket 3.25mm high,
+buttons 4.65 x 3.00 x 2.50mm, flat cable socket 5.70 x 3.60 x 1.90mm,
+the place of every part. A photo of the Core2350B's adapter shows that
+board's layout turned by 180 degrees, with a socket of 6 contacts; the
+model is drawn in the photo's orientation. Estimated, not measured: the
+Core2350B's thickness (1.6mm), corner radius (0.5mm) and holes (1.0mm),
+the heights of its inductor (1.0mm), crystal (0.55mm) and flash
+(1.9mm), its flat cable socket's height (the adapter's 1.90mm), the
+PSRAM's package (drawn as the flash; the photos show its place empty on
+a board without PSRAM) and the buttons' body and cap within the STEP
+file's box. Not drawn: the names printed beside the holes, the logo,
+the flat cable and the adapter's underside. `_photo_grid.py`'s grid fit lies within
 0.20mm of the paper's grid in these photos. The camera stands 171mm over
 the paper. The 2.54mm rows of the INA219 board and the charger board read
 1.005 times their size, and sizes read off a board's top are divided by

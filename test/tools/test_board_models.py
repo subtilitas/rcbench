@@ -1,6 +1,6 @@
 """hardware/mechanical: the module boards and cells drawn part by part.
 
-The print's font fits a line to a width, every solid of the six models
+The print's font fits a line to a width, every solid of the models
 closes, each model is as large as its spec's sources give it, the
 KiCad library writes the same solids, and each footprint's pads lie
 where the model has its holes.
@@ -20,6 +20,7 @@ sys.path.insert(0, str(ROOT / "hardware" / "kicad" / "tools"))
 import _parts  # noqa: E402
 import _solid  # noqa: E402
 import boost_5v_en  # noqa: E402
+import core2350b  # noqa: E402
 import esp32_c6_zero  # noqa: E402
 import gen_all  # noqa: E402
 import ina219_cjmcu219  # noqa: E402
@@ -202,3 +203,75 @@ def test_cell_sizes(stem, size):
 def test_library_writes_the_same_solids(spec):
     """A flat board's library model is its mechanical model."""
     assert gen_all.detail(spec.kicad.MODEL) == model(spec)
+
+
+def test_core2350b_solids_close():
+    """The Core2350B and its adapter board: every solid closes."""
+    models = core2350b.parts(None)
+    assert {k: len(v) for k, v in models.items()} == {
+        "core2350b": 429, "core2350b_usb_adapter": 70}
+    for solids in models.values():
+        assert [n for n, item in enumerate(solids)
+                if open_edges(item)] == []
+
+
+def test_core2350b_follows_the_makers_drawing():
+    """64 holes on a 2.54 grid, 1.27 from the edges, the middle empty."""
+    kicad = core2350b.kicad
+    pads = kicad.FOOTPRINT["pads"]
+    assert [p["num"] for p in pads] == [str(n) for n in range(1, 65)]
+    assert (pads[0]["x"], pads[0]["y"]) == kicad.FOOTPRINT["origin"]
+    assert pads[0]["shape"] == "rect"
+    places = set()
+    for pad in pads:
+        col, row = ((pad[k] - 1.27) / 2.54 for k in ("x", "y"))
+        assert (col, row) == pytest.approx((round(col), round(row)))
+        places.add((round(col), round(row)))
+    middle = {(c, r) for c in range(2, 8) for r in range(2, 8)}
+    assert places == {(c, r) for c in range(10) for r in range(10)} - middle
+    box = extent(core2350b.parts(None)["core2350b"])
+    assert box[3] - box[0] == pytest.approx(25.4)
+    assert box[4] - box[1] == pytest.approx(25.4)
+
+
+def test_core2350b_symbol_names_every_pad_once():
+    """64 pins numbered as the pads; the names of Waveshare's headers."""
+    kicad = core2350b.kicad
+    pins = {num: name for _k, name, num, *_at in kicad.SYMBOL["pins"]}
+    assert sorted(pins, key=int) == [str(n) for n in range(1, 65)]
+    assert [pins[n] for n in ("1", "17", "21", "31", "32", "49")] == [
+        "GND", "GND", "BOOTSEL", "VBUS", "3V3", "GND"]
+    assert pins["19"] == "GP47_ADC7_PSRAM_CS"
+    gpio = {name.split("_")[0] for name in pins.values()
+            if name.startswith("GP")}
+    assert gpio == {f"GP{i}" for i in range(48)}
+
+
+def test_core2350b_library_model_stands_on_headers():
+    """64 pins reach 6.0 under the plastic; the board lies 2.5 up."""
+    solids = core2350b.kicad_model()
+    assert len(solids) == 429 + 8 * 9
+    box = extent(solids)
+    assert box[2] == pytest.approx(-6.0)
+
+
+@pytest.mark.parametrize("stem, names", [
+    ("es3c28p_pwr", ["5V", "GND"]),
+    ("es3c28p_uart", ["5V", "GND", "TXD", "RXD"]),
+    ("es3c28p_i2c", ["3V3", "GND", "SCL", "SDA"]),
+    ("es3c28p_gpio", ["IO2", "IO3", "IO14", "IO21"])])
+def test_es3c28p_headers_follow_the_socket(stem, names):
+    """Pins in the socket's order on a 2.0mm JST PH row, pin 1 first."""
+    spec = next(s for s in gen_all.load_specs()
+                if s.__name__ == stem)
+    pins = [(num, name) for _k, name, num, *_at in spec.SYMBOL["pins"]]
+    assert pins == [(str(i), n) for i, n in enumerate(names, 1)]
+    pads = spec.FOOTPRINT["pads"]
+    assert [p["num"] for p in pads] == [str(i) for i in
+                                        range(1, len(names) + 1)]
+    xs = [p["x"] for p in pads]
+    steps = [b - a for a, b in zip(xs[:-1], xs[1:], strict=True)]
+    assert steps == pytest.approx([2.0] * (len(names) - 1))
+    assert spec.FOOTPRINT["board"] == pytest.approx(
+        (2.0 * (len(names) - 1) + 3.9, 4.5))
+    assert spec.SYMBOL["footprint"] == spec.FOOTPRINT["name"]
