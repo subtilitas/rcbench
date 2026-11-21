@@ -721,6 +721,111 @@ TEST_CASE(a_card_gone_before_the_offer_s_read_is_looked_at_again)
     CHECK(sbk_screen_offer());
 }
 
+/**
+ * @brief File @p name of the folder as another panel would have written it
+ *        again: brightness 80 and @p written in place of brightness 40 and
+ *        its date.
+ */
+static void rewrite(const char *name, const char *written)
+{
+    fake_file_t *f = (fake_file_t *)find(name);
+    REQUIRE_ALLOC(f);
+    static sf_load_t l;
+    if (sf_parse(f->data, f->len, &l, NULL) != SF_OK) {
+        CHECK(false);
+        return;
+    }
+    static char text[FAKE_BYTES];
+    char *at = strstr(f->data, "\nbrightness = 40");
+    REQUIRE_ALLOC(at);
+    at[14] = '8';
+    const char *old = strstr(f->data, l.head.written);
+    REQUIRE_ALLOC(old);
+    const size_t pre = (size_t)(old - f->data);
+    (void)snprintf(text, sizeof(text), "%.*s%s%s", (int)pre, f->data,
+                   written, old + strlen(l.head.written));
+    f->len = strlen(text);
+    memcpy(f->data, text, f->len + 1u);
+}
+
+/** @brief HOLD 2s TO LOAD held for 2250ms and let go. */
+static void hold_load(void)
+{
+    const gfx_rect_t hold = sbk_screen_part(SBK_PART_HOLD);
+    press_body(hold, TOUCH_EVENT_DOWN);
+    for (int i = 0; i < 9; ++i) {
+        frame(0.25f);
+    }
+    press_body(hold, TOUCH_EVENT_UP);
+    settle();
+}
+
+TEST_CASE(another_card_under_backup_loads_nothing_without_a_new_choice)
+{
+    fake_fresh();
+    put_backup("AUTO1.TXT", "2026-11-20 10:00:00 UTC");
+    start(false, true);
+    settle();
+    sbk_screen_open(false);
+    settle();
+    tap_body(sbk_screen_row(0));
+    CHECK(sbk_screen_hold_ready());
+    /* Swapped between two frames: the same name, brightness 80. */
+    rewrite("AUTO1.TXT", "2026-11-21 09:00:00 UTC");
+    g_feed.mount = 1u;
+    frame(0.016f);
+    CHECK_EQ(sbk_screen_chosen(), -1);
+    CHECK(!sbk_screen_hold_ready());
+    settle();
+    uint8_t n = 0u;
+    CHECK_EQ(sbk_list_state(), SBK_LIST_READY);
+    CHECK_STR_EQ(sbk_files(&n)[0].head.written, "2026-11-21 09:00:00 UTC");
+    hold_load();
+    CHECK_EQ(sbk_load_state(), SBK_LOAD_IDLE);
+    CHECK_FEQ(settings_get(SET_BRIGHTNESS), 60.0f);
+    /* Pulled: no card shown, nothing chosen; in again: listed anew. */
+    tap_body(sbk_screen_row(0));
+    CHECK(sbk_screen_hold_ready());
+    g_feed.mounted = false;
+    frame(0.016f);
+    CHECK_EQ(sbk_screen_chosen(), -1);
+    CHECK_EQ(sbk_list_state(), SBK_LIST_READY);
+    CHECK_EQ(sbk_list_code(), SB_NO_CARD);
+    g_feed.mounted = true;
+    g_feed.mount = 2u;
+    settle();
+    CHECK_EQ(sbk_list_state(), SBK_LIST_READY);
+    CHECK_EQ(sbk_list_code(), SB_OK);
+    CHECK_EQ(n, 1u);
+}
+
+TEST_CASE(a_file_written_again_after_the_choice_is_refused_and_listed_anew)
+{
+    fake_fresh();
+    put_backup("AUTO1.TXT", "2026-11-20 10:00:00 UTC");
+    start(false, true);
+    settle();
+    sbk_screen_open(false);
+    settle();
+    tap_body(sbk_screen_row(0));
+    CHECK(sbk_screen_hold_ready());
+    /* Written again on the same card, by a browser or another tool. */
+    rewrite("AUTO1.TXT", "2026-11-21 09:00:00 UTC");
+    hold_load();
+    CHECK_FEQ(settings_get(SET_BRIGHTNESS), 60.0f);
+    CHECK(sbk_load_state() != SBK_LOAD_DONE);
+    CHECK_STR_EQ(band(), ui_tr(TX_ALERT_SB_CHANGED));
+    CHECK_EQ(sbk_screen_chosen(), -1);
+    uint8_t n = 0u;
+    CHECK_EQ(sbk_list_state(), SBK_LIST_READY);
+    CHECK_STR_EQ(sbk_files(&n)[0].head.written, "2026-11-21 09:00:00 UTC");
+    /* Chosen again: it loads. */
+    tap_body(sbk_screen_row(0));
+    hold_load();
+    CHECK_EQ(sbk_load_state(), SBK_LOAD_DONE);
+    CHECK_FEQ(settings_get(SET_BRIGHTNESS), 80.0f);
+}
+
 int main(void)
 {
     RUN(save_settings_writes_the_stored_settings_and_says_so);
@@ -738,5 +843,7 @@ int main(void)
     RUN(a_list_that_changes_under_a_choice_drops_the_choice);
     RUN(a_card_gone_before_the_offer_s_list_is_looked_at_again);
     RUN(a_card_gone_before_the_offer_s_read_is_looked_at_again);
+    RUN(another_card_under_backup_loads_nothing_without_a_new_choice);
+    RUN(a_file_written_again_after_the_choice_is_refused_and_listed_anew);
     return test_summary("sbk_screen");
 }

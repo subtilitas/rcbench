@@ -83,7 +83,7 @@ static const settings_store_t k_mem = { m_load, m_save, m_load_text,
                                         m_save_text };
 
 /** @brief What the panel feeds the driver: a card in, SAFE. */
-static sbk_feed_t s_feed = { true, false, false, 1795269933 };
+static sbk_feed_t s_feed = { true, false, false, 1795269933, 0u };
 
 /** @brief Frames: the driver's requests run on the folder, the router
  *         ticked. */

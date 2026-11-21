@@ -118,6 +118,7 @@ void sbk_screen_relisted(const sb_entry_t *before, unsigned before_n)
     const sb_entry_t *now = sbk_files(&n);
     const int i = v.chosen;
     const bool same = before != NULL && i < (int)before_n && i < (int)n
+                      && before[i].size == now[i].size
                       && strcmp(before[i].name, now[i].name) == 0
                       && strcmp(before[i].head.written,
                                 now[i].head.written) == 0;

@@ -147,6 +147,7 @@ static void draw_answer(gfx_canvas_t *c)
             (void)snprintf(buf, sizeof(buf), TR(SBK_RESULT_ARMED), name);
             break;
         case SBK_WHY_CARD:
+        case SBK_WHY_CHANGED:      /* not FAILED: the list again */
         case SBK_WHY_NONE:
         default:
             (void)snprintf(buf, sizeof(buf), TR(SBK_RESULT_CARD), name,

@@ -55,6 +55,8 @@ typedef struct {
                              frame (settings_save_tick())                 */
     int64_t wall_s;     /**< the clock, s since 1970; a time wall_valid()
                              refuses writes "not known"                   */
+    unsigned mount;     /**< the mount's number (storage_mount_count()): a
+                             new number while mounted is another card     */
 } sbk_feed_t;
 
 /** @brief SAVE SETTINGS' state, for its row. */
@@ -86,6 +88,9 @@ typedef enum {
     SBK_WHY_CARD,       /**< the card's answer, an sb_result_t           */
     SBK_WHY_FILE,       /**< the file is refused whole, an sf_err_t       */
     SBK_WHY_ARMED,      /**< the bench was ARMED when the file arrived    */
+    SBK_WHY_CHANGED,    /**< the file read is not the one listed: another
+                             size, date, version or format; the list is
+                             read again and nothing is chosen             */
 } sbk_why_t;
 
 /** @brief The restore offer's state. */

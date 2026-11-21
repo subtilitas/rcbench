@@ -225,6 +225,7 @@ void panel_sbk_frame(bool committed, bool armed)
         .armed = armed,
         .committed = committed,
         .wall_s = (int64_t)time(NULL),
+        .mount = storage_mount_count(),
     };
     /* Every frame, so a save to the store is seen while a request is out;
      * the driver hands out none until it has the answer. */

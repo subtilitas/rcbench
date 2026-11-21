@@ -62,7 +62,7 @@ void sbk_screen_open(bool offer);
  * @brief The driver read the list again: a chosen file whose row no longer
  *        has the same name and date is no longer chosen, and a hold under
  *        way ends without a load.
- * @param before   The list before.
+ * @param before   The list before; NULL drops the choice.
  * @param before_n Its files.
  */
 void sbk_screen_relisted(const sb_entry_t *before, unsigned before_n);

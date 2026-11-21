@@ -6133,6 +6133,9 @@ UI_TEXT(ALERT_SB_FULL, 94,
 UI_TEXT(ALERT_SB_FAILED, 94,
     "Settings copy not written: card code %u.",
     "Einstellungskopie nicht geschrieben: Karten-Code %u.")
+UI_TEXT(ALERT_SB_CHANGED, 94,
+    "The settings file changed on the card: choose again.",
+    "Einstellungsdatei auf der Karte geändert: neu wählen.")
 UI_TEXT(ALERT_FW_UPDATED, 94,
     "Panel firmware %s installed.",
     "Panel-Firmware %s installiert.")

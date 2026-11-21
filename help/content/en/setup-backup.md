@@ -30,6 +30,7 @@ Each time the panel writes its settings to NVS with a card in, it also writes a 
 - Each file shows its date and the panel version that wrote it. `date not known`: the panel's clock was not set; the panel sets it only from the network.
 - Tap a file to choose it. HOLD 2s TO LOAD loads it; a release before 2s shows `Hold 2s to load the settings file.` The hold takes no press while ARMED.
 - BACK or the home tag returns to SD CARD.
+- A card pulled or swapped while BACKUP shows clears the list and the choice. A file written again after you chose it loads nothing: `The settings file changed on the card: choose again.` shows, and the list is read again.
 
 Loading replaces every setting: the file's value, or the default where the file has none. The values take effect at once and are written to NVS when the bench is idle. The answer lists each line the panel refused, with its line number, key, code and reason:
 

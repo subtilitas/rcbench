@@ -7055,6 +7055,16 @@ jedes Mal neu:
   bei ARMED, ohne gewählte Datei und für eine Datei, die keine
   Einstellungsdatei ist; die Zeile darüber nennt den Grund.
 - ZURÜCK oder das Home-Tag führt zurück zu SD CARD.
+- Eine Karte, die gezogen oder getauscht wird, während BACKUP zu sehen ist,
+  leert die Liste, die Wahl und ein laufendes Halten; die Liste zeigt
+  `Keine Karte.`, und die nächste Karte wird neu gelistet.
+- Laden prüft, dass die gelesene Datei die gelistete ist: dieselbe Größe,
+  dasselbe `Written:`-Datum, dieselbe Panel-Version und dasselbe Format.
+  Eine seither neu geschriebene Datei, durch einen Browser, FILES oder einen
+  Computer, lädt nichts; das Meldeband zeigt `Einstellungsdatei auf der
+  Karte geändert: neu wählen.`, und die Liste wird ohne Wahl neu gelesen.
+  Ein Neuschreiben, das Größe und die ersten drei Zeilen behält, wird nicht
+  erkannt.
 
 Laden ersetzt alle Einstellungen: durch den Wert der Datei, wo eine Zeile
 einen gibt, sonst durch den Standardwert. Die Werte gelten sofort, wie eine

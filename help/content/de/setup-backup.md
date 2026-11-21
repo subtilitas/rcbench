@@ -30,6 +30,7 @@ Jedes Mal, wenn das Panel seine Einstellungen mit eingesteckter Karte ins NVS sc
 - Jede Datei zeigt ihr Datum und die Panel-Version, die sie schrieb. `Datum unbekannt`: Die Uhr des Panels war nicht gestellt; das Panel stellt sie nur über das Netz.
 - Tippe auf eine Datei, um sie zu wählen. 2s HALTEN ZUM LADEN lädt sie; Loslassen vor 2s zeigt `Halte 2s, um die Einstellungsdatei zu laden.` Bei ARMED nimmt die Taste keinen Druck.
 - ZURÜCK oder das Home-Tag führt zurück zu SD CARD.
+- Eine Karte, die gezogen oder getauscht wird, während BACKUP zu sehen ist, leert Liste und Wahl. Eine Datei, die nach deiner Wahl neu geschrieben wurde, lädt nichts: `Einstellungsdatei auf der Karte geändert: neu wählen.` erscheint, und die Liste wird neu gelesen.
 
 Laden ersetzt alle Einstellungen: durch den Wert der Datei oder den Standardwert, wo die Datei keinen hat. Die Werte gelten sofort und werden ins NVS geschrieben, sobald der Prüfstand ruht. Die Antwort nennt jede Zeile, die das Panel abgelehnt hat, mit Zeilennummer, Schlüssel, Code und Grund:
 

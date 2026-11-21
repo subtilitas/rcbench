@@ -104,6 +104,7 @@ typedef enum {
 typedef struct {
     char      name[SB_NAME_MAX]; /**< AUTO1.TXT, ..., SETTINGS.TXT          */
     uint8_t   err;               /**< sf_head()'s sf_err_t; SF_OK readable  */
+    int32_t   size;              /**< its bytes as the list found them      */
     sf_head_t head;              /**< its first lines                       */
 } sb_entry_t;
 

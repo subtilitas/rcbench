@@ -113,11 +113,13 @@ sb_result_t sb_write_auto(const sb_io_t *io, const char *text, size_t len)
 /** @brief List one file into @p e when it is there; whether it is. */
 static bool list_one(const sb_io_t *io, const char *name, sb_entry_t *e)
 {
-    if (io->size(io->ctx, name) < 0) {
+    const int32_t size = io->size(io->ctx, name);
+    if (size < 0) {
         return false;
     }
     memset(e, 0, sizeof(*e));
     (void)snprintf(e->name, sizeof(e->name), "%s", name);
+    e->size = size;
     char head[SB_HEAD_BYTES];
     const int32_t n = io->read(io->ctx, name, head, sizeof(head));
     e->err = (uint8_t)((n < 0) ? SF_ERR_ARG

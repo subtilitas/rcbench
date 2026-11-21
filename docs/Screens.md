@@ -6511,6 +6511,15 @@ settings themselves are in NVS.
   chosen, or for a file that is no settings file; the line above it says
   which.
 - BACK, or the home tag, returns to SD CARD.
+- A card pulled or swapped while BACKUP shows clears the list, the choice
+  and a hold under way; the list shows `No card.`, and the next card is
+  listed anew.
+- A load checks that the file read is the file listed: the same size,
+  `Written:` date, panel version and format. A file written again since,
+  by a browser, FILES or a computer, loads nothing; the alert band shows
+  `The settings file changed on the card: choose again.`, and the list is
+  read again with nothing chosen. A rewrite that keeps the size and the
+  first three lines is not detected.
 
 A load replaces every setting: the file's value where a line gives one, the
 default where none does. The values take effect at once, as an edit does,

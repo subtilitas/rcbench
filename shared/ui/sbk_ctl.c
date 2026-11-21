@@ -29,6 +29,8 @@ typedef struct {
     bool        read_check;    /**< the owed read is the offer's        */
     char        read_name[SB_NAME_MAX]; /**< the file it reads          */
     bool        mounted;       /**< a card was mounted at the last frame */
+    unsigned    mount;         /**< its mount's number                  */
+    sb_entry_t  want;          /**< the file a load reads, as listed    */
     bool        armed;         /**< the bench was ARMED at the last frame */
     int64_t     wall_s;        /**< the clock at the last frame         */
     bool        boot_defaults; /**< the panel started on defaults only  */
@@ -171,13 +173,42 @@ static bool next(sb_req_t *req)
     return false;
 }
 
+/**
+ * @brief The card the list was read from is gone, or another took its
+ *        place: the list, the choice and a hold under way go, and a load
+ *        not yet handed out is dropped.
+ * @param mounted Whether a card is mounted now.
+ */
+static void card_gone(bool mounted)
+{
+    k.count = 0u;
+    memset(k.files, 0, sizeof(k.files));
+    k.list = mounted ? SBK_LIST_NONE : SBK_LIST_READY;
+    k.list_code = SB_NO_CARD;
+    if (k.owe_read && !k.read_check) {
+        k.owe_read = false;
+        k.load = SBK_LOAD_IDLE;
+    }
+    sbk_screen_relisted(NULL, 0u);
+    sbk_screen_invalidate();
+}
+
 bool sbk_tick(const sbk_feed_t *f, sb_req_t *req)
 {
     if (f == NULL || req == NULL) {
         return false;
     }
     const bool mounted_now = f->mounted && !k.mounted;
+    const bool other_card = f->mounted && k.mounted && f->mount != k.mount;
+    if ((k.mounted && !f->mounted) || other_card) {
+        card_gone(f->mounted);
+    }
+    if ((mounted_now || other_card)
+        && ui_router_current() == SCREEN_SET_LOAD) {
+        sbk_ask_list();             /* BACKUP lists the card that is in */
+    }
     k.mounted = f->mounted;
+    k.mount = f->mount;
     k.armed = f->armed;
     k.wall_s = f->wall_s;
     if (f->committed && f->mounted) {
@@ -298,6 +329,21 @@ static void load_read(const sb_done_t *d, bool armed)
         k.why_code = d->result;
         return;
     }
+    /* The file read must be the file the list showed: a card swapped, a
+     * browser write or a rename since gives another size or header. */
+    sf_head_t h;
+    const sf_err_t he = sf_head(s_buf, d->len, &h);
+    if ((int32_t)d->len != k.want.size || (uint8_t)he != k.want.err
+        || h.format != k.want.head.format
+        || strcmp(h.version, k.want.head.version) != 0
+        || strcmp(h.written, k.want.head.written) != 0) {
+        k.load = SBK_LOAD_IDLE;
+        k.why = SBK_WHY_CHANGED;
+        ui_router_set_alert(TR(ALERT_SB_CHANGED));
+        sbk_ask_list();
+        sbk_screen_relisted(NULL, 0u);
+        return;
+    }
     const sf_err_t e = sf_parse(s_buf, d->len, &s_load, &k.why_line);
     if (e != SF_OK) {
         k.why = SBK_WHY_FILE;
@@ -397,6 +443,7 @@ void sbk_ask_load(int index)
     }
     (void)snprintf(k.read_name, sizeof(k.read_name), "%s",
                    k.files[index].name);
+    k.want = k.files[index];
     k.owe_read = true;
     k.read_check = false;
     k.load = SBK_LOAD_READING;
