@@ -2,7 +2,8 @@
 """Build a KST X10 on a frame with counter bearing, driving a flap.
 
     flap_drive            frame, double arm, pushrod and horn
-    flap_drive_wing       a slice of wing with the flap, cut open
+    flap_drive_wing       a slice of wing with the flap, cut open, and
+                          the fairing over the rod's slot
     flap_drive_assembly   both and the servo of kst_x10.py
 
 A slice of wing, 88 of span, carries a flap hinged in the lower skin.
@@ -29,12 +30,17 @@ pin, cheeks 2.2 thick and 4.0 apart. Horn eye 3.5 over the flap's upper
 surface and 1.0 behind the hinge, plates 1.5 thick and 2.8 apart. Rod
 3.0 across, screws M2.5 in brass inserts. The plate lies 0.25 under
 the skin at the nearest point, turned to the skin's slope; the gap is
-the adhesive's and is not drawn.
+the adhesive's and is not drawn. The wing's upper skin ends on a plane
+through the hinge that leans 22 degrees forward, 4.45 before the flap
+at the upper surface, so the flap turns up. A fairing, half an
+ellipsoid 40 long with a wall of 0.6, covers the slot; it is open
+where the skin ends.
 
 Not drawn: threads, the servo's splines, the hinge's tape, adhesive,
-the spar's caps, ribs, a fairing over the rod's slot. The parts stand
-at neutral; ``travel`` gives the flap's angle for an angle of the arm
-from the same sizes.
+the spar's caps, ribs, a seal over the gap. The files hold the parts
+at neutral. ``travel`` gives the flap's angle for an angle of the arm
+from the same sizes, ``posed`` the parts at that angle, and ``sweep``
+checks them from -45 to 75 degrees of the arm.
 
 Frames. The frame's parts are drawn in the servo's frame (kst_x10.py:
 origin on the shaft's axis at the case's output end, z = 0 on the face
@@ -47,6 +53,7 @@ Usage:
     python3 hardware/mechanical/_gen_flap_drive.py           write
     python3 hardware/mechanical/_gen_flap_drive.py --check   exit 1 when
         a file differs, a solid is not valid, or two solids share volume
+        at neutral or at one of 8 angles of the arm
     xvfb-run -a python3 hardware/mechanical/_gen_flap_drive.py \
         --render hardware/mechanical/renders
 
@@ -66,18 +73,20 @@ from OCP.BRep import BRep_Builder
 from OCP.BRepAlgoAPI import (BRepAlgoAPI_Common, BRepAlgoAPI_Cut,
                              BRepAlgoAPI_Fuse)
 from OCP.BRepBndLib import BRepBndLib
-from OCP.BRepBuilderAPI import (BRepBuilderAPI_MakeEdge,
+from OCP.BRepBuilderAPI import (BRepBuilderAPI_GTransform,
+                                BRepBuilderAPI_MakeEdge,
                                 BRepBuilderAPI_MakeFace,
                                 BRepBuilderAPI_MakeWire,
                                 BRepBuilderAPI_Transform)
 from OCP.BRepCheck import BRepCheck_Analyzer
 from OCP.BRepGProp import BRepGProp
 from OCP.BRepPrimAPI import (BRepPrimAPI_MakeBox, BRepPrimAPI_MakeCylinder,
-                             BRepPrimAPI_MakePrism)
+                             BRepPrimAPI_MakePrism, BRepPrimAPI_MakeSphere)
 from OCP.collections import Array1_gp_Pnt
 from OCP.GC import GC_MakeArcOfCircle
 from OCP.GeomAPI import GeomAPI_PointsToBSpline
-from OCP.gp import gp_Ax1, gp_Ax2, gp_Dir, gp_Pnt, gp_Trsf, gp_Vec
+from OCP.gp import (gp_Ax1, gp_Ax2, gp_Dir, gp_GTrsf, gp_Pnt, gp_Trsf,
+                    gp_Vec)
 from OCP.GProp import GProp_GProps
 from OCP.Interface import Interface_Static
 from OCP.ShapeUpgrade import ShapeUpgrade_UnifySameDomain
@@ -106,6 +115,11 @@ STEEL = (0.62, 0.63, 0.65)
 CHORD, SHELL = 230.0, 0.8
 SPAN = (-28.0, 60.0)
 HINGE_AT, SHAFT_AT, GAP = 0.75, 0.38, 0.6
+# The wing's upper skin ends on a plane through the hinge that leans
+# forward by UP degrees: the flap turns up that far less the gap.
+UP = 22.0
+# The arm's travel the collision check covers: from, to, step, degrees.
+SWEEP = (-45, 75, 15)
 SPAR = (0.27, 2.0)          # part of the chord, thickness
 REAR = (13.0, 1.0)          # before the hinge, thickness
 NOSE = (3.5, 1.0)           # the flap's nose wall behind the hinge
@@ -126,16 +140,20 @@ SCREW = (2.5, 4.5, 2.5, 5.5, 0.5, 3.6)  # thread, head, its height,
 #                                         washer, its thickness, insert
 # Arm: shaft to pin, hub radius, eye radius, inner cheek from and to,
 # outer cheek from and to, boss diameter and its end, barrel diameter.
-ARM = (7.0, 3.6, 2.4, 0.8, 3.0, 7.0, 9.2, 5.0, 10.8, 6.0)
+ARM = (7.0, 3.6, 2.4, 0.8, 3.0, 7.0, 9.2, 5.0, 10.8, 5.4)
 PIN = (2.0, 0.6, 9.4)
 ROD = 3.0
 # Rod end at the arm: thickness, half height, straight length, taper's
 # end, half height there, collar's end; collar diameter.
-END = (3.4, 2.2, 11.0, 17.0, 1.6, 21.0, 4.2)
+END = (3.4, 1.2, 11.0, 17.0, 1.6, 21.0, 4.2)
 # Horn: eye over the flap's upper surface, eye behind the hinge, plate
 # thickness, space between the plates, reach into the flap, eye radius,
 # pin.
 HORN = (3.5, 1.0, 1.5, 2.8, 24.0, 2.2, 1.6)
+# Fairing over the slot, half an ellipsoid round the hinge line: length
+# before the hinge, height there over the upper surface, half width
+# inside, wall.
+FAIRING = (40.0, 7.8, 4.5, 0.6)
 EXIT = (3.5, 6.0)               # the rod's slot in the upper skin: half
 #                                 width, length before the rod meets it
 FORK = (2.0, 7.0, 10.0)         # eye radius, straight length, collar's end
@@ -337,18 +355,12 @@ def travel(arm):
     j = joints()
     rod = math.dist(j["pin"], j["eye"])
 
-    def turned(point, centre, degrees):
-        a = math.radians(degrees)
-        dx, dz = point[0] - centre[0], point[1] - centre[1]
-        return (centre[0] + dx * math.cos(a) + dz * math.sin(a),
-                centre[1] - dx * math.sin(a) + dz * math.cos(a))
-
     # Seen from -y a positive turn about y is clockwise in (x, z): a
     # point over the centre moves to +x.
-    pin = turned(j["pin"], j["shaft"], -arm)
+    pin = _turned(j["pin"], j["shaft"], -arm)
 
     def miss(flap):
-        return math.dist(pin, turned(j["eye"], j["hinge"], flap)) - rod
+        return math.dist(pin, _turned(j["eye"], j["hinge"], flap)) - rod
 
     if arm == 0:
         return 0.0
@@ -465,14 +477,8 @@ def _along(start, end, shape):
     return _moved(shape, _about_y(start[0], start[1], -angle))
 
 
-def linkage():
-    """Rod, its two ends and the horn, in the wing's frame.
-
-    Returns:
-        A list of (name, shape, colour).
-    """
-    j = joints()
-    pin, eye, hinge = j["pin"], j["eye"], j["hinge"]
+def _rod(pin, eye):
+    """Rod end, fork and rod from the pin to the eye, both in (x, z)."""
     y = -MID
     thick, half, straight, taper, small, collar, across = END
     px, pz = pin
@@ -498,6 +504,39 @@ def linkage():
     length = math.dist(pin, eye)
     rod = _cyl("x", y, pz, ROD / 2, px + END[5], px + length - collar)
     out.append(("rod", _along(pin, eye, rod), CARBON))
+    return out
+
+
+def _turned(point, centre, degrees):
+    """A point of (x, z) turned about a centre, as ``_about_y`` turns."""
+    a = math.radians(degrees)
+    dx, dz = point[0] - centre[0], point[1] - centre[1]
+    return (centre[0] + dx * math.cos(a) + dz * math.sin(a),
+            centre[1] - dx * math.sin(a) + dz * math.cos(a))
+
+
+def linkage(arm=0.0):
+    """Rod, its two ends and the horn, in the wing's frame.
+
+    Args:
+        arm: Degrees the arm is turned from neutral, as in ``travel``.
+
+    Returns:
+        A list of (name, shape, colour). The horn is turned with the
+        flap, the rod and its ends run from the turned pin to the turned
+        eye.
+    """
+    j = joints()
+    hinge = j["hinge"]
+    flap = travel(arm)
+    if flap is None:
+        raise ValueError(f"the rod does not reach at {arm} degrees")
+    swing = _about_y(*hinge, flap)
+    pin = _turned(j["pin"], j["shaft"], -arm)
+    eye = _turned(j["eye"], hinge, flap)
+    out = _rod(pin, eye)
+    ex, ez = j["eye"]
+    y = -MID
     reach, r = HORN[4], HORN[5]
     front = hinge[0] + NOSE[0] + NOSE[1] + 1.0
     low = inside(front)[0] + 0.2, inside(hinge[0] + reach)[0] + 0.2
@@ -513,6 +552,9 @@ def linkage():
     span = HORN[3] / 2 + HORN[2] + 0.4
     out.append(("horn pin", _cyl("y", ex, ez, HORN[6] / 2, y - span,
                                  y + span), STEEL))
+    if arm:
+        out[3:] = [(name, _moved(shape, swing), rgb)
+                   for name, shape, rgb in out[3:]]
     return out
 
 
@@ -537,8 +579,13 @@ def wing():
                      _spline(list(reversed(low)), y0 - 1),
                      straight(low[0], up[0])], (0, 1, 0), y1 - y0 + 2)
     shell = _cut(outer, hollow)
-    main = _cut(shell, _box(HINGE - GAP / 2, y0 - 2, -50, CHORD + 5, y1 + 2,
-                            50))
+    hz = joints()["hinge"][1]
+    lean = 60.0 * math.tan(math.radians(UP))
+    behind = _slab(
+        [(HINGE - GAP / 2, -50.0), (CHORD + 5, -50.0), (CHORD + 5, hz + 60.0),
+         (HINGE - GAP / 2 - lean, hz + 60.0), (HINGE - GAP / 2, hz)],
+        y0 - 2, y1 + 2)
+    main = _cut(shell, behind)
     plates = [shape for name, shape, _rgb in linkage()
               if name.startswith("horn plate")]
     flap = _cut(shell, _box(-5, y0 - 2, -50, HINGE + GAP / 2, y1 + 2, 50),
@@ -548,8 +595,12 @@ def wing():
     meets = next(x for x in [j["pin"][0] + k * 0.5 for k in range(400)]
                  if j["pin"][1] + rise * (x - j["pin"][0]) + END[6] / 2
                  > inside(x)[1])
-    main = _cut(main, _box(meets - EXIT[1], -MID - EXIT[0], 2.0,
-                           HINGE + 1.0, -MID + EXIT[0], 50))
+    reach, _high, half, wall = FAIRING
+    main = _cut(main, BRepAlgoAPI_Common(
+        _box(meets - EXIT[1], -MID - EXIT[0], 2.0, HINGE + 1.0,
+             -MID + EXIT[0], 50),
+        _stretched(_cyl("z", 0.0, 0.0, 1.0, 0.0, 50.0), reach - 2 * wall,
+                   half, 1.0, HINGE, -MID, 0.0)).Shape())
     move, _slope = setting()
     a, b = SHAFT - HATCH[0], SHAFT + HATCH[1]
     rear = -kst_x10.HEIGHT - kst_x10.TAB[1] - EDGE[1]
@@ -581,7 +632,44 @@ def wing():
             wall = _cut(wall, *plates)
         walls.append((name, wall, rgb))
     return [("wing", main, SKIN), ("flap", flap, SKIN),
-            ("cover", cover, SKIN)] + walls
+            ("cover", cover, SKIN)] + walls + [
+                ("fairing", _fairing(outer, behind), SKIN)]
+
+
+def _stretched(shape, a, b, c, x, y, z):
+    """A shape scaled by (a, b, c) along the axes, then set at a point."""
+    scale = gp_GTrsf()
+    for k, factor in enumerate((a, b, c)):
+        scale.SetValue(k + 1, k + 1, factor)
+    place = gp_Trsf()
+    place.SetTranslation(gp_Vec(x, y, z))
+    return _moved(BRepBuilderAPI_GTransform(shape, scale, True).Shape(),
+                  place)
+
+
+def _fairing(outer, behind):
+    """The shell over the rod's slot, on the wing's upper skin.
+
+    Half an ellipsoid with its centre on the hinge line, turned to the
+    upper surface's slope. Its inside is an ellipsoid a wall smaller.
+
+    Args:
+        outer: The airfoil as a solid; the shell ends on its surface.
+        behind: Everything behind the wing's upper skin; the shell ends
+            where the skin does and is open there.
+    """
+    reach, high, half, wall = FAIRING
+    top = height(UPPER, HINGE)
+    slope = (top - height(UPPER, HINGE - reach)) / reach
+    turn = _about_y(HINGE, top, math.degrees(math.atan(-slope)))
+
+    def body(shrink):
+        ball = BRepPrimAPI_MakeSphere(1.0).Shape()
+        return _moved(_stretched(ball, reach - 2 * shrink,
+                                 half + wall - shrink, high - shrink,
+                                 HINGE, -MID, top), turn)
+
+    return _cut(body(0.0), body(wall), outer, behind)
 
 
 def servo():
@@ -605,6 +693,53 @@ def parts():
     section = wing()
     return {"flap_drive": drive, "flap_drive_wing": section,
             "flap_drive_assembly": section + drive + servo()}
+
+
+def posed(arm, fixed=None):
+    """The assembly with the arm turned.
+
+    Args:
+        arm: Degrees the arm is turned from neutral, as in ``travel``.
+        fixed: (wing(), frame(), servo()) when they are built already.
+
+    Returns:
+        A list of (name, shape, colour): arm and its pin turned about
+        the shaft, flap, nose wall and horn turned about the hinge, the
+        rod between them.
+    """
+    section, drive, case = fixed or (wing(), frame(), servo())
+    j = joints()
+    move, _slope = setting()
+    turn = _about_y(*j["shaft"], -arm)
+    swing = _about_y(*j["hinge"], travel(arm))
+    out = []
+    for name, shape, rgb in section:
+        if name in ("flap", "nose wall"):
+            shape = _moved(shape, swing)
+        out.append((name, shape, rgb))
+    for name, shape, rgb in drive:
+        shape = _moved(shape, move)
+        if name in ("arm", "arm pin"):
+            shape = _moved(shape, turn)
+        out.append((name, shape, rgb))
+    return out + linkage(arm) + case
+
+
+def sweep():
+    """Check the assembly at every SWEEP[2] degrees of the arm's travel.
+
+    Returns:
+        A list of error texts, each with its arm angle, empty when no
+        two solids share volume from SWEEP[0] to SWEEP[1].
+    """
+    fixed = (wing(), frame(), servo())
+    low, high, step = SWEEP
+    errors = []
+    for arm in range(low, high + 1, step):
+        if arm:
+            errors += [f"arm {arm} degrees: {text}"
+                       for text in check(posed(arm, fixed))]
+    return errors
 
 
 # ---- files and checks -----------------------------------------------------
@@ -794,7 +929,7 @@ def main(argv):
     if "--render" in argv:
         render(built, argv[argv.index("--render") + 1])
         return 0
-    errors = check(built["flap_drive_assembly"])
+    errors = check(built["flap_drive_assembly"]) + sweep()
     for stem, items in built.items():
         text = step_text(stem, items)
         path = MODELS / f"{stem}.step"
