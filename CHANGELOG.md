@@ -76,6 +76,13 @@ history is in git.
   115200 baud, which has no effect on that link. A USB-to-UART bridge
   still gets 460800 baud.
   The page's first load grows to 58.6kB, 385.3kB in all.
+- Menu: the MOTOR & ESC tile carries no SIMULATED mark while the power
+  node is the pack's source (SETUP > WIRELESS: Power node ON, INA228
+  source NODE, a node bound), also with the IOmcu's INA228 OFF on SETUP >
+  SENSORS. A bound node counts whether it is connected or not, as an
+  enabled INA228 counts whether it answers or not. The tile still needs
+  the IOmcu's ESC outputs
+  ([Screens](docs/Screens.md#menu-marks)).
 
 ## 0.23.16 - 2026-11-21
 
