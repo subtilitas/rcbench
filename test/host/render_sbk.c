@@ -123,7 +123,7 @@ static void edit(char *text, const char *key, const char *value)
         return;
     }
     p += strlen(at);
-    char *end = strchr(p, ' ');
+    const char *end = strchr(p, ' ');
     char rest[SF_FILE_MAX + 1u];
     (void)snprintf(rest, sizeof(rest), "%s", (end != NULL) ? end : "");
     (void)snprintf(p, SF_FILE_MAX - (size_t)(p - text), "%s%s", value,

@@ -463,9 +463,9 @@ TEST_CASE(the_hold_loads_at_2000ms_and_not_at_1999ms)
     CHECK_FEQ(settings_get(SET_BRIGHTNESS), 40.0f);
     CHECK_STR_EQ(settings_text(SET_TEXT_DIAL_NAME), "DIAL-0001");
     CHECK_STR_EQ(sbk_load_name(), "AUTO1.TXT");
-    int changed = 0;
-    CHECK_EQ(sbk_load_result(&changed)->refused_n, 0);
-    CHECK_EQ(changed, 2);
+    int n_changed = 0;
+    CHECK_EQ(sbk_load_result(&n_changed)->refused_n, 0);
+    CHECK_EQ(n_changed, 2);
     /* The save to the store is asked for. */
     CHECK(settings_save_asked());
     ui_router_render(&s_c, 0);

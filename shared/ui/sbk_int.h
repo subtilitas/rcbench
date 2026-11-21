@@ -64,8 +64,9 @@ _Static_assert(SBK_BACK_Y + SBK_BACK_H <= SBK_FLOOR,
                "BACK ends over the alert band");
 _Static_assert(SBK_ROW_Y + SBK_RES_LINES * SBK_RES_P <= SBK_FLOOR,
                "the answer's lines end over the alert band");
-_Static_assert(SBK_HOLD_H >= UI_TAP_MIN && SBK_BACK_H >= UI_TAP_MIN
-               && SBK_ROW_H >= UI_TAP_MIN, "every control is a tap target");
+_Static_assert(SBK_HOLD_H >= UI_TAP_MIN, "the hold is a tap target");
+_Static_assert(SBK_BACK_H >= UI_TAP_MIN, "BACK is a tap target");
+_Static_assert(SBK_ROW_H >= UI_TAP_MIN, "a file row is a tap target");
 
 /** @brief What a press landed on: a control, or SBK_HIT_ROW0 + a row. */
 enum {

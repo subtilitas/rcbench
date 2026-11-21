@@ -475,10 +475,10 @@ TEST_CASE(a_load_sets_the_file_and_the_defaults_and_leaves_a_held_one)
     CHECK(sf_differs(&g_l));
     g_hold_brightness = true;
     settings_set_hold(hold_brightness);
-    const int changed = sf_apply(&g_l);
+    const int n_changed = sf_apply(&g_l);
     settings_set_hold(NULL);
     g_hold_brightness = false;
-    CHECK_EQ(changed, 3);
+    CHECK_EQ(n_changed, 3);
     CHECK_FEQ(settings_get(SET_PACK_CELLS), 4.0f);
     CHECK_FEQ(settings_get(SET_PACK_MAH), settings_def(SET_PACK_MAH)->def);
     CHECK_STR_EQ(settings_text(SET_TEXT_DIAL_NAME), "");
