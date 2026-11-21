@@ -6,6 +6,22 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- `tools/pio_budget.py`: counts every PIO (programmable input/output)
+  program in the `.pio` files under `protocols/` as pioasm 2.3.0 does and
+  loads each board's programs into a model of the RP2350's 3 blocks of 4
+  state machines and 32 words and 16 DMA (direct memory access) channels,
+  in boot order and placed as pico-sdk 2.3.0 places them. It prints per
+  block the words used and free and the state machines used, and the DMA
+  channels used, for the RP2350-CAN module, the rbmod carrier and the
+  planned remote servo node, and fails when a mix a board allows does not
+  fit. For the remote servo node it runs 23,552 slot orders with every
+  programming session. The capture ring's worst case is 8 plain DShot
+  outputs at 267,200 events/s, 30.7ms of ring against a 42ms flash window:
+  a plain DShot pad keeps its input enable, so its 32,000 edges a second
+  reach the ring. CI runs `--check`.
+
 ## 0.23.16 - 2026-11-21
 
 0.23.16 is a testing release. SETUP > WIRELESS opens a SEARCH screen from
@@ -53,19 +69,6 @@ The entries below cover the 11 pull requests merged since v0.23.15: #893 to
 
 ### Added
 
-- `tools/pio_budget.py`: counts every PIO (programmable input/output)
-  program in the `.pio` files under `protocols/` as pioasm 2.3.0 does and
-  loads each board's programs into a model of the RP2350's 3 blocks of 4
-  state machines and 32 words and 16 DMA (direct memory access) channels,
-  in boot order and placed as pico-sdk 2.3.0 places them. It prints per
-  block the words used and free and the state machines used, and the DMA
-  channels used, for the RP2350-CAN module, the rbmod carrier and the
-  planned remote servo node, and fails when a mix a board allows does not
-  fit. For the remote servo node it runs 23,552 slot orders with every
-  programming session. The capture ring's worst case is 8 plain DShot
-  outputs at 267,200 events/s, 30.7ms of ring against a 42ms flash window:
-  a plain DShot pad keeps its input enable, so its 32,000 edges a second
-  reach the ring. CI runs `--check`.
 - Web flasher at `/rcbench/flash/` on GitHub Pages (`flasher/`), English
   and German, Chrome or Edge on a desktop computer. It writes the panel
   (ESP32-P4), the display node and the M5Stack Dial (ESP32-S3), the power
