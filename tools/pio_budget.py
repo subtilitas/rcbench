@@ -875,9 +875,97 @@ FLASH_WINDOW_MS = 42
 RSN_INPUTS = 9
 #: The fastest servo frame rate the capture is sized for, Hz.
 PWM_HZ = 560
-#: Events a second of a bidirectional DShot pin: 32 edges of a frame and
-#: up to 21 of the reply, 1000 frames a second.
-BIDIR_EVENTS = (32 + 21) * 1000
+
+
+def _defines(root: pathlib.Path, header: str,
+             names: tuple[str, ...]) -> dict[str, int]:
+    """Integer #defines of a header.
+
+    Args:
+        root: The repository.
+        header: The header, relative to it.
+        names: The macros to read.
+
+    Returns:
+        Each macro's value.
+
+    Raises:
+        BudgetError: A macro is missing.
+    """
+    text = (root / header).read_text(encoding="utf-8")
+    val = {}
+    for name in names:
+        m = re.search(r"#define\s+%s\s+(\d+)u?\b" % name, text)
+        if m is None:
+            raise BudgetError(f"{header}: no {name}")
+        val[name] = int(m.group(1))
+    return val
+
+
+@dataclasses.dataclass(frozen=True)
+class Rates:
+    """Capture events a second of one output of each PIO kind.
+
+    Attributes:
+        plain: A plain DShot output.
+        bidir: A bidirectional DShot output.
+        ppm: A PPM output.
+    """
+
+    plain: int
+    bidir: int
+    ppm: int
+
+
+def dshot_events(root: pathlib.Path = ROOT) -> tuple[int, int]:
+    """Events a second of a plain and a bidirectional DShot output.
+
+    Every bit of a frame is a rise and a fall (dshot.pio), so a frame of
+    DSHOT_FRAME_BITS bits is 2 edges a bit; a bidirectional output adds up
+    to DSHOT_TELEM_BITS edges of the reply (protocols/dshot/include/
+    dshot.h).  Frames go out at OUT_RENDER_DSHOT_HZ
+    (shared/outputs/include/out_render.h).
+
+    A plain DShot pad is captured: pio_gpio_init() is gpio_set_function(),
+    which sets the pad's input enable (pico-sdk 2.3.0 gpio.c), and neither
+    dshot_tx_program_init() nor out_dshot.c clears it.  CAPTURE cannot
+    leave the output pins out by its window: it reads one run of pins from
+    its IN base, and the outputs sit between the inputs (output k on
+    GPIO14 + 2k, input k one above), and PIO has no instruction that masks
+    a read.  gpio_set_input_enabled(pin, false) after the program's init
+    makes a plain DShot or PPM pad read 0 to every state machine, which
+    takes its events out of the ring and leaves its output untouched; a
+    bidirectional DShot pad keeps its input, because its receiver reads
+    the reply on it.
+
+    Args:
+        root: The repository.
+
+    Returns:
+        (plain, bidirectional) events a second.
+
+    Raises:
+        BudgetError: A constant is missing.
+    """
+    bits = _defines(root, "protocols/dshot/include/dshot.h",
+                    ("DSHOT_FRAME_BITS", "DSHOT_TELEM_BITS"))
+    hz = _defines(root, "shared/outputs/include/out_render.h",
+                  ("OUT_RENDER_DSHOT_HZ",))["OUT_RENDER_DSHOT_HZ"]
+    frame = 2 * bits["DSHOT_FRAME_BITS"]
+    return frame * hz, (frame + bits["DSHOT_TELEM_BITS"]) * hz
+
+
+def capture_rates(root: pathlib.Path = ROOT) -> Rates:
+    """The capture rates of the tree's DShot and PPM drivers.
+
+    Args:
+        root: The repository.
+
+    Returns:
+        The rates.
+    """
+    plain, bidir = dshot_events(root)
+    return Rates(plain, bidir, ppm_events(root))
 
 
 def ppm_events(root: pathlib.Path = ROOT) -> int:
@@ -897,33 +985,29 @@ def ppm_events(root: pathlib.Path = ROOT) -> int:
     Raises:
         BudgetError: A constant is missing.
     """
-    text = (root / "protocols/ppm/include/ppm.h").read_text(encoding="utf-8")
-    val = {}
-    for name in ("PPM_MAX_CHANNELS", "PPM_CHANNEL_MIN_US", "PPM_SYNC_MIN_US"):
-        m = re.search(r"#define\s+%s\s+(\d+)u?\b" % name, text)
-        if m is None:
-            raise BudgetError(f"ppm.h: no {name}")
-        val[name] = int(m.group(1))
+    val = _defines(root, "protocols/ppm/include/ppm.h",
+                   ("PPM_MAX_CHANNELS", "PPM_CHANNEL_MIN_US",
+                    "PPM_SYNC_MIN_US"))
     n = val["PPM_MAX_CHANNELS"]
     frame_us = n * val["PPM_CHANNEL_MIN_US"] + val["PPM_SYNC_MIN_US"]
     return 2 * (n + 1) * 1000000 // frame_us
 
 
-def capture_rate(plain: int, pairs: int, ppm: int, ppm_rate: int) -> int:
+def capture_rate(plain: int, pairs: int, ppm: int, rates: Rates) -> int:
     """Board 3's capture events a second for a mix.
 
     Args:
-        plain: Plain DShot outputs: none, their pads read 0.
+        plain: Plain DShot outputs.
         pairs: Bidirectional DShot outputs.
         ppm: PPM outputs.
-        ppm_rate: Events a second of one PPM output.
+        rates: Events a second of one output of each kind.
 
     Returns:
         The 9 inputs and every output at its fastest.
     """
     pwm = RSN_OUTPUTS - plain - pairs - ppm
     return (RSN_INPUTS * PWM_HZ * 2 + pwm * PWM_HZ * 2
-            + pairs * BIDIR_EVENTS + ppm * ppm_rate)
+            + plain * rates.plain + pairs * rates.bidir + ppm * rates.ppm)
 
 
 def ring_ms(rate: int) -> float:
@@ -951,6 +1035,9 @@ class Sweep:
         worst_mix: Its outputs, described.
         lapping: The outputs of every allowed mix whose ring holds less
             than a flash window, described.
+        worst_quiet: The highest rate with plain DShot and PPM pads that
+            read 0 (their input enable cleared).
+        lapping_quiet: lapping with those pads read 0.
     """
 
     runs: int = 0
@@ -960,6 +1047,25 @@ class Sweep:
     worst_rate: int = 0
     worst_mix: str = ""
     lapping: list[str] = dataclasses.field(default_factory=list)
+    worst_quiet: int = 0
+    lapping_quiet: list[str] = dataclasses.field(default_factory=list)
+
+
+def _outputs(plain: int, pairs: int, ppm: int) -> str:
+    """Board 3's PIO outputs of a mix, the PWM outputs left out.
+
+    Args:
+        plain: Plain DShot outputs.
+        pairs: Bidirectional DShot outputs.
+        ppm: PPM outputs.
+
+    Returns:
+        For example "4 bidirectional" or "6 plain + 1 PPM".
+    """
+    parts = [f"{n} {what}" for n, what in ((pairs, "bidirectional"),
+                                           (plain, "plain"), (ppm, "PPM"))
+             if n]
+    return " + ".join(parts) or "no DShot or PPM"
 
 
 def _walk(chip: Chip, seq: str, ok: bool, limit: int, visit,
@@ -983,13 +1089,13 @@ def _walk(chip: Chip, seq: str, ok: bool, limit: int, visit,
 
 
 def sweep(board: Board, progs: dict[str, Program],
-          ppm_rate: int) -> Sweep:
+          rates: Rates) -> Sweep:
     """Runs every slot order with every session on board 3.
 
     Args:
         board: Board 3.
         progs: Its programs.
-        ppm_rate: Events a second of one PPM output.
+        rates: Capture events a second of one output of each kind.
 
     Returns:
         The sweep.
@@ -1036,14 +1142,18 @@ def sweep(board: Board, progs: dict[str, Program],
             out.allowed += 1
             if not fits:
                 out.failures.append(what)
-            rate = capture_rate(singles - ppm, pairs, ppm, ppm_rate)
-            outputs = (f"{pairs} bidirectional DShot, {singles - ppm} plain "
-                       f"DShot, {ppm} PPM, "
-                       f"{RSN_OUTPUTS - singles - pairs} PWM")
-            if ring_ms(rate) < FLASH_WINDOW_MS and outputs not in out.lapping:
-                out.lapping.append(outputs)
+            outputs = _outputs(singles - ppm, pairs, ppm)
+            rate = capture_rate(singles - ppm, pairs, ppm, rates)
+            quiet = capture_rate(singles - ppm, pairs, ppm,
+                                 Rates(0, rates.bidir, 0))
+            for r, laps in ((rate, out.lapping), (quiet, out.lapping_quiet)):
+                if ring_ms(r) < FLASH_WINDOW_MS and outputs not in laps:
+                    laps.append(outputs)
             if rate > out.worst_rate:
                 out.worst_rate, out.worst_mix = rate, outputs
+            out.worst_quiet = max(out.worst_quiet, quiet)
+    for laps in (out.lapping, out.lapping_quiet):
+        laps.sort()
     return out
 
 
@@ -1057,13 +1167,13 @@ def _row(chip: Chip) -> str:
 
 
 def report(board: Board, progs: dict[str, Program],
-           ppm_rate: int) -> tuple[list[str], list[str]]:
+           rates: Rates) -> tuple[list[str], list[str]]:
     """The budget of one board.
 
     Args:
         board: The board.
         progs: The programs read from the files.
-        ppm_rate: Events a second of one PPM output.
+        rates: Capture events a second of one output of each kind.
 
     Returns:
         The report's lines and the failures.
@@ -1100,7 +1210,7 @@ def report(board: Board, progs: dict[str, Program],
                             f"the table says {want} ({mix.ref})")
         lines.append(line)
     if board.sweep:
-        sw = sweep(board, bp, ppm_rate)
+        sw = sweep(board, bp, rates)
         lines.append(f"  sweep: {sw.runs} mixes run, {sw.allowed} allowed by "
                      f"the table, {len(sw.failures)} of them do not fit; "
                      f"{sw.refused_fit} the table refuses fit all the same")
@@ -1110,9 +1220,14 @@ def report(board: Board, progs: dict[str, Program],
                      f"{FLASH_WINDOW_MS}ms flash window; it covers the "
                      f"window below "
                      f"{RING_EVENTS * 1000 // FLASH_WINDOW_MS:,} events/s")
-        lines.append("  a flash window can lap the ring with: "
-                     + ("; ".join(sw.lapping) or "none")
-                     + " (a gap in the capture figures, not an error)")
+        lines.append(f"  a flash window can lap the ring with "
+                     f"{len(sw.lapping)} output mixes (a gap in the "
+                     f"capture figures, not an error): "
+                     + ("; ".join(sw.lapping) or "none"))
+        lines.append(f"  with plain DShot and PPM pads at input enable "
+                     f"off: {sw.worst_quiet:,} events/s at most, "
+                     f"{ring_ms(sw.worst_quiet):.1f}ms; laps with "
+                     + ("; ".join(sw.lapping_quiet) or "none"))
         failures += [f"board {board.number}: allowed, does not fit: {f}"
                      for f in sw.failures]
     return lines, failures
@@ -1128,12 +1243,12 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     try:
         progs = load_programs()
-        ppm_rate = ppm_events()
+        rates = capture_rates()
         failures = []
         for board in BOARDS:
             if args.board not in (None, board.number):
                 continue
-            lines, bad = report(board, progs, ppm_rate)
+            lines, bad = report(board, progs, rates)
             failures += bad
             if not args.check:
                 print("\n".join(lines) + "\n")

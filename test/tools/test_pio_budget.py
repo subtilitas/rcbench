@@ -18,6 +18,9 @@ pytestmark = pytest.mark.usefixtures("no_hang")
 
 PIOASM = os.environ.get("PIOASM") or shutil.which("pioasm")
 
+# Capture rates of 0: for the cases that look at placement only.
+ZERO = pb.Rates(0, 0, 0)
+
 # Every rule of the reader in one file: comments of all three kinds, a code
 # block whose lines look like instructions, labels with an instruction
 # after them, `.word`, defines, and a `.lang_opt` whose value holds a `;`.
@@ -303,7 +306,7 @@ def fixture_progs():
 @pytest.mark.parametrize("brd", pb.BOARDS, ids=lambda b: str(b.number))
 def test_every_board_passes_with_the_real_sources(brd, progs):
     """Boards 1 and 2 with today's .pio files, and board 3 as planned."""
-    lines, failures = pb.report(brd, progs, pb.ppm_events(REPO))
+    lines, failures = pb.report(brd, progs, pb.capture_rates(REPO))
     assert failures == []
     assert lines[0].startswith(f"Board {brd.number},")
 
@@ -350,7 +353,7 @@ def test_a_table_that_allows_what_does_not_fit_fails(progs, capsys,
     bad = dataclasses.replace(pb.BOARD_RBMOD, mixes=(pb.Mix(
         "tap beside 4 bidirectional", pb._x(pb.BIDIR, 4)
         + (pb.PD_UART, pb.TAP), True, "test"),))
-    _, failures = pb.report(bad, progs, 0)
+    _, failures = pb.report(bad, progs, ZERO)
     assert len(failures) == 1 and "the table says fits" in failures[0]
     monkeypatch.setattr(pb, "BOARDS", (bad,))
     assert pb.main(["--check"]) == 1
@@ -361,7 +364,7 @@ def test_a_table_that_refuses_what_fits_fails(progs):
     """A refusal the chip does not need is a table error as well."""
     bad = dataclasses.replace(pb.BOARD_RBMOD, mixes=(pb.Mix(
         "one plain", (pb.DSHOT,), False, "test"),))
-    _, failures = pb.report(bad, progs, 0)
+    _, failures = pb.report(bad, progs, ZERO)
     assert len(failures) == 1 and "the table says refused" in failures[0]
 
 
@@ -392,7 +395,7 @@ def test_the_sweep_finds_a_looser_table(progs, monkeypatch):
     plain DShot slots and the session do not fit.
     """
     bp = pb.board_programs(pb.BOARD_RSN, progs)
-    assert pb.sweep(pb.BOARD_RSN, bp, 0).failures == []
+    assert pb.sweep(pb.BOARD_RSN, bp, ZERO).failures == []
 
     def loose(session, singles, pairs, ppm):
         if session is pb.HITEC_PRE:
@@ -401,7 +404,7 @@ def test_the_sweep_finds_a_looser_table(progs, monkeypatch):
 
     real = pb.rsn_allows
     monkeypatch.setattr(pb, "rsn_allows", loose)
-    failures = pb.sweep(pb.BOARD_RSN, bp, 0).failures
+    failures = pb.sweep(pb.BOARD_RSN, bp, ZERO).failures
     assert failures
     assert any(f.startswith("4 plain, 0 bidirectional, 0 PPM")
                and "Hitec D" in f for f in failures)
@@ -411,7 +414,7 @@ def test_the_sweep_finds_the_dma_limit(progs, monkeypatch):
     """7 PPM slots need 17 DMA channels with the 3 of the boot."""
     bp = pb.board_programs(pb.BOARD_RSN, progs)
     monkeypatch.setattr(pb, "RSN_PPM_MAX", 7)
-    failures = pb.sweep(pb.BOARD_RSN, bp, 0).failures
+    failures = pb.sweep(pb.BOARD_RSN, bp, ZERO).failures
     assert failures and all(", 7 PPM" in f for f in failures)
 
 
@@ -420,26 +423,56 @@ def test_ppm_must_place_as_plain_dshot(progs):
     bp = dict(pb.board_programs(pb.BOARD_RSN, progs),
               ppm_tx=prog("ppm_tx", 5))
     with pytest.raises(pb.BudgetError, match="ppm_tx and dshot_tx differ"):
-        pb.sweep(pb.BOARD_RSN, bp, 0)
+        pb.sweep(pb.BOARD_RSN, bp, ZERO)
+
+
+def test_dshot_events_from_the_headers(tmp_path):
+    """32 edges a frame at 1000Hz, and 21 more of a reply; a gap fails."""
+    assert pb.dshot_events(REPO) == (32000, 53000)
+    (tmp_path / "protocols/dshot/include").mkdir(parents=True)
+    (tmp_path / "protocols/dshot/include/dshot.h").write_text(
+        "#define DSHOT_FRAME_BITS 16u\n")
+    with pytest.raises(pb.BudgetError, match="DSHOT_TELEM_BITS"):
+        pb.dshot_events(tmp_path)
 
 
 def test_capture_figures():
-    """20,160/s and 406ms; the worst case 227,680/s and 36ms; 195,047/s."""
-    assert pb.capture_rate(0, 0, 0, 0) == 20160
+    """20,160/s and 406ms with no PIO output; 195,047/s fills the window.
+
+    A plain DShot pad keeps its input enable, so its 32,000 edges a second
+    reach the ring: 8 plain DShot and 1 PWM output give 267,200/s, 30.7ms.
+    4 bidirectional and 5 PWM give 227,680/s, 36.0ms.
+    """
+    rates = pb.capture_rates(REPO)
+    assert pb.capture_rate(0, 0, 0, rates) == 20160
     assert round(pb.ring_ms(20160)) == 406
-    assert pb.capture_rate(0, 4, 0, 0) == 227680
+    assert pb.capture_rate(8, 0, 0, rates) == 267200
+    assert round(pb.ring_ms(267200), 1) == 30.7
+    assert pb.capture_rate(0, 4, 0, rates) == 227680
     assert round(pb.ring_ms(227680)) == 36
+    assert pb.capture_rate(1, 0, 0, rates) == 20160 - 1120 + 32000
     assert pb.RING_EVENTS * 1000 // pb.FLASH_WINDOW_MS == 195047
     assert pb.ring_ms(0) == float("inf")
 
 
 def test_the_sweep_reports_the_worst_capture(progs):
-    """Only 4 bidirectional DShot outputs can lap the ring."""
+    """8 plain DShot is the worst; 19 output mixes lap the ring.
+
+    6 plain DShot outputs are the fewest that lap it (10,080 + 6 x 32,000
+    + 3 x 1,120 = 205,440/s).  A session leaves at most 4 plain or 2
+    bidirectional, which never laps.  With plain DShot and PPM pads at
+    input enable off only 4 bidirectional outputs lap it.
+    """
     bp = pb.board_programs(pb.BOARD_RSN, progs)
-    sw = pb.sweep(pb.BOARD_RSN, bp, pb.ppm_events(REPO))
-    assert sw.worst_rate == 227680
-    assert sw.lapping == ["4 bidirectional DShot, 0 plain DShot, 0 PPM, "
-                          "5 PWM"]
+    sw = pb.sweep(pb.BOARD_RSN, bp, pb.capture_rates(REPO))
+    assert (sw.worst_rate, sw.worst_mix) == (267200, "8 plain")
+    assert len(sw.lapping) == 19
+    assert {"6 plain", "8 plain", "4 bidirectional"} <= set(sw.lapping)
+    assert "5 plain" not in sw.lapping
+    assert (pb.capture_rate(4, 0, 0, pb.capture_rates(REPO))
+            < pb.RING_EVENTS * 1000 // pb.FLASH_WINDOW_MS)
+    assert (sw.worst_quiet, sw.lapping_quiet) == (227680,
+                                                  ["4 bidirectional"])
     assert sw.allowed > 0 and sw.runs > sw.allowed
 
 
