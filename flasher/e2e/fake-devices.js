@@ -1,12 +1,15 @@
 // Fake Web Serial and WebUSB for the browser tests, installed before the page
 // script runs. window.__fakeConfig picks what is attached:
 //
-//   esp: { chipId }        an ESP32 boot ROM on a serial port, USB-Serial-JTAG
-//                          IDs 303A:1001. chipId 18 is an ESP32-P4, 9 an
-//                          ESP32-S3, 13 an ESP32-C6. It answers SYNC, the
+//   esp: { chipId, usb }   an ESP32 boot ROM on a serial port, USB-Serial-JTAG
+//                          IDs 303A:1001 unless usb: [vendor, product] names
+//                          a USB-to-UART bridge. chipId 18 is an ESP32-P4, 9
+//                          an ESP32-S3, 13 an ESP32-C6. It answers SYNC, the
 //                          register reads, GET_SECURITY_INFO, the stub
 //                          upload (with "OHAI"), the baud change, the
-//                          compressed flash write and SPI_FLASH_MD5.
+//                          compressed flash write and SPI_FLASH_MD5. A
+//                          compressed write erases the 4096-byte sectors it
+//                          covers first, as the flasher stub does.
 //   iomcu: true            an IOmcu with rcbench firmware on a serial port,
 //                          IDs 2E8A:0009; opened at 1200 baud it leaves for
 //                          BOOTSEL.
@@ -16,8 +19,9 @@
 //   rpDelayMs: n           the RP2350 boot ROM answers each command n ms late,
 //                          for a write that lasts long enough to act during it.
 //
-// window.__fake holds the state: the flash of each device, the commands, and
-// flashHash(kind, start, length) for the checks.
+// window.__fake holds the state: the flash of each device, the commands, the
+// ESP write ranges (espWrites), MD5 requests (espMd5) and host baud rates
+// (espBauds), and flashHash(kind, start, length) for the checks.
 (() => {
   const cfg = window.__fakeConfig || {};
   if (cfg.none) {
@@ -26,7 +30,7 @@
     return;
   }
   const state = { espFlash: new Uint8Array(1 << 22).fill(0xff), rpFlash: new Uint8Array(1 << 22).fill(0x5a),
-    espOps: [], rpCmds: [], bootsel: !!cfg.bootsel, touched: 0 };
+    espOps: [], espWrites: [], espMd5: [], espBauds: [], rpCmds: [], bootsel: !!cfg.bootsel, touched: 0 };
   window.__fake = state;
   state.flashHash = async (kind, start, length) => {
     const f = kind === 'esp' ? state.espFlash : state.rpFlash;
@@ -85,7 +89,13 @@
           stub = true;
           setTimeout(() => send([...'OHAI'].map((c) => c.charCodeAt(0))), 5);
           return;
-        case 0x10: defl = { size: u32(data, 0), offset: u32(data, 12), parts: [] }; reply(op, 0, []); return;
+        case 0x10: {
+          defl = { size: u32(data, 0), offset: u32(data, 12), parts: [] };
+          state.espWrites.push([defl.offset, defl.size]);
+          state.espFlash.fill(0xff, defl.offset, Math.ceil((defl.offset + defl.size) / 4096) * 4096);
+          reply(op, 0, []);
+          return;
+        }
         case 0x11: defl.parts.push(data.slice(16)); reply(op, 0, []); return;
         case 0x12: {
           const blob = new Blob(defl.parts);
@@ -97,6 +107,7 @@
         case 0x13: {
           const addr = u32(data, 0);
           const size = u32(data, 4);
+          state.espMd5.push([addr, size]);
           const hex = await window.__fakeMd5(Array.from(state.espFlash.subarray(addr, addr + size)));
           const raw = hex.match(/../g).map((h) => parseInt(h, 16));
           reply(op, 0, raw);
@@ -120,14 +131,14 @@
     const port = {
       readable: null,
       writable: null,
-      getInfo: () => ({ usbVendorId: 0x303a, usbProductId: 0x1001 }),
+      getInfo: () => (cfg.esp && cfg.esp.usb ? { usbVendorId: cfg.esp.usb[0], usbProductId: cfg.esp.usb[1] } : { usbVendorId: 0x303a, usbProductId: 0x1001 }),
       async open() {
         port.readable = new ReadableStream({ start(c) { ctrl = c; }, cancel() { ctrl = null; } });
         port.writable = new WritableStream({ write(chunk) { feed(chunk); } });
       },
       async close() { ctrl = null; port.readable = null; port.writable = null; },
       async setSignals() { stub = false; },
-      async setBaudRate() {},
+      async setBaudRate(baud) { state.espBauds.push(baud); },
       addEventListener() {},
       removeEventListener() {},
     };
