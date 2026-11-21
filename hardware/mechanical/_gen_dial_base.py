@@ -59,11 +59,11 @@ Usage:
 
     xvfb-run -a python3 hardware/mechanical/_gen_dial_base.py --render DIR
 
-Writes models/dial_base_top.step and models/dial_base_bottom.step and,
-for printing, models/dial_base_top.stl and models/dial_base_bottom.stl.
---render draws the base with dial, nut and cell to DIR/dial_base.png,
-taken apart to DIR/dial_base_exploded.png and cut open to
-DIR/dial_base_section.png, 1200 x 1000 pixels. Needs OCP, the
+Writes models/casing/dial_base_top.step and dial_base_bottom.step and,
+for printing, the same 2 as .stl.
+--render draws the base with dial, nut and cell to DIR/casing/dial_base.png,
+taken apart to DIR/casing/dial_base_exploded.png and cut open to
+DIR/casing/dial_base_section.png, 1200 x 1000 pixels. Needs OCP, the
 OpenCASCADE binding (pip install cadquery-ocp==8.0.1.1.0); --render
 needs an OpenGL context: an X display, or xvfb-run with Mesa.
 
@@ -105,7 +105,9 @@ from OCP.TopExp import TopExp_Explorer
 from OCP.XCAFDoc import XCAFDoc_ColorGen, XCAFDoc_DocumentTool
 
 HERE = Path(__file__).resolve().parent
-MODELS = HERE / "models"
+sys.path.insert(0, str(HERE))
+import _models  # noqa: E402
+
 sys.path.insert(0, str(HERE.parent / "kicad" / "tools"))
 
 GRAPHITE = (0.20, 0.21, 0.23)
@@ -442,7 +444,7 @@ def step_text(stem, solid):
     writer.SetColorMode(True)
     writer.SetNameMode(True)
     writer.Transfer(doc, STEPControl_AsIs)
-    path = MODELS / f".{stem}.tmp"
+    path = _models.ROOT / f".{stem}.tmp"
     writer.Write(str(path))
     text = path.read_text()
     path.unlink()
@@ -493,11 +495,11 @@ def neighbours():
     """
     import step_check
     read = step_check.read
-    cell = [s for s, _c in read(MODELS / "lipo_102540_1000mah.step")[1]]
+    cell = [s for s, _c in read(_models.path("lipo_102540_1000mah"))[1]]
     return {
-        "dial": [s for s, _c in read(MODELS / "m5dial.step")[1]],
+        "dial": [s for s, _c in read(_models.path("m5dial"))[1]],
         "nut": [_moved(s, z=-PLATE)
-                for s, _c in read(MODELS / "m5dial_nut.step")[1]],
+                for s, _c in read(_models.path("m5dial_nut"))[1]],
         "cell": [_moved(s, x=-CELL[0] / 2, z=FLOOR, angle=-90.0)
                  for s in cell[:-3]],
     }
@@ -566,12 +568,12 @@ def render(built, directory):
 
     def colours(name):
         return [c or (0.5, 0.5, 0.5)
-                for _s, c in step_check.read(MODELS / name)[1]]
+                for _s, c in step_check.read(_models.path(name))[1]]
 
     near = neighbours()
-    dial = list(zip(near["dial"], colours("m5dial.step"), strict=True))
+    dial = list(zip(near["dial"], colours("m5dial"), strict=True))
     dial += [(solid, (0.85, 0.85, 0.83)) for solid in near["nut"]]
-    cell = list(zip(near["cell"], colours("lipo_102540_1000mah.step"),
+    cell = list(zip(near["cell"], colours("lipo_102540_1000mah"),
                     strict=False))
     top = [(built["dial_base_top"], GRAPHITE)]
     bottom = [(built["dial_base_bottom"], GRAPHITE)]
@@ -595,7 +597,8 @@ def render(built, directory):
         image = Image_AlienPixMap()
         view.view.ToPixMap(image, view.w, view.h,
                            Graphic3d_BufferType.Graphic3d_BT_RGB)
-        image.Save(TCollection_AsciiString(str(Path(directory) / name)))
+        image.Save(TCollection_AsciiString(str(_models.render(
+            directory, name.removesuffix(".png")))))
 
     def lifted(items, z):
         return [(_moved(solid, z=z), rgb) for solid, rgb in items]
@@ -630,7 +633,7 @@ def main(argv):
     errors = check(built)
     for stem, solid in built.items():
         text = step_text(stem, solid)
-        path = MODELS / f"{stem}.step"
+        path = _models.path(stem)
         if "--check" in argv:
             if not path.exists() or path.read_text() != text:
                 errors.append(f"STALE {path.name}")
@@ -639,7 +642,7 @@ def main(argv):
         BRepMesh_IncrementalMesh(solid, 0.03, False, 0.2)
         stl = StlAPI_Writer()
         stl.ASCIIMode = False
-        stl.Write(solid, str(MODELS / f"{stem}.stl"))
+        stl.Write(solid, str(_models.path(stem, ".stl")))
         print(f"wrote {stem}.step and .stl, {volume(solid) / 1000:.1f}cm3")
     for error in errors:
         print(error)

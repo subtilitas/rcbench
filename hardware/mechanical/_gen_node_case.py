@@ -52,12 +52,12 @@ Usage:
     python3 hardware/mechanical/_gen_node_case.py [--check]
     xvfb-run -a python3 hardware/mechanical/_gen_node_case.py --render DIR
 
-Writes models/ina228_node_{plate,frame,bezel}.step and, for printing,
+Writes models/casing/ina228_node_{plate,frame,bezel}.step and, for printing,
 the same 3 as .stl. --check fails on a stale file, on a part that is
 not one piece, on two parts sharing volume and on a part sharing volume
-with a solid of models/ina228_node_layout.step. --render draws the case
-closed, taken apart and cut open, 1200 x 1000 pixels. Needs OCP (pip
-install cadquery-ocp==8.0.1.1.0).
+with a solid of models/pcb/ina228_node_layout.step. --render draws the
+case closed, taken apart and cut open to DIR/casing/, 1200 x 1000
+pixels. Needs OCP (pip install cadquery-ocp==8.0.1.1.0).
 
 SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
@@ -73,10 +73,10 @@ from OCP.BRepMesh import BRepMesh_IncrementalMesh
 from OCP.StlAPI import StlAPI_Writer
 
 import _gen_dial_base as base
+import _models
 from _gen_dial_base import _box, _cylinder, _extent, _merged, _moved
 
 HERE = Path(__file__).resolve().parent
-MODELS = HERE / "models"
 STEMS = ("ina228_node_plate", "ina228_node_frame", "ina228_node_bezel")
 LAYOUT = "ina228_node_layout"
 
@@ -290,7 +290,7 @@ def step_text(stem, solid):
 def neighbours():
     """The solids of the layout and their colours."""
     import step_check
-    return step_check.read(MODELS / f"{LAYOUT}.step")[1]
+    return step_check.read(_models.path(LAYOUT))[1]
 
 
 def check(built):
@@ -374,7 +374,8 @@ def render(built, directory):
         image = Image_AlienPixMap()
         view.view.ToPixMap(image, view.w, view.h,
                            Graphic3d_BufferType.Graphic3d_BT_RGB)
-        image.Save(TCollection_AsciiString(str(Path(directory) / name)))
+        image.Save(TCollection_AsciiString(str(_models.render(
+            directory, name.removesuffix(".png")))))
 
     def lifted(items, z):
         return [(_moved(solid, z=z), rgb) for solid, rgb in items]
@@ -414,7 +415,7 @@ def main(argv):
     errors = check(built)
     for stem, solid in built.items():
         text = step_text(stem, solid)
-        path = MODELS / f"{stem}.step"
+        path = _models.path(stem)
         if "--check" in argv:
             if not path.exists() or path.read_text() != text:
                 errors.append(f"STALE {path.name}")
@@ -423,7 +424,7 @@ def main(argv):
         BRepMesh_IncrementalMesh(solid, 0.03, False, 0.2)
         stl = StlAPI_Writer()
         stl.ASCIIMode = False
-        stl.Write(solid, str(MODELS / f"{stem}.stl"))
+        stl.Write(solid, str(_models.path(stem, ".stl")))
         print(f"wrote {stem}.step and .stl, "
               f"{base.volume(solid) / 1000:.1f}cm3")
     for error in errors:

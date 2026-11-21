@@ -96,8 +96,9 @@ from OCP.TopExp import TopExp_Explorer
 from OCP.TopoDS import TopoDS_Compound
 
 HERE = Path(__file__).resolve().parent
-MODELS = HERE / "models"
 sys.path.insert(0, str(HERE))
+import _models  # noqa: E402
+
 sys.path.insert(0, str(HERE.parent / "kicad" / "tools"))
 import _rg15  # noqa: E402
 import kst_x10  # noqa: E402
@@ -678,7 +679,7 @@ def servo():
     move, _slope = setting()
     return [(f"servo {i + 1}", _moved(solid, move), rgb or ALU)
             for i, (solid, rgb) in enumerate(
-                step_check.read(MODELS / "kst_x10.step")[1])]
+                step_check.read(_models.path("kst_x10"))[1])]
 
 
 def parts():
@@ -761,7 +762,7 @@ def step_text(stem, items):
         raise RuntimeError("write.step.assembly is not set")
     writer = STEPControl_Writer()
     writer.Transfer(compound, STEPControl_AsIs)
-    path = MODELS / f".{stem}.tmp"
+    path = _models.ROOT / f".{stem}.tmp"
     writer.Write(str(path))
     text = path.read_text()
     path.unlink()
@@ -896,7 +897,8 @@ def render(built, directory):
         image = Image_AlienPixMap()
         view.view.ToPixMap(image, view.w, view.h,
                            Graphic3d_BufferType.Graphic3d_BT_RGB)
-        image.Save(TCollection_AsciiString(str(Path(directory) / name)))
+        image.Save(TCollection_AsciiString(str(_models.render(
+            directory, name.removesuffix(".png")))))
 
     move, _slope = setting()
     back = move.Inverted()
@@ -932,7 +934,7 @@ def main(argv):
     errors = check(built["flap_drive_assembly"]) + sweep()
     for stem, items in built.items():
         text = step_text(stem, items)
-        path = MODELS / f"{stem}.step"
+        path = _models.path(stem)
         if "--check" in argv:
             if not path.exists() or path.read_text() != text:
                 errors.append(f"STALE {path.name}")

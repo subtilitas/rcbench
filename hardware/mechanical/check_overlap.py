@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check that no two solids of a mechanical model share volume.
 
-Each named model of hardware/mechanical/models/ is read back with
+Each named model under hardware/mechanical/models/ is read back with
 OpenCASCADE. Every pair of solids whose boxes overlap is intersected;
 the check fails on a pair that shares more than SHARED. Stems joined
 by "+" are checked as one model: the parts as they sit together.
@@ -27,6 +27,7 @@ from OCP.GProp import GProp_GProps
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "kicad" / "tools"))
+import _models  # noqa: E402
 import step_check  # noqa: E402
 
 MODELS = ("panel_7b", "ina228_xt90+ina228_xt90_case", "ina219_cjmcu219",
@@ -84,7 +85,7 @@ def main(argv):
     """
     bad = 0
     for stem in argv or MODELS:
-        pairs, count = shared(*(HERE / "models" / f"{one}.step"
+        pairs, count = shared(*(_models.path(one)
                                 for one in stem.split("+")))
         print(f"{'FAIL' if pairs else 'ok  '} {stem}: {count} solids, "
               f"{len(pairs)} pairs share volume")
