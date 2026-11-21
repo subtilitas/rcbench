@@ -8,9 +8,13 @@ a contact sheet ``all.png`` of all of them.
 
 Usage:
     xvfb-run -a python3 hardware/kicad/tools/step_render.py DIR [--size W H]
-        [--step FILE ...]
+        [--step FILE ...] [--from CORNER] [--suffix TEXT]
 
---step renders the given STEP files in place of the library.
+--step renders the given STEP files in place of the library. --from
+names the corner the view looks from as OpenCASCADE's
+V3d_TypeOfOrientation does, XnegYnegZpos by default; XposYnegZneg looks
+at the underside. --suffix is added to each PNG's name and leaves the
+contact sheet out.
 
 Needs OCP (pip install cadquery-ocp), Pillow for the contact sheet, and
 an OpenGL context: an X display, or xvfb-run with Mesa.
@@ -78,12 +82,13 @@ class Renderer:
                                   0.08)
         self.ctx = AIS_InteractiveContext(self.viewer)
 
-    def render(self, path, out):
+    def render(self, path, out, corner="XnegYnegZpos"):
         """Draw one STEP file to a PNG.
 
         Args:
             path: The STEP file.
             out: The PNG path.
+            corner: The corner the view looks from.
 
         Raises:
             RuntimeError: When the image cannot be written.
@@ -101,7 +106,7 @@ class Renderer:
             drawer.SetFaceBoundaryDraw(True)
             drawer.SetFaceBoundaryAspect(edge)
             self.ctx.Display(ais, 1, -1, False)
-        self.view.SetProj(V3d_TypeOfOrientation.V3d_XnegYnegZpos)
+        self.view.SetProj(getattr(V3d_TypeOfOrientation, f"V3d_{corner}"))
         self.view.FitAll(0.06, False)
         self.view.Redraw()
         img = Image_AlienPixMap()
@@ -147,6 +152,10 @@ def main(argv):
     ap.add_argument("--size", type=int, nargs=2, default=(800, 600))
     ap.add_argument("--step", type=Path, nargs="+",
                     help="render these files in place of the library")
+    ap.add_argument("--from", dest="corner", default="XnegYnegZpos",
+                    help="the corner the view looks from")
+    ap.add_argument("--suffix", default="",
+                    help="added to each PNG's name; no contact sheet")
     args = ap.parse_args(argv)
     args.out.mkdir(parents=True, exist_ok=True)
     r = Renderer(*args.size)
@@ -156,11 +165,12 @@ def main(argv):
         / f"{spec.FOOTPRINT['name']}.step" for spec in gen_all.load_specs()]
     for path in paths:
         name = path.stem
-        png = args.out / f"{name}.png"
-        r.render(path, png)
+        png = args.out / f"{name}{args.suffix}.png"
+        r.render(path, png, args.corner)
         pngs.append(png)
         print(f"wrote {png}")
-    sheet(pngs, args.out / "all.png")
+    if not args.suffix:
+        sheet(pngs, args.out / "all.png")
     return 0
 
 

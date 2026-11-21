@@ -25,6 +25,17 @@ history is in git.
   the bindings of a one-page record if the flash holds one, empty
   otherwise.
 
+- `hardware/mechanical/`: `es3c28p.step`, the LCDWIKI ES3C28P of the
+  display node (50.0mm x 86.0mm, 10.6mm over all): board with 4 holes of
+  3.2mm, touch panel, display, both flat cables' folds, and on the back
+  the ESP32-S3, USB-C, microSD, the 5 wire sockets of 1.25mm pitch, BOOT,
+  RESET and 103 chip parts, from LCDWIKI's STEP file and outline drawing,
+  checked against tester photos within 0.3mm. The overlap check covers
+  it; it has no KiCad entry, as no carrier mounts the board
+  ([Mechanical parts](hardware/mechanical/README.md#display-node-board-lcdwiki-es3c28p)).
+- `hardware/kicad/tools/step_render.py`: `--from` picks the corner the
+  view looks from, `--suffix` names the PNGs of a second view.
+
 ### Fixed
 
 - Web flasher: a write to an ESP board keeps the board's settings. The

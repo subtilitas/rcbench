@@ -31,7 +31,8 @@ import step_check  # noqa: E402
 
 MODELS = ("panel_7b", "ina228_xt90+ina228_xt90_case", "ina219_cjmcu219",
           "lipo_charger_boost_5v", "boost_5v_en", "esp32_c6_zero",
-          "core2350b", "core2350b_usb_adapter", "lipo_702030_380mah",
+          "core2350b", "core2350b_usb_adapter", "es3c28p",
+          "lipo_702030_380mah",
           "lipo_102540_1000mah", "servo_standard", "kst_x10", "wit_imu")
 SHARED = 1e-6           # mm3
 
