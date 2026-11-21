@@ -342,7 +342,7 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
   MX1.25 socket are not in the model; `dial` names them without showing
   them.
 - The `mini` model is MiniRcBench's assembly
-  `hardware/mechanical/models/minircbench.stp`, 55.7 x 76.7 x 24.7mm,
+  `hardware/mechanical/models/parts/minircbench.stp`, 55.7 x 76.7 x 24.7mm,
   which is in that repository, not in this one; the converted model
   (1.8MB) is not in the tree:
 

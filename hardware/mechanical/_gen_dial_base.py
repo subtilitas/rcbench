@@ -61,9 +61,9 @@ Usage:
 
 Writes models/casing/dial_base_top.step and dial_base_bottom.step and,
 for printing, the same 2 as .stl.
---render draws the base with dial, nut and cell to DIR/dial_base.png,
-taken apart to DIR/dial_base_exploded.png and cut open to
-DIR/dial_base_section.png, 1200 x 1000 pixels. Needs OCP, the
+--render draws the base with dial, nut and cell to DIR/casing/dial_base.png,
+taken apart to DIR/casing/dial_base_exploded.png and cut open to
+DIR/casing/dial_base_section.png, 1200 x 1000 pixels. Needs OCP, the
 OpenCASCADE binding (pip install cadquery-ocp==8.0.1.1.0); --render
 needs an OpenGL context: an X display, or xvfb-run with Mesa.
 
@@ -597,7 +597,8 @@ def render(built, directory):
         image = Image_AlienPixMap()
         view.view.ToPixMap(image, view.w, view.h,
                            Graphic3d_BufferType.Graphic3d_BT_RGB)
-        image.Save(TCollection_AsciiString(str(Path(directory) / name)))
+        image.Save(TCollection_AsciiString(str(_models.render(
+            directory, name.removesuffix(".png")))))
 
     def lifted(items, z):
         return [(_moved(solid, z=z), rgb) for solid, rgb in items]

@@ -897,7 +897,8 @@ def render(built, directory):
         image = Image_AlienPixMap()
         view.view.ToPixMap(image, view.w, view.h,
                            Graphic3d_BufferType.Graphic3d_BT_RGB)
-        image.Save(TCollection_AsciiString(str(Path(directory) / name)))
+        image.Save(TCollection_AsciiString(str(_models.render(
+            directory, name.removesuffix(".png")))))
 
     move, _slope = setting()
     back = move.Inverted()

@@ -55,9 +55,9 @@ Usage:
 Writes models/casing/ina228_node_{plate,frame,bezel}.step and, for printing,
 the same 3 as .stl. --check fails on a stale file, on a part that is
 not one piece, on two parts sharing volume and on a part sharing volume
-with a solid of models/pcb/ina228_node_layout.step. --render draws the case
-closed, taken apart and cut open, 1200 x 1000 pixels. Needs OCP (pip
-install cadquery-ocp==8.0.1.1.0).
+with a solid of models/pcb/ina228_node_layout.step. --render draws the
+case closed, taken apart and cut open to DIR/casing/, 1200 x 1000
+pixels. Needs OCP (pip install cadquery-ocp==8.0.1.1.0).
 
 SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
@@ -374,7 +374,8 @@ def render(built, directory):
         image = Image_AlienPixMap()
         view.view.ToPixMap(image, view.w, view.h,
                            Graphic3d_BufferType.Graphic3d_BT_RGB)
-        image.Save(TCollection_AsciiString(str(Path(directory) / name)))
+        image.Save(TCollection_AsciiString(str(_models.render(
+            directory, name.removesuffix(".png")))))
 
     def lifted(items, z):
         return [(_moved(solid, z=z), rgb) for solid, rgb in items]

@@ -1062,7 +1062,7 @@ def main() -> int:
             and not (VIDEO / "cad" / "minircbench.glb").is_file():
         sys.exit("tools/video/cad/minircbench.glb is missing; "
                  "tools/video_cad.py --parts writes it from MiniRcBench's "
-                 "hardware/mechanical/models/minircbench.stp")
+                 "hardware/mechanical/models/parts/minircbench.stp")
     if not (VIDEO / "node_modules" / "three").is_dir():
         sys.exit("run `npm install` in tools/video/ first")
     for tool in ("node",) + (() if args.stills else ("ffmpeg",)):

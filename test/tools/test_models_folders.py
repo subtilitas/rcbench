@@ -55,3 +55,23 @@ def test_stray_file_is_found(tmp_path, monkeypatch):
     monkeypatch.setattr(_models, "ROOT", tmp_path)
     assert [str(p.relative_to(tmp_path)) for p in _models.strays()] == [
         "casing/panel_7b.step", "m5dial.step", "parts/m5dial.txt"]
+
+
+def test_every_render_lies_in_its_folder():
+    """A model's picture in the model's folder, all.png beside them."""
+    assert _models.stray_renders() == []
+    assert (_models.RENDERS / _models.SHEET).is_file()
+    for stem, folder in _models.FOLDER.items():
+        assert (_models.RENDERS / folder / f"{stem}.png").is_file()
+    for name, folder in _models.VIEW.items():
+        assert (_models.RENDERS / folder / f"{name}.png").is_file()
+    assert not set(_models.VIEW) & set(_models.FOLDER)
+
+
+def test_render_path_makes_its_folder(tmp_path):
+    """A view goes to its folder; an unknown name is an error."""
+    assert _models.render(tmp_path, "dial_base_section") == (
+        tmp_path / "casing" / "dial_base_section.png")
+    assert (tmp_path / "casing").is_dir()
+    with pytest.raises(KeyError, match="no model and no view"):
+        _models.render(tmp_path, "no_such_view")

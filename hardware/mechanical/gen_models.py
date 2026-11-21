@@ -82,7 +82,7 @@ def main(argv):
             print(f"wrote {path.relative_to(HERE.parent.parent)}")
     for p in stale:
         print(f"STALE {p}: run hardware/mechanical/gen_models.py")
-    strays = _models.strays()
+    strays = _models.strays() + _models.stray_renders()
     for p in strays:
         print(f"STRAY {p.relative_to(HERE.parent.parent)}: not where "
               "hardware/mechanical/_models.py puts it")

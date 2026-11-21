@@ -107,7 +107,9 @@ history is in git.
   models: 16 boards and the sensor node's layout), `casing/` (7 printed
   parts) and `parts/` (13 bought parts and assemblies). `_models.py` names
   each model's folder; every generator and check asks it for a path.
-  `gen_models.py --check` fails on a file under `models/` that lies
+  `renders/` has the same 3 folders, the contact sheet `all.png` beside
+  them; `step_render.py --folders` writes into them. `gen_models.py
+  --check` fails on a file under `models/` or `renders/` that lies
   elsewhere. File names are unchanged.
 - Dial base: the 4 screws turn into brass threaded inserts for melting
   in (ruthex RX-M3Sx4.0; owner, 2026-11-21) in place of threads cut in the

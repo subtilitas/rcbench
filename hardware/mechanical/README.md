@@ -41,8 +41,8 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `_parts.py` | shapes of electronic parts: chip parts, leaded packages, wire sockets, USB sockets, card slot, buttons, pin header, shunt, both halves of the XT90PW |
 | `check_overlap.py` | fails when two solids share volume in the panel board's model, in the INA228 module with its case, in one of the 5 module boards, in the Core2350B's USB adapter board, in the ES3C28P, in a cell, in the standard servo, in the KST X10, in the WitMotion sensor, in one of the 2 models of the rbmod carrier or in one of its 4 module boards |
 | `check_panel_7b.py` | holds the panel board's model against Waveshare's STEP file |
-| `gen_models.py` | writes `models/` from the specs; `--check` fails on drift and on a file under `models/` that `_models.py` does not account for |
-| `_models.py` | names the folder of each model under `models/`: `pcb`, `casing` or `parts` |
+| `gen_models.py` | writes `models/` from the specs; `--check` fails on drift and on a file under `models/` or `renders/` that `_models.py` does not account for |
+| `_models.py` | names the folder of each model under `models/` and of each picture under `renders/`: `pcb`, `casing` or `parts` |
 | `_stl.py` | reads a binary STL and splits it into its closed parts |
 | `_refit.py` | fits planes, cylinders, cones, tori and a thread's surfaces to a mesh part |
 | `_surface.py`, `_segment.py` | the surfaces and their fits, and the faces grown on them, for `_refit.py` |
@@ -50,7 +50,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `models/pcb/` | 17 models: 16 boards with their parts and the sensor node's layout; STEP |
 | `models/casing/` | 7 printed parts: the Dial's base, the sensor node's case, the INA228 module's case, the flap drive's frame; STEP, and STL for 5 of them |
 | `models/parts/` | 13 models of bought parts and of assemblies: emergency stop button, M5Stack Dial and its nut, 2 servos, 2 cells, inertial sensor, the flap drive's assembly and wing; STEP |
-| `renders/` | OpenCASCADE renders of the models and the contact sheet `all.png` |
+| `renders/` | OpenCASCADE renders in the folders of `models/`: `pcb/`, `casing/`, `parts/`; a view of several models lies in the folder `_models.py` names for it. The contact sheet `all.png` lies beside the folders |
 | `vendor/` | third-party meshes, unchanged, each with its licence |
 
 ```sh
@@ -64,11 +64,11 @@ python3 hardware/mechanical/_gen_dial_base.py --check   # 1 minute
 python3 hardware/mechanical/_gen_flap_drive.py --check  # 10 seconds
 python3 hardware/mechanical/_gen_node_case.py --check   # 20 seconds
 xvfb-run -a python3 hardware/kicad/tools/step_render.py \
-    hardware/mechanical/renders --size 640 480 \
+    hardware/mechanical/renders --size 640 480 --folders \
     --step hardware/mechanical/models/*/*.step
 xvfb-run -a python3 hardware/kicad/tools/step_render.py \
     hardware/mechanical/renders --size 640 480 --from XposYnegZneg \
-    --suffix _back \
+    --suffix _back --folders \
     --step hardware/mechanical/models/pcb/es3c28p.step
 ```
 
@@ -229,11 +229,11 @@ controller. The dial sits flat on top, face up; the 1000mAh lithium
 polymer cell 102540 lies in the bottom part. One hand holds the base
 while the other turns the knob.
 
-![Base with the dial](renders/dial_base.png)
+![Base with the dial](renders/casing/dial_base.png)
 
 | | |
 | --- | --- |
-| ![Taken apart](renders/dial_base_exploded.png) | ![Cut open](renders/dial_base_section.png) |
+| ![Taken apart](renders/casing/dial_base_exploded.png) | ![Cut open](renders/casing/dial_base_section.png) |
 
 | File | Content | Print |
 | --- | --- | --- |
@@ -441,7 +441,7 @@ two round tails bend down through it. The KiCad module
 same board as boxes; these two models draw it part by part, in the same
 frame.
 
-![INA228 module](renders/ina228_xt90.png)
+![INA228 module](renders/pcb/ina228_xt90.png)
 
 | File | Content | Origin |
 | --- | --- | --- |
@@ -524,11 +524,11 @@ and both are bare here.
 
 | | | |
 | --- | --- | --- |
-| ![INA219 board](renders/ina219_cjmcu219.png) | ![charger board](renders/lipo_charger_boost_5v.png) | ![boost board](renders/boost_5v_en.png) |
+| ![INA219 board](renders/pcb/ina219_cjmcu219.png) | ![charger board](renders/pcb/lipo_charger_boost_5v.png) | ![boost board](renders/pcb/boost_5v_en.png) |
 | `ina219_cjmcu219.step` | `lipo_charger_boost_5v.step` | `boost_5v_en.step` |
-| ![ESP32-C6-Zero](renders/esp32_c6_zero.png) | ![380mAh cell](renders/lipo_702030_380mah.png) | ![1000mAh cell](renders/lipo_102540_1000mah.png) |
+| ![ESP32-C6-Zero](renders/pcb/esp32_c6_zero.png) | ![380mAh cell](renders/parts/lipo_702030_380mah.png) | ![1000mAh cell](renders/parts/lipo_102540_1000mah.png) |
 | `esp32_c6_zero.step` | `lipo_702030_380mah.step` | `lipo_102540_1000mah.step` |
-| ![Core2350B](renders/core2350b.png) | ![Core2350B USB adapter](renders/core2350b_usb_adapter.png) | |
+| ![Core2350B](renders/pcb/core2350b.png) | ![Core2350B USB adapter](renders/pcb/core2350b_usb_adapter.png) | |
 | `core2350b.step` | `core2350b_usb_adapter.step` | |
 
 | File | Content | Size, mm | Origin |
@@ -619,7 +619,7 @@ JST PH headers `ES3C28P_PWR`, `_UART`, `_I2C` and `_GPIO` of the
 [KiCad library](../kicad/README.md), or sits in a case. So it has no
 footprint and no model in the library; `es3c28p.step` is its only model.
 
-| ![ES3C28P, front](renders/es3c28p.png) | ![ES3C28P, back](renders/es3c28p_back.png) |
+| ![ES3C28P, front](renders/pcb/es3c28p.png) | ![ES3C28P, back](renders/pcb/es3c28p_back.png) |
 | --- | --- |
 | front | back |
 
@@ -706,7 +706,7 @@ them.
 
 | | |
 | --- | --- |
-| ![Sensor node layout](renders/ina228_node_layout.png) | ![Matek mBEC12S](renders/matek_mbec12s.png) |
+| ![Sensor node layout](renders/pcb/ina228_node_layout.png) | ![Matek mBEC12S](renders/pcb/matek_mbec12s.png) |
 | `ina228_node_layout.step` | `matek_mbec12s.step` |
 
 | File | Content | Size, mm | Origin |
@@ -746,11 +746,11 @@ sets that voltage.
 A printed case of 3 parts round the layout, 91.4mm x 55.4mm x 28.0mm. It
 has no ears; the node hangs in its cable.
 
-![Case of the sensor node](renders/ina228_node_case.png)
+![Case of the sensor node](renders/casing/ina228_node_case.png)
 
 | | | |
 | --- | --- | --- |
-| ![Taken apart](renders/ina228_node_case_exploded.png) | ![Cut open](renders/ina228_node_case_section.png) | ![Plug end](renders/ina228_node_case_back.png) |
+| ![Taken apart](renders/casing/ina228_node_case_exploded.png) | ![Cut open](renders/casing/ina228_node_case_section.png) | ![Plug end](renders/casing/ina228_node_case_back.png) |
 
 | File | Content | Print |
 | --- | --- | --- |
@@ -826,9 +826,9 @@ carrier. The files here hold the bare boards.
 
 | | |
 | --- | --- |
-| ![RP2350-CAN](renders/rp2350_can.png) | ![INA3221 board](renders/ina3221_module.png) |
+| ![RP2350-CAN](renders/pcb/rp2350_can.png) | ![INA3221 board](renders/pcb/ina3221_module.png) |
 | `rp2350_can.step` | `ina3221_module.step` |
-| ![Mini560 buck converter](renders/dcdc_buck_mini.png) | ![USB-C PD trigger board](renders/usbc_pd_trigger.png) |
+| ![Mini560 buck converter](renders/pcb/dcdc_buck_mini.png) | ![USB-C PD trigger board](renders/pcb/usbc_pd_trigger.png) |
 | `dcdc_buck_mini.step` | `usbc_pd_trigger.step` |
 
 | File | Content | Size, mm | Sources, none in the repository |
@@ -877,7 +877,7 @@ RP2350-CAN, an INA3221 module, 2 mini buck converters and a USB-C PD
 
 | | |
 | --- | --- |
-| ![The carrier with its SMD parts](renders/rbmod_v2_smd.png) | ![The carrier with connectors and modules](renders/rbmod_v2.png) |
+| ![The carrier with its SMD parts](renders/pcb/rbmod_v2_smd.png) | ![The carrier with connectors and modules](renders/pcb/rbmod_v2.png) |
 
 | File | Content | Size, mm |
 | --- | --- | --- |
@@ -958,7 +958,7 @@ A standard size servo with a round horn: black case of three shells, two
 ears with two open mounting holes each, white print "Standard Servo" on
 both long sides, white horn.
 
-![Standard servo](renders/servo_standard.png)
+![Standard servo](renders/parts/servo_standard.png)
 
 | File | Content | Size, mm | Origin |
 | --- | --- | --- | --- |
@@ -987,12 +987,12 @@ their kinds of parts and their look follow photos of such a frame, and
 every size is chosen in `_gen_flap_drive.py`. No part is measured, made
 or tried.
 
-![Servo, frame and linkage](renders/flap_drive_unit_2.png)
+![Servo, frame and linkage](renders/parts/flap_drive_unit_2.png)
 
 | | |
 | --- | --- |
-| ![Section through wing and flap](renders/flap_drive_section.png) | ![Wing from below, cover off](renders/flap_drive_below.png) |
-| ![The unit from the rod's side](renders/flap_drive_unit.png) | ![Wing from above, skin clear](renders/flap_drive_above.png) |
+| ![Section through wing and flap](renders/parts/flap_drive_section.png) | ![Wing from below, cover off](renders/parts/flap_drive_below.png) |
+| ![The unit from the rod's side](renders/parts/flap_drive_unit.png) | ![Wing from above, skin clear](renders/parts/flap_drive_above.png) |
 
 | File | Content | Frame |
 | --- | --- | --- |
@@ -1076,7 +1076,7 @@ A WitMotion inertial sensor in its black case: a base of 3.0mm with a
 slotted ear at each end, a square body, and a white label with blue print
 that shows the sensor's axes.
 
-![WitMotion sensor](renders/wit_imu.png)
+![WitMotion sensor](renders/parts/wit_imu.png)
 
 | File | Content | Size, mm | Origin |
 | --- | --- | --- | --- |
