@@ -60,10 +60,14 @@ of a reference layout round it: a carbon frame with counter bearing, a double
 arm of 7.0mm, a pushrod and a horn of 2 plates that stands out of the flap's
 upper surface, in an 88mm slice of wing with
 the RG-15 airfoil on a 230mm chord and a flap hinged in the lower skin. The
+wing's upper skin ends 4.45mm before the flap, and a fairing, half an
+ellipsoid 35.5mm long, covers the rod's slot. The
 layout's sizes are chosen, not measured; its look follows photos of such a
-frame. The parts stand at neutral, and only that position is checked for
-collisions. `travel()` gives 25.5 degrees of flap down for 45 degrees of the
-arm and -20.3 degrees for -45 degrees.
+frame. The files hold the parts at neutral. `travel()` gives 25.5 degrees of
+flap down for 45 degrees of the arm and -20.3 degrees for -45 degrees. The
+collision check covers neutral and 8 angles of the arm from -45 to 75
+degrees, 20.3 degrees of flap up to 38.0 degrees down; no seal over the gap
+is drawn.
 It holds a STEP model of a WitMotion inertial sensor in its case with two
 slotted ears, 36.1mm x 51.5mm x 15.0mm, from a product picture with
 dimensions. The sensor's type is not named in the picture; the USB socket is

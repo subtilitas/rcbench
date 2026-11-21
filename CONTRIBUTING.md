@@ -64,6 +64,7 @@ python3 tools/gen_esc_profiles.py --check
 python3 tools/check_sizes.py --check  # every file over 1,000 code lines is in tools/check_sizes.txt
 python3 tools/check_sanitizers.py --check  # the sanitizer build's flags, on every file
 python3 tools/check_protocols.py --check   # every module under protocols/ stands alone
+python3 tools/pio_budget.py --check        # every board's PIO programs and DMA channels fit the RP2350
 python3 tools/check_loop_waits.py --check  # no busy wait, sleep, blocking call or blocking print in the IOmcu's code
 python3 tools/security_parsers.py --check  # the parser table in SECURITY.md
 python3 tools/check_formats.py        # every translated format against its call

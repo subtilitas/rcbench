@@ -25,6 +25,27 @@ history is in git.
   the bindings of a one-page record if the flash holds one, empty
   otherwise.
 
+- `tools/pio_budget.py`: counts every PIO (programmable input/output)
+  program in the `.pio` files under `protocols/` as pioasm 2.3.0 does and
+  loads each board's programs into a model of the RP2350's 3 blocks of 4
+  state machines and 32 words and 16 DMA (direct memory access) channels,
+  in boot order and placed as pico-sdk 2.3.0 places them. It prints per
+  block the words used and free and the state machines used, and the DMA
+  channels used, for the RP2350-CAN module, the rbmod carrier and the
+  planned remote servo node, and fails when a mix a board allows does not
+  fit. For the remote servo node it runs 23,552 slot orders with every
+  programming session. The capture ring's worst case is 8 plain DShot
+  outputs at 267,200 events/s, 30.7ms of ring against a 42ms flash window:
+  a plain DShot pad keeps its input enable, so its 32,000 edges a second
+  reach the ring. During a programming session the capture guarantee does
+  not hold: the session's pin carries its own edges, up to 1,843,200 a
+  second from the Hitec precharge sampler, and the measured figures are
+  marked invalid for the session; pass-through goes on, as MIRROR uses no
+  ring. The tool reports each session's ring use apart. A mix the remote
+  servo node's table refuses that fits the chip must break a named rule
+  (SESSION_BLOCK, PPM_MAX, SLOT_PINS), or the check fails. CI runs
+  `--check`.
+
 - `hardware/mechanical/`: `es3c28p.step`, the LCDWIKI ES3C28P of the
   display node (50.0mm x 86.0mm, 10.6mm over all): board with 4 holes of
   3.2mm, touch panel, display, both flat cables' folds, and on the back
@@ -35,6 +56,21 @@ history is in git.
   ([Mechanical parts](hardware/mechanical/README.md#display-node-board-lcdwiki-es3c28p)).
 - `hardware/kicad/tools/step_render.py`: `--from` picks the corner the
   view looks from, `--suffix` names the PNGs of a second view.
+
+### Changed
+
+- Flap drive model (`hardware/mechanical/_gen_flap_drive.py`): the wing's
+  upper skin ends 4.45mm before the flap, so the flap turns 20.3 degrees
+  up; a fairing, half an ellipsoid 35.5mm long, 10.2mm wide and 8.1mm
+  high, covers the rod's slot (`flap_drive_wing.step`, 7 solids). The rod
+  end's neck is 2.4mm high and the arm's barrel 5.4mm across, which keeps
+  them apart at -45 degrees of the arm. `posed()` gives the parts at an
+  angle of the arm, and `--check` fails when two solids share volume at
+  neutral or at one of 8 angles from -45 to 75 degrees.
+- [hardware/kicad/README.md](hardware/kicad/README.md) limits the rule that
+  boards are drawn green to the box models: the five `detail` models keep the
+  real board's colour (owner, 2026-11-21, for the INA219 board, the charger
+  board, the boost board and the ESP32-C6-Zero).
 
 ### Fixed
 
