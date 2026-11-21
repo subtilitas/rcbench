@@ -17,6 +17,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `boost_5v_en.py` | spec of the 5V boost converter board with enable pad |
 | `esp32_c6_zero.py` | spec of the Waveshare ESP32-C6-Zero |
 | `core2350b.py` | spec of the Waveshare Core2350B and its USB adapter board |
+| `es3c28p.py` | spec of the LCDWIKI ES3C28P, the display node's board: 2.8" display, ESP32-S3, sockets |
 | `lipo_cells.py` | spec of two lithium polymer cells, 702030 and 102540, with wires and plug |
 | `kst_x10.py` | spec of the KST X10 wing servo, from a dimension drawing and photos |
 | `_gen_flap_drive.py` | builds a frame with counter bearing for the KST X10, its linkage and a slice of wing with a flap with OpenCASCADE, checks that no two solids share volume |
@@ -31,7 +32,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `_measure_step.py` | measures Waveshare's STEP file of the panel board with OpenCASCADE |
 | `_solid.py` | profiles of straight sides and arcs pushed along an axis, and round rods along a path of lines and arcs, turned and moved, as solids with flat, cylindrical and toroidal faces |
 | `_parts.py` | shapes of electronic parts: chip parts, leaded packages, wire sockets, USB sockets, card slot, buttons, pin header, shunt, both halves of the XT90PW |
-| `check_overlap.py` | fails when two solids share volume in the panel board's model, in the INA228 module with its case, in one of the 5 module boards, in the Core2350B's USB adapter board, in a cell, in the standard servo, in the KST X10 or in the WitMotion sensor |
+| `check_overlap.py` | fails when two solids share volume in the panel board's model, in the INA228 module with its case, in one of the 5 module boards, in the Core2350B's USB adapter board, in the ES3C28P, in a cell, in the standard servo, in the KST X10 or in the WitMotion sensor |
 | `check_panel_7b.py` | holds the panel board's model against Waveshare's STEP file |
 | `gen_models.py` | writes `models/` from the specs; `--check` fails on drift |
 | `_stl.py` | reads a binary STL and splits it into its closed parts |
@@ -54,6 +55,9 @@ python3 hardware/mechanical/_gen_flap_drive.py --check  # 10 seconds
 xvfb-run -a python3 hardware/kicad/tools/step_render.py \
     hardware/mechanical/renders --size 640 480 \
     --step hardware/mechanical/models/*.step
+xvfb-run -a python3 hardware/kicad/tools/step_render.py \
+    hardware/mechanical/renders --size 640 480 --from XposYnegZneg \
+    --suffix _back --step hardware/mechanical/models/es3c28p.step
 ```
 
 ## Emergency stop button, M16
@@ -586,6 +590,90 @@ Limits:
 ```sh
 python3 hardware/mechanical/_gen_font.py     # rewrite _font.py; needs OpenCV
 ```
+
+## Display node board, LCDWIKI ES3C28P
+
+The display node's board and the display of the planned remote servo
+node: an ESP32-S3 board of 50.0 x 86.0mm under a 2.8" display of 240 x
+320 pixels (ILI9341V) with a capacitive touch panel (FT6336G). The board
+is not soldered to a carrier: it reaches the carrier by cables to the
+JST PH headers `ES3C28P_PWR`, `_UART`, `_I2C` and `_GPIO` of the
+[KiCad library](../kicad/README.md), or sits in a case. So it has no
+footprint and no model in the library; `es3c28p.step` is its only model.
+
+| ![ES3C28P, front](renders/es3c28p.png) | ![ES3C28P, back](renders/es3c28p_back.png) |
+| --- | --- |
+| front | back |
+
+| File | Content | Origin |
+| --- | --- | --- |
+| `es3c28p.step` | the ES3C28P: board with 4 holes, window and slot of the touch cable; touch panel with its black border, optical glue, display module, 2 strips of tape, both cables' folds round the display's end and the touch cable's run to its socket; on the back the ESP32-S3, flash, codec, amplifier, RGB LED, crystal, microphone, 6 SOT-23 packages, a diode, 103 chip parts, USB Type-C, microSD, 6-way flat cable socket, 5 wire sockets of 1.25mm pitch, BOOT and RESET, the touch controller and 6 chip parts on its cable; print of both sides; 767 solids, 5.8MB | as `panel_7b.step`: the center of the view area on the touch panel's front face, +z to the viewer; seen from the front x to the right and y up, the USB socket down and the microphone hole at the top right |
+
+Positions in the model frame, mm. Heights are below the board's back
+face at z = -5.9. A plug enters from the side named.
+
+| Part | Place | Size, height | Plug from |
+| --- | --- | --- | --- |
+| Board | x -25.0 to 25.0, y -45.835 to 40.165, z -5.9 to -4.3 | 50.0 x 86.0 x 1.6, corners 3.5 | |
+| 4 mounting holes | x -21.0 and 21.0, y -41.835 and 36.165 | 3.2, rings of 5.6 printed on the front | |
+| Touch panel | y -37.435 to 31.765, front at z 0 | 50.0 x 69.2 x 1.0 | |
+| View area | centered on the origin | 43.6 x 58.05 | |
+| Display module | z -3.8 to -1.5 | 50.0 x 69.2 x 2.3 | |
+| Cable folds | y -38.705 to -37.435, x -10.65 to 11.75 and 12.3 to 17.5 | 1.27 past the display's end | |
+| UART socket, 4 pins | x -24.49 to -20.29, center y -10.85 | 4.2 x 6.75, wings 10.15, 3.4 | -x, face 0.51 inside the edge |
+| BAT socket, 2 pins | x -21.94 to -17.74, center y -22.64 | 4.2 x 4.25, wings 7.65, 3.4 | +x, leads towards the edge |
+| I2C socket, 4 pins | x 20.29 to 24.49, center y 4.08 | as UART | +x, face 0.51 inside the edge |
+| GPIO socket, 4 pins | x 20.29 to 24.49, center y 21.93 | as UART | +x, face 0.51 inside the edge |
+| SPEAKER socket, 2 pins | x 20.61 to 24.21, y -13.30 to -5.65 | 3.6 x 7.65, 4.7 | -z |
+| USB Type-C | x -4.47 to 4.47, front at y -46.205 | 8.94 x 7.35, shell 0.09 to 3.25 | -y, 0.37 past the edge |
+| microSD | x -22.47 to -7.57, y -1.855 to 12.245 | 14.9 x 14.1, 1.85 | -x, 2.53 inside the edge |
+| RESET, BOOT | x 11.58 and -11.55, y -42.575 | 4.2 x 3.2, plunger top 2.5 | -z |
+| Flat cable socket | x 10.65 to 17.85, y 8.135 to 14.135 | 2.0 | -y |
+| Microphone hole | x 15.0, y 36.165 | 0.6 | |
+| Over all | z 0 to -10.6 | | |
+
+Sources:
+
+- LCDWIKI's STEP file `ES3C28P_3D.step` (in `ES3C28P_3D.zip` at
+  `https://www.lcdwiki.com/res/ES3C28P/`, 1238 solids): the stack, the
+  board's outline, holes and cut-outs, the place, size and height of
+  every part. It states no licence and is not in the repository.
+  `_measure_step.py`'s `measure` and OpenCASCADE's assembly tree read
+  it.
+- LCDWIKI's outline drawing `ES3C28P_Size.pdf` (V1.0, 2025-06-11): board
+  50.00 x 86.00 x 1.60, holes 3.20 on 42.00 x 78.00, display and touch
+  panel 50.00 x 69.20 +-0.2, view area 43.60 x 58.05, 10.60 over all,
+  parts 4.70 at most. The STEP file agrees.
+- 17 tester photos, not in the repository: top side and back on 5mm
+  squared paper, edges, angled views, side views against a folding
+  rule. The back photos are laid onto the board by its 4 holes.
+  `_photo_grid.py`'s grid fit lies within 0.24mm RMS (root mean square)
+  of the paper's grid over 1102 crossings; the holes lie 42.35 x 78.73mm
+  apart on the paper, so the camera stands about 680mm over it.
+
+Limits:
+
+- The STEP file's parts lie on the photos' within 0.3mm. The folds of
+  the cables, which the STEP file does not draw, are read off the front
+  photo within 0.3mm. No dimension is verified with a caliper.
+- The photos give the top-entry socket 4.5 +-0.3mm high and the
+  side-entry sockets 3.6 +-0.3mm; the model keeps the STEP file's 4.7mm
+  and 3.4mm.
+- The folds are half circles of 1.15mm inner radius drawn as 12 flat
+  facets.
+- Not measured, estimated: the cables' thickness (0.12mm) and run behind
+  the display, the display cable's tail (5.1mm), the pegs of the USB and
+  microSD sockets, the wire sockets' walls and pins, the touch
+  controller's name (a chip of 5.0 x 5.0mm with 40 pads on the touch
+  cable, taken to be the FT6336G).
+- `_font.py` has no inch mark and no brackets: the board's `2.8"` is
+  drawn as `2.8`, `IO15(SCL)` as `IO15 SCL`.
+- Not drawn: the antenna's copper, tracks, vias, pads, frames round chip
+  parts, arrows, the microphone symbol, the shapes of the CE and RoHS
+  marks (their frames and letters are drawn), the display cable's joint
+  to the board, 3 chip parts of 0402 beside RESET that the photos show
+  and the STEP file lacks, and the notches the panel's tabs leave in the
+  edges.
 
 ## Standard servo
 

@@ -21,6 +21,7 @@ import _parts  # noqa: E402
 import _solid  # noqa: E402
 import boost_5v_en  # noqa: E402
 import core2350b  # noqa: E402
+import es3c28p  # noqa: E402
 import esp32_c6_zero  # noqa: E402
 import gen_all  # noqa: E402
 import ina219_cjmcu219  # noqa: E402
@@ -290,3 +291,53 @@ def test_es3c28p_headers_follow_the_socket(stem, names):
     assert spec.FOOTPRINT["board"] == pytest.approx(
         (2.0 * (len(names) - 1) + 3.9, 4.5))
     assert spec.SYMBOL["footprint"] == spec.FOOTPRINT["name"]
+
+
+def test_es3c28p_solids_close():
+    """The ES3C28P: every solid closes."""
+    solids = es3c28p.parts(None)["es3c28p"]
+    assert len(solids) == 767
+    assert [n for n, item in enumerate(solids) if open_edges(item)] == []
+
+
+def test_es3c28p_follows_the_makers_drawing():
+    """Board 50.0 x 86.0 x 1.6, holes 42.0 x 78.0, 10.6 over all."""
+    box = extent(_solid.items(es3c28p.board()))
+    assert box == pytest.approx([-52.75, 6.0, -1.6, -2.75, 92.0, 0.0])
+    xs = sorted({x for x, _y in es3c28p.HOLES})
+    ys = sorted({y for _x, y in es3c28p.HOLES})
+    assert (xs[1] - xs[0], ys[1] - ys[0]) == pytest.approx((42.0, 78.0))
+    assert es3c28p.HOLE_D == 3.2
+    x0, y0, x1, y1 = es3c28p.LCD
+    assert (x1 - x0, y1 - y0) == pytest.approx((50.0, 69.2))
+    x0, y0, x1, y1 = es3c28p.VIEW
+    assert (x1 - x0, y1 - y0) == pytest.approx((43.6, 58.05))
+    # The model's origin is the view area's center on the touch panel.
+    box = extent(es3c28p.parts(None)["es3c28p"])
+    assert box[3] - box[0] == pytest.approx(50.0)
+    assert box[2] == pytest.approx(-10.6)
+    assert box[5] == pytest.approx(0.0)
+    assert (box[0] + box[3]) / 2 == pytest.approx(0.0)
+    # Only the USB socket passes the edge, by 0.37 at the bottom.
+    assert box[4] == pytest.approx(92.0 - (y0 + y1) / 2)
+    assert box[1] == pytest.approx(5.63 - (y0 + y1) / 2)
+
+
+def test_es3c28p_sockets_for_a_case():
+    """Side-entry sockets 3.4 high at the edges; speaker 4.7, USB 3.25."""
+    # From the board's nearer long edge: UART's and the right-hand
+    # sockets' plug faces 0.51, BAT's leads 2.07.
+    reach = (0.51, 2.07, 0.51, 0.51)
+    for (pins, (x, y), turn), gap in zip(es3c28p.SOCKETS, reach,
+                                         strict=True):
+        depth, height = es3c28p.SOCKET_BOX[:2]
+        box = extent(_solid.items(es3c28p.under(
+            es3c28p.p.socket(pins, 1.25, 1.25 * (pins - 1) + 6.4, depth,
+                             height, *es3c28p.SOCKET_BOX[2:]), x, y, turn)))
+        assert box[2] == pytest.approx(-1.6 - 3.4)
+        edge = box[0] + 52.75 if x < -27.75 else -2.75 - box[3]
+        assert edge == pytest.approx(gap, abs=0.01)
+    box = extent(_solid.items(es3c28p.speaker_socket()))
+    assert box[2] == pytest.approx(-1.6 - 4.7)
+    box = extent(_solid.items(es3c28p.usb()))
+    assert box[2] == pytest.approx(-1.6 - 3.25)

@@ -139,7 +139,9 @@ castellations, the XT90 board's milled slots and the AS5600 magnet.
 
 `tools/step_render.py` reads each STEP file with OpenCASCADE, the
 geometry kernel KiCad uses to read STEP. It renders a shaded view with face edges
-from above and to the front left. The images below are its output, 640 x 480px:
+from above and to the front left; `--from XposYnegZneg` looks from below
+and to the front right, and `--suffix` adds a text to each PNG's name for
+such a second view. The images below are its output, 640 x 480px:
 
 ```sh
 pip install cadquery-ocp==8.0.1.1.0 pillow
