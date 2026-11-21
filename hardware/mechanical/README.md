@@ -229,8 +229,8 @@ while the other turns the knob.
 
 | File | Content | Print |
 | --- | --- | --- |
-| `dial_base_top.step`, `.stl` | the dial's seat: top plate with the 45.2mm hole, wall, 4 screw bosses, USB opening with its guide tube; 13.9cm3 | top face down, no support |
-| `dial_base_bottom.step`, `.stl` | floor with the cell's pocket, centring rim, 4 screw columns; 15.6cm3 | foot down, no support |
+| `dial_base_top.step`, `.stl` | the dial's seat: top plate with the 45.2mm hole, wall, 4 bosses for threaded inserts, USB opening with its guide tube; 14.2cm3 | top face down, no support |
+| `dial_base_bottom.step`, `.stl` | floor with the cell's pocket, centring rim with a notch at each boss, 4 screw columns; 15.4cm3 | foot down, no support |
 
 Both files are in the dial's frame: z = 0 is the top plate's upper face,
 where the dial's flange seats, the knob points to +z, the `^` mark is at
@@ -263,13 +263,14 @@ measured.
 | Feature | mm |
 | --- | --- |
 | Dial's hole | 45.2 in a plate 2.0 thick; the dial takes 45.0 +/- 0.2 and a panel of 0 to 6 |
-| Room for the ring nut | 4.2 between the nut, 50.82 across, and the wall; 0.6 to each boss |
+| Room for the ring nut | 4.2 between the nut, 50.82 across, and the wall; 0.6 to each boss, which is 6.0 across beside the nut |
 | Room under the dial | the dial's screw heads end 17.7 below the top; the cell's top is 20.1 below it |
 | USB opening | 13.4 x 7.6 with corners rounded 1.5 at -y, center 12.13 below the top, on the dial's USB socket, whose opening lies 18.45 from the axis |
 | Guide tube | the opening runs on as a tube with a wall of 1.0 from the outer wall in to 24.5 from the axis, 10.7 long and 6.05 short of the socket, 2.5 off the dial's thread; beyond 26.5 from the axis a block ties it to the top plate; its top is 0.33 under the ring nut |
 | Cell pocket | 42.9 x 26.0 between 4 rails 1.4 thick and 6.0 high, open at the 4 corners: 1.2 free at each end of the cell and 0.5 at each side; the cell's length lies across the `^` mark, its wires towards +y, the side away from the USB opening |
 | Foam pad | 2 thick, about 20 x 30, between the cell and the dial, in the 2.4 between them; it holds the cell and leaves it room to swell |
-| Screws | 4 x M3 x 12, pan head, on a circle of 58.0 at 45 degrees to the axes; clearance holes 3.4, heads sunk 8.0 into the foot in recesses of 6.2; pilot holes 2.6 in bosses of 6.0, 6.5 of thread |
+| Screws | 4 x M3 x 12, pan head, on a circle of 58.0 at 45 degrees to the axes; clearance holes 3.4, heads sunk 8.0 into the foot in recesses of 6.2; each turns into a brass threaded insert in a boss of the top part and ends 2.5 above it |
+| Threaded inserts | 4 x ruthex RX-M3Sx4.0 (M3, 4.0 long, 4.6 over the knurl), melted in from the joint; hole 4.0, 5.0 deep, wall 1.6, as the maker's label asks; the boss is 7.2 across up to 1.0 under the ring nut, narrows in 2 steps of 0.3, and is 6.0 beside the nut; a bore of 3.2 above the hole takes the screw's end |
 
 The dial's battery socket, 1.25mm pitch with 2 pins, is on its main board
 under the Stamp-S3, at the USB end (M5Stack's picture "Dial Lithium
@@ -292,9 +293,14 @@ solid, or when a part shares volume with the dial, the nut or the cell.
 
 Limits:
 
-- No part is printed yet, so no fit is tried and the base has not been
-  held in a hand: the 0.2mm gap of the rim and the 2.6mm pilot holes are
-  design values for a 0.4mm nozzle.
+- One base is printed and works (owner, 2026-11-21). Its flutes are
+  partly filled: in its files the bosses' webs, the ledge under the rim
+  and the screw columns reach the unfluted surface. Its screws cut their
+  thread in pilot holes of 2.6mm. The files here are cut to the fluted
+  surface, `--check` fails on material in a flute, and the bosses take
+  threaded inserts. No base is printed from these files. No fit is measured: the 0.2mm gap
+  of the rim and the 4.0mm holes for the inserts are design values for a
+  0.4mm nozzle.
 - The battery socket's place is read from M5Stack's picture, not
   measured, and the socket is not in the dial's model. The passage for
   the wires under the Stamp-S3 and out at its +y end is not in the model

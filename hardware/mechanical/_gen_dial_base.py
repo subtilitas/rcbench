@@ -31,7 +31,9 @@ All sizes are mm.
 The dial's ring nut holds it from below the top plate, on a plate 2.0
 thick so the nut stays clear of the dial's USB notch. Each M3 x 12 pan
 head screw enters a column of the bottom part from below, its head
-sunk 8.0 into the foot, and cuts its thread in a boss of the top part.
+sunk 8.0 into the foot, and turns into a brass threaded insert (ruthex
+RX-M3Sx4.0, 4.0 long) melted into a boss of the top part from the
+joint: a hole of 4.0, 5.0 deep, in a boss 7.2 across.
 The cell lies flat in its pocket, its length across the "^" mark, its
 wires towards +y, the side away from the USB opening. The dial's
 battery socket (1.25 pitch, 2 pins) is on its main board under the
@@ -41,9 +43,11 @@ Stamp-S3 and leave the dial at its +y end, away from the USB plug, then
 drop to the cell. A pad of foam 2 thick lies between the cell and the
 dial; it holds the cell and leaves it room to swell.
 
-``check`` fails when a part is not one valid solid, and puts the dial,
-its nut and the cell where they sit and fails when one shares volume
-with a part of the base.
+``check`` fails when a part is not one valid solid or has material in
+a flute, and puts the dial, its nut and the cell where they sit and
+fails when one shares volume with a part of the base. The bosses' webs,
+the rim's ledge, the screw columns and the USB tube are cut to the
+fluted shape, so each flute is open over its whole length.
 
 Usage:
     python3 hardware/mechanical/_gen_dial_base.py           write
@@ -90,6 +94,7 @@ from OCP.GProp import GProp_GProps
 from OCP.Interface import Interface_Static
 from OCP.Quantity import Quantity_Color, Quantity_TOC_RGB
 from OCP.STEPCAFControl import STEPCAFControl_Writer
+from OCP.ShapeUpgrade import ShapeUpgrade_UnifySameDomain
 from OCP.STEPControl import STEPControl_AsIs
 from OCP.StlAPI import StlAPI_Writer
 from OCP.TCollection import TCollection_ExtendedString
@@ -125,11 +130,21 @@ FLOOR = -HEIGHT + WALL   # z of the floor's upper face
 # Rim of the bottom part inside the top part: height, thickness, gap.
 RIM = (2.0, 1.0, 0.2)
 LEDGE = 1.5             # height of the ledge's upright side under the rim
-# Screws: circle radius, angles, boss diameter, pilot hole, clearance
-# hole, head recess diameter, z of the head's seat, z the pilot hole
-# reaches up to.
+# Screws: circle radius, angles, boss diameter beside the ring nut,
+# clearance hole, head recess diameter, z of the head's seat, diameter
+# of the bottom part's columns.
 SCREW_R, SCREW_AT = 29.0, (45.0, 135.0, 225.0, 315.0)
-BOSS, PILOT, CLEAR, HEAD, SEAT, DEPTH = 6.0, 2.6, 3.4, 6.2, -24.5, -9.0
+BOSS, CLEAR, HEAD, SEAT, COLUMN = 6.0, 3.4, 6.2, -24.5, 7.2
+# Threaded insert for melting in, ruthex RX-M3Sx4.0: its hole's
+# diameter and depth and the wall round the hole, as the maker's label
+# gives them (4.0, 5.0 at least, 1.6 at least), and the insert's
+# length. RELIEF is the bore above the hole for the screw's end: its
+# diameter and the z it reaches up to. The boss is INSERT[0] + 2 x
+# INSERT[2] across up to WIDE_TO, 1.0 under the ring nut, and narrows
+# to BOSS in 2 steps of 0.3 above it.
+INSERT = (4.0, 5.0, 1.6, 4.0)
+RELIEF = (3.2, -11.5)
+WIDE_TO = -8.0
 # USB opening at -y: width, height, z of its center, corner radius.
 USB = (13.4, 7.6, -12.13, 1.5)
 # Guide tube round the opening: its wall, the distance of its inner end
@@ -219,18 +234,41 @@ def inner_radius(z):
     return end[0] - (end[1] - z) * math.tan(math.radians(TURN))
 
 
-def shell():
-    """The base in one piece: hollow, fluted, with the dial's hole."""
-    solid = BRepAlgoAPI_Cut(_body(), _revolve(_profile(WALL, -PLATE))).Shape()
+def flutes():
+    """The cylinders that cut the flutes, one for each flute."""
     count, radius, depth, plain = FLUTES
     reach = BELLY[0] + radius - depth
+    out = []
     for k in range(count):
         angle = 360.0 * (k + 0.5) / count
         if abs((angle - 270.0 + 180.0) % 360.0 - 180.0) < plain:
             continue
-        flute = _turned(_cylinder(reach, 0.0, radius, -HEIGHT - 1, 1.0),
-                        angle)
-        solid = BRepAlgoAPI_Cut(solid, flute).Shape()
+        out.append(_turned(_cylinder(reach, 0.0, radius, -HEIGHT - 1, 1.0),
+                           angle))
+    return out
+
+
+_FLUTED = []
+
+
+def _fluted():
+    """The pebble with its flutes, without its cavity.
+
+    Everything added inside the base is cut to this shape, so nothing
+    fills a flute.
+    """
+    if not _FLUTED:
+        solid = _body()
+        for flute in flutes():
+            solid = BRepAlgoAPI_Cut(solid, flute).Shape()
+        _FLUTED.append(solid)
+    return _FLUTED[0]
+
+
+def shell():
+    """The base in one piece: hollow, fluted, with the dial's hole."""
+    solid = BRepAlgoAPI_Cut(_fluted(),
+                            _revolve(_profile(WALL, -PLATE))).Shape()
     return BRepAlgoAPI_Cut(solid, _cylinder(0, 0, HOLE / 2, -PLATE - 1,
                                             1.0)).Shape()
 
@@ -279,12 +317,26 @@ def parts():
     for x, y, angle in _screw_points():
         web = _turned(_box(SCREW_R, -1.5, SPLIT + RIM[0] + 0.3,
                            BELLY[0], 1.5, -PLATE), angle)
+        hole, deep, wall, _length = INSERT
         boss = BRepAlgoAPI_Fuse(_cylinder(x, y, BOSS / 2, SPLIT, -PLATE),
                                 web).Shape()
+        wide = hole / 2 + wall
+        step = (wide - BOSS / 2) / 2
+        boss = BRepAlgoAPI_Fuse(boss, _cylinder(
+            x, y, wide, SPLIT, WIDE_TO)).Shape()
+        # The boss widens in 2 steps of 0.3, each as high as the 2
+        # together are wide: an overhang the print carries. A cone
+        # would meet the web in a curve OpenCASCADE computes
+        # differently from one processor to the next.
+        boss = BRepAlgoAPI_Fuse(boss, _cylinder(
+            x, y, wide - step, WIDE_TO, WIDE_TO + 2 * step)).Shape()
         top = BRepAlgoAPI_Fuse(
-            top, BRepAlgoAPI_Common(boss, _body()).Shape()).Shape()
-        top = BRepAlgoAPI_Cut(top, _cylinder(x, y, PILOT / 2, SPLIT - 1,
-                                             DEPTH)).Shape()
+            top, BRepAlgoAPI_Common(boss, _fluted()).Shape()).Shape()
+        top = BRepAlgoAPI_Cut(top, _cylinder(x, y, hole / 2, SPLIT - 1,
+                                             SPLIT + deep)).Shape()
+        top = BRepAlgoAPI_Cut(top, _cylinder(x, y, RELIEF[0] / 2,
+                                             SPLIT + deep - 0.5,
+                                             RELIEF[1])).Shape()
     # USB opening at -y, in a tube that guides the plug to the socket.
     width, height, z, corner = USB
     wall, near, tie = TUBE
@@ -294,7 +346,7 @@ def parts():
         -width / 2 - wall, -big, z, width / 2 + wall, -tie,
         -PLATE)).Shape()
     top = BRepAlgoAPI_Fuse(
-        top, BRepAlgoAPI_Common(tube, _body()).Shape()).Shape()
+        top, BRepAlgoAPI_Common(tube, _fluted()).Shape()).Shape()
     top = BRepAlgoAPI_Cut(top, _bar(width, height, corner, z, 20.0,
                                     big)).Shape()
     # Rim of the bottom part, rising into the top part. It stands on a
@@ -312,11 +364,17 @@ def parts():
         _line((BELLY[0], SPLIT - drop - slope), (inside, SPLIT - drop)),
         _line((inside, SPLIT - drop), (inside, SPLIT + rise))])
     bottom = BRepAlgoAPI_Fuse(
-        bottom, BRepAlgoAPI_Common(rim, _body()).Shape()).Shape()
+        bottom, BRepAlgoAPI_Common(rim, _fluted()).Shape()).Shape()
+    # The rim leaves each boss room: a notch gap wider than the boss.
+    for x, y, _angle in _screw_points():
+        bottom = BRepAlgoAPI_Cut(bottom, _cylinder(
+            x, y, INSERT[0] / 2 + INSERT[2] + gap, SPLIT,
+            SPLIT + rise + 1.0)).Shape()
     # Screw columns with clearance holes and head recesses.
     for x, y, _angle in _screw_points():
         column = BRepAlgoAPI_Common(
-            _cylinder(x, y, BOSS / 2 + 0.6, -HEIGHT, SPLIT), _body()).Shape()
+            _cylinder(x, y, COLUMN / 2, -HEIGHT, SPLIT),
+            _fluted()).Shape()
         bottom = BRepAlgoAPI_Fuse(bottom, column).Shape()
     for x, y, _angle in _screw_points():
         bottom = BRepAlgoAPI_Cut(bottom, _cylinder(
@@ -333,7 +391,17 @@ def parts():
             (-half_x - rail, -half_y + 5, -half_x, half_y - 5)):
         bottom = BRepAlgoAPI_Fuse(bottom, _box(
             x0, y0, FLOOR - 0.2, x1, y1, FLOOR + high)).Shape()
-    return {"dial_base_top": top, "dial_base_bottom": bottom}
+    # Faces that lie on one surface become one face: the end of a web
+    # that meets a flute leaves no outline in it.
+    return {"dial_base_top": _merged(top),
+            "dial_base_bottom": _merged(bottom)}
+
+
+def _merged(shape):
+    """The shape with neighbouring faces of one surface made one."""
+    unify = ShapeUpgrade_UnifySameDomain(shape, True, True, True)
+    unify.Build()
+    return unify.Shape()
 
 
 def _bar(width, height, corner, z, near, far):
@@ -451,6 +519,12 @@ def check(built):
         count = pieces(solid)
         if count != 1:
             errors.append(f"{stem}: {count} separate pieces")
+    for stem, solid in built.items():
+        filled = sum(volume(BRepAlgoAPI_Common(solid, flute).Shape())
+                     for flute in flutes())
+        if filled > 1e-3:
+            errors.append(f"{stem}: {filled:.2f}mm3 of it lie in the "
+                          "flutes")
     top, bottom = built["dial_base_top"], built["dial_base_bottom"]
     shared = volume(BRepAlgoAPI_Common(top, bottom).Shape())
     if shared > 1e-6:

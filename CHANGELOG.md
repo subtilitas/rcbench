@@ -83,6 +83,11 @@ history is in git.
 
 ### Changed
 
+- Dial base: the 4 screws turn into brass threaded inserts for melting
+  in (ruthex RX-M3Sx4.0; owner, 2026-11-21) in place of threads cut in the
+  plastic. Each boss of the top part has a hole of 4.0mm, 5.0mm deep, and
+  is 7.2mm across up to 1.0mm under the ring nut; the bottom part's rim
+  has a notch at each boss. The two parts weigh 37g in PLA.
 - KiCad library: 4 module models have the real board's colour in place of
   green: the RP2350-CAN and the mini buck converter blue, the INA3221
   board black (owner, 2026-11-21), the USB-C PD trigger board purple, as
@@ -103,6 +108,12 @@ history is in git.
 
 ### Fixed
 
+- Dial base (`hardware/mechanical/_gen_dial_base.py`): every flute is
+  open. The bosses' webs, the ledge under the rim and the screw columns
+  were cut to the unfluted shape and filled the flutes, 183mm3 in the
+  bottom part and 10mm3 in the top part; a printed base showed it (owner,
+  2026-11-21). They are cut to the fluted shape, and `--check` fails on
+  material in a flute.
 - Web flasher: a write to an ESP board keeps the board's settings. The
   page reads the partition table from the merged image (0xC000 on the
   panel, 0x8000 on the Dial, the nodes and the C6 radio) and writes every
