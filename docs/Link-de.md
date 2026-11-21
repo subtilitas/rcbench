@@ -616,7 +616,7 @@ Regeln:
 | Panel | IOmcu | Eine geschriebene Bindung |
 | --- | --- | --- |
 | 4.41 | 4.41 | SERVO `FRAME_HZ` = 0, je 8 Frames an BIND_CFG, BIND_OUT, BIND_CFG_HI und BIND_OUT_HI, `COMMIT_ALL`: 34 Austausche. Zurückgelesen als OUTPUTS, CHAN_CFG, OUTPUTS_HI und CHAN_CFG_HI |
-| 4.41 | 4.40 oder älter | wie zwischen zwei Builds mit 4.40: 18 Austausche an einen IOmcu ab 4.10. Eine Bindung mit einem gebundenen Slot von 9 bis 16 lehnt das Panel ab, bevor etwas gesendet ist. Das Lesen fragt nur nach den ersten zwei Pages |
+| 4.41 | 4.40 oder älter | wie zwischen zwei Builds mit 4.40: 18 Austausche an einen IOmcu ab 4.10. Eine Bindung mit einem gebundenen Slot von 9 bis 16 oder mit einem Slot, dessen Kanalfolge über Kanal 8 hinausreicht, lehnt das Panel ab, bevor etwas gesendet ist: Kanal 8 der Bank dieses IOmcu ist sein Bench-Throttle, 9 bis 12 sind seine Programmierports. Das Lesen fragt nur nach den ersten zwei Pages |
 | 4.40 oder älter | 4.41 | das Panel schreibt BIND_CFG und BIND_OUT und `COMMIT`: die Slots 9 bis 16 und die Kanäle 9 bis 16 bleiben, wie sie in Kraft sind |
 
 Das Bindungsmodell des Panels hält die Slots 1 bis 8 für die Boards, die

@@ -15,7 +15,8 @@ history is in git.
   pages as one. A slot's channel run ends at channel 16; SENSE_MAP's
   `WATCH` names outputs 9 to 16 as 0x40 to 0x47. A 4.40 panel commits slots
   1 to 8 and leaves the rest as they are; this panel sends the new pages
-  to a 4.41 IOmcu only, and its binding model still fills slots 1 to 8
+  to a 4.41 IOmcu only, refuses an older IOmcu a slot whose channel run
+  reaches past channel 8, and its binding model still fills slots 1 to 8
   ([Link, Slots and channels 9 to 16](docs/Link.md#slots-and-channels-9-to-16)).
 - Output store record version 9 (436 bytes) keeps slots 9 to 16 and
   channels 9 to 16. A version 8 record reads with slots 9 to 16 unbound

@@ -38,6 +38,31 @@ static bool hi_bound(const uint16_t *slots)
 }
 
 /**
+ * @brief Whether a bound slot of the first half of @p slots runs past
+ *        channel 8.
+ *
+ * A 4.40 IOmcu's bank channel 8 is its bench throttle and 9 to 12 its
+ * programming ports: such a slot would render them, not channels 9 to 16.
+ *
+ * @param slots OUTPUTS and OUTPUTS_HI, LINK_OS_ALL registers.
+ * @return true when a slot from 1 to 8 has a driver and first channel plus
+ *         count above 8.
+ */
+static bool lo_past_channel_8(const uint16_t *slots)
+{
+    for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
+        const uint16_t *r = &slots[(size_t)s * LINK_OS_STRIDE];
+        if (r[LINK_OS_DRIVER] != (uint16_t)LINK_DRIVER_NONE
+            && (unsigned)LINK_OS_FIRST(r[LINK_OS_RANGE])
+                       + LINK_OS_CHANNELS(r[LINK_OS_RANGE])
+                   > LINK_OUT_CHANNELS) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * @brief @p count registers from @p off, a frame per exchange.  True when they
  *        were acknowledged whole; otherwise @p res says which way it ended.
  *
@@ -87,6 +112,13 @@ static bool page_written(link_host_t *h, const link_port_t *port,
     return reg_written(h, port, page, 0u, count, regs, res);
 }
 
+bool bind_link_fits(uint16_t minor, const uint16_t *slots)
+{
+    return slots != NULL
+           && (minor >= LINK_MINOR_OUT16
+               || (!hi_bound(slots) && !lo_past_channel_8(slots)));
+}
+
 bind_write_t bind_link_write(link_host_t *h, const link_port_t *port,
                              uint16_t minor, const uint16_t *cfg,
                              const uint16_t *slots, bind_rate_t *rate)
@@ -99,8 +131,9 @@ bind_write_t bind_link_write(link_host_t *h, const link_port_t *port,
     if (h == NULL || port == NULL || cfg == NULL || slots == NULL) {
         return BIND_NO_LINK;
     }
-    /* Slots 9 to 16 reach a 4.41 IOmcu only: an older one has none. */
-    if (minor < LINK_MINOR_OUT16 && hi_bound(slots)) {
+    /* Slots and channels 9 to 16 reach a 4.41 IOmcu only: an older one
+     * has none, and its bank channels 8 to 12 are its throttle and ports. */
+    if (!bind_link_fits(minor, slots)) {
         return BIND_REFUSED;
     }
     bind_write_t res = BIND_WRITTEN;

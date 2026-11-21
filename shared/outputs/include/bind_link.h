@@ -43,6 +43,22 @@ typedef enum {
 } bind_rate_t;
 
 /**
+ * @brief Whether an IOmcu of protocol 4.@p minor has every slot and channel
+ *        @p slots binds.
+ *
+ * Below 4.41 no slot from 9 to 16 may be bound and no slot's channel run may
+ * reach past channel 8: that IOmcu's bank channel 8 is its bench throttle and
+ * 9 to 12 its programming ports.  bind_link_write() refuses a binding that
+ * does not fit before it sends anything.
+ *
+ * @param minor The IOmcu's protocol minor.
+ * @param slots OUTPUTS and OUTPUTS_HI, LINK_OS_ALL registers.
+ * @return true when the binding fits, false when it does not or @p slots is
+ *         NULL.
+ */
+bool bind_link_fits(uint16_t minor, const uint16_t *slots);
+
+/**
  * @brief Write a CHAN_CFG page @p cfg and an OUTPUTS page @p slots, each frame
  *        its own acknowledged exchange (link_write_acked()).
  *
@@ -69,8 +85,10 @@ typedef enum {
  *
  * The exchanges stop at the first one refused or unanswered.
  *
- * A binding with a slot from 9 to 16 bound is refused BIND_REFUSED, and
- * nothing sent, to an IOmcu older than 4.41: it has 8 slots.
+ * A binding with a slot from 9 to 16 bound, or a slot whose channel run
+ * reaches past channel 8, is refused BIND_REFUSED, and nothing sent, to an
+ * IOmcu older than 4.41: it has 8 slots, and its bank channels 8 to 12 are
+ * its bench throttle and programming ports.
  *
  * @param h The link host to write through.
  * @param port The link port the IOmcu answers on.

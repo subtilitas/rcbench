@@ -565,7 +565,7 @@ Rules:
 | Panel | IOmcu | A binding written |
 | --- | --- | --- |
 | 4.41 | 4.41 | SERVO `FRAME_HZ` = 0, 8 frames each to BIND_CFG, BIND_OUT, BIND_CFG_HI and BIND_OUT_HI, `COMMIT_ALL`: 34 exchanges. Read back as OUTPUTS, CHAN_CFG, OUTPUTS_HI and CHAN_CFG_HI |
-| 4.41 | 4.40 or older | as between two 4.40 builds: 18 exchanges to a 4.10 or later IOmcu. A binding with a slot from 9 to 16 bound is refused by the panel before anything is sent. The read asks for the first two pages only |
+| 4.41 | 4.40 or older | as between two 4.40 builds: 18 exchanges to a 4.10 or later IOmcu. A binding with a slot from 9 to 16 bound, or with a slot whose channel run reaches past channel 8, is refused by the panel before anything is sent: that IOmcu's bank channel 8 is its bench throttle and 9 to 12 its programming ports. The read asks for the first two pages only |
 | 4.40 or older | 4.41 | the panel writes BIND_CFG and BIND_OUT and `COMMIT`: slots 9 to 16 and channels 9 to 16 stay as they are in force |
 
 The panel's binding model holds slots 1 to 8 for the boards it has today.

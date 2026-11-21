@@ -564,6 +564,46 @@ TEST_CASE(a_4_41_panel_sends_a_4_40_iomcu_nothing_it_lacks)
     CHECK_EQ(rd.cfg[LINK_CC_COUNT + LINK_CC_MAX_US], LINK_CC_DEFAULT_MAX);
 }
 
+/*
+ * A slot whose channel run reaches past channel 8 is for a 4.41 IOmcu only.
+ * A 4.40 IOmcu's bank channel 8 is its bench throttle and 9 to 12 its
+ * programming ports: (8,1) would bind the pin to the throttle, not to
+ * channel 9.  Refused before anything is sent.
+ */
+TEST_CASE(a_4_40_iomcu_is_sent_no_slot_past_channel_8)
+{
+    static const struct { uint16_t minor; uint8_t first, n; bool sent; }
+        k_case[] = {
+            { 40u, 8u, 1u, false }, { 40u, 7u, 2u, false },
+            { 40u, 12u, 1u, false }, { 40u, 7u, 1u, true },
+            { 40u, 0u, 8u, true },  { 41u, 8u, 1u, true },
+            { 41u, 15u, 1u, true },
+        };
+    for (size_t k = 0; k < sizeof(k_case) / sizeof(k_case[0]); ++k) {
+        fresh(k_case[k].minor);
+        uint16_t cfg[LINK_CC_ALL], slots[LINK_OS_ALL] = { 0 };
+        outputs_chan_cfg_defaults(cfg);
+        outputs_chan_cfg_defaults(&cfg[LINK_CC_COUNT]);
+        slot_of(&slots[0], 2u, k_case[k].first, k_case[k].n);
+        CHECK_EQ(bind_link_fits(k_case[k].minor, slots), k_case[k].sent);
+        CHECK_EQ(bind_link_write(&g_host, &k_port, k_case[k].minor, cfg,
+                                 slots, NULL),
+                 k_case[k].sent ? BIND_WRITTEN : BIND_REFUSED);
+        if (k_case[k].sent) {
+            CHECK_EQ(s_bank.slot[0].pin, 2u);
+            CHECK_EQ(s_bank.slot[0].first_channel, k_case[k].first);
+        } else {
+            CHECK_EQ(g_exchanges, 0u);
+            CHECK_EQ(s_bank.slot[0].driver, OUT_DRIVER_NONE);
+        }
+    }
+    /* An unbound slot's RANGE is not looked at. */
+    uint16_t slots[LINK_OS_ALL] = { 0 };
+    slots[LINK_OS_RANGE] = LINK_OS_RANGE_OF(8u, 1u);
+    CHECK(bind_link_fits(40u, slots));
+    CHECK(!bind_link_fits(41u, NULL));
+}
+
 /* ---------------------------------------------------------------- the CRC */
 
 TEST_CASE(the_commit_all_crc_runs_on_over_the_hi_pages)
@@ -627,6 +667,7 @@ int main(void)
     RUN(a_binding_is_prepared_and_taken_over_both_halves);
     RUN(a_4_40_panel_leaves_the_hi_halves_of_a_4_41_iomcu);
     RUN(a_4_41_panel_sends_a_4_40_iomcu_nothing_it_lacks);
+    RUN(a_4_40_iomcu_is_sent_no_slot_past_channel_8);
     RUN(the_commit_all_crc_runs_on_over_the_hi_pages);
     return test_summary("out16");
 }
