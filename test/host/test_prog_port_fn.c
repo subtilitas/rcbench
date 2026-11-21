@@ -172,7 +172,7 @@ TEST_CASE(a_none_port_is_under_the_pin_rules_and_no_pwm_rule)
     CHECK_EQ(put(PIN(1u), 0xFFFEu), LINK_NACK_BAD_VALUE);
     CHECK_EQ(reg(PIN(1u)), 48u);
     /* A PWM slot is refused on a NONE port's pin, never beside it. */
-    uint16_t slots[LINK_OS_COUNT];
+    uint16_t slots[LINK_OS_ALL] = { 0 };
     memset(slots, 0, sizeof(slots));
     hold_all();
     CHECK_EQ(put(PIN(2u), 7u), 0u);   /* GP6's slice partner */
@@ -270,8 +270,7 @@ TEST_CASE(the_pulse_and_the_target_name_servo_pwm_ports_only)
     CHECK_EQ(put(FN(2u), PWM_FN), 0u);
     hold_all();
     CHECK_EQ(prog_port_sliced_channels(&pg),
-             (uint16_t)((1u << prog_port_channel(1u))
-                        | (1u << prog_port_channel(2u))));
+             (1uL << prog_port_channel(1u)) | (1uL << prog_port_channel(2u)));
     /* A port the IOmcu did not hold is refused, whatever its function. */
     prog_port_bound(&pg, 1u);
     CHECK_EQ(reg(LINK_PG_FLAGS),
@@ -457,7 +456,7 @@ TEST_CASE(a_dshot_port_is_under_the_pin_rules_and_no_pwm_rule)
     hold_all();
     CHECK_EQ(put(PIN(1u), 7u), 0u);   /* GP6's slice partner */
     hold_all();
-    uint16_t slots[LINK_OS_COUNT];
+    uint16_t slots[LINK_OS_ALL] = { 0 };
     memset(slots, 0, sizeof(slots));
     slots[LINK_OS_DRIVER] = (uint16_t)OUT_DRIVER_PWM;
     slots[LINK_OS_PIN]    = 6u;
@@ -477,7 +476,7 @@ TEST_CASE(a_servo_pwm_port_gives_way_to_a_pwm_slot_on_its_slice)
     hold_all();
     CHECK_EQ(put(LINK_PG_PWM, 1u), 0u);
     CHECK_EQ(put(LINK_PG_TARGET, 1u), 0u);
-    uint16_t slots[LINK_OS_COUNT];
+    uint16_t slots[LINK_OS_ALL] = { 0 };
     memset(slots, 0, sizeof(slots));
     slots[LINK_OS_DRIVER] = (uint16_t)OUT_DRIVER_PWM;
     slots[LINK_OS_PIN]    = 1u;                /* GP0's slice partner */

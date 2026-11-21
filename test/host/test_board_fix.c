@@ -141,7 +141,7 @@ static void slot(uint16_t *slots, unsigned s, uint16_t driver, uint16_t pin)
 TEST_CASE(a_driven_slot_sits_on_a_servo_output)
 {
     const outbind_roles_t *r = roles();
-    uint16_t slots[LINK_OS_COUNT];
+    uint16_t slots[LINK_OS_ALL];
     memset(slots, 0, sizeof(slots));
     /* Nothing driven: taken, whatever the pins say. */
     slot(slots, 5u, LINK_DRIVER_NONE, 13u);
@@ -162,6 +162,11 @@ TEST_CASE(a_driven_slot_sits_on_a_servo_output)
         }
     }
     slot(slots, 7u, LINK_DRIVER_NONE, 0u);
+    CHECK(board_fix_slots_ok(r, slots));
+    /* Slots 9 to 16 (OUTPUTS_HI, protocol 4.41) by the same rule. */
+    slot(slots, 15u, LINK_DRIVER_PWM, 22u);
+    CHECK(!board_fix_slots_ok(r, slots));
+    slot(slots, 15u, LINK_DRIVER_NONE, 0u);
     CHECK(board_fix_slots_ok(r, slots));
     /* No roles: every page is the page's own business. */
     slot(slots, 7u, LINK_DRIVER_PWM, 27u);
@@ -686,7 +691,7 @@ TEST_CASE(a_protocol_goes_to_a_servo_output_and_nowhere_else)
              OUTBIND_CLASH_NONE);
 
     /* The page: PWM01 first, then PWM04, whatever their GPIOs. */
-    uint16_t regs[LINK_OS_COUNT];
+    uint16_t regs[LINK_OS_ALL] = { 0 };
     CHECK_EQ(outbind_to_slots(&b, regs), 2u);
     CHECK_EQ(regs[0u * LINK_OS_STRIDE + LINK_OS_PIN], 2u);
     CHECK_EQ(regs[1u * LINK_OS_STRIDE + LINK_OS_PIN], 1u);
@@ -716,7 +721,7 @@ TEST_CASE(the_channel_roles_follow_the_slots_on_the_carrier)
     CHECK(outbind_toggle(&b, at(2u)));
     outbind_set_proto(&b, proto_named("MOTOR PWM"));
     CHECK(outbind_toggle(&b, at(1u)));
-    uint16_t regs[LINK_OS_COUNT];
+    uint16_t regs[LINK_OS_ALL] = { 0 };
     CHECK_EQ(outbind_to_slots(&b, regs), 2u);
     CHECK_EQ(regs[0u * LINK_OS_STRIDE + LINK_OS_PIN], 2u);
     CHECK_EQ(regs[1u * LINK_OS_STRIDE + LINK_OS_PIN], 1u);

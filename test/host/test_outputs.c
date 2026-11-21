@@ -321,7 +321,7 @@ TEST_CASE(a_reserved_pin_is_refused)
 
 TEST_CASE(the_outputs_page_refuses_a_pin_that_does_not_fit_the_field)
 {
-    uint16_t regs[LINK_OS_COUNT];
+    uint16_t regs[LINK_OS_ALL] = { 0 };
     outputs_slots_defaults(regs);
 
     /* The register is sixteen bits and a pin is eight, so 259 would be
@@ -585,7 +585,7 @@ TEST_CASE(the_timeout_reaches_a_channel_and_leaves_it_driving)
     CHECK_EQ(outputs_actual(&o, 0), OUT_SPAN / 2u);
 
     /* By index: the CHANNELS page reaches it whatever its role. */
-    uint16_t regs[LINK_CH_COUNT];
+    uint16_t regs[LINK_CH_ALL] = { 0 };
     outputs_channels_defaults(regs);
     regs[0] = 0u;
     outputs_channels_apply_n(&o, regs, 0u, 1u, late + 1u);
@@ -706,9 +706,9 @@ TEST_CASE(the_timeout_survives_the_wrap)
 
 /* ------------------------------------------------- the pages as outputs */
 
-static uint16_t chan_cfg[LINK_CC_COUNT];
-static uint16_t slots[LINK_OS_COUNT];
-static uint16_t chans[LINK_CH_COUNT];
+static uint16_t chan_cfg[LINK_CC_ALL];
+static uint16_t slots[LINK_OS_ALL];
+static uint16_t chans[LINK_CH_ALL];
 
 static void fresh_pages(void)
 {
@@ -804,7 +804,7 @@ TEST_CASE(the_throttle_range_reaches_throttles_and_leaves_surfaces_alone)
     chan_cfg[0 * LINK_CC_STRIDE + LINK_CC_SLEW]   = 40u;
     chan_cfg[1 * LINK_CC_STRIDE + LINK_CC_MIN_US] = 900u;
     chan_cfg[1 * LINK_CC_STRIDE + LINK_CC_MAX_US] = 2100u;
-    uint16_t before[LINK_CC_COUNT];
+    uint16_t before[LINK_CC_ALL] = { 0 };
     memcpy(before, chan_cfg, sizeof(before));
 
     CHECK(outputs_chan_cfg_set_throttle_range(chan_cfg, 980u, 2020u));
@@ -823,7 +823,7 @@ TEST_CASE(the_throttle_range_reaches_throttles_and_leaves_surfaces_alone)
     }
 
     /* And the result is a page the IOmcu accepts. */
-    uint16_t copy[LINK_CC_COUNT];
+    uint16_t copy[LINK_CC_ALL] = { 0 };
     memcpy(copy, chan_cfg, sizeof(copy));
     CHECK_EQ(outputs_chan_cfg_write(chan_cfg, 0, LINK_CC_COUNT, copy), 0u);
 }
@@ -1145,7 +1145,7 @@ TEST_CASE(the_mirror_leaves_a_throttle_at_zero)
 TEST_CASE(a_role_change_takes_the_channels_register_to_the_new_rest)
 {
     fresh_pages();
-    uint16_t was[LINK_CC_COUNT];
+    uint16_t was[LINK_CC_ALL] = { 0 };
     chan_cfg[LINK_CC_ROLE] = LINK_CC_ROLE_THROTTLE;
     chan_cfg[LINK_CC_STRIDE + LINK_CC_ROLE] = LINK_CC_ROLE_SURFACE;
     outputs_chan_cfg_apply(&o, chan_cfg);
@@ -1398,7 +1398,7 @@ TEST_CASE(a_page_that_would_split_a_slice_under_the_servo_rate_is_refused)
     outputs_slots_apply(&o, slots);
     CHECK_EQ(outputs_servo_rate_check(&o, 560u), 0u);
 
-    uint16_t cc[LINK_CC_COUNT];
+    uint16_t cc[LINK_CC_ALL] = { 0 };
     memcpy(cc, chan_cfg, sizeof(cc));
     cc[1 * LINK_CC_STRIDE + LINK_CC_ROLE] = LINK_CC_ROLE_THROTTLE;
     CHECK_EQ(outputs_chan_cfg_rate_check(&o, cc, 560u), LINK_NACK_BAD_VALUE);
@@ -1407,7 +1407,7 @@ TEST_CASE(a_page_that_would_split_a_slice_under_the_servo_rate_is_refused)
     CHECK_EQ(o.channel[1].role, OUT_ROLE_SURFACE);   /* the bank untouched */
 
     /* Slot 1 becomes a throttle on GP1 (channel 2), beside the surface. */
-    uint16_t os[LINK_OS_COUNT];
+    uint16_t os[LINK_OS_ALL] = { 0 };
     memcpy(os, slots, sizeof(os));
     os[1 * LINK_OS_STRIDE + LINK_OS_RANGE] = LINK_OS_RANGE_OF(2, 1);
     CHECK_EQ(outputs_slots_rate_check(&o, os, 560u), LINK_NACK_BAD_VALUE);
@@ -1488,7 +1488,7 @@ TEST_CASE(a_chan_cfg_endpoint_longer_than_its_frame_is_refused)
         outputs_slots_apply(&o, slots);
         CHECK_EQ(o.slot[0].driver, OUT_DRIVER_PWM);
 
-        uint16_t cc[LINK_CC_COUNT];
+        uint16_t cc[LINK_CC_ALL] = { 0 };
         memcpy(cc, chan_cfg, sizeof(cc));
         range_of(cc, 0u, 1000u, (uint16_t)(k[i].period - 1u));
         CHECK_EQ(outputs_chan_cfg_pulse_check(&o, cc, NULL, 0u), 0u);
@@ -1541,7 +1541,7 @@ TEST_CASE(an_outputs_rate_too_fast_for_the_endpoints_is_refused)
 {
     fresh_pages();
     outputs_chan_cfg_apply(&o, chan_cfg);   /* 1000 to 2000us */
-    uint16_t os[LINK_OS_COUNT];
+    uint16_t os[LINK_OS_ALL] = { 0 };
     memcpy(os, slots, sizeof(os));
     slot_at(os, 0u, 0u, 0u, LINK_DRIVER_PWM, 560u);
     CHECK_EQ(outputs_slots_pulse_check(&o, os, 0u), LINK_NACK_BAD_VALUE);
@@ -1625,8 +1625,8 @@ TEST_CASE(a_bind_commit_judges_its_pages_together)
     outputs_slots_apply(&o, slots);
     CHECK_EQ(outputs_pulse_check(&o, 0u, 0u, 0u), 0u);
 
-    uint16_t cc[LINK_CC_COUNT];
-    uint16_t os[LINK_OS_COUNT];
+    uint16_t cc[LINK_CC_ALL] = { 0 };
+    uint16_t os[LINK_OS_ALL] = { 0 };
     memcpy(cc, chan_cfg, sizeof(cc));
     memcpy(os, slots, sizeof(os));
     range_of(cc, 0u, 1000u, 2000u);
@@ -1693,14 +1693,14 @@ TEST_CASE(an_outputs_write_the_silicon_did_not_bind_is_refused)
         r[LINK_OS_RATE_HZ] = 50u;
     }
     outputs_slots_apply(&o, slots);
-    uint16_t next[LINK_OS_COUNT];
+    uint16_t next[LINK_OS_ALL] = { 0 };
     memcpy(next, slots, sizeof(next));
 
     CHECK_EQ(outputs_slots_changed(slots, next), 0u);
     next[1 * LINK_OS_STRIDE + LINK_OS_RATE_HZ] = 55u;
     next[2 * LINK_OS_STRIDE + LINK_OS_RATE_HZ] = 60u;
     CHECK_EQ(outputs_slots_changed(slots, next), 0x06u);
-    CHECK_EQ(outputs_slots_changed(NULL, next), 0xFFu);
+    CHECK_EQ(outputs_slots_changed(NULL, next), 0xFFFFu);
 
     /* Slots 0 and 1 were bound; slot 2 was left unbound before. */
     const uint8_t before = 0x03u;

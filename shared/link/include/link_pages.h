@@ -71,6 +71,11 @@ typedef enum {
     LINK_PAGE_ESC_DATA  = 0x3B, /**< its page, as blocks                     */
     LINK_PAGE_PROG_SUPPLY = 0x39, /**< the programming ports' own supply, on
                                        a board that switches one        */
+    LINK_PAGE_CHANNELS_HI = 0x3C, /**< CHANNELS for channels 9 to 16 (4.41) */
+    LINK_PAGE_CHAN_CFG_HI = 0x3D, /**< CHAN_CFG for channels 9 to 16 (4.41) */
+    LINK_PAGE_OUTPUTS_HI  = 0x3E, /**< OUTPUTS for slots 9 to 16 (4.41)     */
+    LINK_PAGE_BIND_CFG_HI = 0x3F, /**< CHAN_CFG_HI prepared (4.41)          */
+    LINK_PAGE_BIND_OUT_HI = 0x40, /**< OUTPUTS_HI prepared (4.41)           */
     /* Frozen: the same numbers, layout and meaning under every major. */
     LINK_PAGE_UPDATE_CTL  = 0xF0, /**< the IOmcu's own firmware update */
     LINK_PAGE_UPDATE_DATA = 0xF1, /**< and the 64 bytes of the block in hand */
@@ -158,7 +163,15 @@ typedef enum {
  * older IOmcu has no such watchdog and never sets it.  From 4.40 BENCH
  * sets flag bit 8 (LINK_BN_RPM_MAX_OVER) while the peak speed is above
  * RPM_MAX's ceiling of 65,535rpm; an older IOmcu never sets it, and the
- * panel reads its RPM_MAX of 65535 as 65,535rpm.
+ * panel reads its RPM_MAX of 65535 as 65,535rpm.  From 4.41 the bank has
+ * 16 slots and 16 channels: CHANNELS_HI, CHAN_CFG_HI and OUTPUTS_HI
+ * (0x3C to 0x3E) carry channels 9 to 16 and slots 9 to 16, BIND_CFG_HI
+ * and BIND_OUT_HI (0x3F, 0x40) prepare them, BIND's LINK_BD_COMMIT_ALL
+ * takes all four prepared pages as one, a slot's RANGE ends at channel 16
+ * at the latest, and SENSE_MAP's WATCH names outputs 9 to 16
+ * (LINK_SM_WATCH_OUT()).  An older IOmcu refuses the five pages with
+ * LINK_NACK_BAD_PAGE and BIND register 2 with LINK_NACK_BAD_RANGE; the
+ * panel sends them to a 4.41 IOmcu only.
  * An IOmcu never asks the panel's minor; a page an older panel does not
  * know is a page it never writes.
  *
@@ -171,9 +184,9 @@ typedef enum {
  * major change; it is a new page.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-/** @brief The minor this build speaks: 40, BENCH flag bit 8
- *         (LINK_MINOR_RPM_MAX_OVER). */
-#define LINK_PROTOCOL_MINOR 40u
+/** @brief The minor this build speaks: 41, 16 slots and channels
+ *         (LINK_MINOR_OUT16). */
+#define LINK_PROTOCOL_MINOR 41u
 
 /** @brief The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -431,6 +444,19 @@ typedef enum {
  */
 #define LINK_MINOR_RPM_MAX_OVER 40u
 
+/**
+ * @brief The first minor with 16 slots and 16 channels: CHANNELS_HI,
+ *        CHAN_CFG_HI, OUTPUTS_HI, BIND_CFG_HI, BIND_OUT_HI and
+ *        LINK_BD_COMMIT_ALL, and WATCH values for outputs 9 to 16.
+ *
+ * An older IOmcu refuses the five pages with LINK_NACK_BAD_PAGE and
+ * LINK_BD_COMMIT_ALL with LINK_NACK_BAD_RANGE; its bank has 8 slots, and
+ * a slot's RANGE that names a channel past 8 is taken and drives nothing.
+ * An older panel never writes the new pages and commits with
+ * LINK_BD_COMMIT: slots 9 to 16 and channels 9 to 16 stay as they are.
+ */
+#define LINK_MINOR_OUT16 41u
+
 /* ----------------------------------------------------------------- outputs */
 
 /*
@@ -443,20 +469,31 @@ typedef enum {
  *             and the pulse widths its ends correspond to.
  *   OUTPUTS   which driver renders which channels, on which pin, how often.
  *
- * Eight of each.  At four registers per slot, eight slots fit a page of
- * LINK_MAX_REGS registers; eight is also the number of servo outputs the
+ * Eight of each a page.  At four registers per slot, eight slots fit a page
+ * of LINK_MAX_REGS registers; eight is also the number of servo outputs the
  * bench has and the number of channels PPM (pulse-position modulation)
- * carries.  A ninth slot needs a minor version and a second page.
+ * carries.  From protocol 4.41 each page has a second half, the _HI page,
+ * for slots 9 to 16 and channels 9 to 16, laid out as the first: register
+ * r of OUTPUTS_HI is register r of OUTPUTS for slot r / 4 + 8, and
+ * register c of CHANNELS_HI is channel c + 8.  A slot in either half may
+ * render any of the 16 channels.
  */
 
-#define LINK_OUT_SLOTS     8u  /**< slots of the OUTPUTS page */
-#define LINK_OUT_CHANNELS  8u  /**< channels of the CHANNELS page */
+#define LINK_OUT_SLOTS     8u  /**< slots of one OUTPUTS page */
+#define LINK_OUT_CHANNELS  8u  /**< channels of one CHANNELS page */
+/** @brief Slots over OUTPUTS and OUTPUTS_HI (4.41): the bank's slots. */
+#define LINK_OUT_SLOTS_ALL     (2u * LINK_OUT_SLOTS)
+/** @brief Channels over CHANNELS and CHANNELS_HI (4.41): the channels a slot
+ *         may render. */
+#define LINK_OUT_CHANNELS_ALL  (2u * LINK_OUT_CHANNELS)
 
 /** @brief A command runs 0..LINK_CH_SPAN across the channel's own travel. */
 #define LINK_CH_SPAN    1000u
 
 /* --- what each output is asked for */
 #define LINK_CH_COUNT   LINK_OUT_CHANNELS  /**< registers of the CHANNELS page: one a channel */
+/** @brief CHANNELS and CHANNELS_HI as one array: channel c at register c. */
+#define LINK_CH_ALL     LINK_OUT_CHANNELS_ALL
 
 /* --- what a channel is.  Four registers each, and a channel must be written
  *     whole: min and max are a pair, and a range half-applied is a range
@@ -469,6 +506,8 @@ enum {
     LINK_CC_STRIDE  = 4,
 };
 #define LINK_CC_COUNT  (LINK_OUT_CHANNELS * LINK_CC_STRIDE)  /**< registers of the CHAN_CFG page: LINK_CC_STRIDE a channel */
+/** @brief CHAN_CFG and CHAN_CFG_HI as one array, CHAN_CFG first. */
+#define LINK_CC_ALL    (LINK_OUT_CHANNELS_ALL * LINK_CC_STRIDE)
 
 /**
  * @brief The fastest slew a write may name, in thousandths of the span a
@@ -529,6 +568,8 @@ enum {
     LINK_OS_STRIDE  = 4,
 };
 #define LINK_OS_COUNT  (LINK_OUT_SLOTS * LINK_OS_STRIDE)  /**< registers of the OUTPUTS page: LINK_OS_STRIDE a slot */
+/** @brief OUTPUTS and OUTPUTS_HI as one array, OUTPUTS first. */
+#define LINK_OS_ALL    (LINK_OUT_SLOTS_ALL * LINK_OS_STRIDE)
 
 /* --- the SERVO screen's page: the target's frame rate (protocol 4.1) and
  *     the sweep that drives it through a curve (4.2).
@@ -943,13 +984,27 @@ typedef enum {
  * LINK_BD_WHY (protocol 4.38) is read only: a link_bind_why_t, the cause of
  * the last write to CHAN_CFG, OUTPUTS, BIND_CFG, BIND_OUT or BIND that was
  * refused, and LINK_BW_NONE once a later CHAN_CFG, OUTPUTS or BIND write is
- * taken.  A write to it is refused with LINK_NACK_BAD_RANGE.
+ * taken.  A write to it is refused with LINK_NACK_BAD_RANGE.  The _HI pages
+ * count with the pages they extend.
+ *
+ * From protocol 4.41 BIND_CFG_HI and BIND_OUT_HI prepare CHAN_CFG_HI and
+ * OUTPUTS_HI, and a write of LINK_BD_COMMIT_ALL carries the CRC of all
+ * four prepared pages, 128 registers in the order BIND_CFG, BIND_OUT,
+ * BIND_CFG_HI, BIND_OUT_HI (out_stage_crc_all()).  It judges and takes the
+ * 16 channels and the 16 slots as one, by the same rules as COMMIT.  A
+ * write of LINK_BD_COMMIT takes BIND_CFG and BIND_OUT alone, as before
+ * 4.41: channels 9 to 16 and slots 9 to 16 stay as they are in force, and
+ * the whole is judged.  LINK_BD_COMMIT_ALL reads the CRC of the four.
  */
 enum {
     LINK_BD_COMMIT = 0, /**< write: the prepared pages' CRC; read: the same */
     LINK_BD_WHY    = 1, /**< read: a link_bind_why_t (4.38)                 */
-    LINK_BD_COUNT  = 2,
+    LINK_BD_COMMIT_ALL = 2, /**< write: the four prepared pages' CRC; read:
+                                 the same (4.41)                         */
+    LINK_BD_COUNT  = 3,
 };
+/** @brief BIND's registers before 4.41: COMMIT and WHY. */
+#define LINK_BD_COUNT_V440 2u
 
 /** @brief Why the IOmcu refused a binding write (LINK_BD_WHY). */
 typedef enum {

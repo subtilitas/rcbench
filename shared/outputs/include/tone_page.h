@@ -269,11 +269,11 @@ bool tone_page_pin_free(const tone_page_t *p, const outputs_t *o,
                         uint64_t taken);
 
 /**
- * @brief LINK_NACK_BAD_VALUE for an OUTPUTS page (slots, LINK_OS_COUNT
+ * @brief LINK_NACK_BAD_VALUE for an OUTPUTS page (slots, LINK_OS_ALL
  *        registers) that binds a slot to the tap's pin; 0 otherwise.
  *
  * @param p The page state.
- * @param slots The OUTPUTS page, LINK_OS_COUNT registers.
+ * @param slots OUTPUTS and OUTPUTS_HI, LINK_OS_ALL registers.
  * @return LINK_NACK_BAD_VALUE when a slot with a driver binds the pin held by
  *         tone_page_pins(), 0 otherwise. LINK_NACK_BAD_VALUE for a NULL
  *         @p slots.

@@ -574,11 +574,15 @@ void service_arming(bool link_up)
  */
 static bool write_output_binding(const outbind_t *bind)
 {
-    uint16_t cfg[LINK_CC_COUNT];
-    uint16_t slots[LINK_OS_COUNT];
+    /* The binding model fills slots 1 to 8; slots 9 to 16 are sent unbound
+     * and channels 9 to 16 at their defaults, to a 4.41 IOmcu only. */
+    static uint16_t cfg[LINK_CC_ALL];
+    static uint16_t slots[LINK_OS_ALL];
     outbind_to_chan_cfg(bind, cfg, endpoints_min(&s_endpoints),
                         endpoints_max(&s_endpoints));
+    outputs_chan_cfg_defaults(&cfg[LINK_CC_COUNT]);
     (void)outbind_to_slots(bind, slots);
+    outputs_slots_defaults(&slots[LINK_OS_COUNT]);
 
     /*
      * The sequence is bind_link_write()'s: prepared and committed whole on an
@@ -603,9 +607,11 @@ static bool write_output_binding(const outbind_t *bind)
     servo_link_rate_reset_note(rate != BIND_RATE_NOT_SENT,
                                rate == BIND_RATE_LANDED);
     /* A refusal of the binding itself has a cause on a 4.38 IOmcu; a
-     * refused rate reset left the register at an earlier one. */
+     * refused rate reset left the register at an earlier one, and a
+     * binding this end refused (bind_link_fits()) reached no register. */
     uint8_t why = (uint8_t)LINK_BW_NONE;
-    if (res == OUTPUTS_REFUSED && rate != BIND_RATE_REFUSED) {
+    if (res == OUTPUTS_REFUSED && rate != BIND_RATE_REFUSED
+        && bind_link_fits(s_far_minor, slots)) {
         why = bind_link_why(&s_host, &k_port, s_far_minor);
     }
     atomic_store(&s_outputs_result, OUTPUTS_RESULT_PACK(res, why));
