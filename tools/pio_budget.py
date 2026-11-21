@@ -1,0 +1,1146 @@
+#!/usr/bin/env python3
+"""Hold each IOmcu board's PIO programs and DMA channels to the RP2350.
+
+The RP2350 has 3 PIO (programmable input/output) blocks, each with 4 state
+machines and 32 instruction words, and 16 DMA (direct memory access)
+channels.  The tool reads the length of every program from the .pio files
+under protocols/, as pioasm 2.3.0 counts it: one word an instruction or
+`.word`, at most 32, `.origin` a fixed offset given before the first
+instruction, `.wrap_target` and `.wrap` inside the program.  It loads each
+board's programs into a model of the chip, in the order the board starts
+them, and reports per block the words used and free and the state
+machines used, and the DMA channels used.
+
+The model places a program as pico-sdk 2.3.0 does
+(pio_claim_free_sm_and_add_program_for_gpio_range(), hardware_pio/pio.c):
+the blocks are searched from PIO2 down to PIO0, a block's lowest free
+state machine is taken, and the program goes at the highest free offset
+that holds it, or at its `.origin`.  A bidirectional DShot output takes an
+adjacent pair of state machines, n and (n + 1) modulo 4, in the first
+block from PIO2 down with such a pair and room for both programs
+(claim_pair() in protocols/dshot/rp2350/out_dshot.c).  A program a board
+places in a named block goes there or nowhere.  A use that does not fit
+is refused and leaves the chip as it was, as the drivers leave it.
+
+Every block runs at one GPIO base for the whole run: 0 when the board's
+PIO pins all lie below GPIO32, 16 when they lie in GPIO16 to GPIO47.  A
+board whose PIO pins fit neither window fails.
+
+The boards:
+
+- board 1, the RP2350-CAN module wired by hand, and board 2, the rbmod
+  carrier: the drivers of firmware/iomcu in the order main.c starts them
+  (output slots, the PD mini UART, the phase tap, the programming ports),
+  then a programming session.  Each mix in the table names the document
+  or code that promises or refuses it.
+- board 3, the remote servo node, defined in the node's plan (PLAN.md,
+  outside this repository): its program set is a table here, each entry
+  naming the PLAN.md section.  Besides its table, every order of up to 9
+  plain DShot, bidirectional DShot and PPM (pulse-position modulation)
+  slots runs with each programming session, the session opened after the
+  slots and before them, against the limits of PLAN.md 2.8.  A PPM slot
+  places as a plain DShot slot does (ppm_tx and dshot_tx are both 4 words
+  without an origin, the tool checks it), so the sweep runs each order
+  once and adds the PPM slots' DMA channels.  The capture ring's event
+  rate of each mix is held against the 42ms flash window
+  (PLAN.md 2.3).
+
+The tool fails when a mix that a board's table allows does not fit, and
+when a mix the table refuses fits: the table is then wrong the other way.
+
+Not modelled: a program unloaded and loaded again (a slot unbound and
+bound anew leaves a hole of its own size, which the model never sees),
+and pass 2 of the SDK's search, which moves the GPIO base of an empty
+block.
+
+    tools/pio_budget.py              the budget of every board
+    tools/pio_budget.py --board 3    one board
+    tools/pio_budget.py --check      only the failures; exit 1 on one
+
+SPDX-License-Identifier: MIT
+"""
+
+from __future__ import annotations
+
+import argparse
+import dataclasses
+import pathlib
+import re
+import sys
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+
+NUM_PIOS = 3     #: PIO blocks of the RP2350
+NUM_SMS = 4      #: state machines in a block
+PIO_WORDS = 32   #: instruction words in a block
+NUM_DMA = 16     #: DMA channels
+
+
+class BudgetError(Exception):
+    """A source is not in a shape this tool reads, or a board is malformed."""
+
+
+@dataclasses.dataclass(frozen=True)
+class Program:
+    """One PIO program as pioasm assembles it.
+
+    Attributes:
+        name: The name after `.program`.
+        length: Instruction words.
+        origin: The offset `.origin` fixes, or -1 for none.
+        wrap_target: The offset of `.wrap_target`, 0 without one.
+        wrap: The offset of the last instruction before `.wrap`, the last
+            instruction without one.
+        source: The file it is read from, or what defines it.
+    """
+
+    name: str
+    length: int
+    origin: int
+    wrap_target: int
+    wrap: int
+    source: str
+
+
+# ------------------------------------------------------------------ reading
+
+# The directives pioasm 2.3.0 knows (tools/pioasm/lexer.ll).
+_DIRECTIVES = {"program", "origin", "define", "wrap_target", "wrap", "word",
+               "side_set", "pio_version", "in", "out", "set", "clock_div",
+               "fifo", "mov_status", "lang_opt"}
+# A label: `name:`, `public name:` or `*name:`, an instruction after it.
+_LABEL_RE = re.compile(r"(?:public\s+|\*\s*)?[A-Za-z_]\w*\s*:(.*)\Z",
+                       re.I | re.S)
+_BLOCK_RE = re.compile(r"%([^%\n]+)\{")
+_BLOCK_END_RE = re.compile(r"%\}[ \t\r]*")
+_LANG_OPT_RE = re.compile(r"\.lang_opt(?![A-Za-z0-9_])", re.I)
+_INT_RE = re.compile(r"0x[0-9a-f]+|0b[01]+|\d+", re.I)
+_DIRECTIVE_RE = re.compile(r"\.(\w*)(.*)\Z", re.S)
+
+
+def _clean(text: str) -> str:
+    """Blanks comments, code blocks and `.lang_opt` values, keeping lines.
+
+    A `;` or `//` comment runs to the line end, a `/* */` comment becomes a
+    space and its newlines, a `% name {` block up to a line of `%}` goes
+    with its lines, and the rest of a `.lang_opt` line is dropped: pioasm
+    lexes it as one string.
+
+    Args:
+        text: A .pio file.
+
+    Returns:
+        The text with as many lines, holding directives, labels and
+        instructions only.
+
+    Raises:
+        BudgetError: A `/*` comment or a code block is not closed.
+    """
+    out, i, n = [], 0, len(text)
+    while i < n:
+        if text.startswith((";", "//"), i):
+            j = text.find("\n", i)
+            i = n if j < 0 else j
+        elif text.startswith("/*", i):
+            j = text.find("*/", i + 2)
+            if j < 0:
+                raise BudgetError("a /* comment is not closed")
+            out.append(" " + "\n" * text.count("\n", i, j))
+            i = j + 2
+        elif text[i] == "%" and _BLOCK_RE.match(text, i):
+            i = _BLOCK_RE.match(text, i).end()
+            while True:
+                eol = text.find("\n", i)
+                if eol < 0:
+                    raise BudgetError("a code block is not closed")
+                out.append("\n")
+                if _BLOCK_END_RE.fullmatch(text[i:eol]):
+                    i = eol + 1
+                    break
+                i = eol + 1
+        elif text[i] == "." and _LANG_OPT_RE.match(text, i):
+            out.append(".lang_opt")
+            j = text.find("\n", i)
+            i = n if j < 0 else j
+        else:
+            out.append(text[i])
+            i += 1
+    return "".join(out)
+
+
+def _value(word: str, defines: dict[str, int], where: str) -> int:
+    """An integer operand: a literal, `(literal)` or a `.define`d name.
+
+    Args:
+        word: The operand as written.
+        defines: The names defined so far with an integer value.
+        where: File and line, for the error.
+
+    Returns:
+        The value.
+
+    Raises:
+        BudgetError: The operand is an expression this tool does not read.
+    """
+    word = word.strip()
+    while word.startswith("(") and word.endswith(")"):
+        word = word[1:-1].strip()
+    if _INT_RE.fullmatch(word):
+        return int(word, 0)
+    if word in defines:
+        return defines[word]
+    raise BudgetError(f"{where}: cannot read the value {word!r}")
+
+
+@dataclasses.dataclass
+class _Draft:
+    """A program while its lines are read."""
+
+    name: str
+    count: int = 0
+    origin: int = -1
+    wrap_target: int | None = None
+    wrap: int | None = None
+
+
+def _finish(d: _Draft, source: str) -> Program:
+    """The program a draft becomes at its end, held to pioasm's rules.
+
+    Args:
+        d: The draft.
+        source: The file, for the error.
+
+    Returns:
+        The program.
+
+    Raises:
+        BudgetError: No instruction, a `.wrap_target` after the last one,
+            or an `.origin` that leaves the program no room.
+    """
+    if d.count == 0:
+        raise BudgetError(f"{source}: program {d.name} has no instruction")
+    if d.wrap_target is not None and d.wrap_target >= d.count:
+        raise BudgetError(f"{source}: .wrap_target of {d.name} is after "
+                          "the last instruction")
+    if d.origin >= 0 and d.origin + d.count > PIO_WORDS:
+        raise BudgetError(f"{source}: .origin {d.origin} of {d.name} leaves "
+                          f"no room for {d.count} words")
+    return Program(d.name, d.count, d.origin,
+                   0 if d.wrap_target is None else d.wrap_target,
+                   d.count - 1 if d.wrap is None else d.wrap, source)
+
+
+def _directive(d: _Draft | None, word: str, rest: str,
+               defines: dict[str, int], where: str) -> None:
+    """Applies one directive other than `.program` to the draft.
+
+    Args:
+        d: The program being read, None before the first `.program`.
+        word: The directive's name in lower case, without the dot.
+        rest: The text after it.
+        defines: The integer `.define`s, extended here.
+        where: File and line, for the error.
+
+    Raises:
+        BudgetError: An unknown directive, or one that pioasm refuses
+            where it stands.
+    """
+    if word not in _DIRECTIVES:
+        raise BudgetError(f"{where}: unknown directive .{word}")
+    if word == "define":
+        parts = rest.split()
+        if parts and parts[0].lower() == "public":
+            parts = parts[1:]
+        if len(parts) == 2 and _INT_RE.fullmatch(parts[1]):
+            defines[parts[0]] = int(parts[1], 0)
+        return
+    if d is None:
+        raise BudgetError(f"{where}: .{word} before .program")
+    if word == "origin":
+        if d.count:
+            raise BudgetError(f"{where}: .origin after an instruction")
+        d.origin = _value(rest, defines, where)
+    elif word == "wrap_target":
+        if d.wrap_target is not None:
+            raise BudgetError(f"{where}: a second .wrap_target")
+        d.wrap_target = d.count
+    elif word == "wrap":
+        if d.wrap is not None:
+            raise BudgetError(f"{where}: a second .wrap")
+        if d.count == 0:
+            raise BudgetError(f"{where}: .wrap before the first instruction")
+        d.wrap = d.count - 1
+    elif word == "word":
+        _instruction(d, where)
+
+
+def _instruction(d: _Draft | None, where: str) -> None:
+    """Counts one instruction word into the draft.
+
+    Args:
+        d: The program being read.
+        where: File and line, for the error.
+
+    Raises:
+        BudgetError: No program yet, or the 33rd word.
+    """
+    if d is None:
+        raise BudgetError(f"{where}: an instruction before .program")
+    if d.count >= PIO_WORDS:
+        raise BudgetError(f"{where}: {d.name} is over {PIO_WORDS} words")
+    d.count += 1
+
+
+def parse_pio(text: str, source: str = "<text>") -> list[Program]:
+    """Reads every program of a .pio file.
+
+    Args:
+        text: The file.
+        source: Its name, for the programs and the errors.
+
+    Returns:
+        The programs in file order.
+
+    Raises:
+        BudgetError: The file breaks a rule pioasm holds it to, or holds
+            an `.origin` this tool cannot read.
+    """
+    programs: list[Program] = []
+    defines: dict[str, int] = {}
+    d: _Draft | None = None
+    for lineno, raw in enumerate(_clean(text).split("\n"), 1):
+        line = raw.strip()
+        if not line:
+            continue
+        where = f"{source}:{lineno}"
+        if line.startswith("."):
+            word, rest = _DIRECTIVE_RE.match(line).groups()
+            word = word.lower()
+            if word == "program":
+                if d is not None:
+                    programs.append(_finish(d, source))
+                d = _Draft(rest.strip())
+            else:
+                _directive(d, word, rest, defines, where)
+            continue
+        label = _LABEL_RE.match(line)
+        if label is None or label.group(1).strip():
+            _instruction(d, where)
+    if d is not None:
+        programs.append(_finish(d, source))
+    return programs
+
+
+def load_programs(root: pathlib.Path = ROOT) -> dict[str, Program]:
+    """Every program the IOmcu loads, by name.
+
+    The .pio files under protocols/*/rp2350/, and the Hitec precharge
+    sampler, which hitec_pre_program() writes at run time: its length is
+    HITEC_PRE_PROGRAM_MAX, the most it writes.
+
+    Args:
+        root: The repository.
+
+    Returns:
+        The programs by name.
+
+    Raises:
+        BudgetError: A file the parser refuses, a name defined twice, or
+            no HITEC_PRE_PROGRAM_MAX.
+    """
+    progs: dict[str, Program] = {}
+    for path in sorted((root / "protocols").glob("*/rp2350/*.pio")):
+        rel = path.relative_to(root).as_posix()
+        for p in parse_pio(path.read_text(encoding="utf-8"), rel):
+            if p.name in progs:
+                raise BudgetError(f"{rel}: {p.name} is also in "
+                                  f"{progs[p.name].source}")
+            progs[p.name] = p
+    hdr = "protocols/hitec/include/hitec_pre.h"
+    m = re.search(r"#define\s+HITEC_PRE_PROGRAM_MAX\s+(\d+)u?\b",
+                  (root / hdr).read_text(encoding="utf-8"))
+    if m is None:
+        raise BudgetError(f"{hdr}: no HITEC_PRE_PROGRAM_MAX")
+    n = int(m.group(1))
+    progs["hitec_pre"] = Program("hitec_pre", n, -1, 0, n - 1,
+                                 hdr + " HITEC_PRE_PROGRAM_MAX")
+    return progs
+
+
+# -------------------------------------------------------------------- model
+
+@dataclasses.dataclass
+class Chip:
+    """The PIO blocks and DMA channels as the uses so far leave them.
+
+    Attributes:
+        used: Per block, a bit per instruction word taken.
+        sms: Per block, the program on each state machine, or None.
+        dma: DMA channels claimed.
+    """
+
+    used: list[int] = dataclasses.field(
+        default_factory=lambda: [0] * NUM_PIOS)
+    sms: list[list[str | None]] = dataclasses.field(
+        default_factory=lambda: [[None] * NUM_SMS for _ in range(NUM_PIOS)])
+    dma: int = 0
+
+    def copy(self) -> Chip:
+        """An independent copy.
+
+        Returns:
+            The copy.
+        """
+        return Chip(list(self.used), [list(s) for s in self.sms], self.dma)
+
+    def words(self, block: int) -> int:
+        """Instruction words taken in a block.
+
+        Args:
+            block: 0 to 2.
+
+        Returns:
+            0 to 32.
+        """
+        return bin(self.used[block]).count("1")
+
+    def sms_used(self, block: int) -> int:
+        """State machines claimed in a block.
+
+        Args:
+            block: 0 to 2.
+
+        Returns:
+            0 to 4.
+        """
+        return sum(s is not None for s in self.sms[block])
+
+
+def _offset(used: int, prog: Program) -> int | None:
+    """Where the SDK loads a program in a block (find_offset_for_program()).
+
+    Args:
+        used: The block's taken words.
+        prog: The program.
+
+    Returns:
+        Its `.origin` when that range is free, else the highest free offset
+        that holds it; None when there is none.
+    """
+    mask = (1 << prog.length) - 1
+    if prog.origin >= 0:
+        return None if used & (mask << prog.origin) else prog.origin
+    for at in range(PIO_WORDS - prog.length, -1, -1):
+        if not used & (mask << at):
+            return at
+    return None
+
+
+def _add(chip: Chip, block: int, prog: Program) -> bool:
+    """Claims a block's lowest free state machine and loads a program.
+
+    Args:
+        chip: Changed on success.
+        block: 0 to 2.
+        prog: The program.
+
+    Returns:
+        False, with the chip unchanged, when the block has no free state
+        machine or no room.
+    """
+    sms = chip.sms[block]
+    if None not in sms:
+        return False
+    at = _offset(chip.used[block], prog)
+    if at is None:
+        return False
+    sms[sms.index(None)] = prog.name
+    chip.used[block] |= ((1 << prog.length) - 1) << at
+    return True
+
+
+def _pair(chip: Chip, tx: Program, rx: Program) -> bool:
+    """Claims an adjacent pair and loads both programs (claim_pair()).
+
+    Args:
+        chip: Changed on success.
+        tx: The transmitter, on state machine n.
+        rx: The receiver, on state machine (n + 1) modulo 4.
+
+    Returns:
+        False, with the chip unchanged, when no block has a free pair and
+        room for both.
+    """
+    for block in reversed(range(NUM_PIOS)):
+        sms = chip.sms[block]
+        for t in range(NUM_SMS):
+            r = (t + 1) % NUM_SMS
+            if sms[t] is not None or sms[r] is not None:
+                continue
+            at_tx = _offset(chip.used[block], tx)
+            if at_tx is None:
+                break
+            used = chip.used[block] | (((1 << tx.length) - 1) << at_tx)
+            at_rx = _offset(used, rx)
+            if at_rx is None:
+                break
+            chip.used[block] = used | (((1 << rx.length) - 1) << at_rx)
+            sms[t], sms[r] = tx.name, rx.name
+            return True
+    return False
+
+
+@dataclasses.dataclass(frozen=True)
+class Use:
+    """One driver instance: the programs it loads and the DMA it claims.
+
+    Attributes:
+        label: What it is, for the report.
+        steps: ("sm", program) loads through the SDK's search, ("pair",
+            transmitter, receiver) through claim_pair(), ("fixed", program,
+            block) into that block only.
+        dma: DMA channels it claims.
+        ref: The code or plan section it is read from.
+    """
+
+    label: str
+    steps: tuple[tuple, ...] = ()
+    dma: int = 0
+    ref: str = ""
+
+
+def apply(chip: Chip, use: Use, progs: dict[str, Program]) -> Chip | None:
+    """Places one use, all or nothing.
+
+    Args:
+        chip: Not changed.
+        use: The use.
+        progs: The programs by name.
+
+    Returns:
+        The chip after the use, or None when it does not fit.
+
+    Raises:
+        BudgetError: A step names a program that is not known.
+    """
+    nxt = chip.copy()
+    for step in use.steps:
+        try:
+            ps = [progs[name] for name in step[1:3] if isinstance(name, str)]
+        except KeyError as e:
+            raise BudgetError(f"{use.label}: no program {e.args[0]}")
+        if step[0] == "sm":
+            ok = any(_add(nxt, b, ps[0]) for b in reversed(range(NUM_PIOS)))
+        elif step[0] == "pair":
+            ok = _pair(nxt, ps[0], ps[1])
+        else:
+            ok = _add(nxt, step[2], ps[0])
+        if not ok:
+            return None
+    nxt.dma += use.dma
+    return nxt if nxt.dma <= NUM_DMA else None
+
+
+@dataclasses.dataclass(frozen=True)
+class Mix:
+    """A configuration in a board's table.
+
+    Attributes:
+        name: What it holds.
+        uses: Its uses after the board's boot uses, in the order they bind.
+        fits: True when the board allows it, False when it refuses it.
+        ref: The document, code or plan section that says so.
+    """
+
+    name: str
+    uses: tuple[Use, ...]
+    fits: bool
+    ref: str
+
+
+@dataclasses.dataclass(frozen=True)
+class Board:
+    """A board: its PIO pins, what it loads at boot and its table.
+
+    Attributes:
+        number: The IDENTITY board value.
+        name: Its name.
+        gpio: The lowest and highest GPIO a PIO program of it touches.
+        boot: Uses loaded before any mix, in order.
+        mixes: The table.
+        planned: Programs not in a .pio file yet: name to (words, ref).
+        sweep: True to run every slot order with every session.
+    """
+
+    number: int
+    name: str
+    gpio: tuple[int, int]
+    boot: tuple[Use, ...] = ()
+    mixes: tuple[Mix, ...] = ()
+    planned: tuple[tuple[str, int, str], ...] = ()
+    sweep: bool = False
+
+    def base(self) -> int:
+        """The GPIO base every block runs at.
+
+        Returns:
+            0 or 16.
+
+        Raises:
+            BudgetError: The PIO pins fit neither window.
+        """
+        lo, hi = self.gpio
+        if hi < PIO_WORDS:
+            return 0
+        if lo >= 16 and hi < 48:
+            return 16
+        raise BudgetError(f"board {self.number}: GPIO{lo} to GPIO{hi} is "
+                          "in no 32-pin PIO window")
+
+
+@dataclasses.dataclass
+class Outcome:
+    """The chip after a mix, and the uses it refused.
+
+    Attributes:
+        chip: The blocks and channels at the end.
+        refused: Labels of the uses that did not fit.
+    """
+
+    chip: Chip
+    refused: list[str]
+
+    @property
+    def fits(self) -> bool:
+        """True when every use fits."""
+        return not self.refused
+
+
+def board_programs(board: Board,
+                   progs: dict[str, Program]) -> dict[str, Program]:
+    """The programs a board can load: the files' and its planned ones.
+
+    A planned program that a .pio file defines by the same name is taken
+    from the file.
+
+    Args:
+        board: The board.
+        progs: The programs read from the files.
+
+    Returns:
+        The programs by name.
+    """
+    out = dict(progs)
+    for name, words, ref in board.planned:
+        if name not in out:
+            out[name] = Program(name, words, -1, 0, words - 1,
+                                "planned, " + ref)
+    return out
+
+
+def run(board: Board, uses: tuple[Use, ...],
+        progs: dict[str, Program]) -> Outcome:
+    """Loads a board's boot uses, then a mix's, in order.
+
+    Args:
+        board: The board.
+        uses: The mix's uses.
+        progs: The board's programs.
+
+    Returns:
+        The outcome.
+    """
+    board.base()
+    chip, refused = Chip(), []
+    for use in board.boot + tuple(uses):
+        nxt = apply(chip, use, progs)
+        if nxt is None:
+            refused.append(use.label)
+        else:
+            chip = nxt
+    return Outcome(chip, refused)
+
+
+# ------------------------------------------------------------------- boards
+
+#: Plain DShot: one 4-word program per pin, no DMA (out_dshot.c).
+DSHOT = Use("plain DShot", (("sm", "dshot_tx"),), 0,
+            "protocols/dshot/rp2350/out_dshot.c")
+#: Bidirectional DShot: a pair of state machines, no DMA (out_dshot.c).
+BIDIR = Use("bidirectional DShot", (("pair", "dshot_bidir_tx", "dshot_rx"),),
+            0, "protocols/dshot/rp2350/out_dshot.c")
+#: PPM: data and control DMA channels (out_ppm.c).
+PPM = Use("PPM", (("sm", "ppm_tx"),), 2, "protocols/ppm/rp2350/out_ppm.c")
+#: A servo or MOTOR PWM output: a PWM slice, no PIO (out_pwm.c).
+SERVO = Use("servo PWM", (), 0, "firmware/iomcu/src/out_pwm.c")
+#: The PD mini UART: two state machines, no DMA (pd_uart.c).
+PD_UART = Use("PD mini UART", (("sm", "pd_uart_tx"), ("sm", "pd_uart_rx")),
+              0, "protocols/pdmini/rp2350/pd_uart.c")
+#: The phase tap's capture: one state machine, one DMA channel.
+TAP = Use("phase tap", (("sm", "tone_cap"),), 1,
+          "protocols/phase_tap/rp2350/tone_cap.c")
+#: A KST session's line: transmit and receive DMA.
+KST = Use("KST session", (("sm", "kst_line"),), 2,
+          "protocols/kst/rp2350/kst_line.c")
+#: An ESC wire session's line: transmit and receive DMA.
+ESCWIRE = Use("ESC wire session", (("sm", "ew_line"),), 2,
+              "protocols/escwire/rp2350/ew_line.c")
+#: A Hitec session's line without the precharge sampler.
+HITEC = Use("Hitec session", (("sm", "hitec_line"),), 2,
+            "protocols/hitec/rp2350/hitec_line.c")
+#: A Hitec D session with the precharge sampler: 2 programs, 3 DMA.
+HITEC_PRE = Use("Hitec D session with precharge",
+                (("sm", "hitec_line"), ("sm", "hitec_pre")), 3,
+                "protocols/hitec/rp2350/hitec_line.c, pre_claim()")
+#: Every programming session.
+SESSIONS = (KST, ESCWIRE, HITEC, HITEC_PRE)
+
+
+def _x(use: Use, n: int) -> tuple[Use, ...]:
+    """N copies of a use, for a mix."""
+    return (use,) * n
+
+
+_MAIN = "firmware/iomcu/src/main.c, the boot order"
+
+BOARD_RP2350_CAN = Board(
+    1, "RP2350-CAN module wired by hand", (0, 29),
+    mixes=tuple(
+        Mix(f"PD mini UART, phase tap, {s.label}", (PD_UART, TAP, s), True,
+            _MAIN) for s in SESSIONS) + (
+        Mix("6 bidirectional DShot slots", _x(BIDIR, 6), True,
+            "docs/Link.md, PIO budget: 3 blocks hold 6 bidirectional pins"),
+        Mix("2 bidirectional DShot slots, 2 plain DShot ports, Hitec D "
+            "session with precharge",
+            _x(BIDIR, 2) + _x(DSHOT, 2) + (HITEC_PRE,), True,
+            "docs/Link.md, PIO budget: 8 of 12 state machines"),
+        Mix("6 bidirectional DShot slots, PD mini UART",
+            _x(BIDIR, 6) + (PD_UART,), False,
+            "docs/Link.md, BIND WHY 13: the slots leave the UART no block"),
+        Mix("8 PPM slots, phase tap", _x(PPM, 8) + (TAP,), False,
+            "docs/Link.md, TONE: BUSY, no DMA channel left by the outputs"),
+    ))
+
+BOARD_RBMOD = Board(
+    2, "rbmod carrier", (0, 29),
+    mixes=tuple(
+        Mix(f"4 servo PWM slots, PD mini UART, phase tap, {s.label}",
+            _x(SERVO, 4) + (PD_UART, TAP, s), True, _MAIN)
+        for s in SESSIONS) + (
+        Mix("4 bidirectional DShot slots, PD mini UART",
+            _x(BIDIR, 4) + (PD_UART,), True, _MAIN),
+        Mix("4 plain DShot slots, PD mini UART, KST session",
+            _x(DSHOT, 4) + (PD_UART, KST), True, _MAIN),
+        Mix("4 bidirectional DShot slots, PD mini UART, phase tap",
+            _x(BIDIR, 4) + (PD_UART, TAP), False,
+            _MAIN + ": the outputs bind and the tap is left out"),
+        Mix("4 plain DShot slots, PD mini UART, phase tap, KST session",
+            _x(DSHOT, 4) + (PD_UART, TAP, KST), False,
+            "the tap's 22 words leave no block 24 free words"),
+    ))
+
+# Board 3.  Every reference is a section of the remote servo node's
+# PLAN.md.
+_P23 = "PLAN.md 2.3"
+_P28 = "PLAN.md 2.8"
+RSN_MIRROR = Use("MIRROR", (("fixed", "pass_mirror", 0),), 0, _P23)
+RSN_CAPTURE = Use("CAPTURE", (("fixed", "pass_capture", 0),), 2,
+                  _P23 + ": 2 chained DMA channels")
+RSN_PD_UART = Use("PD mini UART", (("fixed", "pd_uart_tx", 0),
+                                   ("fixed", "pd_uart_rx", 0)), 0,
+                  _P28 + ", PIO0 row")
+RSN_LINK_RX = Use("UART link receive", (), 1,
+                  "PLAN.md 2.4: UART0 RX into a 1KiB ring, 1 DMA channel")
+
+#: PPM slots board 3 allows: 3 fixed DMA channels and 2 a PPM slot stay
+#: within 16.  PLAN.md 2.8 leaves the DMA count to this tool.
+RSN_PPM_MAX = 6
+#: Output pins of board 3 (PLAN.md 1.3).
+RSN_OUTPUTS = 9
+
+
+def _packs(blocks: list[int], singles: int, pairs: int) -> bool:
+    """True when the slots go into blocks of the given free state machines.
+
+    Args:
+        blocks: Free state machines per block.
+        singles: Slots of 1 state machine.
+        pairs: Slots of 2 state machines in one block.
+
+    Returns:
+        True when a placement exists.
+    """
+    if pairs == 0:
+        return singles <= sum(blocks)
+    return any(cap >= 2 and _packs(blocks[:i] + [cap - 2] + blocks[i + 1:],
+                                   singles, pairs - 1)
+               for i, cap in enumerate(blocks))
+
+
+def rsn_allows(session: Use | None, singles: int, pairs: int,
+               ppm: int) -> bool:
+    """True when board 3's table allows a mix (PLAN.md 2.8).
+
+    PIO0 holds the fixed load.  Without a session PIO1 and PIO2 take
+    throttle slots, 4 state machines each.  A session's line takes one of
+    the two blocks, and a Hitec D session's precharge sampler one state
+    machine of the other.
+
+    Args:
+        session: The programming session, or None.
+        singles: Plain DShot and PPM slots.
+        pairs: Bidirectional DShot slots.
+        ppm: How many of the singles are PPM.
+
+    Returns:
+        True when allowed.
+    """
+    if ppm > RSN_PPM_MAX or singles + pairs > RSN_OUTPUTS:
+        return False
+    if session is None:
+        blocks = [4, 4]
+    elif session is HITEC_PRE:
+        blocks = [3]
+    else:
+        blocks = [4]
+    return _packs(blocks, singles, pairs)
+
+
+def _rsn_mixes() -> tuple[Mix, ...]:
+    """Board 3's table: the limits PLAN.md 2.8 states, and the refusals.
+
+    Returns:
+        The mixes.
+    """
+    rows = [
+        Mix("boot only", (), True, "PLAN.md 2.3, 2.4, 2.8"),
+        Mix("8 plain DShot", _x(DSHOT, 8), True,
+            _P28 + ": 8 plain while no session holds PIO1"),
+        Mix("4 bidirectional DShot", _x(BIDIR, 4), True,
+            _P28 + ": 4 bidirectional while no session holds PIO1"),
+        Mix("4 bidirectional DShot, 5 servo PWM", _x(BIDIR, 4)
+            + _x(SERVO, 5), True, _P23 + ", the capture's worst case"),
+    ]
+    for s in (KST, ESCWIRE, HITEC):
+        rows += [
+            Mix(f"4 plain DShot, {s.label}", _x(DSHOT, 4) + (s,), True,
+                _P28 + ", PIO1 row"),
+            Mix(f"2 bidirectional DShot, {s.label}", _x(BIDIR, 2) + (s,),
+                True, _P28 + ", PIO1 row"),
+            Mix(f"1 bidirectional and 2 plain DShot, {s.label}",
+                (BIDIR,) + _x(DSHOT, 2) + (s,), True, _P28 + ", PIO1 row"),
+        ]
+    rows += [
+        Mix("3 plain DShot, Hitec D session with precharge",
+            _x(DSHOT, 3) + (HITEC_PRE,), True, _P28 + ", PIO2 row"),
+        Mix("1 bidirectional and 1 plain DShot, Hitec D session with "
+            "precharge", (BIDIR, DSHOT, HITEC_PRE), True,
+            _P28 + ", PIO2 row"),
+        Mix("4 plain DShot, Hitec D session with precharge",
+            _x(DSHOT, 4) + (HITEC_PRE,), False,
+            _P28 + ", PIO2 row: the sampler takes a state machine"),
+        Mix("2 bidirectional DShot, Hitec D session with precharge",
+            _x(BIDIR, 2) + (HITEC_PRE,), False,
+            _P28 + ", PIO2 row: the sampler takes a state machine"),
+        Mix("6 PPM", _x(PPM, 6), True, "RSN_PPM_MAX: 15 of 16 DMA channels"),
+        Mix("7 PPM", _x(PPM, 7), False, "RSN_PPM_MAX: 17 of 16 DMA channels"),
+    ]
+    return tuple(rows)
+
+
+BOARD_RSN = Board(
+    3, "remote servo node (planned)", (16, 35),
+    boot=(RSN_MIRROR, RSN_CAPTURE, RSN_PD_UART, RSN_LINK_RX),
+    mixes=_rsn_mixes(),
+    planned=(("pass_mirror", 1, _P23 + " MIRROR"),
+             ("pass_capture", 6, _P23 + " CAPTURE, about 6 words")),
+    sweep=True)
+
+BOARDS = (BOARD_RP2350_CAN, BOARD_RBMOD, BOARD_RSN)
+
+
+# ---------------------------------------------------------------- the sweep
+
+#: The capture ring of board 3: 64KiB of 8-byte events (PLAN.md 2.3).
+RING_EVENTS = 64 * 1024 // 8
+#: The longest flash window, in ms (docs/Safety.md).
+FLASH_WINDOW_MS = 42
+#: Receiver inputs of board 3, each captured (PLAN.md 2.3).
+RSN_INPUTS = 9
+#: The fastest servo frame rate the capture is sized for, Hz (PLAN.md 2.3).
+PWM_HZ = 560
+#: Events a second of a bidirectional DShot pin: 32 edges of a frame and
+#: up to 21 of the reply, 1000 frames a second (PLAN.md 2.3).
+BIDIR_EVENTS = (32 + 21) * 1000
+
+
+def ppm_events(root: pathlib.Path = ROOT) -> int:
+    """Events a second of a PPM output at its shortest frame.
+
+    PLAN.md does not count PPM in the capture.  The figure here is the
+    upper bound by protocols/ppm/include/ppm.h: 2 edges a run and
+    PPM_MAX_CHANNELS + 1 runs a frame, in a frame of PPM_MAX_CHANNELS
+    channels at PPM_CHANNEL_MIN_US and a gap of PPM_SYNC_MIN_US.
+
+    Args:
+        root: The repository.
+
+    Returns:
+        Events a second, rounded down.
+
+    Raises:
+        BudgetError: A constant is missing.
+    """
+    text = (root / "protocols/ppm/include/ppm.h").read_text(encoding="utf-8")
+    val = {}
+    for name in ("PPM_MAX_CHANNELS", "PPM_CHANNEL_MIN_US", "PPM_SYNC_MIN_US"):
+        m = re.search(r"#define\s+%s\s+(\d+)u?\b" % name, text)
+        if m is None:
+            raise BudgetError(f"ppm.h: no {name}")
+        val[name] = int(m.group(1))
+    n = val["PPM_MAX_CHANNELS"]
+    frame_us = n * val["PPM_CHANNEL_MIN_US"] + val["PPM_SYNC_MIN_US"]
+    return 2 * (n + 1) * 1000000 // frame_us
+
+
+def capture_rate(plain: int, pairs: int, ppm: int, ppm_rate: int) -> int:
+    """Board 3's capture events a second for a mix.
+
+    Args:
+        plain: Plain DShot outputs: none, their pads read 0.
+        pairs: Bidirectional DShot outputs.
+        ppm: PPM outputs.
+        ppm_rate: Events a second of one PPM output.
+
+    Returns:
+        The 9 inputs and every output at its fastest.
+    """
+    pwm = RSN_OUTPUTS - plain - pairs - ppm
+    return (RSN_INPUTS * PWM_HZ * 2 + pwm * PWM_HZ * 2
+            + pairs * BIDIR_EVENTS + ppm * ppm_rate)
+
+
+def ring_ms(rate: int) -> float:
+    """How long the ring holds at an event rate.
+
+    Args:
+        rate: Events a second.
+
+    Returns:
+        ms.
+    """
+    return RING_EVENTS * 1000.0 / rate if rate else float("inf")
+
+
+@dataclasses.dataclass
+class Sweep:
+    """Board 3's sweep.
+
+    Attributes:
+        runs: Mixes run.
+        allowed: Mixes the table allows.
+        failures: Allowed mixes that do not fit, described.
+        refused_fit: Mixes the table refuses that fit all the same.
+        worst_rate: The highest capture rate of an allowed mix.
+        worst_mix: Its outputs, described.
+        lapping: The outputs of every allowed mix whose ring holds less
+            than a flash window, described.
+    """
+
+    runs: int = 0
+    allowed: int = 0
+    failures: list[str] = dataclasses.field(default_factory=list)
+    refused_fit: int = 0
+    worst_rate: int = 0
+    worst_mix: str = ""
+    lapping: list[str] = dataclasses.field(default_factory=list)
+
+
+def _walk(chip: Chip, seq: str, ok: bool, limit: int, visit,
+          progs: dict[str, Program]) -> None:
+    """Visits every order of plain (P) and bidirectional (B) slots.
+
+    Args:
+        chip: The chip before the next slot.
+        seq: The slots so far.
+        ok: False once a slot was refused.
+        limit: The most slots.
+        visit: Called with (chip, seq, ok) at every node.
+        progs: The programs.
+    """
+    visit(chip, seq, ok)
+    if len(seq) < limit:
+        for kind, use in (("P", DSHOT), ("B", BIDIR)):
+            nxt = apply(chip, use, progs)
+            _walk(nxt or chip, seq + kind, ok and nxt is not None, limit,
+                  visit, progs)
+
+
+def sweep(board: Board, progs: dict[str, Program],
+          ppm_rate: int) -> Sweep:
+    """Runs every slot order with every session on board 3.
+
+    Args:
+        board: Board 3.
+        progs: Its programs.
+        ppm_rate: Events a second of one PPM output.
+
+    Returns:
+        The sweep.
+
+    Raises:
+        BudgetError: ppm_tx and dshot_tx no longer place alike.
+    """
+    a, b = progs["ppm_tx"], progs["dshot_tx"]
+    if (a.length, a.origin, PPM.steps[0][0]) != (b.length, b.origin, "sm"):
+        raise BudgetError("ppm_tx and dshot_tx differ: the sweep's PPM "
+                          "slots no longer place as plain DShot slots")
+    records = []
+    boot = run(board, (), progs)
+
+    def slots_first(chip, seq, ok):
+        records.append((None, "", seq, ok, chip.dma))
+        if len(seq) < RSN_OUTPUTS:
+            for s in SESSIONS:
+                nxt = apply(chip, s, progs)
+                records.append((s, "after", seq, ok and nxt is not None,
+                                chip.dma + s.dma))
+
+    _walk(boot.chip, "", boot.fits, RSN_OUTPUTS, slots_first, progs)
+    for s in SESSIONS:
+        start = apply(boot.chip, s, progs)
+        _walk(start or boot.chip, "", boot.fits and start is not None,
+              RSN_OUTPUTS - 1,
+              lambda chip, seq, ok, s=s: records.append(
+                  (s, "before", seq, ok, chip.dma)), progs)
+
+    out = Sweep()
+    for session, order, seq, ok, dma in records:
+        singles, pairs = seq.count("P"), seq.count("B")
+        for ppm in range(singles + 1):
+            out.runs += 1
+            fits = ok and dma + ppm * PPM.dma <= NUM_DMA
+            what = (f"{singles - ppm} plain, {pairs} bidirectional, {ppm} "
+                    f"PPM in the order {seq or '-'}")
+            if session is not None:
+                what += f", {session.label} opened {order} the slots"
+            if not rsn_allows(session, singles, pairs, ppm):
+                out.refused_fit += fits
+                continue
+            out.allowed += 1
+            if not fits:
+                out.failures.append(what)
+            rate = capture_rate(singles - ppm, pairs, ppm, ppm_rate)
+            outputs = (f"{pairs} bidirectional DShot, {singles - ppm} plain "
+                       f"DShot, {ppm} PPM, "
+                       f"{RSN_OUTPUTS - singles - pairs} PWM")
+            if ring_ms(rate) < FLASH_WINDOW_MS and outputs not in out.lapping:
+                out.lapping.append(outputs)
+            if rate > out.worst_rate:
+                out.worst_rate, out.worst_mix = rate, outputs
+    return out
+
+
+# ------------------------------------------------------------------- report
+
+def _row(chip: Chip) -> str:
+    """The block and DMA columns of a report line."""
+    cells = [f"{chip.words(b):2d}/{PIO_WORDS - chip.words(b):2d} "
+             f"{chip.sms_used(b)}" for b in range(NUM_PIOS)]
+    return "  ".join(cells) + f"  {chip.dma:2d}/{NUM_DMA}"
+
+
+def report(board: Board, progs: dict[str, Program],
+           ppm_rate: int) -> tuple[list[str], list[str]]:
+    """The budget of one board.
+
+    Args:
+        board: The board.
+        progs: The programs read from the files.
+        ppm_rate: Events a second of one PPM output.
+
+    Returns:
+        The report's lines and the failures.
+    """
+    bp = board_programs(board, progs)
+    lines = [f"Board {board.number}, {board.name}: GPIO{board.gpio[0]} to "
+             f"GPIO{board.gpio[1]}, every block at base {board.base()}"]
+    uses = board.boot + tuple(u for m in board.mixes for u in m.uses)
+    uses += SESSIONS if board.sweep else ()
+    names = []
+    for use in uses:
+        for step in use.steps:
+            for name in step[1:]:
+                if isinstance(name, str) and name not in names:
+                    names.append(name)
+    lines.append("  programs: " + ", ".join(
+        f"{n} {bp[n].length}"
+        + (" (planned)" if bp[n].source.startswith("planned") else "")
+        for n in names))
+    lines.append("  words used/free and state machines per block, DMA "
+                 "channels:")
+    lines.append("  PIO0    PIO1    PIO2    DMA    result    mix")
+    failures = []
+    for mix in board.mixes:
+        out = run(board, mix.uses, bp)
+        verdict = "fits" if out.fits else "refused"
+        want = "fits" if mix.fits else "refused"
+        line = f"  {_row(out.chip)}  {verdict:8s}  {mix.name}"
+        if out.refused:
+            line += f" [refused: {', '.join(out.refused)}]"
+        if out.fits != mix.fits:
+            line += f"  FAIL: the table says {want}"
+            failures.append(f"board {board.number}: {mix.name}: {verdict}, "
+                            f"the table says {want} ({mix.ref})")
+        lines.append(line)
+    if board.sweep:
+        sw = sweep(board, bp, ppm_rate)
+        lines.append(f"  sweep: {sw.runs} mixes run, {sw.allowed} allowed by "
+                     f"the table, {len(sw.failures)} of them do not fit; "
+                     f"{sw.refused_fit} the table refuses fit all the same")
+        lines.append(f"  capture: {sw.worst_rate:,} events/s at most "
+                     f"({sw.worst_mix}): the ring holds "
+                     f"{ring_ms(sw.worst_rate):.1f}ms against a "
+                     f"{FLASH_WINDOW_MS}ms flash window; it covers the "
+                     f"window below "
+                     f"{RING_EVENTS * 1000 // FLASH_WINDOW_MS:,} events/s")
+        lines.append("  a flash window can lap the ring with: "
+                     + ("; ".join(sw.lapping) or "none")
+                     + " (PLAN.md 2.3: a measurement gap, not an error)")
+        failures += [f"board {board.number}: allowed, does not fit: {f}"
+                     for f in sw.failures]
+    return lines, failures
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Prints the budget of every board; exits 1 on a failure."""
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--board", type=int, choices=[b.number for b in BOARDS],
+                    help="report this board only")
+    ap.add_argument("--check", action="store_true",
+                    help="print the failures only")
+    args = ap.parse_args(argv)
+    try:
+        progs = load_programs()
+        ppm_rate = ppm_events()
+        failures = []
+        for board in BOARDS:
+            if args.board not in (None, board.number):
+                continue
+            lines, bad = report(board, progs, ppm_rate)
+            failures += bad
+            if not args.check:
+                print("\n".join(lines) + "\n")
+    except BudgetError as e:
+        print(f"pio_budget: {e}", file=sys.stderr)
+        return 1
+    for f in failures:
+        print(f)
+    if failures:
+        print(f"{len(failures)} mix(es) against the table", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

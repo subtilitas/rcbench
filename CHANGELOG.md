@@ -8,6 +8,17 @@ history is in git.
 
 ### Added
 
+- `tools/pio_budget.py`: counts every PIO (programmable input/output)
+  program in the `.pio` files under `protocols/` as pioasm 2.3.0 does and
+  loads each board's programs into a model of the RP2350's 3 blocks of 4
+  state machines and 32 words and 16 DMA (direct memory access) channels,
+  in boot order and placed as pico-sdk 2.3.0 places them. It prints per
+  block the words used and free and the state machines used, and the DMA
+  channels used, for the RP2350-CAN module, the rbmod carrier and the
+  planned remote servo node, and fails when a mix a board allows does not
+  fit. For the remote servo node it runs 23,552 slot orders with every
+  programming session; the capture ring's worst case is 227,680 events/s,
+  36.0ms of ring against a 42ms flash window. CI runs `--check`.
 - Web flasher at `/rcbench/flash/` on GitHub Pages (`flasher/`), English
   and German, Chrome or Edge on a desktop computer. It writes the panel
   (ESP32-P4), the display node and the M5Stack Dial (ESP32-S3), the power
