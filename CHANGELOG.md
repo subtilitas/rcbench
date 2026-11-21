@@ -170,6 +170,9 @@ history is in git.
 
 ### Fixed
 
+- `hardware/kicad/`: the pin names under the ES3C28P JST PH headers stagger
+  between 2 rows, 0.8mm apart; at 2.0mm pitch "IO14" and "IO21" printed
+  over each other on `ES3C28P_GPIO`.
 - SETUP > WIRELESS: the found list of SCAN FOR DIAL, SCAN FOR NODE, BOUND
   DIAL and BOUND NODE opened without being drawn. SETUP's render drew a
   list's rows, strip and SAVE but no open choice list, so a tap on

@@ -16,7 +16,7 @@
 		)
 	)
 	(property "Value" "ES3C28P_UART_JST_PH_B4B-PH-K-S"
-		(at 3 5 0)
+		(at 3 5.8 0)
 		(unlocked yes)
 		(layer "F.Fab")
 		(uuid "72bc957a-db1c-5ad8-bc0b-b11473e21d6c")
@@ -89,7 +89,7 @@
 		)
 	)
 	(fp_text user "GND"
-		(at 2 3.6 0)
+		(at 2 4.4 0)
 		(unlocked yes)
 		(layer "F.SilkS")
 		(uuid "95f5f68a-c3b6-58a2-a744-88adcc1f4043")
@@ -113,7 +113,7 @@
 		)
 	)
 	(fp_text user "RXD"
-		(at 6 3.6 0)
+		(at 6 4.4 0)
 		(unlocked yes)
 		(layer "F.SilkS")
 		(uuid "9d521945-f8c3-5002-b956-cae2ff71e7d2")

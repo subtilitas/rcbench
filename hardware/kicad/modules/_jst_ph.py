@@ -61,12 +61,15 @@ def footprint(name, desc, title, labels):
              "drill": DRILL} for i in range(1, n + 1)]
     x1 = pin_x(1)
     mark = ("poly", [(x1 - 0.35, 0.2), (x1 + 0.35, 0.2), (x1, 0.6)])
-    silk = [mark] + [("text", label, pin_x(i), DEPTH + 0.8, 0.6)
+    # Odd pins print 0.8mm under the housing, even pins 1.6mm: a 4-letter
+    # name at 0.6mm is wider than the 2.0mm pitch, so neighbours stagger.
+    silk = [mark] + [("text", label, pin_x(i),
+                      DEPTH + (0.8 if i % 2 else 1.6), 0.6)
                      for i, label in enumerate(labels, 1)]
     fab = [mark, ("text", title, w / 2, 3.6, 0.5 if n < 3 else 0.7)]
     return {"name": name, "desc": desc, "board": (w, DEPTH),
             "origin": (x1, ROW), "pads": pads, "silk": silk, "fab": fab,
-            "value_at": (w / 2, DEPTH + 2.2)}
+            "value_at": (w / 2, DEPTH + 3.0)}
 
 
 def symbol(name, desc, footprint_name, title, pins):
