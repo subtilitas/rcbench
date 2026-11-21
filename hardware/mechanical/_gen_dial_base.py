@@ -86,8 +86,7 @@ from OCP.BRepBuilderAPI import (BRepBuilderAPI_MakeEdge,
 from OCP.BRepCheck import BRepCheck_Analyzer
 from OCP.BRepGProp import BRepGProp
 from OCP.BRepMesh import BRepMesh_IncrementalMesh
-from OCP.BRepPrimAPI import (BRepPrimAPI_MakeBox, BRepPrimAPI_MakeCone,
-                             BRepPrimAPI_MakeCylinder,
+from OCP.BRepPrimAPI import (BRepPrimAPI_MakeBox, BRepPrimAPI_MakeCylinder,
                              BRepPrimAPI_MakeRevol)
 from OCP.GC import GC_MakeArcOfCircle
 from OCP.gp import gp_Ax1, gp_Ax2, gp_Dir, gp_Pnt, gp_Trsf, gp_Vec
@@ -142,7 +141,7 @@ BOSS, CLEAR, HEAD, SEAT, COLUMN = 6.0, 3.4, 6.2, -24.5, 7.2
 # length. RELIEF is the bore above the hole for the screw's end: its
 # diameter and the z it reaches up to. The boss is INSERT[0] + 2 x
 # INSERT[2] across up to WIDE_TO, 1.0 under the ring nut, and narrows
-# to BOSS on a cone of 45 degrees above it.
+# to BOSS in 2 steps of 0.3 above it.
 INSERT = (4.0, 5.0, 1.6, 4.0)
 RELIEF = (3.2, -11.5)
 WIDE_TO = -8.0
@@ -322,13 +321,15 @@ def parts():
         boss = BRepAlgoAPI_Fuse(_cylinder(x, y, BOSS / 2, SPLIT, -PLATE),
                                 web).Shape()
         wide = hole / 2 + wall
-        step = wide - BOSS / 2
+        step = (wide - BOSS / 2) / 2
         boss = BRepAlgoAPI_Fuse(boss, _cylinder(
             x, y, wide, SPLIT, WIDE_TO)).Shape()
-        # A cone at 45 degrees carries the wider part in the print.
-        boss = BRepAlgoAPI_Fuse(boss, BRepPrimAPI_MakeCone(
-            gp_Ax2(gp_Pnt(x, y, WIDE_TO), gp_Dir(0, 0, 1)), wide, BOSS / 2,
-            step).Shape()).Shape()
+        # The boss widens in 2 steps of 0.3, each as high as the 2
+        # together are wide: an overhang the print carries. A cone
+        # would meet the web in a curve OpenCASCADE computes
+        # differently from one processor to the next.
+        boss = BRepAlgoAPI_Fuse(boss, _cylinder(
+            x, y, wide - step, WIDE_TO, WIDE_TO + 2 * step)).Shape()
         top = BRepAlgoAPI_Fuse(
             top, BRepAlgoAPI_Common(boss, _fluted()).Shape()).Shape()
         top = BRepAlgoAPI_Cut(top, _cylinder(x, y, hole / 2, SPLIT - 1,

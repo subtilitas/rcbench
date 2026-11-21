@@ -270,7 +270,7 @@ measured.
 | Cell pocket | 42.9 x 26.0 between 4 rails 1.4 thick and 6.0 high, open at the 4 corners: 1.2 free at each end of the cell and 0.5 at each side; the cell's length lies across the `^` mark, its wires towards +y, the side away from the USB opening |
 | Foam pad | 2 thick, about 20 x 30, between the cell and the dial, in the 2.4 between them; it holds the cell and leaves it room to swell |
 | Screws | 4 x M3 x 12, pan head, on a circle of 58.0 at 45 degrees to the axes; clearance holes 3.4, heads sunk 8.0 into the foot in recesses of 6.2; each turns into a brass threaded insert in a boss of the top part and ends 2.5 above it |
-| Threaded inserts | 4 x ruthex RX-M3Sx4.0 (M3, 4.0 long, 4.6 over the knurl), melted in from the joint; hole 4.0, 5.0 deep, wall 1.6, as the maker's label asks; the boss is 7.2 across up to 1.0 under the ring nut and 6.0 beside it; a bore of 3.2 above the hole takes the screw's end |
+| Threaded inserts | 4 x ruthex RX-M3Sx4.0 (M3, 4.0 long, 4.6 over the knurl), melted in from the joint; hole 4.0, 5.0 deep, wall 1.6, as the maker's label asks; the boss is 7.2 across up to 1.0 under the ring nut, narrows in 2 steps of 0.3, and is 6.0 beside the nut; a bore of 3.2 above the hole takes the screw's end |
 
 The dial's battery socket, 1.25mm pitch with 2 pins, is on its main board
 under the Stamp-S3, at the USB end (M5Stack's picture "Dial Lithium
