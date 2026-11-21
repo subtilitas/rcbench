@@ -52,7 +52,9 @@ length are estimated. The boost board does not name its enable pad; the one
 pad besides the 4 corner pads is it (owner, 2026-11-19).
 It holds 2 STEP models of the rbmod carrier board, version 2, 80.0mm x
 89.0mm: one with its 17 surface-mounted parts, one with 7 connectors and
-5 modules as well, 13.0mm high over the board. J6 and J8 are not populated
+5 modules as well, 13.0mm high over the board. Both carry the pads, gold
+for their ENEPIG finish, and the tracks and vias of the 2 outer layers; the
+filled ground zones and the inner layers are not drawn. J6 and J8 are not populated
 (owner, 2026-11-21) and not drawn. Outline, holes and every
 part's place are read from the board file of the owner's KiCad repository
 (branch `rbmod_v2`, commit `86d2301`), which is not in this repository. The

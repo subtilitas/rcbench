@@ -20,13 +20,14 @@ fp_line, fp_rect and fp_poly on F.Fab. An arc on Edge.Cuts or a
 footprint on the bottom side stops the tool: neither is handled.
 
 Copper of the 2 outer layers: PADS_TOP and PADS_BOTTOM hold the pads,
-COPPER_TOP and COPPER_BOTTOM the tracks, the vias and the zones' filled
-areas less the pads. Each is a list of (outline, holes); every drilled
-hole is cut out, so no outline crosses another and none covers a hole.
-Round ends are polygons of 32 sides to a circle; points nearer than
-0.01mm to the line through their neighbours are dropped. Pads are
-circle, oval, rect or roundrect; another shape stops the tool. Inner
-layers are not read. This part needs shapely (pip install
+COPPER_TOP and COPPER_BOTTOM the tracks and the vias less the pads.
+Each is a list of (outline, holes); every drilled hole is cut out, so
+no outline crosses another and none covers a hole. Round ends are
+polygons of 16 sides to a circle; points nearer than 0.02mm to the line
+through their neighbours are dropped. Pads are circle, oval, rect or
+roundrect; another shape stops the tool. Zones and inner layers are not
+read: a filled zone of this board has 9328 corners, which makes a STEP
+file of 43MB. This part needs shapely (pip install
 shapely==2.2.0).
 
 SPDX-License-Identifier: CC-BY-NC-SA-4.0
@@ -109,7 +110,7 @@ def _pad_shape(pad, geometry):
     if kind == "rect":
         return geometry.box(-wide / 2, -high / 2, wide / 2, high / 2)
     if kind == "circle":
-        return geometry.Point(0.0, 0.0).buffer(wide / 2, quad_segs=8)
+        return geometry.Point(0.0, 0.0).buffer(wide / 2, quad_segs=4)
     if kind == "oval":
         r = min(wide, high) / 2
     elif kind == "roundrect":
@@ -117,7 +118,7 @@ def _pad_shape(pad, geometry):
     else:
         raise ValueError(f"pad shape {kind} is not handled")
     return geometry.box(-wide / 2 + r, -high / 2 + r, wide / 2 - r,
-                        high / 2 - r).buffer(r, quad_segs=8)
+                        high / 2 - r).buffer(r, quad_segs=4)
 
 
 def copper(pcb, at):
@@ -131,7 +132,7 @@ def copper(pcb, at):
         A dict: "pads_top", "pads_bottom", "copper_top", "copper_bottom",
         each a list of (outline, holes).
     """
-    from shapely import affinity, geometry, make_valid, ops
+    from shapely import affinity, geometry, ops
 
     pads = {"F.Cu": [], "B.Cu": []}
     rest = {"F.Cu": [], "B.Cu": []}
@@ -155,32 +156,26 @@ def copper(pcb, at):
             drill = kid(pad, "drill")
             if drill:
                 drills.append(geometry.Point(x, y).buffer(
-                    float(drill[1]) / 2, quad_segs=8))
+                    float(drill[1]) / 2, quad_segs=4))
     for g in kids(pcb, "gr_circle"):
         if kid(g, "layer")[1] == "Edge.Cuts":
             centre = _xy(kid(g, "center"))
             drills.append(geometry.Point(*centre).buffer(
-                math.dist(centre, _xy(kid(g, "end"))), quad_segs=8))
+                math.dist(centre, _xy(kid(g, "end"))), quad_segs=4))
     for seg in kids(pcb, "segment"):
         layer = kid(seg, "layer")[1]
         if layer in rest:
             rest[layer].append(geometry.LineString(
                 [_xy(kid(seg, "start")), _xy(kid(seg, "end"))]).buffer(
-                    float(kid(seg, "width")[1]) / 2, quad_segs=8))
+                    float(kid(seg, "width")[1]) / 2, quad_segs=4))
     for via in kids(pcb, "via"):
         for found in rest.values():
             found.append(geometry.Point(*_xy(kid(via, "at"))).buffer(
-                float(kid(via, "size")[1]) / 2, quad_segs=8))
-    for zone in kids(pcb, "zone"):
-        for filled in kids(zone, "filled_polygon"):
-            layer = kid(filled, "layer")[1]
-            if layer in rest:
-                rest[layer].append(make_valid(geometry.Polygon(
-                    [_xy(q) for q in kids(kid(filled, "pts"), "xy")])))
+                float(kid(via, "size")[1]) / 2, quad_segs=4))
     holes = ops.unary_union(drills)
 
     def polygons(shape):
-        shape = shape.simplify(0.01)
+        shape = shape.simplify(0.02)
         out = []
         for part in getattr(shape, "geoms", [shape]):
             if part.geom_type != "Polygon" or part.area < 0.01:

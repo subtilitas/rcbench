@@ -13,6 +13,9 @@ import sys
 from pathlib import Path
 
 import pytest
+from conftest import import_or_fail
+
+import_or_fail("shapely", "needs shapely, which the reader's copper uses")
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "hardware" / "mechanical"))
@@ -28,16 +31,23 @@ BOARD = """(kicad_pcb (general (thickness 1.2))
  (gr_line (start 10 50) (end 30 50) (layer "Edge.Cuts"))
  (gr_line (start 10 50) (end 10 20) (layer "Edge.Cuts"))
  (gr_line (start 0 0) (end 5 5) (layer "F.SilkS"))
+ (segment (start 14 45) (end 14 30) (width 0.4) (layer "F.Cu"))
+ (segment (start 14 30) (end 19 30) (width 0.4) (layer "F.Cu"))
+ (segment (start 12 40) (end 28 40) (width 1) (layer "In1.Cu"))
+ (via (at 25 40) (size 1) (drill 0.5) (layers "F.Cu" "B.Cu"))
  (gr_circle (center 12 22) (end 13.5 22) (layer "Edge.Cuts"))
  (footprint "Lib:Part" (layer "F.Cu") (at 20 30 90)
   (property "Reference" "J2") (property "Value" "plug")
   (attr through_hole dnp)
   (fp_line (start -1 -2) (end 3 4) (layer "F.Fab"))
-  (pad "1" thru_hole circle (at 0 0) (size 2 2) (drill 1))
-  (pad "2" thru_hole circle (at 2 0 90) (size 2 2) (drill 0.8)))
+  (pad "1" thru_hole circle (at 0 0) (size 2 2) (drill 1)
+   (layers "*.Cu" "*.Mask"))
+  (pad "2" thru_hole rect (at 2 0 90) (size 2 2) (drill 0.8)
+   (layers "*.Cu" "*.Mask")))
  (footprint "Lib:Chip" (layer "F.Cu") (at 15 45)
   (property "Reference" "C1") (property "Value" "1u") (attr smd)
-  (pad "1" smd rect (at -1 0) (size 1 1))))
+  (pad "1" smd roundrect (at -1 0) (size 1 1) (roundrect_rratio 0.25)
+   (layers "F.Cu" "F.Mask"))))
 """
 
 
@@ -67,6 +77,34 @@ def test_reader_turns_the_board_into_the_models_frame():
     assert plug["fab"] == (-1.0, -4.0, 3.0, 2.0)
 
 
+def test_reader_gives_the_outer_layers_copper():
+    """Pads with their holes cut out; a track ends at the pads' edge."""
+    data = reader.read(BOARD)
+    assert len(data["pads_top"]) == 3
+    assert len(data["pads_bottom"]) == 2
+    assert all(len(holes) == 1 for _outer, holes in data["pads_bottom"])
+    # The track and the via; the inner layer's track is not read.
+    assert len(data["copper_top"]) == 2
+    assert len(data["copper_bottom"]) == 1
+    (via, no_holes), = data["copper_bottom"]
+    assert no_holes == []
+    assert reader._area(via) == pytest.approx(math.pi * 0.25, rel=0.03)
+    track = max(data["copper_top"], key=lambda q: abs(reader._area(q[0])))
+    xs = [x for x, _y in track[0]]
+    ys = [y for _x, y in track[0]]
+    # From the track's round end to the edge of the plug's round pad 1,
+    # which the track keeps 0.02 from.
+    assert min(xs) == pytest.approx(3.8, abs=0.01)
+    assert 8.97 < max(xs) < 9.01
+    assert max(ys) == pytest.approx(20.2, abs=0.01)
+
+
+def test_reader_refuses_a_pad_shape_it_does_not_know():
+    """A custom pad stops the tool."""
+    with pytest.raises(ValueError, match="pad shape custom"):
+        reader.read(BOARD.replace("smd roundrect", "smd custom"))
+
+
 def test_reader_refuses_what_it_does_not_handle():
     """An arc in the outline, an open outline, a part on the underside."""
     arc = BOARD.replace('(gr_circle', '(gr_arc (start 1 1) (mid 2 2) (end '
@@ -82,16 +120,34 @@ def test_reader_refuses_what_it_does_not_handle():
 
 def test_board_has_the_files_outline_and_holes():
     """80 x 89 with a notch of 4.41 x 13, 6 holes of 3.0, 1.579 thick."""
-    assert extent(rbmod_v2.board()) == pytest.approx(
+    assert extent(rbmod_v2.board()[:1]) == pytest.approx(
         [0.0, 0.0, -1.579, 80.0, 89.0, 0.0])
+    assert extent(rbmod_v2.board()) == pytest.approx(
+        [0.0, 0.0, -1.579 - 0.035, 80.0, 89.0, 0.035])
     assert reader._area(rbmod_v2.data.OUTLINE) == pytest.approx(
         80.0 * 89.0 - 4.4096 * 13.0)
     assert len(rbmod_v2.data.HOLES) == 6
     assert {d for _x, _y, d in rbmod_v2.data.HOLES} == {3.0}
     drills = [d for fp in rbmod_v2.data.FOOTPRINTS for d in fp["drills"]]
     assert len(drills) == 123
-    (_outer, holes, *_rest), = rbmod_v2.board()
+    (_outer, holes, *_rest) = rbmod_v2.board()[0]
     assert len(holes) == 129
+
+
+def test_board_carries_its_copper():
+    """157 pads on top, 123 under it, gold; tracks in a lighter green."""
+    board = rbmod_v2.board()
+    assert len(board) == 1 + 157 + 123 + 31 + 19
+    gold = [shape for shape in board if shape[4] == rbmod_v2.ENEPIG]
+    assert len(gold) == 280
+    assert {(round(shape[2], 3), round(shape[3], 3)) for shape in gold} == {
+        (0.0, 0.035), (-1.614, -1.579)}
+    tracks = [shape for shape in board if shape[4] == rbmod_v2.COPPER[0]]
+    assert len(tracks) == 50
+    assert {round(shape[3] - shape[2], 3) for shape in tracks} == {0.02}
+    # Every drilled pad's hole is open in its 2 pads.
+    drilled = sum(len(fp["drills"]) for fp in rbmod_v2.data.FOOTPRINTS)
+    assert sum(len(shape[1]) for shape in gold) == 2 * drilled
 
 
 def test_parts_by_kind():
@@ -120,28 +176,31 @@ def test_an_unknown_footprint_is_refused():
 
 
 def test_the_two_models_differ_by_the_through_hole_parts():
-    """52 solids with the SMD parts, 1566 with connectors and modules."""
+    """382 solids with the SMD parts, 1920 with connectors and modules."""
     built = rbmod_v2.parts(None)
     assert sorted(built) == ["rbmod_v2", "rbmod_v2_smd"]
-    assert len(built["rbmod_v2_smd"]) == 52
-    assert len(built["rbmod_v2"]) == 1566
-    assert built["rbmod_v2"][:52] == built["rbmod_v2_smd"]
+    assert len(built["rbmod_v2_smd"]) == 382
+    assert len(built["rbmod_v2"]) == 1920
+    assert built["rbmod_v2"][:382] == built["rbmod_v2_smd"]
     assert extent(rbmod_v2.board() + rbmod_v2.placed(True))[5] == (
-        pytest.approx(2.5))
+        pytest.approx(2.535))
     box = extent(rbmod_v2.placed(False))
-    assert (box[2], box[5]) == pytest.approx((-6.0, 12.96), abs=0.01)
+    assert (box[2], box[5]) == pytest.approx((-5.965, 12.99), abs=0.01)
     # J6 and J8 are not populated: nothing stands on their pads.
     assert box[1] == pytest.approx(6.87, abs=0.01)
 
 
 def test_smd_parts_lie_on_the_board_at_their_places():
-    """Each stands on z = 0, centred on its footprint's place."""
+    """Each stands on its pads' top, centred on its footprint's place."""
     for fp in rbmod_v2.data.FOOTPRINTS:
         if not fp["smd"]:
             continue
         box = extent(_solid.place(rbmod_v2.part(fp), x=fp["at"][0],
                                   y=fp["at"][1], turn=fp["turn"]))
         assert box[2] == pytest.approx(0.0)
+        lifted = [shape for shape in rbmod_v2.placed(True)]
+        assert min(extent([shape])[2] for shape in lifted) == (
+            pytest.approx(0.035))
         assert ((box[0] + box[3]) / 2, (box[1] + box[4]) / 2) == (
             pytest.approx(fp["at"], abs=0.01))
         assert 0.0 < box[0] and box[3] < 80.0 and 0.0 < box[1]

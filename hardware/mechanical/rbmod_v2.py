@@ -35,13 +35,15 @@ drawing.
 
 The copper of the 2 outer layers is drawn from the board file: the
 pads, gold (ENEPIG: nickel, palladium, gold; owner, 2026-11-21) and
-0.035mm thick, and the tracks, the vias and the filled
-zones, 0.02mm thick in a lighter green, as copper shows under the
-solder mask. Every part stands on the pads' top, 0.035mm over the
+0.035mm thick, and the tracks and the vias, 0.02mm thick in a lighter
+green, as copper shows under the solder mask. Every part stands on the
+pads' top, 0.035mm over the
 board.
 
-Not drawn: the inner layers, the print, the vias' holes, solder. The
-board is drawn green and 1.579mm thick, the board file's stack. The RP2350-CAN, the INA3221 board and the 2 buck
+Not drawn: the filled ground zones of the 2 outer layers, the inner
+layers, the print, the vias' holes, solder. The board is drawn green
+and 1.579mm thick, the board file's stack. The RP2350-CAN, the INA3221
+board and the 2 buck
 converters stand on their headers' plastic, 2.5mm over the carrier; the
 PD trigger board lies on the carrier.
 
@@ -169,9 +171,9 @@ def unpopulated(footprint):
 def board():
     """The carrier: plate, holes, and the copper of its 2 outer layers.
 
-    The pads are p.PAD thick and gold, their finish ENEPIG. The tracks, the vias and the
-    filled zones are COPPER[1] thick in a lighter green, as copper
-    shows under the solder mask.
+    The pads are p.PAD thick and gold, their finish ENEPIG. The tracks
+    and the vias are COPPER[1] thick in a lighter green, as copper shows
+    under the solder mask.
     """
     drills = [d for fp in data.FOOTPRINTS for d in fp["drills"]]
     t = data.THICKNESS

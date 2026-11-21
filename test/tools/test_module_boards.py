@@ -3,8 +3,8 @@
 The RP2350-CAN, the INA3221 board, the Mini560 buck converter and the
 USB-C PD trigger board: every solid closes, each board is as large as
 its footprint, its holes are the footprint's, the parts named in its
-spec are there, and the mounted model stands as the board is mounted: three on pin
-headers, the PD trigger board flat.
+spec are there, and the mounted model stands as the board is mounted:
+three on pin headers, the PD trigger board flat.
 
 SPDX-License-Identifier: MIT
 """

@@ -8,6 +8,12 @@ history is in git.
 
 ### Added
 
+- `hardware/mechanical/`: the rbmod carrier's models carry the copper of
+  the 2 outer layers, read from the board file by `_read_kicad_pcb.py`:
+  280 pads, gold for their ENEPIG finish, and the tracks and vias in a
+  lighter green. `rbmod_v2.step` holds 1920 solids (27.3MB),
+  `rbmod_v2_smd.step` 382 (10.1MB). The reader's copper needs shapely
+  2.2.0, which CI installs for the tool tests.
 - `hardware/mechanical/`: `rp2350_can.step`, `ina3221_module.step`,
   `dcdc_buck_mini.step` and `usbc_pd_trigger.step`, the 4 kinds of module
   on the rbmod carrier drawn part by part with the print of both sides:
@@ -15,8 +21,7 @@ history is in git.
   trigger board. Part places are read from straight views of the maker and
   of sellers, laid onto each board's frame, within 0.2mm to 0.5mm. The
   same models are the 3D models of the 4 footprints in the KiCad library
-  and stand on `rbmod_v2.step`, which holds 1566 solids. The overlap check
-  covers them
+  and stand on `rbmod_v2.step`. The overlap check covers them
   ([Mechanical parts](hardware/mechanical/README.md#module-boards-of-the-rbmod-carrier)).
 - `hardware/mechanical/`: `rbmod_v2_smd.step` and `rbmod_v2.step`, the
   rbmod carrier board, version 2 (80.0mm x 89.0mm): the board with its 17

@@ -20,8 +20,8 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `es3c28p.py` | spec of the LCDWIKI ES3C28P, the display node's board: 2.8" display, ESP32-S3, sockets |
 | `rp2350_can.py`, `ina3221_module.py`, `dcdc_buck_mini.py`, `usbc_pd_trigger.py` | specs of 4 module boards, part by part: Waveshare RP2350-CAN, INA3221 board, Mini560 buck converter, USB-C PD trigger board |
 | `rbmod_v2.py` | spec of the rbmod carrier board, version 2: with its SMD parts, and with its connectors and modules |
-| `_read_kicad_pcb.py` | reads a KiCad board file's outline, holes and footprints into a data file |
-| `_rbmod_v2_data.py` | outline, holes and footprints of the rbmod board, version 2, written by `_read_kicad_pcb.py` |
+| `_read_kicad_pcb.py` | reads a KiCad board file's outline, holes, footprints, and the pads, tracks and vias of its 2 outer layers into a data file; the copper needs shapely |
+| `_rbmod_v2_data.py` | outline, holes, footprints and outer copper of the rbmod board, version 2, written by `_read_kicad_pcb.py` |
 | `lipo_cells.py` | spec of two lithium polymer cells, 702030 and 102540, with wires and plug |
 | `kst_x10.py` | spec of the KST X10 wing servo, from a dimension drawing and photos |
 | `_gen_flap_drive.py` | builds a frame with counter bearing for the KST X10, its linkage and a slice of wing with a flap with OpenCASCADE, checks that no two solids share volume |
@@ -53,7 +53,7 @@ python3 hardware/mechanical/gen_models.py --check  # CI: exit 1 on drift
 pip install cadquery-ocp==8.0.1.1.0 pillow
 python3 hardware/kicad/tools/step_check.py         # also checks models/
 python3 hardware/mechanical/check_refit.py         # needs numpy; 2 minutes
-python3 hardware/mechanical/check_overlap.py       # 1 minute
+python3 hardware/mechanical/check_overlap.py       # 2 minutes
 python3 hardware/mechanical/_gen_dial_base.py --check   # 1 minute
 python3 hardware/mechanical/_gen_flap_drive.py --check  # 10 seconds
 xvfb-run -a python3 hardware/kicad/tools/step_render.py \
@@ -745,8 +745,8 @@ RP2350-CAN, an INA3221 module, 2 mini buck converters and a USB-C PD
 
 | File | Content | Size, mm |
 | --- | --- | --- |
-| `rbmod_v2_smd.step` | the board with 129 holes and its 17 surface-mounted parts: 9 resistors 1206, 3 resistors 0402, 2 capacitors 0603, 1 capacitor 1210, 1 SMB diode, 1 SMC diode; 52 solids, 0.8MB | 80.0 x 89.0, 1.579 thick, parts to 2.5 over the board |
-| `rbmod_v2.step` | the same with 3 JST PH headers of 4 pins and 2 of 2 pins, 2 angled pin headers of 3 x 4 pins and the 5 modules, each part by part; 1566 solids, 17.6MB | 85.3 x 89.0; 13.0 over the board, 6.0 under its top side |
+| `rbmod_v2_smd.step` | the board with 129 holes, the copper of its 2 outer layers (280 pads, 50 areas of tracks and vias) and its 17 surface-mounted parts: 9 resistors 1206, 3 resistors 0402, 2 capacitors 0603, 1 capacitor 1210, 1 SMB diode, 1 SMC diode; 382 solids, 10.1MB | 80.0 x 89.0, 1.579 thick, parts to 2.5 over the board |
+| `rbmod_v2.step` | the same with 3 JST PH headers of 4 pins and 2 of 2 pins, 2 angled pin headers of 3 x 4 pins and the 5 modules, each part by part; 1920 solids, 27.3MB | 85.3 x 89.0; 13.0 over the board, 6.0 under its top side |
 
 Frame: origin at the outline's lower left corner seen from the top side,
 x to the right, y up, z = 0 on the top side.
@@ -773,13 +773,21 @@ drilled pads are in the board, the parts are in neither model.
 
 Source: `rbmod.kicad_pcb` on the branch `rbmod_v2` of the owner's KiCad
 repository, commit `86d2301`, which is not in this repository.
-`_read_kicad_pcb.py` reads the outline, the holes and each footprint's
-place, turn and drilled pads into `_rbmod_v2_data.py`:
+`_read_kicad_pcb.py` reads the outline, the holes, each footprint's
+place, turn and drilled pads, and the copper of the 2 outer layers into
+`_rbmod_v2_data.py`:
 
 ```sh
+pip install shapely==2.2.0
 python3 hardware/mechanical/_read_kicad_pcb.py \
     path/to/rbmod.kicad_pcb rbmod_v2
 ```
+
+Copper: the pads of both sides are drawn gold, 0.035mm thick; their finish
+is ENEPIG (electroless nickel, electroless palladium, immersion gold;
+owner, 2026-11-21). The tracks and the vias are drawn 0.02mm thick in a
+lighter green, as copper shows under the solder mask. Every drilled hole is
+open in its pads, and every part stands on the pads' top.
 
 The 5 modules are the models of [the KiCad library](../kicad/README.md),
 whose footprints the board uses, drawn
@@ -795,14 +803,18 @@ Limits:
   sizes. No part is measured on a board; no board is built.
 - Estimated, not from a maker's drawing: the angled headers as a plastic
   bar of 2.54mm with pins that end 15.12mm from the first row.
-- Copper, solder mask openings, print, vias and solder joints are not
-  drawn. The board is green.
+- The filled ground zones of the 2 outer layers, the inner layers, the
+  print, the vias' holes and solder are not drawn. A filled zone of this
+  board has 9328 corners; with the zones `rbmod_v2.step` is 43MB. The
+  board is green.
+- Round pads and track ends are polygons of 16 sides to a circle.
 - The mini buck converter's enable pad has a hole of 0.8mm in the
   carrier's footprint. A header pin of 0.64mm square is 0.91mm across its
   corners and does not fit it. The model draws no pin there.
-- The reader handles lines and circles on Edge.Cuts and footprints on the
-  top side. It stops at an arc in the outline or a footprint on the
-  underside.
+- The reader handles lines and circles on Edge.Cuts, footprints on the
+  top side and pads that are circle, oval, rect or roundrect. It stops at
+  an arc in the outline, a footprint on the underside or another pad
+  shape.
 
 ## Standard servo
 
