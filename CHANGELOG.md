@@ -178,6 +178,9 @@ history is in git.
   the parts right of the flash sit where Waveshare's underside photo
   with the PSRAM fitted shows them, within about 0.2mm. The footprint's
   fabrication layer draws the PSRAM's 3.9mm x 4.9mm body.
+- `hardware/kicad/`: the pin names under the ES3C28P JST PH headers stagger
+  between 2 rows, 0.8mm apart; at 2.0mm pitch "IO14" and "IO21" printed
+  over each other on `ES3C28P_GPIO`.
 - SETUP > WIRELESS: the found list of SCAN FOR DIAL, SCAN FOR NODE, BOUND
   DIAL and BOUND NODE opened without being drawn. SETUP's render drew a
   list's rows, strip and SAVE but no open choice list, so a tap on

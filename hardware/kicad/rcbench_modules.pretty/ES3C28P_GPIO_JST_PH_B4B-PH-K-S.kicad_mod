@@ -16,7 +16,7 @@
 		)
 	)
 	(property "Value" "ES3C28P_GPIO_JST_PH_B4B-PH-K-S"
-		(at 3 5 0)
+		(at 3 5.8 0)
 		(unlocked yes)
 		(layer "F.Fab")
 		(uuid "1d4bd46f-33df-5628-bd56-ce59aa662a75")
@@ -89,7 +89,7 @@
 		)
 	)
 	(fp_text user "IO3"
-		(at 2 3.6 0)
+		(at 2 4.4 0)
 		(unlocked yes)
 		(layer "F.SilkS")
 		(uuid "9b6cc737-0c26-5f2d-9490-73cdfd781722")
@@ -113,7 +113,7 @@
 		)
 	)
 	(fp_text user "IO21"
-		(at 6 3.6 0)
+		(at 6 4.4 0)
 		(unlocked yes)
 		(layer "F.SilkS")
 		(uuid "a595b07c-69b7-5d59-b196-3b9b157de41c")

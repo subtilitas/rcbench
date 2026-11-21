@@ -16,7 +16,7 @@
 		)
 	)
 	(property "Value" "ES3C28P_PWR_JST_PH_B2B-PH-K-S"
-		(at 1 5 0)
+		(at 1 5.8 0)
 		(unlocked yes)
 		(layer "F.Fab")
 		(uuid "ad34b7aa-5d40-5253-ad27-31eb6260492d")
@@ -89,7 +89,7 @@
 		)
 	)
 	(fp_text user "GND"
-		(at 2 3.6 0)
+		(at 2 4.4 0)
 		(unlocked yes)
 		(layer "F.SilkS")
 		(uuid "74cf37df-35e8-5637-a575-dddd590751ee")

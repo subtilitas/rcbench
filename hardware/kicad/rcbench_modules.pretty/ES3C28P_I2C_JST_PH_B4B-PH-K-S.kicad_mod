@@ -16,7 +16,7 @@
 		)
 	)
 	(property "Value" "ES3C28P_I2C_JST_PH_B4B-PH-K-S"
-		(at 3 5 0)
+		(at 3 5.8 0)
 		(unlocked yes)
 		(layer "F.Fab")
 		(uuid "2c9a4d4f-4344-53f2-b679-3133ce314fff")
@@ -89,7 +89,7 @@
 		)
 	)
 	(fp_text user "GND"
-		(at 2 3.6 0)
+		(at 2 4.4 0)
 		(unlocked yes)
 		(layer "F.SilkS")
 		(uuid "169cb2f4-f06c-5de8-af45-c2e4759cf836")
@@ -113,7 +113,7 @@
 		)
 	)
 	(fp_text user "SDA"
-		(at 6 3.6 0)
+		(at 6 4.4 0)
 		(unlocked yes)
 		(layer "F.SilkS")
 		(uuid "16bb00aa-6868-5e7c-970b-55f455fb968b")
