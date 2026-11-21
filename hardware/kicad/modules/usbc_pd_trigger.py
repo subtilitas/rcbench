@@ -89,15 +89,5 @@ SYMBOL = {
     ],
 }
 
-# 3D model. Part class figures, not measured; no source for this board
-# was found: USB-C receptacle 3.2mm, DIP switch 2.0mm with 0.4mm sliders.
-# Parts beyond the receptacle and the switch are not drawn. The board is
-# wired, so it rests on the carrier.
-MODEL = {
-    "mount": "flat",
-    "color": "black",        # the real board (owner, 2026-11-21)
-    "bodies": [("box",) + USB + (3.2, "metal"),
-               ("box",) + DIP + (2.0, "red")]
-    + [("box", 12.08, y - 0.3, 13.28, y + 0.3, 0.4, "white", 2.0)
-       for y in DIP_ROWS],
-}
+# 3D model: drawn part by part in hardware/mechanical/usbc_pd_trigger.py.
+MODEL = {"detail": "usbc_pd_trigger"}

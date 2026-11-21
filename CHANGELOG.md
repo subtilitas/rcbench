@@ -8,6 +8,16 @@ history is in git.
 
 ### Added
 
+- `hardware/mechanical/`: `rp2350_can.step`, `ina3221_module.step`,
+  `dcdc_buck_mini.step` and `usbc_pd_trigger.step`, the 4 kinds of module
+  on the rbmod carrier drawn part by part with the print of both sides:
+  Waveshare RP2350-CAN, INA3221 board, Mini560 buck converter, USB-C PD
+  trigger board. Part places are read from straight views of the maker and
+  of sellers, laid onto each board's frame, within 0.2mm to 0.5mm. The
+  same models are the 3D models of the 4 footprints in the KiCad library
+  and stand on `rbmod_v2.step`, which holds 1566 solids. The overlap check
+  covers them
+  ([Mechanical parts](hardware/mechanical/README.md#module-boards-of-the-rbmod-carrier)).
 - `hardware/mechanical/`: `rbmod_v2_smd.step` and `rbmod_v2.step`, the
   rbmod carrier board, version 2 (80.0mm x 89.0mm): the board with its 17
   surface-mounted parts, and the same with 7 connectors and 5 modules,
@@ -68,10 +78,12 @@ history is in git.
 
 ### Changed
 
-- KiCad library: 4 module models have the real board's colour (owner,
-  2026-11-21) in place of green: the RP2350-CAN and the mini buck converter
-  blue, the INA3221 module and the USB-C PD trigger board black. The rbmod
-  model shows them so ([hardware/kicad/README.md](hardware/kicad/README.md)).
+- KiCad library: 4 module models have the real board's colour in place of
+  green: the RP2350-CAN and the mini buck converter blue, the INA3221
+  board black (owner, 2026-11-21), the USB-C PD trigger board purple, as
+  three owner photos show it. The mini buck converter lies flat on its
+  carrier in place of standing on a header
+  ([hardware/kicad/README.md](hardware/kicad/README.md)).
 - Flap drive model (`hardware/mechanical/_gen_flap_drive.py`): the wing's
   upper skin ends 4.45mm before the flap, so the flap turns 20.3 degrees
   up; a fairing, half an ellipsoid 35.5mm long, 10.2mm wide and 8.1mm

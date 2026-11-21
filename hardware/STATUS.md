@@ -52,12 +52,19 @@ length are estimated. The boost board does not name its enable pad; the one
 pad besides the 4 corner pads is it (owner, 2026-11-19).
 It holds 2 STEP models of the rbmod carrier board, version 2, 80.0mm x
 89.0mm: one with its 17 surface-mounted parts, one with 7 connectors and
-5 modules as well, 11.1mm high over the board. J6 and J8 are not populated
+5 modules as well, 13.0mm high over the board. J6 and J8 are not populated
 (owner, 2026-11-21) and not drawn. Outline, holes and every
 part's place are read from the board file of the owner's KiCad repository
 (branch `rbmod_v2`, commit `86d2301`), which is not in this repository. The
 modules are the KiCad library's models. The angled pin headers are
 estimated; no board is built.
+It holds STEP models, part by part with the print of both sides, of the 4
+kinds of module on that carrier: the Waveshare RP2350-CAN (blue), an INA3221
+board with 3 shunts (black), the Mini560 buck converter (blue) and a USB-C PD
+trigger board (purple). The same models are the 3D models of their
+footprints in the KiCad library. Part places are read from sellers' and the
+maker's straight views laid onto each board's frame, within 0.2mm to 0.5mm;
+no height is measured and no board is measured with a caliper.
 It holds a STEP model of a standard size servo with a round horn, black with
 the white print "Standard Servo", from an owner sketch with dimensions: case
 40.5mm x 20.0mm x 36.3mm, mounting holes 49.5mm x 10.0mm apart. The horn's

@@ -93,14 +93,16 @@ pad is a hole through the module board. The model uses the
 footprint's coordinate system: origin at pad 1, z = 0 on the carrier's top side, so the
 footprint places it with no offset, scale or rotation.
 
-Five modules have a `MODEL` of the one key `detail`: the INA219 board with
-the print CJMCU, the charger board, the boost board, the ESP32-C6-Zero
-and the Core2350B. Their models come from the specs of the same name in
+Nine modules have a `MODEL` of the one key `detail`: the INA219 board with
+the print CJMCU, the charger board, the boost board, the ESP32-C6-Zero,
+the Core2350B, the RP2350-CAN, the INA3221 board, the mini buck (Mini560)
+and the PD trigger. Their models come from the specs of the same name in
 [hardware/mechanical](../mechanical/README.md#module-boards-and-cells),
 which draw each board part by part with its print, in the board's own
 colour, with round holes and arcs as cylinders. The INA219 board stands
-on a 6-pin header, the Core2350B on four 2 x 8 headers, the other three
-lie flat.
+on a 6-pin header, the INA3221 board on an 8-pin header, the RP2350-CAN on
+two headers of 20 pins, the Core2350B on four 2 x 8 headers; the other
+five lie flat.
 
 The 4 ES3C28P socket headers share one model builder in
 `modules/_jst_ph.py`: a floor 0.6mm thick with the pin holes, four walls
@@ -109,9 +111,9 @@ carrier's top side to 4.6mm over it.
 
 | Mount | Modules | Position |
 | --- | --- | --- |
-| header | RP2350-CAN, INA3221, INA219, ADS1115, ADXL345, mini buck, Core2350B | on 2.54mm male headers: 2.5mm plastic on the carrier, pins 6.0mm below the plastic and 3.0mm above it, module underside 2.5mm above the carrier |
+| header | RP2350-CAN, INA3221, INA219, ADS1115, ADXL345, Core2350B | on 2.54mm male headers: 2.5mm plastic on the carrier, pins 6.0mm below the plastic and 3.0mm above it, module underside 2.5mm above the carrier |
 | angled | AS5600 | right-angle 2.54mm headers under the board: 2.54mm plastic on the carrier, pins out horizontally 1.27mm above the carrier, 9.5mm from the hole, over the nearest board edge |
-| flat | MATEK INA228, XT90 INA228, PD Power Mini, PD trigger, T-plug | wired; the module's underside rests on the carrier |
+| flat | MATEK INA228, XT90 INA228, PD Power Mini, PD trigger, mini buck, T-plug | wired or soldered at its pads; the module's underside rests on the carrier |
 | flat | the 4 ES3C28P socket headers | the header's floor rests on the carrier, its pins through it |
 
 Sources of the heights, as each spec lists them:
@@ -125,15 +127,12 @@ Sources of the heights, as each spec lists them:
 No source gives a board thickness; boards are drawn 1.6mm (the WeAct
 model measures 1.69mm over copper). The exact part fitted to a board is not always
 identified: the XT90 variant and the INA219 terminal are the closest
-catalogue parts. No source was found for the RP2350-CAN heights, the PD
-trigger, the mini buck or the T-plug. The boards of the box models are
-drawn green (owner, 2026-10-28), whatever the colour of the real board,
-except 4 that have the real board's colour (owner, 2026-11-21): the
-RP2350-CAN and the mini buck blue, the INA3221 module and the PD trigger
-black. The
-five `detail` models keep the real board's colour; for the INA219 board, the
-charger board, the boost board and the ESP32-C6-Zero that is an owner decision
-(2026-11-21). Parts omitted from a spec
+catalogue parts. No source was found for the T-plug. The boards of the box
+models are drawn green (owner, 2026-10-28), whatever the colour of the real
+board. The nine `detail` models keep the real board's colour (owner,
+2026-11-21): the RP2350-CAN and the mini buck are blue, the INA3221 board
+black, the PD trigger purple, as three owner photos show it. Parts omitted
+from a spec
 are also absent from its model: bottom-side parts (the detail models
 draw them), the RP2350-CAN
 castellations, the XT90 board's milled slots and the AS5600 magnet.

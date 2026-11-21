@@ -18,6 +18,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `esp32_c6_zero.py` | spec of the Waveshare ESP32-C6-Zero |
 | `core2350b.py` | spec of the Waveshare Core2350B and its USB adapter board |
 | `es3c28p.py` | spec of the LCDWIKI ES3C28P, the display node's board: 2.8" display, ESP32-S3, sockets |
+| `rp2350_can.py`, `ina3221_module.py`, `dcdc_buck_mini.py`, `usbc_pd_trigger.py` | specs of 4 module boards, part by part: Waveshare RP2350-CAN, INA3221 board, Mini560 buck converter, USB-C PD trigger board |
 | `rbmod_v2.py` | spec of the rbmod carrier board, version 2: with its SMD parts, and with its connectors and modules |
 | `_read_kicad_pcb.py` | reads a KiCad board file's outline, holes and footprints into a data file |
 | `_rbmod_v2_data.py` | outline, holes and footprints of the rbmod board, version 2, written by `_read_kicad_pcb.py` |
@@ -35,7 +36,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `_measure_step.py` | measures Waveshare's STEP file of the panel board with OpenCASCADE |
 | `_solid.py` | profiles of straight sides and arcs pushed along an axis, and round rods along a path of lines and arcs, turned and moved, as solids with flat, cylindrical and toroidal faces |
 | `_parts.py` | shapes of electronic parts: chip parts, leaded packages, wire sockets, USB sockets, card slot, buttons, pin header, shunt, both halves of the XT90PW |
-| `check_overlap.py` | fails when two solids share volume in the panel board's model, in the INA228 module with its case, in one of the 5 module boards, in the Core2350B's USB adapter board, in the ES3C28P, in a cell, in the standard servo, in the KST X10, in the WitMotion sensor or in one of the 2 models of the rbmod carrier |
+| `check_overlap.py` | fails when two solids share volume in the panel board's model, in the INA228 module with its case, in one of the 5 module boards, in the Core2350B's USB adapter board, in the ES3C28P, in a cell, in the standard servo, in the KST X10, in the WitMotion sensor, in one of the 2 models of the rbmod carrier or in one of its 4 module boards |
 | `check_panel_7b.py` | holds the panel board's model against Waveshare's STEP file |
 | `gen_models.py` | writes `models/` from the specs; `--check` fails on drift |
 | `_stl.py` | reads a binary STL and splits it into its closed parts |
@@ -678,6 +679,58 @@ Limits:
   and the STEP file lacks, and the notches the panel's tabs leave in the
   edges.
 
+## Module boards of the rbmod carrier
+
+Four module boards drawn part by part with the print of both sides. Each
+model is also the 3D model of its footprint in the
+[KiCad library](../kicad/README.md), in the same frame and mounted there:
+the RP2350-CAN on two pin headers of 20, the INA3221 board on a header of
+8, the other two flat on the carrier. The files here hold the bare boards.
+
+| | |
+| --- | --- |
+| ![RP2350-CAN](renders/rp2350_can.png) | ![INA3221 board](renders/ina3221_module.png) |
+| `rp2350_can.step` | `ina3221_module.step` |
+| ![Mini560 buck converter](renders/dcdc_buck_mini.png) | ![USB-C PD trigger board](renders/usbc_pd_trigger.png) |
+| `dcdc_buck_mini.step` | `usbc_pd_trigger.step` |
+
+| File | Content | Size, mm | Sources, none in the repository |
+| --- | --- | --- | --- |
+| `rp2350_can.step` | Waveshare RP2350-CAN, blue: 40 edge pads, USB-C socket, 2 buttons, RP2350A, XL2515, SIT65HVD230, flash, buck converter, 2 crystals, slide switch, 3-way screw terminal, 52 chip parts, 3 wire openings, pad names on the underside; 632 solids, 7.3MB | 21.0 x 51.0, 1.6 thick; terminal 8.8 over the board; USB-C 1.1 and terminal 0.5 past the ends | Waveshare's product photos of 1600 x 1200px, top side and underside; its schematic; its dimension drawing for the pad grid |
+| `ina3221_module.step` | INA3221 board, black: 20 plated holes, INA3221, 3 shunts R100, 5 LEDs, 28 chip parts, 4 pairs of bridge pads, hole names on the underside; 299 solids, 3.3MB | 38.0 x 31.8, 1.6 thick; parts to 0.9 | a seller's pictures of 1024 x 1024px, top side and underside; 2 owner photos for the holes |
+| `dcdc_buck_mini.step` | Mini560 buck converter, blue: 4 corner pads with 2 holes each, enable hole, inductor 4R7, 6 capacitors 1206, controller, 10 chip parts, LED; 137 solids, 1.3MB | 30.0 x 18.0, 1.6 thick; inductor 3.8, 5.4 over all | a seller's pictures of 800 x 800px, top side and underside, and its dimension drawing |
+| `usbc_pd_trigger.step` | USB-C PD trigger board, purple: USB-C socket, 3-way switch, 10-lead chip, regulator, 2 capacitors 1206, 9 chip parts, LED, the voltage table on the underside; 158 solids, 1.9MB | 30.0 x 20.0, 1.6 thick; USB-C 3.3 over the board and 1.1 past the edge | a seller's picture of 517 x 405px with both sides; a second seller's 3 angled pictures; 3 owner photos |
+
+How the places are found: each straight view is laid onto the board's
+frame by known points, the pad holes of the KiCad spec or, for the PD
+trigger board, the board's 4 corners. The holes then fit within 0.02mm
+(RP2350-CAN, Mini560) and 0.2mm (INA3221 board). Part places are read
+from the rectified picture at 30 to 40px/mm.
+
+No maker publishes a 3D file of any of the four. One third-party STEP file
+of the Mini560 exists (one solid of 125 faces, in a KiCad library on
+GitHub); it is not used.
+
+Limits:
+
+- Part places are within about 0.2mm (RP2350-CAN), 0.3mm (INA3221 board,
+  Mini560) and 0.5mm (PD trigger board). No board is measured with a
+  caliper.
+- No height is measured. Packages have their class figures; the terminal
+  is drawn 8.8mm, the Mini560's inductor 3.8mm, the PD trigger board's
+  switch 2.5mm. Every board is drawn 1.6mm thick.
+- The kinds of the chip parts are read from their colour.
+- Not drawn: the half holes at the edges of the RP2350-CAN and the
+  Mini560, the maker's sign under the RP2350-CAN, solder, and the print's
+  frames round single parts. The print has no underscore.
+- The Mini560's enable hole is drawn at the KiCad footprint's place, 9.4mm
+  from the input end. The seller's top view gives 9.0mm. Which is right is
+  not known.
+- The INA3221 board's 6 channel holes and 3 large holes are empty. What
+  joins them to a carrier is not drawn.
+- The PD trigger board's sliders stand at one end; their real places set
+  the voltage.
+
 ## rbmod carrier board, version 2
 
 The carrier of the modular bench: a board of 80.0mm x 89.0mm with a notch
@@ -692,7 +745,7 @@ RP2350-CAN, an INA3221 module, 2 mini buck converters and a USB-C PD
 | File | Content | Size, mm |
 | --- | --- | --- |
 | `rbmod_v2_smd.step` | the board with 129 holes and its 17 surface-mounted parts: 9 resistors 1206, 3 resistors 0402, 2 capacitors 0603, 1 capacitor 1210, 1 SMB diode, 1 SMC diode; 52 solids, 0.8MB | 80.0 x 89.0, 1.579 thick, parts to 2.5 over the board |
-| `rbmod_v2.step` | the same with 3 JST PH headers of 4 pins and 2 of 2 pins, 2 angled pin headers of 3 x 4 pins and the 5 modules; 324 solids, 3.8MB | 85.4 x 89.0; 11.1 over the board, 6.0 under its top side |
+| `rbmod_v2.step` | the same with 3 JST PH headers of 4 pins and 2 of 2 pins, 2 angled pin headers of 3 x 4 pins and the 5 modules, each part by part; 1566 solids, 17.6MB | 85.3 x 89.0; 13.0 over the board, 6.0 under its top side |
 
 Frame: origin at the outline's lower left corner seen from the top side,
 x to the right, y up, z = 0 on the top side.
@@ -701,15 +754,15 @@ Height over the board's top side, mm:
 
 | Part | Height |
 | --- | --- |
-| RP2350-CAN | 11.1 |
-| Mini buck converters | 8.6 |
+| RP2350-CAN, its screw terminal | 13.0 |
 | Angled pin headers | 7.6 |
 | JST PH headers | 6.0 |
-| INA3221 module | 5.5 |
-| USB-C PD trigger board | 4.8 |
+| INA3221 board, its header pins | 5.5 |
+| Mini buck converters | 5.5 |
+| USB-C PD trigger board | 4.9 |
 | SMD parts | 2.5 |
 
-Past the outline: the RP2350-CAN reaches 1.1mm over the left edge, the
+Past the outline: the RP2350-CAN reaches 1.0mm over the left edge, the
 angled headers' pins 4.3mm over the right edge.
 
 Not populated (owner, 2026-11-21): J6, a JST PH header of 4 pins at the
@@ -728,9 +781,12 @@ python3 hardware/mechanical/_read_kicad_pcb.py \
 ```
 
 The 5 modules are the models of [the KiCad library](../kicad/README.md),
-whose footprints the board uses: each module's drilled pads on the board
-agree with its spec, and each header pin stands in a drilled pad of the
-carrier.
+whose footprints the board uses, drawn
+[part by part](#module-boards-of-the-rbmod-carrier): each module's drilled
+pads on the board agree with its spec, and each header pin stands in a
+drilled pad of the carrier. The RP2350-CAN and the INA3221 board stand on
+pin headers. The 2 buck converters and the PD trigger board lie on the
+carrier, as three owner photos of a built carrier show them.
 
 Limits:
 
@@ -740,9 +796,9 @@ Limits:
   bar of 2.54mm with pins that end 15.12mm from the first row.
 - Copper, solder mask openings, print, vias and solder joints are not
   drawn. The board is green.
-- The mini buck converter's enable pad has a hole of 0.8mm. A header pin
-  of 0.64mm square is 0.91mm across its corners and does not fit it; the
-  model draws that pin 0.5mm square.
+- The mini buck converter's enable pad has a hole of 0.8mm in the
+  carrier's footprint. A header pin of 0.64mm square is 0.91mm across its
+  corners and does not fit it. The model draws no pin there.
 - The reader handles lines and circles on Edge.Cuts and footprints on the
   top side. It stops at an arc in the outline or a footprint on the
   underside.

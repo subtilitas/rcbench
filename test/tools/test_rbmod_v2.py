@@ -19,8 +19,8 @@ sys.path.insert(0, str(ROOT / "hardware" / "mechanical"))
 sys.path.insert(0, str(ROOT / "hardware" / "kicad" / "tools"))
 import _read_kicad_pcb as reader  # noqa: E402
 import _solid  # noqa: E402
+import gen_all  # noqa: E402
 import rbmod_v2  # noqa: E402
-import step_gen  # noqa: E402
 
 BOARD = """(kicad_pcb (general (thickness 1.2))
  (gr_line (start 10 20) (end 30 20) (layer "Edge.Cuts"))
@@ -120,16 +120,16 @@ def test_an_unknown_footprint_is_refused():
 
 
 def test_the_two_models_differ_by_the_through_hole_parts():
-    """52 solids with the SMD parts, 324 with connectors and modules."""
+    """52 solids with the SMD parts, 1566 with connectors and modules."""
     built = rbmod_v2.parts(None)
     assert sorted(built) == ["rbmod_v2", "rbmod_v2_smd"]
     assert len(built["rbmod_v2_smd"]) == 52
-    assert len(built["rbmod_v2"]) == 324
+    assert len(built["rbmod_v2"]) == 1566
     assert built["rbmod_v2"][:52] == built["rbmod_v2_smd"]
     assert extent(rbmod_v2.board() + rbmod_v2.placed(True))[5] == (
         pytest.approx(2.5))
     box = extent(rbmod_v2.placed(False))
-    assert (box[2], box[5]) == pytest.approx((-6.0, 11.1))
+    assert (box[2], box[5]) == pytest.approx((-6.0, 12.96), abs=0.01)
     # J6 and J8 are not populated: nothing stands on their pads.
     assert box[1] == pytest.approx(6.87, abs=0.01)
 
@@ -148,8 +148,7 @@ def test_smd_parts_lie_on_the_board_at_their_places():
 
 
 def test_module_pins_stand_in_the_carriers_holes():
-    """Every pin that reaches under the carrier lies on a drilled pad."""
-    gold = step_gen.COLORS["gold"]
+    """Every header pin under the carrier lies on a drilled pad."""
     count = 0
     for fp in rbmod_v2.data.FOOTPRINTS:
         if not fp["ref"].startswith("M"):
@@ -157,27 +156,34 @@ def test_module_pins_stand_in_the_carriers_holes():
         shapes = _solid.place(rbmod_v2.part(fp), x=fp["at"][0],
                               y=fp["at"][1], turn=fp["turn"])
         for shape in shapes:
-            if shape[4] != gold or shape[2] >= 0.0:
-                continue
             box = extent([shape])
+            if box[2] > -5.9:
+                continue
             cx, cy = (box[0] + box[3]) / 2, (box[1] + box[4]) / 2
             x, y, d = min(fp["drills"],
                           key=lambda q: math.dist(q[:2], (cx, cy)))
             assert math.dist((x, y), (cx, cy)) < 0.01
-            side = box[3] - box[0]
-            assert side * math.sqrt(2) < d
+            assert (box[3] - box[0]) * math.sqrt(2) < d
             count += 1
-    assert count == 40 + 8 + 9 + 9
+    assert count == 40 + 8
 
 
-def test_the_buck_converters_enable_pin_is_drawn_thin():
-    """Its hole is 0.8; a 0.64 pin is 0.91 across its corners."""
-    spec = rbmod_v2._board.kicad_spec("dcdc_buck_mini")
-    small = [pad for pad in spec.FOOTPRINT["pads"]
-             if pad.get("drill") and pad["drill"] < 0.95]
-    assert [pad["drill"] for pad in small] == [0.8]
-    assert step_gen.HDR_PIN * math.sqrt(2) > 0.8
-    assert rbmod_v2.THIN * math.sqrt(2) < 0.8
+def test_flat_modules_lie_on_the_carrier():
+    """The buck converters and the PD trigger board have no pins."""
+    by = {fp["ref"]: fp for fp in rbmod_v2.data.FOOTPRINTS}
+    for ref, top in (("M6", 4.91), ("M7", 5.47), ("M8", 5.47)):
+        box = extent(rbmod_v2.part(by[ref]))
+        assert (box[2], box[5]) == pytest.approx((0.02, top), abs=0.01)
+
+
+def test_modules_are_the_library_models():
+    """Each module's shapes are those of its KiCad model."""
+    for name, stem in rbmod_v2.MODULES.items():
+        spec = rbmod_v2._board.kicad_spec(stem)
+        assert spec.MODEL == {"detail": stem}
+        assert spec.NAME == name
+        assert _solid.items(rbmod_v2.module(name)) == gen_all.detail(
+            spec.MODEL)
 
 
 def test_connectors():
