@@ -15,6 +15,21 @@ history is in git.
   2,568 in all (428 a shard).
 - `test_mutate.py` runs `mutate.py` with `mutation.yml`'s own arguments
   and fails when the run no longer lists `shared/safety` first.
+- `hardware/mechanical/`: `core2350b.step`, the Waveshare Core2350B
+  (RP2350B, 25.40mm x 25.40mm, 64 plated holes at 2.54mm, flash and PSRAM
+  on the underside), and `core2350b_usb_adapter.step`, its USB adapter
+  board (18.0mm x 18.0mm, USB-C, BOOT, RESET, 4 holes of 2.0mm), from
+  Waveshare's drawings, schematic, photos and the RP2350-Tiny adapter's
+  STEP file. The overlap check covers both
+  ([Mechanical parts](hardware/mechanical/README.md#module-boards-and-cells)).
+- `hardware/kicad/`: `Core2350B_Waveshare_25.4x25.4mm`, footprint, symbol
+  and 3D model on four 2 x 8 headers; pads numbered as Waveshare's headers
+  P1 to P4 ([KiCad library](hardware/kicad/README.md#core2350b)).
+- `hardware/kicad/`: `ES3C28P_PWR`, `ES3C28P_UART`, `ES3C28P_I2C` and
+  `ES3C28P_GPIO`, one symbol and one JST PH 2.0mm top-entry header
+  footprint each, for 1:1 cables from the display node's ES3C28P sockets;
+  `ES3C28P_PWR` feeds the ES3C28P's USB-C VBUS
+  ([KiCad library](hardware/kicad/README.md#es3c28p-sockets)).
 - `hardware/mechanical/`: `servo_standard.step`, a standard size servo with
   a round horn, black with the white print "Standard Servo", from an owner
   sketch with dimensions: case 40.5mm x 20.0mm x 36.3mm, 2 ears with 2 open
