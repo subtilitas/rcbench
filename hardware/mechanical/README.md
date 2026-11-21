@@ -19,6 +19,9 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `core2350b.py` | spec of the Waveshare Core2350B and its USB adapter board |
 | `es3c28p.py` | spec of the LCDWIKI ES3C28P, the display node's board: 2.8" display, ESP32-S3, sockets |
 | `rp2350_can.py`, `ina3221_module.py`, `dcdc_buck_mini.py`, `usbc_pd_trigger.py` | specs of 4 module boards, part by part: Waveshare RP2350-CAN, INA3221 board, Mini560 buck converter, USB-C PD trigger board |
+| `matek_mbec12s.py` | spec of the Matek mBEC12S buck converter, 6V to 60V in |
+| `ina228_node.py` | layout of the remote INA228 sensor node: INA228 module, buck converter and display in place |
+| `_gen_node_case.py` | builds the 3 parts of the sensor node's case with OpenCASCADE, checks their fit round the layout's solids, writes STEP and STL |
 | `rbmod_v2.py` | spec of the rbmod carrier board, version 2: with its SMD parts, and with its connectors and modules |
 | `_read_kicad_pcb.py` | reads a KiCad board file's outline, holes, footprints, and the pads, tracks and vias of its 2 outer layers into a data file; the copper needs shapely |
 | `_rbmod_v2_data.py` | outline, holes, footprints and outer copper of the rbmod board, version 2, written by `_read_kicad_pcb.py` |
@@ -56,6 +59,7 @@ python3 hardware/mechanical/check_refit.py         # needs numpy; 2 minutes
 python3 hardware/mechanical/check_overlap.py       # 2 minutes
 python3 hardware/mechanical/_gen_dial_base.py --check   # 1 minute
 python3 hardware/mechanical/_gen_flap_drive.py --check  # 10 seconds
+python3 hardware/mechanical/_gen_node_case.py --check   # 20 seconds
 xvfb-run -a python3 hardware/kicad/tools/step_render.py \
     hardware/mechanical/renders --size 640 480 \
     --step hardware/mechanical/models/*.step
@@ -684,6 +688,128 @@ Limits:
   to the board, 3 chip parts of 0402 beside RESET that the photos show
   and the STEP file lacks, and the notches the panel's tabs leave in the
   edges.
+
+## Remote INA228 sensor node, layout
+
+The boards of the remote sensor node in the places a case will hold
+them: the [INA228 module](#ina228-module-with-xt90-connectors) at the
+bottom, the [display board](#display-node-board-lcdwiki-es3c28p) on top,
+a Matek mBEC12S buck converter between them. The node has no cell and no
+charger board: the converter feeds it with 5V from the measured line of
+6V to 60V. No part is changed; each is the model of its own spec, moved
+and turned. A [case](#case-of-the-sensor-node) of 3 printed parts holds
+them.
+
+| | |
+| --- | --- |
+| ![Sensor node layout](renders/ina228_node_layout.png) | ![Matek mBEC12S](renders/matek_mbec12s.png) |
+| `ina228_node_layout.step` | `matek_mbec12s.step` |
+
+| File | Content | Size, mm | Origin |
+| --- | --- | --- | --- |
+| `ina228_node_layout.step` | INA228 module, buck converter, display board; 1139 solids, 10.3MB | 86.4 x 50.0 x 23.7 | the INA228 module's: header pin 1 on the board's underside |
+| `matek_mbec12s.step` | Matek mBEC12S, black: 4 edge pads OUT, G, G, IN 2.54 apart, inductor with the print 100, diode SS56, converter chip, 3 capacitors, LED, 13 chip parts, 2 voltage pads, the print of both sides; 147 solids, 1.8MB | 18.0 x 15.0, 1.2 thick; 4.5 over all | the pad OUT on the board's edge, on the underside |
+
+| Part | x, mm | y, mm | z, mm |
+| --- | --- | --- | --- |
+| INA228 module | -58.4 to 25.0 | -4.2 to 44.4 | -1.1 to 11.5 |
+| Buck converter | -30.0 to -12.0 | 29.0 to 44.0 | 3.1 to 7.65 |
+| Display board | -59.1 to 27.3 | -4.9 to 45.1 | 12.0 to 22.6 |
+
+- The shunt with the minus bar (y 10.0 to 18.1) and the plus bar (y 22.5
+  to 27.6, its solder to 28.5 on the underside) carry the whole current.
+  The converter lies beside them, 0.5mm past the plus bar's solder and
+  1.5mm over the board, between the 2 connector housings. The strip it
+  lies in is 15.9mm wide, the converter 15.0mm. Its 4 pads face the plug
+  half.
+- The display's long side runs along the INA228 board's long side, the
+  centers of the 2 boards over each other, its USB Type-C socket at the
+  socket half's end. Its lowest part is 0.5mm over the connector
+  housings, which end 11.5mm over the board's underside.
+- Not drawn: wires and anything that holds the parts.
+
+The converter is drawn from 6 seller pictures, none in the repository:
+a top view with the dimensions 18mm, 15mm and 2.54mm printed on it, and
+a view of the underside. Part places are read from the top view by eye
+at 23px/mm, within about 0.5mm. Sellers' listings give 18 x 15 x 4.5mm
+and 2g. No height but the 4.5mm over all is known; the board's thickness
+is read off an angled picture. The half holes of the edge pads are not
+drawn. Output is 5V as delivered; a solder bridge on the pad 9V or 12V
+sets that voltage.
+
+### Case of the sensor node
+
+A printed case of 3 parts round the layout, 91.4mm x 55.4mm x 28.0mm. It
+has no ears; the node hangs in its cable.
+
+![Case of the sensor node](renders/ina228_node_case.png)
+
+| | | |
+| --- | --- | --- |
+| ![Taken apart](renders/ina228_node_case_exploded.png) | ![Cut open](renders/ina228_node_case_section.png) | ![Plug end](renders/ina228_node_case_back.png) |
+
+| File | Content | Print |
+| --- | --- | --- |
+| `ina228_node_plate.step`, `.stl` | bottom plate, 2.4mm thick, with 4 stands of 6.4mm under the INA228 board's holes, each with a hole of 3.4mm and a recess of 6.0mm x 2.2mm for a screw's head; 12.0cm3 | underside down, no support |
+| `ina228_node_frame.step`, `.stl` | wall of 2.4mm from the plate to the display board's back, 18.3mm high, with 4 columns that stand on the INA228 board and carry the display board; 15.1cm3 | upper face down, no support; the 2 XT90 openings are bridges of 21.4mm |
+| `ina228_node_bezel.step`, `.stl` | rim round the display board, 7.3mm high, a plate of 1.2mm over the touch panel with the window, 4 posts on the display board's holes; 7.5cm3 | front down, no support |
+
+Assembly, 8 screws M3 and 8 threaded inserts ruthex RX-M3Sx4.0:
+
+1. Melt 2 inserts into each column of the frame, one from each end. The
+   holes are 4.0mm wide and 6.0mm deep.
+2. Put the INA228 module on the plate's stands, the frame over it. 4
+   screws M3 x 8 with pan heads go from below through the plate and the
+   board's holes into the columns' feet. The board is clamped between
+   stands and columns.
+3. Lay the display board on the columns, the bezel over it. 4 screws
+   M3 x 10 go from above through the bezel's posts and the board's holes
+   into the columns' tops.
+
+Each column joins a hole of the INA228 board to a hole of the display
+board; the two lie 4.2mm apart. Under the display board the column's
+lobe at the INA228 hole steps back in 4 steps of 0.65mm, clear of chip
+parts that hang 0.9mm down from that board.
+
+| Opening | Where | Size, mm |
+| --- | --- | --- |
+| XT90, 2 | each end wall, round the housing | 21.4 x 10.5 |
+| USB Type-C | end wall over the socket half's opening, through frame and bezel | 13.0 x 4.4 |
+| RESET, BOOT | a slot under the USB notch | 26.6 x 2.6 |
+| microSD | long wall at the header's side | 16.0 x 2.8 |
+| Speaker | 4 slots in the other long wall | 1.6 x 7.0 each, 3.2 apart |
+| Microphone | bezel, over the board's microphone hole | 1.6 round |
+| Display | bezel, 0.5 round the view area | 59.1 x 44.6 |
+
+Limits:
+
+- RESET and BOOT are pressed from the display board's back, towards the
+  display. They have no push rod: a tool of 2mm at most goes through the
+  slot, 5.9mm in from the wall's outer face, and levers the plunger up.
+- The USB socket's axis is 3.6mm over the top of the XT90 housing under
+  it. A USB plug thicker than 7.0mm meets the plug in that housing.
+- The speaker is not chosen and not drawn. The room behind its slots is
+  18mm x 14mm x 10mm, beside the speaker socket.
+- The converter has no seat in the case. A foam pad of 1.5mm on the
+  INA228 board carries it; pad and wires are not drawn.
+- The touch panel lies 0.2mm under the bezel's plate, which is 1.2mm
+  thick: the panel's face is 1.4mm under the case's front.
+- No part is printed. The fits are drawn, not tried: 0.3mm round the
+  display board, 1.0mm at the INA228 board's long sides.
+
+`_gen_node_case.py` builds the parts from boxes and upright cylinders
+and checks them: each part is one valid solid, no two parts share
+volume, and no part shares volume with one of the 1139 solids of
+`ina228_node_layout.step`. The parts seat on the copper rings (0.05mm)
+and the print (0.02mm) that the board models draw round their holes.
+
+```sh
+pip install cadquery-ocp==8.0.1.1.0
+python3 hardware/mechanical/_gen_node_case.py            # write STEP and STL
+python3 hardware/mechanical/_gen_node_case.py --check    # CI
+xvfb-run -a python3 hardware/mechanical/_gen_node_case.py \
+    --render hardware/mechanical/renders
+```
 
 ## Module boards of the rbmod carrier
 
