@@ -6,6 +6,13 @@ history is in git.
 
 ## Unreleased
 
+### Changed
+
+- [hardware/kicad/README.md](hardware/kicad/README.md) limits the rule that
+  boards are drawn green to the box models: the five `detail` models keep the
+  real board's colour (owner, 2026-11-21, for the INA219 board, the charger
+  board, the boost board and the ESP32-C6-Zero).
+
 ## 0.23.16 - 2026-11-21
 
 0.23.16 is a testing release. SETUP > WIRELESS opens a SEARCH screen from
@@ -129,10 +136,6 @@ The entries below cover the 11 pull requests merged since v0.23.15: #893 to
 
 ### Changed
 
-- [hardware/kicad/README.md](hardware/kicad/README.md) limits the rule that
-  boards are drawn green to the box models: the five `detail` models keep the
-  real board's colour (owner, 2026-11-21, for the INA219 board, the charger
-  board, the boost board and the ESP32-C6-Zero).
 - The IOmcu's update and the update of the Dial, the power node and the
   balance node refuse the supply's OUTPUT ON, PROG 5V ON and a programmer
   session's start while they run, as the C6 radio's update does; the alert
