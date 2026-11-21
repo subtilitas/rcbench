@@ -33,17 +33,22 @@ The boards:
   (output slots, the PD mini UART, the phase tap, the programming ports),
   then a programming session.  Each mix in the table names the document
   or code that promises or refuses it.
-- board 3, the remote servo node, defined in the node's plan (PLAN.md,
-  outside this repository): its program set is a table here, each entry
-  naming the PLAN.md section.  Besides its table, every order of up to 9
-  plain DShot, bidirectional DShot and PPM (pulse-position modulation)
-  slots runs with each programming session, the session opened after the
-  slots and before them, against the limits of PLAN.md 2.8.  A PPM slot
-  places as a plain DShot slot does (ppm_tx and dshot_tx are both 4 words
-  without an origin, the tool checks it), so the sweep runs each order
-  once and adds the PPM slots' DMA channels.  The capture ring's event
-  rate of each mix is held against the 42ms flash window
-  (PLAN.md 2.3).
+- board 3, the remote servo node: board 3 is planned; its program set
+  is the planned one, a table here.  PIO0 holds a fixed load from boot:
+  MIRROR (copies input k to output k, 1 word), CAPTURE (pushes every edge
+  of the 9 inputs and 9 outputs, 6 words, 2 chained DMA channels) and the
+  PD mini UART, all pinned to PIO0 before any slot binds; the UART link
+  to the display board takes 1 DMA channel.  PIO1 and PIO2 take the
+  throttle slots and a programming session's line.  Besides the table,
+  every order of up to 9 plain DShot, bidirectional DShot and PPM
+  (pulse-position modulation) slots runs with each programming session,
+  the session opened after the slots and before them, against
+  rsn_allows().  A PPM slot places as a plain DShot slot does (ppm_tx and
+  dshot_tx are both 4 words without an origin, the tool checks it), so
+  the sweep runs each order once and adds the PPM slots' DMA channels.
+  The capture ring's event rate of each mix is held against the 42ms
+  flash window; a window that laps the ring is a gap in the capture
+  figures, not an error.
 
 The tool fails when a mix that a board's table allows does not fit, and
 when a mix the table refuses fits: the table is then wrong the other way.
@@ -500,7 +505,7 @@ class Use:
             transmitter, receiver) through claim_pair(), ("fixed", program,
             block) into that block only.
         dma: DMA channels it claims.
-        ref: The code or plan section it is read from.
+        ref: The code it is read from, or the fact it stands for.
     """
 
     label: str
@@ -549,7 +554,7 @@ class Mix:
         name: What it holds.
         uses: Its uses after the board's boot uses, in the order they bind.
         fits: True when the board allows it, False when it refuses it.
-        ref: The document, code or plan section that says so.
+        ref: The document or code that says so, or the reason.
     """
 
     name: str
@@ -739,24 +744,25 @@ BOARD_RBMOD = Board(
             "the tap's 22 words leave no block 24 free words"),
     ))
 
-# Board 3.  Every reference is a section of the remote servo node's
-# PLAN.md.
-_P23 = "PLAN.md 2.3"
-_P28 = "PLAN.md 2.8"
-RSN_MIRROR = Use("MIRROR", (("fixed", "pass_mirror", 0),), 0, _P23)
+# Board 3, planned.
+RSN_MIRROR = Use("MIRROR", (("fixed", "pass_mirror", 0),), 0,
+                 "copies input k to output k, pinned to PIO0 at boot")
 RSN_CAPTURE = Use("CAPTURE", (("fixed", "pass_capture", 0),), 2,
-                  _P23 + ": 2 chained DMA channels")
+                  "every edge of 18 pins, 2 chained DMA channels, PIO0")
 RSN_PD_UART = Use("PD mini UART", (("fixed", "pd_uart_tx", 0),
                                    ("fixed", "pd_uart_rx", 0)), 0,
-                  _P28 + ", PIO0 row")
+                  "pinned to PIO0 at boot")
 RSN_LINK_RX = Use("UART link receive", (), 1,
-                  "PLAN.md 2.4: UART0 RX into a 1KiB ring, 1 DMA channel")
+                  "UART0 RX into a 1KiB ring by 1 DMA channel")
 
 #: PPM slots board 3 allows: 3 fixed DMA channels and 2 a PPM slot stay
-#: within 16.  PLAN.md 2.8 leaves the DMA count to this tool.
+#: within 16.
 RSN_PPM_MAX = 6
-#: Output pins of board 3 (PLAN.md 1.3).
+#: Output pins of board 3, GPIO16 to GPIO32, even.
 RSN_OUTPUTS = 9
+_SLOTS = "PIO1 and PIO2 for slots"
+_ONE = "a session's line takes one block, the other is for slots"
+_PRE = "the precharge sampler takes a state machine of the slots' block"
 
 
 def _packs(blocks: list[int], singles: int, pairs: int) -> bool:
@@ -779,7 +785,7 @@ def _packs(blocks: list[int], singles: int, pairs: int) -> bool:
 
 def rsn_allows(session: Use | None, singles: int, pairs: int,
                ppm: int) -> bool:
-    """True when board 3's table allows a mix (PLAN.md 2.8).
+    """True when board 3's table allows a mix.
 
     PIO0 holds the fixed load.  Without a session PIO1 and PIO2 take
     throttle slots, 4 state machines each.  A session's line takes one of
@@ -807,41 +813,41 @@ def rsn_allows(session: Use | None, singles: int, pairs: int,
 
 
 def _rsn_mixes() -> tuple[Mix, ...]:
-    """Board 3's table: the limits PLAN.md 2.8 states, and the refusals.
+    """Board 3's table: the limits rsn_allows() states, and the refusals.
 
     Returns:
         The mixes.
     """
     rows = [
-        Mix("boot only", (), True, "PLAN.md 2.3, 2.4, 2.8"),
+        Mix("boot only", (), True, "PIO0: 19 words, 4 state machines"),
         Mix("8 plain DShot", _x(DSHOT, 8), True,
-            _P28 + ": 8 plain while no session holds PIO1"),
+            _SLOTS + ": 4 plain each"),
         Mix("4 bidirectional DShot", _x(BIDIR, 4), True,
-            _P28 + ": 4 bidirectional while no session holds PIO1"),
+            _SLOTS + ": 2 bidirectional each"),
         Mix("4 bidirectional DShot, 5 servo PWM", _x(BIDIR, 4)
-            + _x(SERVO, 5), True, _P23 + ", the capture's worst case"),
+            + _x(SERVO, 5), True, "the capture's worst case"),
     ]
     for s in (KST, ESCWIRE, HITEC):
         rows += [
             Mix(f"4 plain DShot, {s.label}", _x(DSHOT, 4) + (s,), True,
-                _P28 + ", PIO1 row"),
+                _ONE),
             Mix(f"2 bidirectional DShot, {s.label}", _x(BIDIR, 2) + (s,),
-                True, _P28 + ", PIO1 row"),
+                True, _ONE),
             Mix(f"1 bidirectional and 2 plain DShot, {s.label}",
-                (BIDIR,) + _x(DSHOT, 2) + (s,), True, _P28 + ", PIO1 row"),
+                (BIDIR,) + _x(DSHOT, 2) + (s,), True, _ONE),
         ]
     rows += [
         Mix("3 plain DShot, Hitec D session with precharge",
-            _x(DSHOT, 3) + (HITEC_PRE,), True, _P28 + ", PIO2 row"),
+            _x(DSHOT, 3) + (HITEC_PRE,), True, _PRE),
         Mix("1 bidirectional and 1 plain DShot, Hitec D session with "
             "precharge", (BIDIR, DSHOT, HITEC_PRE), True,
-            _P28 + ", PIO2 row"),
+            _PRE),
         Mix("4 plain DShot, Hitec D session with precharge",
             _x(DSHOT, 4) + (HITEC_PRE,), False,
-            _P28 + ", PIO2 row: the sampler takes a state machine"),
+            _PRE),
         Mix("2 bidirectional DShot, Hitec D session with precharge",
             _x(BIDIR, 2) + (HITEC_PRE,), False,
-            _P28 + ", PIO2 row: the sampler takes a state machine"),
+            _PRE),
         Mix("6 PPM", _x(PPM, 6), True, "RSN_PPM_MAX: 15 of 16 DMA channels"),
         Mix("7 PPM", _x(PPM, 7), False, "RSN_PPM_MAX: 17 of 16 DMA channels"),
     ]
@@ -852,8 +858,8 @@ BOARD_RSN = Board(
     3, "remote servo node (planned)", (16, 35),
     boot=(RSN_MIRROR, RSN_CAPTURE, RSN_PD_UART, RSN_LINK_RX),
     mixes=_rsn_mixes(),
-    planned=(("pass_mirror", 1, _P23 + " MIRROR"),
-             ("pass_capture", 6, _P23 + " CAPTURE, about 6 words")),
+    planned=(("pass_mirror", 1, "MIRROR: mov pins, pins"),
+             ("pass_capture", 6, "CAPTURE: a compare loop, about 6")),
     sweep=True)
 
 BOARDS = (BOARD_RP2350_CAN, BOARD_RBMOD, BOARD_RSN)
@@ -861,26 +867,26 @@ BOARDS = (BOARD_RP2350_CAN, BOARD_RBMOD, BOARD_RSN)
 
 # ---------------------------------------------------------------- the sweep
 
-#: The capture ring of board 3: 64KiB of 8-byte events (PLAN.md 2.3).
+#: The capture ring of board 3: 64KiB of 8-byte events.
 RING_EVENTS = 64 * 1024 // 8
 #: The longest flash window, in ms (docs/Safety.md).
 FLASH_WINDOW_MS = 42
-#: Receiver inputs of board 3, each captured (PLAN.md 2.3).
+#: Receiver inputs of board 3, each captured.
 RSN_INPUTS = 9
-#: The fastest servo frame rate the capture is sized for, Hz (PLAN.md 2.3).
+#: The fastest servo frame rate the capture is sized for, Hz.
 PWM_HZ = 560
 #: Events a second of a bidirectional DShot pin: 32 edges of a frame and
-#: up to 21 of the reply, 1000 frames a second (PLAN.md 2.3).
+#: up to 21 of the reply, 1000 frames a second.
 BIDIR_EVENTS = (32 + 21) * 1000
 
 
 def ppm_events(root: pathlib.Path = ROOT) -> int:
     """Events a second of a PPM output at its shortest frame.
 
-    PLAN.md does not count PPM in the capture.  The figure here is the
-    upper bound by protocols/ppm/include/ppm.h: 2 edges a run and
-    PPM_MAX_CHANNELS + 1 runs a frame, in a frame of PPM_MAX_CHANNELS
-    channels at PPM_CHANNEL_MIN_US and a gap of PPM_SYNC_MIN_US.
+    The figure is the upper bound by protocols/ppm/include/ppm.h: 2 edges
+    a run and PPM_MAX_CHANNELS + 1 runs a frame, in a frame of
+    PPM_MAX_CHANNELS channels at PPM_CHANNEL_MIN_US and a gap of
+    PPM_SYNC_MIN_US.
 
     Args:
         root: The repository.
@@ -1106,7 +1112,7 @@ def report(board: Board, progs: dict[str, Program],
                      f"{RING_EVENTS * 1000 // FLASH_WINDOW_MS:,} events/s")
         lines.append("  a flash window can lap the ring with: "
                      + ("; ".join(sw.lapping) or "none")
-                     + " (PLAN.md 2.3: a measurement gap, not an error)")
+                     + " (a gap in the capture figures, not an error)")
         failures += [f"board {board.number}: allowed, does not fit: {f}"
                      for f in sw.failures]
     return lines, failures

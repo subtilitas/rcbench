@@ -302,7 +302,7 @@ def fixture_progs():
 
 @pytest.mark.parametrize("brd", pb.BOARDS, ids=lambda b: str(b.number))
 def test_every_board_passes_with_the_real_sources(brd, progs):
-    """Boards 1 and 2 with today's .pio files, and board 3's plan."""
+    """Boards 1 and 2 with today's .pio files, and board 3 as planned."""
     lines, failures = pb.report(brd, progs, pb.ppm_events(REPO))
     assert failures == []
     assert lines[0].startswith(f"Board {brd.number},")
@@ -318,7 +318,7 @@ def test_main_passes_on_the_tree(capsys):
 
 
 def test_today_s_lengths(progs):
-    """The lengths PLAN.md 2.8 and docs/Link.md quote."""
+    """The lengths docs/Link.md quotes, and the rest of today's programs."""
     got = {n: progs[n].length for n in (
         "dshot_tx", "dshot_bidir_tx", "dshot_rx", "ppm_tx", "pd_uart_tx",
         "pd_uart_rx", "tone_cap", "kst_line", "ew_line", "hitec_line")}
@@ -328,7 +328,7 @@ def test_today_s_lengths(progs):
                    "hitec_line": 30}
 
 
-def test_board_3_boot_is_plan_2_8_pio0(progs):
+def test_board_3_boot_fills_pio0(progs):
     """PIO0: MIRROR 1, CAPTURE 6, UART 4 and 8: 19 words, 4 machines."""
     bp = pb.board_programs(pb.BOARD_RSN, progs)
     out = pb.run(pb.BOARD_RSN, (), bp)
@@ -378,7 +378,10 @@ def test_a_table_that_refuses_what_fits_fails(progs):
     (pb.HITEC_PRE, 2, 1, 0, False),
 ])
 def test_board_3_table(session, singles, pairs, ppm, allowed):
-    """PLAN.md 2.8: 8 plain or 4 bidirectional, one block in a session."""
+    """8 plain or 4 bidirectional slots; a session leaves one block.
+
+    The Hitec D precharge sampler takes one state machine of that block.
+    """
     assert pb.rsn_allows(session, singles, pairs, ppm) is allowed
 
 
@@ -420,7 +423,7 @@ def test_ppm_must_place_as_plain_dshot(progs):
         pb.sweep(pb.BOARD_RSN, bp, 0)
 
 
-def test_capture_figures_are_plan_2_3():
+def test_capture_figures():
     """20,160/s and 406ms; the worst case 227,680/s and 36ms; 195,047/s."""
     assert pb.capture_rate(0, 0, 0, 0) == 20160
     assert round(pb.ring_ms(20160)) == 406
