@@ -41,12 +41,15 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `_parts.py` | shapes of electronic parts: chip parts, leaded packages, wire sockets, USB sockets, card slot, buttons, pin header, shunt, both halves of the XT90PW |
 | `check_overlap.py` | fails when two solids share volume in the panel board's model, in the INA228 module with its case, in one of the 5 module boards, in the Core2350B's USB adapter board, in the ES3C28P, in a cell, in the standard servo, in the KST X10, in the WitMotion sensor, in one of the 2 models of the rbmod carrier or in one of its 4 module boards |
 | `check_panel_7b.py` | holds the panel board's model against Waveshare's STEP file |
-| `gen_models.py` | writes `models/` from the specs; `--check` fails on drift |
+| `gen_models.py` | writes `models/` from the specs; `--check` fails on drift and on a file under `models/` that `_models.py` does not account for |
+| `_models.py` | names the folder of each model under `models/`: `pcb`, `casing` or `parts` |
 | `_stl.py` | reads a binary STL and splits it into its closed parts |
 | `_refit.py` | fits planes, cylinders, cones, tori and a thread's surfaces to a mesh part |
 | `_surface.py`, `_segment.py` | the surfaces and their fits, and the faces grown on them, for `_refit.py` |
 | `check_refit.py` | holds the dial's solids, read back with OpenCASCADE, against the mesh |
-| `models/` | the generated STEP files |
+| `models/pcb/` | 17 models: 16 boards with their parts and the sensor node's layout; STEP |
+| `models/casing/` | 7 printed parts: the Dial's base, the sensor node's case, the INA228 module's case, the flap drive's frame; STEP, and STL for 5 of them |
+| `models/parts/` | 13 models of bought parts and of assemblies: emergency stop button, M5Stack Dial and its nut, 2 servos, 2 cells, inertial sensor, the flap drive's assembly and wing; STEP |
 | `renders/` | OpenCASCADE renders of the models and the contact sheet `all.png` |
 | `vendor/` | third-party meshes, unchanged, each with its licence |
 
@@ -62,10 +65,11 @@ python3 hardware/mechanical/_gen_flap_drive.py --check  # 10 seconds
 python3 hardware/mechanical/_gen_node_case.py --check   # 20 seconds
 xvfb-run -a python3 hardware/kicad/tools/step_render.py \
     hardware/mechanical/renders --size 640 480 \
-    --step hardware/mechanical/models/*.step
+    --step hardware/mechanical/models/*/*.step
 xvfb-run -a python3 hardware/kicad/tools/step_render.py \
     hardware/mechanical/renders --size 640 480 --from XposYnegZneg \
-    --suffix _back --step hardware/mechanical/models/es3c28p.step
+    --suffix _back \
+    --step hardware/mechanical/models/pcb/es3c28p.step
 ```
 
 ## Emergency stop button, M16
@@ -1105,7 +1109,7 @@ Under the MIT (Massachusetts Institute of Technology) licence instead:
 
 - `vendor/m5stack_dial/Dial.stl`, M5Stack's mesh
   ([vendor/m5stack_dial/LICENSE](vendor/m5stack_dial/LICENSE));
-- `models/m5dial.step` and `models/m5dial_nut.step`, M5Stack's geometry
+- `models/parts/m5dial.step` and `models/parts/m5dial_nut.step`, M5Stack's geometry
   fitted to that mesh ([M5Stack Dial](#m5stack-dial));
 - `_font.py`, letter outlines traced from OpenCV's single-stroke Hershey
   font ([LICENSE](../../LICENSE)).

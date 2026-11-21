@@ -12,7 +12,7 @@ file.  Neither file is in the tree: the assembly is 65MB and the model
     python3 tools/video_cad.py rcbench_case.stp
 
     python3 tools/video_cad.py --solids \
-        hardware/mechanical/models/m5dial.step \
+        hardware/mechanical/models/parts/m5dial.step \
         -o tools/video/cad/m5dial.glb
 
 With --solids the model holds one mesh a solid, named solid-0, solid-1 and

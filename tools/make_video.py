@@ -1038,13 +1038,13 @@ def main() -> int:
             and not (VIDEO / "cad" / "m5dial.glb").is_file():
         sys.exit("tools/video/cad/m5dial.glb is missing; tools/video_cad.py "
                  "--solids writes it from "
-                 "hardware/mechanical/models/m5dial.step")
+                 "hardware/mechanical/models/parts/m5dial.step")
     if board.get("dial_base"):
         for part in DIAL_BASE:
             if not (VIDEO / "cad" / f"{part}.glb").is_file():
                 sys.exit(f"tools/video/cad/{part}.glb is missing; "
                          "tools/video_cad.py --solids writes it from "
-                         f"hardware/mechanical/models/{part}.step")
+                         f"hardware/mechanical/models/*/{part}.step")
     for n, scene in enumerate(board["scenes"]):
         if scene["type"] != "board":
             continue

@@ -103,6 +103,12 @@ history is in git.
 
 ### Changed
 
+- `hardware/mechanical/models/` is sorted into 3 folders: `pcb/` (17
+  models: 16 boards and the sensor node's layout), `casing/` (7 printed
+  parts) and `parts/` (13 bought parts and assemblies). `_models.py` names
+  each model's folder; every generator and check asks it for a path.
+  `gen_models.py --check` fails on a file under `models/` that lies
+  elsewhere. File names are unchanged.
 - Dial base: the 4 screws turn into brass threaded inserts for melting
   in (ruthex RX-M3Sx4.0; owner, 2026-11-21) in place of threads cut in the
   plastic. Each boss of the top part has a hole of 4.0mm, 5.0mm deep, and

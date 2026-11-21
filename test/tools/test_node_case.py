@@ -46,9 +46,9 @@ def test_parts_fit_the_layout(built):
 def test_files_are_current(built):
     """The STEP files hold what the spec builds."""
     for stem, solid in built.items():
-        path = case.MODELS / f"{stem}.step"
+        path = case._models.path(stem)
         assert path.read_text() == case.step_text(stem, solid)
-        assert (case.MODELS / f"{stem}.stl").stat().st_size > 10000
+        assert case._models.path(stem, ".stl").stat().st_size > 10000
 
 
 def test_case_has_its_size(built):

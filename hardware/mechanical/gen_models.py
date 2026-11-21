@@ -5,7 +5,8 @@ The specs are hardware/mechanical/*.py other than this file, the checks
 (check_*.py) and the helpers (_*.py); each defines
 ``parts(colors)``, a dict of file stem to solids as
 hardware/kicad/tools/step_gen.py's ``write`` takes them. The models go
-to hardware/mechanical/models/<stem>.step.
+to hardware/mechanical/models/<folder>/<stem>.step; _models.py
+names each stem's folder.
 
 Usage:
     python3 hardware/mechanical/gen_models.py           write the files
@@ -21,8 +22,8 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-MODELS = HERE / "models"
 sys.path.insert(0, str(HERE.parent / "kicad" / "tools"))
+import _models  # noqa: E402
 import step_gen  # noqa: E402
 
 
@@ -53,8 +54,7 @@ def outputs():
     out = {}
     for spec in load_specs():
         for stem, items in spec.parts(step_gen.COLORS).items():
-            out[MODELS / f"{stem}.step"] = (step_gen.write(stem, items),
-                                            items)
+            out[_models.path(stem)] = (step_gen.write(stem, items), items)
     return out
 
 
@@ -82,7 +82,11 @@ def main(argv):
             print(f"wrote {path.relative_to(HERE.parent.parent)}")
     for p in stale:
         print(f"STALE {p}: run hardware/mechanical/gen_models.py")
-    return 1 if stale else 0
+    strays = _models.strays()
+    for p in strays:
+        print(f"STRAY {p.relative_to(HERE.parent.parent)}: not where "
+              "hardware/mechanical/_models.py puts it")
+    return 1 if stale or strays else 0
 
 
 if __name__ == "__main__":

@@ -306,11 +306,11 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
   follow the module's footprint, whose EN pad is placed within about
   0.5mm. The parts are drawn as axial parts; the zener's package on a
   reworked board is not stated in the tree.
-- The `dial` model is `hardware/mechanical/models/m5dial.step`, which is in
+- The `dial` model is `hardware/mechanical/models/parts/m5dial.step`, which is in
   the tree; the converted model (0.9MB) is not:
 
   ```sh
-  python3 tools/video_cad.py --solids hardware/mechanical/models/m5dial.step \
+  python3 tools/video_cad.py --solids hardware/mechanical/models/parts/m5dial.step \
       -o tools/video/cad/m5dial.glb
   ```
 
@@ -322,7 +322,7 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
   ```sh
   for part in dial_base_top dial_base_bottom m5dial_nut; do
       python3 tools/video_cad.py --solids \
-          hardware/mechanical/models/$part.step -o tools/video/cad/$part.glb
+          hardware/mechanical/models/*/$part.step -o tools/video/cad/$part.glb
   done
   ```
 
