@@ -1,25 +1,49 @@
 // ESP32-P4, -S3 and -C6 over Web Serial with esptool-js: connect, detect the
-// chip, write the merged image at 0x0, compare the MD5 of the flash with the
-// image, reset. esptool-js loads on the first connect, so the page's first
-// load stays small.
+// chip, write the ranges of the write plan (src/partitions.ts), compare the
+// MD5 of each written flash range with the image, reset. esptool-js loads on
+// the first connect, so the page's first load stays small.
 
 import { chipFromEspName } from './boards.ts';
 import type { Chip } from './boards.ts';
 import { md5Hex } from './digest.ts';
 import { StepError } from './rp2350.ts';
 
-/** The rate esptool-js asks the flasher stub for. USB-Serial-JTAG ignores it. */
+/** The rate esptool-js asks the flasher stub for behind a USB-to-UART bridge. */
 export const ESP_BAUD = 460800;
 export const ROM_BAUD = 115200;
 
+/** USB ID of the USB Serial/JTAG built into the ESP32-P4, -S3 and -C6. */
+export const USB_SERIAL_JTAG = { usbVendorId: 0x303a, usbProductId: 0x1001 } as const;
+
+/**
+ * The rate for the flasher stub on a port. On the built-in USB Serial/JTAG
+ * the rate has no effect, and the change makes esptool-js reopen the port,
+ * which resets the chip: the page stays at 115200 baud there. A USB-to-UART
+ * bridge gets 460800 baud.
+ */
+export function stubBaud(info: { usbVendorId?: number; usbProductId?: number }): number {
+  const jtag = info.usbVendorId === USB_SERIAL_JTAG.usbVendorId && info.usbProductId === USB_SERIAL_JTAG.usbProductId;
+  return jtag ? ROM_BAUD : ESP_BAUD;
+}
+
 export type EspStep = 'connect' | 'write' | 'verify' | 'reset';
+
+/** Bytes of the image for one address of the flash. */
+export interface EspChunk {
+  address: number;
+  data: Uint8Array;
+}
 
 export interface EspSession {
   chip: Chip | null;
   /** The chip as esptool-js describes it, with its revision. */
   description: string;
-  write(data: Uint8Array, onProgress: (done: number, total: number) => void): Promise<void>;
-  verify(data: Uint8Array): Promise<void>;
+  /** The rate the flasher stub runs at. */
+  baud: number;
+  /** Writes each chunk at its address; the progress counts image bytes over all chunks. */
+  write(chunks: readonly EspChunk[], onProgress: (done: number, total: number) => void): Promise<void>;
+  /** Compares the MD5 of the flash with the MD5 of each chunk, over exactly the written bytes. */
+  verify(chunks: readonly EspChunk[]): Promise<void>;
   reset(): Promise<void>;
   close(): Promise<void>;
 }
@@ -45,7 +69,9 @@ export async function connectEsp(port: SerialPort, log: (line: string) => void):
     writeLine: (s: string): void => log(s),
     write: (s: string): void => log(s),
   };
-  const loader = new ESPLoader({ transport, baudrate: ESP_BAUD, romBaudrate: ROM_BAUD, terminal });
+  const baud = stubBaud(port.getInfo());
+  if (baud === ROM_BAUD) log(`USB Serial/JTAG (303a:1001): the rate stays at ${ROM_BAUD} baud`);
+  const loader = new ESPLoader({ transport, baudrate: baud, romBaudrate: ROM_BAUD, terminal });
   const description = await inStep('connect', async () => {
     try {
       return await loader.main('default_reset');
@@ -58,20 +84,29 @@ export async function connectEsp(port: SerialPort, log: (line: string) => void):
   return {
     chip,
     description,
-    write: (data, onProgress) => inStep('write', () => loader.writeFlash({
-      fileArray: [{ data, address: 0 }],
-      flashMode: 'keep',
-      flashFreq: 'keep',
-      flashSize: 'keep',
-      eraseAll: false,
-      compress: true,
-      reportProgress: (_i, written, total) => onProgress(written, total),
-    })),
-    verify: (data) => inStep('verify', async () => {
-      const image = padTo4(data);
-      const want = md5Hex(image);
-      const got = (await loader.flashMd5sum(0, image.length)).toLowerCase();
-      if (got !== want) throw new Error(`MD5 of the flash ${got}, of the image ${want}`);
+    baud,
+    write: (chunks, onProgress) => inStep('write', () => {
+      const total = chunks.reduce((n, c) => n + c.data.length, 0);
+      const before = chunks.map((_, i) => chunks.slice(0, i).reduce((n, c) => n + c.data.length, 0));
+      return loader.writeFlash({
+        fileArray: chunks.map((c) => ({ data: c.data, address: c.address })),
+        flashMode: 'keep',
+        flashFreq: 'keep',
+        flashSize: 'keep',
+        eraseAll: false,
+        compress: true,
+        // esptool-js counts compressed bytes of one chunk; the page shows image bytes of all.
+        reportProgress: (i, written, size) => onProgress(
+          before[i]! + (size > 0 ? Math.round((written / size) * chunks[i]!.data.length) : 0), total),
+      });
+    }),
+    verify: (chunks) => inStep('verify', async () => {
+      for (const c of chunks) {
+        const bytes = padTo4(c.data);
+        const want = md5Hex(bytes);
+        const got = (await loader.flashMd5sum(c.address, bytes.length)).toLowerCase();
+        if (got !== want) throw new Error(`MD5 of the flash at 0x${c.address.toString(16)} ${got}, of the image ${want}`);
+      }
     }),
     reset: () => inStep('reset', async () => {
       await loader.after('hard_reset');
