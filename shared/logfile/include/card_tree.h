@@ -15,6 +15,9 @@
  *     ESCW/CONF/               ESC settings files read over the signal wire,
  *                              such as ESCW001-AM32, and the record of a
  *                              write, ESCW.TXT
+ *     SETUP/                   the panel's settings: SETTINGS.TXT and the
+ *                              automatic copies AUTO1.TXT to AUTO3.TXT
+ *                              (settings_backup.h)
  *     RCBENCH.LOG              the fault log, at most 1MiB
  *     RCBENCH.OLD              the fault log before the last 1MiB
  *   /USER/
@@ -108,8 +111,14 @@ extern "C" {
 #define CARD_BALANCE     "BENCH/BALANCE"
 
 /**
- * @brief The deepest folder of bench area @p i: the 4 CONF folders above
- *        and CARD_BALANCE.
+ * @brief The panel's settings as text files: SAVE SETTINGS' file and the
+ *        automatic copies (settings_backup.h).
+ */
+#define CARD_SETUP       "BENCH/SETUP"
+
+/**
+ * @brief The deepest folder of bench area @p i: the 4 CONF folders above,
+ *        CARD_BALANCE and CARD_SETUP.
  *
  * The one list of the bench's own areas.  card_folder_check() refuses a log
  * folder in an area; fm_rules.c holds each folder of the list and every
@@ -199,8 +208,8 @@ typedef enum {
     CARD_FOLDER_RESERVED,  /**< a device name: CON, PRN, AUX, NUL, COM1 to
                                 COM9, LPT1 to LPT9                         */
     CARD_FOLDER_BENCH,     /**< the bench's own: BENCH/ESC, BENCH/KST,
-                                BENCH/HITEC, BENCH/ESCW, BENCH/BALANCE and
-                                below                                      */
+                                BENCH/HITEC, BENCH/ESCW, BENCH/BALANCE,
+                                BENCH/SETUP and below                      */
 } card_folder_t;
 
 /**

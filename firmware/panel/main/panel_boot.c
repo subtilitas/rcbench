@@ -24,6 +24,7 @@
 #include "panel.h"
 #include "panel_main.h"
 #include "panel_perf.h"
+#include "sbk_ctl.h"
 #include "panel_trial.h"
 #include "rcbench_version.h"
 #include "selftest.h"
@@ -144,6 +145,9 @@ bool bring_up(void)
      * the status DISCARD on SETUP waits on. */
     settings_set_armed(bench_armed);
     settings_init();
+    /* Whether the store held nothing but the defaults: the settings
+     * backup's restore offer at the card's first mount (sbk_ctl.h). */
+    sbk_init();
     /* And once unconditionally, whatever settings_init() told the observer:
      * a bench left at the defaults still has to tell the far end what it
      * is, and each snapshot the control task reads starts zeroed.  The
