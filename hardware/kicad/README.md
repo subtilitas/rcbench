@@ -126,8 +126,11 @@ No source gives a board thickness; boards are drawn 1.6mm (the WeAct
 model measures 1.69mm over copper). The exact part fitted to a board is not always
 identified: the XT90 variant and the INA219 terminal are the closest
 catalogue parts. No source was found for the RP2350-CAN heights, the PD
-trigger, the mini buck or the T-plug. The boards of these box models are
-drawn green (owner, 2026-10-28), whatever the colour of the real board. The
+trigger, the mini buck or the T-plug. The boards of the box models are
+drawn green (owner, 2026-10-28), whatever the colour of the real board,
+except 4 that have the real board's colour (owner, 2026-11-21): the
+RP2350-CAN and the mini buck blue, the INA3221 module and the PD trigger
+black. The
 five `detail` models keep the real board's colour; for the INA219 board, the
 charger board, the boost board and the ESP32-C6-Zero that is an owner decision
 (2026-11-21). Parts omitted from a spec

@@ -207,6 +207,7 @@ SYMBOL = {
 # 1.5mm, CAN terminal 7.0mm. The castellations are not modelled.
 MODEL = {
     "mount": "header",
+    "color": "blue",        # the real board (owner, 2026-11-21)
     "pins": [str(n) for n in range(1, 41)],
     "bodies": [
         ("box",) + USB + (3.2, "metal"),

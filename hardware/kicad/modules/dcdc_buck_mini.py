@@ -60,6 +60,7 @@ SYMBOL = {
 # measured; other parts are not drawn. No source for this board was found.
 MODEL = {
     "mount": "header",
+    "color": "blue",        # the real board (owner, 2026-11-21)
     "pins": ["1", "2", "3", "4", "5"],
     "bodies": [("box", 7.8, 0.4, 18.5, 10.4, 4.5, "chip")],
 }
