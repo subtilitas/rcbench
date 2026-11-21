@@ -98,6 +98,10 @@ image compressed at 0x0 with flash mode, frequency and size kept as in the
 image, read the MD5 (Message-Digest 5) of the written range from the stub
 and compare it with the MD5 of the image, hard reset.
 
+On 21 November 2026 the page wrote v0.23.15 to a panel over the ESP32-P4's
+own USB-Serial-JTAG (USB ID 303A:1001), chip revision 3.2: 7,572,864 bytes
+in 40s.
+
 ## RP2350: PICOBOOT over WebUSB
 
 The RP2350 cannot be flashed over Web Serial. In BOOTSEL it is a USB drive
