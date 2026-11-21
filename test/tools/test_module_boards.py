@@ -3,7 +3,8 @@
 The RP2350-CAN, the INA3221 board, the Mini560 buck converter and the
 USB-C PD trigger board: every solid closes, each board is as large as
 its footprint, its holes are the footprint's, the parts named in its
-spec are there, and the mounted model stands as the board is mounted.
+spec are there, and the mounted model stands as the board is mounted: three on pin
+headers, the PD trigger board flat.
 
 SPDX-License-Identifier: MIT
 """
@@ -26,7 +27,7 @@ import rp2350_can  # noqa: E402
 import usbc_pd_trigger  # noqa: E402
 
 SPECS = [(rp2350_can, 632, 674), (ina3221_module, 299, 308),
-         (dcdc_buck_mini, 137, 137), (usbc_pd_trigger, 158, 158)]
+         (dcdc_buck_mini, 137, 149), (usbc_pd_trigger, 158, 158)]
 
 
 def extent(shapes):
@@ -98,7 +99,8 @@ def test_boards_have_their_colours():
 
 def test_header_boards_stand_on_their_headers():
     """Underside 2.5 over the carrier, pins 6.0 under it."""
-    for spec, pins in ((rp2350_can, 40), (ina3221_module, 8)):
+    for spec, pins in ((rp2350_can, 40), (ina3221_module, 8),
+                       (dcdc_buck_mini, 8)):
         shapes = spec.mounted()
         assert extent(shapes)[2] == pytest.approx(-6.0)
         plate = spec.mounted()[0]
@@ -108,13 +110,12 @@ def test_header_boards_stand_on_their_headers():
         assert len(gold) == pins
 
 
-def test_flat_boards_lie_on_the_carrier():
-    """The buck converter and the PD trigger board lie flat."""
-    for spec in (dcdc_buck_mini, usbc_pd_trigger):
-        box = extent(spec.mounted())
-        assert box[2] == pytest.approx(0.02, abs=0.001)
-        assert extent(spec.mounted()[:1])[2] == pytest.approx(0.055,
-                                                              abs=0.001)
+def test_the_pd_trigger_board_lies_on_the_carrier():
+    """The PD trigger board lies flat, its print on the carrier."""
+    box = extent(usbc_pd_trigger.mounted())
+    assert box[2] == pytest.approx(0.02, abs=0.001)
+    assert extent(usbc_pd_trigger.mounted()[:1])[2] == pytest.approx(
+        0.055, abs=0.001)
 
 
 def test_rp2350_can_parts():

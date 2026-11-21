@@ -685,7 +685,8 @@ Four module boards drawn part by part with the print of both sides. Each
 model is also the 3D model of its footprint in the
 [KiCad library](../kicad/README.md), in the same frame and mounted there:
 the RP2350-CAN on two pin headers of 20, the INA3221 board on a header of
-8, the other two flat on the carrier. The files here hold the bare boards.
+8, the Mini560 on four headers of 2, the PD trigger board flat on the
+carrier. The files here hold the bare boards.
 
 | | |
 | --- | --- |
@@ -757,8 +758,8 @@ Height over the board's top side, mm:
 | RP2350-CAN, its screw terminal | 13.0 |
 | Angled pin headers | 7.6 |
 | JST PH headers | 6.0 |
+| Mini buck converters | 8.0 |
 | INA3221 board, its header pins | 5.5 |
-| Mini buck converters | 5.5 |
 | USB-C PD trigger board | 4.9 |
 | SMD parts | 2.5 |
 
@@ -784,9 +785,9 @@ The 5 modules are the models of [the KiCad library](../kicad/README.md),
 whose footprints the board uses, drawn
 [part by part](#module-boards-of-the-rbmod-carrier): each module's drilled
 pads on the board agree with its spec, and each header pin stands in a
-drilled pad of the carrier. The RP2350-CAN and the INA3221 board stand on
-pin headers. The 2 buck converters and the PD trigger board lie on the
-carrier, as three owner photos of a built carrier show them.
+drilled pad of the carrier. The RP2350-CAN, the INA3221 board and the 2
+buck converters stand on pin headers (owner, 2026-11-21). The PD trigger
+board lies on the carrier.
 
 Limits:
 

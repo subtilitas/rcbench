@@ -15,7 +15,7 @@ laid onto the board by its 8 corner holes, which fit within 0.02mm, and
 part places are read from it at 40px/mm, within about 0.3mm. The
 underside's print is read from the unrectified view at 22px/mm, within
 about 0.5mm. Three owner photos of 2 boards on a carrier show the same
-parts and the boards soldered flat onto the carrier.
+parts.
 
 Drawn on the top side: the inductor 10.3 x 10.2 with its print 4R7 and
 its 2 tabs, 2 input and 4 output capacitors (1206), the controller
@@ -30,8 +30,9 @@ board's 2 short edges and the print's frames round the parts are not
 drawn. The enable hole is drawn at the KiCad spec's place, 9.4 from the
 input end; the seller's top view gives 9.0.
 
-Mounted, the board lies on the carrier, soldered at its 4 corner pads;
-solder and the enable wire are not drawn.
+Mounted, the board stands on 4 pin headers of 2, one under each corner
+pad, its underside 2.5 over the carrier (owner, 2026-11-21). The enable
+hole has no pin; solder and the enable wire are not drawn.
 
 Frame: the KiCad model's. Origin at pad 1 on the board's underside (on
 the carrier's top side for the mounted model), x to the right, y up.
@@ -141,12 +142,20 @@ def bare():
 
 
 def mounted():
-    """The board lying on the carrier, as shapes."""
-    return s.place(bare(), z=p.PAD + p.PRINT)
+    """The board on its 4 pin headers of 2, as shapes.
+
+    The headers' plastic stands on z = 0 and the board's underside pads
+    lie on it.
+    """
+    out = s.place(bare(), z=2.5 + p.PAD + p.PRINT)
+    header = p.pin_header(2, below=6.0, above=3.0)
+    for x, ys in CORNERS:
+        out += B.through(header, *at(x, sum(ys) / 2), 90.0)
+    return out
 
 
 def kicad_model():
-    """The model of the KiCad footprint: the board lying flat."""
+    """The model of the KiCad footprint: the board on its headers."""
     return s.items(mounted())
 
 

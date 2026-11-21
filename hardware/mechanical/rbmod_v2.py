@@ -1,6 +1,7 @@
 """The rbmod carrier board, version 2: with its SMD parts, and complete.
 
-    rbmod_v2_smd   the board with its 17 surface-mounted parts
+    rbmod_v2_smd   the board with its copper and its 17 surface-mounted
+                   parts
     rbmod_v2       the same with 7 through-hole connectors and the
                    5 modules
 
@@ -32,11 +33,16 @@ Estimated: the angled 3 x 4 pin headers as a plastic bar 2.54mm thick,
 row, the F.Fab drawing's reach. They are not taken from a maker's
 drawing.
 
-Not drawn: copper, solder mask openings, print, vias, the modules'
-solder joints. The board is drawn green and 1.579mm thick, the board
-file's stack. The RP2350-CAN and the INA3221 board stand on their
-headers' plastic, 2.5mm over the carrier; the 2 buck converters and the
-PD trigger board lie on the carrier.
+The copper of the 2 outer layers is drawn from the board file: the
+pads, gold and 0.035mm thick, and the tracks, the vias and the filled
+zones, 0.02mm thick in a lighter green, as copper shows under the
+solder mask. Every part stands on the pads' top, 0.035mm over the
+board.
+
+Not drawn: the inner layers, the print, the vias' holes, solder. The
+board is drawn green and 1.579mm thick, the board file's stack. The RP2350-CAN, the INA3221 board and the 2 buck
+converters stand on their headers' plastic, 2.5mm over the carrier; the
+PD trigger board lies on the carrier.
 
 Frame: origin at the outline's lower left corner seen from the top
 side, x to the right, y up, z = 0 on the top side, mm.
@@ -63,6 +69,7 @@ MODULES = {"RP2350-CAN": "rp2350_can", "INA3221_Module": "ina3221_module",
            "DCDC_Buck_Mini_30x18mm_EN": "dcdc_buck_mini",
            "USBC_PD_Trigger_DIP3_30x20mm": "usbc_pd_trigger"}
 DNP = ("J6", "J8")              # not populated (owner, 2026-11-21)
+COPPER = ((0.17, 0.62, 0.31), 0.02)  # copper under the mask; thickness
 ANGLED = (2.54, 1.52, 15.12)    # bar's thickness, its gap to the third
 #                                 row, the pins' reach from the first row
 
@@ -158,10 +165,25 @@ def unpopulated(footprint):
 
 
 def board():
-    """The carrier with every drilled pad and the 6 holes."""
+    """The carrier: plate, holes, and the copper of its 2 outer layers.
+
+    The pads are p.PAD thick and gold. The tracks, the vias and the
+    filled zones are COPPER[1] thick in a lighter green, as copper
+    shows under the solder mask.
+    """
     drills = [d for fp in data.FOOTPRINTS for d in fp["drills"]]
-    return [s.ext(list(data.OUTLINE), -data.THICKNESS, 0.0, GREEN, holes=[
+    t = data.THICKNESS
+    out = [s.ext(list(data.OUTLINE), -t, 0.0, GREEN, holes=[
         s.circle(x, y, d / 2) for x, y, d in list(data.HOLES) + drills])]
+    rgb, thick = COPPER
+    for areas, z0, z1, colour in (
+            (data.PADS_TOP, 0.0, p.PAD, p.GOLD),
+            (data.PADS_BOTTOM, -t - p.PAD, -t, p.GOLD),
+            (data.COPPER_TOP, 0.0, thick, rgb),
+            (data.COPPER_BOTTOM, -t - thick, -t, rgb)):
+        out += [s.ext(outer, z0, z1, colour, holes=holes)
+                for outer, holes in areas]
+    return out
 
 
 def placed(smd):
@@ -174,7 +196,7 @@ def placed(smd):
     for fp in data.FOOTPRINTS:
         if fp["smd"] == smd and not unpopulated(fp):
             out += s.place(part(fp), x=fp["at"][0], y=fp["at"][1],
-                           turn=fp["turn"])
+                           z=p.PAD, turn=fp["turn"])
     return out
 
 

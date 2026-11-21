@@ -81,8 +81,7 @@ history is in git.
 - KiCad library: 4 module models have the real board's colour in place of
   green: the RP2350-CAN and the mini buck converter blue, the INA3221
   board black (owner, 2026-11-21), the USB-C PD trigger board purple, as
-  three owner photos show it. The mini buck converter lies flat on its
-  carrier in place of standing on a header
+  three owner photos show it
   ([hardware/kicad/README.md](hardware/kicad/README.md)).
 - Flap drive model (`hardware/mechanical/_gen_flap_drive.py`): the wing's
   upper skin ends 4.45mm before the flap, so the flap turns 20.3 degrees

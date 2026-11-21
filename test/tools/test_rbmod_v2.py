@@ -165,15 +165,17 @@ def test_module_pins_stand_in_the_carriers_holes():
             assert math.dist((x, y), (cx, cy)) < 0.01
             assert (box[3] - box[0]) * math.sqrt(2) < d
             count += 1
-    assert count == 40 + 8
+    assert count == 40 + 8 + 8 + 8
 
 
-def test_flat_modules_lie_on_the_carrier():
-    """The buck converters and the PD trigger board have no pins."""
+def test_the_pd_trigger_board_lies_on_the_carrier():
+    """It has no pins; the buck converters stand 2.5 over the carrier."""
     by = {fp["ref"]: fp for fp in rbmod_v2.data.FOOTPRINTS}
-    for ref, top in (("M6", 4.91), ("M7", 5.47), ("M8", 5.47)):
+    box = extent(rbmod_v2.part(by["M6"]))
+    assert (box[2], box[5]) == pytest.approx((0.02, 4.91), abs=0.01)
+    for ref in ("M7", "M8"):
         box = extent(rbmod_v2.part(by[ref]))
-        assert (box[2], box[5]) == pytest.approx((0.02, top), abs=0.01)
+        assert (box[2], box[5]) == pytest.approx((-6.0, 7.97), abs=0.01)
 
 
 def test_modules_are_the_library_models():

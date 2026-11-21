@@ -101,8 +101,8 @@ and the PD trigger. Their models come from the specs of the same name in
 which draw each board part by part with its print, in the board's own
 colour, with round holes and arcs as cylinders. The INA219 board stands
 on a 6-pin header, the INA3221 board on an 8-pin header, the RP2350-CAN on
-two headers of 20 pins, the Core2350B on four 2 x 8 headers; the other
-five lie flat.
+two headers of 20 pins, the mini buck on four headers of 2 pins, the
+Core2350B on four 2 x 8 headers; the other four lie flat.
 
 The 4 ES3C28P socket headers share one model builder in
 `modules/_jst_ph.py`: a floor 0.6mm thick with the pin holes, four walls
@@ -111,9 +111,9 @@ carrier's top side to 4.6mm over it.
 
 | Mount | Modules | Position |
 | --- | --- | --- |
-| header | RP2350-CAN, INA3221, INA219, ADS1115, ADXL345, Core2350B | on 2.54mm male headers: 2.5mm plastic on the carrier, pins 6.0mm below the plastic and 3.0mm above it, module underside 2.5mm above the carrier |
+| header | RP2350-CAN, INA3221, INA219, ADS1115, ADXL345, mini buck, Core2350B | on 2.54mm male headers: 2.5mm plastic on the carrier, pins 6.0mm below the plastic and 3.0mm above it, module underside 2.5mm above the carrier |
 | angled | AS5600 | right-angle 2.54mm headers under the board: 2.54mm plastic on the carrier, pins out horizontally 1.27mm above the carrier, 9.5mm from the hole, over the nearest board edge |
-| flat | MATEK INA228, XT90 INA228, PD Power Mini, PD trigger, mini buck, T-plug | wired or soldered at its pads; the module's underside rests on the carrier |
+| flat | MATEK INA228, XT90 INA228, PD Power Mini, PD trigger, T-plug | wired; the module's underside rests on the carrier |
 | flat | the 4 ES3C28P socket headers | the header's floor rests on the carrier, its pins through it |
 
 Sources of the heights, as each spec lists them:
