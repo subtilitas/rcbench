@@ -209,10 +209,25 @@ def test_core2350b_solids_close():
     """The Core2350B and its adapter board: every solid closes."""
     models = core2350b.parts(None)
     assert {k: len(v) for k, v in models.items()} == {
-        "core2350b": 429, "core2350b_usb_adapter": 70}
+        "core2350b": 445, "core2350b_usb_adapter": 70}
     for solids in models.values():
         assert [n for n, item in enumerate(solids)
                 if open_edges(item)] == []
+
+
+def test_core2350b_underside_chips():
+    """Flash SOIC-8 208mil, PSRAM SOP-8 150mil, both on 4 pads a side."""
+    kicad = core2350b.kicad
+    assert kicad.FLASH[1] == (5.3, 5.3)
+    assert kicad.PSRAM[1] == (3.9, 4.9)
+    for chip, span in ((core2350b.soic8_wide(), 7.9),
+                       (core2350b.p.soic8(), 6.0)):
+        box = extent(core2350b.s.items(chip))
+        assert box[3] - box[0] == pytest.approx(span)
+    # The pads reach past both packages' lead tips.
+    reach = core2350b.CHIP_PAD_AT + core2350b.CHIP_PAD[0] / 2
+    assert reach == pytest.approx(4.5)
+    assert reach > 7.9 / 2
 
 
 def test_core2350b_follows_the_makers_drawing():
@@ -250,7 +265,7 @@ def test_core2350b_symbol_names_every_pad_once():
 def test_core2350b_library_model_stands_on_headers():
     """64 pins reach 6.0 under the plastic; the board lies 2.5 up."""
     solids = core2350b.kicad_model()
-    assert len(solids) == 429 + 8 * 9
+    assert len(solids) == 445 + 8 * 9
     box = extent(solids)
     assert box[2] == pytest.approx(-6.0)
 

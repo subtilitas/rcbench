@@ -1,12 +1,13 @@
 """Waveshare Core2350B, 25.40 x 25.40mm, 64 plated holes at 2.54mm.
 
 An RP2350B core board: the RP2350B (QFN-80), 16MB QSPI (quad serial
-peripheral interface) flash, an optional 2MB PSRAM (pseudo-static RAM)
-on the underside, a 12MHz crystal, a 3.3V regulator and a 6-pin flat
-cable socket for the USB adapter board. The 64 holes form a 10 x 10
-grid at 2.54mm with the middle 6 x 6 left out: two rows round each
-edge. The board has no castellations and no buttons; BOOT and RESET
-are on the USB adapter board.
+peripheral interface) flash, an optional PSRAM (pseudo-static RAM),
+2MB on the B1 variant and 8MB on the B2, on the underside, a 12MHz
+crystal, a 3.3V regulator and a 6-pin flat cable socket for the USB
+adapter board. The 64 holes form a 10 x 10 grid at 2.54mm with the
+middle 6 x 6 left out: two rows round each edge. The board has no
+castellations and no buttons; BOOT and RESET are on the USB adapter
+board.
 
 Sources:
     D: Waveshare's dimension drawing Core2350B0-details-size.jpg
@@ -104,7 +105,8 @@ def at(x, y):
 
 # Parts, seen from the top side, from the board's center (P): center
 # and size along x and y. The flash and the PSRAM are on the underside;
-# their places are given as seen through the board from the top.
+# their places are given as seen through the board from the top, their
+# sizes are the bodies' (U, see hardware/mechanical/core2350b.py).
 MCU = ((-1.93, 2.0), (10.0, 10.0))
 REGULATOR = ((-3.6, -5.8), (2.8, 2.9))
 INDUCTOR = ((0.0, -5.15), (2.2, 1.85))
@@ -114,8 +116,8 @@ LED = ((5.95, 2.93), (1.6, 0.8))
 # cable enters (towards the RP2350B), as (x0, y0, x1, y1).
 FFC = (2.67, -7.22, 7.97, -5.33)
 FFC_LOCK = (3.21, -5.33, 7.75, -3.67)
-FLASH = ((-1.71, -1.70), (5.3, 5.3))
-PSRAM = ((-1.62, 3.92), (5.3, 5.3))
+FLASH = ((-1.65, -1.65), (5.3, 5.3))
+PSRAM = ((-1.63, 3.92), (3.9, 4.9))
 
 
 def _box(part):
