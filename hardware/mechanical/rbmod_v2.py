@@ -34,7 +34,8 @@ row, the F.Fab drawing's reach. They are not taken from a maker's
 drawing.
 
 The copper of the 2 outer layers is drawn from the board file: the
-pads, gold and 0.035mm thick, and the tracks, the vias and the filled
+pads, gold (ENEPIG: nickel, palladium, gold; owner, 2026-11-21) and
+0.035mm thick, and the tracks, the vias and the filled
 zones, 0.02mm thick in a lighter green, as copper shows under the
 solder mask. Every part stands on the pads' top, 0.035mm over the
 board.
@@ -70,6 +71,7 @@ MODULES = {"RP2350-CAN": "rp2350_can", "INA3221_Module": "ina3221_module",
            "USBC_PD_Trigger_DIP3_30x20mm": "usbc_pd_trigger"}
 DNP = ("J6", "J8")              # not populated (owner, 2026-11-21)
 COPPER = ((0.17, 0.62, 0.31), 0.02)  # copper under the mask; thickness
+ENEPIG = (0.96, 0.80, 0.30)     # the pads' finish (owner, 2026-11-21)
 ANGLED = (2.54, 1.52, 15.12)    # bar's thickness, its gap to the third
 #                                 row, the pins' reach from the first row
 
@@ -167,7 +169,7 @@ def unpopulated(footprint):
 def board():
     """The carrier: plate, holes, and the copper of its 2 outer layers.
 
-    The pads are p.PAD thick and gold. The tracks, the vias and the
+    The pads are p.PAD thick and gold, their finish ENEPIG. The tracks, the vias and the
     filled zones are COPPER[1] thick in a lighter green, as copper
     shows under the solder mask.
     """
@@ -177,8 +179,8 @@ def board():
         s.circle(x, y, d / 2) for x, y, d in list(data.HOLES) + drills])]
     rgb, thick = COPPER
     for areas, z0, z1, colour in (
-            (data.PADS_TOP, 0.0, p.PAD, p.GOLD),
-            (data.PADS_BOTTOM, -t - p.PAD, -t, p.GOLD),
+            (data.PADS_TOP, 0.0, p.PAD, ENEPIG),
+            (data.PADS_BOTTOM, -t - p.PAD, -t, ENEPIG),
             (data.COPPER_TOP, 0.0, thick, rgb),
             (data.COPPER_BOTTOM, -t - thick, -t, rgb)):
         out += [s.ext(outer, z0, z1, colour, holes=holes)
