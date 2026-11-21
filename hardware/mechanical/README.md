@@ -633,14 +633,16 @@ or tried.
 | --- | --- | --- |
 | `kst_x10.step` | the servo: case with red band, 2 ears, tab, shaft, print, 3 wires 15mm long; 25 solids | origin on the shaft's axis at the case's output end, z = 0 on the face the ears lie on; shaft to +y |
 | `flap_drive.step` | plate, 3 inserts, 3 washers, 3 screws, 2 blocks, strut, bush and its screw, double arm, pin, rod end, rod, fork, 2 horn plates, horn pin; 23 solids | the wing's: origin at the nose on the chord line, x to the trailing edge, y along the span, z up |
-| `flap_drive_wing.step` | wing shell, flap shell, cover of the servo's opening, spar web, rear web, the flap's nose wall; 6 solids | the wing's |
-| `flap_drive_assembly.step` | the two files above and the servo in its place; 54 solids, 3.5MB | the wing's |
+| `flap_drive_wing.step` | wing shell, flap shell, cover of the servo's opening, spar web, rear web, the flap's nose wall, fairing over the rod's slot; 7 solids | the wing's |
+| `flap_drive_assembly.step` | the two files above and the servo in its place; 55 solids, 4.0MB | the wing's |
 
 The layout:
 
 - The wing is a slice of 88mm span with the RG-15 airfoil on a chord of
   230mm and skins of 0.8mm. The flap is hinged in the lower skin at 75%
-  of the chord.
+  of the chord. The gap at the hinge is 0.6mm. The wing's upper skin ends
+  on a plane through the hinge that leans 22 degrees forward, which
+  leaves a gap of 4.45mm at the upper surface for the flap's way up.
 - The servo lies flat under the upper skin, its shaft along the span at
   38% of the chord. A carbon plate of 2.0mm is bonded to the skin, turned
   1.6 degrees to the skin's slope and 0.25mm under it at the nearest
@@ -657,14 +659,23 @@ The layout:
   between 2 horn plates of 1.5mm. The plates stand on the flap's lower
   skin and pass through its upper skin. Their eye lies 3.5mm over the
   flap's upper surface and 1.0mm behind the hinge, 12.9mm over the hinge.
+- A fairing covers the slot in the upper skin: half an ellipsoid with a
+  wall of 0.6mm, 35.5mm long from its nose to the end of the wing's
+  upper skin, 10.2mm wide and 8.1mm high there, open to the rear.
 - The servo comes out through an opening of 60mm x 69mm in the lower
   skin, which a cover closes.
 
 Flap angle for an angle of the arm, from `travel()`:
 
-| Arm, degrees | -60 | -45 | -30 | -15 | 15 | 30 | 45 | 60 |
+| Arm, degrees | -45 | -30 | -15 | 15 | 30 | 45 | 60 | 75 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Flap, degrees, positive down | -24.4 | -20.3 | -14.7 | -7.8 | 8.4 | 17.1 | 25.5 | 32.8 |
+| Flap, degrees, positive down | -20.3 | -14.7 | -7.8 | 8.4 | 17.1 | 25.5 | 32.8 | 38.0 |
+
+`posed()` gives the parts at an angle of the arm. `--check` builds them at
+the 8 angles of the table and fails when two solids share volume. The
+smallest distance between a moving part and the fairing is 0.78mm, at
+-40 degrees of the arm, between a horn plate and the fairing's wall.
+At -50 degrees the arm's barrel meets the rod end's neck.
 
 Dimensions of the servo, mm:
 
@@ -684,10 +695,13 @@ database of the University of Illinois at Urbana-Champaign.
 
 Limits:
 
-- The parts stand at neutral. The collision check covers that position
-  only; no deflected position is checked.
+- The files hold the parts at neutral. The collision check covers
+  neutral and the 8 angles of the table; no angle between them and no
+  angle outside -45 to 75 degrees is checked.
+- The gap of 4.45mm in the upper skin is open: no seal or wiper is
+  drawn.
 - Threads, the servo's splines, the hinge's tape, the adhesive under the
-  plate, spar caps, ribs and a fairing over the rod's slot are not drawn.
+  plate, spar caps and ribs are not drawn.
 - The cable ends 15mm from the servo and has no plug.
 - Loads, stiffness and the bush's play are not calculated.
 
