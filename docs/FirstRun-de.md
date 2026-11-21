@@ -160,7 +160,11 @@ diese Schreibweise ab, sodass `@flash_args` esptool 5 oder neuer braucht.
 
    Ein Browser-Flasher, der eine Datei an einen Offset schreibt, etwa das
    ESP Web Tool, nimmt `rcbench-panel-merged.bin` bei 0x0, mit derselben
-   Wirkung wie der erste Befehl.
+   Wirkung wie der erste Befehl. Der
+   [Web-Flasher](https://subtilitas.github.io/rcbench/flash/) von rcbench
+   schreibt das zusammengeführte Image eines Release auf das Panel und das
+   Install-Image über WebUSB auf die IOmcu, in Chrome oder Edge auf einem
+   Desktop-Computer ([flasher/README.md](../flasher/README.md)).
 4. Schalte beide Platinen mit verdrahtetem Link ein. Ein in Schritt 2
    geladener IOmcu hat den Build, den das Panel trägt, und das Panel
    bietet kein Update an. Das Panel lädt die Zeichnung der Platine

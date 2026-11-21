@@ -151,7 +151,11 @@ spelling, so `@flash_args` needs esptool 5 or later.
 
    A browser flasher that writes one file at an offset, such as the ESP Web
    Tool, takes `rcbench-panel-merged.bin` at 0x0, with the same effect as
-   the first command.
+   the first command. The rcbench
+   [web flasher](https://subtilitas.github.io/rcbench/flash/) writes the
+   merged image of a release to the panel, and the install image to the
+   IOmcu over WebUSB, in Chrome or Edge on a desktop computer
+   ([flasher/README.md](../flasher/README.md)).
 4. Power both boards with the link wired. An IOmcu loaded in step 2 runs
    the build the panel carries, and the panel offers no update. The panel
    fetches the board drawing ([§4](#4-first-link-up-the-board-drawing)).

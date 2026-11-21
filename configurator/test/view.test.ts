@@ -7,7 +7,7 @@ import { benchParts, optionsOf, testObjectsOf } from '../src/names.ts';
 import { describe, sweep } from './geometry.ts';
 import { chooser, deselectText, groupId, reasonText, removalWarning, removeControl, statusText } from '../src/view/chooser.ts';
 import type { Pending, View } from '../src/view/chooser.ts';
-import { HELP_URL, NOTICE_URL, result, resultError } from '../src/view/result.ts';
+import { FLASH_URL, HELP_URL, NOTICE_URL, result, resultError } from '../src/view/result.ts';
 
 function view(part: Partial<Selection>, lang: Lang = 'en'): View {
   const selection: Selection = { functions: [], owned: [], options: { ...DEFAULT_OPTIONS }, ...part };
@@ -631,6 +631,19 @@ test('the footer links to the panel help of its language, on the same site', () 
       const foot = html.slice(html.indexOf('<footer>'));
       assert.equal(count(foot, 'id="helplink"'), 1);
       assert.ok(foot.includes(`<p><a id="helplink" href="${HELP_URL[lang]}">${name[lang]}</a></p>`), foot);
+    }
+  }
+});
+
+test('the footer links to the web flasher on the same site, after the panel help', () => {
+  assert.equal(FLASH_URL, 'flash/');
+  const name = { en: 'Web flasher: write the firmware to the boards', de: 'Web-Flasher: Firmware auf die Boards schreiben' };
+  for (const lang of LANGS) {
+    for (const html of [result(view({ functions: ['servo'] }, lang), URL, []), resultError(lang, CATALOGUE, URL)]) {
+      const foot = html.slice(html.indexOf('<footer>'));
+      assert.equal(count(foot, 'id="flashlink"'), 1);
+      assert.ok(foot.includes(`<p><a id="flashlink" href="flash/">${name[lang]}</a></p>`), foot);
+      assert.ok(foot.indexOf('id="helplink"') < foot.indexOf('id="flashlink"'));
     }
   }
 });
