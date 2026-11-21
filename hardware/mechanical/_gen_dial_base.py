@@ -92,6 +92,7 @@ from OCP.GProp import GProp_GProps
 from OCP.Interface import Interface_Static
 from OCP.Quantity import Quantity_Color, Quantity_TOC_RGB
 from OCP.STEPCAFControl import STEPCAFControl_Writer
+from OCP.ShapeUpgrade import ShapeUpgrade_UnifySameDomain
 from OCP.STEPControl import STEPControl_AsIs
 from OCP.StlAPI import StlAPI_Writer
 from OCP.TCollection import TCollection_ExtendedString
@@ -359,7 +360,17 @@ def parts():
             (-half_x - rail, -half_y + 5, -half_x, half_y - 5)):
         bottom = BRepAlgoAPI_Fuse(bottom, _box(
             x0, y0, FLOOR - 0.2, x1, y1, FLOOR + high)).Shape()
-    return {"dial_base_top": top, "dial_base_bottom": bottom}
+    # Faces that lie on one surface become one face: the end of a web
+    # that meets a flute leaves no outline in it.
+    return {"dial_base_top": _merged(top),
+            "dial_base_bottom": _merged(bottom)}
+
+
+def _merged(shape):
+    """The shape with neighbouring faces of one surface made one."""
+    unify = ShapeUpgrade_UnifySameDomain(shape, True, True, True)
+    unify.Build()
+    return unify.Shape()
 
 
 def _bar(width, height, corner, z, near, far):
