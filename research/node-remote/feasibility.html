@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>rcbench Node Remote</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+body { margin: 0; }
+/* Layout: one reading column for the analysis; the five phone screens sit in a wrapping row as the only framed objects. */
+:root {
+  --bg: #f2f4f8; --surface: #ffffff; --fg: #17202b; --muted: #566375; --line: #d3dae4;
+  --accent: #1b5bb8; --ok: #17794f; --warn: #9a5b00; --bad: #b3261e;
+  --ok-bg: #dff3e9; --warn-bg: #fbecd0; --bad-bg: #fbe1de;
+  /* the app's own look: one fixed dark instrument palette in both page themes */
+  --app-bg: #0e1319; --app-panel: #18212c; --app-fg: #e8edf3; --app-dim: #8a98a9; --app-line: #2a3542;
+  --app-safe: #3fb37f; --app-armed: #f0a020; --app-stop: #e5372b; --app-data: #7fc4ff; --app-case: #05080b; --app-volt: #c3a6ff; --app-pow: #e3c9a1;
+  --display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --body: "Inter", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f141b; --surface: #171f2a; --fg: #e5eaf1; --muted: #9ba8b8; --line: #2b3644;
+  --accent: #7db0ff; --ok: #5fd19d; --warn: #f2b755; --bad: #ff8a80;
+  --ok-bg: #123526; --warn-bg: #3b2c0c; --bad-bg: #40191a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f141b; --surface: #171f2a; --fg: #e5eaf1; --muted: #9ba8b8; --line: #2b3644;
+  --accent: #7db0ff; --ok: #5fd19d; --warn: #f2b755; --bad: #ff8a80;
+  --ok-bg: #123526; --warn-bg: #3b2c0c; --bad-bg: #40191a; color-scheme: dark }
+
+body { background: var(--bg); color: var(--fg); font: 400 16px/1.6 var(--body); }
+.page { max-width: 1120px; margin: 0 auto; padding-block: 40px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 48px; }
+.col { max-width: 68ch; display: flex; flex-direction: column; gap: 14px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: 2rem; } h2 { font-size: 1.35rem; } h3 { font-size: 1rem; }
+p, ul, ol { margin: 0; } ul, ol { padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { font: 600 0.75rem/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.muted { color: var(--muted); } code { font: 0.88em var(--mono); }
+a { color: var(--accent); } a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+section { display: flex; flex-direction: column; gap: 18px; }
+
+.verdict { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 20px; display: grid; gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.verdict div { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.verdict strong { font-family: var(--display); font-size: 1.05rem; }
+
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 720px; font-size: 0.9rem; line-height: 1.45; }
+th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+th { font: 600 0.72rem/1.3 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pill { display: inline-block; font: 600 0.72rem/1 var(--mono); padding: 5px 8px; border-radius: 99px; white-space: nowrap; }
+.pill.ok { background: var(--ok-bg); color: var(--ok); } .pill.warn { background: var(--warn-bg); color: var(--warn); }
+.pill.bad { background: var(--bad-bg); color: var(--bad); }
+
+/* phones */
+.phones { display: flex; flex-wrap: wrap; gap: 32px 28px; }
+figure { margin: 0; width: 280px; max-width: 100%; display: flex; flex-direction: column; gap: 12px; }
+figcaption { font-size: 0.86rem; line-height: 1.5; color: var(--muted); }
+figcaption b { color: var(--fg); font-weight: 600; display: block; }
+.phone { background: var(--app-case); border-radius: 26px; padding: 9px; }
+.scr { background: var(--app-bg); color: var(--app-fg); border-radius: 18px; height: 560px; display: flex; flex-direction: column;
+  font: 400 12px/1.35 var(--body); overflow: hidden; }
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 14px 10px; border-bottom: 1px solid var(--app-line); }
+.bar .name { font: 600 12px/1.2 var(--mono); } .bar .sub { font: 400 10px/1.3 var(--mono); color: var(--app-dim); }
+.state { font: 600 10px/1 var(--mono); letter-spacing: 0.08em; padding: 5px 8px; border-radius: 3px; color: var(--app-bg); }
+.state.safe { background: var(--app-safe); } .state.armed { background: var(--app-armed); }
+.body { flex: 1; padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.lbl { font: 600 9px/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--app-dim); }
+.dev { background: var(--app-panel); border-radius: 6px; padding: 10px; display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; }
+.dev .n { font: 600 12px/1.3 var(--mono); } .dev .r { color: var(--app-dim); font-size: 11px; }
+.dev .d { font: 400 11px/1.3 var(--mono); color: var(--app-data); text-align: right; }
+.ch { display: grid; grid-template-columns: 18px 1fr 34px 40px; align-items: center; gap: 8px; height: 31px; font: 400 10.5px/1 var(--mono); font-variant-numeric: tabular-nums; }
+.ch .id { color: var(--app-dim); } .ch .v, .ch .ma { text-align: right; } .ch .ma { color: var(--app-data); }
+.trk { height: 6px; border-radius: 3px; background: var(--app-line); position: relative; }
+.trk i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--app-armed); }
+.trk b { position: absolute; top: -6px; width: 6px; height: 18px; margin-left: -3px; border-radius: 2px; background: var(--app-fg); }
+.foot { padding: 10px 14px 14px; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--app-line); }
+.btn { border-radius: 6px; text-align: center; font: 600 12px/1 var(--mono); letter-spacing: 0.08em; padding: 12px; }
+.btn.stop { background: var(--app-stop); color: #fff; padding: 18px; font-size: 15px; }
+.btn.ghost { border: 1px solid var(--app-line); color: var(--app-fg); }
+.btn.hold { border: 1px solid var(--app-armed); color: var(--app-armed); position: relative; overflow: hidden; }
+.btn.hold i { position: absolute; left: 0; top: 0; bottom: 0; width: 60%; background: var(--app-armed); opacity: 0.25; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pt { width: 100%; border-collapse: collapse; min-width: 0; font: 400 10px/1 var(--mono); font-variant-numeric: tabular-nums; }
+.pt th, .pt td { padding: 6px 2px; border-bottom: 1px solid var(--app-line); text-align: right; color: var(--app-fg); }
+.pt th { font-size: 8.5px; color: var(--app-dim); letter-spacing: 0.04em; text-transform: none; } .pt td:first-child, .pt th:first-child { text-align: left; color: var(--app-dim); }
+.lost { color: var(--app-stop) !important; font-weight: 600; }
+.big { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.big div { background: var(--app-panel); border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+.big span { font: 600 20px/1 var(--mono); font-variant-numeric: tabular-nums; } .big small { font: 400 10px/1 var(--mono); color: var(--app-dim); }
+.plot { background: var(--app-panel); border-radius: 6px; padding: 8px; }
+.plot svg { display: block; width: 100%; height: auto; }
+.plot polyline { fill: none; stroke-width: 2; } .plot .lbl { display: block; margin-bottom: 6px; }
+.plot .leg { display: flex; justify-content: space-between; gap: 6px; margin-bottom: 6px; } .plot .leg .lbl { display: inline; margin: 0; }
+.grid { stroke: var(--app-line); stroke-width: 1; fill: none; } .ax { fill: var(--app-dim); font: 8px var(--mono); }
+.tv { stroke: var(--app-volt); } .ti { stroke: var(--app-data); } .tp { stroke: var(--app-pow); }
+.dv { fill: var(--app-volt); } .di { fill: var(--app-data); } .dp { fill: var(--app-pow); }
+.cv { color: var(--app-volt); } .ci { color: var(--app-data); } .cp { color: var(--app-pow); }
+.big.tight div { padding: 8px 10px; gap: 4px; } .big.tight span { font-size: 17px; }
+.big.three { grid-template-columns: repeat(3, 1fr); } .big.three div { padding: 8px; } .big.three span { font-size: 14px; }
+.bars { background: var(--app-panel); border-radius: 6px; padding: 8px; display: grid; grid-template-columns: repeat(9, 1fr); gap: 5px; }
+.vb { display: flex; flex-direction: column; align-items: center; gap: 4px; font: 400 9px/1 var(--mono); color: var(--app-dim); }
+.vb i { display: block; width: 100%; height: 44px; border-radius: 2px; background: linear-gradient(to top, var(--app-armed) var(--h), var(--app-line) var(--h)); }
+@media (max-width: 420px) { h1 { font-size: 1.6rem; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="col">
+  <span class="eyebrow">Feasibility analysis · 2026-11-21</span>
+  <h1>A Godot app on Android as the central for the rcbench nodes</h1>
+  <p>The app replaces the panel as the Bluetooth LE (Low Energy, BLE) central for the power node, the balance node and the planned servo node. It can hold links to several nodes at once. For the servo node the phone may ARM and drive outputs.</p>
+</header>
+
+<div class="verdict">
+  <div><span class="pill ok">Feasible</span><strong>The app itself</strong><span class="muted">Godot renders the screens and decodes packets of 20 to 102 bytes. Nothing in the node protocol exceeds what an Android phone's BLE link carries.</span></div>
+  <div><span class="pill warn">Needs own plugin</span><strong>Bluetooth access</strong><span class="muted">Godot has no BLE API. No published Godot plugin is both verified on Android hardware and able to set the MTU and the connection interval.</span></div>
+  <div><span class="pill bad">Not measurable yet</span><strong>STOP latency and timing</strong><span class="muted">No node has run on hardware and the servo node's protocol is a draft. Every timing figure for a phone is unmeasured.</span></div>
+</div>
+
+<section>
+  <div class="col">
+    <h2>Bluetooth access: what exists and what is tested</h2>
+    <p>The node protocol needs five things from the central: a scan with manufacturer data, notifications, write without response, an ATT MTU (attribute protocol maximum transmission unit) of 105 or more for the servo node, and a connection interval short enough for a keep-alive every 50ms.</p>
+  </div>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Option</th><th>What it is</th><th>Generic read, write, notify</th><th>MTU and interval</th><th>State on Android</th></tr></thead>
+    <tbody>
+      <tr><td><b>Godot core</b><br><span class="muted">4.7</span></td><td>no Bluetooth class</td><td><span class="pill bad">none</span></td><td><span class="pill bad">none</span></td><td>Proposal #6711 "Add a Bluetooth server and module" is open since 2023-04-17. Proposal #145 is closed and archived. Neither is implemented.</td></tr>
+      <tr><td><b>GodotAndroidBle</b><br><span class="muted">v3.2.0, 2026-07-13, MIT</span></td><td>Kotlin plugin in Godot's v2 format on the BLESSED library 3.0.12</td><td><span class="pill warn">not documented</span><br>The README lists scans and signals for health and fitness profiles only (heart rate, cycling power, glucose).</td><td><span class="pill warn">not documented</span></td><td>Releases follow Godot 4.6 to 4.7. Tested phones: not stated. 0 open issues, 10 stars. The source was not read for this analysis.</td></tr>
+      <tr><td><b>GDBLE</b><br><span class="muted">v0.6.0, 2026-10-18, MIT</span></td><td>Rust GDExtension on btleplug 0.12.0, with 2 Android libraries</td><td><span class="pill ok">yes</span><br>read, write with and without response, subscribe</td><td><span class="pill bad">not exposed</span></td><td>Not verified on a real device: the README states real-device acceptance is pending and <code>release_ready = false</code>. 5 of 6 open issues report Android failures. ARM64 and x86_64 only.</td></tr>
+      <tr><td><b>Own plugin</b><br><span class="muted">to be written</span></td><td>Kotlin plugin in the v2 format on <code>android.bluetooth</code></td><td><span class="pill ok">yes</span></td><td><span class="pill ok">yes</span><br><code>requestMtu()</code>, <code>requestConnectionPriority()</code></td><td>Android's BLE central API is part of the platform since API 18. Godot's v2 plugin format is documented since Godot 4.2, with an official template. The plugin's own code is new and untested.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="col">
+    <p><b>Finding.</b> Bluetooth access is available, and both layers under it are established: Android's API and Godot's plugin mechanism. A ready-made, device-tested Godot plugin that covers the node protocol does not exist. The app needs its own Kotlin plugin of about 10 methods and 8 signals. GodotAndroidBle is a working reference for the plugin structure and the runtime permissions.</p>
+    <p class="muted">Permissions: <code>BLUETOOTH_SCAN</code> and <code>BLUETOOTH_CONNECT</code> from Android 12 (API 31); <code>ACCESS_FINE_LOCATION</code> on Android 6 to 11. The Android emulator has no BLE radio, so every test needs a real phone.</p>
+  </div>
+</section>
+
+<section>
+  <div class="col"><h2>Protocol needs against Android</h2></div>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Need</th><th>Figure</th><th>Android</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Power node stream</td><td class="num">20 bytes / 20ms</td><td>50 notifications/s, 1,000 bytes/s</td><td><span class="pill ok">fits</span></td></tr>
+      <tr><td>Balance report</td><td class="num">24 bytes / 250ms</td><td>needs MTU 27; the default is 23 until the exchange</td><td><span class="pill ok">fits after MTU request</span></td></tr>
+      <tr><td>Servo node <code>SRV_WIN</code></td><td class="num">102 bytes / 50ms</td><td>2,040 bytes/s; MTU 105 or more; Android grants up to 517</td><td><span class="pill ok">fits</span></td></tr>
+      <tr><td>Keep-alive with STOP flag</td><td class="num">50ms, off at 300ms</td><td>interval 11.25 to 15ms with high priority, 30 to 50ms by default</td><td><span class="pill warn">needs high priority</span></td></tr>
+      <tr><td><code>CHAN_CMD</code>, 9 channels</td><td class="num">on event</td><td>write without response; at 60 frames/s one write per 16.7ms</td><td><span class="pill ok">fits</span></td></tr>
+      <tr><td>STOP end to end</td><td class="num">27 to 62ms computed for the panel</td><td>touch, Godot frame, plugin call, one connection interval</td><td><span class="pill bad">not measured</span></td></tr>
+      <tr><td>App in background</td><td class="num">300ms</td><td>Godot's main loop stops; the keep-alive stops with it</td><td><span class="pill ok">outputs off by contract</span></td></tr>
+      <tr><td>Data Length Extension</td><td class="num">unknown</td><td>negotiated by the phone's controller, not by the app</td><td><span class="pill bad">not measured</span></td></tr>
+      <tr><td>Nodes linked at once</td><td class="num">3: servo, power, balance</td><td>about 3,100 bytes/s in total; commonly 7 connections per phone, not checked per device</td><td><span class="pill warn">keep-alive timing not measured</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <h2>Mock-ups</h2>
+    <p>Six screens in portrait at 262 × 560 px. All values are examples. The servo node's packets are the draft of the brief and change with the plan.</p>
+  </div>
+  <div class="phones">
+
+    <figure>
+      <div class="phone"><div class="scr">
+        <div class="bar"><div><div class="name">NODES</div><div class="sub">scanning · 3 found</div></div><span class="state safe">SAFE</span></div>
+        <div class="body">
+          <span class="lbl">Servo</span>
+          <div class="dev"><span class="n">rcbench-srv-3F2A</span><span class="d">-58 dBm</span><span class="r">9 outputs · protocol draft</span><span class="d">USB-C PD</span></div>
+          <span class="lbl">Power</span>
+          <div class="dev"><span class="n">rcbench-pwr-91C0</span><span class="d">-64 dBm</span><span class="r">INA228 · 200µΩ shunt</span><span class="d">3.91 V cell</span></div>
+          <span class="lbl">Balance</span>
+          <div class="dev"><span class="n">rcbench-bal-0B7E</span><span class="d">-71 dBm</span><span class="r">accelerometer + index</span><span class="d">3.78 V cell</span></div>
+          <span class="lbl">Not shown</span>
+          <div class="r" style="color:var(--app-dim)">A node linked to a panel does not advertise. Unlink it on the panel under SETUP &gt; WIRELESS.</div>
+        </div>
+        <div class="foot"><div class="btn ghost">SCAN AGAIN</div></div>
+      </div></div>
+      <figcaption><b>Nodes</b>The list comes from the advertising alone: role from the manufacturer data, name from the scan response. Several nodes can be linked at once; each node accepts 1 central.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="phone"><div class="scr">
+        <div class="bar"><div><div class="name">3 NODES LINKED</div><div class="sub">srv · pwr · bal</div></div><span class="state armed">ARMED</span></div>
+        <div class="body">
+          <span class="lbl">Power node · pack</span>
+          <div class="big three"><div><small>VOLTS</small><span class="cv">22.41</span></div><div><small>AMPS</small><span class="ci">38.6</span></div><div><small>WATTS</small><span class="cp">865</span></div></div>
+          <div class="row2">
+            <div class="plot" style="grid-column:1/-1"><div class="leg"><span class="lbl cv">U 21–24 V</span><span class="lbl ci">I 0–60 A</span><span class="lbl cp">P 0–1600 W</span></div><svg viewBox="0 0 220 60" role="img" aria-label="Example traces of voltage, current and power over 10 seconds in one graph"><path class="grid" d="M0 6H220M0 54H220"/><polyline class="tv" points="0,15.6 20,17.2 40,23.6 60,28.4 80,38 95,44.4 110,39.6 130,33.2 150,31.6 170,31.6 190,31.6 216,31.4"/><polyline class="tp" points="0,45.6 20,44.2 40,36.1 60,31 80,21 95,14.4 110,19.8 130,25.9 150,27.8 170,27.1 190,28.5 216,28"/><polyline class="ti" points="0,44.4 20,42.8 40,33.2 60,26.8 80,14 95,5 110,12.4 130,20.4 150,22.8 170,22 190,23.6 216,23.1"/><circle class="dv" cx="216" cy="31.4" r="3"/><circle class="dp" cx="216" cy="28" r="3"/><circle class="di" cx="216" cy="23.1" r="3"/></svg></div>
+            
+          </div>
+          <span class="lbl">Servo · 6.02 V · 0.94 A · 5.7 W</span>
+          <div class="bars">
+            <div class="vb"><i style="--h:50%"></i>1</div><div class="vb"><i style="--h:72%"></i>2</div><div class="vb"><i style="--h:31%"></i>3</div>
+            <div class="vb"><i style="--h:50%"></i>4</div><div class="vb"><i style="--h:88%"></i>5</div><div class="vb"><i style="--h:12%"></i>6</div>
+            <div class="vb"><i style="--h:50%"></i>7</div><div class="vb"><i style="--h:0%"></i>8</div><div class="vb"><i style="--h:0%"></i>9</div>
+          </div>
+          <span class="lbl">Balance node · 8,400 rpm</span>
+          <div class="big three"><div><small>MAG g</small><span>0.52</span></div><div><small>PHASE °</small><span>212</span></div><div><small>BLADES</small><span>2</span></div></div>
+        </div>
+        <div class="foot"><div class="row2"><div class="btn ghost">DISARM</div><div class="btn ghost">NODES</div></div><div class="btn stop">STOP</div></div>
+      </div></div>
+      <figcaption><b>All three nodes linked</b>One screen for a run: the pack's voltage, current and power from the power node, the 9 output positions and the rail from the servo node, and the imbalance from the balance node. ARMED and STOP belong to the servo node. Keep-alive timing with 3 links is not measured.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="phone"><div class="scr">
+        <div class="bar"><div><div class="name">srv-3F2A · OUTPUTS</div><div class="sub">alive 50ms · link 15ms</div></div><span class="state armed">ARMED</span></div>
+        <div class="body" style="gap:0"><span class="lbl" style="padding:2px 0 6px">Rail 6.02 V · 0.94 A · 5.7 W</span>
+          <div class="ch"><span class="id">S1</span><div class="trk"><i style="width:50%"></i><b style="left:50%"></b></div><span class="v">500</span><span class="ma">84mA</span></div>
+          <div class="ch"><span class="id">S2</span><div class="trk"><i style="width:72%"></i><b style="left:72%"></b></div><span class="v">720</span><span class="ma">212mA</span></div>
+          <div class="ch"><span class="id">S3</span><div class="trk"><i style="width:31%"></i><b style="left:31%"></b></div><span class="v">310</span><span class="ma">96mA</span></div>
+          <div class="ch"><span class="id">S4</span><div class="trk"><i style="width:50%"></i><b style="left:50%"></b></div><span class="v">500</span><span class="ma">61mA</span></div>
+          <div class="ch"><span class="id">S5</span><div class="trk"><i style="width:88%"></i><b style="left:88%"></b></div><span class="v">880</span><span class="ma">405mA</span></div>
+          <div class="ch"><span class="id">S6</span><div class="trk"><i style="width:12%"></i><b style="left:12%"></b></div><span class="v">120</span><span class="ma">77mA</span></div>
+          <div class="ch"><span class="id">S7</span><div class="trk"><i style="width:50%"></i><b style="left:50%"></b></div><span class="v">500</span><span class="ma">0mA</span></div>
+          <div class="ch"><span class="id">S8</span><div class="trk"><i style="width:0%"></i><b style="left:0%"></b></div><span class="v">0</span><span class="ma">0mA</span></div>
+          <div class="ch"><span class="id">S9</span><div class="trk"><i style="width:0%"></i><b style="left:0%"></b></div><span class="v">0</span><span class="ma">0mA</span></div>
+        </div>
+        <div class="foot"><div class="row2"><div class="btn ghost">DISARM</div><div class="btn ghost">CENTRE ALL</div></div><div class="btn stop">STOP</div></div>
+      </div></div>
+      <figcaption><b>Servo node, outputs</b>9 sliders send <code>CHAN_CMD</code> with 0 to 1000 per channel. Currents come from <code>SRV_WIN</code> every 50ms. STOP is one tap and sits in the same place on every servo screen.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="phone"><div class="scr">
+        <div class="bar"><div><div class="name">srv-3F2A · PORTS</div><div class="sub">rail 6.02 V · 0.94 A · 5.7 W</div></div><span class="state safe">SAFE</span></div>
+        <div class="body">
+          <table class="pt">
+            <tr><th>PORT</th><th>mA</th><th>PEAK</th><th>mV</th><th>W</th><th>OUT µs</th><th>IN µs</th></tr>
+            <tr><td>S1</td><td>84</td><td>310</td><td>6010</td><td>0.50</td><td>1500</td><td>1502</td></tr>
+            <tr><td>S2</td><td>212</td><td>880</td><td>5990</td><td>1.27</td><td>1720</td><td>1719</td></tr>
+            <tr><td>S3</td><td>96</td><td>240</td><td>6010</td><td>0.58</td><td>1310</td><td>1311</td></tr>
+            <tr><td>S4</td><td>61</td><td>150</td><td>6020</td><td>0.37</td><td>1500</td><td class="lost">RX LOST</td></tr>
+            <tr><td>S5</td><td>405</td><td>1620</td><td>5940</td><td>2.41</td><td>1880</td><td>—</td></tr>
+            <tr><td>S6</td><td>77</td><td>205</td><td>6010</td><td>0.46</td><td>1120</td><td>—</td></tr>
+            <tr><td>S7</td><td>0</td><td>0</td><td>6020</td><td>0.00</td><td>off</td><td>—</td></tr>
+            <tr><td>S8</td><td>0</td><td>0</td><td>6020</td><td>0.00</td><td>off</td><td>—</td></tr>
+            <tr><td>S9</td><td>0</td><td>0</td><td>6020</td><td>0.00</td><td>off</td><td>—</td></tr>
+          </table>
+          <span class="lbl">Supply · PD mini · limit 3.00 A</span>
+          <div class="row2"><div class="btn ghost">6.0 V</div><div class="btn ghost">OFF</div></div>
+        </div>
+        <div class="foot"><div class="btn hold"><i></i>ARM · HOLD 1.2 / 2.0 s</div><div class="btn stop">STOP</div></div>
+      </div></div>
+      <figcaption><b>Servo node, ports</b>Mean and peak current, voltage, power, output pulse and receiver input per port. The draft <code>SRV_WIN</code> carries no power; the app computes it as mean current times voltage. ARM and voltage-on are 2s holds; the bar fills while the finger stays down. A lost receiver signal reads RX LOST.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="phone"><div class="scr">
+        <div class="bar"><div><div class="name">pwr-91C0 · POWER</div><div class="sub">run tag 17 · cell 3.91 V</div></div><span class="state safe">LINKED</span></div>
+        <div class="body">
+          <div class="big tight">
+            <div><small>VOLTAGE</small><span class="cv">22.41 V</span></div>
+            <div><small>CURRENT</small><span class="ci">38.6 A</span></div>
+            <div><small>POWER</small><span class="cp">865 W</span></div>
+            <div><small>CHARGE</small><span>412 mAh</span></div>
+          </div>
+          <span class="lbl">Last 10 <span style="text-transform:none">s</span> · own scale per trace</span>
+          <div class="plot"><div class="leg"><span class="lbl cv">U 21–24 V</span><span class="lbl ci">I 0–60 A</span><span class="lbl cp">P 0–1600 W</span></div><svg viewBox="0 0 220 110" role="img" aria-label="Example traces of voltage, current and power over 10 seconds in one graph">
+            <path class="grid" d="M0 12H220M0 55H220M0 98H220"/>
+            <polyline class="tv" points="0,29.2 20,32.1 40,43.5 60,52.1 80,69.3 95,80.8 110,72.2 130,60.7 150,57.9 170,57.9 190,57.9 216,57.6"/>
+            <polyline class="tp" points="0,82.9 20,80.5 40,66 60,56.7 80,38.9 95,26.9 110,36.8 130,47.6 150,51 170,49.8 190,52.3 216,51.5"/>
+            <polyline class="ti" points="0,80.8 20,77.9 40,60.7 60,49.3 80,26.3 95,10.3 110,23.5 130,37.8 150,42.1 170,40.7 190,43.5 216,42.7"/>
+            <circle class="dv" cx="216" cy="57.6" r="3"/><circle class="dp" cx="216" cy="51.5" r="3"/><circle class="di" cx="216" cy="42.7" r="3"/>
+          </svg></div>
+          <span class="lbl" style="line-height:1.6">Lowest 21.60 V · highest 61.2 A · highest 1,322 W</span>
+
+        </div>
+        <div class="foot"><div class="row2"><div class="btn ghost">NEW RUN</div><div class="btn ghost">SLEEP</div></div></div>
+      </div></div>
+      <figcaption><b>Power node</b>Voltage, current and power as values and as 3 traces in 1 graph over 10s. Each trace has its own scale, named in the legend; the grid lines mark the ends and the middle of every scale. A 20ms window carries the mean and lowest voltage and the mean and highest current; the app computes power as mean voltage times mean current. Charge comes from the 500ms accumulators. NEW RUN writes RUN with the next tag and restarts the extremes. There is no STOP: this node measures and drives nothing.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="phone"><div class="scr">
+        <div class="bar"><div><div class="name">bal-0B7E · BALANCE</div><div class="sub">250 ms · cell 3.78 V</div></div><span class="state safe">LINKED</span></div>
+        <div class="body">
+          <div class="plot"><svg viewBox="0 0 220 170" role="img" aria-label="Example polar plot of the imbalance vector at 212 degrees">
+            <g fill="none" stroke="#2a3542" stroke-width="1"><circle cx="110" cy="85" r="70"/><circle cx="110" cy="85" r="46"/><circle cx="110" cy="85" r="23"/><path d="M110 15V155M40 85H180"/></g>
+            <line x1="110" y1="85" x2="72" y2="121" stroke="#f0a020" stroke-width="3"/><circle cx="72" cy="121" r="5" fill="#f0a020"/>
+            <g fill="#8a98a9" font-family="monospace" font-size="8"><text x="104" y="11">0°</text><text x="184" y="88">90°</text><text x="100" y="167">180°</text><text x="18" y="88">270°</text></g>
+          </svg></div>
+          <div class="big">
+            <div><small>MAGNITUDE</small><span>0.52 g</span></div>
+            <div><small>PHASE</small><span>212°</span></div>
+            <div><small>SPEED rpm</small><span>8,400</span></div>
+            <div><small>BLADES</small><span>2</span></div>
+          </div>
+        </div>
+        <div class="foot"><div class="row2"><div class="btn ghost">BLADES</div><div class="btn ghost">RPM</div></div></div>
+      </div></div>
+      <figcaption><b>Balance node</b>Magnitude and phase from the 250ms report. BLADES (1 to 12) and RPM (0 to 60,000; 0 selects the index sensor) are the node's 2 settings. The balancing arithmetic of the panel is not part of this screen.</figcaption>
+    </figure>
+
+  </div>
+</section>
+
+<section class="col">
+  <h2>Limits and open points</h2>
+  <ul>
+    <li><b>One central per node.</b> Each node accepts 1 connection (<code>CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1</code>). A node linked to the phone is not available to the panel, and the reverse.</li>
+    <li><b>Several nodes per phone.</b> Android's stack has commonly allowed 7 concurrent BLE connections; the figure is not checked for a specific phone, and a watch or earbuds on BLE count against it. The panel is configured for 5. Each added link takes radio time from the servo node's 50ms keep-alive; the number of links a phone holds before a gap approaches 300ms is not measured.</li>
+    <li><b>No pairing, no encryption.</b> Any central in range can ARM the servo node and switch a 3,000mA rail. A tap on the node's own touch screen to accept a new central is the smallest guard; the plan does not contain it.</li>
+    <li><b>Keep-alive source.</b> The keep-alive stops when Godot's main loop stops. A plugin thread that keeps sending behind a frozen screen holds outputs on without a working STOP.</li>
+    <li><b>Safety logic.</b> The stop latch and the 2s hold exist as host-tested C in <code>shared/</code>. Compiled into a GDExtension for ARM64 they stay one implementation. Whether those files build without the panel's other sources is not checked.</li>
+    <li><b>Programming and DShot.</b> Servo and ESC (electronic speed controller) programming needs the tunnelled link frames and the panel's programmer logic. The mock-ups leave it out.</li>
+    <li><b>Hardware.</b> The sensor node boards are ordered and not delivered. The servo node has no firmware and no carrier board. An app written now runs against a simulated node only.</li>
+    <li><b>Contract wording.</b> "The node does not drive outputs without a linked panel" needs "panel or phone" in the plan and its decisions file. Neither file was changed.</li>
+  </ul>
+</section>
+
+<section class="col">
+  <h2>Order of work, if it goes ahead</h2>
+  <ol>
+    <li>Kotlin plugin: scan, connect, MTU 247, high priority, subscribe, write without response. Test against the power node firmware on one ESP32-C6 board.</li>
+    <li>Measure on one phone: connection interval, notification gaps over 10 minutes, and the time from touch to a pin edge on the node.</li>
+    <li>Power and balance screens. These carry no safety duty.</li>
+    <li>Servo screens after the plan's throughput measurement fixes the packets, and after the access guard is decided.</li>
+  </ol>
+  <p class="muted">Effort in days is not estimated.</p>
+</section>
+
+<section class="col">
+  <h2>Sources</h2>
+  <ul>
+    <li><a href="https://docs.godotengine.org/en/stable/tutorials/platform/android/android_plugin.html">Godot documentation: Godot Android plugins (v2 format)</a></li>
+    <li><a href="https://github.com/godotengine/godot-proposals/issues?q=bluetooth">godot-proposals: issues matching "bluetooth"</a></li>
+    <li><a href="https://github.com/duffrecords/GodotAndroidBle">duffrecords/GodotAndroidBle</a></li>
+    <li><a href="https://github.com/Fantety/GDBLE">Fantety/GDBLE</a></li>
+    <li><a href="https://developer.android.com/reference/android/bluetooth/BluetoothGatt">Android reference: BluetoothGatt</a></li>
+    <li>rcbench: <code>docs/Nodes.md</code>, <code>protocols/rcnode/README.md</code>, and the servo node brief of 2026-11-21</li>
+  </ul>
+  <p class="muted">Plugin pages were read on 2026-11-21. Plugin source code was not read. Android's connection interval figures are the platform defaults and vary by phone.</p>
+</section>
+
+</div>
+</body>
+</html>
