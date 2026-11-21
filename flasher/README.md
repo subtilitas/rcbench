@@ -173,6 +173,10 @@ port, which resets the chip: esptool-js then connects again and goes on
 at 115200 baud anyway. A panel connected that way writes 4,216,445
 compressed bytes of v0.23.15 in about 40s.
 
+On 21 November 2026 the page wrote v0.23.15 to a panel over the ESP32-P4's
+own USB-Serial-JTAG (USB ID 303A:1001), chip revision 3.2: 7,572,864 bytes
+in 40s.
+
 ## RP2350: PICOBOOT over WebUSB
 
 The RP2350 cannot be flashed over Web Serial. In BOOTSEL it is a USB drive
