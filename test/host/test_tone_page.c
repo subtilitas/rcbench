@@ -354,7 +354,7 @@ TEST_CASE(the_pin_is_the_taps_while_it_runs_and_no_slot_binds_it)
     CHECK_EQ(on(22u), 0u);
     CHECK_EQ(setup(1u, 22u, 500u, 6500u, 8u, 3u, 3u, 0u), 0u);
     /* But an output may not take it. */
-    uint16_t slots[LINK_OS_COUNT];
+    uint16_t slots[LINK_OS_ALL] = { 0 };
     memset(slots, 0, sizeof(slots));
     CHECK_EQ(tone_page_slots_check(&pg, slots), 0u);
     slots[LINK_OS_STRIDE * 2 + LINK_OS_DRIVER] = LINK_DRIVER_PWM;

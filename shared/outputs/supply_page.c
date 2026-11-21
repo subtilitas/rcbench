@@ -467,7 +467,7 @@ uint8_t supply_page_slots_check(const supply_page_t *p, const uint16_t *slots)
         return LINK_NACK_BAD_VALUE;
     }
     const uint64_t held = supply_page_pins(p);
-    for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
+    for (unsigned s = 0; s < LINK_OUT_SLOTS_ALL; ++s) {
         const uint16_t *r = &slots[(size_t)s * LINK_OS_STRIDE];
         if (r[LINK_OS_DRIVER] != 0u && r[LINK_OS_PIN] <= OUT_MAX_PIN
             && (held & ((uint64_t)1u << r[LINK_OS_PIN])) != 0u) {

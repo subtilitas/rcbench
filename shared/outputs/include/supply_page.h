@@ -236,7 +236,7 @@ uint8_t supply_page_wire_write(supply_page_t *p, const outputs_t *o);
 void supply_page_wire_refuse(supply_page_t *p);
 
 /**
- * @brief LINK_NACK_BAD_VALUE for an OUTPUTS page (@p slots, LINK_OS_COUNT
+ * @brief LINK_NACK_BAD_VALUE for an OUTPUTS page (@p slots, LINK_OS_ALL
  *        registers) that binds a slot to a pin the supply holds; 0 otherwise.
  *
  * Checked before the page is stored, so no binding is kept that the bank would
@@ -244,7 +244,7 @@ void supply_page_wire_refuse(supply_page_t *p);
  *  wired, would drive on the module's pin.
  *
  * @param p The page state.
- * @param slots The OUTPUTS page, LINK_OS_COUNT registers.
+ * @param slots OUTPUTS and OUTPUTS_HI, LINK_OS_ALL registers.
  * @return LINK_NACK_BAD_VALUE for a NULL @p slots or a slot with a driver on a
  *         pin in supply_page_pins(), 0 otherwise.
  */

@@ -178,6 +178,15 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_SENSE_WIN_A, LINK_SX_COUNT, sense_win_a_read, NULL },
     { LINK_PAGE_SENSE_WIN_B, LINK_SX_COUNT, sense_win_b_read, NULL },
     { LINK_PAGE_PROG_SUPPLY, LINK_PS_COUNT, psup_read,      psup_write },
+    { LINK_PAGE_CHANNELS_HI, LINK_CH_COUNT, channels_hi_read,
+      channels_hi_write },
+    { LINK_PAGE_CHAN_CFG_HI, LINK_CC_COUNT, chan_cfg_hi_read,
+      chan_cfg_hi_write },
+    { LINK_PAGE_OUTPUTS_HI,  LINK_OS_COUNT, slots_hi_read,  slots_hi_write },
+    { LINK_PAGE_BIND_CFG_HI, LINK_CC_COUNT, bind_cfg_hi_read,
+      bind_cfg_hi_write },
+    { LINK_PAGE_BIND_OUT_HI, LINK_OS_COUNT, bind_out_hi_read,
+      bind_out_hi_write },
     { LINK_PAGE_ESC_WIRE,  LINK_EW_COUNT,  esc_read,       esc_write },
     { LINK_PAGE_ESC_DATA,  LINK_ED_COUNT,  esc_data_read,  esc_data_write },
     { LINK_PAGE_UPDATE_CTL,  LINK_UPD_COUNT,      update_hw_ctl_read,
@@ -467,7 +476,9 @@ int main(void)
      * first frame rather than from the first configuration. */
     outputs_channels_defaults(s_state.channels);
     outputs_chan_cfg_defaults(s_state.chan_cfg);
+    outputs_chan_cfg_defaults(&s_state.chan_cfg[LINK_CC_COUNT]);
     outputs_slots_defaults(s_state.slots);
+    outputs_slots_defaults(&s_state.slots[LINK_OS_COUNT]);
     servo_page_init(&s_servo);
 
     /*
@@ -481,7 +492,7 @@ int main(void)
      * not a configuration, and a bench that came back holding the last
      * throttle it was given is exactly what must not happen.
      */
-    static out_store_t saved;            /* 288 bytes, off main()'s frame */
+    static out_store_t saved;            /* 416 bytes, off main()'s frame */
     const bool have_saved = out_store_load(&saved);
     /*
      * A board with soldered pins starts each role on its pin, whatever the
@@ -500,13 +511,21 @@ int main(void)
     }
     const bool have_ifaces = have_saved || roles != NULL;
     if (have_saved) {
-        memcpy(s_state.slots, saved.slots, sizeof(s_state.slots));
+        memcpy(s_state.slots, saved.slots, sizeof(saved.slots));
+        memcpy(&s_state.slots[LINK_OS_COUNT], saved.slots_hi,
+               sizeof(saved.slots_hi));
         /* A stored slot an OUTPUTS write refuses by value (a driver number
-         * the page does not know, a pin above GPIO 63) starts unbound. */
+         * the page does not know, a pin above GPIO 63, a channel run past
+         * channel 16 into the throttle's or the ports' bank channels)
+         * starts unbound. */
         (void)outputs_slots_free_unwritable(s_state.slots);
         /* A kept slew above LINK_CC_SLEW_MAX starts as that maximum, here
          * and in BIND_CFG, which is seeded from this below. */
-        outputs_chan_cfg_restore(s_state.chan_cfg, saved.chan_cfg);
+        static uint16_t kept_cfg[LINK_CC_ALL];
+        memcpy(kept_cfg, saved.chan_cfg, sizeof(saved.chan_cfg));
+        memcpy(&kept_cfg[LINK_CC_COUNT], saved.chan_cfg_hi,
+               sizeof(saved.chan_cfg_hi));
+        outputs_chan_cfg_restore(s_state.chan_cfg, kept_cfg);
         /* A stored slot on a programming port's bank channel starts
          * unbound: an OUTPUTS write of it is refused. */
         (void)prog_port_slots_free(s_state.slots);

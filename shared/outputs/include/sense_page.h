@@ -85,7 +85,7 @@ typedef struct {
     uint16_t cap_gen;   /**< moves with each arm and each end of a
                              capture's order                             */
     bool     sensed;    /**< BENCH carries the INA228's numbers          */
-    uint8_t  bound;     /**< bit n: output slot n is bound to silicon
+    uint16_t bound;     /**< bit n: output slot n is bound to silicon
                              (sense_page_bound()); 0 until told           */
     uint8_t  ports;     /**< bit n: programming port n renders a pulse
                              (sense_page_ports()); 0 until told           */
@@ -215,7 +215,7 @@ uint8_t sense_servo_write(sense_page_t *p, uint8_t off, uint8_t n,
  * @param p     The page.
  * @param slots Bit n: output slot n is bound to silicon.
  */
-void sense_page_bound(sense_page_t *p, uint8_t slots);
+void sense_page_bound(sense_page_t *p, uint16_t slots);
 
 /** @brief Which programming ports render a pulse while the bank drives (bit n
  *        port n): bound to the PWM generator, switched on in LINK_PG_PWM and
@@ -420,7 +420,7 @@ uint64_t sense_page_pins(const sense_page_t *p);
  */
 uint64_t sense_page_held(const sense_page_t *p);
 
-/** @brief LINK_NACK_BAD_VALUE for an OUTPUTS page (@p slots, LINK_OS_COUNT
+/** @brief LINK_NACK_BAD_VALUE for an OUTPUTS page (@p slots, LINK_OS_ALL
  *        registers) that binds a slot to a pin sense_page_held() names, the
  *        refusal the SUPPLY page gives for its own; 0 otherwise.
  *
@@ -428,7 +428,7 @@ uint64_t sense_page_held(const sense_page_t *p);
  *  such a slot would be left unbound with nothing on the wire to say so.
  *
  * @param p     The page, or NULL.
- * @param slots The OUTPUTS slot registers, LINK_OUT_SLOTS slots of
+ * @param slots The OUTPUTS slot registers, LINK_OUT_SLOTS_ALL slots of
  *              LINK_OS_STRIDE registers each.
  * @return 0, or LINK_NACK_BAD_VALUE for a NULL slots or a slot bound to a held
  *         pin.
