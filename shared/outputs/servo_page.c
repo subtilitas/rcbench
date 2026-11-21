@@ -77,13 +77,13 @@ static uint8_t target_first(const servo_page_t *p)
  * @brief One past the last channel the sweep and the hold command.
  *
  * @param p The page state.
- * @return target_first + target_n, or LINK_OUT_CHANNELS for the standard servo
- *         ports.
+ * @return target_first + target_n, or LINK_OUT_CHANNELS_ALL for the standard
+ *         servo ports.
  */
 static uint8_t target_end(const servo_page_t *p)
 {
     return (p->target_n != 0u) ? (uint8_t)(p->target_first + p->target_n)
-                               : (uint8_t)LINK_OUT_CHANNELS;
+                               : (uint8_t)LINK_OUT_CHANNELS_ALL;
 }
 
 /**
@@ -181,7 +181,7 @@ static uint8_t rate_check(const servo_page_t *p, const outputs_t *o,
         return LINK_NACK_BAD_VALUE;
     }
     for (uint8_t ch = target_first(p); ch < target_end(p); ++ch) {
-        const uint32_t bit = (ch < 16u) ? (1u << ch) : 0u;
+        const uint32_t bit = (ch < 32u) ? ((uint32_t)1u << ch) : 0u;
         if (hz != PROG_PORT_RATE_HZ && (p->sliced & bit) != 0u) {
             return LINK_NACK_BAD_VALUE;
         }
@@ -458,7 +458,7 @@ bool servo_page_target(servo_page_t *p, outputs_t *o, uint8_t first,
     return true;
 }
 
-void servo_page_ports(servo_page_t *p, uint16_t channels, uint16_t sliced)
+void servo_page_ports(servo_page_t *p, uint32_t channels, uint32_t sliced)
 {
     if (p != NULL) {
         p->ports  = channels;

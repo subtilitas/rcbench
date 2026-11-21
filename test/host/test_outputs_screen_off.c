@@ -759,7 +759,7 @@ TEST_CASE(a_failed_read_for_another_board_keeps_no_binding)
     /* A board this build has no pin map for shows no pins and takes no
      * edit; the reading for a known board ends that. */
     pose_three_protocols();
-    uint16_t slots[LINK_OS_COUNT], cc[LINK_CC_COUNT];
+    uint16_t slots[LINK_OS_ALL] = { 0 }, cc[LINK_CC_ALL] = { 0 };
     (void)outbind_to_slots(outputs_screen_binding(), slots);
     outbind_to_chan_cfg(outputs_screen_binding(), cc, 1000u, 2000u);
     bind_reading_t r;

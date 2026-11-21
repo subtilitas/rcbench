@@ -132,9 +132,10 @@ target_compile_definitions(rcbench-iomcu PRIVATE PICO_STACK_SIZE=0x1000)
 # 94us, every pass at most 250us.  The flash itself is still read, by the
 # output store and an update's checks, through the uncached window.
 pico_set_binary_type(rcbench-iomcu copy_to_ram)
-# The DShot driver's pin table: the 8 output slots and the 4 programming
-# ports (outputs_hw.c asserts it).
-target_compile_definitions(rcbench-iomcu PRIVATE OUT_DSHOT_MAX_PINS=12u)
+# The DShot driver's pin table: the 16 output slots and the 4 programming
+# ports; the PPM driver's: the 16 slots (outputs_hw.c asserts both).
+target_compile_definitions(rcbench-iomcu PRIVATE OUT_DSHOT_MAX_PINS=20u
+                                                 OUT_PPM_MAX_PINS=16u)
 
 # A bring-up build for the current monitors: with no part enabled in flash,
 # both are enabled at the SENSE page's defaults for that boot, not saved.

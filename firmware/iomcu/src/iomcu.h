@@ -71,9 +71,9 @@ typedef struct {
     uint16_t control[LINK_CT_COUNT]; /**< CONTROL page */
     uint16_t status[LINK_ST_COUNT]; /**< STATUS page */
     uint16_t bench[LINK_BN_COUNT]; /**< BENCH page */
-    uint16_t channels[LINK_CH_COUNT];   /**< what each output is asked for   */
-    uint16_t chan_cfg[LINK_CC_COUNT];   /**< what each channel is */
-    uint16_t slots[LINK_OS_COUNT];      /**< which driver drives what */
+    uint16_t channels[LINK_CH_ALL];  /**< CHANNELS, then CHANNELS_HI       */
+    uint16_t chan_cfg[LINK_CC_ALL];  /**< CHAN_CFG, then CHAN_CFG_HI       */
+    uint16_t slots[LINK_OS_ALL];     /**< OUTPUTS, then OUTPUTS_HI         */
 } iomcu_state_t;
 
 /**
@@ -209,14 +209,16 @@ extern link_dev_t    s_dev; /**< the link's device end */
  * the silence timeout) live in shared/outputs and nowhere else, so this end
  * and the panel cannot answer them differently.
  *
- * The output pages address bank channels 0..LINK_OUT_CHANNELS-1 directly.
+ * The output pages address bank channels 0..LINK_OUT_CHANNELS_ALL-1
+ * directly: CHANNELS 0 to 7, CHANNELS_HI 8 to 15.
  * The throttle lives above that range, so the control page commands it
  * without colliding with a CHANNELS-page write, and a motor command keeps
  * the control page's priority on the wire.
  */
 extern outputs_t s_outputs;
 
-#define CH_THROTTLE  LINK_OUT_CHANNELS   /**< bank channel 8, off the page */
+/** @brief Bank channel 16, off the pages. */
+#define CH_THROTTLE  LINK_OUT_CHANNELS_ALL
 
 /**
  * @brief The panel's safety line, as judged in firmware.
@@ -414,6 +416,65 @@ void slots_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
  * @return 0 to accept, or a link_nack_t to refuse.
  */
 uint8_t slots_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
+/**
+ * @brief Reads the CHANNELS_HI page (protocol 4.41).
+ *
+ * @param ctx  The iomcu_state_t the page reads or writes.
+ * @param off  First register to read.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
+ */
+void channels_hi_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+/**
+ * @brief Writes the CHANNELS_HI page (protocol 4.41).
+ *
+ * @param ctx  The iomcu_state_t the page reads or writes.
+ * @param off  First register to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
+ * @return 0 to accept, or a link_nack_t to refuse.
+ */
+uint8_t channels_hi_write(void *ctx, uint8_t off, uint8_t n,
+                          const uint16_t *in);
+/**
+ * @brief Reads the CHAN_CFG_HI page (protocol 4.41).
+ *
+ * @param ctx  The iomcu_state_t the page reads or writes.
+ * @param off  First register to read.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
+ */
+void chan_cfg_hi_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+/**
+ * @brief Writes the CHAN_CFG_HI page (protocol 4.41).
+ *
+ * @param ctx  The iomcu_state_t the page reads or writes.
+ * @param off  First register to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
+ * @return 0 to accept, or a link_nack_t to refuse.
+ */
+uint8_t chan_cfg_hi_write(void *ctx, uint8_t off, uint8_t n,
+                          const uint16_t *in);
+/**
+ * @brief Reads the OUTPUTS_HI page (protocol 4.41).
+ *
+ * @param ctx  The iomcu_state_t the page reads or writes.
+ * @param off  First register to read.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
+ */
+void slots_hi_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+/**
+ * @brief Writes the OUTPUTS_HI page (protocol 4.41).
+ *
+ * @param ctx  The iomcu_state_t the page reads or writes.
+ * @param off  First register to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
+ * @return 0 to accept, or a link_nack_t to refuse.
+ */
+uint8_t slots_hi_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
 /**
  * @brief Reads the SERVO page.
  *
@@ -724,6 +785,46 @@ void bind_out_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
 uint8_t bind_out_write(void *ctx, uint8_t off, uint8_t n,
                        const uint16_t *in);
 /**
+ * @brief Reads the BIND_CFG_HI page (protocol 4.41).
+ *
+ * @param ctx  Unused.
+ * @param off  First register to read.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
+ */
+void bind_cfg_hi_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+/**
+ * @brief Writes the BIND_CFG_HI page (protocol 4.41).
+ *
+ * @param ctx  Unused.
+ * @param off  First register to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
+ * @return 0 to accept, or a link_nack_t to refuse.
+ */
+uint8_t bind_cfg_hi_write(void *ctx, uint8_t off, uint8_t n,
+                          const uint16_t *in);
+/**
+ * @brief Reads the BIND_OUT_HI page (protocol 4.41).
+ *
+ * @param ctx  Unused.
+ * @param off  First register to read.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
+ */
+void bind_out_hi_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+/**
+ * @brief Writes the BIND_OUT_HI page (protocol 4.41).
+ *
+ * @param ctx  Unused.
+ * @param off  First register to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
+ * @return 0 to accept, or a link_nack_t to refuse.
+ */
+uint8_t bind_out_hi_write(void *ctx, uint8_t off, uint8_t n,
+                          const uint16_t *in);
+/**
  * @brief Reads the BIND page.
  *
  * @param ctx  Unused.
@@ -819,7 +920,7 @@ void ports_apply(void);
  * @param may_bind  Bit mask of the slots that may be bound. The others are
  *                  released and left unbound.
  */
-void hw_apply_only(uint8_t may_bind);
+void hw_apply_only(uint16_t may_bind);
 /**
  * @brief One slot left out of an apply bound again, at the rate it runs at; no
  * DShot port is let go for it (outputs_hw_return_slot()).
@@ -1151,12 +1252,12 @@ static inline void status_gate(iomcu_state_t *s)
  *
  * @return One bit per slot: bit i is set when slot i is bound.
  */
-static inline uint8_t bound_slots(void)
+static inline uint16_t bound_slots(void)
 {
-    uint8_t bound = 0u;
+    uint16_t bound = 0u;
     for (uint8_t i = 0; i < OUT_MAX_SLOTS; ++i) {
         if (outputs_hw_bound(i)) {
-            bound |= (uint8_t)(1u << i);
+            bound |= (uint16_t)(1u << i);
         }
     }
     return bound;

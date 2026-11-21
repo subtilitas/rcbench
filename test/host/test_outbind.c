@@ -548,7 +548,7 @@ TEST_CASE(what_this_writes_is_what_the_bank_accepts)
     static const uint8_t gp[4] = { 0, 1, 20, 28 };
     for (unsigned i = 0; i < 4u; ++i) { CHECK(outbind_toggle(&b, idx(gp[i]))); }
 
-    uint16_t slots[LINK_OS_COUNT];
+    uint16_t slots[LINK_OS_ALL] = { 0 };
     const uint8_t n = outbind_to_slots(&b, slots);
 
     outputs_t o;

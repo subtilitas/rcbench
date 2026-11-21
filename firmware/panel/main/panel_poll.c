@@ -338,7 +338,7 @@ static void post_reading(const bind_reading_t *r)
  */
 void post_no_reading(void)
 {
-    static bind_reading_t r;     /* 140 bytes kept off the task's stack */
+    static bind_reading_t r;     /* 268 bytes kept off the task's stack */
     (void)bind_link_classify(&r, s_board, NULL, NULL);
     post_reading(&r);
 }
@@ -356,7 +356,8 @@ void post_no_reading(void)
 void read_outputs_binding(void)
 {
     static bind_reading_t r;     /* control task only */
-    if (bind_link_read(&s_host, &k_port, s_board, &r) == BIND_READ_OK) {
+    if (bind_link_read(&s_host, &k_port, s_far_minor, s_board, &r)
+        == BIND_READ_OK) {
         /*
          * Which channels the horn may drive, from the pages themselves rather
          * than from the binding they were read into.  A binding names one

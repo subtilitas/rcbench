@@ -22,6 +22,7 @@
 
 #include "out_store_map.h"
 #include "out_store_rec.h"
+#include "outputs_pages.h"
 #include "prog_port.h"
 #include "sense_page.h"
 #include "tone_page.h"
@@ -452,6 +453,13 @@ static void numbered(out_store_t *c, uint16_t base)
     for (size_t i = 0; i < sizeof(*c) / sizeof(uint16_t); ++i) {
         w[i] = (uint16_t)(base + i);
     }
+    /* Each slot's run one channel of its own, inside every version's
+     * channels: slot s on channel s. */
+    for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
+        c->slots[s * LINK_OS_STRIDE + LINK_OS_RANGE] = LINK_OS_RANGE_OF(s, 1u);
+        c->slots_hi[s * LINK_OS_STRIDE + LINK_OS_RANGE] =
+            LINK_OS_RANGE_OF(8u + s, 1u);
+    }
 }
 
 /* Each version appends to the one before: 64 registers of bindings, then
@@ -467,32 +475,53 @@ TEST_CASE(each_record_version_carries_the_one_before_and_more)
     CHECK_EQ(out_store_cfg_size(6u), 176u);
     CHECK_EQ(out_store_cfg_size(7u), 208u);
     CHECK_EQ(out_store_cfg_size(8u), 288u);
-    CHECK_EQ(OUT_STORE_VERSION, 8u);
+    CHECK_EQ(out_store_cfg_size(9u), 416u);
+    CHECK_EQ(OUT_STORE_VERSION, 9u);
     CHECK_EQ(sizeof(((out_store_t *)0)->prog),
              PROG_PORT_KEPT_COUNT * sizeof(uint16_t));
     CHECK_EQ(out_store_cfg_size(OUT_STORE_VERSION), sizeof(out_store_t));
     CHECK_EQ(sizeof(out_store_t) % 4u, 0u);
     CHECK_EQ(out_store_cfg_size(2u), 0u);
-    CHECK_EQ(out_store_cfg_size(9u), 0u);
-    /* A header of 20 bytes: version 7 fits one 256-byte flash page, version
-     * 8 takes two. */
+    CHECK_EQ(out_store_cfg_size(10u), 0u);
+    /* A header of 20 bytes: version 7 fits one 256-byte flash page,
+     * versions 8 and 9 take two. */
     CHECK_EQ(out_store_rec_size(7u), 228u);
     CHECK_EQ(out_store_rec_size(8u), 308u);
-    CHECK_EQ(out_store_rec_size(9u), 0u);
+    CHECK_EQ(out_store_rec_size(9u), 436u);
+    CHECK_EQ(out_store_rec_size(10u), 0u);
     CHECK(out_store_rec_size(7u) <= OUT_STORE_SLOT_BYTES_V7);
     CHECK(out_store_rec_size(8u) > 256u);
-    CHECK(out_store_rec_size(8u) <= OUT_STORE_SLOT_BYTES);
+    CHECK(out_store_rec_size(9u) <= OUT_STORE_SLOT_BYTES);
     CHECK_EQ(OUT_STORE_SLOT_BYTES, 512u);
 }
 
-TEST_CASE(a_version_8_record_reads_back_whole)
+TEST_CASE(a_version_9_record_reads_back_whole)
 {
     out_store_t in;
     out_store_t out;
     numbered(&in, 0x1000u);
     memset(&out, 0, sizeof(out));
-    CHECK(out_store_cfg_read(8u, &in, &out));
+    CHECK(out_store_cfg_read(9u, &in, &out));
     CHECK_EQ(memcmp(&in, &out, sizeof(in)), 0);
+}
+
+/* A record from before protocol 4.41: everything it carries, no slot past
+ * slot 8, and channels 9 to 16 as CHAN_CFG_HI starts. */
+TEST_CASE(a_version_8_record_leaves_slots_9_to_16_unbound)
+{
+    out_store_t in;
+    out_store_t out;
+    numbered(&in, 0x1100u);
+    memset(&out, 0xA5, sizeof(out));
+    CHECK(out_store_cfg_read(8u, &in, &out));
+    CHECK_EQ(memcmp(&out, &in, offsetof(out_store_t, slots_hi)), 0);
+    uint16_t cc[LINK_CC_COUNT];
+    outputs_chan_cfg_defaults(cc);
+    CHECK_EQ(memcmp(out.chan_cfg_hi, cc, sizeof(cc)), 0);
+    CHECK_EQ(cc[LINK_CC_ROLE], LINK_CC_ROLE_SURFACE);
+    for (unsigned i = 0; i < LINK_OS_COUNT; ++i) {
+        CHECK_EQ(out.slots_hi[i], 0u);
+    }
 }
 
 /* A record from before the map: everything it carries; the map not in
@@ -518,11 +547,12 @@ TEST_CASE(a_version_7_record_keeps_everything_and_leaves_the_map_derived)
 /* A record as a save stages it: two pages, the record and then 0xFF. */
 static uint8_t g_slot[OUT_STORE_SLOT_BYTES];
 
+/* A record of the two-page layout: version 8 or 9. */
 static bool check8(uint32_t *seq)
 {
     uint16_t version = 0u;
-    return out_store_rec_check(g_slot, sizeof(g_slot), 8u, 8u, &version, seq)
-           && version == 8u;
+    return out_store_rec_check(g_slot, sizeof(g_slot), 8u, 9u, &version, seq)
+           && (version == 8u || version == 9u);
 }
 
 TEST_CASE(a_record_over_two_pages_is_whole_or_no_record)
@@ -534,12 +564,12 @@ TEST_CASE(a_record_over_two_pages_is_whole_or_no_record)
     uint32_t seq = 0u;
     CHECK(check8(&seq));
     CHECK_EQ(seq, 41u);
-    for (size_t b = out_store_rec_size(8u); b < sizeof(g_slot); ++b) {
+    for (size_t b = out_store_rec_size(9u); b < sizeof(g_slot); ++b) {
         CHECK_EQ(g_slot[b], 0xFFu);
     }
     /* Its configuration where the record says it is. */
     out_store_t back;
-    CHECK(out_store_cfg_read(8u, g_slot + sizeof(out_store_hdr_t), &back));
+    CHECK(out_store_cfg_read(9u, g_slot + sizeof(out_store_hdr_t), &back));
     CHECK_EQ(memcmp(&back, &cfg, sizeof(cfg)), 0);
     /* The first page programmed, the second not yet: no record. */
     uint8_t keep[OUT_STORE_SLOT_BYTES];
@@ -552,7 +582,7 @@ TEST_CASE(a_record_over_two_pages_is_whole_or_no_record)
     CHECK(!check8(&seq));
     /* One bit of the second page's configuration still erased. */
     memcpy(g_slot, keep, sizeof(keep));
-    for (size_t b = 300u; b < out_store_rec_size(8u); ++b) {
+    for (size_t b = 300u; b < out_store_rec_size(9u); ++b) {
         if (g_slot[b] != 0xFFu) {
             g_slot[b] = (uint8_t)(g_slot[b] | 0x01u
                                   | (uint8_t)~g_slot[b]);   /* all set */
@@ -567,16 +597,210 @@ TEST_CASE(a_record_over_two_pages_is_whole_or_no_record)
     /* The record whole again, and a slot too short to hold it. */
     memcpy(g_slot, keep, sizeof(keep));
     CHECK(check8(&seq));
-    CHECK(!out_store_rec_check(g_slot, 307u, 8u, 8u, NULL, NULL));
-    CHECK(!out_store_rec_check(g_slot, 10u, 8u, 8u, NULL, NULL));
-    CHECK(!out_store_rec_check(NULL, 512u, 8u, 8u, NULL, NULL));
-    CHECK(out_store_rec_check(g_slot, 308u, 8u, 8u, NULL, NULL));
+    CHECK(!out_store_rec_check(g_slot, 435u, 8u, 9u, NULL, NULL));
+    CHECK(!out_store_rec_check(g_slot, 10u, 8u, 9u, NULL, NULL));
+    CHECK(!out_store_rec_check(NULL, 512u, 8u, 9u, NULL, NULL));
+    CHECK(out_store_rec_check(g_slot, 436u, 8u, 9u, NULL, NULL));
+    /* An image of protocol 4.40 reads version 8 alone: no record. */
+    CHECK(!out_store_rec_check(g_slot, sizeof(g_slot), 8u, 8u, NULL, NULL));
     /* An erased slot is no record. */
     memset(g_slot, 0xFF, sizeof(g_slot));
     CHECK(!check8(&seq));
     CHECK(!out_store_rec_build(NULL, sizeof(g_slot), 8u, 1u, &cfg));
     CHECK(!out_store_rec_build(g_slot, 256u, 8u, 1u, &cfg));  /* too long */
-    CHECK(!out_store_rec_build(g_slot, sizeof(g_slot), 9u, 1u, &cfg));
+    CHECK(!out_store_rec_build(g_slot, sizeof(g_slot), 10u, 1u, &cfg));
+}
+
+/*
+ * A slot whose channel run reaches the bank's channels past the link's
+ * starts unbound and drives nothing.  A record of version 8 or older is
+ * of a link with channels 1 to 8: a run past channel 8 meant that image's
+ * bench throttle (channel 8), its programming ports (9 to 12) or no page's
+ * channel.  A version 9 record, or any page, with a run past channel 16
+ * reaches this image's throttle (16) and ports (17 to 20).
+ */
+TEST_CASE(a_kept_slot_past_the_links_channels_starts_unbound)
+{
+    static const uint16_t k_old[] = {
+        LINK_OS_RANGE_OF(8u, 1u), LINK_OS_RANGE_OF(16u, 1u),
+        LINK_OS_RANGE_OF(7u, 2u), LINK_OS_RANGE_OF(12u, 1u),
+    };
+    for (unsigned v = 3u; v <= 8u; ++v) {
+        for (size_t k = 0; k < sizeof(k_old) / sizeof(k_old[0]); ++k) {
+            out_store_t in;
+            out_store_cfg_defaults(&in);
+            for (unsigned s = 0; s < 2u; ++s) {
+                uint16_t *r = &in.slots[s * LINK_OS_STRIDE];
+                r[LINK_OS_DRIVER]  = LINK_DRIVER_PWM;
+                r[LINK_OS_PIN]     = (uint16_t)(2u + s);
+                r[LINK_OS_RATE_HZ] = 50u;
+            }
+            in.slots[LINK_OS_RANGE] = LINK_OS_RANGE_OF(0u, 1u);
+            in.slots[LINK_OS_STRIDE + LINK_OS_RANGE] = k_old[k];
+            out_store_t out;
+            CHECK(out_store_cfg_read((uint16_t)v, &in, &out));
+            CHECK_EQ(out.slots[LINK_OS_DRIVER], LINK_DRIVER_PWM);
+            CHECK_EQ(out.slots[LINK_OS_STRIDE + LINK_OS_DRIVER],
+                     LINK_DRIVER_NONE);
+        }
+    }
+    /* Version 9: channel 16 is the last a slot renders; the boot frees a
+     * run past it and the bank never configures one. */
+    static const struct { uint16_t range; bool kept; } k_new[] = {
+        { LINK_OS_RANGE_OF(15u, 1u), true },  { LINK_OS_RANGE_OF(16u, 1u), false },
+        { LINK_OS_RANGE_OF(8u, 8u), true },   { LINK_OS_RANGE_OF(9u, 8u), false },
+        { LINK_OS_RANGE_OF(20u, 1u), false }, { LINK_OS_RANGE_OF(255u, 1u), false },
+    };
+    for (size_t k = 0; k < sizeof(k_new) / sizeof(k_new[0]); ++k) {
+        out_store_t in;
+        out_store_cfg_defaults(&in);
+        uint16_t *r = &in.slots_hi[7u * LINK_OS_STRIDE];      /* slot 16 */
+        const bool ppm = LINK_OS_CHANNELS(k_new[k].range) > 1u;
+        r[LINK_OS_DRIVER]  = ppm ? LINK_DRIVER_PPM : LINK_DRIVER_PWM;
+        r[LINK_OS_PIN]     = 20u;
+        r[LINK_OS_RANGE]   = k_new[k].range;
+        r[LINK_OS_RATE_HZ] = ppm ? 40u : 50u;
+        CHECK(out_store_rec_build(g_slot, sizeof(g_slot), OUT_STORE_VERSION,
+                                  3u, &in));
+        out_store_t got;
+        CHECK(out_store_cfg_read(OUT_STORE_VERSION,
+                                 g_slot + sizeof(out_store_hdr_t), &got));
+        /* As main() restores it: the two pages, held to the write rules. */
+        uint16_t pages[LINK_OS_ALL];
+        memcpy(pages, got.slots, sizeof(got.slots));
+        memcpy(&pages[LINK_OS_COUNT], got.slots_hi, sizeof(got.slots_hi));
+        CHECK_EQ(outputs_slots_free_unwritable(pages), k_new[k].kept ? 0u : 1u);
+        outputs_t o;
+        outputs_init(&o, 0u);
+        outputs_slots_apply(&o, pages);
+        CHECK_EQ(o.slot[15].driver != OUT_DRIVER_NONE, k_new[k].kept);
+        /* And the bank alone, handed the raw page, configures nothing past
+         * channel 16 either. */
+        memcpy(&pages[LINK_OS_COUNT], got.slots_hi, sizeof(got.slots_hi));
+        outputs_init(&o, 0u);
+        outputs_slots_apply(&o, pages);
+        CHECK_EQ(o.slot[15].driver != OUT_DRIVER_NONE, k_new[k].kept);
+        for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
+            CHECK(o.slot[i].driver == OUT_DRIVER_NONE
+                  || (unsigned)o.slot[i].first_channel + o.slot[i].channels
+                         <= LINK_OUT_CHANNELS_ALL);
+        }
+    }
+}
+
+/*
+ * A 4.40 bench's motor stays bound across the update.  The binding model
+ * puts a motor on a channel of its own among channels 1 to 8 with the
+ * THROTTLE role on CHAN_CFG; the bank's throttle channel (8 under 4.40,
+ * 16 here) has no slot and reaches the motor through that role.  The
+ * slot, the role and the throttle command all come through, and the
+ * record saves as version 9 and reads back the same.
+ */
+TEST_CASE(a_4_40_motor_keeps_its_slot_and_its_throttle_after_the_update)
+{
+    out_store_t in;
+    out_store_cfg_defaults(&in);
+    static const struct { uint16_t driver, pin, rate; uint8_t ch; bool motor; }
+        k_bench[] = {
+            { LINK_DRIVER_DSHOT_BIDIR, 0u, 600u, 0u, true },
+            { LINK_DRIVER_PWM,         1u, 50u, 1u, true },
+            { LINK_DRIVER_PWM,         2u, 50u, 2u, false },
+            { LINK_DRIVER_PWM,         13u, 50u, 7u, false },
+        };
+    for (unsigned i = 0; i < 4u; ++i) {
+        uint16_t *r = &in.slots[i * LINK_OS_STRIDE];
+        r[LINK_OS_DRIVER]  = k_bench[i].driver;
+        r[LINK_OS_PIN]     = k_bench[i].pin;
+        r[LINK_OS_RANGE]   = LINK_OS_RANGE_OF(k_bench[i].ch, 1u);
+        r[LINK_OS_RATE_HZ] = k_bench[i].rate;
+        in.chan_cfg[k_bench[i].ch * LINK_CC_STRIDE + LINK_CC_ROLE] =
+            (uint16_t)(k_bench[i].motor ? LINK_CC_ROLE_THROTTLE
+                                      : LINK_CC_ROLE_SURFACE);
+    }
+    for (unsigned v = 3u; v <= 8u; ++v) {
+        out_store_t got;
+        CHECK(out_store_cfg_read((uint16_t)v, &in, &got));
+        CHECK_EQ(memcmp(got.slots, in.slots, sizeof(in.slots)), 0);
+        /* As main() restores it. */
+        uint16_t pages[LINK_OS_ALL];
+        memcpy(pages, got.slots, sizeof(got.slots));
+        memcpy(&pages[LINK_OS_COUNT], got.slots_hi, sizeof(got.slots_hi));
+        CHECK_EQ(outputs_slots_free_unwritable(pages), 0u);
+        uint16_t kept[LINK_CC_ALL], cfg[LINK_CC_ALL];
+        memcpy(kept, got.chan_cfg, sizeof(got.chan_cfg));
+        memcpy(&kept[LINK_CC_COUNT], got.chan_cfg_hi, sizeof(got.chan_cfg_hi));
+        outputs_chan_cfg_restore(cfg, kept);
+        CHECK_EQ(prog_port_slots_free(pages), 0u);
+        outputs_t o;
+        outputs_init(&o, 0u);
+        outputs_slots_apply(&o, pages);
+        outputs_chan_cfg_apply(&o, cfg);
+        for (unsigned i = 0; i < 4u; ++i) {
+            CHECK(o.slot[i].driver != OUT_DRIVER_NONE);
+            CHECK_EQ(o.slot[i].first_channel, k_bench[i].ch);
+            CHECK_EQ(o.channel[k_bench[i].ch].role == OUT_ROLE_THROTTLE,
+                     k_bench[i].motor);
+        }
+        /* The control page's throttle, as the IOmcu sets it: the bank's
+         * throttle channel and every channel with the THROTTLE role. */
+        (void)outputs_set(&o, (uint8_t)LINK_OUT_CHANNELS_ALL, 300u, 0u);
+        (void)outputs_set_role_channels(&o, OUT_ROLE_THROTTLE,
+                                        (uint8_t)(PROG_PORT_CHANNEL0
+                                                  + LINK_PG_PORTS_MAX),
+                                        300u, 0u);
+        for (unsigned i = 0; i < 4u; ++i) {
+            CHECK_EQ(outputs_command(&o, k_bench[i].ch) == 300u,
+                     k_bench[i].motor);
+        }
+        /* Saved as version 9 and read back the same. */
+        CHECK(out_store_rec_build(g_slot, sizeof(g_slot), OUT_STORE_VERSION,
+                                  4u, &got));
+        out_store_t back;
+        CHECK(out_store_cfg_read(OUT_STORE_VERSION,
+                                 g_slot + sizeof(out_store_hdr_t), &back));
+        CHECK_EQ(memcmp(&back, &got, sizeof(got)), 0);
+    }
+}
+
+/* The update to 4.41: a version 8 record in its two-page slot, read by this
+ * build with slots 9 to 16 unbound, saved again as version 9 and read back
+ * whole. */
+TEST_CASE(a_version_8_record_in_flash_is_read_and_saved_as_version_9)
+{
+    out_store_t cfg;
+    numbered(&cfg, 0x7000u);
+    CHECK(out_store_rec_build(g_slot, sizeof(g_slot), 8u, 12u, &cfg));
+    for (size_t b = out_store_rec_size(8u); b < sizeof(g_slot); ++b) {
+        CHECK_EQ(g_slot[b], 0xFFu);
+    }
+    uint16_t version = 0u;
+    uint32_t seq = 0u;
+    CHECK(out_store_rec_check(g_slot, sizeof(g_slot), OUT_STORE_VERSION_V8,
+                              OUT_STORE_VERSION, &version, &seq));
+    CHECK_EQ(version, 8u);
+    CHECK_EQ(seq, 12u);
+    out_store_t got;
+    CHECK(out_store_cfg_read(version, g_slot + sizeof(out_store_hdr_t),
+                             &got));
+    CHECK_EQ(memcmp(&got, &cfg, offsetof(out_store_t, slots_hi)), 0);
+    CHECK_EQ(got.slots_hi[LINK_OS_DRIVER], (uint16_t)LINK_DRIVER_NONE);
+    CHECK_EQ(got.chan_cfg_hi[LINK_CC_MAX_US], LINK_CC_DEFAULT_MAX);
+
+    /* Slot 9 bound and saved: a version 9 record, slot 9 read back. */
+    got.slots_hi[LINK_OS_DRIVER] = LINK_DRIVER_PWM;
+    got.slots_hi[LINK_OS_PIN] = 16u;
+    got.slots_hi[LINK_OS_RANGE] = LINK_OS_RANGE_OF(8u, 1u);
+    got.slots_hi[LINK_OS_RATE_HZ] = 50u;
+    CHECK(out_store_rec_build(g_slot, sizeof(g_slot), OUT_STORE_VERSION,
+                              seq + 1u, &got));
+    CHECK(out_store_rec_check(g_slot, sizeof(g_slot), OUT_STORE_VERSION_V8,
+                              OUT_STORE_VERSION, &version, &seq));
+    CHECK_EQ(version, 9u);
+    CHECK_EQ(seq, 13u);
+    out_store_t back;
+    CHECK(out_store_cfg_read(version, g_slot + sizeof(out_store_hdr_t),
+                             &back));
+    CHECK_EQ(memcmp(&back, &got, sizeof(got)), 0);
 }
 
 /* Each layout takes its own versions: a version 7 record that starts a
@@ -735,7 +959,7 @@ TEST_CASE(a_record_of_another_version_reads_as_nothing)
     memset(&out, 0x5A, sizeof(out));
     was = out;
     CHECK(!out_store_cfg_read(2u, &in, &out));
-    CHECK(!out_store_cfg_read(9u, &in, &out));
+    CHECK(!out_store_cfg_read(10u, &in, &out));
     CHECK(!out_store_cfg_read(7u, NULL, &out));
     CHECK_EQ(memcmp(&out, &was, sizeof(out)), 0);
     CHECK(!out_store_cfg_read(7u, &in, NULL));
@@ -760,9 +984,13 @@ int main(void)
     RUN(a_power_cut_during_a_save_leaves_the_record_before_it);
     RUN(a_power_cut_during_an_erase_leaves_the_live_record);
     RUN(each_record_version_carries_the_one_before_and_more);
-    RUN(a_version_8_record_reads_back_whole);
+    RUN(a_version_9_record_reads_back_whole);
+    RUN(a_version_8_record_leaves_slots_9_to_16_unbound);
     RUN(a_version_7_record_keeps_everything_and_leaves_the_map_derived);
     RUN(a_record_over_two_pages_is_whole_or_no_record);
+    RUN(a_version_8_record_in_flash_is_read_and_saved_as_version_9);
+    RUN(a_kept_slot_past_the_links_channels_starts_unbound);
+    RUN(a_4_40_motor_keeps_its_slot_and_its_throttle_after_the_update);
     RUN(a_version_7_record_belongs_to_the_one_page_layout);
     RUN(the_one_page_layouts_live_sector_is_kept_until_replaced);
     RUN(a_version_6_record_keeps_its_tap_and_gives_the_port_its_default_pin);

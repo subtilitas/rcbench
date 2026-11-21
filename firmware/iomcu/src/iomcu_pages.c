@@ -86,11 +86,14 @@ void bench_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
  */
 void save_outputs(const iomcu_state_t *s)
 {
-    /* Core 0's alone, and 288 bytes: off the stack. */
+    /* Core 0's alone, and 416 bytes: off the stack. */
     static out_store_t cfg;
     memset(&cfg, 0, sizeof(cfg));
     memcpy(cfg.slots, s->slots, sizeof(cfg.slots));
     memcpy(cfg.chan_cfg, s->chan_cfg, sizeof(cfg.chan_cfg));
+    memcpy(cfg.slots_hi, &s->slots[LINK_OS_COUNT], sizeof(cfg.slots_hi));
+    memcpy(cfg.chan_cfg_hi, &s->chan_cfg[LINK_CC_COUNT],
+           sizeof(cfg.chan_cfg_hi));
     /* And the supply's wiring, so a restart can still switch a module off. */
     memcpy(cfg.supply, &s_supply.regs[LINK_SP_ENABLE], sizeof(cfg.supply));
     /* And the sensor bus's set-up, so its pins stay held across one. */
@@ -107,19 +110,49 @@ void save_outputs(const iomcu_state_t *s)
     out_store_save(&cfg, s_now_ms);
 }
 
-void channels_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+/**
+ * @brief Copies @p n registers of a page held from @p regs.
+ *
+ * link_dev_dispatch() has checked the window against the page's count.
+ *
+ * @param regs The page's first register.
+ * @param off First register of the window.
+ * @param n Number of registers.
+ * @param out Receives the @p n values.
+ */
+static void page_window(const uint16_t *regs, uint8_t off, uint8_t n,
+                        uint16_t *out)
 {
-    const iomcu_state_t *s = (const iomcu_state_t *)ctx;
-    for (uint8_t i = 0; i < n; ++i) {
-        out[i] = s->channels[off + i];
-    }
+    memcpy(out, &regs[off], (size_t)n * sizeof(uint16_t));
 }
 
-uint8_t channels_write(void *ctx, uint8_t off, uint8_t n,
-                              const uint16_t *in)
+void channels_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
-    iomcu_state_t *s = (iomcu_state_t *)ctx;
-    const uint8_t nack = outputs_channels_write(s->channels, off, n, in);
+    page_window(((const iomcu_state_t *)ctx)->channels, off, n, out);
+}
+
+void channels_hi_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    page_window(&((const iomcu_state_t *)ctx)->channels[LINK_CH_COUNT], off,
+                n, out);
+}
+
+/**
+ * @brief A window of CHANNELS (@p base 0) or CHANNELS_HI (@p base
+ *        LINK_CH_COUNT) stored and commanded.
+ *
+ * @param s The state.
+ * @param base The page's first channel in s->channels.
+ * @param off First register of the window.
+ * @param n Number of registers.
+ * @param in The @p n commands.
+ * @return 0, or the refusal of outputs_channels_write().
+ */
+static uint8_t channels_put(iomcu_state_t *s, uint8_t base, uint8_t off,
+                            uint8_t n, const uint16_t *in)
+{
+    const uint8_t nack = outputs_channels_write(&s->channels[base], off, n,
+                                                in);
     if (nack != 0u) {
         return nack;
     }
@@ -129,8 +162,22 @@ uint8_t channels_write(void *ctx, uint8_t off, uint8_t n,
      * timeout that returns an uncommanded output to rest is per channel
      * exactly so that one screen's traffic cannot hold another's output up.
      */
-    outputs_channels_apply_n(&s_outputs, s->channels, off, n, s_now_ms);
+    outputs_channels_apply_n(&s_outputs, s->channels, (uint8_t)(base + off),
+                             n, s_now_ms);
     return 0u;
+}
+
+uint8_t channels_write(void *ctx, uint8_t off, uint8_t n,
+                              const uint16_t *in)
+{
+    return channels_put((iomcu_state_t *)ctx, 0u, off, n, in);
+}
+
+uint8_t channels_hi_write(void *ctx, uint8_t off, uint8_t n,
+                          const uint16_t *in)
+{
+    return channels_put((iomcu_state_t *)ctx, (uint8_t)LINK_CH_COUNT, off, n,
+                        in);
 }
 
 /**
@@ -230,7 +277,7 @@ void ports_apply(void)
  * bound; hw_apply() binds every one.  The programming ports follow, on what
  * the slots leave.
  */
-void hw_apply_only(uint8_t may_bind)
+void hw_apply_only(uint16_t may_bind)
 {
     (void)target_sync();
     uint16_t rate[OUT_MAX_SLOTS];
@@ -255,7 +302,7 @@ bool hw_return_slot(uint8_t slot)
 
 void hw_apply(void)
 {
-    hw_apply_only(0xFFu);
+    hw_apply_only(0xFFFFu);
 }
 
 /**
@@ -271,10 +318,13 @@ static bool bank_armed(const iomcu_state_t *s)
 
 void chan_cfg_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
-    const iomcu_state_t *s = (const iomcu_state_t *)ctx;
-    for (uint8_t i = 0; i < n; ++i) {
-        out[i] = s->chan_cfg[off + i];
-    }
+    page_window(((const iomcu_state_t *)ctx)->chan_cfg, off, n, out);
+}
+
+void chan_cfg_hi_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    page_window(&((const iomcu_state_t *)ctx)->chan_cfg[LINK_CC_COUNT], off,
+                n, out);
 }
 
 /** @brief Why the last binding write was refused, a link_bind_why_t. */
@@ -289,11 +339,11 @@ uint8_t bind_refuse(uint8_t why, uint8_t nack)
 uint8_t bind_why(void) { return s_bind_why; }
 
 /*
- * A whole CHAN_CFG page, judged and put in force: 0, or the reason with the
- * page in force unchanged.  A CHAN_CFG write is the page with one window
- * replaced and @p slots NULL; a BIND commit is the page prepared
- * (out_stage_commit()), with the OUTPUTS page prepared beside it as
- * @p slots, which saves once for both pages and passes @p save false.
+ * Both CHAN_CFG pages, judged and put in force: 0, or the reason with the
+ * pages in force unchanged.  A CHAN_CFG or CHAN_CFG_HI write is the pages
+ * with one window replaced and @p slots NULL; a BIND commit is the pages it
+ * takes (out_stage_commit()), with the OUTPUTS pages it takes beside them
+ * as @p slots, which saves once for all and passes @p save false.
  */
 uint8_t chan_cfg_take(iomcu_state_t *s, const uint16_t *next,
                              const uint16_t *slots, bool save)
@@ -318,7 +368,7 @@ uint8_t chan_cfg_take(iomcu_state_t *s, const uint16_t *next,
                                      servo_page_slots_hz(&s_servo)) != 0u) {
         return bind_refuse(LINK_BW_PULSE, LINK_NACK_BAD_VALUE);
     }
-    uint16_t was[LINK_CC_COUNT];
+    static uint16_t was[LINK_CC_ALL];
     memcpy(was, s->chan_cfg, sizeof(was));
     memcpy(s->chan_cfg, next, sizeof(s->chan_cfg));
     outputs_chan_cfg_apply(&s_outputs, s->chan_cfg);
@@ -334,30 +384,56 @@ uint8_t chan_cfg_take(iomcu_state_t *s, const uint16_t *next,
     return bind_refuse(LINK_BW_NONE, 0u);
 }
 
-uint8_t chan_cfg_write(void *ctx, uint8_t off, uint8_t n,
-                              const uint16_t *in)
+/**
+ * @brief A window of CHAN_CFG (@p base 0) or CHAN_CFG_HI (@p base
+ *        LINK_CC_COUNT) written: both pages judged with it and put in force.
+ *
+ * @param s The state.
+ * @param base The page's first register in s->chan_cfg.
+ * @param off First register of the window.
+ * @param n Number of registers.
+ * @param in The @p n values.
+ * @return 0, or the refusal.
+ */
+static uint8_t chan_cfg_put(iomcu_state_t *s, uint8_t base, uint8_t off,
+                            uint8_t n, const uint16_t *in)
 {
-    iomcu_state_t *s = (iomcu_state_t *)ctx;
-    uint16_t next[LINK_CC_COUNT];
+    static uint16_t next[LINK_CC_ALL];
 
     /* The output the ESC_WIRE page holds gets back what it had. */
     if (esc_port_supply_hold(&s_esc)) {
         return bind_refuse(LINK_BW_ESC_WIRE, LINK_NACK_BUSY);
     }
     memcpy(next, s->chan_cfg, sizeof(next));
-    const uint8_t nack = outputs_chan_cfg_write(next, off, n, in);
+    const uint8_t nack = outputs_chan_cfg_write(&next[base], off, n, in);
     if (nack != 0u) {
         return bind_refuse(LINK_BW_VALUE, nack);
     }
     return chan_cfg_take(s, next, NULL, true);
 }
 
+uint8_t chan_cfg_write(void *ctx, uint8_t off, uint8_t n,
+                              const uint16_t *in)
+{
+    return chan_cfg_put((iomcu_state_t *)ctx, 0u, off, n, in);
+}
+
+uint8_t chan_cfg_hi_write(void *ctx, uint8_t off, uint8_t n,
+                          const uint16_t *in)
+{
+    return chan_cfg_put((iomcu_state_t *)ctx, (uint8_t)LINK_CC_COUNT, off, n,
+                        in);
+}
+
 void slots_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
-    const iomcu_state_t *s = (const iomcu_state_t *)ctx;
-    for (uint8_t i = 0; i < n; ++i) {
-        out[i] = s->slots[off + i];
-    }
+    page_window(((const iomcu_state_t *)ctx)->slots, off, n, out);
+}
+
+void slots_hi_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    page_window(&((const iomcu_state_t *)ctx)->slots[LINK_OS_COUNT], off, n,
+                out);
 }
 
 /* ------------------------------------------------- the programming ports */
@@ -472,10 +548,10 @@ uint8_t servo_write(void *ctx, uint8_t off, uint8_t n,
 }
 
 /*
- * A whole OUTPUTS page, judged and put in force: 0, or the reason with the
- * page, the bank and the silicon as they were.  The page with one window
- * replaced for an OUTPUTS write, the page prepared for a BIND commit,
- * as chan_cfg_take().
+ * Both OUTPUTS pages, judged and put in force: 0, or the reason with the
+ * pages, the bank and the silicon as they were.  The pages with one window
+ * replaced for an OUTPUTS or OUTPUTS_HI write, the pages a BIND commit
+ * takes, as chan_cfg_take().
  */
 uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
 {
@@ -533,9 +609,9 @@ uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
     prog_port_yield_t yielded;
     const uint16_t servo_hz = servo_page_hz(&s_servo);
     prog_port_yield(&s_prog, yield, &yielded);
-    uint16_t prev[LINK_OS_COUNT];
+    static uint16_t prev[LINK_OS_ALL];
     memcpy(prev, s->slots, sizeof(prev));
-    const uint8_t bound_before = bound_slots();
+    const uint16_t bound_before = bound_slots();
     memcpy(s->slots, next, sizeof(s->slots));
     outputs_slots_apply(&s_outputs, s->slots);
     /* The bank has decided what the slots are; this makes the silicon agree
@@ -552,10 +628,10 @@ uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
      * refused would take the resource from the tap or the supply there.
      * outputs_bind_check() in shared/ decides; this is the glue.
      */
-    uint8_t watch = (uint8_t)(outputs_slots_changed(prev, next)
-                              | bound_before);
+    uint16_t watch = (uint16_t)(outputs_slots_changed(prev, next)
+                                | bound_before);
     if (s_pd_open) {
-        watch = 0xFFu;   /* the UART holds two state machines: every slot */
+        watch = 0xFFFFu;   /* the UART holds two state machines: every slot */
     }
     bool refused = outputs_bind_check(&s_outputs, watch, bound_slots()) != 0u;
     uint8_t why = LINK_BW_SILICON;
@@ -590,22 +666,45 @@ uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
     return bind_refuse(LINK_BW_NONE, 0u);
 }
 
-uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
-                           const uint16_t *in)
+/**
+ * @brief A window of OUTPUTS (@p base 0) or OUTPUTS_HI (@p base
+ *        LINK_OS_COUNT) written: both pages judged with it and put in force.
+ *
+ * @param s The state.
+ * @param base The page's first register in s->slots.
+ * @param off First register of the window.
+ * @param n Number of registers.
+ * @param in The @p n values.
+ * @return 0, or the refusal.
+ */
+static uint8_t slots_put(iomcu_state_t *s, uint8_t base, uint8_t off,
+                         uint8_t n, const uint16_t *in)
 {
-    iomcu_state_t *s = (iomcu_state_t *)ctx;
-    uint16_t next[LINK_OS_COUNT];
+    static uint16_t next[LINK_OS_ALL];
 
     /* The output the ESC_WIRE page holds gets back what it had. */
     if (esc_port_supply_hold(&s_esc)) {
         return bind_refuse(LINK_BW_ESC_WIRE, LINK_NACK_BUSY);
     }
     memcpy(next, s->slots, sizeof(next));
-    const uint8_t nack = outputs_slots_write(next, off, n, in);
+    const uint8_t nack = outputs_slots_write(&next[base], off, n, in);
     if (nack != 0u) {
         return bind_refuse(LINK_BW_VALUE, nack);
     }
     return slots_take(s, next, true);
+}
+
+uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
+                           const uint16_t *in)
+{
+    return slots_put((iomcu_state_t *)ctx, 0u, off, n, in);
+}
+
+uint8_t slots_hi_write(void *ctx, uint8_t off, uint8_t n,
+                       const uint16_t *in)
+{
+    return slots_put((iomcu_state_t *)ctx, (uint8_t)LINK_OS_COUNT, off, n,
+                     in);
 }
 
 uint8_t control_write(void *ctx, uint8_t off, uint8_t n,

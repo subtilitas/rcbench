@@ -13,6 +13,7 @@
 
 #include "link_crc.h"
 #include "out_store_map.h"
+#include "outputs_pages.h"
 
 #include "prog_port.h"
 #include "sense_page.h"
@@ -45,6 +46,12 @@ _Static_assert(offsetof(out_store_t, sense_map)
                == offsetof(out_store_t, prog)
                   + (size_t)LINK_PG_PORTS_MAX * 4u * sizeof(uint16_t),
                "the configuration has no padding before the map");
+_Static_assert(offsetof(out_store_t, slots_hi)
+               == offsetof(out_store_t, spare8) + sizeof(uint16_t),
+               "version 9 appends to version 8");
+_Static_assert(offsetof(out_store_t, slots_hi) == 288u
+               && sizeof(out_store_t) == 416u,
+               "the configuration of versions 8 and 9");
 _Static_assert(sizeof(out_store_t) % 4u == 0u,
                "the configuration is a whole number of 32-bit words");
 _Static_assert(sizeof(out_store_hdr_t) == 20u, "the record's head");
@@ -62,6 +69,7 @@ size_t out_store_cfg_size(uint16_t version)
 {
     switch (version) {
     case OUT_STORE_VERSION:    return sizeof(out_store_t);
+    case OUT_STORE_VERSION_V8: return offsetof(out_store_t, slots_hi);
     case OUT_STORE_VERSION_V7: return offsetof(out_store_t, sense_map);
     case OUT_STORE_VERSION_V6: return offsetof(out_store_t, prog);
     case OUT_STORE_VERSION_V5: return offsetof(out_store_t, tone);
@@ -83,6 +91,8 @@ void out_store_cfg_defaults(out_store_t *out)
     sense_page_defaults(out->sense);
     tone_page_defaults(out->tone);
     prog_port_defaults(out->prog, PROG_PORT_DEFAULT_PIN);
+    /* Channels 9 to 16 as CHAN_CFG_HI starts: surfaces at 1000 to 2000us. */
+    outputs_chan_cfg_defaults(out->chan_cfg_hi);
 }
 
 bool out_store_cfg_read(uint16_t version, const void *cfg, out_store_t *out)
@@ -95,6 +105,23 @@ bool out_store_cfg_read(uint16_t version, const void *cfg, out_store_t *out)
     out_store_cfg_defaults(out);
     /* And over it, everything the record does carry. */
     memcpy(out, cfg, size);
+    if (version < OUT_STORE_VERSION) {
+        /*
+         * Before protocol 4.41 the link had channels 1 to 8.  A slot an
+         * older image kept with a run past them rendered that image's bank
+         * channels 8 and up -- its bench throttle, its programming ports or
+         * a channel no page commanded -- which here are channels 9 to 16 or
+         * this image's throttle and ports.  It starts unbound.
+         */
+        for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
+            uint16_t *r = &out->slots[(size_t)s * LINK_OS_STRIDE];
+            if ((unsigned)LINK_OS_FIRST(r[LINK_OS_RANGE])
+                    + LINK_OS_CHANNELS(r[LINK_OS_RANGE])
+                > LINK_OUT_CHANNELS) {
+                r[LINK_OS_DRIVER] = (uint16_t)LINK_DRIVER_NONE;
+            }
+        }
+    }
     return true;
 }
 

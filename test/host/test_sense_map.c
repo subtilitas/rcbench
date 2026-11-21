@@ -102,6 +102,20 @@ TEST_CASE(the_pages_are_where_protocol_4_25_puts_them)
     CHECK_EQ(LINK_SX_COUNT, LINK_MAX_REGS);
     CHECK_EQ(LINK_SX_E(5u, LINK_SX_E_FLAGS), 31u);
     CHECK_EQ(LINK_SM_WATCH_PORT(3u), 0x13u);
+    /* Outputs 1 to 8 and 9 to 16, and the way back. */
+    CHECK_EQ(LINK_SM_WATCH_OUT(7u), 0x08u);
+    CHECK_EQ(LINK_SM_WATCH_OUT(8u), 0x40u);
+    CHECK_EQ(LINK_SM_WATCH_OUT(15u), 0x47u);
+    for (unsigned w = 0u; w <= 0xFFu; ++w) {
+        const int ch = link_sm_watch_out_of(w);
+        const int want = (w >= 0x01u && w <= 0x08u) ? (int)w - 1
+                         : (w >= 0x40u && w <= 0x47u) ? (int)w - 0x40 + 8
+                                                      : -1;
+        CHECK_EQ(ch, want);
+        if (ch >= 0) {
+            CHECK_EQ(LINK_SM_WATCH_OUT((unsigned)ch), w);
+        }
+    }
 }
 
 TEST_CASE(until_written_the_map_is_senses_one_part)
@@ -179,11 +193,12 @@ TEST_CASE(each_value_is_taken_at_its_limits_and_refused_past_them)
     CHECK_EQ(mwrite(LINK_SM_SHUNT(4u), 50u), 0u);
     CHECK_EQ(mwrite(LINK_SM_SHUNT(4u), 10000u), 0u);
     CHECK_EQ(mwrite(LINK_SM_SHUNT(4u), 0u), 0u);
-    /* WATCH: the list and nothing else. */
+    /* WATCH: the list and nothing else; outputs 9 to 16 at 0x40 to 0x47
+     * (4.41). */
     static const uint16_t ok[] = { 0x00u, 0x01u, 0x08u, 0x10u, 0x13u, 0x20u,
-                                   0x30u, 0x31u, 0x32u };
+                                   0x30u, 0x31u, 0x32u, 0x40u, 0x47u };
     static const uint16_t bad[] = { 0x09u, 0x0Fu, 0x14u, 0x1Fu, 0x21u,
-                                    0x2Fu, 0x33u, 0xFFFFu };
+                                    0x2Fu, 0x33u, 0x3Fu, 0x48u, 0xFFFFu };
     for (unsigned k = 0; k < sizeof(ok) / sizeof(ok[0]); ++k) {
         CHECK_EQ(mwrite(LINK_SM_WATCH(11u), ok[k]), 0u);
     }
@@ -284,6 +299,7 @@ TEST_CASE(servo_sense_is_a_channel_watching_an_output_a_port_or_a_rail)
     CHECK_EQ(sense_page_caps(&pg) & LINK_CAP_SERVO_SENSE, 0u);
     static const struct { uint16_t w; bool cap; } k[] = {
         { LINK_SM_WATCH_OUT(0u), true },  { LINK_SM_WATCH_OUT(7u), true },
+        { LINK_SM_WATCH_OUT(8u), true },  { LINK_SM_WATCH_OUT(15u), true },
         { LINK_SM_WATCH_PORT(0u), true }, { LINK_SM_WATCH_PORT(3u), true },
         { LINK_SM_WATCH_SUPPLY, false },  { LINK_SM_WATCH_NONE, false },
         { LINK_SM_WATCH_RAIL_A, true },   { LINK_SM_WATCH_RAIL_B, true },
