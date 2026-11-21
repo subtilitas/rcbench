@@ -245,7 +245,7 @@ TEST_CASE(a_frame_runs_unchanged_through_the_can_mapping)
     const size_t frames = link_can_encode(&m, cf, LINK_CAN_MAX_FRAMES);
     CHECK_EQ(frames, LINK_CAN_MAX_FRAMES);
 
-    uint8_t wire[LINK_CAN_MAX_FRAMES * LINK_UART_WIRE_MAX];
+    uint8_t wire[LINK_CAN_MAX_FRAMES * LINK_UART_WIRE_MAX] = {0};
     size_t n = 0;
     for (size_t i = 0; i < frames; ++i) {
         n += link_uart_encode(&cf[i], &wire[n], sizeof(wire) - n);
@@ -326,7 +326,8 @@ TEST_CASE(every_single_bit_error_fails_the_crc_and_is_counted)
             memcpy(bad, raw, len);
             bad[b / 8u] ^= (uint8_t)(1u << (b % 8u));
             uint8_t w[LINK_UART_WIRE_MAX];
-            feed(&rx, w, ref_wire(bad, len, w), &s);
+            const size_t nw = ref_wire(bad, len, w);
+            feed(&rx, w, nw, &s);
             ++flips;
         }
         CHECK_EQ(s.n, 0);
@@ -336,7 +337,8 @@ TEST_CASE(every_single_bit_error_fails_the_crc_and_is_counted)
 
         /* And the unchanged frame right after is taken. */
         uint8_t w[LINK_UART_WIRE_MAX];
-        feed(&rx, w, ref_wire(raw, len, w), &s);
+        const size_t nw = ref_wire(raw, len, w);
+        feed(&rx, w, nw, &s);
         CHECK_EQ(s.n, 1);
         CHECK_EQ(s.f[0].dlc, dlc);
     }
@@ -385,7 +387,8 @@ TEST_CASE(a_dlc_over_8_is_refused_even_with_a_good_crc)
             uint8_t raw[LINK_UART_RAW_MAX];
             uint8_t w[LINK_UART_WIRE_MAX];
             const size_t len = raw_of(0x123u, (uint8_t)dlc, data, nd, raw);
-            feed(&rx, w, ref_wire(raw, len, w), &s);
+            const size_t nw = ref_wire(raw, len, w);
+            feed(&rx, w, nw, &s);
             ++sent;
         }
     }
@@ -412,15 +415,18 @@ TEST_CASE(a_length_that_disagrees_with_the_dlc_is_refused)
             uint8_t raw[LINK_UART_RAW_MAX];
             uint8_t w[LINK_UART_WIRE_MAX];
             const size_t len = raw_of(0x7u, dlc, data, nd, raw);
-            feed(&rx, w, ref_wire(raw, len, w), &s);
+            const size_t nw = ref_wire(raw, len, w);
+            feed(&rx, w, nw, &s);
             ++sent;
         }
     }
     /* Under 7 bytes after COBS: 1 to 6 bytes. */
     for (size_t len = 1; len < LINK_UART_RAW_MIN; ++len) {
-        uint8_t raw[LINK_UART_RAW_MIN] = {0x31, 0x32, 0x33, 0x34, 0x35, 0x36};
+        const uint8_t raw[LINK_UART_RAW_MIN] = {0x31, 0x32, 0x33,
+                                                0x34, 0x35, 0x36};
         uint8_t w[LINK_UART_WIRE_MAX];
-        feed(&rx, w, ref_wire(raw, len, w), &s);
+        const size_t nw = ref_wire(raw, len, w);
+        feed(&rx, w, nw, &s);
         ++sent;
     }
     CHECK_EQ(s.n, 0);
@@ -443,7 +449,8 @@ TEST_CASE(an_identifier_above_29_bits_is_refused_both_ways)
     for (size_t i = 0; i < 3u; ++i) {
         uint8_t raw[LINK_UART_RAW_MAX];
         const size_t len = raw_of(ids[i], 0, NULL, 0, raw);
-        feed(&rx, w, ref_wire(raw, len, w), &s);
+        const size_t nw = ref_wire(raw, len, w);
+        feed(&rx, w, nw, &s);
     }
     CHECK_EQ(s.n, 0);
     CHECK_EQ(rx.counts.bad_id, 3);
@@ -452,7 +459,8 @@ TEST_CASE(an_identifier_above_29_bits_is_refused_both_ways)
     /* 0x1FFFFFFF itself is an identifier. */
     uint8_t raw[LINK_UART_RAW_MAX];
     const size_t len = raw_of(LINK_UART_ID_MAX, 0, NULL, 0, raw);
-    feed(&rx, w, ref_wire(raw, len, w), &s);
+    const size_t nw = ref_wire(raw, len, w);
+    feed(&rx, w, nw, &s);
     CHECK_EQ(s.n, 1);
     CHECK_EQ(s.f[0].id, LINK_UART_ID_MAX);
 }
@@ -831,7 +839,7 @@ TEST_CASE(frames_split_at_every_byte_boundary_decode_the_same)
     f[0] = frame(0x00000000u, 0, 0);
     f[1] = frame(0x1FFFFFFFu, 8, 0x00);
     f[2] = frame(0x0C000000u, 3, 0xFF);
-    uint8_t wire[3 * LINK_UART_WIRE_MAX];
+    uint8_t wire[3 * LINK_UART_WIRE_MAX] = {0};
     size_t n = 0;
     for (size_t i = 0; i < 3u; ++i) {
         n += link_uart_encode(&f[i], &wire[n], sizeof(wire) - n);
