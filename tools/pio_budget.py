@@ -46,12 +46,24 @@ The boards:
   rsn_allows().  A PPM slot places as a plain DShot slot does (ppm_tx and
   dshot_tx are both 4 words without an origin, the tool checks it), so
   the sweep runs each order once and adds the PPM slots' DMA channels.
-  The capture ring's event rate of each mix is held against the 42ms
-  flash window; a window that laps the ring is a gap in the capture
-  figures, not an error.
+  The capture ring's event rate of each mix without a session is held
+  against the 42ms flash window; a window that laps the ring is a gap in
+  the capture figures, not an error.  During a programming session the
+  capture guarantee does not hold: the session's pin carries the line's
+  own edges (the Hitec precharge sampler 1,843,200 a second), the
+  measured figures (pulse width, frame period, missed frames, servo
+  windows) are marked invalid for the session, and pass-through goes on,
+  because MIRROR is a state machine of its own and uses no ring.  The
+  ring use during each session is reported apart and not counted against
+  the guarantee.
 
 The tool fails when a mix that a board's table allows does not fit, and
 when a mix the table refuses fits: the table is then wrong the other way.
+Board 3's table refuses some mixes for reasons outside the chip model,
+each a named rule in RSN_RULES; a refused mix that fits must break one of
+them.  The slots the model fits beside each session's line in its own
+block are pinned in RSN_SESSION_SPARE, so a program whose length changes
+fails the check.
 
 Not modelled: a program unloaded and loaded again (a slot unbound and
 bound anew leaves a hole of its own size, which the model never sees),
@@ -783,14 +795,84 @@ def _packs(blocks: list[int], singles: int, pairs: int) -> bool:
                for i, cap in enumerate(blocks))
 
 
+def _slot_blocks(session: Use | None) -> list[int]:
+    """Free state machines per block that board 3 gives its slots.
+
+    Args:
+        session: The programming session, or None.
+
+    Returns:
+        [4, 4] without a session (PIO1 and PIO2), [3] with a Hitec D
+        session with precharge (the block of the sampler), else [4].
+    """
+    if session is None:
+        return [4, 4]
+    return [3] if session is HITEC_PRE else [4]
+
+
+@dataclasses.dataclass(frozen=True)
+class Rule:
+    """A refusal of board 3's table that the chip model does not make.
+
+    Attributes:
+        name: Its name in the report.
+        text: What it refuses and why.
+        breaks: (session, singles, pairs, ppm) -> True when refused.
+    """
+
+    name: str
+    text: str
+    breaks: object
+
+
+#: Board 3's named rules.  A mix the table refuses that fits the model
+#: must break one of them, or the tool fails.
+RSN_RULES = (
+    Rule("SESSION_BLOCK",
+         "a session's line holds its whole block; slots go in the other "
+         "block, in the 3 state machines the Hitec precharge sampler "
+         "leaves there",
+         lambda s, n1, n2, q: s is not None
+         and not _packs(_slot_blocks(s), n1, n2)),
+    Rule("PPM_MAX",
+         "at most 6 PPM slots: 3 fixed DMA channels and 2 a PPM slot",
+         lambda s, n1, n2, q: q > RSN_PPM_MAX),
+    Rule("SLOT_PINS",
+         "9 output pins, and a session takes one of them",
+         lambda s, n1, n2, q: n1 + n2 > RSN_OUTPUTS - (s is not None)),
+)
+
+#: Plain DShot slots the model fits beside each session's line in the
+#: line's own block, which SESSION_BLOCK refuses: a KST line (24 words)
+#: leaves 8 words and 3 state machines, an ESC wire line (25) 7 words,
+#: a Hitec line (30) 2 words.  The tool fails when the model differs.
+RSN_SESSION_SPARE = {"KST session": 2, "ESC wire session": 1,
+                     "Hitec session": 0, "Hitec D session with precharge": 0}
+
+
+def rsn_broken(session: Use | None, singles: int, pairs: int,
+               ppm: int) -> list[str]:
+    """The named rules a board 3 mix breaks.
+
+    Args:
+        session: The programming session, or None.
+        singles: Plain DShot and PPM slots.
+        pairs: Bidirectional DShot slots.
+        ppm: How many of the singles are PPM.
+
+    Returns:
+        The names, in RSN_RULES order.
+    """
+    return [r.name for r in RSN_RULES
+            if r.breaks(session, singles, pairs, ppm)]
+
+
 def rsn_allows(session: Use | None, singles: int, pairs: int,
                ppm: int) -> bool:
     """True when board 3's table allows a mix.
 
-    PIO0 holds the fixed load.  Without a session PIO1 and PIO2 take
-    throttle slots, 4 state machines each.  A session's line takes one of
-    the two blocks, and a Hitec D session's precharge sampler one state
-    machine of the other.
+    PIO0 holds the fixed load; PIO1 and PIO2 give the slots 4 state
+    machines each, and RSN_RULES narrow that.
 
     Args:
         session: The programming session, or None.
@@ -801,15 +883,31 @@ def rsn_allows(session: Use | None, singles: int, pairs: int,
     Returns:
         True when allowed.
     """
-    if ppm > RSN_PPM_MAX or singles + pairs > RSN_OUTPUTS:
-        return False
-    if session is None:
-        blocks = [4, 4]
-    elif session is HITEC_PRE:
-        blocks = [3]
-    else:
-        blocks = [4]
-    return _packs(blocks, singles, pairs)
+    return (_packs([4, 4], singles, pairs)
+            and not rsn_broken(session, singles, pairs, ppm))
+
+
+def session_spare(board: Board, session: Use,
+                  progs: dict[str, Program]) -> int:
+    """Plain DShot slots the model fits in a session line's own block.
+
+    Args:
+        board: Board 3.
+        session: The session.
+        progs: Its programs.
+
+    Returns:
+        The slots placed in the line's block before one goes elsewhere.
+    """
+    chip = apply(run(board, (), progs).chip, session, progs)
+    block = next(b for b in range(NUM_PIOS)
+                 if progs[session.steps[0][1]].name in chip.sms[b])
+    n = 0
+    while True:
+        nxt = apply(chip, DSHOT, progs)
+        if nxt is None or nxt.sms_used(block) == chip.sms_used(block):
+            return n
+        chip, n = nxt, n + 1
 
 
 def _rsn_mixes() -> tuple[Mix, ...]:
@@ -955,6 +1053,76 @@ def dshot_events(root: pathlib.Path = ROOT) -> tuple[int, int]:
     return frame * hz, (frame + bits["DSHOT_TELEM_BITS"]) * hz
 
 
+@dataclasses.dataclass(frozen=True)
+class Traffic:
+    """The edges a programming session puts on its pin.
+
+    Attributes:
+        rate: Edges a second at most, while it sends or receives.
+        burst_us: The longest transaction, us.
+        what: How the figures come about.
+    """
+
+    rate: int
+    burst_us: int
+    what: str
+
+    @property
+    def events(self) -> int:
+        """Edges of the longest transaction at the rate."""
+        return self.rate * self.burst_us // 1000000
+
+
+def session_traffic(root: pathlib.Path = ROOT) -> dict[str, Traffic]:
+    """Each session's edges on its pin, from the protocol headers.
+
+    A line that sends bits or half-cells changes level at most once a bit
+    or half-cell.  The Hitec precharge sampler drives the pad high and
+    releases it HITEC_PRE_SAMPLES_PER_BIT times a bit, and a servo that
+    holds the line low, as it does at rest, pulls it down after every
+    precharge: 2 edges a sample for the whole window.  pre_take() keeps
+    the pad's input enabled, so CAPTURE sees them.
+
+    Args:
+        root: The repository.
+
+    Returns:
+        Traffic by session label.
+
+    Raises:
+        BudgetError: A constant is missing.
+    """
+    kst = _defines(root, "protocols/kst/include/kst_wire.h",
+                   ("KST_HALF_CELL_NS", "KST_FRAME_MAX_HALF_CELLS",
+                    "KST_WRITE_WINDOW_NS"))
+    ew = _defines(root, "protocols/escwire/include/ew_wire.h",
+                  ("EW_BIT_TEXT_NS", "EW_RX_TEXT_MAX"))
+    hw = _defines(root, "protocols/hitec/include/hitec_wire.h",
+                  ("HITEC_D_BIT_RATE", "HITEC_D_WINDOW_US"))
+    pre = _defines(root, "protocols/hitec/include/hitec_pre.h",
+                   ("HITEC_PRE_SAMPLES_PER_BIT", "HITEC_PRE_WINDOW_MAX_US"))
+    half = kst["KST_HALF_CELL_NS"]
+    return {
+        KST.label: Traffic(
+            1000000000 // half,
+            (kst["KST_FRAME_MAX_HALF_CELLS"] * half
+             + kst["KST_WRITE_WINDOW_NS"]) // 1000,
+            "1 edge a half-cell; the longest frame and a write's reply "
+            "window"),
+        ESCWIRE.label: Traffic(
+            1000000000 // ew["EW_BIT_TEXT_NS"],
+            ew["EW_RX_TEXT_MAX"] * 10 * ew["EW_BIT_TEXT_NS"] // 1000,
+            "1 edge a bit at 38400 baud; the longest text answer"),
+        HITEC.label: Traffic(
+            hw["HITEC_D_BIT_RATE"], hw["HITEC_D_WINDOW_US"],
+            "1 edge a bit at the D series rate; its receive window"),
+        HITEC_PRE.label: Traffic(
+            2 * pre["HITEC_PRE_SAMPLES_PER_BIT"] * hw["HITEC_D_BIT_RATE"],
+            pre["HITEC_PRE_WINDOW_MAX_US"],
+            "2 edges a precharge sample; the longest sampled window"),
+    }
+
+
 def capture_rates(root: pathlib.Path = ROOT) -> Rates:
     """The capture rates of the tree's DShot and PPM drivers.
 
@@ -1038,6 +1206,9 @@ class Sweep:
         worst_quiet: The highest rate with plain DShot and PPM pads that
             read 0 (their input enable cleared).
         lapping_quiet: lapping with those pads read 0.
+        explained: Refused mixes that fit, per named rule they break.
+        session_worst: Per session label, the highest capture rate of an
+            allowed mix during its transactions, its own pin included.
     """
 
     runs: int = 0
@@ -1049,6 +1220,8 @@ class Sweep:
     lapping: list[str] = dataclasses.field(default_factory=list)
     worst_quiet: int = 0
     lapping_quiet: list[str] = dataclasses.field(default_factory=list)
+    explained: dict[str, int] = dataclasses.field(default_factory=dict)
+    session_worst: dict[str, int] = dataclasses.field(default_factory=dict)
 
 
 def _outputs(plain: int, pairs: int, ppm: int) -> str:
@@ -1088,14 +1261,15 @@ def _walk(chip: Chip, seq: str, ok: bool, limit: int, visit,
                   visit, progs)
 
 
-def sweep(board: Board, progs: dict[str, Program],
-          rates: Rates) -> Sweep:
+def sweep(board: Board, progs: dict[str, Program], rates: Rates,
+          traffic: dict[str, Traffic] | None = None) -> Sweep:
     """Runs every slot order with every session on board 3.
 
     Args:
         board: Board 3.
         progs: Its programs.
         rates: Capture events a second of one output of each kind.
+        traffic: Each session's edges on its pin; none counted without.
 
     Returns:
         The sweep.
@@ -1137,13 +1311,29 @@ def sweep(board: Board, progs: dict[str, Program],
             if session is not None:
                 what += f", {session.label} opened {order} the slots"
             if not rsn_allows(session, singles, pairs, ppm):
-                out.refused_fit += fits
+                if fits:
+                    out.refused_fit += 1
+                    broken = rsn_broken(session, singles, pairs, ppm)
+                    for name in broken:
+                        out.explained[name] = out.explained.get(name, 0) + 1
+                    if not broken:
+                        out.failures.append("refused for no named rule, "
+                                            "fits: " + what)
                 continue
             out.allowed += 1
             if not fits:
-                out.failures.append(what)
-            outputs = _outputs(singles - ppm, pairs, ppm)
+                out.failures.append("allowed, does not fit: " + what)
             rate = capture_rate(singles - ppm, pairs, ppm, rates)
+            if session is not None:
+                # The session's pin is one of the 9 outputs: its edges in
+                # place of a PWM output's.
+                rate += ((traffic or {}).get(session.label, Traffic(
+                    2 * PWM_HZ, 0, "")).rate - 2 * PWM_HZ)
+                key = session.label
+                out.session_worst[key] = max(out.session_worst.get(key, 0),
+                                             rate)
+                continue
+            outputs = _outputs(singles - ppm, pairs, ppm)
             quiet = capture_rate(singles - ppm, pairs, ppm,
                                  Rates(0, rates.bidir, 0))
             for r, laps in ((rate, out.lapping), (quiet, out.lapping_quiet)):
@@ -1167,13 +1357,16 @@ def _row(chip: Chip) -> str:
 
 
 def report(board: Board, progs: dict[str, Program],
-           rates: Rates) -> tuple[list[str], list[str]]:
+           rates: Rates,
+           traffic: dict[str, Traffic] | None = None
+           ) -> tuple[list[str], list[str]]:
     """The budget of one board.
 
     Args:
         board: The board.
         progs: The programs read from the files.
         rates: Capture events a second of one output of each kind.
+        traffic: Each session's edges on its pin.
 
     Returns:
         The report's lines and the failures.
@@ -1210,10 +1403,22 @@ def report(board: Board, progs: dict[str, Program],
                             f"the table says {want} ({mix.ref})")
         lines.append(line)
     if board.sweep:
-        sw = sweep(board, bp, rates)
+        sw = sweep(board, bp, rates, traffic)
         lines.append(f"  sweep: {sw.runs} mixes run, {sw.allowed} allowed by "
-                     f"the table, {len(sw.failures)} of them do not fit; "
-                     f"{sw.refused_fit} the table refuses fit all the same")
+                     f"the table; {sw.refused_fit} the table refuses fit "
+                     f"the model, each refused by a named rule: "
+                     + ", ".join(f"{r.name} {sw.explained.get(r.name, 0)}"
+                                 for r in RSN_RULES))
+        for r in RSN_RULES:
+            lines.append(f"    {r.name}: {r.text}")
+        for session in SESSIONS:
+            got = session_spare(board, session, bp)
+            want = RSN_SESSION_SPARE[session.label]
+            if got != want:
+                failures.append(
+                    f"board {board.number}: {session.label}: {got} plain "
+                    f"DShot fit beside the line in its block, "
+                    f"RSN_SESSION_SPARE says {want}")
         lines.append(f"  capture: {sw.worst_rate:,} events/s at most "
                      f"({sw.worst_mix}): the ring holds "
                      f"{ring_ms(sw.worst_rate):.1f}ms against a "
@@ -1228,8 +1433,21 @@ def report(board: Board, progs: dict[str, Program],
                      f"off: {sw.worst_quiet:,} events/s at most, "
                      f"{ring_ms(sw.worst_quiet):.1f}ms; laps with "
                      + ("; ".join(sw.lapping_quiet) or "none"))
-        failures += [f"board {board.number}: allowed, does not fit: {f}"
-                     for f in sw.failures]
+        lines.append("  during a programming session the capture figures "
+                     "are not guaranteed and are marked invalid; "
+                     "pass-through (MIRROR) does not use the ring:")
+        for session in SESSIONS:
+            t = (traffic or {}).get(session.label)
+            if t is None:
+                continue
+            worst = sw.session_worst.get(session.label, 0)
+            lines.append(
+                f"    {session.label}: {t.rate:,} edges/s on its pin, "
+                f"transactions up to {t.burst_us / 1000:.1f}ms, "
+                f"{t.events:,} edges ({t.what}); with the busiest allowed "
+                f"slots {worst:,} events/s, the ring holds "
+                f"{ring_ms(worst):.1f}ms")
+        failures += [f"board {board.number}: {f}" for f in sw.failures]
     return lines, failures
 
 
@@ -1244,11 +1462,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         progs = load_programs()
         rates = capture_rates()
+        traffic = session_traffic()
         failures = []
         for board in BOARDS:
             if args.board not in (None, board.number):
                 continue
-            lines, bad = report(board, progs, rates)
+            lines, bad = report(board, progs, rates, traffic)
             failures += bad
             if not args.check:
                 print("\n".join(lines) + "\n")

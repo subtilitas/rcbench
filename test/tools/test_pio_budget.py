@@ -306,7 +306,8 @@ def fixture_progs():
 @pytest.mark.parametrize("brd", pb.BOARDS, ids=lambda b: str(b.number))
 def test_every_board_passes_with_the_real_sources(brd, progs):
     """Boards 1 and 2 with today's .pio files, and board 3 as planned."""
-    lines, failures = pb.report(brd, progs, pb.capture_rates(REPO))
+    lines, failures = pb.report(brd, progs, pb.capture_rates(REPO),
+                                pb.session_traffic(REPO))
     assert failures == []
     assert lines[0].startswith(f"Board {brd.number},")
 
@@ -406,7 +407,8 @@ def test_the_sweep_finds_a_looser_table(progs, monkeypatch):
     monkeypatch.setattr(pb, "rsn_allows", loose)
     failures = pb.sweep(pb.BOARD_RSN, bp, ZERO).failures
     assert failures
-    assert any(f.startswith("4 plain, 0 bidirectional, 0 PPM")
+    assert any(f.startswith("allowed, does not fit: 4 plain, 0 "
+                            "bidirectional, 0 PPM")
                and "Hitec D" in f for f in failures)
 
 
@@ -484,3 +486,110 @@ def test_ppm_events_from_ppm_h(tmp_path):
         "#define PPM_MAX_CHANNELS 8u\n")
     with pytest.raises(pb.BudgetError, match="PPM_CHANNEL_MIN_US"):
         pb.ppm_events(tmp_path)
+
+
+# ------------------------------------------------------ named rules, sessions
+
+@pytest.mark.parametrize("session, singles, pairs, ppm, broken", [
+    (None, 8, 0, 0, []), (None, 7, 0, 7, ["PPM_MAX"]),
+    (pb.KST, 4, 0, 0, []), (pb.KST, 5, 0, 0, ["SESSION_BLOCK"]),
+    (pb.HITEC_PRE, 4, 0, 0, ["SESSION_BLOCK"]),
+    (pb.HITEC_PRE, 1, 1, 0, []),
+    (None, 9, 0, 0, []), (pb.KST, 9, 0, 0, ["SESSION_BLOCK", "SLOT_PINS"]),
+])
+def test_named_rules(session, singles, pairs, ppm, broken):
+    """Each rule refuses what its text says."""
+    assert pb.rsn_broken(session, singles, pairs, ppm) == broken
+
+
+def test_every_refused_fit_has_a_named_rule(progs):
+    """169 refused mixes fit the model; SESSION_BLOCK refuses each."""
+    bp = pb.board_programs(pb.BOARD_RSN, progs)
+    sw = pb.sweep(pb.BOARD_RSN, bp, ZERO)
+    assert sw.failures == []
+    assert sw.refused_fit == 169
+    assert sw.explained == {"SESSION_BLOCK": 169}
+
+
+def test_a_refusal_without_a_named_rule_fails(progs, monkeypatch):
+    """A table that refuses 8 plain DShot for no rule fails the check."""
+    bp = pb.board_programs(pb.BOARD_RSN, progs)
+    real = pb.rsn_allows
+
+    def strict(session, singles, pairs, ppm):
+        if session is None and (singles, pairs) == (8, 0):
+            return False
+        return real(session, singles, pairs, ppm)
+
+    monkeypatch.setattr(pb, "rsn_allows", strict)
+    failures = pb.sweep(pb.BOARD_RSN, bp, ZERO).failures
+    assert failures
+    assert all(f.startswith("refused for no named rule, fits: ")
+               and "plain, 0 bidirectional" in f for f in failures)
+
+
+def test_a_drifted_program_fails_the_check(progs):
+    """ew_line at 4 words leaves an ESC wire line's block 3 more slots.
+
+    The spare RSN_SESSION_SPARE pins no longer holds, so the check fails
+    although SESSION_BLOCK still refuses every mix that now fits.
+    """
+    drift = dict(progs, ew_line=prog("ew_line", 4))
+    _, failures = pb.report(pb.BOARD_RSN, drift, ZERO)
+    assert failures == ["board 3: ESC wire session: 3 plain DShot fit "
+                        "beside the line in its block, RSN_SESSION_SPARE "
+                        "says 1"]
+
+
+def test_session_spare_matches_the_table(progs):
+    """KST leaves 2 plain DShot in its block, ESC wire 1, Hitec 0."""
+    bp = pb.board_programs(pb.BOARD_RSN, progs)
+    assert {s.label: pb.session_spare(pb.BOARD_RSN, s, bp)
+            for s in pb.SESSIONS} == pb.RSN_SESSION_SPARE
+
+
+def test_session_traffic_from_the_headers(tmp_path):
+    """Edges a second and the longest transaction of each session.
+
+    KST: 1 edge a 25.4us half-cell, 127 half-cells and an 8ms window.
+    ESC wire: 1 edge a bit at 38400 baud, 1536 bytes of text.  Hitec: 1
+    edge a bit at 115200bit/s, a 25ms window.  Hitec precharge: 2 edges a
+    sample, 8 samples a bit, a 30ms window, 55,296 edges: more than the
+    ring's 8192.
+    """
+    t = pb.session_traffic(REPO)
+    got = {k: (v.rate, v.burst_us, v.events) for k, v in t.items()}
+    assert got == {
+        "KST session": (39370, 11225, 441),
+        "ESC wire session": (38399, 400005, 15359),
+        "Hitec session": (115200, 25000, 2880),
+        "Hitec D session with precharge": (1843200, 30000, 55296),
+    }
+    assert t["Hitec D session with precharge"].events > pb.RING_EVENTS
+    (tmp_path / "protocols/kst/include").mkdir(parents=True)
+    (tmp_path / "protocols/kst/include/kst_wire.h").write_text("")
+    with pytest.raises(pb.BudgetError, match="KST_HALF_CELL_NS"):
+        pb.session_traffic(tmp_path)
+
+
+def test_sessions_stay_out_of_the_capture_guarantee(progs):
+    """Session mixes are reported apart; the guarantee is the same.
+
+    The session's pin counts its own edges in place of a PWM output's.
+    3 plain DShot beside a Hitec precharge window give 1,954,880 events/s.
+    """
+    bp = pb.board_programs(pb.BOARD_RSN, progs)
+    rates = pb.capture_rates(REPO)
+    traffic = pb.session_traffic(REPO)
+    with_t = pb.sweep(pb.BOARD_RSN, bp, rates, traffic)
+    without = pb.sweep(pb.BOARD_RSN, bp, rates)
+    assert (with_t.worst_rate, with_t.lapping) == (without.worst_rate,
+                                                   without.lapping)
+    assert set(with_t.session_worst) == {s.label for s in pb.SESSIONS}
+    pre = with_t.session_worst["Hitec D session with precharge"]
+    assert pre == (pb.capture_rate(3, 0, 0, rates) - 2 * pb.PWM_HZ
+                   + 1843200)
+    lines, failures = pb.report(pb.BOARD_RSN, progs, rates, traffic)
+    assert failures == []
+    assert any("Hitec D session with precharge: 1,843,200 edges/s" in ln
+               for ln in lines)

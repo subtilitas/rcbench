@@ -20,7 +20,14 @@ history is in git.
   programming session. The capture ring's worst case is 8 plain DShot
   outputs at 267,200 events/s, 30.7ms of ring against a 42ms flash window:
   a plain DShot pad keeps its input enable, so its 32,000 edges a second
-  reach the ring. CI runs `--check`.
+  reach the ring. During a programming session the capture guarantee does
+  not hold: the session's pin carries its own edges, up to 1,843,200 a
+  second from the Hitec precharge sampler, and the measured figures are
+  marked invalid for the session; pass-through goes on, as MIRROR uses no
+  ring. The tool reports each session's ring use apart. A mix the remote
+  servo node's table refuses that fits the chip must break a named rule
+  (SESSION_BLOCK, PPM_MAX, SLOT_PINS), or the check fails. CI runs
+  `--check`.
 
 ## 0.23.16 - 2026-11-21
 
