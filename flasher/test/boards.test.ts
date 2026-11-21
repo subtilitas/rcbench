@@ -55,3 +55,21 @@ test('an RP2350 board takes an RP2350 UF2 file or a raw binary, never an ESP ima
   broken.copyWithin(512, 1024);
   assert.equal(reason(checkImage('rp2350', broken, 'a.uf2')), 'uf2');
 });
+
+test('a file named .uf2 always goes through the UF2 parser: a damaged or short one is refused, never taken as raw bytes', () => {
+  const reason = (r: ReturnType<typeof checkImage>): string => (r.ok ? r.format : r.reason);
+  const badFirstMagic = makeUf2(0x10000000, 2);
+  badFirstMagic[0] ^= 0xff;
+  assert.equal(reason(checkImage('rp2350', badFirstMagic, 'iomcu.uf2')), 'uf2');
+  assert.equal(reason(checkImage('rp2350', makeUf2(0x10000000, 1).subarray(0, 300), 'iomcu.uf2')), 'uf2');
+  assert.equal(reason(checkImage('rp2350', new Uint8Array(0), 'iomcu.UF2')), 'uf2');
+  assert.equal(reason(checkImage('rp2350', new Uint8Array(1024), 'image.uf2')), 'uf2');
+});
+
+test('a file named .bin that holds a UF2 container is refused, and an RP2350 takes no other name', () => {
+  const reason = (r: ReturnType<typeof checkImage>): string => (r.ok ? r.format : r.reason);
+  assert.equal(reason(checkImage('rp2350', makeUf2(0x10000000, 2), 'iomcu.bin')), 'uf2-as-bin');
+  assert.equal(reason(checkImage('rp2350', makeUf2(0x10000000, 1).subarray(0, 100), 'iomcu.bin')), 'uf2-as-bin');
+  assert.equal(reason(checkImage('rp2350', new Uint8Array(1024), 'iomcu.hex')), 'ext');
+  assert.equal(reason(checkImage('rp2350', new Uint8Array(1024), 'iomcu.BIN')), 'bin');
+});

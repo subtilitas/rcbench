@@ -40,7 +40,7 @@ function manifest(tag: string, boards: (keyof typeof IMAGES)[]): object {
   };
 }
 
-async function setup(page: Page, config: object, opts: { badSha?: boolean } = {}): Promise<void> {
+async function setup(page: Page, config: object, opts: { badSha?: boolean; indexDelayMs?: number } = {}): Promise<void> {
   await page.addInitScript((c) => { (window as unknown as { __fakeConfig: object }).__fakeConfig = c; }, config);
   await page.addInitScript({ path: FAKES });
   await page.exposeFunction('__fakeMd5', (bytes: number[]) => createHash('md5').update(Uint8Array.from(bytes)).digest('hex'));
@@ -56,9 +56,10 @@ async function setup(page: Page, config: object, opts: { badSha?: boolean } = {}
     files.set(`${TAG}/${f}`, opts.badSha && b === 'dial' ? bytes.map((x) => x ^ 1) : bytes);
     files.set(`${OLD}/${f}`, bytes);
   }
-  await page.route('**/rcbench/flash/fw/**', (route) => {
+  await page.route('**/rcbench/flash/fw/**', async (route) => {
     const path = new URL(route.request().url()).pathname.replace('/rcbench/flash/fw/', '');
     const body = files.get(path);
+    if (path === 'index.json' && opts.indexDelayMs) await new Promise((r) => setTimeout(r, opts.indexDelayMs));
     if (!body) return route.fulfill({ status: 404, body: 'not found' });
     if (body instanceof Uint8Array) return route.fulfill({ status: 200, contentType: 'application/octet-stream', body: Buffer.from(body) });
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
@@ -221,4 +222,37 @@ test('a release the visitor picks stays when the next board has an image in it',
   await expect(page.locator('#image-note')).toBeVisible();
   await chooseBoard(page, 'iomcu');
   await expect(page.locator('#tag')).toHaveValue(TAG);
+});
+
+test('a language switch during a write keeps the visible progress moving, in the new language', async ({ page }) => {
+  await setup(page, { bootsel: true, rpDelayMs: 15 });
+  await chooseBoard(page, 'iomcu');
+  await page.locator('#tag').selectOption(TAG);
+  await expectImage(page, FILES.iomcu!, IMAGES.iomcu);
+  await page.locator('#connect-pico').click();
+  await expect(page.locator('#conn-state')).toBeVisible();
+  const other = isDe(page) ? 'en' : 'de';
+  await page.locator('#write').click();
+  await expect(page.locator('#prog-text')).not.toBeEmpty();
+  await page.locator(`.lang button[data-lang="${other}"]`).click();
+  await expect(page.locator('html')).toHaveAttribute('lang', other);
+  // The new elements carry the last progress at once and keep moving.
+  await expect(page.locator('#prog-text')).toContainText(other === 'de' ? 'Bytes' : 'bytes');
+  const first = await page.locator('#prog-text').textContent();
+  await expect(page.locator('#prog-text')).not.toHaveText(first ?? '');
+  await expect(page.locator('#prog')).not.toHaveJSProperty('value', 0);
+  await expect(page.locator('#result.ok')).toBeVisible({ timeout: 30_000 });
+});
+
+test('a local file picked while the release list loads stays when the list arrives', async ({ page }) => {
+  await setup(page, { esp: { chipId: 9 } }, { indexDelayMs: 1500 });
+  await chooseBoard(page, 'dial');
+  await page.locator('input[name="src"][value="file"]').check();
+  await page.locator('#file').setInputFiles({ name: 'dial-local.bin', mimeType: 'application/octet-stream', buffer: Buffer.from(IMAGES.dial) });
+  await expect(page.locator('#image')).toContainText('dial-local.bin');
+  // The list arrives after the file: the release radio comes to life, the file stays.
+  await expect(page.locator('input[name="src"][value="release"]')).toBeEnabled({ timeout: 10_000 });
+  await expect(page.locator('input[name="src"][value="file"]')).toBeChecked();
+  await expect(page.locator('#image')).toContainText('dial-local.bin');
+  await expect(page.locator('#image')).toContainText(sha(IMAGES.dial));
 });

@@ -1,7 +1,7 @@
 // The boards the page flashes, their chips, and the checks that hold an image
 // to a board and a detected chip to an image.
 
-import { isUf2, parseUf2, RP2350_FAMILIES, familyName } from './uf2.ts';
+import { isUf2, parseUf2, RP2350_FAMILIES, familyName, startsWithUf2Magic } from './uf2.ts';
 
 export type Chip = 'esp32p4' | 'esp32s3' | 'esp32c6' | 'rp2350';
 export type Link = 'serial' | 'picoboot';
@@ -93,16 +93,20 @@ export function espImageInfo(bytes: Uint8Array): EspImageInfo | null {
 
 export type ImageVerdict =
   | { ok: true; format: 'bin' | 'uf2' }
-  | { ok: false; reason: 'not-esp' | 'app-only' | 'chip' | 'offset' | 'not-rp2350' | 'family' | 'uf2'; detail: string };
+  | { ok: false; reason: 'not-esp' | 'app-only' | 'chip' | 'offset' | 'not-rp2350' | 'family' | 'uf2' | 'uf2-as-bin' | 'ext'; detail: string };
 
 /**
  * Holds an image to the chip of a board. An ESP image must be a merged image
  * of that chip, its bootloader at the chip's offset, written at 0x0. An RP2350
- * image is a UF2 file of an RP2350 family, or a raw binary for the flash start.
+ * image is a file named .uf2 that parses as UF2 of an RP2350 family, or a file
+ * named .bin for the flash start that does not start with the UF2 magic word.
  */
 export function checkImage(chip: Chip, bytes: Uint8Array, fileName: string): ImageVerdict {
   if (chip === 'rp2350') {
-    if (isUf2(bytes)) {
+    const name = fileName.toLowerCase();
+    if (name.endsWith('.uf2')) {
+      // A .uf2 file always goes through the parser: a damaged or short one is
+      // refused, never written as raw bytes.
       try {
         const img = parseUf2(bytes);
         if (!RP2350_FAMILIES.includes(img.family)) return { ok: false, reason: 'family', detail: familyName(img.family) };
@@ -111,6 +115,10 @@ export function checkImage(chip: Chip, bytes: Uint8Array, fileName: string): Ima
       }
       return { ok: true, format: 'uf2' };
     }
+    if (!name.endsWith('.bin')) return { ok: false, reason: 'ext', detail: fileName };
+    // A .bin that starts with the first UF2 magic word is a UF2 container
+    // under the wrong name: refused, so its block headers never reach the flash.
+    if (isUf2(bytes) || startsWithUf2Magic(bytes)) return { ok: false, reason: 'uf2-as-bin', detail: fileName };
     if (espImageInfo(bytes)) return { ok: false, reason: 'not-rp2350', detail: fileName };
     return { ok: true, format: 'bin' };
   }

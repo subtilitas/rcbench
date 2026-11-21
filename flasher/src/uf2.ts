@@ -79,6 +79,11 @@ export function familyName(id: number): string {
   return `0x${id.toString(16).padStart(8, '0')}`;
 }
 
+/** True when the bytes start with the first UF2 magic word, whatever follows. */
+export function startsWithUf2Magic(bytes: Uint8Array): boolean {
+  return bytes.length >= 4 && new DataView(bytes.buffer, bytes.byteOffset, 4).getUint32(0, true) === MAGIC_START0;
+}
+
 /** True when the bytes start with a UF2 block. */
 export function isUf2(bytes: Uint8Array): boolean {
   if (bytes.length < UF2_BLOCK) return false;

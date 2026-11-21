@@ -53,8 +53,11 @@ The checks before WRITE:
 - An image of a release must match the SHA-256 and size of its manifest.
 - After Connect, the chip esptool-js detects must be the chip of the image.
   Another chip is refused before anything is written.
-- An RP2350 image is a UF2 file of the families absolute, rp2350-arm-s,
-  rp2350-riscv or rp2350-arm-ns, or a raw `.bin` for the flash start.
+- An RP2350 image is a file named `.uf2` that the UF2 reader takes, of the
+  families absolute, rp2350-arm-s, rp2350-riscv or rp2350-arm-ns; a damaged
+  or short `.uf2` is refused. A file named `.bin` goes to the flash start
+  as raw bytes; one that starts with the UF2 magic word 0x0A324655 is
+  refused as a UF2 file under the wrong name. Any other name is refused.
 
 ## Browsers
 
@@ -86,7 +89,7 @@ address by the chip revision of an ESP32-P4, which a P4 of revision 3.0 or
 later needs; the panel build requires revision 3.1
 (`CONFIG_ESP32P4_REV_MIN_301` in `firmware/panel/sdkconfig.defaults`).
 0.7.1 is the newest release (2 November 2026). It loads on the first
-Connect: the first load of the page is 49.5kB.
+Connect: the first load of the page is 50.3kB.
 
 The flow: open the port at 115200 baud, reset into the boot ROM, sync,
 detect the chip, start the flasher stub, change to 460800 baud (the
@@ -238,14 +241,15 @@ python3 -m pytest ../test/tools/test_flash_manifest.py
 ```
 
 The size budget is the page's own; the configurator's budget does not count
-it. The build measures 49.5kB at the first load and 376.1kB in all, with
+it. The build measures 50.3kB at the first load and 376.9kB in all, with
 the flasher stubs of every chip esptool-js knows; the page loads the stub of
 the detected chip only.
 
 ## Language and stored state
 
 English and German; the start language follows the browser, the buttons EN
-and DE switch it. The page keeps the language picked with the buttons in
+and DE switch it. A switch during a write keeps the progress: the page
+renders the last step, percentage and bytes in the new language. The page keeps the language picked with the buttons in
 `localStorage` under `rcbench.flasher` (`{"v":1,"lang":"de"}`). A browser
 that blocks the store keeps the page at work. Light and dark theme follow
 the system setting.

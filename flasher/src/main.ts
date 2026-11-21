@@ -54,6 +54,8 @@ const st = {
   busy: false,
   result: null as Note | null,
   log: [] as string[],
+  /** The last progress of the write in hand: rendered again after a re-render, a language switch for one. */
+  progress: null as { step: string; done: number; total: number; t0: number } | null,
 };
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
@@ -166,14 +168,29 @@ function renderConnect(): string {
   return html;
 }
 
+/** Percentage and text of the progress in hand, in the language of the page. */
+function progressView(): { pct: number; text: string } {
+  const p = st.progress;
+  if (!p) return { pct: 0, text: '' };
+  const pct = p.total > 0 ? Math.floor((100 * p.done) / p.total) : 0;
+  return {
+    pct,
+    text: tr('progress', {
+      step: hasKey(`step_${p.step}`) ? tr(`step_${p.step}` as Key) : p.step,
+      pct, done: fmtBytes(p.done), total: fmtBytes(p.total), s: ((performance.now() - p.t0) / 1000).toFixed(1),
+    }),
+  };
+}
+
 function renderWrite(): string {
   const ready = !!st.image && !!st.conn && !st.busy;
   let html = `<p class="muted">${esc(tr('writeHint'))}</p>`;
   html += `<button type="button" class="act primary" id="write"${ready ? '' : ' disabled'}>${esc(tr('write'))}</button>`;
   if (!st.image) html += ` <span class="muted small">${esc(tr('needImage'))}</span>`;
   else if (!st.conn) html += ` <span class="muted small">${esc(tr('needConnect'))}</span>`;
-  html += '<div class="prog" id="prog-wrap"' + (st.busy ? '' : ' hidden') + '><progress id="prog" max="100" value="0"></progress>'
-    + '<p id="prog-text" aria-live="polite"></p></div>';
+  const p = progressView();
+  html += `<div class="prog" id="prog-wrap"${st.busy ? '' : ' hidden'}><progress id="prog" max="100" value="${p.pct}"></progress>`
+    + `<p id="prog-text" aria-live="polite">${esc(p.text)}</p></div>`;
   html += renderNote(st.result, 'result');
   return html;
 }
@@ -398,15 +415,15 @@ async function write(): Promise<void> {
   st.result = null;
   render();
   const t0 = performance.now();
-  const bar = $<HTMLProgressElement>('prog');
-  const text = $('prog-text');
+  // The elements are looked up on every call: a render during the write, a
+  // language switch for one, replaces them.
   const show = (step: string, done: number, total: number): void => {
-    const pct = total > 0 ? Math.floor((100 * done) / total) : 0;
-    bar.value = pct;
-    text.textContent = tr('progress', {
-      step: hasKey(`step_${step}`) ? tr(`step_${step}` as Key) : step,
-      pct, done: fmtBytes(done), total: fmtBytes(total), s: ((performance.now() - t0) / 1000).toFixed(1),
-    });
+    st.progress = { step, done, total, t0 };
+    const view = progressView();
+    const bar = document.getElementById('prog') as HTMLProgressElement | null;
+    const text = document.getElementById('prog-text');
+    if (bar) bar.value = view.pct;
+    if (text) text.textContent = view.text;
   };
   try {
     if (conn.kind === 'esp') {
@@ -439,6 +456,7 @@ async function write(): Promise<void> {
     await dropConn();
   }
   st.busy = false;
+  st.progress = null;
   render();
 }
 
@@ -515,7 +533,10 @@ async function start(): Promise<void> {
     st.releasesError = errText(e);
   }
   if (!st.releases?.length) st.source = 'file';
-  await loadReleaseImage();
+  // A local file the visitor picked while the releases loaded stays: the
+  // release image is loaded only while the source is still the release.
+  if (st.source === 'release') await loadReleaseImage();
+  else render();
 }
 
 void start();

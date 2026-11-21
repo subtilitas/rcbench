@@ -82,6 +82,8 @@ const S = {
   bad_offset: ['The bootloader of this image sits at {x}, not where this chip starts it.', 'Der Bootloader dieses Images liegt bei {x}, nicht dort, wo dieser Chip ihn startet.'],
   'bad_not-rp2350': ['{x} is an ESP-IDF image, not an RP2350 image.', '{x} ist ein ESP-IDF-Image, kein RP2350-Image.'],
   bad_family: ['This UF2 file is for family {x}, which an RP2350 does not take.', 'Diese UF2-Datei ist für die Familie {x}, die ein RP2350 nicht annimmt.'],
+  'bad_uf2-as-bin': ['{x} holds a UF2 file under the name .bin. Rename it to .uf2.', '{x} enthält eine UF2-Datei unter dem Namen .bin. Benenne sie in .uf2 um.'],
+  bad_ext: ['{x}: an RP2350 takes a .uf2 or a .bin file.', '{x}: Ein RP2350 nimmt eine .uf2- oder eine .bin-Datei.'],
   bad_uf2: ['The UF2 file is damaged: {x}.', 'Die UF2-Datei ist beschädigt: {x}.'],
   hConnect: ['3. Connect', '3. Verbinden'],
   connectEsp: ['Connect', 'Verbinden'],

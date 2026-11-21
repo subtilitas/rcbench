@@ -13,6 +13,8 @@
 //   bootsel: true          the RP2350 boot ROM (2E8A:000F) present from the
 //                          start.
 //   none: true             the browser has neither interface.
+//   rpDelayMs: n           the RP2350 boot ROM answers each command n ms late,
+//                          for a write that lasts long enough to act during it.
 //
 // window.__fake holds the state: the flash of each device, the commands, and
 // flashHash(kind, start, length) for the checks.
@@ -162,7 +164,7 @@
   function bootrom() {
     let pending = null;
     let lastStatus = 0;
-    const ok = (x) => Promise.resolve(x);
+    const ok = (x) => new Promise((res) => setTimeout(() => res(x), cfg.rpDelayMs || 0));
     const offset = (a) => a - FLASH;
     const inRange = (a, n) => a >= FLASH && a + n <= FLASH + state.rpFlash.length;
     const dev = {

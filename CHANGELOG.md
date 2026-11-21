@@ -19,7 +19,7 @@ history is in git.
   firmware enters BOOTSEL when its serial port opens at 1200 baud. The page
   refuses an image whose chip differs from the board or from the detected
   chip, shows tag, size and SHA-256 before WRITE, and reports the failed
-  step with what to try. Size: 49.5kB at the first load, 376.1kB in all
+  step with what to try. Size: 50.3kB at the first load, 376.9kB in all
   ([flasher/README.md](flasher/README.md)).
 - `tools/flash_manifest.py`: picks the 6 newest releases and the newest
   stable one and writes the flasher's `fw/` folder from their assets, a
