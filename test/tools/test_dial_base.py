@@ -19,7 +19,9 @@ import_or_fail("OCP", "needs OCP, the OpenCASCADE binding")
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "hardware" / "mechanical"))
 import _gen_dial_base as base  # noqa: E402
-from OCP.BRepAlgoAPI import BRepAlgoAPI_Common  # noqa: E402
+from OCP.BRepAlgoAPI import (  # noqa: E402
+    BRepAlgoAPI_Common, BRepAlgoAPI_Cut,
+)
 from OCP.BRepCheck import BRepCheck_Analyzer  # noqa: E402
 
 
@@ -102,11 +104,40 @@ def test_nut_has_room_under_the_plate():
     assert base.SCREW_R - base.BOSS / 2 - 25.41 == pytest.approx(0.59)
 
 
-def test_screws_reach_their_bosses(built):
-    """An M3 x 12 from its seat ends inside the pilot hole."""
+def test_bosses_take_the_threaded_inserts(built):
+    """A hole of 4.0, 5.0 deep, with 1.6 of wall, under the ring nut."""
+    hole, deep, wall, length = base.INSERT
+    assert (hole, deep, wall, length) == (4.0, 5.0, 1.6, 4.0)
+    assert hole + 2 * wall == pytest.approx(7.2)
+    assert deep >= length + 1.0
+    # The wide part ends 1.0 under the nut, which reaches to z = -7.0.
+    assert base.WIDE_TO == pytest.approx(-7.0 - 1.0)
+    top = built["dial_base_top"]
+    for x, y, _angle in base._screw_points():
+        # The insert's place is empty and has its wall all round.
+        insert = base._cylinder(x, y, hole / 2 - 0.01, base.SPLIT,
+                                base.SPLIT + deep)
+        shared = BRepAlgoAPI_Common(top, insert).Shape()
+        assert base.volume(shared) == pytest.approx(0.0, abs=1e-6)
+        ring = BRepAlgoAPI_Cut(
+            base._cylinder(x, y, hole / 2 + wall - 0.01, base.SPLIT + 0.5,
+                           base.SPLIT + deep),
+            base._cylinder(x, y, hole / 2 + 0.01, base.SPLIT,
+                           base.SPLIT + deep + 1)).Shape()
+        held = BRepAlgoAPI_Common(top, ring).Shape()
+        assert base.volume(held) == pytest.approx(base.volume(ring),
+                                                  rel=1e-3)
+    # The rim of the bottom part leaves each boss 0.2 of room.
+    both = BRepAlgoAPI_Common(*built.values()).Shape()
+    assert base.volume(both) == pytest.approx(0.0, abs=1e-6)
+
+
+def test_screws_reach_through_their_inserts(built):
+    """An M3 x 12 from its seat passes the insert and ends in the relief."""
     tip = base.SEAT + 12.0
-    assert base.SPLIT < tip < base.DEPTH
+    assert base.SPLIT + base.INSERT[3] < tip < base.RELIEF[1]
     assert tip - base.SPLIT == pytest.approx(6.5)
+    assert base.RELIEF[0] > 3.0
     x, y, _angle = base._screw_points()[0]
     shank = base._cylinder(x, y, 1.2, -base.HEIGHT, tip)
     for solid in built.values():

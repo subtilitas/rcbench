@@ -31,7 +31,9 @@ All sizes are mm.
 The dial's ring nut holds it from below the top plate, on a plate 2.0
 thick so the nut stays clear of the dial's USB notch. Each M3 x 12 pan
 head screw enters a column of the bottom part from below, its head
-sunk 8.0 into the foot, and cuts its thread in a boss of the top part.
+sunk 8.0 into the foot, and turns into a brass threaded insert (ruthex
+RX-M3Sx4.0, 4.0 long) melted into a boss of the top part from the
+joint: a hole of 4.0, 5.0 deep, in a boss 7.2 across.
 The cell lies flat in its pocket, its length across the "^" mark, its
 wires towards +y, the side away from the USB opening. The dial's
 battery socket (1.25 pitch, 2 pins) is on its main board under the
@@ -84,7 +86,8 @@ from OCP.BRepBuilderAPI import (BRepBuilderAPI_MakeEdge,
 from OCP.BRepCheck import BRepCheck_Analyzer
 from OCP.BRepGProp import BRepGProp
 from OCP.BRepMesh import BRepMesh_IncrementalMesh
-from OCP.BRepPrimAPI import (BRepPrimAPI_MakeBox, BRepPrimAPI_MakeCylinder,
+from OCP.BRepPrimAPI import (BRepPrimAPI_MakeBox, BRepPrimAPI_MakeCone,
+                             BRepPrimAPI_MakeCylinder,
                              BRepPrimAPI_MakeRevol)
 from OCP.GC import GC_MakeArcOfCircle
 from OCP.gp import gp_Ax1, gp_Ax2, gp_Dir, gp_Pnt, gp_Trsf, gp_Vec
@@ -128,11 +131,21 @@ FLOOR = -HEIGHT + WALL   # z of the floor's upper face
 # Rim of the bottom part inside the top part: height, thickness, gap.
 RIM = (2.0, 1.0, 0.2)
 LEDGE = 1.5             # height of the ledge's upright side under the rim
-# Screws: circle radius, angles, boss diameter, pilot hole, clearance
-# hole, head recess diameter, z of the head's seat, z the pilot hole
-# reaches up to.
+# Screws: circle radius, angles, boss diameter beside the ring nut,
+# clearance hole, head recess diameter, z of the head's seat, diameter
+# of the bottom part's columns.
 SCREW_R, SCREW_AT = 29.0, (45.0, 135.0, 225.0, 315.0)
-BOSS, PILOT, CLEAR, HEAD, SEAT, DEPTH = 6.0, 2.6, 3.4, 6.2, -24.5, -9.0
+BOSS, CLEAR, HEAD, SEAT, COLUMN = 6.0, 3.4, 6.2, -24.5, 7.2
+# Threaded insert for melting in, ruthex RX-M3Sx4.0: its hole's
+# diameter and depth and the wall round the hole, as the maker's label
+# gives them (4.0, 5.0 at least, 1.6 at least), and the insert's
+# length. RELIEF is the bore above the hole for the screw's end: its
+# diameter and the z it reaches up to. The boss is INSERT[0] + 2 x
+# INSERT[2] across up to WIDE_TO, 1.0 under the ring nut, and narrows
+# to BOSS on a cone of 45 degrees above it.
+INSERT = (4.0, 5.0, 1.6, 4.0)
+RELIEF = (3.2, -11.5)
+WIDE_TO = -8.0
 # USB opening at -y: width, height, z of its center, corner radius.
 USB = (13.4, 7.6, -12.13, 1.5)
 # Guide tube round the opening: its wall, the distance of its inner end
@@ -305,12 +318,24 @@ def parts():
     for x, y, angle in _screw_points():
         web = _turned(_box(SCREW_R, -1.5, SPLIT + RIM[0] + 0.3,
                            BELLY[0], 1.5, -PLATE), angle)
+        hole, deep, wall, _length = INSERT
         boss = BRepAlgoAPI_Fuse(_cylinder(x, y, BOSS / 2, SPLIT, -PLATE),
                                 web).Shape()
+        wide = hole / 2 + wall
+        step = wide - BOSS / 2
+        boss = BRepAlgoAPI_Fuse(boss, _cylinder(
+            x, y, wide, SPLIT, WIDE_TO)).Shape()
+        # A cone at 45 degrees carries the wider part in the print.
+        boss = BRepAlgoAPI_Fuse(boss, BRepPrimAPI_MakeCone(
+            gp_Ax2(gp_Pnt(x, y, WIDE_TO), gp_Dir(0, 0, 1)), wide, BOSS / 2,
+            step).Shape()).Shape()
         top = BRepAlgoAPI_Fuse(
             top, BRepAlgoAPI_Common(boss, _fluted()).Shape()).Shape()
-        top = BRepAlgoAPI_Cut(top, _cylinder(x, y, PILOT / 2, SPLIT - 1,
-                                             DEPTH)).Shape()
+        top = BRepAlgoAPI_Cut(top, _cylinder(x, y, hole / 2, SPLIT - 1,
+                                             SPLIT + deep)).Shape()
+        top = BRepAlgoAPI_Cut(top, _cylinder(x, y, RELIEF[0] / 2,
+                                             SPLIT + deep - 0.5,
+                                             RELIEF[1])).Shape()
     # USB opening at -y, in a tube that guides the plug to the socket.
     width, height, z, corner = USB
     wall, near, tie = TUBE
@@ -339,10 +364,15 @@ def parts():
         _line((inside, SPLIT - drop), (inside, SPLIT + rise))])
     bottom = BRepAlgoAPI_Fuse(
         bottom, BRepAlgoAPI_Common(rim, _fluted()).Shape()).Shape()
+    # The rim leaves each boss room: a notch gap wider than the boss.
+    for x, y, _angle in _screw_points():
+        bottom = BRepAlgoAPI_Cut(bottom, _cylinder(
+            x, y, INSERT[0] / 2 + INSERT[2] + gap, SPLIT,
+            SPLIT + rise + 1.0)).Shape()
     # Screw columns with clearance holes and head recesses.
     for x, y, _angle in _screw_points():
         column = BRepAlgoAPI_Common(
-            _cylinder(x, y, BOSS / 2 + 0.6, -HEIGHT, SPLIT),
+            _cylinder(x, y, COLUMN / 2, -HEIGHT, SPLIT),
             _fluted()).Shape()
         bottom = BRepAlgoAPI_Fuse(bottom, column).Shape()
     for x, y, _angle in _screw_points():
