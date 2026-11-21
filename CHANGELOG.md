@@ -8,6 +8,13 @@ history is in git.
 
 ### Added
 
+- `hardware/mechanical/`: `rbmod_v2_smd.step` and `rbmod_v2.step`, the
+  rbmod carrier board, version 2 (80.0mm x 89.0mm): the board with its 17
+  surface-mounted parts, and the same with 9 connectors and 5 modules,
+  12.8mm over the board. `_read_kicad_pcb.py` reads outline, holes and
+  footprints from the KiCad board file into `_rbmod_v2_data.py`; the
+  overlap check covers both models
+  ([Mechanical parts](hardware/mechanical/README.md#rbmod-carrier-board-version-2)).
 - `tools/pio_budget.py`: counts every PIO (programmable input/output)
   program in the `.pio` files under `protocols/` as pioasm 2.3.0 does and
   loads each board's programs into a model of the RP2350's 3 blocks of 4

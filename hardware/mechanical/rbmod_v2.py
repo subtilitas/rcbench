@@ -1,0 +1,217 @@
+"""The rbmod carrier board, version 2: with its SMD parts, and complete.
+
+    rbmod_v2_smd   the board with its 17 surface-mounted parts
+    rbmod_v2       the same with the 9 through-hole connectors and the
+                   5 modules
+
+The carrier is 80.0 x 89.0mm with a notch of 4.4 x 13.0mm in its left
+edge and 6 holes of 3.0mm. It carries an RP2350-CAN, an INA3221 module,
+2 mini buck converters and a USB-C PD trigger board.
+
+Source: rbmod.kicad_pcb of the branch rbmod_v2 of the owner's KiCad
+repository, commit 86d2301 (not in this repository). _read_kicad_pcb.py
+reads its outline, holes and footprints into _rbmod_v2_data.py; every
+place, turn and drill of this model comes from there. The modules are
+the models of hardware/kicad/modules/, whose footprints the board uses:
+the drilled pads of each agree with its spec.
+
+Drawn from package sizes, not from the board file: 1206 resistors
+3.2 x 1.6 x 0.55, 0402 resistors, 0603 capacitors, the 1210 capacitor
+3.2 x 2.5 x 2.5, the SMB diode 4.3 x 3.6 x 2.3 and 5.4 over its leads,
+the SMC diode 6.9 x 5.9 x 2.3 and 7.9 over its leads. The JST PH
+headers B2B-PH-K and B4B-PH-K follow hardware/kicad/modules/_jst_ph.py.
+
+Estimated: the Molex Mini-Fit Jr header 5566-02A as a housing of
+5.4 x 9.6mm, 12.8mm high, round its 2 pins 5.5mm apart; the angled
+3 x 4 pin headers as a plastic bar 2.54mm thick, 1.52mm behind the
+third row, with pins that end 15.12mm from the first row, the F.Fab
+drawing's reach. Neither is taken from a maker's drawing.
+
+Not drawn: copper, solder mask openings, print, vias, the modules'
+solder joints. The board is drawn green and 1.579mm thick, the board
+file's stack. The module boards stand on their header's plastic, 2.5mm
+over the carrier; the PD trigger board lies on the carrier.
+
+Frame: origin at the outline's lower left corner seen from the top
+side, x to the right, y up, z = 0 on the top side, mm.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
+"""
+
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parent / "kicad" / "tools"))
+import _board  # noqa: E402
+import _parts as p  # noqa: E402
+import _rbmod_v2_data as data  # noqa: E402
+import _solid as s  # noqa: E402
+import step_gen  # noqa: E402
+
+GREEN = step_gen.COLORS["green"]
+JST = _board.kicad_spec("_jst_ph")
+MODULES = {"RP2350-CAN": "rp2350_can", "INA3221_Module": "ina3221_module",
+           "DCDC_Buck_Mini_30x18mm_EN": "dcdc_buck_mini",
+           "USBC_PD_Trigger_DIP3_30x20mm": "usbc_pd_trigger"}
+MOLEX = (5.4, 9.6, 12.8, 5.5)   # housing x, y, height; pin to pin
+THIN = 0.5                      # a header pin in a hole under 0.95
+ANGLED = (2.54, 1.52, 15.12)    # bar's thickness, its gap to the third
+#                                 row, the pins' reach from the first row
+
+
+def ph_header(pins):
+    """A JST PH top-entry header B<n>B-PH-K, pin 1 at the origin.
+
+    The pins run along +x. The housing reaches 1.95 past the first and
+    the last pin, 1.7 to +y and 2.8 to -y.
+    """
+    x0, x1 = -JST.END, JST.PITCH * (pins - 1) + JST.END
+    y0, y1 = JST.ROW - JST.DEPTH, JST.ROW
+    w = JST.WALL
+    xs = [JST.PITCH * i for i in range(pins)]
+    half = JST.PIN / 2
+    out = [s.ext(s.rect(x0, y0, x1, y1), 0.0, JST.FLOOR, p.CREAM, holes=[
+               s.rect(x - half, -half, x + half, half) for x in xs]),
+           s.ext(s.rect(x0, y0, x1, y1), JST.FLOOR, JST.HEIGHT, p.CREAM,
+                 holes=[s.rect(x0 + w, y0 + w, x1 - w, y1 - w)])]
+    for x in xs:
+        out.append(s.box(x - half, -half, x + half, half, -JST.PIN_BELOW,
+                         JST.PIN_TOP, p.TIN))
+    return out
+
+
+def angled_header():
+    """The angled 3 x 4 pin header, pin 1 at the origin.
+
+    Rows of 3 run along +x, 4 of them towards -y. The pin of the third
+    column is the lowest; each pin rises from its hole and runs to +x
+    through the plastic bar.
+    """
+    thick, gap, reach = ANGLED
+    half = 0.32
+    bar = 2 * 2.54 + gap
+    out = [s.ext(s.rect(bar, -3 * 2.54 - 1.27, bar + thick, 1.27), 0.0,
+                 3 * 2.54, p.BLACK)]
+    for row in range(4):
+        y = -2.54 * row
+        for column in range(3):
+            x, z = 2.54 * column, 1.27 + 2.54 * (2 - column)
+            out.append(s.box(x - half, y - half, x + half, y + half,
+                             -3.0, z + half, p.GOLD))
+            out.append(s.box(x + half, y - half, bar, y + half, z - half,
+                             z + half, p.GOLD))
+            out.append(s.box(bar + thick, y - half, reach, y + half,
+                             z - half, z + half, p.GOLD))
+    return out
+
+
+def molex_header():
+    """The Mini-Fit Jr header of 2 circuits, pin 1 at the origin.
+
+    Pin 2 lies 5.5 to -y. The housing is a shell with a wall of 0.9
+    round one chamber for each pin.
+    """
+    wide, deep, high, pitch = MOLEX
+    x0, x1 = -wide / 2, wide / 2
+    y0, y1 = -pitch / 2 - deep / 2, -pitch / 2 + deep / 2
+    wall, floor, pin = 0.9, 3.0, 0.45
+    out = [s.ext(s.rect(x0, y0, x1, y1), 0.0, floor, p.CREAM, holes=[
+               s.rect(-pin, y - pin, pin, y + pin) for y in (0.0, -pitch)]),
+           s.ext(s.rect(x0, y0, x1, y1), floor, high, p.CREAM, holes=[
+               s.rect(x0 + wall, y0 + wall, x1 - wall, -pitch / 2 - wall / 2),
+               s.rect(x0 + wall, -pitch / 2 + wall / 2, x1 - wall,
+                      y1 - wall)])]
+    for y in (0.0, -pitch):
+        out.append(s.box(-pin, y - pin, pin, y + pin, -3.5, high - 4.0,
+                         p.TIN))
+    return out
+
+
+def module(name):
+    """A module of hardware/kicad/modules/ as shapes, pad 1 at the origin.
+
+    The KiCad model draws each header pin through solid plastic. Here
+    the plastic has the pin's hole. A pin in a hole under 0.95 across
+    is drawn THIN square in place of 0.64, which measures 0.91 across
+    its corners.
+    """
+    spec = _board.kicad_spec(MODULES[name])
+    gold, plastic = step_gen.COLORS["gold"], step_gen.COLORS["plastic"]
+    ox, oy = spec.FOOTPRINT["origin"]
+    small = [(pad["x"] - ox, oy - pad["y"]) for pad in spec.FOOTPRINT["pads"]
+             if pad.get("drill") and pad["drill"] < 0.95]
+    out = []
+    for outer, holes, z0, z1, rgb in step_gen.solids(spec.FOOTPRINT,
+                                                     spec.MODEL):
+        xs, ys = [q[0] for q in outer], [q[1] for q in outer]
+        cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
+        thin = any(abs(cx - x) < 0.01 and abs(cy - y) < 0.01
+                   for x, y in small)
+        half = (THIN if thin else step_gen.HDR_PIN) / 2
+        pin = s.rect(cx - half, cy - half, cx + half, cy + half)
+        if rgb == gold and z0 < 0.0:
+            outer = pin
+        elif rgb == plastic and z0 == 0.0 and len(outer) == 4:
+            holes = [pin]
+        out.append(s.ext(outer, z0, z1, rgb, holes=holes))
+    return out
+
+
+def part(footprint):
+    """The shapes of one footprint in its own frame.
+
+    Raises:
+        ValueError: For a footprint the model does not know.
+    """
+    name = footprint["footprint"].split(":")[1]
+    if name in MODULES:
+        return module(name)
+    made = {
+        "R_1206_3216Metric": lambda: p.chip(3.2, 1.6, 0.55, p.EPOXY),
+        "R_0402_1005Metric": p.r0402,
+        "C_0603_1608Metric": p.c0603,
+        "C_1210_3225Metric": lambda: p.chip(3.2, 2.5, 2.5, p.TAN),
+        "D_SMB": lambda: p.sod(4.3, 3.6, 2.3, 5.4, 2.0),
+        "D_SMC": lambda: p.sod(6.9, 5.9, 2.3, 7.9, 3.0),
+        "JST_PH_B2B-PH-K_1x02_P2.00mm_Vertical": lambda: ph_header(2),
+        "JST_PH_B4B-PH-K_1x04_P2.00mm_Vertical": lambda: ph_header(4),
+        "PinHeader_3x04_P2.54mm_Horizontal": angled_header,
+        "Molex_Mini-Fit_Jr_5566-02A_2x01_P4.20mm_Vertical": molex_header,
+    }
+    if name not in made:
+        raise ValueError(f"no model of {name}")
+    return made[name]()
+
+
+def board():
+    """The carrier with every drilled pad and the 6 holes."""
+    drills = [d for fp in data.FOOTPRINTS for d in fp["drills"]]
+    return [s.ext(list(data.OUTLINE), -data.THICKNESS, 0.0, GREEN, holes=[
+        s.circle(x, y, d / 2) for x, y, d in list(data.HOLES) + drills])]
+
+
+def placed(smd):
+    """The parts of one kind in the board's frame.
+
+    Args:
+        smd: True for the surface-mounted parts, False for the others.
+    """
+    out = []
+    for fp in data.FOOTPRINTS:
+        if fp["smd"] == smd:
+            out += s.place(part(fp), x=fp["at"][0], y=fp["at"][1],
+                           turn=fp["turn"])
+    return out
+
+
+def parts(_colors):
+    """The two models.
+
+    Returns:
+        A dict of file stem to solids.
+    """
+    bare = board() + placed(True)
+    return {"rbmod_v2_smd": s.items(bare),
+            "rbmod_v2": s.items(bare + placed(False))}

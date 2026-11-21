@@ -18,6 +18,9 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `esp32_c6_zero.py` | spec of the Waveshare ESP32-C6-Zero |
 | `core2350b.py` | spec of the Waveshare Core2350B and its USB adapter board |
 | `es3c28p.py` | spec of the LCDWIKI ES3C28P, the display node's board: 2.8" display, ESP32-S3, sockets |
+| `rbmod_v2.py` | spec of the rbmod carrier board, version 2: with its SMD parts, and with its connectors and modules |
+| `_read_kicad_pcb.py` | reads a KiCad board file's outline, holes and footprints into a data file |
+| `_rbmod_v2_data.py` | outline, holes and footprints of the rbmod board, version 2, written by `_read_kicad_pcb.py` |
 | `lipo_cells.py` | spec of two lithium polymer cells, 702030 and 102540, with wires and plug |
 | `kst_x10.py` | spec of the KST X10 wing servo, from a dimension drawing and photos |
 | `_gen_flap_drive.py` | builds a frame with counter bearing for the KST X10, its linkage and a slice of wing with a flap with OpenCASCADE, checks that no two solids share volume |
@@ -32,7 +35,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `_measure_step.py` | measures Waveshare's STEP file of the panel board with OpenCASCADE |
 | `_solid.py` | profiles of straight sides and arcs pushed along an axis, and round rods along a path of lines and arcs, turned and moved, as solids with flat, cylindrical and toroidal faces |
 | `_parts.py` | shapes of electronic parts: chip parts, leaded packages, wire sockets, USB sockets, card slot, buttons, pin header, shunt, both halves of the XT90PW |
-| `check_overlap.py` | fails when two solids share volume in the panel board's model, in the INA228 module with its case, in one of the 5 module boards, in the Core2350B's USB adapter board, in the ES3C28P, in a cell, in the standard servo, in the KST X10 or in the WitMotion sensor |
+| `check_overlap.py` | fails when two solids share volume in the panel board's model, in the INA228 module with its case, in one of the 5 module boards, in the Core2350B's USB adapter board, in the ES3C28P, in a cell, in the standard servo, in the KST X10, in the WitMotion sensor or in one of the 2 models of the rbmod carrier |
 | `check_panel_7b.py` | holds the panel board's model against Waveshare's STEP file |
 | `gen_models.py` | writes `models/` from the specs; `--check` fails on drift |
 | `_stl.py` | reads a binary STL and splits it into its closed parts |
@@ -674,6 +677,72 @@ Limits:
   to the board, 3 chip parts of 0402 beside RESET that the photos show
   and the STEP file lacks, and the notches the panel's tabs leave in the
   edges.
+
+## rbmod carrier board, version 2
+
+The carrier of the modular bench: a board of 80.0mm x 89.0mm with a notch
+of 4.4mm x 13.0mm in its left edge and 6 holes of 3.0mm. It carries an
+RP2350-CAN, an INA3221 module, 2 mini buck converters and a USB-C PD
+(Power Delivery) trigger board.
+
+| | |
+| --- | --- |
+| ![The carrier with its SMD parts](renders/rbmod_v2_smd.png) | ![The carrier with connectors and modules](renders/rbmod_v2.png) |
+
+| File | Content | Size, mm |
+| --- | --- | --- |
+| `rbmod_v2_smd.step` | the board with 129 holes and its 17 surface-mounted parts: 9 resistors 1206, 3 resistors 0402, 2 capacitors 0603, 1 capacitor 1210, 1 SMB diode, 1 SMC diode; 52 solids, 0.8MB | 80.0 x 89.0, 1.579 thick, parts to 2.5 over the board |
+| `rbmod_v2.step` | the same with 4 JST PH headers of 4 pins and 2 of 2 pins, a Molex Mini-Fit Jr header of 2 pins, 2 angled pin headers of 3 x 4 pins and the 5 modules; 334 solids, 3.6MB | 85.4 x 89.0; 12.8 over the board, 6.0 under its top side |
+
+Frame: origin at the outline's lower left corner seen from the top side,
+x to the right, y up, z = 0 on the top side.
+
+Height over the board's top side, mm:
+
+| Part | Height |
+| --- | --- |
+| Molex Mini-Fit Jr header | 12.8 |
+| RP2350-CAN | 11.1 |
+| Mini buck converters | 8.6 |
+| Angled pin headers | 7.6 |
+| JST PH headers | 6.0 |
+| INA3221 module | 5.5 |
+| USB-C PD trigger board | 4.8 |
+| SMD parts | 2.5 |
+
+Past the outline: the RP2350-CAN reaches 1.1mm over the left edge, the
+angled headers' pins 4.3mm over the right edge.
+
+Source: `rbmod.kicad_pcb` on the branch `rbmod_v2` of the owner's KiCad
+repository, commit `86d2301`, which is not in this repository.
+`_read_kicad_pcb.py` reads the outline, the holes and each footprint's
+place, turn and drilled pads into `_rbmod_v2_data.py`:
+
+```sh
+python3 hardware/mechanical/_read_kicad_pcb.py \
+    path/to/rbmod.kicad_pcb rbmod_v2
+```
+
+The 5 modules are the models of [the KiCad library](../kicad/README.md),
+whose footprints the board uses: each module's drilled pads on the board
+agree with its spec, and each header pin stands in a drilled pad of the
+carrier.
+
+Limits:
+
+- The SMD parts and the JST PH headers have their packages' nominal
+  sizes. No part is measured on a board; no board is built.
+- Estimated, not from a maker's drawing: the Molex header as a housing of
+  5.4mm x 9.6mm x 12.8mm, the angled headers as a plastic bar of 2.54mm
+  with pins that end 15.12mm from the first row.
+- Copper, solder mask openings, print, vias and solder joints are not
+  drawn. The board is green.
+- The mini buck converter's enable pad has a hole of 0.8mm. A header pin
+  of 0.64mm square is 0.91mm across its corners and does not fit it; the
+  model draws that pin 0.5mm square.
+- The reader handles lines and circles on Edge.Cuts and footprints on the
+  top side. It stops at an arc in the outline or a footprint on the
+  underside.
 
 ## Standard servo
 
