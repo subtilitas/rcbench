@@ -1,6 +1,7 @@
 """The rbmod carrier board, version 2: with its SMD parts, and complete.
 
-    rbmod_v2_smd   the board with its 17 surface-mounted parts
+    rbmod_v2_smd   the board with its copper and its 17 surface-mounted
+                   parts
     rbmod_v2       the same with 7 through-hole connectors and the
                    5 modules
 
@@ -13,7 +14,8 @@ repository, commit 86d2301 (not in this repository). _read_kicad_pcb.py
 reads its outline, holes and footprints into _rbmod_v2_data.py; every
 place, turn and drill of this model comes from there. The modules are
 the models of hardware/kicad/modules/, whose footprints the board uses:
-the drilled pads of each agree with its spec.
+the drilled pads of each agree with its spec. Each is drawn part by
+part by the spec of its name in this directory.
 
 Drawn from package sizes, not from the board file: 1206 resistors
 3.2 x 1.6 x 0.55, 0402 resistors, 0603 capacitors, the 1210 capacitor
@@ -31,10 +33,19 @@ Estimated: the angled 3 x 4 pin headers as a plastic bar 2.54mm thick,
 row, the F.Fab drawing's reach. They are not taken from a maker's
 drawing.
 
-Not drawn: copper, solder mask openings, print, vias, the modules'
-solder joints. The board is drawn green and 1.579mm thick, the board
-file's stack. The module boards stand on their header's plastic, 2.5mm
-over the carrier; the PD trigger board lies on the carrier.
+The copper of the 2 outer layers is drawn from the board file: the
+pads, gold (ENEPIG: nickel, palladium, gold; owner, 2026-11-21) and
+0.035mm thick, and the tracks and the vias, 0.02mm thick in a lighter
+green, as copper shows under the solder mask. Every part stands on the
+pads' top, 0.035mm over the
+board.
+
+Not drawn: the filled ground zones of the 2 outer layers, the inner
+layers, the print, the vias' holes, solder. The board is drawn green
+and 1.579mm thick, the board file's stack. The RP2350-CAN, the INA3221
+board and the 2 buck
+converters stand on their headers' plastic, 2.5mm over the carrier; the
+PD trigger board lies on the carrier.
 
 Frame: origin at the outline's lower left corner seen from the top
 side, x to the right, y up, z = 0 on the top side, mm.
@@ -42,6 +53,7 @@ side, x to the right, y up, z = 0 on the top side, mm.
 SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
+import importlib.util
 import sys
 from pathlib import Path
 
@@ -60,7 +72,8 @@ MODULES = {"RP2350-CAN": "rp2350_can", "INA3221_Module": "ina3221_module",
            "DCDC_Buck_Mini_30x18mm_EN": "dcdc_buck_mini",
            "USBC_PD_Trigger_DIP3_30x20mm": "usbc_pd_trigger"}
 DNP = ("J6", "J8")              # not populated (owner, 2026-11-21)
-THIN = 0.5                      # a header pin in a hole under 0.95
+COPPER = ((0.17, 0.62, 0.31), 0.02)  # copper under the mask; thickness
+ENEPIG = (0.96, 0.80, 0.30)     # the pads' finish (owner, 2026-11-21)
 ANGLED = (2.54, 1.52, 15.12)    # bar's thickness, its gap to the third
 #                                 row, the pins' reach from the first row
 
@@ -112,33 +125,17 @@ def angled_header():
 
 
 def module(name):
-    """A module of hardware/kicad/modules/ as shapes, pad 1 at the origin.
+    """A module as shapes, pad 1 at the origin on the carrier's top side.
 
-    The KiCad model draws each header pin through solid plastic. Here
-    the plastic has the pin's hole. A pin in a hole under 0.95 across
-    is drawn THIN square in place of 0.64, which measures 0.91 across
-    its corners.
+    The shapes are those of the module's KiCad model, which its spec in
+    this directory draws part by part.
     """
     spec = _board.kicad_spec(MODULES[name])
-    gold, plastic = step_gen.COLORS["gold"], step_gen.COLORS["plastic"]
-    ox, oy = spec.FOOTPRINT["origin"]
-    small = [(pad["x"] - ox, oy - pad["y"]) for pad in spec.FOOTPRINT["pads"]
-             if pad.get("drill") and pad["drill"] < 0.95]
-    out = []
-    for outer, holes, z0, z1, rgb in step_gen.solids(spec.FOOTPRINT,
-                                                     spec.MODEL):
-        xs, ys = [q[0] for q in outer], [q[1] for q in outer]
-        cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
-        thin = any(abs(cx - x) < 0.01 and abs(cy - y) < 0.01
-                   for x, y in small)
-        half = (THIN if thin else step_gen.HDR_PIN) / 2
-        pin = s.rect(cx - half, cy - half, cx + half, cy + half)
-        if rgb == gold and z0 < 0.0:
-            outer = pin
-        elif rgb == plastic and z0 == 0.0 and len(outer) == 4:
-            holes = [pin]
-        out.append(s.ext(outer, z0, z1, rgb, holes=holes))
-    return out
+    path = HERE / f"{spec.MODEL['detail']}.py"
+    found = importlib.util.spec_from_file_location(path.stem, path)
+    drawn = importlib.util.module_from_spec(found)
+    found.loader.exec_module(drawn)
+    return drawn.mounted()
 
 
 def part(footprint):
@@ -172,10 +169,25 @@ def unpopulated(footprint):
 
 
 def board():
-    """The carrier with every drilled pad and the 6 holes."""
+    """The carrier: plate, holes, and the copper of its 2 outer layers.
+
+    The pads are p.PAD thick and gold, their finish ENEPIG. The tracks
+    and the vias are COPPER[1] thick in a lighter green, as copper shows
+    under the solder mask.
+    """
     drills = [d for fp in data.FOOTPRINTS for d in fp["drills"]]
-    return [s.ext(list(data.OUTLINE), -data.THICKNESS, 0.0, GREEN, holes=[
+    t = data.THICKNESS
+    out = [s.ext(list(data.OUTLINE), -t, 0.0, GREEN, holes=[
         s.circle(x, y, d / 2) for x, y, d in list(data.HOLES) + drills])]
+    rgb, thick = COPPER
+    for areas, z0, z1, colour in (
+            (data.PADS_TOP, 0.0, p.PAD, ENEPIG),
+            (data.PADS_BOTTOM, -t - p.PAD, -t, ENEPIG),
+            (data.COPPER_TOP, 0.0, thick, rgb),
+            (data.COPPER_BOTTOM, -t - thick, -t, rgb)):
+        out += [s.ext(outer, z0, z1, colour, holes=holes)
+                for outer, holes in areas]
+    return out
 
 
 def placed(smd):
@@ -188,7 +200,7 @@ def placed(smd):
     for fp in data.FOOTPRINTS:
         if fp["smd"] == smd and not unpopulated(fp):
             out += s.place(part(fp), x=fp["at"][0], y=fp["at"][1],
-                           turn=fp["turn"])
+                           z=p.PAD, turn=fp["turn"])
     return out
 
 

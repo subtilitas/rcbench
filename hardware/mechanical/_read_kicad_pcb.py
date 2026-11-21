@@ -19,6 +19,17 @@ Read: gr_line and gr_circle on Edge.Cuts, and of each footprint its
 fp_line, fp_rect and fp_poly on F.Fab. An arc on Edge.Cuts or a
 footprint on the bottom side stops the tool: neither is handled.
 
+Copper of the 2 outer layers: PADS_TOP and PADS_BOTTOM hold the pads,
+COPPER_TOP and COPPER_BOTTOM the tracks and the vias less the pads.
+Each is a list of (outline, holes); every drilled hole is cut out, so
+no outline crosses another and none covers a hole. Round ends are
+polygons of 16 sides to a circle; points nearer than 0.02mm to the line
+through their neighbours are dropped. Pads are circle, oval, rect or
+roundrect; another shape stops the tool. Zones and inner layers are not
+read: a filled zone of this board has 9328 corners, which makes a STEP
+file of 43MB. This part needs shapely (pip install
+shapely==2.2.0).
+
 SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
@@ -92,6 +103,100 @@ def _area(points):
                                strict=True)) / 2
 
 
+def _pad_shape(pad, geometry):
+    """A pad's copper as a polygon round (0, 0), unturned."""
+    kind = pad[3]
+    wide, high = _xy(kid(pad, "size"))
+    if kind == "rect":
+        return geometry.box(-wide / 2, -high / 2, wide / 2, high / 2)
+    if kind == "circle":
+        return geometry.Point(0.0, 0.0).buffer(wide / 2, quad_segs=4)
+    if kind == "oval":
+        r = min(wide, high) / 2
+    elif kind == "roundrect":
+        r = float(kid(pad, "roundrect_rratio")[1]) * min(wide, high)
+    else:
+        raise ValueError(f"pad shape {kind} is not handled")
+    return geometry.box(-wide / 2 + r, -high / 2 + r, wide / 2 - r,
+                        high / 2 - r).buffer(r, quad_segs=4)
+
+
+def copper(pcb, at):
+    """Pads and other copper of the 2 outer layers as polygons.
+
+    Args:
+        pcb: The parsed board.
+        at: The move from KiCad's (x, y) to the data's frame.
+
+    Returns:
+        A dict: "pads_top", "pads_bottom", "copper_top", "copper_bottom",
+        each a list of (outline, holes).
+    """
+    from shapely import affinity, geometry, ops
+
+    pads = {"F.Cu": [], "B.Cu": []}
+    rest = {"F.Cu": [], "B.Cu": []}
+    drills = []
+    for fp in kids(pcb, "footprint"):
+        place = kid(fp, "at")
+        fx, fy = _xy(place)
+        turn = math.radians(float(place[3]) if len(place) > 3 else 0.0)
+        c, s = math.cos(turn), math.sin(turn)
+        for pad in kids(fp, "pad"):
+            where = kid(pad, "at")
+            px, py = _xy(where)
+            x, y = fx + px * c + py * s, fy - px * s + py * c
+            angle = float(where[3]) if len(where) > 3 else 0.0
+            shape = affinity.translate(affinity.rotate(
+                _pad_shape(pad, geometry), -angle, origin=(0, 0)), x, y)
+            layers = kid(pad, "layers")[1:]
+            for layer, found in pads.items():
+                if layer in layers or "*.Cu" in layers:
+                    found.append(shape)
+            drill = kid(pad, "drill")
+            if drill:
+                drills.append(geometry.Point(x, y).buffer(
+                    float(drill[1]) / 2, quad_segs=4))
+    for g in kids(pcb, "gr_circle"):
+        if kid(g, "layer")[1] == "Edge.Cuts":
+            centre = _xy(kid(g, "center"))
+            drills.append(geometry.Point(*centre).buffer(
+                math.dist(centre, _xy(kid(g, "end"))), quad_segs=4))
+    for seg in kids(pcb, "segment"):
+        layer = kid(seg, "layer")[1]
+        if layer in rest:
+            rest[layer].append(geometry.LineString(
+                [_xy(kid(seg, "start")), _xy(kid(seg, "end"))]).buffer(
+                    float(kid(seg, "width")[1]) / 2, quad_segs=4))
+    for via in kids(pcb, "via"):
+        for found in rest.values():
+            found.append(geometry.Point(*_xy(kid(via, "at"))).buffer(
+                float(kid(via, "size")[1]) / 2, quad_segs=4))
+    holes = ops.unary_union(drills)
+
+    def polygons(shape):
+        shape = shape.simplify(0.02)
+        out = []
+        for part in getattr(shape, "geoms", [shape]):
+            if part.geom_type != "Polygon" or part.area < 0.01:
+                continue
+            out.append(([at(*q) for q in part.exterior.coords[:-1]],
+                        [[at(*q) for q in ring.coords[:-1]]
+                         for ring in part.interiors]))
+        return sorted(out)
+
+    out = {}
+    for layer, side in (("F.Cu", "top"), ("B.Cu", "bottom")):
+        own = ops.unary_union(pads[layer])
+        out[f"pads_{side}"] = polygons(own.difference(holes))
+        # The other copper keeps 0.02 from pads and holes, so no solid
+        # of one touches a solid of the other along a line.
+        out[f"copper_{side}"] = polygons(ops.unary_union(
+            rest[layer]).difference(holes.buffer(0.02)).difference(
+                own.buffer(0.02)))
+    return out
+
+
 def read(text):
     """The board's data in the frame the module describes.
 
@@ -99,7 +204,8 @@ def read(text):
         text: The .kicad_pcb file's text.
 
     Returns:
-        A dict: "thickness", "outline", "holes", "footprints".
+        A dict: "thickness", "outline", "holes", "footprints", and the
+        4 lists of ``copper``.
 
     Raises:
         ValueError: For an arc on Edge.Cuts, an outline that does not
@@ -170,7 +276,8 @@ def read(text):
 
     return {"thickness": float(kid(kid(pcb, "general"), "thickness")[1]),
             "outline": outline, "holes": holes,
-            "footprints": sorted(footprints, key=order)}
+            "footprints": sorted(footprints, key=order),
+            **copper(pcb, at)}
 
 
 def main(argv):
@@ -197,6 +304,10 @@ def main(argv):
     for key in ("thickness", "outline", "holes", "footprints"):
         lines.append(f"{key.upper()} = " + pprint.pformat(
             data[key], width=79, sort_dicts=False))
+    for key in ("pads_top", "pads_bottom", "copper_top", "copper_bottom"):
+        lines.append(f"{key.upper()} = [")
+        lines += [f"    {polygon!r}," for polygon in data[key]]
+        lines.append("]")
     (HERE / f"_{name}_data.py").write_text("\n".join(lines) + "\n",
                                            encoding="utf-8")
     print(f"wrote _{name}_data.py: {len(data['footprints'])} footprints")
