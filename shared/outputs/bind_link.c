@@ -148,9 +148,9 @@ bind_write_t bind_link_write(link_host_t *h, const link_port_t *port,
     }
     /* Both _HI halves as well, and all four taken as one. */
     if (!page_written(h, port, LINK_PAGE_BIND_CFG_HI, LINK_CC_COUNT,
-                      &cfg[LINK_CC_COUNT], &res)
+                      &cfg[(size_t)LINK_CC_COUNT], &res)
         || !page_written(h, port, LINK_PAGE_BIND_OUT_HI, LINK_OS_COUNT,
-                         &slots[LINK_OS_COUNT], &res)) {
+                         &slots[(size_t)LINK_OS_COUNT], &res)) {
         return res;
     }
     const uint16_t crc = out_stage_crc_all(cfg, slots);
@@ -261,15 +261,15 @@ bind_read_t bind_link_read(link_host_t *h, const link_port_t *port,
     static uint16_t slots[LINK_OS_ALL];
     static uint16_t cfg[LINK_CC_ALL];
     memset(slots, 0, sizeof(slots));
-    outputs_chan_cfg_defaults(&cfg[LINK_CC_COUNT]);
+    outputs_chan_cfg_defaults(&cfg[(size_t)LINK_CC_COUNT]);
     const bool hi = minor >= LINK_MINOR_OUT16;
     if (h == NULL || port == NULL
         || !page_read(h, port, LINK_PAGE_OUTPUTS, LINK_OS_COUNT, slots)
         || !page_read(h, port, LINK_PAGE_CHAN_CFG, LINK_CC_COUNT, cfg)
         || (hi && !page_read(h, port, LINK_PAGE_OUTPUTS_HI, LINK_OS_COUNT,
-                             &slots[LINK_OS_COUNT]))
+                             &slots[(size_t)LINK_OS_COUNT]))
         || (hi && !page_read(h, port, LINK_PAGE_CHAN_CFG_HI, LINK_CC_COUNT,
-                             &cfg[LINK_CC_COUNT]))) {
+                             &cfg[(size_t)LINK_CC_COUNT]))) {
         return bind_link_classify(out, board, NULL, NULL);
     }
     return bind_link_classify(out, board, slots, cfg);

@@ -26,13 +26,13 @@ void out_stage_init(out_stage_t *st, const uint16_t *cfg,
         memcpy(st->cfg, cfg, sizeof(st->cfg));
     } else {
         outputs_chan_cfg_defaults(st->cfg);
-        outputs_chan_cfg_defaults(&st->cfg[LINK_CC_COUNT]);
+        outputs_chan_cfg_defaults(&st->cfg[(size_t)LINK_CC_COUNT]);
     }
     if (slots != NULL) {
         memcpy(st->slots, slots, sizeof(st->slots));
     } else {
         outputs_slots_defaults(st->slots);
-        outputs_slots_defaults(&st->slots[LINK_OS_COUNT]);
+        outputs_slots_defaults(&st->slots[(size_t)LINK_OS_COUNT]);
     }
 }
 
@@ -127,8 +127,8 @@ uint16_t out_stage_crc_all(const uint16_t *cfg, const uint16_t *slots)
         return 0u;
     }
     uint16_t crc = out_stage_crc(cfg, slots);
-    crc = crc_regs(crc, &cfg[LINK_CC_COUNT], LINK_CC_COUNT);
-    return crc_regs(crc, &slots[LINK_OS_COUNT], LINK_OS_COUNT);
+    crc = crc_regs(crc, &cfg[(size_t)LINK_CC_COUNT], LINK_CC_COUNT);
+    return crc_regs(crc, &slots[(size_t)LINK_OS_COUNT], LINK_OS_COUNT);
 }
 
 uint16_t out_stage_held_crc(const out_stage_t *st)
@@ -232,9 +232,9 @@ uint8_t out_stage_commit(const out_stage_t *st, uint16_t crc,
     }
     /* The first halves prepared, the _HI halves as they are in force. */
     memcpy(s_next_cfg, cfg_in_force, sizeof(s_next_cfg));
-    memcpy(s_next_cfg, st->cfg, LINK_CC_COUNT * sizeof(uint16_t));
+    memcpy(s_next_cfg, st->cfg, (size_t)LINK_CC_COUNT * sizeof(uint16_t));
     memcpy(s_next_slots, slots_in_force, sizeof(s_next_slots));
-    memcpy(s_next_slots, st->slots, LINK_OS_COUNT * sizeof(uint16_t));
+    memcpy(s_next_slots, st->slots, (size_t)LINK_OS_COUNT * sizeof(uint16_t));
     return take_both(s_next_cfg, s_next_slots, cfg_in_force, ops, ctx);
 }
 
