@@ -292,12 +292,12 @@ solid, or when a part shares volume with the dial, the nut or the cell.
 
 Limits:
 
-- One base is printed and works (owner, 2026-11-21). That print had
-  material in the flutes: the bosses' webs, the ledge under the rim and
-  the screw columns ran out to the unfluted surface. The files here are
-  cut to the fluted surface, `--check` fails on material in a flute, and
-  this corrected shape is not printed yet. No fit is measured: the 0.2mm
-  gap of the rim and the 2.6mm pilot holes are design values for a 0.4mm
+- One base is printed and works (owner, 2026-11-21). Its flutes are
+  partly filled: in its files the bosses' webs, the ledge under the rim
+  and the screw columns reach the unfluted surface. The files here are
+  cut to the fluted surface, and `--check` fails on material in a flute.
+  No base is printed from these files. No fit is measured: the 0.2mm gap
+  of the rim and the 2.6mm pilot holes are design values for a 0.4mm
   nozzle.
 - The battery socket's place is read from M5Stack's picture, not
   measured, and the socket is not in the dial's model. The passage for

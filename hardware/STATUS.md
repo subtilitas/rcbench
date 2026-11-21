@@ -104,8 +104,8 @@ the 1000mAh cell 102540, and 4 M3 screws join them from below. The base is
 72.0mm across and 32.5mm high, with 18 flutes round its belly. A CI check
 builds both parts and fails when one shares volume with the dial, its nut or
 the cell, or has material in a flute. One base is printed and works (owner,
-2026-11-21); that print had the flutes partly filled, which the files no
-longer have. The corrected shape is not printed yet.
+2026-11-21). Its flutes are partly filled; the files here hold every flute
+open, and no base is printed from them.
 It also holds STEP models of the M5Stack Dial and its ring nut. Their 9
 plastic parts are M5Stack's mesh (MIT licence) fitted again with planes,
 cylinders, cones, tori and the thread's helical surfaces; the models are
