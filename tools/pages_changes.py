@@ -44,6 +44,9 @@ FULL_PATHS = (
     "tools/help_site.py",
     "tools/render_ui.py",
     "shared/ui/include/ui_screen.h",
+    "flasher/",
+    "tools/flash_manifest.py",
+    "test/tools/test_flash_manifest.py",
 )
 
 

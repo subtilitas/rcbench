@@ -113,6 +113,7 @@ die Wiki-Seiten werden beim Veröffentlichen überschrieben.
 | --- | --- |
 | [Worum es geht](https://github.com/subtilitas/rcbench/wiki/Manifest-de) | Anforderungen und ihre Umsetzung |
 | [Bench configurator](https://subtilitas.github.io/rcbench/) | Webseite, Deutsch und Englisch: Wähle Funktionen oder Teile aus. Daraus entstehen Teileliste, Einkaufsliste mit Herstellerseiten und Links zur Websuche, Verdrahtungszeichnung und Pin-zu-Pin-Tabelle für diesen Aufbau |
+| [Web-Flasher](https://subtilitas.github.io/rcbench/flash/) | Webseite, Deutsch und Englisch, Chrome oder Edge auf einem Desktop-Computer: schreibt die Firmware eines Release oder eine lokale Datei über Web Serial auf das Panel und die Funkgeräte und über WebUSB auf die IOmcu, mit Prüfung durch Zurücklesen |
 | [Panel-Hilfe](https://subtilitas.github.io/rcbench/help/de/index.html) | Webseite, Deutsch und Englisch: jede Seite des Panels mit Screenshots ihrer Zustände, Anzeigen und Bedienmöglichkeiten |
 | [C-API-Referenz](https://subtilitas.github.io/rcbench/api/) | Webseite, Englisch: die Programmierschnittstelle (API) von `shared/`, `protocols/`, der Firmware von Panel, IOmcu, Dial und Nodes und dem Kern des Touch-Injectors, von Doxygen aus den Kommentaren im Quelltext erzeugt |
 | [Bauen](https://github.com/subtilitas/rcbench/wiki/Building-de) | Toolchains, Befehle, CI |

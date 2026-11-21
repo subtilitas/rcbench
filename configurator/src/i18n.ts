@@ -343,6 +343,7 @@ const S = {
   ],
   footNotice: ['Trademark notice', 'Markenhinweis'],
   footHelp: ['Panel help', 'Panel-Hilfe'],
+  footFlash: ['Web flasher: write the firmware to the boards', 'Web-Flasher: Firmware auf die Boards schreiben'],
   printHead: [`rcbench bench configurator, release ${RELEASE}`, `rcbench Prüfstand-Konfigurator, Release ${RELEASE}`],
   copro: ['IOmcu', 'IOmcu'],
   coproSub: ['RP2350-CAN', 'RP2350-CAN'],

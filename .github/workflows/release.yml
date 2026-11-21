@@ -20,6 +20,10 @@ name: Release
 #
 # The configurator-data job runs beside the others and gates nothing: it
 # shows a release tag newer than the configurator data as a warning.
+#
+# The pages job runs after the publish and starts pages.yml on main, which
+# copies the images of the newest releases to the web flasher on GitHub
+# Pages (tools/flash_manifest.py).
 
 on:
   push:
@@ -600,3 +604,22 @@ jobs:
           gh release edit "$TAG" --repo "$REPO" --draft=false \
             "${kind[@]}" "${latest[@]}"
           published=1
+
+  # A run of pages.yml on main: its flash-fw job copies the images of the
+  # newest releases, this one among them, to the web flasher at
+  # /rcbench/flash/.  A workflow dispatch is the one event a GITHUB_TOKEN
+  # starts a run with; the github-pages environment deploys from main only,
+  # so the run is on main and not on this tag.
+  pages:
+    name: Publish the images to the web flasher
+    needs: [publish]
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: Start pages.yml on main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: gh workflow run pages.yml --repo "$REPO" --ref main

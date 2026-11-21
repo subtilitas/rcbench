@@ -56,9 +56,13 @@ export const NOTICE_URL = 'https://github.com/subtilitas/rcbench/blob/main/NOTIC
 /** The panel's web help beside the page, in the language of the page. */
 export const HELP_URL = { en: 'help/index.html', de: 'help/de/index.html' } as const;
 
+/** The web flasher beside the page (flasher/ in the repository). */
+export const FLASH_URL = 'flash/';
+
 const footer = (lang: Lang): string =>
   `<footer><p id="dev-state">${esc(t(lang, 'devState'))}</p>`
   + `<p><a id="helplink" href="${HELP_URL[lang]}">${esc(t(lang, 'footHelp'))}</a></p>`
+  + `<p><a id="flashlink" href="${FLASH_URL}">${esc(t(lang, 'footFlash'))}</a></p>`
   + `<p>${esc(t(lang, 'foot'))} <a id="noticelink" href="${NOTICE_URL}" rel="noopener noreferrer">${esc(t(lang, 'footNotice'))}</a></p></footer>`;
 
 /** Folder of the picture files, relative to the page. */

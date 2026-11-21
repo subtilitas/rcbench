@@ -8,6 +8,25 @@ history is in git.
 
 ### Added
 
+- Web flasher at `/rcbench/flash/` on GitHub Pages (`flasher/`), English
+  and German, Chrome or Edge on a desktop computer. It writes the panel
+  (ESP32-P4), the display node and the M5Stack Dial (ESP32-S3), the power
+  node, the balance node and the C6 radio (ESP32-C6) over Web Serial with
+  esptool-js 0.7.1: the merged image of a release at 0x0, then the MD5 of
+  the flash against the image, then a reset. It writes the IOmcu (RP2350)
+  over WebUSB through the boot ROM's PICOBOOT interface: the install image,
+  slot B erased, every byte read back, then a reboot; an IOmcu with rcbench
+  firmware enters BOOTSEL when its serial port opens at 1200 baud. The page
+  refuses an image whose chip differs from the board or from the detected
+  chip, shows tag, size and SHA-256 before WRITE, and reports the failed
+  step with what to try. Size: 49.5kB at the first load, 376.1kB in all
+  ([flasher/README.md](flasher/README.md)).
+- `tools/flash_manifest.py`: picks the 6 newest releases and the newest
+  stable one and writes the flasher's `fw/` folder from their assets, a
+  manifest per release with board, chip, file, size, SHA-256 and offset;
+  `pages.yml` runs it with `gh release download` (about 64MB on Pages for 7
+  releases), and `release.yml` starts `pages.yml` on `main` after a release.
+- The configurator's footer links to the web flasher.
 - `tools/check_mutants.py`: `--check` holds the weekly mutation run's
   figures in `mutation.yml`, `STATUS.md`, `CONTRIBUTING.md` and
   `docs/Building*.md` to the mutants of the tree, run in CI; `--update`
