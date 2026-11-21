@@ -580,6 +580,147 @@ TEST_CASE(a_file_read_in_the_frame_that_arms_is_not_put_in_force)
     CHECK(!settings_dirty());
 }
 
+/** @brief Brightness in file @p name of the folder; -1 for none. */
+static float file_brightness(const char *name)
+{
+    static sf_load_t l;
+    const fake_file_t *f = find(name);
+    if (f == NULL || sf_parse(f->data, f->len, &l, NULL) != SF_OK) {
+        return -1.0f;
+    }
+    return l.values[SET_BRIGHTNESS];
+}
+
+TEST_CASE(a_copy_owed_while_backup_shows_waits_and_the_load_reads_the_file_shown)
+{
+    fake_fresh();
+    put_backup("AUTO1.TXT", "2026-11-20 10:00:00 UTC");
+    start(false, true);
+    settle();
+    sbk_screen_open(false);
+    settle();
+    tap_body(sbk_screen_row(0));
+    CHECK_EQ(sbk_screen_chosen(), 0);
+    /* A save to the store while BACKUP shows: its copy, of brightness 60,
+     * waits; AUTO1.TXT is still the file of brightness 40 shown. */
+    g_feed.committed = true;
+    settle();
+    CHECK(find("AUTO2.TXT") == NULL);
+    CHECK_FEQ(file_brightness("AUTO1.TXT"), 40.0f);
+    uint8_t n = 0u;
+    CHECK_STR_EQ(sbk_files(&n)[0].head.written, "2026-11-20 10:00:00 UTC");
+    /* The hold loads the file shown. */
+    const gfx_rect_t hold = sbk_screen_part(SBK_PART_HOLD);
+    press_body(hold, TOUCH_EVENT_DOWN);
+    for (int i = 0; i < 9; ++i) {
+        frame(0.25f);
+    }
+    press_body(hold, TOUCH_EVENT_UP);
+    settle();
+    CHECK_EQ(sbk_load_state(), SBK_LOAD_DONE);
+    CHECK_STR_EQ(sbk_load_name(), "AUTO1.TXT");
+    CHECK_FEQ(settings_get(SET_BRIGHTNESS), 40.0f);
+    /* BACK: the copy goes, the copies move on, and the list is read
+     * again with the new dates. */
+    tap_body(sbk_screen_part(SBK_PART_BACK));
+    CHECK(ui_router_current() != SCREEN_SET_LOAD);
+    settle();
+    CHECK_FEQ(file_brightness("AUTO1.TXT"), 60.0f);
+    CHECK_FEQ(file_brightness("AUTO2.TXT"), 40.0f);
+    const sb_entry_t *f = sbk_files(&n);
+    CHECK_EQ(n, 2u);
+    CHECK_STR_EQ(f[0].name, "AUTO1.TXT");
+    CHECK_STR_EQ(f[0].head.written, "2026-11-21 14:05:33 UTC");
+    CHECK_STR_EQ(f[1].name, "AUTO2.TXT");
+    CHECK_STR_EQ(f[1].head.written, "2026-11-20 10:00:00 UTC");
+}
+
+TEST_CASE(a_list_that_changes_under_a_choice_drops_the_choice)
+{
+    fake_fresh();
+    put_backup("AUTO1.TXT", "2026-11-20 10:00:00 UTC");
+    start(false, true);
+    settle();
+    sbk_screen_open(false);
+    settle();
+    tap_body(sbk_screen_row(0));
+    CHECK(sbk_screen_hold_ready());
+    /* The same names and dates read again: the choice stays. */
+    uint8_t n = 0u;
+    static sb_entry_t before[SB_FILES];
+    memcpy(before, sbk_files(&n), sizeof(before));
+    sbk_screen_relisted(before, n);
+    CHECK_EQ(sbk_screen_chosen(), 0);
+    /* AUTO1.TXT of another date: no file chosen, no hold. */
+    before[0].head.written[0] = '\0';
+    sbk_screen_relisted(before, n);
+    CHECK_EQ(sbk_screen_chosen(), -1);
+    CHECK(!sbk_screen_hold_ready());
+}
+
+TEST_CASE(a_card_gone_before_the_offer_s_list_is_looked_at_again)
+{
+    fake_fresh();
+    put_backup("AUTO1.TXT", "2026-11-20 10:00:00 UTC");
+    start(true, false);
+    settle();
+    CHECK_EQ(sbk_offer_state(), SBK_OFFER_WAIT);
+    /* Mounted for one frame: the list is asked for, and the card is gone
+     * before the card task runs it. */
+    g_feed.mounted = true;
+    g_fake.mounted = false;
+    frame(0.016f);
+    CHECK(g_answered);
+    /* The answer comes in the frame that sees no card. */
+    g_feed.mounted = false;
+    g_feed.committed = true;
+    frame(0.016f);
+    CHECK_EQ(sbk_offer_state(), SBK_OFFER_WAIT);
+    settle();
+    /* In again: the offer comes; no copy before it is answered. */
+    g_fake.mounted = true;
+    g_feed.mounted = true;
+    g_feed.committed = true;
+    settle();
+    CHECK_EQ(ui_router_current(), SCREEN_SET_LOAD);
+    CHECK(sbk_screen_offer());
+    CHECK(find("AUTO2.TXT") == NULL);
+    CHECK_FEQ(file_brightness("AUTO1.TXT"), 40.0f);
+    /* SKIP: the owed copy goes. */
+    tap_body(sbk_screen_part(SBK_PART_BACK));
+    settle();
+    CHECK_EQ(sbk_offer_state(), SBK_OFFER_DONE);
+    CHECK_FEQ(file_brightness("AUTO2.TXT"), 40.0f);
+}
+
+TEST_CASE(a_card_gone_before_the_offer_s_read_is_looked_at_again)
+{
+    fake_fresh();
+    put_backup("AUTO1.TXT", "2026-11-20 10:00:00 UTC");
+    start(true, false);
+    settle();
+    /* The list works; the card is gone before the read. */
+    g_feed.mounted = true;
+    frame(0.016f);
+    CHECK(g_answered);
+    frame(0.016f);
+    CHECK(g_answered);
+    g_fake.mounted = false;
+    sb_req_t q;
+    memset(&q, 0, sizeof(q));
+    q.op = SB_REQ_READ;
+    (void)snprintf(q.name, sizeof(q.name), "AUTO1.TXT");
+    sb_run(&k_io, &q, sbk_buffer(), sbk_buffer_size(), &g_done);
+    g_feed.mounted = false;
+    frame(0.016f);
+    CHECK_EQ(sbk_offer_state(), SBK_OFFER_WAIT);
+    g_fake.mounted = true;
+    g_feed.mounted = true;
+    settle();
+    CHECK_EQ(ui_router_current(), SCREEN_SET_LOAD);
+    CHECK(sbk_screen_offer());
+}
+
 int main(void)
 {
     RUN(save_settings_writes_the_stored_settings_and_says_so);
@@ -593,5 +734,9 @@ int main(void)
     RUN(a_load_lists_each_refused_line_and_a_cut_file_loads_nothing);
     RUN(armed_or_no_card_loads_nothing);
     RUN(a_file_read_in_the_frame_that_arms_is_not_put_in_force);
+    RUN(a_copy_owed_while_backup_shows_waits_and_the_load_reads_the_file_shown);
+    RUN(a_list_that_changes_under_a_choice_drops_the_choice);
+    RUN(a_card_gone_before_the_offer_s_list_is_looked_at_again);
+    RUN(a_card_gone_before_the_offer_s_read_is_looked_at_again);
     return test_summary("sbk_screen");
 }

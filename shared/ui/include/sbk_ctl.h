@@ -18,7 +18,10 @@
  *   does not reach the card is said once in the alert band; the next copy
  *   that does clears that, so the next failure is said again.  No card is
  *   no failure.  A failed copy is no fault of the bench: it does not switch
- *   an output off.
+ *   an output off.  While BACKUP shows, a copy owed waits and is written
+ *   once the screen is left: a copy renames the files the screen lists.
+ *   Each copy written has the list read again, and a list that changes
+ *   under a chosen file drops the choice (sbk_screen_relisted()).
  * - LOAD SETTINGS (sbk_ask_load()) reads a file whole and puts it in force
  *   (sf_apply()) on a SAFE bench, then asks for the save.
  * - The restore offer: a panel that started with the defaults only
@@ -26,7 +29,8 @@
  *   the newest file, and offers it (SCREEN_SET_LOAD over OVERVIEW, on a SAFE
  *   bench) when it holds other settings.  Until the offer is answered, or
  *   found not due, no automatic copy is written: a copy of the defaults would
- *   push a good copy one place on.
+ *   push a good copy one place on.  A list or read that finds no card puts
+ *   the offer back to waiting for the next mount.
  *
  * SPDX-License-Identifier: MIT
  */

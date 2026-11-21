@@ -21,7 +21,7 @@ Die letzten beiden Zeilen von [SETUP > SD CARD](setup.md#sd-card):
 
 ## Die automatischen Kopien
 
-Jedes Mal, wenn das Panel seine Einstellungen mit eingesteckter Karte ins NVS schreibt, schreibt es auch eine Kopie: `AUTO1.TXT` ist die neueste, `AUTO2.TXT` und `AUTO3.TXT` die beiden davor. Eine Kopie wird zuerst ganz als `AUTO.TMP` geschrieben, erst dann rücken die anderen weiter; eine volle Karte lässt die Kopien, wie sie waren. Eine Kopie, die die Karte nicht erreicht, steht einmal im Meldeband, `Einstellungskopie nicht geschrieben: Die Karte ist voll.` oder `Einstellungskopie nicht geschrieben: Karten-Code n.`; der nächste Fehler steht erst nach einer gelungenen Kopie wieder dort. Eine fehlgeschlagene Kopie ist kein Fehler des Prüfstands: Ausgänge, Netzteil und ARMED bleiben, wie sie sind.
+Jedes Mal, wenn das Panel seine Einstellungen mit eingesteckter Karte ins NVS schreibt, schreibt es auch eine Kopie: `AUTO1.TXT` ist die neueste, `AUTO2.TXT` und `AUTO3.TXT` die beiden davor. Eine Kopie wird zuerst ganz als `AUTO.TMP` geschrieben, erst dann rücken die anderen weiter; eine volle Karte lässt die Kopien, wie sie waren. Eine Kopie, die die Karte nicht erreicht, steht einmal im Meldeband, `Einstellungskopie nicht geschrieben: Die Karte ist voll.` oder `Einstellungskopie nicht geschrieben: Karten-Code n.`; der nächste Fehler steht erst nach einer gelungenen Kopie wieder dort. Eine fehlgeschlagene Kopie ist kein Fehler des Prüfstands: Ausgänge, Netzteil und ARMED bleiben, wie sie sind. Solange BACKUP zu sehen ist, wartet eine Kopie und wird geschrieben, sobald BACKUP verlassen wird.
 
 ## BACKUP
 

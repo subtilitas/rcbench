@@ -7024,6 +7024,9 @@ Control-Task warten nicht auf die Karte.
 **Die automatische Kopie.** Ein Speichern, das das NVS erreicht, während
 eine Karte eingehängt ist, schuldet eine Kopie; ein Speichern ohne Karte
 schreibt keine, und eine später eingesteckte Karte bekommt dafür keine.
+Solange BACKUP zu sehen ist, wartet eine geschuldete Kopie und wird
+geschrieben, sobald BACKUP verlassen wird; so behalten die gelisteten
+Dateien Namen und Datum. Nach jeder Kopie wird die Liste neu gelesen.
 Eine Kopie, die die Karte nicht erreicht, steht einmal im Meldeband:
 `Einstellungskopie nicht geschrieben: Die Karte ist voll.` oder
 `Einstellungskopie nicht geschrieben: Karten-Code n.` Der nächste Fehler
@@ -7084,7 +7087,8 @@ Dateien eines haben, sonst `AUTO1.TXT`, `AUTO2.TXT`, `AUTO3.TXT`,
 einmal je Start. Bis es beantwortet ist, wird keine automatische Kopie
 geschrieben, damit eine Kopie der Standardwerte keine gute Kopie
 weiterschiebt. Ein Speichern anderer Einstellungen, bevor das Angebot
-erscheint, beendet es.
+erscheint, beendet es. Wird die Karte gezogen, bevor die neueste Datei
+gelesen ist, prüft das Panel beim nächsten Einstecken erneut.
 
 **Was die Datei enthält.** Jede Einstellung des Schemas (die Listen von
 SETUP, MOTOR & ESC > SETTINGS, SUPPLY, SERVO, die vier INA3221-Schlüssel

@@ -109,6 +109,26 @@ static void go_back(void)
     ui_router_goto(ui_router_parent(SCREEN_SET_LOAD));
 }
 
+void sbk_screen_relisted(const sb_entry_t *before, unsigned before_n)
+{
+    if (v.chosen < 0) {
+        return;
+    }
+    uint8_t n = 0u;
+    const sb_entry_t *now = sbk_files(&n);
+    const int i = v.chosen;
+    const bool same = before != NULL && i < (int)before_n && i < (int)n
+                      && strcmp(before[i].name, now[i].name) == 0
+                      && strcmp(before[i].head.written,
+                                now[i].head.written) == 0;
+    if (!same) {
+        v.chosen = -1;
+        drop_press();
+        ui_hold_reset(&v.hold);
+        sbk_screen_invalidate();
+    }
+}
+
 /** @brief Takes a touch event. */
 static void event(const touch_event_t *evt)
 {

@@ -6483,7 +6483,10 @@ the card.
 
 **The automatic copy.** A save that reaches NVS with a card mounted owes a
 copy; a save without a card writes none, and a card put in later gets none
-for it. A copy that does not reach the card shows once in the alert band:
+for it. While BACKUP shows, an owed copy waits and is written when BACKUP is
+left, so the files listed keep their names and dates; after each copy, the
+list is read again. A copy that does not reach the card shows once in the
+alert band:
 `Settings copy not written: the card is full.` or `Settings copy not
 written: card code n.` The next failure shows again only after a copy that
 worked. A failed copy is no error of the bench: the outputs, the supply and
@@ -6536,7 +6539,8 @@ one, else `AUTO1.TXT`, `AUTO2.TXT`, `AUTO3.TXT`, `SETTINGS.TXT` in that
 order. HOLD 2s TO LOAD loads it; SKIP or the home tag returns to the menu.
 The offer comes once a start. Until it is answered, no automatic copy is
 written, so a copy of the defaults does not push a good copy one place on.
-A save of other settings before the offer shows ends the offer.
+A save of other settings before the offer shows ends the offer. A card
+pulled before the newest file is read leaves the offer to the next mount.
 
 **What the file holds.** Every setting of the schema (the lists of SETUP,
 MOTOR & ESC > SETTINGS, SUPPLY, SERVO, the four INA3221 keys of 0.21 that

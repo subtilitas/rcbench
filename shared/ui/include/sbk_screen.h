@@ -27,6 +27,7 @@
 #include <stddef.h>
 
 #include "gfx.h"
+#include "settings_backup.h"
 #include "ui_screen.h"
 #include "ui_setlist.h"
 
@@ -56,6 +57,15 @@ const ui_screen_t *sbk_screen(void);
  * @param offer true for the restore offer.
  */
 void sbk_screen_open(bool offer);
+
+/**
+ * @brief The driver read the list again: a chosen file whose row no longer
+ *        has the same name and date is no longer chosen, and a hold under
+ *        way ends without a load.
+ * @param before   The list before.
+ * @param before_n Its files.
+ */
+void sbk_screen_relisted(const sb_entry_t *before, unsigned before_n);
 
 /** @brief Draw the screen whole at its next render. */
 void sbk_screen_invalidate(void);

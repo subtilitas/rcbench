@@ -21,7 +21,7 @@ The last two rows of [SETUP > SD CARD](setup.md#sd-card):
 
 ## The automatic copies
 
-Each time the panel writes its settings to NVS with a card in, it also writes a copy: `AUTO1.TXT` is the newest, `AUTO2.TXT` and `AUTO3.TXT` the two before it. A copy is written whole under `AUTO.TMP` first, and only then do the others move on, so a full card leaves the copies as they were. A copy that does not reach the card shows once in the alert band, `Settings copy not written: the card is full.` or `Settings copy not written: card code n.`; the next failure shows again after a copy that worked. A failed copy is no error of the bench: outputs, supply and ARMED stay as they are.
+Each time the panel writes its settings to NVS with a card in, it also writes a copy: `AUTO1.TXT` is the newest, `AUTO2.TXT` and `AUTO3.TXT` the two before it. A copy is written whole under `AUTO.TMP` first, and only then do the others move on, so a full card leaves the copies as they were. A copy that does not reach the card shows once in the alert band, `Settings copy not written: the card is full.` or `Settings copy not written: card code n.`; the next failure shows again after a copy that worked. A failed copy is no error of the bench: outputs, supply and ARMED stay as they are. While BACKUP shows, a copy waits and is written when BACKUP is left.
 
 ## BACKUP
 

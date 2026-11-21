@@ -155,7 +155,11 @@ static bool next(sb_req_t *req)
         req->op = SB_REQ_LIST;
         return true;
     }
-    if (k.owe_auto && sbk_auto_allowed()) {
+    /* Not while BACKUP shows: a copy renames the files its list names, so
+     * the file a hold loads would not be the one chosen.  The copy stays
+     * owed and goes when the screen is left. */
+    if (k.owe_auto && sbk_auto_allowed()
+        && ui_router_current() != SCREEN_SET_LOAD) {
         k.owe_auto = false;
         req->len = format_now();
         if (req->len == 0u) {
@@ -203,6 +207,9 @@ static void auto_answer(uint8_t result)
 {
     if (result == SB_OK) {
         k.auto_alerted = false;
+        /* The copies moved on: the list is read again, so no list names
+         * a file by its old date. */
+        k.owe_list = true;
         return;
     }
     if (result == SB_NO_CARD || k.auto_alerted) {
@@ -219,11 +226,29 @@ static void auto_answer(uint8_t result)
     }
 }
 
+/**
+ * @brief The offer's check found no card: it waits for the next mount, as
+ *        at start, and the automatic copies stay held.  A card mounted
+ *        again since is checked at once.
+ */
+static void offer_again(void)
+{
+    k.offer = SBK_OFFER_WAIT;
+    if (k.mounted) {
+        k.offer = SBK_OFFER_CHECKING;
+        k.owe_list = true;
+    }
+}
+
 /** @brief The offer's list: its newest file is read, or the offer is not
  *         due. */
 static void offer_list(void)
 {
     if (k.offer != SBK_OFFER_CHECKING) {
+        return;
+    }
+    if (k.list_code == SB_NO_CARD) {
+        offer_again();
         return;
     }
     const int newest = sb_newest(k.files, k.count);
@@ -242,6 +267,10 @@ static void offer_list(void)
 static void offer_read(const sb_done_t *d)
 {
     if (k.offer != SBK_OFFER_CHECKING) {
+        return;
+    }
+    if (d->result == SB_NO_CARD) {
+        offer_again();
         return;
     }
     if (d->result == SB_OK
@@ -305,13 +334,18 @@ void sbk_done(const sb_done_t *d, bool armed)
     case SB_REQ_AUTO:
         auto_answer(d->result);
         break;
-    case SB_REQ_LIST:
+    case SB_REQ_LIST: {
+        static sb_entry_t before[SB_FILES];
+        const uint8_t before_n = k.count;
+        memcpy(before, k.files, sizeof(before));
         k.list = SBK_LIST_READY;
         k.list_code = d->result;
         k.count = (d->count <= SB_FILES) ? d->count : SB_FILES;
         memcpy(k.files, d->files, sizeof(k.files));
+        sbk_screen_relisted(before, before_n);
         offer_list();
         break;
+    }
     case SB_REQ_READ:
         if (check) {
             offer_read(d);
