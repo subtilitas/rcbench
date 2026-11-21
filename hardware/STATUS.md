@@ -73,10 +73,15 @@ connector housings, a Matek mBEC12S buck converter (6V to 60V in, 5V out)
 beside the plus bar and 1.5mm over the board, 86.4mm x 50.0mm x 23.7mm over
 all. The node has no cell and no charger board (owner, 2026-11-21). The
 converter's model, `matek_mbec12s.step`, is drawn from seller pictures by eye,
-within about 0.5mm; only its 4.5mm over all is a listed height. The node's
-case is not drawn; chosen for it (owner, 2026-11-21): openings for USB-C,
-microSD, RESET, BOOT, speaker and microphone, ruthex RX-M3Sx4.0 inserts, no
-mounting ears.
+within about 0.5mm; only its 4.5mm over all is a listed height.
+It holds the node's case, 3 printed parts of 91.4mm x 55.4mm x 28.0mm over
+all: bottom plate, frame with 4 columns, bezel. Chosen (owner, 2026-11-21):
+screws from below through the INA228 module, ruthex RX-M3Sx4.0 inserts, no
+mounting ears, openings for USB-C, microSD, RESET, BOOT, speaker and
+microphone. No part is printed. RESET and BOOT have no push rod: a tool of
+2mm at most reaches them through a slot. A USB plug thicker than 7.0mm meets
+the plug in the XT90 housing under it. The speaker is not chosen; the
+converter lies on a foam pad of 1.5mm that is not drawn.
 It holds a STEP model of a standard size servo with a round horn, black with
 the white print "Standard Servo", from an owner sketch with dimensions: case
 40.5mm x 20.0mm x 36.3mm, mounting holes 49.5mm x 10.0mm apart. The horn's

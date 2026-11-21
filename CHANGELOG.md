@@ -8,6 +8,17 @@ history is in git.
 
 ### Added
 
+- `hardware/mechanical/`: a printed case of 3 parts for the remote INA228
+  sensor node, 91.4mm x 55.4mm x 28.0mm: `ina228_node_plate`,
+  `ina228_node_frame` and `ina228_node_bezel`, each as STEP and STL. 4
+  screws M3 x 8 go from below through the plate and the INA228 board into
+  the frame's columns, 4 screws M3 x 10 from above through the bezel and
+  the display board; the 8 threads are ruthex RX-M3Sx4.0 inserts.
+  Openings: 2 XT90, USB Type-C, a tool slot for RESET and BOOT, microSD,
+  4 speaker slots, microphone, display window. `_gen_node_case.py` builds
+  the parts with OpenCASCADE and CI checks them against the 1139 solids of
+  the layout. No part is printed
+  ([Mechanical parts](hardware/mechanical/README.md#case-of-the-sensor-node)).
 - `hardware/mechanical/`: `ina228_node_layout.step`, the boards of the
   remote INA228 sensor node in place: the INA228 module with its 2 XT90PW
   connectors at the bottom, the ES3C28P display board 0.5mm over the
@@ -15,7 +26,7 @@ history is in git.
   out) beside the plus bar, not over the current path. 86.4mm x 50.0mm x
   23.7mm over all, 1139 solids, no two sharing volume. `matek_mbec12s.step`
   is the converter alone, 18.0mm x 15.0mm x 4.5mm, drawn from seller
-  pictures within about 0.5mm. No case is drawn
+  pictures within about 0.5mm
   ([Mechanical parts](hardware/mechanical/README.md#remote-ina228-sensor-node-layout)).
 - `hardware/mechanical/`: the rbmod carrier's models carry the copper of
   the 2 outer layers, read from the board file by `_read_kicad_pcb.py`:
