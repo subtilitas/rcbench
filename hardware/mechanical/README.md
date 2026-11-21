@@ -257,7 +257,7 @@ For scale, two things made to be held or turned in one hand: Microsoft's
 Surface Dial is 59mm across and 30mm high (Microsoft's specification), an
 ice hockey puck 76.2mm across and 25.4mm high. The base lies between them
 in width, 72.0mm, and is 32.5mm high. The dial weighs 46.3g and the two
-parts, printed solid in PLA at 1.24g/cm3, 37g; the cell's weight is not
+parts, printed solid in PLA at 1.24g/cm3, 36g; the cell's weight is not
 measured.
 
 | Feature | mm |
@@ -292,9 +292,13 @@ solid, or when a part shares volume with the dial, the nut or the cell.
 
 Limits:
 
-- No part is printed yet, so no fit is tried and the base has not been
-  held in a hand: the 0.2mm gap of the rim and the 2.6mm pilot holes are
-  design values for a 0.4mm nozzle.
+- One base is printed and works (owner, 2026-11-21). That print had
+  material in the flutes: the bosses' webs, the ledge under the rim and
+  the screw columns ran out to the unfluted surface. The files here are
+  cut to the fluted surface, `--check` fails on material in a flute, and
+  this corrected shape is not printed yet. No fit is measured: the 0.2mm
+  gap of the rim and the 2.6mm pilot holes are design values for a 0.4mm
+  nozzle.
 - The battery socket's place is read from M5Stack's picture, not
   measured, and the socket is not in the dial's model. The passage for
   the wires under the Stamp-S3 and out at its +y end is not in the model

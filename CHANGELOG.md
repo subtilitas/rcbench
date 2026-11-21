@@ -103,6 +103,12 @@ history is in git.
 
 ### Fixed
 
+- Dial base (`hardware/mechanical/_gen_dial_base.py`): every flute is
+  open. The bosses' webs, the ledge under the rim and the screw columns
+  were cut to the unfluted shape and filled the flutes, 183mm3 in the
+  bottom part and 10mm3 in the top part; a printed base showed it (owner,
+  2026-11-21). They are cut to the fluted shape, and `--check` fails on
+  material in a flute. The two parts weigh 36g in PLA.
 - Web flasher: a write to an ESP board keeps the board's settings. The
   page reads the partition table from the merged image (0xC000 on the
   panel, 0x8000 on the Dial, the nodes and the C6 radio) and writes every

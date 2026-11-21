@@ -38,6 +38,19 @@ def test_parts_are_valid_and_apart(built):
     assert base.volume(both) == pytest.approx(0.0, abs=1e-6)
 
 
+def test_every_flute_is_open(built):
+    """No part has material in one of the 18 flutes."""
+    flutes = base.flutes()
+    assert len(flutes) == 18
+    for solid in built.values():
+        for flute in flutes:
+            filled = BRepAlgoAPI_Common(solid, flute).Shape()
+            assert base.volume(filled) == pytest.approx(0.0, abs=1e-3)
+    # The flutes take material off: each part is lighter than its share
+    # of the unfluted shell.
+    assert base.check(built) == []
+
+
 def test_rim_stands_on_the_wall(built):
     """The rim has material under it all round, not only at the screws.
 

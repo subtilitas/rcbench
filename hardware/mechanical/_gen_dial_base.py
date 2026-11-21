@@ -41,9 +41,11 @@ Stamp-S3 and leave the dial at its +y end, away from the USB plug, then
 drop to the cell. A pad of foam 2 thick lies between the cell and the
 dial; it holds the cell and leaves it room to swell.
 
-``check`` fails when a part is not one valid solid, and puts the dial,
-its nut and the cell where they sit and fails when one shares volume
-with a part of the base.
+``check`` fails when a part is not one valid solid or has material in
+a flute, and puts the dial, its nut and the cell where they sit and
+fails when one shares volume with a part of the base. The bosses' webs,
+the rim's ledge, the screw columns and the USB tube are cut to the
+fluted shape, so each flute is open over its whole length.
 
 Usage:
     python3 hardware/mechanical/_gen_dial_base.py           write
@@ -219,18 +221,41 @@ def inner_radius(z):
     return end[0] - (end[1] - z) * math.tan(math.radians(TURN))
 
 
-def shell():
-    """The base in one piece: hollow, fluted, with the dial's hole."""
-    solid = BRepAlgoAPI_Cut(_body(), _revolve(_profile(WALL, -PLATE))).Shape()
+def flutes():
+    """The cylinders that cut the flutes, one for each flute."""
     count, radius, depth, plain = FLUTES
     reach = BELLY[0] + radius - depth
+    out = []
     for k in range(count):
         angle = 360.0 * (k + 0.5) / count
         if abs((angle - 270.0 + 180.0) % 360.0 - 180.0) < plain:
             continue
-        flute = _turned(_cylinder(reach, 0.0, radius, -HEIGHT - 1, 1.0),
-                        angle)
-        solid = BRepAlgoAPI_Cut(solid, flute).Shape()
+        out.append(_turned(_cylinder(reach, 0.0, radius, -HEIGHT - 1, 1.0),
+                           angle))
+    return out
+
+
+_FLUTED = []
+
+
+def _fluted():
+    """The pebble with its flutes, without its cavity.
+
+    Everything added inside the base is cut to this shape, so nothing
+    fills a flute.
+    """
+    if not _FLUTED:
+        solid = _body()
+        for flute in flutes():
+            solid = BRepAlgoAPI_Cut(solid, flute).Shape()
+        _FLUTED.append(solid)
+    return _FLUTED[0]
+
+
+def shell():
+    """The base in one piece: hollow, fluted, with the dial's hole."""
+    solid = BRepAlgoAPI_Cut(_fluted(),
+                            _revolve(_profile(WALL, -PLATE))).Shape()
     return BRepAlgoAPI_Cut(solid, _cylinder(0, 0, HOLE / 2, -PLATE - 1,
                                             1.0)).Shape()
 
@@ -282,7 +307,7 @@ def parts():
         boss = BRepAlgoAPI_Fuse(_cylinder(x, y, BOSS / 2, SPLIT, -PLATE),
                                 web).Shape()
         top = BRepAlgoAPI_Fuse(
-            top, BRepAlgoAPI_Common(boss, _body()).Shape()).Shape()
+            top, BRepAlgoAPI_Common(boss, _fluted()).Shape()).Shape()
         top = BRepAlgoAPI_Cut(top, _cylinder(x, y, PILOT / 2, SPLIT - 1,
                                              DEPTH)).Shape()
     # USB opening at -y, in a tube that guides the plug to the socket.
@@ -294,7 +319,7 @@ def parts():
         -width / 2 - wall, -big, z, width / 2 + wall, -tie,
         -PLATE)).Shape()
     top = BRepAlgoAPI_Fuse(
-        top, BRepAlgoAPI_Common(tube, _body()).Shape()).Shape()
+        top, BRepAlgoAPI_Common(tube, _fluted()).Shape()).Shape()
     top = BRepAlgoAPI_Cut(top, _bar(width, height, corner, z, 20.0,
                                     big)).Shape()
     # Rim of the bottom part, rising into the top part. It stands on a
@@ -312,11 +337,12 @@ def parts():
         _line((BELLY[0], SPLIT - drop - slope), (inside, SPLIT - drop)),
         _line((inside, SPLIT - drop), (inside, SPLIT + rise))])
     bottom = BRepAlgoAPI_Fuse(
-        bottom, BRepAlgoAPI_Common(rim, _body()).Shape()).Shape()
+        bottom, BRepAlgoAPI_Common(rim, _fluted()).Shape()).Shape()
     # Screw columns with clearance holes and head recesses.
     for x, y, _angle in _screw_points():
         column = BRepAlgoAPI_Common(
-            _cylinder(x, y, BOSS / 2 + 0.6, -HEIGHT, SPLIT), _body()).Shape()
+            _cylinder(x, y, BOSS / 2 + 0.6, -HEIGHT, SPLIT),
+            _fluted()).Shape()
         bottom = BRepAlgoAPI_Fuse(bottom, column).Shape()
     for x, y, _angle in _screw_points():
         bottom = BRepAlgoAPI_Cut(bottom, _cylinder(
@@ -451,6 +477,12 @@ def check(built):
         count = pieces(solid)
         if count != 1:
             errors.append(f"{stem}: {count} separate pieces")
+    for stem, solid in built.items():
+        filled = sum(volume(BRepAlgoAPI_Common(solid, flute).Shape())
+                     for flute in flutes())
+        if filled > 1e-3:
+            errors.append(f"{stem}: {filled:.2f}mm3 of it lie in the "
+                          "flutes")
     top, bottom = built["dial_base_top"], built["dial_base_bottom"]
     shared = volume(BRepAlgoAPI_Common(top, bottom).Shape())
     if shared > 1e-6:
