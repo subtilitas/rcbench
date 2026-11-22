@@ -761,8 +761,52 @@ TEST_CASE(a_part_online_at_the_roll_is_judged_if_it_drops_after_it)
     CHECK(dropped_in_closing_tick);
 }
 
+/* Board 3's critical limits: written at the probe with CEN, reported in
+ * the snapshot, and a changed limit a set-up of its own; each Mask/Enable
+ * read counted. */
+TEST_CASE(a_critical_limit_is_written_reported_and_a_change_set_up_anew)
+{
+    rig();
+    cmd.parts.i3221.crit_ma[0] = 1000u;           /* 100mV on 100mΩ */
+    step();
+    CHECK_EQ(snap.i3221[0], SENSE_PART_ONLINE);
+    CHECK_EQ(snap.i3221_crit, 0x01u);
+    CHECK_EQ(i3221->reg[INA3221_CRIT1], (uint16_t)(2500u << 3));
+    CHECK_EQ(i3221->reg[INA3221_MASK_ENABLE] & INA3221_ME_CEN, INA3221_ME_CEN);
+    CHECK_EQ(g_opens, 1u);
+    const uint32_t first = snap.setup;
+    CHECK(first != 0u);
+    /* Mask/Enable is read in the rotation, 25Hz: counted, CEN kept. */
+    steps(100u);
+    CHECK_EQ(snap.i3221_have_flags & 0x01u, 0x01u);
+    const uint16_t n0 = snap.i3221_flags_n[0];
+    CHECK(n0 >= 2u);
+    CHECK_EQ(snap.i3221_flags[0] & INA3221_ME_CEN, INA3221_ME_CEN);
+    i3221->reg[INA3221_MASK_ENABLE] |= INA3221_ME_CF1;
+    steps(41u);
+    CHECK(snap.i3221_flags_n[0] != n0);
+    /* A new limit under the same generation: closed and set up again. */
+    cmd.parts.i3221.crit_ma[0] = 500u;
+    step();
+    CHECK_EQ(g_closes, 1u);
+    CHECK_EQ(g_opens, 2u);
+    CHECK_EQ(i3221->reg[INA3221_CRIT1], (uint16_t)(1250u << 3));
+    CHECK_EQ(snap.i3221_crit, 0x01u);
+    /* A new series of windows: the POWER page counts from its first. */
+    CHECK(snap.setup != first);
+    /* The same limit again: no set-up. */
+    steps(5u);
+    CHECK_EQ(g_opens, 2u);
+    /* No limit: none held. */
+    cmd.parts.i3221.crit_ma[0] = 0u;
+    step();
+    CHECK_EQ(g_opens, 3u);
+    CHECK_EQ(snap.i3221_crit, 0u);
+}
+
 int main(void)
 {
+    RUN(a_critical_limit_is_written_reported_and_a_change_set_up_anew);
     RUN(a_set_up_opens_the_bus_and_reads_both_parts);
     RUN(a_new_set_up_closes_the_bus_and_opens_it_again);
     RUN(pins_that_do_not_open_leave_the_bus_closed);

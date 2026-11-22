@@ -45,7 +45,7 @@ and the time off.
 |---|---|---|
 | `POWER_OFF`: 250ms at least, read off within 3000ms, then the time off (0 to 10000ms) | parked | off |
 | `LEAD`, 50ms | driven high | off |
-| `POWER_ON`: until the PD mini reads on, 3000ms at most | driven high | asked on, at 3000 to 20000mV and 50 to 3000mA, at least 700mV under the input |
+| `POWER_ON`: until the PD mini reads on, 3000ms at most | driven high | asked on, at 3000 to 20000mV (8400mV on board 3) and 50 to 3000mA, at least 700mV under the input |
 | `RUN`: the hold (500 to 120000ms), counted from it reading on, then first contact or `info` | driven high, then the wire | on |
 
 | `BY HAND`, on the ESC's own supply | Line | Supply |

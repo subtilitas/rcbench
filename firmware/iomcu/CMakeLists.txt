@@ -80,6 +80,9 @@ add_executable(rcbench-iomcu
     src/iomcu_tone.c
     src/iomcu_bind.c
     src/iomcu_can.c
+    # The remote servo node's stepping check, POWER page and switches; on
+    # the other boards its functions do nothing.
+    src/iomcu_rsn.c
     src/iomcu_report.c
     src/xl2515.c
     src/out_pwm.c
@@ -97,20 +100,30 @@ add_executable(rcbench-iomcu
 target_include_directories(rcbench-iomcu PRIVATE include src)
 
 # Which board the image is for (include/iomcu_pins.h): rp2350_can, the
-# module wired by hand, or rbmod, the carrier whose pins are soldered
-# (shared/outputs/out_board_rbmod.c).  The board names the files: the
-# module's image is rcbench-iomcu.*, a carrier's rcbench-iomcu-<board>.*,
-# so the two never share a file name.
-set(IOMCU_BOARD "rp2350_can" CACHE STRING "Board the image is for: rp2350_can or rbmod")
-set_property(CACHE IOMCU_BOARD PROPERTY STRINGS rp2350_can rbmod)
+# module wired by hand; rbmod, the carrier whose pins are soldered
+# (shared/outputs/out_board_rbmod.c); or rsn, the remote servo node's
+# Core2350B (RP2350B, shared/outputs/out_board_rsn.c), one image for
+# carriers with and without the port switches.  The board names the files:
+# the module's image is rcbench-iomcu.*, a carrier's rcbench-iomcu-<board>.*,
+# so no two share a file name.  The rsn image runs on the default
+# PICO_BOARD: pimoroni_pico_plus2_rp2350 is an RP2350B with 16MB flash and
+# its PSRAM's chip select on GPIO 47, as the Core2350B1 is.
+set(IOMCU_BOARD "rp2350_can" CACHE STRING "Board the image is for: rp2350_can, rbmod or rsn")
+set_property(CACHE IOMCU_BOARD PROPERTY STRINGS rp2350_can rbmod rsn)
 if(IOMCU_BOARD STREQUAL "rp2350_can")
     set(iomcu_out rcbench-iomcu)
-    target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_BOARD_RBMOD=0)
+    target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_BOARD_RBMOD=0
+                                                     IOMCU_BOARD_RSN=0)
 elseif(IOMCU_BOARD STREQUAL "rbmod")
     set(iomcu_out rcbench-iomcu-rbmod)
-    target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_BOARD_RBMOD=1)
+    target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_BOARD_RBMOD=1
+                                                     IOMCU_BOARD_RSN=0)
+elseif(IOMCU_BOARD STREQUAL "rsn")
+    set(iomcu_out rcbench-iomcu-rsn)
+    target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_BOARD_RBMOD=0
+                                                     IOMCU_BOARD_RSN=1)
 else()
-    message(FATAL_ERROR "IOMCU_BOARD=${IOMCU_BOARD}: rp2350_can or rbmod")
+    message(FATAL_ERROR "IOMCU_BOARD=${IOMCU_BOARD}: rp2350_can, rbmod or rsn")
 endif()
 set_target_properties(rcbench-iomcu PROPERTIES OUTPUT_NAME ${iomcu_out})
 

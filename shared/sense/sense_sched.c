@@ -215,6 +215,7 @@ static void init_part(sense_sched_t *s, unsigned a)
     if (s->i3221_setup[a] != INA3221_SETUP_OK) {
         return;
     }
+    ina3221_set_crit(&s->i3221[a], &m->crit_ma[SENSE_CH(a, 1u)]);
     for (unsigned ch = 1u; ch <= INA3221_CHANNELS; ++ch) {
         const unsigned c = SENSE_CH(a, ch);
         const uint32_t r = s->i3221[a].shunt_uohm[ch - 1u];
@@ -563,6 +564,7 @@ static void read_flags(sense_sched_t *s, unsigned a)
 {
     if (ina3221_read_flags(&s->i3221[a], &s->flags[a]) == SENSE_OK) {
         s->have_flags |= (uint8_t)(1u << a);
+        ++s->flags_n[a];
     }
 }
 

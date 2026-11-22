@@ -362,6 +362,7 @@ SOURCES = [
     "shared/outputs/out_bind.c",
     "shared/outputs/out_bind_take.c",
     "shared/outputs/out_board_rbmod.c",
+    "shared/outputs/out_board_rsn.c",
     "shared/outputs/board_fix.c",
     "shared/outputs/servo_cmd.c",
     "shared/can/can_selftest.c",
