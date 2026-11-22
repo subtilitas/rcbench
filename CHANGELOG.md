@@ -1038,7 +1038,7 @@ The entries below cover the 7 pull requests merged since v0.23.13: #847,
   ([Videos from storyboards](tools/video/README.md#the-simulated-phase-tap)).
 - Storyboard `hitec-precharge`: reading an open-drain answer on an
   RP2350 pin without a pull-up resistor, the Hitec D series PRECHARGE
-  receive, in 6 steps, narrated, with no product named: a device that only pulls low, the 2.2kΩ
+  receive, in 6 steps, narrated, 348.67s, with no product named: a device that only pulls low, the 2.2kΩ
   pull-up and what it changes for the pin's other uses, one precharge and
   sample, the sampling window, one answer byte in 80 samples, and 3 logic
   analyser captures of a read of register 0x32. A `scope` scene draws
