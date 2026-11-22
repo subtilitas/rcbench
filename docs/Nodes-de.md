@@ -721,6 +721,12 @@ Zeile, deren INA228-Werte die des Knotens sind, und `ina voltage` und
 `ina current` enthalten sie
 ([Bildschirme](Screens-de.md#tabelle-und-was-der-esc-meldet)).
 
+Die Kachel MOTOR & ESC im Menü zählt den Knoten als Sensor des Akkus,
+solange Leistungsknoten EIN ist, INA228-Quelle NODE und ein Knoten
+gebunden ist, verbunden oder nicht: Sie trägt dann keine Marke SIMULIERT,
+auch bei ausgeschaltetem INA228 des IOmcu
+([Bildschirme](Screens-de.md#marken-im-menü)).
+
 ## Update über Bluetooth LE
 
 Ein Knoten nimmt ein neues Anwendungs-Image über BLE von einem Central an,

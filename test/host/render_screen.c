@@ -5146,6 +5146,15 @@ int main(int argc, char **argv)
         s_caps = (uint16_t)(LINK_CAP_SERVO_PWM | LINK_CAP_ESC_DRIVE
                             | LINK_CAP_ESC_TELEM | LINK_CAP_PACK_SENSE);
     }
+    if (strcmp(view, "overview-pnode") == 0) {
+        /* The INA228 OFF on SETUP > SENSORS, so no pack sensing from the
+         * IOmcu, and the power node the pack's source: ON, INA228 SOURCE
+         * NODE, a node bound.  MOTOR & ESC without the mark. */
+        s_caps &= (uint16_t)~LINK_CAP_PACK_SENSE;
+        settings_set(SET_PNODE_EN, 1.0f);
+        settings_set(SET_I228_SRC, 1.0f);
+        settings_set_text(SET_TEXT_PNODE_ADDR, "7C:DF:A1:12:34:56 P");
+    }
     st.capabilities = s_caps;
     st.simulated = sim || (id == SCREEN_MOTOR
                            && strcmp(view, "motor-live") != 0

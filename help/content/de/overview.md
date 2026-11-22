@@ -31,19 +31,19 @@ Eine Kachel öffnet sich, wenn du den Finger auf derselben Kachel anhebst, auf d
 
 ## Die Marke SIMULIERT
 
-Die Markierung SIMULIERT bedeutet, dass der IOmcu für diese Seite keine Fähigkeit meldet oder dass ihr Sensor deaktiviert ist. Sie beschreibt nicht jeden angezeigten Wert. RECEIVER und BATTERY tragen die Markierung, zeigen aber keine Werte. SERVO kann ohne Markierung erscheinen und dennoch das Netzteilmodell des Panels als Quelle für die Servoschiene verwenden, wenn weder ein PD mini noch ein INA3221 aktiviert ist. Jede Seite nennt die Quelle ihrer Messwerte.
+Die Markierung SIMULIERT bedeutet, dass der IOmcu für diese Seite keine Fähigkeit meldet oder dass ihr Sensor deaktiviert ist. Für MOTOR & ESC zählt auch der Leistungsknoten als Sensor des Akkus ([Wireless](setup-wireless.md#der-leistungsknoten)). Sie beschreibt nicht jeden angezeigten Wert. RECEIVER und BATTERY tragen die Markierung, zeigen aber keine Werte. SERVO kann ohne Markierung erscheinen und dennoch das Netzteilmodell des Panels als Quelle für die Servoschiene verwenden, wenn weder ein PD mini noch ein INA3221 aktiviert ist. Jede Seite nennt die Quelle ihrer Messwerte.
 
 Die Markierung richtet sich nach den Fähigkeits-Bits, die der IOmcu beim Verbindungsaufbau meldet:
 
 | Kachel | Ohne Marke, wenn |
 |---|---|
-| MOTOR & ESC | der IOmcu ESCs ansteuert und eine INA228-Einstellung hält, die unter SETUP, SENSORS eingeschaltet ist |
+| MOTOR & ESC | der IOmcu ESCs ansteuert und entweder eine INA228-Einstellung hält, die unter SETUP, SENSORS eingeschaltet ist, oder der Leistungsknoten die Quelle des Akkus ist: Leistungsknoten EIN, INA228-Quelle NODE und ein Knoten gebunden |
 | SERVO | der IOmcu Servo-PWM-Ausgänge (Pulsweitenmodulation) ansteuert |
 | SUPPLY | der PD mini im Abschnitt PD MINI der SUPPLY-Optionen eingeschaltet ist |
 | RECEIVER, BATTERY, BALANCE | in diesem Release nie: kein IOmcu meldet diese Fähigkeiten |
 | LOGS, SETUP | nie markiert: sie enthalten keine Messung |
 
-Wenn kein IOmcu antwortet, tragen auch MOTOR & ESC und SERVO die Markierung. Bei SUPPLY hängt sie allein von der Einstellung PD mini ab, unabhängig von der Verbindung.
+Ein Sensor des Akkus zählt, wie er eingestellt ist, ob er antwortet oder nicht: Ein eingeschalteter INA228 ohne Antwort oder ein gebundener Knoten ohne Verbindung lässt MOTOR & ESC ohne Marke. Wenn kein IOmcu antwortet, tragen auch MOTOR & ESC und SERVO die Markierung. Bei SUPPLY hängt sie allein von der Einstellung PD mini ab, unabhängig von der Verbindung.
 
 ## Das helle Design
 

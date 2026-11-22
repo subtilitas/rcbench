@@ -718,7 +718,9 @@ with 8px clearance at each side:
 
 SIMULATED marks a tile when the bench does not report the screen's data
 source: either the IOmcu lacks the capability or the sensor is disabled
-under SETUP > SENSORS. The screen still opens and uses its model.
+under SETUP > SENSORS. For MOTOR & ESC the power node counts as the pack's
+sensor as well (SETUP > WIRELESS, [Nodes](Nodes.md#the-panel)). The
+screen still opens and uses its model.
 
 The mark describes the screen as a whole, not each displayed value.
 RECEIVER and BATTERY carry the mark and show no values. SERVO can appear
@@ -728,13 +730,24 @@ source of its readings.
 
 | Tile | Without the mark when |
 | --- | --- |
-| MOTOR & ESC | the IOmcu drives ESCs and holds an INA228 set-up enabled on SETUP, SENSORS |
+| MOTOR & ESC | the IOmcu drives ESCs, and either holds an INA228 set-up enabled on SETUP, SENSORS or the power node is the pack's source: Power node ON, INA228 source NODE and a node bound |
 | SERVO | the IOmcu drives servo PWM outputs |
 | SUPPLY | the PD mini is enabled in SUPPLY's PD mini settings whatever the IOmcu reports; otherwise the panel runs its own model of a supply |
 | RECEIVER, BATTERY, BALANCE | never in this release: no IOmcu reports these capabilities |
 
 The capability bits come from the IOmcu at bring-up. With no IOmcu
 answering, MOTOR & ESC and SERVO carry the mark too.
+
+Both sources of pack sensing count as configured, whether they answer or
+not. An enabled INA228 that does not answer, or a bound node that is not
+connected, leaves MOTOR & ESC without the mark. SETUP > WIRELESS shows the
+node's link, and an ARM of MOTOR & ESC with INA228 source NODE is refused
+while no node reading came in the last 100ms.
+
+The menu with the IOmcu's INA228 OFF and the power node as the pack's
+source:
+
+![The menu with the power node as the pack's source](img/overview-pnode.png)
 
 The menu in the light theme:
 

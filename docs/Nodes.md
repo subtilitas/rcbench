@@ -673,6 +673,11 @@ The bench log names the source: `source` reads `node` on a row whose INA228
 figures are the node's, and `ina voltage` and `ina current` hold them
 ([Screens](Screens.md#table-and-what-the-esc-says)).
 
+The menu's MOTOR & ESC tile counts the node as its pack sensor while POWER
+NODE is ON, INA228 SOURCE is NODE and a node is bound, connected or not:
+it carries no SIMULATED mark then, with the IOmcu's INA228 OFF too
+([Screens](Screens.md#menu-marks)).
+
 ## Update over Bluetooth LE
 
 A node takes a new application image over BLE from a central, through the
