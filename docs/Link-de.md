@@ -1791,7 +1791,9 @@ Auf Board 3 hält der IOmcu jede Rolle auf ihrem Pin (`shared/outputs/out_board_
   Port beginnt ohne Pin und auf NONE.
 - TX und RX von SUPPLY sind GPIO 34 und 35. Ein Sollwert über 8400mV wird
   mit BAD_VALUE abgelehnt: die 9,1-V-Klemme an der Schiene setzt bei 8,65V
-  ein.
+  ein. Dieselbe Grenze gilt für das ON eines Programmierports (ESC_WIRE,
+  KST, Hitec): ein ON des Ports über 8400mV wird abgelehnt, und ESC_WIRE
+  lehnt ein solches `ENTER` mit RANGE ab.
 - SDA und SCL von SENSE sind GPIO 4 und 5. Ein `ENABLE` mit dem Bit des
   AS5600 wird mit BAD_VALUE abgelehnt. TONE lehnt jedes Schreiben mit
   BAD_VALUE ab: kein Phasenabgriff ist bestückt. PROG_SUPPLY hat keinen
@@ -1842,7 +1844,8 @@ Alert hält.
   oder auf einem abgelehnten Chip mit NOT_ARMED abgelehnt. RAIL 1 wird mit
   BUSY abgelehnt, bis alle drei INA3221 mit geschriebenen Critical-Grenzen
   antworten. Der Ausgang eines Ports ist ein Throttle, wenn ein Slot von
-  OUTPUTS auf seinem Pin einen Throttle-Kanal ausgibt oder ein
+  OUTPUTS auf seinem Pin DShot oder bidirektionales DShot ist oder einen
+  Throttle-Kanal ausgibt oder ein
   Programmierport seinen Pin als DSHOT150, DSHOT300 oder DSHOT600 oder mit
   einem Throttle-Kanal hält. Ein neues Bit in PORT_WANT für einen solchen
   Port und RAIL 1 mit einem solchen gehaltenen Bit werden mit BAD_VALUE

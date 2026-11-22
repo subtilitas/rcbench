@@ -17,7 +17,9 @@
  * fixed SENSE_MAP judged whole on its 3 parts, 9 watches and 9 shunts of
  * 20.0mΩ; a kept record put on the node's pins; each channel's critical
  * limit at 4000mA, lowered by a lower SENSE_LIMIT and not raised by a
- * higher one, and none on the other boards.
+ * higher one, and none on the other boards; the supply's ceiling of
+ * 8400mV on the SUPPLY page and on a programming port's ON, 8410mV
+ * refused on both.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -33,6 +35,7 @@
 #include "outputs.h"
 #include "prog_port.h"
 #include "rsn_pins.h"
+#include "supply_page.h"
 
 #define RSN ((uint16_t)OUTBIND_BOARD_RSN)
 #define BIT(pin) ((uint64_t)1u << (pin))
@@ -424,6 +427,41 @@ TEST_CASE(each_channels_critical_limit_is_4000ma_or_a_lower_limit)
     board_fix_crit(r, lim, NULL);            /* nothing for NULL */
 }
 
+/* Board 3's supply ceiling on every way to the PD mini: the SUPPLY page
+ * and a programming port's ON (ESC_WIRE, KST, Hitec), at 8400mV and
+ * 8410mV; supply_page_init() keeps it. */
+TEST_CASE(the_supply_ceiling_holds_for_the_page_and_the_ports)
+{
+    const outbind_roles_t *r = outbind_roles((uint16_t)OUTBIND_BOARD_RSN);
+    if (r == NULL) { T_FAIL("no board 3"); return; }
+    CHECK_EQ(r->supply_max_mv, (uint16_t)RSN_SUPPLY_MAX_MV);
+    supply_page_t sp;
+    memset(&sp, 0, sizeof(sp));
+    supply_page_ceiling(&sp, r->supply_max_mv);
+    supply_page_init(&sp);
+    sp.regs[LINK_SP_ENABLE] = 1u;
+    CHECK(!supply_page_port_set(&sp, true, 8410u, 1000u, true));
+    CHECK_EQ(sp.regs[LINK_SP_OUTPUT], 0u);
+    CHECK(supply_page_port_set(&sp, true, 8400u, 1000u, true));
+    CHECK_EQ(sp.regs[LINK_SP_SET_MV], 8400u);
+    supply_port_view_t v;
+    supply_page_port_view(&sp, &v);
+    CHECK_EQ(v.max_mv, 8400u);
+    CHECK(supply_page_port_set(&sp, false, 0u, 0u, true));
+    /* The page itself, without the board's write check. */
+    outputs_t o;
+    outputs_init(&o, 0u);
+    const uint16_t hi[3] = { 1u, 8410u, 1000u };
+    CHECK_EQ(supply_page_write(&sp, LINK_SP_OUTPUT, 3u, hi, &o, true),
+             (uint8_t)LINK_NACK_BAD_VALUE);
+    CHECK_EQ(sp.regs[LINK_SP_SET_MV], 8400u);
+    /* Another board: the module's own range. */
+    supply_page_ceiling(&sp, 0u);
+    CHECK(supply_page_port_set(&sp, true, 12000u, 1000u, true));
+    supply_page_port_view(&sp, &v);
+    CHECK_EQ(v.max_mv, (uint16_t)PDMINI_V_MAX_MV);
+}
+
 int main(void)
 {
     RUN(board_3_is_the_node_with_its_role_pins);
@@ -435,5 +473,6 @@ int main(void)
     RUN(the_map_is_fixed_on_three_parts_nine_watches_and_shunts);
     RUN(a_kept_record_starts_on_the_nodes_pins);
     RUN(each_channels_critical_limit_is_4000ma_or_a_lower_limit);
+    RUN(the_supply_ceiling_holds_for_the_page_and_the_ports);
     return test_summary("board_fix_rsn");
 }

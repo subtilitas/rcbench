@@ -225,8 +225,9 @@ uint16_t power_window(power_page_t *p, uint32_t series, uint16_t number,
                       uint16_t have, uint16_t rail_mv);
 
 /**
- * @brief The ports whose output is a throttle: a slot with a driver on the
- *        port's pin renders a channel whose role is OUT_ROLE_THROTTLE, or a
+ * @brief The ports whose output is a throttle: a DShot or bidirectional
+ *        DShot slot on the port's pin whatever its channel's role, another
+ *        slot on it that renders a channel whose role is OUT_ROLE_THROTTLE, or a
  *        programming port holds the port's pin with a DShot function
  *        (DSHOT150 to DSHOT600) or a channel whose role is
  *        OUT_ROLE_THROTTLE.

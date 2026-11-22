@@ -567,6 +567,11 @@ int main(void)
                       | IOMCU_RESERVED_PINS;
     outputs_reserve_pins(&s_outputs, s_base_reserved);
     supply_page_init(&s_supply);
+    /* The board's ceiling on every way to the PD mini: the page and each
+     * programming port's ON (board 3: 8400mV); supply_page_init() keeps
+     * it. */
+    supply_page_ceiling(&s_supply, (roles != NULL) ? roles->supply_max_mv
+                                                   : 0u);
     sense_page_init(&s_sense);
     tone_page_init(&s_tone);
     tone_core1_init();

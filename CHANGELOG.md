@@ -13,7 +13,8 @@ history is in git.
   in CI. Its catalogue lists 27 role pins; S1 to S9 on GPIO 16 to 32, each
   on its own PWM slice. SENSE_MAP is fixed to 3 INA3221 at 0x40 to 0x42 on
   20.0mΩ shunts, each channel with a critical alert limit of 4000mA or its
-  lower SENSE_LIMIT; SUPPLY set points above 8400mV are refused; a
+  lower SENSE_LIMIT; SUPPLY set points above 8400mV are refused, on the
+  page and in a programming port's ON (ESC_WIRE, KST, Hitec); a
   programming port takes any servo output and DShot. The image has no
   link transport
   ([Link: The remote servo node](docs/Link.md#the-remote-servo-node)).
@@ -23,10 +24,10 @@ history is in git.
   ARM, SUPPLY ON, POWER ON and every programming session with NOT_ARMED.
   The POWER page (0x43) switches the node's servo rail and its 9 ports:
   ON wants a live heartbeat and the critical limits written, a throttle
-  port takes no power (an OUTPUTS slot or a DShot programming port on
-  its pin) and one on that becomes a throttle goes off, RAIL 0 is always
-  taken, also in a write refused for another register, CRIT_N low, a critical alert flag, a SENSE_LIMIT
-  trip or a switch in thermal shutdown cuts the rail and makes the bench
+  port takes no power (a DShot or throttle OUTPUTS slot or a DShot
+  programming port on its pin) and one on that becomes a throttle goes
+  off, RAIL 0 is always taken, also in a write refused for another
+  register, CRIT_N low, a critical alert flag, a SENSE_LIMIT trip or a switch in thermal shutdown cuts the rail and makes the bench
   SAFE, and the BEC check flags a port at 500mV or more with the rail off
   ([Link: The POWER page](docs/Link.md#the-power-page)).
 - `hardware/mechanical/`: a printed case of 3 parts for the remote INA228

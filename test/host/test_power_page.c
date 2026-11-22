@@ -461,6 +461,38 @@ TEST_CASE(a_throttle_port_is_read_off_the_bank)
     CHECK_EQ(power_throttle(&o, NULL, NULL), 0u);
 }
 
+/* A DShot slot is a throttle whatever its channel's role: DSHOT600 and
+ * bidirectional DShot on GPIO 16 with channel 0 at its default role. */
+TEST_CASE(a_dshot_slot_is_a_throttle_port_whatever_its_role)
+{
+    const outbind_roles_t *r = outbind_roles((uint16_t)OUTBIND_BOARD_RSN);
+    if (r == NULL) { T_FAIL("no board 3"); return; }
+    const out_driver_t drv[2] = { OUT_DRIVER_DSHOT,
+                                 OUT_DRIVER_DSHOT_BIDIR };
+    for (unsigned i = 0; i < 2u; ++i) {
+        outputs_t o;
+        outputs_init(&o, 0u);
+        const out_slot_t d = { .driver = drv[i], .first_channel = 0u,
+                               .channels = 1u, .pin = 16u, .rate_hz = 600u };
+        CHECK(outputs_configure(&o, 0u, &d));
+        CHECK_EQ((int)o.channel[0].role, (int)OUT_ROLE_SURFACE);
+        CHECK_EQ(power_throttle(&o, NULL, r), 0x0001u);
+        /* Port on first, then the slot set to DShot: switched off. */
+        outputs_t before;
+        outputs_init(&before, 0u);
+        start(true);
+        ctx.throttle = power_throttle(&before, NULL, r);
+        CHECK_EQ(wr(LINK_PW_PORT_WANT, 0x0001u), 0u);
+        CHECK_EQ(wr(LINK_PW_RAIL, 1u), 0u);
+        CHECK_EQ(power_hold(&pg, power_throttle(&o, NULL, r)), 0x0001u);
+        CHECK_EQ(reg(LINK_PW_PORT_ON), 0u);
+        /* And refused in the other order. */
+        ctx.throttle = power_throttle(&o, NULL, r);
+        CHECK_EQ(wr(LINK_PW_PORT_WANT, 0x0001u),
+                 (uint8_t)LINK_NACK_BAD_VALUE);
+    }
+}
+
 /* ------------------------------------------------ review round 1 cases */
 
 /* Port 1 on from window 10, then windows numbered 10 + @p from onward,
@@ -706,6 +738,7 @@ int main(void)
     RUN(the_bec_check_sets_a_port_at_500mv_and_not_at_490mv);
     RUN(the_bec_check_runs_only_with_rail_and_ports_off);
     RUN(a_throttle_port_is_read_off_the_bank);
+    RUN(a_dshot_slot_is_a_throttle_port_whatever_its_role);
     RUN(the_thermal_check_stays_on_however_long_the_port_is_on);
     RUN(the_bec_check_stays_on_however_long_everything_is_off);
     RUN(a_restarted_window_series_keeps_both_checks);

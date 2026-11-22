@@ -1637,7 +1637,10 @@ On board 3 the IOmcu holds every role to its pin (`shared/outputs/out_board_rsn.
   SERVO PWM or a DShot rate. Another PIN, an input pin among them, is
   refused with BAD_VALUE. Every port starts without a pin and on NONE.
 - SUPPLY TX and RX are GPIO 34 and 35. A set point above 8400mV is refused
-  with BAD_VALUE: the 9.1V clamp on the rail starts at 8.65V.
+  with BAD_VALUE: the 9.1V clamp on the rail starts at 8.65V. The same
+  ceiling holds for a programming port's ON (ESC_WIRE, KST, Hitec): the
+  port's ON above 8400mV is refused, and ESC_WIRE refuses such an `ENTER`
+  with RANGE.
 - SENSE SDA and SCL are GPIO 4 and 5. An `ENABLE` with the AS5600 bit is
   refused with BAD_VALUE. TONE refuses every write with BAD_VALUE: no phase
   tap is fitted. PROG_SUPPLY has no switch and refuses ON with BAD_VALUE.
@@ -1684,8 +1687,8 @@ holds its critical alert.
 - `RAIL` 1 and a new `PORT_WANT` bit are refused with NOT_ARMED without a
   live heartbeat or on a refused chip. `RAIL` 1 is refused with BUSY until
   all three INA3221s answer with their critical limits written. A port's
-  output is a throttle when an OUTPUTS slot on its pin renders a throttle
-  channel, or when a programming port holds its pin as DSHOT150, DSHOT300
+  output is a throttle when an OUTPUTS slot on its pin is DShot or
+  bidirectional DShot, or renders a throttle channel, or when a programming port holds its pin as DSHOT150, DSHOT300
   or DSHOT600 or with a throttle channel. A new `PORT_WANT` bit for such a
   port, and `RAIL` 1 with such a bit kept, are refused with BAD_VALUE;
   without the switches `RAIL` 1 is refused with BAD_VALUE while any port

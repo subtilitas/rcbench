@@ -354,6 +354,12 @@ uint16_t power_throttle(const outputs_t *o, const prog_port_t *pp,
         if (k < 0 || k >= (int)LINK_PW_PORTS) {
             continue;
         }
+        /* DShot speaks to an ESC whatever role its channel has. */
+        if (sl->driver == OUT_DRIVER_DSHOT
+            || sl->driver == OUT_DRIVER_DSHOT_BIDIR) {
+            m |= (uint16_t)(1u << (unsigned)k);
+            continue;
+        }
         for (unsigned c = sl->first_channel;
              c < (unsigned)sl->first_channel + sl->channels
              && c < OUT_MAX_CHANNELS; ++c) {

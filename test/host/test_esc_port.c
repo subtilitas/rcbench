@@ -1,6 +1,7 @@
 /*
  * The ESC_WIRE page, shared/outputs/esc_port.c: the way in and out of a slot and a
- * port, every refusal of OPEN and ENTER at its limit, the supply's order, BY HAND,
+ * port, every refusal of OPEN and ENTER at its limit (the board's supply ceiling
+ * at 8400mV and 8410mV among them), the supply's order, BY HAND,
  * what the bank's masks say in each state.
  *
  * SPDX-License-Identifier: MIT
@@ -613,6 +614,28 @@ TEST_CASE(a_slot_pin_is_a_bound_throttle)
     CHECK_EQ(esc_port_slot_pin(&o, 1u, 0x02u), ESC_PORT_NO_PIN);
 }
 
+/* The board's ceiling as the supply reports it: board 3's 8400mV taken,
+ * 8410mV refused as out of range. */
+TEST_CASE(an_enter_above_the_boards_ceiling_is_refused)
+{
+    up_am_rig();
+    stage_defaults(2u);
+    (void)stage();
+    pass();
+    open_target(2u);
+    ST_REG(LINK_EW_W_POWER) = LINK_ESC_SWITCHED;
+    g.v.max_mv = 8400u;
+    ST_REG(LINK_EW_W_MV) = 8410u;
+    (void)stage();
+    CHECK_EQ(cmd(LINK_ESC_OP_ENTER), 0u);
+    CHECK_EQ(refusal(), LINK_ESC_REF_RANGE);
+    CHECK_EQ(g.ons, 0);
+    ST_REG(LINK_EW_W_MV) = 8400u;
+    (void)stage();
+    CHECK_EQ(cmd(LINK_ESC_OP_ENTER), 0u);
+    CHECK_EQ(refusal(), LINK_ESC_REF_NONE);
+}
+
 int main(void)
 {
     RUN(init_needs_every_hook);
@@ -623,6 +646,7 @@ int main(void)
     RUN(every_refusal_of_an_open);
     RUN(a_frame_or_window_the_page_does_not_take);
     RUN(every_refusal_of_an_enter);
+    RUN(an_enter_above_the_boards_ceiling_is_refused);
     RUN(a_switched_entry_in_its_order);
     RUN(the_hold_counts_from_the_supply_reading_on);
     RUN(a_supply_that_will_not_read_off_or_refuses_on);
