@@ -30,7 +30,10 @@ Attributes:
     FRAME: The video frame in pixels, the range of a label's position.
     BEDS: The music beds of tools/video_audio.py.
     UNITS: The components of the cad model that a scene can move.
-    PART_FRAMES: The frames of one part that --keep keeps.
+    CACHE: The spoken lines and drawn views a later run reuses.
+    PART_FRAMES: The most frames of one part that --keep keeps.
+    VIEWS_KEPT: The sets of drawn views CACHE keeps.
+    PART_LEAST: The size in bytes a part must exceed to be reused.
     ANCHORS: The named points of the case model a label can point at.
     CONNECTORS: The headers of the case model and their position count.
     FITS: The parts a board scene solders across two pads.
@@ -54,6 +57,7 @@ import threading
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 VIDEO = REPO / "tools" / "video"
+CACHE = REPO / "build" / "video" / "cache"
 PANEL = (1024, 600)
 FRAME = (1920, 1080)
 ANCHORS = ("display", "rbmod", "pdmini", "J1", "J2", "xt60", "usbc",
@@ -71,6 +75,8 @@ UNITS = ("lid", "estop", "xt60", "usbc", "pdmini", "mcu", "ina",
 CONNECTORS = {"J1": 4, "J2": 4}
 BEDS = ("pads", "bach-prelude", "pachelbel-canon", "vivaldi-spring")
 PART_FRAMES = 900
+VIEWS_KEPT = 4
+PART_LEAST = 1024
 ACTIONS = ("tap", "hold")
 STYLES = ("ok", "warn", "muted")
 FITS = ("resistor", "zener", "cap", "link")
@@ -795,6 +801,9 @@ def render_views(board: dict, shots: pathlib.Path) -> None:
         board: The storyboard.
         shots: The directory that takes one PNG per view.
     """
+    import concurrent.futures
+    import os
+
     import render_ui
 
     # The MiniRcBench's screens are stills: frames of its own host suite.
@@ -808,22 +817,35 @@ def render_views(board: dict, shots: pathlib.Path) -> None:
         tmp = pathlib.Path(td)
         exe = render_ui.build(tmp)
         known = {**render_ui.SCREENS, **render_ui.FIT_ONLY}
-        for name, (view, screen, lang) in views(board).items():
+
+        def draw(item):
+            n, (name, (view, screen, lang)) = item
             # A view of render_ui.py's tables brings its screen and theme;
             # any other is a pose of the screen the storyboard names.
             theme = "dark"
             if view in known:
                 _, screen, theme = known[view]
             if screen is None:
-                sys.exit(f"view {view!r} is not in render_ui.py's tables: "
-                         "the step or its scene must name the screen")
+                return (f"view {view!r} is not in render_ui.py's tables: "
+                        "the step or its scene must name the screen")
+            own = tmp / f"view-{n}"
+            own.mkdir()
             try:
-                image = render_ui.render_one(exe, tmp, view, screen, theme,
+                image = render_ui.render_one(exe, own, view, screen, theme,
                                              lang)
             except subprocess.CalledProcessError:
-                sys.exit(f"the renderer does not draw view {view!r} of "
-                         f"screen {screen!r}")
+                return (f"the renderer does not draw view {view!r} of "
+                        f"screen {screen!r}")
             image.save(shots / f"{name}.png")
+            return None
+
+        # One renderer process per view, as many at once as there are
+        # cores.
+        with concurrent.futures.ThreadPoolExecutor(
+                os.cpu_count() or 1) as pool:
+            for fault in pool.map(draw, enumerate(views(board).items())):
+                if fault:
+                    sys.exit(fault)
         wanted = faces(board)
         live = any("run" in scene for scene in board["scenes"])
         if wanted or live:
@@ -839,6 +861,69 @@ def render_views(board: dict, shots: pathlib.Path) -> None:
                 render_dial.render(dial, tmp, name, board["lang"]).save(
                     shots / f"dial-{name}.png")
             runs(board, shots, tmp, exe, dial)
+
+
+def _views_key(board: dict) -> str:
+    """Name what render_views() draws from.
+
+    Args:
+        board: The storyboard.
+
+    Returns:
+        A hash of the storyboard and of every file under the directories
+        the two renderers build from, the tools and the stills.
+    """
+    import hashlib
+
+    whole = hashlib.sha256(json.dumps(board, sort_keys=True).encode())
+    roots = [REPO / "shared", REPO / "protocols", REPO / "test" / "host",
+             STILLS]
+    files = [path for root in roots for path in root.rglob("*")
+             if path.is_file()]
+    files += list((REPO / "tools").glob("*.py"))
+    for path in sorted(files):
+        whole.update(str(path.relative_to(REPO)).encode())
+        whole.update(hashlib.sha256(path.read_bytes()).digest())
+    return whole.hexdigest()[:20]
+
+
+def cached_views(board: dict, shots: pathlib.Path,
+                 cache: pathlib.Path) -> dict:
+    """Run render_views() once per storyboard and source tree.
+
+    The shots and the storyboard a run's shots extend are kept under
+    @p cache in a directory named by _views_key(); a later run with the
+    same key copies them back.  The VIEWS_KEPT newest directories stay.
+
+    Args:
+        board: The storyboard.
+        shots: The directory that takes one PNG per view.
+        cache: The directory of kept views.
+
+    Returns:
+        The storyboard as render_views() leaves it.
+    """
+    kept = cache / _views_key(board)
+    if (kept / "storyboard.json").is_file():
+        for path in kept.glob("*.png"):
+            shutil.copy(path, shots / path.name)
+        return json.loads((kept / "storyboard.json").read_text(
+            encoding="utf-8"))
+    render_views(board, shots)
+    part = kept.with_suffix(".part")
+    shutil.rmtree(part, ignore_errors=True)
+    part.mkdir(parents=True)
+    for path in shots.glob("*.png"):
+        shutil.copy(path, part / path.name)
+    (part / "storyboard.json").write_text(json.dumps(board),
+                                          encoding="utf-8")
+    part.replace(kept)
+    old = sorted((path for path in cache.iterdir()
+                  if path.is_dir() and path.suffix != ".part"),
+                 key=lambda path: path.stat().st_mtime, reverse=True)
+    for path in old[VIEWS_KEPT:]:
+        shutil.rmtree(path, ignore_errors=True)
+    return board
 
 
 class _Handler(http.server.SimpleHTTPRequestHandler):
@@ -887,6 +972,18 @@ def _plan(scene: dict) -> pathlib.Path:
     return drawn if drawn.is_file() else VIDEO / "cad" / drawn.name
 
 
+def _holds_video(path: pathlib.Path) -> bool:
+    """Tell whether a captured part can be used.
+
+    Args:
+        path: The part's file.
+
+    Returns:
+        True for a file of more than PART_LEAST bytes.
+    """
+    return path.is_file() and path.stat().st_size > PART_LEAST
+
+
 def _capture(cmd: list, board: dict, out: pathlib.Path, fps: int,
              jobs: int, keep: pathlib.Path | None,
              shots: pathlib.Path) -> int:
@@ -913,7 +1010,8 @@ def _capture(cmd: list, board: dict, out: pathlib.Path, fps: int,
         spans = [(a, b, where / f"{mark}-{fps}-{a}-{b}.mp4")
                  for a, b in zip(edges, edges[1:], strict=False)]
     else:
-        # With a directory to keep them in, parts of PART_FRAMES frames
+        # With a directory to keep them in, parts of at most PART_FRAMES
+        # frames and frames / jobs
         # within each scene, named by what the scene's frames show: the
         # scene, its place in the video, the video's length, the steps
         # before it, its board and the player.  A change to one scene
@@ -929,6 +1027,8 @@ def _capture(cmd: list, board: dict, out: pathlib.Path, fps: int,
         # The bed and its level are heard, not seen.
         rest = {name: value for name, value in board.items()
                 if name not in ("scenes", "music", "music_gain")}
+        # Parts short enough that every job has one.
+        size = max(1, min(PART_FRAMES, -(-frames // jobs)))
         before = 0
         for n, (scene, (start, length)) in enumerate(
                 zip(board["scenes"], times, strict=True)):
@@ -941,8 +1041,8 @@ def _capture(cmd: list, board: dict, out: pathlib.Path, fps: int,
             first = round(start * fps)
             end = frames if n == len(times) - 1 else round(
                 (start + length) * fps)
-            for a in range(first, end, PART_FRAMES):
-                b = min(end, a + PART_FRAMES)
+            for a in range(first, end, size):
+                b = min(end, a + size)
                 spans.append((a, b, where / f"{mark}-{fps}-{a}-{b}.mp4"))
             for chip in scene.get("chips", []):
                 if _number(chip.get("n")):
@@ -952,11 +1052,16 @@ def _capture(cmd: list, board: dict, out: pathlib.Path, fps: int,
 
     def one(span):
         a, b, done = span
-        if keep is not None and done.is_file():
+        # A part without video is one whose capture died: drawn again.
+        if keep is not None and _holds_video(done):
             return 0
         part = done.with_suffix(".part.mp4")
         status = subprocess.run(cmd + ["video", str(part), str(fps),
                                        str(a), str(b)]).returncode
+        if status == 0 and not _holds_video(part):
+            print(f"{part.name}: the capture wrote no video",
+                  file=sys.stderr)
+            return 1
         if status == 0:
             part.replace(done)
         return status
@@ -999,6 +1104,9 @@ def main() -> int:
     ap.add_argument("--keep", type=pathlib.Path, metavar="DIR",
                     help="keep the captured parts here; a run that was "
                          "cut off continues with the parts it lacks")
+    ap.add_argument("--no-cache", action="store_true",
+                    help="speak every line and draw every view again, "
+                         "without reading or writing build/video/cache/")
     ap.add_argument("--no-sound", action="store_true",
                     help="write the video without its sound track")
     ap.add_argument("--check", action="store_true",
@@ -1083,10 +1191,14 @@ def main() -> int:
         if "voice" in board and not args.no_voice and not args.no_sound:
             import video_voice
 
-            board, clips = video_voice.narrate(board)
+            board, clips = video_voice.narrate(
+                board, None if args.no_cache else CACHE / "voice")
         # A run's shots add keys to its scene: drawn before the player's
         # copy of the storyboard is written.
-        render_views(board, shots)
+        if args.no_cache:
+            render_views(board, shots)
+        else:
+            board = cached_views(board, shots, CACHE / "views")
         played = shots / "storyboard.json"
         played.write_text(json.dumps(board), encoding="utf-8")
         handler = functools.partial(_Handler, board=played, shots=shots)

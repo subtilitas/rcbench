@@ -547,7 +547,7 @@
      "style": "warn",
      "size": "sm",
      "title": "Check the polarity first",
-     "text": "Which pin of the socket is plus is not checked against the cell's plug."
+     "text": "Match plus on the socket to plus on the cell's plug."
     },
     {
      "from": 31.6,
