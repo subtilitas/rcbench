@@ -193,6 +193,9 @@ void upd_c6_line(const upd_c6_view_t *v, char *out, size_t n)
 
 void upd_c6_label(const upd_c6_view_t *v, char *out, size_t n)
 {
+    if (upd_fetch_label(&v->fetch, out, n)) {
+        return;
+    }
     if (v->row == FW_C6_ROW_UPDATING) {
         snprintf(out, n, TR(UPD_C6_PROGRESS),
                  v->percent > 100u ? 100u : v->percent);

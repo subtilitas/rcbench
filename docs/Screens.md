@@ -7045,8 +7045,11 @@ release ([The release line](#the-release-line)).
 ![UPDATES: the last card](img/updates.png)
 
 UPDATES leads through six steps in a fixed order: PANEL, IOMCU, C6 RADIO,
-DIAL, POWER NODE and BALANCE NODE. The panel image carries every other
-image, so PANEL comes first. The C6 radio comes before the wireless
+DIAL, POWER NODE and BALANCE NODE. The panel image carries the IOmcu
+images; the C6 radio's and the wireless devices' images are files of the
+release the panel runs, which their step's hold fetches
+([Device images](#device-images)). A newer panel release brings newer
+images for every later step, so PANEL comes first. The C6 radio comes before the wireless
 devices: their transfers run on its Bluetooth LE (Low Energy) controller,
 and its update restarts the panel. Only the current step has a control
 ([The steps](#the-steps)).
@@ -7140,7 +7143,7 @@ send.
 | --- | --- | --- |
 | 1 PANEL | a check found a newer release | `HOLD 2s TO DOWNLOAD & INSTALL` ([The download](#the-download)); the card names the release and says that the panel restarts into it |
 | 2 IOMCU | the IOmcu runs another build than the carried one | `HOLD 2s TO UPDATE THE IOMCU` ([The IOmcu](#the-iomcu)); `The firmware on this panel is older.` in the warning colour for an older image |
-| 3 C6 RADIO | the C6 reports another version than the carried image's | `HOLD 2s TO UPDATE THE C6 RADIO` ([The C6 radio](#the-c6-radio)); the card says `The panel restarts after this step.` |
+| 3 C6 RADIO | the C6 reports another version than the release's C6 image | `HOLD 2s TO UPDATE THE C6 RADIO` ([The C6 radio](#the-c6-radio)); the card says `The panel restarts after this step.` |
 | 4 DIAL | the connected Dial runs another version | `HOLD 2s TO UPDATE THE DIAL` ([The Dial](#the-dial)) |
 | 5 POWER NODE | the connected power node runs another version | `HOLD 2s TO UPDATE THE POWER NODE` ([The sensor nodes](#the-sensor-nodes)) |
 | 6 BALANCE NODE | the connected balance node runs another version | `HOLD 2s TO UPDATE THE BALANCE NODE` |
@@ -7160,9 +7163,9 @@ alert's line in the warning colour, and the hold is the retry.
 | Tag | Meaning |
 | --- | --- |
 | `NEXT` | the current step: its control is live, or grey with the reason on the card |
-| `CURRENT` | runs the carried or newest version; its number box is filled in the OK colour |
+| `CURRENT` | runs the carried, the release's or the newest version; its number box is filled in the OK colour |
 | `LATER` | a step after the current one with another version; while PANEL is current with a newer release, also IOMCU and every connected device: the release carries newer images for them |
-| `UPDATING`, `CHECKING` | its update runs; or a short wait: the IOmcu's build check, the carried image's check, Bluetooth LE's start, another update's end. The card says which; no control |
+| `UPDATING`, `CHECKING` | its update runs, or its image is downloaded, read from the SD card or checked ([Device images](#device-images)); or a short wait: the IOmcu's build check, Bluetooth LE's start, another update's end. The card says which; no control |
 | `FAILED` | its last attempt since the panel's start ended without an install |
 | `SKIPPED` | SKIP THIS STEP was tapped since the panel's start |
 | `NOT CHECKED` | PANEL: no check result at this start |
@@ -7170,7 +7173,7 @@ alert's line in the warning colour, and the hold is the retry.
 | `NOT BOUND` | no device of the kind is bound on WIRELESS |
 | `OFF` | a device is bound and its switch on WIRELESS is OFF: the panel runs no link to it |
 | `NO BLUETOOTH` | a device is bound and ON, and Bluetooth LE cannot link it: the C6's link failed, or the host has no sync with the C6 |
-| `NO FIRMWARE`, `BAD FIRMWARE`, `CHECK FAILED`, `USB ONLY`, `NO ANSWER`, `NOT REPORTED` | nothing to act on: the panel carries no image, the carried image fails its check, the IOmcu's build check gave no answer, the IOmcu takes no update over CAN, the C6 failed its link, the C6 named no version |
+| `NO FIRMWARE`, `BAD FIRMWARE`, `CHECK FAILED`, `USB ONLY`, `NO ANSWER`, `NOT REPORTED` | nothing to act on: the panel carries no IOmcu image, the carried IOmcu image fails its check, the IOmcu's build check gave no answer, the IOmcu takes no update over CAN, the C6 failed its link, the C6 named no version |
 
 A step with nothing to act on is passed. While an update run stands after
 a restart, the IOmcu without a link and a bound device that is not
@@ -7486,8 +7489,8 @@ IOmcu's ([The C6 radio](#the-c6-radio)). The footer reads
 | Control | Action |
 | --- | --- |
 | `HOLD 2s TO UPDATE THE IOMCU` | Starts the IOmcu's update from the image this panel carries ([The IOmcu](#the-iomcu)). |
-| `HOLD 2s TO UPDATE THE C6 RADIO` | Sends the C6 radio's image this panel carries to the board's ESP32-C6 ([The C6 radio](#the-c6-radio)). |
-| `HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE` | The same, while the C6 reports the carried version ([The C6 radio](#the-c6-radio)). |
+| `HOLD 2s TO UPDATE THE C6 RADIO` | Fetches the C6 radio's image of the release the panel runs and sends it to the board's ESP32-C6 ([The C6 radio](#the-c6-radio), [Device images](#device-images)). |
+| `HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE` | The same, while the C6 reports the release's version ([The C6 radio](#the-c6-radio)). |
 | `WIRELESS DEVICE FIRMWARE` | Opens the page of the Dial's and the sensor nodes' firmware rows over this page ([The wireless devices](#the-wireless-devices)). While an update runs the button reads that row's label. |
 | `BACK` | Closes the page: UPDATES shows again. |
 
@@ -7539,14 +7542,120 @@ offer opens UPDATES for it. An IOmcu of another protocol major shows NO
 LINK in the band and still takes the update; its offer opens UPDATES as
 any other.
 
+### Device images
+
+The panel image carries the IOmcu images only. The C6 radio's, the Dial's,
+the power node's and the balance node's application images are files of
+the release the panel runs, tag `vMAJOR.MINOR.PATCH` of the panel's own
+version, which the web flasher and the release page offer as well:
+
+| Step | File | Most bytes |
+| --- | --- | ---: |
+| C6 RADIO | `rcbench-c6-<esp_hosted version>.bin`, `rcbench-c6-2.13.0.bin` | 1,966,080 |
+| DIAL | `rcbench-dial-<version>.bin` | 3,145,728 |
+| POWER NODE | `rcbench-node-pwr-<version>.bin` | 1,572,864 |
+| BALANCE NODE | `rcbench-node-bal-<version>.bin` | 1,572,864 |
+
+A step's hold takes the image from one of three places, and the card names
+the file and the place:
+
+| Card line | Where the hold takes it |
+| --- | --- |
+| `The hold downloads rcbench-dial-0.23.16.bin from GitHub first.` | GitHub: the default with a home network kept. |
+| `The hold reads BENCH/UPDATES/rcbench-dial-0.23.16.bin from the SD card.` | The SD card, folder `BENCH/UPDATES`: after a failed download, and always without a home network. The control reads `HOLD 2s TO UPDATE FROM THE SD CARD`. A failed card read sends the next hold to GitHub again. |
+| `rcbench-dial-0.23.16.bin is downloaded and checked.` | The memory: an earlier hold fetched it. It stays in PSRAM (pseudo-static random-access memory) until the panel restarts. |
+
+The download takes the panel's own download path ([The download](#the-download)):
+the home network, `SHA256SUMS` of the release, then the file, each through
+at most 3 redirects to GitHub's hosts over HTTPS, 180s at most from the
+start. The file's `Content-Length` is over 0 and at most the step's most
+bytes; the file goes into one PSRAM buffer of that length, and its SHA-256
+must be the one `SHA256SUMS` names for it. The radio goes off after it, as
+after a check. A card read takes the file of the same name from
+`BENCH/UPDATES`; when that folder also holds a `SHA256SUMS` that names the
+file, the file's SHA-256 must be that line's. Either way the image then
+passes the checks the senders make: an ESP-IDF application of the
+device's chip and project, its own appended SHA-256, for the Dial and the
+nodes the role in its head, and the release's version. The checks and the
+card read run on the task `devimg` ([Performance: Stacks](Performance.md#stacks)).
+
+The image's release signature is checked as the panel image's
+([SECURITY.md](../SECURITY.md)): the download fetches `<file>.sig` beside
+the file, and a card read takes `<file>.sig` beside the file in
+`BENCH/UPDATES`. A missing `.sig` is no signature; one outside 8 to 72
+bytes, or one that does not verify under the release key, does not match.
+While the build warns (`RCBENCH_SIGN_ENFORCE` 0, every build up to the
+stable release that enforces it) such an image is kept and sent: the band
+says `rcbench-dial-0.23.16.bin is not signed by the rcbench release key.`,
+and the step's card reads `rcbench-dial-0.23.16.bin: not signed by the
+rcbench release key. The image comes with no signature.`, or `The
+signature does not match.`, in the warning colour. A build that
+enforces it refuses the image with `V07`.
+
+The control shows what runs: `DOWNLOADING 43%`, `CHECKING THE FILE`,
+`READING THE SD CARD`. CANCEL UPDATE during a device's download, card read or check drops the
+update the hold asked for and ends the download; an image that still
+passes stays in memory for the next hold. Once the
+image passed, the update the hold asked for starts by itself when its
+gate is open; it waits up to 20,000ms for the radio to go off after the
+download, and the panel ends the radio's time request for it. Any other
+closed gate drops the start: the band names the reason, and the next hold
+starts the update from the image in memory. Until the start, the row
+and the step show the update as under way: no SKIP THIS STEP and no
+other hold; on a wireless device's step CANCEL UPDATE drops the start.
+
+A download needs what a check needs: a home network, the bench SAFE with
+no arm waiting, the supply output off, no log run, no other update and no
+panel install. While ARMED no download starts: the step's hold is grey,
+and a press names the reason in the band. ARMED, the supply, a log run,
+STOP or WI-FI opening end a download under way. No output changes state
+for a download, a card read or a check. One image is on its way at a
+time.
+
+![The Dial's step after a failed download: the hold reads the SD card](img/updates-step-dial-card.png)
+
+A failed attempt shows on the step's card in the warning colour, with a
+code of a letter and two digits; the step reads `FAILED` and its hold is
+the retry from the next place:
+
+| Line | Codes |
+| --- | --- |
+| `Download failed (D10): No connection to GitHub.` | `D` and the download's result, worded as the panel's own download ([The download](#the-download)): `D04` no home network kept, `D05` the gate, `D06` ended from outside (ARMED, the supply, a log run, STOP, WI-FI, CANCEL UPDATE), `D07` the join failed, `D08` the radio did not come up, `D09` the 180s ran out, `D10` no connection, `D11` an HTTP status refused, `D12` an answer out of form, `D13` `SHA256SUMS` missing or without the file's line, `D14` the SHA-256 differs from `SHA256SUMS`, `D16` no memory |
+| `SD card failed (S02): BENCH/UPDATES/rcbench-dial-0.23.16.bin is not on the SD card.` | `S01` no card, `S02` no such file, `S03` the read failed, `S04` empty or over the step's most bytes, `S05` no memory, `S06` the card's `SHA256SUMS` out of form or naming the file twice |
+| `Check failed (V05): The file is version 0.23.15; this release has 0.23.16.` | `V01` empty or over the most bytes, `V02` the SHA-256 differs from the card's `SHA256SUMS`, `V03` no application of the device's chip and project, or its own SHA-256 differs, `V04` another device's role, `V05` another version, `V07` no valid release signature in a build that enforces it |
+
+The console names each step:
+
+    I (…) devimg: rcbench-dial-0.23.16.bin: download of v0.23.16's file, job 3
+    I (…) devimg: rcbench-dial-0.23.16.bin: 850816 bytes, SHA-256 as SHA256SUMS; checking
+    I (…) devimg: rcbench-dial-0.23.16.bin: 0.23.16 850816 bytes, SHA-256 1a2b3c4d, from GitHub
+    W (…) devimg: image 1: Download failed (D10): No connection to GitHub.
+
+Current limitations:
+
+- The time a download takes on a real network is not measured.
+- A panel that runs a build no release has (a version without its tag)
+  finds no file on GitHub: `D13`, as GitHub answers 404 for the release's
+  `SHA256SUMS`. Its images come from the SD card.
+- An image stays in PSRAM until the panel restarts, up to the four most
+  bytes above together, 8,257,536 bytes.
+- While `RCBENCH_SIGN_ENFORCE` is 0 an image without a valid release
+  signature is sent after the warning: an SD-card image is then held to
+  its size, its chip, project, role and version, its own appended SHA-256
+  and a card `SHA256SUMS` that names it only ([SECURITY.md](../SECURITY.md)).
+
 ### The C6 radio
 
 Under the heading, SINGLE UPDATES shows the board's ESP32-C6, which carries Wi-Fi and
-Bluetooth: `C6 radio: 2.13.0. Included: 2.13.0.`, the version the C6
+Bluetooth: `C6 radio: 2.13.0. Release: 2.13.0.`, the version the C6
 reported at the first Wi-Fi start since the panel started, or
-`not reported`, and the version of the image this panel carries, or
-`none`. Under it `HOLD 2s TO UPDATE THE C6 RADIO`, or `HOLD 2s TO REINSTALL
-THIS PANEL'S C6 FIRMWARE` while the C6 reports the carried version. While the update runs the
+`not reported`, and the esp_hosted version of the release's C6 image.
+Under it `HOLD 2s TO UPDATE THE C6 RADIO`, or `HOLD 2s TO REINSTALL
+THIS PANEL'S C6 FIRMWARE` while the C6 reports that version. The hold
+fetches the image first while it is not in memory
+([Device images](#device-images)); the button then reads `DOWNLOADING 43%`,
+`CHECKING THE FILE` or `READING THE SD CARD`, and the update starts once
+the image passed its checks. While the update runs the
 button reads `C6 UPDATE 37%`, the share of the image the C6 took. The
 steps, their limits and how each ends are in
 [The ESP32-C6 radio: The C6's firmware](C6.md#the-c6s-firmware).
@@ -7558,9 +7667,7 @@ grey, and a tap on it shows the first reason on the alert band:
 
 | Band | Condition |
 | --- | --- |
-| `This panel includes no C6 radio firmware.` | The panel was built without the C6's image. |
-| `The included C6 radio firmware failed its check.` | The carried image is no ESP32-C6 build of esp_hosted, or its SHA-256 differs. |
-| `The C6 radio update is running.` | An update runs. |
+| `The C6 radio update is running.` | An update runs, or its image is on its way. |
 | `The C6 radio did not answer. Restart the panel.` | The link to the C6 failed since the panel started; the C6 is held in reset. |
 | `The C6 update requires SAFE.` | ARMED, or an arm waiting. |
 | `The C6 update requires the supply output off.` | The supply output is on or switching on. |
@@ -7576,10 +7683,10 @@ grey, and a tap on it shows the first reason on the alert band:
 | `C6 radio updated. The panel restarts once SAFE with all outputs off.` | The update ended with a success and the panel's restart is due: 3s after the end at the earliest, and only on a bench that is SAFE with all outputs off. |
 
 A C6 that reports no version, as the shipped one does, is offered the
-update. A C6 that reports the carried version is offered the reinstall:
+update. A C6 that reports the release's version is offered the reinstall:
 images of one esp_hosted version with other settings report the same
 version, such as one with 3 Bluetooth LE connections and one with 5
-([The ESP32-C6 radio: The image the panel carries](C6.md#the-image-the-panel-carries)).
+([The ESP32-C6 radio: The C6 image](C6.md#the-c6-image)).
 The alert band says how an update ended:
 
 | Alert | Meaning |
@@ -7602,8 +7709,8 @@ GitHub check and the IOmcu's update wait.
 
 The WIRELESS DEVICES entry on SINGLE UPDATES counts the devices:
 `Connected: 1 of 3. Another version: 0.` names the devices that reported
-a version and those whose row offers another version than the carried
-one. A tap on `WIRELESS DEVICE FIRMWARE` opens the page; while an update
+a version and those whose row offers another version than the
+release's. A tap on `WIRELESS DEVICE FIRMWARE` opens the page; while an update
 runs the button reads that row's label.
 
 ![The WIRELESS DEVICES entry while the Dial asks for its press](img/updates-dial.png)
@@ -7620,22 +7727,23 @@ runs, the other rows' holds are grey.
 
 | Control | Action |
 | --- | --- |
-| `HOLD 2s TO UPDATE THE DIAL` | Sends the M5Stack Dial's image this panel carries to the linked Dial over Bluetooth LE ([The Dial](#the-dial)). |
-| `HOLD 2s TO REINSTALL THE DIAL FIRMWARE` | The same, while the Dial reports the carried version. |
-| `HOLD 2s TO UPDATE THE POWER NODE` | Sends the power node's image this panel carries to the bound power node ([The sensor nodes](#the-sensor-nodes)). |
-| `HOLD 2s TO REINSTALL THE POWER NODE` | The same, while the node reports the carried version. |
-| `HOLD 2s TO UPDATE THE BALANCE NODE` | Sends the balance node's image this panel carries to the bound balance node. |
-| `HOLD 2s TO REINSTALL THE BALANCE NODE` | The same, while the node reports the carried version. |
+| `HOLD 2s TO UPDATE THE DIAL` | Fetches the M5Stack Dial's image of the release the panel runs and sends it to the linked Dial over Bluetooth LE ([The Dial](#the-dial), [Device images](#device-images)). |
+| `HOLD 2s TO REINSTALL THE DIAL FIRMWARE` | The same, while the Dial reports the release's version. |
+| `HOLD 2s TO UPDATE THE POWER NODE` | Fetches the power node's image of the release and sends it to the bound power node ([The sensor nodes](#the-sensor-nodes)). |
+| `HOLD 2s TO REINSTALL THE POWER NODE` | The same, while the node reports the release's version. |
+| `HOLD 2s TO UPDATE THE BALANCE NODE` | Fetches the balance node's image of the release and sends it to the bound balance node. |
+| `HOLD 2s TO REINSTALL THE BALANCE NODE` | The same, while the node reports the release's version. |
+| `HOLD 2s TO UPDATE FROM THE SD CARD` | On any of the rows above, after a failed download or without a home network: reads the image from the SD card ([Device images](#device-images)). |
 | `CANCEL UPDATE` | In the footer's middle slot while an update runs; a plain tap. Before END it ends the update: the device drops what it took and keeps its firmware, and the band reads `<device> update stopped: canceled on UPDATES. Previous firmware is running.` From END on the device installs whatever comes: the key is grey, a tap puts `The device installs the update and cannot stop now. Its result follows.` in the band, and the result follows as without the tap. |
 | `BACK` | Closes the page: SINGLE UPDATES shows again. |
 
 ### The Dial
 
 The DIAL FIRMWARE row shows the M5Stack Dial's firmware:
-`Dial: 0.21.0. Included: 0.22.0.`, the version the linked Dial's INFO
-named, or `not connected`, and the version of the Dial image this panel
-carries, or `none`. Beside it `HOLD 2s TO UPDATE THE DIAL`, or `HOLD 2s TO
-REINSTALL THE DIAL FIRMWARE` while the Dial reports the carried version.
+`Dial: 0.21.0. Release: 0.22.0.`, the version the linked Dial's INFO
+named, or `not connected`, and the version of the release the panel
+runs. Beside it `HOLD 2s TO UPDATE THE DIAL`, or `HOLD 2s TO
+REINSTALL THE DIAL FIRMWARE` while the Dial reports that version.
 The Dial and its update are in [The M5Stack Dial: Update over Bluetooth
 LE](Dial.md#update-over-bluetooth-le).
 
@@ -7643,6 +7751,7 @@ While the update runs the button reads, one after the other:
 
 | Button | Step |
 | --- | --- |
+| `DOWNLOADING 43%`, `CHECKING THE FILE`, `READING THE SD CARD` | the Dial's image is on its way ([Device images](#device-images)) |
 | `DIAL UPDATE: CONNECTING` | the Dial's knob link ends, and the update connects to the bound Dial |
 | `PRESS THE DIAL TO ACCEPT: 27s` | the Dial took BEGIN and asks for a press of its screen button; the seconds are the Dial's |
 | `DIAL UPDATE 37%` | the share of the image the Dial took |
@@ -7655,9 +7764,6 @@ reason on the alert band:
 | Band | Condition |
 | --- | --- |
 | `The device update is running.` | An update runs or was asked for. |
-| `This panel includes no firmware for this device.` | The panel was built without the Dial's image. |
-| `The included firmware for this device is being checked.` | The carried image's check has not run since the start. |
-| `The included firmware for this device failed its check.` | The carried image is no ESP32-S3 application of the project `rcbench-dial` with the Dial's role, is larger than the Dial's slot of 3,145,728 bytes, or its appended SHA-256 differs. |
 | `The device update requires SAFE.` | ARMED, or an arm waiting. |
 | `The device update waits for the other update to finish.` | The C6's or the IOmcu's update, or the panel's download or install, runs. |
 | `Connect the device on WIRELESS first.` | No Dial is linked, or its INFO has not come. |
@@ -7711,9 +7817,9 @@ gap is no loss error. The transfer time is not measured.
 ### The sensor nodes
 
 The POWER NODE FIRMWARE and BALANCE NODE FIRMWARE rows show a node's
-firmware: `Node: 0.23.15. Included: 0.23.16.`, the version the node's
+firmware: `Node: 0.23.15. Release: 0.23.16.`, the version the node's
 STATUS packet named on the current link, or `not connected`, and the
-version of the node image this panel carries, or `none`. The two roles'
+version of the release the panel runs. The two roles'
 images differ: the power node's row sends the power image, the balance
 node's the balance image, and a node refuses the other role's image. The
 nodes and their update are in [The sensor nodes: Update over Bluetooth

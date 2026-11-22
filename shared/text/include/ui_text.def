@@ -6690,25 +6690,25 @@ UI_TEXT(HOLD_HINT_C6_UPDATE, 94,
     "Hold 2s to update the C6 radio. Wi-Fi stays off until it ends.",
     "Halte 2s, um den C6-Funk zu aktualisieren. Das WLAN bleibt bis zum Ende aus.")
 UI_TEXT(HOLD_HINT_C6_REINSTALL, 94,
-    "Hold 2s to reinstall the C6 firmware this panel carries. Wi-Fi stays off until it ends.",
-    "Halte 2s, um die C6-Firmware des Panels neu zu installieren. WLAN bleibt bis zum Ende aus.")
+    "Hold 2s to reinstall the C6 firmware of this panel's release. Wi-Fi is off while it is sent.",
+    "Halte 2s, um die C6-Firmware des Panels neu zu installieren. WLAN bleibt beim Senden aus.")
 UI_TEXT(HOLD_HINT_DIAL_UPDATE, 94,
     "Hold 2s to update the Dial. Its knob stops until it connects again.",
     "Halte 2s, um das Dial zu aktualisieren. Der Drehknopf ruht bis zur neuen Verbindung.")
 UI_TEXT(HOLD_HINT_DIAL_REINSTALL, 94,
-    "Hold 2s to reinstall the Dial firmware this panel carries.",
+    "Hold 2s to reinstall the Dial firmware of this panel's release.",
     "Halte 2s, um die Dial-Firmware des Panels neu zu installieren.")
 UI_TEXT(HOLD_HINT_PNODE_UPDATE, 94,
     "Hold 2s to update the power node. Its readings stop until it connects again.",
     "Halte 2s, um den Leistungsknoten zu aktualisieren. Messwerte ruhen bis zur neuen Verbindung.")
 UI_TEXT(HOLD_HINT_PNODE_REINSTALL, 94,
-    "Hold 2s to reinstall the power node firmware this panel carries.",
+    "Hold 2s to reinstall the power node firmware of this panel's release.",
     "Halte 2s, um die Firmware des Leistungsknotens neu zu installieren.")
 UI_TEXT(HOLD_HINT_BAL_UPDATE, 94,
     "Hold 2s to update the balance node. Its reports stop until it connects again.",
     "Halte 2s, um den Auswuchtknoten zu aktualisieren. Messungen ruhen bis zur neuen Verbindung.")
 UI_TEXT(HOLD_HINT_BAL_REINSTALL, 94,
-    "Hold 2s to reinstall the balance node firmware this panel carries.",
+    "Hold 2s to reinstall the balance node firmware of this panel's release.",
     "Halte 2s, um die Firmware des Auswuchtknotens neu zu installieren.")
 UI_TEXT(HOLD_HINT_UNBIND, 94,
     "Hold 2s to clear all pin assignments.",
@@ -7394,17 +7394,17 @@ UI_TEXT(HG_UPD_CU_HOLD, 0,
     "Sends the included build to the IOmcu. Outputs stay off until it ends.",
     "Sendet den enthaltenen Build an den IOmcu. Ausgänge bleiben aus, bis es endet.")
 UI_TEXT(HG_UPD_DIAL, 0,
-    "The Dial's version and the included one. The hold sends it; the Dial asks for a press.",
-    "Version des Dial und die enthaltene. Das Halten sendet sie; das Dial fragt nach einem Druck.")
+    "The Dial's version and the release's. The hold sends it; the Dial asks for a press.",
+    "Version des Dial und die des Release. Das Halten sendet sie; das Dial fragt nach einem Druck.")
 UI_TEXT(HG_UPD_DEVS, 0,
     "How many devices reported a version, and how many run another one. The button opens their rows.",
     "Wie viele Geräte eine Version meldeten und wie viele eine andere haben. Die Taste öffnet ihre Zeilen.")
 UI_TEXT(HG_UPD_PNODE, 0,
-    "The power node's version and the included one. The hold sends it; BOOT held 1s accepts.",
-    "Version des Knotens und die enthaltene. Das Halten sendet sie; BOOT 1s gehalten nimmt an.")
+    "The power node's version and the release's. The hold sends it; BOOT held 1s accepts.",
+    "Version des Knotens und die des Release. Das Halten sendet sie; BOOT 1s gehalten nimmt an.")
 UI_TEXT(HG_UPD_BAL, 0,
-    "The balance node's version and the included one. The hold sends it; BOOT held 1s accepts.",
-    "Version des Knotens und die enthaltene. Das Halten sendet sie; BOOT 1s gehalten nimmt an.")
+    "The balance node's version and the release's. The hold sends it; BOOT held 1s accepts.",
+    "Version des Knotens und die des Release. Das Halten sendet sie; BOOT 1s gehalten nimmt an.")
 UI_TEXT(HG_UPD_DEVS_CANCEL, 0,
     "Ends the update before its last byte; the device keeps its firmware. Grey while it installs.",
     "Beendet das Update vor dem letzten Byte; das Gerät behält seine Firmware. Grau beim Installieren.")
@@ -7418,8 +7418,8 @@ UI_TEXT(HG_UPD_CARD, 0,
     "The current step: versions, what it does, why it waits. The last card: all firmware is current.",
     "Der aktuelle Schritt: Versionen, was er tut, worauf er wartet. Zuletzt: alle Firmware aktuell.")
 UI_TEXT(HG_UPD_C6, 0,
-    "Sends the included build to the C6 radio, which carries Wi-Fi. The panel restarts then.",
-    "Sendet den enthaltenen Build an den C6-Funk, der das WLAN trägt. Danach startet das Panel neu.")
+    "Sends the release's build to the C6 radio, which carries Wi-Fi. The panel restarts then.",
+    "Sendet den Build des Release an den C6-Funk, der das WLAN trägt. Danach startet das Panel neu.")
 UI_TEXT(HG_UPD_OPTIONS, 0,
     "Reminder at start, Releases and Single updates. Grey while a check, a download or an update runs.",
     "Erinnerung, Releases und Einzelne Updates. Grau, solange Suche, Download oder Update läuft.")
@@ -9178,8 +9178,8 @@ UI_TEXT(UPD_CU_INSTALL, 0,
  * did not name or an image not carried, the hold and the update's share
  * sent.  updates-c6 and updates-c6-* measure each. */
 UI_TEXT(UPD_C6_LINE, 0,
-    "C6 radio: %s. Included: %s.",
-    "C6-Funk: %s. Auf diesem Panel: %s.")
+    "C6 radio: %s. Release: %s.",
+    "C6-Funk: %s. Release: %s.")
 UI_TEXT(UPD_C6_NOT_REPORTED, 0,
     "not reported",
     "nicht gemeldet")
@@ -9252,8 +9252,8 @@ UI_TEXT(UPD_DIAL_HEAD, 0,
     "DIAL FIRMWARE",
     "DIAL-FIRMWARE")
 UI_TEXT(UPD_DIAL_LINE, 0,
-    "Dial: %s. Included: %s.",
-    "Dial: %s. Im Panel: %s.")
+    "Dial: %s. Release: %s.",
+    "Dial: %s. Release: %s.")
 UI_TEXT(UPD_DEV_NOT_LINKED, 0,
     "not connected",
     "nicht verbunden")
@@ -9273,8 +9273,8 @@ UI_TEXT(UPD_DIAL_PROGRESS, 0,
     "DIAL UPDATE %u%%",
     "DIAL-UPDATE %u%%")
 UI_TEXT(UPD_NODE_LINE, 0,
-    "Node: %s. Included: %s.",
-    "Knoten: %s. Im Panel: %s.")
+    "Node: %s. Release: %s.",
+    "Knoten: %s. Release: %s.")
 UI_TEXT(UPD_NODE_PRESS, 0,
     "HOLD BOOT 1s ON THE NODE: %us",
     "BOOT AM KNOTEN 1s HALTEN: %us")
@@ -9462,6 +9462,83 @@ UI_TEXT(UPD_WIZ_END_NO_CHECK, 0,
 UI_TEXT(UPD_WIZ_DO_PANEL, 0,
     "The panel restarts into %s. The steps for the IOmcu and the devices follow after the restart.",
     "Das Panel startet mit %s neu. Die Schritte für IOmcu und Geräte folgen nach dem Neustart.")
+/* UPDATES' C6 RADIO and device steps: where the hold takes the image from
+ * (upd_fetch.c, devimg.h).  The control while the image is on its way,
+ * the hold that reads the SD card, the card's line that names the file,
+ * a failed attempt's line with its code, and the reasons. */
+UI_TEXT(UPD_FETCH_HOLD_CARD, 44,
+    "HOLD 2s TO UPDATE FROM THE SD CARD",
+    "2s HALTEN: UPDATE VON DER SD-KARTE")
+UI_TEXT(UPD_FETCH_NET, 44,
+    "DOWNLOADING %u%%",
+    "DOWNLOAD %u%%")
+UI_TEXT(UPD_FETCH_CHECK, 44,
+    "CHECKING THE FILE",
+    "DATEI WIRD GEPRÜFT")
+UI_TEXT(UPD_FETCH_CARD, 44,
+    "READING THE SD CARD",
+    "SD-KARTE WIRD GELESEN")
+UI_TEXT(UPD_FETCH_FROM_NET, 123,
+    "The hold downloads %s from GitHub first.",
+    "Das Halten lädt zuerst %s von GitHub.")
+UI_TEXT(UPD_FETCH_FROM_CARD, 123,
+    "The hold reads %s from the SD card.",
+    "Das Halten liest %s von der SD-Karte.")
+UI_TEXT(UPD_FETCH_IN_RAM, 123,
+    "%s is downloaded and checked.",
+    "%s ist geladen und geprüft.")
+/* An image in memory without a valid release signature (fw_sig.h), in a
+ * build that warns: the card's line in the warning colour with UPS_NONE or
+ * UPS_BAD as the reason, and the band once it arrives. */
+UI_TEXT(UPD_FETCH_IN_RAM_NOSIG, 123,
+    "%s: not signed by the rcbench release key. %s",
+    "%s: nicht vom rcbench-Release-Schlüssel signiert. %s")
+UI_TEXT(UPD_FETCH_NOSIG_NOTE, 94,
+    "%s is not signed by the rcbench release key.",
+    "%s ist nicht vom rcbench-Release-Schlüssel signiert.")
+UI_TEXT(UPD_FETCH_FAIL_NET, 123,
+    "Download failed (%s): %s",
+    "Download fehlgeschlagen (%s): %s")
+UI_TEXT(UPD_FETCH_FAIL_CARD, 123,
+    "SD card failed (%s): %s",
+    "SD-Karte fehlgeschlagen (%s): %s")
+UI_TEXT(UPD_FETCH_FAIL_CHECK, 123,
+    "Check failed (%s): %s",
+    "Prüfung fehlgeschlagen (%s): %s")
+UI_TEXT(UPD_FETCH_NO_CARD, 81,
+    "No SD card.",
+    "Keine SD-Karte.")
+UI_TEXT(UPD_FETCH_NO_FILE, 81,
+    "%s is not on the SD card.",
+    "%s fehlt auf der SD-Karte.")
+UI_TEXT(UPD_FETCH_READ, 81,
+    "The SD card could not be read.",
+    "Die SD-Karte ließ sich nicht lesen.")
+UI_TEXT(UPD_FETCH_SIZE, 81,
+    "The file is empty or larger than the device's slot.",
+    "Die Datei ist leer oder größer als der Platz im Gerät.")
+UI_TEXT(UPD_FETCH_MEMORY, 81,
+    "No memory for the file.",
+    "Kein Speicher für die Datei.")
+UI_TEXT(UPD_FETCH_SUMS, 81,
+    "SHA256SUMS on the SD card is out of form.",
+    "SHA256SUMS auf der SD-Karte ist fehlerhaft.")
+UI_TEXT(UPD_FETCH_ROLE, 81,
+    "The file is the firmware of another device.",
+    "Die Datei ist die Firmware eines anderen Geräts.")
+UI_TEXT(UPD_FETCH_VERSION, 81,
+    "The file is version %s; this release has %s.",
+    "Die Datei hat Version %s, dieses Release %s.")
+UI_TEXT(UPD_FETCH_NOT_FW, 81,
+    "The file is no firmware for this device.",
+    "Die Datei ist keine Firmware für dieses Gerät.")
+UI_TEXT(UPD_FETCH_NOSIG, 81,
+    "The file is not signed by the rcbench release key.",
+    "Die Datei ist nicht vom rcbench-Release-Schlüssel signiert.")
+/* The version a C6 or device step installs: the release's file. */
+UI_TEXT(UPD_WIZ_FOR_PANEL, 41,
+    "For this panel: %s",
+    "Für dieses Panel: %s")
 UI_TEXT(UPD_WIZ_DO_C6, 0,
     "The panel restarts after this step.",
     "Nach diesem Schritt startet das Panel neu.")

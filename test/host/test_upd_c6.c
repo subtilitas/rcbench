@@ -412,12 +412,12 @@ TEST_CASE(the_line_names_both_versions_or_says_not_reported)
     upd_c6_view_t v = view_of(FW_C6_ROW_READY, FW_C6_WHY_NONE);
     char line[96];
     upd_c6_line(&v, line, sizeof(line));
-    CHECK_STR_EQ(line, "C6 radio: not reported. Included: 2.13.0.");
+    CHECK_STR_EQ(line, "C6 radio: not reported. Release: 2.13.0.");
     v.known = true;
     v.running = (fw_version_t){ 0u, 0u, 0u };
     v.have_image = false;
     upd_c6_line(&v, line, sizeof(line));
-    CHECK_STR_EQ(line, "C6 radio: 0.0.0. Included: none.");
+    CHECK_STR_EQ(line, "C6 radio: 0.0.0. Release: none.");
     v.row = FW_C6_ROW_UPDATING;
     v.percent = 37u;
     upd_c6_label(&v, line, sizeof(line));
@@ -435,7 +435,7 @@ TEST_CASE(the_line_names_both_versions_or_says_not_reported)
     v.known = false;
     v.have_image = true;
     upd_c6_line(&v, line, sizeof(line));
-    CHECK_STR_EQ(line, "C6-Funk: nicht gemeldet. Auf diesem Panel: 2.13.0.");
+    CHECK_STR_EQ(line, "C6-Funk: nicht gemeldet. Release: 2.13.0.");
     ui_text_set_language(UI_LANG_EN);
 }
 

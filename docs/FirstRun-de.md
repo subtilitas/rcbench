@@ -231,19 +231,25 @@ Die Dauer des Updates über CAN ist nicht gemessen.
 ### Der C6-Funk über SDIO
 
 Der ESP32-C6 des Boards trägt Wi-Fi und Bluetooth und betreibt die Firmware
-von esp_hosted. Ein Panel-Image bringt die C6-Firmware seiner
-esp_hosted-Version mit, 2.13.0; der ausgelieferte C6 meldet keine (`nicht
+von esp_hosted. Das Release des Panels veröffentlicht die C6-Firmware seiner
+esp_hosted-Version, 2.13.0, als `rcbench-c6-2.13.0.bin`; das Panel-Image
+bringt sie nicht mit, und der ausgelieferte C6 meldet keine (`nicht
 gemeldet`).
 
 1. Starte Wi-Fi einmal (WI-FI > ACCESS POINT), damit der C6 nach seiner
    Version gefragt wird, und schalte es wieder aus.
 2. Auf SETUP > UPDATES zeigt die Zeile C6 RADIO `C6-Funk: nicht gemeldet.
-   Auf diesem Panel: 2.13.0.`. Halte `2s HALTEN ZUM C6-FUNK-UPDATE` 2s lang,
-   mit dem Prüfstand SAFE und dem Netzteilausgang aus. Die Taste zählt
-   `C6-UPDATE 0%` bis `100%`.
+   Release: 2.13.0.`. Halte `2s HALTEN ZUM C6-FUNK-UPDATE` 2s lang,
+   mit dem Prüfstand SAFE und dem Netzteilausgang aus. Mit einem auf WI-FI
+   gespeicherten Heimnetz zählt die Taste `DOWNLOAD 0%` bis `100%`, während
+   das Panel das Image lädt; ohne eines kopiere vorher
+   `rcbench-c6-2.13.0.bin` aus dem Release nach `BENCH/UPDATES` der
+   SD-Karte, und das Halten lautet `2s HALTEN: UPDATE VON DER SD-KARTE`
+   ([Bildschirme: Geräte-Images](Screens-de.md#geräte-images)). Danach zählt
+   die Taste `C6-UPDATE 0%` bis `100%`.
 3. Das Band meldet `C6-Funk auf 2.13.0 aktualisiert. Das Panel startet
    neu.`, und das Panel startet 3s später neu. Nach dem nächsten
-   Wi-Fi-Start zeigt die Zeile `C6-Funk: 2.13.0. Auf diesem Panel: 2.13.0.`.
+   Wi-Fi-Start zeigt die Zeile `C6-Funk: 2.13.0. Release: 2.13.0.`.
 
 Ein C6, der das Update ablehnt, hinterlässt `Der C6-Funk nimmt kein Update
 über SDIO an. Flashe ihn über Header H4.`; er behält seine Firmware, und

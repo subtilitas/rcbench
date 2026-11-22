@@ -732,8 +732,12 @@ auch bei ausgeschaltetem INA228 des IOmcu
 Ein Knoten nimmt ein neues Anwendungs-Image über BLE von einem Central an,
 über den Update-Dienst von `protocols/bleota`
 ([README](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md)).
-Das Panel bringt die Images beider Rollen mit, prüft sie beim Start und
-sendet sie von der Seite der Funkgeräte auf UPDATES:
+Das Panel-Image bringt die Images der Knoten nicht mit: Das Halten einer
+Zeile lädt die Datei seiner Rolle aus dem Release, das das Panel ausführt,
+`rcbench-node-pwr-<Version>.bin` oder `rcbench-node-bal-<Version>.bin`,
+oder liest sie aus `BENCH/UPDATES` der SD-Karte, prüft sie
+([Bildschirme: Geräte-Images](Screens-de.md#geräte-images)) und sendet sie
+von der Seite der Funkgeräte auf UPDATES:
 LEISTUNGSKNOTEN-FIRMWARE und AUSWUCHTKNOTEN-FIRMWARE
 ([Bildschirme: Die Sensorknoten](Screens-de.md#die-sensorknoten)). Das
 Halten von 2s auf der Zeile beendet den eigenen Link des Knotens

@@ -352,14 +352,16 @@ idf.py -C firmware/panel -B firmware/panel/build-bars -D RCBENCH_DISPLAY_BARS=ON
 idf.py -C firmware/panel -D RCBENCH_IOMCU_BIN=$PWD/firmware/iomcu/build/rcbench-iomcu.bin \
     -D RCBENCH_IOMCU_RBMOD_BIN=$PWD/firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod.bin build
 
-# panel carrying the wireless devices' images it sends over Bluetooth LE:
-# the Dial's and both node roles'; each is checked first
+# the wireless devices' images a panel sends over Bluetooth LE, the
+# Dial's and both node roles', checked, and named as the release names
+# them, for the SD card's BENCH/UPDATES (Screens: Device images)
 python3 tools/c6_image.py device dial firmware/dial/build/rcbench-dial.bin
 python3 tools/c6_image.py device node-pwr firmware/node/build-pwr/rcbench-node.bin
 python3 tools/c6_image.py device node-bal firmware/node/build-bal/rcbench-node.bin
-idf.py -C firmware/panel -D RCBENCH_DIAL_BIN=$PWD/firmware/dial/build/rcbench-dial.bin \
-    -D RCBENCH_NODE_PWR_BIN=$PWD/firmware/node/build-pwr/rcbench-node.bin \
-    -D RCBENCH_NODE_BAL_BIN=$PWD/firmware/node/build-bal/rcbench-node.bin build
+v=0.23.16   # the tree's version, shared/link/include/rcbench_version.h
+cp firmware/dial/build/rcbench-dial.bin /media/sdcard/BENCH/UPDATES/rcbench-dial-$v.bin
+cp firmware/node/build-pwr/rcbench-node.bin /media/sdcard/BENCH/UPDATES/rcbench-node-pwr-$v.bin
+cp firmware/node/build-bal/rcbench-node.bin /media/sdcard/BENCH/UPDATES/rcbench-node-bal-$v.bin
 
 # panel without the touch injector: every panel build, a release's too,
 # looks once at start-up for one at 0x14 beside the glass
@@ -431,16 +433,15 @@ Override with `-DPICO_BOARD=`. The final board needs an RP2350B: the planned
 pin budget is 27 to 32 GPIO (general-purpose input/output).
 
 `tools/c6_image.py device ROLE IMAGE` checks a wireless device's image
-before the panel carries it: an ESP-IDF application of the role's chip
+before a release publishes it: an ESP-IDF application of the role's chip
 (the Dial's ESP32-S3 for `dial`, ESP32-C6 for `node-pwr` and `node-bal`) and project
 (`rcbench-dial`, `rcbench-node`), no larger than its slot (3,145,728 or
 1,572,864 bytes), with its appended SHA-256 right and the version of the
 tree. It tells the node roles apart by the balance node's console text and
-fails on a swapped pair. The panel options `RCBENCH_DIAL_BIN`,
-`RCBENCH_NODE_PWR_BIN` and `RCBENCH_NODE_BAL_BIN` take the paths; the panel
-checks each image again at start, and UPDATES' wireless devices' page
-offers each ([Screens: The wireless devices](Screens.md#the-wireless-devices)). A panel built without an option
-offers no update to that device.
+fails on a swapped pair. The panel image carries none of them: a device
+step's hold downloads the file of the release the panel runs, or reads it
+from the SD card's `BENCH/UPDATES`, and checks it again before it sends it
+([Screens: Device images](Screens.md#device-images)).
 
 ## Tools
 
@@ -553,7 +554,7 @@ update and recovery, failures and the Bluetooth LE service.
 
 | Workflow | Trigger | Jobs |
 | --- | --- | --- |
-| `ci.yml` | push to `main`, tag `v*`, the label `ci` added to a pull request, once its reviews are clean (a push to a pull request starts no run; any other label starts a run that builds nothing and fails the required checks within 2min, and the head then needs `ci` taken off and added again), manual (`gh workflow run ci.yml --ref <branch>`, whose checks a pull request does not take) | host suite; the same suite under AddressSanitizer and UBSan (UndefinedBehaviorSanitizer); coverage floors and the Codecov upload in a job of its own that no required check needs, which fails when the upload fails; the checks that hold generated files to their sources (fonts, board drawings, cat tables, KiCad library, mechanical models, ESC profile tables, file manager strings); the file-size, docs, mutation-run figure, Wi-Fi secret, units, writing-rule, web help, `SECURITY.md` parser, wiki-link, screenshot and string-fit checks; the translated-format check; the check of the code the IOmcu builds for busy waits, sleeps, blocking calls and blocking prints (`tools/check_loop_waits.py`); the frame-cost job; the protocol module check; clang-tidy 22.1.8 and cppcheck 2.17.1 over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff; the tools' pytest cases; the Doxygen comment check of `tools/doc_check.py`, which in a pull request also fails on any warning in a C file the pull request adds or on a line it changes; on a pull request the mutation check of the changed lines, which reports and does not fail on a survivor; the C6 radio's image from esp_hosted's `slave/` folder on ESP-IDF v6.1 for the ESP32-C6 (`c6.yml`, [The image the panel carries](C6.md#the-image-the-panel-carries)); panel build on ESP-IDF v6.1 for the ESP32-P4 with the check of the generated sdkconfig against `sdkconfig.defaults` (`tools/check_sdkconfig.py`), the check of the image against its update slot, a check that the image carries the IOmcu images, the C6 image and the images of the Dial and both node roles (`tools/c6_image.py device`, from the `dial` and `node` jobs) and holds the touch injector's symbols, the console's frame lines (`tools/check_perf_log.py`) and exFAT, and a second build with `RCBENCH_TOUCH_INJECTOR=OFF` and `RCBENCH_PERF_LOG=OFF` that fails when it holds an injector symbol or a frame line; IOmcu build on pico-sdk 2.3.0 with the pin map check and the stack check of its two cores, once more with `-DSENSE_TRACE=ON`, with the same stack check, failing when the default image holds a trace symbol, and once more with `-DIOMCU_CONSOLE=ON`, with the same stack check, failing when the default image holds a console symbol; the touch injector build on pico-sdk 2.3.0 for `waveshare_rp2350_zero`, not uploaded; the file manager's browser test (`Web file manager browser test`: the `wa_page_dump` target, then `test/web` on Node.js 24 and Chromium, traces and screenshots kept for 14 days on a failure only); firmware artifacts including a merged panel image for offset 0 |
+| `ci.yml` | push to `main`, tag `v*`, the label `ci` added to a pull request, once its reviews are clean (a push to a pull request starts no run; any other label starts a run that builds nothing and fails the required checks within 2min, and the head then needs `ci` taken off and added again), manual (`gh workflow run ci.yml --ref <branch>`, whose checks a pull request does not take) | host suite; the same suite under AddressSanitizer and UBSan (UndefinedBehaviorSanitizer); coverage floors and the Codecov upload in a job of its own that no required check needs, which fails when the upload fails; the checks that hold generated files to their sources (fonts, board drawings, cat tables, KiCad library, mechanical models, ESC profile tables, file manager strings); the file-size, docs, mutation-run figure, Wi-Fi secret, units, writing-rule, web help, `SECURITY.md` parser, wiki-link, screenshot and string-fit checks; the translated-format check; the check of the code the IOmcu builds for busy waits, sleeps, blocking calls and blocking prints (`tools/check_loop_waits.py`); the frame-cost job; the protocol module check; clang-tidy 22.1.8 and cppcheck 2.17.1 over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff; the tools' pytest cases; the Doxygen comment check of `tools/doc_check.py`, which in a pull request also fails on any warning in a C file the pull request adds or on a line it changes; on a pull request the mutation check of the changed lines, which reports and does not fail on a survivor; the C6 radio's image from esp_hosted's `slave/` folder on ESP-IDF v6.1 for the ESP32-C6 (`c6.yml`, [The C6 image](C6.md#the-c6-image)); panel build on ESP-IDF v6.1 for the ESP32-P4 with the check of the generated sdkconfig against `sdkconfig.defaults` (`tools/check_sdkconfig.py`), the check of the image against its update slot, the check of the Dial's and both node roles' images (`tools/c6_image.py device`, from the `dial` and `node` jobs), an image that carries the IOmcu images and holds the touch injector's symbols, the console's frame lines (`tools/check_perf_log.py`) and exFAT, and a second build with `RCBENCH_TOUCH_INJECTOR=OFF` and `RCBENCH_PERF_LOG=OFF` that fails when it holds an injector symbol or a frame line; IOmcu build on pico-sdk 2.3.0 with the pin map check and the stack check of its two cores, once more with `-DSENSE_TRACE=ON`, with the same stack check, failing when the default image holds a trace symbol, and once more with `-DIOMCU_CONSOLE=ON`, with the same stack check, failing when the default image holds a console symbol; the touch injector build on pico-sdk 2.3.0 for `waveshare_rp2350_zero`, not uploaded; the file manager's browser test (`Web file manager browser test`: the `wa_page_dump` target, then `test/web` on Node.js 24 and Chromium, traces and screenshots kept for 14 days on a failure only); firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/`, manual | waits for the CI run on the same commit and, when it passed, mirrors `docs/` to the GitHub wiki |
 | `mutation.yml` | Sunday 03:17 UTC, manual | the mutants of the lines of `shared/safety` and `shared/outputs` (7117 mutants in 92 files) in 6 parallel shards, no mutant limit; `shared/safety` leads the list, `arming.c`, `heartbeat.c`, `stop_latch.c`, `touch_loss.c` and `prog5v_lost.c` at its head, and shard i takes every 6th mutant from place i; no mutant is started after 18000s in a shard, about 428 mutants at 42s each, so the 699 mutants of `shared/safety` run every week and about 1,869 of the 6418 of `shared/outputs`; a shard that leaves mutants unrun says so in a warning annotation and in its summary, with the count for each file; does not fail on a survivor or on mutants left; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
 | `c6.yml` | called by `ci.yml` and `release.yml` | the C6 radio's image and its checks (`tools/c6_image.py`); artifact `c6` |
@@ -671,8 +672,11 @@ A release can also be loaded manually: its
 archives over USB (Universal Serial Bus), as described in
 [First run, §1](FirstRun.md#1-flash-both-boards). The release's
 `rcbench-iomcu-vX.Y.Z.zip` and the image the panel carries are of the same
-commit. So are `rcbench-c6-2.13.0.bin`, the C6 image the panel carries, and
+commit. So are `rcbench-c6-2.13.0.bin`, the C6 image a panel of the release
+downloads for its C6 update, and
 `rcbench-c6-merged-2.13.0.bin`, the one for header H4; their names carry
 esp_hosted's version, and SHA256SUMS lists both. The release's
-`rcbench-dial-<version>.bin` and `rcbench-node-<role>-<version>.bin` are the images the panel
-carries.
+`rcbench-dial-<version>.bin` and `rcbench-node-<role>-<version>.bin` are the images a panel of the
+release downloads for the Dial's and the nodes' updates; SHA256SUMS holds
+the SHA-256 each download is checked against
+([Screens: Device images](Screens.md#device-images)).

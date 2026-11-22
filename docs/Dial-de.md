@@ -189,7 +189,11 @@ wird angenommen.
 
 ## Update über Bluetooth LE
 
-Das Panel bringt das Anwendungs-Image des Dial mit und sendet es über BLE.
+Das Panel sendet das Anwendungs-Image des Dial über BLE. Das Panel-Image
+bringt es nicht mit: Das Halten des Schritts DIAL lädt
+`rcbench-dial-<Version>.bin` aus dem Release, das das Panel ausführt, oder
+liest es aus `BENCH/UPDATES` der SD-Karte, und prüft es vorher
+([Bildschirme: Geräte-Images](Screens-de.md#geräte-images)).
 Das Protokoll ist `protocols/bleota`
 ([README](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md));
 die Seite des Panels ist die Zeile DIAL-FIRMWARE auf der Seite, die der
