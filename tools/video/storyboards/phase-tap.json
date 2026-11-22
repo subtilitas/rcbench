@@ -1710,6 +1710,15 @@
      "say": "One warning before a run. The supply that feeds the controller through the X T 60 also feeds the servo rails. A servo left on those pins gets the controller's voltage. Unplug every servo first."
     },
     {
+     "dur": 9,
+     "n": 6,
+     "card": {
+      "title": "Red wire out of the signal plug",
+      "text": "The ESC's BEC and the port's 5 V must not meet."
+     },
+     "say": "And the signal lead. Take the red wire out of the controller's servo plug before it goes onto the port. The controller's own 5 volt supply sits on that wire, and the port has 5 volts of its own. Signal and ground are all the bench needs."
+    },
+    {
      "view": "setup-tap",
      "dur": 6,
      "n": 7,
