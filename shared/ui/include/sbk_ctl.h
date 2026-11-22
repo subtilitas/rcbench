@@ -32,6 +32,31 @@
  *   push a good copy one place on.  A list or read that finds no card puts
  *   the offer back to waiting for the next mount.
  *
+ * The restore offer's states (sbk_offer_t) and what moves them.  PULL is
+ * a card gone, or another card in its place (a new mount number), which
+ * is PULL and then MOUNT in one frame.  An answer to a request handed out
+ * before a PULL is not the offer's.  "-" leaves the state as it is.
+ *
+ * | event                        | WAIT     | CHECKING            | DUE               | SHOWN                    |
+ * |------------------------------|----------|---------------------|-------------------|--------------------------|
+ * | MOUNT                        | CHECKING | -                   | -                 | -                        |
+ * | PULL                         | -        | WAIT                | WAIT              | WAIT; BACKUP: No card    |
+ * | list OK                      | -        | read newest; none: DONE | newest picked again; none: DONE | the screen checks its choice |
+ * | list NO_CARD                 | -        | WAIT (CHECKING with a card in) | -      | -                        |
+ * | list, another error          | -        | DONE                | -                 | -                        |
+ * | read: other settings         | -        | DUE                 | -                 | -                        |
+ * | read: same, refused, error   | -        | DONE                | -                 | -                        |
+ * | read NO_CARD                 | -        | WAIT (CHECKING with a card in) | -      | -                        |
+ * | SAFE on OVERVIEW             | -        | -                   | SHOWN             | -                        |
+ * | SAFE, BACKUP open as offer   | -        | -                   | SHOWN, newest chosen | -                     |
+ * | ARMED                        | -        | -                   | - (not shown)     | - (no hold)              |
+ * | BACKUP left: SKIP, BACK, home| DONE (if it was the offer's) | - | -              | DONE                     |
+ * | a LOAD put in force          | DONE     | DONE                | DONE              | - (left: DONE)           |
+ * | the store holds other settings | DONE   | DONE                | DONE              | -                        |
+ *
+ * DONE is left by nothing: the offer comes once a start.  No automatic
+ * copy is written before DONE.
+ *
  * SPDX-License-Identifier: MIT
  */
 #pragma once

@@ -7097,8 +7097,12 @@ Dateien eines haben, sonst `AUTO1.TXT`, `AUTO2.TXT`, `AUTO3.TXT`,
 einmal je Start. Bis es beantwortet ist, wird keine automatische Kopie
 geschrieben, damit eine Kopie der Standardwerte keine gute Kopie
 weiterschiebt. Ein Speichern anderer Einstellungen, bevor das Angebot
-erscheint, beendet es. Wird die Karte gezogen, bevor die neueste Datei
-gelesen ist, prüft das Panel beim nächsten Einstecken erneut.
+erscheint, beendet es, ebenso eine Datei, die von Hand über
+Einstellungen laden geladen wird. Wird die Karte gezogen oder getauscht,
+bevor das Angebot beantwortet ist, beginnt es von vorn: Die nächste Karte
+wird gelistet und ihre neueste Datei erneut gelesen; ein Angebot auf dem
+Bildschirm zeigt bis dahin `Keine Karte.` und kommt mit der neuesten Datei
+dieser Karte gewählt zurück.
 
 **Was die Datei enthält.** Jede Einstellung des Schemas (die Listen von
 SETUP, MOTOR & ESC > SETTINGS, SUPPLY, SERVO, die vier INA3221-Schlüssel

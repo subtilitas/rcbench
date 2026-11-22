@@ -6548,8 +6548,11 @@ one, else `AUTO1.TXT`, `AUTO2.TXT`, `AUTO3.TXT`, `SETTINGS.TXT` in that
 order. HOLD 2s TO LOAD loads it; SKIP or the home tag returns to the menu.
 The offer comes once a start. Until it is answered, no automatic copy is
 written, so a copy of the defaults does not push a good copy one place on.
-A save of other settings before the offer shows ends the offer. A card
-pulled before the newest file is read leaves the offer to the next mount.
+A save of other settings before the offer shows ends the offer, and so
+does a file loaded by hand through Load settings. A card pulled or swapped
+before the offer is answered sends it back to the start: the next card is
+listed and its newest file read again; an offer on the screen shows `No
+card.` until then, and comes back with that card's newest file chosen.
 
 **What the file holds.** Every setting of the schema (the lists of SETUP,
 MOTOR & ESC > SETTINGS, SUPPLY, SERVO, the four INA3221 keys of 0.21 that

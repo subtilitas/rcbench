@@ -826,6 +826,118 @@ TEST_CASE(a_file_written_again_after_the_choice_is_refused_and_listed_anew)
     CHECK_FEQ(settings_get(SET_BRIGHTNESS), 80.0f);
 }
 
+/** @brief The name of the file BACKUP has chosen, "" for none. */
+static const char *chosen_name(void)
+{
+    uint8_t n = 0u;
+    const sb_entry_t *f = sbk_files(&n);
+    const int i = sbk_screen_chosen();
+    return (i >= 0 && i < (int)n) ? f[i].name : "";
+}
+
+TEST_CASE(an_offer_put_off_on_motor_comes_back_after_a_card_pull)
+{
+    fake_fresh();
+    put_backup("AUTO1.TXT", "2026-11-20 10:00:00 UTC");
+    start(true, true);
+    ui_router_goto(SCREEN_MOTOR);
+    settle();
+    CHECK_EQ(sbk_offer_state(), SBK_OFFER_DUE);
+    g_feed.mounted = false;
+    settle();
+    CHECK_EQ(sbk_offer_state(), SBK_OFFER_WAIT);
+    g_feed.mounted = true;
+    settle();
+    CHECK_EQ(sbk_offer_state(), SBK_OFFER_DUE);
+    ui_router_goto(SCREEN_OVERVIEW);
+    settle();
+    CHECK_EQ(ui_router_current(), SCREEN_SET_LOAD);
+    CHECK(sbk_screen_offer());
+    CHECK_STR_EQ(chosen_name(), "AUTO1.TXT");
+    CHECK(sbk_screen_hold_ready());
+    CHECK(find("AUTO2.TXT") == NULL);
+}
+
+TEST_CASE(a_shown_offer_says_no_card_and_comes_back_with_the_card)
+{
+    fake_fresh();
+    put_backup("AUTO1.TXT", "2026-11-20 10:00:00 UTC");
+    start(true, true);
+    settle();
+    CHECK_EQ(sbk_offer_state(), SBK_OFFER_SHOWN);
+    g_feed.mounted = false;
+    settle();
+    CHECK_EQ(ui_router_current(), SCREEN_SET_LOAD);
+    CHECK_EQ(sbk_offer_state(), SBK_OFFER_WAIT);
+    CHECK_EQ(sbk_list_code(), SB_NO_CARD);
+    CHECK(!sbk_screen_hold_ready());
+    g_feed.mounted = true;
+    settle();
+    CHECK_EQ(sbk_offer_state(), SBK_OFFER_SHOWN);
+    CHECK(sbk_screen_offer());
+    CHECK_STR_EQ(chosen_name(), "AUTO1.TXT");
+    CHECK(sbk_screen_hold_ready());
+}
+
+TEST_CASE(another_card_during_the_check_is_checked_itself)
+{
+    fake_fresh();
+    put_backup("AUTO1.TXT", "2026-11-20 10:00:00 UTC");
+    start(true, true);
+    frame(0.016f);                  /* the list goes out */
+    frame(0.016f);                  /* listed; the read of AUTO1 goes out */
+    CHECK_EQ(sbk_offer_state(), SBK_OFFER_CHECKING);
+    /* Another card, whose only file is SETTINGS.TXT. */
+    CHECK_EQ(f_rename(NULL, "AUTO1.TXT", "SETTINGS.TXT"), SB_IO_OK);
+    g_feed.mount = 1u;
+    settle();
+    CHECK_EQ(ui_router_current(), SCREEN_SET_LOAD);
+    CHECK_STR_EQ(chosen_name(), "SETTINGS.TXT");
+    CHECK(sbk_screen_hold_ready());
+}
+
+TEST_CASE(a_load_by_hand_answers_an_offer_not_yet_shown)
+{
+    fake_fresh();
+    put_backup("AUTO1.TXT", "2026-11-20 10:00:00 UTC");
+    start(true, true);
+    ui_router_goto(SCREEN_SETUP);
+    settle();
+    CHECK_EQ(sbk_offer_state(), SBK_OFFER_DUE);
+    sbk_screen_open(false);
+    settle();
+    tap_body(sbk_screen_row(0));
+    hold_load();
+    CHECK_EQ(sbk_load_state(), SBK_LOAD_DONE);
+    CHECK_EQ(sbk_offer_state(), SBK_OFFER_DONE);
+    tap_body(sbk_screen_part(SBK_PART_BACK));
+    ui_router_goto(SCREEN_OVERVIEW);
+    settle();
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+}
+
+TEST_CASE(a_list_while_the_offer_waits_picks_its_file_again)
+{
+    fake_fresh();
+    put_backup("AUTO1.TXT", "2026-11-19 10:00:00 UTC");
+    put_backup("AUTO2.TXT", "2026-11-20 10:00:00 UTC");
+    start(true, true);
+    ui_router_goto(SCREEN_MOTOR);
+    settle();
+    CHECK_EQ(sbk_offer_state(), SBK_OFFER_DUE);
+    CHECK_EQ(sbk_offer_index(), 1);
+    /* AUTO1.TXT goes, through FILES or a browser; a list reads it. */
+    CHECK_EQ(f_remove(NULL, "AUTO1.TXT"), SB_IO_OK);
+    sbk_ask_list();
+    settle();
+    CHECK_EQ(sbk_offer_index(), 0);
+    ui_router_goto(SCREEN_OVERVIEW);
+    settle();
+    CHECK_EQ(ui_router_current(), SCREEN_SET_LOAD);
+    CHECK_STR_EQ(chosen_name(), "AUTO2.TXT");
+    CHECK(sbk_screen_hold_ready());
+}
+
 int main(void)
 {
     RUN(save_settings_writes_the_stored_settings_and_says_so);
@@ -845,5 +957,10 @@ int main(void)
     RUN(a_card_gone_before_the_offer_s_read_is_looked_at_again);
     RUN(another_card_under_backup_loads_nothing_without_a_new_choice);
     RUN(a_file_written_again_after_the_choice_is_refused_and_listed_anew);
+    RUN(an_offer_put_off_on_motor_comes_back_after_a_card_pull);
+    RUN(a_shown_offer_says_no_card_and_comes_back_with_the_card);
+    RUN(another_card_during_the_check_is_checked_itself);
+    RUN(a_load_by_hand_answers_an_offer_not_yet_shown);
+    RUN(a_list_while_the_offer_waits_picks_its_file_again);
     return test_summary("sbk_screen");
 }

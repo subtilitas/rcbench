@@ -50,6 +50,10 @@ typedef struct {
     char        load_name[SB_NAME_MAX]; /**< the file it read           */
     sbk_offer_t offer;         /**< the restore offer                   */
     int         offer_index;   /**< the file it names in @c files       */
+    unsigned    offer_gen;     /**< counts the offer's restarts         */
+    unsigned    busy_gen;      /**< offer_gen when the request went out:
+                                    an answer of an older one is not the
+                                    offer's                              */
 } sbk_state_t;
 
 /** @brief The driver's one instance. */
@@ -98,8 +102,12 @@ static void offer_follow(void)
         && !settings_stored_defaults()) {
         k.offer = SBK_OFFER_DONE;
     }
+    /* Over the menu, or on the offer's own screen when it was there as
+     * the card came back. */
     if (k.offer == SBK_OFFER_DUE && !k.armed
-        && ui_router_current() == SCREEN_OVERVIEW) {
+        && (ui_router_current() == SCREEN_OVERVIEW
+            || (ui_router_current() == SCREEN_SET_LOAD
+                && sbk_screen_offer()))) {
         k.offer = SBK_OFFER_SHOWN;
         sbk_screen_open(true);
     }
@@ -134,6 +142,7 @@ static void without_card(void)
 static bool next(sb_req_t *req)
 {
     memset(req, 0, sizeof(*req));
+    k.busy_gen = k.offer_gen;
     if (k.owe_read) {
         k.owe_read = false;
         k.busy_check = k.read_check;
@@ -181,6 +190,17 @@ static bool next(sb_req_t *req)
  */
 static void card_gone(bool mounted)
 {
+    /* The offer named a file of that card: it starts again at the next
+     * mount, and answers to requests made before are not its. */
+    if (k.offer == SBK_OFFER_CHECKING || k.offer == SBK_OFFER_DUE
+        || k.offer == SBK_OFFER_SHOWN) {
+        k.offer = SBK_OFFER_WAIT;
+        k.offer_index = -1;
+        ++k.offer_gen;
+        if (k.owe_read && k.read_check) {
+            k.owe_read = false;
+        }
+    }
     k.count = 0u;
     memset(k.files, 0, sizeof(k.files));
     k.list = mounted ? SBK_LIST_NONE : SBK_LIST_READY;
@@ -214,12 +234,9 @@ bool sbk_tick(const sbk_feed_t *f, sb_req_t *req)
     if (f->committed && f->mounted) {
         k.owe_auto = true;
     }
-    if (mounted_now && k.offer == SBK_OFFER_WAIT) {
+    if ((mounted_now || other_card) && k.offer == SBK_OFFER_WAIT) {
         k.offer = SBK_OFFER_CHECKING;
         k.owe_list = true;
-    }
-    if (!f->mounted && k.offer == SBK_OFFER_CHECKING) {
-        k.offer = SBK_OFFER_WAIT;        /* the next card is looked at */
     }
     offer_follow();
     if (k.busy) {
@@ -294,6 +311,23 @@ static void offer_list(void)
                    k.files[newest].name);
 }
 
+/**
+ * @brief A list of the same card while the offer is due: the file it names
+ *        is picked again, as the files may have moved; none left, nothing
+ *        to offer.
+ * @param result The list's answer.
+ */
+static void offer_relist(uint8_t result)
+{
+    if (k.offer != SBK_OFFER_DUE || result != SB_OK) {
+        return;
+    }
+    k.offer_index = sb_newest(k.files, k.count);
+    if (k.offer_index < 0) {
+        k.offer = SBK_OFFER_DONE;
+    }
+}
+
 /** @brief The offer's read: due when the file holds other settings. */
 static void offer_read(const sb_done_t *d)
 {
@@ -359,6 +393,11 @@ static void load_read(const sb_done_t *d, bool armed)
     settings_apply_all();
     k.why = SBK_WHY_NONE;
     k.load = SBK_LOAD_DONE;
+    /* Settings chosen by hand answer the offer, before the save of them
+     * reaches the store. */
+    if (k.offer != SBK_OFFER_SHOWN) {
+        k.offer = SBK_OFFER_DONE;
+    }
 }
 
 void sbk_done(const sb_done_t *d, bool armed)
@@ -367,6 +406,7 @@ void sbk_done(const sb_done_t *d, bool armed)
      * reads it too. */
     k.armed = armed;
     const bool check = k.busy_check;
+    const bool fresh = k.busy_gen == k.offer_gen;
     k.busy = false;
     k.busy_check = false;
     if (d == NULL) {
@@ -389,12 +429,17 @@ void sbk_done(const sb_done_t *d, bool armed)
         k.count = (d->count <= SB_FILES) ? d->count : SB_FILES;
         memcpy(k.files, d->files, sizeof(k.files));
         sbk_screen_relisted(before, before_n);
-        offer_list();
+        if (fresh) {
+            offer_list();
+            offer_relist(d->result);
+        }
         break;
     }
     case SB_REQ_READ:
         if (check) {
-            offer_read(d);
+            if (fresh) {
+                offer_read(d);
+            }
         } else {
             load_read(d, armed);
         }
