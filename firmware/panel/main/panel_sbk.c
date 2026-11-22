@@ -251,8 +251,9 @@ void panel_sbk_card_serve(void)
 
 void panel_sbk_frame(bool committed, bool armed)
 {
-    /* The answer with this frame's ARMED: a load that arrives in the first
-     * frame that sees ARMED is refused (sbk_done()). */
+    /* The answer with ARMED as the caller read it after the router's
+     * tick, an arm waiting or queued included: a load that arrives then is
+     * refused (sbk_done()). */
     if (s_req_out && atomic_load(&s_answered) == atomic_load(&s_sent)) {
         s_req_out = false;
         sbk_done(&s_done, armed);

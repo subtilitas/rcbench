@@ -3,8 +3,9 @@
  * sbk_screen.h): SETUP > SD CARD's SAVE SETTINGS and LOAD SETTINGS, the
  * automatic copy at each save to the store, the alert of a copy that does
  * not reach the card, the restore offer and its conditions, the 2s hold at
- * 1999 and 2000ms, the lines a load refuses, and a file whose first
- * lines lie past the 256B a list reads.  The card is a folder in
+ * 1999 and 2000ms, the lines a load refuses, a load refused while an ARM
+ * is queued or waits, and a file whose first lines lie past the 256B a
+ * list reads.  The card is a folder in
  * memory (sbk_card_rig.h); the panel's card task is sb_run() on it, called
  * between frames.
  *
@@ -12,6 +13,7 @@
  */
 #include "settings_rig.h"
 
+#include "flash_gate.h"
 #include "rcbench_version.h"
 #include "sbk_card_rig.h"
 #include "sbk_ctl.h"
@@ -581,6 +583,64 @@ TEST_CASE(a_file_read_in_the_frame_that_arms_is_not_put_in_force)
     CHECK(!settings_dirty());
 }
 
+/**
+ * @brief One frame in panel_frame_loop()'s order around an ARM: the bench's
+ *        ARMED taken at the frame's start, the router's tick, which queues
+ *        an ARM (@p queued) the control task has not taken, or an arm that
+ *        waits for the line (@p waits); then panel_sbk_frame() with ARMED
+ *        as panel_frame.c passes it, arm_live_or_coming(): flash_gate_arm()
+ *        of the snapshot and the ARM counts, read after the tick.
+ */
+static void frame_arm_under_way(bool queued, bool waits)
+{
+    const bool armed_now = g_feed.armed;     /* the frame's start */
+    ui_router_tick(0.016f);
+    const unsigned sent = queued ? 1u : 0u;  /* the ARM the tick queued */
+    const bool armed = flash_gate_arm(armed_now, waits, sent, 0u);
+    if (g_answered) {
+        g_answered = false;
+        sbk_done(&g_done, armed);
+    }
+    g_feed.armed = armed;
+    sb_req_t q;
+    if (sbk_tick(&g_feed, &q)) {
+        sb_run(&k_io, &q, sbk_buffer(), sbk_buffer_size(), &g_done);
+        g_answered = true;
+        ++g_requests;
+    }
+    g_feed.armed = armed_now;
+}
+
+TEST_CASE(a_file_read_while_an_arm_is_queued_or_waits_is_not_put_in_force)
+{
+    /* 0: an ARM queued by the frame's own router tick; 1: an arm waiting
+     * for the line; 2: neither, the limit at which the file loads. */
+    for (int c = 0; c < 3; ++c) {
+        fake_fresh();
+        put_backup("AUTO1.TXT", "x");
+        start(false, true);
+        settle();
+        sbk_screen_open(false);
+        settle();
+        /* SAFE when the read is handed out; the card task reads the file. */
+        sbk_ask_load(0);
+        frame(0.016f);
+        CHECK(g_answered);
+        /* SAFE at the frame's start; the answer is handed in after the
+         * router's tick. */
+        frame_arm_under_way(c == 0, c == 1);
+        if (c < 2) {
+            CHECK_EQ(sbk_load_state(), SBK_LOAD_FAILED);
+            CHECK_EQ(sbk_load_why(NULL, NULL), SBK_WHY_ARMED);
+            CHECK_FEQ(settings_get(SET_BRIGHTNESS), 60.0f);
+            CHECK(!settings_dirty());
+        } else {
+            CHECK_EQ(sbk_load_state(), SBK_LOAD_DONE);
+            CHECK_FEQ(settings_get(SET_BRIGHTNESS), 40.0f);
+        }
+    }
+}
+
 /** @brief Brightness in file @p name of the folder; -1 for none. */
 static float file_brightness(const char *name)
 {
@@ -1031,6 +1091,7 @@ int main(void)
     RUN(a_load_lists_each_refused_line_and_a_cut_file_loads_nothing);
     RUN(armed_or_no_card_loads_nothing);
     RUN(a_file_read_in_the_frame_that_arms_is_not_put_in_force);
+    RUN(a_file_read_while_an_arm_is_queued_or_waits_is_not_put_in_force);
     RUN(a_file_with_its_first_lines_past_256_bytes_loads);
     RUN(a_copy_owed_while_backup_shows_waits_and_the_load_reads_the_file_shown);
     RUN(a_list_that_changes_under_a_choice_drops_the_choice);

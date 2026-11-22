@@ -6540,8 +6540,9 @@ place of the list:
 its key, its code and the reason. The first 16 refused lines are kept; a
 line under them counts the rest. A file that is refused whole loads
 nothing and reads `<file> refused: code n, line m.` A file whose read ends
-in a frame that sees the bench ARMED is not loaded either, whatever the
-bench was at the hold: `<file> not loaded: the bench is ARMED.`
+in a frame that sees the bench ARMED, or an ARM that waits or is queued,
+is not loaded either, whatever the bench was at the hold:
+`<file> not loaded: the bench is ARMED.`
 
 **The restore offer.** A panel that starts with the defaults only (NVS held
 no settings, or the defaults after an erase) reads the card's newest file at

@@ -14,7 +14,9 @@
  *        handed to the logger, an answer handed to the driver.
  * @param committed The settings were written to NVS (non-volatile storage)
  *                  this frame: settings_save_tick() answered true.
- * @param armed     The bench is ARMED.
+ * @param armed     The bench is ARMED, an arm waits or an ARM is queued
+ *                  (arm_live_or_coming()), read after the router's tick:
+ *                  a load whose answer arrives then is refused.
  */
 void panel_sbk_frame(bool committed, bool armed);
 

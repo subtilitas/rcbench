@@ -900,8 +900,11 @@ void panel_frame_loop(void)
         const bool committed = settings_save_tick(quiet && !s_artbusy
                                                   && !atomic_load(&s_keeping));
         /* And the settings backup: a save to NVS just made is copied to
-         * the card, by the logger task (panel_sbk.h). */
-        panel_sbk_frame(committed, armed_now);
+         * the card, by the logger task (panel_sbk.h).  ARMED as the flash
+         * save's gate reads it, now: an ARM the router queued this frame,
+         * or an arm waiting, refuses a load that arrives in it, which the
+         * ARMED of the frame's start would let through. */
+        panel_sbk_frame(committed, arm_live_or_coming());
         /* And the ramp, from the task that owns the values, for the control
          * task to read on its next pump. */
         publish_throttle_ramp();
