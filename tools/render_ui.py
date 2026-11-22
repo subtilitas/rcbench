@@ -61,6 +61,7 @@ SOURCES = [
     "shared/bench/kst_link.c",
     "shared/outputs/kst_port.c",
     "shared/link/link_dev.c",
+    "shared/link/link_gate.c",
     "protocols/kst/kst_session.c",
     "protocols/kst/kst_wire.c",
     "test/host/render_hitec.c",
@@ -74,6 +75,9 @@ SOURCES = [
     # The Bluetooth IMU: its screen handed a view, SCAN tapped; SENSORS on
     # the IMU entry.
     "test/host/render_imu.c",
+    # The settings backup: its files on a folder in memory, the driver's
+    # requests run between frames.
+    "test/host/render_sbk.c",
     # UPDATES' steps: the views handed in, SKIP tapped.
     "test/host/render_upd_wiz.c",
     "shared/bench/hitec_link.c",
@@ -813,8 +817,14 @@ SCREENS = {
     "wifi-older": ("wifi-older.png", "wifi", "dark"),
     "wifi-rebuild": ("wifi-rebuild.png", "wifi", "dark"),
     "wifi-installed": ("wifi-installed.png", "wifi", "dark"),
-    # PANEL UPDATE: writing, written, failed.
+    # PANEL UPDATE: writing, written, failed.  Writing an image the release
+    # key does not vouch for, with the warning; and the second hold,
+    # INSTALL ANYWAY, of a build that enforces the signature.
     "panel-update": ("panel-update.png", "panel-update", "dark"),
+    "panel-update-unsigned": ("panel-update-unsigned.png", "panel-update",
+                              "dark"),
+    "panel-update-anyway": ("panel-update-anyway.png", "panel-update",
+                            "dark"),
     "panel-update-done": ("panel-update-done.png", "panel-update", "dark"),
     "panel-update-failed": ("panel-update-failed.png", "panel-update",
                             "dark"),
@@ -917,6 +927,14 @@ SCREENS = {
                                    "setup", "dark"),
     "setup-wireless-search-scan": ("setup-wireless-search-scan.png",
                                    "setup", "dark"),
+    # The settings backup: SD CARD at the end of its list, SAVE SETTINGS
+    # written; BACKUP from LOAD SETTINGS with the newest copy chosen; the
+    # restore offer at start; a hand-edited file loaded, three lines
+    # refused.
+    "setup-card-backup": ("setup-card-backup.png", "setup", "dark"),
+    "setup-backup": ("setup-backup.png", "set-load", "dark"),
+    "setup-backup-offer": ("setup-backup-offer.png", "set-load", "dark"),
+    "setup-backup-loaded": ("setup-backup-loaded.png", "set-load", "dark"),
     # RUDDER AUTO: SAFE on the bench's outputs, READY's PORT row red; its
     # SETTINGS list; on the rbmod carrier SAFE with the hold offered, the
     # ARM + START sequence waiting for the PROG 5V, and its read-back

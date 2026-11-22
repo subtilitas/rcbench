@@ -798,6 +798,14 @@ jobs:
       - name: Sensor node case matches its spec and clears the boards
         run: python3 hardware/mechanical/_gen_node_case.py --check
 
+      # The 2 parts of the display node's case with XT30 openings: the
+      # files match their spec, each part is a valid solid in one piece,
+      # none shares volume with the other or with the display board, and
+      # the lid closes on the box's rim. Its tests are
+      # test/tools/test_display_case.py, in the pytest step above.
+      - name: Display node case matches its spec and its lid closes
+        run: python3 hardware/mechanical/_gen_display_case.py --check
+
       # The M5Stack Dial's solids are surfaces fitted to M5Stack's mesh.
       # OpenCASCADE meshes each solid again; the two meshes are within
       # 0.15mm of each other both ways and 1% in volume.
@@ -1257,6 +1265,20 @@ jobs:
                     firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod-install.uf2
           python3 tools/stack_check.py --iomcu firmware/iomcu/build-rbmod
 
+      # The remote servo node's image (IOMCU_BOARD=rsn): the Core2350B's
+      # board identity, the stepping check and the POWER page.  No CAN
+      # controller on that board; its stacks are checked as the others are.
+      - name: The remote servo node's image
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: |
+          cmake -S firmware/iomcu -B firmware/iomcu/build-rsn -G Ninja \
+            -DIOMCU_BOARD=rsn
+          cmake --build firmware/iomcu/build-rsn -j"$(nproc)"
+          sha256sum firmware/iomcu/build-rsn/rcbench-iomcu-rsn.uf2 \
+                    firmware/iomcu/build-rsn/rcbench-iomcu-rsn-install.uf2
+          python3 tools/stack_check.py --iomcu firmware/iomcu/build-rsn
+
       - uses: actions/upload-artifact@v7
         with:
           name: iomcu
@@ -1283,6 +1305,17 @@ jobs:
             firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod-pt.uf2
             firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod.bin
             firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod.elf
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: iomcu-rsn
+          path: |
+            firmware/iomcu/build-rsn/rcbench-iomcu-rsn.uf2
+            firmware/iomcu/build-rsn/rcbench-iomcu-rsn-install.uf2
+            firmware/iomcu/build-rsn/rcbench-iomcu-rsn-pt.uf2
+            firmware/iomcu/build-rsn/rcbench-iomcu-rsn.bin
+            firmware/iomcu/build-rsn/rcbench-iomcu-rsn.elf
           if-no-files-found: error
 
   touch-injector:

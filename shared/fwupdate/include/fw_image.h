@@ -31,6 +31,7 @@
 #include <stdint.h>
 
 #include "fw_sha256.h"
+#include "fw_sig.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -93,6 +94,12 @@ typedef struct {
      * @brief The SHA-256 of the ELF file, from the application descriptor.
      */
     uint8_t      elf_sha[FW_SHA256_BYTES];
+    /**
+     * @brief What the release key says about the image (fw_sig.h).  The
+     *        checks here leave FW_SIG_NONE; the receiver that has the
+     *        signature sets it after them.
+     */
+    fw_sig_t     sig;
 } fw_image_info_t;
 
 /**

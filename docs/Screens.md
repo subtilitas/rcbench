@@ -4011,7 +4011,7 @@ Below the name are the entry's kind and state:
 
 | State | Meaning |
 |---|---|
-| FIXED | a folder used by the bench: the two log folders, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF`, `BENCH/ESCW/CONF`, `BENCH/BALANCE` and their parent folders, including `BENCH` and `USER`. RENAME and MOVE are unavailable because they would move its contents away from the expected path. NEW can create these folders; DELETE can remove an empty one. Each writer recreates its folder before writing, and readers treat a missing folder as they would on a new card |
+| FIXED | a folder used by the bench: the two log folders, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF`, `BENCH/ESCW/CONF`, `BENCH/BALANCE`, `BENCH/SETUP` and their parent folders, including `BENCH` and `USER`. RENAME and MOVE are unavailable because they would move its contents away from the expected path. NEW can create these folders; DELETE can remove an empty one. Each writer recreates its folder before writing, and readers treat a missing folder as they would on a new card |
 | LOCKED | the programmers' records, `BENCH/KST/CONF/KST.TXT`, `BENCH/HITEC/CONF/HITEC.TXT` and `BENCH/ESCW/CONF/ESCW.TXT`, plus their `KST.NEW`, `HITEC.NEW` and `ESCW.NEW` files while being written. Only INFO is available |
 | WRITING | a file open in the logger. Only INFO is available |
 
@@ -4874,6 +4874,12 @@ ESP32-P4 (chip ID 0x0012), the application's project name `rcbench-panel`, a ver
 form MAJOR.MINOR.PATCH and the appended SHA-256 (secure hash algorithm, 256
 bits). A second upload is refused while an image is waiting. CANCEL on the panel
 discards that image.
+A second file picker takes the image's release signature,
+`rcbench-panel-p4-vX.Y.Z.bin.sig`, 8 to 72 bytes; the page refuses another
+size before a byte is sent (`The signature file is not 8 to 72 bytes
+long.`). The signature is optional. It goes with the image in the same
+request, and the panel's answer ends with what the release key says
+([The release signature](#the-release-signature)).
 The screen shows the bytes received while an upload runs. The upload
 writes no flash: the panel keeps the file in PSRAM (pseudo-static
 random-access memory) until PANEL UPDATE writes it.
@@ -5190,6 +5196,29 @@ that runs already is not offered:
 
 ![The same version, another build](img/wifi-rebuild.png)
 ![The build that runs](img/wifi-installed.png)
+
+#### The release signature
+
+The question says what the release key says about the image, in one line
+under the versions: `SIGNED BY THE RCBENCH RELEASE KEY` in green, or `NOT
+SIGNED BY THE RCBENCH RELEASE KEY.` in amber with the reason, `The image
+comes with no signature.` or `The signature does not match.` The older
+image above came without its `.sig`; the rebuild came with a signature of
+another key. PANEL UPDATE repeats the line while it writes:
+
+![Writing an image without a signature](img/panel-update-unsigned.png)
+
+The panel verifies an ECDSA (elliptic curve digital signature algorithm)
+P-256 signature over the whole image against the release public key
+compiled into its firmware ([Security policy](../SECURITY.md#release-signatures)).
+Until the stable release that enforces the signature, an image without a
+valid one installs with the single 2s hold and this warning. A build with
+`RCBENCH_SIGN_ENFORCE=1` stops after the hold instead: PANEL UPDATE shows
+the reason and a second 2s hold, `HOLD 2s: INSTALL ANYWAY`. Nothing is
+written before that hold completes; CANCEL, STOP, ARMED and leaving the
+screen drop the image.
+
+![A build that enforces the signature: the second hold](img/panel-update-anyway.png)
 
 INSTALL is a 2s hold (`HOLD 2s TO INSTALL`). The browser cannot start it.
 It needs the bench SAFE, the supply output off, no log run open, no board
@@ -6456,13 +6485,205 @@ in force unchanged, and the line right of the title says why:
 | more than 2 folders | `A/B/C` (`A/B` is taken) | `At most 2 folder levels` |
 | a character other than A-Z, 0-9, `_` and `-` | `MY LOGS` | `A-Z, 0-9, _ and - only` |
 | a device name of Windows: CON, PRN, AUX, NUL, COM1 to COM9, LPT1 to LPT9 | `AUX/LOGS` | `Reserved name` |
-| a folder of the bench's own files: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW`, `BENCH/BALANCE` | `BENCH/KST` (`BENCH/KSTX` is taken) | `Reserved for the bench's files` |
+| a folder of the bench's own files: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW`, `BENCH/BALANCE`, `BENCH/SETUP` | `BENCH/KST` (`BENCH/KSTX` is taken) | `Reserved for the bench's files` |
 
 Every folder name accepted by the panel is a FAT (File Allocation Table)
 8.3 short name, identical on every computer. The longest folder is 17 characters,
 `ABCDEFGH/12345678`. If a stored folder name is invalid, for example one saved by another
 firmware version, the panel does not write there: the logs go to the
 default folder of their kind, and LOGS lists that folder.
+
+### SD CARD: the settings backup
+
+The panel keeps its settings in NVS (non-volatile storage) on its own flash.
+A full flash of the panel erases NVS, and the bindings of the Dial, the
+nodes and the IMU with it. The settings backup keeps a copy on the card.
+
+![SD CARD at the end of its list: SAVE SETTINGS written](img/setup-card-backup.png)
+
+| Row | Tap | Value | Takes no tap |
+| --- | --- | --- | --- |
+| Save settings | writes the stored settings as `BENCH/SETUP/SETTINGS.TXT`; each tap replaces it | `WRITING`, `WRITTEN`, `CARD FULL` or `FAILED, CODE n` (the codes below) | `No card`; `Changes not saved: SAVE them first` while SAVE is offered: the file holds what the store holds, not an edit |
+| Load settings | opens BACKUP | none | `Not while ARMED` |
+
+**The files.** All of them are in `BENCH/SETUP`, a FIXED folder of
+[Files](#files):
+
+| File | Written |
+| --- | --- |
+| `SETTINGS.TXT` | by Save settings |
+| `AUTO1.TXT` | at each write of the settings to NVS while a card is in: the newest copy |
+| `AUTO2.TXT`, `AUTO3.TXT` | the copies before it; the next copy removes `AUTO3.TXT` |
+| `AUTO.TMP`, `SETTINGS.TMP` | a file while it is written |
+
+A file is written whole under its `.TMP` name first. Only then do the copies
+move on: `AUTO3.TXT` goes, `AUTO2.TXT` becomes `AUTO3.TXT`, `AUTO1.TXT`
+becomes `AUTO2.TXT`, and the new file becomes `AUTO1.TXT`. A full card or a
+failed write leaves the copies as they were. The writes run on the logger
+task, beside the logs; the screens and the control task do not wait for
+the card. Each request takes the card's job lock that FILES and the Wi-Fi
+page's writes share, and does not wait for it: while one of them holds
+it, the request waits for the logger's next pass. A copy therefore never
+moves the files while an edit of one of them is saved.
+
+**The automatic copy.** A save that reaches NVS with a card mounted owes a
+copy; a save without a card writes none, and a card put in later gets none
+for it. While BACKUP shows, an owed copy waits and is written when BACKUP is
+left, so the files listed keep their names and dates; after each copy, the
+list is read again. A copy that does not reach the card shows once in the
+alert band:
+`Settings copy not written: the card is full.` or `Settings copy not
+written: card code n.` The next failure shows again only after a copy that
+worked. A failed copy is no error of the bench: the outputs, the supply and
+ARMED stay as they are. It loses nothing the bench drives, and the
+settings themselves are in NVS.
+
+**BACKUP.** Load settings opens it, and it reads the folder anew each time:
+
+![BACKUP: the card's settings files, the newest chosen](img/setup-backup.png)
+
+- Left, one card per file: its name, the date of its `Written:` line and
+  the panel version of its `Panel:` line, as the first 256B of the file
+  give them: a line past them reads `date not known` or `panel not
+  known`, and a line they cut shows its part inside them. `date not
+  known` also stands for a
+  file written while the panel's clock was not set: the panel has no RTC
+  (real-time clock) chip and sets its clock only from an NTP (Network Time
+  Protocol) answer. A file that is no settings file reads `No settings
+  file: code n` (the file codes below).
+- A tap on a file chooses it. Right, the chosen file's name, date and
+  version.
+- HOLD 2s TO LOAD loads the chosen file: a 2s hold, as every action that
+  replaces much. A release before 2s shows `Hold 2s to load the settings
+  file.` in the alert band. It takes no press while ARMED, while no file is
+  chosen, or for a file that is no settings file; the line above it says
+  which.
+- BACK, or the home tag, returns to SD CARD.
+- A card pulled or swapped while BACKUP shows clears the list, the choice
+  and a hold under way; the list shows `No card.`, and the next card is
+  listed anew.
+- The list reads each file whole, up to 24,576B, the largest file a load
+  takes; a read stops at 24,577B, so a list reads 98,308B at most for the
+  four files. It keeps the CRC-32 (cyclic redundancy check) of each
+  file's bytes, the sum FILES' editor and the Wi-Fi page's ETag use. A load
+  checks that the file read is the file listed: the same size and the same
+  CRC-32. A file written again since, by a browser, FILES or a computer,
+  loads nothing, also when the edit keeps the size and every first line;
+  the alert band shows
+  `The settings file changed on the card: choose again.`, and the list is
+  read again with nothing chosen. A rewrite to other bytes of the same
+  size and the same CRC-32 is not detected.
+
+A load replaces every setting: the file's value where a line gives one, the
+default where none does. The values take effect at once, as an edit does,
+and the save to NVS is asked for: it is taken the next time the bench is
+idle (see [Keeping the values](#keeping-the-values)). The answer takes the
+place of the list:
+
+![A hand-edited file loaded, three lines refused](img/setup-backup-loaded.png)
+
+`<file> loaded: n changed, m refused`, then each refused line: its number,
+its key, its code and the reason. The first 16 refused lines are kept; a
+line under them counts the rest. A file that is refused whole loads
+nothing and reads `<file> refused: code n, line m.` A file whose read ends
+in a frame that sees the bench ARMED, or an ARM that waits or is queued,
+is not loaded either, whatever the bench was at the hold:
+`<file> not loaded: the bench is ARMED.`
+
+**The restore offer.** A panel that starts with the defaults only (NVS held
+no settings, or the defaults after an erase) reads the card's newest file at
+the card's first mount. If that file holds other settings, BACKUP opens over
+the menu as soon as the bench is SAFE and the menu shows:
+
+![The restore offer at start](img/setup-backup-offer.png)
+
+The newest file is chosen: the latest `Written:` date where two files have
+one, else `AUTO1.TXT`, `AUTO2.TXT`, `AUTO3.TXT`, `SETTINGS.TXT` in that
+order. HOLD 2s TO LOAD loads it; SKIP or the home tag returns to the menu.
+The offer comes once a start. Until it is answered, no automatic copy is
+written, so a copy of the defaults does not push a good copy one place on.
+A save of other settings before the offer shows ends the offer, and so
+does a file loaded by hand through Load settings. A card pulled or swapped
+before the offer is answered sends it back to the start: the next card is
+listed and its newest file read again; an offer on the screen shows `No
+card.` until then, and comes back with that card's newest file chosen.
+
+**What the file holds.** Every setting of the schema (the lists of SETUP,
+MOTOR & ESC > SETTINGS, SUPPLY, SERVO, the four INA3221 keys of 0.21 that
+no list shows, and Units) and every string: the DUT name, the two log
+folders, and the bindings of the IMU, the Dial, the power node and the
+balance node, each an address and a name. Sensor SCL is not written: it
+follows Sensor SDA.
+
+**What it does not hold.** The Wi-Fi home network and its password,
+HOTSPOT PASSWORD, ACCESS CODE and the access code switch. They are in
+another NVS store, and they stay out: a card is read on every computer it
+goes into, and a file that is loaded must not switch the access code off
+or name a network the panel joins. BACKUP says so under the files. They
+are set again on [Wi-Fi](#wi-fi) after a full flash. The notes the panel
+keeps about an update (`fw_ota`) are no settings and stay out too.
+
+**The format, version 1.** Text a person reads and edits, one line a
+setting:
+
+```
+rcbench settings, format 1
+Panel: 0.23.15
+Written: 2026-11-21 14:05:33 UTC
+# Not in this file: the Wi-Fi home network and its password,
+# HOTSPOT PASSWORD and ACCESS CODE.
+# One line a setting: <key> = <value>.  A setting without a line loads
+# its default.  Keep the last line, end.
+pack_cells = 6                  # Cells, 1 to 14S
+theme = DARK                    # Theme: DARK, LIGHT
+plot_pan1 = OFF                 # One finger pans: ON, OFF
+srv_dut = "SERVO"               # Device under test, for the report
+dial_ble = "D4:F9:8D:00:3A:10 R" # Bound Dial: BLE address and its type
+end
+```
+
+- The key is the setting's NVS key; the comment after `#` names the
+  setting in English and gives its range or its options.
+- A number has as many digits after the point as its step; a switch is
+  `ON` or `OFF`; a choice is the English text of its option; a string is in
+  double quotes, `\"` and `\\` for a quote and a backslash, at most 23
+  bytes.
+- Keys and the words of a switch or a choice are read without case. Spaces
+  and tabs around a key and a value, empty lines, comments, LF and CR LF,
+  and a UTF-8 byte order mark are taken.
+- The last line that is not blank and not a comment is `end`. A file cut
+  short has none and is refused whole.
+- A file is 24,576 bytes at most; one the panel writes is about 12,100.
+
+| File code | Refused whole |
+| --- | --- |
+| 2 | more than 24,576 bytes |
+| 3 | line 1 is not `rcbench settings, format n` |
+| 4 | the format is not a number from 1 to 999 |
+| 5 | a format above 1, written by a newer panel |
+| 6 | no `end` as the last line: the file is cut |
+
+| Line code | Reason | The line is skipped because |
+| --- | --- | --- |
+| 1 | not key = value | no `=`, no key, or another `<word>:` line |
+| 2 | unknown key | no setting has that key |
+| 3 | key given twice | the key had a line before; the first one counts |
+| 4 | value not readable | not a number, no option of the choice, not ON or OFF, a string not in quotes |
+| 5 | out of range | outside the range, off the step by half a step or more, or a pin the row does not take |
+| 6 | text too long | a string over 23 bytes |
+| 7 | follows another | `sns_scl`, which follows Sensor SDA |
+| 8 | in use, kept | a task holds the setting, as the servo programmer holds a pin of its port; the setting keeps its value |
+
+| Card code | Meaning |
+| --- | --- |
+| 1 | no card |
+| 2 | the card is full |
+| 3 | the card takes no file: write protected, or a file holds a folder's name |
+| 4 | a write, a rename or a remove failed |
+| 5 | a read failed |
+| 6 | the file is gone |
+| 7 | the file is over 24,576 bytes |
+| 8 | a request the folder does not take |
 
 ### Keeping the values
 
@@ -7567,8 +7788,9 @@ Its result is on UPDATES.
 
 The 2s hold confirms both download and installation. There is no further
 question after the download. The
-panel joins the home network within 30s, then fetches two files of the
-release's tag over HTTPS, `SHA256SUMS` and `rcbench-panel-p4-v0.23.0.bin`.
+panel joins the home network within 30s, then fetches three files of the
+release's tag over HTTPS, `SHA256SUMS`, `rcbench-panel-p4-v0.23.0.bin` and
+its signature `rcbench-panel-p4-v0.23.0.bin.sig`.
 GitHub answers each with a redirect to its file host; the panel follows at
 most 3 redirects, and only to `github.com`, `release-assets.githubusercontent.com`
 and `objects.githubusercontent.com`. Then:
@@ -7582,6 +7804,12 @@ and `objects.githubusercontent.com`. Then:
    in `SHA256SUMS`.
 4. Every check an uploaded image passes ([Installing](#installing-panel-update))
    runs, and the image must name the release's version.
+5. The panel fetches the image's signature, `rcbench-panel-p4-v0.23.0.bin.sig`,
+   by the same rules and verifies it ([The release signature](#the-release-signature)).
+   An HTTP status other than 200 means no signature, and a body outside 8 to
+   72 bytes a signature that does not match; the download goes on to the
+   install either way. A connection that breaks, STOP or the time budget
+   ends the download.
 
 Only after these checks does installation begin, following the same steps
 as INSTALL: the radio switches off completely, the image is written, the

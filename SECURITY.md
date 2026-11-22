@@ -90,20 +90,96 @@ bundle of common certificate authorities. The image's SHA-256 (secure hash
 algorithm, 256 bits) must equal its line in `SHA256SUMS`, and every image
 check below runs, before the flash is written.
 
+## Release signatures
+
+Every firmware image a release publishes has a detached signature,
+`<image>.sig`, beside the asset or beside the member inside its ZIP
+archive: the panel application and merged image, the panel's bootloader,
+partition table and OTA (over-the-air) data, the IOmcu images (`.bin`,
+`.uf2` and the install `.uf2`, RP2350-CAN and rbmod), the C6 radio, the
+M5Stack Dial, the power node, the balance node and the display node
+(application and merged images). The signature is ECDSA (elliptic curve
+digital signature algorithm) on curve P-256 over the SHA-256 of the whole
+file, in the DER (distinguished encoding rules) form of
+`openssl dgst -sha256 -sign`, 8 to 72 bytes. `SHA256SUMS` does not list
+the `.sig` files.
+
+The release workflow (`.github/workflows/release.yml`) signs every `.bin`
+and `.uf2` file the build jobs hand over in one loop
+(`tools/sign_images.sh sign`), with the private key in the repository
+secret `RCBENCH_IMAGE_SIGNING` (PEM text). The key is written to a file
+created under umask 077 and removed when the step exits. A tag build
+without the secret fails before anything is signed. Before the draft
+release is created, every image beside the assets and inside every archive
+must have its `.sig`, and each must verify against the committed public
+key `firmware/panel/main/keys/release_signing_pub.pem`
+(`tools/sign_images.sh verify`); a missing signature or a secret whose
+public half is another key fails the release. The public key's
+fingerprint, the SHA-256 of its DER form, is
+`cf9320e466c7961fca210b1d56f49b3f89c1ddc14a92f15bd62778f880f7eda2`.
+
+The panel verifies the signature of its own application image with Mbed
+TLS 4.1.0 (`shared/fwupdate/fw_sign.c`) against the same public key,
+compiled into the firmware, over the whole image in PSRAM:
+
+- Upload over Wi-Fi: the page takes an optional `.sig` file beside the
+  image, checks its size (8 to 72 bytes) and sends it with the upload as
+  the hex digits of the query parameter `sig` of `POST /update`. The panel
+  verifies it once the image checks pass. The upload's answer and the
+  question on WI-FI say whether the image is signed.
+- Download from GitHub: after the image, the panel fetches
+  `rcbench-panel-p4-vX.Y.Z.bin.sig` over the same allowed hosts. An HTTP
+  status other than 200 means no signature; a body outside 8 to 72 bytes
+  or a redirect out of form is a signature that does not match. A broken
+  connection, STOP or the time budget ends the download and nothing is
+  installed.
+- PANEL UPDATE shows the verdict while it writes: SIGNED BY THE RCBENCH
+  RELEASE KEY, or NOT SIGNED BY THE RCBENCH RELEASE KEY with the reason
+  (no signature, or a signature that does not match).
+
+What the panel does with an image the release key does not vouch for is
+one compile-time switch, `RCBENCH_SIGN_ENFORCE`
+(`shared/fwupdate/include/fw_sig.h`). At 0, the setting of every build up
+to the stable release that enforces it, the image installs with the single
+2s INSTALL hold and the warning on the screen. At 1 it needs a second,
+separate 2s hold, INSTALL ANYWAY, on PANEL UPDATE; CANCEL, STOP, ARMED and
+leaving the screen drop the image. The release numbering gives the next
+stable release as 0.24.0 (an even minor number).
+
 Current limitations:
 
 - The page uses plain HTTP. On a home network, access codes and files
   cross the network without application-layer encryption.
 - The saved home-network password is unencrypted in NVS (non-volatile
   storage).
-- An uploaded image is checked against its own SHA-256, without a
-  signature. An image built as `rcbench-panel` for the ESP32-P4 can pass
-  those checks. A device between the browser and panel can replace an
-  upload on the network.
+- The release signature warns and does not refuse (`RCBENCH_SIGN_ENFORCE`
+  0). An uploaded image without a valid signature, built as
+  `rcbench-panel` for the ESP32-P4, installs after the warning with the
+  single 2s hold. A device between the browser and the panel can replace
+  an upload, and drop its `.sig`, on the network; the panel then shows NOT
+  SIGNED.
 - A downloaded image is tied to the release through the certificate
-  chain and `SHA256SUMS`, without a signature. A party able to publish a
-  repository release, or obtain a false certificate from a trusted
-  authority, can supply an installable image.
+  chain, `SHA256SUMS` and its signature. A party able to publish a
+  repository release without the signing key, or to obtain a false
+  certificate from a trusted authority, can supply an image that installs
+  after the warning.
+- A `v*` tag runs `release.yml` and `tools/sign_images.sh` from the tagged
+  commit with `RCBENCH_IMAGE_SIGNING` in the signing step's environment.
+  Whoever can push a tag can run any code with the key and so read it.
+  The repository has one collaborator; the secret is not held in a
+  protected environment, and no rule limits who creates a tag.
+- The public key is compiled into the panel firmware. Changing the key
+  needs a firmware release signed by the old key, or a USB flash; no key
+  is revoked.
+- The IOmcu images the panel carries are part of the panel application
+  image and covered by its signature. The IOmcu checks no signature of the
+  image the panel sends it over CAN (controller area network).
+- The panel does not verify the signatures of the C6 radio, Dial and node
+  images, neither of the ones it carries nor of ones it downloads; those
+  updates check the SHA-256 the panel sends (see the wireless devices
+  below).
+- The web flasher (`/rcbench/flash/`) copies each image's `.sig` beside it
+  and neither checks nor shows it.
 - Certificate validity dates are not checked, even after NTP (Network
   Time Protocol) sets the clock. mbedTLS is built with
   `CONFIG_MBEDTLS_HAVE_TIME_DATE` off, the ESP-IDF default. An expired
@@ -290,7 +366,7 @@ The following modules parse input from outside their own trusted state:
 | `shared/ui` | SD card directory listings, CSV column names and cells, any file of the card up to 1MiB as text in the text viewer (`text_view.c` over `shared/files/text_buf.c` and `text_hl.c`: a NUL byte in the first 4KiB refuses the file, over 65,536 line ends refuse it, a byte that starts no UTF-8 sequence, a control character and a later NUL draw as one `?` cell each, a line is classed in at most 128 spans; the editor writes a file only through a SAVE job to `<name>.NEW` while the bench is SAFE with no run logged, and takes a changed KST file's checksum line out, so a hand-edited file never passes the servo programmer as a servo's own image), and ESC profile names and manual text as drawn, cut and wrapped by character cells; touch coordinates turned into row and key indexes; the M5Stack Dial's notifications (`dial_ctl.c`): an EVENT taken only after the Dial's INFO named protocol 1 and only from its EVENT handle, decoded by `protocols/dialknob`, a repeated seq dropped, the held button and touch states never taken as a press, a scan's report listed only when it advertises the Dial's service; the balance node's notifications (`bal_ctl.c`): a report taken only after the node's INFO named protocol 1 and the balance role, decoded by `protocols/rcnode`, a STATUS on STREAM taken only when it decodes as one and counted as no report, a scan's report listed only when its manufacturer data names the balance role (a name alone never lists), a later report of a listed address only refreshing its RSSI and giving a name to one without; a report shown only for 1000ms after it came (`node_balance.c`); a CSV row appended only after a line end, one written first when the file's last byte is none |
 | `shared/artwork` | board drawing blocks fetched over the link and drawing records read back from flash (payload checked against a 16-bit CRC and a 32-bit FNV-1a hash before use) |
 | `shared/safety` | CONTROL page writes from the link (offset, count and values), which arm and clear the output stage |
-| `shared/settings` | setting values and texts loaded from NVS at start-up. Each value is brought to its schema: a switch to 0 or 1, an option out of range and a Sensor SDA (serial data) pin the bus cannot use to the default, a number snapped to its step, where it has one, and clamped to its range. Sensor SCL (serial clock) is derived from Sensor SDA, not read. The text (the device-under-test name) is cut to 23 characters and terminated. Not checked here: the characters of the text (`shared/gfx` decodes them for drawing), and whether a stored value inside today's range is the one that was saved |
+| `shared/settings` | setting values and texts loaded from NVS at start-up. Each value is brought to its schema: a switch to 0 or 1, an option out of range and a Sensor SDA (serial data) pin the bus cannot use to the default, a number snapped to its step, where it has one, and clamped to its range. Sensor SCL (serial clock) is derived from Sensor SDA, not read. The text (the device-under-test name) is cut to 23 characters and terminated. Not checked here: the characters of the text (`shared/gfx` decodes them for drawing), and whether a stored value inside today's range is the one that was saved. The settings files of the card's `BENCH/SETUP` folder (`sf_parse()`): at most 24,576 bytes, read whole; line 1 `rcbench settings, format n` with n from 1 to 999, a format above 1 refused; the last meaningful line `end`, else the whole file is refused; a line of at most 120 bytes, a key of at most 15 characters, each known key once; a value taken only when the schema takes it as written (`settings_takes()`: a switch 0 or 1, an option by its English text, a number inside its range and within half a step of its step), a string in double quotes with `\"` and `\\` escapes and at most 23 bytes; a refused line is skipped and kept as a line number and a code, at most 16 of them. A setting a task holds keeps its value. `sb_read()` reads only the folder's four names, into a buffer of 24,577 bytes |
 | `shared/touch` | the GT911 touch controller's point list as the panel driver reads it, from the glass at 0x5D and from a device at 0x14 that answered at start-up (`touch_merge.c` merges the two; a contact from 0x14 gets a track ID with bit 7 set): count, track IDs (identifiers), x and y. The panel driver drops a frame whose count is above 5 (`TOUCH_MAX_POINTS`), and `shared/touch` clamps the count to 5 as well; x and y are clamped to the resolution the controller reports at start-up (the LCD (liquid crystal display) size when an axis reads 0 or the read fails), before rotation and mirroring; a track ID repeated in one frame is kept once; a contact that moves more than 120px (`TOUCH_JUMP_PX`, x plus y distance) in one frame becomes a release and a new press. Not checked here: a reported resolution larger than the screen, which passes coordinates beyond the screen to `shared/ui`; a reported resolution of 32,768 or more on an axis, which the driver casts to a negative `int16_t`, so `touch_map_apply` takes a size of 1 and maps every coordinate on that axis to 1 value; and the range of a track ID |
 | `shared/fwupdate` | the answers to the panel's requests to GitHub: the newest testing or stable release's tag from the API's answer (`fw_release_scan_feed()`: status 200, a `Content-Length` from 1 to 262144 bytes or the chunked coding; at most 262144 bytes scanned, byte by byte, nothing kept but the tag under way and the highest; a JSON array of objects, at most 10 of them read; each object's own `tag_name` key exactly once, a string of at most 18 bytes without escapes, `v` and then `fw_release_parse_version()`, and its `draft` key at most once, `true` or `false`, a draft passed over; nested values and strings passed over; every bracket closed by its own kind, at most 32 levels; a control byte in any string, or any release out of this form, a draft's included, refuses the whole answer); the newest stable release's tag from a `Location` header (`fw_release_parse_tag()`: printable ASCII without space, at most 69 bytes, `https://github.com/subtilitas/rcbench/releases/tag/v` and then `fw_release_parse_version()`: MAJOR.MINOR.PATCH, digits only, each 0 to 65535 in at most 5 digits without a leading zero, nothing after it); a redirect's `Location` (at most 2048 bytes of printable ASCII, `https://` and one of the 3 listed hosts exactly, at most 3 redirects); the HTTP status (200, or 301, 302, 303, 307 and 308 as redirects; anything else refused); the `Content-Length` (required, above 0, not with chunked transfer, at most the slot or 4096 bytes for `SHA256SUMS`); and `SHA256SUMS` (`fw_release_parse_sums()`: at most 4096 bytes ending in a line feed, every line 64 lowercase hexadecimal digits, a space, a space or `*`, and a name of letters, digits, `.`, `-` and `_`, optionally after `./`; exactly one line for the image's name). A panel firmware image uploaded over Wi-Fi or downloaded from GitHub: refused before it is stored when it is larger than the slot (7,936KiB, 8,126,464 bytes); then the ESP image header (magic byte, chip ID of the ESP32-P4, a segment count from 1 to 16, every segment's length within the file), the application description (magic word, project name `rcbench-panel` with its terminator, a version of the form MAJOR.MINOR.PATCH), the hash flag, the appended SHA-256 over the whole image and no bytes after it. An image that fails any check is not offered for install; a downloaded one also when its SHA-256 differs from its `SHA256SUMS` line or it names another version than its release |
 | `shared/webaccess` | requests to the Wi-Fi page: the `Host`, `Origin`, `Referer` and `X-Rcbench-Upload` headers (`wa_guard()`: a host part of at most 63 bytes, the panel's names in any letter case, its dotted address, port 80 or none, no IPv6 literal, `http://` only), the `Cookie` header up to the server's 1024-byte header limit, the URI (uniform resource identifier) path of a card file (percent decoding; `..`, an absolute path, a backslash, an encoded `.` or `/` that forms a traversal, NUL, a name over 255 characters and a path over 384 bytes are refused, and the path stays under the card's mount point), the access code from the form and the cookie (8 characters, compared in full), the upload's declared length, and mDNS (multicast domain name system) queries: at most 512 bytes, every label and compression pointer checked against the packet's end, at most 16 pointer hops |
@@ -302,9 +378,8 @@ The following modules parse input from outside their own trusted state:
 
 The table combines modules detected from public-header function names
 under `shared/` and `protocols/` with an explicit set in
-`tools/security_parsers.py`. The explicit set includes `shared/settings`
-and `shared/touch`, whose external inputs are not detected by the naming
-rule. `tools/security_parsers.py --check` compares both sets with the
+`tools/security_parsers.py`. The explicit set includes `shared/touch`,
+whose external input is not detected by the naming rule. `tools/security_parsers.py --check` compares both sets with the
 table. CI (continuous integration) runs this check.
 
 The test suite runs under AddressSanitizer and UBSan

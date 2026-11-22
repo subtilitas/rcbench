@@ -204,6 +204,9 @@ SOURCES = [
     "shared/ui/wifi_kept.c",
     "shared/ui/wifi_view.c",
     "shared/ui/update_screen.c",
+    # The release signature's verdict, which the question and PANEL UPDATE
+    # show.
+    "shared/fwupdate/fw_sig.c",
     "shared/ui/coproc_update_screen.c",
     "shared/ui/upd_screen.c",
     "shared/ui/upd_remind.c",
@@ -240,6 +243,10 @@ SOURCES = [
     # SEARCH: the scan and bind screen of the Dial and the nodes.
     "shared/ui/wl_search.c",
     "shared/ui/wl_search_draw.c",
+    "shared/ui/sbk_ctl.c",
+    "shared/ui/sbk_screen.c",
+    "shared/ui/sbk_draw.c",
+    "shared/ui/sbk_rows.c",
     "protocols/dialknob/dialknob.c",
     "protocols/dialknob/dk_track.c",
     "protocols/bleuart/bleuart_adv.c",
@@ -312,6 +319,8 @@ SOURCES = [
     "shared/settings/settings_schema.c",
     "shared/settings/settings_sensors.c",
     "shared/settings/settings_text.c",
+    "shared/settings/settings_file.c",
+    "shared/settings/settings_backup.c",
     "shared/logfile/log_numbers.c",
     "shared/logfile/log_csv.c",
     "shared/logfile/log_reader.c",
@@ -353,6 +362,7 @@ SOURCES = [
     "shared/outputs/out_bind.c",
     "shared/outputs/out_bind_take.c",
     "shared/outputs/out_board_rbmod.c",
+    "shared/outputs/out_board_rsn.c",
     "shared/outputs/board_fix.c",
     "shared/outputs/servo_cmd.c",
     "shared/can/can_selftest.c",

@@ -17,6 +17,11 @@ tables cannot slip past.
 
     tools/check_formats.py
 
+shared/fwupdate/fw_sign.c includes the Mbed TLS headers.  They are read
+from the release source tree RCBENCH_MBEDTLS_DIR names, else from the one a
+host build fetched under test/host/build*/_deps/mbedtls-src.  Without
+either, a file that includes them is skipped with a line that says so.
+
 Not covered: firmware/panel/main/, which needs ESP-IDF to compile.  Its
 translated formats are ALERT_FW_UPDATED, ALERT_FW_ROLLED_BACK and
 ALERT_FW_UNCONFIRMED in main.c; ALERT_SUPPLY_TRIP and ALERT_PDMINI_SAG in
@@ -31,6 +36,7 @@ SPDX-License-Identifier: MIT
 
 from __future__ import annotations
 
+import os
 import re
 import shutil
 import subprocess
@@ -116,6 +122,48 @@ def literals_from_dial() -> str:
     return "\n".join(out) + "\n"
 
 
+def mbedtls_includes(root: Path, env: dict) -> list[Path]:
+    """Find the include folders of an Mbed TLS 4 source tree.
+
+    Args:
+        root: The repository.
+        env: The environment: RCBENCH_MBEDTLS_DIR names a tree first.
+
+    Returns:
+        The tree's include, tf-psa-crypto/include and
+        tf-psa-crypto/drivers/builtin/include, or [] when no tree has
+        mbedtls/pk.h.
+    """
+    found = [Path(env["RCBENCH_MBEDTLS_DIR"])] \
+        if env.get("RCBENCH_MBEDTLS_DIR") else []
+    found += sorted((root / "test" / "host").glob("build*/_deps/mbedtls-src"))
+    for d in found:
+        crypto = d / "tf-psa-crypto"
+        if (crypto / "include" / "mbedtls" / "pk.h").is_file():
+            return [d / "include", crypto / "include",
+                    crypto / "drivers" / "builtin" / "include"]
+    return []
+
+
+def without_mbedtls(sources: list[Path]) -> tuple[list[Path], list[Path]]:
+    """Split the sources by whether they include an Mbed TLS header.
+
+    Args:
+        sources: The C files.
+
+    Returns:
+        (the files that include none, the files that include one).
+    """
+    kept, skipped = [], []
+    for src in sources:
+        text = src.read_text(encoding="utf-8", errors="replace")
+        if re.search(r'#\s*include\s*[<"](mbedtls|psa)/', text):
+            skipped.append(src)
+        else:
+            kept.append(src)
+    return kept, skipped
+
+
 def main() -> int:
     """Compile shared/ with literal texts; return the exit status."""
     cc = shutil.which("cc") or shutil.which("gcc")
@@ -169,6 +217,14 @@ def main() -> int:
             includes += ["-I", str(d)]
         sources = sorted(p for p in tree.rglob("*.c")
                          if not p.name.startswith("gfx_font"))
+        mbed = mbedtls_includes(ROOT, os.environ)
+        for d in mbed:
+            includes += ["-isystem", str(d)]
+        if not mbed:
+            sources, skipped = without_mbedtls(sources)
+            for src in skipped:
+                print("skipped %s: no Mbed TLS headers found"
+                      % str(src).replace(str(tree), "shared"))
         failed = False
         for src in sources:
             run = subprocess.run([cc, *FLAGS, *includes, str(src)],

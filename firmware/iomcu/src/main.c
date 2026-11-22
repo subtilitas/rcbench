@@ -148,7 +148,7 @@ static bool sense_capture_open(void)
  * handler is read-only.
  */
 static const link_page_t k_pages[] = {
-    { LINK_PAGE_IDENTITY, LINK_ID_COUNT, identity_read, NULL },
+    { LINK_PAGE_IDENTITY, LINK_ID_ALL,   identity_read, NULL },
     { LINK_PAGE_STATUS,   LINK_ST_COUNT, status_read,   NULL },
     { LINK_PAGE_CONTROL,  LINK_CT_COUNT, control_read,  control_write },
     { LINK_PAGE_CHANNELS, LINK_CH_COUNT, channels_read, channels_write },
@@ -189,6 +189,10 @@ static const link_page_t k_pages[] = {
       bind_out_hi_write },
     { LINK_PAGE_ESC_WIRE,  LINK_EW_COUNT,  esc_read,       esc_write },
     { LINK_PAGE_ESC_DATA,  LINK_ED_COUNT,  esc_data_read,  esc_data_write },
+#if IOMCU_BOARD_RSN
+    /* The servo rail's master and port switches (iomcu_rsn.c). */
+    { LINK_PAGE_POWER,     LINK_PW_COUNT,  power_page_rd,  power_page_wr },
+#endif
     { LINK_PAGE_UPDATE_CTL,  LINK_UPD_COUNT,      update_hw_ctl_read,
       update_hw_ctl_write },
     { LINK_PAGE_UPDATE_DATA, LINK_UPD_DATA_COUNT, update_hw_data_read,
@@ -353,12 +357,12 @@ static bool flash_busy(void)
  * @brief Drive the programming ports' 5V enable low, before anything else
  *        runs; psup_pass() drives it from the main loop on.
  *
- * @param r  The board's roles, or NULL for a board without the switch: then
- *           nothing is touched.
+ * @param r  The board's roles. NULL, or roles whose prog_5v_en is
+ *           OUTBIND_NO_GPIO (a board without the switch): nothing is touched.
  */
 static void prog_5v_off(const outbind_roles_t *r)
 {
-    if (r == NULL) {
+    if (r == NULL || r->prog_5v_en == OUTBIND_NO_GPIO) {
         return;
     }
     gpio_init(r->prog_5v_en);
@@ -425,6 +429,9 @@ static void restart_prepare(void)
  */
 int main(void)
 {
+    /* The remote servo node's rail and port switches off, first of all
+     * (iomcu_rsn.c); nothing on the other boards. */
+    rsn_pins_off();
     /*
      * The programming ports' 5V off before anything else, on a board that
      * switches it (the rbmod carrier's GP21).  The PROG_SUPPLY page drives
@@ -470,6 +477,9 @@ int main(void)
      * set once the set-up is restored below (capabilities_update()).
      */
     s_state.identity[LINK_ID_CAPABILITIES] = IOMCU_CAPABILITIES;
+    /* The remote servo node reads its chip's stepping here, before any
+     * output is restored: on a chip before A4 nothing is bound below. */
+    rsn_boot(&s_state);
 
     /* A range before anybody sets one, so the clamp is meaningful from the
      * first frame rather than from the first configuration. */
@@ -509,7 +519,8 @@ int main(void)
         board_fix_store(roles, &saved);
     }
     const bool have_ifaces = have_saved || roles != NULL;
-    if (have_saved) {
+    /* A refused chip binds no output: every pad stays in its reset state. */
+    if (have_saved && !rsn_chip_refused()) {
         memcpy(s_state.slots, saved.slots, sizeof(saved.slots));
         memcpy(&s_state.slots[LINK_OS_COUNT], saved.slots_hi,
                sizeof(saved.slots_hi));
@@ -554,6 +565,11 @@ int main(void)
                       | IOMCU_RESERVED_PINS | IOMCU_LINK_PINS;
     outputs_reserve_pins(&s_outputs, s_base_reserved);
     supply_page_init(&s_supply);
+    /* The board's ceiling on every way to the PD mini: the page and each
+     * programming port's ON (board 3: 8400mV); supply_page_init() keeps
+     * it. */
+    supply_page_ceiling(&s_supply, (roles != NULL) ? roles->supply_max_mv
+                                                   : 0u);
     sense_page_init(&s_sense);
     tone_page_init(&s_tone);
     tone_core1_init();
@@ -704,6 +720,8 @@ int main(void)
      * request can ask. */
     update_hw_init(flash_busy, restart_prepare);
     link_dev_init(&s_dev, k_pages, count_of(k_pages), &s_state, now0);
+    /* On a refused chip whatever could drive a pin is refused. */
+    rsn_link(&s_dev);
 #if IOMCU_CONSOLE
     /* The bench console on the same pages, through link_dev_apply(): it
      * does not feed the link's silence watchdog. */
@@ -862,11 +880,22 @@ int main(void)
                                  (uint32_t)(beat_ms - beat_sample_ms) + 1u);
         }
         beat_sample_ms = beat_ms;
+        /*
+         * The node's rail: CRIT_N, the INA3221s' flags, SENSE_LIMIT and the
+         * switches' thermal shutdown judged before the gate, so a trip's
+         * disarm is in the ARM the gate reads this pass.  A trip is an
+         * error: SAFE, the arm latched until a CLEAR.
+         */
+        if (rsn_pass(now) != 0u) {
+            link_dev_latch_arm(&s_dev);
+            outputs_off();
+        }
         const safety_gate_t gate =
             safety_gate_step(&s_beat, heartbeat_edge(), &s_dev,
                              s_state.control, now);
         if (gate.off) {
             outputs_off();   /* fires on the edge only */
+            rsn_off();       /* the node's rail and ports with them */
         }
 
         /*

@@ -642,7 +642,8 @@ TEST_CASE(the_hub_has_nine_slots_and_no_tenth)
  * Eight tiles: PANEL, SENSORS, OUTPUTS, SD CARD, WI-FI, UPDATES, IMU and
  * WIRELESS.  SD CARD's list
  * is AUTO LOGS and USER LOGS, two toggles, named in both languages, Browser
- * writes, and the two log folders under them (test_settings_folders).
+ * writes, the two log folders under them (test_settings_folders), and
+ * SAVE SETTINGS and LOAD SETTINGS (test_sbk_screen).
  */
 TEST_CASE(the_hub_holds_eight_tiles_and_sd_card_is_the_fourth)
 {
@@ -660,7 +661,7 @@ TEST_CASE(the_hub_holds_eight_tiles_and_sd_card_is_the_fourth)
     tap(tile_x(3), tile_y(3));
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
     CHECK_EQ(settings_screen_category(), SET_CAT_CARD);
-    CHECK_EQ(settings_screen_rows(SET_CAT_CARD), 5);
+    CHECK_EQ(settings_screen_rows(SET_CAT_CARD), 7);
     CHECK_EQ(settings_screen_row_of(SET_CAT_CARD, 1), 1);
     CHECK_EQ(settings_screen_row_of(SET_CAT_CARD, 2), 2);
     CHECK_EQ(settings_screen_row_of(SET_CAT_CARD, 3), -1);

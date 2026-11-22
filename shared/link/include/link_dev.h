@@ -132,6 +132,11 @@ typedef struct {
     /** @brief The exchange's messages and their answers, in arrival order. */
     link_dev_kept_t kept[LINK_DEV_REPEAT_KEEP];
     uint32_t repeats;     /**< repeats answered from `kept`, modulo 2^32  */
+    /**
+     * @brief Every write that could drive a pin is refused before its page
+     *        sees it (link_gate_drive(), link_dev_refuse_drive()).
+     */
+    bool     refuse_drive;
 } link_dev_t;
 
 /**
@@ -243,6 +248,18 @@ void link_dev_latch_arm(link_dev_t *d);
  * @return true while the latch is set.
  */
 bool link_dev_arm_latched(const link_dev_t *d);
+
+/**
+ * @brief Refuse every write that could drive a pin, ahead of the pages'
+ *        own rules (link_gate_drive()), or stop refusing.
+ *
+ * The board 3 IOmcu on a chip before the A4 stepping sets it at boot
+ * (chip_gate.h).  link_dev_init() starts without it.
+ *
+ * @param d      The link state; nothing is done for NULL.
+ * @param refuse true to refuse.
+ */
+void link_dev_refuse_drive(link_dev_t *d, bool refuse);
 
 #ifdef __cplusplus
 }

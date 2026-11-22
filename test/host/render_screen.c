@@ -39,6 +39,7 @@
 #include "render_files.h"
 #include "render_help.h"
 #include "render_imu.h"
+#include "render_sbk.h"
 #include "render_outputs.h"
 #include "render_rudder.h"
 #include "render_upd_wiz.h"
@@ -2252,6 +2253,7 @@ static ui_screen_id_t id_of(const char *name)
         { "upd-remind", SCREEN_UPD_REMIND },
         { "layout",     SCREEN_LAYOUT },
         { "imu",        SCREEN_IMU },
+        { "set-load",   SCREEN_SET_LOAD },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         if (strcmp(name, k[i].name) == 0) {
@@ -2437,15 +2439,20 @@ static void pose_wifi(const char *view)
         v.up = WIFI_UP_STAGED;
         strcpy(v.new_ver, EX_NEWER);
         v.offer = WIFI_OFFER_NEWER;
+        /* Signed, but the older image came with no signature and the
+         * rebuild with one that does not match. */
+        v.sig = FW_SIG_OK;
         if (strcmp(view, "wifi-older") == 0) {
             strcpy(v.new_ver, EX_OLDER);
             v.offer = WIFI_OFFER_OLDER;
             v.gate = WIFI_GATE_DRAWING;
+            v.sig = FW_SIG_NONE;
         } else if (strcmp(view, "wifi-coproc") == 0) {
             v.gate = WIFI_GATE_COPROC;
         } else if (strcmp(view, "wifi-rebuild") == 0) {
             strcpy(v.new_ver, EX_RUNNING);
             v.offer = WIFI_OFFER_REBUILD;
+            v.sig = FW_SIG_BAD;
         } else if (strcmp(view, "wifi-installed") == 0) {
             strcpy(v.new_ver, EX_RUNNING);
             v.offer = WIFI_OFFER_INSTALLED;
@@ -2842,6 +2849,15 @@ static void pose_update(const char *view)
     u.total = 1843200u;
     u.written = 720896u;
     u.state = UPDATE_WRITING;
+    u.sig = FW_SIG_OK;
+    if (strcmp(view, "panel-update-unsigned") == 0) {
+        u.sig = FW_SIG_NONE;      /* warns, and writes */
+    } else if (strcmp(view, "panel-update-anyway") == 0) {
+        /* A build with RCBENCH_SIGN_ENFORCE: the second hold. */
+        u.written = 0u;
+        u.state = UPDATE_UNSIGNED;
+        u.sig = FW_SIG_BAD;
+    }
     if (strncmp(view, "panel-download", 14) == 0) {
         upd_view_t v;
         memset(&v, 0, sizeof(v));
@@ -5234,6 +5250,7 @@ int main(int argc, char **argv)
     pose_shown_setup(id, view);
     pose_shown_tools(id, view);
     render_imu_pose(view);
+    render_sbk_pose(view);
     /* Last: the guide opens over the screen as the poses left it. */
     if (render_help_view(shot_view)) {
         render_help_pose(shot_view);

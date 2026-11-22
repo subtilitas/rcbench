@@ -48,7 +48,7 @@ Spannung, die Strombegrenzung, die Haltezeit und die Auszeit vor.
 |---|---|---|
 | `POWER_OFF`: mindestens 250ms, innerhalb von 3000ms als aus gelesen, dann die Auszeit (0 bis 10000ms) | geparkt | aus |
 | `LEAD`, 50ms | high getrieben | aus |
-| `POWER_ON`: bis der PD mini als ein liest, höchstens 3000ms | high getrieben | ein angefragt, mit 3000 bis 20000mV und 50 bis 3000mA, mindestens 700mV unter dem Eingang |
+| `POWER_ON`: bis der PD mini als ein liest, höchstens 3000ms | high getrieben | ein angefragt, mit 3000 bis 20000mV (8400mV auf Board 3) und 50 bis 3000mA, mindestens 700mV unter dem Eingang |
 | `RUN`: der Hold (500 bis 120000ms), gezählt ab dem Lesen als ein, dann First Contact oder `info` | high getrieben, dann der Draht | ein |
 
 | `BY HAND`, an der eigenen Versorgung des ESC | Leitung | Versorgung |

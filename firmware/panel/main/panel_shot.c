@@ -22,6 +22,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include "panel_sbk.h"
 #include "panel_shot.h"
 
 #include <stdatomic.h>
@@ -301,7 +302,8 @@ void panel_shot_frame(const panel_shot_in_t *in, shot_facts_t *facts)
             || atomic_load(&s_hitec_file_sent)
                    != atomic_load(&s_hitec_file_done)
             || atomic_load(&s_hitec_card_sent)
-                   != atomic_load(&s_hitec_card_answered),
+                   != atomic_load(&s_hitec_card_answered)
+            || panel_sbk_busy(),
         .testing = atomic_load(&s_servo_testing),
         .cu_active = in->cu_active,
         .update_busy = panel_update_busy(),

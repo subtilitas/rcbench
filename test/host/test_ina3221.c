@@ -494,8 +494,72 @@ TEST_CASE(a_shunt_of_100_uohm_is_taken_and_99_is_not)
              INA3221_SETUP_NO_SHUNT);
 }
 
+/* ------------------------------------------------------ critical limits */
+
+TEST_CASE(a_critical_limit_is_its_shunt_voltage_in_40_microvolt_steps)
+{
+    /* 4000mA over 20mΩ: 80mV, code 2000. */
+    CHECK_EQ(ina3221_crit_reg(20000u, 4000u), (uint16_t)(2000u << 3));
+    CHECK_EQ(ina3221_crit_reg(20000u, 3000u), (uint16_t)(1500u << 3));
+    /* Rounded down: 3999mA is 79.98mV, code 1999. */
+    CHECK_EQ(ina3221_crit_reg(20000u, 3999u), (uint16_t)(1999u << 3));
+    /* At most the top code; 0mA is the power-on value. */
+    CHECK_EQ(ina3221_crit_reg(20000u, 9000u), 0x7FF8u);
+    CHECK_EQ(ina3221_crit_reg(20000u, 0u), 0x7FF8u);
+    CHECK_EQ(ina3221_crit_reg(100000u, 1638u), (uint16_t)(4095u << 3));
+    CHECK_EQ(INA3221_CRIT1, 0x07);
+}
+
+TEST_CASE(a_probe_writes_the_critical_limits_and_cen_and_reads_them_back)
+{
+    daokai(INA3221_CONFIG_BENCH_ALL);
+    const uint16_t ma[3] = { 1000u, 0u, 1500u };
+    ina3221_set_crit(&d, ma);
+    CHECK(d.crit_on);
+    CHECK(!ina3221_crit_held(&d));
+    CHECK(ina3221_step(&d, 0));
+    CHECK(ina3221_crit_held(&d));
+    /* 1000mA over 0.1Ω: 100mV, code 2500; CH2 keeps the power-on value. */
+    CHECK_EQ(part->reg[INA3221_CRIT1], (uint16_t)(2500u << 3));
+    CHECK_EQ(part->reg[INA3221_CRIT1 + 2u], 0x7FF8u);
+    CHECK_EQ(part->reg[INA3221_CRIT1 + 4u], (uint16_t)(3750u << 3)); /* 150mV */
+    CHECK_EQ(part->reg[INA3221_MASK_ENABLE], INA3221_ME_CEN);
+    /* 4 transactions of the probe, then 4 writes and 4 reads. */
+    CHECK_EQ(fb.transactions, 12);
+    /* A limit that does not read back: refused. */
+    daokai(INA3221_CONFIG_BENCH_ALL);
+    ina3221_set_crit(&d, ma);
+    part->glitch_reg   = INA3221_CRIT1;
+    part->glitch_n     = 1u;
+    part->glitch_value = 0x1234u;
+    CHECK(!ina3221_step(&d, 0));
+    CHECK_EQ(ina3221_state(&d), SENSE_PART_REFUSED);
+    CHECK(!ina3221_crit_held(&d));
+    /* A write that fails part way: the part is not online. */
+    daokai(INA3221_CONFIG_BENCH_ALL);
+    ina3221_set_crit(&d, ma);
+    fb.fail_at   = 7u;
+    fb.fail_with = SENSE_NACK;
+    CHECK(!ina3221_step(&d, 0));
+    CHECK(!ina3221_crit_held(&d));
+    /* No limit given: the probe writes none. */
+    daokai(INA3221_CONFIG_BENCH_ALL);
+    ina3221_set_crit(&d, NULL);
+    CHECK(!d.crit_on);
+    CHECK(ina3221_step(&d, 0));
+    CHECK(!ina3221_crit_held(&d));
+    CHECK_EQ(fb.transactions, 4);
+    /* A channel the configuration leaves off gets no limit. */
+    daokai(INA3221_CONFIG_BENCH_CH1);
+    const uint16_t ch2[3] = { 0u, 1000u, 0u };
+    ina3221_set_crit(&d, ch2);
+    CHECK(!d.crit_on);
+}
+
 int main(void)
 {
+    RUN(a_critical_limit_is_its_shunt_voltage_in_40_microvolt_steps);
+    RUN(a_probe_writes_the_critical_limits_and_cen_and_reads_them_back);
     RUN(registers_hold_thirteen_bits_in_15_to_3);
     RUN(the_daokai_shunt_reads_400_microamps_a_step_to_1638_milliamps);
     RUN(channel_one_is_bit_14_and_the_fields_pack);

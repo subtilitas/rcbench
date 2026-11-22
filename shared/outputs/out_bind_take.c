@@ -41,8 +41,8 @@ static uint8_t pins_cap(const outbind_board_t *bd, const outbind_proto_t *p)
 {
     uint8_t cap = (p->max_pins < LINK_OUT_SLOTS) ? p->max_pins
                                                  : (uint8_t)LINK_OUT_SLOTS;
-    if (bd->roles != NULL && cap > OUTBIND_FIXED_OUTS) {
-        cap = (uint8_t)OUTBIND_FIXED_OUTS;
+    if (bd->roles != NULL && cap > outbind_out_count(bd->roles)) {
+        cap = outbind_out_count(bd->roles);
     }
     return cap;
 }

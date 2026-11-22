@@ -92,7 +92,8 @@ static const outbind_other_t k_others[] = {
 };
 
 const outbind_roles_t outbind_rbmod_roles = {
-    .out        = { 2u, 4u, 5u, 1u },
+    .out        = { 2u, 4u, 5u, 1u, OUTBIND_NO_GPIO, OUTBIND_NO_GPIO,
+                    OUTBIND_NO_GPIO, OUTBIND_NO_GPIO, OUTBIND_NO_GPIO },
     .prog       = { 13u, 14u, 15u, 0u },
     .sda        = 16u,
     .scl        = 17u,
@@ -106,6 +107,7 @@ const outbind_roles_t outbind_rbmod_roles = {
     .ina        = {
         .on    = true,
         .part  = 0u,
+        .parts = 1u,
         .watch = { (uint8_t)LINK_SM_WATCH_RAIL_B, (uint8_t)LINK_SM_WATCH_RAIL_A,
                    (uint8_t)LINK_SM_WATCH_PROG_5V },
         .feeds = { (1u << 5) | (1u << 4), (1u << 2) | (1u << 1),

@@ -19,6 +19,89 @@ history is in git.
   Boards 1 and 2 keep CAN; CMake's `IOMCU_LINK` overrides the board's
   choice. The 3s report prints a `UART up` line in place of the CAN lines
   ([The UART transport](docs/Link.md#the-uart-transport)).
+- IOmcu board 3, the remote servo node's Waveshare Core2350B (RP2350B):
+  image `rcbench-iomcu-rsn.*` (CMake `IOMCU_BOARD=rsn`), built and checked
+  in CI. Its catalogue lists 27 role pins; S1 to S9 on GPIO 16 to 32, each
+  on its own PWM slice. SENSE_MAP is fixed to 3 INA3221 at 0x40 to 0x42 on
+  20.0mΩ shunts, each channel with a critical alert limit of 4000mA or its
+  lower SENSE_LIMIT; SUPPLY set points above 8400mV are refused, on the
+  page and in a programming port's ON (ESC_WIRE, KST, Hitec); a
+  programming port takes any servo output and DShot. The image has no
+  link transport
+  ([Link: The remote servo node](docs/Link.md#the-remote-servo-node)).
+- Link protocol 4.41: IDENTITY registers 7 and 8 carry the chip's revision
+  and boot ROM version; STATUS fault bit 8 says a board 3 IOmcu runs on a
+  chip before the RP2350 A4 stepping, where it drives nothing and refuses
+  ARM, SUPPLY ON, POWER ON and every programming session with NOT_ARMED.
+  The POWER page (0x43) switches the node's servo rail and its 9 ports:
+  ON wants a live heartbeat and the critical limits written, a throttle
+  port takes no power (a DShot or throttle OUTPUTS slot or a DShot
+  programming port on its pin) and one on that becomes a throttle goes
+  off, RAIL 0 is always taken, also in a write refused for another
+  register, CRIT_N low, a critical alert flag, a SENSE_LIMIT trip or a switch in thermal shutdown cuts the rail and makes the bench
+  SAFE, and the BEC check flags a port at 500mV or more with the rail off
+  ([Link: The POWER page](docs/Link.md#the-power-page)).
+- Release signatures: every firmware image a release publishes has a
+  detached `<image>.sig`, ECDSA (elliptic curve digital signature
+  algorithm) P-256 over its SHA-256, beside the asset or inside its ZIP
+  archive. The release workflow signs every `.bin` and `.uf2` file in one
+  loop with the secret `RCBENCH_IMAGE_SIGNING`, fails a tag build without
+  it, and verifies every signature against the committed public key before
+  publishing (`tools/sign_images.sh`). The web flasher's folder carries the
+  `.sig` beside each image ([Security policy](SECURITY.md#release-signatures)).
+- The panel verifies the signature of its own image with Mbed TLS 4.1.0:
+  the Wi-Fi page takes an optional `rcbench-panel-p4-vX.Y.Z.bin.sig` beside
+  the image, and a download from GitHub fetches it after the image. The
+  question on WI-FI and PANEL UPDATE show SIGNED BY THE RCBENCH RELEASE KEY,
+  or NOT SIGNED BY THE RCBENCH RELEASE KEY with the reason. Until the stable
+  release that enforces it, an image without a valid signature installs
+  with the single 2s hold and that warning; a build with
+  `RCBENCH_SIGN_ENFORCE=1` asks for a second 2s hold, INSTALL ANYWAY.
+  The panel image grows by 7152 bytes.
+
+- `hardware/mechanical/`: `hitec_d485hw.step`, the Hitec D485HW servo with
+  the four-arm horn HD-X25, its type plate and 60mm of its lead: 3 wires,
+  minus black, plus red, signal yellow, and the 3 pin plug. 126.4mm x
+  36.0mm x 46.35mm over all, 37 solids. Case, ears and mounting holes
+  follow the maker's dimension drawing, the rest its STEP model and data
+  sheets. The overlap check covers it
+  ([Mechanical parts](hardware/mechanical/README.md#hitec-d485hw)).
+- `hardware/mechanical/`: a variant of the display node's case for
+  panel-mount XT60 with 2 screws, 59.8mm x 105.6mm x 24.4mm:
+  `display_node_xt60_box` and `display_node_xt60_lid`, each as STEP and
+  STL. Each short wall has the seat of the bench's front case: a wall of
+  3.0mm, a recess 2.0mm deep in the flange's outline, an opening of 19.6mm
+  x 12.4mm for the body and 2 insert holes 25.6mm apart in bosses behind
+  the wall. The check holds the connectors' flange, body and contacts
+  clear of box and board. No part is printed
+  ([Cases](hardware/mechanical/CASES.md#case-of-the-display-node-xt60)).
+- `hardware/mechanical/`: a printed case of 2 parts for the display node
+  with XT30 connectors, 59.8mm x 101.2mm x 17.8mm: `display_node_box` and
+  `display_node_lid`, each as STEP and STL. It follows a tester's case,
+  measured from its STL file, which closes in nominal sizes with 0.18mm
+  over the board. 3 changes give real parts more room, so that the lid
+  still closes on the rim: blind insert holes of 4.0mm x 6.0mm with a
+  relief in place of straight holes of 3.5mm, a window with 0.5mm in place
+  of 0.17mm beside the touch panel, and head recesses of 6.0mm for M3. A
+  hole of 3.5mm in the floor holds the current sensor board. `_gen_display_case.py --check`, which CI runs, fails when a part
+  meets the display board or the stack does not close. No part is printed
+  ([Cases](hardware/mechanical/CASES.md#case-of-the-display-node-xt30)).
+- Settings backup on the card, `BENCH/SETUP`. SETUP > SD CARD ends on Save
+  settings, which writes the stored settings as `SETTINGS.TXT`, and Load
+  settings, which opens BACKUP: the card's settings files with their date
+  and panel version, and HOLD 2s TO LOAD. A load replaces every setting
+  (the file's value, or the default where the file has none), lists each
+  refused line with its number, key and code, and asks for the save to NVS
+  (non-volatile storage). Each save to NVS with a card in also writes
+  `AUTO1.TXT` and moves the older copies on to `AUTO2.TXT` and `AUTO3.TXT`;
+  a copy that does not reach the card shows once in the alert band and
+  switches no output off. A panel that starts on the defaults offers the
+  card's newest file over the menu once SAFE. The file is text, format 1:
+  one `<key> = <value>` line a setting, the bindings of the IMU, the Dial
+  and the nodes among them; the Wi-Fi home network, its password, HOTSPOT
+  PASSWORD and ACCESS CODE are not in it
+  ([Screens](docs/Screens.md#sd-card-the-settings-backup)).
+- The SD CARD tile reads `LOGS, BROWSER WRITES, BACKUP`.
 - `hardware/mechanical/`: a printed case of 3 parts for the remote INA228
   sensor node, 91.4mm x 55.4mm x 28.0mm: `ina228_node_plate`,
   `ina228_node_frame` and `ina228_node_bezel`, each as STEP and STL. 4
@@ -29,7 +112,7 @@ history is in git.
   4 speaker slots, microphone, display window. `_gen_node_case.py` builds
   the parts with OpenCASCADE and CI checks them against the 1139 solids of
   the layout. No part is printed
-  ([Mechanical parts](hardware/mechanical/README.md#case-of-the-sensor-node)).
+  ([Cases](hardware/mechanical/CASES.md#case-of-the-sensor-node)).
 - `hardware/mechanical/`: `ina228_node_layout.step`, the boards of the
   remote INA228 sensor node in place: the INA228 module with its 2 XT90PW
   connectors at the bottom, the ES3C28P display board 0.5mm over the
@@ -79,7 +162,6 @@ history is in git.
   an IOmcu image older than 4.41 reads no version 9 record and starts with
   the bindings of a one-page record if the flash holds one, empty
   otherwise.
-
 - `tools/pio_budget.py`: counts every PIO (programmable input/output)
   program in the `.pio` files under `protocols/` as pioasm 2.3.0 does and
   loads each board's programs into a model of the RP2350's 3 blocks of 4
@@ -114,6 +196,14 @@ history is in git.
 
 ### Changed
 
+- Sensor node case (`hardware/mechanical/_gen_node_case.py`): 2 joints
+  hold the frame's wall from moving inwards between its 4 columns. The
+  plate has a lip of 1.2mm x 1.5mm all round inside the wall's lower edge.
+  The wall's upper inner edge is cut off at 45 degrees, and 4 wedges of
+  1.2mm under the bezel's rim lie in the cut. On a printed case without
+  the joints the walls shift sideways (owner, 2026-11-22). The parts with
+  the joints are not printed
+  ([Cases](hardware/mechanical/CASES.md#case-of-the-sensor-node)).
 - `hardware/mechanical/models/` is sorted into 3 folders: `pcb/` (17
   models: 16 boards and the sensor node's layout), `casing/` (7 printed
   parts) and `parts/` (13 bought parts and assemblies). `_models.py` names

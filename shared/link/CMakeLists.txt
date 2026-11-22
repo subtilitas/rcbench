@@ -8,7 +8,7 @@
 # retransmission in silicon.  The UART (universal asynchronous
 # receiver-transmitter) link adds a CRC-16 to each frame (link_uart.c) and
 # runs the IOmcu's end of it from a DMA ring (link_uart_dev.c).
-set(SRCS link_crc.c link_can.c link_dev.c link_host.c link_bringup.c
+set(SRCS link_crc.c link_can.c link_dev.c link_gate.c link_host.c link_bringup.c
         link_artxfer.c link_drawing.c link_control.c link_port.c
         link_sha256.c link_update_image.c link_update_dev.c
         link_update_host.c console_relay.c link_uart.c link_uart_dev.c)

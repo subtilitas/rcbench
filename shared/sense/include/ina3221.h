@@ -49,6 +49,8 @@ enum {
     INA3221_CONFIG       = 0x00,
     INA3221_SHUNT1       = 0x01,   /**< channel n: 0x01 + 2 (n - 1) */
     INA3221_BUS1         = 0x02,   /**< channel n: 0x02 + 2 (n - 1) */
+    INA3221_CRIT1        = 0x07,   /**< channel n's critical alert limit:
+                                        0x07 + 2 (n - 1), Table 8-1 */
     INA3221_MASK_ENABLE  = 0x0F,
     INA3221_MANUFACTURER = 0xFE,
     INA3221_DIE_ID       = 0xFF,
@@ -215,6 +217,20 @@ int32_t ina3221_bus_mv(int32_t code);
 
 /* -------------------------------------------------------------- driver */
 
+/**
+ * @brief A critical alert limit register for @p limit_ma over @p shunt_uohm:
+ *        the shunt voltage in 40µV steps in bits 15-3, as a shunt register
+ *        (§8.2.5), rounded down, at most the top code 7FF8h.
+ *
+ * 4000mA over 20mΩ is 80mV, code 2000, 3E80h.  The part compares each
+ * single shunt conversion with it (§7.3.2.1).
+ *
+ * @param shunt_uohm Shunt resistance, in µΩ.
+ * @param limit_ma   The current, mA.
+ * @return The register value; 7FF8h, the part's power-on value, for 0mA.
+ */
+uint16_t ina3221_crit_reg(uint32_t shunt_uohm, uint32_t limit_ma);
+
 /** @brief The result of ina3221_init(): OK or the reason a set-up is refused. */
 typedef enum {
     INA3221_SETUP_OK = 0,
@@ -231,6 +247,10 @@ typedef struct {
     uint32_t     shunt_uohm[INA3221_CHANNELS]; /**< CH1 to CH3; 0 for a
                                     channel the configuration leaves off */
     uint16_t     config;       /**< the Configuration register as written */
+    /** @brief CH1 to CH3's critical alert limit registers to write at
+     *         each probe; crit_on false writes none. */
+    uint16_t     crit[INA3221_CHANNELS];
+    bool         crit_on;      /**< the probe writes crit and sets CEN    */
 } ina3221_t;
 
 /**
@@ -269,6 +289,30 @@ ina3221_setup_err_t ina3221_init_shunts(ina3221_t *d, sense_bus_t *bus,
                                         uint8_t addr,
                                         const uint32_t *shunt_uohm,
                                         uint16_t config);
+
+/**
+ * @brief Each channel's critical alert limit, written at every probe from
+ *        then on with the latch enable (Mask/Enable CEN).
+ *
+ * Call after ina3221_init_shunts(), which clears them.  A channel the
+ * configuration leaves off, and a limit of 0, keeps the power-on value
+ * 7FF8h.  The probe then writes the three limit registers and Mask/Enable
+ * with CEN, reads each back, and takes the part online only when all four
+ * hold the values written: 8 transactions more, 960µs of bus time at
+ * 400kHz.  With every limit 0 nothing more is written.
+ *
+ * @param d        The driver.
+ * @param limit_ma CH1 to CH3's limits, mA; NULL for none.
+ */
+void ina3221_set_crit(ina3221_t *d, const uint16_t *limit_ma);
+
+/**
+ * @brief Whether the part is online with its critical limits written.
+ *
+ * @param d The driver.
+ * @return  true when online and ina3221_set_crit() gave a limit.
+ */
+bool ina3221_crit_held(const ina3221_t *d);
 
 /**
  * @brief Every tick: probes the part when it is due -- at the first call, and
