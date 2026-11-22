@@ -110,6 +110,16 @@ void link_uart_rx_init(link_uart_rx_t *rx)
     }
 }
 
+void link_uart_rx_drop(link_uart_rx_t *rx)
+{
+    if (rx != NULL && rx->synced) {
+        /* As a frame grown too long, without its count: the rest up to the
+         * next 0x00 is dropped. */
+        rx->len = 0;
+        rx->overlong = true;
+    }
+}
+
 /**
  * @brief Count one dropped frame in its own count and in @p refused.
  *

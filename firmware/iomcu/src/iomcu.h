@@ -17,7 +17,10 @@
  *                SENSE_WIN_A, SENSE_WIN_B and SENSE_LIMIT
  * iomcu_tone.c   the TONE page and the phase tap's capture
  * iomcu_bind.c   BIND, BIND_CFG, BIND_OUT and the board's own pages
- * iomcu_can.c    the heartbeat's input and the CAN bus
+ * iomcu_can.c    the heartbeat's input and the CAN bus, the transport of
+ *                boards 1 and 2
+ * iomcu_uart.c   the link on UART0 with its receive DMA ring, the transport
+ *                of board 3 (iomcu_link.h)
  *
  * The helpers at the end are `static inline`, so the main loop and each
  * page handler that calls one carry their own inlined copy.
@@ -234,12 +237,12 @@ extern heartbeat_mon_t s_beat;
 extern uint32_t s_frames;
 
 /**
- * @brief CAN frames received and refused since power-up, published on the
+ * @brief Frames received and refused since power-up, published on the
  * STATUS page (LINK_ST_REFUSED_LO and _HI).
  *
- * Counted in two places, both shared
- * code: a receive buffer with no frame the link carries in it
- * (mcp2515_recv_next()) and a frame link_can_decode() refuses
+ * Counted in shared code: on CAN a receive buffer with no frame the link
+ * carries in it (mcp2515_recv_next()), on the UART a frame the decoder
+ * drops (link_uart_feed()), and on both a frame link_can_decode() refuses
  * (link_can_decode_counted()).  Wraps at 2^32.
  */
 extern uint32_t s_refused;
@@ -299,7 +302,8 @@ extern uint32_t s_can_overflows;
 extern can_txq_t s_can_txq;
 
 /**
- * @brief When a frame was last taken out of the controller; see iomcu_can.c.
+ * @brief When a frame was last taken out of the controller or the UART's
+ * receive ring; see iomcu_can.c.
  */
 extern uint32_t s_last_rx_ms;
 

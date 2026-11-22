@@ -86,6 +86,15 @@ ALLOWED = (
     ("firmware/iomcu/src/iomcu_can.c", "can_drain", "clock", None,
      "the firmware update's restart only, with arming held: at most 7 "
      "batches of CAN_TXQ_STUCK_US (35,000us)"),
+    ("firmware/iomcu/src/iomcu_uart.c", "uart_link_start", "print",
+     "rcbench-iomcu: UART DID NOT START",
+     "the boot line, before the main loop"),
+    ("firmware/iomcu/src/iomcu_uart.c", "uart_link_start", "print",
+     "rcbench-iomcu: UART up at", "the boot line, before the main loop"),
+    ("firmware/iomcu/src/iomcu_uart.c", "uart_link_drain", "clock", None,
+     "the firmware update's restart only, with arming held: the 512-byte "
+     "queue at 10us a byte, 5,120us, and never past LOOP_WATCH_DRAIN_US "
+     "(35,000us)"),
     ("firmware/iomcu/src/iomcu_report.c", "reset_start", "print",
      "rcbench-iomcu: reset %s", "the boot line, before the main loop"),
     ("firmware/iomcu/src/iomcu_report.c", "reset_start", "print",

@@ -53,6 +53,22 @@ Peripheral Interface) connection: the module is not fitted or its wiring
 on GPIO 8 to GPIO 12 is faulty. This message does not indicate a CAN bus
 fault.
 
+On board 3, whose link runs on the UART (universal asynchronous
+receiver-transmitter, [The UART transport](Link.md#the-uart-transport)),
+one line takes the place of the CAN lines:
+
+    rcbench-iomcu: UART up, 1000000 baud, 0 requests served, 0 self-test echoes, crc 0 resync 0 laps 0 overruns 0 tx_drop 0 txq_max 0
+
+`crc` counts frames refused for their CRC-16 (cyclic redundancy check),
+`resync` the times the decoder dropped bytes up to a 0x00, `laps` the times
+the receive ring was overwritten before it was read, `overruns` the passes
+that found the UART's receive FIFO (first in, first out buffer) overrun
+flag set, `tx_drop` the replies the 512-byte transmit queue had no room for
+and `txq_max` the most bytes queued since the last report. `UART did not
+start -- no free DMA channel` replaces the line when no DMA (direct memory
+access) channel was free at boot. `can max` in the loop line then times the
+UART's service.
+
 The last two lines of every report give the main loop's pass times since
 the report before it:
 

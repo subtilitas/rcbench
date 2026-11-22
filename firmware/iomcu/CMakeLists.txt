@@ -80,6 +80,7 @@ add_executable(rcbench-iomcu
     src/iomcu_tone.c
     src/iomcu_bind.c
     src/iomcu_can.c
+    src/iomcu_uart.c
     src/iomcu_report.c
     src/xl2515.c
     src/out_pwm.c
@@ -113,6 +114,30 @@ else()
     message(FATAL_ERROR "IOMCU_BOARD=${IOMCU_BOARD}: rp2350_can or rbmod")
 endif()
 set_target_properties(rcbench-iomcu PROPERTIES OUTPUT_NAME ${iomcu_out})
+
+# The link's transport (src/iomcu_link.h): CAN (Controller Area Network)
+# through the XL2515 on boards 1 and 2, UART0 at 1Mbaud on board 3 (rsn).
+# Empty takes the board's; `can` or `uart` names one, as for a bring-up of
+# the UART transport on the module wired by hand.
+set(IOMCU_LINK "" CACHE STRING "Link transport: empty for the board's, can or uart")
+set_property(CACHE IOMCU_LINK PROPERTY STRINGS "" can uart)
+if(IOMCU_LINK STREQUAL "")
+    if(IOMCU_BOARD STREQUAL "rsn")
+        set(iomcu_link uart)
+    else()
+        set(iomcu_link can)
+    endif()
+else()
+    set(iomcu_link ${IOMCU_LINK})
+endif()
+if(iomcu_link STREQUAL "uart")
+    target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_LINK_UART=1)
+elseif(iomcu_link STREQUAL "can")
+    target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_LINK_UART=0)
+else()
+    message(FATAL_ERROR "IOMCU_LINK=${IOMCU_LINK}: empty, can or uart")
+endif()
+message(STATUS "rcbench-iomcu: board ${IOMCU_BOARD}, link ${iomcu_link}")
 
 # Core 0's stack: 4096 bytes, all of the SCRATCH_Y region at 0x20081000.  The
 # SDK's default is 2048, and the deepest chain from main() with panic() and
@@ -239,6 +264,7 @@ target_link_libraries(rcbench-iomcu
     hardware_pwm
     hardware_dma
     hardware_spi
+    hardware_uart
     hardware_gpio
     hardware_flash
     hardware_sync

@@ -1,8 +1,8 @@
 /**
  * @file
  * @brief The console report every 3s: the flash store, the running slot
- * and why this start happened, the flash's read set-up, the CAN bus, the
- * current monitors as the pages show them, and the main loop's pass times
+ * and why this start happened, the flash's read set-up, the link's transport
+ * (CAN or UART), the current monitors as the pages show them, and the main loop's pass times
  * with the XIP cache's misses.
  *
  * The lines are shared/bench/report_lines.c's, and report_steps.c runs
@@ -40,8 +40,8 @@
 #include "reset_cause.h"
 #include "sense_limit.h"
 #include "sense_map.h"
+#include "iomcu_link.h"
 #include "update_hw.h"
-#include "xl2515.h"
 #if IOMCU_CONSOLE
 #include "console_hw.h"
 #endif
@@ -316,16 +316,7 @@ static void io_snap(void *ctx, report_snap_t *s)
     s->reset     = s_why;
     s->boot      = s_boot;
     qmi_snap(s);
-    s->can_up    = s_can_up;
-    if (s_can_up) {
-        s->bitrate  = IOMCU_CAN_BITRATE;
-        s->requests = s_frames;
-        s->echoes   = s_can_echoes;
-        xl2515_errors(&s->tec, &s->rec, &s->eflg);
-        s->tx_drop  = s_can_txq.dropped;
-        s->txq_max  = can_txq_take_peak(&s_can_txq);
-        s->overruns = s_can_overflows;
-    }
+    iomcu_link_snap(s);
     s->sense_on = sense_page_enabled(&s_sense);
     if (s->sense_on) {
         sense_snap(s);
