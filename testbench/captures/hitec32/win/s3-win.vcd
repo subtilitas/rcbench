@@ -1,0 +1,14 @@
+$date Sun Nov 22 18:55:55 2026 $end
+$version libsigrok 0.6.0-git-0bc24877 $end
+$comment
+  Acquisition with 2/16 channels at 200 MHz
+$end
+$timescale 5 ns $end
+$scope module libsigrok $end
+$var wire 1 ! CH0 $end
+$var wire 1 " CH11 $end
+$upscope $end
+$enddefinitions $end
+
+#0 1! 0"
+#1890060
