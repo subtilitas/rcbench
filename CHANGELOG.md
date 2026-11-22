@@ -24,7 +24,6 @@ history is in git.
   PASSWORD and ACCESS CODE are not in it
   ([Screens](docs/Screens.md#sd-card-the-settings-backup)).
 - The SD CARD tile reads `LOGS, BROWSER WRITES, BACKUP`.
-
 - `hardware/mechanical/`: a printed case of 3 parts for the remote INA228
   sensor node, 91.4mm x 55.4mm x 28.0mm: `ina228_node_plate`,
   `ina228_node_frame` and `ina228_node_bezel`, each as STEP and STL. 4
