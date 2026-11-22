@@ -354,6 +354,9 @@ void upd_dev_label(upd_dev_id_t id, const upd_dev_view_t *v, char *out,
                    size_t n)
 {
     const dev_words_t *w = &k_words[in_range(id)];
+    if (upd_fetch_label(&v->fetch, out, n)) {
+        return;
+    }
     if (v->row == DEVUPD_ROW_UPDATING) {
         if (v->phase == DEVUPD_CONFIRM) {
             press_label(in_range(id), v->secs, out, n);

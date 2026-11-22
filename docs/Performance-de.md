@@ -448,9 +448,10 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 392 | 1 664 |
 | `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 6 912 | 2 912 | 2 960 |
 | `mdns` | `mdns_task`, der mDNS-Responder (Multicast Domain Name System), solange das Panel mit einem Heimnetz verbunden ist | 4 096 | 1 440 | 1 616 |
-| `wifi_get` | `fetch_task`, eine Release-Suche oder ein Download von GitHub (`components/wifi_access`) | 8 192 | 1 744 | 5 408 |
+| `wifi_get` | `fetch_task`, eine Release-Suche oder ein Download von GitHub, das Image des Panels oder eines Geräts (`components/wifi_access`) | 8 192 | 1 840 | 5 312 |
 | `cardjob` | `files_task`, die Kartenoperationen von FILES (`panel_files.c`) | 6 656 | 2 064 | 3 552 |
 | `c6upd` | `c6_task`, das Update des C6-Funks, ein Schritt nach dem anderen (`panel_c6.c`) | 4 096 | 1 248 | 1 808 |
+| `devimg` | `devimg_task`, das Lesen eines Geräte-Images von der SD-Karte, seine Prüfungen und seine Release-Signatur, danach beendet (`panel_devimg.c`) | 8 192 | 3 920 | 3 232 |
 | `shot` | `shot_task`, ein Screenshot-Auftrag, dann weg (`panel_shot.c`) | 7 168 | 2 432 | 3 696 |
 
 Der HTTP-Server (Hypertext Transfer Protocol) der Seite läuft in einem Task
@@ -462,7 +463,10 @@ sie unbenutzt lassen (unten). Die Tiefe von `wifi_get` lässt den
 TLS-Handshake (Transport Layer Security) und jedes Lesen darunter aus:
 esp_http_client erreicht seinen Transport über einen Funktionszeiger. Sein
 Stack nutzt den Speicher des Seitenservers; die beiden Tasks laufen nie gleichzeitig; die Tiefe des
-Handshakes ist nicht gemessen.
+Handshakes ist nicht gemessen. Die Tiefe von
+`devimg` reicht in die Prüfung des Release-Schlüssels (`fw_sig_verify()`);
+die Mbed-TLS-Aufrufe darunter, die über einen Funktionszeiger gehen, sind
+nicht darin, und ihre Tiefe ist nicht gemessen.
 
 Die Bluetooth-LE-Tasks (Low Energy) starten beim ersten IMU EIN
 (`panel_imu.c` ruft `panel_ble_start()` auf) oder mit `ble scan` des
@@ -601,6 +605,7 @@ zeigt Speicherbedarf, den das Werkzeug nicht verfolgt.
 | `wifi_get` | 8 192 | nicht gemessen |
 | `cardjob` | 6 656 | nicht gemessen |
 | `c6upd` | 4 096 | nicht gemessen |
+| `devimg` | 8 192 | nicht gemessen |
 | `shot` | 7 168 | nicht gemessen |
 
 Die Tasks von ESP-IDF und esp_hosted stehen nicht in der Tabelle: ihre Namen
@@ -819,11 +824,14 @@ sind nicht gezählt.
 Das Update der Funkgeräte, aus der Linker-Map des Standard-Builds:
 `panel_devupd.c` hält 2 008 Bytes DIRAM (1 580 .bss, 428 .data) und 5 050
 Bytes Code; `upd_dev.c` 566 Bytes .bss und 3 926 Bytes Code;
-`shared/devupd` 3 540 Bytes Code und `protocols/bleota` 446. Die drei
-mitgebrachten Images, das des Dial und die beider Knoten, fügen bei 0.23.12
-2 130 416 Bytes Image hinzu: 841 504, 646 240 und 642 672. Mit ihnen hat
-das Anwendungs-Image 7 375 296 Bytes, 751 168 (9,2%) unter dem Slot von
-8 126 464.
+`shared/devupd` 3 540 Bytes Code und `protocols/bleota` 446. Das
+Panel-Image bringt weder die Images dieser Geräte noch das des C6 mit: Ein
+Update lädt die Datei seines Geräts in den PSRAM
+([Bildschirme: Geräte-Images](Screens-de.md#geräte-images)). Bei 0.23.16
+haben die vier Dateien 850 816 (Dial), 646 336 (Leistungsknoten), 642 768
+(Auswuchtknoten) und 1 283 616 (C6) Bytes. Der Release-Build des Panels
+mit beiden IOmcu-Images hat 4 074 096 Bytes, 4 052 368 (49,9%) unter dem
+Slot von 8 126 464.
 Die 4 096 Bytes der Ereignis-Warteschlange, die aufgehobenen DISCONNECTs
 und der Hub stecken in der DIRAM-Zahl, außerhalb von `libbt.a`. Hub und 5
 Verbindungen fügen dem Standard-Build mit einer Verbindung 3 704 Bytes

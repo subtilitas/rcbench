@@ -1,6 +1,7 @@
 /**
  * @file panel_c6.c
- * @brief The C6 radio's update from the image this panel carries: SETUP >
+ * @brief The C6 radio's update from the image of the release the panel
+ *        runs, fetched by the row's hold (panel_devimg.h): SETUP >
  *        UPDATES' C6 RADIO row, the gate, and the steps over SDIO (Secure
  *        Digital input/output) through esp_hosted's OTA (over-the-air) calls.
  *
@@ -49,6 +50,7 @@
 #include "fw_ota.h"
 #include "panel.h"
 #include "panel_ble.h"
+#include "panel_devimg.h"
 #include "panel_devupd.h"
 #include "ui_screen.h"
 #include "ui_text.h"
@@ -68,13 +70,6 @@ static const char *TAG = "rcbench";
 /** @brief c6upd's core: 0, with the radio's tasks. */
 #define C6_CORE       0
 
-#ifdef RCBENCH_C6_IMAGE
-/** @brief First byte of the carried C6 image (main/CMakeLists.txt). */
-extern const uint8_t _binary_rcbench_c6_bin_start[];
-/** @brief One past its last byte. */
-extern const uint8_t _binary_rcbench_c6_bin_end[];
-#endif
-
 /** @brief One step's answer, c6upd to app_main. */
 typedef struct {
     uint32_t     gen;     /**< the step's gen                        */
@@ -84,9 +79,9 @@ typedef struct {
 } c6_answer_t;
 
 static fw_c6_ota_t     s_ota;        /**< app_main only */
-static fw_image_info_t s_info;       /**< the carried image, once checked */
-static bool            s_checked;    /**< the image was checked */
-static fw_err_t        s_check;      /**< and what the check said */
+static fw_image_info_t s_info;       /**< the image of the update under way */
+static const uint8_t  *s_img;        /**< its bytes, PSRAM (panel_devimg.c) */
+static uint32_t        s_len;        /**< their count */
 static bool            s_seen_end;   /**< the update's end was reported */
 static fw_c6_restart_t s_restart;    /**< the restart after a success */
 static TaskHandle_t    s_task;       /**< c6upd, once created */
@@ -99,56 +94,15 @@ static atomic_bool     s_busy;       /**< panel_c6_busy() */
 static uint8_t         s_chunk[FW_C6_CHUNK];
 
 /**
- * @brief The carried image and its length.
- * @param len receives the length, 0 for none
- * @return the image, NULL for none
- */
-static const uint8_t *carried(uint32_t *len)
-{
-#ifdef RCBENCH_C6_IMAGE
-    /* cppcheck takes the two symbols for two arrays; see CU_SPAN(). */
-    // cppcheck-suppress subtractPointers
-    *len = (uint32_t)(_binary_rcbench_c6_bin_end - _binary_rcbench_c6_bin_start);
-    return _binary_rcbench_c6_bin_start;
-#else
-    *len = 0u;
-    return NULL;
-#endif
-}
-
-/** @brief Checks the carried image once and logs what it is. */
-static void check_once(void)
-{
-    if (s_checked) {
-        return;
-    }
-    s_checked = true;
-    uint32_t len = 0u;
-    const uint8_t *img = carried(&len);
-    if (img == NULL) {
-        s_check = FW_ERR_EMPTY;
-        ESP_LOGI(TAG, "C6: this build carries no C6 image");
-        return;
-    }
-    s_check = fw_c6_image_check(img, len, &s_info);
-    if (s_check == FW_OK) {
-        ESP_LOGI(TAG, "C6: carries esp_hosted %s, %lu bytes",
-                 s_info.version_text, (unsigned long)len);
-    } else {
-        ESP_LOGE(TAG, "C6: the carried image fails its check: %s",
-                 fw_err_str(s_check));
-    }
-}
-
-/**
  * @brief Runs one step's calls on c6upd.
  * @param st the step
  * @param a  its answer, filled
  */
 static void run_step(const fw_c6_step_t *st, c6_answer_t *a)
 {
-    uint32_t len = 0u;
-    const uint8_t *img = carried(&len);
+    /* Set before the update's first step and unchanged to its end. */
+    const uint32_t len = s_len;
+    const uint8_t *img = s_img;
     esp_err_t e = ESP_OK;
     switch (st->act) {
     case FW_C6_ACT_LINK: {
@@ -309,17 +263,19 @@ static fw_c6_feed_t feed_now(bool armed)
 {
     fw_c6_feed_t f;
     memset(&f, 0, sizeof(f));
-    uint32_t len = 0u;
-    f.have_image = carried(&len) != NULL;
-    f.image_ok = s_check == FW_OK;
-    f.carried = s_info.version;
+    /* The release publishes the image; the hold fetches it when it is not
+     * in memory yet (panel_devimg.h). */
+    f.have_image = true;
+    f.image_ok = true;
+    f.carried = panel_devimg_want(DEVIMG_C6);
     c6_link_version_t v;
     if (c6_link_version(&v)) {
         f.known = true;
         f.running = (fw_version_t){ v.major, v.minor, v.patch };
     }
     f.link_failed = c6_link_failed();
-    f.updating = fw_c6_ota_active(&s_ota);
+    /* The image on its way reads as the update running: no second hold. */
+    f.updating = fw_c6_ota_active(&s_ota) || panel_devimg_running(DEVIMG_C6);
     f.ending = atomic_load(&s_in_call);
     f.restarting = fw_c6_restart_pending(&s_restart);
     f.armed = armed;
@@ -356,10 +312,20 @@ static void start_update(bool armed, uint32_t now)
     fw_c6_why_t why = FW_C6_WHY_NONE;
     const fw_c6_feed_t f = feed_now(armed);
     const fw_c6_row_t row = fw_c6_row(&f, &why);
-    uint32_t len = 0u;
-    (void)carried(&len);
-    if ((row != FW_C6_ROW_READY && row != FW_C6_ROW_REINSTALL) || !task_once()
-        || !fw_c6_ota_start(&s_ota, len, s_info.version, now)) {
+    const bool ready = row == FW_C6_ROW_READY || row == FW_C6_ROW_REINSTALL;
+    if (ready && !panel_devimg_get(DEVIMG_C6, NULL, NULL, NULL, NULL)) {
+        /* Not in memory: the download or the card read first; the update
+         * starts when the image has passed its checks
+         * (owed_service()). */
+        atomic_store(&s_busy, false);
+        (void)panel_devimg_request(DEVIMG_C6, armed);
+        return;
+    }
+    if (ready) {
+        (void)panel_devimg_get(DEVIMG_C6, &s_img, &s_len, &s_info, NULL);
+    }
+    if (!ready || !task_once()
+        || !fw_c6_ota_start(&s_ota, s_len, s_info.version, now)) {
         const upd_c6_view_t v = { .row = row, .why = why };
         ESP_LOGW(TAG, "C6 update refused: row %u, reason %u", (unsigned)row,
                  (unsigned)why);
@@ -372,7 +338,7 @@ static void start_update(bool armed, uint32_t now)
     ESP_LOGI(TAG, "C6 update%s: esp_hosted %s, %lu bytes",
              row == FW_C6_ROW_REINSTALL ? " (reinstall: the C6 reports this "
                                           "version)" : "",
-             s_info.version_text, (unsigned long)len);
+             s_info.version_text, (unsigned long)s_len);
 }
 
 /**
@@ -416,9 +382,47 @@ static void restart_service(bool armed, uint32_t now)
     }
 }
 
+/**
+ * @brief The update a hold owes to an image that was on its way: started
+ *        once the row's hold would start it, kept while Wi-Fi goes off
+ *        after the download, dropped with the row's reason otherwise.
+ * @param armed ARMED, an arm waiting or an ARM queued
+ * @param now   now
+ */
+static void owed_service(bool armed, uint32_t now)
+{
+    fw_c6_why_t why = FW_C6_WHY_NONE;
+    const fw_c6_feed_t f = feed_now(armed);
+    const fw_c6_row_t row = fw_c6_row(&f, &why);
+    const bool open = row == FW_C6_ROW_READY || row == FW_C6_ROW_REINSTALL;
+    const bool radio = row == FW_C6_ROW_BLOCKED && why == FW_C6_WHY_RADIO;
+    switch (panel_devimg_owed(DEVIMG_C6, open, radio)) {
+    case DEVIMG_OWED_FIRE:
+        start_update(armed, now);
+        break;
+    case DEVIMG_OWED_WAIT:
+        if (radio && s_wifi_ok) {
+            /* The download's time request holds the radio up to 30s
+             * longer; the update does not wait for it. */
+            wifi_access_end_linger();
+        }
+        break;
+    case DEVIMG_OWED_DROP: {
+        const upd_c6_view_t v = { .row = row, .why = why };
+        const char *t = upd_c6_reason(&v);
+        ESP_LOGW(TAG, "C6: the image arrived; the update does not start: "
+                      "row %u, reason %u", (unsigned)row, (unsigned)why);
+        ui_router_set_notice(t != NULL ? t : TR(C6_WHY_ENDING));
+        break;
+    }
+    case DEVIMG_OWED_NONE:
+    default:
+        break;
+    }
+}
+
 void c6_service(bool armed)
 {
-    check_once();
     const uint32_t now = now_ms();
 
     /* The answer to the step out, then its limit. */
@@ -442,14 +446,19 @@ void c6_service(bool armed)
     if (upd_c6_take()) {
         start_update(armed, now);
     }
+    owed_service(armed, now);
 
     fw_c6_why_t why = FW_C6_WHY_NONE;
-    const fw_c6_feed_t f = feed_now(armed);
+    fw_c6_feed_t f = feed_now(armed);
+    /* The row shows the update under way while its start is still owed
+     * (the radio's wait): no SKIP, no second hold. */
+    f.updating = f.updating || panel_devimg_pending(DEVIMG_C6);
     upd_c6_view_t v = {
         .row = fw_c6_row(&f, &why), .why = why, .known = f.known,
         .running = f.running, .have_image = f.have_image && f.image_ok,
         .carried = f.carried, .percent = fw_c6_ota_percent(&s_ota),
     };
+    panel_devimg_view(DEVIMG_C6, &v.fetch);
     upd_c6_set(&v);
 
     atomic_store(&s_busy, fw_c6_ota_active(&s_ota) || atomic_load(&s_in_call)

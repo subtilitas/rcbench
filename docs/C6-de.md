@@ -93,7 +93,7 @@ SDIO, BLE (Bluetooth Low Energy)) und `Version mismatch: Host [2.13.0] >
 Co-proc [0.0.0]` und beantwortet die Versionsabfrage nicht. Ob er das Update
 über SDIO annimmt, ist nicht bekannt.
 
-#### Das Image, das das Panel mitbringt
+#### Das C6-Image
 
 CI und das Release bauen die Firmware des C6 aus dem Ordner `slave/` der
 esp_hosted-Komponente, die das Panel festlegt, 2.13.0, mit ESP-IDF v6.1 für den
@@ -114,12 +114,14 @@ verschoben hat.
 | --- | --- |
 | `rcbench-c6-2.13.0.bin` (über SDIO gesendet) | 1 283 616 Bytes, 65,3% des C6-Slots, mit `CONFIG_BT_LE_MAX_CONNECTIONS=5` wie mit 3 gleich; jede Verbindung belegt beim Start des Controllers etwa 1kB DRAM des C6 (Kconfig-Hilfe), der freie Heap ist nicht gemessen |
 | `rcbench-c6-merged-2.13.0.bin` (über H4 ab 0x0 geflasht) | 1 349 152 Bytes: Bootloader, Partitionstabelle, otadata und die Anwendung |
-| Wachstum des Panel-Images, wenn es mitgebracht wird | 1 284 272 Bytes Flash; 1 408 Bytes interner RAM (ein Puffer für einen Block von 1 400 Bytes) |
-| Panel-Image damit, mit NimBLE und einem IOmcu-Image | 4 419 968 von 8 126 464 Bytes im Update-Slot, 45,6% frei; das Release-Image mit beiden IOmcu-Images ist nicht gemessen |
+| PSRAM des Panels, solange das Image gehalten wird | seine Länge, vom Download oder Lesen der Karte bis zum Neustart des Panels; 1 408 Bytes interner RAM für das Update (ein Puffer für einen Block von 1 400 Bytes) |
 
-Ein Build bringt das Image mit `-D RCBENCH_C6_BIN=<Pfad>` mit, wie die
-IOmcu-Images; ein Build ohne bringt keines mit, und die Zeile C6 RADIO auf
-SETUP > UPDATES > EINZELNE UPDATES sagt das.
+Das Panel-Image bringt es nicht mit. Das Release veröffentlicht es als
+`rcbench-c6-2.13.0.bin`, benannt nach der esp_hosted-Version, die die
+Host-Seite des Panels ausführt, und das Halten des Schritts C6-FUNK lädt es
+aus dem Release, das das Panel ausführt, oder liest es aus `BENCH/UPDATES`
+der SD-Karte, und prüft es, bevor es gesendet wird
+([Bildschirme: Geräte-Images](Screens-de.md#geräte-images)).
 
 ```bash
 # das Image des C6 aus der Managed Component des Panels (ein Panel-Build
@@ -132,23 +134,26 @@ cd slave && IDF_TARGET=esp32c6 idf.py build \
   && idf.py merge-bin -o rcbench-c6-merged.bin
 cd ../../.. && python3 tools/c6_image.py check firmware/c6/slave \
   firmware/c6/slave/build c6-dist
-# das Panel, das es mitbringt
-cd firmware/panel && idf.py -D RCBENCH_C6_BIN=../../c6-dist/rcbench-c6-2.13.0.bin build
+# für ein Panel ohne Netz: das Image auf der SD-Karte
+mkdir -p /media/sdcard/BENCH/UPDATES
+cp c6-dist/rcbench-c6-2.13.0.bin /media/sdcard/BENCH/UPDATES/
 ```
 
 #### Das Update über SDIO
 
 Auf UPDATES ist der C6 Schritt 3: Meldet er eine andere Version als die
-des mitgebrachten Images und sind die Schritte davor erledigt, trägt seine
+des C6-Images des Release und sind die Schritte davor erledigt, trägt seine
 Karte `2s HALTEN ZUM C6-FUNK-UPDATE`
 ([Bildschirme, Die Schritte](Screens-de.md#die-schritte)).
 Die Zeile C6 RADIO auf SETUP > UPDATES > EINZELNE UPDATES (OPTIONEN, Zeile
 Einzelne Updates; [Bildschirme, Einzelne Updates](Screens-de.md#einzelne-updates))
 zeigt die Version, die der C6 beim
-ersten Wi-Fi-Start gemeldet hat, oder `nicht gemeldet`, die mitgebrachte
-Version und `2s HALTEN ZUM C6-FUNK-UPDATE`, bei der mitgebrachten Version `2s
-HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN`. Das Halten ist aktiv, wenn
-der Build ein Image mitbringt, das seine Prüfung bestanden hat, die Verbindung
+ersten Wi-Fi-Start gemeldet hat, oder `nicht gemeldet`, die Version des
+Release und `2s HALTEN ZUM C6-FUNK-UPDATE`, bei dieser Version `2s
+HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN`. Das Halten holt zuerst das
+Image, solange es nicht im Speicher ist
+([Bildschirme: Geräte-Images](Screens-de.md#geräte-images)). Das Halten ist aktiv, wenn
+die Verbindung
 zum C6 nicht ausgefallen ist, die Bench SAFE ist und kein ARM wartet, der
 Netzteilausgang aus ist, kein Aufzeichnungslauf offen ist, keine
 Platinenzeichnung geladen wird, weder das IOmcu-Update noch Download oder
@@ -161,7 +166,7 @@ im Alarmband. Das Update läuft auf der Task `c6upd` (Kern 0, Priorität 2, Stac
 
 | Schritt | Aufruf | Grenze | Endet als |
 | --- | --- | ---: | --- |
-| Verbindung | `c6_link_up()`, dann die Version des C6 | 30 000ms | `Der C6-Funk hat nicht geantwortet. WLAN ist bis zum Neustart des Panels aus.`; ein C6, der die mitgebrachte Version meldet, bekommt das Image trotzdem |
+| Verbindung | `c6_link_up()`, dann die Version des C6 | 30 000ms | `Der C6-Funk hat nicht geantwortet. WLAN ist bis zum Neustart des Panels aus.`; ein C6, der die Version des Release meldet, bekommt das Image trotzdem |
 | Beginn | `esp_hosted_slave_ota_begin()`: der C6 löscht den Slot, aus dem er nicht läuft | 20 000ms | ein Fehler: `Der C6-Funk nimmt kein Update über SDIO an. Flashe ihn über Header H4.` |
 | Schreiben | `esp_hosted_slave_ota_write()`, 1 400 Bytes je Aufruf, 4 Aufrufe je Schritt | 10 000ms je Schritt | ein Fehler: noch einmal der Ende-Aufruf, der das OTA-Handle des C6 freigibt, dann `C6-Update abgebrochen: Schreiben fehlgeschlagen. Vorherige Firmware läuft.` |
 | Ende | `esp_hosted_slave_ota_end()`: der C6 prüft den SHA-256 des Images | 10 000ms | `... Prüfung im C6 fehlgeschlagen ...` |
@@ -220,7 +225,7 @@ Leistungsknoten-Update läuft.`. ARM während des Updates eines Geräts lautet
 Konsolenzeilen, Tag `rcbench`:
 
 ```
-I (…) rcbench: C6: carries esp_hosted 2.13.0, 1283616 bytes
+I (…) devimg: rcbench-c6-2.13.0.bin: 2.13.0 1283616 bytes, SHA-256 <4 bytes>, from GitHub
 I (…) rcbench: C6 update: esp_hosted 2.13.0, 1283616 bytes
 I (…) rcbench: C6: updated to esp_hosted 2.13.0, 1283616 bytes; restarting in 3000ms
 W (…) rcbench: C6: the restart waits for SAFE with all outputs off

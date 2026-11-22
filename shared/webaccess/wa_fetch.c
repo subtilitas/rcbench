@@ -8,6 +8,7 @@
 
 #include "wa_fetch.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #include "fw_sha256.h"
@@ -50,6 +51,20 @@ wa_why_t wa_fetch_start_gate(wa_why_t gate, bool taken, bool task_alive,
 bool wa_fetch_busy(const wa_fetch_t *f)
 {
     return f->phase != WA_PH_IDLE && f->phase != WA_PH_ENDED;
+}
+
+void wa_fetch_keep(const wa_fetch_t *f, wa_job_t next, wa_fetch_t *keep)
+{
+    if (next == WA_JOB_DEVICE && f->job != WA_JOB_DEVICE
+        && !wa_fetch_busy(f)) {
+        *keep = *f;
+    }
+}
+
+void wa_fetch_own(const wa_fetch_t *f, const wa_fetch_t *keep,
+                  wa_fetch_t *out)
+{
+    *out = (f->job != WA_JOB_DEVICE) ? *f : *keep;
 }
 
 bool wa_fetch_stale(const wa_fetch_t *f, wa_channel_t now)
@@ -108,7 +123,7 @@ wa_got_t wa_fetch_start(wa_fetch_t *f, wa_job_t job, fw_version_t want,
     f->job = job;
     f->channel = (ch == WA_CH_TESTING) ? WA_CH_TESTING : WA_CH_STABLE;
     f->start_ms = now_ms;
-    f->found = (job == WA_JOB_DOWNLOAD) ? want : (fw_version_t){ 0, 0, 0 };
+    f->found = (job != WA_JOB_CHECK) ? want : (fw_version_t){ 0, 0, 0 };
     if (!have_net) {
         f->phase = WA_PH_ENDED;
         f->got = WA_GOT_NO_NET;
@@ -243,7 +258,7 @@ static bool got_found(wa_got_t got)
 
 bool wa_fetch_has_found(const wa_fetch_t *f)
 {
-    return f != NULL && (f->job == WA_JOB_DOWNLOAD || got_found(f->got));
+    return f != NULL && (f->job != WA_JOB_CHECK || got_found(f->got));
 }
 
 void wa_fetch_install_failed(wa_fetch_t *f)
@@ -737,25 +752,29 @@ static void sig_add(const wa_run_t *r, void *ctx, const uint8_t *d,
 }
 
 /**
- * @brief The release signature of the staged image, and the verdict on it
- *        in r->up->info.sig.
+ * @brief The release signature of a file in memory, @p name, and the
+ *        verdict on it in @p verdict.
  *
  * A release without one (a status other than 200 or a redirect) is
  * FW_SIG_NONE; an answer of a size outside FW_SIG_MIN to FW_SIG_MAX, or a
  * redirect fw_release_redirect() refuses, is FW_SIG_FORM.
  * Neither ends the job.
  *
- * @param r   the runner, with the image staged in r->up
- * @param v   the release
- * @param out takes the result when the job ends here
+ * @param r       the runner
+ * @param v       the release
+ * @param name    the signature's file name in the release
+ * @param img     the file the signature is of
+ * @param bytes   its length
+ * @param verdict takes the verdict
+ * @param out     takes the result when the job ends here
  * @return false when the job ends: an abort, the budget, or a connection
  *         that broke
  */
-static bool fetch_sig(const wa_run_t *r, fw_version_t v, wa_fetch_res_t *out)
+static bool fetch_sig_of(const wa_run_t *r, fw_version_t v, const char *name,
+                         const uint8_t *img, uint32_t bytes,
+                         fw_sig_t *verdict, wa_fetch_res_t *out)
 {
-    char name[FW_REL_SIG_NAME_MAX];
-    fw_release_sig_name(v, name);
-    fw_sig_t verdict = FW_SIG_NONE;
+    *verdict = FW_SIG_NONE;
     if (fw_release_url(v, name, r->url, FW_REL_URL_MAX + 1u)) {
         sigbuf_t sb = { { 0u }, 0u };
         const sink_t ks = { sig_begin, sig_add, &sb, FW_SIG_MAX,
@@ -763,21 +782,40 @@ static bool fetch_sig(const wa_run_t *r, fw_version_t v, wa_fetch_res_t *out)
         wa_fetch_res_t got;
         memset(&got, 0, sizeof(got));
         if (fetch(r, &ks, &got)) {
-            verdict = (sb.n < FW_SIG_MIN) ? FW_SIG_FORM
-                      : (r->verify != NULL)
-                          ? r->verify(r->ctx, r->up->buf, r->up->bytes,
-                                      sb.b, sb.n)
-                          : FW_SIG_NONE;
+            *verdict = (sb.n < FW_SIG_MIN) ? FW_SIG_FORM
+                       : (r->verify != NULL)
+                           ? r->verify(r->ctx, img, bytes, sb.b, sb.n)
+                           : FW_SIG_NONE;
         } else if (got.got == WA_GOT_UNEXPECTED) {
-            verdict = FW_SIG_FORM;    /* a size or a redirect out of form */
+            *verdict = FW_SIG_FORM;   /* a size or a redirect out of form */
         } else if (got.got != WA_GOT_REFUSED) {
             *out = got;
             out->found = v;
             return false;
         }
+    } else {
+        *verdict = FW_SIG_FORM;       /* a name too long for the URL */
     }
-    r->up->info.sig = verdict;
     return true;
+}
+
+/**
+ * @brief The release signature of the staged panel image, and the verdict
+ *        on it in r->up->info.sig (fetch_sig_of()).
+ * @param r   the runner, with the image staged in r->up
+ * @param v   the release
+ * @param out takes the result when the job ends here
+ * @return false when the job ends
+ */
+static bool fetch_sig(const wa_run_t *r, fw_version_t v, wa_fetch_res_t *out)
+{
+    char name[FW_REL_SIG_NAME_MAX];
+    fw_release_sig_name(v, name);
+    fw_sig_t verdict = FW_SIG_NONE;
+    const bool go = fetch_sig_of(r, v, name, r->up->buf, r->up->bytes,
+                                 &verdict, out);
+    r->up->info.sig = verdict;
+    return go;
 }
 
 void wa_run_download(const wa_run_t *r, fw_version_t v, wa_fetch_res_t *out)
@@ -851,5 +889,101 @@ void wa_run_download(const wa_run_t *r, fw_version_t v, wa_fetch_res_t *out)
         failed(r, out, WA_GOT_TIMEOUT, FW_REL_OK);
         return;
     }
+    res(out, WA_GOT_STAGED, FW_REL_OK);
+}
+
+/** @brief The sink of a device's file: one buffer of its announced length. */
+typedef struct {
+    uint8_t *buf;    /**< from r->alloc, NULL until begin */
+    uint32_t bytes;  /**< the announced length */
+} dev_sink_t;
+
+/** @brief Start a device's file: a buffer of @p bytes, or end the job. */
+static bool dev_begin(const wa_run_t *r, void *ctx, uint32_t bytes,
+                      wa_fetch_res_t *out)
+{
+    dev_sink_t *d = ctx;
+    d->buf = r->alloc(r->ctx, bytes);
+    d->bytes = bytes;
+    if (d->buf == NULL) {
+        res(out, WA_GOT_MEMORY, FW_REL_OK);
+        return false;
+    }
+    report(r, WA_PH_IMAGE, 0u, bytes);
+    return true;
+}
+
+/** @brief Take a piece of a device's file. */
+static void dev_add(const wa_run_t *r, void *ctx, const uint8_t *d,
+                    uint32_t n, uint32_t done, uint32_t total)
+{
+    /* fetch() hands over no more than the announced length. */
+    memcpy(((dev_sink_t *)ctx)->buf + (done - n), d, n);
+    report(r, WA_PH_IMAGE, done, total);
+}
+
+void wa_run_device(const wa_run_t *r, fw_version_t v, wa_fetch_res_t *out)
+{
+    memset(out, 0, sizeof(*out));
+    out->found = v;
+    report(r, WA_PH_SUMS, 0u, 0u);
+    if (r->name == NULL
+        || !fw_release_url(v, FW_REL_SUMS_NAME, r->url, FW_REL_URL_MAX + 1u)) {
+        res(out, WA_GOT_UNEXPECTED, FW_REL_LONG);
+        return;
+    }
+    sums_t sums = { 0u };
+    const sink_t ks = { sums_begin, sums_add, &sums, FW_REL_SUMS_MAX,
+                        WA_GOT_SUMS };
+    if (!fetch(r, &ks, out)) {
+        return;
+    }
+    uint8_t want[FW_SHA256_BYTES];
+    const fw_rel_err_t se = fw_release_parse_sums(r->sums, sums.n, r->name,
+                                                  want);
+    if (se != FW_REL_OK) {
+        res(out, WA_GOT_SUMS, se);
+        return;
+    }
+
+    report(r, WA_PH_IMAGE, 0u, 0u);
+    if (!fw_release_url(v, r->name, r->url, FW_REL_URL_MAX + 1u)) {
+        res(out, WA_GOT_UNEXPECTED, FW_REL_LONG);
+        return;
+    }
+    dev_sink_t dev = { NULL, 0u };
+    const sink_t kd = { dev_begin, dev_add, &dev, r->slot,
+                        WA_GOT_UNEXPECTED };
+    const bool whole = fetch(r, &kd, out);
+    out->buf = dev.buf;
+    if (!whole) {
+        return;
+    }
+    report(r, WA_PH_CHECKING, dev.bytes, dev.bytes);
+    uint8_t got[FW_SHA256_BYTES];
+    fw_sha256(dev.buf, dev.bytes, got);
+    if (memcmp(got, want, sizeof(got)) != 0) {
+        res(out, WA_GOT_HASH, FW_REL_OK);
+        return;
+    }
+    /* Its release signature beside it, <name>.sig, as the panel image's. */
+    char sig_name[WA_DEV_SIG_NAME_MAX];
+    fw_sig_t verdict = FW_SIG_FORM;
+    const int sn = snprintf(sig_name, sizeof(sig_name), "%s.sig", r->name);
+    if (sn > 0 && (size_t)sn < sizeof(sig_name)) {
+        if (!fetch_sig_of(r, v, sig_name, dev.buf, dev.bytes, &verdict,
+                          out)) {
+            out->buf = dev.buf;
+            return;
+        }
+    }
+    out->sig = verdict;
+    if (r->stopped(r->ctx) || run_left(r) == 0u) {
+        /* Ended, or past the budget, while the last bytes came in: the job
+         * is over, the file is not handed on. */
+        failed(r, out, WA_GOT_TIMEOUT, FW_REL_OK);
+        return;
+    }
+    out->bytes = dev.bytes;
     res(out, WA_GOT_STAGED, FW_REL_OK);
 }

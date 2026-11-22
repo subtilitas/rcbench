@@ -856,6 +856,10 @@ SCREENS = {
     "updates-step-dial-ask": ("updates-step-dial-ask.png", "updates",
                               "dark"),
     "updates-step-waiting": ("updates-step-waiting.png", "updates", "dark"),
+    # The Dial's step after its download failed: the result line with its
+    # code, and the hold that reads the image from the SD card.
+    "updates-step-dial-card": ("updates-step-dial-card.png", "updates",
+                               "dark"),
     "updates-done": ("updates-done.png", "updates", "dark"),
     # SINGLE UPDATES' IOmcu section with an IOmcu on another build: the
     # hold that starts the IOmcu's update.
@@ -1186,6 +1190,11 @@ FIT_ONLY = {
     "updates-wiz-node":       (None, "updates", "dark"),
     "updates-wiz-node-ask":   (None, "updates", "dark"),
     "updates-wiz-dev-send":   (None, "updates", "dark"),
+    "updates-wiz-dev-download": (None, "updates", "dark"),
+    "updates-wiz-dev-card":   (None, "updates", "dark"),
+    "updates-wiz-dev-ram":    (None, "updates", "dark"),
+    "updates-wiz-dev-nosig":  (None, "updates", "dark"),
+    "updates-wiz-c6-check":   (None, "updates", "dark"),
     "updates-wiz-wait-iomcu": (None, "updates", "dark"),
     "updates-wiz-wait-node":  (None, "updates", "dark"),
     "updates-wiz-failed":     (None, "updates", "dark"),

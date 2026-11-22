@@ -1743,7 +1743,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 625 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 628 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1844,7 +1844,7 @@ The host suite is 625 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`,
 `test_wifi_kept`, `test_wifi_layout`, `test_update_sig`, `test_fw_image`, `test_fw_c6`, `test_fw_install`, `test_fw_run`, `test_fw_trial`,
 `test_fw_slots`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_fw_sig`, `test_fw_sign`, `test_wa_session`,
-`test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_sig`, `test_wa_fetch_channel`, `test_wa_fetch_task`,
+`test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_sig`, `test_wa_fetch_dev`, `test_wa_fetch_channel`, `test_wa_fetch_task`,
 `test_upd_screen`, `test_upd_settings`, `test_upd_single`, `test_upd_c6`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`,
 `test_wa_page`, `test_wa_page_de`, `test_wa_hl`, `test_wa_edit`, `test_wa_mdns`,
 `test_wa_guard`, `test_wa_kept`, `test_wa_cookie`, `test_wa_api`, `test_wa_api_file`,
@@ -1871,7 +1871,7 @@ The host suite is 625 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
 `test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_view`,
-`test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client`, `test_upd_dev`,
+`test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client`, `test_devimg`, `test_upd_dev`, `test_upd_fetch`,
 `test_upd_wizard`, `test_upd_wizard_map`, `test_upd_wiz_view` and `test_harness`.
 
 The harness is `test/host/greatest.h`, written for this project. `CHECK_EQ` compares
@@ -2377,7 +2377,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-1036 committed screenshots to the current render, 518 in English and the same 518 in German, and `render_ui.py --fit` fails on a string that
+1038 committed screenshots to the current render, 519 in English and the same 519 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -2568,12 +2568,13 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/upd_remind.c` | 163 | 153 | 93.9% |
 | `shared/ui/upd_single.c` | 166 | 164 | 98.8% |
 | `shared/ui/upd_settings.c` | 57 | 53 | 93.0% |
-| `shared/ui/upd_c6.c` | 151 | 149 | 98.7% |
-| `shared/ui/upd_dev.c` | 292 | 286 | 98.0% |
+| `shared/ui/upd_c6.c` | 152 | 149 | 98.0% |
+| `shared/ui/upd_dev.c` | 293 | 287 | 98.0% |
+| `shared/ui/upd_fetch.c` | 105 | 105 | 100.0% |
 | `shared/ui/upd_wizard.c` | 308 | 308 | 100.0% |
 | `shared/ui/upd_run.c` | 44 | 44 | 100.0% |
 | `shared/ui/upd_wiz_view.c` | 322 | 310 | 96.3% |
-| `shared/ui/upd_wiz_card.c` | 205 | 204 | 99.5% |
+| `shared/ui/upd_wiz_card.c` | 214 | 213 | 99.5% |
 | `shared/ui/imu_ctl.c` | 108 | 108 | 100.0% |
 | `shared/ui/imu_ble.c` | 141 | 140 | 99.3% |
 | `shared/ui/imu_sensor.c` | 234 | 234 | 100.0% |
@@ -2858,8 +2859,9 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/fwupdate/fw_sign.c` | 66 | 63 | 95.5% |
 | `shared/devupd/devupd.c` | 283 | 271 | 95.8% |
 | `shared/devupd/devupd_client.c` | 90 | 81 | 90.0% |
+| `shared/devupd/devimg.c` | 110 | 107 | 97.3% |
 | `shared/webaccess/wa_session.c` | 432 | 430 | 99.5% |
-| `shared/webaccess/wa_fetch.c` | 462 | 452 | 97.8% |
+| `shared/webaccess/wa_fetch.c` | 531 | 516 | 97.2% |
 | `shared/webaccess/wa_text.c` | 343 | 341 | 99.4% |
 | `shared/webaccess/wa_walk.c` | 96 | 91 | 94.8% |
 | `shared/webaccess/wa_send.c` | 102 | 102 | 100.0% |
@@ -2871,7 +2873,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **105783** | **103515** | **97.9%** |
+| **total** | **106078** | **103801** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

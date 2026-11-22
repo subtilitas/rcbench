@@ -216,18 +216,24 @@ The time of the update over CAN is not measured.
 ### The C6 radio over SDIO
 
 The board's ESP32-C6 carries Wi-Fi and Bluetooth and runs esp_hosted's
-firmware. A panel image carries the C6 firmware of its esp_hosted version,
-2.13.0; the C6 as shipped reports none (`not reported`).
+firmware. The panel's release publishes the C6 firmware of its esp_hosted
+version, 2.13.0, as `rcbench-c6-2.13.0.bin`; the panel image does not carry
+it, and the C6 as shipped reports none (`not reported`).
 
 1. Start Wi-Fi once (WI-FI > ACCESS POINT), so the C6 is asked its version,
    then switch it off.
 2. On SETUP > UPDATES the C6 RADIO row reads `C6 radio: not reported.
-   Included: 2.13.0.`. Hold `HOLD 2s TO UPDATE THE C6 RADIO` for 2s with the
-   bench SAFE and the supply output off. The button counts `C6 UPDATE 0%`
-   to `100%`.
+   Release: 2.13.0.`. Hold `HOLD 2s TO UPDATE THE C6 RADIO` for 2s with the
+   bench SAFE and the supply output off. With a home network kept on
+   WI-FI the button counts `DOWNLOADING 0%` to `100%` while the panel
+   downloads the image; without one, copy `rcbench-c6-2.13.0.bin` from the
+   release to the SD card's `BENCH/UPDATES` first, and the hold reads
+   `HOLD 2s TO UPDATE FROM THE SD CARD`
+   ([Screens: Device images](Screens.md#device-images)). Then the button
+   counts `C6 UPDATE 0%` to `100%`.
 3. The band says `C6 radio updated to 2.13.0. The panel restarts.`, and
    the panel restarts 3s later. After the next Wi-Fi start the row reads
-   `C6 radio: 2.13.0. Included: 2.13.0.`.
+   `C6 radio: 2.13.0. Release: 2.13.0.`.
 
 A C6 that refuses the update leaves `The C6 radio takes no update over
 SDIO. Flash it over header H4.`; it keeps its firmware and Wi-Fi works as

@@ -421,9 +421,10 @@ its stack less 1024 bytes.
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,392 | 1,664 |
 | `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 6,912 | 2,912 | 2,960 |
 | `mdns` | `mdns_task`, the mDNS (multicast domain name system) responder while the panel is joined to a home network | 4,096 | 1,440 | 1,616 |
-| `wifi_get` | `fetch_task`, one release check or download from GitHub (`components/wifi_access`) | 8,192 | 1,744 | 5,408 |
+| `wifi_get` | `fetch_task`, one release check or download from GitHub, the panel's image or a device's (`components/wifi_access`) | 8,192 | 1,840 | 5,312 |
 | `cardjob` | `files_task`, FILES' card operations (`panel_files.c`) | 6,656 | 2,064 | 3,552 |
 | `c6upd` | `c6_task`, the C6 radio's update, one step at a time (`panel_c6.c`) | 4,096 | 1,248 | 1,808 |
+| `devimg` | `devimg_task`, a device image's read from the SD card, its checks and its release signature, then gone (`panel_devimg.c`) | 8,192 | 3,920 | 3,232 |
 | `shot` | `shot_task`, one screenshot job, then gone (`panel_shot.c`) | 7,168 | 2,432 | 3,696 |
 
 The page's HTTP (hypertext transfer protocol) server runs on a task of
@@ -434,7 +435,10 @@ the table: their depth is not measured, and the console reports what they
 leave unused (below). `wifi_get`'s depth leaves out the TLS (transport layer
 security) handshake and every read under it: esp_http_client reaches its
 transport through a function pointer. Its stack uses the page server's allocation; the two tasks
-never run concurrently; the handshake's depth is not measured.
+never run concurrently; the handshake's depth is not measured. `devimg`'s
+depth runs into the release key's verifier (`fw_sig_verify()`); the Mbed
+TLS calls under it that go through a function pointer are not in it, and
+their depth is not measured.
 
 The Bluetooth LE (Low Energy) tasks start at the first IMU ON
 (`panel_imu.c` calls `panel_ble_start()`), or at the console build's `ble
@@ -561,6 +565,7 @@ tool does not follow.
 | `wifi_get` | 8,192 | not measured |
 | `cardjob` | 6,656 | not measured |
 | `c6upd` | 4,096 | not measured |
+| `devimg` | 8,192 | not measured |
 | `shot` | 7,168 | not measured |
 
 The tasks of ESP-IDF and esp_hosted are not in the table: their names and
@@ -765,10 +770,13 @@ its texts and its calls in other files are not counted.
 The wireless devices' update, from the linker map of the default build:
 `panel_devupd.c` holds 2,008 bytes of DIRAM (1,580 .bss, 428 .data) and
 5,050 bytes of code; `upd_dev.c` 566 bytes of .bss and 3,926 of code;
-`shared/devupd` 3,540 bytes of code and `protocols/bleota` 446. The three
-carried images, the Dial's and both nodes', add 2,130,416 bytes of image at
-0.23.12: 841,504, 646,240 and 642,672. With them the application image is
-7,375,296 bytes, 751,168 (9.2%) under the slot of 8,126,464.
+`shared/devupd` 3,540 bytes of code and `protocols/bleota` 446. The panel
+image carries neither these devices' images nor the C6's: an update
+downloads its device's file into PSRAM ([Screens: Device images](Screens.md#device-images)).
+At 0.23.16 the four files are 850,816 (Dial), 646,336 (power node),
+642,768 (balance node) and 1,283,616 (C6) bytes. The release build of
+the panel with both IOmcu images is 4,074,096 bytes, 4,052,368 (49.9%)
+under the slot of 8,126,464.
 The event queue's 4,096 bytes, the kept DISCONNECTs and the hub are in the
 DIRAM figure, outside `libbt.a`. The hub and 5 connections add 3,704 bytes
 of DIRAM and 3,570 bytes of `libbleuart.a` to the default build of one
