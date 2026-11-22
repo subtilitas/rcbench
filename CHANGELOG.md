@@ -131,9 +131,9 @@ history is in git.
 
 ### Changed
 
-- The panel image carries the IOmcu images only: 4,043,648 bytes in place
-  of 7,457,504 at 0.23.16. The C6 radio's, the Dial's and the nodes' images
-  stay release assets (`rcbench-c6-<esp_hosted version>.bin`,
+- The panel image carries the IOmcu images only: 4,065,568 bytes in place
+  of 7,479,184 with the 0.23.16 device images carried. The C6 radio's,
+  the Dial's and the nodes' images stay release assets (`rcbench-c6-<esp_hosted version>.bin`,
   `rcbench-dial-<version>.bin`, `rcbench-node-pwr-<version>.bin`,
   `rcbench-node-bal-<version>.bin`); `release.yml` and `ci.yml` no longer
   pass them to the panel build, and the panel's options `RCBENCH_C6_BIN`,
