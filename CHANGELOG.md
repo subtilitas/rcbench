@@ -959,7 +959,7 @@ The entries below cover the 7 pull requests merged since v0.23.13: #847,
   circuit draws a zener diode
   ([Videos from storyboards](tools/video/README.md#the-simulated-phase-tap)).
 - Storyboard `hitec-precharge`: the Hitec D series PRECHARGE receive in
-  7 steps, narrated: the servo's 3kΩ pull-down, the 2.2kΩ pull-up, one
+  7 steps, narrated, 337.93s: the servo's 3kΩ pull-down, the 2.2kΩ pull-up, one
   precharge and sample, the sampling window, one answer byte in 80
   samples, 3 logic analyser captures of a read of register 0x32, and the
   setting on the panel. A `scope` scene draws plots and a circuit from a
