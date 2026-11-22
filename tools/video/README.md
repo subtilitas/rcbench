@@ -157,10 +157,10 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `storyboards/dial.json` | bringing the M5Stack Dial into use in 7 steps: the Dial, its ring nut, the cell 102540 and a foam pad into the two parts of the printed base and its 4 screws M3 x 12, flashing over USB, the bind on SETUP > WIRELESS > DIAL, the menu and the SET of a value, the knob on MOTOR & ESC and on SERVO LIVE, and what the Dial does not do; the bench and the Dial stand in one 3D scene and show the same screen, run and value; narrated, 295.69s, Pachelbel's Canon at half level |
 | `storyboards/minircbench-build.json` | building a MiniRcBench in 10 steps: the parts, the firmware, the boost board's input on the battery socket's pins, the 0Ω resistor off the enable pad, the pull-down and IO28 on it, the INA219 on the I2C socket, the 5.6V zener and the 470µF capacitor across the boost board's output, the 5V path through the sensor to both male servo connectors, the signals and the 9 unused wires taken out of the 12-pin plug, the check before the cell, the case, and the settings; narrated, 505.57s, Pachelbel's Canon at half level |
 | `storyboards/minircbench-features.json` | every screen of the MiniRcBench, firmware 0.1.0, in 12 chapters: the tester, its telemetry, the menu, ESC COMMANDS, ESC CONFIG with ESC SETTINGS and USB BRIDGE, SERVO TESTER, SERVO PROGRAMMER for KST, Chaservo and Hitec, RX SIGNALS with the S.BUS monitor, TOOLS with the angle meter, SD LOG, SETTINGS, and the rules all screens share; the bench stands frontal with 81 stills on its display, one label a line of narration; narrated, 1000.70s, Pachelbel's Canon at half level |
-| `storyboards/hitec-precharge.json` | the Hitec D series PRECHARGE receive in 6 steps, after the IOmcu module and a servo as `part` scenes: the servo's 3kΩ pull-down, the 2.2kΩ pull-up, one precharge and sample, the sampling window against the measured one, one answer byte in 80 samples, and the setting on the panel; narrated |
+| `storyboards/hitec-precharge.json` | the Hitec D series PRECHARGE receive in 7 steps, after the IOmcu module and the D485HW as `part` scenes: the servo's 3kΩ pull-down, the 2.2kΩ pull-up, one precharge and sample, the sampling window against the measured one, one answer byte in 80 samples, 3 logic analyser captures of a read of register 0x32 beside the simulation, and the setting on the panel; narrated |
 | `storyboards/thumbnail.json` | the thumbnail of `features`: the case with its display lifted and the title; `--stills 3` writes it |
 | `../video_scope.py` | simulates the D series signal wire with ngspice and writes `plots/hitec-precharge.json`, the figure of the `scope` scenes; `--capture NAME=FILE` adds a logic analyser trace from a sigrok CSV export |
-| `plots/hitec-precharge.json` | the figure: 11 traces, the circuit's drawing, the model's values and the measured window |
+| `plots/hitec-precharge.json` | the figure: 11 simulated traces, 3 captured ones (`capture-pre`, `capture-pullup`, `capture-bare`), the circuit's drawing, the model's values and the measured window |
 | `player/scope.js` | draws a figure's plots and circuits |
 | `../video_audio.py` | the sound track of a storyboard as a WAV file |
 | `../video_voice.py` | the narration: the lines, the speaker, the room each line needs |
@@ -353,17 +353,32 @@ line's voltage from a transient analysis with 0.5ns steps.
 | Servo pull-down | 3kΩ | `protocols/hitec/README.md` |
 | Pull-up | 2.2kΩ to 5.0V | `protocols/hitec/README.md` |
 | Pad supply | 3.3V | IOVDD |
-| Pad driver | 40Ω | fitted |
-| Line capacitance | 90pF | fitted |
-| Input threshold | 1.3V | fitted |
-| Servo output | 50Ω to ground | assumed |
+| Pad driver | 50Ω | fitted |
+| Line capacitance | 72pF | fitted |
+| Input threshold | 1.1V | fitted |
+| Servo output | 37Ω to ground | fitted |
 
-The 3 fitted values make the model read the settings of the reference's
-table as the D485HW did: high with the sample 40 to 213ns after the
-release, low at 267ns, and low at 213ns after a precharge of 1 system
-clock cycle. The tool stops with a message when the model reads one of
-the 12 settings otherwise. The timing is `hitec_pre_timing()` at 150MHz:
+The 4 fitted values make the model agree with 2 measurements on a D485HW.
+The reference's table: the pad reads high with the sample 40 to 213ns
+after the release, low at 267ns, and low at 213ns after a precharge of 1
+system clock cycle. The logic analyser capture (200MHz, threshold 1.4V):
+a precharge on a released line reads 260 to 290ns above 1.4V, median
+280ns, and one against a servo that pulls low reads 0 to 20ns or does not
+appear. The model gives 279.5ns and 0ns. The tool stops with a message
+when the model reads one of the 12 settings or one of the 2 pulse widths
+otherwise. The timing is `hitec_pre_timing()` at 150MHz:
 163 cycles a sample, 15 of precharge, 17 to the sample.
+
+The captures are `win/s1-0x32-win.csv`, `win/s2-0x32-win.csv` and
+`win/s3-win.csv` of `testbench/captures/hitec32/` on branch
+`inbox/hitec32-captures` (commit eafcbc896), taken on 2026-11-22 with a
+Kingst LA2016: IOmcu 0.23.18 on GPIO 13, D485HW, 5.0V. The figure keeps
+their edges in ns from each window's start:
+
+```sh
+python3 tools/video_scope.py --rate 200e6 --capture pre=s1-0x32-win.csv \
+    --capture pullup=s2-0x32-win.csv --capture bare=s3-win.csv
+```
 
 ## Limits
 

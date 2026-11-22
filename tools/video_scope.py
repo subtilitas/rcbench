@@ -14,10 +14,13 @@ The circuit: the pad's driver as a switch of RDRV to 3.3V, the line's
 capacitance CLINE to ground, the servo's pull-down RPD to ground, the
 servo's output as a switch of RSRV to ground, and, where a run fits it,
 the pull-up RPU from the line to the servo supply VSERVO.  RPD and RPU
-are the values of the protocol reference.  RDRV, CLINE and VTH are fitted:
-with them the pad reads a released line high 40 to 213ns after the release
-and low at 267ns, and a precharge of 1 system clock cycle fails at 213ns,
-as the reference's table measures on a D485HW.  RSRV is an assumption.
+are the values of the protocol reference.  RDRV, CLINE, VTH and RSRV are
+fitted to two measurements on a D485HW.  The reference's table: the pad
+reads a released line high 40 to 213ns after the release and low at 267ns,
+and a precharge of 1 system clock cycle fails at 213ns.  The logic analyser
+capture testbench/captures/hitec32 (200MHz, threshold 1.4V): a precharge on
+a released line reads 260 to 290ns above 1.4V, and one against a servo that
+pulls low reads 0 to 20ns or does not appear.
 
 --capture NAME=FILE adds a logic analyser trace: a sigrok CSV export of
 one channel, one sample a line, at --rate samples a second.  Its edges
@@ -32,7 +35,8 @@ Attributes:
     BIT_NS: One bit of the D series, 115,200bit/s.
     MODEL: The circuit's values.
     MEASURED: The pass window of the protocol reference, in ns after the
-        release.
+        release, and the pulses of the capture at the analyser's
+        threshold.
 
 SPDX-License-Identifier: MIT
 """
@@ -51,10 +55,12 @@ PLOTS = pathlib.Path(__file__).resolve().parent / "video" / "plots"
 CLOCK_HZ = 150e6
 PERIOD, PRECHARGE, WAIT = 163, 15, 17
 BIT_NS = 1e9 / 115200
-MODEL = {"rdrv": 40.0, "cline": 90e-12, "rpd": 3000.0, "rsrv": 50.0,
-         "rpu": 2200.0, "vio": 3.3, "vservo": 5.0, "vth": 1.3}
+MODEL = {"rdrv": 50.0, "cline": 72e-12, "rpd": 3000.0, "rsrv": 37.0,
+         "rpu": 2200.0, "vio": 3.3, "vservo": 5.0, "vth": 1.1}
 MEASURED = {"pass": [40.0, 213.3], "fail": 266.7,
-            "pass_cycles": [6, 32], "fail_cycles": 40}
+            "pass_cycles": [6, 32], "fail_cycles": 40,
+            "probe_v": 1.4, "pulse_ns": [260.0, 290.0],
+            "low_pulse_ns": [0.0, 20.0], "period_ns": 1086.5}
 _CYCLE = 1e9 / CLOCK_HZ
 _EDGE = 2.0     # a switch's control ramp, ns
 
@@ -269,7 +275,9 @@ def window() -> dict:
 
     Returns:
         The voltage at each (precharge cycles, wait cycles) the protocol
-        reference measures, and whether it reads high against VTH.
+        reference measures, and whether it reads high against VTH; under
+        "pulse" and "low_pulse" the ns one precharge stays above the
+        analyser's threshold on a released line and against the servo.
     """
     found = {}
     for cycles in (1, 2, 3, 15, 30):
@@ -278,6 +286,13 @@ def window() -> dict:
             volts = value(run, 100 + (cycles + wait) * _CYCLE)
             found[f"{cycles}/{wait}"] = [round(volts, 3),
                                          volts > MODEL["vth"]]
+    # What the analyser sees of one precharge: the time above its
+    # threshold, on a released line and against the servo.
+    for name, low in (("pulse", False), ("low_pulse", True)):
+        run = cycle(PRECHARGE, low)
+        found[name] = round(sum(
+            b[0] - a[0] for a, b in zip(run, run[1:], strict=False)
+            if a[1] > MEASURED["probe_v"]), 1)
     return found
 
 
@@ -294,10 +309,20 @@ def faults(found: dict) -> list:
     want = {"1/6": True, "1/28": True, "30/6": True, "30/28": True,
             "15/6": True, "15/28": True, "2/32": True, "3/32": True,
             "15/32": True, "1/32": False, "15/40": False, "30/40": False}
-    return [f"precharge {key.split('/')[0]} cycles, sample "
-            f"{key.split('/')[1]} cycles after the release: the model reads "
-            f"{'high' if found[key][1] else 'low'}"
-            for key, high in want.items() if found[key][1] != high]
+    wrong = [f"precharge {key.split('/')[0]} cycles, sample "
+             f"{key.split('/')[1]} cycles after the release: the model "
+             f"reads {'high' if found[key][1] else 'low'}"
+             for key, high in want.items() if found[key][1] != high]
+    lo, hi = MEASURED["pulse_ns"]
+    if not lo <= found["pulse"] <= hi:
+        wrong.append(f"a precharge on a released line reads "
+                     f"{found['pulse']}ns above {MEASURED['probe_v']}V, "
+                     f"measured {lo:g} to {hi:g}ns")
+    if found["low_pulse"] > MEASURED["low_pulse_ns"][1]:
+        wrong.append(f"a precharge against the servo reads "
+                     f"{found['low_pulse']}ns above {MEASURED['probe_v']}V, "
+                     f"measured up to {MEASURED['low_pulse_ns'][1]:g}ns")
+    return wrong
 
 
 def answer(byte: int, mode: str) -> tuple:
@@ -356,7 +381,7 @@ def circuit() -> dict:
             {"id": "rpu", "t": "res", "a": [450, top], "b": [450, line],
              "text": "2.2 kΩ"},
             {"id": "cl", "t": "cap", "a": [570, line], "b": [570, gnd],
-             "text": "90 pF"},
+             "text": "72 pF"},
             {"id": "rpd", "t": "res", "a": [750, line], "b": [750, gnd],
              "text": "3 kΩ"},
             {"id": "srv", "t": "sw", "a": [880, line], "b": [880, gnd],

@@ -68,6 +68,9 @@ def test_faults_names_a_setting_the_model_reads_wrongly():
     assert video_scope.faults(found) == []
     found["15/40"] = [1.5, True]
     assert len(video_scope.faults(found)) == 1
+    found["pulse"] = 330.0
+    found["low_pulse"] = 60.0
+    assert len(video_scope.faults(found)) == 3
 
 
 def test_the_figure_holds_the_tools_model_and_timing():
