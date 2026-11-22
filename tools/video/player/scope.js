@@ -249,7 +249,7 @@ function drawCircuit(p, fig, lt, a, t) {
         return `<path d="M0 0H${m - 42}l7 -13l14 26l14 -26l14 26l14 -26
           l14 26l7 -13H${len}"/>`;
       }) + (it.label ? text(it.label[0], it.label[1], it.text, col, 'middle')
-        : text(Math.max(it.a[0], it.b[0]) + 24,
+        : text(Math.max(it.a[0], it.b[0]) + 38,
                (it.a[1] + it.b[1]) / 2 + 7, it.text, col));
     } else if (it.t === 'zener') {
       // A zener diode from its anode a to its cathode b.
