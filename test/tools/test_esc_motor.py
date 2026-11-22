@@ -31,7 +31,7 @@ def extent(shapes):
         max(q[k] for q in points) for k in range(3)]
 
 
-@pytest.mark.parametrize("spec,count", [(esc, 43), (motor, 15), (both, 58)])
+@pytest.mark.parametrize("spec,count", [(esc, 44), (motor, 15), (both, 59)])
 def test_solids_close(spec, count):
     """Each edge of each solid is used once in each direction."""
     (items,) = spec.parts(None).values()
@@ -54,20 +54,48 @@ def test_esc_has_the_makers_size():
 
 
 def test_esc_power_leads_end_in_an_xt60():
-    """Black and red, 7.2 apart, 60 long, then the plug of 16.0."""
+    """Black and red, 7.2 apart, 60 long, then the keyed plug of 16.0."""
     shapes = esc.power()
     assert [shape[4] for shape in shapes[:2]] == [_parts.BLACK, _parts.RED]
     red = extent(shapes[1:2])
     assert (red[1] + red[4]) / 2 == pytest.approx(3.6)
     assert red[3] - red[0] == pytest.approx(60.0)
     assert red[3] == pytest.approx(-32.5)
-    plug = extent(shapes[2:3])
-    assert shapes[2][4] == _parts.YELLOW
+    shroud, rear = shapes[2], shapes[3]
+    assert shroud[4] == rear[4] == _parts.YELLOW
+    plug = extent([shroud, rear])
     assert [round(plug[k + 3] - plug[k], 2) for k in range(3)] == [
         16.0, 15.7, 8.1]
     assert esc.xt60_end() == pytest.approx((-108.5, 0.0, 4.5))
     assert plug[0] == pytest.approx(esc.xt60_end()[0])
-    assert [shape[4] for shape in shapes[3:]] == [_parts.GOLD] * 2
+    front = extent([shroud])
+    assert front[3] - front[0] == pytest.approx(7.5)
+
+
+def test_xt60_is_keyed_and_has_its_pins():
+    """2 corners cut at the minus contact, an open shroud, 2 pins in it."""
+    outline = esc._keyed(0.0)
+    assert len(outline) == 6
+    low = min(y for y, _z in outline)
+    cut = [q for q in outline if q[0] == pytest.approx(low)]
+    assert len(cut) == 2
+    assert cut[0][1] - cut[1][1] == pytest.approx(8.1 - 2 * 2.5)
+    # The cut end is the minus contact's: the black lead's side.
+    assert esc.power_y(0) < 0 > low
+    assert max(y for y, _z in outline) == pytest.approx(7.85)
+    # The shroud is hollow: its hole is the outline, 1.2 inside.
+    shroud = esc.power()[2]
+    (hole,) = shroud[1]
+    assert max(y for y, _z in hole) == pytest.approx(7.85 - 1.2)
+    pins = esc.power()[4:]
+    assert [shape[4] for shape in pins] == [_parts.GOLD] * 2
+    for k, pin in enumerate(pins):
+        box = extent([pin])
+        assert (box[1] + box[4]) / 2 == pytest.approx(esc.power_y(k))
+        assert box[4] - box[1] == pytest.approx(3.5, abs=0.01)
+        # A pin ends 0.5 inside the shroud's mouth.
+        assert box[0] == pytest.approx(esc.xt60_end()[0] + 0.5)
+    assert esc.power_y(1) - esc.power_y(0) == pytest.approx(7.2)
 
 
 def test_esc_motor_leads():

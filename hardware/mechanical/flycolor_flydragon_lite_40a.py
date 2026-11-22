@@ -32,10 +32,18 @@ picture: how M's 15.5 splits (heat-shrink 9.0 thick, the capacitor 8.0
 across to 15.5), the corner radius (2.0), the leads' diameters (power
 and motor 3.4, signal 1.2), their places across the ESC, and their
 lengths: LEADS draws 60 of the power leads, 80 of the motor leads and
-100 of the signal lead. The plugs: the XT60 as a housing of 15.7 x 8.1
-x 16.0 with its contacts as in X; the signal plug 7.7 x 2.6 x 14.0
-with contacts 2.54 apart. Which power contact lies at which side of
-the XT60's key is not drawn: the housing has no key.
+100 of the signal lead. The signal plug: 7.7 x 2.6 x 14.0 with contacts
+2.54 apart.
+
+The XT60 is the plug with pins, the half that mates with the bench's
+panel socket of X. Its housing is 15.7 x 8.1 x 16.0 with 2 corners cut
+off at one end, the key: X's socket has its 2 round corners at one end
+in the same way. The front 7.5 is a shroud with a wall of 1.2 round the
+2 pins of 3.5, which stand 7.2 apart (X). The cut corners are drawn at
+the minus contact, as the housings of such plugs are marked. Housing
+size, shroud depth, wall and the corners' cut (2.5) are common values
+for this plug, not a maker's drawing; the pins are plain, without their
+slots.
 
 Not drawn: the maker's sign, the red "Lite" tag, the board and its
 parts under the heat-shrink, bullet plugs on the motor leads (P shows
@@ -67,8 +75,10 @@ LEAD_Z = 4.5
 POWER = (3.4, 7.2, 60.0)
 MOTOR = (3.4, 4.0, 80.0, 2.0, 4.0)
 SIGNAL = (1.2, 1.3, 100.0, -10.0)
-# XT60: width, height, length, contact diameter, its sleeve's bore.
-XT60 = (15.7, 8.1, 16.0, 3.5, 5.5)
+# XT60: width, height, length, pin diameter, the bore round a pin in
+# the housing's rear part, the shroud's depth and wall, the cut of the
+# 2 corners at the minus contact.
+XT60 = (15.7, 8.1, 16.0, 3.5, 4.6, 7.5, 1.2, 2.5)
 PLUG = (7.7, 2.6, 14.0, 2.54, 0.7)
 # The signal lead's wires from -y to +y (P; see above).
 WIRES = (("minus", p.BLACK), ("plus", p.RED), ("signal", p.WHITE))
@@ -108,20 +118,34 @@ def xt60_end():
     return (X0 - POWER[2] - XT60[2], 0.0, LEAD_Z)
 
 
+def _keyed(inset):
+    """The XT60's outline in (y, z), ``inset`` inside the housing's.
+
+    The 2 cut corners lie at -y, at the minus contact.
+    """
+    wide, high, cut = XT60[0], XT60[1], XT60[7]
+    y0, y1 = -wide / 2 + inset, wide / 2 - inset
+    z0, z1 = LEAD_Z - high / 2 + inset, LEAD_Z + high / 2 - inset
+    c = cut - inset * 0.59      # the cut's corners move in with the wall
+    return [(y0 + c, z0), (y1, z0), (y1, z1), (y0 + c, z1), (y0, z1 - c),
+            (y0, z0 + c)]
+
+
 def power():
-    """The 2 power leads and the XT60 plug."""
+    """The 2 power leads and the XT60 plug: shroud, rear part, 2 pins."""
     across, _apart, length = POWER
-    wide, high, long, pin, bore = XT60
+    _wide, _high, long, pin, bore, shroud, wall, _cut = XT60
     x = X0 - length
+    front = x - long
     out = [_rod(x, X0, power_y(k), across, rgb)
            for k, rgb in enumerate((p.BLACK, p.RED))]
+    out.append(s.ext(_keyed(0.0), front, front + shroud, p.YELLOW,
+                     holes=[_keyed(wall)], frame=s.X))
     out.append(s.ext(
-        s.rect(-wide / 2, LEAD_Z - high / 2, wide / 2, LEAD_Z + high / 2),
-        x - long, x, p.YELLOW,
+        _keyed(0.0), front + shroud, x, p.YELLOW,
         holes=[s.circle(power_y(k), LEAD_Z, bore / 2) for k in (0, 1)],
         frame=s.X))
-    out += [_rod(x - long + 2.0, x, power_y(k), pin, p.GOLD)
-            for k in (0, 1)]
+    out += [_rod(front + 0.5, x, power_y(k), pin, p.GOLD) for k in (0, 1)]
     return out
 
 

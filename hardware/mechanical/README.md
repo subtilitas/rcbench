@@ -977,9 +977,9 @@ no motor for those measurements.
 
 | File | Content | Over all, mm | Origin |
 | --- | --- | --- | --- |
-| `flycolor_flydragon_lite_40a.step` | black heat-shrink with white print, capacitor, 2 power leads (red, black) with a yellow XT60 plug, 3 black motor leads with tinned ends, signal lead (white, red, black) with a 3 pin plug; 43 solids | 263.0 x 26.85 x 15.5; the ESC alone 65.0 x 26.0 x 15.5 | the middle of the ESC's underside; x along it, power and signal leads leave at -x, motor leads at +x; red power lead at +y; z up |
+| `flycolor_flydragon_lite_40a.step` | black heat-shrink with white print, capacitor, 2 power leads (red, black) with a yellow XT60 plug (keyed housing, shroud, 2 gold pins), 3 black motor leads with tinned ends, signal lead (white, red, black) with a 3 pin plug; 44 solids | 263.0 x 26.85 x 15.5; the ESC alone 65.0 x 26.0 x 15.5 | the middle of the ESC's underside; x along it, power and signal leads leave at -x, motor leads at +x; red power lead at +y; z up |
 | `tmotor_at2814.step` | bright base plate with 4 threads, copper windings, black can, bright front cap with 4 threads, collar, shaft, 3 copper leads, print "AT2814" on the mounting face; 15 solids | 135.2 x 35.2 x 54.5; the motor alone 35.2 across, 54.5 over the shaft | on the shaft's axis, on the base's mounting face; z along the shaft towards the propeller; leads leave towards -x |
-| `esc_motor_set.step` | both, the motor moved by 234.1, 0.0, -1.75; 58 solids | 398.2 x 35.2 x 54.5 | the ESC's |
+| `esc_motor_set.step` | both, the motor moved by 234.1, 0.0, -1.75; 59 solids | 398.2 x 35.2 x 54.5 | the ESC's |
 
 | Point | Frame | x, mm | y, mm | z, mm |
 | --- | --- | --- | --- | --- |
@@ -1011,8 +1011,11 @@ Limits:
   them.
 - How the ESC's 15.5mm splits between heat-shrink (9.0mm) and capacitor is
   read from a picture taken at an angle.
-- The XT60 is a plain housing of 15.7mm x 8.1mm x 16.0mm without its key;
-  which contact is plus is given by the red lead at +y only.
+- The XT60 is the plug with pins: a housing of 15.7mm x 8.1mm x 16.0mm
+  with 2 corners cut off by 2.5mm at the minus contact, a shroud 7.5mm
+  deep with a wall of 1.2mm, and 2 pins of 3.5mm, 7.2mm apart. The pins'
+  distance is the owner's XT60 model's; the other sizes are common values
+  for this plug, not a maker's drawing. The pins have no slots.
 - The motor's base cage and front cap are drawn without their openings.
   The base is its end plate alone, so the windings show as a copper ring.
   How the body's 36mm splits (base 9.5mm, can 17.5mm, cap 9.0mm) is read
