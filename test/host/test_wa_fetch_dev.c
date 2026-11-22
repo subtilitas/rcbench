@@ -343,7 +343,8 @@ TEST_CASE(a_release_without_the_files_line_or_sums_fetches_no_file)
     fresh(0u);
     make_release(true);
     const size_t one = strlen(g_sums_text);
-    memcpy(g_sums_text + one, g_sums_text, one + 1u);
+    memcpy(g_sums_text + one, g_sums_text, one);
+    g_sums_text[2u * one] = '\0';
     answer(sums_body());
     out = fetch_dev(0u, DSLOT);
     CHECK_EQ(out.got, WA_GOT_SUMS);
