@@ -6479,7 +6479,10 @@ move on: `AUTO3.TXT` goes, `AUTO2.TXT` becomes `AUTO3.TXT`, `AUTO1.TXT`
 becomes `AUTO2.TXT`, and the new file becomes `AUTO1.TXT`. A full card or a
 failed write leaves the copies as they were. The writes run on the logger
 task, beside the logs; the screens and the control task do not wait for
-the card.
+the card. Each request takes the card's job lock that FILES and the Wi-Fi
+page's writes share, and does not wait for it: while one of them holds
+it, the request waits for the logger's next pass. A copy therefore never
+moves the files while an edit of one of them is saved.
 
 **The automatic copy.** A save that reaches NVS with a card mounted owes a
 copy; a save without a card writes none, and a card put in later gets none

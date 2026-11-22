@@ -9,6 +9,9 @@
  * and gives the driver the answer once the logger has one.  The logger task
  * calls panel_sbk_card_serve() in its pass, beside the servo programmer's
  * files, so no card call is made by the render loop or the control task.
+ * A request runs under the card's job lock that FILES and the Wi-Fi page's
+ * writes share; while one of them holds it, the request waits for the
+ * logger's next pass, and the render loop never waits for it.
  * The text travels in sbk_buffer(), which only the side that holds the
  * request touches.
  *
@@ -178,6 +181,40 @@ static sb_io_result_t io_remove(void *ctx, const char *name)
     return (errno == ENOENT) ? SB_IO_MISSING : write_err(errno);
 }
 
+/**
+ * @brief sb_io_t.lock: the card's job lock (panel_files_lock()), not waited
+ *        for, then the volume the request was taken under.
+ *
+ * FILES and the Wi-Fi page's writes check a file and replace it under that
+ * lock; a rotation of the copies between the two would make the replace
+ * remove the newest copy.  While one of them holds it the request waits for
+ * the logger's next pass.  With no lock made at start-up (no RAM for it)
+ * FILES does not start and the page writes nothing, and a request waits
+ * for good.
+ */
+static bool io_lock(void *ctx)
+{
+    (void)ctx;
+    if (!panel_files_lock(0u)) {
+        return false;
+    }
+    /* A card put in since is not the one the request was for. */
+    s_held = storage_hold_mount(s_mount);
+    return true;
+}
+
+/** @brief sb_io_t.unlock: the volume and the card's job lock given back. */
+static void io_unlock(void *ctx)
+{
+    (void)ctx;
+    if (s_held) {
+        storage_release();
+    }
+    s_held = false;
+    /* BENCH/SETUP holds no log: the logs' numbering stays as it is. */
+    panel_files_unlock(false);
+}
+
 /** @brief The folder's functions. */
 static const sb_io_t k_io = {
     .ctx = NULL,
@@ -187,6 +224,8 @@ static const sb_io_t k_io = {
     .write = io_write,
     .rename = io_rename,
     .remove = io_remove,
+    .lock = io_lock,
+    .unlock = io_unlock,
 };
 
 /* ------------------------------------------------------- the two tasks */
@@ -197,14 +236,12 @@ void panel_sbk_card_serve(void)
     if (sent == atomic_load(&s_answered)) {
         return;
     }
-    /* Held across the request's card calls, on the volume it was taken
-     * under: a card put in since is not the one the request was for. */
-    s_held = storage_hold_mount(s_mount);
-    sb_run(&k_io, &s_req, sbk_buffer(), sbk_buffer_size(), &s_done);
-    if (s_held) {
-        storage_release();
+    /* Under the card's job lock and on the volume the request was taken
+     * under, both held across its card calls (io_lock()); unanswered while
+     * FILES or the Wi-Fi page holds the lock, and asked again next pass. */
+    if (!sb_serve(&k_io, &s_req, sbk_buffer(), sbk_buffer_size(), &s_done)) {
+        return;
     }
-    s_held = false;
     if (s_done.result != SB_OK) {
         ESP_LOGW(TAG, "settings backup: request %u ended %u",
                  (unsigned)s_req.op, (unsigned)s_done.result);

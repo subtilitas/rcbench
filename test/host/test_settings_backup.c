@@ -2,7 +2,8 @@
  * The settings files on the card (shared/settings/settings_backup.c) over a
  * folder in memory: SAVE SETTINGS' file, the rotation of the automatic
  * copies, a full card, a card that takes no file, no card, the list and
- * the newest copy, a read.
+ * the newest copy, a read, and a request that waits while the card's job
+ * lock is held by FILES or a write of the Wi-Fi page.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -284,6 +285,90 @@ TEST_CASE(a_request_runs_and_every_request_gets_an_answer)
     sb_run(&k_io, &q, buf, sizeof(buf), NULL);
 }
 
+TEST_CASE(a_request_waits_while_the_card_job_lock_is_held)
+{
+    fake_fresh();
+    static char buf[SF_FILE_MAX + 1u];
+    CHECK_EQ(sb_write_auto(&k_io, g_t, text("x", "old")), SB_OK);
+    sb_req_t q;
+    memset(&q, 0, sizeof(q));
+    q.len = text("x", "new");
+    memcpy(buf, g_t, q.len + 1u);
+    q.op = SB_REQ_AUTO;
+    sb_done_t d;
+    memset(&d, 0xA5, sizeof(d));
+    g_fake.held = true;
+    const unsigned writes = g_fake.writes;
+    CHECK(!sb_serve(&k_io, &q, buf, sizeof(buf), &d));
+    /* Nothing ran and the answer is untouched. */
+    CHECK_EQ(g_fake.writes, writes);
+    CHECK(holds("AUTO1.TXT", "old"));
+    CHECK(find("AUTO2.TXT") == NULL);
+    CHECK_EQ(d.op, 0xA5);
+    CHECK_EQ(g_fake.unlocks, 0u);
+    /* Given back: the next pass runs it, under the lock, and gives it back. */
+    g_fake.held = false;
+    CHECK(sb_serve(&k_io, &q, buf, sizeof(buf), &d));
+    CHECK_EQ(d.op, SB_REQ_AUTO);
+    CHECK_EQ(d.result, SB_OK);
+    CHECK(holds("AUTO1.TXT", "new"));
+    CHECK(holds("AUTO2.TXT", "old"));
+    CHECK_EQ(g_fake.locks, 1u);
+    CHECK_EQ(g_fake.unlocks, 1u);
+    /* Without a lock in the table the request runs at once. */
+    sb_io_t bare = k_io;
+    bare.lock = NULL;
+    bare.unlock = NULL;
+    g_fake.held = true;
+    q.op = SB_REQ_LIST;
+    CHECK(sb_serve(&bare, &q, buf, sizeof(buf), &d));
+    CHECK_EQ(d.result, SB_OK);
+    CHECK_EQ(d.count, 2);
+}
+
+/*
+ * An editor's save of AUTO1.TXT, as FILES' and the Wi-Fi page's replace
+ * runs it under the card's job lock: the file's size checked against the
+ * one it read, the file removed, its text written.  An automatic copy
+ * asked between the check and the write must not run there: it would put
+ * the new copy at AUTO1.TXT, of the same size, and the editor's remove
+ * would take it.
+ */
+TEST_CASE(a_copy_asked_during_an_editor_save_keeps_the_newest_copy)
+{
+    fake_fresh();
+    static char buf[SF_FILE_MAX + 1u];
+    CHECK_EQ(sb_write_auto(&k_io, g_t, text("x", "AA")), SB_OK);
+    const int32_t read_size = f_size(NULL, "AUTO1.TXT");
+    /* The editor takes the lock and checks the size. */
+    g_fake.held = true;
+    CHECK_EQ(f_size(NULL, "AUTO1.TXT"), read_size);
+    /* The copy is asked now, of the same size as the file the editor
+     * read. */
+    sb_req_t q;
+    memset(&q, 0, sizeof(q));
+    q.op = SB_REQ_AUTO;
+    q.len = text("x", "BB");
+    memcpy(buf, g_t, q.len + 1u);
+    CHECK_EQ((int32_t)q.len, read_size);
+    sb_done_t d;
+    const bool ran_first = sb_serve(&k_io, &q, buf, sizeof(buf), &d);
+    /* The editor's replace: the size checked once more, remove, write. */
+    CHECK_EQ(f_size(NULL, "AUTO1.TXT"), read_size);
+    CHECK_EQ(f_remove(NULL, "AUTO1.TXT"), SB_IO_OK);
+    const size_t e = text("x", "EE");
+    CHECK_EQ(f_write(NULL, "AUTO1.TXT", g_t, e), SB_IO_OK);
+    g_fake.held = false;
+    /* The caller asks again at its next pass while no answer came. */
+    if (!ran_first) {
+        CHECK(sb_serve(&k_io, &q, buf, sizeof(buf), &d));
+    }
+    CHECK_EQ(d.result, SB_OK);
+    /* The copy is the newest, the editor's text the one before it. */
+    CHECK(holds("AUTO1.TXT", "BB"));
+    CHECK(holds("AUTO2.TXT", "EE"));
+}
+
 int main(void)
 {
     RUN(save_settings_replaces_its_one_file);
@@ -294,5 +379,7 @@ int main(void)
     RUN(a_read_takes_one_of_the_folder_s_files_whole);
     RUN(a_file_of_sf_file_max_reads_and_one_byte_more_does_not);
     RUN(a_request_runs_and_every_request_gets_an_answer);
+    RUN(a_request_waits_while_the_card_job_lock_is_held);
+    RUN(a_copy_asked_during_an_editor_save_keeps_the_newest_copy);
     return test_summary("settings_backup");
 }

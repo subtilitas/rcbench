@@ -7019,7 +7019,12 @@ rücken die Kopien weiter: `AUTO3.TXT` entfällt, `AUTO2.TXT` wird
 `AUTO3.TXT`, `AUTO1.TXT` wird `AUTO2.TXT`, die neue Datei wird `AUTO1.TXT`.
 Eine volle Karte oder ein fehlgeschlagenes Schreiben lässt die Kopien, wie
 sie waren. Geschrieben wird in der Logger-Task neben den Logs; Seiten und
-Control-Task warten nicht auf die Karte.
+Control-Task warten nicht auf die Karte. Jeder Auftrag nimmt die
+Auftragssperre der Karte, die FILES und die Schreibzugriffe der WLAN-Seite
+teilen, und wartet nicht darauf: Solange einer von ihnen sie hält, wartet
+der Auftrag auf den nächsten Durchgang der Logger-Task. So verschiebt eine
+Kopie nie die Dateien, während eine Bearbeitung einer von ihnen
+gespeichert wird.
 
 **Die automatische Kopie.** Ein Speichern, das das NVS erreicht, während
 eine Karte eingehängt ist, schuldet eine Kopie; ein Speichern ohne Karte

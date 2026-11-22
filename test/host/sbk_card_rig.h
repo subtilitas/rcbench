@@ -1,7 +1,8 @@
 /*
  * A card's folder BENCH/SETUP in memory, behind settings_backup.h's sb_io_t:
  * up to FAKE_FILES files of FAKE_BYTES, a room for the whole card, a card
- * that takes no file, a rename or a read that fails.  For the suites of the
+ * that takes no file, a rename or a read that fails, and the card's job
+ * lock held by another writer.  For the suites of the
  * settings backup and for the renderer's views of BACKUP.
  *
  * Functions are `static inline` and the folder is `unused`, so a file that
@@ -36,6 +37,9 @@ typedef struct {
     int         fail_rename; /* the nth rename from now fails; 0 none  */
     bool        fail_read;
     unsigned    writes;
+    bool        held;       /* another writer holds the card's job lock */
+    unsigned    locks;      /* sb_io_t.lock calls that took it          */
+    unsigned    unlocks;    /* sb_io_t.unlock calls                     */
 } fake_t;
 
 static fake_t g_fake __attribute__((unused));
@@ -146,8 +150,26 @@ static inline sb_io_result_t f_remove(void *ctx, const char *name)
     return SB_IO_OK;
 }
 
+/* The card's job lock: refused while another writer holds it (held). */
+static inline bool f_lock(void *ctx)
+{
+    (void)ctx;
+    if (g_fake.held) {
+        return false;
+    }
+    ++g_fake.locks;
+    return true;
+}
+
+static inline void f_unlock(void *ctx)
+{
+    (void)ctx;
+    ++g_fake.unlocks;
+}
+
 static const sb_io_t k_io __attribute__((unused)) = {
     NULL, f_mounted, f_size, f_read, f_write, f_rename, f_remove,
+    f_lock, f_unlock,
 };
 
 /** The folder empty, a card mounted, 100000 bytes of room. */

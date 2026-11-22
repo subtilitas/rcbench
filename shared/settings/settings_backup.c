@@ -252,3 +252,17 @@ void sb_run(const sb_io_t *io, const sb_req_t *req, char *buf, size_t cap,
         break;
     }
 }
+
+bool sb_serve(const sb_io_t *io, const sb_req_t *req, char *buf, size_t cap,
+              sb_done_t *done)
+{
+    const bool locks = io != NULL && io->lock != NULL && io->unlock != NULL;
+    if (locks && !io->lock(io->ctx)) {
+        return false;
+    }
+    sb_run(io, req, buf, cap, done);
+    if (locks) {
+        io->unlock(io->ctx);
+    }
+    return true;
+}

@@ -22,7 +22,8 @@
  * there as they were.  The text is settings_file.h's.
  *
  * sb_run() blocks as long as the card does: one caller at a time, on the
- * task that has the card.
+ * task that has the card.  sb_serve() runs it under the card's job lock,
+ * shared with the other writers of the folder, and never waits for it.
  *
  * Pure C, no ESP-IDF (Espressif Internet-of-Things Development Framework).
  *
@@ -83,6 +84,12 @@ typedef struct {
     sb_io_result_t (*rename)(void *ctx, const char *from, const char *to);
     /** @brief Remove a file; SB_IO_MISSING when there is none. */
     sb_io_result_t (*remove)(void *ctx, const char *name);
+    /** @brief sb_serve(): take the card's job lock, which other writers of
+     *         the folder share, without waiting; false while another holds
+     *         it.  NULL with @c unlock: no lock. */
+    bool (*lock)(void *ctx);
+    /** @brief sb_serve(): give the lock @c lock took back. */
+    void (*unlock)(void *ctx);
 } sb_io_t;
 
 /** @brief How a request ended.  The numbers are stable: the screen shows
@@ -206,6 +213,26 @@ sb_result_t sb_read(const sb_io_t *io, const char *name, char *buf,
  */
 void sb_run(const sb_io_t *io, const sb_req_t *req, char *buf, size_t cap,
             sb_done_t *done);
+
+/**
+ * @brief sb_run() under the card's job lock (sb_io_t.lock), or nothing while
+ *        another writer holds it.
+ *
+ * A FILES job or a write of the Wi-Fi page checks a file and replaces it
+ * under that lock: a rotation of the copies between the two would make the
+ * replace remove the newest copy.  The request waits instead, and the
+ * caller asks again at its next pass.
+ *
+ * @param io   The card.
+ * @param req  The request.
+ * @param buf  SAVE and AUTO: the text; READ: takes the file.
+ * @param cap  Bytes at @p buf.
+ * @param done Takes the answer when the request ran; untouched otherwise.
+ * @return true when the request ran and @p done holds its answer; false
+ *         while the lock is held elsewhere.
+ */
+bool sb_serve(const sb_io_t *io, const sb_req_t *req, char *buf, size_t cap,
+              sb_done_t *done);
 
 #ifdef __cplusplus
 }
