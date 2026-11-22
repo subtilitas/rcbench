@@ -267,6 +267,7 @@ static report_snap_t snap_widest(char *why, char *boot)
     s.boot = boot;
     s.qmi_m1_set = true;
     s.can_up = true;
+    s.uart = false;
     s.bitrate = 1000000u;       /* IOMCU_CAN_BITRATE, the one rate */
     s.sense_on = true;
     s.temp_dc = INT16_MIN;
@@ -311,6 +312,50 @@ TEST_CASE(the_whole_report_is_at_most_report_bytes_max)
     s.can_up = false;
     CHECK(report_text(&s, out, sizeof(out), &lines) < REPORT_BYTES_MAX);
     CHECK_EQ(lines, 11);
+    /* On the UART: its one line in place of the CAN up and overrun lines,
+     * shorter than the two. */
+    s.uart = true;
+    s.can_up = true;
+    CHECK(report_text(&s, out, sizeof(out), &lines) < REPORT_BYTES_MAX);
+    CHECK_EQ(lines, 11);
+}
+
+/* The UART line with ordinary values and at its widest; the CAN lines are
+ * left out while it is printed, and it is left out on CAN. */
+TEST_CASE(the_uart_line_replaces_the_can_lines)
+{
+    report_snap_t s = snap_a();
+    char buf[REPORT_LINE_MAX];
+    CHECK_EQ(report_line(&s, REPORT_L_UART, buf, sizeof(buf)), 0u);
+    s.uart = true;
+    s.uart_crc = 1u;
+    s.uart_resync = 2u;
+    s.uart_laps = 3u;
+    s.uart_txq_max = 136u;
+    CHECK(report_line(&s, REPORT_L_UART, buf, sizeof(buf)) > 0u);
+    CHECK_STR_EQ(buf, "rcbench-iomcu: UART up, 1000000 baud, 123456 requests "
+                      "served, 7 self-test echoes, crc 1 resync 2 laps 3 "
+                      "overruns 2 tx_drop 9 txq_max 136\n");
+    CHECK_EQ(report_line(&s, REPORT_L_CAN_UP, buf, sizeof(buf)), 0u);
+    CHECK_EQ(report_line(&s, REPORT_L_CAN_DOWN, buf, sizeof(buf)), 0u);
+    CHECK_EQ(report_line(&s, REPORT_L_CAN_OVERRUN, buf, sizeof(buf)), 0u);
+    /* Down: one line that says why, and no counters. */
+    s.can_up = false;
+    CHECK(report_line(&s, REPORT_L_CAN_DOWN, buf, sizeof(buf)) > 0u);
+    CHECK_STR_EQ(buf, "rcbench-iomcu: UART did not start -- no free DMA "
+                      "channel\n");
+    CHECK_EQ(report_line(&s, REPORT_L_UART, buf, sizeof(buf)), 0u);
+
+    char why[144], boot[112];
+    s = snap_widest(why, boot);
+    s.uart = true;
+    const size_t n = report_line(&s, REPORT_L_UART, buf, sizeof(buf));
+    CHECK(n + 1u <= REPORT_LINE_MAX);
+    s.uart = false;
+    char can[REPORT_LINE_MAX];
+    const size_t up = report_line(&s, REPORT_L_CAN_UP, can, sizeof(can));
+    const size_t ov = report_line(&s, REPORT_L_CAN_OVERRUN, can, sizeof(can));
+    CHECK(n < up + ov);
 }
 
 TEST_CASE(a_line_out_of_range_or_without_a_buffer_is_empty)
@@ -341,5 +386,6 @@ int main(void)
     RUN(every_line_fits_at_its_widest);
     RUN(the_whole_report_is_at_most_report_bytes_max);
     RUN(a_line_out_of_range_or_without_a_buffer_is_empty);
+    RUN(the_uart_line_replaces_the_can_lines);
     return test_summary("report_lines");
 }

@@ -58,6 +58,23 @@ den Configuration Mode gemeldet hat. Der Fehler liegt an SPI (Serial
 Peripheral Interface; Modul nicht bestückt, Verdrahtung an GPIO 8 bis GPIO 12),
 nicht am CAN-Bus.
 
+Auf Board 3, dessen Link über den UART läuft (Universal Asynchronous
+Receiver-Transmitter, [Der UART-Transport](Link-de.md#der-uart-transport)),
+steht eine Zeile an der Stelle der CAN-Zeilen:
+
+    rcbench-iomcu: UART up, 1000000 baud, 0 requests served, 0 self-test echoes, crc 0 resync 0 laps 0 overruns 0 tx_drop 0 txq_max 0
+
+`crc` zählt die wegen ihrer CRC-16 (Cyclic Redundancy Check) abgelehnten
+Frames, `resync` wie oft der Decoder Bytes bis zu einem 0x00 verworfen hat,
+`laps` wie oft der Empfangsring überschrieben wurde, bevor er gelesen war,
+`overruns` die Durchläufe, die das Überlauf-Flag des Empfangs-FIFO (First
+In, First Out) des UART gesetzt fanden, `tx_drop` die Antworten, für die die
+512-Byte-Sendewarteschlange keinen Platz hatte, und `txq_max` die meisten
+Bytes in der Warteschlange seit dem letzten Bericht. `UART did not start --
+no free DMA channel` ersetzt die Zeile, wenn beim Start kein DMA-Kanal
+(Direct Memory Access) frei war. `can max` in der Loop-Zeile misst dann den
+Dienst des UART.
+
 Die letzten beiden Zeilen jedes Berichts nennen die Durchlaufzeiten der
 Hauptschleife seit dem Bericht davor:
 

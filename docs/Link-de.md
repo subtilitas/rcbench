@@ -1898,12 +1898,14 @@ die Page POWER, ihr Auslösen und die BEC-Prüfung.
 Ab 4.21 zählt der IOmcu die CAN-Frames, die er empfängt und nicht
 dekodiert, und veröffentlicht die Zahl in STATUS (0x01) Register 8 und 9
 (`LINK_ST_REFUSED_LO` und `LINK_ST_REFUSED_HI`), die niederwertige Hälfte
-zuerst. Ein Frame wird an einer von zwei Stufen abgelehnt:
+zuerst. Ein Frame wird an einer von zwei Stufen abgelehnt, beim UART an
+einer von drei:
 
 | Stufe | Abgelehnt | Code |
 | --- | --- | --- |
 | Empfangspuffer | ein 11-Bit-Identifier, ein Remote Frame (RTR, Remote Transmission Request), ein DLC (Data Length Code) über 8 | `mcp2515_recv_next()` in `shared/can/mcp2515.c` |
 | Link-Dekodierung | ein unbekannter Op, ein Count über das Ende einer Page, ein DLC, der nicht zum Count passt (ein READ mit Nutzdaten, ein DATA, dessen Nutzdaten nicht 2 Byte je Register sind) | `link_can_decode_counted()` in `shared/link/link_can.c` |
+| UART-Decoder, Board 3 | eine falsche CRC-16, ein DLC über 8, ein COBS-Fehler, eine Länge, die nicht zum DLC passt, ein Identifier über 29 Bit, mehr als 16 Byte vor einem 0x00, Bytes vor dem ersten 0x00 ([Der UART-Transport](#der-uart-transport)) | `link_uart_feed()` in `shared/link/link_uart.c` |
 
 Die Frames des CAN-Selbsttests werden beantwortet, nicht abgelehnt, und
 nicht gezählt. Ein READ, den ein Panel mit ESP-IDF v5.5.0 oder v5.5.1 als
@@ -2172,6 +2174,61 @@ Acht Quanta sind das Minimum für ein Bit. Deshalb braucht der XL2515 für
 75%; das TWAI-Timing ist darauf abgestimmt. `test_can_timing` prüft die Zeile des
 XL2515. Für den TWAI-Controller prüft der Test den Abtastpunkt bei 75% und eine
 Sprungbreite von mindestens 2, nicht die Werte der Zeile.
+
+### Der UART-Transport
+
+Board 3, der Core2350B des Remote-Servo-Knotens, führt den Link statt über
+CAN über einen UART (Universal Asynchronous Receiver-Transmitter) zum
+ES3C28P des Knotens. Die Frames, die Pages, die Austauschnummern, die
+Wiederholung nach 50ms, der Timeout nach 1000ms und der Failsafe nach 200ms
+Stille sind die oben beschriebenen; nur die Leitung ist eine andere.
+`firmware/iomcu/src/iomcu_link.h` enthält die eine Schnittstelle, die beide
+Transporte bedienen, und das Board wählt sie beim Bau des Images: CAN auf
+den Boards 1 und 2, den UART auf Board 3. `IOMCU_LINK` in CMake (`can` oder
+`uart`) übergeht die Wahl des Boards für eine Inbetriebnahme.
+
+| | |
+| --- | --- |
+| Leitung | UART0, 1.000.000 Baud, 8N1, ohne Flusssteuerung; TX GPIO 0, RX GPIO 1 (Pull-up) |
+| Frame | COBS (Consistent Overhead Byte Stuffing) aus dem 29-Bit-Identifier (4 Byte, Little Endian), dem DLC (Data Length Code), 0 bis 8 Datenbytes und einer CRC-16 (Polynom 0x1021, Startwert 0xFFFF), danach 0x00: 9 bis 17 Byte, 90 bis 170us (`shared/link/link_uart.c`) |
+| Abbildung | ein UART-Frame trägt einen CAN-Frame, wie `link_can_encode()` ihn baut; `link_can_decode_counted()` liest ihn |
+| Empfang | ein DMA-Kanal (Direct Memory Access) kopiert jedes Byte in einen 1-KiB-Ring im SRAM und startet sich alle 268.434.432 Byte selbst neu; er läuft durch ein 42-ms-Flash-Fenster, das der 32-Byte-FIFO (First In, First Out) des UART allein 320us lang hielte (`shared/link/link_uart_dev.c`) |
+| Senden | eine Antwort ganz in 512 Byte eingereiht, drei Antworten zu 8 Frames, und zweimal je Durchlauf in den 32-Byte-FIFO geschoben; kein Aufruf wartet auf die Leitung |
+| Start | der Decoder des IOmcu beginnt wie nach einem 0x00, und der IOmcu sendet ein 0x00, damit der Decoder des Knotens an einer Frame-Grenze beginnt |
+
+Ein Frame mit falscher CRC, einem DLC über 8, einem COBS-Fehler, einer
+Länge, die nicht zum DLC passt, einem Identifier über 29 Bit, mehr als 16
+Byte vor seinem 0x00 oder Bytes vor dem ersten 0x00 wird verworfen und in
+STATUS Register 8 und 9 gezählt ([Abgelehnte Frames](#abgelehnte-frames)).
+Bytes ohne abschließendes 0x00 laufen in den Frame danach, Rauschen ohne
+0x00 am Ende kostet also auch diesen Frame; die Wiederholung 50ms später
+holt ihn nach.
+
+Ein Leser, der mehr als 960 Byte hinter dem DMA-Kanal liegt, hat Bytes
+verloren: er zählt eine Runde, behält die letzten 960 Byte und verwirft sie
+bis zum nächsten 0x00. Eine Runde wird wie ein Empfangsüberlauf bei CAN
+gezählt, nicht als abgelehnter Frame. Mit einer Anfrage zur Zeit sendet der
+Knoten in jedem 42-ms-Fenster höchstens 34 Byte, also überrundet nur
+Rauschen den Ring.
+
+STATUS Register 6 und 7 tragen die eigenen Zähler des UART, jeweils modulo
+65536: Register 6 die wegen ihrer CRC abgelehnten Frames, Register 7 die
+Resyncs (Bytes vor dem ersten 0x00, ein Frame über 16 Byte, ein
+COBS-Fehler, eine Runde). Bei CAN tragen sie die Empfangs- und
+Sendefehlerzähler des Controllers.
+
+`test_link_uart` prüft das Framing. `test_link_uart_loopback` lässt den
+Link-Host des Knotens gegen Ring, Warteschlange und Dispatcher des IOmcu
+über einen modellierten UART in Schritten von 10us laufen: den Zähler des
+DMA-Kanals über sein Nachladen und über 2^32, die Runde bei 960 und 961
+Byte, eine Warteschlange, die eine Antwort ganz oder gar nicht nimmt, die
+breiteste Antwort von 136 Byte durch den 32-Byte-FIFO, ein gekipptes Byte
+in jeder Richtung und eine Boot-Meldung vor der ersten Anfrage.
+`test_link_uart_retry` prüft die Wiederholung nach 50ms und den Timeout
+nach 1000ms gegen einen Leser, der 42ms steht, zusätzlich 5ms Verzögerung
+je Richtung, eine Antwort nach 48ms und nach 50ms, verlorene Antworten,
+Rauschen, das den Ring während des Stillstands überrundet, mit und ohne
+0x00 am Ende, und den Überlauf der 32-Bit-Millisekunden.
 
 ### Budget
 

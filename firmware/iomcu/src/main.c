@@ -30,6 +30,7 @@
 
 #include "iomcu.h"
 
+#include "iomcu_link.h"
 #include "iomcu_pins.h"
 #include "bench_state.h"
 #include "board_fix.h"
@@ -44,7 +45,6 @@
 #include "sense_map.h"
 #include "tone_core1.h"
 #include "update_hw.h"
-#include "xl2515.h"
 #if SENSE_TRACE
 #include "sense_trace_hw.h"
 #endif
@@ -297,17 +297,14 @@ static void sample(void)
     s_state.status[LINK_ST_FRAMES_LO] = (uint16_t)(s_frames & 0xFFFFu);
     s_state.status[LINK_ST_FRAMES_HI] = (uint16_t)(s_frames >> 16);
     /*
-     * LINK_ST_CRC_ERRORS and LINK_ST_RESYNCS carry the controller's receive
-     * and transmit error counters: CAN finds and checks frame boundaries in
-     * silicon, so this end has no CRC (cyclic redundancy check) or resync
-     * count of its own.
+     * LINK_ST_CRC_ERRORS and LINK_ST_RESYNCS are the transport's: on CAN
+     * the controller's receive and transmit error counters, on the UART
+     * the frames refused for their CRC-16 and the resyncs (iomcu_link.h).
      */
-    uint8_t tec = 0, rec = 0;
-    if (s_can_up) {         /* a board without the controller reads 0 */
-        xl2515_errors(&tec, &rec, NULL);
-    }
-    s_state.status[LINK_ST_CRC_ERRORS] = rec;
-    s_state.status[LINK_ST_RESYNCS]    = tec;
+    uint16_t crc_errors = 0, resyncs = 0;
+    iomcu_link_wire_errors(&crc_errors, &resyncs);
+    s_state.status[LINK_ST_CRC_ERRORS] = crc_errors;
+    s_state.status[LINK_ST_RESYNCS]    = resyncs;
     s_state.status[LINK_ST_REFUSED_LO] = (uint16_t)(s_refused & 0xFFFFu);
     s_state.status[LINK_ST_REFUSED_HI] = (uint16_t)(s_refused >> 16);
 }
@@ -412,14 +409,14 @@ static void loop_watch_feed_window(void)
 }
 
 /**
- * @brief Before the update's restart: the queued CAN frames out
- *        (can_drain()), and the watchdog's mark taken back, so the start
+ * @brief Before the update's restart: the queued frames out (the
+ *        transport's drain, can_drain() on CAN), and the watchdog's mark taken back, so the start
  *        after reboot() is not read as the watchdog's.  reboot() loads the
  *        watchdog with its own 10ms.
  */
 static void restart_prepare(void)
 {
-    can_drain();
+    iomcu_link_drain();
     if (loop_watch_handover(&s_loop_watch)) {
         watchdog_hw->scratch[0] = 0u;
     }
@@ -552,7 +549,8 @@ int main(void)
     /*
      * The pins this build will not hand out, whatever the host asks for: the
      * safety line, the CAN (Controller Area Network) controller's four SPI
-     * (Serial Peripheral Interface) pins and its interrupt, the pins the
+     * (Serial Peripheral Interface) pins and its interrupt, a UART
+     * transport's TX and RX (IOMCU_LINK_PINS), the pins the
      * module uses and does not break out (GP23, GP24, GP25, GP29), and every
      * number above the last GPIO (general-purpose input/output) the module
      * has, whatever board the SDK is built for.  The pin arrives from the panel over the OUTPUTS page, so it is whatever an
@@ -564,7 +562,7 @@ int main(void)
      * safety line.
      */
     s_base_reserved = outbind_reserved_mask(IOMCU_BOARD_ID)
-                      | IOMCU_RESERVED_PINS;
+                      | IOMCU_RESERVED_PINS | IOMCU_LINK_PINS;
     outputs_reserve_pins(&s_outputs, s_base_reserved);
     supply_page_init(&s_supply);
     /* The board's ceiling on every way to the PD mini: the page and each
@@ -798,7 +796,7 @@ int main(void)
         }
     }
 
-    can_start();
+    iomcu_link_start();
     memset(&s_bench, 0, sizeof(s_bench));
 
     uint32_t last_sample = (uint32_t)to_ms_since_boot(get_absolute_time());
@@ -841,7 +839,7 @@ int main(void)
         /* Polled rather than interrupt-driven: the loop turns over far faster
          * than a frame takes to arrive, and the failsafe has to fire on time
          * whether or not anything is arriving. */
-        can_service(now);
+        iomcu_link_service(now);
         /* Core 1's beeps and status into the TONE page. */
         tone_core1_sync(&s_tone);
         /* The firmware update's slice of a hash, its restart, and the end
@@ -1144,6 +1142,6 @@ int main(void)
 
         /* At the end of the pass as well: a request that arrived during it
          * is answered now, and the transmit queue gets its second pump. */
-        can_service(now);
+        iomcu_link_service(now);
     }
 }

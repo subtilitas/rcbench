@@ -132,6 +132,18 @@ size_t link_uart_encode(const link_can_frame_t *f, uint8_t *out, size_t cap);
 void link_uart_rx_init(link_uart_rx_t *rx);
 
 /**
+ * @brief Drop the frame under way: bytes were lost between the last one fed
+ * and the next one, so what the decoder holds cannot end in a good frame.
+ *
+ * The bytes up to the next 0x00 are dropped and count nothing; the counts
+ * stay.  The caller counts the loss where it found it (a receive ring that
+ * was overwritten, for one).  A decoder not yet synced stays so.
+ *
+ * @param rx The decoder; NULL does nothing.
+ */
+void link_uart_rx_drop(link_uart_rx_t *rx);
+
+/**
  * @brief Take one received byte; at a 0x00 that ends a good frame, hand the
  * frame out.
  *
