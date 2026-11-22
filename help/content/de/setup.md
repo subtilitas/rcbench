@@ -17,7 +17,7 @@ SETUP enthält die prüfstandsweiten Paneleinstellungen in den Kategorien PANEL,
 | PANEL | `DESIGN, SPRACHE, DREHKNOPF` | Einstellungen des Panels. |
 | SENSORS | `STROM, WINKEL, PHASENABGRIFF` | [Sensoren](setup-sensors.md): Sensorbus, Strommonitore INA228 und INA3221, AS5600 und Phasenabgriff. Links stehen 8 Einträge, rechts die Einstellungen der Auswahl. |
 | OUTPUTS | `PROTOKOLLE, PINS, PLATINE` | [Ausgänge](outputs.md): Funktion der IOmcu-Pins auf einer Platinenzeichnung. |
-| SD CARD | `LOGS, BROWSER-SCHREIBEN` | Aufzeichnungsarten, Speicherordner und Voraussetzungen für Browser-Schreibzugriffe. |
+| SD CARD | `LOGS, BROWSER-SCHREIBEN, BACKUP` | Aufzeichnungsarten, Speicherordner, Voraussetzungen für Browser-Schreibzugriffe und die Sicherung der Einstellungen. |
 | WI-FI | `NETZWERK, DATEIEN, UPLOAD` | [WLAN](wifi.md): Funkverbindung für Kartendateien und Firmware-Images im Browser. |
 | UPDATES | `VERSIONEN AUF GITHUB` | [Updates](updates.md): Suche nach neuerer Panel-Firmware und Update-Erinnerung. |
 | IMU | `BLUETOOTH-WINKELSENSOR` | [IMU](imu.md): WitMotion BWT901CL über Bluetooth LE, Sensorsuche und Binden, Kalibrierung und aktuelle Winkel. |
@@ -187,7 +187,9 @@ Bei einem unzulässigen Ordner bleibt die Tastatur offen und die Einstellung unv
 | über 2 Ordner | `A/B/C`; `A/B` wird genommen | `Höchstens 2 Ordnerebenen` |
 | ein Zeichen außer A-Z, 0-9, `_` und `-` | `MY LOGS` | `Nur A-Z, 0-9, _ und -` |
 | ein Gerätename von Windows: CON, PRN, AUX, NUL, COM1 bis COM9, LPT1 bis LPT9 | `AUX/LOGS` | `Reservierter Name` |
-| `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW` oder `BENCH/BALANCE`, die eigenen Dateien des Prüfstands | `BENCH/KST`; `BENCH/KSTX` wird genommen | `Für Prüfstand-Dateien reserviert` |
+| `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW`, `BENCH/BALANCE` oder `BENCH/SETUP`, die eigenen Dateien des Prüfstands | `BENCH/KST`; `BENCH/KSTX` wird genommen | `Für Prüfstand-Dateien reserviert` |
+
+Die letzten beiden Zeilen, Einstellungen sichern und Einstellungen laden, legen die Einstellungen des Panels auf die Karte und laden sie zurück. Siehe [Sicherung der Einstellungen](setup-backup.md).
 
 ## SENSORS
 
@@ -202,6 +204,7 @@ WIRELESS listet die Bluetooth-LE-Geräte des Panels, die IMU und das M5Stack Dia
 - [Netzteil](supply.md): die Verdrahtung des PD mini, in der Optionsliste von SUPPLY.
 - [Sensoren](setup-sensors.md)
 - [Wireless](setup-wireless.md)
+- [Sicherung der Einstellungen](setup-backup.md)
 - [Ausgänge](outputs.md)
 - [Updates](updates.md)
 - [Netzteil](supply.md), [Servo-Optionen](servo-settings.md) und [Motor-Optionen](motor-settings.md): die Einstellungen, die auf ihren eigenen Bildschirmen stehen.

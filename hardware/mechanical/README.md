@@ -21,6 +21,8 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `rp2350_can.py`, `ina3221_module.py`, `dcdc_buck_mini.py`, `usbc_pd_trigger.py` | specs of 4 module boards, part by part: Waveshare RP2350-CAN, INA3221 board, Mini560 buck converter, USB-C PD trigger board |
 | `matek_mbec12s.py` | spec of the Matek mBEC12S buck converter, 6V to 60V in |
 | `ina228_node.py` | layout of the remote INA228 sensor node: INA228 module, buck converter and display in place |
+| `CASES.md` | the printed cases of the display node, with XT30 and with XT60, and of the sensor node: parts, assembly, openings, limits |
+| `_gen_display_case.py` | builds the display node's case in 2 variants of 2 parts each, with XT30 openings and with seats for screwed panel-mount XT60, with OpenCASCADE; checks their fit round the display board and the connectors and that the lid closes on the rim; writes STEP and STL |
 | `_gen_node_case.py` | builds the 3 parts of the sensor node's case with OpenCASCADE, checks their fit round the layout's solids, writes STEP and STL |
 | `rbmod_v2.py` | spec of the rbmod carrier board, version 2: with its SMD parts, and with its connectors and modules |
 | `_read_kicad_pcb.py` | reads a KiCad board file's outline, holes, footprints, and the pads, tracks and vias of its 2 outer layers into a data file; the copper needs shapely |
@@ -31,6 +33,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `_rg15.py` | coordinates of the RG-15 airfoil |
 | `wit_imu.py` | spec of a WitMotion inertial sensor in its case, from a product picture with dimensions |
 | `servo_standard.py` | spec of a standard size servo with a round horn, from a dimensioned sketch |
+| `hitec_d485hw.py` | spec of the Hitec D485HW servo with the horn HD-X25 and its lead, from the maker's drawing, model and data sheets |
 | `_board.py` | a module's board for the specs: the plate, and parts placed by their position from the board's center |
 | `_font.py` | outlines of the letters of board print, written by `_gen_font.py` from OpenCV's single-stroke font |
 | `_photo_grid.py` | measures a board from a photo on squared paper: grid fit, camera height, the INA228 module's photos laid onto the board frame |
@@ -48,8 +51,8 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `_surface.py`, `_segment.py` | the surfaces and their fits, and the faces grown on them, for `_refit.py` |
 | `check_refit.py` | holds the dial's solids, read back with OpenCASCADE, against the mesh |
 | `models/pcb/` | 17 models: 16 boards with their parts and the sensor node's layout; STEP |
-| `models/casing/` | 7 printed parts: the Dial's base, the sensor node's case, the INA228 module's case, the flap drive's frame; STEP, and STL for 5 of them |
-| `models/parts/` | 13 models of bought parts and of assemblies: emergency stop button, M5Stack Dial and its nut, 2 servos, 2 cells, inertial sensor, the flap drive's assembly and wing; STEP |
+| `models/casing/` | 11 printed parts: the Dial's base, the display node's case in 2 variants, the sensor node's case, the INA228 module's case, the flap drive's frame; STEP, and STL for 9 of them |
+| `models/parts/` | 14 models of bought parts and of assemblies: emergency stop button, M5Stack Dial and its nut, 3 servos, 2 cells, inertial sensor, the flap drive's assembly and wing; STEP |
 | `renders/` | OpenCASCADE renders in the folders of `models/`: `pcb/`, `casing/`, `parts/`; a view of several models lies in the folder `_models.py` names for it. The contact sheet `all.png` lies beside the folders |
 | `vendor/` | third-party meshes, unchanged, each with its licence |
 
@@ -63,6 +66,7 @@ python3 hardware/mechanical/check_overlap.py       # 2 minutes
 python3 hardware/mechanical/_gen_dial_base.py --check   # 1 minute
 python3 hardware/mechanical/_gen_flap_drive.py --check  # 10 seconds
 python3 hardware/mechanical/_gen_node_case.py --check   # 20 seconds
+python3 hardware/mechanical/_gen_display_case.py --check  # 10 seconds
 xvfb-run -a python3 hardware/kicad/tools/step_render.py \
     hardware/mechanical/renders --size 640 480 --folders \
     --step hardware/mechanical/models/*/*.step
@@ -693,6 +697,10 @@ Limits:
   and the STEP file lacks, and the notches the panel's tabs leave in the
   edges.
 
+The display node's printed cases are in [Cases](CASES.md): with
+[XT30 openings](CASES.md#case-of-the-display-node-xt30) and with
+[screwed XT60](CASES.md#case-of-the-display-node-xt60).
+
 ## Remote INA228 sensor node, layout
 
 The boards of the remote sensor node in the places a case will hold
@@ -701,7 +709,7 @@ bottom, the [display board](#display-node-board-lcdwiki-es3c28p) on top,
 a Matek mBEC12S buck converter between them. The node has no cell and no
 charger board: the converter feeds it with 5V from the measured line of
 6V to 60V. No part is changed; each is the model of its own spec, moved
-and turned. A [case](#case-of-the-sensor-node) of 3 printed parts holds
+and turned. A [case](CASES.md#case-of-the-sensor-node) of 3 printed parts holds
 them.
 
 | | |
@@ -740,80 +748,6 @@ and 2g. No height but the 4.5mm over all is known; the board's thickness
 is read off an angled picture. The half holes of the edge pads are not
 drawn. Output is 5V as delivered; a solder bridge on the pad 9V or 12V
 sets that voltage.
-
-### Case of the sensor node
-
-A printed case of 3 parts round the layout, 91.4mm x 55.4mm x 28.0mm. It
-has no ears; the node hangs in its cable.
-
-![Case of the sensor node](renders/casing/ina228_node_case.png)
-
-| | | |
-| --- | --- | --- |
-| ![Taken apart](renders/casing/ina228_node_case_exploded.png) | ![Cut open](renders/casing/ina228_node_case_section.png) | ![Plug end](renders/casing/ina228_node_case_back.png) |
-
-| File | Content | Print |
-| --- | --- | --- |
-| `ina228_node_plate.step`, `.stl` | bottom plate, 2.4mm thick, with 4 stands of 6.4mm under the INA228 board's holes, each with a hole of 3.4mm and a recess of 6.0mm x 2.2mm for a screw's head; 12.0cm3 | underside down, no support |
-| `ina228_node_frame.step`, `.stl` | wall of 2.4mm from the plate to the display board's back, 18.3mm high, with 4 columns that stand on the INA228 board and carry the display board; 15.1cm3 | upper face down, no support; the 2 XT90 openings are bridges of 21.4mm |
-| `ina228_node_bezel.step`, `.stl` | rim round the display board, 7.3mm high, a plate of 1.2mm over the touch panel with the window, 4 posts on the display board's holes; 7.5cm3 | front down, no support |
-
-Assembly, 8 screws M3 and 8 threaded inserts ruthex RX-M3Sx4.0:
-
-1. Melt 2 inserts into each column of the frame, one from each end. The
-   holes are 4.0mm wide and 6.0mm deep.
-2. Put the INA228 module on the plate's stands, the frame over it. 4
-   screws M3 x 8 with pan heads go from below through the plate and the
-   board's holes into the columns' feet. The board is clamped between
-   stands and columns.
-3. Lay the display board on the columns, the bezel over it. 4 screws
-   M3 x 10 go from above through the bezel's posts and the board's holes
-   into the columns' tops.
-
-Each column joins a hole of the INA228 board to a hole of the display
-board; the two lie 4.2mm apart. Under the display board the column's
-lobe at the INA228 hole steps back in 4 steps of 0.65mm, clear of chip
-parts that hang 0.9mm down from that board.
-
-| Opening | Where | Size, mm |
-| --- | --- | --- |
-| XT90, 2 | each end wall, round the housing | 21.4 x 10.5 |
-| USB Type-C | end wall over the socket half's opening, through frame and bezel | 13.0 x 4.4 |
-| RESET, BOOT | a slot under the USB notch | 26.6 x 2.6 |
-| microSD | long wall at the header's side | 16.0 x 2.8 |
-| Speaker | 4 slots in the other long wall | 1.6 x 7.0 each, 3.2 apart |
-| Microphone | bezel, over the board's microphone hole | 1.6 round |
-| Display | bezel, 0.5 round the view area | 59.1 x 44.6 |
-
-Limits:
-
-- RESET and BOOT are pressed from the display board's back, towards the
-  display. They have no push rod: a tool of 2mm at most goes through the
-  slot, 5.9mm in from the wall's outer face, and levers the plunger up.
-- The USB socket's axis is 3.6mm over the top of the XT90 housing under
-  it. A USB plug thicker than 7.0mm meets the plug in that housing.
-- The speaker is not chosen and not drawn. The room behind its slots is
-  18mm x 14mm x 10mm, beside the speaker socket.
-- The converter has no seat in the case. A foam pad of 1.5mm on the
-  INA228 board carries it; pad and wires are not drawn.
-- The touch panel lies 0.2mm under the bezel's plate, which is 1.2mm
-  thick: the panel's face is 1.4mm under the case's front.
-- No part is printed. The fits are drawn, not tried: 0.3mm round the
-  display board, 1.0mm at the INA228 board's long sides.
-
-`_gen_node_case.py` builds the parts from boxes and upright cylinders
-and checks them: each part is one valid solid, no two parts share
-volume, and no part shares volume with one of the 1139 solids of
-`ina228_node_layout.step`. The parts seat on the copper rings (0.05mm)
-and the print (0.02mm) that the board models draw round their holes.
-
-```sh
-pip install cadquery-ocp==8.0.1.1.0
-python3 hardware/mechanical/_gen_node_case.py            # write STEP and STL
-python3 hardware/mechanical/_gen_node_case.py --check    # CI
-xvfb-run -a python3 hardware/mechanical/_gen_node_case.py \
-    --render hardware/mechanical/renders
-```
 
 ## Module boards of the rbmod carrier
 
@@ -977,6 +911,52 @@ repository and names neither maker nor type. The sketch gives 55mm over the
 ears and 7.2mm + 40.5mm + 7.2mm for its parts; the model is 54.9mm long. The
 cable, its plug, the horn's screw and the shaft's splines are not in the
 sketch and not drawn. No dimension is verified on a servo.
+
+## Hitec D485HW
+
+The Hitec D485HW, a standard size digital servo: black case of 3 shells,
+2 ears with 2 open mounting holes each, the four-arm horn HD-X25 on the
+shaft, a silver type plate, and the lead with its 3 wires and 3 pin plug.
+
+![Hitec D485HW](renders/parts/hitec_d485hw.png)
+
+| File | Content | Size, mm | Origin |
+| --- | --- | --- | --- |
+| `hitec_d485hw.step` | case of 3 shells, 2 ears, boss, shaft, horn HD-X25 with 16 holes, type plate, print "D485HW" on the plate and on 2 sides, lead bushing, 3 wires, plug; 37 solids, 0.6MB | case 39.8 x 19.8 x 37.65; 53.0 over the ears; 46.35 over the horn; 126.4 x 36.0 x 46.35 over all | on the shaft's axis, on the case's underside; x along the case, the long end towards -x, the lead leaves the end at +x; z up |
+
+| Dimension | Value | Source |
+| --- | --- | --- |
+| Case, ears, mounting holes | 39.8mm x 19.8mm; 53.0mm over the ears; holes of 4.5mm, 48.0mm apart along the case and 10.0mm across; shaft axis 14.0mm from a row of holes; ears 2.5mm thick, underside 28.0mm over the case's underside | the maker's dimension drawing |
+| Seams, deck, boss, shaft, type plate, lead bushing, wires | seams 2.05mm and 23.55mm over the underside; deck 37.65mm; boss to 39.85mm; shaft 6.0mm across, to 43.05mm; bushing 9.0mm x 5.0mm, 6.0mm long, its axis 6.25mm over the underside; wires 1.3mm across, 1.8mm apart | the maker's STEP model, read with OpenCASCADE |
+| Horn HD-X25 | hub 9.0mm across, 6.2mm high; holes of 1.6mm at 7mm, 10mm, 13mm and 16mm from the axis on one pair of arms and at 6mm, 9mm, 12mm and 15mm on the other; arm ends round with 3.0mm | the maker's horn and spline data sheet, page 43 |
+| Lead | 300mm long, 24AWG; minus black, plus red, impulse yellow | the maker's data sheet Ver2.1 and operating instructions |
+| Ear slots, corner radius, boss diameters, plug housing, the horn's place on the shaft, its arms' thickness and width | see `hitec_d485hw.py` | estimated |
+
+| Point | x, mm | y, mm | z, mm |
+| --- | --- | --- | --- |
+| The lead leaves the case | 9.9 | 0.0 | 6.25 |
+| Wires | 15.9 to 75.9 | minus -1.8, plus 0.0, signal +1.8 | 6.25 |
+| Signal contact in the plug's end face | 89.9 | 2.54 | 6.25 |
+| Plus contact | 89.9 | 0.0 | 6.25 |
+| Minus contact | 89.9 | -2.54 | 6.25 |
+
+Sources, none in the repository: the maker's dimension drawing and STEP
+model of the D485HW (HiTEC Europe shop), its data sheet "D485HW General
+Specification" Ver2.1, its "Servo Actuator Horn & Spline Technical Data
+Sheet" and its operating instructions. The STEP model is 40.0mm x 20.0mm
+where the drawing gives 39.8mm x 19.8mm; the model follows the drawing.
+
+Limits:
+
+- 60mm of the lead's 300mm are drawn, straight.
+- Red is the middle wire. Which edge of the band carries the yellow signal
+  wire is not in the sources; it is drawn at +y.
+- The box holds 4 horns; the model carries the HD-X25. Its height on the
+  shaft is estimated: the hub's underside 0.3mm over the boss.
+- Not drawn: the spline's 25 teeth, the horn's screw, the case's 4 screws,
+  the ribs under the ears, the raised gear cover on the deck, the maker's
+  sign. The print is the type as plain text.
+- No dimension is verified on a servo.
 
 ## KST X10 with frame and flap drive
 

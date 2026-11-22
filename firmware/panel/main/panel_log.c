@@ -29,6 +29,7 @@
 #include "log_viewer_screen.h"
 #include "log_writer.h"
 #include "panel.h"
+#include "panel_sbk.h"
 #include "panel_bal.h"
 #include "panel_trial.h"
 #include "storage.h"
@@ -1098,6 +1099,8 @@ void log_task(void *arg)
         hitec_record_write();
         hitec_card_serve();
         esc_card_serve();
+        /* And the settings backup's request, when one waits. */
+        panel_sbk_card_serve();
         /* And a balance solution's CSV row, when one waits. */
         panel_bal_card_serve();
         /* And RENAME LOG's request, when one waits: refused while any log

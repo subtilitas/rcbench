@@ -74,15 +74,17 @@ TEST_CASE(sd_card_lists_the_folders_under_the_switches)
 {
     fresh_card();
     CHECK_EQ(settings_screen_category(), SET_CAT_CARD);
-    CHECK_EQ(settings_screen_rows(SET_CAT_CARD), 5);
+    CHECK_EQ(settings_screen_rows(SET_CAT_CARD), 7);
     CHECK_EQ(settings_screen_text_row(SET_CAT_CARD, SET_TEXT_LOG_AUTO_DIR), 3);
     CHECK_EQ(settings_screen_text_row(SET_CAT_CARD, SET_TEXT_LOG_USER_DIR), 4);
     CHECK_EQ(settings_screen_text_row(SET_CAT_CARD, SET_TEXT_DUT_NAME), -1);
     CHECK_EQ(settings_screen_text_row(SET_CAT_APP, SET_TEXT_LOG_AUTO_DIR), -1);
-    /* The five fit the list: nothing to scroll. */
+    /* Seven rows, SAVE SETTINGS and LOAD SETTINGS last: one row's pitch
+     * past the six the list shows whole. */
     int max = -1;
     (void)settings_screen_scroll(&max);
-    CHECK_EQ(max, 0);
+    CHECK(max > 0);
+    CHECK(max <= ROW_PITCH);
     CHECK(!kb()->open);
     ui_router_render(&s_c, 0);
 }

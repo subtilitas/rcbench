@@ -17,7 +17,7 @@ SETUP contains bench-wide panel settings under PANEL, SENSORS, WIRELESS and SD C
 | PANEL | `THEME, LANGUAGE, KNOB` | the list of PANEL |
 | SENSORS | `CURRENT, ANGLE, PHASE TAP` | [Sensors](setup-sensors.md): the sensor bus, the INA228 and INA3221 current monitors, the AS5600 and the phase tap, a left list of 8 beside the selected one's rows |
 | OUTPUTS | `PROTOCOLS, PINS, BOARD` | [Outputs](outputs.md): the role of each IOmcu pin, on a drawing of the board |
-| SD CARD | `LOGS, BROWSER WRITES` | the list of SD CARD: which logs the panel writes, and where, and what a browser needs to write |
+| SD CARD | `LOGS, BROWSER WRITES, BACKUP` | the list of SD CARD: which logs the panel writes, and where, what a browser needs to write, and the settings backup |
 | WI-FI | `NETWORK, FILES, UPLOAD` | [Wi-Fi](wifi.md): the panel's radio, for the card's files and a firmware image in a browser |
 | UPDATES | `RELEASES ON GITHUB` | [Updates](updates.md): the check for a newer panel firmware release and the reminder switch |
 | IMU | `BLUETOOTH ANGLE SENSOR` | [IMU](imu.md): the WitMotion BWT901CL over Bluetooth LE, the scan and the bind, the calibration and the live angles |
@@ -187,7 +187,9 @@ An invalid folder leaves the keyboard open and the setting unchanged. The line b
 | over 2 folders | `A/B/C`; `A/B` is taken | `At most 2 folder levels` |
 | a character other than A-Z, 0-9, `_` and `-` | `MY LOGS` | `A-Z, 0-9, _ and - only` |
 | a Windows device name: CON, PRN, AUX, NUL, COM1 to COM9, LPT1 to LPT9 | `AUX/LOGS` | `Reserved name` |
-| `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW` or `BENCH/BALANCE`, the bench's own files | `BENCH/KST`; `BENCH/KSTX` is taken | `Reserved for the bench's files` |
+| `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW`, `BENCH/BALANCE` or `BENCH/SETUP`, the bench's own files | `BENCH/KST`; `BENCH/KSTX` is taken | `Reserved for the bench's files` |
+
+The last two rows, Save settings and Load settings, keep the panel's settings on the card and load them back. See [Settings backup](setup-backup.md).
 
 ## SENSORS
 
@@ -202,6 +204,7 @@ WIRELESS lists the panel's Bluetooth LE devices, the IMU and the M5Stack Dial. E
 - [Supply](supply.md): the PD mini's wiring, in SUPPLY's settings list.
 - [Sensors](setup-sensors.md)
 - [Wireless](setup-wireless.md)
+- [Settings backup](setup-backup.md)
 - [Outputs](outputs.md)
 - [Updates](updates.md)
 - [Supply](supply.md), [Servo settings](servo-settings.md) and [Motor settings](motor-settings.md): the settings kept on their own screens.
