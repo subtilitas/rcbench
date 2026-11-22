@@ -360,12 +360,12 @@ static bool flash_busy(void)
  * @brief Drive the programming ports' 5V enable low, before anything else
  *        runs; psup_pass() drives it from the main loop on.
  *
- * @param r  The board's roles, or NULL for a board without the switch: then
- *           nothing is touched.
+ * @param r  The board's roles. NULL, or roles whose prog_5v_en is
+ *           OUTBIND_NO_GPIO (a board without the switch): nothing is touched.
  */
 static void prog_5v_off(const outbind_roles_t *r)
 {
-    if (r == NULL) {
+    if (r == NULL || r->prog_5v_en == OUTBIND_NO_GPIO) {
         return;
     }
     gpio_init(r->prog_5v_en);
