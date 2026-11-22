@@ -24,6 +24,20 @@ history is in git.
   is checked with the panel image's verifier and key: while
   `RCBENCH_SIGN_ENFORCE` is 0 an image without a valid one is sent after a
   warning on the band and the step's card, and at 1 it is refused (`V07`).
+- `hardware/mechanical/`: `motor_simulator.step`, a stand-in for a motor
+  on an ESC's 3 motor leads: 3 resistors of 600Ω in a triangle, 400Ω
+  between any 2 of its 3 crocodile clips, with the phase tap's lead on one
+  clip, ending in a 3.5mm mono plug. 32 solids, 51.05mm x 20.0mm x
+  78.06mm; every size is estimated from one owner photo
+  ([ESC and motor](hardware/mechanical/ESC_MOTOR.md#motor-simulator)).
+- `hardware/mechanical/`: `flycolor_flydragon_lite_40a.step`, the ESC with
+  its capacitor, print, power leads with an XT60 plug, 3 motor leads and
+  signal lead with plug (44 solids); `tmotor_at2814.step`, the outrunner
+  with its 3 leads (15 solids); and `esc_motor_set.step`, the two joined
+  lead to lead, 398.2mm long. The ESC's size follows the maker's manual,
+  the motor the maker's drawing; lead lengths and diameters of the ESC are
+  estimated from a picture. The overlap check covers the 3 models
+  ([ESC and motor](hardware/mechanical/ESC_MOTOR.md#flycolor-flydragon-lite-40a-and-t-motor-at2814)).
 - IOmcu: the link on a UART (universal asynchronous receiver-transmitter)
   beside CAN (Controller Area Network), the transport of board 3, the
   remote servo node's Core2350B. UART0 at 1Mbaud 8N1 on GPIO 0 (TX) and
@@ -100,7 +114,8 @@ history is in git.
   relief in place of straight holes of 3.5mm, a window with 0.5mm in place
   of 0.17mm beside the touch panel, and head recesses of 6.0mm for M3. A
   hole of 3.5mm in the floor holds the current sensor board. `_gen_display_case.py --check`, which CI runs, fails when a part
-  meets the display board or the stack does not close. No part is printed
+  meets the display board or the stack does not close. A tester's print
+  of 2026-11-22 fits the node and goes together without binding
   ([Cases](hardware/mechanical/CASES.md#case-of-the-display-node-xt30)).
 - Settings backup on the card, `BENCH/SETUP`. SETUP > SD CARD ends on Save
   settings, which writes the stored settings as `SETTINGS.TXT`, and Load
