@@ -112,12 +112,12 @@ static bool read_ok(uint16_t board)
 static void role_name(const outbind_roles_t *r, uint8_t kind, uint8_t gpio,
                       char *buf, size_t cap)
 {
-    _Static_assert(OUTBIND_FIXED_OUTS == OUTBIND_FIXED_PROGS,
-                   "one loop walks both role lists");
-    const uint8_t *pins = (kind == (uint8_t)OUTBIND_CONN_PROG) ? r->prog
-                                                                : r->out;
-    const char *stem = (kind == (uint8_t)OUTBIND_CONN_PROG) ? "PROGP" : "PWM";
-    for (unsigned n = 0; n < OUTBIND_FIXED_OUTS; ++n) {
+    const bool prog = kind == (uint8_t)OUTBIND_CONN_PROG;
+    const uint8_t *pins = prog ? r->prog : r->out;
+    const char *stem = prog ? "PROGP" : "PWM";
+    const unsigned count = prog ? OUTBIND_FIXED_PROGS : outbind_out_count(r);
+    /* At most OUTBIND_FIXED_OUTS: two digits whatever the count says. */
+    for (unsigned n = 0; n < count && n < OUTBIND_FIXED_OUTS; ++n) {
         if (pins[n] == gpio) {
             (void)snprintf(buf, cap, "%s%02u", stem, n + 1u);
             return;

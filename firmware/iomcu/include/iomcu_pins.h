@@ -34,13 +34,32 @@
  * chooses it: rp2350_can (the default) builds the module wired by hand,
  * rbmod the carrier, whose role pins are in shared/outputs/out_board_rbmod.c
  * (IOMCU_BOARD_RBMOD=1).  Both boards hold the same module, so the CAN and
- * heartbeat pins below are the same on both.  A further board appends an
- * entry to k_boards in shared/outputs/out_bind.c and a value here.
+ * heartbeat pins below are the same on both.  rsn builds the remote servo
+ * node's Core2350B (IOMCU_BOARD_RSN=1, shared/outputs/out_board_rsn.c and
+ * rsn_pins.h): its heartbeat is GPIO 3 as well, and it has no CAN
+ * controller.  A further board appends an entry to k_boards in
+ * shared/outputs/out_bind.c and a value here.
  */
-#if defined(IOMCU_BOARD_RBMOD) && IOMCU_BOARD_RBMOD
+#if defined(IOMCU_BOARD_RSN) && IOMCU_BOARD_RSN
+#define IOMCU_BOARD_ID  ((uint16_t)OUTBIND_BOARD_RSN)
+#elif defined(IOMCU_BOARD_RBMOD) && IOMCU_BOARD_RBMOD
 #define IOMCU_BOARD_ID  ((uint16_t)OUTBIND_BOARD_RBMOD)
 #else
 #define IOMCU_BOARD_ID  ((uint16_t)OUTBIND_BOARD_PICO_HEADER)
+#endif
+
+/**
+ * @brief Whether the board carries the XL2515 CAN controller: 1 on the
+ *        RP2350-CAN module and the rbmod carrier, 0 on the remote servo
+ *        node, whose GPIO 8 to 12 are port switch enables.
+ *
+ * Without it can_start() leaves the controller's pins alone and the link
+ * has no transport in this image.
+ */
+#if defined(IOMCU_BOARD_RSN) && IOMCU_BOARD_RSN
+#define IOMCU_HAS_CAN 0
+#else
+#define IOMCU_HAS_CAN 1
 #endif
 
 /**
@@ -96,6 +115,7 @@
  * the safety line from inside, and the interlock stops meaning anything with
  * nothing on any screen to say so.
  */
+#if IOMCU_HAS_CAN
 #define IOMCU_RESERVED_PINS                     \
     ((1ull << IOMCU_HEARTBEAT_PIN)              \
      | (1ull << IOMCU_CAN_PIN_SCK)              \
@@ -103,5 +123,14 @@
      | (1ull << IOMCU_CAN_PIN_MISO)             \
      | (1ull << IOMCU_CAN_PIN_CS)               \
      | (1ull << IOMCU_CAN_PIN_INT))
+#else
+/* The remote servo node: the heartbeat, the UART to the ES3C28P, the rail
+ * and port switch enables, the strap, the critical alert, the LED and the
+ * PSRAM's chip select (rsn_pins.h). */
+#define IOMCU_RESERVED_PINS                                         \
+    ((1ull << IOMCU_HEARTBEAT_PIN) | (1ull << 0) | (1ull << 1)      \
+     | (1ull << 2) | (0x1FFull << 6) | (1ull << 15) | (1ull << 36)  \
+     | (1ull << 39) | (1ull << 47))
+#endif
 
 #endif /* RCBENCH_IOMCU_PINS_H */

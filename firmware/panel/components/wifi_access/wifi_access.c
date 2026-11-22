@@ -53,6 +53,7 @@
 #include "wifi_dns.h"
 #include "wifi_ntp.h"
 #include "wifi_req.h"
+#include "wifi_sig.h"
 #include "wifi_sock.h"
 #include "wa_text.h"
 #include "wa_walk.h"
@@ -839,6 +840,9 @@ static esp_err_t h_update(httpd_req_t *r)
     memset(&got, 0, sizeof(got));
     const fw_err_t ce = (e == FW_OK)
                         ? fw_image_check(img, img_n, img_slot, &got) : e;
+    if (ce == FW_OK) {               /* the release key's verdict, too */
+        got.sig = wifi_sig_upload(r, img, img_n);
+    }
     fw_image_info_t info;
     bool same = false;
     lock();
@@ -1307,6 +1311,7 @@ static void fetch_task(void *arg)
         .stopped = f_stopped,
         .report = f_report,
         .alloc = f_alloc,
+        .verify = wifi_sig_verify,
         .ctx = NULL,
         .start_ms = start_ms,
         .budget_ms = (job == WA_JOB_CHECK) ? WA_FETCH_CHECK_MS

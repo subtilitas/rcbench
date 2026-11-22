@@ -174,13 +174,18 @@ size_t report_line(const report_snap_t *s, unsigned i, char *buf,
         if (s->can_up) {
             return 0u;
         }
+        if (s->uart) {
+            return say(buf, cap,
+                       "rcbench-iomcu: UART did not start -- no free DMA "
+                       "channel\n");
+        }
         return say(buf, cap,
                    "rcbench-iomcu: CAN did not answer on SPI -- module "
                    "fitted? wiring on GP9-12?\n");
     case REPORT_L_CAN_UP:
         /* Requests first: the number that answers "is the other end talking
          * to me at all". */
-        if (!s->can_up) {
+        if (s->uart || !s->can_up) {
             return 0u;
         }
         return say(buf, cap,
@@ -194,7 +199,7 @@ size_t report_line(const report_snap_t *s, unsigned i, char *buf,
     case REPORT_L_CAN_OVERRUN:
         /* In words: an overrun is the one thing that explains a frame going
          * missing while the bus reports no error. */
-        if (!s->can_up || s->overruns == 0u) {
+        if (s->uart || !s->can_up || s->overruns == 0u) {
             return 0u;
         }
         return say(buf, cap,
@@ -202,6 +207,20 @@ size_t report_line(const report_snap_t *s, unsigned i, char *buf,
                    "-- frames arrived with nowhere to put them; not a bus "
                    "fault\n",
                    (unsigned long)s->overruns);
+    case REPORT_L_UART:
+        if (!s->uart || !s->can_up) {
+            return 0u;
+        }
+        return say(buf, cap,
+                   "rcbench-iomcu: UART up, %lu baud, %lu requests served, "
+                   "%lu self-test echoes, crc %lu resync %lu laps %lu "
+                   "overruns %lu tx_drop %lu txq_max %u\n",
+                   (unsigned long)s->bitrate, (unsigned long)s->requests,
+                   (unsigned long)s->echoes, (unsigned long)s->uart_crc,
+                   (unsigned long)s->uart_resync,
+                   (unsigned long)s->uart_laps,
+                   (unsigned long)s->overruns, (unsigned long)s->tx_drop,
+                   (unsigned)s->uart_txq_max);
     case REPORT_L_SENSE:
         return s->sense_on ? sense_line(s, buf, cap) : 0u;
     case REPORT_L_SENSE_WINDOW:

@@ -76,6 +76,7 @@ typedef enum {
     LINK_PAGE_OUTPUTS_HI  = 0x3E, /**< OUTPUTS for slots 9 to 16 (4.41)     */
     LINK_PAGE_BIND_CFG_HI = 0x3F, /**< CHAN_CFG_HI prepared (4.41)          */
     LINK_PAGE_BIND_OUT_HI = 0x40, /**< OUTPUTS_HI prepared (4.41)           */
+    LINK_PAGE_POWER       = 0x43, /**< the servo rail's switches, board 3 (4.41) */
     /* Frozen: the same numbers, layout and meaning under every major. */
     LINK_PAGE_UPDATE_CTL  = 0xF0, /**< the IOmcu's own firmware update */
     LINK_PAGE_UPDATE_DATA = 0xF1, /**< and the 64 bytes of the block in hand */
@@ -171,7 +172,14 @@ typedef enum {
  * at the latest, and SENSE_MAP's WATCH names outputs 9 to 16
  * (LINK_SM_WATCH_OUT()).  An older IOmcu refuses the five pages with
  * LINK_NACK_BAD_PAGE and BIND register 2 with LINK_NACK_BAD_RANGE; the
- * panel sends them to a 4.41 IOmcu only.
+ * panel sends them to a 4.41 IOmcu only.  From 4.41 as well IDENTITY has
+ * 9 registers on the IOmcu (LINK_ID_ALL): registers 7 and 8 carry the
+ * chip's revision and its boot ROM's version, and STATUS fault bit 8
+ * (LINK_FAULT_CHIP_STEPPING) says a board 3 IOmcu found a chip before the
+ * RP2350 A4 stepping and drives nothing; the remote servo node's IOmcu
+ * (board 3) serves POWER (0x43, link_pages_power.h).  The panel reads
+ * LINK_ID_COUNT registers of IDENTITY from every IOmcu and registers 7
+ * and 8 from a 4.41 IOmcu only.
  * An IOmcu never asks the panel's minor; a page an older panel does not
  * know is a page it never writes.
  *
@@ -776,6 +784,7 @@ enum {
 /* The current monitors' pages (protocol 4.7 to 4.27). */
 #include "link_pages_sense.h"
 #include "link_pages_esc.h"
+#include "link_pages_power.h"
 
 /* --- the TONE page (protocol 4.8): the beeps of an ESC (electronic speed
  *     controller), heard on one motor phase.  One GPIO reads the phase
@@ -1042,7 +1051,25 @@ enum {
     LINK_ID_FIRMWARE_PATCH = 4,
     LINK_ID_HARDWARE       = 5, /**< board revision                        */
     LINK_ID_CAPABILITIES   = 6, /**< bitmap: which optional pages are real */
+    /** @brief The registers every IOmcu answers, frozen: what the panel
+     *         reads first. */
     LINK_ID_COUNT          = 7,
+    /**
+     * @brief Protocol 4.41: SYSINFO CHIP_ID's REVISION field, bits 31 to 28
+     *        (rp2350_chip_version()): 2 on an A2 chip, 3 on A3 and A4.
+     *
+     * 0 on a board that does not read it (boards 1 and 2).
+     */
+    LINK_ID_CHIP_REV       = 7,
+    /**
+     * @brief Protocol 4.41: the boot ROM's version byte at address 0x13
+     *        (rp2350_rom_version()): 2 on A2, 3 on A3, 4 on A4.
+     *
+     * 0 on a board that does not read it (boards 1 and 2).
+     */
+    LINK_ID_ROM_VER        = 8,
+    /** @brief The registers a 4.41 IOmcu's IDENTITY page has. */
+    LINK_ID_ALL            = 9,
 };
 
 /**
@@ -1127,6 +1154,17 @@ typedef enum {
      * restart until a CLEAR is taken.
      */
     LINK_FAULT_WATCHDOG      = 1u << 7,
+    /**
+     * @brief The board 3 IOmcu runs on a chip before the RP2350 A4 stepping
+     *        (protocol 4.41): IDENTITY's LINK_ID_CHIP_REV under 3 or its
+     *        LINK_ID_ROM_VER under 4.
+     *
+     * It drives nothing: the rail and port switches stay off, no output is
+     * bound, and ARM, POWER ON, SUPPLY ON and every programming page's
+     * write are refused with LINK_NACK_NOT_ARMED.  Set from the start until
+     * a restart on an A4 chip.
+     */
+    LINK_FAULT_CHIP_STEPPING = 1u << 8,
 } link_fault_t;
 
 /**

@@ -107,6 +107,9 @@ typedef struct {
     bool     sticky;      /**< the panel's OFF stands: no port ON      */
     bool     wire_frozen; /**< supply_page_wire_freeze()               */
     uint32_t held_t0;     /**< when the held OFF was written           */
+    uint16_t max_mv;      /**< the board's ceiling for SET_MV, mV; 0 for
+                               the module's PDMINI_V_MAX_MV.  Kept by
+                               supply_page_init()                       */
 } supply_page_t;
 
 /** @brief The supply as a programming port sees it (kst_port.h). */
@@ -122,6 +125,8 @@ typedef struct {
     uint16_t set_ma;                    /**< the current limit asked for, mA */
     uint16_t vin_mv;    /**< the PD mini's input, 0 while not read */
     bool     latched;   /**< the panel's OFF stands until the hold ends */
+    uint16_t max_mv;    /**< the highest SET_MV the page takes, mV; 0 for
+                             PDMINI_V_MAX_MV */
 } supply_port_view_t;
 
 /**
@@ -133,6 +138,19 @@ typedef struct {
  * @param p The page state, overwritten.
  */
 void supply_page_init(supply_page_t *p);
+
+/**
+ * @brief The board's ceiling for the supply's voltage: a SET_MV above it is
+ *        refused on the page (LINK_NACK_BAD_VALUE) and in a programming
+ *        port's ON (supply_page_port_set()), and the port's view reports it.
+ *
+ * supply_page_init() keeps it.  Nothing is done when @p p is NULL.
+ *
+ * @param p  The page state.
+ * @param mv The ceiling in mV; 0 or a value above PDMINI_V_MAX_MV leaves
+ *           the module's PDMINI_V_MAX_MV.
+ */
+void supply_page_ceiling(supply_page_t *p, uint16_t mv);
 
 /**
  * @brief The rate the UART is to run at now, 0 to 6.

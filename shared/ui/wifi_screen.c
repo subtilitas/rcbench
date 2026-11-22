@@ -1179,6 +1179,9 @@ static void draw_question(gfx_canvas_t *c)
     default:
         break;
     }
+    char sig[160];      /* what the release key says, one line */
+    update_sig_text(s.v.sig, sig, sizeof(sig));
+    y = q_para(c, y, sig, fw_sig_signed(s.v.sig) ? UI_OK : UI_WARN) + 8;
     y = q_para(c, y, TR(WF_Q_NOTE_1), UI_TEXT_DIM);
     y = q_para(c, y, TR(WF_Q_NOTE_2), UI_TEXT_DIM) + 16;
     if (s.v.offer != WIFI_OFFER_INSTALLED && s.v.gate != WIFI_GATE_OPEN) {

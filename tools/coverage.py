@@ -416,8 +416,10 @@ TRACKED = [
     "shared/link/link_bringup.c",
     "shared/link/link_can.c",
     "shared/link/link_uart.c",
+    "shared/link/link_uart_dev.c",
     "shared/link/link_crc.c",
     "shared/link/link_dev.c",
+    "shared/link/link_gate.c",
     "shared/link/link_host.c",
     "shared/link/link_artxfer.c",
     "shared/link/link_drawing.c",
@@ -436,6 +438,8 @@ TRACKED = [
     "shared/outputs/out_bind.c",
     "shared/outputs/out_bind_take.c",
     "shared/outputs/board_fix.c",
+    "shared/outputs/chip_gate.c",
+    "shared/outputs/power_page.c",
     "shared/outputs/out_pwm_map.c",
     "shared/outputs/servo_page.c",
     "shared/outputs/supply_page.c",
@@ -511,6 +515,8 @@ TRACKED = [
     "shared/fwupdate/fw_trial.c",
     "shared/fwupdate/fw_c6.c",
     "shared/fwupdate/fw_slots.c",
+    "shared/fwupdate/fw_sig.c",
+    "shared/fwupdate/fw_sign.c",
     "shared/devupd/devupd.c",
     "shared/devupd/devupd_client.c",
     "shared/webaccess/wa_session.c",
@@ -555,6 +561,8 @@ DATA_ONLY = {
     "shared/esc/esc_profiles_gen.c",
     # The rbmod carrier's pin catalogue and role table.
     "shared/outputs/out_board_rbmod.c",
+    # The remote servo node's pin catalogue and role table.
+    "shared/outputs/out_board_rsn.c",
     # The Wi-Fi page's file manager as C strings, by tools/gen_web_blob.py.
     "shared/webaccess/wa_web_blob.c",
     # The settings' schema, one row per setting.

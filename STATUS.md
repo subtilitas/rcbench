@@ -343,6 +343,19 @@ both are due, the band names what holds it back with one line per frame, the sta
 while the C6's restart is due (`upd_run.h`, `test_upd_run`: both restarts over a store in
 memory, a power cut before step 2, a rollback; `panel_updrun.c` feeds it on the panel).
 
+The release signature of the panel's own image (ECDSA P-256 over SHA-256, `<image>.sig`) is
+verified with Mbed TLS 4.1.0 (`fw_sign.c`, `test_fw_sign`: 48 signatures made by openssl,
+another key, every flipped image bit position tried, cut and padded signatures, DER forms out
+of shape, a P-384 key, the committed release key). The Wi-Fi page sends an optional `.sig`
+with the upload (`test_wa_page`), a download fetches it after the image (`test_wa_fetch_sig`:
+404, sizes 7, 8, 72 and 73 bytes, a broken connection, STOP and the budget during the
+signature), and the question and PANEL UPDATE show the verdict (`test_update_sig`). An image
+without a valid signature installs with the one hold and a warning; `RCBENCH_SIGN_ENFORCE=1`
+adds the second hold INSTALL ANYWAY (`test_fw_sig`, built a second time with the switch at
+1). The release workflow
+signs every image and verifies every signature against the committed key
+(`tools/sign_images.sh`, `test/tools/test_sign_images.py`).
+
 On the ESP32-P4 the radio is the board's ESP32-C6 on SDIO through `esp_wifi_remote` and
 `esp_hosted` (`components/c6_link`, [Wi-Fi through the
 ESP32-C6](docs/C6.md#wi-fi-through-the-esp32-c6)). Measured on a home network on
@@ -1715,7 +1728,7 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 | --- | --- | --- |
 | `ci.yml` | push to `main`, the label `ci` added to a pull request, tag `v*`, manual | on Ubuntu 26.04: the host suite in five parallel jobs, joined by the job the branch ruleset requires; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check`; the Codecov upload in a job of its own that no required check needs, which fails when the upload fails; the font, screenshot, fit, translated-format, docs, mutation-run figure and wiki-link checks; `check_protocols.py --check`; `pio_budget.py --check`, the PIO and DMA budget of every board; clang-tidy 22.1.8 and cppcheck 2.17.1 over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff with its docstring (D) rules; the pytest cases of the tools (`test/tools/`); `tools/doc_check.py --check`, the Doxygen comments of the C sources against `tools/doc_check_baseline.txt`, which on a pull request also fails on any warning in a C file the pull request adds or on a line it changes, on a C file it changes that has no `@file` block with a `@brief`, and on a comment block without `@brief` it adds or edits; on a pull request `tools/mutate.py` on the changed lines of `shared/` and of the cores under `protocols/`, which reports survivors and does not fail on one; the panel build on ESP-IDF (Espressif Internet-of-Things Development Framework) v6.1 for the ESP32-P4, with the check of the generated sdkconfig against `sdkconfig.defaults`, of the image against its update slot, of the embedded IOmcu image, of the touch injector and of exFAT, and a second build without the injector; the pico-sdk build of the IOmcu with `pinmap_check.py` and the stack check of its two cores, a second build with `-DSENSE_TRACE=ON`, with the same stack check, that fails when the default image holds a trace symbol, and a third with `-DIOMCU_CONSOLE=ON`, with the same stack check, that fails when the default image holds a console symbol; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/`, manual | waits for the CI run on the same commit (`tools/ci_gate.py`, at most 5400s) and publishes `docs/` to the GitHub wiki when it passed |
-| `mutation.yml` | Sunday 03:17 UTC, manual | the mutants of the lines of `shared/safety` and `shared/outputs` (6796 mutants in 85 files) in 6 parallel shards, no mutant limit; `shared/safety` leads the list, `arming.c`, `heartbeat.c`, `stop_latch.c`, `touch_loss.c` and `prog5v_lost.c` at its head, and shard i takes every 6th mutant from place i; no mutant is started after 18000s in a shard, about 428 mutants at 42s each, so the 699 mutants of `shared/safety` run every week and about 1,869 of the 6097 of `shared/outputs`; a shard that leaves mutants unrun says so in a warning annotation and in its summary, with the count for each file; does not fail on a survivor or on mutants left; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
+| `mutation.yml` | Sunday 03:17 UTC, manual | the mutants of the lines of `shared/safety` and `shared/outputs` (7117 mutants in 92 files) in 6 parallel shards, no mutant limit; `shared/safety` leads the list, `arming.c`, `heartbeat.c`, `stop_latch.c`, `touch_loss.c` and `prog5v_lost.c` at its head, and shard i takes every 6th mutant from place i; no mutant is started after 18000s in a shard, about 428 mutants at 42s each, so the 699 mutants of `shared/safety` run every week and about 1,869 of the 6418 of `shared/outputs`; a shard that leaves mutants unrun says so in a warning annotation and in its summary, with the count for each file; does not fail on a survivor or on mutants left; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
 | `release.yml` | tag `v*`, manual for a tag | waits for the CI run on the tagged commit and, when it passed, builds both images, packages them with checksums, creates a release, a pre-release for an odd minor number (`tools/release_kind.py`); beside that, without holding the release back, runs the configurator data check (`configurator/core/tools/check-annotate.sh --warn-only`) and shows each warning, such as a release tag newer than the configurator data, as an annotation and in the run summary |
 | `dial.yml` | called by `ci.yml` and `release.yml` | the M5Stack Dial's image on ESP-IDF v6.1 for the ESP32-S3 and its test build with `RCBENCH_DIAL_HOOKS=ON`; the generated sdkconfig against `sdkconfig.defaults`, both images against their update slot, no hook in the released image; artifact `dial` |
 | `pages.yml` | the label `ci` added to a pull request, and a push to `main`, touching `configurator/`, `help/`, `docs/img/`, the help generator, the `Doxyfile` or `tools/install_doxygen.sh` (a push to a pull request starts no run); a push to `main` touching the C sources as well | type check, tests, data check, size budget and Playwright browser tests of the configurator; the web help; the C API (application programming interface) reference built by Doxygen 1.18.0; on a push to `main` it publishes the built page to GitHub Pages, with the help under `help/` and the API reference under `api/`. A run that changes only the C sources, the `Doxyfile` or `tools/install_doxygen.sh` builds the configurator page without its checks and runs no Playwright test |
@@ -1730,7 +1743,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 616 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 625 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1766,7 +1779,7 @@ The host suite is 616 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_settings_folders`, `test_settings_file`, `test_settings_backup`, `test_sbk_screen`, `test_settings_sensors`, `test_settings_keypad`,
 `test_settings_rows`, `test_settings_grid`, `test_setting_keypad_eq`, `test_log_numbers`, `test_log_reader`,
 `test_log_csv`, `test_link_crc`, `test_link_pages`, `test_link_watchdog`,
-`test_link_loopback`, `test_link_bringup`, `test_link_read_split`, `test_link_retry`, `test_link_can`, `test_link_uart`,
+`test_link_loopback`, `test_link_bringup`, `test_link_read_split`, `test_link_retry`, `test_link_can`, `test_link_uart`, `test_link_uart_loopback`, `test_link_uart_retry`,
 `test_link_sha256`, `test_link_update`, `test_link_artxfer`, `test_link_drawing`,
 `test_art_store`, `test_art_fetch`, `test_outputs`, `test_outputs_hw`,
 `test_outputs_hw_ports`, `test_out_render`, `test_outstore`, `test_outstore_range`, `test_can_timing`, `test_can_selftest`,
@@ -1784,7 +1797,7 @@ The host suite is 616 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_sense_link_view`, `test_sense_map_link`, `test_sense_win_link`,
 `test_sense_limit_link`, `test_log_cols`, `test_log_throttle`, `test_sense_windows`, `test_servo_source`,
 `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`, `test_dshot_cadence`, `test_out_dshot`, `test_ppm`,
-`test_outbind`, `test_outbind_take`, `test_board_fix`, `test_outputs_screen`, `test_outputs_screen_draw`,
+`test_outbind`, `test_outbind_take`, `test_board_fix`, `test_board_fix_rsn`, `test_chip_gate`, `test_power_page`, `test_outputs_screen`, `test_outputs_screen_draw`,
 `test_outputs_screen_off`, `test_outputs_screen_port`, `test_outputs_screen_carrier`,
 `test_prog_choice`, `test_layout_screen`, `test_outputs_layout`, `test_outputs_view`,
 `test_picker_screen`, `test_picker_screen_hold`, `test_picker_screen_table`,
@@ -1829,9 +1842,9 @@ The host suite is 616 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_hitec_panel`, `test_hitec_panel_states`, `test_hitec_panel_stop_fingers`, `test_hitec_panel_write`, `test_hitec_panel_gate`,
 `test_hitec_panel_file`, `test_page_console`, `test_kst_card`, `test_prog_link`,
 `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`,
-`test_wifi_kept`, `test_wifi_layout`, `test_fw_image`, `test_fw_c6`, `test_fw_install`, `test_fw_run`, `test_fw_trial`,
-`test_fw_slots`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_wa_session`,
-`test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_channel`, `test_wa_fetch_task`,
+`test_wifi_kept`, `test_wifi_layout`, `test_update_sig`, `test_fw_image`, `test_fw_c6`, `test_fw_install`, `test_fw_run`, `test_fw_trial`,
+`test_fw_slots`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_fw_sig`, `test_fw_sign`, `test_wa_session`,
+`test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_sig`, `test_wa_fetch_channel`, `test_wa_fetch_task`,
 `test_upd_screen`, `test_upd_settings`, `test_upd_single`, `test_upd_c6`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`,
 `test_wa_page`, `test_wa_page_de`, `test_wa_hl`, `test_wa_edit`, `test_wa_mdns`,
 `test_wa_guard`, `test_wa_kept`, `test_wa_cookie`, `test_wa_api`, `test_wa_api_file`,
@@ -2364,7 +2377,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-1032 committed screenshots to the current render, 516 in English and the same 516 in German, and `render_ui.py --fit` fails on a string that
+1036 committed screenshots to the current render, 518 in English and the same 518 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -2515,7 +2528,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/logs_strip.c` | 40 | 37 | 92.5% |
 | `shared/ui/log_select.c` | 56 | 56 | 100.0% |
 | `shared/ui/files_screen.c` | 703 | 681 | 96.9% |
-| `shared/ui/layout_screen.c` | 141 | 140 | 99.3% |
+| `shared/ui/layout_screen.c` | 142 | 141 | 99.3% |
 | `shared/ui/files_draw.c` | 341 | 330 | 96.8% |
 | `shared/ui/files_events.c` | 228 | 227 | 99.6% |
 | `shared/ui/files_text.c` | 161 | 148 | 91.9% |
@@ -2546,10 +2559,10 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/pin_take.c` | 296 | 281 | 94.9% |
 | `shared/ui/board_drawing.c` | 88 | 85 | 96.6% |
 | `shared/ui/busfault_screen.c` | 453 | 452 | 99.8% |
-| `shared/ui/wifi_screen.c` | 629 | 622 | 98.9% |
+| `shared/ui/wifi_screen.c` | 631 | 624 | 98.9% |
 | `shared/ui/wifi_kept.c` | 31 | 31 | 100.0% |
 | `shared/ui/wifi_view.c` | 15 | 15 | 100.0% |
-| `shared/ui/update_screen.c` | 112 | 112 | 100.0% |
+| `shared/ui/update_screen.c` | 180 | 179 | 99.4% |
 | `shared/ui/coproc_update_screen.c` | 212 | 212 | 100.0% |
 | `shared/ui/upd_screen.c` | 362 | 343 | 94.8% |
 | `shared/ui/upd_remind.c` | 163 | 153 | 93.9% |
@@ -2706,7 +2719,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/logfile/servo_store.c` | 267 | 265 | 99.2% |
 | `shared/outputs/kst_port.c` | 665 | 664 | 99.8% |
 | `shared/outputs/hitec_port.c` | 525 | 524 | 99.8% |
-| `shared/outputs/esc_port.c` | 584 | 584 | 100.0% |
+| `shared/outputs/esc_port.c` | 585 | 585 | 100.0% |
 | `shared/outputs/console_tunnel.c` | 78 | 78 | 100.0% |
 | `shared/outputs/esc_console.c` | 92 | 92 | 100.0% |
 | `shared/outputs/page_console.c` | 585 | 561 | 95.9% |
@@ -2741,9 +2754,11 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/can/can_txq.c` | 67 | 67 | 100.0% |
 | `shared/link/link_bringup.c` | 163 | 163 | 100.0% |
 | `shared/link/link_can.c` | 112 | 111 | 99.1% |
-| `shared/link/link_uart.c` | 108 | 108 | 100.0% |
+| `shared/link/link_uart.c` | 113 | 113 | 100.0% |
+| `shared/link/link_uart_dev.c` | 83 | 82 | 98.8% |
 | `shared/link/link_crc.c` | 14 | 14 | 100.0% |
-| `shared/link/link_dev.c` | 168 | 164 | 97.6% |
+| `shared/link/link_dev.c` | 175 | 171 | 97.7% |
+| `shared/link/link_gate.c` | 43 | 43 | 100.0% |
 | `shared/link/link_host.c` | 169 | 165 | 97.6% |
 | `shared/link/link_artxfer.c` | 94 | 93 | 98.9% |
 | `shared/link/link_drawing.c` | 141 | 141 | 100.0% |
@@ -2759,12 +2774,14 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/bench/bench_state.c` | 257 | 253 | 98.4% |
 | `shared/outputs/outputs.c` | 230 | 227 | 98.7% |
 | `shared/outputs/outputs_pages.c` | 342 | 332 | 97.1% |
-| `shared/outputs/out_bind.c` | 563 | 550 | 97.7% |
+| `shared/outputs/out_bind.c` | 569 | 556 | 97.7% |
 | `shared/outputs/out_bind_take.c` | 100 | 99 | 99.0% |
-| `shared/outputs/board_fix.c` | 101 | 101 | 100.0% |
+| `shared/outputs/board_fix.c` | 152 | 152 | 100.0% |
+| `shared/outputs/chip_gate.c` | 5 | 5 | 100.0% |
+| `shared/outputs/power_page.c` | 209 | 206 | 98.6% |
 | `shared/outputs/out_pwm_map.c` | 20 | 20 | 100.0% |
 | `shared/outputs/servo_page.c` | 240 | 238 | 99.2% |
-| `shared/outputs/supply_page.c` | 351 | 348 | 99.2% |
+| `shared/outputs/supply_page.c` | 360 | 357 | 99.2% |
 | `shared/outputs/prog_supply.c` | 131 | 131 | 100.0% |
 | `shared/outputs/out_store_map.c` | 74 | 74 | 100.0% |
 | `shared/outputs/out_store_range.c` | 10 | 10 | 100.0% |
@@ -2810,17 +2827,17 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/dial/dial_draw.c` | 512 | 484 | 94.5% |
 | `shared/dial/dial_text.c` | 10 | 9 | 90.0% |
 | `shared/dial/dial_button.c` | 82 | 82 | 100.0% |
-| `shared/bench/report_lines.c` | 104 | 102 | 98.1% |
+| `shared/bench/report_lines.c` | 116 | 114 | 98.3% |
 | `shared/bench/report_steps.c` | 32 | 30 | 93.8% |
 | `shared/bench/imu.c` | 172 | 172 | 100.0% |
 | `shared/sense/sense_bus.c` | 133 | 132 | 99.2% |
 | `shared/sense/ina228.c` | 200 | 200 | 100.0% |
-| `shared/sense/ina3221.c` | 142 | 142 | 100.0% |
+| `shared/sense/ina3221.c` | 173 | 173 | 100.0% |
 | `shared/sense/as5600.c` | 78 | 78 | 100.0% |
-| `shared/sense/sense_sched.c` | 397 | 397 | 100.0% |
+| `shared/sense/sense_sched.c` | 399 | 399 | 100.0% |
 | `shared/sense/sense_sched_cap.c` | 129 | 129 | 100.0% |
 | `shared/sense/sense_i3221_cfg.c` | 12 | 12 | 100.0% |
-| `shared/sense/sense_svc.c` | 194 | 194 | 100.0% |
+| `shared/sense/sense_svc.c` | 202 | 202 | 100.0% |
 | `shared/sense/sense_trace_feed.c` | 122 | 122 | 100.0% |
 | `shared/sense/sense_trace.c` | 530 | 530 | 100.0% |
 | `shared/sense/sense_txq.c` | 102 | 102 | 100.0% |
@@ -2830,29 +2847,31 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/fwupdate/fw_sha256.c` | 83 | 83 | 100.0% |
 | `shared/fwupdate/fw_image.c` | 138 | 137 | 99.3% |
 | `shared/fwupdate/fw_upload.c` | 74 | 74 | 100.0% |
-| `shared/fwupdate/fw_release.c` | 430 | 430 | 100.0% |
+| `shared/fwupdate/fw_release.c` | 434 | 434 | 100.0% |
 | `shared/fwupdate/fw_install.c` | 76 | 76 | 100.0% |
 | `shared/fwupdate/fw_boot.c` | 53 | 53 | 100.0% |
 | `shared/fwupdate/fw_run.c` | 85 | 85 | 100.0% |
 | `shared/fwupdate/fw_trial.c` | 29 | 29 | 100.0% |
 | `shared/fwupdate/fw_c6.c` | 212 | 212 | 100.0% |
 | `shared/fwupdate/fw_slots.c` | 47 | 47 | 100.0% |
+| `shared/fwupdate/fw_sig.c` | 39 | 39 | 100.0% |
+| `shared/fwupdate/fw_sign.c` | 66 | 63 | 95.5% |
 | `shared/devupd/devupd.c` | 283 | 271 | 95.8% |
 | `shared/devupd/devupd_client.c` | 90 | 81 | 90.0% |
 | `shared/webaccess/wa_session.c` | 432 | 430 | 99.5% |
-| `shared/webaccess/wa_fetch.c` | 432 | 420 | 97.2% |
+| `shared/webaccess/wa_fetch.c` | 462 | 452 | 97.8% |
 | `shared/webaccess/wa_text.c` | 343 | 341 | 99.4% |
 | `shared/webaccess/wa_walk.c` | 96 | 91 | 94.8% |
 | `shared/webaccess/wa_send.c` | 102 | 102 | 100.0% |
 | `shared/webaccess/wa_zip.c` | 420 | 408 | 97.1% |
-| `shared/webaccess/wa_page.c` | 104 | 102 | 98.1% |
+| `shared/webaccess/wa_page.c` | 120 | 118 | 98.3% |
 | `shared/webaccess/wa_mdns.c` | 119 | 118 | 99.2% |
 | `shared/webaccess/wa_guard.c` | 70 | 70 | 100.0% |
 | `shared/webaccess/wa_api.c` | 445 | 439 | 98.7% |
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **105085** | **102823** | **97.8%** |
+| **total** | **105783** | **103515** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -3089,7 +3108,7 @@ stop, a pulled cable, the input lowered under a live set point in 0.5V steps.
 `stack_check.py --iomcu` measures 1560 bytes for the deepest chain and 528 for one interrupt
 on the 4096-byte stack, 1752 bytes above the 256-byte margin. The figures are those of the
 image CI builds with arm-none-eabi-gcc 14.2.1, and `stack_check.py --iomcu --check-doc`
-holds them. The depth is a lower bound: 261 calls through a register are not followed. The
+holds them. The depth is a lower bound: 262 calls through a register are not followed. The
 stack has no guard (`PICO_USE_STACK_GUARDS` is off). Not measured on hardware. An image
 built with another option set is measured only when CI builds it.
 

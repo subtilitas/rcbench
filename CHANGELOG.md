@@ -8,6 +8,71 @@ history is in git.
 
 ### Added
 
+- `hardware/mechanical/`: `motor_simulator.step`, a stand-in for a motor
+  on an ESC's 3 motor leads: 3 resistors of 600Ω in a triangle, 400Ω
+  between any 2 of its 3 crocodile clips, with the phase tap's lead on one
+  clip, ending in a 3.5mm mono plug. 32 solids, 51.05mm x 20.0mm x
+  78.06mm; every size is estimated from one owner photo
+  ([ESC and motor](hardware/mechanical/ESC_MOTOR.md#motor-simulator)).
+- `hardware/mechanical/`: `flycolor_flydragon_lite_40a.step`, the ESC with
+  its capacitor, print, power leads with an XT60 plug, 3 motor leads and
+  signal lead with plug (44 solids); `tmotor_at2814.step`, the outrunner
+  with its 3 leads (15 solids); and `esc_motor_set.step`, the two joined
+  lead to lead, 398.2mm long. The ESC's size follows the maker's manual,
+  the motor the maker's drawing; lead lengths and diameters of the ESC are
+  estimated from a picture. The overlap check covers the 3 models
+  ([ESC and motor](hardware/mechanical/ESC_MOTOR.md#flycolor-flydragon-lite-40a-and-t-motor-at2814)).
+- IOmcu: the link on a UART (universal asynchronous receiver-transmitter)
+  beside CAN (Controller Area Network), the transport of board 3, the
+  remote servo node's Core2350B. UART0 at 1Mbaud 8N1 on GPIO 0 (TX) and
+  GPIO 1 (RX); one DMA (direct memory access) channel fills a 1KiB receive
+  ring through a 42ms flash window; replies leave whole through a
+  512-byte queue. Frames refused by the decoder count in STATUS registers 8
+  and 9; registers 6 and 7 carry the CRC (cyclic redundancy check) errors
+  and resyncs. The 50ms repeat and the 1000ms timeout are unchanged.
+  Boards 1 and 2 keep CAN; CMake's `IOMCU_LINK` overrides the board's
+  choice. The 3s report prints a `UART up` line in place of the CAN lines
+  ([The UART transport](docs/Link.md#the-uart-transport)).
+- IOmcu board 3, the remote servo node's Waveshare Core2350B (RP2350B):
+  image `rcbench-iomcu-rsn.*` (CMake `IOMCU_BOARD=rsn`), built and checked
+  in CI. Its catalogue lists 27 role pins; S1 to S9 on GPIO 16 to 32, each
+  on its own PWM slice. SENSE_MAP is fixed to 3 INA3221 at 0x40 to 0x42 on
+  20.0mΩ shunts, each channel with a critical alert limit of 4000mA or its
+  lower SENSE_LIMIT; SUPPLY set points above 8400mV are refused, on the
+  page and in a programming port's ON (ESC_WIRE, KST, Hitec); a
+  programming port takes any servo output and DShot. The image has no
+  link transport
+  ([Link: The remote servo node](docs/Link.md#the-remote-servo-node)).
+- Link protocol 4.41: IDENTITY registers 7 and 8 carry the chip's revision
+  and boot ROM version; STATUS fault bit 8 says a board 3 IOmcu runs on a
+  chip before the RP2350 A4 stepping, where it drives nothing and refuses
+  ARM, SUPPLY ON, POWER ON and every programming session with NOT_ARMED.
+  The POWER page (0x43) switches the node's servo rail and its 9 ports:
+  ON wants a live heartbeat and the critical limits written, a throttle
+  port takes no power (a DShot or throttle OUTPUTS slot or a DShot
+  programming port on its pin) and one on that becomes a throttle goes
+  off, RAIL 0 is always taken, also in a write refused for another
+  register, CRIT_N low, a critical alert flag, a SENSE_LIMIT trip or a switch in thermal shutdown cuts the rail and makes the bench
+  SAFE, and the BEC check flags a port at 500mV or more with the rail off
+  ([Link: The POWER page](docs/Link.md#the-power-page)).
+- Release signatures: every firmware image a release publishes has a
+  detached `<image>.sig`, ECDSA (elliptic curve digital signature
+  algorithm) P-256 over its SHA-256, beside the asset or inside its ZIP
+  archive. The release workflow signs every `.bin` and `.uf2` file in one
+  loop with the secret `RCBENCH_IMAGE_SIGNING`, fails a tag build without
+  it, and verifies every signature against the committed public key before
+  publishing (`tools/sign_images.sh`). The web flasher's folder carries the
+  `.sig` beside each image ([Security policy](SECURITY.md#release-signatures)).
+- The panel verifies the signature of its own image with Mbed TLS 4.1.0:
+  the Wi-Fi page takes an optional `rcbench-panel-p4-vX.Y.Z.bin.sig` beside
+  the image, and a download from GitHub fetches it after the image. The
+  question on WI-FI and PANEL UPDATE show SIGNED BY THE RCBENCH RELEASE KEY,
+  or NOT SIGNED BY THE RCBENCH RELEASE KEY with the reason. Until the stable
+  release that enforces it, an image without a valid signature installs
+  with the single 2s hold and that warning; a build with
+  `RCBENCH_SIGN_ENFORCE=1` asks for a second 2s hold, INSTALL ANYWAY.
+  The panel image grows by 7152 bytes.
+
 - `hardware/mechanical/`: `hitec_d485hw.step`, the Hitec D485HW servo with
   the four-arm horn HD-X25, its type plate and 60mm of its lead: 3 wires,
   minus black, plus red, signal yellow, and the 3 pin plug. 126.4mm x
@@ -33,7 +98,8 @@ history is in git.
   relief in place of straight holes of 3.5mm, a window with 0.5mm in place
   of 0.17mm beside the touch panel, and head recesses of 6.0mm for M3. A
   hole of 3.5mm in the floor holds the current sensor board. `_gen_display_case.py --check`, which CI runs, fails when a part
-  meets the display board or the stack does not close. No part is printed
+  meets the display board or the stack does not close. A tester's print
+  of 2026-11-22 fits the node and goes together without binding
   ([Cases](hardware/mechanical/CASES.md#case-of-the-display-node-xt30)).
 - Settings backup on the card, `BENCH/SETUP`. SETUP > SD CARD ends on Save
   settings, which writes the stored settings as `SETTINGS.TXT`, and Load

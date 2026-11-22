@@ -128,7 +128,7 @@ this is a licensing requirement. Test coverage must meet both the overall
 minimum and the minimum for each file.
 
 <!-- coverage:start -->
-Host-suite line coverage of `shared/` and `protocols/`: **97.8%**, 102,823 of 105,085 lines in 465 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
+Host-suite line coverage of `shared/` and `protocols/`: **97.9%**, 103,515 of 105,783 lines in 471 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
 <!-- coverage:end -->
 
 Security and safety reports: [SECURITY.md](SECURITY.md).
