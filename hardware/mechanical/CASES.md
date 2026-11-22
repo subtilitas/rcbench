@@ -168,11 +168,13 @@ has no ears; the node hangs in its cable.
 | --- | --- | --- |
 | ![Taken apart](renders/casing/ina228_node_case_exploded.png) | ![Cut open](renders/casing/ina228_node_case_section.png) | ![Plug end](renders/casing/ina228_node_case_back.png) |
 
+![Section across the long walls](renders/casing/ina228_node_case_joints.png)
+
 | File | Content | Print |
 | --- | --- | --- |
-| `ina228_node_plate.step`, `.stl` | bottom plate, 2.4mm thick, with 4 stands of 6.4mm under the INA228 board's holes, each with a hole of 3.4mm and a recess of 6.0mm x 2.2mm for a screw's head; 12.0cm3 | underside down, no support |
-| `ina228_node_frame.step`, `.stl` | wall of 2.4mm from the plate to the display board's back, 18.3mm high, with 4 columns that stand on the INA228 board and carry the display board; 15.1cm3 | upper face down, no support; the 2 XT90 openings are bridges of 21.4mm |
-| `ina228_node_bezel.step`, `.stl` | rim round the display board, 7.3mm high, a plate of 1.2mm over the touch panel with the window, 4 posts on the display board's holes; 7.5cm3 | front down, no support |
+| `ina228_node_plate.step`, `.stl` | bottom plate, 2.4mm thick, with 4 stands of 6.4mm under the INA228 board's holes, each with a hole of 3.4mm and a recess of 6.0mm x 2.2mm for a screw's head; a lip of 1.2mm x 1.5mm all round inside the wall; 12.4cm3 | underside down, no support |
+| `ina228_node_frame.step`, `.stl` | wall of 2.4mm from the plate to the display board's back, 18.3mm high, with 4 columns that stand on the INA228 board and carry the display board; its lower inner half cut away for the plate's lip, its upper inner edge cut off at 45 degrees between the columns; 14.4cm3 | upper face down, no support; the 2 XT90 openings are bridges of 21.4mm |
+| `ina228_node_bezel.step`, `.stl` | rim round the display board, 7.3mm high, a plate of 1.2mm over the touch panel with the window, 4 posts on the display board's holes, 4 wedges of 1.2mm under the rim; 7.6cm3 | front down, no support |
 
 Assembly, 8 screws M3 and 8 threaded inserts ruthex RX-M3Sx4.0:
 
@@ -185,6 +187,20 @@ Assembly, 8 screws M3 and 8 threaded inserts ruthex RX-M3Sx4.0:
 3. Lay the display board on the columns, the bezel over it. 4 screws
    M3 x 10 go from above through the bezel's posts and the board's holes
    into the columns' tops.
+
+The screws clamp the frame at its 4 columns only. Between the columns 2
+joints hold its wall from moving inwards:
+
+| Joint | Shape | Size, mm |
+| --- | --- | --- |
+| Plate to frame | a lip all round on the plate, inside the wall's lower edge; the wall's inner half is cut away for it | lip 1.2 thick, 1.5 high; 0.15 beside it, 0.1 over it; 1.05 of wall outside it |
+| Frame to bezel | the wall's upper inner edge is cut off at 45 degrees; a wedge under the bezel's rim lies in the cut | wedge 1.2, cut 1.4: 0.14 between the faces; along the long walls for 60.0, along the short ones for 29.2 |
+
+The wedges leave out the columns, the card's notch and the USB notch. A
+wall pressed inwards at its upper edge bears on the wedge's slanted face;
+the bezel's 4 screws hold against it. With the frame's upper face on the
+bed the slanted cut prints without support; a step like the plate's lip
+would hang there. Neither joint holds the wall from moving outwards.
 
 Each column joins a hole of the INA228 board to a hole of the display
 board; the two lie 4.2mm apart. Under the display board the column's
@@ -214,10 +230,13 @@ Limits:
   INA228 board carries it; pad and wires are not drawn.
 - The touch panel lies 0.2mm under the bezel's plate, which is 1.2mm
   thick: the panel's face is 1.4mm under the case's front.
-- No part is printed. The fits are drawn, not tried: 0.3mm round the
+- The case is printed once, without the 2 joints: its walls shift
+  sideways (owner, 2026-11-22). The parts with the joints are not printed.
+  The fits are drawn: 0.3mm round the
   display board, 1.0mm at the INA228 board's long sides.
 
-`_gen_node_case.py` builds the parts from boxes and upright cylinders
+`_gen_node_case.py` builds the parts from boxes, upright cylinders and
+prisms over triangles
 and checks them: each part is one valid solid, no two parts share
 volume, and no part shares volume with one of the 1139 solids of
 `ina228_node_layout.step`. The parts seat on the copper rings (0.05mm)

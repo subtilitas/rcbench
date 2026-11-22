@@ -92,7 +92,10 @@ It holds the node's case, 3 printed parts of 91.4mm x 55.4mm x 28.0mm over
 all: bottom plate, frame with 4 columns, bezel. Chosen (owner, 2026-11-21):
 screws from below through the INA228 module, ruthex RX-M3Sx4.0 inserts, no
 mounting ears, openings for USB-C, microSD, RESET, BOOT, speaker and
-microphone. No part is printed. RESET and BOOT have no push rod: a tool of
+microphone. On a print of the case without joints the frame's walls shift
+sideways (owner, 2026-11-22). The plate has a lip and the bezel 4 wedges that
+hold the wall from moving inwards; the parts with these joints are not
+printed. RESET and BOOT have no push rod: a tool of
 2mm at most reaches them through a slot. A USB plug thicker than 7.0mm meets
 the plug in the XT90 housing under it. The speaker is not chosen; the
 converter lies on a foam pad of 1.5mm that is not drawn.

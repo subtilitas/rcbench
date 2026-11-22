@@ -123,6 +123,14 @@ history is in git.
 
 ### Changed
 
+- Sensor node case (`hardware/mechanical/_gen_node_case.py`): 2 joints
+  hold the frame's wall from moving inwards between its 4 columns. The
+  plate has a lip of 1.2mm x 1.5mm all round inside the wall's lower edge.
+  The wall's upper inner edge is cut off at 45 degrees, and 4 wedges of
+  1.2mm under the bezel's rim lie in the cut. On a printed case without
+  the joints the walls shift sideways (owner, 2026-11-22). The parts with
+  the joints are not printed
+  ([Cases](hardware/mechanical/CASES.md#case-of-the-sensor-node)).
 - `hardware/mechanical/models/` is sorted into 3 folders: `pcb/` (17
   models: 16 boards and the sensor node's layout), `casing/` (7 printed
   parts) and `parts/` (13 bought parts and assemblies). `_models.py` names

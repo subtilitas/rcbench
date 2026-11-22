@@ -42,9 +42,11 @@ foam pad of 1.5 that carries the converter over the board. A USB plug
 thicker than 7.0 meets the plug in the XT90 housing under it: the
 socket's axis is 3.6 over that housing's top.
 
-Shapes are boxes and upright cylinders only. A cone or a slanted cut
-meets its neighbours in curves OpenCASCADE computes differently from
-one processor to the next, and the STEP text is compared in CI.
+Shapes are boxes, upright cylinders and, for the wedges, prisms over
+triangles with given corners that meet flat faces only. A cone, or a
+slanted cut through a round face, meets its neighbours in curves
+OpenCASCADE computes differently from one processor to the next, and
+the STEP text is compared in CI.
 
 Frame: the INA228 module's, as ina228_node.py. All sizes are mm.
 
@@ -68,8 +70,12 @@ from pathlib import Path
 
 from OCP.BRepAlgoAPI import (BRepAlgoAPI_Common, BRepAlgoAPI_Cut,
                              BRepAlgoAPI_Fuse)
+from OCP.BRepBuilderAPI import (BRepBuilderAPI_MakeFace,
+                                BRepBuilderAPI_MakePolygon)
 from OCP.BRepCheck import BRepCheck_Analyzer
 from OCP.BRepMesh import BRepMesh_IncrementalMesh
+from OCP.BRepPrimAPI import BRepPrimAPI_MakePrism
+from OCP.gp import gp_Pnt, gp_Vec
 from OCP.StlAPI import StlAPI_Writer
 
 import _gen_dial_base as base
@@ -128,6 +134,21 @@ CARD = (-32.15, -16.15, 13.9)
 GRILLE = ((-7.8, -4.6, -1.4, 1.8), 1.6, 3.5, 10.5)
 WINDOW = (-48.5, -2.2, 10.6, 42.4)
 MIC = (-55.11, 35.1, 1.6)
+# The joints hold the frame's wall, which the screws clamp at its 4
+# columns only, from moving inwards.
+# Plate to frame: a lip all round on the plate, inside the lower edge
+# of the wall, whose inner half is cut away for it: the lip's
+# thickness and height, the room beside it and over it.
+LIP = (1.2, 1.5, 0.15, 0.1)
+# Frame to bezel: the wall's upper inner edge is cut off at 45 degrees
+# and a wedge under the bezel's rim lies in the cut: the wedge's size,
+# the cut's size. They run along the straight walls between the
+# columns: x0, x1 along the long walls, y0, y1 along the short ones.
+# With the frame's upper face on the bed the cut prints without
+# support; a step like the plate's would hang.
+WEDGE = (1.2, 1.4)
+WEDGE_X = (-46.0, 14.0)
+WEDGE_Y = (5.5, 34.7)
 
 X0, Y0 = DISPLAY[0] - GAP, DISPLAY[1] - GAP
 X1, Y1 = DISPLAY[2] + GAP, DISPLAY[3] + GAP
@@ -213,10 +234,51 @@ def column(k):
                   _cylinder(bx, by, hole / 2, z1 - deep, z1 + 1))
 
 
+def _prism(points, vector):
+    """A prism over a polygon of (x, y, z) corners, pushed by a vector."""
+    wire = BRepBuilderAPI_MakePolygon()
+    for point in points:
+        wire.Add(gp_Pnt(*point))
+    wire.Close()
+    face = BRepBuilderAPI_MakeFace(wire.Wire()).Face()
+    return BRepPrimAPI_MakePrism(face, gp_Vec(*vector)).Shape()
+
+
+def ring(grow, z0, z1):
+    """The inner part of the wall: ``grow`` wide from the cavity out."""
+    return _cut(rounded(X0 - grow, Y0 - grow, X1 + grow, Y1 + grow,
+                        RADIUS + grow, z0, z1), cavity(z0 - 1, z1 + 1))
+
+
+def wedges(size):
+    """Prisms along the wall's upper inner edge, 45 degrees, at the split.
+
+    Args:
+        size: The length of the 2 short sides of each prism's section.
+
+    Returns:
+        One prism for each of the 4 walls, between the columns.
+    """
+    z = Z_SPLIT
+    out = []
+    for y, away in ((Y0, -1.0), (Y1, 1.0)):
+        out.append(_prism([(WEDGE_X[0], y, z), (WEDGE_X[0], y + away * size,
+                                                z),
+                           (WEDGE_X[0], y, z - size)],
+                          (WEDGE_X[1] - WEDGE_X[0], 0.0, 0.0)))
+    for x, away in ((X0, -1.0), (X1, 1.0)):
+        out.append(_prism([(x, WEDGE_Y[0], z), (x + away * size, WEDGE_Y[0],
+                                                z),
+                           (x, WEDGE_Y[0], z - size)],
+                          (0.0, WEDGE_Y[1] - WEDGE_Y[0], 0.0)))
+    return out
+
+
 def plate():
-    """The bottom plate with its 4 stands and the screws' recesses."""
+    """The bottom plate with its lip, 4 stands and the screws' recesses."""
     clear, head, sunk = SCREW
-    solid = outer(Z_PLATE, Z_FLOOR)
+    solid = _fuse(outer(Z_PLATE, Z_FLOOR),
+                  ring(LIP[0], Z_FLOOR - 0.1, Z_FLOOR + LIP[1]))
     for x, y in INA_HOLES:
         solid = _fuse(solid, _cylinder(x, y, STAND / 2, Z_PLATE,
                                        INA_Z[0] - FOIL))
@@ -247,7 +309,9 @@ def frame():
     for x in xs:
         holes.append(_box(x - wide / 2, Y1 - 1, z0, x + wide / 2,
                           Y1 + WALL + 1, z1))
-    return _cut(solid, *holes)
+    holes.append(ring(LIP[0] + LIP[2], Z_FLOOR - 1,
+                      Z_FLOOR + LIP[1] + LIP[3]))
+    return _cut(solid, *holes, *wedges(WEDGE[1]))
 
 
 def bezel():
@@ -255,6 +319,7 @@ def bezel():
     clear, head, sunk = SCREW
     under = TOUCH + OVER
     solid = _cut(outer(Z_SPLIT, Z_TOP), cavity(Z_SPLIT - 1, under))
+    solid = _fuse(solid, *wedges(WEDGE[0]))
     radius = INSERT[0] / 2 + INSERT[2]
     for hole in DISPLAY_HOLES:
         solid = _fuse(solid, _corner(hole, radius,
@@ -262,8 +327,10 @@ def bezel():
     holes = [_box(WINDOW[0], WINDOW[1], under - 1, WINDOW[2], WINDOW[3],
                   Z_TOP + 1),
              _cylinder(MIC[0], MIC[1], MIC[2] / 2, under - 1, Z_TOP + 1),
-             _box(X1 - 1, USB[0], Z_SPLIT - 1, X1 + WALL + 1, USB[1],
-                  USB[2])]
+             _box(X1 - 1, USB[0], Z_SPLIT - 2, X1 + WALL + 1, USB[1],
+                  USB[2]),
+             _box(CARD[0], Y0 - WALL - 1, Z_SPLIT - 2, CARD[1], Y0 + 1,
+                  Z_SPLIT)]
     for x, y in DISPLAY_HOLES:
         holes.append(_cylinder(x, y, clear / 2, DISPLAY_Z[1] - 1,
                                Z_TOP + 1))
@@ -397,6 +464,16 @@ def render(built, directory):
     draw(plate_ + frame_ + bezel_ + near,
          V3d_TypeOfOrientation.V3d_XnegYposZpos,
          "ina228_node_case_back.png", False)
+
+    def across(items):
+        half = _box(-16.0, -BIG, -BIG, BIG, BIG, BIG)
+        return [(BRepAlgoAPI_Cut(solid, half).Shape(), rgb)
+                for solid, rgb in items]
+
+    draw(across(plate_ + bezel_)
+         + across([(built[STEMS[1]], (0.35, 0.36, 0.40))]) + near,
+         V3d_TypeOfOrientation.V3d_Xpos, "ina228_node_case_joints.png",
+         True)
 
 
 def main(argv):

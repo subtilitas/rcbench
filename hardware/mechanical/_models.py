@@ -51,7 +51,8 @@ VIEWS = {
         "display_node_xt60_case", "display_node_xt60_case_exploded",
         "display_node_xt60_case_section", "display_node_xt60_seat",
         "ina228_node_case", "ina228_node_case_back",
-        "ina228_node_case_exploded", "ina228_node_case_section"),
+        "ina228_node_case_exploded", "ina228_node_case_joints",
+        "ina228_node_case_section"),
     "parts": (
         "flap_drive_above", "flap_drive_below", "flap_drive_section",
         "flap_drive_unit", "flap_drive_unit_2"),
