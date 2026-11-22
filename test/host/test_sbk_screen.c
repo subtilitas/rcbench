@@ -3,7 +3,8 @@
  * sbk_screen.h): SETUP > SD CARD's SAVE SETTINGS and LOAD SETTINGS, the
  * automatic copy at each save to the store, the alert of a copy that does
  * not reach the card, the restore offer and its conditions, the 2s hold at
- * 1999 and 2000ms, and the lines a load refuses.  The card is a folder in
+ * 1999 and 2000ms, the lines a load refuses, and a file whose first
+ * lines lie past the 256B a list reads.  The card is a folder in
  * memory (sbk_card_rig.h); the panel's card task is sb_run() on it, called
  * between frames.
  *
@@ -760,6 +761,85 @@ static void hold_load(void)
     settle();
 }
 
+/**
+ * @brief A backup as put_backup() writes it, with comment lines of @p pad
+ *        bytes in all between the header and `Panel:`: a file edited by
+ *        hand, its first lines pushed towards or past the SB_HEAD_BYTES
+ *        (256B) a list reads.
+ */
+static void put_padded(const char *name, const char *written, size_t pad)
+{
+    put_backup(name, written);
+    fake_file_t *f = (fake_file_t *)find(name);
+    REQUIRE_ALLOC(f);
+    static char text[FAKE_BYTES];
+    const char *nl = strchr(f->data, '\n');
+    REQUIRE_ALLOC(nl);
+    const size_t head = (size_t)(nl - f->data) + 1u;
+    memcpy(text, f->data, head);
+    size_t at = head;
+    /* Lines of at most 40 bytes: '#', filler, '\n'. */
+    for (size_t left = pad; left > 0u;) {
+        const size_t line = (left > 40u) ? 40u : left;
+        if (line == 1u) {
+            text[at++] = '\n';
+        } else {
+            text[at++] = '#';
+            memset(&text[at], 'x', line - 2u);
+            at += line - 2u;
+            text[at++] = '\n';
+        }
+        left -= line;
+    }
+    memcpy(&text[at], f->data + head, f->len - head + 1u);
+    f->len += pad;
+    memcpy(f->data, text, f->len + 1u);
+}
+
+TEST_CASE(a_file_with_its_first_lines_past_256_bytes_loads)
+{
+    static const char written[] = "2026-11-20 10:00:00 UTC";
+    /* Where the `Written:` line lies in put_backup()'s file. */
+    fake_fresh();
+    put_backup("AUTO1.TXT", written);
+    const fake_file_t *f = find("AUTO1.TXT");
+    REQUIRE_ALLOC(f);
+    const char *w = strstr(f->data, "Written:");
+    REQUIRE_ALLOC(w);
+    const size_t w_at = (size_t)(w - f->data);
+    const size_t w_nl = (size_t)(strchr(w, '\n') - f->data);
+    /* The line's end at byte 255 and at byte 256 of the file, its value cut
+     * at byte 256, and the line starting at byte 256. */
+    const struct {
+        size_t      pad;
+        const char *listed;
+    } cases[] = {
+        { SB_HEAD_BYTES - 1u - w_nl, written },
+        { SB_HEAD_BYTES - w_nl,      written },
+        { SB_HEAD_BYTES - w_at - 13u, "2026" },
+        { SB_HEAD_BYTES - w_at,      "" },
+    };
+    for (size_t i = 0u; i < sizeof(cases) / sizeof(cases[0]); ++i) {
+        fake_fresh();
+        put_padded("AUTO1.TXT", written, cases[i].pad);
+        start(false, true);
+        settle();
+        sbk_screen_open(false);
+        settle();
+        uint8_t n = 0u;
+        const sb_entry_t *e = sbk_files(&n);
+        CHECK_EQ(n, 1u);
+        CHECK_EQ(e[0].err, SF_OK);
+        CHECK_STR_EQ(e[0].head.written, cases[i].listed);
+        tap_body(sbk_screen_row(0));
+        CHECK(sbk_screen_hold_ready());
+        hold_load();
+        CHECK_EQ(sbk_load_state(), SBK_LOAD_DONE);
+        CHECK_FEQ(settings_get(SET_BRIGHTNESS), 40.0f);
+        CHECK_STR_EQ(band(), "");
+    }
+}
+
 TEST_CASE(another_card_under_backup_loads_nothing_without_a_new_choice)
 {
     fake_fresh();
@@ -951,6 +1031,7 @@ int main(void)
     RUN(a_load_lists_each_refused_line_and_a_cut_file_loads_nothing);
     RUN(armed_or_no_card_loads_nothing);
     RUN(a_file_read_in_the_frame_that_arms_is_not_put_in_force);
+    RUN(a_file_with_its_first_lines_past_256_bytes_loads);
     RUN(a_copy_owed_while_backup_shows_waits_and_the_load_reads_the_file_shown);
     RUN(a_list_that_changes_under_a_choice_drops_the_choice);
     RUN(a_card_gone_before_the_offer_s_list_is_looked_at_again);

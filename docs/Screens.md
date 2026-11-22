@@ -6501,7 +6501,10 @@ settings themselves are in NVS.
 ![BACKUP: the card's settings files, the newest chosen](img/setup-backup.png)
 
 - Left, one card per file: its name, the date of its `Written:` line and
-  the panel version of its `Panel:` line. `date not known` stands for a
+  the panel version of its `Panel:` line, as the first 256B of the file
+  give them: a line past them reads `date not known` or `panel not
+  known`, and a line they cut shows its part inside them. `date not
+  known` also stands for a
   file written while the panel's clock was not set: the panel has no RTC
   (real-time clock) chip and sets its clock only from an NTP (Network Time
   Protocol) answer. A file that is no settings file reads `No settings
@@ -6518,11 +6521,12 @@ settings themselves are in NVS.
   and a hold under way; the list shows `No card.`, and the next card is
   listed anew.
 - A load checks that the file read is the file listed: the same size,
-  `Written:` date, panel version and format. A file written again since,
+  and the same `Written:` date, panel version and format in its first
+  256B. A file written again since,
   by a browser, FILES or a computer, loads nothing; the alert band shows
   `The settings file changed on the card: choose again.`, and the list is
-  read again with nothing chosen. A rewrite that keeps the size and the
-  first three lines is not detected.
+  read again with nothing chosen. A rewrite that keeps the size and those
+  lines is not detected.
 
 A load replaces every setting: the file's value where a line gives one, the
 default where none does. The values take effect at once, as an edit does,

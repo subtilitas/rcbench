@@ -7046,7 +7046,10 @@ jedes Mal neu:
 ![BACKUP: die Einstellungsdateien der Karte, die neueste gewählt](img/de/setup-backup.png)
 
 - Links eine Karte je Datei: ihr Name, das Datum ihrer `Written:`-Zeile und
-  die Panel-Version ihrer `Panel:`-Zeile. `Datum unbekannt` steht für eine
+  die Panel-Version ihrer `Panel:`-Zeile, wie die ersten 256B der Datei
+  sie geben: Eine Zeile dahinter zeigt `Datum unbekannt` oder `Panel
+  unbekannt`, eine Zeile, die sie schneiden, ihren Teil darin. `Datum
+  unbekannt` steht auch für eine
   Datei, die geschrieben wurde, als die Uhr des Panels nicht gestellt war:
   Das Panel hat keinen RTC-Baustein (real-time clock) und stellt seine Uhr
   nur über eine NTP-Antwort (Network Time Protocol). Eine Datei, die keine
@@ -7063,12 +7066,13 @@ jedes Mal neu:
 - Eine Karte, die gezogen oder getauscht wird, während BACKUP zu sehen ist,
   leert die Liste, die Wahl und ein laufendes Halten; die Liste zeigt
   `Keine Karte.`, und die nächste Karte wird neu gelistet.
-- Laden prüft, dass die gelesene Datei die gelistete ist: dieselbe Größe,
-  dasselbe `Written:`-Datum, dieselbe Panel-Version und dasselbe Format.
+- Laden prüft, dass die gelesene Datei die gelistete ist: dieselbe Größe
+  und in ihren ersten 256B dasselbe `Written:`-Datum, dieselbe
+  Panel-Version und dasselbe Format.
   Eine seither neu geschriebene Datei, durch einen Browser, FILES oder einen
   Computer, lädt nichts; das Meldeband zeigt `Einstellungsdatei auf der
   Karte geändert: neu wählen.`, und die Liste wird ohne Wahl neu gelesen.
-  Ein Neuschreiben, das Größe und die ersten drei Zeilen behält, wird nicht
+  Ein Neuschreiben, das Größe und diese Zeilen behält, wird nicht
   erkannt.
 
 Laden ersetzt alle Einstellungen: durch den Wert der Datei, wo eine Zeile
