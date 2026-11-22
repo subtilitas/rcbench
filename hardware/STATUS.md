@@ -74,6 +74,13 @@ beside the plus bar and 1.5mm over the board, 86.4mm x 50.0mm x 23.7mm over
 all. The node has no cell and no charger board (owner, 2026-11-21). The
 converter's model, `matek_mbec12s.step`, is drawn from seller pictures by eye,
 within about 0.5mm; only its 4.5mm over all is a listed height.
+It holds a case of 2 printed parts for the display node with XT30 connectors,
+59.8mm x 101.2mm x 17.8mm, after a tester's case measured from its STL file.
+The tester reports a gap of about 1mm between lid and box; the measured case
+closes in nominal sizes with 0.18mm over the board. This case has blind
+insert holes of 4.0mm with a relief and 0.5mm beside the touch panel in the
+window. Which of the two held the lid up is not known; no part is printed and
+the tester's result is open. The boards on the floor are not drawn.
 It holds the node's case, 3 printed parts of 91.4mm x 55.4mm x 28.0mm over
 all: bottom plate, frame with 4 columns, bezel. Chosen (owner, 2026-11-21):
 screws from below through the INA228 module, ruthex RX-M3Sx4.0 inserts, no

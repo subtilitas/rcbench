@@ -8,6 +8,16 @@ history is in git.
 
 ### Added
 
+- `hardware/mechanical/`: a printed case of 2 parts for the display node
+  with XT30 connectors, 59.8mm x 101.2mm x 17.8mm: `display_node_box` and
+  `display_node_lid`, each as STEP and STL. It follows a tester's case,
+  measured from its STL file. 3 changes close the gap of about 1mm the
+  tester reports between lid and box: blind insert holes of 4.0mm x 6.0mm
+  with a relief in place of straight holes of 3.5mm, a window with 0.5mm
+  in place of 0.17mm beside the touch panel, and head recesses of 6.0mm
+  for M3. `_gen_display_case.py --check`, which CI runs, fails when a part
+  meets the display board or the stack does not close. No part is printed
+  ([Cases](hardware/mechanical/CASES.md#case-of-the-display-node-xt30)).
 - `hardware/mechanical/`: a printed case of 3 parts for the remote INA228
   sensor node, 91.4mm x 55.4mm x 28.0mm: `ina228_node_plate`,
   `ina228_node_frame` and `ina228_node_bezel`, each as STEP and STL. 4
@@ -18,7 +28,7 @@ history is in git.
   4 speaker slots, microphone, display window. `_gen_node_case.py` builds
   the parts with OpenCASCADE and CI checks them against the 1139 solids of
   the layout. No part is printed
-  ([Mechanical parts](hardware/mechanical/README.md#case-of-the-sensor-node)).
+  ([Cases](hardware/mechanical/CASES.md#case-of-the-sensor-node)).
 - `hardware/mechanical/`: `ina228_node_layout.step`, the boards of the
   remote INA228 sensor node in place: the INA228 module with its 2 XT90PW
   connectors at the bottom, the ES3C28P display board 0.5mm over the
