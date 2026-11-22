@@ -220,10 +220,15 @@ def test_a_forced_module_cannot_also_be_excluded(tmp_path, monkeypatch):
         "NOT_UNTRUSTED names shared/t, which is no candidate"]
 
 
-def test_settings_and_touch_are_forced():
-    """Settings and touch are forced."""
-    assert set(sp.FORCED) == {"shared/settings", "shared/touch"}
+def test_touch_is_forced_and_settings_found_by_name():
+    """Touch is forced; settings is found by the name rule.
+
+    shared/settings declares sf_parse(), the settings file's parser, so the
+    name rule finds it and FORCED must not name it again.
+    """
+    assert set(sp.FORCED) == {"shared/touch"}
     assert all(reason.strip() for reason in sp.FORCED.values())
+    assert "shared/settings" in sp.candidates()
 
 
 def test_a_row_joined_with_and_names_both_modules(tmp_path, monkeypatch):

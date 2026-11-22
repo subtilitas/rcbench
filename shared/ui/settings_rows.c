@@ -1,7 +1,8 @@
 /**
  * @file settings_rows.c
  * @brief SETUP's list rows: a category's settings in schema order and the
- * category's strings after its settings.
+ * category's strings after its settings; SD CARD's last two rows are SAVE
+ * SETTINGS and LOAD SETTINGS (sbk_screen.h).
  * SENSORS and WIRELESS list the rows of the left list's selected entry and
  * nothing else (sensors_pane.h, wireless_pane.h); a WIRELESS row may be a
  * custom one.
@@ -11,6 +12,7 @@
 
 #include "settings_rows_int.h"
 
+#include "sbk_screen.h"
 #include "sensors_pane.h"
 #include "settings_screen.h"
 #include "settings_sensors.h"
@@ -20,8 +22,9 @@
  *         the INA3221 parts and 25 others (test_imu_pane holds it). */
 #define MAX_ROWS 65
 
-/** @brief The most rows a list has: its settings and strings. */
-#define MAX_ENTRIES (MAX_ROWS + SETTING_TEXT_COUNT)
+/** @brief The most rows a list has: its settings, its strings and SD
+ *         CARD's rows of the settings backup. */
+#define MAX_ENTRIES (MAX_ROWS + SETTING_TEXT_COUNT + SBK_SETUP_ROWS)
 
 /**
  * @brief The list of @p cat in row order, its strings after its settings; the
@@ -59,6 +62,14 @@ static int entries(setting_cat_t cat, settings_row_t *out, int max)
         if (out != NULL && rows < max) {
             out[rows] = (settings_row_t){ (setting_id_t)0, (int8_t)texts[i],
                                           NULL };
+        }
+        ++rows;
+    }
+    /* SD CARD ends on SAVE SETTINGS and LOAD SETTINGS. */
+    for (int i = 0; cat == SET_CAT_CARD && i < SBK_SETUP_ROWS; ++i) {
+        if (out != NULL && rows < max) {
+            out[rows] = (settings_row_t){ (setting_id_t)0, -1,
+                                          sbk_setup_row(i) };
         }
         ++rows;
     }
