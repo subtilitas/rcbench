@@ -106,6 +106,22 @@ Apache License 2.0. esp_wifi_remote's dummy_src.c is an empty file without a
 licence line.
 
 
+Mbed TLS in the host test build
+-------------------------------
+
+The panel verifies the release signature of its image with Mbed TLS
+(shared/fwupdate/fw_sign.c), the copy ESP-IDF v6.1 ships: Mbed TLS 4.1.0
+with TF-PSA-Crypto 1.1.0. The host test build compiles the same release
+from a source tree or from the release tarball that CMake downloads and
+checks against its SHA-256 (test/host/CMakeLists.txt). No Mbed TLS source
+file is stored in this repository.
+
+  Copyright The Mbed TLS Contributors
+  Licensed under the Apache License, Version 2.0 or the GNU General Public
+  License, version 2 or later, at the user's choice.
+  https://github.com/Mbed-TLS/mbedtls/blob/mbedtls-4.1.0/LICENSE
+
+
 Components the M5Stack Dial build fetches
 -----------------------------------------
 

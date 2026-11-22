@@ -606,7 +606,7 @@ jobs:
               gh release download "$tag" --repo "$GITHUB_REPOSITORY" \
                 --dir "$dir" --clobber \
                 -p 'rcbench-panel-p4-*.zip' -p 'rcbench-iomcu-*.zip' \
-                -p '*-merged-*.bin' -p SHA256SUMS
+                -p '*-merged-*.bin' -p '*-merged-*.bin.sig' -p SHA256SUMS
             fi
             # A release before the partition table has no file: its entry
             # names no range to erase.
