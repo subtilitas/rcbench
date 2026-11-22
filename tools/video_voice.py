@@ -134,6 +134,8 @@ SPELL = (
     (r"\bHV\b", "high voltage"),
     (r"\b(IMU|CSV|PNG|PWM|PPM|EDF|SD|HTTPS)\b",
      lambda m: " ".join(m.group(1))),
+    # misaki's dictionary lacks "kilohm" and its fallback says "kai-lohm".
+    (r"\b[Kk]ilohm(s?)\b", r"kilo ohm\1"),
     (r"\bCAN bus\b", "can, bus"),
     (r"\bCAN\b", "can"),
     (r"\bZIP\b", "zip"),

@@ -130,3 +130,11 @@ def test_a_stretched_scope_scene_keeps_its_times_in_order():
     assert make_video.check(board) == []
     late = board["scenes"][n]["labels"][-1]
     assert late["to"] > _board()["scenes"][n]["labels"][-1]["to"]
+
+
+def test_the_narrator_is_given_kilo_ohms_as_two_words():
+    """The narrator is given kilo ohms as two words."""
+    assert video_voice.spoken("4.7 kilohms in series") == (
+        "4.7 kilo ohms in series")
+    assert video_voice.spoken("a 3 kilohm pull-down") == (
+        "a 3 kilo ohm pull-down")
