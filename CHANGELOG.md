@@ -970,16 +970,17 @@ The entries below cover the 7 pull requests merged since v0.23.13: #847,
   simulated edges. A plot's time axis reads in s from 2s of width, and a
   circuit draws a zener diode
   ([Videos from storyboards](tools/video/README.md#the-simulated-phase-tap)).
-- Storyboard `hitec-precharge`: the Hitec D series PRECHARGE receive in
-  7 steps, narrated, 339.20s: the servo's 3kΩ pull-down, the 2.2kΩ pull-up, one
-  precharge and sample, the sampling window, one answer byte in 80
-  samples, 3 logic analyser captures of a read of register 0x32, and the
-  setting on the panel. A `scope` scene draws plots and a circuit from a
-  figure under `tools/video/plots/`. `tools/video_scope.py` simulates the
-  signal wire with ngspice and writes the figure; its pad driver (50Ω),
-  line capacitance (72pF), input threshold (1.1V) and servo output (37Ω)
-  are fitted to the measured window of 40 to 213ns and to the captured
-  pulse width of 280ns at 1.4V
+- Storyboard `hitec-precharge`: reading an open-drain answer on an
+  RP2350 pin without a pull-up resistor, the Hitec D series PRECHARGE
+  receive, in 6 steps, narrated: a device that only pulls low, the 2.2kΩ
+  pull-up and what it changes for the pin's other uses, one precharge and
+  sample, the sampling window, one answer byte in 80 samples, and 3 logic
+  analyser captures of a read of register 0x32. A `scope` scene draws
+  plots and a circuit from a figure under `tools/video/plots/`.
+  `tools/video_scope.py` simulates the signal wire with ngspice and
+  writes the figure; its pad driver (50Ω), line capacitance (72pF), input
+  threshold (1.1V) and servo output (37Ω) are fitted to the measured
+  window of 40 to 213ns and to the captured pulse width of 280ns at 1.4V
   ([Videos from storyboards](tools/video/README.md#the-simulated-signal-wire)).
 - Storyboard `minircbench-features`: every screen of the MiniRcBench,
   firmware 0.1.0, in 12 chapters, narrated, 1000.70s. The stills
