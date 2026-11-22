@@ -1,8 +1,8 @@
 /*
  * The settings files on the card (shared/settings/settings_backup.c) over a
  * folder in memory: SAVE SETTINGS' file, the rotation of the automatic
- * copies, a full card, a card that takes no file, no card, the list and
- * the newest copy, a read, and a request that waits while the card's job
+ * copies, a full card, a card that takes no file, no card, the list, the
+ * CRC-32 it takes of each file up to SF_FILE_MAX bytes and the newest copy, a read, and a request that waits while the card's job
  * lock is held by FILES or a write of the Wi-Fi page.
  *
  * SPDX-License-Identifier: MIT
@@ -12,11 +12,14 @@
 
 #include "greatest.h"
 
+#include "fm_crc.h"
 #include "sbk_card_rig.h"
 #include "settings_backup.h"
 
 /* A file's text: a header, its date and a mark. */
 static char g_t[256];
+/* The buffer a list reads each file into. */
+static char g_list[SF_FILE_MAX + 1u];
 
 static size_t text(const char *written, const char *mark)
 {
@@ -130,7 +133,7 @@ TEST_CASE(no_card_writes_nothing_and_lists_nothing)
     CHECK_EQ(g_fake.writes, 0u);
     sb_entry_t e[SB_FILES];
     uint8_t n = 9u;
-    CHECK_EQ(sb_list(&k_io, e, &n), SB_NO_CARD);
+    CHECK_EQ(sb_list(&k_io, g_list, sizeof(g_list), e, &n), SB_NO_CARD);
     CHECK_EQ(n, 0);
     static char buf[SF_FILE_MAX + 1u];
     size_t len = 7u;
@@ -158,7 +161,7 @@ TEST_CASE(the_list_reads_each_file_s_first_lines_and_names_the_newest)
                             text("2026-11-21 12:00:00 UTC", "s1")), SB_OK);
     sb_entry_t e[SB_FILES];
     uint8_t n = 0u;
-    CHECK_EQ(sb_list(&k_io, e, &n), SB_OK);
+    CHECK_EQ(sb_list(&k_io, g_list, sizeof(g_list), e, &n), SB_OK);
     CHECK_EQ(n, 3);
     CHECK_STR_EQ(e[0].name, "AUTO1.TXT");
     CHECK_STR_EQ(e[1].name, "AUTO2.TXT");
@@ -173,22 +176,69 @@ TEST_CASE(the_list_reads_each_file_s_first_lines_and_names_the_newest)
     CHECK_EQ(sb_newest(e, n), 0);
     /* A file that is no settings file is listed and not the newest. */
     CHECK_EQ(f_write(NULL, "AUTO1.TXT", "hello\n", 6u), SB_IO_OK);
-    CHECK_EQ(sb_list(&k_io, e, &n), SB_OK);
+    CHECK_EQ(sb_list(&k_io, g_list, sizeof(g_list), e, &n), SB_OK);
     CHECK_EQ(e[0].err, SF_ERR_NOT_SETTINGS);
     CHECK_EQ(sb_newest(e, n), 2);
     /* A file that does not read. */
     g_fake.fail_read = true;
-    CHECK_EQ(sb_list(&k_io, e, &n), SB_OK);
+    CHECK_EQ(sb_list(&k_io, g_list, sizeof(g_list), e, &n), SB_OK);
     CHECK_EQ(n, 3);
     CHECK_EQ(e[1].err, SF_ERR_ARG);
     CHECK_EQ(sb_newest(e, n), -1);
     CHECK_EQ(sb_newest(NULL, 3), -1);
     /* An empty folder. */
     fake_fresh();
-    CHECK_EQ(sb_list(&k_io, e, &n), SB_OK);
+    CHECK_EQ(sb_list(&k_io, g_list, sizeof(g_list), e, &n), SB_OK);
     CHECK_EQ(n, 0);
     CHECK_EQ(sb_newest(e, n), -1);
-    CHECK_EQ(sb_list(&k_io, NULL, &n), SB_ARG);
+    CHECK_EQ(sb_list(&k_io, g_list, sizeof(g_list), NULL, &n), SB_ARG);
+}
+
+TEST_CASE(the_list_sums_each_file_up_to_sf_file_max_bytes)
+{
+    fake_fresh();
+    /* SETTINGS.TXT of exactly SF_FILE_MAX bytes: its first lines, then
+     * comment lines. */
+    static char big[SF_FILE_MAX + 2u];
+    const size_t n0 = text("2026-11-21 12:00:00 UTC", "s1");
+    memcpy(big, g_t, n0);
+    memset(big + n0, '#', SF_FILE_MAX - n0);
+    for (size_t i = n0 + 79u; i < SF_FILE_MAX; i += 80u) {
+        big[i] = '\n';
+    }
+    big[SF_FILE_MAX - 1u] = '\n';
+    CHECK_EQ(f_write(NULL, SB_SAVED, big, SF_FILE_MAX), SB_IO_OK);
+    CHECK_EQ(sb_write_auto(&k_io, g_t, text("x", "c1")), SB_OK);
+    sb_entry_t e[SB_FILES];
+    uint8_t n = 0u;
+    CHECK_EQ(sb_list(&k_io, g_list, sizeof(g_list), e, &n), SB_OK);
+    CHECK_EQ(n, 2);
+    CHECK(e[0].summed);
+    CHECK_EQ(e[0].crc, fm_crc32(0u, g_t, strlen(g_t)));
+    CHECK(e[1].summed);
+    CHECK_EQ(e[1].size, (int32_t)SF_FILE_MAX);
+    CHECK_EQ(e[1].crc, fm_crc32(0u, big, SF_FILE_MAX));
+    CHECK_STR_EQ(e[1].head.written, "2026-11-21 12:00:00 UTC");
+    /* The last byte changed, size and first lines kept: another sum. */
+    const uint32_t before = e[1].crc;
+    big[SF_FILE_MAX - 2u] = 'x';
+    CHECK_EQ(f_write(NULL, SB_SAVED, big, SF_FILE_MAX), SB_IO_OK);
+    CHECK_EQ(sb_list(&k_io, g_list, sizeof(g_list), e, &n), SB_OK);
+    CHECK(e[1].summed);
+    CHECK(e[1].crc != before);
+    /* One byte more: listed with its first lines, not summed. */
+    big[SF_FILE_MAX] = '\n';
+    CHECK_EQ(f_write(NULL, SB_SAVED, big, SF_FILE_MAX + 1u), SB_IO_OK);
+    CHECK_EQ(sb_list(&k_io, g_list, sizeof(g_list), e, &n), SB_OK);
+    CHECK_EQ(n, 2);
+    CHECK_EQ(e[1].size, (int32_t)SF_FILE_MAX + 1);
+    CHECK_EQ(e[1].err, SF_OK);
+    CHECK(!e[1].summed);
+    CHECK_EQ(e[1].crc, 0u);
+    /* A buffer under SF_FILE_MAX + 1 bytes lists nothing. */
+    CHECK_EQ(sb_list(&k_io, g_list, SF_FILE_MAX, e, &n), SB_ARG);
+    CHECK_EQ(n, 0);
+    CHECK_EQ(sb_list(&k_io, NULL, sizeof(g_list), e, &n), SB_ARG);
 }
 
 TEST_CASE(a_read_takes_one_of_the_folder_s_files_whole)
@@ -376,6 +426,7 @@ int main(void)
     RUN(a_full_card_or_a_failed_write_leaves_the_copies_as_they_were);
     RUN(no_card_writes_nothing_and_lists_nothing);
     RUN(the_list_reads_each_file_s_first_lines_and_names_the_newest);
+    RUN(the_list_sums_each_file_up_to_sf_file_max_bytes);
     RUN(a_read_takes_one_of_the_folder_s_files_whole);
     RUN(a_file_of_sf_file_max_reads_and_one_byte_more_does_not);
     RUN(a_request_runs_and_every_request_gets_an_answer);

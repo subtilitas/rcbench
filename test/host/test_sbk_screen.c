@@ -4,10 +4,10 @@
  * automatic copy at each save to the store, the alert of a copy that does
  * not reach the card, the restore offer and its conditions, the 2s hold at
  * 1999 and 2000ms, the lines a load refuses, a load refused while an ARM
- * is queued or waits, and a file whose first lines lie past the 256B a
- * list reads.  The card is a folder in
- * memory (sbk_card_rig.h); the panel's card task is sb_run() on it, called
- * between frames.
+ * is queued or waits, a file whose first lines lie past the 256B the list
+ * takes them from, and an edit that keeps the size and first lines.  The
+ * card is a folder in memory (sbk_card_rig.h); the panel's card task is
+ * sb_run() on it, called between frames.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -825,7 +825,7 @@ static void hold_load(void)
  * @brief A backup as put_backup() writes it, with comment lines of @p pad
  *        bytes in all between the header and `Panel:`: a file edited by
  *        hand, its first lines pushed towards or past the SB_HEAD_BYTES
- *        (256B) a list reads.
+ *        (256B) a list takes them from.
  */
 static void put_padded(const char *name, const char *written, size_t pad)
 {
@@ -896,6 +896,54 @@ TEST_CASE(a_file_with_its_first_lines_past_256_bytes_loads)
         hold_load();
         CHECK_EQ(sbk_load_state(), SBK_LOAD_DONE);
         CHECK_FEQ(settings_get(SET_BRIGHTNESS), 40.0f);
+        CHECK_STR_EQ(band(), "");
+    }
+}
+
+/** @brief File @p name edited in place: brightness 40 to 80, the size and
+ *         every first line kept, as an editor that leaves `Written:`. */
+static void edit_in_place(const char *name)
+{
+    fake_file_t *f = (fake_file_t *)find(name);
+    REQUIRE_ALLOC(f);
+    char *at = strstr(f->data, "\nbrightness = 40");
+    REQUIRE_ALLOC(at);
+    at[14] = '8';
+}
+
+TEST_CASE(an_edit_that_keeps_the_size_and_first_lines_is_refused)
+{
+    /* 0: put_backup()'s file; 1: the same padded to SF_FILE_MAX bytes,
+     * the largest file the list sums. */
+    for (int c = 0; c < 2; ++c) {
+        fake_fresh();
+        put_backup("AUTO1.TXT", "2026-11-20 10:00:00 UTC");
+        if (c == 1) {
+            const size_t len = find("AUTO1.TXT")->len;
+            put_padded("AUTO1.TXT", "2026-11-20 10:00:00 UTC",
+                       SF_FILE_MAX - len);
+            CHECK_EQ(find("AUTO1.TXT")->len, (size_t)SF_FILE_MAX);
+        }
+        start(false, true);
+        settle();
+        sbk_screen_open(false);
+        settle();
+        uint8_t n = 0u;
+        CHECK(sbk_files(&n)[0].summed);
+        tap_body(sbk_screen_row(0));
+        CHECK(sbk_screen_hold_ready());
+        edit_in_place("AUTO1.TXT");
+        hold_load();
+        CHECK(sbk_load_state() != SBK_LOAD_DONE);
+        CHECK_FEQ(settings_get(SET_BRIGHTNESS), 60.0f);
+        CHECK_STR_EQ(band(), ui_tr(TX_ALERT_SB_CHANGED));
+        CHECK_EQ(sbk_screen_chosen(), -1);
+        /* Chosen again from the new list: it loads, unchanged since. */
+        ui_router_set_alert(NULL);
+        tap_body(sbk_screen_row(0));
+        hold_load();
+        CHECK_EQ(sbk_load_state(), SBK_LOAD_DONE);
+        CHECK_FEQ(settings_get(SET_BRIGHTNESS), 80.0f);
         CHECK_STR_EQ(band(), "");
     }
 }
@@ -1093,6 +1141,7 @@ int main(void)
     RUN(a_file_read_in_the_frame_that_arms_is_not_put_in_force);
     RUN(a_file_read_while_an_arm_is_queued_or_waits_is_not_put_in_force);
     RUN(a_file_with_its_first_lines_past_256_bytes_loads);
+    RUN(an_edit_that_keeps_the_size_and_first_lines_is_refused);
     RUN(a_copy_owed_while_backup_shows_waits_and_the_load_reads_the_file_shown);
     RUN(a_list_that_changes_under_a_choice_drops_the_choice);
     RUN(a_card_gone_before_the_offer_s_list_is_looked_at_again);

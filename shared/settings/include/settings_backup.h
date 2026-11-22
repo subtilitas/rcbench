@@ -53,7 +53,7 @@ extern "C" {
 #define SB_FILES      (SB_AUTO_COPIES + 1)
 /** @brief Room for a file name, with the terminator. */
 #define SB_NAME_MAX   16u
-/** @brief Bytes a list reads from the start of a file for its first lines. */
+/** @brief Bytes from the start of a file a list takes its first lines from. */
 #define SB_HEAD_BYTES 256u
 
 /** @brief What a function of the card reports. */
@@ -113,6 +113,9 @@ typedef struct {
     uint8_t   err;               /**< sf_head()'s sf_err_t; SF_OK readable  */
     int32_t   size;              /**< its bytes as the list found them      */
     sf_head_t head;              /**< its first lines                       */
+    bool      summed;            /**< read whole: up to SF_FILE_MAX bytes   */
+    uint32_t  crc;               /**< summed: the CRC-32 of its bytes
+                                      (fm_crc32()); 0 otherwise             */
 } sb_entry_t;
 
 /** @brief What a request asks. */
@@ -171,16 +174,26 @@ sb_result_t sb_write_saved(const sb_io_t *io, const char *text, size_t len);
 sb_result_t sb_write_auto(const sb_io_t *io, const char *text, size_t len);
 
 /**
- * @brief The files there are, with their first lines: AUTO1 to AUTO3, then
- *        SETTINGS.TXT.
+ * @brief The files there are, with their first lines and the CRC-32 of
+ *        their bytes: AUTO1 to AUTO3, then SETTINGS.TXT.
+ *
+ * Each file is read whole into @p buf, at most SF_FILE_MAX + 1 bytes
+ * (24,577B), so a full list reads at most 4 x 24,577 = 98,308B.  The first
+ * lines come from the first SB_HEAD_BYTES (256B).  A load compares the
+ * file it reads with the sum, so an edit that keeps the size and the first
+ * lines is found.
+ *
  * @param io    The card.
+ * @param buf   Takes each file in turn.
+ * @param cap   Bytes at @p buf, SF_FILE_MAX + 1 or more.
  * @param out   Takes the files there are, in that order.
  * @param count Takes their number.
- * @return SB_OK, SB_NO_CARD or SB_ARG.  A file whose first bytes do not read
- *         is listed with err SF_ERR_ARG.
+ * @return SB_OK, SB_NO_CARD or SB_ARG.  A file whose bytes do not read is
+ *         listed with err SF_ERR_ARG; a file over SF_FILE_MAX bytes is
+ *         listed with its first lines and not summed.
  */
-sb_result_t sb_list(const sb_io_t *io, sb_entry_t out[SB_FILES],
-                    uint8_t *count);
+sb_result_t sb_list(const sb_io_t *io, char *buf, size_t cap,
+                    sb_entry_t out[SB_FILES], uint8_t *count);
 
 /**
  * @brief The newest file of a list that reads: the latest `Written:` date

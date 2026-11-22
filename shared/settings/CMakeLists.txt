@@ -12,10 +12,11 @@ set(SRCS settings.c settings_schema.c settings_sensors.c settings_text.c
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include
-                           REQUIRES link outputs PRIV_REQUIRES text)
+                           REQUIRES link outputs PRIV_REQUIRES text files)
 else()
     add_library(rcbench_settings STATIC ${SRCS})
     target_include_directories(rcbench_settings PUBLIC include)
     target_link_libraries(rcbench_settings PUBLIC m
-                          PRIVATE rcbench_link rcbench_outputs rcbench_text)
+                          PRIVATE rcbench_link rcbench_outputs rcbench_text
+                                  rcbench_files)
 endif()

@@ -121,7 +121,9 @@ void sbk_screen_relisted(const sb_entry_t *before, unsigned before_n)
                       && before[i].size == now[i].size
                       && strcmp(before[i].name, now[i].name) == 0
                       && strcmp(before[i].head.written,
-                                now[i].head.written) == 0;
+                                now[i].head.written) == 0
+                      && before[i].summed == now[i].summed
+                      && before[i].crc == now[i].crc;
     if (!same) {
         v.chosen = -1;
         drop_press();

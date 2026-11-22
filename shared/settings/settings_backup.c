@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "fm_crc.h"
+
 /** @brief The automatic copies' names, newest first. */
 static const char *const k_auto[SB_AUTO_COPIES] = {
     "AUTO1.TXT", "AUTO2.TXT", "AUTO3.TXT",
@@ -110,8 +112,13 @@ sb_result_t sb_write_auto(const sb_io_t *io, const char *text, size_t len)
                ? SB_OK : SB_WRITE;
 }
 
-/** @brief List one file into @p e when it is there; whether it is. */
-static bool list_one(const sb_io_t *io, const char *name, sb_entry_t *e)
+/**
+ * @brief List one file into @p e when it is there; whether it is.  The file
+ *        is read whole into @p buf, SF_FILE_MAX + 1 bytes at most: its first
+ *        lines from the first SB_HEAD_BYTES, its CRC-32 over all of it.
+ */
+static bool list_one(const sb_io_t *io, const char *name, char *buf,
+                     sb_entry_t *e)
 {
     const int32_t size = io->size(io->ctx, name);
     if (size < 0) {
@@ -120,17 +127,30 @@ static bool list_one(const sb_io_t *io, const char *name, sb_entry_t *e)
     memset(e, 0, sizeof(*e));
     (void)snprintf(e->name, sizeof(e->name), "%s", name);
     e->size = size;
-    char head[SB_HEAD_BYTES];
-    const int32_t n = io->read(io->ctx, name, head, sizeof(head));
-    e->err = (uint8_t)((n < 0) ? SF_ERR_ARG
-                               : sf_head(head, (size_t)n, &e->head));
+    const int32_t n = io->read(io->ctx, name, buf, SF_FILE_MAX + 1u);
+    if (n < 0) {
+        e->err = (uint8_t)SF_ERR_ARG;
+        return true;
+    }
+    const size_t head = ((size_t)n < SB_HEAD_BYTES) ? (size_t)n
+                                                    : SB_HEAD_BYTES;
+    e->err = (uint8_t)sf_head(buf, head, &e->head);
+    /* Over SF_FILE_MAX no load takes it (SB_LARGE): nothing to compare. */
+    if ((uint32_t)n <= SF_FILE_MAX) {
+        e->summed = true;
+        e->crc = fm_crc32(0u, buf, (size_t)n);
+    }
     return true;
 }
 
-sb_result_t sb_list(const sb_io_t *io, sb_entry_t out[SB_FILES],
-                    uint8_t *count)
+sb_result_t sb_list(const sb_io_t *io, char *buf, size_t cap,
+                    sb_entry_t out[SB_FILES], uint8_t *count)
 {
-    if (out == NULL || count == NULL) {
+    if (out == NULL || count == NULL || buf == NULL
+        || cap < SF_FILE_MAX + 1u) {
+        if (count != NULL) {
+            *count = 0u;
+        }
         return SB_ARG;
     }
     *count = 0u;
@@ -139,10 +159,11 @@ sb_result_t sb_list(const sb_io_t *io, sb_entry_t out[SB_FILES],
         return r;
     }
     for (int i = 0; i < SB_AUTO_COPIES; ++i) {
-        *count = (uint8_t)(*count + (list_one(io, k_auto[i], &out[*count])
+        *count = (uint8_t)(*count + (list_one(io, k_auto[i], buf,
+                                              &out[*count])
                                      ? 1u : 0u));
     }
-    *count = (uint8_t)(*count + (list_one(io, SB_SAVED, &out[*count])
+    *count = (uint8_t)(*count + (list_one(io, SB_SAVED, buf, &out[*count])
                                  ? 1u : 0u));
     return SB_OK;
 }
@@ -240,7 +261,8 @@ void sb_run(const sb_io_t *io, const sb_req_t *req, char *buf, size_t cap,
                                      : SB_ARG);
         break;
     case SB_REQ_LIST:
-        done->result = (uint8_t)sb_list(io, done->files, &done->count);
+        done->result = (uint8_t)sb_list(io, buf, cap, done->files,
+                                        &done->count);
         break;
     case SB_REQ_READ:
         (void)snprintf(done->name, sizeof(done->name), "%s", req->name);

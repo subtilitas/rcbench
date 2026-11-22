@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "fm_crc.h"
 #include "rcbench_version.h"
 #include "sbk_screen.h"
 #include "settings.h"
@@ -364,17 +365,11 @@ static void load_read(const sb_done_t *d, bool armed)
         return;
     }
     /* The file read must be the file the list showed: a card swapped, a
-     * browser write or a rename since gives another size or header.  The
-     * header is read from the bytes the list read, the first SB_HEAD_BYTES
-     * (256B): a `Panel:` or `Written:` line past them is not known to the
-     * list, and not to this check either. */
-    sf_head_t h;
-    const size_t head_len = (d->len < SB_HEAD_BYTES) ? d->len : SB_HEAD_BYTES;
-    const sf_err_t he = sf_head(s_buf, head_len, &h);
-    if ((int32_t)d->len != k.want.size || (uint8_t)he != k.want.err
-        || h.format != k.want.head.format
-        || strcmp(h.version, k.want.head.version) != 0
-        || strcmp(h.written, k.want.head.written) != 0) {
+     * browser or FILES edit or a rename since gives another size or another
+     * CRC-32 of its bytes, an edit that keeps the size and the first lines
+     * too. */
+    if ((int32_t)d->len != k.want.size || !k.want.summed
+        || fm_crc32(0u, s_buf, d->len) != k.want.crc) {
         k.load = SBK_LOAD_IDLE;
         k.why = SBK_WHY_CHANGED;
         ui_router_set_alert(TR(ALERT_SB_CHANGED));
