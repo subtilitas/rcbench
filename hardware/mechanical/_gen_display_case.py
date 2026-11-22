@@ -20,8 +20,12 @@ each short wall.
 Source: a tester's printed case of the same node, measured from its STL
 file (2 bodies, 44890 triangles), which is not in the repository.
 Outline, heights, the bosses' places, the window, the recesses and the
-XT30 openings are that case's, within 0.1. 3 things differ, each to
-close the gap of about 1 the tester reports between lid and box:
+XT30 openings are that case's, within 0.1. In nominal sizes the measured
+case closes: its plug ends 0.18 over the board. A gap of about 1
+between lid and box that the tester saw belongs to an earlier print,
+not to the measured file (tester, 2026-11-22). 3 things differ here.
+Each gives real parts room where the measured case has little, so that
+the lid still closes on the rim:
 
 1. Insert holes. The measured case has straight holes of 3.5 through
    bosses and floor. Here each boss has a blind hole of 4.0, 6.0 deep,
@@ -38,9 +42,7 @@ close the gap of about 1 the tester reports between lid and box:
    they are 6.0 wide and 2.2 deep, for M3 pan heads of 5.6: the board's
    holes are 3.2, so M3 fits.
 
-In nominal sizes the measured case closes: its plug ends 0.18 over the
-board. Which of 1 and 2 held the tester's lid up is not known; the
-inserts and screws the tester used are not known either.
+The inserts and screws the tester uses are not known.
 
 How it closes: the lid's flange lies on the box's rim. The plug ends
 0.18 over the board's front, so the board lies loose by that much
@@ -84,8 +86,18 @@ each short wall hang 4.0 out of it: they need support or a slow bridge.
 Not drawn: screws, inserts, the 2 boards on the floor, the XT30
 connectors, wires. Not measured: the height of the parts under the
 board; 3.6 is free under the board's speaker socket and 8.3 elsewhere.
-The hole of 3.5 through the floor at FLOOR_HOLE is the measured case's;
-what it is for is not stated.
+The hole of 3.5 through the floor at FLOOR_HOLE holds the current sensor
+board: a screw goes through it and through the board's hole of 3.0. In
+the tester's node one XT30 is soldered straight to that board, so the
+screw holds that connector too (tester, 2026-11-22). The hole lies 11.3
+inside the short wall at -y and 17.1 beside the middle of that wall's
+XT30 opening. The board's hole lies 4.6 to 9.6 from its wire pad along
+the board and 8.2 to 16.2 across it (hardware/kicad/modules/
+ina228_matek.py); with the XT30's plus contact 2.5 off the connector's
+middle that is 14.6 across, inside that range. How far the XT30 reaches
+into the box is not measured, so the place along the box is not
+checked. The XT60 variant has the hole at the same place: its
+connectors are screwed to the walls and the board hangs on its wires.
 
 Shapes are boxes, cylinders along an axis of the frame and prisms over
 polygons with given corners: no cone and no turned shape, so the STEP

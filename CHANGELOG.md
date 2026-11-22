@@ -20,11 +20,12 @@ history is in git.
 - `hardware/mechanical/`: a printed case of 2 parts for the display node
   with XT30 connectors, 59.8mm x 101.2mm x 17.8mm: `display_node_box` and
   `display_node_lid`, each as STEP and STL. It follows a tester's case,
-  measured from its STL file. 3 changes close the gap of about 1mm the
-  tester reports between lid and box: blind insert holes of 4.0mm x 6.0mm
-  with a relief in place of straight holes of 3.5mm, a window with 0.5mm
-  in place of 0.17mm beside the touch panel, and head recesses of 6.0mm
-  for M3. `_gen_display_case.py --check`, which CI runs, fails when a part
+  measured from its STL file, which closes in nominal sizes with 0.18mm
+  over the board. 3 changes give real parts more room, so that the lid
+  still closes on the rim: blind insert holes of 4.0mm x 6.0mm with a
+  relief in place of straight holes of 3.5mm, a window with 0.5mm in place
+  of 0.17mm beside the touch panel, and head recesses of 6.0mm for M3. A
+  hole of 3.5mm in the floor holds the current sensor board. `_gen_display_case.py --check`, which CI runs, fails when a part
   meets the display board or the stack does not close. No part is printed
   ([Cases](hardware/mechanical/CASES.md#case-of-the-display-node-xt30)).
 - `hardware/mechanical/`: a printed case of 3 parts for the remote INA228

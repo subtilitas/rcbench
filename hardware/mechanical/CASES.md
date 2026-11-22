@@ -33,20 +33,21 @@ screw reaches 4.4mm into its boss.
 The case follows a tester's printed case of the same node, measured from
 its STL file, which is not in the repository: outline, heights, the
 bosses' places, the window's ends, the recesses and the XT30 openings are
-that case's, within 0.1mm. The tester reports a gap of about 1mm between
-lid and box. In nominal sizes the measured case closes: its plug ends
-0.18mm over the board, the display's parts clear the lid by 0.8mm or more
-and the plug clears the box by 0.33mm. 3 things differ here, at the 2
-places where real parts take more room than nominal ones:
+that case's, within 0.1mm. In nominal sizes the measured case closes: its
+plug ends 0.18mm over the board, the display's parts clear the lid by
+0.8mm or more and the plug clears the box by 0.33mm. A gap of about 1mm
+between lid and box that the tester saw belongs to an earlier print, not
+to the measured file (tester, 2026-11-22). 3 things differ here. Each
+gives real parts room where the measured case has little, so that the lid
+still closes on the rim:
 
-| | Measured case | This case | Effect on the gap |
+| | Measured case | This case | What the room is for |
 | --- | --- | --- | --- |
 | Insert holes | 3.5mm, straight through boss and floor, no relief | 4.0mm, blind, 6.0mm deep, relief of 4.6mm x 0.5mm at the mouth | an insert or a burr standing 1.0mm out of a boss lifts board and lid by 0.8mm; the relief takes the plastic the insert pushes up |
 | Window | 50.5mm wide, 0.08mm off the board's axis: 0.17mm at one side of a touch panel of 50.0mm +- 0.2mm | 51.0mm wide, centred on the board: 0.5mm at each side | the panel enters the window by 3.9mm; where it binds, the lid stops short |
 | Head recesses | 4.5mm wide | 6.0mm wide, 2.2mm deep | a pan head M3 of 5.6mm sinks into the lid |
 
-Which of the first 2 held the tester's lid up is not known, and neither
-are the inserts and screws the tester used. `stack()` gives the closed
+The inserts and screws the tester uses are not known. `stack()` gives the closed
 case in numbers and `--check` fails when one falls under its limit:
 
 | | Value, mm | Limit, mm |
@@ -67,8 +68,17 @@ Limits:
 - The USB socket, the microSD slot and the 2 buttons are not reachable
   with the lid on: the box has no opening for them, as the measured
   case has none.
-- The floor's hole of 3.5mm at x 5.6mm, y -37.5mm is the measured
-  case's; what it is for is not stated.
+- The floor's hole of 3.5mm at x 5.6mm, y -37.5mm holds the current
+  sensor board: a screw goes through it and through the board's hole of
+  3.0mm. In the tester's node one XT30 is soldered straight to that
+  board, so the screw holds that connector too (tester, 2026-11-22). The
+  hole lies 17.1mm beside the middle of the XT30 opening in the wall at
+  -y. The board's hole lies 8.2mm to 16.2mm across from its wire pad
+  ([KiCad library](../kicad/README.md), `ina228_matek.py`); with the
+  XT30's plus contact 2.5mm off the connector's middle that is 14.6mm,
+  inside that range. How far the XT30 reaches into the box is not
+  measured: the hole's place along the box, 11.3mm inside the wall, is
+  not checked.
 
 ```sh
 python3 hardware/mechanical/_gen_display_case.py            # write STEP and STL
@@ -138,6 +148,9 @@ Limits:
 
 - No part is printed, and no XT60 is tried in the seat. The connector's
   sizes are a model's, not a caliper's.
+- The floor has the hole for the current sensor board at the same place
+  as the XT30 case. Here the connectors are screwed to the walls and the
+  board hangs on its wires; the hole's place is not checked against them.
 - The limits of the XT30 case hold here too: the boards on the floor are
   not drawn, USB socket, microSD slot and buttons are not reachable with
   the lid on.
