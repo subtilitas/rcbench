@@ -38,8 +38,8 @@ function step(width, n) {
 }
 // A time in ns, in the unit that suits the width of the view.
 function clock(ns, width) {
-  const [div, unit] = width >= 2e6 ? [1e6, 'ms'] : width >= 2e3
-    ? [1e3, 'µs'] : [1, 'ns'];
+  const [div, unit] = width >= 2e9 ? [1e9, 's'] : width >= 2e6
+    ? [1e6, 'ms'] : width >= 2e3 ? [1e3, 'µs'] : [1, 'ns'];
   const v = ns / div;
   return (Math.abs(v) >= 100 || Number.isInteger(+v.toFixed(2))
     ? String(+v.toFixed(2)) : v.toFixed(Math.abs(v) < 10 ? 2 : 1))
@@ -248,8 +248,18 @@ function drawCircuit(p, fig, lt, a, t) {
         const m = len / 2;
         return `<path d="M0 0H${m - 42}l7 -13l14 26l14 -26l14 26l14 -26
           l14 26l7 -13H${len}"/>`;
-      }) + text(Math.max(it.a[0], it.b[0]) + 24,
-                (it.a[1] + it.b[1]) / 2 + 7, it.text, col);
+      }) + (it.label ? text(it.label[0], it.label[1], it.text, col, 'middle')
+        : text(Math.max(it.a[0], it.b[0]) + 24,
+               (it.a[1] + it.b[1]) / 2 + 7, it.text, col));
+    } else if (it.t === 'zener') {
+      // A zener diode from its anode a to its cathode b.
+      s += along(it.a, it.b, len => {
+        const m = len / 2;
+        return `<path d="M0 0H${m - 18}M${m - 18} -20L${m + 18} 0
+          L${m - 18} 20ZM${m + 18} 0H${len}M${m + 26} -24L${m + 18} -18
+          V18L${m + 10} 24"/>`;
+      }) + text(Math.min(it.a[0], it.b[0]) - 34,
+                (it.a[1] + it.b[1]) / 2 + 7, it.text, col, 'end');
     } else if (it.t === 'cap') {
       s += along(it.a, it.b, len => {
         const m = len / 2;

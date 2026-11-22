@@ -40,6 +40,8 @@ a new session needs beyond it.
 | `storyboards/thumbnail.json` | thumbnail of the feature tour, `--stills 3` |
 | `tools/video_scope.py`, `player/scope.js`, `plots/hitec-precharge.json` | the `scope` scene: plots and a circuit from a figure; the figure of the D series signal wire is simulated with ngspice 42 |
 | `storyboards/hitec-precharge.json` | the Hitec D series PRECHARGE receive in 7 steps, narrated in the voice of `features`, bed `pachelbel-canon` at half level; 312.50s before the narration stretches it; not rendered. It opens with 2 `part` scenes, `rp2350_can` and `hitec_d485hw`; the 5 `scope` scenes that follow have no 3D layer, and the sixth step draws the 3 captures of `testbench/captures/hitec32` (branch `inbox/hitec32-captures`) |
+| `tools/video_tap.py`, `plots/phase-tap.json`, `storyboards/phase-tap.json` | ESC STICK programming from the phase tap in 7 steps, narrated in the voice of `features`, bed `pachelbel-canon` at half level; 279.17s before the narration stretches it; not rendered. Its `part` scenes are `rbmod_v2` and `rp2350_can`; scenes of the ESC and the motor wait for their models. No capture: the owner chose the simulation and the documented figures (2026-11-22) |
+| `test/tools/test_video_tap.py` | 7 cases; the lead's model, the detector on a group, the figure |
 | `test/tools/test_make_video.py`, `test/tools/test_video_scope.py` | 52 and 15 cases; the storyboard check, the script, the freezes, the phonemes and the trim of the narration, the figure, the scope scene |
 
 No pull request is open. CI has not been looked at for this branch.

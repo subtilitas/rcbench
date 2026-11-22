@@ -69,6 +69,8 @@ python3 tools/make_video.py dial                   # build/video/dial.mp4
 python3 tools/make_video.py minircbench-build      # build/video/minircbench-build.mp4
 python3 tools/make_video.py hitec-precharge        # build/video/hitec-precharge.mp4
 python3 tools/video_scope.py                       # plots/hitec-precharge.json, with ngspice
+python3 tools/make_video.py phase-tap              # build/video/phase-tap.mp4
+python3 tools/video_tap.py                         # plots/phase-tap.json, with ngspice and cc
 python3 tools/make_video.py kst-rbmod --stills 2.5,40 -o /tmp/stills
 python3 tools/make_video.py features --jobs 3      # frames in 3 parts at once
 python3 tools/make_video.py features --jobs 3 --keep build/video/parts
@@ -158,9 +160,12 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `storyboards/minircbench-build.json` | building a MiniRcBench in 10 steps: the parts, the firmware, the boost board's input on the battery socket's pins, the 0Ω resistor off the enable pad, the pull-down and IO28 on it, the INA219 on the I2C socket, the 5.6V zener and the 470µF capacitor across the boost board's output, the 5V path through the sensor to both male servo connectors, the signals and the 9 unused wires taken out of the 12-pin plug, the check before the cell, the case, and the settings; narrated, 505.57s, Pachelbel's Canon at half level |
 | `storyboards/minircbench-features.json` | every screen of the MiniRcBench, firmware 0.1.0, in 12 chapters: the tester, its telemetry, the menu, ESC COMMANDS, ESC CONFIG with ESC SETTINGS and USB BRIDGE, SERVO TESTER, SERVO PROGRAMMER for KST, Chaservo and Hitec, RX SIGNALS with the S.BUS monitor, TOOLS with the angle meter, SD LOG, SETTINGS, and the rules all screens share; the bench stands frontal with 81 stills on its display, one label a line of narration; narrated, 1000.70s, Pachelbel's Canon at half level |
 | `storyboards/hitec-precharge.json` | the Hitec D series PRECHARGE receive in 7 steps, after the IOmcu module and the D485HW as `part` scenes: the servo's 3kΩ pull-down, the 2.2kΩ pull-up, one precharge and sample, the sampling window against the measured one, one answer byte in 80 samples, 3 logic analyser captures of a read of register 0x32 beside the simulation, and the setting on the panel; narrated |
+| `storyboards/phase-tap.json` | ESC STICK programming counted from the phase tap in 7 steps, after the rbmod carrier and the IOmcu module as `part` scenes: a menu of beeps, the tap's circuit, the edge stamps, carrier, tone and beep, the count of a group, the warning that the servo rails carry the ESC's voltage, and the screens; narrated |
 | `storyboards/thumbnail.json` | the thumbnail of `features`: the case with its display lifted and the title; `--stills 3` writes it |
 | `../video_scope.py` | simulates the D series signal wire with ngspice and writes `plots/hitec-precharge.json`, the figure of the `scope` scenes; `--capture NAME=FILE` adds a logic analyser trace from a sigrok CSV export |
 | `plots/hitec-precharge.json` | the figure: 11 simulated traces, 3 captured ones (`capture-pre`, `capture-pullup`, `capture-bare`), the circuit's drawing, the model's values and the measured window |
+| `../video_tap.py` | models a beeping motor lead, simulates the tap on it with ngspice, runs the capture's hold-off and `protocols/phase_tap/tone.c` on the simulated edges and writes `plots/phase-tap.json` |
+| `plots/phase-tap.json` | the figure of `phase-tap`: 12 traces, the tap's drawing, the model's values and the detector's beeps, windows and groups |
 | `player/scope.js` | draws a figure's plots and circuits |
 | `../video_audio.py` | the sound track of a storyboard as a WAV file |
 | `../video_voice.py` | the narration: the lines, the speaker, the room each line needs |
@@ -368,6 +373,31 @@ appear. The model gives 279.5ns and 0ns. The tool stops with a message
 when the model reads one of the 12 settings or one of the 2 pulse widths
 otherwise. The timing is `hitec_pre_timing()` at 150MHz:
 163 cycles a sample, 15 of precharge, 17 to the sample.
+
+## The simulated phase tap
+
+`tools/video_tap.py` builds the motor lead of a beeping ESC, simulates
+the tap with ngspice and hands the pin's edges to the firmware's own
+detector, compiled for the host.
+
+| Value | Is | Source |
+| --- | --- | --- |
+| Short beep | 127.9ms at 2090Hz | measured, FlyDragon Lite 40A at 7.6V (`STATUS.md`) |
+| Long beep | 383.7ms at 1866Hz | measured, the same |
+| Pause in a group, between groups | 148ms, 3.23s | one recording, the same |
+| Series resistor, zener, pull-down | 4.7kΩ, 3.0V, 8.2kΩ | `protocols/phase_tap/README.md` |
+| Tick, hold-off | 26.7ns, 8000ns | `tone_svc.h` |
+| Tone range, gap, periods, split | 400 to 6500Hz, 3ms, 3, 8% | the TONE page's defaults |
+| Carrier | 12kHz | model: the first value of the ESC's PWM frequency item |
+| Carrier duty, driven share of a tone period | 25%, 50% | model |
+| Pin capacitance, input threshold | 10pF, 1.1V | model |
+
+For one group of 3 short beeps the detector reports 3 beeps of 127.5ms at
+2090.0Hz with a carrier of 12,004Hz and 267 bursts each, and the hold-off
+keeps every one of the 4806 edges. The tool stops with a message when the
+detector reports another number of beeps, a length more than 1ms or a
+pitch more than 1% from the ones sounded, or a group that does not count
+3.
 
 The captures are `win/s1-0x32-win.csv`, `win/s2-0x32-win.csv` and
 `win/s3-win.csv` of `testbench/captures/hitec32/` on branch

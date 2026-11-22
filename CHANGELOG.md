@@ -950,6 +950,14 @@ The entries below cover the 7 pull requests merged since v0.23.13: #847,
   under `hardware/kicad/modules/`. `--keep` keeps the captured parts per
   scene, so that a changed scene is captured alone; a kept part of
   1024 bytes or less is captured again ([Videos from storyboards](tools/video/README.md)).
+- Storyboard `phase-tap`: ESC STICK programming counted from the phase
+  tap in 7 steps, narrated. `tools/video_tap.py` models the motor lead of
+  a beeping ESC from the FlyDragon Lite 40A's measured beeps, simulates
+  the tap (4.7kΩ, 3.0V zener, 8.2kΩ) with ngspice and runs the capture's
+  hold-off and the detector of `protocols/phase_tap/tone.c` on the
+  simulated edges. A plot's time axis reads in s from 2s of width, and a
+  circuit draws a zener diode
+  ([Videos from storyboards](tools/video/README.md#the-simulated-phase-tap)).
 - Storyboard `hitec-precharge`: the Hitec D series PRECHARGE receive in
   7 steps, narrated: the servo's 3kΩ pull-down, the 2.2kΩ pull-up, one
   precharge and sample, the sampling window, one answer byte in 80
