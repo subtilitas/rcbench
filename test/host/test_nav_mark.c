@@ -11,6 +11,10 @@
  * - switching_the_mark_invalidates_the_cached_chrome
  * - the_menu_marks_what_is_not_fitted
  * - the_supply_word_outlives_a_start_of_the_screens
+ * - the_power_node_as_pack_source_fits_motor_and_esc
+ * - the_power_node_counts_only_on_and_bound_with_source_node
+ * - the_wired_ina228_fits_motor_and_esc_as_before
+ * - a_bind_kept_while_the_menu_is_up_takes_the_mark_off
  * - demo_mode_is_off_by_default_and_the_mark_is_drawn
  * - demo_mode_hides_the_mark_and_keeps_the_sim_chip
  * - demo_mode_switched_back_off_draws_the_mark_on_the_next_frame
@@ -399,6 +403,142 @@ TEST_CASE(the_supply_word_outlives_a_start_of_the_screens)
     overview_screen_set_supply_real(false);
 }
 
+/* ------------------------------------------- MOTOR & ESC and the power node */
+
+/** @brief The MOTOR & ESC tile's slot: row 1, column 1. */
+#define SLOT_MOTOR 0
+/** @brief A bound node's address as SETUP keeps it. */
+#define NODE_ADDR "7C:DF:A1:12:34:56 P"
+
+/**
+ * @brief The menu with default settings and the IOmcu's capabilities
+ *        @p caps: SETUP's power node values are the case's to set.
+ * @param caps The link_cap_t bits.
+ */
+static void pnode_rig(uint16_t caps)
+{
+    settings_set_store(NULL);
+    settings_init();
+    fresh();
+    to_overview();
+    ui_bench_status_t st = *ui_router_status();
+    st.capabilities = caps;
+    ui_router_set_status(&st);
+}
+
+/**
+ * @brief SETUP's power node values: POWER NODE, INA228 SOURCE and the
+ *        bound node's address.
+ * @param on   POWER NODE ON.
+ * @param node INA228 SOURCE NODE, else WIRED.
+ * @param addr The bound node, "" none.
+ */
+static void pnode_set(bool on, bool node, const char *addr)
+{
+    settings_set(SET_PNODE_EN, on ? 1.0f : 0.0f);
+    settings_set(SET_I228_SRC, node ? 1.0f : 0.0f);
+    settings_set_text(SET_TEXT_PNODE_ADDR, addr);
+}
+
+/*
+ * The tester's set-up: the wired INA228 OFF, so the IOmcu reports no pack
+ * sensing, and the power node feeds MOTOR & ESC.  The node is the pack's
+ * source as configured, connected now or not, as the capability bits are.
+ */
+TEST_CASE(the_power_node_as_pack_source_fits_motor_and_esc)
+{
+    pnode_rig((uint16_t)(LINK_CAP_ESC_DRIVE | LINK_CAP_SERVO_PWM));
+    CHECK(overview_screen_tile_marked(SLOT_MOTOR));
+    pnode_set(true, true, NODE_ADDR);
+    CHECK(!overview_screen_tile_marked(SLOT_MOTOR));
+    /* SERVO's own need is untouched. */
+    CHECK(!overview_screen_tile_marked(1));
+
+    /* The ESC drive is still needed: no IOmcu ESC output, the mark. */
+    ui_bench_status_t st = *ui_router_status();
+    st.capabilities = (uint16_t)LINK_CAP_SERVO_PWM;
+    ui_router_set_status(&st);
+    CHECK(overview_screen_tile_marked(SLOT_MOTOR));
+    st.capabilities = 0u;
+    ui_router_set_status(&st);
+    CHECK(overview_screen_tile_marked(SLOT_MOTOR));
+}
+
+/* Each of the three values alone leaves the node out: WIRED, POWER NODE
+ * OFF, no node bound. */
+TEST_CASE(the_power_node_counts_only_on_and_bound_with_source_node)
+{
+    pnode_rig((uint16_t)LINK_CAP_ESC_DRIVE);
+    pnode_set(true, false, NODE_ADDR);           /* WIRED */
+    CHECK(overview_screen_tile_marked(SLOT_MOTOR));
+    pnode_set(false, true, NODE_ADDR);           /* POWER NODE OFF */
+    CHECK(overview_screen_tile_marked(SLOT_MOTOR));
+    pnode_set(true, true, "");                   /* no node bound */
+    CHECK(overview_screen_tile_marked(SLOT_MOTOR));
+    pnode_set(true, true, NODE_ADDR);
+    CHECK(!overview_screen_tile_marked(SLOT_MOTOR));
+    /* RESET of WIRELESS gives the defaults: OFF, WIRED. */
+    settings_reset(SET_CAT_WIRELESS);
+    CHECK(overview_screen_tile_marked(SLOT_MOTOR));
+}
+
+/* The wired INA228 enabled on SETUP > SENSORS: no mark whatever the node's
+ * values say, as before. */
+TEST_CASE(the_wired_ina228_fits_motor_and_esc_as_before)
+{
+    pnode_rig((uint16_t)(LINK_CAP_ESC_DRIVE | LINK_CAP_PACK_SENSE));
+    CHECK(!overview_screen_tile_marked(SLOT_MOTOR));
+    pnode_set(true, false, NODE_ADDR);
+    CHECK(!overview_screen_tile_marked(SLOT_MOTOR));
+    pnode_set(true, true, NODE_ADDR);
+    CHECK(!overview_screen_tile_marked(SLOT_MOTOR));
+    pnode_set(false, false, "");
+    CHECK(!overview_screen_tile_marked(SLOT_MOTOR));
+    /* The empty slot and one past the grid carry none. */
+    CHECK(!overview_screen_tile_marked(-1));
+    CHECK(!overview_screen_tile_marked(8));
+}
+
+/**
+ * @brief The mark's colour counted on the canvas.
+ * @return The pixels in UI_C_PANEL_SUNK.
+ */
+static int sunk_pixels(void)
+{
+    int n = 0;
+    for (int i = 0; i < W * H; ++i) {
+        n += (fb[i] == ui_theme_color(UI_C_PANEL_SUNK));
+    }
+    return n;
+}
+
+/* The frame keeps a bind in SETUP a frame after the controller made it,
+ * possibly with the menu up: the next frame draws the tile without the
+ * mark, not the next visit. */
+TEST_CASE(a_bind_kept_while_the_menu_is_up_takes_the_mark_off)
+{
+    pnode_rig((uint16_t)LINK_CAP_ESC_DRIVE);
+    pnode_set(true, true, "");
+    ui_router_render(&cv, 0);
+    const int marked = sunk_pixels();
+    CHECK(overview_screen_tile_marked(SLOT_MOTOR));
+
+    settings_set_text(SET_TEXT_PNODE_ADDR, NODE_ADDR);
+    ui_router_tick(0.016f);
+    ui_router_render(&cv, 0);
+    const int bound = sunk_pixels();
+    if (bound >= marked) {
+        T_FAIL("the bind left the MOTOR & ESC mark drawn: %d then %d",
+               marked, bound);
+    }
+
+    /* And back: the bind cleared, the mark again. */
+    settings_set_text(SET_TEXT_PNODE_ADDR, "");
+    ui_router_tick(0.016f);
+    ui_router_render(&cv, 0);
+    CHECK_EQ(sunk_pixels(), marked);
+}
+
 /* ---------------------------------------------------------------- demo mode */
 
 #define BUF_PX ((size_t)W * H)
@@ -691,6 +831,10 @@ int main(void)
     RUN(switching_the_mark_invalidates_the_cached_chrome);
     RUN(the_menu_marks_what_is_not_fitted);
     RUN(the_supply_word_outlives_a_start_of_the_screens);
+    RUN(the_power_node_as_pack_source_fits_motor_and_esc);
+    RUN(the_power_node_counts_only_on_and_bound_with_source_node);
+    RUN(the_wired_ina228_fits_motor_and_esc_as_before);
+    RUN(a_bind_kept_while_the_menu_is_up_takes_the_mark_off);
     RUN(demo_mode_is_off_by_default_and_the_mark_is_drawn);
     RUN(demo_mode_hides_the_mark_and_keeps_the_sim_chip);
     RUN(demo_mode_switched_back_off_draws_the_mark_on_the_next_frame);
