@@ -147,16 +147,24 @@ static const char *ver_or(const char *ver, const char *none)
 /**
  * @brief The running and the included version, and the warning when the
  *        included one is older.
- * @param st   the step
- * @param none the text for a version not known
+ * @param st       the step
+ * @param none     the text for a version not known
+ * @param included the image is in the panel's (the IOmcu's); else it is
+ *                 the release's file, fetched when the hold asks for it
  */
-static void versions(const upd_wiz_step_t *st, const char *none)
+static void versions(const upd_wiz_step_t *st, const char *none,
+                     bool included)
 {
     (void)snprintf(s_line, sizeof(s_line), TR(UPD_CU_RUNNING),
                    ver_or(st->ver, none));
     add(s_line, UI_TEXT, 8, true);
-    (void)snprintf(s_line, sizeof(s_line), TR(UPD_CU_CARRIED),
-                   ver_or(st->next, TR(UPD_C6_NONE)));
+    if (included) {
+        (void)snprintf(s_line, sizeof(s_line), TR(UPD_CU_CARRIED),
+                       ver_or(st->next, TR(UPD_C6_NONE)));
+    } else {
+        (void)snprintf(s_line, sizeof(s_line), TR(UPD_WIZ_FOR_PANEL),
+                       ver_or(st->next, TR(UPD_C6_NONE)));
+    }
     add(s_line, UI_TEXT, 0, true);
     if (st->older) {
         add(TR(CU_Q_OLDER), UI_WARN, 0, true);
@@ -223,7 +231,7 @@ static void panel_card(const upd_wiz_t *w)
 static void iomcu_card(const upd_wiz_t *w)
 {
     const upd_wiz_step_t *st = &w->step[UPD_WIZ_IOMCU];
-    versions(st, TR(UPD_CU_NOT_KNOWN));
+    versions(st, TR(UPD_CU_NOT_KNOWN), true);
     if (st->state == UPD_WIZ_WAITING) {
         add(TR(UPD_WIZ_WAIT_IOMCU), UI_WARN, 12, true);
     } else if (st->state != UPD_WIZ_OPEN && st->state != UPD_WIZ_FAILED) {
@@ -245,7 +253,11 @@ static void iomcu_card(const upd_wiz_t *w)
 static void c6_card(const upd_wiz_t *w)
 {
     const upd_wiz_step_t *st = &w->step[UPD_WIZ_C6];
-    versions(st, TR(UPD_C6_NOT_REPORTED));
+    versions(st, TR(UPD_C6_NOT_REPORTED), false);
+    const upd_c6_view_t *cv = upd_c6_view();
+    upd_fetch_line(&cv->fetch, s_line, sizeof(s_line));
+    add(s_line, cv->fetch.src == DEVIMG_SRC_CARD ? UI_WARN : UI_TEXT_DIM, 12,
+        true);
     add(TR(UPD_WIZ_DO_C6), UI_TEXT, 12, false);
     const char *why = upd_c6_reason(upd_c6_view());
     if (why != NULL) {
@@ -265,12 +277,18 @@ static void dev_card(const upd_wiz_t *w)
     const upd_dev_id_t id = (upd_dev_id_t)(i - (unsigned)UPD_WIZ_DIAL);
     const upd_dev_view_t *v = upd_dev_view(id);
     const bool dial = id == UPD_DEV_DIAL;
-    versions(st, TR(UPD_DEV_NOT_LINKED));
+    versions(st, TR(UPD_DEV_NOT_LINKED), false);
+    upd_fetch_line(&v->fetch, s_line, sizeof(s_line));
+    add(s_line, v->fetch.src == DEVIMG_SRC_CARD ? UI_WARN : UI_TEXT_DIM, 12,
+        true);
     if (st->state == UPD_WIZ_RUNNING) {
-        add(v->phase == DEVUPD_CONFIRM
-                ? (dial ? TR(UPD_WIZ_ASK_DIAL) : TR(UPD_WIZ_ASK_NODE))
-                : TR(DEV_WHY_UPDATING),
-            UI_TEXT, 12, true);
+        /* While the image is on its way, the control says what runs. */
+        if (v->fetch.run == UPD_FETCH_IDLE) {
+            add(v->phase == DEVUPD_CONFIRM
+                    ? (dial ? TR(UPD_WIZ_ASK_DIAL) : TR(UPD_WIZ_ASK_NODE))
+                    : TR(DEV_WHY_UPDATING),
+                UI_TEXT, 12, true);
+        }
     } else if (st->state == UPD_WIZ_WAITING) {
         add(dial ? TR(UPD_WIZ_WAIT_DIAL) : TR(UPD_WIZ_WAIT_NODE), UI_WARN,
             12, true);

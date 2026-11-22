@@ -678,8 +678,11 @@ figures are the node's, and `ina voltage` and `ina current` hold them
 A node takes a new application image over BLE from a central, through the
 update service of `protocols/bleota`
 ([README](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md)).
-The panel carries both roles' images, checks them at start and sends them
-from UPDATES' wireless devices' page: POWER NODE FIRMWARE and BALANCE NODE
+The panel image does not carry the nodes' images: a row's hold downloads
+its role's file of the release the panel runs, `rcbench-node-pwr-<version>.bin`
+or `rcbench-node-bal-<version>.bin`, or reads it from the SD card's
+`BENCH/UPDATES`, checks it ([Screens: Device images](Screens.md#device-images))
+and sends it from UPDATES' wireless devices' page: POWER NODE FIRMWARE and BALANCE NODE
 FIRMWARE ([Screens: The sensor nodes](Screens.md#the-sensor-nodes)). The
 row's 2s hold ends the node's own link (`pnode_ctl_hold()`,
 `bal_ctl_hold()`); that end and the link's return count as no loss, so the

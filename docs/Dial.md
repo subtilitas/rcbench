@@ -177,7 +177,11 @@ range that connects first, or that spoofs the bound address, is taken.
 
 ## Update over Bluetooth LE
 
-The panel carries the Dial's application image and sends it over BLE. The
+The panel sends the Dial's application image over BLE. The panel image
+does not carry it: the DIAL step's hold downloads `rcbench-dial-<version>.bin`
+of the release the panel runs, or reads it from the SD card's
+`BENCH/UPDATES`, and checks it first
+([Screens: Device images](Screens.md#device-images)). The
 protocol is `protocols/bleota`
 ([README](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md));
 the panel's side is the DIAL FIRMWARE row on the page that the WIRELESS

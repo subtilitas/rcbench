@@ -47,6 +47,8 @@ extern "C" {
 
 /** @brief The access point's channel, 2.4GHz band. */
 #define WIFI_ACCESS_AP_CHANNEL 6u
+/** @brief Bytes of a DEVICE job's file name, its terminator included. */
+#define WIFI_DEV_NAME_MAX 48u
 
 /** What the screen draws, as a copy. */
 typedef struct {
@@ -204,6 +206,34 @@ void wifi_access_release(void);
  */
 wa_got_t wifi_access_fetch_start(wa_job_t job, fw_version_t want,
                                  wa_channel_t ch, wa_why_t gate);
+
+/**
+ * @brief Start a DEVICE job (wa_run_device()): the file @p name of release
+ *        @p rel, at most @p cap bytes, unless @p gate says why not; as
+ *        wifi_access_fetch_start() otherwise.  The job's wa_fetch_t.asset
+ *        is @p asset.  A file fetched waits for wifi_access_dev_take(); the
+ *        next DEVICE job's file replaces one not taken.
+ * @param asset the caller's number of the file
+ * @param rel   the release
+ * @param name  the file's name in the release, under WIFI_DEV_NAME_MAX
+ *              bytes
+ * @param cap   its most bytes: the device's slot
+ * @param gate  the gate's answer
+ * @return WA_GOT_NONE when the job runs; otherwise how it ended at once
+ */
+wa_got_t wifi_access_fetch_dev(uint8_t asset, fw_version_t rel,
+                               const char *name, uint32_t cap, wa_why_t gate);
+
+/**
+ * @brief Take the file the DEVICE job @p gen fetched: the caller owns the
+ *        PSRAM (pseudo-static random-access memory) buffer from then on and
+ *        frees it with heap_caps_free().
+ * @param gen   the job, wa_fetch_t.gen
+ * @param buf   takes the buffer
+ * @param bytes takes the file's length
+ * @return true when the job's file was there
+ */
+bool wifi_access_dev_take(uint32_t gen, uint8_t **buf, uint32_t *bytes);
 
 /**
  * @brief Once a frame, after wifi_access_tick(): @p abort as wa_fetch_tick()

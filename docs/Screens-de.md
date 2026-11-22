@@ -7387,8 +7387,11 @@ dem ESP32-P4-Panel wird jedes neuere Release angeboten
 ![UPDATES: die letzte Karte](img/de/updates.png)
 
 UPDATES führt durch sechs Schritte in fester Reihe: PANEL, IOMCU, C6-FUNK,
-DIAL, LEISTUNGSKNOTEN und AUSWUCHTKNOTEN. Das Panel-Image bringt jedes
-andere Image mit, darum kommt PANEL zuerst. Der C6-Funk kommt vor den
+DIAL, LEISTUNGSKNOTEN und AUSWUCHTKNOTEN. Das Panel-Image bringt die
+IOmcu-Images mit; die Images des C6-Funks und der Funkgeräte sind Dateien
+des Release, das das Panel ausführt, und das Halten ihres Schritts holt
+sie ([Geräte-Images](#geräte-images)). Ein neueres Panel-Release bringt
+neuere Images für jeden späteren Schritt, darum kommt PANEL zuerst. Der C6-Funk kommt vor den
 Funkgeräten: Ihre Übertragung läuft über seinen Bluetooth-LE-Controller
 (Low Energy), und sein Update startet das Panel neu. Nur der aktuelle
 Schritt hat ein Bedienelement ([Die Schritte](#die-schritte)).
@@ -7488,7 +7491,7 @@ die die späteren Schritte senden.
 | --- | --- | --- |
 | 1 PANEL | eine Suche ein neueres Release fand | `2s HALTEN: LADEN & INSTALLIEREN` ([Der Download](#der-download)); die Karte nennt das Release und sagt, dass das Panel damit neu startet |
 | 2 IOMCU | der IOmcu einen anderen Build als den mitgebrachten ausführt | `2s HALTEN ZUM IOMCU-UPDATE` ([Der IOmcu](#der-iomcu)); `Die Firmware auf diesem Panel ist älter.` in der Warnfarbe für ein älteres Image |
-| 3 C6-FUNK | der C6 eine andere Version als die des mitgebrachten Images meldet | `2s HALTEN ZUM C6-FUNK-UPDATE` ([Der C6-Funk](#der-c6-funk)); die Karte sagt `Nach diesem Schritt startet das Panel neu.` |
+| 3 C6-FUNK | der C6 eine andere Version als die des C6-Images des Release meldet | `2s HALTEN ZUM C6-FUNK-UPDATE` ([Der C6-Funk](#der-c6-funk)); die Karte sagt `Nach diesem Schritt startet das Panel neu.` |
 | 4 DIAL | das verbundene Dial eine andere Version ausführt | `2s HALTEN ZUM DIAL-UPDATE` ([Das Dial](#das-dial)) |
 | 5 LEISTUNGSKNOTEN | der verbundene Leistungsknoten eine andere Version ausführt | `2s HALTEN ZUM LEISTUNGSKNOTEN-UPDATE` ([Die Sensorknoten](#die-sensorknoten)) |
 | 6 AUSWUCHTKNOTEN | der verbundene Auswuchtknoten eine andere Version ausführt | `2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE` |
@@ -7511,9 +7514,9 @@ Warnfarbe, und das Halten ist der neue Versuch.
 | Etikett | Bedeutung |
 | --- | --- |
 | `ALS NÄCHSTES` | der aktuelle Schritt: sein Bedienelement ist aktiv, oder grau mit dem Grund auf der Karte |
-| `AKTUELL` | führt die mitgebrachte oder neueste Version aus; sein Nummernfeld ist in der OK-Farbe gefüllt |
+| `AKTUELL` | führt die mitgebrachte, die des Release oder die neueste Version aus; sein Nummernfeld ist in der OK-Farbe gefüllt |
 | `SPÄTER` | ein Schritt nach dem aktuellen mit einer anderen Version; ist PANEL mit einem neueren Release aktuell, auch IOMCU und jedes verbundene Gerät: Das Release bringt neuere Images für sie mit |
-| `UPDATE LÄUFT`, `WIRD GEPRÜFT` | sein Update läuft; oder eine kurze Wartezeit: die Build-Prüfung des IOmcu, die Prüfung des mitgebrachten Images, der Start von Bluetooth LE, das Ende eines anderen Updates. Die Karte sagt welche; kein Bedienelement |
+| `UPDATE LÄUFT`, `WIRD GEPRÜFT` | sein Update läuft, oder sein Image wird geladen, von der SD-Karte gelesen oder geprüft ([Geräte-Images](#geräte-images)); oder eine kurze Wartezeit: die Build-Prüfung des IOmcu, der Start von Bluetooth LE, das Ende eines anderen Updates. Die Karte sagt welche; kein Bedienelement |
 | `FEHLGESCHLAGEN` | sein letzter Versuch seit dem Start des Panels endete ohne Installation |
 | `ÜBERSPRUNGEN` | SCHRITT ÜBERSPRINGEN wurde seit dem Start des Panels getippt |
 | `NICHT GESUCHT` | PANEL: kein Suchergebnis seit diesem Start |
@@ -7521,7 +7524,7 @@ Warnfarbe, und das Halten ist der neue Versuch.
 | `NICHT GEBUNDEN` | kein Gerät der Art ist auf WIRELESS gebunden |
 | `AUS` | ein Gerät ist gebunden, und sein Schalter auf WIRELESS steht auf AUS: Das Panel hält keine Verbindung zu ihm |
 | `KEIN BLUETOOTH` | ein Gerät ist gebunden und EIN, und Bluetooth LE kann es nicht verbinden: Die Verbindung zum C6 schlug fehl, oder der Host hat keinen Sync mit dem C6 |
-| `KEINE FIRMWARE`, `FIRMWARE DEFEKT`, `PRÜFFEHLER`, `NUR USB`, `KEINE ANTWORT`, `NICHT GEMELDET` | nichts zu tun: Das Panel bringt kein Image mit, das mitgebrachte Image besteht seine Prüfung nicht, die Build-Prüfung des IOmcu gab keine Antwort, der IOmcu nimmt kein Update über CAN an, die Verbindung zum C6 schlug fehl, der C6 nannte keine Version |
+| `KEINE FIRMWARE`, `FIRMWARE DEFEKT`, `PRÜFFEHLER`, `NUR USB`, `KEINE ANTWORT`, `NICHT GEMELDET` | nichts zu tun: Das Panel bringt kein IOmcu-Image mit, das mitgebrachte IOmcu-Image besteht seine Prüfung nicht, die Build-Prüfung des IOmcu gab keine Antwort, der IOmcu nimmt kein Update über CAN an, die Verbindung zum C6 schlug fehl, der C6 nannte keine Version |
 
 Ein Schritt, bei dem nichts zu tun ist, wird übergangen. Steht nach einem
 Neustart ein Update-Lauf, warten stattdessen der IOmcu ohne Verbindung und
@@ -7852,8 +7855,8 @@ Die Fußleiste lautet `[UPDATES] [ ] [ZURÜCK]`.
 | Bedienelement | Wirkung |
 | --- | --- |
 | `2s HALTEN ZUM IOMCU-UPDATE` | Startet das Update des IOmcu aus dem Image, das dieses Panel mitbringt ([Der IOmcu](#der-iomcu)). |
-| `2s HALTEN ZUM C6-FUNK-UPDATE` | Sendet das Image des C6-Funks, das dieses Panel mitbringt, an den ESP32-C6 des Boards ([Der C6-Funk](#der-c6-funk)). |
-| `2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN` | Dasselbe, solange der C6 die mitgebrachte Version meldet ([Der C6-Funk](#der-c6-funk)). |
+| `2s HALTEN ZUM C6-FUNK-UPDATE` | Holt das Image des C6-Funks aus dem Release, das das Panel ausführt, und sendet es an den ESP32-C6 des Boards ([Der C6-Funk](#der-c6-funk), [Geräte-Images](#geräte-images)). |
+| `2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN` | Dasselbe, solange der C6 die Version des Release meldet ([Der C6-Funk](#der-c6-funk)). |
 | `FIRMWARE DER FUNKGERÄTE` | Öffnet über dieser Seite die Seite mit den Firmware-Zeilen des Dial und der Sensorknoten ([Die Funkgeräte](#die-funkgeräte)). Während ein Update läuft, zeigt die Taste die Beschriftung dieser Zeile. |
 | `ZURÜCK` | Schließt die Seite: UPDATES erscheint wieder. |
 
@@ -7909,15 +7912,105 @@ enthaltenen Build, bleibt die Taste zum Halten inaktiv, und kein Angebot
 VERBINDUNG im Band und nimmt das Update trotzdem; sein Angebot öffnet
 UPDATES wie jedes andere.
 
+### Geräte-Images
+
+Das Panel-Image bringt nur die IOmcu-Images mit. Die Anwendungs-Images des
+C6-Funks, des Dial, des Leistungsknotens und des Auswuchtknotens sind
+Dateien des Release, das das Panel ausführt, Tag `vMAJOR.MINOR.PATCH` der
+eigenen Version des Panels, die auch der Web-Flasher und die Release-Seite
+anbieten:
+
+| Schritt | Datei | Höchstens Bytes |
+| --- | --- | ---: |
+| C6-FUNK | `rcbench-c6-<esp_hosted-Version>.bin`, `rcbench-c6-2.13.0.bin` | 1.966.080 |
+| DIAL | `rcbench-dial-<Version>.bin` | 3.145.728 |
+| LEISTUNGSKNOTEN | `rcbench-node-pwr-<Version>.bin` | 1.572.864 |
+| AUSWUCHTKNOTEN | `rcbench-node-bal-<Version>.bin` | 1.572.864 |
+
+Das Halten eines Schritts nimmt das Image von einer von drei Stellen, und
+die Karte nennt die Datei und die Stelle:
+
+| Zeile der Karte | Woher das Halten es nimmt |
+| --- | --- |
+| `Das Halten lädt zuerst rcbench-dial-0.23.16.bin von GitHub.` | GitHub: der Normalfall mit gespeichertem Heimnetz. |
+| `Das Halten liest BENCH/UPDATES/rcbench-dial-0.23.16.bin von der SD-Karte.` | Die SD-Karte, Ordner `BENCH/UPDATES`: nach einem fehlgeschlagenen Download, und immer ohne Heimnetz. Das Bedienelement zeigt `2s HALTEN: UPDATE VON DER SD-KARTE`. Ein fehlgeschlagenes Lesen der Karte schickt das nächste Halten wieder zu GitHub. |
+| `rcbench-dial-0.23.16.bin ist geladen und geprüft.` | Der Speicher: Ein früheres Halten hat es geholt. Es bleibt im PSRAM (pseudo-statischer Arbeitsspeicher), bis das Panel neu startet. |
+
+Der Download nimmt den eigenen Download-Weg des Panels ([Der Download](#der-download)):
+das Heimnetz, `SHA256SUMS` des Release, dann die Datei, jede über höchstens
+3 Weiterleitungen zu den Hosts von GitHub über HTTPS, höchstens 180s ab dem
+Start. Der `Content-Length` der Datei ist größer als 0 und höchstens die
+Bytes des Schritts; die Datei kommt in einen PSRAM-Puffer dieser Länge, und
+ihr SHA-256 muss der sein, den `SHA256SUMS` für sie nennt. Danach geht der
+Funk aus, wie nach einer Suche. Das Lesen der Karte nimmt die Datei
+gleichen Namens aus `BENCH/UPDATES`; liegt in diesem Ordner auch eine
+`SHA256SUMS`, die die Datei nennt, muss der SHA-256 der Datei der dieser
+Zeile sein. In beiden Fällen besteht das Image danach die Prüfungen der
+Sender: eine ESP-IDF-Anwendung für Chip und Projekt des Geräts, ihr eigener
+angehängter SHA-256, für Dial und Knoten die Rolle in ihrem Kopf, und die
+Version des Release. Die Prüfungen und das Lesen der Karte laufen auf der
+Task `devimg` ([Performance: Stacks](Performance-de.md#stacks)).
+
+Das Bedienelement zeigt, was läuft: `DOWNLOAD 43%`, `DATEI WIRD GEPRÜFT`,
+`SD-KARTE WIRD GELESEN`. UPDATE ABBRECHEN beendet den Download eines
+Funkgeräts. Hat das Image bestanden, startet das Update, das das Halten
+angefordert hat, von selbst, wenn sein Gate offen ist; es wartet bis zu
+20.000ms, bis der Funk nach dem Download aus ist, und das Panel beendet
+dafür die Zeitabfrage des Funks. Jedes andere geschlossene Gate verwirft
+den Start: Das Band nennt den Grund, und das nächste Halten startet das
+Update aus dem Image im Speicher.
+
+Ein Download braucht, was eine Suche braucht: ein Heimnetz, den Prüfstand
+in SAFE ohne wartendes ARM, den Netzteilausgang aus, keinen Log-Lauf, kein
+anderes Update und keine Panel-Installation. Solange ARMED gilt, startet
+kein Download: Das Halten des Schritts ist grau, und ein Druck nennt den
+Grund im Band. ARMED, das Netzteil, ein Log-Lauf, STOP oder das Öffnen von
+WI-FI beenden einen laufenden Download. Kein Ausgang ändert seinen Zustand
+wegen eines Downloads, eines Lesens der Karte oder einer Prüfung. Es ist
+immer nur ein Image unterwegs.
+
+![Der Schritt des Dial nach einem fehlgeschlagenen Download: Das Halten liest die SD-Karte](img/de/updates-step-dial-card.png)
+
+Ein fehlgeschlagener Versuch steht in der Warnfarbe auf der Karte des
+Schritts, mit einem Code aus einem Buchstaben und zwei Ziffern; der Schritt
+zeigt `FEHLGESCHLAGEN`, und sein Halten ist der neue Versuch von der
+nächsten Stelle:
+
+| Zeile | Codes |
+| --- | --- |
+| `Download fehlgeschlagen (D10): Keine Verbindung zu GitHub.` | `D` und das Ergebnis des Downloads, in den Worten des eigenen Downloads des Panels ([Der Download](#der-download)): `D04` kein Heimnetz gespeichert, `D05` das Gate, `D06` von außen beendet (ARMED, Netzteil, Log-Lauf, STOP, WI-FI, UPDATE ABBRECHEN), `D07` das Verbinden schlug fehl, `D08` der Funk kam nicht hoch, `D09` die 180s sind abgelaufen, `D10` keine Verbindung, `D11` ein HTTP-Status abgelehnt, `D12` eine Antwort außer Form, `D13` `SHA256SUMS` fehlt oder ohne Zeile der Datei, `D14` der SHA-256 weicht von `SHA256SUMS` ab, `D16` kein Speicher |
+| `SD-Karte fehlgeschlagen (S02): BENCH/UPDATES/rcbench-dial-0.23.16.bin fehlt auf der SD-Karte.` | `S01` keine Karte, `S02` keine solche Datei, `S03` das Lesen schlug fehl, `S04` leer oder größer als die Bytes des Schritts, `S05` kein Speicher, `S06` die `SHA256SUMS` der Karte ist außer Form oder nennt die Datei zweimal |
+| `Prüfung fehlgeschlagen (V05): Die Datei hat Version 0.23.15, dieses Release 0.23.16.` | `V01` leer oder größer als die Bytes, `V02` der SHA-256 weicht von der `SHA256SUMS` der Karte ab, `V03` keine Anwendung für Chip und Projekt des Geräts, oder ihr eigener SHA-256 weicht ab, `V04` die Rolle eines anderen Geräts, `V05` eine andere Version |
+
+Die Konsole nennt jeden Schritt:
+
+    I (…) devimg: rcbench-dial-0.23.16.bin: download of v0.23.16's file, job 3
+    I (…) devimg: rcbench-dial-0.23.16.bin: 850816 bytes, SHA-256 as SHA256SUMS; checking
+    I (…) devimg: rcbench-dial-0.23.16.bin: 0.23.16 850816 bytes, SHA-256 1a2b3c4d, from GitHub
+    W (…) devimg: image 1: Download failed (D10): No connection to GitHub.
+
+Aktuelle Einschränkungen:
+
+- Die Dauer eines Downloads in einem echten Netz ist nicht gemessen.
+- Ein Panel mit einem Build, zu dem es kein Release gibt (eine Version ohne
+  ihr Tag), findet auf GitHub keine Datei: `D13`, weil GitHub für die
+  `SHA256SUMS` des Release 404 antwortet. Seine Images kommen von der
+  SD-Karte.
+- Ein Image bleibt bis zum Neustart des Panels im PSRAM, höchstens die
+  vier Byte-Grenzen oben zusammen, 8.257.536 Bytes.
+
 ### Der C6-Funk
 
 Unter der Überschrift zeigt EINZELNE UPDATES den ESP32-C6 des Boards, der Wi-Fi und
-Bluetooth trägt: `C6-Funk: 2.13.0. Auf diesem Panel: 2.13.0.`, die Version,
+Bluetooth trägt: `C6-Funk: 2.13.0. Release: 2.13.0.`, die Version,
 die der C6 beim ersten Wi-Fi-Start seit dem Panel-Start gemeldet hat, oder
-`nicht gemeldet`, und die Version des Images, das dieses Panel mitbringt,
-oder `keine`. Darunter `2s HALTEN ZUM C6-FUNK-UPDATE`, oder `2s HALTEN:
-C6-FIRMWARE DES PANELS NEU INSTALLIEREN`, solange der C6 die mitgebrachte
-Version meldet. Während das Update
+`nicht gemeldet`, und die esp_hosted-Version des C6-Images des Release.
+Darunter `2s HALTEN ZUM C6-FUNK-UPDATE`, oder `2s HALTEN:
+C6-FIRMWARE DES PANELS NEU INSTALLIEREN`, solange der C6 diese
+Version meldet. Das Halten holt zuerst das Image, solange es nicht im
+Speicher ist ([Geräte-Images](#geräte-images)); die Taste zeigt dann
+`DOWNLOAD 43%`, `DATEI WIRD GEPRÜFT` oder `SD-KARTE WIRD GELESEN`, und das
+Update startet, sobald das Image seine Prüfungen bestanden hat. Während das Update
 läuft, zeigt die Taste `C6-UPDATE 37%`, den Anteil des Images, den der C6
 angenommen hat. Die Schritte, ihre Grenzen und wie jeder endet, stehen in
 [Der Funk über den ESP32-C6: Die Firmware des C6](C6-de.md#die-firmware-des-c6).
@@ -7929,9 +8022,7 @@ es grau, und ein Tippen darauf zeigt den ersten Grund im Alarmband:
 
 | Band | Bedingung |
 | --- | --- |
-| `Dieses Panel enthält keine C6-Funk-Firmware.` | Das Panel wurde ohne das Image des C6 gebaut. |
-| `Die enthaltene C6-Funk-Firmware hat die Prüfung nicht bestanden.` | Das mitgebrachte Image ist kein ESP32-C6-Build von esp_hosted, oder sein SHA-256 weicht ab. |
-| `Das C6-Funk-Update läuft.` | Ein Update läuft. |
+| `Das C6-Funk-Update läuft.` | Ein Update läuft, oder sein Image ist unterwegs. |
 | `Der C6-Funk hat nicht geantwortet. Starte das Panel neu.` | Die Verbindung zum C6 ist seit dem Panel-Start ausgefallen; der C6 wird im Reset gehalten. |
 | `Das C6-Update erfordert SAFE.` | ARMED, oder ein ARM wartet. |
 | `Das C6-Update erfordert einen ausgeschalteten Netzteilausgang.` | Der Netzteilausgang ist an oder schaltet ein. |
@@ -7947,11 +8038,11 @@ es grau, und ein Tippen darauf zeigt den ersten Grund im Alarmband:
 | `C6-Funk aktualisiert. Neustart, sobald SAFE und alle Ausgänge aus sind.` | Das Update endete erfolgreich, und der Neustart des Panels steht an: frühestens 3s nach dem Ende, und nur bei einem Prüfstand in SAFE mit allen Ausgängen aus. |
 
 Ein C6, der keine Version meldet, wie der ausgelieferte, bekommt das Update
-angeboten. Ein C6, der die mitgebrachte Version meldet, bekommt die
+angeboten. Ein C6, der die Version des Release meldet, bekommt die
 Neuinstallation angeboten: Images einer esp_hosted-Version mit anderen
 Einstellungen melden dieselbe Version, etwa eines mit 3
-Bluetooth-LE-Verbindungen und eines mit 5 ([Der Funk über den ESP32-C6: Das Image, das das Panel
-mitbringt](C6-de.md#das-image-das-das-panel-mitbringt)). Das
+Bluetooth-LE-Verbindungen und eines mit 5 ([Der Funk über den ESP32-C6: Das
+C6-Image](C6-de.md#das-c6-image)). Das
 Alarmband sagt, wie ein Update endete:
 
 | Alarm | Bedeutung |
@@ -7975,7 +8066,7 @@ und IOmcu-Update warten.
 Der Eintrag FUNKGERÄTE auf EINZELNE UPDATES zählt die Geräte:
 `Verbunden: 1 von 3. Andere Version: 0.` nennt die Geräte, die eine
 Version gemeldet haben, und die, deren Zeile eine andere als die
-mitgebrachte Version anbietet. Ein Tippen auf `FIRMWARE DER FUNKGERÄTE`
+Version des Release anbietet. Ein Tippen auf `FIRMWARE DER FUNKGERÄTE`
 öffnet die Seite; während ein Update läuft, zeigt die Taste die
 Beschriftung dieser Zeile.
 
@@ -7994,23 +8085,24 @@ Halten der anderen Zeilen grau.
 
 | Bedienelement | Wirkung |
 | --- | --- |
-| `2s HALTEN ZUM DIAL-UPDATE` | Sendet das Image des M5Stack Dial, das dieses Panel mitbringt, über Bluetooth LE an das verbundene Dial ([Das Dial](#das-dial)). |
-| `2s HALTEN: DIAL-FIRMWARE NEU INSTALLIEREN` | Dasselbe, solange das Dial die mitgebrachte Version meldet. |
-| `2s HALTEN ZUM LEISTUNGSKNOTEN-UPDATE` | Sendet das Image des Leistungsknotens, das dieses Panel mitbringt, an den gebundenen Leistungsknoten ([Die Sensorknoten](#die-sensorknoten)). |
-| `2s HALTEN: LEISTUNGSKNOTEN NEU INSTALLIEREN` | Dasselbe, solange der Knoten die mitgebrachte Version meldet. |
-| `2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE` | Sendet das Image des Auswuchtknotens, das dieses Panel mitbringt, an den gebundenen Auswuchtknoten. |
-| `2s HALTEN: AUSWUCHTKNOTEN NEU INSTALLIEREN` | Dasselbe, solange der Knoten die mitgebrachte Version meldet. |
+| `2s HALTEN ZUM DIAL-UPDATE` | Holt das Image des M5Stack Dial aus dem Release, das das Panel ausführt, und sendet es über Bluetooth LE an das verbundene Dial ([Das Dial](#das-dial), [Geräte-Images](#geräte-images)). |
+| `2s HALTEN: DIAL-FIRMWARE NEU INSTALLIEREN` | Dasselbe, solange das Dial die Version des Release meldet. |
+| `2s HALTEN ZUM LEISTUNGSKNOTEN-UPDATE` | Holt das Image des Leistungsknotens aus dem Release und sendet es an den gebundenen Leistungsknoten ([Die Sensorknoten](#die-sensorknoten)). |
+| `2s HALTEN: LEISTUNGSKNOTEN NEU INSTALLIEREN` | Dasselbe, solange der Knoten die Version des Release meldet. |
+| `2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE` | Holt das Image des Auswuchtknotens aus dem Release und sendet es an den gebundenen Auswuchtknoten. |
+| `2s HALTEN: AUSWUCHTKNOTEN NEU INSTALLIEREN` | Dasselbe, solange der Knoten die Version des Release meldet. |
+| `2s HALTEN: UPDATE VON DER SD-KARTE` | Auf jeder der Zeilen oben, nach einem fehlgeschlagenen Download oder ohne Heimnetz: liest das Image von der SD-Karte ([Geräte-Images](#geräte-images)). |
 | `UPDATE ABBRECHEN` | Im mittleren Platz der Fußleiste, solange ein Update läuft; ein einfaches Tippen. Vor END beendet es das Update: Das Gerät verwirft, was es angenommen hat, und behält seine Firmware, und das Band zeigt `<Gerät>-Update abgebrochen: auf UPDATES abgebrochen. Vorherige Firmware läuft.` Ab END installiert das Gerät, was kommt: Die Taste ist grau, ein Tippen zeigt `Das Gerät installiert das Update und hält jetzt nicht an. Das Ergebnis folgt.` im Band, und das Ergebnis folgt wie ohne das Tippen. |
 | `ZURÜCK` | Schließt die Seite: EINZELNE UPDATES erscheint wieder. |
 
 ### Das Dial
 
 Die Zeile DIAL-FIRMWARE zeigt die Firmware des M5Stack Dial:
-`Dial: 0.21.0. Im Panel: 0.22.0.`, die Version, die INFO des verbundenen
-Dial genannt hat, oder `nicht verbunden`, und die Version des Dial-Images,
-das dieses Panel mitbringt, oder `keine`. Daneben `2s HALTEN ZUM
+`Dial: 0.21.0. Release: 0.22.0.`, die Version, die INFO des verbundenen
+Dial genannt hat, oder `nicht verbunden`, und die Version des Release, das
+das Panel ausführt. Daneben `2s HALTEN ZUM
 DIAL-UPDATE`, oder `2s HALTEN: DIAL-FIRMWARE NEU INSTALLIEREN`, solange
-das Dial die mitgebrachte Version meldet. Das Dial und sein Update stehen
+das Dial diese Version meldet. Das Dial und sein Update stehen
 in [Das M5Stack Dial: Update über Bluetooth
 LE](Dial-de.md#update-über-bluetooth-le).
 
@@ -8018,6 +8110,7 @@ Während das Update läuft, zeigt die Taste nacheinander:
 
 | Taste | Schritt |
 | --- | --- |
+| `DOWNLOAD 43%`, `DATEI WIRD GEPRÜFT`, `SD-KARTE WIRD GELESEN` | das Image des Dial ist unterwegs ([Geräte-Images](#geräte-images)) |
 | `DIAL-UPDATE: VERBINDET` | Der Knopf-Link des Dial endet, und das Update verbindet sich mit dem gebundenen Dial |
 | `AM DIAL DRÜCKEN ZUM ANNEHMEN: 27s` | Das Dial hat BEGIN angenommen und fragt nach einem Druck seiner Bildschirmtaste; die Sekunden sind die des Dial |
 | `DIAL-UPDATE 37%` | der Anteil des Images, den das Dial angenommen hat |
@@ -8030,9 +8123,6 @@ den ersten Grund im Alarmband:
 | Band | Bedingung |
 | --- | --- |
 | `Das Geräte-Update läuft.` | Ein Update läuft oder wurde angefordert. |
-| `Dieses Panel enthält keine Firmware für dieses Gerät.` | Das Panel wurde ohne das Image des Dial gebaut. |
-| `Die enthaltene Firmware für dieses Gerät wird geprüft.` | Die Prüfung des mitgebrachten Images ist seit dem Start noch nicht gelaufen. |
-| `Die enthaltene Firmware für dieses Gerät hat die Prüfung nicht bestanden.` | Das mitgebrachte Image ist keine ESP32-S3-Anwendung des Projekts `rcbench-dial` mit der Rolle des Dial, ist größer als der Slot des Dial von 3.145.728 Bytes, oder sein angehängter SHA-256 weicht ab. |
 | `Das Geräte-Update erfordert SAFE.` | ARMED, oder ein ARM wartet. |
 | `Das Geräte-Update wartet auf das Ende des anderen Updates.` | Das Update des C6 oder des IOmcu, oder Download oder Installation des Panels laufen. |
 | `Verbinde das Gerät zuerst auf WIRELESS.` | Kein Dial ist verbunden, oder seine INFO ist noch nicht gekommen. |
@@ -8088,10 +8178,10 @@ gemessen.
 ### Die Sensorknoten
 
 Die Zeilen LEISTUNGSKNOTEN-FIRMWARE und AUSWUCHTKNOTEN-FIRMWARE zeigen die
-Firmware eines Knotens: `Knoten: 0.23.15. Im Panel: 0.23.16.`, die
+Firmware eines Knotens: `Knoten: 0.23.15. Release: 0.23.16.`, die
 Version, die das STATUS-Paket des Knotens auf der laufenden Verbindung
-genannt hat, oder `nicht verbunden`, und die Version des Knoten-Images,
-das dieses Panel mitbringt, oder `keine`. Die Images der beiden Rollen
+genannt hat, oder `nicht verbunden`, und die Version des Release, das
+das Panel ausführt. Die Images der beiden Rollen
 unterscheiden sich: Die Zeile des Leistungsknotens sendet das
 Leistungs-Image, die des Auswuchtknotens das Auswucht-Image, und ein
 Knoten lehnt das Image der anderen Rolle ab. Die Knoten und ihr Update

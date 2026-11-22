@@ -68,6 +68,7 @@ extern "C" {
 typedef enum {
     UPD_JOB_CHECK = 0,
     UPD_JOB_DOWNLOAD,
+    UPD_JOB_DEVICE,   /**< a device's image (upd_fetch.h); never PANEL's */
 } upd_job_t;
 
 /** wa_phase_t */

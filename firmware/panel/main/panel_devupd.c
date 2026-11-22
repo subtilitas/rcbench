@@ -1,8 +1,9 @@
 /**
  * @file panel_devupd.c
  * @brief The wireless devices' update on the panel (panel_devupd.h): the
- *        carried images, the `blec` task's update client, and the frame's
- *        rows of UPDATES' devices' page.
+ *        images of the release the panel runs, fetched by a row's hold
+ *        (panel_devimg.h), the `blec` task's update client, and the
+ *        frame's rows of UPDATES' devices' page.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -24,6 +25,7 @@
 #include "panel_ble.h"
 #include "panel_blec.h"
 #include "panel_bal.h"
+#include "panel_devimg.h"
 #include "panel_dial.h"
 #include "panel_pnode.h"
 #include "ui_screen.h"
@@ -31,6 +33,7 @@
 #include "upd_dev.h"
 #include "upd_screen.h"
 #include "upd_wizard.h"
+#include "wifi_access.h"
 
 /** @brief The console lines' tag. */
 static const char *TAG = "devupd";
@@ -45,7 +48,7 @@ _Static_assert(PANEL_BLEC_UPD < BLEU_OWNER_MAX,
                "the update client's owner fits a token");
 /** @brief The devices the panel carries an image for, BLEOTA_KIND_DIAL to
  *         BLEOTA_KIND_NODE_BAL.  BLEOTA_KIND_NODE_POWER_S3, the display
- *         node, is flashed over USB: its image is not carried. */
+ *         node, is flashed over USB: its image is not sent. */
 #define DEV_N BLEOTA_KIND_NODE_BAL
 
 _Static_assert(UPD_DEV_COUNT == BLEOTA_KIND_NODE_BAL
@@ -54,58 +57,31 @@ _Static_assert(UPD_DEV_COUNT == BLEOTA_KIND_NODE_BAL
                    && UPD_DEV_BAL == BLEOTA_KIND_NODE_BAL - 1,
                "a row, its image and its device share one index");
 
-#ifdef RCBENCH_DIAL_IMAGE
-/** @brief The carried Dial image (main/CMakeLists.txt). @{ */
-extern const uint8_t _binary_rcbench_dial_bin_start[];
-extern const uint8_t _binary_rcbench_dial_bin_end[];
-/** @} */
-#endif
-#ifdef RCBENCH_NODE_PWR_IMAGE
-/** @brief The carried power node image. @{ */
-extern const uint8_t _binary_rcbench_node_pwr_bin_start[];
-extern const uint8_t _binary_rcbench_node_pwr_bin_end[];
-/** @} */
-#endif
-#ifdef RCBENCH_NODE_BAL_IMAGE
-/** @brief The carried balance node image. @{ */
-extern const uint8_t _binary_rcbench_node_bal_bin_start[];
-extern const uint8_t _binary_rcbench_node_bal_bin_end[];
-/** @} */
-#endif
-
-/** @brief A carried image's check. */
-typedef enum {
-    IMG_NONE = 0, /**< not carried */
-    IMG_DUE,      /**< carried, not checked yet */
-    IMG_READY,    /**< checked: version and SHA-256 known */
-    IMG_BAD,      /**< failed its check */
-} img_state_t;
-
-/** @brief One carried image. */
+/** @brief One device's image, as `blec` sends it: taken from
+ *         panel_devimg.c once it arrived and passed its checks there. */
 typedef struct {
     const char     *word;    /**< its name on the console */
+    devimg_id_t     id;      /**< its image (panel_devimg.h) */
+    uint8_t         kind;    /**< BLEOTA_KIND_* */
+    bool            ready;   /**< taken: the fields below are set */
     const uint8_t  *p;       /**< its first byte */
     uint32_t        n;       /**< its length */
-    uint8_t         kind;    /**< BLEOTA_KIND_* */
-    uint16_t        chip;    /**< FW_CHIP_* it must name */
-    const char     *project; /**< the project it must name */
-    uint32_t        slot;    /**< the device's slot */
-    uint8_t         st;      /**< img_state_t, written by `blec` */
-    fw_err_t        err;     /**< IMG_BAD: why */
-    fw_image_info_t info;    /**< IMG_READY: what it says */
-    uint8_t         sha[32]; /**< IMG_READY: the SHA-256 of every byte */
+    fw_image_info_t info;    /**< what it says */
+    uint8_t         sha[32]; /**< the SHA-256 of every byte */
 } carried_t;
 
-/** @brief The images, by BLEOTA_KIND_* - 1. */
+/** @brief The images, by BLEOTA_KIND_* - 1; `blec`'s own. */
 static carried_t s_img[DEV_N] = {
-    { .word = "Dial", .kind = BLEOTA_KIND_DIAL, .chip = DEVUPD_CHIP_ESP32S3,
-      .project = DEVUPD_PROJECT_DIAL, .slot = DEVUPD_SLOT_DIAL },
-    { .word = "power node", .kind = BLEOTA_KIND_NODE_POWER,
-      .chip = FW_CHIP_ESP32C6, .project = DEVUPD_PROJECT_NODE,
-      .slot = DEVUPD_SLOT_NODE },
-    { .word = "balance node", .kind = BLEOTA_KIND_NODE_BAL,
-      .chip = FW_CHIP_ESP32C6, .project = DEVUPD_PROJECT_NODE,
-      .slot = DEVUPD_SLOT_NODE },
+    { .word = "Dial", .id = DEVIMG_DIAL, .kind = BLEOTA_KIND_DIAL },
+    { .word = "power node", .id = DEVIMG_PNODE,
+      .kind = BLEOTA_KIND_NODE_POWER },
+    { .word = "balance node", .id = DEVIMG_BAL,
+      .kind = BLEOTA_KIND_NODE_BAL },
+};
+
+/** @brief The image of each device by s_img's index, for the frame. */
+static const devimg_id_t k_img_id[DEV_N] = {
+    DEVIMG_DIAL, DEVIMG_PNODE, DEVIMG_BAL,
 };
 
 /** @brief A device's own client, as the update uses it. */
@@ -143,13 +119,10 @@ typedef enum {
     STAGE_RUN,      /**< the client runs the transfer */
 } stage_t;
 
-/** @brief What a device's link and image say, for its row. */
+/** @brief What a device's link says, for its row. */
 typedef struct {
-    bool         img_due;   /**< its image is not checked yet */
-    bool         have_img;  /**< it is carried, and for the board the device
-                                 runs */
-    bool         img_ok;    /**< it passed */
-    fw_version_t carried;   /**< its version */
+    bool         other;     /**< it runs a board the release has no image
+                                 for to send over Bluetooth LE */
     bool         bound;     /**< a device of the kind is bound */
     bool         off;       /**< bound, its switch on WIRELESS OFF */
     bool         linked;    /**< the device is connected, its version read */
@@ -249,27 +222,6 @@ bool panel_devupd_known(void)
 
 void panel_devupd_start(void)
 {
-#ifdef RCBENCH_DIAL_IMAGE
-    s_img[0].p = _binary_rcbench_dial_bin_start;
-    /* cppcheck takes the two linker symbols for two arrays. */
-    // cppcheck-suppress subtractPointers
-    s_img[0].n = (uint32_t)(_binary_rcbench_dial_bin_end - _binary_rcbench_dial_bin_start);
-#endif
-#ifdef RCBENCH_NODE_PWR_IMAGE
-    s_img[1].p = _binary_rcbench_node_pwr_bin_start;
-    /* cppcheck takes the two linker symbols for two arrays. */
-    // cppcheck-suppress subtractPointers
-    s_img[1].n = (uint32_t)(_binary_rcbench_node_pwr_bin_end - _binary_rcbench_node_pwr_bin_start);
-#endif
-#ifdef RCBENCH_NODE_BAL_IMAGE
-    s_img[2].p = _binary_rcbench_node_bal_bin_start;
-    /* cppcheck takes the two linker symbols for two arrays. */
-    // cppcheck-suppress subtractPointers
-    s_img[2].n = (uint32_t)(_binary_rcbench_node_bal_bin_end - _binary_rcbench_node_bal_bin_start);
-#endif
-    for (unsigned i = 0; i < DEV_N; ++i) {
-        s_img[i].st = s_img[i].p != NULL ? IMG_DUE : IMG_NONE;
-    }
     s_started = devupd_client_init(&s_cli, PANEL_BLEC_UPD);
     if (!s_started) {
         ESP_LOGE(TAG, "update client not set up; no device updates");
@@ -278,39 +230,25 @@ void panel_devupd_start(void)
 }
 
 /**
- * @brief Check the next image that waits for its check, one a poll: a poll
- *        that checks runs no longer than one image's two passes.
+ * @brief Take device @p dev's image from panel_devimg.c once it is there,
+ *        checked: `blec`'s, at the poll's start and at an update's start.
+ * @param dev the device, by s_img's index
+ * @return true when the image is taken
  */
-static void check_next(void)
+static bool adopt(unsigned dev)
 {
-    for (unsigned i = 0; i < DEV_N; ++i) {
-        carried_t *c = &s_img[i];
-        if (c->st != IMG_DUE) {
-            continue;
-        }
-        c->err = fw_image_check_as(c->p, c->n, c->slot, c->chip, c->project,
-                                   &c->info);
-        if (c->err == FW_OK
-            && bleota_head_check(c->p, c->n, c->chip, c->kind) != BLEOTA_OK) {
-            /* The role in its .rodata_custom_desc names another device:
-             * the two node roles share chip and project. */
-            c->err = FW_ERR_PROJECT;
-        }
-        if (c->err != FW_OK) {
-            c->st = IMG_BAD;
-            ESP_LOGE(TAG, "the carried %s image fails its check: %s",
-                     c->word, fw_err_str(c->err));
-            return;
-        }
-        fw_sha256(c->p, c->n, c->sha);
-        c->st = IMG_READY;
-        ESP_LOGI(TAG, "carries the %s image %s, %lu bytes, %lu%% of its "
-                      "slot, SHA-256 %02x%02x%02x%02x", c->word,
+    carried_t *c = &s_img[dev];
+    if (!c->ready
+        && panel_devimg_get(c->id, &c->p, &c->n, &c->info, c->sha)) {
+        c->ready = true;
+        ESP_LOGI(TAG, "the %s image %s, %lu bytes, %lu%% of its slot, "
+                      "SHA-256 %02x%02x%02x%02x", c->word,
                  c->info.version_text, (unsigned long)c->n,
-                 (unsigned long)((uint64_t)c->n * 100u / c->slot),
+                 (unsigned long)((uint64_t)c->n * 100u
+                                 / devimg_slot(c->id)),
                  c->sha[0], c->sha[1], c->sha[2], c->sha[3]);
-        return;
     }
+    return c->ready;
 }
 
 /** @brief What each device's link says, at this poll. */
@@ -319,7 +257,7 @@ typedef struct {
     bool        bound;  /**< one is bound */
     bool        linked; /**< connected, its version read */
     bool        down;   /**< no link stands or is under way */
-    bool        other;  /**< it runs a board the carried image is not for */
+    bool        other;  /**< it runs a board the release sends no image to */
     uint8_t     ver[3]; /**< its version */
 } seen_t;
 
@@ -347,7 +285,7 @@ static void push_end(unsigned dev, bool ok, bool unknown, uint8_t err,
 
 /**
  * @brief The running update's device as the console names it.
- * @return its name, from the carried image's table
+ * @return its name, from the images' table
  */
 static const char *cur_word(void)
 {
@@ -445,10 +383,11 @@ static void begin(unsigned dev, bool bound, bool linked, const uint8_t ver[3],
 {
     s_cur = dev;
     const carried_t *c = &s_img[dev];
-    if (!s_started || !bound || !linked || c->st != IMG_READY
+    const bool ready = adopt(dev);
+    if (!s_started || !bound || !linked || !ready
         || s_stage != STAGE_IDLE) {
-        ESP_LOGW(TAG, "%s update refused: bound %d, linked %d, image %u",
-                 cur_word(), bound, linked, (unsigned)c->st);
+        ESP_LOGW(TAG, "%s update refused: bound %d, linked %d, image %d",
+                 cur_word(), bound, linked, ready);
         s_t0 = now;
         finish(false, DEVUPD_E_LINK, 0u, now);
         return;
@@ -508,7 +447,9 @@ void panel_devupd_blec_poll(uint32_t now)
     if (!s_started) {
         return;
     }
-    check_next();
+    for (unsigned i = 0; i < DEV_N; ++i) {
+        (void)adopt(i);
+    }
     seen_t t[DEV_N];
     memset(t, 0, sizeof(t));
     for (unsigned i = 0; i < DEV_N; ++i) {
@@ -574,13 +515,10 @@ void panel_devupd_blec_poll(uint32_t now)
         settle(t, now, false);
     }
     for (unsigned i = 0; i < DEV_N; ++i) {
-        const carried_t *g = &s_img[i];
         dev_pub_t *d = &s_next.d[i];
-        d->img_due = g->st == IMG_DUE;
-        /* A display node runs another board: no carried image is its. */
-        d->have_img = g->st != IMG_NONE && !t[i].other;
-        d->img_ok = g->st == IMG_READY && !t[i].other;
-        d->carried = g->info.version;
+        /* A display node runs another board: no image of the release is
+         * sent to it over Bluetooth LE. */
+        d->other = t[i].other;
         d->bound = t[i].bound;
         d->off = t[i].bound && k_dev[i].off();
         d->linked = t[i].bound && t[i].linked;
@@ -695,28 +633,71 @@ void devupd_service(bool armed)
         /* The frame asks alone, so the device it asked for is the one the
          * gate holds while it reads busy. */
         const bool mine = busy && s_ask_dev == i;
+        /* The image on its way reads as the update running; another
+         * image on its way holds the row as another update does. */
+        const devimg_id_t id = k_img_id[i];
+        const bool fetching = panel_devimg_running(id);
+        const fw_version_t rel = panel_devimg_want(id);
         const devupd_row_in_t in = {
-            .have_image = d->have_img, .image_due = d->img_due,
-            .image_ok = d->img_ok,
+            .have_image = !d->other, .image_due = false,
+            .image_ok = !d->other,
             .linked = d->linked, .known = d->linked, .running = d->running,
-            .carried = d->carried, .armed = armed,
-            .other = other || (busy && !mine), .busy = mine,
+            .carried = rel, .armed = armed,
+            .other = other || (busy && !mine)
+                     || (panel_devimg_busy() && !fetching),
+            .busy = mine || fetching,
         };
-        const upd_dev_view_t v = {
+        upd_dev_view_t v = {
             .row = devupd_row(&in), .bound = d->bound, .off = d->off,
             .no_ble = no_ble, .known = d->linked,
-            .running = d->running, .have_image = d->img_ok,
-            .carried = d->carried, .phase = mine ? p.phase : 0u,
+            .running = d->running, .have_image = !d->other,
+            .carried = rel, .phase = mine ? p.phase : 0u,
             .percent = mine ? p.percent : 0u, .secs = mine ? p.secs : 0u,
         };
+        panel_devimg_view(id, &v.fetch);
         upd_dev_set((upd_dev_id_t)i, &v);
+        const bool open = v.row == DEVUPD_ROW_READY
+                          || v.row == DEVUPD_ROW_REINSTALL;
+        bool ask = false;
         if (upd_dev_take((upd_dev_id_t)i)) {
-            if (v.row == DEVUPD_ROW_READY || v.row == DEVUPD_ROW_REINSTALL) {
-                s_ask_dev = i;
-                devupd_gate_ask(&s_gate, i);
+            if (!open) {
+                ui_router_set_notice(upd_dev_reason(&v));
+            } else if (panel_devimg_get(id, NULL, NULL, NULL, NULL)) {
+                ask = true;
             } else {
+                /* Not in memory: the download or the card read first;
+                 * the update starts once the image passed its checks. */
+                (void)panel_devimg_request(id, armed);
+            }
+        }
+        /* After a download the radio goes off, and its time request can
+         * hold it up to 30s longer: the transfer runs on the C6's
+         * Bluetooth LE controller without Wi-Fi beside it. */
+        const bool radio_free = !s_wifi_ok || wifi_access_down();
+        switch (panel_devimg_owed(id, open && radio_free,
+                                  open && !radio_free)) {
+        case DEVIMG_OWED_FIRE:
+            ask = true;
+            break;
+        case DEVIMG_OWED_WAIT:
+            if (open && !radio_free) {
+                wifi_access_end_linger();
+            }
+            break;
+        case DEVIMG_OWED_DROP:
+            ESP_LOGW(TAG, "%s: the image arrived; the update does not "
+                          "start: row %u", s_img[i].word, (unsigned)v.row);
+            if (upd_dev_reason(&v) != NULL) {
                 ui_router_set_notice(upd_dev_reason(&v));
             }
+            break;
+        case DEVIMG_OWED_NONE:
+        default:
+            break;
+        }
+        if (ask) {
+            s_ask_dev = i;
+            devupd_gate_ask(&s_gate, i);
         }
     }
     const unsigned dev = p.dev < DEV_N ? p.dev : 0u;
@@ -725,7 +706,14 @@ void devupd_service(bool armed)
     }
     s_seen_phase = p.phase;
     if (upd_dev_take_cancel()) {
-        atomic_store(&s_cancel, true);
+        if (panel_devimg_busy()) {
+            /* CANCEL UPDATE while the image is on its way ends the
+             * download (upd_service()); a card read and the checks end
+             * by themselves within their few seconds. */
+            panel_devimg_cancel();
+        } else {
+            atomic_store(&s_cancel, true);
+        }
     }
     /* Each end since the last frame, in order; more than the ring holds
      * only the last END_RING. */

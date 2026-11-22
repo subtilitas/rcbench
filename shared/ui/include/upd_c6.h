@@ -33,6 +33,7 @@
 #include "fw_c6.h"
 #include "gfx.h"
 #include "touch_types.h"
+#include "upd_fetch.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,6 +57,8 @@ typedef struct {
     bool         have_image; /**< this panel carries a C6 image           */
     fw_version_t carried;    /**< its version                             */
     unsigned     percent;    /**< FW_C6_ROW_UPDATING: the share sent, 0-100 */
+    upd_fetch_t  fetch;      /**< where the hold takes the image from, and
+                                  the download or card read under way    */
 } upd_c6_view_t;
 
 /**

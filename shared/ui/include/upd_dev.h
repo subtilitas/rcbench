@@ -49,6 +49,7 @@
 #include "devupd.h"
 #include "gfx.h"
 #include "touch_types.h"
+#include "upd_fetch.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -105,6 +106,9 @@ typedef struct {
     uint8_t      phase;      /**< DEVUPD_ROW_UPDATING: devupd_phase_t     */
     unsigned     percent;    /**< DEVUPD_SEND: the share taken, 0-100     */
     unsigned     secs;       /**< DEVUPD_CONFIRM: seconds the device gave */
+    upd_fetch_t  fetch;      /**< where the hold takes the image from, and
+                                  the download or card read under way:
+                                  the row reads UPDATING while it runs  */
 } upd_dev_view_t;
 
 /**

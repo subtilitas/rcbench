@@ -8,6 +8,19 @@ history is in git.
 
 ### Added
 
+- SETUP > UPDATES: an update of the C6 radio, the M5Stack Dial, the power
+  node or the balance node fetches that device's image of the release the
+  panel runs when its step's hold asks for it: `SHA256SUMS` and the file
+  over HTTPS on the panel's own download path, into PSRAM, the file's
+  `Content-Length` held to the device's slot and its SHA-256 to its
+  `SHA256SUMS` line, then the senders' checks. The update starts once the
+  image passed, after the radio is off. Without a home network, or after a
+  failed download, the hold reads the same file name from the SD card's
+  `BENCH/UPDATES` (`HOLD 2s TO UPDATE FROM THE SD CARD`). A failed attempt
+  shows on the step's card with a code: `D` for the download, `S` for the
+  card, `V` for the checks
+  ([Screens: Device images](docs/Screens.md#device-images)).
+
 - `hardware/mechanical/`: a printed case of 3 parts for the remote INA228
   sensor node, 91.4mm x 55.4mm x 28.0mm: `ina228_node_plate`,
   `ina228_node_frame` and `ina228_node_bezel`, each as STEP and STL. 4
@@ -102,6 +115,18 @@ history is in git.
   view looks from, `--suffix` names the PNGs of a second view.
 
 ### Changed
+
+- The panel image carries the IOmcu images only: 4,043,648 bytes in place
+  of 7,457,504 at 0.23.16. The C6 radio's, the Dial's and the nodes' images
+  stay release assets (`rcbench-c6-<esp_hosted version>.bin`,
+  `rcbench-dial-<version>.bin`, `rcbench-node-pwr-<version>.bin`,
+  `rcbench-node-bal-<version>.bin`); `release.yml` and `ci.yml` no longer
+  pass them to the panel build, and the panel's options `RCBENCH_C6_BIN`,
+  `RCBENCH_DIAL_BIN`, `RCBENCH_NODE_PWR_BIN` and `RCBENCH_NODE_BAL_BIN` are
+  gone. The release checks the Dial's and the nodes' assets with
+  `tools/c6_image.py device` in its publish job.
+- The C6 RADIO, DIAL and NODE rows read `Release:` for the version they
+  install, in place of `Included:`.
 
 - `hardware/mechanical/models/` is sorted into 3 folders: `pcb/` (17
   models: 16 boards and the sensor node's layout), `casing/` (7 printed
@@ -1373,7 +1398,7 @@ The entries below cover the 52 pull requests merged since v0.23.12: #803 to
   connections, up from 1 and 3: the IMU, the Dial, 2 sensor nodes and 1
   spare. The C6 image sets `CONFIG_BT_LE_MAX_CONNECTIONS=5` from
   `firmware/c6/sdkconfig.rcbench`, and `tools/c6_image.py check` fails an
-  image without it ([The ESP32-C6 radio](docs/C6.md#the-image-the-panel-carries)).
+  image without it ([The ESP32-C6 radio](docs/C6.md#the-c6-image)).
 - The IMU's link runs on the `blec` task, the one task of every Bluetooth
   LE client, through the hub, in place of the `imu` task. The event queue
   holds 64 events (4,096 bytes of internal RAM), up from 32, and keeps up

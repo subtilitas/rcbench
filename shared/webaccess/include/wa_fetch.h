@@ -33,6 +33,13 @@
  *             fw_image_check(); WA_FETCH_DOWNLOAD_MS at most from the start.
  *             What it leaves is an image staged as an upload would leave
  *             it, for the existing installer.  No flash is written here.
+ *   DEVICE    as DOWNLOAD, for one file of the release other than the
+ *             panel's image: the C6 radio's, the M5Stack Dial's or a
+ *             sensor node's application, named by the caller
+ *             (wa_run_t.name), at most wa_run_t.slot bytes.  Its SHA-256
+ *             against its SHA256SUMS line; the image checks of the device
+ *             are the caller's.  What it leaves is the file in a buffer of
+ *             its own (wa_fetch_res_t.buf), handed to the caller.
  *
  * Two halves.  The job (wa_fetch_t) lives with the session under the
  * platform's lock: started and ticked by the UI loop, which holds the
@@ -79,6 +86,7 @@ extern "C" {
 typedef enum {
     WA_JOB_CHECK = 0,
     WA_JOB_DOWNLOAD,
+    WA_JOB_DEVICE,     /**< another file of the release: a device's image */
 } wa_job_t;
 
 /** Which releases a CHECK looks at: SETUP > UPDATES' RELEASES. */
@@ -103,7 +111,9 @@ typedef enum {
     WA_GOT_NONE = 0,   /**< under way, or none ran                      */
     WA_GOT_NEWER,      /**< CHECK: a newer release, wa_fetch_t.found    */
     WA_GOT_CURRENT,    /**< CHECK: none newer than the running build    */
-    WA_GOT_STAGED,     /**< DOWNLOAD: the image waits, checked          */
+    WA_GOT_STAGED,     /**< DOWNLOAD: the image waits, checked; DEVICE:
+                            the file is in wa_fetch_res_t.buf, its
+                            SHA-256 SHA256SUMS'                         */
     WA_GOT_NO_NET,     /**< no home network kept: nothing started       */
     WA_GOT_BLOCKED,    /**< the gate: nothing started; see why          */
     WA_GOT_ABORTED,    /**< ended from outside; see why                 */
@@ -167,6 +177,7 @@ typedef struct {
     uint32_t      done;     /**< IMAGE: bytes received                    */
     uint32_t      total;    /**< IMAGE: bytes announced                   */
     uint32_t      budget_ms;/**< TIMEOUT: the budget that ran out         */
+    uint8_t       asset;    /**< DEVICE: the caller's number of the file  */
     bool          owe_off;  /**< ended: the radio goes off                */
     bool          owe_run;  /**< joined: the runner starts                */
 } wa_fetch_t;
@@ -339,6 +350,10 @@ typedef struct {
     fw_err_t     img;     /**< IMAGE */
     int          status;  /**< REFUSED, LIMIT: the HTTP status */
     fw_version_t found;   /**< the release found or fetched */
+    /** @brief DEVICE: the buffer wa_run_t.alloc gave, NULL for none.
+     *  Whoever runs the runner frees it, unless it keeps a STAGED file. */
+    uint8_t     *buf;
+    uint32_t     bytes;   /**< DEVICE, STAGED: the file's length */
 } wa_fetch_res_t;
 
 /**
@@ -437,6 +452,7 @@ typedef struct {
     uint32_t  io_cap;        /**< the size of io, in bytes */
     char     *sums;          /**< FW_REL_SUMS_MAX bytes                   */
     fw_upload_t *up;         /**< DOWNLOAD: the image, staged on success  */
+    const char  *name;       /**< DEVICE: the file's name in the release  */
 } wa_run_t;
 
 /**
@@ -456,6 +472,21 @@ void wa_run_check(const wa_run_t *r, wa_fetch_res_t *out);
  * @param out Receives the result.
  */
 void wa_run_download(const wa_run_t *r, fw_version_t v, wa_fetch_res_t *out);
+
+/**
+ * @brief DEVICE: the file r->name of release @p v, from the join on.
+ *
+ * SHA256SUMS first, which must name the file on one line; then the file,
+ * whose Content-Length is over 0 and at most r->slot bytes, into one
+ * buffer of that length from r->alloc; then its SHA-256 against the line.
+ * STAGED with the file in out->buf and out->bytes, or why not.  A buffer
+ * taken stays in out->buf whatever the result.
+ *
+ * @param r The runner; r->name and r->slot set.
+ * @param v The release the file belongs to.
+ * @param out Receives the result.
+ */
+void wa_run_device(const wa_run_t *r, fw_version_t v, wa_fetch_res_t *out);
 
 #ifdef __cplusplus
 }

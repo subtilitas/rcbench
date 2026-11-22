@@ -35,6 +35,7 @@
 #include "panel.h"
 #include "balance_screen.h"
 #include "panel_bal.h"
+#include "panel_devimg.h"
 #include "panel_devupd.h"
 #include "panel_dial.h"
 #include "panel_pnode.h"
@@ -848,6 +849,7 @@ void panel_frame_loop(void)
         upd_service(arm_any,
                     arm_any || supply_now || supplies_live_or_coming(),
                     stops_now, &cu);
+        devimg_service(arm_any);
         c6_service(arm_any);
         const bool dev_known = panel_devupd_known();
         devupd_service(arm_any);

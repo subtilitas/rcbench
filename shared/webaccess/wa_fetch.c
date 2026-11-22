@@ -108,7 +108,7 @@ wa_got_t wa_fetch_start(wa_fetch_t *f, wa_job_t job, fw_version_t want,
     f->job = job;
     f->channel = (ch == WA_CH_TESTING) ? WA_CH_TESTING : WA_CH_STABLE;
     f->start_ms = now_ms;
-    f->found = (job == WA_JOB_DOWNLOAD) ? want : (fw_version_t){ 0, 0, 0 };
+    f->found = (job != WA_JOB_CHECK) ? want : (fw_version_t){ 0, 0, 0 };
     if (!have_net) {
         f->phase = WA_PH_ENDED;
         f->got = WA_GOT_NO_NET;
@@ -243,7 +243,7 @@ static bool got_found(wa_got_t got)
 
 bool wa_fetch_has_found(const wa_fetch_t *f)
 {
-    return f != NULL && (f->job == WA_JOB_DOWNLOAD || got_found(f->got));
+    return f != NULL && (f->job != WA_JOB_CHECK || got_found(f->got));
 }
 
 void wa_fetch_install_failed(wa_fetch_t *f)
@@ -774,5 +774,89 @@ void wa_run_download(const wa_run_t *r, fw_version_t v, wa_fetch_res_t *out)
         failed(r, out, WA_GOT_TIMEOUT, FW_REL_OK);
         return;
     }
+    res(out, WA_GOT_STAGED, FW_REL_OK);
+}
+
+/** @brief The sink of a device's file: one buffer of its announced length. */
+typedef struct {
+    uint8_t *buf;    /**< from r->alloc, NULL until begin */
+    uint32_t bytes;  /**< the announced length */
+} dev_sink_t;
+
+/** @brief Start a device's file: a buffer of @p bytes, or end the job. */
+static bool dev_begin(const wa_run_t *r, void *ctx, uint32_t bytes,
+                      wa_fetch_res_t *out)
+{
+    dev_sink_t *d = ctx;
+    d->buf = r->alloc(r->ctx, bytes);
+    d->bytes = bytes;
+    if (d->buf == NULL) {
+        res(out, WA_GOT_MEMORY, FW_REL_OK);
+        return false;
+    }
+    report(r, WA_PH_IMAGE, 0u, bytes);
+    return true;
+}
+
+/** @brief Take a piece of a device's file. */
+static void dev_add(const wa_run_t *r, void *ctx, const uint8_t *d,
+                    uint32_t n, uint32_t done, uint32_t total)
+{
+    /* fetch() hands over no more than the announced length. */
+    memcpy(((dev_sink_t *)ctx)->buf + (done - n), d, n);
+    report(r, WA_PH_IMAGE, done, total);
+}
+
+void wa_run_device(const wa_run_t *r, fw_version_t v, wa_fetch_res_t *out)
+{
+    memset(out, 0, sizeof(*out));
+    out->found = v;
+    report(r, WA_PH_SUMS, 0u, 0u);
+    if (r->name == NULL
+        || !fw_release_url(v, FW_REL_SUMS_NAME, r->url, FW_REL_URL_MAX + 1u)) {
+        res(out, WA_GOT_UNEXPECTED, FW_REL_LONG);
+        return;
+    }
+    sums_t sums = { 0u };
+    const sink_t ks = { sums_begin, sums_add, &sums, FW_REL_SUMS_MAX,
+                        WA_GOT_SUMS };
+    if (!fetch(r, &ks, out)) {
+        return;
+    }
+    uint8_t want[FW_SHA256_BYTES];
+    const fw_rel_err_t se = fw_release_parse_sums(r->sums, sums.n, r->name,
+                                                  want);
+    if (se != FW_REL_OK) {
+        res(out, WA_GOT_SUMS, se);
+        return;
+    }
+
+    report(r, WA_PH_IMAGE, 0u, 0u);
+    if (!fw_release_url(v, r->name, r->url, FW_REL_URL_MAX + 1u)) {
+        res(out, WA_GOT_UNEXPECTED, FW_REL_LONG);
+        return;
+    }
+    dev_sink_t dev = { NULL, 0u };
+    const sink_t kd = { dev_begin, dev_add, &dev, r->slot,
+                        WA_GOT_UNEXPECTED };
+    const bool whole = fetch(r, &kd, out);
+    out->buf = dev.buf;
+    if (!whole) {
+        return;
+    }
+    report(r, WA_PH_CHECKING, dev.bytes, dev.bytes);
+    uint8_t got[FW_SHA256_BYTES];
+    fw_sha256(dev.buf, dev.bytes, got);
+    if (memcmp(got, want, sizeof(got)) != 0) {
+        res(out, WA_GOT_HASH, FW_REL_OK);
+        return;
+    }
+    if (r->stopped(r->ctx) || run_left(r) == 0u) {
+        /* Ended, or past the budget, while the last bytes came in: the job
+         * is over, the file is not handed on. */
+        failed(r, out, WA_GOT_TIMEOUT, FW_REL_OK);
+        return;
+    }
+    out->bytes = dev.bytes;
     res(out, WA_GOT_STAGED, FW_REL_OK);
 }

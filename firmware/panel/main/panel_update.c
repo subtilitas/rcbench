@@ -34,6 +34,7 @@
 #include "link_update_host.h"
 #include "out_bind.h"
 #include "panel.h"
+#include "panel_devimg.h"
 #include "panel_devupd.h"
 #include "rcbench_version.h"
 #include "settings.h"
@@ -955,6 +956,24 @@ void wifi_service(bool armed, uint32_t stops_now)
 static upd_driver_t s_upd;
 static uint32_t     s_upd_boot_gen;   /**< the start-up check's job; 0 none */
 static bool         s_upd_dl;         /**< a download, from its hold to its end */
+/** @brief The panel's own last job, CHECK or DOWNLOAD: a device's image
+ *         (DEVICE, panel_devimg.c) runs on the same job and never shows as
+ *         PANEL's check or download. */
+static wa_fetch_t   s_upd_own;
+
+/**
+ * @brief The job as it stands, and the panel's own last job.
+ * @param raw takes the job, whichever it is
+ * @param own takes the last CHECK or DOWNLOAD
+ */
+static void fetch_get(wa_fetch_t *raw, wa_fetch_t *own)
+{
+    wifi_access_fetch_get(raw);
+    if (raw->job != WA_JOB_DEVICE) {
+        s_upd_own = *raw;
+    }
+    *own = s_upd_own;
+}
 
 /**
  * @brief The Wi-Fi reason (WA_WHY_*) a flash gate state stands for;
@@ -982,12 +1001,22 @@ static wa_why_t why_of_fw_gate(fw_gate_t g)
  * transfer.  CHECK FOR UPDATES is grey for its length and the start-up
  * check waits.
  */
-static wa_why_t upd_check_gate(bool armed)
+wa_why_t upd_dev_gate(bool armed)
 {
     return wa_fetch_gate(armed, supplies_live_or_coming(), run_open_now(),
                          atomic_load(&s_cu_busy) || panel_c6_busy()
                              || panel_devupd_busy(),
                          atomic_load(&s_fw_installing));
+}
+
+/**
+ * @brief The check's gate: upd_dev_gate(), and a device's image on its
+ *        way (panel_devimg_busy()) holds it as a device's update does.
+ */
+static wa_why_t upd_check_gate(bool armed)
+{
+    const wa_why_t g = upd_dev_gate(armed);
+    return (g == WA_WHY_NONE && panel_devimg_busy()) ? WA_WHY_COPROC : g;
 }
 
 /** @brief SETUP > UPDATES' RELEASES, now: 1 is TESTING. */
@@ -1031,8 +1060,8 @@ void upd_remind_service(bool armed, bool unsafe, const cu_snap_t *cs)
     if (!s_wifi_ok) {
         return;
     }
-    wa_fetch_t f;
-    wifi_access_fetch_get(&f);
+    wa_fetch_t raw, f;
+    fetch_get(&raw, &f);
     char ssid[WIFI_SSID_MAX + 1];
     const bool have_net = wifi_access_home(ssid, sizeof(ssid));
     const upd_feed_t feed = upd_feed_now(armed, unsafe, cs, &f, have_net);
@@ -1081,8 +1110,8 @@ void upd_service(bool armed, bool unsafe, uint32_t stops_now,
     }
 
     v.have_net = wifi_access_home(v.net, sizeof(v.net));
-    wa_fetch_t f;
-    wifi_access_fetch_get(&f);
+    wa_fetch_t raw, f;
+    fetch_get(&raw, &f);
     const unsigned req = upd_screen_take();
     const fw_version_t none = { 0u, 0u, 0u };
     const wa_channel_t ch = upd_channel();
@@ -1093,16 +1122,16 @@ void upd_service(bool armed, bool unsafe, uint32_t stops_now,
         && wifi_access_fetch_start(WA_JOB_CHECK, none, ch,
                                    upd_check_gate(armed))
            == WA_GOT_NONE) {
-        wifi_access_fetch_get(&f);
+        fetch_get(&raw, &f);
         s_upd_boot_gen = f.gen;
         ESP_LOGI(TAG, "GitHub: start-up check");
     }
-    if ((req & UPD_REQ_CHECK) != 0u && !wa_fetch_busy(&f)) {
+    if ((req & UPD_REQ_CHECK) != 0u && !wa_fetch_busy(&raw)) {
         (void)wifi_access_fetch_start(WA_JOB_CHECK, none, ch,
                                       upd_check_gate(armed));
-        wifi_access_fetch_get(&f);
+        fetch_get(&raw, &f);
     }
-    if ((req & UPD_REQ_DOWNLOAD) != 0u && !wa_fetch_busy(&f) && !s_upd_dl
+    if ((req & UPD_REQ_DOWNLOAD) != 0u && !wa_fetch_busy(&raw) && !s_upd_dl
         && wa_fetch_offers(&f, ch)) {
         /* Before the gate is read: see s_fw_installing. */
         atomic_store(&s_fw_installing, true);
@@ -1113,34 +1142,38 @@ void upd_service(bool armed, bool unsafe, uint32_t stops_now,
                                       why_of_fw_gate(fw_gate_now(armed)));
         (void)update_screen_take_cancel();
         ui_router_goto(SCREEN_UPDATE);
-        wifi_access_fetch_get(&f);
+        fetch_get(&raw, &f);
     }
 
-    /* A job under way ends for any of these. */
+    /* A job under way ends for any of these; a device's image also for
+     * its CANCEL UPDATE (panel_devimg_take_cancel()). */
     wa_why_t abort = WA_WHY_NONE;
+    const bool dev_cancel = panel_devimg_take_cancel();
     const bool cancel = (req & UPD_REQ_CANCEL) != 0u
                         || (s_upd_dl && update_screen_take_cancel());
-    if (wa_fetch_busy(&f)) {
+    if (wa_fetch_busy(&raw)) {
         if (stop) {
             abort = WA_WHY_STOP;
         } else if (ui_router_current() == SCREEN_WIFI) {
             abort = WA_WHY_FILES;
+        } else if (raw.job == WA_JOB_DEVICE) {
+            abort = dev_cancel ? WA_WHY_CANCEL : upd_dev_gate(armed);
         } else if (cancel) {
             abort = WA_WHY_CANCEL;
-        } else if (f.job == WA_JOB_DOWNLOAD) {
+        } else if (raw.job == WA_JOB_DOWNLOAD) {
             abort = why_of_fw_gate(fw_gate_now(armed));
         } else {
             abort = upd_check_gate(armed);
         }
     }
     wifi_access_fetch_tick(abort);
-    wifi_access_fetch_get(&f);
+    fetch_get(&raw, &f);
 
     /* What UPDATES and the download's screen show. */
     const bool busy = wa_fetch_busy(&f);
     v.block = (upd_why_t)upd_check_gate(armed);
     v.radio_free = wifi_access_down();
-    if (s_upd_dl || busy) {
+    if (s_upd_dl || wa_fetch_busy(&raw)) {
         v.dl_block = UPD_WHY_BUSY;
     } else {
         v.dl_block = (upd_why_t)why_of_fw_gate(fw_gate_now(armed));
@@ -1255,7 +1288,7 @@ void cu_render_service(bool unsafe, bool link_up, const cu_snap_t *cs,
 bool panel_update_busy(void)
 {
     wa_fetch_t f;
-    wifi_access_fetch_get(&f);
+    wifi_access_fetch_get(&f);   /* whichever job: each holds the radio */
     return atomic_load(&s_cu_busy) || atomic_load(&s_fw_installing) || s_upd_dl
            || wa_fetch_busy(&f) || panel_c6_busy();
 }

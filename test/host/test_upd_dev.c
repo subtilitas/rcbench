@@ -385,9 +385,25 @@ TEST_CASE(the_label_follows_the_update_phase)
     upd_dev_label(UPD_DEV_BAL, &v, out, sizeof(out));
     CHECK_STR_EQ(out, "HOLD 2s TO UPDATE THE BALANCE NODE");
     upd_dev_line(UPD_DEV_DIAL, &v, out, sizeof(out));
-    CHECK_STR_EQ(out, "Dial: not connected. Included: 0.25.0.");
+    CHECK_STR_EQ(out, "Dial: not connected. Release: 0.25.0.");
     upd_dev_line(UPD_DEV_PNODE, &v, out, sizeof(out));
-    CHECK_STR_EQ(out, "Node: not connected. Included: 0.25.0.");
+    CHECK_STR_EQ(out, "Node: not connected. Release: 0.25.0.");
+    /* The image's way takes the label over from every phase. */
+    v.row = DEVUPD_ROW_READY;
+    v.fetch.run = UPD_FETCH_NET;
+    v.fetch.percent = 250u;
+    upd_dev_label(UPD_DEV_DIAL, &v, out, sizeof(out));
+    CHECK_STR_EQ(out, "DOWNLOADING 100%");
+    v.fetch.run = UPD_FETCH_CHECK;
+    upd_dev_label(UPD_DEV_PNODE, &v, out, sizeof(out));
+    CHECK_STR_EQ(out, "CHECKING THE FILE");
+    v.fetch.run = UPD_FETCH_IDLE;
+    v.fetch.src = DEVIMG_SRC_CARD;
+    upd_dev_label(UPD_DEV_BAL, &v, out, sizeof(out));
+    CHECK_STR_EQ(out, "HOLD 2s TO UPDATE FROM THE SD CARD");
+    v.fetch.src = DEVIMG_SRC_RAM;
+    upd_dev_label(UPD_DEV_BAL, &v, out, sizeof(out));
+    CHECK_STR_EQ(out, "HOLD 2s TO UPDATE THE BALANCE NODE");
 }
 
 TEST_CASE(the_entry_counts_the_devices_and_shows_a_running_update)
