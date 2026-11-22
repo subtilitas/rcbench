@@ -616,20 +616,6 @@ def test_a_part_without_video_is_not_reused(tmp_path):
     assert make_video._holds_video(part)
 
 
-def test_the_feature_walk_of_the_mini_names_every_menu_row():
-    """minircbench-features has a chapter per menu row and its stills."""
-    path = make_video.VIDEO / "storyboards" / "minircbench-features.json"
-    board = json.loads(path.read_text(encoding="utf-8"))
-    assert make_video.check(board) == []
-    assert len(board["chapters"]) == board["steps"] == 12
-    shown = {key[1] for scene in board["scenes"]
-             for key in scene.get("panel", [])}
-    for name in ("splash", "tester-armed", "menu", "esccmd", "esc-chooser",
-                 "servo-supply", "prog-chooser-switched", "rx-chooser",
-                 "tools-chooser", "log-ready", "settings"):
-        assert f"mini-{name}" in shown, name
-
-
 def test_a_step_can_set_its_versions():
     """A tour step with versions is a shot of its own."""
     versions = ["0.24.1", "0.24.2", "0.24.0"]

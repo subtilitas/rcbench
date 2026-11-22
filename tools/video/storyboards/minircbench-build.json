@@ -2451,7 +2451,7 @@
     "SERVO SUPPLY GP28, CURRENT SENSE INA219"
    ],
    "say": "The Mini R C bench is built. The manual in the project's wiki goes on from here.",
-   "note": "Manual: github.com/subtilitas/MiniRcBench/wiki"
+   "note": "Manual: github.com/subtilitas/MiniRcBench/wiki · not tested on hardware: the INA219 and the switched boost board."
   }
  ]
 }

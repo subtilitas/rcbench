@@ -1077,10 +1077,6 @@ The entries below cover the 7 pull requests merged since v0.23.13: #847,
   threshold (1.1V) and servo output (37Ω) are fitted to the measured
   window of 40 to 213ns and to the captured pulse width of 280ns at 1.4V
   ([Videos from storyboards](tools/video/README.md#the-simulated-signal-wire)).
-- Storyboard `minircbench-features`: every screen of the MiniRcBench,
-  firmware 0.1.0, in 12 chapters, narrated, 1000.70s. The stills
-  under `tools/video/stills/` are 83 frames of MiniRcBench's host suite
-  at its commit 2cdf044.
 - Storyboard `minircbench-build`: building a MiniRcBench in 10 steps,
   narrated, 505.57s. A `case` scene with the model `mini` draws the bench
   from its assembly, seats its components, shows stills on its display
