@@ -8,6 +8,13 @@ history is in git.
 
 ### Added
 
+- `hardware/mechanical/`: `hitec_d485hw.step`, the Hitec D485HW servo with
+  the four-arm horn HD-X25, its type plate and 60mm of its lead: 3 wires,
+  minus black, plus red, signal yellow, and the 3 pin plug. 126.4mm x
+  36.0mm x 46.35mm over all, 37 solids. Case, ears and mounting holes
+  follow the maker's dimension drawing, the rest its STEP model and data
+  sheets. The overlap check covers it
+  ([Mechanical parts](hardware/mechanical/README.md#hitec-d485hw)).
 - `hardware/mechanical/`: a variant of the display node's case for
   panel-mount XT60 with 2 screws, 59.8mm x 105.6mm x 24.4mm:
   `display_node_xt60_box` and `display_node_xt60_lid`, each as STEP and
