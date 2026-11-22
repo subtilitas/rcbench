@@ -100,8 +100,8 @@ printed. RESET and BOOT have no push rod: a tool of
 2mm at most reaches them through a slot. A USB plug thicker than 7.0mm meets
 the plug in the XT90 housing under it. The speaker is not chosen; the
 converter lies on a foam pad of 1.5mm that is not drawn.
-It holds a STEP model of the motor simulator, 3 resistors of 600 ohm in a
-triangle with 3 crocodile clips, 400 ohm between any 2 clips (owner,
+It holds a STEP model of the motor simulator, 3 resistors of 600Ω in a
+triangle with 3 crocodile clips, 400Ω between any 2 clips (owner,
 2026-11-22). Every size is estimated from one owner photo; the resistors'
 rating is not stated. The phase tap's lead is on one clip and ends in a 3.5mm
 mono plug; how it is fastened and which contact carries the tap are not

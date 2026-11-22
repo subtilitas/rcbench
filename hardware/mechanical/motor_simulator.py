@@ -1,6 +1,6 @@
 """Motor simulator: 3 resistors in a triangle with 3 crocodile clips.
 
-    motor_simulator   3 resistors of 600 ohm joined corner to corner,
+    motor_simulator   3 resistors of 600Ω joined corner to corner,
                       a yellow wire from each corner to a black
                       crocodile clip, and the phase tap's lead on one
                       clip, ending in a 3.5mm mono plug
@@ -9,8 +9,8 @@ It stands in for a brushless motor on the 3 motor leads of an ESC
 (electronic speed controller): each pair of leads sees a resistance in
 place of a winding, so the ESC and the phase tap
 (protocols/phase_tap/README.md) can be tried with no motor on the
-bench. The 3 resistors form a delta: between any 2 clips lie 600 ohm
-in parallel with 2 x 600 ohm, which is 400 ohm.
+bench. The 3 resistors form a delta: between any 2 clips lie 600Ω
+in parallel with 2 x 600Ω, which is 400Ω.
 
 The phase tap's lead is connected to one of the 3 clips (O): the bench
 hears the ESC's beeps on that lead. Which clip is free, as the 3 carry

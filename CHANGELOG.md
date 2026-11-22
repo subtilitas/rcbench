@@ -9,7 +9,7 @@ history is in git.
 ### Added
 
 - `hardware/mechanical/`: `motor_simulator.step`, a stand-in for a motor
-  on an ESC's 3 motor leads: 3 resistors of 600 ohm in a triangle, 400 ohm
+  on an ESC's 3 motor leads: 3 resistors of 600Ω in a triangle, 400Ω
   between any 2 of its 3 crocodile clips, with the phase tap's lead on one
   clip, ending in a 3.5mm mono plug. 32 solids, 51.05mm x 20.0mm x
   78.06mm; every size is estimated from one owner photo

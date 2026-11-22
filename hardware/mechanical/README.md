@@ -38,7 +38,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `flycolor_flydragon_lite_40a.py` | spec of the Flycolor FlyDragon Lite 40A ESC with its power, motor and signal leads, from the maker's manual and a product picture |
 | `tmotor_at2814.py` | spec of the T-Motor AT2814 outrunner with its 3 leads, from the maker's drawing |
 | `esc_motor_set.py` | the ESC and the motor joined lead to lead, for pictures of the phase tap |
-| `motor_simulator.py` | spec of the motor simulator: 3 resistors of 600 ohm in a triangle with 3 crocodile clips, from an owner photo |
+| `motor_simulator.py` | spec of the motor simulator: 3 resistors of 600Ω in a triangle with 3 crocodile clips, from an owner photo |
 | `_board.py` | a module's board for the specs: the plate, and parts placed by their position from the board's center |
 | `_font.py` | outlines of the letters of board print, written by `_gen_font.py` from OpenCV's single-stroke font |
 | `_photo_grid.py` | measures a board from a photo on squared paper: grid fit, camera height, the INA228 module's photos laid onto the board frame |

@@ -75,9 +75,9 @@ Limits:
 ## Motor simulator
 
 A stand-in for a brushless motor on the 3 motor leads of an ESC: 3
-resistors of 600 ohm joined corner to corner, a yellow wire from each
+resistors of 600Ω joined corner to corner, a yellow wire from each
 corner to a black crocodile clip. The resistors form a delta, so any 2
-clips see 600 ohm in parallel with 1200 ohm: 400 ohm. With it the ESC and
+clips see 600Ω in parallel with 1200Ω: 400Ω. With it the ESC and
 the phase tap are tried with no motor on the bench (owner, 2026-11-22).
 The phase tap's lead is connected to one of the 3 clips and ends in a
 3.5mm mono headphone plug; the model draws it as a white wire standing on
@@ -99,14 +99,14 @@ the clip of corner C, with the plug on its end.
 
 Limits:
 
-- The only sources are the owner's word (motor stand-in, 600 ohm each, the
+- The only sources are the owner's word (motor stand-in, 600Ω each, the
   build with black clips) and one owner photo taken at an angle with no
   scale, which is not in the repository. Every size is estimated by eye
   from the size of a common 0.6W resistor body, 6.5mm x 2.5mm.
 - The built part's wires are bent together; the model draws the triangle
   standing across 3 straight wires, 13.0mm apart.
 - The resistors' rating and the voltage the simulator bears are not
-  stated. At 16.8V, 4 cells full, 400 ohm draw 42mA and each resistor
+  stated. At 16.8V, 4 cells full, 400Ω draw 42mA and each resistor
   across 2 driven leads dissipates 0.47W.
 - The phase tap's lead is on one clip and ends in a 3.5mm mono headphone
   plug (owner, 2026-11-22). Which clip is free: the 3 carry the same

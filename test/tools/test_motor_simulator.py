@@ -1,7 +1,7 @@
 """hardware/mechanical: the motor simulator, 3 resistors in a triangle.
 
-Every solid closes, the 3 resistors of 600 ohm join corner to corner,
-any 2 clips see 400 ohm, each corner has its solder, its yellow wire
+Every solid closes, the 3 resistors of 600Ω join corner to corner,
+any 2 clips see 400Ω, each corner has its solder, its yellow wire
 and its black clip, the 3 wires leave side by side, and the phase tap's
 lead stands on one clip and ends in a 3.5mm mono plug.
 
@@ -41,7 +41,7 @@ def test_solids_close():
 
 
 def test_resistance_between_two_clips():
-    """A delta of 3 x 600 ohm: 600 in parallel with 1200 is 400."""
+    """A delta of 3 x 600Ω: 600 in parallel with 1200 is 400."""
     assert sim.OHM == 600
     assert sim.between_clips() == pytest.approx(400.0)
     assert sim.between_clips() == pytest.approx(
