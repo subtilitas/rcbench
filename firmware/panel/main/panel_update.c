@@ -956,10 +956,6 @@ void wifi_service(bool armed, uint32_t stops_now)
 static upd_driver_t s_upd;
 static uint32_t     s_upd_boot_gen;   /**< the start-up check's job; 0 none */
 static bool         s_upd_dl;         /**< a download, from its hold to its end */
-/** @brief The panel's own last job, CHECK or DOWNLOAD: a device's image
- *         (DEVICE, panel_devimg.c) runs on the same job and never shows as
- *         PANEL's check or download. */
-static wa_fetch_t   s_upd_own;
 
 /**
  * @brief The job as it stands, and the panel's own last job.
@@ -968,11 +964,10 @@ static wa_fetch_t   s_upd_own;
  */
 static void fetch_get(wa_fetch_t *raw, wa_fetch_t *own)
 {
-    wifi_access_fetch_get(raw);
-    if (raw->job != WA_JOB_DEVICE) {
-        s_upd_own = *raw;
-    }
-    *own = s_upd_own;
+    /* A device's image (DEVICE, panel_devimg.c) runs on the same job and
+     * never shows as PANEL's check or download; the job it replaced is
+     * kept where it was replaced (wa_fetch_keep()). */
+    wifi_access_fetch_get_own(raw, own);
 }
 
 /**

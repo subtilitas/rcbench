@@ -267,6 +267,30 @@ bool wa_fetch_offers(const wa_fetch_t *f, wa_channel_t now);
 bool wa_fetch_stale(const wa_fetch_t *f, wa_channel_t now);
 
 /**
+ * @brief Before a job starts on @p f: a DEVICE job keeps the panel's own
+ *        job, CHECK or DOWNLOAD, that ended on @p f in @p keep, so its end
+ *        stays readable (wa_fetch_own()) however late its reader comes.
+ *        Call it in the same lock as wa_fetch_start().
+ *
+ * @param f    The job state before the start.
+ * @param next The job about to start.
+ * @param keep Takes @p f when @p next is DEVICE and @p f is the panel's
+ *             own job, not running; unchanged otherwise.
+ */
+void wa_fetch_keep(const wa_fetch_t *f, wa_job_t next, wa_fetch_t *keep);
+
+/**
+ * @brief The panel's own last job: @p f unless it is a DEVICE job, else
+ *        the one wa_fetch_keep() kept.
+ *
+ * @param f    The job state.
+ * @param keep What wa_fetch_keep() kept.
+ * @param out  Takes the panel's job.
+ */
+void wa_fetch_own(const wa_fetch_t *f, const wa_fetch_t *keep,
+                  wa_fetch_t *out);
+
+/**
  * @brief Whether a job runs: joining to checking.
  *
  * @param f The job state.

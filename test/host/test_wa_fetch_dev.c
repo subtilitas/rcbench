@@ -504,6 +504,54 @@ TEST_CASE(a_device_job_is_refused_while_armed_or_without_a_network)
                             WA_WHY_NONE, 0u), WA_GOT_NO_NET);
 }
 
+/* The panel's CHECK ends and a device's job replaces it before any
+ * reader saw the end: the panel's view still reads that end.  A CHECK
+ * still running refuses the DEVICE job and keeps nothing. */
+TEST_CASE(a_device_job_keeps_the_panels_ended_check_readable)
+{
+    wa_fetch_t f, keep, own;
+    wa_fetch_init(&f, V16);
+    memset(&keep, 0, sizeof(keep));
+    CHECK_EQ(wa_fetch_start(&f, WA_JOB_CHECK, V16, WA_CH_STABLE, true,
+                            WA_WHY_NONE, 0u), WA_GOT_NONE);
+    const uint32_t check_gen = f.gen;
+    /* running: the DEVICE start is refused, nothing is kept */
+    wa_fetch_keep(&f, WA_JOB_DEVICE, &keep);
+    CHECK_EQ(wa_fetch_start(&f, WA_JOB_DEVICE, V16, WA_CH_STABLE, true,
+                            WA_WHY_NONE, 1u), WA_GOT_BLOCKED);
+    CHECK_EQ(keep.gen, 0u);
+    wa_fetch_own(&f, &keep, &own);
+    CHECK_EQ(own.job, WA_JOB_CHECK);
+    CHECK(wa_fetch_busy(&own));
+    /* the check ends; in the same frame a device's job replaces it */
+    wa_fetch_abort(&f, WA_WHY_STOP);
+    CHECK(!wa_fetch_busy(&f));
+    wa_fetch_keep(&f, WA_JOB_DEVICE, &keep);
+    CHECK_EQ(wa_fetch_start(&f, WA_JOB_DEVICE, V16, WA_CH_STABLE, true,
+                            WA_WHY_NONE, 2u), WA_GOT_NONE);
+    wa_fetch_own(&f, &keep, &own);
+    CHECK_EQ(own.job, WA_JOB_CHECK);
+    CHECK_EQ(own.gen, check_gen);
+    CHECK(!wa_fetch_busy(&own));
+    CHECK_EQ(own.got, WA_GOT_ABORTED);
+    /* a second DEVICE job keeps the panel's check, not the device's */
+    wa_fetch_abort(&f, WA_WHY_CANCEL);
+    wa_fetch_keep(&f, WA_JOB_DEVICE, &keep);
+    CHECK_EQ(wa_fetch_start(&f, WA_JOB_DEVICE, V16, WA_CH_STABLE, true,
+                            WA_WHY_NONE, 3u), WA_GOT_NONE);
+    wa_fetch_own(&f, &keep, &own);
+    CHECK_EQ(own.gen, check_gen);
+    /* the panel's next job reads as itself */
+    wa_fetch_abort(&f, WA_WHY_CANCEL);
+    wa_fetch_keep(&f, WA_JOB_DOWNLOAD, &keep);
+    CHECK_EQ(wa_fetch_start(&f, WA_JOB_DOWNLOAD, V16, WA_CH_STABLE, true,
+                            WA_WHY_NONE, 4u), WA_GOT_NONE);
+    wa_fetch_own(&f, &keep, &own);
+    CHECK_EQ(own.job, WA_JOB_DOWNLOAD);
+    CHECK_EQ(own.gen, f.gen);
+    CHECK_EQ(keep.gen, check_gen);
+}
+
 int main(void)
 {
     g_img = malloc(SLOT);
@@ -522,6 +570,7 @@ int main(void)
     RUN(no_name_fetches_nothing);
     RUN(a_device_job_keeps_its_release_and_asks_sums_after_the_join);
     RUN(a_device_job_is_refused_while_armed_or_without_a_network);
+    RUN(a_device_job_keeps_the_panels_ended_check_readable);
     free(g.alloc_buf);
     free(g_img);
     return test_summary("wa_fetch_dev");

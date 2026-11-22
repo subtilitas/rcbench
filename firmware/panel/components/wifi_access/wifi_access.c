@@ -129,6 +129,7 @@ static struct {
     fw_offer_t      offer;  /**< The offer the staged image makes. */
     uint32_t        gen;          /**< sessions started */
     wa_fetch_t      f;            /**< the job asking GitHub */
+    wa_fetch_t      f_own;        /**< the panel's job a DEVICE job replaced */
     struct {
         uint32_t     gen;         /**< the job's, wa_fetch_t.gen */
         wa_job_t     job;  /**< What the job fetches. */
@@ -2022,6 +2023,7 @@ static wa_got_t fetch_start(wa_job_t job, fw_version_t want, wa_channel_t ch,
     const wa_why_t g = wa_fetch_start_gate(
         gate, s.taken, atomic_load(&s.fetch_alive),
         wa_radio(&s.w) && s.w.mode != WA_MODE_FETCH);
+    wa_fetch_keep(&s.f, job, &s.f_own);
     const wa_got_t r = wa_fetch_start(&s.f, job, want, ch, s.conf.have_net,
                                       g, ms());
     s.f.asset = asset;
@@ -2123,6 +2125,14 @@ void wifi_access_fetch_get(wa_fetch_t *out)
 {
     lock();
     *out = s.f;
+    unlock();
+}
+
+void wifi_access_fetch_get_own(wa_fetch_t *raw, wa_fetch_t *own)
+{
+    lock();
+    *raw = s.f;
+    wa_fetch_own(&s.f, &s.f_own, own);
     unlock();
 }
 

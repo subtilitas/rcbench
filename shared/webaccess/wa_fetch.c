@@ -52,6 +52,20 @@ bool wa_fetch_busy(const wa_fetch_t *f)
     return f->phase != WA_PH_IDLE && f->phase != WA_PH_ENDED;
 }
 
+void wa_fetch_keep(const wa_fetch_t *f, wa_job_t next, wa_fetch_t *keep)
+{
+    if (next == WA_JOB_DEVICE && f->job != WA_JOB_DEVICE
+        && !wa_fetch_busy(f)) {
+        *keep = *f;
+    }
+}
+
+void wa_fetch_own(const wa_fetch_t *f, const wa_fetch_t *keep,
+                  wa_fetch_t *out)
+{
+    *out = (f->job != WA_JOB_DEVICE) ? *f : *keep;
+}
+
 bool wa_fetch_stale(const wa_fetch_t *f, wa_channel_t now)
 {
     return f->job == WA_JOB_CHECK && f->phase == WA_PH_ENDED

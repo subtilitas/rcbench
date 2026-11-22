@@ -250,6 +250,15 @@ void wifi_access_fetch_tick(wa_why_t abort);
 void wifi_access_fetch_get(wa_fetch_t *out);
 
 /**
+ * @brief The job and the panel's own last job, CHECK or DOWNLOAD, in one
+ *        copy: a DEVICE job that replaced the panel's leaves its end
+ *        readable (wa_fetch_own()).
+ * @param raw takes the job
+ * @param own takes the panel's last job
+ */
+void wifi_access_fetch_get_own(wa_fetch_t *raw, wa_fetch_t *own);
+
+/**
  * @brief Whether a home network is kept, and its name into @p ssid of @p n
  *         bytes (empty for none).
  * @param ssid takes the network's name; empty for none
