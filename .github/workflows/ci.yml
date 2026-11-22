@@ -700,6 +700,7 @@ jobs:
       # checked-in tables were made with.  numpy, OpenCASCADE (cadquery-ocp)
       # and OpenCV are what the cases of test_make_video.py,
       # test_dial_base.py, test_panel_7b.py and test_ina228_xt90.py import;
+      # shapely is what test_rbmod_v2.py's reader cases import;
       # the model checks below the pytest step use the first two as well.
       # A case whose tool or module is missing fails here and skips on a
       # developer's machine (conftest.py, skip_or_fail and import_or_fail).
@@ -707,7 +708,7 @@ jobs:
         run: >-
           python3 -m pip install --quiet pytest==9.1.1 markdown-it-py==3.0.0
           pillow==12.3.0 numpy==2.5.3 cadquery-ocp==8.0.1.1.0
-          opencv-python-headless==5.0.0.93
+          opencv-python-headless==5.0.0.93 shapely==2.2.0
 
       # test_check_protocols.py holds the check's reading of a .pio file
       # to the C pioasm writes.  pioasm is built from the pinned pico-sdk
@@ -788,6 +789,14 @@ jobs:
       # test/tools/test_flap_drive.py, in the pytest step above.
       - name: Flap drive matches its spec and no two of its solids collide
         run: python3 hardware/mechanical/_gen_flap_drive.py --check
+
+      # The 3 parts of the sensor node's case are built with OpenCASCADE
+      # round the layout of its boards: the files match their spec, each
+      # part is a valid solid in one piece, and none shares volume with
+      # another or with a solid of the layout. Its tests are
+      # test/tools/test_node_case.py, in the pytest step above.
+      - name: Sensor node case matches its spec and clears the boards
+        run: python3 hardware/mechanical/_gen_node_case.py --check
 
       # The M5Stack Dial's solids are surfaces fitted to M5Stack's mesh.
       # OpenCASCADE meshes each solid again; the two meshes are within

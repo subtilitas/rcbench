@@ -8,13 +8,15 @@ a contact sheet ``all.png`` of all of them.
 
 Usage:
     xvfb-run -a python3 hardware/kicad/tools/step_render.py DIR [--size W H]
-        [--step FILE ...] [--from CORNER] [--suffix TEXT]
+        [--step FILE ...] [--from CORNER] [--suffix TEXT] [--folders]
 
 --step renders the given STEP files in place of the library. --from
 names the corner the view looks from as OpenCASCADE's
 V3d_TypeOfOrientation does, XnegYnegZpos by default; XposYnegZneg looks
 at the underside. --suffix is added to each PNG's name and leaves the
-contact sheet out.
+contact sheet out. --folders writes each PNG to DIR/<name of its STEP
+file's folder>/, as hardware/mechanical/renders/ is sorted; the contact
+sheet stays in DIR.
 
 Needs OCP (pip install cadquery-ocp), Pillow for the contact sheet, and
 an OpenGL context: an X display, or xvfb-run with Mesa.
@@ -156,6 +158,8 @@ def main(argv):
                     help="the corner the view looks from")
     ap.add_argument("--suffix", default="",
                     help="added to each PNG's name; no contact sheet")
+    ap.add_argument("--folders", action="store_true",
+                    help="each PNG goes to DIR/<its STEP file's folder>")
     args = ap.parse_args(argv)
     args.out.mkdir(parents=True, exist_ok=True)
     r = Renderer(*args.size)
@@ -165,7 +169,9 @@ def main(argv):
         / f"{spec.FOOTPRINT['name']}.step" for spec in gen_all.load_specs()]
     for path in paths:
         name = path.stem
-        png = args.out / f"{name}{args.suffix}.png"
+        out = args.out / path.parent.name if args.folders else args.out
+        out.mkdir(parents=True, exist_ok=True)
+        png = out / f"{name}{args.suffix}.png"
         r.render(path, png, args.corner)
         pngs.append(png)
         print(f"wrote {png}")
