@@ -155,6 +155,31 @@ def test_build_writes_manifest_images_and_index(tmp_path):
         [i["file"] for i in m["images"]] + ["manifest.json"])
 
 
+def test_signatures_are_copied_beside_their_images(tmp_path):
+    """A signature in the ZIP file or beside the asset goes with the image."""
+    rel = tmp_path / "rel"
+    folder = write_release(rel, "v0.24.0")
+    zpath = folder / "rcbench-panel-p4-v0.24.0.zip"
+    with zipfile.ZipFile(zpath, "a") as z:
+        z.writestr("rcbench-panel-merged.bin.sig", b"panel-sig")
+    sums = (folder / "SHA256SUMS").read_text().splitlines()
+    digest = hashlib.sha256(zpath.read_bytes()).hexdigest()
+    (folder / "SHA256SUMS").write_text("\n".join(
+        f"{digest}  ./{zpath.name}" if zpath.name in line else line
+        for line in sums) + "\n")
+    (folder / "rcbench-dial-merged-0.24.0.bin.sig").write_bytes(b"dial-sig")
+    out = tmp_path / "fw"
+    fm.build(rel, listing("v0.24.0"), out)
+    dest = out / "v0.24.0"
+    assert (dest / "rcbench-panel-p4-merged-v0.24.0.bin.sig").read_bytes() \
+        == b"panel-sig"
+    assert (dest / "rcbench-dial-merged-0.24.0.bin.sig").read_bytes() \
+        == b"dial-sig"
+    # An image without a signature has none beside it.
+    assert not (dest / "rcbench-iomcu-install-v0.24.0.uf2.sig").exists()
+    assert not (dest / "rcbench-c6-merged-2.13.0.bin.sig").exists()
+
+
 def test_an_image_of_another_chip_fails(tmp_path):
     """A Dial image with the chip ID of an ESP32-C6 fails the build."""
     rel = tmp_path / "rel"

@@ -204,6 +204,9 @@ SOURCES = [
     "shared/ui/wifi_kept.c",
     "shared/ui/wifi_view.c",
     "shared/ui/update_screen.c",
+    # The release signature's verdict, which the question and PANEL UPDATE
+    # show.
+    "shared/fwupdate/fw_sig.c",
     "shared/ui/coproc_update_screen.c",
     "shared/ui/upd_screen.c",
     "shared/ui/upd_remind.c",

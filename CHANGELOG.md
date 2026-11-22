@@ -8,6 +8,24 @@ history is in git.
 
 ### Added
 
+- Release signatures: every firmware image a release publishes has a
+  detached `<image>.sig`, ECDSA (elliptic curve digital signature
+  algorithm) P-256 over its SHA-256, beside the asset or inside its ZIP
+  archive. The release workflow signs every `.bin` and `.uf2` file in one
+  loop with the secret `RCBENCH_IMAGE_SIGNING`, fails a tag build without
+  it, and verifies every signature against the committed public key before
+  publishing (`tools/sign_images.sh`). The web flasher's folder carries the
+  `.sig` beside each image ([Security policy](SECURITY.md#release-signatures)).
+- The panel verifies the signature of its own image with Mbed TLS 4.1.0:
+  the Wi-Fi page takes an optional `rcbench-panel-p4-vX.Y.Z.bin.sig` beside
+  the image, and a download from GitHub fetches it after the image. The
+  question on WI-FI and PANEL UPDATE show SIGNED BY THE RCBENCH RELEASE KEY,
+  or NOT SIGNED BY THE RCBENCH RELEASE KEY with the reason. Until the stable
+  release that enforces it, an image without a valid signature installs
+  with the single 2s hold and that warning; a build with
+  `RCBENCH_SIGN_ENFORCE=1` asks for a second 2s hold, INSTALL ANYWAY.
+  The panel image grows by 7152 bytes.
+
 - `hardware/mechanical/`: a printed case of 3 parts for the remote INA228
   sensor node, 91.4mm x 55.4mm x 28.0mm: `ina228_node_plate`,
   `ina228_node_frame` and `ina228_node_bezel`, each as STEP and STL. 4

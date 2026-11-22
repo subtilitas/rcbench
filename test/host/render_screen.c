@@ -2437,15 +2437,20 @@ static void pose_wifi(const char *view)
         v.up = WIFI_UP_STAGED;
         strcpy(v.new_ver, EX_NEWER);
         v.offer = WIFI_OFFER_NEWER;
+        /* Signed, but the older image came with no signature and the
+         * rebuild with one that does not match. */
+        v.sig = FW_SIG_OK;
         if (strcmp(view, "wifi-older") == 0) {
             strcpy(v.new_ver, EX_OLDER);
             v.offer = WIFI_OFFER_OLDER;
             v.gate = WIFI_GATE_DRAWING;
+            v.sig = FW_SIG_NONE;
         } else if (strcmp(view, "wifi-coproc") == 0) {
             v.gate = WIFI_GATE_COPROC;
         } else if (strcmp(view, "wifi-rebuild") == 0) {
             strcpy(v.new_ver, EX_RUNNING);
             v.offer = WIFI_OFFER_REBUILD;
+            v.sig = FW_SIG_BAD;
         } else if (strcmp(view, "wifi-installed") == 0) {
             strcpy(v.new_ver, EX_RUNNING);
             v.offer = WIFI_OFFER_INSTALLED;
@@ -2842,6 +2847,15 @@ static void pose_update(const char *view)
     u.total = 1843200u;
     u.written = 720896u;
     u.state = UPDATE_WRITING;
+    u.sig = FW_SIG_OK;
+    if (strcmp(view, "panel-update-unsigned") == 0) {
+        u.sig = FW_SIG_NONE;      /* warns, and writes */
+    } else if (strcmp(view, "panel-update-anyway") == 0) {
+        /* A build with RCBENCH_SIGN_ENFORCE: the second hold. */
+        u.written = 0u;
+        u.state = UPDATE_UNSIGNED;
+        u.sig = FW_SIG_BAD;
+    }
     if (strncmp(view, "panel-download", 14) == 0) {
         upd_view_t v;
         memset(&v, 0, sizeof(v));

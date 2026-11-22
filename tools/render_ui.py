@@ -813,8 +813,14 @@ SCREENS = {
     "wifi-older": ("wifi-older.png", "wifi", "dark"),
     "wifi-rebuild": ("wifi-rebuild.png", "wifi", "dark"),
     "wifi-installed": ("wifi-installed.png", "wifi", "dark"),
-    # PANEL UPDATE: writing, written, failed.
+    # PANEL UPDATE: writing, written, failed.  Writing an image the release
+    # key does not vouch for, with the warning; and the second hold,
+    # INSTALL ANYWAY, of a build that enforces the signature.
     "panel-update": ("panel-update.png", "panel-update", "dark"),
+    "panel-update-unsigned": ("panel-update-unsigned.png", "panel-update",
+                              "dark"),
+    "panel-update-anyway": ("panel-update-anyway.png", "panel-update",
+                            "dark"),
     "panel-update-done": ("panel-update-done.png", "panel-update", "dark"),
     "panel-update-failed": ("panel-update-failed.png", "panel-update",
                             "dark"),
