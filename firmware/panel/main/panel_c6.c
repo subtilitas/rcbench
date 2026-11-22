@@ -449,7 +449,10 @@ void c6_service(bool armed)
     owed_service(armed, now);
 
     fw_c6_why_t why = FW_C6_WHY_NONE;
-    const fw_c6_feed_t f = feed_now(armed);
+    fw_c6_feed_t f = feed_now(armed);
+    /* The row shows the update under way while its start is still owed
+     * (the radio's wait): no SKIP, no second hold. */
+    f.updating = f.updating || panel_devimg_pending(DEVIMG_C6);
     upd_c6_view_t v = {
         .row = fw_c6_row(&f, &why), .why = why, .known = f.known,
         .running = f.running, .have_image = f.have_image && f.image_ok,

@@ -208,6 +208,16 @@ devimg_src_t devimg_src(const devimg_slot_t *s, bool have_net);
 bool devimg_busy(const devimg_slot_t *s);
 
 /**
+ * @brief Whether the row shows the update as under way: the image is on
+ *        its way, or it arrived and the update the hold asked for is
+ *        still owed (the radio's wait).  The row offers no other control
+ *        then, and CANCEL UPDATE stays (devimg_cancel()).
+ * @param s the image's state
+ * @return true for FETCH, CARD and VERIFY, and while owed
+ */
+bool devimg_pending(const devimg_slot_t *s);
+
+/**
  * @brief A hold starts the image's way from @p src: FETCH for NET, CARD for
  *        CARD; the update is owed.  The last failure's code clears.
  *        Nothing changes while one runs, or for RAM.

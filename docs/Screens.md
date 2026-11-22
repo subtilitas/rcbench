@@ -7558,7 +7558,9 @@ image passed, the update the hold asked for starts by itself when its
 gate is open; it waits up to 20,000ms for the radio to go off after the
 download, and the panel ends the radio's time request for it. Any other
 closed gate drops the start: the band names the reason, and the next hold
-starts the update from the image in memory.
+starts the update from the image in memory. Until the start, the row
+and the step show the update as under way: no SKIP THIS STEP and no
+other hold; on a wireless device's step CANCEL UPDATE drops the start.
 
 A download needs what a check needs: a home network, the bench SAFE with
 no arm waiting, the supply output off, no log run, no other update and no
@@ -7595,6 +7597,10 @@ Current limitations:
   `SHA256SUMS`. Its images come from the SD card.
 - An image stays in PSRAM until the panel restarts, up to the four most
   bytes above together, 8,257,536 bytes.
+- An SD-card image carries no signature, and no signature of a device
+  image is checked: a card without a `SHA256SUMS` that names the file
+  holds it to its size, its chip, project, role and version, and its own
+  appended SHA-256 only ([SECURITY.md](../SECURITY.md)).
 
 ### The C6 radio
 

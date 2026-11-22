@@ -122,6 +122,11 @@ bool devimg_busy(const devimg_slot_t *s)
            || s->st == DEVIMG_VERIFY;
 }
 
+bool devimg_pending(const devimg_slot_t *s)
+{
+    return devimg_busy(s) || s->owed;
+}
+
 bool devimg_begin(devimg_slot_t *s, devimg_src_t src)
 {
     if (devimg_busy(s) || s->st == DEVIMG_READY || src == DEVIMG_SRC_RAM) {

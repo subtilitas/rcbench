@@ -8181,7 +8181,10 @@ das das Halten angefordert hat, und beendet den Download; ein Image, das
 danach noch besteht, bleibt für das nächste Halten im Speicher. Hat das Image bestanden, startet das Update, das das Halten
 angefordert hat, von selbst, wenn sein Gate offen ist; es wartet bis zu
 20.000ms, bis der Funk nach dem Download aus ist, und das Panel beendet
-dafür die Zeitabfrage des Funks. Jedes andere geschlossene Gate verwirft
+dafür die Zeitabfrage des Funks. Bis zum Start zeigen Zeile und Schritt
+das Update als laufend: kein SCHRITT ÜBERSPRINGEN und kein anderes
+Halten; auf dem Schritt eines Funkgeräts verwirft UPDATE ABBRECHEN den
+Start. Jedes andere geschlossene Gate verwirft
 den Start: Das Band nennt den Grund, und das nächste Halten startet das
 Update aus dem Image im Speicher.
 
@@ -8223,6 +8226,10 @@ Aktuelle Einschränkungen:
   SD-Karte.
 - Ein Image bleibt bis zum Neustart des Panels im PSRAM, höchstens die
   vier Byte-Grenzen oben zusammen, 8.257.536 Bytes.
+- Ein Image von der SD-Karte trägt keine Signatur, und keine Signatur
+  eines Geräte-Images wird geprüft: Eine Karte ohne `SHA256SUMS`, die die
+  Datei nennt, bindet es nur an seine Größe, Chip, Projekt, Rolle und
+  Version und seinen eigenen angehängten SHA-256 ([SECURITY.md](../SECURITY.md)).
 
 ### Der C6-Funk
 

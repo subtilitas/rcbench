@@ -391,6 +391,47 @@ TEST_CASE(cancel_drops_the_owed_update_in_every_phase_and_keeps_the_image)
     CHECK(!devimg_cancel(&s));
 }
 
+/* The row shows the update under way from the hold until the owed start
+ * fires, drops or is cancelled: through the radio's wait up to its last
+ * millisecond, never after. */
+TEST_CASE(the_update_shows_pending_until_its_owed_start_ends)
+{
+    devimg_slot_t s;
+    devimg_init(&s);
+    CHECK(!devimg_pending(&s));
+    CHECK(devimg_begin(&s, DEVIMG_SRC_NET));
+    CHECK(devimg_pending(&s));
+    devimg_fetched(&s);
+    CHECK(devimg_pending(&s));
+    devimg_ready(&s, 100u);
+    CHECK(!devimg_busy(&s));
+    CHECK(devimg_pending(&s));
+    CHECK_EQ(devimg_owed_step(&s, false, true, 100u + DEVIMG_OWED_MS - 1u),
+             DEVIMG_OWED_WAIT);
+    CHECK(devimg_pending(&s));
+    CHECK_EQ(devimg_owed_step(&s, false, true, 100u + DEVIMG_OWED_MS),
+             DEVIMG_OWED_DROP);
+    CHECK(!devimg_pending(&s));
+    /* FIRE ends it; READY without an owed start shows none */
+    devimg_init(&s);
+    CHECK(devimg_begin(&s, DEVIMG_SRC_CARD));
+    devimg_ready(&s, 0u);
+    CHECK(devimg_pending(&s));
+    CHECK_EQ(devimg_owed_step(&s, true, false, 0u), DEVIMG_OWED_FIRE);
+    CHECK(!devimg_pending(&s));
+    /* CANCEL UPDATE ends it */
+    devimg_init(&s);
+    CHECK(devimg_begin(&s, DEVIMG_SRC_CARD));
+    devimg_ready(&s, 0u);
+    CHECK(devimg_cancel(&s));
+    CHECK(!devimg_pending(&s));
+    /* a failure ends it */
+    devimg_init(&s);
+    CHECK(devimg_begin(&s, DEVIMG_SRC_NET));
+    devimg_failed(&s, 'D', 10u);
+    CHECK(!devimg_pending(&s));
+}
+
 int main(void)
 {
     g_img = malloc(DEVUPD_SLOT_DIAL);
@@ -415,6 +456,7 @@ int main(void)
     RUN(any_other_closed_gate_drops_the_owed_update_at_once);
     RUN(a_failed_attempt_owes_no_update);
     RUN(cancel_drops_the_owed_update_in_every_phase_and_keeps_the_image);
+    RUN(the_update_shows_pending_until_its_owed_start_ends);
     free(g_img);
     return test_summary("devimg");
 }

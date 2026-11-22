@@ -144,6 +144,21 @@ bool panel_devimg_running(devimg_id_t id)
     return (unsigned)id < DEVIMG_COUNT && devimg_busy(&s_sl[id]);
 }
 
+bool panel_devimg_pending(devimg_id_t id)
+{
+    return (unsigned)id < DEVIMG_COUNT && devimg_pending(&s_sl[id]);
+}
+
+bool panel_devimg_pending_other(devimg_id_t id)
+{
+    for (unsigned i = 0; i < DEVIMG_COUNT; ++i) {
+        if (i != (unsigned)id && devimg_pending(&s_sl[i])) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool panel_devimg_cancel(void)
 {
     bool took = false;

@@ -220,12 +220,11 @@ role). The panel then takes that device's packets as the real one's:
   produces an ADD and WHERE correction and a CSV row. A CONTROL write the
   panel sends (BLADES, RPM) reaches whichever device holds the link.
 - The device update on UPDATES: the panel's update client connects to the
-  same stored address, sends the image this panel carries to whichever
+  same stored address, sends the image the hold fetched to whichever
   device holds it, and takes that device's answers and its version as the
   real one's. A false device can show an install that did not happen, or
-  a refusal, on the band and in the row; it receives only an image built
-  from this repository. The device side of the update is the next
-  paragraph.
+  a refusal, on the band and in the row; it receives the image the hold
+  fetched (the next paragraphs). The device side of the update follows.
 
 The planned remedy is pairing with bonding (LE Secure Connections), a
 planned slice that is not built.
@@ -252,6 +251,22 @@ flashed once over USB. A link that drops, or an ABORT that comes, while the
 device installs does not stop the install: the boot slot may already be
 switched, so the device restarts into the image when it passed ESP-IDF's
 check, and the panel learns the result from the device's version.
+
+Current limitation, the device images the panel sends: the panel image
+carries none of the C6 radio's, the Dial's or the nodes' images. A hold
+downloads its device's file of the panel's release from GitHub over HTTPS
+and checks its length against the device's slot and its SHA-256 against
+the release's `SHA256SUMS`, fetched over the same HTTPS path. Without a
+home network, or after a failed download, the hold reads the file from
+the SD card's `BENCH/UPDATES`. An SD-card image is checked for its size,
+the device's chip, project and role, the release's version, its own
+appended SHA-256, and against a `SHA256SUMS` on the same card only when
+one names it. It is not authenticated: anyone who can write the card can
+place an image that passes these checks, and the step's 2s hold sends it
+to the C6 radio over SDIO (Secure Digital input/output), or to the Dial or
+a node over Bluetooth LE, where the device's own confirmation still
+applies. Signature verification of device images is not built
+([Screens: Device images](docs/Screens.md#device-images)).
 
 Two classes of report apply.
 

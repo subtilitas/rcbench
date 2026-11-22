@@ -647,8 +647,15 @@ void devupd_service(bool armed)
                      || (panel_devimg_busy() && !fetching),
             .busy = mine || fetching,
         };
+        /* The row shows the update under way while its start is still
+         * owed, so no SKIP or other hold appears under the radio's wait;
+         * the gate above stays the one the owed start opens on. */
+        devupd_row_in_t shown = in;
+        shown.busy = in.busy || panel_devimg_pending(id);
+        shown.other = in.other || panel_devimg_pending_other(id);
+        const devupd_row_t gate_row = devupd_row(&in);
         upd_dev_view_t v = {
-            .row = devupd_row(&in), .bound = d->bound, .off = d->off,
+            .row = devupd_row(&shown), .bound = d->bound, .off = d->off,
             .no_ble = no_ble, .known = d->linked,
             .running = d->running, .have_image = !d->other,
             .carried = rel, .phase = mine ? p.phase : 0u,
@@ -656,12 +663,17 @@ void devupd_service(bool armed)
         };
         panel_devimg_view(id, &v.fetch);
         upd_dev_set((upd_dev_id_t)i, &v);
-        const bool open = v.row == DEVUPD_ROW_READY
-                          || v.row == DEVUPD_ROW_REINSTALL;
+        /* The gate's own reasons, for the band. */
+        upd_dev_view_t gv = v;
+        gv.row = gate_row;
+        const bool open = gate_row == DEVUPD_ROW_READY
+                          || gate_row == DEVUPD_ROW_REINSTALL;
         bool ask = false;
         if (upd_dev_take((upd_dev_id_t)i)) {
-            if (!open) {
-                ui_router_set_notice(upd_dev_reason(&v));
+            if (!open || panel_devimg_pending(id)) {
+                /* An owed start is this hold's already: it reads as the
+                 * update running. */
+                ui_router_set_notice(upd_dev_reason(open ? &v : &gv));
             } else if (panel_devimg_get(id, NULL, NULL, NULL, NULL)) {
                 ask = true;
             } else {
@@ -687,8 +699,8 @@ void devupd_service(bool armed)
         case DEVIMG_OWED_DROP:
             ESP_LOGW(TAG, "%s: the image arrived; the update does not "
                           "start: row %u", s_img[i].word, (unsigned)v.row);
-            if (upd_dev_reason(&v) != NULL) {
-                ui_router_set_notice(upd_dev_reason(&v));
+            if (upd_dev_reason(&gv) != NULL) {
+                ui_router_set_notice(upd_dev_reason(&gv));
             }
             break;
         case DEVIMG_OWED_NONE:

@@ -80,6 +80,22 @@ bool panel_devimg_busy(void);
 bool panel_devimg_running(devimg_id_t id);
 
 /**
+ * @brief Whether @p id's row shows its update as under way
+ *        (devimg_pending()): on its way, or its start still owed.
+ * @param id the image
+ * @return true while one runs or is owed
+ */
+bool panel_devimg_pending(devimg_id_t id);
+
+/**
+ * @brief Whether an image other than @p id is pending
+ *        (panel_devimg_pending()).
+ * @param id the image left out
+ * @return true while another runs or is owed
+ */
+bool panel_devimg_pending_other(devimg_id_t id);
+
+/**
  * @brief The row's view of @p id's image: where the next hold takes it
  *        from, the file, and what runs.
  * @param id  the image
