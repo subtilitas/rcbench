@@ -204,6 +204,9 @@ SOURCES = [
     "shared/ui/wifi_kept.c",
     "shared/ui/wifi_view.c",
     "shared/ui/update_screen.c",
+    # The release signature's verdict, which the question and PANEL UPDATE
+    # show.
+    "shared/fwupdate/fw_sig.c",
     "shared/ui/coproc_update_screen.c",
     "shared/ui/upd_screen.c",
     "shared/ui/upd_remind.c",
@@ -359,6 +362,7 @@ SOURCES = [
     "shared/outputs/out_bind.c",
     "shared/outputs/out_bind_take.c",
     "shared/outputs/out_board_rbmod.c",
+    "shared/outputs/out_board_rsn.c",
     "shared/outputs/board_fix.c",
     "shared/outputs/servo_cmd.c",
     "shared/can/can_selftest.c",

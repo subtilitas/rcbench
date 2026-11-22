@@ -86,10 +86,12 @@ REPO = pathlib.Path(__file__).resolve().parent.parent
 # What the host build reads: the code under test, the suite, the
 # IOmcu's pin header, PIO program and sources, which tests read or
 # compile, the panel's storage component, which test_storage compiles, the
-# touch injector's core, which the host build compiles and tests, and the
-# profile generator, which the esc_parity test holds the card reader to.
+# touch injector's core, which the host build compiles and tests, the
+# panel's release key, which test_fw_sign parses, and the profile
+# generator, which the esc_parity test holds the card reader to.
 COPIED = ("shared", "protocols", "test/host", "firmware/iomcu",
-          "firmware/panel/components/storage", "firmware/node/main",
+          "firmware/panel/components/storage", "firmware/panel/main/keys",
+          "firmware/node/main",
           "testbench/touch-injector/core", "tools/gen_esc_profiles.py")
 # Where a mutant is made, and the folder under it where none is: a pin
 # driver is compiled by the IOmcu build only.

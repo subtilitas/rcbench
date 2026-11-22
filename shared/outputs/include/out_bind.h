@@ -63,10 +63,14 @@ typedef enum {
     OUTBIND_BOARD_UNKNOWN = 0,  /**< nothing answered, or unknown identity */
     OUTBIND_BOARD_PICO_HEADER = 1,  /**< Pico form factor, wired by hand    */
     OUTBIND_BOARD_RBMOD = 2,        /**< the rbmod carrier: soldered pins   */
+    /** @brief The remote servo node: a Waveshare Core2350B (RP2350B) on its
+     *         carrier, soldered pins (out_board_rsn.c). */
+    OUTBIND_BOARD_RSN = 3,
 } outbind_board_id_t;
 
-/** @brief The most pins any board in this build brings out. */
-#define OUTBIND_PINS  26u
+/** @brief The most pins any board in this build brings out: the remote
+ *         servo node's 27. */
+#define OUTBIND_PINS  27u
 
 /**
  * @brief One pin of a board's catalogue.
@@ -115,8 +119,15 @@ typedef struct {
     uint8_t decivolts;
 } outbind_pad_t;
 
-/** @brief The servo outputs a board with soldered pins has (PWM01 to PWM04). */
-#define OUTBIND_FIXED_OUTS 4u
+/**
+ * @brief The servo outputs a board with soldered pins has at most: 9 on the
+ *        remote servo node (S1 to S9), 4 on the rbmod carrier (PWM01 to
+ *        PWM04).
+ *
+ * A board with fewer fills the rest of outbind_roles_t.out with
+ * OUTBIND_NO_GPIO.
+ */
+#define OUTBIND_FIXED_OUTS 9u
 /** @brief The programming ports a board with soldered pins has (PROGP01 to
  *         PROGP04). */
 #define OUTBIND_FIXED_PROGS 4u
@@ -154,22 +165,40 @@ typedef struct {
 
 /** @brief The channels of an INA3221 part. */
 #define OUTBIND_INA_CHANNELS 3u
+/** @brief The INA3221 parts a board with soldered pins carries at most. */
+#define OUTBIND_INA_PARTS    3u
+/** @brief Their channels. */
+#define OUTBIND_INA_CH_MAX   (OUTBIND_INA_CHANNELS * OUTBIND_INA_PARTS)
 
 /**
- * @brief The INA3221 a board with soldered pins carries on its sensor bus,
- *        and what each of its channels measures.
+ * @brief The INA3221s a board with soldered pins carries on its sensor bus,
+ *        and what each of their channels measures.
  *
- * On such a board the part is fitted and each channel watches its rail
+ * On such a board the parts are fitted and each channel watches its rail
  * whatever the settings say: the IOmcu refuses a SENSE_MAP write that
  * changes either (board_fix.h), and the panel shows the rows without keys.
+ * The parts sit at consecutive addresses from 0x40 + part; channel c of
+ * watch[] and feeds[] is part c / 3's CH(c % 3 + 1).
  */
 typedef struct {
-    bool     on;                            /**< the board carries one    */
-    uint8_t  part;                          /**< 0 to 3: at 0x40 + part   */
-    uint8_t  watch[OUTBIND_INA_CHANNELS];   /**< CHn+1's LINK_SM_WATCH_*  */
-    /** @brief CHn+1's rail: the GPIOs of the positions it feeds, bit g
+    bool     on;                            /**< the board carries them   */
+    uint8_t  part;                          /**< 0 to 3: the first at
+                                                 0x40 + part              */
+    /** @brief Parts fitted, 1 to OUTBIND_INA_PARTS; 0 is read as 1. */
+    uint8_t  parts;
+    uint8_t  watch[OUTBIND_INA_CH_MAX];     /**< channel c's LINK_SM_WATCH_* */
+    /** @brief Channel c's rail: the GPIOs of the positions it feeds, bit g
      *         for GPIO g. */
-    uint32_t feeds[OUTBIND_INA_CHANNELS];
+    uint64_t feeds[OUTBIND_INA_CH_MAX];
+    /** @brief Every channel's shunt in 0.1mΩ, held: a SENSE_MAP write of
+     *         another is refused.  0: the shunts are the page's. */
+    uint16_t shunt_dmohm;
+    /** @brief Each channel's critical alert limit when SENSE_LIMIT sets
+     *         none lower, mA; 0: no critical limit is written. */
+    uint16_t crit_ma;
+    /** @brief The SENSE_LIMIT each channel starts at when a kept record
+     *         holds none on any of the board's channels, mA; 0: none. */
+    uint16_t limit_ma;
 } outbind_ina_t;
 
 /**
@@ -192,7 +221,22 @@ typedef struct {
     uint8_t tap;          /**< the phase tap                                */
     uint8_t prog_5v_en;   /**< enable of the programming ports' 5V DC-DC    */
     uint8_t heartbeat;    /**< the safety heartbeat from the panel          */
-    outbind_ina_t ina;    /**< the INA3221 it solders, if any               */
+    /**
+     * @brief A programming port's PIN is any servo output (out[]), or
+     *        LINK_PG_PIN_NONE; prog[] is not used.  False: port n's PIN is
+     *        prog[n].
+     */
+    bool     prog_on_outs;
+    /** @brief A programming port's FUNC takes the DShot rates besides NONE
+     *         and SERVO PWM. */
+    bool     prog_dshot;
+    /** @brief The highest SUPPLY set point taken, mV; 0: the PD mini's own
+     *         range. */
+    uint16_t supply_max_mv;
+    /** @brief No AS5600 output encoder on the board's sensor bus: a SENSE
+     *         write that enables it is refused. */
+    bool     no_encoder;
+    outbind_ina_t ina;    /**< the INA3221s it solders, if any              */
     const outbind_conn_t  *conns;      /**< the signal connectors          */
     uint8_t                conn_count; /**< entries in `conns`             */
     const outbind_other_t *others;     /**< the other connectors and nets  */
@@ -258,6 +302,15 @@ const outbind_board_t *outbind_board(uint16_t id);
  * @return    The board's roles, or NULL.
  */
 const outbind_roles_t *outbind_roles(uint16_t id);
+
+/**
+ * @brief The servo outputs a board with soldered pins has: the entries of
+ *        roles.out before the first OUTBIND_NO_GPIO.
+ *
+ * @param r  The board's roles, or NULL.
+ * @return   0 to OUTBIND_FIXED_OUTS; 0 for NULL.
+ */
+uint8_t outbind_out_count(const outbind_roles_t *r);
 
 /* ------------------------------------------------ a board that describes itself */
 

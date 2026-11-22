@@ -173,3 +173,29 @@ def test_a_table_without_entries_stops_the_tool(tree):
     with pytest.raises(SystemExit) as stop:
         cf.main()
     assert "no UI_TEXT entries" in str(stop.value)
+
+
+def test_mbedtls_headers_are_found_or_their_users_skipped(tmp_path):
+    """A tree under RCBENCH_MBEDTLS_DIR or a host build's _deps is used.
+
+    Without one, a file that includes an Mbed TLS or PSA header is set
+    aside, and every other file is kept.
+    """
+    tree = tmp_path / "mbed"
+    (tree / "tf-psa-crypto" / "include" / "mbedtls").mkdir(parents=True)
+    (tree / "tf-psa-crypto" / "include" / "mbedtls" / "pk.h").write_text("")
+    got = cf.mbedtls_includes(tmp_path, {"RCBENCH_MBEDTLS_DIR": str(tree)})
+    assert got == [tree / "include", tree / "tf-psa-crypto" / "include",
+                   tree / "tf-psa-crypto" / "drivers" / "builtin" / "include"]
+    deps = tmp_path / "test" / "host" / "build" / "_deps" / "mbedtls-src"
+    shutil.copytree(tree, deps)
+    assert cf.mbedtls_includes(tmp_path, {})[0] == deps / "include"
+    assert cf.mbedtls_includes(tmp_path / "none", {}) == []
+    a = tmp_path / "a.c"
+    a.write_text('#include "mbedtls/pk.h"\n')
+    b = tmp_path / "b.c"
+    b.write_text('#  include <psa/crypto.h>\n')
+    c = tmp_path / "c.c"
+    c.write_text('#include "fw_sig.h"\n')
+    kept, skipped = cf.without_mbedtls([a, b, c])
+    assert kept == [c] and skipped == [a, b]

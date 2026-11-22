@@ -151,6 +151,17 @@ typedef struct {
     uint16_t over_n[SENSE_CHANNELS]; /**< each channel's windows over its
                                       limit, modulo 65536, since core 1
                                       started: across set-ups            */
+    uint16_t i3221_flags[SENSE_I3221_PARTS];   /**< each Mask/Enable as
+                                                    last read            */
+    uint16_t i3221_flags_n[SENSE_I3221_PARTS]; /**< its reads, modulo
+                                                    65536, this set-up   */
+    uint8_t  i3221_have_flags;   /**< bit a: i3221_flags[a] holds a read   */
+    uint8_t  i3221_crit;         /**< bit a: part a online with its
+                                      critical limits written           */
+    uint32_t setup;              /**< the schedule's set-up, counted from
+                                      1 (sense_sched_t.gen); a new value
+                                      numbers its windows from 0 again;
+                                      0 with the bus closed             */
 } sense_snap_t;
 
 /** @brief The wire, the clock, the recovery and the pins. */
@@ -192,6 +203,7 @@ typedef struct {
     bool     lim_have;           /**< lim_win is a window judged            */
     uint16_t lim_win;            /**< the number of the last one judged    */
     uint16_t over_n[SENSE_CHANNELS];    /**< per channel, the windows judged over the limit */
+    uint16_t crit_ma[SENSE_CHANNELS];   /**< the critical limits of the set-up taken */
     uint32_t setups;             /**< schedules set up, modulo 2^32: each
                                       one's sched.gen                     */
     sense_sched_t sched;                /**< the schedule */
