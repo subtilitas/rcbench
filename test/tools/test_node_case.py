@@ -61,7 +61,8 @@ def test_case_has_its_size(built):
     assert boxes[PLATE][5] == pytest.approx(-0.05, abs=0.01)
     assert boxes[FRAME][2] == pytest.approx(-1.6, abs=0.01)
     assert boxes[FRAME][5] == pytest.approx(16.7, abs=0.01)
-    assert boxes[BEZEL][2] == pytest.approx(16.7, abs=0.01)
+    # The bezel's wedges reach 1.2 under the split.
+    assert boxes[BEZEL][2] == pytest.approx(15.5, abs=0.01)
     assert boxes[BEZEL][5] == pytest.approx(24.0, abs=0.01)
 
 
@@ -149,3 +150,75 @@ def test_window_shows_the_view_area():
                                                             abs=0.1)
     assert case.WINDOW[3] - case.WINDOW[1] == pytest.approx(wide + 1.0,
                                                             abs=0.1)
+
+
+def test_plate_lip_holds_the_wall_from_moving_in(built):
+    """A lip of 1.2 x 1.5 all round, inside the wall's lower outer half."""
+    thick, high, beside, over = case.LIP
+    plate, frame = built[PLATE], built[FRAME]
+    floor = case.Z_FLOOR
+    # Mid-way along each wall: lip in the wall's inner half, the frame's
+    # wall outside it, 0.15 between them, 0.1 over the lip.
+    for (x, y), (dx, dy) in (((-16.0, case.Y0), (0, -1)),
+                             ((-16.0, case.Y1), (0, 1)),
+                             ((case.X0, 20.0), (-1, 0)),
+                             ((case.X1, 5.0), (1, 0))):
+        def probe(a, b, z0, z1, x=x, y=y, dx=dx, dy=dy):
+            xs = sorted((x + dx * a - (not dx) * 1.0,
+                         x + dx * b + (not dx) * 1.0))
+            ys = sorted((y + dy * a - (not dy) * 1.0,
+                         y + dy * b + (not dy) * 1.0))
+            return _box(xs[0], ys[0], z0, xs[1], ys[1], z1)
+
+        lip = probe(0.01, thick - 0.01, floor + 0.01, floor + high - 0.01)
+        assert filled(plate, lip) == pytest.approx(volume(lip), rel=1e-3)
+        assert filled(frame, probe(0.0, thick + beside - 0.01, floor,
+                                   floor + high + over - 0.01)) == (
+                                       pytest.approx(0.0, abs=1e-6))
+        outside = probe(thick + beside + 0.01, case.WALL - 0.01,
+                        floor + 0.01, floor + high)
+        assert filled(frame, outside) == pytest.approx(volume(outside),
+                                                       rel=1e-3)
+        over_lip = probe(0.01, thick, floor + high + over + 0.01,
+                         floor + high + over + 0.5)
+        assert filled(frame, over_lip) == pytest.approx(volume(over_lip),
+                                                        rel=1e-3)
+    # The lip stands outside the cavity: the INA228 board keeps its room.
+    inside = _box(case.X0 + 5.0, case.Y0 + 0.01, floor + 0.01,
+                  case.X1 - 5.0, case.Y0 + 0.5, floor + high)
+    assert filled(plate, inside) == pytest.approx(0.0, abs=1e-6)
+
+
+def test_bezel_wedges_lie_in_the_walls_cut_edge(built):
+    """4 wedges of 1.2 at 45 degrees in cuts of 1.4, between the columns."""
+    wedge, cut = case.WEDGE
+    frame, bezel = built[FRAME], built[BEZEL]
+    z = case.Z_SPLIT
+    assert len(case.wedges(wedge)) == 4
+    for solid in case.wedges(wedge):
+        assert filled(bezel, solid) > 0.5 * volume(solid)
+        assert filled(frame, solid) == pytest.approx(0.0, abs=1e-6)
+    for solid in case.wedges(cut):
+        assert filled(frame, solid) == pytest.approx(0.0, abs=1e-6)
+    # In the wall at -y, mid-way: the wedge under the rim, the wall cut.
+    y = case.Y0
+    assert filled(bezel, _box(-10.0, y - 0.3, z - 0.3, -9.0, y - 0.01,
+                              z - 0.01)) == pytest.approx(0.29 * 0.29,
+                                                          rel=1e-2)
+    assert filled(bezel, _box(-10.0, y - 1.0, z - 1.0, -9.0, y - 0.7,
+                              z - 0.7)) == pytest.approx(0.0, abs=1e-6)
+    assert filled(frame, _box(-10.0, y - 1.3, z - 1.3, -9.0, y - 1.0,
+                              z - 1.0)) > 0.0
+    # The wall's outer half reaches the split and carries the rim.
+    assert filled(frame, _box(-10.0, y - case.WALL + 0.01, z - 0.5, -9.0,
+                              y - 1.45, z)) == pytest.approx(
+                                  0.5 * (case.WALL - 1.46), rel=1e-2)
+    # No wedge at the card's notch, at the USB notch or in a column.
+    assert filled(bezel, _box(case.CARD[0] + 0.1, y - 1.3, z - 1.3,
+                              case.CARD[1] - 0.1, y, z - 0.01)) == (
+                                  pytest.approx(0.0, abs=1e-6))
+    assert filled(bezel, _box(case.X1, case.USB[0] + 0.1, z - 1.3,
+                              case.X1 + 1.3, case.USB[1] - 0.1,
+                              z - 0.01)) == pytest.approx(0.0, abs=1e-6)
+    assert filled(bezel, _box(-58.0, y - 1.3, z - 1.3, -47.0, y,
+                              z - 0.01)) == pytest.approx(0.0, abs=1e-6)

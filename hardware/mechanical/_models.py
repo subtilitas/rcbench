@@ -25,7 +25,9 @@ FOLDERS = {
         "lipo_charger_boost_5v", "matek_mbec12s", "panel_7b", "rbmod_v2",
         "rbmod_v2_smd", "rp2350_can", "usbc_pd_trigger"),
     "casing": (
-        "dial_base_bottom", "dial_base_top", "flap_drive",
+        "dial_base_bottom", "dial_base_top", "display_node_box",
+        "display_node_lid", "display_node_xt60_box",
+        "display_node_xt60_lid", "flap_drive",
         "ina228_node_bezel", "ina228_node_frame", "ina228_node_plate",
         "ina228_xt90_case"),
     "parts": (
@@ -44,8 +46,13 @@ VIEWS = {
     "pcb": ("es3c28p_back",),
     "casing": (
         "dial_base", "dial_base_exploded", "dial_base_section",
+        "display_node_case", "display_node_case_exploded",
+        "display_node_case_section", "display_node_lid_inside",
+        "display_node_xt60_case", "display_node_xt60_case_exploded",
+        "display_node_xt60_case_section", "display_node_xt60_seat",
         "ina228_node_case", "ina228_node_case_back",
-        "ina228_node_case_exploded", "ina228_node_case_section"),
+        "ina228_node_case_exploded", "ina228_node_case_joints",
+        "ina228_node_case_section"),
     "parts": (
         "flap_drive_above", "flap_drive_below", "flap_drive_section",
         "flap_drive_unit", "flap_drive_unit_2"),

@@ -21,6 +21,8 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `rp2350_can.py`, `ina3221_module.py`, `dcdc_buck_mini.py`, `usbc_pd_trigger.py` | specs of 4 module boards, part by part: Waveshare RP2350-CAN, INA3221 board, Mini560 buck converter, USB-C PD trigger board |
 | `matek_mbec12s.py` | spec of the Matek mBEC12S buck converter, 6V to 60V in |
 | `ina228_node.py` | layout of the remote INA228 sensor node: INA228 module, buck converter and display in place |
+| `CASES.md` | the printed cases of the display node, with XT30 and with XT60, and of the sensor node: parts, assembly, openings, limits |
+| `_gen_display_case.py` | builds the display node's case in 2 variants of 2 parts each, with XT30 openings and with seats for screwed panel-mount XT60, with OpenCASCADE; checks their fit round the display board and the connectors and that the lid closes on the rim; writes STEP and STL |
 | `_gen_node_case.py` | builds the 3 parts of the sensor node's case with OpenCASCADE, checks their fit round the layout's solids, writes STEP and STL |
 | `rbmod_v2.py` | spec of the rbmod carrier board, version 2: with its SMD parts, and with its connectors and modules |
 | `_read_kicad_pcb.py` | reads a KiCad board file's outline, holes, footprints, and the pads, tracks and vias of its 2 outer layers into a data file; the copper needs shapely |
@@ -48,7 +50,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `_surface.py`, `_segment.py` | the surfaces and their fits, and the faces grown on them, for `_refit.py` |
 | `check_refit.py` | holds the dial's solids, read back with OpenCASCADE, against the mesh |
 | `models/pcb/` | 17 models: 16 boards with their parts and the sensor node's layout; STEP |
-| `models/casing/` | 7 printed parts: the Dial's base, the sensor node's case, the INA228 module's case, the flap drive's frame; STEP, and STL for 5 of them |
+| `models/casing/` | 11 printed parts: the Dial's base, the display node's case in 2 variants, the sensor node's case, the INA228 module's case, the flap drive's frame; STEP, and STL for 9 of them |
 | `models/parts/` | 13 models of bought parts and of assemblies: emergency stop button, M5Stack Dial and its nut, 2 servos, 2 cells, inertial sensor, the flap drive's assembly and wing; STEP |
 | `renders/` | OpenCASCADE renders in the folders of `models/`: `pcb/`, `casing/`, `parts/`; a view of several models lies in the folder `_models.py` names for it. The contact sheet `all.png` lies beside the folders |
 | `vendor/` | third-party meshes, unchanged, each with its licence |
@@ -63,6 +65,7 @@ python3 hardware/mechanical/check_overlap.py       # 2 minutes
 python3 hardware/mechanical/_gen_dial_base.py --check   # 1 minute
 python3 hardware/mechanical/_gen_flap_drive.py --check  # 10 seconds
 python3 hardware/mechanical/_gen_node_case.py --check   # 20 seconds
+python3 hardware/mechanical/_gen_display_case.py --check  # 10 seconds
 xvfb-run -a python3 hardware/kicad/tools/step_render.py \
     hardware/mechanical/renders --size 640 480 --folders \
     --step hardware/mechanical/models/*/*.step
@@ -693,6 +696,10 @@ Limits:
   and the STEP file lacks, and the notches the panel's tabs leave in the
   edges.
 
+The display node's printed cases are in [Cases](CASES.md): with
+[XT30 openings](CASES.md#case-of-the-display-node-xt30) and with
+[screwed XT60](CASES.md#case-of-the-display-node-xt60).
+
 ## Remote INA228 sensor node, layout
 
 The boards of the remote sensor node in the places a case will hold
@@ -701,7 +708,7 @@ bottom, the [display board](#display-node-board-lcdwiki-es3c28p) on top,
 a Matek mBEC12S buck converter between them. The node has no cell and no
 charger board: the converter feeds it with 5V from the measured line of
 6V to 60V. No part is changed; each is the model of its own spec, moved
-and turned. A [case](#case-of-the-sensor-node) of 3 printed parts holds
+and turned. A [case](CASES.md#case-of-the-sensor-node) of 3 printed parts holds
 them.
 
 | | |
@@ -740,80 +747,6 @@ and 2g. No height but the 4.5mm over all is known; the board's thickness
 is read off an angled picture. The half holes of the edge pads are not
 drawn. Output is 5V as delivered; a solder bridge on the pad 9V or 12V
 sets that voltage.
-
-### Case of the sensor node
-
-A printed case of 3 parts round the layout, 91.4mm x 55.4mm x 28.0mm. It
-has no ears; the node hangs in its cable.
-
-![Case of the sensor node](renders/casing/ina228_node_case.png)
-
-| | | |
-| --- | --- | --- |
-| ![Taken apart](renders/casing/ina228_node_case_exploded.png) | ![Cut open](renders/casing/ina228_node_case_section.png) | ![Plug end](renders/casing/ina228_node_case_back.png) |
-
-| File | Content | Print |
-| --- | --- | --- |
-| `ina228_node_plate.step`, `.stl` | bottom plate, 2.4mm thick, with 4 stands of 6.4mm under the INA228 board's holes, each with a hole of 3.4mm and a recess of 6.0mm x 2.2mm for a screw's head; 12.0cm3 | underside down, no support |
-| `ina228_node_frame.step`, `.stl` | wall of 2.4mm from the plate to the display board's back, 18.3mm high, with 4 columns that stand on the INA228 board and carry the display board; 15.1cm3 | upper face down, no support; the 2 XT90 openings are bridges of 21.4mm |
-| `ina228_node_bezel.step`, `.stl` | rim round the display board, 7.3mm high, a plate of 1.2mm over the touch panel with the window, 4 posts on the display board's holes; 7.5cm3 | front down, no support |
-
-Assembly, 8 screws M3 and 8 threaded inserts ruthex RX-M3Sx4.0:
-
-1. Melt 2 inserts into each column of the frame, one from each end. The
-   holes are 4.0mm wide and 6.0mm deep.
-2. Put the INA228 module on the plate's stands, the frame over it. 4
-   screws M3 x 8 with pan heads go from below through the plate and the
-   board's holes into the columns' feet. The board is clamped between
-   stands and columns.
-3. Lay the display board on the columns, the bezel over it. 4 screws
-   M3 x 10 go from above through the bezel's posts and the board's holes
-   into the columns' tops.
-
-Each column joins a hole of the INA228 board to a hole of the display
-board; the two lie 4.2mm apart. Under the display board the column's
-lobe at the INA228 hole steps back in 4 steps of 0.65mm, clear of chip
-parts that hang 0.9mm down from that board.
-
-| Opening | Where | Size, mm |
-| --- | --- | --- |
-| XT90, 2 | each end wall, round the housing | 21.4 x 10.5 |
-| USB Type-C | end wall over the socket half's opening, through frame and bezel | 13.0 x 4.4 |
-| RESET, BOOT | a slot under the USB notch | 26.6 x 2.6 |
-| microSD | long wall at the header's side | 16.0 x 2.8 |
-| Speaker | 4 slots in the other long wall | 1.6 x 7.0 each, 3.2 apart |
-| Microphone | bezel, over the board's microphone hole | 1.6 round |
-| Display | bezel, 0.5 round the view area | 59.1 x 44.6 |
-
-Limits:
-
-- RESET and BOOT are pressed from the display board's back, towards the
-  display. They have no push rod: a tool of 2mm at most goes through the
-  slot, 5.9mm in from the wall's outer face, and levers the plunger up.
-- The USB socket's axis is 3.6mm over the top of the XT90 housing under
-  it. A USB plug thicker than 7.0mm meets the plug in that housing.
-- The speaker is not chosen and not drawn. The room behind its slots is
-  18mm x 14mm x 10mm, beside the speaker socket.
-- The converter has no seat in the case. A foam pad of 1.5mm on the
-  INA228 board carries it; pad and wires are not drawn.
-- The touch panel lies 0.2mm under the bezel's plate, which is 1.2mm
-  thick: the panel's face is 1.4mm under the case's front.
-- No part is printed. The fits are drawn, not tried: 0.3mm round the
-  display board, 1.0mm at the INA228 board's long sides.
-
-`_gen_node_case.py` builds the parts from boxes and upright cylinders
-and checks them: each part is one valid solid, no two parts share
-volume, and no part shares volume with one of the 1139 solids of
-`ina228_node_layout.step`. The parts seat on the copper rings (0.05mm)
-and the print (0.02mm) that the board models draw round their holes.
-
-```sh
-pip install cadquery-ocp==8.0.1.1.0
-python3 hardware/mechanical/_gen_node_case.py            # write STEP and STL
-python3 hardware/mechanical/_gen_node_case.py --check    # CI
-xvfb-run -a python3 hardware/mechanical/_gen_node_case.py \
-    --render hardware/mechanical/renders
-```
 
 ## Module boards of the rbmod carrier
 

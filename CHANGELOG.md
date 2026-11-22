@@ -8,6 +8,26 @@ history is in git.
 
 ### Added
 
+- `hardware/mechanical/`: a variant of the display node's case for
+  panel-mount XT60 with 2 screws, 59.8mm x 105.6mm x 24.4mm:
+  `display_node_xt60_box` and `display_node_xt60_lid`, each as STEP and
+  STL. Each short wall has the seat of the bench's front case: a wall of
+  3.0mm, a recess 2.0mm deep in the flange's outline, an opening of 19.6mm
+  x 12.4mm for the body and 2 insert holes 25.6mm apart in bosses behind
+  the wall. The check holds the connectors' flange, body and contacts
+  clear of box and board. No part is printed
+  ([Cases](hardware/mechanical/CASES.md#case-of-the-display-node-xt60)).
+- `hardware/mechanical/`: a printed case of 2 parts for the display node
+  with XT30 connectors, 59.8mm x 101.2mm x 17.8mm: `display_node_box` and
+  `display_node_lid`, each as STEP and STL. It follows a tester's case,
+  measured from its STL file, which closes in nominal sizes with 0.18mm
+  over the board. 3 changes give real parts more room, so that the lid
+  still closes on the rim: blind insert holes of 4.0mm x 6.0mm with a
+  relief in place of straight holes of 3.5mm, a window with 0.5mm in place
+  of 0.17mm beside the touch panel, and head recesses of 6.0mm for M3. A
+  hole of 3.5mm in the floor holds the current sensor board. `_gen_display_case.py --check`, which CI runs, fails when a part
+  meets the display board or the stack does not close. No part is printed
+  ([Cases](hardware/mechanical/CASES.md#case-of-the-display-node-xt30)).
 - Settings backup on the card, `BENCH/SETUP`. SETUP > SD CARD ends on Save
   settings, which writes the stored settings as `SETTINGS.TXT`, and Load
   settings, which opens BACKUP: the card's settings files with their date
@@ -34,7 +54,7 @@ history is in git.
   4 speaker slots, microphone, display window. `_gen_node_case.py` builds
   the parts with OpenCASCADE and CI checks them against the 1139 solids of
   the layout. No part is printed
-  ([Mechanical parts](hardware/mechanical/README.md#case-of-the-sensor-node)).
+  ([Cases](hardware/mechanical/CASES.md#case-of-the-sensor-node)).
 - `hardware/mechanical/`: `ina228_node_layout.step`, the boards of the
   remote INA228 sensor node in place: the INA228 module with its 2 XT90PW
   connectors at the bottom, the ES3C28P display board 0.5mm over the
@@ -118,6 +138,14 @@ history is in git.
 
 ### Changed
 
+- Sensor node case (`hardware/mechanical/_gen_node_case.py`): 2 joints
+  hold the frame's wall from moving inwards between its 4 columns. The
+  plate has a lip of 1.2mm x 1.5mm all round inside the wall's lower edge.
+  The wall's upper inner edge is cut off at 45 degrees, and 4 wedges of
+  1.2mm under the bezel's rim lie in the cut. On a printed case without
+  the joints the walls shift sideways (owner, 2026-11-22). The parts with
+  the joints are not printed
+  ([Cases](hardware/mechanical/CASES.md#case-of-the-sensor-node)).
 - `hardware/mechanical/models/` is sorted into 3 folders: `pcb/` (17
   models: 16 boards and the sensor node's layout), `casing/` (7 printed
   parts) and `parts/` (13 bought parts and assemblies). `_models.py` names
