@@ -99,6 +99,10 @@ printed. RESET and BOOT have no push rod: a tool of
 2mm at most reaches them through a slot. A USB plug thicker than 7.0mm meets
 the plug in the XT90 housing under it. The speaker is not chosen; the
 converter lies on a foam pad of 1.5mm that is not drawn.
+It holds a STEP model of the Hitec D485HW servo with the horn HD-X25 and 60mm
+of its 300mm lead, from the maker's dimension drawing, STEP model and data
+sheets. Which edge of the lead carries the signal wire is not in the sources;
+no dimension is verified on a servo.
 It holds a STEP model of a standard size servo with a round horn, black with
 the white print "Standard Servo", from an owner sketch with dimensions: case
 40.5mm x 20.0mm x 36.3mm, mounting holes 49.5mm x 10.0mm apart. The horn's

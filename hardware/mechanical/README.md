@@ -33,6 +33,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `_rg15.py` | coordinates of the RG-15 airfoil |
 | `wit_imu.py` | spec of a WitMotion inertial sensor in its case, from a product picture with dimensions |
 | `servo_standard.py` | spec of a standard size servo with a round horn, from a dimensioned sketch |
+| `hitec_d485hw.py` | spec of the Hitec D485HW servo with the horn HD-X25 and its lead, from the maker's drawing, model and data sheets |
 | `_board.py` | a module's board for the specs: the plate, and parts placed by their position from the board's center |
 | `_font.py` | outlines of the letters of board print, written by `_gen_font.py` from OpenCV's single-stroke font |
 | `_photo_grid.py` | measures a board from a photo on squared paper: grid fit, camera height, the INA228 module's photos laid onto the board frame |
@@ -51,7 +52,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `check_refit.py` | holds the dial's solids, read back with OpenCASCADE, against the mesh |
 | `models/pcb/` | 17 models: 16 boards with their parts and the sensor node's layout; STEP |
 | `models/casing/` | 11 printed parts: the Dial's base, the display node's case in 2 variants, the sensor node's case, the INA228 module's case, the flap drive's frame; STEP, and STL for 9 of them |
-| `models/parts/` | 13 models of bought parts and of assemblies: emergency stop button, M5Stack Dial and its nut, 2 servos, 2 cells, inertial sensor, the flap drive's assembly and wing; STEP |
+| `models/parts/` | 14 models of bought parts and of assemblies: emergency stop button, M5Stack Dial and its nut, 3 servos, 2 cells, inertial sensor, the flap drive's assembly and wing; STEP |
 | `renders/` | OpenCASCADE renders in the folders of `models/`: `pcb/`, `casing/`, `parts/`; a view of several models lies in the folder `_models.py` names for it. The contact sheet `all.png` lies beside the folders |
 | `vendor/` | third-party meshes, unchanged, each with its licence |
 
@@ -910,6 +911,52 @@ repository and names neither maker nor type. The sketch gives 55mm over the
 ears and 7.2mm + 40.5mm + 7.2mm for its parts; the model is 54.9mm long. The
 cable, its plug, the horn's screw and the shaft's splines are not in the
 sketch and not drawn. No dimension is verified on a servo.
+
+## Hitec D485HW
+
+The Hitec D485HW, a standard size digital servo: black case of 3 shells,
+2 ears with 2 open mounting holes each, the four-arm horn HD-X25 on the
+shaft, a silver type plate, and the lead with its 3 wires and 3 pin plug.
+
+![Hitec D485HW](renders/parts/hitec_d485hw.png)
+
+| File | Content | Size, mm | Origin |
+| --- | --- | --- | --- |
+| `hitec_d485hw.step` | case of 3 shells, 2 ears, boss, shaft, horn HD-X25 with 16 holes, type plate, print "D485HW" on the plate and on 2 sides, lead bushing, 3 wires, plug; 37 solids, 0.6MB | case 39.8 x 19.8 x 37.65; 53.0 over the ears; 46.35 over the horn; 126.4 x 36.0 x 46.35 over all | on the shaft's axis, on the case's underside; x along the case, the long end towards -x, the lead leaves the end at +x; z up |
+
+| Dimension | Value | Source |
+| --- | --- | --- |
+| Case, ears, mounting holes | 39.8mm x 19.8mm; 53.0mm over the ears; holes of 4.5mm, 48.0mm apart along the case and 10.0mm across; shaft axis 14.0mm from a row of holes; ears 2.5mm thick, underside 28.0mm over the case's underside | the maker's dimension drawing |
+| Seams, deck, boss, shaft, type plate, lead bushing, wires | seams 2.05mm and 23.55mm over the underside; deck 37.65mm; boss to 39.85mm; shaft 6.0mm across, to 43.05mm; bushing 9.0mm x 5.0mm, 6.0mm long, its axis 6.25mm over the underside; wires 1.3mm across, 1.8mm apart | the maker's STEP model, read with OpenCASCADE |
+| Horn HD-X25 | hub 9.0mm across, 6.2mm high; holes of 1.6mm at 7mm, 10mm, 13mm and 16mm from the axis on one pair of arms and at 6mm, 9mm, 12mm and 15mm on the other; arm ends round with 3.0mm | the maker's horn and spline data sheet, page 43 |
+| Lead | 300mm long, 24AWG; minus black, plus red, impulse yellow | the maker's data sheet Ver2.1 and operating instructions |
+| Ear slots, corner radius, boss diameters, plug housing, the horn's place on the shaft, its arms' thickness and width | see `hitec_d485hw.py` | estimated |
+
+| Point | x, mm | y, mm | z, mm |
+| --- | --- | --- | --- |
+| The lead leaves the case | 9.9 | 0.0 | 6.25 |
+| Wires | 15.9 to 75.9 | minus -1.8, plus 0.0, signal +1.8 | 6.25 |
+| Signal contact in the plug's end face | 89.9 | 2.54 | 6.25 |
+| Plus contact | 89.9 | 0.0 | 6.25 |
+| Minus contact | 89.9 | -2.54 | 6.25 |
+
+Sources, none in the repository: the maker's dimension drawing and STEP
+model of the D485HW (HiTEC Europe shop), its data sheet "D485HW General
+Specification" Ver2.1, its "Servo Actuator Horn & Spline Technical Data
+Sheet" and its operating instructions. The STEP model is 40.0mm x 20.0mm
+where the drawing gives 39.8mm x 19.8mm; the model follows the drawing.
+
+Limits:
+
+- 60mm of the lead's 300mm are drawn, straight.
+- Red is the middle wire. Which edge of the band carries the yellow signal
+  wire is not in the sources; it is drawn at +y.
+- The box holds 4 horns; the model carries the HD-X25. Its height on the
+  shaft is estimated: the hub's underside 0.3mm over the boss.
+- Not drawn: the spline's 25 teeth, the horn's screw, the case's 4 screws,
+  the ribs under the ears, the raised gear cover on the deck, the maker's
+  sign. The print is the type as plain text.
+- No dimension is verified on a servo.
 
 ## KST X10 with frame and flap drive
 
