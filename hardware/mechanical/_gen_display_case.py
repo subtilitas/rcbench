@@ -64,8 +64,13 @@ reaching 15.5 behind the flange's front, contacts to 19.8, screw holes
   stand 4.0 behind it: 5.0 deep, for a ruthex RX-M3Sx4.0 insert melted
   in from outside. 2 screws M3 x 6 hold the flange.
 
-The front case's notch of 10.2 x 2.5 under the recess is not drawn; what
-it is for is not stated. The flange is 15.8 high and the body 11.7, so
+- a notch of 10.2 x 2.5 beside the recess, as deep as it, for the strap
+  of the plug's rubber lid (owner, 2026-11-22). The front case has it
+  under the recess. Here it is over it, towards the lid, and the
+  connector is turned by half a turn about its axis: under the recess
+  the notch would end 1.35 below the box's underside.
+
+The flange is 15.8 high and the body 11.7, so
 this variant is 24.4 high in place of 17.8: the connectors' bodies lie
 under the display board, whose bosses are 16.6 high. It is 105.6 long
 in place of 101.2: 1.2 for each thicker short wall, 2.0 more at the USB
@@ -179,6 +184,13 @@ XT60 = ((33.2, 15.8, 2.5), (18.8, 11.7, 15.5), 19.8, 2.14, 3.6, 25.6)
 # insert's hole.
 SEAT = (3.0, 2.0, 0.75, 16.6, 9.6, 11.8, (19.6, 12.4, 3.0), (8.0, 4.0),
         4.0)
+# Notch beside the recess for the strap of the plug's rubber lid: width
+# and how far it reaches past the recess. The front case has it under
+# the recess; here it is over it, towards the lid, and the connector is
+# turned by half a turn about its axis with it, so notch and the body's
+# rounded corners lie as in the front case. Under the recess it would
+# end 1.35 below the box's underside.
+NOTCH = (10.2, 2.5)
 BIG = 200.0
 
 
@@ -315,7 +327,7 @@ def xt60_seat(case, side):
         case: The variant; its connector is the axis's height.
         side: 1 for the wall at +y, -1 for the wall at -y. The 2 seats
             are one turned by half a turn about z, so the body's
-            rounded corners lie at +x in the wall at +y.
+            rounded corners lie at -x in the wall at +y.
 
     Returns:
         (bosses, cuts): 2 lists of shapes.
@@ -339,10 +351,12 @@ def xt60_seat(case, side):
                (-full - room, half_high), (-ear + 3.4, ear_high / 2 + room),
                (-ear - room, ear_high / 2 + room)]
     y0, y1 = span(face - side * sunk, face + side * 1.0)
-    cuts = [_prism_y([(x + u, z + w) for u, w in corners], y0, y1)]
+    cuts = [_prism_y([(x + u, z + w) for u, w in corners], y0, y1),
+            _box(x - NOTCH[0] / 2, y0, z + half_high - 0.1,
+                 x + NOTCH[0] / 2, y1, z + half_high + NOTCH[1])]
     wide, high, radius = opening
     y0, y1 = span(inner - side * (boss[1] + 1.0), face)
-    cuts.append(_keyed(x, z, wide, high, radius, side, y0, y1))
+    cuts.append(_keyed(x, z, wide, high, radius, -side, y0, y1))
     bosses = []
     for k in (-1, 1):
         u = x + k * XT60[5] / 2
@@ -379,7 +393,7 @@ def connectors(case):
         out.append(slab(2 * SEAT[4], flange[1], 0.0, flange[2]))
         y0, y1 = sorted((front - side * flange[2], front - side * body[2]))
         out.append(_keyed(x, z, body[0], body[1],
-                          SEAT[6][2] - (SEAT[6][0] - body[0]) / 2, side,
+                          SEAT[6][2] - (SEAT[6][0] - body[0]) / 2, -side,
                           y0, y1))
         out.append(slab(2 * (apart + radius), 2 * radius, body[2], reach))
     return out

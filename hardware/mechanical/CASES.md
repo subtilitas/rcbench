@@ -108,10 +108,17 @@ The seat is the one of the bench's front case in the same repository
 | Flange over the wall's outer face | 0.5 |
 | Opening for the body, through the 1.0 that is left | 19.6 x 12.4, 2 corners rounded with 3.0 |
 | Insert holes | 4.0 wide, 25.6 apart, 5.0 deep: through the wall into bosses of 8.0 that stand 4.0 behind it |
+| Notch for the strap of the plug's rubber lid | 10.2 wide, 2.5 past the recess, 2.0 deep |
 
 Each connector takes 2 threaded inserts ruthex RX-M3Sx4.0, melted in from
 outside, and 2 screws M3 x 6. The 2 seats are one turned by half a turn:
-the body's rounded corners lie at +x in the wall at +y.
+the body's rounded corners lie at -x in the wall at +y.
+
+The front case has the notch under the recess. Here it is over it, towards
+the lid, and the connector is turned by half a turn about its axis, so the
+notch and the body's rounded corners lie to each other as in the front
+case. Under the recess the notch would end 1.35mm below the box's
+underside; over it, 1.65mm of wall is left up to the rim.
 
 What differs from the XT30 case, and why:
 
@@ -131,8 +138,6 @@ Limits:
 
 - No part is printed, and no XT60 is tried in the seat. The connector's
   sizes are a model's, not a caliper's.
-- The front case's notch of 10.2mm x 2.5mm under the recess is not drawn;
-  what it is for is not stated.
 - The limits of the XT30 case hold here too: the boards on the floor are
   not drawn, USB socket, microSD slot and buttons are not reachable with
   the lid on.

@@ -167,13 +167,25 @@ def test_xt60_seat_is_the_front_cases(built):
         y0, y1 = along(2.0, 3.0)
         skin = _box(x - 17, y0, z - 6.6, x - 16, y1, z - 5.6)
         assert filled(box, skin) == pytest.approx(1.0, rel=1e-3)
-        body = _box(x - 9.79 + (3.0 if side < 0 else 0), y0, z - 6.19,
-                    x + 9.79 - (3.0 if side > 0 else 0), y1, z + 6.19)
+        body = _box(x - 9.79 + (3.0 if side > 0 else 0), y0, z - 6.19,
+                    x + 9.79 - (3.0 if side < 0 else 0), y1, z + 6.19)
         assert filled(box, body) == pytest.approx(0.0, abs=1e-6)
         # 2 of the opening's corners are round: material in them.
-        corner = _box(x + side * 9.3, y0, z + 5.7, x + side * 9.8, y1,
-                      z + 6.2)
+        corner = _box(x - side * 9.8, y0, z + 5.7, x - side * 9.3, y1,
+                      z + 6.2) if side > 0 else _box(
+                          x + 9.3, y0, z + 5.7, x + 9.8, y1, z + 6.2)
         assert filled(box, corner) > 0.02
+        # The notch for the rubber lid's strap: over the recess, 10.2
+        # wide, 2.5 high, as deep as the recess; wall beside and over it.
+        n0, n1 = along(0.0, 2.0)
+        notch = _box(x - 5.09, n0, z + 8.65, x + 5.09, n1, z + 11.14)
+        assert filled(box, notch) == pytest.approx(0.0, abs=1e-6)
+        n0, n1 = along(0.1, 1.9)
+        assert filled(box, _box(x + 5.2, n0, z + 9.0, x + 6.2, n1,
+                                z + 10.0)) == pytest.approx(1.8, rel=1e-3)
+        assert filled(box, _box(x - 1, n0, z + 11.3, x + 1, n1,
+                                z + 12.3)) == pytest.approx(3.6, rel=1e-3)
+        assert z + 11.15 < XT60.rim - 1.0
         # The bosses, 25.6 apart, 4.0 behind the wall, bored 4.0.
         y0, y1 = along(3.0, 7.0)
         for k in (-1, 1):
