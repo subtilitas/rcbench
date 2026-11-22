@@ -773,8 +773,10 @@ je 22 Zeichen und 8px Abstand zu den Seitenrändern:
 
 SIMULIERT markiert eine Kachel, wenn der Prüfstand die Datenquelle der
 Seite nicht meldet: Entweder fehlt die Fähigkeit im IOmcu, oder der Sensor
-ist unter SETUP > SENSORS ausgeschaltet. Die Seite öffnet sich trotzdem
-und verwendet ihr Modell.
+ist unter SETUP > SENSORS ausgeschaltet. Für MOTOR & ESC zählt auch der
+Leistungsknoten als Sensor des Akkus (SETUP > WIRELESS,
+[Knoten](Nodes-de.md#das-panel)). Die Seite öffnet sich trotzdem und
+verwendet ihr Modell.
 
 Die Markierung beschreibt die Seite insgesamt, nicht jeden einzelnen
 Messwert. RECEIVER und BATTERY tragen sie und zeigen keine Werte. SERVO
@@ -784,13 +786,25 @@ aktiviert ist. Jede Seite nennt die Quelle ihrer Messwerte.
 
 | Kachel | Ohne Marke, wenn |
 | --- | --- |
-| MOTOR & ESC | der IOmcu ESCs ansteuert und eine INA228-Konfiguration hat, die unter SETUP, SENSORS eingeschaltet ist |
+| MOTOR & ESC | der IOmcu ESCs ansteuert und entweder eine INA228-Konfiguration hat, die unter SETUP, SENSORS eingeschaltet ist, oder der Leistungsknoten die Quelle des Akkus ist: Leistungsknoten EIN, INA228-Quelle NODE und ein Knoten gebunden |
 | SERVO | der IOmcu Servo-PWM-Ausgänge ansteuert |
 | SUPPLY | der PD mini im Abschnitt PD MINI der SUPPLY-Optionen eingeschaltet ist, unabhängig davon, was der IOmcu meldet; sonst rechnet das Panel mit seinem eigenen Netzteilmodell |
 | RECEIVER, BATTERY, BALANCE | in diesem Release nie: kein IOmcu meldet diese Fähigkeiten |
 
 Der IOmcu meldet seine Capability-Bits beim Start. Antwortet kein IOmcu,
 tragen MOTOR & ESC und SERVO ebenfalls die Markierung.
+
+Beide Quellen der Akkumessung zählen, wie sie eingestellt sind, ob sie
+antworten oder nicht. Ein eingeschalteter INA228, der nicht
+antwortet, oder ein gebundener Knoten ohne Verbindung lässt MOTOR & ESC
+ohne Marke. SETUP > WIRELESS zeigt die Verbindung des Knotens, und ein ARM
+von MOTOR & ESC mit INA228-Quelle NODE wird abgelehnt, solange in den
+letzten 100ms kein Messwert des Knotens kam.
+
+Das Menü mit ausgeschaltetem INA228 des IOmcu und dem Leistungsknoten als
+Quelle des Akkus:
+
+![Das Menü mit dem Leistungsknoten als Quelle des Akkus](img/de/overview-pnode.png)
 
 Das Menü im hellen Design:
 

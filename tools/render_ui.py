@@ -116,6 +116,9 @@ SCREENS = {
     "band-hwstop": ("band-hwstop.png", "overview", "dark"),
     # An alert across the bottom of the menu, with its x.
     "overview-alert": ("overview-alert.png", "overview", "dark"),
+    # The menu with the IOmcu's INA228 OFF and the power node as the pack's
+    # source: MOTOR & ESC without the SIMULATED mark.
+    "overview-pnode": ("overview-pnode.png", "overview", "dark"),
     # The screen guide over the menu at page 1: the dock on the right, the
     # left two columns of tiles marked.
     "help-overview": ("help-overview.png", "overview", "dark"),

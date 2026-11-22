@@ -31,19 +31,19 @@ A tile opens when you lift your finger on the same tile you pressed. Sliding off
 
 ## The SIMULATED mark
 
-The SIMULATED mark means that the IOmcu reports no capability for that screen, or that its sensor is disabled. The mark does not describe every value on the screen. RECEIVER and BATTERY carry it but show no values. SERVO can have no mark yet use the panel's supply model as its rail meter, when neither a PD mini nor an INA3221 is enabled. Each screen identifies the source of its readings.
+The SIMULATED mark means that the IOmcu reports no capability for that screen, or that its sensor is disabled. For MOTOR & ESC the power node counts as the pack's sensor too ([Wireless](setup-wireless.md#the-power-node)). The mark does not describe every value on the screen. RECEIVER and BATTERY carry it but show no values. SERVO can have no mark yet use the panel's supply model as its rail meter, when neither a PD mini nor an INA3221 is enabled. Each screen identifies the source of its readings.
 
 The mark follows the capability bits the IOmcu reports at link-up:
 
 | Tile | Without the mark when |
 |---|---|
-| MOTOR & ESC | the IOmcu drives ESCs and holds an INA228 set-up enabled on SETUP, SENSORS |
+| MOTOR & ESC | the IOmcu drives ESCs, and either holds an INA228 set-up enabled on SETUP, SENSORS or the power node is the pack's source: Power node ON, INA228 source NODE and a node bound |
 | SERVO | the IOmcu drives servo PWM (pulse-width modulation) outputs |
 | SUPPLY | the PD mini is enabled in SUPPLY's PD mini settings |
 | RECEIVER, BATTERY, BALANCE | never in this release: no IOmcu reports these capabilities |
 | LOGS, SETUP | never marked: they hold no measurement |
 
-When no IOmcu responds, MOTOR & ESC and SERVO also carry the mark. The SUPPLY mark depends only on the PD mini setting, regardless of the link.
+A pack sensor counts as set up, whether it answers or not: an enabled INA228 that does not answer, or a bound node that is not connected, leaves MOTOR & ESC without the mark. When no IOmcu responds, MOTOR & ESC and SERVO also carry the mark. The SUPPLY mark depends only on the PD mini setting, regardless of the link.
 
 ## The light theme
 
