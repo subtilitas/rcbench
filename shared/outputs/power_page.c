@@ -117,8 +117,16 @@ static uint16_t next_of(const power_page_t *p, uint8_t off, uint8_t n,
 uint8_t power_write(power_page_t *p, uint8_t off, uint8_t n,
                     const uint16_t *in, const power_ctx_t *ctx)
 {
-    if (p == NULL || in == NULL || ctx == NULL || n == 0u
-        || (unsigned)off + n > (unsigned)LINK_PW_COUNT) {
+    if (p == NULL || in == NULL || ctx == NULL || n == 0u) {
+        return (uint8_t)LINK_NACK_BAD_RANGE;
+    }
+    /* An OFF is always taken: RAIL 0 first, whatever the rest of the write
+     * brings. */
+    if (off == (uint8_t)LINK_PW_RAIL && in[0] == 0u && p->rail) {
+        p->rail = false;
+        track(p);
+    }
+    if ((unsigned)off + n > (unsigned)LINK_PW_COUNT) {
         return (uint8_t)LINK_NACK_BAD_RANGE;
     }
     for (unsigned i = 0; i < n; ++i) {
@@ -134,11 +142,15 @@ uint8_t power_write(power_page_t *p, uint8_t off, uint8_t n,
     const bool rail_on = rail_written && rail == 1u;
     const uint16_t added = (uint16_t)(want & (uint16_t)~p->want);
     const bool new_bit = added != 0u;
+    /* The ports RAIL 1 powers: PORT_WANT with the switches, every port
+     * without them. */
+    const uint16_t powered = (p->fitted != 0u) ? want
+                                               : (uint16_t)LINK_PW_PORT_ALL;
     /* Only a write that powers a port is judged against the throttles: a
      * new bit, or RAIL 1 with the bits kept.  An OFF is always taken. */
     if (rail > 1u || (want & (uint16_t)~LINK_PW_PORT_ALL) != 0u
         || (added & ctx->throttle) != 0u
-        || (rail_on && (want & ctx->throttle) != 0u)) {
+        || (rail_on && (powered & ctx->throttle) != 0u)) {
         return (uint8_t)LINK_NACK_BAD_VALUE;
     }
     if ((rail_on || new_bit) && (!ctx->beat_alive || !p->chip_ok)) {
@@ -297,12 +309,42 @@ uint16_t power_window(power_page_t *p, uint32_t series, uint16_t number,
     return 0u;
 }
 
-uint16_t power_throttle(const outputs_t *o, const outbind_roles_t *r)
+uint16_t power_hold(power_page_t *p, uint16_t throttle)
+{
+    const uint16_t hit = (uint16_t)(power_port_on(p) & throttle);
+    if (hit == 0u) {
+        return 0u;
+    }
+    if (p->fitted != 0u) {
+        p->want &= (uint16_t)~hit;
+    } else {
+        p->rail = false;
+    }
+    track(p);
+    return hit;
+}
+
+uint16_t power_throttle(const outputs_t *o, const prog_port_t *pp,
+                        const outbind_roles_t *r)
 {
     if (o == NULL || r == NULL) {
         return 0u;
     }
     uint16_t m = 0u;
+    for (uint8_t q = 0u; q < prog_port_count(pp); ++q) {
+        const uint8_t pin = prog_port_pin(pp, q);
+        if (pin == PROG_PORT_NO_PIN) {
+            continue;
+        }
+        const uint8_t ch = prog_port_channel(q);
+        const bool dshot = LINK_PG_FN_IS_DSHOT(prog_port_func(pp, q));
+        const bool motor = ch < OUT_MAX_CHANNELS
+                           && o->channel[ch].role == OUT_ROLE_THROTTLE;
+        const int k = board_fix_out_index(r, pin);
+        if ((dshot || motor) && k >= 0 && k < (int)LINK_PW_PORTS) {
+            m |= (uint16_t)(1u << (unsigned)k);
+        }
+    }
     for (unsigned s = 0; s < OUT_MAX_SLOTS; ++s) {
         const out_slot_t *sl = &o->slot[s];
         if (sl->driver == OUT_DRIVER_NONE) {

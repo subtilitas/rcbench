@@ -1841,12 +1841,24 @@ Alert hält.
 - RAIL 1 und ein neues Bit in PORT_WANT werden ohne lebenden Heartbeat
   oder auf einem abgelehnten Chip mit NOT_ARMED abgelehnt. RAIL 1 wird mit
   BUSY abgelehnt, bis alle drei INA3221 mit geschriebenen Critical-Grenzen
-  antworten. Ein neues Bit in PORT_WANT für einen Port, dessen Ausgang als
-  Throttle gebunden ist, und RAIL 1 mit einem solchen gehaltenen Bit werden
-  mit BAD_VALUE abgelehnt. RAIL über 1 und ein
-  Bit hinter Port 9 werden mit BAD_VALUE abgelehnt.
-- RAIL 0 und ein gelöschtes Bit in PORT_WANT werden immer genommen.
-  RAIL 0 behält PORT_WANT. Ein genommenes RAIL 1 löscht TRIPPED.
+  antworten. Der Ausgang eines Ports ist ein Throttle, wenn ein Slot von
+  OUTPUTS auf seinem Pin einen Throttle-Kanal ausgibt oder ein
+  Programmierport seinen Pin als DSHOT150, DSHOT300 oder DSHOT600 oder mit
+  einem Throttle-Kanal hält. Ein neues Bit in PORT_WANT für einen solchen
+  Port und RAIL 1 mit einem solchen gehaltenen Bit werden mit BAD_VALUE
+  abgelehnt; ohne die Schalter wird RAIL 1 mit BAD_VALUE abgelehnt,
+  solange irgendein Port ein Throttle ist. RAIL über 1 und ein Bit hinter
+  Port 9 werden mit BAD_VALUE abgelehnt.
+- RAIL 0 und ein gelöschtes Bit in PORT_WANT werden immer genommen. Ein
+  Schreiben, das mit RAIL 0 beginnt, schaltet die Schiene aus, bevor
+  irgendetwas anderes geprüft wird: wegen eines anderen Registers
+  abgelehnt, meldet es die Ablehnung mit ausgeschalteter Schiene und
+  unverändertem PORT_WANT. RAIL 0 behält PORT_WANT. Ein genommenes RAIL 1
+  löscht TRIPPED.
+- Ein Port, der an ist, wenn sein Ausgang ein Throttle wird, geht im
+  nächsten Durchlauf der Hauptschleife aus: mit den Schaltern wird sein Bit
+  in PORT_WANT gelöscht, ohne sie geht RAIL auf 0 und PORT_WANT bleibt.
+  TRIPPED wird nicht gesetzt.
 - Mit den Portschaltern (SW_FITTED beim Start low, FITTED 0x1FF) ist
   PORT_ON gleich PORT_WANT, solange RAIL 1 ist. Ohne sie (FITTED 0)
   ist jedes Bit von PORT_ON gleich RAIL, PORT_WANT wird gehalten und

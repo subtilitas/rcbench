@@ -1683,12 +1683,23 @@ holds its critical alert.
 
 - `RAIL` 1 and a new `PORT_WANT` bit are refused with NOT_ARMED without a
   live heartbeat or on a refused chip. `RAIL` 1 is refused with BUSY until
-  all three INA3221s answer with their critical limits written. A new
-  `PORT_WANT` bit for a port whose output is bound as a throttle, and
-  `RAIL` 1 with such a bit kept, are refused with BAD_VALUE. `RAIL` above 1 and a bit past port 9 are refused with
+  all three INA3221s answer with their critical limits written. A port's
+  output is a throttle when an OUTPUTS slot on its pin renders a throttle
+  channel, or when a programming port holds its pin as DSHOT150, DSHOT300
+  or DSHOT600 or with a throttle channel. A new `PORT_WANT` bit for such a
+  port, and `RAIL` 1 with such a bit kept, are refused with BAD_VALUE;
+  without the switches `RAIL` 1 is refused with BAD_VALUE while any port
+  is a throttle. `RAIL` above 1 and a bit past port 9 are refused with
   BAD_VALUE.
-- `RAIL` 0 and a cleared `PORT_WANT` bit are always taken. `RAIL` 0 keeps
-  `PORT_WANT`. A taken `RAIL` 1 clears `TRIPPED`.
+- `RAIL` 0 and a cleared `PORT_WANT` bit are always taken. A write that
+  starts with `RAIL` 0 switches the rail off before anything else is
+  judged: refused for another register, it returns the refusal with the
+  rail off and `PORT_WANT` as it was. `RAIL` 0 keeps `PORT_WANT`. A taken
+  `RAIL` 1 clears `TRIPPED`.
+- A port that is on when its output becomes a throttle goes off on the
+  next main-loop pass: with the switches its `PORT_WANT` bit is cleared,
+  without them `RAIL` goes to 0 and `PORT_WANT` stays. `TRIPPED` is not
+  set.
 - With the port switches (SW_FITTED low at boot, `FITTED` 0x1FF) `PORT_ON`
   is `PORT_WANT` while `RAIL` is 1. Without them (`FITTED` 0) every
   `PORT_ON` bit is `RAIL`, `PORT_WANT` is kept and reported, and PORT_EN1

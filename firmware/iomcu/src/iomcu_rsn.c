@@ -150,6 +150,17 @@ static uint16_t rail_mv(void)
                ? s_supply.regs[LINK_SP_V_MV] : 0u;
 }
 
+/**
+ * @brief The ports whose output is a throttle: an OUTPUTS slot's or a
+ *        programming port's (power_throttle()).
+ *
+ * @return Bit k for port k.
+ */
+static uint16_t throttles(void)
+{
+    return power_throttle(&s_outputs, &s_prog, outbind_roles(IOMCU_BOARD_ID));
+}
+
 uint16_t rsn_pass(uint32_t now)
 {
     power_in_t in;
@@ -178,6 +189,8 @@ uint16_t rsn_pass(uint32_t now)
         trip |= power_window(&s_power, s_sense_snap.setup,
                              s_sense_snap.win[0].number, mv, have, rail_mv());
     }
+    /* A port on whose output became a throttle afterwards goes off. */
+    (void)power_hold(&s_power, throttles());
     drive();
     const uint32_t half = s_chip_ok ? RSN_LED_OK_MS : RSN_LED_REFUSED_MS;
     gpio_put(RSN_PIN_LED, ((now / half) & 1u) != 0u);
@@ -197,8 +210,7 @@ uint8_t power_page_wr(void *ctx, uint8_t off, uint8_t n, const uint16_t *in)
     const power_ctx_t c = {
         .beat_alive  = safety_gate_supply_ok(&s_beat, &s_dev),
         .limits_held = (s_sense_snap.i3221_crit & 0x07u) == 0x07u,
-        .throttle    = power_throttle(&s_outputs,
-                                      outbind_roles(IOMCU_BOARD_ID)),
+        .throttle    = throttles(),
     };
     const uint8_t nack = power_write(&s_power, off, n, in, &c);
     if (nack == 0u) {

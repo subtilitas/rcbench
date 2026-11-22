@@ -10,9 +10,14 @@
  *     the A4 stepping (LINK_NACK_NOT_ARMED); RAIL 1 wants every INA3221 of
  *     the board answering with its critical limits written
  *     (LINK_NACK_BUSY); a new PORT_WANT bit for a port whose output is
- *     bound as a throttle, and RAIL 1 with such a bit kept, are refused
- *     (LINK_NACK_BAD_VALUE): an ESC brings its own supply.  RAIL 0 and cleared bits are always taken; RAIL 0 keeps
- *     PORT_WANT.  A taken RAIL 1 clears TRIPPED.
+ *     a throttle (power_throttle()), and RAIL 1 with such a bit kept, are
+ *     refused (LINK_NACK_BAD_VALUE): an ESC brings its own supply.
+ *     Without the switches RAIL 1 is refused while any port is a
+ *     throttle.  RAIL 0 and cleared bits are always taken; a write that
+ *     starts with RAIL 0 switches the rail off before the rest is judged,
+ *     so a refusal for another register leaves the rail off and PORT_WANT
+ *     as it was.  RAIL 0 keeps PORT_WANT.  A taken RAIL 1 clears TRIPPED.
+ *   - power_hold(): a port on whose output becomes a throttle goes off.
  *   - PORT_ON: with the switches fitted, PORT_WANT while RAIL is 1; without
  *     them every bit follows RAIL, and PORT_WANT is kept and reported.
  *   - power_off(): RAIL, PORT_ON and PORT_WANT cleared, for a lost
@@ -52,6 +57,7 @@
 #include "link_pages.h"
 #include "out_bind.h"
 #include "outputs.h"
+#include "prog_port.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -148,11 +154,13 @@ bool power_rail(const power_page_t *p);
  *         the page or a NULL argument; LINK_NACK_READ_ONLY for FITTED,
  *         PORT_ON, TRIPPED or BEC; LINK_NACK_BAD_VALUE for RAIL over 1, a
  *         PORT_WANT bit past port 9, a new bit on a throttle port, or
- *         RAIL 1 with a throttle port's bit kept;
+ *         RAIL 1 with a throttle port's bit kept (without the switches,
+ *         RAIL 1 with any throttle port);
  *         LINK_NACK_NOT_ARMED for RAIL 1 or a new PORT_WANT bit without a
  *         live heartbeat or on a chip before A4; LINK_NACK_BUSY for RAIL 1
  *         before the critical limits are held.  A refused write changes
- *         nothing.
+ *         nothing, except that a write starting with RAIL 0 switches the
+ *         rail off first.
  */
 uint8_t power_write(power_page_t *p, uint8_t off, uint8_t n,
                     const uint16_t *in, const power_ctx_t *ctx);
@@ -217,15 +225,31 @@ uint16_t power_window(power_page_t *p, uint32_t series, uint16_t number,
                       uint16_t have, uint16_t rail_mv);
 
 /**
- * @brief The ports whose output is bound as a throttle: a slot with a
- *        driver on the port's pin renders a channel whose role is
+ * @brief The ports whose output is a throttle: a slot with a driver on the
+ *        port's pin renders a channel whose role is OUT_ROLE_THROTTLE, or a
+ *        programming port holds the port's pin with a DShot function
+ *        (DSHOT150 to DSHOT600) or a channel whose role is
  *        OUT_ROLE_THROTTLE.
  *
- * @param o  The bank.
- * @param r  The board's roles: port k is r->out[k].
- * @return   Bit k for port k; 0 for NULL.
+ * @param o   The bank.
+ * @param pp  The programming ports; NULL for none.
+ * @param r   The board's roles: port k is r->out[k].
+ * @return    Bit k for port k; 0 for a NULL @p o or @p r.
  */
-uint16_t power_throttle(const outputs_t *o, const outbind_roles_t *r);
+uint16_t power_throttle(const outputs_t *o, const prog_port_t *pp,
+                        const outbind_roles_t *r);
+
+/**
+ * @brief A port on whose output became a throttle afterwards is switched
+ *        off: with the switches its PORT_WANT bit is cleared, without them
+ *        RAIL goes to 0 and PORT_WANT stays.  TRIPPED is not set.
+ *
+ * @param p         The state.
+ * @param throttle  power_throttle() as it stands.
+ * @return          The ports that were on and are throttles; 0 for none
+ *                  or NULL.
+ */
+uint16_t power_hold(power_page_t *p, uint16_t throttle);
 
 /**
  * @brief The STATUS fault bits TRIPPED stands for: LINK_FAULT_OVERCURRENT

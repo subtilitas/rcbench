@@ -19,7 +19,11 @@
  * on every port without the switches, and the window number's wrap at
  * 65536; the BEC check at 490mV and 500mV, only with the rail and every
  * port off and only on windows wholly after; the fault bits; the throttle
- * ports read off the bank.
+ * ports read off the bank and off the programming ports (each DShot rate);
+ * a port on that becomes a throttle switched off, without the switches the
+ * rail; RAIL 1 without the switches refused with a throttle on any port;
+ * RAIL 0 taken in a write refused for its other registers, and RAIL 0 alone
+ * and PORT_WANT with fewer bits taken with every refusal reason standing.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -33,6 +37,7 @@
 #include "out_bind.h"
 #include "outputs.h"
 #include "power_page.h"
+#include "prog_port.h"
 
 static power_page_t pg;
 static power_ctx_t  ctx;
@@ -438,7 +443,7 @@ TEST_CASE(a_throttle_port_is_read_off_the_bank)
     if (r == NULL) { T_FAIL("no board 3"); return; }
     outputs_t o;
     outputs_init(&o, 0u);
-    CHECK_EQ(power_throttle(&o, r), 0u);
+    CHECK_EQ(power_throttle(&o, NULL, r), 0u);
     /* A DShot slot on S3 (GPIO 20) rendering channel 4, a throttle. */
     const out_slot_t dshot = { .driver = OUT_DRIVER_DSHOT, .first_channel = 4u,
                                .channels = 1u, .pin = 20u, .rate_hz = 600u };
@@ -448,12 +453,12 @@ TEST_CASE(a_throttle_port_is_read_off_the_bank)
     const out_slot_t pwm = { .driver = OUT_DRIVER_PWM, .first_channel = 0u,
                              .channels = 1u, .pin = 16u, .rate_hz = 50u };
     CHECK(outputs_configure(&o, 1u, &pwm));
-    CHECK_EQ(power_throttle(&o, r), 0x0004u);
+    CHECK_EQ(power_throttle(&o, NULL, r), 0x0004u);
     /* MOTOR PWM: a PWM slot whose channel is a throttle. */
     CHECK(outputs_set_role(&o, 0u, OUT_ROLE_THROTTLE));
-    CHECK_EQ(power_throttle(&o, r), 0x0005u);
-    CHECK_EQ(power_throttle(NULL, r), 0u);
-    CHECK_EQ(power_throttle(&o, NULL), 0u);
+    CHECK_EQ(power_throttle(&o, NULL, r), 0x0005u);
+    CHECK_EQ(power_throttle(NULL, NULL, r), 0u);
+    CHECK_EQ(power_throttle(&o, NULL, NULL), 0u);
 }
 
 /* ------------------------------------------------ review round 1 cases */
@@ -557,6 +562,132 @@ TEST_CASE(rail_off_is_taken_with_a_kept_port_now_a_throttle)
     CHECK_EQ(wr(LINK_PW_RAIL, 1u), 0u);
 }
 
+/* ------------------------------------------------ review round 2 cases */
+
+/* A programming port's write of one register. */
+static uint8_t pg_put(prog_port_t *pp, outputs_t *o, unsigned off, uint16_t v)
+{
+    return prog_port_write(pp, (uint8_t)off, 1u, &v, o, 0u, false, 0u);
+}
+
+TEST_CASE(a_dshot_programming_port_is_a_throttle_port)
+{
+    const outbind_roles_t *r = outbind_roles((uint16_t)OUTBIND_BOARD_RSN);
+    if (r == NULL) { T_FAIL("no board 3"); return; }
+    outputs_t o;
+    outputs_init(&o, 0u);
+    prog_port_t pp;
+    prog_port_init(&pp, LINK_PG_PORTS_MAX);
+    CHECK_EQ(power_throttle(&o, &pp, r), 0u);
+    /* Port 0 on S1 (GPIO 16) as the servo pulse: a surface. */
+    CHECK_EQ(pg_put(&pp, &o, LINK_PG_REG(0u, LINK_PG_PIN), 16u), 0u);
+    CHECK_EQ(power_throttle(&o, &pp, r), 0u);
+    /* Each DShot rate makes S1 a throttle port. */
+    const uint16_t fn[3] = { (uint16_t)LINK_PG_FN_DSHOT150,
+                             (uint16_t)LINK_PG_FN_DSHOT300,
+                             (uint16_t)LINK_PG_FN_DSHOT600 };
+    for (unsigned i = 0; i < 3u; ++i) {
+        CHECK_EQ(pg_put(&pp, &o, LINK_PG_FUNC(0u), fn[i]), 0u);
+        CHECK_EQ(power_throttle(&o, &pp, r), 0x0001u);
+    }
+    /* Port 1 on S3 (GPIO 20), NONE: no throttle. */
+    CHECK_EQ(pg_put(&pp, &o, LINK_PG_FUNC(1u), (uint16_t)LINK_PG_FN_NONE),
+             0u);
+    CHECK_EQ(pg_put(&pp, &o, LINK_PG_REG(1u, LINK_PG_PIN), 20u), 0u);
+    CHECK_EQ(power_throttle(&o, &pp, r), 0x0001u);
+    /* Without the programming ports only the slots count. */
+    CHECK_EQ(power_throttle(&o, NULL, r), 0u);
+    /* A DShot port's write to the POWER page: refused. */
+    start(true);
+    ctx.throttle = power_throttle(&o, &pp, r);
+    CHECK_EQ(wr(LINK_PW_PORT_WANT, 0x0001u), (uint8_t)LINK_NACK_BAD_VALUE);
+    CHECK_EQ(reg(LINK_PW_PORT_WANT), 0u);
+}
+
+TEST_CASE(a_port_on_that_becomes_a_throttle_is_switched_off)
+{
+    start(true);
+    CHECK_EQ(wr(LINK_PW_PORT_WANT, 0x0005u), 0u);
+    CHECK_EQ(wr(LINK_PW_RAIL, 1u), 0u);
+    CHECK_EQ(power_hold(&pg, 0u), 0u);
+    CHECK_EQ(power_hold(&pg, 0x0002u), 0u);      /* port 2 is off      */
+    CHECK_EQ(reg(LINK_PW_PORT_ON), 0x0005u);
+    /* Port 1 becomes a throttle: its bit goes, the rest stays. */
+    CHECK_EQ(power_hold(&pg, 0x0001u), 0x0001u);
+    CHECK_EQ(reg(LINK_PW_PORT_WANT), 0x0004u);
+    CHECK_EQ(reg(LINK_PW_PORT_ON), 0x0004u);
+    CHECK_EQ(reg(LINK_PW_RAIL), 1u);
+    CHECK_EQ(reg(LINK_PW_TRIPPED), 0u);
+    /* Without the switches every port follows the rail: the rail goes,
+     * PORT_WANT stays. */
+    start(false);
+    CHECK_EQ(wr(LINK_PW_PORT_WANT, 0x0001u), 0u);
+    CHECK_EQ(wr(LINK_PW_RAIL, 1u), 0u);
+    CHECK_EQ(power_hold(&pg, 0x0100u), 0x0100u);
+    CHECK_EQ(reg(LINK_PW_RAIL), 0u);
+    CHECK_EQ(reg(LINK_PW_PORT_ON), 0u);
+    CHECK_EQ(reg(LINK_PW_PORT_WANT), 0x0001u);
+    CHECK_EQ(reg(LINK_PW_TRIPPED), 0u);
+    CHECK_EQ(power_hold(NULL, 0x01FFu), 0u);
+}
+
+TEST_CASE(without_the_switches_rail_on_with_any_throttle_is_refused)
+{
+    start(false);
+    ctx.throttle = 0x0004u;          /* a throttle on S3, PORT_WANT 0 */
+    CHECK_EQ(wr(LINK_PW_RAIL, 1u), (uint8_t)LINK_NACK_BAD_VALUE);
+    CHECK_EQ(reg(LINK_PW_RAIL), 0u);
+    ctx.throttle = 0u;
+    CHECK_EQ(wr(LINK_PW_RAIL, 1u), 0u);
+}
+
+TEST_CASE(rail_off_in_a_refused_write_is_taken)
+{
+    /* RAIL 0 to PORT_WANT in one write, adding a throttle port: the rail
+     * goes off, the refusal comes back, PORT_WANT stays. */
+    start(true);
+    CHECK_EQ(wr(LINK_PW_PORT_WANT, 0x0001u), 0u);
+    CHECK_EQ(wr(LINK_PW_RAIL, 1u), 0u);
+    ctx.throttle = 0x0002u;
+    const uint16_t add_throttle[4] = { 0u, 0u, 0u, 0x0003u };
+    CHECK(power_write(&pg, 0u, 4u, add_throttle, &ctx) != 0u);
+    CHECK_EQ(reg(LINK_PW_RAIL), 0u);
+    CHECK_EQ(reg(LINK_PW_PORT_ON), 0u);
+    CHECK_EQ(reg(LINK_PW_PORT_WANT), 0x0001u);
+    /* The same adding a port with the heartbeat lost. */
+    start(true);
+    CHECK_EQ(wr(LINK_PW_PORT_WANT, 0x0001u), 0u);
+    CHECK_EQ(wr(LINK_PW_RAIL, 1u), 0u);
+    ctx.beat_alive = false;
+    const uint16_t add_port[4] = { 0u, 0u, 0u, 0x0011u };
+    CHECK(power_write(&pg, 0u, 4u, add_port, &ctx) != 0u);
+    CHECK_EQ(reg(LINK_PW_RAIL), 0u);
+    CHECK_EQ(reg(LINK_PW_PORT_WANT), 0x0001u);
+    /* On a chip before A4, past the page and with a bad PORT_WANT. */
+    power_init(&pg, true, false);
+    pg.rail = true;
+    pg.want = 0x0001u;
+    const uint16_t past[7] = { 0u, 0u, 0u, 0x0001u, 0u, 0u, 0u };
+    CHECK(power_write(&pg, 0u, 7u, past, &ctx) != 0u);
+    CHECK_EQ(reg(LINK_PW_RAIL), 0u);
+    pg.rail = true;
+    const uint16_t bad[4] = { 0u, 0u, 0u, 0x0400u };
+    CHECK(power_write(&pg, 0u, 4u, bad, &ctx) != 0u);
+    CHECK_EQ(reg(LINK_PW_RAIL), 0u);
+    CHECK_EQ(reg(LINK_PW_PORT_WANT), 0x0001u);
+    /* RAIL 0 alone, and PORT_WANT with fewer bits, with every refusal
+     * reason standing. */
+    pg.rail = true;
+    ctx.throttle = 0x0001u;
+    CHECK_EQ(wr(LINK_PW_RAIL, 0u), 0u);
+    CHECK_EQ(reg(LINK_PW_RAIL), 0u);
+    pg.rail = true;
+    pg.want = 0x0003u;
+    CHECK_EQ(wr(LINK_PW_PORT_WANT, 0x0001u), 0u);
+    CHECK_EQ(reg(LINK_PW_PORT_WANT), 0x0001u);
+    CHECK_EQ(reg(LINK_PW_RAIL), 1u);
+}
+
 int main(void)
 {
     RUN(the_page_starts_off_with_the_switches_as_strapped);
@@ -579,5 +710,9 @@ int main(void)
     RUN(the_bec_check_stays_on_however_long_everything_is_off);
     RUN(a_restarted_window_series_keeps_both_checks);
     RUN(rail_off_is_taken_with_a_kept_port_now_a_throttle);
+    RUN(a_dshot_programming_port_is_a_throttle_port);
+    RUN(a_port_on_that_becomes_a_throttle_is_switched_off);
+    RUN(without_the_switches_rail_on_with_any_throttle_is_refused);
+    RUN(rail_off_in_a_refused_write_is_taken);
     return test_summary("power_page");
 }
