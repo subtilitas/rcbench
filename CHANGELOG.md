@@ -960,7 +960,7 @@ The entries below cover the 7 pull requests merged since v0.23.13: #847,
   cello solo, BWV 1007, 41 bars at 4s a bar, plucked over each bar's
   lowest note. The notes are those of the Mutopia Project's edition
   Mutopia-2018/01/19-517, which its typesetter placed in the public
-  domain. No storyboard uses it
+  domain. `phase-tap` uses it
   ([Videos from storyboards](tools/video/README.md)).
 - Storyboard `phase-tap`: ESC STICK programming counted from the phase
   tap in 7 steps, narrated. `tools/video_tap.py` models the motor lead of
