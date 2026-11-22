@@ -311,6 +311,8 @@ TEST_CASE(the_benchs_own_folders_are_refused)
     CHECK_EQ(check("BENCH/HITEC", out), CARD_FOLDER_BENCH);
     CHECK_EQ(check("BENCH/ESCW", out), CARD_FOLDER_BENCH);
     CHECK_EQ(check("BENCH/BALANCE", out), CARD_FOLDER_BENCH);
+    CHECK_EQ(check("BENCH/SETUP", out), CARD_FOLDER_BENCH);
+    CHECK_EQ(check("bench/setup", out), CARD_FOLDER_BENCH);
     CHECK_STR_EQ(out, "UNTOUCHED");
     /* Every area of the bench's list, by its first 2 folders. */
     const char *own;
@@ -326,7 +328,7 @@ TEST_CASE(the_benchs_own_folders_are_refused)
         CHECK_EQ(check(area, out), CARD_FOLDER_BENCH);
         ++areas;
     }
-    CHECK_EQ((int)areas, 5);
+    CHECK_EQ((int)areas, 6);
     CHECK(card_bench_dir(areas) == NULL);
     /* Below them is 3 deep, refused before the bench is asked. */
     CHECK_EQ(check("BENCH/KST/CONF", out), CARD_FOLDER_DEEP);
@@ -337,6 +339,7 @@ TEST_CASE(the_benchs_own_folders_are_refused)
     CHECK_EQ(check("BENCH/HITECS", out), CARD_FOLDER_OK);
     CHECK_EQ(check("BENCH/ESCWX", out), CARD_FOLDER_OK);
     CHECK_EQ(check("BENCH/BALANCES", out), CARD_FOLDER_OK);
+    CHECK_EQ(check("BENCH/SETUPS", out), CARD_FOLDER_OK);
     CHECK_EQ(check("BENCHX/KST", out), CARD_FOLDER_OK);
     CHECK_EQ(check("KST", out), CARD_FOLDER_OK);
     CHECK_EQ(check("USER/KST", out), CARD_FOLDER_OK);

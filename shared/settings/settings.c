@@ -836,6 +836,54 @@ const char *settings_text_key(setting_text_id_t id)
     return k_text_defs[id].key;
 }
 
+const char *settings_text_default(setting_text_id_t id)
+{
+    return (id >= 0 && id < SETTING_TEXT_COUNT) ? k_text_defs[id].def : "";
+}
+
+bool settings_takes(setting_id_t id, float value)
+{
+    const setting_def_t *d = settings_def(id);
+    if (d == NULL || isnan(value) || isinf(value)) {
+        return false;
+    }
+    if (d->type == SET_TYPE_BOOL) {
+        return value == 0.0f || value == 1.0f;
+    }
+    /* What the schema makes of it, within half a step: a value it snaps
+     * onto its grid is taken, one it clamps, replaces or moves off an
+     * "off" gap is not. */
+    const float fitted = coerce(d, value);
+    const float slack = (d->step > 0.0f) ? 0.5f * d->step : 0.0f;
+    if (d->type == SET_TYPE_ENUM) {
+        /* An option offered: coerce() takes an index in range as it is. */
+        return value == floorf(value) && fitted == value;
+    }
+    if (d->type == SET_TYPE_INT) {
+        return fabsf(fitted - value) < ((slack > 0.5f) ? slack : 0.5f)
+               && value >= d->min - slack && value <= d->max + slack;
+    }
+    return value >= d->min - slack && value <= d->max + slack
+           && fabsf(fitted - value) <= slack;
+}
+
+bool settings_stored_defaults(void)
+{
+    for (int i = 0; i < SETTING_COUNT; ++i) {
+        const float step = DEF(i).step;
+        const float tol = (step > 0.0f) ? 0.5f * step : 0.0f;
+        if (fabsf(s.stored[i] - DEF(i).def) > tol) {
+            return false;
+        }
+    }
+    for (int i = 0; i < SETTING_TEXT_COUNT; ++i) {
+        if (strcmp(s.stored_texts[i], k_text_defs[i].def) != 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void settings_set_text(setting_text_id_t id, const char *text)
 {
     if (id < 0 || id >= SETTING_TEXT_COUNT || text == NULL) {
