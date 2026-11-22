@@ -84,6 +84,7 @@ entries:
     ui_band (rcbench_extram_bss)
     splash_screen (rcbench_extram_bss)
     ui_router (rcbench_extram_bss)
+    sbk_ctl (rcbench_extram_bss)
 
 [mapping:rcbench_bench_psram]
 archive: libbench.a

@@ -26,6 +26,42 @@ history is in git.
   `RCBENCH_SIGN_ENFORCE=1` asks for a second 2s hold, INSTALL ANYWAY.
   The panel image grows by 7152 bytes.
 
+- `hardware/mechanical/`: a variant of the display node's case for
+  panel-mount XT60 with 2 screws, 59.8mm x 105.6mm x 24.4mm:
+  `display_node_xt60_box` and `display_node_xt60_lid`, each as STEP and
+  STL. Each short wall has the seat of the bench's front case: a wall of
+  3.0mm, a recess 2.0mm deep in the flange's outline, an opening of 19.6mm
+  x 12.4mm for the body and 2 insert holes 25.6mm apart in bosses behind
+  the wall. The check holds the connectors' flange, body and contacts
+  clear of box and board. No part is printed
+  ([Cases](hardware/mechanical/CASES.md#case-of-the-display-node-xt60)).
+- `hardware/mechanical/`: a printed case of 2 parts for the display node
+  with XT30 connectors, 59.8mm x 101.2mm x 17.8mm: `display_node_box` and
+  `display_node_lid`, each as STEP and STL. It follows a tester's case,
+  measured from its STL file, which closes in nominal sizes with 0.18mm
+  over the board. 3 changes give real parts more room, so that the lid
+  still closes on the rim: blind insert holes of 4.0mm x 6.0mm with a
+  relief in place of straight holes of 3.5mm, a window with 0.5mm in place
+  of 0.17mm beside the touch panel, and head recesses of 6.0mm for M3. A
+  hole of 3.5mm in the floor holds the current sensor board. `_gen_display_case.py --check`, which CI runs, fails when a part
+  meets the display board or the stack does not close. No part is printed
+  ([Cases](hardware/mechanical/CASES.md#case-of-the-display-node-xt30)).
+- Settings backup on the card, `BENCH/SETUP`. SETUP > SD CARD ends on Save
+  settings, which writes the stored settings as `SETTINGS.TXT`, and Load
+  settings, which opens BACKUP: the card's settings files with their date
+  and panel version, and HOLD 2s TO LOAD. A load replaces every setting
+  (the file's value, or the default where the file has none), lists each
+  refused line with its number, key and code, and asks for the save to NVS
+  (non-volatile storage). Each save to NVS with a card in also writes
+  `AUTO1.TXT` and moves the older copies on to `AUTO2.TXT` and `AUTO3.TXT`;
+  a copy that does not reach the card shows once in the alert band and
+  switches no output off. A panel that starts on the defaults offers the
+  card's newest file over the menu once SAFE. The file is text, format 1:
+  one `<key> = <value>` line a setting, the bindings of the IMU, the Dial
+  and the nodes among them; the Wi-Fi home network, its password, HOTSPOT
+  PASSWORD and ACCESS CODE are not in it
+  ([Screens](docs/Screens.md#sd-card-the-settings-backup)).
+- The SD CARD tile reads `LOGS, BROWSER WRITES, BACKUP`.
 - `hardware/mechanical/`: a printed case of 3 parts for the remote INA228
   sensor node, 91.4mm x 55.4mm x 28.0mm: `ina228_node_plate`,
   `ina228_node_frame` and `ina228_node_bezel`, each as STEP and STL. 4
@@ -36,7 +72,7 @@ history is in git.
   4 speaker slots, microphone, display window. `_gen_node_case.py` builds
   the parts with OpenCASCADE and CI checks them against the 1139 solids of
   the layout. No part is printed
-  ([Mechanical parts](hardware/mechanical/README.md#case-of-the-sensor-node)).
+  ([Cases](hardware/mechanical/CASES.md#case-of-the-sensor-node)).
 - `hardware/mechanical/`: `ina228_node_layout.step`, the boards of the
   remote INA228 sensor node in place: the INA228 module with its 2 XT90PW
   connectors at the bottom, the ES3C28P display board 0.5mm over the
@@ -86,7 +122,6 @@ history is in git.
   an IOmcu image older than 4.41 reads no version 9 record and starts with
   the bindings of a one-page record if the flash holds one, empty
   otherwise.
-
 - `tools/pio_budget.py`: counts every PIO (programmable input/output)
   program in the `.pio` files under `protocols/` as pioasm 2.3.0 does and
   loads each board's programs into a model of the RP2350's 3 blocks of 4
@@ -121,6 +156,14 @@ history is in git.
 
 ### Changed
 
+- Sensor node case (`hardware/mechanical/_gen_node_case.py`): 2 joints
+  hold the frame's wall from moving inwards between its 4 columns. The
+  plate has a lip of 1.2mm x 1.5mm all round inside the wall's lower edge.
+  The wall's upper inner edge is cut off at 45 degrees, and 4 wedges of
+  1.2mm under the bezel's rim lie in the cut. On a printed case without
+  the joints the walls shift sideways (owner, 2026-11-22). The parts with
+  the joints are not printed
+  ([Cases](hardware/mechanical/CASES.md#case-of-the-sensor-node)).
 - `hardware/mechanical/models/` is sorted into 3 folders: `pcb/` (17
   models: 16 boards and the sensor node's layout), `casing/` (7 printed
   parts) and `parts/` (13 bought parts and assemblies). `_models.py` names

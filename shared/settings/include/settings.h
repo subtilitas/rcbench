@@ -669,6 +669,35 @@ const char *settings_text(setting_text_id_t id);
  */
 const char *settings_text_key(setting_text_id_t id);
 /**
+ * @brief A string's default: what a fresh panel holds and RESET sets.
+ * @param id  The string.
+ * @return The default; "" for an id out of range.  Never NULL.
+ */
+const char *settings_text_default(setting_text_id_t id);
+
+/**
+ * @brief Whether the schema takes @p value for @p id as it is: a number in
+ *        its range, on its grid within half a step, and outside an "off"
+ *        gap (off_below); a switch 0 or 1; a choice one of the options
+ *        offered; a pin one the row takes.  The settings file's load
+ *        (settings_file.h) refuses a line whose value fails this, where
+ *        settings_set() would clamp or replace it.
+ * @param id    The setting.
+ * @param value The value.
+ * @return true when it is taken; false for an id out of range, NaN and an
+ *         infinity.
+ */
+bool settings_takes(setting_id_t id, float value);
+
+/**
+ * @brief Whether the stored copy holds the schema's defaults only, every
+ *        value within half a step and every string: a panel whose store
+ *        held no setting, or one an erase left with the defaults.
+ * @return true when it does.
+ */
+bool settings_stored_defaults(void);
+
+/**
  * @brief Set a string, cut to SETTINGS_TEXT_MAX - 1 characters; an edit like
  * any other.
  * @param id    The string.
