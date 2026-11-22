@@ -3,8 +3,8 @@
 The servo has the drawing's sizes. Every solid of the assembly is valid
 and no two share volume, the frame's screws meet the servo's holes, the
 strut's bush lies on the shaft's axis, the plate follows the upper
-skin, the horn's eye lies above the flap, and the rod turns the flap both
-ways.
+skin, the horn's eye lies above the flap, the rod turns the flap both
+ways, and no two solids share volume over the arm's travel.
 
 SPDX-License-Identifier: MIT
 """
@@ -70,7 +70,46 @@ def test_assembly_is_sound(built):
     """Valid solids in one piece each, no shared volume."""
     assert drive.check(built["flap_drive_assembly"]) == []
     assert len(built["flap_drive"]) == 23
-    assert len(built["flap_drive_wing"]) == 6
+    assert len(built["flap_drive_wing"]) == 7
+
+
+def test_no_collision_over_the_travel():
+    """No two solids share volume from -45 to 75 degrees of the arm."""
+    assert drive.SWEEP == (-45, 75, 15)
+    assert drive.sweep() == []
+
+
+def test_posed_parts_follow_the_arm():
+    """The flap's trailing edge drops for a push and rises for a pull."""
+    def edge(arm):
+        return drive.extent(named(drive.posed(arm), "flap"))
+    assert edge(45.0)[2] < edge(0.0)[2] - 20.0
+    assert edge(-45.0)[5] > edge(0.0)[5] + 10.0
+    names = [n for n, _s, _c in drive.posed(30.0)]
+    assert len(names) == 55 and len(set(names)) == 55
+
+
+def test_upper_skin_leaves_the_flap_room(built):
+    """The gap is 0.6 at the hinge and 4.45 at the upper surface."""
+    wing = drive.extent(named(built["flap_drive_wing"], "wing"))
+    flap = drive.extent(named(built["flap_drive_wing"], "flap"))
+    assert flap[0] - wing[3] == pytest.approx(drive.GAP, abs=0.01)
+    fairing = drive.extent(named(built["flap_drive_wing"], "fairing"))
+    top = drive.height(drive.UPPER, drive.HINGE)
+    lean = (top - drive.joints()["hinge"][1]) * math.tan(
+        math.radians(drive.UP))
+    assert drive.GAP + lean == pytest.approx(4.45, abs=0.01)
+    assert fairing[3] == pytest.approx(flap[0] - 4.45, abs=0.25)
+
+
+def test_fairing_covers_the_slot(built):
+    """One valid shell, 35.5 long and 10.2 wide, round the rod's plane."""
+    box = drive.extent(named(built["flap_drive_wing"], "fairing"))
+    assert box[3] - box[0] == pytest.approx(35.5, abs=0.1)
+    assert box[4] - box[1] == pytest.approx(10.2, abs=0.1)
+    assert (box[1] + box[4]) / 2 == pytest.approx(-drive.MID, abs=0.01)
+    assert box[5] - drive.height(drive.UPPER, box[3]) == pytest.approx(
+        8.1, abs=0.2)
 
 
 def test_horn_stands_out_of_the_flap(built):

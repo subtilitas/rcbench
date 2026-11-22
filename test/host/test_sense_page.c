@@ -482,7 +482,7 @@ TEST_CASE(read_only_registers_and_the_page_end_are_refused)
 TEST_CASE(no_slot_binds_a_pin_the_bus_holds)
 {
     fresh();
-    uint16_t slots[LINK_OS_COUNT];
+    uint16_t slots[LINK_OS_ALL] = { 0 };
     memset(slots, 0, sizeof(slots));
     slots[LINK_OS_DRIVER] = LINK_DRIVER_PWM;
     slots[LINK_OS_PIN]    = 16u;
@@ -518,7 +518,7 @@ TEST_CASE(no_slot_binds_a_pin_core_1_still_holds)
     CHECK_EQ(bus(1u, 20u, 21u, 400u, 0u), 0u);
     CHECK_EQ(sense_page_pins(&pg), BIT(20) | BIT(21));
     CHECK_EQ(sense_page_held(&pg), BIT(16) | BIT(17) | BIT(20) | BIT(21));
-    uint16_t slots[LINK_OS_COUNT];
+    uint16_t slots[LINK_OS_ALL] = { 0 };
     memset(slots, 0, sizeof(slots));
     slots[LINK_OS_DRIVER] = LINK_DRIVER_PWM;
     slots[LINK_OS_PIN]    = 16u;

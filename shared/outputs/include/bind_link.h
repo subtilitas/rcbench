@@ -43,6 +43,22 @@ typedef enum {
 } bind_rate_t;
 
 /**
+ * @brief Whether an IOmcu of protocol 4.@p minor has every slot and channel
+ *        @p slots binds.
+ *
+ * Below 4.41 no slot from 9 to 16 may be bound and no slot's channel run may
+ * reach past channel 8: that IOmcu's bank channel 8 is its bench throttle and
+ * 9 to 12 its programming ports.  bind_link_write() refuses a binding that
+ * does not fit before it sends anything.
+ *
+ * @param minor The IOmcu's protocol minor.
+ * @param slots OUTPUTS and OUTPUTS_HI, LINK_OS_ALL registers.
+ * @return true when the binding fits, false when it does not or @p slots is
+ *         NULL.
+ */
+bool bind_link_fits(uint16_t minor, const uint16_t *slots);
+
+/**
  * @brief Write a CHAN_CFG page @p cfg and an OUTPUTS page @p slots, each frame
  *        its own acknowledged exchange (link_write_acked()).
  *
@@ -51,9 +67,12 @@ typedef enum {
  * no answer ends it BIND_NO_LINK, with no page written.  @p rate, when not
  * NULL, takes what became of it.
  *
- * Then, to an IOmcu whose protocol minor @p minor is LINK_MINOR_BIND
- * (10) or later: 8 frames to BIND_CFG, 8 to BIND_OUT, and LINK_BD_COMMIT
- * with the CRC (cyclic redundancy check) of the two pages, 17 exchanges.
+ * Then, to an IOmcu whose protocol minor @p minor is LINK_MINOR_OUT16
+ * (41) or later: 8 frames each to BIND_CFG, BIND_OUT, BIND_CFG_HI and
+ * BIND_OUT_HI, and LINK_BD_COMMIT_ALL with the CRC (cyclic redundancy
+ * check) of the four pages (out_stage_crc_all()), 33 exchanges.  To one of
+ * LINK_MINOR_BIND (10) to 40: 8 frames to BIND_CFG, 8 to BIND_OUT, and
+ * LINK_BD_COMMIT with the CRC of the two pages, 17 exchanges.
  * The pages in force change at the commit and not before, both or neither,
  * so a sequence that ends BIND_NO_LINK or BIND_REFUSED before the commit is
  * taken leaves the binding in force as it was.  A commit whose
@@ -66,16 +85,22 @@ typedef enum {
  *
  * The exchanges stop at the first one refused or unanswered.
  *
+ * A binding with a slot from 9 to 16 bound, or a slot whose channel run
+ * reaches past channel 8, is refused BIND_REFUSED, and nothing sent, to an
+ * IOmcu older than 4.41: it has 8 slots, and its bank channels 8 to 12 are
+ * its bench throttle and programming ports.
+ *
  * @param h The link host to write through.
  * @param port The link port the IOmcu answers on.
  * @param minor The IOmcu's protocol minor version.
- * @param cfg The CHAN_CFG page, LINK_CC_COUNT registers.
- * @param slots The OUTPUTS page, LINK_OS_COUNT registers.
+ * @param cfg CHAN_CFG and CHAN_CFG_HI, LINK_CC_ALL registers.
+ * @param slots OUTPUTS and OUTPUTS_HI, LINK_OS_ALL registers.
  * @param rate Receives what became of the SERVO rate reset, set to
  *        BIND_RATE_NOT_SENT first. NULL discards it.
  * @return BIND_WRITTEN when every exchange was acknowledged. BIND_NO_LINK when
  *         an exchange was unanswered, or when @p h, @p port, @p cfg or @p slots
- *         is NULL. BIND_REFUSED when the far end answered and refused one.
+ *         is NULL. BIND_REFUSED when the far end answered and refused one,
+ *         or for slots past 8 to an IOmcu older than 4.41.
  */
 bind_write_t bind_link_write(link_host_t *h, const link_port_t *port,
                              uint16_t minor, const uint16_t *cfg,
@@ -111,7 +136,8 @@ typedef enum {
     BIND_READ_NONE,
     /** @brief Both pages read and no binding this model can hold renders to
      *        them: a pin in two slots, a rate or driver no protocol entry has,
-     *        a pin off the board or reserved, channels out of slot order.
+     *        a pin off the board or reserved, channels out of slot order, a
+     *        slot from 9 to 16 bound.
      */
     BIND_READ_ODD,
     /** @brief Both pages read and this build has no pin map for the board. */
@@ -127,8 +153,8 @@ typedef struct {
      *        BIND_READ_NONE.
      */
     bool        pages;
-    uint16_t    slots[LINK_OS_COUNT];   /**< the OUTPUTS page */
-    uint16_t    cfg[LINK_CC_COUNT];     /**< the CHAN_CFG page */
+    uint16_t    slots[LINK_OS_ALL];   /**< OUTPUTS, then OUTPUTS_HI   */
+    uint16_t    cfg[LINK_CC_ALL];     /**< CHAN_CFG, then CHAN_CFG_HI */
 } bind_reading_t;
 
 /**
@@ -162,8 +188,8 @@ bool bind_link_may_write(bind_read_t last, uint16_t board,
  * @param out Receives the reading. NULL gives BIND_READ_NONE and nothing is
  *        stored.
  * @param board The board the IOmcu answers as.
- * @param slots The OUTPUTS page, LINK_OS_COUNT registers, or NULL.
- * @param cfg The CHAN_CFG page, LINK_CC_COUNT registers, or NULL.
+ * @param slots OUTPUTS and OUTPUTS_HI, LINK_OS_ALL registers, or NULL.
+ * @param cfg CHAN_CFG and CHAN_CFG_HI, LINK_CC_ALL registers, or NULL.
  * @return BIND_READ_NONE when either page is NULL. BIND_READ_NO_BOARD when
  *         this build has no pin map for @p board. BIND_READ_OK when the pages
  *         render to a binding. BIND_READ_ODD otherwise.
@@ -172,19 +198,25 @@ bind_read_t bind_link_classify(bind_reading_t *out, uint16_t board,
                                const uint16_t *slots, const uint16_t *cfg);
 
 /**
- * @brief Read OUTPUTS and then CHAN_CFG, two exchanges, and classify them.
+ * @brief Read OUTPUTS and then CHAN_CFG, and from a 4.41 IOmcu OUTPUTS_HI
+ *        and CHAN_CFG_HI after them, and classify them.
  *
- * The second is not sent when the first did not read.
+ * Each page is one read of LINK_READ_REGS_MAX registers and a READ_HELD
+ * on a 4.35 or later IOmcu (link_read_split()).  A page is not asked for
+ * when the one before did not read.  From an older IOmcu the _HI halves
+ * read as no slot and CHAN_CFG_HI's defaults.
  *
  * @param h The link host to read through.
  * @param port The link port the IOmcu answers on.
+ * @param minor The IOmcu's protocol minor.
  * @param board The board the IOmcu answers as.
  * @param out Receives the reading. NULL gives BIND_READ_NONE.
  * @return The state from bind_link_classify(), or BIND_READ_NONE when @p h or
  *         @p port is NULL or an exchange did not return a data frame.
  */
 bind_read_t bind_link_read(link_host_t *h, const link_port_t *port,
-                           uint16_t board, bind_reading_t *out);
+                           uint16_t minor, uint16_t board,
+                           bind_reading_t *out);
 
 #ifdef __cplusplus
 }

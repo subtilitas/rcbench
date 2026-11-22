@@ -23,7 +23,7 @@ static esc_port_t g_p;
 
 /* The hooks' side. */
 static struct {
-    uint8_t  pin[2][8];        /* [is_port][index] */
+    uint8_t  pin[2][16];       /* [is_port][index] */
     bool     take_ok;
     int      takes, gives;
     uint8_t  last_pin;

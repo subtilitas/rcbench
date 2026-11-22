@@ -38,6 +38,7 @@ from OCP.TopoDS import TopoDS
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "kicad" / "tools"))
+import _models  # noqa: E402
 import m5dial  # noqa: E402
 import step_check  # noqa: E402
 
@@ -210,10 +211,10 @@ def main():
     """
     parts = m5dial.mesh_parts()
     found = {}
-    _shape, solids = step_check.read(HERE / "models" / "m5dial.step")
+    _shape, solids = step_check.read(_models.path("m5dial"))
     for name, (solid, _colour) in zip(m5dial.DIAL, solids, strict=False):
         found[name] = solid
-    _shape, solids = step_check.read(HERE / "models" / "m5dial_nut.step")
+    _shape, solids = step_check.read(_models.path("m5dial_nut"))
     found["nut"] = solids[0][0]
     bad = 0
     for name in sorted(parts):

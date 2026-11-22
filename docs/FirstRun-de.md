@@ -164,7 +164,11 @@ diese Schreibweise ab, sodass `@flash_args` esptool 5 oder neuer braucht.
    [Web-Flasher](https://subtilitas.github.io/rcbench/flash/) von rcbench
    schreibt das zusammengeführte Image eines Release auf das Panel und das
    Install-Image über WebUSB auf die IOmcu, in Chrome oder Edge auf einem
-   Desktop-Computer ([flasher/README.md](../flasher/README.md)).
+   Desktop-Computer ([flasher/README.md](../flasher/README.md)). Sein
+   Kästchen „Einstellungen behalten“, vorgegeben an, lässt die
+   NVS-Partition bei 0xD000 aus, so behält das Panel seine Einstellungen
+   wie mit `@flash_args`; ohne Haken schreibt er das ganze
+   zusammengeführte Image.
 4. Schalte beide Platinen mit verdrahtetem Link ein. Ein in Schritt 2
    geladener IOmcu hat den Build, den das Panel trägt, und das Panel
    bietet kein Update an. Das Panel lädt die Zeichnung der Platine
@@ -190,7 +194,7 @@ ins Menü in der Simulation ([Den Link in Betrieb nehmen](Bringup-de.md#der-bus-
 
 Ein IOmcu mit 0.19.0 oder neuer hat die Partitionstabelle von seinem
 USB-Laden und bekommt das Image, das das Panel trägt, über CAN. Das
-Link-Protokoll des Panels ist 4.40, und ein IOmcu mit 0.19.0 oder neuer
+Link-Protokoll des Panels ist 4.41, und ein IOmcu mit 0.19.0 oder neuer
 spricht 4.22 oder neuer: die Hauptversion, 4, ist gleich, also verbinden
 sich beide Platinen vor und nach dem Update.
 

@@ -218,7 +218,7 @@ uint8_t esc_port_pin_mask(const esc_port_t *p);
  * @param mask the slots asked
  * @return @p mask without the held slot
  */
-uint8_t esc_port_may_bind(const esc_port_t *p, uint8_t mask);
+uint16_t esc_port_may_bind(const esc_port_t *p, uint16_t mask);
 
 /**
  * @brief The pin the port holds, as a reservation mask (outputs_reserve_pins()).
@@ -265,7 +265,7 @@ void esc_port_other(esc_port_t *p, uint8_t mask);
  * @param bound bit n: slot n is bound
  * @return the pin, or ESC_PORT_NO_PIN
  */
-uint8_t esc_port_slot_pin(const outputs_t *o, uint8_t slot, uint8_t bound);
+uint8_t esc_port_slot_pin(const outputs_t *o, uint8_t slot, uint16_t bound);
 
 #ifdef __cplusplus
 }

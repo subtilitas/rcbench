@@ -47,7 +47,7 @@ No pull request is open. CI has not been looked at for this branch.
 | `case.glb` | 35MB | `python3 tools/video_cad.py rcbench_case.stp`, 54s | `tools/video/cad/` |
 | `rbmod.kicad_pcb` of rev 1 | 251kB | repository `subtilitas/kicad`, `projects/rcbench/rcbench_modular/rbmod/rbmod-backups/rbmod-2026-10-25_215831.zip` | any path; input of `tools/video_board.py` |
 | `rbmod-rev1.json` | 40kB | `python3 tools/video_board.py rbmod.kicad_pcb -o tools/video/cad/rbmod-rev1.json` | `tools/video/cad/` |
-| `m5dial.glb` | 0.9MB | `python3 tools/video_cad.py --solids hardware/mechanical/models/m5dial.step -o tools/video/cad/m5dial.glb`, 10s | `tools/video/cad/` |
+| `m5dial.glb` | 0.9MB | `python3 tools/video_cad.py --solids hardware/mechanical/models/parts/m5dial.step -o tools/video/cad/m5dial.glb`, 10s | `tools/video/cad/` |
 | `kokoro-v1.0.onnx`, `voices-v1.0.bin` | 354MB | github.com/thewh1teagle/kokoro-onnx, release `model-files-v1.0` | `tools/video/tts/` |
 | `node_modules/` | | `npm install` in `tools/video/` | `tools/video/` |
 

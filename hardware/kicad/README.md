@@ -93,14 +93,16 @@ pad is a hole through the module board. The model uses the
 footprint's coordinate system: origin at pad 1, z = 0 on the carrier's top side, so the
 footprint places it with no offset, scale or rotation.
 
-Five modules have a `MODEL` of the one key `detail`: the INA219 board with
-the print CJMCU, the charger board, the boost board, the ESP32-C6-Zero
-and the Core2350B. Their models come from the specs of the same name in
+Nine modules have a `MODEL` of the one key `detail`: the INA219 board with
+the print CJMCU, the charger board, the boost board, the ESP32-C6-Zero,
+the Core2350B, the RP2350-CAN, the INA3221 board, the mini buck (Mini560)
+and the PD trigger. Their models come from the specs of the same name in
 [hardware/mechanical](../mechanical/README.md#module-boards-and-cells),
 which draw each board part by part with its print, in the board's own
 colour, with round holes and arcs as cylinders. The INA219 board stands
-on a 6-pin header, the Core2350B on four 2 x 8 headers, the other three
-lie flat.
+on a 6-pin header, the INA3221 board on an 8-pin header, the RP2350-CAN on
+two headers of 20 pins, the mini buck on four headers of 2 pins, the
+Core2350B on four 2 x 8 headers; the other four lie flat.
 
 The 4 ES3C28P socket headers share one model builder in
 `modules/_jst_ph.py`: a floor 0.6mm thick with the pin holes, four walls
@@ -125,9 +127,12 @@ Sources of the heights, as each spec lists them:
 No source gives a board thickness; boards are drawn 1.6mm (the WeAct
 model measures 1.69mm over copper). The exact part fitted to a board is not always
 identified: the XT90 variant and the INA219 terminal are the closest
-catalogue parts. No source was found for the RP2350-CAN heights, the PD
-trigger, the mini buck or the T-plug. All boards are drawn green (owner,
-2026-10-28), whatever the colour of the real board. Parts omitted from a spec
+catalogue parts. No source was found for the T-plug. The boards of the box
+models are drawn green (owner, 2026-10-28), whatever the colour of the real
+board. The nine `detail` models keep the real board's colour (owner,
+2026-11-21): the RP2350-CAN and the mini buck are blue, the INA3221 board
+black, the PD trigger purple, as three owner photos show it. Parts omitted
+from a spec
 are also absent from its model: bottom-side parts (the detail models
 draw them), the RP2350-CAN
 castellations, the XT90 board's milled slots and the AS5600 magnet.
@@ -136,7 +141,9 @@ castellations, the XT90 board's milled slots and the AS5600 magnet.
 
 `tools/step_render.py` reads each STEP file with OpenCASCADE, the
 geometry kernel KiCad uses to read STEP. It renders a shaded view with face edges
-from above and to the front left. The images below are its output, 640 x 480px:
+from above and to the front left; `--from XposYnegZneg` looks from below
+and to the front right, and `--suffix` adds a text to each PNG's name for
+such a second view. The images below are its output, 640 x 480px:
 
 ```sh
 pip install cadquery-ocp==8.0.1.1.0 pillow
