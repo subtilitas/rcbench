@@ -1841,8 +1841,9 @@ Alert hält.
 - RAIL 1 und ein neues Bit in PORT_WANT werden ohne lebenden Heartbeat
   oder auf einem abgelehnten Chip mit NOT_ARMED abgelehnt. RAIL 1 wird mit
   BUSY abgelehnt, bis alle drei INA3221 mit geschriebenen Critical-Grenzen
-  antworten. Ein Bit in PORT_WANT für einen Port, dessen Ausgang als
-  Throttle gebunden ist, wird mit BAD_VALUE abgelehnt. RAIL über 1 und ein
+  antworten. Ein neues Bit in PORT_WANT für einen Port, dessen Ausgang als
+  Throttle gebunden ist, und RAIL 1 mit einem solchen gehaltenen Bit werden
+  mit BAD_VALUE abgelehnt. RAIL über 1 und ein
   Bit hinter Port 9 werden mit BAD_VALUE abgelehnt.
 - RAIL 0 und ein gelöschtes Bit in PORT_WANT werden immer genommen.
   RAIL 0 behält PORT_WANT. Ein genommenes RAIL 1 löscht TRIPPED.
@@ -1859,7 +1860,12 @@ Alert hält.
   Ports geschlossen. Ein Auslösen setzt seine Bits in TRIPPED, löscht
   RAIL, PORT_ON und PORT_WANT und bringt den Prüfstand mit gesetztem
   Arm-Latch in SAFE. Ohne die Schalter findet die Prüfung auf thermische
-  Abschaltung an jedem Port die Abschaltung des Hauptschalters.
+  Abschaltung an jedem Port die Abschaltung des Hauptschalters. Sobald das
+  erste Fenster ganz nach der Änderung geschlossen ist, zählt jedes weitere
+  Fenster, wie lange der Port auch an bleibt. Wird der Sensorbus neu
+  eingerichtet (eine geänderte Critical-Grenze), zählen seine Fenster ab 0:
+  die Prüfungen zählen ab dem ersten Fenster der neuen Reihe, und jeder
+  Lauf beginnt neu.
 - Ein ausgebliebener Heartbeat und der Failsafe des Links löschen RAIL,
   PORT_ON und PORT_WANT; ein Neustart beginnt mit ihnen gelöscht.
 - Die BEC-Prüfung: mit RAIL 0 und jedem Port aus setzt jedes danach ganz

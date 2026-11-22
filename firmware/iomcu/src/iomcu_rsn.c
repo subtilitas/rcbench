@@ -174,8 +174,9 @@ uint16_t rsn_pass(uint32_t now)
                 have |= (uint16_t)(1u << k);
             }
         }
-        trip |= power_window(&s_power, s_sense_snap.win[0].number, mv, have,
-                             rail_mv());
+        /* The series: a set-up of the schedule numbers windows anew. */
+        trip |= power_window(&s_power, s_sense_snap.setup,
+                             s_sense_snap.win[0].number, mv, have, rail_mv());
     }
     drive();
     const uint32_t half = s_chip_ok ? RSN_LED_OK_MS : RSN_LED_REFUSED_MS;

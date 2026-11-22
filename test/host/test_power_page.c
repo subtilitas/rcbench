@@ -65,7 +65,7 @@ static uint16_t win(uint16_t number, int32_t mv, uint16_t rail_mv)
 {
     int32_t v[LINK_PW_PORTS];
     for (unsigned k = 0; k < LINK_PW_PORTS; ++k) { v[k] = mv; }
-    return power_window(&pg, number, v, LINK_PW_PORT_ALL, rail_mv);
+    return power_window(&pg, 0u, number, v, LINK_PW_PORT_ALL, rail_mv);
 }
 
 /* ------------------------------------------------------------ the page */
@@ -321,16 +321,16 @@ TEST_CASE(a_port_under_half_the_rail_on_two_windows_is_an_error)
     CHECK_EQ(wr(LINK_PW_RAIL, 1u), 0u);
     int32_t v[LINK_PW_PORTS] = { 0 };
     /* Window 101 was filling as the port came on: not counted. */
-    CHECK_EQ(power_window(&pg, 101u, v, 0x0001u, 6000u), 0u);
+    CHECK_EQ(power_window(&pg, 0u, 101u, v, 0x0001u, 6000u), 0u);
     /* 102 is the first wholly after; under half (2999mV of 6000mV). */
     v[0] = 2999;
-    CHECK_EQ(power_window(&pg, 102u, v, 0x0001u, 6000u), 0u);
+    CHECK_EQ(power_window(&pg, 0u, 102u, v, 0x0001u, 6000u), 0u);
     CHECK_EQ(reg(LINK_PW_RAIL), 1u);
     /* The same number again is no new window. */
-    CHECK_EQ(power_window(&pg, 102u, v, 0x0001u, 6000u), 0u);
+    CHECK_EQ(power_window(&pg, 0u, 102u, v, 0x0001u, 6000u), 0u);
     CHECK_EQ(reg(LINK_PW_RAIL), 1u);
     /* The second in a row trips. */
-    CHECK_EQ(power_window(&pg, 103u, v, 0x0001u, 6000u),
+    CHECK_EQ(power_window(&pg, 0u, 103u, v, 0x0001u, 6000u),
              (uint16_t)LINK_PW_TRIP_THERMAL);
     CHECK(all_off());
     CHECK_EQ(reg(LINK_PW_TRIPPED), (uint16_t)LINK_PW_TRIP_THERMAL);
@@ -344,30 +344,30 @@ TEST_CASE(half_the_rail_itself_and_a_broken_run_do_not_trip)
     CHECK_EQ(wr(LINK_PW_RAIL, 1u), 0u);
     int32_t v[LINK_PW_PORTS] = { 0 };
     v[1] = 3000;                                 /* exactly half: not under */
-    CHECK_EQ(power_window(&pg, 12u, v, 0x0002u, 6000u), 0u);
-    CHECK_EQ(power_window(&pg, 13u, v, 0x0002u, 6000u), 0u);
+    CHECK_EQ(power_window(&pg, 0u, 12u, v, 0x0002u, 6000u), 0u);
+    CHECK_EQ(power_window(&pg, 0u, 13u, v, 0x0002u, 6000u), 0u);
     v[1] = 100;
-    CHECK_EQ(power_window(&pg, 14u, v, 0x0002u, 6000u), 0u);
+    CHECK_EQ(power_window(&pg, 0u, 14u, v, 0x0002u, 6000u), 0u);
     /* A window without a reading neither counts nor breaks the run. */
-    CHECK_EQ(power_window(&pg, 15u, v, 0x0000u, 6000u), 0u);
+    CHECK_EQ(power_window(&pg, 0u, 15u, v, 0x0000u, 6000u), 0u);
     v[1] = 5900;                                 /* back up: the run ends */
-    CHECK_EQ(power_window(&pg, 16u, v, 0x0002u, 6000u), 0u);
+    CHECK_EQ(power_window(&pg, 0u, 16u, v, 0x0002u, 6000u), 0u);
     v[1] = 100;
-    CHECK_EQ(power_window(&pg, 17u, v, 0x0002u, 6000u), 0u);
+    CHECK_EQ(power_window(&pg, 0u, 17u, v, 0x0002u, 6000u), 0u);
     CHECK_EQ(reg(LINK_PW_RAIL), 1u);
     /* A port that is off is not judged. */
     v[0] = 0;
-    CHECK_EQ(power_window(&pg, 18u, v, 0x0001u, 6000u), 0u);
-    CHECK_EQ(power_window(&pg, 19u, v, 0x0001u, 6000u), 0u);
+    CHECK_EQ(power_window(&pg, 0u, 18u, v, 0x0001u, 6000u), 0u);
+    CHECK_EQ(power_window(&pg, 0u, 19u, v, 0x0001u, 6000u), 0u);
     /* The rail's voltage not known: the check is left out. */
-    CHECK_EQ(power_window(&pg, 20u, v, 0x0002u, 0u), 0u);
-    CHECK_EQ(power_window(&pg, 21u, v, 0x0002u, 0u), 0u);
+    CHECK_EQ(power_window(&pg, 0u, 20u, v, 0x0002u, 0u), 0u);
+    CHECK_EQ(power_window(&pg, 0u, 21u, v, 0x0002u, 0u), 0u);
     CHECK_EQ(reg(LINK_PW_RAIL), 1u);
     /* Then known again, and 2 in a row. */
-    CHECK_EQ(power_window(&pg, 22u, v, 0x0002u, 6000u),
+    CHECK_EQ(power_window(&pg, 0u, 22u, v, 0x0002u, 6000u),
              (uint16_t)LINK_PW_TRIP_THERMAL);
-    CHECK_EQ(power_window(NULL, 1u, v, 1u, 1u), 0u);
-    CHECK_EQ(power_window(&pg, 1u, NULL, 1u, 1u), 0u);
+    CHECK_EQ(power_window(NULL, 0u, 1u, v, 1u, 1u), 0u);
+    CHECK_EQ(power_window(&pg, 0u, 1u, NULL, 1u, 1u), 0u);
 }
 
 TEST_CASE(without_the_switches_every_port_finds_the_master_switch)
@@ -391,15 +391,15 @@ TEST_CASE(the_bec_check_sets_a_port_at_500mv_and_not_at_490mv)
     v[2] = 490;
     v[3] = 500;
     /* From the start every window counts: nothing was ever on. */
-    CHECK_EQ(power_window(&pg, 5u, v, LINK_PW_PORT_ALL, 0u), 0u);
+    CHECK_EQ(power_window(&pg, 0u, 5u, v, LINK_PW_PORT_ALL, 0u), 0u);
     CHECK_EQ(reg(LINK_PW_BEC), 0x0008u);
     /* A port without a reading keeps its bit. */
     v[3] = 0;
-    CHECK_EQ(power_window(&pg, 6u, v, (uint16_t)(LINK_PW_PORT_ALL & ~0x0008u),
+    CHECK_EQ(power_window(&pg, 0u, 6u, v, (uint16_t)(LINK_PW_PORT_ALL & ~0x0008u),
                           0u), 0u);
     CHECK_EQ(reg(LINK_PW_BEC), 0x0008u);
     /* Read under, the bit goes. */
-    CHECK_EQ(power_window(&pg, 7u, v, LINK_PW_PORT_ALL, 0u), 0u);
+    CHECK_EQ(power_window(&pg, 0u, 7u, v, LINK_PW_PORT_ALL, 0u), 0u);
     CHECK_EQ(reg(LINK_PW_BEC), 0u);
 }
 
@@ -407,26 +407,26 @@ TEST_CASE(the_bec_check_runs_only_with_rail_and_ports_off)
 {
     start(true);
     int32_t v[LINK_PW_PORTS] = { 0 };
-    CHECK_EQ(power_window(&pg, 40u, v, LINK_PW_PORT_ALL, 0u), 0u);
+    CHECK_EQ(power_window(&pg, 0u, 40u, v, LINK_PW_PORT_ALL, 0u), 0u);
     CHECK_EQ(wr(LINK_PW_RAIL, 1u), 0u);
     /* With the rail on the rail is read: no check, the register stands. */
     for (unsigned k = 0; k < LINK_PW_PORTS; ++k) { v[k] = 6000; }
-    CHECK_EQ(power_window(&pg, 41u, v, LINK_PW_PORT_ALL, 6000u), 0u);
+    CHECK_EQ(power_window(&pg, 0u, 41u, v, LINK_PW_PORT_ALL, 6000u), 0u);
     CHECK_EQ(reg(LINK_PW_BEC), 0u);
     /* Off again: the window filling at the change and the one before
      * still hold the rail; the next one is the first checked. */
     CHECK_EQ(wr(LINK_PW_RAIL, 0u), 0u);
-    CHECK_EQ(power_window(&pg, 42u, v, LINK_PW_PORT_ALL, 0u), 0u);
+    CHECK_EQ(power_window(&pg, 0u, 42u, v, LINK_PW_PORT_ALL, 0u), 0u);
     CHECK_EQ(reg(LINK_PW_BEC), 0u);
     for (unsigned k = 0; k < LINK_PW_PORTS; ++k) { v[k] = (k == 5u) ? 5000 : 0; }
-    CHECK_EQ(power_window(&pg, 43u, v, LINK_PW_PORT_ALL, 0u), 0u);
+    CHECK_EQ(power_window(&pg, 0u, 43u, v, LINK_PW_PORT_ALL, 0u), 0u);
     CHECK_EQ(reg(LINK_PW_BEC), 0x0020u);         /* S6: a BEC on its lead */
     /* A port on stops the check: its bit stands as last checked. */
     CHECK_EQ(wr(LINK_PW_PORT_WANT, 0x0001u), 0u);
     CHECK_EQ(reg(LINK_PW_PORT_ON), 0u);          /* rail off: still quiet */
     CHECK_EQ(wr(LINK_PW_RAIL, 1u), 0u);
     for (unsigned k = 0; k < LINK_PW_PORTS; ++k) { v[k] = 0; }
-    CHECK_EQ(power_window(&pg, 44u, v, LINK_PW_PORT_ALL, 0u), 0u);
+    CHECK_EQ(power_window(&pg, 0u, 44u, v, LINK_PW_PORT_ALL, 0u), 0u);
     CHECK_EQ(reg(LINK_PW_BEC), 0x0020u);
 }
 
@@ -456,6 +456,107 @@ TEST_CASE(a_throttle_port_is_read_off_the_bank)
     CHECK_EQ(power_throttle(&o, NULL), 0u);
 }
 
+/* ------------------------------------------------ review round 1 cases */
+
+/* Port 1 on from window 10, then windows numbered 10 + @p from onward,
+ * every one at full rail, then two under half: tripped. */
+static bool trips_after(uint32_t from)
+{
+    start(true);
+    int32_t v[LINK_PW_PORTS] = { 0 };
+    CHECK_EQ(power_window(&pg, 0u, 10u, v, 0u, 0u), 0u);
+    CHECK_EQ(wr(LINK_PW_PORT_WANT, 0x0001u), 0u);
+    CHECK_EQ(wr(LINK_PW_RAIL, 1u), 0u);
+    v[0] = 6000;
+    uint32_t w = 11u;
+    for (; w < 10u + from; ++w) {
+        (void)power_window(&pg, 0u, (uint16_t)w, v, 0x0001u, 6000u);
+    }
+    v[0] = 100;
+    (void)power_window(&pg, 0u, (uint16_t)w, v, 0x0001u, 6000u);
+    return power_window(&pg, 0u, (uint16_t)(w + 1u), v, 0x0001u, 6000u)
+           == (uint16_t)LINK_PW_TRIP_THERMAL;
+}
+
+TEST_CASE(the_thermal_check_stays_on_however_long_the_port_is_on)
+{
+    /* 32,767 and 32,768 windows: half the 16-bit window number; 65,535
+     * and 65,536: its wrap; 131,072: the wrap twice. */
+    static const uint32_t k_n[] = { 32767u, 32768u, 32769u, 65535u, 65536u,
+                                    65537u, 131072u };
+    for (size_t i = 0; i < sizeof(k_n) / sizeof(k_n[0]); ++i) {
+        if (!trips_after(k_n[i])) {
+            T_FAIL("no trip after %u windows", (unsigned)k_n[i]);
+        }
+    }
+}
+
+TEST_CASE(the_bec_check_stays_on_however_long_everything_is_off)
+{
+    start(true);
+    int32_t v[LINK_PW_PORTS] = { 0 };
+    CHECK_EQ(power_window(&pg, 0u, 5u, v, LINK_PW_PORT_ALL, 0u), 0u);
+    CHECK_EQ(wr(LINK_PW_RAIL, 1u), 0u);
+    CHECK_EQ(wr(LINK_PW_RAIL, 0u), 0u);
+    for (uint32_t w = 6u; w < 6u + 40000u; ++w) {
+        (void)power_window(&pg, 0u, (uint16_t)w, v, LINK_PW_PORT_ALL, 0u);
+    }
+    v[2] = 600;
+    (void)power_window(&pg, 0u, (uint16_t)(6u + 40000u), v,
+                       LINK_PW_PORT_ALL, 0u);
+    CHECK_EQ(reg(LINK_PW_BEC), 0x0004u);
+}
+
+TEST_CASE(a_restarted_window_series_keeps_both_checks)
+{
+    /* The port came on at window 1000; the sensor schedule starts again
+     * (a changed critical limit) and numbers its windows from 0. */
+    start(true);
+    int32_t v[LINK_PW_PORTS] = { 0 };
+    CHECK_EQ(power_window(&pg, 1u, 1000u, v, 0u, 6000u), 0u);
+    CHECK_EQ(wr(LINK_PW_PORT_WANT, 0x0001u), 0u);
+    CHECK_EQ(wr(LINK_PW_RAIL, 1u), 0u);
+    v[0] = 100;
+    CHECK_EQ(power_window(&pg, 2u, 0u, v, 0x0001u, 6000u), 0u);
+    CHECK_EQ(power_window(&pg, 2u, 1u, v, 0x0001u, 6000u),
+             (uint16_t)LINK_PW_TRIP_THERMAL);
+    /* The BEC check the same: off at window 500 of one series, read in
+     * the next one's first windows. */
+    start(true);
+    CHECK_EQ(power_window(&pg, 1u, 500u, v, 0u, 0u), 0u);
+    CHECK_EQ(wr(LINK_PW_RAIL, 1u), 0u);
+    CHECK_EQ(wr(LINK_PW_RAIL, 0u), 0u);
+    for (unsigned k = 0; k < LINK_PW_PORTS; ++k) { v[k] = 0; }
+    v[7] = 700;
+    CHECK_EQ(power_window(&pg, 2u, 0u, v, LINK_PW_PORT_ALL, 0u), 0u);
+    CHECK_EQ(reg(LINK_PW_BEC), 0x0080u);
+    /* Within one series, the same number twice is one window. */
+    CHECK_EQ(power_window(&pg, 2u, 0u, v, LINK_PW_PORT_ALL, 0u), 0u);
+}
+
+TEST_CASE(rail_off_is_taken_with_a_kept_port_now_a_throttle)
+{
+    start(true);
+    CHECK_EQ(wr(LINK_PW_PORT_WANT, 0x0003u), 0u);
+    CHECK_EQ(wr(LINK_PW_RAIL, 1u), 0u);
+    /* Port 2's output is bound as a throttle afterwards. */
+    ctx.throttle = 0x0002u;
+    ctx.beat_alive = false;
+    CHECK_EQ(wr(LINK_PW_RAIL, 0u), 0u);
+    CHECK_EQ(reg(LINK_PW_RAIL), 0u);
+    CHECK_EQ(reg(LINK_PW_PORT_ON), 0u);
+    const uint16_t both[4] = { 0u, 0u, 0u, 0x0003u };
+    CHECK_EQ(power_write(&pg, 0u, 1u, both, &ctx), 0u);
+    /* Clearing port 1 keeps port 2's bit: taken, nothing switched on. */
+    CHECK_EQ(wr(LINK_PW_PORT_WANT, 0x0002u), 0u);
+    /* Switching on with that bit kept powers a throttle: refused. */
+    ctx.beat_alive = true;
+    CHECK_EQ(wr(LINK_PW_RAIL, 1u), (uint8_t)LINK_NACK_BAD_VALUE);
+    CHECK_EQ(reg(LINK_PW_RAIL), 0u);
+    CHECK_EQ(wr(LINK_PW_PORT_WANT, 0u), 0u);
+    CHECK_EQ(wr(LINK_PW_RAIL, 1u), 0u);
+}
+
 int main(void)
 {
     RUN(the_page_starts_off_with_the_switches_as_strapped);
@@ -474,5 +575,9 @@ int main(void)
     RUN(the_bec_check_sets_a_port_at_500mv_and_not_at_490mv);
     RUN(the_bec_check_runs_only_with_rail_and_ports_off);
     RUN(a_throttle_port_is_read_off_the_bank);
+    RUN(the_thermal_check_stays_on_however_long_the_port_is_on);
+    RUN(the_bec_check_stays_on_however_long_everything_is_off);
+    RUN(a_restarted_window_series_keeps_both_checks);
+    RUN(rail_off_is_taken_with_a_kept_port_now_a_throttle);
     return test_summary("power_page");
 }

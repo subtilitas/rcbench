@@ -37,6 +37,7 @@ static void track(power_page_t *p)
         if ((rose & (1u << k)) != 0u) {
             p->on_win[k] = p->last_win;
             p->low_n[k]  = 0u;
+            p->settled  &= (uint16_t)~(1u << k);
         }
     }
     p->on_prev = on;
@@ -53,7 +54,10 @@ static void track(power_page_t *p)
  *        that was the newest when something changed.
  *
  * The window after @p mark was being filled at the change, so the one after
- * that is the first that holds no reading from before it.
+ * that is the first that holds no reading from before it.  Asked only until
+ * it first holds: the caller latches it (settled, quiet_any), so the
+ * 16-bit numbers' half range bounds the wait, not the time a port stays
+ * on.
  *
  * @param number The window's number.
  * @param mark   The newest window number at the change.
@@ -127,12 +131,16 @@ uint8_t power_write(power_page_t *p, uint8_t off, uint8_t n,
     const uint16_t rail = next_of(p, off, n, in, LINK_PW_RAIL);
     const uint16_t want = next_of(p, off, n, in, LINK_PW_PORT_WANT);
     const bool rail_written = (unsigned)off == (unsigned)LINK_PW_RAIL;
+    const bool rail_on = rail_written && rail == 1u;
+    const uint16_t added = (uint16_t)(want & (uint16_t)~p->want);
+    const bool new_bit = added != 0u;
+    /* Only a write that powers a port is judged against the throttles: a
+     * new bit, or RAIL 1 with the bits kept.  An OFF is always taken. */
     if (rail > 1u || (want & (uint16_t)~LINK_PW_PORT_ALL) != 0u
-        || (want & ctx->throttle) != 0u) {
+        || (added & ctx->throttle) != 0u
+        || (rail_on && (want & ctx->throttle) != 0u)) {
         return (uint8_t)LINK_NACK_BAD_VALUE;
     }
-    const bool rail_on = rail_written && rail == 1u;
-    const bool new_bit = (want & (uint16_t)~p->want) != 0u;
     if ((rail_on || new_bit) && (!ctx->beat_alive || !p->chip_ok)) {
         return (uint8_t)LINK_NACK_NOT_ARMED;
     }
@@ -227,24 +235,42 @@ uint16_t power_step(power_page_t *p, const power_in_t *in)
     return trip;
 }
 
-uint16_t power_window(power_page_t *p, uint16_t number, const int32_t *mv,
+uint16_t power_window(power_page_t *p, uint32_t series, uint16_t number,
+                      const int32_t *mv,
                       uint16_t have, uint16_t rail_mv)
 {
-    if (p == NULL || mv == NULL
-        || (p->have_win && number == p->last_win)) {
+    if (p == NULL || mv == NULL) {
         return 0u;
     }
-    p->have_win = true;
-    p->last_win = number;
+    const bool restart = p->have_win && series != p->series;
+    if (p->have_win && !restart && number == p->last_win) {
+        return 0u;
+    }
     const uint16_t on = power_port_on(p);
+    if (restart) {
+        /* The sensor schedule started again and numbers its windows anew:
+         * every window of the new series was filled after whatever was on
+         * or off already, so those checks count from its first window. */
+        p->settled = on;
+        memset(p->low_n, 0, sizeof(p->low_n));
+        if (p->quiet) {
+            p->quiet_any = true;
+        }
+    }
+    p->have_win = true;
+    p->series   = series;
+    p->last_win = number;
     bool hot = false;
     for (unsigned k = 0; k < LINK_PW_PORTS; ++k) {
         const uint16_t bit = (uint16_t)(1u << k);
         if ((have & bit) == 0u) {
             continue;
         }
-        if ((on & bit) != 0u && rail_mv != 0u
+        if ((on & bit) != 0u && (p->settled & bit) == 0u
             && after(number, p->on_win[k])) {
+            p->settled |= bit;          /* latched until the port goes off */
+        }
+        if ((on & bit) != 0u && rail_mv != 0u && (p->settled & bit) != 0u) {
             if (mv[k] * 2 < (int32_t)rail_mv) {
                 if (++p->low_n[k] >= POWER_THERMAL_N) {
                     hot = true;
@@ -253,7 +279,10 @@ uint16_t power_window(power_page_t *p, uint16_t number, const int32_t *mv,
                 p->low_n[k] = 0u;
             }
         }
-        if (p->quiet && (p->quiet_any || after(number, p->quiet_win))) {
+        if (p->quiet && !p->quiet_any && after(number, p->quiet_win)) {
+            p->quiet_any = true;        /* latched until the rail goes on */
+        }
+        if (p->quiet && p->quiet_any) {
             if (mv[k] >= (int32_t)LINK_PW_BEC_MV) {
                 p->bec |= bit;
             } else {

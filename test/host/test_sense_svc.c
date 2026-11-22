@@ -774,6 +774,8 @@ TEST_CASE(a_critical_limit_is_written_reported_and_a_change_set_up_anew)
     CHECK_EQ(i3221->reg[INA3221_CRIT1], (uint16_t)(2500u << 3));
     CHECK_EQ(i3221->reg[INA3221_MASK_ENABLE] & INA3221_ME_CEN, INA3221_ME_CEN);
     CHECK_EQ(g_opens, 1u);
+    const uint32_t first = snap.setup;
+    CHECK(first != 0u);
     /* Mask/Enable is read in the rotation, 25Hz: counted, CEN kept. */
     steps(100u);
     CHECK_EQ(snap.i3221_have_flags & 0x01u, 0x01u);
@@ -790,6 +792,8 @@ TEST_CASE(a_critical_limit_is_written_reported_and_a_change_set_up_anew)
     CHECK_EQ(g_opens, 2u);
     CHECK_EQ(i3221->reg[INA3221_CRIT1], (uint16_t)(1250u << 3));
     CHECK_EQ(snap.i3221_crit, 0x01u);
+    /* A new series of windows: the POWER page counts from its first. */
+    CHECK(snap.setup != first);
     /* The same limit again: no set-up. */
     steps(5u);
     CHECK_EQ(g_opens, 2u);

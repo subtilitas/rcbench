@@ -1683,9 +1683,9 @@ holds its critical alert.
 
 - `RAIL` 1 and a new `PORT_WANT` bit are refused with NOT_ARMED without a
   live heartbeat or on a refused chip. `RAIL` 1 is refused with BUSY until
-  all three INA3221s answer with their critical limits written. A
-  `PORT_WANT` bit for a port whose output is bound as a throttle is refused
-  with BAD_VALUE. `RAIL` above 1 and a bit past port 9 are refused with
+  all three INA3221s answer with their critical limits written. A new
+  `PORT_WANT` bit for a port whose output is bound as a throttle, and
+  `RAIL` 1 with such a bit kept, are refused with BAD_VALUE. `RAIL` above 1 and a bit past port 9 are refused with
   BAD_VALUE.
 - `RAIL` 0 and a cleared `PORT_WANT` bit are always taken. `RAIL` 0 keeps
   `PORT_WANT`. A taken `RAIL` 1 clears `TRIPPED`.
@@ -1701,6 +1701,11 @@ holds its critical alert.
   `TRIPPED` bits, clears `RAIL`, `PORT_ON` and `PORT_WANT`, and makes the
   bench SAFE with the arm latch set. Without the switches the
   thermal-shutdown check on every port finds the master switch's shutdown.
+  Once the first window wholly after the change has closed, every later
+  window counts, however long the port stays on. When the sensor bus is
+  set up again (a changed critical limit), its windows are numbered from 0:
+  the checks count from the new series' first window and each run starts
+  anew.
 - A lost heartbeat and the link failsafe clear `RAIL`, `PORT_ON` and
   `PORT_WANT`; a restart starts with them clear.
 - The BEC check: with `RAIL` 0 and every port off, each SENSE window closed

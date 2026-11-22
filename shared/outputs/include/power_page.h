@@ -9,9 +9,9 @@
  *   - RAIL 1 and a new PORT_WANT bit want a live heartbeat and a chip of
  *     the A4 stepping (LINK_NACK_NOT_ARMED); RAIL 1 wants every INA3221 of
  *     the board answering with its critical limits written
- *     (LINK_NACK_BUSY); a PORT_WANT bit for a port whose output is bound as
- *     a throttle is refused (LINK_NACK_BAD_VALUE): an ESC brings its own
- *     supply.  RAIL 0 and cleared bits are always taken; RAIL 0 keeps
+ *     (LINK_NACK_BUSY); a new PORT_WANT bit for a port whose output is
+ *     bound as a throttle, and RAIL 1 with such a bit kept, are refused
+ *     (LINK_NACK_BAD_VALUE): an ESC brings its own supply.  RAIL 0 and cleared bits are always taken; RAIL 0 keeps
  *     PORT_WANT.  A taken RAIL 1 clears TRIPPED.
  *   - PORT_ON: with the switches fitted, PORT_WANT while RAIL is 1; without
  *     them every bit follows RAIL, and PORT_WANT is kept and reported.
@@ -26,7 +26,11 @@
  *     windows in a row, each closed wholly after the port came on.  Without
  *     the switches every port follows the rail, so the same check finds the
  *     master switch's shutdown.  A window without a reading of the port
- *     neither counts nor breaks the run.
+ *     neither counts nor breaks the run.  Once a window wholly after the
+ *     change has closed, every later one counts, however long the port
+ *     stays on.  A new window series (the sensor schedule set up again,
+ *     numbering from 0) counts from its first window and starts each run
+ *     anew.
  *   - The BEC check: with RAIL and every port off, each window closed
  *     wholly after that sets port k's BEC bit at LINK_PW_BEC_MV or more and
  *     clears it under; a port without a reading keeps its bit.  With the
@@ -71,9 +75,14 @@ typedef struct {
     bool     have_win;   /**< last_win holds a window number              */
     uint16_t last_win;   /**< the newest window number seen               */
     uint16_t on_win[LINK_PW_PORTS]; /**< last_win when port k came on    */
+    uint16_t settled;    /**< bit k: a window wholly after port k came on
+                              has closed; every later one counts         */
+    uint32_t series;     /**< the window series last_win belongs to       */
     uint8_t  low_n[LINK_PW_PORTS];  /**< windows in a row under half      */
     bool     quiet;      /**< RAIL and every port off                     */
-    bool     quiet_any;  /**< quiet since the start: every window counts  */
+    bool     quiet_any;  /**< quiet since the start, or a window wholly
+                              after quiet began has closed: every window
+                              counts                                     */
     uint16_t quiet_win;  /**< last_win when quiet began                   */
     bool     have_over;  /**< over_n holds the counts last seen           */
     uint16_t over_n[LINK_PW_PORTS]; /**< SENSE_LIMIT trips per channel    */
@@ -138,7 +147,8 @@ bool power_rail(const power_page_t *p);
  * @return 0 when taken; LINK_NACK_BAD_RANGE for no register, a range past
  *         the page or a NULL argument; LINK_NACK_READ_ONLY for FITTED,
  *         PORT_ON, TRIPPED or BEC; LINK_NACK_BAD_VALUE for RAIL over 1, a
- *         PORT_WANT bit past port 9 or one on a throttle port;
+ *         PORT_WANT bit past port 9, a new bit on a throttle port, or
+ *         RAIL 1 with a throttle port's bit kept;
  *         LINK_NACK_NOT_ARMED for RAIL 1 or a new PORT_WANT bit without a
  *         live heartbeat or on a chip before A4; LINK_NACK_BUSY for RAIL 1
  *         before the critical limits are held.  A refused write changes
@@ -191,15 +201,19 @@ uint16_t power_step(power_page_t *p, const power_in_t *in);
  * @brief A window closed: the thermal-shutdown check and the BEC check.
  *
  * @param p        The state.
+ * @param series   Which window series @p number is of: a new value is the
+ *                 sensor schedule set up again (sense_snap_t.setup).
  * @param number   The window's number, modulo 65536; the same number again
- *                 is not a new window and does nothing.
+ *                 in the same series is not a new window and does
+ *                 nothing.
  * @param mv       LINK_PW_PORTS mean bus voltages, mV, port 1 first.
  * @param have     Bit k: mv[k] is a reading.
  * @param rail_mv  The rail's voltage as the PD mini reads it, mV; 0 when
  *                 not known, which leaves the thermal check out.
  * @return LINK_PW_TRIP_THERMAL when the check tripped; 0 otherwise.
  */
-uint16_t power_window(power_page_t *p, uint16_t number, const int32_t *mv,
+uint16_t power_window(power_page_t *p, uint32_t series, uint16_t number,
+                      const int32_t *mv,
                       uint16_t have, uint16_t rail_mv);
 
 /**

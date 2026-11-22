@@ -158,6 +158,10 @@ typedef struct {
     uint8_t  i3221_have_flags;   /**< bit a: i3221_flags[a] holds a read   */
     uint8_t  i3221_crit;         /**< bit a: part a online with its
                                       critical limits written           */
+    uint32_t setup;              /**< the schedule's set-up, counted from
+                                      1 (sense_sched_t.gen); a new value
+                                      numbers its windows from 0 again;
+                                      0 with the bus closed             */
 } sense_snap_t;
 
 /** @brief The wire, the clock, the recovery and the pins. */

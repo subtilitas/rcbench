@@ -23,7 +23,7 @@ history is in git.
   ARM, SUPPLY ON, POWER ON and every programming session with NOT_ARMED.
   The POWER page (0x43) switches the node's servo rail and its 9 ports:
   ON wants a live heartbeat and the critical limits written, a throttle
-  port takes no power, CRIT_N low, a critical alert flag, a SENSE_LIMIT
+  port takes no power, RAIL 0 is always taken, CRIT_N low, a critical alert flag, a SENSE_LIMIT
   trip or a switch in thermal shutdown cuts the rail and makes the bench
   SAFE, and the BEC check flags a port at 500mV or more with the rail off
   ([Link: The POWER page](docs/Link.md#the-power-page)).

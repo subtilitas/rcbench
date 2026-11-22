@@ -304,6 +304,7 @@ static void snap(const sense_svc_t *v, sense_snap_t *out)
         return;
     }
     const sense_sched_t *s = &v->sched;
+    out->setup       = s->gen;
     out->held        = ((uint64_t)1u << v->sda) | ((uint64_t)1u << v->scl);
     out->stuck       = s->bus.stuck;
     out->errors      = s->bus.errors;
