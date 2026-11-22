@@ -438,7 +438,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 912 | 2 240 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 168 | 1 984 |
 | `control` | `control_task` | 6 144 | 3 616 | 1 488 |
 | `runlog` | `log_task` | 6 656 | 3 856 | 1 760 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
@@ -448,7 +448,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 392 | 1 664 |
 | `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 6 912 | 2 912 | 2 960 |
 | `mdns` | `mdns_task`, der mDNS-Responder (Multicast Domain Name System), solange das Panel mit einem Heimnetz verbunden ist | 4 096 | 1 440 | 1 616 |
-| `wifi_get` | `fetch_task`, eine Release-Suche oder ein Download von GitHub, das Image des Panels oder eines Geräts (`components/wifi_access`) | 8 192 | 1 584 | 5 568 |
+| `wifi_get` | `fetch_task`, eine Release-Suche oder ein Download von GitHub, das Image des Panels oder eines Geräts (`components/wifi_access`) | 8 192 | 1 776 | 5 376 |
 | `cardjob` | `files_task`, die Kartenoperationen von FILES (`panel_files.c`) | 6 656 | 2 064 | 3 552 |
 | `c6upd` | `c6_task`, das Update des C6-Funks, ein Schritt nach dem anderen (`panel_c6.c`) | 4 096 | 1 248 | 1 808 |
 | `devimg` | `devimg_task`, das Lesen eines Geräte-Images von der SD-Karte und seine Prüfungen, danach beendet (`panel_devimg.c`) | 6 144 | 2 400 | 2 704 |
@@ -827,7 +827,7 @@ Update lädt die Datei seines Geräts in den PSRAM
 ([Bildschirme: Geräte-Images](Screens-de.md#geräte-images)). Bei 0.23.16
 haben die vier Dateien 850 816 (Dial), 646 336 (Leistungsknoten), 642 768
 (Auswuchtknoten) und 1 283 616 (C6) Bytes. Der Release-Build des Panels
-mit beiden IOmcu-Images hat 4 065 568 Bytes, 4 060 896 (50,0%) unter dem
+mit beiden IOmcu-Images hat 4 072 992 Bytes, 4 053 472 (49,9%) unter dem
 Slot von 8 126 464.
 Die 4 096 Bytes der Ereignis-Warteschlange, die aufgehobenen DISCONNECTs
 und der Hub stecken in der DIRAM-Zahl, außerhalb von `libbt.a`. Hub und 5

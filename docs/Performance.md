@@ -411,7 +411,7 @@ its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,912 | 2,240 |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 5,168 | 1,984 |
 | `control` | `control_task` | 6,144 | 3,616 | 1,488 |
 | `runlog` | `log_task` | 6,656 | 3,856 | 1,760 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
@@ -421,7 +421,7 @@ its stack less 1024 bytes.
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,392 | 1,664 |
 | `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 6,912 | 2,912 | 2,960 |
 | `mdns` | `mdns_task`, the mDNS (multicast domain name system) responder while the panel is joined to a home network | 4,096 | 1,440 | 1,616 |
-| `wifi_get` | `fetch_task`, one release check or download from GitHub, the panel's image or a device's (`components/wifi_access`) | 8,192 | 1,584 | 5,568 |
+| `wifi_get` | `fetch_task`, one release check or download from GitHub, the panel's image or a device's (`components/wifi_access`) | 8,192 | 1,776 | 5,376 |
 | `cardjob` | `files_task`, FILES' card operations (`panel_files.c`) | 6,656 | 2,064 | 3,552 |
 | `c6upd` | `c6_task`, the C6 radio's update, one step at a time (`panel_c6.c`) | 4,096 | 1,248 | 1,808 |
 | `devimg` | `devimg_task`, a device image's read from the SD card and its checks, then gone (`panel_devimg.c`) | 6,144 | 2,400 | 2,704 |
@@ -772,7 +772,7 @@ image carries neither these devices' images nor the C6's: an update
 downloads its device's file into PSRAM ([Screens: Device images](Screens.md#device-images)).
 At 0.23.16 the four files are 850,816 (Dial), 646,336 (power node),
 642,768 (balance node) and 1,283,616 (C6) bytes. The release build of
-the panel with both IOmcu images is 4,065,568 bytes, 4,060,896 (50.0%)
+the panel with both IOmcu images is 4,072,992 bytes, 4,053,472 (49.9%)
 under the slot of 8,126,464.
 The event queue's 4,096 bytes, the kept DISCONNECTs and the hub are in the
 DIRAM figure, outside `libbt.a`. The hub and 5 connections add 3,704 bytes
