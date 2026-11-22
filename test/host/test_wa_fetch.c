@@ -419,6 +419,7 @@ static void script_good(void)
     answer(sums_body());
     answer(to_asset());
     answer(image_body());
+    answer((answer_t){ .status = 404, .length = 0 });   /* no signature */
 }
 
 static wa_fetch_res_t download(uint32_t start)
@@ -477,8 +478,9 @@ TEST_CASE(a_release_downloads_checked_and_staged)
     CHECK_STR_EQ(g.urls[1], ASSET);
     CHECK_STR_EQ(g.urls[2], "https://github.com/subtilitas/rcbench/releases/"
                             "download/v0.20.0/rcbench-panel-p4-v0.20.0.bin");
-    CHECK_EQ(g.opens, 4u);
-    CHECK_EQ(g.closes, 4u);
+    CHECK_EQ(g.opens, 5u);
+    CHECK_EQ(g.closes, 5u);
+    CHECK_EQ(g_up.info.sig, FW_SIG_NONE);
     /* The phases in order, and the bytes of the last report. */
     CHECK_EQ(g.phase_n, 3u);
     CHECK_EQ(g.phases[0], WA_PH_SUMS);
@@ -608,6 +610,7 @@ TEST_CASE(a_redirect_chain_is_held_to_its_hosts_and_its_length)
     answer(sums_body());
     answer(to_asset());
     answer(image_body());
+    answer((answer_t){ .status = 404, .length = 0 });
     out = download(0u);
     CHECK_EQ(out.got, WA_GOT_STAGED);
     fresh(0u);

@@ -9079,6 +9079,36 @@ UI_TEXT(UP_WHY_OTHER, 81,
 UI_TEXT(UP_CLOSE, 0,
     "CLOSE",
     "SCHLIESSEN")
+/* The release signature of the image (fw_sig.h): on the question on
+ * WI-FI, on PANEL UPDATE while it writes, and on PANEL UPDATE's second
+ * hold in a build that enforces it (RCBENCH_SIGN_ENFORCE). */
+UI_TEXT(UPS_SIGNED, 0,
+    "SIGNED BY THE RCBENCH RELEASE KEY",
+    "VOM RCBENCH-RELEASE-SCHLÜSSEL SIGNIERT")
+UI_TEXT(UPS_HEAD, 0,
+    "NOT SIGNED BY THE RCBENCH RELEASE KEY",
+    "NICHT VOM RCBENCH-RELEASE-SCHLÜSSEL SIGNIERT")
+UI_TEXT(UPS_NONE, 0,
+    "The image comes with no signature.",
+    "Das Image hat keine Signatur.")
+UI_TEXT(UPS_BAD, 0,
+    "The signature does not match.",
+    "Die Signatur passt nicht.")
+UI_TEXT(UPS_NOTE_1, 0,
+    "Install only an image you built yourself or trust.",
+    "Installiere nur ein selbst gebautes oder vertrautes Image.")
+UI_TEXT(UPS_TITLE, 0,
+    "PANEL FIRMWARE %s",
+    "PANEL-FIRMWARE %s")
+UI_TEXT(UPS_BYTES, 0,
+    "%lu bytes, checked",
+    "%lu Bytes, geprüft")
+UI_TEXT(UPS_NOTE_2, 0,
+    "Nothing is written until the hold below completes.",
+    "Geschrieben wird erst, wenn das Halten unten fertig ist.")
+UI_TEXT(UPS_HOLD, 0,
+    "HOLD 2s: INSTALL ANYWAY",
+    "2s HALTEN: TROTZDEM INSTALLIEREN")
 
 /* ------------------------------------- UPDATES, the reminder, the download */
 UI_TEXT(UPD_CHECK, 0,
@@ -11895,6 +11925,38 @@ UI_WEB_TEXT(P_FW_NOTE,
     "hoch. Das Panel prüft sie und fragt "
     "nach einer Bestätigung. Halte INSTALLIEREN "
     "am Panel 2s, um sie zu installieren.")
+UI_WEB_TEXT(P_SIG_NOTE,
+    "Choose its signature rcbench-panel-p4-vX.Y.Z.bin.sig with it. "
+    "An image without a valid signature of the rcbench release key "
+    "installs with a warning on the panel.",
+    "Wähle dazu ihre Signatur rcbench-panel-p4-vX.Y.Z.bin.sig. "
+    "Ein Image ohne gültige Signatur des rcbench-Release-Schlüssels "
+    "wird mit einer Warnung am Panel installiert.")
+UI_WEB_TEXT(P_SIG_NOTE_ACK,
+    "Choose its signature rcbench-panel-p4-vX.Y.Z.bin.sig with it. "
+    "An image without a valid signature of the rcbench release key "
+    "needs a second hold of 2s on the panel.",
+    "Wähle dazu ihre Signatur rcbench-panel-p4-vX.Y.Z.bin.sig. "
+    "Ein Image ohne gültige Signatur des rcbench-Release-Schlüssels "
+    "braucht am Panel ein zweites Halten von 2s.")
+UI_WEB_TEXT(P_IMAGE,
+    "Firmware (.bin) ",
+    "Firmware (.bin) ")
+UI_WEB_TEXT(P_SIGNATURE,
+    "Signature (.sig, optional) ",
+    "Signatur (.sig, optional) ")
+UI_WEB_TEXT(P_SIG_SIZE,
+    "The signature file is not 8 to 72 bytes long.",
+    "Die Signaturdatei ist nicht 8 bis 72 Bytes lang.")
+UI_WEB_TEXT(P_UP_SIGNED,
+    " Signed by the rcbench release key.",
+    " Vom rcbench-Release-Schlüssel signiert.")
+UI_WEB_TEXT(P_UP_UNSIGNED,
+    " Not signed by the rcbench release key: no signature came with it.",
+    " Nicht vom rcbench-Release-Schlüssel signiert: keine Signatur dabei.")
+UI_WEB_TEXT(P_UP_BADSIG,
+    " Not signed by the rcbench release key: the signature does not match.",
+    " Nicht vom rcbench-Release-Schlüssel signiert: die Signatur passt nicht.")
 UI_WEB_TEXT(P_UPLOAD,
     "Upload",
     "Hochladen")

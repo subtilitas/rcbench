@@ -4874,6 +4874,12 @@ ESP32-P4 (chip ID 0x0012), the application's project name `rcbench-panel`, a ver
 form MAJOR.MINOR.PATCH and the appended SHA-256 (secure hash algorithm, 256
 bits). A second upload is refused while an image is waiting. CANCEL on the panel
 discards that image.
+A second file picker takes the image's release signature,
+`rcbench-panel-p4-vX.Y.Z.bin.sig`, 8 to 72 bytes; the page refuses another
+size before a byte is sent (`The signature file is not 8 to 72 bytes
+long.`). The signature is optional. It goes with the image in the same
+request, and the panel's answer ends with what the release key says
+([The release signature](#the-release-signature)).
 The screen shows the bytes received while an upload runs. The upload
 writes no flash: the panel keeps the file in PSRAM (pseudo-static
 random-access memory) until PANEL UPDATE writes it.
@@ -5190,6 +5196,29 @@ that runs already is not offered:
 
 ![The same version, another build](img/wifi-rebuild.png)
 ![The build that runs](img/wifi-installed.png)
+
+#### The release signature
+
+The question says what the release key says about the image, in one line
+under the versions: `SIGNED BY THE RCBENCH RELEASE KEY` in green, or `NOT
+SIGNED BY THE RCBENCH RELEASE KEY.` in amber with the reason, `The image
+comes with no signature.` or `The signature does not match.` The older
+image above came without its `.sig`; the rebuild came with a signature of
+another key. PANEL UPDATE repeats the line while it writes:
+
+![Writing an image without a signature](img/panel-update-unsigned.png)
+
+The panel verifies an ECDSA (elliptic curve digital signature algorithm)
+P-256 signature over the whole image against the release public key
+compiled into its firmware ([Security policy](../SECURITY.md#release-signatures)).
+Until the stable release that enforces the signature, an image without a
+valid one installs with the single 2s hold and this warning. A build with
+`RCBENCH_SIGN_ENFORCE=1` stops after the hold instead: PANEL UPDATE shows
+the reason and a second 2s hold, `HOLD 2s: INSTALL ANYWAY`. Nothing is
+written before that hold completes; CANCEL, STOP, ARMED and leaving the
+screen drop the image.
+
+![A build that enforces the signature: the second hold](img/panel-update-anyway.png)
 
 INSTALL is a 2s hold (`HOLD 2s TO INSTALL`). The browser cannot start it.
 It needs the bench SAFE, the supply output off, no log run open, no board
@@ -7597,9 +7626,9 @@ Current limitations:
   `SHA256SUMS`. Its images come from the SD card.
 - An image stays in PSRAM until the panel restarts, up to the four most
   bytes above together, 8,257,536 bytes.
-- An SD-card image carries no signature, and no signature of a device
-  image is checked: a card without a `SHA256SUMS` that names the file
-  holds it to its size, its chip, project, role and version, and its own
+- The panel checks no signature of a device image, though the release
+  publishes a `.sig` beside each. An SD-card image is therefore not
+  authenticated: a card without a `SHA256SUMS` that names the file holds it to its size, its chip, project, role and version, and its own
   appended SHA-256 only ([SECURITY.md](../SECURITY.md)).
 
 ### The C6 radio
@@ -7852,8 +7881,9 @@ Its result is on UPDATES.
 
 The 2s hold confirms both download and installation. There is no further
 question after the download. The
-panel joins the home network within 30s, then fetches two files of the
-release's tag over HTTPS, `SHA256SUMS` and `rcbench-panel-p4-v0.23.0.bin`.
+panel joins the home network within 30s, then fetches three files of the
+release's tag over HTTPS, `SHA256SUMS`, `rcbench-panel-p4-v0.23.0.bin` and
+its signature `rcbench-panel-p4-v0.23.0.bin.sig`.
 GitHub answers each with a redirect to its file host; the panel follows at
 most 3 redirects, and only to `github.com`, `release-assets.githubusercontent.com`
 and `objects.githubusercontent.com`. Then:
@@ -7867,6 +7897,12 @@ and `objects.githubusercontent.com`. Then:
    in `SHA256SUMS`.
 4. Every check an uploaded image passes ([Installing](#installing-panel-update))
    runs, and the image must name the release's version.
+5. The panel fetches the image's signature, `rcbench-panel-p4-v0.23.0.bin.sig`,
+   by the same rules and verifies it ([The release signature](#the-release-signature)).
+   An HTTP status other than 200 means no signature, and a body outside 8 to
+   72 bytes a signature that does not match; the download goes on to the
+   install either way. A connection that breaks, STOP or the time budget
+   ends the download.
 
 Only after these checks does installation begin, following the same steps
 as INSTALL: the radio switches off completely, the image is written, the

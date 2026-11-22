@@ -31,6 +31,14 @@
  *             redirects to the hosts fw_release.h allows, the image into
  *             memory; its SHA-256 against its SHA256SUMS line, then every
  *             fw_image_check(); WA_FETCH_DOWNLOAD_MS at most from the start.
+ *             Then the image's release signature, the image's name and
+ *             ".sig" (fw_release_sig_name()), FW_SIG_MAX bytes at most, and the
+ *             verdict on it (wa_run_t.verify) in the staged image's
+ *             fw_image_info_t.sig.  A release without one (an HTTP status
+ *             other than 200) is FW_SIG_NONE, and an answer that is not
+ *             FW_SIG_MIN to FW_SIG_MAX bytes is FW_SIG_FORM; either way the
+ *             job goes on and the panel warns (fw_sig.h).  A broken
+ *             connection, an abort or the budget ends the job.
  *             What it leaves is an image staged as an upload would leave
  *             it, for the existing installer.  No flash is written here.
  *   DEVICE    as DOWNLOAD, for one file of the release other than the
@@ -460,6 +468,14 @@ typedef struct {
     /** A buffer of @p bytes for the image, in PSRAM on the panel; NULL for
      *  none.  The runner keeps it in @p up; the platform frees it. */
     uint8_t *(*alloc)(void *ctx, uint32_t bytes);
+    /**
+     * @brief The release key's verdict on @p bytes at @p img and the @p sig_n
+     * bytes of signature at @p sig (fw_sign.h); NULL leaves every image
+     * FW_SIG_NONE.  @p sig is NULL with @p sig_n 0 when the release has
+     * none.
+     */
+    fw_sig_t (*verify)(void *ctx, const uint8_t *img, uint32_t bytes,
+                       const uint8_t *sig, uint32_t sig_n);
     void     *ctx;           /**< passed to each function */
 
     uint32_t  start_ms;      /**< the job's                               */

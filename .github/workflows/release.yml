@@ -24,6 +24,14 @@ name: Release
 # The pages job runs after the publish and starts pages.yml on main, which
 # copies the images of the newest releases to the web flasher on GitHub
 # Pages (tools/flash_manifest.py).
+#
+# Every firmware image the release publishes, beside the assets or inside
+# an archive, carries a detached signature <image>.sig: ECDSA (elliptic
+# curve digital signature algorithm) P-256 over its SHA-256, made with the
+# release signing key, the repository secret RCBENCH_IMAGE_SIGNING
+# (tools/sign_images.sh, SECURITY.md).  A tag build without the secret
+# fails, and so does one whose signatures do not verify against the
+# committed public key, firmware/panel/main/keys/release_signing_pub.pem.
 
 on:
   push:
@@ -425,6 +433,16 @@ jobs:
           python3 tools/c6_image.py device node-bal \
             "$(ls artifacts/node/rcbench-node-bal-[0-9]*.bin)"
 
+      # One loop over every image the build jobs handed over, *.bin and
+      # *.uf2 at any depth: a new image is signed without a change here.
+      # The key reaches the script through the environment and lives in a
+      # file made under umask 077 and removed on exit; an empty secret
+      # fails the step before anything is signed.
+      - name: Sign every image
+        env:
+          SIGNING_KEY: ${{ secrets.RCBENCH_IMAGE_SIGNING }}
+        run: tools/sign_images.sh sign artifacts
+
       - name: Package
         env:
           # The dispatch input first: on a manual run the ref name is the
@@ -461,10 +479,13 @@ jobs:
             }
           done
           cp artifacts/panel/rcbench-panel.bin "dist/rcbench-panel-p4-$TAG.bin"
+          cp artifacts/panel/rcbench-panel.bin.sig \
+             "dist/rcbench-panel-p4-$TAG.bin.sig"
           # The C6 radio's firmware, named for its esp_hosted version: the
           # application a panel downloads for its C6 update, and the merged
           # image for 0x0 over header H4 (docs/C6.md, the C6's firmware).
-          cp artifacts/c6/rcbench-c6-*.bin dist/
+          cp artifacts/c6/rcbench-c6-*.bin artifacts/c6/rcbench-c6-*.bin.sig \
+             dist/
           # The power and balance nodes' firmware: for each, the
           # application a panel downloads for the node's update, and the
           # merged image for 0x0 over USB (docs/Nodes.md, "Building and
@@ -473,14 +494,30 @@ jobs:
           cp artifacts/node/rcbench-node-pwr-*.bin \
              artifacts/node/rcbench-node-bal-*.bin \
              artifacts/node/rcbench-node-display-merged-*.bin dist/
+          cp artifacts/node/rcbench-node-pwr-*.bin.sig \
+             artifacts/node/rcbench-node-bal-*.bin.sig \
+             artifacts/node/rcbench-node-display-merged-*.bin.sig dist/
           # The M5Stack Dial's firmware: the application a panel downloads
           # for the Dial's update, and the merged image for 0x0 over its
           # USB-C socket (docs/Dial.md).  The test
           # build with the console's hooks stays a CI artifact.
           cp artifacts/dial/rcbench-dial-[0-9]*.bin \
              artifacts/dial/rcbench-dial-merged-*.bin dist/
+          cp artifacts/dial/rcbench-dial-[0-9]*.bin.sig \
+             artifacts/dial/rcbench-dial-merged-*.bin.sig dist/
+          # The signatures are assets of their own and not in SHA256SUMS:
+          # the panel reads its image's line there (fw_release.c).
           (cd dist && sha256sum ./*.zip ./*.bin > SHA256SUMS)
           ls -l dist
+
+      # What is published, checked as published: every image beside the
+      # assets and inside every archive has its .sig, and each verifies
+      # against the committed public key.  A secret whose public half is
+      # not that key fails here, before the draft.
+      - name: Verify every signature against the committed key
+        run: |
+          tools/sign_images.sh verify \
+            firmware/panel/main/keys/release_signing_pub.pem dist
 
       - name: Publish the release
         env:
@@ -540,7 +577,7 @@ jobs:
           }
           trap cleanup EXIT
 
-          assets=(dist/*.zip dist/*.bin dist/SHA256SUMS)
+          assets=(dist/*.zip dist/*.bin dist/*.sig dist/SHA256SUMS)
 
           # A testing release is a pre-release and never the latest; a
           # stable release is a full release.  The draft carries the

@@ -20,6 +20,23 @@ history is in git.
   shows on the step's card with a code: `D` for the download, `S` for the
   card, `V` for the checks
   ([Screens: Device images](docs/Screens.md#device-images)).
+- Release signatures: every firmware image a release publishes has a
+  detached `<image>.sig`, ECDSA (elliptic curve digital signature
+  algorithm) P-256 over its SHA-256, beside the asset or inside its ZIP
+  archive. The release workflow signs every `.bin` and `.uf2` file in one
+  loop with the secret `RCBENCH_IMAGE_SIGNING`, fails a tag build without
+  it, and verifies every signature against the committed public key before
+  publishing (`tools/sign_images.sh`). The web flasher's folder carries the
+  `.sig` beside each image ([Security policy](SECURITY.md#release-signatures)).
+- The panel verifies the signature of its own image with Mbed TLS 4.1.0:
+  the Wi-Fi page takes an optional `rcbench-panel-p4-vX.Y.Z.bin.sig` beside
+  the image, and a download from GitHub fetches it after the image. The
+  question on WI-FI and PANEL UPDATE show SIGNED BY THE RCBENCH RELEASE KEY,
+  or NOT SIGNED BY THE RCBENCH RELEASE KEY with the reason. Until the stable
+  release that enforces it, an image without a valid signature installs
+  with the single 2s hold and that warning; a build with
+  `RCBENCH_SIGN_ENFORCE=1` asks for a second 2s hold, INSTALL ANYWAY.
+  The panel image grows by 7152 bytes.
 
 - `hardware/mechanical/`: `hitec_d485hw.step`, the Hitec D485HW servo with
   the four-arm horn HD-X25, its type plate and 60mm of its lead: 3 wires,

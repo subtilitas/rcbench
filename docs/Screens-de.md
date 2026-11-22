@@ -5290,7 +5290,13 @@ den ESP-Image-Header für den ESP32-P4 (Chip-ID 0x0012), den Projektnamen `rcben
 der Anwendung, eine Version der Form MAJOR.MINOR.PATCH und den angehängten
 SHA-256 (Secure Hash Algorithm, 256 Bit). Solange ein Image wartet,
 wird ein weiterer Upload abgewiesen. Verwirf das wartende Image mit ABBRECHEN
-am Panel, bevor du ein anderes hochlädst. Während ein Upload läuft,
+am Panel, bevor du ein anderes hochlädst. Eine zweite Dateiauswahl nimmt die
+Release-Signatur des Images, `rcbench-panel-p4-vX.Y.Z.bin.sig`, 8 bis 72 Bytes;
+eine andere Größe weist die Seite ab, bevor ein Byte gesendet ist (`Die
+Signaturdatei ist nicht 8 bis 72 Bytes lang.`). Die Signatur ist optional.
+Sie geht in derselben Anfrage wie das Image mit, und die Antwort des Panels
+endet mit dem, was der Release-Schlüssel sagt
+([Die Release-Signatur](#die-release-signatur)). Während ein Upload läuft,
 zeigt der Bildschirm die empfangenen Bytes. Der Upload schreibt keinen
 Flash: Das Panel hält die Datei im PSRAM (Pseudo-Static Random-Access
 Memory), bis PANEL UPDATE sie schreibt. Das Panel
@@ -5637,6 +5643,30 @@ angeboten. Der Build, der schon läuft, wird nicht angeboten:
 
 ![Dieselbe Version, ein anderer Build](img/de/wifi-rebuild.png)
 ![Der Build, der läuft](img/de/wifi-installed.png)
+
+#### Die Release-Signatur
+
+Die Rückfrage sagt in einer Zeile unter den Versionen, was der
+Release-Schlüssel zum Image sagt: `VOM RCBENCH-RELEASE-SCHLÜSSEL SIGNIERT` in
+Grün, oder `NICHT VOM RCBENCH-RELEASE-SCHLÜSSEL SIGNIERT.` in Bernstein mit
+dem Grund, `Das Image hat keine Signatur.` oder `Die Signatur passt nicht.`
+Das ältere Image oben kam ohne seine `.sig`; der andere Build kam mit der
+Signatur eines anderen Schlüssels. PANEL UPDATE wiederholt die Zeile beim
+Schreiben:
+
+![Schreiben eines Images ohne Signatur](img/de/panel-update-unsigned.png)
+
+Das Panel prüft eine ECDSA-Signatur (Elliptic Curve Digital Signature
+Algorithm) P-256 über das ganze Image gegen den öffentlichen Release-Schlüssel,
+der in seiner Firmware steht ([Sicherheitsrichtlinie](../SECURITY.md#release-signatures)).
+Bis zum stabilen Release, das die Signatur erzwingt, wird ein Image ohne
+gültige Signatur mit dem einen Halten von 2s und dieser Warnung installiert.
+Ein Build mit `RCBENCH_SIGN_ENFORCE=1` hält stattdessen nach dem Halten an:
+PANEL UPDATE zeigt den Grund und ein zweites Halten von 2s, `2s HALTEN:
+TROTZDEM INSTALLIEREN`. Vor dem Ende dieses Haltens wird nichts geschrieben;
+ABBRECHEN, STOP, ARMED und das Verlassen des Bildschirms verwerfen das Image.
+
+![Ein Build, der die Signatur erzwingt: das zweite Halten](img/de/panel-update-anyway.png)
 
 Halte `2s HALTEN ZUM INSTALLIEREN` für 2s gedrückt. Die Installation lässt
 sich nur am Panel starten. Dafür muss der Prüfstand SAFE, der Netzteilausgang
@@ -8226,8 +8256,9 @@ Aktuelle Einschränkungen:
   SD-Karte.
 - Ein Image bleibt bis zum Neustart des Panels im PSRAM, höchstens die
   vier Byte-Grenzen oben zusammen, 8.257.536 Bytes.
-- Ein Image von der SD-Karte trägt keine Signatur, und keine Signatur
-  eines Geräte-Images wird geprüft: Eine Karte ohne `SHA256SUMS`, die die
+- Das Panel prüft keine Signatur eines Geräte-Images, obwohl das Release
+  neben jedem eine `.sig` veröffentlicht. Ein Image von der SD-Karte ist
+  darum nicht authentifiziert: Eine Karte ohne `SHA256SUMS`, die die
   Datei nennt, bindet es nur an seine Größe, Chip, Projekt, Rolle und
   Version und seinen eigenen angehängten SHA-256 ([SECURITY.md](../SECURITY.md)).
 
@@ -8494,8 +8525,9 @@ sie nichts. Ihr Ergebnis steht auf UPDATES.
 
 Das Halten für 2s bestätigt Download und Installation. Nach dem Download
 folgt keine weitere Rückfrage. Das Panel verbindet sich innerhalb von 30s mit dem Heimnetz
-und lädt dann zwei Dateien des Release-Tags über HTTPS, `SHA256SUMS` und
-`rcbench-panel-p4-v0.23.0.bin`. GitHub beantwortet beide mit einem Redirect zu
+und lädt dann drei Dateien des Release-Tags über HTTPS, `SHA256SUMS`,
+`rcbench-panel-p4-v0.23.0.bin` und dessen Signatur
+`rcbench-panel-p4-v0.23.0.bin.sig`. GitHub beantwortet jede mit einem Redirect zu
 seinem Datei-Host; das Panel folgt höchstens 3 Redirects und nur zu
 `github.com`, `release-assets.githubusercontent.com` und
 `objects.githubusercontent.com`. Dann:
@@ -8509,6 +8541,12 @@ seinem Datei-Host; das Panel folgt höchstens 3 Redirects und nur zu
    Eintrag in `SHA256SUMS` übereinstimmen.
 4. Das Image muss alle Prüfungen für hochgeladene Images bestehen
    ([Installieren](#installieren-panel-update)) und die Version des Releases nennen.
+5. Das Panel lädt die Signatur des Images, `rcbench-panel-p4-v0.23.0.bin.sig`,
+   nach denselben Regeln und prüft sie ([Die Release-Signatur](#die-release-signatur)).
+   Ein HTTP-Status außer 200 heißt keine Signatur, ein Inhalt außerhalb von 8
+   bis 72 Bytes eine Signatur, die nicht passt; der Download geht in beiden
+   Fällen zur Installation weiter. Eine abgebrochene Verbindung, STOP oder das
+   Zeitbudget beenden den Download.
 
 Erst danach beginnt dieselbe Installation wie nach der Bestätigung am
 Panel: WLAN vollständig aus, Schreiben, Neustart, Versuchsstart. Zwischen

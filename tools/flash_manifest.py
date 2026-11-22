@@ -26,6 +26,11 @@ Format) addresses:
     node-bal      rcbench-node-bal-merged-<version>.bin, ESP32-C6
     c6            rcbench-c6-merged-<esp_hosted version>.bin, ESP32-C6
 
+Each image's release signature, `<image>.sig` beside the asset or beside
+the member in its ZIP file, is copied as fw/<tag>/<image>.sig when the
+release has one; releases before the signed ones have none.  The page
+does not read it.
+
 A release without one of them leaves it out, and a release that gives
 none fails.  Releases up to 0.22.1 carry the image of the ESP32-S3
 panel as rcbench-panel-<tag>.zip: no image of the page.  Every ESP-IDF
@@ -328,14 +333,20 @@ def build_release(folder: pathlib.Path, entry: dict,
             raise BuildError(f"{tag}: {asset.name} is not in SHA256SUMS")
         if want and hashlib.sha256(raw).hexdigest() != want:
             raise BuildError(f"{tag}: {asset.name} differs from SHA256SUMS")
+        sig = None
         if member:
             with zipfile.ZipFile(asset) as z:
                 try:
                     data = z.read(member)
                 except KeyError:
                     raise BuildError(f"{tag}: {asset.name} holds no {member}")
+                if member + ".sig" in z.namelist():
+                    sig = z.read(member + ".sig")
         else:
             data = raw
+            beside = folder / (asset.name + ".sig")
+            if beside.is_file():
+                sig = beside.read_bytes()
         name = rename.format(tag=tag) if rename else asset.name
         if not SAFE_NAME.fullmatch(name):
             raise BuildError(f"{tag}: file name {name!r}")
@@ -352,6 +363,8 @@ def build_release(folder: pathlib.Path, entry: dict,
         else:
             esp_check(data, chip, name)
         (dest / name).write_bytes(data)
+        if sig is not None:
+            (dest / (name + ".sig")).write_bytes(sig)
         images.append(image)
     if not images:
         raise BuildError(f"{tag}: no image of the page")
