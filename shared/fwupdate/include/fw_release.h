@@ -123,6 +123,8 @@ extern "C" {
 #define FW_REL_VER_TEXT    18u
 /** @brief The longest asset name, "rcbench-panel-p4-v65535.65535.65535.bin", with its terminator. */
 #define FW_REL_NAME_MAX    40u
+/** @brief The longest signature name, "rcbench-panel-p4-v65535.65535.65535.bin.sig", with its terminator. */
+#define FW_REL_SIG_NAME_MAX 44u
 /** @brief A redirect's Location, in bytes; a longer one is refused. */
 #define FW_REL_URL_MAX     2048u
 /** Redirects followed in one fetch at most. */
@@ -395,6 +397,19 @@ void fw_release_version_text(fw_version_t v, char out[FW_REL_VER_TEXT]);
  * @param out Receives the name, terminated.
  */
 void fw_release_image_name(fw_version_t v, char out[FW_REL_NAME_MAX]);
+
+/**
+ * @brief The file name of the release signature of a release's panel image
+ *        (fw_sig.h): the image's name and ".sig", a release asset of its
+ *        own that SHA256SUMS does not list.
+ *
+ * Writes "rcbench-panel-p4-v0.20.0.bin.sig" for version 0.20.0.  The
+ * longest name fills FW_REL_SIG_NAME_MAX bytes with its terminator.
+ *
+ * @param v   Version of the release.
+ * @param out Receives the name, terminated.
+ */
+void fw_release_sig_name(fw_version_t v, char out[FW_REL_SIG_NAME_MAX]);
 
 /**
  * @brief Write the download URL of @p file in release @p v into @p out.

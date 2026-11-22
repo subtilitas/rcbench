@@ -160,7 +160,7 @@ Browser writes use the same checks as FILES: the bench must be SAFE with no reco
 
 The page uses the panel's language.
 
-**Panel firmware** shows the installed version, a file picker and Upload. Select the release asset `rcbench-panel-p4-vX.Y.Z.bin`. Files larger than 8,126,464 bytes are refused before transmission.
+**Panel firmware** shows the installed version, a file picker and Upload. Select the release asset `rcbench-panel-p4-vX.Y.Z.bin`. Files larger than 8,126,464 bytes are refused before transmission. The second picker takes its signature `rcbench-panel-p4-vX.Y.Z.bin.sig`, 8 to 72 bytes; it is optional, and the panel's answer says whether the release key signed the image.
 
 **Files on the card** uses two panes like [FILES](files.md): root on the left, User log folder on the right, with 48 entries per page and PREV and NEXT. Select a row for RESCAN, INFO, DOWNLOAD or OPEN. Tap a dimmed button to see why it is unavailable. The page follows the browser's light or dark scheme using the panel theme colours.
 
@@ -197,11 +197,13 @@ An older version is allowed, and the question says it is older.
 
 A different build with the same version can be reinstalled. The currently running build is not offered. The hold opens [PANEL UPDATE](update.md).
 
+The line under the versions says whether the release key signed the image. The older image above came without its signature, the rebuild with one that does not match. Both install with the same hold and the warning ([PANEL UPDATE](update.md#the-release-signature)).
+
 ## Current limitations
 
 - NVS is not encrypted. The home network's password, a kept HOTSPOT PASSWORD and a kept ACCESS CODE are kept in plain form in the panel's flash.
 - The page is plain HTTP (hypertext transfer protocol). On a home network the access code and every file cross the network unencrypted. The screen says so while joined.
 - A device that reads that traffic can send a write of its own while writes are allowed.
 - The browser's editor saves a file with mixed line ends with LF ends.
-- An uploaded image is checked against its own SHA-256 hash, not against a signature.
+- An image without a valid release signature installs after the warning with the single 2s hold.
 - The panel stays joined only while this screen is open.

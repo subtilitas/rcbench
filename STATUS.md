@@ -343,6 +343,19 @@ both are due, the band names what holds it back with one line per frame, the sta
 while the C6's restart is due (`upd_run.h`, `test_upd_run`: both restarts over a store in
 memory, a power cut before step 2, a rollback; `panel_updrun.c` feeds it on the panel).
 
+The release signature of the panel's own image (ECDSA P-256 over SHA-256, `<image>.sig`) is
+verified with Mbed TLS 4.1.0 (`fw_sign.c`, `test_fw_sign`: 48 signatures made by openssl,
+another key, every flipped image bit position tried, cut and padded signatures, DER forms out
+of shape, a P-384 key, the committed release key). The Wi-Fi page sends an optional `.sig`
+with the upload (`test_wa_page`), a download fetches it after the image (`test_wa_fetch_sig`:
+404, sizes 7, 8, 72 and 73 bytes, a broken connection, STOP and the budget during the
+signature), and the question and PANEL UPDATE show the verdict (`test_update_sig`). An image
+without a valid signature installs with the one hold and a warning; `RCBENCH_SIGN_ENFORCE=1`
+adds the second hold INSTALL ANYWAY (`test_fw_sig`, built a second time with the switch at
+1). The release workflow
+signs every image and verifies every signature against the committed key
+(`tools/sign_images.sh`, `test/tools/test_sign_images.py`).
+
 On the ESP32-P4 the radio is the board's ESP32-C6 on SDIO through `esp_wifi_remote` and
 `esp_hosted` (`components/c6_link`, [Wi-Fi through the
 ESP32-C6](docs/C6.md#wi-fi-through-the-esp32-c6)). Measured on a home network on
@@ -1730,7 +1743,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 619 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 620 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1829,9 +1842,9 @@ The host suite is 619 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_hitec_panel`, `test_hitec_panel_states`, `test_hitec_panel_stop_fingers`, `test_hitec_panel_write`, `test_hitec_panel_gate`,
 `test_hitec_panel_file`, `test_page_console`, `test_kst_card`, `test_prog_link`,
 `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`,
-`test_wifi_kept`, `test_wifi_layout`, `test_fw_image`, `test_fw_c6`, `test_fw_install`, `test_fw_run`, `test_fw_trial`,
-`test_fw_slots`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_wa_session`,
-`test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_channel`, `test_wa_fetch_task`,
+`test_wifi_kept`, `test_wifi_layout`, `test_update_sig`, `test_fw_image`, `test_fw_c6`, `test_fw_install`, `test_fw_run`, `test_fw_trial`,
+`test_fw_slots`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_fw_sig`, `test_fw_sign`, `test_wa_session`,
+`test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_sig`, `test_wa_fetch_channel`, `test_wa_fetch_task`,
 `test_upd_screen`, `test_upd_settings`, `test_upd_single`, `test_upd_c6`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`,
 `test_wa_page`, `test_wa_page_de`, `test_wa_hl`, `test_wa_edit`, `test_wa_mdns`,
 `test_wa_guard`, `test_wa_kept`, `test_wa_cookie`, `test_wa_api`, `test_wa_api_file`,
@@ -2364,7 +2377,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-1032 committed screenshots to the current render, 516 in English and the same 516 in German, and `render_ui.py --fit` fails on a string that
+1036 committed screenshots to the current render, 518 in English and the same 518 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -2546,10 +2559,10 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/pin_take.c` | 296 | 281 | 94.9% |
 | `shared/ui/board_drawing.c` | 88 | 85 | 96.6% |
 | `shared/ui/busfault_screen.c` | 453 | 452 | 99.8% |
-| `shared/ui/wifi_screen.c` | 629 | 622 | 98.9% |
+| `shared/ui/wifi_screen.c` | 631 | 624 | 98.9% |
 | `shared/ui/wifi_kept.c` | 31 | 31 | 100.0% |
 | `shared/ui/wifi_view.c` | 15 | 15 | 100.0% |
-| `shared/ui/update_screen.c` | 112 | 112 | 100.0% |
+| `shared/ui/update_screen.c` | 180 | 179 | 99.4% |
 | `shared/ui/coproc_update_screen.c` | 212 | 212 | 100.0% |
 | `shared/ui/upd_screen.c` | 362 | 343 | 94.8% |
 | `shared/ui/upd_remind.c` | 163 | 153 | 93.9% |
@@ -2830,29 +2843,31 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/fwupdate/fw_sha256.c` | 83 | 83 | 100.0% |
 | `shared/fwupdate/fw_image.c` | 138 | 137 | 99.3% |
 | `shared/fwupdate/fw_upload.c` | 74 | 74 | 100.0% |
-| `shared/fwupdate/fw_release.c` | 430 | 430 | 100.0% |
+| `shared/fwupdate/fw_release.c` | 434 | 434 | 100.0% |
 | `shared/fwupdate/fw_install.c` | 76 | 76 | 100.0% |
 | `shared/fwupdate/fw_boot.c` | 53 | 53 | 100.0% |
 | `shared/fwupdate/fw_run.c` | 85 | 85 | 100.0% |
 | `shared/fwupdate/fw_trial.c` | 29 | 29 | 100.0% |
 | `shared/fwupdate/fw_c6.c` | 212 | 212 | 100.0% |
 | `shared/fwupdate/fw_slots.c` | 47 | 47 | 100.0% |
+| `shared/fwupdate/fw_sig.c` | 39 | 39 | 100.0% |
+| `shared/fwupdate/fw_sign.c` | 66 | 63 | 95.5% |
 | `shared/devupd/devupd.c` | 283 | 271 | 95.8% |
 | `shared/devupd/devupd_client.c` | 90 | 81 | 90.0% |
 | `shared/webaccess/wa_session.c` | 432 | 430 | 99.5% |
-| `shared/webaccess/wa_fetch.c` | 432 | 420 | 97.2% |
+| `shared/webaccess/wa_fetch.c` | 462 | 452 | 97.8% |
 | `shared/webaccess/wa_text.c` | 343 | 341 | 99.4% |
 | `shared/webaccess/wa_walk.c` | 96 | 91 | 94.8% |
 | `shared/webaccess/wa_send.c` | 102 | 102 | 100.0% |
 | `shared/webaccess/wa_zip.c` | 420 | 408 | 97.1% |
-| `shared/webaccess/wa_page.c` | 104 | 102 | 98.1% |
+| `shared/webaccess/wa_page.c` | 120 | 118 | 98.3% |
 | `shared/webaccess/wa_mdns.c` | 119 | 118 | 99.2% |
 | `shared/webaccess/wa_guard.c` | 70 | 70 | 100.0% |
 | `shared/webaccess/wa_api.c` | 445 | 439 | 98.7% |
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **105085** | **102823** | **97.8%** |
+| **total** | **105310** | **103046** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

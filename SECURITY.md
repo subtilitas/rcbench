@@ -90,20 +90,96 @@ bundle of common certificate authorities. The image's SHA-256 (secure hash
 algorithm, 256 bits) must equal its line in `SHA256SUMS`, and every image
 check below runs, before the flash is written.
 
+## Release signatures
+
+Every firmware image a release publishes has a detached signature,
+`<image>.sig`, beside the asset or beside the member inside its ZIP
+archive: the panel application and merged image, the panel's bootloader,
+partition table and OTA (over-the-air) data, the IOmcu images (`.bin`,
+`.uf2` and the install `.uf2`, RP2350-CAN and rbmod), the C6 radio, the
+M5Stack Dial, the power node, the balance node and the display node
+(application and merged images). The signature is ECDSA (elliptic curve
+digital signature algorithm) on curve P-256 over the SHA-256 of the whole
+file, in the DER (distinguished encoding rules) form of
+`openssl dgst -sha256 -sign`, 8 to 72 bytes. `SHA256SUMS` does not list
+the `.sig` files.
+
+The release workflow (`.github/workflows/release.yml`) signs every `.bin`
+and `.uf2` file the build jobs hand over in one loop
+(`tools/sign_images.sh sign`), with the private key in the repository
+secret `RCBENCH_IMAGE_SIGNING` (PEM text). The key is written to a file
+created under umask 077 and removed when the step exits. A tag build
+without the secret fails before anything is signed. Before the draft
+release is created, every image beside the assets and inside every archive
+must have its `.sig`, and each must verify against the committed public
+key `firmware/panel/main/keys/release_signing_pub.pem`
+(`tools/sign_images.sh verify`); a missing signature or a secret whose
+public half is another key fails the release. The public key's
+fingerprint, the SHA-256 of its DER form, is
+`cf9320e466c7961fca210b1d56f49b3f89c1ddc14a92f15bd62778f880f7eda2`.
+
+The panel verifies the signature of its own application image with Mbed
+TLS 4.1.0 (`shared/fwupdate/fw_sign.c`) against the same public key,
+compiled into the firmware, over the whole image in PSRAM:
+
+- Upload over Wi-Fi: the page takes an optional `.sig` file beside the
+  image, checks its size (8 to 72 bytes) and sends it with the upload as
+  the hex digits of the query parameter `sig` of `POST /update`. The panel
+  verifies it once the image checks pass. The upload's answer and the
+  question on WI-FI say whether the image is signed.
+- Download from GitHub: after the image, the panel fetches
+  `rcbench-panel-p4-vX.Y.Z.bin.sig` over the same allowed hosts. An HTTP
+  status other than 200 means no signature; a body outside 8 to 72 bytes
+  or a redirect out of form is a signature that does not match. A broken
+  connection, STOP or the time budget ends the download and nothing is
+  installed.
+- PANEL UPDATE shows the verdict while it writes: SIGNED BY THE RCBENCH
+  RELEASE KEY, or NOT SIGNED BY THE RCBENCH RELEASE KEY with the reason
+  (no signature, or a signature that does not match).
+
+What the panel does with an image the release key does not vouch for is
+one compile-time switch, `RCBENCH_SIGN_ENFORCE`
+(`shared/fwupdate/include/fw_sig.h`). At 0, the setting of every build up
+to the stable release that enforces it, the image installs with the single
+2s INSTALL hold and the warning on the screen. At 1 it needs a second,
+separate 2s hold, INSTALL ANYWAY, on PANEL UPDATE; CANCEL, STOP, ARMED and
+leaving the screen drop the image. The release numbering gives the next
+stable release as 0.24.0 (an even minor number).
+
 Current limitations:
 
 - The page uses plain HTTP. On a home network, access codes and files
   cross the network without application-layer encryption.
 - The saved home-network password is unencrypted in NVS (non-volatile
   storage).
-- An uploaded image is checked against its own SHA-256, without a
-  signature. An image built as `rcbench-panel` for the ESP32-P4 can pass
-  those checks. A device between the browser and panel can replace an
-  upload on the network.
+- The release signature warns and does not refuse (`RCBENCH_SIGN_ENFORCE`
+  0). An uploaded image without a valid signature, built as
+  `rcbench-panel` for the ESP32-P4, installs after the warning with the
+  single 2s hold. A device between the browser and the panel can replace
+  an upload, and drop its `.sig`, on the network; the panel then shows NOT
+  SIGNED.
 - A downloaded image is tied to the release through the certificate
-  chain and `SHA256SUMS`, without a signature. A party able to publish a
-  repository release, or obtain a false certificate from a trusted
-  authority, can supply an installable image.
+  chain, `SHA256SUMS` and its signature. A party able to publish a
+  repository release without the signing key, or to obtain a false
+  certificate from a trusted authority, can supply an image that installs
+  after the warning.
+- A `v*` tag runs `release.yml` and `tools/sign_images.sh` from the tagged
+  commit with `RCBENCH_IMAGE_SIGNING` in the signing step's environment.
+  Whoever can push a tag can run any code with the key and so read it.
+  The repository has one collaborator; the secret is not held in a
+  protected environment, and no rule limits who creates a tag.
+- The public key is compiled into the panel firmware. Changing the key
+  needs a firmware release signed by the old key, or a USB flash; no key
+  is revoked.
+- The IOmcu images the panel carries are part of the panel application
+  image and covered by its signature. The IOmcu checks no signature of the
+  image the panel sends it over CAN (controller area network).
+- The panel does not verify the signatures of the C6 radio, Dial and node
+  images, neither of the ones it carries nor of ones it downloads; those
+  updates check the SHA-256 the panel sends (see the wireless devices
+  below).
+- The web flasher (`/rcbench/flash/`) copies each image's `.sig` beside it
+  and neither checks nor shows it.
 - Certificate validity dates are not checked, even after NTP (Network
   Time Protocol) sets the clock. mbedTLS is built with
   `CONFIG_MBEDTLS_HAVE_TIME_DATE` off, the ESP-IDF default. An expired

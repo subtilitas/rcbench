@@ -160,7 +160,7 @@ Browser-Schreibzugriffe unterliegen denselben Prüfungen wie FILES: SAFE, keine 
 
 Die Browserseite verwendet die Panelsprache.
 
-**Panel-Firmware** zeigt die installierte Version, eine Dateiauswahl und Hochladen. Wähle das Release-Asset `rcbench-panel-p4-vX.Y.Z.bin`. Dateien über 8.126.464 Bytes werden vor der Übertragung abgelehnt.
+**Panel-Firmware** zeigt die installierte Version, eine Dateiauswahl und Hochladen. Wähle das Release-Asset `rcbench-panel-p4-vX.Y.Z.bin`. Dateien über 8.126.464 Bytes werden vor der Übertragung abgelehnt. Die zweite Auswahl nimmt seine Signatur `rcbench-panel-p4-vX.Y.Z.bin.sig`, 8 bis 72 Bytes; sie ist optional, und die Antwort des Panels sagt, ob der Release-Schlüssel das Image signiert hat.
 
 **Dateien auf der Karte** zeigt wie [FILES](files.md) zwei Spalten: links das Stammverzeichnis, rechts den Ordner Testaufzeichnungen, mit 48 Einträgen je Seite sowie VORIGE und NÄCHSTE. Wähle eine Zeile für AKTUALISIEREN, INFO, HERUNTERLADEN oder ÖFFNEN. Ein Tipp auf eine gedimmte Taste erklärt ihre Sperre. Die Seite folgt dem hellen oder dunklen Browserschema mit den Designfarben des Panels.
 
@@ -197,11 +197,13 @@ Nach dem Upload zeigt das Panel eine Rückfrage mit laufender und hochgeladener 
 
 Ein anderer Build derselben Version wird zur Neuinstallation angeboten. Der bereits laufende Build wird nicht angeboten. Das Halten öffnet [PANEL UPDATE](update.md).
 
+Die Zeile unter den Versionen sagt, ob der Release-Schlüssel das Image signiert hat. Das ältere Image oben kam ohne seine Signatur, der andere Build mit einer, die nicht passt. Beide werden mit demselben Halten und der Warnung installiert ([PANEL UPDATE](update.md#die-release-signatur)).
+
 ## Aktuelle Einschränkungen
 
 - NVS ist nicht verschlüsselt. Heimnetzpasswort, festes HOTSPOT-PASSWORT und fester ZUGANGSCODE liegen im Klartext im Panel-Flash.
 - Die Seite verwendet unverschlüsseltes HTTP (Hypertext Transfer Protocol). Im Heimnetz werden Zugangscode und Dateien unverschlüsselt übertragen. Die verbundene Seite weist darauf hin.
 - Wer diesen Datenverkehr mitliest, kann während einer Schreibfreigabe eigene Schreibanfragen senden.
 - Der Browsereditor vereinheitlicht gemischte Zeilenenden zu LF.
-- Hochgeladene Images werden gegen ihren eigenen SHA-256-Hash geprüft, nicht gegen eine Signatur.
+- Ein Image ohne gültige Release-Signatur wird nach der Warnung mit dem einen Halten von 2s installiert.
 - Die Verbindung besteht nur, solange diese Seite geöffnet ist.

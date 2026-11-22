@@ -514,6 +514,8 @@ TRACKED = [
     "shared/fwupdate/fw_trial.c",
     "shared/fwupdate/fw_c6.c",
     "shared/fwupdate/fw_slots.c",
+    "shared/fwupdate/fw_sig.c",
+    "shared/fwupdate/fw_sign.c",
     "shared/devupd/devupd.c",
     "shared/devupd/devupd_client.c",
     "shared/webaccess/wa_session.c",

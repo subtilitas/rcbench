@@ -277,7 +277,7 @@ TEST_CASE(without_a_card_the_page_says_so_and_still_takes_an_upload)
     /* No ZIP link; the file manager is there to say so and to read the
      * card once it is in. */
     CHECK(strstr(g_p.buf, "<div id=\"fm\" class=\"fm\"></div>") != NULL);
-    CHECK(strstr(g_p.buf, "POST','/update'") != NULL);
+    CHECK(strstr(g_p.buf, "POST','/update'+q") != NULL);
     /* The upload's own header, which the panel requires (wa_guard.h): a
      * page of another site cannot send it without a preflight. */
     CHECK(strstr(g_p.buf, "x.setRequestHeader('X-Rcbench-Upload','1');")
@@ -492,13 +492,76 @@ TEST_CASE(every_upload_answer_has_its_own_text_in_both_languages)
     wa_page_upload_result(&g_o, false, FW_OK, &info, false);
     CHECK(wa_out_flush(&g_o));
     CHECK_STR_EQ(g_p.buf, "Received and checked: panel firmware 0.20.1. To "
-                          "install, hold INSTALL on the panel for 2s.");
+                          "install, hold INSTALL on the panel for 2s. Not "
+                          "signed by the rcbench release key: no signature "
+                          "came with it.");
     begin(-1);
     wa_page_upload_result(&g_o, true, FW_OK, &info, true);
     CHECK(wa_out_flush(&g_o));
     CHECK(strstr(g_p.buf, "0.20.1. Dieser Build") != NULL);
+    /* The release key's verdict, last: signed, and each way of not. */
+    static const struct { fw_sig_t sig; const char *end; } says[] = {
+        { FW_SIG_OK,   "2s. Signed by the rcbench release key." },
+        { FW_SIG_BAD,  "key: the signature does not match." },
+        { FW_SIG_FORM, "key: the signature does not match." },
+        { FW_SIG_KEY,  "key: the signature does not match." },
+        { FW_SIG_NONE, "key: no signature came with it." },
+    };
+    for (size_t i = 0; i < sizeof(says) / sizeof(says[0]); ++i) {
+        fw_image_info_t si = info;
+        si.sig = says[i].sig;
+        begin(-1);
+        wa_page_upload_result(&g_o, false, FW_OK, &si, false);
+        CHECK(wa_out_flush(&g_o));
+        const size_t n = strlen(says[i].end);
+        CHECK(g_p.len >= n);
+        CHECK_STR_EQ(g_p.buf + g_p.len - n, says[i].end);
+    }
+    fw_image_info_t si = info;
+    si.sig = FW_SIG_OK;
+    begin(-1);
+    wa_page_upload_result(&g_o, true, FW_OK, &si, false);
+    CHECK(wa_out_flush(&g_o));
+    CHECK(strstr(g_p.buf, " Vom rcbench-Release-Schl\xc3\xbcssel signiert.")
+          != NULL);
     free(g_p.buf);
     memset(&g_p, 0, sizeof(g_p));
+}
+
+/* The firmware form takes the image and, optional, its signature; the
+ * script checks the signature's size at 8 and 72 bytes before it sends
+ * anything, and the note says what the panel does without one. */
+TEST_CASE(the_form_takes_a_signature_beside_the_image)
+{
+    fake_fs_t fs;
+    fake_init(&fs);
+    const wa_fs_t w = fake_wa(&fs);
+    begin(-1);
+    wa_page_main(&g_o, &k_en, &w);
+    CHECK(wa_out_flush(&g_o));
+    CHECK(strstr(g_p.buf, "Firmware (.bin) <input type=\"file\" id=\"i\" "
+                          "accept=\".bin\" required>") != NULL);
+    CHECK(strstr(g_p.buf, "Signature (.sig, optional) <input type=\"file\" "
+                          "id=\"s\" accept=\".sig\">") != NULL);
+    CHECK(strstr(g_p.buf, "if(g&&(g.size<8||g.size>72)){r.textContent="
+                          "'The signature file is not 8 to 72 bytes long.';"
+                          "return;}") != NULL);
+    CHECK(strstr(g_p.buf, "go('?sig='+h)") != NULL);
+    CHECK(strstr(g_p.buf, "else{go('');}") != NULL);
+    /* The note of the build's policy, and not the other one. */
+#if RCBENCH_SIGN_ENFORCE
+    CHECK(strstr(g_p.buf, "needs a second hold of 2s") != NULL);
+#else
+    CHECK(strstr(g_p.buf, "installs with a warning on the panel.") != NULL);
+    CHECK(strstr(g_p.buf, "needs a second hold") == NULL);
+#endif
+    begin(-1);
+    wa_page_main(&g_o, &k_de, &w);
+    CHECK(wa_out_flush(&g_o));
+    CHECK(strstr(g_p.buf, "Signatur (.sig, optional) ") != NULL);
+    CHECK(strstr(g_p.buf, "Die Signaturdatei ist nicht 8 bis 72 Bytes lang.")
+          != NULL);
+    fake_free(&fs);
 }
 
 /* The bench tree's files are all counted for the ZIP file. */
@@ -535,5 +598,6 @@ int main(void)
     RUN(texts_in_the_upload_script_are_escaped_in_both_languages);
     RUN(the_pages_are_written_for_the_script_check);
     RUN(every_upload_answer_has_its_own_text_in_both_languages);
+    RUN(the_form_takes_a_signature_beside_the_image);
     return test_summary("wa_page");
 }

@@ -37,6 +37,9 @@ extern "C" {
 /** @brief The paths the page uses. */
 #define WA_URL_CODE    "/code"
 #define WA_URL_UPDATE  "/update"  /**< the firmware upload */
+/** @brief The upload's query parameter that carries the image's release
+ *         signature, as hex digits (fw_sig_from_hex()). */
+#define WA_SIG_PARAM   "sig"
 #define WA_URL_FILE    "/card/"   /**< a file of the card, by path */
 #define WA_URL_ZIP     "/card.zip" /**< the whole card as a ZIP file */
 /** @brief The cookie that carries the access code. */

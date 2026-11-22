@@ -23,6 +23,7 @@ const IDS = [
   'SET_LEAVE_TITLE', 'SET_STAY', 'P_FM_UPLOAD', 'P_FM_REPLACE',
   'P_FM_REPLACE_Q', 'P_FM_DOWNLOAD', 'P_API_CHANGED', 'P_API_NOT_EMPTY',
   'P_API_ARMED', 'P_API_WRITES_OFF', 'P_API_WRITES_HOLD', 'FM_DELETE_REPORT',
+  'P_UPLOAD', 'P_SIG_SIZE',
 ];
 
 const REPORT = 'ATEST001.TXT';
@@ -380,6 +381,37 @@ for (const lang of LANGS) {
       await expect(fm.msg).toHaveText(fm.t('LOG_DELETED', 'HELLO.TXT'));
       await expect(fm.row(0, 'HELLO.TXT')).toHaveCount(0);
       expect(Object.keys((await fm.tree()).files)).not.toContain('HELLO.TXT');
+    });
+
+    test('the firmware form sends a signature of 8 to 72 bytes with the image as hex', async ({ page }) => {
+      const fm = await open(page, lang);
+      const sent: string[] = [];
+      await page.route('**/update*', async (route) => {
+        sent.push(new URL(route.request().url()).search);
+        await route.fulfill({ status: 200, contentType: 'text/plain', body: 'ok' });
+      });
+      const image = { name: 'rcbench-panel-p4-v0.24.0.bin', mimeType: 'application/octet-stream', buffer: Buffer.alloc(64, 0xe9) };
+      const sig = (n: number) => ({ name: 'rcbench-panel-p4-v0.24.0.bin.sig', mimeType: 'application/octet-stream',
+                                    buffer: Buffer.from(Array.from({ length: n }, (_, i) => (i * 37) & 0xff)) });
+      const send = page.getByRole('button', { name: fm.t('P_UPLOAD'), exact: true }).first();
+      // No signature: the image alone, without a query.
+      await page.locator('#i').setInputFiles(image);
+      await send.click();
+      await expect(page.locator('#r')).toHaveText('ok');
+      // 7 and 73 bytes are refused on the page; nothing is sent.
+      for (const n of [7, 73]) {
+        await page.locator('#s').setInputFiles(sig(n));
+        await send.click();
+        await expect(page.locator('#r')).toHaveText(fm.t('P_SIG_SIZE'));
+      }
+      // 8 and 72 bytes go with the image, two lower-case hex digits a byte.
+      for (const n of [8, 72]) {
+        await page.locator('#s').setInputFiles(sig(n));
+        await send.click();
+        await expect.poll(() => sent.length).toBe(n === 8 ? 2 : 3);
+      }
+      const hex = (n: number) => Array.from({ length: n }, (_, i) => ((i * 37) & 0xff).toString(16).padStart(2, '0')).join('');
+      expect(sent).toEqual(['', `?sig=${hex(8)}`, `?sig=${hex(72)}`]);
     });
 
     test('a labelled run is deleted with its plain report, named in the question', async ({ page }) => {
