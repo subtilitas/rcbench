@@ -144,42 +144,42 @@
   {
    "type": "case",
    "model": "part",
-   "part": "servo_standard",
+   "part": "hitec_d485hw",
    "dur": 11.36,
    "spin": [
     [
      0,
-     130
+     25
     ],
     [
      11.36,
-     215
+     -20
     ]
    ],
    "camera": [
     [
      0,
      [
-      -120,
-      150,
-      150
+      -60,
+      230,
+      260
      ],
      [
       0,
-      40,
+      62,
       0
      ]
     ],
     [
      11.36,
      [
-      -100,
-      130,
-      130
+      -40,
+      200,
+      230
      ],
      [
       0,
-      40,
+      62,
       0
      ]
     ]
@@ -192,22 +192,48 @@
      "text": "The servo"
     }
    ],
+   "tags": [
+    {
+     "from": 2.0,
+     "to": 10.959999999999999,
+     "at": [
+      18.3,
+      -16.9,
+      -1.8
+     ],
+     "text": "signal wire",
+     "side": "b",
+     "d": 90
+    },
+    {
+     "from": 2.4,
+     "to": 10.959999999999999,
+     "at": [
+      63.2,
+      -16.9,
+      0
+     ],
+     "text": "3-pin plug",
+     "side": "t",
+     "d": 70
+    }
+   ],
    "labels": [
     {
      "from": 1.2,
      "to": 10.959999999999999,
      "anchor": [
-      0,
+      -40,
       5,
       0
      ],
      "at": [
       1330,
-      250
+      220
      ],
      "size": "sm",
-     "title": "One wire, both directions",
-     "text": "115,200 bit/s, half duplex. The servo's answer starts 5.9 to 6.5 ms after the request."
+     "title": "Hitec D485HW",
+     "text": "One wire, both directions: 115,200 bit/s, half duplex. The answer starts 5.9 to 6.5 ms after the request."
     }
    ],
    "say": [
