@@ -259,6 +259,12 @@ void artwork_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     (void)ctx;
     uint16_t all[LINK_AW_COUNT];
+    /* The remote servo node carries no drawing: its pads sit on 4 edges,
+     * and the page reads 0 throughout. */
+    if (IOMCU_BOARD_ID == (uint16_t)OUTBIND_BOARD_RSN) {
+        memset(out, 0, (size_t)n * sizeof(uint16_t));
+        return;
+    }
     link_artserve_meta(all, (uint16_t)LINK_ART_DRAWING,
                        board_drawing_rp2350_can_width,
                        board_drawing_rp2350_can_height,
@@ -282,6 +288,10 @@ void art_data_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     (void)ctx;
     uint16_t all[LINK_AD_COUNT];
+    if (IOMCU_BOARD_ID == (uint16_t)OUTBIND_BOARD_RSN) {
+        memset(out, 0, (size_t)n * sizeof(uint16_t));   /* no drawing */
+        return;
+    }
     link_artserve_block(all, board_drawing_rp2350_can,
                         board_drawing_rp2350_can_bytes, s_art_block);
     for (uint8_t i = 0; i < n; ++i) {

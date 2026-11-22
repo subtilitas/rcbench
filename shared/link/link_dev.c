@@ -7,6 +7,7 @@
  */
 
 #include "link_dev.h"
+#include "link_gate.h"
 
 #include <string.h>
 
@@ -49,6 +50,13 @@ void link_dev_latch_arm(link_dev_t *d)
 {
     if (d != NULL) {
         d->arm_latched = true;
+    }
+}
+
+void link_dev_refuse_drive(link_dev_t *d, bool refuse)
+{
+    if (d != NULL) {
+        d->refuse_drive = refuse;
     }
 }
 
@@ -316,8 +324,13 @@ bool link_dev_apply(const link_dev_t *d, const link_msg_t *req,
             refuse(reply, req, LINK_NACK_READ_ONLY);
             return true;
         }
-        const uint8_t why = p->write(d->ctx, req->offset, req->count,
-                                     req->regs);
+        uint8_t why = d->refuse_drive
+                          ? link_gate_drive(req->page, req->offset,
+                                            req->count, req->regs)
+                          : 0u;
+        if (why == 0u) {
+            why = p->write(d->ctx, req->offset, req->count, req->regs);
+        }
         if (why != 0) {
             refuse(reply, req, (link_nack_t)why);
             return true;

@@ -286,6 +286,9 @@ typedef struct {
     uint8_t  fitted;                      /**< bit a: the part at 0x40 + a */
     uint32_t shunt_uohm[SENSE_CHANNELS];  /**< 0: the channel is off       */
     uint8_t  fast;                        /**< a channel, or SENSE_FAST_NONE */
+    /** @brief Each channel's critical alert limit, mA, written at every
+     *         probe of its part (ina3221_set_crit()); 0: none. */
+    uint16_t crit_ma[SENSE_CHANNELS];
 } sense_i3221_cfg_t;
 
 /** @brief What is fitted and how; a part not enabled is never addressed. */
@@ -501,6 +504,9 @@ typedef struct {
     int32_t  temp_mdegc;     /**< INA228 DIETEMP as last read             */
     uint16_t diag;           /**< INA228 DIAG_ALRT as last read           */
     uint16_t flags[SENSE_I3221_PARTS]; /**< each Mask/Enable as last read */
+    /** @brief Each part's Mask/Enable reads that went through, modulo
+     *         65536: a new count is a new read of flags[a]. */
+    uint16_t flags_n[SENSE_I3221_PARTS];
     sense_run_t run;  /**< the run since arming */
     sense_cap_t cap;  /**< the capture of a FAST move */
     sense_enc_t enc;  /**< the output encoder */

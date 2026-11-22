@@ -18,6 +18,8 @@
  * iomcu_tone.c   the TONE page and the phase tap's capture
  * iomcu_bind.c   BIND, BIND_CFG, BIND_OUT and the board's own pages
  * iomcu_can.c    the heartbeat's input and the CAN bus
+ * iomcu_rsn.c    the remote servo node only (IOMCU_BOARD=rsn): the chip's
+ *                stepping, the POWER page and the rail and port switches
  *
  * The helpers at the end are `static inline`, so the main loop and each
  * page handler that calls one carry their own inlined copy.
@@ -33,6 +35,7 @@
 
 #include "hardware/gpio.h"
 
+#include "board_fix.h"
 #include "can_txq.h"
 #include "heartbeat.h"
 #include "hitec_line.h"
@@ -67,7 +70,7 @@
  * @brief Register images of the pages the IOmcu holds, one array per page.
  */
 typedef struct {
-    uint16_t identity[LINK_ID_COUNT]; /**< IDENTITY page */
+    uint16_t identity[LINK_ID_ALL];   /**< IDENTITY page */
     uint16_t control[LINK_CT_COUNT]; /**< CONTROL page */
     uint16_t status[LINK_ST_COUNT]; /**< STATUS page */
     uint16_t bench[LINK_BN_COUNT]; /**< BENCH page */
@@ -1223,6 +1226,78 @@ reset_cause_t reset_start(void);
 void reset_say(void);
 #endif
 
+/* iomcu_rsn.c: the remote servo node's parts; on the other boards each
+ * does nothing and answers as a board without them. */
+/**
+ * @brief RAIL_EN and PORT_EN1 to 9 driven low, the LED off, the strap and
+ *        CRIT_N read with their pull-ups: the first statement of main().
+ */
+void rsn_pins_off(void);
+/**
+ * @brief The chip's stepping read (chip_gate_ok()) into IDENTITY registers
+ *        7 and 8, and the POWER page started for the strap.
+ *
+ * @param s  The pages whose IDENTITY is written.
+ */
+void rsn_boot(iomcu_state_t *s);
+/**
+ * @brief Whether the stepping check refused the chip: nothing is bound and
+ *        nothing driven on it.
+ *
+ * @return true on a chip before the A4 stepping.
+ */
+bool rsn_chip_refused(void);
+/**
+ * @brief On a refused chip every write that could drive a pin is refused
+ *        (link_dev_refuse_drive()); nothing on an A4 chip.
+ *
+ * @param d  The link's device end.
+ */
+void rsn_link(link_dev_t *d);
+/**
+ * @brief STATUS's fault bits of the node: LINK_FAULT_CHIP_STEPPING, and
+ *        what POWER's TRIPPED stands for (power_faults()).
+ *
+ * @return link_fault_t bits.
+ */
+uint16_t rsn_faults(void);
+/**
+ * @brief RAIL, PORT_ON and PORT_WANT off and the pins driven so: a lost
+ *        heartbeat, the link failsafe, a STOP.
+ */
+void rsn_off(void);
+/**
+ * @brief One pass: CRIT_N, the INA3221s' flags, the SENSE_LIMIT counts and
+ *        a new window judged (power_step(), power_window()), the switches
+ *        driven, the LED blinked.
+ *
+ * @param now  The pass's clock in ms.
+ * @return     LINK_PW_TRIP_* bits tripped this pass: the caller makes the
+ *             bank SAFE; 0 for none.
+ */
+uint16_t rsn_pass(uint32_t now);
+/**
+ * @brief The POWER page's read (power_read()).
+ *
+ * @param ctx  Not used.
+ * @param off  First register.
+ * @param n    Registers.
+ * @param out  The values.
+ */
+void power_page_rd(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+/**
+ * @brief The POWER page's write (power_write()), judged against the
+ *        heartbeat, the critical limits core 1 last reported and the
+ *        throttle ports of the bank; the switches driven when taken.
+ *
+ * @param ctx  Not used.
+ * @param off  First register.
+ * @param n    Registers.
+ * @param in   The values.
+ * @return     0 or a link_nack_t.
+ */
+uint8_t power_page_wr(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
+
 /* ------------------------------------------------------ the inline helpers */
 
 /**
@@ -1244,6 +1319,8 @@ static inline void status_gate(iomcu_state_t *s)
     }
     /* A restart by the loop's watchdog, until a CLEAR (loop_watch.h). */
     faults |= loop_watch_fault(&s_loop_watch);
+    /* The node's chip stepping and its POWER trips (iomcu_rsn.c). */
+    faults |= rsn_faults();
     s->status[LINK_ST_FAULTS] = faults;
 }
 
@@ -1430,6 +1507,10 @@ static inline void sense_build(sense_cmd_t *cmd)
 {
     memset(cmd, 0, sizeof(*cmd));
     sense_page_cmd(&s_sense, cmd);
+    /* The critical alert limits of a board's own INA3221s, written at each
+     * probe; none on a board without them (board_fix_crit()). */
+    board_fix_crit(outbind_roles(IOMCU_BOARD_ID), cmd->limit_ma,
+                   cmd->parts.i3221.crit_ma);
     cmd->run_gen  = s_run_gen;
     cmd->edge_set = s_edge_set && s_edge_gen == s_sense.cap_gen;
     cmd->edge_us  = s_edge_us;

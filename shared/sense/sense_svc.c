@@ -55,6 +55,7 @@ static void set_up(sense_svc_t *v, const sense_cmd_t *cmd)
         v->seq_base = (uint16_t)(v->seq_base + v->sched.cap.seq);
     }
     v->cfg_gen  = cmd->cfg_gen;
+    memcpy(v->crit_ma, cmd->parts.i3221.crit_ma, sizeof(v->crit_ma));
     v->present  = 0u;
     v->lim_have = false;        /* the new schedule numbers from 0 */
     v->scan_due = false;
@@ -315,7 +316,13 @@ static void snap(const sense_svc_t *v, sense_snap_t *out)
         out->i3221_maker[a] = s->i3221[a].part.id_maker;
         out->i3221_die[a]   = s->i3221[a].part.id_device;
         out->i3221_resets[a] = s->i3221_resets[a];
+        out->i3221_flags[a]   = s->flags[a];
+        out->i3221_flags_n[a] = s->flags_n[a];
+        if (ina3221_crit_held(&s->i3221[a])) {
+            out->i3221_crit |= (uint8_t)(1u << a);
+        }
     }
+    out->i3221_have_flags = s->have_flags;
     out->fast        = s->cfg.i3221.fast;
     out->have_temp   = s->have_temp;
     out->temp_mdegc  = s->temp_mdegc;
@@ -342,7 +349,11 @@ static void snap(const sense_svc_t *v, sense_snap_t *out)
 
 void sense_svc_step(sense_svc_t *v, const sense_cmd_t *cmd, sense_snap_t *out)
 {
-    if (!v->started || cmd->cfg_gen != v->cfg_gen) {
+    /* A critical limit is written at a part's probe: a changed one is a
+     * set-up of its own. */
+    if (!v->started || cmd->cfg_gen != v->cfg_gen
+        || memcmp(cmd->parts.i3221.crit_ma, v->crit_ma,
+                  sizeof(v->crit_ma)) != 0) {
         v->started = true;
         set_up(v, cmd);
     }
