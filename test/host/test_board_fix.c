@@ -51,7 +51,7 @@ TEST_CASE(the_carrier_is_a_board_with_its_role_pins)
     /* The module wired by hand has no roles. */
     CHECK(outbind_roles(OUTBIND_BOARD_PICO_HEADER) == NULL);
     CHECK(outbind_roles(OUTBIND_BOARD_UNKNOWN) == NULL);
-    CHECK(outbind_roles(3u) == NULL);
+    CHECK(outbind_roles(4u) == NULL);
 
     /* The owner's map, PROGP03 on GP15 on every carrier. */
     static const uint8_t k_out[4]  = { 2u, 4u, 5u, 1u };
@@ -75,7 +75,7 @@ static uint64_t role_pins(const outbind_roles_t *r)
 {
     uint64_t m = BIT(r->sda) | BIT(r->scl) | BIT(r->pd_tx) | BIT(r->pd_rx)
                  | BIT(r->tap);
-    for (unsigned i = 0; i < OUTBIND_FIXED_OUTS; ++i) { m |= BIT(r->out[i]); }
+    for (unsigned i = 0; i < outbind_out_count(r); ++i) { m |= BIT(r->out[i]); }
     for (unsigned i = 0; i < OUTBIND_FIXED_PROGS; ++i) { m |= BIT(r->prog[i]); }
     return m;
 }
@@ -377,10 +377,10 @@ TEST_CASE(the_carriers_ina3221_is_at_0x40_watching_its_three_supplies)
     CHECK_EQ(r->ina.watch[0], LINK_SM_WATCH_RAIL_B);
     CHECK_EQ(r->ina.watch[1], LINK_SM_WATCH_RAIL_A);
     CHECK_EQ(r->ina.watch[2], LINK_SM_WATCH_PROG_5V);
-    CHECK_EQ(r->ina.feeds[0], (uint32_t)(BIT(5) | BIT(4)));
-    CHECK_EQ(r->ina.feeds[1], (uint32_t)(BIT(2) | BIT(1)));
+    CHECK_EQ(r->ina.feeds[0], (uint64_t)(BIT(5) | BIT(4)));
+    CHECK_EQ(r->ina.feeds[1], (uint64_t)(BIT(2) | BIT(1)));
     CHECK_EQ(r->ina.feeds[2],
-             (uint32_t)(BIT(0) | BIT(13) | BIT(14) | BIT(15)));
+             (uint64_t)(BIT(0) | BIT(13) | BIT(14) | BIT(15)));
     /* Each rail's GPIOs are J2's positions on that rail, and CH3's are
      * J1's: the connector table and the monitor agree. */
     for (unsigned i = 0; i < r->conn_count; ++i) {
@@ -523,7 +523,7 @@ TEST_CASE(the_ports_hold_their_pins_with_a_servo_output_beside_progp04)
     prog_port_t pg;
     outputs_init(&o, 0u);
     outputs_reserve_pins(&o, outbind_reserved_mask(RBMOD));
-    for (unsigned i = 0; i < OUTBIND_FIXED_OUTS; ++i) {
+    for (unsigned i = 0; i < outbind_out_count(r); ++i) {
         const out_slot_t pwm = { .driver = OUT_DRIVER_PWM,
                                  .first_channel = (uint8_t)i, .channels = 1,
                                  .pin = r->out[i], .rate_hz = 50 };
@@ -559,7 +559,7 @@ TEST_CASE(a_carrier_port_takes_servo_pwm_beside_the_outputs_binding)
         prog_port_t pg;
         outputs_init(&o, 0u);
         outputs_reserve_pins(&o, outbind_reserved_mask(RBMOD));
-        for (unsigned i = 0; i < OUTBIND_FIXED_OUTS; ++i) {
+        for (unsigned i = 0; i < outbind_out_count(r); ++i) {
             if (r->out[i] == 1u && with_pwm04 == 0u) {
                 continue;
             }
@@ -595,7 +595,7 @@ TEST_CASE(a_carrier_port_takes_servo_pwm_beside_the_outputs_binding)
             }
         }
         /* The binding is the same after every ask. */
-        for (unsigned i = 0; i < OUTBIND_FIXED_OUTS; ++i) {
+        for (unsigned i = 0; i < outbind_out_count(r); ++i) {
             const bool there = !(r->out[i] == 1u && with_pwm04 == 0u);
             CHECK_EQ(o.slot[i].driver == OUT_DRIVER_PWM, there);
         }

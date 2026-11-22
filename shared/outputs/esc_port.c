@@ -411,7 +411,11 @@ static link_esc_ref_t enter_values(const esc_port_t *p,
     if (v->latched) {
         return LINK_ESC_REF_SUPPLY_OFF;
     }
-    if (mv < LINK_ESC_SUPPLY_MIN_MV || mv > PDMINI_V_MAX_MV
+    /* The board's ceiling where the supply reports one (board 3: 8400mV). */
+    const uint16_t top = (v->max_mv != 0u) ? v->max_mv
+                                           : (uint16_t)PDMINI_V_MAX_MV;
+
+    if (mv < LINK_ESC_SUPPLY_MIN_MV || mv > top
         || ma < PDMINI_I_MIN_MA || ma > PDMINI_I_MAX_MA
         || (v->vin_mv != 0u && (uint32_t)mv + PDMINI_CAP_MV > v->vin_mv)) {
         return LINK_ESC_REF_RANGE;

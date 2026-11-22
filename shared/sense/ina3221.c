@@ -156,6 +156,33 @@ ina3221_setup_err_t ina3221_init_shunts(ina3221_t *d, sense_bus_t *bus,
     return INA3221_SETUP_OK;
 }
 
+uint16_t ina3221_crit_reg(uint32_t shunt_uohm, uint32_t limit_ma)
+{
+    if (limit_ma == 0u) {
+        return 0x7FF8u;
+    }
+    /* mA x µΩ / 1000 is µV; 40µV a step. */
+    const uint64_t code = ((uint64_t)limit_ma * shunt_uohm) / 40000u;
+    return (uint16_t)(((code > 4095u) ? 4095u : (unsigned)code) << 3);
+}
+
+void ina3221_set_crit(ina3221_t *d, const uint16_t *limit_ma)
+{
+    d->crit_on = false;
+    const uint8_t on = ina3221_channels(d->config);
+    for (unsigned k = 0; k < INA3221_CHANNELS; ++k) {
+        const uint16_t ma = (limit_ma != NULL && (on & (1u << k)) != 0u)
+                                ? limit_ma[k] : 0u;
+        d->crit[k] = ina3221_crit_reg(d->shunt_uohm[k], ma);
+        d->crit_on = d->crit_on || ma != 0u;
+    }
+}
+
+bool ina3221_crit_held(const ina3221_t *d)
+{
+    return d->crit_on && d->part.state == SENSE_PART_ONLINE;
+}
+
 /**
  * @brief Read a 16-bit register.
  *
@@ -172,6 +199,39 @@ static bool read16(ina3221_t *d, uint8_t reg, uint16_t *v)
     }
     *v = sense_be16(b);
     return true;
+}
+
+/**
+ * @brief The probe's second half with limits: the three critical limits
+ *        and Mask/Enable with CEN written and read back.
+ *
+ * @param d The driver, its Configuration taken.
+ * @return SENSE_PART_ONLINE when all four read back as written,
+ *       SENSE_PART_REFUSED when one differs, SENSE_PART_ABSENT when a
+ *       transaction failed.
+ */
+static sense_state_t probe_crit(ina3221_t *d)
+{
+    for (unsigned k = 0; k <= INA3221_CHANNELS; ++k) {
+        const uint8_t reg = (k < INA3221_CHANNELS)
+                                ? (uint8_t)(INA3221_CRIT1 + 2u * k)
+                                : (uint8_t)INA3221_MASK_ENABLE;
+        const uint16_t v = (k < INA3221_CHANNELS) ? d->crit[k]
+                                                  : (uint16_t)INA3221_ME_CEN;
+        uint16_t back = 0u;
+        if (sense_bus_write16(d->part.bus, d->part.addr, reg, v) != SENSE_OK
+            || !read16(d, reg, &back)) {
+            return SENSE_PART_ABSENT;
+        }
+        /* Mask/Enable reads its flags beside CEN, and the read clears
+         * them: only CEN is compared. */
+        const uint16_t mask = (k < INA3221_CHANNELS)
+                                  ? 0xFFF8u : (uint16_t)INA3221_ME_CEN;
+        if ((back & mask) != (v & mask)) {
+            return SENSE_PART_REFUSED;
+        }
+    }
+    return SENSE_PART_ONLINE;
 }
 
 /**
@@ -196,7 +256,10 @@ static sense_state_t probe(ina3221_t *d)
         || !read16(d, INA3221_CONFIG, &back)) {
         return SENSE_PART_ABSENT;
     }
-    return (back == d->config) ? SENSE_PART_ONLINE : SENSE_PART_REFUSED;
+    if (back != d->config) {
+        return SENSE_PART_REFUSED;
+    }
+    return d->crit_on ? probe_crit(d) : SENSE_PART_ONLINE;
 }
 
 bool ina3221_step(ina3221_t *d, uint32_t now_ms)

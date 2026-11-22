@@ -61,6 +61,7 @@ SOURCES = [
     "shared/bench/kst_link.c",
     "shared/outputs/kst_port.c",
     "shared/link/link_dev.c",
+    "shared/link/link_gate.c",
     "protocols/kst/kst_session.c",
     "protocols/kst/kst_wire.c",
     "test/host/render_hitec.c",
