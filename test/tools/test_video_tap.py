@@ -95,3 +95,14 @@ def test_the_cello_bed_holds_41_bars_of_sixteenths_and_is_a_known_bed():
     assert video_audio.CELLO[0][:8] == (43, 50, 59, 57, 59, 50, 59, 50)
     assert "bach-cello" in video_audio.BEDS
     assert video_audio.BEDS == make_video.BEDS
+
+
+def test_the_moonlight_bed_holds_4_bars_of_4_triplets_over_2_octaves():
+    """The moonlight bed holds 4 bars of 4 triplets over 2 octaves."""
+    assert len(video_audio.MOON) == 4
+    for groups, basses in video_audio.MOON:
+        assert len(groups) == 4 and all(len(g) == 3 for g in groups)
+        assert len(basses) == 2
+        assert all(high - low == 12 for low, high in basses)
+    assert video_audio.MOON[0][0][0] == (56, 61, 64)
+    assert "beethoven-moonlight" in make_video.BEDS

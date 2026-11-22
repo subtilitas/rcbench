@@ -37,6 +37,14 @@ are those of the Mutopia Project's edition Mutopia-2018/01/19-517
 (typeset by Andreas Scherer from Schirmer, 1916), which its typesetter
 placed in the public domain; no recording is used.
 
+"beethoven-moonlight" is the opening of the Sonata quasi una fantasia
+in C sharp minor, Op. 27 No. 2, of Ludwig van Beethoven (1770 to 1827),
+first movement: bars 1 to 4, their triplets on a plucked voice, 0.37s a
+note, over the bass octaves, as a loop, then the C sharp minor chord of
+bar 5.  The composition is in the public domain.  The notes are read
+from the first edition (Vienna: Cappi, 1802; scan 15808 of the
+International Music Score Library Project); no recording is used.
+
 While a case scene holds a component in the air, the music stops as a
 record does under a hand: its speed falls to SLOW over BRAKE_S, pitch
 and all, and comes back over SPIN_S when the component moves on.
@@ -61,6 +69,10 @@ Attributes:
         sixteenth, 0 where the note before is held.
     CELLO_END: Its closing chord.
     CELLO_BAR_S: Seconds one bar of it lasts.
+    MOON: Bars 1 to 4 of Beethoven's Op. 27 No. 2, first movement: per
+        bar its 4 triplets and the bass octave of each half bar.
+    MOON_END: The chord of bar 5 that closes the bed.
+    MOON_NOTE_S: Seconds one triplet note of it lasts.
     SPRING: The opening of "Spring" from Vivaldi's Four Seasons, RV 269,
         first movement, in E major: per bar the melody as (MIDI note,
         length in eighths) and the bass note of each half bar.  Bars 0
@@ -178,8 +190,17 @@ CELLO = (
 )
 CELLO_END = (43, 59, 67)
 CELLO_BAR_S = 4.0
+MOON = (
+    (((56, 61, 64),) * 4, ((37, 49),) * 2),
+    (((56, 61, 64),) * 4, ((35, 47),) * 2),
+    (((57, 61, 64),) * 2 + ((57, 62, 66),) * 2, ((33, 45), (30, 42))),
+    (((56, 60, 66), (56, 61, 64), (56, 61, 63), (54, 60, 63)),
+     ((32, 44),) * 2),
+)
+MOON_END = (37, 44, 49, 52, 56, 61)
+MOON_NOTE_S = 0.37
 BEDS = ("pads", "bach-prelude", "pachelbel-canon", "vivaldi-spring",
-        "bach-cello")
+        "bach-cello", "beethoven-moonlight")
 SLOW = 0.05
 BRAKE_S = 1.1
 SPIN_S = 0.7
@@ -522,6 +543,43 @@ def render(board: dict, path: pathlib.Path, clips=()) -> float:
             at = t0 + k * CELLO_BAR_S / 16.0
             put(music, at, sig, pan, 0.085)
             put(music, at + 0.375, sig, -pan, 0.02)
+    # The Moonlight opening: the triplets plucked, each half bar's octave
+    # in the bass held under them and the triplet's chord as a quiet pad.
+    bar_m = 12 * MOON_NOTE_S
+    count_m = (int((span - 6.0) / bar_m)
+               if bed == "beethoven-moonlight" else 0)
+    for bar in range(count_m):
+        t0 = 1.0 + bar * bar_m
+        if bar == count_m - 1:
+            for note in MOON_END:
+                for cents, pan in ((-5, -0.6), (6, 0.6)):
+                    sig, _ = tone(hz(note) * 2 ** (cents / 1200), 5.0, soft)
+                    put(music, t0, sig * swell(5.0, 0.05, 3.4), pan, 0.022)
+                sig, t = tone(hz(note), 3.0, pluck)
+                sig *= np.exp(-t / 1.6) * np.minimum(1.0, t / 0.012)
+                put(music, t0, sig, 0.0, 0.05)
+            break
+        groups, basses = MOON[bar % len(MOON)]
+        for half, octave in enumerate(basses):
+            h0 = t0 + half * bar_m / 2
+            env = swell(bar_m / 2 + 1.6, 0.5, 1.8)
+            for note in octave:
+                sig, _ = tone(hz(note), bar_m / 2 + 1.6,
+                              ((1, 1.0), (2, 0.3), (3, 0.08)))
+                put(music, h0, sig * env, 0.0, 0.05)
+            for note in groups[half * 2]:
+                for cents, pan in ((-5, -0.6), (6, 0.6)):
+                    sig, _ = tone(hz(note) * 2 ** (cents / 1200),
+                                  bar_m / 2 + 1.6, soft)
+                    put(music, h0, sig * env, pan, 0.014)
+        for k, group in enumerate(groups):
+            for j, note in enumerate(group):
+                sig, t = tone(hz(note), 2.4, pluck)
+                sig *= np.exp(-t / 0.7) * np.minimum(1.0, t / 0.014)
+                pan = -0.3 + 0.3 * j
+                at = t0 + (k * 3 + j) * MOON_NOTE_S
+                put(music, at, sig, pan, 0.08)
+                put(music, at + 0.375, sig, -pan, 0.018)
     # Spring: the melody on a bowed voice with the third below it, the
     # bass plucked on every eighth and its chord as a quiet pad.  The
     # first bar holds only the upbeat; the last 3s are a held E major.

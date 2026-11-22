@@ -950,6 +950,12 @@ The entries below cover the 7 pull requests merged since v0.23.13: #847,
   under `hardware/kicad/modules/`. `--keep` keeps the captured parts per
   scene, so that a changed scene is captured alone; a kept part of
   1024 bytes or less is captured again ([Videos from storyboards](tools/video/README.md)).
+- Music bed `beethoven-moonlight`: bars 1 to 4 of Ludwig van
+  Beethoven's Sonata Op. 27 No. 2, first movement, as a loop of 17.76s:
+  the triplets plucked over the bass octaves, then the chord of bar 5.
+  The notes are read from the first edition (Vienna: Cappi, 1802). No
+  storyboard uses it
+  ([Videos from storyboards](tools/video/README.md)).
 - Music bed `bach-cello`: the Prelude of J. S. Bach's Suite No. 1 for
   cello solo, BWV 1007, 41 bars at 4s a bar, plucked over each bar's
   lowest note. The notes are those of the Mutopia Project's edition
