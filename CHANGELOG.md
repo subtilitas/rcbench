@@ -24,6 +24,17 @@ history is in git.
   is checked with the panel image's verifier and key: while
   `RCBENCH_SIGN_ENFORCE` is 0 an image without a valid one is sent after a
   warning on the band and the step's card, and at 1 it is refused (`V07`).
+- IOmcu: the link on a UART (universal asynchronous receiver-transmitter)
+  beside CAN (Controller Area Network), the transport of board 3, the
+  remote servo node's Core2350B. UART0 at 1Mbaud 8N1 on GPIO 0 (TX) and
+  GPIO 1 (RX); one DMA (direct memory access) channel fills a 1KiB receive
+  ring through a 42ms flash window; replies leave whole through a
+  512-byte queue. Frames refused by the decoder count in STATUS registers 8
+  and 9; registers 6 and 7 carry the CRC (cyclic redundancy check) errors
+  and resyncs. The 50ms repeat and the 1000ms timeout are unchanged.
+  Boards 1 and 2 keep CAN; CMake's `IOMCU_LINK` overrides the board's
+  choice. The 3s report prints a `UART up` line in place of the CAN lines
+  ([The UART transport](docs/Link.md#the-uart-transport)).
 - IOmcu board 3, the remote servo node's Waveshare Core2350B (RP2350B):
   image `rcbench-iomcu-rsn.*` (CMake `IOMCU_BOARD=rsn`), built and checked
   in CI. Its catalogue lists 27 role pins; S1 to S9 on GPIO 16 to 32, each

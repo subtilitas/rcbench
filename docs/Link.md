@@ -1737,12 +1737,13 @@ trips and the BEC check.
 From 4.21 the IOmcu counts the CAN frames it receives and refuses to
 decode, and publishes the count in STATUS (0x01) registers 8 and 9
 (`LINK_ST_REFUSED_LO` and `LINK_ST_REFUSED_HI`), low half first. A frame is
-refused at one of two steps:
+refused at one of two steps, on the UART at one of three:
 
 | Step | Refused | Code |
 | --- | --- | --- |
 | receive buffer | an 11-bit identifier, a remote frame (RTR, remote transmission request), a DLC (data length code) above 8 | `mcp2515_recv_next()` in `shared/can/mcp2515.c` |
 | link decode | an unknown op, a count past the end of a page, a DLC that disagrees with the count (a READ with a payload, a DATA whose payload is not 2 bytes a register) | `link_can_decode_counted()` in `shared/link/link_can.c` |
+| UART decoder, board 3 | a bad CRC-16, a DLC over 8, a COBS error, a length that disagrees with the DLC, an identifier over 29 bits, more than 16 bytes before a 0x00, bytes before the first 0x00 ([The UART transport](#the-uart-transport)) | `link_uart_feed()` in `shared/link/link_uart.c` |
 
 The CAN self-test frames are answered, not refused, and are not counted. A
 READ that a panel on ESP-IDF v5.5.0 or v5.5.1 sends as DLC 8 instead of
@@ -1988,6 +1989,55 @@ bit:
 Eight quanta is the minimum a bit may have. That is why the XL2515 needs a 16MHz crystal for 1Mbit/s and why its sample point is fixed at 75%; the TWAI
 timing is chosen to match. `test_can_timing` pins the XL2515 row. For the TWAI it checks
 the 75% sample point and a jump width of at least 2, not the values of the row.
+
+### The UART transport
+
+Board 3, the remote servo node's Core2350B, carries the link on a UART
+(universal asynchronous receiver-transmitter) to the node's ES3C28P in
+place of CAN. The frames, the pages, the exchange numbers, the 50ms repeat,
+the 1000ms timeout and the 200ms silence failsafe are the ones above; only
+the wire differs. `firmware/iomcu/src/iomcu_link.h` holds the one
+interface both transports serve, and the board chooses it when the image is
+built: CAN on boards 1 and 2, the UART on board 3. CMake's `IOMCU_LINK`
+(`can` or `uart`) overrides the board's choice for a bring-up.
+
+| | |
+| --- | --- |
+| Line | UART0, 1,000,000 baud, 8N1, no flow control; TX GPIO 0, RX GPIO 1 (pulled up) |
+| Frame | COBS (consistent overhead byte stuffing) of the 29-bit identifier (4 bytes, little-endian), the DLC (data length code), 0 to 8 data bytes and a CRC-16 (polynomial 0x1021, seed 0xFFFF), then 0x00: 9 to 17 bytes, 90 to 170us (`shared/link/link_uart.c`) |
+| Mapping | one UART frame carries one CAN frame as `link_can_encode()` builds it; `link_can_decode_counted()` reads it |
+| Receive | one DMA (direct memory access) channel copies every byte into a 1KiB ring in SRAM and re-triggers itself every 268,434,432 bytes; it runs through a 42ms flash window, which the UART's 32-byte FIFO (first in, first out buffer) alone would hold for 320us (`shared/link/link_uart_dev.c`) |
+| Transmit | a reply queued whole in 512 bytes, three replies of 8 frames, and moved into the 32-byte FIFO twice a pass; no call waits for the line |
+| Start | the IOmcu's decoder starts as after a 0x00, and the IOmcu sends one 0x00 so the node's decoder starts at a frame boundary |
+
+A frame with a bad CRC, a DLC over 8, a COBS error, a length that
+disagrees with its DLC, an identifier over 29 bits, more than 16 bytes
+before its 0x00 or bytes before the first 0x00 is dropped and counted in
+STATUS registers 8 and 9 ([Refused frames](#refused-frames)). Bytes not
+ended by a 0x00 run into the frame after them, so noise without a 0x00 at
+its end costs that frame as well; the repeat 50ms later recovers it.
+
+A reader more than 960 bytes behind the DMA has lost bytes: it counts one
+lap, keeps the last 960 bytes and drops them up to the next 0x00. A lap is
+counted as a CAN receive overrun is, not as a refused frame. With one
+request in flight the node sends at most 34 bytes in any 42ms window, so
+only noise laps the ring.
+
+STATUS registers 6 and 7 carry the UART's own counts, each modulo 65536:
+register 6 the frames refused for their CRC, register 7 the resyncs (bytes
+before the first 0x00, a frame over 16 bytes, a COBS error, a lap). On CAN
+they carry the controller's receive and transmit error counters.
+
+`test_link_uart` holds the framing. `test_link_uart_loopback` runs the
+node's link host against the IOmcu's ring, queue and dispatcher over a
+modelled UART in steps of 10us: the DMA count across its reload and across
+2^32, the lap at 960 and 961 bytes, a queue that takes a reply whole or
+not at all, the widest reply of 136 bytes through the 32-byte FIFO, a
+flipped byte each way and a boot message in front of the first request.
+`test_link_uart_retry` holds the 50ms repeat and the 1000ms timeout against
+a reader stalled for 42ms, 5ms of delay each way on top of it, an answer
+at 48ms and at 50ms, lost answers, noise that laps the ring during the
+stall with and without a 0x00 at its end, and the 32-bit ms wrap.
 
 ### Budget
 

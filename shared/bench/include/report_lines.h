@@ -51,9 +51,12 @@ typedef enum {
     REPORT_L_RESET,         /**< why this start happened                */
     REPORT_L_BOOT,          /**< the boot ROM's record of this boot     */
     REPORT_L_FLASH,         /**< the flash's read set-up, QMI M0 and M1 */
-    REPORT_L_CAN_DOWN,      /**< the controller did not answer on SPI   */
+    REPORT_L_CAN_DOWN,      /**< the controller did not answer on SPI,
+                                 or the UART found no DMA channel       */
     REPORT_L_CAN_UP,        /**< the CAN counters, with the controller up */
     REPORT_L_CAN_OVERRUN,   /**< receive overruns, when there were any  */
+    REPORT_L_UART,          /**< the UART link's counters, in place of
+                                 the three CAN lines                    */
     REPORT_L_SENSE,         /**< SENSE and BENCH, a current monitor on  */
     REPORT_L_SENSE_WINDOW,  /**< SERVO_SENSE's window and capture       */
     REPORT_L_SENSE_MAP,     /**< the INA3221 map and SENSE_LIMIT's OVER */
@@ -86,7 +89,9 @@ typedef struct {
     bool         qmi_m1_set; /**< M1 differs from its reset values      */
     report_qmi_t qmi_m1;    /**< chip select 1's window                 */
 
-    bool     can_up;        /**< the controller answered at boot        */
+    bool     can_up;        /**< the controller answered at boot; on the
+                                 UART, the UART and its DMA channel
+                                 started                                */
     uint32_t bitrate;       /**< the CAN bit rate, bit/s                */
     uint32_t requests;      /**< requests served                        */
     uint32_t echoes;        /**< self-test echoes                       */
@@ -96,6 +101,22 @@ typedef struct {
     uint32_t tx_drop;       /**< reply frames dropped                   */
     uint8_t  txq_max;       /**< the most frames queued at once         */
     uint32_t overruns;      /**< receive overruns                       */
+
+    /**
+     * @brief The link runs on the UART (universal asynchronous
+     *        receiver-transmitter): the three CAN lines are left out and
+     *        REPORT_L_UART is printed, with `bitrate` as the baud rate and
+     *        `requests`, `echoes`, `tx_drop` and `overruns` (the UART's
+     *        receive FIFO overrun flag, passes it was seen in) as their
+     *        own.
+     */
+    bool     uart;
+    uint32_t uart_crc;      /**< frames refused for their CRC-16        */
+    uint32_t uart_resync;   /**< bytes dropped up to a 0x00: garbage
+                                 before the first, a frame over 16
+                                 bytes, a COBS error, a ring lap         */
+    uint32_t uart_laps;     /**< receive ring laps                      */
+    uint16_t uart_txq_max;  /**< the most bytes queued at once          */
 
     bool     sense_on;      /**< a current monitor is enabled           */
     uint16_t sn_flags;      /**< SENSE FLAGS                            */

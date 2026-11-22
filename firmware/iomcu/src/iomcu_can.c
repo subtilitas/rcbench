@@ -1,8 +1,8 @@
 /**
  * @file
  * @brief The panel's heartbeat input and the CAN bus: the controller and the
- * receive loop that answers the link's requests; see iomcu.h for the
- * other files.
+ * receive loop that answers the link's requests, the transport of boards 1
+ * and 2 (iomcu_link.h); see iomcu.h for the other files.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -15,6 +15,7 @@
 
 #include "can_selftest.h"
 #include "can_txq.h"
+#include "iomcu_link.h"
 #include "iomcu_pins.h"
 #include "xl2515.h"
 
@@ -214,5 +215,31 @@ void can_drain(void)
      * update's restart only, with arming held (update_hw_holds_arm()). */
     while (can_txq_busy(&s_can_txq)) {
         can_txq_pump(&s_can_txq, time_us_32());
+    }
+}
+
+void can_wire_errors(uint16_t *crc_errors, uint16_t *resyncs)
+{
+    /* CAN finds and checks frame boundaries in silicon, so this end has no
+     * CRC (cyclic redundancy check) or resync count of its own. */
+    uint8_t tec = 0, rec = 0;
+    if (s_can_up) {         /* a board without the controller reads 0 */
+        xl2515_errors(&tec, &rec, NULL);
+    }
+    *crc_errors = rec;
+    *resyncs    = tec;
+}
+
+void can_snap(report_snap_t *s)
+{
+    s->can_up = s_can_up;
+    if (s_can_up) {
+        s->bitrate  = IOMCU_CAN_BITRATE;
+        s->requests = s_frames;
+        s->echoes   = s_can_echoes;
+        xl2515_errors(&s->tec, &s->rec, &s->eflg);
+        s->tx_drop  = s_can_txq.dropped;
+        s->txq_max  = can_txq_take_peak(&s_can_txq);
+        s->overruns = s_can_overflows;
     }
 }

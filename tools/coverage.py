@@ -417,6 +417,7 @@ TRACKED = [
     "shared/link/link_bringup.c",
     "shared/link/link_can.c",
     "shared/link/link_uart.c",
+    "shared/link/link_uart_dev.c",
     "shared/link/link_crc.c",
     "shared/link/link_dev.c",
     "shared/link/link_gate.c",
