@@ -282,6 +282,8 @@ def _stretch(scene: dict, old: list, new: list) -> None:
     scene["dur"] = move(scene["dur"])
     if scene["type"] == "scope":
         _stretch_scope(scene, move)
+        for cue in scene["say"]:
+            cue["at"] = move(cue["at"])
         return
     for key in scene["camera"]:
         key[0] = move(key[0])

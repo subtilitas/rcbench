@@ -138,3 +138,23 @@ def test_the_narrator_is_given_kilo_ohms_as_two_words():
         "4.7 kilo ohms in series")
     assert video_voice.spoken("a 3 kilohm pull-down") == (
         "a 3 kilo ohm pull-down")
+
+
+def test_a_stretched_scope_scene_moves_its_cues_with_its_other_times():
+    """A stretched scope scene moves its cues with its other times."""
+    board = _board()
+    n = _first(board)
+    scene = copy.deepcopy(board["scenes"][n])
+    cues = [cue["at"] for cue in scene["say"]]
+    old = [0.0] + cues + [scene["dur"]]
+    # Every line needs 4s more than its gap gives it.
+    new = [0.0, cues[0]]
+    for k in range(len(cues)):
+        new.append(round(new[-1] + old[k + 2] - old[k + 1] + 4.0, 2))
+    video_voice._stretch(scene, old, new)
+    moved = [cue["at"] for cue in scene["say"]]
+    assert moved == pytest.approx(new[1:-1])
+    gaps = [b - a for a, b in zip(moved, moved[1:], strict=False)]
+    before = [b - a for a, b in zip(cues, cues[1:], strict=False)]
+    assert gaps == pytest.approx([gap + 4.0 for gap in before])
+    assert scene["dur"] == pytest.approx(new[-1])
