@@ -163,6 +163,11 @@ Current limitations:
   repository release without the signing key, or to obtain a false
   certificate from a trusted authority, can supply an image that installs
   after the warning.
+- A `v*` tag runs `release.yml` and `tools/sign_images.sh` from the tagged
+  commit with `RCBENCH_IMAGE_SIGNING` in the signing step's environment.
+  Whoever can push a tag can run any code with the key and so read it.
+  The repository has one collaborator; the secret is not held in a
+  protected environment, and no rule limits who creates a tag.
 - The public key is compiled into the panel firmware. Changing the key
   needs a firmware release signed by the old key, or a USB flash; no key
   is revoked.
