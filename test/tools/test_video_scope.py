@@ -26,6 +26,11 @@ def _board() -> dict:
     return json.loads(BOARD.read_text(encoding="utf-8"))
 
 
+def _first(board: dict) -> int:
+    return next(n for n, scene in enumerate(board["scenes"])
+                if scene["type"] == "scope")
+
+
 def test_frame_levels_invert_the_byte_between_a_high_start_and_a_low_stop():
     """Frame levels invert the byte between a high start and a low stop."""
     assert video_scope.frame_levels(0x69) == [
@@ -105,19 +110,20 @@ def test_the_scope_storyboard_passes_the_check():
 def test_the_check_names_a_fault_of_a_scope_scene(change, message):
     """The check names a fault of a scope scene."""
     board = _board()
-    change(board["scenes"][0])
+    change(board["scenes"][_first(board)])
     assert any(message in error for error in make_video.check(board))
 
 
 def test_a_stretched_scope_scene_keeps_its_times_in_order():
     """A stretched scope scene keeps its times in order."""
     board = _board()
-    scene = copy.deepcopy(board["scenes"][0])
+    n = _first(board)
+    scene = copy.deepcopy(board["scenes"][n])
     old = [0.0, 10.0, scene["dur"]]
     new = [0.0, 10.0, scene["dur"] + 30.0]
     video_voice._stretch(scene, old, new)
-    assert scene["dur"] == pytest.approx(board["scenes"][0]["dur"] + 30.0)
-    board["scenes"][0] = scene
+    assert scene["dur"] == pytest.approx(board["scenes"][n]["dur"] + 30.0)
+    board["scenes"][n] = scene
     assert make_video.check(board) == []
-    late = board["scenes"][0]["labels"][-1]
-    assert late["to"] > _board()["scenes"][0]["labels"][-1]["to"]
+    late = board["scenes"][n]["labels"][-1]
+    assert late["to"] > _board()["scenes"][n]["labels"][-1]["to"]

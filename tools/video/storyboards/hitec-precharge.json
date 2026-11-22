@@ -15,26 +15,222 @@
  "music_gain": 0.5,
  "scenes": [
   {
-   "type": "scope",
-   "figure": "hitec-precharge",
-   "dur": 63.53,
+   "type": "case",
+   "model": "part",
+   "part": "rp2350_can",
+   "dur": 16.97,
+   "spin": [
+    [
+     0,
+     -70
+    ],
+    [
+     6.0,
+     0
+    ],
+    [
+     16.97,
+     12
+    ]
+   ],
+   "camera": [
+    [
+     0,
+     [
+      -150,
+      190,
+      150
+     ],
+     [
+      0,
+      30,
+      0
+     ]
+    ],
+    [
+     6.0,
+     [
+      -110,
+      150,
+      110
+     ],
+     [
+      0,
+      30,
+      4
+     ]
+    ],
+    [
+     8.5,
+     [
+      -78,
+      108,
+      86
+     ],
+     [
+      -4,
+      30,
+      10
+     ]
+    ],
+    [
+     16.97,
+     [
+      -74,
+      104,
+      84
+     ],
+     [
+      -4,
+      30,
+      10
+     ]
+    ]
+   ],
    "title": {
     "from": 0.3,
-    "to": 5.8,
+    "to": 6.2,
     "kicker": "rcbench · Hitec D series",
     "heading": "Precharge and sample",
     "text": "Reading a servo's answer with no pull-up resistor<br>on the signal wire."
    },
    "chips": [
     {
-     "from": 6.0,
-     "to": 37.69,
+     "from": 6.6,
+     "to": 16.97,
+     "n": "i",
+     "text": "The IOmcu"
+    }
+   ],
+   "tags": [
+    {
+     "from": 9.0,
+     "to": 16.57,
+     "at": [
+      -8.9,
+      -1.5,
+      16.5
+     ],
+     "text": "GP13 · signal wire",
+     "side": "l",
+     "d": 90
+    }
+   ],
+   "labels": [
+    {
+     "from": 7.3,
+     "to": 16.57,
+     "anchor": [
+      0,
+      2,
+      0
+     ],
+     "at": [
+      1330,
+      250
+     ],
+     "size": "sm",
+     "title": "RP2350-CAN",
+     "text": "The IOmcu: RP2350 at 150 MHz, one pad per programming port."
+    }
+   ],
+   "say": [
+    {
+     "at": 7.0,
+     "text": "This is the I O M C U of the R C bench, a Waveshare R P 23 50 board. Its pin G-P 13 is a programming port for servos."
+    }
+   ]
+  },
+  {
+   "type": "case",
+   "model": "part",
+   "part": "servo_standard",
+   "dur": 11.36,
+   "spin": [
+    [
+     0,
+     130
+    ],
+    [
+     11.36,
+     215
+    ]
+   ],
+   "camera": [
+    [
+     0,
+     [
+      -120,
+      150,
+      150
+     ],
+     [
+      0,
+      40,
+      0
+     ]
+    ],
+    [
+     11.36,
+     [
+      -100,
+      130,
+      130
+     ],
+     [
+      0,
+      40,
+      0
+     ]
+    ]
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 11.36,
+     "n": "i",
+     "text": "The servo"
+    }
+   ],
+   "labels": [
+    {
+     "from": 1.2,
+     "to": 10.959999999999999,
+     "anchor": [
+      0,
+      5,
+      0
+     ],
+     "at": [
+      1330,
+      250
+     ],
+     "size": "sm",
+     "title": "One wire, both directions",
+     "text": "115,200 bit/s, half duplex. The servo's answer starts 5.9 to 6.5 ms after the request."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.8,
+     "text": "A Hitec D series servo is programmed over its signal wire. The bench sends a request, and the servo answers on the same wire."
+    }
+   ]
+  },
+  {
+   "type": "scope",
+   "figure": "hitec-precharge",
+   "dur": 47.77,
+   "chips": [
+    {
+     "from": 0,
+     "to": 21.93,
      "n": 1,
      "text": "The servo's pull-down"
     },
     {
-     "from": 37.69,
-     "to": 63.53,
+     "from": 21.93,
+     "to": 47.77,
      "n": 2,
      "text": "The pull-up resistor"
     }
@@ -50,8 +246,6 @@
       1010,
       520
      ],
-     "from": 5.2,
-     "to": 63.53,
      "show": {
       "rpu": [
        [
@@ -59,11 +253,11 @@
         0
        ],
        [
-        37.69,
+        21.93,
         0
        ],
        [
-        38.489999999999995,
+        22.73,
         1
        ]
       ],
@@ -73,11 +267,11 @@
         0
        ],
        [
-        37.69,
+        21.93,
         0
        ],
        [
-        38.489999999999995,
+        22.73,
         1
        ]
       ],
@@ -107,19 +301,19 @@
         0
        ],
        [
-        18.759999999999998,
+        3.0,
         0
        ],
        [
-        19.16,
+        3.4000000000000004,
         1
        ],
        [
-        22.159999999999997,
+        6.3999999999999995,
         1
        ],
        [
-        22.56,
+        6.8,
         0
        ]
       ]
@@ -131,19 +325,19 @@
         0
        ],
        [
-        26.42,
+        10.66,
         0
        ],
        [
-        26.92,
+        11.16,
         1
        ],
        [
-        37.69,
+        21.93,
         1
        ],
        [
-        38.19,
+        22.43,
         0
        ]
       ],
@@ -153,19 +347,19 @@
         0
        ],
        [
-        38.489999999999995,
+        22.73,
         0
        ],
        [
-        38.989999999999995,
+        23.23,
         1
        ],
        [
-        54.16,
+        38.4,
         1
        ],
        [
-        63.53,
+        47.77,
         1
        ]
       ]
@@ -176,22 +370,22 @@
      },
      "flow": [
       {
-       "from": 18.959999999999997,
-       "to": 22.36,
+       "from": 3.2,
+       "to": 6.6,
        "path": "low",
        "style": "warn"
       },
       {
-       "from": 45.93,
-       "to": 54.16,
+       "from": 30.17,
+       "to": 38.4,
        "path": "pullup",
        "style": "ok"
       }
      ],
      "meters": [
       {
-       "from": 29.92,
-       "to": 38.29,
+       "from": 14.16,
+       "to": 22.53,
        "node": "line",
        "value": [
         [
@@ -202,8 +396,8 @@
        "style": "warn"
       },
       {
-       "from": 46.53,
-       "to": 63.230000000000004,
+       "from": 30.770000000000003,
+       "to": 47.470000000000006,
        "node": "line",
        "style": "ok",
        "value": [
@@ -212,11 +406,11 @@
          0
         ],
         [
-         46.53,
+         30.770000000000003,
          0
         ],
         [
-         47.73,
+         31.970000000000002,
          2.88
         ]
        ]
@@ -232,8 +426,8 @@
       1808,
       340
      ],
-     "from": 25.92,
-     "to": 63.53,
+     "from": 10.16,
+     "to": 47.77,
      "heading": "Signal wire · one answer byte, 0x69 · simulated",
      "view": [
       [
@@ -265,22 +459,22 @@
        ],
        "width": 2,
        "label": "the servo lets the wire go",
-       "from": 25.92,
-       "to": 38.69
+       "from": 10.16,
+       "to": 22.93
       },
       {
        "series": "byte-bare",
        "style": "warn",
        "label": "wire, no pull-up",
-       "from": 27.92,
-       "to": 46.43,
+       "from": 12.16,
+       "to": 30.67,
        "reveal": [
         [
-         27.92,
+         12.16,
          0
         ],
         [
-         31.42,
+         15.66,
          112847.28
         ]
        ]
@@ -289,15 +483,15 @@
        "series": "byte-pullup",
        "style": "ok",
        "label": "wire, 2.2 kΩ pull-up",
-       "from": 46.33,
-       "to": 63.53,
+       "from": 30.57,
+       "to": 47.77,
        "reveal": [
         [
-         46.33,
+         30.57,
          0
         ],
         [
-         49.93,
+         34.17,
          112847.28
         ]
        ]
@@ -305,8 +499,8 @@
      ],
      "lines": [
       {
-       "from": 47.93,
-       "to": 63.53,
+       "from": 32.17,
+       "to": 47.77,
        "y": 1.3,
        "text": "input threshold",
        "style": "muted"
@@ -316,22 +510,8 @@
    ],
    "labels": [
     {
-     "from": 6.7,
-     "to": 16.259999999999998,
-     "anchor": [
-      "c",
-      "wire"
-     ],
-     "at": [
-      1110,
-      170
-     ],
-     "title": "One wire, both directions",
-     "text": "115,200 bit/s, half duplex. The servo's answer starts 5.9 to 6.5 ms after the request."
-    },
-    {
-     "from": 16.86,
-     "to": 26.12,
+     "from": 1.1,
+     "to": 10.36,
      "anchor": [
       "c",
       "srv"
@@ -344,8 +524,8 @@
      "text": "Low: pulled to ground. High: released. The servo never drives the wire high."
     },
     {
-     "from": 26.720000000000002,
-     "to": 37.39,
+     "from": 10.96,
+     "to": 21.63,
      "anchor": [
       "c",
       "rpd"
@@ -359,8 +539,8 @@
      "text": "A released wire sits at <b>0 V</b>. With no pull-up the answer reads as all low."
     },
     {
-     "from": 38.29,
-     "to": 45.63,
+     "from": 22.53,
+     "to": 29.87,
      "anchor": [
       "c",
       "rpu"
@@ -374,8 +554,8 @@
      "text": "From the signal wire to the servo's 5 V supply. Receive mode <b>PULL-UP</b>."
     },
     {
-     "from": 46.23,
-     "to": 53.86,
+     "from": 30.470000000000002,
+     "to": 38.1,
      "anchor": [
       "c",
       "line"
@@ -389,8 +569,8 @@
      "text": "5 V × 3 kΩ / (3 kΩ + 2.2 kΩ) = <b>2.88 V</b> on a released wire, 58 % of the servo supply."
     },
     {
-     "from": 54.459999999999994,
-     "to": 63.13,
+     "from": 38.699999999999996,
+     "to": 47.370000000000005,
      "anchor": [
       "c",
       "rpu"
@@ -405,27 +585,23 @@
    ],
    "say": [
     {
-     "at": 6.4,
-     "text": "A Hitec D series servo is programmed over its signal wire. The bench sends a request, and the servo answers on the same wire."
-    },
-    {
-     "at": 16.56,
+     "at": 0.8,
      "text": "The servo answers with an open output. For a low level it pulls the wire to ground. For a high level it lets the wire go."
     },
     {
-     "at": 26.42,
+     "at": 10.66,
      "text": "Inside the servo, a pull-down of 3 kilohms sits on the wire. A wire that is let go falls to zero volts, so the bench reads every bit as low."
     },
     {
-     "at": 37.69,
+     "at": 21.93,
      "text": "The usual fix is a pull-up resistor: 2.2 kilohms from the signal wire to the servo's 5 volt supply."
     },
     {
-     "at": 45.93,
+     "at": 30.17,
      "text": "Pull-up and pull-down form a divider. The released wire rises to 2.9 volts, and the answer appears."
     },
     {
-     "at": 54.16,
+     "at": 38.4,
      "text": "It works, but it costs a resistor on every programming port, and it ties the signal wire to the servo supply."
     }
    ]
