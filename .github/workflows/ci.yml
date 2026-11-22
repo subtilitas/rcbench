@@ -798,6 +798,14 @@ jobs:
       - name: Sensor node case matches its spec and clears the boards
         run: python3 hardware/mechanical/_gen_node_case.py --check
 
+      # The 2 parts of the display node's case with XT30 openings: the
+      # files match their spec, each part is a valid solid in one piece,
+      # none shares volume with the other or with the display board, and
+      # the lid closes on the box's rim. Its tests are
+      # test/tools/test_display_case.py, in the pytest step above.
+      - name: Display node case matches its spec and its lid closes
+        run: python3 hardware/mechanical/_gen_display_case.py --check
+
       # The M5Stack Dial's solids are surfaces fitted to M5Stack's mesh.
       # OpenCASCADE meshes each solid again; the two meshes are within
       # 0.15mm of each other both ways and 1% in volume.
