@@ -21,6 +21,7 @@ export function buildDuo(caseGltf, dialGltf, baseGltfs = null) {
     anchors: {...rig.anchors, dial: dial.anchors.display,
               knob: dial.anchors.knob, bezel: dial.anchors.bezel},
     setFace: dial.setFace,
+    dialPixel: dial.pixel,
     setTurn: dial.setTurn,
   };
 }

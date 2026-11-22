@@ -25,6 +25,8 @@
  * found, servo-rudder-angle-many with six, a public and a random address
  * of the same last bytes among them, in two columns of entries on two
  * lines, servo-rudder-angle-scan with a scan under way, and
+ * servo-rudder-rbmod and servo-rudder-angle-rbmod are servo-rudder and
+ * servo-rudder-angle on the carrier's PROG PORT 1, for tools/video.
  * servo-rudder-angle-none with the AS5600 off in SETUP and a scan that
  * found none.
  *
@@ -102,7 +104,8 @@ static void angle_list(const char *view)
     v.link = IMU_LINK_READY;
     snprintf(v.version, sizeof(v.version), "2.13.0");
     settings_set(SET_IMU_EN, 1.0f);
-    if (strcmp(view, "servo-rudder-angle") == 0) {
+    if (strcmp(view, "servo-rudder-angle") == 0
+        || strcmp(view, "servo-rudder-angle-rbmod") == 0) {
         v.found_n = 2u;
         sensor(&v.found[0], "00:0C:BF:08:19:29", "HC-06", -50);
         sensor(&v.found[1], "D4:2B:7E:51:0C:A3", "BWT901CL", -71);
@@ -166,8 +169,8 @@ void render_rudder_pose(const char *view)
         servo_screen_set_armed(true);
         tap_body(438, 204);                 /* 2000us */
     }
-    if (strstr(view, "servo-rudder-auto") == view
-        && strstr(view, "-rbmod") != NULL) {
+    /* Every -rbmod view is on the carrier's PROG PORT 1. */
+    if (strstr(view, "-rbmod") != NULL) {
         prog_choice_set_far_minor(LINK_MINOR_CARRIER_PWM);
         settings_set(SET_SERVO_TARGET, 1.0f);
         settings_set(SET_SERVO_PORT_PWM, 0.0f);

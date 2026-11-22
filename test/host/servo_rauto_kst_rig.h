@@ -30,8 +30,11 @@
 
 /** @brief The AS5600's center count. */
 #define CENTER_COUNT 2048
-/** @brief The surface's degrees per microsecond of the horn. */
+/** @brief The surface's degrees per microsecond of the horn.  A video's
+ *         run defines its own for the linkage it shows. */
+#ifndef DEG_PER_US
 #define DEG_PER_US 0.06f
+#endif
 /** @brief RUDDER's ZERO, AUTO and START (servo_spots.h). */
 #define ZERO_X 98
 /* RESET MAX, right of ZERO on its row (servo_rudder_int.h). */
@@ -343,12 +346,17 @@ static inline void ra_ms(uint32_t ms)
 {
     for (uint32_t k = 0; k < ms; ++k) {
         rig_frame();
-        const float amps = servo_sim_step(
+        float amps = servo_sim_step(
             &ra.sv,
             sim_horn_cmd(ra.hi_fixed && ra.cmd > 1500u ? ra.hi_reg
                          : g_rig.on_rail ? g_rig.sim.acting : g_rig.sim.reg,
                          ra.cmd, 4.0f, false),
             g_rig.ms);
+#ifdef RA_VIDEO_METER
+        /* A video's run draws the meter's readings of a servo on a bench;
+         * the suites keep the model's levels. */
+        amps = ra_video_amps(amps);
+#endif
         ra.sum += amps;
         ra.n++;
         const bool feed = ra_rail_on();
@@ -362,8 +370,11 @@ static inline void ra_ms(uint32_t ms)
         }
         ra.rail_was = rail;
         if ((int32_t)(g_rig.ms - ra.win_end) >= 0) {
-            const uint16_t mv = ra_rail_mv();
+            uint16_t mv = ra_rail_mv();
             const int ma = (int)(ra.sum / (float)ra.n * 1000.0f + 0.5f);
+#ifdef RA_VIDEO_METER
+            mv = ra_video_mv(mv, ma);
+#endif
             const sense_link_win_t w = {
                 .number = (uint16_t)++ra.win_no, .current = true,
                 .voltage = true, .mean_ma = (int16_t)ma,

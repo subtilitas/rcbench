@@ -257,6 +257,23 @@ The entries below cover the 11 pull requests merged since v0.23.15: #893 to
   footprint each, for 1:1 cables from the display node's ES3C28P sockets;
   `ES3C28P_PWR` feeds the ES3C28P's USB-C VBUS
   ([KiCad library](hardware/kicad/README.md#es3c28p-sockets)).
+- Storyboard `rbmod-first-program`: the first programming of a bench with
+  the rbmod carrier in 6 chapters, narrated, 321.22s. The panel, the
+  carrier and the RP2350-CAN come from their STEP models, the releases
+  page and the ESP Web Tool from captures of the pages, and the copy onto
+  the drive RP2350 runs on a drawn Windows desktop
+  ([Videos from storyboards](tools/video/README.md)).
+- Storyboard `auto-rudder`: RUDDER AUTO setting a rudder's end points in 4
+  steps, narrated, 302.70s. One 3D scene holds a wing slice with its flap,
+  the IMU on double-sided gel tape, the M5Stack Dial in its base and the
+  cased bench; `test/host/video_rauto.c` runs RUDDER AUTO on the host
+  suites' rig, and the display and the flap follow that run.
+- `tools/make_video.py`: the case models `part`, one STEP model, and
+  `rudder`; `windows` over a board or case scene, a browser with captures
+  of a web page, a folder, a Windows desktop with File Explorer windows
+  and a pointer that clicks and drags; `tilt` and `enter` of a board
+  scene; `versions` of a tour step, the versions its update screens
+  show; `rauto` of a rudder scene.
 - `hardware/mechanical/`: `servo_standard.step`, a standard size servo with
   a round horn, black with the white print "Standard Servo", from an owner
   sketch with dimensions: case 40.5mm x 20.0mm x 36.3mm, 2 ears with 2 open

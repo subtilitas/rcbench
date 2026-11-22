@@ -28,6 +28,7 @@ SPDX-License-Identifier: MIT
 from __future__ import annotations
 
 import argparse
+import os
 import pathlib
 import re
 import shutil
@@ -955,8 +956,12 @@ def build(tmp: pathlib.Path, trace: bool = False) -> pathlib.Path:
     return exe
 
 
-def render_one(exe, tmp, name, screen, theme, lang="en", trace=None):
-    """Render one view in @p lang and return it as an RGB image."""
+def render_one(exe, tmp, name, screen, theme, lang="en", trace=None,
+               env=None):
+    """Render one view in @p lang and return it as an RGB image.
+
+    With @p env the renderer runs with these variables added.
+    """
     ppm = tmp / f"{name}-{lang}.ppm"
     # The view name as well as the screen: three log goldens are all the
     # same screen in different states, and the renderer needs to know
@@ -964,7 +969,8 @@ def render_one(exe, tmp, name, screen, theme, lang="en", trace=None):
     cmd = [str(exe), str(ppm), screen, theme, name, lang]
     if trace is not None:
         cmd.append(str(trace))
-    subprocess.run(cmd, check=True)
+    subprocess.run(cmd, check=True,
+                   env={**os.environ, **env} if env else None)
     from PIL import Image
     return Image.open(ppm).convert("RGB")
 
@@ -987,6 +993,11 @@ MIN_SHAPE = 8
 # network and shut by the gate, and the reminder's hold shut.  The same
 # shape as SCREENS, with no committed file.
 FIT_ONLY = {
+    # tools/video's views of the SERVO hub, RUDDER and its ANGLE SOURCE
+    # list with the tester on the rbmod carrier's PROG PORT 1.
+    "servo-hub-rbmod-port": (None, "servo", "dark"),
+    "servo-rudder-rbmod": (None, "servo", "dark"),
+    "servo-rudder-angle-rbmod": (None, "servo", "dark"),
     # The menu's guide at pages 2 to 4, and MOTOR & ESC's band with the
     # widest row of chips: a clock of 10 hours, ARMED MOTOR, FAULT 7F,
     # BENCH and LINK.

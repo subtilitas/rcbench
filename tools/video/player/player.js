@@ -12,6 +12,9 @@ import * as THREE from 'three';
 import {buildCase, CONNECTORS, WIRE_COLORS} from './case3d.js';
 import {buildCadCase, loadCad} from './case_cad.js';
 import {buildBoard} from './board.js';
+import {drawWindows} from './windows.js';
+import {buildPart} from './part3d.js';
+import {buildRudder} from './rudder3d.js';
 import {buildDial} from './dial3d.js';
 import {buildDuo} from './duo3d.js';
 import {buildMini} from './mini3d.js';
@@ -62,6 +65,7 @@ for (const sc of sb.scenes) {
       a += st.dur;
       if (st.card) continue;
       st.shot = st.lang ? `${st.view}@${st.lang}` : st.view;
+      if (st.versions) st.shot += '~' + st.versions.join('-');
       need.add(st.shot);
     }
     sc.dur = a;
@@ -75,6 +79,10 @@ for (const sc of sb.scenes) {
     }
   }
   if (sc.type === 'case' && sc.display) need.add(sc.display.view);
+  if (sc.type === 'board' && sc.enter?.view) need.add(sc.enter.view);
+  for (const w of sc.windows || []) {
+    for (const [, name] of w.page?.shots || []) need.add(name);
+  }
   // A dial scene shows faces of the Dial: the shots dial-NAME.
   for (const [, face] of (sc.type === 'case' && sc.faces) || []) {
     need.add('dial-' + face);
@@ -104,6 +112,19 @@ const dialBase = sb.dial_base
   ? [await loadCad('/cad/dial_base_top.glb'),
      await loadCad('/cad/dial_base_bottom.glb')]
   : null;
+// The models of a rudder scene, loaded once.  The case's model is not in
+// the tree: without it the panel alone stands in as the bench.
+let rudderLoad = null;
+const rudderParts = () => rudderLoad || (rudderLoad = (async () => {
+  let caseGltf = null;
+  try { caseGltf = await loadCad('/cad/case.glb'); } catch (e) {}
+  return {
+    wing: await loadCad('/cad/flap_drive_assembly.glb'),
+    imu: await loadCad('/cad/wit_imu.glb'),
+    dial: await loadCad('/cad/m5dial.glb'), bases: dialBase, caseGltf,
+    panel: caseGltf ? null : await loadCad('/cad/panel_7b.glb'),
+  };
+})());
 for (const sc of sb.scenes) {
   if (sc.type === 'board') {
     sc.plan = await (await fetch(`/cad/${sc.board}.json`)).json();
@@ -125,6 +146,9 @@ for (const sc of sb.scenes) {
                                     dialBase)
     : sc.model === 'mini'
       ? buildMini(await loadCad('/cad/minircbench.glb'))
+    : sc.model === 'part'
+      ? buildPart(await loadCad(`/cad/${sc.part}.glb`))
+    : sc.model === 'rudder' ? buildRudder(await rudderParts())
     : buildCase(shown);
   if (sc.servo) sc.rig.setServoPort(sc.servo.connector, sc.servo.position);
 }
@@ -222,6 +246,8 @@ function drawCase(sc, lt, a, pulse, ui) {
   }
   if (sc.turn && m.setTurn) m.setTurn(track(sc.turn, lt));
   if (sc.flip && m.setFlip) m.setFlip(track(sc.flip, lt));
+  if (sc.spin && m.setSpin) m.setSpin(track(sc.spin, lt));
+  if (sc.deflect && m.setDeflect) m.setDeflect(track(sc.deflect, lt));
   if (sc.panel && m.setScreen) {
     // The case's display shows the panel's screen of this time.
     let n = 0;
@@ -264,8 +290,14 @@ function drawCase(sc, lt, a, pulse, ui) {
     const q = new THREE.Vector3(...p).project(m.cam);
     return [(q.x + 1) * 960 + shift, (1 - q.y) * 540];
   };
-  drawNotes(sc, lt, a, pulse, ui, p => proj(
-    typeof p === 'string' ? m.anchors[p]() : p));
+  // A point of a part moves with it.
+  // {pixel: [x, y]} is a pixel of the display's screen.
+  const spot = p => proj(typeof p === 'string' ? m.anchors[p]()
+    : p.pixel ? m.pixel(...p.pixel) : m.point ? m.point(p) : p);
+  drawNotes(sc, lt, a, pulse, ui, spot);
+  drawWindows(sc, lt, a, bubs, ov, imgs);
+  drawTags(sc, lt, a, spot);
+  drawTouches(sc, lt, m, proj);
   if (sc.pinout) {
     const p = sc.pinout, pa = win(lt, p.from, p.to) * a, e = $('#pin');
     if (pa > 0 && e.dataset.for !== sc.t + p.connector) {
@@ -428,8 +460,10 @@ function drawBoard(sc, lt, a, pulse, ui) {
     e.dataset.for = String(sc.t);
   }
   e.style.display = 'block';
-  e.style.opacity = a * (sc.title ? .35 + .65 * ramp(lt, sc.title.to - .6,
-                                                     sc.title.to) : 1);
+  // Under a title the board is dimmed, once it has come in.
+  const in1 = sc.enter ? sc.enter.t[1] : 0;
+  e.style.opacity = a * (sc.title ? 1 - .65 * ramp(lt, in1 - .2, in1 + .6)
+    * (1 - ramp(lt, sc.title.to - .6, sc.title.to)) : 1);
   const k = sc.camera;
   let i = 0;
   while (i < k.length - 2 && lt > k[i + 1][0]) i++;
@@ -440,7 +474,51 @@ function drawBoard(sc, lt, a, pulse, ui) {
   sc.rig.draw(sc, lt, [[mix(k[i][1][0], k[j][1][0]),
                         mix(k[i][1][1], k[j][1][1])],
                        Math.exp(mix(Math.log(k[i][2]), Math.log(k[j][2])))]);
-  drawNotes(sc, lt, a, pulse, ui, sc.rig.project);
+  // "tilt", [rx, ry] in degrees, leans the board away from the viewer;
+  // "enter" brings it in turning about its upright axis over t, from its
+  // other side, the display, which shows the view "view" or dark glass.
+  let proj = sc.rig.project;
+  e.style.transform = '';
+  if (sc.tilt || sc.enter) {
+    const [rx, ry0] = sc.tilt || [0, 0], P = 2600, R = Math.PI / 180;
+    const q = sc.enter ? ramp(lt, sc.enter.t[0], sc.enter.t[1]) : 1;
+    const ry = ry0 - (1 - q) * 205, s = .42 + .58 * q;
+    const pose = b => `perspective(${P}px) translateY(${(1 - q) * 60}px) `
+      + `rotateX(${rx}deg) rotateY(${b}deg) scale(${s})`;
+    e.style.transformOrigin = '960px 540px';
+    e.style.backfaceVisibility = 'hidden';
+    e.style.transform = pose(ry);
+    if (q < 1) {
+      const f = $('#pcbf'), [w, h] = sc.plan.size, flat = sc.rig.project;
+      const [x0, y0] = flat([0, 0]), [x1, y1] = flat([w, h]);
+      f.style.display = 'block';
+      f.style.opacity = a;
+      f.style.left = (1920 - x1) + 'px';
+      f.style.top = y0 + 'px';
+      f.style.width = (x1 - x0) + 'px';
+      f.style.height = (y1 - y0) + 'px';
+      f.style.transformOrigin = `${960 - (1920 - x1)}px ${540 - y0}px`;
+      f.style.transform = pose(ry + 180);
+      if (f.dataset.for !== String(sc.t)) {
+        f.innerHTML = sc.enter.view
+          ? `<img src="${imgs[sc.enter.view].src}" alt="">` : '<div></div>';
+        f.dataset.for = String(sc.t);
+      }
+    }
+    const flat = sc.rig.project;
+    const [ca, sa, cb, sb2] = [Math.cos(rx * R), Math.sin(rx * R),
+                               Math.cos(ry * R), Math.sin(ry * R)];
+    proj = at => {
+      const [px, py] = flat(at);
+      const x = (px - 960) * s, y = (py - 540) * s;
+      const x1 = x * cb, z1 = -x * sb2;
+      const y2 = y * ca - z1 * sa, z2 = y * sa + z1 * ca;
+      const k = P / (P - z2);
+      return [960 + x1 * k, 540 + ((1 - q) * 60 + y2) * k];
+    };
+  }
+  drawNotes(sc, lt, a, pulse, ui, proj);
+  drawWindows(sc, lt, a, bubs, ov, imgs);
   // Insets: a cross-section of a solder joint, in a card.
   for (const n of sc.insets || []) {
     const o = win(lt, n.from, n.to) * a;
@@ -455,11 +533,15 @@ function drawBoard(sc, lt, a, pulse, ui) {
       + section(n) + (n.text ? `<p>${n.text}</p>` : '');
     bubs.appendChild(e);
   }
-  // Tags: a pad's name beside it, on a short line.
+  drawTags(sc, lt, a, proj);
+}
+
+// Tags: a point's name beside it, on a short line.
+function drawTags(sc, lt, a, proj) {
   for (const m of sc.tags || []) {
     const o = win(lt, m.from, m.to, .3) * a;
     if (o <= 0) continue;
-    const [x, y] = sc.rig.project(m.at), d = m.d || 46;
+    const [x, y] = proj(m.at), d = m.d || 46;
     const side = m.side || 'r';
     const [ex, ey] = side === 'b' ? [x, y + d] : side === 't' ? [x, y - d]
       : side === 'l' ? [x - d, y] : [x + d, y];
@@ -518,38 +600,63 @@ function drawScreen(sc, lt, a, pulse, ui) {
             text: b.text, a: ba, pulse, style: b.style, tag,
             ...(b.target ? {tx, ty} : {})});
   }
-  if (b.action === 'tap') {
-    const q = q0 - (b.dur - .75);
-    if (q > 0) {
-      const pr = ramp(q, 0, .2) - ramp(q, .3, .5), rp = cl((q - .28) / .45);
-      ov.insertAdjacentHTML('beforeend',
-        `<circle cx="${tx}" cy="${ty}" r="${30 - 7 * pr}"
-          fill="rgba(255,255,255,${.28 + .3 * pr})" stroke="#fff"
-          stroke-width="2.5"
-          opacity="${ramp(q, 0, .12) * (1 - ramp(q, .6, .75))}"/>`
-        + (rp > 0 ? `<circle cx="${tx}" cy="${ty}" r="${26 + 54 * rp}"
-          fill="none" stroke="#fff" stroke-width="3"
-          opacity="${(1 - rp) * .9}"/>` : ''));
-    }
+  if (b.action === 'tap') touchMark('tap', tx, ty, q0 - (b.dur - .75), 1);
+  if (b.action === 'hold') touchMark('hold', tx, ty, q0 - (b.dur - 2.45), 1);
+}
+
+// A touch on a screen: the ring of a tap over 0.75s, or the ring of a
+// hold that fills in 2s, at a frame pixel, q seconds after its start and
+// k times the size it has on a flat screenshot.  The hold's count stands
+// right of the ring, or over it.
+function touchMark(action, tx, ty, q, k, above = false) {
+  if (q <= 0) return;
+  if (action === 'tap') {
+    const pr = ramp(q, 0, .2) - ramp(q, .3, .5), rp = cl((q - .28) / .45);
+    ov.insertAdjacentHTML('beforeend',
+      `<circle cx="${tx}" cy="${ty}" r="${(30 - 7 * pr) * k}"
+        fill="rgba(255,255,255,${.28 + .3 * pr})" stroke="#fff"
+        stroke-width="2.5"
+        opacity="${ramp(q, 0, .12) * (1 - ramp(q, .6, .75))}"/>`
+      + (rp > 0 ? `<circle cx="${tx}" cy="${ty}" r="${(26 + 54 * rp) * k}"
+        fill="none" stroke="#fff" stroke-width="3"
+        opacity="${(1 - rp) * .9}"/>` : ''));
+    return;
   }
-  if (b.action === 'hold') {
-    const q = q0 - (b.dur - 2.45);
-    if (q > 0) {
-      const pr = cl(q / 2), R = 40, C = 2 * Math.PI * R;
-      const o = ramp(q, 0, .15) * (1 - ramp(q, 2.2, 2.42));
-      ov.insertAdjacentHTML('beforeend',
-        `<g opacity="${o}"><circle cx="${tx}" cy="${ty}" r="24"
-          fill="rgba(255,255,255,.5)" stroke="#fff" stroke-width="2.5"/>
-         <circle cx="${tx}" cy="${ty}" r="${R}" fill="none"
-          stroke="rgba(255,255,255,.25)" stroke-width="7"/>
-         <circle cx="${tx}" cy="${ty}" r="${R}" fill="none" stroke="#00f58c"
-          stroke-width="7" stroke-linecap="round" stroke-dasharray="${C}"
-          stroke-dashoffset="${C * (1 - pr)}"
-          transform="rotate(-90 ${tx} ${ty})"/>
-         <text x="${tx + 56}" y="${ty + 8}" font-family="Inter"
-          font-weight="800" font-size="24"
-          fill="#00f58c">${(pr * 2).toFixed(1)} s</text></g>`);
-    }
+  const pr = cl(q / 2), R = 40 * k, C = 2 * Math.PI * R;
+  const o = ramp(q, 0, .15) * (1 - ramp(q, 2.2, 2.42));
+  ov.insertAdjacentHTML('beforeend',
+    `<g opacity="${o}"><circle cx="${tx}" cy="${ty}" r="${24 * k}"
+      fill="rgba(255,255,255,.5)" stroke="#fff" stroke-width="2.5"/>
+     <circle cx="${tx}" cy="${ty}" r="${R}" fill="none"
+      stroke="rgba(255,255,255,.25)" stroke-width="${7 * k}"/>
+     <circle cx="${tx}" cy="${ty}" r="${R}" fill="none" stroke="#00f58c"
+      stroke-width="${7 * k}" stroke-linecap="round" stroke-dasharray="${C}"
+      stroke-dashoffset="${C * (1 - pr)}"
+      transform="rotate(-90 ${tx} ${ty})"/>
+     <text x="${above ? tx : tx + R + 16}"
+      y="${above ? ty - R - 14 : ty + 8}"
+      text-anchor="${above ? 'middle' : 'start'}" font-family="Inter"
+      font-weight="800" font-size="24" stroke="#05070b" stroke-width="5"
+      paint-order="stroke"
+      fill="#00f58c">${(pr * 2).toFixed(1)}s</text></g>`);
+}
+
+// The touches of a 3D scene: each {at, on, xy, action} is a tap or a
+// 2s hold on a pixel of the panel's screen or of the Dial's face, drawn
+// where that pixel stands in the frame and at the size it has there.
+function drawTouches(sc, lt, m, proj) {
+  for (const t of sc.touches || []) {
+    // A hold of another length fills its ring in that time.
+    const f = t.action === 'hold' ? 2 / (t.for || 2) : 1, q = (lt - t.at) * f;
+    if (q <= 0 || q > (t.action === 'hold' ? 2.45 : .75)) continue;
+    const px = t.on === 'dial' ? m.dialPixel : m.pixel;
+    if (!px) continue;
+    const [x, y] = t.xy, [tx, ty] = proj(px(x, y));
+    const [ux, uy] = proj(px(x + (t.on === 'dial' ? 24 : 60), y));
+    // 60 pixels of the panel, 24 of the Dial, are 75 frame pixels flat.
+    const k = cl(Math.hypot(ux - tx, uy - ty) / 75, .45, 1.2);
+    // The count stands over the ring, clear of the button's own text.
+    touchMark(t.action, tx, ty, q, k, true);
   }
 }
 
@@ -725,7 +832,8 @@ window.TOTAL = TOTAL;
 window.renderAt = t => {
   bubs.innerHTML = '';
   ov.innerHTML = '';
-  for (const id of ['#gl', '#pcb', '#fig', '#dev', '#end', '#cap', '#card']) {
+  for (const id of ['#gl', '#pcb', '#pcbf', '#fig', '#dev', '#end', '#cap',
+                    '#card']) {
     $(id).style.display = 'none';
   }
   $('#dev').style.transformOrigin = '';

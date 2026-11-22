@@ -49,6 +49,7 @@ import functools
 import http.server
 import json
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -60,7 +61,9 @@ VIDEO = REPO / "tools" / "video"
 CACHE = REPO / "build" / "video" / "cache"
 PANEL = (1024, 600)
 FRAME = (1920, 1080)
-ANCHORS = ("display", "rbmod", "pdmini", "J1", "J2", "xt60", "usbc",
+ANCHORS = ("wing", "servo", "hinge", "rod", "flap", "edge", "imu", "tape",
+           "horn", "lead", "port", "display", "rbmod", "pdmini", "J1", "J2",
+           "xt60", "usbc",
            "estop", "side", "plug", "panel", "case", "mcu",
            "ina", "buck", "trigger", "knob", "bezel", "usb", "power",
            "portA", "portB", "body", "dial", "glass", "board", "card",
@@ -118,9 +121,10 @@ def _check_say(scene: dict, dur: float, where: str, errors: list) -> None:
 def _check_run(scene: dict, dur: float, where: str, errors: list) -> None:
     run = scene["run"]
     kind = run.get("kind", "motor") if isinstance(run, dict) else None
-    if kind not in RUNS or scene.get("model") not in ("dial", "duo"):
-        errors.append(f"{where} run: needs the dial or duo model and a "
-                      f"kind, one of {', '.join(RUNS)}")
+    if kind not in RUNS or scene.get("model") not in ("dial", "duo",
+                                                      "rudder"):
+        errors.append(f"{where} run: needs the dial, duo or rudder model "
+                      f"and a kind, one of {', '.join(RUNS)}")
         return
     if not (_number(run.get("from")) and _number(run.get("to"))
             and 0 <= run["from"] < run["to"] <= dur):
@@ -154,6 +158,44 @@ def _check_run(scene: dict, dur: float, where: str, errors: list) -> None:
                       "and a throttle of 0 to 100")
 
 
+TOUCH_ON = {"panel": ((1024, 600), ("mockup", "cad", "duo", "rudder")),
+            "dial": ((240, 240), ("dial", "duo", "rudder"))}
+
+
+def _check_touch(scene: dict, touch, where: str, errors: list) -> None:
+    """Check one touch of a 3D scene.
+
+    Args:
+        scene: The case scene.
+        touch: {on, xy, action} with "at", seconds into the scene, or
+            "run_ms", milliseconds into the scene's rauto run.
+        where: The touch's name for a message.
+        errors: The list that takes the messages.
+    """
+    if not isinstance(touch, dict) or touch.get("on") not in TOUCH_ON:
+        errors.append(f"{where}: on must be panel or dial")
+        return
+    (w, h), models = TOUCH_ON[touch["on"]]
+    xy = touch.get("xy")
+    if scene.get("model", "mockup") not in models:
+        errors.append(f"{where}: the model shows no {touch['on']}")
+    if not (isinstance(xy, list) and len(xy) == 2 and all(map(_number, xy))
+            and 0 <= xy[0] <= w and 0 <= xy[1] <= h):
+        errors.append(f"{where}: xy is a pixel of the {w} x {h} screen")
+    if touch.get("action") not in ("tap", "hold"):
+        errors.append(f"{where}: action must be tap or hold")
+    if "run_ms" in touch:
+        if not (_number(touch["run_ms"]) and touch["run_ms"] >= 0
+                and "rauto" in scene and "at" not in touch):
+            errors.append(f"{where}: run_ms is a time of the scene's rauto "
+                          "run, in place of at")
+    elif not (_number(touch.get("at")) and 0 <= touch["at"] < scene["dur"]):
+        errors.append(f"{where}: at must lie within the scene")
+    if "for" in touch and not (_number(touch["for"]) and touch["for"] > 0
+                               and touch.get("action") == "hold"):
+        errors.append(f"{where}: for is a hold's time in s, above 0")
+
+
 def _check_case(scene: dict, where: str, errors: list) -> None:
     dur = scene.get("dur")
     if not (_number(dur) and dur > 0):
@@ -161,13 +203,30 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
         return
     _keys(scene.get("camera"), 3, f"{where} camera", errors)
     if scene.get("model", "mockup") not in ("mockup", "cad", "dial", "duo",
-                                            "mini"):
-        errors.append(f"{where}: model must be mockup, cad, dial, duo "
-                      "or mini")
+                                            "mini", "part", "rudder"):
+        errors.append(f"{where}: model must be mockup, cad, dial, duo, "
+                      "mini, part or rudder")
+    if scene.get("model") == "part" and not (
+            isinstance(scene.get("part"), str) and scene["part"]
+            and all(c.isalnum() or c in "-_" for c in scene["part"])):
+        errors.append(f"{where}: part names a model under tools/video/cad/, "
+                      "without its suffix")
+    known = set()
+    for n, window in enumerate(scene.get("windows", [])):
+        _check_window(window, dur, f"{where} window {n + 1}", errors, known)
     mini = scene.get("model") == "mini"
-    for name in ("faces", "turn", "flip"):
+    auto = scene.get("rauto")
+    if auto is not None and not (
+            scene.get("model") == "rudder" and isinstance(auto, dict)
+            and _number(auto.get("at")) and 0 <= auto["at"] < dur
+            and _number(auto.get("speed", 1)) and auto.get("speed", 1) > 0):
+        errors.append(f"{where}: rauto needs the rudder model, at within "
+                      "the scene and a speed above 0")
+    for name in ("faces", "turn", "flip", "spin", "deflect"):
         if name in scene:
             _keys(scene[name], 2, f"{where} {name}", errors)
+    for n, touch in enumerate(scene.get("touches", [])):
+        _check_touch(scene, touch, f"{where} touch {n + 1}", errors)
     for key in scene.get("faces", []):
         if not (isinstance(key, list) and len(key) == 2
                 and isinstance(key[1], str)):
@@ -202,10 +261,18 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
         at = f"{where} label {n + 1}"
         _span(label, dur, at, errors)
         anchor = label.get("anchor")
-        if not (anchor in ANCHORS or (isinstance(anchor, list)
-                                      and len(anchor) == 3)):
-            errors.append(f"{at}: anchor must be [x, y, z] in mm or one "
-                          f"of {', '.join(ANCHORS)}")
+        pixel = (isinstance(anchor, dict) and list(anchor) == ["pixel"]
+                 and isinstance(anchor["pixel"], list)
+                 and len(anchor["pixel"]) == 2
+                 and all(map(_number, anchor["pixel"]))
+                 and 0 <= anchor["pixel"][0] <= 1024
+                 and 0 <= anchor["pixel"][1] <= 600
+                 and scene.get("model", "mockup") in TOUCH_ON["panel"][1])
+        if not (pixel or (isinstance(anchor, str) and anchor in ANCHORS)
+                or (isinstance(anchor, list) and len(anchor) == 3)):
+            errors.append(f"{at}: anchor must be [x, y, z] in mm, "
+                          "{pixel: [x, y]} of the 1024 x 600 display or "
+                          f"one of {', '.join(ANCHORS)}")
         pos = label.get("at")
         if not (isinstance(pos, list) and len(pos) == 2
                 and 0 <= pos[0] < FRAME[0] and 0 <= pos[1] < FRAME[1]):
@@ -215,8 +282,10 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
         if label.get("style", "ok") not in STYLES:
             errors.append(f"{at}: style must be one of {', '.join(STYLES)}")
     for name, keys in scene.get("parts", {}).items():
-        known = MINI_UNITS if mini else DIAL_UNITS if scene.get(
-            "model") == "dial" else UNITS
+        model = scene.get("model")
+        known = MINI_UNITS if mini else DIAL_UNITS if model == "dial" else (
+            "imu", "tape", "skin", "lead", "stand", "tip") \
+            if model == "rudder" else UNITS
         if name not in known:
             errors.append(f"{where} parts: {name} is not one of "
                           f"{', '.join(known)}")
@@ -328,6 +397,108 @@ def _check_board(scene: dict, where: str, errors: list) -> None:
                 and 0 <= fit["t"] < dur):
             errors.append(f"{where} fit {n + 1}: needs kind, one of "
                           f"{', '.join(FITS)}, the pads a and b, and t")
+    tilt = scene.get("tilt")
+    if tilt is not None and not (
+            isinstance(tilt, list) and len(tilt) == 2
+            and all(_number(v) and -45 <= v <= 45 for v in tilt)):
+        errors.append(f"{where}: tilt is [rx, ry] in degrees, each from "
+                      "-45 to 45")
+    enter = scene.get("enter")
+    if enter is not None and not (
+            isinstance(enter, dict) and _within(enter.get("t"), dur)
+            and isinstance(enter.get("view", ""), str)):
+        errors.append(f"{where}: enter needs t, [t0, t1] within the scene, "
+                      "and takes a view")
+    known = set()
+    for n, window in enumerate(scene.get("windows", [])):
+        _check_window(window, dur, f"{where} window {n + 1}", errors, known)
+
+
+def _within(value, dur: float) -> bool:
+    return (isinstance(value, list) and len(value) == 2
+            and all(_number(v) for v in value)
+            and 0 <= value[0] < value[1] <= dur)
+
+
+WINDOW_ITEMS = ("h", "p", "log", "file", "button", "bar", "drive", "dialog")
+
+
+def _check_window(window: dict, dur: float, where: str,
+                  errors: list, known: set) -> None:
+    if isinstance(window, dict) and window.get("kind") == "desktop":
+        if not (_within([window.get("from"), window.get("to")], dur)
+                and _place(window.get("at")) and all(
+                    _number(window.get(k)) and window[k] > 0
+                    for k in ("w", "h"))):
+            errors.append(f"{where}: a desktop needs from, to, at, w and h")
+        return
+    if not (isinstance(window, dict)
+            and _within([window.get("from"), window.get("to")], dur)
+            and _place(window.get("at")) and isinstance(window["at"], list)
+            and _number(window.get("w")) and 200 <= window["w"] <= 1920
+            and window.get("kind", "browser") in ("browser", "folder",
+                                                  "explorer")
+            and isinstance(window.get("url") or window.get("title"), str)):
+        errors.append(f"{where}: needs from and to within the scene, at, "
+                      "[x, y], w from 200 to 1920, kind browser, folder or "
+                      "explorer, "
+                      "and a url or a title")
+        return
+    page = window.get("page")
+    if page is not None:
+        shots = page.get("shots") if isinstance(page, dict) else None
+        if not (_number(page.get("w") if isinstance(page, dict) else None)
+                and isinstance(shots, list) and shots and all(
+                    isinstance(k, list) and len(k) == 2 and _number(k[0])
+                    and isinstance(k[1], str) for k in shots)):
+            errors.append(f"{where}: page needs w, the page's width, and "
+                          "shots, keys [t, name]")
+            return
+        for key in shots:
+            if not (STILLS / f"{key[1]}.png").is_file():
+                errors.append(f"{where}: no still tools/video/stills/"
+                              f"{key[1]}.png")
+    ids = set(known) | {r["id"] for r in window.get("rows", [])
+                        if isinstance(r, dict) and "id" in r}
+    if "id" in window:
+        ids.add(window["id"])
+    known.update(ids)
+    for item in window.get("side", []) + window.get("body", []):
+        kinds = [k for k in WINDOW_ITEMS if isinstance(item, dict)
+                 and k in item]
+        if len(kinds) != 1:
+            errors.append(f"{where}: an item is one of "
+                          f"{', '.join(WINDOW_ITEMS)}")
+            continue
+        if "id" in item:
+            ids.add(item["id"])
+            known.add(item["id"])
+        for key in ("get", "bar"):
+            if key in item and not _within(item[key], dur):
+                errors.append(f"{where}: {key} is [t0, t1] within the "
+                              "scene")
+        if kinds[0] == "dialog":
+            rows = item.get("rows")
+            if not (isinstance(rows, list) and rows and all(
+                    isinstance(r, dict) and isinstance(r.get("text"), str)
+                    for r in rows)):
+                errors.append(f"{where}: a dialog needs rows, each with "
+                              "text")
+                continue
+            ids.update(r["id"] for r in rows if "id" in r)
+    last = 0.0
+    for key in window.get("pointer", []):
+        if not (isinstance(key, list) and len(key) in (2, 3)
+                and _number(key[0]) and last <= key[0] <= dur
+                and (isinstance(key[1], list) and page is not None
+                     and _place(key[1])
+                     or isinstance(key[1], str) and key[1] in ids)
+                and (len(key) == 2 or key[2] in ("click", "grab", "drop"))):
+            errors.append(f"{where} pointer: a key is [t, id] or [t, id, "
+                          "op] with rising t, an item's id and op click, "
+                          "grab or drop")
+            continue
+        last = key[0]
 
 
 def _check_scope(scene: dict, where: str, errors: list) -> None:
@@ -620,6 +791,14 @@ def _check_tour(scene: dict, steps: int, where: str, errors: list) -> None:
             errors.append(f"{at}: dur must be at least {least}s")
         if step.get("lang", "en") not in ("en", "de"):
             errors.append(f"{at}: lang must be en or de")
+        versions = step.get("versions")
+        if versions is not None and not (
+                isinstance(versions, list) and len(versions) == 3
+                and all(isinstance(v, str)
+                        and re.fullmatch(r"\d{1,3}\.\d{1,3}\.\d{1,3}", v)
+                        for v in versions)):
+            errors.append(f"{at}: versions must be three of the form "
+                          "X.Y.Z: running, newer, older")
         focus = step.get("focus")
         if focus is not None and not (
                 isinstance(focus, list) and len(focus) == 4
@@ -712,8 +891,10 @@ def views(board: dict) -> dict:
 
     Returns:
         The shots by file name without suffix, the view name with @de or
-        @en where a step sets its own language.  Each holds the view, the
-        screen name the storyboard gives or None, and the language.
+        @en where a step sets its own language and with ~ and the versions
+        where a step sets them.  Each holds the view, the screen name the
+        storyboard gives or None, the language and, where a step sets them, its
+        versions.
     """
     found = {}
     for scene in board["scenes"]:
@@ -721,10 +902,13 @@ def views(board: dict) -> dict:
             shot = scene["display"]
             found[shot["view"]] = (shot["view"], shot.get("screen"),
                                    board["lang"])
+        if scene["type"] == "board" and scene.get("enter", {}).get("view"):
+            view = scene["enter"]["view"]
+            found[view] = (view, scene["enter"].get("screen"), board["lang"])
         for key in scene.get("panel", []) if scene["type"] == "case" else []:
             # A run's shots are drawn by runs(), not from a view's name;
             # the mini model's are stills.
-            if not key[1].startswith("live-") \
+            if not key[1].startswith(("live-", "rauto-")) \
                     and scene.get("model") != "mini":
                 found[key[1]] = (key[1], key[2] if len(key) > 2 else None,
                                  board["lang"])
@@ -734,9 +918,13 @@ def views(board: dict) -> dict:
                     continue
                 lang = step.get("lang")
                 name = f"{step['view']}@{lang}" if lang else step["view"]
+                versions = step.get("versions")
+                if versions:
+                    name += "~" + "-".join(versions)
                 found[name] = (step["view"],
                                step.get("screen", scene.get("screen")),
-                               lang or board["lang"])
+                               lang or board["lang"],
+                               *([versions] if versions else []))
     return found
 
 
@@ -749,12 +937,19 @@ def faces(board: dict) -> list:
     Returns:
         The names of tools/render_dial.py's faces, sorted.
     """
-    return sorted({key[1] for scene in board["scenes"]
-                   if scene["type"] == "case"
-                   for key in scene.get("faces", [])
-                   if not key[1].startswith("live-")})
+    found = {key[1] for scene in board["scenes"]
+             if scene["type"] == "case"
+             for key in scene.get("faces", [])
+             if not key[1].startswith("live-")}
+    # A RUDDER AUTO run shows the Dial its title and the bench's state.
+    if any("rauto" in scene for scene in board["scenes"]):
+        found |= set(RAUTO_FACES[board["lang"] == "de"])
+    return sorted(found)
 
 
+# The Dial's faces of a RUDDER AUTO run, SAFE and ARMED: English, German.
+RAUTO_FACES = (("other-rudder-auto-safe", "other-rudder-auto-armed"),
+               ("other-ruder-auto-safe", "other-ruder-auto-armed"))
 RUN_HZ = 10
 DETENT_DEG = 22.5
 RUNS = ("motor", "servo", "nav")
@@ -959,6 +1154,10 @@ def render_views(board: dict, shots: pathlib.Path) -> None:
 
     # The MiniRcBench's screens are stills: frames of its own host suite.
     for scene in board["scenes"]:
+        # A window's page is a capture of a web page, a still as well.
+        for window in scene.get("windows", []):
+            for key in window.get("page", {}).get("shots", []):
+                shutil.copy(STILLS / f"{key[1]}.png", shots / f"{key[1]}.png")
         if scene.get("model") == "mini":
             for key in scene.get("panel", []):
                 shutil.copy(STILLS / f"{key[1]}.png", shots / f"{key[1]}.png")
@@ -970,7 +1169,8 @@ def render_views(board: dict, shots: pathlib.Path) -> None:
         known = {**render_ui.SCREENS, **render_ui.FIT_ONLY}
 
         def draw(item):
-            n, (name, (view, screen, lang)) = item
+            n, (name, (view, screen, lang, *rest)) = item
+            versions = rest[0] if rest else None
             # A view of render_ui.py's tables brings its screen and theme;
             # any other is a pose of the screen the storyboard names.
             theme = "dark"
@@ -982,8 +1182,10 @@ def render_views(board: dict, shots: pathlib.Path) -> None:
             own = tmp / f"view-{n}"
             own.mkdir()
             try:
-                image = render_ui.render_one(exe, own, view, screen, theme,
-                                             lang)
+                image = render_ui.render_one(
+                    exe, own, view, screen, theme, lang,
+                    env={"RCBENCH_VIDEO_VERSIONS": ",".join(versions)}
+                    if versions else None)
             except subprocess.CalledProcessError:
                 return (f"the renderer does not draw view {view!r} of "
                         f"screen {screen!r}")
@@ -1004,7 +1206,8 @@ def render_views(board: dict, shots: pathlib.Path) -> None:
             import render_dial
 
             unknown = [name for name in wanted
-                       if name not in render_dial.FACES]
+                       if name not in render_dial.FACES
+                       and render_dial.other(name) is None]
             if unknown:
                 sys.exit(f"render_dial.py draws no face {unknown[0]!r}")
             dial = render_dial.build(tmp)
@@ -1012,6 +1215,76 @@ def render_views(board: dict, shots: pathlib.Path) -> None:
                 render_dial.render(dial, tmp, name, board["lang"]).save(
                     shots / f"dial-{name}.png")
             runs(board, shots, tmp, exe, dial)
+        rauto(board, shots, tmp)
+
+
+def rauto(board: dict, shots: pathlib.Path, tmp: pathlib.Path) -> None:
+    """Draw a RUDDER AUTO run and give its scene the shots and the flap.
+
+    test/host/video_rauto.c runs the run of the host suites and writes
+    the panel's screen every 500ms and the surface's angle every 100ms.
+    A scene with "rauto", {at, speed}, takes the frames as shots of its
+    display from "at" on, "speed" times as fast as the run, and the
+    angle as its "deflect" keys.
+
+    Args:
+        board: The storyboard; its scenes with "rauto" gain "panel" and
+            "deflect" keys.
+        shots: The directory that takes the frames, rauto-NNNN.png.
+        tmp: A directory for the run's files.
+    """
+    import os
+
+    from PIL import Image
+
+    scenes = [scene for scene in board["scenes"] if "rauto" in scene]
+    if not scenes:
+        return
+    build = REPO / "build" / "video_host"
+    quiet = {"check": True, "stdout": subprocess.DEVNULL}
+    subprocess.run(["cmake", "-S", str(REPO / "test" / "host"), "-B",
+                    str(build), "-DCMAKE_BUILD_TYPE=Release"], **quiet)
+    subprocess.run(["cmake", "--build", str(build), "--target",
+                    "video_rauto", "-j", str(os.cpu_count() or 1)], **quiet)
+    out = tmp / "rauto"
+    out.mkdir()
+    german = board["lang"] == "de"
+    subprocess.run([str(build / "video_rauto"), str(out)]
+                   + (["de"] if german else []), **quiet)
+    for path in sorted(out.glob("rauto-*.ppm")):
+        Image.open(path).convert("RGB").save(shots / f"{path.stem}.png")
+    rows = [line.split(",") for line in (out / "track.csv").read_text(
+        encoding="utf-8").splitlines()[1:]]
+    start = int(rows[0][1])
+    for scene in scenes:
+        at, speed = scene["rauto"]["at"], scene["rauto"].get("speed", 1)
+        panel, deflect, frame = [], [], None
+        dial, state = [], None
+        for n, (shot, ms, deg, _running, armed) in enumerate(rows):
+            t = round(at + (int(ms) - start) / 1000 / speed, 3)
+            if armed != state:
+                state = armed
+                dial.append([t, RAUTO_FACES[german][int(armed)]])
+            if shot != frame:
+                frame = shot
+                panel.append([t, f"rauto-{int(shot):04d}"])
+            # A key where the angle turns: the flap moves on lines.
+            edge = n in (0, len(rows) - 1) or not (
+                rows[n - 1][2] == deg == rows[n + 1][2])
+            if edge:
+                deflect.append([t, float(deg)])
+        # A touch of the run takes its time, and a hold its length.
+        for touch in scene.get("touches", []):
+            if "run_ms" in touch:
+                touch["at"] = round(at + touch.pop("run_ms") / 1000 / speed,
+                                    3)
+                if touch["action"] == "hold":
+                    touch["for"] = round(2 / speed, 3)
+        # The Dial's face follows the bench's state through the run.
+        scene["faces"] = sorted(
+            [key for key in scene.get("faces", []) if key[0] < at] + dial)
+        scene["panel"] = sorted(scene.get("panel", []) + panel)
+        scene["deflect"] = sorted(scene.get("deflect", []) + deflect)
 
 
 def _views_key(board: dict) -> str:
