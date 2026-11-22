@@ -134,7 +134,7 @@ Testabdeckung muss sowohl die Gesamtuntergrenze als auch die Untergrenze
 für jede Datei erreichen.
 
 <!-- coverage:start -->
-Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,8%**, 102 707 von 104 968 Zeilen in 464 Dateien. CI schlägt unter 94% gesamt oder unter 85% in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
+Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,9%**, 101 687 von 103 875 Zeilen in 459 Dateien. CI schlägt unter 94% gesamt oder unter 85% in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
 <!-- coverage:end -->
 
 Sicherheitsmeldungen: [SECURITY.md](SECURITY.md).
