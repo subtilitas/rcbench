@@ -37,27 +37,27 @@
     [
      0,
      [
-      -150,
+      -186,
       190,
-      150
+      114
      ],
      [
-      0,
+      -36,
       30,
-      0
+      -36
      ]
     ],
     [
      6.0,
      [
-      -110,
+      -146,
       150,
-      110
+      74
      ],
      [
-      0,
+      -36,
       30,
-      4
+      -32
      ]
     ],
     [
@@ -121,9 +121,9 @@
      "from": 7.3,
      "to": 16.57,
      "anchor": [
-      0,
-      2,
-      0
+      0.05,
+      -3.5,
+      -1.9
      ],
      "at": [
       1330,
@@ -131,7 +131,7 @@
      ],
      "size": "sm",
      "title": "RP2350-CAN",
-     "text": "The IOmcu: RP2350 at 150 MHz, one pad per programming port."
+     "text": "The IOmcu: RP2350 at 150 MHz, one pad per programming port."
     }
    ],
    "say": [
@@ -233,7 +233,7 @@
      ],
      "size": "sm",
      "title": "Hitec D485HW",
-     "text": "One wire, both directions: 115,200 bit/s, half duplex. The answer starts 5.9 to 6.5 ms after the request."
+     "text": "One wire, both directions: 115,200 bit/s, half duplex. The answer starts 5.9 to 6.5 ms after the request."
     }
    ],
    "say": [
@@ -509,7 +509,7 @@
       {
        "series": "byte-pullup",
        "style": "ok",
-       "label": "wire, 2.2 kΩ pull-up",
+       "label": "wire, 2.2 kΩ pull-up",
        "from": 30.57,
        "to": 47.77,
        "reveal": [
@@ -562,8 +562,8 @@
       170
      ],
      "style": "warn",
-     "title": "3 kΩ pull-down",
-     "text": "A released wire sits at <b>0 V</b>. With no pull-up the answer reads as all low."
+     "title": "3 kΩ pull-down",
+     "text": "A released wire sits at <b>0 V</b>. With no pull-up the answer reads as all low."
     },
     {
      "from": 22.53,
@@ -577,8 +577,8 @@
       170
      ],
      "style": "ok",
-     "title": "2.2 kΩ pull-up",
-     "text": "From the signal wire to the servo's 5 V supply. Receive mode <b>PULL-UP</b>."
+     "title": "2.2 kΩ pull-up",
+     "text": "From the signal wire to the servo's 5 V supply. Receive mode <b>PULL-UP</b>."
     },
     {
      "from": 30.470000000000002,
@@ -592,8 +592,8 @@
       170
      ],
      "style": "ok",
-     "title": "A divider: 2.9 V",
-     "text": "5 V × 3 kΩ / (3 kΩ + 2.2 kΩ) = <b>2.88 V</b> on a released wire, 58 % of the servo supply."
+     "title": "A divider: 2.9 V",
+     "text": "5 V × 3 kΩ / (3 kΩ + 2.2 kΩ) = <b>2.88 V</b> on a released wire, 58 % of the servo supply."
     },
     {
      "from": 38.699999999999996,
@@ -916,7 +916,7 @@
      ],
      "from": 10.88,
      "to": 66.23,
-     "heading": "Signal wire · one sample period, 1086.7 ns · simulated with ngspice",
+     "heading": "Signal wire · one sample period, 1086.7 ns · simulated with ngspice",
      "view": [
       [
        0,
@@ -1020,7 +1020,7 @@
         100.0,
         200.0
        ],
-       "text": "precharge 100.0 ns",
+       "text": "precharge 100.0 ns",
        "dy": 212
       }
      ],
@@ -1029,7 +1029,7 @@
        "from": 33.13,
        "to": 66.23,
        "x": 313.33,
-       "text": "sample, 113.3 ns after the release",
+       "text": "sample, 113.3 ns after the release",
        "style": "ok",
        "dy": 60
       },
@@ -1070,8 +1070,8 @@
       170
      ],
      "n": 1,
-     "title": "Drive high, 100.0 ns",
-     "text": "15 cycles of the 150 MHz system clock, at the pad's 2 mA drive strength."
+     "title": "Drive high, 100.0 ns",
+     "text": "15 cycles of the 150 MHz system clock, at the pad's 2 mA drive strength."
     },
     {
      "from": 22.01,
@@ -1087,7 +1087,7 @@
      "n": 2,
      "style": "warn",
      "title": "Let go",
-     "text": "3 kΩ × 72 pF = <b>216 ns</b>. The wire's own capacitance holds the level."
+     "text": "3 kΩ × 72 pF = <b>216 ns</b>. The wire's own capacitance holds the level."
     },
     {
      "from": 33.43,
@@ -1102,8 +1102,8 @@
      ],
      "n": 3,
      "style": "ok",
-     "title": "Sample, 113.3 ns later",
-     "text": "17 cycles after the release. <b>1.93 V</b> on the wire: the bit is high."
+     "title": "Sample, 113.3 ns later",
+     "text": "17 cycles after the release. <b>1.93 V</b> on the wire: the bit is high."
     },
     {
      "from": 41.29,
@@ -1118,7 +1118,7 @@
      ],
      "style": "warn",
      "title": "The servo pulls low",
-     "text": "1.4 V while both drive, for 100 ns of every 1086.7 ns. At the sample the wire is at <b>0 V</b>."
+     "text": "1.4 V while both drive, for 100 ns of every 1086.7 ns. At the sample the wire is at <b>0 V</b>."
     },
     {
      "from": 55.379999999999995,
@@ -1208,7 +1208,7 @@
      "traces": [
       {
        "series": "decay",
-       "label": "simulated: 3 kΩ and 72 pF",
+       "label": "simulated: 3 kΩ and 72 pF",
        "reveal": [
         [
          0.5,
@@ -1257,7 +1257,7 @@
        "from": 24.49,
        "to": 46.81,
        "x": 234,
-       "text": "234 ns",
+       "text": "234 ns",
        "style": "warn",
        "dy": 170
       },
@@ -1265,7 +1265,7 @@
        "from": 31.94,
        "to": 46.81,
        "x": 113.3,
-       "text": "sample: 113.3 ns",
+       "text": "sample: 113.3 ns",
        "style": "white",
        "dy": 220
       }
@@ -1278,8 +1278,8 @@
      "to": 11.18,
      "anchor": [
       "p",
-      113,
-      1.93
+      610,
+      1.1
      ],
      "at": [
       1340,
@@ -1302,7 +1302,7 @@
      ],
      "style": "ok",
      "title": "Measured on a D485HW",
-     "text": "IOmcu at 150 MHz, GPIO 13, no pull-up, servo supply 5.0 V. Sample 40 to 213 ns after the release: <b>5 of 5</b> reads at each setting. 267 ns: <b>0 of 5</b>."
+     "text": "IOmcu at 150 MHz, GPIO 13, no pull-up, servo supply 5.0 V. Sample 40 to 213 ns after the release: <b>5 of 5</b> reads at each setting. 267 ns: <b>0 of 5</b>."
     },
     {
      "from": 21.79,
@@ -1318,7 +1318,7 @@
      ],
      "style": "warn",
      "title": "Simulation and measurement agree",
-     "text": "The simulated wire crosses the threshold between the last setting that passed, 213 ns, and the first that failed, 267 ns."
+     "text": "The simulated wire crosses the threshold between the last setting that passed, 213 ns, and the first that failed, 267 ns."
     },
     {
      "from": 32.24,
@@ -1332,8 +1332,8 @@
       1340,
       200
      ],
-     "title": "113.3 ns",
-     "text": "17 clock cycles. The window is 173 ns wide; the sample has 73 ns of it before and 100 ns after."
+     "title": "113.3 ns",
+     "text": "17 clock cycles. The window is 173 ns wide; the sample has 73 ns of it before and 100 ns after."
     },
     {
      "from": 38.029999999999994,
@@ -1518,7 +1518,7 @@
         52083.36
        ],
        "style": "",
-       "text": "one bit, 8.68 µs",
+       "text": "one bit, 8.68 µs",
        "dy": 60
       }
      ]
@@ -1534,7 +1534,7 @@
       3.2
      ],
      "at": [
-      1330,
+      270,
       790
      ],
      "side": "t",
@@ -1575,7 +1575,7 @@
      "side": "t",
      "size": "sm",
      "title": "7.99 samples a bit",
-     "text": "163 clock cycles a sample, 1086.7 ns, against a bit of 8680.6 ns."
+     "text": "163 clock cycles a sample, 1086.7 ns, against a bit of 8680.6 ns."
     },
     {
      "from": 27.87,
@@ -1593,7 +1593,7 @@
      "size": "sm",
      "style": "ok",
      "title": "Inverted 8N1",
-     "text": "8 data bits, no parity, 1 stop bit. The servo's bit time may be 4 % short or long."
+     "text": "8 data bits, no parity, 1 stop bit. The servo's bit time may be 4 % short or long."
     }
    ],
    "say": [
@@ -1637,7 +1637,7 @@
       1808,
       470
      ],
-     "heading": "Signal wire, GPIO 13 · Hitec D485HW · read of register 0x32 · logic analyser, 200 MHz, threshold 1.4 V",
+     "heading": "Signal wire, GPIO 13 · Hitec D485HW · read of register 0x32 · logic analyser, 200 MHz, threshold 1.4 V",
      "view": [
       [
        0,
@@ -1723,11 +1723,11 @@
         8.4
        ],
        "width": 3,
-       "from": 9.4,
+       "from": 5.3,
        "to": 56.97,
        "reveal": [
         [
-         9.6,
+         5.5,
          0
         ],
         [
@@ -1836,7 +1836,7 @@
       3,
       [
        1.4,
-       "1.4 V"
+       "1.4 V"
       ]
      ],
      "unit": "V",
@@ -1883,7 +1883,7 @@
      ],
      "side": "t",
      "title": "Kingst LA2016",
-     "text": "One channel on the signal wire, 5 ns a sample. It reads the wire as above or below 1.4 V. Servo supply 5.0 V."
+     "text": "One channel on the signal wire, 5 ns a sample. It reads the wire as above or below 1.4 V. Servo supply 5.0 V."
     },
     {
      "from": 10.3,
@@ -1899,8 +1899,8 @@
      ],
      "side": "t",
      "style": "ok",
-     "title": "PULL-UP, 2.2 kΩ fitted",
-     "text": "Request <b>96 00 32 00 32</b>, answer <b>69 00 32 02 00 00 34 00</b>. The answer starts 6.358 ms after the request ends."
+     "title": "PULL-UP, 2.2 kΩ fitted",
+     "text": "Request <b>96 00 32 00 32</b>, answer <b>69 00 32 02 00 00 34 00</b>. The answer starts 6.358 ms after the request ends."
     },
     {
      "from": 20.46,
@@ -1917,7 +1917,7 @@
      "side": "t",
      "style": "warn",
      "title": "PULL-UP, no resistor",
-     "text": "0 edges in 10 s. The panel reports: No D series servo answers."
+     "text": "0 edges in 10 s. The panel reports: No D series servo answers."
     },
     {
      "from": 28.17,
@@ -1948,8 +1948,8 @@
       700
      ],
      "side": "t",
-     "title": "280 ns above 1.4 V",
-     "text": "Period 1086.5 ns measured, 1086.7 ns by design. A pulse against the servo's low level reads 0 to 20 ns, or not at all."
+     "title": "280 ns above 1.4 V",
+     "text": "Period 1086.5 ns measured, 1086.7 ns by design. A pulse against the servo's low level reads 0 to 20 ns, or not at all."
     }
    ],
    "say": [
@@ -2043,9 +2043,9 @@
    "dur": 9,
    "heading": "Precharge and sample",
    "items": [
-    "Drive the wire high for 100.0 ns",
-    "Let go; 3 kΩ and 72 pF hold the level",
-    "Sample 113.3 ns after the release",
+    "Drive the wire high for 100.0 ns",
+    "Let go; 3 kΩ and 72 pF hold the level",
+    "Sample 113.3 ns after the release",
     "8 samples a bit, no pull-up resistor"
    ],
    "note": "Reference: protocols/hitec/README.md, Receive by precharge and sample.",
