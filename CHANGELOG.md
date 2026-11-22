@@ -8,6 +8,11 @@ history is in git.
 
 ### Added
 
+- `hardware/mechanical/`: `motor_simulator.step`, a stand-in for a motor
+  on an ESC's 3 motor leads: 3 resistors of 600 ohm in a triangle, 400 ohm
+  between any 2 of its 3 crocodile clips. 27 solids, 51.05mm x 20.0mm x
+  18.26mm; every size is estimated from one owner photo
+  ([Mechanical parts](hardware/mechanical/README.md#motor-simulator)).
 - `hardware/mechanical/`: `flycolor_flydragon_lite_40a.step`, the ESC with
   its capacitor, print, power leads with an XT60 plug, 3 motor leads and
   signal lead with plug (44 solids); `tmotor_at2814.step`, the outrunner

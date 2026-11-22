@@ -37,6 +37,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `flycolor_flydragon_lite_40a.py` | spec of the Flycolor FlyDragon Lite 40A ESC with its power, motor and signal leads, from the maker's manual and a product picture |
 | `tmotor_at2814.py` | spec of the T-Motor AT2814 outrunner with its 3 leads, from the maker's drawing |
 | `esc_motor_set.py` | the ESC and the motor joined lead to lead, for pictures of the phase tap |
+| `motor_simulator.py` | spec of the motor simulator: 3 resistors of 600 ohm in a triangle with 3 crocodile clips, from an owner photo |
 | `_board.py` | a module's board for the specs: the plate, and parts placed by their position from the board's center |
 | `_font.py` | outlines of the letters of board print, written by `_gen_font.py` from OpenCV's single-stroke font |
 | `_photo_grid.py` | measures a board from a photo on squared paper: grid fit, camera height, the INA228 module's photos laid onto the board frame |
@@ -55,7 +56,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `check_refit.py` | holds the dial's solids, read back with OpenCASCADE, against the mesh |
 | `models/pcb/` | 17 models: 16 boards with their parts and the sensor node's layout; STEP |
 | `models/casing/` | 11 printed parts: the Dial's base, the display node's case in 2 variants, the sensor node's case, the INA228 module's case, the flap drive's frame; STEP, and STL for 9 of them |
-| `models/parts/` | 17 models of bought parts and of assemblies: emergency stop button, M5Stack Dial and its nut, 3 servos, an ESC, a motor and the set of both, 2 cells, inertial sensor, the flap drive's assembly and wing; STEP |
+| `models/parts/` | 18 models of bought parts and of assemblies: emergency stop button, M5Stack Dial and its nut, 3 servos, an ESC, a motor, the set of both and a motor simulator, 2 cells, inertial sensor, the flap drive's assembly and wing; STEP |
 | `renders/` | OpenCASCADE renders in the folders of `models/`: `pcb/`, `casing/`, `parts/`; a view of several models lies in the folder `_models.py` names for it. The contact sheet `all.png` lies beside the folders |
 | `vendor/` | third-party meshes, unchanged, each with its licence |
 
@@ -1026,6 +1027,42 @@ Limits:
   the motor's magnets, bearings, shaft flats, propeller adapter and cross
   mount. The prints are plain text.
 - No dimension is verified on a part.
+
+### Motor simulator
+
+A stand-in for a brushless motor on the 3 motor leads of an ESC: 3
+resistors of 600 ohm joined corner to corner, a yellow wire from each
+corner to a black crocodile clip. The resistors form a delta, so any 2
+clips see 600 ohm in parallel with 1200 ohm: 400 ohm. With it the ESC and
+the phase tap are tried with no motor on the bench (owner, 2026-11-22).
+
+![Motor simulator](renders/parts/motor_simulator.png)
+
+| File | Content | Over all, mm | Origin |
+| --- | --- | --- | --- |
+| `motor_simulator.step` | 3 blue resistors with their leads, solder at the 3 corners, 3 yellow wires, 3 clips with black boots and steel jaws; 27 solids | 51.05 x 20.0 x 18.26 | the middle of the triangle's lower side; the triangle stands in the y-z plane, corner A at -y, B at +y, C on top; the wires run towards -x |
+
+| Point | x, mm | y, mm | z, mm |
+| --- | --- | --- | --- |
+| Corners A, B, C | 0.0 | -6.5, +6.5, 0.0 | 0.0, 0.0, 11.26 |
+| Wires: start, middle, end | -0.8, -10.8, -20.8 | as the corners | as the corners |
+| Clips' tips | -49.8 | as the corners | as the corners |
+
+Limits:
+
+- The only sources are the owner's word (motor stand-in, 600 ohm each, the
+  build with black clips) and one owner photo taken at an angle with no
+  scale, which is not in the repository. Every size is estimated by eye
+  from the size of a common 0.6W resistor body, 6.5mm x 2.5mm.
+- The built part's wires are bent together; the model draws the triangle
+  standing across 3 straight wires, 13.0mm apart.
+- The resistors' rating and the voltage the simulator bears are not
+  stated. At 16.8V, 4 cells full, 400 ohm draw 42mA and each resistor
+  across 2 driven leads dissipates 0.47W.
+- A second build with orange clips and 6 resistors exists; it is not
+  drawn.
+- Not drawn: the resistors' colour bands, the clips' teeth, spring and
+  hinge.
 
 ## KST X10 with frame and flap drive
 
