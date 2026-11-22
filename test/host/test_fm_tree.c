@@ -397,7 +397,7 @@ TEST_CASE(every_bench_folder_is_fixed_and_others_free)
     static const char *const fixed[] = {
         CARD_BENCH, CARD_AUTO_LOGS, "BENCH/ESC", CARD_ESC_CONF, "BENCH/KST",
         CARD_KST_CONF, "BENCH/HITEC", CARD_HITEC_CONF, "BENCH/ESCW",
-        CARD_ESCW_CONF, CARD_BALANCE, CARD_USER,
+        CARD_ESCW_CONF, CARD_BALANCE, CARD_SETUP, CARD_USER,
         CARD_USER_LOGS,
     };
     for (size_t i = 0u; i < sizeof(fixed) / sizeof(fixed[0]); ++i) {
@@ -422,6 +422,9 @@ TEST_CASE(every_bench_folder_is_fixed_and_others_free)
     CHECK_EQ(fm_place_of(NULL, CARD_BALANCE, "OLD", true), FM_PLACE_FREE);
     /* The balance node's file is no folder: FILES opens and copies it. */
     CHECK_EQ(fm_place_of(NULL, CARD_BALANCE, "BALANCE.CSV", false),
+             FM_PLACE_FREE);
+    /* The settings' files are files: FILES opens, copies and deletes them. */
+    CHECK_EQ(fm_place_of(NULL, CARD_SETUP, "AUTO1.TXT", false),
              FM_PLACE_FREE);
     /* A file named as a bench folder is a file. */
     CHECK_EQ(fm_place_of(NULL, "", "BENCH", false), FM_PLACE_FREE);

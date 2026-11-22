@@ -164,6 +164,18 @@ schema category has a row (`test_keypad_rows_setup`, `test_keypad_rows_stick`,
 `test_keypad_rows_kst`, over `test/host/keypad_rows_rig.h`). MOTOR & ESC's throttle `-1` and
 `+1` keys open no keypad: they act while ARMED only, and a typed throttle is a jump.
 
+The settings backup is built and tested on the host and linked into the panel build. SETUP > SD CARD's Save settings writes the stored settings as
+`BENCH/SETUP/SETTINGS.TXT`; each save to NVS with a card mounted writes `AUTO1.TXT` and moves
+the older copies to `AUTO2.TXT` and `AUTO3.TXT`, on the logger task (`firmware/panel/main/panel_sbk.c`).
+Load settings opens BACKUP: the files with date and panel version, HOLD 2s TO LOAD, refused
+lines listed with line number, key and code. A panel that starts on the defaults offers the
+newest file over the menu. The file is text format 1, every schema setting and every string
+(the IMU, Dial and node bindings among them), without the Wi-Fi secrets
+(`shared/settings/settings_file.c`, `settings_backup.c`, `shared/ui/sbk_ctl.c`;
+`test_settings_file`, `test_settings_backup`, `test_sbk_screen`: every setting and string
+round trip, format versions, refused lines, rotation, the offer's conditions, no card, a full
+card, the hold at 1999 and 2000ms). [Reference](docs/Screens.md#sd-card-the-settings-backup).
+
 ### CSV (comma-separated values) and number parsing, log viewer
 
 Built and tested against the fixture corpus; every report, `ATESTnnn.TXT` beside its CSV or
@@ -1718,7 +1730,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 616 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 619 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1751,7 +1763,7 @@ The host suite is 616 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_esc_stick_layout`, `test_balance`, `test_battery`, `test_instruments_layout`,
 `test_settings`, `test_settings_screen`, `test_settings_gesture`, `test_settings_pins_hub`,
 `test_settings_carrier`, `test_sensors_carrier`, `test_sensors_pane`, `test_settings_leave`,
-`test_settings_folders`, `test_settings_sensors`, `test_settings_keypad`,
+`test_settings_folders`, `test_settings_file`, `test_settings_backup`, `test_sbk_screen`, `test_settings_sensors`, `test_settings_keypad`,
 `test_settings_rows`, `test_settings_grid`, `test_setting_keypad_eq`, `test_log_numbers`, `test_log_reader`,
 `test_log_csv`, `test_link_crc`, `test_link_pages`, `test_link_watchdog`,
 `test_link_loopback`, `test_link_bringup`, `test_link_read_split`, `test_link_retry`, `test_link_can`, `test_link_uart`,
@@ -2352,7 +2364,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-1024 committed screenshots to the current render, 512 in English and the same 512 in German, and `render_ui.py --fit` fails on a string that
+1032 committed screenshots to the current render, 516 in English and the same 516 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -2391,7 +2403,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_band.c` | 385 | 372 | 96.6% |
 | `shared/ui/ui_help.c` | 384 | 372 | 96.9% |
 | `shared/ui/help_outputs.c` | 74 | 72 | 97.3% |
-| `shared/ui/help_setup.c` | 95 | 91 | 95.8% |
+| `shared/ui/help_setup.c` | 95 | 92 | 96.8% |
 | `shared/ui/help_logs.c` | 54 | 53 | 98.2% |
 | `shared/ui/help_files.c` | 24 | 23 | 95.8% |
 | `shared/ui/help_upd.c` | 78 | 75 | 96.2% |
@@ -2406,7 +2418,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_text.c` | 140 | 139 | 99.3% |
 | `shared/ui/ui_router.c` | 612 | 600 | 98.0% |
 | `shared/ui/ui_router_alert.c` | 36 | 36 | 100.0% |
-| `shared/ui/ui_router_screens.c` | 60 | 60 | 100.0% |
+| `shared/ui/ui_router_screens.c` | 62 | 62 | 100.0% |
 | `shared/ui/ui_alert_slot.c` | 39 | 39 | 100.0% |
 | `shared/ui/ui_value_ask.c` | 8 | 8 | 100.0% |
 | `shared/ui/splash_screen.c` | 72 | 69 | 95.8% |
@@ -2512,7 +2524,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/text_view_keys.c` | 489 | 471 | 96.3% |
 | `shared/ui/settings_screen.c` | 333 | 324 | 97.3% |
 | `shared/ui/settings_draw.c` | 69 | 69 | 100.0% |
-| `shared/ui/settings_rows.c` | 44 | 43 | 97.7% |
+| `shared/ui/settings_rows.c` | 49 | 48 | 98.0% |
 | `shared/ui/ui_setlist.c` | 626 | 611 | 97.6% |
 | `shared/ui/ui_setlist_draw.c` | 283 | 264 | 93.3% |
 | `shared/ui/ui_footer.c` | 42 | 41 | 97.6% |
@@ -2572,9 +2584,15 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/node_balance.c` | 346 | 339 | 98.0% |
 | `shared/ui/wireless_bal.c` | 190 | 187 | 98.4% |
 | `shared/ui/motor_balance.c` | 184 | 181 | 98.4% |
-| `shared/settings/settings.c` | 427 | 420 | 98.4% |
+| `shared/ui/sbk_ctl.c` | 290 | 264 | 91.0% |
+| `shared/ui/sbk_screen.c` | 160 | 146 | 91.2% |
+| `shared/ui/sbk_draw.c` | 155 | 132 | 85.2% |
+| `shared/ui/sbk_rows.c` | 37 | 36 | 97.3% |
+| `shared/settings/settings.c` | 454 | 447 | 98.5% |
 | `shared/settings/settings_sensors.c` | 150 | 149 | 99.3% |
 | `shared/settings/settings_text.c` | 14 | 13 | 92.9% |
+| `shared/settings/settings_file.c` | 370 | 364 | 98.4% |
+| `shared/settings/settings_backup.c` | 164 | 159 | 97.0% |
 | `shared/logfile/log_numbers.c` | 396 | 374 | 94.4% |
 | `shared/logfile/log_csv.c` | 514 | 488 | 94.9% |
 | `shared/logfile/log_reader.c` | 212 | 201 | 94.8% |
@@ -2834,7 +2852,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **103875** | **101687** | **97.9%** |
+| **total** | **105085** | **102823** | **97.8%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

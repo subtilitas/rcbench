@@ -30,6 +30,22 @@ history is in git.
   register, CRIT_N low, a critical alert flag, a SENSE_LIMIT trip or a switch in thermal shutdown cuts the rail and makes the bench
   SAFE, and the BEC check flags a port at 500mV or more with the rail off
   ([Link: The POWER page](docs/Link.md#the-power-page)).
+- Settings backup on the card, `BENCH/SETUP`. SETUP > SD CARD ends on Save
+  settings, which writes the stored settings as `SETTINGS.TXT`, and Load
+  settings, which opens BACKUP: the card's settings files with their date
+  and panel version, and HOLD 2s TO LOAD. A load replaces every setting
+  (the file's value, or the default where the file has none), lists each
+  refused line with its number, key and code, and asks for the save to NVS
+  (non-volatile storage). Each save to NVS with a card in also writes
+  `AUTO1.TXT` and moves the older copies on to `AUTO2.TXT` and `AUTO3.TXT`;
+  a copy that does not reach the card shows once in the alert band and
+  switches no output off. A panel that starts on the defaults offers the
+  card's newest file over the menu once SAFE. The file is text, format 1:
+  one `<key> = <value>` line a setting, the bindings of the IMU, the Dial
+  and the nodes among them; the Wi-Fi home network, its password, HOTSPOT
+  PASSWORD and ACCESS CODE are not in it
+  ([Screens](docs/Screens.md#sd-card-the-settings-backup)).
+- The SD CARD tile reads `LOGS, BROWSER WRITES, BACKUP`.
 - `hardware/mechanical/`: a printed case of 3 parts for the remote INA228
   sensor node, 91.4mm x 55.4mm x 28.0mm: `ina228_node_plate`,
   `ina228_node_frame` and `ina228_node_bezel`, each as STEP and STL. 4
@@ -90,7 +106,6 @@ history is in git.
   an IOmcu image older than 4.41 reads no version 9 record and starts with
   the bindings of a one-page record if the flash holds one, empty
   otherwise.
-
 - `tools/pio_budget.py`: counts every PIO (programmable input/output)
   program in the `.pio` files under `protocols/` as pioasm 2.3.0 does and
   loads each board's programs into a model of the RP2350's 3 blocks of 4
