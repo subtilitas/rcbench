@@ -33,6 +33,7 @@ FOLDERS = {
     "parts": (
         "estop_m16_assembly", "estop_m16_button", "estop_m16_nut",
         "estop_m16_shim", "flap_drive_assembly", "flap_drive_wing",
+        "hitec_d485hw",
         "kst_x10", "lipo_102540_1000mah", "lipo_702030_380mah", "m5dial",
         "m5dial_nut", "servo_standard", "wit_imu"),
 }
