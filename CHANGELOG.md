@@ -10,9 +10,10 @@ history is in git.
 
 - `hardware/mechanical/`: `motor_simulator.step`, a stand-in for a motor
   on an ESC's 3 motor leads: 3 resistors of 600 ohm in a triangle, 400 ohm
-  between any 2 of its 3 crocodile clips. 27 solids, 51.05mm x 20.0mm x
-  18.26mm; every size is estimated from one owner photo
-  ([Mechanical parts](hardware/mechanical/README.md#motor-simulator)).
+  between any 2 of its 3 crocodile clips, with the phase tap's lead on one
+  clip, ending in a 3.5mm mono plug. 32 solids, 51.05mm x 20.0mm x
+  78.06mm; every size is estimated from one owner photo
+  ([ESC and motor](hardware/mechanical/ESC_MOTOR.md#motor-simulator)).
 - `hardware/mechanical/`: `flycolor_flydragon_lite_40a.step`, the ESC with
   its capacitor, print, power leads with an XT60 plug, 3 motor leads and
   signal lead with plug (44 solids); `tmotor_at2814.step`, the outrunner
@@ -20,7 +21,7 @@ history is in git.
   lead to lead, 398.2mm long. The ESC's size follows the maker's manual,
   the motor the maker's drawing; lead lengths and diameters of the ESC are
   estimated from a picture. The overlap check covers the 3 models
-  ([Mechanical parts](hardware/mechanical/README.md#esc-and-motor-flycolor-flydragon-lite-40a-t-motor-at2814)).
+  ([ESC and motor](hardware/mechanical/ESC_MOTOR.md#flycolor-flydragon-lite-40a-and-t-motor-at2814)).
 - `hardware/mechanical/`: `hitec_d485hw.step`, the Hitec D485HW servo with
   the four-arm horn HD-X25, its type plate and 60mm of its lead: 3 wires,
   minus black, plus red, signal yellow, and the 3 pin plug. 126.4mm x

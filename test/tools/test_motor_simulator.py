@@ -2,7 +2,8 @@
 
 Every solid closes, the 3 resistors of 600 ohm join corner to corner,
 any 2 clips see 400 ohm, each corner has its solder, its yellow wire
-and its black clip, and the 3 wires leave side by side.
+and its black clip, the 3 wires leave side by side, and the phase tap's
+lead stands on one clip and ends in a 3.5mm mono plug.
 
 SPDX-License-Identifier: MIT
 """
@@ -29,9 +30,9 @@ def extent(shapes):
 
 
 def test_solids_close():
-    """Each edge of each of the 27 solids is used once in each direction."""
+    """Each edge of each of the 32 solids is used once in each direction."""
     (items,) = sim.parts(None).values()
-    assert len(items) == 27
+    assert len(items) == 32
     for _kind, _points, edges, faces, _rgb in items:
         used = Counter((edge, forward) for _s, _same, loops in faces
                        for loop in loops for edge, forward in loop)
@@ -109,7 +110,52 @@ def test_wires_leave_side_by_side():
 
 
 def test_whole_model_has_its_size():
-    """51.05 x 20.0 x 18.26 over all."""
+    """51.05 x 20.0 x 78.06 over all; 18.26 high without the tap's lead."""
     box = extent(sim.simulator())
     assert [round(box[k + 3] - box[k], 2) for k in range(3)] == [
-        51.05, 20.0, 18.26]
+        51.05, 20.0, 78.06]
+    own = extent(sim.resistors() + sim.joints() + [
+        shape for name in sim.CORNERS for shape in sim.wire_and_clip(name)])
+    assert round(own[5] - own[2], 2) == 18.26
+
+
+def test_phase_tap_lead_is_on_one_clip():
+    """A white wire of 30 standing on the upper jaw of the clip on C."""
+    assert sim.TAP == "C"
+    start, middle, end = sim.tap_lead()
+    tip = sim.clip_end("C")
+    assert start[0] == pytest.approx(tip[0] + 4.5)
+    assert start[1] == pytest.approx(tip[1])
+    # It starts on the jaw's upper face: no gap, no shared volume.
+    jaw = extent(sim.wire_and_clip("C")[3:4])
+    assert start[2] == pytest.approx(jaw[5])
+    assert jaw[0] < start[0] < jaw[3]
+    assert end[2] - start[2] == pytest.approx(30.0)
+    assert middle[2] == pytest.approx((start[2] + end[2]) / 2)
+    wire = sim.tap()[0]
+    assert wire[4] == _parts.WHITE
+    box = extent([wire])
+    assert box[3] - box[0] == pytest.approx(1.2, abs=0.01)
+    assert (box[2], box[5]) == pytest.approx((start[2], end[2]))
+
+
+def test_tap_lead_ends_in_a_mono_plug():
+    """Handle, sleeve, ring and tip in a row: a shaft of 3.5 x 14.0."""
+    shapes = sim.tap()[1:]
+    assert [shape[4] for shape in shapes] == [
+        _parts.BLACK, _parts.STEEL, _parts.BLACK, _parts.STEEL]
+    end = sim.tap_lead()[2]
+    handle = extent(shapes[:1])
+    assert handle[2] == pytest.approx(end[2])
+    assert handle[3] - handle[0] == pytest.approx(6.0, abs=0.01)
+    assert handle[5] - handle[2] == pytest.approx(18.0)
+    shaft = extent(shapes[1:])
+    assert shaft[3] - shaft[0] == pytest.approx(3.5, abs=0.01)
+    assert shaft[5] - shaft[2] == pytest.approx(14.0)
+    assert shaft[2] == pytest.approx(handle[5])
+    # 2 contacts, tip and sleeve, with one ring between them: mono.
+    assert sum(1 for shape in shapes[1:] if shape[4] == _parts.STEEL) == 2
+    tip = sim.plug_tip()
+    assert tip[:2] == pytest.approx(end[:2])
+    assert tip[2] == pytest.approx(shaft[5])
+    assert tip[2] - end[2] == pytest.approx(32.0)

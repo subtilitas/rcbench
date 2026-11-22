@@ -102,7 +102,9 @@ converter lies on a foam pad of 1.5mm that is not drawn.
 It holds a STEP model of the motor simulator, 3 resistors of 600 ohm in a
 triangle with 3 crocodile clips, 400 ohm between any 2 clips (owner,
 2026-11-22). Every size is estimated from one owner photo; the resistors'
-rating is not stated.
+rating is not stated. The phase tap's lead is on one clip and ends in a 3.5mm
+mono plug; how it is fastened and which contact carries the tap are not
+stated.
 It holds STEP models of the Flycolor FlyDragon Lite 40A ESC with its leads,
 of the T-Motor AT2814 outrunner, and of the two joined lead to lead. The ESC's
 size is the maker's; its leads' lengths, diameters and the signal wires' roles

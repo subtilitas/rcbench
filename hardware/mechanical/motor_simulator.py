@@ -2,7 +2,8 @@
 
     motor_simulator   3 resistors of 600 ohm joined corner to corner,
                       a yellow wire from each corner to a black
-                      crocodile clip
+                      crocodile clip, and the phase tap's lead on one
+                      clip, ending in a 3.5mm mono plug
 
 It stands in for a brushless motor on the 3 motor leads of an ESC
 (electronic speed controller): each pair of leads sees a resistance in
@@ -11,10 +12,24 @@ place of a winding, so the ESC and the phase tap
 bench. The 3 resistors form a delta: between any 2 clips lie 600 ohm
 in parallel with 2 x 600 ohm, which is 400 ohm.
 
+The phase tap's lead is connected to one of the 3 clips (O): the bench
+hears the ESC's beeps on that lead. Which clip is free, as the 3 carry
+the same beeps; TAP names the clip on corner C. The lead is drawn as a
+wire standing on that clip's upper jaw. It ends in a 3.5mm mono
+headphone plug (O): 2 contacts, tip and sleeve. How the lead is
+fastened to the clip, its colour, diameter and length, and which of
+the plug's contacts carries the tap are not stated: drawn white, 1.2
+across and TAP_LEAD long, straight up. The plug's shaft is 3.5 across
+and 14.0 long as such plugs are; its tip (3.5 long), the ring between
+tip and sleeve (1.0) and its black handle (6.0 across, 18.0 long) are
+estimated. The tip is drawn as a plain cylinder, without its groove
+and round end.
+
 Sources:
     O: the owner, 2026-11-22: a motor stand-in; each resistor is 600
     ohm; of the 2 built, this is the one with black clips and 3
-    resistors.
+    resistors; the phase tap's lead is connected to one of the clips
+    and ends in a 3.5mm mono headphone plug.
     P: one owner photo of 2026-11-22 (not in the repository), taken at
     an angle with no scale in it: blue resistors with axial leads
     soldered corner to corner, a yellow wire from each corner, the 3
@@ -55,6 +70,11 @@ WIRE = (1.4, 20.0)              # diameter, length
 CLIP = ((4.5, 5.0), (7.0, 15.0), (9.0, 3.6, 0.8, 1.0))
 RESISTOR_BLUE = (0.16, 0.42, 0.72)
 WIRE_YELLOW = (0.93, 0.80, 0.12)
+TAP = "C"                       # the clip the phase tap's lead is on
+TAP_LEAD = (1.2, 30.0, 4.5)     # diameter, length, from the jaws' tip
+# The mono plug on the lead's end: handle (diameter, length), shaft
+# diameter, sleeve length, ring length, tip length.
+PLUG = ((6.0, 18.0), 3.5, 9.5, 1.0, 3.5)
 CORNERS = {"A": (-SIDE / 2, 0.0), "B": (SIDE / 2, 0.0),
            "C": (0.0, SIDE * 3 ** 0.5 / 2)}        # (y, z)
 SIDES = (("A", "B"), ("B", "C"), ("C", "A"))
@@ -132,12 +152,51 @@ def wire_and_clip(name):
     return out
 
 
+def tap_lead():
+    """The phase tap's lead: where it meets the clip, its middle, its end.
+
+    Returns:
+        3 points (x, y, z); the first lies on the upper jaw of the clip
+        TAP.
+    """
+    _across, length, back = TAP_LEAD
+    _jaws, _wide, thick, gap = CLIP[2]
+    x, y, z = clip_end(TAP)
+    low = z + gap / 2 + thick
+    return ((x + back, y, low), (x + back, y, low + length / 2),
+            (x + back, y, low + length))
+
+
+def plug_tip():
+    """The end of the mono plug's tip: (x, y, z)."""
+    (_across, handle), _shaft, sleeve, ring, tip = PLUG
+    x, y, z = tap_lead()[2]
+    return (x, y, z + handle + sleeve + ring + tip)
+
+
+def tap():
+    """The phase tap's lead on the clip TAP, and its mono plug."""
+    start, _middle, end = tap_lead()
+    (across, handle), shaft, sleeve, ring, tip = PLUG
+    x, y = start[0], start[1]
+    out = [s.ext(s.circle(x, y, TAP_LEAD[0] / 2), start[2], end[2],
+                 p.WHITE)]
+    z = end[2]
+    for diameter, length, rgb in ((across, handle, p.BLACK),
+                                  (shaft, sleeve, p.STEEL),
+                                  (shaft, ring, p.BLACK),
+                                  (shaft, tip, p.STEEL)):
+        out.append(s.ext(s.circle(x, y, diameter / 2), z, z + length, rgb))
+        z += length
+    return out
+
+
 def simulator():
     """The simulator as shapes."""
     out = resistors() + joints()
     for name in CORNERS:
         out += wire_and_clip(name)
-    return out
+    return out + tap()
 
 
 def parts(_colors):
