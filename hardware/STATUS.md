@@ -86,8 +86,9 @@ of about 1mm that the tester saw belongs to an earlier print (tester,
 2026-11-22). This case has blind insert holes of 4.0mm with a relief and
 0.5mm beside the touch panel in the window, as room for real parts. A hole of
 3.5mm in the floor holds the current sensor board, to which the tester's node
-has one XT30 soldered. The tester prints the XT30 case (2026-11-22); the
-result is open. The boards on the floor are not drawn.
+has one XT30 soldered. A tester printed the XT30 case (2026-11-22): it fits the
+node and goes together without binding; the buck converter is held with
+double-sided tape. The boards on the floor are not drawn.
 It holds the node's case, 3 printed parts of 91.4mm x 55.4mm x 28.0mm over
 all: bottom plate, frame with 4 columns, bezel. Chosen (owner, 2026-11-21):
 screws from below through the INA228 module, ruthex RX-M3Sx4.0 inserts, no

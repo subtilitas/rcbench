@@ -47,7 +47,8 @@ history is in git.
   relief in place of straight holes of 3.5mm, a window with 0.5mm in place
   of 0.17mm beside the touch panel, and head recesses of 6.0mm for M3. A
   hole of 3.5mm in the floor holds the current sensor board. `_gen_display_case.py --check`, which CI runs, fails when a part
-  meets the display board or the stack does not close. No part is printed
+  meets the display board or the stack does not close. A tester's print
+  of 2026-11-22 fits the node and goes together without binding
   ([Cases](hardware/mechanical/CASES.md#case-of-the-display-node-xt30)).
 - Settings backup on the card, `BENCH/SETUP`. SETUP > SD CARD ends on Save
   settings, which writes the stored settings as `SETTINGS.TXT`, and Load
