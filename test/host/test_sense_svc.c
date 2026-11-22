@@ -767,7 +767,7 @@ TEST_CASE(a_part_online_at_the_roll_is_judged_if_it_drops_after_it)
 TEST_CASE(a_critical_limit_is_written_reported_and_a_change_set_up_anew)
 {
     rig();
-    cmd.parts.i3221.crit_ma[0] = 1000u;           /* 100mV on 0.1 ohm */
+    cmd.parts.i3221.crit_ma[0] = 1000u;           /* 100mV on 100mΩ */
     step();
     CHECK_EQ(snap.i3221[0], SENSE_PART_ONLINE);
     CHECK_EQ(snap.i3221_crit, 0x01u);
