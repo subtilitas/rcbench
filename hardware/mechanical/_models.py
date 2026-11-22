@@ -26,7 +26,8 @@ FOLDERS = {
         "rbmod_v2_smd", "rp2350_can", "usbc_pd_trigger"),
     "casing": (
         "dial_base_bottom", "dial_base_top", "display_node_box",
-        "display_node_lid", "flap_drive",
+        "display_node_lid", "display_node_xt60_box",
+        "display_node_xt60_lid", "flap_drive",
         "ina228_node_bezel", "ina228_node_frame", "ina228_node_plate",
         "ina228_xt90_case"),
     "parts": (
@@ -47,6 +48,8 @@ VIEWS = {
         "dial_base", "dial_base_exploded", "dial_base_section",
         "display_node_case", "display_node_case_exploded",
         "display_node_case_section", "display_node_lid_inside",
+        "display_node_xt60_case", "display_node_xt60_case_exploded",
+        "display_node_xt60_case_section", "display_node_xt60_seat",
         "ina228_node_case", "ina228_node_case_back",
         "ina228_node_case_exploded", "ina228_node_case_section"),
     "parts": (

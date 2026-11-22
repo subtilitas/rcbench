@@ -1,6 +1,6 @@
 # Printed cases of the nodes
 
-Two cases for nodes of [Nodes](../../docs/Nodes.md), built with OpenCASCADE
+Three cases for nodes of [Nodes](../../docs/Nodes.md), built with OpenCASCADE
 by the generators of [Mechanical parts](README.md). The STEP and STL files
 are in `models/casing/`, the pictures in `renders/casing/`. All parts are
 under the licence of [Mechanical parts](README.md#licence).
@@ -76,6 +76,66 @@ python3 hardware/mechanical/_gen_display_case.py --check    # CI
 xvfb-run -a python3 hardware/mechanical/_gen_display_case.py \
     --render hardware/mechanical/renders
 ```
+
+## Case of the display node, XT60
+
+The same case with a seat for a panel-mount XT60 with a flange and 2
+screws (XT60E) in each short wall, 59.8mm x 105.6mm x 24.4mm.
+
+![Display node case, XT60](renders/casing/display_node_xt60_case.png)
+
+| | | |
+| --- | --- | --- |
+| ![Taken apart](renders/casing/display_node_xt60_case_exploded.png) | ![Cut open](renders/casing/display_node_xt60_case_section.png) | ![Box with its 2 seats](renders/casing/display_node_xt60_seat.png) |
+
+| File | Content | Print |
+| --- | --- | --- |
+| `display_node_xt60_box.step`, `.stl` | as `display_node_box`, 22.6mm high, bosses 16.6mm high, short walls of 3.0mm with one XT60 seat each; 25.8cm3 | underside down; the body's opening is a bridge of 19.6mm, and the 2 bosses behind each short wall hang 4.0mm out of it: support, or a slow bridge |
+| `display_node_xt60_lid.step`, `.stl` | as `display_node_lid`, 105.6mm long; 10.1cm3 | front down, no support |
+
+The connector, from its model in the owner's hardware repository
+(`cad/XT60`), which is not in this repository: flange 33.2mm x 15.8mm x
+2.5mm with ears 11.8mm high, body 18.8mm x 11.7mm ending 15.5mm behind the
+flange's front, contacts to 19.8mm, 2 screw holes 25.6mm apart.
+
+The seat is the one of the bench's front case in the same repository
+(`cad/case_front`), measured from that part's mesh:
+
+| | Size, mm |
+| --- | --- |
+| Wall at the seat | 3.0 |
+| Recess from outside, in the flange's outline | 2.0 deep; 34.7 x 13.3 at the ears, 20.7 x 17.3 in the middle, slanted between; 0.75 of room round the flange |
+| Flange over the wall's outer face | 0.5 |
+| Opening for the body, through the 1.0 that is left | 19.6 x 12.4, 2 corners rounded with 3.0 |
+| Insert holes | 4.0 wide, 25.6 apart, 5.0 deep: through the wall into bosses of 8.0 that stand 4.0 behind it |
+
+Each connector takes 2 threaded inserts ruthex RX-M3Sx4.0, melted in from
+outside, and 2 screws M3 x 6. The 2 seats are one turned by half a turn:
+the body's rounded corners lie at +x in the wall at +y.
+
+What differs from the XT30 case, and why:
+
+- 24.4mm high in place of 17.8mm. The flange is 15.8mm high and its
+  recess 17.3mm, more than the XT30 box's 16.0mm. The connectors' axis is
+  9.8mm over the underside, the bodies lie under the display board, and
+  the board's bosses are 16.6mm high: 0.97mm between a body and the
+  board's back.
+- 105.6mm long in place of 101.2mm: 1.2mm for each thicker short wall and
+  2.0mm more at the USB socket's end, where the body ends 1.4mm before the
+  board and the contacts reach 2.9mm under it, about 1.5mm under the
+  USB socket.
+- 10.2mm is free under the board's speaker socket in place of 3.6mm.
+- The wall at the USB socket's end has no recess in its inner face.
+
+Limits:
+
+- No part is printed, and no XT60 is tried in the seat. The connector's
+  sizes are a model's, not a caliper's.
+- The front case's notch of 10.2mm x 2.5mm under the recess is not drawn;
+  what it is for is not stated.
+- The limits of the XT30 case hold here too: the boards on the floor are
+  not drawn, USB socket, microSD slot and buttons are not reachable with
+  the lid on.
 
 ## Case of the sensor node
 

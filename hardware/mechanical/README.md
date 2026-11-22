@@ -21,8 +21,8 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `rp2350_can.py`, `ina3221_module.py`, `dcdc_buck_mini.py`, `usbc_pd_trigger.py` | specs of 4 module boards, part by part: Waveshare RP2350-CAN, INA3221 board, Mini560 buck converter, USB-C PD trigger board |
 | `matek_mbec12s.py` | spec of the Matek mBEC12S buck converter, 6V to 60V in |
 | `ina228_node.py` | layout of the remote INA228 sensor node: INA228 module, buck converter and display in place |
-| `CASES.md` | the printed cases of the display node and of the sensor node: parts, assembly, openings, limits |
-| `_gen_display_case.py` | builds the 2 parts of the display node's case with XT30 openings with OpenCASCADE, checks their fit round the display board and that the lid closes on the rim, writes STEP and STL |
+| `CASES.md` | the printed cases of the display node, with XT30 and with XT60, and of the sensor node: parts, assembly, openings, limits |
+| `_gen_display_case.py` | builds the display node's case in 2 variants of 2 parts each, with XT30 openings and with seats for screwed panel-mount XT60, with OpenCASCADE; checks their fit round the display board and the connectors and that the lid closes on the rim; writes STEP and STL |
 | `_gen_node_case.py` | builds the 3 parts of the sensor node's case with OpenCASCADE, checks their fit round the layout's solids, writes STEP and STL |
 | `rbmod_v2.py` | spec of the rbmod carrier board, version 2: with its SMD parts, and with its connectors and modules |
 | `_read_kicad_pcb.py` | reads a KiCad board file's outline, holes, footprints, and the pads, tracks and vias of its 2 outer layers into a data file; the copper needs shapely |
@@ -50,7 +50,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `_surface.py`, `_segment.py` | the surfaces and their fits, and the faces grown on them, for `_refit.py` |
 | `check_refit.py` | holds the dial's solids, read back with OpenCASCADE, against the mesh |
 | `models/pcb/` | 17 models: 16 boards with their parts and the sensor node's layout; STEP |
-| `models/casing/` | 9 printed parts: the Dial's base, the display node's case, the sensor node's case, the INA228 module's case, the flap drive's frame; STEP, and STL for 7 of them |
+| `models/casing/` | 11 printed parts: the Dial's base, the display node's case in 2 variants, the sensor node's case, the INA228 module's case, the flap drive's frame; STEP, and STL for 9 of them |
 | `models/parts/` | 13 models of bought parts and of assemblies: emergency stop button, M5Stack Dial and its nut, 2 servos, 2 cells, inertial sensor, the flap drive's assembly and wing; STEP |
 | `renders/` | OpenCASCADE renders in the folders of `models/`: `pcb/`, `casing/`, `parts/`; a view of several models lies in the folder `_models.py` names for it. The contact sheet `all.png` lies beside the folders |
 | `vendor/` | third-party meshes, unchanged, each with its licence |
@@ -696,8 +696,9 @@ Limits:
   and the STEP file lacks, and the notches the panel's tabs leave in the
   edges.
 
-The display node's printed case with XT30 openings is in
-[Cases](CASES.md#case-of-the-display-node-xt30).
+The display node's printed cases are in [Cases](CASES.md): with
+[XT30 openings](CASES.md#case-of-the-display-node-xt30) and with
+[screwed XT60](CASES.md#case-of-the-display-node-xt60).
 
 ## Remote INA228 sensor node, layout
 

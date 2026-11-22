@@ -8,6 +8,15 @@ history is in git.
 
 ### Added
 
+- `hardware/mechanical/`: a variant of the display node's case for
+  panel-mount XT60 with 2 screws, 59.8mm x 105.6mm x 24.4mm:
+  `display_node_xt60_box` and `display_node_xt60_lid`, each as STEP and
+  STL. Each short wall has the seat of the bench's front case: a wall of
+  3.0mm, a recess 2.0mm deep in the flange's outline, an opening of 19.6mm
+  x 12.4mm for the body and 2 insert holes 25.6mm apart in bosses behind
+  the wall. The check holds the connectors' flange, body and contacts
+  clear of box and board. No part is printed
+  ([Cases](hardware/mechanical/CASES.md#case-of-the-display-node-xt60)).
 - `hardware/mechanical/`: a printed case of 2 parts for the display node
   with XT30 connectors, 59.8mm x 101.2mm x 17.8mm: `display_node_box` and
   `display_node_lid`, each as STEP and STL. It follows a tester's case,

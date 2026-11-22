@@ -74,6 +74,11 @@ beside the plus bar and 1.5mm over the board, 86.4mm x 50.0mm x 23.7mm over
 all. The node has no cell and no charger board (owner, 2026-11-21). The
 converter's model, `matek_mbec12s.step`, is drawn from seller pictures by eye,
 within about 0.5mm; only its 4.5mm over all is a listed height.
+It holds a variant of the display node's case for panel-mount XT60 with 2
+screws, 59.8mm x 105.6mm x 24.4mm. Its seat is the front case's of the owner's
+hardware repository, measured from that part's mesh: wall 3.0mm, flange
+recess 2.0mm deep, 2 inserts 25.6mm apart behind the wall. The connector's
+sizes are its model's; no XT60 is tried in the seat and no part is printed.
 It holds a case of 2 printed parts for the display node with XT30 connectors,
 59.8mm x 101.2mm x 17.8mm, after a tester's case measured from its STL file.
 The tester reports a gap of about 1mm between lid and box; the measured case
