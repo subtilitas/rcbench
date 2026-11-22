@@ -950,6 +950,12 @@ The entries below cover the 7 pull requests merged since v0.23.13: #847,
   under `hardware/kicad/modules/`. `--keep` keeps the captured parts per
   scene, so that a changed scene is captured alone; a kept part of
   1024 bytes or less is captured again ([Videos from storyboards](tools/video/README.md)).
+- Music bed `bach-cello`: the Prelude of J. S. Bach's Suite No. 1 for
+  cello solo, BWV 1007, 41 bars at 4s a bar, plucked over each bar's
+  lowest note. The notes are those of the Mutopia Project's edition
+  Mutopia-2018/01/19-517, which its typesetter placed in the public
+  domain. No storyboard uses it
+  ([Videos from storyboards](tools/video/README.md)).
 - Storyboard `phase-tap`: ESC STICK programming counted from the phase
   tap in 7 steps, narrated. `tools/video_tap.py` models the motor lead of
   a beeping ESC from the FlyDragon Lite 40A's measured beeps, simulates

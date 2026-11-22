@@ -76,7 +76,8 @@ STILLS = VIDEO / "stills"
 UNITS = ("lid", "estop", "xt60", "usbc", "pdmini", "mcu", "ina",
          "buck", "trigger", "rbmod", "case")
 CONNECTORS = {"J1": 4, "J2": 4}
-BEDS = ("pads", "bach-prelude", "pachelbel-canon", "vivaldi-spring")
+BEDS = ("pads", "bach-prelude", "pachelbel-canon", "vivaldi-spring",
+        "bach-cello")
 PART_FRAMES = 900
 VIEWS_KEPT = 4
 PART_LEAST = 1024

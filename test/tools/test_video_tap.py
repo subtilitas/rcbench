@@ -14,6 +14,7 @@ REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "tools"))
 
 import make_video  # noqa: E402
+import video_audio  # noqa: E402
 import video_tap  # noqa: E402
 
 FIGURE = REPO / "tools" / "video" / "plots" / "phase-tap.json"
@@ -85,3 +86,12 @@ def test_the_phase_tap_storyboard_passes_the_check():
     """The phase tap storyboard passes the check."""
     board = json.loads(BOARD.read_text(encoding="utf-8"))
     assert make_video.check(board) == []
+
+
+def test_the_cello_bed_holds_41_bars_of_sixteenths_and_is_a_known_bed():
+    """The cello bed holds 41 bars of sixteenths and is a known bed."""
+    assert len(video_audio.CELLO) == 41
+    assert all(len(row) == 16 and row[0] for row in video_audio.CELLO)
+    assert video_audio.CELLO[0][:8] == (43, 50, 59, 57, 59, 50, 59, 50)
+    assert "bach-cello" in video_audio.BEDS
+    assert video_audio.BEDS == make_video.BEDS
