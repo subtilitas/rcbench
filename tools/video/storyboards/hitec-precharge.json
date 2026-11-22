@@ -800,9 +800,10 @@
       "pad"
      ],
      "at": [
-      1110,
-      170
+      70,
+      700
      ],
+     "side": "t",
      "style": "warn",
      "title": "The wire no longer rests low",
      "text": "A released pin has only its internal pull-down, 50 to 80 kΩ. Against 2.2 kΩ it decides nothing."
@@ -830,9 +831,10 @@
       "pad"
      ],
      "at": [
-      1110,
-      170
+      70,
+      700
      ],
+     "side": "t",
      "title": "One pin, several jobs",
      "text": "Servo pulses and DShot rest on a low wire. The pull-up serves one protocol and changes the wire for all."
     }
@@ -863,11 +865,11 @@
   {
    "type": "scope",
    "figure": "hitec-precharge",
-   "dur": 67.93,
+   "dur": 68.01,
    "chips": [
     {
      "from": 0,
-     "to": 67.93,
+     "to": 68.01,
      "n": 3,
      "text": "Precharge and sample"
     }
@@ -950,7 +952,7 @@
         1
        ],
        [
-        67.93,
+        68.01,
         1
        ]
       ]
@@ -1142,7 +1144,7 @@
       340
      ],
      "from": 12.58,
-     "to": 67.93,
+     "to": 68.01,
      "heading": "Signal wire · one sample period, 1086.7 ns · simulated with ngspice",
      "view": [
       [
@@ -1197,7 +1199,7 @@
        "series": "cycle",
        "label": "servo lets go: reads high",
        "from": 13.78,
-       "to": 67.93,
+       "to": 68.01,
        "reveal": [
         [
          13.98,
@@ -1222,7 +1224,7 @@
        "style": "red",
        "label": "servo pulls low: reads low",
        "from": 44.900000000000006,
-       "to": 67.93,
+       "to": 68.01,
        "reveal": [
         [
          45.1,
@@ -1242,7 +1244,7 @@
      "bands": [
       {
        "from": 13.78,
-       "to": 67.93,
+       "to": 68.01,
        "x": [
         100.0,
         200.0
@@ -1254,7 +1256,7 @@
      "lines": [
       {
        "from": 34.83,
-       "to": 67.93,
+       "to": 68.01,
        "x": 313.33,
        "text": "sample, 113.3 ns after the release",
        "style": "ok",
@@ -1262,7 +1264,7 @@
       },
       {
        "from": 36.33,
-       "to": 67.93,
+       "to": 68.01,
        "y": 1.1,
        "text": "input threshold",
        "style": "muted"
@@ -1349,7 +1351,7 @@
     },
     {
      "from": 57.08,
-     "to": 67.53,
+     "to": 67.61,
      "anchor": [
       "c",
       "pad"
@@ -1385,7 +1387,7 @@
     },
     {
      "at": 56.78,
-     "text": "One precharge, one sample, every 1087 nanoseconds. A second state machine of the RP2350's programmable I O does it in 7 instructions."
+     "text": "One precharge, one sample, every 1,087 nanoseconds. A second state machine of the RP2350's programmable I O does it in 7 instructions."
     }
    ]
   },
@@ -1845,11 +1847,11 @@
   {
    "type": "scope",
    "figure": "hitec-precharge",
-   "dur": 56.75,
+   "dur": 56.82,
    "chips": [
     {
      "from": 0,
-     "to": 56.75,
+     "to": 56.82,
      "n": 6,
      "text": "On the logic analyser"
     }
@@ -1916,7 +1918,7 @@
        ]
       ],
       [
-       56.75,
+       56.82,
        [
         7949525.576,
         7970358.92
@@ -1951,7 +1953,7 @@
        ],
        "width": 3,
        "from": 5.3,
-       "to": 56.75,
+       "to": 56.82,
        "reveal": [
         [
          5.5,
@@ -1972,7 +1974,7 @@
        ],
        "width": 3,
        "from": 19.86,
-       "to": 56.75,
+       "to": 56.82,
        "reveal": [
         [
          20.16,
@@ -1994,7 +1996,7 @@
        "width": 2.5,
        "shift": 153820.0,
        "from": 27.349999999999998,
-       "to": 56.75,
+       "to": 56.82,
        "reveal": [
         [
          27.65,
@@ -2041,8 +2043,8 @@
       1808,
       350
      ],
-     "from": 45.84,
-     "to": 56.75,
+     "from": 45.91,
+     "to": 56.82,
      "heading": "The same pulses, simulated with ngspice · dashed: the analyser's threshold",
      "view": [
       [
@@ -2073,15 +2075,15 @@
        "shift": 7891908.33,
        "width": 3,
        "label": "simulated wire",
-       "from": 46.040000000000006,
-       "to": 56.75,
+       "from": 46.11,
+       "to": 56.82,
        "reveal": [
         [
-         46.34,
+         46.41,
          7949525.576
         ],
         [
-         49.34,
+         49.41,
          7970358.92
         ]
        ]
@@ -2164,7 +2166,7 @@
     },
     {
      "from": 39.64,
-     "to": 45.74,
+     "to": 45.809999999999995,
      "anchor": [
       "a",
       7955601.968,
@@ -2198,10 +2200,10 @@
     },
     {
      "at": 32.84,
-     "text": "One pulse every 1087 nanoseconds. A wire that is let go holds each pulse above the analyser's threshold for 280 nanoseconds. Where the servo pulls low, the pulse is gone."
+     "text": "One pulse every 1,087 nanoseconds. A wire that is let go holds each pulse above the analyser's threshold for 280 nanoseconds. Where the servo pulls low, the pulse is gone."
     },
     {
-     "at": 46.34,
+     "at": 46.41,
      "text": "The simulated wire, read at the same threshold, gives the same picture. And the bytes are the same 8 in both receive modes."
     }
    ]
