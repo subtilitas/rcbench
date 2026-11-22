@@ -1010,14 +1010,21 @@ jobs:
       - name: Every task's stack holds its deepest call chain
         run: python3 tools/stack_check.py firmware/panel/build --check-doc
 
-      # The symbols target_add_binary_data() names the embedded images by:
-      # the module's, the rbmod carrier's, the C6 radio's, the Dial's and
-      # the two nodes'.
-      - name: Both IOmcu images, the C6, Dial and node images are carried
+      # The symbols target_add_binary_data() names the embedded images by.
+      # Only the IOmcu images are embedded (the module's and the rbmod
+      # carrier's); the C6, Dial and node images are release assets the
+      # panel downloads for an update, so none of their symbols may appear.
+      - name: Both IOmcu images are carried, no device image is
         run: |
-          for s in iomcu iomcu_rbmod c6 dial node_pwr node_bal; do
+          for s in iomcu iomcu_rbmod; do
             grep -aq "_binary_rcbench_${s}_bin_start" \
               firmware/panel/build/rcbench-panel.elf
+          done
+          for s in c6 dial node_pwr node_bal; do
+            if grep -aq "_binary_rcbench_${s}_bin_start" \
+                firmware/panel/build/rcbench-panel.elf; then
+              echo "rcbench_${s}.bin is embedded"; exit 1
+            fi
           done
 
       # The default build reads a touch injector at 0x14 beside the glass
