@@ -56,10 +56,5 @@ SYMBOL = {
     ],
 }
 
-# 3D model. The inductor height (4.5mm) is a part class figure, not
-# measured; other parts are not drawn. No source for this board was found.
-MODEL = {
-    "mount": "header",
-    "pins": ["1", "2", "3", "4", "5"],
-    "bodies": [("box", 7.8, 0.4, 18.5, 10.4, 4.5, "chip")],
-}
+# 3D model: drawn part by part in hardware/mechanical/dcdc_buck_mini.py.
+MODEL = {"detail": "dcdc_buck_mini"}

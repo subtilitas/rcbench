@@ -25,6 +25,49 @@ history is in git.
   ([Screens](docs/Screens.md#sd-card-the-settings-backup)).
 - The SD CARD tile reads `LOGS, BROWSER WRITES, BACKUP`.
 
+- `hardware/mechanical/`: a printed case of 3 parts for the remote INA228
+  sensor node, 91.4mm x 55.4mm x 28.0mm: `ina228_node_plate`,
+  `ina228_node_frame` and `ina228_node_bezel`, each as STEP and STL. 4
+  screws M3 x 8 go from below through the plate and the INA228 board into
+  the frame's columns, 4 screws M3 x 10 from above through the bezel and
+  the display board; the 8 threads are ruthex RX-M3Sx4.0 inserts.
+  Openings: 2 XT90, USB Type-C, a tool slot for RESET and BOOT, microSD,
+  4 speaker slots, microphone, display window. `_gen_node_case.py` builds
+  the parts with OpenCASCADE and CI checks them against the 1139 solids of
+  the layout. No part is printed
+  ([Mechanical parts](hardware/mechanical/README.md#case-of-the-sensor-node)).
+- `hardware/mechanical/`: `ina228_node_layout.step`, the boards of the
+  remote INA228 sensor node in place: the INA228 module with its 2 XT90PW
+  connectors at the bottom, the ES3C28P display board 0.5mm over the
+  connector housings, a Matek mBEC12S buck converter (6V to 60V in, 5V
+  out) beside the plus bar, not over the current path. 86.4mm x 50.0mm x
+  23.7mm over all, 1139 solids, no two sharing volume. `matek_mbec12s.step`
+  is the converter alone, 18.0mm x 15.0mm x 4.5mm, drawn from seller
+  pictures within about 0.5mm
+  ([Mechanical parts](hardware/mechanical/README.md#remote-ina228-sensor-node-layout)).
+- `hardware/mechanical/`: the rbmod carrier's models carry the copper of
+  the 2 outer layers, read from the board file by `_read_kicad_pcb.py`:
+  280 pads, gold for their ENEPIG finish, and the tracks and vias in a
+  lighter green. `rbmod_v2.step` holds 1920 solids (27.3MB),
+  `rbmod_v2_smd.step` 382 (10.1MB). The reader's copper needs shapely
+  2.2.0, which CI installs for the tool tests.
+- `hardware/mechanical/`: `rp2350_can.step`, `ina3221_module.step`,
+  `dcdc_buck_mini.step` and `usbc_pd_trigger.step`, the 4 kinds of module
+  on the rbmod carrier drawn part by part with the print of both sides:
+  Waveshare RP2350-CAN, INA3221 board, Mini560 buck converter, USB-C PD
+  trigger board. Part places are read from straight views of the maker and
+  of sellers, laid onto each board's frame, within 0.2mm to 0.5mm. The
+  same models are the 3D models of the 4 footprints in the KiCad library
+  and stand on `rbmod_v2.step`. The overlap check covers them
+  ([Mechanical parts](hardware/mechanical/README.md#module-boards-of-the-rbmod-carrier)).
+- `hardware/mechanical/`: `rbmod_v2_smd.step` and `rbmod_v2.step`, the
+  rbmod carrier board, version 2 (80.0mm x 89.0mm): the board with its 17
+  surface-mounted parts, and the same with 7 connectors and 5 modules,
+  11.1mm over the board; J6 and J8 are not populated and not drawn.
+  `_read_kicad_pcb.py` reads outline, holes and footprints from the KiCad
+  board file into `_rbmod_v2_data.py`; the
+  overlap check covers both models
+  ([Mechanical parts](hardware/mechanical/README.md#rbmod-carrier-board-version-2)).
 - Link protocol 4.41: the IOmcu's bank has 16 slots and 16 channels.
   CHANNELS_HI, CHAN_CFG_HI and OUTPUTS_HI (0x3C to 0x3E) carry channels 9
   to 16 and slots 9 to 16, BIND_CFG_HI and BIND_OUT_HI (0x3F, 0x40)
@@ -76,6 +119,24 @@ history is in git.
 
 ### Changed
 
+- `hardware/mechanical/models/` is sorted into 3 folders: `pcb/` (17
+  models: 16 boards and the sensor node's layout), `casing/` (7 printed
+  parts) and `parts/` (13 bought parts and assemblies). `_models.py` names
+  each model's folder; every generator and check asks it for a path.
+  `renders/` has the same 3 folders, the contact sheet `all.png` beside
+  them; `step_render.py --folders` writes into them. `gen_models.py
+  --check` fails on a file under `models/` or `renders/` that lies
+  elsewhere. File names are unchanged.
+- Dial base: the 4 screws turn into brass threaded inserts for melting
+  in (ruthex RX-M3Sx4.0; owner, 2026-11-21) in place of threads cut in the
+  plastic. Each boss of the top part has a hole of 4.0mm, 5.0mm deep, and
+  is 7.2mm across up to 1.0mm under the ring nut; the bottom part's rim
+  has a notch at each boss. The two parts weigh 37g in PLA.
+- KiCad library: 4 module models have the real board's colour in place of
+  green: the RP2350-CAN and the mini buck converter blue, the INA3221
+  board black (owner, 2026-11-21), the USB-C PD trigger board purple, as
+  three owner photos show it
+  ([hardware/kicad/README.md](hardware/kicad/README.md)).
 - Flap drive model (`hardware/mechanical/_gen_flap_drive.py`): the wing's
   upper skin ends 4.45mm before the flap, so the flap turns 20.3 degrees
   up; a fairing, half an ellipsoid 35.5mm long, 10.2mm wide and 8.1mm
@@ -91,6 +152,12 @@ history is in git.
 
 ### Fixed
 
+- Dial base (`hardware/mechanical/_gen_dial_base.py`): every flute is
+  open. The bosses' webs, the ledge under the rim and the screw columns
+  were cut to the unfluted shape and filled the flutes, 183mm3 in the
+  bottom part and 10mm3 in the top part; a printed base showed it (owner,
+  2026-11-21). They are cut to the fluted shape, and `--check` fails on
+  material in a flute.
 - Web flasher: a write to an ESP board keeps the board's settings. The
   page reads the partition table from the merged image (0xC000 on the
   panel, 0x8000 on the Dial, the nodes and the C6 radio) and writes every
