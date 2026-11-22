@@ -99,6 +99,13 @@ printed. RESET and BOOT have no push rod: a tool of
 2mm at most reaches them through a slot. A USB plug thicker than 7.0mm meets
 the plug in the XT90 housing under it. The speaker is not chosen; the
 converter lies on a foam pad of 1.5mm that is not drawn.
+It holds STEP models of the Flycolor FlyDragon Lite 40A ESC with its leads,
+of the T-Motor AT2814 outrunner, and of the two joined lead to lead. The ESC's
+size is the maker's; its leads' lengths, diameters and the signal wires' roles
+are not stated by the maker and are estimated or taken from common use. The
+motor follows the maker's drawing without the openings of cap and cage. The
+motor stands for the one a 40A ESC drives (owner, 2026-11-22); the phase tap's
+measurements name no motor.
 It holds a STEP model of the Hitec D485HW servo with the horn HD-X25 and 60mm
 of its 300mm lead, from the maker's dimension drawing, STEP model and data
 sheets. Which edge of the lead carries the signal wire is not in the sources;

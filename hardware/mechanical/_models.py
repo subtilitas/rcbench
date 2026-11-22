@@ -31,11 +31,11 @@ FOLDERS = {
         "ina228_node_bezel", "ina228_node_frame", "ina228_node_plate",
         "ina228_xt90_case"),
     "parts": (
-        "estop_m16_assembly", "estop_m16_button", "estop_m16_nut",
-        "estop_m16_shim", "flap_drive_assembly", "flap_drive_wing",
-        "hitec_d485hw",
+        "esc_motor_set", "estop_m16_assembly", "estop_m16_button",
+        "estop_m16_nut", "estop_m16_shim", "flap_drive_assembly",
+        "flap_drive_wing", "flycolor_flydragon_lite_40a", "hitec_d485hw",
         "kst_x10", "lipo_102540_1000mah", "lipo_702030_380mah", "m5dial",
-        "m5dial_nut", "servo_standard", "wit_imu"),
+        "m5dial_nut", "servo_standard", "tmotor_at2814", "wit_imu"),
 }
 FOLDER = {stem: folder for folder, stems in FOLDERS.items()
           for stem in stems}

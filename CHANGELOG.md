@@ -8,6 +8,14 @@ history is in git.
 
 ### Added
 
+- `hardware/mechanical/`: `flycolor_flydragon_lite_40a.step`, the ESC with
+  its capacitor, print, power leads with an XT60 plug, 3 motor leads and
+  signal lead with plug (43 solids); `tmotor_at2814.step`, the outrunner
+  with its 3 leads (15 solids); and `esc_motor_set.step`, the two joined
+  lead to lead, 398.2mm long. The ESC's size follows the maker's manual,
+  the motor the maker's drawing; lead lengths and diameters of the ESC are
+  estimated from a picture. The overlap check covers the 3 models
+  ([Mechanical parts](hardware/mechanical/README.md#esc-and-motor-flycolor-flydragon-lite-40a-t-motor-at2814)).
 - `hardware/mechanical/`: `hitec_d485hw.step`, the Hitec D485HW servo with
   the four-arm horn HD-X25, its type plate and 60mm of its lead: 3 wires,
   minus black, plus red, signal yellow, and the 3 pin plug. 126.4mm x

@@ -19,11 +19,11 @@ import gen_models  # noqa: E402
 
 
 def test_each_stem_is_in_one_folder():
-    """3 folders, 42 stems, none twice."""
+    """3 folders, 45 stems, none twice."""
     assert list(_models.FOLDERS) == ["pcb", "casing", "parts"]
     stems = [stem for group in _models.FOLDERS.values() for stem in group]
-    assert len(stems) == len(set(stems)) == 42
-    assert [len(group) for group in _models.FOLDERS.values()] == [17, 11, 14]
+    assert len(stems) == len(set(stems)) == 45
+    assert [len(group) for group in _models.FOLDERS.values()] == [17, 11, 17]
 
 
 def test_every_file_lies_in_its_folder():
