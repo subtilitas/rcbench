@@ -9487,6 +9487,15 @@ UI_TEXT(UPD_FETCH_FROM_CARD, 123,
 UI_TEXT(UPD_FETCH_IN_RAM, 123,
     "%s is downloaded and checked.",
     "%s ist geladen und geprüft.")
+/* An image in memory without a valid release signature (fw_sig.h), in a
+ * build that warns: the card's line in the warning colour with UPS_NONE or
+ * UPS_BAD as the reason, and the band once it arrives. */
+UI_TEXT(UPD_FETCH_IN_RAM_NOSIG, 123,
+    "%s: not signed by the rcbench release key. %s",
+    "%s: nicht vom rcbench-Release-Schlüssel signiert. %s")
+UI_TEXT(UPD_FETCH_NOSIG_NOTE, 94,
+    "%s is not signed by the rcbench release key.",
+    "%s ist nicht vom rcbench-Release-Schlüssel signiert.")
 UI_TEXT(UPD_FETCH_FAIL_NET, 123,
     "Download failed (%s): %s",
     "Download fehlgeschlagen (%s): %s")
@@ -9523,6 +9532,9 @@ UI_TEXT(UPD_FETCH_VERSION, 81,
 UI_TEXT(UPD_FETCH_NOT_FW, 81,
     "The file is no firmware for this device.",
     "Die Datei ist keine Firmware für dieses Gerät.")
+UI_TEXT(UPD_FETCH_NOSIG, 81,
+    "The file is not signed by the rcbench release key.",
+    "Die Datei ist nicht vom rcbench-Release-Schlüssel signiert.")
 /* The version a C6 or device step installs: the release's file. */
 UI_TEXT(UPD_WIZ_FOR_PANEL, 41,
     "For this panel: %s",

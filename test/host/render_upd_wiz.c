@@ -217,6 +217,17 @@ static void fit_views(const char *view, wiz_pose_t *w)
     } else if (strcmp(view, "updates-wiz-dev-ram") == 0) {
         dial_behind(w);
         w->d[UPD_DEV_DIAL].fetch.src = DEVIMG_SRC_RAM;
+        snprintf(w->d[UPD_DEV_DIAL].fetch.file,
+                 sizeof(w->d[UPD_DEV_DIAL].fetch.file),
+                 "rcbench-node-bal-10.10.10.bin");
+    } else if (strcmp(view, "updates-wiz-dev-nosig") == 0) {
+        dial_behind(w);
+        w->d[UPD_DEV_DIAL].fetch.src = DEVIMG_SRC_RAM;
+        w->d[UPD_DEV_DIAL].fetch.nosig = true;
+        /* The longest file name the release has: a node's. */
+        snprintf(w->d[UPD_DEV_DIAL].fetch.file,
+                 sizeof(w->d[UPD_DEV_DIAL].fetch.file),
+                 "rcbench-node-bal-10.10.10.bin");
     } else if (strcmp(view, "updates-wiz-c6-check") == 0) {
         w->c6.row = FW_C6_ROW_UPDATING;
         w->c6.carried = (fw_version_t){ 2u, 14u, 0u };

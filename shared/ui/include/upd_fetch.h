@@ -39,6 +39,10 @@ typedef struct {
     uint8_t src;      /**< devimg_src_t: where the next hold takes it  */
     uint8_t run;      /**< upd_fetch_run_t                              */
     uint8_t percent;  /**< UPD_FETCH_NET: the share received, 0-100    */
+    bool    nosig;    /**< DEVIMG_SRC_RAM: the image has no valid release
+                           signature (fw_sig.h); the build warns         */
+    bool    sigbad;   /**< with nosig: a signature came and did not match
+                           (fw_sig_bad()); false: none came             */
     /** @brief The file: its name in the release for DEVIMG_SRC_NET and
      *         RAM, its path on the card for DEVIMG_SRC_CARD; empty for
      *         none. */
@@ -73,6 +77,24 @@ bool upd_fetch_label(const upd_fetch_t *f, char *out, size_t n);
  * @param n   bytes of @p out
  */
 void upd_fetch_line(const upd_fetch_t *f, char *out, size_t n);
+
+/**
+ * @brief Whether the card's line (upd_fetch_line()) is a warning: the hold
+ *        reads the SD card, or the image in memory is not signed.
+ * @param f the row's image
+ * @return true for the warning colour
+ */
+bool upd_fetch_warn(const upd_fetch_t *f);
+
+/**
+ * @brief The band's line once an image arrives without a valid release
+ *        signature, in a build that warns; the card's line gives the
+ *        reason (upd_fetch_line()).
+ * @param file the file's name
+ * @param out  takes the line
+ * @param n    bytes of @p out
+ */
+void upd_fetch_nosig_note(const char *file, char *out, size_t n);
 
 /**
  * @brief A failed attempt's line, as the card shows it on the step:

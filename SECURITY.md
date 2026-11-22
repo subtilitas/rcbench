@@ -137,6 +137,25 @@ compiled into the firmware, over the whole image in PSRAM:
   RELEASE KEY, or NOT SIGNED BY THE RCBENCH RELEASE KEY with the reason
   (no signature, or a signature that does not match).
 
+The panel verifies the device images it sends the same way, with the same
+verifier and key, before an update takes one
+(`shared/devupd/devimg.c`, `firmware/panel/main/panel_devimg.c`):
+
+- Download from GitHub: after the C6 radio's, the Dial's or a node's file
+  and its `SHA256SUMS` check, the panel fetches `<file>.sig` beside it,
+  with the panel image's rules: a status other than 200 is no signature, a
+  body outside 8 to 72 bytes is a signature that does not match, a broken
+  connection ends the download.
+- SD card: the file `<file>.sig` beside the file in `BENCH/UPDATES`. None
+  is no signature; one outside 8 to 72 bytes is a signature that does not
+  match.
+- The verdict follows `RCBENCH_SIGN_ENFORCE` below. At 0 an image without
+  a valid signature is kept and sent after the band says
+  `<file> is not signed by the rcbench release key.`, and the step's card
+  keeps that warning with the reason (no signature, or one that does not
+  match) in the warning colour. At 1 the image is
+  refused (`V07`), and nothing is sent.
+
 What the panel does with an image the release key does not vouch for is
 one compile-time switch, `RCBENCH_SIGN_ENFORCE`
 (`shared/fwupdate/include/fw_sig.h`). At 0, the setting of every build up
@@ -153,7 +172,9 @@ Current limitations:
 - The saved home-network password is unencrypted in NVS (non-volatile
   storage).
 - The release signature warns and does not refuse (`RCBENCH_SIGN_ENFORCE`
-  0). An uploaded image without a valid signature, built as
+  0), for the panel image and for the device images alike. A device image
+  without a valid signature, from the SD card's `BENCH/UPDATES` or the
+  network, passes the other checks and is sent after the warning. An uploaded image without a valid signature, built as
   `rcbench-panel` for the ESP32-P4, installs after the warning with the
   single 2s hold. A device between the browser and the panel can replace
   an upload, and drop its `.sig`, on the network; the panel then shows NOT
@@ -337,13 +358,13 @@ home network, or after a failed download, the hold reads the file from
 the SD card's `BENCH/UPDATES`. An SD-card image is checked for its size,
 the device's chip, project and role, the release's version, its own
 appended SHA-256, and against a `SHA256SUMS` on the same card only when
-one names it. It is not authenticated: anyone who can write the card can
-place an image that passes these checks, and the step's 2s hold sends it
+one names it, and against its `.sig`. While `RCBENCH_SIGN_ENFORCE` is 0
+the signature only warns: anyone who can write the card can place an
+image that passes the other checks, and the step's 2s hold sends it
 to the C6 radio over SDIO (Secure Digital input/output), or to the Dial or
 a node over Bluetooth LE, where the device's own confirmation still
-applies. The release publishes a `.sig` beside each device image (Release
-signatures above); the panel fetches and checks none of them, neither for
-a download nor for an SD-card file
+applies, after the warning on the band and the step's card. At 1 such an
+image is refused
 ([Screens: Device images](docs/Screens.md#device-images)).
 
 Two classes of report apply.

@@ -256,7 +256,7 @@ static void c6_card(const upd_wiz_t *w)
     versions(st, TR(UPD_C6_NOT_REPORTED), false);
     const upd_c6_view_t *cv = upd_c6_view();
     upd_fetch_line(&cv->fetch, s_line, sizeof(s_line));
-    add(s_line, cv->fetch.src == DEVIMG_SRC_CARD ? UI_WARN : UI_TEXT_DIM, 12,
+    add(s_line, upd_fetch_warn(&cv->fetch) ? UI_WARN : UI_TEXT_DIM, 12,
         true);
     add(TR(UPD_WIZ_DO_C6), UI_TEXT, 12, false);
     const char *why = upd_c6_reason(upd_c6_view());
@@ -279,7 +279,7 @@ static void dev_card(const upd_wiz_t *w)
     const bool dial = id == UPD_DEV_DIAL;
     versions(st, TR(UPD_DEV_NOT_LINKED), false);
     upd_fetch_line(&v->fetch, s_line, sizeof(s_line));
-    add(s_line, v->fetch.src == DEVIMG_SRC_CARD ? UI_WARN : UI_TEXT_DIM, 12,
+    add(s_line, upd_fetch_warn(&v->fetch) ? UI_WARN : UI_TEXT_DIM, 12,
         true);
     if (st->state == UPD_WIZ_RUNNING) {
         /* While the image is on its way, the control says what runs. */

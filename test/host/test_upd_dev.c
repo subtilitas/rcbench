@@ -524,6 +524,41 @@ TEST_CASE(cancel_is_a_tap_before_end_and_grey_through_the_install)
     CHECK(!upd_dev_take_cancel());
 }
 
+/* An image in memory without a valid release signature: the card's line
+ * says so in the warning colour, the band names the reason; a signed one
+ * reads as before. */
+TEST_CASE(an_unsigned_image_in_memory_warns_on_the_card_and_the_band)
+{
+    ui_text_set_language(UI_LANG_EN);
+    upd_fetch_t f;
+    memset(&f, 0, sizeof(f));
+    f.src = DEVIMG_SRC_RAM;
+    snprintf(f.file, sizeof(f.file), "%s", "rcbench-dial-0.23.16.bin");
+    char out[160];
+    upd_fetch_line(&f, out, sizeof(out));
+    CHECK_STR_EQ(out, "rcbench-dial-0.23.16.bin is downloaded and checked.");
+    CHECK(!upd_fetch_warn(&f));
+    f.nosig = true;
+    upd_fetch_line(&f, out, sizeof(out));
+    CHECK_STR_EQ(out, "rcbench-dial-0.23.16.bin: not signed by the rcbench "
+                      "release key. The image comes with no signature.");
+    CHECK(upd_fetch_warn(&f));
+    f.sigbad = true;
+    upd_fetch_line(&f, out, sizeof(out));
+    CHECK_STR_EQ(out, "rcbench-dial-0.23.16.bin: not signed by the rcbench "
+                      "release key. The signature does not match.");
+    upd_fetch_nosig_note(f.file, out, sizeof(out));
+    CHECK_STR_EQ(out, "rcbench-dial-0.23.16.bin is not signed by the rcbench "
+                      "release key.");
+    upd_fetch_check_text(DEVIMG_E_SIG, NULL, NULL, out, sizeof(out));
+    CHECK_STR_EQ(out, "The file is not signed by the rcbench release key.");
+    /* the card's hold stays a warning; a download is not */
+    f.src = DEVIMG_SRC_CARD;
+    CHECK(upd_fetch_warn(&f));
+    f.src = DEVIMG_SRC_NET;
+    CHECK(!upd_fetch_warn(&f));
+}
+
 int main(void)
 {
     RUN(the_entry_opens_the_page_and_back_and_the_home_tag_close_it);
@@ -536,5 +571,6 @@ int main(void)
     RUN(the_entry_counts_the_devices_and_shows_a_running_update);
     RUN(the_lines_and_the_labels_fit_in_both_languages);
     RUN(cancel_is_a_tap_before_end_and_grey_through_the_install);
+    RUN(an_unsigned_image_in_memory_warns_on_the_card_and_the_band);
     return test_summary("upd_dev");
 }

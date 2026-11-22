@@ -57,6 +57,11 @@ static const format_args_t k_args[] = {
      * cells, its own field), the code, and versions of 3 x 5 digits. */
     { TX_UPD_FETCH_FROM_NET,  { "rcbench-node-pwr-0.23.16.bin" } },
     { TX_UPD_FETCH_IN_RAM,    { "rcbench-node-pwr-0.23.16.bin" } },
+    /* An image without a valid release signature: the longer reason of
+     * UPS_NONE and UPS_BAD in either language. */
+    { TX_UPD_FETCH_IN_RAM_NOSIG,
+      { "rcbench-node-pwr-0.23.16.bin", "The image comes with no signature." } },
+    { TX_UPD_FETCH_NOSIG_NOTE, { "rcbench-node-pwr-0.23.16.bin" } },
     { TX_UPD_FETCH_FROM_CARD,
       { "BENCH/UPDATES/rcbench-node-pwr-0.23.16.bin" } },
     { TX_UPD_FETCH_NO_FILE,

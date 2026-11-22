@@ -8204,6 +8204,20 @@ angehängter SHA-256, für Dial und Knoten die Rolle in ihrem Kopf, und die
 Version des Release. Die Prüfungen und das Lesen der Karte laufen auf der
 Task `devimg` ([Performance: Stacks](Performance-de.md#stacks)).
 
+Die Release-Signatur des Images wird wie die des Panel-Images geprüft
+([SECURITY.md](../SECURITY.md)): Der Download holt `<Datei>.sig` neben der
+Datei, und das Lesen der Karte nimmt `<Datei>.sig` neben der Datei in
+`BENCH/UPDATES`. Eine fehlende `.sig` ist keine Signatur; eine außerhalb
+von 8 bis 72 Bytes, oder eine, die sich mit dem Release-Schlüssel nicht
+bestätigen lässt, passt nicht. Solange der Build warnt
+(`RCBENCH_SIGN_ENFORCE` 0, jeder Build bis zum stabilen Release, das sie
+erzwingt), wird ein solches Image behalten und gesendet: Das Band sagt
+`rcbench-dial-0.23.16.bin ist nicht vom rcbench-Release-Schlüssel
+signiert.`, und die Karte des Schritts zeigt `rcbench-dial-0.23.16.bin:
+nicht vom rcbench-Release-Schlüssel signiert. Das Image hat keine
+Signatur.` oder `Die Signatur passt nicht.` in der Warnfarbe.
+Ein Build, der sie erzwingt, lehnt das Image mit `V07` ab.
+
 Das Bedienelement zeigt, was läuft: `DOWNLOAD 43%`, `DATEI WIRD GEPRÜFT`,
 `SD-KARTE WIRD GELESEN`. UPDATE ABBRECHEN während des Downloads, des
 Lesens der Karte oder der Prüfung eines Funkgeräts verwirft das Update,
@@ -8238,7 +8252,7 @@ nächsten Stelle:
 | --- | --- |
 | `Download fehlgeschlagen (D10): Keine Verbindung zu GitHub.` | `D` und das Ergebnis des Downloads, in den Worten des eigenen Downloads des Panels ([Der Download](#der-download)): `D04` kein Heimnetz gespeichert, `D05` das Gate, `D06` von außen beendet (ARMED, Netzteil, Log-Lauf, STOP, WI-FI, UPDATE ABBRECHEN), `D07` das Verbinden schlug fehl, `D08` der Funk kam nicht hoch, `D09` die 180s sind abgelaufen, `D10` keine Verbindung, `D11` ein HTTP-Status abgelehnt, `D12` eine Antwort außer Form, `D13` `SHA256SUMS` fehlt oder ohne Zeile der Datei, `D14` der SHA-256 weicht von `SHA256SUMS` ab, `D16` kein Speicher |
 | `SD-Karte fehlgeschlagen (S02): BENCH/UPDATES/rcbench-dial-0.23.16.bin fehlt auf der SD-Karte.` | `S01` keine Karte, `S02` keine solche Datei, `S03` das Lesen schlug fehl, `S04` leer oder größer als die Bytes des Schritts, `S05` kein Speicher, `S06` die `SHA256SUMS` der Karte ist außer Form oder nennt die Datei zweimal |
-| `Prüfung fehlgeschlagen (V05): Die Datei hat Version 0.23.15, dieses Release 0.23.16.` | `V01` leer oder größer als die Bytes, `V02` der SHA-256 weicht von der `SHA256SUMS` der Karte ab, `V03` keine Anwendung für Chip und Projekt des Geräts, oder ihr eigener SHA-256 weicht ab, `V04` die Rolle eines anderen Geräts, `V05` eine andere Version |
+| `Prüfung fehlgeschlagen (V05): Die Datei hat Version 0.23.15, dieses Release 0.23.16.` | `V01` leer oder größer als die Bytes, `V02` der SHA-256 weicht von der `SHA256SUMS` der Karte ab, `V03` keine Anwendung für Chip und Projekt des Geräts, oder ihr eigener SHA-256 weicht ab, `V04` die Rolle eines anderen Geräts, `V05` eine andere Version, `V07` keine gültige Release-Signatur in einem Build, der sie erzwingt |
 
 Die Konsole nennt jeden Schritt:
 
@@ -8256,11 +8270,11 @@ Aktuelle Einschränkungen:
   SD-Karte.
 - Ein Image bleibt bis zum Neustart des Panels im PSRAM, höchstens die
   vier Byte-Grenzen oben zusammen, 8.257.536 Bytes.
-- Das Panel prüft keine Signatur eines Geräte-Images, obwohl das Release
-  neben jedem eine `.sig` veröffentlicht. Ein Image von der SD-Karte ist
-  darum nicht authentifiziert: Eine Karte ohne `SHA256SUMS`, die die
-  Datei nennt, bindet es nur an seine Größe, Chip, Projekt, Rolle und
-  Version und seinen eigenen angehängten SHA-256 ([SECURITY.md](../SECURITY.md)).
+- Solange `RCBENCH_SIGN_ENFORCE` 0 ist, wird ein Image ohne gültige
+  Release-Signatur nach der Warnung gesendet: Ein Image von der SD-Karte
+  ist dann nur an seine Größe, Chip, Projekt, Rolle und Version, seinen
+  eigenen angehängten SHA-256 und eine `SHA256SUMS` der Karte gebunden,
+  die es nennt ([SECURITY.md](../SECURITY.md)).
 
 ### Der C6-Funk
 

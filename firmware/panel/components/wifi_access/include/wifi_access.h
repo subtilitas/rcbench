@@ -231,9 +231,24 @@ wa_got_t wifi_access_fetch_dev(uint8_t asset, fw_version_t rel,
  * @param gen   the job, wa_fetch_t.gen
  * @param buf   takes the buffer
  * @param bytes takes the file's length
+ * @param sig   takes the release key's verdict on its .sig
  * @return true when the job's file was there
  */
-bool wifi_access_dev_take(uint32_t gen, uint8_t **buf, uint32_t *bytes);
+bool wifi_access_dev_take(uint32_t gen, uint8_t **buf, uint32_t *bytes,
+                          fw_sig_t *sig);
+
+/**
+ * @brief The release key's verdict on @p bytes at @p img and the @p sig_n
+ *        bytes of signature at @p sig: the verifier and the key the
+ *        panel's own image is checked with (fw_sign.h).  Any task.
+ * @param img   the image
+ * @param bytes its length
+ * @param sig   the DER signature
+ * @param sig_n its length
+ * @return the verdict
+ */
+fw_sig_t wifi_access_sig_verify(const uint8_t *img, uint32_t bytes,
+                                const uint8_t *sig, uint32_t sig_n);
 
 /**
  * @brief Once a frame, after wifi_access_tick(): @p abort as wa_fetch_tick()

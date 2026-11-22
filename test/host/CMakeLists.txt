@@ -215,6 +215,9 @@ endforeach()
 # RCBENCH_SIGN_ENFORCE=1, the setting a build that enforces the signature
 # uses (shared/fwupdate/include/fw_sig.h).
 target_link_libraries(test_fw_sign PRIVATE rcbench_fwsign)
+# test_devimg runs a device image's card signature through the same
+# verifier.
+target_link_libraries(test_devimg PRIVATE rcbench_fwsign)
 add_executable(test_fw_sig_enforce test_fw_sig.c "${SHARED}/fwupdate/fw_sig.c")
 target_compile_definitions(test_fw_sig_enforce PRIVATE RCBENCH_SIGN_ENFORCE=1)
 target_link_libraries(test_fw_sig_enforce PRIVATE ${UNDER_TEST} rcbench_mstime)

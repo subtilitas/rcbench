@@ -39,9 +39,10 @@
 /** @brief The console lines' tag. */
 static const char *TAG = "devimg";
 
-/** @brief `devimg`'s stack, bytes: the card's FatFs calls and the
- *         checks; docs/Performance.md holds the depth. */
-#define DEVIMG_STACK 6144u
+/** @brief `devimg`'s stack, bytes: the card's FatFs calls, the checks
+ *         and the release key's verifier, whose Mbed TLS calls through a
+ *         pointer the depth leaves out; docs/Performance.md holds it. */
+#define DEVIMG_STACK 8192u
 /** @brief `devimg`'s priority: under the UI loop's, so a check shares the
  *         core by time slice and never starves the frame. */
 #define DEVIMG_PRIO  1u
@@ -59,6 +60,7 @@ typedef struct {
     uint32_t        n;         /**< their count */
     devimg_card_t   card_err;  /**< the card's answer */
     devimg_err_t    err;       /**< the checks' answer */
+    fw_sig_t        sig;       /**< the release key's verdict on its .sig */
     fw_image_info_t info;      /**< what the image says */
     uint8_t         sha[FW_SHA256_BYTES]; /**< of every byte */
 } job_t;
@@ -73,6 +75,8 @@ static uint32_t        s_n[DEVIMG_COUNT];
 static fw_image_info_t s_info[DEVIMG_COUNT];
 /** @brief Each READY image's SHA-256 over every byte. */
 static uint8_t         s_sha[DEVIMG_COUNT][FW_SHA256_BYTES];
+/** @brief Each READY image's signature verdict (fw_sig.h). */
+static fw_sig_t        s_sig[DEVIMG_COUNT];
 /** @brief Set once an image's fields above are written: other tasks read
  *         them only after it. */
 static atomic_bool     s_ready[DEVIMG_COUNT];
@@ -216,11 +220,50 @@ void panel_devimg_view(devimg_id_t id, upd_fetch_t *out)
     case DEVIMG_CARD:
         out->run = UPD_FETCH_CARD;
         break;
-    case DEVIMG_IDLE:
     case DEVIMG_READY:
+        out->nosig = !fw_sig_signed(s_sig[id]);
+        out->sigbad = fw_sig_bad(s_sig[id]);
+        break;
+    case DEVIMG_IDLE:
     default:
         break;
     }
+}
+
+/**
+ * @brief The verdict on the card's "<file>.sig" beside the job's file
+ *        (devimg_card_sig()): `devimg`'s, with the card held.
+ * @param j    the job, its file read
+ * @param path the file's path on the card
+ * @return the verdict
+ */
+static fw_sig_t card_sig(const job_t *j, const char *path)
+{
+    char sp[sizeof(STORAGE_MOUNT_POINT) + DEVIMG_PATH_MAX + 8u];
+    const int k = snprintf(sp, sizeof(sp), "%s.sig", path);
+    if (k <= 0 || (size_t)k >= sizeof(sp)) {
+        return FW_SIG_FORM;
+    }
+    storage_stat_t st;
+    const esp_err_t e = storage_stat(sp, &st);
+    fw_sig_t v = FW_SIG_NONE;
+    if (e == ESP_ERR_NOT_FOUND || (e == ESP_OK && st.is_dir)) {
+        (void)devimg_card_sig(false, NULL, 0u, &v);
+        return v;
+    }
+    /* One byte past the longest, so that a longer file is told apart. */
+    uint8_t sig[FW_SIG_MAX + 1u];
+    size_t got = 0u;
+    FILE *f = (e == ESP_OK) ? fopen(sp, "rb") : NULL;
+    if (f != NULL) {
+        got = fread(sig, 1u, sizeof(sig), f);
+        (void)fclose(f);
+    }
+    /* The panel image's verifier and key, called by name so that the
+     * stack check follows it into `devimg`'s depth. */
+    return devimg_card_sig(true, sig, (uint32_t)got, &v)
+               ? wifi_access_sig_verify(j->buf, j->n, sig, (uint32_t)got)
+               : v;
 }
 
 /**
@@ -266,6 +309,9 @@ static devimg_card_t read_card(job_t *j, uint8_t sha[FW_SHA256_BYTES],
     }
     if (f != NULL) {
         (void)fclose(f);
+    }
+    if (r == DEVIMG_CARD_OK) {
+        j->sig = card_sig(j, path);
     }
     /* The card's SHA256SUMS, when the folder holds one: a file it names
      * is held to its line; a file it does not name is checked by the
@@ -322,6 +368,11 @@ static void devimg_task(void *arg)
         j->err = devimg_verify(j->id, j->buf, j->n, j->want,
                                have_sha ? want_sha : NULL, &j->info, j->sha,
                                NULL);
+    }
+    if (j->card_err == DEVIMG_CARD_OK && j->err == DEVIMG_OK) {
+        /* The panel image's policy: warn while RCBENCH_SIGN_ENFORCE is 0,
+         * refuse while it is 1. */
+        j->err = devimg_sig_policy(j->sig, fw_sig_enforced());
     }
     atomic_store(&s_done, true);
     vTaskDelete(NULL);
@@ -486,13 +537,16 @@ static void fetch_service(void)
     }
     uint8_t *buf = NULL;
     uint32_t n = 0u;
-    if (f.got != WA_GOT_STAGED || !wifi_access_dev_take(s_gen, &buf, &n)) {
+    fw_sig_t sig = FW_SIG_NONE;
+    if (f.got != WA_GOT_STAGED
+        || !wifi_access_dev_take(s_gen, &buf, &n, &sig)) {
         fail_download(&f);
         return;
     }
     devimg_fetched(&s_sl[s_cur]);
     s_job.buf = buf;
     s_job.n = n;
+    s_job.sig = sig;
     s_job.card = false;
     ESP_LOGI(TAG, "%s: %lu bytes, SHA-256 as SHA256SUMS; checking",
              s_job.name, (unsigned long)n);
@@ -536,6 +590,7 @@ static void job_service(void)
     s_n[id] = j->n;
     s_info[id] = j->info;
     memcpy(s_sha[id], j->sha, FW_SHA256_BYTES);
+    s_sig[id] = j->sig;
     atomic_store(&s_ready[id], true);
     j->buf = NULL;
     devimg_ready(&s_sl[id], now_ms());
@@ -545,6 +600,15 @@ static void job_service(void)
              j->name, j->info.version_text, (unsigned long)j->n, j->sha[0],
              j->sha[1], j->sha[2], j->sha[3],
              j->card ? "the SD card" : "GitHub");
+    if (!fw_sig_signed(j->sig)) {
+        /* The build warns (devimg_sig_policy()): the band says so once,
+         * and the step's card keeps the line (upd_fetch_line()). */
+        char line[UI_ALERT_MAX];
+        upd_fetch_nosig_note(j->name, line, sizeof(line));
+        ui_router_set_notice(line);
+        ESP_LOGW(TAG, "%s: %s; installed only with a warning", j->name,
+                 fw_sig_str(j->sig));
+    }
 }
 
 void devimg_service(bool armed)

@@ -145,6 +145,7 @@ static struct {
     uint32_t        dev_cap;      /**< DEVICE: the next job's cap */
     uint8_t        *dev_buf;      /**< DEVICE: a file fetched, not taken */
     uint32_t        dev_bytes;    /**< its length */
+    fw_sig_t        dev_sig;      /**< the verdict on its .sig */
     uint32_t        dev_gen;      /**< the job that fetched it */
 
     /* Set once. */
@@ -1171,6 +1172,7 @@ static void fetch_task(void *arg)
         if (current) {
             s.dev_buf = res.buf;
             s.dev_bytes = res.bytes;
+            s.dev_sig = res.sig;
             s.dev_gen = gen;
             res.buf = old;
         }
@@ -2069,17 +2071,25 @@ wa_got_t wifi_access_fetch_dev(uint8_t asset, fw_version_t rel,
     return fetch_start(WA_JOB_DEVICE, rel, WA_CH_STABLE, gate, asset);
 }
 
-bool wifi_access_dev_take(uint32_t gen, uint8_t **buf, uint32_t *bytes)
+bool wifi_access_dev_take(uint32_t gen, uint8_t **buf, uint32_t *bytes,
+                          fw_sig_t *sig)
 {
     lock();
     const bool ok = s.dev_buf != NULL && s.dev_gen == gen;
     if (ok) {
         *buf = s.dev_buf;
         *bytes = s.dev_bytes;
+        *sig = s.dev_sig;
         s.dev_buf = NULL;
     }
     unlock();
     return ok;
+}
+
+fw_sig_t wifi_access_sig_verify(const uint8_t *img, uint32_t bytes,
+                                const uint8_t *sig, uint32_t sig_n)
+{
+    return wifi_sig_verify(NULL, img, bytes, sig, sig_n);
 }
 
 void wifi_access_fetch_tick(wa_why_t abort)

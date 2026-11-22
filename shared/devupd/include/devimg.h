@@ -41,6 +41,7 @@
 
 #include "fw_image.h"
 #include "fw_sha256.h"
+#include "fw_sig.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -106,7 +107,34 @@ typedef enum {
     DEVIMG_E_ROLE,    /**< the role in its head names another device   */
     DEVIMG_E_VERSION, /**< it is another version than the one wanted   */
     DEVIMG_E_ID,      /**< an image number out of range                */
+    DEVIMG_E_SIG,     /**< no valid release signature, in a build that
+                           enforces it (devimg_sig_policy())          */
 } devimg_err_t;
+
+/**
+ * @brief An SD-card file's detached signature, the file's name and ".sig"
+ *        beside it, judged as a download's (wa_fetch.h) before the release
+ *        key is asked: none beside it is FW_SIG_NONE, one outside
+ *        FW_SIG_MIN to FW_SIG_MAX bytes is FW_SIG_FORM.
+ * @param present the card holds the .sig file
+ * @param sig     its bytes
+ * @param sig_n   their count
+ * @param verdict takes the verdict when the key is not asked
+ * @return true when the release key judges it (fw_sign.h); false with
+ *         @p verdict set otherwise
+ */
+bool devimg_card_sig(bool present, const uint8_t *sig, uint32_t sig_n,
+                     fw_sig_t *verdict);
+
+/**
+ * @brief The panel image's signature policy (fw_sig.h) for a device image:
+ *        a valid signature passes; any other verdict passes with a warning
+ *        while @p enforce is false, and is refused while it is true.
+ * @param s       the verdict
+ * @param enforce fw_sig_enforced() on the panel
+ * @return DEVIMG_OK, or DEVIMG_E_SIG
+ */
+devimg_err_t devimg_sig_policy(fw_sig_t s, bool enforce);
 
 /**
  * @brief Every check an image passes before a sender gets it.

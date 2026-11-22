@@ -267,12 +267,51 @@ static answer_t image_body(void)
                        .body_n = g_img_n };
 }
 
+/* The release has no NAME.sig: GitHub answers 404. */
+static answer_t no_sig(void)
+{
+    return (answer_t){ .status = 404, .length = 9 };
+}
+
 static void script_good(void)
 {
     answer(to_asset());
     answer(sums_body());
     answer(to_asset());
     answer(image_body());
+    answer(no_sig());
+}
+
+/* ------------------------------------------------- the release key */
+
+static fw_sig_t g_verdict;          /* what verify() says             */
+static unsigned g_verifies;         /* verify() calls                 */
+static const uint8_t *g_v_img;      /* the image verify() saw         */
+static uint32_t g_v_bytes, g_v_sig_n;
+static uint8_t  g_v_sig[FW_SIG_MAX];
+
+static fw_sig_t f_verify(void *ctx, const uint8_t *img, uint32_t bytes,
+                         const uint8_t *sig, uint32_t sig_n)
+{
+    (void)ctx;
+    ++g_verifies;
+    g_v_img = img;
+    g_v_bytes = bytes;
+    g_v_sig_n = sig_n;
+    memcpy(g_v_sig, sig, sig_n);
+    return g_verdict;
+}
+
+static uint8_t g_sig_body[FW_SIG_MAX + 1u];
+
+/* NAME.sig of @p n bytes. */
+static answer_t sig_body(uint32_t n)
+{
+    for (uint32_t i = 0; i < n; ++i) {
+        g_sig_body[i] = (uint8_t)(0x30u + i);
+    }
+    return (answer_t){ .status = 200, .length = n, .body = g_sig_body,
+                       .body_n = n };
 }
 
 /* wa_run_device() of NAME into a slot of @p slot bytes from @p start. */
@@ -282,6 +321,7 @@ static wa_fetch_res_t fetch_dev(uint32_t start, uint32_t slot)
     r.slot = slot;
     r.name = NAME;
     r.up = NULL;
+    r.verify = f_verify;
     wa_fetch_res_t out;
     wa_run_device(&r, V16, &out);
     return out;
@@ -439,6 +479,7 @@ TEST_CASE(the_budget_ends_the_job_at_its_millisecond_across_the_wrap)
     answer_t a = image_body();
     a.open_ms = WA_FETCH_DOWNLOAD_MS - 1u;
     answer(a);
+    answer(no_sig());
     wa_fetch_res_t out = fetch_dev(start, DSLOT);
     CHECK_EQ(out.got, WA_GOT_STAGED);
     /* At the budget's end: the file is not handed on. */
@@ -553,6 +594,83 @@ TEST_CASE(a_device_job_keeps_the_panels_ended_check_readable)
     CHECK_EQ(keep.gen, check_gen);
 }
 
+/* NAME.sig beside the file: its bytes go to the release key with the
+ * file's buffer, at FW_SIG_MIN and FW_SIG_MAX bytes; the verdict comes back
+ * with the staged file. */
+TEST_CASE(a_devices_file_carries_the_verdict_on_its_sig)
+{
+    static const fw_sig_t k_says[] = { FW_SIG_OK, FW_SIG_BAD };
+    static const uint32_t k_len[] = { FW_SIG_MIN, FW_SIG_MAX };
+    for (unsigned i = 0; i < 2u; ++i) {
+        fresh(0u);
+        make_release(true);
+        answer(to_asset());
+        answer(sums_body());
+        answer(to_asset());
+        answer(image_body());
+        answer(to_asset());
+        answer(sig_body(k_len[i]));
+        g_verdict = k_says[i];
+        g_verifies = 0u;
+        const wa_fetch_res_t out = fetch_dev(0u, DSLOT);
+        CHECK_EQ(out.got, WA_GOT_STAGED);
+        CHECK_EQ(out.sig, k_says[i]);
+        CHECK_EQ(g_verifies, 1u);
+        CHECK(g_v_img == out.buf);
+        CHECK_EQ(g_v_bytes, g_img_n);
+        CHECK_EQ(g_v_sig_n, k_len[i]);
+        CHECK_EQ(memcmp(g_v_sig, g_sig_body, k_len[i]), 0);
+        CHECK_STR_EQ(g.urls[4], FW_REL_DL_PREFIX "v0.23.16/" NAME ".sig");
+        CHECK_EQ(g.opens, g.closes);
+    }
+}
+
+/* No NAME.sig (404), one byte under FW_SIG_MIN, one byte over FW_SIG_MAX:
+ * the file still comes, unsigned, and the release key is not asked. */
+TEST_CASE(a_missing_or_misshapen_sig_leaves_the_file_unsigned)
+{
+    fresh(0u);
+    make_release(true);
+    script_good();
+    g_verdict = FW_SIG_OK;
+    g_verifies = 0u;
+    wa_fetch_res_t out = fetch_dev(0u, DSLOT);
+    CHECK_EQ(out.got, WA_GOT_STAGED);
+    CHECK_EQ(out.sig, FW_SIG_NONE);
+    CHECK_EQ(g_verifies, 0u);
+    static const uint32_t k_len[] = { FW_SIG_MIN - 1u, FW_SIG_MAX + 1u };
+    for (unsigned i = 0; i < 2u; ++i) {
+        fresh(0u);
+        make_release(true);
+        answer(to_asset());
+        answer(sums_body());
+        answer(to_asset());
+        answer(image_body());
+        answer(sig_body(k_len[i]));
+        out = fetch_dev(0u, DSLOT);
+        CHECK_EQ(out.got, WA_GOT_STAGED);
+        CHECK_EQ(out.sig, FW_SIG_FORM);
+        CHECK_EQ(g_verifies, 0u);
+    }
+}
+
+/* The connection breaks on NAME.sig: the job ends, as the panel image's
+ * does, and the buffer goes back to be freed. */
+TEST_CASE(a_broken_connection_on_the_sig_ends_the_job)
+{
+    fresh(0u);
+    make_release(true);
+    answer(to_asset());
+    answer(sums_body());
+    answer(to_asset());
+    answer(image_body());
+    answer((answer_t){ .no_connect = true });
+    const wa_fetch_res_t out = fetch_dev(0u, DSLOT);
+    CHECK(out.got != WA_GOT_STAGED);
+    CHECK(out.buf == g.alloc_buf);
+    CHECK_EQ(out.bytes, 0u);
+}
+
 int main(void)
 {
     g_img = malloc(SLOT);
@@ -572,6 +690,9 @@ int main(void)
     RUN(a_device_job_keeps_its_release_and_asks_sums_after_the_join);
     RUN(a_device_job_is_refused_while_armed_or_without_a_network);
     RUN(a_device_job_keeps_the_panels_ended_check_readable);
+    RUN(a_devices_file_carries_the_verdict_on_its_sig);
+    RUN(a_missing_or_misshapen_sig_leaves_the_file_unsigned);
+    RUN(a_broken_connection_on_the_sig_ends_the_job);
     free(g.alloc_buf);
     free(g_img);
     return test_summary("wa_fetch_dev");

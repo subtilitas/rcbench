@@ -45,9 +45,11 @@
  *             panel's image: the C6 radio's, the M5Stack Dial's or a
  *             sensor node's application, named by the caller
  *             (wa_run_t.name), at most wa_run_t.slot bytes.  Its SHA-256
- *             against its SHA256SUMS line; the image checks of the device
- *             are the caller's.  What it leaves is the file in a buffer of
- *             its own (wa_fetch_res_t.buf), handed to the caller.
+ *             against its SHA256SUMS line, then its release signature,
+ *             the file's name and ".sig", as DOWNLOAD's, the verdict in
+ *             wa_fetch_res_t.sig; the image checks and the signature's
+ *             policy are the caller's.  What it leaves is the file in a
+ *             buffer of its own (wa_fetch_res_t.buf), handed to the caller.
  *
  * Two halves.  The job (wa_fetch_t) lives with the session under the
  * platform's lock: started and ticked by the UI loop, which holds the
@@ -86,6 +88,10 @@ extern "C" {
 #define WA_FETCH_JOIN_MS      30000u
 /** DOWNLOAD: from the start to a checked image. */
 #define WA_FETCH_DOWNLOAD_MS  180000u
+/** @brief A device file's signature name, "<name>.sig", with its NUL: the
+ *         longest file name the caller passes (wa_run_t.name, 48 bytes
+ *         with its NUL on the panel) and four more. */
+#define WA_DEV_SIG_NAME_MAX   64u
 /** One connection or one read waits this long at most, and never past the
  *  job's budget. */
 #define WA_FETCH_OP_MS        10000u
@@ -386,6 +392,7 @@ typedef struct {
      *  Whoever runs the runner frees it, unless it keeps a STAGED file. */
     uint8_t     *buf;
     uint32_t     bytes;   /**< DEVICE, STAGED: the file's length */
+    fw_sig_t     sig;     /**< DEVICE, STAGED: the verdict on its .sig */
 } wa_fetch_res_t;
 
 /**

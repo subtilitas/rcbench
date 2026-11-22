@@ -7579,6 +7579,19 @@ device's chip and project, its own appended SHA-256, for the Dial and the
 nodes the role in its head, and the release's version. The checks and the
 card read run on the task `devimg` ([Performance: Stacks](Performance.md#stacks)).
 
+The image's release signature is checked as the panel image's
+([SECURITY.md](../SECURITY.md)): the download fetches `<file>.sig` beside
+the file, and a card read takes `<file>.sig` beside the file in
+`BENCH/UPDATES`. A missing `.sig` is no signature; one outside 8 to 72
+bytes, or one that does not verify under the release key, does not match.
+While the build warns (`RCBENCH_SIGN_ENFORCE` 0, every build up to the
+stable release that enforces it) such an image is kept and sent: the band
+says `rcbench-dial-0.23.16.bin is not signed by the rcbench release key.`,
+and the step's card reads `rcbench-dial-0.23.16.bin: not signed by the
+rcbench release key. The image comes with no signature.`, or `The
+signature does not match.`, in the warning colour. A build that
+enforces it refuses the image with `V07`.
+
 The control shows what runs: `DOWNLOADING 43%`, `CHECKING THE FILE`,
 `READING THE SD CARD`. CANCEL UPDATE during a device's download, card read or check drops the
 update the hold asked for and ends the download; an image that still
@@ -7609,7 +7622,7 @@ the retry from the next place:
 | --- | --- |
 | `Download failed (D10): No connection to GitHub.` | `D` and the download's result, worded as the panel's own download ([The download](#the-download)): `D04` no home network kept, `D05` the gate, `D06` ended from outside (ARMED, the supply, a log run, STOP, WI-FI, CANCEL UPDATE), `D07` the join failed, `D08` the radio did not come up, `D09` the 180s ran out, `D10` no connection, `D11` an HTTP status refused, `D12` an answer out of form, `D13` `SHA256SUMS` missing or without the file's line, `D14` the SHA-256 differs from `SHA256SUMS`, `D16` no memory |
 | `SD card failed (S02): BENCH/UPDATES/rcbench-dial-0.23.16.bin is not on the SD card.` | `S01` no card, `S02` no such file, `S03` the read failed, `S04` empty or over the step's most bytes, `S05` no memory, `S06` the card's `SHA256SUMS` out of form or naming the file twice |
-| `Check failed (V05): The file is version 0.23.15; this release has 0.23.16.` | `V01` empty or over the most bytes, `V02` the SHA-256 differs from the card's `SHA256SUMS`, `V03` no application of the device's chip and project, or its own SHA-256 differs, `V04` another device's role, `V05` another version |
+| `Check failed (V05): The file is version 0.23.15; this release has 0.23.16.` | `V01` empty or over the most bytes, `V02` the SHA-256 differs from the card's `SHA256SUMS`, `V03` no application of the device's chip and project, or its own SHA-256 differs, `V04` another device's role, `V05` another version, `V07` no valid release signature in a build that enforces it |
 
 The console names each step:
 
@@ -7626,10 +7639,10 @@ Current limitations:
   `SHA256SUMS`. Its images come from the SD card.
 - An image stays in PSRAM until the panel restarts, up to the four most
   bytes above together, 8,257,536 bytes.
-- The panel checks no signature of a device image, though the release
-  publishes a `.sig` beside each. An SD-card image is therefore not
-  authenticated: a card without a `SHA256SUMS` that names the file holds it to its size, its chip, project, role and version, and its own
-  appended SHA-256 only ([SECURITY.md](../SECURITY.md)).
+- While `RCBENCH_SIGN_ENFORCE` is 0 an image without a valid release
+  signature is sent after the warning: an SD-card image is then held to
+  its size, its chip, project, role and version, its own appended SHA-256
+  and a card `SHA256SUMS` that names it only ([SECURITY.md](../SECURITY.md)).
 
 ### The C6 radio
 

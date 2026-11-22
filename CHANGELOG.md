@@ -19,7 +19,11 @@ history is in git.
   `BENCH/UPDATES` (`HOLD 2s TO UPDATE FROM THE SD CARD`). A failed attempt
   shows on the step's card with a code: `D` for the download, `S` for the
   card, `V` for the checks
-  ([Screens: Device images](docs/Screens.md#device-images)).
+  ([Screens: Device images](docs/Screens.md#device-images)). Each image's
+  release signature, `<file>.sig` beside it in the release or on the card,
+  is checked with the panel image's verifier and key: while
+  `RCBENCH_SIGN_ENFORCE` is 0 an image without a valid one is sent after a
+  warning on the band and the step's card, and at 1 it is refused (`V07`).
 - Release signatures: every firmware image a release publishes has a
   detached `<image>.sig`, ECDSA (elliptic curve digital signature
   algorithm) P-256 over its SHA-256, beside the asset or inside its ZIP
@@ -175,7 +179,7 @@ history is in git.
 
 ### Changed
 
-- The panel image carries the IOmcu images only: 4,072,992 bytes in the
+- The panel image carries the IOmcu images only: 4,074,096 bytes in the
   release configuration; carrying the 0.23.16 C6, Dial and node images
   made it 3,413,616 bytes larger. The C6 radio's,
   the Dial's and the nodes' images stay release assets (`rcbench-c6-<esp_hosted version>.bin`,

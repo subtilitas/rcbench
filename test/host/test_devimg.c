@@ -23,7 +23,9 @@
 #include "devimg.h"
 #include "devupd.h"
 #include "fw_c6.h"
+#include "fw_sign.h"
 #include "fw_fixture.h"
+#include "sign_vectors.h"
 
 static uint8_t *g_img;
 
@@ -432,6 +434,79 @@ TEST_CASE(the_update_shows_pending_until_its_owed_start_ends)
     CHECK(!devimg_pending(&s));
 }
 
+/* ---------------------------------------------- the release signature */
+
+/* The card's <file>.sig: none beside the file, a size one byte outside
+ * FW_SIG_MIN to FW_SIG_MAX, no bytes; at both limits the release key
+ * judges it. */
+TEST_CASE(a_card_files_sig_is_judged_as_a_downloads)
+{
+    uint8_t sig[FW_SIG_MAX + 1u] = { 0u };
+    fw_sig_t v = FW_SIG_OK;
+    CHECK(!devimg_card_sig(false, sig, FW_SIG_MAX, &v));
+    CHECK_EQ(v, FW_SIG_NONE);
+    v = FW_SIG_OK;
+    CHECK(!devimg_card_sig(true, sig, FW_SIG_MIN - 1u, &v));
+    CHECK_EQ(v, FW_SIG_FORM);
+    v = FW_SIG_OK;
+    CHECK(!devimg_card_sig(true, sig, FW_SIG_MAX + 1u, &v));
+    CHECK_EQ(v, FW_SIG_FORM);
+    v = FW_SIG_OK;
+    CHECK(!devimg_card_sig(true, NULL, FW_SIG_MIN, &v));
+    CHECK_EQ(v, FW_SIG_FORM);
+    v = FW_SIG_BAD;
+    CHECK(devimg_card_sig(true, sig, FW_SIG_MIN, &v));
+    CHECK(devimg_card_sig(true, sig, FW_SIG_MAX, &v));
+    CHECK_EQ(v, FW_SIG_BAD);   /* untouched: the key's to say */
+}
+
+/* The card path end to end with the release key's verifier (fw_sign.h)
+ * and a key pair of test vectors: a good .sig passes and is SIGNED; a
+ * flipped byte, or the signature of another image, is BAD; none is NONE;
+ * the policy then warns or refuses. */
+TEST_CASE(a_card_files_sig_good_bad_or_missing_under_the_release_key)
+{
+    fw_pubkey_t k;
+    CHECK(fw_pubkey_parse_pem(sv_pem_a, strlen(sv_pem_a), &k));
+    uint8_t img[256];
+    const size_t n = 64u;                  /* image(0) of test_fw_sign.c */
+    for (size_t j = 0; j < n; ++j) {
+        img[j] = (uint8_t)((j * 7u) & 0xFFu);
+    }
+    uint8_t sig[FW_SIG_MAX];
+    memcpy(sig, sv_sig[0], sv_sig_len[0]);
+    fw_sig_t v = FW_SIG_NONE;
+    CHECK(devimg_card_sig(true, sig, sv_sig_len[0], &v));
+    v = fw_sig_verify(&k, img, (uint32_t)n, sig, sv_sig_len[0]);
+    CHECK_EQ(v, FW_SIG_OK);
+    CHECK_EQ(devimg_sig_policy(v, true), DEVIMG_OK);
+    sig[sv_sig_len[0] - 1u] ^= 0x01u;
+    v = fw_sig_verify(&k, img, (uint32_t)n, sig, sv_sig_len[0]);
+    CHECK(v != FW_SIG_OK);
+    CHECK_EQ(devimg_sig_policy(v, false), DEVIMG_OK);
+    CHECK_EQ(devimg_sig_policy(v, true), DEVIMG_E_SIG);
+    v = fw_sig_verify(&k, img, (uint32_t)n, sv_sig[1], sv_sig_len[1]);
+    CHECK_EQ(v, FW_SIG_BAD);
+    CHECK(!devimg_card_sig(false, NULL, 0u, &v));
+    CHECK_EQ(v, FW_SIG_NONE);
+    CHECK_EQ(devimg_sig_policy(v, false), DEVIMG_OK);
+    CHECK_EQ(devimg_sig_policy(v, true), DEVIMG_E_SIG);
+}
+
+/* The panel image's policy: a valid signature passes either way; every
+ * other verdict passes while the build warns and is refused while it
+ * enforces. */
+TEST_CASE(the_signature_policy_warns_or_refuses_as_the_panels)
+{
+    static const fw_sig_t k_all[] = { FW_SIG_NONE, FW_SIG_OK, FW_SIG_FORM,
+                                      FW_SIG_KEY, FW_SIG_BAD };
+    for (unsigned i = 0; i < 5u; ++i) {
+        CHECK_EQ(devimg_sig_policy(k_all[i], false), DEVIMG_OK);
+        CHECK_EQ(devimg_sig_policy(k_all[i], true),
+                 k_all[i] == FW_SIG_OK ? DEVIMG_OK : DEVIMG_E_SIG);
+    }
+}
+
 int main(void)
 {
     g_img = malloc(DEVUPD_SLOT_DIAL);
@@ -457,6 +532,9 @@ int main(void)
     RUN(a_failed_attempt_owes_no_update);
     RUN(cancel_drops_the_owed_update_in_every_phase_and_keeps_the_image);
     RUN(the_update_shows_pending_until_its_owed_start_ends);
+    RUN(a_card_files_sig_is_judged_as_a_downloads);
+    RUN(a_card_files_sig_good_bad_or_missing_under_the_release_key);
+    RUN(the_signature_policy_warns_or_refuses_as_the_panels);
     free(g_img);
     return test_summary("devimg");
 }

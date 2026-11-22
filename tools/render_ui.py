@@ -1192,6 +1192,7 @@ FIT_ONLY = {
     "updates-wiz-dev-download": (None, "updates", "dark"),
     "updates-wiz-dev-card":   (None, "updates", "dark"),
     "updates-wiz-dev-ram":    (None, "updates", "dark"),
+    "updates-wiz-dev-nosig":  (None, "updates", "dark"),
     "updates-wiz-c6-check":   (None, "updates", "dark"),
     "updates-wiz-wait-iomcu": (None, "updates", "dark"),
     "updates-wiz-wait-node":  (None, "updates", "dark"),

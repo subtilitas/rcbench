@@ -201,3 +201,22 @@ devimg_owed_t devimg_owed_step(devimg_slot_t *s, bool open, bool wait,
     s->owed = false;
     return DEVIMG_OWED_DROP;
 }
+
+bool devimg_card_sig(bool present, const uint8_t *sig, uint32_t sig_n,
+                     fw_sig_t *verdict)
+{
+    if (!present) {
+        *verdict = FW_SIG_NONE;
+        return false;
+    }
+    if (sig == NULL || sig_n < FW_SIG_MIN || sig_n > FW_SIG_MAX) {
+        *verdict = FW_SIG_FORM;
+        return false;
+    }
+    return true;
+}
+
+devimg_err_t devimg_sig_policy(fw_sig_t s, bool enforce)
+{
+    return (enforce && !fw_sig_signed(s)) ? DEVIMG_E_SIG : DEVIMG_OK;
+}

@@ -48,7 +48,12 @@ void upd_fetch_line(const upd_fetch_t *f, char *out, size_t n)
     }
     switch (f->src) {
     case DEVIMG_SRC_RAM:
-        snprintf(out, n, TR(UPD_FETCH_IN_RAM), f->file);
+        if (f->nosig) {
+            snprintf(out, n, TR(UPD_FETCH_IN_RAM_NOSIG), f->file,
+                     f->sigbad ? TR(UPS_BAD) : TR(UPS_NONE));
+        } else {
+            snprintf(out, n, TR(UPD_FETCH_IN_RAM), f->file);
+        }
         break;
     case DEVIMG_SRC_CARD:
         snprintf(out, n, TR(UPD_FETCH_FROM_CARD), f->file);
@@ -58,6 +63,21 @@ void upd_fetch_line(const upd_fetch_t *f, char *out, size_t n)
         snprintf(out, n, TR(UPD_FETCH_FROM_NET), f->file);
         break;
     }
+}
+
+bool upd_fetch_warn(const upd_fetch_t *f)
+{
+    return f != NULL
+           && (f->src == DEVIMG_SRC_CARD
+               || (f->src == DEVIMG_SRC_RAM && f->nosig));
+}
+
+void upd_fetch_nosig_note(const char *file, char *out, size_t n)
+{
+    if (out == NULL || n == 0u) {
+        return;
+    }
+    snprintf(out, n, TR(UPD_FETCH_NOSIG_NOTE), file != NULL ? file : "");
 }
 
 void upd_fetch_fail_line(upd_fetch_fail_t kind, const char *code,
@@ -133,6 +153,9 @@ void upd_fetch_check_text(devimg_err_t e, const char *have, const char *want,
     case DEVIMG_E_VERSION:
         snprintf(out, n, TR(UPD_FETCH_VERSION), have != NULL ? have : "",
                  want != NULL ? want : "");
+        break;
+    case DEVIMG_E_SIG:
+        snprintf(out, n, "%s", TR(UPD_FETCH_NOSIG));
         break;
     case DEVIMG_E_CHECK:
     case DEVIMG_E_ID:
