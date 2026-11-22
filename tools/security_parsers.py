@@ -54,8 +54,6 @@ NOT_UNTRUSTED: dict[str, str] = {}
 # Modules with outside input whose public functions the name rule does not
 # match.  Each reason names the input.
 FORCED: dict[str, str] = {
-    "shared/settings": "settings values and texts loaded from NVS "
-                       "(settings_store_t.load and load_text)",
     "shared/touch": "the GT911 point list turned into touch events "
                     "(touch_tracker_update)",
 }

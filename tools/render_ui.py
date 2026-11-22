@@ -74,6 +74,9 @@ SOURCES = [
     # The Bluetooth IMU: its screen handed a view, SCAN tapped; SENSORS on
     # the IMU entry.
     "test/host/render_imu.c",
+    # The settings backup: its files on a folder in memory, the driver's
+    # requests run between frames.
+    "test/host/render_sbk.c",
     # UPDATES' steps: the views handed in, SKIP tapped.
     "test/host/render_upd_wiz.c",
     "shared/bench/hitec_link.c",
@@ -921,6 +924,14 @@ SCREENS = {
                                    "setup", "dark"),
     "setup-wireless-search-scan": ("setup-wireless-search-scan.png",
                                    "setup", "dark"),
+    # The settings backup: SD CARD at the end of its list, SAVE SETTINGS
+    # written; BACKUP from LOAD SETTINGS with the newest copy chosen; the
+    # restore offer at start; a hand-edited file loaded, three lines
+    # refused.
+    "setup-card-backup": ("setup-card-backup.png", "setup", "dark"),
+    "setup-backup": ("setup-backup.png", "set-load", "dark"),
+    "setup-backup-offer": ("setup-backup-offer.png", "set-load", "dark"),
+    "setup-backup-loaded": ("setup-backup-loaded.png", "set-load", "dark"),
     # RUDDER AUTO: SAFE on the bench's outputs, READY's PORT row red; its
     # SETTINGS list; on the rbmod carrier SAFE with the hold offered, the
     # ARM + START sequence waiting for the PROG 5V, and its read-back

@@ -96,6 +96,14 @@ static const format_args_t k_args[] = {
     { TX_SV_TARGET_PN_PIN,     { "9", "47" } },
     { TX_SV_TARGET_PN_PIN_OFF, { "9", "47" } },
     { TX_SUP_PD_PINS,          { "47", "47" } },
+    /* The settings backup: a file of BENCH/SETUP, a key of 15 characters,
+     * the longest reason of a refused line. */
+    { TX_SBK_RESULT_READING,   { "SETTINGS.TXT" } },
+    { TX_SBK_RESULT_CARD,      { "SETTINGS.TXT" } },
+    { TX_SBK_RESULT_FILE,      { "SETTINGS.TXT" } },
+    { TX_SBK_RESULT_ARMED,     { "SETTINGS.TXT" } },
+    { TX_SBK_REFUSED_NOLINE,   { "srv_travel_max_", "9999",
+                                 "außerhalb des Bereichs" } },
     { TX_OUT_NEEDS_CHANNEL,    { "16", "16" } },
     { TX_OUT_NEEDS_CHANNELS,   { "16", "16" } },
     /* A frame rate of 3 digits on a port of 1. */

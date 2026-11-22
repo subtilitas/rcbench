@@ -1598,8 +1598,165 @@ UI_TEXT(SET_HUB_PANEL, 0,
     "THEME, LANGUAGE, KNOB",
     "DESIGN, SPRACHE, DREHKNOPF")
 UI_TEXT(SET_HUB_CARD, 0,
-    "LOGS, BROWSER WRITES",
-    "LOGS, BROWSER-SCHREIBEN")
+    "LOGS, BROWSER WRITES, BACKUP",
+    "LOGS, BROWSER-SCHREIBEN, BACKUP")
+/* SETUP > SD CARD's rows of the settings backup (sbk_rows.c): a row's name
+ * in the head face, its help line in the label face; the value at the
+ * row's right in the body face, 20 cells; a lock in the help line's place,
+ * 60 cells of the label face. */
+UI_TEXT(SBK_ROW_SAVE, 0,
+    "Save settings",
+    "Einstellungen sichern")
+UI_TEXT(SBK_ROW_SAVE_HELP, 0,
+    "Writes the saved settings to BENCH/SETUP",
+    "Schreibt die gespeicherten Einstellungen nach BENCH/SETUP")
+UI_TEXT(SBK_ROW_LOAD, 0,
+    "Load settings",
+    "Einstellungen laden")
+UI_TEXT(SBK_ROW_LOAD_HELP, 0,
+    "Replaces every setting with a file of BENCH/SETUP",
+    "Ersetzt alle Einstellungen durch eine Datei aus BENCH/SETUP")
+UI_TEXT(SBK_LOCK_UNSAVED, 60,
+    "Changes not saved: SAVE them first",
+    "Änderungen nicht gespeichert: erst SAVE")
+UI_TEXT(SBK_LOCK_NO_CARD, 60,
+    "No card",
+    "Keine Karte")
+UI_TEXT(SBK_LOCK_ARMED, 60,
+    "Not while ARMED",
+    "Nicht bei ARMED")
+UI_TEXT(SBK_V_WRITING, 20,
+    "WRITING",
+    "SCHREIBT")
+UI_TEXT(SBK_V_WRITTEN, 20,
+    "WRITTEN",
+    "GESCHRIEBEN")
+UI_TEXT(SBK_V_FULL, 20,
+    "CARD FULL",
+    "KARTE VOLL")
+UI_TEXT(SBK_V_FAILED, 20,
+    "FAILED, CODE %u",
+    "FEHLER, CODE %u")
+/* LOAD SETTINGS (sbk_draw.c): left, the head line in 53 cells of the body
+ * face and each file's line in 64 cells of the label face; the notes under
+ * the files and the result's lines in 64 cells of the label face.  Right,
+ * the labels and the reasons in 32 cells of the label face, the date and
+ * the version in 27 cells of the body face. */
+UI_TEXT(SBK_HEAD_LIST, 0,
+    "Settings files in BENCH/SETUP",
+    "Einstellungsdateien in BENCH/SETUP")
+UI_TEXT(SBK_HEAD_OFFER, 0,
+    "This panel holds no settings. The card has:",
+    "Dieses Panel hat keine Einstellungen. Auf der Karte:")
+UI_TEXT(SBK_HEAD_READING, 53,
+    "Reading the card ...",
+    "Karte wird gelesen ...")
+UI_TEXT(SBK_HEAD_NO_CARD, 53,
+    "No card.",
+    "Keine Karte.")
+UI_TEXT(SBK_HEAD_NONE, 53,
+    "No settings file in BENCH/SETUP.",
+    "Keine Einstellungsdatei in BENCH/SETUP.")
+UI_TEXT(SBK_HEAD_FAILED, 53,
+    "The card did not list: code %u.",
+    "Karte nicht gelesen: Code %u.")
+UI_TEXT(SBK_FILE_LINE, 0,
+    "%s, panel %s",
+    "%s, Panel %s")
+UI_TEXT(SBK_DATE_UNKNOWN, 27,
+    "date not known",
+    "Datum unbekannt")
+UI_TEXT(SBK_VERSION_UNKNOWN, 27,
+    "not known",
+    "unbekannt")
+UI_TEXT(SBK_FILE_BAD, 64,
+    "No settings file: code %u",
+    "Keine Einstellungsdatei: Code %u")
+UI_TEXT(SBK_WRITTEN, 0,
+    "WRITTEN",
+    "GESCHRIEBEN")
+UI_TEXT(SBK_PANEL, 0,
+    "PANEL VERSION",
+    "PANEL-VERSION")
+UI_TEXT(SBK_NOTE_REPLACE, 0,
+    "Loading replaces every setting: the file's value, or the default where the file has none.",
+    "Laden ersetzt alle Einstellungen: durch den Wert der Datei oder den Standardwert, wo die Datei keinen hat.")
+UI_TEXT(SBK_NOTE_WIFI, 0,
+    "Not in the file: the home network and its password, HOTSPOT PASSWORD and ACCESS CODE. Set them on WI-FI.",
+    "Nicht in der Datei: das Heimnetz und sein Passwort, HOTSPOT-PASSWORT und ZUGANGSCODE. Sie werden auf WI-FI gesetzt.")
+UI_TEXT(SBK_HOLD, 0,
+    "HOLD 2s TO LOAD",
+    "2s HALTEN ZUM LADEN")
+UI_TEXT(SBK_BACK, 0,
+    "BACK",
+    "ZURÜCK")
+UI_TEXT(SBK_SKIP, 0,
+    "SKIP",
+    "ÜBERSPRINGEN")
+UI_TEXT(SBK_WHY_ARMED, 32,
+    "Not while ARMED.",
+    "Nicht bei ARMED.")
+UI_TEXT(SBK_WHY_PICK, 32,
+    "Tap a file to choose it.",
+    "Tippe auf eine Datei.")
+UI_TEXT(SBK_WHY_BAD, 32,
+    "This is no settings file.",
+    "Keine Einstellungsdatei.")
+UI_TEXT(SBK_RESULT_DONE, 0,
+    "%s loaded: %d changed, %u refused",
+    "%s geladen: %d geändert, %u abgelehnt")
+UI_TEXT(SBK_RESULT_KEPT, 0,
+    "In force now; saved to the panel once the bench is idle.",
+    "Jetzt in Kraft; gespeichert, sobald der Prüfstand ruht.")
+UI_TEXT(SBK_RESULT_READING, 53,
+    "Reading %s ...",
+    "%s wird gelesen ...")
+UI_TEXT(SBK_RESULT_CARD, 53,
+    "%s not loaded: card code %u.",
+    "%s nicht geladen: Karten-Code %u.")
+UI_TEXT(SBK_RESULT_FILE, 53,
+    "%s refused: code %u, line %u.",
+    "%s abgelehnt: Code %u, Zeile %u.")
+UI_TEXT(SBK_RESULT_ARMED, 53,
+    "%s not loaded: the bench is ARMED.",
+    "%s nicht geladen: Prüfstand ARMED.")
+UI_TEXT(SBK_RESULT_NONE, 64,
+    "Nothing was refused.",
+    "Nichts wurde abgelehnt.")
+UI_TEXT(SBK_REFUSED_LINE, 0,
+    "Line %u, %s: code %u, %s",
+    "Zeile %u, %s: Code %u, %s")
+UI_TEXT(SBK_REFUSED_NOLINE, 64,
+    "No line, %s: code %u, %s",
+    "Ohne Zeile, %s: Code %u, %s")
+UI_TEXT(SBK_REFUSED_MORE, 64,
+    "... and %u more",
+    "... und %u weitere")
+/* A refused line's reason, by sf_line_err_t, after its code. */
+UI_TEXT(SBK_LINE_MALFORMED, 24,
+    "not key = value",
+    "nicht Schlüssel = Wert")
+UI_TEXT(SBK_LINE_KEY, 24,
+    "unknown key",
+    "unbekannter Schlüssel")
+UI_TEXT(SBK_LINE_TWICE, 24,
+    "key given twice",
+    "Schlüssel doppelt")
+UI_TEXT(SBK_LINE_VALUE, 24,
+    "value not readable",
+    "Wert nicht lesbar")
+UI_TEXT(SBK_LINE_RANGE, 24,
+    "out of range",
+    "außerhalb des Bereichs")
+UI_TEXT(SBK_LINE_LONG, 24,
+    "text too long",
+    "Text zu lang")
+UI_TEXT(SBK_LINE_DERIVED, 24,
+    "follows another",
+    "folgt einer anderen")
+UI_TEXT(SBK_LINE_HELD, 24,
+    "in use, kept",
+    "belegt, bleibt")
 UI_TEXT(SET_HUB_OUTPUTS, 0,
     "PROTOCOLS, PINS, BOARD",
     "PROTOKOLLE, PINS, PLATINE")
@@ -5970,6 +6127,15 @@ UI_TEXT(ALERT_CARD_SERVO_SHORT, 94,
 UI_TEXT(ALERT_CARD_ROWS_PAST, 94,
     "Data can no longer be saved to the card. Recording stopped here.",
     "Daten können nicht mehr auf die Karte gespeichert werden. Aufzeichnung endet hier.")
+UI_TEXT(ALERT_SB_FULL, 94,
+    "Settings copy not written: the card is full.",
+    "Einstellungskopie nicht geschrieben: Die Karte ist voll.")
+UI_TEXT(ALERT_SB_FAILED, 94,
+    "Settings copy not written: card code %u.",
+    "Einstellungskopie nicht geschrieben: Karten-Code %u.")
+UI_TEXT(ALERT_SB_CHANGED, 94,
+    "The settings file changed on the card: choose again.",
+    "Einstellungsdatei auf der Karte geändert: neu wählen.")
 UI_TEXT(ALERT_FW_UPDATED, 94,
     "Panel firmware %s installed.",
     "Panel-Firmware %s installiert.")
@@ -6514,6 +6680,9 @@ UI_TEXT(HOLD_HINT_WRITES, 94,
 UI_TEXT(HOLD_HINT_DOWNLOAD, 94,
     "Hold 2s to download and install.",
     "Halte 2s, um zu laden und zu installieren.")
+UI_TEXT(HOLD_HINT_SBK_LOAD, 94,
+    "Hold 2s to load the settings file.",
+    "Halte 2s, um die Einstellungsdatei zu laden.")
 UI_TEXT(HOLD_HINT_IOMCU_UPDATE, 94,
     "Hold 2s to update the IOmcu.",
     "Halte 2s, um den IOmcu zu aktualisieren.")
