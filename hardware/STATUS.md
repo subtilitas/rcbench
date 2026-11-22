@@ -86,8 +86,9 @@ of about 1mm that the tester saw belongs to an earlier print (tester,
 2026-11-22). This case has blind insert holes of 4.0mm with a relief and
 0.5mm beside the touch panel in the window, as room for real parts. A hole of
 3.5mm in the floor holds the current sensor board, to which the tester's node
-has one XT30 soldered. The tester prints the XT30 case (2026-11-22); the
-result is open. The boards on the floor are not drawn.
+has one XT30 soldered. A tester printed the XT30 case (2026-11-22): it fits the
+node and goes together without binding; the buck converter is held with
+double-sided tape. The boards on the floor are not drawn.
 It holds the node's case, 3 printed parts of 91.4mm x 55.4mm x 28.0mm over
 all: bottom plate, frame with 4 columns, bezel. Chosen (owner, 2026-11-21):
 screws from below through the INA228 module, ruthex RX-M3Sx4.0 inserts, no
@@ -99,6 +100,19 @@ printed. RESET and BOOT have no push rod: a tool of
 2mm at most reaches them through a slot. A USB plug thicker than 7.0mm meets
 the plug in the XT90 housing under it. The speaker is not chosen; the
 converter lies on a foam pad of 1.5mm that is not drawn.
+It holds a STEP model of the motor simulator, 3 resistors of 600Ω in a
+triangle with 3 crocodile clips, 400Ω between any 2 clips (owner,
+2026-11-22). Every size is estimated from one owner photo; the resistors'
+rating is not stated. The phase tap's lead is on one clip and ends in a 3.5mm
+mono plug; how it is fastened and which contact carries the tap are not
+stated.
+It holds STEP models of the Flycolor FlyDragon Lite 40A ESC with its leads,
+of the T-Motor AT2814 outrunner, and of the two joined lead to lead. The ESC's
+size is the maker's; its leads' lengths, diameters and the signal wires' roles
+are not stated by the maker and are estimated or taken from common use. The
+motor follows the maker's drawing without the openings of cap and cage. The
+motor stands for the one a 40A ESC drives (owner, 2026-11-22); the phase tap's
+measurements name no motor.
 It holds a STEP model of the Hitec D485HW servo with the horn HD-X25 and 60mm
 of its 300mm lead, from the maker's dimension drawing, STEP model and data
 sheets. Which edge of the lead carries the signal wire is not in the sources;

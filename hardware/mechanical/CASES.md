@@ -60,7 +60,9 @@ case in numbers and `--check` fails when one falls under its limit:
 
 Limits:
 
-- No part is printed. The fits are drawn, not tried.
+- Printed once, by a tester, 2026-11-22: box and lid fit the node and go
+  together without binding. The tester holds the buck converter with
+  double-sided tape. No fit is measured.
 - The 2 boards on the floor, the XT30 connectors and the wires are not
   drawn and their height is not measured. 3.6mm is free under the
   display board's speaker socket and 8.3mm under its flat parts; parts

@@ -21,6 +21,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `rp2350_can.py`, `ina3221_module.py`, `dcdc_buck_mini.py`, `usbc_pd_trigger.py` | specs of 4 module boards, part by part: Waveshare RP2350-CAN, INA3221 board, Mini560 buck converter, USB-C PD trigger board |
 | `matek_mbec12s.py` | spec of the Matek mBEC12S buck converter, 6V to 60V in |
 | `ina228_node.py` | layout of the remote INA228 sensor node: INA228 module, buck converter and display in place |
+| `ESC_MOTOR.md` | the models of the ESC, the motor, the set of both and the motor simulator: parts, frames, points, sources, limits |
 | `CASES.md` | the printed cases of the display node, with XT30 and with XT60, and of the sensor node: parts, assembly, openings, limits |
 | `_gen_display_case.py` | builds the display node's case in 2 variants of 2 parts each, with XT30 openings and with seats for screwed panel-mount XT60, with OpenCASCADE; checks their fit round the display board and the connectors and that the lid closes on the rim; writes STEP and STL |
 | `_gen_node_case.py` | builds the 3 parts of the sensor node's case with OpenCASCADE, checks their fit round the layout's solids, writes STEP and STL |
@@ -34,6 +35,10 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `wit_imu.py` | spec of a WitMotion inertial sensor in its case, from a product picture with dimensions |
 | `servo_standard.py` | spec of a standard size servo with a round horn, from a dimensioned sketch |
 | `hitec_d485hw.py` | spec of the Hitec D485HW servo with the horn HD-X25 and its lead, from the maker's drawing, model and data sheets |
+| `flycolor_flydragon_lite_40a.py` | spec of the Flycolor FlyDragon Lite 40A ESC with its power, motor and signal leads, from the maker's manual and a product picture |
+| `tmotor_at2814.py` | spec of the T-Motor AT2814 outrunner with its 3 leads, from the maker's drawing |
+| `esc_motor_set.py` | the ESC and the motor joined lead to lead, for pictures of the phase tap |
+| `motor_simulator.py` | spec of the motor simulator: 3 resistors of 600Ω in a triangle with 3 crocodile clips, from an owner photo |
 | `_board.py` | a module's board for the specs: the plate, and parts placed by their position from the board's center |
 | `_font.py` | outlines of the letters of board print, written by `_gen_font.py` from OpenCV's single-stroke font |
 | `_photo_grid.py` | measures a board from a photo on squared paper: grid fit, camera height, the INA228 module's photos laid onto the board frame |
@@ -52,7 +57,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `check_refit.py` | holds the dial's solids, read back with OpenCASCADE, against the mesh |
 | `models/pcb/` | 17 models: 16 boards with their parts and the sensor node's layout; STEP |
 | `models/casing/` | 11 printed parts: the Dial's base, the display node's case in 2 variants, the sensor node's case, the INA228 module's case, the flap drive's frame; STEP, and STL for 9 of them |
-| `models/parts/` | 14 models of bought parts and of assemblies: emergency stop button, M5Stack Dial and its nut, 3 servos, 2 cells, inertial sensor, the flap drive's assembly and wing; STEP |
+| `models/parts/` | 18 models of bought parts and of assemblies: emergency stop button, M5Stack Dial and its nut, 3 servos, an ESC, a motor, the set of both and a motor simulator, 2 cells, inertial sensor, the flap drive's assembly and wing; STEP |
 | `renders/` | OpenCASCADE renders in the folders of `models/`: `pcb/`, `casing/`, `parts/`; a view of several models lies in the folder `_models.py` names for it. The contact sheet `all.png` lies beside the folders |
 | `vendor/` | third-party meshes, unchanged, each with its licence |
 
@@ -957,6 +962,9 @@ Limits:
   the ribs under the ears, the raised gear cover on the deck, the maker's
   sign. The print is the type as plain text.
 - No dimension is verified on a servo.
+
+The ESC, the motor, the set of both and the motor simulator are in
+[ESC and motor](ESC_MOTOR.md).
 
 ## KST X10 with frame and flap drive
 
