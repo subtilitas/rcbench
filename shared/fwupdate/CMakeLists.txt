@@ -23,6 +23,11 @@ else()
     add_library(rcbench_fwupdate STATIC ${SRCS})
     target_include_directories(rcbench_fwupdate PUBLIC include)
     target_link_libraries(rcbench_fwupdate PUBLIC rcbench_safety rcbench_link)
-    add_library(rcbench_fwsign STATIC fw_sign.c)
-    target_link_libraries(rcbench_fwsign PUBLIC rcbench_fwupdate tfpsacrypto)
+    # Only where the build has Mbed TLS (the host suite); the IOmcu links
+    # fw_slots.c and has none.
+    if(TARGET tfpsacrypto)
+        add_library(rcbench_fwsign STATIC fw_sign.c)
+        target_link_libraries(rcbench_fwsign PUBLIC rcbench_fwupdate
+                              tfpsacrypto)
+    endif()
 endif()
