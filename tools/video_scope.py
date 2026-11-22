@@ -366,7 +366,7 @@ def circuit() -> dict:
             {"id": "mcu", "t": "box", "r": [20, 20, 330, 460],
              "text": "RP2350 · GPIO 13"},
             {"id": "servo", "t": "box", "r": [690, 110, 290, 370],
-             "text": "Hitec D series servo"},
+             "text": "Device · open output"},
             {"id": "vio", "t": "rail", "at": [pad, top + 40],
              "text": "3.3 V"},
             {"id": "drv", "t": "sw", "a": [pad, top + 40], "b": [pad, line],

@@ -19,7 +19,7 @@
    "type": "case",
    "model": "part",
    "part": "rp2350_can",
-   "dur": 23.34,
+   "dur": 29.19,
    "spin": [
     [
      0,
@@ -30,7 +30,7 @@
      0
     ],
     [
-     23.34,
+     29.19,
      12
     ]
    ],
@@ -75,7 +75,7 @@
      ]
     ],
     [
-     23.34,
+     29.19,
      [
       -74,
       104,
@@ -91,28 +91,28 @@
    "title": {
     "from": 0.3,
     "to": 6.2,
-    "kicker": "RP2350 · one pin, several jobs",
+    "kicker": "RP2350 · one pin, several protocols",
     "heading": "Precharge and sample",
     "text": "Reading a wire that is only ever pulled low,<br>without a pull-up resistor."
    },
    "chips": [
     {
      "from": 6.6,
-     "to": 23.34,
+     "to": 29.19,
      "n": "i",
-     "text": "The pin"
+     "text": "One pin, several protocols"
     }
    ],
    "tags": [
     {
      "from": 9.0,
-     "to": 22.94,
+     "to": 28.790000000000003,
      "at": [
       -8.9,
       -1.5,
       16.5
      ],
-     "text": "GP13",
+     "text": "one pin",
      "side": "l",
      "d": 90
     }
@@ -120,7 +120,7 @@
    "labels": [
     {
      "from": 7.3,
-     "to": 22.94,
+     "to": 28.790000000000003,
      "anchor": [
       0.05,
       -3.5,
@@ -138,120 +138,18 @@
    "say": [
     {
      "at": 7.0,
-     "text": "One pin of an R P 23 50 can have several jobs. The same pin sends servo pulses, sends D shot, and talks to a servo over a single wire. This is about that last job, and about a resistor it seemed to need."
-    }
-   ]
-  },
-  {
-   "type": "case",
-   "model": "part",
-   "part": "hitec_d485hw",
-   "dur": 11.21,
-   "spin": [
-    [
-     0,
-     25
-    ],
-    [
-     11.21,
-     -20
-    ]
-   ],
-   "camera": [
-    [
-     0,
-     [
-      -60,
-      230,
-      260
-     ],
-     [
-      0,
-      62,
-      0
-     ]
-    ],
-    [
-     11.21,
-     [
-      -40,
-      200,
-      230
-     ],
-     [
-      0,
-      62,
-      0
-     ]
-    ]
-   ],
-   "chips": [
-    {
-     "from": 0,
-     "to": 11.21,
-     "n": "i",
-     "text": "The device"
-    }
-   ],
-   "tags": [
-    {
-     "from": 2.0,
-     "to": 10.81,
-     "at": [
-      18.3,
-      -16.9,
-      -1.8
-     ],
-     "text": "signal wire",
-     "side": "b",
-     "d": 90
-    },
-    {
-     "from": 2.4,
-     "to": 10.81,
-     "at": [
-      63.2,
-      -16.9,
-      0
-     ],
-     "text": "3-pin plug",
-     "side": "t",
-     "d": 70
-    }
-   ],
-   "labels": [
-    {
-     "from": 1.2,
-     "to": 10.81,
-     "anchor": [
-      -40,
-      5,
-      0
-     ],
-     "at": [
-      1330,
-      220
-     ],
-     "size": "sm",
-     "title": "Hitec D485HW",
-     "text": "One wire, both directions: 115,200 bit/s, half duplex. The answer starts 5.9 to 6.5 ms after the request."
-    }
-   ],
-   "say": [
-    {
-     "at": 0.8,
-     "text": "The device on the wire is a Hitec D series servo. It takes a request over its signal wire, and it answers on the same wire."
+     "text": "One pin of a microcontroller often speaks several protocols. On this R P 23 50, one pin sends pulses in one protocol, a fast digital stream in another, and in a third it talks both ways over a single wire. That third protocol seems to need a resistor the other two cannot live with."
     }
    ]
   },
   {
    "type": "scope",
    "figure": "hitec-precharge",
-   "dur": 25.52,
+   "dur": 26.63,
    "chips": [
     {
      "from": 0,
-     "to": 25.52,
+     "to": 26.63,
      "n": 1,
      "text": "A device that only pulls low"
     }
@@ -330,15 +228,15 @@
         0
        ],
        [
-        10.66,
+        11.7,
         0
        ],
        [
-        11.16,
+        12.2,
         1
        ],
        [
-        25.52,
+        26.63,
         1
        ]
       ]
@@ -356,8 +254,8 @@
      ],
      "meters": [
       {
-       "from": 15.16,
-       "to": 25.22,
+       "from": 16.2,
+       "to": 26.33,
        "node": "line",
        "value": [
         [
@@ -378,8 +276,8 @@
       1808,
       340
      ],
-     "from": 10.16,
-     "to": 25.52,
+     "from": 11.2,
+     "to": 26.63,
      "heading": "Signal wire · one answer byte, 0x69 · simulated",
      "view": [
       [
@@ -410,21 +308,21 @@
         3.3
        ],
        "width": 2,
-       "label": "the servo lets the wire go"
+       "label": "the device lets the wire go"
       },
       {
        "series": "byte-bare",
        "style": "warn",
        "label": "the wire",
-       "from": 15.16,
-       "to": 25.52,
+       "from": 16.2,
+       "to": 26.63,
        "reveal": [
         [
-         15.16,
+         16.2,
          0
         ],
         [
-         18.66,
+         19.7,
          112847.28
         ]
        ]
@@ -435,7 +333,7 @@
    "labels": [
     {
      "from": 1.1,
-     "to": 10.36,
+     "to": 11.399999999999999,
      "anchor": [
       "c",
       "srv"
@@ -445,11 +343,11 @@
       170
      ],
      "title": "An open output",
-     "text": "Low: pulled to ground. High: released. The servo never drives the wire high."
+     "text": "Low: pulled to ground. High: released. The device never drives the wire high."
     },
     {
-     "from": 10.96,
-     "to": 25.12,
+     "from": 12.0,
+     "to": 26.23,
      "anchor": [
       "c",
       "rpd"
@@ -466,30 +364,30 @@
    "say": [
     {
      "at": 0.8,
-     "text": "The servo answers with an open output. For a low level it pulls the wire to ground. For a high level it lets the wire go."
+     "text": "The device on that wire answers with an open output. For a low level it pulls the wire to ground. For a high level it lets the wire go."
     },
     {
-     "at": 10.66,
-     "text": "And inside the servo, a pull-down of 3 kilohms sits on the wire. A wire that is let go falls to zero volts. The pin reads every bit as low: the answer is there, and it cannot be seen."
+     "at": 11.7,
+     "text": "And inside the device, a pull-down of 3 kilohms sits on the wire. A wire that is let go falls to zero volts. The pin reads every bit as low: the answer is there, and it cannot be seen."
     }
    ]
   },
   {
    "type": "scope",
    "figure": "hitec-precharge",
-   "dur": 48.44,
+   "dur": 49.7,
    "chips": [
     {
      "from": 0,
-     "to": 17.19,
+     "to": 16.45,
      "n": 2,
      "text": "The pull-up resistor"
     },
     {
-     "from": 17.19,
-     "to": 48.44,
+     "from": 16.45,
+     "to": 49.7,
      "n": 2,
-     "text": "What the pull-up costs"
+     "text": "Why the pull-up cannot stay"
     }
    ],
    "panels": [
@@ -564,11 +462,11 @@
         0.15
        ],
        [
-        41.59,
+        41.51,
         0.15
        ],
        [
-        42.39,
+        42.309999999999995,
         1
        ]
       ],
@@ -586,11 +484,11 @@
         0.1
        ],
        [
-        41.59,
+        41.51,
         0.1
        ],
        [
-        42.39,
+        42.309999999999995,
         1
        ]
       ],
@@ -608,11 +506,11 @@
         0.1
        ],
        [
-        41.59,
+        41.51,
         0.1
        ],
        [
-        42.39,
+        42.309999999999995,
         1
        ]
       ]
@@ -632,7 +530,7 @@
         1
        ],
        [
-        48.44,
+        49.7,
         1
        ]
       ]
@@ -642,7 +540,7 @@
      },
      "flow": [
       {
-       "from": 8.96,
+       "from": 8.22,
        "to": 30.76,
        "path": "pullup",
        "style": "ok"
@@ -650,8 +548,8 @@
      ],
      "meters": [
       {
-       "from": 9.56,
-       "to": 16.990000000000002,
+       "from": 8.82,
+       "to": 16.25,
        "node": "line",
        "style": "ok",
        "dy": -84,
@@ -661,18 +559,18 @@
          0
         ],
         [
-         9.56,
+         8.82,
          0
         ],
         [
-         10.760000000000002,
+         10.020000000000001,
          2.88
         ]
        ]
       },
       {
-       "from": 17.19,
-       "to": 48.14,
+       "from": 16.45,
+       "to": 49.400000000000006,
        "node": "line",
        "style": "warn",
        "dy": -84,
@@ -690,11 +588,11 @@
          5.0
         ],
         [
-         41.59,
+         41.51,
          5.0
         ],
         [
-         42.790000000000006,
+         42.71,
          2.88
         ]
        ]
@@ -710,8 +608,8 @@
       1808,
       340
      ],
-     "from": 8.46,
-     "to": 17.490000000000002,
+     "from": 7.720000000000001,
+     "to": 16.75,
      "heading": "Signal wire · one answer byte, 0x69 · simulated",
      "view": [
       [
@@ -740,11 +638,11 @@
        "label": "wire, 2.2 kΩ pull-up",
        "reveal": [
         [
-         8.96,
+         8.22,
          0
         ],
         [
-         12.96,
+         12.22,
          112847.28
         ]
        ]
@@ -752,8 +650,8 @@
      ],
      "lines": [
       {
-       "from": 10.96,
-       "to": 17.490000000000002,
+       "from": 10.22,
+       "to": 16.75,
        "y": 1.1,
        "text": "input threshold",
        "style": "muted"
@@ -764,7 +662,7 @@
    "labels": [
     {
      "from": 1.4,
-     "to": 8.66,
+     "to": 7.920000000000001,
      "anchor": [
       "c",
       "rpu"
@@ -775,11 +673,11 @@
      ],
      "style": "ok",
      "title": "2.2 kΩ pull-up",
-     "text": "From the signal wire to the servo's 5 V supply."
+     "text": "From the signal wire to a 5 V supply."
     },
     {
-     "from": 9.260000000000002,
-     "to": 16.89,
+     "from": 8.520000000000001,
+     "to": 16.15,
      "anchor": [
       "c",
       "line"
@@ -790,10 +688,10 @@
      ],
      "style": "ok",
      "title": "A divider: 2.9 V",
-     "text": "5 V × 3 kΩ / (3 kΩ + 2.2 kΩ) = <b>2.88 V</b> on a released wire, 58 % of the servo supply."
+     "text": "5 V × 3 kΩ / (3 kΩ + 2.2 kΩ) = <b>2.88 V</b> on a released wire, 58 % of the supply."
     },
     {
-     "from": 17.490000000000002,
+     "from": 16.75,
      "to": 30.46,
      "anchor": [
       "c",
@@ -810,7 +708,7 @@
     },
     {
      "from": 31.060000000000002,
-     "to": 41.290000000000006,
+     "to": 41.21,
      "anchor": [
       "c",
       "rpu"
@@ -821,11 +719,11 @@
      ],
      "style": "warn",
      "title": "5 V with nothing plugged in",
-     "text": "The wire follows the servo supply through the resistor. One resistor on every port that may ever read such a servo."
+     "text": "The wire follows the 5 V supply through the resistor, whatever protocol the pin is to speak next."
     },
     {
-     "from": 41.89,
-     "to": 48.04,
+     "from": 41.809999999999995,
+     "to": 49.300000000000004,
      "anchor": [
       "c",
       "line"
@@ -835,41 +733,41 @@
       700
      ],
      "side": "t",
-     "title": "One pin, several jobs",
-     "text": "Servo pulses and DShot rest on a low wire. The pull-up serves one protocol and changes the wire for all."
+     "title": "One pin, several protocols",
+     "text": "A pulse protocol and a digital stream rest on a low wire. The pull-up serves one protocol and changes the wire for all."
     }
    ],
    "say": [
     {
      "at": 0.8,
-     "text": "The textbook answer is a pull-up resistor: 2.2 kilohms from the wire to the servo's 5 volt supply."
+     "text": "The textbook answer is a pull-up resistor: 2.2 kilohms from the wire to a 5 volt supply."
     },
     {
-     "at": 8.96,
+     "at": 8.22,
      "text": "Pull-up and pull-down form a divider. The released wire rises to 2.9 volts, and the answer appears."
     },
     {
-     "at": 17.19,
-     "text": "But a resistor is there all the time, for every job of the pin. Whenever the pin lets go, at reset or between two jobs, the wire no longer rests low. It sits at 2.9 volts."
+     "at": 16.45,
+     "text": "But a resistor is there all the time, for every protocol on the pin. Whenever the pin lets go, at reset or between two protocols, the wire no longer rests low. It sits at 2.9 volts."
     },
     {
      "at": 30.76,
-     "text": "With nothing plugged in, it is the full 5 volts. The resistor also ties the signal wire to the servo supply, and every port needs one."
+     "text": "With nothing plugged in, it is the full 5 volts. The other protocols expect a wire that rests low, and a level the pin alone decides."
     },
     {
-     "at": 41.59,
-     "text": "One job needs the resistor. Every other job of the pin has to live with it."
+     "at": 41.51,
+     "text": "One protocol needs the resistor. The others cannot have it. So the resistor cannot be fitted."
     }
    ]
   },
   {
    "type": "scope",
    "figure": "hitec-precharge",
-   "dur": 68.01,
+   "dur": 68.3,
    "chips": [
     {
      "from": 0,
-     "to": 68.01,
+     "to": 68.3,
      "n": 3,
      "text": "Precharge and sample"
     }
@@ -906,35 +804,35 @@
         0
        ],
        [
-        13.58,
+        13.66,
         0
        ],
        [
-        13.98,
+        14.06,
         1
        ],
        [
-        23.41,
+        23.56,
         1
        ],
        [
-        23.81,
+        23.959999999999997,
         0
        ],
        [
-        44.7,
+        44.92,
         0
        ],
        [
-        45.1,
+        45.32,
         1
        ],
        [
-        48.2,
+        48.42,
         1
        ],
        [
-        48.6,
+        48.82,
         0
        ]
       ],
@@ -944,15 +842,15 @@
         0
        ],
        [
-        42.7,
+        42.92,
         0
        ],
        [
-        43.2,
+        43.42,
         1
        ],
        [
-        68.01,
+        68.3,
         1
        ]
       ]
@@ -964,19 +862,19 @@
         0
        ],
        [
-        13.18,
+        13.26,
         0
        ],
        [
-        13.68,
+        13.76,
         1
        ],
        [
-        23.41,
+        23.56,
         1
        ],
        [
-        23.91,
+        24.06,
         0
        ]
       ],
@@ -986,19 +884,19 @@
         0
        ],
        [
-        16.18,
+        16.259999999999998,
         0
        ],
        [
-        16.68,
+        16.759999999999998,
         1
        ],
        [
-        34.83,
+        35.06,
         1
        ],
        [
-        35.33,
+        35.56,
         0
        ]
       ],
@@ -1008,19 +906,19 @@
         0
        ],
        [
-        25.41,
+        25.56,
         0
        ],
        [
-        25.91,
+        26.06,
         1
        ],
        [
-        34.83,
+        35.06,
         1
        ],
        [
-        35.33,
+        35.56,
         0
        ]
       ],
@@ -1030,19 +928,19 @@
         0
        ],
        [
-        34.83,
+        35.06,
         0
        ],
        [
-        35.33,
+        35.56,
         1
        ],
        [
-        42.7,
+        42.92,
         1
        ],
        [
-        43.2,
+        43.42,
         0
        ]
       ]
@@ -1055,27 +953,27 @@
      },
      "flow": [
       {
-       "from": 13.98,
-       "to": 23.41,
+       "from": 14.06,
+       "to": 23.56,
        "path": "charge"
       },
       {
-       "from": 23.81,
-       "to": 35.83,
+       "from": 23.959999999999997,
+       "to": 36.06,
        "path": "decay",
        "style": "warn"
       },
       {
-       "from": 45.1,
-       "to": 48.400000000000006,
+       "from": 45.32,
+       "to": 48.620000000000005,
        "path": "fight",
        "style": "red"
       }
      ],
      "meters": [
       {
-       "from": 13.98,
-       "to": 42.5,
+       "from": 14.06,
+       "to": 42.72,
        "node": "line",
        "value": [
         [
@@ -1083,30 +981,30 @@
          0
         ],
         [
-         13.98,
+         14.06,
          0
         ],
         [
-         15.68,
+         15.76,
          3.25
         ],
         [
-         23.81,
+         23.959999999999997,
          3.25
         ],
         [
-         35.33,
+         35.56,
          1.93
         ],
         [
-         42.400000000000006,
+         42.620000000000005,
          1.93
         ]
        ]
       },
       {
-       "from": 45.1,
-       "to": 56.480000000000004,
+       "from": 45.32,
+       "to": 56.78,
        "node": "line",
        "style": "red",
        "value": [
@@ -1115,19 +1013,19 @@
          0
         ],
         [
-         45.1,
+         45.32,
          0
         ],
         [
-         46.1,
+         46.32,
          1.39
         ],
         [
-         48.2,
+         48.42,
          1.39
         ],
         [
-         48.900000000000006,
+         49.120000000000005,
          0
         ]
        ]
@@ -1143,8 +1041,8 @@
       1808,
       340
      ],
-     "from": 12.58,
-     "to": 68.01,
+     "from": 12.66,
+     "to": 68.3,
      "heading": "Signal wire · one sample period, 1086.7 ns · simulated with ngspice",
      "view": [
       [
@@ -1155,28 +1053,28 @@
        ]
       ],
       [
-       42.7,
+       42.92,
        [
         0,
         1187
        ]
       ],
       [
-       44.2,
+       44.42,
        [
         60,
         460
        ]
       ],
       [
-       56.28,
+       56.58,
        [
         60,
         460
        ]
       ],
       [
-       57.78,
+       58.08,
        [
         0,
         1187
@@ -1197,24 +1095,24 @@
      "traces": [
       {
        "series": "cycle",
-       "label": "servo lets go: reads high",
-       "from": 13.78,
-       "to": 68.01,
+       "label": "device lets go: reads high",
+       "from": 13.86,
+       "to": 68.3,
        "reveal": [
         [
-         13.98,
+         14.06,
          100.0
         ],
         [
-         23.41,
+         23.56,
          200.0
         ],
         [
-         34.83,
+         35.06,
          313.33
         ],
         [
-         38.83,
+         39.06,
          1187
         ]
        ]
@@ -1222,20 +1120,20 @@
       {
        "series": "cycle-low",
        "style": "red",
-       "label": "servo pulls low: reads low",
-       "from": 44.900000000000006,
-       "to": 68.01,
+       "label": "device pulls low: reads low",
+       "from": 45.120000000000005,
+       "to": 68.3,
        "reveal": [
         [
-         45.1,
+         45.32,
          100.0
         ],
         [
-         48.2,
+         48.42,
          200.0
         ],
         [
-         50.7,
+         50.92,
          1187
         ]
        ]
@@ -1243,8 +1141,8 @@
      ],
      "bands": [
       {
-       "from": 13.78,
-       "to": 68.01,
+       "from": 13.86,
+       "to": 68.3,
        "x": [
         100.0,
         200.0
@@ -1255,16 +1153,16 @@
      ],
      "lines": [
       {
-       "from": 34.83,
-       "to": 68.01,
+       "from": 35.06,
+       "to": 68.3,
        "x": 313.33,
        "text": "sample, 113.3 ns after the release",
        "style": "ok",
        "dy": 60
       },
       {
-       "from": 36.33,
-       "to": 68.01,
+       "from": 36.56,
+       "to": 68.3,
        "y": 1.1,
        "text": "input threshold",
        "style": "muted"
@@ -1275,7 +1173,7 @@
    "labels": [
     {
      "from": 1.1,
-     "to": 12.879999999999999,
+     "to": 12.959999999999999,
      "anchor": [
       "c",
       "pad"
@@ -1288,8 +1186,8 @@
      "text": "No resistor on the wire. The pad makes the high level, one sample at a time."
     },
     {
-     "from": 13.48,
-     "to": 23.11,
+     "from": 13.56,
+     "to": 23.259999999999998,
      "anchor": [
       "c",
       "drv"
@@ -1303,8 +1201,8 @@
      "text": "15 cycles of the 150 MHz system clock, at the pad's 2 mA drive strength."
     },
     {
-     "from": 23.71,
-     "to": 34.53,
+     "from": 23.86,
+     "to": 34.760000000000005,
      "anchor": [
       "c",
       "rpd"
@@ -1319,8 +1217,8 @@
      "text": "3 kΩ × 72 pF = <b>216 ns</b>. The wire's own capacitance holds the level."
     },
     {
-     "from": 35.129999999999995,
-     "to": 42.400000000000006,
+     "from": 35.36,
+     "to": 42.620000000000005,
      "anchor": [
       "c",
       "in"
@@ -1335,8 +1233,8 @@
      "text": "17 cycles after the release. <b>1.93 V</b> on the wire: the bit is high."
     },
     {
-     "from": 43.0,
-     "to": 56.480000000000004,
+     "from": 43.22,
+     "to": 56.78,
      "anchor": [
       "c",
       "srv"
@@ -1346,12 +1244,12 @@
       170
      ],
      "style": "warn",
-     "title": "The servo pulls low",
+     "title": "The device pulls low",
      "text": "1.4 V while both drive, for 100 ns of every 1086.7 ns. At the sample the wire is at <b>0 V</b>."
     },
     {
-     "from": 57.08,
-     "to": 67.61,
+     "from": 57.379999999999995,
+     "to": 67.89999999999999,
      "anchor": [
       "c",
       "pad"
@@ -1367,26 +1265,26 @@
    "say": [
     {
      "at": 0.8,
-     "text": "There is another way to make the high level. The pin makes it itself, for an instant, only while it listens, and then looks at what the servo does with it."
+     "text": "There is another way to make the high level. The pin makes it itself, for an instant, only while it listens, and then looks at what the device does with it."
     },
     {
-     "at": 13.18,
-     "text": "The pad drives the wire high for 100 nanoseconds. That charges the capacitance of the wire and the servo's input to 3.3 volts."
+     "at": 13.26,
+     "text": "The pad drives the wire high for 100 nanoseconds. That charges the capacitance of the wire and the device's input to 3.3 volts."
     },
     {
-     "at": 23.41,
-     "text": "Then the pad lets go. The charge drains through the servo's 3 kilohm pull-down, and the voltage falls with a time constant of 216 nanoseconds."
+     "at": 23.56,
+     "text": "Then the pad lets go. The charge drains through the device's 3 kilohm pull-down, and the voltage falls with a time constant of 216 nanoseconds."
     },
     {
-     "at": 34.83,
+     "at": 35.06,
      "text": "113 nanoseconds after the release, the pad samples the wire. It still holds 1.9 volts: a high."
     },
     {
-     "at": 42.7,
-     "text": "When the servo pulls low, the picture changes. The pad lifts the wire only part of the way, and 10 nanoseconds after the release the wire is back at ground. The sample reads low."
+     "at": 42.92,
+     "text": "When the device pulls low, the picture changes. The pad lifts the wire only part of the way, and 10 nanoseconds after the release the wire is back at ground. The sample reads low."
     },
     {
-     "at": 56.78,
+     "at": 57.08,
      "text": "One precharge, one sample, every 1,087 nanoseconds. A second state machine of the RP2350's programmable I O does it in 7 instructions."
     }
    ]
@@ -1394,11 +1292,11 @@
   {
    "type": "scope",
    "figure": "hitec-precharge",
-   "dur": 46.81,
+   "dur": 42.96,
    "chips": [
     {
      "from": 0,
-     "to": 46.81,
+     "to": 42.96,
      "n": 4,
      "text": "The sampling window"
     }
@@ -1453,7 +1351,7 @@
      "bands": [
       {
        "from": 11.48,
-       "to": 46.81,
+       "to": 42.96,
        "x": [
         40,
         213.3
@@ -1464,7 +1362,7 @@
       },
       {
        "from": 16.98,
-       "to": 46.81,
+       "to": 42.96,
        "x": [
         266.7,
         630
@@ -1477,22 +1375,22 @@
      "lines": [
       {
        "from": 1.5,
-       "to": 46.81,
+       "to": 42.96,
        "y": 1.1,
        "text": "input threshold",
        "style": "muted"
       },
       {
-       "from": 24.49,
-       "to": 46.81,
+       "from": 25.23,
+       "to": 42.96,
        "x": 234,
        "text": "234 ns",
        "style": "warn",
        "dy": 170
       },
       {
-       "from": 31.94,
-       "to": 46.81,
+       "from": 32.69,
+       "to": 42.96,
        "x": 113.3,
        "text": "sample: 113.3 ns",
        "style": "white",
@@ -1519,7 +1417,7 @@
     },
     {
      "from": 11.780000000000001,
-     "to": 21.189999999999998,
+     "to": 21.93,
      "anchor": [
       "p",
       126,
@@ -1530,12 +1428,12 @@
       200
      ],
      "style": "ok",
-     "title": "Measured on a D485HW",
-     "text": "RP2350 at 150 MHz, GPIO 13, no pull-up, servo supply 5.0 V. Sample 40 to 213 ns after the release: <b>5 of 5</b> reads at each setting. 267 ns: <b>0 of 5</b>."
+     "title": "Measured",
+     "text": "RP2350 at 150 MHz, no pull-up, device supply 5.0 V. Sample 40 to 213 ns after the release: <b>5 of 5</b> reads at each setting. 267 ns: <b>0 of 5</b>."
     },
     {
-     "from": 21.79,
-     "to": 31.64,
+     "from": 22.53,
+     "to": 32.39,
      "anchor": [
       "p",
       234,
@@ -1550,8 +1448,8 @@
      "text": "The simulated wire crosses the threshold between the last setting that passed, 213 ns, and the first that failed, 267 ns."
     },
     {
-     "from": 32.24,
-     "to": 37.43,
+     "from": 32.989999999999995,
+     "to": 38.17,
      "anchor": [
       "p",
       113.3,
@@ -1565,8 +1463,8 @@
      "text": "17 clock cycles. The window is 173 ns wide; the sample has 73 ns of it before and 100 ns after."
     },
     {
-     "from": 38.029999999999994,
-     "to": 46.410000000000004,
+     "from": 38.769999999999996,
+     "to": 42.56,
      "anchor": [
       "p",
       126,
@@ -1578,7 +1476,7 @@
      ],
      "style": "ok",
      "title": "133 of 133 reads",
-     "text": "19 registers of the D485HW, equal to the readings of Hitec's HFP-30 programmer."
+     "text": "Read by precharge and sample, equal to the values a reference reader gives."
     }
    ],
    "say": [
@@ -1588,30 +1486,30 @@
     },
     {
      "at": 11.48,
-     "text": "On a Hitec D485HW, every read passed with the sample 40 to 213 nanoseconds after the release. At 267 nanoseconds, none did."
+     "text": "On the device measured here, every read passed with the sample 40 to 213 nanoseconds after the release. At 267 nanoseconds, none did."
     },
     {
-     "at": 21.49,
+     "at": 22.23,
      "text": "The simulation places the edge in the same spot: the released wire crosses the input threshold 234 nanoseconds after the release."
     },
     {
-     "at": 31.94,
+     "at": 32.69,
      "text": "The firmware samples at 113 nanoseconds, the middle of the window."
     },
     {
-     "at": 37.73,
-     "text": "With these values, 133 of 133 reads of 19 registers passed, the same values Hitec's own programmer reads."
+     "at": 38.47,
+     "text": "With these values, 133 of 133 reads passed."
     }
    ]
   },
   {
    "type": "scope",
    "figure": "hitec-precharge",
-   "dur": 39.39,
+   "dur": 39.69,
    "chips": [
     {
      "from": 0,
-     "to": 39.39,
+     "to": 39.69,
      "n": 5,
      "text": "One byte, 80 samples"
     }
@@ -1626,7 +1524,7 @@
       1808,
       620
      ],
-     "heading": "Signal wire with PRECHARGE receive · answer byte 0x69 · simulated with ngspice",
+     "heading": "Signal wire, read by precharge and sample · answer byte 0x69 · simulated with ngspice",
      "view": [
       [
        0,
@@ -1636,28 +1534,28 @@
        ]
       ],
       [
-       19.14,
+       19.21,
        [
         0,
         112847.28
        ]
       ],
       [
-       22.14,
+       22.21,
        [
         39930.576,
         64236.144
        ]
       ],
       [
-       27.07,
+       27.15,
        [
         39930.576,
         64236.144
        ]
       ],
       [
-       29.57,
+       29.65,
        [
         0,
         112847.28
@@ -1704,7 +1602,7 @@
        "on": "byte-precharge",
        "style": "ok",
        "from": 8.22,
-       "to": 39.39,
+       "to": 39.69,
        "r": 5
       },
       {
@@ -1716,7 +1614,7 @@
        ],
        "label": "samples",
        "from": 9.22,
-       "to": 39.39,
+       "to": 39.69,
        "reveal": [
         [
          9.22,
@@ -1732,7 +1630,7 @@
      "lines": [
       {
        "from": 8.22,
-       "to": 39.39,
+       "to": 39.69,
        "y": 1.1,
        "text": "",
        "style": "muted"
@@ -1740,8 +1638,8 @@
      ],
      "bands": [
       {
-       "from": 21.64,
-       "to": 27.27,
+       "from": 21.71,
+       "to": 27.349999999999998,
        "x": [
         43402.8,
         52083.36
@@ -1773,7 +1671,7 @@
     },
     {
      "from": 8.520000000000001,
-     "to": 19.34,
+     "to": 19.41,
      "anchor": [
       "p",
       65104.2,
@@ -1790,8 +1688,8 @@
      "text": "A filled dot is a sample that read high, an empty one a low."
     },
     {
-     "from": 19.94,
-     "to": 27.27,
+     "from": 20.01,
+     "to": 27.349999999999998,
      "anchor": [
       "p",
       47743.08,
@@ -1807,8 +1705,8 @@
      "text": "163 clock cycles a sample, 1086.7 ns, against a bit of 8680.6 ns."
     },
     {
-     "from": 27.87,
-     "to": 38.99,
+     "from": 27.95,
+     "to": 39.29,
      "anchor": [
       "p",
       73784.76,
@@ -1822,7 +1720,7 @@
      "size": "sm",
      "style": "ok",
      "title": "Inverted 8N1",
-     "text": "8 data bits, no parity, 1 stop bit. The servo's bit time may be 4 % short or long."
+     "text": "8 data bits, no parity, 1 stop bit. The device's bit time may be 4 % short or long."
     }
    ],
    "say": [
@@ -1832,26 +1730,26 @@
     },
     {
      "at": 8.22,
-     "text": "Where the servo lets the wire go, the spikes are tall and the samples read high. Where it pulls low, they stay short and the samples read low."
+     "text": "Where the device lets the wire go, the spikes are tall and the samples read high. Where it pulls low, they stay short and the samples read low."
     },
     {
-     "at": 19.64,
+     "at": 19.71,
      "text": "A bit lasts 8.68 microseconds, and the pad samples every 1.09 microseconds: 8 samples to a bit."
     },
     {
-     "at": 27.57,
-     "text": "The decoder takes the samples as an inverted serial byte and reads the middle of each bit. It hands on the same bytes as the pull-up receiver."
+     "at": 27.65,
+     "text": "The decoder takes the samples as an inverted serial byte and reads the middle of each bit. It hands on the same bytes a pull-up would have given."
     }
    ]
   },
   {
    "type": "scope",
    "figure": "hitec-precharge",
-   "dur": 56.82,
+   "dur": 57.71,
    "chips": [
     {
      "from": 0,
-     "to": 56.82,
+     "to": 57.71,
      "n": 6,
      "text": "On the logic analyser"
     }
@@ -1866,7 +1764,7 @@
       1808,
       470
      ],
-     "heading": "Signal wire, GPIO 13 · Hitec D485HW · read of register 0x32 · logic analyser, 200 MHz, threshold 1.4 V",
+     "heading": "Signal wire · one request and its answer · logic analyser, 200 MHz, threshold 1.4 V",
      "view": [
       [
        0,
@@ -1876,49 +1774,49 @@
        ]
       ],
       [
-       30.15,
+       30.07,
        [
         0,
         9700000.0
        ]
       ],
       [
-       32.15,
+       32.07,
        [
         7849595.0,
         8669595.0
        ]
       ],
       [
-       32.440000000000005,
+       32.370000000000005,
        [
         7849595.0,
         8669595.0
        ]
       ],
       [
-       34.440000000000005,
+       34.370000000000005,
        [
         7903595.0,
         8001595.0
        ]
       ],
       [
-       37.34,
+       37.27,
        [
         7903595.0,
         8001595.0
        ]
       ],
       [
-       39.34,
+       39.27,
        [
         7949525.576,
         7970358.92
        ]
       ],
       [
-       56.82,
+       57.71,
        [
         7949525.576,
         7970358.92
@@ -1953,14 +1851,14 @@
        ],
        "width": 3,
        "from": 5.3,
-       "to": 56.82,
+       "to": 57.71,
        "reveal": [
         [
          5.5,
          0
         ],
         [
-         14.5,
+         14.42,
          9700000.0
         ]
        ]
@@ -1973,15 +1871,15 @@
         5.4
        ],
        "width": 3,
-       "from": 19.86,
-       "to": 56.82,
+       "from": 19.779999999999998,
+       "to": 57.71,
        "reveal": [
         [
-         20.16,
+         20.08,
          0
         ],
         [
-         23.16,
+         23.08,
          9700000.0
         ]
        ]
@@ -1995,15 +1893,15 @@
        ],
        "width": 2.5,
        "shift": 153820.0,
-       "from": 27.349999999999998,
-       "to": 56.82,
+       "from": 27.27,
+       "to": 57.71,
        "reveal": [
         [
-         27.65,
+         27.57,
          0
         ],
         [
-         30.15,
+         30.07,
          9700000.0
         ]
        ]
@@ -2011,8 +1909,8 @@
      ],
      "bands": [
       {
-       "from": 12.0,
-       "to": 30.65,
+       "from": 11.92,
+       "to": 30.57,
        "x": [
         1117000.0,
         1551000.0
@@ -2022,8 +1920,8 @@
        "dy": 36
       },
       {
-       "from": 14.0,
-       "to": 30.65,
+       "from": 13.92,
+       "to": 30.57,
        "x": [
         7909595.0,
         8603595.0
@@ -2044,7 +1942,7 @@
       350
      ],
      "from": 45.91,
-     "to": 56.82,
+     "to": 57.71,
      "heading": "The same pulses, simulated with ngspice · dashed: the analyser's threshold",
      "view": [
       [
@@ -2076,7 +1974,7 @@
        "width": 3,
        "label": "simulated wire",
        "from": 46.11,
-       "to": 56.82,
+       "to": 57.71,
        "reveal": [
         [
          46.41,
@@ -2101,7 +1999,7 @@
    "labels": [
     {
      "from": 1.1,
-     "to": 9.4,
+     "to": 9.32,
      "anchor": [
       960,
       400
@@ -2112,11 +2010,11 @@
      ],
      "side": "t",
      "title": "Kingst LA2016",
-     "text": "One channel on the signal wire, 5 ns a sample. It reads the wire as above or below 1.4 V. Servo supply 5.0 V."
+     "text": "One channel on the signal wire, 5 ns a sample. It reads the wire as above or below 1.4 V. Device supply 5.0 V."
     },
     {
-     "from": 10.3,
-     "to": 19.86,
+     "from": 10.22,
+     "to": 19.779999999999998,
      "anchor": [
       "a",
       4909595.0,
@@ -2128,12 +2026,12 @@
      ],
      "side": "t",
      "style": "ok",
-     "title": "PULL-UP, 2.2 kΩ fitted",
+     "title": "Pull-up fitted, 2.2 kΩ",
      "text": "Request <b>96 00 32 00 32</b>, answer <b>69 00 32 02 00 00 34 00</b>. The answer starts 6.358 ms after the request ends."
     },
     {
-     "from": 20.46,
-     "to": 27.349999999999998,
+     "from": 20.38,
+     "to": 27.27,
      "anchor": [
       "a",
       4800000.0,
@@ -2145,12 +2043,12 @@
      ],
      "side": "t",
      "style": "warn",
-     "title": "PULL-UP, no resistor",
+     "title": "No pull-up, no precharge",
      "text": "0 edges in 10 s. The read finds no answer."
     },
     {
-     "from": 27.95,
-     "to": 32.34,
+     "from": 27.87,
+     "to": 32.27,
      "anchor": [
       "a",
       8209595.0,
@@ -2161,11 +2059,11 @@
       700
      ],
      "side": "t",
-     "title": "PRECHARGE, no resistor",
+     "title": "No pull-up, precharge",
      "text": "The same answer, read 3 of 3 times: <b>69 00 32 02 00 00 34 00</b>."
     },
     {
-     "from": 39.64,
+     "from": 39.57,
      "to": 45.809999999999995,
      "anchor": [
       "a",
@@ -2178,33 +2076,33 @@
      ],
      "side": "t",
      "title": "280 ns above 1.4 V",
-     "text": "Period 1086.5 ns measured, 1086.7 ns by design. A pulse against the servo's low level reads 0 to 20 ns, or not at all."
+     "text": "Period 1086.5 ns measured, 1086.7 ns by design. A pulse against the device's low level reads 0 to 20 ns, or not at all."
     }
    ],
    "say": [
     {
      "at": 0.8,
-     "text": "Now the real wire, on a logic analyser at 200 megasamples per second. The same register is read in three setups."
+     "text": "Now the real wire, on a logic analyser at 200 megasamples per second. The same request is sent in three setups."
     },
     {
-     "at": 10.0,
+     "at": 9.92,
      "text": "With the pull-up resistor fitted, request and answer are plain levels: 5 bytes out and, 6.4 milliseconds later, 8 bytes back."
     },
     {
-     "at": 20.16,
+     "at": 20.08,
      "text": "Without the resistor, and without precharge, the wire never moves. No answer can be read."
     },
     {
-     "at": 27.65,
+     "at": 27.57,
      "text": "With precharge, the answer is there, as a train of pulses."
     },
     {
-     "at": 32.84,
-     "text": "One pulse every 1,087 nanoseconds. A wire that is let go holds each pulse above the analyser's threshold for 280 nanoseconds. Where the servo pulls low, the pulse is gone."
+     "at": 32.77,
+     "text": "One pulse every 1,087 nanoseconds. A wire that is let go holds each pulse above the analyser's threshold for 280 nanoseconds. Where the device pulls low, the pulse is gone."
     },
     {
      "at": 46.41,
-     "text": "The simulated wire, read at the same threshold, gives the same picture. And the bytes are the same 8 in both receive modes."
+     "text": "The simulated wire, read at the same threshold, gives the same picture. And the bytes are the same 8, with the resistor and without it."
     }
    ]
   },
@@ -2216,10 +2114,9 @@
     "Drive the wire high for 100.0 ns",
     "Let go; 3 kΩ and 72 pF hold the level",
     "Sample 113.3 ns after the release",
-    "No pull-up: the pin's other jobs are untouched"
+    "No pull-up: the pin's other protocols are untouched"
    ],
-   "note": "In use in rcbench, to program Hitec D series servos. Reference: protocols/hitec/README.md.",
-   "say": "Precharge and sample. The pin makes the high level itself, and only while it listens. The pull-up resistor is gone, and the pin's other jobs never see it. The R C bench reads its Hitec servos this way."
+   "say": "Precharge and sample. The pin makes the high level itself, and only while it listens. No resistor is fitted, and the pin's other protocols never see a pull-up."
   }
  ]
 }
