@@ -158,3 +158,10 @@ def test_a_stretched_scope_scene_moves_its_cues_with_its_other_times():
     before = [b - a for a, b in zip(cues, cues[1:], strict=False)]
     assert gaps == pytest.approx([gap + 4.0 for gap in before])
     assert scene["dur"] == pytest.approx(new[-1])
+
+
+def test_the_narrator_is_given_precharge_with_a_hyphen():
+    """The narrator is given precharge with a hyphen."""
+    assert video_voice.spoken("Set it to PRECHARGE, and one precharge "
+                              "follows. Precharged.") == (
+        "Set it to pre-charge, and one pre-charge follows. pre-charged.")
