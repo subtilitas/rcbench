@@ -456,7 +456,7 @@ a spotlight, and a recap. `tools/video_audio.py` computes the sound track from t
 storyboard: synthesizer pads and one quiet sound per event, no percussion, the loudest sample
 at -3dBFS (decibels relative to full scale); its balance has not been judged by ear. `--check` reads every
 storyboard and fails on a field the player would not draw; `test/tools/test_make_video.py`
-runs it. Five storyboards and a thumbnail: `kst-rbmod`, programming a KST servo on the rbmod carrier, 8 steps,
+runs it. Eight storyboards and a thumbnail: `kst-rbmod`, programming a KST servo on the rbmod carrier, 8 steps,
 100.4s, and `features`, every screen of the bench in 8 chapters, where it opens from and what
 it does on the rbmod carrier, narrated, 755.92s, with Bach's Prelude in C major or Pachelbel's
 Canon in D major as its bed. `tools/video_voice.py` speaks a storyboard with Kokoro, a
@@ -480,7 +480,7 @@ to a USB-C plug board for the PD mini, and a drawing of the panel's back
 supply and ground from J7 on the RS485 header's 5V and GND pins. `dial` shows the M5Stack Dial, in its printed hand-held base, coming
 into use in 7 steps and 295.69s, narrated, step 1 the assembly of the base with its cell: its STEP model with the faces of
 `tools/render_dial.py` on its display and its knob turning (`tools/video/player/dial3d.js`),
-and SETUP > WIRELESS > DIAL as the host renderer draws it. `kst-rbmod` draws a mockup of boxes whose size is estimated, and J2's row order
+and SETUP > WIRELESS > DIAL as the host renderer draws it. `minircbench-features` shows every screen of the MiniRcBench, firmware 0.1.0, in 12 chapters, narrated, 1000.70s. `hitec-precharge` explains the Hitec D series PRECHARGE receive in 6 steps, narrated: `scope` scenes (`tools/video/player/scope.js`) draw the signal wire's circuit and its voltage, which `tools/video_scope.py` simulates with ngspice from a model fitted to the measured sampling window ([the simulated signal wire](tools/video/README.md#the-simulated-signal-wire)); it is not rendered. `kst-rbmod` draws a mockup of boxes whose size is estimated, and J2's row order
 there is not confirmed. A render is not run in CI.
 
 [Videos from storyboards](tools/video/README.md).

@@ -8,6 +8,7 @@ under `storyboards/`. It lists scenes; each scene has a type:
 | --- | --- |
 | `case` | the MiniRcBench from its assembly, its components taking their places, its display showing stills and the whole bench rolling over to its back; or the bench in its case as a 3D model, with a camera path, the lid lifting, labels on named parts, a pin table and a servo being plugged in; or the M5Stack Dial as a 3D model, its display showing its faces and its knob turning, alone or beside the bench with both displays following one simulated run |
 | `board` | a circuit board seen flat from its front, with a view that moves over it, labels and tags on pads, parts taking their place, solder joints, a cross-section in a card, a net lit up, a track cut, a wire and a part soldered across two pads |
+| `scope` | plots and circuits of a figure: traces over a time axis whose view moves, with lines, bands and sample points, and a circuit whose parts appear, switch and carry a drawn current |
 | `screen` | the panel's screens, one step after another, each with a bubble, a pointer and a tap or hold mark |
 | `tour` | the panel's screens with an animated caption, a path to the screen, marks that name parts of the display, a spotlight, and chapter cards |
 | `end` | a heading, a numbered recap and a note |
@@ -50,6 +51,8 @@ python3 tools/make_video.py rbmod-rework           # build/video/rbmod-rework.mp
 python3 tools/make_video.py rbmod-build            # build/video/rbmod-build.mp4
 python3 tools/make_video.py dial                   # build/video/dial.mp4
 python3 tools/make_video.py minircbench-build      # build/video/minircbench-build.mp4
+python3 tools/make_video.py hitec-precharge        # build/video/hitec-precharge.mp4
+python3 tools/video_scope.py                       # plots/hitec-precharge.json, with ngspice
 python3 tools/make_video.py kst-rbmod --stills 2.5,40 -o /tmp/stills
 python3 tools/make_video.py features --jobs 3      # frames in 3 parts at once
 python3 tools/make_video.py features --jobs 3 --keep build/video/parts
@@ -123,7 +126,11 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `storyboards/dial.json` | bringing the M5Stack Dial into use in 7 steps: the Dial, its ring nut, the cell 102540 and a foam pad into the two parts of the printed base and its 4 screws M3 x 12, flashing over USB, the bind on SETUP > WIRELESS > DIAL, the menu and the SET of a value, the knob on MOTOR & ESC and on SERVO LIVE, and what the Dial does not do; the bench and the Dial stand in one 3D scene and show the same screen, run and value; narrated, 295.69s, Pachelbel's Canon at half level |
 | `storyboards/minircbench-build.json` | building a MiniRcBench in 10 steps: the parts, the firmware, the boost board's input on the battery socket's pins, the 0Ω resistor off the enable pad, the pull-down and IO28 on it, the INA219 on the I2C socket, the 5.6V zener and the 470µF capacitor across the boost board's output, the 5V path through the sensor to both male servo connectors, the signals and the 9 unused wires taken out of the 12-pin plug, the check before the cell, the case, and the settings; narrated, 505.57s, Pachelbel's Canon at half level |
 | `storyboards/minircbench-features.json` | every screen of the MiniRcBench, firmware 0.1.0, in 12 chapters: the tester, its telemetry, the menu, ESC COMMANDS, ESC CONFIG with ESC SETTINGS and USB BRIDGE, SERVO TESTER, SERVO PROGRAMMER for KST, Chaservo and Hitec, RX SIGNALS with the S.BUS monitor, TOOLS with the angle meter, SD LOG, SETTINGS, and the rules all screens share; the bench stands frontal with 81 stills on its display, one label a line of narration; narrated, 1000.70s, Pachelbel's Canon at half level |
+| `storyboards/hitec-precharge.json` | the Hitec D series PRECHARGE receive in 6 steps: the servo's 3kΩ pull-down, the 2.2kΩ pull-up, one precharge and sample, the sampling window against the measured one, one answer byte in 80 samples, and the setting on the panel; narrated |
 | `storyboards/thumbnail.json` | the thumbnail of `features`: the case with its display lifted and the title; `--stills 3` writes it |
+| `../video_scope.py` | simulates the D series signal wire with ngspice and writes `plots/hitec-precharge.json`, the figure of the `scope` scenes; `--capture NAME=FILE` adds a logic analyser trace from a sigrok CSV export |
+| `plots/hitec-precharge.json` | the figure: 11 traces, the circuit's drawing, the model's values and the measured window |
+| `player/scope.js` | draws a figure's plots and circuits |
 | `../video_audio.py` | the sound track of a storyboard as a WAV file |
 | `../video_voice.py` | the narration: the lines, the speaker, the room each line needs |
 
@@ -178,6 +185,46 @@ optional `glow` names a component that is lit while the label shows. `at` is the
 top left corner on the frame in pixels. The model's origin is the centre
 of the case floor; x runs along the 190mm side, y up, z towards the
 connector wall.
+
+A `scope` scene:
+
+| Field | Meaning |
+| --- | --- |
+| `dur` | length in s |
+| `figure` | the name of a figure under `plots/`, without `.json` |
+| `panels` | a list of plots and circuits; each has `id`, `kind` (`plot` or `circuit`), `box` as `[x, y, w, h]` in pixels and optional `from`, `to` |
+| `title`, `chips`, `say` | as in a `case` scene; the panels are dimmed to 25% under a title |
+| `labels` | as in a `case` scene; `anchor` is `[x, y]` in pixels, `[plot, x, y]` in ns and the plot's unit, or `[circuit, node]` |
+
+A panel of kind `plot`:
+
+| Field | Meaning |
+| --- | --- |
+| `view` | keys `[t, [x0, x1]]`: the span of the time axis in ns; the axis is labelled in ns, µs or ms by its width |
+| `y` | `[low, high]` of the vertical axis |
+| `ticks`, `unit` | optional: the values that carry a grid line and a number, each a value or `[value, text]`, and the unit after a number |
+| `heading`, `ylabel` | optional texts |
+| `traces` | `{series}` and optional `style`, `label`, `width`, `from`, `to`, `shift` in ns, `reveal` as keys `[t, x]` (the trace is drawn up to x), `lane` as `[y0, y1]` (a logic trace's 0 and 1), `points` with `on` and `r` (a dot per point, filled where the value is 1, on the trace named by `on`) |
+| `lines` | optional `{x}` or `{y}` with `text`, `style`, `from`, `to`, `dy`: a dashed line |
+| `bands` | optional `{x: [x0, x1]}` with `text`, `style`, `from`, `to`, `dy`: a shaded span |
+
+A style is empty, `ok`, `warn`, `muted`, `red`, `white` or `violet`.
+
+A panel of kind `circuit`:
+
+| Field | Meaning |
+| --- | --- |
+| `circuit` | the name of a circuit of the figure |
+| `show` | optional, by part: keys `[t, opacity]` |
+| `set` | optional, by switch: keys `[t, v]`, 0 open and 1 shut |
+| `lit`, `tint` | optional, by part: keys `[t, v]` from 0 to 1, and the style a lit part takes |
+| `flow` | optional `{from, to, path}` and optional `style`, `speed`: dashes that run along a path of the circuit |
+| `meters` | optional `{from, to, node, value}` with `value` as keys `[t, volts]` and optional `style`, `dx`, `dy`: a voltage beside a node |
+
+A figure holds `series` (each `{unit, x, y}` with x in ns), `circuits`
+(each with `size`, `items`, `nodes` and `paths`), and for
+`hitec-precharge` the `model`, the `timing`, the `measured` window and
+the simulated `window`.
 
 A `board` scene:
 
@@ -256,6 +303,28 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
 3. Copy `storyboards/kst-rbmod.json`, replace the steps, and read each
    `target` from the view's PNG.
 4. `--stills` at a few times shows the layout before a full render.
+
+## The simulated signal wire
+
+`tools/video_scope.py` writes one ngspice deck per run and reads the
+line's voltage from a transient analysis with 0.5ns steps.
+
+| Part | Value | Source |
+| --- | --- | --- |
+| Servo pull-down | 3kΩ | `protocols/hitec/README.md` |
+| Pull-up | 2.2kΩ to 5.0V | `protocols/hitec/README.md` |
+| Pad supply | 3.3V | IOVDD |
+| Pad driver | 40Ω | fitted |
+| Line capacitance | 90pF | fitted |
+| Input threshold | 1.3V | fitted |
+| Servo output | 50Ω to ground | assumed |
+
+The 3 fitted values make the model read the settings of the reference's
+table as the D485HW did: high with the sample 40 to 213ns after the
+release, low at 267ns, and low at 213ns after a precharge of 1 system
+clock cycle. The tool stops with a message when the model reads one of
+the 12 settings otherwise. The timing is `hitec_pre_timing()` at 150MHz:
+163 cycles a sample, 15 of precharge, 17 to the sample.
 
 ## Limits
 

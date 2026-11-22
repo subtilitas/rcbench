@@ -36,7 +36,9 @@ a new session needs beyond it.
 | `storyboards/minircbench-build.json`, `player/mini3d.js`, `boards/minircbench-wiring.json`, `stills/` | the build of a MiniRcBench in 10 steps, 505.57s, narrated in the voice of `features`, bed `pachelbel-canon` at half level; `tools/video_cad.py --parts` converts its assembly |
 | `storyboards/minircbench-features.json`, `stills/` | every screen of the MiniRcBench, firmware 0.1.0, in 12 chapters, 1000.70s, narrated in the voice of `features`, bed `pachelbel-canon` at half level; 81 stills of that project's host suite at its commit 2cdf044 on the display of the `mini` model seen from the front |
 | `storyboards/thumbnail.json` | thumbnail of the feature tour, `--stills 3` |
-| `test/tools/test_make_video.py` | 35 cases; the storyboard check, the script, the freezes |
+| `tools/video_scope.py`, `player/scope.js`, `plots/hitec-precharge.json` | the `scope` scene: plots and a circuit from a figure; the figure of the D series signal wire is simulated with ngspice 42 |
+| `storyboards/hitec-precharge.json` | the Hitec D series PRECHARGE receive in 6 steps, narrated in the voice of `features`, bed `pachelbel-canon` at half level; 242.96s before the narration stretches it; not rendered |
+| `test/tools/test_make_video.py`, `test/tools/test_video_scope.py` | 42 and 15 cases; the storyboard check, the script, the freezes, the figure, the scope scene |
 
 No pull request is open. CI has not been looked at for this branch.
 

@@ -79,6 +79,7 @@ VIEWS_KEPT = 4
 PART_LEAST = 1024
 ACTIONS = ("tap", "hold")
 STYLES = ("ok", "warn", "muted")
+SCOPE_STYLES = ("", "ok", "warn", "muted", "red", "white", "violet")
 FITS = ("resistor", "zener", "cap", "link")
 INSETS = ("strip", "fill", "extract", "pins", "latch")
 
@@ -329,6 +330,154 @@ def _check_board(scene: dict, where: str, errors: list) -> None:
                           f"{', '.join(FITS)}, the pads a and b, and t")
 
 
+def _check_scope(scene: dict, where: str, errors: list) -> None:
+    dur = scene.get("dur")
+    if not (_number(dur) and dur > 0):
+        errors.append(f"{where}: dur must be a positive number")
+        return
+    name = scene.get("figure")
+    path = VIDEO / "plots" / f"{name}.json"
+    if not (isinstance(name, str) and name
+            and all(c.isalnum() or c in "-_" for c in name)
+            and path.is_file()):
+        errors.append(f"{where}: figure names a file under "
+                      "tools/video/plots/, without its suffix")
+        return
+    figure = json.loads(path.read_text(encoding="utf-8"))
+    if "title" in scene:
+        _span(scene["title"], dur, f"{where} title", errors)
+        if not isinstance(scene["title"].get("heading"), str):
+            errors.append(f"{where} title: heading is missing")
+    for n, chip in enumerate(scene.get("chips", [])):
+        _span(chip, dur, f"{where} chip {n + 1}", errors)
+    panels = scene.get("panels")
+    if not (isinstance(panels, list) and panels
+            and all(isinstance(p, dict) for p in panels)):
+        errors.append(f"{where}: panels is a list of plots and circuits")
+        return
+    known = {}
+    for n, panel in enumerate(panels):
+        at = f"{where} panel {n + 1}"
+        box = panel.get("box")
+        if not (isinstance(box, list) and len(box) == 4
+                and all(_number(v) for v in box) and box[0] >= 0
+                and box[1] >= 0 and box[2] > 0 and box[3] > 0
+                and box[0] + box[2] <= FRAME[0]
+                and box[1] + box[3] <= FRAME[1]):
+            errors.append(f"{at}: box must be [x, y, w, h] inside the frame")
+        if not isinstance(panel.get("id"), str) or panel["id"] in known:
+            errors.append(f"{at}: id must be a name of its own")
+            continue
+        if "from" in panel or "to" in panel:
+            _span(panel, dur, at, errors)
+        if panel.get("kind") == "plot":
+            known[panel["id"]] = None
+            _check_plot(panel, figure, dur, at, errors)
+        elif panel.get("kind") == "circuit":
+            drawn = figure.get("circuits", {}).get(panel.get("circuit"))
+            if drawn is None:
+                errors.append(f"{at}: circuit is not in the figure")
+                continue
+            known[panel["id"]] = drawn
+            _check_circuit(panel, drawn, dur, at, errors)
+        else:
+            errors.append(f"{at}: kind must be plot or circuit")
+    for n, label in enumerate(scene.get("labels", [])):
+        at = f"{where} label {n + 1}"
+        _span(label, dur, at, errors)
+        anchor = label.get("anchor")
+        fine = isinstance(anchor, list) and len(anchor) in (2, 3)
+        if fine and isinstance(anchor[0], str):
+            drawn = known.get(anchor[0], False)
+            fine = ((len(anchor) == 3 and drawn is None
+                     and _number(anchor[1]) and _number(anchor[2]))
+                    or (len(anchor) == 2 and isinstance(drawn, dict)
+                        and anchor[1] in drawn["nodes"]))
+        elif fine:
+            fine = len(anchor) == 2 and all(_number(v) for v in anchor)
+        if not fine:
+            errors.append(f"{at}: anchor must be [x, y], [plot, x, y] or "
+                          "[circuit, node]")
+        pos = label.get("at")
+        if not (isinstance(pos, list) and len(pos) == 2
+                and 0 <= pos[0] < FRAME[0] and 0 <= pos[1] < FRAME[1]):
+            errors.append(f"{at}: at must be [x, y] inside the frame")
+        if not isinstance(label.get("title"), str):
+            errors.append(f"{at}: title is missing")
+        if label.get("style", "ok") not in STYLES:
+            errors.append(f"{at}: style must be one of {', '.join(STYLES)}")
+    _check_say(scene, dur, where, errors)
+
+
+def _check_plot(panel: dict, figure: dict, dur: float, at: str,
+                errors: list) -> None:
+    view = panel.get("view")
+    _keys(view, 2, f"{at} view", errors)
+    for key in view if isinstance(view, list) else []:
+        if not (isinstance(key, list) and len(key) == 2
+                and isinstance(key[1], list) and len(key[1]) == 2
+                and all(_number(v) for v in key[1]) and key[1][0] < key[1][1]):
+            errors.append(f"{at} view: a key is [t, [x0, x1]] in ns, in "
+                          "order")
+            break
+    y = panel.get("y")
+    if not (isinstance(y, list) and len(y) == 2
+            and all(_number(v) for v in y) and y[0] < y[1]):
+        errors.append(f"{at}: y must be [low, high]")
+    traces = panel.get("traces")
+    if not (isinstance(traces, list) and traces):
+        errors.append(f"{at}: traces is empty")
+        return
+    for n, trace in enumerate(traces):
+        name = f"{at} trace {n + 1}"
+        if trace.get("series") not in figure["series"]:
+            errors.append(f"{name}: series is not in the figure")
+        if "on" in trace and trace["on"] not in figure["series"]:
+            errors.append(f"{name}: on is not a series of the figure")
+        if trace.get("style", "") not in SCOPE_STYLES:
+            errors.append(f"{name}: style must be one of "
+                          f"{', '.join(SCOPE_STYLES[1:])}")
+        if "from" in trace or "to" in trace:
+            _span(trace, dur, name, errors)
+        if "reveal" in trace:
+            _keys(trace["reveal"], 2, f"{name} reveal", errors)
+    for kind in ("lines", "bands"):
+        for n, item in enumerate(panel.get(kind, [])):
+            name = f"{at} {kind[:-1]} {n + 1}"
+            if "from" in item or "to" in item:
+                _span(item, dur, name, errors)
+            if item.get("style", "") not in SCOPE_STYLES:
+                errors.append(f"{name}: style must be one of "
+                              f"{', '.join(SCOPE_STYLES[1:])}")
+            if kind == "bands" and not (
+                    isinstance(item.get("x"), list) and len(item["x"]) == 2
+                    and all(_number(v) for v in item["x"])):
+                errors.append(f"{name}: x must be [x0, x1]")
+            if kind == "lines" and _number(item.get("x")) == _number(
+                    item.get("y")):
+                errors.append(f"{name}: needs x or y")
+
+
+def _check_circuit(panel: dict, drawn: dict, dur: float, at: str,
+                   errors: list) -> None:
+    parts = {item["id"] for item in drawn["items"]}
+    for name in ("show", "set", "lit"):
+        for part, keys in panel.get(name, {}).items():
+            if part not in parts:
+                errors.append(f"{at} {name}: {part} is not a part of the "
+                              "circuit")
+            _keys(keys, 2, f"{at} {name} {part}", errors)
+    for n, flow in enumerate(panel.get("flow", [])):
+        _span(flow, dur, f"{at} flow {n + 1}", errors)
+        if flow.get("path") not in drawn["paths"]:
+            errors.append(f"{at} flow {n + 1}: path is not in the circuit")
+    for n, meter in enumerate(panel.get("meters", [])):
+        _span(meter, dur, f"{at} meter {n + 1}", errors)
+        if meter.get("node") not in drawn["nodes"]:
+            errors.append(f"{at} meter {n + 1}: node is not in the circuit")
+        _keys(meter.get("value"), 2, f"{at} meter {n + 1} value", errors)
+
+
 def _names(value) -> bool:
     return (isinstance(value, list) and bool(value)
             and all(isinstance(v, str) for v in value))
@@ -539,6 +688,8 @@ def check(board: dict) -> list:
             _check_case(scene, where, errors)
         elif kind == "board":
             _check_board(scene, where, errors)
+        elif kind == "scope":
+            _check_scope(scene, where, errors)
         elif kind == "screen":
             _check_screen(scene, steps, where, errors)
         elif kind == "tour":
@@ -548,8 +699,8 @@ def check(board: dict) -> list:
                     and isinstance(scene.get("heading"), str)):
                 errors.append(f"{where}: needs dur and heading")
         else:
-            errors.append(f"{where}: type must be case, board, screen, "
-                          "tour or end")
+            errors.append(f"{where}: type must be case, board, scope, "
+                          "screen, tour or end")
     return errors
 
 
@@ -953,6 +1104,8 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
             name = pathlib.PurePosixPath(path).name
             drawn = VIDEO / "boards" / name
             return str(drawn if drawn.is_file() else VIDEO / "cad" / name)
+        if path.startswith("/plots/"):
+            return str(VIDEO / "plots" / pathlib.PurePosixPath(path).name)
         if path.startswith("/node_modules/"):
             return str(VIDEO / path.lstrip("/"))
         return super().translate_path(path)
@@ -1035,6 +1188,9 @@ def _capture(cmd: list, board: dict, out: pathlib.Path, fps: int,
             plan = ""
             if scene["type"] == "board":
                 plan = _plan(scene).read_text(encoding="utf-8")
+            if scene["type"] == "scope":
+                plan = (VIDEO / "plots" / f"{scene['figure']}.json"
+                        ).read_text(encoding="utf-8")
             mark = digest([rest, scene, start, total, n,
                            len(board["scenes"]), before, plan, code,
                            seen])

@@ -147,7 +147,7 @@ def script(board: dict) -> list:
     """
     lines = []
     for i, scene in enumerate(board["scenes"]):
-        if scene["type"] in ("case", "board"):
+        if scene["type"] in ("case", "board", "scope"):
             for cue in scene.get("say", []):
                 lines.append((i, None, cue["at"], spoken(cue["text"])))
         elif scene["type"] == "end":
@@ -157,6 +157,40 @@ def script(board: dict) -> list:
             for j, step in enumerate(scene["steps"]):
                 lines.append((i, j, LEAD_S, spoken(_line(step))))
     return lines
+
+
+def _stretch_scope(scene: dict, move) -> None:
+    """Move every time of a scope scene.
+
+    Args:
+        scene: The scene; its dur is moved already.
+        move: Gives the new time of an old one.
+    """
+    def span(item):
+        if "from" in item:
+            item["from"], item["to"] = move(item["from"]), move(item["to"])
+
+    def keys(track):
+        for key in track:
+            key[0] = move(key[0])
+
+    for item in scene.get("labels", []) + scene.get("chips", []):
+        span(item)
+    if "title" in scene:
+        span(scene["title"])
+    for panel in scene["panels"]:
+        span(panel)
+        if "view" in panel:
+            keys(panel["view"])
+        for name in ("traces", "lines", "bands", "flow", "meters"):
+            for item in panel.get(name, []):
+                span(item)
+                for track in ("reveal", "value"):
+                    if track in item:
+                        keys(item[track])
+        for name in ("show", "set", "lit"):
+            for track in panel.get(name, {}).values():
+                keys(track)
 
 
 def _stretch(scene: dict, old: list, new: list) -> None:
@@ -171,6 +205,9 @@ def _stretch(scene: dict, old: list, new: list) -> None:
                      / (old[n + 1] - old[n]), 2)
 
     scene["dur"] = move(scene["dur"])
+    if scene["type"] == "scope":
+        _stretch_scope(scene, move)
+        return
     for key in scene["camera"]:
         key[0] = move(key[0])
     for name in ("lid", "faces", "turn", "panel", "flip"):
@@ -353,7 +390,8 @@ def narrate(board: dict, cache: pathlib.Path | None = None) -> tuple:
     # cues keep their gaps or get the room their lines need, and every
     # other time of the scene follows them.
     for i, scene in enumerate(board["scenes"]):
-        if scene["type"] not in ("case", "board") or not scene.get("say"):
+        if (scene["type"] not in ("case", "board", "scope")
+                or not scene.get("say")):
             continue
         mine = [(at, clip) for k, j, at, clip in spoken_lines if k == i]
         old = [0.0] + [at for at, _ in mine] + [scene["dur"]]
@@ -374,7 +412,7 @@ def narrate(board: dict, cache: pathlib.Path | None = None) -> tuple:
             start = t
             continue
         cues = ([cue["at"] for cue in scene.get("say", [])]
-                if scene["type"] in ("case", "board") else [0.6])
+                if scene["type"] in ("case", "board", "scope") else [0.6])
         for (_, clip), at in zip(mine, cues, strict=False):
             clips.append((start + at, clip))
         start += scene["dur"]

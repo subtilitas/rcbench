@@ -883,6 +883,15 @@ The entries below cover the 7 pull requests merged since v0.23.13: #847,
   under `hardware/kicad/modules/`. `--keep` keeps the captured parts per
   scene, so that a changed scene is captured alone; a kept part of
   1024 bytes or less is captured again ([Videos from storyboards](tools/video/README.md)).
+- Storyboard `hitec-precharge`: the Hitec D series PRECHARGE receive in
+  6 steps, narrated: the servo's 3kΩ pull-down, the 2.2kΩ pull-up, one
+  precharge and sample, the sampling window, one answer byte in 80
+  samples, and the setting on the panel. A `scope` scene draws plots and
+  a circuit from a figure under `tools/video/plots/`.
+  `tools/video_scope.py` simulates the signal wire with ngspice and
+  writes the figure; its pad driver (40Ω), line capacitance (90pF) and
+  input threshold (1.3V) are fitted to the measured window of 40 to
+  213ns ([Videos from storyboards](tools/video/README.md#the-simulated-signal-wire)).
 - Storyboard `minircbench-features`: every screen of the MiniRcBench,
   firmware 0.1.0, in 12 chapters, narrated, 1000.70s. The stills
   under `tools/video/stills/` are 83 frames of MiniRcBench's host suite

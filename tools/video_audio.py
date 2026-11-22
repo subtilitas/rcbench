@@ -253,6 +253,17 @@ def events(board: dict) -> list:
                 found.append((start + joint["t"][0], "swell", 0))
             for inset in scene.get("insets", []):
                 found.append((start + inset["from"] + 0.1, "pop", 0))
+        elif kind == "scope":
+            if "title" in scene:
+                found.append((start + scene["title"]["from"], "chime", 0))
+            for label in scene.get("labels", []):
+                found.append((start + label["from"] + 0.1, "pop", 0))
+            # A panel comes with a rising sound, a current with a tick.
+            for panel in scene["panels"]:
+                if panel.get("from", 0) > 0:
+                    found.append((start + panel["from"], "swell", 0))
+                for n, flow in enumerate(panel.get("flow", [])):
+                    found.append((start + flow["from"], "tick", n % 5))
         elif kind == "end":
             found.append((start + 0.3, "final", 0))
         at = start
