@@ -441,7 +441,7 @@ TEST_CASE(the_update_shows_pending_until_its_owed_start_ends)
  * judges it. */
 TEST_CASE(a_card_files_sig_is_judged_as_a_downloads)
 {
-    uint8_t sig[FW_SIG_MAX + 1u] = { 0u };
+    const uint8_t sig[FW_SIG_MAX + 1u] = { 0u };
     fw_sig_t v = FW_SIG_OK;
     CHECK(!devimg_card_sig(false, sig, FW_SIG_MAX, &v));
     CHECK_EQ(v, FW_SIG_NONE);
