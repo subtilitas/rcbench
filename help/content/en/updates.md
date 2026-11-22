@@ -289,7 +289,7 @@ The panel image carries the IOmcu images only. The C6 radio's, the Dial's and th
 | `The hold reads BENCH/UPDATES/rcbench-dial-0.23.16.bin from the SD card.` | the SD card's `BENCH/UPDATES`, after a failed download or without a home network; the control reads HOLD 2s TO UPDATE FROM THE SD CARD. A `SHA256SUMS` beside the file is checked when it names it |
 | `rcbench-dial-0.23.16.bin is downloaded and checked.` | the memory, until the panel restarts |
 
-The control shows `DOWNLOADING 43%`, `CHECKING THE FILE` or `READING THE SD CARD`. The image passes the senders' checks: the device's chip and project, its own SHA-256, the role for the Dial and the nodes, the release's version. Then the update starts by itself, once the radio is off, within 20s. ARMED, the supply, a log run, STOP, WI-FI and CANCEL UPDATE end a download; no download starts while ARMED. No output changes for any of it.
+The control shows `DOWNLOADING 43%`, `CHECKING THE FILE` or `READING THE SD CARD`. The image passes the senders' checks: the device's chip and project, its own SHA-256, the role for the Dial and the nodes, the release's version. Then the update starts by itself, once the radio is off, within 20s. ARMED, the supply, a log run, STOP, WI-FI and CANCEL UPDATE end a download; no download starts while ARMED. CANCEL UPDATE also drops the update the hold asked for; an image that still passes stays for the next hold. No output changes for any of it.
 
 ![The Dial's step after a failed download](view:updates-step-dial-card)
 

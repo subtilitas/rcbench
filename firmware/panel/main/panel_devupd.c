@@ -706,12 +706,10 @@ void devupd_service(bool armed)
     }
     s_seen_phase = p.phase;
     if (upd_dev_take_cancel()) {
-        if (panel_devimg_busy()) {
-            /* CANCEL UPDATE while the image is on its way ends the
-             * download (upd_service()); a card read and the checks end
-             * by themselves within their few seconds. */
-            panel_devimg_cancel();
-        } else {
+        /* CANCEL UPDATE while the image is on its way, or while its
+         * update is owed, drops the owed start and ends a download
+         * (upd_service()); otherwise it ends the update that runs. */
+        if (!panel_devimg_cancel()) {
             atomic_store(&s_cancel, true);
         }
     }

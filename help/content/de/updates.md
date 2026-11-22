@@ -289,7 +289,7 @@ Das Panel-Image bringt nur die IOmcu-Images mit. Die Images des C6-Funks, des Di
 | `Das Halten liest BENCH/UPDATES/rcbench-dial-0.23.16.bin von der SD-Karte.` | `BENCH/UPDATES` der SD-Karte, nach einem fehlgeschlagenen Download oder ohne Heimnetz; das Bedienelement zeigt 2s HALTEN: UPDATE VON DER SD-KARTE. Eine `SHA256SUMS` neben der Datei wird geprüft, wenn sie sie nennt |
 | `rcbench-dial-0.23.16.bin ist geladen und geprüft.` | der Speicher, bis das Panel neu startet |
 
-Das Bedienelement zeigt `DOWNLOAD 43%`, `DATEI WIRD GEPRÜFT` oder `SD-KARTE WIRD GELESEN`. Das Image besteht die Prüfungen der Sender: Chip und Projekt des Geräts, sein eigener SHA-256, die Rolle bei Dial und Knoten, die Version des Release. Danach startet das Update von selbst, sobald der Funk aus ist, innerhalb von 20s. ARMED, das Netzteil, ein Log-Lauf, STOP, WI-FI und UPDATE ABBRECHEN beenden einen Download; solange ARMED gilt, startet keiner. Kein Ausgang ändert sich dabei.
+Das Bedienelement zeigt `DOWNLOAD 43%`, `DATEI WIRD GEPRÜFT` oder `SD-KARTE WIRD GELESEN`. Das Image besteht die Prüfungen der Sender: Chip und Projekt des Geräts, sein eigener SHA-256, die Rolle bei Dial und Knoten, die Version des Release. Danach startet das Update von selbst, sobald der Funk aus ist, innerhalb von 20s. ARMED, das Netzteil, ein Log-Lauf, STOP, WI-FI und UPDATE ABBRECHEN beenden einen Download; solange ARMED gilt, startet keiner. UPDATE ABBRECHEN verwirft auch das Update, das das Halten angefordert hat; ein Image, das noch besteht, bleibt für das nächste Halten. Kein Ausgang ändert sich dabei.
 
 ![Der Schritt des Dial nach einem fehlgeschlagenen Download](view:updates-step-dial-card)
 

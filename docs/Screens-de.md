@@ -7952,8 +7952,10 @@ Version des Release. Die Prüfungen und das Lesen der Karte laufen auf der
 Task `devimg` ([Performance: Stacks](Performance-de.md#stacks)).
 
 Das Bedienelement zeigt, was läuft: `DOWNLOAD 43%`, `DATEI WIRD GEPRÜFT`,
-`SD-KARTE WIRD GELESEN`. UPDATE ABBRECHEN beendet den Download eines
-Funkgeräts. Hat das Image bestanden, startet das Update, das das Halten
+`SD-KARTE WIRD GELESEN`. UPDATE ABBRECHEN während des Downloads, des
+Lesens der Karte oder der Prüfung eines Funkgeräts verwirft das Update,
+das das Halten angefordert hat, und beendet den Download; ein Image, das
+danach noch besteht, bleibt für das nächste Halten im Speicher. Hat das Image bestanden, startet das Update, das das Halten
 angefordert hat, von selbst, wenn sein Gate offen ist; es wartet bis zu
 20.000ms, bis der Funk nach dem Download aus ist, und das Panel beendet
 dafür die Zeitabfrage des Funks. Jedes andere geschlossene Gate verwirft

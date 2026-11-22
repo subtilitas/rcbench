@@ -166,6 +166,13 @@ void devimg_failed(devimg_slot_t *s, char kind, unsigned n)
     s->code[3] = '\0';
 }
 
+bool devimg_cancel(devimg_slot_t *s)
+{
+    const bool was = s->owed;
+    s->owed = false;
+    return was;
+}
+
 devimg_owed_t devimg_owed_step(devimg_slot_t *s, bool open, bool wait,
                                uint32_t now_ms)
 {

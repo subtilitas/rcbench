@@ -96,9 +96,16 @@ void panel_devimg_view(devimg_id_t id, upd_fetch_t *out);
  */
 devimg_owed_t panel_devimg_owed(devimg_id_t id, bool open, bool wait);
 
-/** @brief CANCEL UPDATE while a device's image is on its way: the download
- *         ends at the next frame (upd_service()). */
-void panel_devimg_cancel(void);
+/**
+ * @brief CANCEL UPDATE while a device's image is on its way or its update
+ *        is owed: the owed update no longer starts (devimg_cancel()), and
+ *        a download ends at the next frame (upd_service()).  A card read
+ *        and the checks end by themselves; their image stays for the next
+ *        hold.
+ * @return true when an image was on its way or an update was owed: the
+ *         cancel is taken
+ */
+bool panel_devimg_cancel(void);
 
 /**
  * @brief Taken once by upd_service(): CANCEL UPDATE asked to end the

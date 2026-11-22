@@ -144,9 +144,17 @@ bool panel_devimg_running(devimg_id_t id)
     return (unsigned)id < DEVIMG_COUNT && devimg_busy(&s_sl[id]);
 }
 
-void panel_devimg_cancel(void)
+bool panel_devimg_cancel(void)
 {
-    atomic_store(&s_cancel, true);
+    bool took = false;
+    for (unsigned i = 0; i < DEVIMG_COUNT; ++i) {
+        const bool busy = devimg_busy(&s_sl[i]);
+        took = devimg_cancel(&s_sl[i]) || busy || took;
+        if (busy && s_sl[i].st == DEVIMG_FETCH) {
+            atomic_store(&s_cancel, true);
+        }
+    }
+    return took;
 }
 
 bool panel_devimg_take_cancel(void)

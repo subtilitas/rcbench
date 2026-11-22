@@ -241,6 +241,15 @@ void devimg_ready(devimg_slot_t *s, uint32_t now_ms);
 void devimg_failed(devimg_slot_t *s, char kind, unsigned n);
 
 /**
+ * @brief CANCEL UPDATE for the update the hold owes: it no longer starts.
+ *        A download, a card read or the checks under way go on; an image
+ *        that passes stays READY for the next hold.
+ * @param s the image's state
+ * @return true when an update was owed
+ */
+bool devimg_cancel(devimg_slot_t *s);
+
+/**
  * @brief The update owed once the image is READY: start it when its gate
  *        is open, wait while @p wait holds and DEVIMG_OWED_MS has not
  *        passed since the arrival, else drop it.  FIRE and DROP clear owed.

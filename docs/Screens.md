@@ -7346,7 +7346,9 @@ nodes the role in its head, and the release's version. The checks and the
 card read run on the task `devimg` ([Performance: Stacks](Performance.md#stacks)).
 
 The control shows what runs: `DOWNLOADING 43%`, `CHECKING THE FILE`,
-`READING THE SD CARD`. CANCEL UPDATE ends a device's download. Once the
+`READING THE SD CARD`. CANCEL UPDATE during a device's download, card read or check drops the
+update the hold asked for and ends the download; an image that still
+passes stays in memory for the next hold. Once the
 image passed, the update the hold asked for starts by itself when its
 gate is open; it waits up to 20,000ms for the radio to go off after the
 download, and the panel ends the radio's time request for it. Any other

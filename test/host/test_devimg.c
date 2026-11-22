@@ -346,6 +346,51 @@ TEST_CASE(a_failed_attempt_owes_no_update)
     CHECK_EQ(devimg_owed_step(&s, true, false, 0u), DEVIMG_OWED_NONE);
 }
 
+/* CANCEL UPDATE in each phase of the image's way: the card read, the
+ * download, the downloaded file's checks, and READY while the radio's
+ * wait still owes the start.  The image still lands for the next hold. */
+TEST_CASE(cancel_drops_the_owed_update_in_every_phase_and_keeps_the_image)
+{
+    devimg_slot_t s;
+    /* the card read and its checks */
+    devimg_init(&s);
+    CHECK(devimg_begin(&s, DEVIMG_SRC_CARD));
+    CHECK(devimg_cancel(&s));
+    CHECK(devimg_busy(&s));
+    devimg_ready(&s, 1000u);
+    CHECK_EQ(s.st, DEVIMG_READY);
+    CHECK_EQ(devimg_owed_step(&s, true, false, 1000u), DEVIMG_OWED_NONE);
+    CHECK_EQ(devimg_src(&s, true), DEVIMG_SRC_RAM);
+    /* the download, then its checks */
+    devimg_init(&s);
+    CHECK(devimg_begin(&s, DEVIMG_SRC_NET));
+    CHECK(devimg_cancel(&s));
+    devimg_fetched(&s);
+    devimg_ready(&s, 0u);
+    CHECK_EQ(devimg_owed_step(&s, true, false, 0u), DEVIMG_OWED_NONE);
+    /* the downloaded file's checks alone */
+    devimg_init(&s);
+    CHECK(devimg_begin(&s, DEVIMG_SRC_NET));
+    devimg_fetched(&s);
+    CHECK_EQ(s.st, DEVIMG_VERIFY);
+    CHECK(devimg_cancel(&s));
+    devimg_ready(&s, 0u);
+    CHECK_EQ(devimg_owed_step(&s, true, false, 0u), DEVIMG_OWED_NONE);
+    /* READY, one millisecond before the radio's wait ends */
+    devimg_init(&s);
+    CHECK(devimg_begin(&s, DEVIMG_SRC_CARD));
+    devimg_ready(&s, 0u);
+    CHECK_EQ(devimg_owed_step(&s, false, true, DEVIMG_OWED_MS - 1u),
+             DEVIMG_OWED_WAIT);
+    CHECK(devimg_cancel(&s));
+    CHECK_EQ(devimg_owed_step(&s, true, false, DEVIMG_OWED_MS - 1u),
+             DEVIMG_OWED_NONE);
+    /* nothing owed: the cancel is not this image's */
+    CHECK(!devimg_cancel(&s));
+    devimg_init(&s);
+    CHECK(!devimg_cancel(&s));
+}
+
 int main(void)
 {
     g_img = malloc(DEVUPD_SLOT_DIAL);
@@ -369,6 +414,7 @@ int main(void)
     RUN(the_wait_holds_across_the_millisecond_wrap);
     RUN(any_other_closed_gate_drops_the_owed_update_at_once);
     RUN(a_failed_attempt_owes_no_update);
+    RUN(cancel_drops_the_owed_update_in_every_phase_and_keeps_the_image);
     free(g_img);
     return test_summary("devimg");
 }
