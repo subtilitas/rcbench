@@ -120,7 +120,7 @@ Das Feld ist 640px breit und fasst 60 Zeichen pro Zeile in der Schrift
 - Auch Bedienelemente zum Anhalten wirken mit demselben Druck: DISARM,
   AUSGANG AUS, PROG 5V AUS, ABBRECHEN eines Stick-Laufs und der ESC-, KST-
   und HITEC-Sitzung, TEST BEENDEN, LAUF BEENDEN, 2s HALTEN: ARM + START auf RUDER AUTO, TEST und
-  ENDLAGENLAUF während seiner Startschritte oder seines Laufs sowie auf
+  LIMIT RUN während seiner Startschritte oder seines Laufs sowie auf
   HITEC EIN von SERVO BEWEGEN und die Taste von ANSCHLAG SUCHEN, deren
   Seite sucht.
   ARM und AUSGANG EIN schließen dagegen nur das Feld; die Haltegeste beginnt
@@ -219,7 +219,7 @@ Listen, Boxen, Warnungen und Bestätigungsdialoge zeigen kein "?".
 | Hilfefeld | 480 x 488px, 8px vom linken oder rechten Rand des Panels, y 64 bis 552; die Hilfeseite bestimmt die Position |
 | Freie Hälfte | die übrigen 528px des Inhalts; die Seite bleibt dort sichtbar und läuft weiter |
 | Kopfzeile | der Titel der Seite und "Seite / Seiten" |
-| Eintrag | seine Nummer in einer 28px-Marke, der Name des Bedienelements in der Akzentfarbe, dann seine Funktion, in der Schrift 10 x 20px, 41 Zeichen pro Zeile, höchstens 3 Zeilen |
+| Eintrag | seine Nummer in einer 28px-Marke, der Name des Bedienelements in der Akzentfarbe, dann seine Funktion, in der Schrift 10 x 20px, 41 Zeichen pro Zeile, höchstens 3 Zeilen, umbrochen an einem Leerzeichen; eine Zeile endet vor SD CARD, PD MINI, MOTOR & ESC, ESC STICK, LIMIT RUN, RUDDER AUTO, RUDER AUTO oder PANEL UPDATE statt darin (`ui_help_row_len()`) |
 | Einträge pro Seite | höchstens 5 |
 | Web-Zeile | `Mehr: subtilitas.github.io/rcbench/help/de/`, auf Englisch die Adresse ohne `de/` |
 | VORIGE und NÄCHSTE | 124 x 48px, 8px auseinander, im Band von x 8 bis 264, y 6 bis 54, an der Stelle des Home-Felds, auf jeder Seite dieselbe |
@@ -354,10 +354,10 @@ Die Aufgabe auf der linken Karte bestimmt die ersten Hilfeseiten:
 
 | Seite und Aufgabe | Hilfeseiten, Einträge |
 | --- | --- |
-| SERVO Hub | die Kacheln LIVE, ENDLAGENLAUF, RUDER und KST und die Portzeile (5); eine Kachel und OPTIONEN (2) |
+| SERVO Hub | die Kacheln LIVE, LIMIT RUN, RUDER und KST und die Portzeile (5); eine Kachel und OPTIONEN (2) |
 | SERVO LIVE und SWEEP | der Winkel des Ruderhorns, die Skala und die Messwerte (3) |
 | SERVO TEST | das Feld AUTOMATISCHER TEST, die Grenzen und der Verlauf (3); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
-| SERVO ENDLAGENLAUF | UNTERES ENDE mit OBERES ENDE und die Zustandszeilen (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
+| SERVO LIMIT RUN | UNTERES ENDE mit OBERES ENDE und die Zustandszeilen (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
 | SERVO RUDER | LÄNGE, die Fahrtasten, NULLPUNKT, MAX LÖSCHEN und ohne antwortenden Drehknopf -10us und +10us (4 oder 5); AUSSCHLAG, HINTERKANTE und die Statuszeilen (3) |
 | SERVO RUDER AUTO | die Sollwerte, RESERVE und TOLERANZ, NULLPUNKT (3); AUSSCHLAG und HINTERKANTE (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
 | SERVO LIVE, SWEEP und RUDER, SAFE | PORT, BEREIT, die Schienenzeile, ARM und OPTIONEN (5); SET V, die Grafik, TEMPO, Typ und die Tasten auf LIVE und SWEEP (5), SET V, die Grafik, Typ und Seitenansicht auf RUDER (4); SET V nicht am Programmierport des rbmod-Carriers |
@@ -662,7 +662,7 @@ eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | VERBINDEN in den Programmierern für KST und HITEC, wo die Sitzung die Servoversorgung schaltet | `Halte 2s, um zu verbinden und die Versorgung des Ports einzuschalten.` |
 | ÜBERNEHMEN in den Warnungen zu HV, Pulsrate und weichen Grenzen von SERVO, KST und Chaservo und auf den Hitec-Seiten | `Halte 2s, um zu übernehmen.` |
 | 2s HALTEN: ARM + START auf TEST | `Halte 2s, um auf ARMED zu schalten und den Test zu starten.` |
-| 2s HALTEN: ARM + START auf ENDLAGENLAUF | `Halte 2s, um Port und Versorgung einzuschalten, ARM und den Endlagenlauf zu starten.` |
+| 2s HALTEN: ARM + START auf LIMIT RUN | `Halte 2s, um Port und Versorgung einzuschalten, ARM und den Endlagenlauf zu starten.` |
 | 2s HALTEN ZUM SCHREIBEN, und n WERTE SCHREIBEN in den Programmierern für KST und HITEC | `Halte 2s, um zu schreiben.` |
 | 2s HALTEN ZUM ZURÜCKSPIELEN | `Halte 2s, um zurückzuspielen.` |
 | 2s HALTEN ZUM FORTFAHREN | `Halte 2s, um fortzufahren.` |
@@ -700,7 +700,7 @@ Ein langsamerer Frame beendet nur die Phase, in die er fällt; so wird
 jede Phase bei jeder Bildrate gezeichnet. Die neue Farbe ist die,
 zu der das Halten überblendet: Gefahrenrot bei ARM, AUSGANG EIN, PROG 5V
 EIN, VERBINDEN der Programmierer und ERLEDIGT eines Stick-Laufs vor einem Einschalten; Bernstein bei 2s HALTEN: ARM + START auf TEST, RUDER AUTO und
-ENDLAGENLAUF, deren Folge vor dem Lauf auf ARMED und ihre Rückmeldungen
+LIMIT RUN, deren Folge vor dem Lauf auf ARMED und ihre Rückmeldungen
 wartet.
 
 - Das Aufblitzen beginnt mit dem Halten, nicht mit der Antwort. ARMED, der
@@ -723,7 +723,7 @@ Die Füllung einer Taste sagt, was ein Druck mit einem Ausgang macht.
 
 | Klasse | Tasten | Verfügbar | Aktiv | Wartend | Abgelehnt |
 | --- | --- | --- | --- | --- | --- |
-| Ausgangsaktion: schaltet einen Ausgang ein, schaltet auf ARMED, startet einen Lauf, schreibt ein Servo | ARM, AUSGANG EIN, PROG 5V EIN, 2s HALTEN: ARM + START auf TEST, RUDER AUTO und ENDLAGENLAUF, ZENTRIEREN auf LIVE, SWEEP auf SWEEP, 1000us, ZENTRIEREN, 2000us, -10us, +10us und NULLPUNKT auf RUDER, VERBINDEN, n WERTE SCHREIBEN und SERVO BEWEGEN der Programmierungen | grün (`UI_C_OK`) | rot (`UI_C_DANGER`): ein Ausgang ist ein, ARMED, ein Schreiben läuft, das Servo wird angesteuert; die Beschriftung sagt, was ein Druck anhält (DISARM, AUSGANG AUS, LAUF BEENDEN, PAUSE, VERLASSEN, ABBRECHEN, EIN) | bernstein (`UI_C_WARN`): PAUSIERT, WARTEN, der Schritt von ARM + START und von ARM auf LIVE, SWEEP und RUDER und von n WERTE SCHREIBEN der Programmierungen | grau (`ui_button_off_fill()`), blasse Beschriftung |
+| Ausgangsaktion: schaltet einen Ausgang ein, schaltet auf ARMED, startet einen Lauf, schreibt ein Servo | ARM, AUSGANG EIN, PROG 5V EIN, 2s HALTEN: ARM + START auf TEST, RUDER AUTO und LIMIT RUN, ZENTRIEREN auf LIVE, SWEEP auf SWEEP, 1000us, ZENTRIEREN, 2000us, -10us, +10us und NULLPUNKT auf RUDER, VERBINDEN, n WERTE SCHREIBEN und SERVO BEWEGEN der Programmierungen | grün (`UI_C_OK`) | rot (`UI_C_DANGER`): ein Ausgang ist ein, ARMED, ein Schreiben läuft, das Servo wird angesteuert; die Beschriftung sagt, was ein Druck anhält (DISARM, AUSGANG AUS, LAUF BEENDEN, PAUSE, VERLASSEN, ABBRECHEN, EIN) | bernstein (`UI_C_WARN`): PAUSIERT, WARTEN, der Schritt von ARM + START und von ARM auf LIVE, SWEEP und RUDER und von n WERTE SCHREIBEN der Programmierungen | grau (`ui_button_off_fill()`), blasse Beschriftung |
 | Notfall | STOP | rot | rot, blitzt beim Druck | - | nie |
 | Bearbeiten | `-` `+`, Wertfelder, MAX LÖSCHEN, KATEGORIE ZURÜCKSETZEN auf SETUP, VERWERFEN, NEU LESEN | neutral (`UI_C_PANEL_HI`) | - | - | grau |
 | SPEICHERN auf SETUP | SPEICHERN, GESPEICHERT, BEI STILLSTAND, NICHT GESPEICHERT | grün, solange etwas ungespeichert ist (SPEICHERN) | - | bernstein (BEI STILLSTAND) | neutral mit roter Beschriftung (NICHT GESPEICHERT); GESPEICHERT ist neutral |
@@ -738,7 +738,7 @@ Ein Tipp auf ein graues 2s HALTEN: ARM + START zeigt die erste rote Zeile
 der Karte BEREIT im Alarmband als Mitteilung, 4s in Bernstein, wie der
 Hinweis einer Halte-Taste: `PORT: AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT`
 auf RUDER AUTO, `STUFEN: KEINE STUFE GEWÄHLT` auf TEST, `MESSGERÄT: SERVOSTROMMESSER
-(INA3221) NICHT EINGERICHTET` auf ENDLAGENLAUF; die
+(INA3221) NICHT EINGERICHTET` auf LIMIT RUN; die
 Zustandszeile der Karte sagt dasselbe.
 
 ## Marken im Menü
@@ -1928,7 +1928,7 @@ der Reihenfolge der Nutzung.
 | LIVE | LIVE | das Zifferblatt, den Drehknopf, die Anzeigen SOLL-PULSBREITE, GEMESSEN und STROM; OPTIONEN öffnet das Servoprofil |
 | SWEEP | SWEEP | das Zifferblatt mit dem Sweep; OPTIONEN öffnet KURVE, TEMPO, BEREICH und HALTEZEIT |
 | TEST | TEST | das Feld AUTOMATISCHER TEST, die Grenzen von SUPPLY, der Verlauf und das Feld des Laufs, die Karte BEREIT an der Stelle des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet die Liste des automatischen Tests |
-| ENDLAGENLAUF | ENDLAGENLAUF | Modus- und Ausgangszeile, UNTERES ENDE und OBERES ENDE und die Zustandszeilen auf der linken Karte, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet MODUS, SERVO, SERVOPULSE, STROM, Warten vor PWM, den Namen des Prüflings und die Testaufzeichnungen ([Starten](Servo-de.md#starten)) |
+| LIMIT RUN | LIMIT RUN | Modus- und Ausgangszeile, UNTERES ENDE und OBERES ENDE und die Zustandszeilen auf der linken Karte, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet MODUS, SERVO, SERVOPULSE, STROM, Warten vor PWM, den Namen des Prüflings und die Testaufzeichnungen ([Starten](Servo-de.md#starten)) |
 | RUDER | RUDER | Ausschlag in ° und mm, LÄNGE, 1000us, ZENTRIEREN, 2000us, NULLPUNKT und MAX LÖSCHEN, -10us und +10us ohne antwortenden Drehknopf ([Ruderausschlag](Servo-de.md#ruderausschlag)) |
 | RUDER AUTO | RUDER AUTO | das Feld von AUTO statt LÄNGE und der Fahrtasten, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste ([AUTO-Endpoints](Servo-de.md#auto-endpoints)) |
 | KST | SERVO > KST | die Programmierung für KST und Chaservo über dem linken Feld, die Karte BEREIT statt des Ausgangsfelds, WERTE SCHREIBEN in der Fußleiste ([Programmierer](#programmierer)) |
@@ -1962,10 +1962,10 @@ Jeder Funktionsbildschirm hat denselben Rahmen. Das linke Feld ist 620px
 breit und reicht von y 8 bis zum Feldboden bei y 436. Das rechte Feld, x
 636 bis 1016, beginnt mit der Taste PORT (y 8 bis 56). Auf LIVE, SWEEP
 und RUDER trägt es die Zeilen von BEREIT und die Bedienelemente darunter,
-auf TEST, ENDLAGENLAUF, RUDER AUTO, KST und HITEC die Karte BEREIT. Kein
+auf TEST, LIMIT RUN, RUDER AUTO, KST und HITEC die Karte BEREIT. Kein
 Funktionsbildschirm hat AUSGANG EIN oder ein Feld PROG 5V: AUSGANG EIN
 gehört zu SUPPLY, und das 2s-Halten von ARM schaltet die Versorgung ein.
-TEST, ENDLAGENLAUF und RUDER AUTO setzen SET A von SUPPLY über ihre
+TEST, LIMIT RUN und RUDER AUTO setzen SET A von SUPPLY über ihre
 Zeile PD MINI. Die Fußleiste bei y
 444 bis 492 hat drei Plätze von 328 x 48px: den Namen der Funktion mit
 der Portzeile darunter, ARM oder DISARM (WERTE SCHREIBEN auf KST und
@@ -2016,7 +2016,7 @@ speist:
 | LIVE, SWEEP, RUDER | die SET-Zeile, rechts von SET A | 180 x 48px |
 | KST, HITEC | die Karte BEREIT, 8px unter der letzten Zeile bis 8px über der Schienenzeile | 356 x 172px auf KST, 356 x 142px auf HITEC |
 | TEST | das linke Feld unter den Grenzen von SUPPLY, neben dem Kasten des Laufs, solange er steht | 600 x 170px, 246 x 170px neben dem Kasten |
-| ENDLAGENLAUF | das linke Feld unter acht Zeilen Zustand, y 374 bis 432 | 600 x 58px |
+| LIMIT RUN | das linke Feld unter acht Zeilen Zustand, y 374 bis 432 | 600 x 58px |
 | RUDER AUTO | das linke Feld rechts von NULLPUNKT und MAX LÖSCHEN, y 240 bis 288 | 260 x 48px |
 
 Eine Legende über der Grafik zeigt Volt, Ampere und Watt,
@@ -2025,7 +2025,7 @@ VOLT, CURR und PWR auf SUPPLY. Der Name des Messgeräts steht links davon,
 wo die Breite beides fasst. Unter 80px Höhe steht die Legende in der
 Schrift 8 x 16 und die Grafik ohne Zeitachse. Ein Punkt je Messwert, 20 in
 der Sekunde: eine Grafik zeigt die letzten Breite / 20 Sekunden, 9.0s auf
-LIVE, 17.8s auf KST, 30.0s auf TEST und ENDLAGENLAUF, 13.0s auf RUDER
+LIVE, 17.8s auf KST, 30.0s auf TEST und LIMIT RUN, 13.0s auf RUDER
 AUTO. Jede Grafik skaliert über die letzten 600 Punkte, 30.0s. Ein neuer
 Messwert zeichnet nur die Grafik und die Schienenzeile neu.
 
@@ -2087,7 +2087,7 @@ Schritte schalten ARMED.
 
 ![LIVE auf dem rbmod-Carrier: PORT-PWM und PROG 5V gelb, ARM schaltet sie ein](img/de/servo-rbmod.png)
 
-RUDER AUTO und ENDLAGENLAUF behalten die Taste PORT und zeigen eine Karte
+RUDER AUTO und LIMIT RUN behalten die Taste PORT und zeigen eine Karte
 BEREIT an der Stelle des Ausgangsfelds: Zeilen von 30px ab y 96, je zehn,
 so viele, wie die Karte über der Schienenzeile bei y 404 fasst, jede mit
 Punkt, Bezeichnung von 10 Zellen und Zustand von 20. Jeder Zustand
@@ -2135,7 +2135,7 @@ WERTE SCHREIBEN der Sitzung; keiner der beiden Bildschirme hat ARM
 ![RUDER AUTO auf dem rbmod-Carrier, die Folge ARM + START wartet auf die Rückmeldung von PROG 5V](img/de/servo-rudder-auto-start-rbmod.png)
 
 PROG 5V, eingeschaltet von ARM auf LIVE, SWEEP oder RUDER oder von ARM +
-START auf ENDLAGENLAUF und RUDER AUTO, bleibt von einem SERVO-Bildschirm
+START auf LIMIT RUN und RUDER AUTO, bleibt von einem SERVO-Bildschirm
 zum nächsten an, auch auf dem Hub, und schaltet aus, sobald SERVO zu einem anderen Bildschirm
 verlassen wird.
 
@@ -2176,7 +2176,7 @@ ebenfalls auf SAFE.
 
 Der eingeschaltete Drehknopf bewegt das Ruderhorn auf LIVE, SWEEP, RUDER
 und RUDER AUTO von seiner aktuellen Position aus
-([der Knopf](#panel-der-drehknopf)). Auf dem Hub, TEST, ENDLAGENLAUF, KST,
+([der Knopf](#panel-der-drehknopf)). Auf dem Hub, TEST, LIMIT RUN, KST,
 HITEC, in einer Liste und unter offenen Dialogen hat er keine Wirkung.
 Auch eine Drehung im Frame, in dem ein Bildschirm wieder erscheint, wird
 ignoriert; die nächste wirkt.
@@ -2375,7 +2375,7 @@ das CH1 des einzelnen über SENSE ausgelesenen Bausteins.
 
 Auf dem [rbmod-Carrier](Carrier-de.md#versorgung) zeigt kein
 SERVO-Bildschirm das Feld PROG 5V. Auf LIVE, SWEEP und RUDER nennt die
-Zeile VERSORGUNG PROG 5V, und ARM schaltet sie ein; auf ENDLAGENLAUF und
+Zeile VERSORGUNG PROG 5V, und ARM schaltet sie ein; auf LIMIT RUN und
 RUDER AUTO tut es ARM + START. Auf KST und HITEC zeigt die Zeile der
 Versorgung EIN, solange die 5V an sind, und ein Tippen schaltet sie aus.
 Hält ein Programmierport die 5V, schaltet das Tippen nichts, und das
@@ -2392,7 +2392,7 @@ Zwei Fenster unter 3000mV danach lösen denselben Fehler aus, mit
 `PROG 5V ausgefallen: INA3221 0x40 CH3 misst 0.12V trotz EIN. Alle Ausgänge aus.`
 ([Carrier, PROG 5V fehlt oder ausgefallen](Carrier-de.md#prog-5v-fehlt-oder-ausgefallen)).
 Solange der PD mini den Eingang des Carriers unter 13,5V liest, zeigt die
-Zeile PROG 5V der Karte BEREIT auf KST, HITEC, ENDLAGENLAUF und RUDER AUTO
+Zeile PROG 5V der Karte BEREIT auf KST, HITEC, LIMIT RUN und RUDER AUTO
 `EINGANG 5.1V < 15V` in Rot, und VERBINDEN und ARM + START werden mit
 `EINGANG 5.1V: BENÖTIGT 15V. VERSORGUNGSSPANNUNG PRÜFEN` abgelehnt
 ([Carrier, Die Eingangsversorgung](Carrier-de.md#die-eingangsversorgung)).
@@ -2721,7 +2721,7 @@ in der Zeile über der Grafik:
 
 ![Ein Ergebnis am INA3221](img/de/servo-result-ina.png)
 
-**2s HALTEN: ARM + START beginnt die Endlagensuche** auf ENDLAGENLAUF.
+**2s HALTEN: ARM + START beginnt die Endlagensuche** auf LIMIT RUN.
 Das Servo fährt in 10us-Schritten nach außen, bis der Strom ein
 blockiertes Gestänge erkennen lässt. SUCHEN + PROGRAMMIEREN verringert
 zusätzlich die Endwerte der gewählten Servofamilie, bis beide Enden frei
@@ -2984,9 +2984,9 @@ Eine Änderung gilt bis SPEICHERN als nicht gespeichert.
 | LIVE | das Servoprofil, die Liste des Hubs; darunter WINKEL mit SENSOR-MITTE |
 | SWEEP | KURVE, TEMPO, Bereich und Haltezeit |
 | TEST | SPANNUNGSSTUFEN: Stufe 4.8V, Stufe 6.0V, HV-SERVO, Stufe 7.4V, Stufe 8.4V; BROWN-OUT: Brown-out, Brown-out Mindestspannung, Brown-out-Schritt; GRENZWERTE: Blockierschwelle, Ruhestrom max, Haltestrom max, Stellzeit max; DAUER UND ZEITEN: Länge nach, Testzeit, Bewegungen, Haltezeit, Einschwingzeit; BEREICH: Bereich, AUSGANG; PRÜFLING: Name des Prüflings, Bericht |
-| ENDLAGENLAUF | MODUS, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, STROM, Warten vor PWM, Name des Prüflings und Testaufzeichnungen; ein Lauf programmiert mit 5,0V ([Servo](Servo-de.md#die-50v-des-laufs)). STROM ist SET A von SUPPLY, `SET A 2.00A`, ein Tipp sein Tastenfeld; `--` und gesperrt ohne PD mini ([Servo](Servo-de.md#die-strombegrenzung-des-laufs)) |
+| LIMIT RUN | MODUS, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, STROM, Warten vor PWM, Name des Prüflings und Testaufzeichnungen; ein Lauf programmiert mit 5,0V ([Servo](Servo-de.md#die-50v-des-laufs)). STROM ist SET A von SUPPLY, `SET A 2.00A`, ein Tipp sein Tastenfeld; `--` und gesperrt ohne PD mini ([Servo](Servo-de.md#die-strombegrenzung-des-laufs)) |
 | RUDER | LÄNGE, SENSOR-MITTE und WINKELQUELLE |
-| RUDER AUTO | die Ziele, MARGIN, TOLERANZ, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, WINKELQUELLE, STROM, Warten vor PWM, Name des Prüflings und Testaufzeichnungen; STROM wie beim ENDLAGENLAUF |
+| RUDER AUTO | die Ziele, MARGIN, TOLERANZ, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, WINKELQUELLE, STROM, Warten vor PWM, Name des Prüflings und Testaufzeichnungen; STROM wie bei LIMIT RUN |
 | SERVO > KST | KST EXPERT MODE, eine Ebene tiefer |
 | HITEC | SERIE und EMPFANG |
 
@@ -2998,7 +2998,7 @@ und Läufe.
 Das Profil öffnet auch von einem Funktionsbildschirm, an der Stelle seiner
 OPTIONEN-Liste: ein Tippen auf die Typzeile von LIVE, SWEEP und RUDER
 öffnet es mit TYP im Blick, ein Tippen auf die Zeile BEREICH der Karten
-BEREIT von ENDLAGENLAUF und RUDER AUTO und auf die Zeile AUSGANG von TEST
+BEREIT von LIMIT RUN und RUDER AUTO und auf die Zeile AUSGANG von TEST
 mit PULS MIN im Blick. Seine Leiste nennt SERVO. Es folgt der Liste einer
 Funktion: es öffnet nur bei SAFE und schließt, sobald der Prüfstand scharf
 wird. Das Home-Feld schließt es, und der Funktionsbildschirm erscheint
@@ -3075,9 +3075,9 @@ Die 56px hohen Tasten 2s HALTEN ZUM ÜBERNEHMEN und ABBRECHEN enden 8px
 | Liste von TEST, GRENZWERTE | Ruhestrom max, Haltestrom max, Stellzeit max | Grenzen für bestanden/nicht bestanden; 0 wird nicht geprüft |
 | Liste von TEST, DAUER UND ZEITEN | Länge nach, Testzeit, Bewegungen | wie lange jede Spannungsstufe läuft: eine Zeit oder eine Zahl von Bewegungen; Testzeit nimmt nur bei ZEIT einen Druck an, Bewegungen nur bei BEWEGUNGEN |
 | Liste von TEST, DAUER UND ZEITEN | Haltezeit, Einschwingzeit | Haltezeit an jedem Ende, im Test und bei SWEEP; Wartezeit nach einer Spannungsstufe vor dem Messen |
-| ENDLAGENLAUF > OPTIONEN | MODUS | NUR SUCHE oder SUCHEN + PROGRAMMIEREN; an den Ausgängen des Prüfstands gesperrt mit `Nur an einem PROG-PORT: wähle einen mit PORT`. Für die Sitzung |
-| ENDLAGENLAUF > OPTIONEN | SERVO | KST/CHASERVO, HITEC D-SERIE oder HITEC KLASSISCH; der Programmierer, an den die Sitzungen des Laufs gehen. Die eigene gespeicherte Einstellung des Endlagenlaufs, dieselbe wie die Zeile SERVO der Karte BEREIT |
-| ENDLAGENLAUF > OPTIONEN | SERVOPULSE | BEHALTEN oder 1000-2000; gesperrt, solange PORT nicht auf PROG-PORT oder SERVO auf HITEC steht. 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos in der Lesesitzung des Laufs, vor der Suche, auf 1000,0 und 2000,0us. Vorgabe BEHALTEN; für die Sitzung |
+| LIMIT RUN > OPTIONEN | MODUS | NUR SUCHE oder SUCHEN + PROGRAMMIEREN; an den Ausgängen des Prüfstands gesperrt mit `Nur an einem PROG-PORT: wähle einen mit PORT`. Für die Sitzung |
+| LIMIT RUN > OPTIONEN | SERVO | KST/CHASERVO, HITEC D-SERIE oder HITEC KLASSISCH; der Programmierer, an den die Sitzungen des Laufs gehen. Die eigene gespeicherte Einstellung des Endlagenlaufs, dieselbe wie die Zeile SERVO der Karte BEREIT |
+| LIMIT RUN > OPTIONEN | SERVOPULSE | BEHALTEN oder 1000-2000; gesperrt, solange PORT nicht auf PROG-PORT oder SERVO auf HITEC steht. 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos in der Lesesitzung des Laufs, vor der Suche, auf 1000,0 und 2000,0us. Vorgabe BEHALTEN; für die Sitzung |
 | Liste des Hubs | NAME | der Prüfling, bis 23 Zeichen, für den Bericht |
 | Liste des Hubs | BERICHT | ein Textbericht neben der Aufzeichnung jedes Tests |
 | Listen von LIVE und RUDER | SENSOR-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert seit dem aktuellen Verbindungsaufbau (keinen nach einem Verbindungsverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, SENSORS, AS5600-Mitte |
@@ -3131,7 +3131,7 @@ und keinem als SERVO PWM gebundenen Ausgang, lautet der erste Eintrag
 öffnet OUTPUTS auf dem Protokoll SERVO PWM, wo dessen Pins gebunden
 werden. Das Verlassen schaltet den Prüfstand auf SAFE wie jeder andere
 Weg hinaus. Das Home-Feld dort führt zu dem SERVO-Bildschirm zurück, auf
-dem die Liste geöffnet wurde: LIVE, SWEEP, TEST, ENDLAGENLAUF, RUDER oder
+dem die Liste geöffnet wurde: LIVE, SWEEP, TEST, LIMIT RUN, RUDER oder
 RUDER AUTO. Die Taste folgt dem wirklich
 angesteuerten Ziel, auch bei ausstehendem Schreibvorgang oder einem
 angeforderten Port ohne Pin.
@@ -3906,7 +3906,7 @@ Ordner Auto-Aufzeichnungen und Ordner Testaufzeichnungen:
 | `BENCH/LOGS` | `MOTORnnn.CSV` | ein Schalten auf ARMED von ARM auf MOTOR & ESC oder einem Stick-Lauf auf dessen PROGRAMMIEREN |
 | `BENCH/LOGS` | `SUPPLnnn.CSV` | ein Einschalten des SUPPLY-Ausgangs, solange der Prüfstand SAFE ist |
 | `USER/LOGS` | `ATESTnnn.CSV` | ein AUTOMATISCHER TEST; sein Bericht ist `ATESTnnn.TXT` |
-| `USER/LOGS` | `LIMITnnn.TXT` | der Bericht eines ENDLAGENLAUFS, ohne CSV daneben |
+| `USER/LOGS` | `LIMITnnn.TXT` | der Bericht eines Laufs von LIMIT RUN, ohne CSV daneben |
 | `USER/LOGS` | `RUDDRnnn.CSV` | ein Lauf von RUDER AUTO, eine Zeile je Messung; sein Bericht ist `RUDDRnnn.TXT` |
 
 Der Name folgt der Seite, die ARM angefordert hat: Gas-Ausgänge ergeben
@@ -3981,7 +3981,7 @@ Die Reihenfolge folgt absteigenden Laufnummern über alle Präfixe,
 Berichte nach ihrer eigenen Nummer: `LIMIT044.TXT`, `MOTOR043.CSV`,
 `SERVO042.CSV`, `SERVO042.TXT`, dann `SUPPL041.CSV`.
 
-![Der Bericht eines ENDLAGENLAUFS, aus LOGS im Textbetrachter geöffnet](img/de/logs-report.png)
+![Der Bericht eines Laufs von LIMIT RUN, aus LOGS im Textbetrachter geöffnet](img/de/logs-report.png)
 
 ÖFFNEN zeigt einen Bericht schreibgeschützt im
 [Textbetrachter](#der-textbetrachter) von FILES. Das Statusband trägt FILES;
@@ -6141,7 +6141,7 @@ Panel berührt und der Prüfstand ruht.
   wie beim Popup des Screenshots ([Das Popup](#das-popup)): SAFE ohne
   wartendes ARM, Netzteil und PROG 5V aus, kein Port gehalten, keine
   Programmiersitzung, kein Kartenauftrag, kein Sweep, kein Test, kein
-  Endlagenlauf, kein ESC-STICK-Lauf, kein Update, kein FAULT-Bit und keine
+  LIMIT RUN, kein ESC-STICK-Lauf, kein Update, kein FAULT-Bit und keine
   offene Aufzeichnung. Ein Frame, der eine davon findet, setzt sofort 100%
   und startet die Minuten neu. Ein Prüfstand bei ARMED oder ein
   eingeschalteter Ausgang steht nie hinter einem gedimmten Bild.
@@ -6987,7 +6987,7 @@ Frage und bricht kein Antippen ab.
 | Einstellung | Bereich | Vorgabe | Schreibt |
 | --- | --- | --- | --- |
 | Auto-Aufzeichnungen | AUS, EIN | EIN | `SERVOnnn.CSV`, `MOTORnnn.CSV` und `SUPPLnnn.CSV` in Ordner Auto-Aufzeichnungen: eine Aufzeichnung je ARMED- und Netzteil-Lauf |
-| Testaufzeichnungen | AUS, EIN | EIN | `ATESTnnn.CSV` mit seiner `ATESTnnn.TXT`, `LIMITnnn.TXT` und `RUDDRnnn.CSV` mit seiner `RUDDRnnn.TXT` in Ordner Testaufzeichnungen: den AUTOMATISCHEN TEST, den ENDLAGENLAUF und RUDER AUTO, jeweils wie die Einstellung beim Start des Laufs steht |
+| Testaufzeichnungen | AUS, EIN | EIN | `ATESTnnn.CSV` mit seiner `ATESTnnn.TXT`, `LIMITnnn.TXT` und `RUDDRnnn.CSV` mit seiner `RUDDRnnn.TXT` in Ordner Testaufzeichnungen: den AUTOMATISCHEN TEST, LIMIT RUN und RUDER AUTO, jeweils wie die Einstellung beim Start des Laufs steht |
 | Schreiben per Browser | OFFEN, ZUGANGSCODE, HALTEN, AUS | OFFEN | selbst nichts: was ein Browser braucht, um die Karte über die Seite von WI-FI zu ändern ([Schreiben per Browser](#schreiben-per-browser)) |
 | Ordner Auto-Aufzeichnungen | ein Ordner, siehe unten | `BENCH/LOGS` | wohin Auto-Aufzeichnungen schreibt |
 | Ordner Testaufzeichnungen | ein Ordner, siehe unten | `USER/LOGS` | wohin Testaufzeichnungen schreibt |
@@ -6999,7 +6999,7 @@ Frage und bricht kein Antippen ab.
   Schaltest du während eines ARMED- oder Netzteil-Laufs auf EIN, beginnt
   eine neue Datei.
 - Testaufzeichnungen wird gelesen, wenn 2s HALTEN: ARM + START auf TEST
-  oder ENDLAGENLAUF den Lauf startet.
+  oder LIMIT RUN den Lauf startet.
   Der Test behält den Zustand vom Start. Bei AUS
   zeigen die Laufkarte und der Kasten auf LIVE `TESTAUFZEICHNUNGEN AUS` an der
   Stelle der Dateinamen.

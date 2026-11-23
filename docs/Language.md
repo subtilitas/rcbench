@@ -61,7 +61,8 @@ manual beside the bench.
   PAUSE, the control, stays English.
 - The screen titles: MOTOR & ESC, SERVO, SUPPLY, RECEIVER, LOGS, SETUP,
   BATTERY, BALANCE, OUTPUTS, SENSORS, SD CARD, WI-FI, FILES, UPDATES, UPDATE,
-  PANEL UPDATE. The titles of the bus fault screen are translated:
+  PANEL UPDATE, and SERVO's LIVE, SWEEP, TEST and LIMIT RUN. The run itself
+  is the Endlagenlauf in German prose. The titles of the bus fault screen are translated:
   CAN BUS FAULT is CAN-BUS-FEHLER and LINK LOST is VERBINDUNG VERLOREN. A tile, a tab of LOGS' strip and the
   band of the screen it opens carry the same word. A note that names a screen names it by its
   title: "der Seite SUPPLY".

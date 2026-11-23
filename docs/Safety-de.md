@@ -404,7 +404,7 @@ schaltet VERBINDEN das Servo ein. Die Page folgt den Regeln der Page SUPPLY für
 - M7 läuft aus dem Netz +15V, dem Eingang des Carriers über den
   PD-Trigger M6. Solange der PD mini am selben Eingang ihn unter 13,5V
   liest, werden PROG 5V EIN, ein VERBINDEN von KST oder Hitec und ARM +
-  START von ENDLAGENLAUF und RUDER AUTO mit `EINGANG 5.1V: BENÖTIGT 15V.
+  START von LIMIT RUN und RUDER AUTO mit `EINGANG 5.1V: BENÖTIGT 15V.
   VERSORGUNGSSPANNUNG PRÜFEN` abgelehnt, und nichts wird geschaltet
   ([Carrier, Die Eingangsversorgung](Carrier-de.md#die-eingangsversorgung)).
   Ohne Messwert des PD mini gilt nur die Prüfung nach dem ON.

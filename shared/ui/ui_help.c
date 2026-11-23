@@ -592,19 +592,51 @@ ui_help_hit_t ui_help_hit(const ui_help_page_t *p, int x, int y)
 
 /* ------------------------------------------------------------- the text */
 
+/** @brief The names of more than one word a row never splits: screen,
+ *         tile and part names the guide quotes. */
+static const char *const k_held[] = {
+    "SD CARD", "PD MINI", "MOTOR & ESC", "ESC STICK", "LIMIT RUN",
+    "RUDDER AUTO", "RUDER AUTO", "PANEL UPDATE",
+};
+
 /**
- * @brief The bytes of the row that starts @p s, at most @p cells: broken at
- *        the last space that falls in it, or inside a word where none does.
- * @param s     The text left.
- * @param cells The row's cells.
- * @return The row's bytes.
+ * @brief Whether the space at @p s[@p i] lies inside one of k_held, as a
+ *        whole word sequence of @p s.
+ * @param s The text left.
+ * @param i The space's byte.
+ * @return True when a row must not end there.
  */
-static size_t row_len(const char *s, int cells)
+static bool held_at(const char *s, size_t i)
+{
+    for (size_t k = 0u; k < sizeof(k_held) / sizeof(k_held[0]); ++k) {
+        const char *name = k_held[k];
+        const size_t n = strlen(name);
+        for (size_t j = 0u; j < n; ++j) {
+            if (name[j] != ' ' || j > i) {
+                continue;
+            }
+            const size_t start = i - j;
+            if (strncmp(s + start, name, n) == 0
+                && (start == 0u || s[start - 1u] < 'A' || s[start - 1u] > 'Z')
+                && (s[start + n] < 'A' || s[start + n] > 'Z')) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+size_t ui_help_row_len(const char *s, int cells)
 {
     if (gfx_text_cells(s) <= cells) {
         return strlen(s);
     }
     const size_t max = gfx_text_prefix(s, cells);
+    for (size_t i = max; i > 0u; --i) {
+        if (s[i] == ' ' && !held_at(s, i)) {
+            return i;
+        }
+    }
     for (size_t i = max; i > 0u; --i) {
         if (s[i] == ' ') {
             return i;
@@ -668,7 +700,7 @@ static int wrap(gfx_canvas_t *c, int x, int y, const char *t, size_t lead,
     int rows = 0;
     const char *at = t;
     while (*at != '\0') {
-        const size_t len = row_len(at, cells);
+        const size_t len = ui_help_row_len(at, cells);
         if (c != NULL) {
             const size_t done = (size_t)(at - t);
             const size_t acc = (done >= lead) ? 0u

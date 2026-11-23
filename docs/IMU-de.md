@@ -343,7 +343,7 @@ Sprungs, bei 50Hz etwa 0,2s.
 
 Die Ruhezeit ist die des Sensors und gilt je Achse: der Winkel einer Achse
 innerhalb von 0,5° (`IMU_STILL_DEG`) um den ersten Frame der Strecke
-dieser Achse. RUDER AUTO, der Servotest und der ENDLAGENLAUF lesen die
+dieser Achse. RUDER AUTO, der Servotest und LIMIT RUN lesen die
 Ruhezeit der Einstellung IMU-Achse, deren Winkel sie nehmen. Die beiden
 anderen Achsen dürfen sich bewegen: ein Pitch, der mit 1°/s wandert, hält
 die Ruhezeit eines ruhigen Yaw nicht auf 0. Solange der gefilterte Winkel
@@ -397,9 +397,9 @@ Ein Messwert, der sich seinem Endwert als e x exp(-t / tau) nähert,
 bewegt sich über ein Fenster W um e x (exp(W / tau) - 1). Ein Fenster W
 innerhalb P lässt höchstens P / (exp(W / tau) - 1) übrig: 0,03° mit den
 Vorgaben bei tau 1,7s, 0,08° bei tau 3,5s. Beide Einstellungen gelten ab
-dem Start des Laufs. Der Servotest und der ENDLAGENLAUF nutzen sie nicht:
+dem Start des Laufs. Der Servotest und LIMIT RUN nutzen sie nicht:
 der Servotest misst die Zeit einer Bewegung mit der Ruhezeit und
-entscheidet nichts über den Winkel, und der ENDLAGENLAUF berichtet den
+entscheidet nichts über den Winkel, und LIMIT RUN berichtet den
 Winkel an der weitesten freien Stellung ohne Ruheprüfung. Was die Regel
 für einen Lauf bedeutet, steht unter
 [Servo: AUTO-Endpoints](Servo-de.md#auto-endpoints).

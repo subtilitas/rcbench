@@ -438,6 +438,11 @@ to #908, #910 to #927, #930, #931, #933 and #934.
 - Screen guide, menu page 2: SETUP lists the hub's tiles in hub order:
   PANEL, SENSORS, OUTPUTS, SD CARD, WI-FI, UPDATES, IMU and WIRELESS. IMU
   and WIRELESS were missing.
+- Screen guide: a row of the dock's text never ends inside SD CARD, PD
+  MINI, MOTOR & ESC, ESC STICK, LIMIT RUN, RUDDER AUTO, RUDER AUTO or PANEL
+  UPDATE; it ends at the space before the name. The German menu page 2
+  broke `SD` / `CARD`. The help suites' page check holds every
+  page they open to the rule in both languages.
 - RUDDER: an angle source that is on and sends no reading reads
   `ANGLE: IMU X+ NO READING` (`WINKEL: IMU X+ KEIN MESSWERT`), the words
   LIVE, TEST and LIMIT RUN use for the same state, in place of
@@ -445,6 +450,12 @@ to #908, #910 to #927, #930, #931, #933 and #934.
 - German: the WIRELESS tile reads `IMU, DIAL, SENSORKNOTEN`, devices
   in place of activities (`IMU, DIAL, LEISTUNG, AUSWUCHTEN`); the power
   and balance node names, 37 cells, do not fit the tile's 31.
+- German: SERVO's LIMIT RUN keeps its English name, as LIVE, SWEEP and TEST
+  do: its tile, footer tab and screen guide title, the run's card heading
+  `LIMIT RUN, %u VON %u WERTEN`, `LIMIT RUN LÄUFT` and the User logs help
+  read LIMIT RUN, matching the band. ENDLAGENLAUF was the German tab and
+  tile under a band reading LIMIT RUN. German prose names the run itself
+  Endlagenlauf ([Language](docs/Language.md#terms-that-stay-english)).
 
 ## 0.23.16 - 2026-11-21
 

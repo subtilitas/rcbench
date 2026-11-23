@@ -56,7 +56,7 @@ Servo auf unter 12s. Ein Lauf am Prüfstand ist nicht gemessen.
 
 ### Starten
 
-![ENDLAGENLAUF an einem PROG-PORT hinter einem PD mini, SAFE: ARM gelb, das Halten angeboten](img/de/servo-limrun-ready.png)
+![LIMIT RUN an einem PROG-PORT hinter einem PD mini, SAFE: ARM gelb, das Halten angeboten](img/de/servo-limrun-ready.png)
 
 Der Endlagenlauf hat einen eigenen Bildschirm im Rahmen jedes
 SERVO-Funktionsbildschirms. Der Bildschirm steht in
@@ -76,7 +76,7 @@ SERVO-Funktionsbildschirms. Der Bildschirm steht in
   Lauf zuerst fand, in us; `FREI`, wo er vor PULS MIN oder PULS MAX keinen
   Anschlag fand; `-` vor dem ersten Lauf.
 - Die Zustandszeilen ab y 178 der Karte, 24px Abstand: Titel und Schritt
-  des Laufs, während er läuft, etwa `ENDLAGENLAUF, 6 VON 8 WERTEN` und
+  des Laufs, während er läuft, etwa `LIMIT RUN, 6 VON 8 WERTEN` und
   `KONTROLLE UNTERES ENDE 1350us`; sonst der Schritt der Startfolge, oder der
   Fehler der letzten Startfolge, oder warum das Halten gesperrt ist; warum
   der gewählte Modus nicht angeboten wird; das letzte Ergebnis; der
@@ -132,7 +132,7 @@ SERVO-Funktionsbildschirms. Der Bildschirm steht in
   Nur an einem PROG-PORT: wähle einen mit PORT`; auf ein rotes MESSGERÄT
   öffnet es SETUP > SENSORS an dem INA3221, dessen Kanal das Ziel des
   Testers überwacht, sonst am ersten bestückten, und das Home-Feld dort
-  führt zum ENDLAGENLAUF zurück; auf ein rotes PD MINI mit
+  führt zu LIMIT RUN zurück; auf ein rotes PD MINI mit
   `PD MINI: 5.0V AUSSERHALB SEINER GRENZEN` öffnet es die Einstellungen von
   SUPPLY bei AUSGANGSGRENZEN; auf ein grünes oder gelbes PD MINI öffnet es
   das Tastenfeld von SET A
@@ -277,16 +277,16 @@ Endlagenlauf und RUDER AUTO programmieren mit 5,0V
 
 #### Die Strombegrenzung des Laufs
 
-Ein Lauf von ENDLAGENLAUF und RUDER AUTO und jede Stufe des automatischen
+Ein Lauf von LIMIT RUN und RUDER AUTO und jede Stufe des automatischen
 Tests laufen mit SET A von SUPPLY, wo ein PD mini das Servo speist
 (`shared/ui/servo_run_supply.c`).
 
 - Die Zeile PD MINI der Karte BEREIT zeigt sie nach der Spannung:
-  `5.0V 2.00A` auf ENDLAGENLAUF und RUDER AUTO, `EIN 2.00A` auf TEST, gelb
+  `5.0V 2.00A` auf LIMIT RUN und RUDER AUTO, `EIN 2.00A` auf TEST, gelb
   `EIN BEI START 2.00A`, solange das Halten oder die Stufen den Ausgang
   einschalten. Der Zustand bleibt in Englisch und Deutsch in seinen 20
   Zellen, auch mit drei Stellen mA (`EIN BEI START 2.125A`).
-- Die Listen OPTIONEN von ENDLAGENLAUF und RUDER AUTO führen sie als
+- Die Listen OPTIONEN von LIMIT RUN und RUDER AUTO führen sie als
   STROM, `SET A 2.00A`.
 - Ein Tippen auf die Zeile, grün oder gelb, oder auf STROM öffnet das
   Tastenfeld von SUPPLY über der linken Spalte: STROMBEGRENZUNG in A, zwei
@@ -495,7 +495,7 @@ Mit SERVO auf HITEC D-SERIE oder HITEC KLASSISCH übernimmt die
 Laufs in dieser Serie, gleich, was die Zeile SERIE der HITEC-Seite hält.
 Suche, Vorhalt, Zuordnung und Prüfung sind die oben beschriebenen.
 
-![Die Optionen des ENDLAGENLAUFS, SERVO auf HITEC D-SERIE](img/de/servo-limrun-hitec.png)
+![Die Optionen von LIMIT RUN, SERVO auf HITEC D-SERIE](img/de/servo-limrun-hitec.png)
 
 ![Die Auswahl SERVO des Endlagenlaufs über der linken Spalte](img/de/servo-limrun-family.png)
 
@@ -580,7 +580,7 @@ modelliertes Servo getestet; keines der beiden Firmware-Images ruft es auf.
 
 ### Was einen Endlagenlauf beendet
 
-STOP, LAUF BEENDEN in der Fußleiste von ENDLAGENLAUF, ein Umschalten auf
+STOP, LAUF BEENDEN in der Fußleiste von LIMIT RUN, ein Umschalten auf
 SAFE durch den Bediener, Linkverlust, das Verlassen des Bildschirms, die manuelle Übernahme des Servos, eine Änderung an den Einstellungen des
 Servos, verlorene Touch-Ereignisse, der INA3221, der aufhört, das Messgerät zu sein,
 und ein Netzteil, das aufhört zu antworten, auslöst, ausschaltet oder
@@ -1262,7 +1262,7 @@ offen ist, beendet den Lauf sofort mit dem Grund des INA3221.
 
 #### Winkelquelle
 
-WINKELQUELLE legt fest, woher Servotest, ENDLAGENLAUF und
+WINKELQUELLE legt fest, woher Servotest, LIMIT RUN und
 SERVO-Aufzeichnung den Hornwinkel beziehen: `AS5600` als Vorgabe oder
 `IMU`. Bei `IMU` wird die gewählte IMU-Achse mit dem IMU-Vorzeichen
 verwendet, bezogen auf den NULLPUNKT, den die IMU-Seite oder die Zeile
@@ -1271,7 +1271,7 @@ Einstellung ist die zweite Zeile unter SETUP > WIRELESS > IMU, auch bei
 ausgeschalteter IMU gezeigt, und steht in der Liste WINKELQUELLE.
 
 Die Liste WINKELQUELLE öffnet sich über der linken Spalte, von der Zeile
-WINKEL der Karte BEREIT auf RUDER, RUDER AUTO, TEST und ENDLAGENLAUF und
+WINKEL der Karte BEREIT auf RUDER, RUDER AUTO, TEST und LIMIT RUN und
 von der Zeile WINKELQUELLE der OPTIONEN von RUDER und RUDER AUTO, nur bei SAFE: ARMED, ein angefordertes ARM,
 ein Lauf oder ein gehaltener Druck verweigern sie, und ein Prüfstand, der
 SAFE verlässt, schließt sie. Der Code ist `shared/ui/servo_angle_pick.c`.
@@ -1335,8 +1335,8 @@ AS5600, bei WINKELQUELLE IMU der eigene NULLPUNKT der IMU
 Für IMU-Lücken gilt dieselbe Toleranz wie für den AS5600: höchstens
 300ms, wobei der Beginn der vorherigen Lücke mindestens 10s zurückliegen
 muss. Längere oder häufigere Lücken beenden den Lauf. Beide Berichte tragen die Zeile
-`Winkelquelle:    AS5600` oder `Winkelquelle:    IMU X+`. Der Bericht des
-ENDLAGENLAUFS nennt die Quelle in der Winkelzeile jeder Endlage. Die CSV des
+`Winkelquelle:    AS5600` oder `Winkelquelle:    IMU X+`. Der Bericht von
+LIMIT RUN nennt die Quelle in der Winkelzeile jeder Endlage. Die CSV des
 Servotests hat die Spalte `angle source` zuletzt, nach den Spalten des
 Messgeräts, mit `AS5600` oder `IMU X+` in jeder Zeile; eine Datei ohne die
 Spalte liest LOGS nach denselben Spaltennamen. `angle (deg)` der SERVO-Aufzeichnung enthält den Winkel dieser Quelle,
@@ -1680,7 +1680,7 @@ die Sollwerte des PD mini und die Grafik der Versorgung
 | Teil | Tut | Grenzen |
 | --- | --- | --- |
 | SET V, SET A | Tippen öffnet das Tastenfeld SPANNUNG oder STROMBEGRENZUNG von SUPPLY; OK setzt den Wert auf SUPPLY | die Grenzen von SUPPLY, eingeengt durch dessen AUSGANGSGRENZEN. Bei eingeschaltetem Ausgang und OPTIONEN, RÜCKFRAGE IM BETRIEB, TASTENFELD EIN erst die Rückfrage von SUPPLY, bei ARMED wie bei SAFE. Eine Spannung über 6.0V: erst das 2s-Halten der HV-Warnung. Abgewiesen, der Grund im Alarmband, solange ein Programmierport den PD mini hält |
-| Grafik | Spannung, Strom und Leistung dessen, was das Servo speist, die letzten 9.0s, 180 x 48px, unter einer Legende `5.02V  0.120A  0.60W` | die Grafik, die jeder Funktionsbildschirm zeigt ([Bildschirme](Screens-de.md#servo)): KST und HITEC unter den Zeilen von BEREIT, TEST unter den Grenzen von SUPPLY, ENDLAGENLAUF unter seinen Zustandszeilen, RUDER AUTO rechts von NULLPUNKT und MAX LÖSCHEN |
+| Grafik | Spannung, Strom und Leistung dessen, was das Servo speist, die letzten 9.0s, 180 x 48px, unter einer Legende `5.02V  0.120A  0.60W` | die Grafik, die jeder Funktionsbildschirm zeigt ([Bildschirme](Screens-de.md#servo)): KST und HITEC unter den Zeilen von BEREIT, TEST unter den Grenzen von SUPPLY, LIMIT RUN unter seinen Zustandszeilen, RUDER AUTO rechts von NULLPUNKT und MAX LÖSCHEN |
 
 Am Programmierport des rbmod-Carriers läuft das Servo an den festen PROG
 5V. Die Zeile zeigt `PROG 5V` über `5V FEST` an Stelle von SET V und SET A
@@ -1832,7 +1832,7 @@ Bluetooth-IMU).
   (`rud_tol`). Ein Tippen öffnet das Tastenfeld. Dieselben vier, SERVO,
   SERVO-PULSE, WINKELQUELLE, STROM, Warten vor PWM, der Name des
   Prüflings und die Testaufzeichnungen stehen in OPTIONEN. STROM ist SET A
-  von SUPPLY, wie auf ENDLAGENLAUF ([Die Strombegrenzung des
+  von SUPPLY, wie auf LIMIT RUN ([Die Strombegrenzung des
   Laufs](#die-strombegrenzung-des-laufs)); Warten vor PWM ist die
   Wartezeit des KST-Programmierers, die VERLASSEN des Laufs sendet. Der
   Name ist der des Hubs, die Testaufzeichnungen die von SETUP > SD CARD;
@@ -2057,7 +2057,7 @@ Halten grau, solange:
 | WINKEL | die IMU-Achse Z (Gieren) gewählt ist, in 6-AXIS und in 9-AXIS: an einer BWT901CL driftet das Gieren in 6-AXIS 2,4° in 100s und bleibt in 9-AXIS 38° daneben stehen, gegen 0,5° Toleranz. Ein Tippen öffnet die Liste IMU-GIEREN, `IMU-ACHSE X NEHMEN (ROLLEN)`, `IMU-ACHSE Y NEHMEN (NICKEN)`, für einen um 90° gedrehten Sensor, dessen Achse X oder Y das Scharnier ist; eine Wahl schreibt die Einstellung und speichert sie ([IMU](IMU-de.md#die-verbindung)) | `IMU-GIEREN GESPERRT: SCHARNIER AUF X ODER Y` | `GIEREN GESPERRT` |
 | WINKEL | die Winkelquelle keinen Messwert liefert | `WINKELQUELLE: KEIN MESSWERT` | `KEIN MESSWERT` |
 | NULLPUNKT | kein Nullpunkt gesetzt ist | `SETZE DEN NULLPUNKT MIT DEM RUDER IN NEUTRALLAGE` | `NICHT GESETZT` |
-| ARM | ein anderer Lauf läuft oder ein Bericht noch geschrieben wird | die Zeile des Laufs, wie auf TEST | `TEST LÄUFT`, `SCHREIBT BERICHT`; `ENDLAGENLAUF LÄUFT` ganz |
+| ARM | ein anderer Lauf läuft oder ein Bericht noch geschrieben wird | die Zeile des Laufs, wie auf TEST | `TEST LÄUFT`, `SCHREIBT BERICHT`; `LIMIT RUN LÄUFT` ganz |
 
 Eine Zeile mit einem Text, der das Halten sperrt, ist rot, auch wenn ein
 anderer ihrer Texte einer ist, den das Halten erledigt: ein Bericht, der
@@ -2380,7 +2380,7 @@ Der Lauf selbst rechnet mit dem Abstand jedes Endpoints von NEUTRAL (bei
 der D-Serie 8192 - LEFT END und RIGHT END - 8192); eine Funktion,
 `servo_rauto_reg_of()`, macht daraus den angezeigten Wert, und ein
 Host-Test hält sie gleich dem `hitec_run_to_reg()` des Schreibwegs. Der
-Bericht des ENDLAGENLAUFS nennt einen Endpoint der D-Serie weiter als
+Bericht von LIMIT RUN nennt einen Endpoint der D-Serie weiter als
 Abstand von NEUTRAL.
 
 ### Grenzen

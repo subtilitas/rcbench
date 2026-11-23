@@ -201,7 +201,7 @@ dialogs also have no "?".
 | Dock | 480 x 488px, 8px from the panel's left or right edge, y 64 to 552; the page says which side |
 | Live half | the other 528px of the body; the screen draws there and keeps running |
 | Header | the page's title and "page / pages" |
-| Item | its number in a 28px badge, the control's name in the accent colour, then what it does in the 10 x 20px face, 41 characters a row, 3 rows at most |
+| Item | its number in a 28px badge, the control's name in the accent colour, then what it does in the 10 x 20px face, 41 characters a row, 3 rows at most, broken at a space; a row ends before SD CARD, PD MINI, MOTOR & ESC, ESC STICK, LIMIT RUN, RUDDER AUTO, RUDER AUTO or PANEL UPDATE rather than inside it (`ui_help_row_len()`) |
 | Items a page | 5 at most |
 | Web line | `More: subtilitas.github.io/rcbench/help/`, German `Mehr: subtilitas.github.io/rcbench/help/de/` |
 | PREV and NEXT | 124 x 48px, 8px apart, in the band from x 8 to 264, y 6 to 54, in the home tag's place, the same on every page |

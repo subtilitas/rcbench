@@ -459,7 +459,7 @@ UI_TEXT(HG_OV_LOGS, 0,
     "Zeigt Aufzeichnungen der SD-Karte und bis zu 4 Spalten als Grafik. FILES ist ein Tab, WI-FI eine Taste.")
 UI_TEXT(HG_OV_SETUP, 0,
     "The bench-wide settings: PANEL, SENSORS, OUTPUTS, SD CARD, WI-FI, UPDATES, IMU and WIRELESS.",
-    "Die Einstellungen des ganzen Prüfstands: PANEL, SENSORS, OUTPUTS, SD CARD, WI-FI, UPDATES, IMU und WIRELESS.")
+    "Die Einstellungen des Prüfstands: PANEL, SENSORS, OUTPUTS, SD CARD, WI-FI, UPDATES, IMU und WIRELESS.")
 UI_TEXT(HG_OV_STOP, 0,
     "Switches the bench to SAFE and the supply output off, on every screen and with this guide open.",
     "Schaltet den Prüfstand auf SAFE und den Netzteilausgang aus, auf jeder Seite, auch bei offener Hilfe.")
@@ -5625,7 +5625,7 @@ UI_TEXT(SV_LIM_TITLE, 31,
     "ENDLAGENSUCHE")
 UI_TEXT(SV_LIM_TITLE_PROG, 0,
     "LIMIT RUN, %u OF %u VALUES",
-    "ENDLAGENLAUF, %u VON %u WERTEN")
+    "LIMIT RUN, %u VON %u WERTEN")
 UI_TEXT(SV_LIM_AT, 0,
     "%s %s END %uus",
     "%s %s ENDE %uus")
@@ -5862,7 +5862,7 @@ UI_TEXT(HG_SV_SETTINGS, 0,
     "Wie diese Seite ihre Funktion ausführt. Öffnet nur bei SAFE.")
 UI_TEXT(HG_SV_TITLE_LIMRUN, 0,
     "SERVO: LIMIT RUN",
-    "SERVO: ENDLAGENLAUF")
+    "SERVO: LIMIT RUN")
 /* The SERVO hub (servo_hub.c): its tiles' names and lines, at most 31
  * cells of 10 x 20, and its guide. */
 UI_TEXT(SVH_SERVO, 0,
@@ -5879,7 +5879,7 @@ UI_TEXT(SVH_TEST, 0,
     "TEST")
 UI_TEXT(SVH_LIMRUN, 0,
     "LIMIT RUN",
-    "ENDLAGENLAUF")
+    "LIMIT RUN")
 UI_TEXT(SVH_RUDDER, 0,
     "RUDDER",
     "RUDER")
@@ -5933,7 +5933,7 @@ UI_TEXT(HG_SVH_DRIVE, 0,
     "LIVE und SWEEP steuern das Servo mit Skala, Drehknopf und Kurve.")
 UI_TEXT(HG_SVH_MEASURE, 0,
     "TEST and LIMIT RUN measure the servo on the rail and find its ends.",
-    "TEST und ENDLAGENLAUF messen das Servo an der Schiene und finden seine Endlagen.")
+    "TEST und LIMIT RUN messen das Servo an der Schiene und finden seine Endlagen.")
 UI_TEXT(HG_SVH_SURFACE, 0,
     "RUDDER and RUDDER AUTO read a control surface's deflection.",
     "RUDER und RUDER AUTO lesen den Ausschlag eines Ruders.")
@@ -10688,7 +10688,7 @@ UI_SETTING_LABEL(SET_LOG_USER,
     "Testaufzeichnungen")
 UI_SETTING_HELP(SET_LOG_USER,
     "AUTOMATIC TEST, LIMIT RUN, RUDDER AUTO",
-    "AUTOMATISCHER TEST, ENDLAGENLAUF, RUDER AUTO")
+    "AUTOMATISCHER TEST, LIMIT RUN, RUDER AUTO")
 UI_SETTING_LABEL(SET_WEB_WRITES,
     "Browser writes",
     "Schreiben per Browser")
@@ -11055,7 +11055,7 @@ UI_SERVO_TEXT(SERVO_STR_START_TEST_RUNS,
     "AUTOMATISCHER TEST LÄUFT")
 UI_SERVO_TEXT(SERVO_STR_START_LIMIT_RUNS,
     "LIMIT RUN IS RUNNING",
-    "ENDLAGENLAUF LÄUFT")
+    "LIMIT RUN LÄUFT")
 UI_SERVO_TEXT(SERVO_STR_START_PROG_5V,
     "PROG 5V OFF: START SWITCHES IT ON",
     "PROG 5V AUS: START SCHALTET ES EIN")
