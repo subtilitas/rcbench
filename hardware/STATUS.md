@@ -106,7 +106,9 @@ triangle with 3 crocodile clips, 400Ω between any 2 clips (owner,
 rating is not stated. The phase tap's lead leaves one clip's boot beside the
 resistor's wire and ends in a 3.5mm mono plug; how it is fastened inside the
 boot and which contact carries the tap are not stated. The plug's handle and
-the split of its 14.0mm shaft are taken from common plugs, not measured.
+the split of its 14.0mm shaft are taken from common plugs, not measured. The
+model draws the plug at 0.6 of its size: a shaft of 2.1mm x 8.4mm (owner,
+2026-11-23).
 It holds STEP models of the Flycolor FlyDragon Lite 40A ESC with its leads,
 of the T-Motor AT2814 outrunner, and of the two joined lead to lead. The ESC's
 size is the maker's; its leads' lengths, diameters and the signal wires' roles

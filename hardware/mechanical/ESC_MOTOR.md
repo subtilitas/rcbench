@@ -83,13 +83,15 @@ The phase tap's lead is connected to one of the 3 clips and ends in a
 3.5mm mono headphone plug; the model draws it as a white wire that
 leaves the boot of the clip of corner C at its rear face, 1.45mm above
 the yellow wire, runs 5.0mm along it, bends up with a radius of 4.0mm
-and carries the plug on its end, 20.0mm higher.
+and carries the plug on its end, 20.0mm higher. The plug is drawn at 0.6
+of a 3.5mm plug's size (owner, 2026-11-23): its shaft is 2.1mm across and
+8.4mm long in the model.
 
 ![Motor simulator](renders/parts/motor_simulator.png)
 
 | File | Content | Over all, mm | Origin |
 | --- | --- | --- | --- |
-| `motor_simulator.step` | 3 blue resistors with their leads, solder at the 3 corners, 3 yellow wires, 3 clips with black boots and steel jaws, the phase tap's white lead out of one clip's boot with its 3.5mm mono plug (strain relief of 3 steps, barrel, shoulder, sleeve, black ring, grooved tip); 39 solids | 51.05 x 20.0 x 77.71; 18.26 high without the tap's lead | the middle of the triangle's lower side; the triangle stands in the y-z plane, corner A at -y, B at +y, C on top; the wires run towards -x |
+| `motor_simulator.step` | 3 blue resistors with their leads, solder at the 3 corners, 3 yellow wires, 3 clips with black boots and steel jaws, the phase tap's white lead out of one clip's boot with its 3.5mm mono plug (strain relief of 3 steps, barrel, shoulder, sleeve, black ring, grooved tip), the plug at 0.6 of its size; 39 solids | 51.05 x 20.0 x 62.71; 18.26 high without the tap's lead | the middle of the triangle's lower side; the triangle stands in the y-z plane, corner A at -y, B at +y, C on top; the wires run towards -x |
 
 | Point | x, mm | y, mm | z, mm |
 | --- | --- | --- | --- |
@@ -98,9 +100,9 @@ and carries the plug on its end, 20.0mm higher.
 | Clips' tips | -49.8 | as the corners | as the corners |
 | Phase tap's lead: leaves the boot of the clip of C | -20.8 | 0.0 | 12.71 |
 | Phase tap's lead: end of the bend, end in the plug | -11.8 | 0.0 | 16.71, 36.71 |
-| Mono plug: strain relief, barrel, shoulder | -11.8 | 0.0 | 36.71 to 44.21, 44.21 to 58.21, 58.21 to 60.21 |
-| Mono plug: sleeve, ring, tip | -11.8 | 0.0 | 60.21 to 69.71, 69.71 to 70.71, 70.71 to 74.21 |
-| Mono plug: groove of the tip, end of the tip | -11.8 | 0.0 | 70.71 to 71.81, 74.21 |
+| Mono plug: strain relief, barrel, shoulder | -11.8 | 0.0 | 36.71 to 41.21, 41.21 to 49.61, 49.61 to 50.81 |
+| Mono plug: sleeve, ring, tip | -11.8 | 0.0 | 50.81 to 56.51, 56.51 to 57.11, 57.11 to 59.21 |
+| Mono plug: groove of the tip, end of the tip | -11.8 | 0.0 | 57.11 to 57.77, 59.21 |
 
 Limits:
 
@@ -124,7 +126,8 @@ Limits:
   2.0mm, barrel 7.0mm x 14.0mm, strain relief of 3 steps of 2.5mm, 5.0mm,
   4.0mm and 3.0mm across) are taken from common plugs of this kind, not
   measured on the owner's. The tip's round end is 2 steps of 2.9mm and
-  2.0mm.
+  2.0mm. These are the plug's own sizes; the model draws each at 0.6 of
+  it, so no size of the drawn plug is a 3.5mm plug's.
 - A second build with orange clips and 6 resistors exists; it is not
   drawn.
 - Not drawn: the resistors' colour bands, the clips' teeth, spring and

@@ -30,11 +30,17 @@ relief of 3 steps down to 3.0 where the lead enters) are estimated
 from common plugs of this kind, not measured on the owner's. The
 tip's round end is drawn as 2 steps.
 
+The plug is drawn at PLUG_SCALE, 0.6 of these sizes (O2): its shaft is
+2.1 across and 8.4 long in the model, its barrel 4.2 x 8.4, the whole
+plug 22.5 long. The sizes above are the plug's own; the model's are
+not.
+
 Sources:
     O: the owner, 2026-11-22: a motor stand-in; each resistor is 600
     ohm; of the 2 built, this is the one with black clips and 3
     resistors; the phase tap's lead is connected to one of the clips
     and ends in a 3.5mm mono headphone plug.
+    O2: the owner, 2026-11-23: the plug is drawn 40% smaller.
     P: one owner photo of 2026-11-22 (not in the repository), taken at
     an angle with no scale in it: blue resistors with axial leads
     soldered corner to corner, a yellow wire from each corner, the 3
@@ -84,6 +90,7 @@ TAP_LEAD = (1.2, 1.45, 5.0, 4.0, 20.0)
 # The mono plug on the lead's end, from the lead on, each (diameter,
 # length): the strain relief's steps, the barrel, the shoulder.
 HANDLE = ((3.0, 2.5), (4.0, 2.5), (5.0, 2.5), (7.0, 14.0), (5.0, 2.0))
+PLUG_SCALE = 0.6                # the plug as drawn, of its own size (O2)
 SHAFT = 3.5                     # the plug's contacts: diameter
 SLEEVE = 9.5                    # the sleeve contact's length
 RING = 1.0                      # the insulating ring's length
@@ -185,11 +192,18 @@ def tap_lead_length():
     return out + bend * math.pi / 2 + up
 
 
+def plug_steps():
+    """The plug as drawn, from the lead on: (diameter, length, colour)."""
+    steps = [(d, n, p.BLACK) for d, n in HANDLE]
+    steps += [(SHAFT, SLEEVE, p.STEEL), (SHAFT, RING, p.BLACK)]
+    steps += [(d, n, p.STEEL) for d, n in TIP]
+    return [(d * PLUG_SCALE, n * PLUG_SCALE, rgb) for d, n, rgb in steps]
+
+
 def plug_tip():
     """The end of the mono plug's tip: (x, y, z)."""
     x, y, z = tap_lead()[2]
-    return (x, y, z + sum(length for _d, length in HANDLE) + SLEEVE
-            + RING + sum(length for _d, length in TIP))
+    return (x, y, z + sum(length for _d, length, _rgb in plug_steps()))
 
 
 def tap():
@@ -206,10 +220,7 @@ def tap():
                     (turned[0], turned[2]), (end[0], end[2])],
                    TAP_LEAD[0] / 2, p.WHITE, frame=frame)]
     z = end[2]
-    steps = [(d, n, p.BLACK) for d, n in HANDLE]
-    steps += [(SHAFT, SLEEVE, p.STEEL), (SHAFT, RING, p.BLACK)]
-    steps += [(d, n, p.STEEL) for d, n in TIP]
-    for diameter, length, rgb in steps:
+    for diameter, length, rgb in plug_steps():
         shapes.append(s.ext(s.circle(x, y, diameter / 2), z, z + length, rgb))
         z += length
     return shapes

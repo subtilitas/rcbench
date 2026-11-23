@@ -110,10 +110,10 @@ def test_wires_leave_side_by_side():
 
 
 def test_whole_model_has_its_size():
-    """51.05 x 20.0 x 77.71 over all; 18.26 high without the tap's lead."""
+    """51.05 x 20.0 x 62.71 over all; 18.26 high without the tap's lead."""
     box = extent(sim.simulator())
     assert [round(box[k + 3] - box[k], 2) for k in range(3)] == [
-        51.05, 20.0, 77.71]
+        51.05, 20.0, 62.71]
     own = extent(sim.resistors() + sim.joints() + [
         shape for name in sim.CORNERS for shape in sim.wire_and_clip(name)])
     assert round(own[5] - own[2], 2) == 18.26
@@ -150,7 +150,7 @@ def test_phase_tap_lead_leaves_the_boot():
 
 
 def test_tap_lead_ends_in_a_mono_plug():
-    """Strain relief, barrel, shoulder, then a shaft of 3.5 x 14.0."""
+    """Strain relief, barrel, shoulder, shaft: a 3.5 plug drawn at 0.6."""
     shapes = sim.tap()[1:]
     assert [shape[4] for shape in shapes] == (
         [_parts.BLACK] * 5 + [_parts.STEEL, _parts.BLACK]
@@ -158,15 +158,18 @@ def test_tap_lead_ends_in_a_mono_plug():
     end = sim.tap_lead()[2]
     handle = extent(shapes[:5])
     assert handle[2] == pytest.approx(end[2])
-    assert handle[3] - handle[0] == pytest.approx(7.0, abs=0.01)
-    assert handle[5] - handle[2] == pytest.approx(23.5)
+    assert handle[3] - handle[0] == pytest.approx(4.2, abs=0.01)
+    assert handle[5] - handle[2] == pytest.approx(14.1)
     # The strain relief narrows to the lead: 5.0, 4.0, 3.0 across.
     widths = [extent([shape])[3] - extent([shape])[0]
               for shape in shapes[:3]]
-    assert widths == pytest.approx([3.0, 4.0, 5.0], abs=0.01)
+    assert widths == pytest.approx([1.8, 2.4, 3.0], abs=0.01)
     shaft = extent(shapes[5:])
-    assert shaft[3] - shaft[0] == pytest.approx(3.5, abs=0.01)
-    assert shaft[5] - shaft[2] == pytest.approx(14.0)
+    assert sim.PLUG_SCALE == 0.6
+    assert shaft[3] - shaft[0] == pytest.approx(2.1, abs=0.01)
+    assert shaft[5] - shaft[2] == pytest.approx(8.4)
+    # The lead is not wider than the strain relief's end.
+    assert sim.TAP_LEAD[0] < widths[0]
     assert shaft[2] == pytest.approx(handle[5])
     # 2 contacts, tip and sleeve, with one ring between them: mono.
     assert sim.SLEEVE + sim.RING + sum(n for _d, n in sim.TIP) == (
@@ -179,4 +182,4 @@ def test_tap_lead_ends_in_a_mono_plug():
     tip = sim.plug_tip()
     assert tip[:2] == pytest.approx(end[:2])
     assert tip[2] == pytest.approx(shaft[5])
-    assert tip[2] - end[2] == pytest.approx(37.5)
+    assert tip[2] - end[2] == pytest.approx(22.5)
