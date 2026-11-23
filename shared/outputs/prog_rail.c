@@ -85,6 +85,11 @@ uint8_t prog_rail_connect_mask(const power_page_t *pg, const int *k_of,
     return m;
 }
 
+uint16_t prog_rail_claim(const prog_rail_t *r)
+{
+    return (r != NULL && r->held && !r->sticky) ? bit_of(r->port) : 0u;
+}
+
 bool prog_rail_open_ok(const power_page_t *pg, int k, uint8_t held,
                        const prog_rail_ctx_t *ctx)
 {
@@ -313,7 +318,24 @@ uint8_t prog_rail_write(prog_rail_t *r, power_page_t *pg, uint8_t off,
     const bool w_want = (unsigned)off <= (unsigned)LINK_PW_PORT_WANT
                         && (unsigned)off + n > (unsigned)LINK_PW_PORT_WANT;
     const bool rail = w_rail ? in[0] == 1u : pg->rail;
-    const uint16_t want = w_want ? in[LINK_PW_PORT_WANT - off] : pg->want;
+    uint16_t want = w_want ? in[LINK_PW_PORT_WANT - off] : pg->want;
+    /* While a session holds output k, bit k is the session's: PORT_WANT
+     * reads it set (prog_rail_claim()), and a write without it is the
+     * panel's OFF of that output.  Bit k of a write never switches the
+     * output on: it keeps what the session has driven. */
+    const uint16_t own = r->held ? bit_of(r->port) : 0u;
+    uint16_t buf[LINK_PW_COUNT];
+    if (own != 0u && w_want && pg->fitted != 0u) {
+        if ((want & own) == 0u) {
+            r->pending = false;     /* the panel's OFF of output k */
+            r->sticky  = true;
+        } else if (n <= LINK_PW_COUNT) {
+            want = (uint16_t)((want & (uint16_t)~own) | (pg->want & own));
+            memcpy(buf, in, (size_t)n * sizeof(in[0]));
+            buf[LINK_PW_PORT_WANT - off] = want;
+            in = buf;
+        }
+    }
     /* A write that starts with RAIL 0 switches the rail off whatever the
      * rest of it is answered (power_write()): that OFF stands for the
      * session from here, and a pending ON ends. */
@@ -339,17 +361,7 @@ uint8_t prog_rail_write(prog_rail_t *r, power_page_t *pg, uint8_t off,
             return (uint8_t)LINK_NACK_BUSY;
         }
     }
-    const bool had_k = (pg->want & bit) != 0u || (pg->held_on & bit) != 0u;
     const uint8_t nack = power_write(pg, off, n, in, &ctx->power);
-    if (bit != 0u && nack == 0u) {
-        const bool cut_rail = w_rail && in[0] == 0u;
-        const bool cut_k = pg->fitted != 0u && w_want && had_k
-                           && (want & bit) == 0u;
-        if (cut_rail || cut_k) {
-            r->sticky  = true;
-            r->pending = false;
-        }
-    }
     if (pg->held_on != 0u && !r->kept) {
         r->kept    = true;
         r->kept_t0 = now;

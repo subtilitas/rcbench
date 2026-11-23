@@ -59,11 +59,14 @@
  * The panel's POWER writes go through prog_rail_write(): while a session
  * holds the port, a write that would switch port k on is refused
  * (LINK_NACK_BUSY), and so is a new PORT_WANT bit while the session runs
- * the rail at another voltage.  The panel's OFF is taken at once for every
+ * the rail at another voltage.  With the switches, PORT_WANT bit k is the
+ * session's while it holds output k: it reads set (prog_rail_claim()), a
+ * write's bit k never switches the output on, and a write without it is
+ * the panel's OFF of the output, as RAIL 0 is.  The panel's OFF is taken at once for every
  * other port; port k stays on while the session writes to the servo's
  * memory (prog_rail_tell()), SUPPLY_PAGE_WRITE_WAIT_MS (10000ms) at most
  * from the OFF, as the SUPPLY page holds the PD mini (supply_page.h).  From
- * a RAIL 0, or a PORT_WANT without bit k while it was set, the session's
+ * a RAIL 0, or (with the switches) a PORT_WANT without bit k, the session's
  * own ON is refused until it lets go; a write starting with RAIL 0 latches
  * that OFF whatever the rest of it is answered.  A lost heartbeat, the
  * link failsafe and a trip are not held (power_off(), prog_rail_off()).
@@ -196,6 +199,17 @@ prog_rail_refusal_t prog_rail_connect(const power_page_t *pg, int k,
 uint8_t prog_rail_connect_mask(const power_page_t *pg, const int *k_of,
                                uint8_t ports, uint8_t held,
                                const prog_rail_ctx_t *ctx);
+
+/**
+ * @brief The PORT_WANT bit a session claims: bit k while it holds output
+ *        k and its OFF does not stand.  PORT_WANT reads it set, so the
+ *        panel's write keeps it; a write without it is the panel's OFF of
+ *        output k (prog_rail_write()).
+ *
+ * @param r The state.
+ * @return  Bit k, or 0; 0 for NULL.
+ */
+uint16_t prog_rail_claim(const prog_rail_t *r);
 
 /**
  * @brief Whether a session may open on output @p k before it switches

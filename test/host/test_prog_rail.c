@@ -38,6 +38,9 @@ static void two_ports_on(void)
     CHECK_EQ(ports_on(), 0x0003u);
 }
 
+static void pd_by_hand_at(bool switches, uint16_t from_mv, uint32_t t0);
+static unsigned passes_at(uint16_t v_mv, unsigned max);
+
 /* The session holds the port and writes when @p writing. */
 static void hold(bool writing, uint32_t now)
 {
@@ -284,9 +287,12 @@ TEST_CASE(the_panel_cannot_switch_the_sessions_port_on)
     rig_start(true, K, true);
     two_ports_on();
     hold(false, 0u);
-    CHECK_EQ(pw_write(LINK_PW_PORT_WANT, 0x0003u | K_BIT, 0u),
-             (uint8_t)LINK_NACK_BUSY);
+    /* Bit k of a panel write is the session's: kept, never switched on. */
+    CHECK_EQ(pw_write(LINK_PW_PORT_WANT, 0x0003u | K_BIT, 0u), 0u);
     CHECK_EQ(ports_on(), 0x0003u);
+    CHECK_EQ(pw_reg(LINK_PW_PORT_WANT), 0x0003u);
+    CHECK_EQ(prog_rail_claim(&g_rail), K_BIT);
+    CHECK(!g_rail.sticky);
     /* RAIL 0 is taken. */
     const uint16_t two[4] = { 0u, 0u, 0u, 0x0003u | K_BIT };
     CHECK_EQ(prog_rail_write(&g_rail, &g_pw, 0u, 1u, two, &g_rctx, 0u), 0u);
@@ -385,18 +391,30 @@ TEST_CASE(an_off_without_a_write_is_at_once_and_stands)
     CHECK_EQ(ports_on(), 0u);
     CHECK(g_rail.sticky);
     CHECK(!rail_set(true, RAIL_MV, 1000u));
-    /* A PORT_WANT without bit k in the session's own off time is no OFF of
-     * the session. */
+    /* A PORT_WANT without bit k in the session's own off time is the
+     * panel's OFF of output k; with bit k (as read) it is none. */
     rig_start(true, K, true);
     two_ports_on();
     hold(false, 0u);
     CHECK(rail_on( RAIL_MV, 1000u));
     CHECK(rail_set(false, 0u, 0u));
     hold(false, 0u);
-    CHECK_EQ(pw_write(LINK_PW_PORT_WANT, 0x0001u, 0u), 0u);
+    CHECK_EQ(pw_write(LINK_PW_PORT_WANT, 0x0001u | K_BIT, 0u), 0u);
     CHECK(!g_rail.sticky);
-    CHECK(rail_on( RAIL_MV, 1000u));
-    CHECK_EQ(ports_on(), 0x0001u | K_BIT);
+    CHECK_EQ(ports_on(), 0x0001u);
+    CHECK_EQ(pw_write(LINK_PW_PORT_WANT, 0x0001u, 0u), 0u);
+    CHECK(g_rail.sticky);
+    CHECK_EQ(prog_rail_claim(&g_rail), 0u);
+    CHECK(!rail_set(true, RAIL_MV, 1000u));
+    CHECK_EQ(ports_on(), 0x0001u);
+    /* During a waiting ON the same: it ends, nothing switches. */
+    pd_by_hand_at(true, 8400u, 0u);
+    CHECK(g_rail.pending);
+    CHECK_EQ(pw_write(LINK_PW_PORT_WANT, 0u, 0u), 0u);
+    CHECK(!g_rail.pending);
+    CHECK(g_rail.sticky);
+    CHECK_EQ(passes_at(5000u, 500u), 500u);
+    CHECK_EQ(ports_on(), 0u);
 }
 
 TEST_CASE(a_lost_heartbeat_is_not_held)

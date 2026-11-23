@@ -1965,12 +1965,17 @@ die Spannung der Schiene für jeden Port.
   anderen Ports gehen nur mit dem eigenen Schreiben des Panels an.
 - Solange eine Sitzung ihren Ausgang hält, wird ein Schreiben des Panels,
   das diesen Ausgang einschalten würde, mit BUSY abgelehnt. Ein Schreiben,
-  das mit RAIL 0 beginnt, wird für RAIL trotzdem genommen.
+  das mit RAIL 0 beginnt, wird für RAIL trotzdem genommen. Mit den
+  Schaltern gehört Bit k von PORT_WANT der Sitzung, solange sie Ausgang k
+  hält: es liest gesetzt, Bit k eines Schreibens schaltet den Ausgang nie
+  ein, und ein Schreiben ohne es ist das OFF des Panels für diesen
+  Ausgang, wie RAIL 0.
 - Das OFF des Panels (RAIL 0, oder PORT_WANT ohne das Bit der Sitzung)
   steht sofort in den Registern und schaltet jeden anderen Port sofort
-  aus. Ein Schreiben, das mit RAIL 0 beginnt, steht als OFF für die
-  Sitzung, wie der Rest auch beantwortet wird, und beendet ein wartendes
-  ON. Solange die Sitzung in den Speicher des Servos schreibt (ein KST
+  aus. Es steht als OFF für die Sitzung, wie der Rest des Schreibens auch
+  beantwortet wird, auch in der eigenen Aus-Zeit der Sitzung, und beendet
+  ein wartendes ON: das ON der Sitzung wird abgelehnt, und sie endet mit
+  dem Ergebnis 32. Solange die Sitzung in den Speicher des Servos schreibt (ein KST
   WRITE, RESTORE oder RELEASE, ein Hitec-Schreiben und seine 150ms
   danach, wie für die Page SUPPLY), bleibt der Ausgang der Sitzung an und
   PORT_ON zeigt ihn, bis das Schreiben endet, höchstens 10000ms nach dem

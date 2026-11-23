@@ -1797,11 +1797,15 @@ voltage for every port.
   ports come on with the panel's own write only.
 - While a session holds its output, a panel write that would switch that
   output on is refused with BUSY. A write that starts with `RAIL` 0 is
-  still taken for `RAIL`.
+  still taken for `RAIL`. With the switches, `PORT_WANT` bit k is the
+  session's while it holds output k: it reads set, a write's bit k never
+  switches the output on, and a write without it is the panel's OFF of
+  that output, as `RAIL` 0 is.
 - The panel's OFF (`RAIL` 0, or `PORT_WANT` without the session's bit)
   reads in the registers at once and switches every other port off at
-  once. A write that starts with `RAIL` 0 stands as the session's OFF
-  however the rest of it is answered, and ends a waiting ON. While the session writes to the servo's memory (a KST WRITE,
+  once. It stands as the session's OFF however the rest of the write is
+  answered, also in the session's own off time, and ends a waiting ON:
+  the session's ON is refused and it ends with result `SUPPLY`. While the session writes to the servo's memory (a KST WRITE,
   RESTORE or RELEASE, a Hitec write and its 150ms tail, as for the SUPPLY
   page), the session's output stays on and `PORT_ON` shows it, until the
   write ends and 10000ms after the OFF at most. From that OFF the

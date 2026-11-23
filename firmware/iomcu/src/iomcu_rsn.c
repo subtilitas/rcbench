@@ -376,6 +376,11 @@ void power_page_rd(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     (void)ctx;
     power_read(&s_power, off, n, out);
+    /* The session's output reads wanted, so the panel's write keeps it. */
+    if (s_power.fitted != 0u && off <= LINK_PW_PORT_WANT
+        && (unsigned)off + n > LINK_PW_PORT_WANT) {
+        out[LINK_PW_PORT_WANT - off] |= prog_rail_claim(&s_rail);
+    }
 }
 
 uint8_t power_page_wr(void *ctx, uint8_t off, uint8_t n, const uint16_t *in)

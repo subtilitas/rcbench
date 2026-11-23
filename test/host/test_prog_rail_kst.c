@@ -628,6 +628,68 @@ TEST_CASE(a_higher_rail_never_reaches_the_sessions_servo)
     }
 }
 
+/* The panel's PORT_WANT without bit k (S1 and S2 kept) @p at_ms into a
+ * REBOOT's off time: port k is never switched on again, the session ends
+ * with SUPPLY. */
+static void want_off_in_reboot(uint32_t at_ms)
+{
+    bench(true, RAIL_MV);
+    two_ports_on();
+    connect();
+    CHECK_EQ(cmd(LINK_KST_OP_REBOOT, 0, 0), 0);
+    until_state(LINK_KST_RAIL_OFF);
+    tick();
+    const uint32_t t0 = g_ms;
+    while (g_ms - t0 < at_ms) {
+        tick();
+    }
+    CHECK_EQ(prog_rail_claim(&g_rail), K_BIT);   /* reads wanted */
+    const unsigned ons = g_k_ons;
+    CHECK_EQ(pw_write(LINK_PW_PORT_WANT, 0x0003u, g_ms), 0u);
+    until_state(LINK_KST_PWM);
+    run_ms(KST_PORT_SUPPLY_MS);
+    CHECK_EQ(g_k_ons, ons);
+    CHECK_EQ(ports_on(), 0x0003u);
+    CHECK(!g_sim.powered);
+    CHECK_EQ(result(), LINK_KST_RESULT_SUPPLY);
+}
+
+TEST_CASE(a_port_want_without_k_in_a_reboot_keeps_it_off)
+{
+    static const uint32_t k_at[4] = { 0u, 500u, KST_PORT_RAIL_OFF_MS - 2u,
+                                      KST_PORT_RAIL_OFF_MS - 1u };
+
+    for (unsigned i = 0; i < 4u; ++i) {
+        want_off_in_reboot(k_at[i]);
+    }
+}
+
+TEST_CASE(a_port_want_without_k_ends_a_waiting_on)
+{
+    const uint16_t hi[3] = { 1u, 8400u, RAIL_MA };
+
+    bench(true, RAIL_MV);
+    CHECK_EQ(supply_page_write(&g_sp, LINK_SP_OUTPUT, 3u, hi, &g_sout, true),
+             0u);
+    tick();
+    two_ports_on();
+    g_pd_by_hand = true;
+    g_pd.st.v_mv = 8400u;
+    CHECK_EQ(cmd(LINK_KST_OP_ENTER, 0, 0), 0);
+    while (!g_rail.pending && busy()) {
+        tick();
+    }
+    CHECK(g_rail.pending);
+    run_ms(50u);
+    CHECK_EQ(pw_write(LINK_PW_PORT_WANT, 0u, g_ms), 0u);
+    CHECK(!g_rail.pending);
+    g_pd.st.v_mv = RAIL_MV;             /* the PD mini there after all */
+    settle();
+    CHECK_EQ(result(), LINK_KST_RESULT_SUPPLY);
+    CHECK_EQ(ports_on(), 0u);
+    CHECK(!g_sim.powered);
+}
+
 int main(void)
 {
     RUN(without_the_switches_the_cycles_act_on_rail_en);
@@ -641,5 +703,7 @@ int main(void)
     RUN(a_trip_in_a_reboot_keeps_the_rail_off);
     RUN(connect_is_refused_while_another_session_holds_a_port);
     RUN(a_higher_rail_never_reaches_the_sessions_servo);
+    RUN(a_port_want_without_k_in_a_reboot_keeps_it_off);
+    RUN(a_port_want_without_k_ends_a_waiting_on);
     return test_summary("prog_rail_kst");
 }
