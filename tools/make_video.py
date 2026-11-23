@@ -488,7 +488,11 @@ def _views_key(board: dict) -> str:
              if path.is_file()]
     files += list((REPO / "tools").glob("*.py"))
     for path in sorted(files):
-        whole.update(str(path.relative_to(REPO)).encode())
+        # A still beside a storyboard of another repository has no place
+        # under this one; its file name stands for it.
+        inside = path.resolve().is_relative_to(REPO)
+        whole.update(str(path.resolve().relative_to(REPO) if inside
+                         else pathlib.Path("stills") / path.name).encode())
         whole.update(hashlib.sha256(path.read_bytes()).digest())
     return whole.hexdigest()[:20]
 

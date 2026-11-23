@@ -561,6 +561,11 @@ def test_stills_beside_a_storyboard_come_first(tmp_path):
         assert make_video.still("mini-splash") == stills / "mini-splash.png"
         assert make_video.still_dirs() == [stills, make_video.STILLS]
         assert make_video.check(board) == []
+        # The view cache names a still outside the repository and
+        # follows its content.
+        key = make_video._views_key(board)
+        (stills / "mini-splash.png").write_bytes(b"other")
+        assert make_video._views_key(board) != key
     finally:
         make_video.use_stills()
     assert make_video.still_dirs() == [make_video.STILLS]
