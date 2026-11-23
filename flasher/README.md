@@ -48,7 +48,7 @@ The error states:
 | Check | the signature does not match | a red note, WRITE disabled |
 | Check | the release has no signature | an information note, WRITE enabled |
 | Write | the write or the verify fails | the failed phase, the reason and a hint, CONNECT AGAIN (Connect, the image kept), CANCEL |
-| Write | the reset after a verify that passed fails | goes to Done with "press RESET" |
+| Write | the reset after a verify that passed fails | the port is closed; goes to Done with "press RESET" |
 
 ### Release of the visit
 

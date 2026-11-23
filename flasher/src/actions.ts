@@ -402,7 +402,14 @@ export async function write(): Promise<void> {
       await conn.session.verify(chunks);
       show('verify', total, total);
       show('reset', 0, 1);
-      try { await conn.session.reset(); } catch (e) { log(errText(e)); resetHint = tr('try_reset'); }
+      try {
+        await conn.session.reset();
+      } catch (e) {
+        // Written and verified: the board only missed its restart. The port is released all the same.
+        log(errText(e));
+        resetHint = tr('try_reset');
+        await conn.session.close();
+      }
     } else {
       let plan;
       if (img.format === 'uf2') {

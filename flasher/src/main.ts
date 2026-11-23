@@ -117,7 +117,7 @@ function onPop(): void {
   const w = clamp(want, facts());
   st.wiz = w;
   if (w.board && !st.image && !st.loading && !st.imageNote) chooseImage();
-  if (toHash(w) !== toHash(want)) history.replaceState({ depth: depth() }, '', urlOf(w));
+  if (urlOf(w) !== (location.hash || location.pathname + location.search)) history.replaceState({ depth: depth() }, '', urlOf(w));
   render();
 }
 
