@@ -6,6 +6,17 @@ history is in git.
 
 ## Unreleased
 
+### Changed
+
+- `hardware/mechanical/`: `motor_simulator.step` runs the phase tap's lead
+  out of the boot of the clip on corner C, beside the resistor's wire,
+  in place of a wire on the clip's upper jaw. The 3.5mm mono plug has a
+  strain relief of 3 steps, a barrel, a shoulder, a sleeve, one insulating
+  ring and a tip with a groove, and is drawn at 0.6 of its size: a shaft
+  of 2.1mm x 8.4mm. 39 solids, 51.05mm x 20.0mm x 62.71mm; the plug
+  stands at x -11.8mm in place of -45.3mm
+  ([ESC and motor](hardware/mechanical/ESC_MOTOR.md#motor-simulator)).
+
 ## 0.23.17 - 2026-11-23
 
 0.23.17 is a testing release. Every firmware image the release publishes
@@ -117,11 +128,9 @@ to #908, #910 to #927, #930, #931, #933 and #934.
   warning on the band and the step's card, and at 1 it is refused (`V07`).
 - `hardware/mechanical/`: `motor_simulator.step`, a stand-in for a motor
   on an ESC's 3 motor leads: 3 resistors of 600Ω in a triangle, 400Ω
-  between any 2 of its 3 crocodile clips. The phase tap's lead leaves one
-  clip's boot beside the resistor's wire and ends in a 3.5mm mono plug
-  with a grooved tip, one insulating ring, a barrel and a strain relief,
-  drawn at 0.6 of its size. 39 solids, 51.05mm x 20.0mm x 62.71mm; every
-  size is estimated from one owner photo
+  between any 2 of its 3 crocodile clips, with the phase tap's lead on one
+  clip, ending in a 3.5mm mono plug. 32 solids, 51.05mm x 20.0mm x
+  78.06mm; every size is estimated from one owner photo
   ([ESC and motor](hardware/mechanical/ESC_MOTOR.md#motor-simulator)).
 - `hardware/mechanical/`: `flycolor_flydragon_lite_40a.step`, the ESC with
   its capacitor, print, power leads with an XT60 plug, 3 motor leads and
