@@ -125,7 +125,7 @@ static bool assemble(const char *path, const char *name, prog_t *p)
     }
     fclose(f);
 
-    struct { char n[24]; unsigned a; } lab[16];
+    struct { char n[24]; unsigned a; } lab[16] = {0};
     size_t nl = 0;
     memset(p, 0, sizeof(*p));
     /* Pass 1: labels, addresses and the wrap. */

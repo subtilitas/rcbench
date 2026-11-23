@@ -207,8 +207,8 @@ bool pass_page_tick(pass_page_t *p, const pass_dec_t *d, uint32_t now_ms)
     uint16_t lost = 0u;
     uint16_t glitch = 0u;
     for (unsigned k = 0; k < PASS_CHANNELS; ++k) {
-        const pass_pin_t *in  = &d->pin[PASS_IN_BIT(k)];
-        const pass_pin_t *out = &d->pin[PASS_OUT_BIT(k)];
+        const pass_pin_t *in  = &d->pin[(size_t)PASS_IN_BIT(k)];
+        const pass_pin_t *out = &d->pin[(size_t)PASS_OUT_BIT(k)];
         p->pass[LINK_PA_IN_US(k)]  = width(in);
         p->pass[LINK_PA_OUT_US(k)] = width(out);
         if (in->lost) {

@@ -303,7 +303,7 @@ TEST_CASE(two_long_gaps_in_a_row_are_a_new_rate)
     start(0u);
     uint32_t t = train(IN(3), 1000u, 20000u, 1500u, 3u);
     /* The receiver drops to 25Hz: 40ms gaps from now on. */
-    t = train(IN(3), t + 40000u, 40000u, 1500u, 6u);
+    (void)train(IN(3), t + 40000u, 40000u, 1500u, 6u);
     CHECK_EQ(in_pin(3)->period_us, 40000u);
     /* Only the first long gap counted. */
     CHECK_EQ(in_pin(3)->missed, 1u);
