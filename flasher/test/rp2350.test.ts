@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CMD, IF_CMD_STATUS, IF_RESET, Picoboot, PicobootError } from '../src/picoboot.ts';
 import type { UsbDeviceLike } from '../src/picoboot.ts';
-import { CHUNK, StepError, planBin, planUf2, runPlan, sectorAlign } from '../src/rp2350.ts';
+import { CHUNK, IOMCU_SLOTS, StepError, otherSlots, planBin, planUf2, runPlan, sectorAlign } from '../src/rp2350.ts';
+import { readFileSync } from 'node:fs';
 import { FAMILY, parseUf2 } from '../src/uf2.ts';
 import { makeUf2 } from './fixtures.ts';
 
@@ -173,4 +174,24 @@ test('a device with another USB ID is refused', async () => {
   const { dev } = fakeUsb();
   (dev as { productId: number }).productId = 0x0009;
   await assert.rejects(Picoboot.open(dev), /no RP2350 in BOOTSEL/);
+});
+
+test('the IOmcu slots are the image partitions of firmware/iomcu/partitions.json', () => {
+  const table = JSON.parse(readFileSync(new URL('../../firmware/iomcu/partitions.json', import.meta.url), 'utf8')) as {
+    partitions: { start: string; size: string; families?: string[] }[];
+  };
+  const kib = (v: string): number => Number(/^(\d+)K$/.exec(v)![1]) * 1024;
+  const slots = table.partitions
+    .filter((p) => (p.families ?? []).some((f) => f !== 'data'))
+    .map((p) => ({ offset: kib(p.start), size: kib(p.size) }));
+  assert.deepEqual(slots, IOMCU_SLOTS);
+});
+
+test('a local install UF2 into slot A erases slot B, one into B erases A, one into no slot erases nothing', () => {
+  const [a, b] = IOMCU_SLOTS;
+  const at = (offset: number): { addr: number; data: Uint8Array }[] => [{ addr: 0x10000000 + offset, data: new Uint8Array(4096) }];
+  assert.deepEqual(otherSlots(at(a!.offset)), [b]);
+  assert.deepEqual(otherSlots(at(b!.offset + b!.size - 4096)), [a]);
+  assert.deepEqual(otherSlots(at(b!.offset + b!.size)), []);
+  assert.deepEqual(otherSlots(planUf2(parseUf2(makeUf2(0x10002000, 40, FAMILY.ABSOLUTE, true)), null).writes), [b]);
 });

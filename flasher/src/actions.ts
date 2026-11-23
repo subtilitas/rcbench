@@ -19,7 +19,8 @@ import { RELEASE_KEY_PEM } from './release_key.ts';
 import { StepError, planBin, planUf2, runPlan } from './rp2350.ts';
 import { sigShown, verifySignature } from './signature.ts';
 import { board, errText, fmtBytes, log, st, tr, ui } from './state.ts';
-import type { Img, Note } from './state.ts';
+import type { AdvApi, Img, Note } from './state.ts';
+import { sourceFor } from './tasks.ts';
 import { FAMILY, parseUf2 } from './uf2.ts';
 
 const FW = `${import.meta.env.BASE_URL}fw/`;
@@ -59,16 +60,54 @@ export function boardHasRelease(id: string): boolean {
   return releaseFor(id, st.releases, st.manifests, { visit: st.visit, chosen: null, advanced: false }) !== null;
 }
 
-/** Drops the image and its notes, and loads the release image of the board in hand. */
+/** The release the page writes to the board in hand: the picked one in Advanced while it carries the board. */
+function tagFor(id: string): string | null {
+  return st.releases ? releaseFor(id, st.releases, st.manifests, { visit: st.visit, chosen: st.chosen, advanced: st.wiz.advanced }) : null;
+}
+
+/**
+ * A new board: drops the image, a local file's .sig and its notes, sets the
+ * source, and loads the release image when the source is the release.
+ * "Write a file of my own", and in Advanced a board no release carries,
+ * start on the local file; simple mode writes the release only.
+ */
 export function chooseImage(): void {
-  ++loadSeq;
-  st.image = null;
-  st.imageNote = null;
-  st.loading = false;
-  st.keep = true;
+  dropImage();
+  st.localSig = null;
   const b = board();
-  st.tag = b && st.releases ? releaseFor(b.id, st.releases, st.manifests, { visit: st.visit, chosen: null, advanced: false }) : null;
-  if (b) void loadReleaseImage();
+  if (!b) return;
+  const file = st.wiz.task === 'file' || !boardHasRelease(b.id);
+  st.source = sourceFor(b, st.wiz.advanced, file ? 'file' : 'release') ?? 'release';
+  if (st.source === 'release') {
+    st.tag = tagFor(b.id);
+    void loadReleaseImage();
+  } else ui.render();
+}
+
+/** The release list is in: the release image of the board in hand loads; a local file stays. */
+export function releasesIn(): void {
+  const b = board();
+  if (b && st.source === 'release') chooseImage();
+  else ui.render();
+}
+
+/** A release picked in the select of Advanced: it wins on every board it carries. */
+export function pickRelease(tag: string): void {
+  st.chosen = tag;
+  const b = board();
+  st.tag = b ? tagFor(b.id) : null;
+  void loadReleaseImage();
+}
+
+/** A change of the source in Advanced: the image in hand goes, the release image loads for the release. */
+export function setSource(source: 'release' | 'file'): void {
+  dropImage();
+  st.source = source;
+  const b = board();
+  if (source === 'release' && b) {
+    st.tag = tagFor(b.id);
+    void loadReleaseImage();
+  } else ui.render();
 }
 
 /** Drops the image, its notes and the release in hand. */
@@ -81,7 +120,25 @@ export function dropImage(): void {
   st.keep = true;
 }
 
-function imageVerdict(bytes: Uint8Array, name: string): Note | null {
+/** Advanced off: the release, "Keep settings" on, no picked release and no .sig file. */
+export function leaveAdvanced(): void {
+  dropImage();
+  st.source = 'release';
+  st.chosen = null;
+  st.localSig = null;
+}
+
+/** Loads the Advanced code once; the wizard turns Advanced on only after it is in. */
+export async function loadAdvanced(): Promise<AdvApi> {
+  st.adv ??= await import('./advanced.ts');
+  return st.adv;
+}
+
+/** A new load of the image in hand: the number a load holds to see whether it is still the current one. */
+export const newLoad = (): number => ++loadSeq;
+export const isLoad = (seq: number): boolean => seq === loadSeq;
+
+export function imageVerdict(bytes: Uint8Array, name: string): Note | null {
   const b = board();
   if (!b) return null;
   const v = checkImage(b.chip, bytes, name);
@@ -103,7 +160,7 @@ export async function loadReleaseImage(): Promise<void> {
   st.image = null;
   st.imageNote = null;
   st.loading = false;
-  if (!b || !st.releases) { ui.render(); return; }
+  if (!b || !st.releases || st.source !== 'release') { ui.render(); return; }
   const tag = st.tag;
   if (!tag) {
     st.imageNote = { kind: 'info', text: tr('noRelease') };
@@ -146,7 +203,7 @@ export async function loadReleaseImage(): Promise<void> {
     const state = sigShown(await verifySignature(RELEASE_KEY_PEM, bytes, await fetchSig(`${FW}${tag}/${sigName}`, sigName)));
     if (seq !== loadSeq) return;
     log(`${sigName}: ${state}`);
-    st.image = { bytes, name: entry.file, tag, sha256: sha, format: entry.format, entry, sig: { state, file: sigName } };
+    st.image = { bytes, name: entry.file, tag, sha256: sha, format: entry.format, entry, erase: entry.erase ?? [], sig: { state, file: sigName } };
     done(null);
   } catch (e) {
     done({ kind: 'bad', text: tr('noReleases', { x: errText(e) }) });
@@ -361,7 +418,7 @@ export async function write(): Promise<void> {
         if (uf2.family !== FAMILY.ABSOLUTE) {
           try { target = await conn.pb.targetPartition(uf2.family); } catch (e) { throw new StepError('partition', e); }
         }
-        try { plan = planUf2(uf2, target, img.entry.erase ?? []); } catch (e) { throw new StepError('partition', e); }
+        try { plan = planUf2(uf2, target, img.erase); } catch (e) { throw new StepError('partition', e); }
       } else {
         plan = planBin(img.bytes);
       }

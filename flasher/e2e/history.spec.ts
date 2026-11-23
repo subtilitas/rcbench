@@ -89,14 +89,18 @@ test('an unknown hash opens Task', async ({ page }) => {
   await expectStep(page, 'task');
 });
 
-test('a pasted hash with adv=1 opens simple mode: no Core2350B, no adv in the URL', async ({ page }) => {
+test('a pasted hash with adv=1 opens Advanced; the Core2350B is reachable there only', async ({ page }) => {
   await setup(page, { iomcu: true }, { hash: 't=iomcu&b=core2350b&s=connect&adv=1' });
+  await expectStep(page, 'connect');
+  await expect(page).toHaveURL(/adv=1/);
+  await expect(page.locator('#log-box')).toHaveAttribute('open', '');
+  await page.locator('#cancel').click();
+  await expectStep(page, 'task');
+  await expect(page.locator('#adv')).toBeChecked();
+  await expect(page.locator('#tiles [data-task]')).toHaveCount(5);
+  await page.goto('./#t=iomcu&b=core2350b&s=connect');
+  await page.reload();
   await expectStep(page, 'board');
-  await expect(page).not.toHaveURL(/adv=1/);
   await expect(page.locator('[data-board]')).toHaveCount(2);
   await expect(page.locator('[data-board="core2350b"]')).toHaveCount(0);
-  await page.goto('./#adv=1');
-  await expectStep(page, 'task');
-  await expect(page).not.toHaveURL(/adv=1/);
-  await expect(page.locator('#tiles [data-task]')).toHaveCount(4);
 });

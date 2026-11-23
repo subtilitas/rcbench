@@ -1,7 +1,8 @@
-// One render function per step of the wizard, in simple mode: Task, Board,
-// Prepare, Connect, Check, Write, Done. Each returns the HTML of the step's
-// section; main.ts puts it in place and wires the buttons by id and data
-// attributes.
+// One render function per step of the wizard: Task, Board, Prepare,
+// Connect, Check, Write, Done. Each returns the HTML of the step's section;
+// main.ts puts it in place and wires the buttons by id and data attributes.
+// The parts of Advanced mode come from advanced.ts through `st.adv`, which
+// the page loads before it turns Advanced on.
 
 import { boardById, chipLabel, linkOf } from './boards.ts';
 import type { Board } from './boards.ts';
@@ -12,6 +13,7 @@ import type { PlanVerdict } from './partitions.ts';
 import { boardHasRelease, espPlan, phasesOf, progressView } from './actions.ts';
 import { board, esc, fmtBytes, hasSerial, hasUsb, st, tr } from './state.ts';
 import type { Note } from './state.ts';
+import type { AdvKey } from './i18n_adv.ts';
 import { boardUsable, boardsFor, tasksFor, tileState } from './tasks.ts';
 import type { TaskId } from './tasks.ts';
 import { checkGate, sigStateOf, stepNumber } from './wizard.ts';
@@ -31,6 +33,10 @@ export function renderNote(n: Note | null, id: string): string {
 }
 
 const boardName = (b: Board): string => tr(`b_${b.id}` as Key);
+
+/** An Advanced string; Advanced is on only once its code is in (`st.adv`). */
+const ta = (key: AdvKey, vars?: Record<string, string | number>): string => st.adv?.ta(key, vars) ?? '';
+const advanced = (): boolean => st.wiz.advanced && !!st.adv;
 
 const TITLE: Record<Step, Key> = {
   task: 'sTask', board: 'sBoard', prepare: 'sPrepare', connect: 'sConnect', check: 'sCheck', write: 'sWrite', done: 'sDone',
@@ -66,7 +72,9 @@ function renderTask(): string {
       + `<span><b>${esc(tr(`task_${x.id}` as Key))}</b>${sub ? `<small>${esc(sub)}</small>` : ''}`
       + `${why ? `<small class="why">${esc(why)}</small>` : ''}</span><span class="chip">${TASK_CHIP[x.id]}</span></button>`;
   }).join('');
-  return `<div class="tiles" id="tiles">${tiles}</div><p class="muted small">${esc(tr('tasksNote'))}</p>`;
+  return `<div class="tiles" id="tiles">${tiles}</div><p class="muted small">${esc(tr('tasksNote'))}</p>`
+    + `<label class="opt"><input type="checkbox" id="adv"${st.wiz.advanced ? ' checked' : ''}${none ? ' disabled' : ''}>`
+    + `<span>${esc(tr('advSwitch'))}</span></label>`;
 }
 
 // ---- Board ----
@@ -74,11 +82,15 @@ function renderTask(): string {
 function renderBoard(): string {
   const task = st.wiz.task;
   if (!task) return '';
+  // Advanced writes a local file to a board no release carries; simple mode greys it.
+  const adv = advanced();
   const tiles = boardsFor(task, st.wiz.advanced).map((b) => {
     const why = !boardUsable(b, LINKS) ? tr('unsupported', { api: API[linkOf(b.chip)] })
-      : !boardHasRelease(b.id) ? tr('noRelease') : '';
+      : !boardHasRelease(b.id) && !adv ? tr('noRelease') : '';
+    const sub = why ? '' : b.planned ? ta('planned') : adv && !boardHasRelease(b.id) ? ta('noReleaseFile') : '';
     return `<button type="button" class="tile" data-board="${b.id}"${why ? ' disabled' : ''}>`
-      + `<span><b>${esc(boardName(b))}</b>${why ? `<small class="why">${esc(why)}</small>` : ''}</span>`
+      + `<span><b>${esc(boardName(b))}</b>${why ? `<small class="why">${esc(why)}</small>` : ''}`
+      + `${sub ? `<small>${esc(sub)}</small>` : ''}</span>`
       + `<span class="chip">${chipLabel(b.chip)}</span></button>`;
   }).join('');
   return `<div class="tiles" id="boards">${tiles}</div>${bar()}`;
@@ -149,66 +161,92 @@ function releaseLabel(tag: string): string {
   return r ? `${r.tag}, ${tr(r.kind)}, ${r.published.slice(0, 10)}` : tag;
 }
 
-/** "Keep settings" in simple mode: always on, shown as the list of what stays on the board. */
+/**
+ * "Keep settings": in simple mode always on, shown as the list of what stays
+ * on the board; in Advanced the checkbox first, and off writes the whole
+ * image (the plan names no table then).
+ */
 function renderKeep(v: PlanVerdict): string {
+  const adv = advanced();
+  const box = adv ? st.adv!.keepBox() : '';
   if (!v.ok) {
-    return `<div class="note bad" id="keep-note" role="alert"><p>${esc(tr(`keep_${v.reason}` as Key, { x: v.detail }))}</p>`
-      + `<p>${esc(tr('keepRefused'))}</p></div>`;
+    return `${box}<div class="note bad" id="keep-note" role="alert"><p>${esc(tr(`keep_${v.reason}` as Key, { x: v.detail }))}</p>`
+      + `<p>${esc(adv ? ta('keepRefused') : tr('keepRefused'))}</p></div>`;
   }
   const { plan } = v;
-  // Simple mode writes with "Keep settings" on: the plan always names its table.
-  const table = hex(plan.table ?? 0);
-  if (!plan.kept.length) return `<p class="note info" id="keep-note">${esc(tr('keepNone', { x: table }))}</p>`;
+  if (plan.table === null) return `${box}<p class="note warn" id="keep-note">${esc(ta('keepOff'))}</p>`;
+  const table = hex(plan.table);
+  if (!plan.kept.length) return `${box}<p class="note info" id="keep-note">${esc(tr('keepNone', { x: table }))}</p>`;
   const items = plan.kept.map((k) => `<li>${esc(tr('keepItem', { name: k.name, sub: k.subtype, offset: hex(k.offset), n: fmtBytes(k.size) }))}</li>`).join('');
-  return `<div class="note info" id="keep-note"><p>${esc(tr('keepList', { x: table }))}</p>`
+  return `${box}<div class="note info" id="keep-note"><p>${esc(tr('keepList', { x: table }))}</p>`
     + `<ul id="keep-list">${items}</ul><p>${esc(tr('keepOta'))}</p></div>`;
 }
 
 /** The gate of WRITE from the page's state. */
 export function gate(): Gate {
   const plan = espPlan();
+  const rel = st.source === 'release';
+  const shown = st.image?.sig.state;
   return checkGate({
-    advanced: false,
+    advanced: advanced(),
     conn: !!st.conn,
     busy: st.busy,
-    releasesFailed: !!st.releasesError,
-    loading: st.loading || (st.releases === null && !st.releasesError),
+    releasesFailed: rel && !!st.releasesError,
+    loading: st.loading || (rel && st.releases === null && !st.releasesError),
     imageOk: !!st.image,
     keepRefused: !!plan && !plan.ok,
-    sig: st.image ? sigStateOf('release', false, st.image.sig.state) : null,
+    sig: st.image ? sigStateOf(st.source, !!st.localSig, shown === 'unchecked' || shown === undefined ? null : shown) : null,
   });
+}
+
+const HINT: Record<string, [string, Key]> = { 'advanced-file': ['hint-file', 'hintFile'], 'advanced-erase': ['hint-erase', 'hintErase'] };
+
+/** The signature of the image in hand: a row when signed, else a note; a mismatch is red. */
+function renderSig(img: NonNullable<typeof st.image>): string {
+  const state = img.sig.state;
+  if (state === 'signed') return '';
+  const bad = state === 'mismatch';
+  const text = state === 'pending' ? ta('sigChecking', { file: img.sig.file })
+    : state === 'unchecked' ? ta('sigLocal')
+    : bad ? (advanced() ? ta('sigMismatch', { file: img.sig.file }) : tr('sigMismatch', { file: img.sig.file }))
+      : tr('sigNone', { file: img.sig.file });
+  return `<div class="note ${bad ? 'bad' : 'info'}" id="sig-state" data-state="${state}" role="${bad ? 'alert' : 'status'}">`
+    + `<p>${esc(text)}</p></div>`;
 }
 
 function renderCheck(b: Board): string {
   const img = st.image;
   const rows: [Key, string, string?][] = [['rowBoard', boardName(b)], ['rowConn', st.connLabel || '—']];
   if (img) {
+    if (img.tag) rows.push(['imgTag', releaseLabel(img.tag)]);
     rows.push(
-      ['imgTag', releaseLabel(img.tag)],
       ['imgFile', img.name],
       ['imgSize', `${tr('bytes', { n: fmtBytes(img.bytes.length) })} (${(img.bytes.length / 1048576).toFixed(2)}MB)`],
       ['imgSha', img.sha256, 'mono'],
-      ['imgCheck', tr('imgOk')],
+      ['imgCheck', img.entry ? tr('imgOk') : ta('imgLocal')],
     );
-    for (const e of img.entry.erase ?? []) rows.push(['imgErase', tr('imgEraseB', { x: `0x${e.offset.toString(16)}+0x${e.size.toString(16)}` })]);
+    for (const e of img.erase) rows.push(['imgErase', tr('imgEraseB', { x: `0x${e.offset.toString(16)}+0x${e.size.toString(16)}` })]);
   }
-  let html = `<dl class="img" id="image">${rows.map(([k, v, cls]) => `<dt>${esc(tr(k))}</dt><dd${cls ? ` class="${cls}"` : ''}>${esc(v)}</dd>`).join('')}`;
+  let html = advanced() ? st.adv!.renderSource(b) : '';
+  html += `<dl class="img" id="image">${rows.map(([k, v, cls]) => `<dt>${esc(tr(k))}</dt><dd${cls ? ` class="${cls}"` : ''}>${esc(v)}</dd>`).join('')}`;
   if (img?.sig.state === 'signed') {
     html += `<dt>${esc(tr('rowSig'))}</dt><dd id="sig-state" data-state="signed">${esc(tr('sigSigned', { file: img.sig.file }))}</dd>`;
   }
   html += '</dl>';
-  if (img && img.sig.state !== 'signed') {
-    const bad = img.sig.state === 'mismatch';
-    html += `<div class="note ${bad ? 'bad' : 'info'}" id="sig-state" data-state="${img.sig.state}" role="${bad ? 'alert' : 'status'}">`
-      + `<p>${esc(tr(bad ? 'sigMismatch' : 'sigNone', { file: img.sig.file }))}</p></div>`;
-  }
+  if (img) html += renderSig(img);
+  if (img && b.chip === 'rp2350' && img.format === 'bin') html += `<p class="note info" id="bin-warn">${esc(ta('binWarn'))}</p>`;
   const plan = espPlan();
   if (plan) html += renderKeep(plan);
-  if (st.releasesError) html += renderNote({ kind: 'bad', text: tr('noReleases', { x: st.releasesError }) }, 'releases-note');
-  else if (!img && !st.imageNote) html += `<p class="muted" id="image-wait">${esc(tr('loading'))}</p>`;
+  const rel = st.source === 'release';
+  if (st.releasesError && rel) html += renderNote({ kind: 'bad', text: tr('noReleases', { x: st.releasesError }) }, 'releases-note');
+  else if (!img && !st.imageNote && (rel || st.loading)) html += `<p class="muted" id="image-wait">${esc(tr('loading'))}</p>`;
   html += renderNote(st.imageNote, 'image-note');
-  if (st.imageNote?.retry) html += btn('retry', 'retry', !st.loading);
+  if (st.imageNote?.retry && rel) html += btn('retry', 'retry', !st.loading);
   const g = gate();
+  for (const n of g.notes) {
+    const h = HINT[n];
+    if (h) html += `<p class="note info" id="${h[0]}">${esc(tr(h[1]))}</p>`;
+  }
   html += `<p class="muted">${esc(tr('writeHint'))}</p>`;
   html += `<button type="button" class="act primary" id="write" data-block="${g.block ?? ''}"${g.write ? '' : ' disabled'}>${esc(tr('write'))}</button>`;
   return html + bar();

@@ -7,9 +7,12 @@ import type { Board } from './boards.ts';
 import type { EspSession } from './esp.ts';
 import { t } from './i18n.ts';
 import type { Key, Lang } from './i18n.ts';
+import type { AdvKey } from './i18n_adv.ts';
 import type { ImageEntry, Manifest, ReleaseEntry } from './manifest.ts';
 import type { Picoboot } from './picoboot.ts';
+import type { EraseRange } from './rp2350.ts';
 import type { SigShown } from './signature.ts';
+import type { Source } from './tasks.ts';
 import { start } from './wizard.ts';
 import type { Facts, Wiz } from './wizard.ts';
 
@@ -18,12 +21,36 @@ const STORE_KEY = 'rcbench.flasher';
 export interface Img {
   bytes: Uint8Array;
   name: string;
-  tag: string;
+  /** The release of a release image; null for a local file. */
+  tag: string | null;
   sha256: string;
   format: 'bin' | 'uf2';
-  entry: ImageEntry;
-  /** The release signature: its shown state and the .sig file it comes from. */
-  sig: { state: SigShown; file: string };
+  /** The manifest entry of a release image; null for a local file. */
+  entry: ImageEntry | null;
+  /**
+   * The image slots a write erases: the manifest's for a release image; for
+   * a local install UF2 (absolute addresses) on an RP2350 board, the IOmcu
+   * slots it leaves as they are (`otherSlots`).
+   */
+  erase: readonly EraseRange[];
+  /**
+   * The signature: its shown state and the .sig file it comes from. A local
+   * file without a picked .sig file is `unchecked`; `pending` while the
+   * check against a newly picked .sig file runs (WRITE disabled).
+   */
+  sig: { state: SigShown | 'unchecked' | 'pending'; file: string };
+}
+
+/** The Advanced code, loaded on the first switch to Advanced (advanced.ts). */
+export interface AdvApi {
+  /** A string of Advanced mode in the language of the page. */
+  ta: (key: AdvKey, vars?: Record<string, string | number>) => string;
+  /** Release select, local file and its .sig file: the source part of Check. */
+  renderSource: (board: Board) => string;
+  /** The "Keep settings" checkbox. */
+  keepBox: () => string;
+  /** A change of an input of the source part or of the checkbox. */
+  onChange: (el: HTMLInputElement) => void;
 }
 
 export type Conn = { kind: 'esp'; session: EspSession } | { kind: 'pico'; pb: Picoboot };
@@ -58,8 +85,16 @@ export const st = {
   busy: false,
   /** A write runs: BACK, CANCEL, the language and the browser's back are inert. */
   writing: false,
-  /** "Keep settings": always on in simple mode. */
+  /** "Keep settings": always on in simple mode, the checkbox in Advanced. */
   keep: true,
+  /** The image source: the release, or a local file (Advanced only). */
+  source: 'release' as Source,
+  /** The release picked in Advanced: it wins on every board it carries. */
+  chosen: null as string | null,
+  /** The .sig file picked beside a local file, checked against each local image. */
+  localSig: null as { name: string; bytes: Uint8Array } | null,
+  /** The Advanced code once loaded; set before the wizard turns Advanced on. */
+  adv: null as AdvApi | null,
   /** The end of the last write: ok, failed, or null before one. */
   outcome: null as 'ok' | 'failed' | null,
   result: null as Note | null,

@@ -67,6 +67,8 @@ export interface SetupOpts {
   missing?: string[];
   /** The hash the page opens with, without '#'. */
   hash?: string;
+  /** The release list answers after this many milliseconds. */
+  indexDelayMs?: number;
 }
 
 /** The fw/ folder as the test serves it; a test may change it after the set-up. */
@@ -103,6 +105,7 @@ export async function setup(page: Page, config: object, opts: SetupOpts = {}): P
   await page.route('**/rcbench/flash/fw/**', async (route) => {
     const path = new URL(route.request().url()).pathname.replace('/rcbench/flash/fw/', '');
     const body = files.get(path);
+    if (path === 'index.json' && opts.indexDelayMs) await new Promise((res) => setTimeout(res, opts.indexDelayMs));
     if (!body) return route.fulfill({ status: 404, body: 'not found' });
     if (body instanceof Uint8Array) return route.fulfill({ status: 200, contentType: 'application/octet-stream', body: Buffer.from(body) });
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
@@ -117,6 +120,17 @@ export const label = (page: Page, en: string, de: string): string => (isDe(page)
 
 /** The step the page shows, from the section's data attribute. */
 export const expectStep = (page: Page, step: string): Promise<void> => expect(page.locator('#step')).toHaveAttribute('data-step', step);
+
+/** The Advanced switch on Task: on, and the Details log open. */
+export async function advancedOn(page: Page): Promise<void> {
+  await page.locator('#adv').check();
+  await expect(page.locator('[data-task="file"]')).toBeVisible();
+  await expect(page).toHaveURL(/adv=1/);
+}
+
+/** Picks a local file on Check: the image or its .sig file. */
+export const pickFile = (page: Page, id: '#file' | '#sigfile', name: string, bytes: Uint8Array): Promise<void> =>
+  page.locator(id).setInputFiles({ name, mimeType: 'application/octet-stream', buffer: Buffer.from(bytes) });
 
 /** Taps a task and, for a task of several boards, a board; NEXT on Prepare. Ends on Connect. */
 export async function walk(page: Page, task: string, board?: string): Promise<void> {

@@ -5,14 +5,15 @@
 
 import './style.css';
 import {
-  chooseImage, connectSerial, connectUsb, dropConn, dropImage, enterBootsel, loadReleaseImage, loadReleases, resetConnect, write,
+  chooseImage, connectSerial, connectUsb, dropConn, dropImage, enterBootsel, leaveAdvanced, loadAdvanced, loadReleaseImage, loadReleases,
+  releasesIn, resetConnect, write,
 } from './actions.ts';
 import { browserLang } from './i18n.ts';
-import { $, board, facts, hasSerial, hasUsb, readStoredLang, st, storeLang, tr, ui } from './state.ts';
+import { $, board, errText, facts, hasSerial, hasUsb, log, readStoredLang, st, storeLang, tr, ui } from './state.ts';
 import type { TaskId } from './tasks.ts';
 import { renderFooter, renderStep, stepTitle } from './views.ts';
 import {
-  back, cancel, chooseBoard, chooseTask, clamp, connectAgain, fromHash, next, startOver, stepsOf, toHash, writeAnother,
+  back, cancel, chooseBoard, chooseTask, clamp, connectAgain, fromHash, next, setAdvanced, startOver, stepsOf, toHash, writeAnother,
 } from './wizard.ts';
 import type { Drop, Move, Wiz } from './wizard.ts';
 
@@ -89,9 +90,6 @@ function onBack(): void {
   go(m.wiz, 'replace');
 }
 
-/** The page has simple mode only: a hash with `adv=1` is read as simple mode. */
-const simple = (w: Wiz): Wiz => (w.advanced ? { ...w, advanced: false } : w);
-
 const ORDER = ['task', 'board', 'prepare', 'connect', 'check', 'write', 'done'];
 
 /** The browser's back or forward: the state of the entry, held to the facts. */
@@ -102,12 +100,15 @@ function onPop(): void {
     history.pushState({ depth: depth() + 1 }, '', urlOf(cur));
     return;
   }
+  if (cur.advanced && !fromHash(location.hash).advanced) leaveAdvanced();
   if (cur.step === 'done') {
     applyDrop({ conn: true, image: true });
     go(startOver(cur).wiz, 'push');
     return;
   }
-  const want = simple(fromHash(location.hash));
+  const want = fromHash(location.hash);
+  // An entry of Advanced holds only after its code is in.
+  if (want.advanced && !st.adv) want.advanced = false;
   const sameBoard = want.board !== null && want.task === cur.task && want.board === cur.board;
   // Back past Connect drops the connection; back to Board or Task, or to another board, the image too.
   if (!sameBoard || ORDER.indexOf(want.step) < ORDER.indexOf('connect')) {
@@ -118,6 +119,29 @@ function onPop(): void {
   if (w.board && !st.image && !st.loading && !st.imageNote) chooseImage();
   if (urlOf(w) !== (location.hash || location.pathname + location.search)) history.replaceState({ depth: depth() }, '', urlOf(w));
   render();
+}
+
+/**
+ * The Advanced switch on Task: on once its code is in, off with the source,
+ * "Keep settings" and the picked release reset. The Details log opens with it.
+ */
+let advSeq = 0;
+
+async function switchAdvanced(on: boolean): Promise<void> {
+  // The last switch wins: an "on" whose code arrives after a later "off", or after a task tap, is dropped.
+  const seq = ++advSeq;
+  if (on) {
+    try { await loadAdvanced(); } catch (e) { log(errText(e)); render(); return; }
+    if (seq !== advSeq || st.wiz.step !== 'task') { render(); return; }
+  } else leaveAdvanced();
+  ($('log-box') as HTMLDetailsElement).open = on;
+  go(setAdvanced(st.wiz, on), 'replace');
+}
+
+function onChange(ev: Event): void {
+  const el = ev.target as HTMLInputElement;
+  if (el.id === 'adv') void switchAdvanced(el.checked);
+  else if (st.wiz.advanced) st.adv?.onChange(el);
 }
 
 function onClick(ev: Event): void {
@@ -165,16 +189,21 @@ function onClick(ev: Event): void {
 async function main(): Promise<void> {
   st.lang = readStoredLang() ?? browserLang(navigator.languages ?? [navigator.language]);
   document.addEventListener('click', onClick);
+  document.addEventListener('change', onChange);
   window.addEventListener('popstate', onPop);
   window.addEventListener('beforeunload', (e) => { if (st.writing) e.preventDefault(); });
   // A reload or a pasted link: connection and image are not in the URL, so clamp lands at most on Connect.
-  st.wiz = clamp(simple(fromHash(location.hash)), facts());
+  const want = fromHash(location.hash);
+  if (want.advanced) {
+    try { await loadAdvanced(); ($('log-box') as HTMLDetailsElement).open = true; } catch (e) { log(errText(e)); want.advanced = false; }
+  }
+  st.wiz = clamp(want, facts());
   history.replaceState({ depth: 0 }, '', urlOf(st.wiz));
   render();
   if (!hasSerial && !hasUsb) return;
-  await loadReleases();
   if (board()) chooseImage();
-  else render();
+  await loadReleases();
+  releasesIn();
 }
 
 void main();

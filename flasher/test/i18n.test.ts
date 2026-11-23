@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ALL_KEYS, browserLang, hasKey, strings, t } from '../src/i18n.ts';
+import { ADV_KEYS, advStrings, tAdv } from '../src/i18n_adv.ts';
 import { BOARDS } from '../src/boards.ts';
 
 const vars = (s: string): string[] => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]!).sort();
@@ -12,6 +13,16 @@ test('every string has an English and a German text with the same placeholders',
     assert.deepEqual(vars(en), vars(de), key);
     assert.doesNotMatch(en + de, /!/, `${key} carries an exclamation mark`);
   }
+});
+
+test('every Advanced string has an English and a German text with the same placeholders', () => {
+  for (const key of ADV_KEYS) {
+    const [en, de] = advStrings(key);
+    assert.ok(en.length > 0 && de.length > 0, key);
+    assert.deepEqual(vars(en), vars(de), key);
+    assert.doesNotMatch(en + de, /!/, `${key} carries an exclamation mark`);
+  }
+  assert.match(tAdv('de', 'sigMismatch', { file: 'a.sig' }), /a\.sig/);
 });
 
 test('every board has a name in both languages', () => {
