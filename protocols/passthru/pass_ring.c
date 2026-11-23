@@ -8,6 +8,8 @@
  */
 #include "pass_ring.h"
 
+#include <string.h>
+
 /** @brief An index into the ring. */
 #define WRAP(i) ((uint32_t)(i) & (PASS_RING_EVENTS - 1u))
 
@@ -16,9 +18,7 @@ _Static_assert((PASS_RING_EVENTS & (PASS_RING_EVENTS - 1u)) == 0u,
 
 void pass_ring_init(pass_ring_t *r)
 {
-    r->rd = 0u;
-    r->last_state = 0u;
-    r->last_stamp = 0u;
+    memset(r, 0, sizeof(*r));
 }
 
 /**
@@ -47,14 +47,25 @@ pass_drain_t pass_ring_drain(pass_ring_t *r,
     bool ok = intact(r, states, stamps);
     if (ok) {
         const uint32_t n = WRAP(h - r->rd);
+        if (n != 0u) {
+            r->before = *d;
+        }
         for (uint32_t i = 0; i < n; ++i) {
             const uint32_t s = WRAP(r->rd + i);
             pass_dec_event(d, states[s], stamps[s]);
         }
         out.events = n;
+        if (r->read_done != NULL) {
+            r->read_done(r->read_ctx);
+        }
         /* The DMA reaches the slot before the reader's first: unchanged,
-         * nothing just read was overwritten while it was read. */
+         * nothing just read was overwritten while it was read.  Changed,
+         * what was decoded may mix old and new events: undone. */
         ok = intact(r, states, stamps);
+        if (!ok && n != 0u) {
+            *d = r->before;
+            out.events = 0u;
+        }
     }
     const uint32_t newest = WRAP(h - 1u);
     r->rd = h;

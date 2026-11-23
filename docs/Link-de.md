@@ -2150,8 +2150,8 @@ unbekannt gemacht hat, eine Messlücke und kein Fehler:
 
 | Bit | Bedeutung |
 | ---: | --- |
-| 0 | die DMA hat den Ring überrundet: der Leser hat verworfen, was darin war, und beim neuesten Zustand neu begonnen |
-| 1 | eine Programmier-Session hielt einen Pin: die Flanken ihrer Leitung fluten den Ring |
+| 0 | die DMA hat den Ring überrundet: der Leser hat verworfen, was darin war, die Werte von vor diesem Leeren behalten und beim neuesten Zustand neu begonnen |
+| 1 | eine Programmier-Session war offen: KST oder Hitec an einem Programmierport, oder ESC wire an einem Programmierport oder einem Ausgangsslot; die Flanken ihrer Leitung fluten den Ring |
 | 2 | das FIFO von CAPTURE war voll und hat einen Zustand verworfen |
 | 3 | die Messung läuft nicht; jede Größe liest 0 |
 

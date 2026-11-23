@@ -107,7 +107,7 @@ static bool assemble(const char *path, const char *name, prog_t *p)
         if (c != NULL) {
             *c = '\0';
         }
-        char *s = buf;
+        const char *s = buf;
         while (*s == ' ' || *s == '\t') {
             ++s;
         }

@@ -1963,8 +1963,8 @@ a measurement gap and not an error:
 
 | Bit | Meaning |
 | ---: | --- |
-| 0 | the DMA lapped the ring: the reader dropped what was in it and started again at the newest state |
-| 1 | a programming session held a pin: its line's edges flood the ring |
+| 0 | the DMA lapped the ring: the reader dropped what was in it, kept the figures from before that drain, and started again at the newest state |
+| 1 | a programming session was open: KST or Hitec on a programming port, or ESC wire on a programming port or an output slot; its line's edges flood the ring |
 | 2 | CAPTURE's FIFO was full and dropped a state |
 | 3 | the capture does not run; every figure reads 0 |
 

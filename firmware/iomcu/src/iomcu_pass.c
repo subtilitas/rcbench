@@ -14,7 +14,7 @@
  * chip before A4 nothing starts and no pad is touched.
  *
  * Each pass, after the bank's arm: the ring drained (a lap, a full FIFO and
- * a programming session's wire flag the open window), the window closed
+ * an open programming session flag the open window), the window closed
  * when due, and the pads routed.  A PASS-THROUGH pad is MIRROR's only while
  * the bank is ARMED; SAFE, the failsafe, a STOP and every error leave it
  * driven low from the pass that sees them.  OFF is low always.  BENCH is
@@ -156,7 +156,7 @@ void thru_service(uint32_t now_ms)
         if (pass_cap_stalled()) {
             f |= LINK_PA_F_STALL;
         }
-        if (ports_wire() != 0u) {
+        if (pass_page_session(&s_kst, &s_hitec, &s_esc)) {
             f |= LINK_PA_F_SESSION;
         }
         pass_page_flag(&s_thru, f);

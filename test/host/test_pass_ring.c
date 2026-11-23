@@ -12,10 +12,9 @@
  * slot; one event short of a lap not a lap; a reader stalled for a 42ms
  * flash window at 195,000 events/s keeping up and at 227,680 events/s (the
  * capture's worst mix) lapped; the lost signals judged at the drain's
- * clock.
- *
- * Not tested here, because the host has no DMA running beside the reader:
- * a lap that happens while a drain reads (the second check of the slot).
+ * clock; a lap that happens while a drain reads (the DMA's write stood in
+ * for between the read and the second check) leaving the decoder's figures
+ * as they were before the drain.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -197,6 +196,59 @@ TEST_CASE(the_lost_signals_are_judged_at_the_drains_clock)
     CHECK(d.pin[PASS_IN_BIT(0)].lost);
 }
 
+/* The DMA's write during the read: the slot before the reader's first
+ * overwritten, as a lap leaves it. */
+static void lap_meanwhile(void *ctx)
+{
+    (void)ctx;
+    states[(r.rd - 1u) & (N - 1u)] ^= 1u;
+    stamps[(r.rd - 1u) & (N - 1u)] += N;
+}
+
+TEST_CASE(a_lap_during_the_read_leaves_the_figures_as_before_the_drain)
+{
+    reset();
+    put(0u, 1u);
+    (void)drain(1u);
+    const uint32_t t = pulses(1000u, 3u);
+    CHECK(!drain(t).lapped);
+    const pass_dec_t was = d;
+    CHECK_EQ(was.pin[PASS_IN_BIT(0)].frames, 3u);
+    CHECK_EQ(was.pin[PASS_IN_BIT(0)].width_us, 1500u);
+    /* A 100us glitch on input 0, a pulse of 1000us on input 1, read while
+     * the DMA laps the reader. */
+    put(1u << PASS_IN_BIT(0), t);
+    put(0u, t + 100u);
+    put(1u << PASS_IN_BIT(1), t + 200u);
+    put(0u, t + 1200u);
+    r.read_done = lap_meanwhile;
+    const pass_drain_t x = drain(t + 2000u);
+    r.read_done = NULL;
+    CHECK(x.lapped);
+    CHECK_EQ(x.events, 0u);
+    for (unsigned b = 0; b < PASS_PINS; ++b) {
+        CHECK_EQ(d.pin[b].frames, was.pin[b].frames);
+        CHECK_EQ(d.pin[b].glitches, was.pin[b].glitches);
+        CHECK_EQ(d.pin[b].missed, was.pin[b].missed);
+        CHECK_EQ(d.pin[b].width_us, was.pin[b].width_us);
+        CHECK_EQ(d.pin[b].period_us, was.pin[b].period_us);
+    }
+    /* The restart: the newest state taken, no high in progress. */
+    CHECK_EQ(d.level, 0u);
+    CHECK(!d.pin[PASS_IN_BIT(0)].rise_seen);
+    /* The same events without the lap: decoded. */
+    reset();
+    put(0u, 1u);
+    (void)drain(1u);
+    (void)drain(pulses(1000u, 3u));
+    put(1u << PASS_IN_BIT(0), t);
+    put(0u, t + 100u);
+    const pass_drain_t y = drain(t + 2000u);
+    CHECK(!y.lapped);
+    CHECK_EQ(y.events, 2u);
+    CHECK_EQ(d.pin[PASS_IN_BIT(0)].glitches, 1u);
+}
+
 int main(void)
 {
     RUN(events_are_read_in_order_across_the_rings_end);
@@ -205,5 +257,6 @@ int main(void)
     RUN(a_lap_before_the_first_drain_is_found_against_the_cleared_slot);
     RUN(a_42ms_flash_window_laps_the_ring_only_above_195000_events_a_second);
     RUN(the_lost_signals_are_judged_at_the_drains_clock);
+    RUN(a_lap_during_the_read_leaves_the_figures_as_before_the_drain);
     return test_summary("pass_ring");
 }

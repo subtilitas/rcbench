@@ -39,6 +39,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "esc_port.h"
+#include "hitec_port.h"
+#include "kst_port.h"
 #include "link_pages.h"
 #include "pass_decode.h"
 
@@ -185,6 +188,20 @@ uint16_t pass_page_active(const pass_page_t *p);
  * @return      The channels of @p mask now OFF.
  */
 uint16_t pass_page_force_off(pass_page_t *p, uint16_t mask, uint16_t busy);
+
+/**
+ * @brief Whether a programming session is open, for FLAGS bit 1
+ *        (LINK_PA_F_SESSION): a KST or HITEC session out of PWM or holding
+ *        its port's pin, or an ESC_WIRE session on a programming port or on
+ *        an output slot, from OPEN until its line is given back.
+ *
+ * @param kst    The KST port; NULL for none.
+ * @param hitec  The HITEC port; NULL for none.
+ * @param esc    The ESC_WIRE port; NULL for none.
+ * @return       true while one is open.
+ */
+bool pass_page_session(const kst_port_t *kst, const hitec_port_t *hitec,
+                       const esc_port_t *esc);
 
 #ifdef __cplusplus
 }

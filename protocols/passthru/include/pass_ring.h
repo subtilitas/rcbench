@@ -18,7 +18,9 @@
  * the read shows as well.  A ring that has just filled is taken as lapped.
  * On a lap the reader drops what is in the ring, starts after the newest
  * event, and restarts the decoder (pass_dec_restart()): the figures of that
- * stretch are not known, a measurement gap and not an error.
+ * stretch are not known, a measurement gap and not an error.  A lap found
+ * after the read puts the decoder back to its figures before the drain:
+ * nothing decoded from a ring the DMA overwrote meanwhile is kept.
  *
  * Before the first event is read the slot expected is the ring's last,
  * holding 0 and 0: the capture clears the ring before it starts.  An event
@@ -46,9 +48,15 @@ extern "C" {
 
 /** @brief The reader. */
 typedef struct {
-    uint32_t rd;          /**< the next event to read */
-    uint32_t last_state;  /**< the event before rd as read */
-    uint32_t last_stamp;  /**< and its stamp */
+    uint32_t   rd;          /**< the next event to read */
+    uint32_t   last_state;  /**< the event before rd as read */
+    uint32_t   last_stamp;  /**< and its stamp */
+    pass_dec_t before;      /**< the decoder as the drain found it */
+    /** @brief Called between the read and the second lap check, NULL in
+     *         the firmware: the host's stand-in for the DMA writing
+     *         meanwhile. */
+    void     (*read_done)(void *ctx);
+    void      *read_ctx;    /**< read_done()'s argument */
 } pass_ring_t;
 
 /** @brief What one drain found. */

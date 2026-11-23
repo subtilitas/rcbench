@@ -16,7 +16,10 @@
  * modulo 65536, RESET taking the counts as zero at once, 0 doing nothing,
  * 2 refused, and its other registers read only; PASS-THROUGH counted as
  * an active channel for a session on the common rail, and the channels a
- * session drops switched to OFF except a BENCH channel a slot holds.
+ * session drops switched to OFF except a BENCH channel a slot holds; the
+ * session flag's source set by KST and Hitec on a programming port and by
+ * ESC wire on a programming port and on an output slot, from the session's
+ * first frame until its driver gives the pin back.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -26,6 +29,7 @@
 
 #include "link_msg.h"
 #include "link_pages.h"
+#include "link_pages_esc.h"
 #include "pass_decode.h"
 #include "pass_page.h"
 
@@ -89,7 +93,7 @@ TEST_CASE(source_is_written_while_safe_and_a_change_refused_while_armed)
 TEST_CASE(bad_values_read_only_registers_and_ranges_are_refused_whole)
 {
     pass_page_init(&p, true, 0u);
-    uint16_t v[3] = { LINK_PA_SRC_PASS, 3u, LINK_PA_SRC_OFF };
+    const uint16_t v[3] = { LINK_PA_SRC_PASS, 3u, LINK_PA_SRC_OFF };
     CHECK_EQ(pass_page_write(&p, 0u, 3u, v, &SAFE), LINK_NACK_BAD_VALUE);
     CHECK_EQ(reg(LINK_PA_SOURCE(0)), LINK_PA_SRC_BENCH);
     CHECK_EQ(reg(LINK_PA_SOURCE(2)), LINK_PA_SRC_BENCH);
@@ -99,7 +103,7 @@ TEST_CASE(bad_values_read_only_registers_and_ranges_are_refused_whole)
                  LINK_NACK_READ_ONLY);
     }
     /* SOURCE 8 and IN_US 0 together: read only, and SOURCE 8 unchanged. */
-    uint16_t two[2] = { LINK_PA_SRC_OFF, 0u };
+    const uint16_t two[2] = { LINK_PA_SRC_OFF, 0u };
     CHECK_EQ(pass_page_write(&p, 8u, 2u, two, &SAFE), LINK_NACK_READ_ONLY);
     CHECK_EQ(reg(LINK_PA_SOURCE(8)), LINK_PA_SRC_BENCH);
     const uint16_t z = 0u;
@@ -282,6 +286,61 @@ TEST_CASE(a_session_counts_pass_through_active_and_switches_channels_off)
     CHECK_EQ(pass_page_active(&p), 1u << 0);
 }
 
+TEST_CASE(every_programming_session_sets_the_session_flag)
+{
+    kst_port_t   kst;
+    hitec_port_t hitec;
+    esc_port_t   esc;
+    memset(&kst, 0, sizeof(kst));
+    memset(&hitec, 0, sizeof(hitec));
+    memset(&esc, 0, sizeof(esc));
+    /* None open: PWM, FREE, FREE. */
+    CHECK(!pass_page_session(&kst, &hitec, &esc));
+    CHECK(!pass_page_session(NULL, NULL, NULL));
+    /* KST on programming port 2: from STOPPING, and while its driver
+     * still holds the pin after PWM. */
+    kst.port = 2u;
+    kst.state = (uint8_t)LINK_KST_STOPPING;
+    CHECK(pass_page_session(&kst, &hitec, &esc));
+    kst.state = (uint8_t)LINK_KST_PROGRAMMING;
+    kst.has_pin = 1u;
+    CHECK(pass_page_session(&kst, NULL, NULL));
+    kst.state = (uint8_t)LINK_KST_PWM;
+    CHECK(pass_page_session(&kst, NULL, NULL));
+    kst.has_pin = 0u;
+    CHECK(!pass_page_session(&kst, &hitec, &esc));
+    /* Hitec on programming port 1. */
+    hitec.port = 1u;
+    hitec.state = (uint8_t)LINK_HITEC_OPEN;
+    CHECK(pass_page_session(&kst, &hitec, &esc));
+    hitec.state = (uint8_t)LINK_HITEC_FREE;
+    hitec.has_pin = 1u;
+    CHECK(pass_page_session(NULL, &hitec, NULL));
+    hitec.has_pin = 0u;
+    CHECK(!pass_page_session(&kst, &hitec, &esc));
+    /* ESC wire on programming port 0. */
+    esc.target = (uint16_t)LINK_EW_TARGET_PORT;   /* port 0 */
+    esc.state = (uint8_t)LINK_ESC_OPEN;
+    esc.has_pin = true;
+    esc.pin = 22u;
+    CHECK(pass_page_session(&kst, &hitec, &esc));
+    /* ESC wire on output slot 2 (S3's pin, GPIO 20): the pin mask of the
+     * programming ports names none, the session counts all the same. */
+    esc.target = 2u;
+    esc.pin = 20u;
+    CHECK_EQ(esc_port_pin_mask(&esc), 0u);
+    CHECK(pass_page_session(&kst, &hitec, &esc));
+    /* From OPEN's frame, before the line takes the slot's pin. */
+    esc.has_pin = false;
+    CHECK(pass_page_session(NULL, NULL, &esc));
+    /* A line still holding its pin once the page reads FREE. */
+    esc.state = (uint8_t)LINK_ESC_FREE;
+    esc.has_pin = true;
+    CHECK(pass_page_session(NULL, NULL, &esc));
+    esc.has_pin = false;
+    CHECK(!pass_page_session(&kst, &hitec, &esc));
+}
+
 int main(void)
 {
     RUN(every_channel_starts_on_bench);
@@ -295,5 +354,6 @@ int main(void)
     RUN(lost_and_glitch_bits_are_published_per_input);
     RUN(missed_saturates_frames_wrap_and_reset_takes_the_counts_as_zero);
     RUN(a_session_counts_pass_through_active_and_switches_channels_off);
+    RUN(every_programming_session_sets_the_session_flag);
     return test_summary("pass_page");
 }

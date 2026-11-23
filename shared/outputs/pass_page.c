@@ -282,3 +282,15 @@ uint16_t pass_page_force_off(pass_page_t *p, uint16_t mask, uint16_t busy)
     }
     return off;
 }
+
+bool pass_page_session(const kst_port_t *kst, const hitec_port_t *hitec,
+                       const esc_port_t *esc)
+{
+    /* The quiet masks cover a session before its wire driver takes the
+     * pin; the pin masks a driver that still holds it; esc_port_pins() a
+     * line on a slot, which esc_port_pin_mask() leaves out. */
+    return (kst_port_quiet_mask(kst) | kst_port_pin_mask(kst)
+            | hitec_port_quiet_mask(hitec) | hitec_port_pin_mask(hitec)
+            | esc_port_pin_mask(esc)) != 0u
+           || esc_port_supply_hold(esc) || esc_port_pins(esc) != 0u;
+}
