@@ -216,6 +216,15 @@ static void fit_views(const char *view, wiz_pose_t *w)
 {
     if (strcmp(view, "updates-wiz-node") == 0) {
         pnode_behind(w);
+    } else if (strcmp(view, "updates-wiz-dnode") == 0) {
+        /* The display node bound as the power node, its widest file name
+         * on the card. */
+        pnode_behind(w);
+        w->d[UPD_DEV_PNODE].display = true;
+        snprintf(w->d[UPD_DEV_PNODE].fetch.file,
+                 sizeof(w->d[UPD_DEV_PNODE].fetch.file),
+                 "BENCH/UPDATES/rcbench-node-display-0.23.18.bin");
+        w->d[UPD_DEV_PNODE].fetch.src = DEVIMG_SRC_CARD;
     } else if (strcmp(view, "updates-wiz-node-ask") == 0) {
         pnode_behind(w);
         w->d[UPD_DEV_PNODE].row = DEVUPD_ROW_UPDATING;
