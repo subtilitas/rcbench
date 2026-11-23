@@ -10,7 +10,8 @@
  *   the balance node, on a LiPo cell, asleep when idle.
  * - LCDWIKI ES3C28P, the 2.8" ESP32-S3 display board (Hosyond sells it;
  *   CONFIG_RCNODE_BOARD_ES3C28P): the power node with a local display,
- *   on 5V from the pack, never asleep.
+ *   on 5V from the pack, never asleep; or the servo role, the remote servo
+ *   node's board on 5V from its carrier.
  *
  * The ES3C28P's pins come from LCDWIKI's documents: the specification
  * ES3C28P_ES2N28P_Specification_V1.0.pdf, section 4.2 "ESP32-S3 pin
@@ -38,8 +39,13 @@
 /** @brief The update kind of the power role: images of the C6 power node
  *         are refused (bleota_head_check(), BEGIN's kind). */
 #define NODE_KIND_POWER BLEOTA_KIND_NODE_POWER_S3
+#if CONFIG_RCNODE_ROLE_SERVO
+/** @brief The servo role drives no power-node screen (node_disp.c). */
+#define NODE_BOARD_DISPLAY 0
+#else
 /** @brief The board drives its display and touch (node_disp.c). */
 #define NODE_BOARD_DISPLAY 1
+#endif
 /** @brief The board never sleeps on its own: its 5V comes from the pack. */
 #define NODE_BOARD_ALWAYS_ON 1
 
@@ -85,6 +91,17 @@
 #define NODE_PIN_TP_INT 17  /**< IO17, low on a touch event; not used */
 #define NODE_TP_ADDR  0x38u /**< the controller's address */
 /** @} */
+
+#if CONFIG_RCNODE_ROLE_SERVO
+/** @brief The servo role's pins to the Core2350B on the carrier: the P2
+ *         UART socket and the P3 expanded-IO socket (schematic; the pin
+ *         orders on a delivered board are not known).  @{ */
+#define NODE_PIN_SRV_TX  43  /**< TXD0 through R39 100Ω, to the Core2350B's GPIO1 (UART0 RX) */
+#define NODE_PIN_SRV_RX  44  /**< RXD0 through R38 100Ω, from the Core2350B's GPIO0 (UART0 TX) */
+#define NODE_PIN_SRV_RUN 14  /**< IO14, the gate of the MOSFET that pulls the Core2350B's RUN low */
+#define NODE_PIN_SRV_HB  21  /**< IO21, HEARTBEAT to the Core2350B's GPIO3 and the monostable */
+/** @} */
+#endif
 
 #elif CONFIG_RCNODE_BOARD_C6_ZERO
 

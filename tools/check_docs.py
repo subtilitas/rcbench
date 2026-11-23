@@ -438,6 +438,9 @@ ENGLISH_QUOTES = {
     # Protocol state LINK_ESC_OPEN, not the translated OPEN file control.
     ("EscWire-de.md", "OPEN"),
     ("StickProgramming-de.md", "none"),
+    # The servo node's console line.
+    ("Nodes-de.md", "none"),
+    ("Nodes-de.md", "refused"),
     ("LinkHitec-de.md", "RESULT"),
     ("LinkHitec-de.md", "SUPPLY"),
     ("LinkHitec-de.md", "RANGE"),

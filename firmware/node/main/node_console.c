@@ -14,6 +14,9 @@
 #include "esp_log.h"
 
 #include "rcbench_version.h"
+#if CONFIG_RCNODE_ROLE_SERVO
+#include "node_srv.h"
+#endif
 
 /**
  * @brief `status`: the last status in full.
@@ -113,6 +116,9 @@ void node_console_start(void)
     for (size_t k = 0; k < sizeof cmds / sizeof cmds[0]; ++k) {
         (void)esp_console_cmd_register(&cmds[k]);
     }
+#if CONFIG_RCNODE_ROLE_SERVO
+    node_srv_console_register();
+#endif
     (void)esp_console_register_help_command();
     (void)esp_console_start_repl(repl);
 }
