@@ -11,6 +11,9 @@ menu "rcbench node"
             bool "Power: the INA228 on the ESC's XT60 power path"
         config RCNODE_ROLE_BALANCE
             bool "Balance: an accelerometer axis and an index sensor"
+        config RCNODE_ROLE_SERVO
+            bool "Servo: the remote servo node's ES3C28P, the link to its Core2350B"
+            depends on IDF_TARGET_ESP32S3
     endchoice
 
     choice RCNODE_BOARD
@@ -25,8 +28,8 @@ menu "rcbench node"
             bool "Waveshare ESP32-C6-Zero"
             depends on IDF_TARGET_ESP32C6
         config RCNODE_BOARD_ES3C28P
-            bool "LCDWIKI ES3C28P: 2.8in ESP32-S3 display board, power role"
-            depends on IDF_TARGET_ESP32S3 && RCNODE_ROLE_POWER
+            bool "LCDWIKI ES3C28P: 2.8in ESP32-S3 display board, power or servo role"
+            depends on IDF_TARGET_ESP32S3 && (RCNODE_ROLE_POWER || RCNODE_ROLE_SERVO)
     endchoice
 
 endmenu

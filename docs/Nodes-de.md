@@ -42,6 +42,9 @@ enthält den Hinweis des Projekts.
 | der Bildschirm des Anzeigeknotens: Werte, Höchst- und Tiefstwert, Touch, Formate, Zeichnen, in der Host-Suite getestet | `firmware/node/main/node_view.c` |
 | Display und Touch des Anzeigeknotens | `firmware/node/main/node_lcd.c`, `firmware/node/main/node_disp.c` |
 | die Konsole | `firmware/node/main/node_console.c` |
+| die Servo-Rolle: die UART-Verbindung zum Core2350B, die Pumpe, `srv` auf der Konsole | `firmware/node/main/node_srv_link.c`, `firmware/node/main/node_srv.c` |
+| die Sicherheitsentscheidungen und die Abfrage des Servoknotens, unter der Host-Testsuite | `firmware/node/main/node_srv_policy.c`, `firmware/node/main/node_srv_poll.c` |
+| die Heartbeat- und RUN-Pins des Servoknotens | `firmware/node/main/node_srv_hb.c` |
 | die Central des Panels für den Leistungsknoten: Suche, Bindung, Prüfung von INFO, der RUN-Marker, in der Host-Suite getestet | `shared/ui/pnode_ctl.c` |
 | Messwerte, Summen, Spitzen und Aussetzerregel des Panels, in der Host-Suite getestet | `shared/ui/pnode_meter.c` |
 | der Eintrag LEISTUNGSKNOTEN unter SETUP > WIRELESS | `shared/ui/wireless_pnode.c` |
@@ -567,7 +570,79 @@ BOOT (IO0) 1s halten zum Bestätigen. Er lehnt ein Image des
 C6-Leistungsknotens ab, und der C6-Leistungsknoten lehnt seines ab, bei
 BEGIN und noch einmal am Kopf. Das Panel trägt sein Image nicht (unten).
 
-## Bluetooth LE
+## Der Servoknoten
+
+Der Servoknoten ist der ES3C28P des Remote-Servoknotens: das Board neben
+einem Waveshare Core2350B, auf dem die IOmcu-Firmware als Board 3 läuft
+(`IOMCU_BOARD=rsn`). Die Servo-Rolle fragt den Core2350B über einen UART
+(Universal Asynchronous Receiver-Transmitter) ab und trägt die
+Lebendigkeit des Panels über eine Heartbeat-Leitung zu ihm. Sie meldet
+sich als `rcbench-srv-XXXX` mit dem Rollen-Byte 3. Das Board ist immer an:
+kein Schlaf, kein Weckzeitgeber.
+
+### Pins des Servoknotens
+
+| Signal | ES3C28P-Pin | Core2350B |
+| --- | --- | --- |
+| UART TX, 1.000.000 Baud 8N1 | IO43 (TXD0, P2 Pin 3, über R39 100Ω) | GPIO1, UART0 RX |
+| UART RX | IO44 (RXD0, P2 Pin 4, über R38 100Ω) | GPIO0, UART0 TX |
+| HEARTBEAT | IO21 (P3 Pin 4) | GPIO3 und das Monoflop des Hauptschalters |
+| RUN | IO14 (P3 Pin 3) | RUN, über einen N-Kanal-MOSFET: IO14 high zieht RUN auf low |
+
+Die Pin-Reihenfolgen stammen aus dem Schaltplan des ES3C28P; an einem
+gelieferten Board sind sie nicht bekannt. IO21 und IO14 liegen ab dem
+Start der Rolle auf low. Die Servo-Rolle zeigt keinen Bildschirm des
+Leistungsknotens.
+
+### Die Verbindung zum Core2350B
+
+UART0 trägt jeden Link-Frame mit COBS (Consistent Overhead Byte Stuffing)
+gerahmt und mit einer CRC-16 (Cyclic Redundancy Check), wie
+[Der UART-Transport](Link-de.md#der-uart-transport) beschreibt. Eine
+Anfrage ist unterwegs; sie wird nach 50ms wiederholt und nach 1000ms
+aufgegeben, wie auf der CAN-Verbindung des Panels. Das ROM des ES3C28P
+(ESP32-S3) schreibt seine Startmeldungen mit 115.200 Baud auf denselben
+TX-Pin; die Rahmung des Core2350B verwirft sie als fehlerhafte Frames.
+
+| Austausch | Alle |
+| --- | --- |
+| IDENTITY: Board 3, Protokoll 4.41 oder später | nach jedem Verbindungsaufbau; ein anderes Board oder ein älteres Protokoll wird abgelehnt |
+| CONTROL schreiben: ARM und THROTTLE | 50ms |
+| STATUS lesen, 10 Register | 500ms; 50ms, solange ein Fehlerbit gesetzt ist oder ein ARM wartet |
+| POWER lesen, 6 Register | 100ms |
+| SUPPLY lesen, 18 Register | 100ms |
+| SENSE_WIN_A und SENSE_WIN_B lesen, je 32 Register | 50ms |
+
+### Sicherheit am Servoknoten
+
+Die Aus-Schreibvorgänge sind ARM 0 und THROTTLE 0 auf CONTROL, RAIL 0 und
+PORT_WANT 0 auf POWER und OUTPUT 0 auf SUPPLY. Sie sind ab dem Start
+fällig und nach jeder Zeile unten, die sie nennt. Ein laufender Austausch
+wird für sie aufgegeben, so folgen sie innerhalb der Leitungszeit eines
+Austauschs.
+
+| Ereignis | Der Servoknoten |
+| --- | --- |
+| kein KEEPALIVE seit dem Start (STANDALONE) | keine Heartbeat-Flanke; ARM 0; jedes ARM abgelehnt |
+| ein KEEPALIVE ohne STOP-Flag, der Core2350B antwortet als Board 3 | alle 20ms eine Flanke auf IO21 |
+| 300ms kein KEEPALIVE | PANEL LOST: die Flanken enden, die Aus-Schreibvorgänge; gehalten, bis ein ARM angenommen wird |
+| eine Bluetooth-LE-Trennung | dasselbe sofort |
+| STOP oder ein KEEPALIVE mit STOP-Flag | dasselbe sofort, gehalten als STOP |
+| 150ms kein THROTTLE im Zustand ARMED | THROTTLE 0 wird geschrieben; ARMED bleibt bis zu den 300ms |
+| 1000ms keine Antwort des Core2350B | IOMCU LOST: SAFE, die Flanken enden, die Aus-Schreibvorgänge für seine Rückkehr fällig, IDENTITY wird neu gelesen |
+| 3000ms keine Antwort | IO14 für 10ms high, einmal je Stille: der Core2350B startet neu, mit gesetztem Arm-Latch |
+| der Core2350B lehnt das ARM von CONTROL im Zustand ARMED ab | SAFE, die Aus-Schreibvorgänge |
+
+Ein ARM wird angenommen mit einer Bluetooth-LE-Verbindung, einem KEEPALIVE
+in den letzten 300ms ohne STOP-Flag, einem Core2350B, der als Board 3
+antwortet, und beantworteten Aus-Schreibvorgängen. Das Schalten auf ARMED
+folgt dem des Panels
+([Das erste Schalten auf ARMED nach einem Stopp](Safety-de.md#das-erste-schalten-auf-armed-nach-einem-stopp)):
+die Flanken setzen wieder ein, der Knoten wartet 100ms, liest dann alle
+50ms STATUS, bis der Heartbeat-Fehler gelöscht ist, und schreibt CLEAR
+(0x5AFE) und danach ARM. Eine Leitung, der 300ms nach dem ARM noch nicht
+vertraut wird, beendet das Schalten: SAFE.
+
 
 Der Knoten sendet sein Advertising als `rcbench-pwr-XXXX` oder `rcbench-bal-XXXX`, die letzten zwei
 Bytes seiner Adresse in Hex, alle 100ms, solange keine Verbindung steht.
@@ -868,6 +943,20 @@ esptool.py --chip esp32s3 write_flash 0x0 \
 
 Ein Release enthält dafür `rcbench-node-display-merged-<version>.bin`.
 
+Der Servoknoten ([Der Servoknoten](#der-servoknoten)) auf demselben Board:
+
+```sh
+idf.py -B build-srv -D SDKCONFIG=build-srv/sdkconfig \
+  -D IDF_TARGET=esp32s3 \
+  -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.s3_es3c28p;sdkconfig.servo" build
+idf.py -B build-srv merge-bin -o rcbench-node-srv-merged.bin
+esptool.py --chip esp32s3 write_flash 0x0 \
+  build-srv/rcbench-node-srv-merged.bin
+```
+
+Der CI-Job "Node image" baut ihn als `rcbench-node-srv-merged-<version>.bin`;
+er nimmt kein Update über Bluetooth LE.
+
 Ein schlafender Knoten antwortet nicht über USB. RESET drücken, um ihn zu
 starten, oder BOOT halten und RESET drücken für den Download-Modus des ROM.
 
@@ -924,7 +1013,34 @@ des Gleichanteils:
 Der Start schreibt `rcbench node <version>, role pwr, <n> timer wakes before
 this start`.
 
+Die Zeile des Servoknotens:
+
+```text
+I (5123) node: srv iomcu up, panel LINKED, SAFE, beat on, faults 0x0000, answered 1520, unanswered 0, refused 0; link up -58dBm, sub 0, bat 0.00V, errors 0, resets 0, dropped 0
+```
+
+| Feld | Bedeutung |
+| --- | --- |
+| `iomcu` | `up` mit angenommener IDENTITY, `none` davor, `LOST` nach 1000ms ohne Antwort |
+| `panel` | `STANDALONE`, `LINKED`, `PANEL LOST` oder `STOP` |
+| `SAFE` | oder `ARM WAIT`, `ARM WRITE`, `ARMED` |
+| `beat` | ob IO21 Flanken trägt |
+| `faults` | STATUS-Register 1, wie zuletzt gelesen |
+| `answered`, `unanswered`, `refused` | beantwortete Austausche, nach 1000ms aufgegebene Austausche, Frames, die die UART-Rahmung oder das Dekodieren verwarf |
+
+| Befehl | Wirkung |
+| --- | --- |
+| `srv` | die Zeile oben, die IDENTITY, die Seiten POWER und SUPPLY wie zuletzt gelesen, die Zähler |
+| `srv ka on`, `srv ka off` | ein KEEPALIVE alle 50ms von der Konsole und eine Verbindung, wie von einem verbundenen Panel: der Heartbeat läuft ohne Panel; off wirkt wie eine Bluetooth-LE-Trennung. Es schaltet nichts auf ARMED und nichts ein |
+| `srv stop` | STOP, wie das des Panels |
+
 ## Aktuelle Einschränkungen
+
+- Der Servoknoten hat in `protocols/rcnode` noch keine eigenen Pakete und
+  keine eigenen Steuerbefehle: KEEPALIVE, STOP, ARM, SAFE und THROTTLE
+  kommen nur von der Konsole (`srv ka`, `srv stop`), und das Panel listet
+  keinen Servoknoten. Er hat keinen eigenen Bildschirm und aktualisiert
+  das Image des Core2350B nicht.
 
 - Das Panel verbindet sich mit dem Leistungsknoten und mit dem
   Auswuchtknoten (SETUP > WIRELESS,

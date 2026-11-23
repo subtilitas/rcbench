@@ -1403,6 +1403,24 @@ orientation, the SPI clock of 20MHz on this board, the I2C socket's pin
 order and the RAM left for Bluetooth LE at run time are not measured. The
 panel does not carry the display node's image: it is flashed over USB.
 
+### The servo node
+
+Built and host-tested: the servo role on the ES3C28P for the remote servo
+node ([docs/Nodes.md](docs/Nodes.md), "The servo node"; `firmware/node`,
+`sdkconfig.servo`, 474,992 bytes, 30.2% of a slot). Its safety decisions
+(`node_srv_policy.c`, `test_node_srv_policy`: the KEEPALIVE age at 299ms
+and 300ms, the THROTTLE age at 149ms and 150ms, the Core2350B lost at
+999ms and 1000ms, the RUN pulse at 2,999ms and 3,000ms and once a silence,
+STOP by op and by flag, a Bluetooth LE disconnect, each ARM precondition,
+the switch to ARMED at the 100ms settle and given up at 300ms, a STOP
+during the arming frame, STANDALONE driving nothing for 60s, each timeout
+across the 32-bit ms clock's wrap) and its poll (`node_srv_poll.c`,
+`test_node_srv_poll`: each period at its last and first millisecond,
+STATUS at 50ms while fast, one exchange a row after a stall, the wrap).
+The UART link, the heartbeat on IO21 and the RUN pulse on IO14 build for
+the ES3C28P; the link host and the framing under them are the suites of
+`link_host.c` and `link_uart.c`. The panel has no client for it.
+
 ### Firmware update over Bluetooth LE
 
 Built and host-tested: the update protocol (`protocols/bleota`): every
@@ -1743,7 +1761,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 628 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 630 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1870,7 +1888,7 @@ The host suite is 628 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`, `test_servo_dial_runs`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
-`test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_view`,
+`test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_srv_policy`, `test_node_srv_poll`, `test_node_view`,
 `test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client`, `test_devimg`, `test_upd_dev`, `test_upd_fetch`,
 `test_upd_wizard`, `test_upd_wizard_map`, `test_upd_wiz_view` and `test_harness`.
 

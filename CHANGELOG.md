@@ -6,6 +6,22 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- Node firmware: the servo role (`CONFIG_RCNODE_ROLE_SERVO`,
+  `sdkconfig.servo`) for the remote servo node's ES3C28P. It polls the
+  Core2350B (board 3) over UART0 at 1,000,000 baud, edges the heartbeat on
+  IO21 every 20ms while a panel's KEEPALIVE is fresh, and writes ARM 0,
+  RAIL 0, PORT_WANT 0 and the supply's OUTPUT 0 at the start, on STOP, on
+  a Bluetooth LE disconnect, 300ms after the last KEEPALIVE and when the
+  Core2350B returns after 1000ms without an answer. A THROTTLE older than
+  150ms is written as 0. 3000ms without an answer pulse the Core2350B's RUN
+  low for 10ms once. The console's `srv ka on` stands in for the panel's
+  KEEPALIVE ([The servo node](docs/Nodes.md#the-servo-node)). The CI job
+  "Node image" builds `rcbench-node-srv-merged-<version>.bin`.
+- `protocols/rcnode`: role 3, `RCNODE_ROLE_SERVO`, named
+  `rcbench-srv-XXXX`.
+
 ### Changed
 
 - `hardware/mechanical/`: `motor_simulator.step` runs the phase tap's lead
