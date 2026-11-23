@@ -606,6 +606,9 @@ Anfrage ist unterwegs; sie wird nach 50ms wiederholt und nach 1000ms
 aufgegeben, wie auf der CAN-Verbindung des Panels. Das ROM des ES3C28P
 (ESP32-S3) schreibt seine Startmeldungen mit 115.200 Baud auf denselben
 TX-Pin; die Rahmung des Core2350B verwirft sie als fehlerhafte Frames.
+Beide Empfänger beginnen wie nach einem 0x00: auf einer beim Start ruhigen
+Leitung wird der erste Frame angenommen, und Störungen enden als ein
+abgelehnter Frame an ihrem 0x00.
 
 | Austausch | Alle |
 | --- | --- |
@@ -622,7 +625,10 @@ Die Aus-Schreibvorgänge sind ARM 0 und THROTTLE 0 auf CONTROL, RAIL 0 und
 PORT_WANT 0 auf POWER und OUTPUT 0 auf SUPPLY. Sie sind ab dem Start
 fällig und nach jeder Zeile unten, die sie nennt. Ein laufender Austausch
 wird für sie aufgegeben, so folgen sie innerhalb der Leitungszeit eines
-Austauschs.
+Austauschs. CLEAR und der Frame, der auf ARMED schaltet, werden ebenso
+aufgegeben, vor dem Senden oder während sie warten, sobald ein SAFE, ein
+STOP oder ein Verlust angenommen ist, und ebenso ein CONTROL-Schreiben,
+dessen ARM vom geltenden abweicht.
 
 | Ereignis | Der Servoknoten |
 | --- | --- |

@@ -589,6 +589,120 @@ TEST_CASE(safe_writes_control_at_once_and_keeps_the_beat)
     CHECK_EQ(p.panel, NODE_SRV_LINKED);
 }
 
+/* ------------------------------------------- an exchange given up on the way */
+
+/** @brief How the switch to ARMED is cut. */
+typedef enum { CUT_SAFE, CUT_STOP_FLAG, CUT_BLE, CUT_KA } cut_t;
+
+/**
+ * @brief Cut the switch to ARMED @p how at @p t.
+ * @param p   The state.
+ * @param t   The clock.
+ * @param how The cut.
+ */
+static void cut(node_srv_pol_t *p, uint32_t t, cut_t how)
+{
+    switch (how) {
+    case CUT_SAFE:      node_srv_pol_safe(p); break;
+    case CUT_STOP_FLAG: node_srv_pol_keepalive(p, t, true); break;
+    case CUT_BLE:       node_srv_pol_ble(p, t, false); break;
+    case CUT_KA:        break;   /* the step at t + 300ms after the last */
+    }
+}
+
+/**
+ * @brief A cut during CLEAR's wait (@p at_write) or during the settle: CLEAR
+ *        and the arming frame are given up, an ACK arriving after it arms
+ *        nothing, and CONTROL then carries ARM 0.
+ */
+static void cut_arming(cut_t how, bool at_write)
+{
+    node_srv_pol_t p;
+    linked_at(&p, 0u);
+    CHECK_EQ(node_srv_pol_arm(&p, 0u, LINK_ARM_ALL), NODE_SRV_ARM_OK);
+    node_srv_out_t o;
+    uint32_t t = 50u;
+    if (at_write) {
+        node_srv_pol_answer(&p, 100u);
+        node_srv_pol_status(&p, 100u, 0u);
+        o = step(&p, 100u);
+        CHECK(o.arm_write);
+        CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_ARMING, 0u));
+        t = 101u;
+    }
+    cut(&p, t, how);
+    if (how == CUT_KA) {
+        t = 300u;   /* the KEEPALIVE came at 0 */
+    }
+    node_srv_pol_answer(&p, t);
+    o = step(&p, t);
+    CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_ARMING, 0u));
+    CHECK(!o.arm_write);
+    CHECK_EQ(o.arm, 0u);
+    /* An ACK of CLEAR or ARM arriving now arms nothing. */
+    node_srv_pol_arm_done(&p, t, true);
+    o = step(&p, t);
+    CHECK_EQ(p.arm, NODE_SRV_SAFE);
+    CHECK_EQ(o.arm, 0u);
+    CHECK_EQ(node_srv_pol_events(&p) & NODE_SRV_EV_ARMED, 0u);
+    /* What follows is not held up: the all-off writes for a STOP or a
+     * loss, CONTROL's ARM 0 for a SAFE. */
+    if (how == CUT_SAFE) {
+        CHECK(o.ctl_now);
+        CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, 0u));
+    } else {
+        CHECK(o.off);
+        CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_OFF, 0u));
+        CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u));
+        CHECK(!o.beat);
+    }
+    /* A later STATUS cannot bring the arming frame back. */
+    node_srv_pol_status(&p, t + 1u, 0u);
+    CHECK(!step(&p, t + 1u).arm_write);
+}
+
+TEST_CASE(safe_stop_ble_or_keepalive_loss_during_clear_arm_nothing)
+{
+    cut_arming(CUT_SAFE, true);
+    cut_arming(CUT_STOP_FLAG, true);
+    cut_arming(CUT_BLE, true);
+    cut_arming(CUT_KA, true);
+}
+
+TEST_CASE(safe_stop_ble_or_keepalive_loss_during_the_settle_arm_nothing)
+{
+    cut_arming(CUT_SAFE, false);
+    cut_arming(CUT_STOP_FLAG, false);
+    cut_arming(CUT_BLE, false);
+    cut_arming(CUT_KA, false);
+}
+
+TEST_CASE(a_control_write_carrying_arm_is_given_up_after_safe)
+{
+    node_srv_pol_t p;
+    const uint32_t t = armed_at(&p, 0u, LINK_ARM_SURFACE);
+    node_srv_out_t o = step(&p, t);
+    CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, LINK_ARM_SURFACE));
+    CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, LINK_ARM_THROTTLE));
+    node_srv_pol_safe(&p);
+    o = step(&p, t + 1u);
+    CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, LINK_ARM_SURFACE));
+    CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, 0u));
+    CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u));
+}
+
+TEST_CASE(the_all_off_writes_are_never_given_up_and_end_every_other_exchange)
+{
+    node_srv_pol_t p;
+    const uint32_t t = armed_at(&p, 0u, LINK_ARM_ALL);
+    node_srv_pol_stop(&p, t);
+    const node_srv_out_t o = step(&p, t);
+    CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_OFF, 0u));
+    CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u));
+    CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, 0u));
+    CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_ARMING, 0u));
+}
+
 int main(void)
 {
     RUN(standalone_drives_nothing_for_a_minute);
@@ -619,5 +733,9 @@ int main(void)
     RUN(a_stop_while_the_arming_frame_is_on_its_way_wins);
     RUN(all_off_writes_owed_again_on_their_way_stay_owed);
     RUN(safe_writes_control_at_once_and_keeps_the_beat);
+    RUN(safe_stop_ble_or_keepalive_loss_during_clear_arm_nothing);
+    RUN(safe_stop_ble_or_keepalive_loss_during_the_settle_arm_nothing);
+    RUN(a_control_write_carrying_arm_is_given_up_after_safe);
+    RUN(the_all_off_writes_are_never_given_up_and_end_every_other_exchange);
     return test_summary("node_srv_policy");
 }

@@ -569,6 +569,8 @@ stuffing) with a CRC-16 (cyclic redundancy check), as
 in flight; it is repeated after 50ms and given up after 1000ms, as on the
 panel's CAN link. The ES3C28P's ESP32-S3 ROM prints its boot messages at 115,200 baud
 on the same TX pin; the Core2350B's framing drops them as bad frames.
+Both receivers start as after a 0x00: on a line idle at the start the
+first frame is taken, and noise ends as one refused frame at its 0x00.
 
 | Exchange | Every |
 | --- | --- |
@@ -584,7 +586,10 @@ on the same TX pin; the Core2350B's framing drops them as bad frames.
 The all-off writes are ARM 0 and THROTTLE 0 on CONTROL, RAIL 0 and
 PORT_WANT 0 on POWER, and OUTPUT 0 on SUPPLY. They are owed from the start
 and after each row below that names them. An exchange in flight is given
-up for them, so they follow within one exchange's wire time.
+up for them, so they follow within one exchange's wire time. CLEAR and the
+arming frame are given up as well, before they are sent or while they wait,
+once a SAFE, a STOP or a loss is taken, and so is a CONTROL write whose ARM
+differs from the one in force.
 
 | Event | Servo node does |
 | --- | --- |

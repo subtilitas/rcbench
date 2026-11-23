@@ -1417,16 +1417,20 @@ the owed update dropped on another address and an unbind
 
 Built and host-tested: the servo role on the ES3C28P for the remote servo
 node ([docs/Nodes.md](docs/Nodes.md), "The servo node"; `firmware/node`,
-`sdkconfig.servo`, 474,992 bytes, 30.2% of a slot). Its safety decisions
+`sdkconfig.servo`, 475,776 bytes, 30.2% of a slot). Its safety decisions
 (`node_srv_policy.c`, `test_node_srv_policy`: the KEEPALIVE age at 299ms
 and 300ms, the THROTTLE age at 149ms and 150ms, the Core2350B lost at
 999ms and 1000ms, the RUN pulse at 2,999ms and 3,000ms and once a silence,
 STOP by op and by flag, a Bluetooth LE disconnect, each ARM precondition,
 the switch to ARMED at the 100ms settle and given up at 300ms, a STOP
-during the arming frame, STANDALONE driving nothing for 60s, each timeout
+during the arming frame, SAFE, the STOP flag, a Bluetooth LE disconnect
+and the KEEPALIVE timeout during CLEAR and during the settle arming
+nothing, STANDALONE driving nothing for 60s, each timeout
 across the 32-bit ms clock's wrap) and its poll (`node_srv_poll.c`,
 `test_node_srv_poll`: each period at its last and first millisecond,
-STATUS at 50ms while fast, one exchange a row after a stall, the wrap).
+STATUS at 50ms while fast, one exchange a row after a stall, the wrap; the
+receiver taking the first answer after the start and dropping and counting
+noise before it).
 The UART link, the heartbeat on IO21 and the RUN pulse on IO14 build for
 the ES3C28P; the link host and the framing under them are the suites of
 `link_host.c` and `link_uart.c`. The panel has no client for it.

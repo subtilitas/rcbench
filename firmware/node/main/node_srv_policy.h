@@ -257,6 +257,37 @@ void node_srv_pol_arm_done(node_srv_pol_t *p, uint32_t now_ms, bool taken);
  */
 void node_srv_pol_refused(node_srv_pol_t *p);
 
+/** @brief What an exchange with the IOmcu writes, for node_srv_pol_keep(). */
+typedef enum {
+    NODE_SRV_X_READ = 0, /**< a read: writes nothing */
+    NODE_SRV_X_OFF,      /**< one of the all-off writes */
+    NODE_SRV_X_ARMING,   /**< CLEAR or the arming frame */
+    NODE_SRV_X_CONTROL,  /**< CONTROL's ARM and THROTTLE at the poll */
+} node_srv_x_t;
+
+/**
+ * @brief Whether an exchange may go on, checked before it is sent and at
+ *        every pump while it waits.  An exchange that may not is given up
+ *        at once, unsent or unanswered, so a SAFE, a STOP or a loss taken
+ *        while it waits never lets a write from before it reach the IOmcu
+ *        later, and the writes that follow from it are not held up.
+ *
+ * | Exchange | Given up when |
+ * | --- | --- |
+ * | an all-off write | never |
+ * | any other | the all-off writes are owed |
+ * | CLEAR or the arming frame | the switch to ARMED is no longer at its writes (SAFE, STOP, a loss, the 300ms) |
+ * | CONTROL with a non-zero ARM | the policy's ARM is no longer that value |
+ *
+ * @param p    The state.
+ * @param out  The last node_srv_pol_step().
+ * @param kind What the exchange writes.
+ * @param arm  The ARM value a CONTROL exchange carries; 0 otherwise.
+ * @return true while it may go on.
+ */
+bool node_srv_pol_keep(const node_srv_pol_t *p, const node_srv_out_t *out,
+                       node_srv_x_t kind, uint16_t arm);
+
 /**
  * @brief Advance the clocks and say what to do now.
  * @param p      The state.

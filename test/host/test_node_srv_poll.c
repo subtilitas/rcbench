@@ -10,7 +10,12 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include <string.h>
+
 #include "greatest.h"
+
+#include "link_can.h"
+#include "link_uart.h"
 
 #include "link_dev.h"
 #include "link_pages.h"
@@ -152,6 +157,90 @@ TEST_CASE(now_makes_a_row_due_at_once_and_ignores_none)
     CHECK_EQ(node_srv_poll_next(&p, 10u, false), NODE_SRV_ROW_CONTROL);
 }
 
+/* ------------------------------------------------------- the receiver */
+
+/**
+ * @brief Feed @p n wire bytes; count the frames handed out.
+ * @param rx      The decoder.
+ * @param b       The bytes.
+ * @param n       Their count.
+ * @param refused The refused-frame counter.
+ * @param last    Receives the last frame handed out.
+ * @return The frames.
+ */
+static unsigned feed(link_uart_rx_t *rx, const uint8_t *b, size_t n,
+                     uint32_t *refused, link_can_frame_t *last)
+{
+    unsigned frames = 0u;
+    for (size_t i = 0; i < n; ++i) {
+        if (link_uart_feed(rx, b[i], last, refused)) {
+            ++frames;
+        }
+    }
+    return frames;
+}
+
+/** @brief The first all-off write's ACK as the IOmcu sends it: one frame. */
+static size_t first_ack(uint8_t *wire, size_t cap)
+{
+    link_msg_t ack;
+    memset(&ack, 0, sizeof ack);
+    ack.op = LINK_OP_ACK;
+    ack.page = LINK_PAGE_CONTROL;
+    ack.offset = 0u;
+    ack.count = 2u;
+    link_can_frame_t f[LINK_CAN_MAX_FRAMES];
+    CHECK_EQ(link_can_encode(&ack, f, LINK_CAN_MAX_FRAMES), 1u);
+    return link_uart_encode(&f[0], wire, cap);
+}
+
+TEST_CASE(the_first_answer_after_the_start_is_taken)
+{
+    uint8_t wire[LINK_UART_WIRE_MAX];
+    const size_t n = first_ack(wire, sizeof wire);
+    CHECK(n > 0u);
+    link_uart_rx_t rx;
+    uint32_t refused = 0u;
+    link_can_frame_t f;
+    node_srv_rx_start(&rx);
+    CHECK_EQ(feed(&rx, wire, n, &refused, &f), 1u);
+    CHECK_EQ(refused, 0u);
+    CHECK_EQ(rx.counts.frames, 1u);
+    link_msg_t m;
+    CHECK(link_can_decode(&f, &m));
+    CHECK_EQ(m.op, LINK_OP_ACK);
+    /* Without the start's 0x00 the same answer is lost: the failure this
+     * guards. */
+    link_uart_rx_t cold;
+    link_uart_rx_init(&cold);
+    CHECK_EQ(feed(&cold, wire, n, &refused, &f), 0u);
+}
+
+TEST_CASE(noise_before_the_first_answer_is_dropped_and_counted)
+{
+    uint8_t wire[64];
+    static const uint8_t noise[] = { 0x55u, 0xAAu, 0x13u, 0x37u, 0x42u };
+    memcpy(wire, noise, sizeof noise);
+    const size_t n = first_ack(wire + sizeof noise, sizeof wire - sizeof noise);
+    link_uart_rx_t rx;
+    uint32_t refused = 0u;
+    link_can_frame_t f;
+    node_srv_rx_start(&rx);
+    /* The noise runs into the answer's bytes: one refused frame at the
+     * answer's 0x00, and the next answer is taken. */
+    CHECK_EQ(feed(&rx, wire, sizeof noise + n, &refused, &f), 0u);
+    CHECK_EQ(refused, 1u);
+    CHECK_EQ(feed(&rx, wire + sizeof noise, n, &refused, &f), 1u);
+    CHECK_EQ(refused, 1u);
+    /* Noise ended by its own 0x00 is one refused frame and costs no answer. */
+    node_srv_rx_start(&rx);
+    refused = 0u;
+    static const uint8_t ended[] = { 0x55u, 0xAAu, 0x00u };
+    CHECK_EQ(feed(&rx, ended, sizeof ended, &refused, &f), 0u);
+    CHECK_EQ(refused, 1u);
+    CHECK_EQ(feed(&rx, wire + sizeof noise, n, &refused, &f), 1u);
+}
+
 int main(void)
 {
     RUN(the_table_reads_whole_pages_at_their_periods);
@@ -161,5 +250,7 @@ int main(void)
     RUN(fast_reads_status_every_50ms_at_once);
     RUN(a_stalled_link_comes_back_with_one_exchange_a_row);
     RUN(now_makes_a_row_due_at_once_and_ignores_none);
+    RUN(the_first_answer_after_the_start_is_taken);
+    RUN(noise_before_the_first_answer_is_dropped_and_counted);
     return test_summary("node_srv_poll");
 }

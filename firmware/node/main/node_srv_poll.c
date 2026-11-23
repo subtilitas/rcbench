@@ -60,6 +60,13 @@ void node_srv_poll_taken(node_srv_poll_t *p, node_srv_row_t row,
     }
 }
 
+void node_srv_rx_start(link_uart_rx_t *rx)
+{
+    link_uart_rx_init(rx);
+    link_can_frame_t none;
+    (void)link_uart_feed(rx, LINK_UART_DELIM, &none, NULL);
+}
+
 void node_srv_poll_now(node_srv_poll_t *p, node_srv_row_t row)
 {
     if (row >= 0 && row < NODE_SRV_ROWS) {

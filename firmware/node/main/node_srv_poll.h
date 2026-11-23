@@ -1,7 +1,7 @@
 /**
  * @file node_srv_poll.h
  * @brief The servo node's poll of the Core2350B: which exchange is due
- *        next.  Pure C, under the host suite (test_node_srv_poll).
+ *        next, and the start of its UART receiver.  Pure C, under the host suite (test_node_srv_poll).
  *
  * The node asks the IOmcu of board 3 over the UART as the panel asks its
  * own over CAN (Controller Area Network): one request in flight.  The rows
@@ -29,6 +29,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+
+#include "link_uart.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -94,6 +96,17 @@ void node_srv_poll_taken(node_srv_poll_t *p, node_srv_row_t row,
  * @param row The row; NODE_SRV_ROW_NONE does nothing.
  */
 void node_srv_poll_now(node_srv_poll_t *p, node_srv_row_t row);
+
+/**
+ * @brief Start the node's UART receiver as after a 0x00, as
+ *        link_uart_ring_init() starts the Core2350B's: on a line idle at
+ *        the start the first answer is taken (the first all-off write's
+ *        ACK), and noise on the line ends as one refused frame at its
+ *        0x00.  The caller flushes what the
+ *        driver received before it started.
+ * @param rx The decoder.
+ */
+void node_srv_rx_start(link_uart_rx_t *rx);
 
 #ifdef __cplusplus
 }

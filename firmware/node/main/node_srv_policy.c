@@ -272,6 +272,24 @@ void node_srv_pol_step(node_srv_pol_t *p, uint32_t now_ms, node_srv_out_t *out)
     out->status_fast = p->faults != 0u || p->arm == NODE_SRV_ARM_WAIT;
 }
 
+bool node_srv_pol_keep(const node_srv_pol_t *p, const node_srv_out_t *out,
+                       node_srv_x_t kind, uint16_t arm)
+{
+    if (kind == NODE_SRV_X_OFF) {
+        return true;
+    }
+    if (out->off || p->off_owed) {
+        return false;
+    }
+    if (kind == NODE_SRV_X_ARMING) {
+        return p->arm == NODE_SRV_ARM_WRITE;
+    }
+    if (kind == NODE_SRV_X_CONTROL && arm != 0u) {
+        return p->arm == NODE_SRV_ARMED && p->roles == arm;
+    }
+    return true;
+}
+
 uint8_t node_srv_pol_events(node_srv_pol_t *p)
 {
     const uint8_t ev = p->events;

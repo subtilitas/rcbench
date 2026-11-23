@@ -79,9 +79,14 @@ static link_host_t     s_host;       /**< the link host */
 static link_uart_rx_t  s_rx;         /**< the UART frame decoder */
 static heartbeat_gen_t s_beat;       /**< the heartbeat's generator */
 static bool            s_level;      /**< IO21 as driven */
-static bool            s_in_off;     /**< the exchange in flight is an all-off write */
+static node_srv_x_t   s_xkind;      /**< what the exchange in flight writes */
+static uint16_t        s_xarm;       /**< the ARM value a CONTROL exchange carries */
 static uint32_t        s_ka_ms;      /**< the console source's last KEEPALIVE */
 static uint32_t        s_refused;    /**< frames the framing or the decode dropped */
+static uint32_t        s_ident_ms;   /**< when IDENTITY was refused */
+static bool            s_ident_wait; /**< IDENTITY waits SRV_IDENT_RETRY_MS from s_ident_ms */
+/** @brief The pause before IDENTITY is asked again after a refusal, ms. */
+#define SRV_IDENT_RETRY_MS 500u
 
 /** @brief The ms clock.  @return ms since the start, wrapping. */
 static uint32_t now_ms(void)
@@ -280,9 +285,11 @@ static bool send_msg(const link_msg_t *req)
 /**
  * @brief One request and its answer: link_port_t's exchange.
  *
- * Waits in reads of up to 1ms, pumping after each.  Ends answered (a NACK
- * included), unanswered at the request's timeout, or given up when the
- * all-off writes become owed during an exchange that is not one of them.
+ * Pumps first and waits in reads of up to 1ms, pumping after each.  Ends
+ * answered (a NACK included), unanswered at the request's timeout, or
+ * given up, before it is sent or while it waits, as soon as
+ * node_srv_pol_keep() refuses s_xkind: a SAFE, STOP or loss taken by the
+ * pump ends a write from before it.
  *
  * @param ctx   Not used.
  * @param h     The link host.
@@ -294,6 +301,12 @@ static bool xchg(void *ctx, link_host_t *h, const link_msg_t *req,
                  link_msg_t *reply)
 {
     (void)ctx;
+    pump();
+    if (!node_srv_pol_keep(&s_pol, &s_out, s_xkind, s_xarm)) {
+        link_host_abandon(h);
+        count(&s_view.preempted);
+        return false;
+    }
     if (!send_msg(req)) {
         link_host_abandon(h);
         count(&s_view.unanswered);
@@ -334,7 +347,7 @@ static bool xchg(void *ctx, link_host_t *h, const link_msg_t *req,
             return true;
         }
         pump();
-        if (!s_in_off && s_out.off) {
+        if (!node_srv_pol_keep(&s_pol, &s_out, s_xkind, s_xarm)) {
             link_host_abandon(h);
             count(&s_view.preempted);
             return false;
@@ -406,7 +419,7 @@ static void do_off(void)
         { LINK_PAGE_SUPPLY, LINK_SP_OUTPUT, 1u },
     };
     const uint8_t gen = s_out.off_gen;
-    s_in_off = true;
+    s_xkind = NODE_SRV_X_OFF;
     bool all = true;
     for (size_t k = 0; k < sizeof k_writes / sizeof k_writes[0] && all; ++k) {
         /* A refusal is an answer: RAIL 0 and OUTPUT 0 are always taken, and
@@ -415,7 +428,7 @@ static void do_off(void)
         (void)write_regs(k_writes[k].page, k_writes[k].offset, k_writes[k].count,
                          k_zero, &all);
     }
-    s_in_off = false;
+    s_xkind = NODE_SRV_X_READ;
     if (all) {
         node_srv_pol_off_done(&s_pol, gen);
         node_srv_pol_ctl_done(&s_pol);
@@ -447,18 +460,28 @@ static void do_identity(void)
     memcpy(s_view.identity, reply.regs, (size_t)LINK_ID_COUNT * sizeof(uint16_t));
     taskEXIT_CRITICAL(&s_view_mux);
     if (!ok) {
-        /* Asked again after a pause, not in a tight loop. */
-        vTaskDelay(pdMS_TO_TICKS(500));
+        /* Asked again after a pause, not in a tight loop; the task pumps
+         * on through it. */
+        s_ident_ms = now_ms();
+        s_ident_wait = true;
     }
 }
 
-/** @brief CLEAR (0x5AFE), then ARM and THROTTLE 0 in one frame. */
+/**
+ * @brief CLEAR (0x5AFE), then ARM and THROTTLE 0 in one frame.  Each is an
+ *        NODE_SRV_X_ARMING exchange: a SAFE, STOP or loss taken before or
+ *        during either ends the sequence before ARM is sent, or ends the
+ *        wait for its answer, and CONTROL's ARM 0 or the all-off writes
+ *        follow (node_srv_pol_keep()).
+ */
 static void do_arm(void)
 {
     const uint16_t clear = LINK_CLEAR_MAGIC;
     const uint16_t arm[2] = { s_pol.roles, 0u };
+    s_xkind = NODE_SRV_X_ARMING;
     const bool taken = write_regs(LINK_PAGE_CONTROL, LINK_CT_CLEAR, 1u, &clear, NULL)
                        && write_regs(LINK_PAGE_CONTROL, LINK_CT_ARM, 2u, arm, NULL);
+    s_xkind = NODE_SRV_X_READ;
     node_srv_pol_arm_done(&s_pol, now_ms(), taken);
 }
 
@@ -467,7 +490,11 @@ static void do_control(void)
 {
     const uint16_t regs[2] = { s_out.arm, s_out.throttle };
     bool answered = false;
+    s_xkind = NODE_SRV_X_CONTROL;
+    s_xarm = regs[0];
     const bool ack = write_regs(LINK_PAGE_CONTROL, LINK_CT_ARM, 2u, regs, &answered);
+    s_xkind = NODE_SRV_X_READ;
+    s_xarm = 0u;
     if (answered) {
         node_srv_pol_ctl_done(&s_pol);
         if (!ack && regs[0] != 0u) {
@@ -535,7 +562,13 @@ static void srv_task(void *arg)
             continue;
         }
         if (!s_pol.identity_ok) {
-            do_identity();
+            if (!s_ident_wait
+                || mstime_elapsed(now_ms(), s_ident_ms, SRV_IDENT_RETRY_MS)) {
+                s_ident_wait = false;
+                do_identity();
+            } else {
+                vTaskDelay(1);
+            }
             continue;
         }
         if (s_out.arm_write) {
@@ -566,7 +599,7 @@ void node_srv_link_start(void)
     node_srv_pol_init(&s_pol, now);
     node_srv_poll_init(&s_poll);
     link_host_init(&s_host, now);
-    link_uart_rx_init(&s_rx);
+    node_srv_rx_start(&s_rx);
     heartbeat_gen_init(&s_beat);
     s_evq = xQueueCreate(SRV_EVQ_LEN, sizeof(srv_ev_t));
     const uart_config_t cfg = {
@@ -584,6 +617,10 @@ void node_srv_link_start(void)
     if (e == ESP_OK) {
         e = uart_set_pin(SRV_UART, NODE_PIN_SRV_TX, NODE_PIN_SRV_RX,
                          UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+    }
+    if (e == ESP_OK) {
+        /* What the line carried before the driver ran is no answer. */
+        e = uart_flush_input(SRV_UART);
     }
     if (e != ESP_OK || s_evq == NULL) {
         /* No link: no heartbeat either, so the Core2350B stays SAFE. */
