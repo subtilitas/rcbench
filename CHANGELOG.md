@@ -263,6 +263,9 @@ history is in git.
   view looks from, `--suffix` names the PNGs of a second view.
 
 ### Changed
+- Web flasher: the size budget of the first load is 120kB (was 80kB).
+  The build measures 79.9kB at the first load and 419.0kB in all; the
+  total budget stays 600kB (`flasher/tools/size.ts`).
 - Web flasher: the page is a wizard. The first screen offers four tasks
   (the panel, the IOmcu, a wireless device, the repair of the panel's C6
   radio); each step then has its own screen: board, prepare (C6 only),
