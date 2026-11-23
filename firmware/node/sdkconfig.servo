@@ -1,0 +1,8 @@
+# The remote servo node's ES3C28P: the servo role, appended after
+# sdkconfig.s3_es3c28p:
+#   idf.py -D IDF_TARGET=esp32s3 -D SDKCONFIG_DEFAULTS=\
+#     "sdkconfig.defaults;sdkconfig.s3_es3c28p;sdkconfig.servo" build
+# The role is a choice: the member sdkconfig.s3_es3c28p selects is named
+# off, so tools/check_sdkconfig.py reads the three files as one list.
+CONFIG_RCNODE_ROLE_POWER=n
+CONFIG_RCNODE_ROLE_SERVO=y

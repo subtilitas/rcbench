@@ -765,7 +765,10 @@ TEST_CASE(the_name_takes_the_two_address_bytes_printed_last)
     CHECK_STR_EQ(name, "rcbench-pwr-3456");
     CHECK(rcnode_name(RCNODE_ROLE_BALANCE, addr2, name));
     CHECK_STR_EQ(name, "rcbench-bal-A00F");
-    CHECK(!rcnode_name(3u, addr, name));
+    CHECK(rcnode_name(RCNODE_ROLE_SERVO, addr, name));
+    CHECK_STR_EQ(name, "rcbench-srv-3456");
+    CHECK(!rcnode_name(4u, addr, name));
+    CHECK(!rcnode_name(0u, addr, name));
     CHECK(!rcnode_name(RCNODE_ROLE_POWER, NULL, name));
 }
 
@@ -791,6 +794,15 @@ TEST_CASE(the_advertising_has_its_bytes_and_matches_its_role)
     CHECK_EQ(rcnode_adv_build(RCNODE_ROLE_BALANCE, addr, ad, sizeof ad), 29);
     CHECK(rcnode_adv_match(ad, 29, &role));
     CHECK_EQ(role, RCNODE_ROLE_BALANCE);
+
+    /* The servo node advertises its role byte 3. */
+    CHECK_EQ(rcnode_adv_build(RCNODE_ROLE_SERVO, addr, ad, sizeof ad), 29);
+    CHECK_EQ(ad[28], RCNODE_ROLE_SERVO);
+    CHECK(rcnode_adv_match(ad, 29, &role));
+    CHECK_EQ(role, 0);
+    CHECK_EQ(rcnode_adv_maker_role(ad, 29), 0);
+    CHECK_EQ(rcnode_name_role("rcbench-srv-3456"), 0);
+    CHECK_EQ(rcnode_adv_build(4u, addr, ad, sizeof ad), 0);
 
     /* the service UUID alone, as a report cut after it, matches with no
      * role, in a complete list and in an incomplete one */

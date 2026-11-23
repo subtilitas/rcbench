@@ -32,6 +32,10 @@
 /** @brief The image's role, which an update over Bluetooth LE checks. */
 #if CONFIG_RCNODE_ROLE_BALANCE
 DEVOTA_ROLE(BLEOTA_KIND_NODE_BAL);
+#elif CONFIG_RCNODE_ROLE_SERVO
+/* Kind 0 is no device's: the servo node takes its image over USB only, and
+ * no device takes this image over Bluetooth LE. */
+DEVOTA_ROLE(0u);
 #else
 DEVOTA_ROLE(NODE_KIND_POWER);
 #endif
@@ -349,10 +353,12 @@ static void tx_task(void *arg)
  *        the key pulls it low.
  * @return true while it is pressed
  */
+#if !CONFIG_RCNODE_ROLE_SERVO
 static bool update_key(void)
 {
     return gpio_get_level(NODE_PIN_BOOT) == 0;
 }
+#endif
 
 void node_ble_start(uint8_t role)
 {
@@ -387,9 +393,11 @@ void node_ble_start(uint8_t role)
         .pull_up_en = GPIO_PULLUP_ENABLE,
     };
     (void)gpio_config(&key);
+#if !CONFIG_RCNODE_ROLE_SERVO
     (void)devota_start(role == RCNODE_ROLE_BALANCE ? BLEOTA_KIND_NODE_BAL
                                                : NODE_KIND_POWER,
                        BLEOTA_CONFIRM_HOLD, update_key);
+#endif
     xTaskCreate(tx_task, "ble_tx", 3072, NULL, 6, NULL);
     nimble_port_freertos_init(host_task);
 }
