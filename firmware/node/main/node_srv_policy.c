@@ -27,15 +27,13 @@ static bool roles_valid(uint16_t roles)
 }
 
 /**
- * @brief SAFE: no switch to ARMED, no throttle; CONTROL written at once
- *        when it was not SAFE.
+ * @brief SAFE: no switch to ARMED, no throttle.  CONTROL's ARM 0 is owed at
+ *        once while the Core2350B may hold a non-zero ARM
+ *        (node_srv_pol_step()'s ctl_now).
  * @param p The state.
  */
 static void disarm(node_srv_pol_t *p)
 {
-    if (p->arm != NODE_SRV_SAFE) {
-        p->ctl_now = true;
-    }
     p->arm = NODE_SRV_SAFE;
     p->thr_seen = false;
     p->thr = 0u;
@@ -154,7 +152,6 @@ node_srv_arm_why_t node_srv_pol_arm(node_srv_pol_t *p, uint32_t now_ms,
 void node_srv_pol_safe(node_srv_pol_t *p)
 {
     disarm(p);
-    p->ctl_now = true;
 }
 
 void node_srv_pol_answer(node_srv_pol_t *p, uint32_t now_ms)
@@ -196,9 +193,21 @@ void node_srv_pol_off_done(node_srv_pol_t *p, uint8_t gen)
     }
 }
 
-void node_srv_pol_ctl_done(node_srv_pol_t *p)
+void node_srv_pol_ctl_sent(node_srv_pol_t *p, uint16_t arm, uint16_t throttle)
 {
-    p->ctl_now = false;
+    /* Sent is maybe taken: the higher of the two may be in force. */
+    if (arm != 0u) {
+        p->force_arm = arm;
+    }
+    if (throttle > p->force_thr) {
+        p->force_thr = throttle;
+    }
+}
+
+void node_srv_pol_ctl_done(node_srv_pol_t *p, uint16_t arm, uint16_t throttle)
+{
+    p->force_arm = arm;
+    p->force_thr = throttle;
 }
 
 void node_srv_pol_arm_done(node_srv_pol_t *p, uint32_t now_ms, bool taken)
@@ -262,18 +271,22 @@ void node_srv_pol_step(node_srv_pol_t *p, uint32_t now_ms, node_srv_out_t *out)
     out->off = p->off_owed;
     out->off_gen = p->off_gen;
     out->arm_write = p->arm == NODE_SRV_ARM_WRITE;
-    out->ctl_now = p->ctl_now;
     if (p->arm == NODE_SRV_ARMED) {
         out->arm = p->roles;
         if (p->thr_seen && !mstime_elapsed(now_ms, p->thr_ms, NODE_SRV_THR_MS)) {
             out->throttle = p->thr;
         }
     }
+    /* Derived, not flagged: whatever path stopped the bench or the motor,
+     * the difference between what the Core2350B may hold and what the
+     * policy wants says CONTROL is owed now. */
+    out->ctl_now = (out->arm == 0u && p->force_arm != 0u)
+                   || (out->throttle == 0u && p->force_thr != 0u);
     out->status_fast = p->faults != 0u || p->arm == NODE_SRV_ARM_WAIT;
 }
 
 bool node_srv_pol_keep(const node_srv_pol_t *p, const node_srv_out_t *out,
-                       node_srv_x_t kind, uint16_t arm)
+                       node_srv_x_t kind, uint16_t arm, uint16_t throttle)
 {
     if (kind == NODE_SRV_X_OFF) {
         return true;
@@ -285,11 +298,15 @@ bool node_srv_pol_keep(const node_srv_pol_t *p, const node_srv_out_t *out,
         return p->arm == NODE_SRV_ARM_WRITE;
     }
     if (kind == NODE_SRV_X_CONTROL) {
-        /* ARM 0 goes on; a non-zero ARM only while it is the one in force. */
-        return arm == 0u || (p->arm == NODE_SRV_ARMED && p->roles == arm);
+        /* A write that asks for more than the policy wants now ends: a
+         * non-zero ARM other than the one wanted, a non-zero THROTTLE once
+         * the policy wants 0. */
+        return (arm == 0u || arm == out->arm)
+               && (throttle == 0u || out->throttle != 0u);
     }
-    /* A read waits for nothing the bench needs: a disarm owed goes first. */
-    return !p->ctl_now && !out->ctl_now;
+    /* A read waits for nothing the bench needs: CONTROL owed now goes
+     * first. */
+    return !out->ctl_now;
 }
 
 uint8_t node_srv_pol_events(node_srv_pol_t *p)

@@ -64,6 +64,8 @@ static uint32_t armed_at(node_srv_pol_t *p, uint32_t t0, uint16_t roles)
     node_srv_pol_status(p, t, 0u);
     node_srv_pol_step(p, t, &o);
     CHECK(o.arm_write);
+    node_srv_pol_ctl_sent(p, roles, 0u);
+    node_srv_pol_ctl_done(p, roles, 0u);
     node_srv_pol_arm_done(p, t, true);
     node_srv_pol_step(p, t, &o);
     CHECK_EQ(p->arm, NODE_SRV_ARMED);
@@ -583,7 +585,7 @@ TEST_CASE(safe_writes_control_at_once_and_keeps_the_beat)
     CHECK_EQ(o.arm, 0u);
     CHECK(o.beat);
     CHECK(!o.off);
-    node_srv_pol_ctl_done(&p);
+    node_srv_pol_ctl_done(&p, 0u, 0u);
     o = step(&p, t + 2u);
     CHECK(!o.ctl_now);
     CHECK_EQ(p.panel, NODE_SRV_LINKED);
@@ -611,12 +613,14 @@ static void cut(node_srv_pol_t *p, uint32_t t, cut_t how)
 }
 
 /**
- * @brief A cut during CLEAR's wait (@p at_write) or during the settle: CLEAR
- *        and the arming frame are given up, an ACK arriving after it arms
- *        nothing, and CONTROL then carries ARM 0.
+ * @brief A cut during the settle (@p stage 0), CLEAR's wait (1) or the
+ *        arming frame's wait (2): CLEAR and the arming frame are given up,
+ *        an ACK arriving after it arms nothing, and CONTROL then carries
+ *        ARM 0, owed at once once the arming frame was sent.
  */
-static void cut_arming(cut_t how, bool at_write)
+static void cut_arming(cut_t how, int stage)
 {
+    const bool at_write = stage > 0;
     node_srv_pol_t p;
     linked_at(&p, 0u);
     CHECK_EQ(node_srv_pol_arm(&p, 0u, LINK_ARM_ALL), NODE_SRV_ARM_OK);
@@ -627,7 +631,10 @@ static void cut_arming(cut_t how, bool at_write)
         node_srv_pol_status(&p, 100u, 0u);
         o = step(&p, 100u);
         CHECK(o.arm_write);
-        CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_ARMING, 0u));
+        CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_ARMING, 0u, 0u));
+        if (stage == 2) {
+            node_srv_pol_ctl_sent(&p, LINK_ARM_ALL, 0u);
+        }
         t = 101u;
     }
     cut(&p, t, how);
@@ -636,7 +643,7 @@ static void cut_arming(cut_t how, bool at_write)
     }
     node_srv_pol_answer(&p, t);
     o = step(&p, t);
-    CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_ARMING, 0u));
+    CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_ARMING, 0u, 0u));
     CHECK(!o.arm_write);
     CHECK_EQ(o.arm, 0u);
     /* An ACK of CLEAR or ARM arriving now arms nothing. */
@@ -648,12 +655,14 @@ static void cut_arming(cut_t how, bool at_write)
     /* What follows is not held up: the all-off writes for a STOP or a
      * loss, CONTROL's ARM 0 for a SAFE. */
     if (how == CUT_SAFE) {
-        CHECK(o.ctl_now);
-        CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, 0u));
+        CHECK_EQ(o.ctl_now, stage == 2);
+        CHECK_EQ(node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u, 0u), stage != 2);
+        CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, 0u, 0u));
+        CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, LINK_ARM_ALL, 0u));
     } else {
         CHECK(o.off);
-        CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_OFF, 0u));
-        CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u));
+        CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_OFF, 0u, 0u));
+        CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u, 0u));
         CHECK(!o.beat);
     }
     /* A later STATUS cannot bring the arming frame back. */
@@ -661,20 +670,22 @@ static void cut_arming(cut_t how, bool at_write)
     CHECK(!step(&p, t + 1u).arm_write);
 }
 
-TEST_CASE(safe_stop_ble_or_keepalive_loss_during_clear_arm_nothing)
+TEST_CASE(safe_stop_ble_or_keepalive_loss_during_clear_or_arm_arm_nothing)
 {
-    cut_arming(CUT_SAFE, true);
-    cut_arming(CUT_STOP_FLAG, true);
-    cut_arming(CUT_BLE, true);
-    cut_arming(CUT_KA, true);
+    for (int stage = 1; stage <= 2; ++stage) {
+        cut_arming(CUT_SAFE, stage);
+        cut_arming(CUT_STOP_FLAG, stage);
+        cut_arming(CUT_BLE, stage);
+        cut_arming(CUT_KA, stage);
+    }
 }
 
 TEST_CASE(safe_stop_ble_or_keepalive_loss_during_the_settle_arm_nothing)
 {
-    cut_arming(CUT_SAFE, false);
-    cut_arming(CUT_STOP_FLAG, false);
-    cut_arming(CUT_BLE, false);
-    cut_arming(CUT_KA, false);
+    cut_arming(CUT_SAFE, 0);
+    cut_arming(CUT_STOP_FLAG, 0);
+    cut_arming(CUT_BLE, 0);
+    cut_arming(CUT_KA, 0);
 }
 
 TEST_CASE(a_control_write_carrying_arm_is_given_up_after_safe)
@@ -682,13 +693,13 @@ TEST_CASE(a_control_write_carrying_arm_is_given_up_after_safe)
     node_srv_pol_t p;
     const uint32_t t = armed_at(&p, 0u, LINK_ARM_SURFACE);
     node_srv_out_t o = step(&p, t);
-    CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, LINK_ARM_SURFACE));
-    CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, LINK_ARM_THROTTLE));
+    CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, LINK_ARM_SURFACE, 0u));
+    CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, LINK_ARM_THROTTLE, 0u));
     node_srv_pol_safe(&p);
     o = step(&p, t + 1u);
-    CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, LINK_ARM_SURFACE));
-    CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, 0u));
-    CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u));
+    CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, LINK_ARM_SURFACE, 0u));
+    CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, 0u, 0u));
+    CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u, 0u));
 }
 
 TEST_CASE(the_all_off_writes_are_never_given_up_and_end_every_other_exchange)
@@ -697,10 +708,10 @@ TEST_CASE(the_all_off_writes_are_never_given_up_and_end_every_other_exchange)
     const uint32_t t = armed_at(&p, 0u, LINK_ARM_ALL);
     node_srv_pol_stop(&p, t);
     const node_srv_out_t o = step(&p, t);
-    CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_OFF, 0u));
-    CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u));
-    CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, 0u));
-    CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_ARMING, 0u));
+    CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_OFF, 0u, 0u));
+    CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u, 0u));
+    CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, 0u, 0u));
+    CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_ARMING, 0u, 0u));
 }
 
 TEST_CASE(safe_gives_up_a_waiting_read_so_arm_0_goes_out_at_the_next_pump)
@@ -712,20 +723,95 @@ TEST_CASE(safe_gives_up_a_waiting_read_so_arm_0_goes_out_at_the_next_pump)
         node_srv_pol_t p;
         const uint32_t t = armed_at(&p, 0u, LINK_ARM_ALL);
         node_srv_out_t o = step(&p, t + row);
-        CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u));
+        CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u, 0u));
         node_srv_pol_safe(&p);
         o = step(&p, t + row + 1u);   /* the next pump */
-        CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u));
+        CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u, 0u));
         CHECK(o.ctl_now);
         CHECK_EQ(o.arm, 0u);
-        CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, 0u));
-        CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, LINK_ARM_ALL));
-        CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_ARMING, 0u));
+        CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, 0u, 0u));
+        CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, LINK_ARM_ALL, 0u));
+        CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_ARMING, 0u, 0u));
         /* Reads go on once ARM 0 is answered. */
-        node_srv_pol_ctl_done(&p);
+        node_srv_pol_ctl_done(&p, 0u, 0u);
         o = step(&p, t + row + 2u);
-        CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u));
+        CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u, 0u));
     }
+}
+
+/**
+ * @brief THROTTLE 4200 in force; its last command at the arming's end.
+ *        A read waits at 149ms and is given up at 150ms; CONTROL with
+ *        THROTTLE 0 is owed then, and one carrying 4200 is given up.
+ * @param t0  The start.
+ * @param row Which of the 6 reads waits (for the record; one kind).
+ */
+static void throttle_expiry_during_read(uint32_t t0, unsigned row)
+{
+    node_srv_pol_t p;
+    const uint32_t t = armed_at(&p, t0, LINK_ARM_THROTTLE);
+    node_srv_pol_throttle(&p, t, 4200u);
+    (void)step(&p, t);
+    /* The poll's CONTROL write takes 4200; then a read waits, its answer
+     * and its repeat lost: nothing is answered after t + 10ms. */
+    node_srv_pol_ctl_sent(&p, LINK_ARM_THROTTLE, 4200u);
+    node_srv_pol_ctl_done(&p, LINK_ARM_THROTTLE, 4200u);
+    node_srv_pol_answer(&p, t + 10u);
+    node_srv_pol_keepalive(&p, t + 100u, false);
+    node_srv_out_t o = step(&p, t + 149u);
+    CHECK_EQ(o.throttle, 4200u);
+    CHECK(!o.ctl_now);
+    CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u, 0u));
+    o = step(&p, t + 150u);                 /* the next pump */
+    CHECK_EQ(o.throttle, 0u);
+    CHECK(o.ctl_now);
+    CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u, 0u));
+    CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, LINK_ARM_THROTTLE, 0u));
+    CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, LINK_ARM_THROTTLE, 4200u));
+    CHECK_EQ(o.arm, LINK_ARM_THROTTLE);     /* ARMED until T_ka */
+    /* THROTTLE 0 acknowledged: nothing owed, reads go on. */
+    node_srv_pol_ctl_sent(&p, LINK_ARM_THROTTLE, 0u);
+    node_srv_pol_ctl_done(&p, LINK_ARM_THROTTLE, 0u);
+    o = step(&p, t + 151u);
+    CHECK(!o.ctl_now);
+    CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u, 0u));
+    (void)row;
+}
+
+TEST_CASE(a_throttle_expiring_during_each_read_gives_it_up_at_150ms_not_149ms)
+{
+    for (unsigned row = 0u; row < 6u; ++row) {
+        throttle_expiry_during_read(1000u, row);
+        throttle_expiry_during_read(0xFFFFFFFFu - 100u - 150u + row, row);
+    }
+}
+
+TEST_CASE(a_throttle_sent_and_unanswered_counts_as_in_force)
+{
+    node_srv_pol_t p;
+    const uint32_t t = armed_at(&p, 0u, LINK_ARM_THROTTLE);
+    node_srv_pol_throttle(&p, t, 3000u);
+    node_srv_pol_ctl_sent(&p, LINK_ARM_THROTTLE, 3000u);   /* no answer */
+    node_srv_pol_safe(&p);
+    const node_srv_out_t o = step(&p, t + 1u);
+    CHECK(o.ctl_now);
+    CHECK_EQ(o.arm, 0u);
+    CHECK_EQ(o.throttle, 0u);
+    /* A lower one sent does not lower what may be in force. */
+    node_srv_pol_ctl_sent(&p, 0u, 0u);
+    CHECK(step(&p, t + 2u).ctl_now);
+    node_srv_pol_ctl_done(&p, 0u, 0u);
+    CHECK(!step(&p, t + 3u).ctl_now);
+}
+
+TEST_CASE(nothing_is_owed_while_nothing_non_zero_can_be_in_force)
+{
+    node_srv_pol_t p;
+    linked_at(&p, 0u);
+    node_srv_pol_safe(&p);
+    const node_srv_out_t o = step(&p, 1u);
+    CHECK(!o.ctl_now);
+    CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u, 0u));
 }
 
 int main(void)
@@ -758,10 +844,13 @@ int main(void)
     RUN(a_stop_while_the_arming_frame_is_on_its_way_wins);
     RUN(all_off_writes_owed_again_on_their_way_stay_owed);
     RUN(safe_writes_control_at_once_and_keeps_the_beat);
-    RUN(safe_stop_ble_or_keepalive_loss_during_clear_arm_nothing);
+    RUN(safe_stop_ble_or_keepalive_loss_during_clear_or_arm_arm_nothing);
     RUN(safe_stop_ble_or_keepalive_loss_during_the_settle_arm_nothing);
     RUN(a_control_write_carrying_arm_is_given_up_after_safe);
     RUN(the_all_off_writes_are_never_given_up_and_end_every_other_exchange);
     RUN(safe_gives_up_a_waiting_read_so_arm_0_goes_out_at_the_next_pump);
+    RUN(a_throttle_expiring_during_each_read_gives_it_up_at_150ms_not_149ms);
+    RUN(a_throttle_sent_and_unanswered_counts_as_in_force);
+    RUN(nothing_is_owed_while_nothing_non_zero_can_be_in_force);
     return test_summary("node_srv_policy");
 }

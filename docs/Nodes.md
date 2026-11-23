@@ -589,8 +589,11 @@ and after each row below that names them. An exchange in flight is given
 up for them, so they follow within one exchange's wire time. CLEAR and the
 arming frame are given up as well, before they are sent or while they wait,
 once a SAFE, a STOP or a loss is taken, and so is a CONTROL write whose ARM
-differs from the one in force. A read waiting for its answer is given up
-when a SAFE is taken, so ARM 0 goes out at the next pump.
+differs from the one in force. CONTROL is owed at once while the node wants
+ARM 0 or THROTTLE 0 and the Core2350B may hold a non-zero one, the last
+value it acknowledged or a higher one sent since. A read waiting for its
+answer is given up then, so ARM 0 after a SAFE and THROTTLE 0 after the
+150ms go out at the next pump.
 
 | Event | Servo node does |
 | --- | --- |

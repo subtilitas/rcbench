@@ -81,6 +81,7 @@ static heartbeat_gen_t s_beat;       /**< the heartbeat's generator */
 static bool            s_level;      /**< IO21 as driven */
 static node_srv_x_t   s_xkind;      /**< what the exchange in flight writes */
 static uint16_t        s_xarm;       /**< the ARM value a CONTROL exchange carries */
+static uint16_t        s_xthr;       /**< the THROTTLE a CONTROL exchange carries */
 static uint32_t        s_ka_ms;      /**< the console source's last KEEPALIVE */
 static uint32_t        s_refused;    /**< frames the framing or the decode dropped */
 static uint32_t        s_ident_ms;   /**< when IDENTITY was refused */
@@ -302,7 +303,7 @@ static bool xchg(void *ctx, link_host_t *h, const link_msg_t *req,
 {
     (void)ctx;
     pump();
-    if (!node_srv_pol_keep(&s_pol, &s_out, s_xkind, s_xarm)) {
+    if (!node_srv_pol_keep(&s_pol, &s_out, s_xkind, s_xarm, s_xthr)) {
         link_host_abandon(h);
         count(&s_view.preempted);
         return false;
@@ -347,7 +348,7 @@ static bool xchg(void *ctx, link_host_t *h, const link_msg_t *req,
             return true;
         }
         pump();
-        if (!node_srv_pol_keep(&s_pol, &s_out, s_xkind, s_xarm)) {
+        if (!node_srv_pol_keep(&s_pol, &s_out, s_xkind, s_xarm, s_xthr)) {
             link_host_abandon(h);
             count(&s_view.preempted);
             return false;
@@ -425,13 +426,15 @@ static void do_off(void)
         /* A refusal is an answer: RAIL 0 and OUTPUT 0 are always taken, and
          * an IOmcu without the page has nothing to switch off there.  An
          * unanswered write ends the round; the next pass starts it again. */
-        (void)write_regs(k_writes[k].page, k_writes[k].offset, k_writes[k].count,
-                         k_zero, &all);
+        const bool ack = write_regs(k_writes[k].page, k_writes[k].offset,
+                                    k_writes[k].count, k_zero, &all);
+        if (k == 0u && ack) {
+            node_srv_pol_ctl_done(&s_pol, 0u, 0u);
+        }
     }
     s_xkind = NODE_SRV_X_READ;
     if (all) {
         node_srv_pol_off_done(&s_pol, gen);
-        node_srv_pol_ctl_done(&s_pol);
     }
 }
 
@@ -479,8 +482,14 @@ static void do_arm(void)
     const uint16_t clear = LINK_CLEAR_MAGIC;
     const uint16_t arm[2] = { s_pol.roles, 0u };
     s_xkind = NODE_SRV_X_ARMING;
-    const bool taken = write_regs(LINK_PAGE_CONTROL, LINK_CT_CLEAR, 1u, &clear, NULL)
-                       && write_regs(LINK_PAGE_CONTROL, LINK_CT_ARM, 2u, arm, NULL);
+    bool taken = write_regs(LINK_PAGE_CONTROL, LINK_CT_CLEAR, 1u, &clear, NULL);
+    if (taken) {
+        node_srv_pol_ctl_sent(&s_pol, arm[0], arm[1]);
+        taken = write_regs(LINK_PAGE_CONTROL, LINK_CT_ARM, 2u, arm, NULL);
+        if (taken) {
+            node_srv_pol_ctl_done(&s_pol, arm[0], arm[1]);
+        }
+    }
     s_xkind = NODE_SRV_X_READ;
     node_srv_pol_arm_done(&s_pol, now_ms(), taken);
 }
@@ -492,14 +501,16 @@ static void do_control(void)
     bool answered = false;
     s_xkind = NODE_SRV_X_CONTROL;
     s_xarm = regs[0];
+    s_xthr = regs[1];
+    node_srv_pol_ctl_sent(&s_pol, regs[0], regs[1]);
     const bool ack = write_regs(LINK_PAGE_CONTROL, LINK_CT_ARM, 2u, regs, &answered);
     s_xkind = NODE_SRV_X_READ;
     s_xarm = 0u;
-    if (answered) {
-        node_srv_pol_ctl_done(&s_pol);
-        if (!ack && regs[0] != 0u) {
-            node_srv_pol_refused(&s_pol);
-        }
+    s_xthr = 0u;
+    if (ack) {
+        node_srv_pol_ctl_done(&s_pol, regs[0], regs[1]);
+    } else if (answered && regs[0] != 0u) {
+        node_srv_pol_refused(&s_pol);
     }
 }
 
@@ -562,7 +573,7 @@ static void srv_task(void *arg)
             continue;
         }
         if (s_out.ctl_now) {
-            /* A disarm goes before every read, IDENTITY's included:
+            /* CONTROL owed now goes before every read, IDENTITY's included:
              * node_srv_pol_keep() gives reads up while it is owed. */
             node_srv_poll_taken(&s_poll, NODE_SRV_ROW_CONTROL, now_ms());
             do_control();

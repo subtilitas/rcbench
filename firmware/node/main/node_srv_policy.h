@@ -125,7 +125,8 @@ typedef struct {
     uint32_t faults_ms;       /**< when */
     bool     off_owed;        /**< the all-off writes are owed */
     uint8_t  off_gen;         /**< counts each time they are owed anew */
-    bool     ctl_now;         /**< CONTROL is to be written at once */
+    uint16_t force_arm;       /**< the ARM the Core2350B may hold: the last one acknowledged, or a higher one sent since */
+    uint16_t force_thr;       /**< the THROTTLE it may hold, as force_arm */
     uint8_t  events;          /**< NODE_SRV_EV_*, not yet taken */
 } node_srv_pol_t;
 
@@ -135,7 +136,9 @@ typedef struct {
     bool     off;       /**< the all-off writes are owed: before anything else */
     uint8_t  off_gen;   /**< their generation, for node_srv_pol_off_done() */
     bool     arm_write; /**< write CLEAR, then the arming frame */
-    bool     ctl_now;   /**< write CONTROL now, not at its next 50ms */
+    bool     ctl_now;   /**< write CONTROL now, not at its next 50ms: arm or
+                             throttle is 0 while the Core2350B may hold a
+                             non-zero one (force_arm, force_thr) */
     uint16_t arm;       /**< ARM for CONTROL's write: 0, or the roles while ARMED */
     uint16_t throttle;  /**< THROTTLE for it: 0 unless ARMED with a fresh THROTTLE */
     bool     run_pulse; /**< pulse RUN low for NODE_SRV_RUN_PULSE_MS now */
@@ -235,10 +238,23 @@ void node_srv_pol_status(node_srv_pol_t *p, uint32_t now_ms, uint16_t faults);
 void node_srv_pol_off_done(node_srv_pol_t *p, uint8_t gen);
 
 /**
- * @brief CONTROL was written after node_srv_out_t's ctl_now.
- * @param p The state.
+ * @brief A CONTROL write of ARM and THROTTLE (the poll's, or the arming
+ *        frame) is about to be sent: from now the Core2350B may hold them.
+ * @param p        The state.
+ * @param arm      The ARM it carries.
+ * @param throttle The THROTTLE it carries.
  */
-void node_srv_pol_ctl_done(node_srv_pol_t *p);
+void node_srv_pol_ctl_sent(node_srv_pol_t *p, uint16_t arm, uint16_t throttle);
+
+/**
+ * @brief The Core2350B acknowledged a CONTROL write of ARM and THROTTLE,
+ *        the all-off writes' ARM 0 and THROTTLE 0 included: they are in
+ *        force.
+ * @param p        The state.
+ * @param arm      The ARM it carried.
+ * @param throttle The THROTTLE it carried.
+ */
+void node_srv_pol_ctl_done(node_srv_pol_t *p, uint16_t arm, uint16_t throttle);
 
 /**
  * @brief How CLEAR and the arming frame ended.
@@ -278,16 +294,25 @@ typedef enum {
  * | any other | the all-off writes are owed |
  * | CLEAR or the arming frame | the switch to ARMED is no longer at its writes (SAFE, STOP, a loss, the 300ms) |
  * | CONTROL with a non-zero ARM | the policy's ARM differs from that value |
- * | a read | CONTROL is owed at once (a SAFE's ARM 0) |
+ * | CONTROL with a non-zero THROTTLE | the policy's THROTTLE is 0 |
+ * | a read | CONTROL is owed now (node_srv_out_t's ctl_now) |
+ *
+ * CONTROL is owed now while the policy wants ARM 0 or THROTTLE 0 and the
+ * Core2350B may hold a non-zero one: derived at every step from force_arm
+ * and force_thr, so a SAFE, a STOP, a loss and a throttle's 150ms each make
+ * it owed without a flag of their own.  The node writes RAIL, PORT_WANT and
+ * SUPPLY OUTPUT only as 0, in the all-off writes, which every other
+ * exchange gives way to.
  *
  * @param p    The state.
  * @param out  The last node_srv_pol_step().
  * @param kind What the exchange writes.
  * @param arm  The ARM value a CONTROL exchange carries; 0 otherwise.
+ * @param throttle The THROTTLE a CONTROL exchange carries; 0 otherwise.
  * @return true while it may go on.
  */
 bool node_srv_pol_keep(const node_srv_pol_t *p, const node_srv_out_t *out,
-                       node_srv_x_t kind, uint16_t arm);
+                       node_srv_x_t kind, uint16_t arm, uint16_t throttle);
 
 /**
  * @brief Advance the clocks and say what to do now.
