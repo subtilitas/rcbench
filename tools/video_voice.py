@@ -271,6 +271,35 @@ def _stretch_scope(scene: dict, move) -> None:
                 keys(track)
 
 
+def _stretch_windows(node, move) -> None:
+    """Move every time of a scene's windows.
+
+    Args:
+        node: The windows, or a part of one: a window's from and to, its
+            items' from, to and on, the spans get, bar and t, and the keys
+            of its page's shots and of its pointer.
+        move: Gives the new time of an old one.
+    """
+    if isinstance(node, list):
+        for item in node:
+            _stretch_windows(item, move)
+        return
+    if not isinstance(node, dict):
+        return
+    for name, value in node.items():
+        number = (isinstance(value, (int, float))
+                  and not isinstance(value, bool))
+        if name in ("from", "to", "on") and number:
+            node[name] = move(value)
+        elif name in ("get", "bar", "t") and isinstance(value, list):
+            node[name] = [move(t) for t in value]
+        elif name in ("shots", "pointer") and isinstance(value, list):
+            for key in value:
+                key[0] = move(key[0])
+        else:
+            _stretch_windows(value, move)
+
+
 def _stretch(scene: dict, old: list, new: list) -> None:
     def move(t):
         n = 0
@@ -329,6 +358,7 @@ def _stretch(scene: dict, old: list, new: list) -> None:
         servo = scene["servo"]
         servo["appear"] = move(servo["appear"])
         servo["plug"] = [move(t) for t in servo["plug"]]
+    _stretch_windows(scene.get("windows", []), move)
     for cue in scene["say"]:
         cue["at"] = move(cue["at"])
 

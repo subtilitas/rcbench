@@ -6,6 +6,8 @@ SPDX-License-Identifier: MIT
 import copy
 import json
 
+import pytest
+
 from conftest import import_or_fail
 
 import make_video
@@ -832,3 +834,42 @@ def test_trim_keeps_the_sound_and_its_margins():
     padded = np.concatenate([np.zeros(rate * 3 // 10), loud,
                              np.zeros(rate // 2)])
     assert abs(len(video_voice.trim(padded, rate)) / rate - 1.06) < 0.001
+
+
+def test_a_stretched_scene_moves_the_times_of_its_windows():
+    """A stretched scene moves the times of its windows."""
+    import video_voice
+    path = make_video.VIDEO / "storyboards" / "rbmod-first-program.json"
+    board = json.loads(path.read_text(encoding="utf-8"))
+    scene = next(s for s in board["scenes"] if any(
+        "copy" in w for w in s.get("windows", [])))
+    was = json.loads(json.dumps(scene))
+    cues = [cue["at"] for cue in scene["say"]]
+    old = [0.0] + cues + [scene["dur"]]
+    new = [0.0, cues[0]] + [round(t + 5.0 * (n + 1), 2)
+                            for n, t in enumerate(old[2:])]
+    video_voice._stretch(scene, old, new)
+
+    def moved(t):
+        n = max(k for k in range(len(old) - 1) if old[k] <= t)
+        n = min(n, len(old) - 2)
+        return new[n] + (t - old[n]) * (new[n + 1] - new[n]) / (
+            old[n + 1] - old[n])
+
+    for now, then in zip(scene["windows"], was["windows"], strict=True):
+        assert now["from"] == pytest.approx(moved(then["from"]), abs=0.02)
+        assert now["to"] == pytest.approx(moved(then["to"]), abs=0.02)
+        assert now.get("at") == then.get("at")
+        if "copy" in then:
+            assert now["copy"]["t"] == pytest.approx(
+                [moved(t) for t in then["copy"]["t"]], abs=0.02)
+            assert now["nav"][-1]["on"] is True
+            late = [r for r in then["rows"] if "from" in r][0]["from"]
+            assert [r for r in now["rows"] if "from" in r][0][
+                "from"] == pytest.approx(moved(late), abs=0.02)
+        for key, old_key in zip(now.get("pointer", []),
+                                then.get("pointer", []), strict=True):
+            assert key[0] == pytest.approx(moved(old_key[0]), abs=0.02)
+            assert key[1:] == old_key[1:]
+    board["scenes"][board["scenes"].index(scene)] = scene
+    assert make_video.check(board) == []
