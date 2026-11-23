@@ -19,7 +19,10 @@
  * on every port without the switches, and the window number's wrap at
  * 65536; the BEC check at 490mV and 500mV, only with the rail and every
  * port off and only on windows wholly after; the fault bits; the throttle
- * ports read off the bank and off the programming ports (each DShot rate);
+ * ports read off the bank and off the programming ports (each DShot rate)
+ * and off a PASS-THROUGH output whose channel is a throttle: PORT_WANT
+ * refused for it, an on port switched off at the SOURCE write and at the
+ * role write, a PASS-THROUGH surface left on;
  * a port on that becomes a throttle switched off, without the switches the
  * rail; RAIL 1 without the switches refused with a throttle on any port;
  * RAIL 0 taken in a write refused for its other registers, and RAIL 0 alone
@@ -36,6 +39,7 @@
 #include "link_pages.h"
 #include "out_bind.h"
 #include "outputs.h"
+#include "pass_page.h"
 #include "power_page.h"
 #include "prog_port.h"
 
@@ -493,6 +497,75 @@ TEST_CASE(a_dshot_slot_is_a_throttle_port_whatever_its_role)
     }
 }
 
+/* The firmware's order after a PASS SOURCE write (iomcu_pass.c): the bank
+ * told which outputs pass, then rsn_throttle_hold(). */
+static uint16_t pass_follow(outputs_t *o, const pass_page_t *pa,
+                            const outbind_roles_t *r)
+{
+    outputs_set_passing(o, pass_page_active(pa));
+    return power_hold(&pg, power_throttle(o, NULL, r));
+}
+
+TEST_CASE(a_pass_through_throttle_is_a_throttle_port)
+{
+    const outbind_roles_t *r = outbind_roles((uint16_t)OUTBIND_BOARD_RSN);
+    if (r == NULL) { T_FAIL("no board 3"); return; }
+    const pass_ctx_t safe = { false, 0u };
+    const uint16_t pass = LINK_PA_SRC_PASS;
+    outputs_t o;
+    pass_page_t pa;
+    outputs_init(&o, 0u);
+    pass_page_init(&pa, true, 0u);
+    /* Channel 2 a throttle, channel 5 a surface, both on PASS-THROUGH. */
+    CHECK(outputs_set_role(&o, 2u, OUT_ROLE_THROTTLE));
+    CHECK_EQ(pass_page_write(&pa, (uint8_t)LINK_PA_SOURCE(2), 1u, &pass,
+                             &safe), 0u);
+    CHECK_EQ(pass_page_write(&pa, (uint8_t)LINK_PA_SOURCE(5), 1u, &pass,
+                             &safe), 0u);
+    CHECK_EQ(power_throttle(&o, NULL, r), 0u);     /* not told yet */
+    outputs_set_passing(&o, pass_page_active(&pa));
+    CHECK_EQ(power_throttle(&o, NULL, r), 0x0004u);
+    /* PORT_WANT refused for S3, taken for the surface on S6. */
+    start(true);
+    ctx.throttle = power_throttle(&o, NULL, r);
+    CHECK_EQ(wr(LINK_PW_PORT_WANT, 0x0004u), (uint8_t)LINK_NACK_BAD_VALUE);
+    CHECK_EQ(wr(LINK_PW_PORT_WANT, 0x0020u), 0u);
+    CHECK_EQ(wr(LINK_PW_RAIL, 1u), 0u);
+    CHECK_EQ(reg(LINK_PW_PORT_ON), 0x0020u);
+    outputs_set_passing(NULL, 1u);                  /* nothing for NULL */
+
+    /* S3 on first, then its SOURCE written PASS-THROUGH: off at the write;
+     * the surface on S6 stays on. */
+    outputs_init(&o, 0u);
+    CHECK(outputs_set_role(&o, 2u, OUT_ROLE_THROTTLE));
+    pass_page_init(&pa, true, 0u);
+    start(true);
+    CHECK_EQ(wr(LINK_PW_PORT_WANT, 0x0024u), 0u);
+    CHECK_EQ(wr(LINK_PW_RAIL, 1u), 0u);
+    CHECK_EQ(reg(LINK_PW_PORT_ON), 0x0024u);
+    CHECK_EQ(pass_page_write(&pa, (uint8_t)LINK_PA_SOURCE(5), 1u, &pass,
+                             &safe), 0u);
+    CHECK_EQ(pass_follow(&o, &pa, r), 0u);
+    CHECK_EQ(reg(LINK_PW_PORT_ON), 0x0024u);
+    CHECK_EQ(pass_page_write(&pa, (uint8_t)LINK_PA_SOURCE(2), 1u, &pass,
+                             &safe), 0u);
+    CHECK_EQ(pass_follow(&o, &pa, r), 0x0004u);
+    CHECK_EQ(reg(LINK_PW_PORT_ON), 0x0020u);
+
+    /* S6 on while passing as a surface; its channel's role written to
+     * throttle (CHAN_CFG while SAFE): off at that write. */
+    CHECK(outputs_set_role(&o, 5u, OUT_ROLE_THROTTLE));
+    CHECK_EQ(power_hold(&pg, power_throttle(&o, NULL, r)), 0x0020u);
+    CHECK_EQ(reg(LINK_PW_PORT_ON), 0u);
+    /* Without the switches the rail goes off. */
+    outputs_init(&o, 0u);
+    CHECK(outputs_set_role(&o, 2u, OUT_ROLE_THROTTLE));
+    start(false);
+    CHECK_EQ(wr(LINK_PW_RAIL, 1u), 0u);
+    CHECK_EQ(pass_follow(&o, &pa, r), 0x0004u);
+    CHECK_EQ(reg(LINK_PW_RAIL), 0u);
+}
+
 /* ------------------------------------------------ review round 1 cases */
 
 /* Port 1 on from window 10, then windows numbered 10 + @p from onward,
@@ -739,6 +812,7 @@ int main(void)
     RUN(the_bec_check_runs_only_with_rail_and_ports_off);
     RUN(a_throttle_port_is_read_off_the_bank);
     RUN(a_dshot_slot_is_a_throttle_port_whatever_its_role);
+    RUN(a_pass_through_throttle_is_a_throttle_port);
     RUN(the_thermal_check_stays_on_however_long_the_port_is_on);
     RUN(the_bec_check_stays_on_however_long_everything_is_off);
     RUN(a_restarted_window_series_keeps_both_checks);

@@ -376,6 +376,9 @@ uint8_t chan_cfg_take(iomcu_state_t *s, const uint16_t *next,
     /* A channel whose role moved sits at its new rest: the CHANNELS page
      * reads that, not the command written under the old role. */
     outputs_channels_follow_roles(&s_outputs, was, s->chan_cfg, s->channels);
+    /* A PASS-THROUGH output whose channel became a throttle: its port off
+     * at this write (board 3). */
+    rsn_throttle_hold();
     /* A channel that became a surface, or stopped being one, moves to or
      * from the SERVO page's rate. */
     hw_apply();

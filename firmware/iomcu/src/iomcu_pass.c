@@ -185,6 +185,7 @@ void thru_drop(uint16_t mask)
     if (pass_page_force_off(&s_thru, mask, busy()) != 0u) {
         reserve_held();
         route();
+        outputs_set_passing(&s_outputs, pass_page_active(&s_thru));
     }
 }
 
@@ -192,6 +193,17 @@ void thru_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     (void)ctx;
     pass_page_read(&s_thru, off, n, out);
+}
+
+/**
+ * @brief After the sources changed: the bank told which outputs carry a
+ *        receiver's channel, and a port whose output became a throttle
+ *        switched off in the same pass (rsn_throttle_hold()).
+ */
+static void passing_follow(void)
+{
+    outputs_set_passing(&s_outputs, pass_page_active(&s_thru));
+    rsn_throttle_hold();
 }
 
 uint8_t thru_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in)
@@ -204,6 +216,7 @@ uint8_t thru_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in)
          * low at once. */
         reserve_held();
         route();
+        passing_follow();
     }
     return nack;
 }

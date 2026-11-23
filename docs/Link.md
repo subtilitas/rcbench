@@ -1691,7 +1691,10 @@ holds its critical alert.
   all three INA3221s answer with their critical limits written. A port's
   output is a throttle when an OUTPUTS slot on its pin is DShot or
   bidirectional DShot, or renders a throttle channel, or when a programming port holds its pin as DSHOT150, DSHOT300
-  or DSHOT600 or with a throttle channel. A new `PORT_WANT` bit for such a
+  or DSHOT600 or with a throttle channel, or when its PASS `SOURCE` is
+  PASS-THROUGH and channel k is a throttle in CHAN_CFG. A port on whose
+  output becomes a throttle is switched off at the PASS or CHAN_CFG write
+  that makes it one. A new `PORT_WANT` bit for such a
   port, and `RAIL` 1 with such a bit kept, are refused with BAD_VALUE;
   without the switches `RAIL` 1 is refused with BAD_VALUE while any port
   is a throttle. `RAIL` above 1 and a bit past port 9 are refused with

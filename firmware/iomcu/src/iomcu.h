@@ -1283,6 +1283,13 @@ void rsn_off(void);
  */
 uint16_t rsn_pass(uint32_t now);
 /**
+ * @brief A port whose output became a throttle switched off now, not one
+ *        pass later (power_hold() over power_throttle()): call right after
+ *        a PASS SOURCE write and a CHAN_CFG role change.  Nothing on boards
+ *        1 and 2.
+ */
+void rsn_throttle_hold(void);
+/**
  * @brief The output of the pin a KST, HITEC or ESC_WIRE page last asked
  *        for (its hw.pin()): the session's output before it holds one.
  *

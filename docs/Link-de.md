@@ -1849,7 +1849,10 @@ Alert hält.
   OUTPUTS auf seinem Pin DShot oder bidirektionales DShot ist oder einen
   Throttle-Kanal ausgibt oder ein
   Programmierport seinen Pin als DSHOT150, DSHOT300 oder DSHOT600 oder mit
-  einem Throttle-Kanal hält. Ein neues Bit in PORT_WANT für einen solchen
+  einem Throttle-Kanal hält, oder wenn sein `SOURCE` in PASS PASS-THROUGH
+  ist und Kanal k in CHAN_CFG ein Throttle ist. Ein eingeschalteter Port,
+  dessen Ausgang zum Throttle wird, wird bei dem Schreiben von PASS oder
+  CHAN_CFG abgeschaltet, das ihn dazu macht. Ein neues Bit in PORT_WANT für einen solchen
   Port und RAIL 1 mit einem solchen gehaltenen Bit werden mit BAD_VALUE
   abgelehnt; ohne die Schalter wird RAIL 1 mit BAD_VALUE abgelehnt,
   solange irgendein Port ein Throttle ist. RAIL über 1 und ein Bit hinter

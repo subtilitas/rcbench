@@ -299,6 +299,12 @@ static int session_port(void)
     return s_asked_k;
 }
 
+void rsn_throttle_hold(void)
+{
+    (void)power_hold(&s_power, throttles());
+    drive();
+}
+
 void rsn_prog_pin(uint8_t pin)
 {
     s_asked_k = out_of(pin);
@@ -421,6 +427,8 @@ uint16_t rsn_pass(uint32_t now)
     (void)now;
     return 0u;
 }
+
+void rsn_throttle_hold(void) {}
 
 void rsn_prog_pin(uint8_t pin) { (void)pin; }
 
