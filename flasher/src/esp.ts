@@ -7,6 +7,7 @@ import { chipFromEspName } from './boards.ts';
 import type { Chip } from './boards.ts';
 import { md5Hex } from './digest.ts';
 import { StepError } from './rp2350.ts';
+import type { ESPLoader } from 'esptool-js';
 
 /** The rate esptool-js asks the flasher stub for behind a USB-to-UART bridge. */
 export const ESP_BAUD = 460800;
@@ -44,6 +45,8 @@ export interface EspSession {
   write(chunks: readonly EspChunk[], onProgress: (done: number, total: number) => void): Promise<void>;
   /** Compares the MD5 of the flash with the MD5 of each chunk, over exactly the written bytes. */
   verify(chunks: readonly EspChunk[]): Promise<void>;
+  /** The esptool-js loader, for the board check's flash reads (installed_read.ts). */
+  loader: ESPLoader;
   reset(): Promise<void>;
   close(): Promise<void>;
 }
@@ -108,6 +111,7 @@ export async function connectEsp(port: SerialPort, log: (line: string) => void):
         if (got !== want) throw new Error(`MD5 of the flash at 0x${c.address.toString(16)} ${got}, of the image ${want}`);
       }
     }),
+    loader,
     reset: () => inStep('reset', async () => {
       await loader.after('hard_reset');
       await transport.disconnect();

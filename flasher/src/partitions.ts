@@ -112,7 +112,7 @@ export function bootloaderEnd(image: Uint8Array, offset: number): number | null 
 const isFF = (b: Uint8Array): boolean => b.every((x) => x === 0xff);
 
 /** Reads the table at `offset`; throws a Refusal for a broken one. */
-function readTable(image: Uint8Array, offset: number): Partition[] {
+export function readTable(image: Uint8Array, offset: number): Partition[] {
   const v = new DataView(image.buffer, image.byteOffset, image.byteLength);
   const entries: Partition[] = [];
   let md5Seen = false;

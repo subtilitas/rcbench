@@ -31,7 +31,7 @@ a first install and for a board that does not start.
 | Board | the task's boards with their chip; a board no release on the page carries is disabled in simple mode and takes a local file in Advanced | a tap on a board; the download of its image starts here |
 | Prepare (C6 radio only) | 3 steps from [The ESP32-C6 radio](../docs/C6.md#recovery-over-header-h4) and a drawing of H4: TXD0, RXD0, GND, IO9 | NEXT |
 | Connect | lines per board (sockets, BOOT key, the pack off the XT60), CONNECT; for the IOmcu the 1200 baud restart into BOOTSEL and the BOOT drawing | a connection whose chip matches the board |
-| Check | board, connected chip, release with kind and date, file, size in bytes, SHA-256, the manifest check, the signature, the IOmcu's slot B erase, the kept NVS ranges, WRITE | WRITE |
+| Check | board, connected chip, the firmware the board runs (see "Board check"), release with kind and date, file, size in bytes, SHA-256, the manifest check, the signature, the IOmcu's slot B erase, the kept NVS ranges, WRITE | WRITE |
 | Write | the phases of the board's flow (ESP: Write, Verify, Reset; RP2350: Exclusive access, Erase, Write, Verify, Reboot), progress bar and text | the end of the write |
 | Done | file, time, kept ranges, the next step on the bench, WRITE ANOTHER, START OVER | a button |
 
@@ -52,8 +52,79 @@ The error states:
 | Check | "Keep settings" refuses the image (see below) | the reason, WRITE disabled; simple mode adds "Advanced mode on the first screen writes the whole image; that erases the settings" |
 | Check | the signature does not match | a red note; WRITE disabled in simple mode, enabled in Advanced |
 | Check | the release has no signature | an information note, WRITE enabled |
+| Check | the board runs the firmware of another device | a warning that names the device, WRITE enabled |
 | Write | the write or the verify fails | the failed phase, the reason and a hint, CONNECT AGAIN (Connect, the image kept), CANCEL |
 | Write | the reset after a verify that passed fails | the port is closed; goes to Done with "press RESET" |
+
+## Board check
+
+The boot ROM reports the chip only: a Dial and a display node are both
+ESP32-S3; a power node, a balance node and the C6 radio are all ESP32-C6.
+After a connect, Check reads what an ESP32 board runs and holds it to the
+chosen board. The row "Installed" shows one of 3 results:
+
+| Result | When | Shown |
+| --- | --- | --- |
+| matches | the application is the chosen board's firmware alone | project and version, "the firmware of this board" |
+| another device | the application is the firmware of other boards only | project, version and the device names, and a warning under the rows |
+| cannot tell | a blank board, no application in the slot the boot loader starts, a project of no board of the page, a node firmware without role record on the power or balance node, a read that fails, an RP2350 board | the reason |
+
+The result is a warning only. WRITE stays as the rest of Check sets it, in
+simple mode and in Advanced. WRITE waits for the reads to end before its
+first command. A check belongs to its connection: after BACK, CANCEL or a
+new connect it reads nothing more, and WRITE waits only for the check of
+the connection in hand.
+
+The reads go through the flasher stub, which the connect starts anyway.
+None of them writes or erases:
+
+| Read | Bytes |
+| --- | --- |
+| Partition table at 0xC000 on the ESP32-P4, else at 0x8000; the other offset when the first holds no valid table | 3,072 each |
+| The 2 otadata entries (`esp_ota_select_entry_t`), at the otadata partition and 4096 bytes above it | 32 each |
+| The head of the application in the slot the boot loader starts | 296 |
+
+That is 4 reads and 3,432 bytes on an rcbench board, 5 reads and 6,504 bytes
+on an ESP32-P4 with its table at 0x8000, 2 reads and 6,144 bytes on a blank
+board. Each read ends with the stub's MD5 (Message-Digest 5) of the
+data, which the page compares. The log ("Details") records reads, bytes and
+milliseconds per check. At 460800 baud behind a USB-to-UART bridge the 3,432
+bytes take 75ms on the wire; the time on a board is not measured.
+
+The slot: the otadata entry with the highest valid sequence number selects
+ota_(sequence - 1) modulo the number of OTA (over-the-air update) slots, as
+the ESP-IDF v6.1 boot loader does (an entry counts with the CRC-32 (cyclic
+redundancy check) of its sequence number and a state other than invalid or
+aborted). Without a valid entry the factory application counts, else ota_0.
+
+The head: the image header (chip ID at byte 12), `esp_app_desc_t` at byte 32
+(project name, version), and from v0.23.13 on the role record
+`bleota_role_t` of the wireless devices at byte 288
+(`protocols/bleota/include/bleota.h`). The firmware the page knows, from the
+repository's sources:
+
+| Board | Chip | Project (`esp_app_desc_t`) | Role record (BLEOTA_KIND_*) | Source |
+| --- | --- | --- | --- | --- |
+| panel | ESP32-P4 | `rcbench-panel` | none | `firmware/panel/CMakeLists.txt` |
+| M5Stack Dial (`dial`) | ESP32-S3 | `rcbench-dial` | 1 | `firmware/dial` |
+| display node (`node-display`) | ESP32-S3 | `rcbench-node` | 4 | `firmware/node`, `sdkconfig.s3_es3c28p` |
+| node-pwr | ESP32-C6 | `rcbench-node` | 2 | `firmware/node` |
+| node-bal | ESP32-C6 | `rcbench-node` | 3 | `firmware/node`, `sdkconfig.balance` |
+| c6 | ESP32-C6 | `network_adapter` | none | esp_hosted `slave/`, `tools/c6_image.py` |
+
+What each chip tells:
+
+- ESP32-P4: the panel firmware or not.
+- ESP32-S3: Dial and display node apart, with and without role record (the
+  project names differ).
+- ESP32-C6: C6 radio and sensor node apart by project. Power node and
+  balance node apart by the role record only: a node firmware without one
+  (releases before v0.23.13) gives "cannot tell" on the power or balance
+  node, and "another device: Power node or Balance node" on the C6 radio.
+- RP2350: not read. The IOmcu images of the RP2350-CAN module, the rbmod
+  carrier and the Core2350B all carry the program name `rcbench-iomcu`
+  (pico-sdk's `bi_program_name` from the CMake target), so the binary info
+  tells no board from another; Check shows "cannot tell" without a read.
 
 ## Advanced mode
 
@@ -180,7 +251,7 @@ from 0x0 and erases the settings.
   littlefs (0x83). Before WRITE it lists each skipped range with name,
   subtype, offset and size in bytes, and the offset of the table.
 
-Each written range gets its own MD5 (Message-Digest 5) check, over exactly
+Each written range gets its own MD5 check, over exactly
 the bytes written there. A skipped range is neither written nor read.
 
 What each board keeps, from the tables of the v0.23.15 images:
@@ -412,6 +483,8 @@ rbmod image: they offer the IOmcu image alone.
 | `src/boards.ts` | The boards, their chips, the image and chip checks. |
 | `src/manifest.ts` | Reader and checks of `index.json` and `manifest.json`. |
 | `src/esp.ts` | ESP32 flow on esptool-js, the baud rule. |
+| `src/installed.ts` | Board check model: the firmware of each ESP32 board, the application head, the otadata slot, the verdict, the read sequence. |
+| `src/installed_read.ts` | Board check on Check: the stub reads with their MD5, the row and the warning, its strings in English and German. Loaded on the first connect. |
 | `src/partitions.ts` | The partition table of a merged image, the bootloader's end, the write plan of "Keep settings". |
 | `src/picoboot.ts` | PICOBOOT: command encoding, transfers, errors. |
 | `src/rp2350.ts` | RP2350 flow: plan, erase, write, read back, reboot. |
@@ -424,14 +497,15 @@ rbmod image: they offer the IOmcu image alone.
 | `src/signature.ts` | Release signature: DER form check, conversion to the 64-byte form of Web Crypto, verification. |
 | `src/release_key.ts` | The release public key, a copy of the panel's. |
 | `public/licenses.txt` | Licences of the bundled code, written by `tools/licenses.ts`. |
-| `test/` | Unit tests, run by `node --test`. `pages-fw/` holds `index.json` and the 7 manifests of the Pages site on 2026-11-23. `fixtures.ts` builds synthetic UF2 images, ESP images, partition tables and merged images, and holds the panel's partition table and bootloader header of v0.23.15. |
+| `test/` | Unit tests, run by `node --test`. `pages-fw/` holds `index.json` and the 7 manifests of the Pages site on 2026-11-23. `fixtures.ts` builds synthetic UF2 images, ESP images, partition tables, merged images, application heads and otadata entries, and holds the panel's partition table and bootloader header of v0.23.15. |
 | `e2e/helpers.ts` | Set-up of the browser tests: synthetic release images, the `fw/` folder served from memory, a test key put in place of the release key in the served script, the walk to Connect. |
 | `e2e/tasks.spec.ts` | Each task to Done: panel with the NVS bytes kept, Dial, power node, IOmcu at 1200 baud and over PICOBOOT, C6 radio at 460800 baud behind a USB-to-UART bridge; a language switch during a write; WRITE ANOTHER. |
 | `e2e/errors.spec.ts` | A chip that does not match, a download that fails or differs, a release list that fails, "Keep settings" refused, a board no release carries, the 3 signature states, a write and a verify that fail. |
 | `e2e/history.spec.ts` | BACK, CANCEL, the browser's back from Check, Connect, Write and Done, a pasted hash, a pasted hash with `adv=1`, a reload. |
 | `e2e/advanced.spec.ts` | The Advanced switch and "Write a file of my own", the release select per board and a picked release on the next board, a local file of the wrong and the right chip, a local file picked while the list loads, "Keep settings" off, a broken table written whole, the .sig states of a local file, WRITE on a mismatch, the Core2350B, the hints to Advanced in simple mode. |
+| `e2e/installed.spec.ts` | The board check: matches, another device, cannot tell (no role record, blank, another project, a read that fails, the RP2350), in simple mode and in Advanced, WRITE enabled in each; a slow first check, CANCEL and a new connect with one set of reads on the new connection. |
 | `e2e/browser.spec.ts` | No Web Serial and no WebUSB, no WebUSB alone, the task list, the language, the footer links, the width of a phone. |
-| `e2e/fake-devices.js` | Fake Web Serial with an ESP32 boot ROM and flasher stub that erases the 4096-byte sectors it writes, an IOmcu port that leaves for BOOTSEL at 1200 baud, and a fake WebUSB RP2350 boot ROM; options for a write, an MD5 and a read back that fail, and for a browser without WebUSB. |
+| `e2e/fake-devices.js` | Fake Web Serial with an ESP32 boot ROM and flasher stub that erases the 4096-byte sectors it writes, an IOmcu port that leaves for BOOTSEL at 1200 baud, and a fake WebUSB RP2350 boot ROM; options for a write, an MD5 and a read back that fail, the flash contents before the connect (`esp.installed`), a flash read that fails, and for a browser without WebUSB. |
 | `tools/size.ts` | Size check of the build. |
 | `tools/licenses.ts` | Writes and checks `public/licenses.txt`. |
 
@@ -510,6 +584,11 @@ the system setting.
   known; the page sends 64KiB, which picotool exceeds for an image above
   6.4MB.
 - An ESP32 in secure download mode or with flash encryption is not handled
-  beyond what esptool-js does.
+  beyond what esptool-js does. The board check reads nothing without the
+  flasher stub and shows "cannot tell"; on an encrypted flash it reads
+  ciphertext and shows "cannot tell".
+- The board check reads the slot the boot loader would start by otadata. A
+  rollback that the boot loader makes at the next start (an image in
+  pending-verify state) is not followed.
 - The Core2350B has no image in a release: the page writes it from a local
   file in Advanced only.

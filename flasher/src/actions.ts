@@ -249,8 +249,24 @@ export async function dropConn(): Promise<void> {
   const c = st.conn;
   st.conn = null;
   st.connLabel = '';
+  st.installed = null;
+  st.installedRun = null;
   if (c?.kind === 'esp') await c.session.close();
   if (c?.kind === 'pico') await c.pb.close();
+}
+
+/**
+ * Starts the board check of the connection in hand; its code loads on the
+ * first connect. The check belongs to this connection: once the connection
+ * is gone it reads nothing more, and `installedRun` names the check of the
+ * current connection only (dropConn clears it, the next connect replaces
+ * it), so WRITE never waits for an abandoned check.
+ */
+export function checkInstalled(): void {
+  const conn = st.conn;
+  const b = board();
+  if (!conn || !b) return;
+  st.installedRun = import('./installed_read.ts').then((m) => (st.inst = m).run(conn, b), (e: unknown) => log(errText(e)));
 }
 
 /** Drops the connection and the notes of Connect and Write. */
@@ -296,6 +312,7 @@ export async function connectSerial(): Promise<void> {
     } else {
       st.conn = { kind: 'esp', session };
       st.connLabel = session.description;
+      checkInstalled();
     }
   } catch (e) {
     st.connNote = failNote(e);
@@ -330,6 +347,7 @@ export async function connectUsb(): Promise<void> {
     const pb = await Picoboot.open(dev);
     st.conn = { kind: 'pico', pb };
     st.connLabel = `${tr('picoName')}, ${dev.productName ?? ''}`.replace(/, $/, '');
+    checkInstalled();
   } catch (e) {
     st.connNote = failNote(e instanceof StepError ? e : new StepError('connect', e));
   }
@@ -369,6 +387,12 @@ export async function write(): Promise<void> {
   const conn = st.conn;
   if (!img || !conn || st.busy) return;
   st.busy = true;
+  if (st.installedRun) {
+    // The board check's reads end before the write's first command.
+    ui.render();
+    await st.installedRun;
+    if (st.conn !== conn) { st.busy = false; ui.render(); return; }
+  }
   st.writing = true;
   st.result = null;
   st.outcome = null;

@@ -6,7 +6,7 @@ import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { createHash, generateKeyPairSync, sign } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { NODE_PARTS, PANEL_TABLE_V0_23_15, makeMerged, makeTable, makeUf2 } from '../test/fixtures.ts';
+import { NODE_PARTS, PANEL_TABLE_V0_23_15, makeInstalled, makeMerged, makeTable, makeUf2 } from '../test/fixtures.ts';
 import { FAMILY } from '../src/uf2.ts';
 import { RELEASE_KEY_PEM } from '../src/release_key.ts';
 
@@ -170,7 +170,7 @@ export async function writeAndWait(page: Page): Promise<void> {
 }
 
 export type Fake = {
-  espFlash: Uint8Array; espOps: number[]; espWrites: [number, number][]; espMd5: [number, number][]; espBauds: number[];
+  espFlash: Uint8Array; espOps: number[]; espReads: [number, number][]; espWrites: [number, number][]; espMd5: [number, number][]; espBauds: number[];
   rpCmds: number[]; touched: number; rpFlash: Uint8Array;
   flashHash: (k: string, s: number, l: number) => Promise<string>;
 };
@@ -183,3 +183,12 @@ export const flashHash = (page: Page, kind: 'esp' | 'rp', start: number, length:
 export const espOps = (page: Page): Promise<number[]> => page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.espOps);
 
 export const pad4 = (n: number): number => Math.ceil(n / 4) * 4;
+
+/**
+ * The firmware on a fake ESP before the page connects, for the fake's
+ * `esp.installed` option: the node layout (table at 0x8000, ota_0 at
+ * 0x20000), the application head of a project, the role record when `kind`
+ * is set.
+ */
+export const installed = (chipId: number, project: string, version: string, kind: number | null = null): [number, number[]][] =>
+  makeInstalled({ chipId, project, version, kind, tableOffset: 0x8000, parts: NODE_PARTS }).map(([o, b]) => [o, Array.from(b)]);
