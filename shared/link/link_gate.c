@@ -71,6 +71,17 @@ uint8_t link_gate_drive(uint8_t page, uint8_t off, uint8_t n,
         refuse = sets(off, n, in, LINK_PW_RAIL)
                  || sets(off, n, in, LINK_PW_PORT_WANT);
         break;
+    case LINK_PAGE_PASS:
+        /* OFF drives the pad low and PASS-THROUGH gives it to MIRROR:
+         * only BENCH, which leaves the pad to an output slot, is taken. */
+        for (unsigned k = 0; k < LINK_PA_CHANNELS; ++k) {
+            const unsigned reg = LINK_PA_SOURCE(k);
+            if (reg >= (unsigned)off && reg < (unsigned)off + n
+                && in[reg - off] != (uint16_t)LINK_PA_SRC_BENCH) {
+                refuse = true;
+            }
+        }
+        break;
     case LINK_PAGE_KST:
     case LINK_PAGE_HITEC:
     case LINK_PAGE_ESC_WIRE:

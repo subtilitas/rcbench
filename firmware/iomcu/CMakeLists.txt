@@ -51,6 +51,9 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/servo"  servo)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/openyge" openyge)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/pdmini"  pdmini)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/phase_tap" phase_tap)
+# The remote servo node's pass-through: the decoder and the ring reader,
+# and on board 3 the PIO programs and their driver (src/iomcu_pass.c).
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/passthru" passthru)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/kst"     kst)
 # The Hitec wire's core and pin driver, which the HITEC page runs
 # (src/iomcu_hitec.c); its PIO program is assembled and checked below.
@@ -84,6 +87,8 @@ add_executable(rcbench-iomcu
     # The remote servo node's stepping check, POWER page and switches; on
     # the other boards its functions do nothing.
     src/iomcu_rsn.c
+    # Its pass-through: the PASS and PASS_STAT pages and the capture.
+    src/iomcu_pass.c
     src/iomcu_report.c
     src/xl2515.c
     src/out_pwm.c
@@ -127,6 +132,25 @@ else()
     message(FATAL_ERROR "IOMCU_BOARD=${IOMCU_BOARD}: rp2350_can, rbmod or rsn")
 endif()
 set_target_properties(rcbench-iomcu PROPERTIES OUTPUT_NAME ${iomcu_out})
+
+# Board 3's pass-through on the chip: MIRROR and CAPTURE in PIO0 and the
+# 64KiB ring of their two DMA channels, in the rsn image only.  The
+# programs as pioasm assembles them must be the ones the host suite runs
+# (test/host/test_pass_pio.c, fixtures/pass_mirror_words.txt and
+# fixtures/pass_capture_words.txt).
+if(IOMCU_BOARD STREQUAL "rsn")
+    target_link_libraries(rcbench-iomcu rcbench_passthru_rp2350)
+    foreach(prog pass_mirror pass_capture)
+        add_custom_command(TARGET rcbench-iomcu PRE_LINK
+            COMMAND ${CMAKE_COMMAND}
+                    -DHEADER=${CMAKE_CURRENT_BINARY_DIR}/passthru/rp2350/pass.pio.h
+                    -DWORDS=${CMAKE_CURRENT_LIST_DIR}/../../test/host/fixtures/${prog}_words.txt
+                    -DNAME=${prog}
+                    -DTEST=test_pass_pio
+                    -P "${CMAKE_CURRENT_LIST_DIR}/cmake/pio_words.cmake"
+            VERBATIM)
+    endforeach()
+endif()
 
 # The link's transport (src/iomcu_link.h): CAN (Controller Area Network)
 # through the XL2515 on boards 1 and 2, UART0 at 1Mbaud on board 3 (rsn).

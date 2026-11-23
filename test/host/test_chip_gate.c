@@ -75,6 +75,16 @@ TEST_CASE(a_write_that_could_drive_a_pin_is_refused)
     CHECK_EQ(one(LINK_PAGE_SUPPLY, LINK_SP_OUTPUT, 1u), NA);
     CHECK_EQ(one(LINK_PAGE_POWER, LINK_PW_RAIL, 1u), NA);
     CHECK_EQ(one(LINK_PAGE_POWER, LINK_PW_PORT_WANT, 0x0100u), NA);
+    /* PASS-THROUGH gives a pad to MIRROR, OFF drives it low: on the first
+     * channel, the last, and inside a frame of all 9. */
+    CHECK_EQ(one(LINK_PAGE_PASS, LINK_PA_SOURCE(0), LINK_PA_SRC_PASS), NA);
+    CHECK_EQ(one(LINK_PAGE_PASS, LINK_PA_SOURCE(8), LINK_PA_SRC_OFF), NA);
+    uint16_t src[LINK_PA_CHANNELS];
+    for (unsigned k = 0; k < LINK_PA_CHANNELS; ++k) {
+        src[k] = (uint16_t)LINK_PA_SRC_BENCH;
+    }
+    src[4] = (uint16_t)LINK_PA_SRC_PASS;
+    CHECK_EQ(link_gate_drive(LINK_PAGE_PASS, 0u, LINK_PA_CHANNELS, src), NA);
     CHECK_EQ(one(LINK_PAGE_KST, 0u, 0u), NA);
     CHECK_EQ(one(LINK_PAGE_HITEC, 0u, 0u), NA);
     CHECK_EQ(one(LINK_PAGE_ESC_WIRE, 0u, 0u), NA);
@@ -110,6 +120,13 @@ TEST_CASE(every_off_and_every_other_write_is_passed_on)
     CHECK_EQ(one(LINK_PAGE_SUPPLY, LINK_SP_SET_MV, 6000u), 0u);
     CHECK_EQ(one(LINK_PAGE_POWER, LINK_PW_RAIL, 0u), 0u);
     CHECK_EQ(one(LINK_PAGE_POWER, LINK_PW_PORT_WANT, 0u), 0u);
+    /* BENCH leaves every pad to its slot, on every channel. */
+    uint16_t bench[LINK_PA_CHANNELS];
+    for (unsigned k = 0; k < LINK_PA_CHANNELS; ++k) {
+        bench[k] = (uint16_t)LINK_PA_SRC_BENCH;
+    }
+    CHECK_EQ(link_gate_drive(LINK_PAGE_PASS, 0u, LINK_PA_CHANNELS, bench), 0u);
+    CHECK_EQ(one(LINK_PAGE_PASS_STAT, LINK_PT_RESET, 1u), 0u);
     CHECK_EQ(one(LINK_PAGE_PROG, LINK_PG_FUNC(0u), LINK_PG_FN_NONE), 0u);
     CHECK_EQ(one(LINK_PAGE_PROG, LINK_PG_REG(0u, LINK_PG_PIN), 16u), 0u);
     CHECK_EQ(one(LINK_PAGE_SENSE_MAP, 0u, 0x0007u), 0u);

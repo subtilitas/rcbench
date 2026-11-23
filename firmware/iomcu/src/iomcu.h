@@ -23,6 +23,8 @@
  *                of board 3 (iomcu_link.h)
  * iomcu_rsn.c    the remote servo node only (IOMCU_BOARD=rsn): the chip's
  *                stepping, the POWER page and the rail and port switches
+ * iomcu_pass.c   the remote servo node only: PASS, PASS_STAT, the
+ *                pass-through's capture and its pads
  *
  * The helpers at the end are `static inline`, so the main loop and each
  * page handler that calls one carry their own inlined copy.
@@ -1302,6 +1304,69 @@ void power_page_rd(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
  */
 uint8_t power_page_wr(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
 
+/* iomcu_pass.c */
+/**
+ * @brief MIRROR and CAPTURE started in PIO0 on an A4 chip of board 3, and
+ *        the PASS and PASS_STAT pages at BENCH: before any slot binds.
+ *
+ * @param now_ms  The first window's start.
+ */
+void thru_boot(uint32_t now_ms);
+/**
+ * @brief One pass, after the bank's arm: the capture's ring into the
+ *        decoder, a window closed when due, each held pad routed.
+ *
+ * @param now_ms  The pass's clock.
+ */
+void thru_service(uint32_t now_ms);
+/**
+ * @brief The output pins the PASS page holds (SOURCE OFF or PASS-THROUGH);
+ *        0 on boards 1 and 2.
+ *
+ * @return One bit per GPIO.
+ */
+uint64_t thru_pins(void);
+/**
+ * @brief The PASS page's read (pass_page_read()).
+ *
+ * @param ctx  Not used.
+ * @param off  First register.
+ * @param n    Registers.
+ * @param out  The values.
+ */
+void thru_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+/**
+ * @brief The PASS page's write (pass_page_write()), judged against the
+ *        bank's arm and the pins held elsewhere; the pins reserved and the
+ *        pads routed when taken.
+ *
+ * @param ctx  Not used.
+ * @param off  First register.
+ * @param n    Registers.
+ * @param in   The values.
+ * @return     0 or a link_nack_t.
+ */
+uint8_t thru_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
+/**
+ * @brief The PASS_STAT page's read (pass_stat_read()).
+ *
+ * @param ctx  Not used.
+ * @param off  First register.
+ * @param n    Registers.
+ * @param out  The values.
+ */
+void thru_stat_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+/**
+ * @brief The PASS_STAT page's write: RESET (pass_stat_write()).
+ *
+ * @param ctx  Not used.
+ * @param off  First register.
+ * @param n    Registers.
+ * @param in   The values.
+ * @return     0 or a link_nack_t.
+ */
+uint8_t thru_stat_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
+
 /* ------------------------------------------------------ the inline helpers */
 
 /**
@@ -1499,7 +1564,8 @@ static inline void reserve_held(void)
                                      | sense_page_held(&s_sense)
                                      | tone_page_pins(&s_tone)
                                      | prog_port_pins(&s_prog)
-                                     | esc_port_pins(&s_esc));
+                                     | esc_port_pins(&s_esc)
+                                     | thru_pins());
 }
 
 /**

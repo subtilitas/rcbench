@@ -6,6 +6,22 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- Remote servo node IOmcu (board 3): pass-through. PIO0 runs MIRROR, which
+  copies each of the 9 receiver inputs to its servo output every cycle
+  (13.3 to 20ns at the pad), and CAPTURE, which pushes the 18 pins' state
+  on every change into a 64KiB DMA (direct memory access) ring. The new
+  pages PASS (0x41) and PASS_STAT (0x42) of protocol 4.41 set each
+  channel's source (OFF,
+  PASS-THROUGH or BENCH, written while SAFE, BENCH at every start) and
+  report each input's and output's last pulse, the frame period, missed
+  frames, glitches (a high under 400µs or over 2600µs) and a signal lost
+  after 3 periods or 100ms, in windows of 50ms. A PASS-THROUGH output is
+  driven only while ARMED and is low from the pass that sees SAFE. The
+  decoder is the new module `protocols/passthru`
+  ([Link, the PASS and PASS_STAT pages](docs/Link.md#the-pass-and-pass_stat-pages)).
+
 ### Changed
 
 - `hardware/mechanical/`: `motor_simulator.step` runs the phase tap's lead
