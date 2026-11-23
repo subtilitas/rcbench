@@ -1,0 +1,2009 @@
+{
+ "name": "phase-tap",
+ "lang": "en",
+ "brand": "the phase tap",
+ "steps": 7,
+ "voice": {
+  "blend": {
+   "af_heart": 0.6,
+   "af_nicole": 0.4
+  },
+  "lang": "en-us",
+  "speed": 0.94
+ },
+ "music": "bach-cello",
+ "music_gain": 0.5,
+ "scenes": [
+  {
+   "type": "case",
+   "model": "part",
+   "part": "rbmod_v2",
+   "dur": 20.74,
+   "spin": [
+    [
+     0,
+     -60
+    ],
+    [
+     6.0,
+     0
+    ],
+    [
+     20.74,
+     10
+    ]
+   ],
+   "camera": [
+    [
+     0,
+     [
+      -330,
+      330,
+      160
+     ],
+     [
+      -70,
+      40,
+      -70
+     ]
+    ],
+    [
+     6.0,
+     [
+      -290,
+      300,
+      120
+     ],
+     [
+      -70,
+      40,
+      -66
+     ]
+    ],
+    [
+     8.5,
+     [
+      -150,
+      250,
+      190
+     ],
+     [
+      0,
+      34,
+      6
+     ]
+    ],
+    [
+     20.74,
+     [
+      -140,
+      240,
+      180
+     ],
+     [
+      0,
+      34,
+      6
+     ]
+    ]
+   ],
+   "title": {
+    "from": 0.3,
+    "to": 6.2,
+    "kicker": "rcbench · ESC stick programming",
+    "heading": "The phase tap",
+    "text": "Counting an ESC's menu beeps<br>on one motor lead."
+   },
+   "chips": [
+    {
+     "from": 6.6,
+     "to": 20.74,
+     "n": "i",
+     "text": "The rbmod carrier"
+    }
+   ],
+   "tags": [
+    {
+     "from": 9.0,
+     "to": 20.34,
+     "at": [
+      25.6,
+      2.0,
+      -41.6
+     ],
+     "text": "J9 · phase tap",
+     "side": "t",
+     "d": 80
+    },
+    {
+     "from": 9.4,
+     "to": 20.34,
+     "at": [
+      29.2,
+      2.0,
+      -35.4
+     ],
+     "text": "J1 · throttle signal",
+     "side": "r",
+     "d": 90
+    }
+   ],
+   "say": [
+    {
+     "at": 7.0,
+     "text": "An electronic speed controller is set up through a menu of beeps. The R C bench works that menu by itself: it moves the throttle and counts the beeps on one motor lead."
+    }
+   ]
+  },
+  {
+   "type": "case",
+   "model": "part",
+   "part": "rp2350_can",
+   "dur": 13.06,
+   "spin": [
+    [
+     0,
+     150
+    ],
+    [
+     13.06,
+     200
+    ]
+   ],
+   "camera": [
+    [
+     0,
+     [
+      -78,
+      108,
+      86
+     ],
+     [
+      0,
+      30,
+      4
+     ]
+    ],
+    [
+     13.06,
+     [
+      -74,
+      104,
+      84
+     ],
+     [
+      0,
+      30,
+      4
+     ]
+    ]
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 13.06,
+     "n": "i",
+     "text": "The IOmcu"
+    }
+   ],
+   "tags": [
+    {
+     "from": 1.2,
+     "to": 12.66,
+     "at": [
+      8.9,
+      -1.5,
+      3.8
+     ],
+     "text": "GP22 · tap input",
+     "side": "t",
+     "d": 90
+    }
+   ],
+   "labels": [
+    {
+     "from": 1.6,
+     "to": 12.66,
+     "anchor": [
+      0.05,
+      -3.5,
+      -1.9
+     ],
+     "at": [
+      1330,
+      250
+     ],
+     "size": "sm",
+     "title": "RP2350",
+     "text": "One PIO state machine and one DMA channel serve the tap. The pin is never driven."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.8,
+     "text": "The tap ends on pin G-P 22 of the I O M C U, an input and nothing more. The throttle signal leaves a programming port, as servo pulses or as D shot."
+    }
+   ]
+  },
+  {
+   "type": "case",
+   "model": "part",
+   "part": "esc_motor_set",
+   "dur": 17.36,
+   "spin": [
+    [
+     0,
+     18
+    ],
+    [
+     17.36,
+     -14
+    ]
+   ],
+   "camera": [
+    [
+     0,
+     [
+      -90,
+      370,
+      480
+     ],
+     [
+      0,
+      62,
+      0
+     ]
+    ],
+    [
+     17.36,
+     [
+      -70,
+      340,
+      440
+     ],
+     [
+      0,
+      62,
+      0
+     ]
+    ]
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 17.36,
+     "n": "i",
+     "text": "ESC and motor"
+    }
+   ],
+   "tags": [
+    {
+     "from": 3.0,
+     "to": 16.96,
+     "at": [
+      -161.1,
+      -19.0,
+      0
+     ],
+     "text": "XT60 · power",
+     "side": "t",
+     "d": 90
+    },
+    {
+     "from": 6.5,
+     "to": 16.96,
+     "at": [
+      -199.1,
+      -19.0,
+      7.5
+     ],
+     "text": "signal lead",
+     "side": "b",
+     "d": 80
+    },
+    {
+     "from": 10.5,
+     "to": 16.96,
+     "at": [
+      63.9,
+      -19.0,
+      -4.0
+     ],
+     "text": "phase tap",
+     "side": "b",
+     "d": 90
+    }
+   ],
+   "labels": [
+    {
+     "from": 1.2,
+     "to": 16.96,
+     "anchor": [
+      -24,
+      -14,
+      0
+     ],
+     "at": [
+      1330,
+      170
+     ],
+     "size": "sm",
+     "title": "Flycolor FlyDragon Lite 40A",
+     "text": "The ESC the tap has counted beeps on, at 7.6 V. The motor is a T-Motor AT2814."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.8,
+     "text": "Here is the whole chain. The controller takes its power from the bench through the X T 60, and its signal lead goes onto a programming port. The tap is one more wire, joined to one of the three motor leads."
+    }
+   ]
+  },
+  {
+   "type": "case",
+   "model": "part",
+   "part": "motor_simulator",
+   "dur": 17.36,
+   "spin": [
+    [
+     0,
+     -30
+    ],
+    [
+     17.36,
+     25
+    ]
+   ],
+   "camera": [
+    [
+     0,
+     [
+      -66,
+      165,
+      187
+     ],
+     [
+      0,
+      44,
+      0
+     ]
+    ],
+    [
+     17.36,
+     [
+      -56,
+      150,
+      168
+     ],
+     [
+      0,
+      44,
+      0
+     ]
+    ]
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 17.36,
+     "n": "i",
+     "text": "The motor simulator"
+    }
+   ],
+   "tags": [
+    {
+     "from": 2.0,
+     "to": 16.96,
+     "at": [
+      24.3,
+      -30.5,
+      0
+     ],
+     "text": "3 × 600 Ω",
+     "side": "r",
+     "d": 80
+    },
+    {
+     "from": 6.0,
+     "to": 16.96,
+     "at": [
+      -21.0,
+      -7.9,
+      0
+     ],
+     "text": "phase tap",
+     "side": "l",
+     "d": 80
+    }
+   ],
+   "labels": [
+    {
+     "from": 1.2,
+     "to": 16.96,
+     "anchor": [
+      -21.0,
+      29.5,
+      0
+     ],
+     "at": [
+      1330,
+      170
+     ],
+     "size": "sm",
+     "title": "A delta of resistors",
+     "text": "Any 2 clips see 600 Ω in parallel with 1200 Ω: 400 Ω. The tap's lead ends in a 3.5 mm plug."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.8,
+     "text": "With no motor at hand, three resistors of 600 ohms stand in for its windings, on three clips. The tap's wire sits on one of them. With it, the controller and the tap can be tried with no motor on the bench."
+    }
+   ]
+  },
+  {
+   "type": "scope",
+   "figure": "phase-tap",
+   "dur": 30.94,
+   "chips": [
+    {
+     "from": 0,
+     "to": 30.94,
+     "n": 1,
+     "text": "A menu of beeps"
+    }
+   ],
+   "panels": [
+    {
+     "id": "p",
+     "kind": "plot",
+     "box": [
+      56,
+      140,
+      1808,
+      560
+     ],
+     "heading": "Flycolor FlyDragon Lite 40A · item loop · beeps of 128 ms, 148 ms apart, 3.23 s between groups",
+     "view": [
+      [
+       0,
+       [
+        0,
+        16600000000.0
+       ]
+      ]
+     ],
+     "y": [
+      0,
+      3
+     ],
+     "ticks": [
+      [
+       1.4,
+       "beeps"
+      ]
+     ],
+     "traces": [
+      {
+       "series": "menu",
+       "lane": [
+        0.9,
+        1.9
+       ],
+       "width": 3,
+       "reveal": [
+        [
+         3.8,
+         0
+        ],
+        [
+         21.59,
+         16600000000.0
+        ]
+       ]
+      }
+     ],
+     "bands": [
+      {
+       "from": 12.59,
+       "to": 30.94,
+       "x": [
+        450000000.0,
+        680000000.0
+       ],
+       "text": "1",
+       "dy": 60
+      },
+      {
+       "from": 14.59,
+       "to": 30.94,
+       "x": [
+        3850000000.0,
+        4360000000.0
+       ],
+       "text": "2",
+       "dy": 60
+      },
+      {
+       "from": 17.09,
+       "to": 30.94,
+       "x": [
+        7550000000.0,
+        8330000000.0
+       ],
+       "style": "ok",
+       "text": "3",
+       "dy": 60
+      },
+      {
+       "from": 20.59,
+       "to": 30.94,
+       "x": [
+        11500000000.0,
+        12600000000.0
+       ],
+       "text": "4",
+       "dy": 60
+      }
+     ]
+    }
+   ],
+   "labels": [
+    {
+     "from": 1.1,
+     "to": 12.29,
+     "anchor": [
+      "p",
+      200000000.0,
+      0.9
+     ],
+     "at": [
+      720,
+      730
+     ],
+     "side": "t",
+     "title": "Throttle at full, then power",
+     "text": "The FlyDragon enters its menu 7 s after power-up. Then it loops through 10 items."
+    },
+    {
+     "from": 17.59,
+     "to": 21.86,
+     "anchor": [
+      "p",
+      7940000000.0,
+      1.9
+     ],
+     "at": [
+      720,
+      730
+     ],
+     "side": "t",
+     "style": "ok",
+     "title": "Item 3: cutoff voltage",
+     "text": "Throttle to minimum within 3 s after the group selects it. Its values then sound the same way."
+    },
+    {
+     "from": 22.46,
+     "to": 30.540000000000003,
+     "anchor": [
+      "p",
+      9900000000.0,
+      0.9
+     ],
+     "at": [
+      720,
+      730
+     ],
+     "side": "t",
+     "title": "Count and silence",
+     "text": "A missed beep selects the wrong setting. A group ended too early does the same."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.8,
+     "text": "A stick menu works like this. The controller is powered with the throttle at full, and after a few seconds it starts to count through its settings."
+    },
+    {
+     "at": 12.59,
+     "text": "One beep, pause. Two beeps, pause. Three beeps: setting number three. Move the stick now, and that setting is chosen."
+    },
+    {
+     "at": 22.16,
+     "text": "So the bench has to hear two things exactly: how many beeps make a group, and when the group is over."
+    }
+   ]
+  },
+  {
+   "type": "scope",
+   "figure": "phase-tap",
+   "dur": 45.24,
+   "chips": [
+    {
+     "from": 0,
+     "to": 45.24,
+     "n": 2,
+     "text": "From motor lead to pin"
+    }
+   ],
+   "panels": [
+    {
+     "id": "c",
+     "kind": "circuit",
+     "circuit": "tap",
+     "box": [
+      56,
+      140,
+      1010,
+      520
+     ],
+     "show": {
+      "rs": [
+       [
+        0,
+        0.2
+       ],
+       [
+        21.49,
+        0.2
+       ],
+       [
+        22.09,
+        1
+       ]
+      ],
+      "dz": [
+       [
+        0,
+        0
+       ],
+       [
+        24.99,
+        0
+       ],
+       [
+        25.589999999999996,
+        1
+       ]
+      ],
+      "rpd": [
+       [
+        0,
+        0
+       ],
+       [
+        28.49,
+        0
+       ],
+       [
+        29.089999999999996,
+        1
+       ]
+      ],
+      "gnd": [
+       [
+        0,
+        0
+       ],
+       [
+        24.99,
+        0
+       ],
+       [
+        25.589999999999996,
+        1
+       ]
+      ],
+      "g": [
+       [
+        0,
+        0
+       ],
+       [
+        24.99,
+        0
+       ],
+       [
+        25.589999999999996,
+        1
+       ]
+      ],
+      "w2": [
+       [
+        0,
+        0.2
+       ],
+       [
+        21.49,
+        0.2
+       ],
+       [
+        22.09,
+        1
+       ]
+      ],
+      "pin": [
+       [
+        0,
+        0.2
+       ],
+       [
+        21.49,
+        0.2
+       ],
+       [
+        22.09,
+        1
+       ]
+      ],
+      "in": [
+       [
+        0,
+        0.2
+       ],
+       [
+        21.49,
+        0.2
+       ],
+       [
+        22.09,
+        1
+       ]
+      ],
+      "mcu": [
+       [
+        0,
+        0.3
+       ],
+       [
+        21.49,
+        0.3
+       ],
+       [
+        22.09,
+        1
+       ]
+      ]
+     },
+     "set": {
+      "sw": [
+       [
+        0,
+        0
+       ],
+       [
+        12.44,
+        0
+       ],
+       [
+        12.84,
+        1
+       ],
+       [
+        13.639999999999999,
+        1
+       ],
+       [
+        14.04,
+        0
+       ],
+       [
+        14.84,
+        0
+       ],
+       [
+        15.239999999999998,
+        1
+       ],
+       [
+        16.04,
+        1
+       ],
+       [
+        16.439999999999998,
+        0
+       ],
+       [
+        22.49,
+        0
+       ],
+       [
+        22.889999999999997,
+        1
+       ],
+       [
+        45.24,
+        1
+       ]
+      ]
+     },
+     "lit": {
+      "rs": [
+       [
+        0,
+        0
+       ],
+       [
+        22.09,
+        0
+       ],
+       [
+        22.59,
+        1
+       ],
+       [
+        24.99,
+        1
+       ],
+       [
+        25.49,
+        0
+       ]
+      ],
+      "dz": [
+       [
+        0,
+        0
+       ],
+       [
+        25.589999999999996,
+        0
+       ],
+       [
+        26.089999999999996,
+        1
+       ],
+       [
+        28.49,
+        1
+       ],
+       [
+        28.99,
+        0
+       ],
+       [
+        34.91,
+        0
+       ],
+       [
+        35.41,
+        1
+       ],
+       [
+        45.24,
+        1
+       ]
+      ],
+      "rpd": [
+       [
+        0,
+        0
+       ],
+       [
+        29.089999999999996,
+        0
+       ],
+       [
+        29.589999999999996,
+        1
+       ],
+       [
+        34.91,
+        1
+       ],
+       [
+        35.41,
+        0
+       ]
+      ]
+     },
+     "tint": {
+      "rs": "",
+      "dz": "ok",
+      "rpd": "warn"
+     },
+     "flow": [
+      {
+       "from": 22.889999999999997,
+       "to": 34.91,
+       "path": "drive"
+      },
+      {
+       "from": 35.41,
+       "to": 44.940000000000005,
+       "path": "clamp",
+       "style": "ok"
+      }
+     ],
+     "meters": [
+      {
+       "from": 12.84,
+       "to": 34.91,
+       "node": "wire",
+       "value": [
+        [
+         0,
+         7.6
+        ]
+       ],
+       "dy": -70,
+       "dx": -60
+      },
+      {
+       "from": 35.309999999999995,
+       "to": 44.940000000000005,
+       "node": "wire",
+       "style": "warn",
+       "dy": -70,
+       "dx": -60,
+       "value": [
+        [
+         0,
+         7.6
+        ],
+        [
+         35.309999999999995,
+         7.6
+        ],
+        [
+         37.41,
+         20.0
+        ]
+       ]
+      },
+      {
+       "from": 26.089999999999996,
+       "to": 44.940000000000005,
+       "node": "pin",
+       "style": "ok",
+       "dy": -70,
+       "dx": 20,
+       "value": [
+        [
+         0,
+         3.0
+        ]
+       ]
+      }
+     ]
+    },
+    {
+     "id": "p",
+     "kind": "plot",
+     "box": [
+      56,
+      680,
+      1808,
+      340
+     ],
+     "from": 11.94,
+     "to": 45.24,
+     "heading": "One tone period: 478 µs at 2090 Hz · simulated with ngspice",
+     "view": [
+      [
+       0,
+       [
+        0,
+        1685406.6985645932
+       ]
+      ],
+      [
+       18.439999999999998,
+       [
+        0,
+        1685406.6985645932
+       ]
+      ],
+      [
+       20.439999999999998,
+       [
+        0,
+        678468.8995215311
+       ]
+      ],
+      [
+       45.24,
+       [
+        0,
+        678468.8995215311
+       ]
+      ]
+     ],
+     "y": [
+      -1.5,
+      22
+     ],
+     "ticks": [
+      0,
+      3,
+      7.6,
+      20
+     ],
+     "unit": "V",
+     "traces": [
+      {
+       "series": "lead",
+       "style": "muted",
+       "label": "motor lead, 7.6 V",
+       "width": 2.5,
+       "from": 12.139999999999999,
+       "to": 36.41,
+       "reveal": [
+        [
+         12.44,
+         0
+        ],
+        [
+         16.439999999999998,
+         1685406.6985645932
+        ]
+       ]
+      },
+      {
+       "series": "lead-20v",
+       "style": "warn",
+       "label": "motor lead, 20 V",
+       "width": 2.5,
+       "from": 36.41,
+       "to": 45.24
+      },
+      {
+       "series": "pin",
+       "style": "ok",
+       "label": "pin, GPIO 22",
+       "from": 26.089999999999996,
+       "to": 38.41,
+       "reveal": [
+        [
+         26.089999999999996,
+         0
+        ],
+        [
+         28.49,
+         1685406.6985645932
+        ]
+       ]
+      },
+      {
+       "series": "pin-20v",
+       "style": "ok",
+       "label": "pin, GPIO 22",
+       "from": 38.41,
+       "to": 45.24
+      }
+     ]
+    }
+   ],
+   "labels": [
+    {
+     "from": 1.1,
+     "to": 12.139999999999999,
+     "anchor": [
+      "c",
+      "sw"
+     ],
+     "at": [
+      1110,
+      170
+     ],
+     "title": "The motor is the speaker",
+     "text": "The ESC switches the supply onto the windings at the tone's rate. The tapped lead carries those pulses."
+    },
+    {
+     "from": 12.74,
+     "to": 21.189999999999998,
+     "anchor": [
+      "c",
+      "lead"
+     ],
+     "at": [
+      1110,
+      170
+     ],
+     "title": "Bursts of the carrier",
+     "text": "Each tone period holds one burst of PWM pulses. The model: 12 kHz, the FlyDragon's PWM setting, 3 pulses a burst."
+    },
+    {
+     "from": 21.79,
+     "to": 34.61,
+     "anchor": [
+      "c",
+      "dz"
+     ],
+     "at": [
+      1110,
+      170
+     ],
+     "style": "ok",
+     "title": "4.7 kΩ, 3.0 V zener, 8.2 kΩ",
+     "text": "0.98 mA through the 4.7 kΩ at 7.6 V. An open RP2350 input needs the outer pull-down: its own does not hold it low."
+    },
+    {
+     "from": 35.209999999999994,
+     "to": 44.84,
+     "anchor": [
+      "c",
+      "pin"
+     ],
+     "at": [
+      1110,
+      170
+     ],
+     "style": "ok",
+     "title": "3.0 V at any supply",
+     "text": "At 20 V, 3.6 mA flow through the 4.7 kΩ. The PD mini supplies up to 20 V."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.8,
+     "text": "Where does a beep come from? The controller has no speaker. It drives the motor's windings at the pitch of the tone, and the motor itself sounds."
+    },
+    {
+     "at": 12.44,
+     "text": "On the lead, a tone is a train of short bursts at the supply voltage: here 7.6 volts, chopped at 12 kilohertz."
+    },
+    {
+     "at": 21.49,
+     "text": "The tap brings that lead to a logic pin. 4.7 kilohms in series limit the current. A 3 volt zener diode clamps the pin, and 8.2 kilohms hold it low while the lead floats."
+    },
+    {
+     "at": 34.91,
+     "text": "The clamp makes the pin independent of the supply. At 7.6 volts or at 20 volts on the lead, the pin sees the same 3 volts."
+    }
+   ]
+  },
+  {
+   "type": "scope",
+   "figure": "phase-tap",
+   "dur": 51.48,
+   "chips": [
+    {
+     "from": 0,
+     "to": 51.48,
+     "n": 3,
+     "text": "Every edge gets a time stamp"
+    }
+   ],
+   "panels": [
+    {
+     "id": "p",
+     "kind": "plot",
+     "box": [
+      56,
+      140,
+      1808,
+      560
+     ],
+     "heading": "Pin GPIO 22 · the input's level and its edges · simulated",
+     "view": [
+      [
+       0,
+       [
+        0,
+        1685406.6985645932
+       ]
+      ],
+      [
+       10.68,
+       [
+        0,
+        1685406.6985645932
+       ]
+      ],
+      [
+       13.18,
+       [
+        80000.0,
+        626315.7894736843
+       ]
+      ],
+      [
+       20.32,
+       [
+        80000.0,
+        626315.7894736843
+       ]
+      ],
+      [
+       22.82,
+       [
+        92000.0,
+        208333.3333333333
+       ]
+      ],
+      [
+       31.07,
+       [
+        92000.0,
+        208333.3333333333
+       ]
+      ],
+      [
+       33.57,
+       [
+        80000.0,
+        626315.7894736843
+       ]
+      ],
+      [
+       42.05,
+       [
+        80000.0,
+        626315.7894736843
+       ]
+      ],
+      [
+       44.55,
+       [
+        0,
+        1685406.6985645932
+       ]
+      ]
+     ],
+     "y": [
+      -2.6,
+      3.9
+     ],
+     "ticks": [
+      0,
+      3,
+      [
+       -1.5,
+       "level"
+      ]
+     ],
+     "unit": "V",
+     "traces": [
+      {
+       "series": "pin",
+       "style": "muted",
+       "width": 2.5,
+       "label": "pin voltage"
+      },
+      {
+       "series": "level",
+       "style": "",
+       "lane": [
+        -2.1,
+        -0.9
+       ],
+       "label": "input level",
+       "from": 0.8,
+       "to": 51.48
+      },
+      {
+       "series": "rises",
+       "points": true,
+       "lane": [
+        -2.1,
+        -0.9
+       ],
+       "style": "ok",
+       "r": 7,
+       "from": 13.68,
+       "to": 51.48
+      },
+      {
+       "series": "falls",
+       "points": true,
+       "lane": [
+        -2.1,
+        -0.9
+       ],
+       "style": "warn",
+       "r": 7,
+       "from": 13.68,
+       "to": 51.48
+      }
+     ],
+     "lines": [
+      {
+       "y": 1.1,
+       "text": "",
+       "style": "muted"
+      }
+     ]
+    }
+   ],
+   "labels": [
+    {
+     "from": 1.1,
+     "to": 10.879999999999999,
+     "anchor": [
+      "p",
+      817703.3492822966,
+      -1.5
+     ],
+     "at": [
+      720,
+      730
+     ],
+     "side": "t",
+     "title": "Edges, not samples",
+     "text": "A beep is 267 bursts. Their edges hold everything the bench needs: carrier, pitch and length."
+    },
+    {
+     "from": 13.48,
+     "to": 20.52,
+     "anchor": [
+      "p",
+      100000.0,
+      -0.9
+     ],
+     "at": [
+      720,
+      730
+     ],
+     "side": "t",
+     "style": "ok",
+     "title": "One tick: 26.7 ns",
+     "text": "4 cycles of the 150 MHz system clock. Every path through the PIO program takes 4 cycles, so the counter keeps time."
+    },
+    {
+     "from": 23.12,
+     "to": 31.27,
+     "anchor": [
+      "p",
+      183333.3333333333,
+      -0.9
+     ],
+     "at": [
+      720,
+      730
+     ],
+     "side": "t",
+     "title": "31 bits of count, 1 bit of level",
+     "text": "The first words of this beep, in ticks: <b>1,875,003↑ · 1,875,785↓ · 1,878,128↑ · 1,878,910↓ · 1,881,253↑ · 1,882,035↓</b>"
+    },
+    {
+     "from": 33.87,
+     "to": 42.25,
+     "anchor": [
+      "p",
+      204166.66666666666,
+      -2.1
+     ],
+     "at": [
+      720,
+      730
+     ],
+     "side": "t",
+     "style": "warn",
+     "title": "Hold-off: 8 µs",
+     "text": "A fall is written only once the pin has stayed low that long. Here each low lasts 62.5 µs: every edge is kept."
+    },
+    {
+     "from": 44.849999999999994,
+     "to": 51.08,
+     "anchor": [
+      "p",
+      1056937.7990430621,
+      -1.5
+     ],
+     "at": [
+      720,
+      730
+     ],
+     "side": "t",
+     "title": "Ring of 4096 words",
+     "text": "16 kB, read every 1 ms by core 1. This group of 3 beeps: <b>4,806</b> edges."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.8,
+     "text": "The pin now carries a clean logic signal. The I O M C U does not sample it at a fixed rate. It records the moment of every edge."
+    },
+    {
+     "at": 11.18,
+     "text": "A state machine of the programmable I O watches the pin and runs a counter beside it: one tick every 26.7 nanoseconds."
+    },
+    {
+     "at": 20.82,
+     "text": "At each edge it writes one word: the counter, and the level after the edge. Direct memory access moves the words into a ring of 4096."
+    },
+    {
+     "at": 31.57,
+     "text": "A hold-off of 8 microseconds drops lows that are shorter. So a fast carrier arrives as one pulse per burst, and the ring does not flood."
+    },
+    {
+     "at": 42.55,
+     "text": "Once a millisecond, the second core takes the new words out of the ring and hands them to the detector."
+    }
+   ]
+  },
+  {
+   "type": "scope",
+   "figure": "phase-tap",
+   "dur": 38.58,
+   "chips": [
+    {
+     "from": 0,
+     "to": 38.58,
+     "n": 4,
+     "text": "Carrier, tone, beep"
+    }
+   ],
+   "panels": [
+    {
+     "id": "p",
+     "kind": "plot",
+     "box": [
+      56,
+      140,
+      1808,
+      420
+     ],
+     "heading": "The input's level, as the hold-off passes it on",
+     "view": [
+      [
+       0,
+       [
+        49980000.0,
+        50526315.78947368
+       ]
+      ],
+      [
+       10.24,
+       [
+        49980000.0,
+        50526315.78947368
+       ]
+      ],
+      [
+       12.74,
+       [
+        49900000.0,
+        51585406.6985646
+       ]
+      ],
+      [
+       20.69,
+       [
+        49900000.0,
+        51585406.6985646
+       ]
+      ],
+      [
+       23.69,
+       [
+        30000000.0,
+        210000000.0
+       ]
+      ],
+      [
+       32.43,
+       [
+        30000000.0,
+        210000000.0
+       ]
+      ],
+      [
+       38.58,
+       [
+        30000000.0,
+        210000000.0
+       ]
+      ]
+     ],
+     "y": [
+      0,
+      3
+     ],
+     "ticks": [
+      [
+       1.4,
+       "level"
+      ]
+     ],
+     "traces": [
+      {
+       "series": "group-level",
+       "lane": [
+        0.8,
+        2.0
+       ],
+       "width": 2.5
+      },
+      {
+       "series": "burst-starts",
+       "points": true,
+       "style": "ok",
+       "lane": [
+        2.3,
+        2.3
+       ],
+       "shift": 49900000.0,
+       "r": 8,
+       "from": 10.74,
+       "to": 22.69
+      }
+     ],
+     "bands": [
+      {
+       "from": 2.8,
+       "to": 10.44,
+       "x": [
+        50000000.0,
+        50083333.333333336
+       ],
+       "text": "83.3 µs",
+       "dy": 40
+      },
+      {
+       "from": 13.24,
+       "to": 20.89,
+       "x": [
+        50000000.0,
+        50478468.89952153
+       ],
+       "style": "ok",
+       "text": "478.5 µs",
+       "dy": 40
+      }
+     ]
+    },
+    {
+     "id": "w",
+     "kind": "plot",
+     "box": [
+      56,
+      580,
+      1808,
+      300
+     ],
+     "from": 20.89,
+     "to": 38.58,
+     "heading": "Pitch of each 8 ms window",
+     "view": [
+      [
+       0,
+       [
+        30000000.0,
+        210000000.0
+       ]
+      ]
+     ],
+     "y": [
+      1.9,
+      2.3
+     ],
+     "ticks": [
+      2.0,
+      2.09,
+      2.2
+     ],
+     "unit": "kHz",
+     "traces": [
+      {
+       "series": "windows",
+       "points": true,
+       "style": "ok",
+       "lane": [
+        0,
+        1
+       ],
+       "r": 7,
+       "reveal": [
+        [
+         21.19,
+         30000000.0
+        ],
+        [
+         26.19,
+         210000000.0
+        ]
+       ]
+      }
+     ],
+     "lines": [
+      {
+       "y": 2.09,
+       "text": "",
+       "style": "muted"
+      }
+     ]
+    }
+   ],
+   "labels": [
+    {
+     "from": 1.1,
+     "to": 10.44,
+     "anchor": [
+      "p",
+      50041666.666666664,
+      2.0
+     ],
+     "at": [
+      1110,
+      600
+     ],
+     "side": "t",
+     "title": "Carrier",
+     "text": "The detector reports <b>12,004 Hz</b>. A rise within 142.9 µs of the last one is a carrier rise."
+    },
+    {
+     "from": 13.04,
+     "to": 20.69,
+     "anchor": [
+      "p",
+      50478468.89952153,
+      2.3
+     ],
+     "at": [
+      1110,
+      600
+     ],
+     "side": "t",
+     "style": "ok",
+     "title": "Tone",
+     "text": "A burst starts after a low of 1.25 carrier periods or more. The tone range is 400 to 6500 Hz."
+    },
+    {
+     "from": 27.73,
+     "to": 38.18,
+     "anchor": [
+      "p",
+      177500000.0,
+      0.8
+     ],
+     "at": [
+      1110,
+      900
+     ],
+     "side": "t",
+     "size": "sm",
+     "style": "ok",
+     "title": "One beep record",
+     "text": "First rise 50.0 ms, length <b>127.5 ms</b>, pitch <b>2090 Hz</b>, 267 bursts."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.8,
+     "text": "The detector reads three time scales out of those stamps. The shortest spacing between rises is the carrier: 12 kilohertz."
+    },
+    {
+     "at": 10.74,
+     "text": "A rise after a longer low starts a new burst. From one burst to the next is one period of the tone: 478 microseconds, 2090 hertz."
+    },
+    {
+     "at": 21.19,
+     "text": "Every 8 milliseconds a window closes with the mean pitch of its periods."
+    },
+    {
+     "at": 27.43,
+     "text": "And when the line has been quiet for 3 milliseconds, the beep is over. The detector reports its first rise, its length and its pitch."
+    }
+   ]
+  },
+  {
+   "type": "scope",
+   "figure": "phase-tap",
+   "dur": 38.13,
+   "chips": [
+    {
+     "from": 0,
+     "to": 38.13,
+     "n": 5,
+     "text": "From beeps to a choice"
+    }
+   ],
+   "panels": [
+    {
+     "id": "p",
+     "kind": "plot",
+     "box": [
+      56,
+      140,
+      1808,
+      360
+     ],
+     "heading": "One group, as the detector reports it",
+     "view": [
+      [
+       0,
+       [
+        0,
+        2000000000.0
+       ]
+      ]
+     ],
+     "y": [
+      0,
+      3
+     ],
+     "ticks": [
+      [
+       1.4,
+       "beeps"
+      ]
+     ],
+     "traces": [
+      {
+       "series": "group-beeps",
+       "style": "ok",
+       "lane": [
+        0.9,
+        1.9
+       ],
+       "width": 3,
+       "reveal": [
+        [
+         0.5,
+         0
+        ],
+        [
+         9.18,
+         2000000000.0
+        ]
+       ]
+      }
+     ],
+     "bands": [
+      {
+       "from": 12.68,
+       "to": 38.13,
+       "x": [
+        729300000.0,
+        1429300000.0
+       ],
+       "style": "warn",
+       "text": "700 ms of silence",
+       "dy": 40
+      }
+     ]
+    },
+    {
+     "id": "m",
+     "kind": "plot",
+     "box": [
+      56,
+      520,
+      1808,
+      360
+     ],
+     "from": 17.95,
+     "to": 38.13,
+     "heading": "The item loop",
+     "view": [
+      [
+       0,
+       [
+        0,
+        16600000000.0
+       ]
+      ]
+     ],
+     "y": [
+      0,
+      3
+     ],
+     "ticks": [
+      [
+       1.4,
+       "beeps"
+      ]
+     ],
+     "traces": [
+      {
+       "series": "menu",
+       "lane": [
+        0.9,
+        1.9
+       ],
+       "width": 3
+      }
+     ],
+     "bands": [
+      {
+       "from": 22.45,
+       "to": 38.13,
+       "x": [
+        450000000.0,
+        680000000.0
+       ],
+       "text": "1",
+       "dy": 44
+      },
+      {
+       "from": 23.45,
+       "to": 38.13,
+       "x": [
+        3850000000.0,
+        4360000000.0
+       ],
+       "text": "2",
+       "dy": 44
+      },
+      {
+       "from": 24.45,
+       "to": 38.13,
+       "x": [
+        7550000000.0,
+        8330000000.0
+       ],
+       "style": "ok",
+       "text": "3",
+       "dy": 44
+      }
+     ],
+     "lines": [
+      {
+       "from": 26.45,
+       "to": 38.13,
+       "x": 9050000000.0,
+       "text": "throttle to minimum",
+       "style": "ok",
+       "dy": 44
+      }
+     ]
+    }
+   ],
+   "labels": [
+    {
+     "from": 1.1,
+     "to": 8.879999999999999,
+     "anchor": [
+      "p",
+      115000000.0,
+      1.9
+     ],
+     "at": [
+      1110,
+      560
+     ],
+     "side": "t",
+     "title": "Numbered beeps",
+     "text": "The first rise in ms and the length to 0.1 ms, read by the panel every 40 ms. The time the panel reads them does not matter."
+    },
+    {
+     "from": 9.48,
+     "to": 17.849999999999998,
+     "anchor": [
+      "p",
+      1000000000.0,
+      0.9
+     ],
+     "at": [
+      1110,
+      560
+     ],
+     "side": "t",
+     "style": "warn",
+     "title": "GROUP GAP: 700 ms",
+     "text": "The FlyDragon's beeps are 148 ms apart, its groups 3.23 s. A beep under 64 ms or a gap under 64 ms spoils the group."
+    },
+    {
+     "from": 30.76,
+     "to": 37.730000000000004,
+     "anchor": [
+      "m",
+      12000000000.0,
+      1.9
+     ],
+     "at": [
+      1110,
+      900
+     ],
+     "side": "t",
+     "size": "sm",
+     "style": "warn",
+     "title": "BEEP LOST",
+     "text": "A missing number, a ring overrun or a stopped capture ends the run."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.8,
+     "text": "The panel receives each beep with its own times from the I O M C U's clock. Now it only has to count."
+    },
+    {
+     "at": 9.18,
+     "text": "Beeps closer than 700 milliseconds belong to one group. Silence of 700 milliseconds ends it: this group counts 3."
+    },
+    {
+     "at": 18.45,
+     "text": "One group is not enough. The bench acts only when three groups in a row came in order: 1, 2, 3. Then it moves the throttle, and the setting is chosen."
+    },
+    {
+     "at": 30.46,
+     "text": "If a beep is ever missing from the numbered records, the run stops. It does not guess."
+    }
+   ]
+  },
+  {
+   "type": "tour",
+   "steps": [
+    {
+     "dur": 9,
+     "n": 6,
+     "card": {
+      "title": "No servo during a tap run",
+      "text": "The servo rails carry the ESC's voltage."
+     },
+     "say": "One warning before a run. The supply that feeds the controller through the X T 60 also feeds the servo rails. A servo left on those pins gets the controller's voltage. Unplug every servo first."
+    },
+    {
+     "dur": 9,
+     "n": 6,
+     "card": {
+      "title": "Red wire out of the signal plug",
+      "text": "The ESC's BEC and the port's 5 V must not meet."
+     },
+     "say": "And the signal lead. Take the red wire out of the controller's servo plug before it goes onto the port. The controller's own 5 volt supply sits on that wire, and the port has 5 volts of its own. Signal and ground are all the bench needs."
+    },
+    {
+     "view": "setup-tap",
+     "dur": 6,
+     "n": 7,
+     "kicker": "07 · On the bench",
+     "path": [
+      "HOME",
+      "SETUP",
+      "SENSORS"
+     ],
+     "title": "Switch the tap on",
+     "text": "SETUP > SENSORS holds the phase tap and its pin.",
+     "say": "On the bench, the tap is switched on under setup, sensors."
+    },
+    {
+     "view": "motor-stick-flydragon",
+     "dur": 6,
+     "n": 7,
+     "kicker": "07 · On the bench",
+     "path": [
+      "HOME",
+      "MOTOR & ESC",
+      "PROGRAM"
+     ],
+     "title": "Pick the ESC",
+     "text": "74 families and 462 models bring their menus.",
+     "say": "Under motor and E S C, program, the controller is picked from the list, with the setting to change."
+    },
+    {
+     "view": "motor-stick-run",
+     "dur": 6,
+     "n": 7,
+     "kicker": "07 · On the bench",
+     "path": [
+      "HOME",
+      "MOTOR & ESC",
+      "PROGRAM"
+     ],
+     "title": "RUN",
+     "text": "The bench powers the ESC, counts and moves the throttle.",
+     "say": "Then run. The bench powers the controller, listens, and moves the throttle at the right group."
+    },
+    {
+     "view": "motor-stick-done",
+     "dur": 5,
+     "n": 7,
+     "kicker": "07 · On the bench",
+     "path": [
+      "HOME",
+      "MOTOR & ESC",
+      "PROGRAM"
+     ],
+     "title": "DONE",
+     "text": "The supply is off and the bench is SAFE.",
+     "say": "When it is done, the supply is off and the bench is safe again."
+    }
+   ]
+  },
+  {
+   "type": "end",
+   "dur": 9,
+   "heading": "The phase tap",
+   "items": [
+    "4.7 kΩ, 3.0 V zener, 8.2 kΩ: any supply becomes a logic level",
+    "Every edge stamped on a 26.7 ns tick",
+    "Carrier, tone period, 8 ms windows, beep",
+    "Three groups in order, then the throttle moves"
+   ],
+   "note": "Reference: docs/StickProgramming.md, protocols/phase_tap/README.md.",
+   "say": "The phase tap: every edge of one motor lead, timed, and turned into a count the bench can act on."
+  }
+ ]
+}

@@ -34,8 +34,14 @@ a new session needs beyond it.
 | `storyboards/rbmod-build.json` | the build of a rev 1 carrier and the panel's wiring in 13 steps, 347.32s, narrated in the voice of `features`, bed `pachelbel-canon` at half level |
 | `storyboards/dial.json` | the M5Stack Dial going into its printed base and coming into use in 7 steps, 295.69s, narrated, bed `pachelbel-canon` at half level; `dial_base` puts the Dial into its printed hand-held base, and step 1 assembles it |
 | `storyboards/minircbench-build.json`, `player/mini3d.js`, `boards/minircbench-wiring.json`, `stills/` | the build of a MiniRcBench in 10 steps, 505.57s, narrated in the voice of `features`, bed `pachelbel-canon` at half level; `tools/video_cad.py --parts` converts its assembly |
+| `storyboards/rbmod-first-program.json`, `player/part3d.js`, `player/windows.js`, `web/capture.js` | first programming of a bench with the rbmod carrier in 6 chapters, 321.22s, narrated, bed `pachelbel-canon` at half level; STEP models of the panel, the carrier and the RP2350-CAN, captures of the releases page and of the ESP Web Tool, a drawn Windows desktop for the drive RP2350 |
+| `storyboards/auto-rudder.json`, `player/rudder3d.js`, `test/host/video_rauto.c` | setting a rudder's end points with RUDDER AUTO in 4 steps, 302.70s, narrated, bed `pachelbel-canon` at half level; the wing slice, the IMU on Gecko Tape, the Dial in its base and the cased bench in one 3D scene, the display and the flap following one run of the host suites' rig |
 | `storyboards/thumbnail.json` | thumbnail of the feature tour, `--stills 3` |
-| `test/tools/test_make_video.py` | 35 cases; the storyboard check, the script, the freezes |
+| `tools/video_scope.py`, `player/scope.js`, `plots/hitec-precharge.json` | the `scope` scene: plots and a circuit from a figure; the figure of the D series signal wire is simulated with ngspice 42 |
+| `storyboards/hitec-precharge.json` | precharge and sample on an RP2350 pin in 6 steps, narrated in the voice of `features`, bed `pachelbel-canon` at half level; 348.67s, 10,460 frames, rendered on 2026-11-22 from 1547c7dca with Blender 5.3.0 for its 910 3D frames (EEVEE on 7 MI50 cards, 114s) and the browser player for its 2D layer (596s). Owner, 2026-11-22, in 3 rounds: the video is abstract. It shows the technique and the solution: no pull-up is possible because several protocols share the pin. It names no servo maker and not rcbench, and it keeps the graphs and the measurements. The script before it, with the servo and rcbench named, was rendered at 361.63s from dac65c733; the first, with the panel's screens, at 339.20s from 2b5940f3a. It opens with 1 `part` scene, `rp2350_can`; the 6 `scope` scenes that follow have no 3D layer, and the sixth step draws the 3 captures of `testbench/captures/hitec32` (branch `inbox/hitec32-captures`) |
+| `tools/video_tap.py`, `plots/phase-tap.json`, `storyboards/phase-tap.json` | ESC STICK programming from the phase tap in 7 steps, narrated in the voice of `features`, bed `bach-cello` at half level; 322.89s before the narration stretches it; not rendered. Its 4 `part` scenes are `rbmod_v2`, `rp2350_can`, `esc_motor_set` (the FlyDragon Lite 40A and a T-Motor AT2814 lead to lead, tags from the point table of `hardware/mechanical/ESC_MOTOR.md`) and `motor_simulator`. No capture: the owner chose the simulation and the documented figures (2026-11-22). Owner, 2026-11-22: the ESC is powered from the bench's XT60; the throttle signal comes from a programming port, as PWM or DShot; no servo is on the servo pins during a tap run, because they carry the ESC's voltage; a video that puts an ESC's signal lead on a port always says to take the red wire out of the plug |
+| `test/tools/test_video_tap.py` | 7 cases; the lead's model, the detector on a group, the figure |
+| `test/tools/test_make_video.py`, `test/tools/test_video_scope.py` | 52 and 15 cases; the storyboard check, the script, the freezes, the phonemes and the trim of the narration, the figure, the scope scene |
 
 No pull request is open. CI has not been looked at for this branch.
 
@@ -51,7 +57,8 @@ No pull request is open. CI has not been looked at for this branch.
 | `kokoro-v1.0.onnx`, `voices-v1.0.bin` | 354MB | github.com/thewh1teagle/kokoro-onnx, release `model-files-v1.0` | `tools/video/tts/` |
 | `node_modules/` | | `npm install` in `tools/video/` | `tools/video/` |
 
-Python packages: `pillow numpy kokoro-onnx cadquery-ocp==8.0.1.1.0`.
+Python packages: `pillow numpy kokoro-onnx misaki==0.9.4 spacy num2words espeakng-loader phonemizer piper-tts cadquery-ocp==8.0.1.1.0`, and `en_core_web_sm` 3.8.0 from
+github.com/explosion/spacy-models for spacy. misaki goes in without its `en` extra, which pulls in PyTorch.
 Node needs `playwright` with its Chromium. ffmpeg and a C compiler are
 needed.
 
@@ -76,8 +83,33 @@ python3 tools/make_video.py features --jobs 12 --keep build/video/parts \
 - A narration change alters step lengths. To keep the picture, set the
   changed step's `dur` to its length before the change, as the
   signal-wire step of `features` does (18.65).
-- `RCBENCH_VIDEO_GL` selects a GPU renderer. It is untested; the server's
-  7 MI50 cards were not used.
+- `RCBENCH_VIDEO_GL` selects a GPU renderer. On the server's MI50 cards
+  its pixels differ from SwiftShader's by 0.031 of 255 on average on
+  the Dial video. `rbmod-first-program` takes
+  112s there with 47 jobs, `auto-rudder` 201s with 12 jobs and `auto-rudder-de` 224s with 14 jobs on the kernel's own amdgpu driver.
+- Chromium takes the first Vulkan device: 47 browsers with the full
+  case model filled one card's 16GiB. A browser of a long scene with
+  the full case needs about 0.4GB; the server spreads the jobs over its
+  cards.
+- The server's fonts had no glyph for 4 symbols of the File Explorer
+  windows; `rbmod-first-program` was rendered with Noto Sans Symbols,
+  Noto Sans Symbols 2 and Noto Sans Math installed there. The windows
+  draw those icons as SVG since.
+- Video texts carry no statement of a feature's test state: narration,
+  labels, notes, chapter cards and `README.md` say what a feature
+  does (owner's rule, 2026-11-15).
+- A video does not do what it shows: the narration says "This video
+  shows how ...", never "This video sets ..." or "This video loads ..."
+  (owner's correction, twice, 2026-11-19).
+- The sound track has no servo sound. Two synthesized gear sounds for
+  the `rudder` model's flap were rejected by ear (owner, 2026-11-19): a
+  tone following the flap's speed squeaked, a noise rattle with a steady
+  whine was refused outright. A servo sound needs a recording.
+- Every touch a video shows carries its ring animation: the tap ring or
+  the 2s hold ring of a `screen` or `tour` step, `touches` in a 3D
+  scene, a pointer's `click` in a window (owner's rule, 2026-11-19).
+  `auto-rudder` holds 15 touches, every screen change among them. The 3D scenes of `dial`, `features`
+  and the other storyboards written before that date hold none.
 - The server session "RCBench 261111" has a worktree with everything
   installed and has rendered `features` three times.
 
@@ -95,9 +127,20 @@ python3 tools/make_video.py features --jobs 12 --keep build/video/parts \
   (written `can, bus` for the speaker); "AM32" written `A-M 32`.
 - The narration states what a screen is for before what it shows.
 - The model leaves the assembly's power bank out.
-- German narration is parked. Piper (`thorsten`, `kerstin`) and
-  Chatterbox Multilingual were tried and rejected by ear; Chatterbox
-  also misread "XT60" and "74".
+- German narration is spoken by Piper `de_DE-thorsten-high`
+  (`"engine": "piper"`), acceptable to the owner ("bearable",
+  2026-11-19). Piper `kerstin` and Chatterbox Multilingual were rejected
+  by ear, and Chatterbox also misread "XT60" and "74". `SPELL_DE` holds
+  how German names are written for the speaker; the owner has not heard
+  its spellings ("Dail", "Sett-ap", "Laif", "Hai-Teck", "Tscha-Servo"). The
+  owner chose "Resärwe" for "Reserve" by ear from five spellings and
+  "Schub Stange" for "Schubstange" from six (2026-11-20). The
+  tape is "Gecko Tape" in both languages, never "gel tape" or
+  "Gel-Klebeband" (owner), written
+  "Gekko Tehp" for the German speaker.
+- `auto-rudder-de` is `auto-rudder` in German. Both come from one
+  generator outside the tree; the German texts are a table by their
+  English ones. A change to one storyboard goes into both.
 
 ## The rbmod rework video
 

@@ -72,6 +72,7 @@
 #include "log_writer.h"
 #include "telemetry_sim.h"
 #include "splash_screen.h"
+#include "render_versions.h"
 #include "outputs_screen.h"
 #include "picker_screen.h"
 #include "port_view.h"
@@ -2271,8 +2272,11 @@ static void pose_splash(void)
     /* BOARD_NAME_TEXT and BOARD_DISPLAY_TEXT of the panel's board_pins.h,
      * as panel_boot.c writes them. */
     char board[SPLASH_DETAIL_MAX];
+    /* A video's bench starts on the version its update screens run. */
+    const bool ex = ex_versions_set();
+    const ex_version_t run = ex_version(EX_VER_RUNNING);
     snprintf(board, sizeof(board), TR(SPLASH_PANEL_FW), "ESP32-P4 7B",
-             RCBENCH_VERSION_STRING);
+             ex ? run.text : RCBENCH_VERSION_STRING);
     splash_screen_set(SPLASH_STEP_BOARD,    SPLASH_OK,   board);
     splash_screen_set(SPLASH_STEP_DISPLAY,  SPLASH_OK,   "1024x600 DSI");
     splash_screen_set(SPLASH_STEP_TOUCH,    SPLASH_OK,   "GT911 5pt");
@@ -2285,8 +2289,9 @@ static void pose_splash(void)
     char iomcu[SPLASH_DETAIL_MAX];
     snprintf(iomcu, sizeof(iomcu), TR(SPLASH_IOMCU_FW),
              (unsigned)LINK_PROTOCOL_MAJOR, (unsigned)LINK_PROTOCOL_MINOR,
-             (unsigned)RCBENCH_VERSION_MAJOR, (unsigned)RCBENCH_VERSION_MINOR,
-             (unsigned)RCBENCH_VERSION_PATCH);
+             ex ? run.n[0] : (unsigned)RCBENCH_VERSION_MAJOR,
+             ex ? run.n[1] : (unsigned)RCBENCH_VERSION_MINOR,
+             ex ? run.n[2] : (unsigned)RCBENCH_VERSION_PATCH);
     splash_screen_set(SPLASH_STEP_IOMCU,    SPLASH_OK,   iomcu);
 }
 
@@ -2331,14 +2336,18 @@ static void wifi_type(const char *text)
     }
 }
 
-/* The versions of the update screens' examples, fixed rather than read from
- * rcbench_version.h: a panel and an IOmcu on 0.22.0, the patch release
- * 0.22.1 offered and installed, 0.21.2 as the older one.  The screenshots
- * and the alerts quoted in Screens.md then tell one sequence at every
- * release. */
-#define EX_RUNNING "0.22.0"
-#define EX_NEWER   "0.22.1"
-#define EX_OLDER   "0.21.2"
+/* The versions of the update screens' examples: render_versions.h. */
+#define EX_RUNNING (ex_version(EX_VER_RUNNING).text)
+#define EX_NEWER   (ex_version(EX_VER_NEWER).text)
+#define EX_OLDER   (ex_version(EX_VER_OLDER).text)
+
+/** @brief An example version as the IOmcu's. */
+static cu_version_t ex_cu(ex_ver_t which)
+{
+    const ex_version_t v = ex_version(which);
+    return (cu_version_t){ (uint16_t)v.n[0], (uint16_t)v.n[1],
+                           (uint16_t)v.n[2] };
+}
 
 /* The views of WI-FI, reached as an operator reaches them: the
  * application's view handed in, the controls tapped. */
@@ -2695,16 +2704,17 @@ static void pose_upd(const char *view)
     };
     upd_cu_view_t cu = {
         .sec = CU_SEC_SAME, .known = true, .have_image = true,
-        .running = { 0, 22, 0 }, .carried = { 0, 22, 0 },
+        .running = ex_cu(EX_VER_RUNNING),
+        .carried = ex_cu(EX_VER_RUNNING),
     };
     for (size_t i = 0; i < sizeof(k_cu) / sizeof(k_cu[0]); ++i) {
         if (strcmp(view, k_cu[i].view) == 0) {
             cu.sec = k_cu[i].sec;
-            cu.running = (cu_version_t){ 0, 21, 2 };
+            cu.running = ex_cu(EX_VER_OLDER);
         }
     }
     if (strcmp(view, "updates-cu-older") == 0) {
-        cu.running = (cu_version_t){ 0, 22, 1 };
+        cu.running = ex_cu(EX_VER_NEWER);
     } else if (strcmp(view, "updates-cu-rebuilt") == 0) {
         cu.running = cu.carried;
     } else if (strcmp(view, "updates-cu-noimage") == 0) {
@@ -4515,7 +4525,8 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
             settings_set(SET_SERVO_TARGET, 1.0f);
             servo_screen_set_drive(1u, 13u, true);
         }
-        if (strcmp(view, "servo-rbmod") == 0) {
+        if (strcmp(view, "servo-rbmod") == 0
+            || strcmp(view, "servo-hub-rbmod-port") == 0) {
             /* The carrier's PROG PORT 1 on GPIO 13, PORT PWM and the PROG
              * 5V off: ARM switches both on. */
             prog_choice_set_far_minor(LINK_MINOR_CARRIER_PWM);
@@ -5224,8 +5235,8 @@ int main(int argc, char **argv)
          * `IOmcu updated to 0.22.0` in Screens.md, half way through the
          * blocks of a 191,592-byte image.  Fixed, as the examples above
          * are. */
-        coproc_update_screen_versions((cu_version_t){ 0, 21, 2 },
-                                      (cu_version_t){ 0, 22, 0 });
+        coproc_update_screen_versions(ex_cu(EX_VER_OLDER),
+                                      ex_cu(EX_VER_RUNNING));
         coproc_update_screen_progress(CU_STEP_SEND, 1497u, 2994u);
     }
     if (id == SCREEN_FILES) {

@@ -481,7 +481,7 @@ a spotlight, and a recap. `tools/video_audio.py` computes the sound track from t
 storyboard: synthesizer pads and one quiet sound per event, no percussion, the loudest sample
 at -3dBFS (decibels relative to full scale); its balance has not been judged by ear. `--check` reads every
 storyboard and fails on a field the player would not draw; `test/tools/test_make_video.py`
-runs it. Five storyboards and a thumbnail: `kst-rbmod`, programming a KST servo on the rbmod carrier, 8 steps,
+runs it. 11 storyboards and a thumbnail: `kst-rbmod`, programming a KST servo on the rbmod carrier, 8 steps,
 100.4s, and `features`, every screen of the bench in 8 chapters, where it opens from and what
 it does on the rbmod carrier, narrated, 755.92s, with Bach's Prelude in C major or Pachelbel's
 Canon in D major as its bed. `tools/video_voice.py` speaks a storyboard with Kokoro, a
@@ -496,7 +496,7 @@ label names each. `rbmod-rework` shows the rework of a rev 1 rbmod carrier in 4 
 without narration: the track cut between the pads of R1, the wire from GP15 to R1's outer pad,
 the 2.2kΩ pull-down on M7's EN and the 5.6V zener on M7's output. It draws the board flat
 (`tools/video/player/board.js`) from a file that `tools/video_board.py` converts from the
-rev 1 KiCad board, which is not in the tree. `minircbench-build` shows the build of a MiniRcBench, the pocket bench of the repository of that name, in 10 steps, narrated, 505.57s: its assembly in 3D (`tools/video/player/mini3d.js`), its wiring on a flat drawing (`tools/video/boards/minircbench-wiring.json`) and its screens as stills of that project's host suite. `rbmod-build` shows the build of a rev 1 carrier
+rev 1 KiCad board, which is not in the tree. `rbmod-first-program` shows the first programming of a bench with the rbmod carrier in 6 chapters, narrated, 321.22s: the panel, the carrier and the RP2350-CAN from their STEP models (`tools/video/player/part3d.js`), captures of the releases page and of the ESP Web Tool (`tools/video/web/capture.js`) and the panel's update screens. `auto-rudder` shows RUDDER AUTO setting a rudder's end points in 4 steps, narrated, 302.70s: a wing slice with its flap, the IMU on gel tape, the Dial and the cased bench in one 3D scene (`tools/video/player/rudder3d.js`), the display and the flap following one run of the host suites' rig (`test/host/video_rauto.c`). `minircbench-build` shows the build of a MiniRcBench, the pocket bench of the repository of that name, in 10 steps, narrated, 505.57s: its assembly in 3D (`tools/video/player/mini3d.js`), its wiring on a flat drawing (`tools/video/boards/minircbench-wiring.json`) and its screens as stills of that project's host suite. `rbmod-build` shows the build of a rev 1 carrier
 in 13 steps and 347.32s on the same board, narrated, with Pachelbel's Canon as its bed: the parts take
 their places, the modules sit on the plastic of straight pin strips and are soldered on both
 sides, the large holes of M5 and M6 take a wire and solder, J6 takes no connector but 4 wires
@@ -505,7 +505,7 @@ to a USB-C plug board for the PD mini, and a drawing of the panel's back
 supply and ground from J7 on the RS485 header's 5V and GND pins. `dial` shows the M5Stack Dial, in its printed hand-held base, coming
 into use in 7 steps and 295.69s, narrated, step 1 the assembly of the base with its cell: its STEP model with the faces of
 `tools/render_dial.py` on its display and its knob turning (`tools/video/player/dial3d.js`),
-and SETUP > WIRELESS > DIAL as the host renderer draws it. `kst-rbmod` draws a mockup of boxes whose size is estimated, and J2's row order
+and SETUP > WIRELESS > DIAL as the host renderer draws it. `hitec-precharge` explains reading an open-drain answer on an RP2350 pin without a pull-up, the technique of the Hitec D series PRECHARGE receive with no product named, in 6 steps, narrated, 348.67s: `scope` scenes (`tools/video/player/scope.js`) draw the signal wire's circuit and its voltage, which `tools/video_scope.py` simulates with ngspice from a model fitted to the measured sampling window and to a logic analyser capture, and 3 captures of a read of register 0x32 beside it ([the simulated signal wire](tools/video/README.md#the-simulated-signal-wire)). `phase-tap` explains ESC STICK programming counted from the phase tap in 7 steps, narrated: `tools/video_tap.py` simulates the tap on a modelled motor lead with ngspice and runs `protocols/phase_tap/tone.c` on the simulated edges; its carrier of 12kHz is a model value, and it is not rendered. `kst-rbmod` draws a mockup of boxes whose size is estimated, and J2's row order
 there is not confirmed. A render is not run in CI.
 
 [Videos from storyboards](tools/video/README.md).

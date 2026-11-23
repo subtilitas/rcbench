@@ -417,6 +417,23 @@ The entries below cover the 11 pull requests merged since v0.23.15: #893 to
   footprint each, for 1:1 cables from the display node's ES3C28P sockets;
   `ES3C28P_PWR` feeds the ES3C28P's USB-C VBUS
   ([KiCad library](hardware/kicad/README.md#es3c28p-sockets)).
+- Storyboard `rbmod-first-program`: the first programming of a bench with
+  the rbmod carrier in 6 chapters, narrated, 321.22s. The panel, the
+  carrier and the RP2350-CAN come from their STEP models, the releases
+  page and the ESP Web Tool from captures of the pages, and the copy onto
+  the drive RP2350 runs on a drawn Windows desktop
+  ([Videos from storyboards](tools/video/README.md)).
+- Storyboard `auto-rudder`: RUDDER AUTO setting a rudder's end points in 4
+  steps, narrated, 302.70s. One 3D scene holds a wing slice with its flap,
+  the IMU on double-sided gel tape, the M5Stack Dial in its base and the
+  cased bench; `test/host/video_rauto.c` runs RUDDER AUTO on the host
+  suites' rig, and the display and the flap follow that run.
+- `tools/make_video.py`: the case models `part`, one STEP model, and
+  `rudder`; `windows` over a board or case scene, a browser with captures
+  of a web page, a folder, a Windows desktop with File Explorer windows
+  and a pointer that clicks and drags; `tilt` and `enter` of a board
+  scene; `versions` of a tour step, the versions its update screens
+  show; `rauto` of a rudder scene.
 - `hardware/mechanical/`: `servo_standard.step`, a standard size servo with
   a round horn, black with the white print "Standard Servo", from an owner
   sketch with dimensions: case 40.5mm x 20.0mm x 36.3mm, 2 ears with 2 open
@@ -1041,7 +1058,40 @@ The entries below cover the 7 pull requests merged since v0.23.13: #847,
   `tools/video_board.py` converts a KiCad board file into the board it
   draws, each module with the parts, prints and pin names of its spec
   under `hardware/kicad/modules/`. `--keep` keeps the captured parts per
-  scene, so that a changed scene is captured alone ([Videos from storyboards](tools/video/README.md)).
+  scene, so that a changed scene is captured alone; a kept part of
+  1024 bytes or less is captured again ([Videos from storyboards](tools/video/README.md)).
+- Music bed `beethoven-moonlight`: bars 1 to 4 of Ludwig van
+  Beethoven's Sonata Op. 27 No. 2, first movement, as a loop of 17.76s:
+  the triplets plucked over the bass octaves, then the chord of bar 5.
+  The notes are read from the first edition (Vienna: Cappi, 1802). No
+  storyboard uses it
+  ([Videos from storyboards](tools/video/README.md)).
+- Music bed `bach-cello`: the Prelude of J. S. Bach's Suite No. 1 for
+  cello solo, BWV 1007, 41 bars at 4s a bar, plucked over each bar's
+  lowest note. The notes are those of the Mutopia Project's edition
+  Mutopia-2018/01/19-517, which its typesetter placed in the public
+  domain. `phase-tap` uses it
+  ([Videos from storyboards](tools/video/README.md)).
+- Storyboard `phase-tap`: ESC STICK programming counted from the phase
+  tap in 7 steps, narrated. `tools/video_tap.py` models the motor lead of
+  a beeping ESC from the FlyDragon Lite 40A's measured beeps, simulates
+  the tap (4.7kΩ, 3.0V zener, 8.2kΩ) with ngspice and runs the capture's
+  hold-off and the detector of `protocols/phase_tap/tone.c` on the
+  simulated edges. A plot's time axis reads in s from 2s of width, and a
+  circuit draws a zener diode
+  ([Videos from storyboards](tools/video/README.md#the-simulated-phase-tap)).
+- Storyboard `hitec-precharge`: reading an open-drain answer on an
+  RP2350 pin without a pull-up resistor, the Hitec D series PRECHARGE
+  receive, in 6 steps, narrated, 348.67s, with no product named: a device that only pulls low, the 2.2kΩ
+  pull-up and what it changes for the pin's other uses, one precharge and
+  sample, the sampling window, one answer byte in 80 samples, and 3 logic
+  analyser captures of a read of register 0x32. A `scope` scene draws
+  plots and a circuit from a figure under `tools/video/plots/`.
+  `tools/video_scope.py` simulates the signal wire with ngspice and
+  writes the figure; its pad driver (50Ω), line capacitance (72pF), input
+  threshold (1.1V) and servo output (37Ω) are fitted to the measured
+  window of 40 to 213ns and to the captured pulse width of 280ns at 1.4V
+  ([Videos from storyboards](tools/video/README.md#the-simulated-signal-wire)).
 - Storyboard `minircbench-build`: building a MiniRcBench in 10 steps,
   narrated, 505.57s. A `case` scene with the model `mini` draws the bench
   from its assembly, seats its components, shows stills on its display

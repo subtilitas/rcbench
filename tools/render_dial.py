@@ -21,6 +21,7 @@ SPDX-License-Identifier: MIT
 from __future__ import annotations
 
 import argparse
+import os
 import pathlib
 import shutil
 import subprocess
@@ -101,13 +102,32 @@ def build(tmp: pathlib.Path) -> pathlib.Path:
     return exe
 
 
+def other(name: str):
+    """Read the name of a face of a screen the knob does nothing on.
+
+    Args:
+        name: "other-TITLE-safe" or "other-TITLE-armed", the title's words
+            in lower case joined by hyphens: "other-rudder-auto-armed".
+
+    Returns:
+        The value of RCBENCH_VIDEO_DIAL_OTHER for it, "RUDDER AUTO:armed",
+        or None when the name is not of that form.
+    """
+    parts = name.split("-")
+    if len(parts) < 3 or parts[0] != "other" or parts[-1] not in (
+            "safe", "armed") or not all(p.isalnum() for p in parts):
+        return None
+    title = " ".join(parts[1:-1]).upper()
+    return title + (":armed" if parts[-1] == "armed" else "")
+
+
 def render(exe: pathlib.Path, tmp: pathlib.Path, name: str, lang: str):
     """Render one face.
 
     Args:
         exe: The renderer.
         tmp: A folder for the PPM (portable pixmap) file.
-        name: The face, a key of FACES.
+        name: The face, a key of FACES, or a name other() reads.
         lang: "en" or "de".
 
     Returns:
@@ -115,7 +135,12 @@ def render(exe: pathlib.Path, tmp: pathlib.Path, name: str, lang: str):
     """
     from PIL import Image
     ppm = tmp / f"{name}-{lang}.ppm"
-    subprocess.run([str(exe), str(ppm), name, lang], check=True)
+    posed = other(name)
+    if posed is None:
+        subprocess.run([str(exe), str(ppm), name, lang], check=True)
+    else:
+        subprocess.run([str(exe), str(ppm), "other", lang], check=True,
+                       env={**os.environ, "RCBENCH_VIDEO_DIAL_OTHER": posed})
     return Image.open(ppm).convert("RGB")
 
 

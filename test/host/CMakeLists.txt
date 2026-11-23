@@ -206,6 +206,13 @@ foreach(suite gfx gfx_faces gfx_subpixel gfx_clip gfx_damage gfx_turn gfx_sprite
     set_tests_properties(${suite} PROPERTIES
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 endforeach()
+# A video's frames of a RUDDER AUTO run, on the rig of the run's suites.
+# Not a test: tools/video's generator of auto-rudder runs it.
+add_executable(video_rauto video_rauto.c)
+target_link_libraries(video_rauto PRIVATE ${UNDER_TEST} rcbench_mstime)
+target_include_directories(video_rauto PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/../../shared/ui")
+target_compile_options(video_rauto PRIVATE ${STRICT})
 # The release signature: test_fw_sign verifies with Mbed TLS, and
 # test_fw_sig_enforce runs test_fw_sig.c against the policy compiled with
 # RCBENCH_SIGN_ENFORCE=1, the setting a build that enforces the signature

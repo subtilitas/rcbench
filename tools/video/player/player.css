@@ -85,5 +85,87 @@ svg#ov{position:absolute;inset:0;width:1920px;height:1080px;pointer-events:none}
 #nav .on{color:#fff}
 #nav .on b{color:var(--cy)}
 #pcb{position:absolute;left:0;top:0;width:1920px;height:1080px;display:none}
+#fig{position:absolute;left:0;top:0;width:1920px;height:1080px;display:none;font-family:inherit}
 .bub.inset{width:640px}
 .bub.inset svg{display:block;width:100%;margin-top:10px}
+#pcbf{position:absolute;display:none;border-radius:14px;background:linear-gradient(160deg,#232b3a,#0c0f15);border:2px solid #4a5670;backface-visibility:hidden;box-shadow:0 30px 90px rgba(0,0,0,.6)}
+#pcbf div,#pcbf img{position:absolute;left:5.2%;top:8%;width:89.6%;height:84%;border-radius:6px;background:linear-gradient(140deg,#1b2a44 0%,#070a10 38%,#05070b 62%,#16243c 100%)}
+.win{position:absolute;border-radius:18px;background:#0f1522;border:1px solid rgba(255,255,255,.14);box-shadow:0 34px 100px rgba(0,0,0,.65);overflow:hidden;color:#e8eef8}
+.win .top{display:flex;align-items:center;gap:9px;height:76.2px;padding:0 24.5px;background:#1a2233;border-bottom:1px solid rgba(255,255,255,.08)}
+.win .top i{width:13px;height:17.7px;border-radius:50%;background:#3a4560}
+.win .top .url{flex:1;margin-left:14px;padding:10.9px 21.8px;border-radius:999px;background:#0c111c;border:1px solid rgba(255,255,255,.08);font-size:25.8px;color:#b9c6dc;white-space:nowrap;overflow:hidden}
+.win .top b{margin-left:14px;font-size:27.2px;font-weight:650;color:#c9d3e4}
+.win .in{display:flex;position:relative}
+.win .side{flex:none;width:300px;padding:27.2px 19px;background:#0c111c;border-right:1px solid rgba(255,255,255,.07)}
+.win .body{flex:1;position:relative;padding:29.9px 35.4px 35.4px;min-width:0}
+.win h3{font-size:36.7px;font-weight:750;margin-bottom:12px}
+.win p{font-size:27.2px;line-height:1.4;color:#aebbd0;margin-bottom:12px}
+.win p b{color:#fff;font-weight:650}
+.win pre{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:23.8px;color:#8fe3b0;margin:3px 0}
+.win .file,.win .drive{position:relative;display:flex;align-items:center;gap:13px;padding:15px 19px 20.4px;margin:6px 0;border-radius:11px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07);font-size:27.2px}
+.win .file i{flex:none;width:17px;height:31.3px;border-radius:3px;background:#9fb4e6}
+.win .drive i{flex:none;width:26px;height:23.1px;border-radius:4px;background:#c9cdd3;box-shadow:inset 0 -5px 0 #8b93a3}
+.win .file span,.win .drive span{flex:1;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.win .file em,.win .drive em,.win .prog em{font-style:normal;font-size:23.1px;color:#93a1b8}
+.win .file.done em{color:var(--gr);font-weight:800}
+.win .file u,.win .prog u{position:absolute;left:14px;right:14px;bottom:6px;height:5.4px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+.win s{display:block;height:100%;background:linear-gradient(90deg,var(--cy),var(--gr))}
+.win .hit{border-color:var(--cy)!important;background:rgba(0,229,255,.16)!important}
+.win .btn{display:inline-block;margin:8px 10px 8px 0;padding:16.3px 40.8px;border-radius:10px;background:#26324a;border:1px solid rgba(255,255,255,.14);font-size:27.2px;font-weight:700;letter-spacing:.03em}
+.win .btn.ok{background:#1f8a4c;border-color:#35b56a;color:#fff}
+.win .btn.go{background:#1c6fd1;border-color:#4a96ee;color:#fff}
+.win .btn.off{opacity:.35}
+.win .prog{position:relative;display:flex;justify-content:space-between;padding:13.6px 19px 24.5px;margin:8px 0;border-radius:11px;background:rgba(255,255,255,.045);font-size:25.8px;font-weight:600}
+.win .dlg{position:absolute;left:50%;top:96px;width:620px;margin-left:-310px;padding:21.8px 21.8px 16.3px;border-radius:14px;background:#1c2538;border:1px solid rgba(255,255,255,.2);box-shadow:0 24px 70px rgba(0,0,0,.7);z-index:2}
+.win .dlg b{display:block;font-size:25.2px;font-weight:650;color:#c9d3e4;margin-bottom:10px}
+.win .dlg .row{padding:13.6px 16.3px;margin:4px 0;border-radius:8px;border:1px solid transparent;font-size:25.8px;background:rgba(255,255,255,.05)}
+.win .page{position:relative;line-height:0;background:#fff}
+.win .page img{display:block;width:100%}
+.win .page img+img{position:absolute;left:0;top:0}
+.desk{position:absolute;border-radius:14px;overflow:hidden;background:radial-gradient(120% 90% at 70% 30%,#6fb1ff 0%,#2f6fd6 38%,#123a8f 70%,#071c4d 100%);border:1px solid rgba(255,255,255,.18);box-shadow:0 34px 100px rgba(0,0,0,.65)}
+.desk .tb{position:absolute;left:0;right:0;bottom:0;height:54px;display:flex;align-items:center;justify-content:center;gap:16px;background:rgba(238,243,250,.92);font:500 17px "Segoe UI",Inter,sans-serif;color:#30343b}
+.desk .tb .st{width:26px;height:26px;background:conic-gradient(#35a7ff 0 25%,#1f8fe8 0 50%,#0f74d1 0 75%,#2b9cf5 0);border-radius:3px}
+.desk .tb span{padding:8px 60px 8px 16px;border-radius:20px;background:#fff;border:1px solid #d9dde3}
+.desk .tb .ap{width:26px;height:26px;border-radius:6px;background:#2b7cd9}
+.desk .tb .a2{background:#e8792b}
+.desk .tb em{position:absolute;right:20px;font-style:normal;font-size:16px}
+.win.explorer{background:#fff;color:#1b1d21;border:1px solid #b9bfc9;border-radius:9px;font-family:"Segoe UI",Inter,sans-serif;box-shadow:0 18px 50px rgba(0,0,0,.45)}
+.win.explorer .xt{display:flex;align-items:flex-end;height:46px;padding-left:10px;background:#e8edf5;font-size:16.5px}
+.win.explorer .tab{display:flex;align-items:center;gap:9px;height:38px;padding:0 12px;min-width:210px;border-radius:8px 8px 0 0;background:#fff}
+.win.explorer .tab span{flex:1}
+.win.explorer .tab b{font-weight:400;font-size:13px;color:#555}
+.win.explorer .plus{align-self:center;margin-left:12px;font-size:20px;color:#444}
+.win.explorer .ctl{align-self:center;width:52px;text-align:center;font-size:15px;color:#333}
+.win.explorer .plus + .ctl{margin-left:auto}
+.win.explorer .xa{display:flex;align-items:center;gap:12px;height:48px;padding:0 12px;font-size:16.5px}
+.win.explorer .ar{letter-spacing:.42em;color:#5a6068;white-space:nowrap}
+.win.explorer .crumb{flex:1;padding:7px 12px;border-radius:5px;background:#f3f5f8;white-space:nowrap;overflow:hidden}
+.win.explorer .crumb i{font-style:normal;color:#777;margin:0 4px}
+.win.explorer .find{width:190px;padding:7px 12px;border-radius:5px;background:#f3f5f8;color:#70767f;white-space:nowrap;overflow:hidden}
+.win.explorer .xb{height:42px;line-height:42px;padding:0 16px;font-size:15.5px;color:#3a3f47;border-top:1px solid #eceff3;border-bottom:1px solid #e3e6eb;white-space:nowrap;overflow:hidden}
+.win.explorer .xm{display:flex}
+.win.explorer .xn{flex:none;width:200px;padding:8px 6px;border-right:1px solid #e3e6eb;font-size:16px}
+.win.explorer .nv{display:flex;align-items:center;gap:9px;padding:6px 10px;border-radius:5px;white-space:nowrap}
+.win.explorer .nv.on{background:#dbe7f7}
+.win.explorer .xl{flex:1;position:relative;min-width:0;font-size:16px}
+.win.explorer .hd,.win.explorer .rw{display:flex;align-items:center;gap:9px;padding:6px 12px;white-space:nowrap}
+.win.explorer .hd{color:#5a6068;font-size:14.5px;border-bottom:1px solid #eceff3}
+.win.explorer .hd span,.win.explorer .rw span{flex:1;overflow:hidden;text-overflow:ellipsis}
+.win.explorer em{flex:none;width:150px;font-style:normal;color:#5a6068;font-size:14.5px;overflow:hidden}
+.win.explorer em.sz{width:74px;text-align:right}
+.win.explorer .rw.on{background:#cfe3fb}
+.win.explorer .xs{height:30px;line-height:30px;padding:0 14px;font-size:14px;color:#5a6068;border-top:1px solid #e3e6eb}
+.ic{flex:none;display:inline-block;width:20px;height:16px;border-radius:2px}
+.ic.fo{background:linear-gradient(#ffd766,#f2b830);box-shadow:inset 0 3px 0 #e9a91e}
+.ic.dr{height:13px;background:linear-gradient(#e9ecf0,#b8bfc9);box-shadow:inset 0 -3px 0 #3b82d6}
+.ic.pc{background:linear-gradient(#5aa9f2,#2b7cd9);box-shadow:0 3px 0 -1px #7d848e}
+.ic.fi,.ic.tx,.ic.we{width:15px;height:19px;background:#fff;border:1px solid #9aa2ad}
+.ic.tx{box-shadow:inset 0 5px 0 -3px #9aa2ad,inset 0 9px 0 -7px #9aa2ad}
+.ic.we{box-shadow:inset 0 0 0 3px #fff,inset 0 0 0 9px #3b82d6}
+.win.explorer .cp{position:absolute;left:50%;top:70px;width:400px;margin-left:-200px;padding:16px 18px 20px;background:#fff;border:1px solid #b9bfc9;border-radius:8px;box-shadow:0 14px 40px rgba(0,0,0,.35)}
+.win.explorer .cp>b{font-size:20px;font-weight:600}
+.win.explorer .cp p b{color:#1b1d21;font-weight:600}
+.win.explorer .cp p{margin:6px 0 12px;font-size:15px;color:#3a3f47}
+.win.explorer .cp u{display:block;height:16px;background:#e6e9ee;border:1px solid #c5cad2;overflow:hidden}
+.win.explorer .cp s{background:#26a340}
+.win.explorer .ctl .box{display:inline-block;width:10px;height:10px;border:1.3px solid #333}

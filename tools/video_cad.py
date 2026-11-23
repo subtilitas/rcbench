@@ -141,9 +141,20 @@ def convert_solids(step: pathlib.Path, model: pathlib.Path) -> int:
         solids = TopExp_Explorer(shape, TopAbs_SOLID)
         while solids.More():
             solid = solids.Current()
+            # An assembly holds a colour on the solid as its part defines
+            # it, without the place of this instance, or on its faces.
             colour = Quantity_Color()
-            if not (colours.GetColor(solid, XCAFDoc_ColorSurf, colour)
-                    or colours.GetColor(solid, XCAFDoc_ColorGen, colour)):
+            bare = solid.Located(TopLoc_Location())
+            first = TopExp_Explorer(solid, TopAbs_FACE)
+            tries = [solid, bare]
+            if first.More():
+                tries += [first.Current(),
+                          first.Current().Located(TopLoc_Location())]
+            for item in tries:
+                if (colours.GetColor(item, XCAFDoc_ColorSurf, colour)
+                        or colours.GetColor(item, XCAFDoc_ColorGen, colour)):
+                    break
+            else:
                 colour = Quantity_Color()
             points, corners = [], []
             faces = TopExp_Explorer(solid, TopAbs_FACE)

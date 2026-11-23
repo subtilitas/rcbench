@@ -1,0 +1,91 @@
+{
+ "version": "v0.23.14",
+ "assets": [
+  "rcbench-c6-2.13.0.bin",
+  "rcbench-c6-merged-2.13.0.bin",
+  "rcbench-dial-0.23.14.bin",
+  "rcbench-dial-merged-0.23.14.bin",
+  "rcbench-iomcu-rbmod-v0.23.14.zip",
+  "rcbench-iomcu-v0.23.14.zip",
+  "rcbench-node-bal-0.23.14.bin",
+  "rcbench-node-bal-merged-0.23.14.bin",
+  "rcbench-node-display-merged-0.23.14.bin",
+  "rcbench-node-pwr-0.23.14.bin",
+  "rcbench-node-pwr-merged-0.23.14.bin",
+  "rcbench-panel-p4-v0.23.14.bin",
+  "rcbench-panel-p4-v0.23.14.zip",
+  "SHA256SUMS"
+ ],
+ "github:rcbench-c6-2.13.0.bin": [
+  165,
+  119
+ ],
+ "github:rcbench-c6-merged-2.13.0.bin": [
+  194,
+  163
+ ],
+ "github:rcbench-dial-0.23.14.bin": [
+  173,
+  207
+ ],
+ "github:rcbench-dial-merged-0.23.14.bin": [
+  203,
+  251
+ ],
+ "github:rcbench-iomcu-rbmod-v0.23.14.zip": [
+  211,
+  295
+ ],
+ "github:rcbench-iomcu-v0.23.14.zip": [
+  186,
+  339
+ ],
+ "github:rcbench-node-bal-0.23.14.bin": [
+  192,
+  383
+ ],
+ "github:rcbench-node-bal-merged-0.23.14.bin": [
+  221,
+  427
+ ],
+ "github:rcbench-node-display-merged-0.23.14.bin": [
+  235,
+  471
+ ],
+ "github:rcbench-node-pwr-0.23.14.bin": [
+  194,
+  515
+ ],
+ "github:rcbench-node-pwr-merged-0.23.14.bin": [
+  224,
+  559
+ ],
+ "github:rcbench-panel-p4-v0.23.14.bin": [
+  197,
+  603
+ ],
+ "github:rcbench-panel-p4-v0.23.14.zip": [
+  196,
+  647
+ ],
+ "github:SHA256SUMS": [
+  139,
+  691
+ ],
+ "esptool:connect": [
+  640,
+  201
+ ],
+ "esptool:file": [
+  667,
+  179
+ ],
+ "esptool:program": [
+  795,
+  417
+ ],
+ "esptool:continue": [
+  818,
+  454
+ ]
+}
