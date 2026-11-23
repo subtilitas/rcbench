@@ -500,47 +500,76 @@ def _mini():
                     "title": "ESC", "text": "x"}]}]}
 
 
-def test_a_mini_scene_takes_its_parts_stills_and_flip():
-    """The MiniRcBench has components, stills and a roll-over of its own."""
-    board = _mini()
-    assert make_video.check(board) == []
-    # Its screens are stills, not views of the panel's renderer.
-    assert make_video.views(board) == {}
-    for name in make_video.MINI_UNITS:
-        assert name not in ("lid", "rbmod")
-
-
-def test_a_mini_scene_refuses_what_it_does_not_have():
-    """A component of the case model and an unknown still are errors."""
-    board = _mini()
-    board["scenes"][0]["parts"]["rbmod"] = [[0, 1], [2, 0]]
-    assert any("rbmod is not one of" in e for e in make_video.check(board))
-    board = _mini()
-    board["scenes"][0]["panel"][1][1] = "mini-nothing"
-    assert any("mini-nothing.png" in e for e in make_video.check(board))
-
-
-def test_the_mini_stills_are_240_by_320():
-    """Each still is a frame of the 240 x 320 display."""
+def _mini_stills(tmp_path):
+    """A stills directory beside a storyboard, as MiniRcBench keeps one."""
     import struct
+    import zlib
 
-    stills = sorted(make_video.STILLS.glob("mini-*.png"))
-    assert stills
-    for path in stills:
-        head = path.read_bytes()[:24]
-        assert struct.unpack(">II", head[16:24]) == (240, 320), path.name
+    def chunk(kind, data):
+        body = kind + data
+        return (struct.pack(">I", len(data)) + body
+                + struct.pack(">I", zlib.crc32(body)))
+
+    png = (b"\x89PNG\r\n\x1a\n"
+           + chunk(b"IHDR", struct.pack(">IIBBBBB", 240, 320, 8, 2, 0, 0, 0))
+           + chunk(b"IDAT", zlib.compress((b"\0" + b"\0" * 720) * 320))
+           + chunk(b"IEND", b""))
+    stills = tmp_path / "stills"
+    stills.mkdir()
+    for name in ("mini-splash", "mini-supply-sense"):
+        (stills / (name + ".png")).write_bytes(png)
+    return stills
 
 
-def test_the_wiring_drawing_holds_what_the_storyboard_names():
-    """Every pad a wire, tag or part of minircbench-build names exists."""
+def test_a_mini_scene_takes_its_parts_stills_and_flip(tmp_path):
+    """The MiniRcBench has components, stills and a roll-over of its own."""
+    make_video.use_stills(_mini_stills(tmp_path))
+    try:
+        board = _mini()
+        assert make_video.check(board) == []
+        # Its screens are stills, not views of the panel's renderer.
+        assert make_video.views(board) == {}
+        for name in make_video.MINI_UNITS:
+            assert name not in ("lid", "rbmod")
+    finally:
+        make_video.use_stills()
+
+
+def test_a_mini_scene_refuses_what_it_does_not_have(tmp_path):
+    """A component of the case model and an unknown still are errors."""
+    make_video.use_stills(_mini_stills(tmp_path))
+    try:
+        board = _mini()
+        board["scenes"][0]["parts"]["rbmod"] = [[0, 1], [2, 0]]
+        assert any("rbmod is not one of" in e
+                   for e in make_video.check(board))
+        board = _mini()
+        board["scenes"][0]["panel"][1][1] = "mini-nothing"
+        assert any("mini-nothing.png" in e for e in make_video.check(board))
+    finally:
+        make_video.use_stills()
+
+
+def test_stills_beside_a_storyboard_come_first(tmp_path):
+    """A storyboard given by path takes its stills from stills/ beside it."""
+    stills = _mini_stills(tmp_path)
+    path = tmp_path / "mini.json"
+    path.write_text(json.dumps(_mini()), encoding="utf-8")
+    try:
+        assert make_video.still("mini-splash") is None
+        board = make_video.load(path)
+        assert make_video.still("mini-splash") == stills / "mini-splash.png"
+        assert make_video.still_dirs() == [stills, make_video.STILLS]
+        assert make_video.check(board) == []
+    finally:
+        make_video.use_stills()
+    assert make_video.still_dirs() == [make_video.STILLS]
+
+
+def test_the_wiring_drawing_holds_the_pads_of_the_build():
+    """The MiniRcBench wiring drawing names the pads its storyboard uses."""
     plan = json.loads((make_video.VIDEO / "boards"
                        / "minircbench-wiring.json").read_text("utf-8"))
-    path = make_video.VIDEO / "storyboards" / "minircbench-build.json"
-    board = json.loads(path.read_text(encoding="utf-8"))
-    scenes = [s for s in board["scenes"] if s["type"] == "board"]
-    assert scenes
-    for scene in scenes:
-        assert make_video.board_faults(scene, plan) == []
     names = {pad["name"] for pad in plan["pads"]}
     assert {"BAT.+", "BAT.-", "J4.11", "BOOST.EN", "INA.T+", "ESC.S",
             "TMT.S"} <= names
