@@ -460,9 +460,9 @@ TEST_CASE(length_takes_0_or_10_to_500mm_and_refuses_the_gap)
 TEST_CASE(the_state_line_names_no_source_stale_and_connected)
 {
     static const char *const want[2][5] = {
-        { "ANGLE: AS5600 OFF IN SETUP", "ANGLE: AS5600 NOT ANSWERING",
+        { "ANGLE: AS5600 OFF IN SETUP", "ANGLE: AS5600 NO READING",
           "ANGLE: AS5600 SEES NO MAGNET", "ANGLE: AS5600", "ANGLE: NO LINK" },
-        { "WINKEL: AS5600 AUS IN SETUP", "WINKEL: AS5600 ANTWORTET NICHT",
+        { "WINKEL: AS5600 AUS IN SETUP", "WINKEL: AS5600 KEIN MESSWERT",
           "WINKEL: AS5600 SIEHT KEINEN MAGNETEN", "WINKEL: AS5600",
           "WINKEL: KEINE VERBINDUNG" },
     };
@@ -524,7 +524,7 @@ TEST_CASE(the_imu_as_the_source_is_named_and_read)
     CHECK(!settings_get_bool(SET_ENC_EN));
     CHECK_EQ(rudder_source(), RUD_SRC_STALE);
     CHECK_STR_EQ(rudder_line(0, line, sizeof(line)),
-                 "ANGLE: IMU Y- NOT ANSWERING");
+                 "ANGLE: IMU Y- NO READING");
     reading(0);
     CHECK_EQ(rudder_source(), RUD_SRC_LIVE);
     CHECK_STR_EQ(rudder_line(0, line, sizeof(line)), "ANGLE: IMU Y-");

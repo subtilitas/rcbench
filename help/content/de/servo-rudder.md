@@ -76,7 +76,7 @@ Die gültige Quelle steht in der Akzentfarbe. Bei eingeschalteter IMU ohne gebun
 |---|---|
 | `WINKEL: AS5600`, `WINKEL: IMU X+` | Quelle liefert Messwerte; bei der IMU stehen Achse und Vorzeichen dabei. |
 | `WINKEL: AS5600 AUS IN SETUP` | AS5600 unter SETUP > SENSORS ausgeschaltet. |
-| `WINKEL: AS5600 ANTWORTET NICHT`, `WINKEL: IMU X+ ANTWORTET NICHT` | Quelle eingeschaltet, aber ohne Messwert; bei der IMU auch ausgeschaltet oder nicht verbunden. |
+| `WINKEL: AS5600 KEIN MESSWERT`, `WINKEL: IMU X+ KEIN MESSWERT` | Quelle eingeschaltet, aber ohne Messwert; bei der IMU auch ausgeschaltet oder nicht verbunden. |
 | `WINKEL: AS5600 SIEHT KEINEN MAGNETEN` | Sensor meldet keinen Magneten. |
 | `WINKEL: KEINE VERBINDUNG` | Keine Verbindung zum IOmcu, der RP2350-Platine. |
 | `KEIN NULLPUNKT: AB SENSORMITTE` | NULLPUNKT noch nicht gesetzt. |

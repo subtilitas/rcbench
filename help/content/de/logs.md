@@ -37,7 +37,7 @@ Die Kopfzeile zeigt rechts neben den Reitern den gewählten Ordner, etwa `BENCH/
 | Reiter | Ordner | Inhalt |
 |---|---|---|
 | STAMM | Stammverzeichnis | Läufe von Firmware 0.21.0 und älter |
-| USER | Ordner Testaufzeichnungen, Vorgabe `USER/LOGS` | Dateien des AUTOMATISCHEN TESTS und des ENDLAGENLAUFS |
+| USER | Ordner Testaufzeichnungen, Vorgabe `USER/LOGS` | Dateien des AUTOMATISCHEN TESTS und von LIMIT RUN |
 | BENCH | Ordner Auto-Aufzeichnungen, Vorgabe `BENCH/LOGS` | automatische Aufzeichnungen bei ARMED und Netzteilläufen |
 
 LOGS öffnet den Reiter der zuletzt vom Panel geschriebenen Datei. Nach dem Start gilt BENCH, bis eine Datei geschrieben wurde. Ohne neue Datei seit dem letzten Besuch bleibt der zuvor gewählte Reiter erhalten. Ein Tipp auf einen Reiter liest seinen Ordner ab der ersten Seite.
@@ -79,7 +79,7 @@ Jede Datei enthält einen Lauf und liegt im Ordner seiner Art. Der Name kennzeic
 | `BENCH/LOGS` | `MOTORnnn.CSV` | ein Schalten auf ARMED von ARM auf MOTOR & ESC oder einem Stick-Lauf auf dessen PROGRAMMIEREN |
 | `BENCH/LOGS` | `SUPPLnnn.CSV` | ein Einschalten des SUPPLY-Ausgangs, solange der Prüfstand SAFE ist |
 | `USER/LOGS` | `ATESTnnn.CSV` | ein AUTOMATISCHER TEST; sein Bericht ist `ATESTnnn.TXT` |
-| `USER/LOGS` | `LIMITnnn.TXT` | der Bericht eines ENDLAGENLAUFS, ohne CSV daneben |
+| `USER/LOGS` | `LIMITnnn.TXT` | der Bericht eines Laufs von LIMIT RUN, ohne CSV daneben |
 | `USER/LOGS` | `RUDDRnnn.CSV` | ein Lauf von RUDER AUTO, eine Zeile je Messung; sein Bericht ist `RUDDRnnn.TXT` |
 | Stammverzeichnis | `BENCHnnn.CSV`, `ESCnnn.CSV`, `SERVOnnn.CSV` | Läufe von Firmware 0.21.0 und älter; im Stammverzeichnis ist `SERVOnnn` ein Servotest |
 | Stammverzeichnis | `SERVOnnn.TXT` allein | ein Endlagenlauf von Firmware 0.21.0 und älter |
@@ -122,7 +122,7 @@ Die ersten fünf hinterlassen keine Datei. Die letzten vier hinterlassen eine Da
 
 ## Ein Bericht
 
-![Der Bericht eines ENDLAGENLAUFS im Textbetrachter](view:logs-report)
+![Der Bericht eines Laufs von LIMIT RUN im Textbetrachter](view:logs-report)
 
 ÖFFNEN zeigt einen Bericht schreibgeschützt im [Textbetrachter](files.md#der-textbetrachter). Im Band steht dann FILES. Das Home-Feld führt zu LOGS zurück, wo der Bericht wieder ausgewählt ist. Berichte über 1MiB bleiben in der Liste; die Fußzeile meldet `Über 1MB: zu groß. Lade die Datei über WLAN herunter.`
 

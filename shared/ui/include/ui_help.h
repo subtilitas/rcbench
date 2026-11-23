@@ -26,6 +26,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include "gfx.h"
@@ -256,6 +257,18 @@ void ui_help_watch_end(void);
  * @return The part.
  */
 ui_help_hit_t ui_help_hit(const ui_help_page_t *p, int x, int y);
+
+/**
+ * @brief The bytes of the dock's row that starts @p s, at most @p cells:
+ *        broken at the last space in it that splits none of the names the
+ *        guide holds together (SD CARD, PD MINI, MOTOR & ESC, ESC STICK,
+ *        LIMIT RUN, RUDDER AUTO, RUDER AUTO, PANEL UPDATE), else at its last
+ *        space, else inside a word.
+ * @param s     The text left.
+ * @param cells The row's cells.
+ * @return The row's bytes.
+ */
+size_t ui_help_row_len(const char *s, int cells);
 
 /**
  * @brief The rows item @p i takes in the dock: its label, two spaces and

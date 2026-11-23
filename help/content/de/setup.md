@@ -21,7 +21,7 @@ SETUP enthält die prüfstandsweiten Paneleinstellungen in den Kategorien PANEL,
 | WI-FI | `NETZWERK, DATEIEN, UPLOAD` | [WLAN](wifi.md): Funkverbindung für Kartendateien und Firmware-Images im Browser. |
 | UPDATES | `VERSIONEN AUF GITHUB` | [Updates](updates.md): Suche nach neuerer Panel-Firmware und Update-Erinnerung. |
 | IMU | `BLUETOOTH-WINKELSENSOR` | [IMU](imu.md): WitMotion BWT901CL über Bluetooth LE, Sensorsuche und Binden, Kalibrierung und aktuelle Winkel. |
-| WIRELESS | `IMU, DIAL, LEISTUNG, AUSWUCHTEN` | [Wireless](setup-wireless.md): die Einstellungen der IMU, das M5Stack Dial, seine Suche, seine Bindung und seine Schritte, der Leistungsknoten mit INA228-Quelle und der Auswuchtknoten mit seiner Testmasse. |
+| WIRELESS | `IMU, DIAL, SENSORKNOTEN` | [Wireless](setup-wireless.md): die Einstellungen der IMU, das M5Stack Dial, seine Suche, seine Bindung und seine Schritte, der Leistungsknoten mit INA228-Quelle und der Auswuchtknoten mit seiner Testmasse. |
 | LAYOUT | `STECKER UND PINS` | [Layout](layout.md): nur auf dem rbmod-Carrier mit fest verlöteten Pins. |
 
 1 Platz bleibt frei; auf dem Carrier belegt ihn LAYOUT. Wie bei den Listen steht unten rechts die Speichertaste. Sie zeigt ungespeicherte Änderungen aus allen Kategorien an:
@@ -162,14 +162,14 @@ Der MT6701 arbeitet im I2C-Modus mit MODE auf High unter Adresse 0x06. Sein Bus 
 | Einstellung | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
 | Auto-Aufzeichnungen | EIN, AUS | EIN | eine Aufzeichnung je ARMED- und Netzteillauf in Ordner Auto-Aufzeichnungen: `SERVOnnn.CSV`, `MOTORnnn.CSV`, `SUPPLnnn.CSV` |
-| Testaufzeichnungen | EIN, AUS | EIN | `ATESTnnn.CSV` und Bericht des AUTOMATISCHEN TESTS, `LIMITnnn.TXT` des ENDLAGENLAUFS und `RUDDRnnn.CSV` und Bericht von RUDER AUTO in Ordner Testaufzeichnungen |
+| Testaufzeichnungen | EIN, AUS | EIN | `ATESTnnn.CSV` und Bericht des AUTOMATISCHEN TESTS, `LIMITnnn.TXT` von LIMIT RUN und `RUDDRnnn.CSV` und Bericht von RUDER AUTO in Ordner Testaufzeichnungen |
 | Schreiben per Browser | OFFEN, ZUGANGSCODE, HALTEN, AUS | OFFEN | was die Browserseite von WI-FI braucht, um die Karte zu ändern: [WLAN](wifi.md#schreiben-per-browser) |
 | Ordner Auto-Aufzeichnungen | ein Ordner | `BENCH/LOGS` | wohin Auto-Aufzeichnungen schreibt |
 | Ordner Testaufzeichnungen | ein Ordner | `USER/LOGS` | wohin Testaufzeichnungen schreibt |
 
 - AUS erzeugt keine Datei, vergibt keine Nummer und unterdrückt Kartenmeldungen für diese Aufzeichnungsart.
 - Wird Auto-Aufzeichnungen während eines Laufs ausgeschaltet, endet dessen Datei an dieser Stelle. Einschalten während ARMED oder eines Netzteillaufs beginnt dort eine Datei.
-- Testaufzeichnungen wird ausgewertet, wenn `2s HALTEN: ARM + START` auf TEST oder ENDLAGENLAUF den Lauf startet. Diese Wahl gilt bis zum Laufende. Bei AUS zeigt SERVO statt des Dateinamens `TESTAUFZEICHNUNGEN AUS`.
+- Testaufzeichnungen wird ausgewertet, wenn `2s HALTEN: ARM + START` auf TEST oder LIMIT RUN den Lauf startet. Diese Wahl gilt bis zum Laufende. Bei AUS zeigt SERVO statt des Dateinamens `TESTAUFZEICHNUNGEN AUS`.
 - Bei Testaufzeichnungen EIN entscheidet BERICHT unter PRÜFLING in den OPTIONEN des SERVO-Hubs, ob `ATESTnnn.TXT` geschrieben wird.
 - Das Fehlerprotokoll `BENCH/RCBENCH.LOG` wird unabhängig von Auto-Aufzeichnungen geschrieben.
 - [Logs](logs.md#was-ein-lauf-schreibt) beschreibt die Ordner.
