@@ -14,7 +14,9 @@
  * or a session fell in and not of the next; IN_US, OUT_US, LOST and
  * GLITCH published; PASS_STAT's MISSED saturating at 65535 and FRAMES
  * modulo 65536, RESET taking the counts as zero at once, 0 doing nothing,
- * 2 refused, and its other registers read only.
+ * 2 refused, and its other registers read only; PASS-THROUGH counted as
+ * an active channel for a session on the common rail, and the channels a
+ * session drops switched to OFF except a BENCH channel a slot holds.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -260,6 +262,26 @@ TEST_CASE(missed_saturates_frames_wrap_and_reset_takes_the_counts_as_zero)
              LINK_NACK_BAD_RANGE);
 }
 
+TEST_CASE(a_session_counts_pass_through_active_and_switches_channels_off)
+{
+    pass_page_init(&p, true, 0u);
+    CHECK_EQ(src(0, LINK_PA_SRC_PASS, &SAFE), 0u);
+    CHECK_EQ(src(1, LINK_PA_SRC_OFF, &SAFE), 0u);
+    /* BENCH counts through its slot, OFF drives nothing. */
+    CHECK_EQ(pass_page_active(&p), 1u << 0);
+    /* Channels 0, 2 and 3 dropped; 3's pin a slot holds. */
+    const uint16_t off = pass_page_force_off(&p, 0x000Du, 1u << 3);
+    CHECK_EQ(off, (1u << 0) | (1u << 2));
+    CHECK_EQ(reg(LINK_PA_SOURCE(0)), LINK_PA_SRC_OFF);
+    CHECK_EQ(reg(LINK_PA_SOURCE(2)), LINK_PA_SRC_OFF);
+    CHECK_EQ(reg(LINK_PA_SOURCE(3)), LINK_PA_SRC_BENCH);
+    CHECK_EQ(pass_page_active(&p), 0u);
+    CHECK_EQ(pass_page_mirror(&p, true), 0u);
+    /* Back only with a new write. */
+    CHECK_EQ(src(0, LINK_PA_SRC_PASS, &SAFE), 0u);
+    CHECK_EQ(pass_page_active(&p), 1u << 0);
+}
+
 int main(void)
 {
     RUN(every_channel_starts_on_bench);
@@ -272,5 +294,6 @@ int main(void)
     RUN(flags_mark_the_window_a_lap_or_a_session_fell_in);
     RUN(lost_and_glitch_bits_are_published_per_input);
     RUN(missed_saturates_frames_wrap_and_reset_takes_the_counts_as_zero);
+    RUN(a_session_counts_pass_through_active_and_switches_channels_off);
     return test_summary("pass_page");
 }

@@ -162,6 +162,30 @@ uint16_t pass_page_mirror(const pass_page_t *p, bool armed);
  */
 uint16_t pass_page_held(const pass_page_t *p);
 
+/**
+ * @brief The channels whose output a receiver drives: PASS-THROUGH.  A
+ *        programming session on the common rail counts them as active
+ *        channels beside the bound slots and ports (PLAN 2.6); BENCH
+ *        counts through its slot, OFF drives nothing.
+ *
+ * @param p  The pages.
+ * @return   Bit k for channel k.
+ */
+uint16_t pass_page_active(const pass_page_t *p);
+
+/**
+ * @brief Channels a programming session switched off go to OFF, whatever
+ *        the bank's arm: PASS-THROUGH always, BENCH where no slot, port or
+ *        page holds the pin (@p busy); a BENCH channel whose pin a slot
+ *        holds stays BENCH, its slot being the session's to stop.
+ *
+ * @param p     The pages.
+ * @param mask  Bit k: channel k switched off.
+ * @param busy  Bit k: output k's pin is held by something else.
+ * @return      The channels of @p mask now OFF.
+ */
+uint16_t pass_page_force_off(pass_page_t *p, uint16_t mask, uint16_t busy);
+
 #ifdef __cplusplus
 }
 #endif

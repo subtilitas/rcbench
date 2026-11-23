@@ -1327,6 +1327,21 @@ void thru_service(uint32_t now_ms);
  */
 uint64_t thru_pins(void);
 /**
+ * @brief The channels on PASS-THROUGH: active channels for a programming
+ *        session on the common rail (JOIN #940: OR into active_ports()).
+ *
+ * @return Bit k for channel k; 0 on boards 1 and 2.
+ */
+uint16_t thru_active(void);
+/**
+ * @brief The channels a session switched off to OFF (pass_page_force_off()),
+ *        their pins reserved and their pads low (JOIN #940: call with
+ *        prog_rail_t.dropped).
+ *
+ * @param mask  Bit k: channel k.
+ */
+void thru_drop(uint16_t mask);
+/**
  * @brief The PASS page's read (pass_page_read()).
  *
  * @param ctx  Not used.

@@ -46,6 +46,10 @@ static uint16_t    s_thru_low;   /**< bit k: output k's pad is driven low */
 
 void thru_boot(uint32_t now_ms)
 {
+    /* JOIN #941 (A8, rsn_pio.h): wrap pass_cap_start() in
+     * place_begin(RSN_PIO_FIXED, RSN_PIN_OUT0) / place_end(cap).  It
+     * claims its state machines in PIO0 by name already, and A8's
+     * place_boot() sets the GPIO base 16 that pass_cap_start() sets. */
     const bool cap = !rsn_chip_refused() && pass_cap_start();
     pass_dec_init(&s_thru_dec, time_us_32());
     pass_ring_init(&s_thru_ring);
@@ -168,6 +172,25 @@ uint64_t thru_pins(void)
     return m;
 }
 
+uint16_t thru_active(void)
+{
+    return pass_page_active(&s_thru);
+}
+
+void thru_drop(uint16_t mask)
+{
+    uint16_t busy = 0u;
+    for (unsigned k = 0; k < PASS_CHANNELS; ++k) {
+        if (held_elsewhere(RSN_PIN_OUT(k))) {
+            busy |= (uint16_t)(1u << k);
+        }
+    }
+    if (pass_page_force_off(&s_thru, mask, busy) != 0u) {
+        reserve_held();
+        route();
+    }
+}
+
 void thru_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     (void)ctx;
@@ -212,5 +235,9 @@ void thru_boot(uint32_t now_ms) { (void)now_ms; }
 void thru_service(uint32_t now_ms) { (void)now_ms; }
 
 uint64_t thru_pins(void) { return 0u; }
+
+uint16_t thru_active(void) { return 0u; }
+
+void thru_drop(uint16_t mask) { (void)mask; }
 
 #endif /* IOMCU_BOARD_RSN */

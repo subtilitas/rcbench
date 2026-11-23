@@ -253,3 +253,32 @@ uint16_t pass_page_held(const pass_page_t *p)
     }
     return m;
 }
+
+uint16_t pass_page_active(const pass_page_t *p)
+{
+    uint16_t m = 0u;
+    for (unsigned k = 0; k < LINK_PA_CHANNELS; ++k) {
+        if (p->source[k] == (uint16_t)LINK_PA_SRC_PASS) {
+            m |= (uint16_t)(1u << k);
+        }
+    }
+    return m;
+}
+
+uint16_t pass_page_force_off(pass_page_t *p, uint16_t mask, uint16_t busy)
+{
+    uint16_t off = 0u;
+    for (unsigned k = 0; k < LINK_PA_CHANNELS; ++k) {
+        const uint16_t b = (uint16_t)(1u << k);
+        if ((mask & b) == 0u) {
+            continue;
+        }
+        if (p->source[k] == (uint16_t)LINK_PA_SRC_BENCH && (busy & b) != 0u) {
+            continue;
+        }
+        p->source[k] = (uint16_t)LINK_PA_SRC_OFF;
+        p->pass[LINK_PA_SOURCE(k)] = (uint16_t)LINK_PA_SRC_OFF;
+        off |= b;
+    }
+    return off;
+}
