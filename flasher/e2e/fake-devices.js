@@ -24,6 +24,11 @@
 //   espResetFail: true     the first change of the serial lines after an MD5
 //                          request fails: the hard reset after a verify
 //                          fails. The port refuses a second open while open.
+//   esp.installed: [[offset, bytes], ...]
+//                          flash contents of the ESP before the page
+//                          connects: a partition table, otadata, an
+//                          application head (e2e/helpers.ts `installed`).
+//   espReadFail: true      the ESP flasher stub refuses every flash read.
 //   rpCorrupt: true        the RP2350 boot ROM returns every read with its
 //                          first byte inverted: the read back fails.
 //   rpDelayMs: n           the RP2350 boot ROM answers each command n ms late,
@@ -40,8 +45,9 @@
     return;
   }
   const state = { espFlash: new Uint8Array(1 << 22).fill(0xff), rpFlash: new Uint8Array(1 << 22).fill(0x5a),
-    espOps: [], espWrites: [], espMd5: [], espBauds: [], rpCmds: [], bootsel: !!cfg.bootsel, touched: 0 };
+    espOps: [], espWrites: [], espMd5: [], espReads: [], espBauds: [], rpCmds: [], bootsel: !!cfg.bootsel, touched: 0 };
   window.__fake = state;
+  for (const [off, bytes] of (cfg.esp && cfg.esp.installed) || []) state.espFlash.set(bytes, off);
   state.flashHash = async (kind, start, length) => {
     const f = kind === 'esp' ? state.espFlash : state.rpFlash;
     const d = await crypto.subtle.digest('SHA-256', f.slice(start, start + length));
@@ -71,6 +77,8 @@
     const regs = new Map(Object.entries(cfg.esp ? cfg.esp.regs || {} : {}).map(([k, v]) => [Number(k), v]));
     let defl = null;
     let failed = false;
+    // A flash read in progress: the data left to send, and the MD5 sent after the last acknowledgement.
+    let rd = null;
     const send = (bytes) => { if (ctrl) ctrl.enqueue(slip(bytes)); };
     const reply = (op, val, data) => {
       const status = stub ? [0, 0] : [0, 0, 0, 0];
@@ -79,6 +87,12 @@
       send([0x01, op, body.length & 0xff, body.length >> 8, ...le(val), ...body]);
     };
     async function handle(p) {
+      if (rd && p.length === 4) {
+        // The host acknowledges each data packet with the count it holds.
+        if (rd.left.length) { const n = Math.min(0x1000, rd.left.length); send(rd.left.slice(0, n)); rd.left = rd.left.slice(n); }
+        else { send(rd.md5); rd = null; }
+        return;
+      }
       const op = p[1];
       const data = p.slice(8);
       state.espOps.push(op);
@@ -126,6 +140,20 @@
             : await window.__fakeMd5(Array.from(state.espFlash.subarray(addr, addr + size)));
           const raw = hex.match(/../g).map((h) => parseInt(h, 16));
           reply(op, 0, raw);
+          return;
+        }
+        case 0xd2: {
+          const addr = u32(data, 0);
+          const size = u32(data, 4);
+          state.espReads.push([addr, size]);
+          if (cfg.espReadFail) { failed = true; reply(op, 0, []); return; }
+          const bytes = new Uint8Array(size).fill(0xff);
+          bytes.set(state.espFlash.subarray(addr, Math.min(addr + size, state.espFlash.length)));
+          const hex = await window.__fakeMd5(Array.from(bytes));
+          reply(op, 0, []);
+          const n = Math.min(0x1000, size);
+          rd = { left: bytes.slice(n), md5: hex.match(/../g).map((h) => parseInt(h, 16)) };
+          send(bytes.slice(0, n));
           return;
         }
         default: reply(op, 0, []);

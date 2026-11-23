@@ -9,6 +9,7 @@ import { t } from './i18n.ts';
 import type { Key, Lang } from './i18n.ts';
 import type { AdvKey } from './i18n_adv.ts';
 import type { ImageEntry, Manifest, ReleaseEntry } from './manifest.ts';
+import type { Verdict } from './installed.ts';
 import type { Picoboot } from './picoboot.ts';
 import type { EraseRange } from './rp2350.ts';
 import type { SigShown } from './signature.ts';
@@ -53,6 +54,19 @@ export interface AdvApi {
   onChange: (el: HTMLInputElement) => void;
 }
 
+/** The board check's code (installed_read.ts), loaded on the first connect. */
+export interface InstApi {
+  /** Reads the installed firmware of the connection in hand and holds it to the board. */
+  run: () => Promise<void>;
+  /** The row of Check, inside its list. */
+  row: () => string;
+  /** The warning under the rows for another device's firmware. */
+  note: (b: Board) => string;
+}
+
+/** The board check of the connection in hand. */
+export type Installed = { state: 'reading' } | { state: 'done'; verdict: Verdict };
+
 export type Conn = { kind: 'esp'; session: EspSession } | { kind: 'pico'; pb: Picoboot };
 
 /** A note on a screen; `retry` adds RETRY for a download that failed or did not match. */
@@ -95,6 +109,12 @@ export const st = {
   localSig: null as { name: string; bytes: Uint8Array } | null,
   /** The Advanced code once loaded; set before the wizard turns Advanced on. */
   adv: null as AdvApi | null,
+  /** The board check's code once loaded. */
+  inst: null as InstApi | null,
+  /** The board check of the connection in hand; null without one. */
+  installed: null as Installed | null,
+  /** The running board check: WRITE waits for it, so that its reads never meet the write. */
+  installedRun: null as Promise<void> | null,
   /** The end of the last write: ok, failed, or null before one. */
   outcome: null as 'ok' | 'failed' | null,
   result: null as Note | null,

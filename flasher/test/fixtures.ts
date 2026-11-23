@@ -3,6 +3,7 @@
 // tables, and merged images with a bootloader, a table and an application.
 
 import { createHash } from 'node:crypto';
+import { crc32 as zlibCrc32 } from 'node:zlib';
 import { FAMILY, FLAG_FAMILY_ID_PRESENT } from '../src/uf2.ts';
 
 export interface BlockSpec {
@@ -181,3 +182,50 @@ export const NODE_PARTS: readonly PartSpec[] = [
   { name: 'ota_0', type: 0, subtype: 0x10, offset: 0x20000, size: 0x180000 },
   { name: 'ota_1', type: 0, subtype: 0x11, offset: 0x1a0000, size: 0x180000 },
 ];
+
+/** The head of an application image: header, esp_app_desc_t, and the role record of rcbench's wireless devices when `kind` is set. */
+export function makeAppHead(chipId: number, project: string, version: string, kind: number | null = null): Uint8Array {
+  const out = new Uint8Array(296).fill(0);
+  const v = new DataView(out.buffer);
+  out[0] = 0xe9;
+  out[1] = 4;
+  v.setUint16(12, chipId, true);
+  v.setUint32(32, 0xabcd5432, true);
+  out.set(new TextEncoder().encode(version).subarray(0, 31), 48);
+  out.set(new TextEncoder().encode(project).subarray(0, 31), 80);
+  if (kind !== null) {
+    v.setUint32(288, 0x52626372, true);
+    out[292] = kind;
+    out[293] = 1;
+  }
+  return out;
+}
+
+/** One esp_ota_select_entry_t: ota_seq, label 0xFF, ota_state, the CRC over ota_seq as the boot loader holds it. */
+export function makeOtaEntry(seq: number, state = 2, crc?: number): Uint8Array {
+  const out = new Uint8Array(32).fill(0xff);
+  const v = new DataView(out.buffer);
+  v.setUint32(0, seq, true);
+  v.setUint32(24, state, true);
+  v.setUint32(28, crc ?? zlibCrc32(out.subarray(0, 4), 0xffffffff), true);
+  return out;
+}
+
+/**
+ * A board's flash as [offset, bytes] parts: the partition table at
+ * `tableOffset`, otadata entries that select `slot` (none for slot 0 when
+ * `otadata` is false), and the application head in that slot.
+ */
+export function makeInstalled(opts: {
+  chipId: number; project: string; version: string; kind?: number | null; tableOffset: number; parts: readonly PartSpec[];
+  slot?: number; otadata?: boolean;
+}): [number, Uint8Array][] {
+  const slot = opts.slot ?? 0;
+  const out: [number, Uint8Array][] = [[opts.tableOffset, makeTable(opts.parts)]];
+  const od = opts.parts.find((p) => p.type === 1 && p.subtype === 0);
+  if (od && (opts.otadata ?? slot !== 0)) out.push([od.offset, makeOtaEntry(slot + 1)]);
+  const app = opts.parts.find((p) => p.type === 0 && p.subtype === 0x10 + slot);
+  if (!app) throw new Error(`no ota_${slot}`);
+  out.push([app.offset, makeAppHead(opts.chipId, opts.project, opts.version, opts.kind ?? null)]);
+  return out;
+}

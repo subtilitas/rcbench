@@ -8,6 +8,17 @@ history is in git.
 
 ### Added
 
+- Web flasher: the board check on Check. After a connect the page reads
+  the partition table, the otadata entries and the head of the application
+  the boot loader starts on an ESP32 board (4 flash reads, 3,432 bytes,
+  through the flasher stub, no write or erase) and shows "Installed":
+  matches, another device (named, with a warning), or cannot tell (blank,
+  unknown or ambiguous firmware, a read that fails). The project names come
+  from `esp_app_desc_t`, power and balance node apart by the role record of
+  v0.23.13 and later. RP2350 boards are not read: their IOmcu images share
+  the name `rcbench-iomcu`. A warning only: it never disables WRITE, in
+  either mode; WRITE waits for the reads to end. The code, 6.7kB, loads on the first
+  connect ([flasher/README.md](flasher/README.md#board-check)).
 - Web flasher: the step model of a wizard (`flasher/src/tasks.ts`,
   `release.ts`, `wizard.ts`) with unit tests: 4 tasks on the first screen,
   the C6 radio repair last with a Prepare step, one release per visit from

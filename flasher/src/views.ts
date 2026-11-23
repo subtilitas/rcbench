@@ -232,7 +232,9 @@ function renderCheck(b: Board): string {
   if (img?.sig.state === 'signed') {
     html += `<dt>${esc(tr('rowSig'))}</dt><dd id="sig-state" data-state="signed">${esc(tr('sigSigned', { file: img.sig.file }))}</dd>`;
   }
+  if (st.inst) html += st.inst.row();
   html += '</dl>';
+  if (st.inst) html += st.inst.note(b);
   if (img) html += renderSig(img);
   if (img && b.chip === 'rp2350' && img.format === 'bin') html += `<p class="note info" id="bin-warn">${esc(ta('binWarn'))}</p>`;
   const plan = espPlan();
