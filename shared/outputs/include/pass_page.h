@@ -44,6 +44,7 @@
 #include "kst_port.h"
 #include "link_pages.h"
 #include "outputs.h"
+#include "prog_port.h"
 #include "pass_decode.h"
 
 #ifdef __cplusplus
@@ -193,6 +194,41 @@ uint16_t pass_page_active(const pass_page_t *p);
  * @return      The channels of @p mask now OFF.
  */
 uint16_t pass_page_force_off(pass_page_t *p, uint16_t mask, uint16_t busy);
+
+/**
+ * @brief The channels whose output pin something other than the pages
+ *        holds: an output slot, a programming port (prog_port_pins(),
+ *        a prebound SERVO PWM port included), or a pin of @p other.  A
+ *        SOURCE change on such a channel is refused with BUSY.
+ *
+ * @param o      The bank; NULL for none.
+ * @param pp     The programming ports; NULL for none.
+ * @param other  One bit per GPIO held elsewhere: the supply, the sensor
+ *               bus, the phase tap, the ESC wire.
+ * @return       Bit k for channel k, whose output is RSN_PIN_OUT(k).
+ */
+uint16_t pass_page_busy(const outputs_t *o, const prog_port_t *pp,
+                        uint64_t other);
+
+/** @brief Sets output k's pad: MIRROR's (PIO0) when @p mirror, else SIO
+ *         driven low.  Must be idempotent: it is called every pass. */
+typedef void (*pass_pad_fn)(void *ctx, unsigned k, bool mirror);
+
+/**
+ * @brief Every pad the pages hold, set as the pages say, on every call:
+ *        MIRROR's for the channels pass_page_mirror() names, low for the
+ *        other held ones.  No state is kept between calls, so a pad that
+ *        another driver touched meanwhile is set again on the next call.
+ *        Pads of BENCH channels are not touched.
+ *
+ * @param p    The pages.
+ * @param o    The bank (pass_page_mirror()).
+ * @param pad  Sets one pad.
+ * @param ctx  @p pad's first argument.
+ * @return     The channels routed to MIRROR.
+ */
+uint16_t pass_page_route(const pass_page_t *p, const outputs_t *o,
+                         pass_pad_fn pad, void *ctx);
 
 /**
  * @brief Whether a programming session is open, for FLAGS bit 1

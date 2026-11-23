@@ -40,12 +40,15 @@ static bool intact(const pass_ring_t *r, const volatile uint32_t *states,
 pass_drain_t pass_ring_drain(pass_ring_t *r,
                              const volatile uint32_t *states,
                              const volatile uint32_t *stamps,
-                             uint32_t head, uint32_t now_us, pass_dec_t *d)
+                             uint32_t head, uint32_t now_us, bool dropped,
+                             pass_dec_t *d)
 {
     pass_drain_t out = { 0u, false };
     const uint32_t h = WRAP(head);
     bool ok = intact(r, states, stamps);
-    if (ok) {
+    /* A state dropped on a full FIFO: nothing of this drain is decoded,
+     * since a pulse in it may span the gap. */
+    if (ok && !dropped) {
         const uint32_t n = WRAP(h - r->rd);
         if (n != 0u) {
             r->before = *d;
@@ -71,8 +74,10 @@ pass_drain_t pass_ring_drain(pass_ring_t *r,
     r->rd = h;
     r->last_state = states[newest];
     r->last_stamp = stamps[newest];
-    if (!ok) {
-        out.lapped = true;
+    out.lapped = !ok;
+    /* Every lost state, a lap or a drop, one rule: the pending edges go,
+     * the counted figures stay. */
+    if (!ok || dropped) {
         pass_dec_restart(d, r->last_state, now_us);
     }
     pass_dec_now(d, now_us);

@@ -210,7 +210,7 @@ static void put(uint32_t state, uint32_t stamp)
 static bool service(bool session, uint32_t now_ms)
 {
     const pass_drain_t r = pass_ring_drain(&g_ring, g_states, g_stamps,
-                                           g_head, now_ms * 1000u, &g_dec);
+                                           g_head, now_ms * 1000u, false, &g_dec);
     uint16_t f = 0u;
     if (r.lapped) {
         f |= LINK_PA_F_LAPPED;

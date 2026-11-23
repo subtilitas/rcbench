@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include "link_msg.h"
+#include "rsn_pins.h"
 
 _Static_assert(LINK_PA_CHANNELS == PASS_CHANNELS,
                "the pages and the decoder have 9 channels");
@@ -296,4 +297,39 @@ bool pass_page_session(const kst_port_t *kst, const hitec_port_t *hitec,
             | hitec_port_quiet_mask(hitec) | hitec_port_pin_mask(hitec)
             | esc_port_pin_mask(esc)) != 0u
            || esc_port_supply_hold(esc) || esc_port_pins(esc) != 0u;
+}
+
+uint16_t pass_page_busy(const outputs_t *o, const prog_port_t *pp,
+                        uint64_t other)
+{
+    uint64_t taken = other | prog_port_pins(pp);
+    if (o != NULL) {
+        for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
+            const out_slot_t *s = &o->slot[i];
+            if (s->driver != OUT_DRIVER_NONE && s->pin <= OUT_MAX_PIN) {
+                taken |= (uint64_t)1u << s->pin;
+            }
+        }
+    }
+    uint16_t m = 0u;
+    for (unsigned k = 0; k < LINK_PA_CHANNELS; ++k) {
+        if ((taken & ((uint64_t)1u << RSN_PIN_OUT(k))) != 0u) {
+            m |= (uint16_t)(1u << k);
+        }
+    }
+    return m;
+}
+
+uint16_t pass_page_route(const pass_page_t *p, const outputs_t *o,
+                         pass_pad_fn pad, void *ctx)
+{
+    const uint16_t held = pass_page_held(p);
+    const uint16_t mir  = (uint16_t)(pass_page_mirror(p, o) & held);
+    for (unsigned k = 0; k < LINK_PA_CHANNELS; ++k) {
+        const uint16_t b = (uint16_t)(1u << k);
+        if ((held & b) != 0u && pad != NULL) {
+            pad(ctx, k, (mir & b) != 0u);
+        }
+    }
+    return mir;
 }

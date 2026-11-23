@@ -211,7 +211,9 @@ void pass_cap_route(unsigned k, bool mirror)
         gpio_set_function(pin, GPIO_FUNC_PIO0);
         return;
     }
-    gpio_init(pin);
+    /* Low and an output in SIO first, then the function: called every
+     * pass, it never lets the pad float or go high. */
     gpio_put(pin, false);
     gpio_set_dir(pin, GPIO_OUT);
+    gpio_set_function(pin, GPIO_FUNC_SIO);
 }

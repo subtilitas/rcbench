@@ -22,7 +22,11 @@
  * session drops switched to OFF except a BENCH channel a slot holds; the
  * session flag's source set by KST and Hitec on a programming port and by
  * ESC wire on a programming port and on an output slot, from the session's
- * first frame until its driver gives the pin back.
+ * first frame until its driver gives the pin back; a programming port's
+ * pin (a prebound SERVO PWM port), a slot's and one held elsewhere busy,
+ * OFF and PASS-THROUGH refused there until the port gives it back; every
+ * route setting each held pad again after another driver touched it
+ * (a port's take and give), BENCH pads untouched.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -35,6 +39,8 @@
 #include "link_pages_esc.h"
 #include "pass_decode.h"
 #include "pass_page.h"
+#include "prog_port.h"
+#include "rsn_pins.h"
 
 static pass_page_t p;
 static pass_dec_t  d;
@@ -396,6 +402,89 @@ TEST_CASE(every_programming_session_sets_the_session_flag)
     CHECK(!pass_page_session(&kst, &hitec, &esc));
 }
 
+/* A model of the 9 output pads: who drives each. */
+enum { PAD_BENCH = 0, PAD_MIRROR, PAD_LOW, PAD_PWM };
+static unsigned pads[LINK_PA_CHANNELS];
+static unsigned pad_calls;
+
+static void pad_set(void *ctx, unsigned k, bool mirror)
+{
+    (void)ctx;
+    pads[k] = mirror ? PAD_MIRROR : PAD_LOW;
+    ++pad_calls;
+}
+
+TEST_CASE(a_programming_ports_pin_is_busy_for_every_source_change)
+{
+    outputs_t o;
+    prog_port_t pg;
+    outputs_init(&o, 0u);
+    prog_port_init(&pg, 4u);
+    pg.regs[LINK_PG_FUNC(0u)] = (uint16_t)LINK_PG_FN_SERVO_PWM;
+    /* A SERVO PWM port prebound on S3 (GPIO 20). */
+    const uint16_t pin = (uint16_t)RSN_PIN_OUT(2);
+    CHECK_EQ(prog_port_write(&pg, (uint8_t)LINK_PG_REG(0u, LINK_PG_PIN), 1u,
+                             &pin, &o, 0u, false, 0u), 0u);
+    CHECK_EQ(pass_page_busy(&o, &pg, 0u), 1u << 2);
+    /* A slot on S5 and a pin held elsewhere on S9. */
+    const out_slot_t pwm = { .driver = OUT_DRIVER_PWM, .first_channel = 0,
+                             .channels = 1, .pin = (uint8_t)RSN_PIN_OUT(4),
+                             .rate_hz = 50 };
+    CHECK(outputs_configure(&o, 0, &pwm));
+    CHECK_EQ(pass_page_busy(&o, &pg, (uint64_t)1u << RSN_PIN_OUT(8)),
+             (1u << 2) | (1u << 4) | (1u << 8));
+    CHECK_EQ(pass_page_busy(NULL, NULL, 0u), 0u);
+    /* OFF and PASS-THROUGH on the port's pin: BUSY, SOURCE stays BENCH. */
+    pass_page_init(&p, true, 0u);
+    const pass_ctx_t c = { false, pass_page_busy(&o, &pg, 0u) };
+    CHECK_EQ(src(2, LINK_PA_SRC_OFF, &c), LINK_NACK_BUSY);
+    CHECK_EQ(src(2, LINK_PA_SRC_PASS, &c), LINK_NACK_BUSY);
+    CHECK_EQ(reg(LINK_PA_SOURCE(2)), LINK_PA_SRC_BENCH);
+    CHECK_EQ(pass_page_held(&p), 0u);
+    /* The port gives the pin back: taken. */
+    const uint16_t none = (uint16_t)LINK_PG_PIN_NONE;
+    CHECK_EQ(prog_port_write(&pg, (uint8_t)LINK_PG_REG(0u, LINK_PG_PIN), 1u,
+                             &none, &o, 0u, false, 0u), 0u);
+    const pass_ctx_t c2 = { false, pass_page_busy(&o, &pg, 0u) };
+    CHECK_EQ(src(2, LINK_PA_SRC_OFF, &c2), 0u);
+}
+
+TEST_CASE(every_route_sets_each_held_pad_again)
+{
+    pass_page_init(&p, true, 0u);
+    CHECK_EQ(src(0, LINK_PA_SRC_PASS, &SAFE), 0u);
+    CHECK_EQ(src(2, LINK_PA_SRC_OFF, &SAFE), 0u);
+    memset(pads, 0, sizeof(pads));
+    pad_calls = 0u;
+    const uint8_t srf = OUT_ROLE_BIT(OUT_ROLE_SURFACE);
+    CHECK_EQ(pass_page_route(&p, armed_for(0u), pad_set, NULL), 0u);
+    CHECK_EQ(pads[0], (unsigned)PAD_LOW);
+    CHECK_EQ(pads[2], (unsigned)PAD_LOW);
+    CHECK_EQ(pads[4], (unsigned)PAD_BENCH);   /* BENCH not touched */
+    CHECK_EQ(pad_calls, 2u);
+    /* A programming port's take and give: ports_apply() rebinds PWM on
+     * S3's pad, and on S1's.  The next route sets both again. */
+    pads[2] = PAD_PWM;
+    pads[0] = PAD_PWM;
+    CHECK_EQ(pass_page_route(&p, armed_for(0u), pad_set, NULL), 0u);
+    CHECK_EQ(pads[2], (unsigned)PAD_LOW);
+    CHECK_EQ(pads[0], (unsigned)PAD_LOW);
+    /* Armed for channel 0's role (a throttle): MIRROR; touched again and
+     * set again; S3 stays low through a surface ARM. */
+    CHECK_EQ(pass_page_route(&p, armed_for(OUT_ROLES_ALL), pad_set, NULL),
+             1u << 0);
+    CHECK_EQ(pads[0], (unsigned)PAD_MIRROR);
+    pads[0] = PAD_PWM;
+    pads[2] = PAD_PWM;
+    CHECK_EQ(pass_page_route(&p, armed_for(srf), pad_set, NULL), 0u);
+    CHECK_EQ(pads[0], (unsigned)PAD_LOW);
+    CHECK_EQ(pads[2], (unsigned)PAD_LOW);
+    CHECK_EQ(pass_page_route(&p, armed_for(OUT_ROLES_ALL), pad_set, NULL),
+             1u << 0);
+    CHECK_EQ(pads[0], (unsigned)PAD_MIRROR);
+    (void)armed_for(0u);
+}
+
 int main(void)
 {
     RUN(every_channel_starts_on_bench);
@@ -411,5 +500,7 @@ int main(void)
     RUN(missed_saturates_frames_wrap_and_reset_takes_the_counts_as_zero);
     RUN(a_session_counts_pass_through_active_and_switches_channels_off);
     RUN(every_programming_session_sets_the_session_flag);
+    RUN(a_programming_ports_pin_is_busy_for_every_source_change);
+    RUN(every_route_sets_each_held_pad_again);
     return test_summary("pass_page");
 }

@@ -42,8 +42,6 @@
 static pass_page_t s_thru;       /**< the PASS and PASS_STAT pages */
 static pass_dec_t  s_thru_dec;   /**< the decoder */
 static pass_ring_t s_thru_ring;  /**< the ring's reader */
-static uint16_t    s_thru_mir;   /**< bit k: output k's pad is MIRROR's */
-static uint16_t    s_thru_low;   /**< bit k: output k's pad is driven low */
 
 void thru_boot(uint32_t now_ms)
 {
@@ -62,27 +60,17 @@ void thru_boot(uint32_t now_ms)
 }
 
 /**
- * @brief Whether a pin is held by something other than the pages: an
- *        output slot, a programming port, the supply, the sensor bus, the
- *        phase tap or the ESC wire.
+ * @brief The channels whose output pin something other than the pages
+ *        holds: an output slot, a programming port, the supply, the
+ *        sensor bus, the phase tap or the ESC wire (pass_page_busy()).
  *
- * @param pin  The GPIO.
- * @return     true when it is.
+ * @return Bit k for channel k.
  */
-static bool held_elsewhere(unsigned pin)
+static uint16_t busy(void)
 {
-    const uint64_t taken = tone_taken() | tone_page_pins(&s_tone)
-                           | esc_port_pins(&s_esc);
-    if ((taken & ((uint64_t)1u << pin)) != 0u) {
-        return true;
-    }
-    for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
-        if (s_outputs.slot[i].driver != OUT_DRIVER_NONE
-            && s_outputs.slot[i].pin == pin) {
-            return true;
-        }
-    }
-    return false;
+    return pass_page_busy(&s_outputs, &s_prog,
+                          tone_taken() | tone_page_pins(&s_tone)
+                          | esc_port_pins(&s_esc));
 }
 
 /**
@@ -122,25 +110,27 @@ static bool armed(void)
 }
 
 /**
- * @brief Each held pad as the pages say: MIRROR's for PASS-THROUGH while
- *        the bank is armed for the channel's role, low otherwise; only what
- *        changed is touched.
+ * @brief pass_cap_route() as a pass_pad_fn.
+ *
+ * @param ctx     Not used.
+ * @param k       The channel.
+ * @param mirror  MIRROR's, else low.
+ */
+static void pad(void *ctx, unsigned k, bool mirror)
+{
+    (void)ctx;
+    pass_cap_route(k, mirror);
+}
+
+/**
+ * @brief Every held pad set as the pages say, every pass: MIRROR's for
+ *        PASS-THROUGH while the bank is armed for the channel's role, low
+ *        otherwise.  Nothing is cached, so a pad another driver touched
+ *        (a programming port's take and give, a bind) is set again here.
  */
 static void route(void)
 {
-    const uint16_t held = pass_page_held(&s_thru);
-    const uint16_t mir  = pass_page_mirror(&s_thru, &s_outputs);
-    const uint16_t low  = (uint16_t)(held & ~mir);
-    for (unsigned k = 0; k < PASS_CHANNELS; ++k) {
-        const uint16_t b = (uint16_t)(1u << k);
-        if ((mir & b) != 0u && (s_thru_mir & b) == 0u) {
-            pass_cap_route(k, true);
-        } else if ((low & b) != 0u && (s_thru_low & b) == 0u) {
-            pass_cap_route(k, false);
-        }
-    }
-    s_thru_mir = mir;
-    s_thru_low = low;
+    (void)pass_page_route(&s_thru, &s_outputs, pad, NULL);
 }
 
 void thru_service(uint32_t now_ms)
@@ -149,15 +139,19 @@ void thru_service(uint32_t now_ms)
         pass_dec_skip(&s_thru_dec, bidir_bits(), time_us_32());
         /* The head before the clock: every stamp read is at or before it. */
         const uint32_t head = pass_cap_head();
+        /* The stall flag after the head: a state dropped before it is in
+         * this drain, which is then undone; one dropped after it restarts
+         * the decoder at this drain's newest state, before the gap. */
+        const bool stalled = pass_cap_stalled();
         const uint32_t now_us = time_us_32();
         const pass_drain_t r = pass_ring_drain(&s_thru_ring, pass_cap_states(),
                                                pass_cap_stamps(), head, now_us,
-                                               &s_thru_dec);
+                                               stalled, &s_thru_dec);
         uint16_t f = 0u;
         if (r.lapped) {
             f |= LINK_PA_F_LAPPED;
         }
-        if (pass_cap_stalled()) {
+        if (stalled) {
             f |= LINK_PA_F_STALL;
         }
         if (pass_page_session(&s_kst, &s_hitec, &s_esc)) {
@@ -188,13 +182,7 @@ uint16_t thru_active(void)
 
 void thru_drop(uint16_t mask)
 {
-    uint16_t busy = 0u;
-    for (unsigned k = 0; k < PASS_CHANNELS; ++k) {
-        if (held_elsewhere(RSN_PIN_OUT(k))) {
-            busy |= (uint16_t)(1u << k);
-        }
-    }
-    if (pass_page_force_off(&s_thru, mask, busy) != 0u) {
+    if (pass_page_force_off(&s_thru, mask, busy()) != 0u) {
         reserve_held();
         route();
     }
@@ -209,12 +197,7 @@ void thru_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 uint8_t thru_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in)
 {
     (void)ctx;
-    pass_ctx_t c = { .armed = armed(), .busy = 0u };
-    for (unsigned k = 0; k < PASS_CHANNELS; ++k) {
-        if (held_elsewhere(RSN_PIN_OUT(k))) {
-            c.busy |= (uint16_t)(1u << k);
-        }
-    }
+    const pass_ctx_t c = { .armed = armed(), .busy = busy() };
     const uint8_t nack = pass_page_write(&s_thru, off, n, in, &c);
     if (nack == 0u) {
         /* The pins the pages now hold are no slot's, and their pads go

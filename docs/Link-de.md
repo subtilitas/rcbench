@@ -2118,7 +2118,12 @@ Durchlauf leert.
   beiden wird mit BUSY abgelehnt, solange ein Ausgangsslot, ein
   Programmierport, die Versorgung, der Sensorbus, der Phasenabgriff oder die
   ESC-Leitung ihn hält, und ein Schreiben auf OUTPUTS oder PROG, das einen
-  gehaltenen Pin nennt, wird wie für einen reservierten Pin abgelehnt.
+  gehaltenen Pin nennt, wird wie für einen reservierten Pin abgelehnt. Ein
+  Programmierport zählt ab seinem Schreiben von PIN, auch ein SERVO-PWM-Port,
+  der vor seiner Session gebunden ist.
+- Jeder Durchlauf der Hauptschleife setzt jedes gehaltene Pad neu, auf
+  MIRROR oder low, damit ein Pad, das ein anderer Treiber inzwischen
+  berührt hat, nach einem Durchlauf zurück ist.
 - PASS-THROUGH wird mit BAD_VALUE abgelehnt, wenn die Messung nicht läuft
   (Bit 3 von `FLAGS`). Auf einem Chip vor dem Stepping A4 startet nichts,
   und jede `SOURCE` außer BENCH wird mit NOT_ARMED abgelehnt.
@@ -2158,7 +2163,7 @@ unbekannt gemacht hat, eine Messlücke und kein Fehler:
 | ---: | --- |
 | 0 | die DMA hat den Ring überrundet: der Leser hat verworfen, was darin war, die Werte von vor diesem Leeren behalten und beim neuesten Zustand neu begonnen |
 | 1 | eine Programmier-Session war offen: KST oder Hitec an einem Programmierport, oder ESC wire an einem Programmierport oder einem Ausgangsslot; die Flanken ihrer Leitung fluten den Ring |
-| 2 | das FIFO von CAPTURE war voll und hat einen Zustand verworfen |
+| 2 | das FIFO von CAPTURE war voll und hat einen Zustand verworfen: behandelt wie eine Überrundung, das Leeren rückgängig gemacht und der Decoder neu gestartet, damit kein Puls über die Lücke gepaart wird |
 | 3 | die Messung läuft nicht; jede Größe liest 0 |
 
 Der Ring hält unter 195.000 Ereignissen/s 42ms, das längste Flash-Fenster.

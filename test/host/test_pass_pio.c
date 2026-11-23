@@ -304,6 +304,7 @@ static uint32_t words[MAX_WORDS];
 static uint64_t word_cyc[MAX_WORDS];       /* the sample that saw it */
 static size_t   nwords;
 static unsigned rxstall;
+static unsigned stall_seen;   /* rxstall at the last drain */
 /* Output pad changes. */
 static uint64_t out_cyc[MAX_EDGES];
 static uint32_t out_lvl[MAX_EDGES];
@@ -337,6 +338,7 @@ static void run(uint64_t cycles, const run_t *rc)
     qsort(edges, nedges, sizeof(edges[0]), cmp_edge);
     nwords = nout = 0;
     rxstall = 0;
+    stall_seen = 0;
     r_head = 0;
     memset(r_states, 0, sizeof(r_states));
     memset(r_stamps, 0, sizeof(r_stamps));
@@ -411,8 +413,12 @@ static void run(uint64_t cycles, const run_t *rc)
             dma_free = cyc + rc->dma_lat;
         }
         if (rc->decode && cyc % rc->drain_every == rc->drain_every - 1u) {
+            /* RXSTALL since the last drain, read and cleared after the
+             * head, as thru_service() does. */
             (void)pass_ring_drain(&ring, r_states, r_stamps, r_head,
-                                  (uint32_t)(cyc / CPU_MHZ), &dec);
+                                  (uint32_t)(cyc / CPU_MHZ),
+                                  rxstall != stall_seen, &dec);
+            stall_seen = rxstall;
         }
         /* MIRROR's write reaches the pads at the next cycle; only the even
          * pins are outputs. */

@@ -1933,7 +1933,11 @@ CAPTURE pushes the state of all 18 pins on every change; two chained DMA
 - OFF and PASS-THROUGH hold the output pin: from BENCH to either is
   refused with BUSY while an output slot, a programming port, the supply,
   the sensor bus, the phase tap or the ESC wire holds it, and an OUTPUTS
-  or PROG write naming a held pin is refused as for a reserved pin.
+  or PROG write naming a held pin is refused as for a reserved pin. A
+  programming port counts from its PIN write on, a SERVO PWM port bound
+  before its session included.
+- Every main-loop pass sets each held pad again, MIRROR's or low, so a pad
+  another driver touched meanwhile is back within one pass.
 - PASS-THROUGH is refused with BAD_VALUE when the capture does not run
   (`FLAGS` bit 3). On a chip before the A4 stepping nothing starts and
   every `SOURCE` other than BENCH is refused with NOT_ARMED.
@@ -1970,7 +1974,7 @@ a measurement gap and not an error:
 | ---: | --- |
 | 0 | the DMA lapped the ring: the reader dropped what was in it, kept the figures from before that drain, and started again at the newest state |
 | 1 | a programming session was open: KST or Hitec on a programming port, or ESC wire on a programming port or an output slot; its line's edges flood the ring |
-| 2 | CAPTURE's FIFO was full and dropped a state |
+| 2 | CAPTURE's FIFO was full and dropped a state: handled as a lap, the drain undone and the decoder restarted, so no pulse is paired across the gap |
 | 3 | the capture does not run; every figure reads 0 |
 
 The ring holds 42ms, the longest flash window, below 195,000 events/s.
