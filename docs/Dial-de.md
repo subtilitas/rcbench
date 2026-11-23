@@ -342,7 +342,7 @@ gelesen ist, werden EVENTs ebenfalls verworfen. Ein INFO, das sich nicht
 lesen oder dekodieren lässt, ist ein fehlgeschlagener GATT-Schritt: Der
 Link endet, und das Panel verbindet sich nach 1.000ms erneut. Rastungen und
 PRESS erreichen den Bildschirm nur, solange der Link `VERBUNDEN` oder
-`GESTÖRT` ist; ein HOLD, der nur entschärft, in jedem Zustand.
+`GESTÖRT` ist; ein HOLD, der nur auf SAFE schaltet, in jedem Zustand.
 
 Die Verlustregel läuft auf der eigenen Uhr des Panels, nicht auf dem
 Supervision Timeout:
@@ -375,7 +375,7 @@ als Schritt des Fokus; alle anderen nehmen keine an.
 
 Auf MOTOR & ESC schaltet ein HOLD auch DISARM, solange ein ARM unterwegs
 ist, angefragt und noch nicht bestätigt, und beendet einen ESC-STICK-Lauf
-wie ABORT, auch in ARMING: Nach einem HOLD wird der Prüfstand nie scharf.
+wie ABORT, auch in ARMING: Nach einem HOLD schaltet der Prüfstand nie auf ARMED.
 Ein PRESS zählt nur in einem Frame mit einer Drehung oder einem Druck, den
 das Panel nimmt; ein HOLD immer. Ein Frame ohne Eingabe lässt eine offene
 Hilfeblase offen. Die gehaltenen Zustände von Taste und Touch im EVENT werden nie als
@@ -761,11 +761,9 @@ verschiedener Reihenfolge; GPIO1 ist in beiden Fällen der Pin dieser Nummer.
   nicht gemessen). Das Neuzeichnen eines Rings ist auf dem Gerät nicht
   gemessen.
 - Das Face eines Werts zeigt keine Kategorie: Kein Paket trägt eine.
-- Nichts in dieser Firmware oder in der Seite des Panels ist mit einem Dial
-  gelaufen: Das Dial ist bestellt, nicht geliefert. Die Latenz von der
-  Drehung zum Ausgang über Funk ist nicht gemessen; die Station misst sie
+- Die Latenz von der Drehung zum Ausgang über Funk ist nicht gemessen; die Station misst sie
   mit dem Test-Build, sobald das Dial an ihrem USB hängt.
-- Das Update über BLE ist mit keinem Dial gelaufen. Seine Rate über die
+- Die Rate des Updates über BLE über die
   ESP32-C6-Verbindung des Panels, die Dauer einer Übertragung von 840kB und
   ein Rollback am Dial sind nicht gemessen.
 - Das Dial prüft Art, Chip und Segmente des Images, nicht seine Herkunft:

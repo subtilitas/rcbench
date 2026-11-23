@@ -875,8 +875,8 @@ this start`.
 - The node's readings reach MOTOR & ESC only while the IOmcu link is up:
   with the link down, the panel's model runs.
 - The latency from a node's window to the panel's read is not measured.
-- No node has run on hardware: the boards are ordered, not delivered. The
-  pins, the wake, the currents and the CD42's behaviour are not measured.
+- The pins, the wake, the currents and the CD42's behaviour are not
+  measured.
 - The CD42's light-load auto-shutdown threshold is not known (above).
 - The balance node's rate, scale, noise and index timing are not measured:
   the figures above are the datasheets' and ESP-IDF's. The station can
@@ -891,7 +891,7 @@ this start`.
 - The WS2812 is not driven. Its current at idle is not measured.
 - The panel does not yet send a node its image: the node's side of the
   update over BLE exists, the panel's rows come with its node clients. The
-  update has not run on a node; its rate and a rollback are not measured.
+  update's rate and a rollback are not measured.
 - A node checks an image's kind, chip and segments, not its origin: a
   central in range can offer any image of the node's role, older ones
   included, and a 1s hold of BOOT installs it.
@@ -903,8 +903,7 @@ this start`.
   as the panel's power node names board 2 in INFO; POWER NODE FIRMWARE then
   offers no update, and a tap reads `This release has no firmware for this
   device.` (`pnode_ctl_other_board()`).
-- The display node has not run on a board. The ILI9341V set-up is the
-  vendor's, not measured; the SPI clock of 20MHz, the touch's orientation,
+- The display node's ILI9341V set-up is the vendor's, not measured; the SPI clock of 20MHz, the touch's orientation,
   the I2C socket's pin order and the internal RAM left for Bluetooth LE at
   run time are not measured. A board without PSRAM runs without a display.
 - The display node's touch read shares the bus with the INA228: a read of

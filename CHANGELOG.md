@@ -16,6 +16,17 @@ history is in git.
   of 2.1mm x 8.4mm. 39 solids, 51.05mm x 20.0mm x 62.71mm; the plug
   stands at x -11.8mm in place of -45.3mm
   ([ESC and motor](hardware/mechanical/ESC_MOTOR.md#motor-simulator)).
+- Web flasher, Done: the next-step line follows what the write kept. After
+  a Dial write that kept the NVS (non-volatile storage) partition, the line
+  reads that the Dial keeps its settings and its binding; after a write
+  over the NVS it asks to bind the Dial on the panel. The display node,
+  power node and balance node lines name both cases, since the panel binds
+  a node by its address. The display node's line no longer asks for a bind
+  after every write.
+- Web flasher, German: device names follow the panel, Auswuchtknoten and
+  C6-Funk; bind texts read binden and gebunden, as the panel's BINDEN.
+- German docs and help name the bench states ARMED and SAFE in place of
+  scharf and entschärft.
 
 ## 0.23.17 - 2026-11-23
 

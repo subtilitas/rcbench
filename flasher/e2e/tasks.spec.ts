@@ -1,6 +1,7 @@
 // Every task of the first screen to Done against fake devices: the panel
 // (ESP32-P4), the IOmcu (RP2350 over PICOBOOT, into BOOTSEL at 1200 baud),
-// the Dial (ESP32-S3) and the power node (ESP32-C6) as wireless devices, and
+// the Dial and the display node (ESP32-S3) and the power node (ESP32-C6) as
+// wireless devices, and
 // the C6 radio behind a USB-to-UART bridge. "Keep settings" is on in simple
 // mode: the NVS partition stays on the fake flash.
 
@@ -10,6 +11,7 @@ import {
   FILES, IMAGES, TAG, connectEsp, expectImage, expectStep, flashHash, isDe, label, pad4, setup, sha, walk, writeAndWait,
 } from './helpers.ts';
 import type { Fake } from './helpers.ts';
+import { NODE_PARTS, makeMerged, makeTable } from '../test/fixtures.ts';
 
 /** The state of the fake ESP after a write: the NVS bytes at 0xD000, the hashes of the two halves of the image, the commands. */
 const espState = (page: Page, len: number) => page.evaluate(async (n) => {
@@ -56,8 +58,16 @@ test('panel: Connect, Check with the kept NVS, WRITE, verify, Done; the NVS byte
   expect(f.bauds).toEqual([]);
 });
 
-for (const [board, chipId, next] of [['dial', 9, 'SETUP > WIRELESS > DIAL'], ['node-pwr', 13, 'SETUP > WIRELESS > POWER NODE']] as const) {
-  test(`wireless device ${board}: Board, Connect, Check, WRITE, verify, Done with the next step`, async ({ page }) => {
+const DIAL_KEPT = ['keeps its settings and its binding to the panel', 'behält seine Einstellungen und seine Bindung an das Panel'] as const;
+const NODE_NEXT = ['a node bound before stays bound', 'Ein schon gebundener Knoten bleibt gebunden'] as const;
+const WIRELESS = [
+  ['dial', 9, 'SETUP > WIRELESS > DIAL', DIAL_KEPT],
+  ['node-pwr', 13, 'SETUP > WIRELESS > POWER NODE', NODE_NEXT],
+  ['node-display', 9, 'SETUP > WIRELESS > POWER NODE', NODE_NEXT],
+] as const;
+
+for (const [board, chipId, next, line] of WIRELESS) {
+  test(`wireless device ${board}: Board, Connect, Check, WRITE, verify, Done with the NVS kept and the next step for it`, async ({ page }) => {
     await setup(page, { esp: { chipId } });
     await walk(page, 'wireless', board);
     await expect(page.locator('#step-title')).toContainText(label(page, 'Step 3 of 6', 'Schritt 3 von 6'));
@@ -67,10 +77,29 @@ for (const [board, chipId, next] of [['dial', 9, 'SETUP > WIRELESS > DIAL'], ['n
     await expect(page.locator('#keep-list')).toContainText('0x9000');
     await writeAndWait(page);
     await expect(page.locator('#result')).toContainText(FILES[board]);
+    await expect(page.locator('#result')).toContainText('nvs 0x9000+0x6000');
+    await expect(page.locator('#next')).toHaveAttribute('data-kept', 'nvs');
+    await expect(page.locator('#next')).toContainText(label(page, line[0], line[1]));
     await expect(page.locator('#next')).toContainText(next);
     expect(await flashHash(page, 'esp', 0, IMAGES[board].length)).toBe(sha(IMAGES[board]));
   });
 }
+
+test('a Dial image without a settings partition: nothing kept, Done shows NOT BOUND and asks to bind', async ({ page }) => {
+  // The node table without its nvs entry: the plan writes the whole image.
+  const table = makeTable(NODE_PARTS.filter((p) => p.name !== 'nvs'));
+  const img = makeMerged({ chipId: 9, bootloaderOffset: 0, tableOffset: 0x8000, table, size: 0x20000 + 20_002 });
+  await setup(page, { esp: { chipId: 9 } }, { images: { dial: img } });
+  await walk(page, 'wireless', 'dial');
+  await connectEsp(page);
+  await expectImage(page, FILES.dial, img);
+  await expect(page.locator('#keep-list')).toHaveCount(0);
+  await writeAndWait(page);
+  await expect(page.locator('#next')).toHaveAttribute('data-kept', 'none');
+  await expect(page.locator('#next')).toHaveText(label(page,
+    'Next: the Dial shows NOT BOUND and its name, DIAL- and 4 hex digits. Bind it on the panel: SETUP > WIRELESS > DIAL.',
+    'Weiter: Das Dial zeigt NOT BOUND und seinen Namen, DIAL- und 4 Hex-Ziffern. Binde es am Panel: SETUP > WIRELESS > DIAL.'));
+});
 
 test('IOmcu: the release of the visit, 1200 baud into BOOTSEL, PICOBOOT erase, write, read back, reboot', async ({ page }) => {
   await setup(page, { iomcu: true });

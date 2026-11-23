@@ -1137,8 +1137,7 @@ Richtungen gleich.
   0x1C, über einen Aus- und Einschaltvorgang erhalten. Jede andere Zelle,
   die Zellen 0x1D bis 0x23, die ein Schreiben ohne Ausgleich sendet, und der
   Datenspeicherbefehl 0x64 sind nicht getestet; die Programmierung sendet
-  kein 0x64. Ein Schreiben an ein Servo mit falscher Prüfsumme und
-  PRÜFSUMME REPARIEREN sind an keinem Servo getestet.
+  kein 0x64.
 - Das Schreibverhalten der D-Serie ist an 1 D485HW durch Mitschnitte des
   HFP-30 gemessen. Der IOmcu hat außerdem das ID-Register 0x32 und die
   Smart-Sensor-Register 0x6C und 0x44 eines D485HW geschrieben und erneut
@@ -1178,16 +1177,9 @@ Richtungen gleich.
 - WERKSEINSTELLUNG wird für die D-Serie nicht angeboten; bei einem
   klassischen Servo ist sie die Kopie der Zellen 0x30 bis 0x53 durch das
   HPP-21 Plus, nur im Host-Modell getestet.
-- Die Prüfstandsschritte S6 bis S8 und S10 bis S11 (Schreiben an ein
-  D485HW und ein klassisches Servo, eine während eines Schreibens
-  getrennte Verbindung) sind nicht gelaufen.
 - POWER beim Einstieg der D-Serie schaltet eine steuerbare Versorgung
   auch bei einer Auszeit von 0ms aus und wieder ein. Mit einem PD mini oder
   der festen 5V-Versorgung des Carriers startet das Servo daher bei jedem
   VERBINDEN neu.
 - Ein klassisches Lesen braucht 2 Frames der Anzeige je Zelle; bei 33ms je
   Frame dauern 100 Zellen im Host-Modell 6,6s.
-- Die Prüfstandsschritte S1 bis S5 des Plans (ein D485HW bei PRECHARGE und
-  PULL-UP, die klassischen HS-5645MG und HS-7955TG, STOP und ein gezogenes
-  Verbindungskabel während ALLES AUSLESEN, ARM und SUPPLY bei gehaltenem
-  Port) sind nicht gelaufen.

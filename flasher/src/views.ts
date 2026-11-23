@@ -6,7 +6,7 @@
 
 import { boardById, chipLabel, linkOf } from './boards.ts';
 import type { Board } from './boards.ts';
-import { hasKey } from './i18n.ts';
+import { hasKey, nextKey } from './i18n.ts';
 import type { Key } from './i18n.ts';
 import { hex } from './partitions.ts';
 import type { PlanVerdict } from './partitions.ts';
@@ -283,9 +283,9 @@ function renderWrite(): string {
 // ---- Done ----
 
 function renderDone(b: Board): string {
-  const next = `nx_${b.id}`;
+  const next = nextKey(b.id, st.keptNvs);
   return renderNote(st.result, 'result')
-    + (hasKey(next) ? `<p class="note info" id="next">${esc(tr(next))}</p>` : '')
+    + (next ? `<p class="note info" id="next" data-kept="${st.keptNvs ? 'nvs' : 'none'}">${esc(tr(next))}</p>` : '')
     + `<div class="bar">${btn('again', 'writeAnother', true, 'act', { board: boardName(b) })}${btn('over', 'startOver', true, 'act primary')}</div>`;
 }
 

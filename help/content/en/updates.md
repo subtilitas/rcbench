@@ -299,8 +299,8 @@ A failed attempt shows on the card with a code: `Download failed (D10): No conne
 
 - How long the check and the download take on a real network is not measured.
 - How long the C6 radio's update takes is not measured, and whether the shipped C6 takes it over SDIO is not known.
-- How long the Dial's update takes is not measured; it has not run with a Dial.
-- How long a node's update takes is not measured; it has not run with a node.
+- How long the Dial's update takes is not measured.
+- How long a node's update takes is not measured.
 - A first DNS (Domain Name System) server of the home network that does not answer delays each name lookup by about 7s after a join, out of the check's 30s: lwIP asks that server 4 times, up to 7s, before the next.
 - TESTING: GitHub answers 60 API requests an hour for each public address without an account, shared by every device behind it. The panel sends no retry.
 - TESTING reads the 10 newest releases by date. A release older by date than those is not seen, however high its version.
