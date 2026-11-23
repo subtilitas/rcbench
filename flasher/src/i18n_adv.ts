@@ -22,6 +22,10 @@ const A = {
     'Signature: local file, signature not checked. Choose its .sig file as well to check it. WRITE stays possible.',
     'Signatur: lokale Datei, Signatur nicht geprüft. Wähle auch ihre .sig-Datei, um sie zu prüfen. SCHREIBEN bleibt möglich.',
   ],
+  sigChecking: [
+    'Signature: checking {file}. WRITE waits for the result.',
+    'Signatur: {file} wird geprüft. SCHREIBEN wartet auf das Ergebnis.',
+  ],
   sigMismatch: [
     'Signature: the signature does not match this image ({file}). The rcbench release key did not sign it. Advanced mode allows WRITE: write it only when you know where the image comes from.',
     'Signatur: Die Signatur passt nicht zu diesem Image ({file}). Der rcbench-Release-Schlüssel hat es nicht signiert. Der erweiterte Modus erlaubt SCHREIBEN: Schreibe es nur, wenn du weißt, woher das Image kommt.',

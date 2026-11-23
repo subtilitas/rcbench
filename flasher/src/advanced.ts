@@ -108,11 +108,18 @@ let sigSeq = 0;
 
 /**
  * A .sig file picked beside a local file: kept for the next local image, and
- * the image in hand checked again. A later pick wins: the result of an
- * earlier one that ends after it is dropped.
+ * the image in hand checked again. The image's signature shows `pending`
+ * (WRITE disabled) from the pick until the verdict for this .sig file lands,
+ * so no verdict of an earlier .sig file stays shown. A later pick wins: the
+ * result of an earlier one that ends after it is dropped.
  */
 async function loadSigFile(file: File): Promise<void> {
   const seq = ++sigSeq;
+  const shown = st.image;
+  if (shown && !shown.entry) {
+    st.image = { ...shown, sig: { state: 'pending', file: file.name } };
+    ui.render();
+  }
   // A file longer than a signature is read to one byte past the longest: still refused by size.
   const bytes = new Uint8Array(await file.slice(0, SIG_MAX + 1).arrayBuffer());
   if (seq !== sigSeq) return;

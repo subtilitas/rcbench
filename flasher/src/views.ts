@@ -195,7 +195,7 @@ export function gate(): Gate {
     loading: st.loading || (rel && st.releases === null && !st.releasesError),
     imageOk: !!st.image,
     keepRefused: !!plan && !plan.ok,
-    sig: st.image ? sigStateOf(st.source, !!st.localSig, shown === 'unchecked' || shown === undefined ? null : shown) : null,
+    sig: st.image ? sigStateOf(st.source, !!st.localSig, shown === 'unchecked' || shown === 'pending' || shown === undefined ? null : shown) : null,
   });
 }
 
@@ -206,7 +206,8 @@ function renderSig(img: NonNullable<typeof st.image>): string {
   const state = img.sig.state;
   if (state === 'signed') return '';
   const bad = state === 'mismatch';
-  const text = state === 'unchecked' ? ta('sigLocal')
+  const text = state === 'pending' ? ta('sigChecking', { file: img.sig.file })
+    : state === 'unchecked' ? ta('sigLocal')
     : bad ? (advanced() ? ta('sigMismatch', { file: img.sig.file }) : tr('sigMismatch', { file: img.sig.file }))
       : tr('sigNone', { file: img.sig.file });
   return `<div class="note ${bad ? 'bad' : 'info'}" id="sig-state" data-state="${state}" role="${bad ? 'alert' : 'status'}">`

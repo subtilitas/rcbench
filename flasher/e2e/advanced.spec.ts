@@ -370,3 +370,33 @@ test('a .sig file picked while a new local image is checked: the image lands wit
   await expect(page.locator('#sig-state')).toHaveAttribute('data-state', 'mismatch');
   await expect(page.locator('#sig-picked')).toHaveText('other.sig');
 });
+
+test('a second .sig file for a local image: "checking" and WRITE disabled until its verdict lands', async ({ page }) => {
+  await setup(page, { esp: { chipId: 9 } });
+  await advancedOn(page);
+  await walk(page, 'file', 'dial');
+  await connectEsp(page);
+  await pickFile(page, '#file', 'dial.bin', IMAGES.dial);
+  await pickFile(page, '#sigfile', 'dial.bin.sig', sigOf(IMAGES.dial));
+  const sig = page.locator('#sig-state');
+  const write = page.locator('#write');
+  await expect(sig).toHaveAttribute('data-state', 'signed');
+  await expect(write).toBeEnabled();
+  // The next signature check answers 1500ms late.
+  await page.evaluate(() => {
+    const verify = SubtleCrypto.prototype.verify;
+    SubtleCrypto.prototype.verify = function (this: SubtleCrypto, ...args: Parameters<SubtleCrypto['verify']>) {
+      const r = verify.apply(this, args);
+      return new Promise((res) => setTimeout(() => res(r), 1500));
+    } as SubtleCrypto['verify'];
+  });
+  await pickFile(page, '#sigfile', 'other.sig', sigOf(IMAGES.panel));
+  await expect(sig).toHaveAttribute('data-state', 'pending');
+  await expect(sig).toContainText('other.sig');
+  await expect(sig).toContainText(label(page, 'checking', 'wird geprüft'));
+  await expect(write).toBeDisabled();
+  await expect(write).toHaveAttribute('data-block', 'sig-pending');
+  await expect(sig).toHaveAttribute('data-state', 'mismatch');
+  await expect(sig).toContainText('other.sig');
+  await expect(write).toBeEnabled();
+});

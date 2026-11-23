@@ -159,6 +159,7 @@ Check shows one of these states:
 | no signature | no `.sig` (HTTP 404 or a failed download), or a `.sig` of 0 bytes | a blue information note: releases before the signed ones carry none | enabled |
 | signature does not match | a `.sig` under 8 or over 72 bytes, out of form, or one that does not verify for this image | a red note | disabled in simple mode, enabled in Advanced |
 | signature not checked (Advanced) | a local file without a picked .sig file | a blue information note | enabled |
+| checking (Advanced) | from a .sig pick for the local image in hand until its verdict lands | a blue information note naming the .sig file | disabled |
 
 A local file is checked against the .sig file picked beside it, with the
 same rules and the same 3 states as a release image. The picked .sig file

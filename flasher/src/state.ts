@@ -35,9 +35,10 @@ export interface Img {
   erase: readonly EraseRange[];
   /**
    * The signature: its shown state and the .sig file it comes from. A local
-   * file without a picked .sig file is `unchecked`.
+   * file without a picked .sig file is `unchecked`; `pending` while the
+   * check against a newly picked .sig file runs (WRITE disabled).
    */
-  sig: { state: SigShown | 'unchecked'; file: string };
+  sig: { state: SigShown | 'unchecked' | 'pending'; file: string };
 }
 
 /** The Advanced code, loaded on the first switch to Advanced (advanced.ts). */
