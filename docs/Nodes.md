@@ -897,13 +897,12 @@ this start`.
   included, and a 1s hold of BOOT installs it.
 - Windows without a sample between two windows are not sent: a stalled
   sampler shows as a jump in `t_node` with no jump in `seq`.
-- The panel does not carry the display node's image, and UPDATES offers no
-  update for it: the panel's application slot of 8,126,464 bytes has about
-  9% (about 750KB) free with the images it carries, and the display node's
-  image is 654,576 bytes. The display node is flashed over USB. A display
-  node bound as the panel's power node names board 2 in INFO; POWER NODE
-  FIRMWARE then offers no update, and a tap reads `This panel includes no
-  firmware for this device.` (`pnode_ctl_other_board()`).
+- The release has no update image of the display node, only
+  `rcbench-node-display-merged-<version>.bin` for USB, and UPDATES offers no
+  update for it. The display node is flashed over USB. A display node bound
+  as the panel's power node names board 2 in INFO; POWER NODE FIRMWARE then
+  offers no update, and a tap reads `This release has no firmware for this
+  device.` (`pnode_ctl_other_board()`).
 - The display node has not run on a board. The ILI9341V set-up is the
   vendor's, not measured; the SPI clock of 20MHz, the touch's orientation,
   the I2C socket's pin order and the internal RAM left for Bluetooth LE at

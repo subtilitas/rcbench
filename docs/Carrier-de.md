@@ -117,7 +117,7 @@ Alarmband und schaltet alle Ausgänge aus. DISARM schaltet den Prüfstand
 auf SAFE und PROG 5V aus
 ([Servo: ARM schaltet die Versorgung](Servo-de.md#arm-schaltet-die-versorgung-auf-live-sweep-und-ruder)).
 
-RUDER AUTO und ENDLAGENLAUF brauchen keinen Schritt von Hand: ihr 2s
+RUDER AUTO und LIMIT RUN brauchen keinen Schritt von Hand: ihr 2s
 HALTEN: ARM + START schaltet bei SAFE PORT-PWM EIN, dann PROG 5V EIN,
 wartet bis zu 1000ms auf die Rückmeldung EIN von PROG 5V, das PWM-Bit des
 Ports (bei SAFE gesetzt) und ein INA3221-Messfenster, das nach beiden
@@ -187,9 +187,9 @@ Spannungsabfall im Kabel), warnt das Panel und lehnt ab:
 | Die Kopfzeile von SUPPLY, rot | `PD MINI TX GPIO 7 RX GPIO 6   EINGANG 5.1V < 15V` |
 | Die zweite Zeile des Felds PROG 5V, rot | `EINGANG 5.1V: BENÖTIGT 15V` |
 | PROG 5V EIN | Nimmt kein Halten an; das Warnband nennt den Eingang. Ein Eingang, der während der 2s Halten niedrig wird, beendet es ebenso, und der Steuer-Task lehnt ein ON ab, das ihn bei niedrigem Eingang erreicht, und schreibt nichts. |
-| Die Zeile PROG 5V der Karte BEREIT auf KST, HITEC, ENDLAGENLAUF und RUDER AUTO, rot | `EINGANG 5.1V < 15V`; ein Tippen nennt den Eingang im Warnband. |
+| Die Zeile PROG 5V der Karte BEREIT auf KST, HITEC, LIMIT RUN und RUDER AUTO, rot | `EINGANG 5.1V < 15V`; ein Tippen nennt den Eingang im Warnband. |
 | VERBINDEN auf KST und HITEC | Nimmt kein Halten an; das Warnband nennt den Eingang. Ein Eingang, der während der 2s Halten niedrig wird, beendet es ebenso. Die Sitzung bleibt in PWM, die 5V aus. |
-| ARM + START auf ENDLAGENLAUF und RUDER AUTO | Abgelehnt mit `PROG 5V: EINGANG 5.1V: BENÖTIGT 15V. VERSORGUNGSSPANNUNG PRÜFEN`; kein Ausgang wird geschaltet. |
+| ARM + START auf LIMIT RUN und RUDER AUTO | Abgelehnt mit `PROG 5V: EINGANG 5.1V: BENÖTIGT 15V. VERSORGUNGSSPANNUNG PRÜFEN`; kein Ausgang wird geschaltet. |
 | Die Schritte von ARM und ARM + START, die PROG 5V schalten, auf jeder SERVO-Ansicht | Ein Eingang, der nach dem Halten niedrig wird, bis zum und im Rücklesen, beendet sie sofort: alle Ausgänge aus, die Fehlerzeile nennt den Eingang. |
 | Das VERBINDEN eines Endlagenlaufs oder von RUDER AUTO nach START | Abgelehnt, solange der Eingang niedrig ist; der Lauf endet. |
 
@@ -216,7 +216,7 @@ hat keinen anderen Messwert des Eingangs ([Nacharbeit Rev 1](#nacharbeit-rev-1))
 
 Das Feld PROG 5V auf SUPPLY schaltet die 5V von Hand: PROG 5V EIN ist ein
 Halten von 2s, PROG 5V AUS wirkt beim Aufsetzen. SERVO hat kein Feld: ARM auf LIVE,
-SWEEP und RUDER und ARM + START auf ENDLAGENLAUF und RUDER AUTO schalten
+SWEEP und RUDER und ARM + START auf LIMIT RUN und RUDER AUTO schalten
 die 5V ein, und auf KST und HITEC schaltet ein Druck auf die Zeile der
 Versorgung in der Karte BEREIT sie aus. Das Panel beurteilt das ON,
 wie es AUSGANG EIN des PD mini beurteilt:
@@ -387,7 +387,7 @@ SETUP > SENSORS zeigt diese Zeilen ohne Tasten zum Bearbeiten:
   Zeile zum INA3221 ([Servo](Servo-de.md#auto-endpoints)).
 - SERVO benennt das Messgerät nach seiner Schiene: `INA SCHIENE A` in der
   Schienenzeile unter jeder BEREIT-Karte und über dem Plot der Schiene,
-  `INA3221 SCHIENE A` in der Zeile MESSGERÄT der Karten TEST, ENDLAGENLAUF
+  `INA3221 SCHIENE A` in der Zeile MESSGERÄT der Karten TEST, LIMIT RUN
   und RUDER AUTO.
   Das Band nennt die Schiene eines Kanals über seiner Grenze:
   `INA3221 0x40 CH2 (SCHIENE A) über der Grenze von 0.80A.`. Die Zeile

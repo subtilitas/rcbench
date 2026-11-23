@@ -180,7 +180,7 @@ SINGLE UPDATES starts one update or reinstall at a time: the IOmcu's, the C6 rad
 |---|---|
 | HOLD 2s TO UPDATE THE IOMCU | starts the [IOmcu update](coproc_update.md) from the image this panel carries, also after its offer was declined, see [The IOmcu](#the-iomcu) |
 | HOLD 2s TO UPDATE THE C6 RADIO | fetches the C6 radio's image of the release and sends it to the board's ESP32-C6, see [The C6 radio](#the-c6-radio) |
-| HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE | the same, while the C6 reports the release's version |
+| HOLD 2s TO REINSTALL THE C6 RADIO | the same, while the C6 reports the release's version |
 | WIRELESS DEVICE FIRMWARE | opens the page of the Dial's and the sensor nodes' firmware rows, see [Wireless devices](#wireless-devices); while an update runs it reads that row's label |
 | BACK | in the footer's right; closes the page |
 
@@ -217,7 +217,7 @@ With the hold live the line reads `Outputs stay off. ARMED is blocked until the 
 
 Under the heading, SINGLE UPDATES shows the board's ESP32-C6, which carries Wi-Fi and Bluetooth: `C6 radio: not reported. Release: 2.13.0.` The first version is the one the C6 named at the first Wi-Fi start since the panel started; the shipped C6 names none. HOLD 2s TO UPDATE THE C6 RADIO fetches the release's image first ([Device images](#device-images)) and sends it over the board's SDIO (Secure Digital input/output) link; the button then reads `C6 UPDATE 37%`.
 
-The hold is live with the bench SAFE, no arm waiting, the supply output off, no open log run, no board drawing being fetched, no other update running, no servo or ESC programmer holding a port, and Wi-Fi off. On a C6 that reports the release's version it reads HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE: an image of the same version can carry other settings, such as 3 Bluetooth links in place of 5. A tap on the grey hold shows the reason on the alert band, for example `The C6 update waits for the panel's Wi-Fi to switch off.`
+The hold is live with the bench SAFE, no arm waiting, the supply output off, no open log run, no board drawing being fetched, no other update running, no servo or ESC programmer holding a port, and Wi-Fi off. On a C6 that reports the release's version it reads HOLD 2s TO REINSTALL THE C6 RADIO: an image of the same version can carry other settings, such as 3 Bluetooth links in place of 5. A tap on the grey hold shows the reason on the alert band, for example `The C6 update waits for the panel's Wi-Fi to switch off.`
 
 While the update runs, ARM, the supply's OUTPUT ON, PROG 5V ON and a programmer's start are refused, and Wi-Fi stays off. It ends with one alert:
 
@@ -270,12 +270,12 @@ The image carries no signature: the Dial accepts any Dial image a nearby device 
 
 ![The power node asks for its BOOT key](view:updates-node)
 
-The POWER NODE FIRMWARE and BALANCE NODE FIRMWARE rows show the node's version, from its STATUS packet on the current link, and the version of the release the panel runs: `Node: 0.23.15. Release: 0.23.16.` The hold needs the bench SAFE, the node bound and linked with its version read, and no other update running.
+The POWER NODE FIRMWARE and BALANCE NODE FIRMWARE rows show the node's version, from its STATUS packet on the current link, and the version of the release the panel runs: `Node: 0.23.16. Release: 0.23.17.` The hold needs the bench SAFE, the node bound and linked with its version read, and no other update running.
 
 1. The hold ends the node's own link; WIRELESS shows the node OFF until the update ends. The button reads `POWER NODE UPDATE: CONNECTING`.
 2. The node waits 30s for its BOOT key held 1s; the button reads `HOLD BOOT 1s ON THE NODE: 27s` and the band `Hold the node's BOOT key 1s within 30s to accept the update.` No hold refuses. Nothing is erased before the hold.
 3. The node writes the image; the button reads `POWER NODE UPDATE 37%`.
-4. The node checks the image, installs it and restarts. The alert reads `Power node updated to 0.23.16. It connects again by itself.` The node's link connects again from SETUP's values, and the row reads the new version from the node's first STATUS packet.
+4. The node checks the image, installs it and restarts. The alert reads `Power node updated to 0.23.17. It connects again by itself.` The node's link connects again from SETUP's values, and the row reads the new version from the node's first STATUS packet.
 
 A power node's readings and a balance node's reports stop from the hold until the node is back. That gap is no loss: the band shows no `POWER NODE LOST`. Any other end reads `Balance node update stopped: <reason>. Previous firmware is running.` with the Dial's reasons, and the node keeps the firmware it ran. A node refuses the other role's image before writing anything. As under the Dial's update, the supply's OUTPUT ON, PROG 5V ON and a programmer's start are refused, for example with `Programmer not started: the power node update is running.`
 
@@ -285,15 +285,15 @@ The panel image carries the IOmcu images only. The C6 radio's, the Dial's and th
 
 | Card line | Where the hold takes it |
 |---|---|
-| `The hold downloads rcbench-dial-0.23.16.bin from GitHub first.` | GitHub, with a home network kept: `SHA256SUMS` and the file over HTTPS, the file's length held to the device's slot and its SHA-256 to its `SHA256SUMS` line |
-| `The hold reads BENCH/UPDATES/rcbench-dial-0.23.16.bin from the SD card.` | the SD card's `BENCH/UPDATES`, after a failed download or without a home network; the control reads HOLD 2s TO UPDATE FROM THE SD CARD. A `SHA256SUMS` beside the file is checked when it names it |
-| `rcbench-dial-0.23.16.bin is downloaded and checked.` | the memory, until the panel restarts |
+| `The hold downloads rcbench-dial-0.23.17.bin from GitHub first.` | GitHub, with a home network kept: `SHA256SUMS` and the file over HTTPS, the file's length held to the device's slot and its SHA-256 to its `SHA256SUMS` line |
+| `The hold reads BENCH/UPDATES/rcbench-dial-0.23.17.bin from the SD card.` | the SD card's `BENCH/UPDATES`, after a failed download or without a home network; the control reads HOLD 2s TO UPDATE FROM THE SD CARD. A `SHA256SUMS` beside the file is checked when it names it |
+| `rcbench-dial-0.23.17.bin is downloaded and checked.` | the memory, until the panel restarts |
 
 The control shows `DOWNLOADING 43%`, `CHECKING THE FILE` or `READING THE SD CARD`. The image passes the senders' checks: the device's chip and project, its own SHA-256, the role for the Dial and the nodes, the release's version. Then the update starts by itself, once the radio is off, within 20s. ARMED, the supply, a log run, STOP, WI-FI and CANCEL UPDATE end a download; no download starts while ARMED. CANCEL UPDATE also drops the update the hold asked for; an image that still passes stays for the next hold. No output changes for any of it.
 
 ![The Dial's step after a failed download](view:updates-step-dial-card)
 
-A failed attempt shows on the card with a code: `Download failed (D10): No connection to GitHub.`, `SD card failed (S02): BENCH/UPDATES/rcbench-dial-0.23.16.bin is not on the SD card.`, `Check failed (V05): The file is version 0.23.15; this release has 0.23.16.` The next hold takes the next place: the card after a download, GitHub after the card. The codes are listed in the [Screens reference](https://github.com/subtilitas/rcbench/wiki/Screens#device-images).
+A failed attempt shows on the card with a code: `Download failed (D10): No connection to GitHub.`, `SD card failed (S02): BENCH/UPDATES/rcbench-dial-0.23.17.bin is not on the SD card.`, `Check failed (V05): The file is version 0.23.16; this release has 0.23.17.` The next hold takes the next place: the card after a download, GitHub after the card. The codes are listed in the [Screens reference](https://github.com/subtilitas/rcbench/wiki/Screens#device-images).
 
 ## Current limitations
 

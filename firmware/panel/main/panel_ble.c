@@ -498,7 +498,7 @@ static void log_link_limit(int status)
         || status == BLE_HS_HCI_ERR(BLE_ERR_MEM_CAPACITY)) {
         ESP_LOGW(TAG, "connect refused by the C6 radio, HCI 0x%02X: it holds "
                       "no further link; a C6 image with 3 links takes no "
-                      "fourth: install this panel's C6 image with the C6 "
+                      "fourth: install the release's C6 image with the C6 "
                       "RADIO hold in SETUP > UPDATES",
                  (unsigned)(status - BLE_HS_ERR_HCI_BASE));
     }

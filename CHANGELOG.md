@@ -6,6 +6,60 @@ history is in git.
 
 ## Unreleased
 
+## 0.23.17 - 2026-11-23
+
+0.23.17 is a testing release. Every firmware image the release publishes
+has a detached signature `<image>.sig`, ECDSA (elliptic curve digital
+signature algorithm) P-256 over its SHA-256. The panel checks the
+signature of its own image and of each device image before an update and
+shows the result; an image without a valid signature still installs after
+a warning. The panel image carries the IOmcu images only and is 4,088,176
+bytes: an update of the C6 radio, the Dial or a node downloads that
+device's image of this release from GitHub, or reads it from the SD card's
+`BENCH/UPDATES`. SETUP > SD CARD saves and loads the settings as a text
+file in `BENCH/SETUP`. The web flasher at `/rcbench/flash/` is a wizard
+with a Simple and an Advanced mode, checks the release signature of each
+image in the browser, reads which firmware a connected ESP32 board runs,
+and keeps a board's settings on a write. The IOmcu gains a link over UART
+(universal asynchronous receiver-transmitter) and board 3, the remote
+servo node's Core2350B; its image is built in CI and is not a release
+asset. `hardware/` gains cases for the display node and the remote INA228
+sensor node, the rbmod carrier version 2 with its 4 module boards, the
+ES3C28P, a Hitec D485HW, an ESC (electronic speed controller) and motor
+set and a motor simulator. Its minor number, 23, is odd. GitHub publishes
+it as a pre-release and does not mark it as latest. It runs on the
+ESP32-P4 panel, as 0.23.16 does; an ESP32-S3 panel stays on the 0.22 line
+and is not offered it. The link protocol is 4.41, up from 4.40 in
+0.23.16: 16 slots and 16 channels on the IOmcu, IDENTITY registers 7 and
+8, STATUS fault bit 8 and the POWER page (0x43). The assets are
+`rcbench-panel-p4-v0.23.17.zip`, `rcbench-panel-p4-v0.23.17.bin`,
+`rcbench-iomcu-v0.23.17.zip`, `rcbench-iomcu-rbmod-v0.23.17.zip`,
+`rcbench-c6-2.13.0.bin`, `rcbench-c6-merged-2.13.0.bin`,
+`rcbench-node-pwr-0.23.17.bin`, `rcbench-node-pwr-merged-0.23.17.bin`,
+`rcbench-node-bal-0.23.17.bin`, `rcbench-node-bal-merged-0.23.17.bin`,
+`rcbench-node-display-merged-0.23.17.bin`, `rcbench-dial-0.23.17.bin`,
+`rcbench-dial-merged-0.23.17.bin`, a `.sig` beside each of these 10
+`.bin` files, and `SHA256SUMS`, which lists the ZIP archives and the `.bin`
+files and no signature. Each ZIP archive holds a `.sig` beside each image
+in it. After the publish, `release.yml` starts `pages.yml` on `main`,
+which copies the images and their signatures to the web flasher.
+
+A bench on 0.23.16 gets 0.23.17 over Wi-Fi: SETUP > UPDATES, RELEASES: TESTING,
+CHECK FOR UPDATES, then hold the install button for 2s. With RELEASES: STABLE the
+check reads `releases/latest`, which names 0.22.1, and offers nothing. At
+link-up the panel offers to update the IOmcu over CAN (Controller Area Network)
+when the IOmcu runs a different build. The Dial and the power and balance
+nodes get their images over Bluetooth LE from SETUP > UPDATES; the panel
+downloads each one when its step's hold asks for it, and needs a home
+network or the file on the SD card for that. The display node's image is
+loaded over USB (Universal Serial Bus). To set up a new bench, load both
+boards over USB as
+[First run, §1](docs/FirstRun.md#1-flash-both-boards) describes, or with
+the [web flasher](flasher/README.md).
+
+The entries below cover the 27 pull requests merged since v0.23.16: #904
+to #908, #910 to #927, #930, #931, #933 and #934.
+
 ### Added
 
 - Web flasher: the board check on Check. After a connect the page reads
@@ -286,9 +340,9 @@ history is in git.
   and the 12 stills `mini-*.png` are in the MiniRcBench repository under
   `docs/video/`
   ([Videos from storyboards](tools/video/README.md#commands)).
-- The panel image carries the IOmcu images only: 4,074,096 bytes in the
+- The panel image carries the IOmcu images only: 4,088,176 bytes in the
   release configuration; carrying the 0.23.16 C6, Dial and node images
-  made it 3,413,616 bytes larger. The C6 radio's,
+  made it 3,413,248 bytes larger. The C6 radio's,
   the Dial's and the nodes' images stay release assets (`rcbench-c6-<esp_hosted version>.bin`,
   `rcbench-dial-<version>.bin`, `rcbench-node-pwr-<version>.bin`,
   `rcbench-node-bal-<version>.bin`); `release.yml` and `ci.yml` no longer
@@ -372,6 +426,36 @@ history is in git.
   enabled INA228 counts whether it answers or not. The tile still needs
   the IOmcu's ESC outputs
   ([Screens](docs/Screens.md#menu-marks)).
+- SETUP > UPDATES > SINGLE UPDATES: the texts name the release's image in
+  place of one the panel carries. The C6 RADIO row's reinstall reads
+  `HOLD 2s TO REINSTALL THE C6 RADIO` (`2s HALTEN: C6-FUNK NEU
+  INSTALLIEREN`); the page's note says a reinstall writes this release's
+  image, downloaded or from the SD card; a tap on a grey device hold whose
+  device runs a board without a release image reads `This release has no
+  firmware for this device.`; the German reinstall hints of the Dial and
+  the nodes name the release; the console's warning on a refused fourth
+  Bluetooth LE link names the release's C6 image.
+- Screen guide, menu page 2: SETUP lists the hub's tiles in hub order:
+  PANEL, SENSORS, OUTPUTS, SD CARD, WI-FI, UPDATES, IMU and WIRELESS. IMU
+  and WIRELESS were missing.
+- Screen guide: a row of the dock's text never ends inside SD CARD, PD
+  MINI, MOTOR & ESC, ESC STICK, LIMIT RUN, RUDDER AUTO, RUDER AUTO or PANEL
+  UPDATE; it ends at the space before the name. The German menu page 2
+  broke `SD` / `CARD`. The help suites' page check holds every
+  page they open to the rule in both languages.
+- RUDDER: an angle source that is on and sends no reading reads
+  `ANGLE: IMU X+ NO READING` (`WINKEL: IMU X+ KEIN MESSWERT`), the words
+  LIVE, TEST and LIMIT RUN use for the same state, in place of
+  `NOT ANSWERING`.
+- German: the WIRELESS tile reads `IMU, DIAL, SENSORKNOTEN`, devices
+  in place of activities (`IMU, DIAL, LEISTUNG, AUSWUCHTEN`); the power
+  and balance node names, 37 cells, do not fit the tile's 31.
+- German: SERVO's LIMIT RUN keeps its English name, as LIVE, SWEEP and TEST
+  do: its tile, footer tab and screen guide title, the run's card heading
+  `LIMIT RUN, %u VON %u WERTEN`, `LIMIT RUN LÄUFT` and the User logs help
+  read LIMIT RUN, matching the band. ENDLAGENLAUF was the German tab and
+  tile under a band reading LIMIT RUN. German prose names the run itself
+  Endlagenlauf ([Language](docs/Language.md#terms-that-stay-english)).
 
 ## 0.23.16 - 2026-11-21
 

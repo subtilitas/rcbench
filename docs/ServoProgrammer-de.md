@@ -210,7 +210,7 @@ einen Neustart erhalten.
 - Für den Endlagenlauf steht PROG 5V für den PD mini: SUCHEN + PROGRAMMIEREN
   und SERVOPULSE werden mit PROG 5V EIN angeboten, und die
   Versorgungszyklen der Sitzung schalten GPIO 21. Mit PROG 5V AUS zeigt die
-  Karte BEREIT von ENDLAGENLAUF bei SAFE `START SCHALTET EIN` auf ihrer Zeile
+  Karte BEREIT von LIMIT RUN bei SAFE `START SCHALTET EIN` auf ihrer Zeile
   PROG 5V, und ARM + START schaltet es ein; die Zeile zum PD mini erscheint
   nicht.
   Ein PD mini an den
@@ -1342,7 +1342,7 @@ rbmod-Carrier übernimmt die feste 5V-Versorgung der Programmierports
 diese Zyklen. Die Prüfung nach dem Schreiben sucht deshalb mit den
 bereits wirksamen neuen Werten. Ohne eine dieser schaltbaren
 Versorgungen sind SUCHEN + PROGRAMMIEREN und SERVOPULSE auf 1000-2000
-nicht verfügbar. Die linke Karte von ENDLAGENLAUF zeigt
+nicht verfügbar. Die linke Karte von LIMIT RUN zeigt
 `PROGRAMMIEREN: KEIN PD MINI ZUM AUS- UND EINSCHALTEN`; der Lauf liest das
 Servo nur aus und sucht. Der Bericht nennt den ausgelesenen Wert von
 20k_sel; er bestimmt nicht den Servotyp.
