@@ -1925,12 +1925,17 @@ die Spannung der Schiene für jeden Port.
   Auslösen beendet außerdem den Halt der Sitzung an der Schiene: kein
   späteres ON dieser Sitzung wird genommen.
 - Ist der PD mini an der Spannung der Sitzung an und ein anderer Port an,
-  lässt das ON der Sitzung den PD mini und seine Stromgrenze, wie sie
-  sind. Sonst wird der PD mini auf Spannung und Stromgrenze der Sitzung
+  lässt das ON der Sitzung die Spannung des PD mini und die anderen Ports,
+  wie sie sind. Sonst wird der PD mini auf die Spannung der Sitzung
   gestellt: aus und wieder an, solange der Ausgang der Sitzung aus ist, und
   mit dem Ausgang an nur auf eine Spannung, die nicht höher ist als die,
   mit der er läuft
   ([Die Versorgung eines Programmierports](Safety-de.md#die-versorgung-eines-programmierports)).
+- Die Stromgrenze: solange der PD mini ein Servo versorgt (der Ausgang der
+  Sitzung an, oder ein anderer Port an der Spannung der Sitzung an), wird
+  die Grenze der Sitzung nur genommen, wenn sie niedriger ist als die des
+  PD mini, und dann für jeden Port, den der PD mini speist; eine höhere wird
+  nicht genommen. Ohne versorgtes Servo wird sie genommen wie erbeten.
 - Mit dem Ausgang der Sitzung aus wartet ihr ON auf den PD mini: der
   Ausgang (und ohne die Schalter die Schiene) wird erst eingeschaltet,
   wenn der PD mini am erbetenen Sollwert an liest und sein Ausgang von
@@ -1939,9 +1944,14 @@ die Spannung der Schiene für jeden Port.
   dann erneut geprüft. Nicht so innerhalb von 2500ms: der PD mini wird
   ausgeschaltet, wenn das ON ihn verstellt hat, der Ausgang bleibt aus, und
   das ON der Sitzung bleibt abgelehnt. Solange es wartet, liest die
-  Versorgung der Sitzung erbeten an, weder an noch aus. Ein Hitec-POWER,
-  dessen Spannung den PD mini verstellt, beginnt sein Lauschen bis zur
-  Einschwingzeit des PD mini plus 100ms, bevor das Servo Strom hat.
+  Versorgung der Sitzung erbeten an, weder an noch aus. Jede Sitzung
+  misst, was vom Strom des Servos abhängt, ab dem Durchlauf, in dem ihre
+  Versorgung zuerst an liest: ein Hitec-POWER beginnt dann sein Lauschen
+  (nur auf Board 3; sonst beim ON), ein KST-Zyklus seine 1000ms Wartezeit,
+  ESC wire seinen Einstieg. Ihre eigenen Zeitgrenzen der Versorgung von
+  3000ms begrenzen das ganze Warten; ein Hitec-POWER, dessen Versorgung
+  abgeschaltet wird, bevor sie an liest, oder die nicht innerhalb von
+  3000ms an liest, schaltet sie ab und endet mit Ergebnis 3.
 - Ein ON der Sitzung aus RAIL 0 löscht die anderen Bits in PORT_WANT: die
   anderen Ports gehen nur mit dem eigenen Schreiben des Panels an.
 - Solange eine Sitzung ihren Ausgang hält, wird ein Schreiben des Panels,

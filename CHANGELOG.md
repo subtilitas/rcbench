@@ -17,7 +17,8 @@ history is in git.
   while the BEC check finds 500mV or more on any port, and on every port
   while another session holds one. The session's port is switched on only
   once the PD mini reads the session's voltage (300mV under to 150mV over,
-  100ms settled, 2500ms at most). After a trip no session switches the
+  100ms settled, 2500ms at most), and a Hitec POWER on the node starts its
+  listen when the port reads on. After a trip no session switches the
   rail on until the panel's RAIL 1. The panel's OFF of the session's port
   waits for a write to the servo's memory, 10000ms at most ([Link, Programming on the common rail](docs/Link.md#programming-on-the-common-rail)).
 - The panel updates the display node (the power node on the ES3C28P,

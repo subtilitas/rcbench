@@ -37,6 +37,12 @@
  *   - A taken ON with port k on: the PD mini is set as asked under its own
  *     rule (supply_page_port_set(): a voltage is never raised under a
  *     servo).
+ *   - The current limit: while the PD mini powers a servo (port k on, or
+ *     with the switches another port on at the session's voltage, which
+ *     stays on as PLAN 2.6 allows), the session's limit is applied only
+ *     when it is lower than the PD mini's, for every port the PD mini
+ *     feeds; a higher one is not applied.  With nothing powered it is
+ *     taken as asked.
  *
  * CONNECT (KST ENTER and REBOOT from PWM, Hitec OPEN, ESC wire OPEN) is
  * refused before anything is switched by prog_rail_connect(): a BEC found,

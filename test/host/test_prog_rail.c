@@ -220,7 +220,7 @@ TEST_CASE(the_same_voltage_leaves_the_other_ports_on)
     CHECK(!g_rail.alone);
     CHECK_EQ(g_rail.dropped, 0u);
     sp_pass(true);
-    CHECK_EQ(g_pd.want_ma, RAIL_MA);    /* their current limit stays */
+    CHECK_EQ(g_pd.want_ma, 500u);       /* the lower limit, for all */
     /* A cycle of port k only. */
     CHECK(rail_set(false, 0u, 0u));
     CHECK_EQ(ports_on(), 0x0003u);
@@ -638,6 +638,52 @@ TEST_CASE(an_off_ends_a_waiting_on)
     CHECK_EQ(ports_on(), 0u);
 }
 
+/* The PD mini at 5000mV and @p pd_ma; the session's ON at 5000mV and
+ * @p ma: the limit it ends with. */
+static uint16_t limit_after(bool switches, bool k_on, bool others,
+                            uint16_t pd_ma, uint16_t ma)
+{
+    const uint16_t on[3] = { 1u, RAIL_MV, pd_ma };
+
+    rig_start(switches, K, false);
+    CHECK_EQ(supply_page_write(&g_sp, LINK_SP_OUTPUT, 3u, on, &g_sout, true),
+             0u);
+    sp_pass(true);
+    sp_pass(true);
+    if (others) {
+        two_ports_on();
+    }
+    hold(false, 0u);
+    if (k_on) {
+        CHECK(rail_on(RAIL_MV, pd_ma));
+        CHECK((ports_on() & K_BIT) != 0u);
+    }
+    CHECK(rail_on(RAIL_MV, ma));
+    CHECK((ports_on() & K_BIT) != 0u);
+    if (others) {
+        CHECK_EQ(ports_on() & 0x0003u, 0x0003u);   /* they stay on */
+    }
+    sp_pass(true);
+    return g_pd.want_ma;
+}
+
+TEST_CASE(the_sessions_current_limit_is_lowered_never_raised_under_a_servo)
+{
+    /* Alone and powered at the same voltage: the lower limit is applied. */
+    CHECK_EQ(limit_after(true, true, false, 2000u, 1000u), 1000u);
+    CHECK_EQ(limit_after(false, true, false, 2000u, 1000u), 1000u);
+    /* A higher one is not applied under the powered servo. */
+    CHECK_EQ(limit_after(true, true, false, 1000u, 2000u), 1000u);
+    CHECK_EQ(limit_after(false, true, false, 1000u, 2000u), 1000u);
+    /* Shared with the switches: lowered for all, the others stay on. */
+    CHECK_EQ(limit_after(true, false, true, 2000u, 800u), 800u);
+    CHECK_EQ(limit_after(true, false, true, 800u, 2000u), 800u);
+    /* Without the switches the rail is the one switch: as alone. */
+    CHECK_EQ(limit_after(false, false, false, 2000u, 800u), 800u);
+    /* Nothing powered: taken as asked, a raise included. */
+    CHECK_EQ(limit_after(true, false, false, 800u, 2000u), 2000u);
+}
+
 int main(void)
 {
     RUN(the_view_is_the_pd_mini_through_the_ports_switch);
@@ -665,5 +711,6 @@ int main(void)
     RUN(a_pd_mini_at_the_voltage_switches_port_k_at_once);
     RUN(a_pd_mini_that_never_reaches_the_voltage_is_refused);
     RUN(an_off_ends_a_waiting_on);
+    RUN(the_sessions_current_limit_is_lowered_never_raised_under_a_servo);
     return test_summary("prog_rail");
 }

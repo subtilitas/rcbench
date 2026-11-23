@@ -586,7 +586,11 @@ TEST_CASE(a_higher_rail_never_reaches_the_sessions_servo)
 {
     const uint16_t hi[3] = { 1u, 8400u, RAIL_MA };
 
-    for (unsigned settles = 0; settles < 2u; ++settles) {
+    static const uint32_t k_settle[4] = { 0u, 400u, 2000u, UINT32_MAX };
+
+    for (unsigned c = 0; c < 4u; ++c) {
+        const uint32_t settle_ms = k_settle[c];
+        const bool settles = settle_ms != UINT32_MAX;
         bench(true, RAIL_MV);
         CHECK_EQ(supply_page_write(&g_sp, LINK_SP_OUTPUT, 3u, hi, &g_sout,
                                    true), 0u);
@@ -596,16 +600,22 @@ TEST_CASE(a_higher_rail_never_reaches_the_sessions_servo)
         g_pd.st.v_mv = 8400u;
         CHECK_EQ(cmd(LINK_KST_OP_ENTER, 0, 0), 0);
         CHECK_EQ(refusal(), LINK_KST_REF_NONE);
-        for (unsigned i = 0; i < 10u * 500u; ++i) {
+        /* Port k waits from the ON: the others go off then. */
+        while (g_rail.pending == false && busy()) {
+            tick();
+        }
+        CHECK(g_rail.pending);
+        CHECK_EQ(ports_on(), 0u);
+        const uint32_t t_on = g_ms;
+        while (busy() && (!settles || g_ms - t_on < settle_ms)) {
             tick();
             CHECK(!g_sim.powered);
         }
-        CHECK_EQ(ports_on(), 0u);       /* the others off, port k waits */
-        if (settles != 0u) {
+        if (settles) {
             g_pd.st.v_mv = RAIL_MV;
         }
         settle();
-        if (settles != 0u) {
+        if (settles) {
             CHECK_EQ(result(), KST_SES_OK);
             CHECK(g_sim.powered);
             CHECK_EQ(ports_on(), K_BIT);

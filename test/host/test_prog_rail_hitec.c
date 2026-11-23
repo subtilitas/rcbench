@@ -37,20 +37,24 @@ static void rs_supply(void *ctx, supply_port_view_t *out)
     rail_view(out);
 }
 
-/* A taken ON powers the servo up: its boot byte comes (hitec_sim.h). */
+/* The servo powers up when its port reads on: its boot byte comes
+ * (hitec_sim.h). */
 static bool rs_supply_set(void *ctx, bool on, uint16_t mv, uint16_t ma)
 {
     (void)ctx;
     const bool taken = rail_set(on, mv, ma);
-    if (on && taken) {
-        g_drv.boot_pending = true;
-    }
+    const bool was = g_hw.v.on;
     rail_view(&g_hw.v);
+    if (g_hw.v.on && !was) {
+        g_drv.boot_pending = true;      /* powered up here */
+    }
     return taken;
 }
 
 /* Bit q: another page's session holds programming port q. */
 static uint8_t g_other_held;
+/* The driver's clock of the first pass after port k came on. */
+static uint32_t g_on_us;
 
 /* The rail and the SUPPLY page told of the hold and the write
  * (ports_tell_supply()), and the CONNECT rules (ports_exclusive()). */
@@ -78,7 +82,12 @@ static void pass_as(bool safe)
     tell();
     supply_page_port_frame(&g_sp, hitec_port_frame_out(&g_port, g_ms), g_ms);
     sp_pass(safe);
+    const bool was = g_hw.v.on;
     rail_view(&g_hw.v);
+    if (g_hw.v.on && !was) {
+        g_drv.boot_pending = true;      /* powered up in this pass */
+        g_on_us = g_drv.us + 1000u;     /* the next pass's clock */
+    }
     g_ms++;
     g_drv.us += 1000u;
 }
@@ -118,6 +127,7 @@ static void bench(bool switches)
     fresh_at(0u, SUPPLY_ON);
     g_port.hw.supply = rs_supply;
     g_port.hw.supply_set = rs_supply_set;
+    g_port.hw.on_read = true;           /* as main.c on board 3 */
     rig_start(switches, K, true);
     g_other_held = 0u;
     CHECK_EQ(pw_write(LINK_PW_RAIL, 1u, g_ms), 0u);
@@ -378,6 +388,81 @@ TEST_CASE(open_is_refused_while_another_session_holds_a_port)
     }
 }
 
+/* POWER at 5500mV with the PD mini by hand: it reads 5500mV @p settle_ms
+ * after the ON (never for UINT32_MAX).  The listen starts in the pass port
+ * k first reads on, and the classic entry's boot byte is heard. */
+static void power_moved(bool switches, uint32_t settle_ms)
+{
+    bench(switches);
+    open_ok();
+    g_pd_by_hand = true;
+    g_pd.st.v_mv = MV;
+    const unsigned starts = g_drv.starts;
+    power(5500u, 500u);
+    while (state() == LINK_HITEC_POWER_OFF && !g_pd.want_output) {
+        pass();
+    }
+    while (state() == LINK_HITEC_POWER_OFF && g_pd.want_mv != 5500u) {
+        pass();
+    }
+    const uint32_t t_on = g_ms;
+    while (state() == LINK_HITEC_POWER_OFF) {
+        if (settle_ms != UINT32_MAX && g_ms - t_on >= settle_ms) {
+            g_pd.st.v_mv = 5500u;
+        }
+        CHECK_EQ(g_drv.starts, starts);  /* no listen before the power */
+        pass();
+    }
+    if (settle_ms == UINT32_MAX) {
+        CHECK_EQ(state(), LINK_HITEC_OPEN);
+        CHECK_EQ(result(), LINK_HITEC_RESULT_SUPPLY);
+        CHECK_EQ(g_drv.starts, starts);
+        CHECK(g_ms - t_on >= PROG_RAIL_WAIT_MS);
+        CHECK(g_ms - t_on <= PROG_RAIL_WAIT_MS + 2u);
+        passes(100u);
+        CHECK_EQ(ports_on(), 0u);
+        CHECK(!g_pd.want_output);
+        return;
+    }
+    CHECK_EQ(g_drv.starts, starts + 1u);
+    CHECK_EQ(g_drv.t_start, g_on_us);
+    until(LINK_HITEC_OPEN);
+    CHECK_EQ(result(), LINK_HITEC_RESULT_DONE);
+    CHECK_EQ(cap_byte(0), 0x5A);
+    CHECK_EQ(ports_on(), switches ? K_BIT : 0x01FFu);
+}
+
+TEST_CASE(a_power_at_a_moved_voltage_listens_from_the_servos_power)
+{
+    for (unsigned sw = 0; sw < 2u; ++sw) {
+        power_moved(sw != 0u, 0u);
+        power_moved(sw != 0u, 400u);
+        power_moved(sw != 0u, 2000u);
+        power_moved(sw != 0u, UINT32_MAX);
+    }
+}
+
+TEST_CASE(a_stop_while_a_power_waits_for_its_on_asks_the_supply_off)
+{
+    bench(true);
+    open_ok();
+    g_pd_by_hand = true;
+    g_pd.st.v_mv = MV;
+    power(5500u, 100u);
+    for (unsigned i = 0; i < 300u; ++i) {
+        pass();
+    }
+    CHECK_EQ(state(), LINK_HITEC_POWER_OFF);
+    CHECK(g_port.on_wait != 0u);
+    pass_as(false);
+    CHECK_EQ(state(), LINK_HITEC_OPEN);
+    CHECK_EQ(result(), LINK_HITEC_RESULT_CUT);
+    CHECK(!g_rail.pending);
+    pass();
+    CHECK_EQ(ports_on(), 0u);
+    CHECK(!g_pd.want_output);
+}
+
 int main(void)
 {
     RUN(without_the_switches_the_entry_cycle_acts_on_rail_en);
@@ -389,5 +474,7 @@ int main(void)
     RUN(an_error_between_two_writes_waits_without_the_switches);
     RUN(a_trip_in_a_power_wait_keeps_the_rail_off);
     RUN(open_is_refused_while_another_session_holds_a_port);
+    RUN(a_power_at_a_moved_voltage_listens_from_the_servos_power);
+    RUN(a_stop_while_a_power_waits_for_its_on_asks_the_supply_off);
     return test_summary("prog_rail_hitec");
 }

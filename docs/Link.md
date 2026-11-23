@@ -1761,11 +1761,16 @@ voltage for every port.
   session lets go. A trip also ends the session's hold on the rail: no
   later ON of that session is taken.
 - With the PD mini on at the session's voltage and another port on, the
-  session's ON leaves the PD mini and its current limit as they are.
-  Otherwise the PD mini is set to the session's voltage and current limit:
-  off and on again while the session's output is off, and with the output
-  on only to a voltage no higher than the one it runs at
+  session's ON leaves the PD mini's voltage and the other ports as they
+  are. Otherwise the PD mini is set to the session's voltage: off and on
+  again while the session's output is off, and with the output on only to
+  a voltage no higher than the one it runs at
   ([A programming port's supply](Safety.md#a-programming-ports-supply)).
+- The current limit: while the PD mini powers a servo (the session's
+  output on, or another port on at the session's voltage), the session's
+  limit is applied only when it is lower than the PD mini's, and then for
+  every port the PD mini feeds; a higher one is not applied. With nothing
+  powered it is taken as asked.
 - With the session's output off, its ON waits for the PD mini: the output
   (and without the switches the rail) is switched on only once the PD
   mini reads on at the asked set point and its output reads from 300mV
@@ -1773,9 +1778,13 @@ voltage for every port.
   PD mini, at once when it did not. Every rule above is judged again then.
   Not so within 2500ms: the PD mini is switched off when the ON moved it,
   the output stays off, and the session's ON stands refused. While it
-  waits the session's supply reads asked on, neither on nor off. A Hitec
-  POWER whose voltage moves the PD mini starts its listen up to the PD
-  mini's settle time plus 100ms before the servo has power.
+  waits the session's supply reads asked on, neither on nor off. Each
+  session times what depends on the servo's power from the pass its
+  supply first reads on: a Hitec POWER starts its listen then (on board 3
+  only; elsewhere at the ON), a KST cycle its 1000ms wait, ESC wire its
+  entry. Their own supply timeouts of 3000ms bound the whole wait; a
+  Hitec POWER whose supply is asked off before it reads on, or does not
+  read on within 3000ms, asks it off and ends with `RESULT` 3.
 - A session ON from `RAIL` 0 clears the other `PORT_WANT` bits: the other
   ports come on with the panel's own write only.
 - While a session holds its output, a panel write that would switch that

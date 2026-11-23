@@ -185,6 +185,19 @@ static void pending_step(prog_rail_t *r, power_page_t *pg, supply_page_t *sp,
     }
 }
 
+/**
+ * @brief The current limit for a PD mini that powers a servo now: the
+ *        lower of its own and the session's.
+ *
+ * @param pd The PD mini's view.
+ * @param ma The session's limit, mA.
+ * @return   The limit to ask, mA.
+ */
+static uint16_t lower_ma(const supply_port_view_t *pd, uint16_t ma)
+{
+    return (ma < pd->set_ma) ? ma : pd->set_ma;
+}
+
 bool prog_rail_set(prog_rail_t *r, power_page_t *pg, supply_page_t *sp,
                    bool on, uint16_t mv, uint16_t ma,
                    const prog_rail_ctx_t *ctx, uint32_t now)
@@ -206,9 +219,13 @@ bool prog_rail_set(prog_rail_t *r, power_page_t *pg, supply_page_t *sp,
     const bool beat = ctx->power.beat_alive;
     if ((power_port_on(pg) & bit) != 0u) {
         /* The servo has power already: the PD mini's own rule, never
-         * raised under it. */
+         * raised under it, and its current limit only lowered. */
+        if (pd.asked_on) {
+            ma = lower_ma(&pd, ma);
+        }
         if (pd.asked_on && pd.set_mv == mv) {
-            return true;
+            return ma == pd.set_ma
+                   || supply_page_port_set(sp, true, mv, ma, beat);
         }
         if (pg->fitted != 0u) {
             r->dropped |= (uint16_t)(power_port_on(pg) & (uint16_t)~bit);
@@ -234,7 +251,15 @@ bool prog_rail_set(prog_rail_t *r, power_page_t *pg, supply_page_t *sp,
         if (!supply_page_port_set(sp, true, mv, ma, beat)) {
             return false;
         }
-    } else if (!shared && !supply_page_port_set(sp, true, mv, ma, beat)) {
+    } else if (shared) {
+        /* The others keep the voltage; the limit is lowered for all, never
+         * raised under them. */
+        const uint16_t low = lower_ma(&pd, ma);
+        if (low != pd.set_ma
+            && !supply_page_port_set(sp, true, mv, low, beat)) {
+            return false;
+        }
+    } else if (!supply_page_port_set(sp, true, mv, ma, beat)) {
         return false;
     }
     /* Port k waits for the PD mini to read the voltage. */

@@ -106,6 +106,7 @@ static void go_free(hitec_port_t *p)
     p->stopped = 0;
     p->cutting = 0;
     p->off_seen = 0;
+    p->on_wait = 0;
     p->more = 0;
     p->wframe = 0;
     p->tail = 0;
@@ -222,7 +223,12 @@ static void on_stop(hitec_port_t *p)
         p->stopped = 1;
         break;
     case LINK_HITEC_POWER_OFF:
-        /* The supply was asked off and stays off. */
+        /* The supply was asked off and stays off; one asked on and waiting
+         * to read on is asked off again. */
+        if (p->on_wait != 0u) {
+            p->on_wait = 0;
+            supply_off(p);
+        }
         p->state = (uint8_t)LINK_HITEC_OPEN;
         p->result = (uint8_t)LINK_HITEC_RESULT_CUT;
         p->stopped = 1;
@@ -444,6 +450,10 @@ static void abort_op(hitec_port_t *p)
         cut(p);
         break;
     case LINK_HITEC_POWER_OFF:
+        if (p->on_wait != 0u) {
+            p->on_wait = 0;     /* no servo on a supply that has not read on */
+            supply_off(p);
+        }
         p->state = (uint8_t)LINK_HITEC_OPEN;
         p->result = (uint8_t)LINK_HITEC_RESULT_CUT;
         break;
@@ -483,6 +493,7 @@ static link_hitec_refusal_t power(hitec_port_t *p, const hitec_xfer_t *x,
     p->ma = ma;
     p->off_ms = off_ms;
     p->off_seen = 0;
+    p->on_wait = 0;
     supply_off(p);
     p->state = (uint8_t)LINK_HITEC_POWER_OFF;
     p->t0_ms = now_ms;
@@ -912,6 +923,24 @@ static void step_power(hitec_port_t *p, uint32_t now_ms)
 {
     supply_port_view_t v;
 
+    if (p->on_wait != 0u) {
+        const bool have = supply_view(p, &v);
+
+        if (have && v.on) {
+            const hitec_xfer_t x = p->xfer;
+
+            p->on_wait = 0;
+            p->t0_ms = now_ms;
+            start(p, &x, x.answer);
+        } else if (!have || !v.asked_on
+                   || (uint32_t)(now_ms - p->t1_ms) >= HITEC_PORT_SUPPLY_MS) {
+            p->on_wait = 0;
+            supply_off(p);
+            p->state = (uint8_t)LINK_HITEC_OPEN;
+            p->result = (uint8_t)LINK_HITEC_RESULT_SUPPLY;
+        }
+        return;
+    }
     if (p->off_seen == 0u) {
         if (supply_view(p, &v) && v.off) {
             p->off_seen = 1;
@@ -931,6 +960,13 @@ static void step_power(hitec_port_t *p, uint32_t now_ms)
     if (!p->hw.supply_set(p->hw.ctx, true, p->mv, p->ma)) {
         p->state = (uint8_t)LINK_HITEC_OPEN;
         p->result = (uint8_t)LINK_HITEC_RESULT_SUPPLY;
+        return;
+    }
+    if (p->hw.on_read) {
+        /* The listen waits for the servo's power. */
+        p->on_wait = 1;
+        p->t1_ms = now_ms;
+        step_power(p, now_ms);
         return;
     }
     {

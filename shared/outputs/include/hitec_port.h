@@ -41,7 +41,12 @@
  * on at the staged LINK_HITEC_SUPPLY_MIN_MV to LINK_HITEC_SUPPLY_MAX_MV
  * (4800 to 6000mV), and starts the staged listen in the same pass.  A
  * supply that refuses the ON gives LINK_HITEC_RESULT_SUPPLY; a listen the
- * driver refuses gives LINK_HITEC_RESULT_START with the supply on.
+ * driver refuses gives LINK_HITEC_RESULT_START with the supply on.  On a
+ * supply whose view reads on with the servo's power (hitec_port_hw_t.
+ * on_read, the remote servo node's port switch), the listen starts in the
+ * pass the supply first reads on instead; a supply asked off before that,
+ * or not read on within HITEC_PORT_SUPPLY_MS of the ON, is asked off and
+ * gives LINK_HITEC_RESULT_SUPPLY.
  *
  * The SUPPLY page is held (hitec_port_supply_hold(), protocol 4.29) in every
  * state but free: from the OPEN that takes the port to the CLOSE that gives
@@ -188,6 +193,9 @@ typedef struct {
     /** Ask the supply on at @p mv and @p ma, or off.  False when it does
      *  not take the request. */
     bool (*supply_set)(void *ctx, bool on, uint16_t mv, uint16_t ma);
+    /** @brief The supply reads on with the servo's power: a POWER's listen
+     *         starts when it reads on, not at the ON. */
+    bool on_read;
     /** @brief The wire driver.
      *
      * now_us() works while the driver is closed.
@@ -237,6 +245,8 @@ typedef struct {
     uint8_t  keyed;         /**< the last transaction puts a byte out */
     uint8_t  cutting;       /**< the driver was told to abort */
     uint8_t  off_seen;      /**< POWER: the supply read off */
+    uint8_t  on_wait;       /**< POWER: asked on, waiting to read on
+                                 (hitec_port_hw_t.on_read) */
     uint8_t  rx_mode;       /**< LINK_HT_W_RX_MODE as written */
     uint8_t  rx_line;       /**< the receive mode of the line, from its
                                  OPEN */
