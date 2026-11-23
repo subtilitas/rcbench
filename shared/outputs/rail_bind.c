@@ -45,7 +45,7 @@ uint16_t rail_bind_slots(const uint16_t *slots, const outbind_roles_t *r)
     }
     uint16_t m = 0u;
     for (unsigned s = 0; s < LINK_OUT_SLOTS_ALL; ++s) {
-        const uint16_t *sl = &slots[s * LINK_OS_STRIDE];
+        const uint16_t *sl = &slots[(size_t)s * LINK_OS_STRIDE];
         if (sl[LINK_OS_DRIVER] != (uint16_t)LINK_DRIVER_NONE) {
             m |= port_bit(r, sl[LINK_OS_PIN]);
         }

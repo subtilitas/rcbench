@@ -17,8 +17,9 @@ history is in git.
   at every start) and report each input's and output's last pulse, the
   frame period, missed frames, glitches (a high under 400µs or over
   2600µs) and a signal lost after 3 periods or 100ms, in windows of 50ms.
-  A PASS-THROUGH output is driven only while ARMED and is low from the
-  pass that sees SAFE. A channel on PASS-THROUGH counts as active for a
+  A PASS-THROUGH output is driven only while the bank is armed for its
+  channel's role (a throttle channel stays low during a surfaces-only run)
+  and is low from the pass that sees SAFE. A channel on PASS-THROUGH counts as active for a
   programming session on the common rail; a session at another voltage
   sets the PASS-THROUGH ports it switches off to OFF. PIO0 holds MIRROR,
   CAPTURE and the PD mini UART. The decoder is the new module `protocols/passthru`
@@ -89,8 +90,8 @@ history is in git.
   PASS-THROUGH. Judged at the write against the sessions open then. With
   the switches nothing changes
   ([Link, Programming on the common rail](docs/Link.md#programming-on-the-common-rail)).
-- IOmcu, board 3: a port that is on when an OUTPUTS, CHAN_CFG, BIND or
-  PROG write makes its output a throttle goes off in that write, before
+- IOmcu, board 3: a port that is on when an OUTPUTS, BIND, CHAN_CFG,
+  PROG or PASS write makes its output a throttle goes off in that write, before
   the next main-loop pass renders a frame on it, not one pass later.
 - A plain DShot or PPM pad has its input enable cleared while its PIO
   block drives it, on every board; a bidirectional DShot pad keeps it

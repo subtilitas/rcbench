@@ -19,7 +19,9 @@
  * arguments.  And a port on whose output a taken write makes a throttle
  * (a DShot slot, a PWM slot whose channel is a throttle, a DShot
  * programming port) switched off in that write, with and without the
- * switches; a surface bind leaving the port on.
+ * switches; a surface bind leaving the port on; a PASS-THROUGH throttle
+ * channel refused during a session at FITTED 0, and once taken counted as
+ * a throttle port whose rail goes off in the write.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -398,6 +400,34 @@ TEST_CASE(a_throttle_role_switches_its_powered_port_off_in_the_write)
     CHECK_EQ(power_port_on(&g_pg), 0x0040u);
 }
 
+/* A receiver's throttle on PASS-THROUGH without the switches: refused by
+ * the lock while a session is open; taken before it, it is a throttle
+ * port, and the rail goes off in the PASS write (passing_follow()). */
+TEST_CASE(a_pass_through_throttle_is_locked_and_counted_as_a_throttle)
+{
+    start(false);
+    pass_page_init(&g_pa, true, 0u);
+    outputs_t o;
+    outputs_init(&o, 0u);
+    CHECK(outputs_set_role(&o, (uint8_t)OTHER, OUT_ROLE_THROTTLE));
+    port_on(K);
+    g_open = true;
+    CHECK_EQ(src(OTHER, LINK_PA_SRC_PASS), (uint8_t)LINK_NACK_BUSY);
+    outputs_set_passing(&o, pass_page_active(&g_pa));
+    CHECK_EQ(power_throttle(&o, NULL, roles()), 0u);
+    CHECK_EQ(rail_bind_hold(&g_pg, &o, NULL, roles()), 0u);
+    CHECK(power_rail(&g_pg));
+    /* With the session ended the write is taken: S3 a throttle port, the
+     * rail off in that write. */
+    g_open = false;
+    CHECK_EQ(src(OTHER, LINK_PA_SRC_PASS), 0u);
+    outputs_set_passing(&o, pass_page_active(&g_pa));
+    CHECK_EQ(power_throttle(&o, NULL, roles()), 0x0004u);
+    CHECK_EQ(rail_bind_hold(&g_pg, &o, NULL, roles()), 0x0004u);
+    CHECK(!power_rail(&g_pg));
+    CHECK_EQ(power_port_on(&g_pg), 0u);
+}
+
 TEST_CASE(a_dshot_port_function_switches_its_powered_port_off_in_the_write)
 {
     prog_start(false);
@@ -430,5 +460,6 @@ int main(void)
     RUN(a_dshot_bind_switches_its_powered_port_off_in_the_write);
     RUN(a_throttle_role_switches_its_powered_port_off_in_the_write);
     RUN(a_dshot_port_function_switches_its_powered_port_off_in_the_write);
+    RUN(a_pass_through_throttle_is_locked_and_counted_as_a_throttle);
     return test_summary("rail_bind");
 }

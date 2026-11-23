@@ -8,7 +8,7 @@ name: Mutation
 # then shared/outputs, and shard i of 6 takes the mutants at the places i,
 # i + 6, i + 12 and so on.  A shard starts no mutant after 18000s: at 42s a
 # mutant on the runner that is about 428 mutants a shard, 2,568 of the
-# 7,653 in all.  Every mutant of shared/safety (699, about 117 a shard) runs every
+# 7,694 in all.  Every mutant of shared/safety (699, about 117 a shard) runs every
 # week; of shared/outputs the head of the list runs and the rest does not.
 # A shard that leaves mutants unrun says so: a warning annotation, and in
 # its summary the count and a table of the files.  The run reports and does

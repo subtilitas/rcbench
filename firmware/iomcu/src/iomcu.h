@@ -1283,6 +1283,14 @@ void rsn_off(void);
  */
 uint16_t rsn_pass(uint32_t now);
 /**
+ * @brief A port whose output became a throttle switched off now, not one
+ *        pass later (rail_bind_hold(): power_hold() over power_throttle()),
+ *        and the switches driven: call right after every taken write that
+ *        can make an output a throttle (OUTPUTS, BIND, CHAN_CFG, PROG, PASS
+ *        SOURCE).  Nothing on boards 1 and 2.
+ */
+void rsn_throttle_hold(void);
+/**
  * @brief The output of the pin a KST, HITEC or ESC_WIRE page last asked
  *        for (its hw.pin()): the session's output before it holds one.
  *
@@ -1347,12 +1355,6 @@ bool rsn_esc_refused(void);
  * @return Bit k for output k; 0 with the switches and on the other boards.
  */
 uint16_t rsn_lock(void);
-/**
- * @brief After a taken binding write (OUTPUTS, CHAN_CFG, BIND, PROG): a
- *        port that is on and whose output is now a throttle goes off at
- *        once (rail_bind_hold()), and the switches are driven.
- */
-void rsn_bound(void);
 /**
  * @brief The POWER page's read (power_read()).
  *

@@ -1691,7 +1691,8 @@ holds its critical alert.
   all three INA3221s answer with their critical limits written. A port's
   output is a throttle when an OUTPUTS slot on its pin is DShot or
   bidirectional DShot, or renders a throttle channel, or when a programming port holds its pin as DSHOT150, DSHOT300
-  or DSHOT600 or with a throttle channel. A new `PORT_WANT` bit for such a
+  or DSHOT600 or with a throttle channel, or when its PASS `SOURCE` is
+  PASS-THROUGH and channel k is a throttle in CHAN_CFG. A new `PORT_WANT` bit for such a
   port, and `RAIL` 1 with such a bit kept, are refused with BAD_VALUE;
   without the switches `RAIL` 1 is refused with BAD_VALUE while any port
   is a throttle. `RAIL` above 1 and a bit past port 9 are refused with
@@ -1702,7 +1703,7 @@ holds its critical alert.
   rail off and `PORT_WANT` as it was. `RAIL` 0 keeps `PORT_WANT`. A taken
   `RAIL` 1 clears `TRIPPED`.
 - A port that is on when its output becomes a throttle goes off in the
-  write that makes it one (OUTPUTS, CHAN_CFG, BIND or PROG), before the
+  write that makes it one (OUTPUTS, BIND, CHAN_CFG, PROG or PASS), before the
   next main-loop pass renders a frame: with the switches its `PORT_WANT`
   bit is cleared, without them `RAIL` goes to 0 and `PORT_WANT` stays.
   `TRIPPED` is not set.
@@ -1936,7 +1937,7 @@ CAPTURE pushes the state of all 18 pins on every change; two chained DMA
 
 | `SOURCE` | Output pad | Output |
 | --- | --- | --- |
-| 1 PASS-THROUGH | PIO0 (MIRROR) while the bank is ARMED; driven low while SAFE | the receiver's pulse |
+| 1 PASS-THROUGH | PIO0 (MIRROR) while the bank is armed for channel k's role; driven low otherwise and while SAFE | the receiver's pulse |
 | 2 BENCH | the output slot bound on the pin, if any | the bank's output, as on the bench |
 | 0 OFF | driven low | nothing |
 
@@ -1947,13 +1948,22 @@ CAPTURE pushes the state of all 18 pins on every change; two chained DMA
 - OFF and PASS-THROUGH hold the output pin: from BENCH to either is
   refused with BUSY while an output slot, a programming port, the supply,
   the sensor bus, the phase tap or the ESC wire holds it, and an OUTPUTS
-  or PROG write naming a held pin is refused as for a reserved pin.
+  or PROG write naming a held pin is refused as for a reserved pin. A
+  programming port counts from its PIN write on, a SERVO PWM port bound
+  before its session included.
+- Every main-loop pass sets each held pad again, MIRROR's or low, so a pad
+  another driver touched meanwhile is back within one pass.
 - Without the port switches (POWER `FITTED` 0) a `SOURCE` moving to
   PASS-THROUGH is refused with BUSY while a programming session is open
   ([Programming on the common rail](#programming-on-the-common-rail)).
 - PASS-THROUGH is refused with BAD_VALUE when the capture does not run
   (`FLAGS` bit 3). On a chip before the A4 stepping nothing starts and
   every `SOURCE` other than BENCH is refused with NOT_ARMED.
+- Channel k's role is channel k's in CHAN_CFG. With surfaces armed
+  alone (ARM 0x0004) a throttle channel on PASS-THROUGH stays low, and a
+  surface channel with throttles armed alone (ARM 0x0002). A role
+  disarmed, or a role changed to one not armed, takes the channel's pad
+  low on the next main-loop pass.
 - A PASS-THROUGH pad goes low on the main-loop pass that sees SAFE: a
   STOP, the failsafe, a lost heartbeat and every error. A throttle channel
   on PASS-THROUGH passes the receiver's throttle pulse; a lost receiver
@@ -1980,9 +1990,9 @@ a measurement gap and not an error:
 
 | Bit | Meaning |
 | ---: | --- |
-| 0 | the DMA lapped the ring: the reader dropped what was in it and started again at the newest state |
-| 1 | a programming session held a pin: its line's edges flood the ring |
-| 2 | CAPTURE's FIFO was full and dropped a state |
+| 0 | the DMA lapped the ring: the reader dropped what was in it, kept the figures from before that drain, and started again at the newest state |
+| 1 | a programming session was open: KST or Hitec on a programming port, or ESC wire on a programming port or an output slot; its line's edges flood the ring |
+| 2 | CAPTURE's FIFO was full and dropped a state: handled as a lap, the drain undone and the decoder restarted, so no pulse is paired across the gap |
 | 3 | the capture does not run; every figure reads 0 |
 
 The ring holds 42ms, the longest flash window, below 195,000 events/s.

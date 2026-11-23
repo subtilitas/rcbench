@@ -1208,6 +1208,13 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   wie bei einem Prüfstand in SAFE. Ein IOmcu älter als Protokoll
   4.18 nimmt jedes ARM ungleich 0 als ganze Bank; an ihm treibt also jeder
   gebundene Pin.
+- Die Durchleitung des entfernten Servoknotens folgt derselben Regel je
+  Kanal: ein Kanal auf PASS-THROUGH leitet den Puls des Empfängers nur
+  durch, solange das ARM die Rolle seines Kanals nennt (CHAN_CFG). Mit ARM
+  0x0004 bleibt das Pad eines Throttle-Kanals low, ein Empfänger treibt
+  also nie einen ESC während eines Laufs nur der Surfaces, und umgekehrt
+  mit ARM 0x0002. Der IOmcu prüft das in jedem Durchlauf der Hauptschleife
+  ([Link, Die Pages PASS und PASS_STAT](Link-de.md#die-pages-pass-und-pass_stat)).
 - Ein ARM für die andere Rolle geht über ein Schalten auf SAFE. Das Panel schreibt
   ARM = 0, wartet mindestens 100ms und schreibt dann die neuen Rollen; den
   Wechsel von einem ARM ungleich 0 zu einem anderen weist der IOmcu

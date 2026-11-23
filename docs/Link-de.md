@@ -1849,7 +1849,8 @@ Alert hält.
   OUTPUTS auf seinem Pin DShot oder bidirektionales DShot ist oder einen
   Throttle-Kanal ausgibt oder ein
   Programmierport seinen Pin als DSHOT150, DSHOT300 oder DSHOT600 oder mit
-  einem Throttle-Kanal hält. Ein neues Bit in PORT_WANT für einen solchen
+  einem Throttle-Kanal hält, oder wenn sein `SOURCE` in PASS PASS-THROUGH
+  ist und Kanal k in CHAN_CFG ein Throttle ist. Ein neues Bit in PORT_WANT für einen solchen
   Port und RAIL 1 mit einem solchen gehaltenen Bit werden mit BAD_VALUE
   abgelehnt; ohne die Schalter wird RAIL 1 mit BAD_VALUE abgelehnt,
   solange irgendein Port ein Throttle ist. RAIL über 1 und ein Bit hinter
@@ -1861,7 +1862,7 @@ Alert hält.
   unverändertem PORT_WANT. RAIL 0 behält PORT_WANT. Ein genommenes RAIL 1
   löscht TRIPPED.
 - Ein Port, der an ist, wenn sein Ausgang ein Throttle wird, geht in dem
-  Schreiben aus, das ihn dazu macht (OUTPUTS, CHAN_CFG, BIND oder PROG),
+  Schreiben aus, das ihn dazu macht (OUTPUTS, BIND, CHAN_CFG, PROG oder PASS),
   bevor der nächste Durchlauf der Hauptschleife einen Frame ausgibt: mit den
   Schaltern wird sein Bit in PORT_WANT gelöscht, ohne sie geht RAIL auf 0
   und PORT_WANT bleibt. TRIPPED wird nicht gesetzt.
@@ -2120,7 +2121,7 @@ Durchlauf leert.
 
 | `SOURCE` | Ausgangspad | Ausgang |
 | --- | --- | --- |
-| 1 PASS-THROUGH | PIO0 (MIRROR), solange die Bank ARMED ist; low getrieben in SAFE | der Puls des Empfängers |
+| 1 PASS-THROUGH | PIO0 (MIRROR), solange die Bank für die Rolle von Kanal k ARMED ist; sonst und in SAFE low getrieben | der Puls des Empfängers |
 | 2 BENCH | der auf dem Pin gebundene Ausgangsslot, falls einer | der Ausgang der Bank, wie am Prüfstand |
 | 0 OFF | low getrieben | nichts |
 
@@ -2134,7 +2135,12 @@ Durchlauf leert.
   beiden wird mit BUSY abgelehnt, solange ein Ausgangsslot, ein
   Programmierport, die Versorgung, der Sensorbus, der Phasenabgriff oder die
   ESC-Leitung ihn hält, und ein Schreiben auf OUTPUTS oder PROG, das einen
-  gehaltenen Pin nennt, wird wie für einen reservierten Pin abgelehnt.
+  gehaltenen Pin nennt, wird wie für einen reservierten Pin abgelehnt. Ein
+  Programmierport zählt ab seinem Schreiben von PIN, auch ein SERVO-PWM-Port,
+  der vor seiner Session gebunden ist.
+- Jeder Durchlauf der Hauptschleife setzt jedes gehaltene Pad neu, auf
+  MIRROR oder low, damit ein Pad, das ein anderer Treiber inzwischen
+  berührt hat, nach einem Durchlauf zurück ist.
 - Ohne die Portschalter (FITTED 0 in POWER) wird ein `SOURCE`, das auf
   PASS-THROUGH wechselt, mit BUSY abgelehnt, solange eine
   Programmiersitzung offen ist
@@ -2142,6 +2148,12 @@ Durchlauf leert.
 - PASS-THROUGH wird mit BAD_VALUE abgelehnt, wenn die Messung nicht läuft
   (Bit 3 von `FLAGS`). Auf einem Chip vor dem Stepping A4 startet nichts,
   und jede `SOURCE` außer BENCH wird mit NOT_ARMED abgelehnt.
+- Die Rolle von Kanal k ist die von Kanal k in CHAN_CFG. Mit Surfaces
+  allein ARMED (ARM 0x0004) bleibt ein Throttle-Kanal auf PASS-THROUGH
+  low, und ein Surface-Kanal mit Throttles allein ARMED (ARM 0x0002). Eine
+  Rolle, die SAFE wird, oder ein Kanal, dessen Rolle zu einer nicht ARMED
+  wechselt, nimmt das Pad des Kanals im nächsten Durchlauf der
+  Hauptschleife auf low.
 - Ein Pad auf PASS-THROUGH geht in dem Durchlauf der Hauptschleife low, der
   SAFE sieht: ein STOP, der Failsafe, ein ausgebliebener Heartbeat und jeder
   Fehler. Ein Throttle-Kanal auf PASS-THROUGH leitet den Throttle-Puls des
@@ -2170,9 +2182,9 @@ unbekannt gemacht hat, eine Messlücke und kein Fehler:
 
 | Bit | Bedeutung |
 | ---: | --- |
-| 0 | die DMA hat den Ring überrundet: der Leser hat verworfen, was darin war, und beim neuesten Zustand neu begonnen |
-| 1 | eine Programmier-Session hielt einen Pin: die Flanken ihrer Leitung fluten den Ring |
-| 2 | das FIFO von CAPTURE war voll und hat einen Zustand verworfen |
+| 0 | die DMA hat den Ring überrundet: der Leser hat verworfen, was darin war, die Werte von vor diesem Leeren behalten und beim neuesten Zustand neu begonnen |
+| 1 | eine Programmier-Session war offen: KST oder Hitec an einem Programmierport, oder ESC wire an einem Programmierport oder einem Ausgangsslot; die Flanken ihrer Leitung fluten den Ring |
+| 2 | das FIFO von CAPTURE war voll und hat einen Zustand verworfen: behandelt wie eine Überrundung, das Leeren rückgängig gemacht und der Decoder neu gestartet, damit kein Puls über die Lücke gepaart wird |
 | 3 | die Messung läuft nicht; jede Größe liest 0 |
 
 Der Ring hält unter 195.000 Ereignissen/s 42ms, das längste Flash-Fenster.

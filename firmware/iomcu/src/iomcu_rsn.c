@@ -215,7 +215,7 @@ uint16_t rsn_pass(uint32_t now)
         prog_rail_off(&s_rail);     /* no session switches a trip back on */
     }
     /* A port on whose output became a throttle goes off: at the binding
-     * write itself (rsn_bound()), and here for anything else. */
+     * write itself (rsn_throttle_hold()), and here for anything else. */
     (void)power_hold(&s_power, throttles());
     drive();
     const uint32_t half = s_chip_ok ? RSN_LED_OK_MS : RSN_LED_REFUSED_MS;
@@ -303,6 +303,13 @@ static int session_port(void)
     return s_asked_k;
 }
 
+void rsn_throttle_hold(void)
+{
+    (void)rail_bind_hold(&s_power, &s_outputs, &s_prog,
+                         outbind_roles(IOMCU_BOARD_ID));
+    drive();
+}
+
 void rsn_prog_pin(uint8_t pin)
 {
     s_asked_k = out_of(pin);
@@ -367,13 +374,6 @@ static uint8_t open_sessions(void)
 uint16_t rsn_lock(void)
 {
     return rail_bind_lock(&s_power, open_sessions() != 0u, session_port());
-}
-
-void rsn_bound(void)
-{
-    (void)rail_bind_hold(&s_power, &s_outputs, &s_prog,
-                         outbind_roles(IOMCU_BOARD_ID));
-    drive();
 }
 
 uint8_t rsn_prog_refused(void)
@@ -449,6 +449,8 @@ uint16_t rsn_pass(uint32_t now)
     return 0u;
 }
 
+void rsn_throttle_hold(void) {}
+
 void rsn_prog_pin(uint8_t pin) { (void)pin; }
 
 bool rsn_prog_view(supply_port_view_t *out)
@@ -470,8 +472,6 @@ void rsn_prog_tell(void) {}
 uint8_t rsn_prog_refused(void) { return 0u; }
 
 uint16_t rsn_lock(void) { return 0u; }
-
-void rsn_bound(void) {}
 
 bool rsn_esc_refused(void) { return false; }
 

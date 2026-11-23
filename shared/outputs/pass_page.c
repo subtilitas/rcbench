@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include "link_msg.h"
+#include "rsn_pins.h"
 
 _Static_assert(LINK_PA_CHANNELS == PASS_CHANNELS,
                "the pages and the decoder have 9 channels");
@@ -212,8 +213,8 @@ bool pass_page_tick(pass_page_t *p, const pass_dec_t *d, uint32_t now_ms)
     uint16_t lost = 0u;
     uint16_t glitch = 0u;
     for (unsigned k = 0; k < PASS_CHANNELS; ++k) {
-        const pass_pin_t *in  = &d->pin[PASS_IN_BIT(k)];
-        const pass_pin_t *out = &d->pin[PASS_OUT_BIT(k)];
+        const pass_pin_t *in  = &d->pin[(size_t)PASS_IN_BIT(k)];
+        const pass_pin_t *out = &d->pin[(size_t)PASS_OUT_BIT(k)];
         p->pass[LINK_PA_IN_US(k)]  = width(in);
         p->pass[LINK_PA_OUT_US(k)] = width(out);
         if (in->lost) {
@@ -234,14 +235,17 @@ bool pass_page_tick(pass_page_t *p, const pass_dec_t *d, uint32_t now_ms)
     return true;
 }
 
-uint16_t pass_page_mirror(const pass_page_t *p, bool armed)
+uint16_t pass_page_mirror(const pass_page_t *p, const outputs_t *o)
 {
     uint16_t m = 0u;
-    if (!armed || !p->capture) {
+    if (o == NULL || !p->capture) {
         return 0u;
     }
     for (unsigned k = 0; k < LINK_PA_CHANNELS; ++k) {
-        if (p->source[k] == (uint16_t)LINK_PA_SRC_PASS) {
+        /* Each channel by its own role: arming surfaces never passes a
+         * receiver's throttle pulse to an ESC. */
+        if (p->source[k] == (uint16_t)LINK_PA_SRC_PASS
+            && outputs_channel_driving(o, (uint8_t)k)) {
             m |= (uint16_t)(1u << k);
         }
     }
@@ -286,4 +290,51 @@ uint16_t pass_page_force_off(pass_page_t *p, uint16_t mask, uint16_t busy)
         off |= b;
     }
     return off;
+}
+
+bool pass_page_session(const kst_port_t *kst, const hitec_port_t *hitec,
+                       const esc_port_t *esc)
+{
+    /* The quiet masks cover a session before its wire driver takes the
+     * pin; the pin masks a driver that still holds it; esc_port_pins() a
+     * line on a slot, which esc_port_pin_mask() leaves out. */
+    return (kst_port_quiet_mask(kst) | kst_port_pin_mask(kst)
+            | hitec_port_quiet_mask(hitec) | hitec_port_pin_mask(hitec)
+            | esc_port_pin_mask(esc)) != 0u
+           || esc_port_supply_hold(esc) || esc_port_pins(esc) != 0u;
+}
+
+uint16_t pass_page_busy(const outputs_t *o, const prog_port_t *pp,
+                        uint64_t other)
+{
+    uint64_t taken = other | prog_port_pins(pp);
+    if (o != NULL) {
+        for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
+            const out_slot_t *s = &o->slot[i];
+            if (s->driver != OUT_DRIVER_NONE && s->pin <= OUT_MAX_PIN) {
+                taken |= (uint64_t)1u << s->pin;
+            }
+        }
+    }
+    uint16_t m = 0u;
+    for (unsigned k = 0; k < LINK_PA_CHANNELS; ++k) {
+        if ((taken & ((uint64_t)1u << RSN_PIN_OUT(k))) != 0u) {
+            m |= (uint16_t)(1u << k);
+        }
+    }
+    return m;
+}
+
+uint16_t pass_page_route(const pass_page_t *p, const outputs_t *o,
+                         pass_pad_fn pad, void *ctx)
+{
+    const uint16_t held = pass_page_held(p);
+    const uint16_t mir  = (uint16_t)(pass_page_mirror(p, o) & held);
+    for (unsigned k = 0; k < LINK_PA_CHANNELS; ++k) {
+        const uint16_t b = (uint16_t)(1u << k);
+        if ((held & b) != 0u && pad != NULL) {
+            pad(ctx, k, (mir & b) != 0u);
+        }
+    }
+    return mir;
 }

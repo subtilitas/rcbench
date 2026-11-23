@@ -67,8 +67,9 @@ enum {
 /** @brief FLAGS: the capture's ring lapped in the window: its figures are
  *         not known (a measurement gap, not an error). */
 #define LINK_PA_F_LAPPED     0x0001u
-/** @brief FLAGS: a programming session held a pin in the window: its
- *         line's edges flood the capture, the figures are not known. */
+/** @brief FLAGS: a programming session was open in the window
+ *         (pass_page_session()): its line's edges flood the capture, the
+ *         figures are not known. */
 #define LINK_PA_F_SESSION    0x0002u
 /** @brief FLAGS: the capture's FIFO was full and dropped a state. */
 #define LINK_PA_F_STALL      0x0004u

@@ -37,6 +37,15 @@ static pass_dec_t  g_dec;
 
 static const pass_ctx_t SAFE = { false, 0u, 0u };
 
+/* A bank armed for every role. */
+static const outputs_t *all_armed(void)
+{
+    static outputs_t bank;
+    outputs_init(&bank, 0u);
+    outputs_arm_roles(&bank, OUT_ROLES_ALL, 0u);
+    return &bank;
+}
+
 /* A SOURCE write while SAFE. */
 static uint8_t src(unsigned k, uint16_t v)
 {
@@ -148,7 +157,7 @@ TEST_CASE(another_voltage_drops_a_pass_through_port_to_off)
      * without one; S9 passes through on a port that is off. */
     CHECK_EQ(src(0, LINK_PA_SRC_PASS), 0u);
     CHECK_EQ(src(8, LINK_PA_SRC_PASS), 0u);
-    CHECK_EQ(pass_page_mirror(&g_pa, true), (1u << 0) | (1u << 8));
+    CHECK_EQ(pass_page_mirror(&g_pa, all_armed()), (1u << 0) | (1u << 8));
     active(1u << 1);
     /* With the switches an active channel does not refuse CONNECT. */
     CHECK_EQ(prog_rail_connect(&g_pw, K, &g_rctx), PROG_RAIL_OK);
@@ -161,7 +170,7 @@ TEST_CASE(another_voltage_drops_a_pass_through_port_to_off)
     CHECK_EQ(pa_reg(LINK_PA_SOURCE(2)), LINK_PA_SRC_OFF);
     /* A port the session did not switch off keeps its source. */
     CHECK_EQ(pa_reg(LINK_PA_SOURCE(8)), LINK_PA_SRC_PASS);
-    CHECK_EQ(pass_page_mirror(&g_pa, true), 1u << 8);
+    CHECK_EQ(pass_page_mirror(&g_pa, all_armed()), 1u << 8);
     CHECK_EQ(pass_page_held(&g_pa) & 0x0007u, (1u << 0) | (1u << 2));
     /* A second request of the session drops nothing new and leaves a
      * source written since as it is. */
@@ -182,7 +191,7 @@ TEST_CASE(the_rails_voltage_drops_no_pass_through_port)
     CHECK_EQ(ports_on(), 0x0003u | K_BIT);
     CHECK_EQ(g_rail.dropped, 0u);
     CHECK_EQ(pa_reg(LINK_PA_SOURCE(0)), LINK_PA_SRC_PASS);
-    CHECK_EQ(pass_page_mirror(&g_pa, true), 1u << 0);
+    CHECK_EQ(pass_page_mirror(&g_pa, all_armed()), 1u << 0);
 }
 
 /* thru_service(): one drain of the ring, the window's flags, the tick. */
@@ -201,7 +210,7 @@ static void put(uint32_t state, uint32_t stamp)
 static bool service(bool session, uint32_t now_ms)
 {
     const pass_drain_t r = pass_ring_drain(&g_ring, g_states, g_stamps,
-                                           g_head, now_ms * 1000u, &g_dec);
+                                           g_head, now_ms * 1000u, false, &g_dec);
     uint16_t f = 0u;
     if (r.lapped) {
         f |= LINK_PA_F_LAPPED;

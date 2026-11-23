@@ -153,6 +153,10 @@ typedef struct {
     uint32_t      timeout_ms;   /**< silence after which a channel rests   */
     uint32_t      last_step_ms;   /**< time of the last outputs_step() */
     uint64_t      reserved;     /**< pins this build will not drive        */
+    uint16_t      passing;      /**< bit k: output k carries a receiver's
+                                     channel k (the remote servo node's
+                                     PASS-THROUGH), channel k's role naming
+                                     what it drives                         */
 } outputs_t;
 
 /** @brief Silence after which a channel is rendered at its role's rest.  It
@@ -220,6 +224,18 @@ bool outputs_configure(outputs_t *o, uint8_t slot, const out_slot_t *cfg);
  *        reachable and need no bit.
  */
 void outputs_reserve_pins(outputs_t *o, uint64_t mask);
+
+/**
+ * @brief The outputs a receiver drives through (the remote servo node's
+ *        PASS-THROUGH): bit k, output k carries channel k, and channel k's
+ *        role says whether it is a throttle (power_throttle()).
+ *
+ * Nothing is done when @p o is NULL.
+ *
+ * @param o     The bank.
+ * @param mask  Bit k for output k; 0 at every start.
+ */
+void outputs_set_passing(outputs_t *o, uint16_t mask);
 
 /**
  * @brief Whether @p pin may be driven: it exists and is not in the reserved

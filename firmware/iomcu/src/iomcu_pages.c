@@ -377,11 +377,12 @@ uint8_t chan_cfg_take(iomcu_state_t *s, const uint16_t *next,
     /* A channel whose role moved sits at its new rest: the CHANNELS page
      * reads that, not the command written under the old role. */
     outputs_channels_follow_roles(&s_outputs, was, s->chan_cfg, s->channels);
+    /* A powered port whose output became a throttle (a slot's or a
+     * PASS-THROUGH channel's role): off at this write (board 3). */
+    rsn_throttle_hold();
     /* A channel that became a surface, or stopped being one, moves to or
      * from the SERVO page's rate. */
     hw_apply();
-    /* A powered port whose output became a throttle goes off now. */
-    rsn_bound();
     if (save) {
         save_outputs(s);
     }
@@ -529,7 +530,7 @@ uint8_t prog_write(void *ctx, uint8_t off, uint8_t n,
     }
     ports_apply();
     /* A powered port whose output became a throttle goes off now. */
-    rsn_bound();
+    rsn_throttle_hold();
     prog_port_kept(&s_prog, kept_now);
     kept_now[PROG_PORT_KEPT_COUNT] = prog_port_kept_func(&s_prog);
     if (memcmp(kept_was, kept_now, sizeof(kept_was)) != 0) {
@@ -686,7 +687,7 @@ uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
     }
     /* A powered port whose output became a throttle goes off now, before
      * the next pass renders a frame on it. */
-    rsn_bound();
+    rsn_throttle_hold();
     if (save) {
         save_outputs(s);
     }

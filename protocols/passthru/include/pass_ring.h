@@ -18,7 +18,14 @@
  * the read shows as well.  A ring that has just filled is taken as lapped.
  * On a lap the reader drops what is in the ring, starts after the newest
  * event, and restarts the decoder (pass_dec_restart()): the figures of that
- * stretch are not known, a measurement gap and not an error.
+ * stretch are not known, a measurement gap and not an error.  A lap found
+ * after the read puts the decoder back to its figures before the drain:
+ * nothing decoded from a ring the DMA overwrote meanwhile is kept.
+ *
+ * Every lost state is one rule.  A state CAPTURE dropped on a full FIFO
+ * (the caller's @p dropped) is handled as a lap: the drain's decoding is
+ * undone and the decoder restarted at the newest state, so no pulse is
+ * paired across the gap; the counted figures from before the drain stay.
  *
  * Before the first event is read the slot expected is the ring's last,
  * holding 0 and 0: the capture clears the ring before it starts.  An event
@@ -46,9 +53,15 @@ extern "C" {
 
 /** @brief The reader. */
 typedef struct {
-    uint32_t rd;          /**< the next event to read */
-    uint32_t last_state;  /**< the event before rd as read */
-    uint32_t last_stamp;  /**< and its stamp */
+    uint32_t   rd;          /**< the next event to read */
+    uint32_t   last_state;  /**< the event before rd as read */
+    uint32_t   last_stamp;  /**< and its stamp */
+    pass_dec_t before;      /**< the decoder as the drain found it */
+    /** @brief Called between the read and the second lap check, NULL in
+     *         the firmware: the host's stand-in for the DMA writing
+     *         meanwhile. */
+    void     (*read_done)(void *ctx);
+    void      *read_ctx;    /**< read_done()'s argument */
 } pass_ring_t;
 
 /** @brief What one drain found. */
@@ -74,13 +87,17 @@ void pass_ring_init(pass_ring_t *r);
  * @param head    The index the stamp channel writes next; read before
  *                @p now_us.
  * @param now_us  The microsecond timer, read after @p head.
+ * @param dropped CAPTURE dropped a state since the last drain (its FIFO
+ *                stall flag, read and cleared after @p head): the drain is
+ *                undone and the decoder restarted, as on a lap.
  * @param d       The decoder.
  * @return        Events decoded and whether the ring lapped.
  */
 pass_drain_t pass_ring_drain(pass_ring_t *r,
                              const volatile uint32_t *states,
                              const volatile uint32_t *stamps,
-                             uint32_t head, uint32_t now_us, pass_dec_t *d);
+                             uint32_t head, uint32_t now_us, bool dropped,
+                             pass_dec_t *d);
 
 #ifdef __cplusplus
 }

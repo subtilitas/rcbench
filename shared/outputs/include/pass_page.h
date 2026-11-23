@@ -42,7 +42,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "esc_port.h"
+#include "hitec_port.h"
+#include "kst_port.h"
 #include "link_pages.h"
+#include "outputs.h"
+#include "prog_port.h"
 #include "pass_decode.h"
 
 #ifdef __cplusplus
@@ -150,13 +155,17 @@ void pass_page_flag(pass_page_t *p, uint16_t flags);
 bool pass_page_tick(pass_page_t *p, const pass_dec_t *d, uint32_t now_ms);
 
 /**
- * @brief The channels MIRROR drives: PASS-THROUGH while ARMED.
+ * @brief The channels MIRROR drives: PASS-THROUGH channel k while the bank
+ *        is armed for channel k's role (outputs_channel_driving()).  With
+ *        surfaces armed alone a throttle channel's pad stays low, and the
+ *        reverse; a role disarmed, or a channel's role changed to one not
+ *        armed, takes its channels out of the mask at the next call.
  *
- * @param p      The pages.
- * @param armed  The bank is ARMED.
- * @return       Bit k for channel k.
+ * @param p  The pages.
+ * @param o  The bank; NULL drives none.
+ * @return   Bit k for channel k.
  */
-uint16_t pass_page_mirror(const pass_page_t *p, bool armed);
+uint16_t pass_page_mirror(const pass_page_t *p, const outputs_t *o);
 
 /**
  * @brief The channels whose output pin the pages hold: OFF and
@@ -190,6 +199,55 @@ uint16_t pass_page_active(const pass_page_t *p);
  * @return      The channels of @p mask now OFF.
  */
 uint16_t pass_page_force_off(pass_page_t *p, uint16_t mask, uint16_t busy);
+
+/**
+ * @brief The channels whose output pin something other than the pages
+ *        holds: an output slot, a programming port (prog_port_pins(),
+ *        a prebound SERVO PWM port included), or a pin of @p other.  A
+ *        SOURCE change on such a channel is refused with BUSY.
+ *
+ * @param o      The bank; NULL for none.
+ * @param pp     The programming ports; NULL for none.
+ * @param other  One bit per GPIO held elsewhere: the supply, the sensor
+ *               bus, the phase tap, the ESC wire.
+ * @return       Bit k for channel k, whose output is RSN_PIN_OUT(k).
+ */
+uint16_t pass_page_busy(const outputs_t *o, const prog_port_t *pp,
+                        uint64_t other);
+
+/** @brief Sets output k's pad: MIRROR's (PIO0) when @p mirror, else SIO
+ *         driven low.  Must be idempotent: it is called every pass. */
+typedef void (*pass_pad_fn)(void *ctx, unsigned k, bool mirror);
+
+/**
+ * @brief Every pad the pages hold, set as the pages say, on every call:
+ *        MIRROR's for the channels pass_page_mirror() names, low for the
+ *        other held ones.  No state is kept between calls, so a pad that
+ *        another driver touched meanwhile is set again on the next call.
+ *        Pads of BENCH channels are not touched.
+ *
+ * @param p    The pages.
+ * @param o    The bank (pass_page_mirror()).
+ * @param pad  Sets one pad.
+ * @param ctx  @p pad's first argument.
+ * @return     The channels routed to MIRROR.
+ */
+uint16_t pass_page_route(const pass_page_t *p, const outputs_t *o,
+                         pass_pad_fn pad, void *ctx);
+
+/**
+ * @brief Whether a programming session is open, for FLAGS bit 1
+ *        (LINK_PA_F_SESSION): a KST or HITEC session out of PWM or holding
+ *        its port's pin, or an ESC_WIRE session on a programming port or on
+ *        an output slot, from OPEN until its line is given back.
+ *
+ * @param kst    The KST port; NULL for none.
+ * @param hitec  The HITEC port; NULL for none.
+ * @param esc    The ESC_WIRE port; NULL for none.
+ * @return       true while one is open.
+ */
+bool pass_page_session(const kst_port_t *kst, const hitec_port_t *hitec,
+                       const esc_port_t *esc);
 
 #ifdef __cplusplus
 }

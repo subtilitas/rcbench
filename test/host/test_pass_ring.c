@@ -12,10 +12,11 @@
  * slot; one event short of a lap not a lap; a reader stalled for a 42ms
  * flash window at 195,000 events/s keeping up and at 227,680 events/s (the
  * capture's worst mix) lapped; the lost signals judged at the drain's
- * clock.
- *
- * Not tested here, because the host has no DMA running beside the reader:
- * a lap that happens while a drain reads (the second check of the slot).
+ * clock; a lap that happens while a drain reads (the DMA's write stood in
+ * for between the read and the second check) leaving the decoder's figures
+ * as they were before the drain; a state dropped on a full FIFO, seen in
+ * the drain that read the rise or in the next, pairing no pulse across
+ * the gap and the next whole pulse decoding.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -51,9 +52,15 @@ static void put(uint32_t state, uint32_t stamp)
     ++head;
 }
 
+/* A drain told CAPTURE dropped a state since the last one. */
+static pass_drain_t drain_dropped(uint32_t now)
+{
+    return pass_ring_drain(&r, states, stamps, head, now, true, &d);
+}
+
 static pass_drain_t drain(uint32_t now)
 {
-    return pass_ring_drain(&r, states, stamps, head, now, &d);
+    return pass_ring_drain(&r, states, stamps, head, now, false, &d);
 }
 
 /* Pulses of 1500us on input 0 every 20ms: 2 events each. */
@@ -197,6 +204,114 @@ TEST_CASE(the_lost_signals_are_judged_at_the_drains_clock)
     CHECK(d.pin[PASS_IN_BIT(0)].lost);
 }
 
+/* The DMA's write during the read: the slot before the reader's first
+ * overwritten, as a lap leaves it. */
+static void lap_meanwhile(void *ctx)
+{
+    (void)ctx;
+    states[(r.rd - 1u) & (N - 1u)] ^= 1u;
+    stamps[(r.rd - 1u) & (N - 1u)] += N;
+}
+
+TEST_CASE(a_lap_during_the_read_leaves_the_figures_as_before_the_drain)
+{
+    reset();
+    put(0u, 1u);
+    (void)drain(1u);
+    const uint32_t t = pulses(1000u, 3u);
+    CHECK(!drain(t).lapped);
+    const pass_dec_t was = d;
+    CHECK_EQ(was.pin[PASS_IN_BIT(0)].frames, 3u);
+    CHECK_EQ(was.pin[PASS_IN_BIT(0)].width_us, 1500u);
+    /* A 100us glitch on input 0, a pulse of 1000us on input 1, read while
+     * the DMA laps the reader. */
+    put(1u << PASS_IN_BIT(0), t);
+    put(0u, t + 100u);
+    put(1u << PASS_IN_BIT(1), t + 200u);
+    put(0u, t + 1200u);
+    r.read_done = lap_meanwhile;
+    const pass_drain_t x = drain(t + 2000u);
+    r.read_done = NULL;
+    CHECK(x.lapped);
+    CHECK_EQ(x.events, 0u);
+    for (unsigned b = 0; b < PASS_PINS; ++b) {
+        CHECK_EQ(d.pin[b].frames, was.pin[b].frames);
+        CHECK_EQ(d.pin[b].glitches, was.pin[b].glitches);
+        CHECK_EQ(d.pin[b].missed, was.pin[b].missed);
+        CHECK_EQ(d.pin[b].width_us, was.pin[b].width_us);
+        CHECK_EQ(d.pin[b].period_us, was.pin[b].period_us);
+    }
+    /* The restart: the newest state taken, no high in progress. */
+    CHECK_EQ(d.level, 0u);
+    CHECK(!d.pin[PASS_IN_BIT(0)].rise_seen);
+    /* The same events without the lap: decoded. */
+    reset();
+    put(0u, 1u);
+    (void)drain(1u);
+    (void)drain(pulses(1000u, 3u));
+    put(1u << PASS_IN_BIT(0), t);
+    put(0u, t + 100u);
+    const pass_drain_t y = drain(t + 2000u);
+    CHECK(!y.lapped);
+    CHECK_EQ(y.events, 2u);
+    CHECK_EQ(d.pin[PASS_IN_BIT(0)].glitches, 1u);
+}
+
+TEST_CASE(a_state_dropped_on_a_full_fifo_pairs_no_pulse_across_the_gap)
+{
+    const uint32_t in0 = 1u << PASS_IN_BIT(0);
+    /* Seen in the drain after the one that read the rise. */
+    reset();
+    put(0u, 1u);
+    (void)drain(1u);
+    uint32_t t = pulses(1000u, 3u);
+    CHECK(!drain(t).lapped);
+    CHECK_EQ(d.pin[PASS_IN_BIT(0)].width_us, 1500u);
+    const uint32_t glitches = d.pin[PASS_IN_BIT(0)].glitches;
+    put(in0, t);
+    (void)drain(t + 10u);
+    CHECK(d.pin[PASS_IN_BIT(0)].rise_seen);
+    /* The fall at t + 1500 dropped; the next rise is no change, the
+     * next fall 21500us after the rise read. */
+    put(in0, t + 20000u);
+    put(0u, t + 21500u);
+    const pass_drain_t x = drain_dropped(t + 22000u);
+    CHECK(!x.lapped);
+    CHECK_EQ(x.events, 0u);
+    CHECK_EQ(d.pin[PASS_IN_BIT(0)].glitches, glitches);
+    CHECK_EQ(d.pin[PASS_IN_BIT(0)].width_us, 1500u);
+    CHECK(!d.pin[PASS_IN_BIT(0)].rise_seen);
+    CHECK_EQ(d.level, 0u);
+    /* The next whole pulse decodes. */
+    put(in0, t + 40000u);
+    put(0u, t + 41200u);
+    (void)drain(t + 42000u);
+    CHECK_EQ(d.pin[PASS_IN_BIT(0)].width_us, 1200u);
+    CHECK_EQ(d.pin[PASS_IN_BIT(0)].glitches, glitches);
+
+    /* Seen in the drain that read the rise: it is undone, the decoder
+     * restarts high with no rise of its own. */
+    reset();
+    put(0u, 1u);
+    (void)drain(1u);
+    t = pulses(1000u, 3u);
+    (void)drain(t);
+    put(in0, t);
+    CHECK_EQ(drain_dropped(t + 10u).events, 0u);
+    CHECK_EQ(d.level, in0);
+    CHECK(!d.pin[PASS_IN_BIT(0)].rise_seen);
+    put(in0, t + 20000u);
+    put(0u, t + 21500u);
+    (void)drain(t + 22000u);
+    CHECK_EQ(d.pin[PASS_IN_BIT(0)].glitches, glitches);
+    CHECK_EQ(d.pin[PASS_IN_BIT(0)].width_us, 1500u);
+    put(in0, t + 40000u);
+    put(0u, t + 41300u);
+    (void)drain(t + 42000u);
+    CHECK_EQ(d.pin[PASS_IN_BIT(0)].width_us, 1300u);
+    CHECK_EQ(d.pin[PASS_IN_BIT(0)].glitches, glitches);
+}
+
 int main(void)
 {
     RUN(events_are_read_in_order_across_the_rings_end);
@@ -205,5 +320,7 @@ int main(void)
     RUN(a_lap_before_the_first_drain_is_found_against_the_cleared_slot);
     RUN(a_42ms_flash_window_laps_the_ring_only_above_195000_events_a_second);
     RUN(the_lost_signals_are_judged_at_the_drains_clock);
+    RUN(a_lap_during_the_read_leaves_the_figures_as_before_the_drain);
+    RUN(a_state_dropped_on_a_full_fifo_pairs_no_pulse_across_the_gap);
     return test_summary("pass_ring");
 }
