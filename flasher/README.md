@@ -18,8 +18,9 @@ site, beside the configurator at `/rcbench/`.
 - **A local file** in place of a release image, for any of these boards.
 
 The page writes nothing before a press of WRITE. Before that it shows the
-image's release tag, file name, size in bytes and SHA-256 (Secure Hash
-Algorithm). Every write ends with a verify step. Progress shows the step,
+image's release tag, file name, size in bytes, SHA-256 (Secure Hash
+Algorithm) and release signature state (see "Release signature"). Every
+write ends with a verify step. Progress shows the step,
 the percentage, the bytes and the elapsed time.
 
 The page sends no data and loads nothing from another origin: esptool-js
@@ -44,6 +45,36 @@ Every ESP image is a merged image: the bootloader, the partition table and
 the application, for 0x0, with 0xFF in every gap. Written whole, as
 `esptool.py write_flash 0x0` writes it, it fills the NVS partition with
 0xFF and so erases the settings ([First run](../docs/FirstRun.md)).
+
+## Release signature
+
+Every image of a release has a detached signature, `<image>.sig`: ECDSA
+(elliptic curve digital signature algorithm) on curve P-256 over the
+SHA-256 of the whole file, in DER (distinguished encoding rules) form, 8 to
+72 bytes ([SECURITY.md](../SECURITY.md#release-signatures)). For a release
+image the page downloads `fw/<tag>/<image>.sig` beside the image and
+verifies it with Web Crypto against the release public key it embeds
+(`src/release_key.ts`, a copy of
+`firmware/panel/main/keys/release_signing_pub.pem`; a unit test holds the
+two equal). The acceptance rules are the panel's (`shared/fwupdate/fw_sign.c`):
+a SEQUENCE of two INTEGERs of 1 to 33 bytes each with short lengths and no
+byte after it; leading zero bytes in an integer are accepted.
+
+The firmware step shows one of these states above the WRITE step:
+
+| State | Shown when | Colour |
+| --- | --- | --- |
+| signed by the rcbench release key | the `.sig` verifies | green |
+| no signature | no `.sig` (HTTP 404 or a failed download), or a `.sig` of 0 bytes | amber, a warning |
+| signature does not match | a `.sig` under 8 or over 72 bytes, out of form, or one that does not verify for this image | amber, a warning |
+| local file, signature not checked | a local file without a `.sig` picked | blue, a note |
+
+The check warns and does not block: WRITE stays possible in every state,
+as on the panel while `RCBENCH_SIGN_ENFORCE` is 0. For a local file the
+page looks for no `.sig` on its own. The field "Signature file of the
+image" takes one; it is read up to 73 bytes and checked against each local
+image until the board changes. The log lists the state of each release
+image.
 
 ## Keep settings
 
@@ -242,7 +273,7 @@ site:
    older than those 6. Odd minor numbers are testing releases, even minor
    numbers stable ones.
 2. `gh release download` fetches each release's panel and IOmcu archives,
-   its merged `.bin` images and `SHA256SUMS`; `git show <tag>:firmware/iomcu/partitions.json`
+   its merged `.bin` images with their `.sig` files and `SHA256SUMS`; `git show <tag>:firmware/iomcu/partitions.json`
    gives the IOmcu's partition table at that tag. A cache keyed on the list
    of tags keeps the downloads, about 175MB for 7 releases.
 3. `tools/flash_manifest.py build` holds every asset to `SHA256SUMS`, takes
@@ -253,6 +284,7 @@ site:
 flash/fw/index.json               {"format":1,"keep":6,"releases":[{"tag","kind","published"}]}
 flash/fw/<tag>/manifest.json      {"format":1,"tag","kind","published","images":[...]}
 flash/fw/<tag>/<image>            the images
+flash/fw/<tag>/<image>.sig        their release signatures, where the release has them
 ```
 
 An image entry: `board`, `chip`, `file`, `size` in bytes, `sha256`, `offset`
@@ -292,9 +324,11 @@ offer the IOmcu image alone.
 | `src/uf2.ts` | UF2 reader. |
 | `src/bootsel.ts` | The 1200 baud request, the boot ROM device chooser. |
 | `src/digest.ts` | SHA-256 by Web Crypto, MD5. |
+| `src/signature.ts` | Release signature: DER form check, conversion to the 64-byte form of Web Crypto, verification. |
+| `src/release_key.ts` | The release public key, a copy of the panel's. |
 | `public/licenses.txt` | Licences of the bundled code, written by `tools/licenses.ts`. |
 | `test/` | Unit tests, run by `node --test`. `fixtures.ts` builds synthetic UF2 images, ESP images, partition tables and merged images, and holds the panel's partition table and bootloader header of v0.23.15. |
-| `e2e/flow.spec.ts` | Playwright test of the whole flow to "done" for the panel, the Dial, the power node and the IOmcu, the refusals, the NVS bytes after a write with and without "Keep settings", and the baud change on a USB-to-UART bridge only. |
+| `e2e/flow.spec.ts` | Playwright test of the whole flow to "done" for the panel, the Dial, the power node and the IOmcu, the refusals, the NVS bytes after a write with and without "Keep settings", the baud change on a USB-to-UART bridge only, and the release signature states in English and German, with a test key put in place of the release key in the served script. |
 | `e2e/fake-devices.js` | Fake Web Serial with an ESP32 boot ROM and flasher stub that erases the 4096-byte sectors it writes, an IOmcu port that leaves for BOOTSEL at 1200 baud, and a fake WebUSB RP2350 boot ROM. |
 | `tools/size.ts` | Size check of the build. |
 | `tools/licenses.ts` | Writes and checks `public/licenses.txt`. |
@@ -321,7 +355,7 @@ python3 -m pytest ../test/tools/test_flash_manifest.py
 ```
 
 The size budget is the page's own; the configurator's budget does not count
-it. The build measures 58.6kB at the first load and 385.3kB in all, with
+it. The build measures 62.7kB at the first load and 389.3kB in all, with
 the flasher stubs of every chip esptool-js knows; the page loads the stub of
 the detected chip only.
 
