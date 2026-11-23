@@ -2830,6 +2830,10 @@ static void pose_upd(const char *view)
             bn->row = DEVUPD_ROW_UPDATING;
             bn->phase = DEVUPD_SEND;
             bn->percent = 42u;
+        } else if (strcmp(view, "updates-node-display") == 0) {
+            /* The display node bound as the power node. */
+            pn->row = DEVUPD_ROW_READY;
+            pn->display = true;
         } else if (strcmp(view, "updates-node-progress") == 0) {
             pn->phase = DEVUPD_SEND;
             pn->percent = 42u;

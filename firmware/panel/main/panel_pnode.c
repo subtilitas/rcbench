@@ -206,9 +206,9 @@ bool panel_pnode_blec_off(void)
     return !s_ctl.cfg.en;
 }
 
-bool panel_pnode_blec_other_board(void)
+uint8_t panel_pnode_blec_board(void)
 {
-    return s_q != NULL && pnode_ctl_other_board(&s_ctl);
+    return s_q != NULL ? pnode_ctl_board(&s_ctl) : 0u;
 }
 
 void panel_pnode_blec_event(const bleu_evt_t *e, uint32_t now)

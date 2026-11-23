@@ -202,6 +202,11 @@ const char *upd_wiz_name(unsigned i)
         TX_UPD_WIZ_N_PANEL, TX_UPD_WIZ_N_IOMCU, TX_UPD_WIZ_N_C6,
         TX_UPD_WIZ_N_DIAL,  TX_UPD_WIZ_N_PNODE, TX_UPD_WIZ_N_BAL,
     };
+    /* The power node's step names the display node while its row sends
+     * the display node's image. */
+    if (i == UPD_WIZ_PNODE && upd_dev_view(UPD_DEV_PNODE)->display) {
+        return TR(UPD_WIZ_N_DNODE);
+    }
     return ui_tr(k_name[i < UPD_WIZ_STEPS ? i : 0u]);
 }
 

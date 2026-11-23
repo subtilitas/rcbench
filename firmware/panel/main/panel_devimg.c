@@ -49,6 +49,11 @@ static const char *TAG = "devimg";
 /** @brief `devimg`'s core: 0, with the UI; core 1 runs the control task. */
 #define DEVIMG_CORE  0
 
+_Static_assert(DEVIMG_NAME_MAX <= WIFI_DEV_NAME_MAX,
+               "the download takes every image's longest name");
+_Static_assert(DEVIMG_NAME_MAX + sizeof(".sig") - 1u <= WA_DEV_SIG_NAME_MAX,
+               "and the longest name's signature beside it");
+
 /** @brief One job of `devimg`: what it reads and checks, and the answer. */
 typedef struct {
     devimg_id_t     id;        /**< the image */
@@ -98,6 +103,7 @@ static uint8_t         s_pct;
 /** @brief The step on UPDATES of each image, by devimg_id_t. */
 static const unsigned  k_step[DEVIMG_COUNT] = {
     UPD_WIZ_C6, UPD_WIZ_DIAL, UPD_WIZ_PNODE, UPD_WIZ_BAL,
+    UPD_WIZ_PNODE, /* the display node: the power node's step */
 };
 
 fw_version_t panel_devimg_want(devimg_id_t id)
@@ -174,6 +180,13 @@ bool panel_devimg_cancel(void)
         }
     }
     return took;
+}
+
+void panel_devimg_forget(devimg_id_t id)
+{
+    if ((unsigned)id < DEVIMG_COUNT) {
+        (void)devimg_cancel(&s_sl[id]);
+    }
 }
 
 bool panel_devimg_take_cancel(void)
