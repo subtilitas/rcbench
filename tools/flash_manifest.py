@@ -29,7 +29,8 @@ Format) addresses:
 Each image's release signature, `<image>.sig` beside the asset or beside
 the member in its ZIP file, is copied as fw/<tag>/<image>.sig when the
 release has one; releases before the signed ones have none.  The page
-does not read it.
+verifies it against its embedded release key and shows the result before
+WRITE (flasher/README.md, "Release signature").
 
 A release without one of them leaves it out, and a release that gives
 none fails.  Releases up to 0.22.1 carry the image of the ESP32-S3

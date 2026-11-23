@@ -8,6 +8,16 @@ history is in git.
 
 ### Added
 
+- Web flasher: the release signature of each release image. The page
+  downloads `<image>.sig` beside the image and verifies it in the browser
+  with Web Crypto (ECDSA P-256, SHA-256) against the embedded release
+  public key, by the panel's rules: a DER signature of 8 to 72 bytes. The
+  firmware step shows "signed by the rcbench release key" in green, or "no
+  signature" or "signature does not match" in amber; WRITE stays possible
+  in every state. A local file shows "local file, signature not checked"
+  until a `.sig` is picked in the new field beside it
+  ([flasher/README.md](flasher/README.md#release-signature)).
+
 - SETUP > UPDATES: an update of the C6 radio, the M5Stack Dial, the power
   node or the balance node fetches that device's image of the release the
   panel runs when its step's hold asks for it: `SHA256SUMS` and the file

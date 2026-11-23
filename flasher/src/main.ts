@@ -12,6 +12,9 @@ import type { Key, Lang } from './i18n.ts';
 import { defaultRelease, readIndex, readManifest } from './manifest.ts';
 import type { ImageEntry, Manifest, ReleaseEntry } from './manifest.ts';
 import { hex, planWrite } from './partitions.ts';
+import { RELEASE_KEY_PEM } from './release_key.ts';
+import { SIG_MAX, sigShown, verifySignature } from './signature.ts';
+import type { SigShown } from './signature.ts';
 import type { PlanVerdict } from './partitions.ts';
 import { Picoboot } from './picoboot.ts';
 import { StepError, planBin, planUf2, runPlan } from './rp2350.ts';
@@ -28,6 +31,8 @@ interface Img {
   sha256: string;
   format: 'bin' | 'uf2';
   entry: ImageEntry | null;
+  /** The release signature: its state on the page and the .sig file it comes from. */
+  sig: { state: SigShown | 'local'; file: string };
 }
 
 type Conn = { kind: 'esp'; session: EspSession } | { kind: 'pico'; pb: Picoboot };
@@ -48,6 +53,8 @@ const st = {
   chosenTag: null as string | null,
   manifests: new Map<string, Manifest>(),
   image: null as Img | null,
+  /** The .sig file picked beside a local file: checked against each local image. */
+  localSig: null as { name: string; bytes: Uint8Array } | null,
   imageNote: null as Note | null,
   conn: null as Conn | null,
   connLabel: '',
@@ -149,7 +156,10 @@ function renderFirmware(): string {
   html += `<label class="opt"><input type="radio" name="src" value="file"${st.source === 'file' ? ' checked' : ''}${dis}>`
     + `<span>${esc(tr('srcFile'))}</span></label>`;
   html += `<input type="file" id="file" accept=".bin,.uf2"${st.source !== 'file' ? ' disabled' : ''}${dis}>`;
-  html += `<p class="muted small">${esc(tr('fileHint'))}</p></div>`;
+  html += `<p class="muted small">${esc(tr('fileHint'))}</p>`;
+  html += `<label class="sigpick small" for="sigfile">${esc(tr('sigFile'))}</label>`
+    + `<input type="file" id="sigfile" accept=".sig"${st.source !== 'file' ? ' disabled' : ''}${dis}>`
+    + `${st.localSig ? ` <span class="muted small" id="sig-picked">${esc(st.localSig.name)}</span>` : ''}</div>`;
   const img = st.image;
   if (img) {
     const rows: [Key, string][] = [
@@ -163,10 +173,24 @@ function renderFirmware(): string {
       rows.push(['imgErase', tr('imgEraseB', { x: `0x${e.offset.toString(16)}+0x${e.size.toString(16)}` })]);
     }
     html += `<dl class="img" id="image">${rows.map(([k, v]) => `<dt>${esc(tr(k))}</dt><dd${k === 'imgSha' ? ' class="mono"' : ''}>${esc(v)}</dd>`).join('')}</dl>`;
+    html += renderSig(img);
     if (st.board.chip === 'rp2350' && img.format === 'bin') html += `<p class="note info">${esc(tr('binWarn'))}</p>`;
   }
   html += renderNote(st.imageNote, 'image-note');
   return html;
+}
+
+const SIG_VIEW: Record<Img['sig']['state'], { kind: string; key: Key }> = {
+  signed: { kind: 'ok', key: 'sigSigned' },
+  none: { kind: 'warn', key: 'sigNone' },
+  mismatch: { kind: 'warn', key: 'sigMismatch' },
+  local: { kind: 'info', key: 'sigLocal' },
+};
+
+/** The signature state of the image in hand; warning colour for none and mismatch. WRITE does not depend on it. */
+function renderSig(img: Img): string {
+  const v = SIG_VIEW[img.sig.state];
+  return `<p class="note ${v.kind}" id="sig-state" data-state="${img.sig.state}" role="status">${esc(tr(v.key, { file: img.sig.file }))}</p>`;
 }
 
 function renderConnect(): string {
@@ -342,13 +366,42 @@ async function loadReleaseImage(): Promise<void> {
       st.imageNote = { kind: 'bad', text: tr('hashBad', { got: sha, want: entry.sha256 }) };
     } else {
       st.imageNote = imageVerdict(bytes, entry.file);
-      if (!st.imageNote) st.image = { bytes, name: entry.file, tag, sha256: sha, format: entry.format, entry };
+      if (!st.imageNote) {
+        const sigName = `${entry.file}.sig`;
+        const state = sigShown(await verifySignature(RELEASE_KEY_PEM, bytes, await fetchSig(`${FW}${tag}/${sigName}`, sigName)));
+        if (seq !== loadSeq) return;
+        log(`${sigName}: ${state}`);
+        st.image = { bytes, name: entry.file, tag, sha256: sha, format: entry.format, entry, sig: { state, file: sigName } };
+      }
     }
   } catch (e) {
     if (seq !== loadSeq) return;
     st.imageNote = { kind: 'bad', text: tr('noReleases', { x: errText(e) }) };
   }
   render();
+}
+
+/**
+ * The release signature beside a release image: null for a 404 or any other
+ * failed download, which the page shows as "no signature".
+ */
+async function fetchSig(url: string, name: string): Promise<Uint8Array | null> {
+  try {
+    const r = await fetch(url);
+    if (r.status === 404) return null;
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return new Uint8Array(await r.arrayBuffer());
+  } catch (e) {
+    log(`${name}: ${errText(e)}`);
+    return null;
+  }
+}
+
+/** The signature state of a local image: checked only against a .sig the visitor picked. */
+async function localSigState(bytes: Uint8Array): Promise<Img['sig']> {
+  const sig = st.localSig;
+  if (!sig) return { state: 'local', file: '' };
+  return { state: sigShown(await verifySignature(RELEASE_KEY_PEM, bytes, sig.bytes)), file: sig.name };
 }
 
 async function loadFile(file: File): Promise<void> {
@@ -360,8 +413,22 @@ async function loadFile(file: File): Promise<void> {
   st.imageNote = imageVerdict(bytes, file.name);
   if (!st.imageNote) {
     const format = checkImage(st.board.chip, bytes, file.name);
-    st.image = { bytes, name: file.name, tag: null, sha256: sha, format: format.ok ? format.format : 'bin', entry: null };
+    const sig = await localSigState(bytes);
+    if (seq !== loadSeq) return;
+    st.image = { bytes, name: file.name, tag: null, sha256: sha, format: format.ok ? format.format : 'bin', entry: null, sig };
   }
+  render();
+}
+
+/** A .sig picked beside a local file: kept for the next local image, and the image in hand checked again. */
+async function loadSigFile(file: File): Promise<void> {
+  // A file longer than a signature is read to one byte past the longest: still refused by size.
+  st.localSig = { name: file.name, bytes: new Uint8Array(await file.slice(0, SIG_MAX + 1).arrayBuffer()) };
+  const img = st.image;
+  if (!img || img.entry) { render(); return; }
+  const sig = await localSigState(img.bytes);
+  if (st.image !== img) return;
+  st.image = { ...img, sig };
   render();
 }
 
@@ -519,8 +586,9 @@ function onChange(ev: Event): void {
     st.connNote = null;
     st.bootselNote = null;
     st.result = null;
-    // A local file is held to the chip of the board it was chosen for: a new board drops it.
+    // A local file is held to the chip of the board it was chosen for: a new board drops it and its .sig.
     st.image = null;
+    st.localSig = null;
     st.imageNote = null;
     void dropConn().then(() => loadReleaseImage());
   } else if (el.name === 'src') {
@@ -539,6 +607,8 @@ function onChange(ev: Event): void {
     render();
   } else if (el.id === 'file' && el.files?.[0]) {
     void loadFile(el.files[0]);
+  } else if (el.id === 'sigfile' && el.files?.[0]) {
+    void loadSigFile(el.files[0]);
   }
 }
 
