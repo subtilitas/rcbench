@@ -242,6 +242,12 @@ history is in git.
 
 ### Changed
 
+- Video tool: a storyboard given by its path takes its stills from
+  `stills/` beside it before `tools/video/stills/`, and `--check` with a
+  path checks that one storyboard. The storyboard `minircbench-build`
+  and the 12 stills `mini-*.png` are in the MiniRcBench repository under
+  `docs/video/`
+  ([Videos from storyboards](tools/video/README.md#commands)).
 - The panel image carries the IOmcu images only: 4,074,096 bytes in the
   release configuration; carrying the 0.23.16 C6, Dial and node images
   made it 3,413,616 bytes larger. The C6 radio's,

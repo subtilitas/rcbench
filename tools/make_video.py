@@ -59,7 +59,8 @@ import threading
 # the others are kept as names of this module.
 from video_check import (  # noqa: F401
     BEDS, CACHE, DIAL_BASE, MINI_UNITS, PART_FRAMES, PART_LEAST, REPO, RUNS,
-    STILLS, VIDEO, VIEWS_KEPT, _number, board_faults, check,
+    STILLS, VIDEO, VIEWS_KEPT, _number, board_faults, check, still,
+    still_dirs, use_stills,
 )
 
 
@@ -313,6 +314,8 @@ def load(path: pathlib.Path) -> dict:
         board = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as err:
         sys.exit(f"{path}: {err}")
+    # A storyboard of another repository brings its stills beside it.
+    use_stills(path.parent / "stills")
     errors = check(board) if isinstance(board, dict) else ["not an object"]
     if errors:
         sys.exit("\n".join(f"{path.name}: {line}" for line in errors))
@@ -336,10 +339,10 @@ def render_views(board: dict, shots: pathlib.Path) -> None:
         # A window's page is a capture of a web page, a still as well.
         for window in scene.get("windows", []):
             for key in window.get("page", {}).get("shots", []):
-                shutil.copy(STILLS / f"{key[1]}.png", shots / f"{key[1]}.png")
+                shutil.copy(still(key[1]), shots / f"{key[1]}.png")
         if scene.get("model") == "mini":
             for key in scene.get("panel", []):
-                shutil.copy(STILLS / f"{key[1]}.png", shots / f"{key[1]}.png")
+                shutil.copy(still(key[1]), shots / f"{key[1]}.png")
     if not shutil.which("cc"):
         sys.exit("no C compiler on PATH")
     with tempfile.TemporaryDirectory() as td:
@@ -480,12 +483,16 @@ def _views_key(board: dict) -> str:
 
     whole = hashlib.sha256(json.dumps(board, sort_keys=True).encode())
     roots = [REPO / "shared", REPO / "protocols", REPO / "test" / "host",
-             STILLS]
+             *still_dirs()]
     files = [path for root in roots for path in root.rglob("*")
              if path.is_file()]
     files += list((REPO / "tools").glob("*.py"))
     for path in sorted(files):
-        whole.update(str(path.relative_to(REPO)).encode())
+        # A still beside a storyboard of another repository has no place
+        # under this one; its file name stands for it.
+        inside = path.resolve().is_relative_to(REPO)
+        whole.update(str(path.resolve().relative_to(REPO) if inside
+                         else pathlib.Path("stills") / path.name).encode())
         whole.update(hashlib.sha256(path.read_bytes()).digest())
     return whole.hexdigest()[:20]
 
@@ -718,14 +725,18 @@ def main() -> int:
     ap.add_argument("--no-sound", action="store_true",
                     help="write the video without its sound track")
     ap.add_argument("--check", action="store_true",
-                    help="read every storyboard and fail on a fault")
+                    help="read every storyboard, or the one given by its "
+                    "path, and fail on a fault")
     args = ap.parse_args()
 
     if args.check:
         failed = False
-        for path in storyboards():
+        named = pathlib.Path(args.storyboard or "")
+        # A path names one storyboard, of this or of another repository.
+        for path in [named] if named.suffix else storyboards():
             try:
                 board = json.loads(path.read_text(encoding="utf-8"))
+                use_stills(path.parent / "stills")
                 errors = check(board)
             except ValueError as err:
                 errors = [str(err)]
