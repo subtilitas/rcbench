@@ -17,7 +17,7 @@ import type { Key, Lang } from './i18n.ts';
 import { checkEsp } from './installed.ts';
 import type { AppHead, Reader, Verdict } from './installed.ts';
 import { md5Hex } from './digest.ts';
-import { board, errText, esc, log, st, tr, ui } from './state.ts';
+import { errText, esc, log, st, tr, ui } from './state.ts';
 import type { Conn } from './state.ts';
 
 const I = {
@@ -92,12 +92,16 @@ async function readFlash(s: EspSession, address: number, size: number): Promise<
   return data;
 }
 
+/** The connection is gone: the check stops before its next read. */
+const GONE = 'connection gone';
+
 /** The verdict for a connection: an ESP32 board is read, an RP2350 one is not. Logs reads, bytes and time. */
 async function verdictOf(conn: Conn, b: Board): Promise<Verdict> {
   if (conn.kind === 'pico') return { kind: 'unknown', why: 'rp2350' };
   let reads = 0;
   let bytes = 0;
   const rd: Reader = (address, size) => {
+    if (st.conn !== conn) return Promise.reject(new Error(GONE));
     reads++;
     bytes += size;
     return readFlash(conn.session, address, size);
@@ -114,14 +118,12 @@ async function verdictOf(conn: Conn, b: Board): Promise<Verdict> {
 }
 
 /**
- * The board check of the connection in hand: "reading" on Check, then the
- * verdict. A result whose connection is gone (BACK, CANCEL, a new connect)
- * is dropped.
+ * The board check of one connection: "reading" on Check, then the verdict.
+ * A check whose connection is gone (BACK, CANCEL, a new connect) reads
+ * nothing more and leaves the page's state as it is.
  */
-export async function run(): Promise<void> {
-  const conn = st.conn;
-  const b = board();
-  if (!conn || !b) return;
+export async function run(conn: Conn, b: Board): Promise<void> {
+  if (st.conn !== conn) return;
   st.installed = { state: 'reading' };
   ui.render();
   const verdict = await verdictOf(conn, b);

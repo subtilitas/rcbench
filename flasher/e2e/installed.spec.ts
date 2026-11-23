@@ -108,3 +108,21 @@ test('Advanced: the same warning, WRITE enabled', async ({ page }) => {
   await expectVerdict(page, 'other', label(page, 'Display node', 'Anzeigeknoten'));
   await expect(page.locator('#installed-note.warn')).toBeVisible();
 });
+
+test('a slow first check, CANCEL and a new connect: one set of reads, on the new connection only', async ({ page }) => {
+  await setup(page, { esp: { chipId: 9, installed: installed(9, 'rcbench-dial', '0.23.14', 1) } });
+  // The check's code is held until the second connect: both checks wait for the same load.
+  let release: () => void = () => undefined;
+  const held = new Promise<void>((res) => { release = res; });
+  await page.route('**/rcbench/flash/assets/installed_read-*.js', async (route) => { await held; await route.fallback(); });
+  await walk(page, 'wireless', 'dial');
+  await connectEsp(page);
+  await page.locator('#cancel').click();
+  await walk(page, 'wireless', 'dial');
+  await connectEsp(page);
+  release();
+  await expectVerdict(page, 'match', 'rcbench-dial 0.23.14');
+  expect((await fake(page)).reads).toEqual([[0x8000, 0xc00], [0xf000, 32], [0x10000, 32], [0x20000, 296]]);
+  await writeAndWait(page);
+  expect((await fake(page)).reads).toHaveLength(4);
+});

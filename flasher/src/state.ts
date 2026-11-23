@@ -56,8 +56,8 @@ export interface AdvApi {
 
 /** The board check's code (installed_read.ts), loaded on the first connect. */
 export interface InstApi {
-  /** Reads the installed firmware of the connection in hand and holds it to the board. */
-  run: () => Promise<void>;
+  /** Reads the installed firmware of a connection and holds it to the board; nothing once the connection is gone. */
+  run: (conn: Conn, b: Board) => Promise<void>;
   /** The row of Check, inside its list. */
   row: () => string;
   /** The warning under the rows for another device's firmware. */

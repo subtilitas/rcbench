@@ -255,9 +255,18 @@ export async function dropConn(): Promise<void> {
   if (c?.kind === 'pico') await c.pb.close();
 }
 
-/** Starts the board check of the connection in hand; its code loads on the first connect. */
+/**
+ * Starts the board check of the connection in hand; its code loads on the
+ * first connect. The check belongs to this connection: once the connection
+ * is gone it reads nothing more, and `installedRun` names the check of the
+ * current connection only (dropConn clears it, the next connect replaces
+ * it), so WRITE never waits for an abandoned check.
+ */
 export function checkInstalled(): void {
-  st.installedRun = import('./installed_read.ts').then((m) => (st.inst = m).run(), (e: unknown) => log(errText(e)));
+  const conn = st.conn;
+  const b = board();
+  if (!conn || !b) return;
+  st.installedRun = import('./installed_read.ts').then((m) => (st.inst = m).run(conn, b), (e: unknown) => log(errText(e)));
 }
 
 /** Drops the connection and the notes of Connect and Write. */

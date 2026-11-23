@@ -71,7 +71,9 @@ chosen board. The row "Installed" shows one of 3 results:
 
 The result is a warning only. WRITE stays as the rest of Check sets it, in
 simple mode and in Advanced. WRITE waits for the reads to end before its
-first command.
+first command. A check belongs to its connection: after BACK, CANCEL or a
+new connect it reads nothing more, and WRITE waits only for the check of
+the connection in hand.
 
 The reads go through the flasher stub, which the connect starts anyway.
 None of them writes or erases:
@@ -501,7 +503,7 @@ rbmod image: they offer the IOmcu image alone.
 | `e2e/errors.spec.ts` | A chip that does not match, a download that fails or differs, a release list that fails, "Keep settings" refused, a board no release carries, the 3 signature states, a write and a verify that fail. |
 | `e2e/history.spec.ts` | BACK, CANCEL, the browser's back from Check, Connect, Write and Done, a pasted hash, a pasted hash with `adv=1`, a reload. |
 | `e2e/advanced.spec.ts` | The Advanced switch and "Write a file of my own", the release select per board and a picked release on the next board, a local file of the wrong and the right chip, a local file picked while the list loads, "Keep settings" off, a broken table written whole, the .sig states of a local file, WRITE on a mismatch, the Core2350B, the hints to Advanced in simple mode. |
-| `e2e/installed.spec.ts` | The board check: matches, another device, cannot tell (no role record, blank, another project, a read that fails, the RP2350), in simple mode and in Advanced, WRITE enabled in each. |
+| `e2e/installed.spec.ts` | The board check: matches, another device, cannot tell (no role record, blank, another project, a read that fails, the RP2350), in simple mode and in Advanced, WRITE enabled in each; a slow first check, CANCEL and a new connect with one set of reads on the new connection. |
 | `e2e/browser.spec.ts` | No Web Serial and no WebUSB, no WebUSB alone, the task list, the language, the footer links, the width of a phone. |
 | `e2e/fake-devices.js` | Fake Web Serial with an ESP32 boot ROM and flasher stub that erases the 4096-byte sectors it writes, an IOmcu port that leaves for BOOTSEL at 1200 baud, and a fake WebUSB RP2350 boot ROM; options for a write, an MD5 and a read back that fail, the flash contents before the connect (`esp.installed`), a flash read that fails, and for a browser without WebUSB. |
 | `tools/size.ts` | Size check of the build. |
