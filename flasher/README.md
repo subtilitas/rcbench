@@ -4,24 +4,76 @@ This static page writes rcbench firmware to the boards of a bench from the
 browser. It is served at `/rcbench/flash/` on the repository's GitHub Pages
 site, beside the configurator at `/rcbench/`.
 
-- **Panel**, an ESP32-P4, over Web Serial: the merged image of the chosen
-  release at 0x0, without its NVS (non-volatile storage) partition, so the
-  settings stay ("Keep settings", on by default). The page connects,
-  detects the chip, writes, verifies and resets. No offset and no file to
-  pick.
-- **IOmcu**, an RP2350, over WebUSB: the install image of the chosen release,
-  through the boot ROM's PICOBOOT interface.
-- **Wireless devices** over Web Serial: the display node and the M5Stack
-  Dial (ESP32-S3), the power node, the balance node and the panel's C6
-  radio (ESP32-C6). The merged image of the chosen release at 0x0, with
-  the same "Keep settings" rule.
-- **A local file** in place of a release image, for any of these boards.
+The page is a wizard: the first screen lists tasks, then one screen per
+step. It writes release images only, with "Keep settings" always on.
 
-The page writes nothing before a press of WRITE. Before that it shows the
-image's release tag, file name, size in bytes, SHA-256 (Secure Hash
-Algorithm) and release signature state (see "Release signature"). Every
-write ends with a verify step. Progress shows the step,
-the percentage, the bytes and the elapsed time.
+## Tasks and steps
+
+| Task | Boards | Chip, link | Steps |
+| --- | --- | --- | --- |
+| Install or update the panel | panel | ESP32-P4, Web Serial | Task, Connect, Check, Write, Done |
+| Install the IOmcu | IOmcu on the Waveshare RP2350-CAN, IOmcu on the rbmod carrier | RP2350, WebUSB | Task, Board, Connect, Check, Write, Done |
+| Set up a wireless device | display node, M5Stack Dial, power node, balance node | ESP32-S3, ESP32-C6, Web Serial | Task, Board, Connect, Check, Write, Done |
+| Repair the panel's C6 radio | C6 radio over header H4 and a USB-to-UART adapter | ESP32-C6, Web Serial | Task, Prepare, Connect, Check, Write, Done |
+
+Below the tasks the page says that a running bench updates the IOmcu, the
+C6 radio, the Dial and the nodes from the panel, and that this page is for
+a first install and for a board that does not start.
+
+| Screen | Shows | Moves on |
+| --- | --- | --- |
+| Task | 4 tiles; a tile whose link the browser lacks is disabled and names the missing interface | a tap on a tile |
+| Board | the task's boards with their chip; a board no release on the page carries is disabled | a tap on a board; the download of its image starts here |
+| Prepare (C6 radio only) | 3 steps from [The ESP32-C6 radio](../docs/C6.md#recovery-over-header-h4) and a drawing of H4: TXD0, RXD0, GND, IO9 | NEXT |
+| Connect | lines per board (sockets, BOOT key, the pack off the XT60), CONNECT; for the IOmcu the 1200 baud restart into BOOTSEL and the BOOT drawing | a connection whose chip matches the board |
+| Check | board, connected chip, release with kind and date, file, size in bytes, SHA-256, the manifest check, the signature, the IOmcu's slot B erase, the kept NVS ranges, WRITE | WRITE |
+| Write | the phases of the board's flow (ESP: Write, Verify, Reset; RP2350: Exclusive access, Erase, Write, Verify, Reboot), progress bar and text | the end of the write |
+| Done | file, time, kept ranges, the next step on the bench, WRITE ANOTHER, START OVER | a button |
+
+Each step screen carries "Step n of m", BACK and CANCEL. CANCEL drops the
+connection and returns to Task. The page writes nothing before a press of
+WRITE, and every write ends with a verify.
+
+The error states:
+
+| Screen | State | What the page offers |
+| --- | --- | --- |
+| Connect | the browser's chooser closed | stays, no message |
+| Connect | the connect fails | the step and a hint, CONNECT again |
+| Connect | the chip is another than the board's | both chips named, nothing written, CHOOSE ANOTHER BOARD (Board, or Task for a one-board task) |
+| Check | the download runs | "Downloading <file>", WRITE disabled |
+| Check | the download fails, or its size or SHA-256 differs from the manifest | the reason, RETRY, WRITE disabled |
+| Check | the release list is not available | the reason, WRITE disabled |
+| Check | "Keep settings" refuses the image (see below) | the reason, WRITE disabled |
+| Check | the signature does not match | a red note, WRITE disabled |
+| Check | the release has no signature | an information note, WRITE enabled |
+| Write | the write or the verify fails | the failed phase, the reason and a hint, CONNECT AGAIN (Connect, the image kept), CANCEL |
+| Write | the reset after a verify that passed fails | the port is closed; goes to Done with "press RESET" |
+
+### Release of the visit
+
+The page writes one release for the whole visit: the newest stable
+release with a panel image, else the newest release with one. A board that
+release does not carry gets the newest stable release with an image for
+it, else the newest with one (`src/release.ts`). Check shows the release
+with its kind (testing or stable) and date.
+
+### History and URL
+
+The URL hash holds the state: `#t=<task>&b=<board>&s=<step>`, no hash on
+Task. Every forward step adds a browser history entry, so the browser's
+back and the page's BACK are the same move.
+
+- Back from Check to Connect keeps the connection; Connect then shows it
+  with NEXT and DISCONNECT. Back from Connect drops it; back to Board or
+  Task drops the image too.
+- The page has simple mode only: a hash with `adv=1` opens simple mode and
+  the URL loses `adv=1`.
+- A reload or a pasted link lands at most on Connect: connection and image
+  are not in the URL.
+- While a write runs, BACK and CANCEL are disabled and the browser's back
+  leaves the Write screen as it is; leaving the page asks first.
+- The browser's back from Done leads to Task.
 
 The page sends no data and loads nothing from another origin: esptool-js
 and its dependencies are bundled, and the firmware images are copies on the
@@ -34,7 +86,7 @@ same site (see "How releases reach the page").
 | Panel, Waveshare ESP32-P4 7-inch board | ESP32-P4 | Web Serial | `rcbench-panel-merged.bin` from `rcbench-panel-p4-<tag>.zip` | 0x0 |
 | IOmcu, Waveshare RP2350-CAN | RP2350 | WebUSB | `rcbench-iomcu-install.uf2` from `rcbench-iomcu-<tag>.zip` | its UF2 (USB Flashing Format) addresses |
 | IOmcu, rbmod carrier | RP2350 | WebUSB | `rcbench-iomcu-rbmod-install.uf2` from `rcbench-iomcu-rbmod-<tag>.zip` | its UF2 addresses |
-| Remote servo node, Waveshare Core2350B | RP2350B | WebUSB | not in a release yet; listed and greyed out | — |
+| Remote servo node, Waveshare Core2350B | RP2350B | WebUSB | not in a release yet; not listed | — |
 | Display node, ES3C28P | ESP32-S3 | Web Serial | `rcbench-node-display-merged-<version>.bin` | 0x0 |
 | M5Stack Dial | ESP32-S3 | Web Serial | `rcbench-dial-merged-<version>.bin` | 0x0 |
 | Power node | ESP32-C6 | Web Serial | `rcbench-node-pwr-merged-<version>.bin` | 0x0 |
@@ -60,36 +112,26 @@ two equal). The acceptance rules are the panel's (`shared/fwupdate/fw_sign.c`):
 a SEQUENCE of two INTEGERs of 1 to 33 bytes each with short lengths and no
 byte after it; leading zero bytes in an integer are accepted.
 
-The firmware step shows one of these states above the WRITE step:
+Check shows one of these states:
 
-| State | Shown when | Colour |
-| --- | --- | --- |
-| signed by the rcbench release key | the `.sig` verifies | green |
-| no signature | no `.sig` (HTTP 404 or a failed download), or a `.sig` of 0 bytes | amber, a warning |
-| signature does not match | a `.sig` under 8 or over 72 bytes, out of form, or one that does not verify for this image | amber, a warning |
-| local file, signature not checked | a local file without a `.sig` picked | blue, a note |
+| State | Shown when | On Check | WRITE |
+| --- | --- | --- | --- |
+| signed by the rcbench release key | the `.sig` verifies | a row "Signature" | enabled |
+| no signature | no `.sig` (HTTP 404 or a failed download), or a `.sig` of 0 bytes | a blue information note: releases before the signed ones carry none | enabled |
+| signature does not match | a `.sig` under 8 or over 72 bytes, out of form, or one that does not verify for this image | a red note | disabled |
 
-The check warns and does not block: WRITE stays possible in every state,
-as on the panel while `RCBENCH_SIGN_ENFORCE` is 0. For a local file the
-page looks for no `.sig` on its own. The field "Signature file of the
-image" takes one; it is read up to 73 bytes and checked against each local
-image until the board changes. The log lists the state of each release
-image.
+The log lists the state of each release image.
 
 ## Keep settings
 
-"Keep settings" (German "Einstellungen behalten") is a checkbox above
-WRITE for every ESP board. It is on when the page loads and again after a
-change of board.
+"Keep settings" (German "Einstellungen behalten") is always on: Check
+lists what stays on the board for every ESP board.
 
-- **On:** the page reads the partition table from the image and writes
+- The page reads the partition table from the image and writes
   every byte of the image except the ranges of its data partitions of the
   subtypes nvs (0x02), nvs_keys (0x04), fat (0x81), spiffs (0x82) and
   littlefs (0x83). Before WRITE it lists each skipped range with name,
   subtype, offset and size in bytes, and the offset of the table.
-- **Off:** the whole image from 0x0, as `esptool.py write_flash 0x0`
-  writes it: the settings and the bindings on the board are erased. The
-  page says so above WRITE.
 
 Each written range gets its own MD5 (Message-Digest 5) check, over exactly
 the bytes written there. A skipped range is neither written nor read.
@@ -124,8 +166,7 @@ every 4096-byte step from there up to 0xF000. The table format follows
 bytes 0xAA 0x50, an MD5 entry (0xEB 0xEB, 14 bytes 0xFF, the MD5 of the
 entries), an end marker of 32 bytes 0xFF, at most 0xC00 bytes.
 
-"Keep settings" refuses, with the reason, and WRITE stays disabled until
-the box is unticked, when:
+"Keep settings" refuses, with the reason, and WRITE stays disabled, when:
 
 - the bootloader header is damaged or runs past the end of the image;
 - no table is found, the table has no MD5 entry, its MD5 does not match,
@@ -139,7 +180,7 @@ the box is unticked, when:
   part of it.
 
 An image whose table has no such partition is written whole, and the page
-says so. A full write needs no table.
+says so.
 
 The checks before WRITE:
 
@@ -162,8 +203,9 @@ The checks before WRITE:
 
 Chrome or Edge on a desktop computer (Windows, macOS, Linux, ChromeOS).
 Firefox and Safari have neither Web Serial nor WebUSB: the page shows a
-notice that names Chrome and Edge and hides the steps. A browser with one of
-the two interfaces offers the boards of that interface and marks the others.
+notice that names Chrome and Edge, and every task is disabled. A browser
+with one of the two interfaces disables the tasks and boards of the other
+and names the missing interface on them.
 
 - **Windows:** the RP2350 boot ROM serves a Microsoft OS 2.0 descriptor set
   that names WinUSB as the driver of its PICOBOOT interface
@@ -188,7 +230,7 @@ address by the chip revision of an ESP32-P4, which a P4 of revision 3.0 or
 later needs; the panel build requires revision 3.1
 (`CONFIG_ESP32P4_REV_MIN_301` in `firmware/panel/sdkconfig.defaults`).
 0.7.1 is the newest release (2 November 2026). It loads on the first
-Connect: the first load of the page is 58.6kB.
+Connect.
 
 The flow: open the port at 115200 baud, reset into the boot ROM, sync,
 detect the chip, start the flasher stub, change to 460800 baud behind a
@@ -302,18 +344,18 @@ Size on Pages: 63,506,153 bytes, about 64MB, for the 7 releases on
 images takes about 13.4MB, so the folder reaches about 94MB once every kept
 release carries all of them. GitHub Pages allows a site of 1GB.
 
-The page lists for each board the releases whose manifest carries an image
-for it, newest first, with their kind and date. It selects the newest stable
-release with an image for the board, else the newest. A release the visitor
-picks stays selected while the next board has an image in it. Releases up to
-0.22.1 carry a panel image for an older panel chip and no rbmod image: they
-offer the IOmcu image alone.
+The page writes the release of the visit (see "Release of the visit").
+Releases up to 0.22.1 carry a panel image for an older panel chip and no
+rbmod image: they offer the IOmcu image alone.
 
 ## Layout
 
 | Path | Content |
 | --- | --- |
-| `src/main.ts` | State, events and rendering. |
+| `src/main.ts` | Wiring: events, the render of the current step, the browser history and the URL hash. |
+| `src/state.ts` | The page's state, the facts the wizard's guards read, strings, the log, the stored language. |
+| `src/actions.ts` | The release list, the release image with its checks and signature, the connection, the write with its verify. |
+| `src/views.ts` | One render function per step: Task, Board, Prepare, Connect, Check, Write, Done. |
 | `src/i18n.ts` | Strings in English and German. |
 | `src/boards.ts` | The boards, their chips, the image and chip checks. |
 | `src/manifest.ts` | Reader and checks of `index.json` and `manifest.json`. |
@@ -331,8 +373,12 @@ offer the IOmcu image alone.
 | `src/release_key.ts` | The release public key, a copy of the panel's. |
 | `public/licenses.txt` | Licences of the bundled code, written by `tools/licenses.ts`. |
 | `test/` | Unit tests, run by `node --test`. `pages-fw/` holds `index.json` and the 7 manifests of the Pages site on 2026-11-23. `fixtures.ts` builds synthetic UF2 images, ESP images, partition tables and merged images, and holds the panel's partition table and bootloader header of v0.23.15. |
-| `e2e/flow.spec.ts` | Playwright test of the whole flow to "done" for the panel, the Dial, the power node and the IOmcu, the refusals, the NVS bytes after a write with and without "Keep settings", the baud change on a USB-to-UART bridge only, and the release signature states in English and German, with a test key put in place of the release key in the served script. |
-| `e2e/fake-devices.js` | Fake Web Serial with an ESP32 boot ROM and flasher stub that erases the 4096-byte sectors it writes, an IOmcu port that leaves for BOOTSEL at 1200 baud, and a fake WebUSB RP2350 boot ROM. |
+| `e2e/helpers.ts` | Set-up of the browser tests: synthetic release images, the `fw/` folder served from memory, a test key put in place of the release key in the served script, the walk to Connect. |
+| `e2e/tasks.spec.ts` | Each task to Done: panel with the NVS bytes kept, Dial, power node, IOmcu at 1200 baud and over PICOBOOT, C6 radio at 460800 baud behind a USB-to-UART bridge; a language switch during a write; WRITE ANOTHER. |
+| `e2e/errors.spec.ts` | A chip that does not match, a download that fails or differs, a release list that fails, "Keep settings" refused, a board no release carries, the 3 signature states, a write and a verify that fail. |
+| `e2e/history.spec.ts` | BACK, CANCEL, the browser's back from Check, Connect, Write and Done, a pasted hash, a reload. |
+| `e2e/browser.spec.ts` | No Web Serial and no WebUSB, no WebUSB alone, the task list, the language, the footer links, the width of a phone. |
+| `e2e/fake-devices.js` | Fake Web Serial with an ESP32 boot ROM and flasher stub that erases the 4096-byte sectors it writes, an IOmcu port that leaves for BOOTSEL at 1200 baud, and a fake WebUSB RP2350 boot ROM; options for a write, an MD5 and a read back that fail, and for a browser without WebUSB. |
 | `tools/size.ts` | Size check of the build. |
 | `tools/licenses.ts` | Writes and checks `public/licenses.txt`. |
 
@@ -340,8 +386,11 @@ offer the IOmcu image alone.
 
 `src/tasks.ts`, `src/release.ts` and `src/wizard.ts` hold the step model of
 a wizard: no browser code, unit tests in `test/tasks.test.ts`,
-`test/release.test.ts` and `test/wizard.test.ts`. The page does not import
-them; it is the four-card page described above.
+`test/release.test.ts` and `test/wizard.test.ts`. The page runs in simple
+mode. It has no Advanced switch, so the model's Advanced parts ("Write a
+file of my own", a picked release, a local file, "Keep settings" off, the
+Core2350B, WRITE on a signature that does not match) have no control on the
+page.
 
 - First screen: 4 tasks, panel, IOmcu, wireless device, and the C6 radio
   repair last. The Advanced switch adds "Write a file of my own" with all 9
@@ -381,7 +430,7 @@ python3 -m pytest ../test/tools/test_flash_manifest.py
 ```
 
 The size budget is the page's own; the configurator's budget does not count
-it. The build measures 62.7kB at the first load and 389.3kB in all, with
+it. The build measures 75.2kB at the first load and 401.8kB in all, with
 the flasher stubs of every chip esptool-js knows; the page loads the stub of
 the detected chip only.
 
@@ -411,8 +460,6 @@ the system setting.
 - The RP2350 boot ROM's limit for the length of one PICOBOOT transfer is not
   known; the page sends 64KiB, which picotool exceeds for an image above
   6.4MB.
-- A `.bin` for an RP2350 goes to the flash start whatever the board's
-  partition table.
 - An ESP32 in secure download mode or with flash encryption is not handled
   beyond what esptool-js does.
 - The Core2350B has no image in a release.

@@ -241,6 +241,14 @@ history is in git.
   view looks from, `--suffix` names the PNGs of a second view.
 
 ### Changed
+- Web flasher: the page is a wizard. The first screen offers four tasks
+  (the panel, the IOmcu, a wireless device, the repair of the panel's C6
+  radio); each step then has its own screen: board, prepare (C6 only),
+  connect, check, write with verify, done. One release serves the whole
+  visit. Simple mode writes release images only, keeps the settings, and
+  keeps WRITE disabled on a signature that does not match. BACK, CANCEL
+  and the browser's back move between the steps; a reload lands on
+  Connect at most ([flasher/README.md](flasher/README.md)).
 
 - Storyboard `phase-tap`: 354.27s as rendered. Its tour shows RUN and
   DONE on the Flycolor FlyDragon Lite+ 40A (views

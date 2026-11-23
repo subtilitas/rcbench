@@ -16,6 +16,16 @@
 //   bootsel: true          the RP2350 boot ROM (2E8A:000F) present from the
 //                          start.
 //   none: true             the browser has neither interface.
+//   noUsb: true            the browser has Web Serial and no WebUSB.
+//   espFailAt: offset      the ESP flasher stub refuses the compressed write
+//                          of the range that holds this flash offset.
+//   espBadMd5: true        the ESP flasher stub answers every MD5 request
+//                          with an MD5 of other bytes: the verify fails.
+//   espResetFail: true     the first change of the serial lines after an MD5
+//                          request fails: the hard reset after a verify
+//                          fails. The port refuses a second open while open.
+//   rpCorrupt: true        the RP2350 boot ROM returns every read with its
+//                          first byte inverted: the read back fails.
 //   rpDelayMs: n           the RP2350 boot ROM answers each command n ms late,
 //                          for a write that lasts long enough to act during it.
 //
@@ -60,9 +70,11 @@
     let stub = false;
     const regs = new Map(Object.entries(cfg.esp ? cfg.esp.regs || {} : {}).map(([k, v]) => [Number(k), v]));
     let defl = null;
+    let failed = false;
     const send = (bytes) => { if (ctrl) ctrl.enqueue(slip(bytes)); };
     const reply = (op, val, data) => {
       const status = stub ? [0, 0] : [0, 0, 0, 0];
+      if (failed) { status[0] = 1; status[1] = 0x05; failed = false; }
       const body = [...data, ...status];
       send([0x01, op, body.length & 0xff, body.length >> 8, ...le(val), ...body]);
     };
@@ -92,6 +104,8 @@
         case 0x10: {
           defl = { size: u32(data, 0), offset: u32(data, 12), parts: [] };
           state.espWrites.push([defl.offset, defl.size]);
+          const at = cfg.espFailAt;
+          if (typeof at === 'number' && at >= defl.offset && at < defl.offset + defl.size) { failed = true; reply(op, 0, []); return; }
           state.espFlash.fill(0xff, defl.offset, Math.ceil((defl.offset + defl.size) / 4096) * 4096);
           reply(op, 0, []);
           return;
@@ -108,7 +122,8 @@
           const addr = u32(data, 0);
           const size = u32(data, 4);
           state.espMd5.push([addr, size]);
-          const hex = await window.__fakeMd5(Array.from(state.espFlash.subarray(addr, addr + size)));
+          const hex = cfg.espBadMd5 ? '00000000000000000000000000000000'
+            : await window.__fakeMd5(Array.from(state.espFlash.subarray(addr, addr + size)));
           const raw = hex.match(/../g).map((h) => parseInt(h, 16));
           reply(op, 0, raw);
           return;
@@ -133,11 +148,18 @@
       writable: null,
       getInfo: () => (cfg.esp && cfg.esp.usb ? { usbVendorId: cfg.esp.usb[0], usbProductId: cfg.esp.usb[1] } : { usbVendorId: 0x303a, usbProductId: 0x1001 }),
       async open() {
+        if (port.readable) throw new DOMException('The port is already open.', 'InvalidStateError');
         port.readable = new ReadableStream({ start(c) { ctrl = c; }, cancel() { ctrl = null; } });
         port.writable = new WritableStream({ write(chunk) { feed(chunk); } });
       },
       async close() { ctrl = null; port.readable = null; port.writable = null; },
-      async setSignals() { stub = false; },
+      async setSignals() {
+        if (cfg.espResetFail && state.espMd5.length && !state.resetFailed) {
+          state.resetFailed = true;
+          throw new DOMException('The device has been lost.', 'NetworkError');
+        }
+        stub = false;
+      },
       async setBaudRate(baud) { state.espBauds.push(baud); },
       addEventListener() {},
       removeEventListener() {},
@@ -221,7 +243,11 @@
           state.rpFlash.fill(0xff, offset(a0), offset(a0) + a1);
           pending = { phase: 'ack' };
         } else if (id === 0x05) pending = { phase: 'data', addr: a0 };
-        else if (id === 0x84) pending = { phase: 'in', data: state.rpFlash.slice(offset(a0), offset(a0) + a1) };
+        else if (id === 0x84) {
+          const data = state.rpFlash.slice(offset(a0), offset(a0) + a1);
+          if (cfg.rpCorrupt) data[0] ^= 0xff;
+          pending = { phase: 'in', data };
+        }
         else if (id === 0x8b) {
           const b = new Uint8Array(len);
           b.set([...le(3), ...le(0xff), ...le(0)], 0);
@@ -240,6 +266,10 @@
       },
     };
     return dev;
+  }
+  if (cfg.noUsb) {
+    delete Navigator.prototype.usb;
+    return;
   }
   const rom = bootrom();
   Object.defineProperty(navigator, 'usb', { configurable: true, value: {
