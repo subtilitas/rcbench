@@ -589,6 +589,8 @@ TEST_CASE(a_pd_mini_at_the_voltage_switches_port_k_at_once)
     sp_pass(true);
     hold(false, 0u);
     CHECK(rail_set(true, RAIL_MV, 1000u));
+    CHECK_EQ(ports_on(), 0x0003u);      /* a sample after the ON first */
+    rail_pass();
     CHECK_EQ(ports_on(), 0x0003u | K_BIT);
     /* At the set point but reading high: not at once. */
     CHECK(rail_set(false, 0u, 0u));
@@ -684,6 +686,123 @@ TEST_CASE(the_sessions_current_limit_is_lowered_never_raised_under_a_servo)
     CHECK_EQ(limit_after(true, false, false, 800u, 2000u), 2000u);
 }
 
+TEST_CASE(port_k_waits_for_fresh_samples_of_the_pd_mini)
+{
+    /* A stale in-band reading: the module's display reads stall, the
+     * cached value is in the band, nothing switches; refused at 2500ms. */
+    pd_by_hand_at(true, 8400u, 0u);
+    g_pd_no_samples = true;
+    g_pd.st.v_mv = 5000u;
+    for (unsigned i = 0; i < PROG_RAIL_WAIT_MS - 1u; ++i) {
+        rail_pass();
+        CHECK_EQ(ports_on(), 0u);
+    }
+    rail_pass();
+    CHECK(!g_rail.pending);
+    CHECK_EQ(ports_on(), 0u);
+
+    /* The sample after the ON is not counted (it may be older than the
+     * set point change), then a single in-band sample and none after it:
+     * nothing switches, the gap starts the window anew. */
+    pd_by_hand_at(true, 8400u, 0u);
+    g_pd.st.v_mv = 5000u;
+    rail_pass();                        /* the first sample after the ON */
+    rail_pass();                        /* one in the band */
+    g_pd_no_samples = true;
+    for (unsigned i = 0; i < 2u * PROG_RAIL_SAMPLE_GAP_MS; ++i) {
+        rail_pass();
+        CHECK_EQ(ports_on(), 0u);
+    }
+    CHECK(!g_rail.in_band);
+    /* Samples again: a whole window from the first of them. */
+    g_pd_no_samples = false;
+    unsigned n = 0u;
+    while (n < 1000u && (ports_on() & K_BIT) == 0u) {
+        rail_pass();
+        ++n;
+    }
+    CHECK_EQ(n, PROG_RAIL_SETTLE_MS + 1u);
+
+    /* Samples every 150ms: 2 in a row spanning the window. */
+    pd_by_hand_at(true, 8400u, 0u);
+    g_pd.st.v_mv = 5000u;
+    g_pd_no_samples = true;
+    n = 0u;
+    while (n < 2000u && (ports_on() & K_BIT) == 0u) {
+        g_pd_no_samples = (n % 150u) != 0u;
+        rail_pass();
+        ++n;
+    }
+    CHECK_EQ(ports_on(), K_BIT);
+    CHECK_EQ(n, 301u);                  /* samples at 0, 150 and 300ms */
+
+    /* Not moved: one fresh sample after the ON, none before it counts. */
+    rig_start(true, K, true);
+    hold(false, 0u);
+    g_pd_no_samples = true;
+    CHECK(rail_set(true, RAIL_MV, 1000u));
+    for (unsigned i = 0; i < 200u; ++i) {
+        rail_pass();
+        CHECK_EQ(ports_on(), 0u);
+    }
+    g_pd_no_samples = false;
+    rail_pass();
+    CHECK_EQ(ports_on(), K_BIT);
+}
+
+/* A pending ON and a panel write starting with RAIL 0, answered @p nack:
+ * the OFF is applied and stands for the session. */
+static void refused_write_latches(uint8_t n, const uint16_t *in,
+                                  uint8_t nack)
+{
+    pd_by_hand_at(true, 8400u, 0u);
+    CHECK(g_rail.pending);
+    CHECK_EQ(prog_rail_write(&g_rail, &g_pw, 0u, n, in, &g_rctx, 0u), nack);
+    CHECK(!power_rail_driven(&g_pw));
+    CHECK(!g_rail.pending);
+    CHECK(g_rail.sticky);
+    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_rctx), PROG_RAIL_OFF_STANDS);
+    CHECK_EQ(passes_at(5000u, 1000u), 1000u);
+    CHECK_EQ(ports_on(), 0u);
+}
+
+TEST_CASE(an_applied_rail_off_is_latched_whatever_the_write_answers)
+{
+    /* RAIL 0 with a new PORT_WANT bit while the session runs another
+     * voltage: BUSY. */
+    const uint16_t busy[4] = { 0u, 0u, 0u, K_BIT | 0x0001u };
+    refused_write_latches(4u, busy, (uint8_t)LINK_NACK_BUSY);
+    /* RAIL 0 with a read-only register: READ_ONLY. */
+    const uint16_t ro[2] = { 0u, 0u };
+    refused_write_latches(2u, ro, (uint8_t)LINK_NACK_READ_ONLY);
+    /* RAIL 0 alone, taken. */
+    refused_write_latches(1u, ro, 0u);
+    /* RAIL 0 past the page's end: BAD_RANGE, the OFF applied. */
+    const uint16_t far[7] = { 0u };
+    pd_by_hand_at(true, 8400u, 0u);
+    CHECK_EQ(prog_rail_write(&g_rail, &g_pw, 0u, 7u, far, &g_rctx, 0u),
+             (uint8_t)LINK_NACK_BAD_RANGE);
+    CHECK(g_rail.sticky);
+    CHECK(!g_rail.pending);
+}
+
+TEST_CASE(esc_wire_opens_only_where_the_rails_rules_allow)
+{
+    for (unsigned sw = 0; sw < 2u; ++sw) {
+        rig_start(sw != 0u, K, true);
+        CHECK(prog_rail_open_ok(&g_pw, K, 0u, &g_rctx));
+        g_rctx.active = 0x0001u | K_BIT;   /* S1 and its own output */
+        CHECK_EQ(prog_rail_open_ok(&g_pw, K, 0u, &g_rctx), sw != 0u);
+        g_rctx.active = K_BIT;
+        CHECK(prog_rail_open_ok(&g_pw, K, 0u, &g_rctx));
+        CHECK(!prog_rail_open_ok(&g_pw, K, 0x01u, &g_rctx)); /* a session */
+        CHECK(!prog_rail_open_ok(&g_pw, PROG_RAIL_NO_PORT, 0u, &g_rctx));
+        g_pw.bec = 0x0100u;
+        CHECK(!prog_rail_open_ok(&g_pw, K, 0u, &g_rctx));
+        CHECK(!prog_rail_open_ok(NULL, K, 0u, &g_rctx));
+    }
+}
+
 int main(void)
 {
     RUN(the_view_is_the_pd_mini_through_the_ports_switch);
@@ -712,5 +831,8 @@ int main(void)
     RUN(a_pd_mini_that_never_reaches_the_voltage_is_refused);
     RUN(an_off_ends_a_waiting_on);
     RUN(the_sessions_current_limit_is_lowered_never_raised_under_a_servo);
+    RUN(port_k_waits_for_fresh_samples_of_the_pd_mini);
+    RUN(an_applied_rail_off_is_latched_whatever_the_write_answers);
+    RUN(esc_wire_opens_only_where_the_rails_rules_allow);
     return test_summary("prog_rail");
 }

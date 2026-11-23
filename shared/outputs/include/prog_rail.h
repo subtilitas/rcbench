@@ -27,11 +27,16 @@
  *     keeps them off until the session lets go (they come back only with
  *     the panel's next write, its 2s hold); without them the rail is off
  *     already.  The PD mini is set (off and on again for another voltage),
- *     and port k waits (prog_rail_t.pending): it is switched on only once
- *     the PD mini reads on at the asked set point and its output reads
- *     from PROG_RAIL_UNDER_MV under to PROG_RAIL_OVER_MV over the voltage,
- *     PROG_RAIL_SETTLE_MS in a row when the PD mini was moved, at once when
- *     it was not; every rule above is judged again then.  Not so within
+ *     and port k waits (prog_rail_t.pending): it is switched on only on
+ *     fresh samples of the PD mini's output (LINK_SP_SAMPLES advanced
+ *     since the ON, past PROG_RAIL_SKIP_SAMPLES when the ON moved it),
+ *     each with the PD mini online, read on, its set point asked and read
+ *     back at the voltage and its output from PROG_RAIL_UNDER_MV under to
+ *     PROG_RAIL_OVER_MV over it: one such sample when the ON did not move
+ *     the PD mini; when it did, 2 or more in a row spanning
+ *     PROG_RAIL_SETTLE_MS, a sample out of the band or none for
+ *     PROG_RAIL_SAMPLE_GAP_MS starting the window anew.  Every rule above
+ *     is judged again then.  Not so within
  *     PROG_RAIL_WAIT_MS: the PD mini is switched off when the session moved
  *     it, port k stays off and the session's ON stands refused.
  *   - A taken ON with port k on: the PD mini is set as asked under its own
@@ -45,7 +50,8 @@
  *     taken as asked.
  *
  * CONNECT (KST ENTER and REBOOT from PWM, Hitec OPEN, ESC wire OPEN) is
- * refused before anything is switched by prog_rail_connect(): a BEC found,
+ * refused before anything is switched by prog_rail_connect() (for ESC wire
+ * through prog_rail_open_ok() on its target's output): a BEC found,
  * and without the switches another active channel; and on every port while
  * any session holds one (prog_rail_connect_mask()): one programming
  * session at a time on the node (PLAN 2.1, 2.6).
@@ -58,8 +64,9 @@
  * memory (prog_rail_tell()), SUPPLY_PAGE_WRITE_WAIT_MS (10000ms) at most
  * from the OFF, as the SUPPLY page holds the PD mini (supply_page.h).  From
  * a RAIL 0, or a PORT_WANT without bit k while it was set, the session's
- * own ON is refused until it lets go.  A lost heartbeat, the link failsafe
- * and a trip are not held (power_off(), prog_rail_off()).
+ * own ON is refused until it lets go; a write starting with RAIL 0 latches
+ * that OFF whatever the rest of it is answered.  A lost heartbeat, the
+ * link failsafe and a trip are not held (power_off(), prog_rail_off()).
  *
  * Pure logic, host-tested in test_prog_rail, test_prog_rail_kst and
  * test_prog_rail_hitec.
@@ -90,6 +97,12 @@ extern "C" {
 /** @brief A PD mini the ON moved reads in that band this long before port
  *         k is switched on, ms. */
 #define PROG_RAIL_SETTLE_MS 100u
+/** @brief A moved PD mini's samples counted from this many after the ON
+ *         on: the first may have been asked before the set point moved. */
+#define PROG_RAIL_SKIP_SAMPLES 1u
+/** @brief No fresh sample of the PD mini's output for this long starts the
+ *         settle window anew, ms: the display is read every 100ms. */
+#define PROG_RAIL_SAMPLE_GAP_MS 250u
 /** @brief Port k's wait for the PD mini ends refused after this long, ms:
  *         under the sessions' own 3000ms supply timeouts. */
 #define PROG_RAIL_WAIT_MS 2500u
@@ -134,6 +147,10 @@ typedef struct {
     uint16_t want_mv;  /**< the pending ON's voltage, mV                */
     uint32_t pend_t0;  /**< when the ON was taken, ms                   */
     uint32_t band_t0;  /**< when the PD mini came into the band, ms     */
+    uint32_t last_t;   /**< when the last fresh sample came, ms         */
+    uint16_t samp0;    /**< LINK_SP_SAMPLES at the ON                   */
+    uint16_t samp_seen;/**< LINK_SP_SAMPLES at the last check           */
+    uint8_t  n_in;     /**< fresh samples in the band in a row          */
 } prog_rail_t;
 
 /**
@@ -179,6 +196,20 @@ prog_rail_refusal_t prog_rail_connect(const power_page_t *pg, int k,
 uint8_t prog_rail_connect_mask(const power_page_t *pg, const int *k_of,
                                uint8_t ports, uint8_t held,
                                const prog_rail_ctx_t *ctx);
+
+/**
+ * @brief Whether a session may open on output @p k before it switches
+ *        anything: no session holds a port, and prog_rail_connect().
+ *
+ * @param pg   The POWER page.
+ * @param k    The output; none is refused.
+ * @param held Bit q: a session holds programming port q (0xFF for the
+ *             ESC wire page).
+ * @param ctx  The active ports.
+ * @return     true when it may.
+ */
+bool prog_rail_open_ok(const power_page_t *pg, int k, uint8_t held,
+                       const prog_rail_ctx_t *ctx);
 
 /**
  * @brief Every rule of a session's ON, in the order of the enum.

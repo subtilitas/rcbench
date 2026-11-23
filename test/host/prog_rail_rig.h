@@ -36,6 +36,8 @@ static uint32_t        g_rnow;      /* the rail's clock, ms */
 /* The PD mini's output follows its set point in the pass, unless a case
  * moves it by hand (g_pd_by_hand, g_pd.st.v_mv). */
 static bool            g_pd_by_hand;
+/* The module's output reading taken every pass, unless a case stalls it. */
+static bool            g_pd_no_samples;
 
 /* ------------------------------------------------------------- the pages */
 
@@ -67,13 +69,17 @@ static inline bool pd_wants_on(void)
 /* One pass of the SUPPLY page and the module. */
 static inline void sp_pass(bool safe)
 {
+    /* The module's reading of this pass, then the page's step over it. */
+    if (!g_pd_by_hand) {
+        g_pd.st.v_mv = g_pd.st.output ? g_pd.st.set_mv : 0u;
+    }
+    if (!g_pd_no_samples) {
+        ++g_pd.st.samples;
+    }
     supply_page_step(&g_sp, safe, &g_pd);
     g_pd.st.output = g_pd.want_output;
     g_pd.st.set_mv = g_pd.want_mv;
     g_pd.st.set_ma = g_pd.want_ma;
-    if (!g_pd_by_hand) {
-        g_pd.st.v_mv = g_pd.want_output ? g_pd.want_mv : 0u;
-    }
 }
 
 /* The panel's SUPPLY OFF, as error_act() has supply_link_cut() write it. */
@@ -134,6 +140,7 @@ static inline void rig_start(bool switches, int k, bool pd_on)
     const uint16_t on[3] = { 1u, RAIL_MV, RAIL_MA };
 
     g_pd_by_hand = false;
+    g_pd_no_samples = false;
     power_init(&g_pw, switches, true);
     prog_rail_init(&g_rail);
     prog_rail_port(&g_rail, k);

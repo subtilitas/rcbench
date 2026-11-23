@@ -24,6 +24,11 @@ static uint8_t esc_hw_pin(void *ctx, bool is_port, uint8_t index)
     } else {
         pin = esc_port_slot_pin(&s_outputs, index, bound_slots());
     }
+    /* The node: refused before anything is switched where the rail's
+     * rules refuse a session on that output (rsn_esc_open_ok()). */
+    if (pin != (uint8_t)ESC_PORT_NO_PIN && !rsn_esc_open_ok(pin)) {
+        return (uint8_t)ESC_PORT_NO_PIN;
+    }
     rsn_prog_pin(pin);          /* the node: the output it would switch */
     return pin;
 }

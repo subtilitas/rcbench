@@ -362,6 +362,16 @@ bool rsn_esc_refused(void)
     return s_power.bec != 0u;
 }
 
+bool rsn_esc_open_ok(uint8_t pin)
+{
+    prog_rail_ctx_t c;
+    memset(&c, 0, sizeof(c));
+    c.active = active_ports();
+    const uint8_t held = (uint8_t)(kst_port_quiet_mask(&s_kst)
+                                   | hitec_port_quiet_mask(&s_hitec));
+    return prog_rail_open_ok(&s_power, out_of(pin), held, &c);
+}
+
 void power_page_rd(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     (void)ctx;
@@ -420,6 +430,12 @@ void rsn_prog_tell(void) {}
 uint8_t rsn_prog_refused(void) { return 0u; }
 
 bool rsn_esc_refused(void) { return false; }
+
+bool rsn_esc_open_ok(uint8_t pin)
+{
+    (void)pin;
+    return true;
+}
 
 void power_page_rd(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {

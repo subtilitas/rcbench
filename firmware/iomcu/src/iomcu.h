@@ -1321,6 +1321,16 @@ void rsn_prog_tell(void);
  */
 uint8_t rsn_prog_refused(void);
 /**
+ * @brief Whether ESC_WIRE may open on @p pin's output before it switches
+ *        anything (prog_rail_open_ok()): no KST or HITEC session holds a
+ *        port, no BEC found, and without the port switches no other
+ *        channel active.
+ *
+ * @param pin  The target's GPIO.
+ * @return     true then; true on the other boards.
+ */
+bool rsn_esc_open_ok(uint8_t pin);
+/**
  * @brief Whether ESC_WIRE's OPEN is refused for a BEC found on a port.
  *
  * @return true then; false on the other boards.

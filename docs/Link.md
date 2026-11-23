@@ -1751,7 +1751,10 @@ voltage for every port.
   function other than NONE, is bound to its output's pin.
 - One programming session at a time on the node: while a KST, Hitec or
   ESC wire session holds a port, CONNECT on every other port is refused
-  (KST BUSY, Hitec HELD, ESC wire HELD).
+  (KST BUSY, Hitec HELD, ESC wire HELD). ESC wire's OPEN is judged on its
+  target's output before anything switches: refused with `NO_PIN` while a
+  KST or Hitec session holds a port, with a BEC found, and without the
+  switches while another channel is active.
 - The session's OFF is always taken and leaves the PD mini as it is. Its
   ON is refused (KST result 32 `SUPPLY`, Hitec `RESULT` 3) while
   `TRIPPED` stands (until the panel's `RAIL` 1 clears it), without a live
@@ -1772,10 +1775,15 @@ voltage for every port.
   every port the PD mini feeds; a higher one is not applied. With nothing
   powered it is taken as asked.
 - With the session's output off, its ON waits for the PD mini: the output
-  (and without the switches the rail) is switched on only once the PD
-  mini reads on at the asked set point and its output reads from 300mV
-  under to 150mV over the voltage, 100ms in a row when the ON moved the
-  PD mini, at once when it did not. Every rule above is judged again then.
+  (and without the switches the rail) is switched on only on fresh
+  samples of the PD mini's output, taken after the ON (`SAMPLES`
+  advanced; when the ON moved the PD mini, the first sample after it is
+  not counted). Each counts with the PD mini online, read on, its set
+  point asked and read back at the session's voltage, and its output from
+  300mV under to 150mV over it. One such sample switches the output on
+  when the ON did not move the PD mini; when it did, 2 or more in a row
+  spanning 100ms. A sample out of that band, or no sample for 250ms,
+  starts the window anew. Every rule above is judged again then.
   Not so within 2500ms: the PD mini is switched off when the ON moved it,
   the output stays off, and the session's ON stands refused. While it
   waits the session's supply reads asked on, neither on nor off. Each
@@ -1792,7 +1800,8 @@ voltage for every port.
   still taken for `RAIL`.
 - The panel's OFF (`RAIL` 0, or `PORT_WANT` without the session's bit)
   reads in the registers at once and switches every other port off at
-  once. While the session writes to the servo's memory (a KST WRITE,
+  once. A write that starts with `RAIL` 0 stands as the session's OFF
+  however the rest of it is answered, and ends a waiting ON. While the session writes to the servo's memory (a KST WRITE,
   RESTORE or RELEASE, a Hitec write and its 150ms tail, as for the SUPPLY
   page), the session's output stays on and `PORT_ON` shows it, until the
   write ends and 10000ms after the OFF at most. From that OFF the

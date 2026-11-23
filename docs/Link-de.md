@@ -1914,7 +1914,11 @@ die Spannung der Schiene für jeden Port.
   gebunden ist.
 - Eine Programmiersitzung zur Zeit auf dem Knoten: solange eine Sitzung
   von KST, Hitec oder ESC wire einen Port hält, wird CONNECT an jedem
-  anderen Port abgelehnt (KST BUSY, Hitec HELD, ESC wire HELD).
+  anderen Port abgelehnt (KST BUSY, Hitec HELD, ESC wire HELD). Das OPEN
+  von ESC wire wird am Ausgang seines Ziels geprüft, bevor etwas schaltet:
+  abgelehnt mit `NO_PIN`, solange eine KST- oder Hitec-Sitzung einen Port
+  hält, mit einem gefundenen BEC und ohne die Schalter, solange ein anderer
+  Kanal aktiv ist.
 - Das OFF der Sitzung wird immer genommen und lässt den PD mini, wie er
   ist. Ihr ON wird abgelehnt (KST-Ergebnis 32, Hitec-Ergebnis 3), solange
   TRIPPED steht (bis RAIL 1 des Panels es löscht), ohne lebenden
@@ -1937,11 +1941,16 @@ die Spannung der Schiene für jeden Port.
   PD mini, und dann für jeden Port, den der PD mini speist; eine höhere wird
   nicht genommen. Ohne versorgtes Servo wird sie genommen wie erbeten.
 - Mit dem Ausgang der Sitzung aus wartet ihr ON auf den PD mini: der
-  Ausgang (und ohne die Schalter die Schiene) wird erst eingeschaltet,
-  wenn der PD mini am erbetenen Sollwert an liest und sein Ausgang von
-  300mV darunter bis 150mV darüber liest, 100ms hintereinander, wenn das
-  ON den PD mini verstellt hat, sofort, wenn nicht. Jede Regel darüber wird
-  dann erneut geprüft. Nicht so innerhalb von 2500ms: der PD mini wird
+  Ausgang (und ohne die Schalter die Schiene) wird nur auf frische
+  Messungen des Ausgangs des PD mini eingeschaltet, genommen nach dem ON
+  (SAMPLES weitergezählt; hat das ON den PD mini verstellt, zählt die erste
+  Messung danach nicht). Jede zählt mit dem PD mini online, an gelesen, mit
+  erbetenem und zurückgelesenem Sollwert an der Spannung der Sitzung und
+  seinem Ausgang von 300mV darunter bis 150mV darüber. Eine solche Messung
+  schaltet den Ausgang ein, wenn das ON den PD mini nicht verstellt hat;
+  wenn doch, 2 oder mehr hintereinander über 100ms. Eine Messung außerhalb
+  dieses Bands oder 250ms ohne Messung beginnen das Fenster neu. Jede Regel
+  darüber wird dann erneut geprüft. Nicht so innerhalb von 2500ms: der PD mini wird
   ausgeschaltet, wenn das ON ihn verstellt hat, der Ausgang bleibt aus, und
   das ON der Sitzung bleibt abgelehnt. Solange es wartet, liest die
   Versorgung der Sitzung erbeten an, weder an noch aus. Jede Sitzung
@@ -1959,7 +1968,9 @@ die Spannung der Schiene für jeden Port.
   das mit RAIL 0 beginnt, wird für RAIL trotzdem genommen.
 - Das OFF des Panels (RAIL 0, oder PORT_WANT ohne das Bit der Sitzung)
   steht sofort in den Registern und schaltet jeden anderen Port sofort
-  aus. Solange die Sitzung in den Speicher des Servos schreibt (ein KST
+  aus. Ein Schreiben, das mit RAIL 0 beginnt, steht als OFF für die
+  Sitzung, wie der Rest auch beantwortet wird, und beendet ein wartendes
+  ON. Solange die Sitzung in den Speicher des Servos schreibt (ein KST
   WRITE, RESTORE oder RELEASE, ein Hitec-Schreiben und seine 150ms
   danach, wie für die Page SUPPLY), bleibt der Ausgang der Sitzung an und
   PORT_ON zeigt ihn, bis das Schreiben endet, höchstens 10000ms nach dem

@@ -85,6 +85,13 @@ uint8_t prog_rail_connect_mask(const power_page_t *pg, const int *k_of,
     return m;
 }
 
+bool prog_rail_open_ok(const power_page_t *pg, int k, uint8_t held,
+                       const prog_rail_ctx_t *ctx)
+{
+    return held == 0u && bit_of(k) != 0u
+           && prog_rail_connect(pg, k, ctx) == PROG_RAIL_OK;
+}
+
 prog_rail_refusal_t prog_rail_judge(const prog_rail_t *r,
                                     const power_page_t *pg,
                                     const prog_rail_ctx_t *ctx)
@@ -141,7 +148,8 @@ static bool pd_at(const supply_page_t *sp, uint16_t mv)
     supply_port_view_t pd;
     supply_page_port_view(sp, &pd);
     const uint32_t v = sp->regs[LINK_SP_V_MV];
-    return pd.on && pd.set_mv == mv
+    return pd.online && pd.on && pd.set_mv == mv
+           && sp->regs[LINK_SP_SET_MV_RB] == mv
            && v + PROG_RAIL_UNDER_MV >= (uint32_t)mv
            && v <= (uint32_t)mv + PROG_RAIL_OVER_MV;
 }
@@ -164,16 +172,34 @@ static void pending_step(prog_rail_t *r, power_page_t *pg, supply_page_t *sp,
         r->pending = false;     /* a trip, a lost heartbeat, an OFF: gone */
         return;
     }
-    const bool at = pd_at(sp, r->want_mv);
-    if (at && !r->in_band) {
-        r->band_t0 = now;
-    }
-    r->in_band = at;
-    if (at && (!r->moved
-               || (uint32_t)(now - r->band_t0) >= PROG_RAIL_SETTLE_MS)) {
-        r->pending = false;
-        power_port_set(pg, (unsigned)r->port, true);
-        return;
+    const uint16_t n = sp->regs[LINK_SP_SAMPLES];
+    const bool fresh = n != r->samp_seen
+                       && (uint16_t)(n - r->samp0)
+                              >= (r->moved ? PROG_RAIL_SKIP_SAMPLES + 1u
+                                           : 1u);
+    r->samp_seen = n;
+    if (fresh) {
+        const bool at = pd_at(sp, r->want_mv);
+        if (at && !r->in_band) {
+            r->band_t0 = now;   /* the window starts with this sample */
+            r->n_in    = 0u;
+        }
+        r->in_band = at;
+        r->last_t  = now;
+        if (at) {
+            r->n_in = (uint8_t)(r->n_in < 255u ? r->n_in + 1u : 255u);
+        }
+        if (at && (!r->moved
+                   || (r->n_in >= 2u
+                       && (uint32_t)(now - r->band_t0)
+                              >= PROG_RAIL_SETTLE_MS))) {
+            r->pending = false;
+            power_port_set(pg, (unsigned)r->port, true);
+            return;
+        }
+    } else if (r->in_band
+               && (uint32_t)(now - r->last_t) >= PROG_RAIL_SAMPLE_GAP_MS) {
+        r->in_band = false;     /* no sample: the window starts anew */
     }
     if ((uint32_t)(now - r->pend_t0) >= PROG_RAIL_WAIT_MS) {
         r->pending = false;
@@ -268,6 +294,9 @@ bool prog_rail_set(prog_rail_t *r, power_page_t *pg, supply_page_t *sp,
     r->in_band = false;
     r->want_mv = mv;
     r->pend_t0 = now;
+    r->samp0   = sp->regs[LINK_SP_SAMPLES];
+    r->samp_seen = r->samp0;
+    r->n_in    = 0u;
     pending_step(r, pg, sp, ctx, now);
     return true;
 }
@@ -285,6 +314,15 @@ uint8_t prog_rail_write(prog_rail_t *r, power_page_t *pg, uint8_t off,
                         && (unsigned)off + n > (unsigned)LINK_PW_PORT_WANT;
     const bool rail = w_rail ? in[0] == 1u : pg->rail;
     const uint16_t want = w_want ? in[LINK_PW_PORT_WANT - off] : pg->want;
+    /* A write that starts with RAIL 0 switches the rail off whatever the
+     * rest of it is answered (power_write()): that OFF stands for the
+     * session from here, and a pending ON ends. */
+    if (w_rail && in[0] == 0u) {
+        r->pending = false;
+        if (r->held) {
+            r->sticky = true;
+        }
+    }
     if (bit != 0u) {
         const uint16_t now_on = power_port_on(pg);
         const bool k_after = rail && (pg->fitted == 0u || (want & bit) != 0u);
@@ -308,7 +346,8 @@ uint8_t prog_rail_write(prog_rail_t *r, power_page_t *pg, uint8_t off,
         const bool cut_k = pg->fitted != 0u && w_want && had_k
                            && (want & bit) == 0u;
         if (cut_rail || cut_k) {
-            r->sticky = true;
+            r->sticky  = true;
+            r->pending = false;
         }
     }
     if (pg->held_on != 0u && !r->kept) {
