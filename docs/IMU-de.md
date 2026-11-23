@@ -164,9 +164,9 @@ Verbindungsaufbau zur Zeit laufen:
 Mit der IMU allein läuft jede Aktion und jedes Event wie mit einer
 Verbindung. Ein C6-Image mit 3 Verbindungen lehnt eine vierte ab; die
 Konsolenzeile nennt das (unten). Ein solches Image meldet esp_hosted 2.13.0
-wie das Image des Panels mit 5 Verbindungen, deshalb bietet die Zeile C6
+wie das Image des Release mit 5 Verbindungen, deshalb bietet die Zeile C6
 RADIO auf SETUP > UPDATES > EINZELNE UPDATES dafür
-`2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN` an.
+`2s HALTEN: C6-FUNK NEU INSTALLIEREN` an.
 
 Die Verbindungswerte sind so gewählt, wie eine Handy-Central sie
 erfragt, nicht gegen andere gemessen; sie stehen zusammen in
@@ -445,7 +445,7 @@ I (…) imu: command FF AA 69 88 B5
 I (…) ble: disconnect: reason 0x<r>, handle <h>, token <k>
 I (…) ble: disconnect: record: handle <h>, peer …
 I (…) ble: connect: failed to be established, reason 0x<r>
-W (…) ble: connect refused by the C6 radio, HCI 0x<c>: it holds no further link; a C6 image with 3 links takes no fourth: install this panel's C6 image with the C6 RADIO hold in SETUP > UPDATES
+W (…) ble: connect refused by the C6 radio, HCI 0x<c>: it holds no further link; a C6 image with 3 links takes no fourth: install the release's C6 image with the C6 RADIO hold in SETUP > UPDATES
 ```
 
 Die letzte Zeile kommt bei HCI 0x09 (Connection Limit Exceeded) und 0x07

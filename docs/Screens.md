@@ -630,13 +630,13 @@ changes. An arriving alert replaces a visible hint.
 | HOLD 2s TO DOWNLOAD & INSTALL on UPDATES and in the update reminder | `Hold 2s to download and install.` |
 | HOLD 2s TO UPDATE THE IOMCU on UPDATES' step 2 and on SINGLE UPDATES | `Hold 2s to update the IOmcu.` |
 | HOLD 2s TO UPDATE THE C6 RADIO on SINGLE UPDATES | `Hold 2s to update the C6 radio. Wi-Fi stays off until it ends.` |
-| HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE on SINGLE UPDATES | `Hold 2s to reinstall the C6 firmware this panel carries. Wi-Fi stays off until it ends.` |
+| HOLD 2s TO REINSTALL THE C6 RADIO on SINGLE UPDATES | `Hold 2s to reinstall the C6 firmware of this panel's release. Wi-Fi is off while it is sent.` |
 | HOLD 2s TO UPDATE THE DIAL on SINGLE UPDATES | `Hold 2s to update the Dial. Its knob stops until it connects again.` |
-| HOLD 2s TO REINSTALL THE DIAL FIRMWARE on SINGLE UPDATES | `Hold 2s to reinstall the Dial firmware this panel carries.` |
+| HOLD 2s TO REINSTALL THE DIAL FIRMWARE on SINGLE UPDATES | `Hold 2s to reinstall the Dial firmware of this panel's release.` |
 | HOLD 2s TO UPDATE THE POWER NODE on SINGLE UPDATES | `Hold 2s to update the power node. Its readings stop until it connects again.` |
-| HOLD 2s TO REINSTALL THE POWER NODE on SINGLE UPDATES | `Hold 2s to reinstall the power node firmware this panel carries.` |
+| HOLD 2s TO REINSTALL THE POWER NODE on SINGLE UPDATES | `Hold 2s to reinstall the power node firmware of this panel's release.` |
 | HOLD 2s TO UPDATE THE BALANCE NODE on SINGLE UPDATES | `Hold 2s to update the balance node. Its reports stop until it connects again.` |
-| HOLD 2s TO REINSTALL THE BALANCE NODE on SINGLE UPDATES | `Hold 2s to reinstall the balance node firmware this panel carries.` |
+| HOLD 2s TO REINSTALL THE BALANCE NODE on SINGLE UPDATES | `Hold 2s to reinstall the balance node firmware of this panel's release.` |
 | HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS on OUTPUTS | `Hold 2s to clear all pin assignments.` |
 | OVERWRITE on FILES' editor's question | `Hold 2s to overwrite.` |
 | HOLD 2s TO ACKNOWLEDGE on the bus-fault screen | `Hold 2s to acknowledge.` |
@@ -7490,7 +7490,7 @@ IOmcu's ([The C6 radio](#the-c6-radio)). The footer reads
 | --- | --- |
 | `HOLD 2s TO UPDATE THE IOMCU` | Starts the IOmcu's update from the image this panel carries ([The IOmcu](#the-iomcu)). |
 | `HOLD 2s TO UPDATE THE C6 RADIO` | Fetches the C6 radio's image of the release the panel runs and sends it to the board's ESP32-C6 ([The C6 radio](#the-c6-radio), [Device images](#device-images)). |
-| `HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE` | The same, while the C6 reports the release's version ([The C6 radio](#the-c6-radio)). |
+| `HOLD 2s TO REINSTALL THE C6 RADIO` | The same, while the C6 reports the release's version ([The C6 radio](#the-c6-radio)). |
 | `WIRELESS DEVICE FIRMWARE` | Opens the page of the Dial's and the sensor nodes' firmware rows over this page ([The wireless devices](#the-wireless-devices)). While an update runs the button reads that row's label. |
 | `BACK` | Closes the page: UPDATES shows again. |
 
@@ -7651,7 +7651,7 @@ Bluetooth: `C6 radio: 2.13.0. Release: 2.13.0.`, the version the C6
 reported at the first Wi-Fi start since the panel started, or
 `not reported`, and the esp_hosted version of the release's C6 image.
 Under it `HOLD 2s TO UPDATE THE C6 RADIO`, or `HOLD 2s TO REINSTALL
-THIS PANEL'S C6 FIRMWARE` while the C6 reports that version. The hold
+THE C6 RADIO` while the C6 reports that version. The hold
 fetches the image first while it is not in memory
 ([Device images](#device-images)); the button then reads `DOWNLOADING 43%`,
 `CHECKING THE FILE` or `READING THE SD CARD`, and the update starts once

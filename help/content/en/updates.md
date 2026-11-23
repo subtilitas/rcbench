@@ -180,7 +180,7 @@ SINGLE UPDATES starts one update or reinstall at a time: the IOmcu's, the C6 rad
 |---|---|
 | HOLD 2s TO UPDATE THE IOMCU | starts the [IOmcu update](coproc_update.md) from the image this panel carries, also after its offer was declined, see [The IOmcu](#the-iomcu) |
 | HOLD 2s TO UPDATE THE C6 RADIO | fetches the C6 radio's image of the release and sends it to the board's ESP32-C6, see [The C6 radio](#the-c6-radio) |
-| HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE | the same, while the C6 reports the release's version |
+| HOLD 2s TO REINSTALL THE C6 RADIO | the same, while the C6 reports the release's version |
 | WIRELESS DEVICE FIRMWARE | opens the page of the Dial's and the sensor nodes' firmware rows, see [Wireless devices](#wireless-devices); while an update runs it reads that row's label |
 | BACK | in the footer's right; closes the page |
 
@@ -217,7 +217,7 @@ With the hold live the line reads `Outputs stay off. ARMED is blocked until the 
 
 Under the heading, SINGLE UPDATES shows the board's ESP32-C6, which carries Wi-Fi and Bluetooth: `C6 radio: not reported. Release: 2.13.0.` The first version is the one the C6 named at the first Wi-Fi start since the panel started; the shipped C6 names none. HOLD 2s TO UPDATE THE C6 RADIO fetches the release's image first ([Device images](#device-images)) and sends it over the board's SDIO (Secure Digital input/output) link; the button then reads `C6 UPDATE 37%`.
 
-The hold is live with the bench SAFE, no arm waiting, the supply output off, no open log run, no board drawing being fetched, no other update running, no servo or ESC programmer holding a port, and Wi-Fi off. On a C6 that reports the release's version it reads HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE: an image of the same version can carry other settings, such as 3 Bluetooth links in place of 5. A tap on the grey hold shows the reason on the alert band, for example `The C6 update waits for the panel's Wi-Fi to switch off.`
+The hold is live with the bench SAFE, no arm waiting, the supply output off, no open log run, no board drawing being fetched, no other update running, no servo or ESC programmer holding a port, and Wi-Fi off. On a C6 that reports the release's version it reads HOLD 2s TO REINSTALL THE C6 RADIO: an image of the same version can carry other settings, such as 3 Bluetooth links in place of 5. A tap on the grey hold shows the reason on the alert band, for example `The C6 update waits for the panel's Wi-Fi to switch off.`
 
 While the update runs, ARM, the supply's OUTPUT ON, PROG 5V ON and a programmer's start are refused, and Wi-Fi stays off. It ends with one alert:
 

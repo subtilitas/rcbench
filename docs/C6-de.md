@@ -150,7 +150,7 @@ Einzelne Updates; [Bildschirme, Einzelne Updates](Screens-de.md#einzelne-updates
 zeigt die Version, die der C6 beim
 ersten Wi-Fi-Start gemeldet hat, oder `nicht gemeldet`, die Version des
 Release und `2s HALTEN ZUM C6-FUNK-UPDATE`, bei dieser Version `2s
-HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN`. Das Halten holt zuerst das
+HALTEN: C6-FUNK NEU INSTALLIEREN`. Das Halten holt zuerst das
 Image, solange es nicht im Speicher ist
 ([Bildschirme: Geräte-Images](Screens-de.md#geräte-images)). Das Halten ist aktiv, wenn
 die Verbindung

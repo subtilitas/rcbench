@@ -426,6 +426,25 @@ to #908, #910 to #927, #930, #931, #933 and #934.
   enabled INA228 counts whether it answers or not. The tile still needs
   the IOmcu's ESC outputs
   ([Screens](docs/Screens.md#menu-marks)).
+- SETUP > UPDATES > SINGLE UPDATES: the texts name the release's image in
+  place of one the panel carries. The C6 RADIO row's reinstall reads
+  `HOLD 2s TO REINSTALL THE C6 RADIO` (`2s HALTEN: C6-FUNK NEU
+  INSTALLIEREN`); the page's note says a reinstall writes this release's
+  image, downloaded or from the SD card; a tap on a grey device hold whose
+  device runs a board without a release image reads `This release has no
+  firmware for this device.`; the German reinstall hints of the Dial and
+  the nodes name the release; the console's warning on a refused fourth
+  Bluetooth LE link names the release's C6 image.
+- Screen guide, menu page 2: SETUP lists the hub's tiles in hub order:
+  PANEL, SENSORS, OUTPUTS, SD CARD, WI-FI, UPDATES, IMU and WIRELESS. IMU
+  and WIRELESS were missing.
+- RUDDER: an angle source that is on and sends no reading reads
+  `ANGLE: IMU X+ NO READING` (`WINKEL: IMU X+ KEIN MESSWERT`), the words
+  LIVE, TEST and LIMIT RUN use for the same state, in place of
+  `NOT ANSWERING`.
+- German: the WIRELESS tile reads `IMU, DIAL, SENSORKNOTEN`, devices
+  in place of activities (`IMU, DIAL, LEISTUNG, AUSWUCHTEN`); the power
+  and balance node names, 37 cells, do not fit the tile's 31.
 
 ## 0.23.16 - 2026-11-21
 

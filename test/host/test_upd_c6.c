@@ -430,7 +430,7 @@ TEST_CASE(the_line_names_both_versions_or_says_not_reported)
     CHECK_STR_EQ(line, "HOLD 2s TO UPDATE THE C6 RADIO");
     v.row = FW_C6_ROW_REINSTALL;
     upd_c6_label(&v, line, sizeof(line));
-    CHECK_STR_EQ(line, "HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE");
+    CHECK_STR_EQ(line, "HOLD 2s TO REINSTALL THE C6 RADIO");
     ui_text_set_language(UI_LANG_DE);
     v.known = false;
     v.have_image = true;

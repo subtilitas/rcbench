@@ -180,7 +180,7 @@ EINZELNE UPDATES startet ein Update oder eine Neuinstallation zur Zeit: des IOmc
 |---|---|
 | 2s HALTEN ZUM IOMCU-UPDATE | Startet das [IOmcu-Update](coproc_update.md) aus dem mitgelieferten Image, auch nach Ablehnung des Angebots, siehe [Der IOmcu](#der-iomcu). |
 | 2s HALTEN ZUM C6-FUNK-UPDATE | Holt das Image des C6-Funks aus dem Release und sendet es an den ESP32-C6 des Boards, siehe [Der C6-Funk](#der-c6-funk). |
-| 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN | Dasselbe, solange der C6 die Version des Release meldet. |
+| 2s HALTEN: C6-FUNK NEU INSTALLIEREN | Dasselbe, solange der C6 die Version des Release meldet. |
 | FIRMWARE DER FUNKGERÄTE | Öffnet die Seite mit den Firmware-Zeilen des Dial und der Sensorknoten, siehe [Funkgeräte](#funkgeräte); während ein Update läuft, zeigt sie die Beschriftung dieser Zeile. |
 | ZURÜCK | Rechts in der Fußleiste; schließt die Seite. |
 
@@ -217,7 +217,7 @@ Bei verfügbarer Haltetaste steht `Ausgänge bleiben aus. ARMED ist bis zum Ende
 
 Unter der Überschrift zeigt EINZELNE UPDATES den ESP32-C6 des Boards, der Wi-Fi und Bluetooth trägt: `C6-Funk: nicht gemeldet. Release: 2.13.0.` Die erste Version ist die, die der C6 beim ersten Wi-Fi-Start seit dem Panel-Start genannt hat; der ausgelieferte C6 nennt keine. 2s HALTEN ZUM C6-FUNK-UPDATE holt zuerst das Image des Release ([Geräte-Images](#geräte-images)) und sendet es über die SDIO-Verbindung (Secure Digital Input/Output) des Boards; die Taste zeigt dann `C6-UPDATE 37%`.
 
-Das Halten ist aktiv, wenn der Prüfstand SAFE ist, kein ARM wartet, der Netzteilausgang aus ist, kein Log-Lauf offen ist, keine Platinenzeichnung geholt wird, kein anderes Update läuft, keine Servo- oder ESC-Programmierung einen Port belegt und das WLAN aus ist. Bei einem C6, der die Version des Release meldet, heißt es 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN: Ein Image derselben Version kann andere Einstellungen tragen, etwa 3 Bluetooth-Verbindungen statt 5. Ein Tippen auf das graue Halten zeigt den Grund im Alarmband, zum Beispiel `Das C6-Update wartet, bis das WLAN des Panels aus ist.`
+Das Halten ist aktiv, wenn der Prüfstand SAFE ist, kein ARM wartet, der Netzteilausgang aus ist, kein Log-Lauf offen ist, keine Platinenzeichnung geholt wird, kein anderes Update läuft, keine Servo- oder ESC-Programmierung einen Port belegt und das WLAN aus ist. Bei einem C6, der die Version des Release meldet, heißt es 2s HALTEN: C6-FUNK NEU INSTALLIEREN: Ein Image derselben Version kann andere Einstellungen tragen, etwa 3 Bluetooth-Verbindungen statt 5. Ein Tippen auf das graue Halten zeigt den Grund im Alarmband, zum Beispiel `Das C6-Update wartet, bis das WLAN des Panels aus ist.`
 
 Während das Update läuft, werden ARM, AUSGANG EIN des Netzteils, PROG 5V EIN und der Start einer Programmierung abgelehnt, und das WLAN bleibt aus. Es endet mit einem Alarm:
 

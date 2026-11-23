@@ -76,7 +76,7 @@ The source in force is in the accent colour. With the IMU on and no sensor bound
 |---|---|
 | `ANGLE: AS5600`, `ANGLE: IMU X+` | the source reads; the IMU is named with its AXIS and SIGN |
 | `ANGLE: AS5600 OFF IN SETUP` | the AS5600 is off on SETUP > SENSORS |
-| `ANGLE: AS5600 NOT ANSWERING`, `ANGLE: IMU X+ NOT ANSWERING` | on, and no reading arrives; the IMU also while it is off or not connected |
+| `ANGLE: AS5600 NO READING`, `ANGLE: IMU X+ NO READING` | on, and no reading arrives; the IMU also while it is off or not connected |
 | `ANGLE: AS5600 SEES NO MAGNET` | the sensor reports no magnet |
 | `ANGLE: NO LINK` | no link to the IOmcu, the RP2350 board |
 | `NO ZERO: FROM THE SENSOR'S CENTER` | ZERO not taken yet |

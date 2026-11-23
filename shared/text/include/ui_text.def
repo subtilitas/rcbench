@@ -458,8 +458,8 @@ UI_TEXT(HG_OV_LOGS, 0,
     "Lists the logs on the SD card and plots up to 4 columns. FILES is a tab, WI-FI a button.",
     "Zeigt Aufzeichnungen der SD-Karte und bis zu 4 Spalten als Grafik. FILES ist ein Tab, WI-FI eine Taste.")
 UI_TEXT(HG_OV_SETUP, 0,
-    "The bench-wide settings: PANEL, SENSORS, OUTPUTS, SD CARD, WI-FI and UPDATES.",
-    "Die Einstellungen des ganzen Prüfstands: PANEL, SENSORS, OUTPUTS, SD CARD, WI-FI und UPDATES.")
+    "The bench-wide settings: PANEL, SENSORS, OUTPUTS, SD CARD, WI-FI, UPDATES, IMU and WIRELESS.",
+    "Die Einstellungen des ganzen Prüfstands: PANEL, SENSORS, OUTPUTS, SD CARD, WI-FI, UPDATES, IMU und WIRELESS.")
 UI_TEXT(HG_OV_STOP, 0,
     "Switches the bench to SAFE and the supply output off, on every screen and with this guide open.",
     "Schaltet den Prüfstand auf SAFE und den Netzteilausgang aus, auf jeder Seite, auch bei offener Hilfe.")
@@ -6691,25 +6691,25 @@ UI_TEXT(HOLD_HINT_C6_UPDATE, 94,
     "Halte 2s, um den C6-Funk zu aktualisieren. Das WLAN bleibt bis zum Ende aus.")
 UI_TEXT(HOLD_HINT_C6_REINSTALL, 94,
     "Hold 2s to reinstall the C6 firmware of this panel's release. Wi-Fi is off while it is sent.",
-    "Halte 2s, um die C6-Firmware des Panels neu zu installieren. WLAN bleibt beim Senden aus.")
+    "Halte 2s, um die C6-Firmware dieses Release neu zu installieren. WLAN bleibt beim Senden aus.")
 UI_TEXT(HOLD_HINT_DIAL_UPDATE, 94,
     "Hold 2s to update the Dial. Its knob stops until it connects again.",
     "Halte 2s, um das Dial zu aktualisieren. Der Drehknopf ruht bis zur neuen Verbindung.")
 UI_TEXT(HOLD_HINT_DIAL_REINSTALL, 94,
     "Hold 2s to reinstall the Dial firmware of this panel's release.",
-    "Halte 2s, um die Dial-Firmware des Panels neu zu installieren.")
+    "Halte 2s, um die Dial-Firmware dieses Release neu zu installieren.")
 UI_TEXT(HOLD_HINT_PNODE_UPDATE, 94,
     "Hold 2s to update the power node. Its readings stop until it connects again.",
     "Halte 2s, um den Leistungsknoten zu aktualisieren. Messwerte ruhen bis zur neuen Verbindung.")
 UI_TEXT(HOLD_HINT_PNODE_REINSTALL, 94,
     "Hold 2s to reinstall the power node firmware of this panel's release.",
-    "Halte 2s, um die Firmware des Leistungsknotens neu zu installieren.")
+    "Halte 2s, um die Leistungsknoten-Firmware dieses Release neu zu installieren.")
 UI_TEXT(HOLD_HINT_BAL_UPDATE, 94,
     "Hold 2s to update the balance node. Its reports stop until it connects again.",
     "Halte 2s, um den Auswuchtknoten zu aktualisieren. Messungen ruhen bis zur neuen Verbindung.")
 UI_TEXT(HOLD_HINT_BAL_REINSTALL, 94,
     "Hold 2s to reinstall the balance node firmware of this panel's release.",
-    "Halte 2s, um die Firmware des Auswuchtknotens neu zu installieren.")
+    "Halte 2s, um die Auswuchtknoten-Firmware dieses Release neu zu installieren.")
 UI_TEXT(HOLD_HINT_UNBIND, 94,
     "Hold 2s to clear all pin assignments.",
     "Halte 2s, um alle Pin-Zuordnungen zu löschen.")
@@ -9190,19 +9190,19 @@ UI_TEXT(UPD_C6_HOLD, 0,
     "HOLD 2s TO UPDATE THE C6 RADIO",
     "2s HALTEN ZUM C6-FUNK-UPDATE")
 UI_TEXT(UPD_C6_REINSTALL, 0,
-    "HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE",
-    "2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN")
+    "HOLD 2s TO REINSTALL THE C6 RADIO",
+    "2s HALTEN: C6-FUNK NEU INSTALLIEREN")
 UI_TEXT(UPD_C6_PROGRESS, 0,
     "C6 UPDATE %u%%",
     "C6-UPDATE %u%%")
 /* The band's line for a tap on the C6 RADIO row's grey hold: why it is
  * grey (upd_c6_reason()). */
 UI_TEXT(C6_WHY_NO_IMAGE, 94,
-    "This panel includes no C6 radio firmware.",
-    "Dieses Panel enthält keine C6-Funk-Firmware.")
+    "This release has no C6 radio firmware.",
+    "Dieses Release enthält keine C6-Funk-Firmware.")
 UI_TEXT(C6_WHY_BAD_IMAGE, 94,
-    "The included C6 radio firmware failed its check.",
-    "Die enthaltene C6-Funk-Firmware hat die Prüfung nicht bestanden.")
+    "The C6 radio firmware of this release failed its check.",
+    "Die C6-Funk-Firmware dieses Release hat die Prüfung nicht bestanden.")
 UI_TEXT(C6_WHY_UPDATING, 94,
     "The C6 radio update is running.",
     "Das C6-Funk-Update läuft.")
@@ -9320,8 +9320,8 @@ UI_TEXT(UPD_SINGLE_HEAD, 0,
     "Single updates and reinstalls. The steps on UPDATES are the normal way.",
     "Einzelne Updates und Neuinstallationen. Der normale Weg sind die Schritte auf UPDATES.")
 UI_TEXT(UPD_SINGLE_NOTE, 0,
-    "Each hold updates one part on its own. A reinstall writes the included firmware again to a C6 or a device that already runs it.",
-    "Jedes Halten aktualisiert ein Teil für sich. Neu installieren schreibt die enthaltene Firmware erneut auf einen C6 oder ein Gerät, das sie schon hat.")
+    "Each hold updates one part on its own. A reinstall writes this release's image, downloaded or from the SD card, again to a C6 or a device that already runs it.",
+    "Jedes Halten aktualisiert ein Teil für sich. Neu installieren schreibt das Image dieses Release, geladen oder von der SD-Karte, erneut auf einen C6 oder ein Gerät, das es schon hat.")
 /* SINGLE UPDATES' WIRELESS DEVICES entry and the page it opens (upd_dev.c). */
 UI_TEXT(UPD_DEVS_HEAD, 0,
     "WIRELESS DEVICES",
@@ -9343,14 +9343,14 @@ UI_TEXT(UPD_DEVS_NOTE, 0,
     "Ein Gerät schreibt nichts, bevor das Update am Gerät selbst innerhalb von 30s angenommen ist: ein Druck auf die Taste am Dial oder BOOT am Knoten 1s gehalten. ARMED ist gesperrt, solange ein Update läuft.")
 /* The band's line for a tap on a device row's grey hold (upd_dev_reason()). */
 UI_TEXT(DEV_WHY_NO_IMAGE, 94,
-    "This panel includes no firmware for this device.",
-    "Dieses Panel enthält keine Firmware für dieses Gerät.")
+    "This release has no firmware for this device.",
+    "Dieses Release enthält keine Firmware für dieses Gerät.")
 UI_TEXT(DEV_WHY_BAD_IMAGE, 94,
-    "The included firmware for this device failed its check.",
-    "Die enthaltene Firmware für dieses Gerät hat die Prüfung nicht bestanden.")
+    "The firmware of this release for this device failed its check.",
+    "Die Firmware dieses Release für dieses Gerät hat die Prüfung nicht bestanden.")
 UI_TEXT(DEV_WHY_CHECKING, 94,
-    "The included firmware for this device is being checked.",
-    "Die enthaltene Firmware für dieses Gerät wird geprüft.")
+    "The firmware of this release for this device is being checked.",
+    "Die Firmware dieses Release für dieses Gerät wird geprüft.")
 UI_TEXT(DEV_WHY_NOT_LINKED, 94,
     "Connect the device on WIRELESS first.",
     "Verbinde das Gerät zuerst auf WIRELESS.")
@@ -12965,8 +12965,8 @@ UI_TEXT(RUD_SRC_NO_MAGNET, 36,
     "ANGLE: %s SEES NO MAGNET",
     "WINKEL: %s SIEHT KEINEN MAGNETEN")
 UI_TEXT(RUD_SRC_STALE, 36,
-    "ANGLE: %s NOT ANSWERING",
-    "WINKEL: %s ANTWORTET NICHT")
+    "ANGLE: %s NO READING",
+    "WINKEL: %s KEIN MESSWERT")
 UI_TEXT(RUD_SRC_LIVE, 0,
     "ANGLE: %s",
     "WINKEL: %s")
@@ -13193,7 +13193,7 @@ UI_TEXT(IMU_ERR_SCAN, 53,
  * its state words (25 cells of 8 x 16), the scan's and the bind's rows. */
 UI_TEXT(SET_HUB_WIRELESS, 0,
     "IMU, DIAL, POWER, BALANCE NODES",
-    "IMU, DIAL, LEISTUNG, AUSWUCHTEN")
+    "IMU, DIAL, SENSORKNOTEN")
 UI_SETTING_LABEL(SET_DIAL_EN,
     "Dial",
     "Dial")

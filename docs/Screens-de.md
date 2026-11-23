@@ -678,13 +678,13 @@ eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | 2s HALTEN: LADEN & INSTALLIEREN auf UPDATES und in der Update-Erinnerung | `Halte 2s, um zu laden und zu installieren.` |
 | 2s HALTEN ZUM IOMCU-UPDATE in Schritt 2 von UPDATES und auf EINZELNE UPDATES | `Halte 2s, um den IOmcu zu aktualisieren.` |
 | 2s HALTEN ZUM C6-FUNK-UPDATE auf EINZELNE UPDATES | `Halte 2s, um den C6-Funk zu aktualisieren. Das WLAN bleibt bis zum Ende aus.` |
-| 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN auf EINZELNE UPDATES | `Halte 2s, um die C6-Firmware des Panels neu zu installieren. WLAN bleibt bis zum Ende aus.` |
+| 2s HALTEN: C6-FUNK NEU INSTALLIEREN auf EINZELNE UPDATES | `Halte 2s, um die C6-Firmware dieses Release neu zu installieren. WLAN bleibt beim Senden aus.` |
 | 2s HALTEN ZUM DIAL-UPDATE auf EINZELNE UPDATES | `Halte 2s, um das Dial zu aktualisieren. Der Drehknopf ruht bis zur neuen Verbindung.` |
-| 2s HALTEN: DIAL-FIRMWARE NEU INSTALLIEREN auf EINZELNE UPDATES | `Halte 2s, um die Dial-Firmware des Panels neu zu installieren.` |
+| 2s HALTEN: DIAL-FIRMWARE NEU INSTALLIEREN auf EINZELNE UPDATES | `Halte 2s, um die Dial-Firmware dieses Release neu zu installieren.` |
 | 2s HALTEN ZUM LEISTUNGSKNOTEN-UPDATE auf EINZELNE UPDATES | `Halte 2s, um den Leistungsknoten zu aktualisieren. Messwerte ruhen bis zur neuen Verbindung.` |
-| 2s HALTEN: LEISTUNGSKNOTEN NEU INSTALLIEREN auf EINZELNE UPDATES | `Halte 2s, um die Firmware des Leistungsknotens neu zu installieren.` |
+| 2s HALTEN: LEISTUNGSKNOTEN NEU INSTALLIEREN auf EINZELNE UPDATES | `Halte 2s, um die Leistungsknoten-Firmware dieses Release neu zu installieren.` |
 | 2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE auf EINZELNE UPDATES | `Halte 2s, um den Auswuchtknoten zu aktualisieren. Messungen ruhen bis zur neuen Verbindung.` |
-| 2s HALTEN: AUSWUCHTKNOTEN NEU INSTALLIEREN auf EINZELNE UPDATES | `Halte 2s, um die Firmware des Auswuchtknotens neu zu installieren.` |
+| 2s HALTEN: AUSWUCHTKNOTEN NEU INSTALLIEREN auf EINZELNE UPDATES | `Halte 2s, um die Auswuchtknoten-Firmware dieses Release neu zu installieren.` |
 | 2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN auf OUTPUTS | `Halte 2s, um alle Pin-Zuordnungen zu löschen.` |
 | ÜBERSCHREIBEN im Bestätigungsdialog des FILES-Editors | `Halte 2s, um zu überschreiben.` |
 | 2s HALTEN ZUM BESTÄTIGEN auf der Busfehler-Seite | `Halte 2s, um zu bestätigen.` |
@@ -5820,7 +5820,7 @@ Zeile in der Schrift 10 x 20px.
 - PANEL, SENSORS, WIRELESS und SD CARD enthalten die Einstellungen für den
   gesamten Prüfstand. Jede Kachel nennt die Zahl der Einstellungen in ihrer
   Liste; SENSORS nennt stattdessen die verfügbaren Gruppen,
-  `STROM, WINKEL, PHASENABGRIFF`, und WIRELESS `IMU, DIAL, LEISTUNG, AUSWUCHTEN`. Ein Tippen öffnet die Liste der Kategorie. Die Einstellungen von Akku,
+  `STROM, WINKEL, PHASENABGRIFF`, und WIRELESS `IMU, DIAL, SENSORKNOTEN`. Ein Tippen öffnet die Liste der Kategorie. Die Einstellungen von Akku,
   Motor und Gasausgang stehen unter MOTOR & ESC > OPTIONEN
   ([MOTOR & ESC, Optionen](#motor--esc-optionen)).
 - Vier eigene Bildschirme: OUTPUTS ([Outputs](#outputs)), WI-FI ([WLAN](#wlan)),
@@ -6141,7 +6141,7 @@ Panel berührt und der Prüfstand ruht.
   wie beim Popup des Screenshots ([Das Popup](#das-popup)): SAFE ohne
   wartendes ARM, Netzteil und PROG 5V aus, kein Port gehalten, keine
   Programmiersitzung, kein Kartenauftrag, kein Sweep, kein Test, kein
-  LIMIT RUN, kein ESC-STICK-Lauf, kein Update, kein FAULT-Bit und keine
+  Endlagenlauf, kein ESC-STICK-Lauf, kein Update, kein FAULT-Bit und keine
   offene Aufzeichnung. Ein Frame, der eine davon findet, setzt sofort 100%
   und startet die Minuten neu. Ein Prüfstand bei ARMED oder ein
   eingeschalteter Ausgang steht nie hinter einem gedimmten Bild.
@@ -8109,7 +8109,7 @@ Die Fußleiste lautet `[UPDATES] [ ] [ZURÜCK]`.
 | --- | --- |
 | `2s HALTEN ZUM IOMCU-UPDATE` | Startet das Update des IOmcu aus dem Image, das dieses Panel mitbringt ([Der IOmcu](#der-iomcu)). |
 | `2s HALTEN ZUM C6-FUNK-UPDATE` | Holt das Image des C6-Funks aus dem Release, das das Panel ausführt, und sendet es an den ESP32-C6 des Boards ([Der C6-Funk](#der-c6-funk), [Geräte-Images](#geräte-images)). |
-| `2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN` | Dasselbe, solange der C6 die Version des Release meldet ([Der C6-Funk](#der-c6-funk)). |
+| `2s HALTEN: C6-FUNK NEU INSTALLIEREN` | Dasselbe, solange der C6 die Version des Release meldet ([Der C6-Funk](#der-c6-funk)). |
 | `FIRMWARE DER FUNKGERÄTE` | Öffnet über dieser Seite die Seite mit den Firmware-Zeilen des Dial und der Sensorknoten ([Die Funkgeräte](#die-funkgeräte)). Während ein Update läuft, zeigt die Taste die Beschriftung dieser Zeile. |
 | `ZURÜCK` | Schließt die Seite: UPDATES erscheint wieder. |
 
@@ -8283,7 +8283,7 @@ Bluetooth trägt: `C6-Funk: 2.13.0. Release: 2.13.0.`, die Version,
 die der C6 beim ersten Wi-Fi-Start seit dem Panel-Start gemeldet hat, oder
 `nicht gemeldet`, und die esp_hosted-Version des C6-Images des Release.
 Darunter `2s HALTEN ZUM C6-FUNK-UPDATE`, oder `2s HALTEN:
-C6-FIRMWARE DES PANELS NEU INSTALLIEREN`, solange der C6 diese
+C6-FUNK NEU INSTALLIEREN`, solange der C6 diese
 Version meldet. Das Halten holt zuerst das Image, solange es nicht im
 Speicher ist ([Geräte-Images](#geräte-images)); die Taste zeigt dann
 `DOWNLOAD 43%`, `DATEI WIRD GEPRÜFT` oder `SD-KARTE WIRD GELESEN`, und das
