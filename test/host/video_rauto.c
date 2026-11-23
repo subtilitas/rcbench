@@ -100,8 +100,8 @@ static const char *g_title = "RUDDER AUTO";
 static void frame(void)
 {
     char path[512];
-    static unsigned ticks;
-    if (ticks++ % FRAME_EVERY == 0u) {
+    static unsigned passes;
+    if (passes++ % FRAME_EVERY == 0u) {
         ui_bench_status_t st = *ui_router_status();
         st.link_up = true;
         st.armed = ra.armed;

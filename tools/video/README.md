@@ -166,6 +166,7 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `../video_tap.py` | models a beeping motor lead, simulates the tap on it with ngspice, runs the capture's hold-off and `protocols/phase_tap/tone.c` on the simulated edges and writes `plots/phase-tap.json` |
 | `plots/phase-tap.json` | the figure of `phase-tap`: 12 traces, the tap's drawing, the model's values and the detector's beeps, windows and groups |
 | `player/scope.js` | draws a figure's plots and circuits |
+| `../video_check.py` | the storyboard check: `check()` returns a message per field the player would not draw, `board_faults()` holds a board scene to its board; `tools/make_video.py --check` runs it |
 | `../video_audio.py` | the sound track of a storyboard as a WAV file |
 | `../video_voice.py` | the narration: the lines, the speaker, the room each line needs |
 
