@@ -711,9 +711,12 @@ The power node's row picks its image by the board the node's INFO names
 | none read yet | `rcbench-node-pwr-<version>.bin` | 2 | ESP32-C6, 0x000D | POWER NODE FIRMWARE |
 | any other | none: `NO FIRMWARE`, a tap reads `This release has no firmware for this device.` | | | POWER NODE FIRMWARE |
 
-The panel keeps the board while the link is down, so the update's own hold
-on the link keeps the choice; a bind or another address clears it until
-the next INFO. Before the first byte goes out, `devimg_fits()` holds the
+The panel keeps the board of the bound address over a link's end, the
+update's own hold on the link and a reconnect whose INFO is still unread,
+and over a bind of the address already bound: none of them changes the
+choice or drops an update owed to the image. A new INFO sets the board;
+another address (a bind of another node, an unbind, SETUP's address)
+clears it until that node's INFO. Before the first byte goes out, `devimg_fits()` holds the
 image to the board INFO named on the link that reported the node's
 version: the board takes that image, and the head names the board's chip
 and kind. A mismatch ends the update before the node's link is touched,

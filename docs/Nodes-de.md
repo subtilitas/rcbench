@@ -766,9 +766,13 @@ des Knotens nennt (`devimg_pnode_image()`, Feld `board` von INFO,
 | noch keins gelesen | `rcbench-node-pwr-<Version>.bin` | 2 | ESP32-C6, 0x000D | LEISTUNGSKNOTEN-FIRMWARE |
 | jedes andere | keins: `KEINE FIRMWARE`, ein Tippen zeigt `Dieses Release enthält keine Firmware für dieses Gerät.` | | | LEISTUNGSKNOTEN-FIRMWARE |
 
-Das Panel behält das Board, solange der Link getrennt ist; das eigene
-Halten des Links durch das Update behält also die Wahl. Ein Binden oder
-eine andere Adresse löscht es bis zum nächsten INFO. Bevor das erste Byte
+Das Panel behält das Board der gebundenen Adresse über das Ende eines
+Links, das eigene Halten des Links durch das Update und ein Wiederverbinden
+mit noch ungelesenem INFO hinweg, und über ein Binden der schon gebundenen
+Adresse: Nichts davon ändert die Wahl oder verwirft ein Update, das dem
+Image geschuldet ist. Ein neues INFO setzt das Board; eine andere Adresse
+(das Binden eines anderen Knotens, ein Lösen, die Adresse aus SETUP)
+löscht es bis zum INFO dieses Knotens. Bevor das erste Byte
 hinausgeht, hält `devimg_fits()` das Image gegen das Board, das INFO auf
 dem Link nannte, der die Version des Knotens meldete: Das Board nimmt
 dieses Image, und der Kopf nennt Chip und Art des Boards. Passt es nicht,

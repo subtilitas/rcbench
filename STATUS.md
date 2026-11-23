@@ -1408,8 +1408,10 @@ before the first byte at every mismatch, the asset's name and card path
 at the widest version, a release without its `SHA256SUMS` line, and the
 version, size and signature checks (`test_devimg_board`); the row's and
 the step's DISPLAY NODE names in both languages (`test_upd_dev`); the
-board kept over the update's hold on the link and cleared on another
-address (`test_pnode_ctl`).
+board kept over the update's hold, a reconnect with INFO unread and a bind
+of the same address, with the owed display update kept, and cleared with
+the owed update dropped on another address and an unbind
+(`test_pnode_ctl`).
 
 ### Firmware update over Bluetooth LE
 

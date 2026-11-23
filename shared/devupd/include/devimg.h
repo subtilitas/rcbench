@@ -119,6 +119,18 @@ uint32_t devimg_slot(devimg_id_t id);
 devimg_id_t devimg_pnode_image(uint8_t board);
 
 /**
+ * @brief A row's image follows its node's board: @p row takes @p now.
+ *        The board is pnode_ctl_board()'s, which a reconnect of the same
+ *        address does not change, so only a new INFO or an address change
+ *        moves the image.
+ * @param row the row's image, updated
+ * @param now the image the row sends now
+ * @return the image the row sent before, whose owed update the caller
+ *         drops (devimg_cancel()); DEVIMG_COUNT when the image is the same
+ */
+devimg_id_t devimg_follow(devimg_id_t *row, devimg_id_t now);
+
+/**
  * @brief The BLEOTA_KIND_* the image's device takes.
  * @param id the image
  * @return the kind; 0 for the C6 radio and for an @p id out of range

@@ -56,6 +56,16 @@ devimg_id_t devimg_pnode_image(uint8_t board)
     }
 }
 
+devimg_id_t devimg_follow(devimg_id_t *row, devimg_id_t now)
+{
+    if (row == NULL || *row == now) {
+        return DEVIMG_COUNT;
+    }
+    const devimg_id_t was = *row;
+    *row = now;
+    return was;
+}
+
 uint8_t devimg_kind(devimg_id_t id)
 {
     return (unsigned)id < DEVIMG_COUNT ? k_fact[id].kind : 0u;

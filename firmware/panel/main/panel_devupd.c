@@ -696,14 +696,12 @@ void devupd_service(bool armed)
         const bool mine = busy && s_ask_dev == i;
         /* The image on its way reads as the update running; another
          * image on its way holds the row as another update does.  The
-         * power node's row takes the image of its node's board: when the
-         * board changes, an update owed to the other image no longer
-         * starts. */
+         * power node's row takes the image of its node's board
+         * (pnode_ctl_board(), kept over a reconnect): when a new INFO or
+         * another address changes it, an update owed to the other image
+         * no longer starts. */
         const devimg_id_t id = row_img(i, d->board);
-        if (id != s_row_img[i]) {
-            panel_devimg_forget(s_row_img[i]);
-            s_row_img[i] = id;
-        }
+        panel_devimg_forget(devimg_follow(&s_row_img[i], id));
         const bool fetching = panel_devimg_running(id);
         const fw_version_t rel = panel_devimg_want(id);
         const devupd_row_in_t in = {

@@ -84,6 +84,10 @@ typedef struct {
     uint8_t       info_proto;  /**< the protocol INFO named, 0 unread */
     uint8_t       info_role;   /**< the role INFO named, 0 unread */
     uint8_t       info_board;  /**< the board INFO named, 0 unread */
+    uint8_t       known_board; /**< the board the bound address's last
+                                    accepted INFO named; kept over link
+                                    ends and reconnects, 0 after an
+                                    address change */
     bool          was_up;      /**< a reading came on this link */
     bool          lost;        /**< the link dropped after a reading */
     bool          run_owed;    /**< the RUN write waits for the link */
@@ -167,13 +171,17 @@ bool pnode_ctl_target(const pnode_ctl_t *c, bleu_addr_t *addr, bool *linked,
                       uint8_t version[3], bool *down);
 
 /**
- * @brief The board the node's INFO named (RCNODE_BOARD_*), for UPDATES'
- *        choice of image (devimg_pnode_image()).  It stays while the link
- *        is down, so an update's hold on the link keeps it; it clears
- *        when a link comes up, until that link's INFO is read, and on a
- *        bind or an address change.
+ * @brief The board the bound node's last accepted INFO named
+ *        (RCNODE_BOARD_*), for UPDATES' choice of image
+ *        (devimg_pnode_image()).  It stays over a link's end, the update's
+ *        hold and a reconnect of the same address, while that link's INFO
+ *        is still unread: a reconnect is no change of board.  A new INFO
+ *        sets it; only an address change (another bind, an unbind, SETUP's
+ *        address) clears it.  A bind of the address already bound keeps
+ *        it.
  * @param c The controller.
- * @return the board; 0 before INFO on the last link, or when @p c is NULL
+ * @return the board; 0 before any INFO of the bound address, or when @p c
+ *         is NULL
  */
 uint8_t pnode_ctl_board(const pnode_ctl_t *c);
 
