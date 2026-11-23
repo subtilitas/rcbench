@@ -5,7 +5,9 @@ browser. It is served at `/rcbench/flash/` on the repository's GitHub Pages
 site, beside the configurator at `/rcbench/`.
 
 The page is a wizard: the first screen lists tasks, then one screen per
-step. It writes release images only, with "Keep settings" always on.
+step. Simple mode writes release images only, with "Keep settings" always
+on. The Advanced switch on the first screen adds a local file, an older
+release, "Keep settings" off and the Core2350B (see "Advanced mode").
 
 ## Tasks and steps
 
@@ -15,6 +17,9 @@ step. It writes release images only, with "Keep settings" always on.
 | Install the IOmcu | IOmcu on the Waveshare RP2350-CAN, IOmcu on the rbmod carrier | RP2350, WebUSB | Task, Board, Connect, Check, Write, Done |
 | Set up a wireless device | display node, M5Stack Dial, power node, balance node | ESP32-S3, ESP32-C6, Web Serial | Task, Board, Connect, Check, Write, Done |
 | Repair the panel's C6 radio | C6 radio over header H4 and a USB-to-UART adapter | ESP32-C6, Web Serial | Task, Prepare, Connect, Check, Write, Done |
+| Write a file of my own (Advanced only) | all 9 boards, the local file preselected | each board's chip and link | Task, Board, Connect, Check, Write, Done |
+
+In Advanced the IOmcu task also lists the Core2350B.
 
 Below the tasks the page says that a running bench updates the IOmcu, the
 C6 radio, the Dial and the nodes from the panel, and that this page is for
@@ -22,8 +27,8 @@ a first install and for a board that does not start.
 
 | Screen | Shows | Moves on |
 | --- | --- | --- |
-| Task | 4 tiles; a tile whose link the browser lacks is disabled and names the missing interface | a tap on a tile |
-| Board | the task's boards with their chip; a board no release on the page carries is disabled | a tap on a board; the download of its image starts here |
+| Task | 4 tiles, 5 in Advanced; a tile whose link the browser lacks is disabled and names the missing interface; the Advanced switch | a tap on a tile |
+| Board | the task's boards with their chip; a board no release on the page carries is disabled in simple mode and takes a local file in Advanced | a tap on a board; the download of its image starts here |
 | Prepare (C6 radio only) | 3 steps from [The ESP32-C6 radio](../docs/C6.md#recovery-over-header-h4) and a drawing of H4: TXD0, RXD0, GND, IO9 | NEXT |
 | Connect | lines per board (sockets, BOOT key, the pack off the XT60), CONNECT; for the IOmcu the 1200 baud restart into BOOTSEL and the BOOT drawing | a connection whose chip matches the board |
 | Check | board, connected chip, release with kind and date, file, size in bytes, SHA-256, the manifest check, the signature, the IOmcu's slot B erase, the kept NVS ranges, WRITE | WRITE |
@@ -43,12 +48,41 @@ The error states:
 | Connect | the chip is another than the board's | both chips named, nothing written, CHOOSE ANOTHER BOARD (Board, or Task for a one-board task) |
 | Check | the download runs | "Downloading <file>", WRITE disabled |
 | Check | the download fails, or its size or SHA-256 differs from the manifest | the reason, RETRY, WRITE disabled |
-| Check | the release list is not available | the reason, WRITE disabled |
-| Check | "Keep settings" refuses the image (see below) | the reason, WRITE disabled |
-| Check | the signature does not match | a red note, WRITE disabled |
+| Check | the release list is not available | the reason, WRITE disabled; simple mode adds "Advanced mode on the first screen writes a local file" |
+| Check | "Keep settings" refuses the image (see below) | the reason, WRITE disabled; simple mode adds "Advanced mode on the first screen writes the whole image; that erases the settings" |
+| Check | the signature does not match | a red note; WRITE disabled in simple mode, enabled in Advanced |
 | Check | the release has no signature | an information note, WRITE enabled |
 | Write | the write or the verify fails | the failed phase, the reason and a hint, CONNECT AGAIN (Connect, the image kept), CANCEL |
 | Write | the reset after a verify that passed fails | the port is closed; goes to Done with "press RESET" |
+
+## Advanced mode
+
+The Advanced switch on the first screen is off on every load. It is held
+in the URL (`adv=1`), so a reload or a pasted link with `adv=1` opens
+Advanced. Its code and strings (`src/advanced.ts`, `src/i18n_adv.ts`, 5.3kB)
+load on the first switch to Advanced, not with the page. Switching it off
+resets the source to the release, "Keep settings" to on and drops the
+picked release and the .sig file. With the switch on, the Details log is
+open.
+
+| Advanced adds | Where |
+| --- | --- |
+| "Write a file of my own": all 9 boards, the local file preselected | Task, Board |
+| The Core2350B, local file only | Board of the IOmcu task and of "Write a file of my own" |
+| A board no release carries, with the local file preselected | Board |
+| Release select: every release whose manifest carries the board, newest first, with kind and date | Check |
+| Local file (.bin, .uf2) and its optional .sig file | Check |
+| "Keep settings" checkbox; off writes the whole image from 0x0 and erases the settings | Check |
+| WRITE on a signature that does not match, under a red note | Check |
+
+A picked release wins on every board it carries for the rest of the visit;
+a board it does not carry takes the release of the visit.
+
+A local file passes the checks of a release image except the manifest:
+the chip ID in its header, a merged image for an ESP board, a UF2 file or a
+`.bin` for an RP2350. An RP2350 `.bin` goes to 0x10000000, over the
+partition table of an IOmcu; Check says so. A board change drops the local
+file and its .sig file.
 
 ### Release of the visit
 
@@ -60,8 +94,8 @@ with its kind (testing or stable) and date.
 
 ### History and URL
 
-The URL hash holds the state: `#t=<task>&b=<board>&s=<step>`, no hash on
-Task. Every forward step adds a browser history entry, so the browser's
+The URL hash holds the state: `#t=<task>&b=<board>&s=<step>`, plus
+`adv=1` in Advanced; no `t`, `b` and `s` on Task. Every forward step adds a browser history entry, so the browser's
 back and the page's BACK are the same move.
 
 - Back from Check to Connect keeps the connection; Connect then shows it
@@ -84,7 +118,7 @@ same site (see "How releases reach the page").
 | Panel, Waveshare ESP32-P4 7-inch board | ESP32-P4 | Web Serial | `rcbench-panel-merged.bin` from `rcbench-panel-p4-<tag>.zip` | 0x0 |
 | IOmcu, Waveshare RP2350-CAN | RP2350 | WebUSB | `rcbench-iomcu-install.uf2` from `rcbench-iomcu-<tag>.zip` | its UF2 (USB Flashing Format) addresses |
 | IOmcu, rbmod carrier | RP2350 | WebUSB | `rcbench-iomcu-rbmod-install.uf2` from `rcbench-iomcu-rbmod-<tag>.zip` | its UF2 addresses |
-| Remote servo node, Waveshare Core2350B | RP2350B | WebUSB | not in a release yet; not listed | — |
+| Remote servo node, Waveshare Core2350B | RP2350B | WebUSB | not in a release yet; a local file in Advanced only | its UF2 addresses, or 0x10000000 for a `.bin` |
 | Display node, ES3C28P | ESP32-S3 | Web Serial | `rcbench-node-display-merged-<version>.bin` | 0x0 |
 | M5Stack Dial | ESP32-S3 | Web Serial | `rcbench-dial-merged-<version>.bin` | 0x0 |
 | Power node | ESP32-C6 | Web Serial | `rcbench-node-pwr-merged-<version>.bin` | 0x0 |
@@ -116,14 +150,21 @@ Check shows one of these states:
 | --- | --- | --- | --- |
 | signed by the rcbench release key | the `.sig` verifies | a row "Signature" | enabled |
 | no signature | no `.sig` (HTTP 404 or a failed download), or a `.sig` of 0 bytes | a blue information note: releases before the signed ones carry none | enabled |
-| signature does not match | a `.sig` under 8 or over 72 bytes, out of form, or one that does not verify for this image | a red note | disabled |
+| signature does not match | a `.sig` under 8 or over 72 bytes, out of form, or one that does not verify for this image | a red note | disabled in simple mode, enabled in Advanced |
+| signature not checked (Advanced) | a local file without a picked .sig file | a blue information note | enabled |
+
+A local file is checked against the .sig file picked beside it, with the
+same rules and the same 3 states as a release image. The picked .sig file
+stays for the next local file of the same board.
 
 The log lists the state of each release image.
 
 ## Keep settings
 
-"Keep settings" (German "Einstellungen behalten") is always on: Check
-lists what stays on the board for every ESP board.
+"Keep settings" (German "Einstellungen behalten") is always on in simple
+mode: Check lists what stays on the board for every ESP board. In Advanced
+it is a checkbox, on for each new board; off writes every byte of the image
+from 0x0 and erases the settings.
 
 - The page reads the partition table from the image and writes
   every byte of the image except the ranges of its data partitions of the
@@ -165,6 +206,9 @@ bytes 0xAA 0x50, an MD5 entry (0xEB 0xEB, 14 bytes 0xFF, the MD5 of the
 entries), an end marker of 32 bytes 0xFF, at most 0xC00 bytes.
 
 "Keep settings" refuses, with the reason, and WRITE stays disabled, when:
+
+In simple mode WRITE stays disabled then; in Advanced "Keep settings" off
+writes the image whole.
 
 - the bootloader header is damaged or runs past the end of the image;
 - no table is found, the table has no MD5 entry, its MD5 does not match,
@@ -354,7 +398,9 @@ rbmod image: they offer the IOmcu image alone.
 | `src/state.ts` | The page's state, the facts the wizard's guards read, strings, the log, the stored language. |
 | `src/actions.ts` | The release list, the release image with its checks and signature, the connection, the write with its verify. |
 | `src/views.ts` | One render function per step: Task, Board, Prepare, Connect, Check, Write, Done. |
+| `src/advanced.ts` | Advanced on Check: release select, local file and .sig file, "Keep settings" checkbox. Loaded on the first switch to Advanced. |
 | `src/i18n.ts` | Strings in English and German. |
+| `src/i18n_adv.ts` | Strings of Advanced mode in English and German, loaded with `src/advanced.ts`. |
 | `src/boards.ts` | The boards, their chips, the image and chip checks. |
 | `src/manifest.ts` | Reader and checks of `index.json` and `manifest.json`. |
 | `src/esp.ts` | ESP32 flow on esptool-js, the baud rule. |
@@ -374,7 +420,8 @@ rbmod image: they offer the IOmcu image alone.
 | `e2e/helpers.ts` | Set-up of the browser tests: synthetic release images, the `fw/` folder served from memory, a test key put in place of the release key in the served script, the walk to Connect. |
 | `e2e/tasks.spec.ts` | Each task to Done: panel with the NVS bytes kept, Dial, power node, IOmcu at 1200 baud and over PICOBOOT, C6 radio at 460800 baud behind a USB-to-UART bridge; a language switch during a write; WRITE ANOTHER. |
 | `e2e/errors.spec.ts` | A chip that does not match, a download that fails or differs, a release list that fails, "Keep settings" refused, a board no release carries, the 3 signature states, a write and a verify that fail. |
-| `e2e/history.spec.ts` | BACK, CANCEL, the browser's back from Check, Connect, Write and Done, a pasted hash, a reload. |
+| `e2e/history.spec.ts` | BACK, CANCEL, the browser's back from Check, Connect, Write and Done, a pasted hash, a pasted hash with `adv=1`, a reload. |
+| `e2e/advanced.spec.ts` | The Advanced switch and "Write a file of my own", the release select per board and a picked release on the next board, a local file of the wrong and the right chip, a local file picked while the list loads, "Keep settings" off, a broken table written whole, the .sig states of a local file, WRITE on a mismatch, the Core2350B, the hints to Advanced in simple mode. |
 | `e2e/browser.spec.ts` | No Web Serial and no WebUSB, no WebUSB alone, the task list, the language, the footer links, the width of a phone. |
 | `e2e/fake-devices.js` | Fake Web Serial with an ESP32 boot ROM and flasher stub that erases the 4096-byte sectors it writes, an IOmcu port that leaves for BOOTSEL at 1200 baud, and a fake WebUSB RP2350 boot ROM; options for a write, an MD5 and a read back that fail, and for a browser without WebUSB. |
 | `tools/size.ts` | Size check of the build. |
@@ -384,11 +431,7 @@ rbmod image: they offer the IOmcu image alone.
 
 `src/tasks.ts`, `src/release.ts` and `src/wizard.ts` hold the step model of
 a wizard: no browser code, unit tests in `test/tasks.test.ts`,
-`test/release.test.ts` and `test/wizard.test.ts`. The page runs in simple
-mode. It has no Advanced switch, so the model's Advanced parts ("Write a
-file of my own", a picked release, a local file, "Keep settings" off, the
-Core2350B, WRITE on a signature that does not match) have no control on the
-page.
+`test/release.test.ts` and `test/wizard.test.ts`.
 
 - First screen: 4 tasks, panel, IOmcu, wireless device, and the C6 radio
   repair last. The Advanced switch adds "Write a file of my own" with all 9
@@ -460,4 +503,5 @@ the system setting.
   6.4MB.
 - An ESP32 in secure download mode or with flash encryption is not handled
   beyond what esptool-js does.
-- The Core2350B has no image in a release.
+- The Core2350B has no image in a release: the page writes it from a local
+  file in Advanced only.

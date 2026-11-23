@@ -12,7 +12,18 @@ history is in git.
   `release.ts`, `wizard.ts`) with unit tests: 4 tasks on the first screen,
   the C6 radio repair last with a Prepare step, one release per visit from
   the panel image's default, the signature gate of WRITE per mode, the
-  Core2350B in Advanced with a local file only. The page does not use it.
+  Core2350B in Advanced with a local file only.
+- Web flasher: Advanced mode of the wizard. A switch on the first screen,
+  held in the URL as `adv=1`, adds "Write a file of my own" over all 9
+  boards, the Core2350B with a local file only, the release select (a
+  picked release wins on every board it carries), the local file with an
+  optional `.sig` file ("signature not checked" without one, WRITE
+  enabled), the "Keep settings" checkbox (off writes the whole image and
+  erases the settings), and WRITE on a signature that does not match under
+  a red note. Simple mode keeps WRITE disabled on a mismatch and points to
+  Advanced when the release list fails or "Keep settings" refuses the
+  image. The Advanced code, 5.3kB, loads on the first switch
+  ([flasher/README.md](flasher/README.md#advanced-mode)).
 - Web flasher: the release signature of each release image. The page
   downloads `<image>.sig` beside the image and verifies it in the browser
   with Web Crypto (ECDSA P-256, SHA-256) against the embedded release
