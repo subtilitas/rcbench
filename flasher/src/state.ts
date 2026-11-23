@@ -10,6 +10,7 @@ import type { Key, Lang } from './i18n.ts';
 import type { AdvKey } from './i18n_adv.ts';
 import type { ImageEntry, Manifest, ReleaseEntry } from './manifest.ts';
 import type { Picoboot } from './picoboot.ts';
+import type { EraseRange } from './rp2350.ts';
 import type { SigShown } from './signature.ts';
 import type { Source } from './tasks.ts';
 import { start } from './wizard.ts';
@@ -26,6 +27,12 @@ export interface Img {
   format: 'bin' | 'uf2';
   /** The manifest entry of a release image; null for a local file. */
   entry: ImageEntry | null;
+  /**
+   * The image slots a write erases: the manifest's for a release image; for
+   * a local install UF2 (absolute addresses) on an RP2350 board, the IOmcu
+   * slots it leaves as they are (`otherSlots`).
+   */
+  erase: readonly EraseRange[];
   /**
    * The signature: its shown state and the .sig file it comes from. A local
    * file without a picked .sig file is `unchecked`.

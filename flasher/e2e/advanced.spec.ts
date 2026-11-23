@@ -238,11 +238,24 @@ test('Core2350B: absent in simple mode; in Advanced a local UF2 file only, writt
   await expect(page.locator('#image-note.bad')).toContainText('.uf2');
   await pickFile(page, '#file', 'core.uf2', IMAGES.iomcu);
   await expect(page.locator('#image')).toContainText(sha(IMAGES.iomcu));
+  // The install image writes slot A: slot B (0x1FF000+0x1FD000) is erased, as a release install erases it.
+  await expect(page.locator('#image')).toContainText('0x1ff000+0x1fd000');
+  // A newer image in slot B on the board: the fake flash holds 0x5A there.
+  expect(await page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.rpFlash[0x1ff000])).toBe(0x5a);
   await writeAndWait(page);
-  const image = await page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.flashHash('rp', 0x2000, 40 * 256));
+  const fake = await page.evaluate(async () => {
+    const f = (window as unknown as { __fake: Fake }).__fake;
+    return {
+      image: await f.flashHash('rp', 0x2000, 40 * 256),
+      slotB: f.rpFlash.subarray(0x1ff000, 0x1ff000 + 0x1fd000).every((x) => x === 0xff),
+      store: f.rpFlash[0x3fc000],
+    };
+  });
   const payload = new Uint8Array(40 * 256);
   for (let i = 0; i < 40; i++) payload.set(IMAGES.iomcu.subarray((i + 1) * 512 + 32, (i + 1) * 512 + 288), i * 256);
-  expect(image).toBe(sha(payload));
+  expect(fake.image).toBe(sha(payload));
+  expect(fake.slotB).toBe(true);
+  expect(fake.store).toBe(0x5a);
 });
 
 test('simple mode points to Advanced when the release list fails; Advanced writes a local file then', async ({ page }) => {
@@ -273,4 +286,58 @@ test('simple mode points to Advanced when "Keep settings" refuses the image', as
   await expect(page.locator('#keep-note.bad')).toContainText('MD5');
   await expect(page.locator('#hint-erase')).toContainText(label(page, 'writes the whole image', 'schreibt das ganze Image'));
   await expect(page.locator('#write')).toBeDisabled();
+});
+
+test('a board no release carries, picked while the release list loads, turns to the local file when the list arrives', async ({ page }) => {
+  await setup(page, { bootsel: true }, { indexDelayMs: 3000 });
+  await advancedOn(page);
+  await walk(page, 'iomcu', 'iomcu-rbmod');
+  await connectPico(page);
+  await expect(page.locator('input[name="src"][value="release"]')).toBeChecked();
+  // The list arrives: no release carries the rbmod carrier, the page shows the local file without a tap.
+  await expect(page.locator('input[name="src"][value="file"]')).toBeChecked({ timeout: 10_000 });
+  await expect(page.locator('#file')).toBeEnabled();
+  await expect(page.locator('#tag option')).toHaveCount(0);
+});
+
+test('two .sig files picked one after the other: the later one wins, whichever check ends first', async ({ page }) => {
+  await setup(page, { esp: { chipId: 9 } });
+  await advancedOn(page);
+  await walk(page, 'file', 'dial');
+  await connectEsp(page);
+  await pickFile(page, '#file', 'dial.bin', IMAGES.dial);
+  await expect(page.locator('#sig-state')).toHaveAttribute('data-state', 'unchecked');
+  // Signature checks answer late by the given milliseconds, in call order.
+  const delays = (ms: number[]): Promise<void> => page.evaluate((list) => {
+    const w = window as unknown as { __verify?: SubtleCrypto['verify']; __calls: number };
+    w.__verify ??= SubtleCrypto.prototype.verify;
+    const verify = w.__verify;
+    w.__calls = 0;
+    SubtleCrypto.prototype.verify = function (this: SubtleCrypto, ...args: Parameters<SubtleCrypto['verify']>) {
+      const r = verify.apply(this, args);
+      const ms = list[w.__calls++] ?? 0;
+      return new Promise((res) => setTimeout(() => res(r), ms));
+    } as SubtleCrypto['verify'];
+  }, ms);
+  const calls = (n: number): Promise<unknown> => page.waitForFunction((k) => (window as unknown as { __calls: number }).__calls >= k, n);
+  const sigState = page.locator('#sig-state');
+  // The earlier check ends last: its late result is dropped.
+  await delays([1500, 0]);
+  await pickFile(page, '#sigfile', 'dial.bin.sig', sigOf(IMAGES.dial));
+  await calls(1);
+  await pickFile(page, '#sigfile', 'other.sig', sigOf(IMAGES.panel));
+  await expect(sigState).toHaveAttribute('data-state', 'mismatch');
+  await page.waitForTimeout(2000);
+  await expect(sigState).toHaveAttribute('data-state', 'mismatch');
+  await expect(page.locator('#sig-picked')).toHaveText('other.sig');
+  // The earlier check ends while the later one runs: the later result still lands.
+  await delays([300, 1500]);
+  await pickFile(page, '#sigfile', 'dial.bin.sig', sigOf(IMAGES.dial));
+  await calls(1);
+  await pickFile(page, '#sigfile', 'other.sig', sigOf(IMAGES.panel));
+  await calls(2);
+  await page.waitForTimeout(2000);
+  await expect(sigState).toHaveAttribute('data-state', 'mismatch');
+  await expect(sigState).toContainText('other.sig');
+  await expect(page.locator('#sig-picked')).toHaveText('other.sig');
 });

@@ -81,7 +81,7 @@ export function chooseImage(): void {
   if (st.source === 'release') {
     st.tag = tagFor(b.id);
     void loadReleaseImage();
-  }
+  } else ui.render();
 }
 
 /** The release list is in: the release image of the board in hand loads; a local file stays. */
@@ -203,7 +203,7 @@ export async function loadReleaseImage(): Promise<void> {
     const state = sigShown(await verifySignature(RELEASE_KEY_PEM, bytes, await fetchSig(`${FW}${tag}/${sigName}`, sigName)));
     if (seq !== loadSeq) return;
     log(`${sigName}: ${state}`);
-    st.image = { bytes, name: entry.file, tag, sha256: sha, format: entry.format, entry, sig: { state, file: sigName } };
+    st.image = { bytes, name: entry.file, tag, sha256: sha, format: entry.format, entry, erase: entry.erase ?? [], sig: { state, file: sigName } };
     done(null);
   } catch (e) {
     done({ kind: 'bad', text: tr('noReleases', { x: errText(e) }) });
@@ -418,7 +418,7 @@ export async function write(): Promise<void> {
         if (uf2.family !== FAMILY.ABSOLUTE) {
           try { target = await conn.pb.targetPartition(uf2.family); } catch (e) { throw new StepError('partition', e); }
         }
-        try { plan = planUf2(uf2, target, img.entry?.erase ?? []); } catch (e) { throw new StepError('partition', e); }
+        try { plan = planUf2(uf2, target, img.erase); } catch (e) { throw new StepError('partition', e); }
       } else {
         plan = planBin(img.bytes);
       }

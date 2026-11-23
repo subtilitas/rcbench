@@ -81,8 +81,15 @@ a board it does not carry takes the release of the visit.
 A local file passes the checks of a release image except the manifest:
 the chip ID in its header, a merged image for an ESP board, a UF2 file or a
 `.bin` for an RP2350. An RP2350 `.bin` goes to 0x10000000, over the
-partition table of an IOmcu; Check says so. A board change drops the local
-file and its .sig file.
+partition table of an IOmcu; Check says so. A local UF2 file with
+absolute addresses on an RP2350 board erases the IOmcu image slot it does
+not write, as a release install does: it writes slot A (0x2000, 2,084,864
+bytes), so slot B (0x1FF000, 2,084,864 bytes) is erased and the boot ROM
+starts the written image. A file that writes into neither slot erases
+nothing. The slots are a copy of `firmware/iomcu/partitions.json`, which the
+module, the rbmod carrier and the Core2350B share; a unit test holds the
+copy equal. A board change drops the local file and its .sig file. A later
+.sig file wins over one whose check still runs.
 
 ### Release of the visit
 

@@ -224,7 +224,7 @@ function renderCheck(b: Board): string {
       ['imgSha', img.sha256, 'mono'],
       ['imgCheck', img.entry ? tr('imgOk') : ta('imgLocal')],
     );
-    for (const e of img.entry?.erase ?? []) rows.push(['imgErase', tr('imgEraseB', { x: `0x${e.offset.toString(16)}+0x${e.size.toString(16)}` })]);
+    for (const e of img.erase) rows.push(['imgErase', tr('imgEraseB', { x: `0x${e.offset.toString(16)}+0x${e.size.toString(16)}` })]);
   }
   let html = advanced() ? st.adv!.renderSource(b) : '';
   html += `<dl class="img" id="image">${rows.map(([k, v, cls]) => `<dt>${esc(tr(k))}</dt><dd${cls ? ` class="${cls}"` : ''}>${esc(v)}</dd>`).join('')}`;

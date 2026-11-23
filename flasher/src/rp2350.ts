@@ -15,6 +15,32 @@ export interface EraseRange {
   size: number;
 }
 
+/**
+ * The image slots A and B of the IOmcu's flash table, a copy of the
+ * partitions of `firmware/iomcu/partitions.json` that take an image family.
+ * The module, the rbmod carrier and the Core2350B share the table; a unit
+ * test holds the copy equal to the file.
+ */
+export const IOMCU_SLOTS: readonly EraseRange[] = [
+  { offset: 0x2000, size: 2036 * 1024 },
+  { offset: 2044 * 1024, size: 2036 * 1024 },
+];
+
+/**
+ * The slots an install image leaves as they are, as the release manifest
+ * names them (`tools/flash_manifest.py` `erase_ranges`): every slot that
+ * holds none of the written sectors. Empty when the image writes into no
+ * slot, so a file of another layout erases nothing.
+ */
+export function otherSlots(writes: readonly Region[], slots: readonly EraseRange[] = IOMCU_SLOTS): EraseRange[] {
+  const hit = (s: EraseRange): boolean => writes.some((w) => {
+    const start = w.addr - FLASH_BASE;
+    return start < s.offset + s.size && start + w.data.length > s.offset;
+  });
+  if (!slots.some(hit)) return [];
+  return slots.filter((s) => !hit(s)).map((s) => ({ ...s }));
+}
+
 /** What the page sends: sector-aligned regions and extra ranges to erase. */
 export interface FlashPlan {
   /** 4096-byte aligned regions at addresses in the 0x10000000 window. */

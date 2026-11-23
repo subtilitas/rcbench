@@ -12,9 +12,11 @@ import type { AdvKey } from './i18n_adv.ts';
 import { RELEASE_KEY_PEM } from './release_key.ts';
 import { releasesFor } from './release.ts';
 import { SIG_MAX, sigShown, verifySignature } from './signature.ts';
+import { otherSlots, planUf2 } from './rp2350.ts';
 import { board, errText, esc, log, st, tr, ui } from './state.ts';
 import type { Img } from './state.ts';
 import { keepFor, sourcesFor } from './tasks.ts';
+import { FAMILY, parseUf2 } from './uf2.ts';
 
 export const ta = (key: AdvKey, vars?: Record<string, string | number>): string => tAdv(st.lang, key, vars);
 
@@ -78,7 +80,15 @@ async function loadFile(file: File): Promise<void> {
       const sig = await localSig(bytes);
       if (!isLoad(seq)) return;
       log(`${file.name}: ${bytes.length} bytes, SHA-256 ${sha}, signature ${sig.state}`);
-      st.image = { bytes, name: file.name, tag: null, sha256: sha, format: v.ok ? v.format : 'bin', entry: null, sig };
+      const format = v.ok ? v.format : 'bin';
+      // A local install UF2 erases the other IOmcu slot as a release install does,
+      // so the boot ROM starts the written image, not an older or newer one.
+      let erase: Img['erase'] = [];
+      if (b.chip === 'rp2350' && format === 'uf2') {
+        const uf2 = parseUf2(bytes);
+        if (uf2.family === FAMILY.ABSOLUTE) erase = otherSlots(planUf2(uf2, null).writes);
+      }
+      st.image = { bytes, name: file.name, tag: null, sha256: sha, format, entry: null, erase, sig };
     }
   } catch (e) {
     if (!isLoad(seq)) return;
@@ -88,16 +98,28 @@ async function loadFile(file: File): Promise<void> {
   ui.render();
 }
 
-/** A .sig file picked beside a local file: kept for the next local image, and the image in hand checked again. */
+let sigSeq = 0;
+
+/**
+ * A .sig file picked beside a local file: kept for the next local image, and
+ * the image in hand checked again. A later pick wins: the result of an
+ * earlier one that ends after it is dropped.
+ */
 async function loadSigFile(file: File): Promise<void> {
+  const seq = ++sigSeq;
   // A file longer than a signature is read to one byte past the longest: still refused by size.
-  st.localSig = { name: file.name, bytes: new Uint8Array(await file.slice(0, SIG_MAX + 1).arrayBuffer()) };
+  const bytes = new Uint8Array(await file.slice(0, SIG_MAX + 1).arrayBuffer());
+  if (seq !== sigSeq) return;
+  st.localSig = { name: file.name, bytes };
   const img = st.image;
   if (!img || img.entry) { ui.render(); return; }
   const sig = await localSig(img.bytes);
-  if (st.image !== img) return;
+  // Only the latest pick lands, and only on the file it was checked against:
+  // an earlier pick may have replaced st.image with its verdict meanwhile.
+  const now = st.image;
+  if (seq !== sigSeq || !now || now.bytes !== img.bytes) return;
   log(`${file.name}: ${sig.state}`);
-  st.image = { ...img, sig };
+  st.image = { ...now, sig };
   ui.render();
 }
 
