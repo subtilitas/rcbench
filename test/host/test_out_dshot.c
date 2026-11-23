@@ -29,6 +29,11 @@
 
 #define PIN   6u
 #define OTHER 7u
+/* The remote servo node's S9 (board 3): GPIO 32, every block at base 16. */
+#define NODE_S9 32u
+
+/* The one pad the fake follows: PIN, or the case's own. */
+static uint g_pad = PIN;
 
 /* --------------------------------------------------------------- the fake */
 
@@ -54,12 +59,13 @@ const pio_program_t dshot_rx_program       = { 5u };
 static pio_hw_t g_block[NUM_PIOS] = { { 0 }, { 1 }, { 2 } };
 
 static struct {
-    /* the pad of PIN */
+    /* the pad of g_pad */
     bool pull_up;
     bool pull_down;
     bool sio_out;
     bool sio_oe;
-    /* the PIO block's latch and direction for PIN */
+    bool ie;                       /* the pad's input enable */
+    /* the PIO block's latch and direction for g_pad */
     bool latch;
     bool oe;
     /* the blocks */
@@ -84,7 +90,7 @@ static struct {
 /* The pad's level, as the function, the override and the pulls give it. */
 static level_t level(void)
 {
-    const uint32_t ctrl = fake_io_bank0.io[PIN].ctrl;
+    const uint32_t ctrl = fake_io_bank0.io[g_pad].ctrl;
     const uint32_t fsel = ctrl & IO_BANK0_GPIO0_CTRL_FUNCSEL_BITS;
     const bool inv = ((ctrl & IO_BANK0_GPIO0_CTRL_OUTOVER_BITS)
                       >> IO_BANK0_GPIO0_CTRL_OUTOVER_LSB)
@@ -113,10 +119,10 @@ static bool is_high(level_t l)
     return l == LVL_DRIVEN_HIGH || l == LVL_PULLED_UP;
 }
 
-/* Every write to the pad of PIN: counted, and a rise to high by it counted. */
+/* Every write to the pad of g_pad: counted, and a rise to high by it counted. */
 static void observe(uint gpio)
 {
-    if (gpio != PIN) {
+    if (gpio != g_pad) {
         return;
     }
     g.pad_writes++;
@@ -136,15 +142,25 @@ static void settle(void)
 
 static uint32_t outover(void)
 {
-    return (fake_io_bank0.io[PIN].ctrl & IO_BANK0_GPIO0_CTRL_OUTOVER_BITS)
+    return (fake_io_bank0.io[g_pad].ctrl & IO_BANK0_GPIO0_CTRL_OUTOVER_BITS)
            >> IO_BANK0_GPIO0_CTRL_OUTOVER_LSB;
 }
 
-/* As the SDK's: the whole control register, the override with it. */
+/* As the SDK's: the whole control register, the override with it, and
+ * the pad's input enable on. */
 void gpio_set_function(uint gpio, gpio_function_t fn)
 {
     fake_io_bank0.io[gpio].ctrl = (uint32_t)fn;
+    if (gpio == g_pad) {
+        g.ie = true;
+    }
     observe(gpio);
+}
+void gpio_set_input_enabled(uint gpio, bool enabled)
+{
+    if (gpio == g_pad) {
+        g.ie = enabled;
+    }
 }
 void gpio_set_outover(uint gpio, uint value)
 {
@@ -157,7 +173,7 @@ void gpio_set_outover(uint gpio, uint value)
 }
 void gpio_disable_pulls(uint gpio)
 {
-    if (gpio == PIN) {
+    if (gpio == g_pad) {
         g.pull_up = false;
         g.pull_down = false;
     }
@@ -165,7 +181,7 @@ void gpio_disable_pulls(uint gpio)
 }
 void gpio_pull_up(uint gpio)
 {
-    if (gpio == PIN) {
+    if (gpio == g_pad) {
         g.pull_up = true;
         g.pull_down = false;
     }
@@ -173,14 +189,14 @@ void gpio_pull_up(uint gpio)
 }
 void gpio_set_dir(uint gpio, bool out)
 {
-    if (gpio == PIN) {
+    if (gpio == g_pad) {
         g.sio_oe = out;
     }
     observe(gpio);
 }
 void gpio_put(uint gpio, bool value)
 {
-    if (gpio == PIN) {
+    if (gpio == g_pad) {
         g.sio_out = value;
     }
     observe(gpio);
@@ -268,10 +284,14 @@ bool pio_claim_free_sm_and_add_program_for_gpio_range(
     }
     return false;
 }
+/* gpio_set_function() to the block's function, as the SDK's. */
 void pio_gpio_init(PIO pio, uint pin)
 {
     (void)pio;
     fake_io_bank0.io[pin].ctrl = (uint32_t)GPIO_FUNC_PIO0;
+    if (pin == g_pad) {
+        g.ie = true;
+    }
     observe(pin);
 }
 /* A transmitter's every instruction side-sets: the first one sets the latch
@@ -281,7 +301,7 @@ static void side_set_0(PIO pio, uint sm)
     if (g.prog[pio->block][sm] == &dshot_tx_program
         || g.prog[pio->block][sm] == &dshot_bidir_tx_program) {
         g.latch = false;
-        observe(PIN);
+        observe(g_pad);
     }
 }
 void pio_sm_set_enabled(PIO pio, uint sm, bool enabled)
@@ -302,7 +322,7 @@ int pio_sm_set_consecutive_pindirs(PIO pio, uint sm, uint pin, uint count,
     (void)pio;
     (void)sm;
     (void)count;
-    if (pin == PIN) {
+    if (pin == g_pad) {
         g.oe = is_out;
     }
     observe(pin);
@@ -313,9 +333,9 @@ void pio_sm_set_pins_with_mask64(PIO pio, uint sm, uint64_t values,
 {
     (void)pio;
     (void)sm;
-    if ((mask & (1ull << PIN)) != 0u) {
-        g.latch = (values & (1ull << PIN)) != 0u;
-        observe(PIN);
+    if ((mask & (1ull << g_pad)) != 0u) {
+        g.latch = (values & (1ull << g_pad)) != 0u;
+        observe(g_pad);
     }
 }
 void pio_sm_restart(PIO pio, uint sm)
@@ -354,14 +374,14 @@ void pio_sm_put(PIO pio, uint sm, uint32_t data)
         }
         g.oe = true;             /* set pindirs, 1: the line taken */
         g.latch = false;
-        observe(PIN);
+        observe(g_pad);
         g.frames++;
         g.oe = false;            /* set pindirs, 0: let go for the reply */
-        observe(PIN);
+        observe(g_pad);
     } else if (g.prog[pio->block][sm] == &dshot_tx_program) {
         g.frames++;
         g.latch = false;         /* the out stalls with the side-set low */
-        observe(PIN);
+        observe(g_pad);
     }
 }
 void pio_interrupt_clear(PIO pio, uint irq)
@@ -427,7 +447,7 @@ static void fresh(bool latch)
     }
     memset(&g, 0, sizeof(g));
     memset(&fake_io_bank0, 0, sizeof(fake_io_bank0));
-    fake_io_bank0.io[PIN].ctrl = (uint32_t)GPIO_FUNC_NULL;
+    fake_io_bank0.io[g_pad].ctrl = (uint32_t)GPIO_FUNC_NULL;
     g.pull_down = true;
     g.latch = latch;
     g.oe = latch;
@@ -755,6 +775,93 @@ TEST_CASE(a_bidirectional_bind_keeps_to_a_block_that_reaches_the_pin)
     CHECK_EQ(claimed_all(), 0x108u);
 }
 
+/* The node's S9: the pad the fake follows is GPIO 32, and every block at
+ * GPIO base 16 as board 3 sets them at boot. */
+static void node_s9(void)
+{
+    g_pad = NODE_S9;
+    fresh(false);
+    g.base[0] = g.base[1] = g.base[2] = 16u;
+}
+
+/* On the node's S9 a bidirectional line idles high between frames, on the
+ * pad's pull-up alone (the node has no pull-down, Q11): released after each
+ * of 20 frames, no frame started from low, and driven low at the stop. */
+TEST_CASE(a_node_bidirectional_line_idles_high_between_frames)
+{
+    node_s9();
+    CHECK(out_dshot_bind(NODE_S9, 600u, true));
+    CHECK_EQ(level(), LVL_DRIVEN_LOW);
+    CHECK(out_dshot_wake(NODE_S9));
+    for (unsigned k = 0; k < 20u; ++k) {
+        out_dshot_send(NODE_S9, (uint16_t)(48u + k), false);
+        CHECK_EQ(level(), LVL_PULLED_UP);
+        CHECK(g.pull_up);
+        CHECK(!g.pull_down);
+    }
+    CHECK_EQ(g.frames, 20u);
+    CHECK_EQ(g.frames_from_low, 0u);
+    /* Its input stays on: the receiver reads the reply on the pad. */
+    CHECK(g.ie);
+    out_dshot_stop(NODE_S9);
+    CHECK_EQ(level(), LVL_DRIVEN_LOW);
+    out_dshot_release(NODE_S9);
+    g_pad = PIN;
+}
+
+/* A plain pad reads nothing while its block drives it: the input off from
+ * the first frame, on again at the stop, where the pad is the processor's
+ * and driven low.  So a capture of the pins sees no edge of its frames. */
+TEST_CASE(a_plain_pads_input_is_off_while_its_block_drives_it)
+{
+    node_s9();
+    CHECK(out_dshot_bind(NODE_S9, 300u, false));
+    out_dshot_send(NODE_S9, 48u, false);
+    CHECK_EQ(g.frames, 1u);
+    CHECK(!g.ie);
+    out_dshot_send(NODE_S9, 49u, false);
+    CHECK(!g.ie);
+    out_dshot_stop(NODE_S9);
+    CHECK_EQ(level(), LVL_DRIVEN_LOW);
+    CHECK(g.ie);
+    /* The next run hands it to the block again with its input off. */
+    out_dshot_send(NODE_S9, 48u, false);
+    CHECK(!g.ie);
+    CHECK_EQ(g.rises, 0u);
+    out_dshot_release(NODE_S9);
+    g_pad = PIN;
+}
+
+/* Board 3's fence (rsn_pio.h): a block with every state machine claimed by
+ * another is skipped by both searches, the SDK's for plain DShot and
+ * claim_pair() for a pair, and its window is not moved.  PIO0 and PIO2
+ * fenced: both go to PIO1.  All three fenced: refused, nothing taken. */
+TEST_CASE(a_bind_keeps_out_of_a_fenced_block)
+{
+    node_s9();
+    g.claimed[0] = 0xFu;
+    g.claimed[2] = 0xFu;
+    CHECK(out_dshot_bind(NODE_S9, 600u, false));
+    CHECK_EQ(claimed_all(), 0xF1Fu);
+    CHECK(out_dshot_bind(30u, 600u, true));
+    CHECK_EQ(claimed_all(), 0xF7Fu);
+    CHECK_EQ(g.used[1], 20u);
+    CHECK_EQ(g.used[0] + g.used[2], 0u);
+    out_dshot_release(NODE_S9);
+    out_dshot_release(30u);
+    CHECK_EQ(claimed_all(), 0xF0Fu);
+
+    node_s9();
+    g.claimed[0] = g.claimed[1] = g.claimed[2] = 0xFu;
+    g.base[2] = 0u;                    /* would be moved, were it free */
+    CHECK(!out_dshot_bind(NODE_S9, 600u, false));
+    CHECK(!out_dshot_bind(NODE_S9, 600u, true));
+    CHECK_EQ(g.programs, 0u);
+    CHECK_EQ(g.pad_writes, 0u);
+    CHECK_EQ(g.base[2], 0u);
+    g_pad = PIN;
+}
+
 int main(void)
 {
     RUN(a_bidirectional_pin_is_driven_low_from_the_bind_with_no_high_on_the_way);
@@ -769,5 +876,8 @@ int main(void)
     RUN(binding_again_the_same_way_moves_nothing);
     RUN(a_bidirectional_bind_takes_the_next_block_for_its_pair);
     RUN(a_bidirectional_bind_keeps_to_a_block_that_reaches_the_pin);
+    RUN(a_node_bidirectional_line_idles_high_between_frames);
+    RUN(a_plain_pads_input_is_off_while_its_block_drives_it);
+    RUN(a_bind_keeps_out_of_a_fenced_block);
     return test_summary("out_dshot");
 }

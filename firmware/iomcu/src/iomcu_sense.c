@@ -11,6 +11,7 @@
 #include "pico/time.h"
 
 #include "iomcu.h"
+#include "iomcu_rsn_pio.h"
 #include "board_fix.h"
 #include "iomcu_pins.h"
 
@@ -45,8 +46,7 @@ bool supply_rewire(void)
     if (!supply_page_enabled(&s_supply)) {
         return true;
     }
-    if (!pd_uart_open(supply_page_tx(&s_supply), supply_page_rx(&s_supply),
-                      supply_page_uart_baud(&s_supply))) {
+    if (!pd_open()) {
         return false;
     }
     const pdmini_io_t io = { pd_uart_attach, pd_uart_detach, pd_uart_send,
@@ -137,8 +137,7 @@ static bool supply_probe(void)
     if (!supply_page_enabled(&s_supply)) {
         return true;
     }
-    if (!pd_uart_open(supply_page_tx(&s_supply), supply_page_rx(&s_supply),
-                      supply_page_uart_baud(&s_supply))) {
+    if (!pd_open()) {
         return false;
     }
     pd_uart_close();

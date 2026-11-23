@@ -10,6 +10,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "iomcu.h"
+#include "iomcu_rsn_pio.h"
 
 /*
  * The port's hardware.  hitec_port.c decides; these do what it says.  The
@@ -27,8 +28,16 @@ bool hitec_hw_take(void *ctx, uint8_t port, uint8_t pin, uint8_t family,
     (void)ctx;
     (void)port;
     ports_apply();
-    return hitec_line_open_rx(&s_hitec_line, pin, family, drive, rx)
-           == HITEC_LINE_OK;
+    /* On board 3 the line into a block that holds no output, the
+     * precharge sampler into the other (iomcu_rsn_pio.h). */
+    if (!place_begin((rx == HITEC_RX_PRECHARGE) ? RSN_PIO_LINE_PRE
+                                                : RSN_PIO_LINE, pin)) {
+        return false;
+    }
+    const bool ok = hitec_line_open_rx(&s_hitec_line, pin, family, drive, rx)
+                    == HITEC_LINE_OK;
+    place_end(ok);
+    return ok;
 }
 
 /* And back: the port holds no pin, so ports_apply() binds it as the PROG
@@ -37,6 +46,7 @@ void hitec_hw_give(void *ctx)
 {
     (void)ctx;
     hitec_line_close(&s_hitec_line);
+    place_line_gone();
     ports_apply();
 }
 
