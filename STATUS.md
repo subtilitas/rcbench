@@ -1401,7 +1401,15 @@ frame that redraws only what changed) and its 6 screenshots
 (`tools/render_node.py --check`). The ILI9341V set-up, the touch's
 orientation, the SPI clock of 20MHz on this board, the I2C socket's pin
 order and the RAM left for Bluetooth LE at run time are not measured. The
-panel does not carry the display node's image: it is flashed over USB.
+panel sends the display node's image `rcbench-node-display-<version>.bin`
+from the power node's row once the node's INFO names the ES3C28P: the
+image the row picks for each board, the check of the board, chip and kind
+before the first byte at every mismatch, the asset's name and card path
+at the widest version, a release without its `SHA256SUMS` line, and the
+version, size and signature checks (`test_devimg_board`); the row's and
+the step's DISPLAY NODE names in both languages (`test_upd_dev`); the
+board kept over the update's hold on the link and cleared on another
+address (`test_pnode_ctl`).
 
 ### Firmware update over Bluetooth LE
 
@@ -1743,7 +1751,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 628 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 629 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1871,7 +1879,7 @@ The host suite is 628 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
 `test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_view`,
-`test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client`, `test_devimg`, `test_upd_dev`, `test_upd_fetch`,
+`test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client`, `test_devimg`, `test_devimg_board`, `test_upd_dev`, `test_upd_fetch`,
 `test_upd_wizard`, `test_upd_wizard_map`, `test_upd_wiz_view` and `test_harness`.
 
 The harness is `test/host/greatest.h`, written for this project. `CHECK_EQ` compares

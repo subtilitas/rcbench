@@ -167,14 +167,15 @@ bool pnode_ctl_target(const pnode_ctl_t *c, bleu_addr_t *addr, bool *linked,
                       uint8_t version[3], bool *down);
 
 /**
- * @brief Whether the linked node's INFO names a board other than the
- *        ESP32-C6-Zero (RCNODE_BOARD_C6_ZERO), whose image is the one the
- *        panel carries: the ES3C28P display node is flashed over USB.
+ * @brief The board the node's INFO named (RCNODE_BOARD_*), for UPDATES'
+ *        choice of image (devimg_pnode_image()).  It stays while the link
+ *        is down, so an update's hold on the link keeps it; it clears
+ *        when a link comes up, until that link's INFO is read, and on a
+ *        bind or an address change.
  * @param c The controller.
- * @return true while INFO is taken on this link and names another board;
- *         false before INFO, for the C6-Zero, or when @p c is NULL.
+ * @return the board; 0 before INFO on the last link, or when @p c is NULL
  */
-bool pnode_ctl_other_board(const pnode_ctl_t *c);
+uint8_t pnode_ctl_board(const pnode_ctl_t *c);
 
 /**
  * @brief SCAN FOR NODE: the list cleared and a scan of BLEU_SCAN_MS.

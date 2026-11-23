@@ -7545,7 +7545,8 @@ any other.
 ### Device images
 
 The panel image carries the IOmcu images only. The C6 radio's, the Dial's,
-the power node's and the balance node's application images are files of
+the power node's, the balance node's and the display node's application
+images are files of
 the release the panel runs, tag `vMAJOR.MINOR.PATCH` of the panel's own
 version, which the web flasher and the release page offer as well:
 
@@ -7555,6 +7556,7 @@ version, which the web flasher and the release page offer as well:
 | DIAL | `rcbench-dial-<version>.bin` | 3,145,728 |
 | POWER NODE | `rcbench-node-pwr-<version>.bin` | 1,572,864 |
 | BALANCE NODE | `rcbench-node-bal-<version>.bin` | 1,572,864 |
+| DISPLAY NODE, the POWER NODE step while the bound power node is the ES3C28P display node | `rcbench-node-display-<version>.bin` | 1,572,864 |
 
 A step's hold takes the image from one of three places, and the card names
 the file and the place:
@@ -7716,7 +7718,8 @@ runs the button reads that row's label.
 ![The WIRELESS DEVICES entry while the Dial asks for its press](img/updates-dial.png)
 
 The page covers SINGLE UPDATES. It holds one row per device, at body
-y 24, 128 and 232: DIAL FIRMWARE, POWER NODE FIRMWARE and BALANCE NODE
+y 24, 128 and 232: DIAL FIRMWARE, POWER NODE FIRMWARE (DISPLAY NODE
+FIRMWARE while the bound power node is the display node) and BALANCE NODE
 FIRMWARE. Each row's heading and line take 496px from x 16, its hold
 480 x 56px from x 528. A note under the rows says how a device accepts an
 update. `BACK` in the footer's right slot and the home tag close the page
@@ -7729,7 +7732,7 @@ runs, the other rows' holds are grey.
 | --- | --- |
 | `HOLD 2s TO UPDATE THE DIAL` | Fetches the M5Stack Dial's image of the release the panel runs and sends it to the linked Dial over Bluetooth LE ([The Dial](#the-dial), [Device images](#device-images)). |
 | `HOLD 2s TO REINSTALL THE DIAL FIRMWARE` | The same, while the Dial reports the release's version. |
-| `HOLD 2s TO UPDATE THE POWER NODE` | Fetches the power node's image of the release and sends it to the bound power node ([The sensor nodes](#the-sensor-nodes)). |
+| `HOLD 2s TO UPDATE THE POWER NODE` | Fetches the power node's image of the release and sends it to the bound power node: the C6 node's, or the display node's on the ES3C28P ([The sensor nodes](#the-sensor-nodes)). |
 | `HOLD 2s TO REINSTALL THE POWER NODE` | The same, while the node reports the release's version. |
 | `HOLD 2s TO UPDATE THE BALANCE NODE` | Fetches the balance node's image of the release and sends it to the bound balance node. |
 | `HOLD 2s TO REINSTALL THE BALANCE NODE` | The same, while the node reports the release's version. |
@@ -7821,7 +7824,20 @@ firmware: `Node: 0.23.16. Release: 0.23.17.`, the version the node's
 STATUS packet named on the current link, or `not connected`, and the
 version of the release the panel runs. The two roles'
 images differ: the power node's row sends the power image, the balance
-node's the balance image, and a node refuses the other role's image. The
+node's the balance image, and a node refuses the other role's image.
+
+The power node's row sends the image of the board the node's INFO names
+(field `board`): `rcbench-node-pwr-<version>.bin` for the ESP32-C6-Zero
+(board 1), `rcbench-node-display-<version>.bin` for the ES3C28P display
+node (board 2). For the display node the row's heading reads `DISPLAY
+NODE FIRMWARE`, its line `Display node: 0.23.17. Release: 0.23.18.`,
+UPDATES' step `DISPLAY NODE`, and the band's lines name the `Display
+node`. The hold, its labels and the BOOT ask (IO0 on the display node)
+are the power node's. Before the first byte the panel holds the image to
+that board's chip and update kind; a mismatch ends the update with
+`Display node update stopped: image for another board. Previous firmware
+is running.` A board no image is for reads `NO FIRMWARE`, and a tap on
+the hold says `This release has no firmware for this device.` The
 nodes and their update are in [The sensor nodes: Update over Bluetooth
 LE](Nodes.md#update-over-bluetooth-le).
 
@@ -7841,9 +7857,10 @@ within 30s to accept the update.` when the node asks. The grey hold's
 reasons are the Dial's ([The Dial](#the-dial)); `Connect the device on
 WIRELESS first.` stands until the node is linked, its INFO taken and its
 first STATUS packet on the link has named its version. A node image that
-fails its check is no ESP32-C6 application of the project `rcbench-node`
-with that node's role, is larger than the node's slot of 1,572,864 bytes,
-or its appended SHA-256 differs.
+fails its check is no application of the node's chip (ESP32-C6, or
+ESP32-S3 for the display node) and the project `rcbench-node` with that
+node's role, is larger than the node's slot of 1,572,864 bytes, or its
+appended SHA-256 differs.
 
 From the hold to the end the node's own client keeps its link ended, as
 the node's OFF does; SETUP > WIRELESS shows the node OFF meanwhile. That

@@ -12,6 +12,7 @@
 #include "bleota.h"
 #include "devupd.h"
 #include "fw_c6.h"
+#include "rcnode.h"
 
 /** @brief One image's fixed facts. */
 typedef struct {
@@ -31,7 +32,49 @@ static const devimg_fact_t k_fact[DEVIMG_COUNT] = {
       DEVUPD_PROJECT_NODE, BLEOTA_KIND_NODE_POWER },
     { "rcbench-node-bal-", DEVUPD_SLOT_NODE, FW_CHIP_ESP32C6,
       DEVUPD_PROJECT_NODE, BLEOTA_KIND_NODE_BAL },
+    { "rcbench-node-display-", DEVUPD_SLOT_NODE, DEVUPD_CHIP_ESP32S3,
+      DEVUPD_PROJECT_NODE, BLEOTA_KIND_NODE_POWER_S3 },
 };
+
+_Static_assert(DEVIMG_DIAL == BLEOTA_KIND_DIAL
+                   && DEVIMG_PNODE == BLEOTA_KIND_NODE_POWER
+                   && DEVIMG_BAL == BLEOTA_KIND_NODE_BAL
+                   && DEVIMG_PNODE_S3 == BLEOTA_KIND_NODE_POWER_S3
+                   && DEVIMG_COUNT == BLEOTA_KIND_MAX + 1,
+               "a wireless device's image number is its BLEOTA_KIND_*");
+
+devimg_id_t devimg_pnode_image(uint8_t board)
+{
+    switch (board) {
+    case 0u:
+    case RCNODE_BOARD_C6_ZERO:
+        return DEVIMG_PNODE;
+    case RCNODE_BOARD_ES3C28P:
+        return DEVIMG_PNODE_S3;
+    default:
+        return DEVIMG_COUNT;
+    }
+}
+
+uint8_t devimg_kind(devimg_id_t id)
+{
+    return (unsigned)id < DEVIMG_COUNT ? k_fact[id].kind : 0u;
+}
+
+devimg_err_t devimg_fits(devimg_id_t id, uint8_t board, const uint8_t *img,
+                         uint32_t n)
+{
+    if ((unsigned)id >= DEVIMG_COUNT || board == 0u
+        || devimg_pnode_image(board) != id) {
+        return DEVIMG_E_ID;
+    }
+    const devimg_fact_t *f = &k_fact[id];
+    if (img == NULL || n == 0u
+        || bleota_head_check(img, n, f->chip, f->kind) != BLEOTA_OK) {
+        return DEVIMG_E_ROLE;
+    }
+    return DEVIMG_OK;
+}
 
 bool devimg_name(devimg_id_t id, fw_version_t v, char *out, size_t n)
 {

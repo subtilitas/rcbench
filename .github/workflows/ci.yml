@@ -939,6 +939,8 @@ jobs:
             "$(ls firmware/panel/node/rcbench-node-pwr-[0-9]*.bin)"
           python3 tools/c6_image.py device node-bal \
             "$(ls firmware/panel/node/rcbench-node-bal-[0-9]*.bin)"
+          python3 tools/c6_image.py device node-display \
+            "$(ls firmware/panel/node/rcbench-node-display-[0-9]*.bin)"
 
       # The managed components (firmware/panel/managed_components) come from
       # the ESP component registry at build time; the lock file pins their
@@ -1020,7 +1022,7 @@ jobs:
             grep -aq "_binary_rcbench_${s}_bin_start" \
               firmware/panel/build/rcbench-panel.elf
           done
-          for s in c6 dial node_pwr node_bal; do
+          for s in c6 dial node_pwr node_bal node_display; do
             if grep -aq "_binary_rcbench_${s}_bin_start" \
                 firmware/panel/build/rcbench-panel.elf; then
               echo "rcbench_${s}.bin is embedded"; exit 1

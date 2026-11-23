@@ -255,6 +255,7 @@ void pnode_ctl_config(pnode_ctl_t *c, const pnode_cfg_t *cfg,
     if (!c->configured || strcmp(was.addr, c->cfg.addr) != 0) {
         set_addr(c, now_ms);
         c->lost = false;
+        c->info_board = 0u; /* another node: its board is not known */
     }
     if (!c->configured || was.en != c->cfg.en) {
         if (!c->cfg.en) {
@@ -312,9 +313,9 @@ bool pnode_ctl_target(const pnode_ctl_t *c, bleu_addr_t *addr, bool *linked,
     return true;
 }
 
-bool pnode_ctl_other_board(const pnode_ctl_t *c)
+uint8_t pnode_ctl_board(const pnode_ctl_t *c)
 {
-    return c != NULL && c->info_ok && c->info_board != RCNODE_BOARD_C6_ZERO;
+    return c != NULL ? c->info_board : 0u;
 }
 
 pnode_scan_t pnode_ctl_scan(pnode_ctl_t *c, bool armed, uint32_t now_ms)
@@ -361,6 +362,7 @@ bool pnode_ctl_bind(pnode_ctl_t *c, uint8_t i, uint32_t now_ms)
     bleu_bind(&c->b, &a, now_ms);
     bleu_hurry(&c->b);
     c->lost = false;
+    c->info_board = 0u; /* another node: its board is not known */
     ++c->bind_seq;
     c->cfg.bind_seq = c->bind_seq;
     follow_link(c, now_ms);
