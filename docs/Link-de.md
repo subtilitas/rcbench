@@ -1888,10 +1888,86 @@ Alert hält.
   und löscht es darunter. Ein Port ohne Messung behält sein Bit; mit der
   Schiene oder einem Port an behält BEC die letzte Prüfung.
 
+#### Throttle-Ausgänge auf Board 3
+
+Jeder Ausgangstreiber läuft auf S1 bis S9: SERVO PWM und MOTOR PWM auf den
+PWM-Slices, PPM, DShot150, DShot300, DShot600 und bidirektionales DShot auf
+PIO. Ein Throttle-Ausgang folgt den Regeln von [DShot](DShot-de.md) wie auf
+den anderen Boards: ein Frame alle 1ms, solange für den Throttle ARMED,
+der Pin in Ruhe low, eine bidirektionale Leitung vor dem ersten Frame und
+zwischen den Frames an ihren Pull-up freigegeben. SAFE, STOP, ein Fehler,
+der Failsafe des Links (200ms Stille) und ein ausgebliebener Heartbeat
+(150ms) beenden jeden DShot- und PPM-Frame und jeden PWM-Puls in dem
+Durchlauf, der sie sieht; die Pins ruhen low. Die Telemetrie eines
+bidirektionalen Ausgangs füllt BENCH wie am Prüfstand, auf welchem Slot er
+auch liegt, Slot 9 auf OUTPUTS_HI eingeschlossen.
+
+Die PIO-Blöcke werden nach festen Regeln belegt
+(`shared/outputs/rsn_pio.c`), denen, die `tools/pio_budget.py` für Board 3
+hält:
+
+| Block | Nimmt |
+|---|---|
+| PIO0 | den UART des PD mini (12 Wörter, 2 State Machines), MIRROR und CAPTURE; sonst nichts |
+| PIO1, PIO2 | die PIO-Ausgänge und die Leitung der einen Programmier-Session; eine Leitung hält ihren Block ganz |
+
+- Jeder Block läuft auf GPIO-Basis 16, beim Start gesetzt, bevor ein
+  Programm geladen ist.
+- Ein Ausgang geht zuerst in PIO2 und in PIO1, sobald PIO2 voll ist: bis zu
+  8 Ausgänge mit einfachem DShot oder PPM, 4 bidirektionale (2 je Block)
+  oder eine Mischung davon in 8 State Machines. Ein Ausgang, der keinen
+  Block findet, wird mit `WHY` SILICON (12) abgelehnt.
+- Kein Ausgang geht in den Block der Leitung einer Session. Eine Leitung
+  für KST, ESC wire oder Hitec geht in PIO1, wenn PIO1 keinen Ausgang hält,
+  sonst in PIO2, wenn PIO2 keinen hält; mit einem Ausgang in jedem Block
+  wird die Session abgelehnt. Eine Leitung für Hitec D mit ihrem
+  Precharge-Sampler geht in PIO2, wenn PIO2 keinen Ausgang hält, sonst in
+  PIO1, und der Sampler nimmt eine State Machine und 12 Wörter des anderen
+  Blocks. Während einer Session teilen sich die Ausgänge den anderen
+  Block: 4 mit einfachem DShot, 2 bidirektionale oder 1 bidirektionaler und
+  2 einfache; neben dem Sampler von Hitec D 3 einfache oder 1
+  bidirektionaler und 1 einfacher.
+- Höchstens 6 PPM-Ausgänge: 3 DMA-Kanäle sind fest belegt (CAPTURE 2, der
+  Empfang des UART-Links 1), und ein PPM-Ausgang nimmt 2 der 16. Der 7.
+  wird mit SILICON abgelehnt.
+- Die Belegung wirkt über die Claims: bevor ein Treiber bindet, wird jede
+  freie State Machine der Blöcke geclaimt, die die Nutzung nicht nehmen
+  darf, und nach dem Binden werden diese Claims freigegeben. Die eigene
+  Suche der Treiber (PIO2 abwärts bis PIO0, eine freie State Machine oder
+  ein freies benachbartes Paar für bidirektionales DShot) findet dann nur
+  die Blöcke, die die Regeln erlauben.
+- Bei einem Pad mit einfachem DShot oder PPM ist der Input Enable
+  gelöscht, solange sein Block es treibt, auf jedem Board: CAPTURE sieht
+  keine seiner Flanken. Ein bidirektionales Pad behält seinen Eingang für
+  die Antwort.
+
+SENSE auf Board 3: der INA228 sitzt an J26, am Sensorbus der drei INA3221.
+Eine Adresse des INA228, die ein bestückter INA3221 hält, wird mit
+BAD_VALUE abgelehnt: 0x40, 0x41 und 0x42 immer, 0x43, wenn SENSE_MAP ein
+viertes Bauteil bestückt. Die übrigen bis 0x4F werden genommen, 0x45 und
+0x44 des MATEK I2C-INA-BM darunter. Der Ablauf liest die 9 Kanäle und den
+INA228 am 400-kHz-Bus in jedem Tick von 1ms:
+
+| Lesung | Ohne FAST-Kanal | Mit S1 als FAST |
+|---|---|---|
+| Strom jedes Kanals | 111 oder 112 je Sekunde (1000 / 9) | S1 1000 je Sekunde, jeder andere 125 (1000 / 8) |
+| Busspannung jedes Kanals | 41 oder 42 je Sekunde | 41 oder 42 je Sekunde |
+| INA228 CURRENT, VBUS | je 500 je Sekunde | je 500 je Sekunde |
+| INA228 ENERGY, CHARGE | je 50 je Sekunde | je 50 je Sekunde |
+| Buszeit des längsten Ticks | 570µs (228 Takte zu 2,5µs) | 690µs (276 Takte) |
+
 `test/host/test_board_fix_rsn.c` hält Katalog, Rollen, Pages und
 Critical-Grenzen von Board 3; `test/host/test_chip_gate.c` die Prüfung des
 Steppings und die Schreiben, die sie ablehnt; `test/host/test_power_page.c`
-die Page POWER, ihr Auslösen und die BEC-Prüfung.
+die Page POWER, ihr Auslösen und die BEC-Prüfung; `test/host/test_rsn_pio.c`
+die Belegung der Blöcke gegen ein Modell der 3 Blöcke, die Tabelle von
+Board 3 aus `tools/pio_budget.py` und jede Reihenfolge von bis zu 9
+Ausgängen mit jeder Session; `test/host/test_rsn_throttle.c` die Ausgänge
+auf S1, S3, S5 und S9 in Ruhe bei SAFE, STOP, einem Fehler, dem Failsafe
+und einem ausgebliebenen Heartbeat, BENCH aus der Telemetrie von S9, die
+Adressen des INA228 und den Ablauf; `test/host/test_out_dshot.c` eine
+bidirektionale Leitung auf S9, die zwischen den Frames high ruht, und den
+Eingang eines einfachen Pads, der aus ist, solange sein Block es treibt.
 
 ### Abgelehnte Frames
 

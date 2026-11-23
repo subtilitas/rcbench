@@ -6,7 +6,27 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- IOmcu board 3, throttle outputs on S1 to S9: MOTOR PWM, PPM, DShot and
+  bidirectional DShot. The PIO blocks are placed by fixed rules: PIO0
+  holds the PD mini UART, every block runs at GPIO base 16, the outputs
+  fill PIO2 and then PIO1, a programming session's line takes a block that
+  holds no output and is refused while both hold one, no output goes into
+  the line's block, and a 7th PPM output is refused with `WHY` SILICON.
+  The INA228 on J26 is refused on an INA3221's address, 0x40 to 0x42; the
+  sensor schedule reads the 9 channels and the INA228 within 690µs of bus
+  time a 1ms tick
+  ([Link: Throttle outputs on board 3](docs/Link.md#throttle-outputs-on-board-3)).
+
 ### Changed
+
+- A plain DShot or PPM pad has its input enable cleared while its PIO
+  block drives it, on every board; a bidirectional DShot pad keeps it
+  ([DShot: Which pin](docs/DShot.md#which-pin)).
+  `tools/pio_budget.py` reads this from the drivers: board 3's capture
+  worst case is 227,680 events/s, 36.0ms of the 64KiB ring, and only 4
+  bidirectional DShot outputs lap it in a 42ms flash window.
 
 - `hardware/mechanical/`: `motor_simulator.step` runs the phase tap's lead
   out of the boot of the clip on corner C, beside the resistor's wire,

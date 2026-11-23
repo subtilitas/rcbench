@@ -12,6 +12,7 @@
 #include <string.h>
 
 #include "iomcu.h"
+#include "iomcu_rsn_pio.h"
 #include "board_fix.h"
 #include "iomcu_pins.h"
 
@@ -499,9 +500,7 @@ uint8_t prog_write(void *ctx, uint8_t off, uint8_t n,
         /* The supply's UART waits for its save with its two state machines
          * free: a DShot port bound now may not take that PIO room.  Tried,
          * and let go again, as slots_take() and tone_write() do. */
-        refused = !pd_uart_open(supply_page_tx(&s_supply),
-                                supply_page_rx(&s_supply),
-                                supply_page_uart_baud(&s_supply));
+        refused = !pd_open();
         if (!refused) {
             pd_uart_close();
         }
@@ -638,9 +637,7 @@ uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
     if (!refused && !s_pd_open && s_supply_attach) {
         /* The supply's UART waits for its save: the slots must leave it a
          * PIO block, tried now, or the attach would fail unseen. */
-        refused = !pd_uart_open(supply_page_tx(&s_supply),
-                                supply_page_rx(&s_supply),
-                                supply_page_uart_baud(&s_supply));
+        refused = !pd_open();
         pd_uart_close();
         why = LINK_BW_PD_UART;
     }

@@ -456,6 +456,12 @@ void out_dshot_send(uint8_t pin, uint16_t value, bool telemetry)
              * block's latch at the low the processor held. */
             pio_sm_set_pins_with_mask64(s->pio, s->tx_sm, 0u, 1ull << pin);
             pio_gpio_init(s->pio, pin);
+            /* Its input off while the block drives it: nothing reads a
+             * plain line back, and a pad with its input on shows every
+             * edge of every frame to whatever samples the pins
+             * (pio_gpio_init() sets it on).  Back on at the stop, which
+             * hands the pad to the processor (gpio_set_function()). */
+            gpio_set_input_enabled(pin, false);
             pio_sm_set_consecutive_pindirs(s->pio, s->tx_sm, pin, 1, true);
             restart(s->pio, s->tx_sm, s->tx_offset);
             s->running = true;

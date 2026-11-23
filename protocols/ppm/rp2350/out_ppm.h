@@ -18,6 +18,11 @@
  * a signal that is a stream of frames.  The alternative, swapping buffers,
  * buys nothing: the receiver acts on whole frames either way.
  *
+ * The pad's input is switched off while the block drives it
+ * (gpio_set_input_enabled()): nothing reads the frame back, and a pad with
+ * its input on shows every edge to a state machine that samples the pins,
+ * such as the remote servo node's capture.
+ *
  * SPDX-License-Identifier: MIT
  */
 #ifndef RCBENCH_OUT_PPM_H
