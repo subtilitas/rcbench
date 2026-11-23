@@ -348,7 +348,7 @@ def circuit() -> dict:
              "text": "drive"},
             {"id": "lead", "t": "dot", "at": [140, line]},
             {"id": "w1", "t": "wire", "p": [[140, line], [330, line]],
-             "text": "motor lead", "at": [250, line + 34]},
+             "text": "motor lead", "at": [195, line + 34]},
             {"id": "rs", "t": "res", "a": [330, line], "b": [500, line],
              "text": "4.7 kΩ", "label": [415, line - 30]},
             {"id": "w2", "t": "wire", "p": [[500, line], [850, line]]},
