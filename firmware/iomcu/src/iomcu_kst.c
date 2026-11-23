@@ -23,7 +23,10 @@
 uint8_t kst_hw_pin(void *ctx, uint8_t port)
 {
     (void)ctx;
-    return prog_port_wire_pin(&s_prog, port, outputs_hw_ports_bound());
+    const uint8_t pin = prog_port_wire_pin(&s_prog, port,
+                                           outputs_hw_ports_bound());
+    rsn_prog_pin(pin);          /* the node: the output it would switch */
+    return pin;
 }
 
 /* The port's pin from the generator to the wire driver.  The port says it
@@ -56,6 +59,10 @@ void kst_hw_give(void *ctx)
 void kst_hw_supply(void *ctx, supply_port_view_t *out)
 {
     (void)ctx;
+    /* On the node, the PD mini through the output's switch. */
+    if (rsn_prog_view(out)) {
+        return;
+    }
     /* On a board that switches the ports' own supply, that one. */
     if (prog_supply_fitted(&s_psup)) {
         prog_supply_port_view(&s_psup, out);
@@ -69,6 +76,10 @@ void kst_hw_supply(void *ctx, supply_port_view_t *out)
 bool kst_hw_supply_set(void *ctx, bool on, uint16_t mv, uint16_t ma)
 {
     (void)ctx;
+    const int rail = rsn_prog_set(on, mv, ma);
+    if (rail >= 0) {
+        return rail != 0;
+    }
     if (prog_supply_fitted(&s_psup)) {
         return prog_supply_port_set(&s_psup, on,
                                     safety_gate_supply_ok(&s_beat, &s_dev));
@@ -90,6 +101,10 @@ uint8_t kst_write(void *ctx, uint8_t off, uint8_t n,
                          const uint16_t *in)
 {
     (void)ctx;
+    /* The CONNECT rules as they stand at this command: a PROG or OUTPUTS
+     * write earlier in the same batch of frames counts (rsn_prog_refused()
+     * on the node: another channel active without the port switches). */
+    ports_exclusive();
     const uint8_t nack = kst_port_write(&s_kst, off, n, in, s_now_ms);
 
     /* No ARM or THROTTLE across either edge of a hold, in this frame. */

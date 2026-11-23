@@ -81,18 +81,64 @@ void power_init(power_page_t *p, bool switches, bool chip_ok)
     p->quiet_any = true;
 }
 
-uint16_t power_port_on(const power_page_t *p)
+/**
+ * @brief PORT_ON as the panel's registers alone ask it, without what a
+ *        write holds on.
+ *
+ * @param p    The state.
+ * @param rail RAIL.
+ * @param want PORT_WANT.
+ * @return     Bit k: port k on.
+ */
+static uint16_t asked_on(const power_page_t *p, bool rail, uint16_t want)
 {
-    if (p == NULL || !p->rail) {
+    if (!rail) {
         return 0u;
     }
-    return (p->fitted != 0u) ? (uint16_t)(p->want & p->fitted)
+    return (p->fitted != 0u) ? (uint16_t)(want & p->fitted)
+                             : (uint16_t)LINK_PW_PORT_ALL;
+}
+
+uint16_t power_port_on(const power_page_t *p)
+{
+    if (p == NULL) {
+        return 0u;
+    }
+    const uint16_t on = asked_on(p, p->rail, p->want);
+    if (p->held_on == 0u) {
+        return on;
+    }
+    /* Without the switches the master switch carries every port. */
+    return (p->fitted != 0u) ? (uint16_t)(on | p->held_on)
                              : (uint16_t)LINK_PW_PORT_ALL;
 }
 
 bool power_rail(const power_page_t *p)
 {
     return p != NULL && p->rail;
+}
+
+bool power_rail_driven(const power_page_t *p)
+{
+    return p != NULL && (p->rail || p->held_on != 0u);
+}
+
+/**
+ * @brief The panel's RAIL and PORT_WANT taken; a port a write keeps
+ *        (power_keep()) that they switch off stays on in held_on.
+ *
+ * @param p    The state.
+ * @param rail The new RAIL.
+ * @param want The new PORT_WANT.
+ */
+static void take(power_page_t *p, bool rail, uint16_t want)
+{
+    const uint16_t lost = (uint16_t)(power_port_on(p)
+                                     & (uint16_t)~asked_on(p, rail, want));
+    p->held_on |= (uint16_t)(lost & p->keep);
+    p->rail = rail;
+    p->want = want;
+    track(p);
 }
 
 /**
@@ -123,8 +169,7 @@ uint8_t power_write(power_page_t *p, uint8_t off, uint8_t n,
     /* An OFF is always taken: RAIL 0 first, whatever the rest of the write
      * brings. */
     if (off == (uint8_t)LINK_PW_RAIL && in[0] == 0u && p->rail) {
-        p->rail = false;
-        track(p);
+        take(p, false, p->want);
     }
     if ((unsigned)off + n > (unsigned)LINK_PW_COUNT) {
         return (uint8_t)LINK_NACK_BAD_RANGE;
@@ -162,9 +207,7 @@ uint8_t power_write(power_page_t *p, uint8_t off, uint8_t n,
     if (rail_on) {
         p->tripped = 0u;
     }
-    p->rail = rail == 1u;
-    p->want = want;
-    track(p);
+    take(p, rail == 1u, want);
     return 0u;
 }
 
@@ -197,8 +240,9 @@ void power_off(power_page_t *p)
     if (p == NULL) {
         return;
     }
-    p->rail = false;
-    p->want = 0u;
+    p->rail    = false;
+    p->want    = 0u;
+    p->held_on = 0u;            /* an error waits for no write */
     track(p);
 }
 
@@ -316,12 +360,62 @@ uint16_t power_hold(power_page_t *p, uint16_t throttle)
         return 0u;
     }
     if (p->fitted != 0u) {
-        p->want &= (uint16_t)~hit;
+        p->want    &= (uint16_t)~hit;
+        p->held_on &= (uint16_t)~hit;
     } else {
-        p->rail = false;
+        p->rail    = false;
+        p->held_on = 0u;
     }
     track(p);
     return hit;
+}
+
+void power_port_set(power_page_t *p, unsigned k, bool on)
+{
+    if (p == NULL || k >= LINK_PW_PORTS) {
+        return;
+    }
+    const uint16_t bit = (uint16_t)(1u << k);
+    if (p->fitted != 0u) {
+        if (on) {
+            /* From RAIL 0 the other ports stay off: they come on with the
+             * panel's own write only. */
+            if (!p->rail) {
+                p->want &= bit;
+            }
+            p->rail  = true;
+            p->want |= bit;
+        } else {
+            p->want    &= (uint16_t)~bit;
+            p->held_on &= (uint16_t)~bit;
+        }
+    } else {
+        p->rail = on;
+        if (!on) {
+            p->held_on = 0u;
+        }
+    }
+    track(p);
+}
+
+void power_drop(power_page_t *p, uint16_t keep)
+{
+    if (p == NULL) {
+        return;
+    }
+    p->want    &= keep;
+    p->held_on &= keep;
+    track(p);
+}
+
+void power_keep(power_page_t *p, uint16_t keep)
+{
+    if (p == NULL) {
+        return;
+    }
+    p->keep     = keep;
+    p->held_on &= keep;
+    track(p);
 }
 
 uint16_t power_throttle(const outputs_t *o, const prog_port_t *pp,

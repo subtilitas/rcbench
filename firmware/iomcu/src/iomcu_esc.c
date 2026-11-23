@@ -18,13 +18,20 @@
 static uint8_t esc_hw_pin(void *ctx, bool is_port, uint8_t index)
 {
     (void)ctx;
+    uint8_t pin;
     if (is_port) {
-        const uint8_t pin = prog_port_esc_pin(&s_prog, index,
-                                              outputs_hw_ports_bound());
-
-        return pin == (uint8_t)PROG_PORT_NO_PIN ? (uint8_t)ESC_PORT_NO_PIN : pin;
+        pin = prog_port_esc_pin(&s_prog, index, outputs_hw_ports_bound());
+        pin = pin == (uint8_t)PROG_PORT_NO_PIN ? (uint8_t)ESC_PORT_NO_PIN : pin;
+    } else {
+        pin = esc_port_slot_pin(&s_outputs, index, bound_slots());
     }
-    return esc_port_slot_pin(&s_outputs, index, bound_slots());
+    /* The node: refused before anything is switched where the rail's
+     * rules refuse a session on that output (rsn_esc_open_ok()). */
+    if (pin != (uint8_t)ESC_PORT_NO_PIN && !rsn_esc_open_ok(pin)) {
+        return (uint8_t)ESC_PORT_NO_PIN;
+    }
+    rsn_prog_pin(pin);          /* the node: the output it would switch */
+    return pin;
 }
 
 /**
@@ -81,18 +88,22 @@ static bool esc_hw_give(void *ctx)
 }
 
 /**
- * @brief What the PD mini says.  An ESC session never uses PROG_SUPPLY.
+ * @brief What the PD mini says, on the node through the output's switch
+ *        (rsn_prog_view()).  An ESC session never uses PROG_SUPPLY.
  * @param ctx Unused.
  * @param out Takes it.
  */
 static void esc_hw_supply(void *ctx, supply_port_view_t *out)
 {
     (void)ctx;
-    supply_page_port_view(&s_supply, out);
+    if (!rsn_prog_view(out)) {  /* the node: through the output's switch */
+        supply_page_port_view(&s_supply, out);
+    }
 }
 
 /**
- * @brief The PD mini on or off.  No ON while its wiring is not in flash, as the
+ * @brief The PD mini on or off, on the node with the output's switch
+ *        (rsn_prog_set()).  No ON while its wiring is not in flash, as the
  *        SUPPLY page refuses one: a restart in the run could not switch it off.
  * @param ctx Unused.
  * @param on  True for on.
@@ -103,6 +114,10 @@ static void esc_hw_supply(void *ctx, supply_port_view_t *out)
 static bool esc_hw_supply_set(void *ctx, bool on, uint16_t mv, uint16_t ma)
 {
     (void)ctx;
+    const int rail = rsn_prog_set(on, mv, ma);
+    if (rail >= 0) {
+        return rail != 0;
+    }
     if (on && s_supply_unsaved) {
         return false;
     }

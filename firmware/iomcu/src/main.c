@@ -621,6 +621,9 @@ int main(void)
         .run        = hitec_hw_run,
         .supply     = kst_hw_supply,
         .supply_set = kst_hw_supply_set,
+        /* The node's port switch: the servo has power when its supply
+         * reads on (iomcu_rsn.c). */
+        .on_read    = IOMCU_BOARD_RSN != 0,
         .driver     = hitec_line_driver(&s_hitec_line),
     };
     (void)hitec_port_init(&s_hitec, &hitec_hw);

@@ -1281,6 +1281,62 @@ void rsn_off(void);
  */
 uint16_t rsn_pass(uint32_t now);
 /**
+ * @brief The output of the pin a KST, HITEC or ESC_WIRE page last asked
+ *        for (its hw.pin()): the session's output before it holds one.
+ *
+ * @param pin  The GPIO.
+ */
+void rsn_prog_pin(uint8_t pin);
+/**
+ * @brief A programming session's supply on the node: the PD mini through
+ *        its output's switch (prog_rail_view()).
+ *
+ * @param out  Takes it.
+ * @return     true on the node; false on the other boards, where the
+ *             caller reads its own supply.
+ */
+bool rsn_prog_view(supply_port_view_t *out);
+/**
+ * @brief A programming session's request on the node (prog_rail_set()):
+ *        its output's switch and the PD mini.
+ *
+ * @param on  true for ON.
+ * @param mv  The voltage for ON, mV.
+ * @param ma  The current limit for ON, mA.
+ * @return    1 taken, 0 refused; -1 on the other boards, where the caller
+ *            asks its own supply.
+ */
+int rsn_prog_set(bool on, uint16_t mv, uint16_t ma);
+/**
+ * @brief The rail told of the session's hold and write
+ *        (prog_rail_tell()), the switches driven; with ports_tell_supply().
+ */
+void rsn_prog_tell(void);
+/**
+ * @brief The programming ports whose CONNECT the rail refuses
+ *        (prog_rail_connect()): a BEC found, or without the switches
+ *        another channel active.
+ *
+ * @return One bit per programming port; 0 on the other boards.
+ */
+uint8_t rsn_prog_refused(void);
+/**
+ * @brief Whether ESC_WIRE may open on @p pin's output before it switches
+ *        anything (prog_rail_open_ok()): no KST or HITEC session holds a
+ *        port, no BEC found, and without the port switches no other
+ *        channel active.
+ *
+ * @param pin  The target's GPIO.
+ * @return     true then; true on the other boards.
+ */
+bool rsn_esc_open_ok(uint8_t pin);
+/**
+ * @brief Whether ESC_WIRE's OPEN is refused for a BEC found on a port.
+ *
+ * @return true then; false on the other boards.
+ */
+bool rsn_esc_refused(void);
+/**
  * @brief The POWER page's read (power_read()).
  *
  * @param ctx  Not used.
@@ -1403,7 +1459,9 @@ static inline uint8_t ports_wire(void)
  * mini, so ESC_WIRE and the two exclude each other on every port; a firmware
  * update keeps ESC_WIRE out as well.
  *
- * Called after a write of either and once a pass.
+ * Called before and after a write of KST, HITEC or ESC_WIRE and once a pass:
+ * a command is judged against the masks as they stand at it, after a PROG
+ * or OUTPUTS write earlier in the same batch of frames.
  */
 static inline void ports_exclusive(void)
 {
@@ -1414,13 +1472,20 @@ static inline void ports_exclusive(void)
     tone_page_freeze(&s_tone, esc != 0u);
     supply_page_wire_freeze(&s_supply, esc != 0u);
 
-    kst_port_other_mask(&s_kst, (uint8_t)(hitec_port_quiet_mask(&s_hitec) | esc));
-    hitec_port_other_mask(&s_hitec, (uint8_t)(kst_port_quiet_mask(&s_kst) | esc));
+    /* The node's rail: CONNECT refused for a BEC found, and without the
+     * port switches while another channel is active (iomcu_rsn.c). */
+    const uint8_t rail = rsn_prog_refused();
+
+    kst_port_other_mask(&s_kst, (uint8_t)(hitec_port_quiet_mask(&s_hitec) | esc
+                                          | rail));
+    hitec_port_other_mask(&s_hitec, (uint8_t)(kst_port_quiet_mask(&s_kst) | esc
+                                              | rail));
     esc_port_other(&s_esc, (uint8_t)(kst_port_quiet_mask(&s_kst)
                                      | hitec_port_quiet_mask(&s_hitec)
                                      | (update_hw_holds_arm() ? 0x80u : 0u)
                                      | (s_supply_attach && !s_pd_open ? 0x40u
-                                                                      : 0u)));
+                                                                      : 0u)
+                                     | (rsn_esc_refused() ? 0x20u : 0u)));
 }
 
 /**
@@ -1470,6 +1535,9 @@ static inline void ports_tell_supply(void)
     /* Under an ESC session its ON is refused, on the rule of a port's hold. */
     prog_supply_hold(&s_psup, (own && hold) || esc_port_supply_hold(&s_esc));
     prog_supply_port_writes(&s_psup, own && writing);
+    /* The node's rail: a panel's OFF of the session's output waits for the
+     * write as the PD mini's does. */
+    rsn_prog_tell();
 }
 
 /**

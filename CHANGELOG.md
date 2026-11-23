@@ -8,6 +8,23 @@ history is in git.
 
 ### Added
 
+- IOmcu, remote servo node (board 3): KST, Hitec and ESC wire sessions run
+  on the common servo rail. A session's power cycle switches the master
+  rail switch without the port switches and only its own port's switch
+  with them. Without the port switches CONNECT is refused while another
+  channel is active; with them a session at another voltage than the
+  rail's switches every other port off until it ends. CONNECT is refused
+  while the BEC check finds 500mV or more on any port, and on every port
+  while another session holds one. The session's port is switched on only
+  once the PD mini reads the session's voltage (300mV under to 150mV over,
+  100ms settled, 2500ms at most), and a Hitec POWER on the node starts its
+  listen when the port reads on. After a trip no session switches the
+  rail on until the panel's RAIL 1. Every OFF that stands (RAIL 0,
+  PORT_WANT without the session's port, SUPPLY OFF, a trip, a lost
+  heartbeat) ends a session's waiting ON, and each CONNECT is judged
+  against the channels as they stand at its own frame. The panel's OFF of
+  the session's port waits for a write to the servo's memory, 10000ms at
+  most ([Link, Programming on the common rail](docs/Link.md#programming-on-the-common-rail)).
 - Node firmware: the servo role (`CONFIG_RCNODE_ROLE_SERVO`,
   `sdkconfig.servo`) for the remote servo node's ES3C28P. It polls the
   Core2350B (board 3) over UART0 at 1,000,000 baud, edges the heartbeat on

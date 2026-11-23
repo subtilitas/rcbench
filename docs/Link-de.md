@@ -1969,6 +1969,114 @@ Adressen des INA228 und den Ablauf; `test/host/test_out_dshot.c` eine
 bidirektionale Leitung auf S9, die zwischen den Frames high ruht, und den
 Eingang eines einfachen Pads, der aus ist, solange sein Block es treibt.
 
+#### Programmieren an der gemeinsamen Schiene
+
+Auf Board 3 läuft eine Sitzung von KST, Hitec oder ESC wire an jedem der 9
+Ausgänge. Die Versorgung ihres Servos ist der PD mini über den Schalter
+des Ausgangs (`shared/outputs/prog_rail.c`). Der Ausgang der Sitzung ist
+der, dessen Pin ihr Programmierport hält, oder der Pin der Leitung von ESC
+wire. Die Programmierspannung des Servos ist der Sollwert des PD mini, also
+die Spannung der Schiene für jeden Port.
+
+| Fall | Ohne die Portschalter (FITTED 0) | Mit ihnen (FITTED 0x1FF) |
+| --- | --- | --- |
+| der Power-Cycle der Sitzung (KST 1000ms, klassischer Hitec-Einstieg 500ms) | RAIL 0 und 1: jedes Servo an der Schiene wird aus- und eingeschaltet | nur Bit k in PORT_WANT; RAIL und die anderen Ports bleiben |
+| CONNECT (KST ENTER und REBOOT aus PWM, Hitec OPEN), während ein anderer Kanal aktiv ist | abgelehnt: KST BUSY, Hitec HELD | genommen |
+| eine Spannung der Sitzung, die vom Sollwert des PD mini abweicht | die Schiene ändert sich für jeden Port; die anderen Kanäle sind nach der Regel darüber OFF | das Bit in PORT_WANT jedes anderen Ports wird gelöscht, bevor der PD mini sich ändert; ein neues Bit wird mit BUSY abgelehnt, bis die Sitzung loslässt, danach braucht es das 2s-Halten des Panels |
+| ein gefundenes BEC (irgendein Bit in BEC) | CONNECT abgelehnt: KST BUSY, Hitec HELD, OPEN von ESC wire HELD | ebenso |
+
+- Ein Kanal ist aktiv, solange ein Slot von OUTPUTS oder ein
+  Programmierport mit einer Funktion außer NONE an den Pin seines Ausgangs
+  gebunden ist.
+- Eine Programmiersitzung zur Zeit auf dem Knoten: solange eine Sitzung
+  von KST, Hitec oder ESC wire einen Port hält, wird CONNECT an jedem
+  anderen Port abgelehnt (KST BUSY, Hitec HELD, ESC wire HELD). Jedes
+  CONNECT wird an den Kanälen geprüft, wie sie bei seinem eigenen Frame
+  stehen: ein Schreiben von PROG oder OUTPUTS früher im selben Stapel von
+  Frames zählt. Das OPEN
+  von ESC wire wird am Ausgang seines Ziels geprüft, bevor etwas schaltet:
+  abgelehnt mit `NO_PIN`, solange eine KST- oder Hitec-Sitzung einen Port
+  hält, mit einem gefundenen BEC und ohne die Schalter, solange ein anderer
+  Kanal aktiv ist.
+- Das OFF der Sitzung wird immer genommen und lässt den PD mini, wie er
+  ist. Ihr ON wird abgelehnt (KST-Ergebnis 32, Hitec-Ergebnis 3), solange
+  TRIPPED steht (bis RAIL 1 des Panels es löscht), ohne lebenden
+  Heartbeat, auf einem abgelehnten Chip, bevor die Critical-Grenzen
+  gehalten werden, an einem Throttle-Ausgang, mit einem gefundenen BEC,
+  ohne die Schalter, während ein anderer Kanal aktiv ist, und nach dem OFF
+  des Panels (RAIL 0, PORT_WANT ohne das Bit der Sitzung oder OUTPUT 0 der
+  Page SUPPLY) oder einem abgelaufenen ON, bis die Sitzung loslässt. Ein
+  Auslösen beendet außerdem den Halt der Sitzung an der Schiene: kein
+  späteres ON dieser Sitzung wird genommen.
+- Ist der PD mini an der Spannung der Sitzung an und ein anderer Port an,
+  lässt das ON der Sitzung die Spannung des PD mini und die anderen Ports,
+  wie sie sind. Sonst wird der PD mini auf die Spannung der Sitzung
+  gestellt: aus und wieder an, solange der Ausgang der Sitzung aus ist, und
+  mit dem Ausgang an nur auf eine Spannung, die nicht höher ist als die,
+  mit der er läuft
+  ([Die Versorgung eines Programmierports](Safety-de.md#die-versorgung-eines-programmierports)).
+- Die Stromgrenze: solange der PD mini ein Servo versorgt (der Ausgang der
+  Sitzung an, oder ein anderer Port an der Spannung der Sitzung an), wird
+  die Grenze der Sitzung nur genommen, wenn sie niedriger ist als die des
+  PD mini, und dann für jeden Port, den der PD mini speist; eine höhere wird
+  nicht genommen. Ohne versorgtes Servo wird sie genommen wie erbeten.
+- Mit dem Ausgang der Sitzung aus wartet ihr ON auf den PD mini: der
+  Ausgang (und ohne die Schalter die Schiene) wird nur auf frische
+  Messungen des Ausgangs des PD mini eingeschaltet, genommen nach dem ON
+  (SAMPLES weitergezählt; hat das ON den PD mini verstellt, zählt die erste
+  Messung danach nicht). Jede zählt mit dem PD mini online, an gelesen, mit
+  erbetenem und zurückgelesenem Sollwert an der Spannung der Sitzung und
+  seinem Ausgang von 300mV darunter bis 150mV darüber. Eine solche Messung
+  schaltet den Ausgang ein, wenn das ON den PD mini nicht verstellt hat;
+  wenn doch, 2 oder mehr hintereinander über 100ms. Eine Messung außerhalb
+  dieses Bands oder 250ms ohne Messung beginnen das Fenster neu. Jede Regel
+  darüber wird in jedem Durchlauf des Wartens und vor dem Einschalten des
+  Ausgangs erneut geprüft, so beendet jedes stehende OFF das Warten: RAIL 0,
+  PORT_WANT ohne das Bit der Sitzung, OUTPUT 0 der Page SUPPLY (auch
+  solange der PD mini für ein laufendes Schreiben an bleibt), ein Auslösen,
+  ein ausgebliebener Heartbeat und das eigene OFF der Sitzung. Nicht so innerhalb von 2500ms: der PD mini wird
+  ausgeschaltet, wenn das ON ihn verstellt hat, der Ausgang bleibt aus, und
+  das ON der Sitzung bleibt abgelehnt. Solange es wartet, liest die
+  Versorgung der Sitzung erbeten an, weder an noch aus. Jede Sitzung
+  misst, was vom Strom des Servos abhängt, ab dem Durchlauf, in dem ihre
+  Versorgung zuerst an liest: ein Hitec-POWER beginnt dann sein Lauschen
+  (nur auf Board 3; sonst beim ON), ein KST-Zyklus seine 1000ms Wartezeit,
+  ESC wire seinen Einstieg. Ihre eigenen Zeitgrenzen der Versorgung von
+  3000ms begrenzen das ganze Warten; ein Hitec-POWER, dessen Versorgung
+  abgeschaltet wird, bevor sie an liest, oder die nicht innerhalb von
+  3000ms an liest, schaltet sie ab und endet mit Ergebnis 3.
+- Ein ON der Sitzung aus RAIL 0 löscht die anderen Bits in PORT_WANT: die
+  anderen Ports gehen nur mit dem eigenen Schreiben des Panels an.
+- Solange eine Sitzung ihren Ausgang hält, wird ein Schreiben des Panels,
+  das diesen Ausgang einschalten würde, mit BUSY abgelehnt. Ein Schreiben,
+  das mit RAIL 0 beginnt, wird für RAIL trotzdem genommen. Mit den
+  Schaltern gehört Bit k von PORT_WANT der Sitzung, solange sie Ausgang k
+  hält: es liest gesetzt, Bit k eines Schreibens schaltet den Ausgang nie
+  ein, und ein Schreiben ohne es ist das OFF des Panels für diesen
+  Ausgang, wie RAIL 0.
+- Das OFF des Panels (RAIL 0, oder PORT_WANT ohne das Bit der Sitzung)
+  steht sofort in den Registern und schaltet jeden anderen Port sofort
+  aus. Es steht als OFF für die Sitzung, wie der Rest des Schreibens auch
+  beantwortet wird, auch in der eigenen Aus-Zeit der Sitzung, und beendet
+  ein wartendes ON: das ON der Sitzung wird abgelehnt, und sie endet mit
+  dem Ergebnis 32. Solange die Sitzung in den Speicher des Servos schreibt (ein KST
+  WRITE, RESTORE oder RELEASE, ein Hitec-Schreiben und seine 150ms
+  danach, wie für die Page SUPPLY), bleibt der Ausgang der Sitzung an und
+  PORT_ON zeigt ihn, bis das Schreiben endet, höchstens 10000ms nach dem
+  OFF. Ab diesem OFF wird das eigene ON der Sitzung abgelehnt, bis sie
+  loslässt.
+- Ein ausgebliebener Heartbeat, der Failsafe des Links und ein Auslösen
+  werden nicht gehalten: die Schiene und jeder Port gehen im
+  selben Durchlauf aus, das Schreiben wird abgeschnitten, und das Servo
+  hält die Frames, die vor dem Schnitt geschrieben waren. Eine KST-Sitzung
+  endet abgebrochen in PWM, und das nächste CONNECT liest das Servo vor
+  allem anderen.
+
+`test/host/test_prog_rail.c` hält die Regeln; `test_prog_rail_kst.c` und
+`test_prog_rail_hitec.c` lassen eine KST- und eine Hitec-Sitzung mit und
+ohne die Schalter darauf laufen; `test_prog_rail_off.c` stellt jedes OFF
+gegen ein wartendes ON.
+
 ### Abgelehnte Frames
 
 Ab 4.21 zählt der IOmcu die CAN-Frames, die er empfängt und nicht
