@@ -1726,10 +1726,79 @@ holds its critical alert.
   under. A port without a reading keeps its bit; with the rail or a port on,
   `BEC` keeps the last check.
 
+#### Throttle outputs on board 3
+
+Every output driver runs on S1 to S9: SERVO PWM and MOTOR PWM on the PWM
+slices, PPM, DShot150, DShot300, DShot600 and bidirectional DShot on PIO.
+A throttle output follows the rules of [DShot](DShot.md) as on the other
+boards: a frame every 1ms while ARMED for the throttle, the pin low at
+rest, a bidirectional line released to its pull-up before the first frame
+and between frames. SAFE, STOP, an error, the link failsafe (200ms of
+silence) and a lost heartbeat (150ms) stop every DShot frame and PPM frame
+and every PWM pulse in the pass that sees them; the pins rest low. A
+bidirectional output's telemetry fills BENCH as on the bench, whichever
+slot it is on, slot 9 on OUTPUTS_HI included.
+
+The PIO blocks are placed by fixed rules (`shared/outputs/rsn_pio.c`), the
+ones `tools/pio_budget.py` holds for board 3:
+
+| Block | Takes |
+|---|---|
+| PIO0 | the PD mini UART (12 words, 2 state machines), MIRROR and CAPTURE; nothing else |
+| PIO1, PIO2 | the PIO outputs and the one programming session's line; a line holds its block whole |
+
+- Every block runs at GPIO base 16, set at boot before any program is
+  loaded.
+- An output goes into PIO2 first and into PIO1 once PIO2 is full: up to 8
+  plain DShot or PPM outputs, 4 bidirectional ones (2 a block), or a mix
+  of them in 8 state machines. An output that finds no block is refused
+  with `WHY` SILICON (12).
+- No output goes into the block of a session's line. A KST, ESC wire or
+  Hitec line goes into PIO1 when PIO1 holds no output, else into PIO2 when
+  PIO2 holds none; with an output in each block the session is refused. A
+  Hitec D line with its precharge sampler goes into PIO2 when PIO2 holds
+  no output, else into PIO1, and the sampler takes a state machine and 12
+  words of the other block. During a session the outputs share the other
+  block: 4 plain DShot, 2 bidirectional, or 1 bidirectional and 2 plain;
+  beside the Hitec D sampler 3 plain or 1 bidirectional and 1 plain.
+- At most 6 PPM outputs: 3 DMA channels are fixed (CAPTURE 2, the UART
+  link's receive 1) and a PPM output takes 2 of the 16. The 7th is
+  refused with SILICON.
+- The placement works through the claims: before a driver binds, every
+  free state machine of the blocks the use may not take is claimed, and
+  after the bind those claims are let go. The drivers' own search (PIO2
+  down to PIO0, a free state machine, or a free adjacent pair for
+  bidirectional DShot) then finds only the blocks the rules allow.
+- A plain DShot or PPM pad has its input enable cleared while its block
+  drives it, on every board: CAPTURE sees none of its edges. A
+  bidirectional pad keeps its input for the reply.
+
+SENSE on board 3: the INA228 sits on J26, on the sensor bus of the three
+INA3221. An INA228 address that a fitted INA3221 holds is refused with
+BAD_VALUE: 0x40, 0x41 and 0x42 always, 0x43 when SENSE_MAP fits a fourth
+part. The others up to 0x4F are taken, the MATEK I2C-INA-BM's 0x45 and
+0x44 among them. The schedule reads the 9 channels and the
+INA228 on the 400kHz bus every 1ms tick:
+
+| Read | Without a FAST channel | With S1 as FAST |
+|---|---|---|
+| each channel's current | 111 or 112 a second (1000 / 9) | S1 1000 a second, each other 125 (1000 / 8) |
+| each channel's bus voltage | 41 or 42 a second | 41 or 42 a second |
+| INA228 CURRENT, VBUS | 500 a second each | 500 a second each |
+| INA228 ENERGY, CHARGE | 50 a second each | 50 a second each |
+| the longest tick's bus time | 570µs (228 clocks of 2.5µs) | 690µs (276 clocks) |
+
 `test/host/test_board_fix_rsn.c` holds board 3's catalogue, roles, pages
 and critical limits; `test/host/test_chip_gate.c` the stepping check and
 the writes it refuses; `test/host/test_power_page.c` the POWER page, its
-trips and the BEC check.
+trips and the BEC check; `test/host/test_rsn_pio.c` the block placement
+against a model of the 3 blocks, board 3's table of `tools/pio_budget.py`
+and every order of up to 9 outputs with each session;
+`test/host/test_rsn_throttle.c` the outputs on S1, S3, S5 and S9 at rest
+on SAFE, STOP, an error, the failsafe and a lost heartbeat, BENCH from
+S9's telemetry, the INA228's addresses and the schedule;
+`test/host/test_out_dshot.c` a bidirectional line on S9 idling high
+between frames and a plain pad's input off while its block drives it.
 
 #### Programming on the common rail
 

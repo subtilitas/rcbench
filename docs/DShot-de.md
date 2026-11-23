@@ -77,7 +77,17 @@ Ein PIO-Block (Programmable Input/Output) adressiert 32 Pins ab Basis
 0 oder 16. Die Basis bleibt fest, solange der Block ein Programm
 enthält. Der Treiber wählt den Block deshalb erst bei der Zuordnung
 des Slots, wenn der Pin bekannt ist. Erreicht kein freier Block den
-Pin, wird die Zuordnung abgelehnt.
+Pin, wird die Zuordnung abgelehnt. Auf dem Remote-Servo-Knoten (Board 3)
+steht jeder Block auf Basis 16, und die Blöcke werden nach festen Regeln
+belegt: PIO0 hält die feste Last, die Ausgänge nehmen PIO1 und PIO2, und
+die Leitung einer Programmier-Session hält einen davon ganz
+([Link: Throttle-Ausgänge auf Board 3](Link-de.md#throttle-ausgänge-auf-board-3)).
+
+Bei einem Pad mit einfachem DShot ist der Input Enable gelöscht, solange
+sein Block es treibt, und kommt beim Stopp zurück, wo das Pad dem
+Prozessor gehört und low getrieben wird: nichts liest eine einfache
+Leitung zurück. Ein bidirektionales Pad behält seinen Eingang, weil der
+Empfänger die Antwort darauf liest.
 
 ## Servo-PWM
 

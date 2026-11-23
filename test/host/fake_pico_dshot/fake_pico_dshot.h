@@ -66,6 +66,7 @@ void gpio_disable_pulls(uint gpio);
 void gpio_pull_up(uint gpio);
 void gpio_set_dir(uint gpio, bool out);
 void gpio_put(uint gpio, bool value);
+void gpio_set_input_enabled(uint gpio, bool enabled);
 
 PIO  pio_get_instance(uint instance);
 uint pio_get_gpio_base(PIO pio);

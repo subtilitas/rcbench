@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "iomcu.h"
+#include "iomcu_rsn_pio.h"
 #include "board_fix.h"
 #include "iomcu_pins.h"
 
@@ -159,9 +160,7 @@ uint8_t tone_write(void *ctx, uint8_t off, uint8_t n,
         /* The supply's wiring waits for flash with its UART closed, and
          * attaches once saved: the capture may not take the PIO room that
          * attach needs.  Tried, and let go again. */
-        wired = pd_uart_open(supply_page_tx(&s_supply),
-                             supply_page_rx(&s_supply),
-                             supply_page_uart_baud(&s_supply));
+        wired = pd_open();
         if (wired) {
             pd_uart_close();
         }

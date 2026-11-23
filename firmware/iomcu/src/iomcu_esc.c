@@ -6,6 +6,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "iomcu.h"
+#include "iomcu_rsn_pio.h"
 
 /**
  * @brief The pin of a throttle slot or a DShot port the IOmcu holds now.
@@ -46,7 +47,13 @@ static bool esc_hw_take(void *ctx, uint8_t pin)
     (void)ctx;
     reserve_held();
     hw_apply_only(bound_slots());
-    return ew_line_open(&s_esc_line, pin) == EW_LINE_OK;
+    /* On board 3 into a block that holds no output (iomcu_rsn_pio.h). */
+    if (!place_begin(RSN_PIO_LINE, pin)) {
+        return false;
+    }
+    const bool ok = ew_line_open(&s_esc_line, pin) == EW_LINE_OK;
+    place_end(ok);
+    return ok;
 }
 
 /**
@@ -63,6 +70,7 @@ static bool esc_hw_give(void *ctx)
     bool back;
 
     ew_line_close(&s_esc_line);
+    place_line_gone();
     safety_gate_hold_ended(s_state.control);
     (void)outputs_set(&s_outputs, CH_THROTTLE, 0u, s_now_ms);
     (void)outputs_set_role_channels(&s_outputs, OUT_ROLE_THROTTLE,

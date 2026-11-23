@@ -6,6 +6,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "iomcu.h"
+#include "iomcu_rsn_pio.h"
 
 /* ----------------------------------------------------------------- KST */
 
@@ -36,7 +37,13 @@ bool kst_hw_take(void *ctx, uint8_t port, uint8_t pin)
     (void)ctx;
     (void)port;
     ports_apply();
-    return kst_line_open(&s_kst_line, pin) == KST_LINE_OK;
+    /* On board 3 into a block that holds no output (iomcu_rsn_pio.h). */
+    if (!place_begin(RSN_PIO_LINE, pin)) {
+        return false;
+    }
+    const bool ok = kst_line_open(&s_kst_line, pin) == KST_LINE_OK;
+    place_end(ok);
+    return ok;
 }
 
 /* And back: the port holds no pin, so ports_apply() binds it as the PROG
@@ -45,6 +52,7 @@ void kst_hw_give(void *ctx)
 {
     (void)ctx;
     kst_line_close(&s_kst_line);
+    place_line_gone();
     ports_apply();
 }
 

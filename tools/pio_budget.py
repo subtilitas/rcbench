@@ -1024,13 +1024,13 @@ def dshot_events(root: pathlib.Path = ROOT) -> tuple[int, int]:
     dshot.h).  Frames go out at OUT_RENDER_DSHOT_HZ
     (shared/outputs/include/out_render.h).
 
-    A plain DShot pad is captured: pio_gpio_init() is gpio_set_function(),
-    which sets the pad's input enable (pico-sdk 2.3.0 gpio.c), and neither
-    dshot_tx_program_init() nor out_dshot.c clears it.  CAPTURE cannot
-    leave the output pins out by its window: it reads one run of pins from
-    its IN base, and the outputs sit between the inputs (output k on
+    These are the edges on the pad.  Whether CAPTURE sees them is
+    input_cleared()'s question: pio_gpio_init() is gpio_set_function(),
+    which sets the pad's input enable (pico-sdk 2.3.0 gpio.c), and CAPTURE
+    cannot leave the output pins out by its window: it reads one run of
+    pins from its IN base, the outputs sit between the inputs (output k on
     GPIO14 + 2k, input k one above), and PIO has no instruction that masks
-    a read.  gpio_set_input_enabled(pin, false) after the program's init
+    a read.  gpio_set_input_enabled(pin, false) after pio_gpio_init()
     makes a plain DShot or PPM pad read 0 to every state machine, which
     takes its events out of the ring and leaves its output untouched; a
     bidirectional DShot pad keeps its input, because its receiver reads
@@ -1123,8 +1123,42 @@ def session_traffic(root: pathlib.Path = ROOT) -> dict[str, Traffic]:
     }
 
 
+#: The drivers whose pads the capture would see, by kind.
+DRIVER_SOURCES = {"plain": "protocols/dshot/rp2350/out_dshot.c",
+                  "ppm": "protocols/ppm/rp2350/out_ppm.c"}
+_INPUT_OFF_RE = re.compile(r"gpio_set_input_enabled\(\s*pin\s*,\s*false\s*\)")
+
+
+def input_cleared(root: pathlib.Path, kind: str) -> bool:
+    """Whether a driver clears its pad's input enable while its block drives.
+
+    Read from the driver's source: a call of
+    gpio_set_input_enabled(pin, false), which follows pio_gpio_init()
+    before the state machine runs.
+
+    Args:
+        root: The repository.
+        kind: "plain" or "ppm", a key of DRIVER_SOURCES.
+
+    Returns:
+        True when the source makes the call.
+
+    Raises:
+        BudgetError: The source is missing.
+    """
+    path = root / DRIVER_SOURCES[kind]
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as e:
+        raise BudgetError(f"{DRIVER_SOURCES[kind]}: {e}") from e
+    return _INPUT_OFF_RE.search(text) is not None
+
+
 def capture_rates(root: pathlib.Path = ROOT) -> Rates:
     """The capture rates of the tree's DShot and PPM drivers.
+
+    A plain DShot or PPM output whose driver clears its pad's input enable
+    (input_cleared()) puts no event in the ring: its rate is 0.
 
     Args:
         root: The repository.
@@ -1133,7 +1167,9 @@ def capture_rates(root: pathlib.Path = ROOT) -> Rates:
         The rates.
     """
     plain, bidir = dshot_events(root)
-    return Rates(plain, bidir, ppm_events(root))
+    ppm = ppm_events(root)
+    return Rates(0 if input_cleared(root, "plain") else plain, bidir,
+                 0 if input_cleared(root, "ppm") else ppm)
 
 
 def ppm_events(root: pathlib.Path = ROOT) -> int:
@@ -1419,6 +1455,11 @@ def report(board: Board, progs: dict[str, Program],
                     f"board {board.number}: {session.label}: {got} plain "
                     f"DShot fit beside the line in its block, "
                     f"RSN_SESSION_SPARE says {want}")
+        seen = {k: ("read 0 to it (input enable cleared by the driver)"
+                    if v == 0 else "are captured")
+                for k, v in (("plain", rates.plain), ("ppm", rates.ppm))}
+        lines.append(f"  capture: plain DShot pads {seen['plain']}; PPM "
+                     f"pads {seen['ppm']}")
         lines.append(f"  capture: {sw.worst_rate:,} events/s at most "
                      f"({sw.worst_mix}): the ring holds "
                      f"{ring_ms(sw.worst_rate):.1f}ms against a "
