@@ -8,6 +8,11 @@ history is in git.
 
 ### Added
 
+- Web flasher: the step model of a wizard (`flasher/src/tasks.ts`,
+  `release.ts`, `wizard.ts`) with unit tests: 4 tasks on the first screen,
+  the C6 radio repair last with a Prepare step, one release per visit from
+  the panel image's default, the signature gate of WRITE per mode, the
+  Core2350B in Advanced with a local file only. The page does not use it.
 - SETUP > UPDATES: an update of the C6 radio, the M5Stack Dial, the power
   node or the balance node fetches that device's image of the release the
   panel runs when its step's hold asks for it: `SHA256SUMS` and the file
