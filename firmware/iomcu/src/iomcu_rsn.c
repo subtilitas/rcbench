@@ -36,6 +36,7 @@
 #include "iomcu.h"
 
 #include "chip_gate.h"
+#include "iomcu_rsn_pio.h"
 #include "power_page.h"
 #include "rsn_pins.h"
 
@@ -96,6 +97,8 @@ void rsn_boot(iomcu_state_t *s)
     s_chip_fault = chip_gate_fault(rev, rom);
     s->identity[LINK_ID_CHIP_REV] = rev;
     s->identity[LINK_ID_ROM_VER]  = rom;
+    /* Every PIO block at GPIO base 16, before any program is loaded. */
+    place_boot();
     /* The strap's pull-up has had the whole start since rsn_pins_off(). */
     power_init(&s_power, !gpio_get(RSN_PIN_SW_FITTED), s_chip_ok);
     printf("rcbench-iomcu: RP2350 revision %u, boot ROM %u: %s; port "
