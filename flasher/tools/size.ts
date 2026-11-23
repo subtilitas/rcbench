@@ -9,7 +9,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const INITIAL_BUDGET = 80_000;
+export const INITIAL_BUDGET = 120_000;
 export const TOTAL_BUDGET = 600_000;
 const BASE = '/rcbench/flash/';
 

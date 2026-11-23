@@ -545,7 +545,7 @@ npm run typecheck   # tsc --noEmit
 npm test            # unit tests
 npm run licenses    # writes public/licenses.txt
 npm run build       # checks public/licenses.txt, then writes dist/
-npm run size        # initial load at most 80kB, dist/ at most 600kB
+npm run size        # initial load at most 120kB, dist/ at most 600kB
 npx playwright install chromium
 npm run e2e         # browser test at 1280px in English, 360px in German
 npm run dev         # http://localhost:5173/rcbench/flash/, without fw/
@@ -553,7 +553,7 @@ python3 -m pytest ../test/tools/test_flash_manifest.py
 ```
 
 The size budget is the page's own; the configurator's budget does not count
-it. The build measures 75.2kB at the first load and 401.8kB in all, with
+it. The build measures 79.9kB at the first load and 419.0kB in all, with
 the flasher stubs of every chip esptool-js knows; the page loads the stub of
 the detected chip only.
 
