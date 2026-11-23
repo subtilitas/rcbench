@@ -23,6 +23,14 @@
  *   LED         GPIO 39: 500ms on, 500ms off on an A4 chip; 100ms on,
  *               100ms off on a refused one.
  *
+ * Programming on the common rail (prog_rail.h): a KST, Hitec or ESC wire
+ * session's supply is the PD mini through its output's switch.  The
+ * session's output is the one whose pin its programming port holds (the
+ * ESC wire line's pin while it has one), or before that the pin the page
+ * last asked for (kst_hw_pin(), esc_hw_pin()).  A channel is active while
+ * an OUTPUTS slot or a programming port with a function is bound to its
+ * output's pin.
+ *
  * On the other boards (IOMCU_BOARD_RSN 0) each function does nothing: no
  * pin is touched, no fault is set and nothing is refused.
  *
@@ -35,8 +43,10 @@
 
 #include "iomcu.h"
 
+#include "board_fix.h"
 #include "chip_gate.h"
 #include "power_page.h"
+#include "prog_rail.h"
 #include "rsn_pins.h"
 
 #if IOMCU_BOARD_RSN
@@ -47,6 +57,10 @@ static power_page_t s_power;
 static bool s_chip_ok;
 /** @brief STATUS's fault bit for the chip (chip_gate_fault()). */
 static uint16_t s_chip_fault;
+/** @brief The programming session on the rail. */
+static prog_rail_t s_rail;
+/** @brief The output of the pin a programming page last asked for. */
+static int s_asked_k = PROG_RAIL_NO_PORT;
 
 /** @brief LED half period on an A4 chip, ms. */
 #define RSN_LED_OK_MS      500u
@@ -98,6 +112,7 @@ void rsn_boot(iomcu_state_t *s)
     s->identity[LINK_ID_ROM_VER]  = rom;
     /* The strap's pull-up has had the whole start since rsn_pins_off(). */
     power_init(&s_power, !gpio_get(RSN_PIN_SW_FITTED), s_chip_ok);
+    prog_rail_init(&s_rail);
     printf("rcbench-iomcu: RP2350 revision %u, boot ROM %u: %s; port "
            "switches %s\n", (unsigned)rev, (unsigned)rom,
            s_chip_ok ? "A4 or later" : "BEFORE A4, NOTHING IS DRIVEN",
@@ -125,7 +140,7 @@ uint16_t rsn_faults(void)
  */
 static void drive(void)
 {
-    gpio_put(RSN_PIN_RAIL_EN, s_chip_ok && power_rail(&s_power));
+    gpio_put(RSN_PIN_RAIL_EN, s_chip_ok && power_rail_driven(&s_power));
     const uint16_t on = (uint16_t)(power_port_on(&s_power) & s_power.fitted);
     for (unsigned k = 0; k < RSN_PORTS; ++k) {
         gpio_put(RSN_PIN_PORT_EN(k), s_chip_ok && (on & (1u << k)) != 0u);
@@ -135,6 +150,7 @@ static void drive(void)
 void rsn_off(void)
 {
     power_off(&s_power);
+    prog_rail_off(&s_rail);
     drive();
 }
 
@@ -197,6 +213,143 @@ uint16_t rsn_pass(uint32_t now)
     return trip;
 }
 
+/**
+ * @brief The output a pin is, 0 to 8.
+ *
+ * @param pin The GPIO.
+ * @return    The output, or PROG_RAIL_NO_PORT.
+ */
+static int out_of(unsigned pin)
+{
+    const int k = board_fix_out_index(outbind_roles(IOMCU_BOARD_ID), pin);
+    return (k >= 0 && k < (int)LINK_PW_PORTS) ? k : PROG_RAIL_NO_PORT;
+}
+
+/**
+ * @brief The ports whose channel is active: an OUTPUTS slot, or a
+ *        programming port with a function, bound to the port's pin.
+ *
+ * @return Bit k for port k.
+ */
+static uint16_t active_ports(void)
+{
+    uint16_t m = 0u;
+    for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
+        const int k = (s_outputs.slot[i].driver != OUT_DRIVER_NONE)
+                          ? out_of(s_outputs.slot[i].pin) : PROG_RAIL_NO_PORT;
+        m |= (k >= 0) ? (uint16_t)(1u << (unsigned)k) : 0u;
+    }
+    for (uint8_t q = 0u; q < prog_port_count(&s_prog); ++q) {
+        const uint8_t pin = prog_port_pin(&s_prog, q);
+        const int k = (pin != PROG_PORT_NO_PIN
+                       && prog_port_func(&s_prog, q) != LINK_PG_FN_NONE)
+                          ? out_of(pin) : PROG_RAIL_NO_PORT;
+        m |= (k >= 0) ? (uint16_t)(1u << (unsigned)k) : 0u;
+    }
+    return m;
+}
+
+/**
+ * @brief What the rail's rules are judged against now.
+ *
+ * @param c Takes it.
+ */
+static void rail_ctx(prog_rail_ctx_t *c)
+{
+    sense_sync();               /* the critical limits as core 1 has them */
+    c->power.beat_alive  = safety_gate_supply_ok(&s_beat, &s_dev);
+    c->power.limits_held = (s_sense_snap.i3221_crit & 0x07u) == 0x07u;
+    c->power.throttle    = throttles();
+    c->active            = active_ports();
+}
+
+/**
+ * @brief The session's output: its programming port's pin while KST or
+ *        HITEC holds one, the ESC wire line's pin while it has one, else
+ *        the pin last asked for.
+ *
+ * @return The output, or PROG_RAIL_NO_PORT.
+ */
+static int session_port(void)
+{
+    const uint8_t q = (uint8_t)((kst_port_quiet_mask(&s_kst)
+                                 | hitec_port_quiet_mask(&s_hitec))
+                                & ((1u << IOMCU_PROG_PORTS) - 1u));
+    for (uint8_t i = 0u; i < IOMCU_PROG_PORTS; ++i) {
+        if ((q & (1u << i)) != 0u) {
+            const uint8_t pin = prog_port_pin(&s_prog, i);
+            return (pin != PROG_PORT_NO_PIN) ? out_of(pin)
+                                             : PROG_RAIL_NO_PORT;
+        }
+    }
+    const uint64_t esc = esc_port_pins(&s_esc);
+    for (unsigned pin = 0u; pin < 64u; ++pin) {
+        if ((esc & ((uint64_t)1u << pin)) != 0u) {
+            return out_of(pin);
+        }
+    }
+    return s_asked_k;
+}
+
+void rsn_prog_pin(uint8_t pin)
+{
+    s_asked_k = out_of(pin);
+}
+
+bool rsn_prog_view(supply_port_view_t *out)
+{
+    supply_port_view_t pd;
+    supply_page_port_view(&s_supply, &pd);
+    prog_rail_port(&s_rail, session_port());
+    prog_rail_view(&s_rail, &s_power, &pd, out);
+    return true;
+}
+
+int rsn_prog_set(bool on, uint16_t mv, uint16_t ma)
+{
+    if (on && s_supply_unsaved) {
+        return 0;               /* as the SUPPLY page refuses one */
+    }
+    prog_rail_ctx_t c;
+    rail_ctx(&c);
+    prog_rail_port(&s_rail, session_port());
+    const bool taken = prog_rail_set(&s_rail, &s_power, &s_supply, on, mv, ma,
+                                     &c);
+    drive();
+    return taken ? 1 : 0;
+}
+
+void rsn_prog_tell(void)
+{
+    const bool held = ports_hold_supply() || esc_port_supply_hold(&s_esc);
+    const bool writing = ports_writing() || esc_port_writing(&s_esc);
+    prog_rail_port(&s_rail, session_port());
+    prog_rail_tell(&s_rail, &s_power, held, writing, s_now_ms);
+    drive();
+}
+
+uint8_t rsn_prog_refused(void)
+{
+    /* CONNECT's rules read the BEC check and the active ports only. */
+    prog_rail_ctx_t c;
+    memset(&c, 0, sizeof(c));
+    c.active = active_ports();
+    uint8_t m = 0u;
+    for (uint8_t q = 0u; q < IOMCU_PROG_PORTS; ++q) {
+        const uint8_t pin = prog_port_pin(&s_prog, q);
+        if (pin != PROG_PORT_NO_PIN
+            && prog_rail_connect(&s_power, out_of(pin), &c) != PROG_RAIL_OK) {
+            m |= (uint8_t)(1u << q);
+        }
+    }
+    return m;
+}
+
+bool rsn_esc_refused(void)
+{
+    return s_power.bec != 0u;
+}
+
 void power_page_rd(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     (void)ctx;
@@ -206,16 +359,11 @@ void power_page_rd(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 uint8_t power_page_wr(void *ctx, uint8_t off, uint8_t n, const uint16_t *in)
 {
     (void)ctx;
-    sense_sync();               /* the critical limits as core 1 has them */
-    const power_ctx_t c = {
-        .beat_alive  = safety_gate_supply_ok(&s_beat, &s_dev),
-        .limits_held = (s_sense_snap.i3221_crit & 0x07u) == 0x07u,
-        .throttle    = throttles(),
-    };
-    const uint8_t nack = power_write(&s_power, off, n, in, &c);
-    if (nack == 0u) {
-        drive();
-    }
+    prog_rail_ctx_t c;
+    rail_ctx(&c);
+    const uint8_t nack = prog_rail_write(&s_rail, &s_power, off, n, in, &c,
+                                         s_now_ms);
+    drive();
     return nack;
 }
 
@@ -238,6 +386,28 @@ uint16_t rsn_pass(uint32_t now)
     (void)now;
     return 0u;
 }
+
+void rsn_prog_pin(uint8_t pin) { (void)pin; }
+
+bool rsn_prog_view(supply_port_view_t *out)
+{
+    (void)out;
+    return false;
+}
+
+int rsn_prog_set(bool on, uint16_t mv, uint16_t ma)
+{
+    (void)on;
+    (void)mv;
+    (void)ma;
+    return -1;
+}
+
+void rsn_prog_tell(void) {}
+
+uint8_t rsn_prog_refused(void) { return 0u; }
+
+bool rsn_esc_refused(void) { return false; }
 
 void power_page_rd(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {

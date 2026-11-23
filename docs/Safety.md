@@ -326,6 +326,20 @@ write without its answer, a read-back that differs, a step the decoder
 refused. Not a fault: a refusal, a plan that sends nothing, ABORT, and a
 step cut by a stop or a lost link, which end the session themselves.
 
+#### The remote servo node's common rail
+
+On the remote servo node (board 3) the session's servo runs from the PD
+mini through its output's switch, and the panel's OFF of that output
+(POWER's `RAIL` 0 or its `PORT_WANT` bit cleared) waits for a write as the
+PD mini's OFF does: every other port goes off at once, the session's
+output when the write ends, 10000ms after the OFF at most. A lost
+heartbeat, the link failsafe and a trip cut the rail and every port at
+once. Without the port switches CONNECT is refused while another channel
+is active; with them, a session at another voltage than the rail's
+switches every other port off. CONNECT is refused while the BEC check
+finds 500mV or more on any port
+([Link, Programming on the common rail](Link.md#programming-on-the-common-rail)).
+
 #### The carrier's programming-port 5V
 
 On the [rbmod carrier](Carrier.md#power) the programming ports run from

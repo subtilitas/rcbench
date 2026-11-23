@@ -1731,6 +1731,57 @@ and critical limits; `test/host/test_chip_gate.c` the stepping check and
 the writes it refuses; `test/host/test_power_page.c` the POWER page, its
 trips and the BEC check.
 
+#### Programming on the common rail
+
+On board 3 a KST, Hitec or ESC wire session runs on any of the 9 outputs.
+Its servo's supply is the PD mini through the output's switch
+(`shared/outputs/prog_rail.c`). The session's output is the one whose pin
+its programming port holds, or the ESC wire line's pin. The servo's
+programming voltage is the PD mini's set point, so it is the rail's
+voltage for every port.
+
+| Case | Without the port switches (`FITTED` 0) | With them (`FITTED` 0x1FF) |
+| --- | --- | --- |
+| the session's power cycle (KST 1000ms, classic Hitec entry 500ms) | `RAIL` 0 and 1: every servo on the rail cycles | `PORT_WANT` bit k only; `RAIL` and the other ports stay |
+| CONNECT (KST ENTER and REBOOT from PWM, Hitec OPEN) while another channel is active | refused: KST BUSY, Hitec HELD | taken |
+| a session voltage other than the PD mini's set point | the rail moves for every port; the other channels are OFF by the rule above | every other port's `PORT_WANT` bit is cleared before the PD mini moves; a new bit is refused with BUSY until the session lets go, then it needs the panel's 2s hold |
+| a BEC found (any `BEC` bit) | CONNECT refused: KST BUSY, Hitec HELD, ESC wire OPEN HELD | the same |
+
+- A channel is active while an OUTPUTS slot, or a programming port with a
+  function other than NONE, is bound to its output's pin.
+- The session's OFF is always taken and leaves the PD mini as it is. Its
+  ON is refused (KST result 32 `SUPPLY`, Hitec `RESULT` 3) without a live
+  heartbeat, on a refused chip, before the critical limits are held, on a
+  throttle output, with a BEC found, without the switches while another
+  channel is active, and after the panel's OFF until the session lets go.
+- With the PD mini on at the session's voltage and another port on, the
+  session's ON leaves the PD mini and its current limit as they are.
+  Otherwise the PD mini is set to the session's voltage and current limit:
+  off and on again while the session's output is off, and with the output
+  on only to a voltage no higher than the one it runs at
+  ([A programming port's supply](Safety.md#a-programming-ports-supply)).
+- A session ON from `RAIL` 0 clears the other `PORT_WANT` bits: the other
+  ports come on with the panel's own write only.
+- While a session holds its output, a panel write that would switch that
+  output on is refused with BUSY. A write that starts with `RAIL` 0 is
+  still taken for `RAIL`.
+- The panel's OFF (`RAIL` 0, or `PORT_WANT` without the session's bit)
+  reads in the registers at once and switches every other port off at
+  once. While the session writes to the servo's memory (a KST WRITE,
+  RESTORE or RELEASE, a Hitec write and its 150ms tail, as for the SUPPLY
+  page), the session's output stays on and `PORT_ON` shows it, until the
+  write ends and 10000ms after the OFF at most. From that OFF the
+  session's own ON is refused until it lets go.
+- A lost heartbeat, the link failsafe and a trip are not held: the
+  rail and every port go off in that pass, the write is cut, and the
+  servo holds the frames written before the cut. A KST session ends in
+  PWM with result `ABORTED`, and the next CONNECT reads the servo before
+  anything else.
+
+`test/host/test_prog_rail.c` holds the rules; `test_prog_rail_kst.c` and
+`test_prog_rail_hitec.c` run a KST and a Hitec session on them with and
+without the switches.
+
 ### Refused frames
 
 From 4.21 the IOmcu counts the CAN frames it receives and refuses to

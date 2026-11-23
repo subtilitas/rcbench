@@ -6,6 +6,18 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- IOmcu, remote servo node (board 3): KST, Hitec and ESC wire sessions run
+  on the common servo rail. A session's power cycle switches the master
+  rail switch without the port switches and only its own port's switch
+  with them. Without the port switches CONNECT is refused while another
+  channel is active; with them a session at another voltage than the
+  rail's switches every other port off until it ends. CONNECT is refused
+  while the BEC check finds 500mV or more on any port. The panel's OFF of
+  the session's port waits for a write to the servo's memory, 10000ms at
+  most ([Link, Programming on the common rail](docs/Link.md#programming-on-the-common-rail)).
+
 ### Changed
 
 - `hardware/mechanical/`: `motor_simulator.step` runs the phase tap's lead

@@ -358,6 +358,21 @@ abwies. Keine Störung: eine Ablehnung, ein Plan, der nichts sendet, ABORT
 und ein Schritt, den ein Stopp oder eine verlorene Verbindung abbricht; die
 beenden die Sitzung selbst.
 
+#### Die gemeinsame Schiene des Remote-Servo-Knotens
+
+Auf dem Remote-Servo-Knoten (Board 3) läuft das Servo der Sitzung am PD
+mini über den Schalter seines Ausgangs, und das OFF des Panels für diesen
+Ausgang (RAIL 0 von POWER oder sein gelöschtes Bit in PORT_WANT) wartet
+auf ein Schreiben wie das OFF des PD mini: jeder andere Port geht sofort
+aus, der Ausgang der Sitzung, wenn das Schreiben endet, höchstens 10000ms
+nach dem OFF. Ein ausgebliebener Heartbeat, der Failsafe des Links und ein
+Auslösen schalten die Schiene und jeden Port sofort ab. Ohne die
+Portschalter wird CONNECT abgelehnt, solange ein anderer Kanal aktiv ist;
+mit ihnen schaltet eine Sitzung mit einer anderen Spannung als der der
+Schiene jeden anderen Port aus. CONNECT wird abgelehnt, solange die
+BEC-Prüfung 500mV oder mehr an irgendeinem Port findet
+([Link, Programmieren an der gemeinsamen Schiene](Link-de.md#programmieren-an-der-gemeinsamen-schiene)).
+
 #### Die 5V der Programmierports auf dem Carrier
 
 Auf dem [rbmod-Carrier](Carrier-de.md#versorgung) laufen die

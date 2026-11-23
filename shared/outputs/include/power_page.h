@@ -22,6 +22,13 @@
  *     them every bit follows RAIL, and PORT_WANT is kept and reported.
  *   - power_off(): RAIL, PORT_ON and PORT_WANT cleared, for a lost
  *     heartbeat, the link failsafe, a restart and a STOP.
+ *   - A programming session switches its own port (power_port_set(), the
+ *     IOmcu's prog_rail.h judges it first): with the switches PORT_WANT
+ *     bit k and RAIL 1, without them RAIL alone.  While it writes to the
+ *     servo's memory (power_keep()), the panel's OFF of that port is
+ *     taken in the registers and the port stays driven on (held_on) until
+ *     the write ends; every other port goes off at once.  power_off() and
+ *     a trip are not held.
  *   - An error trips: the INA3221s' critical alert line low, a critical
  *     alert flag (CF1 to CF3) in a Mask/Enable read that is new, a
  *     SENSE_LIMIT trip on channel 0 to 8 that is new, or a switch found in
@@ -94,6 +101,11 @@ typedef struct {
     uint16_t over_n[LINK_PW_PORTS]; /**< SENSE_LIMIT trips per channel    */
     bool     have_me[POWER_PARTS];  /**< me_n[a] holds a count            */
     uint16_t me_n[POWER_PARTS];     /**< Mask/Enable reads last seen      */
+    uint16_t keep;       /**< bit k: a programming session on port k
+                              writes to the servo's memory: the panel's
+                              OFF of the port waits (power_keep())       */
+    uint16_t held_on;    /**< bit k: port k on only because the panel's
+                              OFF waits for that write                   */
 } power_page_t;
 
 /** @brief What a write is judged against, besides the page. */
@@ -141,6 +153,15 @@ uint16_t power_port_on(const power_page_t *p);
  * @return  RAIL; false for NULL.
  */
 bool power_rail(const power_page_t *p);
+
+/**
+ * @brief Whether the master switch is driven on: RAIL, or a port the
+ *        panel's OFF leaves on for a write (power_keep()).
+ *
+ * @param p The state.
+ * @return  true when RAIL_EN is to be high; false for NULL.
+ */
+bool power_rail_driven(const power_page_t *p);
 
 /**
  * @brief The panel's write.
@@ -251,6 +272,40 @@ uint16_t power_throttle(const outputs_t *o, const prog_port_t *pp,
  *                  or NULL.
  */
 uint16_t power_hold(power_page_t *p, uint16_t throttle);
+
+/**
+ * @brief A programming session's own switch for port @p k, without the
+ *        panel's rules (the caller has judged them): ON is RAIL 1 and, with
+ *        the switches, PORT_WANT bit k, where an ON from RAIL 0 clears the
+ *        other bits (they come on with the panel's own write only); OFF
+ *        clears bit k with the switches and RAIL without them, and ends
+ *        what the panel's OFF held on.
+ *
+ * @param p  The state; nothing for NULL.
+ * @param k  The port, 0 to 8; nothing past it.
+ * @param on true for ON.
+ */
+void power_port_set(power_page_t *p, unsigned k, bool on);
+
+/**
+ * @brief The PORT_WANT bits outside @p keep cleared, and what the panel's
+ *        OFF held on outside it: a session at another voltage than the
+ *        rail's switches the other ports off.
+ *
+ * @param p    The state; nothing for NULL.
+ * @param keep The ports that stay.
+ */
+void power_drop(power_page_t *p, uint16_t keep);
+
+/**
+ * @brief The ports whose panel OFF waits for a write to the servo's
+ *        memory.  A bit cleared here ends its wait: what the panel switched
+ *        off goes off now.
+ *
+ * @param p    The state; nothing for NULL.
+ * @param keep Bit k: a session on port k writes.
+ */
+void power_keep(power_page_t *p, uint16_t keep);
 
 /**
  * @brief The STATUS fault bits TRIPPED stands for: LINK_FAULT_OVERCURRENT

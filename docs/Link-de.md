@@ -1893,6 +1893,62 @@ Critical-Grenzen von Board 3; `test/host/test_chip_gate.c` die Prüfung des
 Steppings und die Schreiben, die sie ablehnt; `test/host/test_power_page.c`
 die Page POWER, ihr Auslösen und die BEC-Prüfung.
 
+#### Programmieren an der gemeinsamen Schiene
+
+Auf Board 3 läuft eine Sitzung von KST, Hitec oder ESC wire an jedem der 9
+Ausgänge. Die Versorgung ihres Servos ist der PD mini über den Schalter
+des Ausgangs (`shared/outputs/prog_rail.c`). Der Ausgang der Sitzung ist
+der, dessen Pin ihr Programmierport hält, oder der Pin der Leitung von ESC
+wire. Die Programmierspannung des Servos ist der Sollwert des PD mini, also
+die Spannung der Schiene für jeden Port.
+
+| Fall | Ohne die Portschalter (FITTED 0) | Mit ihnen (FITTED 0x1FF) |
+| --- | --- | --- |
+| der Power-Cycle der Sitzung (KST 1000ms, klassischer Hitec-Einstieg 500ms) | RAIL 0 und 1: jedes Servo an der Schiene wird aus- und eingeschaltet | nur Bit k in PORT_WANT; RAIL und die anderen Ports bleiben |
+| CONNECT (KST ENTER und REBOOT aus PWM, Hitec OPEN), während ein anderer Kanal aktiv ist | abgelehnt: KST BUSY, Hitec HELD | genommen |
+| eine Spannung der Sitzung, die vom Sollwert des PD mini abweicht | die Schiene ändert sich für jeden Port; die anderen Kanäle sind nach der Regel darüber OFF | das Bit in PORT_WANT jedes anderen Ports wird gelöscht, bevor der PD mini sich ändert; ein neues Bit wird mit BUSY abgelehnt, bis die Sitzung loslässt, danach braucht es das 2s-Halten des Panels |
+| ein gefundenes BEC (irgendein Bit in BEC) | CONNECT abgelehnt: KST BUSY, Hitec HELD, OPEN von ESC wire HELD | ebenso |
+
+- Ein Kanal ist aktiv, solange ein Slot von OUTPUTS oder ein
+  Programmierport mit einer Funktion außer NONE an den Pin seines Ausgangs
+  gebunden ist.
+- Das OFF der Sitzung wird immer genommen und lässt den PD mini, wie er
+  ist. Ihr ON wird abgelehnt (KST-Ergebnis 32, Hitec-Ergebnis 3)
+  ohne lebenden Heartbeat, auf einem abgelehnten Chip, bevor die
+  Critical-Grenzen gehalten werden, an einem Throttle-Ausgang, mit einem
+  gefundenen BEC, ohne die Schalter, während ein anderer Kanal aktiv ist,
+  und nach dem OFF des Panels, bis die Sitzung loslässt.
+- Ist der PD mini an der Spannung der Sitzung an und ein anderer Port an,
+  lässt das ON der Sitzung den PD mini und seine Stromgrenze, wie sie
+  sind. Sonst wird der PD mini auf Spannung und Stromgrenze der Sitzung
+  gestellt: aus und wieder an, solange der Ausgang der Sitzung aus ist, und
+  mit dem Ausgang an nur auf eine Spannung, die nicht höher ist als die,
+  mit der er läuft
+  ([Die Versorgung eines Programmierports](Safety-de.md#die-versorgung-eines-programmierports)).
+- Ein ON der Sitzung aus RAIL 0 löscht die anderen Bits in PORT_WANT: die
+  anderen Ports gehen nur mit dem eigenen Schreiben des Panels an.
+- Solange eine Sitzung ihren Ausgang hält, wird ein Schreiben des Panels,
+  das diesen Ausgang einschalten würde, mit BUSY abgelehnt. Ein Schreiben,
+  das mit RAIL 0 beginnt, wird für RAIL trotzdem genommen.
+- Das OFF des Panels (RAIL 0, oder PORT_WANT ohne das Bit der Sitzung)
+  steht sofort in den Registern und schaltet jeden anderen Port sofort
+  aus. Solange die Sitzung in den Speicher des Servos schreibt (ein KST
+  WRITE, RESTORE oder RELEASE, ein Hitec-Schreiben und seine 150ms
+  danach, wie für die Page SUPPLY), bleibt der Ausgang der Sitzung an und
+  PORT_ON zeigt ihn, bis das Schreiben endet, höchstens 10000ms nach dem
+  OFF. Ab diesem OFF wird das eigene ON der Sitzung abgelehnt, bis sie
+  loslässt.
+- Ein ausgebliebener Heartbeat, der Failsafe des Links und ein Auslösen
+  werden nicht gehalten: die Schiene und jeder Port gehen im
+  selben Durchlauf aus, das Schreiben wird abgeschnitten, und das Servo
+  hält die Frames, die vor dem Schnitt geschrieben waren. Eine KST-Sitzung
+  endet abgebrochen in PWM, und das nächste CONNECT liest das Servo vor
+  allem anderen.
+
+`test/host/test_prog_rail.c` hält die Regeln; `test_prog_rail_kst.c` und
+`test_prog_rail_hitec.c` lassen eine KST- und eine Hitec-Sitzung mit und
+ohne die Schalter darauf laufen.
+
 ### Abgelehnte Frames
 
 Ab 4.21 zählt der IOmcu die CAN-Frames, die er empfängt und nicht

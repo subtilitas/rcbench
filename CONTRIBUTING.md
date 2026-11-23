@@ -232,14 +232,14 @@ fail the job. Answer each survivor of a change with a test, or say in the
 pull request why the two lines behave the same.
 
 `mutation.yml` runs the mutants of every line of `shared/safety` and
-`shared/outputs` (7117 mutants in 92 files) each Sunday at 03:17 UTC and on
+`shared/outputs` (7256 mutants in 94 files) each Sunday at 03:17 UTC and on
 demand. It has no mutant limit and runs in 6 shards. `shared/safety` leads the
 list, `arming.c`, `heartbeat.c`, `stop_latch.c`, `touch_loss.c` and
 `prog5v_lost.c` at its head, and shard i takes every 6th mutant from place i
 (`--first`, `--shard i/6`). A shard starts no mutant after 18000s, stops one
 build or suite run after 600s and ends within 21000s. At 42s a mutant on a
 hosted runner a shard runs about 428 mutants: the 699 mutants of
-`shared/safety` run every week, and about 1,869 of the 6418 of
+`shared/safety` run every week, and about 1,869 of the 6557 of
 `shared/outputs`. A shard that leaves mutants unrun says so in a warning
 annotation and in its summary, with the count for each file. Neither a
 survivor nor a mutant left fails the job. The result is the job summaries and
