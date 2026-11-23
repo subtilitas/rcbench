@@ -99,12 +99,18 @@ bool prog_rail_open_ok(const power_page_t *pg, int k, uint8_t held,
 
 prog_rail_refusal_t prog_rail_judge(const prog_rail_t *r,
                                     const power_page_t *pg,
+                                    const supply_page_t *sp,
                                     const prog_rail_ctx_t *ctx)
 {
-    if (r == NULL || pg == NULL || ctx == NULL || bit_of(r->port) == 0u) {
+    if (r == NULL || pg == NULL || sp == NULL || ctx == NULL
+        || bit_of(r->port) == 0u) {
         return PROG_RAIL_PORT;
     }
-    if (r->sticky) {
+    /* Every OFF that stands: the panel's RAIL 0 or PORT_WANT without bit k
+     * and a timed-out ON (sticky), and the panel's SUPPLY OFF of the PD
+     * mini the session holds, even while the PD mini stays on for a
+     * running write (supply_page_t.off_held). */
+    if (r->sticky || sp->sticky) {
         return PROG_RAIL_OFF_STANDS;
     }
     if (pg->tripped != 0u) {
@@ -173,8 +179,12 @@ static bool pd_at(const supply_page_t *sp, uint16_t mv)
 static void pending_step(prog_rail_t *r, power_page_t *pg, supply_page_t *sp,
                          const prog_rail_ctx_t *ctx, uint32_t now)
 {
-    if (prog_rail_judge(r, pg, ctx) != PROG_RAIL_OK) {
-        r->pending = false;     /* a trip, a lost heartbeat, an OFF: gone */
+    /* The one rule for every OFF: any refusal ends the wait, so an OFF
+     * that stands (prog_rail_judge(): RAIL 0, PORT_WANT without bit k,
+     * SUPPLY OFF, a trip, a lost heartbeat) never meets a switch-on
+     * below. */
+    if (prog_rail_judge(r, pg, sp, ctx) != PROG_RAIL_OK) {
+        r->pending = false;
         return;
     }
     const uint16_t n = sp->regs[LINK_SP_SAMPLES];
@@ -242,7 +252,7 @@ bool prog_rail_set(prog_rail_t *r, power_page_t *pg, supply_page_t *sp,
         power_port_set(pg, (unsigned)r->port, false);   /* nothing for none */
         return true;
     }
-    if (prog_rail_judge(r, pg, ctx) != PROG_RAIL_OK) {
+    if (prog_rail_judge(r, pg, sp, ctx) != PROG_RAIL_OK) {
         return false;
     }
     supply_port_view_t pd;

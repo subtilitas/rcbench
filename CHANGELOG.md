@@ -19,8 +19,12 @@ history is in git.
   once the PD mini reads the session's voltage (300mV under to 150mV over,
   100ms settled, 2500ms at most), and a Hitec POWER on the node starts its
   listen when the port reads on. After a trip no session switches the
-  rail on until the panel's RAIL 1. The panel's OFF of the session's port
-  waits for a write to the servo's memory, 10000ms at most ([Link, Programming on the common rail](docs/Link.md#programming-on-the-common-rail)).
+  rail on until the panel's RAIL 1. Every OFF that stands (RAIL 0,
+  PORT_WANT without the session's port, SUPPLY OFF, a trip, a lost
+  heartbeat) ends a session's waiting ON, and each CONNECT is judged
+  against the channels as they stand at its own frame. The panel's OFF of
+  the session's port waits for a write to the servo's memory, 10000ms at
+  most ([Link, Programming on the common rail](docs/Link.md#programming-on-the-common-rail)).
 - IOmcu board 3, throttle outputs on S1 to S9: MOTOR PWM, PPM, DShot and
   bidirectional DShot. The PIO blocks are placed by fixed rules: PIO0
   holds the PD mini UART, every block runs at GPIO base 16, the outputs

@@ -1459,7 +1459,9 @@ static inline uint8_t ports_wire(void)
  * mini, so ESC_WIRE and the two exclude each other on every port; a firmware
  * update keeps ESC_WIRE out as well.
  *
- * Called after a write of either and once a pass.
+ * Called before and after a write of KST, HITEC or ESC_WIRE and once a pass:
+ * a command is judged against the masks as they stand at it, after a PROG
+ * or OUTPUTS write earlier in the same batch of frames.
  */
 static inline void ports_exclusive(void)
 {

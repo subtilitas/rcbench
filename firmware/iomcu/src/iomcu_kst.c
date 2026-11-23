@@ -101,6 +101,10 @@ uint8_t kst_write(void *ctx, uint8_t off, uint8_t n,
                          const uint16_t *in)
 {
     (void)ctx;
+    /* The CONNECT rules as they stand at this command: a PROG or OUTPUTS
+     * write earlier in the same batch of frames counts (rsn_prog_refused()
+     * on the node: another channel active without the port switches). */
+    ports_exclusive();
     const uint8_t nack = kst_port_write(&s_kst, off, n, in, s_now_ms);
 
     /* No ARM or THROTTLE across either edge of a hold, in this frame. */

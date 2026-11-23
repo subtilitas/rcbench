@@ -18,7 +18,12 @@
  * the switches, and with a BEC found; the panel's error between the two
  * steps of a classic write: every other port off at once, the session's
  * port and the PD mini on until the write's tail ends, then off, the servo
- * holding both cells, and a POWER after it switching nothing on.
+ * holding both cells, and a POWER after it switching nothing on; OPEN in
+ * one batch of frames with a PROG write that makes another channel
+ * active, in both orders, never cutting a live channel (hitec_write()
+ * calls ports_exclusive() before the port's write); a POWER with OFF_MS 0
+ * in a write's tail whose ON waits, and the panel's SUPPLY OFF then: port
+ * k never switched on.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -56,21 +61,27 @@ static uint8_t g_other_held;
 /* The driver's clock of the first pass after port k came on. */
 static uint32_t g_on_us;
 
+/* The CONNECT rules into the port's other-mask: ports_exclusive(). */
+static void exclusive(void)
+{
+    static const int k_of[2] = { K, 6 };
+
+    hitec_port_other_mask(&g_port,
+                          prog_rail_connect_mask(&g_pw, k_of, 2u, g_other_held,
+                                                 &g_rctx));
+}
+
 /* The rail and the SUPPLY page told of the hold and the write
- * (ports_tell_supply()), and the CONNECT rules (ports_exclusive()). */
+ * (ports_tell_supply()), and the CONNECT rules. */
 static void tell(void)
 {
     const bool held = hitec_port_supply_hold(&g_port);
-
-    static const int k_of[2] = { K, 6 };
 
     g_rnow = g_ms;
     rail_tell(held, hitec_port_writing(&g_port));
     supply_page_hold(&g_sp, held);
     supply_page_port_writes(&g_sp, hitec_port_writing(&g_port));
-    hitec_port_other_mask(&g_port,
-                          prog_rail_connect_mask(&g_pw, k_of, 2u, g_other_held,
-                                                 &g_rctx));
+    exclusive();
 }
 
 /* One pass: the port, the rail, the SUPPLY page and the module; the servo
@@ -106,6 +117,7 @@ static void passes(unsigned ms)
 
 static uint8_t hcmd_raw(uint16_t word, uint16_t key, uint16_t crc)
 {
+    exclusive();                /* hitec_write(): the rules at the command */
     const uint8_t nack = cmd_raw(word, key, crc);
 
     tell();
@@ -463,6 +475,64 @@ TEST_CASE(a_stop_while_a_power_waits_for_its_on_asks_the_supply_off)
     CHECK(!g_pd.want_output);
 }
 
+/* OPEN behind a PROG write that makes S1's channel active in the same
+ * batch of frames (no pass between), without the switches: refused, the
+ * rail on.  And in the other order: OPEN taken, switching nothing, the
+ * rail on. */
+TEST_CASE(an_open_and_an_activation_in_one_batch_never_cut_a_live_channel)
+{
+    bench(false);
+    g_rctx.active = 0x0001u;            /* prog_write(): S1 active */
+    CHECK_EQ(open_port(), 0u);
+    CHECK_EQ(refusal(), LINK_HITEC_REF_HELD);
+    passes(1000u);
+    CHECK_EQ(state(), LINK_HITEC_FREE);
+    CHECK(power_rail_driven(&g_pw));
+    CHECK_EQ(ports_on(), 0x01FFu);
+
+    bench(false);
+    CHECK_EQ(open_port(), 0u);
+    CHECK_EQ(refusal(), LINK_HITEC_REF_NONE);
+    g_rctx.active = 0x0001u;            /* prog_write() behind it */
+    for (unsigned i = 0; i < 1000u; ++i) {
+        pass();
+        CHECK(power_rail_driven(&g_pw));
+        CHECK_EQ(ports_on(), 0x01FFu);
+    }
+    CHECK_EQ(state(), LINK_HITEC_OPEN);
+}
+
+/* A POWER with OFF_MS 0 in a write's tail, its ON waiting for a moved PD
+ * mini, and the panel's SUPPLY OFF then: the PD mini stays on for the
+ * write, port k is never switched on. */
+TEST_CASE(a_supply_off_in_a_writes_tail_ends_a_waiting_power)
+{
+    for (unsigned sw = 0; sw < 2u; ++sw) {
+        bench(sw != 0u);
+        open_ok();
+        classic_write(0x10u, 0x55u, true);
+        step_ends();
+        CHECK(hitec_port_writing(&g_port));
+        g_pd_by_hand = true;
+        g_pd.st.v_mv = MV;
+        power(5500u, 0u);
+        for (unsigned i = 0; i < 400u && !g_rail.pending; ++i) {
+            pass();
+        }
+        CHECK(g_rail.pending);
+        const uint16_t was_on = ports_on();
+        CHECK_EQ(was_on & K_BIT, 0u);
+        sp_panel_off();
+        g_pd.st.v_mv = 5500u;           /* the PD mini there after all */
+        for (unsigned i = 0; i < PROG_RAIL_WAIT_MS + 500u; ++i) {
+            pass();
+            CHECK_EQ(ports_on() & K_BIT, 0u);
+        }
+        CHECK(!g_rail.pending);
+        CHECK(!g_hw.v.on);
+    }
+}
+
 int main(void)
 {
     RUN(without_the_switches_the_entry_cycle_acts_on_rail_en);
@@ -476,5 +546,7 @@ int main(void)
     RUN(open_is_refused_while_another_session_holds_a_port);
     RUN(a_power_at_a_moved_voltage_listens_from_the_servos_power);
     RUN(a_stop_while_a_power_waits_for_its_on_asks_the_supply_off);
+    RUN(an_open_and_an_activation_in_one_batch_never_cut_a_live_channel);
+    RUN(a_supply_off_in_a_writes_tail_ends_a_waiting_power);
     return test_summary("prog_rail_hitec");
 }

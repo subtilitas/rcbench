@@ -19,7 +19,8 @@
  * taken at once for every other port and held for port k until the write
  * ends, to the millisecond at SUPPLY_PAGE_WRITE_WAIT_MS and across the
  * 2^32ms wrap, after which the session's ON is refused until it lets go;
- * a lost heartbeat not held; NULL arguments.
+ * a lost heartbeat not held; NULL arguments; ESC wire's OPEN and a PROG
+ * write in one batch of frames, in both orders.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -108,38 +109,42 @@ TEST_CASE(an_on_is_refused_in_the_order_of_the_rules)
 {
     rig_start(false, K, true);
     prog_rail_port(&g_rail, -1);
-    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_rctx), PROG_RAIL_PORT);
+    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_sp, &g_rctx), PROG_RAIL_PORT);
     prog_rail_port(&g_rail, K);
     g_rail.sticky = true;
-    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_rctx), PROG_RAIL_OFF_STANDS);
+    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_sp, &g_rctx), PROG_RAIL_OFF_STANDS);
     g_rail.sticky = false;
+    g_sp.sticky = true;                 /* the SUPPLY page's held OFF */
+    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_sp, &g_rctx), PROG_RAIL_OFF_STANDS);
+    g_sp.sticky = false;
     g_rctx.power.beat_alive = false;
-    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_rctx), PROG_RAIL_UNSAFE);
+    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_sp, &g_rctx), PROG_RAIL_UNSAFE);
     g_rctx.power.beat_alive = true;
     g_pw.chip_ok = false;
-    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_rctx), PROG_RAIL_UNSAFE);
+    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_sp, &g_rctx), PROG_RAIL_UNSAFE);
     g_pw.chip_ok = true;
     g_rctx.power.limits_held = false;
-    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_rctx), PROG_RAIL_LIMITS);
+    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_sp, &g_rctx), PROG_RAIL_LIMITS);
     g_rctx.power.limits_held = true;
     g_rctx.power.throttle = K_BIT;
-    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_rctx), PROG_RAIL_THROTTLE);
+    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_sp, &g_rctx), PROG_RAIL_THROTTLE);
     g_rctx.power.throttle = 0x0001u;    /* another port's: not this rule */
     g_pw.bec = 0x0100u;
-    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_rctx), PROG_RAIL_BEC);
+    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_sp, &g_rctx), PROG_RAIL_BEC);
     g_pw.bec = 0u;
     g_rctx.active = 0x0001u;
-    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_rctx), PROG_RAIL_OTHERS);
+    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_sp, &g_rctx), PROG_RAIL_OTHERS);
     /* Each refusal switches nothing. */
     CHECK(!rail_set(true, RAIL_MV, 1000u));
     CHECK(!power_rail_driven(&g_pw));
     g_rctx.active = K_BIT;              /* its own channel is no other */
-    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_rctx), PROG_RAIL_OK);
+    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_sp, &g_rctx), PROG_RAIL_OK);
     CHECK(rail_on( RAIL_MV, 1000u));
     CHECK(power_rail_driven(&g_pw));
-    CHECK_EQ(prog_rail_judge(NULL, &g_pw, &g_rctx), PROG_RAIL_PORT);
-    CHECK_EQ(prog_rail_judge(&g_rail, NULL, &g_rctx), PROG_RAIL_PORT);
-    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, NULL), PROG_RAIL_PORT);
+    CHECK_EQ(prog_rail_judge(NULL, &g_pw, &g_sp, &g_rctx), PROG_RAIL_PORT);
+    CHECK_EQ(prog_rail_judge(&g_rail, NULL, &g_sp, &g_rctx), PROG_RAIL_PORT);
+    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, NULL, &g_rctx), PROG_RAIL_PORT);
+    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_sp, NULL), PROG_RAIL_PORT);
 }
 
 TEST_CASE(connect_is_refused_with_another_channel_active_without_switches)
@@ -336,7 +341,7 @@ static void off_held_to_the_writes_end(bool switches, uint32_t t0)
     CHECK(!power_rail_driven(&g_pw));
     /* The panel's OFF stands for the session until it lets go. */
     CHECK(!rail_set(true, RAIL_MV, 1000u));
-    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_rctx), PROG_RAIL_OFF_STANDS);
+    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_sp, &g_rctx), PROG_RAIL_OFF_STANDS);
     g_rnow = t0 + 800u;
     rail_tell(false, false);
     CHECK(rail_on( RAIL_MV, 1000u));
@@ -471,7 +476,7 @@ TEST_CASE(a_trip_latches_until_the_panels_rail_1)
     for (unsigned sw = 0; sw < 2u; ++sw) {
         rig_start(sw != 0u, K, true);
         power_trip(&g_pw, LINK_PW_TRIP_CRIT_N);
-        CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_rctx), PROG_RAIL_TRIPPED);
+        CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_sp, &g_rctx), PROG_RAIL_TRIPPED);
         CHECK(!rail_set(true, RAIL_MV, 1000u));
         CHECK_EQ(ports_on(), 0u);
         CHECK(!power_rail_driven(&g_pw));
@@ -637,10 +642,10 @@ static void never_there(uint32_t t0)
     rail_view(&v);
     CHECK(!v.asked_on);
     CHECK(!rail_set(true, 5000u, 1000u));
-    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_rctx), PROG_RAIL_OFF_STANDS);
+    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_sp, &g_rctx), PROG_RAIL_OFF_STANDS);
     /* The session lets go: a new one may try again. */
     rail_tell(false, false);
-    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_rctx), PROG_RAIL_OK);
+    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_sp, &g_rctx), PROG_RAIL_OK);
 }
 
 TEST_CASE(a_pd_mini_that_never_reaches_the_voltage_is_refused)
@@ -779,7 +784,7 @@ static void refused_write_latches(uint8_t n, const uint16_t *in,
     CHECK(!power_rail_driven(&g_pw));
     CHECK(!g_rail.pending);
     CHECK(g_rail.sticky);
-    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_rctx), PROG_RAIL_OFF_STANDS);
+    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_sp, &g_rctx), PROG_RAIL_OFF_STANDS);
     CHECK_EQ(passes_at(5000u, 1000u), 1000u);
     CHECK_EQ(ports_on(), 0u);
 }
@@ -821,6 +826,29 @@ TEST_CASE(esc_wire_opens_only_where_the_rails_rules_allow)
     }
 }
 
+/* ESC wire OPEN judged at its own frame (rsn_esc_open_ok() reads the
+ * active channels then): behind a PROG write in the same batch that makes
+ * S1 active, refused without the switches; in the other order taken, and
+ * the session's ON refused, nothing switched on. */
+TEST_CASE(esc_wire_open_and_an_activation_in_one_batch)
+{
+    rig_start(false, K, true);
+    g_rctx.active = 0x0001u;
+    CHECK(!prog_rail_open_ok(&g_pw, K, 0u, &g_rctx));
+    rig_start(false, K, true);
+    CHECK(prog_rail_open_ok(&g_pw, K, 0u, &g_rctx));
+    g_rctx.active = 0x0001u;            /* prog_write() behind it */
+    hold(false, 0u);
+    CHECK(rail_set(false, 0u, 0u));     /* ENTER's cycle */
+    CHECK(!rail_set(true, RAIL_MV, 1000u));
+    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_sp, &g_rctx),
+             PROG_RAIL_OTHERS);
+    for (unsigned i = 0; i < 500u; ++i) {
+        rail_pass();
+        CHECK(!power_rail_driven(&g_pw));
+    }
+}
+
 int main(void)
 {
     RUN(the_view_is_the_pd_mini_through_the_ports_switch);
@@ -852,5 +880,6 @@ int main(void)
     RUN(port_k_waits_for_fresh_samples_of_the_pd_mini);
     RUN(an_applied_rail_off_is_latched_whatever_the_write_answers);
     RUN(esc_wire_opens_only_where_the_rails_rules_allow);
+    RUN(esc_wire_open_and_an_activation_in_one_batch);
     return test_summary("prog_rail");
 }

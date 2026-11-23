@@ -1990,7 +1990,10 @@ die Spannung der Schiene für jeden Port.
   gebunden ist.
 - Eine Programmiersitzung zur Zeit auf dem Knoten: solange eine Sitzung
   von KST, Hitec oder ESC wire einen Port hält, wird CONNECT an jedem
-  anderen Port abgelehnt (KST BUSY, Hitec HELD, ESC wire HELD). Das OPEN
+  anderen Port abgelehnt (KST BUSY, Hitec HELD, ESC wire HELD). Jedes
+  CONNECT wird an den Kanälen geprüft, wie sie bei seinem eigenen Frame
+  stehen: ein Schreiben von PROG oder OUTPUTS früher im selben Stapel von
+  Frames zählt. Das OPEN
   von ESC wire wird am Ausgang seines Ziels geprüft, bevor etwas schaltet:
   abgelehnt mit `NO_PIN`, solange eine KST- oder Hitec-Sitzung einen Port
   hält, mit einem gefundenen BEC und ohne die Schalter, solange ein anderer
@@ -2001,7 +2004,8 @@ die Spannung der Schiene für jeden Port.
   Heartbeat, auf einem abgelehnten Chip, bevor die Critical-Grenzen
   gehalten werden, an einem Throttle-Ausgang, mit einem gefundenen BEC,
   ohne die Schalter, während ein anderer Kanal aktiv ist, und nach dem OFF
-  des Panels oder einem abgelaufenen ON, bis die Sitzung loslässt. Ein
+  des Panels (RAIL 0, PORT_WANT ohne das Bit der Sitzung oder OUTPUT 0 der
+  Page SUPPLY) oder einem abgelaufenen ON, bis die Sitzung loslässt. Ein
   Auslösen beendet außerdem den Halt der Sitzung an der Schiene: kein
   späteres ON dieser Sitzung wird genommen.
 - Ist der PD mini an der Spannung der Sitzung an und ein anderer Port an,
@@ -2026,7 +2030,11 @@ die Spannung der Schiene für jeden Port.
   schaltet den Ausgang ein, wenn das ON den PD mini nicht verstellt hat;
   wenn doch, 2 oder mehr hintereinander über 100ms. Eine Messung außerhalb
   dieses Bands oder 250ms ohne Messung beginnen das Fenster neu. Jede Regel
-  darüber wird dann erneut geprüft. Nicht so innerhalb von 2500ms: der PD mini wird
+  darüber wird in jedem Durchlauf des Wartens und vor dem Einschalten des
+  Ausgangs erneut geprüft, so beendet jedes stehende OFF das Warten: RAIL 0,
+  PORT_WANT ohne das Bit der Sitzung, OUTPUT 0 der Page SUPPLY (auch
+  solange der PD mini für ein laufendes Schreiben an bleibt), ein Auslösen,
+  ein ausgebliebener Heartbeat und das eigene OFF der Sitzung. Nicht so innerhalb von 2500ms: der PD mini wird
   ausgeschaltet, wenn das ON ihn verstellt hat, der Ausgang bleibt aus, und
   das ON der Sitzung bleibt abgelehnt. Solange es wartet, liest die
   Versorgung der Sitzung erbeten an, weder an noch aus. Jede Sitzung
@@ -2066,7 +2074,8 @@ die Spannung der Schiene für jeden Port.
 
 `test/host/test_prog_rail.c` hält die Regeln; `test_prog_rail_kst.c` und
 `test_prog_rail_hitec.c` lassen eine KST- und eine Hitec-Sitzung mit und
-ohne die Schalter darauf laufen.
+ohne die Schalter darauf laufen; `test_prog_rail_off.c` stellt jedes OFF
+gegen ein wartendes ON.
 
 ### Abgelehnte Frames
 

@@ -1820,7 +1820,9 @@ voltage for every port.
   function other than NONE, is bound to its output's pin.
 - One programming session at a time on the node: while a KST, Hitec or
   ESC wire session holds a port, CONNECT on every other port is refused
-  (KST BUSY, Hitec HELD, ESC wire HELD). ESC wire's OPEN is judged on its
+  (KST BUSY, Hitec HELD, ESC wire HELD). Each CONNECT is judged against
+  the channels as they stand at its own frame: a PROG or OUTPUTS write
+  earlier in the same batch of frames counts. ESC wire's OPEN is judged on its
   target's output before anything switches: refused with `NO_PIN` while a
   KST or Hitec session holds a port, with a BEC found, and without the
   switches while another channel is active.
@@ -1829,8 +1831,9 @@ voltage for every port.
   `TRIPPED` stands (until the panel's `RAIL` 1 clears it), without a live
   heartbeat, on a refused chip, before the critical limits are held, on a
   throttle output, with a BEC found, without the switches while another
-  channel is active, and after the panel's OFF or a timed-out ON until the
-  session lets go. A trip also ends the session's hold on the rail: no
+  channel is active, and after the panel's OFF (`RAIL` 0, `PORT_WANT`
+  without the session's bit, or the SUPPLY page's OUTPUT 0) or a
+  timed-out ON until the session lets go. A trip also ends the session's hold on the rail: no
   later ON of that session is taken.
 - With the PD mini on at the session's voltage and another port on, the
   session's ON leaves the PD mini's voltage and the other ports as they
@@ -1852,7 +1855,11 @@ voltage for every port.
   300mV under to 150mV over it. One such sample switches the output on
   when the ON did not move the PD mini; when it did, 2 or more in a row
   spanning 100ms. A sample out of that band, or no sample for 250ms,
-  starts the window anew. Every rule above is judged again then.
+  starts the window anew. Every rule above is judged again at each pass
+  of the wait and before the output is switched on, so every OFF that
+  stands ends the wait: `RAIL` 0, `PORT_WANT` without the session's bit,
+  the SUPPLY page's OUTPUT 0 (also while the PD mini stays on for a
+  running write), a trip, a lost heartbeat and the session's own OFF.
   Not so within 2500ms: the PD mini is switched off when the ON moved it,
   the output stays off, and the session's ON stands refused. While it
   waits the session's supply reads asked on, neither on nor off. Each
@@ -1887,7 +1894,8 @@ voltage for every port.
 
 `test/host/test_prog_rail.c` holds the rules; `test_prog_rail_kst.c` and
 `test_prog_rail_hitec.c` run a KST and a Hitec session on them with and
-without the switches.
+without the switches; `test_prog_rail_off.c` puts each OFF against a
+waiting ON.
 
 ### Refused frames
 

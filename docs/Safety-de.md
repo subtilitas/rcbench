@@ -372,7 +372,10 @@ eine Programmiersitzung zur Zeit. Ohne die Portschalter wird CONNECT
 abgelehnt, solange ein anderer Kanal aktiv ist; mit ihnen schaltet eine
 Sitzung mit einer anderen Spannung als der der Schiene jeden anderen Port
 aus. Der Ausgang der Sitzung wird erst eingeschaltet, wenn der PD mini die
-Spannung der Sitzung liest, höchstens 150mV darüber. CONNECT wird abgelehnt, solange die
+Spannung der Sitzung liest, höchstens 150mV darüber, und jedes stehende
+OFF (RAIL 0, das gelöschte Bit in PORT_WANT, das OFF der Page SUPPLY, ein
+Auslösen, ein ausgebliebener Heartbeat) beendet dieses Warten. CONNECT
+wird abgelehnt, solange die
 BEC-Prüfung 500mV oder mehr an irgendeinem Port findet
 ([Link, Programmieren an der gemeinsamen Schiene](Link-de.md#programmieren-an-der-gemeinsamen-schiene)).
 

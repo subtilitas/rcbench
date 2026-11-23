@@ -339,7 +339,9 @@ clears `TRIPPED`. One programming session runs at a time. Without the
 port switches CONNECT is refused while another channel is active; with
 them, a session at another voltage than the rail's switches every other
 port off. The session's output is switched on only once the PD mini reads
-the session's voltage, 150mV over it at most. CONNECT is refused while
+the session's voltage, 150mV over it at most, and every OFF that stands
+(`RAIL` 0, the `PORT_WANT` bit cleared, the SUPPLY page's OFF, a trip, a
+lost heartbeat) ends that wait. CONNECT is refused while
 the BEC check finds 500mV or more on any port
 ([Link, Programming on the common rail](Link.md#programming-on-the-common-rail)).
 

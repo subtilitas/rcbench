@@ -23,7 +23,10 @@
  * ends, then off, the servo holding the whole target, the session back in
  * PWM with nothing switched on again; a lost heartbeat during a write:
  * everything off in that pass, the session aborted to PWM with the servo
- * in no mode.
+ * in no mode; ENTER and REBOOT in one batch of frames with a PROG write
+ * that makes another channel active, in both orders, never cutting a
+ * live channel (the CONNECT rules judged at each command, as kst_write()
+ * calls ports_exclusive() before the port's write).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -142,6 +145,8 @@ static uint8_t cmd(link_kst_op_t o, uint16_t key, uint16_t crc)
 {
     const uint16_t in[4] = { LINK_KS_W_CMD_OF(o, CH),
                              (uint16_t)(reg(LINK_KS_SEQ) + 1u), key, crc };
+
+    exclusive();                /* kst_write(): the rules at the command */
     const uint8_t nack = kst_port_write(&g_port, 0, 4, in, g_ms);
 
     tell();
@@ -690,6 +695,73 @@ TEST_CASE(a_port_want_without_k_ends_a_waiting_on)
     CHECK(!g_sim.powered);
 }
 
+/* The panel's RAIL 1 without the switches: every servo on the rail
+ * powered, nothing active, a pass for the masks. */
+static void rail_1_alone(void)
+{
+    bench(false, RAIL_MV);
+    CHECK_EQ(pw_write(LINK_PW_RAIL, 1u, g_ms), 0u);
+    tick();
+    CHECK(power_rail_driven(&g_pw));
+}
+
+/* @p op from PWM behind a PROG write that makes S1's channel active in the
+ * same batch of frames (no pass between): refused, the rail on throughout.
+ * And in the other order: taken; a rail on at the PROG write stays on,
+ * and an ON after it is refused. */
+static void connect_in_one_batch(link_kst_op_t op)
+{
+    rail_1_alone();
+    g_rctx.active = 0x0001u;            /* prog_write(): S1 active */
+    CHECK_EQ(cmd(op, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_BUSY);
+    for (unsigned i = 0; i < 2u * KST_PORT_RAIL_OFF_MS; ++i) {
+        run_ms(1u);
+        CHECK(power_rail_driven(&g_pw));
+        CHECK_EQ(ports_on(), 0x01FFu);
+    }
+    CHECK_EQ(state(), LINK_KST_PWM);
+
+    for (unsigned same_ma = 0; same_ma < 2u; ++same_ma) {
+        rail_1_alone();
+        if (same_ma != 0u) {
+            const uint16_t sup[2] = { RAIL_MV, RAIL_MA };
+            CHECK_EQ(kst_port_write(&g_port, LINK_KS_W_SUPPLY_MV, 2, sup,
+                                    g_ms), 0);
+        }
+        CHECK_EQ(cmd(op, 0, 0), 0);
+        CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+        /* REBOOT's cycle starts at the command: the rail is off before the
+         * PROG write behind it; ENTER's ON at the rail's own voltage cuts
+         * nothing. */
+        const bool live = power_rail_driven(&g_pw);
+        CHECK_EQ(live, op != LINK_KST_OP_REBOOT);
+        g_rctx.active = 0x0001u;        /* prog_write() behind it */
+        while (busy()) {
+            CHECK_EQ(power_rail_driven(&g_pw), live);
+            tick();
+        }
+        if (live) {
+            /* A lower current limit is an ON, refused; the same is none. */
+            CHECK_EQ(result(), same_ma != 0u ? (unsigned)KST_SES_OK
+                                             : (unsigned)LINK_KST_RESULT_SUPPLY);
+            CHECK_EQ(ports_on(), 0x01FFu);
+        } else {
+            CHECK_EQ(result(), LINK_KST_RESULT_SUPPLY);
+            CHECK_EQ(state(), LINK_KST_PWM);
+            CHECK_EQ(ports_on(), 0u);
+            CHECK(!g_sim.powered);
+            CHECK_EQ(g_sim.power_ups, 1u);  /* the panel's RAIL 1 only */
+        }
+    }
+}
+
+TEST_CASE(a_connect_and_an_activation_in_one_batch_never_cut_a_live_channel)
+{
+    connect_in_one_batch(LINK_KST_OP_ENTER);
+    connect_in_one_batch(LINK_KST_OP_REBOOT);
+}
+
 int main(void)
 {
     RUN(without_the_switches_the_cycles_act_on_rail_en);
@@ -705,5 +777,6 @@ int main(void)
     RUN(a_higher_rail_never_reaches_the_sessions_servo);
     RUN(a_port_want_without_k_in_a_reboot_keeps_it_off);
     RUN(a_port_want_without_k_ends_a_waiting_on);
+    RUN(a_connect_and_an_activation_in_one_batch_never_cut_a_live_channel);
     return test_summary("prog_rail_kst");
 }

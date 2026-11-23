@@ -15,8 +15,9 @@
  *     RAIL 0, so every servo on the rail cycles; with them PORT_WANT bit k
  *     only.  The PD mini stays as it is.  An OFF is always taken.
  *   - ON at a voltage: refused (false, nothing switched) for a port that
- *     is not known, after the panel's OFF of the port during the session
- *     or a timed-out ON (until the session lets go), while POWER's TRIPPED
+ *     is not known, after the panel's OFF of the port or of the PD mini
+ *     (SUPPLY OFF) during the session or a timed-out ON (until the
+ *     session lets go), while POWER's TRIPPED
  *     stands (until the panel's RAIL 1 clears it), without a live
  *     heartbeat or on a chip before A4, before the INA3221s hold their
  *     critical limits, for a port whose output is a throttle, while the
@@ -114,8 +115,8 @@ extern "C" {
 typedef enum {
     PROG_RAIL_OK = 0,        /**< taken                                    */
     PROG_RAIL_PORT,          /**< no port known                            */
-    PROG_RAIL_OFF_STANDS,    /**< the panel's OFF or a timed-out ON stands
-                                  for the session                          */
+    PROG_RAIL_OFF_STANDS,    /**< the panel's OFF (RAIL 0, PORT_WANT, SUPPLY)
+                                  or a timed-out ON stands for the session */
     PROG_RAIL_TRIPPED,       /**< POWER's TRIPPED stands                   */
     PROG_RAIL_UNSAFE,        /**< no live heartbeat, or a chip before A4   */
     PROG_RAIL_LIMITS,        /**< the critical limits are not held         */
@@ -228,13 +229,22 @@ bool prog_rail_open_ok(const power_page_t *pg, int k, uint8_t held,
 /**
  * @brief Every rule of a session's ON, in the order of the enum.
  *
+ * Every OFF that stands refuses: RAIL 0 and PORT_WANT without bit k
+ * (prog_rail_t.sticky), the SUPPLY page's OFF the session holds
+ * (supply_page_t.sticky, also while the PD mini stays on for a running
+ * write), POWER's TRIPPED and a lost heartbeat.  A pending ON is judged
+ * here before port k is switched on, so each of them ends it.
+ *
  * @param r   The state.
  * @param pg  The POWER page.
+ * @param sp  The SUPPLY page.
  * @param ctx What the ON is judged against.
- * @return    PROG_RAIL_OK, or the first rule that refuses.
+ * @return    PROG_RAIL_OK, or the first rule that refuses; PROG_RAIL_PORT
+ *            for a NULL argument.
  */
 prog_rail_refusal_t prog_rail_judge(const prog_rail_t *r,
                                     const power_page_t *pg,
+                                    const supply_page_t *sp,
                                     const prog_rail_ctx_t *ctx);
 
 /**

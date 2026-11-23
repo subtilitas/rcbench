@@ -73,6 +73,9 @@ void hitec_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 uint8_t hitec_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in)
 {
     (void)ctx;
+    /* OPEN judged against the CONNECT rules as they stand at this command,
+     * as KST's ENTER and REBOOT are. */
+    ports_exclusive();
     const uint8_t nack = hitec_port_write(&s_hitec, off, n, in, s_now_ms);
 
     /* No ARM or THROTTLE across either edge of a hold, in this frame. */
