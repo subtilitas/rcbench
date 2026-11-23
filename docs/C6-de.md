@@ -264,7 +264,7 @@ GPIO54 des Panels treibt ihn.
    esptool 5 schreibt den Befehl `write-flash`, esptool 4 `write_flash`.
 5. Schalte das Panel aus, nimm IO9 von GND, schalte es ein und starte Wi-Fi
    einmal. Die Konsole zeigt `c6: C6: esp_hosted firmware 2.13.0, host
-   2.13.0`, die Zeile C6 RADIO `C6-Funk: 2.13.0. Auf diesem Panel: 2.13.0.`
+   2.13.0`, die Zeile C6 RADIO `C6-Funk: 2.13.0. Release: 2.13.0.`
 
 Das zusammengeführte Image schreibt die ganze Partitionstabelle, also werden
 NVS (Non-Volatile Storage, 16KiB ab 0x9000) und otadata des C6 neu

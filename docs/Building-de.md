@@ -375,7 +375,7 @@ idf.py -C firmware/panel -D RCBENCH_IOMCU_BIN=$PWD/firmware/iomcu/build/rcbench-
 python3 tools/c6_image.py device dial firmware/dial/build/rcbench-dial.bin
 python3 tools/c6_image.py device node-pwr firmware/node/build-pwr/rcbench-node.bin
 python3 tools/c6_image.py device node-bal firmware/node/build-bal/rcbench-node.bin
-v=0.23.16   # die Version des Baums, shared/link/include/rcbench_version.h
+v=0.23.17   # die Version des Baums, shared/link/include/rcbench_version.h
 cp firmware/dial/build/rcbench-dial.bin /media/sdcard/BENCH/UPDATES/rcbench-dial-$v.bin
 cp firmware/node/build-pwr/rcbench-node.bin /media/sdcard/BENCH/UPDATES/rcbench-node-pwr-$v.bin
 cp firmware/node/build-bal/rcbench-node.bin /media/sdcard/BENCH/UPDATES/rcbench-node-bal-$v.bin
