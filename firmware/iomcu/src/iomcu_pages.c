@@ -21,6 +21,7 @@
 
 #include "out_store.h"
 #include "outputs_pages.h"
+#include "rail_bind.h"
 #include "pd_uart.h"
 #include "update_hw.h"
 
@@ -379,6 +380,8 @@ uint8_t chan_cfg_take(iomcu_state_t *s, const uint16_t *next,
     /* A channel that became a surface, or stopped being one, moves to or
      * from the SERVO page's rate. */
     hw_apply();
+    /* A powered port whose output became a throttle goes off now. */
+    rsn_bound();
     if (save) {
         save_outputs(s);
     }
@@ -451,7 +454,9 @@ void prog_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
  * reserved against all of them and bound, or parked for a NONE port.  A
  * pin its function cannot hold is refused with the pins and functions as
  * they were.  No pin and no function changes while the bank is armed or
- * asked to arm, or while the KST or HITEC page holds a port.
+ * asked to arm, or while the KST or HITEC page holds a port.  On board 3
+ * without the port switches no port takes a function on another output
+ * while any programming session is open (rsn_lock()): LINK_NACK_BUSY.
  *
  * The pins are bound, at the rates the write leaves the ports at, before
  * the SERVO page follows a TARGET change: a refused write leaves the SERVO
@@ -479,6 +484,17 @@ uint8_t prog_write(void *ctx, uint8_t off, uint8_t n,
         bank_armed(s) || ports_quiet() != 0u, s_now_ms);
     if (nack != 0u) {
         return nack;
+    }
+    /* Board 3 without the port switches: no port takes a function on
+     * another output beside an open programming session. */
+    if (rail_bind_refuses(rsn_lock(),
+                          rail_bind_prog(&was, outbind_roles(IOMCU_BOARD_ID)),
+                          rail_bind_prog(&s_prog,
+                                         outbind_roles(IOMCU_BOARD_ID)))) {
+        prog_port_revert(&s_prog, &was, &s_outputs);
+        reserve_held();
+        ports_apply();
+        return LINK_NACK_BUSY;
     }
     reserve_held();
     (void)ports_bind();
@@ -512,6 +528,8 @@ uint8_t prog_write(void *ctx, uint8_t off, uint8_t n,
         return LINK_NACK_BAD_VALUE;
     }
     ports_apply();
+    /* A powered port whose output became a throttle goes off now. */
+    rsn_bound();
     prog_port_kept(&s_prog, kept_now);
     kept_now[PROG_PORT_KEPT_COUNT] = prog_port_kept_func(&s_prog);
     if (memcmp(kept_was, kept_now, sizeof(kept_was)) != 0) {
@@ -561,6 +579,15 @@ uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
      * armed or not. */
     if (!board_fix_slots_ok(outbind_roles(IOMCU_BOARD_ID), next)) {
         return bind_refuse(LINK_BW_BOARD, LINK_NACK_BAD_VALUE);
+    }
+    /* Board 3 without the port switches: no slot comes on beside an open
+     * programming session, judged against the sessions as they stand. */
+    if (rail_bind_refuses(rsn_lock(),
+                          rail_bind_slots(s->slots,
+                                          outbind_roles(IOMCU_BOARD_ID)),
+                          rail_bind_slots(next,
+                                          outbind_roles(IOMCU_BOARD_ID)))) {
+        return bind_refuse(LINK_BW_PORT, LINK_NACK_BUSY);
     }
     /* No slot changes under an armed bank, and the binding in force,
      * written again, is taken without binding anything anew. */
@@ -657,6 +684,9 @@ uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
         hw_apply_only(bound_before);
         return bind_refuse(why, LINK_NACK_BAD_VALUE);
     }
+    /* A powered port whose output became a throttle goes off now, before
+     * the next pass renders a frame on it. */
+    rsn_bound();
     if (save) {
         save_outputs(s);
     }

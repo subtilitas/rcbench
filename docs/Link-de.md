@@ -1860,10 +1860,11 @@ Alert hält.
   abgelehnt, meldet es die Ablehnung mit ausgeschalteter Schiene und
   unverändertem PORT_WANT. RAIL 0 behält PORT_WANT. Ein genommenes RAIL 1
   löscht TRIPPED.
-- Ein Port, der an ist, wenn sein Ausgang ein Throttle wird, geht im
-  nächsten Durchlauf der Hauptschleife aus: mit den Schaltern wird sein Bit
-  in PORT_WANT gelöscht, ohne sie geht RAIL auf 0 und PORT_WANT bleibt.
-  TRIPPED wird nicht gesetzt.
+- Ein Port, der an ist, wenn sein Ausgang ein Throttle wird, geht in dem
+  Schreiben aus, das ihn dazu macht (OUTPUTS, CHAN_CFG, BIND oder PROG),
+  bevor der nächste Durchlauf der Hauptschleife einen Frame ausgibt: mit den
+  Schaltern wird sein Bit in PORT_WANT gelöscht, ohne sie geht RAIL auf 0
+  und PORT_WANT bleibt. TRIPPED wird nicht gesetzt.
 - Mit den Portschaltern (SW_FITTED beim Start low, FITTED 0x1FF) ist
   PORT_ON gleich PORT_WANT, solange RAIL 1 ist. Ohne sie (FITTED 0)
   ist jedes Bit von PORT_ON gleich RAIL, PORT_WANT wird gehalten und
@@ -1984,6 +1985,7 @@ die Spannung der Schiene für jeden Port.
 | --- | --- | --- |
 | der Power-Cycle der Sitzung (KST 1000ms, klassischer Hitec-Einstieg 500ms) | RAIL 0 und 1: jedes Servo an der Schiene wird aus- und eingeschaltet | nur Bit k in PORT_WANT; RAIL und die anderen Ports bleiben |
 | CONNECT (KST ENTER und REBOOT aus PWM, Hitec OPEN), während ein anderer Kanal aktiv ist | abgelehnt: KST BUSY, Hitec HELD | genommen |
+| ein Schreiben, das einen anderen Kanal aktiviert, während eine Sitzung offen ist | mit BUSY abgelehnt (unten) | genommen |
 | eine Spannung der Sitzung, die vom Sollwert des PD mini abweicht | die Schiene ändert sich für jeden Port; die anderen Kanäle sind nach der Regel darüber OFF | das Bit in PORT_WANT jedes anderen Ports wird gelöscht, bevor der PD mini sich ändert; ein neues Bit wird mit BUSY abgelehnt, bis die Sitzung loslässt, danach braucht es das 2s-Halten des Panels |
 | ein gefundenes BEC (irgendein Bit in BEC) | CONNECT abgelehnt: KST BUSY, Hitec HELD, OPEN von ESC wire HELD | ebenso |
 
@@ -1991,6 +1993,18 @@ die Spannung der Schiene für jeden Port.
   Programmierport mit einer Funktion außer NONE an den Pin seines Ausgangs
   gebunden ist, oder solange sein `SOURCE` in PASS PASS-THROUGH ist. Ein
   Kanal auf BENCH zählt über seinen Slot.
+- Ohne die Schalter bleibt jeder andere Kanal für die ganze Sitzung aus:
+  von CONNECT (OPEN von ESC wire), bis die Sitzung loslässt, wird ein
+  Schreiben, das einen Kanal an einem anderen Ausgang aktiviert, mit BUSY
+  abgelehnt, beurteilt beim Schreiben gegen die Sitzungen, wie sie dann
+  stehen (`shared/outputs/rail_bind.c`). Das ist ein Schreiben von OUTPUTS
+  oder OUTPUTS_HI oder ein COMMIT von BIND, das einen Treiber an einen
+  Ausgang bindet, den kein Slot trieb (`WHY` 6, ein Programmierport), ein
+  Schreiben von PROG, das einem Port mit Pin eine Funktion außer NONE gibt
+  oder einen solchen Port an einen anderen Ausgang legt, und ein Schreiben
+  von PASS, das ein `SOURCE` auf PASS-THROUGH setzt. Ein Schreiben, das die
+  Kanäle lässt, wie sie sind, oder einen abschaltet, wird genommen. Mit
+  den Schaltern folgen diese Schreiben den eigenen Regeln ihrer Pages.
 - Die Ports, die eine Sitzung für eine andere Spannung abschaltet, bekommen
   in PASS `SOURCE` OFF, außer einem Kanal auf BENCH, dessen Pin ein Slot
   hält. Ein Kanal kommt nur mit einem neuen Schreiben von PASS zurück auf
@@ -2082,7 +2096,9 @@ die Spannung der Schiene für jeden Port.
 `test/host/test_prog_rail.c` hält die Regeln; `test_prog_rail_kst.c` und
 `test_prog_rail_hitec.c` lassen eine KST- und eine Hitec-Sitzung mit und
 ohne die Schalter darauf laufen; `test_prog_rail_off.c` stellt jedes OFF
-gegen ein wartendes ON.
+gegen ein wartendes ON; `test_rail_bind.c` stellt jedes aktivierende
+Schreiben vor, während und nach einer Sitzung, und ein Binden als Throttle
+gegen einen versorgten Port.
 
 #### Die Pages PASS und PASS_STAT
 
@@ -2119,6 +2135,10 @@ Durchlauf leert.
   Programmierport, die Versorgung, der Sensorbus, der Phasenabgriff oder die
   ESC-Leitung ihn hält, und ein Schreiben auf OUTPUTS oder PROG, das einen
   gehaltenen Pin nennt, wird wie für einen reservierten Pin abgelehnt.
+- Ohne die Portschalter (FITTED 0 in POWER) wird ein `SOURCE`, das auf
+  PASS-THROUGH wechselt, mit BUSY abgelehnt, solange eine
+  Programmiersitzung offen ist
+  ([Programmieren an der gemeinsamen Schiene](#programmieren-an-der-gemeinsamen-schiene)).
 - PASS-THROUGH wird mit BAD_VALUE abgelehnt, wenn die Messung nicht läuft
   (Bit 3 von `FLAGS`). Auf einem Chip vor dem Stepping A4 startet nichts,
   und jede `SOURCE` außer BENCH wird mit NOT_ARMED abgelehnt.

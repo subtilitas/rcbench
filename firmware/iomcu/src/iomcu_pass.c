@@ -205,7 +205,9 @@ void thru_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 uint8_t thru_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in)
 {
     (void)ctx;
-    pass_ctx_t c = { .armed = armed(), .busy = 0u };
+    /* The sessions as they stand at this write: without the port
+     * switches no channel goes to PASS-THROUGH while one is open. */
+    pass_ctx_t c = { .armed = armed(), .busy = 0u, .locked = rsn_lock() };
     for (unsigned k = 0; k < PASS_CHANNELS; ++k) {
         if (held_elsewhere(RSN_PIN_OUT(k))) {
             c.busy |= (uint16_t)(1u << k);

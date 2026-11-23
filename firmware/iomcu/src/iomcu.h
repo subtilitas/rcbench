@@ -1339,6 +1339,21 @@ bool rsn_esc_open_ok(uint8_t pin);
  */
 bool rsn_esc_refused(void);
 /**
+ * @brief The outputs whose channel no write may activate now
+ *        (rail_bind_lock()): without the port switches, while a KST, Hitec
+ *        or ESC wire session is open, every output but the session's.
+ *        Judged against the sessions as they stand at the call.
+ *
+ * @return Bit k for output k; 0 with the switches and on the other boards.
+ */
+uint16_t rsn_lock(void);
+/**
+ * @brief After a taken binding write (OUTPUTS, CHAN_CFG, BIND, PROG): a
+ *        port that is on and whose output is now a throttle goes off at
+ *        once (rail_bind_hold()), and the switches are driven.
+ */
+void rsn_bound(void);
+/**
  * @brief The POWER page's read (power_read()).
  *
  * @param ctx  Not used.

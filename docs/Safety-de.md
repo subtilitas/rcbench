@@ -369,7 +369,10 @@ nach dem OFF. Ein ausgebliebener Heartbeat, der Failsafe des Links und ein
 Auslösen schalten die Schiene und jeden Port sofort ab, und keine Sitzung
 schaltet sie wieder ein, bis RAIL 1 des Panels TRIPPED löscht. Es läuft
 eine Programmiersitzung zur Zeit. Ohne die Portschalter wird CONNECT
-abgelehnt, solange ein anderer Kanal aktiv ist; mit ihnen schaltet eine
+abgelehnt, solange ein anderer Kanal aktiv ist, und solange die Sitzung
+offen ist, wird jedes Schreiben, das einen anderen Kanal aktivieren würde
+(ein Slot von OUTPUTS, die Funktion eines Programmierports,
+PASS-THROUGH), mit BUSY abgelehnt; mit ihnen schaltet eine
 Sitzung mit einer anderen Spannung als der der Schiene jeden anderen Port
 aus. Der Ausgang der Sitzung wird erst eingeschaltet, wenn der PD mini die
 Spannung der Sitzung liest, höchstens 150mV darüber, und jedes stehende

@@ -1701,10 +1701,11 @@ holds its critical alert.
   judged: refused for another register, it returns the refusal with the
   rail off and `PORT_WANT` as it was. `RAIL` 0 keeps `PORT_WANT`. A taken
   `RAIL` 1 clears `TRIPPED`.
-- A port that is on when its output becomes a throttle goes off on the
-  next main-loop pass: with the switches its `PORT_WANT` bit is cleared,
-  without them `RAIL` goes to 0 and `PORT_WANT` stays. `TRIPPED` is not
-  set.
+- A port that is on when its output becomes a throttle goes off in the
+  write that makes it one (OUTPUTS, CHAN_CFG, BIND or PROG), before the
+  next main-loop pass renders a frame: with the switches its `PORT_WANT`
+  bit is cleared, without them `RAIL` goes to 0 and `PORT_WANT` stays.
+  `TRIPPED` is not set.
 - With the port switches (SW_FITTED low at boot, `FITTED` 0x1FF) `PORT_ON`
   is `PORT_WANT` while `RAIL` is 1. Without them (`FITTED` 0) every
   `PORT_ON` bit is `RAIL`, `PORT_WANT` is kept and reported, and PORT_EN1
@@ -1816,12 +1817,24 @@ voltage for every port.
 | --- | --- | --- |
 | the session's power cycle (KST 1000ms, classic Hitec entry 500ms) | `RAIL` 0 and 1: every servo on the rail cycles | `PORT_WANT` bit k only; `RAIL` and the other ports stay |
 | CONNECT (KST ENTER and REBOOT from PWM, Hitec OPEN) while another channel is active | refused: KST BUSY, Hitec HELD | taken |
+| a write that activates another channel while a session is open | refused with BUSY (below) | taken |
 | a session voltage other than the PD mini's set point | the rail moves for every port; the other channels are OFF by the rule above | every other port's `PORT_WANT` bit is cleared before the PD mini moves; a new bit is refused with BUSY until the session lets go, then it needs the panel's 2s hold |
 | a BEC found (any `BEC` bit) | CONNECT refused: KST BUSY, Hitec HELD, ESC wire OPEN HELD | the same |
 
 - A channel is active while an OUTPUTS slot, or a programming port with a
   function other than NONE, is bound to its output's pin, or while its
   PASS `SOURCE` is PASS-THROUGH. A BENCH channel counts through its slot.
+- Without the switches every other channel stays off for the whole
+  session: from CONNECT (ESC wire OPEN) until the session lets go, a write
+  that activates a channel on another output is refused with BUSY, judged
+  at the write against the sessions as they stand then
+  (`shared/outputs/rail_bind.c`). That is an OUTPUTS or OUTPUTS_HI write
+  or a BIND commit that binds a driver on an output no slot drove (`WHY`
+  6, a programming port), a PROG write that gives a port with a pin a
+  function other than NONE or moves such a port to another output, and a
+  PASS write that sets a `SOURCE` to PASS-THROUGH. A write that leaves
+  the channels as they are or switches one off is taken. With the
+  switches these writes follow their pages' own rules.
 - The ports a session switches off for another voltage have their PASS
   `SOURCE` set to OFF, except a BENCH channel whose pin a slot holds. A
   channel comes back on PASS-THROUGH only with a new PASS write.
@@ -1902,7 +1915,8 @@ voltage for every port.
 `test/host/test_prog_rail.c` holds the rules; `test_prog_rail_kst.c` and
 `test_prog_rail_hitec.c` run a KST and a Hitec session on them with and
 without the switches; `test_prog_rail_off.c` puts each OFF against a
-waiting ON.
+waiting ON; `test_rail_bind.c` puts each activating write before, during
+and after a session, and a throttle bind against a powered port.
 
 #### The PASS and PASS_STAT pages
 
@@ -1934,6 +1948,9 @@ CAPTURE pushes the state of all 18 pins on every change; two chained DMA
   refused with BUSY while an output slot, a programming port, the supply,
   the sensor bus, the phase tap or the ESC wire holds it, and an OUTPUTS
   or PROG write naming a held pin is refused as for a reserved pin.
+- Without the port switches (POWER `FITTED` 0) a `SOURCE` moving to
+  PASS-THROUGH is refused with BUSY while a programming session is open
+  ([Programming on the common rail](#programming-on-the-common-rail)).
 - PASS-THROUGH is refused with BAD_VALUE when the capture does not run
   (`FLAGS` bit 3). On a chip before the A4 stepping nothing starts and
   every `SOURCE` other than BENCH is refused with NOT_ARMED.

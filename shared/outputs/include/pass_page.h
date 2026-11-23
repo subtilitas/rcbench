@@ -17,6 +17,9 @@
  *     pin to the bank.
  *   - PASS-THROUGH is refused with LINK_NACK_BAD_VALUE when the capture
  *     and MIRROR do not run.
+ *   - A SOURCE moving to PASS-THROUGH on a locked channel (pass_ctx_t.
+ *     locked: without the port switches, while a programming session holds
+ *     the rail) is refused with LINK_NACK_BUSY.
  *   - Every start is BENCH on every channel; nothing is kept.
  *   - pass_page_mirror(): the channels whose pad MIRROR drives: PASS-
  *     THROUGH while the bank is ARMED.  Every other held channel is low.
@@ -50,6 +53,8 @@ extern "C" {
 typedef struct {
     bool     armed;  /**< the bank is ARMED */
     uint16_t busy;   /**< bit k: output k's pin is held by something else */
+    uint16_t locked; /**< bit k: channel k may not become PASS-THROUGH
+                          (rail_bind_lock())                           */
 } pass_ctx_t;
 
 /** @brief The pages. */

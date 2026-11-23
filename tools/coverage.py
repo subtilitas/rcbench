@@ -442,6 +442,7 @@ TRACKED = [
     "shared/outputs/chip_gate.c",
     "shared/outputs/power_page.c",
     "shared/outputs/prog_rail.c",
+    "shared/outputs/rail_bind.c",
     "shared/outputs/rsn_pio.c",
     "shared/outputs/out_pwm_map.c",
     "shared/outputs/servo_page.c",

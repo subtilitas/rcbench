@@ -32,8 +32,8 @@
 static pass_page_t p;
 static pass_dec_t  d;
 
-static const pass_ctx_t SAFE  = { false, 0u };
-static const pass_ctx_t ARMED = { true, 0u };
+static const pass_ctx_t SAFE  = { false, 0u, 0u };
+static const pass_ctx_t ARMED = { true, 0u, 0u };
 
 static uint8_t src(unsigned k, uint16_t v, const pass_ctx_t *c)
 {
@@ -111,14 +111,14 @@ TEST_CASE(bad_values_read_only_registers_and_ranges_are_refused_whole)
 TEST_CASE(off_and_pass_through_are_refused_on_a_pin_held_elsewhere)
 {
     pass_page_init(&p, true, 0u);
-    const pass_ctx_t held = { false, (uint16_t)(1u << 3) };
+    const pass_ctx_t held = { false, (uint16_t)(1u << 3), 0u };
     CHECK_EQ(src(3, LINK_PA_SRC_PASS, &held), LINK_NACK_BUSY);
     CHECK_EQ(src(3, LINK_PA_SRC_OFF, &held), LINK_NACK_BUSY);
     CHECK_EQ(src(3, LINK_PA_SRC_BENCH, &held), 0u);
     CHECK_EQ(src(4, LINK_PA_SRC_PASS, &held), 0u);
     CHECK_EQ(pass_page_held(&p), 1u << 4);
     /* A channel the page holds already moves between OFF and PASS-THROUGH. */
-    const pass_ctx_t also = { false, (uint16_t)(1u << 4) };
+    const pass_ctx_t also = { false, (uint16_t)(1u << 4), 0u };
     CHECK_EQ(src(4, LINK_PA_SRC_OFF, &also), 0u);
 }
 
