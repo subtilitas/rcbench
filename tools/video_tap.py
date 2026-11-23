@@ -340,7 +340,7 @@ def circuit() -> dict:
         "size": [1000, 500],
         "items": [
             {"id": "esc", "t": "box", "r": [20, 60, 250, 400],
-             "text": "ESC · one motor lead"},
+             "text": "ESC · motor lead"},
             {"id": "mcu", "t": "box", "r": [720, 60, 260, 400],
              "text": "IOmcu · GPIO 22"},
             {"id": "vbat", "t": "rail", "at": [140, 110], "text": "supply"},

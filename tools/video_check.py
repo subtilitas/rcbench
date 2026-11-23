@@ -9,7 +9,9 @@ board_faults() holds a board scene to the board it draws.
 
 Attributes:
     REPO: The repository.
-    STILLS: The directory of the stills a model's display shows.
+    STILLS: The directory of the stills a model's display shows.  A
+        storyboard of another repository brings its own in stills/
+        beside it (use_stills()).
     MINI_UNITS: The components of the mini model that a scene can move.
     PART_FRAMES: The most frames of one part that --keep keeps.
     VIEWS_KEPT: The sets of drawn views the cache keeps.
@@ -59,6 +61,44 @@ ANCHORS = ("wing", "servo", "hinge", "rod", "flap", "edge", "imu", "tape",
 MINI_UNITS = ("shell", "buttons", "ina", "board", "cell", "boost",
               "plugs", "screws")
 STILLS = VIDEO / "stills"
+_still_dirs = [STILLS]
+
+
+def use_stills(directory: pathlib.Path | None = None) -> None:
+    """Name the directory of a storyboard's own stills.
+
+    Args:
+        directory: A directory searched before STILLS, such as stills/
+            beside a storyboard of another repository; None, or a path
+            that is no directory, leaves STILLS alone.
+    """
+    _still_dirs[:] = ([directory] if directory is not None
+                      and directory.is_dir() else []) + [STILLS]
+
+
+def still(name: str) -> pathlib.Path | None:
+    """Find a still.
+
+    Args:
+        name: Its name without the suffix.
+
+    Returns:
+        NAME.png in the storyboard's own stills or in STILLS, or None.
+    """
+    for directory in _still_dirs:
+        path = directory / f"{name}.png"
+        if path.is_file():
+            return path
+    return None
+
+
+def still_dirs() -> list:
+    """List the directories still() searches.
+
+    Returns:
+        The storyboard's own stills, where named, then STILLS.
+    """
+    return list(_still_dirs)
 UNITS = ("lid", "estop", "xt60", "usbc", "pdmini", "mcu", "ina",
          "buck", "trigger", "rbmod", "case")
 CONNECTORS = {"J1": 4, "J2": 4}
@@ -231,9 +271,9 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
                           "[t, view, screen] with rising t")
             break
         last = key[0]
-        if mini and not (STILLS / f"{key[1]}.png").is_file():
-            errors.append(f"{where} panel: tools/video/stills has no "
-                          f"{key[1]}.png")
+        if mini and still(key[1]) is None:
+            errors.append(f"{where} panel: no still {key[1]}.png beside "
+                          "the storyboard or under tools/video/stills")
     if "run" in scene:
         _check_run(scene, dur, where, errors)
     if "lid" in scene:
@@ -445,9 +485,9 @@ def _check_window(window: dict, dur: float, where: str,
                           "shots, keys [t, name]")
             return
         for key in shots:
-            if not (STILLS / f"{key[1]}.png").is_file():
-                errors.append(f"{where}: no still tools/video/stills/"
-                              f"{key[1]}.png")
+            if still(key[1]) is None:
+                errors.append(f"{where}: no still {key[1]}.png beside the "
+                              "storyboard or under tools/video/stills")
     ids = set(known) | {r["id"] for r in window.get("rows", [])
                         if isinstance(r, dict) and "id" in r}
     if "id" in window:
@@ -563,6 +603,8 @@ def _check_scope(scene: dict, where: str, errors: list) -> None:
         if not (isinstance(pos, list) and len(pos) == 2
                 and 0 <= pos[0] < FRAME[0] and 0 <= pos[1] < FRAME[1]):
             errors.append(f"{at}: at must be [x, y] inside the frame")
+        if not isinstance(label.get("leader", True), bool):
+            errors.append(f"{at}: leader must be true or false")
         if not isinstance(label.get("title"), str):
             errors.append(f"{at}: title is missing")
         if label.get("style", "ok") not in STYLES:

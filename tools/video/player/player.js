@@ -188,12 +188,16 @@ function bubble(o) {
   const dx = o.tx - sx, dy = o.ty - sy;
   const cx = (sx + o.tx) / 2 - dy * .06, cy = (sy + o.ty) / 2 + dx * .06;
   const len = Math.hypot(dx, dy) * 1.08, col = COL[o.style || ''];
-  ov.insertAdjacentHTML('beforeend',
-    `<path d="M${sx} ${sy} Q${cx} ${cy} ${o.tx} ${o.ty}" fill="none"
+  // "leader": false leaves the line out: the dot and its ring mark the
+  // point.
+  const line = o.leader === false ? ''
+    : `<path d="M${sx} ${sy} Q${cx} ${cy} ${o.tx} ${o.ty}" fill="none"
       stroke="${col}" stroke-width="3" stroke-linecap="round"
       stroke-dasharray="${len}" stroke-dashoffset="${len * (1 - o.a)}"
       opacity="${o.a}"/>
-     <circle cx="${sx}" cy="${sy}" r="5" fill="${col}" opacity="${o.a}"/>
+     <circle cx="${sx}" cy="${sy}" r="5" fill="${col}" opacity="${o.a}"/>`;
+  ov.insertAdjacentHTML('beforeend',
+    `${line}
      <circle cx="${o.tx}" cy="${o.ty}" r="${7 * o.a}" fill="${col}"/>
      <circle cx="${o.tx}" cy="${o.ty}" r="${14 + 10 * o.pulse}" fill="none"
       stroke="${col}" stroke-width="2.5"

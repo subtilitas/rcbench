@@ -66,7 +66,7 @@ python3 tools/make_video.py features               # build/video/features.mp4
 python3 tools/make_video.py rbmod-rework           # build/video/rbmod-rework.mp4
 python3 tools/make_video.py rbmod-build            # build/video/rbmod-build.mp4
 python3 tools/make_video.py dial                   # build/video/dial.mp4
-python3 tools/make_video.py minircbench-build      # build/video/minircbench-build.mp4
+python3 tools/make_video.py ../MiniRcBench/docs/video/minircbench-build.json   # a storyboard of another repository, by its path
 python3 tools/make_video.py hitec-precharge        # build/video/hitec-precharge.mp4
 python3 tools/video_scope.py                       # plots/hitec-precharge.json, with ngspice
 python3 tools/make_video.py phase-tap              # build/video/phase-tap.mp4
@@ -93,7 +93,12 @@ python3 tools/video_voice.py features              # the lines as spoken
 python3 tools/video_voice.py features --unknown    # words misaki's dictionary lacks
 python3 tools/video_audio.py features -o /tmp/features.wav
 python3 tools/make_video.py --check                # every storyboard
+python3 tools/make_video.py PATH/NAME.json --check  # that one storyboard
 ```
+
+A storyboard is named by its name under `storyboards/` or by the path
+of its JSON file. One given by its path takes a still `NAME.png` from
+`stills/` beside the file first and from `tools/video/stills/` second.
 
 Each spoken line is kept in `build/video/cache/voice/` as a NumPy
 array, named by a hash of its text, the voice, the model files' sizes
@@ -150,14 +155,12 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `../video_board.py` | converts a KiCad board file into `cad/NAME.json`, the board `board.js` draws |
 | `boards/p4-7b-back.json` | the back of the 7 inch ESP32-P4 display board, drawn by hand in the format `video_board.py` writes: its connectors, modules and sockets as boxes, the pads of the 4-pin and 12-pin headers |
 | `boards/minircbench-wiring.json` | the parts of a MiniRcBench laid out flat: the rear of the RP2350-Touch-LCD-2.8 with its sockets, the 5V boost board, the INA219 board, the cell and the two male servo connectors, with the pads the wires go to |
-| `stills/mini-*.png` | 12 frames of the MiniRcBench's 240 x 320 display, drawn by that project's host suite |
 | `player/capture.js` | steps the player through the frames and pipes them to ffmpeg |
 | `storyboards/kst-rbmod.json` | programming a KST servo on the rbmod carrier, 8 steps, 100.4s |
 | `storyboards/features.json` | every screen of the bench in 8 chapters: where it opens from and what it does on the rbmod carrier, narrated, 755.92s |
 | `storyboards/rbmod-rework.json` | the rework of a rev 1 rbmod carrier in 4 steps: the track cut at R1, the wire from GP15, the pull-down on M7's EN and the zener on M7's output; 83s, no narration |
 | `storyboards/rbmod-build.json` | building a rev 1 rbmod carrier in 13 steps, the 4 rework steps among them: the bare board, D1 and R9, the connectors, the headers, the 5 modules on pin strips, the large holes closed with wire and solder, the 4 wires from J6's pads to a USB-C plug board for the PD mini, and the panel's back with the heartbeat wires of header P3, the CAN cable and the supply on the RS485 header; narrated, 347.32s, Pachelbel's Canon as its bed at half level |
 | `storyboards/dial.json` | bringing the M5Stack Dial into use in 7 steps: the Dial, its ring nut, the cell 102540 and a foam pad into the two parts of the printed base and its 4 screws M3 x 12, flashing over USB, the bind on SETUP > WIRELESS > DIAL, the menu and the SET of a value, the knob on MOTOR & ESC and on SERVO LIVE, and what the Dial does not do; the bench and the Dial stand in one 3D scene and show the same screen, run and value; narrated, 295.69s, Pachelbel's Canon at half level |
-| `storyboards/minircbench-build.json` | building a MiniRcBench in 10 steps: the parts, the firmware, the boost board's input on the battery socket's pins, the 0Ω resistor off the enable pad, the pull-down and IO28 on it, the INA219 on the I2C socket, the 5.6V zener and the 470µF capacitor across the boost board's output, the 5V path through the sensor to both male servo connectors, the signals and the 9 unused wires taken out of the 12-pin plug, the check before the cell, the case, and the settings; narrated, 505.57s, Pachelbel's Canon at half level |
 | `storyboards/hitec-precharge.json` | precharge and sample: reading a wire that is only pulled low on an RP2350 pin that several protocols share, without a pull-up resistor, in 6 steps after an RP2350 board as a `part` scene: a device that only pulls low, the 2.2kΩ pull-up and why a pin with several protocols cannot keep it, one precharge and sample, the sampling window against the measured one, one answer byte in 80 samples, and 3 logic analyser captures beside the simulation; narrated, 348.67s. No product is named on screen or in the narration; the corner reads `RP2350` (`product`) |
 | `storyboards/phase-tap.json` | ESC STICK programming counted from the phase tap in 7 steps, after 4 `part` scenes (the rbmod carrier, the IOmcu module, the ESC with its motor, the motor simulator): a menu of beeps, the tap's circuit, the edge stamps, carrier, tone and beep, the count of a group, the warning that the servo rails carry the ESC's voltage, and the screens; narrated |
 | `storyboards/thumbnail.json` | the thumbnail of `features`: the case with its display lifted and the title; `--stills 3` writes it |
@@ -212,7 +215,7 @@ A `case` scene:
 | `display` | optional `{view}`: the renderer view on the model's display |
 | `title` | optional `{from, to, kicker, heading, text}` |
 | `chips` | optional `{from, to, n, text}`: the chip at the top right; a numeric `n` also sets the step marks |
-| `labels` | `{from, to, anchor, at, title, text}` and optional `n`, `size` (`sm`), `side` (`l`, `r`, `t`, `b`: where the pointer leaves the bubble), `style` (`ok`, `warn`, `muted`) |
+| `labels` | `{from, to, anchor, at, title, text}` and optional `n`, `size` (`sm`), `side` (`l`, `r`, `t`, `b`: where the pointer leaves the bubble), `style` (`ok`, `warn`, `muted`), `leader` (`false` leaves the pointer's line out; the dot and its ring stay on the point) |
 | `pinout` | optional `{from, to, connector, select, subtitle}`: the pin table of `J1` or `J2` with one position marked |
 | `say` | optional list of `{at, text}`: what the narrator says in this scene and when; a line that runs into the next is an error |
 | `servo` | optional `{connector, position, appear, plug: [t0, t1]}`: a servo whose plug moves 46mm into the position |
@@ -527,38 +530,10 @@ python3 tools/video_scope.py --rate 200e6 --capture pre=s1-0x32-win.csv \
   the wires and the tape are not shown in 3D. The cell's lead is cut
   off at the cell: it is straight in the model and would leave the
   case.
-- `minircbench-build` shows the build the owner stated on 2026-11-14
-  and 2026-11-15: the boost board's input soldered to the battery
-  socket's pins, its enable pad on GP28 with 10kΩ to ground, a male servo
-  connector with the switched 5V in each of the case's two openings, the
-  INA219 in the boost board's OUT+, JST-SH leads in the 12-pin and the
-  I2C socket, a 0Ω resistor of size 0402 between the boost board's EN pad and IN+ that is taken off before the pull-down goes on (stated on 2026-11-15), no fuse, a cell with its own protection circuit (stated on 2026-11-15), one copper plane from the boost board's IN- to its OUT- (stated on 2026-11-15), both small boards on double-sided tape, a 470µF electrolytic capacitor of 10V or more and a 5.6V zener diode across the boost board's output. The zener is rated 2W to 5W; its package is not stated and it is drawn as an axial part. Its own
-  statements, found nowhere else: the order of the steps, the wire
-  colours, the pull-down's place between EN and IN-, the daisy chain from the TMT to the
-  ESC connector, the cell's lead running over the board, and screws of
-  M2.5 x 6, taken from the case's 2.2mm under the head and the
-  standoffs' 4.0mm. The sockets' places and the prints (BAT + and -,
-  the 12 names of the 12-pin socket, GND 3V3 SDA SCL at the I2C socket)
-  are read from Waveshare's photo of the board's rear and its pin
-  drawing; which side of each socket the plug enters is taken from the
-  solder pins in that photo. How a contact leaves a JST-SH plug is
-  described from the housing's form and is not tried on the lead the
-  board comes with. No part of the build is measured: MiniRcBench
-  states that no INA219 and no boost board has been on its board.
-- The stills are frames of MiniRcBench's host suite (`cd test && make`
-  writes `shot_*.ppm`) at its commit 8c7ace3. `mini-gp28` and
-  `mini-supply-sense` come from two frame dumps added to
-  `test/test_ui.cpp` for this video and not in that repository: SERVO
-  SUPPLY at GP28, and the same with CURRENT SENSE at INA219 and its
-  caption FOUND. A change of MiniRcBench's screens does not reach the
-  stills.
-- `minircbench-build` says that the servo tester feeds its servo from
-  the boost board. The owner stated on 2026-11-15 that the firmware is
-  to do so; the release is not named. MiniRcBench at its commit 25b5a36
-  does not do that: its servo tester never drives the
-  enable pin and shows `GP28 SUPPLY STAYS OFF HERE.`; the KST and Hitec
-  programmers switch the supply. The still `mini-servo-supply` shows
-  that line and is not used in the video.
+- The storyboards of the MiniRcBench and their stills are in that
+  project's repository under `docs/video/`, with their limitations in
+  `docs/video/README.md` there. The `mini` model (`mini3d.js`) and the
+  wiring drawing `boards/minircbench-wiring.json` are here.
 - The `mockup` model is estimated: 190 x 120 x 34mm against the 172 x
   129mm of the assembly. The order of the connectors on the wall and
   J1's pin order follow the case. J2's row order is assumed to match

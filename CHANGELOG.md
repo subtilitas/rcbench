@@ -242,6 +242,17 @@ history is in git.
 
 ### Changed
 
+- Storyboard `phase-tap`: 354.27s as rendered. Its tour shows RUN and
+  DONE on the Flycolor FlyDragon Lite+ 40A (views
+  `motor-stick-flydragon-run` and `motor-stick-flydragon-done`); its
+  cards sit under their points, and the cards of the circuit carry no
+  line (`leader: false` of a label).
+- Video tool: a storyboard given by its path takes its stills from
+  `stills/` beside it before `tools/video/stills/`, and `--check` with a
+  path checks that one storyboard. The storyboard `minircbench-build`
+  and the 12 stills `mini-*.png` are in the MiniRcBench repository under
+  `docs/video/`
+  ([Videos from storyboards](tools/video/README.md#commands)).
 - The panel image carries the IOmcu images only: 4,074,096 bytes in the
   release configuration; carrying the 0.23.16 C6, Dial and node images
   made it 3,413,616 bytes larger. The C6 radio's,
