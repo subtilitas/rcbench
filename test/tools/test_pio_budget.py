@@ -111,7 +111,8 @@ def test_the_held_programs_have_the_fixture_lengths():
     pioasm on the machine.
     """
     progs = pb.load_programs(REPO)
-    for name in ("kst_line", "hitec_line", "ew_line", "tone_cap"):
+    for name in ("kst_line", "hitec_line", "ew_line", "tone_cap",
+                 "pass_mirror", "pass_capture"):
         words = (REPO / "test/host/fixtures" / f"{name}_words.txt")
         lines = [w for w in words.read_text().split() if w.strip()]
         assert progs[name].length == len(lines), name
@@ -305,7 +306,7 @@ def fixture_progs():
 
 @pytest.mark.parametrize("brd", pb.BOARDS, ids=lambda b: str(b.number))
 def test_every_board_passes_with_the_real_sources(brd, progs):
-    """Boards 1 and 2 with today's .pio files, and board 3 as planned."""
+    """Every board with today's .pio files."""
     lines, failures = pb.report(brd, progs, pb.capture_rates(REPO),
                                 pb.session_traffic(REPO))
     assert failures == []
@@ -325,27 +326,29 @@ def test_today_s_lengths(progs):
     """The lengths docs/Link.md quotes, and the rest of today's programs."""
     got = {n: progs[n].length for n in (
         "dshot_tx", "dshot_bidir_tx", "dshot_rx", "ppm_tx", "pd_uart_tx",
-        "pd_uart_rx", "tone_cap", "kst_line", "ew_line", "hitec_line")}
+        "pd_uart_rx", "tone_cap", "kst_line", "ew_line", "hitec_line",
+        "pass_mirror", "pass_capture")}
     assert got == {"dshot_tx": 4, "dshot_bidir_tx": 11, "dshot_rx": 5,
                    "ppm_tx": 4, "pd_uart_tx": 4, "pd_uart_rx": 8,
                    "tone_cap": 22, "kst_line": 24, "ew_line": 25,
-                   "hitec_line": 30}
+                   "hitec_line": 30, "pass_mirror": 1, "pass_capture": 5}
 
 
 def test_board_3_boot_fills_pio0(progs):
-    """PIO0: MIRROR 1, CAPTURE 6, UART 4 and 8: 19 words, 4 machines."""
+    """PIO0: MIRROR 1, CAPTURE 5, UART 4 and 8: 18 words, 4 machines."""
     bp = pb.board_programs(pb.BOARD_RSN, progs)
     out = pb.run(pb.BOARD_RSN, (), bp)
     assert out.fits
-    assert (out.chip.words(0), out.chip.sms_used(0)) == (19, 4)
+    assert (out.chip.words(0), out.chip.sms_used(0)) == (18, 4)
     assert out.chip.dma == 3
 
 
 def test_a_planned_program_in_a_file_is_taken_from_the_file(progs):
-    """A .pio that defines pass_capture replaces the planned 6 words."""
-    real = dict(progs, pass_capture=prog("pass_capture", 9))
-    assert pb.board_programs(pb.BOARD_RSN, real)["pass_capture"].length == 9
-    assert pb.board_programs(pb.BOARD_RSN, progs)["pass_capture"].length == 6
+    """A .pio that defines a planned program replaces its planned words."""
+    brd = dataclasses.replace(pb.BOARD_RSN, planned=(
+        ("pass_capture", 6, "test"), ("not_written", 3, "test")))
+    assert pb.board_programs(brd, progs)["pass_capture"].length == 5
+    assert pb.board_programs(brd, progs)["not_written"].length == 3
 
 
 def test_a_table_that_allows_what_does_not_fit_fails(progs, capsys,

@@ -33,10 +33,11 @@ The boards:
   (output slots, the PD mini UART, the phase tap, the programming ports),
   then a programming session.  Each mix in the table names the document
   or code that promises or refuses it.
-- board 3, the remote servo node: board 3 is planned; its program set
-  is the planned one, a table here.  PIO0 holds a fixed load from boot:
-  MIRROR (copies input k to output k, 1 word), CAPTURE (pushes every edge
-  of the 9 inputs and 9 outputs, 6 words, 2 chained DMA channels) and the
+- board 3, the remote servo node: its uses are a table here, its
+  programs the tree's.  PIO0 holds a fixed load from boot: MIRROR
+  (copies input k to output k, 1 word) and CAPTURE (pushes every edge of
+  the 9 inputs and 9 outputs, 5 words, 2 chained DMA channels), both in
+  protocols/passthru/rp2350/pass.pio, and the
   PD mini UART, all pinned to PIO0 before any slot binds; the UART link
   to the display board takes 1 DMA channel.  PIO1 and PIO2 take the
   throttle slots and a programming session's line.  Besides the table,
@@ -756,7 +757,7 @@ BOARD_RBMOD = Board(
             "the tap's 22 words leave no block 24 free words"),
     ))
 
-# Board 3, planned.
+# Board 3.
 RSN_MIRROR = Use("MIRROR", (("fixed", "pass_mirror", 0),), 0,
                  "copies input k to output k, pinned to PIO0 at boot")
 RSN_CAPTURE = Use("CAPTURE", (("fixed", "pass_capture", 0),), 2,
@@ -917,7 +918,7 @@ def _rsn_mixes() -> tuple[Mix, ...]:
         The mixes.
     """
     rows = [
-        Mix("boot only", (), True, "PIO0: 19 words, 4 state machines"),
+        Mix("boot only", (), True, "PIO0: 18 words, 4 state machines"),
         Mix("8 plain DShot", _x(DSHOT, 8), True,
             _SLOTS + ": 4 plain each"),
         Mix("4 bidirectional DShot", _x(BIDIR, 4), True,
@@ -953,11 +954,9 @@ def _rsn_mixes() -> tuple[Mix, ...]:
 
 
 BOARD_RSN = Board(
-    3, "remote servo node (planned)", (16, 35),
+    3, "remote servo node", (16, 35),
     boot=(RSN_MIRROR, RSN_CAPTURE, RSN_PD_UART, RSN_LINK_RX),
     mixes=_rsn_mixes(),
-    planned=(("pass_mirror", 1, "MIRROR: mov pins, pins"),
-             ("pass_capture", 6, "CAPTURE: a compare loop, about 6")),
     sweep=True)
 
 BOARDS = (BOARD_RP2350_CAN, BOARD_RBMOD, BOARD_RSN)

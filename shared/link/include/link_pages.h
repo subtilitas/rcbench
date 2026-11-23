@@ -76,6 +76,8 @@ typedef enum {
     LINK_PAGE_OUTPUTS_HI  = 0x3E, /**< OUTPUTS for slots 9 to 16 (4.41)     */
     LINK_PAGE_BIND_CFG_HI = 0x3F, /**< CHAN_CFG_HI prepared (4.41)          */
     LINK_PAGE_BIND_OUT_HI = 0x40, /**< OUTPUTS_HI prepared (4.41)           */
+    LINK_PAGE_PASS        = 0x41, /**< pass-through and its capture, board 3 (4.41) */
+    LINK_PAGE_PASS_STAT   = 0x42, /**< the capture's counts, board 3 (4.41) */
     LINK_PAGE_POWER       = 0x43, /**< the servo rail's switches, board 3 (4.41) */
     /* Frozen: the same numbers, layout and meaning under every major. */
     LINK_PAGE_UPDATE_CTL  = 0xF0, /**< the IOmcu's own firmware update */
@@ -177,7 +179,8 @@ typedef enum {
  * chip's revision and its boot ROM's version, and STATUS fault bit 8
  * (LINK_FAULT_CHIP_STEPPING) says a board 3 IOmcu found a chip before the
  * RP2350 A4 stepping and drives nothing; the remote servo node's IOmcu
- * (board 3) serves POWER (0x43, link_pages_power.h).  The panel reads
+ * (board 3) serves POWER (0x43, link_pages_power.h), PASS and PASS_STAT
+ * (0x41, 0x42, link_pages_pass.h).  The panel reads
  * LINK_ID_COUNT registers of IDENTITY from every IOmcu and registers 7
  * and 8 from a 4.41 IOmcu only.
  * An IOmcu never asks the panel's minor; a page an older panel does not
@@ -784,6 +787,7 @@ enum {
 /* The current monitors' pages (protocol 4.7 to 4.27). */
 #include "link_pages_sense.h"
 #include "link_pages_esc.h"
+#include "link_pages_pass.h"
 #include "link_pages_power.h"
 
 /* --- the TONE page (protocol 4.8): the beeps of an ESC (electronic speed

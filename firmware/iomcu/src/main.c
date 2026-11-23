@@ -192,6 +192,9 @@ static const link_page_t k_pages[] = {
 #if IOMCU_BOARD_RSN
     /* The servo rail's master and port switches (iomcu_rsn.c). */
     { LINK_PAGE_POWER,     LINK_PW_COUNT,  power_page_rd,  power_page_wr },
+    /* The pass-through and its capture (iomcu_pass.c). */
+    { LINK_PAGE_PASS,      LINK_PA_COUNT,  thru_read,      thru_write },
+    { LINK_PAGE_PASS_STAT, LINK_PT_COUNT,  thru_stat_read, thru_stat_write },
 #endif
     { LINK_PAGE_UPDATE_CTL,  LINK_UPD_COUNT,      update_hw_ctl_read,
       update_hw_ctl_write },
@@ -480,6 +483,9 @@ int main(void)
     /* The remote servo node reads its chip's stepping here, before any
      * output is restored: on a chip before A4 nothing is bound below. */
     rsn_boot(&s_state);
+    /* And its pass-through, before any slot: MIRROR and CAPTURE take PIO0
+     * at GPIO base 16 while the block is empty (iomcu_pass.c). */
+    thru_boot((uint32_t)to_ms_since_boot(get_absolute_time()));
 
     /* A range before anybody sets one, so the clamp is meaningful from the
      * first frame rather than from the first configuration. */
@@ -920,6 +926,9 @@ int main(void)
         outputs_arm_roles(&s_outputs,
                           arm_now ? outputs_arm_roles_of(gate.roles) : 0u,
                           now);
+        /* The node's pass-through on the arm just set: a PASS-THROUGH pad
+         * is MIRROR's only while ARMED, low from this pass on otherwise. */
+        thru_service(now);
         kst_port_bench_armed(&s_kst, arm_now);
         hitec_port_bench_armed(&s_hitec, arm_now);
         esc_port_bench_armed(&s_esc, arm_now);

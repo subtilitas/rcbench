@@ -1275,6 +1275,8 @@ den eine Page als anderweitig gehalten ablehnt, eines je Angebot alle 5s.
 | 0x3E | OUTPUTS_HI | lesen, schreiben | die Slots 9 bis 16, wie OUTPUTS (seit 4.41): vier Register je Slot. Beide Pages werden als eine Bank beurteilt: ein Pin oder ein Kanal, den zwei Slots nennen, wird abgelehnt, gleich auf welcher Page sie stehen |
 | 0x3F | BIND_CFG_HI | lesen, schreiben | eine CHAN_CFG_HI-Page, vorbereitet und nicht in Kraft (seit 4.41), wie BIND_CFG |
 | 0x40 | BIND_OUT_HI | lesen, schreiben | eine OUTPUTS_HI-Page, vorbereitet und nicht in Kraft (seit 4.41), wie BIND_OUT |
+| 0x41 | PASS | lesen, schreiben | die Durchleitung des entfernten Servoknotens und ihre Pulsmessung (seit 4.41, nur Board 3; Board 1 und 2 lehnen sie mit BAD_PAGE ab): Register 0 bis 8 `SOURCE` von Kanal k (0 OFF, 1 PASS-THROUGH, 2 BENCH), 9 bis 17 `IN_US`, der letzte Puls an Eingang k in µs, 18 bis 26 `OUT_US`, der letzte Puls an Ausgang k wie gemessen, 27 `LOST` (Bit k: Eingang k verloren), 28 `WINDOW`, 29 `FLAGS`, 30 `GLITCH` (Bit k: ein Glitch an Eingang k). Register 0 bis 8 nehmen Schreiben; die übrigen lehnen es mit READ_ONLY ab. [Die Pages PASS und PASS_STAT](#die-pages-pass-und-pass_stat) nennt die Regeln |
+| 0x42 | PASS_STAT | lesen, schreiben | die Zähler der Messung (seit 4.41, nur Board 3): Register 0 bis 8 `PERIOD`, die Rahmenperiode von Eingang k in µs, 9 bis 17 `MISSED`, 18 bis 26 `FRAMES`, 27 RESET, 28 `GLITCHES`. Register 27 nimmt Schreiben; die übrigen lehnen es mit READ_ONLY ab |
 | 0x43 | POWER | lesen, schreiben | der Hauptschalter der Servoschiene und die 9 Portschalter des entfernten Servoknotens (seit 4.41, nur Board 3; Board 1 und 2 lehnen sie mit BAD_PAGE ab): Register 0 RAIL (0 oder 1), 1 FITTED (Bit k ein Schalter an Port k; 0 ohne die Schalter), 2 PORT_ON (Bit k Port k an, wie getrieben), 3 PORT_WANT (Bit k das Panel verlangt Port k), 4 TRIPPED (Bits 0 bis 8 das Critical-Alert-Flag von Kanal k, Bit 9 CRIT_N low, Bit 10 ein Schalter in thermischer Abschaltung, Bit 11 ein Auslösen von SENSE_LIMIT), 5 BEC (Bit k Port k las bei der letzten BEC-Prüfung 500mV oder mehr). Register 0 und 3 nehmen Schreiben; die übrigen lehnen es mit READ_ONLY ab. [Die Page POWER](#die-page-power) nennt die Regeln |
 | 0xE0 | `CONSOLE` | lesen, schreiben | nur in Debug-Konsolen-Builds (`IOMCU_CONSOLE`); kein veröffentlichtes Image hat sie: [Die Prüfstandskonsole](BenchConsole-de.md#über-den-link-ohne-usb-am-iomcu) |
 | 0xF0 | UPDATE_CTL | lesen, schreiben | das Firmware-Update des IOmcu selbst (seit 4.22; über Majors eingefroren): 32 Register. Version, Zustand, Fehler, Slot, Sektoren je Slot, nächster Block, Größe des Images, dann das Kommando in Register 8 mit bis zu 3 Argumenten und ein SHA-256-Digest in Register 16 bis 31. Ein Schreiben, das kein Kommando ist, wird mit READ_ONLY abgelehnt. [Firmware-Update über den Link](#firmware-update-über-den-link) hat die Regeln. Nichts wird behalten |
@@ -1823,9 +1825,9 @@ ROM-Version ab 4. Auf jedem anderen Chip treibt er nichts:
   jedes Ausgangspad bleibt in seinem Reset-Zustand;
 - Fault-Bit 8 von STATUS ist ab dem Start gesetzt;
 - ARM, SUPPLY ON, RAIL 1 und Bits von PORT_WANT der Page POWER, jedes
-  Schreiben auf KST, HITEC und ESC_WIRE, eine PROG-FUNC außer NONE und ein
-  Slot mit Treiber auf OUTPUTS, OUTPUTS_HI, BIND_OUT oder BIND_OUT_HI
-  werden mit NOT_ARMED abgelehnt, bevor ihre Page sie sieht
+  Schreiben auf KST, HITEC und ESC_WIRE, eine PROG-FUNC außer NONE, ein
+  Slot mit Treiber auf OUTPUTS, OUTPUTS_HI, BIND_OUT oder BIND_OUT_HI und
+  eine `SOURCE` der Page PASS außer BENCH werden mit NOT_ARMED abgelehnt, bevor ihre Page sie sieht
   (`shared/link/link_gate.c`). Jedes OFF wird genommen.
 
 Die LED an GPIO 39 blinkt auf einem A4-Chip 500ms an und 500ms aus, auf
@@ -1847,7 +1849,10 @@ Alert hält.
   OUTPUTS auf seinem Pin DShot oder bidirektionales DShot ist oder einen
   Throttle-Kanal ausgibt oder ein
   Programmierport seinen Pin als DSHOT150, DSHOT300 oder DSHOT600 oder mit
-  einem Throttle-Kanal hält. Ein neues Bit in PORT_WANT für einen solchen
+  einem Throttle-Kanal hält, oder wenn sein `SOURCE` in PASS PASS-THROUGH
+  ist und Kanal k in CHAN_CFG ein Throttle ist. Ein eingeschalteter Port,
+  dessen Ausgang zum Throttle wird, wird bei dem Schreiben von PASS oder
+  CHAN_CFG abgeschaltet, das ihn dazu macht. Ein neues Bit in PORT_WANT für einen solchen
   Port und RAIL 1 mit einem solchen gehaltenen Bit werden mit BAD_VALUE
   abgelehnt; ohne die Schalter wird RAIL 1 mit BAD_VALUE abgelehnt,
   solange irgendein Port ein Throttle ist. RAIL über 1 und ein Bit hinter
@@ -1987,7 +1992,12 @@ die Spannung der Schiene für jeden Port.
 
 - Ein Kanal ist aktiv, solange ein Slot von OUTPUTS oder ein
   Programmierport mit einer Funktion außer NONE an den Pin seines Ausgangs
-  gebunden ist.
+  gebunden ist, oder solange sein `SOURCE` in PASS PASS-THROUGH ist. Ein
+  Kanal auf BENCH zählt über seinen Slot.
+- Die Ports, die eine Sitzung für eine andere Spannung abschaltet, bekommen
+  in PASS `SOURCE` OFF, außer einem Kanal auf BENCH, dessen Pin ein Slot
+  hält. Ein Kanal kommt nur mit einem neuen Schreiben von PASS zurück auf
+  PASS-THROUGH.
 - Eine Programmiersitzung zur Zeit auf dem Knoten: solange eine Sitzung
   von KST, Hitec oder ESC wire einen Port hält, wird CONNECT an jedem
   anderen Port abgelehnt (KST BUSY, Hitec HELD, ESC wire HELD). Jedes
@@ -2076,6 +2086,101 @@ die Spannung der Schiene für jeden Port.
 `test_prog_rail_hitec.c` lassen eine KST- und eine Hitec-Sitzung mit und
 ohne die Schalter darauf laufen; `test_prog_rail_off.c` stellt jedes OFF
 gegen ein wartendes ON.
+
+#### Die Pages PASS und PASS_STAT
+
+PASS (0x41) setzt die Quelle des Ausgangs jedes der 9 Kanäle des Knotens
+und meldet die Pulse, die die Messung sieht; PASS_STAT (0x42) hält die
+Zähler (`shared/outputs/pass_page.c`, der Decoder in `protocols/passthru`).
+Der Eingang von Kanal k ist GPIO 17 + 2k, sein Ausgang GPIO 16 + 2k.
+
+Zwei PIO-Programme (programmable input/output) laufen ab dem Start in
+PIO0, bevor ein Ausgangsslot bindet. MIRROR kopiert jeden Eingang in jedem
+Takt auf seinen Ausgang (6,7ns bei 150MHz): eine Flanke erreicht das
+Ausgangspad 2 bis 3 Takte, 13,3 bis 20ns, nachdem sie den Eingangspin
+erreicht, vor dem Eingangspuffer und dem Ausgangswiderstand der
+Trägerplatine, deren Verzögerungen nicht bekannt sind. CAPTURE schiebt bei
+jeder Änderung den Zustand aller 18 Pins; zwei verkettete DMA-Kanäle
+(direct memory access) schreiben jeden Zustand und den 1-µs-Timer in einen
+Ring von 64KiB mit 8192 Ereignissen, den die Hauptschleife in jedem
+Durchlauf leert.
+
+| `SOURCE` | Ausgangspad | Ausgang |
+| --- | --- | --- |
+| 1 PASS-THROUGH | PIO0 (MIRROR), solange die Bank für die Rolle von Kanal k ARMED ist; sonst und in SAFE low getrieben | der Puls des Empfängers |
+| 2 BENCH | der auf dem Pin gebundene Ausgangsslot, falls einer | der Ausgang der Bank, wie am Prüfstand |
+| 0 OFF | low getrieben | nichts |
+
+- Jeder Start beginnt mit BENCH auf jedem Kanal; `SOURCE` wird nicht
+  gehalten.
+- Ein Schreiben, das eine `SOURCE` ändert, während die Bank ARMED ist,
+  wird mit BUSY abgelehnt; ein Schreiben der geltenden `SOURCE`s wird
+  genommen. Werte über 2 werden mit BAD_VALUE abgelehnt. Ein Schreiben wird
+  ganz oder gar nicht genommen.
+- OFF und PASS-THROUGH halten den Ausgangspin: von BENCH zu einem der
+  beiden wird mit BUSY abgelehnt, solange ein Ausgangsslot, ein
+  Programmierport, die Versorgung, der Sensorbus, der Phasenabgriff oder die
+  ESC-Leitung ihn hält, und ein Schreiben auf OUTPUTS oder PROG, das einen
+  gehaltenen Pin nennt, wird wie für einen reservierten Pin abgelehnt. Ein
+  Programmierport zählt ab seinem Schreiben von PIN, auch ein SERVO-PWM-Port,
+  der vor seiner Session gebunden ist.
+- Jeder Durchlauf der Hauptschleife setzt jedes gehaltene Pad neu, auf
+  MIRROR oder low, damit ein Pad, das ein anderer Treiber inzwischen
+  berührt hat, nach einem Durchlauf zurück ist.
+- PASS-THROUGH wird mit BAD_VALUE abgelehnt, wenn die Messung nicht läuft
+  (Bit 3 von `FLAGS`). Auf einem Chip vor dem Stepping A4 startet nichts,
+  und jede `SOURCE` außer BENCH wird mit NOT_ARMED abgelehnt.
+- Die Rolle von Kanal k ist die von Kanal k in CHAN_CFG. Mit Surfaces
+  allein ARMED (ARM 0x0004) bleibt ein Throttle-Kanal auf PASS-THROUGH
+  low, und ein Surface-Kanal mit Throttles allein ARMED (ARM 0x0002). Eine
+  Rolle, die SAFE wird, oder ein Kanal, dessen Rolle zu einer nicht ARMED
+  wechselt, nimmt das Pad des Kanals im nächsten Durchlauf der
+  Hauptschleife auf low.
+- Ein Pad auf PASS-THROUGH geht in dem Durchlauf der Hauptschleife low, der
+  SAFE sieht: ein STOP, der Failsafe, ein ausgebliebener Heartbeat und jeder
+  Fehler. Ein Throttle-Kanal auf PASS-THROUGH leitet den Throttle-Puls des
+  Empfängers durch; ein verlorenes Empfängersignal lässt den Ausgang low,
+  und der eigene Failsafe des ESC greift.
+- Die Messung läuft in jedem Zustand, auch in SAFE.
+
+Die Regeln des Decoders, an jedem Eingangs- und Ausgangspin:
+
+| Größe | Regel |
+| --- | --- |
+| Pulsbreite | Stempel der fallenden Flanke minus Stempel der steigenden, Auflösung 1µs |
+| Glitch | ein High unter 400µs oder über 2600µs: gezählt, nicht als Puls genommen |
+| Rahmenperiode | steigende zu steigender Flanke zweier genommener Pulse; eine Periode über 1s wird nicht gelernt |
+| verpasste Rahmen | eine Lücke über 1,5 Perioden zählt round(Lücke / Periode) - 1; zwei solche Lücken hintereinander, die sich um höchstens 1/8 unterscheiden, sind eine neue Rate, und die zweite zählt nichts |
+| verlorenes Signal | kein Puls für 3 Perioden oder 100ms, je nachdem, was länger ist: Breite und Periode lesen 0, und die Lücke, die den Verlust beendet, zählt keinen verpassten Rahmen |
+
+Ein Ausgang mit bidirektionalem DShot wird nicht dekodiert: sein eigener
+Empfänger liest die Leitung, und `OUT_US` liest 0. Die Highs eines
+Ausgangs mit einfachem DShot sind Glitches.
+
+Die Größen werden in Fenstern von 50ms veröffentlicht. `WINDOW` zählt die
+Fenster modulo 65536; `IN_US`, `OUT_US`, `LOST`, `GLITCH` und PASS_STAT
+sind die des zuletzt geschlossenen Fensters. `FLAGS` sagt, was seine Größen
+unbekannt gemacht hat, eine Messlücke und kein Fehler:
+
+| Bit | Bedeutung |
+| ---: | --- |
+| 0 | die DMA hat den Ring überrundet: der Leser hat verworfen, was darin war, die Werte von vor diesem Leeren behalten und beim neuesten Zustand neu begonnen |
+| 1 | eine Programmier-Session war offen: KST oder Hitec an einem Programmierport, oder ESC wire an einem Programmierport oder einem Ausgangsslot; die Flanken ihrer Leitung fluten den Ring |
+| 2 | das FIFO von CAPTURE war voll und hat einen Zustand verworfen: behandelt wie eine Überrundung, das Leeren rückgängig gemacht und der Decoder neu gestartet, damit kein Puls über die Lücke gepaart wird |
+| 3 | die Messung läuft nicht; jede Größe liest 0 |
+
+Der Ring hält unter 195.000 Ereignissen/s 42ms, das längste Flash-Fenster.
+`tools/pio_budget.py` nennt die Ausgangsmischungen darüber.
+
+PASS_STAT: `MISSED` sättigt bei 65535, `FRAMES` zählt modulo 65536, und
+`GLITCHES` (alle Eingänge) sättigt bei 65535. Eine 1 in RESET nimmt die
+Zähler des Decoders sofort als neue Null; 0 wird genommen und tut nichts;
+über 1 wird mit BAD_VALUE abgelehnt. `PERIOD` ist kein Zähler und bleibt.
+
+`test/host/test_pass_page.c` hält die Pages, `test/host/test_pass_decode.c`
+den Decoder, `test/host/test_pass_ring.c` den Ring und sein Überrunden und
+`test/host/test_pass_pio.c` beide PIO-Programme in einem Modell der State
+Machine, durchgehend bis in den Decoder.
 
 ### Abgelehnte Frames
 

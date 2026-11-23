@@ -251,6 +251,8 @@ uint16_t power_window(power_page_t *p, uint32_t series, uint16_t number,
  *        slot on it that renders a channel whose role is OUT_ROLE_THROTTLE, or a
  *        programming port holds the port's pin with a DShot function
  *        (DSHOT150 to DSHOT600) or a channel whose role is
+ *        OUT_ROLE_THROTTLE, or the port's output carries a receiver's
+ *        channel k (outputs_t.passing, PASS-THROUGH) whose role is
  *        OUT_ROLE_THROTTLE.
  *
  * @param o   The bank.

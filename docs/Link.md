@@ -1162,6 +1162,8 @@ per 5s offer.
 | 0x3E | OUTPUTS_HI | read, write | slots 9 to 16, as OUTPUTS (since 4.41): four registers a slot. The two pages are judged as one bank: a pin or a channel two slots name is refused whichever page holds them |
 | 0x3F | BIND_CFG_HI | read, write | a CHAN_CFG_HI page prepared and not in force (since 4.41), as BIND_CFG |
 | 0x40 | BIND_OUT_HI | read, write | an OUTPUTS_HI page prepared and not in force (since 4.41), as BIND_OUT |
+| 0x41 | PASS | read, write | the remote servo node's pass-through and its pulse capture (since 4.41, board 3 only; boards 1 and 2 refuse it with BAD_PAGE): registers 0 to 8 `SOURCE` of channel k (0 OFF, 1 PASS-THROUGH, 2 BENCH), 9 to 17 `IN_US`, input k's last pulse in µs, 18 to 26 `OUT_US`, output k's last pulse as captured, 27 `LOST` (bit k: input k lost), 28 `WINDOW`, 29 `FLAGS`, 30 `GLITCH` (bit k: a glitch on input k). Registers 0 to 8 take writes; the rest refuse them with READ_ONLY. [The PASS and PASS_STAT pages](#the-pass-and-pass_stat-pages) has the rules |
+| 0x42 | PASS_STAT | read, write | the capture's counts (since 4.41, board 3 only): registers 0 to 8 `PERIOD`, input k's frame period in µs, 9 to 17 `MISSED`, 18 to 26 `FRAMES`, 27 `RESET`, 28 `GLITCHES`. Register 27 takes writes; the rest refuse them with READ_ONLY |
 | 0x43 | POWER | read, write | the servo rail's master switch and the 9 port switches of the remote servo node (since 4.41, board 3 only; boards 1 and 2 refuse it with BAD_PAGE): register 0 `RAIL` (0 or 1), 1 `FITTED` (bit k a switch on port k; 0 without the switches), 2 `PORT_ON` (bit k port k on as driven), 3 `PORT_WANT` (bit k the panel asks for port k), 4 `TRIPPED` (bits 0 to 8 channel k's critical alert flag, bit 9 CRIT_N low, bit 10 a switch in thermal shutdown, bit 11 a SENSE_LIMIT trip), 5 `BEC` (bit k port k read 500mV or more at the last BEC check). Registers 0 and 3 take writes; the rest refuse them with READ_ONLY. [The POWER page](#the-power-page) has the rules |
 | 0xE0 | `CONSOLE` | read, write | exists only in debug console builds (`IOMCU_CONSOLE`); no released image has it: [The bench console](BenchConsole.md#over-the-link-with-no-usb-on-the-iomcu) |
 | 0xF0 | UPDATE_CTL | read, write | the IOmcu's own firmware update (since 4.22; frozen across majors): 32 registers. Version, state, error, slot, slot sectors, next block, image size, then the command in register 8 with up to 3 arguments, and a SHA-256 digest in registers 16 to 31. A write that is not a command is refused with READ_ONLY. [Firmware update over the link](#firmware-update-over-the-link) has the rules. Nothing is kept |
@@ -1667,8 +1669,9 @@ chip it drives nothing:
   pad stays in its reset state;
 - STATUS fault bit 8 is set from the start;
 - ARM, SUPPLY ON, POWER's `RAIL` 1 and `PORT_WANT` bits, every write to KST,
-  HITEC and ESC_WIRE, a PROG FUNC other than NONE and an OUTPUTS, OUTPUTS_HI,
-  BIND_OUT or BIND_OUT_HI slot with a driver are refused with NOT_ARMED
+  HITEC and ESC_WIRE, a PROG FUNC other than NONE, an OUTPUTS, OUTPUTS_HI,
+  BIND_OUT or BIND_OUT_HI slot with a driver and a PASS `SOURCE` other than
+  BENCH are refused with NOT_ARMED
   before their page sees them (`shared/link/link_gate.c`). Every OFF is
   taken.
 
@@ -1688,7 +1691,10 @@ holds its critical alert.
   all three INA3221s answer with their critical limits written. A port's
   output is a throttle when an OUTPUTS slot on its pin is DShot or
   bidirectional DShot, or renders a throttle channel, or when a programming port holds its pin as DSHOT150, DSHOT300
-  or DSHOT600 or with a throttle channel. A new `PORT_WANT` bit for such a
+  or DSHOT600 or with a throttle channel, or when its PASS `SOURCE` is
+  PASS-THROUGH and channel k is a throttle in CHAN_CFG. A port on whose
+  output becomes a throttle is switched off at the PASS or CHAN_CFG write
+  that makes it one. A new `PORT_WANT` bit for such a
   port, and `RAIL` 1 with such a bit kept, are refused with BAD_VALUE;
   without the switches `RAIL` 1 is refused with BAD_VALUE while any port
   is a throttle. `RAIL` above 1 and a bit past port 9 are refused with
@@ -1817,7 +1823,11 @@ voltage for every port.
 | a BEC found (any `BEC` bit) | CONNECT refused: KST BUSY, Hitec HELD, ESC wire OPEN HELD | the same |
 
 - A channel is active while an OUTPUTS slot, or a programming port with a
-  function other than NONE, is bound to its output's pin.
+  function other than NONE, is bound to its output's pin, or while its
+  PASS `SOURCE` is PASS-THROUGH. A BENCH channel counts through its slot.
+- The ports a session switches off for another voltage have their PASS
+  `SOURCE` set to OFF, except a BENCH channel whose pin a slot holds. A
+  channel comes back on PASS-THROUGH only with a new PASS write.
 - One programming session at a time on the node: while a KST, Hitec or
   ESC wire session holds a port, CONNECT on every other port is refused
   (KST BUSY, Hitec HELD, ESC wire HELD). Each CONNECT is judged against
@@ -1896,6 +1906,92 @@ voltage for every port.
 `test_prog_rail_hitec.c` run a KST and a Hitec session on them with and
 without the switches; `test_prog_rail_off.c` puts each OFF against a
 waiting ON.
+
+#### The PASS and PASS_STAT pages
+
+PASS (0x41) sets each of the node's 9 channels' output source and reports
+the pulses the capture measures; PASS_STAT (0x42) holds the counts
+(`shared/outputs/pass_page.c`, the decoder in `protocols/passthru`).
+Channel k's input is GPIO 17 + 2k, its output GPIO 16 + 2k.
+
+Two PIO (programmable input/output) programs run in PIO0 from boot,
+before any output slot binds. MIRROR copies each input to its output
+every cycle (6.7ns at 150MHz): an edge reaches the output pad 2 to 3
+cycles, 13.3 to 20ns, after it reaches the input pin, before the
+carrier's input buffer and output resistor, whose delays are not known.
+CAPTURE pushes the state of all 18 pins on every change; two chained DMA
+(direct memory access) channels write each state and the 1µs timer into a
+64KiB ring of 8192 events, which the main loop drains every pass.
+
+| `SOURCE` | Output pad | Output |
+| --- | --- | --- |
+| 1 PASS-THROUGH | PIO0 (MIRROR) while the bank is armed for channel k's role; driven low otherwise and while SAFE | the receiver's pulse |
+| 2 BENCH | the output slot bound on the pin, if any | the bank's output, as on the bench |
+| 0 OFF | driven low | nothing |
+
+- Every start is BENCH on every channel; `SOURCE` is not kept.
+- A write that changes a `SOURCE` while the bank is ARMED is refused with
+  BUSY; a write of the `SOURCE`s in force is taken. Values above 2 are
+  refused with BAD_VALUE. A write is taken whole or not at all.
+- OFF and PASS-THROUGH hold the output pin: from BENCH to either is
+  refused with BUSY while an output slot, a programming port, the supply,
+  the sensor bus, the phase tap or the ESC wire holds it, and an OUTPUTS
+  or PROG write naming a held pin is refused as for a reserved pin. A
+  programming port counts from its PIN write on, a SERVO PWM port bound
+  before its session included.
+- Every main-loop pass sets each held pad again, MIRROR's or low, so a pad
+  another driver touched meanwhile is back within one pass.
+- PASS-THROUGH is refused with BAD_VALUE when the capture does not run
+  (`FLAGS` bit 3). On a chip before the A4 stepping nothing starts and
+  every `SOURCE` other than BENCH is refused with NOT_ARMED.
+- Channel k's role is channel k's in CHAN_CFG. With surfaces armed
+  alone (ARM 0x0004) a throttle channel on PASS-THROUGH stays low, and a
+  surface channel with throttles armed alone (ARM 0x0002). A role
+  disarmed, or a role changed to one not armed, takes the channel's pad
+  low on the next main-loop pass.
+- A PASS-THROUGH pad goes low on the main-loop pass that sees SAFE: a
+  STOP, the failsafe, a lost heartbeat and every error. A throttle channel
+  on PASS-THROUGH passes the receiver's throttle pulse; a lost receiver
+  signal leaves the output low and the ESC's own failsafe acts.
+- The capture runs in every state, SAFE included.
+
+The decoder's rules, on every input and output pin:
+
+| Figure | Rule |
+| --- | --- |
+| pulse width | fall stamp less rise stamp, 1µs resolution |
+| glitch | a high under 400µs or over 2600µs: counted, not taken as a pulse |
+| frame period | rise to rise of two pulses taken; a period over 1s is not learnt |
+| missed frames | a gap over 1.5 periods counts round(gap / period) - 1; two such gaps in a row within 1/8 of each other are a new rate, the second counting nothing |
+| lost signal | no pulse for 3 periods or 100ms, whichever is longer: the width and the period read 0, and the gap that ends the loss counts no missed frame |
+
+A bidirectional DShot output is not decoded: its own receiver reads the
+line, and `OUT_US` reads 0. A plain DShot output's highs are glitches.
+
+The figures are published in windows of 50ms. `WINDOW` counts the windows
+modulo 65536; `IN_US`, `OUT_US`, `LOST`, `GLITCH` and PASS_STAT are those
+of the last window closed. `FLAGS` says what made its figures not known,
+a measurement gap and not an error:
+
+| Bit | Meaning |
+| ---: | --- |
+| 0 | the DMA lapped the ring: the reader dropped what was in it, kept the figures from before that drain, and started again at the newest state |
+| 1 | a programming session was open: KST or Hitec on a programming port, or ESC wire on a programming port or an output slot; its line's edges flood the ring |
+| 2 | CAPTURE's FIFO was full and dropped a state: handled as a lap, the drain undone and the decoder restarted, so no pulse is paired across the gap |
+| 3 | the capture does not run; every figure reads 0 |
+
+The ring holds 42ms, the longest flash window, below 195,000 events/s.
+`tools/pio_budget.py` lists the output mixes above it.
+
+PASS_STAT: `MISSED` saturates at 65535, `FRAMES` counts modulo 65536 and
+`GLITCHES` (all inputs) saturates at 65535. A write of 1 to `RESET` takes
+the decoder's counts as the new zero at once; 0 is taken and does
+nothing; above 1 is refused with BAD_VALUE. `PERIOD` is no count and stays.
+
+`test/host/test_pass_page.c` holds the pages,
+`test/host/test_pass_decode.c` the decoder, `test/host/test_pass_ring.c`
+the ring and its lap, and `test/host/test_pass_pio.c` both PIO programs in
+a model of the state machine, end to end into the decoder.
 
 ### Refused frames
 

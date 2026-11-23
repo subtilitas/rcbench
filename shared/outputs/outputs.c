@@ -88,6 +88,13 @@ void outputs_reserve_pins(outputs_t *o, uint64_t mask)
     o->reserved = mask;
 }
 
+void outputs_set_passing(outputs_t *o, uint16_t mask)
+{
+    if (o != NULL) {
+        o->passing = mask;
+    }
+}
+
 bool outputs_pin_available(const outputs_t *o, uint8_t pin)
 {
     if (o == NULL || pin > OUT_MAX_PIN) {

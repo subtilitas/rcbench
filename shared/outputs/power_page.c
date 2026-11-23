@@ -462,6 +462,13 @@ uint16_t power_throttle(const outputs_t *o, const prog_port_t *pp,
             }
         }
     }
+    /* A receiver's throttle passed through: an ESC on the port. */
+    for (unsigned k = 0; k < LINK_PW_PORTS && k < OUT_MAX_CHANNELS; ++k) {
+        if ((o->passing & (1u << k)) != 0u
+            && o->channel[k].role == OUT_ROLE_THROTTLE) {
+            m |= (uint16_t)(1u << k);
+        }
+    }
     return m;
 }
 

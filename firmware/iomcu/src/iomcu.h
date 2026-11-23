@@ -23,6 +23,8 @@
  *                of board 3 (iomcu_link.h)
  * iomcu_rsn.c    the remote servo node only (IOMCU_BOARD=rsn): the chip's
  *                stepping, the POWER page and the rail and port switches
+ * iomcu_pass.c   the remote servo node only: PASS, PASS_STAT, the
+ *                pass-through's capture and its pads
  *
  * The helpers at the end are `static inline`, so the main loop and each
  * page handler that calls one carry their own inlined copy.
@@ -1281,6 +1283,13 @@ void rsn_off(void);
  */
 uint16_t rsn_pass(uint32_t now);
 /**
+ * @brief A port whose output became a throttle switched off now, not one
+ *        pass later (power_hold() over power_throttle()): call right after
+ *        a PASS SOURCE write and a CHAN_CFG role change.  Nothing on boards
+ *        1 and 2.
+ */
+void rsn_throttle_hold(void);
+/**
  * @brief The output of the pin a KST, HITEC or ESC_WIRE page last asked
  *        for (its hw.pin()): the session's output before it holds one.
  *
@@ -1357,6 +1366,84 @@ void power_page_rd(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
  * @return     0 or a link_nack_t.
  */
 uint8_t power_page_wr(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
+
+/* iomcu_pass.c */
+/**
+ * @brief MIRROR and CAPTURE started in PIO0 on an A4 chip of board 3, and
+ *        the PASS and PASS_STAT pages at BENCH: before any slot binds.
+ *
+ * @param now_ms  The first window's start.
+ */
+void thru_boot(uint32_t now_ms);
+/**
+ * @brief One pass, after the bank's arm: the capture's ring into the
+ *        decoder, a window closed when due, each held pad routed.
+ *
+ * @param now_ms  The pass's clock.
+ */
+void thru_service(uint32_t now_ms);
+/**
+ * @brief The output pins the PASS page holds (SOURCE OFF or PASS-THROUGH);
+ *        0 on boards 1 and 2.
+ *
+ * @return One bit per GPIO.
+ */
+uint64_t thru_pins(void);
+/**
+ * @brief The channels on PASS-THROUGH: active channels for a programming
+ *        session on the common rail (iomcu_rsn.c's active_ports()).
+ *
+ * @return Bit k for channel k; 0 on boards 1 and 2.
+ */
+uint16_t thru_active(void);
+/**
+ * @brief The channels a session switched off to OFF (pass_page_force_off()),
+ *        their pins reserved and their pads low; rsn_prog_set() calls it
+ *        with the ports prog_rail_set() newly dropped.
+ *
+ * @param mask  Bit k: channel k.
+ */
+void thru_drop(uint16_t mask);
+/**
+ * @brief The PASS page's read (pass_page_read()).
+ *
+ * @param ctx  Not used.
+ * @param off  First register.
+ * @param n    Registers.
+ * @param out  The values.
+ */
+void thru_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+/**
+ * @brief The PASS page's write (pass_page_write()), judged against the
+ *        bank's arm and the pins held elsewhere; the pins reserved and the
+ *        pads routed when taken.
+ *
+ * @param ctx  Not used.
+ * @param off  First register.
+ * @param n    Registers.
+ * @param in   The values.
+ * @return     0 or a link_nack_t.
+ */
+uint8_t thru_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
+/**
+ * @brief The PASS_STAT page's read (pass_stat_read()).
+ *
+ * @param ctx  Not used.
+ * @param off  First register.
+ * @param n    Registers.
+ * @param out  The values.
+ */
+void thru_stat_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+/**
+ * @brief The PASS_STAT page's write: RESET (pass_stat_write()).
+ *
+ * @param ctx  Not used.
+ * @param off  First register.
+ * @param n    Registers.
+ * @param in   The values.
+ * @return     0 or a link_nack_t.
+ */
+uint8_t thru_stat_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
 
 /* ------------------------------------------------------ the inline helpers */
 
@@ -1567,7 +1654,8 @@ static inline void reserve_held(void)
                                      | sense_page_held(&s_sense)
                                      | tone_page_pins(&s_tone)
                                      | prog_port_pins(&s_prog)
-                                     | esc_port_pins(&s_esc));
+                                     | esc_port_pins(&s_esc)
+                                     | thru_pins());
 }
 
 /**

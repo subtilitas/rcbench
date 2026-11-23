@@ -25,7 +25,8 @@ extern "C" {
  * POWER RAIL other than 0 or any PORT_WANT bit; every write to KST, HITEC
  * and ESC_WIRE (a programming session's CONNECT among them); a PROG FUNC
  * other than NONE; an OUTPUTS, OUTPUTS_HI, BIND_OUT or BIND_OUT_HI slot
- * with a driver.  Everything else, and every OFF, is passed on.
+ * with a driver; a PASS SOURCE other than BENCH (OFF drives its pad low).
+ * Everything else, and every other OFF, is passed on.
  *
  * @param page  A link_page_t number.
  * @param off   First register written.

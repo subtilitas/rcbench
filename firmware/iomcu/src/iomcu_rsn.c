@@ -233,13 +233,15 @@ static int out_of(unsigned pin)
 
 /**
  * @brief The ports whose channel is active: an OUTPUTS slot, or a
- *        programming port with a function, bound to the port's pin.
+ *        programming port with a function, bound to the port's pin, or a
+ *        channel on PASS-THROUGH.  A BENCH channel counts through its
+ *        slot.
  *
  * @return Bit k for port k.
  */
 static uint16_t active_ports(void)
 {
-    uint16_t m = 0u;
+    uint16_t m = thru_active();
     for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
         const int k = (s_outputs.slot[i].driver != OUT_DRIVER_NONE)
                           ? out_of(s_outputs.slot[i].pin) : PROG_RAIL_NO_PORT;
@@ -297,6 +299,12 @@ static int session_port(void)
     return s_asked_k;
 }
 
+void rsn_throttle_hold(void)
+{
+    (void)power_hold(&s_power, throttles());
+    drive();
+}
+
 void rsn_prog_pin(uint8_t pin)
 {
     s_asked_k = out_of(pin);
@@ -319,8 +327,11 @@ int rsn_prog_set(bool on, uint16_t mv, uint16_t ma)
     prog_rail_ctx_t c;
     rail_ctx(&c);
     prog_rail_port(&s_rail, session_port());
+    const uint16_t was = s_rail.dropped;
     const bool taken = prog_rail_set(&s_rail, &s_power, &s_supply, on, mv, ma,
                                      &c, s_now_ms);
+    /* The ports the session switched off: their PASS SOURCE goes to OFF. */
+    thru_drop((uint16_t)(s_rail.dropped & ~was));
     drive();
     return taken ? 1 : 0;
 }
@@ -416,6 +427,8 @@ uint16_t rsn_pass(uint32_t now)
     (void)now;
     return 0u;
 }
+
+void rsn_throttle_hold(void) {}
 
 void rsn_prog_pin(uint8_t pin) { (void)pin; }
 

@@ -504,6 +504,11 @@ ASSERTED = {
             "SENSE_I2C_CLEAR_STRETCH_US == I2C_TXQ_CLEAR_STRETCH_US",
         ),
     },
+    "passthru": {
+        "shared/outputs/pass_page.c": (
+            "LINK_PA_CHANNELS == PASS_CHANNELS",
+        ),
+    },
     "ppm": {
         "firmware/iomcu/src/outputs_hw.c": (
             "OUT_PPM_MAX_PINS >= OUT_MAX_SLOTS",

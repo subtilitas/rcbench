@@ -4,7 +4,7 @@
 # out_render.c puts the bank on the pins through out_render_hw_*(), which
 # the IOmcu firmware defines; the panel links nothing that calls it.
 
-set(SRCS outputs.c outputs_pages.c out_bind.c out_bind_take.c out_board_rbmod.c out_board_rsn.c board_fix.c chip_gate.c power_page.c prog_rail.c rsn_pio.c
+set(SRCS outputs.c outputs_pages.c out_bind.c out_bind_take.c out_board_rbmod.c out_board_rsn.c board_fix.c chip_gate.c power_page.c prog_rail.c rsn_pio.c pass_page.c
          out_pwm_map.c out_store_map.c out_store_range.c
          out_store_rec.c servo_page.c supply_page.c sense_page.c sense_map.c
          sense_limit.c tone_page.c prog_supply.c
@@ -15,7 +15,7 @@ set(SRCS outputs.c outputs_pages.c out_bind.c out_bind_take.c out_board_rbmod.c 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include
                            REQUIRES link servo bench sense pdmini phase_tap kst
-                                    hitec escwire dshot)
+                                    hitec escwire dshot passthru)
 else()
     add_library(rcbench_outputs STATIC ${SRCS})
     target_include_directories(rcbench_outputs PUBLIC include)
@@ -23,5 +23,5 @@ else()
                                                  rcbench_sense rcbench_pdmini
                                                  rcbench_phase_tap rcbench_kst
                                                  rcbench_hitec rcbench_escwire
-                                                 rcbench_dshot)
+                                                 rcbench_dshot rcbench_passthru)
 endif()
