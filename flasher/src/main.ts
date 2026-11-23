@@ -125,9 +125,14 @@ function onPop(): void {
  * The Advanced switch on Task: on once its code is in, off with the source,
  * "Keep settings" and the picked release reset. The Details log opens with it.
  */
+let advSeq = 0;
+
 async function switchAdvanced(on: boolean): Promise<void> {
+  // The last switch wins: an "on" whose code arrives after a later "off", or after a task tap, is dropped.
+  const seq = ++advSeq;
   if (on) {
     try { await loadAdvanced(); } catch (e) { log(errText(e)); render(); return; }
+    if (seq !== advSeq || st.wiz.step !== 'task') { render(); return; }
   } else leaveAdvanced();
   ($('log-box') as HTMLDetailsElement).open = on;
   go(setAdvanced(st.wiz, on), 'replace');

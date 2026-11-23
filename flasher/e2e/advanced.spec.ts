@@ -341,3 +341,32 @@ test('two .sig files picked one after the other: the later one wins, whichever c
   await expect(sigState).toContainText('other.sig');
   await expect(page.locator('#sig-picked')).toHaveText('other.sig');
 });
+
+test('a .sig file picked while a new local image is checked: the image lands with the verdict of that .sig file', async ({ page }) => {
+  await setup(page, { esp: { chipId: 9 } });
+  await advancedOn(page);
+  await walk(page, 'file', 'dial');
+  await connectEsp(page);
+  await pickFile(page, '#sigfile', 'dial.bin.sig', sigOf(IMAGES.dial));
+  await expect(page.locator('#sig-picked')).toHaveText('dial.bin.sig');
+  // The image's check against dial.bin.sig answers 1500ms late; other.sig is picked meanwhile.
+  await page.evaluate(() => {
+    const w = window as unknown as { __calls: number };
+    const verify = SubtleCrypto.prototype.verify;
+    w.__calls = 0;
+    SubtleCrypto.prototype.verify = function (this: SubtleCrypto, ...args: Parameters<SubtleCrypto['verify']>) {
+      const r = verify.apply(this, args);
+      const ms = w.__calls++ === 0 ? 1500 : 0;
+      return new Promise((res) => setTimeout(() => res(r), ms));
+    } as SubtleCrypto['verify'];
+  });
+  await pickFile(page, '#file', 'dial.bin', IMAGES.dial);
+  await page.waitForFunction(() => (window as unknown as { __calls: number }).__calls >= 1);
+  await pickFile(page, '#sigfile', 'other.sig', sigOf(IMAGES.panel));
+  await expect(page.locator('#image')).toContainText('dial.bin');
+  await expect(page.locator('#sig-state')).toHaveAttribute('data-state', 'mismatch');
+  await expect(page.locator('#sig-state')).toContainText('other.sig');
+  await page.waitForTimeout(1000);
+  await expect(page.locator('#sig-state')).toHaveAttribute('data-state', 'mismatch');
+  await expect(page.locator('#sig-picked')).toHaveText('other.sig');
+});

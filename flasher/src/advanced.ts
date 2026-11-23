@@ -53,8 +53,7 @@ export function keepBox(): string {
 }
 
 /** The signature of a local image: checked only against a .sig file the visitor picked. */
-async function localSig(bytes: Uint8Array): Promise<Img['sig']> {
-  const sig = st.localSig;
+async function localSig(bytes: Uint8Array, sig = st.localSig): Promise<Img['sig']> {
   if (!sig) return { state: 'unchecked', file: '' };
   return { state: sigShown(await verifySignature(RELEASE_KEY_PEM, bytes, sig.bytes)), file: sig.name };
 }
@@ -77,7 +76,14 @@ async function loadFile(file: File): Promise<void> {
       st.imageNote = bad;
     } else {
       const v = checkImage(b.chip, bytes, file.name);
-      const sig = await localSig(bytes);
+      // A .sig file picked while the check runs replaces the one it ran with:
+      // the verdict is the one of the .sig file selected when the image lands.
+      let sigUsed = st.localSig;
+      let sig = await localSig(bytes, sigUsed);
+      while (isLoad(seq) && st.localSig !== sigUsed) {
+        sigUsed = st.localSig;
+        sig = await localSig(bytes, sigUsed);
+      }
       if (!isLoad(seq)) return;
       log(`${file.name}: ${bytes.length} bytes, SHA-256 ${sha}, signature ${sig.state}`);
       const format = v.ok ? v.format : 'bin';
