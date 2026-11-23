@@ -1,0 +1,2122 @@
+{
+ "name": "hitec-precharge",
+ "lang": "en",
+ "product": "RP2350",
+ "brand": "precharge and sample",
+ "steps": 6,
+ "voice": {
+  "blend": {
+   "af_heart": 0.6,
+   "af_nicole": 0.4
+  },
+  "lang": "en-us",
+  "speed": 0.94
+ },
+ "music": "pachelbel-canon",
+ "music_gain": 0.5,
+ "scenes": [
+  {
+   "type": "case",
+   "model": "part",
+   "part": "rp2350_can",
+   "dur": 29.19,
+   "spin": [
+    [
+     0,
+     -70
+    ],
+    [
+     6.0,
+     0
+    ],
+    [
+     29.19,
+     12
+    ]
+   ],
+   "camera": [
+    [
+     0,
+     [
+      -186,
+      190,
+      114
+     ],
+     [
+      -36,
+      30,
+      -36
+     ]
+    ],
+    [
+     6.0,
+     [
+      -146,
+      150,
+      74
+     ],
+     [
+      -36,
+      30,
+      -32
+     ]
+    ],
+    [
+     8.5,
+     [
+      -78,
+      108,
+      86
+     ],
+     [
+      -4,
+      30,
+      10
+     ]
+    ],
+    [
+     29.19,
+     [
+      -74,
+      104,
+      84
+     ],
+     [
+      -4,
+      30,
+      10
+     ]
+    ]
+   ],
+   "title": {
+    "from": 0.3,
+    "to": 6.2,
+    "kicker": "RP2350 · one pin, several protocols",
+    "heading": "Precharge and sample",
+    "text": "Reading a wire that is only ever pulled low,<br>without a pull-up resistor."
+   },
+   "chips": [
+    {
+     "from": 6.6,
+     "to": 29.19,
+     "n": "i",
+     "text": "One pin, several protocols"
+    }
+   ],
+   "tags": [
+    {
+     "from": 9.0,
+     "to": 28.790000000000003,
+     "at": [
+      -8.9,
+      -1.5,
+      16.5
+     ],
+     "text": "one pin",
+     "side": "l",
+     "d": 90
+    }
+   ],
+   "labels": [
+    {
+     "from": 7.3,
+     "to": 28.790000000000003,
+     "anchor": [
+      0.05,
+      -3.5,
+      -1.9
+     ],
+     "at": [
+      1330,
+      250
+     ],
+     "size": "sm",
+     "title": "RP2350",
+     "text": "3.3 V pins, 150 MHz system clock. A pin that is not in use rests low on its internal pull-down."
+    }
+   ],
+   "say": [
+    {
+     "at": 7.0,
+     "text": "One pin of a microcontroller often speaks several protocols. On this R P 23 50, one pin sends pulses in one protocol, a fast digital stream in another, and in a third it talks both ways over a single wire. That third protocol seems to need a resistor the other two cannot live with."
+    }
+   ]
+  },
+  {
+   "type": "scope",
+   "figure": "hitec-precharge",
+   "dur": 26.63,
+   "chips": [
+    {
+     "from": 0,
+     "to": 26.63,
+     "n": 1,
+     "text": "A device that only pulls low"
+    }
+   ],
+   "panels": [
+    {
+     "id": "c",
+     "kind": "circuit",
+     "circuit": "line",
+     "box": [
+      56,
+      140,
+      1010,
+      520
+     ],
+     "show": {
+      "rpu": [
+       [
+        0,
+        0
+       ]
+      ],
+      "vsv": [
+       [
+        0,
+        0
+       ]
+      ],
+      "cl": [
+       [
+        0,
+        0
+       ]
+      ],
+      "drv": [
+       [
+        0,
+        0.25
+       ]
+      ],
+      "vio": [
+       [
+        0,
+        0.25
+       ]
+      ]
+     },
+     "set": {
+      "srv": [
+       [
+        0,
+        0
+       ],
+       [
+        3.8,
+        0
+       ],
+       [
+        4.2,
+        1
+       ],
+       [
+        7.2,
+        1
+       ],
+       [
+        7.6,
+        0
+       ]
+      ]
+     },
+     "lit": {
+      "rpd": [
+       [
+        0,
+        0
+       ],
+       [
+        11.7,
+        0
+       ],
+       [
+        12.2,
+        1
+       ],
+       [
+        26.63,
+        1
+       ]
+      ]
+     },
+     "tint": {
+      "rpd": "warn"
+     },
+     "flow": [
+      {
+       "from": 4.0,
+       "to": 7.3999999999999995,
+       "path": "low",
+       "style": "warn"
+      }
+     ],
+     "meters": [
+      {
+       "from": 16.2,
+       "to": 26.33,
+       "node": "line",
+       "value": [
+        [
+         0,
+         0
+        ]
+       ],
+       "style": "warn"
+      }
+     ]
+    },
+    {
+     "id": "p",
+     "kind": "plot",
+     "box": [
+      56,
+      680,
+      1808,
+      340
+     ],
+     "from": 11.2,
+     "to": 26.63,
+     "heading": "Signal wire · one answer byte, 0x69 · simulated",
+     "view": [
+      [
+       0,
+       [
+        0,
+        112847.28
+       ]
+      ]
+     ],
+     "y": [
+      -0.4,
+      3.8
+     ],
+     "ticks": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "unit": "V",
+     "traces": [
+      {
+       "series": "byte-servo",
+       "style": "muted",
+       "lane": [
+        0.0,
+        3.3
+       ],
+       "width": 2,
+       "label": "the device lets the wire go"
+      },
+      {
+       "series": "byte-bare",
+       "style": "warn",
+       "label": "the wire",
+       "from": 16.2,
+       "to": 26.63,
+       "reveal": [
+        [
+         16.2,
+         0
+        ],
+        [
+         19.7,
+         112847.28
+        ]
+       ]
+      }
+     ]
+    }
+   ],
+   "labels": [
+    {
+     "from": 1.1,
+     "to": 11.399999999999999,
+     "anchor": [
+      "c",
+      "srv"
+     ],
+     "at": [
+      1110,
+      170
+     ],
+     "title": "An open output",
+     "text": "Low: pulled to ground. High: released. The device never drives the wire high."
+    },
+    {
+     "from": 12.0,
+     "to": 26.23,
+     "anchor": [
+      "c",
+      "rpd"
+     ],
+     "at": [
+      1110,
+      170
+     ],
+     "style": "warn",
+     "title": "3 kΩ pull-down",
+     "text": "A released wire sits at <b>0 V</b>. Every bit of the answer reads low."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.8,
+     "text": "The device on that wire answers with an open output. For a low level it pulls the wire to ground. For a high level it lets the wire go."
+    },
+    {
+     "at": 11.7,
+     "text": "And inside the device, a pull-down of 3 kilohms sits on the wire. A wire that is let go falls to zero volts. The pin reads every bit as low: the answer is there, and it cannot be seen."
+    }
+   ]
+  },
+  {
+   "type": "scope",
+   "figure": "hitec-precharge",
+   "dur": 49.7,
+   "chips": [
+    {
+     "from": 0,
+     "to": 16.45,
+     "n": 2,
+     "text": "The pull-up resistor"
+    },
+    {
+     "from": 16.45,
+     "to": 49.7,
+     "n": 2,
+     "text": "Why the pull-up cannot stay"
+    }
+   ],
+   "panels": [
+    {
+     "id": "c",
+     "kind": "circuit",
+     "circuit": "line",
+     "box": [
+      56,
+      140,
+      1010,
+      520
+     ],
+     "show": {
+      "rpu": [
+       [
+        0,
+        0
+       ],
+       [
+        0.6,
+        0
+       ],
+       [
+        1.4,
+        1
+       ]
+      ],
+      "vsv": [
+       [
+        0,
+        0
+       ],
+       [
+        0.6,
+        0
+       ],
+       [
+        1.4,
+        1
+       ]
+      ],
+      "cl": [
+       [
+        0,
+        0
+       ]
+      ],
+      "drv": [
+       [
+        0,
+        0.25
+       ]
+      ],
+      "vio": [
+       [
+        0,
+        0.25
+       ]
+      ],
+      "servo": [
+       [
+        0,
+        1
+       ],
+       [
+        30.76,
+        1
+       ],
+       [
+        31.560000000000002,
+        0.15
+       ],
+       [
+        41.51,
+        0.15
+       ],
+       [
+        42.309999999999995,
+        1
+       ]
+      ],
+      "rpd": [
+       [
+        0,
+        1
+       ],
+       [
+        30.76,
+        1
+       ],
+       [
+        31.560000000000002,
+        0.1
+       ],
+       [
+        41.51,
+        0.1
+       ],
+       [
+        42.309999999999995,
+        1
+       ]
+      ],
+      "srv": [
+       [
+        0,
+        1
+       ],
+       [
+        30.76,
+        1
+       ],
+       [
+        31.560000000000002,
+        0.1
+       ],
+       [
+        41.51,
+        0.1
+       ],
+       [
+        42.309999999999995,
+        1
+       ]
+      ]
+     },
+     "lit": {
+      "rpu": [
+       [
+        0,
+        0
+       ],
+       [
+        1.4,
+        0
+       ],
+       [
+        1.9,
+        1
+       ],
+       [
+        49.7,
+        1
+       ]
+      ]
+     },
+     "tint": {
+      "rpu": "ok"
+     },
+     "flow": [
+      {
+       "from": 8.22,
+       "to": 30.76,
+       "path": "pullup",
+       "style": "ok"
+      }
+     ],
+     "meters": [
+      {
+       "from": 8.82,
+       "to": 16.25,
+       "node": "line",
+       "style": "ok",
+       "dy": -84,
+       "value": [
+        [
+         0,
+         0
+        ],
+        [
+         8.82,
+         0
+        ],
+        [
+         10.020000000000001,
+         2.88
+        ]
+       ]
+      },
+      {
+       "from": 16.45,
+       "to": 49.400000000000006,
+       "node": "line",
+       "style": "warn",
+       "dy": -84,
+       "value": [
+        [
+         0,
+         2.88
+        ],
+        [
+         30.76,
+         2.88
+        ],
+        [
+         31.96,
+         5.0
+        ],
+        [
+         41.51,
+         5.0
+        ],
+        [
+         42.71,
+         2.88
+        ]
+       ]
+      }
+     ]
+    },
+    {
+     "id": "p",
+     "kind": "plot",
+     "box": [
+      56,
+      680,
+      1808,
+      340
+     ],
+     "from": 7.720000000000001,
+     "to": 16.75,
+     "heading": "Signal wire · one answer byte, 0x69 · simulated",
+     "view": [
+      [
+       0,
+       [
+        0,
+        112847.28
+       ]
+      ]
+     ],
+     "y": [
+      -0.4,
+      3.8
+     ],
+     "ticks": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "unit": "V",
+     "traces": [
+      {
+       "series": "byte-pullup",
+       "style": "ok",
+       "label": "wire, 2.2 kΩ pull-up",
+       "reveal": [
+        [
+         8.22,
+         0
+        ],
+        [
+         12.22,
+         112847.28
+        ]
+       ]
+      }
+     ],
+     "lines": [
+      {
+       "from": 10.22,
+       "to": 16.75,
+       "y": 1.1,
+       "text": "input threshold",
+       "style": "muted"
+      }
+     ]
+    }
+   ],
+   "labels": [
+    {
+     "from": 1.4,
+     "to": 7.920000000000001,
+     "anchor": [
+      "c",
+      "rpu"
+     ],
+     "at": [
+      1110,
+      170
+     ],
+     "style": "ok",
+     "title": "2.2 kΩ pull-up",
+     "text": "From the signal wire to a 5 V supply."
+    },
+    {
+     "from": 8.520000000000001,
+     "to": 16.15,
+     "anchor": [
+      "c",
+      "line"
+     ],
+     "at": [
+      1110,
+      170
+     ],
+     "style": "ok",
+     "title": "A divider: 2.9 V",
+     "text": "5 V × 3 kΩ / (3 kΩ + 2.2 kΩ) = <b>2.88 V</b> on a released wire, 58 % of the supply."
+    },
+    {
+     "from": 16.75,
+     "to": 30.46,
+     "anchor": [
+      "c",
+      "line"
+     ],
+     "at": [
+      351,
+      700
+     ],
+     "side": "t",
+     "style": "warn",
+     "title": "The wire no longer rests low",
+     "text": "A released pin has only its internal pull-down, 50 to 80 kΩ. Against 2.2 kΩ it decides nothing."
+    },
+    {
+     "from": 31.060000000000002,
+     "to": 41.21,
+     "anchor": [
+      "c",
+      "rpu"
+     ],
+     "at": [
+      1110,
+      170
+     ],
+     "style": "warn",
+     "title": "5 V with nothing plugged in",
+     "text": "The wire follows the 5 V supply through the resistor, whatever protocol the pin is to speak next."
+    },
+    {
+     "from": 41.809999999999995,
+     "to": 49.300000000000004,
+     "anchor": [
+      "c",
+      "line"
+     ],
+     "at": [
+      351,
+      700
+     ],
+     "side": "t",
+     "title": "One pin, several protocols",
+     "text": "A pulse protocol and a digital stream rest on a low wire. The pull-up serves one protocol and changes the wire for all."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.8,
+     "text": "The textbook answer is a pull-up resistor: 2.2 kilohms from the wire to a 5 volt supply."
+    },
+    {
+     "at": 8.22,
+     "text": "Pull-up and pull-down form a divider. The released wire rises to 2.9 volts, and the answer appears."
+    },
+    {
+     "at": 16.45,
+     "text": "But a resistor is there all the time, for every protocol on the pin. Whenever the pin lets go, at reset or between two protocols, the wire no longer rests low. It sits at 2.9 volts."
+    },
+    {
+     "at": 30.76,
+     "text": "With nothing plugged in, it is the full 5 volts. The other protocols expect a wire that rests low, and a level the pin alone decides."
+    },
+    {
+     "at": 41.51,
+     "text": "One protocol needs the resistor. The others cannot have it. So the resistor cannot be fitted."
+    }
+   ]
+  },
+  {
+   "type": "scope",
+   "figure": "hitec-precharge",
+   "dur": 68.3,
+   "chips": [
+    {
+     "from": 0,
+     "to": 68.3,
+     "n": 3,
+     "text": "Precharge and sample"
+    }
+   ],
+   "panels": [
+    {
+     "id": "c",
+     "kind": "circuit",
+     "circuit": "line",
+     "box": [
+      56,
+      140,
+      1010,
+      520
+     ],
+     "show": {
+      "rpu": [
+       [
+        0,
+        0
+       ]
+      ],
+      "vsv": [
+       [
+        0,
+        0
+       ]
+      ]
+     },
+     "set": {
+      "drv": [
+       [
+        0,
+        0
+       ],
+       [
+        13.66,
+        0
+       ],
+       [
+        14.06,
+        1
+       ],
+       [
+        23.56,
+        1
+       ],
+       [
+        23.959999999999997,
+        0
+       ],
+       [
+        44.92,
+        0
+       ],
+       [
+        45.32,
+        1
+       ],
+       [
+        48.42,
+        1
+       ],
+       [
+        48.82,
+        0
+       ]
+      ],
+      "srv": [
+       [
+        0,
+        0
+       ],
+       [
+        42.92,
+        0
+       ],
+       [
+        43.42,
+        1
+       ],
+       [
+        68.3,
+        1
+       ]
+      ]
+     },
+     "lit": {
+      "drv": [
+       [
+        0,
+        0
+       ],
+       [
+        13.26,
+        0
+       ],
+       [
+        13.76,
+        1
+       ],
+       [
+        23.56,
+        1
+       ],
+       [
+        24.06,
+        0
+       ]
+      ],
+      "cl": [
+       [
+        0,
+        0
+       ],
+       [
+        16.259999999999998,
+        0
+       ],
+       [
+        16.759999999999998,
+        1
+       ],
+       [
+        35.06,
+        1
+       ],
+       [
+        35.56,
+        0
+       ]
+      ],
+      "rpd": [
+       [
+        0,
+        0
+       ],
+       [
+        25.56,
+        0
+       ],
+       [
+        26.06,
+        1
+       ],
+       [
+        35.06,
+        1
+       ],
+       [
+        35.56,
+        0
+       ]
+      ],
+      "in": [
+       [
+        0,
+        0
+       ],
+       [
+        35.06,
+        0
+       ],
+       [
+        35.56,
+        1
+       ],
+       [
+        42.92,
+        1
+       ],
+       [
+        43.42,
+        0
+       ]
+      ]
+     },
+     "tint": {
+      "drv": "",
+      "cl": "",
+      "rpd": "warn",
+      "in": "ok"
+     },
+     "flow": [
+      {
+       "from": 14.06,
+       "to": 23.56,
+       "path": "charge"
+      },
+      {
+       "from": 23.959999999999997,
+       "to": 36.06,
+       "path": "decay",
+       "style": "warn"
+      },
+      {
+       "from": 45.32,
+       "to": 48.620000000000005,
+       "path": "fight",
+       "style": "red"
+      }
+     ],
+     "meters": [
+      {
+       "from": 14.06,
+       "to": 42.72,
+       "node": "line",
+       "value": [
+        [
+         0,
+         0
+        ],
+        [
+         14.06,
+         0
+        ],
+        [
+         15.76,
+         3.25
+        ],
+        [
+         23.959999999999997,
+         3.25
+        ],
+        [
+         35.56,
+         1.93
+        ],
+        [
+         42.620000000000005,
+         1.93
+        ]
+       ]
+      },
+      {
+       "from": 45.32,
+       "to": 56.78,
+       "node": "line",
+       "style": "red",
+       "value": [
+        [
+         0,
+         0
+        ],
+        [
+         45.32,
+         0
+        ],
+        [
+         46.32,
+         1.39
+        ],
+        [
+         48.42,
+         1.39
+        ],
+        [
+         49.120000000000005,
+         0
+        ]
+       ]
+      }
+     ]
+    },
+    {
+     "id": "p",
+     "kind": "plot",
+     "box": [
+      56,
+      680,
+      1808,
+      340
+     ],
+     "from": 12.66,
+     "to": 68.3,
+     "heading": "Signal wire · one sample period, 1086.7 ns · simulated with ngspice",
+     "view": [
+      [
+       0,
+       [
+        0,
+        1187
+       ]
+      ],
+      [
+       42.92,
+       [
+        0,
+        1187
+       ]
+      ],
+      [
+       44.42,
+       [
+        60,
+        460
+       ]
+      ],
+      [
+       56.58,
+       [
+        60,
+        460
+       ]
+      ],
+      [
+       58.08,
+       [
+        0,
+        1187
+       ]
+      ]
+     ],
+     "y": [
+      -0.4,
+      3.8
+     ],
+     "ticks": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "unit": "V",
+     "traces": [
+      {
+       "series": "cycle",
+       "label": "device lets go: reads high",
+       "from": 13.86,
+       "to": 68.3,
+       "reveal": [
+        [
+         14.06,
+         100.0
+        ],
+        [
+         23.56,
+         200.0
+        ],
+        [
+         35.06,
+         313.33
+        ],
+        [
+         39.06,
+         1187
+        ]
+       ]
+      },
+      {
+       "series": "cycle-low",
+       "style": "red",
+       "label": "device pulls low: reads low",
+       "from": 45.120000000000005,
+       "to": 68.3,
+       "reveal": [
+        [
+         45.32,
+         100.0
+        ],
+        [
+         48.42,
+         200.0
+        ],
+        [
+         50.92,
+         1187
+        ]
+       ]
+      }
+     ],
+     "bands": [
+      {
+       "from": 13.86,
+       "to": 68.3,
+       "x": [
+        100.0,
+        200.0
+       ],
+       "text": "precharge 100.0 ns",
+       "dy": 188
+      }
+     ],
+     "lines": [
+      {
+       "from": 35.06,
+       "to": 68.3,
+       "x": 313.33,
+       "text": "sample, 113.3 ns after the release",
+       "style": "ok",
+       "dy": 60
+      },
+      {
+       "from": 36.56,
+       "to": 68.3,
+       "y": 1.1,
+       "text": "input threshold",
+       "style": "muted"
+      }
+     ]
+    }
+   ],
+   "labels": [
+    {
+     "from": 1.1,
+     "to": 12.959999999999999,
+     "anchor": [
+      "c",
+      "pad"
+     ],
+     "at": [
+      1110,
+      170
+     ],
+     "title": "Precharge and sample",
+     "text": "No resistor on the wire. The pad makes the high level, one sample at a time."
+    },
+    {
+     "from": 13.56,
+     "to": 23.259999999999998,
+     "anchor": [
+      "c",
+      "drv"
+     ],
+     "at": [
+      1110,
+      170
+     ],
+     "n": 1,
+     "title": "Drive high, 100.0 ns",
+     "text": "15 cycles of the 150 MHz system clock, at the pad's 2 mA drive strength."
+    },
+    {
+     "from": 23.86,
+     "to": 34.760000000000005,
+     "anchor": [
+      "c",
+      "rpd"
+     ],
+     "at": [
+      1110,
+      170
+     ],
+     "n": 2,
+     "style": "warn",
+     "title": "Let go",
+     "text": "3 kΩ × 72 pF = <b>216 ns</b>. The wire's own capacitance holds the level."
+    },
+    {
+     "from": 35.36,
+     "to": 42.620000000000005,
+     "anchor": [
+      "c",
+      "in"
+     ],
+     "at": [
+      1110,
+      170
+     ],
+     "n": 3,
+     "style": "ok",
+     "title": "Sample, 113.3 ns later",
+     "text": "17 cycles after the release. <b>1.93 V</b> on the wire: the bit is high."
+    },
+    {
+     "from": 43.22,
+     "to": 56.78,
+     "anchor": [
+      "c",
+      "srv"
+     ],
+     "at": [
+      1110,
+      170
+     ],
+     "style": "warn",
+     "title": "The device pulls low",
+     "text": "1.4 V while both drive, for 100 ns of every 1086.7 ns. At the sample the wire is at <b>0 V</b>."
+    },
+    {
+     "from": 57.379999999999995,
+     "to": 67.89999999999999,
+     "anchor": [
+      "c",
+      "pad"
+     ],
+     "at": [
+      1110,
+      170
+     ],
+     "title": "7 PIO instructions",
+     "text": "<b>set pindirs, 1</b> · <b>set pindirs, 0</b> · <b>in pins, 1</b> and 4 nop. 163 cycles a sample, 32 samples to a word."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.8,
+     "text": "There is another way to make the high level. The pin makes it itself, for an instant, only while it listens, and then looks at what the device does with it."
+    },
+    {
+     "at": 13.26,
+     "text": "The pad drives the wire high for 100 nanoseconds. That charges the capacitance of the wire and the device's input to 3.3 volts."
+    },
+    {
+     "at": 23.56,
+     "text": "Then the pad lets go. The charge drains through the device's 3 kilohm pull-down, and the voltage falls with a time constant of 216 nanoseconds."
+    },
+    {
+     "at": 35.06,
+     "text": "113 nanoseconds after the release, the pad samples the wire. It still holds 1.9 volts: a high."
+    },
+    {
+     "at": 42.92,
+     "text": "When the device pulls low, the picture changes. The pad lifts the wire only part of the way, and 10 nanoseconds after the release the wire is back at ground. The sample reads low."
+    },
+    {
+     "at": 57.08,
+     "text": "One precharge, one sample, every 1,087 nanoseconds. A second state machine of the RP2350's programmable I O does it in 7 instructions."
+    }
+   ]
+  },
+  {
+   "type": "scope",
+   "figure": "hitec-precharge",
+   "dur": 42.96,
+   "chips": [
+    {
+     "from": 0,
+     "to": 42.96,
+     "n": 4,
+     "text": "The sampling window"
+    }
+   ],
+   "panels": [
+    {
+     "id": "p",
+     "kind": "plot",
+     "box": [
+      56,
+      140,
+      1240,
+      840
+     ],
+     "heading": "Released wire after the precharge · time from the release",
+     "view": [
+      [
+       0,
+       [
+        -20,
+        630
+       ]
+      ]
+     ],
+     "y": [
+      -0.3,
+      3.7
+     ],
+     "ticks": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "unit": "V",
+     "traces": [
+      {
+       "series": "decay",
+       "label": "simulated: 3 kΩ and 72 pF",
+       "reveal": [
+        [
+         0.5,
+         0
+        ],
+        [
+         4.5,
+         630
+        ]
+       ]
+      }
+     ],
+     "bands": [
+      {
+       "from": 11.48,
+       "to": 42.96,
+       "x": [
+        40,
+        213.3
+       ],
+       "style": "ok",
+       "text": "measured: every read passes",
+       "dy": 120
+      },
+      {
+       "from": 16.98,
+       "to": 42.96,
+       "x": [
+        266.7,
+        630
+       ],
+       "style": "red",
+       "text": "measured: no read passes",
+       "dy": 120
+      }
+     ],
+     "lines": [
+      {
+       "from": 1.5,
+       "to": 42.96,
+       "y": 1.1,
+       "text": "input threshold",
+       "style": "muted"
+      },
+      {
+       "from": 25.23,
+       "to": 42.96,
+       "x": 234,
+       "text": "234 ns",
+       "style": "warn",
+       "dy": 170
+      },
+      {
+       "from": 32.69,
+       "to": 42.96,
+       "x": 113.3,
+       "text": "sample: 113.3 ns",
+       "style": "white",
+       "dy": 220
+      }
+     ]
+    }
+   ],
+   "labels": [
+    {
+     "from": 1.1,
+     "to": 11.18,
+     "anchor": [
+      "p",
+      610,
+      1.1
+     ],
+     "at": [
+      1340,
+      200
+     ],
+     "title": "Two limits",
+     "text": "Early: a low bit must have fallen. Late: a high bit must still be above the threshold."
+    },
+    {
+     "from": 11.780000000000001,
+     "to": 21.93,
+     "anchor": [
+      "p",
+      126,
+      3.05
+     ],
+     "at": [
+      1340,
+      200
+     ],
+     "style": "ok",
+     "title": "Measured",
+     "text": "RP2350 at 150 MHz, no pull-up, device supply 5.0 V. Sample 40 to 213 ns after the release: <b>5 of 5</b> reads at each setting. 267 ns: <b>0 of 5</b>."
+    },
+    {
+     "from": 22.53,
+     "to": 32.39,
+     "anchor": [
+      "p",
+      234,
+      1.1
+     ],
+     "at": [
+      1340,
+      200
+     ],
+     "style": "warn",
+     "title": "Simulation and measurement agree",
+     "text": "The simulated wire crosses the threshold between the last setting that passed, 213 ns, and the first that failed, 267 ns."
+    },
+    {
+     "from": 32.989999999999995,
+     "to": 38.17,
+     "anchor": [
+      "p",
+      113.3,
+      1.93
+     ],
+     "at": [
+      1340,
+      200
+     ],
+     "title": "113.3 ns",
+     "text": "17 clock cycles. The window is 173 ns wide; the sample has 73 ns of it before and 100 ns after."
+    },
+    {
+     "from": 38.769999999999996,
+     "to": 42.56,
+     "anchor": [
+      "p",
+      126,
+      3.0
+     ],
+     "at": [
+      1340,
+      200
+     ],
+     "style": "ok",
+     "title": "133 of 133 reads",
+     "text": "Read by precharge and sample, equal to the values a reference reader gives."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.8,
+     "text": "How long may the pad wait before it samples? Too early, and a low bit has not fallen yet. Too late, and a high bit has drained away."
+    },
+    {
+     "at": 11.48,
+     "text": "On the device measured here, every read passed with the sample 40 to 213 nanoseconds after the release. At 267 nanoseconds, none did."
+    },
+    {
+     "at": 22.23,
+     "text": "The simulation places the edge in the same spot: the released wire crosses the input threshold 234 nanoseconds after the release."
+    },
+    {
+     "at": 32.69,
+     "text": "The firmware samples at 113 nanoseconds, the middle of the window."
+    },
+    {
+     "at": 38.47,
+     "text": "With these values, 133 of 133 reads passed."
+    }
+   ]
+  },
+  {
+   "type": "scope",
+   "figure": "hitec-precharge",
+   "dur": 39.69,
+   "chips": [
+    {
+     "from": 0,
+     "to": 39.69,
+     "n": 5,
+     "text": "One byte, 80 samples"
+    }
+   ],
+   "panels": [
+    {
+     "id": "p",
+     "kind": "plot",
+     "box": [
+      56,
+      140,
+      1808,
+      620
+     ],
+     "heading": "Signal wire, read by precharge and sample · answer byte 0x69 · simulated with ngspice",
+     "view": [
+      [
+       0,
+       [
+        0,
+        112847.28
+       ]
+      ],
+      [
+       19.21,
+       [
+        0,
+        112847.28
+       ]
+      ],
+      [
+       22.21,
+       [
+        39930.576,
+        64236.144
+       ]
+      ],
+      [
+       27.15,
+       [
+        39930.576,
+        64236.144
+       ]
+      ],
+      [
+       29.65,
+       [
+        0,
+        112847.28
+       ]
+      ]
+     ],
+     "y": [
+      -2.4,
+      3.9
+     ],
+     "ticks": [
+      0,
+      2,
+      3,
+      [
+       1.1,
+       "input"
+      ],
+      [
+       -1.2,
+       "sampled"
+      ]
+     ],
+     "unit": "V",
+     "traces": [
+      {
+       "series": "byte-precharge",
+       "label": "signal wire",
+       "width": 2.5,
+       "reveal": [
+        [
+         0.5,
+         0
+        ],
+        [
+         5.8,
+         112847.28
+        ]
+       ]
+      },
+      {
+       "series": "byte-points",
+       "points": true,
+       "on": "byte-precharge",
+       "style": "ok",
+       "from": 8.22,
+       "to": 39.69,
+       "r": 5
+      },
+      {
+       "series": "byte-samples",
+       "style": "ok",
+       "lane": [
+        -1.9,
+        -0.6
+       ],
+       "label": "samples",
+       "from": 9.22,
+       "to": 39.69,
+       "reveal": [
+        [
+         9.22,
+         0
+        ],
+        [
+         14.22,
+         112847.28
+        ]
+       ]
+      }
+     ],
+     "lines": [
+      {
+       "from": 8.22,
+       "to": 39.69,
+       "y": 1.1,
+       "text": "",
+       "style": "muted"
+      }
+     ],
+     "bands": [
+      {
+       "from": 21.71,
+       "to": 27.349999999999998,
+       "x": [
+        43402.8,
+        52083.36
+       ],
+       "style": "",
+       "text": "one bit, 8.68 µs",
+       "dy": 60
+      }
+     ]
+    }
+   ],
+   "labels": [
+    {
+     "from": 1.1,
+     "to": 7.920000000000001,
+     "anchor": [
+      "p",
+      21701.399999999998,
+      3.2
+     ],
+     "at": [
+      270,
+      790
+     ],
+     "side": "t",
+     "size": "sm",
+     "title": "Start bit",
+     "text": "Inside a frame the wire rests low. The start bit is high."
+    },
+    {
+     "from": 8.520000000000001,
+     "to": 19.41,
+     "anchor": [
+      "p",
+      65104.2,
+      1.93
+     ],
+     "at": [
+      1330,
+      790
+     ],
+     "side": "t",
+     "size": "sm",
+     "style": "ok",
+     "title": "Tall spike, high sample",
+     "text": "A filled dot is a sample that read high, an empty one a low."
+    },
+    {
+     "from": 20.01,
+     "to": 27.349999999999998,
+     "anchor": [
+      "p",
+      47743.08,
+      1.93
+     ],
+     "at": [
+      1330,
+      790
+     ],
+     "side": "t",
+     "size": "sm",
+     "title": "7.99 samples a bit",
+     "text": "163 clock cycles a sample, 1086.7 ns, against a bit of 8680.6 ns."
+    },
+    {
+     "from": 27.95,
+     "to": 39.29,
+     "anchor": [
+      "p",
+      73784.76,
+      -1.2
+     ],
+     "at": [
+      1330,
+      790
+     ],
+     "side": "t",
+     "size": "sm",
+     "style": "ok",
+     "title": "Inverted 8N1",
+     "text": "8 data bits, no parity, 1 stop bit. The device's bit time may be 4 % short or long."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.8,
+     "text": "Here is one answer byte, as the precharge receiver sees it. Each spike is one precharge."
+    },
+    {
+     "at": 8.22,
+     "text": "Where the device lets the wire go, the spikes are tall and the samples read high. Where it pulls low, they stay short and the samples read low."
+    },
+    {
+     "at": 19.71,
+     "text": "A bit lasts 8.68 microseconds, and the pad samples every 1.09 microseconds: 8 samples to a bit."
+    },
+    {
+     "at": 27.65,
+     "text": "The decoder takes the samples as an inverted serial byte and reads the middle of each bit. It hands on the same bytes a pull-up would have given."
+    }
+   ]
+  },
+  {
+   "type": "scope",
+   "figure": "hitec-precharge",
+   "dur": 57.71,
+   "chips": [
+    {
+     "from": 0,
+     "to": 57.71,
+     "n": 6,
+     "text": "On the logic analyser"
+    }
+   ],
+   "panels": [
+    {
+     "id": "a",
+     "kind": "plot",
+     "box": [
+      56,
+      140,
+      1808,
+      470
+     ],
+     "heading": "Signal wire · one request and its answer · logic analyser, 200 MHz, threshold 1.4 V",
+     "view": [
+      [
+       0,
+       [
+        0,
+        9700000.0
+       ]
+      ],
+      [
+       30.07,
+       [
+        0,
+        9700000.0
+       ]
+      ],
+      [
+       32.07,
+       [
+        7849595.0,
+        8669595.0
+       ]
+      ],
+      [
+       32.370000000000005,
+       [
+        7849595.0,
+        8669595.0
+       ]
+      ],
+      [
+       34.370000000000005,
+       [
+        7903595.0,
+        8001595.0
+       ]
+      ],
+      [
+       37.27,
+       [
+        7903595.0,
+        8001595.0
+       ]
+      ],
+      [
+       39.27,
+       [
+        7949525.576,
+        7970358.92
+       ]
+      ],
+      [
+       57.71,
+       [
+        7949525.576,
+        7970358.92
+       ]
+      ]
+     ],
+     "y": [
+      0,
+      9.6
+     ],
+     "ticks": [
+      [
+       7.6,
+       "pull-up"
+      ],
+      [
+       4.6,
+       "none"
+      ],
+      [
+       1.6,
+       "precharge"
+      ]
+     ],
+     "traces": [
+      {
+       "series": "capture-pullup",
+       "style": "ok",
+       "lane": [
+        6.9,
+        8.4
+       ],
+       "width": 3,
+       "from": 5.3,
+       "to": 57.71,
+       "reveal": [
+        [
+         5.5,
+         0
+        ],
+        [
+         14.42,
+         9700000.0
+        ]
+       ]
+      },
+      {
+       "series": "capture-bare",
+       "style": "warn",
+       "lane": [
+        3.9,
+        5.4
+       ],
+       "width": 3,
+       "from": 19.779999999999998,
+       "to": 57.71,
+       "reveal": [
+        [
+         20.08,
+         0
+        ],
+        [
+         23.08,
+         9700000.0
+        ]
+       ]
+      },
+      {
+       "series": "capture-pre",
+       "style": "",
+       "lane": [
+        0.9,
+        2.4
+       ],
+       "width": 2.5,
+       "shift": 153820.0,
+       "from": 27.27,
+       "to": 57.71,
+       "reveal": [
+        [
+         27.57,
+         0
+        ],
+        [
+         30.07,
+         9700000.0
+        ]
+       ]
+      }
+     ],
+     "bands": [
+      {
+       "from": 11.92,
+       "to": 30.57,
+       "x": [
+        1117000.0,
+        1551000.0
+       ],
+       "style": "ok",
+       "text": "request",
+       "dy": 36
+      },
+      {
+       "from": 13.92,
+       "to": 30.57,
+       "x": [
+        7909595.0,
+        8603595.0
+       ],
+       "style": "ok",
+       "text": "answer",
+       "dy": 36
+      }
+     ]
+    },
+    {
+     "id": "b",
+     "kind": "plot",
+     "box": [
+      56,
+      630,
+      1808,
+      350
+     ],
+     "from": 45.91,
+     "to": 57.71,
+     "heading": "The same pulses, simulated with ngspice · dashed: the analyser's threshold",
+     "view": [
+      [
+       0,
+       [
+        7949525.576,
+        7970358.92
+       ]
+      ]
+     ],
+     "y": [
+      -0.3,
+      3.7
+     ],
+     "ticks": [
+      0,
+      2,
+      3,
+      [
+       1.4,
+       "1.4 V"
+      ]
+     ],
+     "unit": "V",
+     "traces": [
+      {
+       "series": "byte-precharge",
+       "shift": 7891908.33,
+       "width": 3,
+       "label": "simulated wire",
+       "from": 46.11,
+       "to": 57.71,
+       "reveal": [
+        [
+         46.41,
+         7949525.576
+        ],
+        [
+         49.41,
+         7970358.92
+        ]
+       ]
+      }
+     ],
+     "lines": [
+      {
+       "y": 1.4,
+       "text": "",
+       "style": "warn"
+      }
+     ]
+    }
+   ],
+   "labels": [
+    {
+     "from": 1.1,
+     "to": 9.32,
+     "anchor": [
+      960,
+      400
+     ],
+     "at": [
+      720,
+      700
+     ],
+     "side": "t",
+     "title": "Kingst LA2016",
+     "text": "One channel on the signal wire, 5 ns a sample. It reads the wire as above or below 1.4 V. Device supply 5.0 V."
+    },
+    {
+     "from": 10.22,
+     "to": 19.779999999999998,
+     "anchor": [
+      "a",
+      4909595.0,
+      7.6
+     ],
+     "at": [
+      720,
+      700
+     ],
+     "side": "t",
+     "style": "ok",
+     "title": "Pull-up fitted, 2.2 kΩ",
+     "text": "Request <b>96 00 32 00 32</b>, answer <b>69 00 32 02 00 00 34 00</b>. The answer starts 6.358 ms after the request ends."
+    },
+    {
+     "from": 20.38,
+     "to": 27.27,
+     "anchor": [
+      "a",
+      4800000.0,
+      4.6
+     ],
+     "at": [
+      720,
+      700
+     ],
+     "side": "t",
+     "style": "warn",
+     "title": "No pull-up, no precharge",
+     "text": "0 edges in 10 s. The read finds no answer."
+    },
+    {
+     "from": 27.87,
+     "to": 32.27,
+     "anchor": [
+      "a",
+      8209595.0,
+      1.6
+     ],
+     "at": [
+      720,
+      700
+     ],
+     "side": "t",
+     "title": "No pull-up, precharge",
+     "text": "The same answer, read 3 of 3 times: <b>69 00 32 02 00 00 34 00</b>."
+    },
+    {
+     "from": 39.57,
+     "to": 45.809999999999995,
+     "anchor": [
+      "a",
+      7955601.968,
+      2.4
+     ],
+     "at": [
+      720,
+      700
+     ],
+     "side": "t",
+     "title": "280 ns above 1.4 V",
+     "text": "Period 1086.5 ns measured, 1086.7 ns by design. A pulse against the device's low level reads 0 to 20 ns, or not at all."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.8,
+     "text": "Now the real wire, on a logic analyser at 200 megasamples per second. The same request is sent in three setups."
+    },
+    {
+     "at": 9.92,
+     "text": "With the pull-up resistor fitted, request and answer are plain levels: 5 bytes out and, 6.4 milliseconds later, 8 bytes back."
+    },
+    {
+     "at": 20.08,
+     "text": "Without the resistor, and without precharge, the wire never moves. No answer can be read."
+    },
+    {
+     "at": 27.57,
+     "text": "With precharge, the answer is there, as a train of pulses."
+    },
+    {
+     "at": 32.77,
+     "text": "One pulse every 1,087 nanoseconds. A wire that is let go holds each pulse above the analyser's threshold for 280 nanoseconds. Where the device pulls low, the pulse is gone."
+    },
+    {
+     "at": 46.41,
+     "text": "The simulated wire, read at the same threshold, gives the same picture. And the bytes are the same 8, with the resistor and without it."
+    }
+   ]
+  },
+  {
+   "type": "end",
+   "dur": 12,
+   "heading": "Precharge and sample",
+   "items": [
+    "Drive the wire high for 100.0 ns",
+    "Let go; 3 kΩ and 72 pF hold the level",
+    "Sample 113.3 ns after the release",
+    "No pull-up: the pin's other protocols are untouched"
+   ],
+   "say": "Precharge and sample. The pin makes the high level itself, and only while it listens. No resistor is fitted, and the pin's other protocols never see a pull-up."
+  }
+ ]
+}

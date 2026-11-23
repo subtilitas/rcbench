@@ -1,0 +1,1294 @@
+{
+ "name": "auto-rudder-de",
+ "lang": "de",
+ "brand": "Ruder Auto",
+ "steps": 4,
+ "dial_base": true,
+ "chapters": [
+  "Sensor befestigen",
+  "Verbinden",
+  "Der Dial",
+  "RUDER AUTO"
+ ],
+ "music": "pachelbel-canon",
+ "music_gain": 0.5,
+ "voice": {
+  "engine": "piper",
+  "name": "de_DE-thorsten-high",
+  "speed": 1.0
+ },
+ "scenes": [
+  {
+   "type": "case",
+   "model": "rudder",
+   "dur": 50.24,
+   "run": {
+    "kind": "nav",
+    "view": "overview",
+    "screen": "overview",
+    "from": 0.2,
+    "to": 50.04,
+    "ops": [
+     [
+      48.24,
+      "t1"
+     ]
+    ]
+   },
+   "faces": [
+    [
+     0,
+     "waiting"
+    ]
+   ],
+   "camera": [
+    [
+     0,
+     [
+      30,
+      470,
+      560
+     ],
+     [
+      0,
+      20,
+      110
+     ]
+    ],
+    [
+     17.08,
+     [
+      30,
+      470,
+      560
+     ],
+     [
+      0,
+      20,
+      110
+     ]
+    ],
+    [
+     19.28,
+     [
+      -60,
+      210,
+      520
+     ],
+     [
+      -40,
+      16,
+      205
+     ]
+    ],
+    [
+     29.919999999999998,
+     [
+      -60,
+      210,
+      520
+     ],
+     [
+      -40,
+      16,
+      205
+     ]
+    ],
+    [
+     31.919999999999998,
+     [
+      150,
+      105,
+      400
+     ],
+     [
+      55,
+      20,
+      200
+     ]
+    ],
+    [
+     44.58,
+     [
+      150,
+      105,
+      400
+     ],
+     [
+      55,
+      20,
+      200
+     ]
+    ],
+    [
+     46.68,
+     [
+      30,
+      470,
+      560
+     ],
+     [
+      0,
+      20,
+      110
+     ]
+    ],
+    [
+     50.24,
+     [
+      30,
+      470,
+      560
+     ],
+     [
+      0,
+      20,
+      110
+     ]
+    ]
+   ],
+   "parts": {
+    "skin": [
+     [
+      0,
+      1
+     ],
+     [
+      17.68,
+      1
+     ],
+     [
+      18.88,
+      0
+     ],
+     [
+      29.12,
+      0
+     ],
+     [
+      30.32,
+      1
+     ]
+    ],
+    "tape": [
+     [
+      0,
+      1
+     ],
+     [
+      32.12,
+      1
+     ],
+     [
+      33.519999999999996,
+      0
+     ]
+    ],
+    "imu": [
+     [
+      0,
+      1
+     ],
+     [
+      35.76,
+      1
+     ],
+     [
+      37.36,
+      0
+     ]
+    ],
+    "lead": [
+     [
+      0,
+      1
+     ],
+     [
+      45.68,
+      1
+     ],
+     [
+      48.08,
+      0
+     ]
+    ]
+   },
+   "title": {
+    "from": 0.4,
+    "to": 16.68,
+    "kicker": "rcbench · Servo",
+    "heading": "Ruder Auto",
+    "text": "Die Bench stellt die Endpunkte eines Servos<br>auf den Ausschlag des Ruders ein."
+   },
+   "chips": [
+    {
+     "from": 17.68,
+     "to": 30.52,
+     "n": "i",
+     "text": "Das Ruder und sein Servo"
+    },
+    {
+     "from": 30.52,
+     "to": 50.24,
+     "n": 1,
+     "text": "Sensor befestigen"
+    }
+   ],
+   "labels": [
+    {
+     "from": 17.88,
+     "to": 29.52,
+     "anchor": "servo",
+     "at": [
+      120,
+      250
+     ],
+     "side": "r",
+     "n": "i",
+     "size": "sm",
+     "title": "KST X10 auf seinem Rahmen",
+     "text": "Unter der oberen Schale, mit Doppelhebel."
+    },
+    {
+     "from": 17.88,
+     "to": 29.52,
+     "anchor": "rod",
+     "at": [
+      1330,
+      300
+     ],
+     "n": "i",
+     "size": "sm",
+     "title": "Schubstange und Ruderhorn",
+     "text": "Die Stange tritt durch einen Schlitz in der Schale aus."
+    },
+    {
+     "from": 30.72,
+     "to": 34.36,
+     "anchor": "tape",
+     "at": [
+      140,
+      300
+     ],
+     "side": "r",
+     "n": 1,
+     "title": "Gecko Tape",
+     "text": "Ein Pad unter der ganzen Grundfläche des Sensors. Es hält auf der Schale und löst sich ohne Rückstand."
+    },
+    {
+     "from": 35.56,
+     "to": 44.08,
+     "anchor": "imu",
+     "at": [
+      140,
+      300
+     ],
+     "side": "r",
+     "n": 1,
+     "title": "IMU auf dem Ruder",
+     "text": "Ein WitMotion-Sensor. Er sitzt auf der Klappe und meldet ihren Winkel über Bluetooth."
+    },
+    {
+     "from": 35.56,
+     "to": 44.08,
+     "anchor": "hinge",
+     "at": [
+      1330,
+      650
+     ],
+     "side": "t",
+     "n": 1,
+     "size": "sm",
+     "style": "warn",
+     "title": "Scharnierlinie",
+     "text": "Die X- oder Y-Achse des Sensors liegt entlang dieser Linie."
+    },
+    {
+     "from": 45.28,
+     "to": 49.24,
+     "anchor": "lead",
+     "at": [
+      150,
+      150
+     ],
+     "side": "r",
+     "n": 1,
+     "size": "sm",
+     "title": "Das Servokabel",
+     "text": "In einen Programmier-Port der Bench: PROG-PORT 1 bis 4."
+    }
+   ],
+   "say": [
+    {
+     "at": 1.0,
+     "text": "Dieses Video zeigt, wie die rcbench die Ausschläge eines Ruders einstellt. Die Bench steuert das Servo, misst den Winkel des Ruders mit einem Sensor und programmiert die Endpunkte des Servos, bis beide Ausschläge stimmen."
+    },
+    {
+     "at": 17.68,
+     "text": "Das Beispiel ist eine Klappe in einem Flügelabschnitt. Ein KST X10 liegt unter der Schale auf einem Rahmen mit Gegenlager und bewegt die Klappe über eine Schubstange."
+    },
+    {
+     "at": 30.52,
+     "text": "Schritt 1. Ein Pad Gecko Tape auf die Klappe kleben."
+    },
+    {
+     "at": 35.36,
+     "text": "Den Sensor auf das Pad drücken. Seine X- oder Y-Achse muss entlang der Scharnierlinie liegen. Die Z-Achse lehnt die Bench ab."
+    },
+    {
+     "at": 45.08,
+     "text": "Das Servo in einen Programmier-Port der Bench stecken."
+    }
+   ]
+  },
+  {
+   "type": "case",
+   "model": "rudder",
+   "dur": 33.6,
+   "faces": [
+    [
+     0,
+     "navigation"
+    ],
+    [
+     4.6,
+     "other-imu-safe"
+    ],
+    [
+     22.48,
+     "navigation"
+    ],
+    [
+     25.88,
+     "other-ruder-safe"
+    ]
+   ],
+   "panel": [
+    [
+     0,
+     "overview"
+    ],
+    [
+     3.2,
+     "setup"
+    ],
+    [
+     4.6,
+     "imu"
+    ],
+    [
+     6.6,
+     "imu-scan"
+    ],
+    [
+     9.0,
+     "imu-connected"
+    ],
+    [
+     22.48,
+     "setup"
+    ],
+    [
+     23.48,
+     "overview"
+    ],
+    [
+     24.68,
+     "servo-hub-rbmod-port"
+    ],
+    [
+     25.88,
+     "servo-rudder-rbmod"
+    ],
+    [
+     27.68,
+     "servo-rudder-angle-rbmod"
+    ]
+   ],
+   "camera": [
+    [
+     0,
+     [
+      30,
+      470,
+      560
+     ],
+     [
+      0,
+      20,
+      110
+     ]
+    ],
+    [
+     1.6,
+     [
+      0,
+      300,
+      105
+     ],
+     [
+      0,
+      30,
+      6
+     ]
+    ],
+    [
+     33.6,
+     [
+      0,
+      300,
+      105
+     ],
+     [
+      0,
+      30,
+      6
+     ]
+    ]
+   ],
+   "touches": [
+    {
+     "at": 2.8,
+     "on": "panel",
+     "xy": [
+      890,
+      460
+     ],
+     "action": "tap"
+    },
+    {
+     "at": 4.2,
+     "on": "panel",
+     "xy": [
+      174,
+      415
+     ],
+     "action": "tap"
+    },
+    {
+     "at": 6.2,
+     "on": "panel",
+     "xy": [
+      245,
+      103
+     ],
+     "action": "tap"
+    },
+    {
+     "at": 8.6,
+     "on": "panel",
+     "xy": [
+      330,
+      128
+     ],
+     "action": "tap"
+    },
+    {
+     "at": 22.08,
+     "on": "panel",
+     "xy": [
+      60,
+      30
+     ],
+     "action": "tap"
+    },
+    {
+     "at": 23.08,
+     "on": "panel",
+     "xy": [
+      75,
+      30
+     ],
+     "action": "tap"
+    },
+    {
+     "at": 24.28,
+     "on": "panel",
+     "xy": [
+      384,
+      195
+     ],
+     "action": "tap"
+    },
+    {
+     "at": 25.48,
+     "on": "panel",
+     "xy": [
+      512,
+      275
+     ],
+     "action": "tap"
+    },
+    {
+     "at": 27.28,
+     "on": "panel",
+     "xy": [
+      880,
+      200
+     ],
+     "action": "tap"
+    },
+    {
+     "at": 29.48,
+     "on": "panel",
+     "xy": [
+      316,
+      202
+     ],
+     "action": "tap"
+    }
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 33.6,
+     "n": 2,
+     "text": "Sensor verbinden"
+    }
+   ],
+   "labels": [
+    {
+     "from": 10.84,
+     "to": 20.88,
+     "anchor": {
+      "pixel": [
+       770,
+       104
+      ]
+     },
+     "at": [
+      1420,
+      300
+     ],
+     "n": 2,
+     "size": "sm",
+     "title": "Einmal gebunden",
+     "text": "Die Bench speichert die Adresse des Sensors. Nach einem Neustart oder einem Verbindungsabbruch verbindet sie sich wieder mit diesem Sensor, ohne Suche."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.6,
+     "text": "Schritt 2. Den Sensor verbinden. Im Menü Setup öffnen, dann IMU. Auf Sensoren suchen tippen und in der Liste auf den eigenen Sensor."
+    },
+    {
+     "at": 10.64,
+     "text": "Die Bench behält diese Bindung. Ab jetzt genügt es, den Sensor einzuschalten: Die Bench verbindet sich von selbst, ohne Suche."
+    },
+    {
+     "at": 21.88,
+     "text": "Zurück ins Menü, dann Servo öffnen und Ruder. Auf die Zeile Winkel tippen. Die Liste bietet die gefundenen Sensoren an. Den eigenen als Winkelquelle wählen."
+    }
+   ]
+  },
+  {
+   "type": "case",
+   "model": "rudder",
+   "dur": 24.76,
+   "faces": [
+    [
+     0,
+     "navigation"
+    ]
+   ],
+   "panel": [
+    [
+     0,
+     "servo-hub-rbmod-port"
+    ]
+   ],
+   "run": {
+    "kind": "servo",
+    "from": 1.4,
+    "to": 24.360000000000003,
+    "angle": [
+     [
+      10.04,
+      0
+     ],
+     [
+      12.84,
+      30
+     ],
+     [
+      14.64,
+      30
+     ],
+     [
+      17.08,
+      30
+     ],
+     [
+      20.28,
+      -30
+     ],
+     [
+      21.28,
+      -30
+     ],
+     [
+      22.88,
+      0
+     ]
+    ]
+   },
+   "deflect": [
+    [
+     10.04,
+     0.0
+    ],
+    [
+     10.51,
+     2.69
+    ],
+    [
+     10.97,
+     5.3
+    ],
+    [
+     11.44,
+     7.81
+    ],
+    [
+     11.91,
+     10.21
+    ],
+    [
+     12.37,
+     12.5
+    ],
+    [
+     12.84,
+     14.66
+    ],
+    [
+     13.14,
+     14.66
+    ],
+    [
+     13.44,
+     14.66
+    ],
+    [
+     13.74,
+     14.66
+    ],
+    [
+     14.04,
+     14.66
+    ],
+    [
+     14.34,
+     14.66
+    ],
+    [
+     14.64,
+     14.66
+    ],
+    [
+     15.05,
+     14.66
+    ],
+    [
+     15.45,
+     14.66
+    ],
+    [
+     15.86,
+     14.66
+    ],
+    [
+     16.27,
+     14.66
+    ],
+    [
+     16.67,
+     14.66
+    ],
+    [
+     17.08,
+     14.66
+    ],
+    [
+     17.61,
+     10.21
+    ],
+    [
+     18.15,
+     5.3
+    ],
+    [
+     18.68,
+     0.0
+    ],
+    [
+     19.21,
+     -5.58
+    ],
+    [
+     19.75,
+     -11.34
+    ],
+    [
+     20.28,
+     -17.14
+    ],
+    [
+     20.45,
+     -17.14
+    ],
+    [
+     20.61,
+     -17.14
+    ],
+    [
+     20.78,
+     -17.14
+    ],
+    [
+     20.95,
+     -17.14
+    ],
+    [
+     21.11,
+     -17.14
+    ],
+    [
+     21.28,
+     -17.14
+    ],
+    [
+     21.55,
+     -14.24
+    ],
+    [
+     21.81,
+     -11.34
+    ],
+    [
+     22.08,
+     -8.45
+    ],
+    [
+     22.35,
+     -5.58
+    ],
+    [
+     22.61,
+     -2.76
+    ],
+    [
+     22.88,
+     0.0
+    ]
+   ],
+   "parts": {
+    "stand": [
+     [
+      0,
+      0
+     ],
+     [
+      0.4,
+      0
+     ],
+     [
+      2.2,
+      1
+     ]
+    ],
+    "tip": [
+     [
+      0,
+      0
+     ],
+     [
+      0.8,
+      0
+     ],
+     [
+      2.4,
+      1
+     ]
+    ]
+   },
+   "camera": [
+    [
+     0,
+     [
+      0,
+      300,
+      105
+     ],
+     [
+      0,
+      30,
+      6
+     ]
+    ],
+    [
+     0.4,
+     [
+      0,
+      300,
+      105
+     ],
+     [
+      0,
+      30,
+      6
+     ]
+    ],
+    [
+     2.4,
+     [
+      120,
+      150,
+      540
+     ],
+     [
+      40,
+      45,
+      110
+     ]
+    ],
+    [
+     5.0,
+     [
+      120,
+      150,
+      540
+     ],
+     [
+      40,
+      45,
+      110
+     ]
+    ],
+    [
+     6.6,
+     [
+      150,
+      150,
+      330
+     ],
+     [
+      140,
+      45,
+      150
+     ]
+    ],
+    [
+     11.04,
+     [
+      150,
+      150,
+      330
+     ],
+     [
+      140,
+      45,
+      150
+     ]
+    ],
+    [
+     12.64,
+     [
+      120,
+      150,
+      540
+     ],
+     [
+      40,
+      45,
+      110
+     ]
+    ],
+    [
+     24.76,
+     [
+      120,
+      150,
+      540
+     ],
+     [
+      40,
+      45,
+      110
+     ]
+    ]
+   ],
+   "touches": [
+    {
+     "at": 1.0,
+     "on": "panel",
+     "xy": [
+      176,
+      130
+     ],
+     "action": "tap"
+    },
+    {
+     "at": 6.8,
+     "on": "dial",
+     "xy": [
+      120,
+      120
+     ],
+     "action": "hold"
+    }
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 24.76,
+     "n": 3,
+     "text": "Das Ruder mit dem Dial bewegen"
+    }
+   ],
+   "labels": [
+    {
+     "from": 9.64,
+     "to": 15.68,
+     "anchor": "knob",
+     "at": [
+      1380,
+      250
+     ],
+     "side": "b",
+     "n": 3,
+     "size": "sm",
+     "title": "M5Stack Dial",
+     "text": "Ein Funk-Drehknopf. Eine Raste ist 1° am Servo."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.6,
+     "text": "Schritt 3. Das Ruder von Hand mit dem Dial bewegen. Servo Live öffnen und zum Scharfschalten das Display des Dial halten."
+    },
+    {
+     "at": 9.44,
+     "text": "Den Knopf drehen. Jede Raste bewegt das Servo um ein Grad, und das Ruder folgt."
+    },
+    {
+     "at": 16.68,
+     "text": "Prüfen, dass das Ruder nach beiden Seiten frei läuft, dann zurück in die Mitte stellen."
+    }
+   ]
+  },
+  {
+   "type": "case",
+   "model": "rudder",
+   "dur": 179.45,
+   "faces": [
+    [
+     0,
+     "other-ruder-auto-safe"
+    ]
+   ],
+   "rauto": {
+    "at": 62.12,
+    "speed": 1.5
+   },
+   "panel": [
+    [
+     0,
+     "servo-hub-rbmod-port"
+    ],
+    [
+     1.6,
+     "rauto-0001"
+    ]
+   ],
+   "deflect": [
+    [
+     0,
+     0
+    ]
+   ],
+   "parts": {
+    "stand": [
+     [
+      0,
+      1
+     ]
+    ],
+    "tip": [
+     [
+      0,
+      1
+     ]
+    ]
+   },
+   "camera": [
+    [
+     0,
+     [
+      40,
+      150,
+      340
+     ],
+     [
+      -10,
+      60,
+      40
+     ]
+    ],
+    [
+     68.92,
+     [
+      40,
+      150,
+      340
+     ],
+     [
+      -10,
+      60,
+      40
+     ]
+    ],
+    [
+     70.59,
+     [
+      150,
+      115,
+      500
+     ],
+     [
+      25,
+      45,
+      120
+     ]
+    ],
+    [
+     169.25,
+     [
+      150,
+      115,
+      500
+     ],
+     [
+      25,
+      45,
+      120
+     ]
+    ],
+    [
+     170.92,
+     [
+      40,
+      150,
+      340
+     ],
+     [
+      -10,
+      60,
+      40
+     ]
+    ],
+    [
+     179.45,
+     [
+      40,
+      150,
+      340
+     ],
+     [
+      -10,
+      60,
+      40
+     ]
+    ]
+   ],
+   "touches": [
+    {
+     "at": 1.2,
+     "on": "panel",
+     "xy": [
+      850,
+      275
+     ],
+     "action": "tap"
+    },
+    {
+     "at": 59.08,
+     "on": "panel",
+     "xy": [
+      98,
+      324
+     ],
+     "action": "tap"
+    },
+    {
+     "run_ms": 2000,
+     "on": "panel",
+     "xy": [
+      512,
+      528
+     ],
+     "action": "hold"
+    }
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 64.12,
+     "n": 4,
+     "text": "RUDER AUTO"
+    },
+    {
+     "from": 64.12,
+     "to": 170.92,
+     "n": 4,
+     "text": "Der Lauf, 1,5-fach beschleunigt"
+    },
+    {
+     "from": 170.92,
+     "to": 179.45,
+     "n": 4,
+     "text": "BESTANDEN"
+    }
+   ],
+   "labels": [
+    {
+     "from": 12.04,
+     "to": 28.0,
+     "anchor": {
+      "pixel": [
+       340,
+       368
+      ]
+     },
+     "at": [
+      1420,
+      300
+     ],
+     "n": 4,
+     "size": "sm",
+     "title": "RESERVE 10%: Platz für die Trimmung",
+     "text": "PULS 950-2050us: 22.0°, 22.0°. Das Soll von 20.0° liegt bei 1000 und 2000us; ein Puls bis 950 oder 2050us erreicht 22.0°."
+    },
+    {
+     "from": 29.2,
+     "to": 56.68,
+     "anchor": {
+      "pixel": [
+       680,
+       200
+      ]
+     },
+     "at": [
+      1420,
+      300
+     ],
+     "n": 4,
+     "size": "sm",
+     "title": "SERVO: KST/CHASERVO oder HITEC",
+     "text": "KST/Chaservo: LEFT ANGLE, RIGHT ANGLE, Rohwerte; wirksam nach Aus- und Einschalten der PROG 5V. Hitec D-Serie: LEFT END, RIGHT END in Zählwerten, 74,5 je Grad; startet selbst neu. Hitec Classic: Rohzellen 0 bis 255; die Versorgung wird für jede Sitzung aus- und eingeschaltet. Hitec: RESERVE 0%."
+    },
+    {
+     "from": 70.64,
+     "to": 79.4,
+     "anchor": "imu",
+     "at": [
+      1400,
+      760
+     ],
+     "side": "t",
+     "n": 4,
+     "size": "sm",
+     "title": "Suche und erste Messung",
+     "text": "10us je Schritt. Ein Anschlag vor dem Soll beendet den Lauf: ANSCHLAG BEI ...us VOR DEM SOLL."
+    },
+    {
+     "from": 104.59,
+     "to": 109.25,
+     "anchor": "imu",
+     "at": [
+      1400,
+      760
+     ],
+     "side": "t",
+     "n": 4,
+     "size": "sm",
+     "title": "Gemessen gegen das Soll",
+     "text": "20.0° bei 1000us, innerhalb der Toleranz von 0.5°."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.6,
+     "text": "Schritt 4. Ruder Auto öffnen. Die beiden Sollwerte sind der Ausschlag, den jedes Ende erreichen soll: hier 20 Grad bei 1000 und bei 2000 Mikrosekunden."
+    },
+    {
+     "at": 11.84,
+     "text": "Die Reserve, hier 10 Prozent, erweitert den Pulsbereich des Servos auf 950 bis 2050 Mikrosekunden. 1000 und 2000 Mikrosekunden ergeben die 20 Grad. Der Bereich darüber hinaus ist Platz für die Trimmung, bis 22 Grad."
+    },
+    {
+     "at": 29.0,
+     "text": "Die Zeile Servo nennt das Fabrikat, denn die Endpunkte werden unterschiedlich gespeichert. Ein Servo von KST oder Chaservo hält sie als zwei Winkelwerte und übernimmt neue, nachdem seine Versorgung aus und wieder ein war. Die Bench schaltet sie. Ein Hitec-Servo der D-Serie hält sie als Positionswerte und startet von selbst neu. Ein Hitec-Servo speichert keinen Pulsbereich, seine Reserve ist deshalb null."
+    },
+    {
+     "at": 57.68,
+     "text": "Mit dem Ruder in Neutralstellung auf Nullpunkt tippen."
+    },
+    {
+     "at": 61.72,
+     "text": "Dann Arm und Start 2 Sekunden halten."
+    },
+    {
+     "at": 65.76,
+     "text": "Die Bench versorgt das Servo, schaltet scharf und liest es aus."
+    },
+    {
+     "at": 70.44,
+     "text": "Zuerst sucht sie nach einem Anschlag: von der Mitte nach außen in Schritten von 10 Mikrosekunden, und beobachtet dabei den Strom des Servos."
+    },
+    {
+     "at": 80.4,
+     "text": "Bei 1000 Mikrosekunden wartet sie, bis der Winkel ruhig steht. Das ist die erste Messung: 23 Grad."
+    },
+    {
+     "at": 88.36,
+     "text": "Die obere Seite läuft genauso. Beide Enden sind frei."
+    },
+    {
+     "at": 98.25,
+     "text": "Jetzt schreibt sie einen kleineren Endpunkt ins Servo und misst 1000 Mikrosekunden erneut: 20 Grad."
+    },
+    {
+     "at": 115.25,
+     "text": "Das andere Ende folgt: messen, schreiben, messen."
+    },
+    {
+     "at": 144.25,
+     "text": "Zum Schluss misst ein Prüfdurchgang beide Enden und die Mitte noch einmal."
+    },
+    {
+     "at": 171.25,
+     "text": "Bestanden. Beide Enden liegen innerhalb eines halben Grads am Soll, und der Bericht liegt auf der SD Karte."
+    }
+   ]
+  },
+  {
+   "type": "end",
+   "dur": 9,
+   "heading": "Ruder eingestellt",
+   "items": [
+    "Gecko Tape und Sensor auf dem Ruder",
+    "IMU › suchen, RUDER › WINKEL: der Sensor",
+    "Dial: scharf schalten, drehen, beide Seiten prüfen",
+    "RUDER AUTO: Sollwerte, NULLPUNKT, ARM + START halten",
+    "Der Lauf: suchen, messen, schreiben, nachmessen",
+    "BESTANDEN, Bericht RUDDRnnn.TXT"
+   ],
+   "say": "Die Endpunkte sind im Servo. 1000 und 2000 Mikrosekunden ergeben jetzt auf beiden Seiten den gleichen Ausschlag.",
+   "note": "Referenz: docs/Servo-de.md, AUTO-Endpoints."
+  }
+ ],
+ "words": {
+  "tap": "TIPPEN",
+  "hold": "2 s HALTEN"
+ }
+}

@@ -8,6 +8,7 @@ under `storyboards/`. It lists scenes; each scene has a type:
 | --- | --- |
 | `case` | the MiniRcBench from its assembly, its components taking their places, its display showing stills and the whole bench rolling over to its back; or the bench in its case as a 3D model, with a camera path, the lid lifting, labels on named parts, a pin table and a servo being plugged in; or the M5Stack Dial as a 3D model, its display showing its faces and its knob turning, alone or beside the bench with both displays following one simulated run |
 | `board` | a circuit board seen flat from its front, with a view that moves over it, labels and tags on pads, parts taking their place, solder joints, a cross-section in a card, a net lit up, a track cut, a wire and a part soldered across two pads |
+| `scope` | plots and circuits of a figure: traces over a time axis whose view moves, with lines, bands and sample points, and a circuit whose parts appear, switch and carry a drawn current |
 | `screen` | the panel's screens, one step after another, each with a bubble, a pointer and a tap or hold mark |
 | `tour` | the panel's screens with an animated caption, a path to the screen, marks that name parts of the display, a spotlight, and chapter cards |
 | `end` | a heading, a numbered recap and a note |
@@ -36,6 +37,22 @@ tree: `kokoro-v1.0.onnx` and `voices-v1.0.bin` from the release
 recogniser (Whisper small.en) returned the lines of `features` with
 their words and names; the voice has not been judged by ear.
 
+Kokoro is given phonemes, not text. For a voice with `lang` `en-us` or
+`en-gb` they come from misaki 0.9.4, the grapheme-to-phoneme converter
+Kokoro was trained with, through its American or British dictionary;
+espeak-ng reads only the words the dictionary lacks. A word ending in
+n't keeps its full vowel (`ˈɪzənt`, not `ˈɪzᵊnt`), and a letter said on
+its own keeps the full stop after it. `SPELL` runs before misaki.
+
+Every clip, Kokoro's and Piper's, is cut to its sound: it keeps 0.02s
+before its first sample above -40dB of its peak and 0.04s after its
+last. Before the cut, kokoro-onnx's own trim at -60dB leaves 0.026s to
+0.075s before and 0.053s to 0.194s after the sound of `auto-rudder`'s 25
+lines, and Piper's `de_DE-thorsten-high` 0s to 0.30s before and 0.05s
+to 0.24s after the 25 lines of `auto-rudder-de`. Piper's speech varies
+from run to run, and some of its clips start with sound at their first
+sample.
+
 The screens are drawn by the host renderer (`tools/render_ui.py`) from the
 panel's own UI (user interface) code. A step names a renderer view; no
 screen is recorded or drawn by hand.
@@ -50,35 +67,59 @@ python3 tools/make_video.py rbmod-rework           # build/video/rbmod-rework.mp
 python3 tools/make_video.py rbmod-build            # build/video/rbmod-build.mp4
 python3 tools/make_video.py dial                   # build/video/dial.mp4
 python3 tools/make_video.py minircbench-build      # build/video/minircbench-build.mp4
+python3 tools/make_video.py hitec-precharge        # build/video/hitec-precharge.mp4
+python3 tools/video_scope.py                       # plots/hitec-precharge.json, with ngspice
+python3 tools/make_video.py phase-tap              # build/video/phase-tap.mp4
+python3 tools/video_tap.py                         # plots/phase-tap.json, with ngspice and cc
 python3 tools/make_video.py kst-rbmod --stills 2.5,40 -o /tmp/stills
 python3 tools/make_video.py features --jobs 3      # frames in 3 parts at once
 python3 tools/make_video.py features --jobs 3 --keep build/video/parts
-                                                   # parts of 900 frames are kept per
+                                                   # parts of up to 900 frames, at
+                                                   # most frames/jobs, are kept per
                                                    # scene; a run cut off continues
                                                    # from them, and a changed scene
                                                    # is captured alone
                                                    # a changed player file, display
                                                    # picture or model captures all
                                                    # scenes again
+                                                   # a kept part of 1024 bytes or
+                                                   # less is captured again
+python3 tools/make_video.py features --no-cache    # speak and draw everything again
 python3 tools/make_video.py features --music bach-prelude,pachelbel-canon
                                                    # one video per bed
 python3 tools/make_video.py features --no-voice    # no narrator, lengths as written
 python3 tools/make_video.py features --no-sound    # the picture alone
 python3 tools/video_voice.py features              # the lines as spoken
+python3 tools/video_voice.py features --unknown    # words misaki's dictionary lacks
 python3 tools/video_audio.py features -o /tmp/features.wav
 python3 tools/make_video.py --check                # every storyboard
 ```
+
+Each spoken line is kept in `build/video/cache/voice/` as a NumPy
+array, named by a hash of its text, the voice, the model files' sizes
+and `tools/video_voice.py`. The drawn views are kept in
+`build/video/cache/views/`, named by a hash of the storyboard and of
+every file under `shared/`, `protocols/`, `test/host/`,
+`tools/video/stills/` and `tools/*.py`; the 4 newest sets stay. A run
+that changes none of these skips the narration and the views. Lines
+not in the cache are spoken by up to 12 worker processes at once;
+views are drawn by one renderer process per core.
 
 The frames are drawn by SwiftShader, a software rasteriser. With
 `RCBENCH_VIDEO_GL` set to Chromium flags, such as
 `--use-angle=vulkan --enable-features=Vulkan`, they are drawn on a GPU
 (graphics processing unit); each capture job prints the renderer it got.
-A GPU render is not tested, and its pixels can differ from SwiftShader's,
-so one video takes one of the two.
+A GPU render's pixels differ from SwiftShader's by 0.031 of 255 on
+average on the Dial video, so one video takes one of the two.
 
-A render needs a C compiler, Pillow, numpy for the sound, `kokoro-onnx`
-and its model for the narration, Node.js with the `playwright` package and
-its Chromium, and ffmpeg. `--check` needs only Python; the
+A render needs a C compiler, Pillow, numpy for the sound, Node.js with
+the `playwright` package and its Chromium, and ffmpeg. The narration
+needs `kokoro-onnx` and its model, `misaki==0.9.4` without its `en`
+extra (the extra pulls in PyTorch), `spacy` with `en_core_web_sm` 3.8.0,
+`num2words`, `espeakng-loader` and `phonemizer`; `piper-tts` speaks a
+voice of Piper. The set in use is kokoro-onnx 0.6.1, misaki 0.9.4,
+spacy 3.8.18, num2words 0.5.14, espeakng-loader 0.2.4, phonemizer 3.6.0
+and piper-tts 1.8.0 on Python 3.12. `--check` needs only Python; the
 pytest case `test/tools/test_make_video.py` runs it in CI (continuous
 integration). The 100.4s of `kst-rbmod` are 3012 frames. `features` is
 755.92s with its narration, 22678 frames. On a software rasteriser its render
@@ -97,6 +138,15 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `player/duo3d.js` | the case and the Dial in one scene: the case's display takes shots of the panel's screen, the Dial's display its faces |
 | `player/mini3d.js` | the MiniRcBench from its assembly: one group a component in its solids' colours, the case and its buttons coloured here, the two male servo connectors and the 4 screws drawn as plain solids, the display showing a still |
 | `player/board.js` | a board drawn flat as SVG, and the rework on it |
+| `player/rudder3d.js` | the `rudder` model: a slice of wing with its flap, the servo on its frame and the linkage, an inertial sensor on a pad of Gecko Tape, a double-sided gel tape, on the flap, the bench and the M5Stack Dial in one scene. `deflect`, keys `[t, degrees]`, turns the flap about its hinge, positive with the trailing edge up, held to the linkage's reach of 27° up and 40° down; the double arm and the rod follow from the generator's joints. `parts` takes `tape`, the pad of Gecko Tape, 34 x 49 x 2mm, 1 over the flap to 0 on it, `imu`, 1 the sensor 70mm over the pad to 0 seated, `skin`, 1 the wing's skins solid to 0 clear, which shows the servo, and `lead`, 1 the servo's 3-wire lead away to 0 run from the servo through the wing and over the table into the bench's connector wall, where it ends in a black 3-pin plug, `stand`, 0 the bench flat to 1 standing on its long edge behind the wing, leaning back 18° and turned 14° to the viewer, and `tip`, 0 the Dial level to 1 tipped 48° towards the viewer. It loads `flap_drive_assembly.glb`, `wit_imu.glb` and `m5dial.glb` from `cad/`, with `dial_base` also `dial_base_top.glb`, `dial_base_bottom.glb` and `m5dial_nut.glb`, and `case.glb` for the bench; without `case.glb` the 7 inch panel of `panel_7b.glb` stands in, leaning back |
+| `../../test/host/video_rauto.c` | a RUDDER AUTO run for a video: the run of the host suites on a KST servo with the IMU on the surface, from SAFE through the hold to PASS. The surface turns 0.042° per µs of the horn, 25.2° at the servo's travel as delivered, inside the reach of the `rudder` model's linkage. The meter's readings are a 5.0V rail that rises and falls over some 50ms windows, sags 0.12V an ampere and carries 2mV of white noise, and a current of 28mA at rest, 4mA more a degree of deflection and 0.35A more while the horn travels, followed with a time constant of 250ms, with 1mA of white noise; the host suites keep the model's two levels. It writes the panel's screen every 500ms and the surface's angle every 100ms. A `rudder` scene with `rauto`, `{at, speed}`, takes the frames as its display's shots from `at` on, `speed` times as fast as the run, and the angle as its `deflect` keys. `make_video.py` builds it with CMake in `build/video_host/` |
+| `storyboards/rbmod-first-program.json` | first programming of a bench with the rbmod carrier in 6 chapters: the release's files on GitHub, the panel through the ESP Web Tool with the merged image at 0x0, the IOmcu through its drive RP2350 on a Windows desktop, the first start, the update from GitHub on SETUP > UPDATES and the upload over the panel's access point; the panel, the carrier and the RP2350-CAN from their STEP models; narrated, 321.22s, Pachelbel's Canon at half level |
+| `storyboards/auto-rudder.json` | setting a rudder's end points with RUDDER AUTO in 4 steps: the sensor on a pad of Gecko Tape on the flap, the sensor connected, the flap moved with the M5Stack Dial on SERVO LIVE, and the run, limit search first, at 1.5 times its speed with the flap following the run's own angle; narrated, 302.70s, Pachelbel's Canon at half level |
+| `storyboards/auto-rudder-de.json` | `auto-rudder` in German: the same scenes, times and touches, the panel's screens and the Dial's faces in German, the recorded run drawn in German (`video_rauto DIR de`), narrated by Piper's `de_DE-thorsten-high`, 297.05s |
+| `player/part3d.js` | one part from its STEP model, turned and rolled over |
+| `web/capture.js` | captures the releases page of the repository on GitHub and the ESP Web Tool at esptool.spacehuhn.com into `stills/web-*.png`, 1280 x 800 CSS pixels at 2 device pixels each, and writes the places of their controls to `stills/web.json`. The ESP Web Tool is the page as served; its serial library is replaced by a stand-in that answers as an ESP32-P4, since no board is on the capturing computer |
+| `stills/web-*.png`, `stills/web.json` | 13 captures of those two pages and the places of the controls a pointer goes to |
+| `player/windows.js` | the windows of a computer over a board scene: a browser page or a folder, its files, buttons and bars, and the pointer |
 | `../video_board.py` | converts a KiCad board file into `cad/NAME.json`, the board `board.js` draws |
 | `boards/p4-7b-back.json` | the back of the 7 inch ESP32-P4 display board, drawn by hand in the format `video_board.py` writes: its connectors, modules and sockets as boxes, the pads of the 4-pin and 12-pin headers |
 | `boards/minircbench-wiring.json` | the parts of a MiniRcBench laid out flat: the rear of the RP2350-Touch-LCD-2.8 with its sockets, the 5V boost board, the INA219 board, the cell and the two male servo connectors, with the pads the wires go to |
@@ -108,7 +158,15 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `storyboards/rbmod-build.json` | building a rev 1 rbmod carrier in 13 steps, the 4 rework steps among them: the bare board, D1 and R9, the connectors, the headers, the 5 modules on pin strips, the large holes closed with wire and solder, the 4 wires from J6's pads to a USB-C plug board for the PD mini, and the panel's back with the heartbeat wires of header P3, the CAN cable and the supply on the RS485 header; narrated, 347.32s, Pachelbel's Canon as its bed at half level |
 | `storyboards/dial.json` | bringing the M5Stack Dial into use in 7 steps: the Dial, its ring nut, the cell 102540 and a foam pad into the two parts of the printed base and its 4 screws M3 x 12, flashing over USB, the bind on SETUP > WIRELESS > DIAL, the menu and the SET of a value, the knob on MOTOR & ESC and on SERVO LIVE, and what the Dial does not do; the bench and the Dial stand in one 3D scene and show the same screen, run and value; narrated, 295.69s, Pachelbel's Canon at half level |
 | `storyboards/minircbench-build.json` | building a MiniRcBench in 10 steps: the parts, the firmware, the boost board's input on the battery socket's pins, the 0Ω resistor off the enable pad, the pull-down and IO28 on it, the INA219 on the I2C socket, the 5.6V zener and the 470µF capacitor across the boost board's output, the 5V path through the sensor to both male servo connectors, the signals and the 9 unused wires taken out of the 12-pin plug, the check before the cell, the case, and the settings; narrated, 505.57s, Pachelbel's Canon at half level |
+| `storyboards/hitec-precharge.json` | precharge and sample: reading a wire that is only pulled low on an RP2350 pin that several protocols share, without a pull-up resistor, in 6 steps after an RP2350 board as a `part` scene: a device that only pulls low, the 2.2kΩ pull-up and why a pin with several protocols cannot keep it, one precharge and sample, the sampling window against the measured one, one answer byte in 80 samples, and 3 logic analyser captures beside the simulation; narrated, 348.67s. No product is named on screen or in the narration; the corner reads `RP2350` (`product`) |
+| `storyboards/phase-tap.json` | ESC STICK programming counted from the phase tap in 7 steps, after 4 `part` scenes (the rbmod carrier, the IOmcu module, the ESC with its motor, the motor simulator): a menu of beeps, the tap's circuit, the edge stamps, carrier, tone and beep, the count of a group, the warning that the servo rails carry the ESC's voltage, and the screens; narrated |
 | `storyboards/thumbnail.json` | the thumbnail of `features`: the case with its display lifted and the title; `--stills 3` writes it |
+| `../video_scope.py` | simulates the D series signal wire with ngspice and writes `plots/hitec-precharge.json`, the figure of the `scope` scenes; `--capture NAME=FILE` adds a logic analyser trace from a sigrok CSV export |
+| `plots/hitec-precharge.json` | the figure: 11 simulated traces, 3 captured ones (`capture-pre`, `capture-pullup`, `capture-bare`), the circuit's drawing, the model's values and the measured window |
+| `../video_tap.py` | models a beeping motor lead, simulates the tap on it with ngspice, runs the capture's hold-off and `protocols/phase_tap/tone.c` on the simulated edges and writes `plots/phase-tap.json` |
+| `plots/phase-tap.json` | the figure of `phase-tap`: 12 traces, the tap's drawing, the model's values and the detector's beeps, windows and groups |
+| `player/scope.js` | draws a figure's plots and circuits |
+| `../video_check.py` | the storyboard check: `check()` returns a message per field the player would not draw, `board_faults()` holds a board scene to its board; `tools/make_video.py --check` runs it |
 | `../video_audio.py` | the sound track of a storyboard as a WAV file |
 | `../video_voice.py` | the narration: the lines, the speaker, the room each line needs |
 
@@ -126,9 +184,9 @@ Top level:
 | `dial_base` | optional, `true` or `false`, the default: the Dial of the models `dial` and `duo` sits in its printed hand-held base, `dial_base_top` and `dial_base_bottom` of `hardware/mechanical/models/`, with the ring nut `m5dial_nut` under the top part |
 | `brand` | the line beside the product's name at the top left |
 | `steps` | the count of step marks at the bottom left |
-| `music` | optional: `pads`, the default bed; `bach-prelude`, J. S. Bach's Prelude in C major BWV 846 on the same voices, one bar every 4s; or `pachelbel-canon`, Johann Pachelbel's Canon in D major, its ground bass at 2s a note under three of the violin's variations. `vivaldi-spring` is the opening of Antonio Vivaldi's "Spring" RV 269 in E major, 0.42s an eighth note: its two themes on a bowed voice with the third below, over a plucked bass; its notes are set down from memory of the violin part and are not checked against a score. All three compositions are in the public domain and no recording is used; the notes are set down in `tools/video_audio.py`. Bars 33 and 34 of the prelude keep the pattern of the other bars so that the piece loops |
+| `music` | optional: `pads`, the default bed; `bach-prelude`, J. S. Bach's Prelude in C major BWV 846 on the same voices, one bar every 4s; or `pachelbel-canon`, Johann Pachelbel's Canon in D major, its ground bass at 2s a note under three of the violin's variations. `vivaldi-spring` is the opening of Antonio Vivaldi's "Spring" RV 269 in E major, 0.42s an eighth note: its two themes on a bowed voice with the third below, over a plucked bass; its notes are set down from memory of the violin part. All three compositions are in the public domain and no recording is used; the notes are set down in `tools/video_audio.py`. Bars 33 and 34 of the prelude keep the pattern of the other bars so that the piece loops; or `bach-cello`, the Prelude of J. S. Bach's Suite No. 1 for cello solo BWV 1007, its 41 bars of sixteenth notes plucked at 4s a bar, with the notes of the Mutopia Project's public domain edition Mutopia-2018/01/19-517; or `beethoven-moonlight`, bars 1 to 4 of Ludwig van Beethoven's Sonata Op. 27 No. 2, first movement, as a loop of 17.76s, 0.37s a triplet note, read from the first edition of 1802 |
 | `music_gain` | optional, 0 to 2, 1 by default: the bed's level against the event sounds and the narrator |
-| `voice` | optional `{name, lang, speed}`: the narrator, a voice of Kokoro such as `af_heart` with `en-us`, or `bm_george` with `en-gb`. `blend` in place of `name` mixes voices by weight: `{"af_heart": 0.6, "af_nicole": 0.4}` |
+| `voice` | optional `{name, lang, speed}`: the narrator, a voice of Kokoro such as `af_heart` with `en-us`, or `bm_george` with `en-gb`. `blend` in place of `name` mixes voices by weight: `{"af_heart": 0.6, "af_nicole": 0.4}`. With `"engine": "piper"` the narrator is a voice of Piper, `name` its model in `tools/video/tts/`, `de_DE-thorsten-high` for German, and `speed` its rate, 1.0 the model's own; it needs the `piper-tts` package. A storyboard with `lang` `de` is written out for the speaker by `SPELL_DE` of `tools/video_voice.py` |
 | `chapters` | optional: one name per step; the names replace the step marks, each with a bar that fills while its chapter runs |
 | `words` | optional: `tap`, `hold`, `pos`, `gpio`, the player's own words, for another language |
 | `scenes` | the scenes in order; each fades in and out over 0.45s |
@@ -138,11 +196,15 @@ A `case` scene:
 | Field | Meaning |
 | --- | --- |
 | `dur` | length in s |
-| `model` | optional: `mockup`, the default, `cad`, the assembly converted by `tools/video_cad.py`, `dial`, the M5Stack Dial converted by `tools/video_cad.py --solids`, `duo`, the case of `cad` with the Dial 128mm right of its middle, or `mini`, the MiniRcBench converted by `tools/video_cad.py --parts` |
+| `model` | optional: `mockup`, the default, `cad`, the assembly converted by `tools/video_cad.py`, `dial`, the M5Stack Dial converted by `tools/video_cad.py --solids`, `duo`, the case of `cad` with the Dial 128mm right of its middle, `mini`, the MiniRcBench converted by `tools/video_cad.py --parts`, or `part`, one STEP model converted by `tools/video_cad.py --solids` and named by `part` |
+| `part` | with the `part` model: the name of a file under `cad/`, without `.glb`, that `tools/video_cad.py --solids` writes from a STEP model. The part floats over the origin, its middle half its diagonal above the floor; a label's or a tag's point `[x, y, z]` is given from the part's middle and moves with it |
+| `spin` | optional, `part` model: keys `[t, degrees]`, the part turned about its upright axis; with `flip` it is rolled over about its long axis, 180 shows its other side |
+| `windows`, `tags` | optional, as in a `board` scene |
 | `flip` | optional, `mini` model: keys `[t, degrees]`, the bench rolled over about its long axis; 180 shows its back. `dial` model with `dial_base`: the Dial in its base rolled over; 180 shows the foot |
-| `faces` | optional, `dial` and `duo` models: keys `[t, name]`, a face of `tools/render_dial.py` on the Dial's display from `t` on, cross-faded over 0.5s |
+| `faces` | optional, `dial`, `duo` and `rudder` models: keys `[t, name]`, a face of `tools/render_dial.py` on the Dial's display from `t` on, cross-faded over 0.5s. A name `other-TITLE-safe` or `other-TITLE-armed`, the title's words in lower case joined by hyphens, is the face of a screen the knob does nothing on with that title and state: `other-rudder-auto-armed`. A scene with `rauto` takes these two for RUDDER AUTO by the run's own state |
 | `panel` | optional, `dial` and `duo` models: keys `[t, view]` or `[t, view, screen]`, the panel's screen from `t` on: on the case's display with `duo`, as a flat shot left of the Dial with `dial`. With the `mini` model a key is `[t, name]`, the still `stills/NAME.png` on the display from `t` on |
 | `run` | optional, `dial` and `duo` models: the panel and the Dial following each other from `from` to `to`. The panel's renderer applies the Dial's gestures and writes the packets the panel sends a Dial; the Dial's renderer draws its face from them. The shots go into `panel` and `faces`, and `turn` follows the run. `kind` is `motor`, the default: `arm` and `throttle`, keys `[t, percent]` joined by lines and `[t, percent, "press"]` for a value set at once; drawn 10 times a second from one simulated run, SAFE before `arm`, a detent a percent. `servo`: `angle`, keys `[t, degrees]` as `throttle`'s, on SERVO LIVE while ARMED, a detent a degree. `nav`: `view`, an optional `screen` and `ops`, keys `[t, op]` with `t` and a count of detents, `p` a PRESS or `h` a HOLD, on a SAFE bench; drawn at each gesture |
+| `touches` | optional, a list of `{at, on, xy, action}`: a touch on a screen of the 3D scene. `on` is `panel`, a pixel `xy` of the 1024 x 600 display of the models `mockup`, `cad`, `duo` and `rudder`, or `dial`, a pixel of the Dial's 240 x 240 face on `dial`, `duo` and `rudder`. `action` is `tap`, a ring over 0.75s, or `hold`, a ring that fills in 2s and counts to 2.0s over the ring; `for` gives a hold another length in s. The ring stands where the pixel stands in the frame, at 0.45 to 1.2 times its size on a flat screenshot. In a scene with `rauto`, `run_ms` in place of `at` is a time of the recorded run in ms: the touch takes the run's time and speed. Every touch a video's narration or screens show carries its ring: `action` on a `screen` or `tour` step, `touches` in a 3D scene, `click` in a window |
 | `turn` | optional, `dial` and `duo` models: keys `[t, degrees]`, the knob ring's angle, clockwise seen from the front; the sound track clicks once per 22.5°, a detent |
 | `camera` | keys `[t, [x, y, z], [x, y, z]]`: position and target in mm |
 | `lid` | optional keys `[t, mm]`: how far the display is lifted |
@@ -155,7 +217,7 @@ A `case` scene:
 | `say` | optional list of `{at, text}`: what the narrator says in this scene and when; a line that runs into the next is an error |
 | `servo` | optional `{connector, position, appear, plug: [t0, t1]}`: a servo whose plug moves 46mm into the position |
 
-`anchor` is `[x, y, z]` in mm or a name: `display`, `rbmod`, `pdmini`,
+`anchor` is `[x, y, z]` in mm, `{"pixel": [x, y]}`, a pixel of the 1024 x 600 display on the models `mockup`, `cad`, `duo` and `rudder`, or a name: `display`, `rbmod`, `pdmini`,
 `J1`, `J2`, `xt60`, `usbc`, `estop`, `side`, `plug`, and on the `cad`
 model also `panel`, `case`, `mcu`, `ina`, `buck` and
 `trigger`, and on the `dial` model `display`, `knob`, `bezel`, `usb`, `power`, `portA`, `portB` and `body`, on the `duo` model the case's and `dial`, `knob` and `bezel`, on the `mini` model `display`, `glass`, `board`, `keys`, `usbc`, `card`, `buttons`, `shell`, `back`, `ports`, `esc`, `tmt`, `plugs`, `screws`, `cell`, `boost` and `ina`. An anchor follows its component while it moves. A label's
@@ -163,6 +225,46 @@ optional `glow` names a component that is lit while the label shows. `at` is the
 top left corner on the frame in pixels. The model's origin is the centre
 of the case floor; x runs along the 190mm side, y up, z towards the
 connector wall.
+
+A `scope` scene:
+
+| Field | Meaning |
+| --- | --- |
+| `dur` | length in s |
+| `figure` | the name of a figure under `plots/`, without `.json` |
+| `panels` | a list of plots and circuits; each has `id`, `kind` (`plot` or `circuit`), `box` as `[x, y, w, h]` in pixels and optional `from`, `to` |
+| `title`, `chips`, `say` | as in a `case` scene; the panels are dimmed to 25% under a title |
+| `labels` | as in a `case` scene; `anchor` is `[x, y]` in pixels, `[plot, x, y]` in ns and the plot's unit, or `[circuit, node]` |
+
+A panel of kind `plot`:
+
+| Field | Meaning |
+| --- | --- |
+| `view` | keys `[t, [x0, x1]]`: the span of the time axis in ns; the axis is labelled in ns, µs or ms by its width |
+| `y` | `[low, high]` of the vertical axis |
+| `ticks`, `unit` | optional: the values that carry a grid line and a number, each a value or `[value, text]`, and the unit after a number |
+| `heading`, `ylabel` | optional texts |
+| `traces` | `{series}` and optional `style`, `label`, `width`, `from`, `to`, `shift` in ns, `reveal` as keys `[t, x]` (the trace is drawn up to x), `lane` as `[y0, y1]` (a logic trace's 0 and 1), `points` with `on` and `r` (a dot per point, filled where the value is 1, on the trace named by `on`) |
+| `lines` | optional `{x}` or `{y}` with `text`, `style`, `from`, `to`, `dy`: a dashed line |
+| `bands` | optional `{x: [x0, x1]}` with `text`, `style`, `from`, `to`, `dy`: a shaded span |
+
+A style is empty, `ok`, `warn`, `muted`, `red`, `white` or `violet`.
+
+A panel of kind `circuit`:
+
+| Field | Meaning |
+| --- | --- |
+| `circuit` | the name of a circuit of the figure |
+| `show` | optional, by part: keys `[t, opacity]` |
+| `set` | optional, by switch: keys `[t, v]`, 0 open and 1 shut |
+| `lit`, `tint` | optional, by part: keys `[t, v]` from 0 to 1, and the style a lit part takes |
+| `flow` | optional `{from, to, path}` and optional `style`, `speed`: dashes that run along a path of the circuit |
+| `meters` | optional `{from, to, node, value}` with `value` as keys `[t, volts]` and optional `style`, `dx`, `dy`: a voltage beside a node |
+
+A figure holds `series` (each `{unit, x, y}` with x in ns), `circuits`
+(each with `size`, `items`, `nodes` and `paths`), and for
+`hitec-precharge` the `model`, the `timing`, the `measured` window and
+the simulated `window`.
 
 A `board` scene:
 
@@ -182,6 +284,9 @@ A `board` scene:
 | `mount` | optional `{refs, t}`: the parts of these references come down onto their places from `t` on |
 | `solder` | optional `{refs, t: [t0, t1]}` or `{pads, t: [t0, t1]}` and optional `back`: a joint on every pad of the parts, or on the pads named, one after another over the span. With `back` the joint is on the other side of the board and shows as a ring that fades |
 | `insets` | optional `{from, to, kind, at, title}` and optional `text`, `good`, `bad`, `upper`, `lower`, `color`: a card at `at` with a cross-section. `strip` draws a module on the plastic of its pin strips, soldered on both sides, beside a module lying on the carrier; `fill` draws a wire through a large hole of both boards, soldered on both sides; `extract` draws a plug housing cut open, a needle on the contact's tongue and the wire leaving to the back; `pins` draws one pin strip per entry of `rows`, `[count, text]`, with its count; `latch` draws a 1.0mm plug cut open, a needle lifting the housing's latch behind a contact and the wire leaving to the back |
+| `tilt` | optional `[rx, ry]` in degrees, each from -45 to 45: the board leans away from the viewer about its horizontal and its upright axis, drawn in perspective from 2600 pixels; labels and tags follow |
+| `enter` | optional `{t: [t0, t1], view}`: the board comes in over the span, turning 205° about its upright axis and growing from 42% of its size. It starts with its other side to the viewer: a display that shows the renderer view `view`, or dark glass without one |
+| `windows` | optional list of `{from, to, at, w, kind, url, title, side, body, pointer}`: a window of a computer over the board, `at` its top left corner and `w` its width in pixels. `kind` is `browser`, with `url` in its address bar, or `folder`, with `title` and a `side` pane. An item of `side` or `body` is one of `{h}` a heading, `{p}` a text, `{log}` a line in a fixed-width face, `{file, note, get: [t0, t1], done}` a file whose bar fills over `get` and that then shows `done`, `{button, style, on}` a button (`ok` green, `go` blue) that is live from `on`, `{bar: [t0, t1], text}` a progress bar, `{drive, note}` a drive, and `{dialog, rows: [{text, id}]}` a list laid over the window. The kind `desktop`, `{from, to, at, w, h}`, is a Windows desktop with wallpaper and a taskbar under the windows that follow it; the kind `explorer` is a File Explorer window on it, `{title, path, nav, rows, h, copy, id}`: `path` the names of its address bar, `nav` the entries of its side pane `{text, kind, on}`, `rows` its files `{file, type, date, size, id, from, to}`, `h` the height of its list in pixels and `copy` `{t: [t0, t1], text}` the copy dialog with its bar. A pointer's `id` is looked up in every window of the scene, so a file is carried from one window into another. With `page`, `{w, shots: [[t, name], ...]}`, the window shows captures of a web page in place of items: the still `stills/NAME.png` from `t` on, cross-faded over 0.2s; a pointer key then takes a place `[x, y]` on the page, `w` CSS pixels wide, where an item's `id` stands. Each takes `id`, `from` and `to`; a hidden item keeps its place. `pointer` is a list of keys `[t, id]` or `[t, id, op]`: the pointer is on the item at `t` and travels there over 0.8s at most; `op` is `click`, `grab`, which carries the file to the next key, or `drop` |
 | `fit` | optional `{kind, a, b, t}`: a `resistor`, a `zener` or a `cap` soldered across two pads from `t` on; a zener's band is at `a`; a `cap` is a radial electrolytic capacitor lying beyond `b`, its plus lead on `a`, its stripe on the minus lead's side, with `text` on its can; a resistor with `text` `2.2 kΩ` carries its colour bands, as does one of `10 kΩ`; a `link` is a 0402 chip resistor, 1.0 x 0.5mm, that lies between `a` and `b` until `t` and is then taken off |
 
 A board's lengths are mm from the top left corner of its drawing. A pad's
@@ -214,6 +319,7 @@ A `tour` scene has `steps`:
 | `card` | `{title, text}`: a chapter card in place of a screen; the step then has only `dur` (at least 2.0) and `n` |
 | `view` | the renderer's view name |
 | `lang` | optional `en` or `de`: this step's screen in another language than the storyboard's |
+| `versions` | optional list of three versions of the form `X.Y.Z`: the running, the newer and the older one. The views of WI-FI, UPDATES, PANEL UPDATE and the IOmcu update show them in place of 0.22.0, 0.22.1 and 0.21.2; the start-up check shows the running one, a wireless device that is behind the older one. The renderer reads them from `RCBENCH_VIDEO_VERSIONS` |
 | `dur` | length in s: at least 1.5, 2.5 with a spotlight, 1.9 plus 0.38 a mark |
 | `n` | the chapter |
 | `kicker`, `title`, `text` | the caption; the title's words rise in one after another, the kicker stays while consecutive steps share it |
@@ -241,6 +347,68 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
 3. Copy `storyboards/kst-rbmod.json`, replace the steps, and read each
    `target` from the view's PNG.
 4. `--stills` at a few times shows the layout before a full render.
+
+## The simulated signal wire
+
+`tools/video_scope.py` writes one ngspice deck per run and reads the
+line's voltage from a transient analysis with 0.5ns steps.
+
+| Part | Value | Source |
+| --- | --- | --- |
+| Servo pull-down | 3kΩ | `protocols/hitec/README.md` |
+| Pull-up | 2.2kΩ to 5.0V | `protocols/hitec/README.md` |
+| Pad supply | 3.3V | IOVDD |
+| Pad driver | 50Ω | fitted |
+| Line capacitance | 72pF | fitted |
+| Input threshold | 1.1V | fitted |
+| Servo output | 37Ω to ground | fitted |
+
+The 4 fitted values make the model agree with 2 measurements on a D485HW.
+The reference's table: the pad reads high with the sample 40 to 213ns
+after the release, low at 267ns, and low at 213ns after a precharge of 1
+system clock cycle. The logic analyser capture (200MHz, threshold 1.4V):
+a precharge on a released line reads 260 to 290ns above 1.4V, median
+280ns, and one against a servo that pulls low reads 0 to 20ns or does not
+appear. The model gives 279.5ns and 0ns. The tool stops with a message
+when the model reads one of the 12 settings or one of the 2 pulse widths
+otherwise. The timing is `hitec_pre_timing()` at 150MHz:
+163 cycles a sample, 15 of precharge, 17 to the sample.
+
+## The simulated phase tap
+
+`tools/video_tap.py` builds the motor lead of a beeping ESC, simulates
+the tap with ngspice and hands the pin's edges to the firmware's own
+detector, compiled for the host.
+
+| Value | Is | Source |
+| --- | --- | --- |
+| Short beep | 127.9ms at 2090Hz | measured, FlyDragon Lite 40A at 7.6V (`STATUS.md`) |
+| Long beep | 383.7ms at 1866Hz | measured, the same |
+| Pause in a group, between groups | 148ms, 3.23s | one recording, the same |
+| Series resistor, zener, pull-down | 4.7kΩ, 3.0V, 8.2kΩ | `protocols/phase_tap/README.md` |
+| Tick, hold-off | 26.7ns, 8000ns | `tone_svc.h` |
+| Tone range, gap, periods, split | 400 to 6500Hz, 3ms, 3, 8% | the TONE page's defaults |
+| Carrier | 12kHz | model: the first value of the ESC's PWM frequency item |
+| Carrier duty, driven share of a tone period | 25%, 50% | model |
+| Pin capacitance, input threshold | 10pF, 1.1V | model |
+
+For one group of 3 short beeps the detector reports 3 beeps of 127.5ms at
+2090.0Hz with a carrier of 12,004Hz and 267 bursts each, and the hold-off
+keeps every one of the 4806 edges. The tool stops with a message when the
+detector reports another number of beeps, a length more than 1ms or a
+pitch more than 1% from the ones sounded, or a group that does not count
+3.
+
+The captures are `win/s1-0x32-win.csv`, `win/s2-0x32-win.csv` and
+`win/s3-win.csv` of `testbench/captures/hitec32/` on branch
+`inbox/hitec32-captures` (commit eafcbc896), taken on 2026-11-22 with a
+Kingst LA2016: IOmcu 0.23.18 on GPIO 13, D485HW, 5.0V. The figure keeps
+their edges in ns from each window's start:
+
+```sh
+python3 tools/video_scope.py --rate 200e6 --capture pre=s1-0x32-win.csv \
+    --capture pullup=s2-0x32-win.csv --capture bare=s3-win.csv
+```
 
 ## Limits
 
@@ -403,4 +571,18 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
 - The sound and the narrator's voice have not been judged by ear.
 - RECEIVER, BATTERY and BALANCE are shown as in development, without
   their state of work, which the README's feature table holds.
+- A window of a board or case scene is HTML laid out by Chromium in the
+  fonts of the rendering machine: "Segoe UI", then Inter, then its
+  sans-serif. The File Explorer's icons are drawn as SVG and need no
+  font.
+- `rbmod-first-program` shows the releases page as captured on
+  2026-11-18, with v0.23.14 as its newest release. The Windows desktop
+  and its File Explorer windows are drawn, not captured; their Date
+  modified and Size columns are empty.
+- `auto-rudder` shows a run of the host suites' rig: a simulated KST
+  servo whose end points start at 150 counts, the IMU model at 10Hz. The
+  36.0° of the first measure and the 22.08° after the write are that
+  rig's. Its step 2 shows the angle source list with the AS5600 in
+  force, the list before the pick. Its step 3 runs on SERVO LIVE. The
+  servo's lead is a drawn tube, not a model.
 - The player draws 1920 x 1080 only.

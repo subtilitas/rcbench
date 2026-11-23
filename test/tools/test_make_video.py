@@ -6,6 +6,8 @@ SPDX-License-Identifier: MIT
 import copy
 import json
 
+import pytest
+
 from conftest import import_or_fail
 
 import make_video
@@ -406,7 +408,9 @@ def test_a_dial_scene_shows_faces_and_turns_its_knob():
     assert any("faces" in e for e in make_video.check(board))
     for path in make_video.storyboards():
         made = json.loads(path.read_text(encoding="utf-8"))
-        assert set(make_video.faces(made)) <= set(render_dial.FACES)
+        assert all(name in render_dial.FACES
+                   or render_dial.other(name) is not None
+                   for name in make_video.faces(made))
 
 
 def _run_scene():
@@ -600,3 +604,272 @@ def test_a_dial_scene_takes_the_parts_of_its_base():
     assert make_video.check(board) == []
     scene["parts"]["lid"] = [[0, 1]]
     assert any("lid is not one of" in e for e in make_video.check(board))
+
+
+def test_a_part_without_video_is_not_reused(tmp_path):
+    """A missing part, an empty one and a stub are captured again."""
+    part = tmp_path / "part.mp4"
+    assert not make_video._holds_video(part)
+    part.write_bytes(b"")
+    assert not make_video._holds_video(part)
+    part.write_bytes(b"0" * make_video.PART_LEAST)
+    assert not make_video._holds_video(part)
+    part.write_bytes(b"0" * (make_video.PART_LEAST + 1))
+    assert make_video._holds_video(part)
+
+
+def test_a_step_can_set_its_versions():
+    """A tour step with versions is a shot of its own."""
+    versions = ["0.24.1", "0.24.2", "0.24.0"]
+    board = {"lang": "en", "steps": 1, "scenes": [{"type": "tour", "steps": [
+        {"view": "updates", "dur": 3, "n": 1, "title": "x",
+         "versions": versions},
+        {"view": "updates", "dur": 3, "n": 1, "title": "x"}]}]}
+    assert make_video.check(board) == []
+    found = make_video.views(board)
+    assert found["updates~0.24.1-0.24.2-0.24.0"] == (
+        "updates", None, "en", versions)
+    assert found["updates"] == ("updates", None, "en")
+    board["scenes"][0]["steps"][0]["versions"] = ["0.24", "0.24.2", "0.24.0"]
+    assert any("versions" in e for e in make_video.check(board))
+
+
+def test_the_first_programming_video_tells_one_version_sequence():
+    """rbmod-first-program shows 0.24.0, then 0.24.1, then 0.24.2."""
+    path = make_video.VIDEO / "storyboards" / "rbmod-first-program.json"
+    board = json.loads(path.read_text(encoding="utf-8"))
+    assert make_video.check(board) == []
+    assert len(board["chapters"]) == board["steps"] == 6
+    steps = [s for scene in board["scenes"] if scene["type"] == "tour"
+             for s in scene["steps"] if "view" in s]
+    running = [s["versions"][0] for s in steps]
+    assert running == sorted(running)
+    assert running[0] == "0.24.0" and running[-1] == "0.24.2"
+
+
+def test_a_board_scene_takes_a_tilt_an_entrance_and_windows():
+    """A window's pointer names items of that window."""
+    scene = {"type": "board", "board": "p4-7b-back", "dur": 10,
+             "camera": [[0, [83, 48], 190], [10, [83, 48], 190]],
+             "tilt": [15, -15], "enter": {"t": [0.2, 3], "view": "splash"},
+             "windows": [{"from": 3, "to": 9, "at": [60, 150], "w": 900,
+                          "url": "example.org", "body": [
+                              {"button": "Connect", "id": "go"},
+                              {"file": "a.bin", "id": "f", "get": [5, 7]}],
+                          "pointer": [[4, "go", "click"], [5, "f"]]}]}
+    board = {"lang": "en", "steps": 1, "scenes": [scene]}
+    assert make_video.check(board) == []
+    assert make_video.views(board)["splash"] == ("splash", None, "en")
+    scene["windows"][0]["pointer"][0][1] = "nowhere"
+    assert any("pointer" in e for e in make_video.check(board))
+    scene["windows"][0]["pointer"][0][1] = "go"
+    scene["tilt"] = [80, 0]
+    assert any("tilt" in e for e in make_video.check(board))
+
+
+def test_a_rudder_scene_takes_a_run_of_rudder_auto():
+    """A run of RUDDER AUTO belongs to the rudder model and its scene."""
+    scene = {"type": "case", "model": "rudder", "dur": 60,
+             "camera": [[0, [0, 250, 330], [0, 34, 10]],
+                        [60, [0, 250, 330], [0, 34, 10]]],
+             "rauto": {"at": 5, "speed": 2}, "labels": [],
+             "parts": {"imu": [[0, 1], [2, 0]], "tape": [[0, 1], [1, 0]]},
+             "deflect": [[0, 0], [5, 0]]}
+    board = {"lang": "en", "steps": 1, "scenes": [scene]}
+    assert make_video.check(board) == []
+    assert make_video.views(board) == {}
+    scene["rauto"]["at"] = 70
+    assert any("rauto" in e for e in make_video.check(board))
+    scene["rauto"]["at"] = 5
+    scene["model"] = "duo"
+    assert any("rauto" in e for e in make_video.check(board))
+
+
+def test_a_3d_scene_takes_touches_on_the_panel_and_the_dial():
+    """A touch names a screen the model shows, a pixel of it and a time."""
+    scene = {"type": "case", "model": "rudder", "dur": 60,
+             "camera": [[0, [0, 250, 330], [0, 34, 10]],
+                        [60, [0, 250, 330], [0, 34, 10]]],
+             "rauto": {"at": 5, "speed": 2}, "labels": [],
+             "touches": [
+                 {"at": 2, "on": "panel", "xy": [98, 324], "action": "tap"},
+                 {"at": 3, "on": "dial", "xy": [120, 120], "action": "hold"},
+                 {"run_ms": 2000, "on": "panel", "xy": [512, 528],
+                  "action": "hold"}]}
+    board = {"lang": "en", "steps": 1, "scenes": [scene]}
+    assert make_video.check(board) == []
+    scene["touches"][0]["xy"] = [1100, 324]
+    assert any("touch 1" in e for e in make_video.check(board))
+    scene["touches"][0]["xy"] = [98, 324]
+    scene["touches"][1]["xy"] = [120, 300]
+    assert any("touch 2" in e for e in make_video.check(board))
+    scene["touches"][1]["xy"] = [120, 120]
+    scene["touches"][1]["action"] = "swipe"
+    assert any("touch 2" in e for e in make_video.check(board))
+    scene["touches"][1]["action"] = "hold"
+    scene["touches"][0]["at"] = 61
+    assert any("touch 1" in e for e in make_video.check(board))
+    scene["touches"][0]["at"] = 2
+    del scene["rauto"]
+    assert any("touch 3" in e for e in make_video.check(board))
+    del scene["touches"][2]
+    scene["model"] = "dial"
+    assert any("touch 1" in e for e in make_video.check(board))
+
+
+def test_a_german_storyboard_is_written_out_for_a_german_speaker():
+    """A German board takes SPELL_DE: units and names as German says."""
+    import video_voice
+
+    said = video_voice.spoken("RESERVE 10%: 950 bis 2050us, 22.0° am IMU",
+                              "de")
+    assert said == ("Resärwe 10 Prozent: 950 bis 2050 Mikrosekunden, "
+                    "22.0 Grad am I M U")
+    assert video_voice.spoken("über eine Schubstange.", "de") == (
+        "über eine Schub Stange.")
+    assert video_voice.spoken("hold 2 s", "en") == "hold 2 seconds"
+    assert video_voice.spoken("A KST or Chaservo servo holds") == (
+        "A K S T or Cha servo holds")
+    assert video_voice.spoken("KST and Chaservo servos, a Chaservo") == (
+        "K S T and Cha servos, a Cha servo")
+    assert video_voice.spoken("KST- oder Chaservo-Servos", "de") == (
+        "K S T- oder Tscha-Servos")
+    board = {"lang": "de", "scenes": [{"type": "end", "dur": 5,
+                                       "say": "Der Dial am KST X10"}]}
+    assert video_voice.script(board)[0][3] == "Der Dail am K S T X 10"
+
+
+def test_a_face_names_a_screen_the_knob_does_nothing_on():
+    """other-TITLE-safe and other-TITLE-armed pose the Dial's other face."""
+    import render_dial
+
+    assert render_dial.other("other-rudder-auto-armed") == "RUDDER AUTO:armed"
+    assert render_dial.other("other-imu-safe") == "IMU"
+    assert render_dial.other("other") is None
+    assert render_dial.other("other-rudder-auto") is None
+    assert render_dial.other("navigation") is None
+
+
+def _g2p(words):
+    """A stand-in for misaki's en.G2P over (text, phonemes) pairs."""
+    import types
+
+    tokens = [types.SimpleNamespace(text=text, phonemes=said, whitespace=" ")
+              for text, said in words]
+    tokens[-1].whitespace = ""
+    return lambda text: ("", tokens)
+
+
+def test_a_negation_keeps_its_vowel_and_a_letter_its_stop():
+    """A negation is read with ə; "U." and "U-S-B." end a sentence."""
+    said = video_voice.phonemes("", _g2p([
+        ("It", "ˌɪt"), ("isn't", "ˈɪzᵊnt"), ("I", "ˌI"), ("M", "ˈɛm"),
+        ("U.", "jˈu"), ("Over", "ˈOvəɹ"), ("U-S-B.", "jˌuˈɛsbˈi"),
+        ("student", "stˈudᵊnt"), ("e.g.", "ˌiʤˈi"), ("x", None),
+        ("end", "ˈɛnd."),
+    ]))
+    assert said == ("ˌɪt ˈɪzənt ˌI ˈɛm jˈu. ˈOvəɹ jˌuˈɛsbˈi. stˈudᵊnt "
+                    "ˌiʤˈi  ˈɛnd.")
+
+
+class _Kokoro:
+    """A stand-in for kokoro_onnx.Kokoro that records create()."""
+
+    def __init__(self):
+        self.calls = []
+
+    def create(self, text, **kwargs):
+        import numpy as np
+
+        self.calls.append((text, kwargs))
+        clip = np.zeros(24000)
+        clip[6000:18000] = 0.5
+        return clip, 24000
+
+
+def test_kokoro_reads_misaki_phonemes(monkeypatch):
+    """en-us and en-gb go through misaki; another language does not."""
+    np = import_or_fail("numpy", "needs numpy")
+
+    speaker, asked = _Kokoro(), []
+    monkeypatch.setattr(video_voice, "_SPEAKER", speaker)
+    monkeypatch.setattr(video_voice, "_misaki", lambda british: (
+        asked.append(british) or _g2p([("isn't", "ˈɪzᵊnt")])))
+    clip = video_voice._speak(("isn't", {"name": "af_heart",
+                                         "lang": "en-us"}))
+    video_voice._speak(("isn't", {"name": "bm_george", "lang": "en-gb"}))
+    video_voice._speak(("n'est", {"name": "ff_siwis", "lang": "fr-fr"}))
+    assert asked == [False, True]
+    assert [(text, kw["is_phonemes"], kw["lang"])
+            for text, kw in speaker.calls] == [
+        ("ˈɪzənt", True, "en-us"), ("ˈɪzənt", True, "en-gb"),
+        ("n'est", False, "fr-fr")]
+    # 0.5s of sound inside 1s: trimmed to the sound and its margins.
+    want = 0.5 + video_voice.TRIM_LEAD_S + video_voice.TRIM_TAIL_S
+    assert abs(len(clip) / video_voice.RATE - want) < 0.002
+    assert np.abs(clip).max() == 1.0
+
+
+def test_trim_keeps_the_sound_and_its_margins():
+    """Silence goes from both ends; a quiet consonant above -40dB stays."""
+    np = import_or_fail("numpy", "needs numpy")
+
+    rate = 24000
+    t = np.arange(rate) / rate
+    loud = np.sin(2 * np.pi * 200 * t)
+    soft = 0.02 * np.cos(2 * np.pi * 3000 * t[: rate // 20])    # -34dB
+    hiss = 0.005 * np.sin(2 * np.pi * 3000 * t[: rate // 20])   # -46dB
+    clip = np.concatenate([np.zeros(rate * 3 // 10), hiss, soft, loud,
+                           np.zeros(rate // 2)])
+    cut = video_voice.trim(clip, rate)
+    first = rate * 3 // 10 + len(hiss)
+    lead = round(video_voice.TRIM_LEAD_S * rate)
+    tail = round(video_voice.TRIM_TAIL_S * rate)
+    assert np.array_equal(cut, clip[first - lead:first + len(soft)
+                                    + len(loud) + tail])
+    # Margins stop at the clip's ends; a silent clip stays whole.
+    assert np.array_equal(video_voice.trim(loud, rate), loud)
+    assert len(video_voice.trim(np.zeros(100), rate)) == 100
+    # Kokoro's own padding: 0.3s before and 0.5s after the sound.
+    padded = np.concatenate([np.zeros(rate * 3 // 10), loud,
+                             np.zeros(rate // 2)])
+    assert abs(len(video_voice.trim(padded, rate)) / rate - 1.06) < 0.001
+
+
+def test_a_stretched_scene_moves_the_times_of_its_windows():
+    """A stretched scene moves the times of its windows."""
+    import video_voice
+    path = make_video.VIDEO / "storyboards" / "rbmod-first-program.json"
+    board = json.loads(path.read_text(encoding="utf-8"))
+    scene = next(s for s in board["scenes"] if any(
+        "copy" in w for w in s.get("windows", [])))
+    was = json.loads(json.dumps(scene))
+    cues = [cue["at"] for cue in scene["say"]]
+    old = [0.0] + cues + [scene["dur"]]
+    new = [0.0, cues[0]] + [round(t + 5.0 * (n + 1), 2)
+                            for n, t in enumerate(old[2:])]
+    video_voice._stretch(scene, old, new)
+
+    def moved(t):
+        n = max(k for k in range(len(old) - 1) if old[k] <= t)
+        n = min(n, len(old) - 2)
+        return new[n] + (t - old[n]) * (new[n + 1] - new[n]) / (
+            old[n + 1] - old[n])
+
+    for now, then in zip(scene["windows"], was["windows"], strict=True):
+        assert now["from"] == pytest.approx(moved(then["from"]), abs=0.02)
+        assert now["to"] == pytest.approx(moved(then["to"]), abs=0.02)
+        assert now.get("at") == then.get("at")
+        if "copy" in then:
+            assert now["copy"]["t"] == pytest.approx(
+                [moved(t) for t in then["copy"]["t"]], abs=0.02)
+            assert now["nav"][-1]["on"] is True
+            late = [r for r in then["rows"] if "from" in r][0]["from"]
+            assert [r for r in now["rows"] if "from" in r][0][
+                "from"] == pytest.approx(moved(late), abs=0.02)
+        for key, old_key in zip(now.get("pointer", []),
+                                then.get("pointer", []), strict=True):
+            assert key[0] == pytest.approx(moved(old_key[0]), abs=0.02)
+            assert key[1:] == old_key[1:]
+    board["scenes"][board["scenes"].index(scene)] = scene
+    assert make_video.check(board) == []

@@ -10,6 +10,9 @@
  */
 #pragma once
 
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "dial_face.h"
@@ -277,9 +280,23 @@ static inline void dial_model(dial_model_t *m, int id, uint8_t lang)
         m->view.batt_mv = 0;
         m->view.usb = true;
         break;
-    default:
-        dm_screen(m, DK_FACE_OTHER, lang, "FILES");
-        dm_state(m, 0);
+    default: {
+        /* A video names the screen and the bench's state:
+         * RCBENCH_VIDEO_DIAL_OTHER is "TITLE" or "TITLE:armed". */
+        const char *other = getenv("RCBENCH_VIDEO_DIAL_OTHER");
+        char title[DK_TITLE_MAX + 1] = "FILES";
+        bool armed = false;
+        if (other != NULL && other[0] != '\0') {
+            const char *end = strchr(other, ':');
+            const size_t n = end != NULL ? (size_t)(end - other)
+                                         : strlen(other);
+            snprintf(title, sizeof(title), "%.*s",
+                     (int)(n > DK_TITLE_MAX ? DK_TITLE_MAX : n), other);
+            armed = end != NULL && strcmp(end, ":armed") == 0;
+        }
+        dm_screen(m, DK_FACE_OTHER, lang, title);
+        dm_state(m, armed ? DK_STA_ARMED : 0);
         break;
+    }
     }
 }

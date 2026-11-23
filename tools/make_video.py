@@ -30,7 +30,10 @@ Attributes:
     FRAME: The video frame in pixels, the range of a label's position.
     BEDS: The music beds of tools/video_audio.py.
     UNITS: The components of the cad model that a scene can move.
-    PART_FRAMES: The frames of one part that --keep keeps.
+    CACHE: The spoken lines and drawn views a later run reuses.
+    PART_FRAMES: The most frames of one part that --keep keeps.
+    VIEWS_KEPT: The sets of drawn views CACHE keeps.
+    PART_LEAST: The size in bytes a part must exceed to be reused.
     ANCHORS: The named points of the case model a label can point at.
     CONNECTORS: The headers of the case model and their position count.
     FITS: The parts a board scene solders across two pads.
@@ -52,499 +55,12 @@ import sys
 import tempfile
 import threading
 
-REPO = pathlib.Path(__file__).resolve().parent.parent
-VIDEO = REPO / "tools" / "video"
-PANEL = (1024, 600)
-FRAME = (1920, 1080)
-ANCHORS = ("display", "rbmod", "pdmini", "J1", "J2", "xt60", "usbc",
-           "estop", "side", "plug", "panel", "case", "mcu",
-           "ina", "buck", "trigger", "knob", "bezel", "usb", "power",
-           "portA", "portB", "body", "dial", "glass", "board", "card",
-           "buttons", "shell", "back", "ports", "esc", "tmt", "plugs",
-           "screws", "cell", "boost", "keys", "stamp", "nut", "top",
-           "bottom", "pad")
-MINI_UNITS = ("shell", "buttons", "ina", "board", "cell", "boost",
-              "plugs", "screws")
-STILLS = VIDEO / "stills"
-UNITS = ("lid", "estop", "xt60", "usbc", "pdmini", "mcu", "ina",
-         "buck", "trigger", "rbmod", "case")
-CONNECTORS = {"J1": 4, "J2": 4}
-BEDS = ("pads", "bach-prelude", "pachelbel-canon", "vivaldi-spring")
-PART_FRAMES = 900
-ACTIONS = ("tap", "hold")
-STYLES = ("ok", "warn", "muted")
-FITS = ("resistor", "zener", "cap", "link")
-INSETS = ("strip", "fill", "extract", "pins", "latch")
-
-
-def _number(value) -> bool:
-    return isinstance(value, (int, float)) and not isinstance(value, bool)
-
-
-def _span(item: dict, dur: float, where: str, errors: list) -> None:
-    lo, hi = item.get("from"), item.get("to")
-    if not (_number(lo) and _number(hi) and 0 <= lo < hi <= dur):
-        errors.append(f"{where}: from/to must lie in 0 to {dur}s, in order")
-
-
-def _keys(keys, size: int, where: str, errors: list) -> None:
-    last = -1.0
-    for key in keys if isinstance(keys, list) else [None]:
-        if not (isinstance(key, list) and len(key) == size
-                and _number(key[0]) and key[0] > last):
-            errors.append(f"{where}: keys are [t, ...] with rising t")
-            return
-        last = key[0]
-
-
-def _check_say(scene: dict, dur: float, where: str, errors: list) -> None:
-    cues = scene.get("say", [])
-    last = -1.0
-    for cue in cues if isinstance(cues, list) else [None]:
-        if not (isinstance(cue, dict) and isinstance(cue.get("text"), str)
-                and _number(cue.get("at")) and last < cue["at"] < dur):
-            errors.append(f"{where}: say holds {{at, text}} with rising at")
-            break
-        last = cue["at"]
-
-
-def _check_run(scene: dict, dur: float, where: str, errors: list) -> None:
-    run = scene["run"]
-    kind = run.get("kind", "motor") if isinstance(run, dict) else None
-    if kind not in RUNS or scene.get("model") not in ("dial", "duo"):
-        errors.append(f"{where} run: needs the dial or duo model and a "
-                      f"kind, one of {', '.join(RUNS)}")
-        return
-    if not (_number(run.get("from")) and _number(run.get("to"))
-            and 0 <= run["from"] < run["to"] <= dur):
-        errors.append(f"{where} run: from and to lie in the scene, in order")
-        return
-    keys = run.get({"motor": "throttle", "servo": "angle",
-                    "nav": "ops"}[kind])
-    rising = (isinstance(keys, list) and keys
-              and all(isinstance(k, list) and len(k) >= 2
-                      and _number(k[0]) for k in keys)
-              and all(a[0] < b[0] for a, b in zip(keys, keys[1:],
-                                                  strict=False)))
-    if not rising:
-        errors.append(f"{where} run: its keys are [t, ...] with rising t")
-    elif kind == "nav":
-        if not (isinstance(run.get("view"), str)
-                and all(len(k) == 2 and isinstance(k[1], str)
-                        and (k[1] in ("p", "h")
-                             or (k[1][:1] == "t"
-                                 and k[1][1:].lstrip("-").isdigit()))
-                        for k in keys)):
-            errors.append(f"{where} run: nav needs a view and ops [t, op], "
-                          "an op being p, h or t and a count of detents")
-    elif not all(len(k) in (2, 3) and _number(k[1]) for k in keys):
-        errors.append(f"{where} run: a key is [t, value]")
-    elif kind == "motor" and not (
-            _number(run.get("arm"))
-            and run["from"] <= run["arm"] < run["to"]
-            and all(0 <= k[1] <= 100 for k in keys)):
-        errors.append(f"{where} run: motor needs arm between from and to "
-                      "and a throttle of 0 to 100")
-
-
-def _check_case(scene: dict, where: str, errors: list) -> None:
-    dur = scene.get("dur")
-    if not (_number(dur) and dur > 0):
-        errors.append(f"{where}: dur must be a positive number")
-        return
-    _keys(scene.get("camera"), 3, f"{where} camera", errors)
-    if scene.get("model", "mockup") not in ("mockup", "cad", "dial", "duo",
-                                            "mini"):
-        errors.append(f"{where}: model must be mockup, cad, dial, duo "
-                      "or mini")
-    mini = scene.get("model") == "mini"
-    for name in ("faces", "turn", "flip"):
-        if name in scene:
-            _keys(scene[name], 2, f"{where} {name}", errors)
-    for key in scene.get("faces", []):
-        if not (isinstance(key, list) and len(key) == 2
-                and isinstance(key[1], str)):
-            errors.append(f"{where} faces: a key is [t, the face's name]")
-            break
-    last = -1.0
-    for key in scene.get("panel", []):
-        if not (isinstance(key, list) and len(key) in (2, 3)
-                and _number(key[0]) and key[0] > last
-                and all(isinstance(v, str) for v in key[1:])):
-            errors.append(f"{where} panel: a key is [t, view] or "
-                          "[t, view, screen] with rising t")
-            break
-        last = key[0]
-        if mini and not (STILLS / f"{key[1]}.png").is_file():
-            errors.append(f"{where} panel: tools/video/stills has no "
-                          f"{key[1]}.png")
-    if "run" in scene:
-        _check_run(scene, dur, where, errors)
-    if "lid" in scene:
-        _keys(scene["lid"], 2, f"{where} lid", errors)
-    if "display" in scene and not isinstance(
-            scene["display"].get("view"), str):
-        errors.append(f"{where}: display needs a view")
-    if "title" in scene:
-        _span(scene["title"], dur, f"{where} title", errors)
-        if not isinstance(scene["title"].get("heading"), str):
-            errors.append(f"{where} title: heading is missing")
-    for n, chip in enumerate(scene.get("chips", [])):
-        _span(chip, dur, f"{where} chip {n + 1}", errors)
-    for n, label in enumerate(scene.get("labels", [])):
-        at = f"{where} label {n + 1}"
-        _span(label, dur, at, errors)
-        anchor = label.get("anchor")
-        if not (anchor in ANCHORS or (isinstance(anchor, list)
-                                      and len(anchor) == 3)):
-            errors.append(f"{at}: anchor must be [x, y, z] in mm or one "
-                          f"of {', '.join(ANCHORS)}")
-        pos = label.get("at")
-        if not (isinstance(pos, list) and len(pos) == 2
-                and 0 <= pos[0] < FRAME[0] and 0 <= pos[1] < FRAME[1]):
-            errors.append(f"{at}: at must be [x, y] inside the frame")
-        if not isinstance(label.get("title"), str):
-            errors.append(f"{at}: title is missing")
-        if label.get("style", "ok") not in STYLES:
-            errors.append(f"{at}: style must be one of {', '.join(STYLES)}")
-    for name, keys in scene.get("parts", {}).items():
-        known = MINI_UNITS if mini else DIAL_UNITS if scene.get(
-            "model") == "dial" else UNITS
-        if name not in known:
-            errors.append(f"{where} parts: {name} is not one of "
-                          f"{', '.join(known)}")
-        _keys(keys, 2, f"{where} parts {name}", errors)
-    _check_say(scene, dur, where, errors)
-    for name in ("servo", "pinout"):
-        part = scene.get(name)
-        if part is None:
-            continue
-        count = CONNECTORS.get(part.get("connector"))
-        chosen = part.get("position" if name == "servo" else "select")
-        if count is None or not (isinstance(chosen, int)
-                                 and 1 <= chosen <= count):
-            errors.append(f"{where} {name}: connector must be one of "
-                          f"{', '.join(CONNECTORS)} with a position in it")
-    if "pinout" in scene:
-        _span(scene["pinout"], dur, f"{where} pinout", errors)
-    if "servo" in scene:
-        plug = scene["servo"].get("plug")
-        if not (_number(scene["servo"].get("appear"))
-                and isinstance(plug, list) and len(plug) == 2
-                and plug[0] < plug[1] <= dur):
-            errors.append(f"{where} servo: needs appear and plug [t0, t1]")
-
-
-def _place(value) -> bool:
-    # A point of a board: a pad's name, or [x, y] in mm.
-    return (isinstance(value, str) and "." in value) or (
-        isinstance(value, list) and len(value) == 2
-        and all(_number(v) for v in value))
-
-
-def _pair(value, dur: float) -> bool:
-    return (isinstance(value, list) and len(value) == 2
-            and all(_number(v) for v in value)
-            and 0 <= value[0] < value[1] <= dur)
-
-
-def _check_board(scene: dict, where: str, errors: list) -> None:
-    dur = scene.get("dur")
-    if not (_number(dur) and dur > 0):
-        errors.append(f"{where}: dur must be a positive number")
-        return
-    name = scene.get("board")
-    if not (isinstance(name, str) and name
-            and all(c.isalnum() or c in "-_" for c in name)):
-        errors.append(f"{where}: board names a file under tools/video/cad/, "
-                      "without its suffix")
-    keys = scene.get("camera")
-    _keys(keys, 3, f"{where} camera", errors)
-    for key in keys if isinstance(keys, list) else []:
-        if not (isinstance(key, list) and len(key) == 3 and _place(key[1])
-                and isinstance(key[1], list) and _number(key[2])
-                and key[2] > 0):
-            errors.append(f"{where} camera: a key is [t, [x, y], w] with "
-                          "the width w in mm above 0")
-            break
-    if "title" in scene:
-        _span(scene["title"], dur, f"{where} title", errors)
-        if not isinstance(scene["title"].get("heading"), str):
-            errors.append(f"{where} title: heading is missing")
-    for n, chip in enumerate(scene.get("chips", [])):
-        _span(chip, dur, f"{where} chip {n + 1}", errors)
-    for n, label in enumerate(scene.get("labels", [])):
-        at = f"{where} label {n + 1}"
-        _span(label, dur, at, errors)
-        if not _place(label.get("anchor")):
-            errors.append(f"{at}: anchor must be a pad's name or [x, y] "
-                          "in mm")
-        pos = label.get("at")
-        if not (isinstance(pos, list) and len(pos) == 2
-                and 0 <= pos[0] < FRAME[0] and 0 <= pos[1] < FRAME[1]):
-            errors.append(f"{at}: at must be [x, y] inside the frame")
-        if not isinstance(label.get("title"), str):
-            errors.append(f"{at}: title is missing")
-        if label.get("style", "ok") not in STYLES:
-            errors.append(f"{at}: style must be one of {', '.join(STYLES)}")
-    for n, tag in enumerate(scene.get("tags", [])):
-        at = f"{where} tag {n + 1}"
-        _span(tag, dur, at, errors)
-        if not (_place(tag.get("at")) and isinstance(tag.get("text"), str)
-                and tag.get("side", "r") in ("l", "r", "t", "b")):
-            errors.append(f"{at}: needs text and at, a pad's name or "
-                          "[x, y] in mm")
-    for n, net in enumerate(scene.get("nets", [])):
-        _span(net, dur, f"{where} net {n + 1}", errors)
-        if not isinstance(net.get("net"), str):
-            errors.append(f"{where} net {n + 1}: net is missing")
-    for n, cut in enumerate(scene.get("cuts", [])):
-        ends = cut.get("between")
-        if not (isinstance(ends, list) and len(ends) == 2
-                and all(_place(e) for e in ends)
-                and _pair(cut.get("t"), dur)):
-            errors.append(f"{where} cut {n + 1}: needs between, two points, "
-                          "and t [t0, t1]")
-    for n, wire in enumerate(scene.get("wires", [])):
-        via = wire.get("via", [])
-        if not (_place(wire.get("from")) and _place(wire.get("to"))
-                and isinstance(via, list) and all(_place(v) for v in via)
-                and ("gone" not in wire or _pair(wire["gone"], dur))
-                and _pair(wire.get("t"), dur)):
-            errors.append(f"{where} wire {n + 1}: needs from, to and "
-                          "t [t0, t1]")
-    _check_build(scene, dur, where, errors)
-    _check_say(scene, dur, where, errors)
-    for n, fit in enumerate(scene.get("fit", [])):
-        if not (fit.get("kind") in FITS and _place(fit.get("a"))
-                and _place(fit.get("b")) and _number(fit.get("t"))
-                and 0 <= fit["t"] < dur):
-            errors.append(f"{where} fit {n + 1}: needs kind, one of "
-                          f"{', '.join(FITS)}, the pads a and b, and t")
-
-
-def _names(value) -> bool:
-    return (isinstance(value, list) and bool(value)
-            and all(isinstance(v, str) for v in value))
-
-
-def _check_build(scene: dict, dur: float, where: str, errors: list) -> None:
-    # What a board scene needs to show a board being assembled.
-    if not isinstance(scene.get("bare", False), bool):
-        errors.append(f"{where}: bare is true or false")
-    for n, mount in enumerate(scene.get("mount", [])):
-        if not (_names(mount.get("refs")) and _number(mount.get("t"))
-                and 0 <= mount["t"] < dur):
-            errors.append(f"{where} mount {n + 1}: needs refs, a list of "
-                          "parts, and t")
-    for n, joint in enumerate(scene.get("solder", [])):
-        if not ((_names(joint.get("refs")) or _names(joint.get("pads")))
-                and isinstance(joint.get("back", False), bool)
-                and _pair(joint.get("t"), dur)):
-            errors.append(f"{where} solder {n + 1}: needs refs or pads, a "
-                          "list, and t [t0, t1]")
-    for n, plug in enumerate(scene.get("plugs", [])):
-        if not (isinstance(plug.get("name"), str) and plug["name"]
-                and "." not in plug["name"] and _place(plug.get("at"))
-                and isinstance(plug["at"], list)
-                and _number(plug.get("t")) and 0 <= plug["t"] < dur):
-            errors.append(f"{where} plug {n + 1}: needs a name, at, "
-                          "[x, y] in mm, and t")
-    for n, inset in enumerate(scene.get("insets", [])):
-        at = f"{where} inset {n + 1}"
-        _span(inset, dur, at, errors)
-        pos = inset.get("at")
-        if not (inset.get("kind") in INSETS
-                and isinstance(inset.get("title"), str)
-                and isinstance(pos, list) and len(pos) == 2
-                and 0 <= pos[0] < FRAME[0] and 0 <= pos[1] < FRAME[1]):
-            errors.append(f"{at}: needs kind, one of {', '.join(INSETS)}, "
-                          "a title and at, [x, y] inside the frame")
-
-
-def board_faults(scene: dict, plan: dict) -> list:
-    """Find what a board scene names and its board does not have.
-
-    Args:
-        scene: A board scene that passed check().
-        plan: The board as tools/video_board.py wrote it.
-
-    Returns:
-        One line per pad or net that the board lacks.
-    """
-    pads = {pad["name"] for pad in plan["pads"]}
-    pads |= {f"{plug['name']}.{pad}" for plug in scene.get("plugs", [])
-             for pad in ("G", "D+", "D-", "V")}
-    nets = {track["net"] for track in plan["tracks"]}
-    named = [label["anchor"] for label in scene.get("labels", [])]
-    named += [tag["at"] for tag in scene.get("tags", [])]
-    for cut in scene.get("cuts", []):
-        named += cut["between"]
-    for wire in scene.get("wires", []):
-        named += [wire["from"], wire["to"], *wire.get("via", [])]
-    for fit in scene.get("fit", []):
-        named += [fit["a"], fit["b"]]
-    for joint in scene.get("solder", []):
-        named += joint.get("pads", [])
-    faults = [f"no pad {name}" for name in named
-              if isinstance(name, str) and name not in pads]
-    refs = {part["ref"] for part in plan["parts"]}
-    faults += [f"no part {ref}"
-               for item in scene.get("mount", []) + scene.get("solder", [])
-               for ref in item.get("refs", []) if ref not in refs]
-    faults += [f"no track of net {net['net']}"
-               for net in scene.get("nets", []) if net["net"] not in nets]
-    return faults
-
-
-def _check_screen(scene: dict, steps: int, where: str, errors: list) -> None:
-    if not scene.get("steps"):
-        errors.append(f"{where}: steps is empty")
-    for n, step in enumerate(scene.get("steps", [])):
-        at = f"{where} step {n + 1}"
-        for name in ("view", "title"):
-            if not isinstance(step.get(name), str):
-                errors.append(f"{at}: {name} is missing")
-        action = step.get("action")
-        if action is not None and action not in ACTIONS:
-            errors.append(f"{at}: action must be one of "
-                          f"{', '.join(ACTIONS)}")
-        # The touch mark needs its lead-in: 0.75s for a tap, 2.45s for a
-        # hold, after the 0.6s the bubble takes to appear.
-        least = {"tap": 1.4, "hold": 3.1}.get(action, 0.9)
-        if not (_number(step.get("dur")) and step["dur"] >= least):
-            errors.append(f"{at}: dur must be at least {least}s")
-        if not (isinstance(step.get("n"), int) and 1 <= step["n"] <= steps):
-            errors.append(f"{at}: n must be a step from 1 to {steps}")
-        target = step.get("target")
-        if target is None and action is not None:
-            errors.append(f"{at}: a {action} needs a target")
-        if target is not None and not (
-                isinstance(target, list) and len(target) == 2
-                and 0 <= target[0] < PANEL[0]
-                and 0 <= target[1] < PANEL[1]):
-            errors.append(f"{at}: target must be [x, y] on the "
-                          f"{PANEL[0]}x{PANEL[1]} display")
-        if step.get("style", "ok") not in STYLES:
-            errors.append(f"{at}: style must be one of {', '.join(STYLES)}")
-
-
-def _check_tour(scene: dict, steps: int, where: str, errors: list) -> None:
-    if not scene.get("steps"):
-        errors.append(f"{where}: steps is empty")
-    for n, step in enumerate(scene.get("steps", [])):
-        at = f"{where} step {n + 1}"
-        if not (isinstance(step.get("n"), int) and 1 <= step["n"] <= steps):
-            errors.append(f"{at}: n must be a step from 1 to {steps}")
-        if "card" in step:
-            # A chapter card: its line is drawn by 1.25s.
-            if not isinstance(step["card"].get("title"), str):
-                errors.append(f"{at}: card needs a title")
-            if not (_number(step.get("dur")) and step["dur"] >= 2.0):
-                errors.append(f"{at}: dur must be at least 2.0s")
-            continue
-        for name in ("view", "title"):
-            if not isinstance(step.get(name), str):
-                errors.append(f"{at}: {name} is missing")
-        marks = step.get("marks", [])
-        for mark in marks if isinstance(marks, list) else [None]:
-            if not (isinstance(mark, dict) and isinstance(mark.get("text"),
-                                                          str)
-                    and isinstance(mark.get("at"), list)
-                    and len(mark["at"]) == 2
-                    and 0 <= mark["at"][0] < PANEL[0]
-                    and 0 <= mark["at"][1] < PANEL[1]
-                    and mark.get("side", "r") in ("l", "r", "t", "b")):
-                errors.append(f"{at}: a mark needs text and at, [x, y] on "
-                              f"the {PANEL[0]}x{PANEL[1]} display")
-        # The caption takes 0.6s to appear and each point 0.14s more; the
-        # spotlight is drawn by 1.5s, and a mark every 0.38s from 1.0s.
-        least = 2.5 if "focus" in step else 1.5
-        least = max(least, 1.9 + 0.38 * len(marks)) if marks else least
-        if not (_number(step.get("dur")) and step["dur"] >= least):
-            errors.append(f"{at}: dur must be at least {least}s")
-        if step.get("lang", "en") not in ("en", "de"):
-            errors.append(f"{at}: lang must be en or de")
-        focus = step.get("focus")
-        if focus is not None and not (
-                isinstance(focus, list) and len(focus) == 4
-                and focus[0] >= 0 and focus[1] >= 0
-                and focus[2] >= 24 and focus[3] >= 24
-                and focus[0] + focus[2] <= PANEL[0]
-                and focus[1] + focus[3] <= PANEL[1]):
-            errors.append(f"{at}: focus must be [x, y, w, h] on the "
-                          f"{PANEL[0]}x{PANEL[1]} display")
-        if not isinstance(step.get("points", []), list):
-            errors.append(f"{at}: points must be a list")
-
-
-#: The two printed parts of the Dial's hand-held base, in tools/video/cad/.
-DIAL_BASE = ("dial_base_top", "dial_base_bottom", "m5dial_nut")
-#: What stands apart in a scene of the Dial in its base.
-DIAL_UNITS = ("upper", "dial", "nut", "cell", "pad", "screws")
-
-
-def check(board: dict) -> list:
-    """Find what the player would not draw.
-
-    Args:
-        board: A storyboard as read from its JSON file.
-
-    Returns:
-        One line per fault; empty for a storyboard the player draws.
-    """
-    errors = []
-    if board.get("lang") not in ("en", "de"):
-        errors.append("lang must be en or de")
-    steps = board.get("steps", 0)
-    if not isinstance(steps, int) or steps < 0:
-        errors.append("steps must be a count of 0 or more")
-        steps = 0
-    voice = board.get("voice")
-    if voice is not None and not (
-            isinstance(voice, dict)
-            and (isinstance(voice.get("name"), str) or "blend" in voice)):
-        errors.append("voice needs a name or a blend of the speaker's "
-                      "voices")
-    if board.get("music", "pads") not in BEDS:
-        errors.append(f"music must be one of {', '.join(BEDS)}")
-    gain = board.get("music_gain", 1.0)
-    if not (_number(gain) and 0 <= gain <= 2):
-        errors.append("music_gain is a number from 0 to 2")
-    blend = (voice or {}).get("blend")
-    if blend is not None and not (
-            isinstance(blend, dict) and blend
-            and all(_number(part) and part > 0 for part in blend.values())):
-        errors.append("voice blend holds a positive part per voice")
-    if not isinstance(board.get("dial_base", False), bool):
-        errors.append("dial_base is true or false")
-    chapters = board.get("chapters")
-    if chapters is not None and not (
-            isinstance(chapters, list) and len(chapters) == steps
-            and all(isinstance(name, str) for name in chapters)):
-        errors.append("chapters must hold one name per step")
-    scenes = board.get("scenes")
-    if not isinstance(scenes, list) or not scenes:
-        return errors + ["scenes is empty"]
-    for n, scene in enumerate(scenes):
-        where = f"scene {n + 1}"
-        kind = scene.get("type") if isinstance(scene, dict) else None
-        if kind == "case":
-            _check_case(scene, where, errors)
-        elif kind == "board":
-            _check_board(scene, where, errors)
-        elif kind == "screen":
-            _check_screen(scene, steps, where, errors)
-        elif kind == "tour":
-            _check_tour(scene, steps, where, errors)
-        elif kind == "end":
-            if not (_number(scene.get("dur")) and scene["dur"] > 0
-                    and isinstance(scene.get("heading"), str)):
-                errors.append(f"{where}: needs dur and heading")
-        else:
-            errors.append(f"{where}: type must be case, board, screen, "
-                          "tour or end")
-    return errors
+# The checks and what they share with the render; MINI_UNITS, STILLS and
+# the others are kept as names of this module.
+from video_check import (  # noqa: F401
+    BEDS, CACHE, DIAL_BASE, MINI_UNITS, PART_FRAMES, PART_LEAST, REPO, RUNS,
+    STILLS, VIDEO, VIEWS_KEPT, _number, board_faults, check,
+)
 
 
 def views(board: dict) -> dict:
@@ -555,8 +71,10 @@ def views(board: dict) -> dict:
 
     Returns:
         The shots by file name without suffix, the view name with @de or
-        @en where a step sets its own language.  Each holds the view, the
-        screen name the storyboard gives or None, and the language.
+        @en where a step sets its own language and with ~ and the versions
+        where a step sets them.  Each holds the view, the screen name the
+        storyboard gives or None, the language and, where a step sets them, its
+        versions.
     """
     found = {}
     for scene in board["scenes"]:
@@ -564,10 +82,13 @@ def views(board: dict) -> dict:
             shot = scene["display"]
             found[shot["view"]] = (shot["view"], shot.get("screen"),
                                    board["lang"])
+        if scene["type"] == "board" and scene.get("enter", {}).get("view"):
+            view = scene["enter"]["view"]
+            found[view] = (view, scene["enter"].get("screen"), board["lang"])
         for key in scene.get("panel", []) if scene["type"] == "case" else []:
             # A run's shots are drawn by runs(), not from a view's name;
             # the mini model's are stills.
-            if not key[1].startswith("live-") \
+            if not key[1].startswith(("live-", "rauto-")) \
                     and scene.get("model") != "mini":
                 found[key[1]] = (key[1], key[2] if len(key) > 2 else None,
                                  board["lang"])
@@ -577,9 +98,13 @@ def views(board: dict) -> dict:
                     continue
                 lang = step.get("lang")
                 name = f"{step['view']}@{lang}" if lang else step["view"]
+                versions = step.get("versions")
+                if versions:
+                    name += "~" + "-".join(versions)
                 found[name] = (step["view"],
                                step.get("screen", scene.get("screen")),
-                               lang or board["lang"])
+                               lang or board["lang"],
+                               *([versions] if versions else []))
     return found
 
 
@@ -592,15 +117,21 @@ def faces(board: dict) -> list:
     Returns:
         The names of tools/render_dial.py's faces, sorted.
     """
-    return sorted({key[1] for scene in board["scenes"]
-                   if scene["type"] == "case"
-                   for key in scene.get("faces", [])
-                   if not key[1].startswith("live-")})
+    found = {key[1] for scene in board["scenes"]
+             if scene["type"] == "case"
+             for key in scene.get("faces", [])
+             if not key[1].startswith("live-")}
+    # A RUDDER AUTO run shows the Dial its title and the bench's state.
+    if any("rauto" in scene for scene in board["scenes"]):
+        found |= set(RAUTO_FACES[board["lang"] == "de"])
+    return sorted(found)
 
 
+# The Dial's faces of a RUDDER AUTO run, SAFE and ARMED: English, German.
+RAUTO_FACES = (("other-rudder-auto-safe", "other-rudder-auto-armed"),
+               ("other-ruder-auto-safe", "other-ruder-auto-armed"))
 RUN_HZ = 10
 DETENT_DEG = 22.5
-RUNS = ("motor", "servo", "nav")
 
 
 def run_value(run: dict, t: float) -> float:
@@ -795,10 +326,17 @@ def render_views(board: dict, shots: pathlib.Path) -> None:
         board: The storyboard.
         shots: The directory that takes one PNG per view.
     """
+    import concurrent.futures
+    import os
+
     import render_ui
 
     # The MiniRcBench's screens are stills: frames of its own host suite.
     for scene in board["scenes"]:
+        # A window's page is a capture of a web page, a still as well.
+        for window in scene.get("windows", []):
+            for key in window.get("page", {}).get("shots", []):
+                shutil.copy(STILLS / f"{key[1]}.png", shots / f"{key[1]}.png")
         if scene.get("model") == "mini":
             for key in scene.get("panel", []):
                 shutil.copy(STILLS / f"{key[1]}.png", shots / f"{key[1]}.png")
@@ -808,22 +346,38 @@ def render_views(board: dict, shots: pathlib.Path) -> None:
         tmp = pathlib.Path(td)
         exe = render_ui.build(tmp)
         known = {**render_ui.SCREENS, **render_ui.FIT_ONLY}
-        for name, (view, screen, lang) in views(board).items():
+
+        def draw(item):
+            n, (name, (view, screen, lang, *rest)) = item
+            versions = rest[0] if rest else None
             # A view of render_ui.py's tables brings its screen and theme;
             # any other is a pose of the screen the storyboard names.
             theme = "dark"
             if view in known:
                 _, screen, theme = known[view]
             if screen is None:
-                sys.exit(f"view {view!r} is not in render_ui.py's tables: "
-                         "the step or its scene must name the screen")
+                return (f"view {view!r} is not in render_ui.py's tables: "
+                        "the step or its scene must name the screen")
+            own = tmp / f"view-{n}"
+            own.mkdir()
             try:
-                image = render_ui.render_one(exe, tmp, view, screen, theme,
-                                             lang)
+                image = render_ui.render_one(
+                    exe, own, view, screen, theme, lang,
+                    env={"RCBENCH_VIDEO_VERSIONS": ",".join(versions)}
+                    if versions else None)
             except subprocess.CalledProcessError:
-                sys.exit(f"the renderer does not draw view {view!r} of "
-                         f"screen {screen!r}")
+                return (f"the renderer does not draw view {view!r} of "
+                        f"screen {screen!r}")
             image.save(shots / f"{name}.png")
+            return None
+
+        # One renderer process per view, as many at once as there are
+        # cores.
+        with concurrent.futures.ThreadPoolExecutor(
+                os.cpu_count() or 1) as pool:
+            for fault in pool.map(draw, enumerate(views(board).items())):
+                if fault:
+                    sys.exit(fault)
         wanted = faces(board)
         live = any("run" in scene for scene in board["scenes"])
         if wanted or live:
@@ -831,7 +385,8 @@ def render_views(board: dict, shots: pathlib.Path) -> None:
             import render_dial
 
             unknown = [name for name in wanted
-                       if name not in render_dial.FACES]
+                       if name not in render_dial.FACES
+                       and render_dial.other(name) is None]
             if unknown:
                 sys.exit(f"render_dial.py draws no face {unknown[0]!r}")
             dial = render_dial.build(tmp)
@@ -839,6 +394,139 @@ def render_views(board: dict, shots: pathlib.Path) -> None:
                 render_dial.render(dial, tmp, name, board["lang"]).save(
                     shots / f"dial-{name}.png")
             runs(board, shots, tmp, exe, dial)
+        rauto(board, shots, tmp)
+
+
+def rauto(board: dict, shots: pathlib.Path, tmp: pathlib.Path) -> None:
+    """Draw a RUDDER AUTO run and give its scene the shots and the flap.
+
+    test/host/video_rauto.c runs the run of the host suites and writes
+    the panel's screen every 500ms and the surface's angle every 100ms.
+    A scene with "rauto", {at, speed}, takes the frames as shots of its
+    display from "at" on, "speed" times as fast as the run, and the
+    angle as its "deflect" keys.
+
+    Args:
+        board: The storyboard; its scenes with "rauto" gain "panel" and
+            "deflect" keys.
+        shots: The directory that takes the frames, rauto-NNNN.png.
+        tmp: A directory for the run's files.
+    """
+    import os
+
+    from PIL import Image
+
+    scenes = [scene for scene in board["scenes"] if "rauto" in scene]
+    if not scenes:
+        return
+    build = REPO / "build" / "video_host"
+    quiet = {"check": True, "stdout": subprocess.DEVNULL}
+    subprocess.run(["cmake", "-S", str(REPO / "test" / "host"), "-B",
+                    str(build), "-DCMAKE_BUILD_TYPE=Release"], **quiet)
+    subprocess.run(["cmake", "--build", str(build), "--target",
+                    "video_rauto", "-j", str(os.cpu_count() or 1)], **quiet)
+    out = tmp / "rauto"
+    out.mkdir()
+    german = board["lang"] == "de"
+    subprocess.run([str(build / "video_rauto"), str(out)]
+                   + (["de"] if german else []), **quiet)
+    for path in sorted(out.glob("rauto-*.ppm")):
+        Image.open(path).convert("RGB").save(shots / f"{path.stem}.png")
+    rows = [line.split(",") for line in (out / "track.csv").read_text(
+        encoding="utf-8").splitlines()[1:]]
+    start = int(rows[0][1])
+    for scene in scenes:
+        at, speed = scene["rauto"]["at"], scene["rauto"].get("speed", 1)
+        panel, deflect, frame = [], [], None
+        dial, state = [], None
+        for n, (shot, ms, deg, _running, armed) in enumerate(rows):
+            t = round(at + (int(ms) - start) / 1000 / speed, 3)
+            if armed != state:
+                state = armed
+                dial.append([t, RAUTO_FACES[german][int(armed)]])
+            if shot != frame:
+                frame = shot
+                panel.append([t, f"rauto-{int(shot):04d}"])
+            # A key where the angle turns: the flap moves on lines.
+            edge = n in (0, len(rows) - 1) or not (
+                rows[n - 1][2] == deg == rows[n + 1][2])
+            if edge:
+                deflect.append([t, float(deg)])
+        # A touch of the run takes its time, and a hold its length.
+        for touch in scene.get("touches", []):
+            if "run_ms" in touch:
+                touch["at"] = round(at + touch.pop("run_ms") / 1000 / speed,
+                                    3)
+                if touch["action"] == "hold":
+                    touch["for"] = round(2 / speed, 3)
+        # The Dial's face follows the bench's state through the run.
+        scene["faces"] = sorted(
+            [key for key in scene.get("faces", []) if key[0] < at] + dial)
+        scene["panel"] = sorted(scene.get("panel", []) + panel)
+        scene["deflect"] = sorted(scene.get("deflect", []) + deflect)
+
+
+def _views_key(board: dict) -> str:
+    """Name what render_views() draws from.
+
+    Args:
+        board: The storyboard.
+
+    Returns:
+        A hash of the storyboard and of every file under the directories
+        the two renderers build from, the tools and the stills.
+    """
+    import hashlib
+
+    whole = hashlib.sha256(json.dumps(board, sort_keys=True).encode())
+    roots = [REPO / "shared", REPO / "protocols", REPO / "test" / "host",
+             STILLS]
+    files = [path for root in roots for path in root.rglob("*")
+             if path.is_file()]
+    files += list((REPO / "tools").glob("*.py"))
+    for path in sorted(files):
+        whole.update(str(path.relative_to(REPO)).encode())
+        whole.update(hashlib.sha256(path.read_bytes()).digest())
+    return whole.hexdigest()[:20]
+
+
+def cached_views(board: dict, shots: pathlib.Path,
+                 cache: pathlib.Path) -> dict:
+    """Run render_views() once per storyboard and source tree.
+
+    The shots and the storyboard a run's shots extend are kept under
+    @p cache in a directory named by _views_key(); a later run with the
+    same key copies them back.  The VIEWS_KEPT newest directories stay.
+
+    Args:
+        board: The storyboard.
+        shots: The directory that takes one PNG per view.
+        cache: The directory of kept views.
+
+    Returns:
+        The storyboard as render_views() leaves it.
+    """
+    kept = cache / _views_key(board)
+    if (kept / "storyboard.json").is_file():
+        for path in kept.glob("*.png"):
+            shutil.copy(path, shots / path.name)
+        return json.loads((kept / "storyboard.json").read_text(
+            encoding="utf-8"))
+    render_views(board, shots)
+    part = kept.with_suffix(".part")
+    shutil.rmtree(part, ignore_errors=True)
+    part.mkdir(parents=True)
+    for path in shots.glob("*.png"):
+        shutil.copy(path, part / path.name)
+    (part / "storyboard.json").write_text(json.dumps(board),
+                                          encoding="utf-8")
+    part.replace(kept)
+    old = sorted((path for path in cache.iterdir()
+                  if path.is_dir() and path.suffix != ".part"),
+                 key=lambda path: path.stat().st_mtime, reverse=True)
+    for path in old[VIEWS_KEPT:]:
+        shutil.rmtree(path, ignore_errors=True)
+    return board
 
 
 class _Handler(http.server.SimpleHTTPRequestHandler):
@@ -868,6 +556,8 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
             name = pathlib.PurePosixPath(path).name
             drawn = VIDEO / "boards" / name
             return str(drawn if drawn.is_file() else VIDEO / "cad" / name)
+        if path.startswith("/plots/"):
+            return str(VIDEO / "plots" / pathlib.PurePosixPath(path).name)
         if path.startswith("/node_modules/"):
             return str(VIDEO / path.lstrip("/"))
         return super().translate_path(path)
@@ -885,6 +575,18 @@ def _plan(scene: dict) -> pathlib.Path:
     # A board drawn by hand is in the tree; a converted one is not.
     drawn = VIDEO / "boards" / f"{scene['board']}.json"
     return drawn if drawn.is_file() else VIDEO / "cad" / drawn.name
+
+
+def _holds_video(path: pathlib.Path) -> bool:
+    """Tell whether a captured part can be used.
+
+    Args:
+        path: The part's file.
+
+    Returns:
+        True for a file of more than PART_LEAST bytes.
+    """
+    return path.is_file() and path.stat().st_size > PART_LEAST
 
 
 def _capture(cmd: list, board: dict, out: pathlib.Path, fps: int,
@@ -913,7 +615,8 @@ def _capture(cmd: list, board: dict, out: pathlib.Path, fps: int,
         spans = [(a, b, where / f"{mark}-{fps}-{a}-{b}.mp4")
                  for a, b in zip(edges, edges[1:], strict=False)]
     else:
-        # With a directory to keep them in, parts of PART_FRAMES frames
+        # With a directory to keep them in, parts of at most PART_FRAMES
+        # frames and frames / jobs
         # within each scene, named by what the scene's frames show: the
         # scene, its place in the video, the video's length, the steps
         # before it, its board and the player.  A change to one scene
@@ -929,20 +632,25 @@ def _capture(cmd: list, board: dict, out: pathlib.Path, fps: int,
         # The bed and its level are heard, not seen.
         rest = {name: value for name, value in board.items()
                 if name not in ("scenes", "music", "music_gain")}
+        # Parts short enough that every job has one.
+        size = max(1, min(PART_FRAMES, -(-frames // jobs)))
         before = 0
         for n, (scene, (start, length)) in enumerate(
                 zip(board["scenes"], times, strict=True)):
             plan = ""
             if scene["type"] == "board":
                 plan = _plan(scene).read_text(encoding="utf-8")
+            if scene["type"] == "scope":
+                plan = (VIDEO / "plots" / f"{scene['figure']}.json"
+                        ).read_text(encoding="utf-8")
             mark = digest([rest, scene, start, total, n,
                            len(board["scenes"]), before, plan, code,
                            seen])
             first = round(start * fps)
             end = frames if n == len(times) - 1 else round(
                 (start + length) * fps)
-            for a in range(first, end, PART_FRAMES):
-                b = min(end, a + PART_FRAMES)
+            for a in range(first, end, size):
+                b = min(end, a + size)
                 spans.append((a, b, where / f"{mark}-{fps}-{a}-{b}.mp4"))
             for chip in scene.get("chips", []):
                 if _number(chip.get("n")):
@@ -952,11 +660,16 @@ def _capture(cmd: list, board: dict, out: pathlib.Path, fps: int,
 
     def one(span):
         a, b, done = span
-        if keep is not None and done.is_file():
+        # A part without video is one whose capture died: drawn again.
+        if keep is not None and _holds_video(done):
             return 0
         part = done.with_suffix(".part.mp4")
         status = subprocess.run(cmd + ["video", str(part), str(fps),
                                        str(a), str(b)]).returncode
+        if status == 0 and not _holds_video(part):
+            print(f"{part.name}: the capture wrote no video",
+                  file=sys.stderr)
+            return 1
         if status == 0:
             part.replace(done)
         return status
@@ -999,6 +712,9 @@ def main() -> int:
     ap.add_argument("--keep", type=pathlib.Path, metavar="DIR",
                     help="keep the captured parts here; a run that was "
                          "cut off continues with the parts it lacks")
+    ap.add_argument("--no-cache", action="store_true",
+                    help="speak every line and draw every view again, "
+                         "without reading or writing build/video/cache/")
     ap.add_argument("--no-sound", action="store_true",
                     help="write the video without its sound track")
     ap.add_argument("--check", action="store_true",
@@ -1083,10 +799,14 @@ def main() -> int:
         if "voice" in board and not args.no_voice and not args.no_sound:
             import video_voice
 
-            board, clips = video_voice.narrate(board)
+            board, clips = video_voice.narrate(
+                board, None if args.no_cache else CACHE / "voice")
         # A run's shots add keys to its scene: drawn before the player's
         # copy of the storyboard is written.
-        render_views(board, shots)
+        if args.no_cache:
+            render_views(board, shots)
+        else:
+            board = cached_views(board, shots, CACHE / "views")
         played = shots / "storyboard.json"
         played.write_text(json.dumps(board), encoding="utf-8")
         handler = functools.partial(_Handler, board=played, shots=shots)

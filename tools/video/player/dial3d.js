@@ -186,6 +186,13 @@ export function makeDial(gltf, bases = null, nut = null) {
   const inBase = g.top.children.length > 0;
   return {
     root,
+    // A pixel of the Dial's 240 x 240 face, in the scene.
+    pixel: (x, y) => {
+      root.updateWorldMatrix(true, true);
+      return g.dial.localToWorld(new THREE.Vector3(
+        (x / 120 - 1) * SCREEN, GLASS + .1, (y / 120 - 1) * SCREEN))
+        .toArray();
+    },
     // How far the base raises the Dial over standing alone, mm.
     lift: rest - alone,
     // Named points: x right, y up from the Dial's seat, z towards the
@@ -256,7 +263,9 @@ export function buildDial(gltf, bases = null, nut = null) {
   ground.position.y -= dial.lift;
   scene.add(dial.root);
   return {
-    scene, cam, ...dial,
+    // A touch on the Dial's face finds its pixels under this name on
+    // every rig that holds a Dial.
+    scene, cam, ...dial, dialPixel: dial.pixel,
     setLid: () => {},
     setServoPort: () => {},
     setServo: () => {},

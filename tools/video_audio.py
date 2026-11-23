@@ -29,6 +29,22 @@ every eighth, 0.42s an eighth.  It is in the public domain.  The notes are
 set down from memory of the violin part and are not checked against a
 score.
 
+"bach-cello" is the Prelude of the Suite No. 1 in G major for cello
+solo, BWV 1007, of J. S. Bach: its 41 bars of sixteenth notes on a
+plucked voice, 4s a bar, over each bar's lowest note as a quiet pad, then
+the closing chord.  The composition is in the public domain.  The notes
+are those of the Mutopia Project's edition Mutopia-2018/01/19-517
+(typeset by Andreas Scherer from Schirmer, 1916), which its typesetter
+placed in the public domain; no recording is used.
+
+"beethoven-moonlight" is the opening of the Sonata quasi una fantasia
+in C sharp minor, Op. 27 No. 2, of Ludwig van Beethoven (1770 to 1827),
+first movement: bars 1 to 4, their triplets on a plucked voice, 0.37s a
+note, over the bass octaves, as a loop, then the C sharp minor chord of
+bar 5.  The composition is in the public domain.  The notes are read
+from the first edition (Vienna: Cappi, 1802; scan 15808 of the
+International Music Score Library Project); no recording is used.
+
 While a case scene holds a component in the air, the music stops as a
 record does under a hand: its speed falls to SLOW over BRAKE_S, pitch
 and all, and comes back over SPIN_S when the component moves on.
@@ -49,6 +65,14 @@ Attributes:
         chord.
     CANON_LINES: Three variations of the canon: 8 notes, 8 notes and 32.
     CANON_NOTE_S: Seconds one note of the ground lasts.
+    CELLO: The Prelude of BWV 1007 bar by bar: the MIDI note of each
+        sixteenth, 0 where the note before is held.
+    CELLO_END: Its closing chord.
+    CELLO_BAR_S: Seconds one bar of it lasts.
+    MOON: Bars 1 to 4 of Beethoven's Op. 27 No. 2, first movement: per
+        bar its 4 triplets and the bass octave of each half bar.
+    MOON_END: The chord of bar 5 that closes the bed.
+    MOON_NOTE_S: Seconds one triplet note of it lasts.
     SPRING: The opening of "Spring" from Vivaldi's Four Seasons, RV 269,
         first movement, in E major: per bar the melody as (MIDI note,
         length in eighths) and the bass note of each half bar.  Bars 0
@@ -121,7 +145,62 @@ SPRING = (
 )
 SPRING_ORDER = (0, 1, 2, 0, 1, 2, 3, 4, 5, 6, 7, 8)
 SPRING_EIGHTH_S = 0.42
-BEDS = ("pads", "bach-prelude", "pachelbel-canon", "vivaldi-spring")
+CELLO = (
+    (43, 50, 59, 57, 59, 50, 59, 50, 43, 50, 59, 57, 59, 50, 59, 50),
+    (43, 52, 60, 59, 60, 52, 60, 52, 43, 52, 60, 59, 60, 52, 60, 52),
+    (43, 54, 60, 59, 60, 54, 60, 54, 43, 54, 60, 59, 60, 54, 60, 54),
+    (43, 55, 59, 57, 59, 55, 59, 55, 43, 55, 59, 57, 59, 55, 59, 54),
+    (43, 52, 59, 57, 59, 55, 54, 55, 52, 55, 54, 55, 47, 50, 49, 47),
+    (49, 55, 57, 55, 57, 55, 57, 55, 49, 55, 57, 55, 57, 55, 57, 55),
+    (54, 57, 62, 61, 62, 57, 55, 57, 54, 57, 55, 57, 50, 54, 52, 50),
+    (40, 47, 55, 54, 55, 47, 55, 47, 40, 47, 55, 54, 55, 47, 55, 47),
+    (40, 49, 50, 52, 50, 49, 47, 45, 55, 54, 52, 62, 61, 59, 57, 55),
+    (54, 52, 50, 62, 57, 62, 54, 57, 50, 52, 54, 57, 55, 54, 52, 50),
+    (56, 50, 53, 52, 53, 50, 56, 50, 59, 50, 53, 52, 53, 50, 56, 50),
+    (48, 52, 57, 59, 60, 57, 52, 50, 48, 52, 57, 59, 60, 57, 54, 52),
+    (51, 54, 51, 54, 57, 54, 57, 54, 51, 54, 51, 54, 57, 54, 57, 54),
+    (55, 54, 52, 55, 54, 55, 57, 54, 55, 54, 52, 50, 48, 47, 45, 43),
+    (42, 48, 50, 48, 50, 48, 50, 48, 42, 48, 50, 48, 50, 48, 50, 48),
+    (43, 47, 53, 52, 53, 47, 53, 47, 43, 47, 53, 52, 53, 47, 53, 47),
+    (43, 48, 52, 50, 52, 48, 52, 48, 43, 48, 52, 50, 52, 48, 52, 48),
+    (43, 54, 60, 59, 60, 54, 60, 54, 43, 54, 60, 59, 60, 54, 60, 54),
+    (43, 50, 59, 57, 59, 55, 54, 52, 50, 48, 47, 45, 43, 42, 40, 38),
+    (37, 45, 52, 54, 55, 52, 54, 55, 37, 45, 52, 54, 55, 52, 54, 55),
+    (36, 45, 50, 52, 54, 50, 52, 54, 36, 45, 50, 52, 54, 50, 52, 54),
+    (36, 45, 50, 54, 57, 61, 62, 0, 0, 45, 47, 48, 50, 52, 54, 55),
+    (57, 54, 50, 52, 54, 55, 57, 59, 60, 57, 54, 55, 57, 59, 60, 62),
+    (63, 62, 61, 62, 62, 60, 59, 60, 60, 57, 54, 52, 50, 45, 47, 48),
+    (38, 45, 50, 54, 57, 59, 60, 57, 59, 55, 50, 48, 47, 43, 45, 47),
+    (38, 43, 47, 50, 55, 57, 59, 55, 61, 58, 57, 58, 58, 57, 56, 57),
+    (57, 55, 54, 55, 55, 52, 49, 47, 45, 49, 52, 55, 57, 61, 62, 61),
+    (62, 57, 54, 52, 54, 57, 50, 54, 45, 50, 49, 47, 45, 43, 42, 40),
+    (38, 0, 60, 59, 57, 55, 54, 52, 50, 60, 59, 57, 55, 54, 52, 50),
+    (48, 59, 57, 55, 54, 52, 50, 48, 47, 57, 55, 54, 52, 50, 48, 47),
+    (45, 55, 54, 52, 54, 57, 50, 57, 52, 57, 54, 57, 55, 57, 52, 57),
+    (54, 57, 50, 57, 55, 57, 52, 57, 54, 57, 50, 57, 55, 57, 52, 57),
+    (54, 57, 50, 57, 52, 57, 54, 57, 55, 57, 57, 57, 59, 57, 50, 57),
+    (57, 57, 59, 57, 60, 57, 50, 57, 59, 57, 60, 57, 62, 57, 59, 57),
+    (60, 57, 59, 57, 60, 57, 57, 57, 59, 57, 57, 57, 59, 57, 55, 57),
+    (57, 57, 55, 57, 57, 57, 54, 57, 55, 57, 54, 57, 55, 57, 52, 57),
+    (54, 57, 50, 52, 53, 50, 54, 50, 55, 50, 56, 50, 57, 50, 58, 50),
+    (59, 50, 60, 50, 61, 50, 62, 50, 63, 50, 64, 50, 65, 50, 66, 50),
+    (67, 59, 50, 59, 67, 59, 67, 59, 67, 59, 50, 59, 67, 59, 67, 59),
+    (67, 57, 50, 57, 67, 57, 67, 57, 67, 57, 50, 57, 67, 57, 67, 57),
+    (66, 60, 50, 60, 66, 60, 66, 60, 66, 60, 50, 60, 66, 60, 66, 60),
+)
+CELLO_END = (43, 59, 67)
+CELLO_BAR_S = 4.0
+MOON = (
+    (((56, 61, 64),) * 4, ((37, 49),) * 2),
+    (((56, 61, 64),) * 4, ((35, 47),) * 2),
+    (((57, 61, 64),) * 2 + ((57, 62, 66),) * 2, ((33, 45), (30, 42))),
+    (((56, 60, 66), (56, 61, 64), (56, 61, 63), (54, 60, 63)),
+     ((32, 44),) * 2),
+)
+MOON_END = (37, 44, 49, 52, 56, 61)
+MOON_NOTE_S = 0.37
+BEDS = ("pads", "bach-prelude", "pachelbel-canon", "vivaldi-spring",
+        "bach-cello", "beethoven-moonlight")
 SLOW = 0.05
 BRAKE_S = 1.1
 SPIN_S = 0.7
@@ -253,6 +332,17 @@ def events(board: dict) -> list:
                 found.append((start + joint["t"][0], "swell", 0))
             for inset in scene.get("insets", []):
                 found.append((start + inset["from"] + 0.1, "pop", 0))
+        elif kind == "scope":
+            if "title" in scene:
+                found.append((start + scene["title"]["from"], "chime", 0))
+            for label in scene.get("labels", []):
+                found.append((start + label["from"] + 0.1, "pop", 0))
+            # A panel comes with a rising sound, a current with a tick.
+            for panel in scene["panels"]:
+                if panel.get("from", 0) > 0:
+                    found.append((start + panel["from"], "swell", 0))
+                for n, flow in enumerate(panel.get("flow", [])):
+                    found.append((start + flow["from"], "tick", n % 5))
         elif kind == "end":
             found.append((start + 0.3, "final", 0))
         at = start
@@ -416,6 +506,80 @@ def render(board: dict, path: pathlib.Path, clips=()) -> float:
             pan = -0.5 + (note - 36) / 45.0
             put(music, t0 + k * step, sig, pan, 0.085)
             put(music, t0 + k * step + 0.375, sig, -pan, 0.02)
+    # The cello prelude: every sixteenth plucked, a held note ringing
+    # longer, over the bar's lowest note as a quiet pad.  The piece
+    # loops over its 41 bars; the last bar played is the closing chord.
+    count_c = int((span - 6.0) / CELLO_BAR_S) if bed == "bach-cello" else 0
+    for bar in range(count_c):
+        t0 = 1.0 + bar * CELLO_BAR_S
+        if bar == count_c - 1:
+            for note in CELLO_END:
+                for cents, pan in ((-5, -0.6), (6, 0.6)):
+                    sig, _ = tone(hz(note) * 2 ** (cents / 1200), 5.0, soft)
+                    put(music, t0, sig * swell(5.0, 0.05, 3.4), pan, 0.03)
+                sig, t = tone(hz(note), 3.0, pluck)
+                sig *= np.exp(-t / 1.6) * np.minimum(1.0, t / 0.012)
+                put(music, t0, sig, 0.0, 0.07)
+            break
+        row = CELLO[bar % len(CELLO)]
+        low = min(note for note in row if note)
+        env = swell(CELLO_BAR_S + 2.0, 1.2, 2.4)
+        for cents, pan in ((-5, -0.6), (6, 0.6)):
+            sig, _ = tone(hz(low) * 2 ** (cents / 1200), CELLO_BAR_S + 2.0,
+                          soft)
+            put(music, t0, sig * env, pan, 0.03)
+        sig, _ = tone(hz(low), CELLO_BAR_S + 2.0, ((1, 1.0), (2, 0.18)))
+        put(music, t0, sig * env, 0.0, 0.04)
+        for k, note in enumerate(row):
+            if not note:
+                continue
+            held = 0
+            while k + held + 1 < 16 and not row[k + held + 1]:
+                held += 1
+            sig, t = tone(hz(note), 2.4, pluck)
+            sig *= np.exp(-t / (0.5 + 0.3 * held)) * np.minimum(1.0,
+                                                                t / 0.012)
+            pan = -0.5 + (note - 36) / 36.0
+            at = t0 + k * CELLO_BAR_S / 16.0
+            put(music, at, sig, pan, 0.085)
+            put(music, at + 0.375, sig, -pan, 0.02)
+    # The Moonlight opening: the triplets plucked, each half bar's octave
+    # in the bass held under them and the triplet's chord as a quiet pad.
+    bar_m = 12 * MOON_NOTE_S
+    count_m = (int((span - 6.0) / bar_m)
+               if bed == "beethoven-moonlight" else 0)
+    for bar in range(count_m):
+        t0 = 1.0 + bar * bar_m
+        if bar == count_m - 1:
+            for note in MOON_END:
+                for cents, pan in ((-5, -0.6), (6, 0.6)):
+                    sig, _ = tone(hz(note) * 2 ** (cents / 1200), 5.0, soft)
+                    put(music, t0, sig * swell(5.0, 0.05, 3.4), pan, 0.022)
+                sig, t = tone(hz(note), 3.0, pluck)
+                sig *= np.exp(-t / 1.6) * np.minimum(1.0, t / 0.012)
+                put(music, t0, sig, 0.0, 0.05)
+            break
+        groups, basses = MOON[bar % len(MOON)]
+        for half, octave in enumerate(basses):
+            h0 = t0 + half * bar_m / 2
+            env = swell(bar_m / 2 + 1.6, 0.5, 1.8)
+            for note in octave:
+                sig, _ = tone(hz(note), bar_m / 2 + 1.6,
+                              ((1, 1.0), (2, 0.3), (3, 0.08)))
+                put(music, h0, sig * env, 0.0, 0.05)
+            for note in groups[half * 2]:
+                for cents, pan in ((-5, -0.6), (6, 0.6)):
+                    sig, _ = tone(hz(note) * 2 ** (cents / 1200),
+                                  bar_m / 2 + 1.6, soft)
+                    put(music, h0, sig * env, pan, 0.014)
+        for k, group in enumerate(groups):
+            for j, note in enumerate(group):
+                sig, t = tone(hz(note), 2.4, pluck)
+                sig *= np.exp(-t / 0.7) * np.minimum(1.0, t / 0.014)
+                pan = -0.3 + 0.3 * j
+                at = t0 + (k * 3 + j) * MOON_NOTE_S
+                put(music, at, sig, pan, 0.08)
+                put(music, at + 0.375, sig, -pan, 0.018)
     # Spring: the melody on a bowed voice with the third below it, the
     # bass plucked on every eighth and its chord as a quiet pad.  The
     # first bar holds only the upbeat; the last 3s are a held E major.
