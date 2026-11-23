@@ -366,10 +366,13 @@ Ausgang (RAIL 0 von POWER oder sein gelöschtes Bit in PORT_WANT) wartet
 auf ein Schreiben wie das OFF des PD mini: jeder andere Port geht sofort
 aus, der Ausgang der Sitzung, wenn das Schreiben endet, höchstens 10000ms
 nach dem OFF. Ein ausgebliebener Heartbeat, der Failsafe des Links und ein
-Auslösen schalten die Schiene und jeden Port sofort ab. Ohne die
-Portschalter wird CONNECT abgelehnt, solange ein anderer Kanal aktiv ist;
-mit ihnen schaltet eine Sitzung mit einer anderen Spannung als der der
-Schiene jeden anderen Port aus. CONNECT wird abgelehnt, solange die
+Auslösen schalten die Schiene und jeden Port sofort ab, und keine Sitzung
+schaltet sie wieder ein, bis RAIL 1 des Panels TRIPPED löscht. Es läuft
+eine Programmiersitzung zur Zeit. Ohne die Portschalter wird CONNECT
+abgelehnt, solange ein anderer Kanal aktiv ist; mit ihnen schaltet eine
+Sitzung mit einer anderen Spannung als der der Schiene jeden anderen Port
+aus. Der Ausgang der Sitzung wird erst eingeschaltet, wenn der PD mini die
+Spannung der Sitzung liest, höchstens 150mV darüber. CONNECT wird abgelehnt, solange die
 BEC-Prüfung 500mV oder mehr an irgendeinem Port findet
 ([Link, Programmieren an der gemeinsamen Schiene](Link-de.md#programmieren-an-der-gemeinsamen-schiene)).
 

@@ -1912,12 +1912,18 @@ die Spannung der Schiene für jeden Port.
 - Ein Kanal ist aktiv, solange ein Slot von OUTPUTS oder ein
   Programmierport mit einer Funktion außer NONE an den Pin seines Ausgangs
   gebunden ist.
+- Eine Programmiersitzung zur Zeit auf dem Knoten: solange eine Sitzung
+  von KST, Hitec oder ESC wire einen Port hält, wird CONNECT an jedem
+  anderen Port abgelehnt (KST BUSY, Hitec HELD, ESC wire HELD).
 - Das OFF der Sitzung wird immer genommen und lässt den PD mini, wie er
-  ist. Ihr ON wird abgelehnt (KST-Ergebnis 32, Hitec-Ergebnis 3)
-  ohne lebenden Heartbeat, auf einem abgelehnten Chip, bevor die
-  Critical-Grenzen gehalten werden, an einem Throttle-Ausgang, mit einem
-  gefundenen BEC, ohne die Schalter, während ein anderer Kanal aktiv ist,
-  und nach dem OFF des Panels, bis die Sitzung loslässt.
+  ist. Ihr ON wird abgelehnt (KST-Ergebnis 32, Hitec-Ergebnis 3), solange
+  TRIPPED steht (bis RAIL 1 des Panels es löscht), ohne lebenden
+  Heartbeat, auf einem abgelehnten Chip, bevor die Critical-Grenzen
+  gehalten werden, an einem Throttle-Ausgang, mit einem gefundenen BEC,
+  ohne die Schalter, während ein anderer Kanal aktiv ist, und nach dem OFF
+  des Panels oder einem abgelaufenen ON, bis die Sitzung loslässt. Ein
+  Auslösen beendet außerdem den Halt der Sitzung an der Schiene: kein
+  späteres ON dieser Sitzung wird genommen.
 - Ist der PD mini an der Spannung der Sitzung an und ein anderer Port an,
   lässt das ON der Sitzung den PD mini und seine Stromgrenze, wie sie
   sind. Sonst wird der PD mini auf Spannung und Stromgrenze der Sitzung
@@ -1925,6 +1931,17 @@ die Spannung der Schiene für jeden Port.
   mit dem Ausgang an nur auf eine Spannung, die nicht höher ist als die,
   mit der er läuft
   ([Die Versorgung eines Programmierports](Safety-de.md#die-versorgung-eines-programmierports)).
+- Mit dem Ausgang der Sitzung aus wartet ihr ON auf den PD mini: der
+  Ausgang (und ohne die Schalter die Schiene) wird erst eingeschaltet,
+  wenn der PD mini am erbetenen Sollwert an liest und sein Ausgang von
+  300mV darunter bis 150mV darüber liest, 100ms hintereinander, wenn das
+  ON den PD mini verstellt hat, sofort, wenn nicht. Jede Regel darüber wird
+  dann erneut geprüft. Nicht so innerhalb von 2500ms: der PD mini wird
+  ausgeschaltet, wenn das ON ihn verstellt hat, der Ausgang bleibt aus, und
+  das ON der Sitzung bleibt abgelehnt. Solange es wartet, liest die
+  Versorgung der Sitzung erbeten an, weder an noch aus. Ein Hitec-POWER,
+  dessen Spannung den PD mini verstellt, beginnt sein Lauschen bis zur
+  Einschwingzeit des PD mini plus 100ms, bevor das Servo Strom hat.
 - Ein ON der Sitzung aus RAIL 0 löscht die anderen Bits in PORT_WANT: die
   anderen Ports gehen nur mit dem eigenen Schreiben des Panels an.
 - Solange eine Sitzung ihren Ausgang hält, wird ein Schreiben des Panels,

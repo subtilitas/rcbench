@@ -14,9 +14,12 @@ history is in git.
   with them. Without the port switches CONNECT is refused while another
   channel is active; with them a session at another voltage than the
   rail's switches every other port off until it ends. CONNECT is refused
-  while the BEC check finds 500mV or more on any port. The panel's OFF of
-  the session's port waits for a write to the servo's memory, 10000ms at
-  most ([Link, Programming on the common rail](docs/Link.md#programming-on-the-common-rail)).
+  while the BEC check finds 500mV or more on any port, and on every port
+  while another session holds one. The session's port is switched on only
+  once the PD mini reads the session's voltage (300mV under to 150mV over,
+  100ms settled, 2500ms at most). After a trip no session switches the
+  rail on until the panel's RAIL 1. The panel's OFF of the session's port
+  waits for a write to the servo's memory, 10000ms at most ([Link, Programming on the common rail](docs/Link.md#programming-on-the-common-rail)).
 - The panel updates the display node (the power node on the ES3C28P,
   ESP32-S3) over Bluetooth LE from SETUP > UPDATES. The power node's row
   sends the image of the board the node's INFO names:

@@ -49,24 +49,31 @@ static bool rs_supply_set(void *ctx, bool on, uint16_t mv, uint16_t ma)
     return taken;
 }
 
+/* Bit q: another page's session holds programming port q. */
+static uint8_t g_other_held;
+
 /* The rail and the SUPPLY page told of the hold and the write
  * (ports_tell_supply()), and the CONNECT rules (ports_exclusive()). */
 static void tell(void)
 {
     const bool held = hitec_port_supply_hold(&g_port);
 
-    prog_rail_tell(&g_rail, &g_pw, held, hitec_port_writing(&g_port), g_ms);
+    static const int k_of[2] = { K, 6 };
+
+    g_rnow = g_ms;
+    rail_tell(held, hitec_port_writing(&g_port));
     supply_page_hold(&g_sp, held);
     supply_page_port_writes(&g_sp, hitec_port_writing(&g_port));
     hitec_port_other_mask(&g_port,
-                          prog_rail_connect(&g_pw, K, &g_rctx) != PROG_RAIL_OK
-                              ? (uint8_t)(1u << CH) : 0u);
+                          prog_rail_connect_mask(&g_pw, k_of, 2u, g_other_held,
+                                                 &g_rctx));
 }
 
 /* One pass: the port, the rail, the SUPPLY page and the module; the servo
  * powered as the session's view reads. */
 static void pass_as(bool safe)
 {
+    g_rnow = g_ms;
     hitec_port_step(&g_port, safe, false, g_ms);
     tell();
     supply_page_port_frame(&g_sp, hitec_port_frame_out(&g_port, g_ms), g_ms);
@@ -112,6 +119,7 @@ static void bench(bool switches)
     g_port.hw.supply = rs_supply;
     g_port.hw.supply_set = rs_supply_set;
     rig_start(switches, K, true);
+    g_other_held = 0u;
     CHECK_EQ(pw_write(LINK_PW_RAIL, 1u, g_ms), 0u);
     CHECK_EQ(pw_write(LINK_PW_PORT_WANT, 0x0003u | K_BIT, g_ms), 0u);
     pass();
@@ -191,6 +199,11 @@ TEST_CASE(a_power_at_another_voltage_switches_the_other_ports_off)
     open_ok();
     power(5500u, 500u);
     until(LINK_HITEC_OPEN);
+    /* The PD mini moved: port k on PROG_RAIL_SETTLE_MS after it reads
+     * 5500mV, after the 100ms listen of this POWER. */
+    for (unsigned i = 0; i < 300u && (ports_on() & K_BIT) == 0u; ++i) {
+        pass();
+    }
     CHECK_EQ(ports_on(), K_BIT);
     CHECK_EQ(g_pd.want_mv, 5500u);
     CHECK_EQ(pw_write(LINK_PW_PORT_WANT, K_BIT | 0x0001u, g_ms),
@@ -314,6 +327,57 @@ TEST_CASE(an_error_between_two_writes_waits_without_the_switches)
     error_between_two_writes(false);
 }
 
+/* A trip @p at_ms into a POWER's off wait: nothing is switched on again,
+ * the POWER ends with its error. */
+static void trip_in_power(bool switches, uint32_t at_ms)
+{
+    bench(switches);
+    open_ok();
+    power(MV, 500u);
+    while (state() == LINK_HITEC_POWER_OFF && (ports_on() & K_BIT) != 0u) {
+        pass();
+    }
+    const uint32_t t0 = g_ms;
+    while (g_ms - t0 < at_ms) {
+        pass();
+    }
+    CHECK_EQ(state(), LINK_HITEC_POWER_OFF);
+    power_trip(&g_pw, LINK_PW_TRIP_CRIT_N);
+    prog_rail_off(&g_rail);
+    for (unsigned i = 0; i < 4000u; ++i) {
+        pass();
+        CHECK_EQ(ports_on(), 0u);
+        CHECK(!g_hw.v.on);
+    }
+    CHECK_EQ(state(), LINK_HITEC_OPEN);
+    CHECK_EQ(result(), LINK_HITEC_RESULT_SUPPLY);
+}
+
+TEST_CASE(a_trip_in_a_power_wait_keeps_the_rail_off)
+{
+    static const uint32_t k_at[4] = { 0u, 250u, 498u, 499u };
+
+    for (unsigned sw = 0; sw < 2u; ++sw) {
+        for (unsigned i = 0; i < 4u; ++i) {
+            trip_in_power(sw != 0u, k_at[i]);
+        }
+    }
+}
+
+TEST_CASE(open_is_refused_while_another_session_holds_a_port)
+{
+    for (unsigned sw = 0; sw < 2u; ++sw) {
+        bench(sw != 0u);
+        g_other_held = 0x02u;           /* KST holds programming port 1 */
+        tell();
+        CHECK_EQ(open_port(), 0u);
+        CHECK_EQ(refusal(), LINK_HITEC_REF_HELD);
+        g_other_held = 0u;
+        tell();
+        open_ok();
+    }
+}
+
 int main(void)
 {
     RUN(without_the_switches_the_entry_cycle_acts_on_rail_en);
@@ -323,5 +387,7 @@ int main(void)
     RUN(open_is_refused_with_a_bec_found);
     RUN(an_error_between_two_writes_waits_for_the_second_with_switches);
     RUN(an_error_between_two_writes_waits_without_the_switches);
+    RUN(a_trip_in_a_power_wait_keeps_the_rail_off);
+    RUN(open_is_refused_while_another_session_holds_a_port);
     return test_summary("prog_rail_hitec");
 }

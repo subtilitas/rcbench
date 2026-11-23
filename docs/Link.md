@@ -1749,17 +1749,33 @@ voltage for every port.
 
 - A channel is active while an OUTPUTS slot, or a programming port with a
   function other than NONE, is bound to its output's pin.
+- One programming session at a time on the node: while a KST, Hitec or
+  ESC wire session holds a port, CONNECT on every other port is refused
+  (KST BUSY, Hitec HELD, ESC wire HELD).
 - The session's OFF is always taken and leaves the PD mini as it is. Its
-  ON is refused (KST result 32 `SUPPLY`, Hitec `RESULT` 3) without a live
+  ON is refused (KST result 32 `SUPPLY`, Hitec `RESULT` 3) while
+  `TRIPPED` stands (until the panel's `RAIL` 1 clears it), without a live
   heartbeat, on a refused chip, before the critical limits are held, on a
   throttle output, with a BEC found, without the switches while another
-  channel is active, and after the panel's OFF until the session lets go.
+  channel is active, and after the panel's OFF or a timed-out ON until the
+  session lets go. A trip also ends the session's hold on the rail: no
+  later ON of that session is taken.
 - With the PD mini on at the session's voltage and another port on, the
   session's ON leaves the PD mini and its current limit as they are.
   Otherwise the PD mini is set to the session's voltage and current limit:
   off and on again while the session's output is off, and with the output
   on only to a voltage no higher than the one it runs at
   ([A programming port's supply](Safety.md#a-programming-ports-supply)).
+- With the session's output off, its ON waits for the PD mini: the output
+  (and without the switches the rail) is switched on only once the PD
+  mini reads on at the asked set point and its output reads from 300mV
+  under to 150mV over the voltage, 100ms in a row when the ON moved the
+  PD mini, at once when it did not. Every rule above is judged again then.
+  Not so within 2500ms: the PD mini is switched off when the ON moved it,
+  the output stays off, and the session's ON stands refused. While it
+  waits the session's supply reads asked on, neither on nor off. A Hitec
+  POWER whose voltage moves the PD mini starts its listen up to the PD
+  mini's settle time plus 100ms before the servo has power.
 - A session ON from `RAIL` 0 clears the other `PORT_WANT` bits: the other
   ports come on with the panel's own write only.
 - While a session holds its output, a panel write that would switch that

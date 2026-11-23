@@ -205,6 +205,9 @@ uint16_t rsn_pass(uint32_t now)
         trip |= power_window(&s_power, s_sense_snap.setup,
                              s_sense_snap.win[0].number, mv, have, rail_mv());
     }
+    if (trip != 0u) {
+        prog_rail_off(&s_rail);     /* no session switches a trip back on */
+    }
     /* A port on whose output became a throttle afterwards goes off. */
     (void)power_hold(&s_power, throttles());
     drive();
@@ -314,7 +317,7 @@ int rsn_prog_set(bool on, uint16_t mv, uint16_t ma)
     rail_ctx(&c);
     prog_rail_port(&s_rail, session_port());
     const bool taken = prog_rail_set(&s_rail, &s_power, &s_supply, on, mv, ma,
-                                     &c);
+                                     &c, s_now_ms);
     drive();
     return taken ? 1 : 0;
 }
@@ -324,7 +327,14 @@ void rsn_prog_tell(void)
     const bool held = ports_hold_supply() || esc_port_supply_hold(&s_esc);
     const bool writing = ports_writing() || esc_port_writing(&s_esc);
     prog_rail_port(&s_rail, session_port());
-    prog_rail_tell(&s_rail, &s_power, held, writing, s_now_ms);
+    /* A pending ON is judged against the rules as they stand now. */
+    prog_rail_ctx_t c;
+    memset(&c, 0, sizeof(c));
+    if (s_rail.pending) {
+        rail_ctx(&c);
+    }
+    prog_rail_tell(&s_rail, &s_power, &s_supply, held, writing,
+                   s_rail.pending ? &c : NULL, s_now_ms);
     drive();
 }
 
@@ -334,15 +344,17 @@ uint8_t rsn_prog_refused(void)
     prog_rail_ctx_t c;
     memset(&c, 0, sizeof(c));
     c.active = active_ports();
-    uint8_t m = 0u;
+    int k_of[IOMCU_PROG_PORTS];
     for (uint8_t q = 0u; q < IOMCU_PROG_PORTS; ++q) {
         const uint8_t pin = prog_port_pin(&s_prog, q);
-        if (pin != PROG_PORT_NO_PIN
-            && prog_rail_connect(&s_power, out_of(pin), &c) != PROG_RAIL_OK) {
-            m |= (uint8_t)(1u << q);
-        }
+        k_of[q] = (pin != PROG_PORT_NO_PIN) ? out_of(pin) : PROG_RAIL_NO_PORT;
     }
-    return m;
+    /* One programming session at a time on the node (PLAN 2.1, 2.6). */
+    const uint8_t held = (uint8_t)(kst_port_quiet_mask(&s_kst)
+                                   | hitec_port_quiet_mask(&s_hitec)
+                                   | (esc_port_supply_hold(&s_esc) ? 0xFFu
+                                                                   : 0u));
+    return prog_rail_connect_mask(&s_power, k_of, IOMCU_PROG_PORTS, held, &c);
 }
 
 bool rsn_esc_refused(void)

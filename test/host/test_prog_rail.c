@@ -41,7 +41,8 @@ static void two_ports_on(void)
 /* The session holds the port and writes when @p writing. */
 static void hold(bool writing, uint32_t now)
 {
-    prog_rail_tell(&g_rail, &g_pw, true, writing, now);
+    g_rnow = now;
+    rail_tell(true, writing);
 }
 
 TEST_CASE(the_view_is_the_pd_mini_through_the_ports_switch)
@@ -58,7 +59,7 @@ TEST_CASE(the_view_is_the_pd_mini_through_the_ports_switch)
     two_ports_on();
     rail_view(&v);
     CHECK(!v.asked_on);                 /* S1 and S2 are not the session's */
-    CHECK(rail_set(true, RAIL_MV, 1000u));
+    CHECK(rail_on( RAIL_MV, 1000u));
     CHECK_EQ(ports_on(), 0x0003u | K_BIT);
     sp_pass(true);
     rail_view(&v);
@@ -75,7 +76,7 @@ TEST_CASE(the_view_is_the_pd_mini_through_the_ports_switch)
 TEST_CASE(an_off_cycles_the_rail_without_the_switches_and_port_k_with_them)
 {
     rig_start(false, K, true);
-    CHECK(rail_set(true, RAIL_MV, 1000u));
+    CHECK(rail_on( RAIL_MV, 1000u));
     CHECK(power_rail_driven(&g_pw));
     CHECK_EQ(ports_on(), 0x01FFu);
     CHECK(rail_set(false, 0u, 0u));
@@ -85,13 +86,13 @@ TEST_CASE(an_off_cycles_the_rail_without_the_switches_and_port_k_with_them)
 
     rig_start(true, K, true);
     two_ports_on();
-    CHECK(rail_set(true, RAIL_MV, 1000u));
+    CHECK(rail_on( RAIL_MV, 1000u));
     CHECK(rail_set(false, 0u, 0u));
     CHECK(power_rail_driven(&g_pw));
     CHECK_EQ(ports_on(), 0x0003u);      /* S5 only */
     CHECK_EQ(pw_reg(LINK_PW_PORT_WANT), 0x0003u);
     /* An OFF is taken without a heartbeat and without a port. */
-    CHECK(rail_set(true, RAIL_MV, 1000u));
+    CHECK(rail_on( RAIL_MV, 1000u));
     g_rctx.power.beat_alive = false;
     CHECK(rail_set(false, 0u, 0u));
     CHECK_EQ(ports_on(), 0x0003u);
@@ -131,7 +132,7 @@ TEST_CASE(an_on_is_refused_in_the_order_of_the_rules)
     CHECK(!power_rail_driven(&g_pw));
     g_rctx.active = K_BIT;              /* its own channel is no other */
     CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_rctx), PROG_RAIL_OK);
-    CHECK(rail_set(true, RAIL_MV, 1000u));
+    CHECK(rail_on( RAIL_MV, 1000u));
     CHECK(power_rail_driven(&g_pw));
     CHECK_EQ(prog_rail_judge(NULL, &g_pw, &g_rctx), PROG_RAIL_PORT);
     CHECK_EQ(prog_rail_judge(&g_rail, NULL, &g_rctx), PROG_RAIL_PORT);
@@ -152,7 +153,7 @@ TEST_CASE(connect_is_refused_with_another_channel_active_without_switches)
     rig_start(true, K, true);
     g_rctx.active = 0x01FFu;
     CHECK_EQ(prog_rail_connect(&g_pw, K, &g_rctx), PROG_RAIL_OK);
-    CHECK(rail_set(true, RAIL_MV, 1000u));
+    CHECK(rail_on( RAIL_MV, 1000u));
     CHECK_EQ(prog_rail_connect(NULL, K, &g_rctx), PROG_RAIL_PORT);
     CHECK_EQ(prog_rail_connect(&g_pw, K, NULL), PROG_RAIL_PORT);
 }
@@ -171,7 +172,7 @@ TEST_CASE(connect_is_refused_with_a_bec_found_at_500mv_not_490mv)
         CHECK(!power_rail_driven(&g_pw));
         rig_window(3u, 0);              /* the + link opened */
         CHECK_EQ(prog_rail_connect(&g_pw, K, &g_rctx), PROG_RAIL_OK);
-        CHECK(rail_set(true, RAIL_MV, 1000u));
+        CHECK(rail_on( RAIL_MV, 1000u));
     }
 }
 
@@ -180,7 +181,7 @@ TEST_CASE(another_voltage_switches_the_other_ports_off_with_the_switches)
     rig_start(true, K, true);
     two_ports_on();
     hold(false, 0u);
-    CHECK(rail_set(true, 6000u, 1000u));
+    CHECK(rail_on( 6000u, 1000u));
     CHECK_EQ(ports_on(), K_BIT);
     CHECK_EQ(pw_reg(LINK_PW_PORT_WANT), K_BIT);
     CHECK_EQ(g_rail.dropped, 0x0003u);
@@ -199,7 +200,8 @@ TEST_CASE(another_voltage_switches_the_other_ports_off_with_the_switches)
     CHECK_EQ(pw_reg(LINK_PW_PORT_WANT), K_BIT);
     /* The session lets go: a new hold brings them back. */
     CHECK(rail_set(false, 0u, 0u));
-    prog_rail_tell(&g_rail, &g_pw, false, false, 20u);
+    g_rnow = 20u;
+    rail_tell(false, false);
     CHECK(!g_rail.alone);
     CHECK_EQ(g_rail.dropped, 0u);
     CHECK_EQ(ports_on(), 0u);
@@ -213,7 +215,7 @@ TEST_CASE(the_same_voltage_leaves_the_other_ports_on)
     rig_start(true, K, true);
     two_ports_on();
     hold(false, 0u);
-    CHECK(rail_set(true, RAIL_MV, 500u));
+    CHECK(rail_on( RAIL_MV, 500u));
     CHECK_EQ(ports_on(), 0x0003u | K_BIT);
     CHECK(!g_rail.alone);
     CHECK_EQ(g_rail.dropped, 0u);
@@ -222,7 +224,7 @@ TEST_CASE(the_same_voltage_leaves_the_other_ports_on)
     /* A cycle of port k only. */
     CHECK(rail_set(false, 0u, 0u));
     CHECK_EQ(ports_on(), 0x0003u);
-    CHECK(rail_set(true, RAIL_MV, 500u));
+    CHECK(rail_on( RAIL_MV, 500u));
     CHECK_EQ(ports_on(), 0x0003u | K_BIT);
 }
 
@@ -231,7 +233,7 @@ TEST_CASE(the_pd_mini_moves_only_while_port_k_is_off)
     /* Without the switches, the rail off: off and on again at 6000mV. */
     rig_start(false, K, true);
     hold(false, 0u);
-    CHECK(rail_set(true, 6000u, 1000u));
+    CHECK(rail_on( 6000u, 1000u));
     sp_pass(true);
     CHECK(pd_wants_on());
     CHECK_EQ(g_pd.want_mv, 6000u);
@@ -241,13 +243,13 @@ TEST_CASE(the_pd_mini_moves_only_while_port_k_is_off)
     sp_pass(true);
     CHECK_EQ(g_pd.want_mv, 6000u);
     CHECK(power_rail_driven(&g_pw));
-    CHECK(rail_set(true, 5000u, 1000u));
+    CHECK(rail_on( 5000u, 1000u));
     sp_pass(true);
     CHECK_EQ(g_pd.want_mv, 5000u);
     /* The PD mini off: switched on at the session's voltage. */
     rig_start(true, K, false);
     CHECK(!pd_wants_on());
-    CHECK(rail_set(true, 5500u, 800u));
+    CHECK(rail_on( 5500u, 800u));
     sp_pass(true);
     CHECK(pd_wants_on());
     CHECK_EQ(g_pd.want_mv, 5500u);
@@ -265,7 +267,7 @@ TEST_CASE(an_on_from_rail_0_leaves_the_other_ports_off)
     two_ports_on();
     CHECK_EQ(pw_write(LINK_PW_RAIL, 0u, 0u), 0u);
     CHECK_EQ(pw_reg(LINK_PW_PORT_WANT), 0x0003u);  /* RAIL 0 keeps them */
-    CHECK(rail_set(true, RAIL_MV, 1000u));
+    CHECK(rail_on( RAIL_MV, 1000u));
     CHECK_EQ(ports_on(), K_BIT);
     CHECK_EQ(pw_reg(LINK_PW_PORT_WANT), K_BIT);
     CHECK_EQ(g_rail.dropped, 0x0003u);
@@ -275,7 +277,7 @@ TEST_CASE(the_panel_cannot_switch_the_sessions_port_on)
 {
     rig_start(false, K, true);
     hold(false, 0u);
-    CHECK(rail_set(true, RAIL_MV, 1000u));
+    CHECK(rail_on( RAIL_MV, 1000u));
     CHECK(rail_set(false, 0u, 0u));     /* the cycle's off time */
     CHECK_EQ(pw_write(LINK_PW_RAIL, 1u, 0u), (uint8_t)LINK_NACK_BUSY);
     CHECK(!power_rail_driven(&g_pw));
@@ -290,7 +292,8 @@ TEST_CASE(the_panel_cannot_switch_the_sessions_port_on)
     CHECK_EQ(prog_rail_write(&g_rail, &g_pw, 0u, 1u, two, &g_rctx, 0u), 0u);
     CHECK_EQ(ports_on(), 0u);
     /* Without the session the panel's rules alone. */
-    prog_rail_tell(&g_rail, &g_pw, false, false, 0u);
+    g_rnow = 0u;
+    rail_tell(false, false);
     CHECK_EQ(pw_write(LINK_PW_RAIL, 1u, 0u), 0u);
     CHECK_EQ(pw_write(LINK_PW_PORT_WANT, K_BIT, 0u), 0u);
     CHECK_EQ(ports_on(), K_BIT);
@@ -309,7 +312,7 @@ static void off_held_to_the_writes_end(bool switches, uint32_t t0)
         two_ports_on();
     }
     hold(false, t0);
-    CHECK(rail_set(true, RAIL_MV, 1000u));
+    CHECK(rail_on( RAIL_MV, 1000u));
     hold(true, t0);
     CHECK_EQ(pw_write(LINK_PW_PORT_WANT, 0u, t0), 0u);
     CHECK_EQ(pw_write(LINK_PW_RAIL, 0u, t0), 0u);
@@ -328,8 +331,9 @@ static void off_held_to_the_writes_end(bool switches, uint32_t t0)
     /* The panel's OFF stands for the session until it lets go. */
     CHECK(!rail_set(true, RAIL_MV, 1000u));
     CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_rctx), PROG_RAIL_OFF_STANDS);
-    prog_rail_tell(&g_rail, &g_pw, false, false, t0 + 800u);
-    CHECK(rail_set(true, RAIL_MV, 1000u));
+    g_rnow = t0 + 800u;
+    rail_tell(false, false);
+    CHECK(rail_on( RAIL_MV, 1000u));
 }
 
 TEST_CASE(the_panels_off_waits_for_a_write_with_the_switches)
@@ -353,7 +357,7 @@ static void held_at_most_10000ms(uint32_t t0)
 {
     rig_start(true, K, true);
     hold(false, t0);
-    CHECK(rail_set(true, RAIL_MV, 1000u));
+    CHECK(rail_on( RAIL_MV, 1000u));
     hold(true, t0);
     CHECK_EQ(pw_write(LINK_PW_RAIL, 0u, t0), 0u);
     hold(true, t0 + SUPPLY_PAGE_WRITE_WAIT_MS - 1u);
@@ -375,7 +379,7 @@ TEST_CASE(an_off_without_a_write_is_at_once_and_stands)
 {
     rig_start(true, K, true);
     hold(false, 0u);
-    CHECK(rail_set(true, RAIL_MV, 1000u));
+    CHECK(rail_on( RAIL_MV, 1000u));
     hold(false, 0u);
     CHECK_EQ(pw_write(LINK_PW_PORT_WANT, 0u, 0u), 0u);
     CHECK_EQ(ports_on(), 0u);
@@ -386,12 +390,12 @@ TEST_CASE(an_off_without_a_write_is_at_once_and_stands)
     rig_start(true, K, true);
     two_ports_on();
     hold(false, 0u);
-    CHECK(rail_set(true, RAIL_MV, 1000u));
+    CHECK(rail_on( RAIL_MV, 1000u));
     CHECK(rail_set(false, 0u, 0u));
     hold(false, 0u);
     CHECK_EQ(pw_write(LINK_PW_PORT_WANT, 0x0001u, 0u), 0u);
     CHECK(!g_rail.sticky);
-    CHECK(rail_set(true, RAIL_MV, 1000u));
+    CHECK(rail_on( RAIL_MV, 1000u));
     CHECK_EQ(ports_on(), 0x0001u | K_BIT);
 }
 
@@ -400,7 +404,7 @@ TEST_CASE(a_lost_heartbeat_is_not_held)
     rig_start(true, K, true);
     two_ports_on();
     hold(false, 0u);
-    CHECK(rail_set(true, RAIL_MV, 1000u));
+    CHECK(rail_on( RAIL_MV, 1000u));
     hold(true, 0u);
     CHECK_EQ(pw_write(LINK_PW_RAIL, 0u, 0u), 0u);
     CHECK_EQ(ports_on(), K_BIT);
@@ -415,7 +419,7 @@ TEST_CASE(a_lost_heartbeat_is_not_held)
     /* A trip the same. */
     rig_start(false, K, true);
     hold(false, 0u);
-    CHECK(rail_set(true, RAIL_MV, 1000u));
+    CHECK(rail_on( RAIL_MV, 1000u));
     hold(true, 0u);
     CHECK_EQ(pw_write(LINK_PW_RAIL, 0u, 0u), 0u);
     CHECK(power_rail_driven(&g_pw));
@@ -430,18 +434,208 @@ TEST_CASE(null_arguments_do_nothing)
     rig_start(true, K, true);
     prog_rail_init(NULL);
     prog_rail_port(NULL, 1);
-    prog_rail_tell(NULL, &g_pw, true, true, 0u);
-    prog_rail_tell(&g_rail, NULL, true, true, 0u);
+    prog_rail_tell(NULL, &g_pw, &g_sp, true, true, &g_rctx, 0u);
+    prog_rail_tell(&g_rail, NULL, &g_sp, true, true, &g_rctx, 0u);
     prog_rail_off(NULL);
     prog_rail_view(NULL, &g_pw, &v, &v);
-    CHECK(!prog_rail_set(NULL, &g_pw, &g_sp, false, 0u, 0u, &g_rctx));
-    CHECK(!prog_rail_set(&g_rail, &g_pw, NULL, false, 0u, 0u, &g_rctx));
+    CHECK(!prog_rail_set(NULL, &g_pw, &g_sp, false, 0u, 0u, &g_rctx, 0u));
+    CHECK(!prog_rail_set(&g_rail, &g_pw, NULL, false, 0u, 0u, &g_rctx, 0u));
     power_port_set(NULL, 0u, true);
     power_port_set(&g_pw, LINK_PW_PORTS, true);
     power_drop(NULL, 0u);
     power_keep(NULL, 0u);
     CHECK(!power_rail_driven(NULL));
     CHECK(!power_rail_driven(&g_pw));
+}
+
+TEST_CASE(a_trip_latches_until_the_panels_rail_1)
+{
+    for (unsigned sw = 0; sw < 2u; ++sw) {
+        rig_start(sw != 0u, K, true);
+        power_trip(&g_pw, LINK_PW_TRIP_CRIT_N);
+        CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_rctx), PROG_RAIL_TRIPPED);
+        CHECK(!rail_set(true, RAIL_MV, 1000u));
+        CHECK_EQ(ports_on(), 0u);
+        CHECK(!power_rail_driven(&g_pw));
+        /* The panel's RAIL 1 clears TRIPPED, as POWER's rule has it. */
+        CHECK_EQ(pw_write(LINK_PW_RAIL, 1u, 0u), 0u);
+        CHECK_EQ(pw_reg(LINK_PW_TRIPPED), 0u);
+        CHECK(rail_on(RAIL_MV, 1000u));
+        CHECK((ports_on() & K_BIT) != 0u);
+    }
+}
+
+TEST_CASE(a_trip_while_port_k_waits_ends_the_wait)
+{
+    rig_start(true, K, false);
+    hold(false, 0u);
+    CHECK(rail_set(true, RAIL_MV, 1000u));
+    CHECK(g_rail.pending);
+    rail_pass();
+    power_trip(&g_pw, LINK_PW_TRIP_THERMAL);
+    prog_rail_off(&g_rail);             /* rsn_pass() on a trip */
+    for (unsigned i = 0; i < 3000u; ++i) {
+        rail_pass();
+        CHECK_EQ(ports_on(), 0u);
+    }
+    CHECK(!g_rail.pending);
+    /* A lost heartbeat the same. */
+    rig_start(false, K, false);
+    hold(false, 0u);
+    CHECK(rail_set(true, RAIL_MV, 1000u));
+    g_rctx.power.beat_alive = false;
+    for (unsigned i = 0; i < 300u; ++i) {
+        rail_pass();
+        CHECK(!power_rail_driven(&g_pw));
+    }
+    CHECK(!g_rail.pending);
+}
+
+TEST_CASE(one_session_at_a_time_refuses_every_other_connect)
+{
+    const int k_of[4] = { K, 6, PROG_RAIL_NO_PORT, 0 };
+
+    rig_start(true, K, true);
+    CHECK_EQ(prog_rail_connect_mask(&g_pw, k_of, 4u, 0u, &g_rctx), 0u);
+    CHECK_EQ(prog_rail_connect_mask(&g_pw, k_of, 4u, 0x02u, &g_rctx), 0x0Fu);
+    CHECK_EQ(prog_rail_connect_mask(&g_pw, k_of, 4u, 0x01u, &g_rctx), 0x0Fu);
+    CHECK_EQ(prog_rail_connect_mask(&g_pw, k_of, 4u, 0x10u, &g_rctx), 0u);
+    g_pw.bec = 0x0001u;
+    CHECK_EQ(prog_rail_connect_mask(&g_pw, k_of, 4u, 0u, &g_rctx), 0x0Bu);
+    g_pw.bec = 0u;
+    rig_start(false, K, true);
+    g_rctx.active = 0x0040u;            /* port 1's own output, S7 */
+    CHECK_EQ(prog_rail_connect_mask(&g_pw, k_of, 4u, 0u, &g_rctx), 0x09u);
+    CHECK_EQ(prog_rail_connect_mask(NULL, k_of, 4u, 0u, &g_rctx), 0x0Fu);
+    CHECK_EQ(prog_rail_connect_mask(&g_pw, k_of, 9u, 0x80u, &g_rctx), 0xFFu);
+}
+
+/* The PD mini by hand at @p from_mv, the panel's ports S1 and S2 on with
+ * the switches; the session asks 5000mV with port k off. */
+static void pd_by_hand_at(bool switches, uint16_t from_mv, uint32_t t0)
+{
+    const uint16_t on[3] = { 1u, from_mv, RAIL_MA };
+
+    rig_start(switches, K, false);
+    CHECK_EQ(supply_page_write(&g_sp, LINK_SP_OUTPUT, 3u, on, &g_sout, true),
+             0u);
+    sp_pass(true);
+    sp_pass(true);
+    if (switches) {
+        two_ports_on();
+    }
+    g_pd_by_hand = true;
+    g_pd.st.v_mv = from_mv;
+    hold(false, t0);
+    CHECK(rail_set(true, 5000u, 1000u));
+    CHECK_EQ(ports_on(), 0u);           /* the others off, port k waits */
+    CHECK(!power_rail_driven(&g_pw) || switches);
+}
+
+/* Passes at @p v_mv until port k is on, at most @p max: the passes. */
+static unsigned passes_at(uint16_t v_mv, unsigned max)
+{
+    unsigned n = 0u;
+
+    g_pd.st.v_mv = v_mv;
+    while (n < max && (ports_on() & K_BIT) == 0u) {
+        rail_pass();
+        ++n;
+    }
+    return n;
+}
+
+TEST_CASE(port_k_waits_for_a_pd_mini_above_the_voltage_to_come_down)
+{
+    for (unsigned sw = 0; sw < 2u; ++sw) {
+        supply_port_view_t v;
+
+        pd_by_hand_at(sw != 0u, 8400u, 0u);
+        rail_view(&v);
+        CHECK(v.asked_on);
+        CHECK(!v.on);
+        CHECK(!v.off);
+        CHECK_EQ(passes_at(8400u, 1000u), 1000u);
+        CHECK_EQ(g_pd.want_mv, 5000u);
+        CHECK_EQ(passes_at(7000u, 200u), 200u);
+        CHECK_EQ(passes_at(5000u + PROG_RAIL_OVER_MV + 1u, 200u), 200u);
+        CHECK(!power_rail_driven(&g_pw) || sw != 0u);
+        /* In the band: PROG_RAIL_SETTLE_MS in a row, a dip starts anew. */
+        CHECK_EQ(passes_at(5000u + PROG_RAIL_OVER_MV, 50u), 50u);
+        CHECK_EQ(passes_at(5300u, 1u), 1u);
+        CHECK_EQ(passes_at(5000u + PROG_RAIL_OVER_MV, 1000u),
+                 PROG_RAIL_SETTLE_MS + 1u);
+        CHECK_EQ(ports_on(), sw != 0u ? K_BIT : 0x01FFu);
+        rail_view(&v);
+        CHECK(v.on);
+    }
+}
+
+TEST_CASE(port_k_waits_for_a_pd_mini_below_the_voltage_to_come_up)
+{
+    pd_by_hand_at(true, 4800u, 0u);
+    CHECK_EQ(passes_at(5000u - PROG_RAIL_UNDER_MV - 1u, 500u), 500u);
+    CHECK_EQ(passes_at(5000u - PROG_RAIL_UNDER_MV, 1000u),
+             PROG_RAIL_SETTLE_MS + 1u);
+    CHECK_EQ(ports_on(), K_BIT);
+}
+
+TEST_CASE(a_pd_mini_at_the_voltage_switches_port_k_at_once)
+{
+    rig_start(true, K, true);
+    two_ports_on();
+    g_pd_by_hand = true;
+    g_pd.st.v_mv = RAIL_MV;
+    sp_pass(true);
+    hold(false, 0u);
+    CHECK(rail_set(true, RAIL_MV, 1000u));
+    CHECK_EQ(ports_on(), 0x0003u | K_BIT);
+    /* At the set point but reading high: not at once. */
+    CHECK(rail_set(false, 0u, 0u));
+    g_pd.st.v_mv = RAIL_MV + PROG_RAIL_OVER_MV + 1u;
+    sp_pass(true);
+    CHECK(rail_set(true, RAIL_MV, 1000u));
+    CHECK_EQ(ports_on(), 0x0003u);
+    CHECK_EQ(passes_at(RAIL_MV, 10u), 1u);   /* not moved: no settle */
+}
+
+/* A PD mini that never comes down: refused at PROG_RAIL_WAIT_MS to the
+ * millisecond, the PD mini off, port k off, the ON standing refused. */
+static void never_there(uint32_t t0)
+{
+    supply_port_view_t v;
+
+    pd_by_hand_at(true, 8400u, t0);
+    CHECK_EQ(passes_at(8400u, PROG_RAIL_WAIT_MS - 1u),
+             PROG_RAIL_WAIT_MS - 1u);
+    CHECK(g_rail.pending);
+    rail_pass();
+    CHECK(!g_rail.pending);
+    CHECK_EQ(ports_on(), 0u);
+    sp_pass(true);
+    CHECK(!pd_wants_on());
+    rail_view(&v);
+    CHECK(!v.asked_on);
+    CHECK(!rail_set(true, 5000u, 1000u));
+    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_rctx), PROG_RAIL_OFF_STANDS);
+    /* The session lets go: a new one may try again. */
+    rail_tell(false, false);
+    CHECK_EQ(prog_rail_judge(&g_rail, &g_pw, &g_rctx), PROG_RAIL_OK);
+}
+
+TEST_CASE(a_pd_mini_that_never_reaches_the_voltage_is_refused)
+{
+    never_there(0u);
+    never_there(0xFFFFFFFFu - 1000u);
+}
+
+TEST_CASE(an_off_ends_a_waiting_on)
+{
+    pd_by_hand_at(true, 8400u, 0u);
+    CHECK(rail_set(false, 0u, 0u));
+    CHECK(!g_rail.pending);
+    CHECK_EQ(passes_at(5000u, 500u), 500u);
+    CHECK_EQ(ports_on(), 0u);
 }
 
 int main(void)
@@ -463,5 +657,13 @@ int main(void)
     RUN(an_off_without_a_write_is_at_once_and_stands);
     RUN(a_lost_heartbeat_is_not_held);
     RUN(null_arguments_do_nothing);
+    RUN(a_trip_latches_until_the_panels_rail_1);
+    RUN(a_trip_while_port_k_waits_ends_the_wait);
+    RUN(one_session_at_a_time_refuses_every_other_connect);
+    RUN(port_k_waits_for_a_pd_mini_above_the_voltage_to_come_down);
+    RUN(port_k_waits_for_a_pd_mini_below_the_voltage_to_come_up);
+    RUN(a_pd_mini_at_the_voltage_switches_port_k_at_once);
+    RUN(a_pd_mini_that_never_reaches_the_voltage_is_refused);
+    RUN(an_off_ends_a_waiting_on);
     return test_summary("prog_rail");
 }

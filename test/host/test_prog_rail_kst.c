@@ -119,17 +119,23 @@ static void tell(void)
 {
     const bool held = kst_port_state(&g_port) != LINK_KST_PWM;
 
-    prog_rail_tell(&g_rail, &g_pw, held, kst_port_writing(&g_port), g_ms);
+    g_rnow = g_ms;
+    rail_tell(held, kst_port_writing(&g_port));
     supply_page_hold(&g_sp, held);
     supply_page_port_writes(&g_sp, kst_port_writing(&g_port));
 }
 
+/* Bit q: another page's session holds programming port q. */
+static uint8_t g_other_held;
+
 /* The CONNECT rules into the port's other-mask: ports_exclusive(). */
 static void exclusive(void)
 {
+    static const int k_of[2] = { K, 6 };
+
     kst_port_other_mask(&g_port,
-                        prog_rail_connect(&g_pw, K, &g_rctx) != PROG_RAIL_OK
-                            ? (uint8_t)(1u << CH) : 0u);
+                        prog_rail_connect_mask(&g_pw, k_of, 2u, g_other_held,
+                                               &g_rctx));
 }
 
 static uint8_t cmd(link_kst_op_t o, uint16_t key, uint16_t crc)
@@ -191,6 +197,7 @@ static void tick_as(bool safe)
 {
     supply_port_view_t v;
 
+    g_rnow = g_ms;
     kst_port_step(&g_port, safe, false, g_ms);
     exclusive();
     tell();
@@ -246,6 +253,7 @@ static void bench(bool switches, uint16_t mv)
     kst_port_hw_t hw;
 
     rig_start(switches, K, true);
+    g_other_held = 0u;
     sim_init(&g_sim);
     g_sim.needs_power_up = true;
     sim_power(&g_sim, false);
@@ -509,6 +517,107 @@ TEST_CASE(a_lost_heartbeat_during_a_write_cuts_everything_at_once)
     CHECK_EQ(ports_on(), 0u);
 }
 
+/* A trip (rsn_pass(): power_trip(), prog_rail_off()) @p at_ms into a
+ * REBOOT's off time, or into its RAIL_WAIT when @p in_wait: nothing is
+ * switched on again, the session ends with its error. */
+static void trip_in_reboot(bool switches, uint32_t at_ms, bool in_wait)
+{
+    bench(switches, RAIL_MV);
+    if (switches) {
+        two_ports_on();
+    }
+    connect();
+    CHECK_EQ(cmd(LINK_KST_OP_REBOOT, 0, 0), 0);
+    until_state(in_wait ? LINK_KST_RAIL_WAIT : LINK_KST_RAIL_OFF);
+    tick();
+    const uint32_t t0 = g_ms;
+    while (g_ms - t0 < at_ms) {
+        tick();
+    }
+    power_trip(&g_pw, LINK_PW_TRIP_CRIT_N);
+    prog_rail_off(&g_rail);
+    const unsigned ons = g_k_ons;
+    CHECK_EQ(ports_on(), 0u);
+    until_state(LINK_KST_PWM);
+    run_ms(KST_PORT_SUPPLY_MS);
+    CHECK_EQ(g_k_ons, ons);
+    CHECK_EQ(ports_on(), 0u);
+    CHECK(!power_rail_driven(&g_pw));
+    CHECK(!g_sim.powered);
+    CHECK(result() != KST_SES_OK);
+    /* Until the panel's RAIL 1 no session switches it on. */
+    CHECK_EQ(cmd(LINK_KST_OP_ENTER, 0, 0), 0);
+    run_ms(KST_PORT_SUPPLY_MS + 100u);
+    CHECK_EQ(g_k_ons, ons);
+}
+
+TEST_CASE(a_trip_in_a_reboot_keeps_the_rail_off)
+{
+    static const uint32_t k_at[4] = { 0u, 500u, KST_PORT_RAIL_OFF_MS - 2u,
+                                      KST_PORT_RAIL_OFF_MS - 1u };
+
+    for (unsigned sw = 0; sw < 2u; ++sw) {
+        for (unsigned i = 0; i < 4u; ++i) {
+            trip_in_reboot(sw != 0u, k_at[i], false);
+        }
+        trip_in_reboot(sw != 0u, 0u, true);
+        trip_in_reboot(sw != 0u, KST_PORT_RAIL_WAIT_MS - 2u, true);
+    }
+}
+
+TEST_CASE(connect_is_refused_while_another_session_holds_a_port)
+{
+    for (unsigned sw = 0; sw < 2u; ++sw) {
+        bench(sw != 0u, RAIL_MV);
+        g_other_held = 0x02u;           /* HITEC holds programming port 1 */
+        exclusive();
+        CHECK_EQ(cmd(LINK_KST_OP_ENTER, 0, 0), 0);
+        CHECK_EQ(refusal(), LINK_KST_REF_BUSY);
+        run_ms(200u);
+        CHECK_EQ(ports_on(), 0u);
+        CHECK_EQ(g_sim.power_ups, 0u);
+        g_other_held = 0u;
+        exclusive();
+        connect();
+    }
+}
+
+TEST_CASE(a_higher_rail_never_reaches_the_sessions_servo)
+{
+    const uint16_t hi[3] = { 1u, 8400u, RAIL_MA };
+
+    for (unsigned settles = 0; settles < 2u; ++settles) {
+        bench(true, RAIL_MV);
+        CHECK_EQ(supply_page_write(&g_sp, LINK_SP_OUTPUT, 3u, hi, &g_sout,
+                                   true), 0u);
+        tick();
+        two_ports_on();
+        g_pd_by_hand = true;
+        g_pd.st.v_mv = 8400u;
+        CHECK_EQ(cmd(LINK_KST_OP_ENTER, 0, 0), 0);
+        CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+        for (unsigned i = 0; i < 10u * 500u; ++i) {
+            tick();
+            CHECK(!g_sim.powered);
+        }
+        CHECK_EQ(ports_on(), 0u);       /* the others off, port k waits */
+        if (settles != 0u) {
+            g_pd.st.v_mv = RAIL_MV;
+        }
+        settle();
+        if (settles != 0u) {
+            CHECK_EQ(result(), KST_SES_OK);
+            CHECK(g_sim.powered);
+            CHECK_EQ(ports_on(), K_BIT);
+        } else {
+            CHECK_EQ(result(), LINK_KST_RESULT_SUPPLY);
+            CHECK_EQ(ports_on(), 0u);
+            CHECK(!g_sim.powered);
+            CHECK(!pd_wants_on());
+        }
+    }
+}
+
 int main(void)
 {
     RUN(without_the_switches_the_cycles_act_on_rail_en);
@@ -519,5 +628,8 @@ int main(void)
     RUN(an_error_during_a_write_waits_for_it_with_the_switches);
     RUN(an_error_during_a_write_waits_for_it_without_the_switches);
     RUN(a_lost_heartbeat_during_a_write_cuts_everything_at_once);
+    RUN(a_trip_in_a_reboot_keeps_the_rail_off);
+    RUN(connect_is_refused_while_another_session_holds_a_port);
+    RUN(a_higher_rail_never_reaches_the_sessions_servo);
     return test_summary("prog_rail_kst");
 }

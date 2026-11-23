@@ -61,6 +61,30 @@ prog_rail_refusal_t prog_rail_connect(const power_page_t *pg, int k,
     return PROG_RAIL_OK;
 }
 
+uint8_t prog_rail_connect_mask(const power_page_t *pg, const int *k_of,
+                               uint8_t ports, uint8_t held,
+                               const prog_rail_ctx_t *ctx)
+{
+    if (ports > 8u) {
+        ports = 8u;
+    }
+    const uint8_t all = (uint8_t)((1u << ports) - 1u);
+    if (pg == NULL || k_of == NULL || ctx == NULL) {
+        return all;
+    }
+    if ((held & all) != 0u) {
+        return all;                     /* one session at a time */
+    }
+    uint8_t m = 0u;
+    for (uint8_t q = 0u; q < ports; ++q) {
+        if (k_of[q] != PROG_RAIL_NO_PORT
+            && prog_rail_connect(pg, k_of[q], ctx) != PROG_RAIL_OK) {
+            m |= (uint8_t)(1u << q);
+        }
+    }
+    return m;
+}
+
 prog_rail_refusal_t prog_rail_judge(const prog_rail_t *r,
                                     const power_page_t *pg,
                                     const prog_rail_ctx_t *ctx)
@@ -70,6 +94,9 @@ prog_rail_refusal_t prog_rail_judge(const prog_rail_t *r,
     }
     if (r->sticky) {
         return PROG_RAIL_OFF_STANDS;
+    }
+    if (pg->tripped != 0u) {
+        return PROG_RAIL_TRIPPED;       /* until the panel's RAIL 1 */
     }
     if (!ctx->power.beat_alive || !pg->chip_ok) {
         return PROG_RAIL_UNSAFE;
@@ -91,52 +118,83 @@ void prog_rail_view(const prog_rail_t *r, const power_page_t *pg,
     }
     const bool sw = (power_port_on(pg) & bit_of(r->port)) != 0u;
     *out = *pd;
-    out->asked_on = pd->asked_on && sw;
+    /* A pending ON is asked on and neither reads on nor off, as a PD mini
+     * that has not followed yet. */
+    out->asked_on = pd->asked_on && (sw || r->pending);
     out->on       = pd->on && sw;
     /* A port switched off is discharged by its switch's QOD at once. */
-    out->off      = pd->off || !sw;
+    out->off      = (pd->off || !sw) && !r->pending;
     out->latched  = pd->latched || r->sticky;
 }
 
 /**
- * @brief The PD mini for the session's ON: set off and on again at @p mv
- *        while port k is off, set as asked while it is on, left alone when
- *        it runs at @p mv for other ports as well.
+ * @brief Whether the PD mini runs at @p mv for port k: read on at that set
+ *        point, its output from PROG_RAIL_UNDER_MV under to
+ *        PROG_RAIL_OVER_MV over it.
  *
- * @param pg   The POWER page.
- * @param sp   The SUPPLY page.
- * @param bit  The session's port bit.
- * @param mv   The voltage, mV.
- * @param ma   The current limit, mA.
- * @param beat The heartbeat is live.
- * @return     true when the PD mini takes it.
+ * @param sp The SUPPLY page.
+ * @param mv The voltage, mV.
+ * @return   true then.
  */
-static bool pd_on(const power_page_t *pg, supply_page_t *sp, uint16_t bit,
-                  uint16_t mv, uint16_t ma, bool beat)
+static bool pd_at(const supply_page_t *sp, uint16_t mv)
 {
     supply_port_view_t pd;
     supply_page_port_view(sp, &pd);
-    const uint16_t on = power_port_on(pg);
-    const bool same = pd.asked_on && pd.set_mv == mv;
-    const bool shared = (on & (uint16_t)~bit) != 0u && pg->fitted != 0u;
-    if (same && shared) {
-        return true;            /* the other ports keep their current limit */
+    const uint32_t v = sp->regs[LINK_SP_V_MV];
+    return pd.on && pd.set_mv == mv
+           && v + PROG_RAIL_UNDER_MV >= (uint32_t)mv
+           && v <= (uint32_t)mv + PROG_RAIL_OVER_MV;
+}
+
+/**
+ * @brief A pending ON judged: port k on once the PD mini has read the
+ *        voltage long enough and every rule holds; refused at
+ *        PROG_RAIL_WAIT_MS.
+ *
+ * @param r   The state.
+ * @param pg  The POWER page.
+ * @param sp  The SUPPLY page.
+ * @param ctx What the ON is judged against.
+ * @param now The clock, ms.
+ */
+static void pending_step(prog_rail_t *r, power_page_t *pg, supply_page_t *sp,
+                         const prog_rail_ctx_t *ctx, uint32_t now)
+{
+    if (prog_rail_judge(r, pg, ctx) != PROG_RAIL_OK) {
+        r->pending = false;     /* a trip, a lost heartbeat, an OFF: gone */
+        return;
     }
-    if (!same && pd.asked_on && (on & bit) == 0u) {
-        (void)supply_page_port_set(sp, false, 0u, 0u, beat);
+    const bool at = pd_at(sp, r->want_mv);
+    if (at && !r->in_band) {
+        r->band_t0 = now;
     }
-    return supply_page_port_set(sp, true, mv, ma, beat);
+    r->in_band = at;
+    if (at && (!r->moved
+               || (uint32_t)(now - r->band_t0) >= PROG_RAIL_SETTLE_MS)) {
+        r->pending = false;
+        power_port_set(pg, (unsigned)r->port, true);
+        return;
+    }
+    if ((uint32_t)(now - r->pend_t0) >= PROG_RAIL_WAIT_MS) {
+        r->pending = false;
+        r->sticky  = true;      /* refused: the session ends with it */
+        if (r->moved) {
+            (void)supply_page_port_set(sp, false, 0u, 0u,
+                                       ctx->power.beat_alive);
+        }
+    }
 }
 
 bool prog_rail_set(prog_rail_t *r, power_page_t *pg, supply_page_t *sp,
                    bool on, uint16_t mv, uint16_t ma,
-                   const prog_rail_ctx_t *ctx)
+                   const prog_rail_ctx_t *ctx, uint32_t now)
 {
     if (r == NULL || pg == NULL || sp == NULL || ctx == NULL) {
         return false;
     }
     const uint16_t bit = bit_of(r->port);
     if (!on) {
+        r->pending = false;
         power_port_set(pg, (unsigned)r->port, false);   /* nothing for none */
         return true;
     }
@@ -145,20 +203,47 @@ bool prog_rail_set(prog_rail_t *r, power_page_t *pg, supply_page_t *sp,
     }
     supply_port_view_t pd;
     supply_page_port_view(sp, &pd);
-    if (pg->fitted != 0u && !(pd.asked_on && pd.set_mv == mv)) {
-        /* Another voltage than the rail's: every other port off for the
-         * session, before the PD mini moves. */
-        r->dropped |= (uint16_t)(power_port_on(pg) & (uint16_t)~bit);
+    const bool beat = ctx->power.beat_alive;
+    if ((power_port_on(pg) & bit) != 0u) {
+        /* The servo has power already: the PD mini's own rule, never
+         * raised under it. */
+        if (pd.asked_on && pd.set_mv == mv) {
+            return true;
+        }
+        if (pg->fitted != 0u) {
+            r->dropped |= (uint16_t)(power_port_on(pg) & (uint16_t)~bit);
+            power_drop(pg, bit);
+            r->alone = true;
+        }
+        return supply_page_port_set(sp, true, mv, ma, beat);
+    }
+    const bool same = pd.asked_on && pd.set_mv == mv;
+    if (pg->fitted != 0u && (!same || !pg->rail)) {
+        /* Another voltage than the rail's, or the rail off: every other
+         * port off for the session, before the PD mini moves. */
+        r->dropped |= (uint16_t)((power_port_on(pg) | pg->want)
+                                 & (uint16_t)~bit);
         power_drop(pg, bit);
-        r->alone = true;
+        r->alone = r->alone || !same;
     }
-    if (pg->fitted != 0u && !pg->rail) {
-        r->dropped |= (uint16_t)(pg->want & (uint16_t)~bit);
-    }
-    if (!pd_on(pg, sp, bit, mv, ma, ctx->power.beat_alive)) {
+    const bool shared = (power_port_on(pg) & (uint16_t)~bit) != 0u;
+    if (!same) {
+        if (pd.asked_on) {
+            (void)supply_page_port_set(sp, false, 0u, 0u, beat);
+        }
+        if (!supply_page_port_set(sp, true, mv, ma, beat)) {
+            return false;
+        }
+    } else if (!shared && !supply_page_port_set(sp, true, mv, ma, beat)) {
         return false;
     }
-    power_port_set(pg, (unsigned)r->port, true);
+    /* Port k waits for the PD mini to read the voltage. */
+    r->pending = true;
+    r->moved   = !same;
+    r->in_band = false;
+    r->want_mv = mv;
+    r->pend_t0 = now;
+    pending_step(r, pg, sp, ctx, now);
     return true;
 }
 
@@ -208,8 +293,9 @@ uint8_t prog_rail_write(prog_rail_t *r, power_page_t *pg, uint8_t off,
     return nack;
 }
 
-void prog_rail_tell(prog_rail_t *r, power_page_t *pg, bool held,
-                    bool writing, uint32_t now)
+void prog_rail_tell(prog_rail_t *r, power_page_t *pg, supply_page_t *sp,
+                    bool held, bool writing, const prog_rail_ctx_t *ctx,
+                    uint32_t now)
 {
     if (r == NULL || pg == NULL) {
         return;
@@ -218,6 +304,10 @@ void prog_rail_tell(prog_rail_t *r, power_page_t *pg, bool held,
         r->sticky  = false;     /* the session let go */
         r->alone   = false;
         r->dropped = 0u;
+        r->pending = false;
+    }
+    if (r->pending && sp != NULL && ctx != NULL) {
+        pending_step(r, pg, sp, ctx, now);
     }
     r->held    = held;
     r->writing = writing;
@@ -245,5 +335,6 @@ void prog_rail_off(prog_rail_t *r)
     if (r->held) {
         r->sticky = true;
     }
-    r->kept = false;
+    r->kept    = false;
+    r->pending = false;
 }

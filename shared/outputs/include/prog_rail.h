@@ -16,22 +16,33 @@
  *     only.  The PD mini stays as it is.  An OFF is always taken.
  *   - ON at a voltage: refused (false, nothing switched) for a port that
  *     is not known, after the panel's OFF of the port during the session
- *     (until the session lets go), without a live heartbeat or on a chip
- *     before A4, before the INA3221s hold their critical limits, for a
- *     port whose output is a throttle, while the BEC check found
- *     LINK_PW_BEC_MV or more on any port, and without the switches while
- *     another port's channel is active.  Otherwise the PD mini is set when
- *     its voltage differs or no other port shares it, and RAIL 1 and (with
- *     the switches) bit k are driven.  With the switches, a voltage other
- *     than the PD mini's set point switches every other port off first
- *     and keeps them off until the session lets go: they come back only
- *     with the panel's next write, its 2s hold.  The PD mini is set off and
- *     on again only while port k is off; with port k on its own rule holds
- *     (supply_page_port_set(): a voltage is never raised under a servo).
+ *     or a timed-out ON (until the session lets go), while POWER's TRIPPED
+ *     stands (until the panel's RAIL 1 clears it), without a live
+ *     heartbeat or on a chip before A4, before the INA3221s hold their
+ *     critical limits, for a port whose output is a throttle, while the
+ *     BEC check found LINK_PW_BEC_MV or more on any port, and without the
+ *     switches while another port's channel is active.
+ *   - A taken ON with port k off: with the switches, a voltage other than
+ *     the PD mini's set point switches every other port off first and
+ *     keeps them off until the session lets go (they come back only with
+ *     the panel's next write, its 2s hold); without them the rail is off
+ *     already.  The PD mini is set (off and on again for another voltage),
+ *     and port k waits (prog_rail_t.pending): it is switched on only once
+ *     the PD mini reads on at the asked set point and its output reads
+ *     from PROG_RAIL_UNDER_MV under to PROG_RAIL_OVER_MV over the voltage,
+ *     PROG_RAIL_SETTLE_MS in a row when the PD mini was moved, at once when
+ *     it was not; every rule above is judged again then.  Not so within
+ *     PROG_RAIL_WAIT_MS: the PD mini is switched off when the session moved
+ *     it, port k stays off and the session's ON stands refused.
+ *   - A taken ON with port k on: the PD mini is set as asked under its own
+ *     rule (supply_page_port_set(): a voltage is never raised under a
+ *     servo).
  *
  * CONNECT (KST ENTER and REBOOT from PWM, Hitec OPEN, ESC wire OPEN) is
  * refused before anything is switched by prog_rail_connect(): a BEC found,
- * and without the switches another active channel.
+ * and without the switches another active channel; and on every port while
+ * any session holds one (prog_rail_connect_mask()): one programming
+ * session at a time on the node (PLAN 2.1, 2.6).
  *
  * The panel's POWER writes go through prog_rail_write(): while a session
  * holds the port, a write that would switch port k on is refused
@@ -65,11 +76,25 @@ extern "C" {
 /** @brief No session port: prog_rail_t.port. */
 #define PROG_RAIL_NO_PORT (-1)
 
+/** @brief The PD mini's output may read this far over the asked voltage
+ *         when port k is switched on, mV. */
+#define PROG_RAIL_OVER_MV 150u
+/** @brief And this far under it, mV. */
+#define PROG_RAIL_UNDER_MV 300u
+/** @brief A PD mini the ON moved reads in that band this long before port
+ *         k is switched on, ms. */
+#define PROG_RAIL_SETTLE_MS 100u
+/** @brief Port k's wait for the PD mini ends refused after this long, ms:
+ *         under the sessions' own 3000ms supply timeouts. */
+#define PROG_RAIL_WAIT_MS 2500u
+
 /** @brief Why a session's CONNECT or ON is refused. */
 typedef enum {
     PROG_RAIL_OK = 0,        /**< taken                                    */
     PROG_RAIL_PORT,          /**< no port known                            */
-    PROG_RAIL_OFF_STANDS,    /**< the panel's OFF stands for the session   */
+    PROG_RAIL_OFF_STANDS,    /**< the panel's OFF or a timed-out ON stands
+                                  for the session                          */
+    PROG_RAIL_TRIPPED,       /**< POWER's TRIPPED stands                   */
     PROG_RAIL_UNSAFE,        /**< no live heartbeat, or a chip before A4   */
     PROG_RAIL_LIMITS,        /**< the critical limits are not held         */
     PROG_RAIL_THROTTLE,      /**< the port's output is a throttle          */
@@ -96,6 +121,13 @@ typedef struct {
     uint16_t dropped;  /**< the ports the session switched off          */
     bool     kept;     /**< a panel's OFF waits for the write           */
     uint32_t kept_t0;  /**< when that OFF was written, ms               */
+    bool     pending;  /**< port k waits for the PD mini                */
+    bool     moved;    /**< the pending ON moved the PD mini            */
+    bool     in_band;  /**< the PD mini read in the band at the last
+                            check                                       */
+    uint16_t want_mv;  /**< the pending ON's voltage, mV                */
+    uint32_t pend_t0;  /**< when the ON was taken, ms                   */
+    uint32_t band_t0;  /**< when the PD mini came into the band, ms     */
 } prog_rail_t;
 
 /**
@@ -125,6 +157,22 @@ void prog_rail_port(prog_rail_t *r, int k);
  */
 prog_rail_refusal_t prog_rail_connect(const power_page_t *pg, int k,
                                       const prog_rail_ctx_t *ctx);
+
+/**
+ * @brief CONNECT's rules for every programming port: all of them refused
+ *        while any session holds one, else prog_rail_connect() for each.
+ *
+ * @param pg    The POWER page.
+ * @param k_of  The output of each programming port's pin, or
+ *              PROG_RAIL_NO_PORT for a port without a pin (not refused).
+ * @param ports The programming ports, up to 8.
+ * @param held  Bit q: a session holds programming port q.
+ * @param ctx   The active ports.
+ * @return      Bit q: CONNECT on port q refused.
+ */
+uint8_t prog_rail_connect_mask(const power_page_t *pg, const int *k_of,
+                               uint8_t ports, uint8_t held,
+                               const prog_rail_ctx_t *ctx);
 
 /**
  * @brief Every rule of a session's ON, in the order of the enum.
@@ -160,12 +208,14 @@ void prog_rail_view(const prog_rail_t *r, const power_page_t *pg,
  * @param mv  The voltage for ON, mV.
  * @param ma  The current limit for ON, mA.
  * @param ctx What the ON is judged against.
- * @return    true when taken; an OFF always is (without a port it switches
- *            nothing); false for a NULL argument.
+ * @param now The clock, ms: a pending ON's wait counts from here.
+ * @return    true when taken, port k on or pending; an OFF always is
+ *            (without a port it switches nothing) and ends a pending ON;
+ *            false for a NULL argument.
  */
 bool prog_rail_set(prog_rail_t *r, power_page_t *pg, supply_page_t *sp,
                    bool on, uint16_t mv, uint16_t ma,
-                   const prog_rail_ctx_t *ctx);
+                   const prog_rail_ctx_t *ctx, uint32_t now);
 
 /**
  * @brief The panel's POWER write with the session's rules (power_write()).
@@ -190,23 +240,29 @@ uint8_t prog_rail_write(prog_rail_t *r, power_page_t *pg, uint8_t off,
 /**
  * @brief The session's hold and write, after every page write that can
  *        move them and once a pass: what the panel's OFF waits for.  The
- *        session letting go ends its standing OFF and its other-ports
- *        rule; a held OFF ends with the write or SUPPLY_PAGE_WRITE_WAIT_MS
- *        after it was written.
+ *        session letting go ends its standing OFF, its other-ports rule
+ *        and a pending ON; a held OFF ends with the write or
+ *        SUPPLY_PAGE_WRITE_WAIT_MS after it was written.  A pending ON is
+ *        judged here: port k on once the PD mini reads the voltage and
+ *        every rule still holds, refused at PROG_RAIL_WAIT_MS.
  *
  * @param r       The state; nothing for NULL.
  * @param pg      The POWER page; nothing for NULL.
+ * @param sp      The SUPPLY page; NULL leaves a pending ON waiting.
  * @param held    A session holds the port's supply.
  * @param writing It writes to the servo's memory.
+ * @param ctx     What a pending ON is judged against; NULL leaves it
+ *                waiting.
  * @param now     The clock, ms.
  */
-void prog_rail_tell(prog_rail_t *r, power_page_t *pg, bool held,
-                    bool writing, uint32_t now);
+void prog_rail_tell(prog_rail_t *r, power_page_t *pg, supply_page_t *sp,
+                    bool held, bool writing, const prog_rail_ctx_t *ctx,
+                    uint32_t now);
 
 /**
  * @brief A lost heartbeat, the link failsafe or a trip: the
- *        caller's power_off() is not held, and a session that holds the
- *        port gets no ON until it lets go.
+ *        caller's power_off() is not held, a pending ON ends, and a
+ *        session that holds the port gets no ON until it lets go.
  *
  * @param r The state; nothing for NULL.
  */

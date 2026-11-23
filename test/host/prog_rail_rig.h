@@ -32,6 +32,10 @@ static prog_rail_ctx_t g_rctx;
 static supply_page_t   g_sp;
 static pdmini_t        g_pd;
 static outputs_t       g_sout;
+static uint32_t        g_rnow;      /* the rail's clock, ms */
+/* The PD mini's output follows its set point in the pass, unless a case
+ * moves it by hand (g_pd_by_hand, g_pd.st.v_mv). */
+static bool            g_pd_by_hand;
 
 /* ------------------------------------------------------------- the pages */
 
@@ -67,6 +71,9 @@ static inline void sp_pass(bool safe)
     g_pd.st.output = g_pd.want_output;
     g_pd.st.set_mv = g_pd.want_mv;
     g_pd.st.set_ma = g_pd.want_ma;
+    if (!g_pd_by_hand) {
+        g_pd.st.v_mv = g_pd.want_output ? g_pd.want_mv : 0u;
+    }
 }
 
 /* The panel's SUPPLY OFF, as error_act() has supply_link_cut() write it. */
@@ -86,7 +93,36 @@ static inline void rail_view(supply_port_view_t *out)
 
 static inline bool rail_set(bool on, uint16_t mv, uint16_t ma)
 {
-    return prog_rail_set(&g_rail, &g_pw, &g_sp, on, mv, ma, &g_rctx);
+    return prog_rail_set(&g_rail, &g_pw, &g_sp, on, mv, ma, &g_rctx, g_rnow);
+}
+
+/* The rail told of the session's hold and write: ports_tell_supply(). */
+static inline void rail_tell(bool held, bool writing)
+{
+    prog_rail_tell(&g_rail, &g_pw, &g_sp, held, writing, &g_rctx, g_rnow);
+}
+
+/* A pass of 1ms: the SUPPLY page, the module and the rail. */
+static inline void rail_pass(void)
+{
+    sp_pass(true);
+    ++g_rnow;
+    rail_tell(g_rail.held, g_rail.writing);
+}
+
+/* An ON and the passes until port k is on, 400ms at most: whether the ON
+ * was taken. */
+static inline bool rail_on(uint16_t mv, uint16_t ma)
+{
+    const uint16_t bit = (uint16_t)(1u << (unsigned)g_rail.port);
+    if (!rail_set(true, mv, ma)) {
+        return false;
+    }
+    for (unsigned i = 0; i < 400u && (power_port_on(&g_pw) & bit) == 0u;
+         ++i) {
+        rail_pass();
+    }
+    return true;
 }
 
 /* The bench at its start: the POWER page with or without the switches,
@@ -97,6 +133,7 @@ static inline void rig_start(bool switches, int k, bool pd_on)
     static const uint16_t k_wiring[4] = { 1u, 8u, 9u, 1u };
     const uint16_t on[3] = { 1u, RAIL_MV, RAIL_MA };
 
+    g_pd_by_hand = false;
     power_init(&g_pw, switches, true);
     prog_rail_init(&g_rail);
     prog_rail_port(&g_rail, k);
