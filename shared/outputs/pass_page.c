@@ -229,14 +229,17 @@ bool pass_page_tick(pass_page_t *p, const pass_dec_t *d, uint32_t now_ms)
     return true;
 }
 
-uint16_t pass_page_mirror(const pass_page_t *p, bool armed)
+uint16_t pass_page_mirror(const pass_page_t *p, const outputs_t *o)
 {
     uint16_t m = 0u;
-    if (!armed || !p->capture) {
+    if (o == NULL || !p->capture) {
         return 0u;
     }
     for (unsigned k = 0; k < LINK_PA_CHANNELS; ++k) {
-        if (p->source[k] == (uint16_t)LINK_PA_SRC_PASS) {
+        /* Each channel by its own role: arming surfaces never passes a
+         * receiver's throttle pulse to an ESC. */
+        if (p->source[k] == (uint16_t)LINK_PA_SRC_PASS
+            && outputs_channel_driving(o, (uint8_t)k)) {
             m |= (uint16_t)(1u << k);
         }
     }

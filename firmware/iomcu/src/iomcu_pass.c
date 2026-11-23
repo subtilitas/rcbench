@@ -16,9 +16,9 @@
  * Each pass, after the bank's arm: the ring drained (a lap, a full FIFO and
  * an open programming session flag the open window), the window closed
  * when due, and the pads routed.  A PASS-THROUGH pad is MIRROR's only while
- * the bank is ARMED; SAFE, the failsafe, a STOP and every error leave it
- * driven low from the pass that sees them.  OFF is low always.  BENCH is
- * not touched here.
+ * the bank is armed for its channel's role; SAFE, the failsafe, a STOP and
+ * every error leave it driven low from the pass that sees them.  OFF is
+ * low always.  BENCH is not touched here.
  *
  * On the other boards (IOMCU_BOARD_RSN 0) the pages are not in the page
  * table and each function does nothing.
@@ -109,7 +109,10 @@ static uint32_t bidir_bits(void)
 }
 
 /**
- * @brief Whether the bank is ARMED for any role, as this pass left it.
+ * @brief Whether the bank is ARMED for any role, as this pass left it: a
+ *        SOURCE change is refused while any role is armed.  Which pads
+ *        MIRROR drives is judged per channel by its own role
+ *        (pass_page_mirror()).
  *
  * @return true while ARMED.
  */
@@ -119,13 +122,14 @@ static bool armed(void)
 }
 
 /**
- * @brief Each held pad as the pages say: MIRROR's while ARMED for
- *        PASS-THROUGH, low otherwise; only what changed is touched.
+ * @brief Each held pad as the pages say: MIRROR's for PASS-THROUGH while
+ *        the bank is armed for the channel's role, low otherwise; only what
+ *        changed is touched.
  */
 static void route(void)
 {
     const uint16_t held = pass_page_held(&s_thru);
-    const uint16_t mir  = pass_page_mirror(&s_thru, armed());
+    const uint16_t mir  = pass_page_mirror(&s_thru, &s_outputs);
     const uint16_t low  = (uint16_t)(held & ~mir);
     for (unsigned k = 0; k < PASS_CHANNELS; ++k) {
         const uint16_t b = (uint16_t)(1u << k);

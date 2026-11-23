@@ -2104,7 +2104,7 @@ Durchlauf leert.
 
 | `SOURCE` | Ausgangspad | Ausgang |
 | --- | --- | --- |
-| 1 PASS-THROUGH | PIO0 (MIRROR), solange die Bank ARMED ist; low getrieben in SAFE | der Puls des Empfängers |
+| 1 PASS-THROUGH | PIO0 (MIRROR), solange die Bank für die Rolle von Kanal k ARMED ist; sonst und in SAFE low getrieben | der Puls des Empfängers |
 | 2 BENCH | der auf dem Pin gebundene Ausgangsslot, falls einer | der Ausgang der Bank, wie am Prüfstand |
 | 0 OFF | low getrieben | nichts |
 
@@ -2122,6 +2122,12 @@ Durchlauf leert.
 - PASS-THROUGH wird mit BAD_VALUE abgelehnt, wenn die Messung nicht läuft
   (Bit 3 von `FLAGS`). Auf einem Chip vor dem Stepping A4 startet nichts,
   und jede `SOURCE` außer BENCH wird mit NOT_ARMED abgelehnt.
+- Die Rolle von Kanal k ist die von Kanal k in CHAN_CFG. Mit Surfaces
+  allein ARMED (ARM 0x0004) bleibt ein Throttle-Kanal auf PASS-THROUGH
+  low, und ein Surface-Kanal mit Throttles allein ARMED (ARM 0x0002). Eine
+  Rolle, die SAFE wird, oder ein Kanal, dessen Rolle zu einer nicht ARMED
+  wechselt, nimmt das Pad des Kanals im nächsten Durchlauf der
+  Hauptschleife auf low.
 - Ein Pad auf PASS-THROUGH geht in dem Durchlauf der Hauptschleife low, der
   SAFE sieht: ein STOP, der Failsafe, ein ausgebliebener Heartbeat und jeder
   Fehler. Ein Throttle-Kanal auf PASS-THROUGH leitet den Throttle-Puls des

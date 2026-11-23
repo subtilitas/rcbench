@@ -9,9 +9,12 @@
  * nothing; OFF and PASS-THROUGH refused on a pin held elsewhere, BENCH
  * taken there; PASS-THROUGH refused without the capture, OFF taken; the
  * pads MIRROR drives (PASS-THROUGH while ARMED only) and the pins the page
- * holds; windows closing at 50ms and not 49ms, their number's wrap at
- * 65536, a late window restarting at its close; FLAGS of the window a lap
- * or a session fell in and not of the next; IN_US, OUT_US, LOST and
+ * holds; each channel mirrored only while the bank is armed for its own
+ * role: surfaces alone, throttles alone, both, a role disarmed mid-run and
+ * a channel's role changed while it passes; windows closing at 50ms and
+ * not 49ms, their number's wrap at 65536, a late window restarting at
+ * its close; FLAGS of the window a lap or a session fell in and not of
+ * the next; IN_US, OUT_US, LOST and
  * GLITCH published; PASS_STAT's MISSED saturating at 65535 and FRAMES
  * modulo 65536, RESET taking the counts as zero at once, 0 doing nothing,
  * 2 refused, and its other registers read only; PASS-THROUGH counted as
@@ -37,6 +40,25 @@ static pass_page_t p;
 static pass_dec_t  d;
 
 static const pass_ctx_t SAFE  = { false, 0u };
+
+static outputs_t bank;
+
+/* The bank armed for @p roles (OUT_ROLE_BIT()s, 0 disarmed); channels 0
+ * to 3 throttles, the rest surfaces unless a case changes them. */
+static const outputs_t *armed_for(uint8_t roles)
+{
+    static bool set_up;
+    if (!set_up) {
+        outputs_init(&bank, 0u);
+        for (uint8_t ch = 0; ch < OUT_MAX_CHANNELS; ++ch) {
+            (void)outputs_set_role(&bank, ch, ch < 4u ? OUT_ROLE_THROTTLE
+                                                     : OUT_ROLE_SURFACE);
+        }
+        set_up = true;
+    }
+    outputs_arm_roles(&bank, roles, 0u);
+    return &bank;
+}
 static const pass_ctx_t ARMED = { true, 0u };
 
 static uint8_t src(unsigned k, uint16_t v, const pass_ctx_t *c)
@@ -68,7 +90,7 @@ TEST_CASE(every_channel_starts_on_bench)
     CHECK_EQ(reg(LINK_PA_WINDOW), 0u);
     CHECK_EQ(reg(LINK_PA_FLAGS), 0u);
     CHECK_EQ(pass_page_held(&p), 0u);
-    CHECK_EQ(pass_page_mirror(&p, true), 0u);
+    CHECK_EQ(pass_page_mirror(&p, armed_for(OUT_ROLES_ALL)), 0u);
     pass_page_init(&p, false, 0u);
     CHECK_EQ(reg(LINK_PA_FLAGS), LINK_PA_F_NO_CAPTURE);
 }
@@ -131,7 +153,7 @@ TEST_CASE(pass_through_wants_the_capture_and_off_does_not)
     pass_page_init(&p, false, 0u);
     CHECK_EQ(src(0, LINK_PA_SRC_PASS, &SAFE), LINK_NACK_BAD_VALUE);
     CHECK_EQ(src(0, LINK_PA_SRC_OFF, &SAFE), 0u);
-    CHECK_EQ(pass_page_mirror(&p, true), 0u);
+    CHECK_EQ(pass_page_mirror(&p, armed_for(OUT_ROLES_ALL)), 0u);
     CHECK_EQ(pass_page_held(&p), 1u);
 }
 
@@ -141,9 +163,42 @@ TEST_CASE(mirror_drives_pass_through_while_armed_only)
     CHECK_EQ(src(0, LINK_PA_SRC_PASS, &SAFE), 0u);
     CHECK_EQ(src(5, LINK_PA_SRC_PASS, &SAFE), 0u);
     CHECK_EQ(src(8, LINK_PA_SRC_OFF, &SAFE), 0u);
-    CHECK_EQ(pass_page_mirror(&p, true), (1u << 0) | (1u << 5));
-    CHECK_EQ(pass_page_mirror(&p, false), 0u);
+    CHECK_EQ(pass_page_mirror(&p, armed_for(OUT_ROLES_ALL)), (1u << 0) | (1u << 5));
+    CHECK_EQ(pass_page_mirror(&p, armed_for(0u)), 0u);
+    CHECK_EQ(pass_page_mirror(&p, NULL), 0u);
     CHECK_EQ(pass_page_held(&p), (1u << 0) | (1u << 5) | (1u << 8));
+}
+
+TEST_CASE(each_channel_passes_only_while_its_own_role_is_armed)
+{
+    const uint8_t thr = OUT_ROLE_BIT(OUT_ROLE_THROTTLE);
+    const uint8_t srf = OUT_ROLE_BIT(OUT_ROLE_SURFACE);
+    pass_page_init(&p, true, 0u);
+    /* Channel 1 a throttle, channel 6 a surface, both passing. */
+    CHECK_EQ(src(1, LINK_PA_SRC_PASS, &SAFE), 0u);
+    CHECK_EQ(src(6, LINK_PA_SRC_PASS, &SAFE), 0u);
+    /* Surfaces alone: no receiver throttle pulse reaches the ESC. */
+    CHECK_EQ(pass_page_mirror(&p, armed_for(srf)), 1u << 6);
+    /* Throttles alone: the reverse. */
+    CHECK_EQ(pass_page_mirror(&p, armed_for(thr)), 1u << 1);
+    /* Both. */
+    CHECK_EQ(pass_page_mirror(&p, armed_for(thr | srf)), (1u << 1) | (1u << 6));
+    /* A role disarmed mid-run: its channel out at the next call, the
+     * other kept. */
+    outputs_arm_roles(&bank, srf, 1u);
+    CHECK_EQ(pass_page_mirror(&p, &bank), 1u << 6);
+    outputs_arm_roles(&bank, 0u, 2u);
+    CHECK_EQ(pass_page_mirror(&p, &bank), 0u);
+    /* A channel whose role changes while passing follows its new role. */
+    (void)armed_for(srf);
+    CHECK_EQ(pass_page_mirror(&p, &bank), 1u << 6);
+    CHECK(outputs_set_role(&bank, 6u, OUT_ROLE_THROTTLE));
+    CHECK_EQ(pass_page_mirror(&p, &bank), 0u);
+    CHECK(outputs_set_role(&bank, 1u, OUT_ROLE_SURFACE));
+    CHECK_EQ(pass_page_mirror(&p, &bank), 1u << 1);
+    CHECK(outputs_set_role(&bank, 1u, OUT_ROLE_THROTTLE));
+    CHECK(outputs_set_role(&bank, 6u, OUT_ROLE_SURFACE));
+    outputs_arm_roles(&bank, 0u, 3u);
 }
 
 /* A decoder with input k pulsing @p w microseconds, output k 3 more. */
@@ -280,7 +335,7 @@ TEST_CASE(a_session_counts_pass_through_active_and_switches_channels_off)
     CHECK_EQ(reg(LINK_PA_SOURCE(2)), LINK_PA_SRC_OFF);
     CHECK_EQ(reg(LINK_PA_SOURCE(3)), LINK_PA_SRC_BENCH);
     CHECK_EQ(pass_page_active(&p), 0u);
-    CHECK_EQ(pass_page_mirror(&p, true), 0u);
+    CHECK_EQ(pass_page_mirror(&p, armed_for(OUT_ROLES_ALL)), 0u);
     /* Back only with a new write. */
     CHECK_EQ(src(0, LINK_PA_SRC_PASS, &SAFE), 0u);
     CHECK_EQ(pass_page_active(&p), 1u << 0);
@@ -349,6 +404,7 @@ int main(void)
     RUN(off_and_pass_through_are_refused_on_a_pin_held_elsewhere);
     RUN(pass_through_wants_the_capture_and_off_does_not);
     RUN(mirror_drives_pass_through_while_armed_only);
+    RUN(each_channel_passes_only_while_its_own_role_is_armed);
     RUN(windows_close_every_50ms_and_their_number_wraps);
     RUN(flags_mark_the_window_a_lap_or_a_session_fell_in);
     RUN(lost_and_glitch_bits_are_published_per_input);

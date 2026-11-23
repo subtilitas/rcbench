@@ -17,8 +17,9 @@ history is in git.
   at every start) and report each input's and output's last pulse, the
   frame period, missed frames, glitches (a high under 400µs or over
   2600µs) and a signal lost after 3 periods or 100ms, in windows of 50ms.
-  A PASS-THROUGH output is driven only while ARMED and is low from the
-  pass that sees SAFE. A channel on PASS-THROUGH counts as active for a
+  A PASS-THROUGH output is driven only while the bank is armed for its
+  channel's role (a throttle channel stays low during a surfaces-only run)
+  and is low from the pass that sees SAFE. A channel on PASS-THROUGH counts as active for a
   programming session on the common rail; a session at another voltage
   sets the PASS-THROUGH ports it switches off to OFF. PIO0 holds MIRROR,
   CAPTURE and the PD mini UART. The decoder is the new module `protocols/passthru`

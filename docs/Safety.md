@@ -1064,6 +1064,13 @@ reads the state and shows the alert, is not in the coverage figure.
   PROG PORT pin to ARMED, ARM 0x0004. A pin of a role the ARM does not name sends no
   pulse, as while SAFE. An IOmcu older than protocol 4.18
   takes any non-zero ARM as the whole bank, so on it every bound pin drives.
+- The remote servo node's pass-through follows the same rule per channel:
+  a channel on PASS-THROUGH passes the receiver's pulse only while the ARM
+  names its channel's role (CHAN_CFG). With ARM 0x0004 a throttle channel's
+  pad stays low, so a receiver never drives an ESC during a surfaces-only
+  run, and the reverse with ARM 0x0002. The IOmcu judges this every
+  main-loop pass ([Link, The PASS and PASS_STAT
+  pages](Link.md#the-pass-and-pass_stat-pages)).
 - A switch to ARMED for the other role goes through SAFE. The panel writes ARM = 0,
   waits at least 100ms, then writes the new roles; the IOmcu refuses
   a change from one non-zero ARM to another with BAD_VALUE.

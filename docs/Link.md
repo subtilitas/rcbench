@@ -1922,7 +1922,7 @@ CAPTURE pushes the state of all 18 pins on every change; two chained DMA
 
 | `SOURCE` | Output pad | Output |
 | --- | --- | --- |
-| 1 PASS-THROUGH | PIO0 (MIRROR) while the bank is ARMED; driven low while SAFE | the receiver's pulse |
+| 1 PASS-THROUGH | PIO0 (MIRROR) while the bank is armed for channel k's role; driven low otherwise and while SAFE | the receiver's pulse |
 | 2 BENCH | the output slot bound on the pin, if any | the bank's output, as on the bench |
 | 0 OFF | driven low | nothing |
 
@@ -1937,6 +1937,11 @@ CAPTURE pushes the state of all 18 pins on every change; two chained DMA
 - PASS-THROUGH is refused with BAD_VALUE when the capture does not run
   (`FLAGS` bit 3). On a chip before the A4 stepping nothing starts and
   every `SOURCE` other than BENCH is refused with NOT_ARMED.
+- Channel k's role is channel k's in CHAN_CFG. With surfaces armed
+  alone (ARM 0x0004) a throttle channel on PASS-THROUGH stays low, and a
+  surface channel with throttles armed alone (ARM 0x0002). A role
+  disarmed, or a role changed to one not armed, takes the channel's pad
+  low on the next main-loop pass.
 - A PASS-THROUGH pad goes low on the main-loop pass that sees SAFE: a
   STOP, the failsafe, a lost heartbeat and every error. A throttle channel
   on PASS-THROUGH passes the receiver's throttle pulse; a lost receiver

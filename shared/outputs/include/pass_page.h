@@ -43,6 +43,7 @@
 #include "hitec_port.h"
 #include "kst_port.h"
 #include "link_pages.h"
+#include "outputs.h"
 #include "pass_decode.h"
 
 #ifdef __cplusplus
@@ -148,13 +149,17 @@ void pass_page_flag(pass_page_t *p, uint16_t flags);
 bool pass_page_tick(pass_page_t *p, const pass_dec_t *d, uint32_t now_ms);
 
 /**
- * @brief The channels MIRROR drives: PASS-THROUGH while ARMED.
+ * @brief The channels MIRROR drives: PASS-THROUGH channel k while the bank
+ *        is armed for channel k's role (outputs_channel_driving()).  With
+ *        surfaces armed alone a throttle channel's pad stays low, and the
+ *        reverse; a role disarmed, or a channel's role changed to one not
+ *        armed, takes its channels out of the mask at the next call.
  *
- * @param p      The pages.
- * @param armed  The bank is ARMED.
- * @return       Bit k for channel k.
+ * @param p  The pages.
+ * @param o  The bank; NULL drives none.
+ * @return   Bit k for channel k.
  */
-uint16_t pass_page_mirror(const pass_page_t *p, bool armed);
+uint16_t pass_page_mirror(const pass_page_t *p, const outputs_t *o);
 
 /**
  * @brief The channels whose output pin the pages hold: OFF and
