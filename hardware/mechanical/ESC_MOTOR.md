@@ -80,22 +80,27 @@ corner to a black crocodile clip. The resistors form a delta, so any 2
 clips see 600Ω in parallel with 1200Ω: 400Ω. With it the ESC and
 the phase tap are tried with no motor on the bench (owner, 2026-11-22).
 The phase tap's lead is connected to one of the 3 clips and ends in a
-3.5mm mono headphone plug; the model draws it as a white wire standing on
-the clip of corner C, with the plug on its end.
+3.5mm mono headphone plug; the model draws it as a white wire that
+leaves the boot of the clip of corner C at its rear face, 1.45mm above
+the yellow wire, runs 5.0mm along it, bends up with a radius of 4.0mm
+and carries the plug on its end, 20.0mm higher.
 
 ![Motor simulator](renders/parts/motor_simulator.png)
 
 | File | Content | Over all, mm | Origin |
 | --- | --- | --- | --- |
-| `motor_simulator.step` | 3 blue resistors with their leads, solder at the 3 corners, 3 yellow wires, 3 clips with black boots and steel jaws, the phase tap's lead on one clip with its 3.5mm mono plug; 32 solids | 51.05 x 20.0 x 78.06; 18.26 high without the tap's lead | the middle of the triangle's lower side; the triangle stands in the y-z plane, corner A at -y, B at +y, C on top; the wires run towards -x |
+| `motor_simulator.step` | 3 blue resistors with their leads, solder at the 3 corners, 3 yellow wires, 3 clips with black boots and steel jaws, the phase tap's white lead out of one clip's boot with its 3.5mm mono plug (strain relief of 3 steps, barrel, shoulder, sleeve, black ring, grooved tip); 39 solids | 51.05 x 20.0 x 77.71; 18.26 high without the tap's lead | the middle of the triangle's lower side; the triangle stands in the y-z plane, corner A at -y, B at +y, C on top; the wires run towards -x |
 
 | Point | x, mm | y, mm | z, mm |
 | --- | --- | --- | --- |
 | Corners A, B, C | 0.0 | -6.5, +6.5, 0.0 | 0.0, 0.0, 11.26 |
 | Wires: start, middle, end | -0.8, -10.8, -20.8 | as the corners | as the corners |
 | Clips' tips | -49.8 | as the corners | as the corners |
-| Phase tap's lead on the clip of C: meets the clip, middle, end | -45.3 | 0.0 | 12.56, 27.56, 42.56 |
-| Mono plug: handle, shaft, end of the tip | -45.3 | 0.0 | 42.56 to 60.56, 60.56 to 74.56, 74.56 |
+| Phase tap's lead: leaves the boot of the clip of C | -20.8 | 0.0 | 12.71 |
+| Phase tap's lead: end of the bend, end in the plug | -11.8 | 0.0 | 16.71, 36.71 |
+| Mono plug: strain relief, barrel, shoulder | -11.8 | 0.0 | 36.71 to 44.21, 44.21 to 58.21, 58.21 to 60.21 |
+| Mono plug: sleeve, ring, tip | -11.8 | 0.0 | 60.21 to 69.71, 69.71 to 70.71, 70.71 to 74.21 |
+| Mono plug: groove of the tip, end of the tip | -11.8 | 0.0 | 70.71 to 71.81, 74.21 |
 
 Limits:
 
@@ -110,12 +115,16 @@ Limits:
   across 2 driven leads dissipates 0.47W.
 - The phase tap's lead is on one clip and ends in a 3.5mm mono headphone
   plug (owner, 2026-11-22). Which clip is free: the 3 carry the same
-  beeps. How the lead is fastened, its colour, diameter and length, and
-  which of the plug's 2 contacts carries the tap are not stated; drawn
-  white, 1.2mm across, 30mm, straight up from the upper jaw.
-- The plug's shaft is 3.5mm across and 14.0mm long, as such plugs are; its
-  tip, the ring between tip and sleeve and its handle of 6.0mm x 18.0mm
-  are estimated. The tip is a plain cylinder.
+  beeps. How the lead is fastened inside the boot, its colour, diameter
+  and length, and which of the plug's 2 contacts carries the tap are not
+  stated; drawn white, 1.2mm across, 31.3mm along its middle line.
+- The plug's shaft is 3.5mm across and 14.0mm long, as such plugs are.
+  Its split into a sleeve of 9.5mm, a ring of 1.0mm and a tip of 3.5mm,
+  the tip's groove of 2.6mm x 1.1mm, and the handle (shoulder 5.0mm x
+  2.0mm, barrel 7.0mm x 14.0mm, strain relief of 3 steps of 2.5mm, 5.0mm,
+  4.0mm and 3.0mm across) are taken from common plugs of this kind, not
+  measured on the owner's. The tip's round end is 2 steps of 2.9mm and
+  2.0mm.
 - A second build with orange clips and 6 resistors exists; it is not
   drawn.
 - Not drawn: the resistors' colour bands, the clips' teeth, spring and

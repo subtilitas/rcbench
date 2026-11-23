@@ -63,9 +63,10 @@ history is in git.
   warning on the band and the step's card, and at 1 it is refused (`V07`).
 - `hardware/mechanical/`: `motor_simulator.step`, a stand-in for a motor
   on an ESC's 3 motor leads: 3 resistors of 600Ω in a triangle, 400Ω
-  between any 2 of its 3 crocodile clips, with the phase tap's lead on one
-  clip, ending in a 3.5mm mono plug. 32 solids, 51.05mm x 20.0mm x
-  78.06mm; every size is estimated from one owner photo
+  between any 2 of its 3 crocodile clips. The phase tap's lead leaves one
+  clip's boot beside the resistor's wire and ends in a 3.5mm mono plug
+  with a grooved tip, one insulating ring, a barrel of 7.0mm and a strain
+  relief. 39 solids, 51.05mm x 20.0mm x 77.71mm; every size is estimated from one owner photo
   ([ESC and motor](hardware/mechanical/ESC_MOTOR.md#motor-simulator)).
 - `hardware/mechanical/`: `flycolor_flydragon_lite_40a.step`, the ESC with
   its capacitor, print, power leads with an XT60 plug, 3 motor leads and
