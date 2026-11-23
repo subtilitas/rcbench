@@ -400,3 +400,37 @@ test('a second .sig file for a local image: "checking" and WRITE disabled until 
   await expect(sig).toContainText('other.sig');
   await expect(write).toBeEnabled();
 });
+
+test('the first .sig file for a local image: "checking" and WRITE disabled at once, until its verdict lands', async ({ page }) => {
+  await setup(page, { esp: { chipId: 9 } });
+  await advancedOn(page);
+  await walk(page, 'file', 'dial');
+  await connectEsp(page);
+  await pickFile(page, '#file', 'dial.bin', IMAGES.dial);
+  const sig = page.locator('#sig-state');
+  const write = page.locator('#write');
+  await expect(sig).toHaveAttribute('data-state', 'unchecked');
+  await expect(write).toBeEnabled();
+  // The check of the first .sig file answers 1500ms late; WRITE is disabled from the pick on.
+  await page.evaluate(() => {
+    const w = window as unknown as { __writeSeen: boolean[] };
+    w.__writeSeen = [];
+    const verify = SubtleCrypto.prototype.verify;
+    SubtleCrypto.prototype.verify = function (this: SubtleCrypto, ...args: Parameters<SubtleCrypto['verify']>) {
+      const r = verify.apply(this, args);
+      return new Promise((res) => setTimeout(() => res(r), 1500));
+    } as SubtleCrypto['verify'];
+    document.addEventListener('change', (e) => {
+      if ((e.target as HTMLElement).id !== 'sigfile') return;
+      // After the page's own handler: the state the pick leaves before any await.
+      queueMicrotask(() => w.__writeSeen.push((document.getElementById('write') as HTMLButtonElement).disabled));
+    });
+  });
+  await pickFile(page, '#sigfile', 'dial.bin.sig', sigOf(IMAGES.dial));
+  await expect(sig).toHaveAttribute('data-state', 'pending');
+  await expect(write).toBeDisabled();
+  await expect(write).toHaveAttribute('data-block', 'sig-pending');
+  expect(await page.evaluate(() => (window as unknown as { __writeSeen: boolean[] }).__writeSeen)).toEqual([true]);
+  await expect(sig).toHaveAttribute('data-state', 'signed');
+  await expect(write).toBeEnabled();
+});

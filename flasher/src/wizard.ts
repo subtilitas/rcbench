@@ -244,10 +244,14 @@ export type SigState = 'signed' | 'none' | 'mismatch' | 'unchecked';
 /**
  * The signature state of an image in hand. A release image takes the shown
  * verdict of its signature check. A local file without a picked .sig file is
- * `unchecked`; with one it takes the verdict of that check. Null while the
- * check runs.
+ * `unchecked`; with one it takes the verdict of that check. Null while a
+ * check runs (`pending`, or no verdict yet), for either source and whether
+ * or not the page holds the picked .sig file yet.
  */
-export function sigStateOf(source: 'release' | 'file', sigPicked: boolean, verdict: 'signed' | 'none' | 'mismatch' | null): SigState | null {
+export function sigStateOf(source: 'release' | 'file', sigPicked: boolean, verdict: 'signed' | 'none' | 'mismatch' | 'pending' | null): SigState | null {
+  // A check that runs holds WRITE whatever else the page holds, so the order
+  // in which a .sig pick updates the page cannot open WRITE early.
+  if (verdict === 'pending') return null;
   if (source === 'file' && !sigPicked) return 'unchecked';
   return verdict;
 }

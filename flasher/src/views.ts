@@ -195,7 +195,7 @@ export function gate(): Gate {
     loading: st.loading || (rel && st.releases === null && !st.releasesError),
     imageOk: !!st.image,
     keepRefused: !!plan && !plan.ok,
-    sig: st.image ? sigStateOf(st.source, !!st.localSig, shown === 'unchecked' || shown === 'pending' || shown === undefined ? null : shown) : null,
+    sig: st.image ? sigStateOf(st.source, !!st.localSig, shown === 'unchecked' || shown === undefined ? null : shown) : null,
   });
 }
 

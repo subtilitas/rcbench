@@ -241,6 +241,11 @@ test('a local file without a .sig file is unchecked: WRITE allowed in Advanced w
   assert.deepEqual(checkGate({ ...adv, sig: sigStateOf('file', true, 'mismatch') }), { write: true, block: null, notes: ['sig-mismatch'] });
   assert.deepEqual(checkGate({ ...ready, sig: sigStateOf('release', false, 'mismatch') }).block, 'sig-mismatch');
   assert.equal(sigStateOf('release', false, null), null);
+  // A check that runs holds WRITE, also before the page holds the picked .sig file.
+  for (const [source, picked] of [['file', false], ['file', true], ['release', false]] as const) {
+    assert.equal(sigStateOf(source, picked, 'pending'), null, `${source} ${picked}`);
+    assert.deepEqual(checkGate({ ...adv, sig: sigStateOf(source, picked, 'pending') }).block, 'sig-pending', `${source} ${picked}`);
+  }
 });
 
 test('simple mode never reaches unchecked: its source is the release, and the gate refuses it', () => {
