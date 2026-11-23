@@ -452,7 +452,7 @@ TEST_CASE(a_lost_heartbeat_is_not_held)
 
 TEST_CASE(null_arguments_do_nothing)
 {
-    supply_port_view_t v;
+    supply_port_view_t v = {0};
 
     rig_start(true, K, true);
     prog_rail_init(NULL);
