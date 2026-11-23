@@ -8167,8 +8167,8 @@ UPDATES wie jedes andere.
 ### Geräte-Images
 
 Das Panel-Image bringt nur die IOmcu-Images mit. Die Anwendungs-Images des
-C6-Funks, des Dial, des Leistungsknotens und des Auswuchtknotens sind
-Dateien des Release, das das Panel ausführt, Tag `vMAJOR.MINOR.PATCH` der
+C6-Funks, des Dial, des Leistungsknotens, des Auswuchtknotens und des
+Anzeigeknotens sind Dateien des Release, das das Panel ausführt, Tag `vMAJOR.MINOR.PATCH` der
 eigenen Version des Panels, die auch der Web-Flasher und die Release-Seite
 anbieten:
 
@@ -8178,6 +8178,7 @@ anbieten:
 | DIAL | `rcbench-dial-<Version>.bin` | 3.145.728 |
 | LEISTUNGSKNOTEN | `rcbench-node-pwr-<Version>.bin` | 1.572.864 |
 | AUSWUCHTKNOTEN | `rcbench-node-bal-<Version>.bin` | 1.572.864 |
+| ANZEIGEKNOTEN, der Schritt LEISTUNGSKNOTEN, solange der gebundene Leistungsknoten der Anzeigeknoten ES3C28P ist | `rcbench-node-display-<Version>.bin` | 1.572.864 |
 
 Das Halten eines Schritts nimmt das Image von einer von drei Stellen, und
 die Karte nennt die Datei und die Stelle:
@@ -8349,8 +8350,9 @@ Beschriftung dieser Zeile.
 ![Der Eintrag FUNKGERÄTE, während das Dial nach seinem Druck fragt](img/de/updates-dial.png)
 
 Die Seite bedeckt EINZELNE UPDATES. Sie hat eine Zeile je Gerät, bei
-y 24, 128 und 232 im Körper: DIAL-FIRMWARE, LEISTUNGSKNOTEN-FIRMWARE und
-AUSWUCHTKNOTEN-FIRMWARE. Überschrift und Zeile nehmen 496px ab x 16 ein,
+y 24, 128 und 232 im Körper: DIAL-FIRMWARE, LEISTUNGSKNOTEN-FIRMWARE
+(ANZEIGEKNOTEN-FIRMWARE, solange der gebundene Leistungsknoten der
+Anzeigeknoten ist) und AUSWUCHTKNOTEN-FIRMWARE. Überschrift und Zeile nehmen 496px ab x 16 ein,
 das Halten 480 x 56px ab x 528. Ein Hinweis unter den Zeilen sagt, wie
 ein Gerät ein Update annimmt. `ZURÜCK` im rechten Platz der Fußleiste und
 das Home-Tag schließen die Seite und zeigen wieder EINZELNE UPDATES; das
@@ -8363,7 +8365,7 @@ Halten der anderen Zeilen grau.
 | --- | --- |
 | `2s HALTEN ZUM DIAL-UPDATE` | Holt das Image des M5Stack Dial aus dem Release, das das Panel ausführt, und sendet es über Bluetooth LE an das verbundene Dial ([Das Dial](#das-dial), [Geräte-Images](#geräte-images)). |
 | `2s HALTEN: DIAL-FIRMWARE NEU INSTALLIEREN` | Dasselbe, solange das Dial die Version des Release meldet. |
-| `2s HALTEN ZUM LEISTUNGSKNOTEN-UPDATE` | Holt das Image des Leistungsknotens aus dem Release und sendet es an den gebundenen Leistungsknoten ([Die Sensorknoten](#die-sensorknoten)). |
+| `2s HALTEN ZUM LEISTUNGSKNOTEN-UPDATE` | Holt das Image des Leistungsknotens aus dem Release und sendet es an den gebundenen Leistungsknoten: das des C6-Knotens oder das des Anzeigeknotens auf dem ES3C28P ([Die Sensorknoten](#die-sensorknoten)). |
 | `2s HALTEN: LEISTUNGSKNOTEN NEU INSTALLIEREN` | Dasselbe, solange der Knoten die Version des Release meldet. |
 | `2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE` | Holt das Image des Auswuchtknotens aus dem Release und sendet es an den gebundenen Auswuchtknoten. |
 | `2s HALTEN: AUSWUCHTKNOTEN NEU INSTALLIEREN` | Dasselbe, solange der Knoten die Version des Release meldet. |
@@ -8464,6 +8466,21 @@ Knoten lehnt das Image der anderen Rolle ab. Die Knoten und ihr Update
 stehen in [Die Sensorknoten: Update über Bluetooth
 LE](Nodes-de.md#update-über-bluetooth-le).
 
+Die Zeile des Leistungsknotens sendet das Image des Boards, das INFO des
+Knotens nennt (Feld `board`): `rcbench-node-pwr-<Version>.bin` für den
+ESP32-C6-Zero (Board 1), `rcbench-node-display-<Version>.bin` für den
+Anzeigeknoten ES3C28P (Board 2). Für den Anzeigeknoten zeigt die Zeile die
+Überschrift `ANZEIGEKNOTEN-FIRMWARE` und die Zeile
+`Anzeigeknoten: 0.23.17. Release: 0.23.18.`, UPDATES den Schritt
+`ANZEIGEKNOTEN`, und die Zeilen des Bands nennen den `Anzeigeknoten`. Das
+Halten, seine Beschriftungen und die BOOT-Frage (IO0 am Anzeigeknoten)
+sind die des Leistungsknotens. Vor dem ersten Byte hält das Panel das
+Image gegen Chip und Update-Art dieses Boards; passt es nicht, endet das
+Update mit `Anzeigeknoten-Update abgebrochen: Image für eine andere
+Platine. Vorherige Firmware läuft.` Ein Board, für das es kein Image
+gibt, zeigt `KEINE FIRMWARE`, und ein Tippen auf das Halten sagt `Dieses
+Release enthält keine Firmware für dieses Gerät.`
+
 ![Die Seite, während der Leistungsknoten nach seiner BOOT-Taste fragt](img/de/updates-node.png)
 
 Während das Update eines Knotens läuft, zeigt sein Halten nacheinander:
@@ -8481,9 +8498,9 @@ fragt. Die Gründe des grauen Haltens sind die des Dial
 ([Das Dial](#das-dial)); `Verbinde das Gerät zuerst auf WIRELESS.` steht,
 bis der Knoten verbunden ist, seine INFO angenommen ist und sein erstes
 STATUS-Paket auf der Verbindung seine Version genannt hat. Ein
-Knoten-Image, das seine Prüfung nicht besteht, ist keine
-ESP32-C6-Anwendung des Projekts `rcbench-node` mit der Rolle dieses
-Knotens, ist größer als der Slot des Knotens von 1.572.864 Bytes, oder
+Knoten-Image, das seine Prüfung nicht besteht, ist keine Anwendung des
+Chips des Knotens (ESP32-C6, für den Anzeigeknoten ESP32-S3) und des
+Projekts `rcbench-node` mit der Rolle dieses Knotens, ist größer als der Slot des Knotens von 1.572.864 Bytes, oder
 sein angehängter SHA-256 weicht ab.
 
 Vom Halten bis zum Ende hält der eigene Client des Knotens seinen Link

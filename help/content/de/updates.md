@@ -277,11 +277,13 @@ Die Zeilen LEISTUNGSKNOTEN-FIRMWARE und AUSWUCHTKNOTEN-FIRMWARE zeigen die Versi
 3. Der Knoten schreibt das Image; die Taste zeigt `LEISTUNGSKNOTEN-UPDATE 37%`.
 4. Der Knoten prüft das Image, installiert es und startet neu. Der Alarm lautet `Leistungsknoten auf 0.23.17 aktualisiert. Verbindet sich von selbst neu.` Der Link des Knotens verbindet sich wieder aus den Werten von SETUP, und die Zeile liest die neue Version aus dem ersten STATUS-Paket des Knotens.
 
+Die Zeile des Leistungsknotens sendet das Image des Boards, das der Knoten in seinem INFO nennt: `rcbench-node-pwr-<Version>.bin` an einen ESP32-C6-Zero, `rcbench-node-display-<Version>.bin` an den Anzeigeknoten ES3C28P. Für den Anzeigeknoten zeigt die Zeile ANZEIGEKNOTEN-FIRMWARE und `Anzeigeknoten: 0.23.17. Release: 0.23.18.`, der Schritt ANZEIGEKNOTEN; seine BOOT-Taste ist IO0. Ein Image, das nicht zum Board des Knotens passt, endet vor dem ersten Byte mit `Anzeigeknoten-Update abgebrochen: Image für eine andere Platine. Vorherige Firmware läuft.` Ein Board, für das das Release kein Image hat, zeigt KEINE FIRMWARE.
+
 Die Messwerte eines Leistungsknotens und die Messungen eines Auswuchtknotens ruhen vom Halten an, bis der Knoten zurück ist. Diese Lücke ist kein Verlust: Das Band zeigt kein `LEISTUNGSKNOTEN VERLOREN`. Jedes andere Ende lautet `Auswuchtknoten-Update abgebrochen: <Grund>. Vorherige Firmware läuft.` mit den Gründen des Dial, und der Knoten behält die Firmware, mit der er lief. Ein Knoten lehnt das Image der anderen Rolle ab, bevor er etwas schreibt. Wie beim Update des Dial werden AUSGANG EIN des Netzteils, PROG 5V EIN und der Start einer Programmierung abgelehnt, zum Beispiel mit `Programmierung nicht gestartet: Das Leistungsknoten-Update läuft.`
 
 ## Geräte-Images
 
-Das Panel-Image bringt nur die IOmcu-Images mit. Die Images des C6-Funks, des Dial und der Knoten sind Dateien des Release, das das Panel ausführt: `rcbench-c6-2.13.0.bin` (die esp_hosted-Version des C6), `rcbench-dial-<Version>.bin`, `rcbench-node-pwr-<Version>.bin` und `rcbench-node-bal-<Version>.bin`. Das Halten eines Schritts nimmt sein Image von einer von drei Stellen, und die Karte nennt die Datei:
+Das Panel-Image bringt nur die IOmcu-Images mit. Die Images des C6-Funks, des Dial und der Knoten sind Dateien des Release, das das Panel ausführt: `rcbench-c6-2.13.0.bin` (die esp_hosted-Version des C6), `rcbench-dial-<Version>.bin`, `rcbench-node-pwr-<Version>.bin`, `rcbench-node-bal-<Version>.bin` und `rcbench-node-display-<Version>.bin`. Das Halten eines Schritts nimmt sein Image von einer von drei Stellen, und die Karte nennt die Datei:
 
 | Zeile der Karte | Woher das Halten es nimmt |
 |---|---|

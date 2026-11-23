@@ -123,6 +123,9 @@ static bool take_info(pnode_ctl_t *c, uint32_t now_ms)
     c->info_ok = p.u.info.proto == RCNODE_PROTO
                  && p.u.info.role == RCNODE_ROLE_POWER
                  && pnode_meter_info(&c->m, &p.u.info);
+    if (c->info_ok) {
+        c->known_board = p.u.info.board;
+    }
     return true;
 }
 
@@ -255,6 +258,7 @@ void pnode_ctl_config(pnode_ctl_t *c, const pnode_cfg_t *cfg,
     if (!c->configured || strcmp(was.addr, c->cfg.addr) != 0) {
         set_addr(c, now_ms);
         c->lost = false;
+        c->known_board = 0u; /* another node: its board is not known */
     }
     if (!c->configured || was.en != c->cfg.en) {
         if (!c->cfg.en) {
@@ -312,9 +316,9 @@ bool pnode_ctl_target(const pnode_ctl_t *c, bleu_addr_t *addr, bool *linked,
     return true;
 }
 
-bool pnode_ctl_other_board(const pnode_ctl_t *c)
+uint8_t pnode_ctl_board(const pnode_ctl_t *c)
 {
-    return c != NULL && c->info_ok && c->info_board != RCNODE_BOARD_C6_ZERO;
+    return c != NULL ? c->known_board : 0u;
 }
 
 pnode_scan_t pnode_ctl_scan(pnode_ctl_t *c, bool armed, uint32_t now_ms)
@@ -355,6 +359,11 @@ bool pnode_ctl_bind(pnode_ctl_t *c, uint8_t i, uint32_t now_ms)
         || !bleu_addr_parse(c->found[i].addr, &a)) {
         ++c->bind_refused;
         return false;
+    }
+    if (strcmp(c->cfg.addr, c->found[i].addr) != 0) {
+        /* Another node: its board is not known.  The address already
+         * bound keeps its link (bleu_bind()) and with it the board. */
+        c->known_board = 0u;
     }
     snprintf(c->cfg.addr, sizeof(c->cfg.addr), "%s", c->found[i].addr);
     snprintf(c->cfg.name, sizeof(c->cfg.name), "%s", c->found[i].name);

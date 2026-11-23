@@ -522,17 +522,19 @@ RESET or a power cycle. The panel sends neither.
 
 ### Update and flashing
 
-The display node is flashed over USB, with the pack off the XT60:
+The display node's first image goes over USB, with the pack off the XT60:
 
 ```sh
 esptool.py --chip esp32s3 write_flash 0x0 rcbench-node-display-merged-<version>.bin
 ```
 
-It keeps the update service over Bluetooth LE: kind 4
+It takes updates over Bluetooth LE from the panel: kind 4
 (`BLEOTA_KIND_NODE_POWER_S3`), the ESP32-S3's chip ID in the image head,
 BOOT (IO0) held 1s to confirm. It refuses an image of the C6 power node,
 and the C6 power node refuses its image, at BEGIN and again at the head.
-The panel does not carry its image (below).
+Its update image is `rcbench-node-display-<version>.bin`; the panel sends
+it from POWER NODE's row, which reads DISPLAY NODE FIRMWARE for it
+([Update over Bluetooth LE](#update-over-bluetooth-le)).
 
 ## Bluetooth LE
 
@@ -684,8 +686,9 @@ A node takes a new application image over BLE from a central, through the
 update service of `protocols/bleota`
 ([README](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md)).
 The panel image does not carry the nodes' images: a row's hold downloads
-its role's file of the release the panel runs, `rcbench-node-pwr-<version>.bin`
-or `rcbench-node-bal-<version>.bin`, or reads it from the SD card's
+its role's file of the release the panel runs, `rcbench-node-pwr-<version>.bin`,
+`rcbench-node-bal-<version>.bin` or, for the display node,
+`rcbench-node-display-<version>.bin`, or reads it from the SD card's
 `BENCH/UPDATES`, checks it ([Screens: Device images](Screens.md#device-images))
 and sends it from UPDATES' wireless devices' page: POWER NODE FIRMWARE and BALANCE NODE
 FIRMWARE ([Screens: The sensor nodes](Screens.md#the-sensor-nodes)). The
@@ -698,17 +701,41 @@ installed is a restart for the balance runs: INFO's clock finds it and
 the runs clear ([Balancing](Balance.md#measuring-with-the-balance-node));
 an update without an install keeps them.
 
+The power node's row picks its image by the board the node's INFO names
+(`devimg_pnode_image()`, field `board` of INFO, `RCNODE_BOARD_*`):
+
+| INFO `board` | Image | Kind | Chip in the head | Row heading |
+| --- | --- | --- | --- | --- |
+| 1, ESP32-C6-Zero | `rcbench-node-pwr-<version>.bin` | 2 | ESP32-C6, 0x000D | POWER NODE FIRMWARE |
+| 2, ES3C28P | `rcbench-node-display-<version>.bin` | 4 | ESP32-S3, 0x0009 | DISPLAY NODE FIRMWARE |
+| none read yet | `rcbench-node-pwr-<version>.bin` | 2 | ESP32-C6, 0x000D | POWER NODE FIRMWARE |
+| any other | none: `NO FIRMWARE`, a tap reads `This release has no firmware for this device.` | | | POWER NODE FIRMWARE |
+
+The panel keeps the board of the bound address over a link's end, the
+update's own hold on the link and a reconnect whose INFO is still unread,
+and over a bind of the address already bound: none of them changes the
+choice or drops an update owed to the image. A new INFO sets the board;
+another address (a bind of another node, an unbind, SETUP's address)
+clears it until that node's INFO. Before the first byte goes out, `devimg_fits()` holds the
+image to the board INFO named on the link that reported the node's
+version: the board takes that image, and the head names the board's chip
+and kind. A mismatch ends the update before the node's link is touched,
+with `<name> update stopped: image for another board.` on the band. The
+node checks the kind again at BEGIN and the head again before it writes.
+
 1. The central connects and sends BEGIN: the kind (power node or balance
    node), the size, the version and the image's SHA-256.
 2. The node checks the kind against its role, the size against its slot of
    1,572,864 bytes (0x180000) and the version. A power node refuses a
    balance image and the reverse. Nothing is erased yet.
-3. The node waits 30s for its BOOT key (GPIO9) held 1s. The node shows
+3. The node waits 30s for its BOOT key (GPIO9; IO0 on the display node)
+   held 1s. The C6 node shows
    nothing; the WS2812 is not driven, and the central tells the user to
    press BOOT. No hold in 30s refuses. A key already down when the window
    opens counts only after it is released.
 4. Held: the node takes the image's first 296 bytes and checks that they
-   name the ESP32-C6 and the node's own role (`DEVOTA_ROLE`, after
+   name its chip (ESP32-C6, or ESP32-S3 on the display node) and its own
+   role (`DEVOTA_ROLE`, after
    ESP-IDF's application descriptor). An image of the other role or
    another device is refused before anything is written. The node then
    erases and writes the slot it does not run from.
@@ -782,10 +809,11 @@ idf.py -B build-bal -D SDKCONFIG=build-bal/sdkconfig \
 idf.py -B build-bal merge-bin -o rcbench-node-bal-merged.bin
 ```
 
-A release carries, for each role (`pwr`, `bal`),
-`rcbench-node-<role>-<version>.bin`, the application, and
-`rcbench-node-<role>-merged-<version>.bin`, which goes to 0x0. The CI
-(continuous integration) job "Node image" builds both roles.
+A release carries, for each build (`pwr`, `bal`, `display`),
+`rcbench-node-<build>-<version>.bin`, the application the panel sends
+over Bluetooth LE, and `rcbench-node-<build>-merged-<version>.bin`, which
+goes to 0x0 over USB; each with its `.sig` and a line in `SHA256SUMS`. The
+CI (continuous integration) job "Node image" builds all three.
 
 To flash, take the pack off the XT60 first (the ground rule), then connect
 the node's USB-C:
@@ -809,7 +837,8 @@ esptool.py --chip esp32s3 write_flash 0x0 \
   build-display/rcbench-node-display-merged.bin
 ```
 
-A release carries `rcbench-node-display-merged-<version>.bin` for it.
+A release carries `rcbench-node-display-merged-<version>.bin` for USB and
+`rcbench-node-display-<version>.bin` for the update over Bluetooth LE.
 
 A node asleep does not answer on USB. Press RESET to start it, or hold BOOT
 and press RESET for the ROM's download mode.
@@ -889,21 +918,21 @@ this start`.
   it and at least 80ms of samples (`errors`, `resets` in STATUS).
 - The balance node holds its ADXL on 3V3 while it sleeps: 350µA.
 - The WS2812 is not driven. Its current at idle is not measured.
-- The panel does not yet send a node its image: the node's side of the
-  update over BLE exists, the panel's rows come with its node clients. The
-  update's rate and a rollback are not measured.
+- The update's rate over Bluetooth LE and a rollback are not measured.
 - A node checks an image's kind, chip and segments, not its origin: a
   central in range can offer any image of the node's role, older ones
   included, and a 1s hold of BOOT installs it.
 - Windows without a sample between two windows are not sent: a stalled
   sampler shows as a jump in `t_node` with no jump in `seq`.
-- The release has no update image of the display node, only
-  `rcbench-node-display-merged-<version>.bin` for USB, and UPDATES offers no
-  update for it. The display node is flashed over USB. A display node bound
-  as the panel's power node names board 2 in INFO; POWER NODE FIRMWARE then
-  offers no update, and a tap reads `This release has no firmware for this
-  device.` (`pnode_ctl_other_board()`).
-- The display node's ILI9341V set-up is the vendor's, not measured; the SPI clock of 20MHz, the touch's orientation,
+- Releases before the one that publishes
+  `rcbench-node-display-<version>.bin` have no line for it in `SHA256SUMS`:
+  a panel running such a release cannot download the display node's image,
+  and the hold ends with `No checksum entry for this firmware.`
+- A display node not connected since the panel started, or since its
+  bind, shows POWER NODE FIRMWARE and the C6 node's file name until its
+  first INFO; the hold stays grey until then.
+- The display node's ILI9341V set-up is the vendor's, not measured; the
+  SPI clock of 20MHz, the touch's orientation,
   the I2C socket's pin order and the internal RAM left for Bluetooth LE at
   run time are not measured. A board without PSRAM runs without a display.
 - The display node's touch read shares the bus with the INA228: a read of

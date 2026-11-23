@@ -371,15 +371,18 @@ idf.py -C firmware/panel -D RCBENCH_IOMCU_BIN=$PWD/firmware/iomcu/build/rcbench-
     -D RCBENCH_IOMCU_RBMOD_BIN=$PWD/firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod.bin build
 
 # die Images der Funkgeräte, die ein Panel über Bluetooth LE sendet, das
-# des Dial und die beider Knotenrollen, geprüft und so benannt wie im
-# Release, für BENCH/UPDATES der SD-Karte (Bildschirme: Geräte-Images)
+# des Dial und die der drei Knoten-Builds (Leistung, Auswuchten,
+# Anzeige), geprüft und so benannt wie im Release, für BENCH/UPDATES
+# der SD-Karte (Bildschirme: Geräte-Images)
 python3 tools/c6_image.py device dial firmware/dial/build/rcbench-dial.bin
 python3 tools/c6_image.py device node-pwr firmware/node/build-pwr/rcbench-node.bin
 python3 tools/c6_image.py device node-bal firmware/node/build-bal/rcbench-node.bin
+python3 tools/c6_image.py device node-display firmware/node/build-display/rcbench-node.bin
 v=0.23.17   # die Version des Baums, shared/link/include/rcbench_version.h
 cp firmware/dial/build/rcbench-dial.bin /media/sdcard/BENCH/UPDATES/rcbench-dial-$v.bin
 cp firmware/node/build-pwr/rcbench-node.bin /media/sdcard/BENCH/UPDATES/rcbench-node-pwr-$v.bin
 cp firmware/node/build-bal/rcbench-node.bin /media/sdcard/BENCH/UPDATES/rcbench-node-bal-$v.bin
+cp firmware/node/build-display/rcbench-node.bin /media/sdcard/BENCH/UPDATES/rcbench-node-display-$v.bin
 
 # Panel ohne Touch-Injector: jeder Panel-Build, auch der eines Releases,
 # sucht beim Start einmal einen Touch-Injector an 0x14 neben dem Glas

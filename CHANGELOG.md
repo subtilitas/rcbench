@@ -13,14 +13,28 @@ history is in git.
   (13.3 to 20ns at the pad), and CAPTURE, which pushes the 18 pins' state
   on every change into a 64KiB DMA (direct memory access) ring. The new
   pages PASS (0x41) and PASS_STAT (0x42) of protocol 4.41 set each
-  channel's source (OFF,
-  PASS-THROUGH or BENCH, written while SAFE, BENCH at every start) and
-  report each input's and output's last pulse, the frame period, missed
-  frames, glitches (a high under 400µs or over 2600µs) and a signal lost
-  after 3 periods or 100ms, in windows of 50ms. A PASS-THROUGH output is
-  driven only while ARMED and is low from the pass that sees SAFE. The
-  decoder is the new module `protocols/passthru`
+  channel's source (OFF, PASS-THROUGH or BENCH, written while SAFE, BENCH
+  at every start) and report each input's and output's last pulse, the
+  frame period, missed frames, glitches (a high under 400µs or over
+  2600µs) and a signal lost after 3 periods or 100ms, in windows of 50ms.
+  A PASS-THROUGH output is driven only while ARMED and is low from the
+  pass that sees SAFE. The decoder is the new module `protocols/passthru`
   ([Link, the PASS and PASS_STAT pages](docs/Link.md#the-pass-and-pass_stat-pages)).
+- The panel updates the display node (the power node on the ES3C28P,
+  ESP32-S3) over Bluetooth LE from SETUP > UPDATES. The power node's row
+  sends the image of the board the node's INFO names:
+  `rcbench-node-pwr-<version>.bin` for the ESP32-C6-Zero (board 1),
+  `rcbench-node-display-<version>.bin` (update kind 4) for the ES3C28P
+  (board 2). For the display node the row reads DISPLAY NODE FIRMWARE,
+  UPDATES' step DISPLAY NODE. The image is downloaded and checked as every
+  device image: `SHA256SUMS`, its `.sig`, chip ESP32-S3, project
+  `rcbench-node`, kind 4 and the release's version. Before the first byte
+  the panel holds it to the board's chip and kind; a mismatch ends with
+  `Display node update stopped: image for another board.` The node asks
+  for BOOT (IO0) held 1s, as the C6 node does.
+- A release publishes `rcbench-node-display-<version>.bin`, the display
+  node's application, with its `.sig` and a line in `SHA256SUMS`, beside
+  `rcbench-node-display-merged-<version>.bin` for USB.
 
 ### Changed
 

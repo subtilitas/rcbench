@@ -555,17 +555,20 @@ beiden.
 
 ### Update und Flashen
 
-Der Anzeigeknoten wird über USB geflasht, mit abgezogenem Pack am XT60:
+Das erste Image des Anzeigeknotens kommt über USB, mit abgezogenem Pack am XT60:
 
 ```sh
 esptool.py --chip esp32s3 write_flash 0x0 rcbench-node-display-merged-<version>.bin
 ```
 
-Er behält den Update-Dienst über Bluetooth LE: Art 4
+Der Anzeigeknoten nimmt Updates über Bluetooth LE vom Panel an: Art 4
 (`BLEOTA_KIND_NODE_POWER_S3`), die Chip-ID des ESP32-S3 im Kopf des Images,
 BOOT (IO0) 1s halten zum Bestätigen. Er lehnt ein Image des
 C6-Leistungsknotens ab, und der C6-Leistungsknoten lehnt seines ab, bei
-BEGIN und noch einmal am Kopf. Das Panel trägt sein Image nicht (unten).
+BEGIN und noch einmal am Kopf. Sein Update-Image ist
+`rcbench-node-display-<Version>.bin`; das Panel sendet es von der Zeile des
+Leistungsknotens, die dafür ANZEIGEKNOTEN-FIRMWARE zeigt
+([Update über Bluetooth LE](#update-über-bluetooth-le)).
 
 ## Bluetooth LE
 
@@ -734,8 +737,9 @@ Ein Knoten nimmt ein neues Anwendungs-Image über BLE von einem Central an,
 ([README](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md)).
 Das Panel-Image bringt die Images der Knoten nicht mit: Das Halten einer
 Zeile lädt die Datei seiner Rolle aus dem Release, das das Panel ausführt,
-`rcbench-node-pwr-<Version>.bin` oder `rcbench-node-bal-<Version>.bin`,
-oder liest sie aus `BENCH/UPDATES` der SD-Karte, prüft sie
+`rcbench-node-pwr-<Version>.bin`, `rcbench-node-bal-<Version>.bin` oder,
+für den Anzeigeknoten, `rcbench-node-display-<Version>.bin`, oder liest sie
+aus `BENCH/UPDATES` der SD-Karte, prüft sie
 ([Bildschirme: Geräte-Images](Screens-de.md#geräte-images)) und sendet sie
 von der Seite der Funkgeräte auf UPDATES:
 LEISTUNGSKNOTEN-FIRMWARE und AUSWUCHTKNOTEN-FIRMWARE
@@ -751,18 +755,45 @@ Neustart: Die Uhr in INFO erkennt ihn, und die Läufe leeren sich
 ([Auswuchten](Balance-de.md#messen-mit-dem-auswuchtknoten)); ein Update
 ohne Installation behält sie.
 
+Die Zeile des Leistungsknotens wählt ihr Image nach dem Board, das INFO
+des Knotens nennt (`devimg_pnode_image()`, Feld `board` von INFO,
+`RCNODE_BOARD_*`):
+
+| INFO `board` | Image | Art | Chip im Kopf | Überschrift der Zeile |
+| --- | --- | --- | --- | --- |
+| 1, ESP32-C6-Zero | `rcbench-node-pwr-<Version>.bin` | 2 | ESP32-C6, 0x000D | LEISTUNGSKNOTEN-FIRMWARE |
+| 2, ES3C28P | `rcbench-node-display-<Version>.bin` | 4 | ESP32-S3, 0x0009 | ANZEIGEKNOTEN-FIRMWARE |
+| noch keins gelesen | `rcbench-node-pwr-<Version>.bin` | 2 | ESP32-C6, 0x000D | LEISTUNGSKNOTEN-FIRMWARE |
+| jedes andere | keins: `KEINE FIRMWARE`, ein Tippen zeigt `Dieses Release enthält keine Firmware für dieses Gerät.` | | | LEISTUNGSKNOTEN-FIRMWARE |
+
+Das Panel behält das Board der gebundenen Adresse über das Ende eines
+Links, das eigene Halten des Links durch das Update und ein Wiederverbinden
+mit noch ungelesenem INFO hinweg, und über ein Binden der schon gebundenen
+Adresse: Nichts davon ändert die Wahl oder verwirft ein Update, das dem
+Image geschuldet ist. Ein neues INFO setzt das Board; eine andere Adresse
+(das Binden eines anderen Knotens, ein Lösen, die Adresse aus SETUP)
+löscht es bis zum INFO dieses Knotens. Bevor das erste Byte
+hinausgeht, hält `devimg_fits()` das Image gegen das Board, das INFO auf
+dem Link nannte, der die Version des Knotens meldete: Das Board nimmt
+dieses Image, und der Kopf nennt Chip und Art des Boards. Passt es nicht,
+endet das Update, bevor der Link des Knotens berührt wird, mit
+`<Name>-Update abgebrochen: Image für eine andere Platine.` im Band. Der
+Knoten prüft die Art noch einmal bei BEGIN und den Kopf noch einmal vor
+dem Schreiben.
+
 1. Das Central verbindet sich und sendet BEGIN: die Art (Leistungsknoten
    oder Auswuchtknoten), die Größe, die Version und den SHA-256 des Images.
 2. Der Knoten prüft die Art gegen seine Rolle, die Größe gegen seinen Slot
    von 1.572.864 Bytes (0x180000) und die Version. Ein Leistungsknoten lehnt
    ein Auswucht-Image ab und umgekehrt. Noch wird nichts gelöscht.
-3. Der Knoten wartet 30s auf seine BOOT-Taste (GPIO9), 1s gehalten. Der
-   Knoten zeigt nichts; die WS2812 wird nicht angesteuert, und das Central
+3. Der Knoten wartet 30s auf seine BOOT-Taste (GPIO9; IO0 am
+   Anzeigeknoten), 1s gehalten. Der C6-Knoten zeigt nichts; die WS2812 wird nicht angesteuert, und das Central
    sagt dem Benutzer, BOOT zu drücken. Kein Halten in 30s lehnt ab. Eine
    Taste, die beim Öffnen des Fensters schon gedrückt ist, zählt erst nach
    dem Loslassen.
 4. Gehalten: Der Knoten nimmt die ersten 296 Bytes des Images und prüft,
-   dass sie den ESP32-C6 und die eigene Rolle des Knotens nennen
+   dass sie seinen Chip (ESP32-C6, am Anzeigeknoten ESP32-S3) und die
+   eigene Rolle des Knotens nennen
    (`DEVOTA_ROLE`, hinter dem Anwendungsdeskriptor von ESP-IDF). Ein Image
    der anderen Rolle oder eines anderen Geräts wird abgelehnt, bevor etwas
    geschrieben ist. Dann löscht und schreibt der Knoten den Slot, aus dem
@@ -839,10 +870,11 @@ idf.py -B build-bal -D SDKCONFIG=build-bal/sdkconfig \
 idf.py -B build-bal merge-bin -o rcbench-node-bal-merged.bin
 ```
 
-Ein Release enthält für jede Rolle (`pwr`, `bal`)
-`rcbench-node-<rolle>-<version>.bin`, die Anwendung, und
-`rcbench-node-<rolle>-merged-<version>.bin` für 0x0. Der CI-Job (Continuous
-Integration) "Node image" baut beide Rollen.
+Ein Release enthält für jeden Build (`pwr`, `bal`, `display`)
+`rcbench-node-<build>-<version>.bin`, die Anwendung, die das Panel über
+Bluetooth LE sendet, und `rcbench-node-<build>-merged-<version>.bin` für
+0x0 über USB; jede mit ihrer `.sig` und einer Zeile in `SHA256SUMS`. Der
+CI-Job (Continuous Integration) "Node image" baut alle drei.
 
 Zum Flashen zuerst das Pack vom XT60 abziehen (die Masseregel), dann USB-C
 des Knotens anschließen:
@@ -866,7 +898,9 @@ esptool.py --chip esp32s3 write_flash 0x0 \
   build-display/rcbench-node-display-merged.bin
 ```
 
-Ein Release enthält dafür `rcbench-node-display-merged-<version>.bin`.
+Ein Release enthält dafür `rcbench-node-display-merged-<version>.bin` für
+USB und `rcbench-node-display-<version>.bin` für das Update über
+Bluetooth LE.
 
 Ein schlafender Knoten antwortet nicht über USB. RESET drücken, um ihn zu
 starten, oder BOOT halten und RESET drücken für den Download-Modus des ROM.
@@ -951,22 +985,21 @@ this start`.
   (`errors`, `resets` in STATUS).
 - Der Auswuchtknoten versorgt seinen ADXL im Schlaf weiter aus 3V3: 350µA.
 - Die WS2812 wird nicht angesteuert. Ihr Ruhestrom ist nicht gemessen.
-- Das Panel sendet einem Knoten sein Image noch nicht: Die Seite des Knotens
-  für das Update über BLE gibt es, die Zeilen des Panels kommen mit seinen
-  Knoten-Clients. Die Rate des Updates und ein Rollback sind nicht
+- Die Rate des Updates über Bluetooth LE und ein Rollback sind nicht
   gemessen.
 - Ein Knoten prüft Art, Chip und Segmente eines Images, nicht seine
   Herkunft: Ein Central in Reichweite kann jedes Image der Rolle des Knotens
   anbieten, auch ältere, und ein Halten von BOOT für 1s installiert es.
 - Fenster ohne Sample zwischen zwei Fenstern werden nicht gesendet: Ein
   stehender Sampler zeigt sich als Sprung in `t_node` ohne Sprung in `seq`.
-- Das Release hat kein Update-Image des Anzeigeknotens, nur
-  `rcbench-node-display-merged-<version>.bin` für USB, und UPDATES bietet
-  kein Update dafür an. Der Anzeigeknoten wird über USB geflasht. Ein als
-  Leistungsknoten des Panels gebundener Anzeigeknoten nennt in INFO Board 2;
-  LEISTUNGSKNOTEN-FIRMWARE bietet dann kein Update an, und ein Tippen zeigt
-  `Dieses Release enthält keine Firmware für dieses Gerät.`
-  (`pnode_ctl_other_board()`).
+- Releases vor dem, das `rcbench-node-display-<Version>.bin`
+  veröffentlicht, haben dafür keine Zeile in `SHA256SUMS`: Ein Panel mit
+  einem solchen Release kann das Image des Anzeigeknotens nicht laden, und
+  das Halten endet mit `Kein Prüfsummeneintrag für diese Firmware.`
+- Ein Anzeigeknoten, der seit dem Start des Panels oder seit seinem Binden
+  nicht verbunden war, zeigt bis zu seinem ersten INFO
+  LEISTUNGSKNOTEN-FIRMWARE und den Dateinamen des C6-Knotens; das Halten
+  bleibt bis dahin grau.
 - Die Einstellung des ILI9341V im Anzeigeknoten ist die des Herstellers,
   nicht gemessen; der SPI-Takt von 20MHz,
   die Ausrichtung des Touch, die Pinfolge der I2C-Buchse und der zur
