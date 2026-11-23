@@ -13,7 +13,7 @@ has a detached signature `<image>.sig`, ECDSA (elliptic curve digital
 signature algorithm) P-256 over its SHA-256. The panel checks the
 signature of its own image and of each device image before an update and
 shows the result; an image without a valid signature still installs after
-a warning. The panel image carries the IOmcu images only and is 4,087,920
+a warning. The panel image carries the IOmcu images only and is 4,088,176
 bytes: an update of the C6 radio, the Dial or a node downloads that
 device's image of this release from GitHub, or reads it from the SD card's
 `BENCH/UPDATES`. SETUP > SD CARD saves and loads the settings as a text
@@ -340,9 +340,9 @@ to #908, #910 to #927, #930, #931, #933 and #934.
   and the 12 stills `mini-*.png` are in the MiniRcBench repository under
   `docs/video/`
   ([Videos from storyboards](tools/video/README.md#commands)).
-- The panel image carries the IOmcu images only: 4,087,920 bytes in the
+- The panel image carries the IOmcu images only: 4,088,176 bytes in the
   release configuration; carrying the 0.23.16 C6, Dial and node images
-  made it 3,413,504 bytes larger. The C6 radio's,
+  made it 3,413,248 bytes larger. The C6 radio's,
   the Dial's and the nodes' images stay release assets (`rcbench-c6-<esp_hosted version>.bin`,
   `rcbench-dial-<version>.bin`, `rcbench-node-pwr-<version>.bin`,
   `rcbench-node-bal-<version>.bin`); `release.yml` and `ci.yml` no longer

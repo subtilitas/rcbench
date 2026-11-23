@@ -830,7 +830,7 @@ Update lädt die Datei seines Geräts in den PSRAM
 ([Bildschirme: Geräte-Images](Screens-de.md#geräte-images)). Bei 0.23.16
 haben die vier Dateien 850 816 (Dial), 646 336 (Leistungsknoten), 642 768
 (Auswuchtknoten) und 1 283 616 (C6) Bytes. Der Release-Build des Panels
-bei 0.23.17 mit beiden IOmcu-Images hat 4 087 920 Bytes, 4 038 544 (49,7%)
+bei 0.23.17 mit beiden IOmcu-Images hat 4 088 176 Bytes, 4 038 288 (49,7%)
 unter dem Slot von 8 126 464.
 Die 4 096 Bytes der Ereignis-Warteschlange, die aufgehobenen DISCONNECTs
 und der Hub stecken in der DIRAM-Zahl, außerhalb von `libbt.a`. Hub und 5
