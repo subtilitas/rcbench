@@ -1054,8 +1054,7 @@ CW and CCW are DIRECTION as read: D series register 0x5E, classic cell
   (station, 2026-10-25): cell 0x02 and the balance 0x1C, kept over a power
   cycle. Every other cell, the cells 0x1D to 0x23, which a write sends
   without a balance, and the data memory command 0x64 are not tested;
-  the programmer sends no 0x64. A write to a servo with a wrong checksum
-  and REPAIR CHECKSUM are not tested on a servo.
+  the programmer sends no 0x64.
 - D series write behaviour is measured on 1 D485HW through captured
   HFP-30 writes. The IOmcu has also written and read back the ID register
   0x32 and smart-sensor registers 0x6C and 0x44 on a D485HW. These selected
@@ -1089,13 +1088,8 @@ CW and CCW are DIRECTION as read: D series register 0x5E, classic cell
 - FACTORY DEFAULT is not offered for the D series; for a classic servo it
   is the HPP-21 Plus's copy of cells 0x30 to 0x53, tested in the host
   model only.
-- Station steps S6 to S8 and S10 to S11 (writes to a D485HW and a classic
-  servo, a link cut during a write) are not run.
 - D series POWER with an off time of 0ms still switches a controllable
   supply off and on. With a PD mini or the carrier's fixed 5V supply, the
   servo therefore restarts at every CONNECT.
 - A classic read takes 2 render frames a cell; at 33ms a frame 100 cells
   take 6.6s in the host model.
-- Station steps S1 to S5 of the plan (a D485HW at PRECHARGE and PULL-UP, the
-  classic HS-5645MG and HS-7955TG, STOP and a pulled link cable during READ
-  ALL, ARM and SUPPLY while held) are not run.

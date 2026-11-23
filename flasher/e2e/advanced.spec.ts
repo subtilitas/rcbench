@@ -7,7 +7,7 @@ import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { makeEspImage } from '../test/fixtures.ts';
 import {
-  FILES, IMAGES, OLD, TAG, advancedOn, connectEsp, expectImage, expectStep, label, pad4, pickFile, setup, sha, sigOf, walk, writeAndWait,
+  FILES, IMAGES, OLD, TAG, advancedOn, connectEsp, expectImage, expectStep, flashHash, label, pad4, pickFile, setup, sha, sigOf, walk, writeAndWait,
 } from './helpers.ts';
 import type { Fake } from './helpers.ts';
 
@@ -165,6 +165,28 @@ test('panel: "Keep settings" off writes the whole image and erases the NVS bytes
   expect(f.writes).toEqual([[0, pad4(len)]]);
   expect(f.md5).toEqual([[0, pad4(len)]]);
 });
+
+for (const [board, next, not] of [
+  ['dial', ['Next: the Dial shows NOT BOUND', 'Weiter: Das Dial zeigt NOT BOUND'], ['keeps its settings', 'behält seine Einstellungen']],
+  ['node-display', ['a node bound before stays bound', 'Ein schon gebundener Knoten bleibt gebunden'], ['', '']],
+] as const) {
+  test(`${board}: "Keep settings" off erases the NVS, and Done names the next step for an erased board`, async ({ page }) => {
+    await setup(page, { esp: { chipId: 9 } });
+    await advancedOn(page);
+    await walk(page, 'wireless', board);
+    await page.evaluate(() => { (window as unknown as { __fake: Fake }).__fake.espFlash.fill(0x42, 0x9000, 0xf000); });
+    await connectEsp(page);
+    await expectImage(page, FILES[board], IMAGES[board]);
+    await page.locator('#keep').uncheck();
+    await expect(page.locator('#keep-list')).toHaveCount(0);
+    await writeAndWait(page);
+    await expect(page.locator('#result')).not.toContainText('nvs 0x9000');
+    await expect(page.locator('#next')).toHaveAttribute('data-kept', 'none');
+    await expect(page.locator('#next')).toContainText(label(page, next[0], next[1]));
+    if (not[0]) await expect(page.locator('#next')).not.toContainText(label(page, not[0], not[1]));
+    expect(await flashHash(page, 'esp', 0, IMAGES[board].length)).toBe(sha(IMAGES[board]));
+  });
+}
 
 test('a local image whose partition table is broken: "Keep settings" refuses, a full write stays possible', async ({ page }) => {
   const broken = Uint8Array.from(IMAGES.panel);

@@ -33,11 +33,11 @@ const A = {
   keep: ['Keep settings', 'Einstellungen behalten'],
   keepSub: [
     'the NVS (non-volatile storage) partition with the settings and the bindings is not written',
-    'die NVS-Partition (non-volatile storage) mit den Einstellungen und den Kopplungen wird nicht geschrieben',
+    'die NVS-Partition (non-volatile storage) mit den Einstellungen und den Bindungen wird nicht geschrieben',
   ],
   keepOff: [
     'The whole image is written from 0x0, over the NVS partition: the settings and the bindings on the board are erased.',
-    'Das ganze Image wird ab 0x0 geschrieben, über die NVS-Partition: Die Einstellungen und die Kopplungen auf dem Board werden gelöscht.',
+    'Das ganze Image wird ab 0x0 geschrieben, über die NVS-Partition: Die Einstellungen und die Bindungen auf dem Board werden gelöscht.',
   ],
   keepRefused: [
     'With "Keep settings" on, nothing is written. Untick it to write the whole image; that erases the settings.',

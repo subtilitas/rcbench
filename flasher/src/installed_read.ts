@@ -53,8 +53,8 @@ const I = {
   'n_dial': ['M5Stack Dial', 'M5Stack Dial'],
   'n_node-display': ['Display node', 'Anzeigeknoten'],
   'n_node-pwr': ['Power node', 'Leistungsknoten'],
-  'n_node-bal': ['Balance node', 'Balance-Knoten'],
-  'n_c6': ['C6 radio of the panel', 'C6-Funkchip des Panels'],
+  'n_node-bal': ['Balance node', 'Auswuchtknoten'],
+  'n_c6': ['C6 radio of the panel', 'C6-Funk des Panels'],
 } as const satisfies Record<string, readonly [string, string]>;
 
 export type InstKey = keyof typeof I;
