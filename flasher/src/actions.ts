@@ -277,6 +277,7 @@ export function resetConnect(): void {
   st.chipRefused = false;
   st.result = null;
   st.outcome = null;
+  st.keptNvs = false;
   st.failedStep = null;
   st.progress = null;
 }
@@ -396,6 +397,7 @@ export async function write(): Promise<void> {
   st.writing = true;
   st.result = null;
   st.outcome = null;
+  st.keptNvs = false;
   st.failedStep = null;
   const t0 = performance.now();
   st.progress = { step: phasesOf(conn.kind)[0]!, done: 0, total: 0, t0 };
@@ -457,7 +459,9 @@ export async function write(): Promise<void> {
     }
     st.conn = null;
     st.connLabel = '';
-    const kept = keptText(conn.kind === 'esp' ? espPlan() : null);
+    const done = conn.kind === 'esp' ? espPlan() : null;
+    const kept = keptText(done);
+    st.keptNvs = !!done?.ok && done.plan.kept.some((k) => k.subtype === 'nvs');
     st.outcome = 'ok';
     st.result = {
       kind: 'ok',

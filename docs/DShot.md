@@ -318,7 +318,7 @@ frame:
 
 The ESC sees the line high for 500µs or more before the first frame: 1000µs
 minus the length of the pass that arms, because the wake pass's due time is
-the clock of the last disarmed pass. The wake pass
+the clock of the last pass at SAFE. The wake pass
 sends no frame, so the ask keeps all ten repeats. `out_dshot_send()` on a pin
 still at its low rest releases it and sends nothing, so no frame starts from a
 low line. `test_out_dshot` holds the pad's level at each step, `test_outputs_hw`

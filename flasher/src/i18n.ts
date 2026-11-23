@@ -21,12 +21,12 @@ const S = {
   task_panel: ['Install or update the panel', 'Panel installieren oder aktualisieren'],
   task_iomcu: ['Install the IOmcu', 'IOmcu installieren'],
   task_wireless: ['Set up a wireless device', 'Funkgerät einrichten'],
-  tsub_wireless: ['M5Stack Dial, display node, power node, balance node', 'M5Stack Dial, Anzeigeknoten, Leistungsknoten, Balance-Knoten'],
-  task_c6: ['Repair the panel\'s C6 radio', 'C6-Funkchip des Panels reparieren'],
+  tsub_wireless: ['M5Stack Dial, display node, power node, balance node', 'M5Stack Dial, Anzeigeknoten, Leistungsknoten, Auswuchtknoten'],
+  task_c6: ['Repair the panel\'s C6 radio', 'C6-Funk des Panels reparieren'],
   tsub_c6: ['over header H4 and a USB-to-UART adapter', 'über Stiftleiste H4 und einen USB-UART-Adapter'],
   tasksNote: [
     'A running bench updates the IOmcu, the C6 radio, the Dial and the nodes from the panel. This page is for a first install and for a board that does not start.',
-    'Ein laufender Prüfstand aktualisiert IOmcu, C6-Funkchip, Dial und Knoten vom Panel aus. Diese Seite ist für eine Erstinstallation und für ein Board, das nicht startet.',
+    'Ein laufender Prüfstand aktualisiert IOmcu, C6-Funk, Dial und Knoten vom Panel aus. Diese Seite ist für eine Erstinstallation und für ein Board, das nicht startet.',
   ],
   task_file: ['Write a file of my own', 'Eigene Datei schreiben'],
   tsub_file: ['any of the 9 boards, a .bin or .uf2 file from this computer', 'eines der 9 Boards, eine .bin- oder .uf2-Datei von diesem Computer'],
@@ -92,19 +92,23 @@ const S = {
   ],
   nx_dial: [
     'Next: the Dial shows NOT BOUND and its name, DIAL- and 4 hex digits. Bind it on the panel: SETUP > WIRELESS > DIAL.',
-    'Weiter: Das Dial zeigt NOT BOUND und seinen Namen, DIAL- und 4 Hex-Ziffern. Kopple es am Panel: SETUP > WIRELESS > DIAL.',
+    'Weiter: Das Dial zeigt NOT BOUND und seinen Namen, DIAL- und 4 Hex-Ziffern. Binde es am Panel: SETUP > WIRELESS > DIAL.',
+  ],
+  nk_dial: [
+    'Next: the Dial keeps its settings and its binding to the panel. A Dial never bound shows NOT BOUND: bind it on the panel: SETUP > WIRELESS > DIAL.',
+    'Weiter: Das Dial behält seine Einstellungen und seine Bindung an das Panel. Ein nie gebundenes Dial zeigt NOT BOUND: Binde es am Panel: SETUP > WIRELESS > DIAL.',
   ],
   'nx_node-display': [
-    'Next: bind the node on the panel: SETUP > WIRELESS > POWER NODE.',
-    'Weiter: Kopple den Knoten am Panel: SETUP > WIRELESS > POWER NODE.',
+    'Next: a node bound before stays bound: the panel binds it by its address. A node never bound: bind it on the panel: SETUP > WIRELESS > POWER NODE.',
+    'Weiter: Ein schon gebundener Knoten bleibt gebunden: Das Panel bindet ihn über seine Adresse. Ein nie gebundener Knoten: Binde ihn am Panel: SETUP > WIRELESS > POWER NODE.',
   ],
   'nx_node-pwr': [
-    'Next: bind the node on the panel: SETUP > WIRELESS > POWER NODE.',
-    'Weiter: Kopple den Knoten am Panel: SETUP > WIRELESS > POWER NODE.',
+    'Next: a node bound before stays bound: the panel binds it by its address. A node never bound: bind it on the panel: SETUP > WIRELESS > POWER NODE.',
+    'Weiter: Ein schon gebundener Knoten bleibt gebunden: Das Panel bindet ihn über seine Adresse. Ein nie gebundener Knoten: Binde ihn am Panel: SETUP > WIRELESS > POWER NODE.',
   ],
   'nx_node-bal': [
-    'Next: bind the node on the panel: SETUP > WIRELESS > BALANCE NODE.',
-    'Weiter: Kopple den Knoten am Panel: SETUP > WIRELESS > BALANCE NODE.',
+    'Next: a node bound before stays bound: the panel binds it by its address. A node never bound: bind it on the panel: SETUP > WIRELESS > BALANCE NODE.',
+    'Weiter: Ein schon gebundener Knoten bleibt gebunden: Das Panel bindet ihn über seine Adresse. Ein nie gebundener Knoten: Binde ihn am Panel: SETUP > WIRELESS > BALANCE NODE.',
   ],
   nx_c6: [
     'Next: switch the panel off, take IO9 off GND, switch the panel on and start Wi-Fi once. The console shows the C6\'s esp_hosted firmware version.',
@@ -129,8 +133,8 @@ const S = {
   'b_node-display': ['Display node: ES3C28P', 'Anzeigeknoten: ES3C28P'],
   b_dial: ['M5Stack Dial', 'M5Stack Dial'],
   'b_node-pwr': ['Power node', 'Leistungsknoten'],
-  'b_node-bal': ['Balance node', 'Balance-Knoten'],
-  b_c6: ['C6 radio of the panel, over header H4 and a USB-to-UART adapter', 'C6-Funkchip des Panels, über Stiftleiste H4 und einen USB-UART-Adapter'],
+  'b_node-bal': ['Balance node', 'Auswuchtknoten'],
+  b_c6: ['C6 radio of the panel, over header H4 and a USB-to-UART adapter', 'C6-Funk des Panels, über Stiftleiste H4 und einen USB-UART-Adapter'],
   unsupported: ['needs {api}, which this browser lacks', 'braucht {api}, das diesem Browser fehlt'],
   noReleases: ['The list of releases is not available ({x}).', 'Die Liste der Releases ist nicht verfügbar ({x}).'],
   noRelease: ['No release on this page carries an image for this board.', 'Kein Release auf dieser Seite enthält ein Image für dieses Board.'],
@@ -323,6 +327,17 @@ export const hasKey = (key: string): key is Key => key in S;
 export function browserLang(languages: readonly string[]): Lang {
   const first = languages[0]?.toLowerCase() ?? 'en';
   return first.startsWith('de') ? 'de' : 'en';
+}
+
+/**
+ * The key of the next-step line on Done. `keptNvs`: the write left an NVS
+ * partition on the board. The Dial keeps its bound panel in its own NVS, so
+ * it has an `nk_` text for a kept NVS; a node is bound by its address on the
+ * panel, so its `nx_` text holds either way.
+ */
+export function nextKey(boardId: string, keptNvs: boolean): Key | null {
+  if (keptNvs && hasKey(`nk_${boardId}`)) return `nk_${boardId}` as Key;
+  return hasKey(`nx_${boardId}`) ? (`nx_${boardId}` as Key) : null;
 }
 
 /** Every key with both strings, for the tests. */

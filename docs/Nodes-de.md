@@ -688,7 +688,7 @@ STICK, deren Läufe BENCH lesen, abgelehnt, solange Leistungsknoten AUS ist
 oder in den letzten 100ms kein Messwert kam. Das Band zeigt `ARMED
 gesperrt: Leistungsknoten sendet nicht. INA228-Quelle WIRED oder Knoten
 verbinden.` Die Ablehnung steht bei den anderen Arm-Ablehnungen des Panels
-(`drain_commands()`), jeder Weg, der das Gas scharf schaltet, trifft auf
+(`drain_commands()`), jeder Weg, der das Gas auf ARMED schaltet, trifft auf
 sie. Die ARMs von SERVO und OUTPUTS lesen keinen INA228 und werden für den
 Knoten nicht abgelehnt.
 
@@ -936,9 +936,8 @@ this start`.
   Panels.
 - Die Latenz von einem Fenster des Knotens bis zum Lesen im Panel ist nicht
   gemessen.
-- Kein Knoten ist auf Hardware gelaufen: Die Boards sind bestellt, nicht
-  geliefert. Die Pins, das Aufwachen, die Ströme und das Verhalten des CD42
-  sind nicht gemessen.
+- Die Pins, das Aufwachen, die Ströme und das Verhalten des CD42 sind nicht
+  gemessen.
 - Die Abschaltschwelle des CD42 bei geringer Last ist nicht bekannt (oben).
 - Rate, Skala, Rauschen und Indexzeit des Auswuchtknotens sind nicht
   gemessen: Die Werte oben sind die der Datenblätter und von ESP-IDF. Die
@@ -954,8 +953,8 @@ this start`.
 - Die WS2812 wird nicht angesteuert. Ihr Ruhestrom ist nicht gemessen.
 - Das Panel sendet einem Knoten sein Image noch nicht: Die Seite des Knotens
   für das Update über BLE gibt es, die Zeilen des Panels kommen mit seinen
-  Knoten-Clients. Das Update ist auf keinem Knoten gelaufen; seine Rate und
-  ein Rollback sind nicht gemessen.
+  Knoten-Clients. Die Rate des Updates und ein Rollback sind nicht
+  gemessen.
 - Ein Knoten prüft Art, Chip und Segmente eines Images, nicht seine
   Herkunft: Ein Central in Reichweite kann jedes Image der Rolle des Knotens
   anbieten, auch ältere, und ein Halten von BOOT für 1s installiert es.
@@ -968,8 +967,8 @@ this start`.
   LEISTUNGSKNOTEN-FIRMWARE bietet dann kein Update an, und ein Tippen zeigt
   `Dieses Release enthält keine Firmware für dieses Gerät.`
   (`pnode_ctl_other_board()`).
-- Der Anzeigeknoten ist auf keinem Board gelaufen. Die Einstellung des
-  ILI9341V ist die des Herstellers, nicht gemessen; der SPI-Takt von 20MHz,
+- Die Einstellung des ILI9341V im Anzeigeknoten ist die des Herstellers,
+  nicht gemessen; der SPI-Takt von 20MHz,
   die Ausrichtung des Touch, die Pinfolge der I2C-Buchse und der zur
   Laufzeit für Bluetooth LE freie interne RAM sind nicht gemessen. Ein
   Board ohne PSRAM läuft ohne Display.

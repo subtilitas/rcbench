@@ -299,8 +299,8 @@ Ein fehlgeschlagener Versuch steht mit einem Code auf der Karte: `Download fehlg
 
 - Die Dauer von Suche und Download in einem echten Netz wurde nicht gemessen.
 - Die Dauer des C6-Funk-Updates ist nicht gemessen, und ob der ausgelieferte C6 es über SDIO annimmt, ist nicht bekannt.
-- Die Dauer des Dial-Updates ist nicht gemessen; es ist mit keinem Dial gelaufen.
-- Die Dauer eines Knoten-Updates ist nicht gemessen; es ist mit keinem Knoten gelaufen.
+- Die Dauer des Dial-Updates ist nicht gemessen.
+- Die Dauer eines Knoten-Updates ist nicht gemessen.
 - Ein nicht antwortender erster DNS-Server (Domain Name System) verzögert nach dem Verbinden jede Namensauflösung um etwa 7s innerhalb der Suchfrist von 30s. lwIP fragt diesen Server 4-mal für insgesamt bis zu 7s ab, bevor es den nächsten versucht.
 - Unter TESTING erlaubt GitHub ohne Konto 60 API-Anfragen pro Stunde und öffentlicher Adresse, gemeinsam für alle Geräte dahinter. Das Panel wiederholt keine Anfrage.
 - TESTING liest die 10 nach Datum neuesten Releases. Ältere Veröffentlichungen werden unabhängig von ihrer Versionsnummer nicht erfasst.

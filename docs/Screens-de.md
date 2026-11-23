@@ -534,7 +534,6 @@ Aktualisieren.
 | Stack von `shot` | niedrigster Stand 5.116B unbenutzt von 7.168B |
 | Läufe auf einem Panel | 30 Screenshots hintereinander: kein Fehler, kein Neustart. Kein FLIP TIMEOUT und keine Watchdog-Zeile. `FM_ERR_BUSY` trat in 3 Läufen mit überlappendem Speichern und Schreibvorgang der WLAN-Seite nicht auf: Beide Vorgänge warten und werden abgeschlossen |
 | Zweiter Kontakt auf einem Panel | 6 von 6 Prüfungen bestanden: Ein zweiter Kontakt während des Haltens nimmt kein Bild auf, und sein Druck wirkt; ein schon liegender Kontakt beginnt kein Halten; STOP während eines Haltens wirkt; ein Halten über der Hilfe mit einem zweiten Kontakt nimmt keins auf; das Popup wartet, bis alle Kontakte abgehoben sind, und drückt keine Taste; 5 gleichzeitige Kontakte auf einer Liste hinterlassen keinen hängenden Druck |
-| Auf einem Panel nicht geprüft | keine Karte im Schacht, Pixelgleichheit des PNG mit einem gerenderten Frame, ein Glaskontakt zusammen mit einem Injektor-Kontakt |
 
 Beim Speichern entsteht zuerst `<Name>.PNG.NEW`; danach wird die Datei
 umbenannt. Ein Abbruch oder das Entfernen der Karte hinterlässt keine
@@ -1896,7 +1895,7 @@ Spannung und Strombegrenzung unter NETZTEIL, die Zeiten der Pieptöne unter
 TIMING UND ERKENNUNG. Keine davon ist gemessen. OPTIONEN nimmt einen Druck
 bei SAFE und ohne laufenden Lauf an; sonst ist es grau, und ein Tippen
 zeigt `OPTIONEN nur bei SAFE. Schalte zuerst auf SAFE.` im Meldeband. Ein
-Prüfstand, der unter der offenen Liste scharf schaltet, schließt sie.
+Prüfstand, der unter der offenen Liste auf ARMED schaltet, schließt sie.
 
 ![Die Optionsliste](img/de/motor-stick-timing.png)
 
@@ -3000,12 +2999,12 @@ OPTIONEN-Liste: ein Tippen auf die Typzeile von LIVE, SWEEP und RUDER
 öffnet es mit TYP im Blick, ein Tippen auf die Zeile BEREICH der Karten
 BEREIT von LIMIT RUN und RUDER AUTO und auf die Zeile AUSGANG von TEST
 mit PULS MIN im Blick. Seine Leiste nennt SERVO. Es folgt der Liste einer
-Funktion: es öffnet nur bei SAFE und schließt, sobald der Prüfstand scharf
-wird. Das Home-Feld schließt es, und der Funktionsbildschirm erscheint
+Funktion: es öffnet nur bei SAFE und schließt, sobald der Prüfstand auf
+ARMED schaltet. Das Home-Feld schließt es, und der Funktionsbildschirm erscheint
 wieder.
 
 Die Liste einer Funktion öffnet nur bei SAFE, ohne Sweep und ohne Lauf;
-wird der Prüfstand darunter scharf, schließt sie, ebenso die Zeilen eines
+schaltet der Prüfstand darunter auf ARMED, schließt sie, ebenso die Zeilen eines
 Laufs oder von KST. Die eigene OPTIONEN-Taste der Laufkarte folgt
 derselben Regel und ist grau, solange sie ablehnt. Die Liste des Hubs
 öffnet jederzeit: der Hub steuert nichts. Keine Liste öffnet, solange
@@ -5768,7 +5767,7 @@ Neustart weitergeht. Ein 18-Byte-Eintrag, Namespace `fw_ota`, Schlüssel
 laufen soll, in 16 Bytes mit Nullen aufgefüllt, und die verbleibenden
 Öffnungen, beim Schreiben 2. Die Installation schreibt ihn, sobald das
 Image ganz geschrieben und geprüft ist, vor der Neustartnotiz. Das Update
-des C6-Funkchips schreibt ihn bei Erfolg, mit der laufenden Version. Ein
+des C6-Funks schreibt ihn bei Erfolg, mit der laufenden Version. Ein
 Stromausfall vor dem Schreiben hinterlässt keinen Lauf. Ein Versionstext
 über 16 Bytes wird nicht geschrieben, und eine bestehende Notiz wird
 gelöscht. Was ein Lauf nach dem Neustart tut, steht in

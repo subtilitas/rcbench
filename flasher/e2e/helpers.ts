@@ -16,7 +16,7 @@ export const sha = (b: Uint8Array): string => createHash('sha256').update(b).dig
 export const TAG = 'v0.23.15';
 export const OLD = 'v0.22.1';
 
-export type ImgBoard = 'panel' | 'dial' | 'node-pwr' | 'c6' | 'iomcu';
+export type ImgBoard = 'panel' | 'dial' | 'node-pwr' | 'node-display' | 'c6' | 'iomcu';
 
 export const IMAGES: Record<ImgBoard, Uint8Array> = {
   // The panel's table of v0.23.15 at 0xC000: nvs 0xD000+0x6000.
@@ -24,6 +24,7 @@ export const IMAGES: Record<ImgBoard, Uint8Array> = {
   // nvs 0x9000+0x6000.
   dial: makeMerged({ chipId: 9, bootloaderOffset: 0, tableOffset: 0x8000, table: makeTable(NODE_PARTS), size: 0x20000 + 20_002 }),
   'node-pwr': makeMerged({ chipId: 13, bootloaderOffset: 0, tableOffset: 0x8000, table: makeTable(NODE_PARTS), size: 0x20000 + 16_384 }),
+  'node-display': makeMerged({ chipId: 9, bootloaderOffset: 0, tableOffset: 0x8000, table: makeTable(NODE_PARTS), size: 0x20000 + 18_000 }),
   c6: makeMerged({ chipId: 13, bootloaderOffset: 0, tableOffset: 0x8000, table: makeTable(NODE_PARTS), size: 0x20000 + 12_288 }),
   iomcu: makeUf2(0x10002000, 40, FAMILY.ABSOLUTE, true),
 };
@@ -31,10 +32,11 @@ export const FILES: Record<ImgBoard, string> = {
   panel: `rcbench-panel-p4-merged-${TAG}.bin`,
   dial: 'rcbench-dial-merged-0.23.15.bin',
   'node-pwr': 'rcbench-node-pwr-merged-0.23.15.bin',
+  'node-display': 'rcbench-node-display-merged-0.23.15.bin',
   c6: 'rcbench-c6-merged-2.13.0.bin',
   iomcu: `rcbench-iomcu-install-${TAG}.uf2`,
 };
-const CHIPS: Record<ImgBoard, string> = { panel: 'esp32p4', dial: 'esp32s3', 'node-pwr': 'esp32c6', c6: 'esp32c6', iomcu: 'rp2350' };
+const CHIPS: Record<ImgBoard, string> = { panel: 'esp32p4', dial: 'esp32s3', 'node-pwr': 'esp32c6', 'node-display': 'esp32s3', c6: 'esp32c6', iomcu: 'rp2350' };
 export const ERASE = { offset: 0x40000, size: 0x20000 };
 
 // The page checks signatures against the release key it embeds. The tests

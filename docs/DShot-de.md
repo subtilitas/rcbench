@@ -342,9 +342,9 @@ High-Idle zurück:
 | Der Befehl nach der Anfrage | 11ms nach Laufbeginn | `service_dshot()` |
 
 Der ESC sieht die Leitung 500µs oder länger high, bevor der erste Frame
-kommt: 1000µs abzüglich der Länge des Durchlaufs, der scharf schaltet, weil
-die Fälligkeit des Wake-Durchlaufs die Uhr des letzten unscharfen
-Durchlaufs ist. Der Wake-Durchlauf
+kommt: 1000µs abzüglich der Länge des Durchlaufs, der auf ARMED schaltet, weil
+die Fälligkeit des Wake-Durchlaufs die Uhr des letzten Durchlaufs bei SAFE
+ist. Der Wake-Durchlauf
 sendet keinen Frame, also behält die Anfrage alle zehn Wiederholungen.
 `out_dshot_send()` lässt einen Pin, der noch low ruht, los und sendet nichts,
 also beginnt kein Frame auf einer Low-Leitung. `test_out_dshot` hält den Pegel

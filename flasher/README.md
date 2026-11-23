@@ -33,7 +33,7 @@ a first install and for a board that does not start.
 | Connect | lines per board (sockets, BOOT key, the pack off the XT60), CONNECT; for the IOmcu the 1200 baud restart into BOOTSEL and the BOOT drawing | a connection whose chip matches the board |
 | Check | board, connected chip, the firmware the board runs (see "Board check"), release with kind and date, file, size in bytes, SHA-256, the manifest check, the signature, the IOmcu's slot B erase, the kept NVS ranges, WRITE | WRITE |
 | Write | the phases of the board's flow (ESP: Write, Verify, Reset; RP2350: Exclusive access, Erase, Write, Verify, Reboot), progress bar and text | the end of the write |
-| Done | file, time, kept ranges, the next step on the bench, WRITE ANOTHER, START OVER | a button |
+| Done | file, time, kept ranges, the next step on the bench (see "Next step on Done"), WRITE ANOTHER, START OVER | a button |
 
 Each step screen carries "Step n of m", BACK and CANCEL. CANCEL drops the
 connection and returns to Task. The page writes nothing before a press of
@@ -55,6 +55,22 @@ The error states:
 | Check | the board runs the firmware of another device | a warning that names the device, WRITE enabled |
 | Write | the write or the verify fails | the failed phase, the reason and a hint, CONNECT AGAIN (Connect, the image kept), CANCEL |
 | Write | the reset after a verify that passed fails | the port is closed; goes to Done with "press RESET" |
+
+## Next step on Done
+
+Done ends with one line on what to do on the bench. For the Dial it
+depends on the NVS (non-volatile storage) partition: the Dial keeps its
+bound panel there (namespace `dial`, key `panel`).
+
+| Board | NVS kept (simple mode, Advanced with "Keep settings" on) | NVS written (Advanced with "Keep settings" off, an image without an nvs partition) |
+| --- | --- | --- |
+| M5Stack Dial | the Dial keeps its settings and its binding; a Dial never bound shows NOT BOUND and is bound on the panel, SETUP > WIRELESS > DIAL | the Dial shows NOT BOUND; bind it on the panel, SETUP > WIRELESS > DIAL |
+| Display node, power node | a node bound before stays bound: the panel binds a node by its address, kept in SETUP; a node never bound is bound on the panel, SETUP > WIRELESS > POWER NODE | the same |
+| Balance node | as the power node, SETUP > WIRELESS > BALANCE NODE | the same |
+| Panel, IOmcu, rbmod carrier, C6 radio | the start of the bench or the C6 radio's version on the console | the same |
+
+The line carries `data-kept="nvs"` when the write left an nvs partition
+on the board and `data-kept="none"` otherwise.
 
 ## Board check
 
@@ -499,10 +515,10 @@ rbmod image: they offer the IOmcu image alone.
 | `public/licenses.txt` | Licences of the bundled code, written by `tools/licenses.ts`. |
 | `test/` | Unit tests, run by `node --test`. `pages-fw/` holds `index.json` and the 7 manifests of the Pages site on 2026-11-23. `fixtures.ts` builds synthetic UF2 images, ESP images, partition tables, merged images, application heads and otadata entries, and holds the panel's partition table and bootloader header of v0.23.15. |
 | `e2e/helpers.ts` | Set-up of the browser tests: synthetic release images, the `fw/` folder served from memory, a test key put in place of the release key in the served script, the walk to Connect. |
-| `e2e/tasks.spec.ts` | Each task to Done: panel with the NVS bytes kept, Dial, power node, IOmcu at 1200 baud and over PICOBOOT, C6 radio at 460800 baud behind a USB-to-UART bridge; a language switch during a write; WRITE ANOTHER. |
+| `e2e/tasks.spec.ts` | Each task to Done: panel with the NVS bytes kept, Dial, power node and display node with the next step for a kept NVS, a Dial image without an nvs partition, IOmcu at 1200 baud and over PICOBOOT, C6 radio at 460800 baud behind a USB-to-UART bridge; a language switch during a write; WRITE ANOTHER. |
 | `e2e/errors.spec.ts` | A chip that does not match, a download that fails or differs, a release list that fails, "Keep settings" refused, a board no release carries, the 3 signature states, a write and a verify that fail. |
 | `e2e/history.spec.ts` | BACK, CANCEL, the browser's back from Check, Connect, Write and Done, a pasted hash, a pasted hash with `adv=1`, a reload. |
-| `e2e/advanced.spec.ts` | The Advanced switch and "Write a file of my own", the release select per board and a picked release on the next board, a local file of the wrong and the right chip, a local file picked while the list loads, "Keep settings" off, a broken table written whole, the .sig states of a local file, WRITE on a mismatch, the Core2350B, the hints to Advanced in simple mode. |
+| `e2e/advanced.spec.ts` | The Advanced switch and "Write a file of my own", the release select per board and a picked release on the next board, a local file of the wrong and the right chip, a local file picked while the list loads, "Keep settings" off on the panel, the Dial and the display node with the next step on Done, a broken table written whole, the .sig states of a local file, WRITE on a mismatch, the Core2350B, the hints to Advanced in simple mode. |
 | `e2e/installed.spec.ts` | The board check: matches, another device, cannot tell (no role record, blank, another project, a read that fails, the RP2350), in simple mode and in Advanced, WRITE enabled in each; a slow first check, CANCEL and a new connect with one set of reads on the new connection. |
 | `e2e/browser.spec.ts` | No Web Serial and no WebUSB, no WebUSB alone, the task list, the language, the footer links, the width of a phone. |
 | `e2e/fake-devices.js` | Fake Web Serial with an ESP32 boot ROM and flasher stub that erases the 4096-byte sectors it writes, an IOmcu port that leaves for BOOTSEL at 1200 baud, and a fake WebUSB RP2350 boot ROM; options for a write, an MD5 and a read back that fail, the flash contents before the connect (`esp.installed`), a flash read that fails, and for a browser without WebUSB. |

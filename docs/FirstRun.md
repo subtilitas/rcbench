@@ -531,8 +531,7 @@ carry their voltage. Otherwise tick the pin's cell
 | Resolution | 1µs |
 
 **Measure and record:** the actual frame period, the pulse at both ends of
-travel, and the jitter. Bit timings are the largest unverified surface in the
-tree.
+travel, and the jitter.
 
 **Then:** confirm the servo screen lets go when it is told to, and only
 then. Lifting the finger does not stop the output: the screen holds the
