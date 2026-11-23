@@ -233,11 +233,24 @@ export function fromHash(hash: string): Wiz {
 }
 
 /**
- * The signature state of an image, one of three: signed by the release key,
- * no signature, or a signature that does not match. Matches `SigShown` of the
- * signature check (flasher/src/signature.ts) once that is on main.
+ * The signature state of an image: signed by the release key, no signature,
+ * a signature that does not match, or a local file without a picked .sig
+ * file, whose signature is not checked. The first three match `SigShown` of
+ * the signature check (flasher/src/signature.ts); `unchecked` matches its
+ * local-file state `local`.
  */
-export type SigState = 'signed' | 'none' | 'mismatch';
+export type SigState = 'signed' | 'none' | 'mismatch' | 'unchecked';
+
+/**
+ * The signature state of an image in hand. A release image takes the shown
+ * verdict of its signature check. A local file without a picked .sig file is
+ * `unchecked`; with one it takes the verdict of that check. Null while the
+ * check runs.
+ */
+export function sigStateOf(source: 'release' | 'file', sigPicked: boolean, verdict: 'signed' | 'none' | 'mismatch' | null): SigState | null {
+  if (source === 'file' && !sigPicked) return 'unchecked';
+  return verdict;
+}
 
 /** What Check holds before WRITE. */
 export interface CheckFacts {
@@ -252,14 +265,14 @@ export interface CheckFacts {
   imageOk: boolean;
   /** The write plan of "Keep settings" refuses the image. */
   keepRefused: boolean;
-  /** The signature state; null while the check runs or before an image. */
+  /** The signature state (`sigStateOf`); null while the check runs or before an image. */
   sig: SigState | null;
 }
 
-export type Block = 'conn' | 'busy' | 'releases' | 'loading' | 'image' | 'keep' | 'sig-pending' | 'sig-mismatch';
+export type Block = 'conn' | 'busy' | 'releases' | 'loading' | 'image' | 'source' | 'keep' | 'sig-pending' | 'sig-mismatch';
 
 /** A note on Check: the hint to Advanced, or the signature note. */
-export type CheckNote = 'advanced-file' | 'advanced-erase' | 'sig-none' | 'sig-mismatch';
+export type CheckNote = 'advanced-file' | 'advanced-erase' | 'sig-none' | 'sig-mismatch' | 'sig-unchecked';
 
 export interface Gate {
   /** True when WRITE is enabled. */
@@ -272,12 +285,16 @@ export interface Gate {
 /**
  * The gate of WRITE on Check. A signature that does not match disables WRITE
  * in simple mode; Advanced shows the same red note and allows WRITE. No
- * signature is an information note in both modes.
+ * signature is an information note in both modes. A local file without a
+ * picked .sig file (`unchecked`, Advanced only) is an information note and
+ * allows WRITE. Simple mode writes release images only: `unchecked` there
+ * disables WRITE (`source`).
  */
 export function checkGate(c: CheckFacts): Gate {
   const notes: CheckNote[] = [];
   if (c.sig === 'none') notes.push('sig-none');
   if (c.sig === 'mismatch') notes.push('sig-mismatch');
+  if (c.sig === 'unchecked' && c.advanced) notes.push('sig-unchecked');
   if (c.releasesFailed && !c.advanced) notes.push('advanced-file');
   if (c.keepRefused && !c.advanced) notes.push('advanced-erase');
   const block: Block | null = !c.conn ? 'conn'
@@ -285,6 +302,7 @@ export function checkGate(c: CheckFacts): Gate {
       : c.releasesFailed ? 'releases'
         : c.loading ? 'loading'
           : !c.imageOk ? 'image'
+            : c.sig === 'unchecked' && !c.advanced ? 'source'
             : c.keepRefused ? 'keep'
               : c.sig === null ? 'sig-pending'
                 : c.sig === 'mismatch' && !c.advanced ? 'sig-mismatch'

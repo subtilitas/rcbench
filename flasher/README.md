@@ -319,7 +319,9 @@ them; it is the four-card page described above.
   does not carry takes the newest stable release with an image for it, else
   the newest. Advanced writes the picked release while it carries the board.
 - Signature on Check: "does not match" disables WRITE in simple mode and is
-  a warning in Advanced; "no signature" is an information note in both.
+  a warning in Advanced; "no signature" is an information note in both. A
+  local file without a picked .sig file (Advanced only) shows "signature not
+  checked" as an information note and allows WRITE.
 - Core2350B: Advanced only, local file only.
 - Simple mode: release images only, "Keep settings" always on.
 

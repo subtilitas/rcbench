@@ -1,9 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { boardsFor, tasksFor } from '../src/tasks.ts';
+import { boardsFor, sourceFor, tasksFor } from '../src/tasks.ts';
+import { BOARDS } from '../src/boards.ts';
 import type { TaskId } from '../src/tasks.ts';
 import {
-  back, cancel, canEnter, chooseBoard, chooseTask, checkGate, clamp, connectAgain, fromHash, next, setAdvanced,
+  back, cancel, canEnter, sigStateOf, chooseBoard, chooseTask, checkGate, clamp, connectAgain, fromHash, next, setAdvanced,
   start, startOver, stepNumber, stepsOf, toHash, writeAnother,
 } from '../src/wizard.ts';
 import type { CheckFacts, Facts, Step, Wiz } from '../src/wizard.ts';
@@ -225,4 +226,31 @@ test('WRITE waits for the connection, the release list, the image and the keep p
   assert.deepEqual(checkGate({ ...ready, keepRefused: true }), { write: false, block: 'keep', notes: ['advanced-erase'] });
   assert.deepEqual(checkGate({ ...ready, keepRefused: true, advanced: true }), { write: false, block: 'keep', notes: [] });
   assert.equal(checkGate({ ...ready, keepRefused: true, sig: 'mismatch' }).block, 'keep');
+});
+
+test('a local file without a .sig file is unchecked: WRITE allowed in Advanced with its note, never pending', () => {
+  const adv = { ...ready, advanced: true };
+  assert.equal(sigStateOf('file', false, null), 'unchecked');
+  assert.equal(sigStateOf('file', false, 'mismatch'), 'unchecked');
+  assert.deepEqual(checkGate({ ...adv, sig: sigStateOf('file', false, null) }), { write: true, block: null, notes: ['sig-unchecked'] });
+  // A .sig file picked beside the local file: the three verdicts as for a release image.
+  assert.equal(sigStateOf('file', true, null), null);
+  assert.deepEqual(checkGate({ ...adv, sig: sigStateOf('file', true, null) }).block, 'sig-pending');
+  assert.deepEqual(checkGate({ ...adv, sig: sigStateOf('file', true, 'signed') }), { write: true, block: null, notes: [] });
+  assert.deepEqual(checkGate({ ...adv, sig: sigStateOf('file', true, 'none') }), { write: true, block: null, notes: ['sig-none'] });
+  assert.deepEqual(checkGate({ ...adv, sig: sigStateOf('file', true, 'mismatch') }), { write: true, block: null, notes: ['sig-mismatch'] });
+  assert.deepEqual(checkGate({ ...ready, sig: sigStateOf('release', false, 'mismatch') }).block, 'sig-mismatch');
+  assert.equal(sigStateOf('release', false, null), null);
+});
+
+test('simple mode never reaches unchecked: its source is the release, and the gate refuses it', () => {
+  for (const b of BOARDS) {
+    const source = sourceFor(b, false, 'file');
+    if (source === null) continue;
+    assert.equal(source, 'release', b.id);
+    for (const picked of [false, true]) {
+      for (const v of ['signed', 'none', 'mismatch', null] as const) assert.notEqual(sigStateOf(source, picked, v), 'unchecked', b.id);
+    }
+  }
+  assert.deepEqual(checkGate({ ...ready, sig: 'unchecked' }), { write: false, block: 'source', notes: [] });
 });
