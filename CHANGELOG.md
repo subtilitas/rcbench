@@ -26,6 +26,14 @@ history is in git.
 
 ### Changed
 
+- `hardware/mechanical/`: `motor_simulator.step` runs the phase tap's lead
+  out of the boot of the clip on corner C, beside the resistor's wire,
+  in place of a wire on the clip's upper jaw. The 3.5mm mono plug has a
+  strain relief of 3 steps, a barrel, a shoulder, a sleeve, one insulating
+  ring and a tip with a groove, and is drawn at 0.6 of its size: a shaft
+  of 2.1mm x 8.4mm. 39 solids, 51.05mm x 20.0mm x 62.71mm; the plug
+  stands at x -11.8mm in place of -45.3mm
+  ([ESC and motor](hardware/mechanical/ESC_MOTOR.md#motor-simulator)).
 - Web flasher, Done: the next-step line follows what the write kept. After
   a Dial write that kept the NVS (non-volatile storage) partition, the line
   reads that the Dial keeps its settings and its binding; after a write
