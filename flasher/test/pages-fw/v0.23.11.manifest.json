@@ -1,0 +1,56 @@
+{
+ "format": 1,
+ "tag": "v0.23.11",
+ "kind": "testing",
+ "published": "2026-11-10T22:48:20Z",
+ "images": [
+  {
+   "board": "panel",
+   "chip": "esp32p4",
+   "file": "rcbench-panel-p4-merged-v0.23.11.bin",
+   "size": 5224176,
+   "sha256": "e13c6be2bfef7f51450220b5f206f9155fb4bcb8986494a5307836dbc4c7d47c",
+   "offset": 0,
+   "format": "bin"
+  },
+  {
+   "board": "iomcu",
+   "chip": "rp2350",
+   "file": "rcbench-iomcu-install-v0.23.11.uf2",
+   "size": 562176,
+   "sha256": "62c3fc96cab1abdc1235d8ca377d79607dae5496afa4ce6f2976f5a450a8f7ac",
+   "offset": 0,
+   "format": "uf2",
+   "erase": [
+    {
+     "offset": 2093056,
+     "size": 2084864
+    }
+   ]
+  },
+  {
+   "board": "iomcu-rbmod",
+   "chip": "rp2350",
+   "file": "rcbench-iomcu-rbmod-install-v0.23.11.uf2",
+   "size": 562176,
+   "sha256": "665b3c05d9f5d5f340041df8f3b827576bc0afae9166621c3195dc9b4fce7cc8",
+   "offset": 0,
+   "format": "uf2",
+   "erase": [
+    {
+     "offset": 2093056,
+     "size": 2084864
+    }
+   ]
+  },
+  {
+   "board": "c6",
+   "chip": "esp32c6",
+   "file": "rcbench-c6-merged-2.13.0.bin",
+   "size": 1349152,
+   "sha256": "da58d9e6e9f9adb94e44757bfee9e9a02fe9a82e4dfc39d25b62279a4571b4c9",
+   "offset": 0,
+   "format": "bin"
+  }
+ ]
+}

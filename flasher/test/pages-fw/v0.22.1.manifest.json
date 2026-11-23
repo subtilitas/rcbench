@@ -1,0 +1,23 @@
+{
+ "format": 1,
+ "tag": "v0.22.1",
+ "kind": "stable",
+ "published": "2026-10-22T18:28:51Z",
+ "images": [
+  {
+   "board": "iomcu",
+   "chip": "rp2350",
+   "file": "rcbench-iomcu-install-v0.22.1.uf2",
+   "size": 445952,
+   "sha256": "72709986b6762b0acd49806d2bbc816bb0f4291be8102b7922abba4a86f15b0b",
+   "offset": 0,
+   "format": "uf2",
+   "erase": [
+    {
+     "offset": 2093056,
+     "size": 2084864
+    }
+   ]
+  }
+ ]
+}

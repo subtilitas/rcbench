@@ -389,7 +389,7 @@ const SIG_TEXT = {
 async function expectSig(page: Page, state: keyof typeof SIG_TEXT, file: string): Promise<void> {
   const note = page.locator('#sig-state');
   await expect(note).toHaveAttribute('data-state', state);
-  await expect(note).toContainText(label(page, ...SIG_TEXT[state]));
+  await expect(note).toContainText(label(page, SIG_TEXT[state][0], SIG_TEXT[state][1]));
   if (file) await expect(note).toContainText(file);
   await expect(note).toHaveClass(state === 'signed' ? /\bok\b/ : state === 'local' ? /\binfo\b/ : /\bwarn\b/);
 }

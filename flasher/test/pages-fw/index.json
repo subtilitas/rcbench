@@ -1,0 +1,41 @@
+{
+ "format": 1,
+ "keep": 6,
+ "releases": [
+  {
+   "tag": "v0.23.16",
+   "kind": "testing",
+   "published": "2026-11-21T10:41:27Z"
+  },
+  {
+   "tag": "v0.23.15",
+   "kind": "testing",
+   "published": "2026-11-18T21:49:31Z"
+  },
+  {
+   "tag": "v0.23.14",
+   "kind": "testing",
+   "published": "2026-11-15T22:35:40Z"
+  },
+  {
+   "tag": "v0.23.13",
+   "kind": "testing",
+   "published": "2026-11-15T01:56:32Z"
+  },
+  {
+   "tag": "v0.23.12",
+   "kind": "testing",
+   "published": "2026-11-11T03:59:46Z"
+  },
+  {
+   "tag": "v0.23.11",
+   "kind": "testing",
+   "published": "2026-11-10T22:48:20Z"
+  },
+  {
+   "tag": "v0.22.1",
+   "kind": "stable",
+   "published": "2026-10-22T18:28:51Z"
+  }
+ ]
+}

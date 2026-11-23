@@ -8,6 +8,11 @@ history is in git.
 
 ### Added
 
+- Web flasher: the step model of a wizard (`flasher/src/tasks.ts`,
+  `release.ts`, `wizard.ts`) with unit tests: 4 tasks on the first screen,
+  the C6 radio repair last with a Prepare step, one release per visit from
+  the panel image's default, the signature gate of WRITE per mode, the
+  Core2350B in Advanced with a local file only. The page does not use it.
 - Web flasher: the release signature of each release image. The page
   downloads `<image>.sig` beside the image and verifies it in the browser
   with Web Crypto (ECDSA P-256, SHA-256) against the embedded release

@@ -1,0 +1,92 @@
+{
+ "format": 1,
+ "tag": "v0.23.14",
+ "kind": "testing",
+ "published": "2026-11-15T22:35:40Z",
+ "images": [
+  {
+   "board": "panel",
+   "chip": "esp32p4",
+   "file": "rcbench-panel-p4-merged-v0.23.14.bin",
+   "size": 7514704,
+   "sha256": "78c9a663e1031a7d0a98d362a2adfeea5a189151357786841257f39451911966",
+   "offset": 0,
+   "format": "bin"
+  },
+  {
+   "board": "iomcu",
+   "chip": "rp2350",
+   "file": "rcbench-iomcu-install-v0.23.14.uf2",
+   "size": 566784,
+   "sha256": "02297f1acd6335964b6bffbf3b57764e1c7e9f7fc028f7afcd32ff6f3aba0de2",
+   "offset": 0,
+   "format": "uf2",
+   "erase": [
+    {
+     "offset": 2093056,
+     "size": 2084864
+    }
+   ]
+  },
+  {
+   "board": "iomcu-rbmod",
+   "chip": "rp2350",
+   "file": "rcbench-iomcu-rbmod-install-v0.23.14.uf2",
+   "size": 566784,
+   "sha256": "93832d9e76428836923dcfffa091fd9d8ccba1875d7d97b292ac4b8e4bc9af02",
+   "offset": 0,
+   "format": "uf2",
+   "erase": [
+    {
+     "offset": 2093056,
+     "size": 2084864
+    }
+   ]
+  },
+  {
+   "board": "node-display",
+   "chip": "esp32s3",
+   "file": "rcbench-node-display-merged-0.23.14.bin",
+   "size": 785568,
+   "sha256": "c73a96833807a17ec7fb6140e8cf5945b6ccb516f8e60e316bb301f790311dc7",
+   "offset": 0,
+   "format": "bin"
+  },
+  {
+   "board": "dial",
+   "chip": "esp32s3",
+   "file": "rcbench-dial-merged-0.23.14.bin",
+   "size": 974288,
+   "sha256": "434c4e3df2e82ed52fddd6994460cbd559ac4eb4a6f522af92d171a68b20259d",
+   "offset": 0,
+   "format": "bin"
+  },
+  {
+   "board": "node-pwr",
+   "chip": "esp32c6",
+   "file": "rcbench-node-pwr-merged-0.23.14.bin",
+   "size": 777408,
+   "sha256": "228e74d87aa1a334a65a671f31064ae069122502b958357f4464de26d6c2d6a0",
+   "offset": 0,
+   "format": "bin"
+  },
+  {
+   "board": "node-bal",
+   "chip": "esp32c6",
+   "file": "rcbench-node-bal-merged-0.23.14.bin",
+   "size": 773840,
+   "sha256": "558f5bc89cef108dc4ccf7607a45fbc3fa968979def13dc7dd9702590cc4cb60",
+   "offset": 0,
+   "format": "bin"
+  },
+  {
+   "board": "c6",
+   "chip": "esp32c6",
+   "file": "rcbench-c6-merged-2.13.0.bin",
+   "size": 1349152,
+   "sha256": "5e2d90593310e3e41609ff30ec1b3e238519c96e97c59c74bb6818b72f886df7",
+   "offset": 0,
+   "format": "bin"
+  }
+ ]
+}

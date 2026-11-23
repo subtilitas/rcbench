@@ -324,14 +324,40 @@ offer the IOmcu image alone.
 | `src/uf2.ts` | UF2 reader. |
 | `src/bootsel.ts` | The 1200 baud request, the boot ROM device chooser. |
 | `src/digest.ts` | SHA-256 by Web Crypto, MD5. |
+| `src/tasks.ts` | Wizard model: the tasks of the first screen, the boards and links of each task, the image sources and "Keep settings" per mode. |
+| `src/release.ts` | Wizard model: the release of the visit and the release per board. |
+| `src/wizard.ts` | Wizard model: the steps of each task, the moves between them, their entry guards, the URL hash, the gate of WRITE. |
 | `src/signature.ts` | Release signature: DER form check, conversion to the 64-byte form of Web Crypto, verification. |
 | `src/release_key.ts` | The release public key, a copy of the panel's. |
 | `public/licenses.txt` | Licences of the bundled code, written by `tools/licenses.ts`. |
-| `test/` | Unit tests, run by `node --test`. `fixtures.ts` builds synthetic UF2 images, ESP images, partition tables and merged images, and holds the panel's partition table and bootloader header of v0.23.15. |
+| `test/` | Unit tests, run by `node --test`. `pages-fw/` holds `index.json` and the 7 manifests of the Pages site on 2026-11-23. `fixtures.ts` builds synthetic UF2 images, ESP images, partition tables and merged images, and holds the panel's partition table and bootloader header of v0.23.15. |
 | `e2e/flow.spec.ts` | Playwright test of the whole flow to "done" for the panel, the Dial, the power node and the IOmcu, the refusals, the NVS bytes after a write with and without "Keep settings", the baud change on a USB-to-UART bridge only, and the release signature states in English and German, with a test key put in place of the release key in the served script. |
 | `e2e/fake-devices.js` | Fake Web Serial with an ESP32 boot ROM and flasher stub that erases the 4096-byte sectors it writes, an IOmcu port that leaves for BOOTSEL at 1200 baud, and a fake WebUSB RP2350 boot ROM. |
 | `tools/size.ts` | Size check of the build. |
 | `tools/licenses.ts` | Writes and checks `public/licenses.txt`. |
+
+## Wizard model
+
+`src/tasks.ts`, `src/release.ts` and `src/wizard.ts` hold the step model of
+a wizard: no browser code, unit tests in `test/tasks.test.ts`,
+`test/release.test.ts` and `test/wizard.test.ts`. The page does not import
+them; it is the four-card page described above.
+
+- First screen: 4 tasks, panel, IOmcu, wireless device, and the C6 radio
+  repair last. The Advanced switch adds "Write a file of my own" with all 9
+  boards.
+- Steps: Task, Board (tasks of several boards) or Prepare (C6 repair),
+  Connect, Check, Write, Done.
+- Release: one release per visit, the default release of the panel image
+  (newest stable with a panel image, else the newest); a board that release
+  does not carry takes the newest stable release with an image for it, else
+  the newest. Advanced writes the picked release while it carries the board.
+- Signature on Check: "does not match" disables WRITE in simple mode and is
+  a warning in Advanced; "no signature" is an information note in both. A
+  local file without a picked .sig file (Advanced only) shows "signature not
+  checked" as an information note and allows WRITE.
+- Core2350B: Advanced only, local file only.
+- Simple mode: release images only, "Keep settings" always on.
 
 The manifest builder is `tools/flash_manifest.py` at the repository root,
 with its tests in `test/tools/test_flash_manifest.py`.
