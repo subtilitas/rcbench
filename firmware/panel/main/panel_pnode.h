@@ -95,11 +95,11 @@ bool panel_pnode_blec_target(bleu_addr_t *addr, bool *linked,
 bool panel_pnode_blec_off(void);
 
 /**
- * @brief Whether the bound node runs a board whose image the panel does not
- *        carry (pnode_ctl_other_board()), for UPDATES; `blec` task only.
- * @return true for a linked display node
+ * @brief The board the bound node's INFO named (pnode_ctl_board()), for
+ *        UPDATES' choice of image; `blec` task only.
+ * @return RCNODE_BOARD_*, 0 before INFO
  */
-bool panel_pnode_blec_other_board(void);
+uint8_t panel_pnode_blec_board(void);
 
 /**
  * @brief A value changed: SET_PNODE_EN and SET_I228_SRC go to the task.

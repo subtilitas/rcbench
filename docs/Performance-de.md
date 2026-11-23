@@ -451,7 +451,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | `wifi_get` | `fetch_task`, eine Release-Suche oder ein Download von GitHub, das Image des Panels oder eines Geräts (`components/wifi_access`) | 8 192 | 1 840 | 5 312 |
 | `cardjob` | `files_task`, die Kartenoperationen von FILES (`panel_files.c`) | 6 656 | 2 064 | 3 552 |
 | `c6upd` | `c6_task`, das Update des C6-Funks, ein Schritt nach dem anderen (`panel_c6.c`) | 4 096 | 1 248 | 1 808 |
-| `devimg` | `devimg_task`, das Lesen eines Geräte-Images von der SD-Karte, seine Prüfungen und seine Release-Signatur, danach beendet (`panel_devimg.c`) | 8 192 | 3 920 | 3 232 |
+| `devimg` | `devimg_task`, das Lesen eines Geräte-Images von der SD-Karte, seine Prüfungen und seine Release-Signatur, danach beendet (`panel_devimg.c`) | 8 192 | 3 936 | 3 216 |
 | `shot` | `shot_task`, ein Screenshot-Auftrag, dann weg (`panel_shot.c`) | 7 168 | 2 432 | 3 696 |
 
 Der HTTP-Server (Hypertext Transfer Protocol) der Seite läuft in einem Task

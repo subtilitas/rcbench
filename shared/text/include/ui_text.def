@@ -6545,6 +6545,9 @@ UI_TEXT(DEV_NAME_DIAL, 36,
 UI_TEXT(DEV_NAME_PNODE, 36,
     "Power node",
     "Leistungsknoten")
+UI_TEXT(DEV_NAME_DNODE, 36,
+    "Display node",
+    "Anzeigeknoten")
 UI_TEXT(DEV_NAME_BAL, 36,
     "Balance node",
     "Auswuchtknoten")
@@ -6566,6 +6569,9 @@ UI_TEXT(DEV_FAIL_WRITE, 36,
 UI_TEXT(DEV_FAIL_KIND, 36,
     "image for another device",
     "Image für ein anderes Gerät")
+UI_TEXT(DEV_FAIL_BOARD, 36,
+    "image for another board",
+    "Image für eine andere Platine")
 UI_TEXT(DEV_FAIL_SIZE, 36,
     "image too large",
     "Image zu groß")
@@ -9275,12 +9281,18 @@ UI_TEXT(UPD_DIAL_PROGRESS, 0,
 UI_TEXT(UPD_NODE_LINE, 0,
     "Node: %s. Release: %s.",
     "Knoten: %s. Release: %s.")
+UI_TEXT(UPD_DNODE_LINE, 0,
+    "Display node: %s. Release: %s.",
+    "Anzeigeknoten: %s. Release: %s.")
 UI_TEXT(UPD_NODE_PRESS, 0,
     "HOLD BOOT 1s ON THE NODE: %us",
     "BOOT AM KNOTEN 1s HALTEN: %us")
 UI_TEXT(UPD_PNODE_HEAD, 0,
     "POWER NODE FIRMWARE",
     "LEISTUNGSKNOTEN-FIRMWARE")
+UI_TEXT(UPD_DNODE_HEAD, 0,
+    "DISPLAY NODE FIRMWARE",
+    "ANZEIGEKNOTEN-FIRMWARE")
 UI_TEXT(UPD_PNODE_HOLD, 0,
     "HOLD 2s TO UPDATE THE POWER NODE",
     "2s HALTEN ZUM LEISTUNGSKNOTEN-UPDATE")
@@ -9385,6 +9397,9 @@ UI_TEXT(UPD_WIZ_N_DIAL, 0,
 UI_TEXT(UPD_WIZ_N_PNODE, 0,
     "POWER NODE",
     "LEISTUNGSKNOTEN")
+UI_TEXT(UPD_WIZ_N_DNODE, 0,
+    "DISPLAY NODE",
+    "ANZEIGEKNOTEN")
 UI_TEXT(UPD_WIZ_N_BAL, 0,
     "BALANCE NODE",
     "AUSWUCHTKNOTEN")

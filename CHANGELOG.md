@@ -18,6 +18,21 @@ history is in git.
   sensor schedule reads the 9 channels and the INA228 within 690µs of bus
   time a 1ms tick
   ([Link: Throttle outputs on board 3](docs/Link.md#throttle-outputs-on-board-3)).
+- The panel updates the display node (the power node on the ES3C28P,
+  ESP32-S3) over Bluetooth LE from SETUP > UPDATES. The power node's row
+  sends the image of the board the node's INFO names:
+  `rcbench-node-pwr-<version>.bin` for the ESP32-C6-Zero (board 1),
+  `rcbench-node-display-<version>.bin` (update kind 4) for the ES3C28P
+  (board 2). For the display node the row reads DISPLAY NODE FIRMWARE,
+  UPDATES' step DISPLAY NODE. The image is downloaded and checked as every
+  device image: `SHA256SUMS`, its `.sig`, chip ESP32-S3, project
+  `rcbench-node`, kind 4 and the release's version. Before the first byte
+  the panel holds it to the board's chip and kind; a mismatch ends with
+  `Display node update stopped: image for another board.` The node asks
+  for BOOT (IO0) held 1s, as the C6 node does.
+- A release publishes `rcbench-node-display-<version>.bin`, the display
+  node's application, with its `.sig` and a line in `SHA256SUMS`, beside
+  `rcbench-node-display-merged-<version>.bin` for USB.
 
 ### Changed
 

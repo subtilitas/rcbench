@@ -23,6 +23,7 @@
 #include "greatest.h"
 
 #include "bleuart.h"
+#include "devimg.h"
 #include "pnode_ctl.h"
 
 /** @brief The handles the rig serves. @{ */
@@ -58,6 +59,8 @@ typedef struct {
     uint8_t     wr[4];    /**< the last one's bytes */
     uint8_t     wr_len;   /**< its length */
     uint8_t     seq;      /**< the node's STREAM seq */
+    bool        hold_read; /**< INFO reads wait for read_answer() */
+    uint16_t    read_tok; /**< the waiting read's token, 0 for none */
 } rig_t;
 
 /** @brief An event with its kind and token. */
@@ -137,6 +140,10 @@ static void act(rig_t *r, const bleu_act_t *a)
         pnode_ctl_event(&r->c, &e, r->now);
         break;
     case BLEU_ACT_READ:
+        if (r->hold_read) {
+            r->read_tok = a->token;
+            break;
+        }
         e = ev(BLEU_EV_READ, a->token);
         e.len = (uint8_t)rcnode_enc_info(&r->info, e.data, sizeof e.data);
         if (r->fail_info > 0u) {
@@ -180,6 +187,16 @@ static void step(rig_t *r)
          ++i) {
         act(r, &a);
     }
+}
+
+/** @brief Answer the INFO read held by hold_read. */
+static void read_answer(rig_t *r)
+{
+    bleu_evt_t e = ev(BLEU_EV_READ, r->read_tok);
+    e.len = (uint8_t)rcnode_enc_info(&r->info, e.data, sizeof e.data);
+    r->read_tok = 0u;
+    r->hold_read = false;
+    pnode_ctl_event(&r->c, &e, r->now);
 }
 
 /** @brief Run @p ms of the clock, a step each ms. */
@@ -668,27 +685,147 @@ static bool run_saw_loss(rig_t *r, uint32_t ms)
     return saw;
 }
 
-/* UPDATES carries the C6-Zero's image only: a display node (ES3C28P)
- * reads as another board once its INFO is taken, and no longer once its
- * link ends. */
-TEST_CASE(a_display_node_reads_as_another_board_after_info)
+/* UPDATES picks the node's image by the board its INFO names: the
+ * board reads once INFO is taken and stays while the update holds the
+ * link off; another address clears it. */
+TEST_CASE(the_board_reads_after_info_and_stays_over_the_update_hold)
 {
     rig_t r;
     up(&r, false);
     CHECK(r.c.info_ok);
-    CHECK(!pnode_ctl_other_board(&r.c));       /* the C6-Zero */
+    CHECK_EQ(pnode_ctl_board(&r.c), RCNODE_BOARD_C6_ZERO);
 
     init(&r, false);
     r.info.board = RCNODE_BOARD_ES3C28P;
-    CHECK(!pnode_ctl_other_board(&r.c));       /* no INFO yet */
+    CHECK_EQ(pnode_ctl_board(&r.c), 0u);           /* no INFO yet */
     run(&r, 50u);
     CHECK(r.c.info_ok);
-    CHECK_EQ(r.c.info_board, RCNODE_BOARD_ES3C28P);
-    CHECK(pnode_ctl_other_board(&r.c));
+    CHECK_EQ(pnode_ctl_board(&r.c), RCNODE_BOARD_ES3C28P);
     pnode_ctl_hold(&r.c, true, r.now);
     run(&r, 100u);
-    CHECK(!pnode_ctl_other_board(&r.c));       /* the link ended */
-    CHECK(!pnode_ctl_other_board(NULL));
+    CHECK(!r.c.info_ok);                           /* the link ended */
+    CHECK_EQ(pnode_ctl_board(&r.c), RCNODE_BOARD_ES3C28P);
+    CHECK_EQ(pnode_ctl_board(NULL), 0u);
+}
+
+/* Drop the update owed to the image the row no longer sends. */
+static void follow(devimg_id_t *row, devimg_slot_t sl[DEVIMG_COUNT],
+                   uint8_t board)
+{
+    const devimg_id_t gone = devimg_follow(row, devimg_pnode_image(board));
+    if (gone < DEVIMG_COUNT) {
+        (void)devimg_cancel(&sl[gone]);
+    }
+}
+
+/* The display node reconnects while its image downloads: through every
+ * millisecond of the reconnect, its INFO unread included, the board stays
+ * the ES3C28P, and the update owed to the display image stays owed. */
+TEST_CASE(a_reconnect_with_info_pending_keeps_the_board_and_the_owed_update)
+{
+    rig_t r;
+    init(&r, false);
+    r.info.board = RCNODE_BOARD_ES3C28P;
+    run(&r, 50u);
+    devimg_slot_t sl[DEVIMG_COUNT];
+    for (unsigned i = 0; i < DEVIMG_COUNT; ++i) {
+        devimg_init(&sl[i]);
+    }
+    devimg_id_t row = DEVIMG_PNODE;
+    follow(&row, sl, pnode_ctl_board(&r.c));
+    CHECK_EQ(row, DEVIMG_PNODE_S3);
+    CHECK(devimg_begin(&sl[DEVIMG_PNODE_S3], DEVIMG_SRC_NET));
+    /* The link drops and comes back by itself. */
+    pnode_ctl_hold(&r.c, true, r.now);
+    run(&r, 100u);
+    r.hold_read = true;
+    pnode_ctl_hold(&r.c, false, r.now);
+    unsigned pending = 0u;
+    for (unsigned k = 0; k < 500u; ++k) {
+        ++r.now;
+        step(&r);
+        if (r.c.linked && !r.c.info_ok) {
+            ++pending;                 /* linked, INFO unread */
+        }
+        CHECK_EQ(pnode_ctl_board(&r.c), RCNODE_BOARD_ES3C28P);
+        follow(&row, sl, pnode_ctl_board(&r.c));
+    }
+    CHECK(pending > 100u);             /* the window was there */
+    CHECK(r.read_tok != 0u);
+    read_answer(&r);
+    run(&r, 50u);
+    CHECK(r.c.info_ok);
+    CHECK_EQ(pnode_ctl_board(&r.c), RCNODE_BOARD_ES3C28P);
+    CHECK_EQ(row, DEVIMG_PNODE_S3);
+    CHECK(sl[DEVIMG_PNODE_S3].owed);
+    /* A new INFO naming another board moves the image and drops it. */
+    r.info.board = RCNODE_BOARD_C6_ZERO;
+    pnode_ctl_hold(&r.c, true, r.now);
+    run(&r, 100u);
+    pnode_ctl_hold(&r.c, false, r.now);
+    run(&r, 500u);
+    CHECK_EQ(pnode_ctl_board(&r.c), RCNODE_BOARD_C6_ZERO);
+    follow(&row, sl, pnode_ctl_board(&r.c));
+    CHECK_EQ(row, DEVIMG_PNODE);
+    CHECK(!sl[DEVIMG_PNODE_S3].owed);
+}
+
+/* SEARCH's list picked again for the node already connected: the link
+ * stays, no new INFO comes, and the board stays.  Another node from the
+ * list clears it. */
+TEST_CASE(a_bind_of_the_bound_address_keeps_the_board_and_another_clears_it)
+{
+    rig_t r;
+    init(&r, false);
+    r.info.board = RCNODE_BOARD_ES3C28P;
+    run(&r, 50u);
+    CHECK(pnode_ctl_scan(&r.c, false, r.now) == PNODE_SCAN_STARTED);
+    run(&r, 5u);
+    report(&r, 0x56u, true, -50, RCNODE_ROLE_POWER);   /* ADDR itself */
+    report(&r, 0x01u, true, -60, RCNODE_ROLE_POWER);
+    run(&r, BLEU_SCAN_MS + 100u);
+    CHECK_STR_EQ(r.c.found[0].addr, ADDR);
+    CHECK(pnode_ctl_bind(&r.c, 0u, r.now));
+    run(&r, 1000u);
+    CHECK(r.c.linked);
+    CHECK(r.c.info_ok);
+    CHECK_EQ(pnode_ctl_board(&r.c), RCNODE_BOARD_ES3C28P);
+    CHECK(pnode_ctl_bind(&r.c, 1u, r.now));
+    CHECK_EQ(pnode_ctl_board(&r.c), 0u);
+}
+
+/* An address change on SETUP and an unbind clear the board, and the row
+ * drops the update owed to the display image. */
+TEST_CASE(an_address_change_clears_the_board_and_drops_the_owed_update)
+{
+    rig_t r;
+    init(&r, false);
+    r.info.board = RCNODE_BOARD_ES3C28P;
+    run(&r, 50u);
+    devimg_slot_t sl[DEVIMG_COUNT];
+    for (unsigned i = 0; i < DEVIMG_COUNT; ++i) {
+        devimg_init(&sl[i]);
+    }
+    devimg_id_t row = DEVIMG_PNODE;
+    follow(&row, sl, pnode_ctl_board(&r.c));
+    CHECK(devimg_begin(&sl[DEVIMG_PNODE_S3], DEVIMG_SRC_NET));
+    pnode_cfg_t cfg = r.c.cfg;
+    memcpy(cfg.addr, "11:22:33:44:55:66 P", sizeof("11:22:33:44:55:66 P"));
+    pnode_ctl_config(&r.c, &cfg, r.now);
+    CHECK_EQ(pnode_ctl_board(&r.c), 0u);
+    follow(&row, sl, pnode_ctl_board(&r.c));
+    CHECK_EQ(row, DEVIMG_PNODE);
+    CHECK(!sl[DEVIMG_PNODE_S3].owed);
+    /* The same address written again keeps a board. */
+    up(&r, false);
+    cfg = r.c.cfg;
+    pnode_ctl_config(&r.c, &cfg, r.now);
+    CHECK_EQ(pnode_ctl_board(&r.c), RCNODE_BOARD_C6_ZERO);
+    /* An unbind clears it. */
+    cfg.addr[0] = '\0';
+    pnode_ctl_config(&r.c, &cfg, r.now);
+    CHECK_EQ(pnode_ctl_board(&r.c), 0u);
+    CHECK_EQ(devimg_follow(NULL, DEVIMG_PNODE), DEVIMG_COUNT);
 }
 
 /* The update's hand-over: the hold ends the link of a node that sent
@@ -784,7 +921,10 @@ int main(void)
     RUN(lang_goes_once_a_link_and_once_a_change_after_run);
     RUN(a_node_that_refuses_lang_keeps_its_link_and_is_not_asked_again);
     RUN(a_node_that_started_again_gets_run_again_and_a_servo_run_no_gap);
-    RUN(a_display_node_reads_as_another_board_after_info);
+    RUN(the_board_reads_after_info_and_stays_over_the_update_hold);
+    RUN(a_reconnect_with_info_pending_keeps_the_board_and_the_owed_update);
+    RUN(a_bind_of_the_bound_address_keeps_the_board_and_another_clears_it);
+    RUN(an_address_change_clears_the_board_and_drops_the_owed_update);
     RUN(the_update_hold_hands_the_link_over_and_takes_it_back);
     return test_summary("pnode_ctl");
 }

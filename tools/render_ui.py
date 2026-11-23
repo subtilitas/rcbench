@@ -1198,11 +1198,13 @@ FIT_ONLY = {
     "updates-node-ready":  (None, "updates", "dark"),
     "updates-node-connecting": (None, "updates", "dark"),
     "updates-node-progress": (None, "updates", "dark"),
+    "updates-node-display": (None, "updates", "dark"),
     "updates-c6-noimage":  (None, "updates", "dark"),
     "updates-c6-failed":   (None, "updates", "dark"),
     # UPDATES' steps: every tag and every line of the card.
     "updates-wiz-node":       (None, "updates", "dark"),
     "updates-wiz-node-ask":   (None, "updates", "dark"),
+    "updates-wiz-dnode":      (None, "updates", "dark"),
     "updates-wiz-dev-send":   (None, "updates", "dark"),
     "updates-wiz-dev-download": (None, "updates", "dark"),
     "updates-wiz-dev-card":   (None, "updates", "dark"),

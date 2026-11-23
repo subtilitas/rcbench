@@ -424,7 +424,7 @@ its stack less 1024 bytes.
 | `wifi_get` | `fetch_task`, one release check or download from GitHub, the panel's image or a device's (`components/wifi_access`) | 8,192 | 1,840 | 5,312 |
 | `cardjob` | `files_task`, FILES' card operations (`panel_files.c`) | 6,656 | 2,064 | 3,552 |
 | `c6upd` | `c6_task`, the C6 radio's update, one step at a time (`panel_c6.c`) | 4,096 | 1,248 | 1,808 |
-| `devimg` | `devimg_task`, a device image's read from the SD card, its checks and its release signature, then gone (`panel_devimg.c`) | 8,192 | 3,920 | 3,232 |
+| `devimg` | `devimg_task`, a device image's read from the SD card, its checks and its release signature, then gone (`panel_devimg.c`) | 8,192 | 3,936 | 3,216 |
 | `shot` | `shot_task`, one screenshot job, then gone (`panel_shot.c`) | 7,168 | 2,432 | 3,696 |
 
 The page's HTTP (hypertext transfer protocol) server runs on a task of
