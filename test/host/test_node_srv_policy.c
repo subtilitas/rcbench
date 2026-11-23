@@ -688,7 +688,7 @@ TEST_CASE(a_control_write_carrying_arm_is_given_up_after_safe)
     o = step(&p, t + 1u);
     CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, LINK_ARM_SURFACE));
     CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, 0u));
-    CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u));
+    CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u));
 }
 
 TEST_CASE(the_all_off_writes_are_never_given_up_and_end_every_other_exchange)
@@ -701,6 +701,31 @@ TEST_CASE(the_all_off_writes_are_never_given_up_and_end_every_other_exchange)
     CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u));
     CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, 0u));
     CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_ARMING, 0u));
+}
+
+TEST_CASE(safe_gives_up_a_waiting_read_so_arm_0_goes_out_at_the_next_pump)
+{
+    /* Each read the poll makes (STATUS, POWER, SUPPLY, SENSE_WIN_A and _B)
+     * and IDENTITY is one NODE_SRV_X_READ exchange; SAFE arrives while one
+     * waits for its answer. */
+    for (unsigned row = 0u; row < 6u; ++row) {
+        node_srv_pol_t p;
+        const uint32_t t = armed_at(&p, 0u, LINK_ARM_ALL);
+        node_srv_out_t o = step(&p, t + row);
+        CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u));
+        node_srv_pol_safe(&p);
+        o = step(&p, t + row + 1u);   /* the next pump */
+        CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u));
+        CHECK(o.ctl_now);
+        CHECK_EQ(o.arm, 0u);
+        CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, 0u));
+        CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_CONTROL, LINK_ARM_ALL));
+        CHECK(!node_srv_pol_keep(&p, &o, NODE_SRV_X_ARMING, 0u));
+        /* Reads go on once ARM 0 is answered. */
+        node_srv_pol_ctl_done(&p);
+        o = step(&p, t + row + 2u);
+        CHECK(node_srv_pol_keep(&p, &o, NODE_SRV_X_READ, 0u));
+    }
 }
 
 int main(void)
@@ -737,5 +762,6 @@ int main(void)
     RUN(safe_stop_ble_or_keepalive_loss_during_the_settle_arm_nothing);
     RUN(a_control_write_carrying_arm_is_given_up_after_safe);
     RUN(the_all_off_writes_are_never_given_up_and_end_every_other_exchange);
+    RUN(safe_gives_up_a_waiting_read_so_arm_0_goes_out_at_the_next_pump);
     return test_summary("node_srv_policy");
 }

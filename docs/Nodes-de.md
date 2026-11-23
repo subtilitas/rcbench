@@ -628,7 +628,9 @@ wird für sie aufgegeben, so folgen sie innerhalb der Leitungszeit eines
 Austauschs. CLEAR und der Frame, der auf ARMED schaltet, werden ebenso
 aufgegeben, vor dem Senden oder während sie warten, sobald ein SAFE, ein
 STOP oder ein Verlust angenommen ist, und ebenso ein CONTROL-Schreiben,
-dessen ARM vom geltenden abweicht.
+dessen ARM vom geltenden abweicht. Ein Lesen, das auf seine Antwort wartet,
+wird aufgegeben, sobald ein SAFE angenommen ist, so geht ARM 0 mit der
+nächsten Pumpe hinaus.
 
 | Ereignis | Der Servoknoten |
 | --- | --- |

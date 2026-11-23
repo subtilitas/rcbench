@@ -277,7 +277,8 @@ typedef enum {
  * | an all-off write | never |
  * | any other | the all-off writes are owed |
  * | CLEAR or the arming frame | the switch to ARMED is no longer at its writes (SAFE, STOP, a loss, the 300ms) |
- * | CONTROL with a non-zero ARM | the policy's ARM is no longer that value |
+ * | CONTROL with a non-zero ARM | the policy's ARM differs from that value |
+ * | a read | CONTROL is owed at once (a SAFE's ARM 0) |
  *
  * @param p    The state.
  * @param out  The last node_srv_pol_step().

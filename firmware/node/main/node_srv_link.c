@@ -561,6 +561,13 @@ static void srv_task(void *arg)
             do_off();
             continue;
         }
+        if (s_out.ctl_now) {
+            /* A disarm goes before every read, IDENTITY's included:
+             * node_srv_pol_keep() gives reads up while it is owed. */
+            node_srv_poll_taken(&s_poll, NODE_SRV_ROW_CONTROL, now_ms());
+            do_control();
+            continue;
+        }
         if (!s_pol.identity_ok) {
             if (!s_ident_wait
                 || mstime_elapsed(now_ms(), s_ident_ms, SRV_IDENT_RETRY_MS)) {
@@ -574,9 +581,6 @@ static void srv_task(void *arg)
         if (s_out.arm_write) {
             do_arm();
             continue;
-        }
-        if (s_out.ctl_now) {
-            node_srv_poll_now(&s_poll, NODE_SRV_ROW_CONTROL);
         }
         const uint32_t now = now_ms();
         const node_srv_row_t row = node_srv_poll_next(&s_poll, now, s_out.status_fast);

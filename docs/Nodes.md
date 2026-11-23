@@ -589,7 +589,8 @@ and after each row below that names them. An exchange in flight is given
 up for them, so they follow within one exchange's wire time. CLEAR and the
 arming frame are given up as well, before they are sent or while they wait,
 once a SAFE, a STOP or a loss is taken, and so is a CONTROL write whose ARM
-differs from the one in force.
+differs from the one in force. A read waiting for its answer is given up
+when a SAFE is taken, so ARM 0 goes out at the next pump.
 
 | Event | Servo node does |
 | --- | --- |

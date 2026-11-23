@@ -284,10 +284,12 @@ bool node_srv_pol_keep(const node_srv_pol_t *p, const node_srv_out_t *out,
     if (kind == NODE_SRV_X_ARMING) {
         return p->arm == NODE_SRV_ARM_WRITE;
     }
-    if (kind == NODE_SRV_X_CONTROL && arm != 0u) {
-        return p->arm == NODE_SRV_ARMED && p->roles == arm;
+    if (kind == NODE_SRV_X_CONTROL) {
+        /* ARM 0 goes on; a non-zero ARM only while it is the one in force. */
+        return arm == 0u || (p->arm == NODE_SRV_ARMED && p->roles == arm);
     }
-    return true;
+    /* A read waits for nothing the bench needs: a disarm owed goes first. */
+    return !p->ctl_now && !out->ctl_now;
 }
 
 uint8_t node_srv_pol_events(node_srv_pol_t *p)

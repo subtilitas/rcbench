@@ -1425,7 +1425,7 @@ STOP by op and by flag, a Bluetooth LE disconnect, each ARM precondition,
 the switch to ARMED at the 100ms settle and given up at 300ms, a STOP
 during the arming frame, SAFE, the STOP flag, a Bluetooth LE disconnect
 and the KEEPALIVE timeout during CLEAR and during the settle arming
-nothing, STANDALONE driving nothing for 60s, each timeout
+nothing, SAFE giving up a waiting read for ARM 0, STANDALONE driving nothing for 60s, each timeout
 across the 32-bit ms clock's wrap) and its poll (`node_srv_poll.c`,
 `test_node_srv_poll`: each period at its last and first millisecond,
 STATUS at 50ms while fast, one exchange a row after a stall, the wrap; the
