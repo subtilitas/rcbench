@@ -53,7 +53,7 @@ test('another device: a C6 node without role record on the C6 radio\'s adapter n
   await setup(page, { esp: { chipId: 13, usb: [0x1a86, 0x55d3], installed: installed(13, 'rcbench-node', '0.23.12') } });
   await walk(page, 'c6');
   await connectEsp(page);
-  await expectVerdict(page, 'other', label(page, 'Power node or Balance node', 'Leistungsknoten oder Balance-Knoten'));
+  await expectVerdict(page, 'other', label(page, 'Power node or Balance node', 'Leistungsknoten oder Auswuchtknoten'));
 });
 
 test('cannot tell: a power node without role record could be either node', async ({ page }) => {

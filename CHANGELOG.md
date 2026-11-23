@@ -24,6 +24,20 @@ history is in git.
   node's application, with its `.sig` and a line in `SHA256SUMS`, beside
   `rcbench-node-display-merged-<version>.bin` for USB.
 
+### Changed
+
+- Web flasher, Done: the next-step line follows what the write kept. After
+  a Dial write that kept the NVS (non-volatile storage) partition, the line
+  reads that the Dial keeps its settings and its binding; after a write
+  over the NVS it asks to bind the Dial on the panel. The display node,
+  power node and balance node lines name both cases, since the panel binds
+  a node by its address. The display node's line no longer asks for a bind
+  after every write.
+- Web flasher, German: device names follow the panel, Auswuchtknoten and
+  C6-Funk; bind texts read binden and gebunden, as the panel's BINDEN.
+- German docs and help name the bench states ARMED and SAFE in place of
+  scharf and entschärft.
+
 ## 0.23.17 - 2026-11-23
 
 0.23.17 is a testing release. Every firmware image the release publishes

@@ -320,7 +320,7 @@ counted and dropped. Until INFO is read, EVENTs are dropped too. An INFO
 that does not read or decode is a failed GATT step: the link ends and the
 panel connects again after 1,000ms. Detents and PRESSes reach the screen
 only while the link is `CONNECTED` or `DEGRADED`; a HOLD, which only
-disarms, in any state.
+switches the bench to SAFE, in any state.
 
 The loss rule runs on the panel's own clock, not on the supervision timeout:
 
@@ -712,11 +712,9 @@ documentation and by M5Unified; GPIO1 is the pin by number either way.
 - The flush of a whole frame takes about 23ms at 40MHz (arithmetic, not
   measured). A ring's repaint is not measured on the device.
 - The value face shows no category: no packet carries one.
-- Nothing in this firmware or in the panel's side has run with a Dial: the
-  Dial is ordered, not delivered. The turn-to-output latency over the air is
-  not measured; the station measures it with the test build once the Dial
+- The turn-to-output latency over the air is not measured; the station measures it with the test build once the Dial
   is on its USB.
-- The update over BLE has not run with a Dial. Its rate over the panel's
+- The rate of the update over BLE over the panel's
   ESP32-C6 link, the time of an 840kB transfer and a rollback on the Dial
   are not measured.
 - The Dial checks the image's kind, chip and segments, not its origin: a

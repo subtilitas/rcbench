@@ -118,6 +118,8 @@ export const st = {
   /** The end of the last write: ok, failed, or null before one. */
   outcome: null as 'ok' | 'failed' | null,
   result: null as Note | null,
+  /** The last write left an nvs partition on the board unwritten; the Dial keeps its bound panel there. */
+  keptNvs: false,
   /** The phase that failed, for the phase list on Write. */
   failedStep: null as string | null,
   log: [] as string[],

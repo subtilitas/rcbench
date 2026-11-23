@@ -561,8 +561,7 @@ Feld des Pins ([Rasteransicht](Screens-de.md#die-rasteransicht)).
 | Auflösung | 1µs |
 
 **Miss und notiere:** die tatsächliche Pulsperiode, die Pulsbreite an
-beiden Enden des Stellwegs und den Jitter. Das Bit-Timing gehört zu den
-noch nicht auf Hardware bestätigten Eigenschaften.
+beiden Enden des Stellwegs und den Jitter.
 
 **Danach:** Prüfe, dass SERVO die Stellung nur auf Anforderung freigibt.
 Das Abheben des Fingers stoppt den Ausgang nicht: Die Seite hält die

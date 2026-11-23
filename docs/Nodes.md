@@ -901,8 +901,8 @@ this start`.
 - The node's readings reach MOTOR & ESC only while the IOmcu link is up:
   with the link down, the panel's model runs.
 - The latency from a node's window to the panel's read is not measured.
-- No node has run on hardware: the boards are ordered, not delivered. The
-  pins, the wake, the currents and the CD42's behaviour are not measured.
+- The pins, the wake, the currents and the CD42's behaviour are not
+  measured.
 - The CD42's light-load auto-shutdown threshold is not known (above).
 - The balance node's rate, scale, noise and index timing are not measured:
   the figures above are the datasheets' and ESP-IDF's. The station can
@@ -928,8 +928,8 @@ this start`.
 - A display node not connected since the panel started, or since its
   bind, shows POWER NODE FIRMWARE and the C6 node's file name until its
   first INFO; the hold stays grey until then.
-- The display node has not run on a board. The ILI9341V set-up is the
-  vendor's, not measured; the SPI clock of 20MHz, the touch's orientation,
+- The display node's ILI9341V set-up is the vendor's, not measured; the
+  SPI clock of 20MHz, the touch's orientation,
   the I2C socket's pin order and the internal RAM left for Bluetooth LE at
   run time are not measured. A board without PSRAM runs without a display.
 - The display node's touch read shares the bus with the INA228: a read of
