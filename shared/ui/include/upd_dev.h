@@ -102,6 +102,10 @@ typedef struct {
                                   version                                 */
     fw_version_t running;    /**< that version                            */
     bool         have_image; /**< this panel carries an image that passed */
+    bool         display;    /**< UPD_DEV_PNODE: the node is the ES3C28P
+                                  display node, its image
+                                  rcbench-node-display-VERSION.bin: the
+                                  row's heading and line name it         */
     fw_version_t carried;    /**< its version                             */
     uint8_t      phase;      /**< DEVUPD_ROW_UPDATING: devupd_phase_t     */
     unsigned     percent;    /**< DEVUPD_SEND: the share taken, 0-100     */
@@ -154,6 +158,15 @@ void upd_dev_fire_cancel(void);
  * @return the text, or NULL while the hold is live
  */
 const char *upd_dev_reason(const upd_dev_view_t *v);
+
+/**
+ * @brief A row's heading: DISPLAY NODE FIRMWARE for the power node's row
+ *        while its node is the display node.
+ * @param id the row
+ * @param v  the view, may be NULL
+ * @return the text
+ */
+const char *upd_dev_head(upd_dev_id_t id, const upd_dev_view_t *v);
 
 /**
  * @brief A row's versions' line.

@@ -1,10 +1,10 @@
 /**
  * @file panel_devimg.h
- * @brief The images of the C6 radio, the M5Stack Dial, the power node and
- *        the balance node, fetched when an update's hold asks for one:
- *        from GitHub over the panel's own download path, or from the SD
- *        card's BENCH/UPDATES, into PSRAM (pseudo-static random-access
- *        memory), checked, and handed to the existing senders (panel_c6.c,
+ * @brief The images of the C6 radio, the M5Stack Dial, the power node, the
+ *        balance node and the display node, fetched when an update's hold
+ *        asks for one: from GitHub over the panel's own download path, or
+ *        from the SD card's BENCH/UPDATES, into PSRAM (pseudo-static
+ *        random-access memory), checked, and handed to the existing senders (panel_c6.c,
  *        panel_devupd.c).  shared/devupd/include/devimg.h holds the names,
  *        the checks and the rules.
  *
@@ -122,6 +122,15 @@ devimg_owed_t panel_devimg_owed(devimg_id_t id, bool open, bool wait);
  *         cancel is taken
  */
 bool panel_devimg_cancel(void);
+
+/**
+ * @brief The row that owed an update to @p id now sends another image
+ *        (the power node's board changed): the owed update no longer
+ *        starts (devimg_cancel()).  A download, a card read or the checks
+ *        under way go on; an image that passes stays for the next hold.
+ * @param id the image; one out of range does nothing
+ */
+void panel_devimg_forget(devimg_id_t id);
 
 /**
  * @brief Taken once by upd_service(): CANCEL UPDATE asked to end the

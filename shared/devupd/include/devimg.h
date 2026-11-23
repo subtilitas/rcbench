@@ -1,9 +1,10 @@
 /**
  * @file devimg.h
  * @brief The images the panel sends to the C6 radio, the M5Stack Dial, the
- *        power node and the balance node, fetched when an update asks for
- *        one: their names in a release, the SD card's fallback, their checks
- *        and the state of one image from the hold to the update's start.
+ *        power node, the balance node and the display node, fetched when an
+ *        update asks for one: their names in a release, the SD card's
+ *        fallback, their checks and the state of one image from the hold to
+ *        the update's start.
  *
  * The panel image carries none of them.  Each is a file of the release the
  * panel runs (tag vMAJOR.MINOR.PATCH of RCBENCH_VERSION_STRING):
@@ -12,6 +13,12 @@
  *   Dial          rcbench-dial-VERSION.bin
  *   power node    rcbench-node-pwr-VERSION.bin
  *   balance node  rcbench-node-bal-VERSION.bin
+ *   display node  rcbench-node-display-VERSION.bin, the power role on the
+ *                 ES3C28P (ESP32-S3) board
+ *
+ * The power node's row sends the image of the board the node's INFO names
+ * (devimg_pnode_image()), and only after devimg_fits() holds the image's
+ * head to that board's chip and BLEOTA_KIND_*.
  *
  * An update's hold takes its image from one of three places
  * (devimg_src()): the memory, when an earlier hold fetched it; GitHub,
@@ -53,6 +60,8 @@ typedef enum {
     DEVIMG_DIAL,   /**< the M5Stack Dial, over Bluetooth LE */
     DEVIMG_PNODE,  /**< the power node, over Bluetooth LE */
     DEVIMG_BAL,    /**< the balance node, over Bluetooth LE */
+    DEVIMG_PNODE_S3, /**< the display node: the power node on the ES3C28P,
+                          over Bluetooth LE */
     DEVIMG_COUNT,  /**< the count */
 } devimg_id_t;
 
@@ -60,8 +69,9 @@ typedef enum {
 #define DEVIMG_DIR      "BENCH/UPDATES"
 /** @brief The checksums file the card's folder may hold beside them. */
 #define DEVIMG_SUMS     "SHA256SUMS"
-/** @brief Bytes of a file name, its terminator included. */
-#define DEVIMG_NAME_MAX 40u
+/** @brief Bytes of a file name, its terminator included: the longest,
+ *         "rcbench-node-display-65535.65535.65535.bin", has 42. */
+#define DEVIMG_NAME_MAX 44u
 /** @brief Bytes of a card path, DEVIMG_DIR "/" and the name. */
 #define DEVIMG_PATH_MAX (sizeof(DEVIMG_DIR) + DEVIMG_NAME_MAX)
 /** @brief Bytes of a failure's code: a letter, two digits, a terminator. */
@@ -97,6 +107,35 @@ bool devimg_card_path(devimg_id_t id, fw_version_t v, char *out, size_t n);
  * @return the slot's bytes, 0 for an @p id out of range
  */
 uint32_t devimg_slot(devimg_id_t id);
+
+/**
+ * @brief The image the power node's row offers for the board the node's
+ *        INFO names (RCNODE_BOARD_*, protocols/rcnode).
+ * @param board the board; 0 before any INFO
+ * @return DEVIMG_PNODE for the ESP32-C6-Zero and for 0, DEVIMG_PNODE_S3
+ *         for the ES3C28P, DEVIMG_COUNT for a board no release image is
+ *         for
+ */
+devimg_id_t devimg_pnode_image(uint8_t board);
+
+/**
+ * @brief A row's image follows its node's board: @p row takes @p now.
+ *        The board is pnode_ctl_board()'s, which a reconnect of the same
+ *        address does not change, so only a new INFO or an address change
+ *        moves the image.
+ * @param row the row's image, updated
+ * @param now the image the row sends now
+ * @return the image the row sent before, whose owed update the caller
+ *         drops (devimg_cancel()); DEVIMG_COUNT when the image is the same
+ */
+devimg_id_t devimg_follow(devimg_id_t *row, devimg_id_t now);
+
+/**
+ * @brief The BLEOTA_KIND_* the image's device takes.
+ * @param id the image
+ * @return the kind; 0 for the C6 radio and for an @p id out of range
+ */
+uint8_t devimg_kind(devimg_id_t id);
 
 /** @brief What devimg_verify() refuses. */
 typedef enum {
@@ -161,6 +200,23 @@ devimg_err_t devimg_verify(devimg_id_t id, const uint8_t *img, uint32_t n,
                            fw_version_t want, const uint8_t *sha_want,
                            fw_image_info_t *info,
                            uint8_t sha[FW_SHA256_BYTES], fw_err_t *why);
+
+/**
+ * @brief The last check before the power node's image is sent: the board
+ *        the bound node's INFO names takes image @p id
+ *        (devimg_pnode_image()), and the image's head names that board's
+ *        chip and BLEOTA_KIND_* (bleota_head_check()).
+ * @param id    the image about to be sent
+ * @param board the board the node's INFO named on the link that reported
+ *              its version; 0 is no INFO
+ * @param img   the image's bytes
+ * @param n     their count
+ * @return DEVIMG_OK; DEVIMG_E_ID for an @p id out of range, a board no
+ *         image is for or one that takes another image; DEVIMG_E_ROLE for
+ *         a head that names another chip or kind
+ */
+devimg_err_t devimg_fits(devimg_id_t id, uint8_t board, const uint8_t *img,
+                         uint32_t n);
 
 /** @brief Why a card read gave no image. */
 typedef enum {

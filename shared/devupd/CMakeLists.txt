@@ -11,10 +11,10 @@ set(SRCS devupd.c devupd_client.c devimg.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include
-                           REQUIRES bleota bleuart fwupdate)
+                           REQUIRES bleota bleuart fwupdate rcnode)
 else()
     add_library(rcbench_devupd STATIC ${SRCS})
     target_include_directories(rcbench_devupd PUBLIC include)
     target_link_libraries(rcbench_devupd PUBLIC rcbench_bleota rcbench_bleuart
-                          rcbench_fwupdate)
+                          rcbench_fwupdate rcbench_rcnode)
 endif()

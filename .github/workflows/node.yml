@@ -12,8 +12,10 @@ name: Node image
 # rcbench-node-<build>-<version>.bin, the application, and
 # rcbench-node-<build>-merged-<version>.bin, bootloader, partition table and
 # application for 0x0 over USB (docs/Nodes.md, "Building and flashing").
-# The panel carries the pwr and bal applications; the display and servo
-# nodes are flashed over USB only.
+# A panel downloads each application of a release for the node's update
+# over Bluetooth LE (shared/devupd/devimg.c); the merged image is for USB.
+# The servo node takes no update over Bluetooth LE: its merged image is
+# for USB.
 
 on:
   workflow_call:

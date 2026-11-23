@@ -285,6 +285,15 @@ static void ver_text(char *out, size_t n, bool have, fw_version_t v,
     }
 }
 
+const char *upd_dev_head(upd_dev_id_t id, const upd_dev_view_t *v)
+{
+    const upd_dev_id_t r = in_range(id);
+    if (r == UPD_DEV_PNODE && v != NULL && v->display) {
+        return TR(UPD_DNODE_HEAD);
+    }
+    return ui_tr(k_words[r].head);
+}
+
 void upd_dev_line(upd_dev_id_t id, const upd_dev_view_t *v, char *out,
                   size_t n)
 {
@@ -295,6 +304,12 @@ void upd_dev_line(upd_dev_id_t id, const upd_dev_view_t *v, char *out,
      * tools/check_formats.py holds them to their arguments. */
     switch (in_range(id)) {
     case UPD_DEV_PNODE:
+        if (v->display) {
+            snprintf(out, n, TR(UPD_DNODE_LINE), run, car);
+        } else {
+            snprintf(out, n, TR(UPD_NODE_LINE), run, car);
+        }
+        break;
     case UPD_DEV_BAL:
         snprintf(out, n, TR(UPD_NODE_LINE), run, car);
         break;
@@ -613,7 +628,7 @@ void upd_dev_render_page(gfx_canvas_t *c)
         dev_state_t *r = &s_rows[i];
         const int y = UPD_DEVP_Y0 + (int)i * UPD_DEVP_PITCH;
         gfx_text_in(c, gfx_rect_make(UPD_DEVP_TEXT_X, y, UPD_DEVP_TEXT_W, h),
-                    ui_tr(k_words[i].head), DEV_FONT, UI_TEXT_DIM, 1,
+                    upd_dev_head(id, &r->v), DEV_FONT, UI_TEXT_DIM, 1,
                     GFX_ALIGN_LEFT);
         upd_dev_line(id, &r->v, line, sizeof(line));
         gfx_text_in(c, gfx_rect_make(UPD_DEVP_TEXT_X, y + UPD_DEVP_LINE_DY,
