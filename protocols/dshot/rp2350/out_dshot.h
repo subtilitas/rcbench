@@ -18,6 +18,12 @@
  * bidirectional pin idles high between the frames of a run; out_dshot_wake()
  * takes it from the low rest to that idle.
  *
+ * A plain pin's pad has its input switched off while the block drives it
+ * (gpio_set_input_enabled()): nothing reads a plain line back, and a pad
+ * with its input on shows every edge of every frame to a state machine that
+ * samples the pins, such as the remote servo node's capture.  A
+ * bidirectional pad keeps its input: its receiver reads the reply on it.
+ *
  * A frame is sent when the caller asks.  Nothing here has a rate of its own:
  * how often an ESC (electronic speed controller) is told what to do is a
  * property of the project, not of the protocol, and it is the caller's with

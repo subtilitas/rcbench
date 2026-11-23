@@ -39,6 +39,9 @@ the project's notice.
 | the display node's screen: values, highest and lowest, touch, formats, drawing, under the host suite | `firmware/node/main/node_view.c` |
 | the display node's display and touch | `firmware/node/main/node_lcd.c`, `firmware/node/main/node_disp.c` |
 | the console | `firmware/node/main/node_console.c` |
+| the servo role: the UART link to the Core2350B, the pump, the console's `srv` | `firmware/node/main/node_srv_link.c`, `firmware/node/main/node_srv.c` |
+| the servo node's safety decisions and its poll, under the host suite | `firmware/node/main/node_srv_policy.c`, `firmware/node/main/node_srv_poll.c` |
+| the servo node's heartbeat and RUN pins | `firmware/node/main/node_srv_hb.c` |
 | the panel's central for the power node: scan, bind, INFO's check, the RUN marker, under the host suite | `shared/ui/pnode_ctl.c` |
 | the panel's readings, totals, peaks and dropout rule, under the host suite | `shared/ui/pnode_meter.c` |
 | SETUP > WIRELESS' POWER NODE entry | `shared/ui/wireless_pnode.c` |
@@ -536,7 +539,82 @@ Its update image is `rcbench-node-display-<version>.bin`; the panel sends
 it from POWER NODE's row, which reads DISPLAY NODE FIRMWARE for it
 ([Update over Bluetooth LE](#update-over-bluetooth-le)).
 
-## Bluetooth LE
+## The servo node
+
+The servo node is the remote servo node's ES3C28P: the board beside a
+Waveshare Core2350B that runs the IOmcu firmware as board 3
+(`IOMCU_BOARD=rsn`). The servo role polls the Core2350B over a UART
+(universal asynchronous receiver-transmitter) and carries the panel's
+liveness to it on a heartbeat wire. It advertises as `rcbench-srv-XXXX`
+with role byte 3. The board is always on: no sleep, no timer wake.
+
+### Pins of the servo node
+
+| Signal | ES3C28P pin | Core2350B |
+| --- | --- | --- |
+| UART TX, 1,000,000 baud 8N1 | IO43 (TXD0, P2 pin 3, through R39 100Ω) | GPIO1, UART0 RX |
+| UART RX | IO44 (RXD0, P2 pin 4, through R38 100Ω) | GPIO0, UART0 TX |
+| HEARTBEAT | IO21 (P3 pin 4) | GPIO3 and the master switch's monostable |
+| RUN | IO14 (P3 pin 3) | RUN, through an N-channel MOSFET: IO14 high pulls RUN low |
+
+The pin orders come from the ES3C28P schematic; on a delivered board they
+are not known. IO21 and IO14 are driven low from the role's start. The
+servo role runs no power-node screen.
+
+### The link to the Core2350B
+
+UART0 carries each link frame COBS-framed (consistent overhead byte
+stuffing) with a CRC-16 (cyclic redundancy check), as
+[The UART transport](Link.md#the-uart-transport) describes. One request is
+in flight; it is repeated after 50ms and given up after 1000ms, as on the
+panel's CAN link. The ES3C28P's ESP32-S3 ROM prints its boot messages at 115,200 baud
+on the same TX pin; the Core2350B's framing drops them as bad frames.
+Both receivers start as after a 0x00: on a line idle at the start the
+first frame is taken, and noise ends as one refused frame at its 0x00.
+
+| Exchange | Every |
+| --- | --- |
+| IDENTITY: board 3, protocol 4.41 or later | after each link-up; another board or an older protocol is refused |
+| write CONTROL: ARM and THROTTLE | 50ms |
+| read STATUS, 10 registers | 500ms; 50ms while a fault bit is set or an ARM waits |
+| read POWER, 6 registers | 100ms |
+| read SUPPLY, 18 registers | 100ms |
+| read SENSE_WIN_A and SENSE_WIN_B, 32 registers each | 50ms |
+
+### Safety on the servo node
+
+The all-off writes are ARM 0 and THROTTLE 0 on CONTROL, RAIL 0 and
+PORT_WANT 0 on POWER, and OUTPUT 0 on SUPPLY. They are owed from the start
+and after each row below that names them. An exchange in flight is given
+up for them, so they follow within one exchange's wire time. CLEAR and the
+arming frame are given up as well, before they are sent or while they wait,
+once a SAFE, a STOP or a loss is taken, and so is a CONTROL write whose ARM
+differs from the one in force. CONTROL is owed at once while the node wants
+ARM 0 or THROTTLE 0 and the Core2350B may hold a non-zero one, the last
+value it acknowledged or a higher one sent since. A read waiting for its
+answer is given up then, so ARM 0 after a SAFE and THROTTLE 0 after the
+150ms go out at the next pump.
+
+| Event | Servo node does |
+| --- | --- |
+| no KEEPALIVE since the start (STANDALONE) | no heartbeat edge; ARM 0; every ARM refused |
+| a KEEPALIVE without the STOP flag, the Core2350B answering as board 3 | an edge on IO21 every 20ms |
+| no KEEPALIVE for 300ms | PANEL LOST: edges stop, the all-off writes; latched until an ARM is taken |
+| a Bluetooth LE disconnect | the same at once |
+| STOP, or a KEEPALIVE with the STOP flag | the same at once, latched as STOP |
+| no THROTTLE for 150ms while ARMED | THROTTLE 0 written; ARMED stays until the 300ms |
+| no answer from the Core2350B for 1000ms | IOMCU LOST: SAFE, edges stop, the all-off writes owed for its return, IDENTITY read again |
+| no answer for 3000ms | IO14 high for 10ms, once each silence: the Core2350B restarts with its arm latch set |
+| the Core2350B refuses CONTROL's ARM while ARMED | SAFE, the all-off writes |
+
+An ARM is taken with a Bluetooth LE link, a KEEPALIVE in the last 300ms
+without the STOP flag, the Core2350B answering as board 3, and the all-off
+writes answered. The switch to ARMED follows the panel's
+([The first switch to ARMED after a stop](Safety.md#the-first-switch-to-armed-after-a-stop)):
+the edges resume, the node waits 100ms, then reads STATUS every 50ms until
+the heartbeat fault reads clear, and writes CLEAR (0x5AFE) and then ARM.
+A line not trusted 300ms after the ARM gives the switch up: SAFE.
+
 
 The node advertises as `rcbench-pwr-XXXX` or `rcbench-bal-XXXX`, the last two bytes of its address
 in hex, every 100ms while no link stands. The advertising carries the node
@@ -840,6 +918,20 @@ esptool.py --chip esp32s3 write_flash 0x0 \
 A release carries `rcbench-node-display-merged-<version>.bin` for USB and
 `rcbench-node-display-<version>.bin` for the update over Bluetooth LE.
 
+The servo node ([The servo node](#the-servo-node)) on the same board:
+
+```sh
+idf.py -B build-srv -D SDKCONFIG=build-srv/sdkconfig \
+  -D IDF_TARGET=esp32s3 \
+  -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.s3_es3c28p;sdkconfig.servo" build
+idf.py -B build-srv merge-bin -o rcbench-node-srv-merged.bin
+esptool.py --chip esp32s3 write_flash 0x0 \
+  build-srv/rcbench-node-srv-merged.bin
+```
+
+The CI job "Node image" builds it as `rcbench-node-srv-merged-<version>.bin`;
+it takes no update over Bluetooth LE.
+
 A node asleep does not answer on USB. Press RESET to start it, or hold BOOT
 and press RESET for the ROM's download mode.
 
@@ -895,7 +987,34 @@ At start the node prints the rate, the counts of 1g and the DC window:
 The start prints `rcbench node <version>, role pwr, <n> timer wakes before
 this start`.
 
+The servo node's line:
+
+```text
+I (5123) node: srv iomcu up, panel LINKED, SAFE, beat on, faults 0x0000, answered 1520, unanswered 0, refused 0; link up -58dBm, sub 0, bat 0.00V, errors 0, resets 0, dropped 0
+```
+
+| Field | Meaning |
+| --- | --- |
+| `iomcu` | `up` with IDENTITY taken, `none` before it, `LOST` after 1000ms without an answer |
+| `panel` | `STANDALONE`, `LINKED`, `PANEL LOST` or `STOP` |
+| `SAFE` | or `ARM WAIT`, `ARM WRITE`, `ARMED` |
+| `beat` | whether IO21 edges |
+| `faults` | STATUS register 1 as last read |
+| `answered`, `unanswered`, `refused` | exchanges answered, exchanges given up at 1000ms, frames the UART framing or the decode dropped |
+
+| Command | Does |
+| --- | --- |
+| `srv` | the line above, the IDENTITY, the POWER and SUPPLY pages as last read, the counts |
+| `srv ka on`, `srv ka off` | a KEEPALIVE every 50ms from the console and a link, as from a connected panel: the heartbeat edges without a panel; off acts as a Bluetooth LE disconnect. It arms nothing and switches nothing on |
+| `srv stop` | STOP, as the panel's |
+
 ## Current limitations
+
+- The servo node has no panel packets and no control ops of its own yet in
+  `protocols/rcnode`: its KEEPALIVE, STOP, ARM, SAFE and THROTTLE come
+  from the console (`srv ka`, `srv stop`) only, and the panel lists no
+  servo node. It has no screen of its own and does not update the
+  Core2350B's image.
 
 - The panel connects to the power node and to the balance node (SETUP >
   WIRELESS, [Balancing](Balance.md#measuring-with-the-balance-node)).

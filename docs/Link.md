@@ -1729,10 +1729,180 @@ holds its critical alert.
   under. A port without a reading keeps its bit; with the rail or a port on,
   `BEC` keeps the last check.
 
+#### Throttle outputs on board 3
+
+Every output driver runs on S1 to S9: SERVO PWM and MOTOR PWM on the PWM
+slices, PPM, DShot150, DShot300, DShot600 and bidirectional DShot on PIO.
+A throttle output follows the rules of [DShot](DShot.md) as on the other
+boards: a frame every 1ms while ARMED for the throttle, the pin low at
+rest, a bidirectional line released to its pull-up before the first frame
+and between frames. SAFE, STOP, an error, the link failsafe (200ms of
+silence) and a lost heartbeat (150ms) stop every DShot frame and PPM frame
+and every PWM pulse in the pass that sees them; the pins rest low. A
+bidirectional output's telemetry fills BENCH as on the bench, whichever
+slot it is on, slot 9 on OUTPUTS_HI included.
+
+The PIO blocks are placed by fixed rules (`shared/outputs/rsn_pio.c`), the
+ones `tools/pio_budget.py` holds for board 3:
+
+| Block | Takes |
+|---|---|
+| PIO0 | the PD mini UART (12 words, 2 state machines), MIRROR and CAPTURE; nothing else |
+| PIO1, PIO2 | the PIO outputs and the one programming session's line; a line holds its block whole |
+
+- Every block runs at GPIO base 16, set at boot before any program is
+  loaded.
+- An output goes into PIO2 first and into PIO1 once PIO2 is full: up to 8
+  plain DShot or PPM outputs, 4 bidirectional ones (2 a block), or a mix
+  of them in 8 state machines. An output that finds no block is refused
+  with `WHY` SILICON (12).
+- No output goes into the block of a session's line. A KST, ESC wire or
+  Hitec line goes into PIO1 when PIO1 holds no output, else into PIO2 when
+  PIO2 holds none; with an output in each block the session is refused. A
+  Hitec D line with its precharge sampler goes into PIO2 when PIO2 holds
+  no output, else into PIO1, and the sampler takes a state machine and 12
+  words of the other block. During a session the outputs share the other
+  block: 4 plain DShot, 2 bidirectional, or 1 bidirectional and 2 plain;
+  beside the Hitec D sampler 3 plain or 1 bidirectional and 1 plain.
+- At most 6 PPM outputs: 3 DMA channels are fixed (CAPTURE 2, the UART
+  link's receive 1) and a PPM output takes 2 of the 16. The 7th is
+  refused with SILICON.
+- The placement works through the claims: before a driver binds, every
+  free state machine of the blocks the use may not take is claimed, and
+  after the bind those claims are let go. The drivers' own search (PIO2
+  down to PIO0, a free state machine, or a free adjacent pair for
+  bidirectional DShot) then finds only the blocks the rules allow.
+- A plain DShot or PPM pad has its input enable cleared while its block
+  drives it, on every board: CAPTURE sees none of its edges. A
+  bidirectional pad keeps its input for the reply.
+
+SENSE on board 3: the INA228 sits on J26, on the sensor bus of the three
+INA3221. An INA228 address that a fitted INA3221 holds is refused with
+BAD_VALUE: 0x40, 0x41 and 0x42 always, 0x43 when SENSE_MAP fits a fourth
+part. The others up to 0x4F are taken, the MATEK I2C-INA-BM's 0x45 and
+0x44 among them. The schedule reads the 9 channels and the
+INA228 on the 400kHz bus every 1ms tick:
+
+| Read | Without a FAST channel | With S1 as FAST |
+|---|---|---|
+| each channel's current | 111 or 112 a second (1000 / 9) | S1 1000 a second, each other 125 (1000 / 8) |
+| each channel's bus voltage | 41 or 42 a second | 41 or 42 a second |
+| INA228 CURRENT, VBUS | 500 a second each | 500 a second each |
+| INA228 ENERGY, CHARGE | 50 a second each | 50 a second each |
+| the longest tick's bus time | 570µs (228 clocks of 2.5µs) | 690µs (276 clocks) |
+
 `test/host/test_board_fix_rsn.c` holds board 3's catalogue, roles, pages
 and critical limits; `test/host/test_chip_gate.c` the stepping check and
 the writes it refuses; `test/host/test_power_page.c` the POWER page, its
-trips and the BEC check.
+trips and the BEC check; `test/host/test_rsn_pio.c` the block placement
+against a model of the 3 blocks, board 3's table of `tools/pio_budget.py`
+and every order of up to 9 outputs with each session;
+`test/host/test_rsn_throttle.c` the outputs on S1, S3, S5 and S9 at rest
+on SAFE, STOP, an error, the failsafe and a lost heartbeat, BENCH from
+S9's telemetry, the INA228's addresses and the schedule;
+`test/host/test_out_dshot.c` a bidirectional line on S9 idling high
+between frames and a plain pad's input off while its block drives it.
+
+#### Programming on the common rail
+
+On board 3 a KST, Hitec or ESC wire session runs on any of the 9 outputs.
+Its servo's supply is the PD mini through the output's switch
+(`shared/outputs/prog_rail.c`). The session's output is the one whose pin
+its programming port holds, or the ESC wire line's pin. The servo's
+programming voltage is the PD mini's set point, so it is the rail's
+voltage for every port.
+
+| Case | Without the port switches (`FITTED` 0) | With them (`FITTED` 0x1FF) |
+| --- | --- | --- |
+| the session's power cycle (KST 1000ms, classic Hitec entry 500ms) | `RAIL` 0 and 1: every servo on the rail cycles | `PORT_WANT` bit k only; `RAIL` and the other ports stay |
+| CONNECT (KST ENTER and REBOOT from PWM, Hitec OPEN) while another channel is active | refused: KST BUSY, Hitec HELD | taken |
+| a session voltage other than the PD mini's set point | the rail moves for every port; the other channels are OFF by the rule above | every other port's `PORT_WANT` bit is cleared before the PD mini moves; a new bit is refused with BUSY until the session lets go, then it needs the panel's 2s hold |
+| a BEC found (any `BEC` bit) | CONNECT refused: KST BUSY, Hitec HELD, ESC wire OPEN HELD | the same |
+
+- A channel is active while an OUTPUTS slot, or a programming port with a
+  function other than NONE, is bound to its output's pin, or while its
+  PASS `SOURCE` is PASS-THROUGH. A BENCH channel counts through its slot.
+- The ports a session switches off for another voltage have their PASS
+  `SOURCE` set to OFF, except a BENCH channel whose pin a slot holds. A
+  channel comes back on PASS-THROUGH only with a new PASS write.
+- One programming session at a time on the node: while a KST, Hitec or
+  ESC wire session holds a port, CONNECT on every other port is refused
+  (KST BUSY, Hitec HELD, ESC wire HELD). Each CONNECT is judged against
+  the channels as they stand at its own frame: a PROG or OUTPUTS write
+  earlier in the same batch of frames counts. ESC wire's OPEN is judged on its
+  target's output before anything switches: refused with `NO_PIN` while a
+  KST or Hitec session holds a port, with a BEC found, and without the
+  switches while another channel is active.
+- The session's OFF is always taken and leaves the PD mini as it is. Its
+  ON is refused (KST result 32 `SUPPLY`, Hitec `RESULT` 3) while
+  `TRIPPED` stands (until the panel's `RAIL` 1 clears it), without a live
+  heartbeat, on a refused chip, before the critical limits are held, on a
+  throttle output, with a BEC found, without the switches while another
+  channel is active, and after the panel's OFF (`RAIL` 0, `PORT_WANT`
+  without the session's bit, or the SUPPLY page's OUTPUT 0) or a
+  timed-out ON until the session lets go. A trip also ends the session's hold on the rail: no
+  later ON of that session is taken.
+- With the PD mini on at the session's voltage and another port on, the
+  session's ON leaves the PD mini's voltage and the other ports as they
+  are. Otherwise the PD mini is set to the session's voltage: off and on
+  again while the session's output is off, and with the output on only to
+  a voltage no higher than the one it runs at
+  ([A programming port's supply](Safety.md#a-programming-ports-supply)).
+- The current limit: while the PD mini powers a servo (the session's
+  output on, or another port on at the session's voltage), the session's
+  limit is applied only when it is lower than the PD mini's, and then for
+  every port the PD mini feeds; a higher one is not applied. With nothing
+  powered it is taken as asked.
+- With the session's output off, its ON waits for the PD mini: the output
+  (and without the switches the rail) is switched on only on fresh
+  samples of the PD mini's output, taken after the ON (`SAMPLES`
+  advanced; when the ON moved the PD mini, the first sample after it is
+  not counted). Each counts with the PD mini online, read on, its set
+  point asked and read back at the session's voltage, and its output from
+  300mV under to 150mV over it. One such sample switches the output on
+  when the ON did not move the PD mini; when it did, 2 or more in a row
+  spanning 100ms. A sample out of that band, or no sample for 250ms,
+  starts the window anew. Every rule above is judged again at each pass
+  of the wait and before the output is switched on, so every OFF that
+  stands ends the wait: `RAIL` 0, `PORT_WANT` without the session's bit,
+  the SUPPLY page's OUTPUT 0 (also while the PD mini stays on for a
+  running write), a trip, a lost heartbeat and the session's own OFF.
+  Not so within 2500ms: the PD mini is switched off when the ON moved it,
+  the output stays off, and the session's ON stands refused. While it
+  waits the session's supply reads asked on, neither on nor off. Each
+  session times what depends on the servo's power from the pass its
+  supply first reads on: a Hitec POWER starts its listen then (on board 3
+  only; elsewhere at the ON), a KST cycle its 1000ms wait, ESC wire its
+  entry. Their own supply timeouts of 3000ms bound the whole wait; a
+  Hitec POWER whose supply is asked off before it reads on, or does not
+  read on within 3000ms, asks it off and ends with `RESULT` 3.
+- A session ON from `RAIL` 0 clears the other `PORT_WANT` bits: the other
+  ports come on with the panel's own write only.
+- While a session holds its output, a panel write that would switch that
+  output on is refused with BUSY. A write that starts with `RAIL` 0 is
+  still taken for `RAIL`. With the switches, `PORT_WANT` bit k is the
+  session's while it holds output k: it reads set, a write's bit k never
+  switches the output on, and a write without it is the panel's OFF of
+  that output, as `RAIL` 0 is.
+- The panel's OFF (`RAIL` 0, or `PORT_WANT` without the session's bit)
+  reads in the registers at once and switches every other port off at
+  once. It stands as the session's OFF however the rest of the write is
+  answered, also in the session's own off time, and ends a waiting ON:
+  the session's ON is refused and it ends with result `SUPPLY`. While the session writes to the servo's memory (a KST WRITE,
+  RESTORE or RELEASE, a Hitec write and its 150ms tail, as for the SUPPLY
+  page), the session's output stays on and `PORT_ON` shows it, until the
+  write ends and 10000ms after the OFF at most. From that OFF the
+  session's own ON is refused until it lets go.
+- A lost heartbeat, the link failsafe and a trip are not held: the
+  rail and every port go off in that pass, the write is cut, and the
+  servo holds the frames written before the cut. A KST session ends in
+  PWM with result `ABORTED`, and the next CONNECT reads the servo before
+  anything else.
+
+`test/host/test_prog_rail.c` holds the rules; `test_prog_rail_kst.c` and
+`test_prog_rail_hitec.c` run a KST and a Hitec session on them with and
+without the switches; `test_prog_rail_off.c` puts each OFF against a
+waiting ON.
 
 #### The PASS and PASS_STAT pages
 

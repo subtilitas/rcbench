@@ -441,14 +441,20 @@ def test_dshot_events_from_the_headers(tmp_path):
         pb.dshot_events(tmp_path)
 
 
+def _rates_input_on():
+    """The rates of a tree whose plain DShot and PPM pads keep their input."""
+    plain, bidir = pb.dshot_events(REPO)
+    return pb.Rates(plain, bidir, pb.ppm_events(REPO))
+
+
 def test_capture_figures():
     """20,160/s and 406ms with no PIO output; 195,047/s fills the window.
 
-    A plain DShot pad keeps its input enable, so its 32,000 edges a second
-    reach the ring: 8 plain DShot and 1 PWM output give 267,200/s, 30.7ms.
-    4 bidirectional and 5 PWM give 227,680/s, 36.0ms.
+    A plain DShot pad that kept its input enable would put its 32,000
+    edges a second in the ring: 8 plain DShot and 1 PWM output give
+    267,200/s, 30.7ms.  4 bidirectional and 5 PWM give 227,680/s, 36.0ms.
     """
-    rates = pb.capture_rates(REPO)
+    rates = _rates_input_on()
     assert pb.capture_rate(0, 0, 0, rates) == 20160
     assert round(pb.ring_ms(20160)) == 406
     assert pb.capture_rate(8, 0, 0, rates) == 267200
@@ -461,24 +467,49 @@ def test_capture_figures():
 
 
 def test_the_sweep_reports_the_worst_capture(progs):
-    """8 plain DShot is the worst; 19 output mixes lap the ring.
+    """With the pads' input on, 8 plain DShot is the worst; 19 mixes lap.
 
     6 plain DShot outputs are the fewest that lap it (10,080 + 6 x 32,000
     + 3 x 1,120 = 205,440/s).  A session leaves at most 4 plain or 2
     bidirectional, which never laps.  With plain DShot and PPM pads at
-    input enable off only 4 bidirectional outputs lap it.
+    input enable off, as the tree's drivers leave them, only 4
+    bidirectional outputs lap it.
     """
     bp = pb.board_programs(pb.BOARD_RSN, progs)
-    sw = pb.sweep(pb.BOARD_RSN, bp, pb.capture_rates(REPO))
+    sw = pb.sweep(pb.BOARD_RSN, bp, _rates_input_on())
     assert (sw.worst_rate, sw.worst_mix) == (267200, "8 plain")
     assert len(sw.lapping) == 19
     assert {"6 plain", "8 plain", "4 bidirectional"} <= set(sw.lapping)
     assert "5 plain" not in sw.lapping
-    assert (pb.capture_rate(4, 0, 0, pb.capture_rates(REPO))
+    assert (pb.capture_rate(4, 0, 0, _rates_input_on())
             < pb.RING_EVENTS * 1000 // pb.FLASH_WINDOW_MS)
     assert (sw.worst_quiet, sw.lapping_quiet) == (227680,
                                                   ["4 bidirectional"])
     assert sw.allowed > 0 and sw.runs > sw.allowed
+    tree = pb.sweep(pb.BOARD_RSN, bp, pb.capture_rates(REPO))
+    assert (tree.worst_rate, tree.worst_mix) == (227680, "4 bidirectional")
+    assert tree.lapping == ["4 bidirectional"]
+
+
+def test_the_tree_s_drivers_clear_the_input_enable(tmp_path):
+    """out_dshot.c and out_ppm.c clear it: their rates are 0 in the tree.
+
+    A source without the call keeps the rate; a missing one fails.
+    """
+    assert pb.input_cleared(REPO, "plain")
+    assert pb.input_cleared(REPO, "ppm")
+    rates = pb.capture_rates(REPO)
+    assert (rates.plain, rates.ppm) == (0, 0)
+    assert rates.bidir == pb.dshot_events(REPO)[1]
+    src = tmp_path / pb.DRIVER_SOURCES["plain"]
+    src.parent.mkdir(parents=True)
+    src.write_text("pio_gpio_init(pio, pin);\n"
+                   "gpio_set_input_enabled(pin, true);\n")
+    assert not pb.input_cleared(tmp_path, "plain")
+    src.write_text("gpio_set_input_enabled( pin , false );\n")
+    assert pb.input_cleared(tmp_path, "plain")
+    with pytest.raises(pb.BudgetError, match="out_ppm.c"):
+        pb.input_cleared(tmp_path, "ppm")
 
 
 def test_ppm_events_from_ppm_h(tmp_path):
@@ -579,10 +610,17 @@ def test_sessions_stay_out_of_the_capture_guarantee(progs):
     """Session mixes are reported apart; the guarantee is the same.
 
     The session's pin counts its own edges in place of a PWM output's.
-    3 plain DShot beside a Hitec precharge window give 1,954,880 events/s.
+    With the pads' input on, 3 plain DShot beside a Hitec precharge window
+    give 1,954,880 events/s; with the tree's drivers, whose plain pads
+    read 0, 1 bidirectional output gives 1,914,120.
     """
     bp = pb.board_programs(pb.BOARD_RSN, progs)
-    rates = pb.capture_rates(REPO)
+    tree = pb.capture_rates(REPO)
+    quiet = pb.sweep(pb.BOARD_RSN, bp, tree, pb.session_traffic(REPO))
+    assert quiet.session_worst["Hitec D session with precharge"] == (
+        pb.capture_rate(0, 1, 0, tree) - 2 * pb.PWM_HZ + 1843200)
+    assert quiet.session_worst["Hitec D session with precharge"] == 1914120
+    rates = _rates_input_on()
     traffic = pb.session_traffic(REPO)
     with_t = pb.sweep(pb.BOARD_RSN, bp, rates, traffic)
     without = pb.sweep(pb.BOARD_RSN, bp, rates)

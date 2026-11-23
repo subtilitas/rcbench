@@ -32,13 +32,14 @@
  * @brief The 3 letters of a role.
  *
  * @param role RCNODE_ROLE_*.
- * @return "pwr" or "bal", NULL for another role.
+ * @return "pwr", "bal" or "srv", NULL for another role.
  */
 static const char *role_word(uint8_t role)
 {
     switch (role) {
     case RCNODE_ROLE_POWER:   return "pwr";
     case RCNODE_ROLE_BALANCE: return "bal";
+    case RCNODE_ROLE_SERVO:   return "srv";
     default:                  return NULL;
     }
 }

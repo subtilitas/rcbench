@@ -18,8 +18,51 @@ history is in git.
   frame period, missed frames, glitches (a high under 400µs or over
   2600µs) and a signal lost after 3 periods or 100ms, in windows of 50ms.
   A PASS-THROUGH output is driven only while ARMED and is low from the
-  pass that sees SAFE. The decoder is the new module `protocols/passthru`
+  pass that sees SAFE. A channel on PASS-THROUGH counts as active for a
+  programming session on the common rail; a session at another voltage
+  sets the PASS-THROUGH ports it switches off to OFF. PIO0 holds MIRROR,
+  CAPTURE and the PD mini UART. The decoder is the new module `protocols/passthru`
   ([Link, the PASS and PASS_STAT pages](docs/Link.md#the-pass-and-pass_stat-pages)).
+- IOmcu, remote servo node (board 3): KST, Hitec and ESC wire sessions run
+  on the common servo rail. A session's power cycle switches the master
+  rail switch without the port switches and only its own port's switch
+  with them. Without the port switches CONNECT is refused while another
+  channel is active; with them a session at another voltage than the
+  rail's switches every other port off until it ends. CONNECT is refused
+  while the BEC check finds 500mV or more on any port, and on every port
+  while another session holds one. The session's port is switched on only
+  once the PD mini reads the session's voltage (300mV under to 150mV over,
+  100ms settled, 2500ms at most), and a Hitec POWER on the node starts its
+  listen when the port reads on. After a trip no session switches the
+  rail on until the panel's RAIL 1. Every OFF that stands (RAIL 0,
+  PORT_WANT without the session's port, SUPPLY OFF, a trip, a lost
+  heartbeat) ends a session's waiting ON, and each CONNECT is judged
+  against the channels as they stand at its own frame. The panel's OFF of
+  the session's port waits for a write to the servo's memory, 10000ms at
+  most ([Link, Programming on the common rail](docs/Link.md#programming-on-the-common-rail)).
+- Node firmware: the servo role (`CONFIG_RCNODE_ROLE_SERVO`,
+  `sdkconfig.servo`) for the remote servo node's ES3C28P. It polls the
+  Core2350B (board 3) over UART0 at 1,000,000 baud, edges the heartbeat on
+  IO21 every 20ms while a panel's KEEPALIVE is fresh, and writes ARM 0,
+  RAIL 0, PORT_WANT 0 and the supply's OUTPUT 0 at the start, on STOP, on
+  a Bluetooth LE disconnect, 300ms after the last KEEPALIVE and when the
+  Core2350B returns after 1000ms without an answer. A THROTTLE older than
+  150ms is written as 0. 3000ms without an answer pulse the Core2350B's RUN
+  low for 10ms once. The console's `srv ka on` stands in for the panel's
+  KEEPALIVE ([The servo node](docs/Nodes.md#the-servo-node)). The CI job
+  "Node image" builds `rcbench-node-srv-merged-<version>.bin`.
+- `protocols/rcnode`: role 3, `RCNODE_ROLE_SERVO`, named
+  `rcbench-srv-XXXX`.
+- IOmcu board 3, throttle outputs on S1 to S9: MOTOR PWM, PPM, DShot and
+  bidirectional DShot. The PIO blocks are placed by fixed rules: PIO0
+  holds the PD mini UART, every block runs at GPIO base 16, the outputs
+  fill PIO2 and then PIO1, a programming session's line takes a block that
+  holds no output and is refused while both hold one, no output goes into
+  the line's block, and a 7th PPM output is refused with `WHY` SILICON.
+  The INA228 on J26 is refused on an INA3221's address, 0x40 to 0x42; the
+  sensor schedule reads the 9 channels and the INA228 within 690µs of bus
+  time a 1ms tick
+  ([Link: Throttle outputs on board 3](docs/Link.md#throttle-outputs-on-board-3)).
 - The panel updates the display node (the power node on the ES3C28P,
   ESP32-S3) over Bluetooth LE from SETUP > UPDATES. The power node's row
   sends the image of the board the node's INFO names:
@@ -37,6 +80,13 @@ history is in git.
   `rcbench-node-display-merged-<version>.bin` for USB.
 
 ### Changed
+
+- A plain DShot or PPM pad has its input enable cleared while its PIO
+  block drives it, on every board; a bidirectional DShot pad keeps it
+  ([DShot: Which pin](docs/DShot.md#which-pin)).
+  `tools/pio_budget.py` reads this from the drivers: board 3's capture
+  worst case is 227,680 events/s, 36.0ms of the 64KiB ring, and only 4
+  bidirectional DShot outputs lap it in a 42ms flash window.
 
 - `hardware/mechanical/`: `motor_simulator.step` runs the phase tap's lead
   out of the boot of the clip on corner C, beside the resistor's wire,

@@ -34,6 +34,7 @@
 
 #if IOMCU_BOARD_RSN
 
+#include "iomcu_rsn_pio.h"
 #include "pass_cap.h"
 #include "pass_decode.h"
 #include "pass_ring.h"
@@ -46,11 +47,15 @@ static uint16_t    s_thru_low;   /**< bit k: output k's pad is driven low */
 
 void thru_boot(uint32_t now_ms)
 {
-    /* JOIN #941 (A8, rsn_pio.h): wrap pass_cap_start() in
-     * place_begin(RSN_PIO_FIXED, RSN_PIN_OUT0) / place_end(cap).  It
-     * claims its state machines in PIO0 by name already, and A8's
-     * place_boot() sets the GPIO base 16 that pass_cap_start() sets. */
-    const bool cap = !rsn_chip_refused() && pass_cap_start();
+    /* The fixed load's placement (rsn_pio.h): the fence claims PIO1's and
+     * PIO2's free state machines, so MIRROR and CAPTURE go into PIO0, at
+     * the GPIO base 16 that place_boot() set and pass_cap_start() sets
+     * again. */
+    bool cap = false;
+    if (!rsn_chip_refused() && place_begin(RSN_PIO_FIXED, RSN_PIN_OUT(0))) {
+        cap = pass_cap_start();
+        place_end(cap);
+    }
     pass_dec_init(&s_thru_dec, time_us_32());
     pass_ring_init(&s_thru_ring);
     pass_page_init(&s_thru, cap, now_ms);

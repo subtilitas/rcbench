@@ -1413,6 +1413,29 @@ of the same address, with the owed display update kept, and cleared with
 the owed update dropped on another address and an unbind
 (`test_pnode_ctl`).
 
+### The servo node
+
+Built and host-tested: the servo role on the ES3C28P for the remote servo
+node ([docs/Nodes.md](docs/Nodes.md), "The servo node"; `firmware/node`,
+`sdkconfig.servo`, 475,920 bytes, 30.2% of a slot). Its safety decisions
+(`node_srv_policy.c`, `test_node_srv_policy`: the KEEPALIVE age at 299ms
+and 300ms, the THROTTLE age at 149ms and 150ms, the Core2350B lost at
+999ms and 1000ms, the RUN pulse at 2,999ms and 3,000ms and once a silence,
+STOP by op and by flag, a Bluetooth LE disconnect, each ARM precondition,
+the switch to ARMED at the 100ms settle and given up at 300ms, a STOP
+during the arming frame, SAFE, the STOP flag, a Bluetooth LE disconnect
+and the KEEPALIVE timeout during CLEAR and during the settle arming
+nothing, SAFE and a throttle's 150ms during each read giving it up for ARM 0 or
+THROTTLE 0, STANDALONE driving nothing for 60s, each timeout
+across the 32-bit ms clock's wrap) and its poll (`node_srv_poll.c`,
+`test_node_srv_poll`: each period at its last and first millisecond,
+STATUS at 50ms while fast, one exchange a row after a stall, the wrap; the
+receiver taking the first answer after the start and dropping and counting
+noise before it).
+The UART link, the heartbeat on IO21 and the RUN pulse on IO14 build for
+the ES3C28P; the link host and the framing under them are the suites of
+`link_host.c` and `link_uart.c`. The panel has no client for it.
+
 ### Firmware update over Bluetooth LE
 
 Built and host-tested: the update protocol (`protocols/bleota`): every
@@ -1511,7 +1534,10 @@ glitches under 400µs or over 2600µs, a signal lost after 3 periods or
 100ms. Both programs run in a cycle-counting model in `test_pass_pio`,
 end to end into the decoder at 560Hz and 40Hz; the decoder's rules in
 `test_pass_decode`, the ring and its lap in `test_pass_ring`, the pages in
-`test_pass_page`, the refusal on a chip before A4 in `test_chip_gate`.
+`test_pass_page`, the refusal on a chip before A4 in `test_chip_gate`,
+PASS-THROUGH beside a programming session on the common rail (CONNECT
+refused at `FITTED` 0, a dropped port's `SOURCE` OFF at `FITTED` 0x1FF,
+`FLAGS` bits 0 and 1 in one window) in `test_prog_rail_pass`.
 
 Not measured: the delay input to output on the Core2350B, the 2-cycle
 input delay the model assumes, the stamp's lag behind the push, and the
@@ -1756,7 +1782,7 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 | --- | --- | --- |
 | `ci.yml` | push to `main`, the label `ci` added to a pull request, tag `v*`, manual | on Ubuntu 26.04: the host suite in five parallel jobs, joined by the job the branch ruleset requires; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check`; the Codecov upload in a job of its own that no required check needs, which fails when the upload fails; the font, screenshot, fit, translated-format, docs, mutation-run figure and wiki-link checks; `check_protocols.py --check`; `pio_budget.py --check`, the PIO and DMA budget of every board; clang-tidy 22.1.8 and cppcheck 2.17.1 over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff with its docstring (D) rules; the pytest cases of the tools (`test/tools/`); `tools/doc_check.py --check`, the Doxygen comments of the C sources against `tools/doc_check_baseline.txt`, which on a pull request also fails on any warning in a C file the pull request adds or on a line it changes, on a C file it changes that has no `@file` block with a `@brief`, and on a comment block without `@brief` it adds or edits; on a pull request `tools/mutate.py` on the changed lines of `shared/` and of the cores under `protocols/`, which reports survivors and does not fail on one; the panel build on ESP-IDF (Espressif Internet-of-Things Development Framework) v6.1 for the ESP32-P4, with the check of the generated sdkconfig against `sdkconfig.defaults`, of the image against its update slot, of the embedded IOmcu image, of the touch injector and of exFAT, and a second build without the injector; the pico-sdk build of the IOmcu with `pinmap_check.py` and the stack check of its two cores, a second build with `-DSENSE_TRACE=ON`, with the same stack check, that fails when the default image holds a trace symbol, and a third with `-DIOMCU_CONSOLE=ON`, with the same stack check, that fails when the default image holds a console symbol; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/`, manual | waits for the CI run on the same commit (`tools/ci_gate.py`, at most 5400s) and publishes `docs/` to the GitHub wiki when it passed |
-| `mutation.yml` | Sunday 03:17 UTC, manual | the mutants of the lines of `shared/safety` and `shared/outputs` (7230 mutants in 94 files) in 6 parallel shards, no mutant limit; `shared/safety` leads the list, `arming.c`, `heartbeat.c`, `stop_latch.c`, `touch_loss.c` and `prog5v_lost.c` at its head, and shard i takes every 6th mutant from place i; no mutant is started after 18000s in a shard, about 428 mutants at 42s each, so the 699 mutants of `shared/safety` run every week and about 1,869 of the 6531 of `shared/outputs`; a shard that leaves mutants unrun says so in a warning annotation and in its summary, with the count for each file; does not fail on a survivor or on mutants left; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
+| `mutation.yml` | Sunday 03:17 UTC, manual | the mutants of the lines of `shared/safety` and `shared/outputs` (7622 mutants in 98 files) in 6 parallel shards, no mutant limit; `shared/safety` leads the list, `arming.c`, `heartbeat.c`, `stop_latch.c`, `touch_loss.c` and `prog5v_lost.c` at its head, and shard i takes every 6th mutant from place i; no mutant is started after 18000s in a shard, about 428 mutants at 42s each, so the 699 mutants of `shared/safety` run every week and about 1,869 of the 6923 of `shared/outputs`; a shard that leaves mutants unrun says so in a warning annotation and in its summary, with the count for each file; does not fail on a survivor or on mutants left; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
 | `release.yml` | tag `v*`, manual for a tag | waits for the CI run on the tagged commit and, when it passed, builds both images, packages them with checksums, creates a release, a pre-release for an odd minor number (`tools/release_kind.py`); beside that, without holding the release back, runs the configurator data check (`configurator/core/tools/check-annotate.sh --warn-only`) and shows each warning, such as a release tag newer than the configurator data, as an annotation and in the run summary |
 | `dial.yml` | called by `ci.yml` and `release.yml` | the M5Stack Dial's image on ESP-IDF v6.1 for the ESP32-S3 and its test build with `RCBENCH_DIAL_HOOKS=ON`; the generated sdkconfig against `sdkconfig.defaults`, both images against their update slot, no hook in the released image; artifact `dial` |
 | `pages.yml` | the label `ci` added to a pull request, and a push to `main`, touching `configurator/`, `help/`, `docs/img/`, the help generator, the `Doxyfile` or `tools/install_doxygen.sh` (a push to a pull request starts no run); a push to `main` touching the C sources as well | type check, tests, data check, size budget and Playwright browser tests of the configurator; the web help; the C API (application programming interface) reference built by Doxygen 1.18.0; on a push to `main` it publishes the built page to GitHub Pages, with the help under `help/` and the API reference under `api/`. A run that changes only the C sources, the `Doxyfile` or `tools/install_doxygen.sh` builds the configurator page without its checks and runs no Playwright test |
@@ -1771,7 +1797,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 633 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 642 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1825,7 +1851,7 @@ The host suite is 633 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_sense_link_view`, `test_sense_map_link`, `test_sense_win_link`,
 `test_sense_limit_link`, `test_log_cols`, `test_log_throttle`, `test_sense_windows`, `test_servo_source`,
 `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`, `test_dshot_cadence`, `test_out_dshot`, `test_ppm`,
-`test_outbind`, `test_outbind_take`, `test_board_fix`, `test_board_fix_rsn`, `test_chip_gate`, `test_power_page`, `test_outputs_screen`, `test_outputs_screen_draw`,
+`test_outbind`, `test_outbind_take`, `test_board_fix`, `test_board_fix_rsn`, `test_chip_gate`, `test_power_page`, `test_rsn_pio`, `test_rsn_throttle`, `test_prog_rail`, `test_prog_rail_kst`, `test_prog_rail_hitec`, `test_prog_rail_off`, `test_prog_rail_pass`, `test_outputs_screen`, `test_outputs_screen_draw`,
 `test_outputs_screen_off`, `test_outputs_screen_port`, `test_outputs_screen_carrier`,
 `test_prog_choice`, `test_layout_screen`, `test_outputs_layout`, `test_outputs_view`,
 `test_picker_screen`, `test_picker_screen_hold`, `test_picker_screen_table`,
@@ -1898,7 +1924,7 @@ The host suite is 633 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`, `test_servo_dial_runs`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
-`test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_view`,
+`test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_srv_policy`, `test_node_srv_poll`, `test_node_view`,
 `test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client`, `test_devimg`, `test_devimg_board`, `test_upd_dev`, `test_upd_fetch`,
 `test_upd_wizard`, `test_upd_wizard_map`, `test_upd_wiz_view` and `test_harness`.
 
@@ -2739,7 +2765,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `protocols/witmotion/witmotion.c` | 118 | 118 | 100.0% |
 | `protocols/rcnode/rcnode.c` | 311 | 309 | 99.4% |
 | `protocols/rcnode/rcnode_win.c` | 97 | 96 | 99.0% |
-| `protocols/rcnode/rcnode_adv.c` | 104 | 102 | 98.1% |
+| `protocols/rcnode/rcnode_adv.c` | 105 | 104 | 99.0% |
 | `protocols/bleota/bleota.c` | 115 | 115 | 100.0% |
 | `protocols/bleota/bleota_dev.c` | 313 | 309 | 98.7% |
 | `protocols/dialknob/dialknob.c` | 530 | 520 | 98.1% |
@@ -2747,7 +2773,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `protocols/dialknob/dk_face.c` | 111 | 111 | 100.0% |
 | `shared/logfile/servo_store.c` | 267 | 265 | 99.2% |
 | `shared/outputs/kst_port.c` | 665 | 664 | 99.8% |
-| `shared/outputs/hitec_port.c` | 525 | 524 | 99.8% |
+| `shared/outputs/hitec_port.c` | 552 | 549 | 99.5% |
 | `shared/outputs/esc_port.c` | 585 | 585 | 100.0% |
 | `shared/outputs/console_tunnel.c` | 78 | 78 | 100.0% |
 | `shared/outputs/esc_console.c` | 92 | 92 | 100.0% |
@@ -2807,7 +2833,9 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/outputs/out_bind_take.c` | 100 | 99 | 99.0% |
 | `shared/outputs/board_fix.c` | 152 | 152 | 100.0% |
 | `shared/outputs/chip_gate.c` | 5 | 5 | 100.0% |
-| `shared/outputs/power_page.c` | 209 | 206 | 98.6% |
+| `shared/outputs/power_page.c` | 255 | 252 | 98.8% |
+| `shared/outputs/prog_rail.c` | 229 | 221 | 96.5% |
+| `shared/outputs/rsn_pio.c` | 127 | 124 | 97.6% |
 | `shared/outputs/out_pwm_map.c` | 20 | 20 | 100.0% |
 | `shared/outputs/servo_page.c` | 240 | 238 | 99.2% |
 | `shared/outputs/supply_page.c` | 360 | 357 | 99.2% |
@@ -2901,7 +2929,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **106136** | **103859** | **97.9%** |
+| **total** | **106566** | **104277** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -3138,7 +3166,7 @@ stop, a pulled cable, the input lowered under a live set point in 0.5V steps.
 `stack_check.py --iomcu` measures 1560 bytes for the deepest chain and 528 for one interrupt
 on the 4096-byte stack, 1752 bytes above the 256-byte margin. The figures are those of the
 image CI builds with arm-none-eabi-gcc 14.2.1, and `stack_check.py --iomcu --check-doc`
-holds them. The depth is a lower bound: 262 calls through a register are not followed. The
+holds them. The depth is a lower bound: 266 calls through a register are not followed. The
 stack has no guard (`PICO_USE_STACK_GUARDS` is off). Not measured on hardware. An image
 built with another option set is measured only when CI builds it.
 

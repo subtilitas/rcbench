@@ -18,6 +18,7 @@
 #include "ew_line.h"
 #include "esc_console.h"
 #include "iomcu.h"
+#include "iomcu_rsn_pio.h"
 #include "page_console.h"
 
 /** @brief What one step does. */
@@ -192,6 +193,7 @@ static void finish(const char *why)
     const unsigned pin = s_line.pin;
 
     ew_line_close(&s_line);
+    place_line_gone();
     s_console_pins = 0u;
     reserve_held();
     s_step = NULL;
@@ -265,7 +267,13 @@ bool ewline_console_line(void *ctx, char **tok, unsigned n)
         return true;
     }
     ew_line_init(&s_line);
+    /* On board 3 into a block that holds no output (iomcu_rsn_pio.h). */
+    if (!place_begin(RSN_PIO_LINE, (uint8_t)pin)) {
+        console_hw_say("err ewline: no PIO block free\n");
+        return true;
+    }
     e = ew_line_open(&s_line, (unsigned)pin);
+    place_end(e == EW_LINE_OK);
     if (e != EW_LINE_OK) {
         console_hw_say("err ewline: open %d\n", (int)e);
         return true;

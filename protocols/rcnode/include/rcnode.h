@@ -39,6 +39,7 @@ extern "C" {
 /** @brief Roles: which sensor a node carries. @{ */
 #define RCNODE_ROLE_POWER   1u  /**< an INA228 on the ESC's (electronic speed controller's) XT60 power path */
 #define RCNODE_ROLE_BALANCE 2u  /**< a vibration sensor and an index sensor */
+#define RCNODE_ROLE_SERVO   3u  /**< the remote servo node's ES3C28P and its Core2350B */
 /** @} */
 
 /** @brief The 16-bit part of each UUID (universally unique identifier). @{ */
