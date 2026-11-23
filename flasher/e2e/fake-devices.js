@@ -21,6 +21,9 @@
 //                          of the range that holds this flash offset.
 //   espBadMd5: true        the ESP flasher stub answers every MD5 request
 //                          with an MD5 of other bytes: the verify fails.
+//   espResetFail: true     the first change of the serial lines after an MD5
+//                          request fails: the hard reset after a verify
+//                          fails. The port refuses a second open while open.
 //   rpCorrupt: true        the RP2350 boot ROM returns every read with its
 //                          first byte inverted: the read back fails.
 //   rpDelayMs: n           the RP2350 boot ROM answers each command n ms late,
@@ -145,11 +148,18 @@
       writable: null,
       getInfo: () => (cfg.esp && cfg.esp.usb ? { usbVendorId: cfg.esp.usb[0], usbProductId: cfg.esp.usb[1] } : { usbVendorId: 0x303a, usbProductId: 0x1001 }),
       async open() {
+        if (port.readable) throw new DOMException('The port is already open.', 'InvalidStateError');
         port.readable = new ReadableStream({ start(c) { ctrl = c; }, cancel() { ctrl = null; } });
         port.writable = new WritableStream({ write(chunk) { feed(chunk); } });
       },
       async close() { ctrl = null; port.readable = null; port.writable = null; },
-      async setSignals() { stub = false; },
+      async setSignals() {
+        if (cfg.espResetFail && state.espMd5.length && !state.resetFailed) {
+          state.resetFailed = true;
+          throw new DOMException('The device has been lost.', 'NetworkError');
+        }
+        stub = false;
+      },
       async setBaudRate(baud) { state.espBauds.push(baud); },
       addEventListener() {},
       removeEventListener() {},

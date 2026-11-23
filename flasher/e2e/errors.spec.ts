@@ -162,3 +162,16 @@ test('an RP2350 read back that differs: the error in step Verify, CONNECT AGAIN 
   await page.locator('#connect-again').click();
   await expectStep(page, 'connect');
 });
+
+test('a reset that fails after a passed verify: Done with the RESET hint, and the port is released for the next CONNECT', async ({ page }) => {
+  await setup(page, { esp: { chipId: 9 }, espResetFail: true });
+  await walk(page, 'wireless', 'dial');
+  await connectEsp(page);
+  await page.locator('#write').click();
+  await expectStep(page, 'done');
+  await expect(page.locator('#result.ok')).toContainText(label(page, 'Press RESET', 'Drücke RESET'));
+  await page.locator('#again').click();
+  await expectStep(page, 'connect');
+  await connectEsp(page);
+  await expectImage(page, FILES.dial, IMAGES.dial);
+});

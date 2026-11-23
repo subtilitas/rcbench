@@ -48,7 +48,7 @@ The error states:
 | Check | the signature does not match | a red note, WRITE disabled |
 | Check | the release has no signature | an information note, WRITE enabled |
 | Write | the write or the verify fails | the failed phase, the reason and a hint, CONNECT AGAIN (Connect, the image kept), CANCEL |
-| Write | the reset after a verify that passed fails | goes to Done with "press RESET" |
+| Write | the reset after a verify that passed fails | the port is closed; goes to Done with "press RESET" |
 
 ### Release of the visit
 
@@ -67,6 +67,8 @@ back and the page's BACK are the same move.
 - Back from Check to Connect keeps the connection; Connect then shows it
   with NEXT and DISCONNECT. Back from Connect drops it; back to Board or
   Task drops the image too.
+- The page has simple mode only: a hash with `adv=1` opens simple mode and
+  the URL loses `adv=1`.
 - A reload or a pasted link lands at most on Connect: connection and image
   are not in the URL.
 - While a write runs, BACK and CANCEL are disabled and the browser's back

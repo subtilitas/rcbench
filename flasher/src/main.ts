@@ -89,6 +89,9 @@ function onBack(): void {
   go(m.wiz, 'replace');
 }
 
+/** The page has simple mode only: a hash with `adv=1` is read as simple mode. */
+const simple = (w: Wiz): Wiz => (w.advanced ? { ...w, advanced: false } : w);
+
 const ORDER = ['task', 'board', 'prepare', 'connect', 'check', 'write', 'done'];
 
 /** The browser's back or forward: the state of the entry, held to the facts. */
@@ -104,7 +107,7 @@ function onPop(): void {
     go(startOver(cur).wiz, 'push');
     return;
   }
-  const want = fromHash(location.hash);
+  const want = simple(fromHash(location.hash));
   const sameBoard = want.board !== null && want.task === cur.task && want.board === cur.board;
   // Back past Connect drops the connection; back to Board or Task, or to another board, the image too.
   if (!sameBoard || ORDER.indexOf(want.step) < ORDER.indexOf('connect')) {
@@ -113,7 +116,7 @@ function onPop(): void {
   const w = clamp(want, facts());
   st.wiz = w;
   if (w.board && !st.image && !st.loading && !st.imageNote) chooseImage();
-  if (toHash(w) !== toHash(want)) history.replaceState({ depth: depth() }, '', urlOf(w));
+  if (urlOf(w) !== (location.hash || location.pathname + location.search)) history.replaceState({ depth: depth() }, '', urlOf(w));
   render();
 }
 
@@ -165,7 +168,7 @@ async function main(): Promise<void> {
   window.addEventListener('popstate', onPop);
   window.addEventListener('beforeunload', (e) => { if (st.writing) e.preventDefault(); });
   // A reload or a pasted link: connection and image are not in the URL, so clamp lands at most on Connect.
-  st.wiz = clamp(fromHash(location.hash), facts());
+  st.wiz = clamp(simple(fromHash(location.hash)), facts());
   history.replaceState({ depth: 0 }, '', urlOf(st.wiz));
   render();
   if (!hasSerial && !hasUsb) return;

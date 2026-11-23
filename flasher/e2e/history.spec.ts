@@ -88,3 +88,15 @@ test('an unknown hash opens Task', async ({ page }) => {
   await setup(page, { esp: { chipId: 18 } }, { hash: 't=nothing&s=check' });
   await expectStep(page, 'task');
 });
+
+test('a pasted hash with adv=1 opens simple mode: no Core2350B, no adv in the URL', async ({ page }) => {
+  await setup(page, { iomcu: true }, { hash: 't=iomcu&b=core2350b&s=connect&adv=1' });
+  await expectStep(page, 'board');
+  await expect(page).not.toHaveURL(/adv=1/);
+  await expect(page.locator('[data-board]')).toHaveCount(2);
+  await expect(page.locator('[data-board="core2350b"]')).toHaveCount(0);
+  await page.goto('./#adv=1');
+  await expectStep(page, 'task');
+  await expect(page).not.toHaveURL(/adv=1/);
+  await expect(page.locator('#tiles [data-task]')).toHaveCount(4);
+});
