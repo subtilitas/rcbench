@@ -603,6 +603,8 @@ def _check_scope(scene: dict, where: str, errors: list) -> None:
         if not (isinstance(pos, list) and len(pos) == 2
                 and 0 <= pos[0] < FRAME[0] and 0 <= pos[1] < FRAME[1]):
             errors.append(f"{at}: at must be [x, y] inside the frame")
+        if not isinstance(label.get("leader", True), bool):
+            errors.append(f"{at}: leader must be true or false")
         if not isinstance(label.get("title"), str):
             errors.append(f"{at}: title is missing")
         if label.get("style", "ok") not in STYLES:

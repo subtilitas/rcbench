@@ -3593,7 +3593,17 @@ static void pose_motor_tools(ui_screen_id_t id, const char *view)
                 stick_open("Hobbywing", NULL);  /* its FLYFUN models */
             }
         } else if (strcmp(view, "motor-stick") != 0) {
-            stick_open("Hobbywing", "hobbywing-flyfun-8item");
+            /* motor-stick-flydragon-run and -done: the same run on the
+             * Flycolor FlyDragon Lite+ 40A, item 3 changed. */
+            const bool fly = strncmp(view, "motor-stick-flydragon-", 22) == 0;
+            if (fly) {
+                view = strcmp(view + 22, "run") == 0 ? "motor-stick-run"
+                                                     : "motor-stick-done";
+                stick_open_model("Flycolor", "flycolor-flydragon-lite-plus",
+                                 "FlyDragon Lite+ 40A");
+            } else {
+                stick_open("Hobbywing", "hobbywing-flyfun-8item");
+            }
             if (strncmp(view, "motor-stick-timing", 18) == 0) {
                 /* The footer's SETTINGS: the 14 stick settings. */
                 tap(RS_SET_X, UI_BAND_H + RS_RUN_CY);
@@ -3606,6 +3616,8 @@ static void pose_motor_tools(ui_screen_id_t id, const char *view)
                     tap(v.x + v.w / 2, UI_BAND_H + v.y + v.h / 2);
                     kp_type(esc_stick_panel_keypad(), "250");
                 }
+            } else if (fly) {
+                tap(RS_STEP_UP_X, UI_BAND_H + RS_STEP_CY(2));
             } else {
                 /* Cutoff mode to hard, startup mode to soft. */
                 for (int i = 0; i < 2; ++i) {
@@ -3659,7 +3671,8 @@ static void pose_motor_tools(ui_screen_id_t id, const char *view)
                           && run->det.high)
                          || (strcmp(view, "motor-stick-tone") == 0
                              && beep_in))
-                        && run->phase == ESC_STICK_ITEMS && run->groups >= 4u
+                        && run->phase == ESC_STICK_ITEMS
+                        && run->groups >= (fly ? 2u : 4u)
                         && esc_stick_beeps(run) >= 2u) {
                         break;
                     }

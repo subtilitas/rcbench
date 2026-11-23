@@ -112,8 +112,8 @@
       -41.6
      ],
      "text": "J9 · phase tap",
-     "side": "t",
-     "d": 80
+     "side": "l",
+     "d": 70
     },
     {
      "from": 9.4,
@@ -124,8 +124,8 @@
       -35.4
      ],
      "text": "J1 · throttle signal",
-     "side": "r",
-     "d": 90
+     "side": "t",
+     "d": 110
     }
    ],
    "say": [
@@ -210,8 +210,8 @@
       -1.9
      ],
      "at": [
-      1330,
-      250
+      1040,
+      170
      ],
      "size": "sm",
      "title": "RP2350",
@@ -558,7 +558,7 @@
       0.9
      ],
      "at": [
-      720,
+      80,
       730
      ],
      "side": "t",
@@ -570,11 +570,11 @@
      "to": 21.86,
      "anchor": [
       "p",
-      7940000000.0,
-      1.9
+      8250000000.0,
+      0.3
      ],
      "at": [
-      720,
+      800,
       730
      ],
      "side": "t",
@@ -1087,7 +1087,8 @@
       170
      ],
      "title": "The motor is the speaker",
-     "text": "The ESC switches the supply onto the windings at the tone's rate. The tapped lead carries those pulses."
+     "text": "The ESC switches the supply onto the windings at the tone's rate. The tapped lead carries those pulses.",
+     "leader": false
     },
     {
      "from": 12.74,
@@ -1101,7 +1102,8 @@
       170
      ],
      "title": "Bursts of the carrier",
-     "text": "Each tone period holds one burst of PWM pulses. The model: 12 kHz, the FlyDragon's PWM setting, 3 pulses a burst."
+     "text": "Each tone period holds one burst of PWM pulses. The model: 12 kHz, the FlyDragon's PWM setting, 3 pulses a burst.",
+     "leader": false
     },
     {
      "from": 21.79,
@@ -1116,7 +1118,8 @@
      ],
      "style": "ok",
      "title": "4.7 kΩ, 3.0 V zener, 8.2 kΩ",
-     "text": "0.98 mA through the 4.7 kΩ at 7.6 V. An open RP2350 input needs the outer pull-down: its own does not hold it low."
+     "text": "0.98 mA through the 4.7 kΩ at 7.6 V. An open RP2350 input needs the outer pull-down: its own does not hold it low.",
+     "leader": false
     },
     {
      "from": 35.209999999999994,
@@ -1131,7 +1134,8 @@
      ],
      "style": "ok",
      "title": "3.0 V at any supply",
-     "text": "At 20 V, 3.6 mA flow through the 4.7 kΩ. The PD mini supplies up to 20 V."
+     "text": "At 20 V, 3.6 mA flow through the 4.7 kΩ. The PD mini supplies up to 20 V.",
+     "leader": false
     }
    ],
    "say": [
@@ -1312,11 +1316,11 @@
      "to": 10.879999999999999,
      "anchor": [
       "p",
-      817703.3492822966,
+      880000.0,
       -1.5
      ],
      "at": [
-      720,
+      790,
       730
      ],
      "side": "t",
@@ -1332,7 +1336,7 @@
       -0.9
      ],
      "at": [
-      720,
+      56,
       730
      ],
      "side": "t",
@@ -1349,7 +1353,7 @@
       -0.9
      ],
      "at": [
-      720,
+      1320,
       730
      ],
      "side": "t",
@@ -1365,7 +1369,7 @@
       -2.1
      ],
      "at": [
-      720,
+      400,
       730
      ],
      "side": "t",
@@ -1378,11 +1382,11 @@
      "to": 51.08,
      "anchor": [
       "p",
-      1056937.7990430621,
+      920000.0,
       -1.5
      ],
      "at": [
-      720,
+      830,
       730
      ],
      "side": "t",
@@ -1613,10 +1617,10 @@
      "anchor": [
       "p",
       50041666.666666664,
-      2.0
+      0.7
      ],
      "at": [
-      1110,
+      100,
       600
      ],
      "side": "t",
@@ -1629,10 +1633,10 @@
      "anchor": [
       "p",
       50478468.89952153,
-      2.3
+      0.7
      ],
      "at": [
-      1110,
+      490,
       600
      ],
      "side": "t",
@@ -1644,12 +1648,12 @@
      "from": 27.73,
      "to": 38.18,
      "anchor": [
-      "p",
-      177500000.0,
-      0.8
+      "w",
+      190000000.0,
+      2.0
      ],
      "at": [
-      1110,
+      1450,
       900
      ],
      "side": "t",
@@ -1848,10 +1852,10 @@
      "anchor": [
       "p",
       115000000.0,
-      1.9
+      0.6
      ],
      "at": [
-      1110,
+      56,
       560
      ],
      "side": "t",
@@ -1863,11 +1867,11 @@
      "to": 17.849999999999998,
      "anchor": [
       "p",
-      1000000000.0,
-      0.9
+      1100000000.0,
+      0.6
      ],
      "at": [
-      1110,
+      840,
       560
      ],
      "side": "t",
@@ -1880,11 +1884,11 @@
      "to": 37.730000000000004,
      "anchor": [
       "m",
-      12000000000.0,
-      1.9
+      12600000000.0,
+      0.5
      ],
      "at": [
-      1110,
+      1230,
       900
      ],
      "side": "t",
@@ -1963,7 +1967,7 @@
      "say": "Under motor and E S C, program, the controller is picked from the list, with the setting to change."
     },
     {
-     "view": "motor-stick-run",
+     "view": "motor-stick-flydragon-run",
      "dur": 6,
      "n": 7,
      "kicker": "07 · On the bench",
@@ -1977,7 +1981,7 @@
      "say": "Then run. The bench powers the controller, listens, and moves the throttle at the right group."
     },
     {
-     "view": "motor-stick-done",
+     "view": "motor-stick-flydragon-done",
      "dur": 5,
      "n": 7,
      "kicker": "07 · On the bench",
