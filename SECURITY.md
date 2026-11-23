@@ -199,8 +199,16 @@ Current limitations:
   images, neither of the ones it carries nor of ones it downloads; those
   updates check the SHA-256 the panel sends (see the wireless devices
   below).
-- The web flasher (`/rcbench/flash/`) copies each image's `.sig` beside it
-  and neither checks nor shows it.
+- The web flasher (`/rcbench/flash/`) downloads each release image's
+  `.sig` and verifies it in the browser with Web Crypto against the
+  embedded release public key, by the panel's rules (P-256 DER signature,
+  8 to 72 bytes). It shows "signed by the rcbench release key", "no
+  signature" or "signature does not match" before WRITE, and warns only:
+  WRITE stays possible in every state. A local file is checked only
+  against a `.sig` the user picks beside it; without one the page shows
+  "local file, signature not checked". The page and its key come from the
+  same GitHub Pages site as the images, so a party able to change that
+  site can change the key the page checks against.
 - Certificate validity dates are not checked, even after NTP (Network
   Time Protocol) sets the clock. mbedTLS is built with
   `CONFIG_MBEDTLS_HAVE_TIME_DATE` off, the ESP-IDF default. An expired

@@ -67,6 +67,20 @@ const S = {
   imgLocal: ['local file, no manifest to compare', 'lokale Datei, kein Manifest zum Vergleich'],
   imgErase: ['Also erases', 'Löscht außerdem'],
   imgEraseB: ['slot B, {x}: the written image is the one that starts', 'Slot B, {x}: das geschriebene Image ist das, das startet'],
+  sigFile: ['Signature file of the image (.sig, optional)', 'Signaturdatei des Images (.sig, optional)'],
+  sigSigned: ['Signature: signed by the rcbench release key ({file}).', 'Signatur: signiert mit dem rcbench-Release-Schlüssel ({file}).'],
+  sigNone: [
+    'Signature: no signature. {file} is missing or empty. WRITE stays possible.',
+    'Signatur: keine Signatur. {file} fehlt oder ist leer. SCHREIBEN bleibt möglich.',
+  ],
+  sigMismatch: [
+    'Signature: signature does not match ({file}). The rcbench release key did not sign this image. WRITE stays possible.',
+    'Signatur: Signatur stimmt nicht ({file}). Der rcbench-Release-Schlüssel hat dieses Image nicht signiert. SCHREIBEN bleibt möglich.',
+  ],
+  sigLocal: [
+    'Signature: local file, signature not checked. Choose its .sig file as well to check it.',
+    'Signatur: lokale Datei, Signatur nicht geprüft. Wähle auch ihre .sig-Datei, um sie zu prüfen.',
+  ],
   bytes: ['{n} bytes', '{n} Bytes'],
   hashBad: [
     'The download does not match the manifest: SHA-256 {got}, {want} expected. Nothing is written. Reload the page and try again.',

@@ -7,10 +7,11 @@
 
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { createHash } from 'node:crypto';
+import { createHash, generateKeyPairSync, sign } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { NODE_PARTS, PANEL_TABLE_V0_23_15, makeEspImage, makeMerged, makeTable, makeUf2 } from '../test/fixtures.ts';
 import { FAMILY } from '../src/uf2.ts';
+import { RELEASE_KEY_PEM } from '../src/release_key.ts';
 
 const FAKES = fileURLToPath(new URL('./fake-devices.js', import.meta.url));
 const sha = (b: Uint8Array): string => createHash('sha256').update(b).digest('hex');
@@ -32,6 +33,15 @@ const FILES: Record<string, string> = {
   iomcu: `rcbench-iomcu-install-${TAG}.uf2`,
 };
 const ERASE = { offset: 0x40000, size: 0x20000 };
+
+// The page checks signatures against the release key it embeds. The tests
+// put a TEST key in its place in the served script and sign with that; the
+// release key's private half is never used.
+const TEST_KEY = generateKeyPairSync('ec', { namedCurve: 'P-256' });
+const sigOf = (b: Uint8Array): Uint8Array => new Uint8Array(sign('sha256', b, { key: TEST_KEY.privateKey, dsaEncoding: 'der' }));
+const pemLines = (pem: string): string[] => pem.split('\n').filter((l) => l && !l.startsWith('-----'));
+const RELEASE_LINES = pemLines(RELEASE_KEY_PEM);
+const TEST_LINES = pemLines(TEST_KEY.publicKey.export({ type: 'spki', format: 'pem' }).toString());
 const CHIPS: Record<string, string> = { panel: 'esp32p4', dial: 'esp32s3', 'node-pwr': 'esp32c6', iomcu: 'rp2350' };
 
 function manifest(tag: string, boards: (keyof typeof IMAGES)[]): object {
@@ -44,7 +54,10 @@ function manifest(tag: string, boards: (keyof typeof IMAGES)[]): object {
   };
 }
 
-async function setup(page: Page, config: object, opts: { badSha?: boolean; indexDelayMs?: number } = {}): Promise<void> {
+/** Signatures served beside the images: fw/<path> to the bytes of the .sig. */
+type Sigs = Record<string, Uint8Array>;
+
+async function setup(page: Page, config: object, opts: { badSha?: boolean; indexDelayMs?: number; sigs?: Sigs } = {}): Promise<void> {
   await page.addInitScript((c) => { (window as unknown as { __fakeConfig: object }).__fakeConfig = c; }, config);
   await page.addInitScript({ path: FAKES });
   await page.exposeFunction('__fakeMd5', (bytes: number[]) => createHash('md5').update(Uint8Array.from(bytes)).digest('hex'));
@@ -60,6 +73,16 @@ async function setup(page: Page, config: object, opts: { badSha?: boolean; index
     files.set(`${TAG}/${f}`, opts.badSha && b === 'dial' ? bytes.map((x) => x ^ 1) : bytes);
     files.set(`${OLD}/${f}`, bytes);
   }
+  for (const [path, sig] of Object.entries(opts.sigs ?? {})) files.set(path, sig);
+  await page.route('**/rcbench/flash/assets/*.js', async (route) => {
+    const r = await route.fetch();
+    let body = await r.text();
+    if (body.includes(RELEASE_LINES[0]!)) {
+      expect(RELEASE_LINES.every((l) => body.includes(l))).toBe(true);
+      RELEASE_LINES.forEach((l, i) => { body = body.replace(l, TEST_LINES[i]!); });
+    }
+    return route.fulfill({ response: r, body });
+  });
   await page.route('**/rcbench/flash/fw/**', async (route) => {
     const path = new URL(route.request().url()).pathname.replace('/rcbench/flash/fw/', '');
     const body = files.get(path);
@@ -352,4 +375,68 @@ test('a USB-to-UART bridge (1A86:55D3) gets the change to 460800 baud', async ({
   const f = await espState(page, IMAGES['node-pwr'].length);
   expect(f.ops).toContain(0x0f);
   expect(f.bauds).toContain(460800);
+});
+
+// ---- Release signatures ----
+
+const SIG_TEXT = {
+  signed: ['signed by the rcbench release key', 'signiert mit dem rcbench-Release-Schlüssel'],
+  none: ['no signature', 'keine Signatur'],
+  mismatch: ['signature does not match', 'Signatur stimmt nicht'],
+  local: ['local file, signature not checked', 'lokale Datei, Signatur nicht geprüft'],
+} as const;
+
+async function expectSig(page: Page, state: keyof typeof SIG_TEXT, file: string): Promise<void> {
+  const note = page.locator('#sig-state');
+  await expect(note).toHaveAttribute('data-state', state);
+  await expect(note).toContainText(label(page, ...SIG_TEXT[state]));
+  if (file) await expect(note).toContainText(file);
+  await expect(note).toHaveClass(state === 'signed' ? /\bok\b/ : state === 'local' ? /\binfo\b/ : /\bwarn\b/);
+}
+
+const panelSig = `${TAG}/${FILES.panel}.sig`;
+
+test('signature: a release image with a valid .sig is signed by the rcbench release key', async ({ page }) => {
+  await setup(page, { esp: { chipId: 18 } }, { sigs: { [panelSig]: sigOf(IMAGES.panel) } });
+  await expectImage(page, FILES.panel!, IMAGES.panel);
+  await expectSig(page, 'signed', `${FILES.panel}.sig`);
+});
+
+test('signature: a release image without a .sig shows no signature, and WRITE stays possible', async ({ page }) => {
+  await setup(page, { esp: { chipId: 18 } });
+  await expectImage(page, FILES.panel!, IMAGES.panel);
+  await expectSig(page, 'none', `${FILES.panel}.sig`);
+  await page.locator('#connect-esp').click();
+  await expect(page.locator('#conn-state')).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('#write')).toBeEnabled();
+});
+
+test('signature: a .sig of another image or out of form does not match, and WRITE stays possible', async ({ page }) => {
+  await setup(page, { esp: { chipId: 9 } }, { sigs: {
+    [panelSig]: sigOf(IMAGES.dial),
+    [`${TAG}/${FILES.dial}.sig`]: new TextEncoder().encode('not a signature'),
+  } });
+  await expectSig(page, 'mismatch', `${FILES.panel}.sig`);
+  await chooseBoard(page, 'dial');
+  await expectImage(page, FILES.dial!, IMAGES.dial);
+  await expectSig(page, 'mismatch', `${FILES.dial}.sig`);
+  await page.locator('#connect-esp').click();
+  await expect(page.locator('#conn-state')).toBeVisible({ timeout: 20_000 });
+  await writeAndWait(page);
+});
+
+test('signature: a local file is not checked unless its .sig is chosen as well', async ({ page }) => {
+  await setup(page, { esp: { chipId: 9 } });
+  await chooseBoard(page, 'dial');
+  await page.locator('input[name="src"][value="file"]').check();
+  const pick = (id: string, name: string, b: Uint8Array): Promise<void> => page.locator(id).setInputFiles({ name, mimeType: 'application/octet-stream', buffer: Buffer.from(b) });
+  await pick('#file', 'dial.bin', IMAGES.dial);
+  await expectSig(page, 'local', '');
+  await pick('#sigfile', 'dial.bin.sig', sigOf(IMAGES.dial));
+  await expectSig(page, 'signed', 'dial.bin.sig');
+  await expect(page.locator('#sig-picked')).toHaveText('dial.bin.sig');
+  await pick('#sigfile', 'other.sig', sigOf(IMAGES.panel));
+  await expectSig(page, 'mismatch', 'other.sig');
+  await pick('#sigfile', 'empty.sig', new Uint8Array(0));
+  await expectSig(page, 'none', 'empty.sig');
 });
