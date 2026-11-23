@@ -12,7 +12,9 @@
  * asking for the BOOT hold; the entry's summary and label; CANCEL UPDATE
  * as a plain tap in every phase before END, grey with its reason from END
  * on, absent with no update; the line and the labels inside their fields
- * in both languages.
+ * in both languages; the power node's row and UPDATES' step naming
+ * the display node while its image is the display node's, and a board no
+ * image is for reading NO FIRMWARE with its reason.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -31,6 +33,8 @@
 #include "upd_c6.h"
 #include "upd_dev.h"
 #include "upd_screen.h"
+#include "upd_wiz_view.h"
+#include "upd_wizard.h"
 
 #include "upd_spots.h"
 
@@ -559,6 +563,56 @@ TEST_CASE(an_unsigned_image_in_memory_warns_on_the_card_and_the_band)
     CHECK(!upd_fetch_warn(&f));
 }
 
+/* The power node's row while its node is the ES3C28P display node: the
+ * heading, the line and UPDATES' step name it in both languages and fit
+ * their fields; the hold, its ask and the other rows stay as they are.  A
+ * board no image is for reads NO FIRMWARE and says why on the band. */
+TEST_CASE(the_display_node_names_its_row_and_its_step)
+{
+    char line[96];
+    upd_dev_view_t v = view_of(DEVUPD_ROW_READY);
+    v.display = true;
+    upd_dev_set(UPD_DEV_PNODE, &v);
+    upd_dev_line(UPD_DEV_PNODE, &v, line, sizeof(line));
+    CHECK_STR_EQ(line, "Display node: 0.24.0. Release: 0.25.0.");
+    CHECK_STR_EQ(upd_dev_head(UPD_DEV_PNODE, &v), "DISPLAY NODE FIRMWARE");
+    CHECK_STR_EQ(upd_wiz_name(UPD_WIZ_PNODE), "DISPLAY NODE");
+    upd_dev_label(UPD_DEV_PNODE, &v, line, sizeof(line));
+    CHECK_STR_EQ(line, "HOLD 2s TO UPDATE THE POWER NODE");
+    /* The flag names only the power node's row. */
+    CHECK_STR_EQ(upd_dev_head(UPD_DEV_BAL, &v), "BALANCE NODE FIRMWARE");
+    upd_dev_line(UPD_DEV_BAL, &v, line, sizeof(line));
+    CHECK_STR_EQ(line, "Node: 0.24.0. Release: 0.25.0.");
+    ui_text_set_language(UI_LANG_DE);
+    upd_dev_line(UPD_DEV_PNODE, &v, line, sizeof(line));
+    CHECK_STR_EQ(line, "Anzeigeknoten: 0.24.0. Release: 0.25.0.");
+    CHECK_STR_EQ(upd_dev_head(UPD_DEV_PNODE, &v), "ANZEIGEKNOTEN-FIRMWARE");
+    CHECK_STR_EQ(upd_wiz_name(UPD_WIZ_PNODE), "ANZEIGEKNOTEN");
+    for (int lang = 0; lang < 2; ++lang) {
+        ui_text_set_language(lang ? UI_LANG_DE : UI_LANG_EN);
+        v.running = (fw_version_t){ 255u, 255u, 255u };
+        v.carried = (fw_version_t){ 255u, 255u, 255u };
+        fits(UPD_DEV_PNODE, &v);
+        CHECK(gfx_text_width(&gfx_font_10x20, upd_dev_head(UPD_DEV_PNODE, &v),
+                             1) <= UPD_DEVP_TEXT_W);
+    }
+    ui_text_set_language(UI_LANG_EN);
+    /* The C6 power node again. */
+    v.display = false;
+    upd_dev_set(UPD_DEV_PNODE, &v);
+    CHECK_STR_EQ(upd_dev_head(UPD_DEV_PNODE, &v), "POWER NODE FIRMWARE");
+    CHECK_STR_EQ(upd_wiz_name(UPD_WIZ_PNODE), "POWER NODE");
+    CHECK_STR_EQ(upd_dev_head(UPD_DEV_PNODE, NULL), "POWER NODE FIRMWARE");
+    /* A board no image is for: NO FIRMWARE, and the reason. */
+    v = view_of(DEVUPD_ROW_NO_IMAGE);
+    v.have_image = false;
+    upd_dev_set(UPD_DEV_PNODE, &v);
+    upd_dev_line(UPD_DEV_PNODE, &v, line, sizeof(line));
+    CHECK(strstr(line, "Node: 0.24.0.") == line);
+    CHECK_STR_EQ(upd_dev_reason(&v),
+                 "This release has no firmware for this device.");
+}
+
 int main(void)
 {
     RUN(the_entry_opens_the_page_and_back_and_the_home_tag_close_it);
@@ -572,5 +626,6 @@ int main(void)
     RUN(the_lines_and_the_labels_fit_in_both_languages);
     RUN(cancel_is_a_tap_before_end_and_grey_through_the_install);
     RUN(an_unsigned_image_in_memory_warns_on_the_card_and_the_band);
+    RUN(the_display_node_names_its_row_and_its_step);
     return test_summary("upd_dev");
 }

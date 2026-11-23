@@ -277,11 +277,13 @@ The POWER NODE FIRMWARE and BALANCE NODE FIRMWARE rows show the node's version, 
 3. The node writes the image; the button reads `POWER NODE UPDATE 37%`.
 4. The node checks the image, installs it and restarts. The alert reads `Power node updated to 0.23.17. It connects again by itself.` The node's link connects again from SETUP's values, and the row reads the new version from the node's first STATUS packet.
 
+The power node's row sends the image of the board the node names in its INFO: `rcbench-node-pwr-<version>.bin` to an ESP32-C6-Zero, `rcbench-node-display-<version>.bin` to the ES3C28P display node. For the display node the row reads DISPLAY NODE FIRMWARE and `Display node: 0.23.17. Release: 0.23.18.`, the step DISPLAY NODE; its BOOT key is IO0. An image that does not fit the node's board ends before the first byte with `Display node update stopped: image for another board. Previous firmware is running.` A board the release has no image for reads NO FIRMWARE.
+
 A power node's readings and a balance node's reports stop from the hold until the node is back. That gap is no loss: the band shows no `POWER NODE LOST`. Any other end reads `Balance node update stopped: <reason>. Previous firmware is running.` with the Dial's reasons, and the node keeps the firmware it ran. A node refuses the other role's image before writing anything. As under the Dial's update, the supply's OUTPUT ON, PROG 5V ON and a programmer's start are refused, for example with `Programmer not started: the power node update is running.`
 
 ## Device images
 
-The panel image carries the IOmcu images only. The C6 radio's, the Dial's and the nodes' images are files of the release the panel runs: `rcbench-c6-2.13.0.bin` (the C6's esp_hosted version), `rcbench-dial-<version>.bin`, `rcbench-node-pwr-<version>.bin` and `rcbench-node-bal-<version>.bin`. A step's hold takes its image from one of three places, and the card names the file:
+The panel image carries the IOmcu images only. The C6 radio's, the Dial's and the nodes' images are files of the release the panel runs: `rcbench-c6-2.13.0.bin` (the C6's esp_hosted version), `rcbench-dial-<version>.bin`, `rcbench-node-pwr-<version>.bin`, `rcbench-node-bal-<version>.bin` and `rcbench-node-display-<version>.bin`. A step's hold takes its image from one of three places, and the card names the file:
 
 | Card line | Where the hold takes it |
 |---|---|
