@@ -107,6 +107,7 @@ def test_the_scope_storyboard_passes_the_check():
      "series is not in the figure"),
     (lambda s: s["panels"][1].update(box=[0, 0, 4000, 10]), "box must be"),
     (lambda s: s["labels"][0].update(anchor=["c", "none"]), "anchor must be"),
+    (lambda s: s["labels"][0].update(leader="no"), "leader must be"),
     (lambda s: s["panels"][0]["flow"][0].update(path="none"),
      "path is not in the circuit"),
 ])
