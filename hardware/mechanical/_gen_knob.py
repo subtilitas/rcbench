@@ -37,9 +37,10 @@ Printed parts, written to models/casing/ as STEP and STL:
                   case's rim up to the bezel
     knob_bezel    the skirt's top, 2.7 high: the lip under the window
                   with an opening of 47 and the window's seat 49.7
-                  across; a spigot inside the skirt, 0.1 off it, glued
-                  in. A part of its own, so the display, 55 across, goes
-                  in from the top before it
+                  across, the window glued in with epoxy; a spigot
+                  inside the skirt, 0.1 off it, glued in with epoxy. A
+                  part of its own, so the display, 55 across, goes in
+                  from the top before it
     knob_carrier  plate 54 across, 2 thick; the display's 3 inserts
                   take countersunk M2 screws through it from below; a
                   spigot under it locks into the shaft's top with a

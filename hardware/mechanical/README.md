@@ -422,8 +422,11 @@ shaft's bore. Lower the display into the skirt, set the spigot's lugs in
 the slots with the display's USB socket 30 degrees anticlockwise of -y
 seen from the top, press down and turn the display 30 degrees
 clockwise. Each lug's nub passes over a ridge 0.1 high over the last 10
-degrees, which holds the lock. Set the acrylic disc in the bezel's seat
-and glue the bezel onto the skirt with cyanoacrylate. The bezel is a
+degrees, which holds the lock. Glue the acrylic disc into the bezel's
+seat with a thin ring of clear 2-component epoxy round its edge; the lip
+carries it from below only, and the seat is open above. Glue the bezel
+onto the skirt with the same epoxy, not with cyanoacrylate, whose vapour
+fogs acrylic. The bezel is a
 part of its own because the display, 55.0 across, does not pass its
 lip's opening of 47.0. Lay the cell in the bottom part and close the
 base with the 4 M3 x 12 of the dial base.
@@ -452,7 +455,8 @@ Limits:
   headers, nor a switch or charger for the cell.
 - The rotor's web and the hub's top overhang and need support when
   printed.
-- The bezel is glued on: to take the display out, the glue is cut.
+- The window and the bezel are glued: to take the display out, the
+  bezel's glue is cut.
 
 ```sh
 python3 hardware/mechanical/_gen_knob.py                 # write STEP and STL
