@@ -386,7 +386,7 @@ TEST_CASE(operations_out_of_order_and_nulls_are_refused)
     d.now_us = NULL;
     CHECK_EQ(oy_session_init(&g_s, &d), OY_ERR_ARG);
     CHECK_EQ(oy_session_init(&g_s, &SIM_DRIVER), OY_OK);
-    uint16_t t[OPENYGE_MAX_PARAMS] = { 0 };
+    const uint16_t t[OPENYGE_MAX_PARAMS] = { 0 };
     CHECK_EQ(oy_session_read(&g_s), OY_ERR_STATE);
     CHECK_EQ(oy_session_write(&g_s, t, 32, 0, 0), OY_ERR_STATE);
     CHECK_EQ(oy_session_write(&g_s, NULL, 32, 0, 0), OY_ERR_ARG);
