@@ -12,7 +12,7 @@
   "speed": 0.94
  },
  "brand": "Hitec servo programmer",
- "steps": 7,
+ "steps": 8,
  "chapters": [
   "Plug in",
   "Open the programmer",
@@ -20,6 +20,7 @@
   "Read the tabs",
   "Edit",
   "Write",
+  "Move the servo",
   "Leave programming"
  ],
  "scenes": [
@@ -35,7 +36,7 @@
     "to": 4.9,
     "kicker": "rcbench · rbmod carrier",
     "heading": "Programming<br>a Hitec servo",
-    "text": "Plug in, connect, edit, write.<br>7 steps on the bench's touch screen."
+    "text": "Plug in, connect, edit, write.<br>8 steps on the bench's touch screen."
    },
    "chips": [
     {
@@ -692,12 +693,192 @@
     },
     {
      "view": "servo-hitec-backup-file-rbmod",
-     "dur": 2.6,
+     "dur": 4.2,
      "n": 7,
+     "chip": "Move the servo",
+     "title": "TRAVEL",
+     "text": "Tap <b>TRAVEL</b>.",
+     "say": "Step 7. The bench can move the horn to the value being edited. Tap travel.",
+     "target": [
+      316,
+      99
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-hitec-travel-rbmod",
+     "dur": 2.8,
+     "n": 7,
+     "chip": "Move the servo",
+     "title": "MOVE SERVO",
+     "text": "Tap <b>OFF</b> on the <b>MOVE SERVO</b> row.",
+     "say": "Tap the move servo row.",
+     "target": [
+      542,
+      379
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-hitec-move-rbmod",
+     "dur": 6.4,
+     "n": 7,
+     "chip": "Move the servo",
+     "title": "Hold to move",
+     "text": "The bench stays <b>SAFE</b>. Keep hands clear of the horn. Hold <b>HOLD 2s TO MOVE</b> for 2s.",
+     "say": "The page names the risks. The bench stays safe, so keep hands clear of the horn. Hold for two seconds to move.",
+     "target": [
+      177,
+      459
+     ],
+     "action": "hold",
+     "style": "warn"
+    },
+    {
+     "view": "servo-hitec-move-on-rbmod",
+     "dur": 7.0,
+     "n": 7,
+     "chip": "Move the servo",
+     "title": "The horn follows",
+     "text": "The horn stands at <b>NEUTRAL</b>. A <b>-</b> or <b>+</b> key steps its row by 8 counts, 0.11°, and the horn follows. Tap <b>-</b> on <b>LEFT END</b>.",
+     "say": "The horn moves to the neutral. A minus or plus key steps its row by 8 counts, and the horn follows that row. Tap minus on left end.",
+     "target": [
+      385,
+      211
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-hitec-move-on-rbmod",
+     "dur": 4.6,
+     "n": 7,
+     "chip": "Move the servo",
+     "title": "Position and current",
+     "text": "The notes show the horn's <b>POSITION</b> and the ports' current. Nothing is saved in the servo.",
+     "say": "The notes show the horn's position and the current. Nothing is saved in the servo.",
+     "target": [
+      200,
+      440
+     ]
+    },
+    {
+     "view": "servo-hitec-move-on-rbmod",
+     "dur": 4.4,
+     "n": 7,
+     "chip": "Move the servo",
+     "title": "FIND STOP",
+     "text": "<b>FIND STOP</b> searches for the mechanical stop of one side. Tap <b>LEFT END</b>.",
+     "say": "Find stop searches for the mechanical stop of one side. Tap left end.",
+     "target": [
+      420,
+      322
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-hitec-move-find-rbmod",
+     "dur": 4.4,
+     "n": 7,
+     "chip": "Move the servo",
+     "title": "Searching",
+     "text": "From <b>NEUTRAL</b> the horn steps outward by 0.5° every 2 passes. A second tap ends the search.",
+     "say": "From the neutral, the horn steps outward by half a degree at a time.",
+     "target": [
+      420,
+      322
+     ]
+    },
+    {
+     "view": "servo-hitec-move-found-rbmod",
+     "dur": 6.0,
+     "n": 7,
+     "chip": "Move the servo",
+     "title": "Stop found",
+     "text": "The horn met a stop at 4840 and moved back 1.0°. <b>LEFT END</b> reads 4915 in the edits.",
+     "say": "The horn meets a stop and moves back by one degree. The bench sets left end to that position in the edits.",
+     "target": [
+      300,
+      480
+     ],
+     "style": "ok"
+    },
+    {
+     "view": "servo-hitec-move-found-rbmod",
+     "dur": 2.8,
+     "n": 7,
+     "chip": "Move the servo",
+     "title": "Switch it off",
+     "text": "Tap <b>ON</b>.",
+     "say": "Tap on to switch move servo off.",
+     "target": [
+      542,
+      379
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-hitec-move-off-rbmod",
+     "dur": 5.6,
+     "n": 7,
+     "chip": "Move the servo",
+     "title": "MOVE SERVO is OFF",
+     "text": "The servo restarts and is read back: the stored values are unchanged. The end point waits as an edit.",
+     "say": "The servo restarts and the bench reads it back. The stored values are unchanged, and the end point waits as an edit.",
+     "target": [
+      300,
+      480
+     ]
+    },
+    {
+     "view": "servo-hitec-move-off-rbmod",
+     "dur": 2.8,
+     "n": 7,
+     "chip": "Move the servo",
+     "title": "Write the end point",
+     "text": "Tap the <b>SERVO</b> tab.",
+     "say": "Write it as in step 6. Tap the servo tab,",
+     "target": [
+      74,
+      99
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-hitec-move-towrite-rbmod",
+     "dur": 3.8,
+     "n": 7,
+     "chip": "Move the servo",
+     "title": "Write the end point",
+     "text": "Hold <b>WRITE 1 VALUE</b> for 2s.",
+     "say": "and hold write 1 value for two seconds.",
+     "target": [
+      508,
+      322
+     ],
+     "action": "hold"
+    },
+    {
+     "view": "servo-hitec-move-written-rbmod",
+     "dur": 3.4,
+     "n": 7,
+     "chip": "Move the servo",
+     "title": "Written and verified",
+     "text": "1 value written and verified.",
+     "say": "The end point is in the servo.",
+     "target": [
+      170,
+      480
+     ],
+     "style": "ok"
+    },
+    {
+     "view": "servo-hitec-move-written-rbmod",
+     "dur": 2.6,
+     "n": 8,
      "chip": "Leave programming",
      "title": "Leave",
      "text": "Tap <b>LEAVE</b>.",
-     "say": "Step 7. Tap leave.",
+     "say": "Step 8. Tap leave.",
      "target": [
       542,
       156
@@ -707,7 +888,7 @@
     {
      "view": "servo-hitec-leave-rbmod",
      "dur": 5.4,
-     "n": 7,
+     "n": 8,
      "chip": "Leave programming",
      "title": "Leave programming",
      "text": "Hold <b>HOLD 2s TO LEAVE</b> for 2s. The servo restarts, receives the tester's signal and may move.",
@@ -721,7 +902,7 @@
     {
      "view": "servo-hitec-left-rbmod",
      "dur": 3.6,
-     "n": 7,
+     "n": 8,
      "chip": "Leave programming",
      "title": "Done",
      "text": "The port is back in tester mode.",
@@ -745,6 +926,7 @@
     "MOTION, TRAVEL, PROTECT, INFO",
     "Edit: * marks a change",
     "Hold WRITE n VALUES",
+    "MOVE SERVO, FIND STOP",
     "LEAVE"
    ],
    "say": "The servo holds its new values, and the card holds the values it had before.",

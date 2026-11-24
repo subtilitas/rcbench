@@ -698,10 +698,16 @@ static bool move_view(const char *v)
     if (strcmp(v, "-move-blocked") == 0) {
         g_drv.d_block_lo = 6000u;
     }
-    if (strcmp(v, "-move-find") == 0 || strcmp(v, "-move-found") == 0) {
+    /* Three states for tools/video only: -move-off, -move-found then a
+     * tap on ON and the loop's end, and the write of the end point. */
+    const bool m_write = strcmp(v, "-move-towrite") == 0
+                         || strcmp(v, "-move-written") == 0;
+    const bool m_off = strcmp(v, "-move-off") == 0 || m_write;
+    if (strcmp(v, "-move-find") == 0 || strcmp(v, "-move-found") == 0
+        || m_off) {
         g_drv.d_block_lo = 4840u;
         htap(hitec_panel_find_rect(false));
-        for (unsigned i = 0; i < 60000u && strcmp(v, "-move-found") == 0
+        for (unsigned i = 0; i < 60000u && strcmp(v, "-move-find") != 0
                              && hitec_prog_message(p)->id
                                     != HITEC_PROG_MSG_FIND_FOUND_L;
              ++i) {
@@ -709,6 +715,28 @@ static bool move_view(const char *v)
         }
         prun(strcmp(v, "-move-find") == 0 ? 6000u : 3000u);
         ui_router_tick(0.02f);
+        if (m_off) {
+            htap(hitec_panel_value_rect(HITEC_PANEL_TRAVEL, 4, 0));
+            for (unsigned i = 0; i < 60000u
+                                 && hitec_prog_move_phase(p)
+                                        != HITEC_MOVE_OFF;
+                 ++i) {
+                pms();
+            }
+            hwait(HITEC_PROG_HELD);
+            ui_router_tick(0.02f);
+        }
+        if (m_write) {
+            /* -move-towrite the end point found on SERVO with a card in,
+             * -move-written after the hold on WRITE 1 VALUE. */
+            g_card = true;
+            prun(20u);
+            htap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+            if (strcmp(v, "-move-written") == 0) {
+                hwrite();
+                hwait(HITEC_PROG_HELD);
+            }
+        }
         return true;
     }
     htap(hitec_panel_step_rect(HITEC_PANEL_TRAVEL, 1, false));
@@ -802,6 +830,11 @@ static void hitec_view_steps(const char *view)
     rig_at(hand || strcmp(v, "-nopd") == 0 || strcmp(v, "-move-nopd") == 0
                ? SUPPLY_NONE : SUPPLY_READY, true);
     g_fixed = carrier;
+    /* MOVE SERVO on the carrier, which hitec_prog_move_gate() refuses: the
+     * fixed 5V drawn with the reading the gate asks for, as INA3221 0x40
+     * CH3 would give it.  No firmware does this; STATUS.md's open items
+     * list it. */
+    g_fixed_reads = carrier && strncmp(v, "-move", 5) == 0;
     if (c_view) {
         servo_hs5645();
     } else {

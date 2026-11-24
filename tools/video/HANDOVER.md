@@ -36,7 +36,7 @@ a new session needs beyond it.
 | `player/mini3d.js`, `boards/minircbench-wiring.json` | the `mini` model and the wiring drawing of the MiniRcBench; its storyboards `minircbench-build` and `minircbench-features` and their stills are in the MiniRcBench repository under `docs/video/` and render here by path; `tools/video_cad.py --parts` converts its assembly |
 | `storyboards/rbmod-first-program.json`, `player/part3d.js`, `player/windows.js`, `web/capture.js` | first programming of a bench with the rbmod carrier in 6 chapters, 321.22s, narrated, bed `pachelbel-canon` at half level; STEP models of the panel, the carrier and the RP2350-CAN, captures of the releases page and of the ESP Web Tool, a drawn Windows desktop for the drive RP2350 |
 | `storyboards/auto-rudder.json`, `player/rudder3d.js`, `test/host/video_rauto.c` | setting a rudder's end points with RUDDER AUTO in 4 steps, 300.77s, narrated, bed `pachelbel-canon` at half level; the wing slice, the IMU on Gecko Tape, the Dial in its base and the cased bench in one 3D scene, the display and the flap following one run of the host suites' rig |
-| `storyboards/hitec-rbmod.json` | programming a Hitec D series servo on the rbmod carrier in 7 steps, 31 screen steps; written and checked with `--check` and 18 stills, not rendered with its narration, not heard, not seen by the owner |
+| `storyboards/hitec-rbmod.json` | programming a Hitec D series servo on the rbmod carrier in 8 steps, 44 screen steps; written and checked with `--check` and 30 stills, not rendered with its narration, not heard, not seen by the owner |
 | `storyboards/stop.json` | STOP as an emergency stop in 4 steps, 13 screen steps; the same state |
 | `storyboards/thumbnail.json` | thumbnail of the feature tour, `--stills 3` |
 | `tools/video_scope.py`, `player/scope.js`, `plots/hitec-precharge.json` | the `scope` scene: plots and a circuit from a figure; the figure of the D series signal wire is simulated with ngspice 42 |
@@ -250,12 +250,14 @@ Owner, 2026-11-14:
 
 ## Limits that still hold
 
-- MOVE SERVO and FIND STOP are not in `hitec-rbmod`. The carrier
-  measures the ports' 5V on INA3221 0x40 CH3, and `hitec_prog_move_gate()`
-  (`shared/bench/hitec_move.c`) takes only a PD mini's reading, so the
-  carrier answers `Moving the servo needs a PD mini with its output on.`
-  The owner wants the move in the video (2026-11-24): it waits for that
-  change in the firmware.
+- Step 7 of `hitec-rbmod` shows MOVE SERVO and FIND STOP on the carrier,
+  which the firmware refuses there: `hitec_prog_move_gate()`
+  (`shared/bench/hitec_move.c`) takes only a PD mini's reading, and the
+  carrier measures the ports' 5V on INA3221 0x40 CH3. The owner asked for
+  the move to be faked and listed as work to do (2026-11-24): the views
+  come from a rig whose fixed 5V carries a reading (`g_fixed_reads`), and
+  `STATUS.md` lists the firmware change under its open items. The
+  video's texts say nothing of this (owner's rule on test state).
 - `hitec-rbmod` and `stop` are in English only.
 - The two storyboards come from one generator outside the tree, as
   `auto-rudder` does.
