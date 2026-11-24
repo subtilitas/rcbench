@@ -50,6 +50,7 @@ typedef struct {
     unsigned    fail_info; /**< the next INFO reads that fail */
     uint16_t    tok_conn; /**< the last connect's token */
     unsigned    connects; /**< CONNECT actions */
+    unsigned    discs;    /**< DISCONNECT actions */
     unsigned    scans;    /**< SCAN actions */
     unsigned    stops;    /**< SCAN_STOP actions */
     unsigned    writes;   /**< CONTROL writes but LANG */
@@ -170,6 +171,7 @@ static void act(rig_t *r, const bleu_act_t *a)
         pnode_ctl_event(&r->c, &e, r->now);
         break;
     case BLEU_ACT_DISCONNECT:
+        ++r->discs;
         e = ev(BLEU_EV_DISCONNECT, r->tok_conn);
         e.status = 0x216u;
         pnode_ctl_event(&r->c, &e, r->now);
@@ -626,6 +628,58 @@ TEST_CASE(power_node_off_ends_the_link_and_is_no_loss)
     CHECK(!pnode_ctl_bind(NULL, 0u, 0u));
 }
 
+/* SEARCH's UNBIND while a run counts on the node: the link ends at once
+ * with a DISCONNECT, nothing is bound, the view reads NONE with no LOST
+ * and the board is no longer known.  The readings stop, so the run rides
+ * the dropout as on a lost link and counts one error once it passes
+ * 300ms; an arm on NODE is refused after it.  No connect follows, and a
+ * second unbind changes nothing. */
+TEST_CASE(an_unbind_ends_the_link_and_a_run_on_node_errors_as_on_a_drop)
+{
+    rig_t r;
+    up(&r, true);
+    window(&r, RCNODE_WF_ONLINE);
+    r.armed = true;
+    for (int k = 0; k < 10; ++k) {
+        run(&r, 20u);
+        window(&r, RCNODE_WF_ONLINE);
+    }
+    const uint32_t last = r.now;
+    CHECK_EQ(r.c.m.errors, 0u);
+    CHECK(r.c.linked);
+    CHECK(pnode_ctl_board(&r.c) != 0u);
+    const uint32_t seq = r.c.bind_seq;
+    CHECK(pnode_ctl_unbind(&r.c, r.now));
+    CHECK_EQ(r.c.bind_seq, seq + 1u);
+    CHECK_EQ(r.c.cfg.bind_seq, r.c.bind_seq);
+    CHECK_STR_EQ(r.c.cfg.addr, "");
+    CHECK_STR_EQ(r.c.cfg.name, "");
+    CHECK(!r.c.b.bound);
+    CHECK(!r.c.linked);
+    CHECK_EQ(pnode_ctl_board(&r.c), 0u);
+    run(&r, 1u);
+    CHECK_EQ(r.discs, 1u);
+    pnode_view_t v;
+    pnode_ctl_view(&r.c, r.now, &v);
+    CHECK_EQ(v.link, PNODE_LINK_NONE);
+    CHECK_STR_EQ(v.bound_addr, "");
+    /* The dropout rides up to 300ms from the last reading, then errors. */
+    run(&r, last + SERVO_GAP_MAX_MS - r.now);
+    CHECK_EQ(r.c.m.errors, 0u);
+    run(&r, 20u);
+    CHECK_EQ(r.c.m.errors, 1u);
+    pnode_reading_t rd;
+    pnode_meter_reading(&r.c.m, &rd);
+    CHECK(pnode_arm_refused(true, true, &rd, r.now));
+    const unsigned connects = r.connects;
+    run(&r, 3u * BLEU_RETRY_MS);
+    CHECK_EQ(r.connects, connects);
+    CHECK_EQ(r.c.m.errors, 1u);
+    CHECK(!pnode_ctl_unbind(&r.c, r.now));
+    CHECK_EQ(r.c.bind_seq, seq + 1u);
+    CHECK_EQ(r.discs, 1u);
+}
+
 TEST_CASE(a_node_that_started_again_gets_run_again_and_a_servo_run_no_gap)
 {
     rig_t r;
@@ -917,6 +971,7 @@ int main(void)
     RUN(a_scan_is_refused_while_armed_and_stopped_at_the_arm);
     RUN(the_scan_lists_power_nodes_and_binds_one);
     RUN(the_run_marker_goes_at_the_arm_and_after_a_drop_within_the_run);
+    RUN(an_unbind_ends_the_link_and_a_run_on_node_errors_as_on_a_drop);
     RUN(power_node_off_ends_the_link_and_is_no_loss);
     RUN(lang_goes_once_a_link_and_once_a_change_after_run);
     RUN(a_node_that_refuses_lang_keeps_its_link_and_is_not_asked_again);

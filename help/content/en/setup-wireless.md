@@ -172,6 +172,16 @@ SEARCH finds and binds the Dial, the power node or the balance node. Scan for Di
 
 Tap a device to bind it: the question shows its name, address and signal, and the device it replaces. BIND binds it; SETUP keeps it and asks for a save, and SEARCH stays and lights it once it is bound. CANCEL, or the home tag, binds nothing. BIND binds nothing while a scan runs, `A SCAN IS RUNNING: PICK THE NODE WHEN IT ENDS`, or when a new scan changed the list under the question, `NODE NOT BOUND: THE LIST CHANGED, PICK IT AGAIN`; the Dial's texts name the Dial.
 
+### Unbind
+
+`HOLD 2s: UNBIND`, under SCAN AGAIN, forgets the bound device. Hold it 2s: the link ends, SETUP keeps no device and asks for a save, and the card reads `NONE`. Let go before 2s and nothing is unbound. With nothing bound the button is grey, and a tap reads `NOTHING IS BOUND: NOTHING TO UNBIND`. To use the device again, scan and bind it.
+
+ARMED does not refuse it. A run that uses the device meets it as a lost link:
+
+- Dial: lost at once; while ARMED that is an error, and every output goes off.
+- Power node: a run that reads its INA228 gets no reading and ends as an error after 300ms, every output off.
+- Balance node: its readings go stale.
+
 ## Related pages
 
 - [Setup](setup.md)

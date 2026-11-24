@@ -208,6 +208,12 @@ static void search_bind(uint8_t i)
     push(PNODE_CMD_BIND, i);
 }
 
+/** @brief SEARCH's UNBIND of the bound node, queued for the controller. */
+static void search_unbind(void)
+{
+    push(PNODE_CMD_UNBIND, 0u);
+}
+
 /** @brief The node's entry as SEARCH asks it. */
 static const wls_device_t k_search = {
     .entry = WL_ENTRY_PNODE,
@@ -217,6 +223,7 @@ static const wls_device_t k_search = {
     .view = search_view,
     .scan = scan_tap,
     .bind = search_bind,
+    .unbind = search_unbind,
 };
 
 /** @brief SCAN FOR NODE tapped: SEARCH opens and a scan is asked. */

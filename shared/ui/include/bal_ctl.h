@@ -156,6 +156,7 @@ typedef enum {
     BAL_CMD_NONE = 0, /**< none */
     BAL_CMD_SCAN,     /**< SCAN FOR NODE */
     BAL_CMD_BIND,     /**< bind the found node arg */
+    BAL_CMD_UNBIND,   /**< forget the bound node, end its link */
 } bal_cmd_kind_t;
 
 /** @brief One command. */
@@ -294,6 +295,19 @@ bal_scan_t bal_ctl_scan(bal_ctl_t *c, bool armed, uint32_t now_ms);
  *         bind_refused, which the view carries to the band.
  */
 bool bal_ctl_bind(bal_ctl_t *c, uint8_t i, uint32_t now_ms);
+
+/**
+ * @brief SEARCH's UNBIND: forget the bound node, at once.  The link ends
+ *        (a DISCONNECT, or the connect cancelled), cfg.addr and cfg.name
+ *        are cleared, the last report is dropped and bind_seq counts it,
+ *        so the frame writes the empty address back to SETUP with a
+ *        save.  As on a lost link, the readings go stale and nothing
+ *        else happens: the node drives no output.
+ * @param c      The controller.
+ * @param now_ms The clock.
+ * @return false with nothing bound or @p c NULL: nothing changes.
+ */
+bool bal_ctl_unbind(bal_ctl_t *c, uint32_t now_ms);
 
 /**
  * @brief One event of the host stack: an advertising report to the scan's

@@ -738,6 +738,21 @@ Panels. Der Auswuchtknoten ist der vierte Client, Owner 3
   der Controller behält bei einer Zahl hinter seiner eigenen den
   gebundenen Knoten und nimmt die übrigen Werte. Der Auswuchtknoten macht
   es ebenso.
+- **Bindung lösen.** BINDUNG LÖSEN auf SEARCH, ein Halten von 2s
+  ([Bildschirme](Screens-de.md#wireless-search)), schickt UNBIND an den
+  Task `blec`. Der Controller (`pnode_ctl_unbind()`, `bal_ctl_unbind()`)
+  trennt die Verbindung mit einem Disconnect oder bricht den laufenden
+  Connect ab, löscht die gebundene Adresse und den Namen und zählt die
+  Änderung wie eine Bindung, so schreibt der Frame die leere Adresse und
+  den leeren Namen in SETUP und fordert Speichern an. Kein Connect folgt.
+  Das Ende der Verbindung ist kein LOST. UPDATES liest für den Knoten
+  keine Platine bis zum nächsten INFO eines gebundenen Knotens. Die Konsole schreibt
+  `node: unbound <Adresse>` (`bal:` beim Auswuchtknoten) und
+  `unbind refused: no node bound`, wenn nichts gebunden war. ARMED lehnt
+  es nicht ab: Ein Lauf, der auf den Leistungsknoten zählt, bekommt danach
+  keinen Messwert und endet als Fehler, sobald der Ausfall 300ms
+  übersteigt, wie bei einer verlorenen Verbindung. Die Messwerte des
+  Auswuchtknotens veralten.
 - **Die Verbindung.** Das Panel abonniert STREAM und liest INFO einmal nach
   jedem Abonnieren. Ein Knoten, dessen INFO ein anderes Protokoll als 1,
   eine andere Rolle als Leistung oder eine INA228-Einstellung nennt, die

@@ -146,6 +146,7 @@ typedef enum {
     DIAL_CMD_NONE = 0, /**< none */
     DIAL_CMD_SCAN,     /**< SCAN FOR DIAL */
     DIAL_CMD_BIND,     /**< bind the found Dial arg */
+    DIAL_CMD_UNBIND,   /**< forget the bound Dial, end its link */
 } dial_cmd_kind_t;
 
 /** @brief One command. */
@@ -242,6 +243,20 @@ dial_scan_t dial_ctl_scan(dial_ctl_t *c, bool armed, uint32_t now_ms);
  *         bind_refused, which the view carries to the band.
  */
 bool dial_ctl_bind(dial_ctl_t *c, uint8_t i, uint32_t now_ms);
+
+/**
+ * @brief SEARCH's UNBIND: forget the bound Dial, at once.  The link ends
+ *        (a DISCONNECT, or the connect cancelled), cfg.addr and cfg.name
+ *        are cleared and bind_seq counts it, so the frame writes the
+ *        empty address back to SETUP with a save.  The link's end is the
+ *        disconnect of a lost link: from UP or DEGRADED it is a loss,
+ *        and while the bench is ARMED the next dial_ctl_step() counts it
+ *        in errors (SAFE, every output off).
+ * @param c      The controller.
+ * @param now_ms The clock.
+ * @return false with nothing bound or @p c NULL: nothing changes.
+ */
+bool dial_ctl_unbind(dial_ctl_t *c, uint32_t now_ms);
 
 /**
  * @brief One event of the host stack: to the central; a notification of

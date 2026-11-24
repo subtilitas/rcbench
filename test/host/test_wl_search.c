@@ -25,6 +25,13 @@
  * - a_list_that_changed_between_tap_and_bind_is_refused
  * - a_list_that_changed_under_the_finger_opens_no_question
  * - view_updates_keep_the_question_and_the_press
+ * - unbind_fires_at_2000ms_and_not_at_1999ms
+ * - unbind_with_nothing_bound_is_grey_and_refused
+ * - an_unbind_hold_ends_when_the_device_goes_or_the_finger_slides_off
+ *
+ * The tester's finding behind UNBIND: a bound Dial, power node or balance
+ * node could only be replaced by another bind or switched OFF, never
+ * forgotten.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -50,7 +57,7 @@ typedef struct {
 
 /** @brief A command of any of the three devices. */
 typedef struct {
-    uint8_t kind;   /**< 1 SCAN, 2 BIND: each device's enum */
+    uint8_t kind;   /**< 1 SCAN, 2 BIND, 3 UNBIND: each device's enum */
     uint8_t arg;    /**< the bind's row */
 } cmd_t;
 
@@ -703,6 +710,138 @@ TEST_CASE(view_updates_keep_the_question_and_the_press)
     }
 }
 
+/** @brief A finger on UNBIND: DOWN, or UP, or a MOVE to (@p dx, 0) from
+ *         its middle, panel coordinates. */
+static void unbind_touch(touch_event_type_t type, int dx)
+{
+    const gfx_rect_t r = wbr_part(WLS_PART_UNBIND);
+    touch_event_t e = { .type = type,
+                        .point = { .id = 1,
+                                   .x = (int16_t)(r.x + r.w / 2 + dx),
+                                   .y = (int16_t)(r.y + r.h / 2) } };
+    ui_router_event(&e);
+}
+
+/** @brief Frames of 250ms, @p n of them, then one of @p rest_s. */
+static void hold_frames(int n, float rest_s)
+{
+    for (int k = 0; k < n; ++k) {
+        ui_router_tick(0.25f);
+    }
+    if (rest_s > 0.0f) {
+        ui_router_tick(rest_s);
+    }
+}
+
+/* For each device, bound: UNBIND let go at 1999ms queues nothing and the
+ * band shows the hint; held to 2000ms it queues one UNBIND on that frame,
+ * and none more while the finger stays or on its release.  ARMED does not
+ * refuse it.  The label is drawn on the button. */
+TEST_CASE(unbind_fires_at_2000ms_and_not_at_1999ms)
+{
+    for (int i = 0; i < DEVS; ++i) {
+        const wdev_t *d = &k_devs[i];
+        T_LOG("%s", d->name);
+        const spec_t sp = found(2u, 0);
+        start(d, &sp);
+        tap_row(d, d->bind_row);
+        CHECK(wl_search_unbind_ready());
+        draw_traced();
+        CHECK_EQ(texts_in(wl_search_part(WLS_PART_UNBIND)), 1);
+        cmd_t c;
+        ui_router_set_alert(NULL);
+        unbind_touch(TOUCH_EVENT_DOWN, 0);
+        hold_frames(7, 0.249f);
+        CHECK(!d->take(&c));
+        unbind_touch(TOUCH_EVENT_UP, 0);
+        CHECK_STR_EQ(wbr_band(), ui_tr(TX_HOLD_HINT_WLS_UNBIND));
+        CHECK(!d->take(&c));
+        ui_router_set_alert("");
+        set_armed(true);
+        unbind_touch(TOUCH_EVENT_DOWN, 0);
+        hold_frames(7, 0.249f);
+        CHECK(!d->take(&c));
+        ui_router_tick(0.001f);
+        CHECK(d->take(&c));
+        CHECK_EQ(c.kind, 3u);
+        CHECK(!d->take(&c));
+        hold_frames(8, 0.0f);
+        unbind_touch(TOUCH_EVENT_UP, 0);
+        CHECK(!d->take(&c));
+        CHECK_STR_EQ(wbr_band(), "");
+        CHECK_EQ(ui_router_current(), SCREEN_WL_SEARCH);
+        set_armed(false);
+    }
+}
+
+/* For each device, nothing bound: UNBIND is grey, takes no hold, and a
+ * press on it queues nothing however long, the band saying NOTHING IS
+ * BOUND.  With the bind question open UNBIND takes no press at all. */
+TEST_CASE(unbind_with_nothing_bound_is_grey_and_refused)
+{
+    for (int i = 0; i < DEVS; ++i) {
+        const wdev_t *d = &k_devs[i];
+        T_LOG("%s", d->name);
+        const spec_t sp = found(2u, -1);
+        start(d, &sp);
+        tap_row(d, d->bind_row);
+        CHECK(!wl_search_unbind_ready());
+        draw_traced();
+        CHECK_EQ(texts_in(wl_search_part(WLS_PART_UNBIND)), 1);
+        cmd_t c;
+        wbr_hold_unbind(NULL, 3000u);
+        CHECK(!d->take(&c));
+        CHECK_STR_EQ(wbr_band(), TR(WLS_UNBIND_NONE));
+        /* Bound, with the question open: the question takes the press. */
+        const spec_t b = found(2u, 0);
+        d->set(&b);
+        tap_found(1);
+        CHECK(wl_search_asking());
+        CHECK(!wl_search_unbind_ready());
+        ui_router_set_alert("");
+        wbr_hold_unbind(NULL, 3000u);
+        CHECK(!d->take(&c));
+        CHECK(wl_search_asking());
+        CHECK_STR_EQ(wbr_band(), "");
+    }
+}
+
+/* A hold on UNBIND ends without an unbind when the bound device goes
+ * under the finger (another bind, the device OFF), and when the finger
+ * slides off the button; sliding back does not resume it. */
+TEST_CASE(an_unbind_hold_ends_when_the_device_goes_or_the_finger_slides_off)
+{
+    for (int i = 0; i < DEVS; ++i) {
+        const wdev_t *d = &k_devs[i];
+        T_LOG("%s", d->name);
+        const spec_t sp = found(2u, 0);
+        start(d, &sp);
+        tap_row(d, d->bind_row);
+        cmd_t c;
+        unbind_touch(TOUCH_EVENT_DOWN, 0);
+        hold_frames(4, 0.0f);
+        const spec_t none = found(2u, -1);
+        d->set(&none);
+        hold_frames(8, 0.0f);
+        d->set(&sp);
+        hold_frames(8, 0.0f);
+        unbind_touch(TOUCH_EVENT_UP, 0);
+        CHECK(!d->take(&c));
+        unbind_touch(TOUCH_EVENT_DOWN, 0);
+        hold_frames(4, 0.0f);
+        unbind_touch(TOUCH_EVENT_MOVE, -200);
+        hold_frames(4, 0.0f);
+        unbind_touch(TOUCH_EVENT_MOVE, 0);
+        hold_frames(8, 0.0f);
+        unbind_touch(TOUCH_EVENT_UP, 0);
+        CHECK(!d->take(&c));
+        /* A fresh press still unbinds. */
+        wbr_hold_unbind(NULL, 2000u);
+        CHECK(d->take(&c));
+        CHECK_EQ(c.kind, 3u);
+    }
+}
+
 int main(void)
 {
     RUN(each_row_opens_search_and_the_home_tag_returns_to_the_entry);
@@ -715,5 +854,8 @@ int main(void)
     RUN(a_list_that_changed_between_tap_and_bind_is_refused);
     RUN(a_list_that_changed_under_the_finger_opens_no_question);
     RUN(view_updates_keep_the_question_and_the_press);
+    RUN(unbind_fires_at_2000ms_and_not_at_1999ms);
+    RUN(unbind_with_nothing_bound_is_grey_and_refused);
+    RUN(an_unbind_hold_ends_when_the_device_goes_or_the_finger_slides_off);
     return test_summary("wl_search");
 }

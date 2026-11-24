@@ -14,6 +14,7 @@
 
 #include "ui_help.h"
 #include "ui_layout.h"
+#include "ui_widgets.h"
 #include "wl_search.h"
 
 /*
@@ -27,7 +28,7 @@
  * Right, from x 680, 328px wide: the device's kind in the heading face
  * (16 x 28) at y 12, its link state in the label face (10 x 20) at y 52,
  * BOUND at y 88 and the bound device in the body face at y 112, SCAN AGAIN
- * 328 x 56px at y 156.
+ * 328 x 56px at y 156, UNBIND 328 x 56px at y 228.
  *
  * The question: a box of 700 x 280px at (162, 100), the kind in its title,
  * the device's name at y 144, its address and RSSI at y 180, the bound one
@@ -47,6 +48,7 @@
 #define WLS_BOUND_Y 88   /**< BOUND's top, px */
 #define WLS_NAME_Y  112  /**< the bound device's top, px */
 #define WLS_AGAIN_Y 156  /**< SCAN AGAIN's top, px */
+#define WLS_UNBIND_Y 228 /**< UNBIND's top, px */
 #define WLS_BTN_H   56   /**< SCAN AGAIN's and the question's buttons'
                               height, px */
 #define WLS_BOX_X   162  /**< the question's left edge, px */
@@ -68,6 +70,9 @@
 
 _Static_assert(WLS_LY + (WLS_FOUND_MAX - 1) * WLS_LP + WLS_LH <= WLS_FLOOR,
                "the eighth row ends over the alert band");
+_Static_assert(WLS_UNBIND_Y >= WLS_AGAIN_Y + WLS_BTN_H + 16
+               && WLS_UNBIND_Y + WLS_BTN_H <= WLS_FLOOR,
+               "UNBIND sits 16px under SCAN AGAIN, over the alert band");
 _Static_assert(WLS_Q_BTN_Y + WLS_BTN_H <= WLS_BOX_Y + WLS_BOX_H
                && WLS_BOX_Y + WLS_BOX_H <= WLS_FLOOR,
                "the question's buttons sit in its box, over the alert band");
@@ -78,6 +83,7 @@ enum {
     WLS_HIT_AGAIN = 0,  /**< SCAN AGAIN */
     WLS_HIT_CANCEL,     /**< the question's CANCEL */
     WLS_HIT_BIND,       /**< the question's BIND */
+    WLS_HIT_UNBIND,     /**< UNBIND, the hold */
     WLS_HIT_DEV0 = 100, /**< found device 0; device i is WLS_HIT_DEV0 + i */
 };
 
@@ -96,6 +102,7 @@ typedef struct {
                                       event */
     uint32_t   drawn_key[2];     /**< the view as each framebuffer last
                                       drew it, as one number */
+    ui_hold_t  unbind;           /**< UNBIND's hold */
 } wls_state_t;
 
 /** @brief The state, wl_search.c's. */

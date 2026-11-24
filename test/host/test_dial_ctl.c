@@ -108,6 +108,48 @@ TEST_CASE(a_disconnect_while_armed_is_an_error_at_once)
     CHECK_EQ(dial_ctl_link(&r.c), DIAL_LINK_LOST);
 }
 
+/* SEARCH's UNBIND while ARMED with the Dial UP: the link ends at once, as
+ * a disconnect does, and the loss is an error at the next step; nothing is
+ * bound, the link reads NONE, no connect follows, and a second unbind
+ * changes nothing.  The same while SAFE is no error. */
+TEST_CASE(an_unbind_ends_the_link_as_a_disconnect_does)
+{
+    drig_t r;
+    drig_up(&r);
+    r.armed = true;
+    drig_event(&r, 0, 0u, DK_G_NONE);
+    drig_run(&r, 10u);
+    CHECK_EQ(dial_ctl_link(&r.c), DIAL_LINK_UP);
+    const uint32_t seq = r.c.bind_seq;
+    CHECK(dial_ctl_unbind(&r.c, r.now));
+    CHECK_EQ(r.c.bind_seq, seq + 1u);
+    CHECK_EQ(r.c.cfg.bind_seq, r.c.bind_seq);
+    CHECK_STR_EQ(r.c.cfg.addr, "");
+    CHECK_STR_EQ(r.c.cfg.name, "");
+    CHECK(!r.c.b.bound);
+    drig_step(&r);
+    CHECK_EQ(r.c.errors, 1u);
+    CHECK(!r.linked);
+    CHECK_EQ(dial_ctl_link(&r.c), DIAL_LINK_NONE);
+    dial_view_t v;
+    dial_ctl_view(&r.c, r.now, &v);
+    CHECK_STR_EQ(v.bound_addr, "");
+    const unsigned connects = r.connects;
+    drig_run(&r, 3u * BLEU_RETRY_MS);
+    CHECK_EQ(r.connects, connects);
+    CHECK_EQ(r.c.errors, 1u);
+    CHECK(!dial_ctl_unbind(&r.c, r.now));
+    CHECK_EQ(r.c.bind_seq, seq + 1u);
+    /* SAFE: the link ends the same way and counts no error. */
+    drig_up(&r);
+    drig_event(&r, 0, 0u, DK_G_NONE);
+    drig_run(&r, 10u);
+    CHECK(dial_ctl_unbind(&r.c, r.now));
+    drig_run(&r, 10u);
+    CHECK_EQ(r.c.errors, 0u);
+    CHECK(!r.linked);
+}
+
 /* A connect that never brings an EVENT starts no loss clock: no error
  * however long, and none at its disconnect. */
 TEST_CASE(a_connect_without_an_event_is_no_loss)
@@ -566,6 +608,7 @@ int main(void)
     RUN(a_loss_while_safe_is_no_error);
     RUN(a_disconnect_while_armed_is_an_error_at_once);
     RUN(a_connect_without_an_event_is_no_loss);
+    RUN(an_unbind_ends_the_link_as_a_disconnect_does);
     RUN(a_scan_while_armed_is_refused);
     RUN(the_scan_lists_dials_only_and_a_bind_takes_one);
     RUN(the_scan_filter_is_the_protocols_own);
