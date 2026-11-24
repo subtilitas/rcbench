@@ -810,6 +810,14 @@ void servo_screen_set_pins(uint64_t gpio_mask, bool known)
     }
 }
 
+void servo_screen_set_pin_protocol(uint8_t proto)
+{
+    if (proto != s.pin_proto) {
+        s.pin_proto = proto;
+        ++s.ctrl_rev;
+    }
+}
+
 void servo_screen_set_surfaces(bool any)
 {
     if (any == s.surfaces) {

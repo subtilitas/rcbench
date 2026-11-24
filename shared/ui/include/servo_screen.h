@@ -708,6 +708,20 @@ void servo_screen_set_drive(uint8_t target, uint8_t gpio, bool pwm);
  */
 void servo_screen_set_pins(uint64_t gpio_mask, bool known);
 
+/** @brief The surface pins are bound as more than one protocol. */
+#define SERVO_PROTO_MIXED 0xFFu
+
+/**
+ * @brief The protocol the surface pins are bound as, an index into
+ *  outbind_protos() (outbind_role_proto()): SERVO PWM, PPM, or
+ *  SERVO_PROTO_MIXED when they are bound as several.  0 when no entry
+ *  describes them, which the line words as SERVO PWM.  The TARGET row and
+ *  the footer's port line put its name before the pins.
+ *
+ * @param proto the protocol, an index into outbind_protos(); 0 for none known
+ */
+void servo_screen_set_pin_protocol(uint8_t proto);
+
 /**
  * @brief The TARGET row's value in the current language: `protocol pins`.
  *
@@ -731,14 +745,16 @@ void servo_screen_set_pins(uint64_t gpio_mask, bool known);
  *                SERVO_SCREEN_TARGET_NO_LINK
  * @param gpio    the port's pin, or SERVO_SCREEN_NO_PIN
  * @param pwm     whether the port renders its pulse
- * @param pins    the SERVO PWM pins, bit n for GPIO n, as
+ * @param pins    the surface pins, bit n for GPIO n, as
  *                servo_screen_set_pins()
+ * @param proto   the protocol they are bound as, as
+ *                servo_screen_set_pin_protocol()
  * @param known   whether the binding is read
  * @return whether the line takes the warning colour: a port target, no
  *         SERVO PWM pin, no binding read, the target not known, or no link
  */
 bool servo_target_line(char *out, size_t size, uint8_t target, uint8_t gpio,
-                       bool pwm, uint64_t pins, bool known);
+                       bool pwm, uint64_t pins, uint8_t proto, bool known);
 
 /**
  * @brief The task the strip shows, a ui_wb_task_t.  For tests.
