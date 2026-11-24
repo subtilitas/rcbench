@@ -9,6 +9,7 @@
  * - outputs_prog_port_entry_sets_what_the_tester_drives_at_rest
  * - the_servo_screen_names_the_pins_the_tester_drives
  * - the_target_line_lists_the_pins_that_fit_and_counts_the_rest
+ * - the_port_line_names_the_function_bound_on_the_pins
  * - the_target_row_stays_in_sight_under_the_settings_and_a_keypad
  * - the_port_pulse_is_not_switched_off_under_a_test_or_a_sweep
  * - the_tester_target_and_pulse_stay_while_the_port_is_held
@@ -490,7 +491,7 @@ static void check_line(uint8_t target, uint8_t gpio, bool pwm, uint64_t pins,
     char line[40];
     memset(line, 'x', sizeof(line));
     CHECK_EQ(servo_target_line(line, sizeof(line), target, gpio, pwm, pins,
-                               known),
+                               0u, known),
              warn);
     CHECK_STR_EQ(line, want);
 }
@@ -582,15 +583,92 @@ TEST_CASE(the_target_line_lists_the_pins_that_fit_and_counts_the_rest)
     /* A short buffer is cut, not overrun; none is no line. */
     char small[8];
     memset(small, 'x', sizeof(small));
-    CHECK(servo_target_line(small, sizeof(small), 1u, 13u, true, 0u, true));
+    CHECK(servo_target_line(small, sizeof(small), 1u, 13u, true, 0u, 0u,
+                            true));
     CHECK_STR_EQ(small, "PROG PO");
     memset(small, 'x', sizeof(small));
     CHECK(!servo_target_line(small, sizeof(small), 0u, SERVO_SCREEN_NO_PIN,
-                             false, PINS_40_47, true));
+                             false, PINS_40_47, 0u, true));
     CHECK_STR_EQ(small, "SERVO P");
-    CHECK(!servo_target_line(NULL, 8u, 1u, 13u, true, 0u, true));
-    CHECK(!servo_target_line(small, 0u, 1u, 13u, true, 0u, true));
+    CHECK(!servo_target_line(NULL, 8u, 1u, 13u, true, 0u, 0u, true));
+    CHECK(!servo_target_line(small, 0u, 1u, 13u, true, 0u, 0u, true));
     CHECK_STR_EQ(small, "SERVO P");
+}
+
+/* The index of protocol @p name in outbind_protos(). */
+static uint8_t proto_index(const char *name)
+{
+    const outbind_proto_t *p = outbind_protos();
+    for (uint8_t i = 1u; i < OUTBIND_PROTOS; ++i) {
+        if (strcmp(p[i].name, name) == 0) {
+            return i;
+        }
+    }
+    CHECK(false);
+    return 0u;
+}
+
+/* The line names the function the pins are bound as, not always SERVO PWM:
+ * PPM on GPIO 20 reads "PPM GPIO 20" on the PORT button and the footer in
+ * both languages (the name is the catalogue's, the same in German), SERVO
+ * PWM stays "SERVO PWM GPIO 20", pins bound as both read MIXED, and no
+ * protocol known keeps SERVO PWM.  Each fits the 25 cells of the line. */
+TEST_CASE(the_port_line_names_the_function_bound_on_the_pins)
+{
+    const uint8_t pwm = proto_index("SERVO PWM");
+    const uint8_t ppm = proto_index("PPM");
+    static const struct {
+        const char *proto;     /* a catalogue name, or NULL for none known */
+        bool mixed;
+        const char *en, *de;
+    } k[] = {
+        { "PPM",       false, "PPM GPIO 20",       "PPM GPIO 20" },
+        { "SERVO PWM", false, "SERVO PWM GPIO 20", "SERVO PWM GPIO 20" },
+        { NULL,        true,  "MIXED GPIO 20",     "GEMISCHT GPIO 20" },
+        { NULL,        false, "SERVO PWM GPIO 20", "SERVO PWM GPIO 20" },
+    };
+    CHECK(pwm != ppm);
+    for (int lang = 0; lang < 2; ++lang) {
+        for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+            const uint8_t proto = k[i].mixed ? SERVO_PROTO_MIXED
+                                  : (k[i].proto != NULL)
+                                        ? proto_index(k[i].proto) : 0u;
+            const char *want = (lang == 0) ? k[i].en : k[i].de;
+            fresh();
+            ui_text_set_language(lang == 0 ? UI_LANG_EN : UI_LANG_DE);
+            servo_screen_set_pins(PIN(20), true);
+            servo_screen_set_pin_protocol(proto);
+            servo_screen_set_drive(0u, SERVO_SCREEN_NO_PIN, false);
+            scr->render(&cv, 0);
+            char line[48];
+            CHECK(!servo_screen_port_line(line, sizeof(line)));
+            CHECK_STR_EQ(line, want);
+            CHECK(gfx_text_cells(line) <= 25);
+            char direct[48];
+            CHECK(!servo_target_line(direct, sizeof(direct), 0u,
+                                     SERVO_SCREEN_NO_PIN, false, PIN(20),
+                                     proto, true));
+            CHECK_STR_EQ(direct, want);
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+
+    /* A change of protocol alone repaints the PORT button, without a tap. */
+    static gfx_color_t a[PB_W * PB_H], b[PB_W * PB_H];
+    fresh();
+    servo_screen_set_pins(PIN(20), true);
+    servo_screen_set_pin_protocol(pwm);
+    scr->render(&cv, 0);
+    target_box(a);
+    servo_screen_set_pin_protocol(ppm);
+    scr->render(&cv, 0);
+    target_box(b);
+    CHECK(memcmp(a, b, sizeof(a)) != 0);
+    /* No pin: the line says so, whatever protocol was last named. */
+    servo_screen_set_pins(0u, true);
+    char none[48];
+    CHECK(servo_screen_port_line(none, sizeof(none)));
+    CHECK_STR_EQ(none, "NO SERVO PWM PIN");
 }
 
 /* A test or a sweep under way keeps the port's pulse: switched off, the run
@@ -694,6 +772,7 @@ int main(void)
     RUN(outputs_prog_port_entry_sets_what_the_tester_drives_at_rest);
     RUN(the_servo_screen_names_the_pins_the_tester_drives);
     RUN(the_target_line_lists_the_pins_that_fit_and_counts_the_rest);
+    RUN(the_port_line_names_the_function_bound_on_the_pins);
     RUN(the_port_button_stays_in_sight_under_a_keypad);
     RUN(the_port_pulse_is_not_switched_off_under_a_test_or_a_sweep);
     RUN(the_tester_target_and_pulse_stay_while_the_port_is_held);

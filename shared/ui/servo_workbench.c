@@ -26,6 +26,7 @@
 #include "esc_wire_panel.h"
 #include "hitec_panel.h"
 #include "kst_panel.h"
+#include "out_bind.h"
 #include "outputs_screen.h"
 #include "servo_limrun.h"
 #include "prog_registry.h"
@@ -344,15 +345,18 @@ void draw_test_page(gfx_canvas_t *c)
     }
 }
 
-/** @brief The protocol the SERVO PWM outputs are bound as: a name, the same in
- * every language. */
-#define TARGET_PROTOCOL "SERVO PWM"
+_Static_assert(SERVO_PROTO_MIXED == OUTBIND_PROTO_MIXED,
+               "the screen's MIXED is the one outbind_role_proto() returns");
+
+/** @brief The name the surface pins are worded with when no protocol is known
+ * for them: the catalogue's name, the same in every language. */
+#define TARGET_PROTOCOL_DEFAULT "SERVO PWM"
 /** @brief Characters the target's line holds in the 10 x 20 face: 25, the
  *         PORT button's value and the footer's line under the name. */
 #define TARGET_CELLS 25u
 
 bool servo_target_line(char *out, size_t size, uint8_t target, uint8_t gpio,
-                       bool pwm, uint64_t pins, bool known)
+                       bool pwm, uint64_t pins, uint8_t proto, bool known)
 {
     if (out == NULL || size == 0u) {
         return false;
@@ -390,8 +394,16 @@ bool servo_target_line(char *out, size_t size, uint8_t target, uint8_t gpio,
         snprintf(out, size, "%s", TR(SV_TARGET_NONE));
         return true;
     }
-    /* The protocol, then as many pins as the value holds and "+N". */
-    (void)ui_target_text(out, size, TARGET_PROTOCOL, pins, TARGET_CELLS);
+    /* The protocol the pins are bound as, by its catalogue name, the same in
+     * every language: SERVO PWM or PPM; several as MIXED; none known as
+     * SERVO PWM.  Then as many pins as the value holds and "+N". */
+    const char *name = TARGET_PROTOCOL_DEFAULT;
+    if (proto == SERVO_PROTO_MIXED) {
+        name = TR(SV_TARGET_MIXED);
+    } else if (proto > 0u && proto < OUTBIND_PROTOS) {
+        name = outbind_protos()[proto].name;
+    }
+    (void)ui_target_text(out, size, name, pins, TARGET_CELLS);
     return false;
 }
 

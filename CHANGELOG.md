@@ -173,6 +173,14 @@ history is in git.
 - German docs and help name the bench states ARMED and SAFE in place of
   scharf and entschärft.
 
+### Fixed
+
+- SERVO function screens: the PORT row and the footer name the function the
+  surface pins are bound as, `PPM GPIO 20` with PPM bound on GPIO 20,
+  `SERVO PWM GPIO 20` with SERVO PWM, and `MIXED GPIO 20` (DE `GEMISCHT`)
+  with both. They read `SERVO PWM` for every bound function before. The
+  name is the catalogue's and stays English in German.
+
 ## 0.23.17 - 2026-11-23
 
 0.23.17 is a testing release. Every firmware image the release publishes

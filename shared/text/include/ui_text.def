@@ -5445,6 +5445,10 @@ UI_TEXT(SV_TARGET, 0,
 UI_TEXT(SV_TARGET_NONE, 23,
     "NO SERVO PWM PIN",
     "KEIN SERVO-PWM-PIN")
+/* Before the pins, for pins bound as more than one protocol. */
+UI_TEXT(SV_TARGET_MIXED, 23,
+    "MIXED",
+    "GEMISCHT")
 UI_TEXT(SV_TARGET_UNREAD, 23,
     "PINS NOT READ",
     "PINS NICHT AUSGELESEN")
