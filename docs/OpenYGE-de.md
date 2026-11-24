@@ -12,17 +12,17 @@ die eine Implementierung benötigt.
 > heran, damit widersprüchliche Fassungen eines Byte-Layouts nicht zu
 > unterschiedlichen Implementierungen führen.
 
-> Die Implementierung wird in einem separaten Repository entwickelt.
 > Diese Seite gehört zur maßgeblichen Spezifikation für die Prüfung
 > durch YGE. Der Codec unter `protocols/openyge/` ist gebaut und getestet,
 > aber nicht an die Firmware angebunden.
 
 **° markiert eine erschlossene Bedeutung.** Diese Einträge beruhen auf
 Feldnamen und üblicher Praxis bei ESCs (Electronic Speed Controller,
-Motorregler), nicht auf einer verbindlichen Quelle. Abschnitt 8 nennt
-die Punkte, die durch Messungen oder Auskünfte geklärt werden müssen.
-Die Markierung ° und Abschnitt 8 kennzeichnen zusammen alle unsicheren
-Angaben dieser Seite.
+Motorregler), nicht auf einer verbindlichen Quelle. Die Spalte
+Widerspruch in Abschnitt 5.3 nennt, wo zwei Quellen sich widersprechen.
+Abschnitt 8 nennt die Punkte, die durch Messungen oder Auskünfte geklärt
+werden müssen. Die Markierung °, die Widersprüche und Abschnitt 8
+kennzeichnen zusammen alle unsicheren Angaben dieser Seite.
 
 ## 1. Bitübertragungsschicht
 
@@ -158,13 +158,21 @@ strikten Ausrichtungsanforderungen undefiniertes Verhalten haben.
 
 Das Feld ist als „0.1eRPM“ beschrieben, der Referenzcode multipliziert aber
 mit zehn. Multiplizieren ist hier die Annahme: 65535 × 10 = 655 350eRPM ist
-eine plausible Obergrenze, 6 553 nicht. Messen (Abschnitt 8).
+eine plausible Obergrenze, 6 553 nicht. Messen (T1, Abschnitt 8).
 
-Die mechanische Drehzahl in RPM (Umdrehungen pro Minute) braucht die Polzahl,
-Parameter 20:
+Die mechanische Drehzahl in RPM (Umdrehungen pro Minute) braucht die Pole
+des Motors, Parameter 20. Eine Quelle liest Index 20 als Polpaare, die
+andere als Pole (Abschnitt 5.3, Widerspruch bei Index 20):
 
-    motor RPM = eRPM / (poles / 2)
-    head RPM  = motor RPM × pinion teeth / main gear teeth
+    index 20 = pole pairs:  motor RPM = eRPM / pole pairs
+    index 20 = poles:       motor RPM = eRPM / (poles / 2)
+    head RPM = motor RPM × pinion teeth / main gear teeth
+
+**Aktuelle Einschränkung.** `openyge_motor_rpm()` und `openyge_head_rpm()`
+in `protocols/openyge/` lesen Index 20 als Pole. Bei einem ESC, dessen
+Index 20 Polpaare enthält, liefern beide für 2 bis 100 Polpaare die
+doppelte Drehzahl und für 1 Polpaar false, weil ein Wert unter 2
+abgelehnt wird. Schritt H5 in Abschnitt 8 klärt, welche Lesart gilt.
 
 ---
 
@@ -208,89 +216,129 @@ Warteschlange einzelner Schreibvorgänge.
 
 ### 5.3 Parametertabelle
 
-Nach Funktion gruppiert. Die Indizes sind die auf der Leitung beobachteten;
-° markiert eine aus dem Namen erschlossene Bedeutung.
+Index i der Tabelle ist Parameter i auf der Leitung. Die Anzahl, Index 0,
+beträgt 32 ab Firmware v1.03503. Rotorflight dokumentiert den
+Parameterzugriff für ESC-Firmware ab V1.03547.
+
+Quellen, mit ihrem Schlüssel in der Spalte Quelle:
+
+| Schlüssel | Quelle |
+| --- | --- |
+| OY | das OpenYGE-Material, aus dem diese Seite geschrieben ist; die Referenz aus Abschnitt 7 |
+| RF-L | Rotorflight-Lua-Skripte (rotorflight-lua-scripts): `mspEscYge.lua` und `esc_yge.lua` |
+| RF-F | Rotorflight-Firmware (rotorflight-firmware): `src/main/sensors/esc_sensor.c` |
+| RF-D | Rotorflight-Dokumentation, ESC Telemetry |
+| M | YGE-Anleitungen: Saphir 125/155 V2, Aureus 105/135 V2, 35–135 LVT, Opto 255, ProgCard III |
+
+Die Rotorflight-Quellen stehen unter der GPL-3.0 (GNU General Public
+License Version 3.0). Diese Seite übernimmt daraus Zahlen, Namen und
+Bedeutungen, keinen Code.
+
+RF-F übergibt die zwischengespeicherte Tabelle an die Lua-Skripte als
+2-Byte-Header, danach Parameter i als Little-Endian-u16 in Slot i. RF-L
+liest die Felder in dieser Reihenfolge, also ergibt seine Feldreihenfolge
+den Index. RF-L liest 12–13, 14–15, 28–29 und 30–31 als je ein u32 und
+teilt 26 in ein unteres und ein oberes Byte.
+
+Die Spalte Zugriff:
+
+| Zugriff | Bedeutung |
+| --- | --- |
+| identity | nur lesen, wird nie geschrieben |
+| telemetry | nur lesen; eine Änderung schaltet den ESC auf ein anderes Telemetrieformat und beendet diese Leitung |
+| raw | Bedeutung unbekannt oder nur von einer Quelle benannt; als Zahl angezeigt, nur lesen, wie gelesen zurückgeschrieben |
+| CHECK | innerhalb der schreibbaren Werte änderbar; ein falscher Wert kann Modell, Empfänger oder Servos beschädigen, deshalb ist das Feld markiert |
+| edit | innerhalb der schreibbaren Werte änderbar |
+
+Ein gelesener Wert außerhalb der schreibbaren Werte wird angezeigt und wie
+gelesen zurückgeschrieben. Werte ohne Einheit sind reine Zahlen.
+
+| # | Einstellung | Werte, Skalierung, Einheit | Schreibbar | Zugriff | Quelle | Widerspruch |
+| ---: | --- | --- | --- | --- | --- | --- |
+| 0 | Parameteranzahl | 32; bestimmt die Tabellenlänge | – | identity | OY, RF-F | – |
+| 1 | ESC mode | 0 frei, ohne Governor; 1 Hubschrauber, externer Governor; 2 Hubschrauber-Governor; 3 Hubschrauber-Governor Store; 4 Segler mit Bremse; 5 Flugzeug ohne Bremse; 6 Flugzeug mit F3A-Bremse | 0–6 | CHECK | RF-L, M | OY: freies Gas oder Governor aus internem oder externem Sollwert °, keine Werte |
+| 2 | BEC voltage | Rohwert × 0,1V; 55–84 = 5,5–8,4V; bis 123 = 12,3V, solange Bit 3 von Index 26 gesetzt ist | 55–84; 55–120, solange 26 Bit 3 gesetzt ist | CHECK | RF-L, OY, M | oberes Ende: RF-L 123 = 12,3V, M 12,0V (Saphir V2, Aureus V2); M 8,4V bei den LVT-Modellen |
+| 3 | Motor timing | 0 auto normal; 1–6 = 0°, 6°, 12°, 18°, 24°, 30°; 16 auto normal; 17 auto efficient; 18 auto power; 19 auto extreme | 0–6, 17–19 | edit | RF-L, OY, M | OY: Codes 0–6, keine weiteren °; 16–19 nur aus RF-L; RF-L zeigt 0 und 16 als eine Einstellung und schreibt dafür 0 |
+| 4 | Startup response | RF-L: 0 normal, 1 smooth | – | raw | RF-L, OY | OY: Anfangsmoment, Antrieb aus dem Stillstand ° |
+| 5 | Governor P gain | Zahl | 1–9 | edit | RF-L, OY | RF-L 1–10, OY 0–9 |
+| 6 | Governor I gain | Zahl | 1–9 | edit | RF-L, OY | RF-L 1–10, OY 0–9 |
+| 7 | Throttle response | 0 slow, 1 medium, 2 fast, 3 custom (Kurve aus YGEs PC-Programm) | 0–3 | edit | RF-L, OY | OY nennt 2 „high“; dieselben 4 Werte |
+| 8 | Cut-off handling | an der Unterspannungsgrenze: 0 aus; 1 slow down, Leistung allmählich reduziert; 2 cut off | 0–2 | CHECK | RF-L, OY | – |
+| 9 | Cut-off voltage per cell | 0–5 = 2,9–3,4V, 0,1V je Stufe, LiPo | 0–5 | edit | RF-L, OY, M | – |
+| 10 | Active freewheel | 0 aus, 1 auto, 2 unbenutzt, 3 immer an | 0, 1, 3 | edit | RF-L, OY, M | OY: an oder aus °; RF-L: 4 Codes, 2 unbenutzt |
+| 11 | ESC type | Modellcode, Tabelle unten | – | identity | RF-L, OY | – |
+| 12–13 | Firmware version | u32, 12 das untere Wort; Version = Wert / 100000, 103555 = 1.03555 | – | identity | RF-L, OY | – |
+| 14–15 | Serial number | u32, 14 das untere Wort | – | identity | RF-L, OY | – |
+| 16 | mAh alarm limit | OY: Verbrauch, bei dem der ESC eine Telemetriewarnung auslöst | – | raw | OY | RF-L: unbenannt |
+| 17 | Stick zero | 900–1900µs, Eingangspulsweite, die als Gas null gilt | 900–1900 | edit | RF-L, OY | – |
+| 18 | Stick range | 600–1500µs, Spanne von null bis Vollgas | 600–1500 | edit | RF-L, OY | – |
+| 19 | Stick period | OY: erwartete Frameperiode des Eingangs ° | – | raw | OY | RF-L: unbenannt |
+| 20 | Motor pole pairs | RF-L: 1–100 Polpaare | – | raw | RF-L, OY | RF-L Polpaare, OY Pole: Faktor 2 auseinander |
+| 21 | Pinion teeth | 1–255 | 1–255 | edit | RF-L, OY | – |
+| 22 | Main gear teeth | 0–1800 | 0–1800 | edit | RF-L, OY | – |
+| 23 | Minimum start power | 0–26% | 0–26 | edit | RF-L, OY | – |
+| 24 | Maximum start power | 0–31% | 0–31 | edit | RF-L, OY | – |
+| 25 | Telemetry type | OY: welches Telemetrieformat der ESC sendet °; M: YGE, Jeti EX Bus, HoTT V4 oder MSBv2, gewählt in YGEs PC-Programm | – | telemetry | OY, M | RF-L: unbenannt; die Codes sind nicht bekannt |
+| 26 | Flags | unteres Byte: Bit 0 Drehrichtung (0 normal, 1 umgekehrt), Bit 1 F3C-Autorotation (0 aus, 1 an), Bit 2 Verbrauchszähler behalten, Bit 3 BEC bis 12V; Bits 4–7 und das obere Byte unbenannt | Bit 0 und Bit 1; jedes andere Bit wie gelesen | Bit 0 CHECK, Bit 1 edit, der Rest raw | RF-L, OY | OY: Bitfeld, Inhalt unbekannt |
+| 27 | Current limit | Rohwert / 100 = A; 1–65500 = 0,01–655,00A | 1–65500 | CHECK | RF-L, OY, M | – |
+| 28–29 | Soft start, soft run | OY: 28 Hochlaufrate aus dem Stand °, 29 Ratenbegrenzung für Gasänderungen im Betrieb ° | – | raw | OY | RF-L: ein unbenanntes u32 |
+| 30–31 | Soft blend, RPM setpoint | OY: 30 Übergang von der Soft-Start-Rampe zum normalen Lauf °, 31 Sollwert des Governors ° | – | raw | OY | RF-L: ein unbenanntes u32 |
+
+Hinweise je Index:
+
+- 0: RF-F schreibt Index 0 nie.
+- 1: RF-L markiert Modus 0 als Achtung. M führt die Modi 1 bis 6 für die
+  Modusprogrammierung per Knüppel und nennt Modus 1 für einen externen
+  Governor wie VBar.
+- 2: M (Saphir V2, Aureus V2, 35–135 LVT): die Spannung des BEC (Battery
+  Eliminator Circuit) wird in 0,1V-Schritten in YGEs PC-Programm
+  eingestellt. Ein Wert über der Nennspannung der Servos beschädigt sie.
+- 3: M: automatisches Timing oder 6 feste Stufen.
+- 7: Wert 3 wählt eine Kurve, die nur YGEs PC-Programm einstellt.
+- 9: M (ProgCard III): 2,9 bis 3,4V je Zelle für LiPo.
+- 26: RF-L schreibt nur die Bits 0 und 1 und jedes andere Bit wie gelesen
+  zurück. Bit 3 hebt das obere Ende von Index 2 von 84 auf 123.
+- 27: RF-L ändert ihn in Schritten von 100, 1,00A. M (Opto 255):
+  Strombegrenzung bis 400A.
+- 21 und 22 ergeben mit der Motordrehzahl die Kopfdrehzahl (Abschnitt 4).
+
+Die Kommentare der Referenz sind um 26–28 falsch nummeriert (drei
+aufeinanderfolgende Einträge tragen die 26). RF-L legt die Flags auf 26
+und die Strombegrenzung auf 27.
 
 Bestätige die Indizes vor dem Schreiben auf einen echten ESC. Lies
 zur Zuordnung zunächst alle Werte aus, ändere eine Einstellung mit
 YGEs eigenem Werkzeug und lies die Werte erneut aus. Der geänderte
-Index gehört zu dieser Einstellung.
+Index gehört zu dieser Einstellung (Schritt H5, Abschnitt 8).
 
-Die Kommentare der Referenz sind um 26–28 falsch nummeriert (drei
-aufeinanderfolgende Einträge tragen die 26), also ist mindestens einer der
-drei in der Referenz falsch.
+#### ESC-Typcodes, Index 11
 
-#### Identität, nur lesen
+| Code | Modell |
+| ---: | --- |
+| 848 | 35 LVT BEC |
+| 1616 | 65 LVT BEC |
+| 2128 | 85 LVT BEC |
+| 2384 | 95 LVT BEC |
+| 4944 | 135 LVT BEC |
+| 2304 | 90 HVT Opto |
+| 4608 | 120 HVT Opto |
+| 5712 | 165 HVT |
+| 8272 | 205 HVT |
+| 8273 | 205 HVT BEC |
+| 4177 | Aureus 105 |
+| 4179 | Aureus 105 v2 |
+| 5025 | Aureus 135 |
+| 5027 | Aureus 135 v2 |
+| 4689 | Saphir 125 |
+| 5457 | Saphir 155 |
+| 5459 | Saphir 155 v2 |
+| 4928 | Opto 135 |
+| 9552 | Opto 255 |
+| 16464 | Opto 405 |
 
-| # | Einstellung | Bedeutung |
-| ---: | --- | --- |
-| 0 | Parameteranzahl | 32 ab Firmware v1.03503. Zuerst lesen; definiert die Tabelle |
-| 11 | ESC type | Modellkennung, unteres Wort |
-| 12–13 | Firmware version | unteres, oberes Wort |
-| 14–15 | Serial number | unteres, oberes Wort |
-
-#### Motor und Getriebe
-
-| # | Einstellung | Bedeutung |
-| ---: | --- | --- |
-| 20 | Motor pole count | Magnetpole; `motor RPM = eRPM / (poles / 2)` |
-| 21 | Pinion teeth | |
-| 22 | Main gear teeth | ergibt mit 21 die Kopfdrehzahl |
-| 3 | Motor timing | Kommutierungsvorlauf. `0` automatisch; sonst `1` = 0° bis `6` = 30°, 6° je Stufe ° |
-
-#### Governor
-
-| # | Einstellung | Bedeutung |
-| ---: | --- | --- |
-| 1 | Device mode | frei laufendes Gas, oder Governor aus internem oder externem Sollwert ° ; entscheidet, ob 5, 6 und 31 eine Wirkung haben |
-| 5 | Governor P gain | 0–9 |
-| 6 | Governor I gain | 0–9 |
-| 31 | RPM setpoint | Sollwert des Governors ° |
-
-#### Anlauf und Rampen
-
-| # | Einstellung | Bedeutung |
-| ---: | --- | --- |
-| 4 | Initial torque | Antrieb aus dem Stillstand ° |
-| 23 | Minimum start power | untere Grenze der Anlauframpe ° |
-| 24 | Maximum start power | obere Grenze der Anlauframpe ° |
-| 28 | Soft start | Hochlaufrate aus dem Stand ° |
-| 29 | Soft run | Ratenbegrenzung für Gasänderungen im Betrieb ° |
-| 30 | Soft blend | Übergang zwischen Soft-Start-Rampe und normalem Lauf ° |
-| 7 | Throttle response | slow / medium / high / custom |
-| 10 | Freewheel demand | aktiver Freilauf (komplementäre PWM (Pulsweitenmodulation)) an oder aus ° |
-
-#### Schutz und Grenzen
-
-| # | Einstellung | Bedeutung |
-| ---: | --- | --- |
-| 8 | Cut-off type | an der Unterspannungsgrenze: `0` nichts, `1` Leistung allmählich reduzieren, `2` Leistung abschalten |
-| 9 | Cut-off voltage per cell | Offset mit `0` = 2,9V; die Schrittweite ist nicht angegeben, 0,1V je Zähler ist die Annahme ° |
-| 27 | Current limit | ° |
-| 16 | mAh alarm limit | Verbrauch, bei dem der ESC eine Telemetriewarnung auslöst |
-
-#### BEC
-
-| # | Einstellung | Bedeutung |
-| ---: | --- | --- |
-| 2 | BEC voltage | geregelte Ausgangsspannung des BEC (Battery Eliminator Circuit) zu Empfänger und Servos, in 0,1V. Ein Wert über der Nennspannung der Servos beschädigt sie |
-
-#### Kalibrierung des Eingangssignals
-
-| # | Einstellung | Bedeutung |
-| ---: | --- | --- |
-| 17 | `STK_ZERO` | Eingangspulsweite, die als Gas null gilt ° |
-| 18 | `STK_RANGE` | Spanne von null bis Vollgas ° |
-| 19 | `STK_PERIOD` | erwartete Frameperiode des Eingangs ° |
-
-Die Einheiten sind vermutlich Mikrosekunden ° .
-
-#### Telemetrie und Flags
-
-| # | Einstellung | Bedeutung |
-| ---: | --- | --- |
-| 25 | Telemetry type | welches Telemetrieformat der ESC ausgibt ° ; ein ESC mit einem anderen Format antwortet auf dieses Protokoll nicht |
-| 26 | Flags | Bitfeld, Inhalt unbekannt; mitführen, nicht interpretieren |
+Quelle: RF-L. Ein anderer Code wird als Zahl angezeigt. Hexadezimal
+gelesen ergeben die oberen Ziffern bei 17 der 20 Codes den Nennstrom des
+Modells, 848 = 0x350 für den 35 LVT BEC °.
 
 ---
 
@@ -372,24 +420,48 @@ erkennen, wenn davor Rauschen mit einem plausiblen Sync liegt.
 
 ---
 
-## 8. Was zu messen ist, bevor diese Seite als gesichert gilt
+## 8. Offene Messungen
 
-1. Skalierung von `rpm`: bekannter Motor, bekannte Polzahl, bekannte
-   mechanische Drehzahl. Entscheidet ×10 gegen ÷10.
-2. CRC-Seed: einen Frame aufzeichnen; bestätigen, dass er mit 0x0000
-   verifiziert und mit 0xFFFF fehlschlägt.
-3. Framelänge: bestätigen, dass ein v3-Telemetrieframe 34 Bytes hat und
-   `frame_length` die CRC mitzählt.
-4. Legacy-Header: bestätigen, dass ein ESC vor v3 `seq` und `device` auslässt
-   und die Payload bei Offset 4 beginnt.
-5. Umschaltzeit: die Lücke zwischen dem letzten Byte einer Anfrage und dem
-   ersten Byte der Antwort. Bestimmt das Timing der Session-Schicht.
-6. Parameterindizes, mit YGE oder per Lesen-Ändern-Lesen gegen deren eigenes
-   Werkzeug, vor jedem Schreiben. Abschnitt 5.3, und die Schrittweite der
-   Abschaltspannung mit ihnen.
-7. `status2` und `reserved1`: beide über eine Sitzung mitschreiben; ist
-   `reserved1` ein High-Byte des Verbrauchs, bewegt es sich auf einem langen
-   Lauf.
+Jede Unbekannte nennt den Hardwareschritt, der sie klärt. Die Schritte H3
+bis H6 brauchen einen YGE-ESC mit OpenYGE-Firmware ab V1.03547, Telemetrietyp
+YGE, einen Akku und keinen Propeller. H5 und H6 brauchen zusätzlich YGEs
+USB-Adapter und PC-Programm.
+
+| Schritt | Was er tut |
+| --- | --- |
+| H3 | nur lesen: Zeit vom Einschalten bis zum ersten Frame, Auto-Frames, 100 Anfragen, Schwellen-Sweep des Logikanalysators von 1,0 bis 3,0V, Adresse, Echo der Sequenznummer; Versorgungsstrom über 10s aus dem PD mini; Gaskabel angeschlossen und abgezogen |
+| H4 | Index 21 (Ritzel, ohne Wirkung auf den Antrieb) um 1 erhöhen, lesen, aus- und einschalten, lesen, 20 Mal; jedes schreibbare Feld einmal auf Minimum und Maximum; Schreibvorgänge im Abstand von 4ms, 20ms und 50ms |
+| H5 | in YGEs PC-Programm eine Einstellung ändern, die Tabelle am Prüfstand lesen, vergleichen; eine Modusprogrammierung per Knüppel ausführen, vergleichen |
+| H6 | Logikanalysator am Telemetriekabel, während YGEs PC-Programm verbindet, liest und schreibt; am Gaskabel, während eine ProgCard liest und schreibt |
+
+| # | Unbekannt | Geklärt durch |
+| --- | --- | --- |
+| U1 | Sendepegel des ESC (3,3V oder 5V), ein Pull-up auf der ESC-Seite, der Ruhepegel | H3, Schwellen-Sweep und Oszilloskop |
+| U2 | Umschaltzeit vom Ende einer Anfrage bis zum ersten Antwortbyte und die Lücken zwischen Antwortbytes | H3, 100 Anfragen |
+| U3 | die Adresse des ESC; ob Gerät 1 und Broadcast 0 beantwortet werden | H3 |
+| U4 | ob `WRITE_PARAM_RESP` den geschriebenen Index und Wert in `pidx` und `pdata` trägt | H4 |
+| U5 | wann ein Schreiben gespeichert wird und ob es Aus- und Einschalten übersteht | H4, 20 Zyklen |
+| U6 | was der ESC mit einem Wert außerhalb des Bereichs tut | nicht gemessen: der Schreibschutz lehnt einen solchen Wert ab, er wird nie gesendet |
+| U7 | die Bedeutungen von 4, 16, 19, 25, 26 oberes Byte und 28 bis 31 sowie die Widersprüche aus Abschnitt 5.3: Index 20 Polpaare oder Pole, Verstärkungen 1–10 oder 0–9, Timing-Codes 16–19, Freilaufwerte | H5 oder eine Auskunft von YGE |
+| U8 | ob eine Modusprogrammierung per Knüppel den Telemetrietyp und andere Indizes zurücksetzt | H5 |
+| U9 | ob ein angeschlossenes Gaskabel oder ein Gassignal beeinflusst, ob der ESC antwortet | H3, Variante mit Gaskabel |
+| U10 | Zeit vom Einschalten bis zum ersten Frame; ob überhaupt `TELE_AUTO`-Frames kommen | H3 |
+| U11 | Einschalt- und Anlaufstrom am PD mini; die niedrigste Spannung, bei der jedes Modell antwortet | H3, Stromaufzeichnung |
+| U12 | Opto-Modelle: ob der Telemetrieanschluss Versorgung von der Empfängerseite braucht | H3 mit einem Opto-Modell |
+| U13 | das Protokoll der ProgCard auf dem Gaskabel | H6 |
+| U14 | ob YGEs PC-Programm OpenYGE-Frames spricht oder ein eigenes Protokoll | H6 |
+| U15 | der kürzeste Abstand aufeinanderfolgender Schreibvorgänge; RF-F nutzt 4ms | H4 |
+| U16 | ob der ESC `seq` zurückspiegelt, wie Abschnitt 2.1 angibt | H3 |
+
+Prüfungen am Telemetrieframe, aus denselben Aufzeichnungen:
+
+| # | Prüfung | Geklärt durch |
+| --- | --- | --- |
+| T1 | Skalierung von `rpm`, ×10 gegen ÷10 | ein Lauf mit bekanntem Motor, bekannten Polen und bekannter mechanischer Drehzahl |
+| T2 | CRC-Seed: ein aufgezeichneter Frame verifiziert mit 0x0000 und schlägt mit 0xFFFF fehl; RF-F nutzt Seed 0 | Aufzeichnung aus H3 |
+| T3 | ein v3-Telemetrieframe hat 34 Bytes, und `frame_length` zählt die CRC mit; RF-F zählt sie mit | Aufzeichnung aus H3 |
+| T4 | ein ESC vor v3 lässt `seq` und `device` aus, seine Payload beginnt bei Offset 4 | Aufzeichnung von einem ESC vor v3 |
+| T5 | `status2` und `reserved1`; ist `reserved1` ein High-Byte des Verbrauchs, bewegt es sich auf einem langen Lauf | Aufzeichnung über einen Lauf |
 
 ---
 
@@ -426,10 +498,51 @@ zurück.
 Nicht gebaut: `openyge_session.c`, die Anfrage-Antwort-State-Machine (Pollen
 im Frametakt, Abgleich der Sequenznummer, Lese- und Schreibtimeouts, Rückfall
 aufs Zuhören bei einem ESC vor v3). Sie braucht zuerst die Messung der
-Umschaltzeit aus Abschnitt 8. Die Implementierung wird in einem eigenen
-Repository verfolgt.
+Umschaltzeit, U2 in Abschnitt 8, und das Timing aus Abschnitt 10. Session,
+Pin-Treiber und Bildschirme sind die Slices der Programmierung für YGE-ESCs;
+diese Seite ist ihre Spezifikation.
 
 Offene Entscheidung: welche ESC-Protokolle außer OpenYGE unterstützt werden.
 Das Ausgangsmaterial steht neben Hobbywing, Kontronik, Scorpion, OMP, ZTW,
 APD, FLY, Graupner und XDFly; mehrere teilen sich eine State Machine, keines
 ein Frameformat. Erst ein Protokoll auf Hardware beweisen, dann ein zweites.
+
+---
+
+## 10. Session-Timing
+
+Die Zeiten, die ein Master beim Pollen und Schreiben einhält. Die Werte
+sind die Konstanten von RF-F. RF-F markiert beide Timeouts mit „zu
+bestätigen“ und die Schreibperiode als vorläufig; U2, U10 und U15 aus
+Abschnitt 8 klären sie. Die Spalte Session enthält die Werte für
+`openyge_session.c`, das nicht gebaut ist; ein als gewählt markierter Wert
+hat keine Quelle.
+
+| Zeit | RF-F | Gezählt ab | Session |
+| --- | ---: | --- | --- |
+| Boot-Wartezeit | 5000ms | dem Start des Flugcontrollers; RF-F sieht das Einschalten des ESC nicht | 5000ms, nachdem die Versorgung als an gelesen wird; Einstellung 1000–20000ms |
+| Auf den ersten Frame hören | – | – | bis 3000ms, gewählt |
+| Erste Anfrage nach einem Auto-Frame | 20ms | dem Ende dieses Frames | – |
+| Anfrageperiode | 38ms | dem Ende der vorigen Antwort bis zur nächsten Anfrage; etwa 50ms je Zyklus, 20Hz | 40ms, gewählt |
+| Schreibperiode | 4ms | dem Ende der vorigen Antwort bis zur Schreibanfrage | ein Schreiben nach jeder Antwort, U15 |
+| Lese-Timeout | 200ms | dem Senden der Anfrage; „zu bestätigen“ | 200ms |
+| Schreib-Timeout | 400ms | dem Senden der Anfrage; „zu bestätigen“ | 400ms, 3 Versuche |
+| Frame-Timeout im Auto-Modus | 900ms bis hinab zu 60ms | dem vorigen Frame; er schrumpft auf den gemessenen Frameabstand plus 10ms, nie unter 60ms | – |
+| Tabelle lesen nach einem Schreiben | – | – | bis 10000ms, gewählt |
+
+So führt RF-F die Session:
+
+- Es adressiert in jeder Anfrage Gerät 1 mit gesetztem Master-Bit, 0x81.
+- Es erhöht `seq` einmal je neuer Anfrage. Ein Timeout sendet dieselbe
+  Anfrage erneut mit derselben `seq`.
+- Es verwirft eine Antwort, deren `seq` von der der Anfrage abweicht.
+  `TELE_AUTO`-Frames sind ausgenommen.
+- Es schreibt nur im Anfrage-Antwort-Modus. Nur empfangend verdrahtet hört
+  es auf `TELE_AUTO`-Frames und schreibt nichts.
+- Ein Speichern schreibt jeden Index ab 1, dessen Wert abweicht, einen je
+  Anfrageslot in aufsteigender Reihenfolge, und kehrt dann zu
+  Telemetrieanfragen zurück. Index 0 schreibt es nie.
+- Vom Speichern bis zum Senden des letzten Schreibens übernimmt es keinen
+  Wert in den Cache. Die Tabelle gibt es erst wieder frei, wenn jeder Index
+  neu gelesen wurde.
+- Ein ESC mit einem Header unter Version 3 schaltet es aufs Zuhören um.

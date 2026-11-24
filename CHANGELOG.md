@@ -98,6 +98,18 @@ history is in git.
 
 ### Changed
 
+- OpenYGE specification ([OpenYGE](docs/OpenYGE.md)): section 5.3 lists
+  indices 0 to 31 with values, scale, unit, writable values, access
+  (identity, telemetry, raw, CHECK, edit) and sources, checked against the
+  Rotorflight Lua scripts and firmware and the YGE manuals; it names 6
+  conflicts between sources (index 20 pole pairs or poles, gains 1–10 or
+  0–9, timing codes 16–19, freewheel values, the name of index 4, the BEC
+  upper end 12.3V or 12.0V) and lists 20 ESC type codes. Section 8 lists
+  16 session unknowns and 5 frame checks with the hardware step that
+  settles each; the new section 10 gives the session timing (boot delay
+  5000ms, request period 38ms, write period 4ms, read timeout 200ms,
+  write timeout 400ms). `openyge_motor_rpm()` reads index 20 as poles,
+  which gives twice the true RPM on an ESC that stores pole pairs.
 - IOmcu, remote servo node (board 3) without the port switches (POWER
   `FITTED` 0): while a KST, Hitec or ESC wire session is open, a write
   that activates another channel is refused with BUSY: an OUTPUTS slot or
