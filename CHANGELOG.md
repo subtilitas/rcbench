@@ -8,6 +8,13 @@ history is in git.
 
 ### Added
 
+- `hardware/mechanical/`: `esp32_s3_lcd_185.step`, the Waveshare
+  ESP32-S3-Touch-LCD-1.85, a round 1.85" display board 55.00mm across and
+  9.70mm over all, measured from Waveshare's STEP file with
+  `_measure_esp32_s3_lcd_185.py`; `bearing_6704_2rs.step`, a ball bearing
+  20 x 27 x 4mm; `acrylic_disc_49_5.step`, a clear acrylic disc 49.5mm
+  across and 2mm thick
+  ([Mechanical parts](hardware/mechanical/README.md#round-display-board-waveshare-esp32-s3-touch-lcd-185)).
 - Storyboards `hitec-rbmod`, programming a Hitec D series servo on the
   rbmod carrier in 8 steps, and `stop`, STOP as an emergency stop in 4
   steps. The renderer draws the Hitec views on the carrier

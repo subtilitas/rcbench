@@ -18,6 +18,11 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `esp32_c6_zero.py` | spec of the Waveshare ESP32-C6-Zero |
 | `core2350b.py` | spec of the Waveshare Core2350B and its USB adapter board |
 | `es3c28p.py` | spec of the LCDWIKI ES3C28P, the display node's board: 2.8" display, ESP32-S3, sockets |
+| `esp32_s3_lcd_185.py` | spec of the Waveshare ESP32-S3-Touch-LCD-1.85: round 1.85" display, ESP32-S3, sockets |
+| `_measure_esp32_s3_lcd_185.py` | measures Waveshare's STEP file of the ESP32-S3-Touch-LCD-1.85 with OpenCASCADE |
+| `_esp32_s3_lcd_185_data.py` | outlines, holes and the place and size of the parts of the ESP32-S3-Touch-LCD-1.85, written by `_measure_esp32_s3_lcd_185.py` |
+| `bearing_6704_2rs.py` | spec of the ball bearing 6704-2RS, 20 x 27 x 4mm |
+| `acrylic_disc.py` | spec of a clear acrylic disc, 49.5mm across and 2mm thick |
 | `rp2350_can.py`, `ina3221_module.py`, `dcdc_buck_mini.py`, `usbc_pd_trigger.py` | specs of 4 module boards, part by part: Waveshare RP2350-CAN, INA3221 board, Mini560 buck converter, USB-C PD trigger board |
 | `matek_mbec12s.py` | spec of the Matek mBEC12S buck converter, 6V to 60V in |
 | `ina228_node.py` | layout of the remote INA228 sensor node: INA228 module, buck converter and display in place |
@@ -47,7 +52,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `_measure_step.py` | measures Waveshare's STEP file of the panel board with OpenCASCADE |
 | `_solid.py` | profiles of straight sides and arcs pushed along an axis, and round rods along a path of lines and arcs, turned and moved, as solids with flat, cylindrical and toroidal faces |
 | `_parts.py` | shapes of electronic parts: chip parts, leaded packages, wire sockets, USB sockets, card slot, buttons, pin header, shunt, both halves of the XT90PW |
-| `check_overlap.py` | fails when two solids share volume in the panel board's model, in the INA228 module with its case, in one of the 5 module boards, in the Core2350B's USB adapter board, in the ES3C28P, in a cell, in the standard servo, in the KST X10, in the WitMotion sensor, in one of the 2 models of the rbmod carrier or in one of its 4 module boards |
+| `check_overlap.py` | fails when two solids share volume in the panel board's model, in the INA228 module with its case, in one of the 5 module boards, in the Core2350B's USB adapter board, in the ES3C28P, in the ESP32-S3-Touch-LCD-1.85, in the 6704-2RS bearing, in a cell, in the standard servo, in the KST X10, in the WitMotion sensor, in one of the 2 models of the rbmod carrier or in one of its 4 module boards |
 | `check_panel_7b.py` | holds the panel board's model against Waveshare's STEP file |
 | `gen_models.py` | writes `models/` from the specs; `--check` fails on drift and on a file under `models/` or `renders/` that `_models.py` does not account for |
 | `_models.py` | names the folder of each model under `models/` and of each picture under `renders/`: `pcb`, `casing` or `parts` |
@@ -55,9 +60,9 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `_refit.py` | fits planes, cylinders, cones, tori and a thread's surfaces to a mesh part |
 | `_surface.py`, `_segment.py` | the surfaces and their fits, and the faces grown on them, for `_refit.py` |
 | `check_refit.py` | holds the dial's solids, read back with OpenCASCADE, against the mesh |
-| `models/pcb/` | 17 models: 16 boards with their parts and the sensor node's layout; STEP |
+| `models/pcb/` | 18 models: 17 boards with their parts and the sensor node's layout; STEP |
 | `models/casing/` | 11 printed parts: the Dial's base, the display node's case in 2 variants, the sensor node's case, the INA228 module's case, the flap drive's frame; STEP, and STL for 9 of them |
-| `models/parts/` | 18 models of bought parts and of assemblies: emergency stop button, M5Stack Dial and its nut, 3 servos, an ESC, a motor, the set of both and a motor simulator, 2 cells, inertial sensor, the flap drive's assembly and wing; STEP |
+| `models/parts/` | 20 models of bought parts and of assemblies: acrylic disc, 6704-2RS ball bearing, emergency stop button, M5Stack Dial and its nut, 3 servos, an ESC, a motor, the set of both and a motor simulator, 2 cells, inertial sensor, the flap drive's assembly and wing; STEP |
 | `renders/` | OpenCASCADE renders in the folders of `models/`: `pcb/`, `casing/`, `parts/`; a view of several models lies in the folder `_models.py` names for it. The contact sheet `all.png` lies beside the folders |
 | `vendor/` | third-party meshes, unchanged, each with its licence |
 
@@ -78,7 +83,8 @@ xvfb-run -a python3 hardware/kicad/tools/step_render.py \
 xvfb-run -a python3 hardware/kicad/tools/step_render.py \
     hardware/mechanical/renders --size 640 480 --from XposYnegZneg \
     --suffix _back --folders \
-    --step hardware/mechanical/models/pcb/es3c28p.step
+    --step hardware/mechanical/models/pcb/es3c28p.step \
+    hardware/mechanical/models/pcb/esp32_s3_lcd_185.step
 ```
 
 ## Emergency stop button, M16
@@ -1083,6 +1089,78 @@ axes are drawn as the picture shows them: X to one ear, Y across, Z out of
 the face. The USB socket, the rounding of the body's upper edge and any
 lamp or switch are not in the picture and not drawn. The maker's logo is
 drawn as the letters "WIT". No dimension is verified on a sensor.
+
+## Round display board, Waveshare ESP32-S3-Touch-LCD-1.85
+
+An ESP32-S3 board behind a round 1.85" display of 360 x 360 pixels with
+a capacitive touch panel. Cover glass 55.00mm +/- 0.1mm across, view
+area 46.08mm across, 9.70mm over all: 0.70mm glass, 5.70mm from the
+glass's front to the board's back, 4.0mm of threaded insert behind it.
+The board is held by 3 M2 screws in its brass inserts. It has no
+footprint in the KiCad library.
+
+| ![ESP32-S3-Touch-LCD-1.85, front](renders/pcb/esp32_s3_lcd_185.png) | ![ESP32-S3-Touch-LCD-1.85, back](renders/pcb/esp32_s3_lcd_185_back.png) |
+| --- | --- |
+| front | back |
+
+| File | Content | Origin |
+| --- | --- | --- |
+| `esp32_s3_lcd_185.step` | the ESP32-S3-Touch-LCD-1.85: glass with its black print round the view area, display with its flat cable folded under it and the stiffener on the cable, foam ring, board with its outline and holes, 3 threaded inserts; on the back the ESP32-S3, 17 leaded packages, 79 chip parts, USB Type-C, microSD slot turned 27 degrees, wire sockets for battery, speaker, RTC (real-time clock) cell, I2C and UART, the PWR, BOOT and RESET buttons; on the front the display socket and 28 chip parts; 491 solids, 3.8MB | the center of the view area on the glass's front face, +z to the viewer; seen from the front x to the right and y up, the USB socket down |
+
+Sources: Waveshare's outline drawing and STEP file of 2026-07-03, both
+in `ESP32-S3-Touch-LCD-1.85.rar` ("Mechanical Files" on the board's page
+at docs.waveshare.com). Waveshare states no licence for them, so neither
+is in this repository. `_measure_esp32_s3_lcd_185.py` reads the STEP
+file with OpenCASCADE into `_esp32_s3_lcd_185_data.py`:
+
+```sh
+python3 hardware/mechanical/_measure_esp32_s3_lcd_185.py \
+    ESP32-S3-Touch-LCD-1_85-20260703.stp
+```
+
+The board's outline is a circle of 23.955mm radius over its upper half
+with a flat at the top, and two arcs of about 28.8mm radius meeting under
+the USB socket with a flat of 10.0mm there. Waveshare's file draws the
+lower arcs as short lines; the model keeps them as lines, simplified to
+0.01mm. Chip parts, also when turned, are drawn with their end caps, and
+leaded packages as a body and its feet. The USB socket and the microSD
+slot are shapes of `_parts.py`. Every other part is the outline of its
+largest flat face pushed over its height, at its angle on the board.
+That includes the turned wire sockets and the side buttons. Parts that
+reach into the board in Waveshare's file are cut at the board's face.
+
+Estimated, not in a source: the inserts' neck in the board (2.8mm) and
+bore (1.6mm). The USB socket's shell sits on the board; Waveshare's file
+sinks it 0.91mm into the board. No dimension is verified with a caliper
+on a board.
+
+## Ball bearing 6704-2RS
+
+A thin-section deep-groove ball bearing, sealed on both sides: bore 20mm,
+outside diameter 27mm, width 4mm, the ISO 15 boundary dimensions of a
+6704, as the seller's listing repeats them.
+
+| File | Content | Origin |
+| --- | --- | --- |
+| `bearing_6704_2rs.step` | outer ring, inner ring, 2 black seals; 4 solids | on the axis, z = 0 on one side face, the other at z = 4 |
+
+Estimated, not in a source: the inner ring's outside diameter (22.0mm),
+the outer ring's bore (25.0mm), the seals' thickness (0.5mm) and their
+depth below the side faces (0.15mm). The rings' edge chamfers, 0.2mm at
+least by ISO 15, are not drawn. The balls and the cage lie behind the
+seals and are not drawn.
+
+## Acrylic disc
+
+A flat round blank of clear acrylic, sold as "50mm": 49.5mm across and
+2mm thick by the seller's dimensioned picture.
+
+| File | Content | Origin |
+| --- | --- | --- |
+| `acrylic_disc_49_5.step` | the disc, 1 solid, drawn pale blue: STEP carries no transparency here | on the axis, z = 0 on one face, the other at z = 2 |
+
+Whether the edges are square, rounded or chamfered is not known; the
+model draws them square.
 
 ## Licence
 

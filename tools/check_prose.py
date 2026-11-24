@@ -17,10 +17,12 @@ The rules, each a name in the output and in tools/check_prose_allow.txt:
 - exclamation     "!" in prose.
 - emoji           an emoji, a pictograph or a check mark symbol in prose.
 - stale-esp32s3   ESP32-S3: the panel is an ESP32-P4.  The M5Stack Dial's
-                  module and the display node's board (the ES3C28P) are
+                  module, the display node's board (the ES3C28P) and the
+                  round display board ESP32-S3-Touch-LCD-1.85 are
                   ESP32-S3s, so the name passes where "Dial", "ES3C28P",
-                  "display node" or "Anzeigeknoten" stands on its line or in
-                  the 300 characters before it.
+                  "display node", "Anzeigeknoten", "LCD-1.85" or
+                  "lcd_185" stands on its line or in the 300 characters
+                  before it.
 - stale-simulation  SIMULATION: the mark on a tile and a pill read
                   SIMULATED (SIMULIERT).  The watermark across a simulated
                   bench reads SIMULATION and stands in the allowlist.
@@ -268,16 +270,17 @@ def skip_narrator_en(view: str, m: re.Match) -> bool:
 
 
 def skip_esp32s3_dial(view: str, m: re.Match) -> bool:
-    """True for ESP32-S3 said of the M5Stack Dial or the display node.
+    """True for ESP32-S3 said of the Dial or a display board named here.
 
-    "Dial", "ES3C28P", "display node" or "Anzeigeknoten" stands on the
-    line of the match or in the 300 characters before it.
+    "Dial", "ES3C28P", "display node", "Anzeigeknoten", "LCD-1.85" or
+    "lcd_185" stands on the line of the match or in the 300 characters
+    before it.
     """
     start = min(view.rfind("\n", 0, m.start()) + 1, max(0, m.start() - 300))
     end = view.find("\n", m.end())
     near = view[start:end if end >= 0 else len(view)]
-    return re.search(r"\b(?:Dial|ES3C28P|display node|Anzeigeknoten)\b",
-                     near) is not None
+    return re.search(r"\b(?:Dial|ES3C28P|display node|Anzeigeknoten)\b"
+                     r"|LCD-1\.85|lcd_185", near) is not None
 
 
 def skip_exclamation(view: str, m: re.Match) -> bool:

@@ -20,7 +20,8 @@ ROOT = Path(__file__).resolve().parent / "models"
 FOLDERS = {
     "pcb": (
         "boost_5v_en", "core2350b", "core2350b_usb_adapter",
-        "dcdc_buck_mini", "es3c28p", "esp32_c6_zero", "ina219_cjmcu219",
+        "dcdc_buck_mini", "es3c28p", "esp32_c6_zero", "esp32_s3_lcd_185",
+        "ina219_cjmcu219",
         "ina228_node_layout", "ina228_xt90", "ina3221_module",
         "lipo_charger_boost_5v", "matek_mbec12s", "panel_7b", "rbmod_v2",
         "rbmod_v2_smd", "rp2350_can", "usbc_pd_trigger"),
@@ -31,9 +32,10 @@ FOLDERS = {
         "ina228_node_bezel", "ina228_node_frame", "ina228_node_plate",
         "ina228_xt90_case"),
     "parts": (
-        "esc_motor_set", "estop_m16_assembly", "estop_m16_button",
-        "estop_m16_nut", "estop_m16_shim", "flap_drive_assembly",
-        "flap_drive_wing", "flycolor_flydragon_lite_40a", "hitec_d485hw",
+        "acrylic_disc_49_5", "bearing_6704_2rs", "esc_motor_set",
+        "estop_m16_assembly", "estop_m16_button", "estop_m16_nut",
+        "estop_m16_shim", "flap_drive_assembly", "flap_drive_wing",
+        "flycolor_flydragon_lite_40a", "hitec_d485hw",
         "kst_x10", "lipo_102540_1000mah", "lipo_702030_380mah", "m5dial",
         "m5dial_nut", "motor_simulator", "servo_standard", "tmotor_at2814",
         "wit_imu"),
@@ -45,7 +47,7 @@ FOLDER = {stem: folder for folder, stems in FOLDERS.items()
 # render lies in the model's folder, the contact sheet all.png beside
 # the folders.
 VIEWS = {
-    "pcb": ("es3c28p_back",),
+    "pcb": ("es3c28p_back", "esp32_s3_lcd_185_back"),
     "casing": (
         "dial_base", "dial_base_exploded", "dial_base_section",
         "display_node_case", "display_node_case_exploded",
