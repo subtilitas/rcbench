@@ -3219,11 +3219,13 @@ is measured.
 
 ### OpenYGE wire facts
 
-Seven items require a capture: rpm scale, CRC (cyclic redundancy check) seed, frame length,
-legacy header, turnaround, parameter indices, `status2`.
+Sixteen session unknowns (U1 to U16) and five frame checks (T1 to T5) require a capture or a
+read with YGE's PC tool: transmit level, turnaround, address, write response, storage, parameter
+meanings and source conflicts, write spacing, sequence echo, rpm scale, CRC (cyclic redundancy
+check) seed, frame length, legacy header, `status2`.
 
-**Next evidence or work:** an ESC and a logic analyser;
-[list](docs/OpenYGE.md#8-what-to-measure-before-trusting-this-page).
+**Next evidence or work:** a YGE ESC, YGE's USB adapter and a logic analyser;
+[list](docs/OpenYGE.md#8-open-measurements).
 
 ### The bench in a browser
 
