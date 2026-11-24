@@ -468,18 +468,27 @@ Built, host-tested, not wired in:
       openyge_frame.c        encode, decode and the CRC, openyge_crc()
       openyge_status.c       status1 -> state, subject, warnings, faults
       openyge_params.c       the parameter cache and its completeness rule
+      openyge_map.c          the fields of section 5.3: access, writable values
+      openyge_guard.c        the gate every outgoing frame passes
+      openyge_session.c      boot wait, listen, takeover, read, write, verify
 
 The decoder counts frames, CRC errors, resyncs, and separately frames whose CRC
 held but whose shape was impossible. Nothing is cast over the receive buffer.
 `openyge_params_get` returns false until every index has arrived, and a pending
 write withdraws the whole table.
 
-`openyge_session.c` is not built. This request-response state machine
-is intended to handle periodic polling, sequence matching, read and
-write timeouts, and fallback to listening for a pre-v3 ESC. It first
-needs the turnaround measurement, U2 in section 8, and the timing of
-section 10. The session, the pin driver and the screens are the
-slices of programming for YGE ESCs; this page is their specification.
+The session is the core of programming for YGE ESCs. It keeps the
+timing of section 10 behind `oy_driver_t`: send a frame, take the
+received bytes, read a clock. The host suites run it against a simulated
+ESC that records every frame. Every frame passes `oy_guard_frame()` right
+before the driver. Only `TELE_REQ` and `WRITE_PARAM_REQ` go out. A write
+needs a complete table read in the same session, a count of 32, a v3
+header and firmware V1.03547 or later. Writable are the fields section 5.3
+marks CHECK or edit, within their Writable values. A write reads the table
+again first and stops with nothing sent when it differs. After the writes
+it reads the whole table again and compares it with the target. The pin
+driver, the link pages and the screens are not built, so neither board
+runs the session.
 
 Open decision: which ESC protocols beyond OpenYGE are supported. The source
 material sits beside Hobbywing, Kontronik, Scorpion, OMP, ZTW, APD, FLY,
@@ -493,8 +502,8 @@ format. One protocol proven on hardware first, then a second.
 The times a master keeps while it polls and writes. The values are RF-F's
 constants. RF-F marks both timeouts "to be confirmed" and the write period
 as provisional; U2, U10 and U15 in section 8 settle them. The Session
-column holds the values for `openyge_session.c`, which is not built; a
-value marked chosen has no source.
+column holds the values `openyge_session.c` uses, named constants in
+`openyge_session.h`; a value marked chosen has no source.
 
 | Time | RF-F | Counted from | Session |
 | --- | ---: | --- | --- |
@@ -506,7 +515,7 @@ value marked chosen has no source.
 | Read timeout | 200ms | the request's send; "to be confirmed" | 200ms |
 | Write timeout | 400ms | the request's send; "to be confirmed" | 400ms, 3 tries |
 | Frame timeout in auto mode | 900ms down to 60ms | the previous frame; it shrinks to the measured frame gap plus 10ms, never below 60ms | – |
-| Table read after a write | – | – | up to 10000ms, chosen |
+| Table read, also after a write | – | – | up to 10000ms, chosen |
 
 How RF-F runs the session:
 
@@ -523,3 +532,17 @@ How RF-F runs the session:
 - From the save until the last write is sent it caches no value. It
   publishes the table again once every index has been read again.
 - An ESC with a header below version 3 switches it to listening.
+
+Where `openyge_session.c` runs it differently:
+
+- It takes the address from the first v3 frame heard while listening. It
+  uses 1 when no frame comes or the frame says 0.
+- Each try of a request or a write carries a new `seq`. A reply that comes
+  after its request was sent again carries the old one and is dropped.
+- A reply counts when it arrives within the timeout of its send. Three
+  sends without one are a miss. A missed request ends the session with
+  `SILENT`. A missed write stops the writes, and the table read after
+  decides the result.
+- After the takeover it drops `TELE_AUTO` frames.
+- A count of 0 or above 64 ends a read at once with `NO_TABLE`.
+- Each write goes 40ms after the previous reply, the request period.
