@@ -7,7 +7,7 @@ behind the seals and are not drawn.
 
 Sources: the bore, outside diameter and width are the ISO 15 boundary
 dimensions of a 6704 (d 20, D 27, B 4), which the seller's listing
-(RowGlow, 10 pieces, "6704-2rs, 20 x 27 x 4 mm") repeats; the seals are
+(RowGlow, 10 pieces, "6704-2rs, 20 x 27 x 4mm") repeats; the seals are
 black in the seller's photos.
 
 Estimated, in no source: the inner ring's outside diameter (22.0), the
