@@ -411,7 +411,11 @@ static link_esc_ref_t enter_values(const esc_port_t *p,
     if (v->latched) {
         return LINK_ESC_REF_SUPPLY_OFF;
     }
-    if (mv < LINK_ESC_SUPPLY_MIN_MV || mv > PDMINI_V_MAX_MV
+    /* The board's ceiling where the supply reports one (board 3: 8400mV). */
+    const uint16_t top = (v->max_mv != 0u) ? v->max_mv
+                                           : (uint16_t)PDMINI_V_MAX_MV;
+
+    if (mv < LINK_ESC_SUPPLY_MIN_MV || mv > top
         || ma < PDMINI_I_MIN_MA || ma > PDMINI_I_MAX_MA
         || (v->vin_mv != 0u && (uint32_t)mv + PDMINI_CAP_MV > v->vin_mv)) {
         return LINK_ESC_REF_RANGE;
@@ -1068,12 +1072,12 @@ uint8_t esc_port_pin_mask(const esc_port_t *p)
                          : 0u);
 }
 
-uint8_t esc_port_may_bind(const esc_port_t *p, uint8_t mask)
+uint16_t esc_port_may_bind(const esc_port_t *p, uint16_t mask)
 {
     if (p == NULL || !p->has_pin || (p->target & LINK_EW_TARGET_PORT) != 0u) {
         return mask;
     }
-    return (uint8_t)(mask & ~(1u << (p->target & 0x07u)));
+    return (uint16_t)(mask & ~(1u << (p->target & 0x0Fu)));
 }
 
 uint64_t esc_port_pins(const esc_port_t *p)
@@ -1105,7 +1109,7 @@ void esc_port_other(esc_port_t *p, uint8_t mask)
     }
 }
 
-uint8_t esc_port_slot_pin(const outputs_t *o, uint8_t slot, uint8_t bound)
+uint8_t esc_port_slot_pin(const outputs_t *o, uint8_t slot, uint16_t bound)
 {
     if (o == NULL || slot >= OUT_MAX_SLOTS || (bound & (1u << slot)) == 0u) {
         return ESC_PORT_NO_PIN;

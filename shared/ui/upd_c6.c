@@ -107,6 +107,7 @@ const char *upd_c6_reason(const upd_c6_view_t *v)
         case FW_C6_WHY_BLE:     return TR(C6_WHY_BLE);
         case FW_C6_WHY_DEVICE:  return TR(C6_WHY_DEVICE);
         case FW_C6_WHY_PROG:    return TR(C6_WHY_PROG);
+        case FW_C6_WHY_RESTART: return TR(C6_WHY_RESTART);
         case FW_C6_WHY_ENDING:
         case FW_C6_WHY_NONE:
         default:                return TR(C6_WHY_ENDING);
@@ -123,7 +124,43 @@ bool upd_c6_holds(const upd_c6_view_t *v)
     return v != NULL
            && (v->row == FW_C6_ROW_UPDATING
                || (v->row == FW_C6_ROW_BLOCKED
-                   && v->why == FW_C6_WHY_ENDING));
+                   && (v->why == FW_C6_WHY_ENDING
+                       || v->why == FW_C6_WHY_RESTART)));
+}
+
+bool upd_refusal_line(char *out, size_t n, fw_upd_t running,
+                      fw_c6_ask_t ask)
+{
+    if (out == NULL || n == 0u) {
+        return false;
+    }
+    out[0] = '\0';
+    const char *name = NULL;
+    switch (running) {
+    case FW_UPD_C6:    name = TR(UPD_RUNS_C6);    break;
+    case FW_UPD_IOMCU: name = TR(UPD_RUNS_IOMCU); break;
+    case FW_UPD_DIAL:  name = TR(UPD_RUNS_DIAL);  break;
+    case FW_UPD_PNODE: name = TR(UPD_RUNS_PNODE); break;
+    case FW_UPD_BAL:   name = TR(UPD_RUNS_BAL);   break;
+    case FW_UPD_NONE:
+    default:           return false;
+    }
+    /* Each format at its call, so tools/check_formats.py holds it. */
+    switch (ask) {
+    case FW_C6_ASK_SUPPLY_ON:
+        (void)snprintf(out, n, TR(ALERT_SUPPLY_UPD), name);
+        return true;
+    case FW_C6_ASK_PROG5V_ON:
+        (void)snprintf(out, n, TR(ALERT_P5_UPD), name);
+        return true;
+    case FW_C6_ASK_SESSION:
+        (void)snprintf(out, n, TR(ALERT_PROG_UPD), name);
+        return true;
+    case FW_C6_ASK_OFF:
+    case FW_C6_ASK_ARM:
+    default:
+        return false;
+    }
 }
 
 /**
@@ -156,6 +193,9 @@ void upd_c6_line(const upd_c6_view_t *v, char *out, size_t n)
 
 void upd_c6_label(const upd_c6_view_t *v, char *out, size_t n)
 {
+    if (upd_fetch_label(&v->fetch, out, n)) {
+        return;
+    }
     if (v->row == FW_C6_ROW_UPDATING) {
         snprintf(out, n, TR(UPD_C6_PROGRESS),
                  v->percent > 100u ? 100u : v->percent);

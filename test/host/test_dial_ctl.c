@@ -181,7 +181,7 @@ TEST_CASE(the_scan_lists_dials_only_and_a_bind_takes_one)
     CHECK_STR_EQ(r.c.found[0].addr, "00:00:00:00:00:02 R");
     CHECK_EQ(r.c.hidden, 1u);
     dial_view_t v;
-    dial_ctl_view(&r.c, &v);
+    dial_ctl_view(&r.c, r.now, &v);
     CHECK(v.scan_done);
     CHECK_EQ(v.found_n, 1u);
     CHECK(!dial_ctl_bind(&r.c, 1u, r.now));
@@ -190,7 +190,7 @@ TEST_CASE(the_scan_lists_dials_only_and_a_bind_takes_one)
     CHECK_STR_EQ(r.c.cfg.addr, "00:00:00:00:00:02 R");
     drig_run(&r, 50u);
     CHECK(r.c.linked);
-    dial_ctl_view(&r.c, &v);
+    dial_ctl_view(&r.c, r.now, &v);
     CHECK_STR_EQ(v.bound_name, "DIAL-3A10");
 }
 
@@ -302,7 +302,7 @@ TEST_CASE(another_protocol_moves_nothing)
     CHECK_EQ(in.presses + in.holds, 0u);
     CHECK_EQ(r.c.unread, 2u);
     dial_view_t v;
-    dial_ctl_view(&r.c, &v);
+    dial_ctl_view(&r.c, r.now, &v);
     CHECK_EQ(v.proto, DK_PROTOCOL + 1u);
 }
 
@@ -356,7 +356,7 @@ TEST_CASE(a_scan_ends_when_the_bench_arms)
     drig_run(&r, 4000u);
     CHECK_EQ(r.stops, 1u);
     dial_view_t v;
-    dial_ctl_view(&r.c, &v);
+    dial_ctl_view(&r.c, r.now, &v);
     CHECK(v.scan_done);
     CHECK(v.scan_cut);
     CHECK(v.link != DIAL_LINK_SCANNING);
@@ -364,7 +364,7 @@ TEST_CASE(a_scan_ends_when_the_bench_arms)
     r.armed = false;
     CHECK_EQ(dial_ctl_scan(&r.c, false, r.now), DIAL_SCAN_STARTED);
     drig_run(&r, BLEU_SCAN_MS + 10u);
-    dial_ctl_view(&r.c, &v);
+    dial_ctl_view(&r.c, r.now, &v);
     CHECK(v.scan_done);
     CHECK(!v.scan_cut);
 }

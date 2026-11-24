@@ -44,8 +44,10 @@
 #define RCBENCH_WIFI_SCREEN_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
+#include "fw_image.h"
 #include "ui_screen.h"
 #include "ui_textkey.h"
 
@@ -181,6 +183,9 @@ typedef struct {
     wifi_offer_t offer;  /**< what the staged image is to the running one */
     wifi_gate_t  gate;  /**< whether flash may be written now */
     char         new_ver[WIFI_VER_MAX + 1];  /**< the version of the staged image */
+    /** @brief What the release key says about the staged image (fw_sig.h):
+     *  the question says it is signed, or warns that it is not. */
+    fw_sig_t     sig;
     char         run_ver[WIFI_VER_MAX + 1];  /**< the version that runs */
 
     /* Browser writes to the card, this radio session. */
@@ -299,6 +304,11 @@ typedef enum {
      *  SHA256SUMS, the image, its checks.  CANCEL ends it. */
     UPDATE_FETCHING,
     UPDATE_FETCH_FAILED,   /**< nothing written: the running image stays  */
+    /** @brief A build that enforces the release signature
+     *  (RCBENCH_SIGN_ENFORCE): the image checked out, the release key does not vouch for it, and
+     *  nothing is written.  The second 2s hold, INSTALL ANYWAY, writes it
+     *  (update_screen_take_go()); CANCEL drops it. */
+    UPDATE_UNSIGNED,
 } update_state_t;
 
 /** @brief What PANEL UPDATE shows: the write or the download and its progress. */
@@ -307,10 +317,15 @@ typedef struct {
     char           version[WIFI_VER_MAX + 1];  /**< the version of the image */
     uint32_t       written;    /**< FETCHING: bytes received              */
     uint32_t       total;  /**< FETCHING: bytes of the whole image */
-    /** FETCHING: the step and the time left; FETCH_FAILED: why, in one
-     *  line or two.  The application writes them (upd_result_text()). */
+    /** @brief FETCHING: the step and the time left; FETCH_FAILED: why, in
+     *  one line or two.  The application writes them (upd_result_text()).
+     *  FAILED: why the write failed, one line (update_fail_text()); empty
+     *  shows none. */
     char           what[96];
     char           why[96];  /**< the reason a download failed */
+    /** @brief WRITING and UNSIGNED: what the release key says about the
+     *  image (fw_sig.h). */
+    fw_sig_t       sig;
 } update_view_t;
 
 /**
@@ -320,12 +335,40 @@ typedef struct {
 void update_screen_set(const update_view_t *v);
 
 /**
- * @brief True once CLOSE was tapped on a failed write or download; cleared when
- *  read.
+ * @brief PANEL UPDATE's line under "Writing failed.": the reason the
+ *        install's console line names (fw_err_str()), in the operator's
+ *        language.
+ * @param e why the install failed; FW_OK and an unknown reason give
+ *          "Reason not known."
+ * @return the line
+ */
+const char *update_fail_text(fw_err_t e);
+
+/**
+ * @brief True once CLOSE was tapped on a failed write or download, or
+ *        CANCEL on an UNSIGNED image; cleared when read.
  *
  * @return true once
  */
 bool update_screen_take_close(void);
+
+/**
+ * @brief The line that says what the release key says about an image:
+ *        UPS_SIGNED, or UPS_HEAD and the reason, UPS_NONE or UPS_BAD, in
+ *        the operator's language.
+ * @param s   the verdict
+ * @param out takes the line, terminated
+ * @param n   bytes of @p out
+ */
+void update_sig_text(fw_sig_t s, char *out, size_t n);
+
+/**
+ * @brief True once the second hold, INSTALL ANYWAY, completed on an
+ *        UNSIGNED image; cleared when read.
+ *
+ * @return true once
+ */
+bool update_screen_take_go(void);
 
 /**
  * @brief True once CANCEL was tapped on a download; cleared when read.

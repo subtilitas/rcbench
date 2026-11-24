@@ -132,6 +132,13 @@ void bench_state_to_regs(const bench_state_t *b, uint16_t *regs)
         && b->rpm > BENCH_RPM_REG_MAX) {
         regs[LINK_BN_FLAGS] &= (uint16_t)~(uint16_t)LINK_BN_RPM_OK;
     }
+    /* The peak has no valid bit to lose: a bit of its own says 65535 is a
+     * bound, and its absence that the peak is 65,535rpm or less. */
+    if (bench_state_rpm_max_over(b)) {
+        regs[LINK_BN_FLAGS] |= (uint16_t)LINK_BN_RPM_MAX_OVER;
+    } else {
+        regs[LINK_BN_FLAGS] &= (uint16_t)~(uint16_t)LINK_BN_RPM_MAX_OVER;
+    }
 }
 
 void bench_state_run_starts(bench_state_t *b, uint16_t *regs)
@@ -228,6 +235,11 @@ void bench_state_reset_peaks(bench_state_t *b)
     b->current_max = b->current;
     b->power_max   = b->power;
     b->rpm_max     = b->rpm;
+    if (bench_state_rpm_over(b)) {
+        b->flags |= (uint16_t)LINK_BN_RPM_MAX_OVER;
+    } else {
+        b->flags &= (uint16_t)~(uint16_t)LINK_BN_RPM_MAX_OVER;
+    }
     /* And if that reading was not a measurement, neither is the floor: the
      * run's first valid voltage seeds it instead. */
     b->sag_seeded  = (b->flags & (uint16_t)LINK_BN_VOLTAGE_OK) != 0u;
@@ -239,7 +251,7 @@ void bench_totals_reset(bench_totals_t *t)
         t->mah     = 0.0;
         t->wh      = 0.0;
         t->counted = 0u;
-        t->run_s   = 0.0f;
+        t->run_ms  = 0u;
     }
 }
 
@@ -255,8 +267,8 @@ void bench_totals_count(bench_totals_t *t, const bench_state_t *b,
     } else if (dt > BENCH_TOTALS_MAX_STEP_S) {
         dt = BENCH_TOTALS_MAX_STEP_S;
     }
-    const bool settled = t->run_s >= BENCH_TOTALS_SETTLE_S;
-    t->run_s += dt;
+    const bool settled = t->run_ms >= BENCH_TOTALS_SETTLE_MS;
+    bench_totals_add_time(t, dt);
     if ((b->flags & (uint16_t)LINK_BN_TOTALS_OK) != 0u && settled) {
         /* The INA228 counts, at every conversion: its totals are the run's,
          * and a reading the panel saw adds nothing to them.  Not in the

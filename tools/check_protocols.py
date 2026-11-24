@@ -376,6 +376,13 @@ ASSERTED = {
             " && UPD_DEV_PNODE == BLEOTA_KIND_NODE_POWER - 1"
             " && UPD_DEV_BAL == BLEOTA_KIND_NODE_BAL - 1",
         ),
+        "shared/devupd/devimg.c": (
+            "DEVIMG_DIAL == BLEOTA_KIND_DIAL"
+            " && DEVIMG_PNODE == BLEOTA_KIND_NODE_POWER"
+            " && DEVIMG_BAL == BLEOTA_KIND_NODE_BAL"
+            " && DEVIMG_PNODE_S3 == BLEOTA_KIND_NODE_POWER_S3"
+            " && DEVIMG_COUNT == BLEOTA_KIND_MAX + 1",
+        ),
         "shared/devupd/devupd_client.c": (
             "BLEOTA_CTRL_MAX <= BLEU_WRITE_MAX",
             "BLEOTA_LEN_STATUS <= BLEU_EVT_DATA",
@@ -495,6 +502,11 @@ ASSERTED = {
             "SENSE_I2C_PROBE_US == I2C_TXQ_PROBE_US",
             "SENSE_I2C_CLEAR_HALF_US == I2C_TXQ_CLEAR_HALF_US",
             "SENSE_I2C_CLEAR_STRETCH_US == I2C_TXQ_CLEAR_STRETCH_US",
+        ),
+    },
+    "passthru": {
+        "shared/outputs/pass_page.c": (
+            "LINK_PA_CHANNELS == PASS_CHANNELS",
         ),
     },
     "ppm": {

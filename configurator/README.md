@@ -1,6 +1,6 @@
 # rcbench configurator
 
-This static page plans a bench for rcbench release 0.23.15. Select the
+This static page plans a bench for rcbench release 0.23.17. Select the
 functions you need to see the required parts, a wiring drawing and a
 pin-to-pin table. Functions are grouped by their required bench hardware.
 Each part beyond the base setup has a remove control. With no functions
@@ -359,7 +359,9 @@ you own". Its test object stays connected by the tick of "Drive a servo" or
 | Parts to buy | What to order for the setup, with quantity, maker, ordering name, check line, maker page, web search and a "have it" tick, and the copy buttons. Under "You have", the rows with that tick. Under "You bring", the test objects and their supplies. See "Parts to buy". |
 | Power sources | The sources of the logic and of each connected test object, from `powerSources` of the data file: voltage and current where stated, advantages, drawbacks, unknowns. "In this setup" marks a source the wires of the setup use; "In this setup: one of these" marks the 2 external servo supplies, of which the setup uses one. |
 
-The footer holds the state of the project and the trademark notice.
+The footer holds the state of the project, a link to the panel help, a link
+to the web flasher at `flash/` beside the page
+([flasher/README.md](../flasher/README.md)) and the trademark notice.
 
 ## Motor simulator
 

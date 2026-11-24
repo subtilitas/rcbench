@@ -42,6 +42,9 @@ enthält den Hinweis des Projekts.
 | der Bildschirm des Anzeigeknotens: Werte, Höchst- und Tiefstwert, Touch, Formate, Zeichnen, in der Host-Suite getestet | `firmware/node/main/node_view.c` |
 | Display und Touch des Anzeigeknotens | `firmware/node/main/node_lcd.c`, `firmware/node/main/node_disp.c` |
 | die Konsole | `firmware/node/main/node_console.c` |
+| die Servo-Rolle: die UART-Verbindung zum Core2350B, die Pumpe, `srv` auf der Konsole | `firmware/node/main/node_srv_link.c`, `firmware/node/main/node_srv.c` |
+| die Sicherheitsentscheidungen und die Abfrage des Servoknotens, unter der Host-Testsuite | `firmware/node/main/node_srv_policy.c`, `firmware/node/main/node_srv_poll.c` |
+| die Heartbeat- und RUN-Pins des Servoknotens | `firmware/node/main/node_srv_hb.c` |
 | die Central des Panels für den Leistungsknoten: Suche, Bindung, Prüfung von INFO, der RUN-Marker, in der Host-Suite getestet | `shared/ui/pnode_ctl.c` |
 | Messwerte, Summen, Spitzen und Aussetzerregel des Panels, in der Host-Suite getestet | `shared/ui/pnode_meter.c` |
 | der Eintrag LEISTUNGSKNOTEN unter SETUP > WIRELESS | `shared/ui/wireless_pnode.c` |
@@ -555,19 +558,105 @@ beiden.
 
 ### Update und Flashen
 
-Der Anzeigeknoten wird über USB geflasht, mit abgezogenem Pack am XT60:
+Das erste Image des Anzeigeknotens kommt über USB, mit abgezogenem Pack am XT60:
 
 ```sh
 esptool.py --chip esp32s3 write_flash 0x0 rcbench-node-display-merged-<version>.bin
 ```
 
-Er behält den Update-Dienst über Bluetooth LE: Art 4
+Der Anzeigeknoten nimmt Updates über Bluetooth LE vom Panel an: Art 4
 (`BLEOTA_KIND_NODE_POWER_S3`), die Chip-ID des ESP32-S3 im Kopf des Images,
 BOOT (IO0) 1s halten zum Bestätigen. Er lehnt ein Image des
 C6-Leistungsknotens ab, und der C6-Leistungsknoten lehnt seines ab, bei
-BEGIN und noch einmal am Kopf. Das Panel trägt sein Image nicht (unten).
+BEGIN und noch einmal am Kopf. Sein Update-Image ist
+`rcbench-node-display-<Version>.bin`; das Panel sendet es von der Zeile des
+Leistungsknotens, die dafür ANZEIGEKNOTEN-FIRMWARE zeigt
+([Update über Bluetooth LE](#update-über-bluetooth-le)).
 
-## Bluetooth LE
+## Der Servoknoten
+
+Der Servoknoten ist der ES3C28P des Remote-Servoknotens: das Board neben
+einem Waveshare Core2350B, auf dem die IOmcu-Firmware als Board 3 läuft
+(`IOMCU_BOARD=rsn`). Die Servo-Rolle fragt den Core2350B über einen UART
+(Universal Asynchronous Receiver-Transmitter) ab und trägt die
+Lebendigkeit des Panels über eine Heartbeat-Leitung zu ihm. Sie meldet
+sich als `rcbench-srv-XXXX` mit dem Rollen-Byte 3. Das Board ist immer an:
+kein Schlaf, kein Weckzeitgeber.
+
+### Pins des Servoknotens
+
+| Signal | ES3C28P-Pin | Core2350B |
+| --- | --- | --- |
+| UART TX, 1.000.000 Baud 8N1 | IO43 (TXD0, P2 Pin 3, über R39 100Ω) | GPIO1, UART0 RX |
+| UART RX | IO44 (RXD0, P2 Pin 4, über R38 100Ω) | GPIO0, UART0 TX |
+| HEARTBEAT | IO21 (P3 Pin 4) | GPIO3 und das Monoflop des Hauptschalters |
+| RUN | IO14 (P3 Pin 3) | RUN, über einen N-Kanal-MOSFET: IO14 high zieht RUN auf low |
+
+Die Pin-Reihenfolgen stammen aus dem Schaltplan des ES3C28P; an einem
+gelieferten Board sind sie nicht bekannt. IO21 und IO14 liegen ab dem
+Start der Rolle auf low. Die Servo-Rolle zeigt keinen Bildschirm des
+Leistungsknotens.
+
+### Die Verbindung zum Core2350B
+
+UART0 trägt jeden Link-Frame mit COBS (Consistent Overhead Byte Stuffing)
+gerahmt und mit einer CRC-16 (Cyclic Redundancy Check), wie
+[Der UART-Transport](Link-de.md#der-uart-transport) beschreibt. Eine
+Anfrage ist unterwegs; sie wird nach 50ms wiederholt und nach 1000ms
+aufgegeben, wie auf der CAN-Verbindung des Panels. Das ROM des ES3C28P
+(ESP32-S3) schreibt seine Startmeldungen mit 115.200 Baud auf denselben
+TX-Pin; die Rahmung des Core2350B verwirft sie als fehlerhafte Frames.
+Beide Empfänger beginnen wie nach einem 0x00: auf einer beim Start ruhigen
+Leitung wird der erste Frame angenommen, und Störungen enden als ein
+abgelehnter Frame an ihrem 0x00.
+
+| Austausch | Alle |
+| --- | --- |
+| IDENTITY: Board 3, Protokoll 4.41 oder später | nach jedem Verbindungsaufbau; ein anderes Board oder ein älteres Protokoll wird abgelehnt |
+| CONTROL schreiben: ARM und THROTTLE | 50ms |
+| STATUS lesen, 10 Register | 500ms; 50ms, solange ein Fehlerbit gesetzt ist oder ein ARM wartet |
+| POWER lesen, 6 Register | 100ms |
+| SUPPLY lesen, 18 Register | 100ms |
+| SENSE_WIN_A und SENSE_WIN_B lesen, je 32 Register | 50ms |
+
+### Sicherheit am Servoknoten
+
+Die Aus-Schreibvorgänge sind ARM 0 und THROTTLE 0 auf CONTROL, RAIL 0 und
+PORT_WANT 0 auf POWER und OUTPUT 0 auf SUPPLY. Sie sind ab dem Start
+fällig und nach jeder Zeile unten, die sie nennt. Ein laufender Austausch
+wird für sie aufgegeben, so folgen sie innerhalb der Leitungszeit eines
+Austauschs. CLEAR und der Frame, der auf ARMED schaltet, werden ebenso
+aufgegeben, vor dem Senden oder während sie warten, sobald ein SAFE, ein
+STOP oder ein Verlust angenommen ist, und ebenso ein CONTROL-Schreiben,
+dessen ARM vom geltenden abweicht. CONTROL ist sofort fällig, solange der
+Knoten ARM 0 oder THROTTLE 0 will und der Core2350B einen Wert ungleich 0
+halten kann, den zuletzt bestätigten oder einen höheren, seither
+gesendeten. Ein Lesen, das auf seine Antwort wartet, wird dann aufgegeben,
+so gehen ARM 0 nach einem SAFE und THROTTLE 0 nach den 150ms mit der
+nächsten Pumpe hinaus.
+
+| Ereignis | Der Servoknoten |
+| --- | --- |
+| kein KEEPALIVE seit dem Start (STANDALONE) | keine Heartbeat-Flanke; ARM 0; jedes ARM abgelehnt |
+| ein KEEPALIVE ohne STOP-Flag, der Core2350B antwortet als Board 3 | alle 20ms eine Flanke auf IO21 |
+| 300ms kein KEEPALIVE | PANEL LOST: die Flanken enden, die Aus-Schreibvorgänge; gehalten, bis ein ARM angenommen wird |
+| eine Bluetooth-LE-Trennung | dasselbe sofort |
+| STOP oder ein KEEPALIVE mit STOP-Flag | dasselbe sofort, gehalten als STOP |
+| 150ms kein THROTTLE im Zustand ARMED | THROTTLE 0 wird geschrieben; ARMED bleibt bis zu den 300ms |
+| 1000ms keine Antwort des Core2350B | IOMCU LOST: SAFE, die Flanken enden, die Aus-Schreibvorgänge für seine Rückkehr fällig, IDENTITY wird neu gelesen |
+| 3000ms keine Antwort | IO14 für 10ms high, einmal je Stille: der Core2350B startet neu, mit gesetztem Arm-Latch |
+| der Core2350B lehnt das ARM von CONTROL im Zustand ARMED ab | SAFE, die Aus-Schreibvorgänge |
+
+Ein ARM wird angenommen mit einer Bluetooth-LE-Verbindung, einem KEEPALIVE
+in den letzten 300ms ohne STOP-Flag, einem Core2350B, der als Board 3
+antwortet, und beantworteten Aus-Schreibvorgängen. Das Schalten auf ARMED
+folgt dem des Panels
+([Das erste Schalten auf ARMED nach einem Stopp](Safety-de.md#das-erste-schalten-auf-armed-nach-einem-stopp)):
+die Flanken setzen wieder ein, der Knoten wartet 100ms, liest dann alle
+50ms STATUS, bis der Heartbeat-Fehler gelöscht ist, und schreibt CLEAR
+(0x5AFE) und danach ARM. Eine Leitung, der 300ms nach dem ARM noch nicht
+vertraut wird, beendet das Schalten: SAFE.
+
 
 Der Knoten sendet sein Advertising als `rcbench-pwr-XXXX` oder `rcbench-bal-XXXX`, die letzten zwei
 Bytes seiner Adresse in Hex, alle 100ms, solange keine Verbindung steht.
@@ -604,16 +693,20 @@ erste Leistungsknoten EIN startet Bluetooth LE bis zum Neustart des
 Panels. Der Auswuchtknoten ist der vierte Client, Owner 3
 ([Auswuchten](Balance-de.md#messen-mit-dem-auswuchtknoten)).
 
-- **Suchen und binden.** KNOTEN SUCHEN sucht 10s lang und listet die Geräte,
-  deren Advertising den Knotendienst und in den Herstellerdaten die Rolle
-  Leistung nennt (`rcnode_adv_match()`, der Name nur, wo keine
-  Herstellerdaten kamen). Ein Auswuchtknoten wird nicht gelistet, mit oder
-  ohne Namen. GEBUNDENER KNOTEN, oder KNOTEN SUCHEN, solange es
-  `n GEFUNDEN` zeigt, öffnet die Liste, bis zu 6 Knoten und zuletzt
-  `AKTUALISIEREN`. Tippen bindet einen über seine Adresse, in SETUP
-  gehalten (`pnode_ble`, `pnode_name`), und sein erster Connect nimmt den
-  nächsten Zug des Hubs nach einem laufenden Versuch. GEBUNDENER KNOTEN
-  ohne Liste sagt auf dem Band, warum. Ein gebundener Knoten wird nach
+- **Suchen und binden.** KNOTEN SUCHEN öffnet SEARCH
+  ([Bildschirme](Screens-de.md#wireless-search)) und sucht 10s lang nach
+  den Geräten, deren Advertising den Knotendienst und in den
+  Herstellerdaten die Rolle Leistung nennt (`rcnode_adv_match()`, der Name
+  nur, wo keine Herstellerdaten kamen). Ein Auswuchtknoten wird nicht
+  gelistet, mit oder ohne Namen. GEBUNDENER KNOTEN öffnet SEARCH mit der
+  Liste der letzten Suche, ohne Suche. SEARCH zeigt die verbleibenden
+  Sekunden der Suche, dann bis zu 8 Knoten mit ihrem RSSI, den gebundenen
+  hervorgehoben, oder warum es keinen listet. Tippen auf einen Knoten
+  fragt `LEISTUNGSKNOTEN BINDEN?`; BINDEN bindet ihn über seine Adresse,
+  in SETUP gehalten (`pnode_ble`, `pnode_name`), und sein erster Connect
+  nimmt den nächsten Zug des Hubs nach einem laufenden Versuch. SEARCH
+  bleibt offen und hebt den Knoten hervor, sobald er gebunden ist. Ein
+  gebundener Knoten wird nach
   jedem Abbruch ohne Suche wieder verbunden, 1000ms nach dem Abbruch und
   nach einem gescheiterten Verbindungsaufbau im Backoff des Hubs. Hält
   der Connect eines anderen Clients den Hub, wartet der Connect des
@@ -621,11 +714,13 @@ Panels. Der Auswuchtknoten ist der vierte Client, Owner 3
   Versuch jedes anderen Clients, je 5000ms. Eine Suche bei ARMED wird
   abgelehnt, und eine laufende Suche endet beim
   Schalten auf ARMED.
-- **Ablehnungen.** Tippen auf KNOTEN SUCHEN während einer Suche zeigt
-  `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s` und startet keine. Der
+- **Ablehnungen.** Tippen auf KNOTEN SUCHEN oder AKTUALISIEREN während
+  einer Suche zeigt `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s` und
+  startet keine. BINDEN während einer Suche, oder nachdem sich die Liste
+  unter der Frage änderte, bindet nichts und zeigt die Texte unten. Der
   Frame gibt einen Befehl an den `blec`-Task weiter, und der Controller
   kann ihn dort noch ablehnen; die Ansicht zählt jede Ablehnung, und das
-  Band nennt sie. Eine Wahl, abgelehnt, weil zuerst eine Suche startete,
+  Band nennt sie. Eine Bindung, abgelehnt, weil zuerst eine Suche startete,
   zeigt `SUCHE LÄUFT: DEN KNOTEN NACH DEM ENDE WÄHLEN`, eine, abgelehnt,
   weil sich die Liste änderte,
   `KNOTEN NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`, und die Konsole
@@ -682,7 +777,7 @@ STICK, deren Läufe BENCH lesen, abgelehnt, solange Leistungsknoten AUS ist
 oder in den letzten 100ms kein Messwert kam. Das Band zeigt `ARMED
 gesperrt: Leistungsknoten sendet nicht. INA228-Quelle WIRED oder Knoten
 verbinden.` Die Ablehnung steht bei den anderen Arm-Ablehnungen des Panels
-(`drain_commands()`), jeder Weg, der das Gas scharf schaltet, trifft auf
+(`drain_commands()`), jeder Weg, der das Gas auf ARMED schaltet, trifft auf
 sie. Die ARMs von SERVO und OUTPUTS lesen keinen INA228 und werden für den
 Knoten nicht abgelehnt.
 
@@ -715,13 +810,24 @@ Zeile, deren INA228-Werte die des Knotens sind, und `ina voltage` und
 `ina current` enthalten sie
 ([Bildschirme](Screens-de.md#tabelle-und-was-der-esc-meldet)).
 
+Die Kachel MOTOR & ESC im Menü zählt den Knoten als Sensor des Akkus,
+solange Leistungsknoten EIN ist, INA228-Quelle NODE und ein Knoten
+gebunden ist, verbunden oder nicht: Sie trägt dann keine Marke SIMULIERT,
+auch bei ausgeschaltetem INA228 des IOmcu
+([Bildschirme](Screens-de.md#marken-im-menü)).
+
 ## Update über Bluetooth LE
 
 Ein Knoten nimmt ein neues Anwendungs-Image über BLE von einem Central an,
 über den Update-Dienst von `protocols/bleota`
 ([README](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md)).
-Das Panel bringt die Images beider Rollen mit, prüft sie beim Start und
-sendet sie von der Seite der Funkgeräte auf UPDATES:
+Das Panel-Image bringt die Images der Knoten nicht mit: Das Halten einer
+Zeile lädt die Datei seiner Rolle aus dem Release, das das Panel ausführt,
+`rcbench-node-pwr-<Version>.bin`, `rcbench-node-bal-<Version>.bin` oder,
+für den Anzeigeknoten, `rcbench-node-display-<Version>.bin`, oder liest sie
+aus `BENCH/UPDATES` der SD-Karte, prüft sie
+([Bildschirme: Geräte-Images](Screens-de.md#geräte-images)) und sendet sie
+von der Seite der Funkgeräte auf UPDATES:
 LEISTUNGSKNOTEN-FIRMWARE und AUSWUCHTKNOTEN-FIRMWARE
 ([Bildschirme: Die Sensorknoten](Screens-de.md#die-sensorknoten)). Das
 Halten von 2s auf der Zeile beendet den eigenen Link des Knotens
@@ -735,18 +841,45 @@ Neustart: Die Uhr in INFO erkennt ihn, und die Läufe leeren sich
 ([Auswuchten](Balance-de.md#messen-mit-dem-auswuchtknoten)); ein Update
 ohne Installation behält sie.
 
+Die Zeile des Leistungsknotens wählt ihr Image nach dem Board, das INFO
+des Knotens nennt (`devimg_pnode_image()`, Feld `board` von INFO,
+`RCNODE_BOARD_*`):
+
+| INFO `board` | Image | Art | Chip im Kopf | Überschrift der Zeile |
+| --- | --- | --- | --- | --- |
+| 1, ESP32-C6-Zero | `rcbench-node-pwr-<Version>.bin` | 2 | ESP32-C6, 0x000D | LEISTUNGSKNOTEN-FIRMWARE |
+| 2, ES3C28P | `rcbench-node-display-<Version>.bin` | 4 | ESP32-S3, 0x0009 | ANZEIGEKNOTEN-FIRMWARE |
+| noch keins gelesen | `rcbench-node-pwr-<Version>.bin` | 2 | ESP32-C6, 0x000D | LEISTUNGSKNOTEN-FIRMWARE |
+| jedes andere | keins: `KEINE FIRMWARE`, ein Tippen zeigt `Dieses Release enthält keine Firmware für dieses Gerät.` | | | LEISTUNGSKNOTEN-FIRMWARE |
+
+Das Panel behält das Board der gebundenen Adresse über das Ende eines
+Links, das eigene Halten des Links durch das Update und ein Wiederverbinden
+mit noch ungelesenem INFO hinweg, und über ein Binden der schon gebundenen
+Adresse: Nichts davon ändert die Wahl oder verwirft ein Update, das dem
+Image geschuldet ist. Ein neues INFO setzt das Board; eine andere Adresse
+(das Binden eines anderen Knotens, ein Lösen, die Adresse aus SETUP)
+löscht es bis zum INFO dieses Knotens. Bevor das erste Byte
+hinausgeht, hält `devimg_fits()` das Image gegen das Board, das INFO auf
+dem Link nannte, der die Version des Knotens meldete: Das Board nimmt
+dieses Image, und der Kopf nennt Chip und Art des Boards. Passt es nicht,
+endet das Update, bevor der Link des Knotens berührt wird, mit
+`<Name>-Update abgebrochen: Image für eine andere Platine.` im Band. Der
+Knoten prüft die Art noch einmal bei BEGIN und den Kopf noch einmal vor
+dem Schreiben.
+
 1. Das Central verbindet sich und sendet BEGIN: die Art (Leistungsknoten
    oder Auswuchtknoten), die Größe, die Version und den SHA-256 des Images.
 2. Der Knoten prüft die Art gegen seine Rolle, die Größe gegen seinen Slot
    von 1.572.864 Bytes (0x180000) und die Version. Ein Leistungsknoten lehnt
    ein Auswucht-Image ab und umgekehrt. Noch wird nichts gelöscht.
-3. Der Knoten wartet 30s auf seine BOOT-Taste (GPIO9), 1s gehalten. Der
-   Knoten zeigt nichts; die WS2812 wird nicht angesteuert, und das Central
+3. Der Knoten wartet 30s auf seine BOOT-Taste (GPIO9; IO0 am
+   Anzeigeknoten), 1s gehalten. Der C6-Knoten zeigt nichts; die WS2812 wird nicht angesteuert, und das Central
    sagt dem Benutzer, BOOT zu drücken. Kein Halten in 30s lehnt ab. Eine
    Taste, die beim Öffnen des Fensters schon gedrückt ist, zählt erst nach
    dem Loslassen.
 4. Gehalten: Der Knoten nimmt die ersten 296 Bytes des Images und prüft,
-   dass sie den ESP32-C6 und die eigene Rolle des Knotens nennen
+   dass sie seinen Chip (ESP32-C6, am Anzeigeknoten ESP32-S3) und die
+   eigene Rolle des Knotens nennen
    (`DEVOTA_ROLE`, hinter dem Anwendungsdeskriptor von ESP-IDF). Ein Image
    der anderen Rolle oder eines anderen Geräts wird abgelehnt, bevor etwas
    geschrieben ist. Dann löscht und schreibt der Knoten den Slot, aus dem
@@ -823,10 +956,11 @@ idf.py -B build-bal -D SDKCONFIG=build-bal/sdkconfig \
 idf.py -B build-bal merge-bin -o rcbench-node-bal-merged.bin
 ```
 
-Ein Release enthält für jede Rolle (`pwr`, `bal`)
-`rcbench-node-<rolle>-<version>.bin`, die Anwendung, und
-`rcbench-node-<rolle>-merged-<version>.bin` für 0x0. Der CI-Job (Continuous
-Integration) "Node image" baut beide Rollen.
+Ein Release enthält für jeden Build (`pwr`, `bal`, `display`)
+`rcbench-node-<build>-<version>.bin`, die Anwendung, die das Panel über
+Bluetooth LE sendet, und `rcbench-node-<build>-merged-<version>.bin` für
+0x0 über USB; jede mit ihrer `.sig` und einer Zeile in `SHA256SUMS`. Der
+CI-Job (Continuous Integration) "Node image" baut alle drei.
 
 Zum Flashen zuerst das Pack vom XT60 abziehen (die Masseregel), dann USB-C
 des Knotens anschließen:
@@ -850,7 +984,23 @@ esptool.py --chip esp32s3 write_flash 0x0 \
   build-display/rcbench-node-display-merged.bin
 ```
 
-Ein Release enthält dafür `rcbench-node-display-merged-<version>.bin`.
+Ein Release enthält dafür `rcbench-node-display-merged-<version>.bin` für
+USB und `rcbench-node-display-<version>.bin` für das Update über
+Bluetooth LE.
+
+Der Servoknoten ([Der Servoknoten](#der-servoknoten)) auf demselben Board:
+
+```sh
+idf.py -B build-srv -D SDKCONFIG=build-srv/sdkconfig \
+  -D IDF_TARGET=esp32s3 \
+  -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.s3_es3c28p;sdkconfig.servo" build
+idf.py -B build-srv merge-bin -o rcbench-node-srv-merged.bin
+esptool.py --chip esp32s3 write_flash 0x0 \
+  build-srv/rcbench-node-srv-merged.bin
+```
+
+Der CI-Job "Node image" baut ihn als `rcbench-node-srv-merged-<version>.bin`;
+er nimmt kein Update über Bluetooth LE.
 
 Ein schlafender Knoten antwortet nicht über USB. RESET drücken, um ihn zu
 starten, oder BOOT halten und RESET drücken für den Download-Modus des ROM.
@@ -908,7 +1058,34 @@ des Gleichanteils:
 Der Start schreibt `rcbench node <version>, role pwr, <n> timer wakes before
 this start`.
 
+Die Zeile des Servoknotens:
+
+```text
+I (5123) node: srv iomcu up, panel LINKED, SAFE, beat on, faults 0x0000, answered 1520, unanswered 0, refused 0; link up -58dBm, sub 0, bat 0.00V, errors 0, resets 0, dropped 0
+```
+
+| Feld | Bedeutung |
+| --- | --- |
+| `iomcu` | `up` mit angenommener IDENTITY, `none` davor, `LOST` nach 1000ms ohne Antwort |
+| `panel` | `STANDALONE`, `LINKED`, `PANEL LOST` oder `STOP` |
+| `SAFE` | oder `ARM WAIT`, `ARM WRITE`, `ARMED` |
+| `beat` | ob IO21 Flanken trägt |
+| `faults` | STATUS-Register 1, wie zuletzt gelesen |
+| `answered`, `unanswered`, `refused` | beantwortete Austausche, nach 1000ms aufgegebene Austausche, Frames, die die UART-Rahmung oder das Dekodieren verwarf |
+
+| Befehl | Wirkung |
+| --- | --- |
+| `srv` | die Zeile oben, die IDENTITY, die Seiten POWER und SUPPLY wie zuletzt gelesen, die Zähler |
+| `srv ka on`, `srv ka off` | ein KEEPALIVE alle 50ms von der Konsole und eine Verbindung, wie von einem verbundenen Panel: der Heartbeat läuft ohne Panel; off wirkt wie eine Bluetooth-LE-Trennung. Es schaltet nichts auf ARMED und nichts ein |
+| `srv stop` | STOP, wie das des Panels |
+
 ## Aktuelle Einschränkungen
+
+- Der Servoknoten hat in `protocols/rcnode` noch keine eigenen Pakete und
+  keine eigenen Steuerbefehle: KEEPALIVE, STOP, ARM, SAFE und THROTTLE
+  kommen nur von der Konsole (`srv ka`, `srv stop`), und das Panel listet
+  keinen Servoknoten. Er hat keinen eigenen Bildschirm und aktualisiert
+  das Image des Core2350B nicht.
 
 - Das Panel verbindet sich mit dem Leistungsknoten und mit dem
   Auswuchtknoten (SETUP > WIRELESS,
@@ -920,9 +1097,8 @@ this start`.
   Panels.
 - Die Latenz von einem Fenster des Knotens bis zum Lesen im Panel ist nicht
   gemessen.
-- Kein Knoten ist auf Hardware gelaufen: Die Boards sind bestellt, nicht
-  geliefert. Die Pins, das Aufwachen, die Ströme und das Verhalten des CD42
-  sind nicht gemessen.
+- Die Pins, das Aufwachen, die Ströme und das Verhalten des CD42 sind nicht
+  gemessen.
 - Die Abschaltschwelle des CD42 bei geringer Last ist nicht bekannt (oben).
 - Rate, Skala, Rauschen und Indexzeit des Auswuchtknotens sind nicht
   gemessen: Die Werte oben sind die der Datenblätter und von ESP-IDF. Die
@@ -936,25 +1112,23 @@ this start`.
   (`errors`, `resets` in STATUS).
 - Der Auswuchtknoten versorgt seinen ADXL im Schlaf weiter aus 3V3: 350µA.
 - Die WS2812 wird nicht angesteuert. Ihr Ruhestrom ist nicht gemessen.
-- Das Panel sendet einem Knoten sein Image noch nicht: Die Seite des Knotens
-  für das Update über BLE gibt es, die Zeilen des Panels kommen mit seinen
-  Knoten-Clients. Das Update ist auf keinem Knoten gelaufen; seine Rate und
-  ein Rollback sind nicht gemessen.
+- Die Rate des Updates über Bluetooth LE und ein Rollback sind nicht
+  gemessen.
 - Ein Knoten prüft Art, Chip und Segmente eines Images, nicht seine
   Herkunft: Ein Central in Reichweite kann jedes Image der Rolle des Knotens
   anbieten, auch ältere, und ein Halten von BOOT für 1s installiert es.
 - Fenster ohne Sample zwischen zwei Fenstern werden nicht gesendet: Ein
   stehender Sampler zeigt sich als Sprung in `t_node` ohne Sprung in `seq`.
-- Das Panel trägt das Image des Anzeigeknotens nicht, und UPDATES bietet
-  kein Update dafür an: Im Anwendungs-Slot des Panels von 8.126.464 Byte
-  sind mit den getragenen Images etwa 9% (etwa 750KB) frei, und das Image
-  des Anzeigeknotens hat 654.576 Byte. Der Anzeigeknoten wird über USB
-  geflasht. Ein als Leistungsknoten des Panels gebundener Anzeigeknoten
-  nennt in INFO Board 2; LEISTUNGSKNOTEN-FIRMWARE bietet dann kein Update
-  an, und ein Tippen zeigt `Dieses Panel enthält keine Firmware für dieses
-  Gerät.` (`pnode_ctl_other_board()`).
-- Der Anzeigeknoten ist auf keinem Board gelaufen. Die Einstellung des
-  ILI9341V ist die des Herstellers, nicht gemessen; der SPI-Takt von 20MHz,
+- Releases vor dem, das `rcbench-node-display-<Version>.bin`
+  veröffentlicht, haben dafür keine Zeile in `SHA256SUMS`: Ein Panel mit
+  einem solchen Release kann das Image des Anzeigeknotens nicht laden, und
+  das Halten endet mit `Kein Prüfsummeneintrag für diese Firmware.`
+- Ein Anzeigeknoten, der seit dem Start des Panels oder seit seinem Binden
+  nicht verbunden war, zeigt bis zu seinem ersten INFO
+  LEISTUNGSKNOTEN-FIRMWARE und den Dateinamen des C6-Knotens; das Halten
+  bleibt bis dahin grau.
+- Die Einstellung des ILI9341V im Anzeigeknoten ist die des Herstellers,
+  nicht gemessen; der SPI-Takt von 20MHz,
   die Ausrichtung des Touch, die Pinfolge der I2C-Buchse und der zur
   Laufzeit für Bluetooth LE freie interne RAM sind nicht gemessen. Ein
   Board ohne PSRAM läuft ohne Display.

@@ -12,7 +12,9 @@
  * asking for the BOOT hold; the entry's summary and label; CANCEL UPDATE
  * as a plain tap in every phase before END, grey with its reason from END
  * on, absent with no update; the line and the labels inside their fields
- * in both languages.
+ * in both languages; the power node's row and UPDATES' step naming
+ * the display node while its image is the display node's, and a board no
+ * image is for reading NO FIRMWARE with its reason.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -31,6 +33,8 @@
 #include "upd_c6.h"
 #include "upd_dev.h"
 #include "upd_screen.h"
+#include "upd_wiz_view.h"
+#include "upd_wizard.h"
 
 #include "upd_spots.h"
 
@@ -385,9 +389,25 @@ TEST_CASE(the_label_follows_the_update_phase)
     upd_dev_label(UPD_DEV_BAL, &v, out, sizeof(out));
     CHECK_STR_EQ(out, "HOLD 2s TO UPDATE THE BALANCE NODE");
     upd_dev_line(UPD_DEV_DIAL, &v, out, sizeof(out));
-    CHECK_STR_EQ(out, "Dial: not connected. Included: 0.25.0.");
+    CHECK_STR_EQ(out, "Dial: not connected. Release: 0.25.0.");
     upd_dev_line(UPD_DEV_PNODE, &v, out, sizeof(out));
-    CHECK_STR_EQ(out, "Node: not connected. Included: 0.25.0.");
+    CHECK_STR_EQ(out, "Node: not connected. Release: 0.25.0.");
+    /* The image's way takes the label over from every phase. */
+    v.row = DEVUPD_ROW_READY;
+    v.fetch.run = UPD_FETCH_NET;
+    v.fetch.percent = 250u;
+    upd_dev_label(UPD_DEV_DIAL, &v, out, sizeof(out));
+    CHECK_STR_EQ(out, "DOWNLOADING 100%");
+    v.fetch.run = UPD_FETCH_CHECK;
+    upd_dev_label(UPD_DEV_PNODE, &v, out, sizeof(out));
+    CHECK_STR_EQ(out, "CHECKING THE FILE");
+    v.fetch.run = UPD_FETCH_IDLE;
+    v.fetch.src = DEVIMG_SRC_CARD;
+    upd_dev_label(UPD_DEV_BAL, &v, out, sizeof(out));
+    CHECK_STR_EQ(out, "HOLD 2s TO UPDATE FROM THE SD CARD");
+    v.fetch.src = DEVIMG_SRC_RAM;
+    upd_dev_label(UPD_DEV_BAL, &v, out, sizeof(out));
+    CHECK_STR_EQ(out, "HOLD 2s TO UPDATE THE BALANCE NODE");
 }
 
 TEST_CASE(the_entry_counts_the_devices_and_shows_a_running_update)
@@ -508,6 +528,91 @@ TEST_CASE(cancel_is_a_tap_before_end_and_grey_through_the_install)
     CHECK(!upd_dev_take_cancel());
 }
 
+/* An image in memory without a valid release signature: the card's line
+ * says so in the warning colour, the band names the reason; a signed one
+ * reads as before. */
+TEST_CASE(an_unsigned_image_in_memory_warns_on_the_card_and_the_band)
+{
+    ui_text_set_language(UI_LANG_EN);
+    upd_fetch_t f;
+    memset(&f, 0, sizeof(f));
+    f.src = DEVIMG_SRC_RAM;
+    snprintf(f.file, sizeof(f.file), "%s", "rcbench-dial-0.23.16.bin");
+    char out[160];
+    upd_fetch_line(&f, out, sizeof(out));
+    CHECK_STR_EQ(out, "rcbench-dial-0.23.16.bin is downloaded and checked.");
+    CHECK(!upd_fetch_warn(&f));
+    f.nosig = true;
+    upd_fetch_line(&f, out, sizeof(out));
+    CHECK_STR_EQ(out, "rcbench-dial-0.23.16.bin: not signed by the rcbench "
+                      "release key. The image comes with no signature.");
+    CHECK(upd_fetch_warn(&f));
+    f.sigbad = true;
+    upd_fetch_line(&f, out, sizeof(out));
+    CHECK_STR_EQ(out, "rcbench-dial-0.23.16.bin: not signed by the rcbench "
+                      "release key. The signature does not match.");
+    upd_fetch_nosig_note(f.file, out, sizeof(out));
+    CHECK_STR_EQ(out, "rcbench-dial-0.23.16.bin is not signed by the rcbench "
+                      "release key.");
+    upd_fetch_check_text(DEVIMG_E_SIG, NULL, NULL, out, sizeof(out));
+    CHECK_STR_EQ(out, "The file is not signed by the rcbench release key.");
+    /* the card's hold stays a warning; a download is not */
+    f.src = DEVIMG_SRC_CARD;
+    CHECK(upd_fetch_warn(&f));
+    f.src = DEVIMG_SRC_NET;
+    CHECK(!upd_fetch_warn(&f));
+}
+
+/* The power node's row while its node is the ES3C28P display node: the
+ * heading, the line and UPDATES' step name it in both languages and fit
+ * their fields; the hold, its ask and the other rows stay as they are.  A
+ * board no image is for reads NO FIRMWARE and says why on the band. */
+TEST_CASE(the_display_node_names_its_row_and_its_step)
+{
+    char line[96];
+    upd_dev_view_t v = view_of(DEVUPD_ROW_READY);
+    v.display = true;
+    upd_dev_set(UPD_DEV_PNODE, &v);
+    upd_dev_line(UPD_DEV_PNODE, &v, line, sizeof(line));
+    CHECK_STR_EQ(line, "Display node: 0.24.0. Release: 0.25.0.");
+    CHECK_STR_EQ(upd_dev_head(UPD_DEV_PNODE, &v), "DISPLAY NODE FIRMWARE");
+    CHECK_STR_EQ(upd_wiz_name(UPD_WIZ_PNODE), "DISPLAY NODE");
+    upd_dev_label(UPD_DEV_PNODE, &v, line, sizeof(line));
+    CHECK_STR_EQ(line, "HOLD 2s TO UPDATE THE POWER NODE");
+    /* The flag names only the power node's row. */
+    CHECK_STR_EQ(upd_dev_head(UPD_DEV_BAL, &v), "BALANCE NODE FIRMWARE");
+    upd_dev_line(UPD_DEV_BAL, &v, line, sizeof(line));
+    CHECK_STR_EQ(line, "Node: 0.24.0. Release: 0.25.0.");
+    ui_text_set_language(UI_LANG_DE);
+    upd_dev_line(UPD_DEV_PNODE, &v, line, sizeof(line));
+    CHECK_STR_EQ(line, "Anzeigeknoten: 0.24.0. Release: 0.25.0.");
+    CHECK_STR_EQ(upd_dev_head(UPD_DEV_PNODE, &v), "ANZEIGEKNOTEN-FIRMWARE");
+    CHECK_STR_EQ(upd_wiz_name(UPD_WIZ_PNODE), "ANZEIGEKNOTEN");
+    for (int lang = 0; lang < 2; ++lang) {
+        ui_text_set_language(lang ? UI_LANG_DE : UI_LANG_EN);
+        v.running = (fw_version_t){ 255u, 255u, 255u };
+        v.carried = (fw_version_t){ 255u, 255u, 255u };
+        fits(UPD_DEV_PNODE, &v);
+        CHECK(gfx_text_width(&gfx_font_10x20, upd_dev_head(UPD_DEV_PNODE, &v),
+                             1) <= UPD_DEVP_TEXT_W);
+    }
+    ui_text_set_language(UI_LANG_EN);
+    /* The C6 power node again. */
+    v.display = false;
+    upd_dev_set(UPD_DEV_PNODE, &v);
+    CHECK_STR_EQ(upd_dev_head(UPD_DEV_PNODE, &v), "POWER NODE FIRMWARE");
+    CHECK_STR_EQ(upd_wiz_name(UPD_WIZ_PNODE), "POWER NODE");
+    CHECK_STR_EQ(upd_dev_head(UPD_DEV_PNODE, NULL), "POWER NODE FIRMWARE");
+    /* A board no image is for: NO FIRMWARE, and the reason. */
+    v = view_of(DEVUPD_ROW_NO_IMAGE);
+    v.have_image = false;
+    upd_dev_set(UPD_DEV_PNODE, &v);
+    upd_dev_line(UPD_DEV_PNODE, &v, line, sizeof(line));
+    CHECK(strstr(line, "Node: 0.24.0.") == line);
+    CHECK_STR_EQ(upd_dev_reason(&v),
+                 "This release has no firmware for this device.");
+}
+
 int main(void)
 {
     RUN(the_entry_opens_the_page_and_back_and_the_home_tag_close_it);
@@ -520,5 +625,7 @@ int main(void)
     RUN(the_entry_counts_the_devices_and_shows_a_running_update);
     RUN(the_lines_and_the_labels_fit_in_both_languages);
     RUN(cancel_is_a_tap_before_end_and_grey_through_the_install);
+    RUN(an_unsigned_image_in_memory_warns_on_the_card_and_the_band);
+    RUN(the_display_node_names_its_row_and_its_step);
     return test_summary("upd_dev");
 }

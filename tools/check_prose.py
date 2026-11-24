@@ -33,11 +33,11 @@ test holds the two to each other), so it is not repeated here.
 
 Read are README.md, README-de.md, STATUS.md, SECURITY.md, CONTRIBUTING.md,
 every page under docs/, help/content/, testbench/ and hardware/, the
-README.md of each directory under protocols/ and configurator/.  CHANGELOG
-pages are history and are not read.  Left out of every page: fenced and
-indented code blocks, inline code, link targets, bare URLs, HTML tags and
-comments, the front matter, and table separator rows.  A page is German
-when its name ends in -de.md or it lies under a directory named de.
+README.md of each directory under protocols/, configurator/ and flasher/.
+CHANGELOG pages are history and are not read.  Left out of every page:
+fenced and indented code blocks, inline code, link targets, bare URLs, HTML
+tags and comments, the front matter, and table separator rows.  A page is
+German when its name ends in -de.md or it lies under a directory named de.
 
 A deliberate exception is an entry in tools/check_prose_allow.txt: comment
 lines with the reason, then `path: rule: text`, where text is a part of the
@@ -75,7 +75,7 @@ LONG_WORDS = 40
 SCOPE_FILES = frozenset({"README.md", "README-de.md", "STATUS.md",
                          "SECURITY.md", "CONTRIBUTING.md"})
 SCOPE_DIRS = ("docs/", "help/content/", "testbench/", "hardware/")
-SCOPE_README_DIRS = ("protocols/", "configurator/")
+SCOPE_README_DIRS = ("protocols/", "configurator/", "flasher/")
 
 
 def in_scope(path: str) -> bool:

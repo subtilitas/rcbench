@@ -31,12 +31,28 @@ name: Configurator
 #   the Doxyfile at the repository root. Pass and fail of the comments are
 #   tools/doc_check.py's in ci.yml; this job publishes. The built reference
 #   is an artifact of every run.
+# - flasher: type check, unit tests, the check of the licence file against
+#   the bundled packages, the Vite build and the size budget (80kB initial,
+#   600kB total) of the web flasher under flasher/. The built page is an
+#   artifact of every run.
+# - flasher-e2e: Playwright against the built flasher at 1280px in English
+#   and 360px in German, with fake Web Serial and WebUSB devices: the whole
+#   flow of the panel, the Dial, the power node and the IOmcu to "done".
+# - flash-fw: the firmware images the flasher offers. Picks the 6 newest
+#   published releases and the newest stable release when it is older
+#   (tools/flash_manifest.py select), downloads their assets with
+#   `gh release download`, and writes fw/ with a manifest per release and
+#   an index (tools/flash_manifest.py build), after the builder's tests. A
+#   release download sends no CORS (cross-origin resource sharing) header,
+#   so the page reads copies from its own site. The downloads are cached
+#   per list of tags. fw/ is about 64MB for 7 releases (2026-11-21).
 # - deploy: publishes the built page to GitHub Pages, with the help in its
-#   help/ folder and the API reference in its api/ folder. It runs on a
-#   push to main only, when every job that ran passed. A pull request
-#   builds and tests and publishes
-#   nothing. Neither the help nor the API reference is part of the
-#   configurator's size budget: the budget is checked on the
+#   help/ folder, the API reference in its api/ folder and the flasher in
+#   flash/, its images in flash/fw/. It runs on a push to main and on a
+#   manual run on main only, when every job that ran passed. A pull
+#   request builds and tests and publishes
+#   nothing. Neither the help, the API reference nor the flasher is part
+#   of the configurator's size budget: the budget is checked on the
 #   configurator's files alone.
 #
 # A pull request runs when the label `ci` is added, as ci.yml does: a push
@@ -45,6 +61,11 @@ name: Configurator
 #
 # The repository setting "Pages source: GitHub Actions" is a precondition of
 # the deploy job.
+#
+# The Release workflow starts a manual run on main once it publishes a
+# release (its pages job), so the flasher offers the new release's images.
+# A run on the release event itself would carry the tag as its ref, and the
+# github-pages environment deploys from main only.
 
 on:
   pull_request:
@@ -60,6 +81,9 @@ on:
       - 'shared/ui/include/ui_screen.h'
       - 'Doxyfile'
       - 'tools/install_doxygen.sh'
+      - 'flasher/**'
+      - 'tools/flash_manifest.py'
+      - 'test/tools/test_flash_manifest.py'
   push:
     branches: [main]
     paths:
@@ -71,6 +95,9 @@ on:
       - 'tools/help_site.py'
       - 'tools/render_ui.py'
       - 'shared/ui/include/ui_screen.h'
+      - 'flasher/**'
+      - 'tools/flash_manifest.py'
+      - 'test/tools/test_flash_manifest.py'
       # The sources of the API reference.  A pull request that changes them
       # runs Doxygen in ci.yml; main publishes the reference again.
       - 'Doxyfile'
@@ -83,6 +110,9 @@ on:
       - 'firmware/node/**'
       - 'firmware/devota/**'
       - 'testbench/touch-injector/core/**'
+  # Started by release.yml after it publishes a release; by hand with
+  # `gh workflow run pages.yml --ref main`.
+  workflow_dispatch:
 
 # A second `ci` label on a pull request replaces the run in progress; a run
 # another label starts has a group of its own and replaces none. A run on
@@ -443,19 +473,182 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  flasher:
+    name: Flasher page
+    if: github.event_name != 'pull_request' || github.event.label.name == 'ci'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: flasher
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: flasher/package-lock.json
+
+      - run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      # The build first holds public/licenses.txt to the bundled packages
+      # (tools/licenses.ts --check).
+      - name: Build
+        run: npm run build
+
+      - name: Size budget
+        run: npm run size
+
+      - name: Keep the built page
+        uses: actions/upload-artifact@v7
+        with:
+          name: flasher-dist
+          path: flasher/dist
+          if-no-files-found: error
+          retention-days: 14
+
+  flasher-e2e:
+    name: Flasher browser test
+    needs: flasher
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: flasher
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: flasher/package-lock.json
+
+      - run: npm ci
+
+      # The test runs against the files the deploy job publishes.
+      - uses: actions/download-artifact@v8
+        with:
+          name: flasher-dist
+          path: flasher/dist
+
+      - name: Install Chromium
+        timeout-minutes: 15
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser test with fake devices
+        timeout-minutes: 10
+        run: npm run e2e
+
+      - name: Keep the traces and screenshots of failed tests
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: flasher-e2e-failures
+          path: flasher/test-results
+          if-no-files-found: ignore
+          retention-days: 14
+
+  flash-fw:
+    name: Firmware images for the flasher
+    if: github.event_name != 'pull_request' || github.event.label.name == 'ci'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      # The tags: the IOmcu's partition table is read at each release tag.
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Test the manifest builder
+        run: |
+          python3 -m pip install --quiet pytest==9.1.1
+          python3 -m pytest test/tools/test_flash_manifest.py -q
+
+      - name: Pick the releases
+        id: pick
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release list --repo "$GITHUB_REPOSITORY" --limit 100 \
+            --json tagName,isDraft,isPrerelease,publishedAt \
+            > "$RUNNER_TEMP/releases.json"
+          python3 tools/flash_manifest.py select "$RUNNER_TEMP/releases.json" \
+            > "$RUNNER_TEMP/tags.txt"
+          cat "$RUNNER_TEMP/tags.txt"
+          echo "key=flash-releases-1-$(sha256sum < "$RUNNER_TEMP/tags.txt" \
+            | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      # About 175MB of downloads for 7 releases; a run with the same tags
+      # takes them from the cache.
+      - name: Restore the release downloads
+        uses: actions/cache@v6
+        with:
+          path: ~/flash-releases
+          key: ${{ steps.pick.outputs.key }}
+
+      - name: Download the release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          while read -r tag; do
+            dir="$HOME/flash-releases/$tag"
+            if [ ! -f "$dir/SHA256SUMS" ]; then
+              mkdir -p "$dir"
+              gh release download "$tag" --repo "$GITHUB_REPOSITORY" \
+                --dir "$dir" --clobber \
+                -p 'rcbench-panel-p4-*.zip' -p 'rcbench-iomcu-*.zip' \
+                -p '*-merged-*.bin' -p '*-merged-*.bin.sig' -p SHA256SUMS
+            fi
+            # A release before the partition table has no file: its entry
+            # names no range to erase.
+            git show "$tag:firmware/iomcu/partitions.json" \
+              > "$dir/iomcu-partitions.json" 2>/dev/null \
+              || rm -f "$dir/iomcu-partitions.json"
+          done < "$RUNNER_TEMP/tags.txt"
+
+      - name: Write the manifests
+        run: |
+          python3 tools/flash_manifest.py build \
+            --releases "$HOME/flash-releases" \
+            --list "$RUNNER_TEMP/releases.json" --out flash-fw \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+          du -sh flash-fw
+
+      - name: Keep the firmware folder
+        uses: actions/upload-artifact@v7
+        with:
+          name: flash-fw
+          path: flash-fw
+          if-no-files-found: error
+          retention-days: 3
+
   deploy:
     name: Publish to GitHub Pages
     # always(): core, smoke and matrix are skipped in a run that is not a
     # full one, and a skipped need would skip the deploy.  A failed or
     # cancelled job stops it.
     if: >-
-      always() && github.event_name == 'push' &&
+      always() &&
+      (github.event_name == 'push' ||
+       github.event_name == 'workflow_dispatch') &&
       github.ref == 'refs/heads/main' &&
       needs.build.result == 'success' && needs.help.result == 'success' &&
-      needs.api.result == 'success' &&
+      needs.api.result == 'success' && needs.flasher.result == 'success' &&
+      needs.flasher-e2e.result == 'success' &&
+      needs.flash-fw.result == 'success' &&
       !contains(needs.*.result, 'failure') &&
       !contains(needs.*.result, 'cancelled')
-    needs: [changes, core, build, smoke, matrix, help, api]
+    needs: [changes, core, build, smoke, matrix, help, api, flasher,
+            flasher-e2e, flash-fw]
     runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
@@ -487,6 +680,24 @@ jobs:
         with:
           name: api-reference
           path: dist/api
+
+      # The flasher goes into flash/, its images into flash/fw/: folders
+      # neither the configurator nor the flasher build has.
+      - name: The configurator has no flash folder
+        run: test ! -e dist/flash
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: flasher-dist
+          path: dist/flash
+
+      - name: The flasher has no fw folder
+        run: test ! -e dist/flash/fw
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: flash-fw
+          path: dist/flash/fw
 
       - uses: actions/upload-pages-artifact@v5
         with:

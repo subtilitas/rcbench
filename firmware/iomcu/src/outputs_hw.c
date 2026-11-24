@@ -26,6 +26,9 @@
 #include "out_pwm.h"
 #include "out_render.h"
 #include "port_park.h"
+#if defined(IOMCU_BOARD_RSN) && IOMCU_BOARD_RSN
+#include "iomcu_rsn_pio.h"
+#endif
 #include "ppm.h"
 
 /** @brief The IOmcu's one renderer. */
@@ -33,7 +36,13 @@ static out_render_t s_render;
 
 /* ------------------------------------------------------------ the pins */
 
-bool out_render_hw_bind(const out_slot_t *s)
+/**
+ * @brief The driver's bind of a slot or port.
+ *
+ * @param s The slot or port.
+ * @return true when the driver bound it.
+ */
+static bool bind_driver(const out_slot_t *s)
 {
     switch (s->driver) {
     case OUT_DRIVER_PWM:
@@ -51,6 +60,26 @@ bool out_render_hw_bind(const out_slot_t *s)
     }
 }
 
+bool out_render_hw_bind(const out_slot_t *s)
+{
+#if defined(IOMCU_BOARD_RSN) && IOMCU_BOARD_RSN
+    /* Board 3: an output on PIO goes into PIO1 or PIO2, never into the
+     * fixed load's PIO0 or a session line's block (iomcu_rsn_pio.h). */
+    if (s->driver == OUT_DRIVER_DSHOT || s->driver == OUT_DRIVER_DSHOT_BIDIR
+        || s->driver == OUT_DRIVER_PPM) {
+        if (!place_begin((s->driver == OUT_DRIVER_PPM) ? RSN_PIO_PPM
+                                                       : RSN_PIO_OUTPUT,
+                         s->pin)) {
+            return false;
+        }
+        const bool ok = bind_driver(s);
+        place_end(ok);
+        return ok;
+    }
+#endif
+    return bind_driver(s);
+}
+
 void out_render_hw_release(const out_slot_t *s)
 {
     switch (s->driver) {
@@ -62,6 +91,9 @@ void out_render_hw_release(const out_slot_t *s)
     case OUT_DRIVER_COUNT:
     default:                                                break;
     }
+#if defined(IOMCU_BOARD_RSN) && IOMCU_BOARD_RSN
+    place_gone(s->pin);
+#endif
 }
 
 bool out_render_hw_park(uint8_t pin)
@@ -139,11 +171,11 @@ bool outputs_hw_bound(uint8_t slot)
 
 void outputs_hw_apply(const outputs_t *o, const uint16_t *rate_hz)
 {
-    out_render_apply(&s_render, o, rate_hz, 0xFFu);
+    out_render_apply(&s_render, o, rate_hz, 0xFFFFu);
 }
 
 void outputs_hw_apply_only(const outputs_t *o, const uint16_t *rate_hz,
-                           uint8_t may_bind)
+                           uint16_t may_bind)
 {
     out_render_apply(&s_render, o, rate_hz, may_bind);
 }

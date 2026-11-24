@@ -94,6 +94,7 @@ static want_t c6_blocked_want(fw_c6_why_t why)
     case FW_C6_WHY_INSTALL:
     case FW_C6_WHY_DEVICE:
     case FW_C6_WHY_ENDING:
+    case FW_C6_WHY_RESTART:
         return (want_t){ UPD_WIZ_PENDING, UPD_WIZ_TAG_CHECKING,
                          UPD_WIZ_WHY_BUSY };
     default:
@@ -104,9 +105,9 @@ static want_t c6_blocked_want(fw_c6_why_t why)
 TEST_CASE(every_c6_row_and_why_maps_to_one_step_state)
 {
     CHECK_EQ(FW_C6_ROW_BLOCKED + 1, 7);
-    CHECK_EQ(FW_C6_WHY_ENDING + 1, 12);
+    CHECK_EQ(FW_C6_WHY_RESTART + 1, 13);
     for (unsigned row = 0u; row <= (unsigned)FW_C6_ROW_BLOCKED; ++row) {
-        for (unsigned why = 0u; why <= (unsigned)FW_C6_WHY_ENDING; ++why) {
+        for (unsigned why = 0u; why <= (unsigned)FW_C6_WHY_RESTART; ++why) {
             want_t want;
             switch ((fw_c6_row_t)row) {
             case FW_C6_ROW_READY:
@@ -154,16 +155,18 @@ TEST_CASE(every_c6_row_and_why_maps_to_one_step_state)
     }
     /* A gate on the carried version holds nothing back: DONE.  The C6's
      * own update ending is no such gate: after a reinstall the restart is
-     * owed on the carried version, and the step stays PENDING. */
-    for (unsigned why = 0u; why <= (unsigned)FW_C6_WHY_ENDING; ++why) {
+     * owed on the carried version (RESTART), or its last step is still in
+     * a call (ENDING), and the step stays PENDING. */
+    for (unsigned why = 0u; why <= (unsigned)FW_C6_WHY_RESTART; ++why) {
         fx_t f;
         all_current(&f);
         f.c6.row = FW_C6_ROW_BLOCKED;
         f.c6.why = (fw_c6_why_t)why;
         const upd_wiz_t w = eval(&f);
-        const bool ending = why == (unsigned)FW_C6_WHY_ENDING;
+        const bool ending = why == (unsigned)FW_C6_WHY_ENDING
+                            || why == (unsigned)FW_C6_WHY_RESTART;
         check_want(&w.step[UPD_WIZ_C6],
-                   ending ? c6_blocked_want(FW_C6_WHY_ENDING)
+                   ending ? c6_blocked_want((fw_c6_why_t)why)
                           : (want_t){ UPD_WIZ_DONE, UPD_WIZ_TAG_CURRENT,
                                       UPD_WIZ_WHY_NONE },
                    "c6 same", FW_C6_ROW_BLOCKED, why);

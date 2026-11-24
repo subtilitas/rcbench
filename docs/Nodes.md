@@ -39,6 +39,9 @@ the project's notice.
 | the display node's screen: values, highest and lowest, touch, formats, drawing, under the host suite | `firmware/node/main/node_view.c` |
 | the display node's display and touch | `firmware/node/main/node_lcd.c`, `firmware/node/main/node_disp.c` |
 | the console | `firmware/node/main/node_console.c` |
+| the servo role: the UART link to the Core2350B, the pump, the console's `srv` | `firmware/node/main/node_srv_link.c`, `firmware/node/main/node_srv.c` |
+| the servo node's safety decisions and its poll, under the host suite | `firmware/node/main/node_srv_policy.c`, `firmware/node/main/node_srv_poll.c` |
+| the servo node's heartbeat and RUN pins | `firmware/node/main/node_srv_hb.c` |
 | the panel's central for the power node: scan, bind, INFO's check, the RUN marker, under the host suite | `shared/ui/pnode_ctl.c` |
 | the panel's readings, totals, peaks and dropout rule, under the host suite | `shared/ui/pnode_meter.c` |
 | SETUP > WIRELESS' POWER NODE entry | `shared/ui/wireless_pnode.c` |
@@ -522,19 +525,96 @@ RESET or a power cycle. The panel sends neither.
 
 ### Update and flashing
 
-The display node is flashed over USB, with the pack off the XT60:
+The display node's first image goes over USB, with the pack off the XT60:
 
 ```sh
 esptool.py --chip esp32s3 write_flash 0x0 rcbench-node-display-merged-<version>.bin
 ```
 
-It keeps the update service over Bluetooth LE: kind 4
+It takes updates over Bluetooth LE from the panel: kind 4
 (`BLEOTA_KIND_NODE_POWER_S3`), the ESP32-S3's chip ID in the image head,
 BOOT (IO0) held 1s to confirm. It refuses an image of the C6 power node,
 and the C6 power node refuses its image, at BEGIN and again at the head.
-The panel does not carry its image (below).
+Its update image is `rcbench-node-display-<version>.bin`; the panel sends
+it from POWER NODE's row, which reads DISPLAY NODE FIRMWARE for it
+([Update over Bluetooth LE](#update-over-bluetooth-le)).
 
-## Bluetooth LE
+## The servo node
+
+The servo node is the remote servo node's ES3C28P: the board beside a
+Waveshare Core2350B that runs the IOmcu firmware as board 3
+(`IOMCU_BOARD=rsn`). The servo role polls the Core2350B over a UART
+(universal asynchronous receiver-transmitter) and carries the panel's
+liveness to it on a heartbeat wire. It advertises as `rcbench-srv-XXXX`
+with role byte 3. The board is always on: no sleep, no timer wake.
+
+### Pins of the servo node
+
+| Signal | ES3C28P pin | Core2350B |
+| --- | --- | --- |
+| UART TX, 1,000,000 baud 8N1 | IO43 (TXD0, P2 pin 3, through R39 100Ω) | GPIO1, UART0 RX |
+| UART RX | IO44 (RXD0, P2 pin 4, through R38 100Ω) | GPIO0, UART0 TX |
+| HEARTBEAT | IO21 (P3 pin 4) | GPIO3 and the master switch's monostable |
+| RUN | IO14 (P3 pin 3) | RUN, through an N-channel MOSFET: IO14 high pulls RUN low |
+
+The pin orders come from the ES3C28P schematic; on a delivered board they
+are not known. IO21 and IO14 are driven low from the role's start. The
+servo role runs no power-node screen.
+
+### The link to the Core2350B
+
+UART0 carries each link frame COBS-framed (consistent overhead byte
+stuffing) with a CRC-16 (cyclic redundancy check), as
+[The UART transport](Link.md#the-uart-transport) describes. One request is
+in flight; it is repeated after 50ms and given up after 1000ms, as on the
+panel's CAN link. The ES3C28P's ESP32-S3 ROM prints its boot messages at 115,200 baud
+on the same TX pin; the Core2350B's framing drops them as bad frames.
+Both receivers start as after a 0x00: on a line idle at the start the
+first frame is taken, and noise ends as one refused frame at its 0x00.
+
+| Exchange | Every |
+| --- | --- |
+| IDENTITY: board 3, protocol 4.41 or later | after each link-up; another board or an older protocol is refused |
+| write CONTROL: ARM and THROTTLE | 50ms |
+| read STATUS, 10 registers | 500ms; 50ms while a fault bit is set or an ARM waits |
+| read POWER, 6 registers | 100ms |
+| read SUPPLY, 18 registers | 100ms |
+| read SENSE_WIN_A and SENSE_WIN_B, 32 registers each | 50ms |
+
+### Safety on the servo node
+
+The all-off writes are ARM 0 and THROTTLE 0 on CONTROL, RAIL 0 and
+PORT_WANT 0 on POWER, and OUTPUT 0 on SUPPLY. They are owed from the start
+and after each row below that names them. An exchange in flight is given
+up for them, so they follow within one exchange's wire time. CLEAR and the
+arming frame are given up as well, before they are sent or while they wait,
+once a SAFE, a STOP or a loss is taken, and so is a CONTROL write whose ARM
+differs from the one in force. CONTROL is owed at once while the node wants
+ARM 0 or THROTTLE 0 and the Core2350B may hold a non-zero one, the last
+value it acknowledged or a higher one sent since. A read waiting for its
+answer is given up then, so ARM 0 after a SAFE and THROTTLE 0 after the
+150ms go out at the next pump.
+
+| Event | Servo node does |
+| --- | --- |
+| no KEEPALIVE since the start (STANDALONE) | no heartbeat edge; ARM 0; every ARM refused |
+| a KEEPALIVE without the STOP flag, the Core2350B answering as board 3 | an edge on IO21 every 20ms |
+| no KEEPALIVE for 300ms | PANEL LOST: edges stop, the all-off writes; latched until an ARM is taken |
+| a Bluetooth LE disconnect | the same at once |
+| STOP, or a KEEPALIVE with the STOP flag | the same at once, latched as STOP |
+| no THROTTLE for 150ms while ARMED | THROTTLE 0 written; ARMED stays until the 300ms |
+| no answer from the Core2350B for 1000ms | IOMCU LOST: SAFE, edges stop, the all-off writes owed for its return, IDENTITY read again |
+| no answer for 3000ms | IO14 high for 10ms, once each silence: the Core2350B restarts with its arm latch set |
+| the Core2350B refuses CONTROL's ARM while ARMED | SAFE, the all-off writes |
+
+An ARM is taken with a Bluetooth LE link, a KEEPALIVE in the last 300ms
+without the STOP flag, the Core2350B answering as board 3, and the all-off
+writes answered. The switch to ARMED follows the panel's
+([The first switch to ARMED after a stop](Safety.md#the-first-switch-to-armed-after-a-stop)):
+the edges resume, the node waits 100ms, then reads STATUS every 50ms until
+the heartbeat fault reads clear, and writes CLEAR (0x5AFE) and then ARM.
+A line not trusted 300ms after the ARM gives the switch up: SAFE.
+
 
 The node advertises as `rcbench-pwr-XXXX` or `rcbench-bal-XXXX`, the last two bytes of its address
 in hex, every 100ms while no link stands. The advertising carries the node
@@ -571,25 +651,30 @@ starts Bluetooth LE until the panel restarts. The balance node is the
 fourth client, owner 3
 ([Balancing](Balance.md#measuring-with-the-balance-node)).
 
-- **Scan and bind.** SCAN FOR NODE scans 10s and lists the devices whose
-  advertising names the node service and the power role in its
+- **Search and bind.** SCAN FOR NODE opens SEARCH
+  ([Screens](Screens.md#wireless-search)) and scans 10s for the devices
+  whose advertising names the node service and the power role in its
   manufacturer data (`rcnode_adv_match()`, the name only where no
   manufacturer data came). A balance node is not listed, named or not.
-  BOUND NODE, or SCAN FOR NODE while it reads `FOUND n`, opens the list,
-  up to 6 nodes and `SCAN AGAIN` last. A tap binds one by its address,
-  kept in SETUP (`pnode_ble`, `pnode_name`), and its first connect takes
-  the hub's next turn after an attempt under way. BOUND NODE with no list
-  says why on the band. A bound node is connected again after each
+  BOUND NODE opens SEARCH on the last scan's list without a scan. SEARCH
+  shows the seconds the scan has left, then up to 8 nodes with their
+  RSSI, the bound one lit, or why it lists none. A tap on a node asks
+  `BIND POWER NODE?`; BIND binds it by its address, kept in SETUP
+  (`pnode_ble`, `pnode_name`), and its first connect takes the hub's next
+  turn after an attempt under way. SEARCH stays open and lights the node
+  once it is bound. A bound node is connected again after each
   drop without a scan, 1000ms after the drop and on the hub's backoff
   after a failed connect. While another client's connect holds the hub,
   the node's connect waits in the hub's queue and goes after at most one
   attempt of each other client, 5000ms each. A scan while ARMED is
   refused, and a scan that
   runs is stopped at the switch to ARMED.
-- **Refusals.** A tap on SCAN FOR NODE while a scan runs reads
-  `A SCAN IS RUNNING: IT ENDS WITHIN 10s` and asks for none. The frame
+- **Refusals.** A tap on SCAN FOR NODE or SCAN AGAIN while a scan runs
+  reads `A SCAN IS RUNNING: IT ENDS WITHIN 10s` and asks for none. BIND
+  while a scan runs, or after the list changed under the question, binds
+  nothing and reads the texts below. The frame
   passes a command to the `blec` task, and the controller can still refuse
-  it there; the view counts each refusal and the band names it. A pick
+  it there; the view counts each refusal and the band names it. A bind
   refused because a scan started first reads
   `A SCAN IS RUNNING: PICK THE NODE WHEN IT ENDS`, one refused because the
   list changed `NODE NOT BOUND: THE LIST CHANGED, PICK IT AGAIN`, and the
@@ -668,13 +753,22 @@ The bench log names the source: `source` reads `node` on a row whose INA228
 figures are the node's, and `ina voltage` and `ina current` hold them
 ([Screens](Screens.md#table-and-what-the-esc-says)).
 
+The menu's MOTOR & ESC tile counts the node as its pack sensor while POWER
+NODE is ON, INA228 SOURCE is NODE and a node is bound, connected or not:
+it carries no SIMULATED mark then, with the IOmcu's INA228 OFF too
+([Screens](Screens.md#menu-marks)).
+
 ## Update over Bluetooth LE
 
 A node takes a new application image over BLE from a central, through the
 update service of `protocols/bleota`
 ([README](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md)).
-The panel carries both roles' images, checks them at start and sends them
-from UPDATES' wireless devices' page: POWER NODE FIRMWARE and BALANCE NODE
+The panel image does not carry the nodes' images: a row's hold downloads
+its role's file of the release the panel runs, `rcbench-node-pwr-<version>.bin`,
+`rcbench-node-bal-<version>.bin` or, for the display node,
+`rcbench-node-display-<version>.bin`, or reads it from the SD card's
+`BENCH/UPDATES`, checks it ([Screens: Device images](Screens.md#device-images))
+and sends it from UPDATES' wireless devices' page: POWER NODE FIRMWARE and BALANCE NODE
 FIRMWARE ([Screens: The sensor nodes](Screens.md#the-sensor-nodes)). The
 row's 2s hold ends the node's own link (`pnode_ctl_hold()`,
 `bal_ctl_hold()`); that end and the link's return count as no loss, so the
@@ -685,17 +779,41 @@ installed is a restart for the balance runs: INFO's clock finds it and
 the runs clear ([Balancing](Balance.md#measuring-with-the-balance-node));
 an update without an install keeps them.
 
+The power node's row picks its image by the board the node's INFO names
+(`devimg_pnode_image()`, field `board` of INFO, `RCNODE_BOARD_*`):
+
+| INFO `board` | Image | Kind | Chip in the head | Row heading |
+| --- | --- | --- | --- | --- |
+| 1, ESP32-C6-Zero | `rcbench-node-pwr-<version>.bin` | 2 | ESP32-C6, 0x000D | POWER NODE FIRMWARE |
+| 2, ES3C28P | `rcbench-node-display-<version>.bin` | 4 | ESP32-S3, 0x0009 | DISPLAY NODE FIRMWARE |
+| none read yet | `rcbench-node-pwr-<version>.bin` | 2 | ESP32-C6, 0x000D | POWER NODE FIRMWARE |
+| any other | none: `NO FIRMWARE`, a tap reads `This release has no firmware for this device.` | | | POWER NODE FIRMWARE |
+
+The panel keeps the board of the bound address over a link's end, the
+update's own hold on the link and a reconnect whose INFO is still unread,
+and over a bind of the address already bound: none of them changes the
+choice or drops an update owed to the image. A new INFO sets the board;
+another address (a bind of another node, an unbind, SETUP's address)
+clears it until that node's INFO. Before the first byte goes out, `devimg_fits()` holds the
+image to the board INFO named on the link that reported the node's
+version: the board takes that image, and the head names the board's chip
+and kind. A mismatch ends the update before the node's link is touched,
+with `<name> update stopped: image for another board.` on the band. The
+node checks the kind again at BEGIN and the head again before it writes.
+
 1. The central connects and sends BEGIN: the kind (power node or balance
    node), the size, the version and the image's SHA-256.
 2. The node checks the kind against its role, the size against its slot of
    1,572,864 bytes (0x180000) and the version. A power node refuses a
    balance image and the reverse. Nothing is erased yet.
-3. The node waits 30s for its BOOT key (GPIO9) held 1s. The node shows
+3. The node waits 30s for its BOOT key (GPIO9; IO0 on the display node)
+   held 1s. The C6 node shows
    nothing; the WS2812 is not driven, and the central tells the user to
    press BOOT. No hold in 30s refuses. A key already down when the window
    opens counts only after it is released.
 4. Held: the node takes the image's first 296 bytes and checks that they
-   name the ESP32-C6 and the node's own role (`DEVOTA_ROLE`, after
+   name its chip (ESP32-C6, or ESP32-S3 on the display node) and its own
+   role (`DEVOTA_ROLE`, after
    ESP-IDF's application descriptor). An image of the other role or
    another device is refused before anything is written. The node then
    erases and writes the slot it does not run from.
@@ -769,10 +887,11 @@ idf.py -B build-bal -D SDKCONFIG=build-bal/sdkconfig \
 idf.py -B build-bal merge-bin -o rcbench-node-bal-merged.bin
 ```
 
-A release carries, for each role (`pwr`, `bal`),
-`rcbench-node-<role>-<version>.bin`, the application, and
-`rcbench-node-<role>-merged-<version>.bin`, which goes to 0x0. The CI
-(continuous integration) job "Node image" builds both roles.
+A release carries, for each build (`pwr`, `bal`, `display`),
+`rcbench-node-<build>-<version>.bin`, the application the panel sends
+over Bluetooth LE, and `rcbench-node-<build>-merged-<version>.bin`, which
+goes to 0x0 over USB; each with its `.sig` and a line in `SHA256SUMS`. The
+CI (continuous integration) job "Node image" builds all three.
 
 To flash, take the pack off the XT60 first (the ground rule), then connect
 the node's USB-C:
@@ -796,7 +915,22 @@ esptool.py --chip esp32s3 write_flash 0x0 \
   build-display/rcbench-node-display-merged.bin
 ```
 
-A release carries `rcbench-node-display-merged-<version>.bin` for it.
+A release carries `rcbench-node-display-merged-<version>.bin` for USB and
+`rcbench-node-display-<version>.bin` for the update over Bluetooth LE.
+
+The servo node ([The servo node](#the-servo-node)) on the same board:
+
+```sh
+idf.py -B build-srv -D SDKCONFIG=build-srv/sdkconfig \
+  -D IDF_TARGET=esp32s3 \
+  -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.s3_es3c28p;sdkconfig.servo" build
+idf.py -B build-srv merge-bin -o rcbench-node-srv-merged.bin
+esptool.py --chip esp32s3 write_flash 0x0 \
+  build-srv/rcbench-node-srv-merged.bin
+```
+
+The CI job "Node image" builds it as `rcbench-node-srv-merged-<version>.bin`;
+it takes no update over Bluetooth LE.
 
 A node asleep does not answer on USB. Press RESET to start it, or hold BOOT
 and press RESET for the ROM's download mode.
@@ -853,7 +987,34 @@ At start the node prints the rate, the counts of 1g and the DC window:
 The start prints `rcbench node <version>, role pwr, <n> timer wakes before
 this start`.
 
+The servo node's line:
+
+```text
+I (5123) node: srv iomcu up, panel LINKED, SAFE, beat on, faults 0x0000, answered 1520, unanswered 0, refused 0; link up -58dBm, sub 0, bat 0.00V, errors 0, resets 0, dropped 0
+```
+
+| Field | Meaning |
+| --- | --- |
+| `iomcu` | `up` with IDENTITY taken, `none` before it, `LOST` after 1000ms without an answer |
+| `panel` | `STANDALONE`, `LINKED`, `PANEL LOST` or `STOP` |
+| `SAFE` | or `ARM WAIT`, `ARM WRITE`, `ARMED` |
+| `beat` | whether IO21 edges |
+| `faults` | STATUS register 1 as last read |
+| `answered`, `unanswered`, `refused` | exchanges answered, exchanges given up at 1000ms, frames the UART framing or the decode dropped |
+
+| Command | Does |
+| --- | --- |
+| `srv` | the line above, the IDENTITY, the POWER and SUPPLY pages as last read, the counts |
+| `srv ka on`, `srv ka off` | a KEEPALIVE every 50ms from the console and a link, as from a connected panel: the heartbeat edges without a panel; off acts as a Bluetooth LE disconnect. It arms nothing and switches nothing on |
+| `srv stop` | STOP, as the panel's |
+
 ## Current limitations
+
+- The servo node has no panel packets and no control ops of its own yet in
+  `protocols/rcnode`: its KEEPALIVE, STOP, ARM, SAFE and THROTTLE come
+  from the console (`srv ka`, `srv stop`) only, and the panel lists no
+  servo node. It has no screen of its own and does not update the
+  Core2350B's image.
 
 - The panel connects to the power node and to the balance node (SETUP >
   WIRELESS, [Balancing](Balance.md#measuring-with-the-balance-node)).
@@ -862,8 +1023,8 @@ this start`.
 - The node's readings reach MOTOR & ESC only while the IOmcu link is up:
   with the link down, the panel's model runs.
 - The latency from a node's window to the panel's read is not measured.
-- No node has run on hardware: the boards are ordered, not delivered. The
-  pins, the wake, the currents and the CD42's behaviour are not measured.
+- The pins, the wake, the currents and the CD42's behaviour are not
+  measured.
 - The CD42's light-load auto-shutdown threshold is not known (above).
 - The balance node's rate, scale, noise and index timing are not measured:
   the figures above are the datasheets' and ESP-IDF's. The station can
@@ -876,23 +1037,21 @@ this start`.
   it and at least 80ms of samples (`errors`, `resets` in STATUS).
 - The balance node holds its ADXL on 3V3 while it sleeps: 350µA.
 - The WS2812 is not driven. Its current at idle is not measured.
-- The panel does not yet send a node its image: the node's side of the
-  update over BLE exists, the panel's rows come with its node clients. The
-  update has not run on a node; its rate and a rollback are not measured.
+- The update's rate over Bluetooth LE and a rollback are not measured.
 - A node checks an image's kind, chip and segments, not its origin: a
   central in range can offer any image of the node's role, older ones
   included, and a 1s hold of BOOT installs it.
 - Windows without a sample between two windows are not sent: a stalled
   sampler shows as a jump in `t_node` with no jump in `seq`.
-- The panel does not carry the display node's image, and UPDATES offers no
-  update for it: the panel's application slot of 8,126,464 bytes has about
-  9% (about 750KB) free with the images it carries, and the display node's
-  image is 654,576 bytes. The display node is flashed over USB. A display
-  node bound as the panel's power node names board 2 in INFO; POWER NODE
-  FIRMWARE then offers no update, and a tap reads `This panel includes no
-  firmware for this device.` (`pnode_ctl_other_board()`).
-- The display node has not run on a board. The ILI9341V set-up is the
-  vendor's, not measured; the SPI clock of 20MHz, the touch's orientation,
+- Releases before the one that publishes
+  `rcbench-node-display-<version>.bin` have no line for it in `SHA256SUMS`:
+  a panel running such a release cannot download the display node's image,
+  and the hold ends with `No checksum entry for this firmware.`
+- A display node not connected since the panel started, or since its
+  bind, shows POWER NODE FIRMWARE and the C6 node's file name until its
+  first INFO; the hold stays grey until then.
+- The display node's ILI9341V set-up is the vendor's, not measured; the
+  SPI clock of 20MHz, the touch's orientation,
   the I2C socket's pin order and the internal RAM left for Bluetooth LE at
   run time are not measured. A board without PSRAM runs without a display.
 - The display node's touch read shares the bus with the INA228: a read of

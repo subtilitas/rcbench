@@ -1,0 +1,85 @@
+/**
+ * @file
+ * @brief The capture's ring.
+ *
+ * See pass_ring.h.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+#include "pass_ring.h"
+
+#include <string.h>
+
+/** @brief An index into the ring. */
+#define WRAP(i) ((uint32_t)(i) & (PASS_RING_EVENTS - 1u))
+
+_Static_assert((PASS_RING_EVENTS & (PASS_RING_EVENTS - 1u)) == 0u,
+               "the ring is a power of two");
+
+void pass_ring_init(pass_ring_t *r)
+{
+    memset(r, 0, sizeof(*r));
+}
+
+/**
+ * @brief Whether the slot before the reader still holds the event read
+ *        there.
+ *
+ * @param r       The reader.
+ * @param states  The states.
+ * @param stamps  The stamps.
+ * @return        true when it does.
+ */
+static bool intact(const pass_ring_t *r, const volatile uint32_t *states,
+                   const volatile uint32_t *stamps)
+{
+    const uint32_t p = WRAP(r->rd - 1u);
+    return states[p] == r->last_state && stamps[p] == r->last_stamp;
+}
+
+pass_drain_t pass_ring_drain(pass_ring_t *r,
+                             const volatile uint32_t *states,
+                             const volatile uint32_t *stamps,
+                             uint32_t head, uint32_t now_us, bool dropped,
+                             pass_dec_t *d)
+{
+    pass_drain_t out = { 0u, false };
+    const uint32_t h = WRAP(head);
+    bool ok = intact(r, states, stamps);
+    /* A state dropped on a full FIFO: nothing of this drain is decoded,
+     * since a pulse in it may span the gap. */
+    if (ok && !dropped) {
+        const uint32_t n = WRAP(h - r->rd);
+        if (n != 0u) {
+            r->before = *d;
+        }
+        for (uint32_t i = 0; i < n; ++i) {
+            const uint32_t s = WRAP(r->rd + i);
+            pass_dec_event(d, states[s], stamps[s]);
+        }
+        out.events = n;
+        if (r->read_done != NULL) {
+            r->read_done(r->read_ctx);
+        }
+        /* The DMA reaches the slot before the reader's first: unchanged,
+         * nothing just read was overwritten while it was read.  Changed,
+         * what was decoded may mix old and new events: undone. */
+        ok = intact(r, states, stamps);
+        if (!ok && n != 0u) {
+            *d = r->before;
+            out.events = 0u;
+        }
+    }
+    const uint32_t newest = WRAP(h - 1u);
+    r->rd = h;
+    r->last_state = states[newest];
+    r->last_stamp = stamps[newest];
+    out.lapped = !ok;
+    /* Every lost state, a lap or a drop, one rule: the pending edges go,
+     * the counted figures stay. */
+    if (!ok || dropped) {
+        pass_dec_restart(d, r->last_state, now_us);
+    }
+    pass_dec_now(d, now_us);
+    return out;
+}

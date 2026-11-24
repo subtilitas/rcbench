@@ -327,6 +327,11 @@ bool out_ppm_write(uint8_t pin, const uint16_t *channel_us, uint8_t channels)
     s->have_last = true;
     if (!s->running) {
         pio_gpio_init(s->pio, pin);
+        /* Its input off while the block drives it: nothing reads the frame
+         * back, and a pad with its input on shows every edge to whatever
+         * samples the pins (pio_gpio_init() sets it on).  Back on at the
+         * stop, which hands the pad to the processor. */
+        gpio_set_input_enabled(pin, false);
         pio_sm_set_consecutive_pindirs(s->pio, s->sm, pin, 1, true);
         pio_sm_clear_fifos(s->pio, s->sm);
         pio_sm_restart(s->pio, s->sm);

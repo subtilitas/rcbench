@@ -56,6 +56,7 @@ cmake --build test/host/build-san && ctest --test-dir test/host/build-san --outp
 
 python3 tools/coverage.py --check     # coverage floors, the STATUS.md table, the README figure
 python3 tools/check_docs.py           # links, translations, SPDX, the suite list, numbers against constants
+python3 tools/check_mutants.py --check  # the weekly mutation run's figures against the tree
 python3 tools/render_ui.py --check    # the committed screenshots match
 python3 tools/gen_font.py --check
 python3 tools/gen_board_drawing.py --check
@@ -63,6 +64,7 @@ python3 tools/gen_esc_profiles.py --check
 python3 tools/check_sizes.py --check  # every file over 1,000 code lines is in tools/check_sizes.txt
 python3 tools/check_sanitizers.py --check  # the sanitizer build's flags, on every file
 python3 tools/check_protocols.py --check   # every module under protocols/ stands alone
+python3 tools/pio_budget.py --check        # every board's PIO programs and DMA channels fit the RP2350
 python3 tools/check_loop_waits.py --check  # no busy wait, sleep, blocking call or blocking print in the IOmcu's code
 python3 tools/security_parsers.py --check  # the parser table in SECURITY.md
 python3 tools/check_formats.py        # every translated format against its call
@@ -230,18 +232,20 @@ fail the job. Answer each survivor of a change with a test, or say in the
 pull request why the two lines behave the same.
 
 `mutation.yml` runs the mutants of every line of `shared/safety` and
-`shared/outputs` (6743 mutants in 85 files) each Sunday at 03:17 UTC and on
+`shared/outputs` (7694 mutants in 100 files) each Sunday at 03:17 UTC and on
 demand. It has no mutant limit and runs in 6 shards. `shared/safety` leads the
 list, `arming.c`, `heartbeat.c`, `stop_latch.c`, `touch_loss.c` and
 `prog5v_lost.c` at its head, and shard i takes every 6th mutant from place i
 (`--first`, `--shard i/6`). A shard starts no mutant after 18000s, stops one
 build or suite run after 600s and ends within 21000s. At 42s a mutant on a
 hosted runner a shard runs about 428 mutants: the 699 mutants of
-`shared/safety` run every week, and about 1,871 of the 6044 of
+`shared/safety` run every week, and about 1,869 of the 6995 of
 `shared/outputs`. A shard that leaves mutants unrun says so in a warning
 annotation and in its summary, with the count for each file. Neither a
 survivor nor a mutant left fails the job. The result is the job summaries and
-the artifacts `mutation-full-0` to `mutation-full-5`.
+the artifacts `mutation-full-0` to `mutation-full-5`. `tools/check_mutants.py --check`
+holds these figures to the tree in CI; `--update` writes them after a file
+under `shared/safety` or `shared/outputs` is added or changed.
 
 ## Where code goes
 

@@ -33,12 +33,15 @@ a new session needs beyond it.
 | `storyboards/rbmod-rework.json` | the rev 1 rework in 4 steps, 83s, no narration |
 | `storyboards/rbmod-build.json` | the build of a rev 1 carrier and the panel's wiring in 13 steps, 347.32s, narrated in the voice of `features`, bed `pachelbel-canon` at half level |
 | `storyboards/dial.json` | the M5Stack Dial going into its printed base and coming into use in 7 steps, 295.69s, narrated, bed `pachelbel-canon` at half level; `dial_base` puts the Dial into its printed hand-held base, and step 1 assembles it |
-| `storyboards/minircbench-build.json`, `player/mini3d.js`, `boards/minircbench-wiring.json`, `stills/` | the build of a MiniRcBench in 10 steps, 505.57s, narrated in the voice of `features`, bed `pachelbel-canon` at half level; `tools/video_cad.py --parts` converts its assembly |
-| `storyboards/minircbench-features.json`, `stills/` | every screen of the MiniRcBench, firmware 0.1.0, in 12 chapters, 1000.70s, narrated in the voice of `features`, bed `pachelbel-canon` at half level; 81 stills of that project's host suite at its commit 2cdf044 on the display of the `mini` model seen from the front |
+| `player/mini3d.js`, `boards/minircbench-wiring.json` | the `mini` model and the wiring drawing of the MiniRcBench; its storyboards `minircbench-build` and `minircbench-features` and their stills are in the MiniRcBench repository under `docs/video/` and render here by path; `tools/video_cad.py --parts` converts its assembly |
 | `storyboards/rbmod-first-program.json`, `player/part3d.js`, `player/windows.js`, `web/capture.js` | first programming of a bench with the rbmod carrier in 6 chapters, 321.22s, narrated, bed `pachelbel-canon` at half level; STEP models of the panel, the carrier and the RP2350-CAN, captures of the releases page and of the ESP Web Tool, a drawn Windows desktop for the drive RP2350 |
 | `storyboards/auto-rudder.json`, `player/rudder3d.js`, `test/host/video_rauto.c` | setting a rudder's end points with RUDDER AUTO in 4 steps, 300.77s, narrated, bed `pachelbel-canon` at half level; the wing slice, the IMU on Gecko Tape, the Dial in its base and the cased bench in one 3D scene, the display and the flap following one run of the host suites' rig |
 | `storyboards/thumbnail.json` | thumbnail of the feature tour, `--stills 3` |
-| `test/tools/test_make_video.py` | 52 cases; the storyboard check, the script, the freezes, the phonemes and the trim of the narration |
+| `tools/video_scope.py`, `player/scope.js`, `plots/hitec-precharge.json` | the `scope` scene: plots and a circuit from a figure; the figure of the D series signal wire is simulated with ngspice 42 |
+| `storyboards/hitec-precharge.json` | precharge and sample on an RP2350 pin in 6 steps, narrated in the voice of `features`, bed `pachelbel-canon` at half level; 348.67s, 10,460 frames, rendered on 2026-11-22 from 1547c7dca with Blender 5.3.0 for its 910 3D frames (EEVEE on 7 MI50 cards, 114s) and the browser player for its 2D layer (596s). Owner, 2026-11-22, in 3 rounds: the video is abstract. It shows the technique and the solution: no pull-up is possible because several protocols share the pin. It names no servo maker and not rcbench, and it keeps the graphs and the measurements. The script before it, with the servo and rcbench named, was rendered at 361.63s from dac65c733; the first, with the panel's screens, at 339.20s from 2b5940f3a. It opens with 1 `part` scene, `rp2350_can`; the 6 `scope` scenes that follow have no 3D layer, and the sixth step draws the 3 captures of `testbench/captures/hitec32` (branch `inbox/hitec32-captures`) |
+| `tools/video_tap.py`, `plots/phase-tap.json`, `storyboards/phase-tap.json` | ESC STICK programming from the phase tap in 7 steps, narrated in the voice of `features`, bed `bach-cello` at half level; 354.27s (10,628 frames) as rendered. Its tour shows the FlyDragon's own RUN and DONE (`motor-stick-flydragon-run`, `-done`). Its 4 `part` scenes are `rbmod_v2`, `rp2350_can`, `esc_motor_set` (the FlyDragon Lite 40A and a T-Motor AT2814 lead to lead, tags from the point table of `hardware/mechanical/ESC_MOTOR.md`) and `motor_simulator`. No capture: the owner chose the simulation and the documented figures (2026-11-22). Owner, 2026-11-22: the ESC is powered from the bench's XT60; the throttle signal comes from a programming port, as PWM or DShot; no servo is on the servo pins during a tap run, because they carry the ESC's voltage; a video that puts an ESC's signal lead on a port always says to take the red wire out of the plug |
+| `test/tools/test_video_tap.py` | 7 cases; the lead's model, the detector on a group, the figure |
+| `test/tools/test_make_video.py`, `test/tools/test_video_scope.py` | 52 and 15 cases; the storyboard check, the script, the freezes, the phonemes and the trim of the narration, the figure, the scope scene |
 
 No pull request is open. CI has not been looked at for this branch.
 
@@ -50,7 +53,7 @@ No pull request is open. CI has not been looked at for this branch.
 | `case.glb` | 35MB | `python3 tools/video_cad.py rcbench_case.stp`, 54s | `tools/video/cad/` |
 | `rbmod.kicad_pcb` of rev 1 | 251kB | repository `subtilitas/kicad`, `projects/rcbench/rcbench_modular/rbmod/rbmod-backups/rbmod-2026-10-25_215831.zip` | any path; input of `tools/video_board.py` |
 | `rbmod-rev1.json` | 40kB | `python3 tools/video_board.py rbmod.kicad_pcb -o tools/video/cad/rbmod-rev1.json` | `tools/video/cad/` |
-| `m5dial.glb` | 0.9MB | `python3 tools/video_cad.py --solids hardware/mechanical/models/m5dial.step -o tools/video/cad/m5dial.glb`, 10s | `tools/video/cad/` |
+| `m5dial.glb` | 0.9MB | `python3 tools/video_cad.py --solids hardware/mechanical/models/parts/m5dial.step -o tools/video/cad/m5dial.glb`, 10s | `tools/video/cad/` |
 | `kokoro-v1.0.onnx`, `voices-v1.0.bin` | 354MB | github.com/thewh1teagle/kokoro-onnx, release `model-files-v1.0` | `tools/video/tts/` |
 | `node_modules/` | | `npm install` in `tools/video/` | `tools/video/` |
 
@@ -82,9 +85,8 @@ python3 tools/make_video.py features --jobs 12 --keep build/video/parts \
   signal-wire step of `features` does (18.65).
 - `RCBENCH_VIDEO_GL` selects a GPU renderer. On the server's MI50 cards
   its pixels differ from SwiftShader's by 0.031 of 255 on average on
-  the Dial video. `minircbench-features`, 30,021 frames, takes 531s
-  there with `--jobs 47` and empty caches. `rbmod-first-program` takes
-  112s with 47 jobs, `auto-rudder` 201s with 12 jobs and `auto-rudder-de` 224s with 14 jobs on the kernel's own amdgpu driver.
+  the Dial video. `rbmod-first-program` takes
+  112s there with 47 jobs, `auto-rudder` 201s with 12 jobs and `auto-rudder-de` 224s with 14 jobs on the kernel's own amdgpu driver.
 - Chromium takes the first Vulkan device: 47 browsers with the full
   case model filled one card's 16GiB. A browser of a long scene with
   the full case needs about 0.4GB; the server spreads the jobs over its

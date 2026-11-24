@@ -64,8 +64,8 @@ typedef struct {
     bool     holding;    /**< LINK_SV_HOLD in force                     */
     uint8_t  target_first; /**< the channels commanded, when target_n   */
     uint8_t  target_n;     /**< is not 0; else the standard servo ports */
-    uint16_t ports;        /**< bank channels pulsing, not slots          */
-    uint16_t sliced;       /**< bank channels held at PROG_PORT_RATE_HZ   */
+    uint32_t ports;        /**< bank channels pulsing, not slots          */
+    uint32_t sliced;       /**< bank channels held at PROG_PORT_RATE_HZ   */
 } servo_page_t;
 
 /**
@@ -153,7 +153,7 @@ bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms);
  * @param channels Bit n set for a bank channel whose pulse is on.
  * @param sliced Bit n set for a bank channel that runs at PROG_PORT_RATE_HZ.
  */
-void servo_page_ports(servo_page_t *p, uint16_t channels, uint16_t sliced);
+void servo_page_ports(servo_page_t *p, uint32_t channels, uint32_t sliced);
 
 /**
  * @brief The frame rate register: the target's rate, 0 for its own.
@@ -188,7 +188,7 @@ uint16_t servo_page_slots_hz(const servo_page_t *p);
 /**
  * @brief Name the channels the sweep and the hold command: @p count channels of
  *        the bank from @p first, or with @p count 0 the standard servo ports
- *        (channels 0 to LINK_OUT_CHANNELS - 1), which is what a page starts
+ *        (channels 0 to LINK_OUT_CHANNELS_ALL - 1), which is what a page starts
  *        with.
  *
  * A programming port is such a range of 1 channel.

@@ -11,6 +11,7 @@
  * - the_arm_button_fades_across_the_hold
  * - an_unanswered_bench_does_not_show_numbers
  * - a_speed_above_the_ceiling_does_not_read_as_65535
+ * - a_peak_of_exactly_65535rpm_reads_as_a_reading
  * - the_plot_records_one_run
  * - leaving_the_screen_does_not_erase_the_run
  * - a_cancelled_gesture_does_not_arm
@@ -337,6 +338,41 @@ TEST_CASE(a_speed_above_the_ceiling_does_not_read_as_65535)
 }
 
 /*
+ * A peak of exactly 65,535rpm is a reading: it reads 65535, not the bound
+ * `>65535` that LINK_BN_RPM_MAX_OVER marks (4.40), whatever an IOmcu of
+ * 4.39 or older, which has no such bit, sends at its ceiling.
+ */
+TEST_CASE(a_peak_of_exactly_65535rpm_reads_as_a_reading)
+{
+    gfx_color_t *shot[2] = { NULL, NULL };
+    for (int k = 0; k < 2; ++k) {
+        fresh();
+        bench_state_t b;
+        memset(&b, 0, sizeof(b));
+        b.valid   = true;
+        b.voltage = 24.0f;
+        b.rpm     = 1000.0f;
+        b.rpm_max = 65535.0f;
+        b.flags   = (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_RPM_OK
+                               | ((k == 1) ? LINK_BN_RPM_MAX_OVER : 0));
+        CHECK_EQ(bench_state_rpm_max_over(&b), k == 1);
+        motor_screen_push(&b);
+        scr->render(&cv, 0);
+        shot[k] = malloc((size_t)W * H * sizeof(gfx_color_t));
+        REQUIRE_ALLOC(shot[k]);
+        memcpy(shot[k], fb, (size_t)W * H * sizeof(gfx_color_t));
+    }
+    int differ = 0;
+    for (int i = 0; i < W * H; ++i) {
+        if (shot[0][i] != shot[1][i]) { ++differ; }
+    }
+    CHECK(differ > 20);
+    for (int k = 0; k < 2; ++k) {
+        free(shot[k]);
+    }
+}
+
+/*
  * The run boundary: what the plot does across an arm and a disarm.
  *
  * The trace is the record of a run, so it advances only while the bench is
@@ -595,6 +631,7 @@ int main(void)
     RUN(the_arm_button_fades_across_the_hold);
     RUN(an_unanswered_bench_does_not_show_numbers);
     RUN(a_speed_above_the_ceiling_does_not_read_as_65535);
+    RUN(a_peak_of_exactly_65535rpm_reads_as_a_reading);
     RUN(the_plot_records_one_run);
     RUN(leaving_the_screen_does_not_erase_the_run);
     RUN(a_cancelled_gesture_does_not_arm);

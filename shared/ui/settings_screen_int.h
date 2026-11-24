@@ -199,6 +199,8 @@ typedef struct {
     /** @brief The scroll each split pane's entry had when last left, px */
     int      entry_scroll[STG_PANES][STG_PANE_ENTRIES];
     bool     opened;   /**< another screen opened the list: no tiles above it */
+    bool     resume;   /**< the next entry keeps the list as it was left
+                            (settings_screen_resume()) */
     ui_screen_id_t warn_to;             /**< screen the warning's way out leads to */
 
     bool     chrome_valid[MAX_FBS];     /**< per frame buffer: whether its chrome is current */

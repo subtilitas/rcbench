@@ -85,6 +85,13 @@ TEST_CASE(only_a_channel_that_reads_a_target_takes_a_group)
     CHECK_STR_EQ(c.name[0], "port 4");
     CHECK_STR_EQ(c.name[1], "out 1");
     CHECK_STR_EQ(c.name[2], "out 2");
+    /* Outputs 9 and 16 (4.41) by their numbers. */
+    m[LINK_SM_FAST] = LINK_SM_FAST_NONE;
+    m[LINK_SM_WATCH(0)] = (uint16_t)LINK_SM_WATCH_OUT(8);
+    m[LINK_SM_WATCH(1)] = (uint16_t)LINK_SM_WATCH_OUT(15);
+    log_cols_from_map(m, &c);
+    CHECK_STR_EQ(c.name[0], "out 9");
+    CHECK_STR_EQ(c.name[1], "out 16");
 }
 
 /* Two channels on one target each name their channel. */

@@ -22,7 +22,8 @@
  * @brief A binding prepared and taken whole (protocol 4.10): BIND_CFG and
  * BIND_OUT hold a CHAN_CFG and an OUTPUTS page that are not in force, and a
  * write of BIND's COMMIT that names their CRC (cyclic redundancy check) puts
- * both in force or neither.
+ * both in force or neither.  From 4.41 BIND_CFG_HI and BIND_OUT_HI prepare
+ * the _HI pages, and COMMIT_ALL takes all four.
  *
  * shared/outputs/out_stage.c decides; this is the glue to the two pages' own
  * rules in iomcu_pages.c.  Not kept in flash: it starts as the pages in
@@ -31,50 +32,80 @@
 out_stage_t s_stage;
 /**
  * @brief The slots the silicon had bound when a commit began, put back with
- * the CHAN_CFG page when the commit's OUTPUTS page is refused.
+ * the CHAN_CFG pages when the commit's OUTPUTS pages are refused.
  */
-static uint8_t s_stage_bound;
+static uint16_t s_stage_bound;
 
 void bind_cfg_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     (void)ctx;
-    out_stage_cfg_read(&s_stage, off, n, out);
+    out_stage_cfg_read(&s_stage, false, off, n, out);
+}
+
+void bind_cfg_hi_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    out_stage_cfg_read(&s_stage, true, off, n, out);
 }
 
 uint8_t bind_cfg_write(void *ctx, uint8_t off, uint8_t n,
                               const uint16_t *in)
 {
     (void)ctx;
-    const uint8_t nack = out_stage_cfg_write(&s_stage, off, n, in);
+    const uint8_t nack = out_stage_cfg_write(&s_stage, false, off, n, in);
+    return (nack != 0u) ? bind_refuse(LINK_BW_VALUE, nack) : 0u;
+}
+
+uint8_t bind_cfg_hi_write(void *ctx, uint8_t off, uint8_t n,
+                          const uint16_t *in)
+{
+    (void)ctx;
+    const uint8_t nack = out_stage_cfg_write(&s_stage, true, off, n, in);
     return (nack != 0u) ? bind_refuse(LINK_BW_VALUE, nack) : 0u;
 }
 
 void bind_out_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     (void)ctx;
-    out_stage_slots_read(&s_stage, off, n, out);
+    out_stage_slots_read(&s_stage, false, off, n, out);
+}
+
+void bind_out_hi_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    out_stage_slots_read(&s_stage, true, off, n, out);
 }
 
 uint8_t bind_out_write(void *ctx, uint8_t off, uint8_t n,
                               const uint16_t *in)
 {
     (void)ctx;
-    const uint8_t nack = out_stage_slots_write(&s_stage, off, n, in);
+    const uint8_t nack = out_stage_slots_write(&s_stage, false, off, n, in);
+    return (nack != 0u) ? bind_refuse(LINK_BW_VALUE, nack) : 0u;
+}
+
+uint8_t bind_out_hi_write(void *ctx, uint8_t off, uint8_t n,
+                          const uint16_t *in)
+{
+    (void)ctx;
+    const uint8_t nack = out_stage_slots_write(&s_stage, true, off, n, in);
     return (nack != 0u) ? bind_refuse(LINK_BW_VALUE, nack) : 0u;
 }
 
 /**
- * @brief Takes the staged CHAN_CFG page for a commit.
+ * @brief Takes the CHAN_CFG pages of a commit.
  *
  * Records the slots the silicon has bound, then calls chan_cfg_take().
  * @param ctx   The iomcu_state_t the commit applies to.
- * @param next  The staged CHAN_CFG register values.
+ * @param next  The CHAN_CFG register values the commit takes.
+ * @param slots The OUTPUTS register values the commit takes beside them.
  * @return 0 to accept, or a link_nack_t to refuse.
  */
-static uint8_t stage_take_cfg(void *ctx, const uint16_t *next)
+static uint8_t stage_take_cfg(void *ctx, const uint16_t *next,
+                              const uint16_t *slots)
 {
     s_stage_bound = bound_slots();
-    return chan_cfg_take((iomcu_state_t *)ctx, next, s_stage.slots, false);
+    return chan_cfg_take((iomcu_state_t *)ctx, next, slots, false);
 }
 
 /**
@@ -101,7 +132,7 @@ static void stage_put_cfg(void *ctx, const uint16_t *prev)
     /* The commit has put the bank's channels back, each command with its
      * role; the page and the silicon follow it here. */
     iomcu_state_t *s = (iomcu_state_t *)ctx;
-    uint16_t was[LINK_CC_COUNT];
+    static uint16_t was[LINK_CC_ALL];
     memcpy(was, s->chan_cfg, sizeof(was));
     memcpy(s->chan_cfg, prev, sizeof(s->chan_cfg));
     outputs_channels_follow_roles(&s_outputs, was, s->chan_cfg, s->channels);
@@ -129,8 +160,12 @@ void bind_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     (void)ctx;
     for (uint8_t i = 0; i < n; ++i) {
-        out[i] = ((uint8_t)(off + i) == (uint8_t)LINK_BD_COMMIT)
-                     ? out_stage_held_crc(&s_stage) : bind_why();
+        switch ((uint8_t)(off + i)) {
+        case LINK_BD_COMMIT:     out[i] = out_stage_held_crc(&s_stage); break;
+        case LINK_BD_COMMIT_ALL: out[i] = out_stage_held_crc_all(&s_stage);
+                                 break;
+        default:                 out[i] = bind_why(); break;
+        }
     }
 }
 
@@ -138,7 +173,8 @@ uint8_t bind_write(void *ctx, uint8_t off, uint8_t n,
                           const uint16_t *in)
 {
     iomcu_state_t *s = (iomcu_state_t *)ctx;
-    if (off != (uint8_t)LINK_BD_COMMIT || n != 1u) {
+    if ((off != (uint8_t)LINK_BD_COMMIT && off != (uint8_t)LINK_BD_COMMIT_ALL)
+        || n != 1u) {
         return LINK_NACK_BAD_RANGE;
     }
     /* The output the ESC_WIRE page holds gets back what it had. */
@@ -148,8 +184,12 @@ uint8_t bind_write(void *ctx, uint8_t off, uint8_t n,
     /* A commit refused before either page is judged leaves no cause: the
      * CRC written is not the prepared pages'. */
     (void)bind_refuse(LINK_BW_NONE, 0u);
-    const uint8_t nack = out_stage_commit(&s_stage, in[0], s->chan_cfg,
-                                          &k_stage_ops, s);
+    const uint8_t nack =
+        (off == (uint8_t)LINK_BD_COMMIT_ALL)
+            ? out_stage_commit_all(&s_stage, in[0], s->chan_cfg, s->slots,
+                                   &k_stage_ops, s)
+            : out_stage_commit(&s_stage, in[0], s->chan_cfg, s->slots,
+                               &k_stage_ops, s);
     if (nack != 0u && bind_why() == LINK_BW_NONE) {
         return bind_refuse(LINK_BW_PREPARED, nack);
     }
@@ -219,6 +259,12 @@ void artwork_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     (void)ctx;
     uint16_t all[LINK_AW_COUNT];
+    /* The remote servo node carries no drawing: its pads sit on 4 edges,
+     * and the page reads 0 throughout. */
+    if (IOMCU_BOARD_ID == (uint16_t)OUTBIND_BOARD_RSN) {
+        memset(out, 0, (size_t)n * sizeof(uint16_t));
+        return;
+    }
     link_artserve_meta(all, (uint16_t)LINK_ART_DRAWING,
                        board_drawing_rp2350_can_width,
                        board_drawing_rp2350_can_height,
@@ -242,6 +288,10 @@ void art_data_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     (void)ctx;
     uint16_t all[LINK_AD_COUNT];
+    if (IOMCU_BOARD_ID == (uint16_t)OUTBIND_BOARD_RSN) {
+        memset(out, 0, (size_t)n * sizeof(uint16_t));   /* no drawing */
+        return;
+    }
     link_artserve_block(all, board_drawing_rp2350_can,
                         board_drawing_rp2350_can_bytes, s_art_block);
     for (uint8_t i = 0; i < n; ++i) {

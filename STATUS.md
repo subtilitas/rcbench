@@ -47,7 +47,7 @@ output signals.
 page, offset and count; a frame carries up to four registers; the transport
 does no reassembly; the IOmcu transmits only when asked. Worst-case
 payload 52kB/s against 12 to 30kB/s of expected traffic. Protocol version
-4.39. A request whose answer is lost is sent once more after 50ms.
+4.41. A request whose answer is lost is sent once more after 50ms.
 [Reference](docs/Link.md).
 
 **Safety.** The panel's control task drives GPIO28 (`PANEL_HEARTBEAT_PIN`, IO28 of header P3) from the core that does
@@ -163,6 +163,18 @@ schema category has a row (`test_keypad_rows_setup`, `test_keypad_rows_stick`,
 `test_keypad_rows_motor`, `test_keypad_rows_supply`, `test_keypad_rows_servo`,
 `test_keypad_rows_kst`, over `test/host/keypad_rows_rig.h`). MOTOR & ESC's throttle `-1` and
 `+1` keys open no keypad: they act while ARMED only, and a typed throttle is a jump.
+
+The settings backup is built and tested on the host and linked into the panel build. SETUP > SD CARD's Save settings writes the stored settings as
+`BENCH/SETUP/SETTINGS.TXT`; each save to NVS with a card mounted writes `AUTO1.TXT` and moves
+the older copies to `AUTO2.TXT` and `AUTO3.TXT`, on the logger task (`firmware/panel/main/panel_sbk.c`).
+Load settings opens BACKUP: the files with date and panel version, HOLD 2s TO LOAD, refused
+lines listed with line number, key and code. A panel that starts on the defaults offers the
+newest file over the menu. The file is text format 1, every schema setting and every string
+(the IMU, Dial and node bindings among them), without the Wi-Fi secrets
+(`shared/settings/settings_file.c`, `settings_backup.c`, `shared/ui/sbk_ctl.c`;
+`test_settings_file`, `test_settings_backup`, `test_sbk_screen`: every setting and string
+round trip, format versions, refused lines, rotation, the offer's conditions, no card, a full
+card, the hold at 1999 and 2000ms). [Reference](docs/Screens.md#sd-card-the-settings-backup).
 
 ### CSV (comma-separated values) and number parsing, log viewer
 
@@ -331,6 +343,19 @@ both are due, the band names what holds it back with one line per frame, the sta
 while the C6's restart is due (`upd_run.h`, `test_upd_run`: both restarts over a store in
 memory, a power cut before step 2, a rollback; `panel_updrun.c` feeds it on the panel).
 
+The release signature of the panel's own image (ECDSA P-256 over SHA-256, `<image>.sig`) is
+verified with Mbed TLS 4.1.0 (`fw_sign.c`, `test_fw_sign`: 48 signatures made by openssl,
+another key, every flipped image bit position tried, cut and padded signatures, DER forms out
+of shape, a P-384 key, the committed release key). The Wi-Fi page sends an optional `.sig`
+with the upload (`test_wa_page`), a download fetches it after the image (`test_wa_fetch_sig`:
+404, sizes 7, 8, 72 and 73 bytes, a broken connection, STOP and the budget during the
+signature), and the question and PANEL UPDATE show the verdict (`test_update_sig`). An image
+without a valid signature installs with the one hold and a warning; `RCBENCH_SIGN_ENFORCE=1`
+adds the second hold INSTALL ANYWAY (`test_fw_sig`, built a second time with the switch at
+1). The release workflow
+signs every image and verifies every signature against the committed key
+(`tools/sign_images.sh`, `test/tools/test_sign_images.py`).
+
 On the ESP32-P4 the radio is the board's ESP32-C6 on SDIO through `esp_wifi_remote` and
 `esp_hosted` (`components/c6_link`, [Wi-Fi through the
 ESP32-C6](docs/C6.md#wi-fi-through-the-esp32-c6)). Measured on a home network on
@@ -456,7 +481,7 @@ a spotlight, and a recap. `tools/video_audio.py` computes the sound track from t
 storyboard: synthesizer pads and one quiet sound per event, no percussion, the loudest sample
 at -3dBFS (decibels relative to full scale); its balance has not been judged by ear. `--check` reads every
 storyboard and fails on a field the player would not draw; `test/tools/test_make_video.py`
-runs it. Five storyboards and a thumbnail: `kst-rbmod`, programming a KST servo on the rbmod carrier, 8 steps,
+runs it. 11 storyboards and a thumbnail: `kst-rbmod`, programming a KST servo on the rbmod carrier, 8 steps,
 100.4s, and `features`, every screen of the bench in 8 chapters, where it opens from and what
 it does on the rbmod carrier, narrated, 755.92s, with Bach's Prelude in C major or Pachelbel's
 Canon in D major as its bed. `tools/video_voice.py` speaks a storyboard with Kokoro, a
@@ -471,7 +496,7 @@ label names each. `rbmod-rework` shows the rework of a rev 1 rbmod carrier in 4 
 without narration: the track cut between the pads of R1, the wire from GP15 to R1's outer pad,
 the 2.2kΩ pull-down on M7's EN and the 5.6V zener on M7's output. It draws the board flat
 (`tools/video/player/board.js`) from a file that `tools/video_board.py` converts from the
-rev 1 KiCad board, which is not in the tree. `rbmod-first-program` shows the first programming of a bench with the rbmod carrier in 6 chapters, narrated, 321.22s: the panel, the carrier and the RP2350-CAN from their STEP models (`tools/video/player/part3d.js`), captures of the releases page and of the ESP Web Tool (`tools/video/web/capture.js`) and the panel's update screens. `auto-rudder` shows RUDDER AUTO setting a rudder's end points in 4 steps, narrated, 300.77s: a wing slice with its flap, the IMU on gel tape, the Dial and the cased bench in one 3D scene (`tools/video/player/rudder3d.js`), the display and the flap following one run of the host suites' rig (`test/host/video_rauto.c`). `minircbench-build` shows the build of a MiniRcBench, the pocket bench of the repository of that name, in 10 steps, narrated, 505.57s: its assembly in 3D (`tools/video/player/mini3d.js`), its wiring on a flat drawing (`tools/video/boards/minircbench-wiring.json`) and its screens as stills of that project's host suite. `minircbench-features` walks through every screen of the MiniRcBench, firmware 0.1.0, in 12 chapters, narrated, 1000.70s: 81 stills of the host suite at that project's commit 2cdf044 on the display of the 3D model. `rbmod-build` shows the build of a rev 1 carrier
+rev 1 KiCad board, which is not in the tree. `rbmod-first-program` shows the first programming of a bench with the rbmod carrier in 6 chapters, narrated, 321.22s: the panel, the carrier and the RP2350-CAN from their STEP models (`tools/video/player/part3d.js`), captures of the releases page and of the ESP Web Tool (`tools/video/web/capture.js`) and the panel's update screens. `auto-rudder` shows RUDDER AUTO setting a rudder's end points in 4 steps, narrated, 300.77s: a wing slice with its flap, the IMU on gel tape, the Dial and the cased bench in one 3D scene (`tools/video/player/rudder3d.js`), the display and the flap following one run of the host suites' rig (`test/host/video_rauto.c`). The storyboards of the MiniRcBench, the pocket bench of the repository of that name, are in that repository under `docs/video/` with their stills; a storyboard given by its path takes its stills from `stills/` beside it, and the tool keeps the bench's 3D drawing (`tools/video/player/mini3d.js`) and its flat wiring drawing (`tools/video/boards/minircbench-wiring.json`). `rbmod-build` shows the build of a rev 1 carrier
 in 13 steps and 347.32s on the same board, narrated, with Pachelbel's Canon as its bed: the parts take
 their places, the modules sit on the plastic of straight pin strips and are soldered on both
 sides, the large holes of M5 and M6 take a wire and solder, J6 takes no connector but 4 wires
@@ -480,7 +505,7 @@ to a USB-C plug board for the PD mini, and a drawing of the panel's back
 supply and ground from J7 on the RS485 header's 5V and GND pins. `dial` shows the M5Stack Dial, in its printed hand-held base, coming
 into use in 7 steps and 295.69s, narrated, step 1 the assembly of the base with its cell: its STEP model with the faces of
 `tools/render_dial.py` on its display and its knob turning (`tools/video/player/dial3d.js`),
-and SETUP > WIRELESS > DIAL as the host renderer draws it. `kst-rbmod` draws a mockup of boxes whose size is estimated, and J2's row order
+and SETUP > WIRELESS > DIAL as the host renderer draws it. `hitec-precharge` explains reading an open-drain answer on an RP2350 pin without a pull-up, the technique of the Hitec D series PRECHARGE receive with no product named, in 6 steps, narrated, 348.67s: `scope` scenes (`tools/video/player/scope.js`) draw the signal wire's circuit and its voltage, which `tools/video_scope.py` simulates with ngspice from a model fitted to the measured sampling window and to a logic analyser capture, and 3 captures of a read of register 0x32 beside it ([the simulated signal wire](tools/video/README.md#the-simulated-signal-wire)). `phase-tap` explains ESC STICK programming counted from the phase tap in 7 steps, narrated: `tools/video_tap.py` simulates the tap on a modelled motor lead with ngspice and runs `protocols/phase_tap/tone.c` on the simulated edges; its carrier of 12kHz is a model value; its render is 354.27s. `kst-rbmod` draws a mockup of boxes whose size is estimated, and J2's row order
 there is not confirmed. A render is not run in CI.
 
 [Videos from storyboards](tools/video/README.md).
@@ -1298,19 +1323,28 @@ SAFE move nothing, PRESS and HOLD; `test_servo_dial_runs`: the HOLD ends
 RUDDER AUTO and a limit run in each phase, the phases that hold the bench
 SAFE included, and takes back an ARM on its way), SETUP > WIRELESS > DIAL
 (`shared/ui/wireless_pane.c`, `test_wireless_pane`; `test_dial_bind` from
-the tap on SCAN FOR DIAL and BOUND DIAL, the found list with SCAN AGAIN,
-through a model of the frame and `blec` glue, the controller and the hub
+the tap on SCAN FOR DIAL and BOUND DIAL, SEARCH's found list, its bind
+question and SCAN AGAIN, through a model of the frame and `blec` glue, the
+controller and the hub
 to the link UP, with an IMU and a power node bound to absent peers: the
 pick's connect at most 5061ms after the tap; `test_wireless_pnode`,
-`test_wireless_bal` the nodes' rows alike), and the `blec` task's
+`test_wireless_bal` the nodes' rows alike; SEARCH, the screen the scan
+and bound rows of all three open, `shared/ui/wl_search.c`,
+`wl_search_draw.c`, `test_wl_search`: each row opens it and the home tag
+returns to the entry, the state line in each state, the found rows and
+the bind question drawn where their taps land, BIND and CANCEL, a scan
+refused while ARMED and while one runs, a bind refused behind a scan and
+after the list changed between the tap and BIND or under the finger, and
+40 view updates that keep the question and a held press), and the `blec` task's
 and the control task's side (`firmware/panel/main/panel_dial.c`,
 `panel_supply.c`). Built and host-tested, not run with a Dial: navigation
 and SET (`shared/ui/ui_focus.c`, `ui_focus_list.c`, `ui_focus_screens.c`,
 `test_dial_nav`, `test_dial_nav_hold`: the focus moves and wraps on the
 menu, SETUP, SERVO's tiles and OUTPUTS' board view; a SELECT opens what a
 tap opens; a SELECT on CLEAR ALL completes no hold; a number kept and
-cancelled on its keypad, an on/off stepped and restored; a choice list
-picked and closed; no focus while the Dial is off or the bench ARMED; a
+cancelled on its keypad, an on/off stepped and restored; SEARCH's devices,
+SCAN AGAIN and its bind question; SERVO's SETTINGS list, with no focus
+while a row's keyboard is open; no focus while the Dial is off or the bench ARMED; a
 ring move writes two rings and leaves the screen as drawn; a list of 70
 rows keeps RESET and SAVE; a dimmed panel woken by the Dial), with the
 `overview-focus` frame-cost mode. The programmers' screens take no focus
@@ -1341,8 +1375,9 @@ the totals baseline at 500ms and 501ms, and the ARM refusal with the node
 OFF or without a reading in the last 100ms). SETUP > WIRELESS > POWER NODE with
 INA228 SOURCE, which keeps its value while ARMED and says so on the band
 at a press (`shared/ui/wireless_pnode.c`, `test_wireless_pnode`;
-`test_pnode_bind` from the tap on SCAN FOR NODE and BOUND NODE through a
-model of the frame and `blec` glue to the controller and a node: a bind or
+`test_pnode_bind` from the tap on SCAN FOR NODE and BOUND NODE through
+SEARCH and a model of the frame and `blec` glue to the controller and a
+node: SEARCH's seconds left counted by the controller, a bind or
 a scan the controller refuses says why on the band, a scan tapped while
 one runs too, and an INA228 SOURCE change read before the frame kept a
 bind leaves the bind and the address SETUP keeps), the
@@ -1366,7 +1401,40 @@ frame that redraws only what changed) and its 6 screenshots
 (`tools/render_node.py --check`). The ILI9341V set-up, the touch's
 orientation, the SPI clock of 20MHz on this board, the I2C socket's pin
 order and the RAM left for Bluetooth LE at run time are not measured. The
-panel does not carry the display node's image: it is flashed over USB.
+panel sends the display node's image `rcbench-node-display-<version>.bin`
+from the power node's row once the node's INFO names the ES3C28P: the
+image the row picks for each board, the check of the board, chip and kind
+before the first byte at every mismatch, the asset's name and card path
+at the widest version, a release without its `SHA256SUMS` line, and the
+version, size and signature checks (`test_devimg_board`); the row's and
+the step's DISPLAY NODE names in both languages (`test_upd_dev`); the
+board kept over the update's hold, a reconnect with INFO unread and a bind
+of the same address, with the owed display update kept, and cleared with
+the owed update dropped on another address and an unbind
+(`test_pnode_ctl`).
+
+### The servo node
+
+Built and host-tested: the servo role on the ES3C28P for the remote servo
+node ([docs/Nodes.md](docs/Nodes.md), "The servo node"; `firmware/node`,
+`sdkconfig.servo`, 475,920 bytes, 30.2% of a slot). Its safety decisions
+(`node_srv_policy.c`, `test_node_srv_policy`: the KEEPALIVE age at 299ms
+and 300ms, the THROTTLE age at 149ms and 150ms, the Core2350B lost at
+999ms and 1000ms, the RUN pulse at 2,999ms and 3,000ms and once a silence,
+STOP by op and by flag, a Bluetooth LE disconnect, each ARM precondition,
+the switch to ARMED at the 100ms settle and given up at 300ms, a STOP
+during the arming frame, SAFE, the STOP flag, a Bluetooth LE disconnect
+and the KEEPALIVE timeout during CLEAR and during the settle arming
+nothing, SAFE and a throttle's 150ms during each read giving it up for ARM 0 or
+THROTTLE 0, STANDALONE driving nothing for 60s, each timeout
+across the 32-bit ms clock's wrap) and its poll (`node_srv_poll.c`,
+`test_node_srv_poll`: each period at its last and first millisecond,
+STATUS at 50ms while fast, one exchange a row after a stall, the wrap; the
+receiver taking the first answer after the start and dropping and counting
+noise before it).
+The UART link, the heartbeat on IO21 and the RUN pulse on IO14 build for
+the ES3C28P; the link host and the framing under them are the suites of
+`link_host.c` and `link_uart.c`. The panel has no client for it.
 
 ### Firmware update over Bluetooth LE
 
@@ -1405,9 +1473,13 @@ every IOmcu section state, C6 row and reason, and device row with
 not bound, bound and not connected, and connected mapped to one step
 state, the current step as the lowest that blocks or the one whose update
 runs, a newer panel release making PANEL current again, ABSENT waiting
-only in a run, SKIP and a failed attempt (`shared/ui/upd_wizard.c`,
-`test_upd_wizard`, `test_upd_wizard_map`), fed `bound` apart from
-connected by `panel_devupd.c`; UPDATES' steps drawn: on a 16px grid over
+only in a run, a bound device OFF on WIRELESS or ON while Bluetooth LE
+cannot link it never waiting, SKIP and a failed attempt
+(`shared/ui/upd_wizard.c`, `test_upd_wizard`, `test_upd_wizard_map`), fed
+`bound` apart from connected and Bluetooth LE's state by `panel_devupd.c`;
+the refusal of the supply's ON, PROG 5V's ON and a programmer's start under
+each update and the alert that names it (`fw_upd_refuses()`,
+`upd_refusal_line()`, `test_fw_c6`, `test_upd_c6`); UPDATES' steps drawn: on a 16px grid over
 the body only the current step's control, SKIP, CHECK and OPTIONS take a
 press in each step, the rows none; each step's hold fires its own latch
 at 2.00s and not at 1.99s; a grey hold names its reason on the band for
@@ -1449,6 +1521,32 @@ Core 1 reads the ring on its 1ms tick (`tone_core1.c`) and core 0 owns the state
 the DMA channel (`tone_cap.c`). Not measured: the PIO program's timing against the system
 timer, the 2-cycle input delay the model assumes, the DMA ring at 96,000 edges/s and the
 load on core 1. The panel's side is not part of this row.
+
+### Pass-through (remote servo node)
+
+Board 3's IOmcu passes up to 9 receiver signals through to its 9 servo
+outputs (`protocols/passthru`, protocol 4.41 pages PASS and PASS_STAT).
+MIRROR (1 instruction) copies each input to its output in PIO0 every
+cycle; CAPTURE (5 instructions) pushes the 18 pins' state on every change
+into a 64KiB ring of 8192 events through two chained DMA channels, and the
+main loop decodes it each pass: pulse width, frame period, missed frames,
+glitches under 400µs or over 2600µs, a signal lost after 3 periods or
+100ms. Both programs run in a cycle-counting model in `test_pass_pio`,
+end to end into the decoder at 560Hz and 40Hz; the decoder's rules in
+`test_pass_decode`, the ring and its lap in `test_pass_ring`, the pages in
+`test_pass_page`, the refusal on a chip before A4 in `test_chip_gate`,
+PASS-THROUGH beside a programming session on the common rail (CONNECT
+refused at `FITTED` 0, a dropped port's `SOURCE` OFF at `FITTED` 0x1FF,
+`FLAGS` bits 0 and 1 in one window) in `test_prog_rail_pass`. At
+`FITTED` 0 an open session refuses with BUSY every write that activates
+another channel (an OUTPUTS slot, a PROG function, PASS-THROUGH), and a
+write that makes a powered port's output a throttle switches the port off
+in that write: `test_rail_bind`, before, during and after a session at
+both `FITTED` values.
+
+Not measured: the delay input to output on the Core2350B, the 2-cycle
+input delay the model assumes, the stamp's lag behind the push, and the
+load of the decode on core 0. The panel's side is not part of this row.
 
 ### Other receiver buses
 
@@ -1648,8 +1746,8 @@ rcbench/
 
   protocols/              one module per external interface: a pure C core,
                           its RP2350 pin driver in rp2350/, a README.md
-    dshot/ ppm/ sbus/ openyge/ pdmini/ phase_tap/ kst/ hitec/ escwire/
-    hc05/ bleuart/ dialknob/
+    dshot/ ppm/ sbus/ openyge/ pdmini/ phase_tap/ passthru/ kst/ hitec/
+    escwire/ hc05/ bleuart/ dialknob/
 
   firmware/panel/         ESP-IDF: main/, components/, sdkconfig.defaults,
                           partitions.csv
@@ -1666,7 +1764,7 @@ rcbench/
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` · `mstime` · `fwupdate` | yes | yes | yes |
 | `artwork` · `esc` · `webaccess` · `clock` | yes | | yes |
 | `openyge` · `ppm` · `i2c_txq` | | yes | yes |
-| `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |
+| `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` · `passthru` | yes | yes | yes |
 | `escwire` | yes | yes | yes |
 | `witmotion` | yes | | yes |
 | `hc05` · `dial` | | | yes |
@@ -1687,9 +1785,9 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 
 | Workflow | Trigger | What it does |
 | --- | --- | --- |
-| `ci.yml` | push to `main`, the label `ci` added to a pull request, tag `v*`, manual | on Ubuntu 26.04: the host suite in five parallel jobs, joined by the job the branch ruleset requires; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check`; the Codecov upload in a job of its own that no required check needs, which fails when the upload fails; the font, screenshot, fit, translated-format, docs and wiki-link checks; `check_protocols.py --check`; clang-tidy 22.1.8 and cppcheck 2.17.1 over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff with its docstring (D) rules; the pytest cases of the tools (`test/tools/`); `tools/doc_check.py --check`, the Doxygen comments of the C sources against `tools/doc_check_baseline.txt`, which on a pull request also fails on any warning in a C file the pull request adds or on a line it changes, on a C file it changes that has no `@file` block with a `@brief`, and on a comment block without `@brief` it adds or edits; on a pull request `tools/mutate.py` on the changed lines of `shared/` and of the cores under `protocols/`, which reports survivors and does not fail on one; the panel build on ESP-IDF (Espressif Internet-of-Things Development Framework) v6.1 for the ESP32-P4, with the check of the generated sdkconfig against `sdkconfig.defaults`, of the image against its update slot, of the embedded IOmcu image, of the touch injector and of exFAT, and a second build without the injector; the pico-sdk build of the IOmcu with `pinmap_check.py` and the stack check of its two cores, a second build with `-DSENSE_TRACE=ON`, with the same stack check, that fails when the default image holds a trace symbol, and a third with `-DIOMCU_CONSOLE=ON`, with the same stack check, that fails when the default image holds a console symbol; firmware artifacts including a merged panel image for offset 0 |
+| `ci.yml` | push to `main`, the label `ci` added to a pull request, tag `v*`, manual | on Ubuntu 26.04: the host suite in five parallel jobs, joined by the job the branch ruleset requires; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check`; the Codecov upload in a job of its own that no required check needs, which fails when the upload fails; the font, screenshot, fit, translated-format, docs, mutation-run figure and wiki-link checks; `check_protocols.py --check`; `pio_budget.py --check`, the PIO and DMA budget of every board; clang-tidy 22.1.8 and cppcheck 2.17.1 over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff with its docstring (D) rules; the pytest cases of the tools (`test/tools/`); `tools/doc_check.py --check`, the Doxygen comments of the C sources against `tools/doc_check_baseline.txt`, which on a pull request also fails on any warning in a C file the pull request adds or on a line it changes, on a C file it changes that has no `@file` block with a `@brief`, and on a comment block without `@brief` it adds or edits; on a pull request `tools/mutate.py` on the changed lines of `shared/` and of the cores under `protocols/`, which reports survivors and does not fail on one; the panel build on ESP-IDF (Espressif Internet-of-Things Development Framework) v6.1 for the ESP32-P4, with the check of the generated sdkconfig against `sdkconfig.defaults`, of the image against its update slot, of the embedded IOmcu image, of the touch injector and of exFAT, and a second build without the injector; the pico-sdk build of the IOmcu with `pinmap_check.py` and the stack check of its two cores, a second build with `-DSENSE_TRACE=ON`, with the same stack check, that fails when the default image holds a trace symbol, and a third with `-DIOMCU_CONSOLE=ON`, with the same stack check, that fails when the default image holds a console symbol; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/`, manual | waits for the CI run on the same commit (`tools/ci_gate.py`, at most 5400s) and publishes `docs/` to the GitHub wiki when it passed |
-| `mutation.yml` | Sunday 03:17 UTC, manual | the mutants of the lines of `shared/safety` and `shared/outputs` (6743 mutants in 85 files) in 6 parallel shards, no mutant limit; `shared/safety` leads the list, `arming.c`, `heartbeat.c`, `stop_latch.c`, `touch_loss.c` and `prog5v_lost.c` at its head, and shard i takes every 6th mutant from place i; no mutant is started after 18000s in a shard, about 428 mutants at 42s each, so the 699 mutants of `shared/safety` run every week and about 1,871 of the 6044 of `shared/outputs`; a shard that leaves mutants unrun says so in a warning annotation and in its summary, with the count for each file; does not fail on a survivor or on mutants left; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
+| `mutation.yml` | Sunday 03:17 UTC, manual | the mutants of the lines of `shared/safety` and `shared/outputs` (7694 mutants in 100 files) in 6 parallel shards, no mutant limit; `shared/safety` leads the list, `arming.c`, `heartbeat.c`, `stop_latch.c`, `touch_loss.c` and `prog5v_lost.c` at its head, and shard i takes every 6th mutant from place i; no mutant is started after 18000s in a shard, about 428 mutants at 42s each, so the 699 mutants of `shared/safety` run every week and about 1,869 of the 6995 of `shared/outputs`; a shard that leaves mutants unrun says so in a warning annotation and in its summary, with the count for each file; does not fail on a survivor or on mutants left; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
 | `release.yml` | tag `v*`, manual for a tag | waits for the CI run on the tagged commit and, when it passed, builds both images, packages them with checksums, creates a release, a pre-release for an odd minor number (`tools/release_kind.py`); beside that, without holding the release back, runs the configurator data check (`configurator/core/tools/check-annotate.sh --warn-only`) and shows each warning, such as a release tag newer than the configurator data, as an annotation and in the run summary |
 | `dial.yml` | called by `ci.yml` and `release.yml` | the M5Stack Dial's image on ESP-IDF v6.1 for the ESP32-S3 and its test build with `RCBENCH_DIAL_HOOKS=ON`; the generated sdkconfig against `sdkconfig.defaults`, both images against their update slot, no hook in the released image; artifact `dial` |
 | `pages.yml` | the label `ci` added to a pull request, and a push to `main`, touching `configurator/`, `help/`, `docs/img/`, the help generator, the `Doxyfile` or `tools/install_doxygen.sh` (a push to a pull request starts no run); a push to `main` touching the C sources as well | type check, tests, data check, size budget and Playwright browser tests of the configurator; the web help; the C API (application programming interface) reference built by Doxygen 1.18.0; on a push to `main` it publishes the built page to GitHub Pages, with the help under `help/` and the API reference under `api/`. A run that changes only the C sources, the `Doxyfile` or `tools/install_doxygen.sh` builds the configurator page without its checks and runs no Playwright test |
@@ -1704,7 +1802,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 610 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 643 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1737,10 +1835,10 @@ The host suite is 610 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_esc_stick_layout`, `test_balance`, `test_battery`, `test_instruments_layout`,
 `test_settings`, `test_settings_screen`, `test_settings_gesture`, `test_settings_pins_hub`,
 `test_settings_carrier`, `test_sensors_carrier`, `test_sensors_pane`, `test_settings_leave`,
-`test_settings_folders`, `test_settings_sensors`, `test_settings_keypad`,
+`test_settings_folders`, `test_settings_file`, `test_settings_backup`, `test_sbk_screen`, `test_settings_sensors`, `test_settings_keypad`,
 `test_settings_rows`, `test_settings_grid`, `test_setting_keypad_eq`, `test_log_numbers`, `test_log_reader`,
 `test_log_csv`, `test_link_crc`, `test_link_pages`, `test_link_watchdog`,
-`test_link_loopback`, `test_link_bringup`, `test_link_read_split`, `test_link_retry`, `test_link_can`,
+`test_link_loopback`, `test_link_bringup`, `test_link_read_split`, `test_link_retry`, `test_link_can`, `test_link_uart`, `test_link_uart_loopback`, `test_link_uart_retry`,
 `test_link_sha256`, `test_link_update`, `test_link_artxfer`, `test_link_drawing`,
 `test_art_store`, `test_art_fetch`, `test_outputs`, `test_outputs_hw`,
 `test_outputs_hw_ports`, `test_out_render`, `test_outstore`, `test_outstore_range`, `test_can_timing`, `test_can_selftest`,
@@ -1758,7 +1856,7 @@ The host suite is 610 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_sense_link_view`, `test_sense_map_link`, `test_sense_win_link`,
 `test_sense_limit_link`, `test_log_cols`, `test_log_throttle`, `test_sense_windows`, `test_servo_source`,
 `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`, `test_dshot_cadence`, `test_out_dshot`, `test_ppm`,
-`test_outbind`, `test_outbind_take`, `test_board_fix`, `test_outputs_screen`, `test_outputs_screen_draw`,
+`test_outbind`, `test_outbind_take`, `test_board_fix`, `test_board_fix_rsn`, `test_chip_gate`, `test_power_page`, `test_rsn_pio`, `test_rsn_throttle`, `test_prog_rail`, `test_prog_rail_kst`, `test_prog_rail_hitec`, `test_prog_rail_off`, `test_prog_rail_pass`, `test_rail_bind`, `test_outputs_screen`, `test_outputs_screen_draw`,
 `test_outputs_screen_off`, `test_outputs_screen_port`, `test_outputs_screen_carrier`,
 `test_prog_choice`, `test_layout_screen`, `test_outputs_layout`, `test_outputs_view`,
 `test_picker_screen`, `test_picker_screen_hold`, `test_picker_screen_table`,
@@ -1770,8 +1868,8 @@ The host suite is 610 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_sense_parts`, `test_sense_map`, `test_sense_limit`, `test_sense_svc`,
 `test_sense_trace_feed`, `test_sense_trace`, `test_sense_trace_next`,
 `test_sense_trace_setup`, `test_sense_trace_lines`, `test_tone`, `test_edge_ring`,
-`test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_endpoints_link`,
-`test_hitec_rx_link`, `test_knob`, `test_panel_i2c`, `test_bind_link`, `test_servo_link`,
+`test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_pass_decode`, `test_pass_ring`, `test_pass_pio`, `test_pass_page`, `test_tone_link`, `test_endpoints_link`,
+`test_hitec_rx_link`, `test_knob`, `test_panel_i2c`, `test_bind_link`, `test_out16`, `test_servo_link`,
 `test_servo_link_restart`, `test_logview`, `test_logview_report`, `test_logview_plot`,
 `test_logview_rank`, `test_logview_pages`, `test_logview_tabs`, `test_logview_delete`,
 `test_logview_touch`, `test_logview_layout`, `test_logview_row`, `test_log_name`,
@@ -1803,9 +1901,9 @@ The host suite is 610 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_hitec_panel`, `test_hitec_panel_states`, `test_hitec_panel_stop_fingers`, `test_hitec_panel_write`, `test_hitec_panel_gate`,
 `test_hitec_panel_file`, `test_page_console`, `test_kst_card`, `test_prog_link`,
 `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`,
-`test_wifi_kept`, `test_wifi_layout`, `test_fw_image`, `test_fw_c6`, `test_fw_install`, `test_fw_run`, `test_fw_trial`,
-`test_fw_slots`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_wa_session`,
-`test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_channel`, `test_wa_fetch_task`,
+`test_wifi_kept`, `test_wifi_layout`, `test_update_sig`, `test_fw_image`, `test_fw_c6`, `test_fw_install`, `test_fw_run`, `test_fw_trial`,
+`test_fw_slots`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_fw_sig`, `test_fw_sign`, `test_wa_session`,
+`test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_sig`, `test_wa_fetch_dev`, `test_wa_fetch_channel`, `test_wa_fetch_task`,
 `test_upd_screen`, `test_upd_settings`, `test_upd_single`, `test_upd_c6`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`,
 `test_wa_page`, `test_wa_page_de`, `test_wa_hl`, `test_wa_edit`, `test_wa_mdns`,
 `test_wa_guard`, `test_wa_kept`, `test_wa_cookie`, `test_wa_api`, `test_wa_api_file`,
@@ -1821,7 +1919,7 @@ The host suite is 610 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_dial_ctl`, `test_dial_stream`, `test_dial_motor`, `test_dial_servo`, `test_dial_nav`,
 `test_dial_nav_hold`, `test_dial_bind`, `test_wireless_pane`,
 `test_pnode_meter`, `test_pnode_ctl`, `test_wireless_pnode`, `test_pnode_bind`,
-`test_settings_panes`, `test_bal_ctl`, `test_node_balance`, `test_wireless_bal`, `test_bal_bind`,
+`test_settings_panes`, `test_bal_ctl`, `test_node_balance`, `test_wireless_bal`, `test_bal_bind`, `test_wl_search`,
 `test_motor_balance`,
 `test_dial_face`, `test_dial_fit`, `test_dial_button`,
 `test_imu`, `test_imu_filter`, `test_imu_angles`,
@@ -1831,8 +1929,8 @@ The host suite is 610 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`, `test_servo_dial_runs`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
-`test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_view`,
-`test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client`, `test_upd_dev`,
+`test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_srv_policy`, `test_node_srv_poll`, `test_node_view`,
+`test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client`, `test_devimg`, `test_devimg_board`, `test_upd_dev`, `test_upd_fetch`,
 `test_upd_wizard`, `test_upd_wizard_map`, `test_upd_wiz_view` and `test_harness`.
 
 The harness is `test/host/greatest.h`, written for this project. `CHECK_EQ` compares
@@ -1924,8 +2022,11 @@ fixed seeds, reads each with `tools/gen_esc_profiles.py` and, through
 the other refuses or the two read differently.
 
 It takes 6.2s on one x86-64 host, 8.1s in the sanitizer build, and ctest stops it after
-120s. `tools/mutate.py --files shared/safety/heartbeat.c --max-mutants 0` makes 36 mutants
-and the suite fails on each. A defined test case that is never called fails the build
+120s. `tools/mutate.py --files shared/safety/heartbeat.c --max-mutants 0` makes 45 mutants
+and the suite fails on 42. The other 3 give the result of the original for every input, so
+no test can fail on them: in `heartbeat_mon_window()`, `>` to `>=` and `HEARTBEAT_MAX_GAP_MS`
+to `HEARTBEAT_MAX_GAP_MS - 1` on line 70 set a window of exactly 150ms to the 150ms it
+already is, and `>` to `>=` on line 73 stores the window already stored. A defined test case that is never called fails the build
 (`-Werror=unused-function`). `tools/check_docs.py` holds this list to
 `test/host/CMakeLists.txt`. Of the 32 `test_kst_*` binaries, 31 run against the servo and
 line model in `test/host/kst_sim.h`; no servo is connected. 5 run the core of
@@ -2335,13 +2436,13 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-1016 committed screenshots to the current render, 508 in English and the same 508 in German, and `render_ui.py --fit` fails on a string that
+1038 committed screenshots to the current render, 519 in English and the same 519 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
 
 `stack_check.py --iomcu` holds each IOmcu core's deepest chain, one interrupt and 256 bytes
-to the core's stack: core 0 reaches 1512 of 4096 with 528 for an interrupt. `stack_check.py`
+to the core's stack: core 0 reaches 1560 of 4096 with 528 for an interrupt. `stack_check.py`
 holds each panel task's deepest chain on the ESP32-P4, decoded from its RISC-V code, and
 1024 bytes to the task's stack; the main task reaches 5424 of 8192. `frame_cost.py` holds 27
 modes to ceilings of L2 fills under the P4's caches; the bench frame has no ceiling while
@@ -2372,9 +2473,9 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_widgets.c` | 432 | 424 | 98.2% |
 | `shared/ui/ui_icons.c` | 199 | 199 | 100.0% |
 | `shared/ui/ui_band.c` | 385 | 372 | 96.6% |
-| `shared/ui/ui_help.c` | 384 | 372 | 96.9% |
+| `shared/ui/ui_help.c` | 400 | 388 | 97.0% |
 | `shared/ui/help_outputs.c` | 74 | 72 | 97.3% |
-| `shared/ui/help_setup.c` | 95 | 91 | 95.8% |
+| `shared/ui/help_setup.c` | 95 | 92 | 96.8% |
 | `shared/ui/help_logs.c` | 54 | 53 | 98.2% |
 | `shared/ui/help_files.c` | 24 | 23 | 95.8% |
 | `shared/ui/help_upd.c` | 78 | 75 | 96.2% |
@@ -2387,15 +2488,16 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_target_row.c` | 93 | 92 | 98.9% |
 | `shared/ui/prog_registry.c` | 438 | 436 | 99.5% |
 | `shared/ui/ui_text.c` | 140 | 139 | 99.3% |
-| `shared/ui/ui_router.c` | 667 | 655 | 98.2% |
+| `shared/ui/ui_router.c` | 612 | 600 | 98.0% |
 | `shared/ui/ui_router_alert.c` | 36 | 36 | 100.0% |
+| `shared/ui/ui_router_screens.c` | 62 | 62 | 100.0% |
 | `shared/ui/ui_alert_slot.c` | 39 | 39 | 100.0% |
 | `shared/ui/ui_value_ask.c` | 8 | 8 | 100.0% |
 | `shared/ui/splash_screen.c` | 72 | 69 | 95.8% |
-| `shared/ui/overview_screen.c` | 149 | 144 | 96.6% |
+| `shared/ui/overview_screen.c` | 161 | 157 | 97.5% |
 | `shared/ui/motor_screen.c` | 326 | 318 | 97.5% |
 | `shared/ui/motor_events.c` | 219 | 215 | 98.2% |
-| `shared/ui/motor_draw.c` | 397 | 387 | 97.5% |
+| `shared/ui/motor_draw.c` | 397 | 388 | 97.7% |
 | `shared/ui/motor_workbench.c` | 172 | 166 | 96.5% |
 | `shared/ui/motor_settings_page.c` | 88 | 88 | 100.0% |
 | `shared/ui/motor_program_page.c` | 193 | 185 | 95.8% |
@@ -2444,7 +2546,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_rudder_flap.c` | 101 | 99 | 98.0% |
 | `shared/ui/servo_guide.c` | 309 | 304 | 98.4% |
 | `shared/ui/servo_fn.c` | 85 | 84 | 98.8% |
-| `shared/ui/servo_hub.c` | 214 | 205 | 95.8% |
+| `shared/ui/servo_hub.c` | 214 | 207 | 96.7% |
 | `shared/ui/servo_footer.c` | 161 | 158 | 98.1% |
 | `shared/ui/servo_lists.c` | 252 | 249 | 98.8% |
 | `shared/ui/servo_pick.c` | 99 | 99 | 100.0% |
@@ -2485,17 +2587,17 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/logs_strip.c` | 40 | 37 | 92.5% |
 | `shared/ui/log_select.c` | 56 | 56 | 100.0% |
 | `shared/ui/files_screen.c` | 703 | 681 | 96.9% |
-| `shared/ui/layout_screen.c` | 141 | 140 | 99.3% |
+| `shared/ui/layout_screen.c` | 142 | 141 | 99.3% |
 | `shared/ui/files_draw.c` | 341 | 330 | 96.8% |
 | `shared/ui/files_events.c` | 228 | 227 | 99.6% |
 | `shared/ui/files_text.c` | 161 | 148 | 91.9% |
 | `shared/ui/text_view.c` | 385 | 378 | 98.2% |
 | `shared/ui/text_view_draw.c` | 270 | 253 | 93.7% |
 | `shared/ui/text_view_keys.c` | 489 | 471 | 96.3% |
-| `shared/ui/settings_screen.c` | 328 | 319 | 97.3% |
-| `shared/ui/settings_draw.c` | 67 | 67 | 100.0% |
-| `shared/ui/settings_rows.c` | 44 | 43 | 97.7% |
-| `shared/ui/ui_setlist.c` | 626 | 612 | 97.8% |
+| `shared/ui/settings_screen.c` | 333 | 324 | 97.3% |
+| `shared/ui/settings_draw.c` | 69 | 69 | 100.0% |
+| `shared/ui/settings_rows.c` | 49 | 48 | 98.0% |
+| `shared/ui/ui_setlist.c` | 626 | 611 | 97.6% |
 | `shared/ui/ui_setlist_draw.c` | 283 | 264 | 93.3% |
 | `shared/ui/ui_footer.c` | 42 | 41 | 97.6% |
 | `shared/ui/sensors_pane.c` | 103 | 103 | 100.0% |
@@ -2516,45 +2618,54 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/pin_take.c` | 296 | 281 | 94.9% |
 | `shared/ui/board_drawing.c` | 88 | 85 | 96.6% |
 | `shared/ui/busfault_screen.c` | 453 | 452 | 99.8% |
-| `shared/ui/wifi_screen.c` | 629 | 622 | 98.9% |
+| `shared/ui/wifi_screen.c` | 631 | 624 | 98.9% |
 | `shared/ui/wifi_kept.c` | 31 | 31 | 100.0% |
 | `shared/ui/wifi_view.c` | 15 | 15 | 100.0% |
-| `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
+| `shared/ui/update_screen.c` | 180 | 179 | 99.4% |
 | `shared/ui/coproc_update_screen.c` | 212 | 212 | 100.0% |
 | `shared/ui/upd_screen.c` | 362 | 343 | 94.8% |
 | `shared/ui/upd_remind.c` | 163 | 153 | 93.9% |
 | `shared/ui/upd_single.c` | 166 | 164 | 98.8% |
 | `shared/ui/upd_settings.c` | 57 | 53 | 93.0% |
-| `shared/ui/upd_c6.c` | 124 | 122 | 98.4% |
-| `shared/ui/upd_dev.c` | 292 | 286 | 98.0% |
-| `shared/ui/upd_wizard.c` | 305 | 305 | 100.0% |
+| `shared/ui/upd_c6.c` | 152 | 149 | 98.0% |
+| `shared/ui/upd_dev.c` | 303 | 297 | 98.0% |
+| `shared/ui/upd_fetch.c` | 105 | 105 | 100.0% |
+| `shared/ui/upd_wizard.c` | 308 | 308 | 100.0% |
 | `shared/ui/upd_run.c` | 44 | 44 | 100.0% |
-| `shared/ui/upd_wiz_view.c` | 322 | 310 | 96.3% |
-| `shared/ui/upd_wiz_card.c` | 205 | 204 | 99.5% |
-| `shared/ui/imu_ctl.c` | 107 | 107 | 100.0% |
+| `shared/ui/upd_wiz_view.c` | 324 | 312 | 96.3% |
+| `shared/ui/upd_wiz_card.c` | 214 | 213 | 99.5% |
+| `shared/ui/imu_ctl.c` | 108 | 108 | 100.0% |
 | `shared/ui/imu_ble.c` | 141 | 140 | 99.3% |
 | `shared/ui/imu_sensor.c` | 234 | 234 | 100.0% |
-| `shared/ui/imu_screen.c` | 370 | 361 | 97.6% |
+| `shared/ui/imu_screen.c` | 373 | 364 | 97.6% |
 | `shared/ui/imu_screen_draw.c` | 132 | 131 | 99.2% |
 | `shared/ui/imu_guide.c` | 33 | 32 | 97.0% |
-| `shared/ui/dial_ctl.c` | 254 | 238 | 93.7% |
+| `shared/ui/dial_ctl.c` | 256 | 240 | 93.8% |
 | `shared/ui/dial_stream.c` | 242 | 234 | 96.7% |
 | `shared/ui/dial_panel.c` | 231 | 219 | 94.8% |
 | `shared/ui/ui_focus.c` | 430 | 381 | 88.6% |
-| `shared/ui/ui_focus_list.c` | 92 | 81 | 88.0% |
-| `shared/ui/ui_focus_screens.c` | 21 | 20 | 95.2% |
-| `shared/ui/wireless_pane.c` | 259 | 255 | 98.5% |
-| `shared/ui/wireless_pnode.c` | 159 | 157 | 98.7% |
-| `shared/ui/pnode_ctl.c` | 292 | 282 | 96.6% |
+| `shared/ui/ui_focus_list.c` | 71 | 67 | 94.4% |
+| `shared/ui/ui_focus_screens.c` | 23 | 22 | 95.7% |
+| `shared/ui/wireless_pane.c` | 243 | 240 | 98.8% |
+| `shared/ui/wireless_pnode.c` | 150 | 148 | 98.7% |
+| `shared/ui/wl_search.c` | 175 | 162 | 92.6% |
+| `shared/ui/wl_search_draw.c` | 139 | 132 | 95.0% |
+| `shared/ui/pnode_ctl.c` | 299 | 289 | 96.7% |
 | `shared/ui/pnode_meter.c` | 261 | 257 | 98.5% |
 | `shared/ui/settings_panes.c` | 43 | 43 | 100.0% |
-| `shared/ui/bal_ctl.c` | 361 | 344 | 95.3% |
+| `shared/ui/bal_ctl.c` | 363 | 346 | 95.3% |
 | `shared/ui/node_balance.c` | 346 | 339 | 98.0% |
-| `shared/ui/wireless_bal.c` | 199 | 195 | 98.0% |
+| `shared/ui/wireless_bal.c` | 190 | 187 | 98.4% |
 | `shared/ui/motor_balance.c` | 184 | 181 | 98.4% |
-| `shared/settings/settings.c` | 427 | 420 | 98.4% |
+| `shared/ui/sbk_ctl.c` | 290 | 264 | 91.0% |
+| `shared/ui/sbk_screen.c` | 160 | 146 | 91.2% |
+| `shared/ui/sbk_draw.c` | 155 | 132 | 85.2% |
+| `shared/ui/sbk_rows.c` | 37 | 36 | 97.3% |
+| `shared/settings/settings.c` | 454 | 447 | 98.5% |
 | `shared/settings/settings_sensors.c` | 150 | 149 | 99.3% |
 | `shared/settings/settings_text.c` | 14 | 13 | 92.9% |
+| `shared/settings/settings_file.c` | 370 | 364 | 98.4% |
+| `shared/settings/settings_backup.c` | 164 | 159 | 97.0% |
 | `shared/logfile/log_numbers.c` | 396 | 374 | 94.4% |
 | `shared/logfile/log_csv.c` | 514 | 488 | 94.9% |
 | `shared/logfile/log_reader.c` | 212 | 201 | 94.8% |
@@ -2652,14 +2763,14 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `protocols/escwire/ew_file_load.c` | 93 | 93 | 100.0% |
 | `protocols/hc05/hc05.c` | 384 | 383 | 99.7% |
 | `protocols/hc05/hc05_line.c` | 125 | 125 | 100.0% |
-| `protocols/bleuart/bleuart.c` | 489 | 488 | 99.8% |
+| `protocols/bleuart/bleuart.c` | 496 | 495 | 99.8% |
 | `protocols/bleuart/bleuart_adv.c` | 175 | 175 | 100.0% |
 | `protocols/bleuart/bleuart_hub.c` | 317 | 315 | 99.4% |
 | `protocols/i2c_txq/i2c_txq.c` | 379 | 379 | 100.0% |
 | `protocols/witmotion/witmotion.c` | 118 | 118 | 100.0% |
 | `protocols/rcnode/rcnode.c` | 311 | 309 | 99.4% |
 | `protocols/rcnode/rcnode_win.c` | 97 | 96 | 99.0% |
-| `protocols/rcnode/rcnode_adv.c` | 104 | 102 | 98.1% |
+| `protocols/rcnode/rcnode_adv.c` | 105 | 104 | 99.0% |
 | `protocols/bleota/bleota.c` | 115 | 115 | 100.0% |
 | `protocols/bleota/bleota_dev.c` | 313 | 309 | 98.7% |
 | `protocols/dialknob/dialknob.c` | 530 | 520 | 98.1% |
@@ -2667,8 +2778,8 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `protocols/dialknob/dk_face.c` | 111 | 111 | 100.0% |
 | `shared/logfile/servo_store.c` | 267 | 265 | 99.2% |
 | `shared/outputs/kst_port.c` | 665 | 664 | 99.8% |
-| `shared/outputs/hitec_port.c` | 525 | 524 | 99.8% |
-| `shared/outputs/esc_port.c` | 584 | 584 | 100.0% |
+| `shared/outputs/hitec_port.c` | 552 | 549 | 99.5% |
+| `shared/outputs/esc_port.c` | 585 | 585 | 100.0% |
 | `shared/outputs/console_tunnel.c` | 78 | 78 | 100.0% |
 | `shared/outputs/esc_console.c` | 92 | 92 | 100.0% |
 | `shared/outputs/page_console.c` | 585 | 561 | 95.9% |
@@ -2703,8 +2814,11 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/can/can_txq.c` | 67 | 67 | 100.0% |
 | `shared/link/link_bringup.c` | 163 | 163 | 100.0% |
 | `shared/link/link_can.c` | 112 | 111 | 99.1% |
+| `shared/link/link_uart.c` | 113 | 113 | 100.0% |
+| `shared/link/link_uart_dev.c` | 83 | 82 | 98.8% |
 | `shared/link/link_crc.c` | 14 | 14 | 100.0% |
-| `shared/link/link_dev.c` | 168 | 164 | 97.6% |
+| `shared/link/link_dev.c` | 175 | 171 | 97.7% |
+| `shared/link/link_gate.c` | 50 | 50 | 100.0% |
 | `shared/link/link_host.c` | 169 | 165 | 97.6% |
 | `shared/link/link_artxfer.c` | 94 | 93 | 98.9% |
 | `shared/link/link_drawing.c` | 141 | 141 | 100.0% |
@@ -2717,28 +2831,34 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/link/link_update_host.c` | 444 | 441 | 99.3% |
 | `shared/artwork/art_store.c` | 193 | 187 | 96.9% |
 | `shared/artwork/art_fetch.c` | 81 | 81 | 100.0% |
-| `shared/bench/bench_state.c` | 251 | 247 | 98.4% |
-| `shared/outputs/outputs.c` | 230 | 227 | 98.7% |
-| `shared/outputs/outputs_pages.c` | 334 | 325 | 97.3% |
-| `shared/outputs/out_bind.c` | 562 | 549 | 97.7% |
+| `shared/bench/bench_state.c` | 257 | 253 | 98.4% |
+| `shared/outputs/outputs.c` | 234 | 231 | 98.7% |
+| `shared/outputs/outputs_pages.c` | 342 | 332 | 97.1% |
+| `shared/outputs/out_bind.c` | 569 | 556 | 97.7% |
 | `shared/outputs/out_bind_take.c` | 100 | 99 | 99.0% |
-| `shared/outputs/board_fix.c` | 98 | 98 | 100.0% |
+| `shared/outputs/board_fix.c` | 152 | 152 | 100.0% |
+| `shared/outputs/chip_gate.c` | 5 | 5 | 100.0% |
+| `shared/outputs/power_page.c` | 259 | 256 | 98.8% |
+| `shared/outputs/prog_rail.c` | 229 | 221 | 96.5% |
+| `shared/outputs/rail_bind.c` | 35 | 35 | 100.0% |
+| `shared/outputs/rsn_pio.c` | 127 | 124 | 97.6% |
 | `shared/outputs/out_pwm_map.c` | 20 | 20 | 100.0% |
 | `shared/outputs/servo_page.c` | 240 | 238 | 99.2% |
-| `shared/outputs/supply_page.c` | 351 | 348 | 99.2% |
+| `shared/outputs/supply_page.c` | 360 | 357 | 99.2% |
 | `shared/outputs/prog_supply.c` | 131 | 131 | 100.0% |
 | `shared/outputs/out_store_map.c` | 74 | 74 | 100.0% |
 | `shared/outputs/out_store_range.c` | 10 | 10 | 100.0% |
-| `shared/outputs/out_store_rec.c` | 72 | 72 | 100.0% |
-| `shared/outputs/out_stage.c` | 66 | 66 | 100.0% |
+| `shared/outputs/out_store_rec.c` | 80 | 80 | 100.0% |
+| `shared/outputs/out_stage.c` | 92 | 92 | 100.0% |
 | `shared/outputs/out_render.c` | 282 | 279 | 98.9% |
-| `shared/outputs/bind_link.c` | 78 | 78 | 100.0% |
+| `shared/outputs/bind_link.c` | 114 | 113 | 99.1% |
 | `shared/outputs/servo_cmd.c` | 22 | 22 | 100.0% |
 | `shared/outputs/servo_link.c` | 563 | 530 | 94.1% |
 | `shared/outputs/sense_page.c` | 514 | 514 | 100.0% |
-| `shared/outputs/sense_map.c` | 197 | 196 | 99.5% |
+| `shared/outputs/sense_map.c` | 198 | 197 | 99.5% |
 | `shared/outputs/sense_limit.c` | 36 | 36 | 100.0% |
 | `shared/outputs/tone_page.c` | 257 | 257 | 100.0% |
+| `shared/outputs/pass_page.c` | 180 | 179 | 99.4% |
 | `shared/bench/telemetry_sim.c` | 49 | 46 | 93.9% |
 | `shared/bench/supply.c` | 170 | 168 | 98.8% |
 | `protocols/pdmini/pdmini.c` | 296 | 292 | 98.7% |
@@ -2759,7 +2879,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/bench/knob.c` | 47 | 47 | 100.0% |
 | `shared/bench/panel_i2c.c` | 10 | 10 | 100.0% |
 | `shared/bench/log_writer.c` | 317 | 305 | 96.2% |
-| `shared/bench/log_cols.c` | 53 | 53 | 100.0% |
+| `shared/bench/log_cols.c` | 54 | 54 | 100.0% |
 | `shared/bench/log_cadence.c` | 50 | 50 | 100.0% |
 | `shared/bench/perf_watch.c` | 68 | 68 | 100.0% |
 | `shared/bench/pass_stats.c` | 28 | 28 | 100.0% |
@@ -2771,49 +2891,54 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/dial/dial_draw.c` | 512 | 484 | 94.5% |
 | `shared/dial/dial_text.c` | 10 | 9 | 90.0% |
 | `shared/dial/dial_button.c` | 82 | 82 | 100.0% |
-| `shared/bench/report_lines.c` | 104 | 102 | 98.1% |
+| `shared/bench/report_lines.c` | 116 | 114 | 98.3% |
 | `shared/bench/report_steps.c` | 32 | 30 | 93.8% |
 | `shared/bench/imu.c` | 172 | 172 | 100.0% |
 | `shared/sense/sense_bus.c` | 133 | 132 | 99.2% |
 | `shared/sense/ina228.c` | 200 | 200 | 100.0% |
-| `shared/sense/ina3221.c` | 142 | 142 | 100.0% |
+| `shared/sense/ina3221.c` | 173 | 173 | 100.0% |
 | `shared/sense/as5600.c` | 78 | 78 | 100.0% |
-| `shared/sense/sense_sched.c` | 397 | 397 | 100.0% |
+| `shared/sense/sense_sched.c` | 399 | 399 | 100.0% |
 | `shared/sense/sense_sched_cap.c` | 129 | 129 | 100.0% |
 | `shared/sense/sense_i3221_cfg.c` | 12 | 12 | 100.0% |
-| `shared/sense/sense_svc.c` | 194 | 194 | 100.0% |
+| `shared/sense/sense_svc.c` | 202 | 202 | 100.0% |
 | `shared/sense/sense_trace_feed.c` | 122 | 122 | 100.0% |
 | `shared/sense/sense_trace.c` | 530 | 530 | 100.0% |
 | `shared/sense/sense_txq.c` | 102 | 102 | 100.0% |
 | `protocols/phase_tap/tone.c` | 372 | 372 | 100.0% |
 | `protocols/phase_tap/edge_ring.c` | 43 | 43 | 100.0% |
 | `protocols/phase_tap/tone_svc.c` | 109 | 109 | 100.0% |
+| `protocols/passthru/pass_decode.c` | 96 | 96 | 100.0% |
+| `protocols/passthru/pass_ring.c` | 33 | 33 | 100.0% |
 | `shared/fwupdate/fw_sha256.c` | 83 | 83 | 100.0% |
-| `shared/fwupdate/fw_image.c` | 136 | 135 | 99.3% |
+| `shared/fwupdate/fw_image.c` | 138 | 137 | 99.3% |
 | `shared/fwupdate/fw_upload.c` | 74 | 74 | 100.0% |
-| `shared/fwupdate/fw_release.c` | 430 | 430 | 100.0% |
+| `shared/fwupdate/fw_release.c` | 434 | 434 | 100.0% |
 | `shared/fwupdate/fw_install.c` | 76 | 76 | 100.0% |
 | `shared/fwupdate/fw_boot.c` | 53 | 53 | 100.0% |
 | `shared/fwupdate/fw_run.c` | 85 | 85 | 100.0% |
 | `shared/fwupdate/fw_trial.c` | 29 | 29 | 100.0% |
-| `shared/fwupdate/fw_c6.c` | 203 | 203 | 100.0% |
+| `shared/fwupdate/fw_c6.c` | 212 | 212 | 100.0% |
 | `shared/fwupdate/fw_slots.c` | 47 | 47 | 100.0% |
+| `shared/fwupdate/fw_sig.c` | 39 | 39 | 100.0% |
+| `shared/fwupdate/fw_sign.c` | 66 | 63 | 95.5% |
 | `shared/devupd/devupd.c` | 283 | 271 | 95.8% |
 | `shared/devupd/devupd_client.c` | 90 | 81 | 90.0% |
+| `shared/devupd/devimg.c` | 135 | 132 | 97.8% |
 | `shared/webaccess/wa_session.c` | 432 | 430 | 99.5% |
-| `shared/webaccess/wa_fetch.c` | 432 | 420 | 97.2% |
+| `shared/webaccess/wa_fetch.c` | 531 | 516 | 97.2% |
 | `shared/webaccess/wa_text.c` | 343 | 341 | 99.4% |
 | `shared/webaccess/wa_walk.c` | 96 | 91 | 94.8% |
 | `shared/webaccess/wa_send.c` | 102 | 102 | 100.0% |
 | `shared/webaccess/wa_zip.c` | 420 | 408 | 97.1% |
-| `shared/webaccess/wa_page.c` | 104 | 102 | 98.1% |
+| `shared/webaccess/wa_page.c` | 120 | 118 | 98.3% |
 | `shared/webaccess/wa_mdns.c` | 119 | 118 | 99.2% |
 | `shared/webaccess/wa_guard.c` | 70 | 70 | 100.0% |
 | `shared/webaccess/wa_api.c` | 445 | 439 | 98.7% |
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **103327** | **101149** | **97.9%** |
+| **total** | **106925** | **104635** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -3047,10 +3172,10 @@ stop, a pulled cable, the input lowered under a live set point in 0.5V steps.
 
 ### IOmcu core 0's stack
 
-`stack_check.py --iomcu` measures 1512 bytes for the deepest chain and 528 for one interrupt
-on the 4096-byte stack, 1800 bytes above the 256-byte margin. The figures are those of the
+`stack_check.py --iomcu` measures 1560 bytes for the deepest chain and 528 for one interrupt
+on the 4096-byte stack, 1752 bytes above the 256-byte margin. The figures are those of the
 image CI builds with arm-none-eabi-gcc 14.2.1, and `stack_check.py --iomcu --check-doc`
-holds them. The depth is a lower bound: 262 calls through a register are not followed. The
+holds them. The depth is a lower bound: 266 calls through a register are not followed. The
 stack has no guard (`PICO_USE_STACK_GUARDS` is off). Not measured on hardware. An image
 built with another option set is measured only when CI builds it.
 

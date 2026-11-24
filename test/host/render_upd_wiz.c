@@ -22,6 +22,7 @@
 #include "ui_text.h"
 #include "upd_c6.h"
 #include "upd_dev.h"
+#include "upd_fetch.h"
 #include "upd_screen.h"
 #include "upd_wizard.h"
 
@@ -108,6 +109,17 @@ static void base(wiz_pose_t *w)
     dial->known = true;
     dial->running = dial->carried;
     w->d[UPD_DEV_PNODE].bound = true;
+    /* Each hold downloads its device's file of the release. */
+    snprintf(w->c6.fetch.file, sizeof(w->c6.fetch.file),
+             "rcbench-c6-2.13.0.bin");
+    static const char *const k_file[UPD_DEV_COUNT] = {
+        "rcbench-dial-0.22.0.bin", "rcbench-node-pwr-0.22.0.bin",
+        "rcbench-node-bal-0.22.0.bin",
+    };
+    for (unsigned i = 0u; i < UPD_DEV_COUNT; ++i) {
+        snprintf(w->d[i].fetch.file, sizeof(w->d[i].fetch.file), "%s",
+                 k_file[i]);
+    }
 }
 
 /** @brief The Dial connected on 0.21.0: its step OPEN. */
@@ -166,7 +178,16 @@ static bool shot_views(const char *view, wiz_pose_t *w)
     } else if (strcmp(view, "updates-step-c6") == 0) {
         w->c6.row = FW_C6_ROW_READY;
         w->c6.carried = (fw_version_t){ 2u, 14u, 0u };
+        snprintf(w->c6.fetch.file, sizeof(w->c6.fetch.file),
+                 "rcbench-c6-2.14.0.bin");
         dial_behind(w);
+    } else if (strcmp(view, "updates-step-dial-card") == 0) {
+        /* The Dial's download failed: the next hold reads the card. */
+        dial_behind(w);
+        w->d[UPD_DEV_DIAL].fetch.src = DEVIMG_SRC_CARD;
+        snprintf(w->d[UPD_DEV_DIAL].fetch.file,
+                 sizeof(w->d[UPD_DEV_DIAL].fetch.file),
+                 "BENCH/UPDATES/rcbench-dial-0.22.0.bin");
     } else if (strcmp(view, "updates-step-dial") == 0
                || strcmp(view, "updates-done") == 0) {
         dial_behind(w);
@@ -195,11 +216,51 @@ static void fit_views(const char *view, wiz_pose_t *w)
 {
     if (strcmp(view, "updates-wiz-node") == 0) {
         pnode_behind(w);
+    } else if (strcmp(view, "updates-wiz-dnode") == 0) {
+        /* The display node bound as the power node, its widest file name
+         * on the card. */
+        pnode_behind(w);
+        w->d[UPD_DEV_PNODE].display = true;
+        snprintf(w->d[UPD_DEV_PNODE].fetch.file,
+                 sizeof(w->d[UPD_DEV_PNODE].fetch.file),
+                 "BENCH/UPDATES/rcbench-node-display-0.23.18.bin");
+        w->d[UPD_DEV_PNODE].fetch.src = DEVIMG_SRC_CARD;
     } else if (strcmp(view, "updates-wiz-node-ask") == 0) {
         pnode_behind(w);
         w->d[UPD_DEV_PNODE].row = DEVUPD_ROW_UPDATING;
         w->d[UPD_DEV_PNODE].phase = DEVUPD_CONFIRM;
         w->d[UPD_DEV_PNODE].secs = 27u;
+    } else if (strcmp(view, "updates-wiz-dev-download") == 0) {
+        dial_behind(w);
+        w->d[UPD_DEV_DIAL].row = DEVUPD_ROW_UPDATING;
+        w->d[UPD_DEV_DIAL].fetch.run = UPD_FETCH_NET;
+        w->d[UPD_DEV_DIAL].fetch.percent = 43u;
+    } else if (strcmp(view, "updates-wiz-dev-card") == 0) {
+        dial_behind(w);
+        w->d[UPD_DEV_DIAL].row = DEVUPD_ROW_UPDATING;
+        w->d[UPD_DEV_DIAL].fetch.run = UPD_FETCH_CARD;
+        w->d[UPD_DEV_DIAL].fetch.src = DEVIMG_SRC_CARD;
+        snprintf(w->d[UPD_DEV_DIAL].fetch.file,
+                 sizeof(w->d[UPD_DEV_DIAL].fetch.file),
+                 "BENCH/UPDATES/rcbench-dial-0.22.0.bin");
+    } else if (strcmp(view, "updates-wiz-dev-ram") == 0) {
+        dial_behind(w);
+        w->d[UPD_DEV_DIAL].fetch.src = DEVIMG_SRC_RAM;
+        snprintf(w->d[UPD_DEV_DIAL].fetch.file,
+                 sizeof(w->d[UPD_DEV_DIAL].fetch.file),
+                 "rcbench-node-bal-10.10.10.bin");
+    } else if (strcmp(view, "updates-wiz-dev-nosig") == 0) {
+        dial_behind(w);
+        w->d[UPD_DEV_DIAL].fetch.src = DEVIMG_SRC_RAM;
+        w->d[UPD_DEV_DIAL].fetch.nosig = true;
+        /* The longest file name the release has: a node's. */
+        snprintf(w->d[UPD_DEV_DIAL].fetch.file,
+                 sizeof(w->d[UPD_DEV_DIAL].fetch.file),
+                 "rcbench-node-bal-10.10.10.bin");
+    } else if (strcmp(view, "updates-wiz-c6-check") == 0) {
+        w->c6.row = FW_C6_ROW_UPDATING;
+        w->c6.carried = (fw_version_t){ 2u, 14u, 0u };
+        w->c6.fetch.run = UPD_FETCH_CHECK;
     } else if (strcmp(view, "updates-wiz-dev-send") == 0) {
         dial_behind(w);
         w->d[UPD_DEV_DIAL].row = DEVUPD_ROW_UPDATING;
@@ -257,6 +318,13 @@ static void fit_views(const char *view, wiz_pose_t *w)
         w->d[UPD_DEV_DIAL].row = DEVUPD_ROW_NOT_LINKED;
         w->d[UPD_DEV_DIAL].known = false;
         w->d[UPD_DEV_DIAL].off = true;
+    } else if (strcmp(view, "updates-wiz-no-ble") == 0) {
+        /* The power node bound and ON while Bluetooth LE cannot link
+         * it: the tag NO BLUETOOTH, named on the last card. */
+        w->d[UPD_DEV_PNODE].row = DEVUPD_ROW_NOT_LINKED;
+        w->d[UPD_DEV_PNODE].bound = true;
+        w->d[UPD_DEV_PNODE].known = false;
+        w->d[UPD_DEV_PNODE].no_ble = true;
     } else if (strcmp(view, "updates-wiz-all-current") == 0) {
         /* No power node bound: every step current. */
         w->d[UPD_DEV_PNODE].bound = false;
@@ -292,6 +360,12 @@ void render_upd_wiz_pose(const char *view)
         upd_dev_set((upd_dev_id_t)i, &w.d[i]);
     }
     upd_screen_set_run(w.run);
+    if (strcmp(view, "updates-step-dial-card") == 0) {
+        char line[UI_ALERT_MAX];
+        upd_fetch_fail_line(UPD_FETCH_FAIL_NET, "D10", TR(UPD_FAIL_CONNECT),
+                            line, sizeof(line));
+        upd_screen_set_result(UPD_WIZ_DIAL, line);
+    }
     if (strcmp(view, "updates-wiz-failed") == 0) {
         char line[UI_ALERT_MAX];
         snprintf(line, sizeof(line), TR(ALERT_DEV_FAILED),

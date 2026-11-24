@@ -13,6 +13,7 @@
 #include "ui_help.h"
 #include "ui_icons.h"
 #include "link_pages.h"
+#include "settings.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -74,6 +75,10 @@ _Static_assert(UI_BAND_H + (ROWS - 1) * (TH + M) + M + MARK_DY + MARK_H
                    < UI_ALERT_Y,
                "the lower row's marks end above the alert band");
 
+/** @brief INA228 SOURCE's option NODE, the second of `i228_src`
+ *         (settings_schema.c). */
+#define I228_SRC_NODE 1
+
 /** @brief One tile of the menu. */
 typedef struct {
     ui_screen_id_t id;      /**< the screen the tile opens               */
@@ -101,6 +106,8 @@ typedef struct {
 static const tile_t k_workbenches[] = {
     { SCREEN_MOTOR,      "MOTOR & ESC", TX_OV_MOTOR,         ui_icon_motor,
       TX_HG_OV_MOTOR,
+      /* PACK_SENSE: the IOmcu's INA228 or the power node's
+       * (node_pack_source()) */
       LINK_CAP_ESC_DRIVE | LINK_CAP_PACK_SENSE, false },
     { SCREEN_SERVO,      "SERVO",       TX_OV_SERVO,         ui_icon_servo,
       TX_HG_OV_SERVO,
@@ -192,7 +199,28 @@ static struct {
     /** @brief The control task's word on the supply: it holds whichever
      *         screen is up, so a start of the screens keeps it */
     bool     supply_real;
+    /** @brief node_pack_source() as the tiles were last drawn */
+    bool     pack_node;
 } s;  /**< The screen's state. */
+
+/**
+ * @brief Whether SETUP makes the power node the pack's source: POWER NODE
+ *        ON, INA228 SOURCE NODE and a node bound.
+ *
+ * Fitted as configured, not online now, as the IOmcu's capability bits
+ * are: a bound node that is not connected counts.  SETUP > WIRELESS and
+ * the band show the node's link, and a switch to ARMED of a run that reads
+ * BENCH is refused without a node reading in the last 100ms
+ * (pnode_arm_refused()).
+ *
+ * @return true when the node is the configured pack source.
+ */
+static bool node_pack_source(void)
+{
+    return settings_get_bool(SET_PNODE_EN)
+           && settings_get_int(SET_I228_SRC) == I228_SRC_NODE
+           && settings_text(SET_TEXT_PNODE_ADDR)[0] != '\0';
+}
 
 void overview_invalidate(void) { s.drawn_mask = 0; }
 
@@ -243,8 +271,12 @@ static bool mark_rect(int i, gfx_rect_t *out)
         return false;
     }
     /* Two states.  MODELLED: the hardware is not fitted, so the values are
-     * modelled.  No mark: the hardware is fitted. */
-    const uint16_t have = ui_router_status()->capabilities;
+     * modelled.  No mark: the hardware is fitted.  The pack's volts and
+     * amps come from the IOmcu's INA228 or from the power node. */
+    uint16_t have = ui_router_status()->capabilities;
+    if (node_pack_source()) {
+        have |= (uint16_t)LINK_CAP_PACK_SENSE;
+    }
     const bool modelled = t->model_only
                           && !(t->id == SCREEN_SUPPLY && s.supply_real);
     const bool fitted = !modelled
@@ -263,6 +295,8 @@ static bool mark_rect(int i, gfx_rect_t *out)
     }
     return true;
 }
+
+bool overview_screen_tile_marked(int slot) { return mark_rect(slot, NULL); }
 
 /** @brief Finds the tile at a point. */
 static int tile_at(int x, int y)
@@ -314,6 +348,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
         return;   /* tiles are chrome: painted once per framebuffer */
     }
     s.drawn_mask |= bit;
+    s.pack_node = node_pack_source();
 
     gfx_clear(c, ui_theme_color(UI_C_BG));
 
@@ -335,6 +370,19 @@ static void render(gfx_canvas_t *c, int buffer_index)
                          ui_theme_color(UI_C_PANEL_SUNK), MARK_INSET,
                          &gfx_font_10x20);
         }
+    }
+}
+
+/**
+ * @brief Draws the tiles again when SETUP's power node values move the
+ *        MOTOR & ESC mark: a bind kept by the frame while the menu is up.
+ * @param dt_s The frame's time, s; not used.
+ */
+static void tick(float dt_s)
+{
+    (void)dt_s;
+    if (node_pack_source() != s.pack_node) {
+        overview_invalidate();
     }
 }
 
@@ -465,7 +513,7 @@ static const ui_screen_t k_screen = {
     .reset  = reset,
     .enter  = NULL,
     .leave  = NULL,
-    .tick   = NULL,
+    .tick   = tick,
     .event  = event,
     .cancel = cancel,
     .render = render,

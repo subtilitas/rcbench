@@ -2,8 +2,8 @@
  * The glass and the node peer of the bind suites of SETUP > WIRELESS.
  *
  * The glass: a finger DOWN and UP in panel coordinates, the middle of an
- * entry's custom row, an open popup's choice as the focus layer lists it,
- * the band's alert and a custom row's value.  The node peer: a power or a
+ * entry's custom row, SEARCH's found devices, its buttons and its home
+ * tag, the band's alert and a custom row's value.  The node peer: a power or a
  * balance node that answers each action of its controller at once with
  * the events NimBLE's callbacks would give (STREAM at 0x0022 with its CCCD
  * at 0x0023, CONTROL at 0x0025, INFO at 0x0027, STATUS at 0x0029), and
@@ -26,6 +26,7 @@
 #include "rcnode.h"
 #include "ui_focus.h"
 #include "ui_setlist.h"
+#include "wl_search.h"
 
 /* ------------------------------------------------------------- the glass */
 
@@ -79,21 +80,49 @@ static inline void wbr_row_mid(int entry, const ui_setlist_custom_t *c,
     wbr_row_at(row, x, y);
 }
 
-/** @brief The open popup's choice @p k, panel coordinates, as the focus
- *         layer lists it (ui_setlist_choice_rect()); false with no popup.
- *         A list of rows names its setlist, a popup's choices do not. */
-static inline bool wbr_choice(int k, gfx_rect_t *out)
+/** @brief A body rectangle of SEARCH moved to panel coordinates. */
+static inline gfx_rect_t wbr_panel(gfx_rect_t r)
 {
-    ui_focus_list_t f;
-    memset(&f, 0, sizeof f);
+    r.y = (int16_t)(r.y + UI_BAND_H);
+    return r;
+}
+
+/** @brief SEARCH's found device @p k, panel coordinates; false while
+ *         SEARCH is not on top, its question is open, or the list holds
+ *         fewer devices. */
+static inline bool wbr_found(int k, gfx_rect_t *out)
+{
     *out = gfx_rect_make(0, 0, 0, 0);
-    if (!settings_screen_focus(&f) || f.sl != NULL || k < 0
-        || k >= f.count) {
+    wls_view_t v;
+    wl_search_view(&v);
+    if (ui_router_current() != SCREEN_WL_SEARCH || wl_search_asking()
+        || k < 0 || k >= (int)v.found_n) {
         return false;
     }
-    *out = f.item[k].rect;
-    out->y = (int16_t)(out->y + UI_BAND_H);
+    *out = wbr_panel(wl_search_row_rect(k));
     return true;
+}
+
+/** @brief A part of SEARCH, panel coordinates. */
+static inline gfx_rect_t wbr_part(wls_part_t part)
+{
+    return wbr_panel(wl_search_part(part));
+}
+
+/** @brief The middle of the home tag of the screen on top, panel
+ *         coordinates. */
+static inline void wbr_home_at(int *x, int *y)
+{
+    const gfx_rect_t r = ui_home_tag_rect(ui_router_title(ui_router_current()));
+    *x = r.x + r.w / 2;
+    *y = r.y + r.h / 2;
+}
+
+/** @brief SEARCH's scan state line, valid until the next call. */
+static inline const char *wbr_state(void)
+{
+    static char buf[96];
+    return wl_search_state_line(buf, sizeof buf);
 }
 
 /** @brief The band's alert, "" with none. */

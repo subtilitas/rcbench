@@ -31,8 +31,25 @@
  *             redirects to the hosts fw_release.h allows, the image into
  *             memory; its SHA-256 against its SHA256SUMS line, then every
  *             fw_image_check(); WA_FETCH_DOWNLOAD_MS at most from the start.
+ *             Then the image's release signature, the image's name and
+ *             ".sig" (fw_release_sig_name()), FW_SIG_MAX bytes at most, and the
+ *             verdict on it (wa_run_t.verify) in the staged image's
+ *             fw_image_info_t.sig.  A release without one (an HTTP status
+ *             other than 200) is FW_SIG_NONE, and an answer that is not
+ *             FW_SIG_MIN to FW_SIG_MAX bytes is FW_SIG_FORM; either way the
+ *             job goes on and the panel warns (fw_sig.h).  A broken
+ *             connection, an abort or the budget ends the job.
  *             What it leaves is an image staged as an upload would leave
  *             it, for the existing installer.  No flash is written here.
+ *   DEVICE    as DOWNLOAD, for one file of the release other than the
+ *             panel's image: the C6 radio's, the M5Stack Dial's or a
+ *             sensor node's application, named by the caller
+ *             (wa_run_t.name), at most wa_run_t.slot bytes.  Its SHA-256
+ *             against its SHA256SUMS line, then its release signature,
+ *             the file's name and ".sig", as DOWNLOAD's, the verdict in
+ *             wa_fetch_res_t.sig; the image checks and the signature's
+ *             policy are the caller's.  What it leaves is the file in a
+ *             buffer of its own (wa_fetch_res_t.buf), handed to the caller.
  *
  * Two halves.  The job (wa_fetch_t) lives with the session under the
  * platform's lock: started and ticked by the UI loop, which holds the
@@ -71,6 +88,10 @@ extern "C" {
 #define WA_FETCH_JOIN_MS      30000u
 /** DOWNLOAD: from the start to a checked image. */
 #define WA_FETCH_DOWNLOAD_MS  180000u
+/** @brief A device file's signature name, "<name>.sig", with its NUL: the
+ *         longest file name the caller passes (wa_run_t.name, 48 bytes
+ *         with its NUL on the panel) and four more. */
+#define WA_DEV_SIG_NAME_MAX   64u
 /** One connection or one read waits this long at most, and never past the
  *  job's budget. */
 #define WA_FETCH_OP_MS        10000u
@@ -79,6 +100,7 @@ extern "C" {
 typedef enum {
     WA_JOB_CHECK = 0,
     WA_JOB_DOWNLOAD,
+    WA_JOB_DEVICE,     /**< another file of the release: a device's image */
 } wa_job_t;
 
 /** Which releases a CHECK looks at: SETUP > UPDATES' RELEASES. */
@@ -103,7 +125,9 @@ typedef enum {
     WA_GOT_NONE = 0,   /**< under way, or none ran                      */
     WA_GOT_NEWER,      /**< CHECK: a newer release, wa_fetch_t.found    */
     WA_GOT_CURRENT,    /**< CHECK: none newer than the running build    */
-    WA_GOT_STAGED,     /**< DOWNLOAD: the image waits, checked          */
+    WA_GOT_STAGED,     /**< DOWNLOAD: the image waits, checked; DEVICE:
+                            the file is in wa_fetch_res_t.buf, its
+                            SHA-256 SHA256SUMS'                         */
     WA_GOT_NO_NET,     /**< no home network kept: nothing started       */
     WA_GOT_BLOCKED,    /**< the gate: nothing started; see why          */
     WA_GOT_ABORTED,    /**< ended from outside; see why                 */
@@ -167,6 +191,7 @@ typedef struct {
     uint32_t      done;     /**< IMAGE: bytes received                    */
     uint32_t      total;    /**< IMAGE: bytes announced                   */
     uint32_t      budget_ms;/**< TIMEOUT: the budget that ran out         */
+    uint8_t       asset;    /**< DEVICE: the caller's number of the file  */
     bool          owe_off;  /**< ended: the radio goes off                */
     bool          owe_run;  /**< joined: the runner starts                */
 } wa_fetch_t;
@@ -256,6 +281,30 @@ bool wa_fetch_offers(const wa_fetch_t *f, wa_channel_t now);
 bool wa_fetch_stale(const wa_fetch_t *f, wa_channel_t now);
 
 /**
+ * @brief Before a job starts on @p f: a DEVICE job keeps the panel's own
+ *        job, CHECK or DOWNLOAD, that ended on @p f in @p keep, so its end
+ *        stays readable (wa_fetch_own()) however late its reader comes.
+ *        Call it in the same lock as wa_fetch_start().
+ *
+ * @param f    The job state before the start.
+ * @param next The job about to start.
+ * @param keep Takes @p f when @p next is DEVICE and @p f is the panel's
+ *             own job, not running; unchanged otherwise.
+ */
+void wa_fetch_keep(const wa_fetch_t *f, wa_job_t next, wa_fetch_t *keep);
+
+/**
+ * @brief The panel's own last job: @p f unless it is a DEVICE job, else
+ *        the one wa_fetch_keep() kept.
+ *
+ * @param f    The job state.
+ * @param keep What wa_fetch_keep() kept.
+ * @param out  Takes the panel's job.
+ */
+void wa_fetch_own(const wa_fetch_t *f, const wa_fetch_t *keep,
+                  wa_fetch_t *out);
+
+/**
  * @brief Whether a job runs: joining to checking.
  *
  * @param f The job state.
@@ -339,6 +388,11 @@ typedef struct {
     fw_err_t     img;     /**< IMAGE */
     int          status;  /**< REFUSED, LIMIT: the HTTP status */
     fw_version_t found;   /**< the release found or fetched */
+    /** @brief DEVICE: the buffer wa_run_t.alloc gave, NULL for none.
+     *  Whoever runs the runner frees it, unless it keeps a STAGED file. */
+    uint8_t     *buf;
+    uint32_t     bytes;   /**< DEVICE, STAGED: the file's length */
+    fw_sig_t     sig;     /**< DEVICE, STAGED: the verdict on its .sig */
 } wa_fetch_res_t;
 
 /**
@@ -421,6 +475,14 @@ typedef struct {
     /** A buffer of @p bytes for the image, in PSRAM on the panel; NULL for
      *  none.  The runner keeps it in @p up; the platform frees it. */
     uint8_t *(*alloc)(void *ctx, uint32_t bytes);
+    /**
+     * @brief The release key's verdict on @p bytes at @p img and the @p sig_n
+     * bytes of signature at @p sig (fw_sign.h); NULL leaves every image
+     * FW_SIG_NONE.  @p sig is NULL with @p sig_n 0 when the release has
+     * none.
+     */
+    fw_sig_t (*verify)(void *ctx, const uint8_t *img, uint32_t bytes,
+                       const uint8_t *sig, uint32_t sig_n);
     void     *ctx;           /**< passed to each function */
 
     uint32_t  start_ms;      /**< the job's                               */
@@ -437,6 +499,7 @@ typedef struct {
     uint32_t  io_cap;        /**< the size of io, in bytes */
     char     *sums;          /**< FW_REL_SUMS_MAX bytes                   */
     fw_upload_t *up;         /**< DOWNLOAD: the image, staged on success  */
+    const char  *name;       /**< DEVICE: the file's name in the release  */
 } wa_run_t;
 
 /**
@@ -456,6 +519,21 @@ void wa_run_check(const wa_run_t *r, wa_fetch_res_t *out);
  * @param out Receives the result.
  */
 void wa_run_download(const wa_run_t *r, fw_version_t v, wa_fetch_res_t *out);
+
+/**
+ * @brief DEVICE: the file r->name of release @p v, from the join on.
+ *
+ * SHA256SUMS first, which must name the file on one line; then the file,
+ * whose Content-Length is over 0 and at most r->slot bytes, into one
+ * buffer of that length from r->alloc; then its SHA-256 against the line.
+ * STAGED with the file in out->buf and out->bytes, or why not.  A buffer
+ * taken stays in out->buf whatever the result.
+ *
+ * @param r The runner; r->name and r->slot set.
+ * @param v The release the file belongs to.
+ * @param out Receives the result.
+ */
+void wa_run_device(const wa_run_t *r, fw_version_t v, wa_fetch_res_t *out);
 
 #ifdef __cplusplus
 }

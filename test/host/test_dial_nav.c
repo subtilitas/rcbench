@@ -45,6 +45,7 @@
 #include "ui_keypad.h"
 #include "upd_dev.h"
 #include "upd_spots.h"
+#include "wl_search.h"
 
 /** @brief The ring's colour as ui_focus.c draws it. */
 static gfx_color_t ring_color(void)
@@ -276,7 +277,7 @@ TEST_CASE(an_on_off_row_steps_and_cancels)
     CHECK_EQ(ui_focus_index(), at + 1);
 }
 
-TEST_CASE(a_choice_list_takes_the_focus_and_a_pick)
+TEST_CASE(search_takes_the_focus_and_a_pick)
 {
     on(SCREEN_SETUP);
     dial_view_t dv;
@@ -286,6 +287,8 @@ TEST_CASE(a_choice_list_takes_the_focus_and_a_pick)
     dv.found_n = 3;
     for (int i = 0; i < 3; ++i) {
         snprintf(dv.found[i].name, sizeof(dv.found[i].name), "DIAL-%d", i);
+        snprintf(dv.found[i].addr, sizeof(dv.found[i].addr),
+                 "A0:B1:C2:00:00:0%d R", i);
         dv.found[i].rssi = -50;
     }
     wireless_pane_set_dial(&dv);
@@ -296,9 +299,12 @@ TEST_CASE(a_choice_list_takes_the_focus_and_a_pick)
     CHECK(ui_focus_shown());
     CHECK(focus_on(ui_tr(TX_DIAL_ROW_BIND)));
     CHECK(ui_focus_press());
-    /* The list's three Dials and SCAN AGAIN, the focus on the first. */
+    /* SEARCH: its three Dials and SCAN AGAIN, the focus on the first. */
+    CHECK_EQ(ui_router_current(), SCREEN_WL_SEARCH);
+    CHECK(!wireless_pane_take_dial(&cmd));
     CHECK_EQ(ui_focus_count(), 4);
     CHECK_EQ(ui_focus_index(), 0);
+    CHECK_STR_EQ(ui_focus_label(0), "DIAL-0  -50dBm");
     CHECK_STR_EQ(ui_focus_label(3), ui_tr(TX_WL_SCAN_AGAIN));
     CHECK(ui_focus_turn(-1));
     CHECK_EQ(ui_focus_index(), 3);
@@ -306,24 +312,35 @@ TEST_CASE(a_choice_list_takes_the_focus_and_a_pick)
     CHECK(wireless_pane_take_dial(&cmd));
     CHECK_EQ(cmd.kind, DIAL_CMD_SCAN);
     CHECK(!wireless_pane_take_dial(&cmd));
-    /* SCAN FOR DIAL reads FOUND 3: its press opens the same list. */
-    CHECK(focus_on(ui_tr(TX_DIAL_ROW_SCAN)));
-    CHECK(ui_focus_press());
-    CHECK_EQ(ui_focus_count(), 4);
-    CHECK(ui_focus_turn(2));
+    /* The third Dial: the question, CANCEL in focus, then BIND. */
+    CHECK(ui_focus_turn(-1));
     CHECK_EQ(ui_focus_index(), 2);
     CHECK(ui_focus_press());
+    CHECK(wl_search_asking());
+    CHECK_EQ(ui_focus_count(), 2);
+    CHECK_EQ(ui_focus_index(), 0);
+    CHECK_STR_EQ(ui_focus_label(0), ui_tr(TX_CANCEL));
+    CHECK_STR_EQ(ui_focus_label(1), ui_tr(TX_WLS_BIND));
+    CHECK(ui_focus_turn(1));
+    CHECK(ui_focus_press());
+    CHECK(!wl_search_asking());
     CHECK(wireless_pane_take_dial(&cmd));
     CHECK_EQ(cmd.kind, DIAL_CMD_BIND);
     CHECK_EQ(cmd.arg, 2);
-    /* Open again: HOLD closes the list and picks nothing. */
-    CHECK(focus_on(ui_tr(TX_DIAL_ROW_BIND)));
-    CHECK(ui_focus_press());
+    /* The question again: HOLD closes it and binds nothing; HOLD once
+     * more is SEARCH's home tag, back to WIRELESS on the DIAL entry. */
     CHECK_EQ(ui_focus_count(), 4);
+    CHECK(ui_focus_press());
+    CHECK(wl_search_asking());
     CHECK(ui_focus_hold());
+    CHECK(!wl_search_asking());
     CHECK(!wireless_pane_take_dial(&cmd));
+    CHECK_EQ(ui_router_current(), SCREEN_WL_SEARCH);
+    CHECK(ui_focus_hold());
+    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
     CHECK_EQ(settings_screen_category(), (int)SET_CAT_WIRELESS);
-    CHECK_STR_EQ(ui_focus_label(ui_focus_index()), ui_tr(TX_DIAL_ROW_BIND));
+    CHECK_EQ(wireless_pane_selected(), WL_ENTRY_DIAL);
+    CHECK(!wireless_pane_take_dial(&cmd));
 }
 
 TEST_CASE(the_servo_hub_moves_and_opens_a_tile)
@@ -338,6 +355,34 @@ TEST_CASE(the_servo_hub_moves_and_opens_a_tile)
     CHECK_EQ(ui_router_current(), SCREEN_SERVO_LIVE);
     /* A bench screen offers no focus: the Dial drives the horn there. */
     CHECK(!ui_focus_shown());
+}
+
+/* SERVO's SETTINGS list, the hub's profile: the focus walks it as a SETUP
+ * list, a string row's item reads its name, and its keyboard takes the
+ * focus away until BACK closes it and the rows take it again. */
+TEST_CASE(the_servo_settings_list_takes_the_focus_and_a_string_row)
+{
+    on(SCREEN_SERVO);
+    CHECK(ui_focus_turn(-1));
+    CHECK_STR_EQ(ui_focus_label(ui_focus_index()), TR(FOOT_SETTINGS));
+    CHECK(ui_focus_press());
+    const ui_setlist_t *sl = servo_screen_list();
+    CHECK(sl->open);
+    CHECK(ui_focus_shown());
+    const int n = ui_focus_count();
+    CHECK(n > 2);
+    CHECK(focus_on(ui_tr(TX_SET_DUT_NAME)));
+    const int at = ui_focus_index();
+    CHECK(ui_focus_press());
+    CHECK(sl->tk.open);
+    CHECK(!ui_focus_shown());
+    CHECK(!ui_focus_turn(1));
+    CHECK(ui_router_home());
+    CHECK(!sl->tk.open);
+    CHECK(sl->open);
+    CHECK(ui_focus_shown());
+    CHECK_EQ(ui_focus_count(), n);
+    CHECK_STR_EQ(ui_focus_label(at), ui_tr(TX_SET_DUT_NAME));
 }
 
 TEST_CASE(nothing_shows_while_the_dial_is_off)
@@ -867,8 +912,9 @@ int main(void)
     RUN(a_number_row_is_set_on_its_keypad_and_kept);
     RUN(a_number_set_is_cancelled_by_a_hold);
     RUN(an_on_off_row_steps_and_cancels);
-    RUN(a_choice_list_takes_the_focus_and_a_pick);
+    RUN(search_takes_the_focus_and_a_pick);
     RUN(the_servo_hub_moves_and_opens_a_tile);
+    RUN(the_servo_settings_list_takes_the_focus_and_a_string_row);
     RUN(nothing_shows_while_the_dial_is_off);
     RUN(armed_moves_no_focus);
     RUN(the_dial_shows_nav_and_value);

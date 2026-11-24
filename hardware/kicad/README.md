@@ -7,10 +7,11 @@ loads both files. KiCad 9 and older refuse both files.
 
 | Path | Content |
 | --- | --- |
-| `rcbench_modules.pretty/` | 16 footprints, one `.kicad_mod` each |
-| `rcbench_modules.kicad_sym` | 12 symbols; each Footprint field names `rcbench_modules:<footprint>` |
-| `rcbench_modules.3dshapes/` | 12 STEP (AP214) models, one per footprint; each footprint names `${RCBENCH_MODULES_3D}/<footprint>.step` |
-| `modules/*.py` | one spec per module: geometry, pads, drawings, symbol, and in its docstring the source, scale, accuracy and unknowns |
+| `rcbench_modules.pretty/` | 21 footprints, one `.kicad_mod` each |
+| `rcbench_modules.kicad_sym` | 21 symbols; each Footprint field names `rcbench_modules:<footprint>` |
+| `rcbench_modules.3dshapes/` | 21 STEP (AP214) models, one per footprint; each footprint names `${RCBENCH_MODULES_3D}/<footprint>.step` |
+| `modules/*.py` | one spec per module or socket: geometry, pads, drawings, symbol, and in its docstring the source, scale, accuracy and unknowns |
+| `modules/_jst_ph.py` | footprint, symbol and 3D model of a JST PH top-entry header, shared by the 4 ES3C28P socket specs |
 | `tools/kicad_gen.py` | writes footprints and symbols from a spec |
 | `tools/step_gen.py` | writes a STEP model from a spec's `MODEL` |
 | `tools/step_check.py` | reads every STEP model with OpenCASCADE and checks it; `--png DIR` draws each with matplotlib |
@@ -70,6 +71,11 @@ repository; each spec names them.
 | `ESP32-C6-Zero_Waveshare_18x23.5mm` | Waveshare ESP32-C6-Zero, 18.00 x 23.50mm | 25 (18 edge pads at 2.54mm, 7 underside pads at 1.6mm) | maker drawing; owner photos | pad grid exact; parts about 0.3mm |
 | `USBC_PD_Trigger_DIP3_30x20mm` | USB-C PD trigger, 3-way DIP switch | 2 (+, -) | vendor photo | about 0.2mm |
 | `DCDC_Buck_Mini_30x18mm_EN` | mini buck DC-DC, 4R7, input 6-20V | 5 (IN+ IN- EN OUT+ OUT-) | dimensions printed on the vendor photo | grid exact; EN pad 0.5mm |
+| `Core2350B_Waveshare_25.4x25.4mm` | Waveshare Core2350B (RP2350B), 25.40 x 25.40mm | 64 plated holes, 10 x 10 grid at 2.54mm without its middle 6 x 6 | maker drawing and schematic; maker photos | hole grid exact; parts about 0.2mm |
+| `ES3C28P_PWR_JST_PH_B2B-PH-K-S` | 5V supply of the LCDWIKI ES3C28P, JST PH 2-pin header | 2 (5V GND) | maker schematic; JST catalogue | header exact to the catalogue |
+| `ES3C28P_UART_JST_PH_B4B-PH-K-S` | ES3C28P UART socket P2, JST PH 4-pin header | 4 (5V GND TXD RXD) | maker schematic and print; JST catalogue | header exact to the catalogue |
+| `ES3C28P_I2C_JST_PH_B4B-PH-K-S` | ES3C28P I2C socket P4, JST PH 4-pin header | 4 (3V3 GND SCL SDA) | maker schematic and print; tester photo; JST catalogue | header exact to the catalogue |
+| `ES3C28P_GPIO_JST_PH_B4B-PH-K-S` | ES3C28P 4-GPIO socket P3, JST PH 4-pin header | 4 (IO2 IO3 IO14 IO21) | maker schematic and print; JST catalogue | header exact to the catalogue |
 
 The accuracy figures are estimates from those measurements; they have not been
 checked against physical boards with a caliper. Check a module against its footprint before ordering
@@ -87,42 +93,57 @@ pad is a hole through the module board. The model uses the
 footprint's coordinate system: origin at pad 1, z = 0 on the carrier's top side, so the
 footprint places it with no offset, scale or rotation.
 
-Four modules have a `MODEL` of the one key `detail`: the INA219 board with
-the print CJMCU, the charger board, the boost board and the
-ESP32-C6-Zero. Their models come from the specs of the same name in
+Nine modules have a `MODEL` of the one key `detail`: the INA219 board with
+the print CJMCU, the charger board, the boost board, the ESP32-C6-Zero,
+the Core2350B, the RP2350-CAN, the INA3221 board, the mini buck (Mini560)
+and the PD trigger. Their models come from the specs of the same name in
 [hardware/mechanical](../mechanical/README.md#module-boards-and-cells),
 which draw each board part by part with its print, in the board's own
 colour, with round holes and arcs as cylinders. The INA219 board stands
-on a 6-pin header, the other three lie flat.
+on a 6-pin header, the INA3221 board on an 8-pin header, the RP2350-CAN on
+two headers of 20 pins, the mini buck on four headers of 2 pins, the
+Core2350B on four 2 x 8 headers; the other four lie flat.
+
+The 4 ES3C28P socket headers share one model builder in
+`modules/_jst_ph.py`: a floor 0.6mm thick with the pin holes, four walls
+0.6mm thick to 6.0mm, and 0.5mm square pins from 3.4mm under the
+carrier's top side to 4.6mm over it.
 
 | Mount | Modules | Position |
 | --- | --- | --- |
-| header | RP2350-CAN, INA3221, INA219, ADS1115, ADXL345, mini buck | on 2.54mm male headers: 2.5mm plastic on the carrier, pins 6.0mm below the plastic and 3.0mm above it, module underside 2.5mm above the carrier |
+| header | RP2350-CAN, INA3221, INA219, ADS1115, ADXL345, mini buck, Core2350B | on 2.54mm male headers: 2.5mm plastic on the carrier, pins 6.0mm below the plastic and 3.0mm above it, module underside 2.5mm above the carrier |
 | angled | AS5600 | right-angle 2.54mm headers under the board: 2.54mm plastic on the carrier, pins out horizontally 1.27mm above the carrier, 9.5mm from the hole, over the nearest board edge |
 | flat | MATEK INA228, XT90 INA228, PD Power Mini, PD trigger, T-plug | wired; the module's underside rests on the carrier |
+| flat | the 4 ES3C28P socket headers | the header's floor rests on the carrier, its pins through it |
 
 Sources of the heights, as each spec lists them:
 
 | Source | Modules |
 | --- | --- |
 | maker 3D model | PD Power Mini (WeAct `WeAct-PDPowerMiniV1-Buck_3D.step`: every part), MATEK INA228 (`I2C-INA-BM.step`: JST-GH 4.35mm, shunt 1.85mm) |
-| part datasheet or catalogue | XT90 plugs 10.2mm (AMASS XT90PW-M), INA219 terminal 8.8mm (KF350-3.5-2P), ADS1115 1.1mm (TI VSSOP-10), ADXL345 1.0mm (ADI LGA-14) |
+| part datasheet or catalogue | XT90 plugs 10.2mm (AMASS XT90PW-M), INA219 terminal 8.8mm (KF350-3.5-2P), ADS1115 1.1mm (TI VSSOP-10), ADXL345 1.0mm (ADI LGA-14), JST PH header 6.0mm and pins 3.4mm under the carrier (JST `ePH.pdf`) |
 | part class figure, not measured | everything else, for example USB-C receptacle 3.2mm, QFN 0.9mm, SOIC-8 1.75mm, 0805 0.6mm |
 
 No source gives a board thickness; boards are drawn 1.6mm (the WeAct
 model measures 1.69mm over copper). The exact part fitted to a board is not always
 identified: the XT90 variant and the INA219 terminal are the closest
-catalogue parts. No source was found for the RP2350-CAN heights, the PD
-trigger, the mini buck or the T-plug. All boards are drawn green (owner,
-2026-10-28), whatever the colour of the real board. Parts omitted from a spec
-are also absent from its model: bottom-side parts, the RP2350-CAN
+catalogue parts. No source was found for the T-plug. The boards of the box
+models are drawn green (owner, 2026-10-28), whatever the colour of the real
+board. The nine `detail` models keep the real board's colour (owner,
+2026-11-21): the RP2350-CAN and the mini buck are blue, the INA3221 board
+black, the PD trigger purple, as three owner photos show it. Parts omitted
+from a spec
+are also absent from its model: bottom-side parts (the detail models
+draw them), the RP2350-CAN
 castellations, the XT90 board's milled slots and the AS5600 magnet.
 
 ### Renders
 
 `tools/step_render.py` reads each STEP file with OpenCASCADE, the
 geometry kernel KiCad uses to read STEP. It renders a shaded view with face edges
-from above and to the front left. The images below are its output, 640 x 480px:
+from above and to the front left; `--from XposYnegZneg` looks from below
+and to the front right, and `--suffix` adds a text to each PNG's name for
+such a second view. The images below are its output, 640 x 480px:
 
 ```sh
 pip install cadquery-ocp==8.0.1.1.0 pillow
@@ -145,11 +166,88 @@ The renders are not checked by CI; run the command after changing a
 | `RP2350-CAN` | `USBC_PD_Trigger_DIP3_30x20mm` | `USBC_T-plug_17x30mm` |
 | ![Boost_5V_EN_13.7x21.7mm](renders/Boost_5V_EN_13.7x21.7mm.png) | ![ESP32-C6-Zero_Waveshare_18x23.5mm](renders/ESP32-C6-Zero_Waveshare_18x23.5mm.png) | ![INA219_CJMCU-219_24.2x21.9mm](renders/INA219_CJMCU-219_24.2x21.9mm.png) |
 | `Boost_5V_EN_13.7x21.7mm` | `ESP32-C6-Zero_Waveshare_18x23.5mm` | `INA219_CJMCU-219_24.2x21.9mm` |
-| ![LiPo_Charger_Boost5V_15.2x24mm](renders/LiPo_Charger_Boost5V_15.2x24mm.png) | | |
-| `LiPo_Charger_Boost5V_15.2x24mm` | | |
+| ![LiPo_Charger_Boost5V_15.2x24mm](renders/LiPo_Charger_Boost5V_15.2x24mm.png) | ![Core2350B_Waveshare_25.4x25.4mm](renders/Core2350B_Waveshare_25.4x25.4mm.png) | ![ES3C28P_PWR_JST_PH_B2B-PH-K-S](renders/ES3C28P_PWR_JST_PH_B2B-PH-K-S.png) |
+| `LiPo_Charger_Boost5V_15.2x24mm` | `Core2350B_Waveshare_25.4x25.4mm` | `ES3C28P_PWR_JST_PH_B2B-PH-K-S` |
+| ![ES3C28P_UART_JST_PH_B4B-PH-K-S](renders/ES3C28P_UART_JST_PH_B4B-PH-K-S.png) | ![ES3C28P_I2C_JST_PH_B4B-PH-K-S](renders/ES3C28P_I2C_JST_PH_B4B-PH-K-S.png) | ![ES3C28P_GPIO_JST_PH_B4B-PH-K-S](renders/ES3C28P_GPIO_JST_PH_B4B-PH-K-S.png) |
+| `ES3C28P_UART_JST_PH_B4B-PH-K-S` | `ES3C28P_I2C_JST_PH_B4B-PH-K-S` | `ES3C28P_GPIO_JST_PH_B4B-PH-K-S` |
+
+## Core2350B
+
+The Waveshare Core2350B carries the RP2350B, 16MB flash, an optional
+PSRAM (pseudo-static RAM), 2MB on the B1 variant and 8MB on the B2, and
+a 6-pin flat cable socket for its USB adapter board. Its 64 plated holes form a 10 x 10 grid at 2.54mm
+without the middle 6 x 6; it has no castellations. Pad numbers are
+Waveshare's header pins: P1 pins 1-16 are pads 1-16 (left edge), P2
+pads 17-32 (top edge, at the flat cable socket), P3 pads 33-48 (bottom
+edge), P4 pads 49-64 (right edge). Pad 1 is GND in the corner. The
+symbol groups the pins: system pins (RUN, BOOTSEL, SWCLK, SWDIO,
+USB_DP, USB_DM) and GP0-GP20 on the left, GP21-GP39 and the ADC
+inputs GP40-GP47 on the right, VBUS, 3V3, 3V3_EN and ADC_VREF at the
+top, the 6 GND pads at the bottom.
+
+The footprint takes 2.54mm headers: 1.0mm holes for a 0.64mm square pin
+(0.91mm across its corners), 1.7mm pads, 0.84mm of board between pads.
+The flash on the underside, about 1.9mm high, keeps the board off a
+carrier; on headers its underside stands 2.5mm over the carrier. F.Fab
+shows the flash (5.3 x 5.3mm) and the PSRAM (3.9 x 4.9mm).
+
+The USB adapter board (USB-C, BOOT, RESET, 4 holes of 2.0mm) is not in
+the library. It plugs into the Core2350B through the 6-way flat cable
+and is not soldered to a carrier; the Core2350B's pads carry USB_DP,
+USB_DM, VBUS, RUN and BOOTSEL, so a carrier reaches USB without it. Its
+3D model is in [hardware/mechanical](../mechanical/README.md#module-boards-and-cells).
+
+## ES3C28P sockets
+
+The LCDWIKI ES3C28P, the display node's ESP32-S3 board
+([docs/Nodes.md](../../docs/Nodes.md#the-display-node)), has 1.25mm
+4-pin sockets. Each socket a carrier connects to has its own symbol and
+footprint, so a header that is not needed is left unfitted:
+
+| Symbol | ES3C28P socket | Pins | Footprint |
+| --- | --- | --- | --- |
+| `ES3C28P_PWR` | USB-C (VBUS, GND), through a USB-C plug | 1 5V, 2 GND | `ES3C28P_PWR_JST_PH_B2B-PH-K-S` |
+| `ES3C28P_UART` | P2 | 1 5V, 2 GND, 3 TXD (GPIO43, out), 4 RXD (GPIO44, in) | `ES3C28P_UART_JST_PH_B4B-PH-K-S` |
+| `ES3C28P_I2C` | P4 | 1 3V3 (out), 2 GND, 3 SCL (GPIO15), 4 SDA (GPIO16) | `ES3C28P_I2C_JST_PH_B4B-PH-K-S` |
+| `ES3C28P_GPIO` | P3 | 1 IO2, 2 IO3, 3 IO14, 4 IO21 | `ES3C28P_GPIO_JST_PH_B4B-PH-K-S` |
+
+Directions are as the ES3C28P sees them; each symbol's description
+gives them per pin. The pin order is the socket's (LCDWIKI schematic
+and the print in LCDWIKI's outline drawing; I2C also a tester's photo,
+2026-11-20), so a 1:1 cable from the 1.25mm socket to the 2.0mm header
+keeps every wire on its pin.
+
+The headers are JST PH top entry, B2B-PH-K-S and B4B-PH-K-S, from JST's
+catalogue `ePH.pdf`: 4.5mm deep against 7.6mm for the side-entry
+S4B-PH-K-S, and the cable leaves upward to any side, so a header needs
+no place at the carrier's edge. Each socket has its own footprint, also
+the three 4-pin ones: the same geometry from `_jst_ph.py`, with the
+socket's pin names on F.SilkS under the pads.
+
+Power: the ES3C28P's +5 rail has three feeds (schematic). USB-C VBUS
+feeds it through a Schottky diode, D8. The battery socket feeds it
+through Q3, a P-channel MOSFET that conducts while VBUS is absent. The
+UART socket's pin 1 feeds it through Q5, a P-channel MOSFET with its
+gate on GND that conducts both ways. `ES3C28P_PWR` feeds VBUS: with
+VBUS up, Q3 keeps a cell on the battery socket off the rail and the
+charger alone charges it. 5V on the UART socket's pin 1 instead would
+reach such a cell through Q3, past the charger. The carrier leaves
+`ES3C28P_UART` pin 1 open.
+
+No 3D model of the ES3C28P exists in the repository; it is to come from
+the tester's photos.
 
 ## Limitations
 
+- The Core2350B footprint is for 2.54mm headers. Soldered flat, the
+  board needs a cut-out of about 15.0 x 15.0mm in the carrier under its
+  middle for the flash and the PSRAM; the footprint has none. Its
+  thickness (drawn 1.6mm) and the flash's height are not measured.
+- The Core2350B's PSRAM is drawn as an SOIC-8 of 5.3mm in its place;
+  the photos show the place empty on a board without PSRAM.
+- The ES3C28P headers' pin 1 follows the ES3C28P socket's pin 1. A
+  ready-made 1.25mm to 2.0mm cable may cross its wires; compare pin 1
+  at both ends before fitting it.
 - The ESP32-C6-Zero footprint is for the board soldered flat. Its 7
   underside pads are pads on the carrier's top side; with the board on
   headers they are not connected.

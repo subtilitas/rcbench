@@ -79,7 +79,7 @@ function fakeTree(c: Catalogue, edit: (files: Map<string, string[]>) => void = (
   entry(212, 'SET_PDMINI_RX', -1);
 
   const iomcu = filler();
-  iomcu[53] = '#define IOMCU_HEARTBEAT_PIN  3';
+  iomcu[72] = '#define IOMCU_HEARTBEAT_PIN  3';
 
   const files = new Map<string, string[]>([[OUT_BIND, outBind], [SCHEMA, settings], [IOMCU_PINS, iomcu]]);
   const squash = (s: string): string => s.replace(/\s+/g, ' ').trim();
@@ -846,7 +846,7 @@ test('src: a repository anchor names a text, and the line at the tag holds it', 
 
   // A named text that the line does not hold.
   const wrong = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 802, has: '| SDA | GP16 (pad 21) |' }];
-  reports(checkSrc(moved, tree, wrong).findings, 'function.servo', /FirstRun\.md:802 does not hold "\| SDA \| GP16 \(pad 21\) \|" at v0\.23\.15/);
+  reports(checkSrc(moved, tree, wrong).findings, 'function.servo', /FirstRun\.md:802 does not hold "\| SDA \| GP16 \(pad 21\) \|" at v0\.23\.17/);
   reports(checkAll(moved, tree, true, wrong).findings, 'function.servo', /does not hold/);
   // Without the tree the text is not compared.
   assert.deepEqual(checkSrc(moved, null, wrong).findings, []);
@@ -872,9 +872,9 @@ test('src: a repository anchor names a text, and the line at the tag holds it', 
     doc.splice(532, 0, '| INA3221 power | 3V3 (pad 36), GND | INA3221 VS, GND |');
   });
   const found = checkSrc(CATALOGUE, shifted).findings;
-  reports(found, 'wire.26', /FirstRun\.md:589 does not hold "\| SDA \| GPIO 16 \(pad 21\) \|"/);
-  reports(found, 'wire.27', /FirstRun\.md:590 does not hold/);
-  reports(found, 'check.ina3221-pullups', /FirstRun\.md:591 does not hold/);
+  reports(found, 'wire.26', /FirstRun\.md:602 does not hold "\| SDA \| GPIO 16 \(pad 21\) \|"/);
+  reports(found, 'wire.27', /FirstRun\.md:603 does not hold/);
+  reports(found, 'check.ina3221-pullups', /FirstRun\.md:604 does not hold/);
 });
 
 test('src: every repository anchor of the data names a text of its own', () => {
@@ -885,14 +885,14 @@ test('src: every repository anchor of the data names a text of its own', () => {
     assert.ok(text.has.trim().length >= ANCHOR_TEXT_MIN, `${text.path}:${text.line}`);
     assert.ok(Object.isFrozen(text));
   }
-  // The sensor bus rows of docs/FirstRun.md at the tag: 589 SDA, 590 SCL,
-  // 591 the pull-ups.
+  // The sensor bus rows of docs/FirstRun.md at the tag: 602 SDA, 603 SCL,
+  // 604 the pull-ups.
   const sda = CATALOGUE.wires.find((w) => w.n === 26)?.src;
   const scl = CATALOGUE.wires.find((w) => w.n === 27)?.src;
-  assert.deepEqual(sda, { kind: 'repo', path: 'docs/FirstRun.md', line: 589, tag: TAG });
-  assert.deepEqual(scl, { kind: 'repo', path: 'docs/FirstRun.md', line: 590, tag: TAG });
+  assert.deepEqual(sda, { kind: 'repo', path: 'docs/FirstRun.md', line: 602, tag: TAG });
+  assert.deepEqual(scl, { kind: 'repo', path: 'docs/FirstRun.md', line: 603, tag: TAG });
   const pullups = CATALOGUE.checks.find((k) => k.id === 'ina3221-pullups')?.src;
-  assert.deepEqual(pullups, { kind: 'repo', path: 'docs/FirstRun.md', line: 591, tag: TAG });
+  assert.deepEqual(pullups, { kind: 'repo', path: 'docs/FirstRun.md', line: 604, tag: TAG });
   // The AS5600 board's OUT and GPO have no repository source at the tag:
   // docs/Building.md describes the panel's knob, an MT6701, since 0.21.0.
   const as5600 = CATALOGUE.parts.find((p) => p.id === 'as5600');
@@ -1002,41 +1002,41 @@ test('tree: a data file that is stale against the firmware tables is reported', 
 
   // The firmware reserves GPIO 5, the ESC signal pin of the data.
   const reservedNow = fakeTree(CATALOGUE, (files) => {
-    lines(files, OUT_BIND)[44] = '    { 5, 7, true, "tacho" },';
+    lines(files, OUT_BIND)[48] = '    { 5, 7, true, "tacho" },';
   });
   reports(checkTree(CATALOGUE, reservedNow), 'pad.7', /reserves GPIO 5/);
 
   // The firmware frees a pad the data marks reserved.
   const freed = fakeTree(CATALOGUE, (files) => {
-    lines(files, OUT_BIND)[47] = '    { 8, 11, false, NULL },';
+    lines(files, OUT_BIND)[51] = '    { 8, 11, false, NULL },';
   });
   reports(checkTree(CATALOGUE, freed), 'pad.11', /does not reserve GPIO 8/);
 
   // A pad carries another GPIO.
   const moved = fakeTree(CATALOGUE, (files) => {
-    lines(files, OUT_BIND)[39] = '    { 23, 1, false, NULL },';
+    lines(files, OUT_BIND)[43] = '    { 23, 1, false, NULL },';
   });
   reports(checkTree(CATALOGUE, moved), 'pad.1', /GPIO 0 in the data and GPIO 23/);
 
   // A row moves by one line: the anchor of the data is stale.
   const shifted = fakeTree(CATALOGUE, (files) => {
     const text = lines(files, OUT_BIND);
-    text[66] = text[39]!;
-    text[39] = '/* text */';
+    text[70] = text[43]!;
+    text[43] = '/* text */';
   });
   reports(checkTree(CATALOGUE, shifted), 'pad.1', /not the row of this pad/);
 
   // A row is gone.
   const gone = fakeTree(CATALOGUE, (files) => {
-    lines(files, OUT_BIND)[64] = '/* text */';
+    lines(files, OUT_BIND)[68] = '/* text */';
   });
   reports(checkTree(CATALOGUE, gone), 'pad.34', /no GPIO on this pad/);
   reports(checkTree(CATALOGUE, gone), 'pads', /lists 39 pads/);
 
   // A ground pad is a power pad, and a named pad has another name.
   const power = fakeTree(CATALOGUE, (files) => {
-    lines(files, OUT_BIND)[89] = '    { 3, LINK_PAD_POWER, 50 },';
-    lines(files, OUT_BIND)[102] = '    { 40, LINK_PAD_POWER, 50 },   /* VUSB */';
+    lines(files, OUT_BIND)[93] = '    { 3, LINK_PAD_POWER, 50 },';
+    lines(files, OUT_BIND)[106] = '    { 40, LINK_PAD_POWER, 50 },   /* VUSB */';
   });
   reports(checkTree(CATALOGUE, power), 'pad.3', /ground/);
   reports(checkTree(CATALOGUE, power), 'pad.40', /VBUS in the data and VUSB/);
@@ -1102,12 +1102,12 @@ test('tree: stale pin defaults are reported', () => {
   reports(checkTree(anchor, fakeTree(CATALOGUE)), 'pin.sda', /not inside SET_SENSE_SDA/);
 
   const heartbeat = fakeTree(CATALOGUE, (files) => {
-    lines(files, IOMCU_PINS)[53] = '#define IOMCU_HEARTBEAT_PIN  4';
+    lines(files, IOMCU_PINS)[72] = '#define IOMCU_HEARTBEAT_PIN  4';
   });
   reports(checkTree(CATALOGUE, heartbeat), 'pin.heartbeat', /GPIO 3 in the data and GPIO 4/);
 
   const undefinedPin = fakeTree(CATALOGUE, (files) => {
-    lines(files, IOMCU_PINS)[53] = '/* text */';
+    lines(files, IOMCU_PINS)[72] = '/* text */';
   });
   reports(checkTree(CATALOGUE, undefinedPin), 'pin.heartbeat', /no IOMCU_HEARTBEAT_PIN/);
 });

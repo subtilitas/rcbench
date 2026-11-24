@@ -62,6 +62,7 @@ SOURCES = [
     "shared/bench/kst_link.c",
     "shared/outputs/kst_port.c",
     "shared/link/link_dev.c",
+    "shared/link/link_gate.c",
     "protocols/kst/kst_session.c",
     "protocols/kst/kst_wire.c",
     "test/host/render_hitec.c",
@@ -75,6 +76,9 @@ SOURCES = [
     # The Bluetooth IMU: its screen handed a view, SCAN tapped; SENSORS on
     # the IMU entry.
     "test/host/render_imu.c",
+    # The settings backup: its files on a folder in memory, the driver's
+    # requests run between frames.
+    "test/host/render_sbk.c",
     # UPDATES' steps: the views handed in, SKIP tapped.
     "test/host/render_upd_wiz.c",
     "shared/bench/hitec_link.c",
@@ -114,6 +118,9 @@ SCREENS = {
     "band-hwstop": ("band-hwstop.png", "overview", "dark"),
     # An alert across the bottom of the menu, with its x.
     "overview-alert": ("overview-alert.png", "overview", "dark"),
+    # The menu with the IOmcu's INA228 OFF and the power node as the pack's
+    # source: MOTOR & ESC without the SIMULATED mark.
+    "overview-pnode": ("overview-pnode.png", "overview", "dark"),
     # The screen guide over the menu at page 1: the dock on the right, the
     # left two columns of tiles marked.
     "help-overview": ("help-overview.png", "overview", "dark"),
@@ -811,8 +818,14 @@ SCREENS = {
     "wifi-older": ("wifi-older.png", "wifi", "dark"),
     "wifi-rebuild": ("wifi-rebuild.png", "wifi", "dark"),
     "wifi-installed": ("wifi-installed.png", "wifi", "dark"),
-    # PANEL UPDATE: writing, written, failed.
+    # PANEL UPDATE: writing, written, failed.  Writing an image the release
+    # key does not vouch for, with the warning; and the second hold,
+    # INSTALL ANYWAY, of a build that enforces the signature.
     "panel-update": ("panel-update.png", "panel-update", "dark"),
+    "panel-update-unsigned": ("panel-update-unsigned.png", "panel-update",
+                              "dark"),
+    "panel-update-anyway": ("panel-update-anyway.png", "panel-update",
+                            "dark"),
     "panel-update-done": ("panel-update-done.png", "panel-update", "dark"),
     "panel-update-failed": ("panel-update-failed.png", "panel-update",
                             "dark"),
@@ -844,6 +857,10 @@ SCREENS = {
     "updates-step-dial-ask": ("updates-step-dial-ask.png", "updates",
                               "dark"),
     "updates-step-waiting": ("updates-step-waiting.png", "updates", "dark"),
+    # The Dial's step after its download failed: the result line with its
+    # code, and the hold that reads the image from the SD card.
+    "updates-step-dial-card": ("updates-step-dial-card.png", "updates",
+                               "dark"),
     "updates-done": ("updates-done.png", "updates", "dark"),
     # SINGLE UPDATES' IOmcu section with an IOmcu on another build: the
     # hold that starts the IOmcu's update.
@@ -907,6 +924,22 @@ SCREENS = {
     # SETUP > WIRELESS on the BALANCE NODE entry: the node reporting, two
     # found by a scan, the first bound, its cell at 3.91V.
     "setup-wireless-bal": ("setup-wireless-bal.png", "setup", "dark"),
+    # SEARCH, opened by BOUND NODE of the power node: two nodes found, the
+    # first bound; the second tapped, its bind question open; and opened
+    # by SCAN FOR DIAL, the scan 7s from its end.
+    "setup-wireless-search": ("setup-wireless-search.png", "setup", "dark"),
+    "setup-wireless-search-bind": ("setup-wireless-search-bind.png",
+                                   "setup", "dark"),
+    "setup-wireless-search-scan": ("setup-wireless-search-scan.png",
+                                   "setup", "dark"),
+    # The settings backup: SD CARD at the end of its list, SAVE SETTINGS
+    # written; BACKUP from LOAD SETTINGS with the newest copy chosen; the
+    # restore offer at start; a hand-edited file loaded, three lines
+    # refused.
+    "setup-card-backup": ("setup-card-backup.png", "setup", "dark"),
+    "setup-backup": ("setup-backup.png", "set-load", "dark"),
+    "setup-backup-offer": ("setup-backup-offer.png", "set-load", "dark"),
+    "setup-backup-loaded": ("setup-backup-loaded.png", "set-load", "dark"),
     # RUDDER AUTO: SAFE on the bench's outputs, READY's PORT row red; its
     # SETTINGS list; on the rbmod carrier SAFE with the hold offered, the
     # ARM + START sequence waiting for the PROG 5V, and its read-back
@@ -1010,6 +1043,8 @@ FIT_ONLY = {
     "help-setup-wireless-dial": (None, "setup", "dark"),
     "help-setup-wireless-pnode": (None, "setup", "dark"),
     "help-setup-wireless-bal": (None, "setup", "dark"),
+    "help-setup-wireless-search": (None, "setup", "dark"),
+    "help-setup-wireless-search-2": (None, "setup", "dark"),
     "help-outputs-2": (None, "outputs", "dark"),
     "help-outputs-port": (None, "outputs", "dark"),
     "help-outputs-port-2": (None, "outputs", "dark"),
@@ -1081,6 +1116,9 @@ FIT_ONLY = {
     # ESC STICK > Flycolor > FlyDragon Lite+ 40A: BEEP MIN and LONG from
     # the profile's measured beep lengths in the side column.
     "motor-stick-flydragon": (None, "motor", "dark"),
+    # The same model's run inside a beep of item 3's group, and its end.
+    "motor-stick-flydragon-run": (None, "motor", "dark"),
+    "motor-stick-flydragon-done": (None, "motor", "dark"),
     # A tap on ARM and on OUTPUT ON, released before 2s: the button's hint
     # in the alert band.
     "hold-hint-arm":    (None, "motor", "dark"),
@@ -1160,12 +1198,19 @@ FIT_ONLY = {
     "updates-node-ready":  (None, "updates", "dark"),
     "updates-node-connecting": (None, "updates", "dark"),
     "updates-node-progress": (None, "updates", "dark"),
+    "updates-node-display": (None, "updates", "dark"),
     "updates-c6-noimage":  (None, "updates", "dark"),
     "updates-c6-failed":   (None, "updates", "dark"),
     # UPDATES' steps: every tag and every line of the card.
     "updates-wiz-node":       (None, "updates", "dark"),
     "updates-wiz-node-ask":   (None, "updates", "dark"),
+    "updates-wiz-dnode":      (None, "updates", "dark"),
     "updates-wiz-dev-send":   (None, "updates", "dark"),
+    "updates-wiz-dev-download": (None, "updates", "dark"),
+    "updates-wiz-dev-card":   (None, "updates", "dark"),
+    "updates-wiz-dev-ram":    (None, "updates", "dark"),
+    "updates-wiz-dev-nosig":  (None, "updates", "dark"),
+    "updates-wiz-c6-check":   (None, "updates", "dark"),
     "updates-wiz-wait-iomcu": (None, "updates", "dark"),
     "updates-wiz-wait-node":  (None, "updates", "dark"),
     "updates-wiz-failed":     (None, "updates", "dark"),
@@ -1179,9 +1224,11 @@ FIT_ONLY = {
     "updates-wiz-absent-c":   (None, "updates", "dark"),
     "updates-wiz-absent-d":   (None, "updates", "dark"),
     "updates-wiz-capped":     (None, "updates", "dark"),
-    # The last card's headings and lines: a Dial OFF on WIRELESS, every
-    # step current, no check since the start, a failed install.
+    # The last card's headings and lines: a Dial OFF on WIRELESS, a
+    # balance node without Bluetooth LE, every step current, no check
+    # since the start, a failed install.
     "updates-wiz-off":        (None, "updates", "dark"),
+    "updates-wiz-no-ble":     (None, "updates", "dark"),
     "updates-wiz-all-current": (None, "updates", "dark"),
     "updates-wiz-no-check":   (None, "updates", "dark"),
     "updates-wiz-inst-failed": (None, "updates", "dark"),

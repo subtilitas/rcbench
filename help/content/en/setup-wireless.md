@@ -60,8 +60,8 @@ The M5Stack Dial turns the throttle on [MOTOR & ESC](motor.md) and the horn on [
 | Setting | Range | Default | What it does |
 |---|---|---|---|
 | Dial | ON, OFF | OFF | Bluetooth LE and the link to the bound Dial; OFF ends the link, and a Dial switched off is no loss |
-| Scan for Dial | `SCAN` | | a tap scans 10s and lists the Dials in range; a switch to ARMED stops it, `STOPPED BY ARM`; refused while ARMED, with `NO DIAL SCAN WHILE ARMED: SWITCH TO SAFE FIRST` in the band |
-| Bound Dial | `NONE` or the Dial's name | `NONE` | a tap lists the Dials the last scan found, with their signal in dBm; a tap on one binds it and asks for a save. RESET keeps the bound Dial |
+| Scan for Dial | `SCAN` | | a tap opens [Search](#search) and scans 10s for the Dials in range; a switch to ARMED stops the scan, `STOPPED BY ARM`; refused while ARMED, with `NO DIAL SCAN WHILE ARMED: SWITCH TO SAFE FIRST` in the band |
+| Bound Dial | `NONE` or the Dial's name | `NONE` | a tap opens [Search](#search) on the last scan's list. RESET keeps the bound Dial |
 | Dial step, throttle | 0.5%, 1%, 2%, 5% | 1% | the throttle one detent moves |
 | Dial step, servo | 0.5°, 1°, 2°, 5° | 1° | the horn angle one detent moves |
 
@@ -101,14 +101,15 @@ The power node is an ESP32-C6 with its own cell that reads an INA228 on the ESC'
 |---|---|---|---|
 | Power node | ON, OFF | OFF | Bluetooth LE and the link to the bound node; OFF ends the link without an error |
 | INA228 source | WIRED, NODE | WIRED | WIRED: the IOmcu's INA228 ([Sensors](setup-sensors.md)); NODE: the power node's readings. Shown with the node off too, so the source can go back to WIRED |
-| Scan for node | `SCAN` | | a tap scans 10s and lists the power nodes in range; a switch to ARMED stops it, `STOPPED BY ARM`; refused while ARMED, with `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST` in the band |
-| Bound node | `NONE` or the node's name | `NONE` | a tap lists the nodes the last scan found, with their signal in dBm; a tap on one binds it and asks for a save. RESET keeps the bound node |
+| Scan for node | `SCAN` | | a tap opens [Search](#search) and scans 10s for the power nodes in range; a switch to ARMED stops the scan, `STOPPED BY ARM`; refused while ARMED, with `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST` in the band |
+| Bound node | `NONE` or the node's name | `NONE` | a tap opens [Search](#search) on the last scan's list. RESET keeps the bound node |
 | Node battery | `3.92V`, `LOW 3.41V`, `NO CELL`, `READ FAILED`, `NOT LINKED` | | the node's cell, from its status every 1s; `LOW` under 3.5V |
 
 With INA228 source on NODE:
 
 - MOTOR & ESC's voltage, current, power, peaks, charge and energy are the node's while the IOmcu link is up. The ESC's own telemetry stays beside them. The log's `source` column reads `node`.
 - A reading older than 300ms is none.
+- With Power node ON and a node bound, the MOTOR & ESC tile on the [menu](overview.md#the-simulated-mark) carries no SIMULATED mark, also with the IOmcu's INA228 OFF and with the node not connected.
 - An ARM of MOTOR & ESC or ESC STICK is refused while Power node is OFF or no reading came in the last 100ms, with `Cannot switch to ARMED: no power node readings. Set INA228 source WIRED or connect the node.` in the band. SERVO and OUTPUTS arm whatever the node does.
 - In a MOTOR & ESC or ESC STICK run, a gap without a reading of up to 300ms rides, once in 10s. A longer gap, or a second one within 10s, switches the bench to SAFE with all outputs off, and the band shows `POWER NODE READINGS LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF`. A SERVO or OUTPUTS run does not end on the node.
 - INA228 source does not change while ARMED.
@@ -141,8 +142,8 @@ The balance node measures the vibration and the index of a rotor for [Balance](b
 | Setting | Range | Default | What it does |
 |---|---|---|---|
 | Balance node | ON, OFF | OFF | Bluetooth LE and the link to the bound node; OFF ends the link |
-| Scan for node | `SCAN` | | a tap scans 10s and lists the balance nodes in range, `rcbench-bal-XXXX`; a switch to ARMED stops it; refused while ARMED, with `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST` in the band |
-| Bound node | `NONE` or the node's name | `NONE` | a tap lists the nodes the last scan found; a tap on one binds it and asks for a save. RESET keeps the bound node |
+| Scan for node | `SCAN` | | a tap opens [Search](#search) and scans 10s for the balance nodes in range, `rcbench-bal-XXXX`; a switch to ARMED stops the scan; refused while ARMED, with `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST` in the band |
+| Bound node | `NONE` or the node's name | `NONE` | a tap opens [Search](#search) on the last scan's list. RESET keeps the bound node |
 | Node battery | `3.91V`, `3.40V LOW`, `NO READING`, `--` | | the node's cell, from the STATUS the node sends beside its reports; LOW under 3.50V |
 | Trial mass | 0.01g to 20.00g | 0.50g | the mass taped on for the trial runs on [MOTOR & ESC](motor.md#balance) |
 
@@ -156,6 +157,20 @@ The balance node measures the vibration and the index of a rotor for [Balance](b
 | `REPORTING` | a report within the last 1000ms |
 
 `OFF`, `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `SCANNING` and `CONNECTING` read as for the Dial.
+
+## Search
+
+![SEARCH on the power node, two nodes found](view:setup-wireless-search)
+
+SEARCH finds and binds the Dial, the power node or the balance node. Scan for Dial and Scan for node open it and scan 10s; Bound Dial and Bound node open it on the last scan's list. A refused scan says why in the band, and SEARCH opens on the last list. The home tag returns to WIRELESS on the device's entry.
+
+- The line over the list: `SCANNING: 7s LEFT`, `FOUND 2: TAP ONE TO BIND IT`, `NONE FOUND`, `STOPPED BY ARM` or `NO SCAN YET: TAP SCAN AGAIN`.
+- The list: up to 8 devices, strongest first, each with its name or address and its signal in dBm. The bound one is lit. The list empties when a scan starts and fills when it ends.
+- Right: the device's kind, its link state, the bound device, and SCAN AGAIN, a new scan of 10s. SCAN AGAIN is grey while a scan runs.
+
+![The bind question](view:setup-wireless-search-bind)
+
+Tap a device to bind it: the question shows its name, address and signal, and the device it replaces. BIND binds it; SETUP keeps it and asks for a save, and SEARCH stays and lights it once it is bound. CANCEL, or the home tag, binds nothing. BIND binds nothing while a scan runs, `A SCAN IS RUNNING: PICK THE NODE WHEN IT ENDS`, or when a new scan changed the list under the question, `NODE NOT BOUND: THE LIST CHANGED, PICK IT AGAIN`; the Dial's texts name the Dial.
 
 ## Related pages
 

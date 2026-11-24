@@ -17,7 +17,14 @@
  *                SENSE_WIN_A, SENSE_WIN_B and SENSE_LIMIT
  * iomcu_tone.c   the TONE page and the phase tap's capture
  * iomcu_bind.c   BIND, BIND_CFG, BIND_OUT and the board's own pages
- * iomcu_can.c    the heartbeat's input and the CAN bus
+ * iomcu_can.c    the heartbeat's input and the CAN bus, the transport of
+ *                boards 1 and 2
+ * iomcu_uart.c   the link on UART0 with its receive DMA ring, the transport
+ *                of board 3 (iomcu_link.h)
+ * iomcu_rsn.c    the remote servo node only (IOMCU_BOARD=rsn): the chip's
+ *                stepping, the POWER page and the rail and port switches
+ * iomcu_pass.c   the remote servo node only: PASS, PASS_STAT, the
+ *                pass-through's capture and its pads
  *
  * The helpers at the end are `static inline`, so the main loop and each
  * page handler that calls one carry their own inlined copy.
@@ -33,6 +40,7 @@
 
 #include "hardware/gpio.h"
 
+#include "board_fix.h"
 #include "can_txq.h"
 #include "heartbeat.h"
 #include "hitec_line.h"
@@ -67,13 +75,13 @@
  * @brief Register images of the pages the IOmcu holds, one array per page.
  */
 typedef struct {
-    uint16_t identity[LINK_ID_COUNT]; /**< IDENTITY page */
+    uint16_t identity[LINK_ID_ALL];   /**< IDENTITY page */
     uint16_t control[LINK_CT_COUNT]; /**< CONTROL page */
     uint16_t status[LINK_ST_COUNT]; /**< STATUS page */
     uint16_t bench[LINK_BN_COUNT]; /**< BENCH page */
-    uint16_t channels[LINK_CH_COUNT];   /**< what each output is asked for   */
-    uint16_t chan_cfg[LINK_CC_COUNT];   /**< what each channel is */
-    uint16_t slots[LINK_OS_COUNT];      /**< which driver drives what */
+    uint16_t channels[LINK_CH_ALL];  /**< CHANNELS, then CHANNELS_HI       */
+    uint16_t chan_cfg[LINK_CC_ALL];  /**< CHAN_CFG, then CHAN_CFG_HI       */
+    uint16_t slots[LINK_OS_ALL];     /**< OUTPUTS, then OUTPUTS_HI         */
 } iomcu_state_t;
 
 /**
@@ -209,14 +217,16 @@ extern link_dev_t    s_dev; /**< the link's device end */
  * the silence timeout) live in shared/outputs and nowhere else, so this end
  * and the panel cannot answer them differently.
  *
- * The output pages address bank channels 0..LINK_OUT_CHANNELS-1 directly.
+ * The output pages address bank channels 0..LINK_OUT_CHANNELS_ALL-1
+ * directly: CHANNELS 0 to 7, CHANNELS_HI 8 to 15.
  * The throttle lives above that range, so the control page commands it
  * without colliding with a CHANNELS-page write, and a motor command keeps
  * the control page's priority on the wire.
  */
 extern outputs_t s_outputs;
 
-#define CH_THROTTLE  LINK_OUT_CHANNELS   /**< bank channel 8, off the page */
+/** @brief Bank channel 16, off the pages. */
+#define CH_THROTTLE  LINK_OUT_CHANNELS_ALL
 
 /**
  * @brief The panel's safety line, as judged in firmware.
@@ -232,12 +242,12 @@ extern heartbeat_mon_t s_beat;
 extern uint32_t s_frames;
 
 /**
- * @brief CAN frames received and refused since power-up, published on the
+ * @brief Frames received and refused since power-up, published on the
  * STATUS page (LINK_ST_REFUSED_LO and _HI).
  *
- * Counted in two places, both shared
- * code: a receive buffer with no frame the link carries in it
- * (mcp2515_recv_next()) and a frame link_can_decode() refuses
+ * Counted in shared code: on CAN a receive buffer with no frame the link
+ * carries in it (mcp2515_recv_next()), on the UART a frame the decoder
+ * drops (link_uart_feed()), and on both a frame link_can_decode() refuses
  * (link_can_decode_counted()).  Wraps at 2^32.
  */
 extern uint32_t s_refused;
@@ -297,7 +307,8 @@ extern uint32_t s_can_overflows;
 extern can_txq_t s_can_txq;
 
 /**
- * @brief When a frame was last taken out of the controller; see iomcu_can.c.
+ * @brief When a frame was last taken out of the controller or the UART's
+ * receive ring; see iomcu_can.c.
  */
 extern uint32_t s_last_rx_ms;
 
@@ -414,6 +425,65 @@ void slots_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
  * @return 0 to accept, or a link_nack_t to refuse.
  */
 uint8_t slots_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
+/**
+ * @brief Reads the CHANNELS_HI page (protocol 4.41).
+ *
+ * @param ctx  The iomcu_state_t the page reads or writes.
+ * @param off  First register to read.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
+ */
+void channels_hi_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+/**
+ * @brief Writes the CHANNELS_HI page (protocol 4.41).
+ *
+ * @param ctx  The iomcu_state_t the page reads or writes.
+ * @param off  First register to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
+ * @return 0 to accept, or a link_nack_t to refuse.
+ */
+uint8_t channels_hi_write(void *ctx, uint8_t off, uint8_t n,
+                          const uint16_t *in);
+/**
+ * @brief Reads the CHAN_CFG_HI page (protocol 4.41).
+ *
+ * @param ctx  The iomcu_state_t the page reads or writes.
+ * @param off  First register to read.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
+ */
+void chan_cfg_hi_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+/**
+ * @brief Writes the CHAN_CFG_HI page (protocol 4.41).
+ *
+ * @param ctx  The iomcu_state_t the page reads or writes.
+ * @param off  First register to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
+ * @return 0 to accept, or a link_nack_t to refuse.
+ */
+uint8_t chan_cfg_hi_write(void *ctx, uint8_t off, uint8_t n,
+                          const uint16_t *in);
+/**
+ * @brief Reads the OUTPUTS_HI page (protocol 4.41).
+ *
+ * @param ctx  The iomcu_state_t the page reads or writes.
+ * @param off  First register to read.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
+ */
+void slots_hi_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+/**
+ * @brief Writes the OUTPUTS_HI page (protocol 4.41).
+ *
+ * @param ctx  The iomcu_state_t the page reads or writes.
+ * @param off  First register to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
+ * @return 0 to accept, or a link_nack_t to refuse.
+ */
+uint8_t slots_hi_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
 /**
  * @brief Reads the SERVO page.
  *
@@ -724,6 +794,46 @@ void bind_out_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
 uint8_t bind_out_write(void *ctx, uint8_t off, uint8_t n,
                        const uint16_t *in);
 /**
+ * @brief Reads the BIND_CFG_HI page (protocol 4.41).
+ *
+ * @param ctx  Unused.
+ * @param off  First register to read.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
+ */
+void bind_cfg_hi_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+/**
+ * @brief Writes the BIND_CFG_HI page (protocol 4.41).
+ *
+ * @param ctx  Unused.
+ * @param off  First register to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
+ * @return 0 to accept, or a link_nack_t to refuse.
+ */
+uint8_t bind_cfg_hi_write(void *ctx, uint8_t off, uint8_t n,
+                          const uint16_t *in);
+/**
+ * @brief Reads the BIND_OUT_HI page (protocol 4.41).
+ *
+ * @param ctx  Unused.
+ * @param off  First register to read.
+ * @param n  Number of registers to read.
+ * @param out  Receives the @p n register values.
+ */
+void bind_out_hi_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+/**
+ * @brief Writes the BIND_OUT_HI page (protocol 4.41).
+ *
+ * @param ctx  Unused.
+ * @param off  First register to write.
+ * @param n  Number of registers to write.
+ * @param in  The @p n register values to write.
+ * @return 0 to accept, or a link_nack_t to refuse.
+ */
+uint8_t bind_out_hi_write(void *ctx, uint8_t off, uint8_t n,
+                          const uint16_t *in);
+/**
  * @brief Reads the BIND page.
  *
  * @param ctx  Unused.
@@ -819,7 +929,7 @@ void ports_apply(void);
  * @param may_bind  Bit mask of the slots that may be bound. The others are
  *                  released and left unbound.
  */
-void hw_apply_only(uint8_t may_bind);
+void hw_apply_only(uint16_t may_bind);
 /**
  * @brief One slot left out of an apply bound again, at the rate it runs at; no
  * DShot port is let go for it (outputs_hw_return_slot()).
@@ -1122,6 +1232,229 @@ reset_cause_t reset_start(void);
 void reset_say(void);
 #endif
 
+/* iomcu_rsn.c: the remote servo node's parts; on the other boards each
+ * does nothing and answers as a board without them. */
+/**
+ * @brief RAIL_EN and PORT_EN1 to 9 driven low, the LED off, the strap and
+ *        CRIT_N read with their pull-ups: the first statement of main().
+ */
+void rsn_pins_off(void);
+/**
+ * @brief The chip's stepping read (chip_gate_ok()) into IDENTITY registers
+ *        7 and 8, and the POWER page started for the strap.
+ *
+ * @param s  The pages whose IDENTITY is written.
+ */
+void rsn_boot(iomcu_state_t *s);
+/**
+ * @brief Whether the stepping check refused the chip: nothing is bound and
+ *        nothing driven on it.
+ *
+ * @return true on a chip before the A4 stepping.
+ */
+bool rsn_chip_refused(void);
+/**
+ * @brief On a refused chip every write that could drive a pin is refused
+ *        (link_dev_refuse_drive()); nothing on an A4 chip.
+ *
+ * @param d  The link's device end.
+ */
+void rsn_link(link_dev_t *d);
+/**
+ * @brief STATUS's fault bits of the node: LINK_FAULT_CHIP_STEPPING, and
+ *        what POWER's TRIPPED stands for (power_faults()).
+ *
+ * @return link_fault_t bits.
+ */
+uint16_t rsn_faults(void);
+/**
+ * @brief RAIL, PORT_ON and PORT_WANT off and the pins driven so: a lost
+ *        heartbeat, the link failsafe, a STOP.
+ */
+void rsn_off(void);
+/**
+ * @brief One pass: CRIT_N, the INA3221s' flags, the SENSE_LIMIT counts and
+ *        a new window judged (power_step(), power_window()), the switches
+ *        driven, the LED blinked.
+ *
+ * @param now  The pass's clock in ms.
+ * @return     LINK_PW_TRIP_* bits tripped this pass: the caller makes the
+ *             bank SAFE; 0 for none.
+ */
+uint16_t rsn_pass(uint32_t now);
+/**
+ * @brief A port whose output became a throttle switched off now, not one
+ *        pass later (rail_bind_hold(): power_hold() over power_throttle()),
+ *        and the switches driven: call right after every taken write that
+ *        can make an output a throttle (OUTPUTS, BIND, CHAN_CFG, PROG, PASS
+ *        SOURCE).  Nothing on boards 1 and 2.
+ */
+void rsn_throttle_hold(void);
+/**
+ * @brief The output of the pin a KST, HITEC or ESC_WIRE page last asked
+ *        for (its hw.pin()): the session's output before it holds one.
+ *
+ * @param pin  The GPIO.
+ */
+void rsn_prog_pin(uint8_t pin);
+/**
+ * @brief A programming session's supply on the node: the PD mini through
+ *        its output's switch (prog_rail_view()).
+ *
+ * @param out  Takes it.
+ * @return     true on the node; false on the other boards, where the
+ *             caller reads its own supply.
+ */
+bool rsn_prog_view(supply_port_view_t *out);
+/**
+ * @brief A programming session's request on the node (prog_rail_set()):
+ *        its output's switch and the PD mini.
+ *
+ * @param on  true for ON.
+ * @param mv  The voltage for ON, mV.
+ * @param ma  The current limit for ON, mA.
+ * @return    1 taken, 0 refused; -1 on the other boards, where the caller
+ *            asks its own supply.
+ */
+int rsn_prog_set(bool on, uint16_t mv, uint16_t ma);
+/**
+ * @brief The rail told of the session's hold and write
+ *        (prog_rail_tell()), the switches driven; with ports_tell_supply().
+ */
+void rsn_prog_tell(void);
+/**
+ * @brief The programming ports whose CONNECT the rail refuses
+ *        (prog_rail_connect()): a BEC found, or without the switches
+ *        another channel active.
+ *
+ * @return One bit per programming port; 0 on the other boards.
+ */
+uint8_t rsn_prog_refused(void);
+/**
+ * @brief Whether ESC_WIRE may open on @p pin's output before it switches
+ *        anything (prog_rail_open_ok()): no KST or HITEC session holds a
+ *        port, no BEC found, and without the port switches no other
+ *        channel active.
+ *
+ * @param pin  The target's GPIO.
+ * @return     true then; true on the other boards.
+ */
+bool rsn_esc_open_ok(uint8_t pin);
+/**
+ * @brief Whether ESC_WIRE's OPEN is refused for a BEC found on a port.
+ *
+ * @return true then; false on the other boards.
+ */
+bool rsn_esc_refused(void);
+/**
+ * @brief The outputs whose channel no write may activate now
+ *        (rail_bind_lock()): without the port switches, while a KST, Hitec
+ *        or ESC wire session is open, every output but the session's.
+ *        Judged against the sessions as they stand at the call.
+ *
+ * @return Bit k for output k; 0 with the switches and on the other boards.
+ */
+uint16_t rsn_lock(void);
+/**
+ * @brief The POWER page's read (power_read()).
+ *
+ * @param ctx  Not used.
+ * @param off  First register.
+ * @param n    Registers.
+ * @param out  The values.
+ */
+void power_page_rd(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+/**
+ * @brief The POWER page's write (power_write()), judged against the
+ *        heartbeat, the critical limits core 1 last reported and the
+ *        throttle ports of the bank; the switches driven when taken.
+ *
+ * @param ctx  Not used.
+ * @param off  First register.
+ * @param n    Registers.
+ * @param in   The values.
+ * @return     0 or a link_nack_t.
+ */
+uint8_t power_page_wr(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
+
+/* iomcu_pass.c */
+/**
+ * @brief MIRROR and CAPTURE started in PIO0 on an A4 chip of board 3, and
+ *        the PASS and PASS_STAT pages at BENCH: before any slot binds.
+ *
+ * @param now_ms  The first window's start.
+ */
+void thru_boot(uint32_t now_ms);
+/**
+ * @brief One pass, after the bank's arm: the capture's ring into the
+ *        decoder, a window closed when due, each held pad routed.
+ *
+ * @param now_ms  The pass's clock.
+ */
+void thru_service(uint32_t now_ms);
+/**
+ * @brief The output pins the PASS page holds (SOURCE OFF or PASS-THROUGH);
+ *        0 on boards 1 and 2.
+ *
+ * @return One bit per GPIO.
+ */
+uint64_t thru_pins(void);
+/**
+ * @brief The channels on PASS-THROUGH: active channels for a programming
+ *        session on the common rail (iomcu_rsn.c's active_ports()).
+ *
+ * @return Bit k for channel k; 0 on boards 1 and 2.
+ */
+uint16_t thru_active(void);
+/**
+ * @brief The channels a session switched off to OFF (pass_page_force_off()),
+ *        their pins reserved and their pads low; rsn_prog_set() calls it
+ *        with the ports prog_rail_set() newly dropped.
+ *
+ * @param mask  Bit k: channel k.
+ */
+void thru_drop(uint16_t mask);
+/**
+ * @brief The PASS page's read (pass_page_read()).
+ *
+ * @param ctx  Not used.
+ * @param off  First register.
+ * @param n    Registers.
+ * @param out  The values.
+ */
+void thru_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+/**
+ * @brief The PASS page's write (pass_page_write()), judged against the
+ *        bank's arm and the pins held elsewhere; the pins reserved and the
+ *        pads routed when taken.
+ *
+ * @param ctx  Not used.
+ * @param off  First register.
+ * @param n    Registers.
+ * @param in   The values.
+ * @return     0 or a link_nack_t.
+ */
+uint8_t thru_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
+/**
+ * @brief The PASS_STAT page's read (pass_stat_read()).
+ *
+ * @param ctx  Not used.
+ * @param off  First register.
+ * @param n    Registers.
+ * @param out  The values.
+ */
+void thru_stat_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+/**
+ * @brief The PASS_STAT page's write: RESET (pass_stat_write()).
+ *
+ * @param ctx  Not used.
+ * @param off  First register.
+ * @param n    Registers.
+ * @param in   The values.
+ * @return     0 or a link_nack_t.
+ */
+uint8_t thru_stat_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
+
 /* ------------------------------------------------------ the inline helpers */
 
 /**
@@ -1143,6 +1476,8 @@ static inline void status_gate(iomcu_state_t *s)
     }
     /* A restart by the loop's watchdog, until a CLEAR (loop_watch.h). */
     faults |= loop_watch_fault(&s_loop_watch);
+    /* The node's chip stepping and its POWER trips (iomcu_rsn.c). */
+    faults |= rsn_faults();
     s->status[LINK_ST_FAULTS] = faults;
 }
 
@@ -1151,12 +1486,12 @@ static inline void status_gate(iomcu_state_t *s)
  *
  * @return One bit per slot: bit i is set when slot i is bound.
  */
-static inline uint8_t bound_slots(void)
+static inline uint16_t bound_slots(void)
 {
-    uint8_t bound = 0u;
+    uint16_t bound = 0u;
     for (uint8_t i = 0; i < OUT_MAX_SLOTS; ++i) {
         if (outputs_hw_bound(i)) {
-            bound |= (uint8_t)(1u << i);
+            bound |= (uint16_t)(1u << i);
         }
     }
     return bound;
@@ -1221,7 +1556,9 @@ static inline uint8_t ports_wire(void)
  * mini, so ESC_WIRE and the two exclude each other on every port; a firmware
  * update keeps ESC_WIRE out as well.
  *
- * Called after a write of either and once a pass.
+ * Called before and after a write of KST, HITEC or ESC_WIRE and once a pass:
+ * a command is judged against the masks as they stand at it, after a PROG
+ * or OUTPUTS write earlier in the same batch of frames.
  */
 static inline void ports_exclusive(void)
 {
@@ -1232,13 +1569,20 @@ static inline void ports_exclusive(void)
     tone_page_freeze(&s_tone, esc != 0u);
     supply_page_wire_freeze(&s_supply, esc != 0u);
 
-    kst_port_other_mask(&s_kst, (uint8_t)(hitec_port_quiet_mask(&s_hitec) | esc));
-    hitec_port_other_mask(&s_hitec, (uint8_t)(kst_port_quiet_mask(&s_kst) | esc));
+    /* The node's rail: CONNECT refused for a BEC found, and without the
+     * port switches while another channel is active (iomcu_rsn.c). */
+    const uint8_t rail = rsn_prog_refused();
+
+    kst_port_other_mask(&s_kst, (uint8_t)(hitec_port_quiet_mask(&s_hitec) | esc
+                                          | rail));
+    hitec_port_other_mask(&s_hitec, (uint8_t)(kst_port_quiet_mask(&s_kst) | esc
+                                              | rail));
     esc_port_other(&s_esc, (uint8_t)(kst_port_quiet_mask(&s_kst)
                                      | hitec_port_quiet_mask(&s_hitec)
                                      | (update_hw_holds_arm() ? 0x80u : 0u)
                                      | (s_supply_attach && !s_pd_open ? 0x40u
-                                                                      : 0u)));
+                                                                      : 0u)
+                                     | (rsn_esc_refused() ? 0x20u : 0u)));
 }
 
 /**
@@ -1288,6 +1632,9 @@ static inline void ports_tell_supply(void)
     /* Under an ESC session its ON is refused, on the rule of a port's hold. */
     prog_supply_hold(&s_psup, (own && hold) || esc_port_supply_hold(&s_esc));
     prog_supply_port_writes(&s_psup, own && writing);
+    /* The node's rail: a panel's OFF of the session's output waits for the
+     * write as the PD mini's does. */
+    rsn_prog_tell();
 }
 
 /**
@@ -1317,7 +1664,8 @@ static inline void reserve_held(void)
                                      | sense_page_held(&s_sense)
                                      | tone_page_pins(&s_tone)
                                      | prog_port_pins(&s_prog)
-                                     | esc_port_pins(&s_esc));
+                                     | esc_port_pins(&s_esc)
+                                     | thru_pins());
 }
 
 /**
@@ -1329,6 +1677,10 @@ static inline void sense_build(sense_cmd_t *cmd)
 {
     memset(cmd, 0, sizeof(*cmd));
     sense_page_cmd(&s_sense, cmd);
+    /* The critical alert limits of a board's own INA3221s, written at each
+     * probe; none on a board without them (board_fix_crit()). */
+    board_fix_crit(outbind_roles(IOMCU_BOARD_ID), cmd->limit_ma,
+                   cmd->parts.i3221.crit_ma);
     cmd->run_gen  = s_run_gen;
     cmd->edge_set = s_edge_set && s_edge_gen == s_sense.cap_gen;
     cmd->edge_us  = s_edge_us;

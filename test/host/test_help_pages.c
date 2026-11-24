@@ -518,6 +518,25 @@ TEST_CASE(a_badge_shows_on_a_fill_of_its_own_colour)
     ui_theme_set(UI_THEME_DARK);
 }
 
+/* A row ends before a name of more than one word rather than inside it,
+ * and where the name alone is wider than the row it still breaks. */
+TEST_CASE(a_row_keeps_a_held_name_whole)
+{
+    const char *de = "Pr\xC3\xBC" "fstands: PANEL, SENSORS, OUTPUTS, SD CARD, WI-FI";
+    const size_t len = ui_help_row_len(de, HELP_ITEM_CELLS);
+    CHECK_EQ(strncmp(de + len, " SD CARD", 8), 0);
+    CHECK(split_name(de) == NULL);
+    /* Without a held name the last space wins. */
+    const char *plain = "Prufstands: PANEL, SENSORS, OUTPUTS, SD KARTE, WI-FI";
+    CHECK_EQ(strncmp(plain + ui_help_row_len(plain, HELP_ITEM_CELLS),
+                     " KARTE", 6), 0);
+    /* A held name with no other space before it is split. */
+    CHECK_EQ(ui_help_row_len("SD CARD", 4), (size_t)2);
+    /* A longer word is not a held name: SD CARDS may break. */
+    const char *pl = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx SD CARDS";
+    CHECK_EQ(ui_help_row_len(pl, HELP_ITEM_CELLS), (size_t)39);
+}
+
 int main(void)
 {
     RUN(the_dock_and_the_live_half_split_the_body);
@@ -532,5 +551,6 @@ int main(void)
     RUN(a_guide_opened_again_notes_the_strings_afresh);
     RUN(a_badge_with_no_place_left_stays_in_the_live_half);
     RUN(a_badge_on_its_controls_edge_covers_no_neighbour);
+    RUN(a_row_keeps_a_held_name_whole);
     return test_summary("help_pages");
 }

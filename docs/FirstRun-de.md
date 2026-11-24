@@ -160,7 +160,15 @@ diese Schreibweise ab, sodass `@flash_args` esptool 5 oder neuer braucht.
 
    Ein Browser-Flasher, der eine Datei an einen Offset schreibt, etwa das
    ESP Web Tool, nimmt `rcbench-panel-merged.bin` bei 0x0, mit derselben
-   Wirkung wie der erste Befehl.
+   Wirkung wie der erste Befehl. Der
+   [Web-Flasher](https://subtilitas.github.io/rcbench/flash/) von rcbench
+   schreibt das zusammengeführte Image eines Release auf das Panel und das
+   Install-Image über WebUSB auf die IOmcu, in Chrome oder Edge auf einem
+   Desktop-Computer ([flasher/README.md](../flasher/README.md)). Sein
+   Kästchen „Einstellungen behalten“, vorgegeben an, lässt die
+   NVS-Partition bei 0xD000 aus, so behält das Panel seine Einstellungen
+   wie mit `@flash_args`; ohne Haken schreibt er das ganze
+   zusammengeführte Image.
 4. Schalte beide Platinen mit verdrahtetem Link ein. Ein in Schritt 2
    geladener IOmcu hat den Build, den das Panel trägt, und das Panel
    bietet kein Update an. Das Panel lädt die Zeichnung der Platine
@@ -186,7 +194,7 @@ ins Menü in der Simulation ([Den Link in Betrieb nehmen](Bringup-de.md#der-bus-
 
 Ein IOmcu mit 0.19.0 oder neuer hat die Partitionstabelle von seinem
 USB-Laden und bekommt das Image, das das Panel trägt, über CAN. Das
-Link-Protokoll des Panels ist 4.39, und ein IOmcu mit 0.19.0 oder neuer
+Link-Protokoll des Panels ist 4.41, und ein IOmcu mit 0.19.0 oder neuer
 spricht 4.22 oder neuer: die Hauptversion, 4, ist gleich, also verbinden
 sich beide Platinen vor und nach dem Update.
 
@@ -223,19 +231,25 @@ Die Dauer des Updates über CAN ist nicht gemessen.
 ### Der C6-Funk über SDIO
 
 Der ESP32-C6 des Boards trägt Wi-Fi und Bluetooth und betreibt die Firmware
-von esp_hosted. Ein Panel-Image bringt die C6-Firmware seiner
-esp_hosted-Version mit, 2.13.0; der ausgelieferte C6 meldet keine (`nicht
+von esp_hosted. Das Release des Panels veröffentlicht die C6-Firmware seiner
+esp_hosted-Version, 2.13.0, als `rcbench-c6-2.13.0.bin`; das Panel-Image
+bringt sie nicht mit, und der ausgelieferte C6 meldet keine (`nicht
 gemeldet`).
 
 1. Starte Wi-Fi einmal (WI-FI > ACCESS POINT), damit der C6 nach seiner
    Version gefragt wird, und schalte es wieder aus.
 2. Auf SETUP > UPDATES zeigt die Zeile C6 RADIO `C6-Funk: nicht gemeldet.
-   Auf diesem Panel: 2.13.0.`. Halte `2s HALTEN ZUM C6-FUNK-UPDATE` 2s lang,
-   mit dem Prüfstand SAFE und dem Netzteilausgang aus. Die Taste zählt
-   `C6-UPDATE 0%` bis `100%`.
+   Release: 2.13.0.`. Halte `2s HALTEN ZUM C6-FUNK-UPDATE` 2s lang,
+   mit dem Prüfstand SAFE und dem Netzteilausgang aus. Mit einem auf WI-FI
+   gespeicherten Heimnetz zählt die Taste `DOWNLOAD 0%` bis `100%`, während
+   das Panel das Image lädt; ohne eines kopiere vorher
+   `rcbench-c6-2.13.0.bin` aus dem Release nach `BENCH/UPDATES` der
+   SD-Karte, und das Halten lautet `2s HALTEN: UPDATE VON DER SD-KARTE`
+   ([Bildschirme: Geräte-Images](Screens-de.md#geräte-images)). Danach zählt
+   die Taste `C6-UPDATE 0%` bis `100%`.
 3. Das Band meldet `C6-Funk auf 2.13.0 aktualisiert. Das Panel startet
    neu.`, und das Panel startet 3s später neu. Nach dem nächsten
-   Wi-Fi-Start zeigt die Zeile `C6-Funk: 2.13.0. Auf diesem Panel: 2.13.0.`.
+   Wi-Fi-Start zeigt die Zeile `C6-Funk: 2.13.0. Release: 2.13.0.`.
 
 Ein C6, der das Update ablehnt, hinterlässt `Der C6-Funk nimmt kein Update
 über SDIO an. Flashe ihn über Header H4.`; er behält seine Firmware, und
@@ -547,8 +561,7 @@ Feld des Pins ([Rasteransicht](Screens-de.md#die-rasteransicht)).
 | Auflösung | 1µs |
 
 **Miss und notiere:** die tatsächliche Pulsperiode, die Pulsbreite an
-beiden Enden des Stellwegs und den Jitter. Das Bit-Timing gehört zu den
-noch nicht auf Hardware bestätigten Eigenschaften.
+beiden Enden des Stellwegs und den Jitter.
 
 **Danach:** Prüfe, dass SERVO die Stellung nur auf Anforderung freigibt.
 Das Abheben des Fingers stoppt den Ausgang nicht: Die Seite hält die

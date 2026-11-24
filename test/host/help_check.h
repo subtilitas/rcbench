@@ -44,6 +44,45 @@ static bool __attribute__((unused)) near(gfx_rect_t a, gfx_rect_t b, int gap)
            && a.y < b.y + b.h + gap && b.y < a.y + a.h + gap;
 }
 
+/** @brief An item row's cells (ui_help.c CELLS): 41. */
+#define HELP_ITEM_CELLS 41
+
+/**
+ * @brief The first name of more than one word that a dock row of item text
+ *        @p t splits at a row's end, or NULL: SD CARD, PD MINI, MOTOR & ESC,
+ *        ESC STICK, LIMIT RUN, RUDDER AUTO, RUDER AUTO, PANEL UPDATE.
+ * @param t The label, two spaces and the item's text.
+ * @return The split name, or NULL.
+ */
+static const char *__attribute__((unused)) split_name(const char *t)
+{
+    static const char *const k_names[] = {
+        "SD CARD", "PD MINI", "MOTOR & ESC", "ESC STICK", "LIMIT RUN",
+        "RUDDER AUTO", "RUDER AUTO", "PANEL UPDATE",
+    };
+    const char *at = t;
+    while (*at != '\0') {
+        const size_t len = ui_help_row_len(at, HELP_ITEM_CELLS);
+        if (len == 0u) {
+            return NULL;
+        }
+        const size_t cut = (size_t)(at - t) + len;
+        for (size_t k = 0; k < sizeof(k_names) / sizeof(k_names[0]); ++k) {
+            const size_t n = strlen(k_names[k]);
+            for (size_t st = (cut >= n) ? cut - n : 0u; st < cut; ++st) {
+                if (st + n > cut && strncmp(t + st, k_names[k], n) == 0) {
+                    return k_names[k];
+                }
+            }
+        }
+        at += len;
+        while (*at == ' ') {
+            ++at;
+        }
+    }
+    return NULL;
+}
+
 /**
  * @brief Whether @p in lies inside @p out.
  * @param in  The inner rect.
@@ -153,6 +192,14 @@ check_pages(const ui_screen_t *sc, const char *what)
                        n + 1, i + 1);
             }
             const int rows = ui_help_item_rows(&p, i);
+            char dock_text[512];
+            snprintf(dock_text, sizeof(dock_text), "%s  %s",
+                     it->label != NULL ? it->label : "", ui_tr(it->text));
+            const char *split = split_name(dock_text);
+            if (split != NULL) {
+                T_FAIL("%s: page %d item %d (%s) breaks %s across rows",
+                       what, n + 1, i + 1, it->label, split);
+            }
             if (rows < 1 || rows > UI_HELP_ROWS) {
                 T_FAIL("%s: page %d item %d (%s) takes %d rows", what, n + 1,
                        i + 1, it->label, rows);

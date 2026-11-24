@@ -134,6 +134,11 @@ SPELL = (
     (r"\bHV\b", "high voltage"),
     (r"\b(IMU|CSV|PNG|PWM|PPM|EDF|SD|HTTPS)\b",
      lambda m: " ".join(m.group(1))),
+    # misaki's dictionary gives "precharge" a short first vowel; with the
+    # hyphen it says "pree-CHARGE".
+    (r"(?i)\bprecharge(d?)\b", r"pre-charge\1"),
+    # misaki's dictionary lacks "kilohm" and its fallback says "kai-lohm".
+    (r"\b[Kk]ilohm(s?)\b", r"kilo ohm\1"),
     (r"\bCAN bus\b", "can, bus"),
     (r"\bCAN\b", "can"),
     (r"\bZIP\b", "zip"),
@@ -219,7 +224,7 @@ def script(board: dict) -> list:
     """
     lines, lang = [], board.get("lang", "en")
     for i, scene in enumerate(board["scenes"]):
-        if scene["type"] in ("case", "board"):
+        if scene["type"] in ("case", "board", "scope"):
             for cue in scene.get("say", []):
                 lines.append((i, None, cue["at"], spoken(cue["text"], lang)))
         elif scene["type"] == "end":
@@ -230,6 +235,69 @@ def script(board: dict) -> list:
                 lines.append((i, j, LEAD_S, spoken(
                     _line({**step, "lang": lang}), lang)))
     return lines
+
+
+def _stretch_scope(scene: dict, move) -> None:
+    """Move every time of a scope scene.
+
+    Args:
+        scene: The scene; its dur is moved already.
+        move: Gives the new time of an old one.
+    """
+    def span(item):
+        if "from" in item:
+            item["from"], item["to"] = move(item["from"]), move(item["to"])
+
+    def keys(track):
+        for key in track:
+            key[0] = move(key[0])
+
+    for item in scene.get("labels", []) + scene.get("chips", []):
+        span(item)
+    if "title" in scene:
+        span(scene["title"])
+    for panel in scene["panels"]:
+        span(panel)
+        if "view" in panel:
+            keys(panel["view"])
+        for name in ("traces", "lines", "bands", "flow", "meters"):
+            for item in panel.get(name, []):
+                span(item)
+                for track in ("reveal", "value"):
+                    if track in item:
+                        keys(item[track])
+        for name in ("show", "set", "lit"):
+            for track in panel.get(name, {}).values():
+                keys(track)
+
+
+def _stretch_windows(node, move) -> None:
+    """Move every time of a scene's windows.
+
+    Args:
+        node: The windows, or a part of one: a window's from and to, its
+            items' from, to and on, the spans get, bar and t, and the keys
+            of its page's shots and of its pointer.
+        move: Gives the new time of an old one.
+    """
+    if isinstance(node, list):
+        for item in node:
+            _stretch_windows(item, move)
+        return
+    if not isinstance(node, dict):
+        return
+    for name, value in node.items():
+        number = (isinstance(value, (int, float))
+                  and not isinstance(value, bool))
+        if name in ("from", "to", "on") and number:
+            node[name] = move(value)
+        elif name in ("get", "bar", "t") and isinstance(value, list):
+            node[name] = [move(t) for t in value]
+        elif name in ("shots", "pointer") and isinstance(value, list):
+            for key in value:
+                key[0] = move(key[0])
+        else:
+            _stretch_windows(value, move)
 
 
 def _stretch(scene: dict, old: list, new: list) -> None:
@@ -244,6 +312,11 @@ def _stretch(scene: dict, old: list, new: list) -> None:
                      / (old[n + 1] - old[n]), 2)
 
     scene["dur"] = move(scene["dur"])
+    if scene["type"] == "scope":
+        _stretch_scope(scene, move)
+        for cue in scene["say"]:
+            cue["at"] = move(cue["at"])
+        return
     for key in scene["camera"]:
         key[0] = move(key[0])
     for name in ("lid", "faces", "turn", "panel", "flip", "spin", "deflect"):
@@ -285,6 +358,7 @@ def _stretch(scene: dict, old: list, new: list) -> None:
         servo = scene["servo"]
         servo["appear"] = move(servo["appear"])
         servo["plug"] = [move(t) for t in servo["plug"]]
+    _stretch_windows(scene.get("windows", []), move)
     for cue in scene["say"]:
         cue["at"] = move(cue["at"])
 
@@ -585,7 +659,8 @@ def narrate(board: dict, cache: pathlib.Path | None = None) -> tuple:
     # cues keep their gaps or get the room their lines need, and every
     # other time of the scene follows them.
     for i, scene in enumerate(board["scenes"]):
-        if scene["type"] not in ("case", "board") or not scene.get("say"):
+        if (scene["type"] not in ("case", "board", "scope")
+                or not scene.get("say")):
             continue
         mine = [(at, clip) for k, j, at, clip in spoken_lines if k == i]
         old = [0.0] + [at for at, _ in mine] + [scene["dur"]]
@@ -606,7 +681,7 @@ def narrate(board: dict, cache: pathlib.Path | None = None) -> tuple:
             start = t
             continue
         cues = ([cue["at"] for cue in scene.get("say", [])]
-                if scene["type"] in ("case", "board") else [0.6])
+                if scene["type"] in ("case", "board", "scope") else [0.6])
         for (_, clip), at in zip(mine, cues, strict=False):
             clips.append((start + at, clip))
         start += scene["dur"]

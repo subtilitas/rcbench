@@ -16,12 +16,29 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `lipo_charger_boost_5v.py` | spec of the lithium polymer charger board with 5V boost output |
 | `boost_5v_en.py` | spec of the 5V boost converter board with enable pad |
 | `esp32_c6_zero.py` | spec of the Waveshare ESP32-C6-Zero |
+| `core2350b.py` | spec of the Waveshare Core2350B and its USB adapter board |
+| `es3c28p.py` | spec of the LCDWIKI ES3C28P, the display node's board: 2.8" display, ESP32-S3, sockets |
+| `rp2350_can.py`, `ina3221_module.py`, `dcdc_buck_mini.py`, `usbc_pd_trigger.py` | specs of 4 module boards, part by part: Waveshare RP2350-CAN, INA3221 board, Mini560 buck converter, USB-C PD trigger board |
+| `matek_mbec12s.py` | spec of the Matek mBEC12S buck converter, 6V to 60V in |
+| `ina228_node.py` | layout of the remote INA228 sensor node: INA228 module, buck converter and display in place |
+| `ESC_MOTOR.md` | the models of the ESC, the motor, the set of both and the motor simulator: parts, frames, points, sources, limits |
+| `CASES.md` | the printed cases of the display node, with XT30 and with XT60, and of the sensor node: parts, assembly, openings, limits |
+| `_gen_display_case.py` | builds the display node's case in 2 variants of 2 parts each, with XT30 openings and with seats for screwed panel-mount XT60, with OpenCASCADE; checks their fit round the display board and the connectors and that the lid closes on the rim; writes STEP and STL |
+| `_gen_node_case.py` | builds the 3 parts of the sensor node's case with OpenCASCADE, checks their fit round the layout's solids, writes STEP and STL |
+| `rbmod_v2.py` | spec of the rbmod carrier board, version 2: with its SMD parts, and with its connectors and modules |
+| `_read_kicad_pcb.py` | reads a KiCad board file's outline, holes, footprints, and the pads, tracks and vias of its 2 outer layers into a data file; the copper needs shapely |
+| `_rbmod_v2_data.py` | outline, holes, footprints and outer copper of the rbmod board, version 2, written by `_read_kicad_pcb.py` |
 | `lipo_cells.py` | spec of two lithium polymer cells, 702030 and 102540, with wires and plug |
 | `kst_x10.py` | spec of the KST X10 wing servo, from a dimension drawing and photos |
 | `_gen_flap_drive.py` | builds a frame with counter bearing for the KST X10, its linkage and a slice of wing with a flap with OpenCASCADE, checks that no two solids share volume |
 | `_rg15.py` | coordinates of the RG-15 airfoil |
 | `wit_imu.py` | spec of a WitMotion inertial sensor in its case, from a product picture with dimensions |
 | `servo_standard.py` | spec of a standard size servo with a round horn, from a dimensioned sketch |
+| `hitec_d485hw.py` | spec of the Hitec D485HW servo with the horn HD-X25 and its lead, from the maker's drawing, model and data sheets |
+| `flycolor_flydragon_lite_40a.py` | spec of the Flycolor FlyDragon Lite 40A ESC with its power, motor and signal leads, from the maker's manual and a product picture |
+| `tmotor_at2814.py` | spec of the T-Motor AT2814 outrunner with its 3 leads, from the maker's drawing |
+| `esc_motor_set.py` | the ESC and the motor joined lead to lead, for pictures of the phase tap |
+| `motor_simulator.py` | spec of the motor simulator: 3 resistors of 600Ω in a triangle with 3 crocodile clips, from an owner photo |
 | `_board.py` | a module's board for the specs: the plate, and parts placed by their position from the board's center |
 | `_font.py` | outlines of the letters of board print, written by `_gen_font.py` from OpenCV's single-stroke font |
 | `_photo_grid.py` | measures a board from a photo on squared paper: grid fit, camera height, the INA228 module's photos laid onto the board frame |
@@ -30,15 +47,18 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `_measure_step.py` | measures Waveshare's STEP file of the panel board with OpenCASCADE |
 | `_solid.py` | profiles of straight sides and arcs pushed along an axis, and round rods along a path of lines and arcs, turned and moved, as solids with flat, cylindrical and toroidal faces |
 | `_parts.py` | shapes of electronic parts: chip parts, leaded packages, wire sockets, USB sockets, card slot, buttons, pin header, shunt, both halves of the XT90PW |
-| `check_overlap.py` | fails when two solids share volume in the panel board's model, in the INA228 module with its case, in one of the 4 module boards, in a cell, in the standard servo, in the KST X10 or in the WitMotion sensor |
+| `check_overlap.py` | fails when two solids share volume in the panel board's model, in the INA228 module with its case, in one of the 5 module boards, in the Core2350B's USB adapter board, in the ES3C28P, in a cell, in the standard servo, in the KST X10, in the WitMotion sensor, in one of the 2 models of the rbmod carrier or in one of its 4 module boards |
 | `check_panel_7b.py` | holds the panel board's model against Waveshare's STEP file |
-| `gen_models.py` | writes `models/` from the specs; `--check` fails on drift |
+| `gen_models.py` | writes `models/` from the specs; `--check` fails on drift and on a file under `models/` or `renders/` that `_models.py` does not account for |
+| `_models.py` | names the folder of each model under `models/` and of each picture under `renders/`: `pcb`, `casing` or `parts` |
 | `_stl.py` | reads a binary STL and splits it into its closed parts |
 | `_refit.py` | fits planes, cylinders, cones, tori and a thread's surfaces to a mesh part |
 | `_surface.py`, `_segment.py` | the surfaces and their fits, and the faces grown on them, for `_refit.py` |
 | `check_refit.py` | holds the dial's solids, read back with OpenCASCADE, against the mesh |
-| `models/` | the generated STEP files |
-| `renders/` | OpenCASCADE renders of the models and the contact sheet `all.png` |
+| `models/pcb/` | 17 models: 16 boards with their parts and the sensor node's layout; STEP |
+| `models/casing/` | 11 printed parts: the Dial's base, the display node's case in 2 variants, the sensor node's case, the INA228 module's case, the flap drive's frame; STEP, and STL for 9 of them |
+| `models/parts/` | 18 models of bought parts and of assemblies: emergency stop button, M5Stack Dial and its nut, 3 servos, an ESC, a motor, the set of both and a motor simulator, 2 cells, inertial sensor, the flap drive's assembly and wing; STEP |
+| `renders/` | OpenCASCADE renders in the folders of `models/`: `pcb/`, `casing/`, `parts/`; a view of several models lies in the folder `_models.py` names for it. The contact sheet `all.png` lies beside the folders |
 | `vendor/` | third-party meshes, unchanged, each with its licence |
 
 ```sh
@@ -47,12 +67,18 @@ python3 hardware/mechanical/gen_models.py --check  # CI: exit 1 on drift
 pip install cadquery-ocp==8.0.1.1.0 pillow
 python3 hardware/kicad/tools/step_check.py         # also checks models/
 python3 hardware/mechanical/check_refit.py         # needs numpy; 2 minutes
-python3 hardware/mechanical/check_overlap.py       # 1 minute
+python3 hardware/mechanical/check_overlap.py       # 2 minutes
 python3 hardware/mechanical/_gen_dial_base.py --check   # 1 minute
 python3 hardware/mechanical/_gen_flap_drive.py --check  # 10 seconds
+python3 hardware/mechanical/_gen_node_case.py --check   # 20 seconds
+python3 hardware/mechanical/_gen_display_case.py --check  # 10 seconds
 xvfb-run -a python3 hardware/kicad/tools/step_render.py \
-    hardware/mechanical/renders --size 640 480 \
-    --step hardware/mechanical/models/*.step
+    hardware/mechanical/renders --size 640 480 --folders \
+    --step hardware/mechanical/models/*/*.step
+xvfb-run -a python3 hardware/kicad/tools/step_render.py \
+    hardware/mechanical/renders --size 640 480 --from XposYnegZneg \
+    --suffix _back --folders \
+    --step hardware/mechanical/models/pcb/es3c28p.step
 ```
 
 ## Emergency stop button, M16
@@ -212,16 +238,16 @@ controller. The dial sits flat on top, face up; the 1000mAh lithium
 polymer cell 102540 lies in the bottom part. One hand holds the base
 while the other turns the knob.
 
-![Base with the dial](renders/dial_base.png)
+![Base with the dial](renders/casing/dial_base.png)
 
 | | |
 | --- | --- |
-| ![Taken apart](renders/dial_base_exploded.png) | ![Cut open](renders/dial_base_section.png) |
+| ![Taken apart](renders/casing/dial_base_exploded.png) | ![Cut open](renders/casing/dial_base_section.png) |
 
 | File | Content | Print |
 | --- | --- | --- |
-| `dial_base_top.step`, `.stl` | the dial's seat: top plate with the 45.2mm hole, wall, 4 screw bosses, USB opening with its guide tube; 13.9cm3 | top face down, no support |
-| `dial_base_bottom.step`, `.stl` | floor with the cell's pocket, centring rim, 4 screw columns; 15.6cm3 | foot down, no support |
+| `dial_base_top.step`, `.stl` | the dial's seat: top plate with the 45.2mm hole, wall, 4 bosses for threaded inserts, USB opening with its guide tube; 14.2cm3 | top face down, no support |
+| `dial_base_bottom.step`, `.stl` | floor with the cell's pocket, centring rim with a notch at each boss, 4 screw columns; 15.4cm3 | foot down, no support |
 
 Both files are in the dial's frame: z = 0 is the top plate's upper face,
 where the dial's flange seats, the knob points to +z, the `^` mark is at
@@ -254,13 +280,14 @@ measured.
 | Feature | mm |
 | --- | --- |
 | Dial's hole | 45.2 in a plate 2.0 thick; the dial takes 45.0 +/- 0.2 and a panel of 0 to 6 |
-| Room for the ring nut | 4.2 between the nut, 50.82 across, and the wall; 0.6 to each boss |
+| Room for the ring nut | 4.2 between the nut, 50.82 across, and the wall; 0.6 to each boss, which is 6.0 across beside the nut |
 | Room under the dial | the dial's screw heads end 17.7 below the top; the cell's top is 20.1 below it |
 | USB opening | 13.4 x 7.6 with corners rounded 1.5 at -y, center 12.13 below the top, on the dial's USB socket, whose opening lies 18.45 from the axis |
 | Guide tube | the opening runs on as a tube with a wall of 1.0 from the outer wall in to 24.5 from the axis, 10.7 long and 6.05 short of the socket, 2.5 off the dial's thread; beyond 26.5 from the axis a block ties it to the top plate; its top is 0.33 under the ring nut |
 | Cell pocket | 42.9 x 26.0 between 4 rails 1.4 thick and 6.0 high, open at the 4 corners: 1.2 free at each end of the cell and 0.5 at each side; the cell's length lies across the `^` mark, its wires towards +y, the side away from the USB opening |
 | Foam pad | 2 thick, about 20 x 30, between the cell and the dial, in the 2.4 between them; it holds the cell and leaves it room to swell |
-| Screws | 4 x M3 x 12, pan head, on a circle of 58.0 at 45 degrees to the axes; clearance holes 3.4, heads sunk 8.0 into the foot in recesses of 6.2; pilot holes 2.6 in bosses of 6.0, 6.5 of thread |
+| Screws | 4 x M3 x 12, pan head, on a circle of 58.0 at 45 degrees to the axes; clearance holes 3.4, heads sunk 8.0 into the foot in recesses of 6.2; each turns into a brass threaded insert in a boss of the top part and ends 2.5 above it |
+| Threaded inserts | 4 x ruthex RX-M3Sx4.0 (M3, 4.0 long, 4.6 over the knurl), melted in from the joint; hole 4.0, 5.0 deep, wall 1.6, as the maker's label asks; the boss is 7.2 across up to 1.0 under the ring nut, narrows in 2 steps of 0.3, and is 6.0 beside the nut; a bore of 3.2 above the hole takes the screw's end |
 
 The dial's battery socket, 1.25mm pitch with 2 pins, is on its main board
 under the Stamp-S3, at the USB end (M5Stack's picture "Dial Lithium
@@ -283,9 +310,14 @@ solid, or when a part shares volume with the dial, the nut or the cell.
 
 Limits:
 
-- No part is printed yet, so no fit is tried and the base has not been
-  held in a hand: the 0.2mm gap of the rim and the 2.6mm pilot holes are
-  design values for a 0.4mm nozzle.
+- One base is printed and works (owner, 2026-11-21). Its flutes are
+  partly filled: in its files the bosses' webs, the ledge under the rim
+  and the screw columns reach the unfluted surface. Its screws cut their
+  thread in pilot holes of 2.6mm. The files here are cut to the fluted
+  surface, `--check` fails on material in a flute, and the bosses take
+  threaded inserts. No base is printed from these files. No fit is measured: the 0.2mm gap
+  of the rim and the 4.0mm holes for the inserts are design values for a
+  0.4mm nozzle.
 - The battery socket's place is read from M5Stack's picture, not
   measured, and the socket is not in the dial's model. The passage for
   the wires under the Stamp-S3 and out at its +y end is not in the model
@@ -418,7 +450,7 @@ two round tails bend down through it. The KiCad module
 same board as boxes; these two models draw it part by part, in the same
 frame.
 
-![INA228 module](renders/ina228_xt90.png)
+![INA228 module](renders/pcb/ina228_xt90.png)
 
 | File | Content | Origin |
 | --- | --- | --- |
@@ -492,17 +524,21 @@ python3 hardware/mechanical/_trace_ina228_print.py PHOTOS  # rewrite _ina228_pri
 
 ## Module boards and cells
 
-Four module boards and two lithium polymer cells, drawn part by part
-with the print of both sides. Each board's model is also the 3D model of
-its footprint in the [KiCad library](../kicad/README.md), in the same
-frame; the INA219 board stands on a 6-pin header there and is bare here.
+Five module boards, the Core2350B's USB adapter board and two lithium
+polymer cells, drawn part by part with the print of both sides. Each
+module board's model is also the 3D model of its footprint in the
+[KiCad library](../kicad/README.md), in the same frame; the INA219 board
+stands on a 6-pin header there and the Core2350B on four 2 x 8 headers,
+and both are bare here.
 
 | | | |
 | --- | --- | --- |
-| ![INA219 board](renders/ina219_cjmcu219.png) | ![charger board](renders/lipo_charger_boost_5v.png) | ![boost board](renders/boost_5v_en.png) |
+| ![INA219 board](renders/pcb/ina219_cjmcu219.png) | ![charger board](renders/pcb/lipo_charger_boost_5v.png) | ![boost board](renders/pcb/boost_5v_en.png) |
 | `ina219_cjmcu219.step` | `lipo_charger_boost_5v.step` | `boost_5v_en.step` |
-| ![ESP32-C6-Zero](renders/esp32_c6_zero.png) | ![380mAh cell](renders/lipo_702030_380mah.png) | ![1000mAh cell](renders/lipo_102540_1000mah.png) |
+| ![ESP32-C6-Zero](renders/pcb/esp32_c6_zero.png) | ![380mAh cell](renders/parts/lipo_702030_380mah.png) | ![1000mAh cell](renders/parts/lipo_102540_1000mah.png) |
 | `esp32_c6_zero.step` | `lipo_702030_380mah.step` | `lipo_102540_1000mah.step` |
+| ![Core2350B](renders/pcb/core2350b.png) | ![Core2350B USB adapter](renders/pcb/core2350b_usb_adapter.png) | |
+| `core2350b.step` | `core2350b_usb_adapter.step` | |
 
 | File | Content | Size, mm | Origin |
 | --- | --- | --- | --- |
@@ -510,13 +546,39 @@ frame; the INA219 board stands on a 6-pin header there and is bare here.
 | `lipo_charger_boost_5v.step` | charger board: 6 plated holes, chip (SOIC-8), inductor, 6 capacitors, 4 resistors, 4 LEDs, side push button, underside's white field with black names; 121 solids, 1.3MB | 15.2 x 24.0 x 1.6, inductor 3.0 over the board, button plunger 1.5 past the edge | hole 1 (OUT 5V) on the underside; x along the row, y from the LEDs to the row |
 | `boost_5v_en.step` | boost board: 4 plated corner holes, enable pad, chip (SOIC-8), inductor, 2 diodes (SMA), 3 capacitors, 3 resistors, print, underside's white field; 69 solids, 0.6MB | 13.7 x 21.7 x 1.6, inductor 3.0 over the board | IN+ hole on the underside; x towards IN-, y towards the outputs |
 | `esp32_c6_zero.step` | Waveshare ESP32-C6-Zero: 18 edge pads with holes and half holes, 7 underside pads, USB Type-C socket, chip (QFN, 40 leads), antenna, 2 buttons, LED, regulator, diode, crystal, 21 chip parts, print; 263 solids, 2.6MB | 18.0 x 23.5 x 1.6, socket 3.25 over the board and 1.21 past the edge | 5V pad's hole on the underside; x towards the TX pad, y towards the socket |
+| `core2350b.step` | Waveshare Core2350B: 64 plated holes (6 GND pads octagonal), RP2350B (QFN, 80 leads), regulator (SOT-23-5), inductor, crystal, LED, 6-way flat cable socket, 4 chip parts on the top side; flash (SOIC-8, 5.3mm body), PSRAM (SOP-8, 3.9 x 4.9mm body), their 16 tinned pads and 29 chip parts on the underside, its print; 445 solids | 25.40 x 25.40 x 1.6, socket 1.9 over the board, flash 1.9 under it | pad 1's hole on the underside; x towards P2's corner GND, y away from P3; flat cable socket at +x +y |
+| `core2350b_usb_adapter.step` | the Core2350B's USB adapter board: USB Type-C socket, 6-way flat cable socket, BOOT and RESET buttons, LED, 5 chip parts, 4 holes of 2.0mm at 14.0mm, the slots of the socket's legs, print BOOT, RESET, PWR; 70 solids | 18.0 x 18.0 x 1.0, socket 3.25 over the board, its front 0.02 inside the edge | the board's center on its underside; x towards RESET, y towards the flat cable socket |
 | `lipo_702030_380mah.step` | cell, print 702030 3.7V 380mAh 1.406Wh: pouch with folded side seams, head under amber tape, print, 2 wires, plug; 40 solids | 20.0 x 31.0 x 7.0; wires 60 | middle of the width at the end away from the head, on the lower face; y towards the head, wires to -x |
 | `lipo_102540_1000mah.step` | cell, print 102540 3.7V 1000mAh: pouch, head under black tape, print, 2 wires, plug; 28 solids | 25.0 x 40.5 x 10.0; wires 60 | as the other cell |
 
 Sources: three owner photos on 5mm squared paper, of the top sides, the
 undersides and the cells on edge, which are not in the repository; for the
 ESP32-C6-Zero also Waveshare's dimension drawing and STEP file, which are
-not in the repository either. `_photo_grid.py`'s grid fit lies within
+not in the repository either.
+
+The Core2350B and its adapter come from Waveshare's documents, none of
+them in the repository: the Core2350B's dimension drawing (25.40mm
+square, 64 holes at 2.54mm) and schematic (the name of each hole);
+product photos of its top side and underside, and a photo of the
+underside with the PSRAM fitted, whose holes fit the 2.54mm grid within
+0.02mm RMS (root mean square), so parts read off them lie within about
+0.2mm; these photos show the underside turned by 90 degrees against a
+plain flip of the top side; the dimension drawing of the RP2350-Tiny's
+adapter board (18.00mm square, holes 14.00mm apart, corner radius
+1.00mm) and its STEP file `RP2040-Tiny-Adapter V1.1.step`, which states
+no licence: board 1.00mm thick, holes 2.02mm, USB socket 3.25mm high,
+buttons 4.65 x 3.00 x 2.50mm, flat cable socket 5.70 x 3.60 x 1.90mm,
+the place of every part. A photo of the Core2350B's adapter shows that
+board's layout turned by 180 degrees, with a socket of 6 contacts; the
+model is drawn in the photo's orientation. Estimated, not measured: the
+Core2350B's thickness (1.6mm), corner radius (0.5mm) and holes (1.0mm),
+the heights of its inductor (1.0mm), crystal (0.55mm) and flash
+(1.9mm), its flat cable socket's height (the adapter's 1.90mm), the
+PSRAM's part number (the schematic names none; drawn as a SOP-8 150mil,
+as AP Memory's APS1604M-3SQR-SN and APS6404L-3SQR-SN are) and height
+(1.5mm) and the buttons' body and cap within the STEP
+file's box. Not drawn: the names printed beside the holes, the logo,
+the flat cable and the adapter's underside. `_photo_grid.py`'s grid fit lies within
 0.20mm of the paper's grid in these photos. The camera stands 171mm over
 the paper. The 2.54mm rows of the INA219 board and the charger board read
 1.005 times their size, and sizes read off a board's top are divided by
@@ -556,13 +618,286 @@ Limits:
 python3 hardware/mechanical/_gen_font.py     # rewrite _font.py; needs OpenCV
 ```
 
+## Display node board, LCDWIKI ES3C28P
+
+The display node's board and the display of the planned remote servo
+node: an ESP32-S3 board of 50.0 x 86.0mm under a 2.8" display of 240 x
+320 pixels (ILI9341V) with a capacitive touch panel (FT6336G). The board
+is not soldered to a carrier: it reaches the carrier by cables to the
+JST PH headers `ES3C28P_PWR`, `_UART`, `_I2C` and `_GPIO` of the
+[KiCad library](../kicad/README.md), or sits in a case. So it has no
+footprint and no model in the library; `es3c28p.step` is its only model.
+
+| ![ES3C28P, front](renders/pcb/es3c28p.png) | ![ES3C28P, back](renders/pcb/es3c28p_back.png) |
+| --- | --- |
+| front | back |
+
+| File | Content | Origin |
+| --- | --- | --- |
+| `es3c28p.step` | the ES3C28P: board with 4 holes, window and slot of the touch cable; touch panel with its black border, optical glue, display module, 2 strips of tape, both cables' folds round the display's end and the touch cable's run to its socket; on the back the ESP32-S3, flash, codec, amplifier, RGB LED, crystal, microphone, 6 SOT-23 packages, a diode, 103 chip parts, USB Type-C, microSD, 6-way flat cable socket, 5 wire sockets of 1.25mm pitch, BOOT and RESET, the touch controller and 6 chip parts on its cable; print of both sides; 767 solids, 5.8MB | as `panel_7b.step`: the center of the view area on the touch panel's front face, +z to the viewer; seen from the front x to the right and y up, the USB socket down and the microphone hole at the top right |
+
+Positions in the model frame, mm. Heights are below the board's back
+face at z = -5.9. A plug enters from the side named.
+
+| Part | Place | Size, height | Plug from |
+| --- | --- | --- | --- |
+| Board | x -25.0 to 25.0, y -45.835 to 40.165, z -5.9 to -4.3 | 50.0 x 86.0 x 1.6, corners 3.5 | |
+| 4 mounting holes | x -21.0 and 21.0, y -41.835 and 36.165 | 3.2, rings of 5.6 printed on the front | |
+| Touch panel | y -37.435 to 31.765, front at z 0 | 50.0 x 69.2 x 1.0 | |
+| View area | centered on the origin | 43.6 x 58.05 | |
+| Display module | z -3.8 to -1.5 | 50.0 x 69.2 x 2.3 | |
+| Cable folds | y -38.705 to -37.435, x -10.65 to 11.75 and 12.3 to 17.5 | 1.27 past the display's end | |
+| UART socket, 4 pins | x -24.49 to -20.29, center y -10.85 | 4.2 x 6.75, wings 10.15, 3.4 | -x, face 0.51 inside the edge |
+| BAT socket, 2 pins | x -21.94 to -17.74, center y -22.64 | 4.2 x 4.25, wings 7.65, 3.4 | +x, leads towards the edge |
+| I2C socket, 4 pins | x 20.29 to 24.49, center y 4.08 | as UART | +x, face 0.51 inside the edge |
+| GPIO socket, 4 pins | x 20.29 to 24.49, center y 21.93 | as UART | +x, face 0.51 inside the edge |
+| SPEAKER socket, 2 pins | x 20.61 to 24.21, y -13.30 to -5.65 | 3.6 x 7.65, 4.7 | -z |
+| USB Type-C | x -4.47 to 4.47, front at y -46.205 | 8.94 x 7.35, shell 0.09 to 3.25 | -y, 0.37 past the edge |
+| microSD | x -22.47 to -7.57, y -1.855 to 12.245 | 14.9 x 14.1, 1.85 | -x, 2.53 inside the edge |
+| RESET, BOOT | x 11.58 and -11.55, y -42.575 | 4.2 x 3.2, plunger top 2.5 | -z |
+| Flat cable socket | x 10.65 to 17.85, y 8.135 to 14.135 | 2.0 | -y |
+| Microphone hole | x 15.0, y 36.165 | 0.6 | |
+| Over all | z 0 to -10.6 | | |
+
+Sources:
+
+- LCDWIKI's STEP file `ES3C28P_3D.step` (in `ES3C28P_3D.zip` at
+  `https://www.lcdwiki.com/res/ES3C28P/`, 1238 solids): the stack, the
+  board's outline, holes and cut-outs, the place, size and height of
+  every part. It states no licence and is not in the repository.
+  `_measure_step.py`'s `measure` and OpenCASCADE's assembly tree read
+  it.
+- LCDWIKI's outline drawing `ES3C28P_Size.pdf` (V1.0, 2025-06-11): board
+  50.00 x 86.00 x 1.60, holes 3.20 on 42.00 x 78.00, display and touch
+  panel 50.00 x 69.20 +-0.2, view area 43.60 x 58.05, 10.60 over all,
+  parts 4.70 at most. The STEP file agrees.
+- 17 tester photos, not in the repository: top side and back on 5mm
+  squared paper, edges, angled views, side views against a folding
+  rule. The back photos are laid onto the board by its 4 holes.
+  `_photo_grid.py`'s grid fit lies within 0.24mm RMS (root mean square)
+  of the paper's grid over 1102 crossings; the holes lie 42.35 x 78.73mm
+  apart on the paper, so the camera stands about 680mm over it.
+
+Limits:
+
+- The STEP file's parts lie on the photos' within 0.3mm. The folds of
+  the cables, which the STEP file does not draw, are read off the front
+  photo within 0.3mm. No dimension is verified with a caliper.
+- The photos give the top-entry socket 4.5 +-0.3mm high and the
+  side-entry sockets 3.6 +-0.3mm; the model keeps the STEP file's 4.7mm
+  and 3.4mm.
+- The folds are half circles of 1.15mm inner radius drawn as 12 flat
+  facets.
+- Not measured, estimated: the cables' thickness (0.12mm) and run behind
+  the display, the display cable's tail (5.1mm), the pegs of the USB and
+  microSD sockets, the wire sockets' walls and pins, the touch
+  controller's name (a chip of 5.0 x 5.0mm with 40 pads on the touch
+  cable, taken to be the FT6336G).
+- `_font.py` has no inch mark and no brackets: the board's `2.8"` is
+  drawn as `2.8`, `IO15(SCL)` as `IO15 SCL`.
+- Not drawn: the antenna's copper, tracks, vias, pads, frames round chip
+  parts, arrows, the microphone symbol, the shapes of the CE and RoHS
+  marks (their frames and letters are drawn), the display cable's joint
+  to the board, 3 chip parts of 0402 beside RESET that the photos show
+  and the STEP file lacks, and the notches the panel's tabs leave in the
+  edges.
+
+The display node's printed cases are in [Cases](CASES.md): with
+[XT30 openings](CASES.md#case-of-the-display-node-xt30) and with
+[screwed XT60](CASES.md#case-of-the-display-node-xt60).
+
+## Remote INA228 sensor node, layout
+
+The boards of the remote sensor node in the places a case will hold
+them: the [INA228 module](#ina228-module-with-xt90-connectors) at the
+bottom, the [display board](#display-node-board-lcdwiki-es3c28p) on top,
+a Matek mBEC12S buck converter between them. The node has no cell and no
+charger board: the converter feeds it with 5V from the measured line of
+6V to 60V. No part is changed; each is the model of its own spec, moved
+and turned. A [case](CASES.md#case-of-the-sensor-node) of 3 printed parts holds
+them.
+
+| | |
+| --- | --- |
+| ![Sensor node layout](renders/pcb/ina228_node_layout.png) | ![Matek mBEC12S](renders/pcb/matek_mbec12s.png) |
+| `ina228_node_layout.step` | `matek_mbec12s.step` |
+
+| File | Content | Size, mm | Origin |
+| --- | --- | --- | --- |
+| `ina228_node_layout.step` | INA228 module, buck converter, display board; 1139 solids, 10.3MB | 86.4 x 50.0 x 23.7 | the INA228 module's: header pin 1 on the board's underside |
+| `matek_mbec12s.step` | Matek mBEC12S, black: 4 edge pads OUT, G, G, IN 2.54 apart, inductor with the print 100, diode SS56, converter chip, 3 capacitors, LED, 13 chip parts, 2 voltage pads, the print of both sides; 147 solids, 1.8MB | 18.0 x 15.0, 1.2 thick; 4.5 over all | the pad OUT on the board's edge, on the underside |
+
+| Part | x, mm | y, mm | z, mm |
+| --- | --- | --- | --- |
+| INA228 module | -58.4 to 25.0 | -4.2 to 44.4 | -1.1 to 11.5 |
+| Buck converter | -30.0 to -12.0 | 29.0 to 44.0 | 3.1 to 7.65 |
+| Display board | -59.1 to 27.3 | -4.9 to 45.1 | 12.0 to 22.6 |
+
+- The shunt with the minus bar (y 10.0 to 18.1) and the plus bar (y 22.5
+  to 27.6, its solder to 28.5 on the underside) carry the whole current.
+  The converter lies beside them, 0.5mm past the plus bar's solder and
+  1.5mm over the board, between the 2 connector housings. The strip it
+  lies in is 15.9mm wide, the converter 15.0mm. Its 4 pads face the plug
+  half.
+- The display's long side runs along the INA228 board's long side, the
+  centers of the 2 boards over each other, its USB Type-C socket at the
+  socket half's end. Its lowest part is 0.5mm over the connector
+  housings, which end 11.5mm over the board's underside.
+- Not drawn: wires and anything that holds the parts.
+
+The converter is drawn from 6 seller pictures, none in the repository:
+a top view with the dimensions 18mm, 15mm and 2.54mm printed on it, and
+a view of the underside. Part places are read from the top view by eye
+at 23px/mm, within about 0.5mm. Sellers' listings give 18 x 15 x 4.5mm
+and 2g. No height but the 4.5mm over all is known; the board's thickness
+is read off an angled picture. The half holes of the edge pads are not
+drawn. Output is 5V as delivered; a solder bridge on the pad 9V or 12V
+sets that voltage.
+
+## Module boards of the rbmod carrier
+
+Four module boards drawn part by part with the print of both sides. Each
+model is also the 3D model of its footprint in the
+[KiCad library](../kicad/README.md), in the same frame and mounted there:
+the RP2350-CAN on two pin headers of 20, the INA3221 board on a header of
+8, the Mini560 on four headers of 2, the PD trigger board flat on the
+carrier. The files here hold the bare boards.
+
+| | |
+| --- | --- |
+| ![RP2350-CAN](renders/pcb/rp2350_can.png) | ![INA3221 board](renders/pcb/ina3221_module.png) |
+| `rp2350_can.step` | `ina3221_module.step` |
+| ![Mini560 buck converter](renders/pcb/dcdc_buck_mini.png) | ![USB-C PD trigger board](renders/pcb/usbc_pd_trigger.png) |
+| `dcdc_buck_mini.step` | `usbc_pd_trigger.step` |
+
+| File | Content | Size, mm | Sources, none in the repository |
+| --- | --- | --- | --- |
+| `rp2350_can.step` | Waveshare RP2350-CAN, blue: 40 edge pads, USB-C socket, 2 buttons, RP2350A, XL2515, SIT65HVD230, flash, buck converter, 2 crystals, slide switch, 3-way screw terminal, 52 chip parts, 3 wire openings, pad names on the underside; 632 solids, 7.3MB | 21.0 x 51.0, 1.6 thick; terminal 8.8 over the board; USB-C 1.1 and terminal 0.5 past the ends | Waveshare's product photos of 1600 x 1200px, top side and underside; its schematic; its dimension drawing for the pad grid |
+| `ina3221_module.step` | INA3221 board, black: 20 plated holes, INA3221, 3 shunts R100, 5 LEDs, 28 chip parts, 4 pairs of bridge pads, hole names on the underside; 299 solids, 3.3MB | 38.0 x 31.8, 1.6 thick; parts to 0.9 | a seller's pictures of 1024 x 1024px, top side and underside; 2 owner photos for the holes |
+| `dcdc_buck_mini.step` | Mini560 buck converter, blue: 4 corner pads with 2 holes each, enable hole, inductor 4R7, 6 capacitors 1206, controller, 10 chip parts, LED; 137 solids, 1.3MB | 30.0 x 18.0, 1.6 thick; inductor 3.8, 5.4 over all | a seller's pictures of 800 x 800px, top side and underside, and its dimension drawing |
+| `usbc_pd_trigger.step` | USB-C PD trigger board, purple: USB-C socket, 3-way switch, 10-lead chip, regulator, 2 capacitors 1206, 9 chip parts, LED, the voltage table on the underside; 158 solids, 1.9MB | 30.0 x 20.0, 1.6 thick; USB-C 3.3 over the board and 1.1 past the edge | a seller's picture of 517 x 405px with both sides; a second seller's 3 angled pictures; 3 owner photos |
+
+How the places are found: each straight view is laid onto the board's
+frame by known points, the pad holes of the KiCad spec or, for the PD
+trigger board, the board's 4 corners. The holes then fit within 0.02mm
+(RP2350-CAN, Mini560) and 0.2mm (INA3221 board). Part places are read
+from the rectified picture at 30 to 40px/mm.
+
+No maker publishes a 3D file of any of the four. One third-party STEP file
+of the Mini560 exists (one solid of 125 faces, in a KiCad library on
+GitHub); it is not used.
+
+Limits:
+
+- Part places are within about 0.2mm (RP2350-CAN), 0.3mm (INA3221 board,
+  Mini560) and 0.5mm (PD trigger board). No board is measured with a
+  caliper.
+- No height is measured. Packages have their class figures; the terminal
+  is drawn 8.8mm, the Mini560's inductor 3.8mm, the PD trigger board's
+  switch 2.5mm. Every board is drawn 1.6mm thick.
+- The kinds of the chip parts are read from their colour.
+- Not drawn: the half holes at the edges of the RP2350-CAN and the
+  Mini560, the maker's sign under the RP2350-CAN, solder, and the print's
+  frames round single parts. The print has no underscore.
+- The Mini560's enable hole is drawn at the KiCad footprint's place, 9.4mm
+  from the input end. The seller's top view gives 9.0mm. Which is right is
+  not known.
+- The INA3221 board's 6 channel holes and 3 large holes are empty. What
+  joins them to a carrier is not drawn.
+- The PD trigger board's sliders stand at one end; their real places set
+  the voltage.
+
+## rbmod carrier board, version 2
+
+The carrier of the modular bench: a board of 80.0mm x 89.0mm with a notch
+of 4.4mm x 13.0mm in its left edge and 6 holes of 3.0mm. It carries an
+RP2350-CAN, an INA3221 module, 2 mini buck converters and a USB-C PD
+(Power Delivery) trigger board.
+
+| | |
+| --- | --- |
+| ![The carrier with its SMD parts](renders/pcb/rbmod_v2_smd.png) | ![The carrier with connectors and modules](renders/pcb/rbmod_v2.png) |
+
+| File | Content | Size, mm |
+| --- | --- | --- |
+| `rbmod_v2_smd.step` | the board with 129 holes, the copper of its 2 outer layers (280 pads, 50 areas of tracks and vias) and its 17 surface-mounted parts: 9 resistors 1206, 3 resistors 0402, 2 capacitors 0603, 1 capacitor 1210, 1 SMB diode, 1 SMC diode; 382 solids, 10.1MB | 80.0 x 89.0, 1.579 thick, parts to 2.5 over the board |
+| `rbmod_v2.step` | the same with 3 JST PH headers of 4 pins and 2 of 2 pins, 2 angled pin headers of 3 x 4 pins and the 5 modules, each part by part; 1920 solids, 27.3MB | 85.3 x 89.0; 13.0 over the board, 6.0 under its top side |
+
+Frame: origin at the outline's lower left corner seen from the top side,
+x to the right, y up, z = 0 on the top side.
+
+Height over the board's top side, mm:
+
+| Part | Height |
+| --- | --- |
+| RP2350-CAN, its screw terminal | 13.0 |
+| Angled pin headers | 7.6 |
+| JST PH headers | 6.0 |
+| Mini buck converters | 8.0 |
+| INA3221 board, its header pins | 5.5 |
+| USB-C PD trigger board | 4.9 |
+| SMD parts | 2.5 |
+
+Past the outline: the RP2350-CAN reaches 1.0mm over the left edge, the
+angled headers' pins 4.3mm over the right edge.
+
+Not populated (owner, 2026-11-21): J6, a JST PH header of 4 pins at the
+lower edge, and J8, a Molex Mini-Fit Jr header of 2 pins beside it. The
+board file does not mark them; `DNP` in `rbmod_v2.py` names them. Their
+drilled pads are in the board, the parts are in neither model.
+
+Source: `rbmod.kicad_pcb` on the branch `rbmod_v2` of the owner's KiCad
+repository, commit `86d2301`, which is not in this repository.
+`_read_kicad_pcb.py` reads the outline, the holes, each footprint's
+place, turn and drilled pads, and the copper of the 2 outer layers into
+`_rbmod_v2_data.py`:
+
+```sh
+pip install shapely==2.2.0
+python3 hardware/mechanical/_read_kicad_pcb.py \
+    path/to/rbmod.kicad_pcb rbmod_v2
+```
+
+Copper: the pads of both sides are drawn gold, 0.035mm thick; their finish
+is ENEPIG (electroless nickel, electroless palladium, immersion gold;
+owner, 2026-11-21). The tracks and the vias are drawn 0.02mm thick in a
+lighter green, as copper shows under the solder mask. Every drilled hole is
+open in its pads, and every part stands on the pads' top.
+
+The 5 modules are the models of [the KiCad library](../kicad/README.md),
+whose footprints the board uses, drawn
+[part by part](#module-boards-of-the-rbmod-carrier): each module's drilled
+pads on the board agree with its spec, and each header pin stands in a
+drilled pad of the carrier. The RP2350-CAN, the INA3221 board and the 2
+buck converters stand on pin headers (owner, 2026-11-21). The PD trigger
+board lies on the carrier.
+
+Limits:
+
+- The SMD parts and the JST PH headers have their packages' nominal
+  sizes. No part is measured on a board; no board is built.
+- Estimated, not from a maker's drawing: the angled headers as a plastic
+  bar of 2.54mm with pins that end 15.12mm from the first row.
+- The filled ground zones of the 2 outer layers, the inner layers, the
+  print, the vias' holes and solder are not drawn. A filled zone of this
+  board has 9328 corners; with the zones `rbmod_v2.step` is 43MB. The
+  board is green.
+- Round pads and track ends are polygons of 16 sides to a circle.
+- The mini buck converter's enable pad has a hole of 0.8mm in the
+  carrier's footprint. A header pin of 0.64mm square is 0.91mm across its
+  corners and does not fit it. The model draws no pin there.
+- The reader handles lines and circles on Edge.Cuts, footprints on the
+  top side and pads that are circle, oval, rect or roundrect. It stops at
+  an arc in the outline, a footprint on the underside or another pad
+  shape.
+
 ## Standard servo
 
 A standard size servo with a round horn: black case of three shells, two
 ears with two open mounting holes each, white print "Standard Servo" on
 both long sides, white horn.
 
-![Standard servo](renders/servo_standard.png)
+![Standard servo](renders/parts/servo_standard.png)
 
 | File | Content | Size, mm | Origin |
 | --- | --- | --- | --- |
@@ -582,6 +917,55 @@ ears and 7.2mm + 40.5mm + 7.2mm for its parts; the model is 54.9mm long. The
 cable, its plug, the horn's screw and the shaft's splines are not in the
 sketch and not drawn. No dimension is verified on a servo.
 
+## Hitec D485HW
+
+The Hitec D485HW, a standard size digital servo: black case of 3 shells,
+2 ears with 2 open mounting holes each, the four-arm horn HD-X25 on the
+shaft, a silver type plate, and the lead with its 3 wires and 3 pin plug.
+
+![Hitec D485HW](renders/parts/hitec_d485hw.png)
+
+| File | Content | Size, mm | Origin |
+| --- | --- | --- | --- |
+| `hitec_d485hw.step` | case of 3 shells, 2 ears, boss, shaft, horn HD-X25 with 16 holes, type plate, print "D485HW" on the plate and on 2 sides, lead bushing, 3 wires, plug; 37 solids, 0.6MB | case 39.8 x 19.8 x 37.65; 53.0 over the ears; 46.35 over the horn; 126.4 x 36.0 x 46.35 over all | on the shaft's axis, on the case's underside; x along the case, the long end towards -x, the lead leaves the end at +x; z up |
+
+| Dimension | Value | Source |
+| --- | --- | --- |
+| Case, ears, mounting holes | 39.8mm x 19.8mm; 53.0mm over the ears; holes of 4.5mm, 48.0mm apart along the case and 10.0mm across; shaft axis 14.0mm from a row of holes; ears 2.5mm thick, underside 28.0mm over the case's underside | the maker's dimension drawing |
+| Seams, deck, boss, shaft, type plate, lead bushing, wires | seams 2.05mm and 23.55mm over the underside; deck 37.65mm; boss to 39.85mm; shaft 6.0mm across, to 43.05mm; bushing 9.0mm x 5.0mm, 6.0mm long, its axis 6.25mm over the underside; wires 1.3mm across, 1.8mm apart | the maker's STEP model, read with OpenCASCADE |
+| Horn HD-X25 | hub 9.0mm across, 6.2mm high; holes of 1.6mm at 7mm, 10mm, 13mm and 16mm from the axis on one pair of arms and at 6mm, 9mm, 12mm and 15mm on the other; arm ends round with 3.0mm | the maker's horn and spline data sheet, page 43 |
+| Lead | 300mm long, 24AWG; minus black, plus red, impulse yellow | the maker's data sheet Ver2.1 and operating instructions |
+| Ear slots, corner radius, boss diameters, plug housing, the horn's place on the shaft, its arms' thickness and width | see `hitec_d485hw.py` | estimated |
+
+| Point | x, mm | y, mm | z, mm |
+| --- | --- | --- | --- |
+| The lead leaves the case | 9.9 | 0.0 | 6.25 |
+| Wires | 15.9 to 75.9 | minus -1.8, plus 0.0, signal +1.8 | 6.25 |
+| Signal contact in the plug's end face | 89.9 | 2.54 | 6.25 |
+| Plus contact | 89.9 | 0.0 | 6.25 |
+| Minus contact | 89.9 | -2.54 | 6.25 |
+
+Sources, none in the repository: the maker's dimension drawing and STEP
+model of the D485HW (HiTEC Europe shop), its data sheet "D485HW General
+Specification" Ver2.1, its "Servo Actuator Horn & Spline Technical Data
+Sheet" and its operating instructions. The STEP model is 40.0mm x 20.0mm
+where the drawing gives 39.8mm x 19.8mm; the model follows the drawing.
+
+Limits:
+
+- 60mm of the lead's 300mm are drawn, straight.
+- Red is the middle wire. Which edge of the band carries the yellow signal
+  wire is not in the sources; it is drawn at +y.
+- The box holds 4 horns; the model carries the HD-X25. Its height on the
+  shaft is estimated: the hub's underside 0.3mm over the boss.
+- Not drawn: the spline's 25 teeth, the horn's screw, the case's 4 screws,
+  the ribs under the ears, the raised gear cover on the deck, the maker's
+  sign. The print is the type as plain text.
+- No dimension is verified on a servo.
+
+The ESC, the motor, the set of both and the motor simulator are in
+[ESC and motor](ESC_MOTOR.md).
+
 ## KST X10 with frame and flap drive
 
 A KST X10 wing servo on a frame with counter bearing, driving a flap
@@ -591,25 +975,27 @@ their kinds of parts and their look follow photos of such a frame, and
 every size is chosen in `_gen_flap_drive.py`. No part is measured, made
 or tried.
 
-![Servo, frame and linkage](renders/flap_drive_unit_2.png)
+![Servo, frame and linkage](renders/parts/flap_drive_unit_2.png)
 
 | | |
 | --- | --- |
-| ![Section through wing and flap](renders/flap_drive_section.png) | ![Wing from below, cover off](renders/flap_drive_below.png) |
-| ![The unit from the rod's side](renders/flap_drive_unit.png) | ![Wing from above, skin clear](renders/flap_drive_above.png) |
+| ![Section through wing and flap](renders/parts/flap_drive_section.png) | ![Wing from below, cover off](renders/parts/flap_drive_below.png) |
+| ![The unit from the rod's side](renders/parts/flap_drive_unit.png) | ![Wing from above, skin clear](renders/parts/flap_drive_above.png) |
 
 | File | Content | Frame |
 | --- | --- | --- |
 | `kst_x10.step` | the servo: case with red band, 2 ears, tab, shaft, print, 3 wires 15mm long; 25 solids | origin on the shaft's axis at the case's output end, z = 0 on the face the ears lie on; shaft to +y |
 | `flap_drive.step` | plate, 3 inserts, 3 washers, 3 screws, 2 blocks, strut, bush and its screw, double arm, pin, rod end, rod, fork, 2 horn plates, horn pin; 23 solids | the wing's: origin at the nose on the chord line, x to the trailing edge, y along the span, z up |
-| `flap_drive_wing.step` | wing shell, flap shell, cover of the servo's opening, spar web, rear web, the flap's nose wall; 6 solids | the wing's |
-| `flap_drive_assembly.step` | the two files above and the servo in its place; 54 solids, 3.5MB | the wing's |
+| `flap_drive_wing.step` | wing shell, flap shell, cover of the servo's opening, spar web, rear web, the flap's nose wall, fairing over the rod's slot; 7 solids | the wing's |
+| `flap_drive_assembly.step` | the two files above and the servo in its place; 55 solids, 4.0MB | the wing's |
 
 The layout:
 
 - The wing is a slice of 88mm span with the RG-15 airfoil on a chord of
   230mm and skins of 0.8mm. The flap is hinged in the lower skin at 75%
-  of the chord.
+  of the chord. The gap at the hinge is 0.6mm. The wing's upper skin ends
+  on a plane through the hinge that leans 22 degrees forward, which
+  leaves a gap of 4.45mm at the upper surface for the flap's way up.
 - The servo lies flat under the upper skin, its shaft along the span at
   38% of the chord. A carbon plate of 2.0mm is bonded to the skin, turned
   1.6 degrees to the skin's slope and 0.25mm under it at the nearest
@@ -626,14 +1012,23 @@ The layout:
   between 2 horn plates of 1.5mm. The plates stand on the flap's lower
   skin and pass through its upper skin. Their eye lies 3.5mm over the
   flap's upper surface and 1.0mm behind the hinge, 12.9mm over the hinge.
+- A fairing covers the slot in the upper skin: half an ellipsoid with a
+  wall of 0.6mm, 35.5mm long from its nose to the end of the wing's
+  upper skin, 10.2mm wide and 8.1mm high there, open to the rear.
 - The servo comes out through an opening of 60mm x 69mm in the lower
   skin, which a cover closes.
 
 Flap angle for an angle of the arm, from `travel()`:
 
-| Arm, degrees | -60 | -45 | -30 | -15 | 15 | 30 | 45 | 60 |
+| Arm, degrees | -45 | -30 | -15 | 15 | 30 | 45 | 60 | 75 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Flap, degrees, positive down | -24.4 | -20.3 | -14.7 | -7.8 | 8.4 | 17.1 | 25.5 | 32.8 |
+| Flap, degrees, positive down | -20.3 | -14.7 | -7.8 | 8.4 | 17.1 | 25.5 | 32.8 | 38.0 |
+
+`posed()` gives the parts at an angle of the arm. `--check` builds them at
+the 8 angles of the table and fails when two solids share volume. The
+smallest distance between a moving part and the fairing is 0.78mm, at
+-40 degrees of the arm, between a horn plate and the fairing's wall.
+At -50 degrees the arm's barrel meets the rod end's neck.
 
 Dimensions of the servo, mm:
 
@@ -653,10 +1048,13 @@ database of the University of Illinois at Urbana-Champaign.
 
 Limits:
 
-- The parts stand at neutral. The collision check covers that position
-  only; no deflected position is checked.
+- The files hold the parts at neutral. The collision check covers
+  neutral and the 8 angles of the table; no angle between them and no
+  angle outside -45 to 75 degrees is checked.
+- The gap of 4.45mm in the upper skin is open: no seal or wiper is
+  drawn.
 - Threads, the servo's splines, the hinge's tape, the adhesive under the
-  plate, spar caps, ribs and a fairing over the rod's slot are not drawn.
+  plate, spar caps and ribs are not drawn.
 - The cable ends 15mm from the servo and has no plug.
 - Loads, stiffness and the bush's play are not calculated.
 
@@ -666,7 +1064,7 @@ A WitMotion inertial sensor in its black case: a base of 3.0mm with a
 slotted ear at each end, a square body, and a white label with blue print
 that shows the sensor's axes.
 
-![WitMotion sensor](renders/wit_imu.png)
+![WitMotion sensor](renders/parts/wit_imu.png)
 
 | File | Content | Size, mm | Origin |
 | --- | --- | --- | --- |
@@ -699,7 +1097,7 @@ Under the MIT (Massachusetts Institute of Technology) licence instead:
 
 - `vendor/m5stack_dial/Dial.stl`, M5Stack's mesh
   ([vendor/m5stack_dial/LICENSE](vendor/m5stack_dial/LICENSE));
-- `models/m5dial.step` and `models/m5dial_nut.step`, M5Stack's geometry
+- `models/parts/m5dial.step` and `models/parts/m5dial_nut.step`, M5Stack's geometry
   fitted to that mesh ([M5Stack Dial](#m5stack-dial));
 - `_font.py`, letter outlines traced from OpenCV's single-stroke Hershey
   font ([LICENSE](../../LICENSE)).

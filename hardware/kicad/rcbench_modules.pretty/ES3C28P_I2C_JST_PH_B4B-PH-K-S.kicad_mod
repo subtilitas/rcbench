@@ -1,0 +1,227 @@
+(footprint "ES3C28P_I2C_JST_PH_B4B-PH-K-S"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(property "Reference" "REF**"
+		(at 3 -3.2 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "e05de340-12a3-544d-bdb5-16a126d2ddcf")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "ES3C28P_I2C_JST_PH_B4B-PH-K-S"
+		(at 3 5.8 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "2c9a4d4f-4344-53f2-b679-3133ce314fff")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "127b00ce-7d37-5928-9704-7c9ed5be8494")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" "LCDWIKI ES3C28P I2C socket P4 on a JST PH B4B-PH-K-S header, 2.0mm, pins 1:1. Pin 1 3V3: ES3C28P output, its 3.3V regulator. Pin 2 GND. Pin 3 SCL: GPIO15, ES3C28P is the controller. Pin 4 SDA: GPIO16, bidirectional. Both pulled to 3.3V by 4.7k on the ES3C28P; the bus also carries its touch controller (0x38) and audio codec (0x18). Pin order from the LCDWIKI schematic and print, confirmed on a delivered board."
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "238d4dfd-05e7-5f8d-a360-32cab80d2036")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr through_hole)
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_rect
+		(start -1.95 -1.7)
+		(end 7.95 2.8)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.SilkS")
+		(uuid "acde0f14-f2ce-55a5-8275-da76a89e1ea8")
+	)
+	(fp_poly
+		(pts (xy -0.35 -1.5) (xy 0.35 -1.5) (xy 0 -1.1))
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.SilkS")
+		(uuid "9abb61fa-8b63-5646-8560-b851baac843e")
+	)
+	(fp_text user "3V3"
+		(at 0 3.6 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "a197b20e-1099-5488-be64-ebec86e45f23")
+		(effects
+			(font
+				(size 0.6 0.6)
+				(thickness 0.09)
+			)
+		)
+	)
+	(fp_text user "GND"
+		(at 2 4.4 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "169cb2f4-f06c-5de8-af45-c2e4759cf836")
+		(effects
+			(font
+				(size 0.6 0.6)
+				(thickness 0.09)
+			)
+		)
+	)
+	(fp_text user "SCL"
+		(at 4 3.6 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "642ac217-60f8-5d92-80d4-c8b5e01b218c")
+		(effects
+			(font
+				(size 0.6 0.6)
+				(thickness 0.09)
+			)
+		)
+	)
+	(fp_text user "SDA"
+		(at 6 4.4 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "16bb00aa-6868-5e7c-970b-55f455fb968b")
+		(effects
+			(font
+				(size 0.6 0.6)
+				(thickness 0.09)
+			)
+		)
+	)
+	(fp_rect
+		(start -1.95 -1.7)
+		(end 7.95 2.8)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "09c46a1e-d34a-5a24-ba29-3e023fe8bb08")
+	)
+	(fp_poly
+		(pts (xy -0.35 -1.5) (xy 0.35 -1.5) (xy 0 -1.1))
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "eaf098d8-da1a-5345-8b07-157e6501c7c4")
+	)
+	(fp_text user "ES3C28P I2C"
+		(at 3 1.9 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "9795b867-a0fa-52fc-9441-f90fba8ddd33")
+		(effects
+			(font
+				(size 0.7 0.7)
+				(thickness 0.1)
+			)
+		)
+	)
+	(fp_rect
+		(start -2.2 -1.95)
+		(end 8.2 3.05)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "38c795aa-9cc9-5c6e-a7fd-5281b55433b7")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 3 0.55 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "3ed691cb-1979-5014-b4a3-f57ac59b3a68")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" thru_hole rect
+		(at 0 0)
+		(size 1.2 1.75)
+		(drill 0.8)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "49b2c026-40c7-508f-8fe7-4f6e0abe9ed1")
+	)
+	(pad "2" thru_hole oval
+		(at 2 0)
+		(size 1.2 1.75)
+		(drill 0.8)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "2d576c09-5cb8-5b2f-ab5f-41239ade5df6")
+	)
+	(pad "3" thru_hole oval
+		(at 4 0)
+		(size 1.2 1.75)
+		(drill 0.8)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "ea99403c-9cd9-5928-a17d-87bcd133695d")
+	)
+	(pad "4" thru_hole oval
+		(at 6 0)
+		(size 1.2 1.75)
+		(drill 0.8)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "8b5305e9-7b85-5ab1-ae30-cfc4518ee08c")
+	)
+	(embedded_fonts no)
+	(model "${RCBENCH_MODULES_3D}/ES3C28P_I2C_JST_PH_B4B-PH-K-S.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)

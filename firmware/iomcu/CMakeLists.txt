@@ -51,6 +51,9 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/servo"  servo)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/openyge" openyge)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/pdmini"  pdmini)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/phase_tap" phase_tap)
+# The remote servo node's pass-through: the decoder and the ring reader,
+# and on board 3 the PIO programs and their driver (src/iomcu_pass.c).
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/passthru" passthru)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/kst"     kst)
 # The Hitec wire's core and pin driver, which the HITEC page runs
 # (src/iomcu_hitec.c); its PIO program is assembled and checked below.
@@ -80,10 +83,17 @@ add_executable(rcbench-iomcu
     src/iomcu_tone.c
     src/iomcu_bind.c
     src/iomcu_can.c
+    src/iomcu_uart.c
+    # The remote servo node's stepping check, POWER page and switches; on
+    # the other boards its functions do nothing.
+    src/iomcu_rsn.c
+    # Its pass-through: the PASS and PASS_STAT pages and the capture.
+    src/iomcu_pass.c
     src/iomcu_report.c
     src/xl2515.c
     src/out_pwm.c
     src/outputs_hw.c
+    src/iomcu_rsn_pio.c
     src/port_park.c
     src/out_store.c
     src/update_hw.c
@@ -97,22 +107,75 @@ add_executable(rcbench-iomcu
 target_include_directories(rcbench-iomcu PRIVATE include src)
 
 # Which board the image is for (include/iomcu_pins.h): rp2350_can, the
-# module wired by hand, or rbmod, the carrier whose pins are soldered
-# (shared/outputs/out_board_rbmod.c).  The board names the files: the
-# module's image is rcbench-iomcu.*, a carrier's rcbench-iomcu-<board>.*,
-# so the two never share a file name.
-set(IOMCU_BOARD "rp2350_can" CACHE STRING "Board the image is for: rp2350_can or rbmod")
-set_property(CACHE IOMCU_BOARD PROPERTY STRINGS rp2350_can rbmod)
+# module wired by hand; rbmod, the carrier whose pins are soldered
+# (shared/outputs/out_board_rbmod.c); or rsn, the remote servo node's
+# Core2350B (RP2350B, shared/outputs/out_board_rsn.c), one image for
+# carriers with and without the port switches.  The board names the files:
+# the module's image is rcbench-iomcu.*, a carrier's rcbench-iomcu-<board>.*,
+# so no two share a file name.  The rsn image runs on the default
+# PICO_BOARD: pimoroni_pico_plus2_rp2350 is an RP2350B with 16MB flash and
+# its PSRAM's chip select on GPIO 47, as the Core2350B1 is.
+set(IOMCU_BOARD "rp2350_can" CACHE STRING "Board the image is for: rp2350_can, rbmod or rsn")
+set_property(CACHE IOMCU_BOARD PROPERTY STRINGS rp2350_can rbmod rsn)
 if(IOMCU_BOARD STREQUAL "rp2350_can")
     set(iomcu_out rcbench-iomcu)
-    target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_BOARD_RBMOD=0)
+    target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_BOARD_RBMOD=0
+                                                     IOMCU_BOARD_RSN=0)
 elseif(IOMCU_BOARD STREQUAL "rbmod")
     set(iomcu_out rcbench-iomcu-rbmod)
-    target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_BOARD_RBMOD=1)
+    target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_BOARD_RBMOD=1
+                                                     IOMCU_BOARD_RSN=0)
+elseif(IOMCU_BOARD STREQUAL "rsn")
+    set(iomcu_out rcbench-iomcu-rsn)
+    target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_BOARD_RBMOD=0
+                                                     IOMCU_BOARD_RSN=1)
 else()
-    message(FATAL_ERROR "IOMCU_BOARD=${IOMCU_BOARD}: rp2350_can or rbmod")
+    message(FATAL_ERROR "IOMCU_BOARD=${IOMCU_BOARD}: rp2350_can, rbmod or rsn")
 endif()
 set_target_properties(rcbench-iomcu PROPERTIES OUTPUT_NAME ${iomcu_out})
+
+# Board 3's pass-through on the chip: MIRROR and CAPTURE in PIO0 and the
+# 64KiB ring of their two DMA channels, in the rsn image only.  The
+# programs as pioasm assembles them must be the ones the host suite runs
+# (test/host/test_pass_pio.c, fixtures/pass_mirror_words.txt and
+# fixtures/pass_capture_words.txt).
+if(IOMCU_BOARD STREQUAL "rsn")
+    target_link_libraries(rcbench-iomcu rcbench_passthru_rp2350)
+    foreach(prog pass_mirror pass_capture)
+        add_custom_command(TARGET rcbench-iomcu PRE_LINK
+            COMMAND ${CMAKE_COMMAND}
+                    -DHEADER=${CMAKE_CURRENT_BINARY_DIR}/passthru/rp2350/pass.pio.h
+                    -DWORDS=${CMAKE_CURRENT_LIST_DIR}/../../test/host/fixtures/${prog}_words.txt
+                    -DNAME=${prog}
+                    -DTEST=test_pass_pio
+                    -P "${CMAKE_CURRENT_LIST_DIR}/cmake/pio_words.cmake"
+            VERBATIM)
+    endforeach()
+endif()
+
+# The link's transport (src/iomcu_link.h): CAN (Controller Area Network)
+# through the XL2515 on boards 1 and 2, UART0 at 1Mbaud on board 3 (rsn).
+# Empty takes the board's; `can` or `uart` names one, as for a bring-up of
+# the UART transport on the module wired by hand.
+set(IOMCU_LINK "" CACHE STRING "Link transport: empty for the board's, can or uart")
+set_property(CACHE IOMCU_LINK PROPERTY STRINGS "" can uart)
+if(IOMCU_LINK STREQUAL "")
+    if(IOMCU_BOARD STREQUAL "rsn")
+        set(iomcu_link uart)
+    else()
+        set(iomcu_link can)
+    endif()
+else()
+    set(iomcu_link ${IOMCU_LINK})
+endif()
+if(iomcu_link STREQUAL "uart")
+    target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_LINK_UART=1)
+elseif(iomcu_link STREQUAL "can")
+    target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_LINK_UART=0)
+else()
+    message(FATAL_ERROR "IOMCU_LINK=${IOMCU_LINK}: empty, can or uart")
+endif()
+message(STATUS "rcbench-iomcu: board ${IOMCU_BOARD}, link ${iomcu_link}")
 
 # Core 0's stack: 4096 bytes, all of the SCRATCH_Y region at 0x20081000.  The
 # SDK's default is 2048, and the deepest chain from main() with panic() and
@@ -132,9 +195,10 @@ target_compile_definitions(rcbench-iomcu PRIVATE PICO_STACK_SIZE=0x1000)
 # 94us, every pass at most 250us.  The flash itself is still read, by the
 # output store and an update's checks, through the uncached window.
 pico_set_binary_type(rcbench-iomcu copy_to_ram)
-# The DShot driver's pin table: the 8 output slots and the 4 programming
-# ports (outputs_hw.c asserts it).
-target_compile_definitions(rcbench-iomcu PRIVATE OUT_DSHOT_MAX_PINS=12u)
+# The DShot driver's pin table: the 16 output slots and the 4 programming
+# ports; the PPM driver's: the 16 slots (outputs_hw.c asserts both).
+target_compile_definitions(rcbench-iomcu PRIVATE OUT_DSHOT_MAX_PINS=20u
+                                                 OUT_PPM_MAX_PINS=16u)
 
 # A bring-up build for the current monitors: with no part enabled in flash,
 # both are enabled at the SENSE page's defaults for that boot, not saved.
@@ -238,6 +302,7 @@ target_link_libraries(rcbench-iomcu
     hardware_pwm
     hardware_dma
     hardware_spi
+    hardware_uart
     hardware_gpio
     hardware_flash
     hardware_sync

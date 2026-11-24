@@ -16,6 +16,16 @@ Das Halten schaltet zuerst das Funkmodul aus. Danach stellt das Panel seine Abfr
 
 Wie lange Löschen und Schreiben dauern, ist nicht gemessen.
 
+## Die Release-Signatur
+
+![Schreiben eines Images ohne Signatur](view:panel-update-unsigned)
+
+Die letzte Zeile sagt, was der Release-Schlüssel zum Image sagt: `VOM RCBENCH-RELEASE-SCHLÜSSEL SIGNIERT`, oder `NICHT VOM RCBENCH-RELEASE-SCHLÜSSEL SIGNIERT.` mit dem Grund, `Das Image hat keine Signatur.` oder `Die Signatur passt nicht.` Ein Image ohne gültige Signatur wird mit dem einen Halten von 2s und dieser Warnung installiert, bis zum stabilen Release, das die Signatur erzwingt.
+
+![Ein Build, der die Signatur erzwingt](view:panel-update-anyway)
+
+Ein Build mit `RCBENCH_SIGN_ENFORCE=1` schreibt nach dem ersten Halten nichts. Er zeigt den Grund und verlangt ein zweites Halten von 2s, `2s HALTEN: TROTZDEM INSTALLIEREN`. ABBRECHEN, STOP, ARMED und das Verlassen des Bildschirms verwerfen das Image.
+
 ## Geschrieben und geprüft
 
 ![Geschrieben und geprüft: das Panel startet neu](view:panel-update-done)
@@ -32,7 +42,7 @@ Ein Fehler, Watchdog-Reset, Neustart oder Stromausfall vor der Übernahme stellt
 
 ![Das Schreiben schlug fehl](view:panel-update-failed)
 
-Ein fehlgeschlagener Schreibvorgang ändert die Startauswahl nicht; die bestehende Firmware läuft weiter. Nach einem Upload führt SCHLIESSEN zu der Seite zurück, die [WLAN](wifi.md) geöffnet hat: [SETUP](setup.md), [LOGS](logs.md) oder [Updates](updates.md). Nach einem Download führt es zu [Updates](updates.md) oder zum Menü.
+Ein fehlgeschlagener Schreibvorgang ändert die Startauswahl nicht; die bestehende Firmware läuft weiter. Die Zeile unter `Schreiben fehlgeschlagen.` nennt den Grund wie die Konsole, zum Beispiel `WLAN ging nicht innerhalb von 20s aus.` oder `Löschen, Schreiben oder Prüfen des Flash ist fehlgeschlagen.` Nach einem Upload führt SCHLIESSEN zu der Seite zurück, die [WLAN](wifi.md) geöffnet hat: [SETUP](setup.md), [LOGS](logs.md) oder [Updates](updates.md). Nach einem Download führt es zu [Updates](updates.md) oder zum Menü.
 
 ## Aktuelle Einschränkungen
 

@@ -8,6 +8,657 @@ history is in git.
 
 ### Added
 
+- Remote servo node IOmcu (board 3): pass-through. PIO0 runs MIRROR, which
+  copies each of the 9 receiver inputs to its servo output every cycle
+  (13.3 to 20ns at the pad), and CAPTURE, which pushes the 18 pins' state
+  on every change into a 64KiB DMA (direct memory access) ring. The new
+  pages PASS (0x41) and PASS_STAT (0x42) of protocol 4.41 set each
+  channel's source (OFF, PASS-THROUGH or BENCH, written while SAFE, BENCH
+  at every start) and report each input's and output's last pulse, the
+  frame period, missed frames, glitches (a high under 400µs or over
+  2600µs) and a signal lost after 3 periods or 100ms, in windows of 50ms.
+  A PASS-THROUGH output is driven only while the bank is armed for its
+  channel's role (a throttle channel stays low during a surfaces-only run)
+  and is low from the pass that sees SAFE. A channel on PASS-THROUGH counts as active for a
+  programming session on the common rail; a session at another voltage
+  sets the PASS-THROUGH ports it switches off to OFF. PIO0 holds MIRROR,
+  CAPTURE and the PD mini UART. The decoder is the new module `protocols/passthru`
+  ([Link, the PASS and PASS_STAT pages](docs/Link.md#the-pass-and-pass_stat-pages)).
+- IOmcu, remote servo node (board 3): KST, Hitec and ESC wire sessions run
+  on the common servo rail. A session's power cycle switches the master
+  rail switch without the port switches and only its own port's switch
+  with them. Without the port switches CONNECT is refused while another
+  channel is active; with them a session at another voltage than the
+  rail's switches every other port off until it ends. CONNECT is refused
+  while the BEC check finds 500mV or more on any port, and on every port
+  while another session holds one. The session's port is switched on only
+  once the PD mini reads the session's voltage (300mV under to 150mV over,
+  100ms settled, 2500ms at most), and a Hitec POWER on the node starts its
+  listen when the port reads on. After a trip no session switches the
+  rail on until the panel's RAIL 1. Every OFF that stands (RAIL 0,
+  PORT_WANT without the session's port, SUPPLY OFF, a trip, a lost
+  heartbeat) ends a session's waiting ON, and each CONNECT is judged
+  against the channels as they stand at its own frame. The panel's OFF of
+  the session's port waits for a write to the servo's memory, 10000ms at
+  most ([Link, Programming on the common rail](docs/Link.md#programming-on-the-common-rail)).
+- Node firmware: the servo role (`CONFIG_RCNODE_ROLE_SERVO`,
+  `sdkconfig.servo`) for the remote servo node's ES3C28P. It polls the
+  Core2350B (board 3) over UART0 at 1,000,000 baud, edges the heartbeat on
+  IO21 every 20ms while a panel's KEEPALIVE is fresh, and writes ARM 0,
+  RAIL 0, PORT_WANT 0 and the supply's OUTPUT 0 at the start, on STOP, on
+  a Bluetooth LE disconnect, 300ms after the last KEEPALIVE and when the
+  Core2350B returns after 1000ms without an answer. A THROTTLE older than
+  150ms is written as 0. 3000ms without an answer pulse the Core2350B's RUN
+  low for 10ms once. The console's `srv ka on` stands in for the panel's
+  KEEPALIVE ([The servo node](docs/Nodes.md#the-servo-node)). The CI job
+  "Node image" builds `rcbench-node-srv-merged-<version>.bin`.
+- `protocols/rcnode`: role 3, `RCNODE_ROLE_SERVO`, named
+  `rcbench-srv-XXXX`.
+- IOmcu board 3, throttle outputs on S1 to S9: MOTOR PWM, PPM, DShot and
+  bidirectional DShot. The PIO blocks are placed by fixed rules: PIO0
+  holds the PD mini UART, every block runs at GPIO base 16, the outputs
+  fill PIO2 and then PIO1, a programming session's line takes a block that
+  holds no output and is refused while both hold one, no output goes into
+  the line's block, and a 7th PPM output is refused with `WHY` SILICON.
+  The INA228 on J26 is refused on an INA3221's address, 0x40 to 0x42; the
+  sensor schedule reads the 9 channels and the INA228 within 690µs of bus
+  time a 1ms tick
+  ([Link: Throttle outputs on board 3](docs/Link.md#throttle-outputs-on-board-3)).
+- The panel updates the display node (the power node on the ES3C28P,
+  ESP32-S3) over Bluetooth LE from SETUP > UPDATES. The power node's row
+  sends the image of the board the node's INFO names:
+  `rcbench-node-pwr-<version>.bin` for the ESP32-C6-Zero (board 1),
+  `rcbench-node-display-<version>.bin` (update kind 4) for the ES3C28P
+  (board 2). For the display node the row reads DISPLAY NODE FIRMWARE,
+  UPDATES' step DISPLAY NODE. The image is downloaded and checked as every
+  device image: `SHA256SUMS`, its `.sig`, chip ESP32-S3, project
+  `rcbench-node`, kind 4 and the release's version. Before the first byte
+  the panel holds it to the board's chip and kind; a mismatch ends with
+  `Display node update stopped: image for another board.` The node asks
+  for BOOT (IO0) held 1s, as the C6 node does.
+- A release publishes `rcbench-node-display-<version>.bin`, the display
+  node's application, with its `.sig` and a line in `SHA256SUMS`, beside
+  `rcbench-node-display-merged-<version>.bin` for USB.
+
+### Changed
+
+- IOmcu, remote servo node (board 3) without the port switches (POWER
+  `FITTED` 0): while a KST, Hitec or ESC wire session is open, a write
+  that activates another channel is refused with BUSY: an OUTPUTS slot or
+  BIND commit binding a driver on another output (`WHY` 6), a PROG port
+  given a function on another output, a PASS `SOURCE` set to
+  PASS-THROUGH. Judged at the write against the sessions open then. With
+  the switches nothing changes
+  ([Link, Programming on the common rail](docs/Link.md#programming-on-the-common-rail)).
+- IOmcu, board 3: a port that is on when an OUTPUTS, BIND, CHAN_CFG,
+  PROG or PASS write makes its output a throttle goes off in that write, before
+  the next main-loop pass renders a frame on it, not one pass later.
+- A plain DShot or PPM pad has its input enable cleared while its PIO
+  block drives it, on every board; a bidirectional DShot pad keeps it
+  ([DShot: Which pin](docs/DShot.md#which-pin)).
+  `tools/pio_budget.py` reads this from the drivers: board 3's capture
+  worst case is 227,680 events/s, 36.0ms of the 64KiB ring, and only 4
+  bidirectional DShot outputs lap it in a 42ms flash window.
+
+- `hardware/mechanical/`: `motor_simulator.step` runs the phase tap's lead
+  out of the boot of the clip on corner C, beside the resistor's wire,
+  in place of a wire on the clip's upper jaw. The 3.5mm mono plug has a
+  strain relief of 3 steps, a barrel, a shoulder, a sleeve, one insulating
+  ring and a tip with a groove, and is drawn at 0.6 of its size: a shaft
+  of 2.1mm x 8.4mm. 39 solids, 51.05mm x 20.0mm x 62.71mm; the plug
+  stands at x -11.8mm in place of -45.3mm
+  ([ESC and motor](hardware/mechanical/ESC_MOTOR.md#motor-simulator)).
+- Web flasher, Done: the next-step line follows what the write kept. After
+  a Dial write that kept the NVS (non-volatile storage) partition, the line
+  reads that the Dial keeps its settings and its binding; after a write
+  over the NVS it asks to bind the Dial on the panel. The display node,
+  power node and balance node lines name both cases, since the panel binds
+  a node by its address. The display node's line no longer asks for a bind
+  after every write.
+- Web flasher, German: device names follow the panel, Auswuchtknoten and
+  C6-Funk; bind texts read binden and gebunden, as the panel's BINDEN.
+- German docs and help name the bench states ARMED and SAFE in place of
+  scharf and entschärft.
+
+## 0.23.17 - 2026-11-23
+
+0.23.17 is a testing release. Every firmware image the release publishes
+has a detached signature `<image>.sig`, ECDSA (elliptic curve digital
+signature algorithm) P-256 over its SHA-256. The panel checks the
+signature of its own image and of each device image before an update and
+shows the result; an image without a valid signature still installs after
+a warning. The panel image carries the IOmcu images only and is 4,088,176
+bytes: an update of the C6 radio, the Dial or a node downloads that
+device's image of this release from GitHub, or reads it from the SD card's
+`BENCH/UPDATES`. SETUP > SD CARD saves and loads the settings as a text
+file in `BENCH/SETUP`. The web flasher at `/rcbench/flash/` is a wizard
+with a Simple and an Advanced mode, checks the release signature of each
+image in the browser, reads which firmware a connected ESP32 board runs,
+and keeps a board's settings on a write. The IOmcu gains a link over UART
+(universal asynchronous receiver-transmitter) and board 3, the remote
+servo node's Core2350B; its image is built in CI and is not a release
+asset. `hardware/` gains cases for the display node and the remote INA228
+sensor node, the rbmod carrier version 2 with its 4 module boards, the
+ES3C28P, a Hitec D485HW, an ESC (electronic speed controller) and motor
+set and a motor simulator. Its minor number, 23, is odd. GitHub publishes
+it as a pre-release and does not mark it as latest. It runs on the
+ESP32-P4 panel, as 0.23.16 does; an ESP32-S3 panel stays on the 0.22 line
+and is not offered it. The link protocol is 4.41, up from 4.40 in
+0.23.16: 16 slots and 16 channels on the IOmcu, IDENTITY registers 7 and
+8, STATUS fault bit 8 and the POWER page (0x43). The assets are
+`rcbench-panel-p4-v0.23.17.zip`, `rcbench-panel-p4-v0.23.17.bin`,
+`rcbench-iomcu-v0.23.17.zip`, `rcbench-iomcu-rbmod-v0.23.17.zip`,
+`rcbench-c6-2.13.0.bin`, `rcbench-c6-merged-2.13.0.bin`,
+`rcbench-node-pwr-0.23.17.bin`, `rcbench-node-pwr-merged-0.23.17.bin`,
+`rcbench-node-bal-0.23.17.bin`, `rcbench-node-bal-merged-0.23.17.bin`,
+`rcbench-node-display-merged-0.23.17.bin`, `rcbench-dial-0.23.17.bin`,
+`rcbench-dial-merged-0.23.17.bin`, a `.sig` beside each of these 10
+`.bin` files, and `SHA256SUMS`, which lists the ZIP archives and the `.bin`
+files and no signature. Each ZIP archive holds a `.sig` beside each image
+in it. After the publish, `release.yml` starts `pages.yml` on `main`,
+which copies the images and their signatures to the web flasher.
+
+A bench on 0.23.16 gets 0.23.17 over Wi-Fi: SETUP > UPDATES, RELEASES: TESTING,
+CHECK FOR UPDATES, then hold the install button for 2s. With RELEASES: STABLE the
+check reads `releases/latest`, which names 0.22.1, and offers nothing. At
+link-up the panel offers to update the IOmcu over CAN (Controller Area Network)
+when the IOmcu runs a different build. The Dial and the power and balance
+nodes get their images over Bluetooth LE from SETUP > UPDATES; the panel
+downloads each one when its step's hold asks for it, and needs a home
+network or the file on the SD card for that. The display node's image is
+loaded over USB (Universal Serial Bus). To set up a new bench, load both
+boards over USB as
+[First run, §1](docs/FirstRun.md#1-flash-both-boards) describes, or with
+the [web flasher](flasher/README.md).
+
+The entries below cover the 27 pull requests merged since v0.23.16: #904
+to #908, #910 to #927, #930, #931, #933 and #934.
+
+### Added
+
+- Web flasher: the board check on Check. After a connect the page reads
+  the partition table, the otadata entries and the head of the application
+  the boot loader starts on an ESP32 board (4 flash reads, 3,432 bytes,
+  through the flasher stub, no write or erase) and shows "Installed":
+  matches, another device (named, with a warning), or cannot tell (blank,
+  unknown or ambiguous firmware, a read that fails). The project names come
+  from `esp_app_desc_t`, power and balance node apart by the role record of
+  v0.23.13 and later. RP2350 boards are not read: their IOmcu images share
+  the name `rcbench-iomcu`. A warning only: it never disables WRITE, in
+  either mode; WRITE waits for the reads to end. The code, 6.7kB, loads on the first
+  connect ([flasher/README.md](flasher/README.md#board-check)).
+- Web flasher: the step model of a wizard (`flasher/src/tasks.ts`,
+  `release.ts`, `wizard.ts`) with unit tests: 4 tasks on the first screen,
+  the C6 radio repair last with a Prepare step, one release per visit from
+  the panel image's default, the signature gate of WRITE per mode, the
+  Core2350B in Advanced with a local file only.
+- Web flasher: Advanced mode of the wizard. A switch on the first screen,
+  held in the URL as `adv=1`, adds "Write a file of my own" over all 9
+  boards, the Core2350B with a local file only, the release select (a
+  picked release wins on every board it carries), the local file with an
+  optional `.sig` file ("signature not checked" without one, WRITE
+  enabled), the "Keep settings" checkbox (off writes the whole image and
+  erases the settings), and WRITE on a signature that does not match under
+  a red note. Simple mode keeps WRITE disabled on a mismatch and points to
+  Advanced when the release list fails or "Keep settings" refuses the
+  image. The Advanced code, 5.3kB, loads on the first switch
+  ([flasher/README.md](flasher/README.md#advanced-mode)).
+- Web flasher: the release signature of each release image. The page
+  downloads `<image>.sig` beside the image and verifies it in the browser
+  with Web Crypto (ECDSA P-256, SHA-256) against the embedded release
+  public key, by the panel's rules: a DER signature of 8 to 72 bytes. The
+  firmware step shows "signed by the rcbench release key" in green, or "no
+  signature" or "signature does not match" in amber; WRITE stays possible
+  in every state. A local file shows "local file, signature not checked"
+  until a `.sig` is picked in the new field beside it
+  ([flasher/README.md](flasher/README.md#release-signature)).
+
+- SETUP > UPDATES: an update of the C6 radio, the M5Stack Dial, the power
+  node or the balance node fetches that device's image of the release the
+  panel runs when its step's hold asks for it: `SHA256SUMS` and the file
+  over HTTPS on the panel's own download path, into PSRAM, the file's
+  `Content-Length` held to the device's slot and its SHA-256 to its
+  `SHA256SUMS` line, then the senders' checks. The update starts once the
+  image passed, after the radio is off. Without a home network, or after a
+  failed download, the hold reads the same file name from the SD card's
+  `BENCH/UPDATES` (`HOLD 2s TO UPDATE FROM THE SD CARD`). A failed attempt
+  shows on the step's card with a code: `D` for the download, `S` for the
+  card, `V` for the checks
+  ([Screens: Device images](docs/Screens.md#device-images)). Each image's
+  release signature, `<file>.sig` beside it in the release or on the card,
+  is checked with the panel image's verifier and key: while
+  `RCBENCH_SIGN_ENFORCE` is 0 an image without a valid one is sent after a
+  warning on the band and the step's card, and at 1 it is refused (`V07`).
+- `hardware/mechanical/`: `motor_simulator.step`, a stand-in for a motor
+  on an ESC's 3 motor leads: 3 resistors of 600Ω in a triangle, 400Ω
+  between any 2 of its 3 crocodile clips, with the phase tap's lead on one
+  clip, ending in a 3.5mm mono plug. 32 solids, 51.05mm x 20.0mm x
+  78.06mm; every size is estimated from one owner photo
+  ([ESC and motor](hardware/mechanical/ESC_MOTOR.md#motor-simulator)).
+- `hardware/mechanical/`: `flycolor_flydragon_lite_40a.step`, the ESC with
+  its capacitor, print, power leads with an XT60 plug, 3 motor leads and
+  signal lead with plug (44 solids); `tmotor_at2814.step`, the outrunner
+  with its 3 leads (15 solids); and `esc_motor_set.step`, the two joined
+  lead to lead, 398.2mm long. The ESC's size follows the maker's manual,
+  the motor the maker's drawing; lead lengths and diameters of the ESC are
+  estimated from a picture. The overlap check covers the 3 models
+  ([ESC and motor](hardware/mechanical/ESC_MOTOR.md#flycolor-flydragon-lite-40a-and-t-motor-at2814)).
+- IOmcu: the link on a UART (universal asynchronous receiver-transmitter)
+  beside CAN (Controller Area Network), the transport of board 3, the
+  remote servo node's Core2350B. UART0 at 1Mbaud 8N1 on GPIO 0 (TX) and
+  GPIO 1 (RX); one DMA (direct memory access) channel fills a 1KiB receive
+  ring through a 42ms flash window; replies leave whole through a
+  512-byte queue. Frames refused by the decoder count in STATUS registers 8
+  and 9; registers 6 and 7 carry the CRC (cyclic redundancy check) errors
+  and resyncs. The 50ms repeat and the 1000ms timeout are unchanged.
+  Boards 1 and 2 keep CAN; CMake's `IOMCU_LINK` overrides the board's
+  choice. The 3s report prints a `UART up` line in place of the CAN lines
+  ([The UART transport](docs/Link.md#the-uart-transport)).
+- IOmcu board 3, the remote servo node's Waveshare Core2350B (RP2350B):
+  image `rcbench-iomcu-rsn.*` (CMake `IOMCU_BOARD=rsn`), built and checked
+  in CI. Its catalogue lists 27 role pins; S1 to S9 on GPIO 16 to 32, each
+  on its own PWM slice. SENSE_MAP is fixed to 3 INA3221 at 0x40 to 0x42 on
+  20.0mΩ shunts, each channel with a critical alert limit of 4000mA or its
+  lower SENSE_LIMIT; SUPPLY set points above 8400mV are refused, on the
+  page and in a programming port's ON (ESC_WIRE, KST, Hitec); a
+  programming port takes any servo output and DShot. The image has no
+  link transport
+  ([Link: The remote servo node](docs/Link.md#the-remote-servo-node)).
+- Link protocol 4.41: IDENTITY registers 7 and 8 carry the chip's revision
+  and boot ROM version; STATUS fault bit 8 says a board 3 IOmcu runs on a
+  chip before the RP2350 A4 stepping, where it drives nothing and refuses
+  ARM, SUPPLY ON, POWER ON and every programming session with NOT_ARMED.
+  The POWER page (0x43) switches the node's servo rail and its 9 ports:
+  ON wants a live heartbeat and the critical limits written, a throttle
+  port takes no power (a DShot or throttle OUTPUTS slot or a DShot
+  programming port on its pin) and one on that becomes a throttle goes
+  off, RAIL 0 is always taken, also in a write refused for another
+  register, CRIT_N low, a critical alert flag, a SENSE_LIMIT trip or a switch in thermal shutdown cuts the rail and makes the bench
+  SAFE, and the BEC check flags a port at 500mV or more with the rail off
+  ([Link: The POWER page](docs/Link.md#the-power-page)).
+- Release signatures: every firmware image a release publishes has a
+  detached `<image>.sig`, ECDSA (elliptic curve digital signature
+  algorithm) P-256 over its SHA-256, beside the asset or inside its ZIP
+  archive. The release workflow signs every `.bin` and `.uf2` file in one
+  loop with the secret `RCBENCH_IMAGE_SIGNING`, fails a tag build without
+  it, and verifies every signature against the committed public key before
+  publishing (`tools/sign_images.sh`). The web flasher's folder carries the
+  `.sig` beside each image ([Security policy](SECURITY.md#release-signatures)).
+- The panel verifies the signature of its own image with Mbed TLS 4.1.0:
+  the Wi-Fi page takes an optional `rcbench-panel-p4-vX.Y.Z.bin.sig` beside
+  the image, and a download from GitHub fetches it after the image. The
+  question on WI-FI and PANEL UPDATE show SIGNED BY THE RCBENCH RELEASE KEY,
+  or NOT SIGNED BY THE RCBENCH RELEASE KEY with the reason. Until the stable
+  release that enforces it, an image without a valid signature installs
+  with the single 2s hold and that warning; a build with
+  `RCBENCH_SIGN_ENFORCE=1` asks for a second 2s hold, INSTALL ANYWAY.
+  The panel image grows by 7152 bytes.
+
+- `hardware/mechanical/`: `hitec_d485hw.step`, the Hitec D485HW servo with
+  the four-arm horn HD-X25, its type plate and 60mm of its lead: 3 wires,
+  minus black, plus red, signal yellow, and the 3 pin plug. 126.4mm x
+  36.0mm x 46.35mm over all, 37 solids. Case, ears and mounting holes
+  follow the maker's dimension drawing, the rest its STEP model and data
+  sheets. The overlap check covers it
+  ([Mechanical parts](hardware/mechanical/README.md#hitec-d485hw)).
+- `hardware/mechanical/`: a variant of the display node's case for
+  panel-mount XT60 with 2 screws, 59.8mm x 105.6mm x 24.4mm:
+  `display_node_xt60_box` and `display_node_xt60_lid`, each as STEP and
+  STL. Each short wall has the seat of the bench's front case: a wall of
+  3.0mm, a recess 2.0mm deep in the flange's outline, an opening of 19.6mm
+  x 12.4mm for the body and 2 insert holes 25.6mm apart in bosses behind
+  the wall. The check holds the connectors' flange, body and contacts
+  clear of box and board. No part is printed
+  ([Cases](hardware/mechanical/CASES.md#case-of-the-display-node-xt60)).
+- `hardware/mechanical/`: a printed case of 2 parts for the display node
+  with XT30 connectors, 59.8mm x 101.2mm x 17.8mm: `display_node_box` and
+  `display_node_lid`, each as STEP and STL. It follows a tester's case,
+  measured from its STL file, which closes in nominal sizes with 0.18mm
+  over the board. 3 changes give real parts more room, so that the lid
+  still closes on the rim: blind insert holes of 4.0mm x 6.0mm with a
+  relief in place of straight holes of 3.5mm, a window with 0.5mm in place
+  of 0.17mm beside the touch panel, and head recesses of 6.0mm for M3. A
+  hole of 3.5mm in the floor holds the current sensor board. `_gen_display_case.py --check`, which CI runs, fails when a part
+  meets the display board or the stack does not close. A tester's print
+  of 2026-11-22 fits the node and goes together without binding
+  ([Cases](hardware/mechanical/CASES.md#case-of-the-display-node-xt30)).
+- Settings backup on the card, `BENCH/SETUP`. SETUP > SD CARD ends on Save
+  settings, which writes the stored settings as `SETTINGS.TXT`, and Load
+  settings, which opens BACKUP: the card's settings files with their date
+  and panel version, and HOLD 2s TO LOAD. A load replaces every setting
+  (the file's value, or the default where the file has none), lists each
+  refused line with its number, key and code, and asks for the save to NVS
+  (non-volatile storage). Each save to NVS with a card in also writes
+  `AUTO1.TXT` and moves the older copies on to `AUTO2.TXT` and `AUTO3.TXT`;
+  a copy that does not reach the card shows once in the alert band and
+  switches no output off. A panel that starts on the defaults offers the
+  card's newest file over the menu once SAFE. The file is text, format 1:
+  one `<key> = <value>` line a setting, the bindings of the IMU, the Dial
+  and the nodes among them; the Wi-Fi home network, its password, HOTSPOT
+  PASSWORD and ACCESS CODE are not in it
+  ([Screens](docs/Screens.md#sd-card-the-settings-backup)).
+- The SD CARD tile reads `LOGS, BROWSER WRITES, BACKUP`.
+- `hardware/mechanical/`: a printed case of 3 parts for the remote INA228
+  sensor node, 91.4mm x 55.4mm x 28.0mm: `ina228_node_plate`,
+  `ina228_node_frame` and `ina228_node_bezel`, each as STEP and STL. 4
+  screws M3 x 8 go from below through the plate and the INA228 board into
+  the frame's columns, 4 screws M3 x 10 from above through the bezel and
+  the display board; the 8 threads are ruthex RX-M3Sx4.0 inserts.
+  Openings: 2 XT90, USB Type-C, a tool slot for RESET and BOOT, microSD,
+  4 speaker slots, microphone, display window. `_gen_node_case.py` builds
+  the parts with OpenCASCADE and CI checks them against the 1139 solids of
+  the layout. No part is printed
+  ([Cases](hardware/mechanical/CASES.md#case-of-the-sensor-node)).
+- `hardware/mechanical/`: `ina228_node_layout.step`, the boards of the
+  remote INA228 sensor node in place: the INA228 module with its 2 XT90PW
+  connectors at the bottom, the ES3C28P display board 0.5mm over the
+  connector housings, a Matek mBEC12S buck converter (6V to 60V in, 5V
+  out) beside the plus bar, not over the current path. 86.4mm x 50.0mm x
+  23.7mm over all, 1139 solids, no two sharing volume. `matek_mbec12s.step`
+  is the converter alone, 18.0mm x 15.0mm x 4.5mm, drawn from seller
+  pictures within about 0.5mm
+  ([Mechanical parts](hardware/mechanical/README.md#remote-ina228-sensor-node-layout)).
+- `hardware/mechanical/`: the rbmod carrier's models carry the copper of
+  the 2 outer layers, read from the board file by `_read_kicad_pcb.py`:
+  280 pads, gold for their ENEPIG finish, and the tracks and vias in a
+  lighter green. `rbmod_v2.step` holds 1920 solids (27.3MB),
+  `rbmod_v2_smd.step` 382 (10.1MB). The reader's copper needs shapely
+  2.2.0, which CI installs for the tool tests.
+- `hardware/mechanical/`: `rp2350_can.step`, `ina3221_module.step`,
+  `dcdc_buck_mini.step` and `usbc_pd_trigger.step`, the 4 kinds of module
+  on the rbmod carrier drawn part by part with the print of both sides:
+  Waveshare RP2350-CAN, INA3221 board, Mini560 buck converter, USB-C PD
+  trigger board. Part places are read from straight views of the maker and
+  of sellers, laid onto each board's frame, within 0.2mm to 0.5mm. The
+  same models are the 3D models of the 4 footprints in the KiCad library
+  and stand on `rbmod_v2.step`. The overlap check covers them
+  ([Mechanical parts](hardware/mechanical/README.md#module-boards-of-the-rbmod-carrier)).
+- `hardware/mechanical/`: `rbmod_v2_smd.step` and `rbmod_v2.step`, the
+  rbmod carrier board, version 2 (80.0mm x 89.0mm): the board with its 17
+  surface-mounted parts, and the same with 7 connectors and 5 modules,
+  11.1mm over the board; J6 and J8 are not populated and not drawn.
+  `_read_kicad_pcb.py` reads outline, holes and footprints from the KiCad
+  board file into `_rbmod_v2_data.py`; the
+  overlap check covers both models
+  ([Mechanical parts](hardware/mechanical/README.md#rbmod-carrier-board-version-2)).
+- Link protocol 4.41: the IOmcu's bank has 16 slots and 16 channels.
+  CHANNELS_HI, CHAN_CFG_HI and OUTPUTS_HI (0x3C to 0x3E) carry channels 9
+  to 16 and slots 9 to 16, BIND_CFG_HI and BIND_OUT_HI (0x3F, 0x40)
+  prepare them, and BIND register 2 `COMMIT_ALL` takes all four prepared
+  pages as one. A slot's channel run ends at channel 16; SENSE_MAP's
+  `WATCH` names outputs 9 to 16 as 0x40 to 0x47. A 4.40 panel commits slots
+  1 to 8 and leaves the rest as they are; this panel sends the new pages
+  to a 4.41 IOmcu only, refuses an older IOmcu a slot whose channel run
+  reaches past channel 8, and its binding model still fills slots 1 to 8
+  ([Link, Slots and channels 9 to 16](docs/Link.md#slots-and-channels-9-to-16)).
+- Output store record version 9 (436 bytes) keeps slots 9 to 16 and
+  channels 9 to 16. A version 8 record reads with slots 9 to 16 unbound
+  and with every slot whose channel run reaches past channel 8 unbound; a
+  kept or written slot whose run reaches past channel 16 is never bound;
+  an IOmcu image older than 4.41 reads no version 9 record and starts with
+  the bindings of a one-page record if the flash holds one, empty
+  otherwise.
+- `tools/pio_budget.py`: counts every PIO (programmable input/output)
+  program in the `.pio` files under `protocols/` as pioasm 2.3.0 does and
+  loads each board's programs into a model of the RP2350's 3 blocks of 4
+  state machines and 32 words and 16 DMA (direct memory access) channels,
+  in boot order and placed as pico-sdk 2.3.0 places them. It prints per
+  block the words used and free and the state machines used, and the DMA
+  channels used, for the RP2350-CAN module, the rbmod carrier and the
+  planned remote servo node, and fails when a mix a board allows does not
+  fit. For the remote servo node it runs 23,552 slot orders with every
+  programming session. The capture ring's worst case is 8 plain DShot
+  outputs at 267,200 events/s, 30.7ms of ring against a 42ms flash window:
+  a plain DShot pad keeps its input enable, so its 32,000 edges a second
+  reach the ring. During a programming session the capture guarantee does
+  not hold: the session's pin carries its own edges, up to 1,843,200 a
+  second from the Hitec precharge sampler, and the measured figures are
+  marked invalid for the session; pass-through goes on, as MIRROR uses no
+  ring. The tool reports each session's ring use apart. A mix the remote
+  servo node's table refuses that fits the chip must break a named rule
+  (SESSION_BLOCK, PPM_MAX, SLOT_PINS), or the check fails. CI runs
+  `--check`.
+
+- `hardware/mechanical/`: `es3c28p.step`, the LCDWIKI ES3C28P of the
+  display node (50.0mm x 86.0mm, 10.6mm over all): board with 4 holes of
+  3.2mm, touch panel, display, both flat cables' folds, and on the back
+  the ESP32-S3, USB-C, microSD, the 5 wire sockets of 1.25mm pitch, BOOT,
+  RESET and 103 chip parts, from LCDWIKI's STEP file and outline drawing,
+  checked against tester photos within 0.3mm. The overlap check covers
+  it; it has no KiCad entry, as no carrier mounts the board
+  ([Mechanical parts](hardware/mechanical/README.md#display-node-board-lcdwiki-es3c28p)).
+- `hardware/kicad/tools/step_render.py`: `--from` picks the corner the
+  view looks from, `--suffix` names the PNGs of a second view.
+
+### Changed
+- Web flasher: the size budget of the first load is 120kB (was 80kB).
+  The build measures 79.9kB at the first load and 419.0kB in all; the
+  total budget stays 600kB (`flasher/tools/size.ts`).
+- Web flasher: the page is a wizard. The first screen offers four tasks
+  (the panel, the IOmcu, a wireless device, the repair of the panel's C6
+  radio); each step then has its own screen: board, prepare (C6 only),
+  connect, check, write with verify, done. One release serves the whole
+  visit. Simple mode writes release images only, keeps the settings, and
+  keeps WRITE disabled on a signature that does not match. BACK, CANCEL
+  and the browser's back move between the steps; a reload lands on
+  Connect at most ([flasher/README.md](flasher/README.md)).
+
+- Storyboard `phase-tap`: 354.27s as rendered. Its tour shows RUN and
+  DONE on the Flycolor FlyDragon Lite+ 40A (views
+  `motor-stick-flydragon-run` and `motor-stick-flydragon-done`); its
+  cards sit under their points, and the cards of the circuit carry no
+  line (`leader: false` of a label).
+- Video tool: a storyboard given by its path takes its stills from
+  `stills/` beside it before `tools/video/stills/`, and `--check` with a
+  path checks that one storyboard. The storyboard `minircbench-build`
+  and the 12 stills `mini-*.png` are in the MiniRcBench repository under
+  `docs/video/`
+  ([Videos from storyboards](tools/video/README.md#commands)).
+- The panel image carries the IOmcu images only: 4,088,176 bytes in the
+  release configuration; carrying the 0.23.16 C6, Dial and node images
+  made it 3,413,248 bytes larger. The C6 radio's,
+  the Dial's and the nodes' images stay release assets (`rcbench-c6-<esp_hosted version>.bin`,
+  `rcbench-dial-<version>.bin`, `rcbench-node-pwr-<version>.bin`,
+  `rcbench-node-bal-<version>.bin`); `release.yml` and `ci.yml` no longer
+  pass them to the panel build, and the panel's options `RCBENCH_C6_BIN`,
+  `RCBENCH_DIAL_BIN`, `RCBENCH_NODE_PWR_BIN` and `RCBENCH_NODE_BAL_BIN` are
+  gone. The release checks the Dial's and the nodes' assets with
+  `tools/c6_image.py device` in its publish job.
+- The C6 RADIO, DIAL and NODE rows read `Release:` for the version they
+  install, in place of `Included:`.
+
+- Sensor node case (`hardware/mechanical/_gen_node_case.py`): 2 joints
+  hold the frame's wall from moving inwards between its 4 columns. The
+  plate has a lip of 1.2mm x 1.5mm all round inside the wall's lower edge.
+  The wall's upper inner edge is cut off at 45 degrees, and 4 wedges of
+  1.2mm under the bezel's rim lie in the cut. On a printed case without
+  the joints the walls shift sideways (owner, 2026-11-22). The parts with
+  the joints are not printed
+  ([Cases](hardware/mechanical/CASES.md#case-of-the-sensor-node)).
+- `hardware/mechanical/models/` is sorted into 3 folders: `pcb/` (17
+  models: 16 boards and the sensor node's layout), `casing/` (7 printed
+  parts) and `parts/` (13 bought parts and assemblies). `_models.py` names
+  each model's folder; every generator and check asks it for a path.
+  `renders/` has the same 3 folders, the contact sheet `all.png` beside
+  them; `step_render.py --folders` writes into them. `gen_models.py
+  --check` fails on a file under `models/` or `renders/` that lies
+  elsewhere. File names are unchanged.
+- Dial base: the 4 screws turn into brass threaded inserts for melting
+  in (ruthex RX-M3Sx4.0; owner, 2026-11-21) in place of threads cut in the
+  plastic. Each boss of the top part has a hole of 4.0mm, 5.0mm deep, and
+  is 7.2mm across up to 1.0mm under the ring nut; the bottom part's rim
+  has a notch at each boss. The two parts weigh 37g in PLA.
+- KiCad library: 4 module models have the real board's colour in place of
+  green: the RP2350-CAN and the mini buck converter blue, the INA3221
+  board black (owner, 2026-11-21), the USB-C PD trigger board purple, as
+  three owner photos show it
+  ([hardware/kicad/README.md](hardware/kicad/README.md)).
+- Flap drive model (`hardware/mechanical/_gen_flap_drive.py`): the wing's
+  upper skin ends 4.45mm before the flap, so the flap turns 20.3 degrees
+  up; a fairing, half an ellipsoid 35.5mm long, 10.2mm wide and 8.1mm
+  high, covers the rod's slot (`flap_drive_wing.step`, 7 solids). The rod
+  end's neck is 2.4mm high and the arm's barrel 5.4mm across, which keeps
+  them apart at -45 degrees of the arm. `posed()` gives the parts at an
+  angle of the arm, and `--check` fails when two solids share volume at
+  neutral or at one of 8 angles from -45 to 75 degrees.
+- [hardware/kicad/README.md](hardware/kicad/README.md) limits the rule that
+  boards are drawn green to the box models: the five `detail` models keep the
+  real board's colour (owner, 2026-11-21, for the INA219 board, the charger
+  board, the boost board and the ESP32-C6-Zero).
+
+### Fixed
+
+- Dial base (`hardware/mechanical/_gen_dial_base.py`): every flute is
+  open. The bosses' webs, the ledge under the rim and the screw columns
+  were cut to the unfluted shape and filled the flutes, 183mm3 in the
+  bottom part and 10mm3 in the top part; a printed base showed it (owner,
+  2026-11-21). They are cut to the fluted shape, and `--check` fails on
+  material in a flute.
+- Web flasher: a write to an ESP board keeps the board's settings. The
+  page reads the partition table from the merged image (0xC000 on the
+  panel, 0x8000 on the Dial, the nodes and the C6 radio) and writes every
+  byte except the data partitions of subtype nvs, nvs_keys, fat, spiffs
+  and littlefs: on the panel nvs 0xD000, 24,576 bytes, with its settings
+  and bindings; on the Dial nvs 0x9000 with its bound panel. otadata is
+  written, so the board starts ota_0 with the written application. A
+  "Keep settings" checkbox, on by default, in English and German, lists
+  the skipped ranges before WRITE; unticked, the page writes the whole
+  image from 0x0. The MD5 check covers each written range. A missing or
+  broken table, two tables, or a kept range that overlaps the bootloader,
+  the table, an application or another partition, or is not aligned to
+  4096 bytes, refuses "Keep settings" with the reason
+  ([flasher/README.md](flasher/README.md#keep-settings)).
+- Web flasher: no baud change on the ESP32's built-in USB Serial/JTAG
+  (USB ID 303A:1001). There the change reset the chip; the page stays at
+  115200 baud, which has no effect on that link. A USB-to-UART bridge
+  still gets 460800 baud.
+  The page's first load grows to 58.6kB, 385.3kB in all.
+- Menu: the MOTOR & ESC tile carries no SIMULATED mark while the power
+  node is the pack's source (SETUP > WIRELESS: Power node ON, INA228
+  source NODE, a node bound), also with the IOmcu's INA228 OFF on SETUP >
+  SENSORS. A bound node counts whether it is connected or not, as an
+  enabled INA228 counts whether it answers or not. The tile still needs
+  the IOmcu's ESC outputs
+  ([Screens](docs/Screens.md#menu-marks)).
+- SETUP > UPDATES > SINGLE UPDATES: the texts name the release's image in
+  place of one the panel carries. The C6 RADIO row's reinstall reads
+  `HOLD 2s TO REINSTALL THE C6 RADIO` (`2s HALTEN: C6-FUNK NEU
+  INSTALLIEREN`); the page's note says a reinstall writes this release's
+  image, downloaded or from the SD card; a tap on a grey device hold whose
+  device runs a board without a release image reads `This release has no
+  firmware for this device.`; the German reinstall hints of the Dial and
+  the nodes name the release; the console's warning on a refused fourth
+  Bluetooth LE link names the release's C6 image.
+- Screen guide, menu page 2: SETUP lists the hub's tiles in hub order:
+  PANEL, SENSORS, OUTPUTS, SD CARD, WI-FI, UPDATES, IMU and WIRELESS. IMU
+  and WIRELESS were missing.
+- Screen guide: a row of the dock's text never ends inside SD CARD, PD
+  MINI, MOTOR & ESC, ESC STICK, LIMIT RUN, RUDDER AUTO, RUDER AUTO or PANEL
+  UPDATE; it ends at the space before the name. The German menu page 2
+  broke `SD` / `CARD`. The help suites' page check holds every
+  page they open to the rule in both languages.
+- RUDDER: an angle source that is on and sends no reading reads
+  `ANGLE: IMU X+ NO READING` (`WINKEL: IMU X+ KEIN MESSWERT`), the words
+  LIVE, TEST and LIMIT RUN use for the same state, in place of
+  `NOT ANSWERING`.
+- German: the WIRELESS tile reads `IMU, DIAL, SENSORKNOTEN`, devices
+  in place of activities (`IMU, DIAL, LEISTUNG, AUSWUCHTEN`); the power
+  and balance node names, 37 cells, do not fit the tile's 31.
+- German: SERVO's LIMIT RUN keeps its English name, as LIVE, SWEEP and TEST
+  do: its tile, footer tab and screen guide title, the run's card heading
+  `LIMIT RUN, %u VON %u WERTEN`, `LIMIT RUN LÄUFT` and the User logs help
+  read LIMIT RUN, matching the band. ENDLAGENLAUF was the German tab and
+  tile under a band reading LIMIT RUN. German prose names the run itself
+  Endlagenlauf ([Language](docs/Language.md#terms-that-stay-english)).
+
+## 0.23.16 - 2026-11-21
+
+0.23.16 is a testing release. SETUP > WIRELESS opens a SEARCH screen from
+its scan and bound rows: the seconds left of a 10s scan, up to 8 found
+devices with their signal strength, and a question before it binds one.
+It takes the place of the found lists of the Dial and the nodes, which
+opened without being drawn. A web flasher at `/rcbench/flash/` writes the
+panel, the IOmcu and the wireless devices from Chrome or Edge on a desktop
+computer; on 2026-11-21 it wrote v0.23.15 to a panel of chip revision 3.2
+over the ESP32-P4's built-in USB (Universal Serial Bus) serial port, USB ID
+303A:1001: 7,572,864 bytes in 40s.
+RUDDER AUTO puts MARGIN into the pulse length and starts every run with
+LIMIT RUN's search, and SERVO LIVE gains a ZERO row. `hardware/` gains the
+Waveshare Core2350B and its USB adapter board as STEP models and a KiCad
+part, KiCad parts for the 4 JST PH sockets of the ES3C28P, and models of a
+standard size servo, the KST X10 with a flap drive and a WitMotion
+inertial sensor. Its minor number, 23, is odd. GitHub publishes it as a
+pre-release and does not mark it as latest. It runs on the ESP32-P4 panel,
+as 0.23.15 does; an ESP32-S3 panel stays on the 0.22 line and is not
+offered it. The link protocol is 4.40, up from 4.39 in 0.23.15: BENCH flag
+bit 8 marks a peak speed above 65,535rpm. The assets are
+`rcbench-panel-p4-v0.23.16.zip`, `rcbench-panel-p4-v0.23.16.bin`,
+`rcbench-iomcu-v0.23.16.zip`, `rcbench-iomcu-rbmod-v0.23.16.zip`,
+`rcbench-c6-2.13.0.bin`, `rcbench-c6-merged-2.13.0.bin`,
+`rcbench-node-pwr-0.23.16.bin`, `rcbench-node-pwr-merged-0.23.16.bin`,
+`rcbench-node-bal-0.23.16.bin`, `rcbench-node-bal-merged-0.23.16.bin`,
+`rcbench-node-display-merged-0.23.16.bin`, `rcbench-dial-0.23.16.bin`,
+`rcbench-dial-merged-0.23.16.bin` and `SHA256SUMS`. After the publish,
+`release.yml` starts `pages.yml` on `main`, which copies the images to the
+web flasher.
+
+A bench on 0.23.15 gets 0.23.16 over Wi-Fi: SETUP > UPDATES, RELEASES: TESTING,
+CHECK FOR UPDATES, then hold the install button for 2s. With RELEASES: STABLE the
+check reads `releases/latest`, which names 0.22.1, and offers nothing. At
+link-up the panel offers to update the IOmcu over CAN (Controller Area Network)
+when the IOmcu runs a different build. The panel carries the images of the
+Dial and of the power and balance nodes and sends them over Bluetooth LE from
+SETUP > UPDATES; the display node's image is loaded over USB. To set up a
+new bench, load both boards over USB as
+[First run, §1](docs/FirstRun.md#1-flash-both-boards) describes, or with
+the [web flasher](flasher/README.md).
+
+The entries below cover the 11 pull requests merged since v0.23.15: #893 to
+#903.
+
+### Added
+
+- Web flasher at `/rcbench/flash/` on GitHub Pages (`flasher/`), English
+  and German, Chrome or Edge on a desktop computer. It writes the panel
+  (ESP32-P4), the display node and the M5Stack Dial (ESP32-S3), the power
+  node, the balance node and the C6 radio (ESP32-C6) over Web Serial with
+  esptool-js 0.7.1: the merged image of a release at 0x0, then the MD5 of
+  the flash against the image, then a reset. It writes the IOmcu (RP2350)
+  over WebUSB through the boot ROM's PICOBOOT interface: the install image,
+  slot B erased, every byte read back, then a reboot; an IOmcu with rcbench
+  firmware enters BOOTSEL when its serial port opens at 1200 baud. The page
+  refuses an image whose chip differs from the board or from the detected
+  chip, shows tag, size and SHA-256 before WRITE, and reports the failed
+  step with what to try. Size: 50.3kB at the first load, 376.9kB in all
+  ([flasher/README.md](flasher/README.md)).
+- `tools/flash_manifest.py`: picks the 6 newest releases and the newest
+  stable one and writes the flasher's `fw/` folder from their assets, a
+  manifest per release with board, chip, file, size, SHA-256 and offset;
+  `pages.yml` runs it with `gh release download` (about 64MB on Pages for 7
+  releases), and `release.yml` starts `pages.yml` on `main` after a release.
+- The configurator's footer links to the web flasher.
+- `tools/check_mutants.py`: `--check` holds the weekly mutation run's
+  figures in `mutation.yml`, `STATUS.md`, `CONTRIBUTING.md` and
+  `docs/Building*.md` to the mutants of the tree, run in CI; `--update`
+  writes them. The run reaches about 1,869 mutants of `shared/outputs`,
+  2,568 in all (428 a shard).
+- `test_mutate.py` runs `mutate.py` with `mutation.yml`'s own arguments
+  and fails when the run no longer lists `shared/safety` first.
+- `hardware/mechanical/`: `core2350b.step`, the Waveshare Core2350B
+  (RP2350B, 25.40mm x 25.40mm, 64 plated holes at 2.54mm, flash and PSRAM
+  on the underside), and `core2350b_usb_adapter.step`, its USB adapter
+  board (18.0mm x 18.0mm, USB-C, BOOT, RESET, 4 holes of 2.0mm), from
+  Waveshare's drawings, schematic, photos and the RP2350-Tiny adapter's
+  STEP file. The overlap check covers both
+  ([Mechanical parts](hardware/mechanical/README.md#module-boards-and-cells)).
+- `hardware/kicad/`: `Core2350B_Waveshare_25.4x25.4mm`, footprint, symbol
+  and 3D model on four 2 x 8 headers; pads numbered as Waveshare's headers
+  P1 to P4 ([KiCad library](hardware/kicad/README.md#core2350b)).
+- `hardware/kicad/`: `ES3C28P_PWR`, `ES3C28P_UART`, `ES3C28P_I2C` and
+  `ES3C28P_GPIO`, one symbol and one JST PH 2.0mm top-entry header
+  footprint each, for 1:1 cables from the display node's ES3C28P sockets;
+  `ES3C28P_PWR` feeds the ES3C28P's USB-C VBUS
+  ([KiCad library](hardware/kicad/README.md#es3c28p-sockets)).
 - Storyboard `rbmod-first-program`: the first programming of a bench with
   the rbmod carrier in 6 chapters, narrated, 321.22s. The panel, the
   carrier and the RP2350-CAN come from their STEP models, the releases
@@ -60,6 +711,21 @@ history is in git.
 
 ### Changed
 
+- The IOmcu's update and the update of the Dial, the power node and the
+  balance node refuse the supply's OUTPUT ON, PROG 5V ON and a programmer
+  session's start while they run, as the C6 radio's update does; the alert
+  names the running update.
+- UPDATES: a bound device that is ON while Bluetooth LE cannot link it (no
+  C6 link, no sync) never waits in an update run; its row reads
+  `NO BLUETOOTH` / `KEIN BLUETOOTH` and the last card names it.
+- PANEL UPDATE: a failed write names its reason under `Writing failed.`,
+  one line per reason the console names; a radio still on and a closed
+  flash gate have their own reasons.
+- C6 radio: a tap on the grey hold during the restart wait reads
+  `C6 radio updated. The panel restarts once SAFE with all outputs off.`
+- STATUS.md: `mutate.py` on `shared/safety/heartbeat.c` makes 45 mutants,
+  the suite fails on 42; the 3 others are named with the reason no input
+  tells them from the original.
 - RUDDER AUTO: MARGIN lies in the pulse length. 1000us and 2000us aim at
   TARGET itself, 20.0° at TARGET 20.0°; MARGIN p% writes a KST or
   Chaservo servo's PULSE LOWER 1000us - (N - 1000us) x p/100 and PULSE
@@ -124,6 +790,47 @@ history is in git.
   row a position. A run with one write a side takes 130s to 187s on the
   settle tests' curves, the search 42s to 49s of it
   ([AUTO end points](docs/Servo.md#auto-end-points)).
+- Host tests: `test_esc_link_run` holds the ESC_WIRE read copy's two
+  bounds without the restart in `absorb()`. A fetch counts its blocks by
+  the LEN it started with, and a block number from `LINK_ED_BACKUP` on
+  copies nothing into the copy or past it.
+
+### Fixed
+
+- `hardware/mechanical/core2350b.step` and the KiCad 3D model of
+  `Core2350B_Waveshare_25.4x25.4mm`: the PSRAM is a SOP-8 150mil (body
+  3.9mm x 4.9mm, 6.0mm over the leads), not a copy of the 5.3mm flash;
+  flash and PSRAM stand on their 16 tinned pads, 0.6mm x 2.25mm, which
+  reach 4.5mm from each chip's center; the left column of chip parts and
+  the parts right of the flash sit where Waveshare's underside photo
+  with the PSRAM fitted shows them, within about 0.2mm. The footprint's
+  fabrication layer draws the PSRAM's 3.9mm x 4.9mm body.
+- `hardware/kicad/`: the pin names under the ES3C28P JST PH headers stagger
+  between 2 rows, 0.8mm apart; at 2.0mm pitch "IO14" and "IO21" printed
+  over each other on `ES3C28P_GPIO`.
+- SETUP > WIRELESS: the found list of SCAN FOR DIAL, SCAN FOR NODE, BOUND
+  DIAL and BOUND NODE opened without being drawn. SETUP's render drew a
+  list's rows, strip and SAVE but no open choice list, so a tap on
+  `FOUND n` showed nothing and the next tap picked or closed the hidden
+  list. SETUP draws an open choice list. The rows open SEARCH in its
+  place: SCAN FOR ... opens it and scans 10s, BOUND ... opens it on the
+  last list; it shows the seconds left, up to 8 found devices with their
+  RSSI, the bound one lit, and SCAN AGAIN; a tap on a device asks
+  `BIND ...?` with CANCEL and BIND
+  ([Screens](docs/Screens.md#wireless-search)). The Dial, the power node
+  and the balance node share it; the views carry the scan's seconds left
+  (`scan_left_s`, `bleu_scan_left_ms()`). `NO DIAL LISTED: ...` and
+  `NO NODE LISTED: ...` are gone: SEARCH shows why it lists nothing.
+- IMU: a scan tapped after the ARM hold and before the IOmcu reports ARMED
+  reads `NO IMU SCAN WHILE ARMED: SWITCH TO SAFE FIRST` on the band. The
+  controller refused it with no text; it counts the refusal in the view
+  (`imu_view_t.scan_armed`).
+- Link protocol 4.40: BENCH flag bit 8, `LINK_BN_RPM_MAX_OVER`, marks a
+  peak speed above 65,535rpm. A peak of exactly 65,535rpm reads 65535 on
+  MOTOR & ESC, a peak above it `>65535`. From an IOmcu of 4.39 or older,
+  which never sets the bit, a peak of 65535 reads 65535.
+- The run's driving time (`bench_totals_t.run_ms`) sums whole ms: a float
+  sum of 50ms steps read 3,602.3s after 1h.
 
 ## 0.23.15 - 2026-11-18
 
@@ -595,10 +1302,38 @@ The entries below cover the 7 pull requests merged since v0.23.13: #847,
   under `hardware/kicad/modules/`. `--keep` keeps the captured parts per
   scene, so that a changed scene is captured alone; a kept part of
   1024 bytes or less is captured again ([Videos from storyboards](tools/video/README.md)).
-- Storyboard `minircbench-features`: every screen of the MiniRcBench,
-  firmware 0.1.0, in 12 chapters, narrated, 1000.70s. The stills
-  under `tools/video/stills/` are 83 frames of MiniRcBench's host suite
-  at its commit 2cdf044.
+- Music bed `beethoven-moonlight`: bars 1 to 4 of Ludwig van
+  Beethoven's Sonata Op. 27 No. 2, first movement, as a loop of 17.76s:
+  the triplets plucked over the bass octaves, then the chord of bar 5.
+  The notes are read from the first edition (Vienna: Cappi, 1802). No
+  storyboard uses it
+  ([Videos from storyboards](tools/video/README.md)).
+- Music bed `bach-cello`: the Prelude of J. S. Bach's Suite No. 1 for
+  cello solo, BWV 1007, 41 bars at 4s a bar, plucked over each bar's
+  lowest note. The notes are those of the Mutopia Project's edition
+  Mutopia-2018/01/19-517, which its typesetter placed in the public
+  domain. `phase-tap` uses it
+  ([Videos from storyboards](tools/video/README.md)).
+- Storyboard `phase-tap`: ESC STICK programming counted from the phase
+  tap in 7 steps, narrated. `tools/video_tap.py` models the motor lead of
+  a beeping ESC from the FlyDragon Lite 40A's measured beeps, simulates
+  the tap (4.7kΩ, 3.0V zener, 8.2kΩ) with ngspice and runs the capture's
+  hold-off and the detector of `protocols/phase_tap/tone.c` on the
+  simulated edges. A plot's time axis reads in s from 2s of width, and a
+  circuit draws a zener diode
+  ([Videos from storyboards](tools/video/README.md#the-simulated-phase-tap)).
+- Storyboard `hitec-precharge`: reading an open-drain answer on an
+  RP2350 pin without a pull-up resistor, the Hitec D series PRECHARGE
+  receive, in 6 steps, narrated, 348.67s, with no product named: a device that only pulls low, the 2.2kΩ
+  pull-up and what it changes for the pin's other uses, one precharge and
+  sample, the sampling window, one answer byte in 80 samples, and 3 logic
+  analyser captures of a read of register 0x32. A `scope` scene draws
+  plots and a circuit from a figure under `tools/video/plots/`.
+  `tools/video_scope.py` simulates the signal wire with ngspice and
+  writes the figure; its pad driver (50Ω), line capacitance (72pF), input
+  threshold (1.1V) and servo output (37Ω) are fitted to the measured
+  window of 40 to 213ns and to the captured pulse width of 280ns at 1.4V
+  ([Videos from storyboards](tools/video/README.md#the-simulated-signal-wire)).
 - Storyboard `minircbench-build`: building a MiniRcBench in 10 steps,
   narrated, 505.57s. A `case` scene with the model `mini` draws the bench
   from its assembly, seats its components, shows stills on its display
@@ -1097,7 +1832,7 @@ The entries below cover the 52 pull requests merged since v0.23.12: #803 to
   connections, up from 1 and 3: the IMU, the Dial, 2 sensor nodes and 1
   spare. The C6 image sets `CONFIG_BT_LE_MAX_CONNECTIONS=5` from
   `firmware/c6/sdkconfig.rcbench`, and `tools/c6_image.py check` fails an
-  image without it ([The ESP32-C6 radio](docs/C6.md#the-image-the-panel-carries)).
+  image without it ([The ESP32-C6 radio](docs/C6.md#the-c6-image)).
 - The IMU's link runs on the `blec` task, the one task of every Bluetooth
   LE client, through the hub, in place of the `imu` task. The event queue
   holds 64 events (4,096 bytes of internal RAM), up from 32, and keeps up

@@ -47,6 +47,8 @@ extern "C" {
 
 /** @brief The access point's channel, 2.4GHz band. */
 #define WIFI_ACCESS_AP_CHANNEL 6u
+/** @brief Bytes of a DEVICE job's file name, its terminator included. */
+#define WIFI_DEV_NAME_MAX 48u
 
 /** What the screen draws, as a copy. */
 typedef struct {
@@ -206,6 +208,49 @@ wa_got_t wifi_access_fetch_start(wa_job_t job, fw_version_t want,
                                  wa_channel_t ch, wa_why_t gate);
 
 /**
+ * @brief Start a DEVICE job (wa_run_device()): the file @p name of release
+ *        @p rel, at most @p cap bytes, unless @p gate says why not; as
+ *        wifi_access_fetch_start() otherwise.  The job's wa_fetch_t.asset
+ *        is @p asset.  A file fetched waits for wifi_access_dev_take(); the
+ *        next DEVICE job's file replaces one not taken.
+ * @param asset the caller's number of the file
+ * @param rel   the release
+ * @param name  the file's name in the release, under WIFI_DEV_NAME_MAX
+ *              bytes
+ * @param cap   its most bytes: the device's slot
+ * @param gate  the gate's answer
+ * @return WA_GOT_NONE when the job runs; otherwise how it ended at once
+ */
+wa_got_t wifi_access_fetch_dev(uint8_t asset, fw_version_t rel,
+                               const char *name, uint32_t cap, wa_why_t gate);
+
+/**
+ * @brief Take the file the DEVICE job @p gen fetched: the caller owns the
+ *        PSRAM (pseudo-static random-access memory) buffer from then on and
+ *        frees it with heap_caps_free().
+ * @param gen   the job, wa_fetch_t.gen
+ * @param buf   takes the buffer
+ * @param bytes takes the file's length
+ * @param sig   takes the release key's verdict on its .sig
+ * @return true when the job's file was there
+ */
+bool wifi_access_dev_take(uint32_t gen, uint8_t **buf, uint32_t *bytes,
+                          fw_sig_t *sig);
+
+/**
+ * @brief The release key's verdict on @p bytes at @p img and the @p sig_n
+ *        bytes of signature at @p sig: the verifier and the key the
+ *        panel's own image is checked with (fw_sign.h).  Any task.
+ * @param img   the image
+ * @param bytes its length
+ * @param sig   the DER signature
+ * @param sig_n its length
+ * @return the verdict
+ */
+fw_sig_t wifi_access_sig_verify(const uint8_t *img, uint32_t bytes,
+                                const uint8_t *sig, uint32_t sig_n);
+
+/**
  * @brief Once a frame, after wifi_access_tick(): @p abort as wa_fetch_tick()
  *        takes it.  Moves the job on, ends it, switches the radio off when it
  *        has ended, and starts the task that talks to GitHub once joined.
@@ -218,6 +263,15 @@ void wifi_access_fetch_tick(wa_why_t abort);
  * @param out takes the job
  */
 void wifi_access_fetch_get(wa_fetch_t *out);
+
+/**
+ * @brief The job and the panel's own last job, CHECK or DOWNLOAD, in one
+ *        copy: a DEVICE job that replaced the panel's leaves its end
+ *        readable (wa_fetch_own()).
+ * @param raw takes the job
+ * @param own takes the panel's last job
+ */
+void wifi_access_fetch_get_own(wa_fetch_t *raw, wa_fetch_t *own);
 
 /**
  * @brief Whether a home network is kept, and its name into @p ssid of @p n

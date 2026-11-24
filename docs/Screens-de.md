@@ -120,7 +120,7 @@ Das Feld ist 640px breit und fasst 60 Zeichen pro Zeile in der Schrift
 - Auch Bedienelemente zum Anhalten wirken mit demselben Druck: DISARM,
   AUSGANG AUS, PROG 5V AUS, ABBRECHEN eines Stick-Laufs und der ESC-, KST-
   und HITEC-Sitzung, TEST BEENDEN, LAUF BEENDEN, 2s HALTEN: ARM + START auf RUDER AUTO, TEST und
-  ENDLAGENLAUF während seiner Startschritte oder seines Laufs sowie auf
+  LIMIT RUN während seiner Startschritte oder seines Laufs sowie auf
   HITEC EIN von SERVO BEWEGEN und die Taste von ANSCHLAG SUCHEN, deren
   Seite sucht.
   ARM und AUSGANG EIN schließen dagegen nur das Feld; die Haltegeste beginnt
@@ -219,7 +219,7 @@ Listen, Boxen, Warnungen und Bestätigungsdialoge zeigen kein "?".
 | Hilfefeld | 480 x 488px, 8px vom linken oder rechten Rand des Panels, y 64 bis 552; die Hilfeseite bestimmt die Position |
 | Freie Hälfte | die übrigen 528px des Inhalts; die Seite bleibt dort sichtbar und läuft weiter |
 | Kopfzeile | der Titel der Seite und "Seite / Seiten" |
-| Eintrag | seine Nummer in einer 28px-Marke, der Name des Bedienelements in der Akzentfarbe, dann seine Funktion, in der Schrift 10 x 20px, 41 Zeichen pro Zeile, höchstens 3 Zeilen |
+| Eintrag | seine Nummer in einer 28px-Marke, der Name des Bedienelements in der Akzentfarbe, dann seine Funktion, in der Schrift 10 x 20px, 41 Zeichen pro Zeile, höchstens 3 Zeilen, umbrochen an einem Leerzeichen; eine Zeile endet vor SD CARD, PD MINI, MOTOR & ESC, ESC STICK, LIMIT RUN, RUDDER AUTO, RUDER AUTO oder PANEL UPDATE statt darin (`ui_help_row_len()`) |
 | Einträge pro Seite | höchstens 5 |
 | Web-Zeile | `Mehr: subtilitas.github.io/rcbench/help/de/`, auf Englisch die Adresse ohne `de/` |
 | VORIGE und NÄCHSTE | 124 x 48px, 8px auseinander, im Band von x 8 bis 264, y 6 bis 54, an der Stelle des Home-Felds, auf jeder Seite dieselbe |
@@ -321,6 +321,7 @@ alle ihre Hilfeseiten auch in ARMED sichtbar.
 | UPDATES, OPTIONEN | 2 | wie eine Optionsliste |
 | UPDATES, EINZELNE UPDATES | 2 | der Abschnitt IOMCU, seine Haltetaste, der Eintrag FUNKGERÄTE; die Überschrift, die Haltetaste des C6-Funks, ZURÜCK |
 | UPDATES, die Seite der Funkgeräte | 1 | die drei Gerätezeilen, UPDATE ABBRECHEN während eines Updates, ZURÜCK |
+| SEARCH | 2 | die Fundliste; die Karte, AKTUALISIEREN |
 
 ![Die Hilfe von SETUP auf Seite 1](img/de/help-setup.png)
 
@@ -353,10 +354,10 @@ Die Aufgabe auf der linken Karte bestimmt die ersten Hilfeseiten:
 
 | Seite und Aufgabe | Hilfeseiten, Einträge |
 | --- | --- |
-| SERVO Hub | die Kacheln LIVE, ENDLAGENLAUF, RUDER und KST und die Portzeile (5); eine Kachel und OPTIONEN (2) |
+| SERVO Hub | die Kacheln LIVE, LIMIT RUN, RUDER und KST und die Portzeile (5); eine Kachel und OPTIONEN (2) |
 | SERVO LIVE und SWEEP | der Winkel des Ruderhorns, die Skala und die Messwerte (3) |
 | SERVO TEST | das Feld AUTOMATISCHER TEST, die Grenzen und der Verlauf (3); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
-| SERVO ENDLAGENLAUF | UNTERES ENDE mit OBERES ENDE und die Zustandszeilen (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
+| SERVO LIMIT RUN | UNTERES ENDE mit OBERES ENDE und die Zustandszeilen (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
 | SERVO RUDER | LÄNGE, die Fahrtasten, NULLPUNKT, MAX LÖSCHEN und ohne antwortenden Drehknopf -10us und +10us (4 oder 5); AUSSCHLAG, HINTERKANTE und die Statuszeilen (3) |
 | SERVO RUDER AUTO | die Sollwerte, RESERVE und TOLERANZ, NULLPUNKT (3); AUSSCHLAG und HINTERKANTE (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
 | SERVO LIVE, SWEEP und RUDER, SAFE | PORT, BEREIT, die Schienenzeile, ARM und OPTIONEN (5); SET V, die Grafik, TEMPO, Typ und die Tasten auf LIVE und SWEEP (5), SET V, die Grafik, Typ und Seitenansicht auf RUDER (4); SET V nicht am Programmierport des rbmod-Carriers |
@@ -533,7 +534,6 @@ Aktualisieren.
 | Stack von `shot` | niedrigster Stand 5.116B unbenutzt von 7.168B |
 | Läufe auf einem Panel | 30 Screenshots hintereinander: kein Fehler, kein Neustart. Kein FLIP TIMEOUT und keine Watchdog-Zeile. `FM_ERR_BUSY` trat in 3 Läufen mit überlappendem Speichern und Schreibvorgang der WLAN-Seite nicht auf: Beide Vorgänge warten und werden abgeschlossen |
 | Zweiter Kontakt auf einem Panel | 6 von 6 Prüfungen bestanden: Ein zweiter Kontakt während des Haltens nimmt kein Bild auf, und sein Druck wirkt; ein schon liegender Kontakt beginnt kein Halten; STOP während eines Haltens wirkt; ein Halten über der Hilfe mit einem zweiten Kontakt nimmt keins auf; das Popup wartet, bis alle Kontakte abgehoben sind, und drückt keine Taste; 5 gleichzeitige Kontakte auf einer Liste hinterlassen keinen hängenden Druck |
-| Auf einem Panel nicht geprüft | keine Karte im Schacht, Pixelgleichheit des PNG mit einem gerenderten Frame, ein Glaskontakt zusammen mit einem Injektor-Kontakt |
 
 Beim Speichern entsteht zuerst `<Name>.PNG.NEW`; danach wird die Datei
 umbenannt. Ein Abbruch oder das Entfernen der Karte hinterlässt keine
@@ -661,7 +661,7 @@ eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | VERBINDEN in den Programmierern für KST und HITEC, wo die Sitzung die Servoversorgung schaltet | `Halte 2s, um zu verbinden und die Versorgung des Ports einzuschalten.` |
 | ÜBERNEHMEN in den Warnungen zu HV, Pulsrate und weichen Grenzen von SERVO, KST und Chaservo und auf den Hitec-Seiten | `Halte 2s, um zu übernehmen.` |
 | 2s HALTEN: ARM + START auf TEST | `Halte 2s, um auf ARMED zu schalten und den Test zu starten.` |
-| 2s HALTEN: ARM + START auf ENDLAGENLAUF | `Halte 2s, um Port und Versorgung einzuschalten, ARM und den Endlagenlauf zu starten.` |
+| 2s HALTEN: ARM + START auf LIMIT RUN | `Halte 2s, um Port und Versorgung einzuschalten, ARM und den Endlagenlauf zu starten.` |
 | 2s HALTEN ZUM SCHREIBEN, und n WERTE SCHREIBEN in den Programmierern für KST und HITEC | `Halte 2s, um zu schreiben.` |
 | 2s HALTEN ZUM ZURÜCKSPIELEN | `Halte 2s, um zurückzuspielen.` |
 | 2s HALTEN ZUM FORTFAHREN | `Halte 2s, um fortzufahren.` |
@@ -677,13 +677,13 @@ eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | 2s HALTEN: LADEN & INSTALLIEREN auf UPDATES und in der Update-Erinnerung | `Halte 2s, um zu laden und zu installieren.` |
 | 2s HALTEN ZUM IOMCU-UPDATE in Schritt 2 von UPDATES und auf EINZELNE UPDATES | `Halte 2s, um den IOmcu zu aktualisieren.` |
 | 2s HALTEN ZUM C6-FUNK-UPDATE auf EINZELNE UPDATES | `Halte 2s, um den C6-Funk zu aktualisieren. Das WLAN bleibt bis zum Ende aus.` |
-| 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN auf EINZELNE UPDATES | `Halte 2s, um die C6-Firmware des Panels neu zu installieren. WLAN bleibt bis zum Ende aus.` |
+| 2s HALTEN: C6-FUNK NEU INSTALLIEREN auf EINZELNE UPDATES | `Halte 2s, um die C6-Firmware dieses Release neu zu installieren. WLAN bleibt beim Senden aus.` |
 | 2s HALTEN ZUM DIAL-UPDATE auf EINZELNE UPDATES | `Halte 2s, um das Dial zu aktualisieren. Der Drehknopf ruht bis zur neuen Verbindung.` |
-| 2s HALTEN: DIAL-FIRMWARE NEU INSTALLIEREN auf EINZELNE UPDATES | `Halte 2s, um die Dial-Firmware des Panels neu zu installieren.` |
+| 2s HALTEN: DIAL-FIRMWARE NEU INSTALLIEREN auf EINZELNE UPDATES | `Halte 2s, um die Dial-Firmware dieses Release neu zu installieren.` |
 | 2s HALTEN ZUM LEISTUNGSKNOTEN-UPDATE auf EINZELNE UPDATES | `Halte 2s, um den Leistungsknoten zu aktualisieren. Messwerte ruhen bis zur neuen Verbindung.` |
-| 2s HALTEN: LEISTUNGSKNOTEN NEU INSTALLIEREN auf EINZELNE UPDATES | `Halte 2s, um die Firmware des Leistungsknotens neu zu installieren.` |
+| 2s HALTEN: LEISTUNGSKNOTEN NEU INSTALLIEREN auf EINZELNE UPDATES | `Halte 2s, um die Leistungsknoten-Firmware dieses Release neu zu installieren.` |
 | 2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE auf EINZELNE UPDATES | `Halte 2s, um den Auswuchtknoten zu aktualisieren. Messungen ruhen bis zur neuen Verbindung.` |
-| 2s HALTEN: AUSWUCHTKNOTEN NEU INSTALLIEREN auf EINZELNE UPDATES | `Halte 2s, um die Firmware des Auswuchtknotens neu zu installieren.` |
+| 2s HALTEN: AUSWUCHTKNOTEN NEU INSTALLIEREN auf EINZELNE UPDATES | `Halte 2s, um die Auswuchtknoten-Firmware dieses Release neu zu installieren.` |
 | 2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN auf OUTPUTS | `Halte 2s, um alle Pin-Zuordnungen zu löschen.` |
 | ÜBERSCHREIBEN im Bestätigungsdialog des FILES-Editors | `Halte 2s, um zu überschreiben.` |
 | 2s HALTEN ZUM BESTÄTIGEN auf der Busfehler-Seite | `Halte 2s, um zu bestätigen.` |
@@ -699,7 +699,7 @@ Ein langsamerer Frame beendet nur die Phase, in die er fällt; so wird
 jede Phase bei jeder Bildrate gezeichnet. Die neue Farbe ist die,
 zu der das Halten überblendet: Gefahrenrot bei ARM, AUSGANG EIN, PROG 5V
 EIN, VERBINDEN der Programmierer und ERLEDIGT eines Stick-Laufs vor einem Einschalten; Bernstein bei 2s HALTEN: ARM + START auf TEST, RUDER AUTO und
-ENDLAGENLAUF, deren Folge vor dem Lauf auf ARMED und ihre Rückmeldungen
+LIMIT RUN, deren Folge vor dem Lauf auf ARMED und ihre Rückmeldungen
 wartet.
 
 - Das Aufblitzen beginnt mit dem Halten, nicht mit der Antwort. ARMED, der
@@ -722,7 +722,7 @@ Die Füllung einer Taste sagt, was ein Druck mit einem Ausgang macht.
 
 | Klasse | Tasten | Verfügbar | Aktiv | Wartend | Abgelehnt |
 | --- | --- | --- | --- | --- | --- |
-| Ausgangsaktion: schaltet einen Ausgang ein, schaltet auf ARMED, startet einen Lauf, schreibt ein Servo | ARM, AUSGANG EIN, PROG 5V EIN, 2s HALTEN: ARM + START auf TEST, RUDER AUTO und ENDLAGENLAUF, ZENTRIEREN auf LIVE, SWEEP auf SWEEP, 1000us, ZENTRIEREN, 2000us, -10us, +10us und NULLPUNKT auf RUDER, VERBINDEN, n WERTE SCHREIBEN und SERVO BEWEGEN der Programmierungen | grün (`UI_C_OK`) | rot (`UI_C_DANGER`): ein Ausgang ist ein, ARMED, ein Schreiben läuft, das Servo wird angesteuert; die Beschriftung sagt, was ein Druck anhält (DISARM, AUSGANG AUS, LAUF BEENDEN, PAUSE, VERLASSEN, ABBRECHEN, EIN) | bernstein (`UI_C_WARN`): PAUSIERT, WARTEN, der Schritt von ARM + START und von ARM auf LIVE, SWEEP und RUDER und von n WERTE SCHREIBEN der Programmierungen | grau (`ui_button_off_fill()`), blasse Beschriftung |
+| Ausgangsaktion: schaltet einen Ausgang ein, schaltet auf ARMED, startet einen Lauf, schreibt ein Servo | ARM, AUSGANG EIN, PROG 5V EIN, 2s HALTEN: ARM + START auf TEST, RUDER AUTO und LIMIT RUN, ZENTRIEREN auf LIVE, SWEEP auf SWEEP, 1000us, ZENTRIEREN, 2000us, -10us, +10us und NULLPUNKT auf RUDER, VERBINDEN, n WERTE SCHREIBEN und SERVO BEWEGEN der Programmierungen | grün (`UI_C_OK`) | rot (`UI_C_DANGER`): ein Ausgang ist ein, ARMED, ein Schreiben läuft, das Servo wird angesteuert; die Beschriftung sagt, was ein Druck anhält (DISARM, AUSGANG AUS, LAUF BEENDEN, PAUSE, VERLASSEN, ABBRECHEN, EIN) | bernstein (`UI_C_WARN`): PAUSIERT, WARTEN, der Schritt von ARM + START und von ARM auf LIVE, SWEEP und RUDER und von n WERTE SCHREIBEN der Programmierungen | grau (`ui_button_off_fill()`), blasse Beschriftung |
 | Notfall | STOP | rot | rot, blitzt beim Druck | - | nie |
 | Bearbeiten | `-` `+`, Wertfelder, MAX LÖSCHEN, KATEGORIE ZURÜCKSETZEN auf SETUP, VERWERFEN, NEU LESEN | neutral (`UI_C_PANEL_HI`) | - | - | grau |
 | SPEICHERN auf SETUP | SPEICHERN, GESPEICHERT, BEI STILLSTAND, NICHT GESPEICHERT | grün, solange etwas ungespeichert ist (SPEICHERN) | - | bernstein (BEI STILLSTAND) | neutral mit roter Beschriftung (NICHT GESPEICHERT); GESPEICHERT ist neutral |
@@ -737,7 +737,7 @@ Ein Tipp auf ein graues 2s HALTEN: ARM + START zeigt die erste rote Zeile
 der Karte BEREIT im Alarmband als Mitteilung, 4s in Bernstein, wie der
 Hinweis einer Halte-Taste: `PORT: AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT`
 auf RUDER AUTO, `STUFEN: KEINE STUFE GEWÄHLT` auf TEST, `MESSGERÄT: SERVOSTROMMESSER
-(INA3221) NICHT EINGERICHTET` auf ENDLAGENLAUF; die
+(INA3221) NICHT EINGERICHTET` auf LIMIT RUN; die
 Zustandszeile der Karte sagt dasselbe.
 
 ## Marken im Menü
@@ -772,8 +772,10 @@ je 22 Zeichen und 8px Abstand zu den Seitenrändern:
 
 SIMULIERT markiert eine Kachel, wenn der Prüfstand die Datenquelle der
 Seite nicht meldet: Entweder fehlt die Fähigkeit im IOmcu, oder der Sensor
-ist unter SETUP > SENSORS ausgeschaltet. Die Seite öffnet sich trotzdem
-und verwendet ihr Modell.
+ist unter SETUP > SENSORS ausgeschaltet. Für MOTOR & ESC zählt auch der
+Leistungsknoten als Sensor des Akkus (SETUP > WIRELESS,
+[Knoten](Nodes-de.md#das-panel)). Die Seite öffnet sich trotzdem und
+verwendet ihr Modell.
 
 Die Markierung beschreibt die Seite insgesamt, nicht jeden einzelnen
 Messwert. RECEIVER und BATTERY tragen sie und zeigen keine Werte. SERVO
@@ -783,13 +785,25 @@ aktiviert ist. Jede Seite nennt die Quelle ihrer Messwerte.
 
 | Kachel | Ohne Marke, wenn |
 | --- | --- |
-| MOTOR & ESC | der IOmcu ESCs ansteuert und eine INA228-Konfiguration hat, die unter SETUP, SENSORS eingeschaltet ist |
+| MOTOR & ESC | der IOmcu ESCs ansteuert und entweder eine INA228-Konfiguration hat, die unter SETUP, SENSORS eingeschaltet ist, oder der Leistungsknoten die Quelle des Akkus ist: Leistungsknoten EIN, INA228-Quelle NODE und ein Knoten gebunden |
 | SERVO | der IOmcu Servo-PWM-Ausgänge ansteuert |
 | SUPPLY | der PD mini im Abschnitt PD MINI der SUPPLY-Optionen eingeschaltet ist, unabhängig davon, was der IOmcu meldet; sonst rechnet das Panel mit seinem eigenen Netzteilmodell |
 | RECEIVER, BATTERY, BALANCE | in diesem Release nie: kein IOmcu meldet diese Fähigkeiten |
 
 Der IOmcu meldet seine Capability-Bits beim Start. Antwortet kein IOmcu,
 tragen MOTOR & ESC und SERVO ebenfalls die Markierung.
+
+Beide Quellen der Akkumessung zählen, wie sie eingestellt sind, ob sie
+antworten oder nicht. Ein eingeschalteter INA228, der nicht
+antwortet, oder ein gebundener Knoten ohne Verbindung lässt MOTOR & ESC
+ohne Marke. SETUP > WIRELESS zeigt die Verbindung des Knotens, und ein ARM
+von MOTOR & ESC mit INA228-Quelle NODE wird abgelehnt, solange in den
+letzten 100ms kein Messwert des Knotens kam.
+
+Das Menü mit ausgeschaltetem INA228 des IOmcu und dem Leistungsknoten als
+Quelle des Akkus:
+
+![Das Menü mit dem Leistungsknoten als Quelle des Akkus](img/de/overview-pnode.png)
 
 Das Menü im hellen Design:
 
@@ -1246,10 +1260,18 @@ TABELLE zeigt vier Kanäle mit je einem Extremwert. Ein Kanal ohne Messwert
 zeigt `--`.
 
 Die Drehzahl reicht bis 65.535rpm, die Obergrenze des Registers im IOmcu.
-Eine Drehzahl darüber steht als `>65535` auf der Karte und in TABELLE. Eine
-Spitze von 65.535rpm oder mehr steht als `>65535`. Der Plot zeichnet eine
-solche Drehzahl bei 65.535rpm. rpm/V und das Dial zeigen keine Drehzahl,
-solange sie über der Obergrenze liegt, und der Auswuchtknoten bekommt keine.
+Eine Drehzahl darüber steht als `>65535` auf der Karte und in TABELLE,
+ebenso eine Spitze darüber. Eine Spitze von genau 65.535rpm steht als
+65535. Ein IOmcu mit Link-Protokoll 4.39 oder älter (Firmware 0.23.15 oder
+älter) markiert seine Spitze nicht: Eine Spitze über 65.535rpm steht als
+65535. Der Plot zeichnet eine Drehzahl über der Obergrenze bei 65.535rpm.
+rpm/V zeigt keine Drehzahl, solange sie über der Obergrenze liegt.
+Derzeitige Einschränkungen: LIVE_MOTOR des Dial hat kein Bit für eine
+Drehzahl über der Obergrenze, also zeigt das Dial keine Drehzahl, solange
+sie über 65.535rpm liegt. Im Modus ohne Index nimmt der Auswuchtknoten die
+Drehzahl des Prüfstands als RPM, 1 bis 60.000rpm: Solange die Drehzahl
+über 65.535rpm liegt, sendet das Panel ihm 0, was den Knoten zum Index
+zurückbringt, und von 60.000 bis 65.535rpm sendet es 60.000.
 
 Ist der INA228 unter SETUP > SENSORS eingeschaltet und antwortet er
 (BENCH-Flag Bit 5), liefert er Spannung, Strom und Leistung. Angezeigt
@@ -1873,7 +1895,7 @@ Spannung und Strombegrenzung unter NETZTEIL, die Zeiten der Pieptöne unter
 TIMING UND ERKENNUNG. Keine davon ist gemessen. OPTIONEN nimmt einen Druck
 bei SAFE und ohne laufenden Lauf an; sonst ist es grau, und ein Tippen
 zeigt `OPTIONEN nur bei SAFE. Schalte zuerst auf SAFE.` im Meldeband. Ein
-Prüfstand, der unter der offenen Liste scharf schaltet, schließt sie.
+Prüfstand, der unter der offenen Liste auf ARMED schaltet, schließt sie.
 
 ![Die Optionsliste](img/de/motor-stick-timing.png)
 
@@ -1905,7 +1927,7 @@ der Reihenfolge der Nutzung.
 | LIVE | LIVE | das Zifferblatt, den Drehknopf, die Anzeigen SOLL-PULSBREITE, GEMESSEN und STROM; OPTIONEN öffnet das Servoprofil |
 | SWEEP | SWEEP | das Zifferblatt mit dem Sweep; OPTIONEN öffnet KURVE, TEMPO, BEREICH und HALTEZEIT |
 | TEST | TEST | das Feld AUTOMATISCHER TEST, die Grenzen von SUPPLY, der Verlauf und das Feld des Laufs, die Karte BEREIT an der Stelle des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet die Liste des automatischen Tests |
-| ENDLAGENLAUF | ENDLAGENLAUF | Modus- und Ausgangszeile, UNTERES ENDE und OBERES ENDE und die Zustandszeilen auf der linken Karte, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet MODUS, SERVO, SERVOPULSE, STROM, Warten vor PWM, den Namen des Prüflings und die Testaufzeichnungen ([Starten](Servo-de.md#starten)) |
+| LIMIT RUN | LIMIT RUN | Modus- und Ausgangszeile, UNTERES ENDE und OBERES ENDE und die Zustandszeilen auf der linken Karte, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet MODUS, SERVO, SERVOPULSE, STROM, Warten vor PWM, den Namen des Prüflings und die Testaufzeichnungen ([Starten](Servo-de.md#starten)) |
 | RUDER | RUDER | Ausschlag in ° und mm, LÄNGE, 1000us, ZENTRIEREN, 2000us, NULLPUNKT und MAX LÖSCHEN, -10us und +10us ohne antwortenden Drehknopf ([Ruderausschlag](Servo-de.md#ruderausschlag)) |
 | RUDER AUTO | RUDER AUTO | das Feld von AUTO statt LÄNGE und der Fahrtasten, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste ([AUTO-Endpoints](Servo-de.md#auto-endpoints)) |
 | KST | SERVO > KST | die Programmierung für KST und Chaservo über dem linken Feld, die Karte BEREIT statt des Ausgangsfelds, WERTE SCHREIBEN in der Fußleiste ([Programmierer](#programmierer)) |
@@ -1939,10 +1961,10 @@ Jeder Funktionsbildschirm hat denselben Rahmen. Das linke Feld ist 620px
 breit und reicht von y 8 bis zum Feldboden bei y 436. Das rechte Feld, x
 636 bis 1016, beginnt mit der Taste PORT (y 8 bis 56). Auf LIVE, SWEEP
 und RUDER trägt es die Zeilen von BEREIT und die Bedienelemente darunter,
-auf TEST, ENDLAGENLAUF, RUDER AUTO, KST und HITEC die Karte BEREIT. Kein
+auf TEST, LIMIT RUN, RUDER AUTO, KST und HITEC die Karte BEREIT. Kein
 Funktionsbildschirm hat AUSGANG EIN oder ein Feld PROG 5V: AUSGANG EIN
 gehört zu SUPPLY, und das 2s-Halten von ARM schaltet die Versorgung ein.
-TEST, ENDLAGENLAUF und RUDER AUTO setzen SET A von SUPPLY über ihre
+TEST, LIMIT RUN und RUDER AUTO setzen SET A von SUPPLY über ihre
 Zeile PD MINI. Die Fußleiste bei y
 444 bis 492 hat drei Plätze von 328 x 48px: den Namen der Funktion mit
 der Portzeile darunter, ARM oder DISARM (WERTE SCHREIBEN auf KST und
@@ -1993,7 +2015,7 @@ speist:
 | LIVE, SWEEP, RUDER | die SET-Zeile, rechts von SET A | 180 x 48px |
 | KST, HITEC | die Karte BEREIT, 8px unter der letzten Zeile bis 8px über der Schienenzeile | 356 x 172px auf KST, 356 x 142px auf HITEC |
 | TEST | das linke Feld unter den Grenzen von SUPPLY, neben dem Kasten des Laufs, solange er steht | 600 x 170px, 246 x 170px neben dem Kasten |
-| ENDLAGENLAUF | das linke Feld unter acht Zeilen Zustand, y 374 bis 432 | 600 x 58px |
+| LIMIT RUN | das linke Feld unter acht Zeilen Zustand, y 374 bis 432 | 600 x 58px |
 | RUDER AUTO | das linke Feld rechts von NULLPUNKT und MAX LÖSCHEN, y 240 bis 288 | 260 x 48px |
 
 Eine Legende über der Grafik zeigt Volt, Ampere und Watt,
@@ -2002,7 +2024,7 @@ VOLT, CURR und PWR auf SUPPLY. Der Name des Messgeräts steht links davon,
 wo die Breite beides fasst. Unter 80px Höhe steht die Legende in der
 Schrift 8 x 16 und die Grafik ohne Zeitachse. Ein Punkt je Messwert, 20 in
 der Sekunde: eine Grafik zeigt die letzten Breite / 20 Sekunden, 9.0s auf
-LIVE, 17.8s auf KST, 30.0s auf TEST und ENDLAGENLAUF, 13.0s auf RUDER
+LIVE, 17.8s auf KST, 30.0s auf TEST und LIMIT RUN, 13.0s auf RUDER
 AUTO. Jede Grafik skaliert über die letzten 600 Punkte, 30.0s. Ein neuer
 Messwert zeichnet nur die Grafik und die Schienenzeile neu.
 
@@ -2064,7 +2086,7 @@ Schritte schalten ARMED.
 
 ![LIVE auf dem rbmod-Carrier: PORT-PWM und PROG 5V gelb, ARM schaltet sie ein](img/de/servo-rbmod.png)
 
-RUDER AUTO und ENDLAGENLAUF behalten die Taste PORT und zeigen eine Karte
+RUDER AUTO und LIMIT RUN behalten die Taste PORT und zeigen eine Karte
 BEREIT an der Stelle des Ausgangsfelds: Zeilen von 30px ab y 96, je zehn,
 so viele, wie die Karte über der Schienenzeile bei y 404 fasst, jede mit
 Punkt, Bezeichnung von 10 Zellen und Zustand von 20. Jeder Zustand
@@ -2112,7 +2134,7 @@ WERTE SCHREIBEN der Sitzung; keiner der beiden Bildschirme hat ARM
 ![RUDER AUTO auf dem rbmod-Carrier, die Folge ARM + START wartet auf die Rückmeldung von PROG 5V](img/de/servo-rudder-auto-start-rbmod.png)
 
 PROG 5V, eingeschaltet von ARM auf LIVE, SWEEP oder RUDER oder von ARM +
-START auf ENDLAGENLAUF und RUDER AUTO, bleibt von einem SERVO-Bildschirm
+START auf LIMIT RUN und RUDER AUTO, bleibt von einem SERVO-Bildschirm
 zum nächsten an, auch auf dem Hub, und schaltet aus, sobald SERVO zu einem anderen Bildschirm
 verlassen wird.
 
@@ -2153,7 +2175,7 @@ ebenfalls auf SAFE.
 
 Der eingeschaltete Drehknopf bewegt das Ruderhorn auf LIVE, SWEEP, RUDER
 und RUDER AUTO von seiner aktuellen Position aus
-([der Knopf](#panel-der-drehknopf)). Auf dem Hub, TEST, ENDLAGENLAUF, KST,
+([der Knopf](#panel-der-drehknopf)). Auf dem Hub, TEST, LIMIT RUN, KST,
 HITEC, in einer Liste und unter offenen Dialogen hat er keine Wirkung.
 Auch eine Drehung im Frame, in dem ein Bildschirm wieder erscheint, wird
 ignoriert; die nächste wirkt.
@@ -2352,7 +2374,7 @@ das CH1 des einzelnen über SENSE ausgelesenen Bausteins.
 
 Auf dem [rbmod-Carrier](Carrier-de.md#versorgung) zeigt kein
 SERVO-Bildschirm das Feld PROG 5V. Auf LIVE, SWEEP und RUDER nennt die
-Zeile VERSORGUNG PROG 5V, und ARM schaltet sie ein; auf ENDLAGENLAUF und
+Zeile VERSORGUNG PROG 5V, und ARM schaltet sie ein; auf LIMIT RUN und
 RUDER AUTO tut es ARM + START. Auf KST und HITEC zeigt die Zeile der
 Versorgung EIN, solange die 5V an sind, und ein Tippen schaltet sie aus.
 Hält ein Programmierport die 5V, schaltet das Tippen nichts, und das
@@ -2369,7 +2391,7 @@ Zwei Fenster unter 3000mV danach lösen denselben Fehler aus, mit
 `PROG 5V ausgefallen: INA3221 0x40 CH3 misst 0.12V trotz EIN. Alle Ausgänge aus.`
 ([Carrier, PROG 5V fehlt oder ausgefallen](Carrier-de.md#prog-5v-fehlt-oder-ausgefallen)).
 Solange der PD mini den Eingang des Carriers unter 13,5V liest, zeigt die
-Zeile PROG 5V der Karte BEREIT auf KST, HITEC, ENDLAGENLAUF und RUDER AUTO
+Zeile PROG 5V der Karte BEREIT auf KST, HITEC, LIMIT RUN und RUDER AUTO
 `EINGANG 5.1V < 15V` in Rot, und VERBINDEN und ARM + START werden mit
 `EINGANG 5.1V: BENÖTIGT 15V. VERSORGUNGSSPANNUNG PRÜFEN` abgelehnt
 ([Carrier, Die Eingangsversorgung](Carrier-de.md#die-eingangsversorgung)).
@@ -2698,7 +2720,7 @@ in der Zeile über der Grafik:
 
 ![Ein Ergebnis am INA3221](img/de/servo-result-ina.png)
 
-**2s HALTEN: ARM + START beginnt die Endlagensuche** auf ENDLAGENLAUF.
+**2s HALTEN: ARM + START beginnt die Endlagensuche** auf LIMIT RUN.
 Das Servo fährt in 10us-Schritten nach außen, bis der Strom ein
 blockiertes Gestänge erkennen lässt. SUCHEN + PROGRAMMIEREN verringert
 zusätzlich die Endwerte der gewählten Servofamilie, bis beide Enden frei
@@ -2961,9 +2983,9 @@ Eine Änderung gilt bis SPEICHERN als nicht gespeichert.
 | LIVE | das Servoprofil, die Liste des Hubs; darunter WINKEL mit SENSOR-MITTE |
 | SWEEP | KURVE, TEMPO, Bereich und Haltezeit |
 | TEST | SPANNUNGSSTUFEN: Stufe 4.8V, Stufe 6.0V, HV-SERVO, Stufe 7.4V, Stufe 8.4V; BROWN-OUT: Brown-out, Brown-out Mindestspannung, Brown-out-Schritt; GRENZWERTE: Blockierschwelle, Ruhestrom max, Haltestrom max, Stellzeit max; DAUER UND ZEITEN: Länge nach, Testzeit, Bewegungen, Haltezeit, Einschwingzeit; BEREICH: Bereich, AUSGANG; PRÜFLING: Name des Prüflings, Bericht |
-| ENDLAGENLAUF | MODUS, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, STROM, Warten vor PWM, Name des Prüflings und Testaufzeichnungen; ein Lauf programmiert mit 5,0V ([Servo](Servo-de.md#die-50v-des-laufs)). STROM ist SET A von SUPPLY, `SET A 2.00A`, ein Tipp sein Tastenfeld; `--` und gesperrt ohne PD mini ([Servo](Servo-de.md#die-strombegrenzung-des-laufs)) |
+| LIMIT RUN | MODUS, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, STROM, Warten vor PWM, Name des Prüflings und Testaufzeichnungen; ein Lauf programmiert mit 5,0V ([Servo](Servo-de.md#die-50v-des-laufs)). STROM ist SET A von SUPPLY, `SET A 2.00A`, ein Tipp sein Tastenfeld; `--` und gesperrt ohne PD mini ([Servo](Servo-de.md#die-strombegrenzung-des-laufs)) |
 | RUDER | LÄNGE, SENSOR-MITTE und WINKELQUELLE |
-| RUDER AUTO | die Ziele, MARGIN, TOLERANZ, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, WINKELQUELLE, STROM, Warten vor PWM, Name des Prüflings und Testaufzeichnungen; STROM wie beim ENDLAGENLAUF |
+| RUDER AUTO | die Ziele, MARGIN, TOLERANZ, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, WINKELQUELLE, STROM, Warten vor PWM, Name des Prüflings und Testaufzeichnungen; STROM wie bei LIMIT RUN |
 | SERVO > KST | KST EXPERT MODE, eine Ebene tiefer |
 | HITEC | SERIE und EMPFANG |
 
@@ -2975,14 +2997,14 @@ und Läufe.
 Das Profil öffnet auch von einem Funktionsbildschirm, an der Stelle seiner
 OPTIONEN-Liste: ein Tippen auf die Typzeile von LIVE, SWEEP und RUDER
 öffnet es mit TYP im Blick, ein Tippen auf die Zeile BEREICH der Karten
-BEREIT von ENDLAGENLAUF und RUDER AUTO und auf die Zeile AUSGANG von TEST
+BEREIT von LIMIT RUN und RUDER AUTO und auf die Zeile AUSGANG von TEST
 mit PULS MIN im Blick. Seine Leiste nennt SERVO. Es folgt der Liste einer
-Funktion: es öffnet nur bei SAFE und schließt, sobald der Prüfstand scharf
-wird. Das Home-Feld schließt es, und der Funktionsbildschirm erscheint
+Funktion: es öffnet nur bei SAFE und schließt, sobald der Prüfstand auf
+ARMED schaltet. Das Home-Feld schließt es, und der Funktionsbildschirm erscheint
 wieder.
 
 Die Liste einer Funktion öffnet nur bei SAFE, ohne Sweep und ohne Lauf;
-wird der Prüfstand darunter scharf, schließt sie, ebenso die Zeilen eines
+schaltet der Prüfstand darunter auf ARMED, schließt sie, ebenso die Zeilen eines
 Laufs oder von KST. Die eigene OPTIONEN-Taste der Laufkarte folgt
 derselben Regel und ist grau, solange sie ablehnt. Die Liste des Hubs
 öffnet jederzeit: der Hub steuert nichts. Keine Liste öffnet, solange
@@ -3052,9 +3074,9 @@ Die 56px hohen Tasten 2s HALTEN ZUM ÜBERNEHMEN und ABBRECHEN enden 8px
 | Liste von TEST, GRENZWERTE | Ruhestrom max, Haltestrom max, Stellzeit max | Grenzen für bestanden/nicht bestanden; 0 wird nicht geprüft |
 | Liste von TEST, DAUER UND ZEITEN | Länge nach, Testzeit, Bewegungen | wie lange jede Spannungsstufe läuft: eine Zeit oder eine Zahl von Bewegungen; Testzeit nimmt nur bei ZEIT einen Druck an, Bewegungen nur bei BEWEGUNGEN |
 | Liste von TEST, DAUER UND ZEITEN | Haltezeit, Einschwingzeit | Haltezeit an jedem Ende, im Test und bei SWEEP; Wartezeit nach einer Spannungsstufe vor dem Messen |
-| ENDLAGENLAUF > OPTIONEN | MODUS | NUR SUCHE oder SUCHEN + PROGRAMMIEREN; an den Ausgängen des Prüfstands gesperrt mit `Nur an einem PROG-PORT: wähle einen mit PORT`. Für die Sitzung |
-| ENDLAGENLAUF > OPTIONEN | SERVO | KST/CHASERVO, HITEC D-SERIE oder HITEC KLASSISCH; der Programmierer, an den die Sitzungen des Laufs gehen. Die eigene gespeicherte Einstellung des Endlagenlaufs, dieselbe wie die Zeile SERVO der Karte BEREIT |
-| ENDLAGENLAUF > OPTIONEN | SERVOPULSE | BEHALTEN oder 1000-2000; gesperrt, solange PORT nicht auf PROG-PORT oder SERVO auf HITEC steht. 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos in der Lesesitzung des Laufs, vor der Suche, auf 1000,0 und 2000,0us. Vorgabe BEHALTEN; für die Sitzung |
+| LIMIT RUN > OPTIONEN | MODUS | NUR SUCHE oder SUCHEN + PROGRAMMIEREN; an den Ausgängen des Prüfstands gesperrt mit `Nur an einem PROG-PORT: wähle einen mit PORT`. Für die Sitzung |
+| LIMIT RUN > OPTIONEN | SERVO | KST/CHASERVO, HITEC D-SERIE oder HITEC KLASSISCH; der Programmierer, an den die Sitzungen des Laufs gehen. Die eigene gespeicherte Einstellung des Endlagenlaufs, dieselbe wie die Zeile SERVO der Karte BEREIT |
+| LIMIT RUN > OPTIONEN | SERVOPULSE | BEHALTEN oder 1000-2000; gesperrt, solange PORT nicht auf PROG-PORT oder SERVO auf HITEC steht. 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos in der Lesesitzung des Laufs, vor der Suche, auf 1000,0 und 2000,0us. Vorgabe BEHALTEN; für die Sitzung |
 | Liste des Hubs | NAME | der Prüfling, bis 23 Zeichen, für den Bericht |
 | Liste des Hubs | BERICHT | ein Textbericht neben der Aufzeichnung jedes Tests |
 | Listen von LIVE und RUDER | SENSOR-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert seit dem aktuellen Verbindungsaufbau (keinen nach einem Verbindungsverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, SENSORS, AS5600-Mitte |
@@ -3108,7 +3130,7 @@ und keinem als SERVO PWM gebundenen Ausgang, lautet der erste Eintrag
 öffnet OUTPUTS auf dem Protokoll SERVO PWM, wo dessen Pins gebunden
 werden. Das Verlassen schaltet den Prüfstand auf SAFE wie jeder andere
 Weg hinaus. Das Home-Feld dort führt zu dem SERVO-Bildschirm zurück, auf
-dem die Liste geöffnet wurde: LIVE, SWEEP, TEST, ENDLAGENLAUF, RUDER oder
+dem die Liste geöffnet wurde: LIVE, SWEEP, TEST, LIMIT RUN, RUDER oder
 RUDER AUTO. Die Taste folgt dem wirklich
 angesteuerten Ziel, auch bei ausstehendem Schreibvorgang oder einem
 angeforderten Port ohne Pin.
@@ -3883,7 +3905,7 @@ Ordner Auto-Aufzeichnungen und Ordner Testaufzeichnungen:
 | `BENCH/LOGS` | `MOTORnnn.CSV` | ein Schalten auf ARMED von ARM auf MOTOR & ESC oder einem Stick-Lauf auf dessen PROGRAMMIEREN |
 | `BENCH/LOGS` | `SUPPLnnn.CSV` | ein Einschalten des SUPPLY-Ausgangs, solange der Prüfstand SAFE ist |
 | `USER/LOGS` | `ATESTnnn.CSV` | ein AUTOMATISCHER TEST; sein Bericht ist `ATESTnnn.TXT` |
-| `USER/LOGS` | `LIMITnnn.TXT` | der Bericht eines ENDLAGENLAUFS, ohne CSV daneben |
+| `USER/LOGS` | `LIMITnnn.TXT` | der Bericht eines Laufs von LIMIT RUN, ohne CSV daneben |
 | `USER/LOGS` | `RUDDRnnn.CSV` | ein Lauf von RUDER AUTO, eine Zeile je Messung; sein Bericht ist `RUDDRnnn.TXT` |
 
 Der Name folgt der Seite, die ARM angefordert hat: Gas-Ausgänge ergeben
@@ -3958,7 +3980,7 @@ Die Reihenfolge folgt absteigenden Laufnummern über alle Präfixe,
 Berichte nach ihrer eigenen Nummer: `LIMIT044.TXT`, `MOTOR043.CSV`,
 `SERVO042.CSV`, `SERVO042.TXT`, dann `SUPPL041.CSV`.
 
-![Der Bericht eines ENDLAGENLAUFS, aus LOGS im Textbetrachter geöffnet](img/de/logs-report.png)
+![Der Bericht eines Laufs von LIMIT RUN, aus LOGS im Textbetrachter geöffnet](img/de/logs-report.png)
 
 ÖFFNEN zeigt einen Bericht schreibgeschützt im
 [Textbetrachter](#der-textbetrachter) von FILES. Das Statusband trägt FILES;
@@ -4325,7 +4347,7 @@ Jede Zeile zeigt ein Symbol, den Namen und rechtsbündig die Größe
 
 | Zustand | Bedeutung |
 |---|---|
-| FEST | ein vom Prüfstand verwendeter Ordner: die beiden Aufzeichnungsordner, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF`, `BENCH/ESCW/CONF`, `BENCH/BALANCE` und ihre übergeordneten Ordner, darunter `BENCH` und `USER`. UMBENENNEN und VERSCHIEBEN sind gesperrt, weil der Inhalt dadurch vom erwarteten Pfad verschoben würde. NEU kann diese Ordner anlegen; LÖSCHEN kann einen leeren entfernen. Jeder Schreiber legt seinen Ordner vor dem Schreiben erneut an. Leser behandeln einen fehlenden Ordner wie auf einer neuen Karte |
+| FEST | ein vom Prüfstand verwendeter Ordner: die beiden Aufzeichnungsordner, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF`, `BENCH/ESCW/CONF`, `BENCH/BALANCE`, `BENCH/SETUP` und ihre übergeordneten Ordner, darunter `BENCH` und `USER`. UMBENENNEN und VERSCHIEBEN sind gesperrt, weil der Inhalt dadurch vom erwarteten Pfad verschoben würde. NEU kann diese Ordner anlegen; LÖSCHEN kann einen leeren entfernen. Jeder Schreiber legt seinen Ordner vor dem Schreiben erneut an. Leser behandeln einen fehlenden Ordner wie auf einer neuen Karte |
 | GESPERRT | die Vermerke der Programmierungen, `BENCH/KST/CONF/KST.TXT`, `BENCH/HITEC/CONF/HITEC.TXT` und `BENCH/ESCW/CONF/ESCW.TXT`, sowie ihre Dateien `KST.NEW`, `HITEC.NEW` und `ESCW.NEW` während des Schreibens. Nur INFO ist verfügbar |
 | WIRD GESCHRIEBEN | eine im Logger offene Datei. Nur INFO ist verfügbar |
 
@@ -5267,7 +5289,13 @@ den ESP-Image-Header für den ESP32-P4 (Chip-ID 0x0012), den Projektnamen `rcben
 der Anwendung, eine Version der Form MAJOR.MINOR.PATCH und den angehängten
 SHA-256 (Secure Hash Algorithm, 256 Bit). Solange ein Image wartet,
 wird ein weiterer Upload abgewiesen. Verwirf das wartende Image mit ABBRECHEN
-am Panel, bevor du ein anderes hochlädst. Während ein Upload läuft,
+am Panel, bevor du ein anderes hochlädst. Eine zweite Dateiauswahl nimmt die
+Release-Signatur des Images, `rcbench-panel-p4-vX.Y.Z.bin.sig`, 8 bis 72 Bytes;
+eine andere Größe weist die Seite ab, bevor ein Byte gesendet ist (`Die
+Signaturdatei ist nicht 8 bis 72 Bytes lang.`). Die Signatur ist optional.
+Sie geht in derselben Anfrage wie das Image mit, und die Antwort des Panels
+endet mit dem, was der Release-Schlüssel sagt
+([Die Release-Signatur](#die-release-signatur)). Während ein Upload läuft,
 zeigt der Bildschirm die empfangenen Bytes. Der Upload schreibt keinen
 Flash: Das Panel hält die Datei im PSRAM (Pseudo-Static Random-Access
 Memory), bis PANEL UPDATE sie schreibt. Das Panel
@@ -5615,6 +5643,30 @@ angeboten. Der Build, der schon läuft, wird nicht angeboten:
 ![Dieselbe Version, ein anderer Build](img/de/wifi-rebuild.png)
 ![Der Build, der läuft](img/de/wifi-installed.png)
 
+#### Die Release-Signatur
+
+Die Rückfrage sagt in einer Zeile unter den Versionen, was der
+Release-Schlüssel zum Image sagt: `VOM RCBENCH-RELEASE-SCHLÜSSEL SIGNIERT` in
+Grün, oder `NICHT VOM RCBENCH-RELEASE-SCHLÜSSEL SIGNIERT.` in Bernstein mit
+dem Grund, `Das Image hat keine Signatur.` oder `Die Signatur passt nicht.`
+Das ältere Image oben kam ohne seine `.sig`; der andere Build kam mit der
+Signatur eines anderen Schlüssels. PANEL UPDATE wiederholt die Zeile beim
+Schreiben:
+
+![Schreiben eines Images ohne Signatur](img/de/panel-update-unsigned.png)
+
+Das Panel prüft eine ECDSA-Signatur (Elliptic Curve Digital Signature
+Algorithm) P-256 über das ganze Image gegen den öffentlichen Release-Schlüssel,
+der in seiner Firmware steht ([Sicherheitsrichtlinie](../SECURITY.md#release-signatures)).
+Bis zum stabilen Release, das die Signatur erzwingt, wird ein Image ohne
+gültige Signatur mit dem einen Halten von 2s und dieser Warnung installiert.
+Ein Build mit `RCBENCH_SIGN_ENFORCE=1` hält stattdessen nach dem Halten an:
+PANEL UPDATE zeigt den Grund und ein zweites Halten von 2s, `2s HALTEN:
+TROTZDEM INSTALLIEREN`. Vor dem Ende dieses Haltens wird nichts geschrieben;
+ABBRECHEN, STOP, ARMED und das Verlassen des Bildschirms verwerfen das Image.
+
+![Ein Build, der die Signatur erzwingt: das zweite Halten](img/de/panel-update-anyway.png)
+
 Halte `2s HALTEN ZUM INSTALLIEREN` für 2s gedrückt. Die Installation lässt
 sich nur am Panel starten. Dafür muss der Prüfstand SAFE, der Netzteilausgang
 aus und jeder Aufzeichnungslauf beendet sein. Es darf weder eine
@@ -5640,7 +5692,11 @@ startet neu.
 
 Der Splash zeigt die neue Version, und das Band sagt
 `Panel-Firmware 0.22.1 installiert.`. Schlägt das Schreiben fehl, bleibt der bisherige Build als Startbuild
-ausgewählt. SCHLIESSEN führt zum Menü zurück; nach einem Download von GitHub
+ausgewählt. Die Zeile unter `Schreiben fehlgeschlagen.` nennt in der Warnfarbe
+den Grund, den die Konsolenzeile nennt: zum Beispiel `WLAN ging nicht
+innerhalb von 20s aus.`, `Die Steuerung stand nicht innerhalb von 1500ms
+still.` oder `Löschen, Schreiben oder Prüfen des Flash ist
+fehlgeschlagen.`. SCHLIESSEN führt zum Menü zurück; nach einem Download von GitHub
 führt es dorthin, wo der Download begann.
 
 ![Das Schreiben schlug fehl](img/de/panel-update-failed.png)
@@ -5711,7 +5767,7 @@ Neustart weitergeht. Ein 18-Byte-Eintrag, Namespace `fw_ota`, Schlüssel
 laufen soll, in 16 Bytes mit Nullen aufgefüllt, und die verbleibenden
 Öffnungen, beim Schreiben 2. Die Installation schreibt ihn, sobald das
 Image ganz geschrieben und geprüft ist, vor der Neustartnotiz. Das Update
-des C6-Funkchips schreibt ihn bei Erfolg, mit der laufenden Version. Ein
+des C6-Funks schreibt ihn bei Erfolg, mit der laufenden Version. Ein
 Stromausfall vor dem Schreiben hinterlässt keinen Lauf. Ein Versionstext
 über 16 Bytes wird nicht geschrieben, und eine bestehende Notiz wird
 gelöscht. Was ein Lauf nach dem Neustart tut, steht in
@@ -5763,7 +5819,7 @@ Zeile in der Schrift 10 x 20px.
 - PANEL, SENSORS, WIRELESS und SD CARD enthalten die Einstellungen für den
   gesamten Prüfstand. Jede Kachel nennt die Zahl der Einstellungen in ihrer
   Liste; SENSORS nennt stattdessen die verfügbaren Gruppen,
-  `STROM, WINKEL, PHASENABGRIFF`, und WIRELESS `IMU, DIAL, LEISTUNG, AUSWUCHTEN`. Ein Tippen öffnet die Liste der Kategorie. Die Einstellungen von Akku,
+  `STROM, WINKEL, PHASENABGRIFF`, und WIRELESS `IMU, DIAL, SENSORKNOTEN`. Ein Tippen öffnet die Liste der Kategorie. Die Einstellungen von Akku,
   Motor und Gasausgang stehen unter MOTOR & ESC > OPTIONEN
   ([MOTOR & ESC, Optionen](#motor--esc-optionen)).
 - Vier eigene Bildschirme: OUTPUTS ([Outputs](#outputs)), WI-FI ([WLAN](#wlan)),
@@ -6793,8 +6849,8 @@ Die Zeilen des DIAL-Eintrags ([Das M5Stack Dial](Dial-de.md#das-panel)):
 | Zeile | Werte | Vorgabe | Wirkung |
 | --- | --- | --- | --- |
 | Dial | EIN, AUS | AUS | die Verbindung zum gebundenen Dial; AUS beendet sie ohne Fehler |
-| Dial suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | bei `n GEFUNDEN` öffnet Tippen die Liste von Gebundenes Dial; sonst sucht Tippen 10s lang, und das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE DIAL-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; während eine Suche läuft, startet Tippen keine, und das Band zeigt `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE DIAL-SUCHE` |
-| Gebundenes Dial | der Name des gebundenen Dials, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen listet die Dials der letzten Suche, `DIAL-3A10  -52dBm`, bis zu 6, das gebundene markiert, und zuletzt `ERNEUT SUCHEN`; Tippen auf ein Dial bindet es und fragt nach dem Speichern, `ERNEUT SUCHEN` sucht wie Dial suchen. Ohne Liste zeigt das Band `KEIN DIAL GELISTET: ERST AUF DIAL SUCHEN TIPPEN`, während einer Suche `SUCHE LÄUFT: DAS DIAL NACH DEM ENDE WÄHLEN` |
+| Dial suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | Tippen öffnet SEARCH ([WIRELESS: SEARCH](#wireless-search)) und sucht 10s lang; das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE DIAL-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; während eine Suche läuft, startet Tippen keine, und das Band zeigt `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE DIAL-SUCHE`. SEARCH öffnet in jedem Fall |
+| Gebundenes Dial | der Name des gebundenen Dials, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen öffnet SEARCH mit der Liste der letzten Suche, ohne Suche |
 | Dial-Schritt, Gas | 0.5%, 1%, 2%, 5% | 1% | das Gas, das eine Raste auf MOTOR & ESC verstellt |
 | Dial-Schritt, Servo | 0.5°, 1°, 2°, 5° | 1° | der Hornwinkel, den eine Raste auf SERVO verstellt |
 
@@ -6816,8 +6872,8 @@ Spannung, Strom, Leistung und Summen von MOTOR & ESC liefert.
 | --- | --- | --- | --- |
 | Leistungsknoten | EIN, AUS | AUS | die Verbindung zum gebundenen Knoten; AUS beendet sie ohne Fehler |
 | INA228-Quelle | WIRED, NODE | WIRED | WIRED: der INA228 des IOmcu unter SENSORS; NODE: die Messwerte des Leistungsknotens. Auch bei ausgeschaltetem Knoten sichtbar, damit die Quelle ohne Einschalten des Knotens auf WIRED zurück kann |
-| Knoten suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | bei `n GEFUNDEN` öffnet Tippen die Liste von Gebundener Knoten; sonst sucht Tippen 10s lang, und das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE KNOTENSUCHE`; während einer Suche `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s` |
-| Gebundener Knoten | der Name des gebundenen Knotens, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen listet die Leistungsknoten der letzten Suche, `rcbench-pwr-3456  -58dBm`, bis zu 6, der gebundene markiert, und zuletzt `ERNEUT SUCHEN`; Tippen auf einen Knoten bindet ihn und fragt nach dem Speichern, `ERNEUT SUCHEN` sucht. Ein Auswuchtknoten wird nicht gelistet. Ohne Liste zeigt das Band `KEIN KNOTEN GELISTET: ERST AUF KNOTEN SUCHEN TIPPEN`, während einer Suche `SUCHE LÄUFT: DEN KNOTEN NACH DEM ENDE WÄHLEN`; eine Wahl, abgelehnt, weil sich die Liste änderte, zeigt `KNOTEN NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN` |
+| Knoten suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | Tippen öffnet SEARCH ([WIRELESS: SEARCH](#wireless-search)) und sucht 10s lang nach Leistungsknoten; das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE KNOTENSUCHE`; während einer Suche `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`. SEARCH öffnet in jedem Fall. Ein Auswuchtknoten wird nicht gelistet |
+| Gebundener Knoten | der Name des gebundenen Knotens, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen öffnet SEARCH mit der Liste der letzten Suche, ohne Suche |
 | Knotenakku | `3.92V`, `SCHWACH 3.41V`, `KEINE ZELLE`, `LESEFEHLER`, `NICHT VERBUNDEN` | | die Zellspannung aus dem letzten STATUS des Knotens, alle 1000ms gesendet; `SCHWACH` unter 3.5V, `KEINE ZELLE` an USB allein |
 
 LEISTUNGSKNOTEN ZURÜCKSETZEN setzt Leistungsknoten auf AUS und
@@ -6862,8 +6918,8 @@ Die Zeilen des AUSWUCHTKNOTEN-Eintrags ([Auswuchten](Balance-de.md#messen-mit-de
 | Zeile | Werte | Vorgabe | Wirkung |
 | --- | --- | --- | --- |
 | Auswuchtknoten | EIN, AUS | AUS | die Verbindung zum gebundenen Knoten; AUS beendet sie, und sein Verlust ist kein Fehler: der Knoten misst und steuert nichts |
-| Knoten suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | bei `n GEFUNDEN` öffnet Tippen die Liste von Gebundener Knoten; sonst sucht Tippen 10s lang nach Knoten, die die Rolle Auswuchten anzeigen, und das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE KNOTENSUCHE`; während einer Suche `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s` |
-| Gebundener Knoten | der Name des gebundenen Knotens, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen listet die Knoten der letzten Suche, `rcbench-bal-3456  -58dBm`, bis zu 6, den gebundenen markiert, und zuletzt `ERNEUT SUCHEN`; Tippen auf einen Knoten bindet ihn und fragt nach dem Speichern, `ERNEUT SUCHEN` sucht. Ohne Liste zeigt das Band `KEIN KNOTEN GELISTET: ERST AUF KNOTEN SUCHEN TIPPEN`, während einer Suche `SUCHE LÄUFT: DEN KNOTEN NACH DEM ENDE WÄHLEN`; eine Wahl, abgelehnt, weil sich die Liste änderte, zeigt `KNOTEN NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN` |
+| Knoten suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | Tippen öffnet SEARCH ([WIRELESS: SEARCH](#wireless-search)) und sucht 10s lang nach Knoten, die die Rolle Auswuchten anzeigen; das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE KNOTENSUCHE`; während einer Suche `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`. SEARCH öffnet in jedem Fall |
+| Gebundener Knoten | der Name des gebundenen Knotens, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen öffnet SEARCH mit der Liste der letzten Suche, ohne Suche |
 | Knotenakku | `3.91V`, `3.40V NIEDRIG` (unter 3.50V), `KEIN WERT`, `--` | | die Zelle des Knotens aus dem STATUS, den er auf STREAM neben seinen Berichten sendet; `--` vor dem ersten auf einer Verbindung |
 | Testmasse | 0.01g bis 20.00g in Schritten von 0.01g | 0.50g | die Masse, die für die Testläufe von MOTOR & ESC > WUCHTEN aufgeklebt wird |
 
@@ -6872,6 +6928,57 @@ AUSWUCHTKNOTEN ZURÜCKSETZEN setzt Auswuchtknoten auf AUS und Testmasse auf
 andere Rolle oder ein anderes Protokoll nennt, zeigt `ROLLE r, PROTOKOLL p`,
 und seine Berichte werden nicht übernommen.
 
+### WIRELESS: SEARCH
+
+![SEARCH beim Leistungsknoten, zwei Knoten gefunden](img/de/setup-wireless-search.png)
+
+SEARCH findet und bindet das Dial, den Leistungsknoten oder den
+Auswuchtknoten. Dial suchen und Knoten suchen öffnen es und fordern eine
+Suche von 10s an; Gebundenes Dial und Gebundener Knoten öffnen es mit der
+Liste der letzten Suche, ohne Suche. Eine Suche, die die Zeile ablehnt
+(ARMED, eine laufende Suche, Bluetooth nicht bereit), nennt den Grund im
+Band, und SEARCH öffnet mit der letzten Liste. Das Home-Feld
+führt zurück zu SETUP > WIRELESS auf den Eintrag des Geräts.
+
+| Teil | Wo, Koordinaten im Körper | Was er zeigt oder tut |
+| --- | --- | --- |
+| Zustandszeile | x 16, y 12 | `SUCHE LÄUFT: NOCH 7s` während einer Suche, von 10s abwärts gezählt; `n GEFUNDEN: ZUM BINDEN EINES ANTIPPEN`; `KEINS GEFUNDEN`; `DURCH ARM BEENDET`; `NOCH KEINE SUCHE: AKTUALISIEREN ANTIPPEN` |
+| Fundliste | Zeilen von 640 x 48px im Abstand von 52px ab x 16, y 44 | die Geräte der letzten Suche, das stärkste zuerst, bis zu 8: der Name, sonst die Adresse, und der RSSI, `rcbench-pwr-3456  -58dBm`; das gebundene in der Akzentfarbe hervorgehoben. Der Controller leert die Liste beim Start einer Suche und füllt sie an ihrem Ende |
+| Karte | x 680, 328px breit, y 12 bis 136 | die Art des Geräts, seine Verbindung wie in der linken Liste, `GEBUNDEN` und der Name des gebundenen Geräts, sonst seine Adresse, sonst `KEINS` |
+| AKTUALISIEREN | 328 x 56px bei x 680, y 156 | eine neue Suche von 10s mit den Regeln von Dial suchen und Knoten suchen; grau während einer Suche, dort zeigt Tippen `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s` |
+
+![Die Bindungsfrage von SEARCH](img/de/setup-wireless-search-bind.png)
+
+Tippen auf ein gefundenes Gerät öffnet die Bindungsfrage anstelle der
+Liste, 700 x 280px bei x 162, y 100: `LEISTUNGSKNOTEN BINDEN?`
+(`DIAL BINDEN?`, `AUSWUCHTKNOTEN BINDEN?`), der Name des Geräts, seine
+Adresse und sein RSSI, das gebundene Gerät, das es ersetzt,
+`SETUP BEHÄLT DIE BINDUNG UND FORDERT SPEICHERN AN`, dann ABBRECHEN und
+BINDEN, je 300 x 56px. ABBRECHEN und das Home-Feld schließen sie und binden
+nichts. BINDEN fordert beim Controller die Bindung des Geräts an seinem
+Platz in der Liste an; die Frage schließt, und SEARCH bleibt. Karte und
+hervorgehobene Zeile folgen, sobald der Controller es gebunden hat, und
+das Panel behält Adresse und Name in SETUP und fordert Speichern an.
+
+BINDEN bindet nichts, schließt die Frage und nennt den Grund im Band:
+
+- während einer Suche: `SUCHE LÄUFT: DEN KNOTEN NACH DEM ENDE WÄHLEN`,
+  beim Dial `SUCHE LÄUFT: DAS DIAL NACH DEM ENDE WÄHLEN`;
+- wenn das angetippte Gerät nicht an seinem Platz in der Liste steht:
+  `KNOTEN NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`, beim Dial
+  `DIAL NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`.
+
+Tippen auf ein Gerät während einer Suche öffnet keine Frage und zeigt den
+Text der Suche. Eine Bindung, die der Controller nach BINDEN ablehnt, hinter
+einer zuerst gestarteten Suche oder einer geänderten Liste, zeigt dieselben
+Texte.
+
+Eine Änderung der Sicht des Geräts, ein RSSI, die verbleibenden Sekunden
+oder der Zustand der Verbindung, zeichnet SEARCH neu. Sie schließt keine
+Frage und bricht kein Antippen ab.
+
+![SEARCH während einer Suche nach dem Dial](img/de/setup-wireless-search-scan.png)
+
 ### SD CARD: welche Logs geschrieben werden, und wohin
 
 ![SD CARD](img/de/setup-card.png)
@@ -6879,7 +6986,7 @@ und seine Berichte werden nicht übernommen.
 | Einstellung | Bereich | Vorgabe | Schreibt |
 | --- | --- | --- | --- |
 | Auto-Aufzeichnungen | AUS, EIN | EIN | `SERVOnnn.CSV`, `MOTORnnn.CSV` und `SUPPLnnn.CSV` in Ordner Auto-Aufzeichnungen: eine Aufzeichnung je ARMED- und Netzteil-Lauf |
-| Testaufzeichnungen | AUS, EIN | EIN | `ATESTnnn.CSV` mit seiner `ATESTnnn.TXT`, `LIMITnnn.TXT` und `RUDDRnnn.CSV` mit seiner `RUDDRnnn.TXT` in Ordner Testaufzeichnungen: den AUTOMATISCHEN TEST, den ENDLAGENLAUF und RUDER AUTO, jeweils wie die Einstellung beim Start des Laufs steht |
+| Testaufzeichnungen | AUS, EIN | EIN | `ATESTnnn.CSV` mit seiner `ATESTnnn.TXT`, `LIMITnnn.TXT` und `RUDDRnnn.CSV` mit seiner `RUDDRnnn.TXT` in Ordner Testaufzeichnungen: den AUTOMATISCHEN TEST, LIMIT RUN und RUDER AUTO, jeweils wie die Einstellung beim Start des Laufs steht |
 | Schreiben per Browser | OFFEN, ZUGANGSCODE, HALTEN, AUS | OFFEN | selbst nichts: was ein Browser braucht, um die Karte über die Seite von WI-FI zu ändern ([Schreiben per Browser](#schreiben-per-browser)) |
 | Ordner Auto-Aufzeichnungen | ein Ordner, siehe unten | `BENCH/LOGS` | wohin Auto-Aufzeichnungen schreibt |
 | Ordner Testaufzeichnungen | ein Ordner, siehe unten | `USER/LOGS` | wohin Testaufzeichnungen schreibt |
@@ -6891,7 +6998,7 @@ und seine Berichte werden nicht übernommen.
   Schaltest du während eines ARMED- oder Netzteil-Laufs auf EIN, beginnt
   eine neue Datei.
 - Testaufzeichnungen wird gelesen, wenn 2s HALTEN: ARM + START auf TEST
-  oder ENDLAGENLAUF den Lauf startet.
+  oder LIMIT RUN den Lauf startet.
   Der Test behält den Zustand vom Start. Bei AUS
   zeigen die Laufkarte und der Kasten auf LIVE `TESTAUFZEICHNUNGEN AUS` an der
   Stelle der Dateinamen.
@@ -6918,13 +7025,222 @@ Ordner gilt weiter; rechts vom Titel steht der Grund:
 | mehr als 2 Ordner | `A/B/C` (`A/B` wird genommen) | `Höchstens 2 Ordnerebenen` |
 | ein Zeichen außer A-Z, 0-9, `_` und `-` | `MY LOGS` | `Nur A-Z, 0-9, _ und -` |
 | ein Gerätename von Windows: CON, PRN, AUX, NUL, COM1 bis COM9, LPT1 bis LPT9 | `AUX/LOGS` | `Reservierter Name` |
-| ein Ordner der eigenen Dateien des Prüfstands: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW`, `BENCH/BALANCE` | `BENCH/KST` (`BENCH/KSTX` wird genommen) | `Für Prüfstand-Dateien reserviert` |
+| ein Ordner der eigenen Dateien des Prüfstands: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW`, `BENCH/BALANCE`, `BENCH/SETUP` | `BENCH/KST` (`BENCH/KSTX` wird genommen) | `Für Prüfstand-Dateien reserviert` |
 
 Jeder Ordnername, den das Panel nimmt, ist ein kurzer 8.3-Name von FAT (File
 Allocation Table), auf jedem Computer derselbe. Der längste Ordner hat 17
 Zeichen, `ABCDEFGH/12345678`. Ein ungültiger gespeicherter Ordner, etwa von einer anderen Firmware,
 wird nicht verwendet. Die Aufzeichnungen gehen stattdessen in den
 Vorgabeordner ihrer Art, und LOGS listet diesen Ordner.
+
+### SD CARD: die Sicherung der Einstellungen
+
+Das Panel hält seine Einstellungen im NVS (non-volatile storage) seines
+eigenen Flash. Ein vollständiges Flashen des Panels löscht das NVS und mit
+ihm die Bindungen von Dial, Knoten und IMU. Die Sicherung legt eine Kopie
+auf die Karte.
+
+![SD CARD am Ende der Liste: EINSTELLUNGEN SICHERN geschrieben](img/de/setup-card-backup.png)
+
+| Zeile | Antippen | Wert | Nimmt kein Antippen |
+| --- | --- | --- | --- |
+| Einstellungen sichern | schreibt die gespeicherten Einstellungen als `BENCH/SETUP/SETTINGS.TXT`; jedes Antippen ersetzt sie | `SCHREIBT`, `GESCHRIEBEN`, `KARTE VOLL` oder `FEHLER, CODE n` (Codes unten) | `Keine Karte`; `Änderungen nicht gespeichert: erst SAVE`, solange SAVE angeboten ist: Die Datei enthält, was der Speicher enthält, keine Änderung |
+| Einstellungen laden | öffnet BACKUP | keiner | `Nicht bei ARMED` |
+
+**Die Dateien.** Alle liegen in `BENCH/SETUP`, einem FEST-Ordner von
+[Files](#files):
+
+| Datei | Geschrieben |
+| --- | --- |
+| `SETTINGS.TXT` | von Einstellungen sichern |
+| `AUTO1.TXT` | bei jedem Schreiben der Einstellungen ins NVS mit eingesteckter Karte: die neueste Kopie |
+| `AUTO2.TXT`, `AUTO3.TXT` | die Kopien davor; die nächste Kopie entfernt `AUTO3.TXT` |
+| `AUTO.TMP`, `SETTINGS.TMP` | eine Datei, während sie geschrieben wird |
+
+Eine Datei wird zuerst ganz unter ihrem `.TMP`-Namen geschrieben. Erst dann
+rücken die Kopien weiter: `AUTO3.TXT` entfällt, `AUTO2.TXT` wird
+`AUTO3.TXT`, `AUTO1.TXT` wird `AUTO2.TXT`, die neue Datei wird `AUTO1.TXT`.
+Eine volle Karte oder ein fehlgeschlagenes Schreiben lässt die Kopien, wie
+sie waren. Geschrieben wird in der Logger-Task neben den Logs; Seiten und
+Control-Task warten nicht auf die Karte. Jeder Auftrag nimmt die
+Auftragssperre der Karte, die FILES und die Schreibzugriffe der WLAN-Seite
+teilen, und wartet nicht darauf: Solange einer von ihnen sie hält, wartet
+der Auftrag auf den nächsten Durchgang der Logger-Task. So verschiebt eine
+Kopie nie die Dateien, während eine Bearbeitung einer von ihnen
+gespeichert wird.
+
+**Die automatische Kopie.** Ein Speichern, das das NVS erreicht, während
+eine Karte eingehängt ist, schuldet eine Kopie; ein Speichern ohne Karte
+schreibt keine, und eine später eingesteckte Karte bekommt dafür keine.
+Solange BACKUP zu sehen ist, wartet eine geschuldete Kopie und wird
+geschrieben, sobald BACKUP verlassen wird; so behalten die gelisteten
+Dateien Namen und Datum. Nach jeder Kopie wird die Liste neu gelesen.
+Eine Kopie, die die Karte nicht erreicht, steht einmal im Meldeband:
+`Einstellungskopie nicht geschrieben: Die Karte ist voll.` oder
+`Einstellungskopie nicht geschrieben: Karten-Code n.` Der nächste Fehler
+steht erst nach einer gelungenen Kopie wieder dort. Eine fehlgeschlagene
+Kopie ist kein Fehler des Prüfstands: Ausgänge, Netzteil und ARMED bleiben,
+wie sie sind. Sie kostet nichts, was der Prüfstand treibt, und die
+Einstellungen selbst liegen im NVS.
+
+**BACKUP.** Einstellungen laden öffnet die Seite, und sie liest den Ordner
+jedes Mal neu:
+
+![BACKUP: die Einstellungsdateien der Karte, die neueste gewählt](img/de/setup-backup.png)
+
+- Links eine Karte je Datei: ihr Name, das Datum ihrer `Written:`-Zeile und
+  die Panel-Version ihrer `Panel:`-Zeile, wie die ersten 256B der Datei
+  sie geben: Eine Zeile dahinter zeigt `Datum unbekannt` oder `Panel
+  unbekannt`, eine Zeile, die sie schneiden, ihren Teil darin. `Datum
+  unbekannt` steht auch für eine
+  Datei, die geschrieben wurde, als die Uhr des Panels nicht gestellt war:
+  Das Panel hat keinen RTC-Baustein (real-time clock) und stellt seine Uhr
+  nur über eine NTP-Antwort (Network Time Protocol). Eine Datei, die keine
+  Einstellungsdatei ist, zeigt `Keine Einstellungsdatei: Code n` (Datei-Codes
+  unten).
+- Antippen wählt eine Datei. Rechts stehen Name, Datum und Version der
+  gewählten Datei.
+- 2s HALTEN ZUM LADEN lädt die gewählte Datei: 2s halten, wie bei jeder
+  Aktion, die viel ersetzt. Loslassen vor 2s zeigt `Halte 2s, um die
+  Einstellungsdatei zu laden.` im Meldeband. Die Taste nimmt keinen Druck
+  bei ARMED, ohne gewählte Datei und für eine Datei, die keine
+  Einstellungsdatei ist; die Zeile darüber nennt den Grund.
+- ZURÜCK oder das Home-Tag führt zurück zu SD CARD.
+- Eine Karte, die gezogen oder getauscht wird, während BACKUP zu sehen ist,
+  leert die Liste, die Wahl und ein laufendes Halten; die Liste zeigt
+  `Keine Karte.`, und die nächste Karte wird neu gelistet.
+- Die Liste liest jede Datei ganz, bis 24.576B, die größte Datei, die
+  Laden nimmt; ein Lesen endet bei 24.577B, also liest eine Liste höchstens
+  98.308B für die vier Dateien. Sie behält die CRC-32-Prüfsumme (Cyclic Redundancy Check)
+  ihrer Bytes, die Summe, die der Editor von FILES und das ETag der
+  WLAN-Seite verwenden. Laden prüft, dass die gelesene Datei die gelistete
+  ist: dieselbe Größe und dieselbe CRC-32. Eine seither neu geschriebene
+  Datei, durch einen Browser, FILES oder einen Computer, lädt nichts, auch
+  wenn die Änderung die Größe und alle ersten Zeilen behält; das Meldeband
+  zeigt `Einstellungsdatei auf der Karte geändert: neu wählen.`, und die
+  Liste wird ohne Wahl neu gelesen. Ein Neuschreiben zu anderen Bytes mit
+  derselben Größe und derselben CRC-32 wird nicht erkannt.
+
+Laden ersetzt alle Einstellungen: durch den Wert der Datei, wo eine Zeile
+einen gibt, sonst durch den Standardwert. Die Werte gelten sofort, wie eine
+Änderung, und das Speichern ins NVS wird angefordert: Es geschieht, sobald
+der Prüfstand ruht (siehe [Werte behalten](#werte-behalten)). Die Antwort
+steht an der Stelle der Liste:
+
+![Eine von Hand bearbeitete Datei geladen, drei Zeilen abgelehnt](img/de/setup-backup-loaded.png)
+
+`<Datei> geladen: n geändert, m abgelehnt`, dann jede abgelehnte Zeile:
+ihre Nummer, ihr Schlüssel, ihr Code und der Grund. Die ersten 16
+abgelehnten Zeilen bleiben erhalten; eine Zeile darunter zählt den Rest.
+Eine ganz abgelehnte Datei lädt nichts und zeigt `<Datei> abgelehnt: Code
+n, Zeile m.` Eine Datei, deren Lesen in einem Frame endet, der den Prüfstand
+ARMED sieht oder ein ARM, das wartet oder eingereiht ist, wird ebenfalls
+nicht geladen, wie auch immer der Prüfstand beim
+Halten stand: `<Datei> nicht geladen: Prüfstand ARMED.`
+
+**Das Angebot beim Start.** Ein Panel, das nur mit den Standardwerten
+startet (das NVS hielt keine Einstellungen oder nach einem Löschen die
+Standardwerte), liest beim ersten Einhängen der Karte deren neueste Datei.
+Hält diese andere Einstellungen, öffnet BACKUP über dem Menü, sobald der
+Prüfstand SAFE ist und das Menü zeigt:
+
+![Das Angebot beim Start](img/de/setup-backup-offer.png)
+
+Gewählt ist die neueste Datei: das späteste `Written:`-Datum, wo zwei
+Dateien eines haben, sonst `AUTO1.TXT`, `AUTO2.TXT`, `AUTO3.TXT`,
+`SETTINGS.TXT` in dieser Reihenfolge. 2s HALTEN ZUM LADEN lädt sie;
+ÜBERSPRINGEN oder das Home-Tag führt zurück ins Menü. Das Angebot kommt
+einmal je Start. Bis es beantwortet ist, wird keine automatische Kopie
+geschrieben, damit eine Kopie der Standardwerte keine gute Kopie
+weiterschiebt. Ein Speichern anderer Einstellungen, bevor das Angebot
+erscheint, beendet es, ebenso eine Datei, die von Hand über
+Einstellungen laden geladen wird. Wird die Karte gezogen oder getauscht,
+bevor das Angebot beantwortet ist, beginnt es von vorn: Die nächste Karte
+wird gelistet und ihre neueste Datei erneut gelesen; ein Angebot auf dem
+Bildschirm zeigt bis dahin `Keine Karte.` und kommt mit der neuesten Datei
+dieser Karte gewählt zurück.
+
+**Was die Datei enthält.** Jede Einstellung des Schemas (die Listen von
+SETUP, MOTOR & ESC > SETTINGS, SUPPLY, SERVO, die vier INA3221-Schlüssel
+von 0.21, die keine Liste zeigt, und die Einheiten) und jeden Text: den
+DUT-Namen, die beiden Aufzeichnungsordner und die Bindungen von IMU, Dial,
+Leistungsknoten und Balancierknoten, je eine Adresse und ein Name. Sensor
+SCL wird nicht geschrieben: Er folgt Sensor SDA.
+
+**Was sie nicht enthält.** Das WLAN-Heimnetz und sein Passwort,
+HOTSPOT-PASSWORT, ZUGANGSCODE und den Schalter des Zugangscodes. Sie liegen
+in einem anderen NVS-Speicher und bleiben draußen: Eine Karte wird von
+jedem Computer gelesen, in den sie kommt, und eine geladene Datei darf
+weder den Zugangscode abschalten noch ein Netz nennen, dem das Panel
+beitritt. BACKUP sagt das unter den Dateien. Nach einem vollständigen
+Flashen werden sie auf [WLAN](#wlan) neu gesetzt. Die Notizen des Panels
+zu einem Update (`fw_ota`) sind keine Einstellungen und bleiben ebenfalls
+draußen.
+
+**Das Format, Version 1.** Text, den ein Mensch liest und bearbeitet, eine
+Zeile je Einstellung:
+
+```
+rcbench settings, format 1
+Panel: 0.23.15
+Written: 2026-11-21 14:05:33 UTC
+# Not in this file: the Wi-Fi home network and its password,
+# HOTSPOT PASSWORD and ACCESS CODE.
+# One line a setting: <key> = <value>.  A setting without a line loads
+# its default.  Keep the last line, end.
+pack_cells = 6                  # Cells, 1 to 14S
+theme = DARK                    # Theme: DARK, LIGHT
+plot_pan1 = OFF                 # One finger pans: ON, OFF
+srv_dut = "SERVO"               # Device under test, for the report
+dial_ble = "D4:F9:8D:00:3A:10 R" # Bound Dial: BLE address and its type
+end
+```
+
+- Der Schlüssel ist der NVS-Schlüssel der Einstellung; der Kommentar nach
+  `#` nennt die Einstellung auf Englisch und ihren Bereich oder ihre
+  Optionen.
+- Eine Zahl hat so viele Nachkommastellen wie ihr Schritt; ein Schalter ist
+  `ON` oder `OFF`; eine Auswahl der englische Text ihrer Option; ein Text
+  steht in doppelten Anführungszeichen, `\"` und `\\` für ein
+  Anführungszeichen und einen Backslash, höchstens 23 Bytes.
+- Schlüssel und die Wörter von Schalter und Auswahl werden ohne Rücksicht
+  auf Groß- und Kleinschreibung gelesen. Leerzeichen und Tabs um Schlüssel
+  und Wert, leere Zeilen, Kommentare, LF und CR LF sowie eine
+  UTF-8-Bytereihenfolgemarke werden angenommen.
+- Die letzte Zeile, die nicht leer und kein Kommentar ist, lautet `end`.
+  Einer abgeschnittenen Datei fehlt sie, und sie wird ganz abgelehnt.
+- Eine Datei hat höchstens 24.576 Bytes; eine vom Panel geschriebene etwa
+  12.100.
+
+| Datei-Code | Ganz abgelehnt |
+| --- | --- |
+| 2 | mehr als 24.576 Bytes |
+| 3 | Zeile 1 ist nicht `rcbench settings, format n` |
+| 4 | das Format ist keine Zahl von 1 bis 999 |
+| 5 | ein Format über 1, von einem neueren Panel geschrieben |
+| 6 | kein `end` als letzte Zeile: Die Datei ist abgeschnitten |
+
+| Zeilen-Code | Grund | Die Zeile wird übersprungen, weil |
+| --- | --- | --- |
+| 1 | nicht Schlüssel = Wert | kein `=`, kein Schlüssel oder eine andere `<Wort>:`-Zeile |
+| 2 | unbekannter Schlüssel | keine Einstellung diesen Schlüssel hat |
+| 3 | Schlüssel doppelt | der Schlüssel schon eine Zeile hatte; die erste zählt |
+| 4 | Wert nicht lesbar | keine Zahl, keine Option der Auswahl, nicht ON oder OFF, ein Text ohne Anführungszeichen |
+| 5 | außerhalb des Bereichs | außerhalb des Bereichs, um einen halben Schritt oder mehr neben dem Raster, oder ein Pin, den die Zeile nicht nimmt |
+| 6 | Text zu lang | ein Text über 23 Bytes |
+| 7 | folgt einer anderen | `sns_scl`, der Sensor SDA folgt |
+| 8 | belegt, bleibt | eine Task die Einstellung hält, etwa der Servo-Programmierer einen Pin seines Ports; die Einstellung behält ihren Wert |
+
+| Karten-Code | Bedeutung |
+| --- | --- |
+| 1 | keine Karte |
+| 2 | die Karte ist voll |
+| 3 | die Karte nimmt keine Datei: schreibgeschützt, oder eine Datei trägt den Namen eines Ordners |
+| 4 | Schreiben, Umbenennen oder Entfernen fehlgeschlagen |
+| 5 | Lesen fehlgeschlagen |
+| 6 | die Datei ist weg |
+| 7 | die Datei hat mehr als 24.576 Bytes |
+| 8 | eine Anfrage, die der Ordner nicht nimmt |
 
 ### Werte behalten
 
@@ -7268,7 +7584,10 @@ Nach dem vollständigen Halten beginnt das Update. Die normale
 Verbindung zum IOmcu wird unterbrochen, die Ausgänge sind aus, und der
 IOmcu lehnt ARM bis zum Ende des Updates ab. Die Fortschrittsanzeige füllt
 den Bildschirm. Er hat kein Band und kein STOP, wie der Bus-Fehler-Bildschirm:
-hinter ihm kann der Prüfstand nicht auf ARMED schalten.
+hinter ihm kann der Prüfstand nicht auf ARMED schalten. Bis zum Ende des
+Updates lehnt das Panel AUSGANG EIN des Netzteils, PROG 5V EIN und den Start
+einer Programmierung ab, zum Beispiel mit `Netzteilausgang nicht
+eingeschaltet: Das IOmcu-Update läuft.`
 
 ![Der Fortschritt](img/de/coproc-update-progress.png)
 
@@ -7320,8 +7639,11 @@ dem ESP32-P4-Panel wird jedes neuere Release angeboten
 ![UPDATES: die letzte Karte](img/de/updates.png)
 
 UPDATES führt durch sechs Schritte in fester Reihe: PANEL, IOMCU, C6-FUNK,
-DIAL, LEISTUNGSKNOTEN und AUSWUCHTKNOTEN. Das Panel-Image bringt jedes
-andere Image mit, darum kommt PANEL zuerst. Der C6-Funk kommt vor den
+DIAL, LEISTUNGSKNOTEN und AUSWUCHTKNOTEN. Das Panel-Image bringt die
+IOmcu-Images mit; die Images des C6-Funks und der Funkgeräte sind Dateien
+des Release, das das Panel ausführt, und das Halten ihres Schritts holt
+sie ([Geräte-Images](#geräte-images)). Ein neueres Panel-Release bringt
+neuere Images für jeden späteren Schritt, darum kommt PANEL zuerst. Der C6-Funk kommt vor den
 Funkgeräten: Ihre Übertragung läuft über seinen Bluetooth-LE-Controller
 (Low Energy), und sein Update startet das Panel neu. Nur der aktuelle
 Schritt hat ein Bedienelement ([Die Schritte](#die-schritte)).
@@ -7421,7 +7743,7 @@ die die späteren Schritte senden.
 | --- | --- | --- |
 | 1 PANEL | eine Suche ein neueres Release fand | `2s HALTEN: LADEN & INSTALLIEREN` ([Der Download](#der-download)); die Karte nennt das Release und sagt, dass das Panel damit neu startet |
 | 2 IOMCU | der IOmcu einen anderen Build als den mitgebrachten ausführt | `2s HALTEN ZUM IOMCU-UPDATE` ([Der IOmcu](#der-iomcu)); `Die Firmware auf diesem Panel ist älter.` in der Warnfarbe für ein älteres Image |
-| 3 C6-FUNK | der C6 eine andere Version als die des mitgebrachten Images meldet | `2s HALTEN ZUM C6-FUNK-UPDATE` ([Der C6-Funk](#der-c6-funk)); die Karte sagt `Nach diesem Schritt startet das Panel neu.` |
+| 3 C6-FUNK | der C6 eine andere Version als die des C6-Images des Release meldet | `2s HALTEN ZUM C6-FUNK-UPDATE` ([Der C6-Funk](#der-c6-funk)); die Karte sagt `Nach diesem Schritt startet das Panel neu.` |
 | 4 DIAL | das verbundene Dial eine andere Version ausführt | `2s HALTEN ZUM DIAL-UPDATE` ([Das Dial](#das-dial)) |
 | 5 LEISTUNGSKNOTEN | der verbundene Leistungsknoten eine andere Version ausführt | `2s HALTEN ZUM LEISTUNGSKNOTEN-UPDATE` ([Die Sensorknoten](#die-sensorknoten)) |
 | 6 AUSWUCHTKNOTEN | der verbundene Auswuchtknoten eine andere Version ausführt | `2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE` |
@@ -7444,16 +7766,17 @@ Warnfarbe, und das Halten ist der neue Versuch.
 | Etikett | Bedeutung |
 | --- | --- |
 | `ALS NÄCHSTES` | der aktuelle Schritt: sein Bedienelement ist aktiv, oder grau mit dem Grund auf der Karte |
-| `AKTUELL` | führt die mitgebrachte oder neueste Version aus; sein Nummernfeld ist in der OK-Farbe gefüllt |
+| `AKTUELL` | führt die mitgebrachte, die des Release oder die neueste Version aus; sein Nummernfeld ist in der OK-Farbe gefüllt |
 | `SPÄTER` | ein Schritt nach dem aktuellen mit einer anderen Version; ist PANEL mit einem neueren Release aktuell, auch IOMCU und jedes verbundene Gerät: Das Release bringt neuere Images für sie mit |
-| `UPDATE LÄUFT`, `WIRD GEPRÜFT` | sein Update läuft; oder eine kurze Wartezeit: die Build-Prüfung des IOmcu, die Prüfung des mitgebrachten Images, der Start von Bluetooth LE, das Ende eines anderen Updates. Die Karte sagt welche; kein Bedienelement |
+| `UPDATE LÄUFT`, `WIRD GEPRÜFT` | sein Update läuft, oder sein Image wird geladen, von der SD-Karte gelesen oder geprüft ([Geräte-Images](#geräte-images)); oder eine kurze Wartezeit: die Build-Prüfung des IOmcu, der Start von Bluetooth LE, das Ende eines anderen Updates. Die Karte sagt welche; kein Bedienelement |
 | `FEHLGESCHLAGEN` | sein letzter Versuch seit dem Start des Panels endete ohne Installation |
 | `ÜBERSPRUNGEN` | SCHRITT ÜBERSPRINGEN wurde seit dem Start des Panels getippt |
 | `NICHT GESUCHT` | PANEL: kein Suchergebnis seit diesem Start |
 | `OHNE VERBINDUNG`, `NICHT VERBUNDEN` | kein IOmcu antwortet; ein gebundenes Gerät ist nicht verbunden |
 | `NICHT GEBUNDEN` | kein Gerät der Art ist auf WIRELESS gebunden |
 | `AUS` | ein Gerät ist gebunden, und sein Schalter auf WIRELESS steht auf AUS: Das Panel hält keine Verbindung zu ihm |
-| `KEINE FIRMWARE`, `FIRMWARE DEFEKT`, `PRÜFFEHLER`, `NUR USB`, `KEINE ANTWORT`, `NICHT GEMELDET` | nichts zu tun: Das Panel bringt kein Image mit, das mitgebrachte Image besteht seine Prüfung nicht, die Build-Prüfung des IOmcu gab keine Antwort, der IOmcu nimmt kein Update über CAN an, die Verbindung zum C6 schlug fehl, der C6 nannte keine Version |
+| `KEIN BLUETOOTH` | ein Gerät ist gebunden und EIN, und Bluetooth LE kann es nicht verbinden: Die Verbindung zum C6 schlug fehl, oder der Host hat keinen Sync mit dem C6 |
+| `KEINE FIRMWARE`, `FIRMWARE DEFEKT`, `PRÜFFEHLER`, `NUR USB`, `KEINE ANTWORT`, `NICHT GEMELDET` | nichts zu tun: Das Panel bringt kein IOmcu-Image mit, das mitgebrachte IOmcu-Image besteht seine Prüfung nicht, die Build-Prüfung des IOmcu gab keine Antwort, der IOmcu nimmt kein Update über CAN an, die Verbindung zum C6 schlug fehl, der C6 nannte keine Version |
 
 Ein Schritt, bei dem nichts zu tun ist, wird übergangen. Steht nach einem
 Neustart ein Update-Lauf, warten stattdessen der IOmcu ohne Verbindung und
@@ -7464,7 +7787,11 @@ ein gebundenes, nicht verbundenes Gerät: Die Karte sagt
 verbindet. Außerhalb eines Laufs werden sie übergangen und auf der letzten
 Karte genannt. Ein gebundenes Gerät, dessen Schalter auf WIRELESS auf AUS
 steht, wartet nie, weder in einem Lauf noch außerhalb: Seine Zeile zeigt
-`AUS`, und die letzte Karte nennt es.
+`AUS`, und die letzte Karte nennt es. Ebenso wenig wartet ein gebundenes
+Gerät, das EIN ist, solange Bluetooth LE es nicht verbinden kann: Seine
+Zeile zeigt `KEIN BLUETOOTH`, und die letzte Karte nennt es. Während
+Bluetooth LE startet, wartet ein gebundenes Gerät, das EIN ist, in einem
+Lauf.
 
 ![Ein Schritt, gesperrt bei ARMED](img/de/updates-held.png)
 
@@ -7510,7 +7837,7 @@ Unter der Überschrift stehen
 die laufende Version, das Heimnetz, das Ergebnis der letzten Suche und
 die übergangenen Schritte: `Nicht verbunden: LEISTUNGSKNOTEN.`,
 `Kein Update hier: C6-FUNK. Die Liste nennt den Grund.` (darunter ein
-Gerät, das `AUS` zeigt) und
+Gerät, das `AUS` oder `KEIN BLUETOOTH` zeigt) und
 `Übersprungen: DIAL.`, danach die Hinweise zur Erinnerung und zu
 RELEASES. ÜBERSPRUNGENE SCHRITTE ZEIGEN steht darunter, solange ein
 Schritt übersprungen ist. NACH UPDATES SUCHEN ist in der Akzentfarbe
@@ -7780,8 +8107,8 @@ Die Fußleiste lautet `[UPDATES] [ ] [ZURÜCK]`.
 | Bedienelement | Wirkung |
 | --- | --- |
 | `2s HALTEN ZUM IOMCU-UPDATE` | Startet das Update des IOmcu aus dem Image, das dieses Panel mitbringt ([Der IOmcu](#der-iomcu)). |
-| `2s HALTEN ZUM C6-FUNK-UPDATE` | Sendet das Image des C6-Funks, das dieses Panel mitbringt, an den ESP32-C6 des Boards ([Der C6-Funk](#der-c6-funk)). |
-| `2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN` | Dasselbe, solange der C6 die mitgebrachte Version meldet ([Der C6-Funk](#der-c6-funk)). |
+| `2s HALTEN ZUM C6-FUNK-UPDATE` | Holt das Image des C6-Funks aus dem Release, das das Panel ausführt, und sendet es an den ESP32-C6 des Boards ([Der C6-Funk](#der-c6-funk), [Geräte-Images](#geräte-images)). |
+| `2s HALTEN: C6-FUNK NEU INSTALLIEREN` | Dasselbe, solange der C6 die Version des Release meldet ([Der C6-Funk](#der-c6-funk)). |
 | `FIRMWARE DER FUNKGERÄTE` | Öffnet über dieser Seite die Seite mit den Firmware-Zeilen des Dial und der Sensorknoten ([Die Funkgeräte](#die-funkgeräte)). Während ein Update läuft, zeigt die Taste die Beschriftung dieser Zeile. |
 | `ZURÜCK` | Schließt die Seite: UPDATES erscheint wieder. |
 
@@ -7837,15 +8164,130 @@ enthaltenen Build, bleibt die Taste zum Halten inaktiv, und kein Angebot
 VERBINDUNG im Band und nimmt das Update trotzdem; sein Angebot öffnet
 UPDATES wie jedes andere.
 
+### Geräte-Images
+
+Das Panel-Image bringt nur die IOmcu-Images mit. Die Anwendungs-Images des
+C6-Funks, des Dial, des Leistungsknotens, des Auswuchtknotens und des
+Anzeigeknotens sind Dateien des Release, das das Panel ausführt, Tag `vMAJOR.MINOR.PATCH` der
+eigenen Version des Panels, die auch der Web-Flasher und die Release-Seite
+anbieten:
+
+| Schritt | Datei | Höchstens Bytes |
+| --- | --- | ---: |
+| C6-FUNK | `rcbench-c6-<esp_hosted-Version>.bin`, `rcbench-c6-2.13.0.bin` | 1.966.080 |
+| DIAL | `rcbench-dial-<Version>.bin` | 3.145.728 |
+| LEISTUNGSKNOTEN | `rcbench-node-pwr-<Version>.bin` | 1.572.864 |
+| AUSWUCHTKNOTEN | `rcbench-node-bal-<Version>.bin` | 1.572.864 |
+| ANZEIGEKNOTEN, der Schritt LEISTUNGSKNOTEN, solange der gebundene Leistungsknoten der Anzeigeknoten ES3C28P ist | `rcbench-node-display-<Version>.bin` | 1.572.864 |
+
+Das Halten eines Schritts nimmt das Image von einer von drei Stellen, und
+die Karte nennt die Datei und die Stelle:
+
+| Zeile der Karte | Woher das Halten es nimmt |
+| --- | --- |
+| `Das Halten lädt zuerst rcbench-dial-0.23.17.bin von GitHub.` | GitHub: der Normalfall mit gespeichertem Heimnetz. |
+| `Das Halten liest BENCH/UPDATES/rcbench-dial-0.23.17.bin von der SD-Karte.` | Die SD-Karte, Ordner `BENCH/UPDATES`: nach einem fehlgeschlagenen Download, und immer ohne Heimnetz. Das Bedienelement zeigt `2s HALTEN: UPDATE VON DER SD-KARTE`. Ein fehlgeschlagenes Lesen der Karte schickt das nächste Halten wieder zu GitHub. |
+| `rcbench-dial-0.23.17.bin ist geladen und geprüft.` | Der Speicher: Ein früheres Halten hat es geholt. Es bleibt im PSRAM (pseudo-statischer Arbeitsspeicher), bis das Panel neu startet. |
+
+Der Download nimmt den eigenen Download-Weg des Panels ([Der Download](#der-download)):
+das Heimnetz, `SHA256SUMS` des Release, dann die Datei, jede über höchstens
+3 Weiterleitungen zu den Hosts von GitHub über HTTPS, höchstens 180s ab dem
+Start. Der `Content-Length` der Datei ist größer als 0 und höchstens die
+Bytes des Schritts; die Datei kommt in einen PSRAM-Puffer dieser Länge, und
+ihr SHA-256 muss der sein, den `SHA256SUMS` für sie nennt. Danach geht der
+Funk aus, wie nach einer Suche. Das Lesen der Karte nimmt die Datei
+gleichen Namens aus `BENCH/UPDATES`; liegt in diesem Ordner auch eine
+`SHA256SUMS`, die die Datei nennt, muss der SHA-256 der Datei der dieser
+Zeile sein. In beiden Fällen besteht das Image danach die Prüfungen der
+Sender: eine ESP-IDF-Anwendung für Chip und Projekt des Geräts, ihr eigener
+angehängter SHA-256, für Dial und Knoten die Rolle in ihrem Kopf, und die
+Version des Release. Die Prüfungen und das Lesen der Karte laufen auf der
+Task `devimg` ([Performance: Stacks](Performance-de.md#stacks)).
+
+Die Release-Signatur des Images wird wie die des Panel-Images geprüft
+([SECURITY.md](../SECURITY.md)): Der Download holt `<Datei>.sig` neben der
+Datei, und das Lesen der Karte nimmt `<Datei>.sig` neben der Datei in
+`BENCH/UPDATES`. Eine fehlende `.sig` ist keine Signatur; eine außerhalb
+von 8 bis 72 Bytes, oder eine, die sich mit dem Release-Schlüssel nicht
+bestätigen lässt, passt nicht. Solange der Build warnt
+(`RCBENCH_SIGN_ENFORCE` 0, jeder Build bis zum stabilen Release, das sie
+erzwingt), wird ein solches Image behalten und gesendet: Das Band sagt
+`rcbench-dial-0.23.17.bin ist nicht vom rcbench-Release-Schlüssel
+signiert.`, und die Karte des Schritts zeigt `rcbench-dial-0.23.17.bin:
+nicht vom rcbench-Release-Schlüssel signiert. Das Image hat keine
+Signatur.` oder `Die Signatur passt nicht.` in der Warnfarbe.
+Ein Build, der sie erzwingt, lehnt das Image mit `V07` ab.
+
+Das Bedienelement zeigt, was läuft: `DOWNLOAD 43%`, `DATEI WIRD GEPRÜFT`,
+`SD-KARTE WIRD GELESEN`. UPDATE ABBRECHEN während des Downloads, des
+Lesens der Karte oder der Prüfung eines Funkgeräts verwirft das Update,
+das das Halten angefordert hat, und beendet den Download; ein Image, das
+danach noch besteht, bleibt für das nächste Halten im Speicher. Hat das Image bestanden, startet das Update, das das Halten
+angefordert hat, von selbst, wenn sein Gate offen ist; es wartet bis zu
+20.000ms, bis der Funk nach dem Download aus ist, und das Panel beendet
+dafür die Zeitabfrage des Funks. Bis zum Start zeigen Zeile und Schritt
+das Update als laufend: kein SCHRITT ÜBERSPRINGEN und kein anderes
+Halten; auf dem Schritt eines Funkgeräts verwirft UPDATE ABBRECHEN den
+Start. Jedes andere geschlossene Gate verwirft
+den Start: Das Band nennt den Grund, und das nächste Halten startet das
+Update aus dem Image im Speicher.
+
+Ein Download braucht, was eine Suche braucht: ein Heimnetz, den Prüfstand
+in SAFE ohne wartendes ARM, den Netzteilausgang aus, keinen Log-Lauf, kein
+anderes Update und keine Panel-Installation. Solange ARMED gilt, startet
+kein Download: Das Halten des Schritts ist grau, und ein Druck nennt den
+Grund im Band. ARMED, das Netzteil, ein Log-Lauf, STOP oder das Öffnen von
+WI-FI beenden einen laufenden Download. Kein Ausgang ändert seinen Zustand
+wegen eines Downloads, eines Lesens der Karte oder einer Prüfung. Es ist
+immer nur ein Image unterwegs.
+
+![Der Schritt des Dial nach einem fehlgeschlagenen Download: Das Halten liest die SD-Karte](img/de/updates-step-dial-card.png)
+
+Ein fehlgeschlagener Versuch steht in der Warnfarbe auf der Karte des
+Schritts, mit einem Code aus einem Buchstaben und zwei Ziffern; der Schritt
+zeigt `FEHLGESCHLAGEN`, und sein Halten ist der neue Versuch von der
+nächsten Stelle:
+
+| Zeile | Codes |
+| --- | --- |
+| `Download fehlgeschlagen (D10): Keine Verbindung zu GitHub.` | `D` und das Ergebnis des Downloads, in den Worten des eigenen Downloads des Panels ([Der Download](#der-download)): `D04` kein Heimnetz gespeichert, `D05` das Gate, `D06` von außen beendet (ARMED, Netzteil, Log-Lauf, STOP, WI-FI, UPDATE ABBRECHEN), `D07` das Verbinden schlug fehl, `D08` der Funk kam nicht hoch, `D09` die 180s sind abgelaufen, `D10` keine Verbindung, `D11` ein HTTP-Status abgelehnt, `D12` eine Antwort außer Form, `D13` `SHA256SUMS` fehlt oder ohne Zeile der Datei, `D14` der SHA-256 weicht von `SHA256SUMS` ab, `D16` kein Speicher |
+| `SD-Karte fehlgeschlagen (S02): BENCH/UPDATES/rcbench-dial-0.23.17.bin fehlt auf der SD-Karte.` | `S01` keine Karte, `S02` keine solche Datei, `S03` das Lesen schlug fehl, `S04` leer oder größer als die Bytes des Schritts, `S05` kein Speicher, `S06` die `SHA256SUMS` der Karte ist außer Form oder nennt die Datei zweimal |
+| `Prüfung fehlgeschlagen (V05): Die Datei hat Version 0.23.16, dieses Release 0.23.17.` | `V01` leer oder größer als die Bytes, `V02` der SHA-256 weicht von der `SHA256SUMS` der Karte ab, `V03` keine Anwendung für Chip und Projekt des Geräts, oder ihr eigener SHA-256 weicht ab, `V04` die Rolle eines anderen Geräts, `V05` eine andere Version, `V07` keine gültige Release-Signatur in einem Build, der sie erzwingt |
+
+Die Konsole nennt jeden Schritt:
+
+    I (…) devimg: rcbench-dial-0.23.17.bin: download of v0.23.17's file, job 3
+    I (…) devimg: rcbench-dial-0.23.17.bin: 850816 bytes, SHA-256 as SHA256SUMS; checking
+    I (…) devimg: rcbench-dial-0.23.17.bin: 0.23.17 850816 bytes, SHA-256 1a2b3c4d, from GitHub
+    W (…) devimg: image 1: Download failed (D10): No connection to GitHub.
+
+Aktuelle Einschränkungen:
+
+- Die Dauer eines Downloads in einem echten Netz ist nicht gemessen.
+- Ein Panel mit einem Build, zu dem es kein Release gibt (eine Version ohne
+  ihr Tag), findet auf GitHub keine Datei: `D13`, weil GitHub für die
+  `SHA256SUMS` des Release 404 antwortet. Seine Images kommen von der
+  SD-Karte.
+- Ein Image bleibt bis zum Neustart des Panels im PSRAM, höchstens die
+  vier Byte-Grenzen oben zusammen, 8.257.536 Bytes.
+- Solange `RCBENCH_SIGN_ENFORCE` 0 ist, wird ein Image ohne gültige
+  Release-Signatur nach der Warnung gesendet: Ein Image von der SD-Karte
+  ist dann nur an seine Größe, Chip, Projekt, Rolle und Version, seinen
+  eigenen angehängten SHA-256 und eine `SHA256SUMS` der Karte gebunden,
+  die es nennt ([SECURITY.md](../SECURITY.md)).
+
 ### Der C6-Funk
 
 Unter der Überschrift zeigt EINZELNE UPDATES den ESP32-C6 des Boards, der Wi-Fi und
-Bluetooth trägt: `C6-Funk: 2.13.0. Auf diesem Panel: 2.13.0.`, die Version,
+Bluetooth trägt: `C6-Funk: 2.13.0. Release: 2.13.0.`, die Version,
 die der C6 beim ersten Wi-Fi-Start seit dem Panel-Start gemeldet hat, oder
-`nicht gemeldet`, und die Version des Images, das dieses Panel mitbringt,
-oder `keine`. Darunter `2s HALTEN ZUM C6-FUNK-UPDATE`, oder `2s HALTEN:
-C6-FIRMWARE DES PANELS NEU INSTALLIEREN`, solange der C6 die mitgebrachte
-Version meldet. Während das Update
+`nicht gemeldet`, und die esp_hosted-Version des C6-Images des Release.
+Darunter `2s HALTEN ZUM C6-FUNK-UPDATE`, oder `2s HALTEN:
+C6-FUNK NEU INSTALLIEREN`, solange der C6 diese
+Version meldet. Das Halten holt zuerst das Image, solange es nicht im
+Speicher ist ([Geräte-Images](#geräte-images)); die Taste zeigt dann
+`DOWNLOAD 43%`, `DATEI WIRD GEPRÜFT` oder `SD-KARTE WIRD GELESEN`, und das
+Update startet, sobald das Image seine Prüfungen bestanden hat. Während das Update
 läuft, zeigt die Taste `C6-UPDATE 37%`, den Anteil des Images, den der C6
 angenommen hat. Die Schritte, ihre Grenzen und wie jeder endet, stehen in
 [Der Funk über den ESP32-C6: Die Firmware des C6](C6-de.md#die-firmware-des-c6).
@@ -7857,9 +8299,7 @@ es grau, und ein Tippen darauf zeigt den ersten Grund im Alarmband:
 
 | Band | Bedingung |
 | --- | --- |
-| `Dieses Panel enthält keine C6-Funk-Firmware.` | Das Panel wurde ohne das Image des C6 gebaut. |
-| `Die enthaltene C6-Funk-Firmware hat die Prüfung nicht bestanden.` | Das mitgebrachte Image ist kein ESP32-C6-Build von esp_hosted, oder sein SHA-256 weicht ab. |
-| `Das C6-Funk-Update läuft.` | Ein Update läuft. |
+| `Das C6-Funk-Update läuft.` | Ein Update läuft, oder sein Image ist unterwegs. |
 | `Der C6-Funk hat nicht geantwortet. Starte das Panel neu.` | Die Verbindung zum C6 ist seit dem Panel-Start ausgefallen; der C6 wird im Reset gehalten. |
 | `Das C6-Update erfordert SAFE.` | ARMED, oder ein ARM wartet. |
 | `Das C6-Update erfordert einen ausgeschalteten Netzteilausgang.` | Der Netzteilausgang ist an oder schaltet ein. |
@@ -7871,14 +8311,15 @@ es grau, und ein Tippen darauf zeigt den ersten Grund im Alarmband:
 | `Das C6-Update wartet: Bluetooth startet.` | Die Start-Task `blestart` von Bluetooth LE läuft. |
 | `Das C6-Update wartet auf das Ende des Funkgeräte-Updates.` | Das Update eines Dial läuft oder wurde angefordert ([Das Dial](#das-dial)). |
 | `Das C6-Update erfordert geschlossene Servo- und ESC-Programmierung. Wähle dort VERLASSEN.` | Eine KST-, Hitec- oder ESC-Programmierung belegt einen Port, oder eine Sitzung startet. |
-| `Das C6-Update wartet auf die letzte Antwort des C6-Funks.` | Ein Schritt eines beendeten Updates ist aus seinem Aufruf noch nicht zurück, oder das Update ist beendet und der Neustart des Panels steht an. |
+| `Das C6-Update wartet auf die letzte Antwort des C6-Funks.` | Ein Schritt eines beendeten Updates ist aus seinem Aufruf noch nicht zurück. |
+| `C6-Funk aktualisiert. Neustart, sobald SAFE und alle Ausgänge aus sind.` | Das Update endete erfolgreich, und der Neustart des Panels steht an: frühestens 3s nach dem Ende, und nur bei einem Prüfstand in SAFE mit allen Ausgängen aus. |
 
 Ein C6, der keine Version meldet, wie der ausgelieferte, bekommt das Update
-angeboten. Ein C6, der die mitgebrachte Version meldet, bekommt die
+angeboten. Ein C6, der die Version des Release meldet, bekommt die
 Neuinstallation angeboten: Images einer esp_hosted-Version mit anderen
 Einstellungen melden dieselbe Version, etwa eines mit 3
-Bluetooth-LE-Verbindungen und eines mit 5 ([Der Funk über den ESP32-C6: Das Image, das das Panel
-mitbringt](C6-de.md#das-image-das-das-panel-mitbringt)). Das
+Bluetooth-LE-Verbindungen und eines mit 5 ([Der Funk über den ESP32-C6: Das
+C6-Image](C6-de.md#das-c6-image)). Das
 Alarmband sagt, wie ein Update endete:
 
 | Alarm | Bedeutung |
@@ -7902,15 +8343,16 @@ und IOmcu-Update warten.
 Der Eintrag FUNKGERÄTE auf EINZELNE UPDATES zählt die Geräte:
 `Verbunden: 1 von 3. Andere Version: 0.` nennt die Geräte, die eine
 Version gemeldet haben, und die, deren Zeile eine andere als die
-mitgebrachte Version anbietet. Ein Tippen auf `FIRMWARE DER FUNKGERÄTE`
+Version des Release anbietet. Ein Tippen auf `FIRMWARE DER FUNKGERÄTE`
 öffnet die Seite; während ein Update läuft, zeigt die Taste die
 Beschriftung dieser Zeile.
 
 ![Der Eintrag FUNKGERÄTE, während das Dial nach seinem Druck fragt](img/de/updates-dial.png)
 
 Die Seite bedeckt EINZELNE UPDATES. Sie hat eine Zeile je Gerät, bei
-y 24, 128 und 232 im Körper: DIAL-FIRMWARE, LEISTUNGSKNOTEN-FIRMWARE und
-AUSWUCHTKNOTEN-FIRMWARE. Überschrift und Zeile nehmen 496px ab x 16 ein,
+y 24, 128 und 232 im Körper: DIAL-FIRMWARE, LEISTUNGSKNOTEN-FIRMWARE
+(ANZEIGEKNOTEN-FIRMWARE, solange der gebundene Leistungsknoten der
+Anzeigeknoten ist) und AUSWUCHTKNOTEN-FIRMWARE. Überschrift und Zeile nehmen 496px ab x 16 ein,
 das Halten 480 x 56px ab x 528. Ein Hinweis unter den Zeilen sagt, wie
 ein Gerät ein Update annimmt. `ZURÜCK` im rechten Platz der Fußleiste und
 das Home-Tag schließen die Seite und zeigen wieder EINZELNE UPDATES; das
@@ -7921,23 +8363,24 @@ Halten der anderen Zeilen grau.
 
 | Bedienelement | Wirkung |
 | --- | --- |
-| `2s HALTEN ZUM DIAL-UPDATE` | Sendet das Image des M5Stack Dial, das dieses Panel mitbringt, über Bluetooth LE an das verbundene Dial ([Das Dial](#das-dial)). |
-| `2s HALTEN: DIAL-FIRMWARE NEU INSTALLIEREN` | Dasselbe, solange das Dial die mitgebrachte Version meldet. |
-| `2s HALTEN ZUM LEISTUNGSKNOTEN-UPDATE` | Sendet das Image des Leistungsknotens, das dieses Panel mitbringt, an den gebundenen Leistungsknoten ([Die Sensorknoten](#die-sensorknoten)). |
-| `2s HALTEN: LEISTUNGSKNOTEN NEU INSTALLIEREN` | Dasselbe, solange der Knoten die mitgebrachte Version meldet. |
-| `2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE` | Sendet das Image des Auswuchtknotens, das dieses Panel mitbringt, an den gebundenen Auswuchtknoten. |
-| `2s HALTEN: AUSWUCHTKNOTEN NEU INSTALLIEREN` | Dasselbe, solange der Knoten die mitgebrachte Version meldet. |
+| `2s HALTEN ZUM DIAL-UPDATE` | Holt das Image des M5Stack Dial aus dem Release, das das Panel ausführt, und sendet es über Bluetooth LE an das verbundene Dial ([Das Dial](#das-dial), [Geräte-Images](#geräte-images)). |
+| `2s HALTEN: DIAL-FIRMWARE NEU INSTALLIEREN` | Dasselbe, solange das Dial die Version des Release meldet. |
+| `2s HALTEN ZUM LEISTUNGSKNOTEN-UPDATE` | Holt das Image des Leistungsknotens aus dem Release und sendet es an den gebundenen Leistungsknoten: das des C6-Knotens oder das des Anzeigeknotens auf dem ES3C28P ([Die Sensorknoten](#die-sensorknoten)). |
+| `2s HALTEN: LEISTUNGSKNOTEN NEU INSTALLIEREN` | Dasselbe, solange der Knoten die Version des Release meldet. |
+| `2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE` | Holt das Image des Auswuchtknotens aus dem Release und sendet es an den gebundenen Auswuchtknoten. |
+| `2s HALTEN: AUSWUCHTKNOTEN NEU INSTALLIEREN` | Dasselbe, solange der Knoten die Version des Release meldet. |
+| `2s HALTEN: UPDATE VON DER SD-KARTE` | Auf jeder der Zeilen oben, nach einem fehlgeschlagenen Download oder ohne Heimnetz: liest das Image von der SD-Karte ([Geräte-Images](#geräte-images)). |
 | `UPDATE ABBRECHEN` | Im mittleren Platz der Fußleiste, solange ein Update läuft; ein einfaches Tippen. Vor END beendet es das Update: Das Gerät verwirft, was es angenommen hat, und behält seine Firmware, und das Band zeigt `<Gerät>-Update abgebrochen: auf UPDATES abgebrochen. Vorherige Firmware läuft.` Ab END installiert das Gerät, was kommt: Die Taste ist grau, ein Tippen zeigt `Das Gerät installiert das Update und hält jetzt nicht an. Das Ergebnis folgt.` im Band, und das Ergebnis folgt wie ohne das Tippen. |
 | `ZURÜCK` | Schließt die Seite: EINZELNE UPDATES erscheint wieder. |
 
 ### Das Dial
 
 Die Zeile DIAL-FIRMWARE zeigt die Firmware des M5Stack Dial:
-`Dial: 0.21.0. Im Panel: 0.22.0.`, die Version, die INFO des verbundenen
-Dial genannt hat, oder `nicht verbunden`, und die Version des Dial-Images,
-das dieses Panel mitbringt, oder `keine`. Daneben `2s HALTEN ZUM
+`Dial: 0.21.0. Release: 0.22.0.`, die Version, die INFO des verbundenen
+Dial genannt hat, oder `nicht verbunden`, und die Version des Release, das
+das Panel ausführt. Daneben `2s HALTEN ZUM
 DIAL-UPDATE`, oder `2s HALTEN: DIAL-FIRMWARE NEU INSTALLIEREN`, solange
-das Dial die mitgebrachte Version meldet. Das Dial und sein Update stehen
+das Dial diese Version meldet. Das Dial und sein Update stehen
 in [Das M5Stack Dial: Update über Bluetooth
 LE](Dial-de.md#update-über-bluetooth-le).
 
@@ -7945,6 +8388,7 @@ Während das Update läuft, zeigt die Taste nacheinander:
 
 | Taste | Schritt |
 | --- | --- |
+| `DOWNLOAD 43%`, `DATEI WIRD GEPRÜFT`, `SD-KARTE WIRD GELESEN` | das Image des Dial ist unterwegs ([Geräte-Images](#geräte-images)) |
 | `DIAL-UPDATE: VERBINDET` | Der Knopf-Link des Dial endet, und das Update verbindet sich mit dem gebundenen Dial |
 | `AM DIAL DRÜCKEN ZUM ANNEHMEN: 27s` | Das Dial hat BEGIN angenommen und fragt nach einem Druck seiner Bildschirmtaste; die Sekunden sind die des Dial |
 | `DIAL-UPDATE 37%` | der Anteil des Images, den das Dial angenommen hat |
@@ -7957,9 +8401,6 @@ den ersten Grund im Alarmband:
 | Band | Bedingung |
 | --- | --- |
 | `Das Geräte-Update läuft.` | Ein Update läuft oder wurde angefordert. |
-| `Dieses Panel enthält keine Firmware für dieses Gerät.` | Das Panel wurde ohne das Image des Dial gebaut. |
-| `Die enthaltene Firmware für dieses Gerät wird geprüft.` | Die Prüfung des mitgebrachten Images ist seit dem Start noch nicht gelaufen. |
-| `Die enthaltene Firmware für dieses Gerät hat die Prüfung nicht bestanden.` | Das mitgebrachte Image ist keine ESP32-S3-Anwendung des Projekts `rcbench-dial` mit der Rolle des Dial, ist größer als der Slot des Dial von 3.145.728 Bytes, oder sein angehängter SHA-256 weicht ab. |
 | `Das Geräte-Update erfordert SAFE.` | ARMED, oder ein ARM wartet. |
 | `Das Geräte-Update wartet auf das Ende des anderen Updates.` | Das Update des C6 oder des IOmcu, oder Download oder Installation des Panels laufen. |
 | `Verbinde das Gerät zuerst auf WIRELESS.` | Kein Dial ist verbunden, oder seine INFO ist noch nicht gekommen. |
@@ -8001,7 +8442,10 @@ verloren`.
 | `Fehler 6` | ein anderer Code des Dial, etwa 6 für ein Schreiben außer der Reihe ([protocols/bleota](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md)) |
 
 Während das Update läuft, wird ARM mit `ARMED gesperrt: Ein Update eines
-Funkgeräts läuft.` abgelehnt, und das Update des C6 wartet. Download und
+Funkgeräts läuft.` abgelehnt, und das Update des C6 wartet. AUSGANG EIN des
+Netzteils, PROG 5V EIN und der Start einer Programmierung werden mit einem
+Alarm abgelehnt, der das Update nennt, zum Beispiel `Netzteilausgang nicht
+eingeschaltet: Das Dial-Update läuft.`. Download und
 Installation der Panel-Firmware warten ebenfalls, mit `Wartet auf das Ende
 des Funkgeräte-Updates.`: Ihr Neustart würde die Übertragung abbrechen, und
 das Gerät verwirft ein halbes Image. Der Knopf
@@ -8012,15 +8456,30 @@ gemessen.
 ### Die Sensorknoten
 
 Die Zeilen LEISTUNGSKNOTEN-FIRMWARE und AUSWUCHTKNOTEN-FIRMWARE zeigen die
-Firmware eines Knotens: `Knoten: 0.23.14. Im Panel: 0.23.15.`, die
+Firmware eines Knotens: `Knoten: 0.23.16. Release: 0.23.17.`, die
 Version, die das STATUS-Paket des Knotens auf der laufenden Verbindung
-genannt hat, oder `nicht verbunden`, und die Version des Knoten-Images,
-das dieses Panel mitbringt, oder `keine`. Die Images der beiden Rollen
+genannt hat, oder `nicht verbunden`, und die Version des Release, das
+das Panel ausführt. Die Images der beiden Rollen
 unterscheiden sich: Die Zeile des Leistungsknotens sendet das
 Leistungs-Image, die des Auswuchtknotens das Auswucht-Image, und ein
 Knoten lehnt das Image der anderen Rolle ab. Die Knoten und ihr Update
 stehen in [Die Sensorknoten: Update über Bluetooth
 LE](Nodes-de.md#update-über-bluetooth-le).
+
+Die Zeile des Leistungsknotens sendet das Image des Boards, das INFO des
+Knotens nennt (Feld `board`): `rcbench-node-pwr-<Version>.bin` für den
+ESP32-C6-Zero (Board 1), `rcbench-node-display-<Version>.bin` für den
+Anzeigeknoten ES3C28P (Board 2). Für den Anzeigeknoten zeigt die Zeile die
+Überschrift `ANZEIGEKNOTEN-FIRMWARE` und die Zeile
+`Anzeigeknoten: 0.23.17. Release: 0.23.18.`, UPDATES den Schritt
+`ANZEIGEKNOTEN`, und die Zeilen des Bands nennen den `Anzeigeknoten`. Das
+Halten, seine Beschriftungen und die BOOT-Frage (IO0 am Anzeigeknoten)
+sind die des Leistungsknotens. Vor dem ersten Byte hält das Panel das
+Image gegen Chip und Update-Art dieses Boards; passt es nicht, endet das
+Update mit `Anzeigeknoten-Update abgebrochen: Image für eine andere
+Platine. Vorherige Firmware läuft.` Ein Board, für das es kein Image
+gibt, zeigt `KEINE FIRMWARE`, und ein Tippen auf das Halten sagt `Dieses
+Release enthält keine Firmware für dieses Gerät.`
 
 ![Die Seite, während der Leistungsknoten nach seiner BOOT-Taste fragt](img/de/updates-node.png)
 
@@ -8039,9 +8498,9 @@ fragt. Die Gründe des grauen Haltens sind die des Dial
 ([Das Dial](#das-dial)); `Verbinde das Gerät zuerst auf WIRELESS.` steht,
 bis der Knoten verbunden ist, seine INFO angenommen ist und sein erstes
 STATUS-Paket auf der Verbindung seine Version genannt hat. Ein
-Knoten-Image, das seine Prüfung nicht besteht, ist keine
-ESP32-C6-Anwendung des Projekts `rcbench-node` mit der Rolle dieses
-Knotens, ist größer als der Slot des Knotens von 1.572.864 Bytes, oder
+Knoten-Image, das seine Prüfung nicht besteht, ist keine Anwendung des
+Chips des Knotens (ESP32-C6, für den Anzeigeknoten ESP32-S3) und des
+Projekts `rcbench-node` mit der Rolle dieses Knotens, ist größer als der Slot des Knotens von 1.572.864 Bytes, oder
 sein angehängter SHA-256 weicht ab.
 
 Vom Halten bis zum Ende hält der eigene Client des Knotens seinen Link
@@ -8054,7 +8513,7 @@ an, bis der Knoten zurück ist. Endet das Update, verbindet sich der Client
 des Knotens wieder aus den Werten von SETUP, und die Version der Zeile
 kommt aus dem ersten STATUS-Paket auf der neuen Verbindung.
 
-Die Zeilen des Alarmbands nennen den Knoten: `Leistungsknoten auf 0.23.15
+Die Zeilen des Alarmbands nennen den Knoten: `Leistungsknoten auf 0.23.17
 aktualisiert. Verbindet sich von selbst neu.`, `Auswuchtknoten-Update
 abgebrochen: <Grund>. Vorherige Firmware läuft.`, `Leistungsknoten hat
 sich nach dem Update nicht gemeldet. Prüfe seine Version auf UPDATES.` Die
@@ -8096,8 +8555,9 @@ sie nichts. Ihr Ergebnis steht auf UPDATES.
 
 Das Halten für 2s bestätigt Download und Installation. Nach dem Download
 folgt keine weitere Rückfrage. Das Panel verbindet sich innerhalb von 30s mit dem Heimnetz
-und lädt dann zwei Dateien des Release-Tags über HTTPS, `SHA256SUMS` und
-`rcbench-panel-p4-v0.23.0.bin`. GitHub beantwortet beide mit einem Redirect zu
+und lädt dann drei Dateien des Release-Tags über HTTPS, `SHA256SUMS`,
+`rcbench-panel-p4-v0.23.0.bin` und dessen Signatur
+`rcbench-panel-p4-v0.23.0.bin.sig`. GitHub beantwortet jede mit einem Redirect zu
 seinem Datei-Host; das Panel folgt höchstens 3 Redirects und nur zu
 `github.com`, `release-assets.githubusercontent.com` und
 `objects.githubusercontent.com`. Dann:
@@ -8111,6 +8571,12 @@ seinem Datei-Host; das Panel folgt höchstens 3 Redirects und nur zu
    Eintrag in `SHA256SUMS` übereinstimmen.
 4. Das Image muss alle Prüfungen für hochgeladene Images bestehen
    ([Installieren](#installieren-panel-update)) und die Version des Releases nennen.
+5. Das Panel lädt die Signatur des Images, `rcbench-panel-p4-v0.23.0.bin.sig`,
+   nach denselben Regeln und prüft sie ([Die Release-Signatur](#die-release-signatur)).
+   Ein HTTP-Status außer 200 heißt keine Signatur, ein Inhalt außerhalb von 8
+   bis 72 Bytes eine Signatur, die nicht passt; der Download geht in beiden
+   Fällen zur Installation weiter. Eine abgebrochene Verbindung, STOP oder das
+   Zeitbudget beenden den Download.
 
 Erst danach beginnt dieselbe Installation wie nach der Bestätigung am
 Panel: WLAN vollständig aus, Schreiben, Neustart, Versuchsstart. Zwischen

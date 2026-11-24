@@ -326,6 +326,27 @@ write without its answer, a read-back that differs, a step the decoder
 refused. Not a fault: a refusal, a plan that sends nothing, ABORT, and a
 step cut by a stop or a lost link, which end the session themselves.
 
+#### The remote servo node's common rail
+
+On the remote servo node (board 3) the session's servo runs from the PD
+mini through its output's switch, and the panel's OFF of that output
+(POWER's `RAIL` 0 or its `PORT_WANT` bit cleared) waits for a write as the
+PD mini's OFF does: every other port goes off at once, the session's
+output when the write ends, 10000ms after the OFF at most. A lost
+heartbeat, the link failsafe and a trip cut the rail and every port at
+once, and no session switches them on again until the panel's `RAIL` 1
+clears `TRIPPED`. One programming session runs at a time. Without the
+port switches CONNECT is refused while another channel is active, and
+while the session is open every write that would activate another
+channel (an OUTPUTS slot, a programming port's function, PASS-THROUGH) is
+refused with BUSY; with them, a session at another voltage than the rail's switches every other
+port off. The session's output is switched on only once the PD mini reads
+the session's voltage, 150mV over it at most, and every OFF that stands
+(`RAIL` 0, the `PORT_WANT` bit cleared, the SUPPLY page's OFF, a trip, a
+lost heartbeat) ends that wait. CONNECT is refused while
+the BEC check finds 500mV or more on any port
+([Link, Programming on the common rail](Link.md#programming-on-the-common-rail)).
+
 #### The carrier's programming-port 5V
 
 On the [rbmod carrier](Carrier.md#power) the programming ports run from
@@ -1045,6 +1066,13 @@ reads the state and shows the alert, is not in the coverage figure.
   PROG PORT pin to ARMED, ARM 0x0004. A pin of a role the ARM does not name sends no
   pulse, as while SAFE. An IOmcu older than protocol 4.18
   takes any non-zero ARM as the whole bank, so on it every bound pin drives.
+- The remote servo node's pass-through follows the same rule per channel:
+  a channel on PASS-THROUGH passes the receiver's pulse only while the ARM
+  names its channel's role (CHAN_CFG). With ARM 0x0004 a throttle channel's
+  pad stays low, so a receiver never drives an ESC during a surfaces-only
+  run, and the reverse with ARM 0x0002. The IOmcu judges this every
+  main-loop pass ([Link, The PASS and PASS_STAT
+  pages](Link.md#the-pass-and-pass_stat-pages)).
 - A switch to ARMED for the other role goes through SAFE. The panel writes ARM = 0,
   waits at least 100ms, then writes the new roles; the IOmcu refuses
   a change from one non-zero ARM to another with BAD_VALUE.

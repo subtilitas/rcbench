@@ -45,9 +45,36 @@ typedef struct {
                                        widest_of() */
 } format_args_t;
 
+/** @brief A reason at its field's width, 81 cells. */
+#define W81 "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW" \
+            "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"
+
 /* A pin is GPIO 0 to 47, a PROG PORT 1 to 9, a file an 8.3 name of 12
  * cells, an output's role name 7 cells (outputs_role_name()'s buffer). */
 static const format_args_t k_args[] = {
+    /* UPDATES' image fetched on demand (upd_fetch.c): the widest file
+     * name and card path of a release 0.23.16, the widest reason (81
+     * cells, its own field), the code, and versions of 3 x 5 digits. */
+    { TX_UPD_FETCH_FROM_NET,  { "rcbench-node-pwr-0.23.16.bin" } },
+    { TX_UPD_FETCH_IN_RAM,    { "rcbench-node-pwr-0.23.16.bin" } },
+    /* An image without a valid release signature: the longer reason of
+     * UPS_NONE and UPS_BAD in either language. */
+    { TX_UPD_FETCH_IN_RAM_NOSIG,
+      { "rcbench-node-pwr-0.23.16.bin", "The image comes with no signature." } },
+    { TX_UPD_FETCH_NOSIG_NOTE, { "rcbench-node-pwr-0.23.16.bin" } },
+    { TX_UPD_FETCH_FROM_CARD,
+      { "BENCH/UPDATES/rcbench-node-pwr-0.23.16.bin" } },
+    { TX_UPD_FETCH_NO_FILE,
+      { "BENCH/UPDATES/rcbench-node-pwr-0.23.16.bin" } },
+    { TX_UPD_FETCH_FAIL_NET,   { "D99", W81 } },
+    { TX_UPD_FETCH_FAIL_CARD,  { "S99", W81 } },
+    { TX_UPD_FETCH_FAIL_CHECK, { "V99", W81 } },
+    { TX_UPD_FETCH_VERSION,   { "65535.65535.65535", "65535.65535.65535" } },
+    { TX_UPD_WIZ_FOR_PANEL,   { "65535.65535.65535" } },
+    /* A refusal under an update: the longest UPD_RUNS_ name. */
+    { TX_ALERT_SUPPLY_UPD,  { "Das Leistungsknoten-Update" } },
+    { TX_ALERT_P5_UPD,      { "Das Leistungsknoten-Update" } },
+    { TX_ALERT_PROG_UPD,    { "Das Leistungsknoten-Update" } },
     /* LOGS' footer messages: the name of a log the bench wrote. */
     { TX_LOG_CANNOT_OPEN,   { "ATEST001.CSV" } },
     { TX_LOG_IS_FOLDER,     { "ATEST001.CSV" } },
@@ -74,6 +101,14 @@ static const format_args_t k_args[] = {
     { TX_SV_TARGET_PN_PIN,     { "9", "47" } },
     { TX_SV_TARGET_PN_PIN_OFF, { "9", "47" } },
     { TX_SUP_PD_PINS,          { "47", "47" } },
+    /* The settings backup: a file of BENCH/SETUP, a key of 15 characters,
+     * the longest reason of a refused line. */
+    { TX_SBK_RESULT_READING,   { "SETTINGS.TXT" } },
+    { TX_SBK_RESULT_CARD,      { "SETTINGS.TXT" } },
+    { TX_SBK_RESULT_FILE,      { "SETTINGS.TXT" } },
+    { TX_SBK_RESULT_ARMED,     { "SETTINGS.TXT" } },
+    { TX_SBK_REFUSED_NOLINE,   { "srv_travel_max_", "9999",
+                                 "außerhalb des Bereichs" } },
     { TX_OUT_NEEDS_CHANNEL,    { "16", "16" } },
     { TX_OUT_NEEDS_CHANNELS,   { "16", "16" } },
     /* A frame rate of 3 digits on a port of 1. */

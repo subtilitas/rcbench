@@ -15,7 +15,8 @@ Covered, each as the text a reader sees:
 
 - the documents: README.md, README-de.md, STATUS.md, CONTRIBUTING.md,
   SECURITY.md, the unreleased section of CHANGELOG.md, every Markdown page
-  under docs/, help/, hardware/, protocols/, testbench/ and configurator/;
+  under docs/, help/, hardware/, protocols/, testbench/, configurator/
+  and flasher/;
 - the text the interface shows and the reports it writes: every string of
   shared/text/include/ui_text.def (screens, settings, the servo test and
   its .TXT reports, the Wi-Fi page) and every string literal of
@@ -134,7 +135,7 @@ STRING_FILES = (
 DOC_FILES = {"README.md", "README-de.md", "STATUS.md", "CONTRIBUTING.md",
              "SECURITY.md", "CHANGELOG.md"}
 DOC_DIRS = ("docs/", "help/", "hardware/", "protocols/", "testbench/",
-            "configurator/")
+            "configurator/", "flasher/")
 NOT_COVERED = ("hardware/research/",)
 C_SUFFIXES = (".c", ".h", ".cpp", ".cc", ".hpp", ".def", ".ts", ".tsx",
               ".js", ".mjs", ".cjs")

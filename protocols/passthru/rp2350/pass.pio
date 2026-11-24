@@ -1,0 +1,49 @@
+;
+; The remote servo node's pass-through, two state machines in PIO0 with the
+; block's GPIO base at 16 (pass_cap.h).
+;
+; pass_mirror copies each receiver input to its servo output.  IN base is
+; GPIO 17, OUT base GPIO 16, both 17 pins: `mov pins, pins` puts input k
+; (GPIO 17 + 2k) on output k (GPIO 16 + 2k) every cycle, 6.7ns at 150MHz.
+; An odd bit lands on an input pin: its pindir is input and its pad's
+; function is not PIO0, so nothing drives it.  An output pad whose function
+; is not PIO0 (a PWM slice, or a DShot or PPM slot in PIO1 or PIO2) ignores
+; its bit: the pad function decides per channel what reaches the servo.
+; The input synchroniser delays each input 2 cycles, so an edge reaches the
+; pad 2 to 3 cycles (13.3 to 20ns) after it reached the input.
+;
+; pass_capture pushes the state of GPIO 16 to GPIO 33 (IN base 16, IN
+; count 18: the RP2350 reads the pins above as 0) whenever it changes.
+; The loop samples every 2 cycles (13.3ns); a change spends 3 more cycles
+; pushing, so a pin that moves again within those 5 cycles is seen at the
+; next sample.  Y holds the last state pushed and starts as all ones, which
+; no reading of 18 pins equals: the first sample is pushed, the levels at
+; the start.  Autopush is off; push noblock drops the state when the RX
+; FIFO (first in, first out) is full, which sets FDEBUG.RXSTALL.  A DMA
+; (direct memory access) channel moves each state to the ring and a
+; second, chained to it, the microsecond timer after it.
+;
+; test_pass_pio runs both programs, assembled from this file, in a model of
+; the state machine; the firmware build holds pioasm's words to the lists
+; the test runs (fixtures/pass_mirror_words.txt, pass_capture_words.txt).
+;
+; Instruction words: 1 and 5 of a block's 32.
+;
+; SPDX-License-Identifier: MIT
+;
+
+.program pass_mirror
+.wrap_target
+    mov pins, pins
+.wrap
+
+.program pass_capture
+changed:
+    mov y, x
+    mov isr, x
+    push noblock
+.wrap_target
+public sample:
+    mov x, pins
+    jmp x!=y, changed
+.wrap

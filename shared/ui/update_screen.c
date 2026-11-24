@@ -27,10 +27,13 @@ static struct {
     update_view_t v;              /**< the view shown                       */
     bool          close;          /**< CLOSE was tapped, not yet taken      */
     bool          cancel;         /**< CANCEL was tapped, not yet taken     */
+    bool          go;             /**< INSTALL ANYWAY completed, not taken  */
     bool          have_press;     /**< whether a contact holds the button   */
     bool          pressed;        /**< whether the contact is on the button */
+    bool          on_hold;        /**< the contact is on INSTALL ANYWAY     */
     uint8_t       press_id;       /**< touch id of that contact             */
     unsigned      drawn_mask;     /**< frame buffers that drew the view     */
+    ui_hold_t     hold;           /**< INSTALL ANYWAY's 2s hold             */
 } u;
 
 /*
@@ -62,13 +65,19 @@ static struct {
 #define U_PITCH      28
 /** @brief CLOSE or CANCEL, at the bottom left. */
 #define U_CLOSE gfx_rect_make(24, UI_PANEL_H - 18 - 56, 240, 56)
+/** @brief UNSIGNED: INSTALL ANYWAY's hold, at the bottom right, 480px wide. */
+#define U_HOLD  gfx_rect_make(UI_PANEL_W - 24 - 480, UI_PANEL_H - 18 - 56, \
+                              480, 56)
 
 _Static_assert(56 >= UI_TAP_MIN, "CLOSE and CANCEL are a finger tall");
+_Static_assert(24 + 240 + 24 <= UI_PANEL_W - 24 - 480,
+               "CANCEL and INSTALL ANYWAY overlap");
 
 /** @brief Clears the screen's state. */
 static void u_reset(void)
 {
     memset(&u, 0, sizeof(u));
+    ui_hold_reset(&u.hold);
 }
 
 void update_screen_set(const update_view_t *v)
@@ -90,6 +99,26 @@ bool update_screen_take_close(void)
     return was;
 }
 
+bool update_screen_take_go(void)
+{
+    const bool was = u.go;
+    u.go = false;
+    return was;
+}
+
+void update_sig_text(fw_sig_t s, char *out, size_t n)
+{
+    if (out == NULL || n == 0u) {
+        return;
+    }
+    if (fw_sig_signed(s)) {
+        snprintf(out, n, "%s", TR(UPS_SIGNED));
+    } else {
+        snprintf(out, n, "%s. %s", TR(UPS_HEAD),
+                 fw_sig_bad(s) ? TR(UPS_BAD) : TR(UPS_NONE));
+    }
+}
+
 bool update_screen_take_cancel(void)
 {
     const bool was = u.cancel;
@@ -97,18 +126,95 @@ bool update_screen_take_cancel(void)
     return was;
 }
 
+const char *update_fail_text(fw_err_t e)
+{
+    static const ui_text_id_t k_why[FW_ERR_COUNT] = {
+        [FW_OK]            = TX_UP_WHY_OTHER,
+        [FW_ERR_EMPTY]     = TX_UP_WHY_EMPTY,
+        [FW_ERR_SHORT]     = TX_UP_WHY_SHORT,
+        [FW_ERR_TOO_BIG]   = TX_UP_WHY_TOO_BIG,
+        [FW_ERR_NOT_IMAGE] = TX_UP_WHY_NOT_IMAGE,
+        [FW_ERR_CHIP]      = TX_UP_WHY_CHIP,
+        [FW_ERR_NO_DESC]   = TX_UP_WHY_NO_DESC,
+        [FW_ERR_PROJECT]   = TX_UP_WHY_PROJECT,
+        [FW_ERR_VERSION]   = TX_UP_WHY_VERSION,
+        [FW_ERR_NO_HASH]   = TX_UP_WHY_NO_HASH,
+        [FW_ERR_LENGTH]    = TX_UP_WHY_LENGTH,
+        [FW_ERR_HASH]      = TX_UP_WHY_HASH,
+        [FW_ERR_READ]      = TX_UP_WHY_READ,
+        [FW_ERR_RUNNING]   = TX_UP_WHY_RUNNING,
+        [FW_ERR_MEMORY]    = TX_UP_WHY_MEMORY,
+        [FW_ERR_FLASH]     = TX_UP_WHY_FLASH,
+        [FW_ERR_BUSY]      = TX_UP_WHY_BUSY,
+        [FW_ERR_QUIET]     = TX_UP_WHY_QUIET,
+        [FW_ERR_RADIO]     = TX_UP_WHY_RADIO,
+        [FW_ERR_GATE]      = TX_UP_WHY_GATE,
+    };
+    const unsigned i = (unsigned)e;
+    return ui_tr(i < (unsigned)FW_ERR_COUNT ? k_why[i] : TX_UP_WHY_OTHER);
+}
+
 /**
- * @brief The one button: CLOSE after a failure, CANCEL while downloading.
+ * @brief The button at the bottom left: CLOSE after a failure, CANCEL while
+ *        downloading and on an UNSIGNED image, which also has the hold.
  */
 static bool u_has_button(void)
 {
     return u.v.state == UPDATE_FAILED || u.v.state == UPDATE_FETCH_FAILED
-           || u.v.state == UPDATE_FETCHING;
+           || u.v.state == UPDATE_FETCHING || u.v.state == UPDATE_UNSIGNED;
 }
 
 /**
- * @brief Takes a touch event: a press on the one button, its release and its
- *        cancel.
+ * @brief Runs the screen for one frame: INSTALL ANYWAY's hold, on an
+ *        UNSIGNED image only.  A hold under way when the state changes
+ *        ends unfired.
+ * @param dt_s The frame's time, s.
+ */
+static void u_tick(float dt_s)
+{
+    if (u.hold.down || u.hold.flash_ms > 0) {
+        u.drawn_mask = 0u;          /* the fill follows the hold */
+    }
+    ui_hold_flash_step(&u.hold, dt_s);
+    if (u.v.state != UPDATE_UNSIGNED) {
+        if (ui_hold_left(&u.hold) && u.on_hold) {
+            u.have_press = false;
+            u.on_hold = false;
+        }
+        return;
+    }
+    if (ui_hold_tick(&u.hold, dt_s)) {
+        u.go = true;
+        ui_hold_reached(&u.hold);
+    }
+}
+
+/**
+ * @brief Takes a touch event on INSTALL ANYWAY's hold: it acts when it
+ *        completes; sliding off or lifting before that ends it.
+ */
+static void u_hold_event(const touch_event_t *evt)
+{
+    const bool on = in(U_HOLD, evt->point.x, evt->point.y);
+    if (evt->type == TOUCH_EVENT_MOVE) {
+        if (!on && ui_hold_leave(&u.hold)) {
+            u.have_press = false;
+            u.on_hold = false;
+            u.drawn_mask = 0u;
+        }
+        return;
+    }
+    if (evt->type == TOUCH_EVENT_UP) {
+        (void)ui_hold_end(&u.hold, evt, U_HOLD);
+        u.have_press = false;
+        u.on_hold = false;
+        u.drawn_mask = 0u;
+    }
+}
+
+/**
+ * @brief Takes a touch event: a press on the button at the bottom left, its
+ *        release and its cancel, and on an UNSIGNED image the hold.
  */
 static void u_event(const touch_event_t *evt)
 {
@@ -116,17 +222,29 @@ static void u_event(const touch_event_t *evt)
         return;
     }
     const bool on = in(U_CLOSE, evt->point.x, evt->point.y);
+    const bool on_hold = u.v.state == UPDATE_UNSIGNED
+                         && in(U_HOLD, evt->point.x, evt->point.y);
     if (evt->type == TOUCH_EVENT_DOWN) {
-        if (!u.have_press && on) {
+        if (!u.have_press && (on || on_hold)) {
             u.have_press = true;
-            u.pressed = true;
+            u.pressed = on;
+            u.on_hold = on_hold;
             u.press_id = evt->point.id;
+            if (on_hold) {
+                ui_hold_begin(&u.hold, TX_HOLD_HINT_INSTALL);
+            }
             u.drawn_mask = 0u;
         }
         return;
     }
-    if (!u.have_press || evt->point.id != u.press_id
-        || evt->type != TOUCH_EVENT_UP) {
+    if (!u.have_press || evt->point.id != u.press_id) {
+        return;
+    }
+    if (u.on_hold) {
+        u_hold_event(evt);
+        return;
+    }
+    if (evt->type != TOUCH_EVENT_UP) {
         return;
     }
     u.have_press = false;
@@ -144,6 +262,10 @@ static void u_event(const touch_event_t *evt)
 /** @brief Drops the press when touch events were lost. */
 static void u_cancel(void)
 {
+    if (u.on_hold) {
+        (void)ui_hold_left(&u.hold);
+    }
+    u.on_hold = false;
     u.have_press = false;
     u.pressed = false;
     u.drawn_mask = 0u;
@@ -185,28 +307,48 @@ static void u_render(gfx_canvas_t *c, int buffer_index)
                         || u.v.state == UPDATE_FETCH_FAILED);
     const bool failed = (u.v.state == UPDATE_FAILED
                          || u.v.state == UPDATE_FETCH_FAILED);
-    const gfx_color_t head = failed ? UI_DANGER : UI_ACCENT;
+    const bool unsig = (u.v.state == UPDATE_UNSIGNED);
+    const gfx_color_t head = failed ? UI_DANGER
+                                    : (unsig ? UI_WARN : UI_ACCENT);
     gfx_fill_rect(c, 0, 0, UI_PANEL_W, U_BAR_H, head);
-    char line[96];
-    snprintf(line, sizeof(line), fetch ? TR(UPD_DL_TITLE) : TR(UP_TITLE),
+    char line[160];
+    snprintf(line, sizeof(line),
+             fetch ? TR(UPD_DL_TITLE) : (unsig ? TR(UPS_TITLE) : TR(UP_TITLE)),
              u.v.version);
     u_line(c, (U_BAR_H - gfx_text_height(U_FONT_HEAD, 1)) / 2, line,
            U_FONT_HEAD, ui_is_light(head) ? UI_TEXT_ON_LIGHT : GFX_WHITE);
     const unsigned pct = (u.v.total > 0u)
         ? (unsigned)((uint64_t)u.v.written * 100u / u.v.total) : 0u;
-    if (!fetch || u.v.total > 0u) {
+    if (unsig) {
+        snprintf(line, sizeof(line), TR(UPS_BYTES), (unsigned long)u.v.total);
+        u_line(c, U_BYTES_Y, line, U_FONT_HEAD, UI_TEXT);
+    } else if (!fetch || u.v.total > 0u) {
         /* A download names its bytes once the image's size is known. */
         snprintf(line, sizeof(line), TR(UP_BYTES),
                  (unsigned long)u.v.written, (unsigned long)u.v.total, pct);
         u_line(c, U_BYTES_Y, line, U_FONT_HEAD, UI_TEXT);
     }
-    ui_bar(c, U_PBAR,
-           (u.v.total > 0u) ? (float)u.v.written / (float)u.v.total : 0.0f,
-           -1.0f, failed ? UI_DANGER : UI_ACCENT);
+    if (!unsig) {
+        ui_bar(c, U_PBAR,
+               (u.v.total > 0u) ? (float)u.v.written / (float)u.v.total
+                                : 0.0f,
+               -1.0f, failed ? UI_DANGER : UI_ACCENT);
+    }
     /* The step or the verdict in the heading face, the lines under it
      * 48px lower and U_PITCH apart. */
     const int y = U_LINES_Y, y2 = U_LINES_Y + 48;
-    if (u.v.state == UPDATE_FETCHING) {
+    if (unsig) {
+        u_line(c, y, TR(UPS_HEAD), U_FONT_HEAD, UI_WARN);
+        u_line(c, y2, fw_sig_bad(u.v.sig) ? TR(UPS_BAD) : TR(UPS_NONE),
+               U_FONT_BODY, UI_TEXT);
+        u_line(c, y2 + U_PITCH, TR(UPS_NOTE_1), U_FONT_BODY, UI_TEXT);
+        u_line(c, y2 + 2 * U_PITCH, TR(UPS_NOTE_2), U_FONT_BODY,
+               UI_TEXT_DIM);
+        ui_button_font(c, U_CLOSE, TR(CANCEL), UI_PANEL_HI, u.pressed, true,
+                       U_FONT_LABEL);
+        ui_hold_button(c, U_HOLD, TR(UPS_HOLD), UI_PANEL_HI, UI_WARN,
+                       &u.hold, false, true, U_FONT_LABEL);
+    } else if (u.v.state == UPDATE_FETCHING) {
         u_line(c, y, u.v.what, U_FONT_HEAD, UI_TEXT);
         u_line(c, y2, u.v.why, U_FONT_BODY, UI_TEXT_DIM);
         u_line(c, y2 + 2 * U_PITCH, TR(UPD_DL_NOTE_1), U_FONT_BODY,
@@ -235,7 +377,13 @@ static void u_render(gfx_canvas_t *c, int buffer_index)
                            48, TR(UP_RESTART), U_FONT_HEAD, UI_OK);
     } else if (failed) {
         u_line(c, y, TR(UP_FAILED), U_FONT_HEAD, UI_DANGER);
-        u_line(c, y2, TR(UP_FAILED_2), U_FONT_BODY, UI_TEXT_DIM);
+        int ly = y2;
+        if (u.v.what[0] != '\0') {
+            /* The reason the console line names, as FETCH_FAILED's. */
+            u_line(c, ly, u.v.what, U_FONT_BODY, UI_WARN);
+            ly += U_PITCH + 12;
+        }
+        u_line(c, ly, TR(UP_FAILED_2), U_FONT_BODY, UI_TEXT_DIM);
         ui_button_font(c, U_CLOSE, TR(UP_CLOSE), UI_PANEL_HI, u.pressed,
                        true, U_FONT_LABEL);
     } else {
@@ -243,6 +391,10 @@ static void u_render(gfx_canvas_t *c, int buffer_index)
         u_line(c, y + U_PITCH, TR(UP_NOTE_2), U_FONT_BODY, UI_TEXT_DIM);
         u_line(c, y + 2 * U_PITCH, TR(WF_Q_NOTE_2), U_FONT_BODY,
                UI_TEXT_DIM);
+        /* What the release key says, 12px under the notes. */
+        update_sig_text(u.v.sig, line, sizeof(line));
+        u_line(c, y + 3 * U_PITCH + 12, line, U_FONT_BODY,
+               fw_sig_signed(u.v.sig) ? UI_OK : UI_WARN);
     }
     u.drawn_mask |= bit;
 }
@@ -253,7 +405,7 @@ static const ui_screen_t k_update = {
     .reset  = u_reset,
     .enter  = NULL,
     .leave  = NULL,
-    .tick   = NULL,
+    .tick   = u_tick,
     .event  = u_event,
     .cancel = u_cancel,
     .render = u_render,

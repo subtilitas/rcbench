@@ -8,8 +8,8 @@
 //  2. Every id occurs once, and every reference to an id resolves.
 //  3. Every form control has a label, every image a text and a size, every
 //     table header a scope.
-//  4. No image leaves the page folder. A link leaves it only to the trademark
-//     notice, to a maker page of the data or to a web search of the parts
+//  4. No image leaves the page folder. A link leaves it only to the panel help
+//     and the web flasher on the same site, to the trademark notice, to a maker page of the data or to a web search of the parts
 //     list, and a link of the parts list opens a new tab without opener.
 //  5. The text holds no placeholder, no "undefined", no banned word and no
 //     exclamation mark, and data text reaches the page escaped.
@@ -28,7 +28,7 @@ import { STRINGS } from '../../src/i18n.ts';
 import { optionsOf } from '../../src/names.ts';
 import { chooser } from '../../src/view/chooser.ts';
 import type { View } from '../../src/view/chooser.ts';
-import { HELP_URL, NOTICE_URL, result, summary } from '../../src/view/result.ts';
+import { FLASH_URL, HELP_URL, NOTICE_URL, result, summary } from '../../src/view/result.ts';
 import { SEARCH } from '../../src/view/buy.ts';
 
 const SPACE = spaceOf(CATALOGUE);
@@ -186,6 +186,8 @@ function problemsOf(v: View, ownOpen: boolean): string[] {
       if (key === 'href' && tag.name === 'a' && value === NOTICE_URL && tag.attrs.get('rel') === 'noopener noreferrer') continue;
       // The panel's web help: a page of the same site, in the footer.
       if (key === 'href' && tag.name === 'a' && Object.values(HELP_URL).includes(value as never)) continue;
+      // The web flasher: a page of the same site, in the footer.
+      if (key === 'href' && tag.name === 'a' && value === FLASH_URL) continue;
       // A maker page or a web search of the parts list: a new tab, no opener, 1 query parameter and no fragment.
       if (key === 'href' && tag.name === 'a' && (PAGES.has(unescape(value)) || (unescape(value).startsWith(SEARCH) && /^[^&#]+$/.test(unescape(value).slice(SEARCH.length))))) {
         if (tag.attrs.get('target') !== '_blank' || tag.attrs.get('rel') !== 'noopener noreferrer') out.push(`<a href="${value}"> opens without target="_blank" rel="noopener noreferrer"`);

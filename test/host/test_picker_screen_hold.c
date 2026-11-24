@@ -692,7 +692,7 @@ TEST_CASE(a_board_that_answers_during_a_visit_keeps_the_picker_on_off)
         bind_reading_t ok;
         {
             const outbind_t full = *picker_screen_binding();
-            uint16_t slots[LINK_OS_COUNT], cc[LINK_CC_COUNT];
+            uint16_t slots[LINK_OS_ALL] = { 0 }, cc[LINK_CC_ALL] = { 0 };
             (void)outbind_to_slots(&full, slots);
             outbind_to_chan_cfg(&full, cc, 1000u, 2000u);
             CHECK_EQ(bind_link_classify(&ok, BOARD, slots, cc),

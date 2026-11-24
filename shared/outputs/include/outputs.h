@@ -42,11 +42,16 @@ extern "C" {
 /** @brief A command runs 0..OUT_SPAN across the channel's own travel. */
 #define OUT_SPAN            1000u
 
-/** @brief Channels in a bank. */
-#define OUT_MAX_CHANNELS    16u
+/**
+ * @brief Channels in a bank: on the IOmcu the link's 16 output channels,
+ *        the bench throttle's channel 16 and a channel for each of the 4
+ *        programming ports, 17 to 20.
+ */
+#define OUT_MAX_CHANNELS    21u
 
-/** @brief Slots in a bank: driver configurations, each rendering channels. */
-#define OUT_MAX_SLOTS        8u
+/** @brief Slots in a bank: driver configurations, each rendering channels;
+ *         the link's 16 (OUTPUTS and OUTPUTS_HI). */
+#define OUT_MAX_SLOTS       16u
 
 /**
  * @brief What a pulse driver may render, in microseconds.
@@ -148,6 +153,10 @@ typedef struct {
     uint32_t      timeout_ms;   /**< silence after which a channel rests   */
     uint32_t      last_step_ms;   /**< time of the last outputs_step() */
     uint64_t      reserved;     /**< pins this build will not drive        */
+    uint16_t      passing;      /**< bit k: output k carries a receiver's
+                                     channel k (the remote servo node's
+                                     PASS-THROUGH), channel k's role naming
+                                     what it drives                         */
 } outputs_t;
 
 /** @brief Silence after which a channel is rendered at its role's rest.  It
@@ -217,6 +226,18 @@ bool outputs_configure(outputs_t *o, uint8_t slot, const out_slot_t *cfg);
 void outputs_reserve_pins(outputs_t *o, uint64_t mask);
 
 /**
+ * @brief The outputs a receiver drives through (the remote servo node's
+ *        PASS-THROUGH): bit k, output k carries channel k, and channel k's
+ *        role says whether it is a throttle (power_throttle()).
+ *
+ * Nothing is done when @p o is NULL.
+ *
+ * @param o     The bank.
+ * @param mask  Bit k for output k; 0 at every start.
+ */
+void outputs_set_passing(outputs_t *o, uint16_t mask);
+
+/**
  * @brief Whether @p pin may be driven: it exists and is not in the reserved
  *        mask.
  *
@@ -282,8 +303,8 @@ bool outputs_set_slew(outputs_t *o, uint8_t ch, uint16_t per_s);
  *
  * @param o The bank.
  * @param regs The CHANNELS page, indexed by channel number.
- * @param first First channel to command, below LINK_CH_COUNT.
- * @param count Number of channels from @p first. Clipped at LINK_CH_COUNT.
+ * @param first First channel to command, below LINK_CH_ALL.
+ * @param count Number of channels from @p first. Clipped at LINK_CH_ALL.
  * @param now_ms Current time in milliseconds, stamped on each channel.
  */
 void outputs_channels_apply_n(outputs_t *o, const uint16_t *regs,

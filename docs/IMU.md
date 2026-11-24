@@ -87,7 +87,9 @@ ARMED.
 
 While the bench is ARMED, SCAN FOR SENSORS, SCAN AGAIN and SERVO's SEARCH
 FOR IMU start no scan and the band reads `NO IMU SCAN WHILE ARMED: SWITCH
-TO SAFE FIRST`. A scan that runs at the switch to ARMED is stopped; the
+TO SAFE FIRST`. The same holds while an arm waits: from the end of the
+ARM hold to the IOmcu's first ARMED report the found list opens, no scan
+runs and the band reads the same text. A scan that runs at the switch to ARMED is stopped; the
 list keeps what it heard until then. The Dial's and the nodes' scans
 follow the same rule ([Dial](Dial.md)).
 
@@ -147,9 +149,9 @@ C6 image hold 5 connections each (`CONFIG_BT_NIMBLE_MAX_CONNECTIONS`,
 
 With the IMU alone every action and event passes as it did with one link.
 A C6 image with 3 links refuses a fourth connect; the console line names
-it (below). Such an image reports esp_hosted 2.13.0, as the panel's 5-link
+it (below). Such an image reports esp_hosted 2.13.0, as the release's 5-link
 image does, so the C6 RADIO row on SETUP > UPDATES > SINGLE UPDATES offers
-`HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE` for it.
+`HOLD 2s TO REINSTALL THE C6 RADIO` for it.
 
 The connect values are chosen as a phone's central asks them, not
 measured against others; they sit together in
@@ -401,7 +403,7 @@ I (…) imu: command FF AA 69 88 B5
 I (…) ble: disconnect: reason 0x<r>, handle <h>, token <k>
 I (…) ble: disconnect: record: handle <h>, peer …
 I (…) ble: connect: failed to be established, reason 0x<r>
-W (…) ble: connect refused by the C6 radio, HCI 0x<c>: it holds no further link; a C6 image with 3 links takes no fourth: install this panel's C6 image with the C6 RADIO hold in SETUP > UPDATES
+W (…) ble: connect refused by the C6 radio, HCI 0x<c>: it holds no further link; a C6 image with 3 links takes no fourth: install the release's C6 image with the C6 RADIO hold in SETUP > UPDATES
 ```
 
 The last line comes for HCI 0x09 (connection limit exceeded) and 0x07

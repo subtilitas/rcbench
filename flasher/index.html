@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="referrer" content="no-referrer">
+<title>rcbench web flasher</title>
+<link rel="icon" href="data:,">
+<script type="module" src="/src/main.ts"></script>
+</head>
+<body>
+<header class="top">
+  <div><h1 id="title">rcbench web flasher</h1><small id="sub"></small></div>
+  <div class="lang" role="group" aria-label="Language / Sprache">
+    <button type="button" data-lang="en" lang="en" aria-pressed="true">EN</button>
+    <button type="button" data-lang="de" lang="de" aria-pressed="false">DE</button>
+  </div>
+</header>
+<main class="page">
+  <div id="notice" class="note bad" role="alert" hidden></div>
+  <div id="flow">
+    <section class="card" id="step" aria-labelledby="step-title"><h2 id="step-title" tabindex="-1"></h2><div id="step-body"></div></section>
+    <details class="card" id="log-box"><summary id="log-sum"></summary><pre id="log"></pre></details>
+  </div>
+</main>
+<footer id="foot" class="page foot"></footer>
+<noscript>
+  <p class="note bad" lang="en">This page requires JavaScript, and Chrome or Edge on a desktop computer.</p>
+  <p class="note bad" lang="de">Diese Seite benötigt JavaScript sowie Chrome oder Edge auf einem Desktop-Computer.</p>
+</noscript>
+</body>
+</html>

@@ -2,6 +2,7 @@
 // from t alone, so frames can be captured in any order and at any rate.
 // A storyboard is a list of scenes: "case" (the 3D model with labels),
 // "board" (a circuit board seen flat, with rework drawn on it),
+// "scope" (plots and circuits of a figure),
 // "screen" (panel screenshots with pointer bubbles), "tour" (panel
 // screenshots with a caption and a spotlight) and "end" (a recap).
 // tools/video/README.md describes the fields.
@@ -17,6 +18,7 @@ import {buildRudder} from './rudder3d.js';
 import {buildDial} from './dial3d.js';
 import {buildDuo} from './duo3d.js';
 import {buildMini} from './mini3d.js';
+import {drawScope, projectScope} from './scope.js';
 
 const $ = s => document.querySelector(s);
 const cl = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
@@ -127,6 +129,9 @@ for (const sc of sb.scenes) {
   if (sc.type === 'board') {
     sc.plan = await (await fetch(`/cad/${sc.board}.json`)).json();
   }
+  if (sc.type === 'scope') {
+    sc.fig = await (await fetch(`/plots/${sc.figure}.json`)).json();
+  }
   if (sc.type !== 'case') continue;
   const shown = sc.display ? imgs[sc.display.view] : null;
   // "cad" is the assembly tools/video_cad.py converts; any other scene
@@ -183,12 +188,16 @@ function bubble(o) {
   const dx = o.tx - sx, dy = o.ty - sy;
   const cx = (sx + o.tx) / 2 - dy * .06, cy = (sy + o.ty) / 2 + dx * .06;
   const len = Math.hypot(dx, dy) * 1.08, col = COL[o.style || ''];
-  ov.insertAdjacentHTML('beforeend',
-    `<path d="M${sx} ${sy} Q${cx} ${cy} ${o.tx} ${o.ty}" fill="none"
+  // "leader": false leaves the line out: the dot and its ring mark the
+  // point.
+  const line = o.leader === false ? ''
+    : `<path d="M${sx} ${sy} Q${cx} ${cy} ${o.tx} ${o.ty}" fill="none"
       stroke="${col}" stroke-width="3" stroke-linecap="round"
       stroke-dasharray="${len}" stroke-dashoffset="${len * (1 - o.a)}"
       opacity="${o.a}"/>
-     <circle cx="${sx}" cy="${sy}" r="5" fill="${col}" opacity="${o.a}"/>
+     <circle cx="${sx}" cy="${sy}" r="5" fill="${col}" opacity="${o.a}"/>`;
+  ov.insertAdjacentHTML('beforeend',
+    `${line}
      <circle cx="${o.tx}" cy="${o.ty}" r="${7 * o.a}" fill="${col}"/>
      <circle cx="${o.tx}" cy="${o.ty}" r="${14 + 10 * o.pulse}" fill="none"
       stroke="${col}" stroke-width="2.5"
@@ -559,6 +568,16 @@ function drawTags(sc, lt, a, proj) {
   }
 }
 
+// Plots and circuits of a figure, with the notes of a board scene.
+function drawFigure(sc, lt, a, pulse, ui, t) {
+  const e = $('#fig');
+  e.style.display = 'block';
+  const dim = sc.title ? .25 + .75 * ramp(lt, sc.title.to - .6, sc.title.to)
+                       : 1;
+  drawScope(e, sc, sc.fig, lt, a * dim, t);
+  drawNotes(sc, lt, a, pulse, ui, anchor => projectScope(sc, anchor));
+}
+
 function drawScreen(sc, lt, a, pulse, ui) {
   const dev = $('#dev');
   dev.style.display = 'block';
@@ -817,7 +836,7 @@ window.TOTAL = TOTAL;
 window.renderAt = t => {
   bubs.innerHTML = '';
   ov.innerHTML = '';
-  for (const id of ['#gl', '#pcb', '#pcbf', '#dev', '#end', '#cap',
+  for (const id of ['#gl', '#pcb', '#pcbf', '#fig', '#dev', '#end', '#cap',
                     '#card']) {
     $(id).style.display = 'none';
   }
@@ -842,6 +861,7 @@ window.renderAt = t => {
   const pulse = (t * .9) % 1;
   if (sc.type === 'case') drawCase(sc, lt, a, pulse, ui);
   else if (sc.type === 'board') drawBoard(sc, lt, a, pulse, ui);
+  else if (sc.type === 'scope') drawFigure(sc, lt, a, pulse, ui, t);
   else if (sc.type === 'screen') drawScreen(sc, lt, a, pulse, ui);
   else if (sc.type === 'tour') drawTour(sc, lt, a, ui);
   else drawEnd(sc, a, ui);
@@ -857,7 +877,7 @@ window.renderAt = t => {
       : i + 1 === ui.step ? cl(ui.frac) * 100 : 0) + '%';
   });
   nav.style.opacity = sc.type === 'tour' || sc.type === 'end' ? a : 0;
-  const titled = (sc.type === 'case' || sc.type === 'board') && sc.title
+  const titled = ['case', 'board', 'scope'].includes(sc.type) && sc.title
     && lt < sc.title.to;
   $('#brand').style.opacity = titled ? 0 : 1;
   dots.style.opacity = titled || sb.chapters ? 0 : 1;

@@ -69,7 +69,16 @@ lead produces no output.
 A PIO (programmable input/output) block addresses 32 pins from a base
 of 0 or 16. The base is fixed while the block holds a program. The
 driver therefore selects a block when the slot is bound and its pin is
-known. Binding is refused if no free block can reach that pin.
+known. Binding is refused if no free block can reach that pin. On the
+remote servo node (board 3) every block sits at base 16 and the blocks are
+placed by fixed rules: PIO0 holds the fixed load, the outputs take PIO1
+and PIO2, and a programming session's line holds one of them whole
+([Link: Throttle outputs on board 3](Link.md#throttle-outputs-on-board-3)).
+
+A plain DShot pad has its input enable cleared while its block drives it,
+and gets it back at the stop, where the pad is the processor's and driven
+low: nothing reads a plain line back. A bidirectional pad keeps its input,
+because the receiver reads the reply on it.
 
 ## Servo PWM
 
@@ -318,7 +327,7 @@ frame:
 
 The ESC sees the line high for 500µs or more before the first frame: 1000µs
 minus the length of the pass that arms, because the wake pass's due time is
-the clock of the last disarmed pass. The wake pass
+the clock of the last pass at SAFE. The wake pass
 sends no frame, so the ask keeps all ten repeats. `out_dshot_send()` on a pin
 still at its low rest releases it and sends nothing, so no frame starts from a
 low line. `test_out_dshot` holds the pad's level at each step, `test_outputs_hw`

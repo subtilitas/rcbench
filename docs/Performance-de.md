@@ -438,8 +438,8 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 816 | 2 336 |
-| `control` | `control_task` | 6 144 | 3 680 | 1 424 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 168 | 1 984 |
+| `control` | `control_task` | 6 144 | 3 616 | 1 488 |
 | `runlog` | `log_task` | 6 656 | 3 856 | 1 760 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
 | `blec` | `blec_task`, die Verbindung jedes Bluetooth-LE-Clients über den Hub: die Werte der IMU, des Dial und beider Sensorknoten aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_blec.c`, die Seite der IMU in `panel_imu.c`, die des Dial in `panel_dial.c`, die des Leistungsknotens in `panel_pnode.c`, die des Auswuchtknotens in `panel_bal.c`, das Update der Funkgeräte in `panel_devupd.c`) | 4 096 | 1 808 | 1 248 |
@@ -448,9 +448,10 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 392 | 1 664 |
 | `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 6 912 | 2 912 | 2 960 |
 | `mdns` | `mdns_task`, der mDNS-Responder (Multicast Domain Name System), solange das Panel mit einem Heimnetz verbunden ist | 4 096 | 1 440 | 1 616 |
-| `wifi_get` | `fetch_task`, eine Release-Suche oder ein Download von GitHub (`components/wifi_access`) | 8 192 | 1 568 | 5 584 |
+| `wifi_get` | `fetch_task`, eine Release-Suche oder ein Download von GitHub, das Image des Panels oder eines Geräts (`components/wifi_access`) | 8 192 | 1 840 | 5 312 |
 | `cardjob` | `files_task`, die Kartenoperationen von FILES (`panel_files.c`) | 6 656 | 2 064 | 3 552 |
 | `c6upd` | `c6_task`, das Update des C6-Funks, ein Schritt nach dem anderen (`panel_c6.c`) | 4 096 | 1 248 | 1 808 |
+| `devimg` | `devimg_task`, das Lesen eines Geräte-Images von der SD-Karte, seine Prüfungen und seine Release-Signatur, danach beendet (`panel_devimg.c`) | 8 192 | 3 936 | 3 216 |
 | `shot` | `shot_task`, ein Screenshot-Auftrag, dann weg (`panel_shot.c`) | 7 168 | 2 432 | 3 696 |
 
 Der HTTP-Server (Hypertext Transfer Protocol) der Seite läuft in einem Task
@@ -462,7 +463,10 @@ sie unbenutzt lassen (unten). Die Tiefe von `wifi_get` lässt den
 TLS-Handshake (Transport Layer Security) und jedes Lesen darunter aus:
 esp_http_client erreicht seinen Transport über einen Funktionszeiger. Sein
 Stack nutzt den Speicher des Seitenservers; die beiden Tasks laufen nie gleichzeitig; die Tiefe des
-Handshakes ist nicht gemessen.
+Handshakes ist nicht gemessen. Die Tiefe von
+`devimg` reicht in die Prüfung des Release-Schlüssels (`fw_sig_verify()`);
+die Mbed-TLS-Aufrufe darunter, die über einen Funktionszeiger gehen, sind
+nicht darin, und ihre Tiefe ist nicht gemessen.
 
 Die Bluetooth-LE-Tasks (Low Energy) starten beim ersten IMU EIN
 (`panel_imu.c` ruft `panel_ble_start()` auf) oder mit `ble scan` des
@@ -533,7 +537,7 @@ oben ist deshalb eine Untergrenze:
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `UI_HOOK_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`,
   `SERVO_STORE_CALLS`):
-  385
+  389
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Sprünge über ein Register: eine Sprungtabelle, die in ihrer Funktion
@@ -601,6 +605,7 @@ zeigt Speicherbedarf, den das Werkzeug nicht verfolgt.
 | `wifi_get` | 8 192 | nicht gemessen |
 | `cardjob` | 6 656 | nicht gemessen |
 | `c6upd` | 4 096 | nicht gemessen |
+| `devimg` | 8 192 | nicht gemessen |
 | `shot` | 7 168 | nicht gemessen |
 
 Die Tasks von ESP-IDF und esp_hosted stehen nicht in der Tabelle: ihre Namen
@@ -631,7 +636,7 @@ eine Marge von 256 Bytes den Stack eines Kerns überschreiten.
 
 | Kern | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Ein Interrupt (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Kern 0 | `main` | 4 096 | 1 512 | 528 | 1 800 |
+| Kern 0 | `main` | 4 096 | 1 560 | 528 | 1 752 |
 | Kern 1 | `core1_main` | 4 096 | 644 | 528 | 2 668 |
 
 Gemessen am Image, das CI baut, pico-sdk 2.3.0 mit arm-none-eabi-gcc 14.2.1
@@ -697,7 +702,7 @@ Jede Tiefe ist eine Untergrenze:
 
 - Aufrufe über ein Register werden nicht verfolgt, außer dem Lese- und dem
   Schreib-Handler einer Page, die das Werkzeug aus der Page-Tabelle des
-  Links liest: 262 solche Aufrufe sind von `main` aus erreichbar, im Image,
+  Links liest: 266 solche Aufrufe sind von `main` aus erreichbar, im Image,
   das CI baut (arm-none-eabi-gcc 14.2.1);
 - der Frame von 1 088 Bytes von `two_way_long_needle()` der newlib bleibt
   außen vor. `strstr()` ruft sie für ein Suchmuster ab 255 Zeichen auf, und
@@ -819,11 +824,14 @@ sind nicht gezählt.
 Das Update der Funkgeräte, aus der Linker-Map des Standard-Builds:
 `panel_devupd.c` hält 2 008 Bytes DIRAM (1 580 .bss, 428 .data) und 5 050
 Bytes Code; `upd_dev.c` 566 Bytes .bss und 3 926 Bytes Code;
-`shared/devupd` 3 540 Bytes Code und `protocols/bleota` 446. Die drei
-mitgebrachten Images, das des Dial und die beider Knoten, fügen bei 0.23.12
-2 130 416 Bytes Image hinzu: 841 504, 646 240 und 642 672. Mit ihnen hat
-das Anwendungs-Image 7 375 296 Bytes, 751 168 (9,2%) unter dem Slot von
-8 126 464.
+`shared/devupd` 3 540 Bytes Code und `protocols/bleota` 446. Das
+Panel-Image bringt weder die Images dieser Geräte noch das des C6 mit: Ein
+Update lädt die Datei seines Geräts in den PSRAM
+([Bildschirme: Geräte-Images](Screens-de.md#geräte-images)). Bei 0.23.16
+haben die vier Dateien 850 816 (Dial), 646 336 (Leistungsknoten), 642 768
+(Auswuchtknoten) und 1 283 616 (C6) Bytes. Der Release-Build des Panels
+bei 0.23.17 mit beiden IOmcu-Images hat 4 088 176 Bytes, 4 038 288 (49,7%)
+unter dem Slot von 8 126 464.
 Die 4 096 Bytes der Ereignis-Warteschlange, die aufgehobenen DISCONNECTs
 und der Hub stecken in der DIRAM-Zahl, außerhalb von `libbt.a`. Hub und 5
 Verbindungen fügen dem Standard-Build mit einer Verbindung 3 704 Bytes

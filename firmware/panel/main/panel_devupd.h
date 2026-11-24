@@ -42,6 +42,7 @@
 #include <stdint.h>
 
 #include "bleuart.h"
+#include "fw_c6.h"
 
 /** @brief Chunks written in one poll of the `blec` task at most. */
 #define PANEL_DEVUPD_CHUNKS 4
@@ -97,6 +98,14 @@ void devupd_service(bool armed);
  * @return true from the hold to the update's end.
  */
 bool panel_devupd_busy(void);
+
+/**
+ * @brief The device whose update runs or was asked for, as the refusals
+ *        name it (fw_upd_refuses()).  Any task.
+ * @return FW_UPD_DIAL, FW_UPD_PNODE or FW_UPD_BAL from the hold to the
+ *         update's end; FW_UPD_NONE otherwise
+ */
+fw_upd_t panel_devupd_running(void);
 
 /**
  * @brief Whether the device rows say what is bound and linked: the `blec`

@@ -27,6 +27,7 @@
 #include "fw_install.h"
 #include "fw_ota.h"
 #include "fw_release.h"
+#include "fw_sig.h"
 #include "gfx.h"
 #include "link_host.h"
 #include "link_pages.h"
@@ -34,6 +35,7 @@
 #include "link_update_host.h"
 #include "out_bind.h"
 #include "panel.h"
+#include "panel_devimg.h"
 #include "panel_devupd.h"
 #include "rcbench_version.h"
 #include "settings.h"
@@ -649,21 +651,90 @@ static fw_gate_t fw_gate_now(bool armed)
                        || panel_devupd_busy());
 }
 
+/** @brief The release key's verdict on the image being installed, which
+ *         PANEL UPDATE shows while it writes (fw_sig.h). */
+static fw_sig_t s_sig;
+
 /**
  * @brief The update screen, drawn now: the install's loop runs no router
  *        tick.
+ * @param st      where the update stands
+ * @param version the image's version
+ * @param written bytes written
+ * @param total   the image's bytes
+ * @param why     UPDATE_FAILED: the reason's line (update_fail_text());
+ *                NULL for none
  */
 static void update_frame(update_state_t st, const char *version,
-                         uint32_t written, uint32_t total)
+                         uint32_t written, uint32_t total, const char *why)
 {
-    update_view_t v = { .state = st, .written = written, .total = total };
+    update_view_t v = { .state = st, .written = written, .total = total,
+                        .sig = s_sig };
     snprintf(v.version, sizeof(v.version), "%s", version);
+    snprintf(v.what, sizeof(v.what), "%s", why != NULL ? why : "");
     update_screen_set(&v);
     gfx_canvas_t *c = panel_canvas();
     if (c != NULL) {
         ui_router_render(c, display_back_index());
         display_flip();
     }
+}
+
+/** @brief An image the release key does not vouch for waits on PANEL
+ *         UPDATE for the second hold, INSTALL ANYWAY: only in a build that
+ *         enforces the signature (fw_sig_enforced()). */
+static bool s_sig_wait;
+/** @brief The version of the image that waits. */
+static char s_sig_version[WIFI_VER_MAX + 1];
+
+/**
+ * @brief The wait for INSTALL ANYWAY ends without the install: the image is
+ *        dropped.
+ * @param show a safety event (STOP, ARM) ended it while PANEL UPDATE still
+ *             shows: the screen leaves the hold for the failed state, whose
+ *             CLOSE leads back; CANCEL, or a screen already left, needs no
+ *             view
+ */
+static void sig_wait_drop(bool show)
+{
+    s_sig_wait = false;
+    atomic_store(&s_fw_installing, false);
+    wifi_access_release();
+    if (show) {
+        update_view_t v = { .state = UPDATE_FAILED, .sig = s_sig };
+        snprintf(v.version, sizeof(v.version), "%s", s_sig_version);
+        update_screen_set(&v);
+    }
+}
+
+/**
+ * @brief Whether the image waits for INSTALL ANYWAY after this call: in a
+ *        build that enforces the signature, an image the release key does
+ *        not vouch for stops here, with the radio off and nothing written.
+ * @param info  the image
+ * @param bytes its length
+ * @param acked INSTALL ANYWAY completed for it
+ * @return true when it waits; PANEL UPDATE shows UNSIGNED
+ */
+static bool sig_wait_begin(const fw_image_info_t *info, uint32_t bytes,
+                           bool acked)
+{
+    if (acked || !fw_sig_needs_ack(info->sig, fw_sig_enforced())) {
+        return false;
+    }
+    ESP_LOGW(TAG, "image %s: %s; waiting for INSTALL ANYWAY",
+             info->version_text, fw_sig_str(info->sig));
+    wifi_access_close(WA_OFF_INSTALL);
+    /* Waiting for the operator is not an install under way: the bench may
+     * arm, which ends the wait (wifi_service()). */
+    atomic_store(&s_fw_installing, false);
+    s_sig_wait = true;
+    snprintf(s_sig_version, sizeof(s_sig_version), "%s", info->version_text);
+    update_view_t v = { .state = UPDATE_UNSIGNED, .total = bytes,
+                        .sig = info->sig };
+    snprintf(v.version, sizeof(v.version), "%s", info->version_text);
+    update_screen_set(&v);
+    return true;
 }
 
 /**
@@ -677,11 +748,17 @@ static void update_frame(update_state_t st, const char *version,
  * and the radio is off.  A failure before the first erase changes nothing;
  * one after it leaves the running build as the one that starts.
  *
+ * The release key's verdict (fw_image_info_t.sig) shows on PANEL UPDATE
+ * while it writes.  In a build that enforces the signature, an image it
+ * does not vouch for stops before the radio goes and waits for INSTALL
+ * ANYWAY (sig_wait_begin()); the call after that hold has @p acked.
+ *
+ * @param acked INSTALL ANYWAY completed for the image that waits
  * @return false when no staged image waits: nothing ran and no screen
- *         changed; true after an install that failed (a successful one
- *         restarts the panel)
+ *         changed; true after an install that failed or that waits for
+ *         INSTALL ANYWAY (a successful one restarts the panel)
  */
-static bool fw_install_run(void)
+static bool fw_install_run(bool acked)
 {
     const uint8_t  *img = NULL;
     uint32_t        bytes = 0u;
@@ -689,11 +766,17 @@ static bool fw_install_run(void)
     if (!wifi_access_take(&img, &bytes, &info)) {
         return false;
     }
+    s_sig_wait = false;
+    s_sig = info.sig;
     /* Before the gate is read: see s_fw_installing. */
     atomic_store(&s_fw_installing, true);
     ui_router_goto(SCREEN_UPDATE);
     (void)wifi_screen_take();        /* the screen's leave: radio off */
-    update_frame(UPDATE_WRITING, info.version_text, 0u, bytes);
+    if (sig_wait_begin(&info, bytes, acked)) {
+        return true;
+    }
+    ESP_LOGI(TAG, "image %s: %s", info.version_text, fw_sig_str(info.sig));
+    update_frame(UPDATE_WRITING, info.version_text, 0u, bytes, NULL);
 
     /* The radio goes first, and wholly: no request may be under way. */
     wifi_access_close(WA_OFF_INSTALL);
@@ -707,7 +790,9 @@ static bool fw_install_run(void)
     static fw_install_t in;
     fw_image_info_t running;
     (void)fw_ota_running(&running);
-    fw_err_t e = FW_ERR_BUSY;
+    /* The radio still up, or the gate shut since the hold: nothing is
+     * written. */
+    fw_err_t e = down ? FW_ERR_GATE : FW_ERR_RADIO;
     if (down && fw_gate_now(arm_live_or_coming()) == FW_GATE_OPEN) {
         e = fw_install_begin(&in, fw_ota_flash(), img, bytes,
                              fw_ota_slot_bytes(), &running);
@@ -729,26 +814,29 @@ static bool fw_install_run(void)
             do {
                 st = fw_install_step(&in, true);
                 update_frame(UPDATE_WRITING, info.version_text, in.done,
-                             bytes);
+                             bytes, NULL);
             } while (st == FW_INSTALL_RUNNING);
         }
         /* Only an image written whole and checked notes the update run:
          * a power cut before this line leaves no run. */
         (void)fw_ota_run_installed(st, info.version_text);
         if (st == FW_INSTALL_DONE) {
-            update_frame(UPDATE_RESTARTING, info.version_text, bytes, bytes);
+            update_frame(UPDATE_RESTARTING, info.version_text, bytes, bytes,
+                         NULL);
             fw_ota_note_restart(info.version_text);
             ESP_LOGI(TAG, "written and checked; restarting");
             vTaskDelay(pdMS_TO_TICKS(1500));
             esp_restart();
         }
     }
+    const fw_err_t why = (e != FW_OK) ? e : in.err;
     ESP_LOGE(TAG, "install of %s failed: %s", info.version_text,
-             fw_err_str((e != FW_OK) ? e : in.err));
+             fw_err_str(why));
     atomic_store(&s_fw_quiet_req, false);
     atomic_store(&s_fw_installing, false);
     wifi_access_release();
-    update_frame(UPDATE_FAILED, info.version_text, in.done, bytes);
+    update_frame(UPDATE_FAILED, info.version_text, in.done, bytes,
+                 update_fail_text(why));
     return true;
 }
 
@@ -861,9 +949,19 @@ void wifi_service(bool armed, uint32_t stops_now)
     }
     if ((req & WIFI_REQ_INSTALL) != 0u) {
         s_update_back = ui_router_parent(SCREEN_WIFI);
-        (void)fw_install_run();
+        (void)fw_install_run(false);
+    }
+    /* The wait for INSTALL ANYWAY ends for STOP, ARMED and a screen left. */
+    if (s_sig_wait && (stop || armed || ui_router_current() != SCREEN_UPDATE)) {
+        sig_wait_drop(ui_router_current() == SCREEN_UPDATE);
+    }
+    if (update_screen_take_go() && s_sig_wait) {
+        (void)fw_install_run(true);
     }
     if (update_screen_take_close()) {
+        if (s_sig_wait) {
+            sig_wait_drop(false);
+        }
         ui_router_goto(s_update_back);
     }
 
@@ -921,6 +1019,7 @@ void wifi_service(bool armed, uint32_t stops_now)
     v->offer = (wifi_offer_t)a->offer;
     v->gate = (wifi_gate_t)fgate;
     snprintf(v->new_ver, sizeof(v->new_ver), "%s", a->info.version_text);
+    v->sig = a->info.sig;
     snprintf(v->run_ver, sizeof(v->run_ver), "%s", RCBENCH_VERSION_STRING);
     v->writes = (wifi_writes_t)writes;
     v->writes_open = wifi_access_writes(&v->written);
@@ -943,6 +1042,19 @@ void wifi_service(bool armed, uint32_t stops_now)
 static upd_driver_t s_upd;
 static uint32_t     s_upd_boot_gen;   /**< the start-up check's job; 0 none */
 static bool         s_upd_dl;         /**< a download, from its hold to its end */
+
+/**
+ * @brief The job as it stands, and the panel's own last job.
+ * @param raw takes the job, whichever it is
+ * @param own takes the last CHECK or DOWNLOAD
+ */
+static void fetch_get(wa_fetch_t *raw, wa_fetch_t *own)
+{
+    /* A device's image (DEVICE, panel_devimg.c) runs on the same job and
+     * never shows as PANEL's check or download; the job it replaced is
+     * kept where it was replaced (wa_fetch_keep()). */
+    wifi_access_fetch_get_own(raw, own);
+}
 
 /**
  * @brief The Wi-Fi reason (WA_WHY_*) a flash gate state stands for;
@@ -970,12 +1082,22 @@ static wa_why_t why_of_fw_gate(fw_gate_t g)
  * transfer.  CHECK FOR UPDATES is grey for its length and the start-up
  * check waits.
  */
-static wa_why_t upd_check_gate(bool armed)
+wa_why_t upd_dev_gate(bool armed)
 {
     return wa_fetch_gate(armed, supplies_live_or_coming(), run_open_now(),
                          atomic_load(&s_cu_busy) || panel_c6_busy()
                              || panel_devupd_busy(),
                          atomic_load(&s_fw_installing));
+}
+
+/**
+ * @brief The check's gate: upd_dev_gate(), and a device's image on its
+ *        way (panel_devimg_busy()) holds it as a device's update does.
+ */
+static wa_why_t upd_check_gate(bool armed)
+{
+    const wa_why_t g = upd_dev_gate(armed);
+    return (g == WA_WHY_NONE && panel_devimg_busy()) ? WA_WHY_COPROC : g;
 }
 
 /** @brief SETUP > UPDATES' RELEASES, now: 1 is TESTING. */
@@ -1019,8 +1141,8 @@ void upd_remind_service(bool armed, bool unsafe, const cu_snap_t *cs)
     if (!s_wifi_ok) {
         return;
     }
-    wa_fetch_t f;
-    wifi_access_fetch_get(&f);
+    wa_fetch_t raw, f;
+    fetch_get(&raw, &f);
     char ssid[WIFI_SSID_MAX + 1];
     const bool have_net = wifi_access_home(ssid, sizeof(ssid));
     const upd_feed_t feed = upd_feed_now(armed, unsafe, cs, &f, have_net);
@@ -1069,8 +1191,8 @@ void upd_service(bool armed, bool unsafe, uint32_t stops_now,
     }
 
     v.have_net = wifi_access_home(v.net, sizeof(v.net));
-    wa_fetch_t f;
-    wifi_access_fetch_get(&f);
+    wa_fetch_t raw, f;
+    fetch_get(&raw, &f);
     const unsigned req = upd_screen_take();
     const fw_version_t none = { 0u, 0u, 0u };
     const wa_channel_t ch = upd_channel();
@@ -1081,16 +1203,16 @@ void upd_service(bool armed, bool unsafe, uint32_t stops_now,
         && wifi_access_fetch_start(WA_JOB_CHECK, none, ch,
                                    upd_check_gate(armed))
            == WA_GOT_NONE) {
-        wifi_access_fetch_get(&f);
+        fetch_get(&raw, &f);
         s_upd_boot_gen = f.gen;
         ESP_LOGI(TAG, "GitHub: start-up check");
     }
-    if ((req & UPD_REQ_CHECK) != 0u && !wa_fetch_busy(&f)) {
+    if ((req & UPD_REQ_CHECK) != 0u && !wa_fetch_busy(&raw)) {
         (void)wifi_access_fetch_start(WA_JOB_CHECK, none, ch,
                                       upd_check_gate(armed));
-        wifi_access_fetch_get(&f);
+        fetch_get(&raw, &f);
     }
-    if ((req & UPD_REQ_DOWNLOAD) != 0u && !wa_fetch_busy(&f) && !s_upd_dl
+    if ((req & UPD_REQ_DOWNLOAD) != 0u && !wa_fetch_busy(&raw) && !s_upd_dl
         && wa_fetch_offers(&f, ch)) {
         /* Before the gate is read: see s_fw_installing. */
         atomic_store(&s_fw_installing, true);
@@ -1101,34 +1223,38 @@ void upd_service(bool armed, bool unsafe, uint32_t stops_now,
                                       why_of_fw_gate(fw_gate_now(armed)));
         (void)update_screen_take_cancel();
         ui_router_goto(SCREEN_UPDATE);
-        wifi_access_fetch_get(&f);
+        fetch_get(&raw, &f);
     }
 
-    /* A job under way ends for any of these. */
+    /* A job under way ends for any of these; a device's image also for
+     * its CANCEL UPDATE (panel_devimg_take_cancel()). */
     wa_why_t abort = WA_WHY_NONE;
+    const bool dev_cancel = panel_devimg_take_cancel();
     const bool cancel = (req & UPD_REQ_CANCEL) != 0u
                         || (s_upd_dl && update_screen_take_cancel());
-    if (wa_fetch_busy(&f)) {
+    if (wa_fetch_busy(&raw)) {
         if (stop) {
             abort = WA_WHY_STOP;
         } else if (ui_router_current() == SCREEN_WIFI) {
             abort = WA_WHY_FILES;
+        } else if (raw.job == WA_JOB_DEVICE) {
+            abort = dev_cancel ? WA_WHY_CANCEL : upd_dev_gate(armed);
         } else if (cancel) {
             abort = WA_WHY_CANCEL;
-        } else if (f.job == WA_JOB_DOWNLOAD) {
+        } else if (raw.job == WA_JOB_DOWNLOAD) {
             abort = why_of_fw_gate(fw_gate_now(armed));
         } else {
             abort = upd_check_gate(armed);
         }
     }
     wifi_access_fetch_tick(abort);
-    wifi_access_fetch_get(&f);
+    fetch_get(&raw, &f);
 
     /* What UPDATES and the download's screen show. */
     const bool busy = wa_fetch_busy(&f);
     v.block = (upd_why_t)upd_check_gate(armed);
     v.radio_free = wifi_access_down();
-    if (s_upd_dl || busy) {
+    if (s_upd_dl || wa_fetch_busy(&raw)) {
         v.dl_block = UPD_WHY_BUSY;
     } else {
         v.dl_block = (upd_why_t)why_of_fw_gate(fw_gate_now(armed));
@@ -1176,12 +1302,13 @@ void upd_service(bool armed, bool unsafe, uint32_t stops_now,
          * the IOmcu's again. */
         atomic_store(&s_fw_installing, false);
         ESP_LOGI(TAG, "GitHub: %s downloaded and checked", v.found);
-        if (!fw_install_run()) {
+        if (!fw_install_run(false)) {
             /* The staged image is gone: the job ends INSTALL as after a
              * failed write, and PANEL UPDATE says the firmware stays. */
             ESP_LOGE(TAG, "GitHub: %s staged, no image to install", v.found);
             wifi_access_release();
-            update_frame(UPDATE_FAILED, v.found, 0u, f.total);
+            update_frame(UPDATE_FAILED, v.found, 0u, f.total,
+                         TR(UP_WHY_GONE));
         }
         return;
     }
@@ -1242,7 +1369,7 @@ void cu_render_service(bool unsafe, bool link_up, const cu_snap_t *cs,
 bool panel_update_busy(void)
 {
     wa_fetch_t f;
-    wifi_access_fetch_get(&f);
+    wifi_access_fetch_get(&f);   /* whichever job: each holds the radio */
     return atomic_load(&s_cu_busy) || atomic_load(&s_fw_installing) || s_upd_dl
            || wa_fetch_busy(&f) || panel_c6_busy();
 }

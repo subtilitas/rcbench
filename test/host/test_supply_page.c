@@ -209,7 +209,7 @@ TEST_CASE(an_on_needs_its_whole_frame)
 TEST_CASE(no_slot_binds_a_held_pin)
 {
     fresh();
-    uint16_t slots[LINK_OS_COUNT];
+    uint16_t slots[LINK_OS_ALL] = { 0 };
     memset(slots, 0, sizeof(slots));
     slots[LINK_OS_DRIVER] = 1u;
     slots[LINK_OS_PIN]    = 8u;

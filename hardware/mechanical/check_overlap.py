@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check that no two solids of a mechanical model share volume.
 
-Each named model of hardware/mechanical/models/ is read back with
+Each named model under hardware/mechanical/models/ is read back with
 OpenCASCADE. Every pair of solids whose boxes overlap is intersected;
 the check fails on a pair that shares more than SHARED. Stems joined
 by "+" are checked as one model: the parts as they sit together.
@@ -27,12 +27,20 @@ from OCP.GProp import GProp_GProps
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "kicad" / "tools"))
+import _models  # noqa: E402
 import step_check  # noqa: E402
 
 MODELS = ("panel_7b", "ina228_xt90+ina228_xt90_case", "ina219_cjmcu219",
           "lipo_charger_boost_5v", "boost_5v_en", "esp32_c6_zero",
-          "lipo_702030_380mah", "lipo_102540_1000mah", "servo_standard",
-          "kst_x10", "wit_imu")
+          "core2350b", "core2350b_usb_adapter", "es3c28p",
+          "lipo_702030_380mah",
+          "lipo_102540_1000mah", "servo_standard", "hitec_d485hw",
+          "flycolor_flydragon_lite_40a", "tmotor_at2814", "esc_motor_set",
+          "motor_simulator",
+          "kst_x10", "wit_imu",
+          "rbmod_v2_smd", "rbmod_v2", "rp2350_can", "ina3221_module",
+          "dcdc_buck_mini", "usbc_pd_trigger", "matek_mbec12s",
+          "ina228_node_layout")
 SHARED = 1e-6           # mm3
 
 
@@ -80,7 +88,7 @@ def main(argv):
     """
     bad = 0
     for stem in argv or MODELS:
-        pairs, count = shared(*(HERE / "models" / f"{one}.step"
+        pairs, count = shared(*(_models.path(one)
                                 for one in stem.split("+")))
         print(f"{'FAIL' if pairs else 'ok  '} {stem}: {count} solids, "
               f"{len(pairs)} pairs share volume")

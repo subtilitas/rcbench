@@ -60,8 +60,8 @@ Das M5Stack Dial stellt das Gas auf [MOTOR & ESC](motor.md) und das Horn auf [SE
 | Einstellung | Bereich | Vorgabe | Wirkung |
 |---|---|---|---|
 | Dial | EIN, AUS | AUS | Bluetooth LE und die Verbindung zum gebundenen Dial; AUS beendet die Verbindung, und ein ausgeschaltetes Dial ist kein Verlust |
-| Dial suchen | `SUCHEN` | | Tippen sucht 10s lang und listet die Dials in Reichweite; das Schalten auf ARMED beendet die Suche, `DURCH ARM BEENDET`; bei ARMED abgelehnt, mit `KEINE DIAL-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN` im Band |
-| Gebundenes Dial | `KEINS` oder der Name des Dials | `KEINS` | Tippen listet die Dials der letzten Suche mit ihrem Signal in dBm; Tippen auf eines bindet es und fragt nach dem Speichern. Die Rücksetztaste behält das gebundene Dial |
+| Dial suchen | `SUCHEN` | | Tippen öffnet [SEARCH](#search) und sucht 10s lang nach den Dials in Reichweite; das Schalten auf ARMED beendet die Suche, `DURCH ARM BEENDET`; bei ARMED abgelehnt, mit `KEINE DIAL-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN` im Band |
+| Gebundenes Dial | `KEINS` oder der Name des Dials | `KEINS` | Tippen öffnet [SEARCH](#search) mit der Liste der letzten Suche. Die Rücksetztaste behält das gebundene Dial |
 | Dial-Schritt, Gas | 0.5%, 1%, 2%, 5% | 1% | das Gas, das eine Raste verstellt |
 | Dial-Schritt, Servo | 0.5°, 1°, 2°, 5° | 1° | der Hornwinkel, den eine Raste verstellt |
 
@@ -70,7 +70,7 @@ Das Panel verbindet sich über die Adresse mit dem gebundenen Dial, ohne Suche, 
 Auf den Prüfstandsbildschirmen:
 
 - Eine Drehung bewegt nichts, solange der Prüfstand SAFE ist, und Drehungen bei SAFE werden nicht für das ARM aufgehoben. Das erste EVENT nach dem Verbinden, ein EVENT mehr als 300ms nach dem letzten und ein Sprung um mehr als 16 Rasten bewegen nichts.
-- Ein Druck auf die Bildschirmtaste des Dials bei ARMED setzt das Gas auf MOTOR & ESC auf 0% und das Horn auf SERVO auf CENTER. 1s Halten schaltet DISARM, auch solange ein ARM unterwegs ist, und beendet einen ESC-STICK-Lauf wie ABORT. Auf SERVO beendet es einen Test, einen LIMIT RUN und einen Lauf von RUDDER AUTO in jeder Phase, auch solange der Lauf den Prüfstand für seine Programmiersitzung auf SAFE hält.
+- Ein Druck auf die Bildschirmtaste des Dials bei ARMED setzt das Gas auf MOTOR & ESC auf 0% und das Horn auf SERVO auf CENTER. 1s Halten schaltet DISARM, auch solange ein ARM unterwegs ist, und beendet einen ESC-STICK-Lauf wie ABORT. Auf SERVO beendet es einen Test, einen Lauf von LIMIT RUN und einen Lauf von RUDER AUTO in jeder Phase, auch solange der Lauf den Prüfstand für seine Programmiersitzung auf SAFE hält.
 - Ein Dial, das bei ARMED verloren geht, ist ein Fehler: 1000ms ohne EVENT oder die Trennung schalten den Prüfstand auf SAFE mit allen Ausgängen aus, und das Band zeigt `DIAL BEI ARMED VERLOREN: AUF SAFE GESCHALTET, ALLE AUSGÄNGE AUS`. 500ms ohne EVENT zeigen `DIAL: 500ms KEIN EREIGNIS`. Die Uhr läuft ab dem ersten EVENT einer Verbindung, ein Verbinden ohne EVENT ist also kein Verlust.
 - Bei SAFE navigiert das Dial das Menü, SETUP, die Kacheln von SERVO mit ihren SETTINGS, die Platine von OUTPUTS und jede Auswahlliste: Ein Rahmen in der Akzentfarbe markiert den Eintrag im Fokus, eine Drehung bewegt ihn, ein Druck tippt ihn an und ein Halten von 1s geht zurück wie das Home-Tag. Ein Druck auf eine Zahl öffnet ihr Ziffernfeld; eine Drehung stellt dann den Wert ein, ein Druck ist OK und ein Halten CANCEL. Ein Druck auf eine Zeile mit Ein/Aus oder Optionen stellt sie durch Drehen ein: Ein Druck behält, ein Halten stellt zurück. Kein 2s-Halten am Panel wird vom Dial aus vollendet.
 - Andere Bildschirme nehmen keine Drehung des Dials an. Das Dial zeigt ihren Titel und den Zustand des Prüfstands.
@@ -101,15 +101,16 @@ Der Leistungsknoten ist ein ESP32-C6 mit eigener Zelle, der einen INA228 am XT60
 |---|---|---|---|
 | Leistungsknoten | EIN, AUS | AUS | Bluetooth LE und die Verbindung zum gebundenen Knoten; AUS beendet die Verbindung ohne Fehler |
 | INA228-Quelle | WIRED, NODE | WIRED | WIRED: der INA228 des IOmcu ([Sensoren](setup-sensors.md)); NODE: die Messwerte des Leistungsknotens. Auch bei ausgeschaltetem Knoten sichtbar, damit die Quelle auf WIRED zurück kann |
-| Knoten suchen | `SUCHEN` | | Tippen sucht 10s lang und listet die Leistungsknoten in Reichweite; das Schalten auf ARMED beendet die Suche, `DURCH ARM BEENDET`; bei ARMED abgelehnt, mit `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN` im Band |
-| Gebundener Knoten | `KEINS` oder der Name des Knotens | `KEINS` | Tippen listet die Knoten der letzten Suche mit ihrem Signal in dBm; Tippen auf einen bindet ihn und fragt nach dem Speichern. Zurücksetzen behält den gebundenen Knoten |
+| Knoten suchen | `SUCHEN` | | Tippen öffnet [SEARCH](#search) und sucht 10s lang nach den Leistungsknoten in Reichweite; das Schalten auf ARMED beendet die Suche, `DURCH ARM BEENDET`; bei ARMED abgelehnt, mit `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN` im Band |
+| Gebundener Knoten | `KEINS` oder der Name des Knotens | `KEINS` | Tippen öffnet [SEARCH](#search) mit der Liste der letzten Suche. Zurücksetzen behält den gebundenen Knoten |
 | Knotenakku | `3.92V`, `SCHWACH 3.41V`, `KEINE ZELLE`, `LESEFEHLER`, `NICHT VERBUNDEN` | | die Zelle des Knotens aus seinem Status jede 1s; `SCHWACH` unter 3.5V |
 
 Mit INA228-Quelle auf NODE:
 
 - Spannung, Strom, Leistung, Spitzen, Ladung und Energie von MOTOR & ESC sind die des Knotens, solange die IOmcu-Verbindung steht. Die eigene Telemetrie des ESC bleibt daneben. Die Spalte `source` des Logs zeigt `node`.
 - Ein Messwert, der älter als 300ms ist, gilt als keiner.
-- Ein ARM von MOTOR & ESC oder ESC STICK wird abgelehnt, solange Leistungsknoten AUS ist oder in den letzten 100ms kein Messwert kam, mit `ARMED gesperrt: Leistungsknoten sendet nicht. INA228-Quelle WIRED oder Knoten verbinden.` im Band. SERVO und OUTPUTS schalten unabhängig vom Knoten scharf.
+- Mit Leistungsknoten EIN und einem gebundenen Knoten trägt die Kachel MOTOR & ESC im [Menü](overview.md#die-marke-simuliert) keine Marke SIMULIERT, auch bei ausgeschaltetem INA228 des IOmcu und ohne Verbindung zum Knoten.
+- Ein ARM von MOTOR & ESC oder ESC STICK wird abgelehnt, solange Leistungsknoten AUS ist oder in den letzten 100ms kein Messwert kam, mit `ARMED gesperrt: Leistungsknoten sendet nicht. INA228-Quelle WIRED oder Knoten verbinden.` im Band. SERVO und OUTPUTS schalten unabhängig vom Knoten auf ARMED.
 - In einem Lauf von MOTOR & ESC oder ESC STICK wird eine Lücke ohne Messwert bis 300ms überbrückt, einmal in 10s. Eine längere Lücke oder eine zweite innerhalb von 10s schaltet den Prüfstand auf SAFE mit allen Ausgängen aus, und das Band zeigt `MESSWERTE DES LEISTUNGSKNOTENS BEI ARMED VERLOREN: AUF SAFE GESCHALTET, ALLE AUSGÄNGE AUS`. Ein SERVO- oder OUTPUTS-Lauf endet nicht am Knoten.
 - INA228-Quelle ändert sich bei ARMED nicht.
 - Die Messwerte des Knotens speisen keine Schutzfunktion: Stromgrenzen und Abschaltungen lesen ihre eigenen Sensoren.
@@ -141,8 +142,8 @@ Der Auswuchtknoten misst Vibration und Index eines Rotors für [Balance](balance
 | Einstellung | Bereich | Vorgabe | Wirkung |
 |---|---|---|---|
 | Auswuchtknoten | EIN, AUS | AUS | Bluetooth LE und die Verbindung zum gebundenen Knoten; AUS beendet die Verbindung |
-| Knoten suchen | `SUCHEN` | | Tippen sucht 10s lang und listet die Auswuchtknoten in Reichweite, `rcbench-bal-XXXX`; das Schalten auf ARMED beendet die Suche; bei ARMED abgelehnt, mit `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN` im Band |
-| Gebundener Knoten | `KEINS` oder der Name des Knotens | `KEINS` | Tippen listet die Knoten der letzten Suche; Tippen auf einen bindet ihn und fragt nach dem Speichern. Zurücksetzen behält den gebundenen Knoten |
+| Knoten suchen | `SUCHEN` | | Tippen öffnet [SEARCH](#search) und sucht 10s lang nach den Auswuchtknoten in Reichweite, `rcbench-bal-XXXX`; das Schalten auf ARMED beendet die Suche; bei ARMED abgelehnt, mit `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN` im Band |
+| Gebundener Knoten | `KEINS` oder der Name des Knotens | `KEINS` | Tippen öffnet [SEARCH](#search) mit der Liste der letzten Suche. Zurücksetzen behält den gebundenen Knoten |
 | Knotenakku | `3.91V`, `3.40V NIEDRIG`, `KEIN WERT`, `--` | | die Zelle des Knotens, aus dem STATUS, den der Knoten neben seinen Berichten sendet; NIEDRIG unter 3.50V |
 | Testmasse | 0.01g bis 20.00g | 0.50g | die Masse, die für die Testläufe auf [MOTOR & ESC](motor.md#wuchten) aufgeklebt wird |
 
@@ -156,6 +157,20 @@ Der Auswuchtknoten misst Vibration und Index eines Rotors für [Balance](balance
 | `BERICHTET` | ein Bericht in den letzten 1000ms |
 
 `AUS`, `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `SUCHE LÄUFT` und `VERBINDE` lesen sich wie beim Dial.
+
+## Search
+
+![SEARCH beim Leistungsknoten, zwei Knoten gefunden](view:setup-wireless-search)
+
+SEARCH findet und bindet das Dial, den Leistungsknoten oder den Auswuchtknoten. Dial suchen und Knoten suchen öffnen es und suchen 10s lang; Gebundenes Dial und Gebundener Knoten öffnen es mit der Liste der letzten Suche. Eine abgelehnte Suche nennt den Grund im Band, und SEARCH öffnet mit der letzten Liste. Das Home-Feld führt zurück zu WIRELESS auf den Eintrag des Geräts.
+
+- Die Zeile über der Liste: `SUCHE LÄUFT: NOCH 7s`, `2 GEFUNDEN: ZUM BINDEN EINES ANTIPPEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` oder `NOCH KEINE SUCHE: AKTUALISIEREN ANTIPPEN`.
+- Die Liste: bis zu 8 Geräte, das stärkste zuerst, jedes mit Name oder Adresse und Signal in dBm. Das gebundene ist hervorgehoben. Die Liste leert sich beim Start einer Suche und füllt sich an ihrem Ende.
+- Rechts: die Art des Geräts, seine Verbindung, das gebundene Gerät und AKTUALISIEREN, eine neue Suche von 10s. AKTUALISIEREN ist grau, solange eine Suche läuft.
+
+![Die Bindungsfrage](view:setup-wireless-search-bind)
+
+Tippe auf ein Gerät, um es zu binden: Die Frage zeigt Name, Adresse und Signal und das Gerät, das es ersetzt. BINDEN bindet es; SETUP behält es und fordert Speichern an, und SEARCH bleibt und hebt es hervor, sobald es gebunden ist. ABBRECHEN oder das Home-Feld binden nichts. BINDEN bindet nichts, solange eine Suche läuft, `SUCHE LÄUFT: DEN KNOTEN NACH DEM ENDE WÄHLEN`, oder wenn eine neue Suche die Liste unter der Frage änderte, `KNOTEN NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`; die Texte des Dials nennen das Dial.
 
 ## Verwandte Seiten
 

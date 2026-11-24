@@ -853,13 +853,16 @@ TEST_CASE(the_last_card_waits_for_no_iomcu_update_that_has_ended)
     CHECK(card_has(TR(UPD_WAIT_BUSY)));
 
     /* The gate held by the restart owed after a C6 reinstall: the C6's
-     * step is current, not the last card, and nothing names the IOmcu. */
+     * step is current, not the last card, nothing names the IOmcu, and
+     * the card says the panel restarts once the bench is SAFE with all
+     * outputs off, not that the C6 still owes an answer. */
     g_c6.row = FW_C6_ROW_BLOCKED;
-    g_c6.why = FW_C6_WHY_ENDING;
+    g_c6.why = FW_C6_WHY_RESTART;
     hand();
     CHECK_EQ(wiz().current, (unsigned)UPD_WIZ_C6);
     CHECK(!card_has(all) && !card_has(TR(UPD_WAIT_COPROC)));
-    CHECK(card_has(TR(C6_WHY_ENDING)));
+    CHECK(card_has(TR(C6_WHY_RESTART)));
+    CHECK(!card_has(TR(C6_WHY_ENDING)));
     CHECK_EQ(wiz().step[UPD_WIZ_IOMCU].tag, UPD_WIZ_TAG_CURRENT);
 }
 
@@ -884,6 +887,36 @@ TEST_CASE(a_device_off_on_wireless_does_not_wait_in_a_run)
         const upd_wiz_t w = wiz();
         CHECK_EQ(w.current, (unsigned)UPD_WIZ_NONE);
         CHECK_EQ(w.step[UPD_WIZ_DIAL + d].tag, UPD_WIZ_TAG_OFF);
+        CHECK(!card_has(TR(UPD_WIZ_WAIT_DIAL)));
+        CHECK(!card_has(TR(UPD_WIZ_WAIT_NODE)));
+        char line[96];
+        snprintf(line, sizeof(line), TR(UPD_WIZ_END_OTHER),
+                 upd_wiz_name(UPD_WIZ_DIAL + d));
+        CHECK(card_has(line));
+        CHECK(card_has(TR(UPD_WIZ_END_NONE_OPEN)));
+        upd_screen_set_run(false);
+    }
+}
+
+/* CLEANUP item 2: a bound device ON while Bluetooth LE cannot link it, in
+ * a run: its step does not wait, its row reads NO BLUETOOTH, and the last
+ * card's "No update here" line names it. */
+TEST_CASE(a_device_without_bluetooth_does_not_wait_in_a_run)
+{
+    for (unsigned d = 0u; d < UPD_DEV_COUNT; ++d) {
+        fresh();
+        ui_router_goto(SCREEN_UPDATES);
+        all_current();
+        upd_screen_set_run(true);
+        g_d[d].row = DEVUPD_ROW_NOT_LINKED;
+        g_d[d].known = false;
+        hand();
+        CHECK_EQ(wiz().current, UPD_WIZ_DIAL + d);       /* it waits */
+        g_d[d].no_ble = true;
+        hand();
+        const upd_wiz_t w = wiz();
+        CHECK_EQ(w.current, (unsigned)UPD_WIZ_NONE);
+        CHECK_EQ(w.step[UPD_WIZ_DIAL + d].tag, UPD_WIZ_TAG_NO_BLE);
         CHECK(!card_has(TR(UPD_WIZ_WAIT_DIAL)));
         CHECK(!card_has(TR(UPD_WIZ_WAIT_NODE)));
         char line[96];
@@ -1121,6 +1154,7 @@ int main(void)
     RUN(the_end_card_heading_follows_the_steps);
     RUN(the_last_card_waits_for_no_iomcu_update_that_has_ended);
     RUN(a_device_off_on_wireless_does_not_wait_in_a_run);
+    RUN(a_device_without_bluetooth_does_not_wait_in_a_run);
     RUN(the_end_card_names_skipped_and_absent_steps);
     RUN(no_home_network_shows_the_wifi_button_only_while_no_step_blocks);
     RUN(options_is_grey_while_any_update_or_check_runs);

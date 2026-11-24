@@ -358,6 +358,30 @@ abwies. Keine Störung: eine Ablehnung, ein Plan, der nichts sendet, ABORT
 und ein Schritt, den ein Stopp oder eine verlorene Verbindung abbricht; die
 beenden die Sitzung selbst.
 
+#### Die gemeinsame Schiene des Remote-Servo-Knotens
+
+Auf dem Remote-Servo-Knoten (Board 3) läuft das Servo der Sitzung am PD
+mini über den Schalter seines Ausgangs, und das OFF des Panels für diesen
+Ausgang (RAIL 0 von POWER oder sein gelöschtes Bit in PORT_WANT) wartet
+auf ein Schreiben wie das OFF des PD mini: jeder andere Port geht sofort
+aus, der Ausgang der Sitzung, wenn das Schreiben endet, höchstens 10000ms
+nach dem OFF. Ein ausgebliebener Heartbeat, der Failsafe des Links und ein
+Auslösen schalten die Schiene und jeden Port sofort ab, und keine Sitzung
+schaltet sie wieder ein, bis RAIL 1 des Panels TRIPPED löscht. Es läuft
+eine Programmiersitzung zur Zeit. Ohne die Portschalter wird CONNECT
+abgelehnt, solange ein anderer Kanal aktiv ist, und solange die Sitzung
+offen ist, wird jedes Schreiben, das einen anderen Kanal aktivieren würde
+(ein Slot von OUTPUTS, die Funktion eines Programmierports,
+PASS-THROUGH), mit BUSY abgelehnt; mit ihnen schaltet eine
+Sitzung mit einer anderen Spannung als der der Schiene jeden anderen Port
+aus. Der Ausgang der Sitzung wird erst eingeschaltet, wenn der PD mini die
+Spannung der Sitzung liest, höchstens 150mV darüber, und jedes stehende
+OFF (RAIL 0, das gelöschte Bit in PORT_WANT, das OFF der Page SUPPLY, ein
+Auslösen, ein ausgebliebener Heartbeat) beendet dieses Warten. CONNECT
+wird abgelehnt, solange die
+BEC-Prüfung 500mV oder mehr an irgendeinem Port findet
+([Link, Programmieren an der gemeinsamen Schiene](Link-de.md#programmieren-an-der-gemeinsamen-schiene)).
+
 #### Die 5V der Programmierports auf dem Carrier
 
 Auf dem [rbmod-Carrier](Carrier-de.md#versorgung) laufen die
@@ -404,7 +428,7 @@ schaltet VERBINDEN das Servo ein. Die Page folgt den Regeln der Page SUPPLY für
 - M7 läuft aus dem Netz +15V, dem Eingang des Carriers über den
   PD-Trigger M6. Solange der PD mini am selben Eingang ihn unter 13,5V
   liest, werden PROG 5V EIN, ein VERBINDEN von KST oder Hitec und ARM +
-  START von ENDLAGENLAUF und RUDER AUTO mit `EINGANG 5.1V: BENÖTIGT 15V.
+  START von LIMIT RUN und RUDER AUTO mit `EINGANG 5.1V: BENÖTIGT 15V.
   VERSORGUNGSSPANNUNG PRÜFEN` abgelehnt, und nichts wird geschaltet
   ([Carrier, Die Eingangsversorgung](Carrier-de.md#die-eingangsversorgung)).
   Ohne Messwert des PD mini gilt nur die Prüfung nach dem ON.
@@ -619,13 +643,13 @@ wieder Flanken zeigt. Das Panel schreibt CLEAR an drei Stellen, jede ein
 
 | Schreibt | Bedingung |
 | --- | --- |
-| Das Schalten auf ARMED | ARM 2s gehalten; CLEAR, sobald der IOmcu dem Heartbeat vertraut, dann der Frame, der scharf schaltet |
+| Das Schalten auf ARMED | ARM 2s gehalten; CLEAR, sobald der IOmcu dem Heartbeat vertraut, dann der Frame, der auf ARMED schaltet |
 | Das Zurücksetzen von STOP | der STOP-Latch gelöst und der IOmcu meldet alle Ausgänge aus ([STOP als Not-Aus](Stop-de.md)) |
 | FAILSAFE LÖSEN, der erste der Schritte von ARM auf SERVO | ARM oder ARM + START 2s gehalten bei SAFE, während STATUS FEHLER 01 und nicht FEHLER 10 zeigt; nicht bei gedrücktem STOP, bei einem Programmierer, der einen Port hält, und ohne Link. FEHLER 01 muss innerhalb von 500ms erlöschen (`SERVO_SEQ_CLEAR_MS`), sonst enden die Schritte mit allen Ausgängen aus |
 
 FAILSAFE LÖSEN gibt es, weil der IOmcu in seinem Failsafe jedes ON einer
 Versorgung abweist und die Schritte von ARM PROG 5V oder den PD mini
-einschalten, bevor sie scharf schalten. Es schreibt kein ARM. Jeder Ausgang
+einschalten, bevor sie auf ARMED schalten. Es schreibt kein ARM. Jeder Ausgang
 braucht weiter sein eigenes ON oder ARM. Host-getestet in
 `test_servo_start_seq`, `test_servo_drive_ready` und
 `test_servo_rauto_seq`; das Schreiben von CLEAR im Panel ist nicht
@@ -1184,6 +1208,13 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   wie bei einem Prüfstand in SAFE. Ein IOmcu älter als Protokoll
   4.18 nimmt jedes ARM ungleich 0 als ganze Bank; an ihm treibt also jeder
   gebundene Pin.
+- Die Durchleitung des entfernten Servoknotens folgt derselben Regel je
+  Kanal: ein Kanal auf PASS-THROUGH leitet den Puls des Empfängers nur
+  durch, solange das ARM die Rolle seines Kanals nennt (CHAN_CFG). Mit ARM
+  0x0004 bleibt das Pad eines Throttle-Kanals low, ein Empfänger treibt
+  also nie einen ESC während eines Laufs nur der Surfaces, und umgekehrt
+  mit ARM 0x0002. Der IOmcu prüft das in jedem Durchlauf der Hauptschleife
+  ([Link, Die Pages PASS und PASS_STAT](Link-de.md#die-pages-pass-und-pass_stat)).
 - Ein ARM für die andere Rolle geht über ein Schalten auf SAFE. Das Panel schreibt
   ARM = 0, wartet mindestens 100ms und schreibt dann die neuen Rollen; den
   Wechsel von einem ARM ungleich 0 zu einem anderen weist der IOmcu

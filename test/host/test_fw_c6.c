@@ -7,8 +7,10 @@
  * same across the 32-bit millisecond wrap, the activate call only from
  * 2.6.0 on, a failed write closed without an activate, and the write
  * lengths at one byte under and over a run.  Then the bench under the
- * update: what is refused while it is busy, the row blocked from a success
- * to the restart, and the restart's wait: the run note and the restart only
+ * update: what is refused while it is busy, what every other update (the
+ * IOmcu's, the Dial's, the nodes') refuses the same way and which update a
+ * refusal names, the row blocked from a success to the restart with its own
+ * reason, and the restart's wait: the run note and the restart only
  * in a quiet frame, the restart not before FW_C6_RESTART_MS, the alert once
  * and again every FW_C6_RESTART_TELL_MS.
  *
@@ -582,6 +584,43 @@ TEST_CASE(arm_supply_on_prog5v_on_and_a_session_are_refused_while_busy)
     CHECK(!fw_c6_refuses(false, FW_C6_ASK_OFF));
 }
 
+/* CLEANUP item 1: every other update refuses what the C6's refuses, and
+ * never an OFF. */
+TEST_CASE(every_update_refuses_supply_on_prog5v_on_and_a_session)
+{
+    static const fw_upd_t runs[] = { FW_UPD_C6, FW_UPD_IOMCU, FW_UPD_DIAL,
+                                     FW_UPD_PNODE, FW_UPD_BAL };
+    static const fw_c6_ask_t ons[] = { FW_C6_ASK_SUPPLY_ON,
+                                       FW_C6_ASK_PROG5V_ON,
+                                       FW_C6_ASK_SESSION };
+    for (size_t r = 0; r < sizeof(runs) / sizeof(runs[0]); ++r) {
+        for (size_t i = 0; i < sizeof(ons) / sizeof(ons[0]); ++i) {
+            CHECK(fw_upd_refuses(runs[r], ons[i]));
+            CHECK(!fw_upd_refuses(FW_UPD_NONE, ons[i]));
+        }
+        CHECK(!fw_upd_refuses(runs[r], FW_C6_ASK_OFF));
+    }
+    CHECK(!fw_upd_refuses(FW_UPD_NONE, FW_C6_ASK_OFF));
+}
+
+/* The refusal names the update that runs: the C6's first, then the
+ * IOmcu's, then a device's; none when nothing runs. */
+TEST_CASE(the_running_update_is_the_c6s_then_the_iomcus_then_a_devices)
+{
+    CHECK_EQ(fw_upd_running(false, false, FW_UPD_NONE), FW_UPD_NONE);
+    CHECK_EQ(fw_upd_running(true, false, FW_UPD_NONE), FW_UPD_C6);
+    CHECK_EQ(fw_upd_running(false, true, FW_UPD_NONE), FW_UPD_IOMCU);
+    CHECK_EQ(fw_upd_running(false, false, FW_UPD_DIAL), FW_UPD_DIAL);
+    CHECK_EQ(fw_upd_running(false, false, FW_UPD_PNODE), FW_UPD_PNODE);
+    CHECK_EQ(fw_upd_running(false, false, FW_UPD_BAL), FW_UPD_BAL);
+    CHECK_EQ(fw_upd_running(true, true, FW_UPD_BAL), FW_UPD_C6);
+    CHECK_EQ(fw_upd_running(false, true, FW_UPD_DIAL), FW_UPD_IOMCU);
+    /* A device slot that names no device is none. */
+    CHECK_EQ(fw_upd_running(false, false, FW_UPD_C6), FW_UPD_NONE);
+    CHECK_EQ(fw_upd_running(false, false, FW_UPD_IOMCU), FW_UPD_NONE);
+    CHECK_EQ(fw_upd_running(false, false, (fw_upd_t)99), FW_UPD_NONE);
+}
+
 /* R08-6: from a success to the restart the C6 still reports the version it
  * ran before; the row must not offer the hold again. */
 TEST_CASE(the_row_is_blocked_from_a_success_to_the_restart)
@@ -599,7 +638,9 @@ TEST_CASE(the_row_is_blocked_from_a_success_to_the_restart)
     f.restarting = fw_c6_restart_pending(&r);
     CHECK(f.restarting);
     CHECK_EQ(fw_c6_row(&f, &why), FW_C6_ROW_BLOCKED);
-    CHECK_EQ(why, FW_C6_WHY_ENDING);
+    /* Its own reason: the restart waits for the bench, not for an answer
+     * of the C6 (FW_C6_WHY_ENDING). */
+    CHECK_EQ(why, FW_C6_WHY_RESTART);
     CHECK_EQ(fw_c6_row(&f, NULL), FW_C6_ROW_BLOCKED);
     /* The same on the carried version: no reinstall either. */
     f.running = k_carried;
@@ -835,6 +876,8 @@ int main(void)
     RUN(a_bench_that_stops_being_quiet_inside_the_3000ms_holds_the_restart);
     RUN(the_waiting_alert_is_posted_once_and_again_every_30000ms);
     RUN(the_restart_wait_holds_across_the_millisecond_wrap);
+    RUN(every_update_refuses_supply_on_prog5v_on_and_a_session);
+    RUN(the_running_update_is_the_c6s_then_the_iomcus_then_a_devices);
     free(g_img);
     return test_summary("fw_c6");
 }

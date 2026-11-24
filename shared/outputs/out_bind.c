@@ -15,8 +15,12 @@
 #include "board_fix.h"
 #include "link_pages.h"
 #include "out_board_rbmod.h"
+#include "out_board_rsn.h"
 #include "out_pwm_map.h"
 #include "outputs_pages.h"
+
+/** @brief The module's header pins: 26. */
+#define PICO_PIN_COUNT 26u
 
 /**
  * @brief The header, in GPIO order.
@@ -36,7 +40,7 @@
  * that use them; the IOmcu reserves the union of both, so the two
  * disagreeing costs a pin rather than the safety line.
  */
-static const outbind_pin_t k_pico_pins[OUTBIND_PINS] = {
+static const outbind_pin_t k_pico_pins[PICO_PIN_COUNT] = {
     {  0,  1, false, NULL },
     {  1,  2, false, NULL },
     {  2,  4, false, NULL },
@@ -111,17 +115,23 @@ static const outbind_pad_t k_pico_pads[] = {
  * carrier holds the same module, so it has the module's outline and pads.
  */
 static const outbind_board_t k_boards[] = {
-    { OUTBIND_BOARD_PICO_HEADER, "RP2350-CAN", k_pico_pins, OUTBIND_PINS,
+    { OUTBIND_BOARD_PICO_HEADER, "RP2350-CAN", k_pico_pins, PICO_PIN_COUNT,
       false, &k_pico_shape, k_pico_pads,
       (uint8_t)(sizeof(k_pico_pads) / sizeof(k_pico_pads[0])), NULL },
     { OUTBIND_BOARD_RBMOD, "RBMOD", outbind_rbmod_pins,
       OUTBIND_RBMOD_PIN_COUNT, true, &k_pico_shape, k_pico_pads,
       (uint8_t)(sizeof(k_pico_pads) / sizeof(k_pico_pads[0])),
       &outbind_rbmod_roles },
+    /* Pads on 4 edges: no two-row shape and no pad list (out_board_rsn.c). */
+    { OUTBIND_BOARD_RSN, "RSN", outbind_rsn_pins, OUTBIND_RSN_PIN_COUNT, true,
+      NULL, NULL, 0u, &outbind_rsn_roles },
 };
 
 _Static_assert(OUTBIND_RBMOD_PIN_COUNT <= OUTBIND_PINS,
                "the carrier's catalogue fits OUTBIND_PINS");
+_Static_assert(OUTBIND_RSN_PIN_COUNT <= OUTBIND_PINS
+                   && OUTBIND_RSN_PIN_COUNT <= LINK_CAT_PINS,
+               "the node's catalogue fits OUTBIND_PINS and the page");
 
 /**
  * @brief One board learned over the link, for an IOmcu this build ships no
@@ -163,6 +173,16 @@ const outbind_roles_t *outbind_roles(uint16_t id)
 {
     const outbind_board_t *b = outbind_board(id);
     return (b != NULL) ? b->roles : NULL;
+}
+
+uint8_t outbind_out_count(const outbind_roles_t *r)
+{
+    uint8_t n = 0u;
+    while (r != NULL && n < OUTBIND_FIXED_OUTS
+           && r->out[n] != OUTBIND_NO_GPIO) {
+        ++n;
+    }
+    return n;
 }
 
 /**
@@ -551,7 +571,7 @@ uint8_t outbind_cell_count(uint16_t board)
     if (bd == NULL) {
         return 0u;
     }
-    return (bd->roles != NULL) ? (uint8_t)OUTBIND_FIXED_OUTS : bd->count;
+    return (bd->roles != NULL) ? outbind_out_count(bd->roles) : bd->count;
 }
 
 uint8_t outbind_cell_index(uint16_t board, uint8_t cell)
@@ -563,7 +583,7 @@ uint8_t outbind_cell_index(uint16_t board, uint8_t cell)
     if (bd->roles == NULL) {
         return (cell < bd->count) ? cell : bd->count;
     }
-    if (cell >= OUTBIND_FIXED_OUTS) {
+    if (cell >= outbind_out_count(bd->roles)) {
         return bd->count;
     }
     return outbind_index_of(board, bd->roles->out[cell]);
@@ -721,11 +741,13 @@ static uint8_t count_pins(uint32_t pins, uint8_t width)
  *        page has.
  *
  * @param p  The protocol entry.
- * @return   The lower of @p p's max_pins and OUT_MAX_SLOTS.
+ * @return   The lower of @p p's max_pins and LINK_OUT_SLOTS, the slots of
+ *           the OUTPUTS page the binding model fills.
  */
 static uint8_t cap_of(const outbind_proto_t *p)
 {
-    return (p->max_pins < OUT_MAX_SLOTS) ? p->max_pins : (uint8_t)OUT_MAX_SLOTS;
+    return (p->max_pins < LINK_OUT_SLOTS) ? p->max_pins
+                                          : (uint8_t)LINK_OUT_SLOTS;
 }
 
 uint8_t outbind_chosen(const outbind_t *b)

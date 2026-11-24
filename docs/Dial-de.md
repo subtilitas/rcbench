@@ -103,7 +103,7 @@ SHA-256-Summen in `SHA256SUMS`.
 
    ```bash
    python -m esptool --chip esp32s3 -p /dev/ttyACM0 -b 460800 \
-     write-flash 0x0 rcbench-dial-merged-0.23.15.bin
+     write-flash 0x0 rcbench-dial-merged-0.23.17.bin
    ```
 
    esptool 5 schreibt den Befehl `write-flash`, esptool 4 `write_flash`.
@@ -189,7 +189,11 @@ wird angenommen.
 
 ## Update über Bluetooth LE
 
-Das Panel bringt das Anwendungs-Image des Dial mit und sendet es über BLE.
+Das Panel sendet das Anwendungs-Image des Dial über BLE. Das Panel-Image
+bringt es nicht mit: Das Halten des Schritts DIAL lädt
+`rcbench-dial-<Version>.bin` aus dem Release, das das Panel ausführt, oder
+liest es aus `BENCH/UPDATES` der SD-Karte, und prüft es vorher
+([Bildschirme: Geräte-Images](Screens-de.md#geräte-images)).
 Das Protokoll ist `protocols/bleota`
 ([README](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md));
 die Seite des Panels ist die Zeile DIAL-FIRMWARE auf der Seite, die der
@@ -202,13 +206,13 @@ und sind die Schritte davor erledigt, trägt seine Karte dasselbe Halten
 ([Bildschirme, Die Schritte](Screens-de.md#die-schritte)).
 
 1. Das Dial ist gebunden und verbunden, der Prüfstand ist SAFE. Die Zeile
-   zeigt `Dial: 0.23.14. Im Panel: 0.23.15.` und `2s HALTEN ZUM DIAL-UPDATE`.
+   zeigt `Dial: 0.23.16. Release: 0.23.17.` und `2s HALTEN ZUM DIAL-UPDATE`.
 2. Das Halten von 2s beendet den Knopf-Link des Dial. Das Panel verbindet
    sich mit dem Update-Dienst des Dial und sendet BEGIN: Art DIAL, Größe,
    Version und den SHA-256 des Images.
 3. Das Dial prüft die Art, die Größe gegen seinen Slot von 3.145.728 Bytes
-   und die Version. Dann zeigt es 30s lang `UPDATE`, `v0.23.14 AUF
-   v0.23.15`, `DRÜCKEN: ANNEHMEN`, die verbleibenden Sekunden und
+   und die Version. Dann zeigt es 30s lang `UPDATE`, `v0.23.16 AUF
+   v0.23.17`, `DRÜCKEN: ANNEHMEN`, die verbleibenden Sekunden und
    `HALTEN: ABLEHNEN`. Vor der Antwort wird nichts gelöscht.
    - Ein Druck der Bildschirmtaste, innerhalb von 1s losgelassen, nimmt an.
    - Ein Halten von 1s lehnt ab.
@@ -279,32 +283,36 @@ Panels, mit einem Connect oder Scan zur Zeit zwischen ihnen.
 
 ### Suchen und Binden
 
-DIAL SUCHEN sucht 10.000ms und listet bis zu 8 Geräte, die den
-dialknob-Dienst senden, das stärkste zuerst, mit Namen und RSSI. Ist der
-Prüfstand ARMED oder wartet ein Arm, wird die Suche abgelehnt, und das Band
-zeigt `KEINE DIAL-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE
-läuft, zeigt es `BLUETOOTH NICHT BEREIT: KEINE DIAL-SUCHE`. Eine bei SAFE
-gestartete Suche endet beim Schalten auf ARMED, und DIAL SUCHEN zeigt
-`DURCH ARM BEENDET`. Ein Tippen auf GEBUNDENES DIAL, oder auf DIAL SUCHEN,
-solange es `n GEFUNDEN` zeigt, listet die Dials der letzten Suche, bis zu
-6, und zuletzt `AKTUALISIEREN`, das eine neue Suche mit denselben
-Ablehnungen startet. Ein Tippen auf ein Dial bindet es: Das Panel behält Adresse
-und Namen in SETUP (`dial_ble`, `dial_name`) und fragt nach dem Speichern.
-Es ist immer ein Dial gebunden oder keins. Das Panel verbindet sich über
-die Adresse mit ihm, ohne Suche, bei Dial EIN, beim Start und nach jedem
-Verlust.
+DIAL SUCHEN öffnet SEARCH ([Bildschirme](Screens-de.md#wireless-search))
+und sucht 10.000ms nach bis zu 8 Geräten, die den dialknob-Dienst senden,
+das stärkste zuerst, mit Namen und RSSI; SEARCH zählt die verbleibenden
+Sekunden. Ist der Prüfstand ARMED oder wartet ein Arm, wird die Suche
+abgelehnt, und das Band zeigt
+`KEINE DIAL-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE
+läuft, zeigt es `BLUETOOTH NICHT BEREIT: KEINE DIAL-SUCHE`. SEARCH öffnet
+in jedem Fall, mit der letzten Liste. Eine bei SAFE gestartete Suche endet
+beim Schalten auf ARMED, und SEARCH und DIAL SUCHEN zeigen
+`DURCH ARM BEENDET`. GEBUNDENES DIAL öffnet SEARCH mit der Liste der
+letzten Suche, ohne Suche, oder mit dem Grund, warum es keins listet:
+`NOCH KEINE SUCHE: AKTUALISIEREN ANTIPPEN`, `KEINS GEFUNDEN`.
+AKTUALISIEREN auf SEARCH startet eine neue Suche mit denselben
+Ablehnungen. Ein Tippen auf ein Dial fragt `DIAL BINDEN?`; BINDEN bindet
+es: Das Panel behält Adresse und Namen in SETUP (`dial_ble`, `dial_name`)
+und fragt nach dem Speichern, und SEARCH bleibt offen und hebt das Dial
+hervor, sobald es gebunden ist. Es ist immer ein Dial gebunden oder keins.
+Das Panel verbindet sich über die Adresse mit ihm, ohne Suche, bei Dial
+EIN, beim Start und nach jedem Verlust.
 
-Ein Tippen auf GEBUNDENES DIAL ohne Liste sagt auf dem Band, warum:
-`KEIN DIAL GELISTET: ERST AUF DIAL SUCHEN TIPPEN` vor einer Suche und nach
-einer, die keins fand, `SUCHE LÄUFT: DAS DIAL NACH DEM ENDE WÄHLEN`,
-solange eine Suche läuft. Eine Wahl, die der Controller ablehnt, weil zuerst
-eine Suche startete oder sich die Liste darunter änderte, zeigt
-`SUCHE LÄUFT: DAS DIAL NACH DEM ENDE WÄHLEN` oder
-`DIAL NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`, und die Konsole
-schreibt `dial: bind of n refused`. Ein gebundenes Dial schreibt
+BINDEN während einer Suche, und ein Tippen auf ein Dial dann, zeigt
+`SUCHE LÄUFT: DAS DIAL NACH DEM ENDE WÄHLEN`; BINDEN, nachdem sich die
+Liste unter der Frage änderte, zeigt
+`DIAL NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`. Beides bindet nichts.
+Eine Bindung, die der Controller ablehnt, weil zuerst eine Suche startete
+oder sich die Liste darunter änderte, zeigt dieselben Texte, und die
+Konsole schreibt `dial: bind of n refused`. Ein gebundenes Dial schreibt
 `dial: bound <Adresse> <Name>`.
-Ein Tippen auf DIAL SUCHEN, während eine Suche läuft, startet keine; das
-Band zeigt `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`.
+Ein Tippen auf DIAL SUCHEN oder AKTUALISIEREN, während eine Suche läuft,
+startet keine; das Band zeigt `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`.
 
 Der Connect nach dem Binden startet sofort, wenn die Central frei ist. Eine
 IMU oder ein Knoten, EIN und an ein Gerät außer Reichweite gebunden, hält
@@ -334,7 +342,7 @@ gelesen ist, werden EVENTs ebenfalls verworfen. Ein INFO, das sich nicht
 lesen oder dekodieren lässt, ist ein fehlgeschlagener GATT-Schritt: Der
 Link endet, und das Panel verbindet sich nach 1.000ms erneut. Rastungen und
 PRESS erreichen den Bildschirm nur, solange der Link `VERBUNDEN` oder
-`GESTÖRT` ist; ein HOLD, der nur entschärft, in jedem Zustand.
+`GESTÖRT` ist; ein HOLD, der nur auf SAFE schaltet, in jedem Zustand.
 
 Die Verlustregel läuft auf der eigenen Uhr des Panels, nicht auf dem
 Supervision Timeout:
@@ -367,7 +375,7 @@ als Schritt des Fokus; alle anderen nehmen keine an.
 
 Auf MOTOR & ESC schaltet ein HOLD auch DISARM, solange ein ARM unterwegs
 ist, angefragt und noch nicht bestätigt, und beendet einen ESC-STICK-Lauf
-wie ABORT, auch in ARMING: Nach einem HOLD wird der Prüfstand nie scharf.
+wie ABORT, auch in ARMING: Nach einem HOLD schaltet der Prüfstand nie auf ARMED.
 Ein PRESS zählt nur in einem Frame mit einer Drehung oder einem Druck, den
 das Panel nimmt; ein HOLD immer. Ein Frame ohne Eingabe lässt eine offene
 Hilfeblase offen. Die gehaltenen Zustände von Taste und Touch im EVENT werden nie als
@@ -383,17 +391,17 @@ Bildschirme:
 | --- | --- |
 | das Menü | seine 8 Kacheln, Zeile für Zeile |
 | die Kacheln von SETUP | die Kacheln, dann SAVE, solange Speichern angeboten ist |
-| eine Liste von SETUP | ihre Zeilen, dann RESET und SAVE; auf SENSORS und WIRELESS zuerst die Einträge links |
+| eine Liste von SETUP | ihre Zeilen, dann RESET und SAVE; auf SENSORS und WIRELESS zuerst die Einträge links; keine, solange die Tastatur einer Zeile offen ist |
 | SERVO | die 8 Kacheln, dann SETTINGS; die offene SETTINGS-Liste wie eine Liste von SETUP |
 | OUTPUTS, Platinenansicht | das Feld der Protokollliste, CLEAR ALL, solange angeboten, dann je eine Pin-Taste |
-| eine offene Auswahlliste | ihre Zeilen, der Fokus auf der gültigen |
+| SEARCH | die gefundenen Geräte, dann AKTUALISIEREN; bei offener Bindungsfrage ABBRECHEN und BINDEN, der Fokus auf ABBRECHEN |
 | die Warnung beim Verlassen | STAY, DISCARD, SAVE |
 
 | Geste | Navigation | SET |
 | --- | --- | --- |
 | Drehen | der Fokus geht eine Rastung einen Eintrag weiter und läuft an beiden Enden um; eine Zeile außer Sicht rollt herein | der Wert geht eine Rastung einen Schritt, innerhalb seines Bereichs |
 | PRESS | SELECT: ein Tippen auf den Eintrag im Fokus | KEEP |
-| HOLD | BACK: was das Home-Tag tut, eine Auswahlliste oder das Ziffernfeld schließt | CANCEL: der Wert wie vorher |
+| HOLD | BACK: was das Home-Tag tut, die Bindungsfrage oder das Ziffernfeld schließt | CANCEL: der Wert wie vorher |
 
 Das Panel zeichnet einen 2px-Rahmen in der Akzentfarbe um den Eintrag im
 Fokus. Der Rahmen hebt die Pixel darunter je Framebuffer auf und setzt sie
@@ -753,11 +761,9 @@ verschiedener Reihenfolge; GPIO1 ist in beiden Fällen der Pin dieser Nummer.
   nicht gemessen). Das Neuzeichnen eines Rings ist auf dem Gerät nicht
   gemessen.
 - Das Face eines Werts zeigt keine Kategorie: Kein Paket trägt eine.
-- Nichts in dieser Firmware oder in der Seite des Panels ist mit einem Dial
-  gelaufen: Das Dial ist bestellt, nicht geliefert. Die Latenz von der
-  Drehung zum Ausgang über Funk ist nicht gemessen; die Station misst sie
+- Die Latenz von der Drehung zum Ausgang über Funk ist nicht gemessen; die Station misst sie
   mit dem Test-Build, sobald das Dial an ihrem USB hängt.
-- Das Update über BLE ist mit keinem Dial gelaufen. Seine Rate über die
+- Die Rate des Updates über BLE über die
   ESP32-C6-Verbindung des Panels, die Dauer einer Übertragung von 840kB und
   ein Rollback am Dial sind nicht gemessen.
 - Das Dial prüft Art, Chip und Segmente des Images, nicht seine Herkunft:

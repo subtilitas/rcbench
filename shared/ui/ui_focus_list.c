@@ -1,7 +1,7 @@
 /**
  * @file
  * @brief The focus layer's items of a setting list (ui_focus.h): its rows
- *        and strip, the open choice list, the leave warning or the keypad.
+ *        and strip, the leave warning or the keypad.
  *
  * A row's item and what a SELECT on it does:
  *
@@ -10,12 +10,16 @@
  * | a number the keypad takes | taps the value: the keypad opens, SET |
  * | a setting with "-" and "+" (on/off, options) | step SET |
  * | a string | taps the row: its keyboard opens, and the Dial has no focus until it closes |
- * | a custom row | taps the row's name: its action or its choice list |
+ * | a custom row | taps the row's name: its action |
  * | a row that takes no press | taps the value: the panel's answer to a tap there |
  *
  * The strip adds RESET and, while a save is offered, SAVE.  Their slots
  * are kept first: of a list longer than UI_FOCUS_MAX items, the last rows
  * take no focus.
+ *
+ * An open keyboard or choice list takes no focus: the Dial has none until
+ * it closes.  The lists the focus reaches, SETUP's and the SERVO hub's
+ * profile, have no row with a choice list.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -33,7 +37,6 @@
 
 /** @brief A list's identity per mode, mixed into the host's. @{ */
 #define MODE_ROWS   0x10000000u /**< the rows and the strip */
-#define MODE_CHOICE 0x20000000u /**< the choice list of a row */
 #define MODE_WARN   0x30000000u /**< the leave warning */
 #define MODE_KEYPAD 0x40000000u /**< the keypad of a setting */
 /** @} */
@@ -52,46 +55,19 @@ static bool has_keys(const ui_setlist_t *sl, setting_id_t id)
 
 /**
  * @brief A row's name, as the list draws it.
- * @param r The row.
+ * @param r The row: a setting, a string or a custom row; add_row() leaves
+ *          out headings and empty rows.
  * @return The name.
  */
 static const char *row_label(const ui_setlist_row_t *r)
 {
-    switch (r->kind) {
-    case UI_SL_SETTING:
+    if (r->kind == UI_SL_SETTING) {
         return ui_setting_label(r->id);
-    case UI_SL_TEXT:
+    }
+    if (r->kind == UI_SL_TEXT) {
         return ui_setlist_text_label((setting_text_id_t)r->text);
-    case UI_SL_CUSTOM:
-        return (r->custom != NULL) ? ui_tr(r->custom->label) : "";
-    default:
-        return "";
     }
-}
-
-/**
- * @brief The items of an open choice list: one a choice.
- * @param out The list.
- * @param sl  The setting list.
- */
-static void add_choices(ui_focus_list_t *out, const ui_setlist_t *sl)
-{
-    const ui_setlist_row_t r = sl_row(sl, sl->choice_row);
-    out->list = out->list * 31u + MODE_CHOICE + (uint32_t)sl->choice_row;
-    if (r.custom == NULL || r.custom->choices == NULL
-        || r.custom->choice == NULL) {
-        return;
-    }
-    int n = r.custom->choices();
-    if (n > UI_SL_CHOICES_MAX) {
-        n = UI_SL_CHOICES_MAX;
-    }
-    for (int k = 0; k < n; ++k) {
-        (void)ui_focus_add(out, ui_setlist_choice_rect(sl, k),
-                           r.custom->choice(k));
-    }
-    const int chosen = (r.custom->chosen != NULL) ? r.custom->chosen() : -1;
-    out->start = (chosen >= 0 && chosen < n) ? chosen : 0;
+    return (r->custom != NULL) ? ui_tr(r->custom->label) : "";
 }
 
 /**
@@ -146,8 +122,8 @@ bool ui_focus_add_setlist(ui_focus_list_t *out, ui_setlist_t *sl)
     if (out == NULL || sl == NULL) {
         return false;
     }
-    if (sl->tk.open) {
-        return false;
+    if (sl->tk.open || sl->choice_row >= 0) {
+        return false;          /* the keyboard or a choice list is open */
     }
     if (sl->kp.open) {
         const setting_def_t *d = settings_def(sl->kp_id);
@@ -162,10 +138,6 @@ bool ui_focus_add_setlist(ui_focus_list_t *out, ui_setlist_t *sl)
         return true;
     }
     if (!sl->open) {
-        return true;
-    }
-    if (sl->choice_row >= 0) {
-        add_choices(out, sl);
         return true;
     }
     out->list = out->list * 31u + MODE_ROWS;

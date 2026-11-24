@@ -25,11 +25,31 @@ uint32_t supply_page_baud(uint16_t setting)
 void supply_page_init(supply_page_t *p)
 {
     if (p != NULL) {
+        const uint16_t max_mv = p->max_mv;   /* the board's, kept */
         memset(p, 0, sizeof(*p));
+        p->max_mv = max_mv;
         p->regs[LINK_SP_BAUD] = 1u;   /* 19200, the module's as shipped */
         p->regs[LINK_SP_BAUD_FOUND] = SUPPLY_BAUD_AUTO;
         p->scan = 1u;                 /* AUTO starts there too          */
     }
+}
+
+void supply_page_ceiling(supply_page_t *p, uint16_t mv)
+{
+    if (p != NULL) {
+        p->max_mv = (mv > PDMINI_V_MAX_MV) ? 0u : mv;
+    }
+}
+
+/**
+ * @brief The highest SET_MV the page takes.
+ *
+ * @param p The page state.
+ * @return The board's ceiling, or PDMINI_V_MAX_MV without one.
+ */
+static uint16_t ceiling(const supply_page_t *p)
+{
+    return (p->max_mv != 0u) ? p->max_mv : (uint16_t)PDMINI_V_MAX_MV;
 }
 
 bool supply_page_enabled(const supply_page_t *p)
@@ -253,7 +273,7 @@ static uint8_t page_write(supply_page_t *p, uint8_t off, uint8_t n,
             }
         }
         if (next[LINK_SP_OUTPUT] > 1u
-            || next[LINK_SP_SET_MV] > PDMINI_V_MAX_MV
+            || next[LINK_SP_SET_MV] > ceiling(p)
             || next[LINK_SP_SET_MA] > PDMINI_I_MAX_MA) {
             return LINK_NACK_BAD_VALUE;
         }
@@ -467,7 +487,7 @@ uint8_t supply_page_slots_check(const supply_page_t *p, const uint16_t *slots)
         return LINK_NACK_BAD_VALUE;
     }
     const uint64_t held = supply_page_pins(p);
-    for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
+    for (unsigned s = 0; s < LINK_OUT_SLOTS_ALL; ++s) {
         const uint16_t *r = &slots[(size_t)s * LINK_OS_STRIDE];
         if (r[LINK_OS_DRIVER] != 0u && r[LINK_OS_PIN] <= OUT_MAX_PIN
             && (held & ((uint64_t)1u << r[LINK_OS_PIN])) != 0u) {
@@ -590,6 +610,7 @@ void supply_page_port_view(const supply_page_t *p, supply_port_view_t *out)
     out->set_mv   = p->regs[LINK_SP_SET_MV];
     out->set_ma   = p->regs[LINK_SP_SET_MA];
     out->vin_mv   = p->regs[LINK_SP_VIN_MV];
+    out->max_mv   = ceiling(p);
     out->on  = out->asked_on && reads_on
                && (f & (LINK_SP_STUCK | LINK_SP_SET_STUCK)) == 0u
                && p->regs[LINK_SP_SET_MV_RB] != 0u
@@ -611,7 +632,7 @@ bool supply_page_port_set(supply_page_t *p, bool on, uint16_t mv,
     }
     if (p->sticky || !beat_alive || !supply_page_enabled(p)
         || p->wire != (uint8_t)SUPPLY_WIRE_IDLE
-        || mv < PDMINI_V_MIN_MV || mv > PDMINI_V_MAX_MV
+        || mv < PDMINI_V_MIN_MV || mv > ceiling(p)
         || ma < PDMINI_I_MIN_MA || ma > PDMINI_I_MAX_MA) {
         return false;
     }

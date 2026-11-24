@@ -134,24 +134,49 @@ static void firmware(wa_out_t *o, const wa_page_info_t *pi)
     wa_out_html(o, pi->version);
     wa_out_str(o, "</p><p>");
     wa_out_str(o, pt(pi->de, P_FW_NOTE));
-    wa_out_str(o, "</p><form id=\"f\"><input type=\"file\" id=\"i\" "
-                  "accept=\".bin\" required> <button>");
+    wa_out_str(o, " ");
+    wa_out_str(o, pt(pi->de, fw_sig_enforced() ? P_SIG_NOTE_ACK
+                                                : P_SIG_NOTE));
+    wa_out_str(o, "</p><form id=\"f\"><p><label>");
+    wa_out_str(o, pt(pi->de, P_IMAGE));
+    wa_out_str(o, "<input type=\"file\" id=\"i\" accept=\".bin\" "
+                  "required></label></p><p><label>");
+    wa_out_str(o, pt(pi->de, P_SIGNATURE));
+    wa_out_str(o, "<input type=\"file\" id=\"s\" accept=\".sig\">"
+                  "</label></p><button>");
     wa_out_str(o, pt(pi->de, P_UPLOAD));
+    /* The signature goes with the image, as the hex digits of the query
+     * parameter "sig" (WA_SIG_PARAM): one request, so the panel judges the
+     * pair it received.  Its size is checked here, before anything is
+     * sent. */
     wa_out_str(o, "</button></form>"
                   "<p><progress id=\"p\" max=\"100\" value=\"0\" hidden>"
                   "</progress></p><p id=\"r\"></p><script>"
                   "document.getElementById('f').onsubmit=function(e){"
                   "e.preventDefault();"
                   "var f=document.getElementById('i').files[0],"
+                  "g=document.getElementById('s').files[0],"
                   "p=document.getElementById('p'),"
                   "r=document.getElementById('r');"
                   "if(!f)return;if(f.size>");
     wa_out_u64(o, pi->slot);
     wa_out_str(o, "){r.textContent='");
     wa_out_js(o, pt(pi->de, P_TOO_BIG));
+    wa_out_str(o, "';return;}");
+    wa_out_str(o, "if(g&&(g.size<");
+    wa_out_u64(o, FW_SIG_MIN);
+    wa_out_str(o, "||g.size>");
+    wa_out_u64(o, FW_SIG_MAX);
+    wa_out_str(o, ")){r.textContent='");
+    wa_out_js(o, pt(pi->de, P_SIG_SIZE));
     wa_out_str(o, "';return;}"
+                  "if(g){g.arrayBuffer().then(function(b){var h='';"
+                  "new Uint8Array(b).forEach(function(v){"
+                  "h+=(v<16?'0':'')+v.toString(16);});"
+                  "go('?" WA_SIG_PARAM "='+h);});}else{go('');}"
+                  "function go(q){"
                   "var x=new XMLHttpRequest();x.open('POST','" WA_URL_UPDATE
-                  "');x.setRequestHeader('" WA_UPLOAD_HDR "','" WA_UPLOAD_VAL
+                  "'+q);x.setRequestHeader('" WA_UPLOAD_HDR "','" WA_UPLOAD_VAL
                   "');p.hidden=false;p.value=0;r.textContent='';"
                   "x.upload.onprogress=function(v){if(v.lengthComputable)"
                   "p.value=Math.floor(v.loaded*100/v.total);};"
@@ -162,7 +187,7 @@ static void firmware(wa_out_t *o, const wa_page_info_t *pi)
                   "x.onerror=function(){p.hidden=true;p.value=0;"
                   "r.textContent='");
     wa_out_js(o, pt(pi->de, P_BROKE));
-    wa_out_str(o, "';};x.send(f);};</script>");
+    wa_out_str(o, "';};x.send(f);}};</script>");
 }
 
 /**
@@ -223,6 +248,11 @@ void wa_page_upload_result(wa_out_t *o, bool de, fw_err_t e,
             wa_out_str(o, v);
         }
         wa_out_str(o, pt(de, same ? P_UP_SAME : P_UP_OK_2));
+        if (info != NULL) {
+            wa_out_str(o, pt(de, fw_sig_signed(info->sig) ? P_UP_SIGNED
+                                 : fw_sig_bad(info->sig) ? P_UP_BADSIG
+                                                         : P_UP_UNSIGNED));
+        }
         return;
     case FW_ERR_EMPTY:     t = P_UP_EMPTY;     break;
     case FW_ERR_TOO_BIG:   t = P_UP_TOO_BIG;   break;
@@ -241,6 +271,8 @@ void wa_page_upload_result(wa_out_t *o, bool de, fw_err_t e,
     case FW_ERR_RUNNING:
     case FW_ERR_FLASH:
     case FW_ERR_QUIET:
+    case FW_ERR_RADIO:
+    case FW_ERR_GATE:
     case FW_ERR_COUNT:
     default:               t = P_UP_OTHER;     break;
     }

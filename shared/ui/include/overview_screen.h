@@ -6,7 +6,9 @@
  * and SUPPLY, which drive outputs and can ARM.  Row 2: the instruments
  * RECEIVER, BATTERY and BALANCE, which only read.  The last column: LOGS
  * over SETUP.  A tile carries a MODELLED badge when its hardware is not
- * fitted.  Programming is a task of a workbench (MOTOR & ESC > PROGRAM,
+ * fitted.  MOTOR & ESC's pack sensing is fitted with the IOmcu's INA228
+ * enabled (LINK_CAP_PACK_SENSE) or with the power node as SETUP's pack
+ * source: POWER NODE ON, INA228 SOURCE NODE, a node bound.  Programming is a task of a workbench (MOTOR & ESC > PROGRAM,
  * SERVO > PROGRAM), not a tile.
  *
  * SPDX-License-Identifier: MIT
@@ -35,6 +37,15 @@ const ui_screen_t *overview_screen(void);
  * @param real true when SUPPLY drives the PD mini
  */
 void overview_screen_set_supply_real(bool real);
+
+/**
+ * @brief Whether the tile in slot @p slot carries the SIMULATED mark now.
+ *
+ * @param slot the slot, row by row from the top left
+ * @return true when the tile shows the mark; false for an empty slot or
+ *         one past the grid
+ */
+bool overview_screen_tile_marked(int slot);
 
 /**
  * @brief The grid's columns: 4.

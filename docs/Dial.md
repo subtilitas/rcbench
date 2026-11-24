@@ -96,7 +96,7 @@ sums in `SHA256SUMS`.
 
    ```bash
    python -m esptool --chip esp32s3 -p /dev/ttyACM0 -b 460800 \
-     write-flash 0x0 rcbench-dial-merged-0.23.15.bin
+     write-flash 0x0 rcbench-dial-merged-0.23.17.bin
    ```
 
    esptool 5 spells the command `write-flash`; esptool 4 `write_flash`.
@@ -177,7 +177,11 @@ range that connects first, or that spoofs the bound address, is taken.
 
 ## Update over Bluetooth LE
 
-The panel carries the Dial's application image and sends it over BLE. The
+The panel sends the Dial's application image over BLE. The panel image
+does not carry it: the DIAL step's hold downloads `rcbench-dial-<version>.bin`
+of the release the panel runs, or reads it from the SD card's
+`BENCH/UPDATES`, and checks it first
+([Screens: Device images](Screens.md#device-images)). The
 protocol is `protocols/bleota`
 ([README](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md));
 the panel's side is the DIAL FIRMWARE row on the page that the WIRELESS
@@ -190,12 +194,12 @@ it are done, its card holds the same hold
 ([Screens, The steps](Screens.md#the-steps)).
 
 1. The Dial is bound and linked, and the bench is SAFE. The row shows
-   `Dial: 0.23.14. Included: 0.23.15.` and `HOLD 2s TO UPDATE THE DIAL`.
+   `Dial: 0.23.16. Release: 0.23.17.` and `HOLD 2s TO UPDATE THE DIAL`.
 2. The 2s hold ends the Dial's knob link. The panel connects to the Dial's
    update service and sends BEGIN: kind DIAL, size, version and the
    image's SHA-256.
 3. The Dial checks the kind, the size against its slot of 3,145,728 bytes
-   and the version. It then shows `UPDATE`, `v0.23.14 TO v0.23.15`, `PRESS
+   and the version. It then shows `UPDATE`, `v0.23.16 TO v0.23.17`, `PRESS
    TO ACCEPT`, the seconds left and `HOLD TO REFUSE` for 30s. Nothing is
    erased before the answer.
    - A press of the screen button released within 1s accepts.
@@ -264,29 +268,32 @@ connect or scan at a time between them.
 
 ### Scan and bind
 
-SCAN FOR DIAL scans 10,000ms and lists up to 8 devices that advertise the
-dialknob service, strongest first, with name and RSSI. While the bench is
-ARMED, or an arm waits, the scan is refused and the band reads
+SCAN FOR DIAL opens SEARCH ([Screens](Screens.md#wireless-search)) and
+scans 10,000ms for up to 8 devices that advertise the dialknob service,
+strongest first, with name and RSSI; SEARCH counts the seconds left. While
+the bench is ARMED, or an arm waits, the scan is refused and the band reads
 `NO DIAL SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs it
-reads `BLUETOOTH IS NOT READY: NO DIAL SCAN`. A scan started while SAFE
-stops at the switch to ARMED, and SCAN FOR DIAL reads `STOPPED BY ARM`. A
-tap on BOUND DIAL, or on SCAN FOR DIAL while it reads `FOUND n`, lists the
-Dials the last scan found, up to 6, and `SCAN AGAIN` last, which starts a
-new scan with the same refusals. A tap on a Dial binds it: the panel keeps its address and name in SETUP (`dial_ble`,
-`dial_name`) and asks for a save. One Dial is bound at a time. The panel
-connects to it by its address, without a scan, at Dial ON, at start-up and
-after each loss.
+reads `BLUETOOTH IS NOT READY: NO DIAL SCAN`. SEARCH opens either way, on
+the last list. A scan started while SAFE stops at the switch to ARMED, and
+SEARCH and SCAN FOR DIAL read `STOPPED BY ARM`. BOUND DIAL opens SEARCH on
+the last scan's list without a scan, or on why it lists none:
+`NO SCAN YET: TAP SCAN AGAIN`, `NONE FOUND`. SCAN AGAIN on SEARCH starts a
+new scan with the same refusals. A tap on a Dial asks `BIND DIAL?`; BIND
+binds it: the panel keeps its address and name in SETUP (`dial_ble`,
+`dial_name`) and asks for a save, and SEARCH stays open and lights the Dial
+once it is bound. One Dial is bound at a time. The panel connects to it by
+its address, without a scan, at Dial ON, at start-up and after each loss.
 
-A tap on BOUND DIAL with no list says why on the band:
-`NO DIAL LISTED: TAP SCAN FOR DIAL FIRST` before a scan and after one that
-found none, `A SCAN IS RUNNING: PICK THE DIAL WHEN IT ENDS` while a scan runs.
-A pick the controller refuses, because a scan started first or the list
-changed under it, reads `A SCAN IS RUNNING: PICK THE DIAL WHEN IT ENDS` or
-`DIAL NOT BOUND: THE LIST CHANGED, PICK IT AGAIN`, and the console logs
+BIND while a scan runs, and a tap on a Dial then, reads
+`A SCAN IS RUNNING: PICK THE DIAL WHEN IT ENDS`; BIND after the list
+changed under the question reads
+`DIAL NOT BOUND: THE LIST CHANGED, PICK IT AGAIN`. Neither binds. A bind
+the controller refuses, because a scan started first or the list
+changed under it, reads the same texts, and the console logs
 `dial: bind of n refused`. A bound Dial logs `dial: bound <address>
 <name>`.
-A tap on SCAN FOR DIAL while a scan runs starts none; the band reads
-`A SCAN IS RUNNING: IT ENDS WITHIN 10s`.
+A tap on SCAN FOR DIAL or SCAN AGAIN while a scan runs starts none; the
+band reads `A SCAN IS RUNNING: IT ENDS WITHIN 10s`.
 
 The connect after a bind starts at once while the central is free. An IMU
 or a node that is ON and bound to a device out of range holds the one
@@ -313,7 +320,7 @@ counted and dropped. Until INFO is read, EVENTs are dropped too. An INFO
 that does not read or decode is a failed GATT step: the link ends and the
 panel connects again after 1,000ms. Detents and PRESSes reach the screen
 only while the link is `CONNECTED` or `DEGRADED`; a HOLD, which only
-disarms, in any state.
+switches the bench to SAFE, in any state.
 
 The loss rule runs on the panel's own clock, not on the supervision timeout:
 
@@ -359,17 +366,17 @@ While the Dial is linked and the bench is SAFE, it navigates these screens:
 | --- | --- |
 | the menu | its 8 tiles, row by row |
 | SETUP's tiles | the tiles, then SAVE while a save is offered |
-| a SETUP list | its rows, then RESET and SAVE; on SENSORS and WIRELESS the entries on the left first |
+| a SETUP list | its rows, then RESET and SAVE; on SENSORS and WIRELESS the entries on the left first; none while a row's keyboard is open |
 | SERVO | the 8 tiles, then SETTINGS; the open SETTINGS list as a SETUP list |
 | OUTPUTS, board view | the protocol list's face, CLEAR ALL while offered, then a pin button each |
-| an open choice list | its rows, the focus on the one in force |
+| SEARCH | the found devices, then SCAN AGAIN; with the bind question open CANCEL and BIND, the focus on CANCEL |
 | the leave warning | STAY, DISCARD, SAVE |
 
 | Gesture | Navigation | SET |
 | --- | --- | --- |
 | turn | the focus moves one item a detent and wraps at either end; a row out of sight scrolls into it | the value moves one step a detent, inside its range |
 | PRESS | SELECT: a tap on the focused item | KEEP |
-| HOLD | BACK: what the home tag does, a choice list or the keypad closes | CANCEL: the value as it was |
+| HOLD | BACK: what the home tag does, the bind question or the keypad closes | CANCEL: the value as it was |
 
 The panel draws a 2px ring in the accent colour round the focused item. The
 ring keeps the pixels under it per frame buffer and puts them back when it
@@ -705,11 +712,9 @@ documentation and by M5Unified; GPIO1 is the pin by number either way.
 - The flush of a whole frame takes about 23ms at 40MHz (arithmetic, not
   measured). A ring's repaint is not measured on the device.
 - The value face shows no category: no packet carries one.
-- Nothing in this firmware or in the panel's side has run with a Dial: the
-  Dial is ordered, not delivered. The turn-to-output latency over the air is
-  not measured; the station measures it with the test build once the Dial
+- The turn-to-output latency over the air is not measured; the station measures it with the test build once the Dial
   is on its USB.
-- The update over BLE has not run with a Dial. Its rate over the panel's
+- The rate of the update over BLE over the panel's
   ESP32-C6 link, the time of an 840kB transfer and a rollback on the Dial
   are not measured.
 - The Dial checks the image's kind, chip and segments, not its origin: a

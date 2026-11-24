@@ -9,6 +9,7 @@
 #include <stdbool.h>
 
 #include "gfx.h"
+#include "ui_screen.h"
 
 /**
  * @brief Draw the alert band across the bottom of the panel
@@ -46,3 +47,23 @@ const char *ui_router_wait_take(void);
  * @param dt_s Seconds since the last tick.
  */
 void ui_router_wait_tick(float dt_s);
+
+/**
+ * @brief Whether @p opener opens screen @p id through one of its controls,
+ *        so the home tag of @p id returns to it (ui_router_screens.c).
+ * @param opener The screen that may open it.
+ * @param id     The screen opened.
+ * @return True when a row of the openers names both.
+ */
+bool ui_router_opens(ui_screen_id_t opener, ui_screen_id_t id);
+
+/**
+ * @brief The table of screen @p id (ui_router_screens.c).
+ * @param id The screen; one out of range gives the overview's.
+ * @return Its table.
+ */
+const ui_screen_t *ui_router_screen(ui_screen_id_t id);
+
+/** @brief Every screen's cached chrome repainted into every framebuffer
+ *         on its next frame (ui_router_screens.c). */
+void ui_router_screens_invalidate(void);

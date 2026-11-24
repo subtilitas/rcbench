@@ -8,6 +8,7 @@ under `storyboards/`. It lists scenes; each scene has a type:
 | --- | --- |
 | `case` | the MiniRcBench from its assembly, its components taking their places, its display showing stills and the whole bench rolling over to its back; or the bench in its case as a 3D model, with a camera path, the lid lifting, labels on named parts, a pin table and a servo being plugged in; or the M5Stack Dial as a 3D model, its display showing its faces and its knob turning, alone or beside the bench with both displays following one simulated run |
 | `board` | a circuit board seen flat from its front, with a view that moves over it, labels and tags on pads, parts taking their place, solder joints, a cross-section in a card, a net lit up, a track cut, a wire and a part soldered across two pads |
+| `scope` | plots and circuits of a figure: traces over a time axis whose view moves, with lines, bands and sample points, and a circuit whose parts appear, switch and carry a drawn current |
 | `screen` | the panel's screens, one step after another, each with a bubble, a pointer and a tap or hold mark |
 | `tour` | the panel's screens with an animated caption, a path to the screen, marks that name parts of the display, a spotlight, and chapter cards |
 | `end` | a heading, a numbered recap and a note |
@@ -65,7 +66,11 @@ python3 tools/make_video.py features               # build/video/features.mp4
 python3 tools/make_video.py rbmod-rework           # build/video/rbmod-rework.mp4
 python3 tools/make_video.py rbmod-build            # build/video/rbmod-build.mp4
 python3 tools/make_video.py dial                   # build/video/dial.mp4
-python3 tools/make_video.py minircbench-build      # build/video/minircbench-build.mp4
+python3 tools/make_video.py ../MiniRcBench/docs/video/minircbench-build.json   # a storyboard of another repository, by its path
+python3 tools/make_video.py hitec-precharge        # build/video/hitec-precharge.mp4
+python3 tools/video_scope.py                       # plots/hitec-precharge.json, with ngspice
+python3 tools/make_video.py phase-tap              # build/video/phase-tap.mp4
+python3 tools/video_tap.py                         # plots/phase-tap.json, with ngspice and cc
 python3 tools/make_video.py kst-rbmod --stills 2.5,40 -o /tmp/stills
 python3 tools/make_video.py features --jobs 3      # frames in 3 parts at once
 python3 tools/make_video.py features --jobs 3 --keep build/video/parts
@@ -88,7 +93,12 @@ python3 tools/video_voice.py features              # the lines as spoken
 python3 tools/video_voice.py features --unknown    # words misaki's dictionary lacks
 python3 tools/video_audio.py features -o /tmp/features.wav
 python3 tools/make_video.py --check                # every storyboard
+python3 tools/make_video.py PATH/NAME.json --check  # that one storyboard
 ```
+
+A storyboard is named by its name under `storyboards/` or by the path
+of its JSON file. One given by its path takes a still `NAME.png` from
+`stills/` beside the file first and from `tools/video/stills/` second.
 
 Each spoken line is kept in `build/video/cache/voice/` as a NumPy
 array, named by a hash of its text, the voice, the model files' sizes
@@ -145,16 +155,21 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `../video_board.py` | converts a KiCad board file into `cad/NAME.json`, the board `board.js` draws |
 | `boards/p4-7b-back.json` | the back of the 7 inch ESP32-P4 display board, drawn by hand in the format `video_board.py` writes: its connectors, modules and sockets as boxes, the pads of the 4-pin and 12-pin headers |
 | `boards/minircbench-wiring.json` | the parts of a MiniRcBench laid out flat: the rear of the RP2350-Touch-LCD-2.8 with its sockets, the 5V boost board, the INA219 board, the cell and the two male servo connectors, with the pads the wires go to |
-| `stills/mini-*.png` | 83 frames of the MiniRcBench's 240 x 320 display, drawn by that project's host suite |
 | `player/capture.js` | steps the player through the frames and pipes them to ffmpeg |
 | `storyboards/kst-rbmod.json` | programming a KST servo on the rbmod carrier, 8 steps, 100.4s |
 | `storyboards/features.json` | every screen of the bench in 8 chapters: where it opens from and what it does on the rbmod carrier, narrated, 755.92s |
 | `storyboards/rbmod-rework.json` | the rework of a rev 1 rbmod carrier in 4 steps: the track cut at R1, the wire from GP15, the pull-down on M7's EN and the zener on M7's output; 83s, no narration |
 | `storyboards/rbmod-build.json` | building a rev 1 rbmod carrier in 13 steps, the 4 rework steps among them: the bare board, D1 and R9, the connectors, the headers, the 5 modules on pin strips, the large holes closed with wire and solder, the 4 wires from J6's pads to a USB-C plug board for the PD mini, and the panel's back with the heartbeat wires of header P3, the CAN cable and the supply on the RS485 header; narrated, 347.32s, Pachelbel's Canon as its bed at half level |
 | `storyboards/dial.json` | bringing the M5Stack Dial into use in 7 steps: the Dial, its ring nut, the cell 102540 and a foam pad into the two parts of the printed base and its 4 screws M3 x 12, flashing over USB, the bind on SETUP > WIRELESS > DIAL, the menu and the SET of a value, the knob on MOTOR & ESC and on SERVO LIVE, and what the Dial does not do; the bench and the Dial stand in one 3D scene and show the same screen, run and value; narrated, 295.69s, Pachelbel's Canon at half level |
-| `storyboards/minircbench-build.json` | building a MiniRcBench in 10 steps: the parts, the firmware, the boost board's input on the battery socket's pins, the 0Ω resistor off the enable pad, the pull-down and IO28 on it, the INA219 on the I2C socket, the 5.6V zener and the 470µF capacitor across the boost board's output, the 5V path through the sensor to both male servo connectors, the signals and the 9 unused wires taken out of the 12-pin plug, the check before the cell, the case, and the settings; narrated, 505.57s, Pachelbel's Canon at half level |
-| `storyboards/minircbench-features.json` | every screen of the MiniRcBench, firmware 0.1.0, in 12 chapters: the tester, its telemetry, the menu, ESC COMMANDS, ESC CONFIG with ESC SETTINGS and USB BRIDGE, SERVO TESTER, SERVO PROGRAMMER for KST, Chaservo and Hitec, RX SIGNALS with the S.BUS monitor, TOOLS with the angle meter, SD LOG, SETTINGS, and the rules all screens share; the bench stands frontal with 81 stills on its display, one label a line of narration; narrated, 1000.70s, Pachelbel's Canon at half level |
+| `storyboards/hitec-precharge.json` | precharge and sample: reading a wire that is only pulled low on an RP2350 pin that several protocols share, without a pull-up resistor, in 6 steps after an RP2350 board as a `part` scene: a device that only pulls low, the 2.2kΩ pull-up and why a pin with several protocols cannot keep it, one precharge and sample, the sampling window against the measured one, one answer byte in 80 samples, and 3 logic analyser captures beside the simulation; narrated, 348.67s. No product is named on screen or in the narration; the corner reads `RP2350` (`product`) |
+| `storyboards/phase-tap.json` | ESC STICK programming counted from the phase tap in 7 steps, after 4 `part` scenes (the rbmod carrier, the IOmcu module, the ESC with its motor, the motor simulator): a menu of beeps, the tap's circuit, the edge stamps, carrier, tone and beep, the count of a group, the warning that the servo rails carry the ESC's voltage, and the screens; narrated |
 | `storyboards/thumbnail.json` | the thumbnail of `features`: the case with its display lifted and the title; `--stills 3` writes it |
+| `../video_scope.py` | simulates the D series signal wire with ngspice and writes `plots/hitec-precharge.json`, the figure of the `scope` scenes; `--capture NAME=FILE` adds a logic analyser trace from a sigrok CSV export |
+| `plots/hitec-precharge.json` | the figure: 11 simulated traces, 3 captured ones (`capture-pre`, `capture-pullup`, `capture-bare`), the circuit's drawing, the model's values and the measured window |
+| `../video_tap.py` | models a beeping motor lead, simulates the tap on it with ngspice, runs the capture's hold-off and `protocols/phase_tap/tone.c` on the simulated edges and writes `plots/phase-tap.json` |
+| `plots/phase-tap.json` | the figure of `phase-tap`: 12 traces, the tap's drawing, the model's values and the detector's beeps, windows and groups |
+| `player/scope.js` | draws a figure's plots and circuits |
+| `../video_check.py` | the storyboard check: `check()` returns a message per field the player would not draw, `board_faults()` holds a board scene to its board; `tools/make_video.py --check` runs it |
 | `../video_audio.py` | the sound track of a storyboard as a WAV file |
 | `../video_voice.py` | the narration: the lines, the speaker, the room each line needs |
 
@@ -172,7 +187,7 @@ Top level:
 | `dial_base` | optional, `true` or `false`, the default: the Dial of the models `dial` and `duo` sits in its printed hand-held base, `dial_base_top` and `dial_base_bottom` of `hardware/mechanical/models/`, with the ring nut `m5dial_nut` under the top part |
 | `brand` | the line beside the product's name at the top left |
 | `steps` | the count of step marks at the bottom left |
-| `music` | optional: `pads`, the default bed; `bach-prelude`, J. S. Bach's Prelude in C major BWV 846 on the same voices, one bar every 4s; or `pachelbel-canon`, Johann Pachelbel's Canon in D major, its ground bass at 2s a note under three of the violin's variations. `vivaldi-spring` is the opening of Antonio Vivaldi's "Spring" RV 269 in E major, 0.42s an eighth note: its two themes on a bowed voice with the third below, over a plucked bass; its notes are set down from memory of the violin part. All three compositions are in the public domain and no recording is used; the notes are set down in `tools/video_audio.py`. Bars 33 and 34 of the prelude keep the pattern of the other bars so that the piece loops |
+| `music` | optional: `pads`, the default bed; `bach-prelude`, J. S. Bach's Prelude in C major BWV 846 on the same voices, one bar every 4s; or `pachelbel-canon`, Johann Pachelbel's Canon in D major, its ground bass at 2s a note under three of the violin's variations. `vivaldi-spring` is the opening of Antonio Vivaldi's "Spring" RV 269 in E major, 0.42s an eighth note: its two themes on a bowed voice with the third below, over a plucked bass; its notes are set down from memory of the violin part. All three compositions are in the public domain and no recording is used; the notes are set down in `tools/video_audio.py`. Bars 33 and 34 of the prelude keep the pattern of the other bars so that the piece loops; or `bach-cello`, the Prelude of J. S. Bach's Suite No. 1 for cello solo BWV 1007, its 41 bars of sixteenth notes plucked at 4s a bar, with the notes of the Mutopia Project's public domain edition Mutopia-2018/01/19-517; or `beethoven-moonlight`, bars 1 to 4 of Ludwig van Beethoven's Sonata Op. 27 No. 2, first movement, as a loop of 17.76s, 0.37s a triplet note, read from the first edition of 1802 |
 | `music_gain` | optional, 0 to 2, 1 by default: the bed's level against the event sounds and the narrator |
 | `voice` | optional `{name, lang, speed}`: the narrator, a voice of Kokoro such as `af_heart` with `en-us`, or `bm_george` with `en-gb`. `blend` in place of `name` mixes voices by weight: `{"af_heart": 0.6, "af_nicole": 0.4}`. With `"engine": "piper"` the narrator is a voice of Piper, `name` its model in `tools/video/tts/`, `de_DE-thorsten-high` for German, and `speed` its rate, 1.0 the model's own; it needs the `piper-tts` package. A storyboard with `lang` `de` is written out for the speaker by `SPELL_DE` of `tools/video_voice.py` |
 | `chapters` | optional: one name per step; the names replace the step marks, each with a bar that fills while its chapter runs |
@@ -200,7 +215,7 @@ A `case` scene:
 | `display` | optional `{view}`: the renderer view on the model's display |
 | `title` | optional `{from, to, kicker, heading, text}` |
 | `chips` | optional `{from, to, n, text}`: the chip at the top right; a numeric `n` also sets the step marks |
-| `labels` | `{from, to, anchor, at, title, text}` and optional `n`, `size` (`sm`), `side` (`l`, `r`, `t`, `b`: where the pointer leaves the bubble), `style` (`ok`, `warn`, `muted`) |
+| `labels` | `{from, to, anchor, at, title, text}` and optional `n`, `size` (`sm`), `side` (`l`, `r`, `t`, `b`: where the pointer leaves the bubble), `style` (`ok`, `warn`, `muted`), `leader` (`false` leaves the pointer's line out; the dot and its ring stay on the point) |
 | `pinout` | optional `{from, to, connector, select, subtitle}`: the pin table of `J1` or `J2` with one position marked |
 | `say` | optional list of `{at, text}`: what the narrator says in this scene and when; a line that runs into the next is an error |
 | `servo` | optional `{connector, position, appear, plug: [t0, t1]}`: a servo whose plug moves 46mm into the position |
@@ -213,6 +228,46 @@ optional `glow` names a component that is lit while the label shows. `at` is the
 top left corner on the frame in pixels. The model's origin is the centre
 of the case floor; x runs along the 190mm side, y up, z towards the
 connector wall.
+
+A `scope` scene:
+
+| Field | Meaning |
+| --- | --- |
+| `dur` | length in s |
+| `figure` | the name of a figure under `plots/`, without `.json` |
+| `panels` | a list of plots and circuits; each has `id`, `kind` (`plot` or `circuit`), `box` as `[x, y, w, h]` in pixels and optional `from`, `to` |
+| `title`, `chips`, `say` | as in a `case` scene; the panels are dimmed to 25% under a title |
+| `labels` | as in a `case` scene; `anchor` is `[x, y]` in pixels, `[plot, x, y]` in ns and the plot's unit, or `[circuit, node]` |
+
+A panel of kind `plot`:
+
+| Field | Meaning |
+| --- | --- |
+| `view` | keys `[t, [x0, x1]]`: the span of the time axis in ns; the axis is labelled in ns, µs or ms by its width |
+| `y` | `[low, high]` of the vertical axis |
+| `ticks`, `unit` | optional: the values that carry a grid line and a number, each a value or `[value, text]`, and the unit after a number |
+| `heading`, `ylabel` | optional texts |
+| `traces` | `{series}` and optional `style`, `label`, `width`, `from`, `to`, `shift` in ns, `reveal` as keys `[t, x]` (the trace is drawn up to x), `lane` as `[y0, y1]` (a logic trace's 0 and 1), `points` with `on` and `r` (a dot per point, filled where the value is 1, on the trace named by `on`) |
+| `lines` | optional `{x}` or `{y}` with `text`, `style`, `from`, `to`, `dy`: a dashed line |
+| `bands` | optional `{x: [x0, x1]}` with `text`, `style`, `from`, `to`, `dy`: a shaded span |
+
+A style is empty, `ok`, `warn`, `muted`, `red`, `white` or `violet`.
+
+A panel of kind `circuit`:
+
+| Field | Meaning |
+| --- | --- |
+| `circuit` | the name of a circuit of the figure |
+| `show` | optional, by part: keys `[t, opacity]` |
+| `set` | optional, by switch: keys `[t, v]`, 0 open and 1 shut |
+| `lit`, `tint` | optional, by part: keys `[t, v]` from 0 to 1, and the style a lit part takes |
+| `flow` | optional `{from, to, path}` and optional `style`, `speed`: dashes that run along a path of the circuit |
+| `meters` | optional `{from, to, node, value}` with `value` as keys `[t, volts]` and optional `style`, `dx`, `dy`: a voltage beside a node |
+
+A figure holds `series` (each `{unit, x, y}` with x in ns), `circuits`
+(each with `size`, `items`, `nodes` and `paths`), and for
+`hitec-precharge` the `model`, the `timing`, the `measured` window and
+the simulated `window`.
 
 A `board` scene:
 
@@ -296,6 +351,68 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
    `target` from the view's PNG.
 4. `--stills` at a few times shows the layout before a full render.
 
+## The simulated signal wire
+
+`tools/video_scope.py` writes one ngspice deck per run and reads the
+line's voltage from a transient analysis with 0.5ns steps.
+
+| Part | Value | Source |
+| --- | --- | --- |
+| Servo pull-down | 3kΩ | `protocols/hitec/README.md` |
+| Pull-up | 2.2kΩ to 5.0V | `protocols/hitec/README.md` |
+| Pad supply | 3.3V | IOVDD |
+| Pad driver | 50Ω | fitted |
+| Line capacitance | 72pF | fitted |
+| Input threshold | 1.1V | fitted |
+| Servo output | 37Ω to ground | fitted |
+
+The 4 fitted values make the model agree with 2 measurements on a D485HW.
+The reference's table: the pad reads high with the sample 40 to 213ns
+after the release, low at 267ns, and low at 213ns after a precharge of 1
+system clock cycle. The logic analyser capture (200MHz, threshold 1.4V):
+a precharge on a released line reads 260 to 290ns above 1.4V, median
+280ns, and one against a servo that pulls low reads 0 to 20ns or does not
+appear. The model gives 279.5ns and 0ns. The tool stops with a message
+when the model reads one of the 12 settings or one of the 2 pulse widths
+otherwise. The timing is `hitec_pre_timing()` at 150MHz:
+163 cycles a sample, 15 of precharge, 17 to the sample.
+
+## The simulated phase tap
+
+`tools/video_tap.py` builds the motor lead of a beeping ESC, simulates
+the tap with ngspice and hands the pin's edges to the firmware's own
+detector, compiled for the host.
+
+| Value | Is | Source |
+| --- | --- | --- |
+| Short beep | 127.9ms at 2090Hz | measured, FlyDragon Lite 40A at 7.6V (`STATUS.md`) |
+| Long beep | 383.7ms at 1866Hz | measured, the same |
+| Pause in a group, between groups | 148ms, 3.23s | one recording, the same |
+| Series resistor, zener, pull-down | 4.7kΩ, 3.0V, 8.2kΩ | `protocols/phase_tap/README.md` |
+| Tick, hold-off | 26.7ns, 8000ns | `tone_svc.h` |
+| Tone range, gap, periods, split | 400 to 6500Hz, 3ms, 3, 8% | the TONE page's defaults |
+| Carrier | 12kHz | model: the first value of the ESC's PWM frequency item |
+| Carrier duty, driven share of a tone period | 25%, 50% | model |
+| Pin capacitance, input threshold | 10pF, 1.1V | model |
+
+For one group of 3 short beeps the detector reports 3 beeps of 127.5ms at
+2090.0Hz with a carrier of 12,004Hz and 267 bursts each, and the hold-off
+keeps every one of the 4806 edges. The tool stops with a message when the
+detector reports another number of beeps, a length more than 1ms or a
+pitch more than 1% from the ones sounded, or a group that does not count
+3.
+
+The captures are `win/s1-0x32-win.csv`, `win/s2-0x32-win.csv` and
+`win/s3-win.csv` of `testbench/captures/hitec32/` on branch
+`inbox/hitec32-captures` (commit eafcbc896), taken on 2026-11-22 with a
+Kingst LA2016: IOmcu 0.23.18 on GPIO 13, D485HW, 5.0V. The figure keeps
+their edges in ns from each window's start:
+
+```sh
+python3 tools/video_scope.py --rate 200e6 --capture pre=s1-0x32-win.csv \
+    --capture pullup=s2-0x32-win.csv --capture bare=s3-win.csv
+```
+
 ## Limits
 
 - The `cad` model is the case's STEP assembly, 172 x 109 x 37mm; the assembly's
@@ -360,11 +477,11 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
   follow the module's footprint, whose EN pad is placed within about
   0.5mm. The parts are drawn as axial parts; the zener's package on a
   reworked board is not stated in the tree.
-- The `dial` model is `hardware/mechanical/models/m5dial.step`, which is in
+- The `dial` model is `hardware/mechanical/models/parts/m5dial.step`, which is in
   the tree; the converted model (0.9MB) is not:
 
   ```sh
-  python3 tools/video_cad.py --solids hardware/mechanical/models/m5dial.step \
+  python3 tools/video_cad.py --solids hardware/mechanical/models/parts/m5dial.step \
       -o tools/video/cad/m5dial.glb
   ```
 
@@ -376,7 +493,7 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
   ```sh
   for part in dial_base_top dial_base_bottom m5dial_nut; do
       python3 tools/video_cad.py --solids \
-          hardware/mechanical/models/$part.step -o tools/video/cad/$part.glb
+          hardware/mechanical/models/*/$part.step -o tools/video/cad/$part.glb
   done
   ```
 
@@ -396,7 +513,7 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
   MX1.25 socket are not in the model; `dial` names them without showing
   them.
 - The `mini` model is MiniRcBench's assembly
-  `hardware/mechanical/models/minircbench.stp`, 55.7 x 76.7 x 24.7mm,
+  `hardware/mechanical/models/parts/minircbench.stp`, 55.7 x 76.7 x 24.7mm,
   which is in that repository, not in this one; the converted model
   (1.8MB) is not in the tree:
 
@@ -413,42 +530,10 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
   the wires and the tape are not shown in 3D. The cell's lead is cut
   off at the cell: it is straight in the model and would leave the
   case.
-- `minircbench-build` shows the build the owner stated on 2026-11-14
-  and 2026-11-15: the boost board's input soldered to the battery
-  socket's pins, its enable pad on GP28 with 10kΩ to ground, a male servo
-  connector with the switched 5V in each of the case's two openings, the
-  INA219 in the boost board's OUT+, JST-SH leads in the 12-pin and the
-  I2C socket, a 0Ω resistor of size 0402 between the boost board's EN pad and IN+ that is taken off before the pull-down goes on (stated on 2026-11-15), no fuse, a cell with its own protection circuit (stated on 2026-11-15), one copper plane from the boost board's IN- to its OUT- (stated on 2026-11-15), both small boards on double-sided tape, a 470µF electrolytic capacitor of 10V or more and a 5.6V zener diode across the boost board's output. The zener is rated 2W to 5W; its package is not stated and it is drawn as an axial part. Its own
-  statements, found nowhere else: the order of the steps, the wire
-  colours, the pull-down's place between EN and IN-, the daisy chain from the TMT to the
-  ESC connector, the cell's lead running over the board, and screws of
-  M2.5 x 6, taken from the case's 2.2mm under the head and the
-  standoffs' 4.0mm. The sockets' places and the prints (BAT + and -,
-  the 12 names of the 12-pin socket, GND 3V3 SDA SCL at the I2C socket)
-  are read from Waveshare's photo of the board's rear and its pin
-  drawing; which side of each socket the plug enters is taken from the
-  solder pins in that photo. How a contact leaves a JST-SH plug is
-  described from the housing's form and is not tried on the lead the
-  board comes with. No part of the build is measured: MiniRcBench
-  states that no INA219 and no boost board has been on its board.
-- The stills are frames of MiniRcBench's host suite (`cd test && make`
-  writes `shot_*.ppm`) at its commit 2cdf044. `mini-gp28` and
-  `mini-supply-sense` come from two frame dumps added to
-  `test/test_ui.cpp` for the build video and not in that repository:
-  SERVO SUPPLY at GP28, and the same with CURRENT SENSE at INA219 and
-  its caption FOUND. A change of MiniRcBench's screens does not reach
-  the stills.
-- `minircbench-features` shows no hardware: every frame is drawn by the
-  host suite from simulated values, and the 0.42 A, the 5.02 V, the
-  RPM and the telemetry in the pictures are not measurements. What the
-  narration says about a feature is taken from MiniRcBench's wiki at
-  its commit 2cdf044. The frames `mini-am32-*` and
-  `mini-efm8-*` are of a simulated ESC.
-- `minircbench-build` says that the servo tester feeds its servo from
-  the boost board. MiniRcBench at its commit 2cdf044 does so: the servo
-  tester switches the enable pin on at HOLD TO START and off at STOP.
-  The firmware release that carries this is not named; 0.1.0 is
-  unreleased.
+- The storyboards of the MiniRcBench and their stills are in that
+  project's repository under `docs/video/`, with their limitations in
+  `docs/video/README.md` there. The `mini` model (`mini3d.js`) and the
+  wiring drawing `boards/minircbench-wiring.json` are here.
 - The `mockup` model is estimated: 190 x 120 x 34mm against the 172 x
   129mm of the assembly. The order of the connectors on the wall and
   J1's pin order follow the case. J2's row order is assumed to match

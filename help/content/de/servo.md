@@ -19,7 +19,7 @@ Der Hub enthält acht Kacheln. Jede öffnet eine eigene Seite:
 | LIVE | Hornwinkel, Zifferblatt und darunter SOLL-PULSBREITE, GEMESSEN und STROM |
 | SWEEP | Zifferblatt mit SWEEP; seine Liste stellt KURVE, TEMPO, BEREICH und Haltezeit ein ([Servo-Optionen](servo-settings.md)) |
 | TEST | AUTOMATISCHER TEST mit Zusammenfassung, letztem Ergebnis und Datei; SUPPLY-Grenzen als Anzeige; die Grafik der Versorgung und die Laufanzeige darunter; die Karte BEREIT und 2s HALTEN: ARM + START |
-| ENDLAGENLAUF | die Enden, die der letzte Lauf fand, seine Zustandszeilen, die Karte BEREIT und 2s HALTEN: ARM + START |
+| LIMIT RUN | die Enden, die der letzte Lauf fand, seine Zustandszeilen, die Karte BEREIT und 2s HALTEN: ARM + START |
 | RUDER | Ausschlag in ° und mm, LÄNGE, 1000us, ZENTRIEREN, 2000us, NULLPUNKT und MAX LÖSCHEN ([Ruderausschlag](servo-rudder.md)) |
 | RUDER AUTO | das Feld AUTO; es programmiert KST-, Chaservo- oder Hitec-Endpunkte auf den vorgegebenen Ausschlag |
 | KST, HITEC | die Programmierung dieses Herstellers über der linken Karte ([Servoprogrammierung](servo-programmer.md)) |
@@ -28,7 +28,7 @@ KST und HITEC sind grau, solange dem IOmcu die Fähigkeit fehlt oder eine andere
 
 Home führt von einer Funktionsseite zum Hub und vom Hub zum Menü. Das Verlassen einer Funktionsseite schaltet den Prüfstand auf SAFE. PROG 5V auf dem Carrier bleibt von einer SERVO-Seite zur nächsten an und geht aus, wenn SERVO verlassen wird; auf dem Hub zeigt die Fußleiste dann `PROG 5V EIN 5.02V 0.120A` in der Warnfarbe, ohne Messwert `--V --A`.
 
-LIVE, SWEEP und RUDER zeigen rechts die Taste PORT und die Zeilen von BEREIT, darunter die Bedienelemente. TEST, ENDLAGENLAUF, RUDER AUTO, KST und HITEC zeigen die Taste PORT und die Karte BEREIT. Die Fußleiste enthält den Namen der Funktion mit der Portzeile, ARM (2s HALTEN: ARM + START auf TEST, ENDLAGENLAUF und RUDER AUTO, WERTE SCHREIBEN der Sitzung auf KST und HITEC) und OPTIONEN für die Liste der Seite; die von LIVE ist das Servoprofil. Jedes Bedienelement ist mindestens 48px (7,2mm) hoch. Der Drehknopf bewegt das Horn nur auf LIVE, SWEEP, RUDER und RUDER AUTO.
+LIVE, SWEEP und RUDER zeigen rechts die Taste PORT und die Zeilen von BEREIT, darunter die Bedienelemente. TEST, LIMIT RUN, RUDER AUTO, KST und HITEC zeigen die Taste PORT und die Karte BEREIT. Die Fußleiste enthält den Namen der Funktion mit der Portzeile, ARM (2s HALTEN: ARM + START auf TEST, LIMIT RUN und RUDER AUTO, WERTE SCHREIBEN der Sitzung auf KST und HITEC) und OPTIONEN für die Liste der Seite; die von LIVE ist das Servoprofil. Jedes Bedienelement ist mindestens 48px (7,2mm) hoch. Der Drehknopf bewegt das Horn nur auf LIVE, SWEEP, RUDER und RUDER AUTO.
 
 ## In Ruhe
 
@@ -116,16 +116,16 @@ Fehlende Messwerte erscheinen als `---` bei STROM auf LIVE, als `--` in der Mess
 
 ## Das Netzteil auf SERVO
 
-LIVE, SWEEP und RUDER haben die Zeile VERSORGUNG und die SET-Zeile: ARM schaltet die Versorgung ein, DISARM schaltet sie aus. TEST, ENDLAGENLAUF und RUDER AUTO schalten sie über ihr Halten und ihren Lauf. Auf KST und HITEC schaltet VERBINDEN der Sitzung sie ein, und ein Tippen auf die Zeile der Versorgung schaltet sie aus, solange sie EIN zeigt. Kein SERVO-Bildschirm hat AUSGANG EIN: es liegt auf SUPPLY.
+LIVE, SWEEP und RUDER haben die Zeile VERSORGUNG und die SET-Zeile: ARM schaltet die Versorgung ein, DISARM schaltet sie aus. TEST, LIMIT RUN und RUDER AUTO schalten sie über ihr Halten und ihren Lauf. Auf KST und HITEC schaltet VERBINDEN der Sitzung sie ein, und ein Tippen auf die Zeile der Versorgung schaltet sie aus, solange sie EIN zeigt. Kein SERVO-Bildschirm hat AUSGANG EIN: es liegt auf SUPPLY.
 
 - Ein Tipp auf SET V oder SET A öffnet das Tastenfeld von SUPPLY über der linken Karte, in den AUSGANGSGRENZEN von SUPPLY. OK setzt den Wert auf SUPPLY: ein Sollwert auf beiden Bildschirmen.
 - Ein bei eingeschaltetem Ausgang eingegebener Wert wartet auf die Rückfrage von SUPPLY, wo OPTIONEN > TASTENFELD unter RÜCKFRAGE IM BETRIEB sie verlangt, bei ARMED wie bei SAFE. Eine Spannung über 6.0V wartet auf NUR HV-SERVOS.
 - Solange ein Programmierport den PD mini hält, sind SET V und SET A blass, und ein Tipp nennt den Grund im Alarmband.
-- Die Strombegrenzung, SET A von SUPPLY, steht auf der Karte BEREIT von TEST, ENDLAGENLAUF und RUDER AUTO: ein Tippen auf PD MINI öffnet ihr Tastenfeld über der linken Karte ([Die Strombegrenzung](#die-strombegrenzung)).
+- Die Strombegrenzung, SET A von SUPPLY, steht auf der Karte BEREIT von TEST, LIMIT RUN und RUDER AUTO: ein Tippen auf PD MINI öffnet ihr Tastenfeld über der linken Karte ([Die Strombegrenzung](#die-strombegrenzung)).
 - Beim Verlassen schaltet SERVO einen von hier eingeschalteten Ausgang aus.
 - Lässt VERLASSEN einer Programmiersitzung den Ausgang eingeschaltet, fragt SERVO nach Wiederherstellung der vorherigen Sollwerte ([Servoprogrammierung](servo-programmer.md)). Bei PORT FREIGEBEN, STOP, Fehler, Verbindungsverlust oder Neustart entfällt die Frage. Die Sitzungswerte bleiben bis zum nächsten AUS.
 
-Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) haben die Programmierports eine eigene 5V-Schiene an GPIO 21. Kein SERVO-Bildschirm zeigt das Feld PROG 5V; SUPPLY zeigt es. Auf LIVE, SWEEP und RUDER zeigt die Zeile VERSORGUNG PROG 5V, und ARM schaltet sie ein, auf ENDLAGENLAUF und RUDER AUTO das Halten. Die SET-Zeile zeigt dann `PROG 5V`, `5V FEST` und nimmt kein Tippen an; Grafik und Schienenzeile zeigen den INA3221-Kanal, der die 5V überwacht, etwa `INA PROG 5V` in der Zeile. Ohne Messwert dieses Kanals zeigt die Zeile `PROG 5V KEIN MESSWERT` und `--V  --A`, nie die Werte des PD mini. Auf KST und HITEC zeigt die Zeile der Versorgung EIN, solange die 5V an sind; ein Tippen schaltet sie aus.
+Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) haben die Programmierports eine eigene 5V-Schiene an GPIO 21. Kein SERVO-Bildschirm zeigt das Feld PROG 5V; SUPPLY zeigt es. Auf LIVE, SWEEP und RUDER zeigt die Zeile VERSORGUNG PROG 5V, und ARM schaltet sie ein, auf LIMIT RUN und RUDER AUTO das Halten. Die SET-Zeile zeigt dann `PROG 5V`, `5V FEST` und nimmt kein Tippen an; Grafik und Schienenzeile zeigen den INA3221-Kanal, der die 5V überwacht, etwa `INA PROG 5V` in der Zeile. Ohne Messwert dieses Kanals zeigt die Zeile `PROG 5V KEIN MESSWERT` und `--V  --A`, nie die Werte des PD mini. Auf KST und HITEC zeigt die Zeile der Versorgung EIN, solange die 5V an sind; ein Tippen schaltet sie aus.
 
 Solange ein Programmierport die 5V hält, schaltet das Tippen nichts, und das Band nennt die Sperre. Beim Verlassen von SERVO schaltet eine von ARM oder vom Halten aktivierte Schiene aus, außer ein Port belegt sie.
 
@@ -133,7 +133,7 @@ Bei eingeschaltetem PROG 5V bedeuten zwei Fenster unter 3000mV einen Ausfall der
 
 ### Die Strombegrenzung
 
-Der automatische Test, der Endlagenlauf und RUDER AUTO laufen mit SET A von SUPPLY, wo ein PD mini das Servo speist. Die Zeile PD MINI der Karte BEREIT zeigt sie nach der Spannung: `EIN 2.00A` auf TEST, `5.0V 2.00A` auf ENDLAGENLAUF und RUDER AUTO, gelb `EIN BEI START 2.00A`, solange das Halten oder die Stufen den Ausgang einschalten. Die Listen von ENDLAGENLAUF und RUDER AUTO führen sie als STROM, `SET A 2.00A`.
+Der automatische Test, der Endlagenlauf und RUDER AUTO laufen mit SET A von SUPPLY, wo ein PD mini das Servo speist. Die Zeile PD MINI der Karte BEREIT zeigt sie nach der Spannung: `EIN 2.00A` auf TEST, `5.0V 2.00A` auf LIMIT RUN und RUDER AUTO, gelb `EIN BEI START 2.00A`, solange das Halten oder die Stufen den Ausgang einschalten. Die Listen von LIMIT RUN und RUDER AUTO führen sie als STROM, `SET A 2.00A`.
 
 - Ein Tippen auf die Zeile, grün oder gelb, oder auf STROM öffnet das Tastenfeld von SUPPLY: STROMBEGRENZUNG in A innerhalb der Grenzen und AUSGANGSGRENZEN von SUPPLY. OK setzt SET A; SET V bleibt.
 - Bei eingeschaltetem Ausgang kommt zuerst die Frage von SUPPLY, wie auf SUPPLY: `AUSGANG IST EINGESCHALTET`, ÜBERNEHMEN oder ABBRECHEN.
@@ -187,13 +187,13 @@ Das Feld zeigt das Ergebnis bis SCHLIESSEN, die Zeile ZULETZT auf der Karte bis 
 
 ## Der Endlagenlauf
 
-Der Endlagenlauf sucht mechanische Anschläge an beiden Enden des eingebauten Servowegs. Danach kann er LEFT ANGLE und RIGHT ANGLE im Servo verringern, sodass es vor dem Anschlag stoppt. Die Kachel ENDLAGENLAUF im Hub öffnet seinen Bildschirm; OPTIONEN in der Fußleiste öffnet die [Liste des Laufs](servo-settings.md#die-optionen-des-endlagenlaufs).
+Der Endlagenlauf sucht mechanische Anschläge an beiden Enden des eingebauten Servowegs. Danach kann er LEFT ANGLE und RIGHT ANGLE im Servo verringern, sodass es vor dem Anschlag stoppt. Die Kachel LIMIT RUN im Hub öffnet seinen Bildschirm; OPTIONEN in der Fußleiste öffnet die [Liste des Laufs](servo-settings.md#die-optionen-des-endlagenlaufs).
 
 ![Der Endlagenlauf, bereit](view:servo-limrun-ready)
 
 1. Tippe auf OPTIONEN in der Fußleiste, dann auf MODUS, um NUR SUCHE oder SUCHEN + PROGRAMMIEREN zu wählen.
 2. Tippe bei PORT auf PROG-PORT auf SERVO in der Karte BEREIT und wähle KST/CHASERVO, HITEC D-SERIE oder HITEC KLASSISCH, den Programmierer der Sitzungen des Laufs. Die Wahl gehört dem Endlagenlauf und wird gespeichert; RUDER AUTO hat seine eigene. Bei KST/CHASERVO stelle SERVOPULSE auf BEHALTEN oder 1000-2000; die Vorgabe ist BEHALTEN.
-3. Tippe auf das Home-Feld, um zu ENDLAGENLAUF zurückzukehren.
+3. Tippe auf das Home-Feld, um zu LIMIT RUN zurückzukehren.
 4. Halte 2s HALTEN: ARM + START in der Fußleiste. Es stellt ein PD mini auf 5,0V. Bei SAFE schaltet es PORT-PWM ein, dann PROG 5V oder den Ausgang des PD mini, wartet bis zu 1000ms auf deren Rückmeldung EIN, das PD mini auf 5,0V, schaltet ARM, wartet bis zu 500ms auf ARMED und startet den Lauf. Ein Tipp oder kürzeres Halten startet nichts und zeigt `Halte 2s, um Port und Versorgung einzuschalten, ARM und den Endlagenlauf zu starten.` im Alarmband.
 5. Während des Laufs zeigt das Halten LAUF BEENDEN. Die Zustandszeilen zeigen Phase, Seite und Puls. Nach dem letzten Befehl des Laufs ist der Prüfstand wieder SAFE; PROG 5V bleibt an, und ein PD mini bleibt auf 5,0V.
 
@@ -287,7 +287,7 @@ Zum Schluss werden beide Enden erneut geprüft. Sind beide frei, lautet das Erge
 
 ![Die Auswahl SERVO des Endlagenlaufs](view:servo-limrun-family)
 
-![Die Optionen des ENDLAGENLAUFS, SERVO auf HITEC D-SERIE](view:servo-limrun-hitec)
+![Die Optionen von LIMIT RUN, SERVO auf HITEC D-SERIE](view:servo-limrun-hitec)
 
 Bei SERVO auf HITEC D-SERIE oder HITEC KLASSISCH verwendet der Lauf die [Hitec-Servoprogrammierung](servo-programmer.md) in dieser Serie, gleich, was SERIE auf der HITEC-Seite zeigt. Mit HITEC D-SERIE zeigt die Liste unter SERVO den Hitec-D-Empfang, die Einstellung der HITEC-Seite. LEFT END und RIGHT END entsprechen bei D-Serie 0xB2 und 0xB0 in Zählschritten relativ zu NEUTRAL 0xC2. Classic-Servos verwenden die rohen Zellen 0x14 und 0x13, bei CCW vertauscht.
 

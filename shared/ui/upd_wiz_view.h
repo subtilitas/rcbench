@@ -149,7 +149,9 @@ gfx_rect_t upd_wiz_skip_rect(void);
 bool upd_wiz_net_shown(const upd_wiz_t *w);
 
 /**
- * @brief A step's name, as its row and the card's heading show it.
+ * @brief A step's name, as its row and the card's heading show it: the
+ *        power node's step reads DISPLAY NODE while its row sends the
+ *        display node's image (upd_dev_view_t.display).
  * @param i the step
  * @return the text
  */

@@ -458,8 +458,8 @@ UI_TEXT(HG_OV_LOGS, 0,
     "Lists the logs on the SD card and plots up to 4 columns. FILES is a tab, WI-FI a button.",
     "Zeigt Aufzeichnungen der SD-Karte und bis zu 4 Spalten als Grafik. FILES ist ein Tab, WI-FI eine Taste.")
 UI_TEXT(HG_OV_SETUP, 0,
-    "The bench-wide settings: PANEL, SENSORS, OUTPUTS, SD CARD, WI-FI and UPDATES.",
-    "Die Einstellungen des ganzen Prüfstands: PANEL, SENSORS, OUTPUTS, SD CARD, WI-FI und UPDATES.")
+    "The bench-wide settings: PANEL, SENSORS, OUTPUTS, SD CARD, WI-FI, UPDATES, IMU and WIRELESS.",
+    "Die Einstellungen des Prüfstands: PANEL, SENSORS, OUTPUTS, SD CARD, WI-FI, UPDATES, IMU und WIRELESS.")
 UI_TEXT(HG_OV_STOP, 0,
     "Switches the bench to SAFE and the supply output off, on every screen and with this guide open.",
     "Schaltet den Prüfstand auf SAFE und den Netzteilausgang aus, auf jeder Seite, auch bei offener Hilfe.")
@@ -1598,8 +1598,165 @@ UI_TEXT(SET_HUB_PANEL, 0,
     "THEME, LANGUAGE, KNOB",
     "DESIGN, SPRACHE, DREHKNOPF")
 UI_TEXT(SET_HUB_CARD, 0,
-    "LOGS, BROWSER WRITES",
-    "LOGS, BROWSER-SCHREIBEN")
+    "LOGS, BROWSER WRITES, BACKUP",
+    "LOGS, BROWSER-SCHREIBEN, BACKUP")
+/* SETUP > SD CARD's rows of the settings backup (sbk_rows.c): a row's name
+ * in the head face, its help line in the label face; the value at the
+ * row's right in the body face, 20 cells; a lock in the help line's place,
+ * 60 cells of the label face. */
+UI_TEXT(SBK_ROW_SAVE, 0,
+    "Save settings",
+    "Einstellungen sichern")
+UI_TEXT(SBK_ROW_SAVE_HELP, 0,
+    "Writes the saved settings to BENCH/SETUP",
+    "Schreibt die gespeicherten Einstellungen nach BENCH/SETUP")
+UI_TEXT(SBK_ROW_LOAD, 0,
+    "Load settings",
+    "Einstellungen laden")
+UI_TEXT(SBK_ROW_LOAD_HELP, 0,
+    "Replaces every setting with a file of BENCH/SETUP",
+    "Ersetzt alle Einstellungen durch eine Datei aus BENCH/SETUP")
+UI_TEXT(SBK_LOCK_UNSAVED, 60,
+    "Changes not saved: SAVE them first",
+    "Änderungen nicht gespeichert: erst SAVE")
+UI_TEXT(SBK_LOCK_NO_CARD, 60,
+    "No card",
+    "Keine Karte")
+UI_TEXT(SBK_LOCK_ARMED, 60,
+    "Not while ARMED",
+    "Nicht bei ARMED")
+UI_TEXT(SBK_V_WRITING, 20,
+    "WRITING",
+    "SCHREIBT")
+UI_TEXT(SBK_V_WRITTEN, 20,
+    "WRITTEN",
+    "GESCHRIEBEN")
+UI_TEXT(SBK_V_FULL, 20,
+    "CARD FULL",
+    "KARTE VOLL")
+UI_TEXT(SBK_V_FAILED, 20,
+    "FAILED, CODE %u",
+    "FEHLER, CODE %u")
+/* LOAD SETTINGS (sbk_draw.c): left, the head line in 53 cells of the body
+ * face and each file's line in 64 cells of the label face; the notes under
+ * the files and the result's lines in 64 cells of the label face.  Right,
+ * the labels and the reasons in 32 cells of the label face, the date and
+ * the version in 27 cells of the body face. */
+UI_TEXT(SBK_HEAD_LIST, 0,
+    "Settings files in BENCH/SETUP",
+    "Einstellungsdateien in BENCH/SETUP")
+UI_TEXT(SBK_HEAD_OFFER, 0,
+    "This panel holds no settings. The card has:",
+    "Dieses Panel hat keine Einstellungen. Auf der Karte:")
+UI_TEXT(SBK_HEAD_READING, 53,
+    "Reading the card ...",
+    "Karte wird gelesen ...")
+UI_TEXT(SBK_HEAD_NO_CARD, 53,
+    "No card.",
+    "Keine Karte.")
+UI_TEXT(SBK_HEAD_NONE, 53,
+    "No settings file in BENCH/SETUP.",
+    "Keine Einstellungsdatei in BENCH/SETUP.")
+UI_TEXT(SBK_HEAD_FAILED, 53,
+    "The card did not list: code %u.",
+    "Karte nicht gelesen: Code %u.")
+UI_TEXT(SBK_FILE_LINE, 0,
+    "%s, panel %s",
+    "%s, Panel %s")
+UI_TEXT(SBK_DATE_UNKNOWN, 27,
+    "date not known",
+    "Datum unbekannt")
+UI_TEXT(SBK_VERSION_UNKNOWN, 27,
+    "not known",
+    "unbekannt")
+UI_TEXT(SBK_FILE_BAD, 64,
+    "No settings file: code %u",
+    "Keine Einstellungsdatei: Code %u")
+UI_TEXT(SBK_WRITTEN, 0,
+    "WRITTEN",
+    "GESCHRIEBEN")
+UI_TEXT(SBK_PANEL, 0,
+    "PANEL VERSION",
+    "PANEL-VERSION")
+UI_TEXT(SBK_NOTE_REPLACE, 0,
+    "Loading replaces every setting: the file's value, or the default where the file has none.",
+    "Laden ersetzt alle Einstellungen: durch den Wert der Datei oder den Standardwert, wo die Datei keinen hat.")
+UI_TEXT(SBK_NOTE_WIFI, 0,
+    "Not in the file: the home network and its password, HOTSPOT PASSWORD and ACCESS CODE. Set them on WI-FI.",
+    "Nicht in der Datei: das Heimnetz und sein Passwort, HOTSPOT-PASSWORT und ZUGANGSCODE. Sie werden auf WI-FI gesetzt.")
+UI_TEXT(SBK_HOLD, 0,
+    "HOLD 2s TO LOAD",
+    "2s HALTEN ZUM LADEN")
+UI_TEXT(SBK_BACK, 0,
+    "BACK",
+    "ZURÜCK")
+UI_TEXT(SBK_SKIP, 0,
+    "SKIP",
+    "ÜBERSPRINGEN")
+UI_TEXT(SBK_WHY_ARMED, 32,
+    "Not while ARMED.",
+    "Nicht bei ARMED.")
+UI_TEXT(SBK_WHY_PICK, 32,
+    "Tap a file to choose it.",
+    "Tippe auf eine Datei.")
+UI_TEXT(SBK_WHY_BAD, 32,
+    "This is no settings file.",
+    "Keine Einstellungsdatei.")
+UI_TEXT(SBK_RESULT_DONE, 0,
+    "%s loaded: %d changed, %u refused",
+    "%s geladen: %d geändert, %u abgelehnt")
+UI_TEXT(SBK_RESULT_KEPT, 0,
+    "In force now; saved to the panel once the bench is idle.",
+    "Jetzt in Kraft; gespeichert, sobald der Prüfstand ruht.")
+UI_TEXT(SBK_RESULT_READING, 53,
+    "Reading %s ...",
+    "%s wird gelesen ...")
+UI_TEXT(SBK_RESULT_CARD, 53,
+    "%s not loaded: card code %u.",
+    "%s nicht geladen: Karten-Code %u.")
+UI_TEXT(SBK_RESULT_FILE, 53,
+    "%s refused: code %u, line %u.",
+    "%s abgelehnt: Code %u, Zeile %u.")
+UI_TEXT(SBK_RESULT_ARMED, 53,
+    "%s not loaded: the bench is ARMED.",
+    "%s nicht geladen: Prüfstand ARMED.")
+UI_TEXT(SBK_RESULT_NONE, 64,
+    "Nothing was refused.",
+    "Nichts wurde abgelehnt.")
+UI_TEXT(SBK_REFUSED_LINE, 0,
+    "Line %u, %s: code %u, %s",
+    "Zeile %u, %s: Code %u, %s")
+UI_TEXT(SBK_REFUSED_NOLINE, 64,
+    "No line, %s: code %u, %s",
+    "Ohne Zeile, %s: Code %u, %s")
+UI_TEXT(SBK_REFUSED_MORE, 64,
+    "... and %u more",
+    "... und %u weitere")
+/* A refused line's reason, by sf_line_err_t, after its code. */
+UI_TEXT(SBK_LINE_MALFORMED, 24,
+    "not key = value",
+    "nicht Schlüssel = Wert")
+UI_TEXT(SBK_LINE_KEY, 24,
+    "unknown key",
+    "unbekannter Schlüssel")
+UI_TEXT(SBK_LINE_TWICE, 24,
+    "key given twice",
+    "Schlüssel doppelt")
+UI_TEXT(SBK_LINE_VALUE, 24,
+    "value not readable",
+    "Wert nicht lesbar")
+UI_TEXT(SBK_LINE_RANGE, 24,
+    "out of range",
+    "außerhalb des Bereichs")
+UI_TEXT(SBK_LINE_LONG, 24,
+    "text too long",
+    "Text zu lang")
+UI_TEXT(SBK_LINE_DERIVED, 24,
+    "follows another",
+    "folgt einer anderen")
+UI_TEXT(SBK_LINE_HELD, 24,
+    "in use, kept",
+    "belegt, bleibt")
 UI_TEXT(SET_HUB_OUTPUTS, 0,
     "PROTOCOLS, PINS, BOARD",
     "PROTOKOLLE, PINS, PLATINE")
@@ -2435,6 +2592,26 @@ UI_TEXT(HG_IM_CAL, 0,
 UI_TEXT(HG_IM_OPTIONS, 0,
     "Opens the IMU entry of SENSORS on SETUP; its home tag returns here.",
     "Öffnet den IMU-Eintrag von SENSORS in SETUP; sein Home-Feld führt hierher zurück.")
+/* SEARCH's guide (wl_search_draw.c): the list, then the card and SCAN
+ * AGAIN. */
+UI_TEXT(HG_WLS_TITLE_LIST, 0,
+    "SEARCH: THE LIST",
+    "SEARCH: DIE LISTE")
+UI_TEXT(HG_WLS_TITLE_CARD, 0,
+    "SEARCH: THE DEVICE",
+    "SEARCH: DAS GERÄT")
+UI_TEXT(HG_WLS_LIST_NAME, 0,
+    "FOUND",
+    "GEFUNDEN")
+UI_TEXT(HG_WLS_LIST, 0,
+    "The devices the last scan found, strongest first, with their signal in dBm. The bound one is lit. A tap asks whether to bind one.",
+    "Die Geräte der letzten Suche, das stärkste zuerst, mit ihrem Signal in dBm. Das gebundene ist hervorgehoben. Tippen fragt, ob eines gebunden wird.")
+UI_TEXT(HG_WLS_CARD, 0,
+    "The device's kind, its link and the bound device. SETUP keeps a bind and asks for a save.",
+    "Art des Geräts, seine Verbindung und das gebundene Gerät. SETUP behält eine Bindung und fordert Speichern an.")
+UI_TEXT(HG_WLS_AGAIN, 0,
+    "Scans 10s again. Refused while ARMED and while a scan runs; the band says why.",
+    "Sucht erneut 10s. Abgelehnt bei ARMED und während einer Suche; das Band nennt den Grund.")
 
 /* ---------------------------------------------------------------- LOGS */
 UI_TEXT(LOG_NO_SOURCE, 36,
@@ -5448,7 +5625,7 @@ UI_TEXT(SV_LIM_TITLE, 31,
     "ENDLAGENSUCHE")
 UI_TEXT(SV_LIM_TITLE_PROG, 0,
     "LIMIT RUN, %u OF %u VALUES",
-    "ENDLAGENLAUF, %u VON %u WERTEN")
+    "LIMIT RUN, %u VON %u WERTEN")
 UI_TEXT(SV_LIM_AT, 0,
     "%s %s END %uus",
     "%s %s ENDE %uus")
@@ -5685,7 +5862,7 @@ UI_TEXT(HG_SV_SETTINGS, 0,
     "Wie diese Seite ihre Funktion ausführt. Öffnet nur bei SAFE.")
 UI_TEXT(HG_SV_TITLE_LIMRUN, 0,
     "SERVO: LIMIT RUN",
-    "SERVO: ENDLAGENLAUF")
+    "SERVO: LIMIT RUN")
 /* The SERVO hub (servo_hub.c): its tiles' names and lines, at most 31
  * cells of 10 x 20, and its guide. */
 UI_TEXT(SVH_SERVO, 0,
@@ -5702,7 +5879,7 @@ UI_TEXT(SVH_TEST, 0,
     "TEST")
 UI_TEXT(SVH_LIMRUN, 0,
     "LIMIT RUN",
-    "ENDLAGENLAUF")
+    "LIMIT RUN")
 UI_TEXT(SVH_RUDDER, 0,
     "RUDDER",
     "RUDER")
@@ -5756,7 +5933,7 @@ UI_TEXT(HG_SVH_DRIVE, 0,
     "LIVE und SWEEP steuern das Servo mit Skala, Drehknopf und Kurve.")
 UI_TEXT(HG_SVH_MEASURE, 0,
     "TEST and LIMIT RUN measure the servo on the rail and find its ends.",
-    "TEST und ENDLAGENLAUF messen das Servo an der Schiene und finden seine Endlagen.")
+    "TEST und LIMIT RUN messen das Servo an der Schiene und finden seine Endlagen.")
 UI_TEXT(HG_SVH_SURFACE, 0,
     "RUDDER and RUDDER AUTO read a control surface's deflection.",
     "RUDER und RUDER AUTO lesen den Ausschlag eines Ruders.")
@@ -5950,6 +6127,15 @@ UI_TEXT(ALERT_CARD_SERVO_SHORT, 94,
 UI_TEXT(ALERT_CARD_ROWS_PAST, 94,
     "Data can no longer be saved to the card. Recording stopped here.",
     "Daten können nicht mehr auf die Karte gespeichert werden. Aufzeichnung endet hier.")
+UI_TEXT(ALERT_SB_FULL, 94,
+    "Settings copy not written: the card is full.",
+    "Einstellungskopie nicht geschrieben: Die Karte ist voll.")
+UI_TEXT(ALERT_SB_FAILED, 94,
+    "Settings copy not written: card code %u.",
+    "Einstellungskopie nicht geschrieben: Karten-Code %u.")
+UI_TEXT(ALERT_SB_CHANGED, 94,
+    "The settings file changed on the card: choose again.",
+    "Einstellungsdatei auf der Karte geändert: neu wählen.")
 UI_TEXT(ALERT_FW_UPDATED, 94,
     "Panel firmware %s installed.",
     "Panel-Firmware %s installiert.")
@@ -6076,16 +6262,32 @@ UI_TEXT(ALERT_ARM_C6, 94,
     "Cannot switch to ARMED: the C6 radio update is running.",
     "ARMED gesperrt: Das C6-Funk-Update läuft.")
 /* The supply's ON, the PROG ports' 5V ON and a programmer session's start
- * refused under the C6 radio's update, as ARM is (fw_c6_refuses()). */
-UI_TEXT(ALERT_SUPPLY_C6, 94,
-    "Supply output not switched on: the C6 radio update is running.",
-    "Netzteilausgang nicht eingeschaltet: Das C6-Funk-Update läuft.")
-UI_TEXT(ALERT_P5_C6, 94,
-    "PROG ports 5V not switched on: the C6 radio update is running.",
-    "PROG-Ports 5V nicht eingeschaltet: Das C6-Funk-Update läuft.")
-UI_TEXT(ALERT_PROG_C6, 94,
-    "Programmer not started: the C6 radio update is running.",
-    "Programmierung nicht gestartet: Das C6-Funk-Update läuft.")
+ * refused under an update (fw_upd_refuses()); %s names the update, one of
+ * the UPD_RUNS_ entries (upd_refusal_line()). */
+UI_TEXT(ALERT_SUPPLY_UPD, 94,
+    "Supply output not switched on: %s is running.",
+    "Netzteilausgang nicht eingeschaltet: %s läuft.")
+UI_TEXT(ALERT_P5_UPD, 94,
+    "PROG ports 5V not switched on: %s is running.",
+    "PROG-Ports 5V nicht eingeschaltet: %s läuft.")
+UI_TEXT(ALERT_PROG_UPD, 94,
+    "Programmer not started: %s is running.",
+    "Programmierung nicht gestartet: %s läuft.")
+UI_TEXT(UPD_RUNS_C6, 30,
+    "the C6 radio update",
+    "Das C6-Funk-Update")
+UI_TEXT(UPD_RUNS_IOMCU, 30,
+    "the IOmcu update",
+    "Das IOmcu-Update")
+UI_TEXT(UPD_RUNS_DIAL, 30,
+    "the Dial update",
+    "Das Dial-Update")
+UI_TEXT(UPD_RUNS_PNODE, 30,
+    "the power node update",
+    "Das Leistungsknoten-Update")
+UI_TEXT(UPD_RUNS_BAL, 30,
+    "the balance node update",
+    "Das Auswuchtknoten-Update")
 UI_TEXT(ALERT_ARM_DEVUPD, 94,
     "Cannot switch to ARMED: a wireless device update is running.",
     "ARMED gesperrt: Ein Update eines Funkgeräts läuft.")
@@ -6343,6 +6545,9 @@ UI_TEXT(DEV_NAME_DIAL, 36,
 UI_TEXT(DEV_NAME_PNODE, 36,
     "Power node",
     "Leistungsknoten")
+UI_TEXT(DEV_NAME_DNODE, 36,
+    "Display node",
+    "Anzeigeknoten")
 UI_TEXT(DEV_NAME_BAL, 36,
     "Balance node",
     "Auswuchtknoten")
@@ -6364,6 +6569,9 @@ UI_TEXT(DEV_FAIL_WRITE, 36,
 UI_TEXT(DEV_FAIL_KIND, 36,
     "image for another device",
     "Image für ein anderes Gerät")
+UI_TEXT(DEV_FAIL_BOARD, 36,
+    "image for another board",
+    "Image für eine andere Platine")
 UI_TEXT(DEV_FAIL_SIZE, 36,
     "image too large",
     "Image zu groß")
@@ -6478,6 +6686,9 @@ UI_TEXT(HOLD_HINT_WRITES, 94,
 UI_TEXT(HOLD_HINT_DOWNLOAD, 94,
     "Hold 2s to download and install.",
     "Halte 2s, um zu laden und zu installieren.")
+UI_TEXT(HOLD_HINT_SBK_LOAD, 94,
+    "Hold 2s to load the settings file.",
+    "Halte 2s, um die Einstellungsdatei zu laden.")
 UI_TEXT(HOLD_HINT_IOMCU_UPDATE, 94,
     "Hold 2s to update the IOmcu.",
     "Halte 2s, um den IOmcu zu aktualisieren.")
@@ -6485,26 +6696,26 @@ UI_TEXT(HOLD_HINT_C6_UPDATE, 94,
     "Hold 2s to update the C6 radio. Wi-Fi stays off until it ends.",
     "Halte 2s, um den C6-Funk zu aktualisieren. Das WLAN bleibt bis zum Ende aus.")
 UI_TEXT(HOLD_HINT_C6_REINSTALL, 94,
-    "Hold 2s to reinstall the C6 firmware this panel carries. Wi-Fi stays off until it ends.",
-    "Halte 2s, um die C6-Firmware des Panels neu zu installieren. WLAN bleibt bis zum Ende aus.")
+    "Hold 2s to reinstall the C6 firmware of this panel's release. Wi-Fi is off while it is sent.",
+    "Halte 2s, um die C6-Firmware dieses Release neu zu installieren. WLAN bleibt beim Senden aus.")
 UI_TEXT(HOLD_HINT_DIAL_UPDATE, 94,
     "Hold 2s to update the Dial. Its knob stops until it connects again.",
     "Halte 2s, um das Dial zu aktualisieren. Der Drehknopf ruht bis zur neuen Verbindung.")
 UI_TEXT(HOLD_HINT_DIAL_REINSTALL, 94,
-    "Hold 2s to reinstall the Dial firmware this panel carries.",
-    "Halte 2s, um die Dial-Firmware des Panels neu zu installieren.")
+    "Hold 2s to reinstall the Dial firmware of this panel's release.",
+    "Halte 2s, um die Dial-Firmware dieses Release neu zu installieren.")
 UI_TEXT(HOLD_HINT_PNODE_UPDATE, 94,
     "Hold 2s to update the power node. Its readings stop until it connects again.",
     "Halte 2s, um den Leistungsknoten zu aktualisieren. Messwerte ruhen bis zur neuen Verbindung.")
 UI_TEXT(HOLD_HINT_PNODE_REINSTALL, 94,
-    "Hold 2s to reinstall the power node firmware this panel carries.",
-    "Halte 2s, um die Firmware des Leistungsknotens neu zu installieren.")
+    "Hold 2s to reinstall the power node firmware of this panel's release.",
+    "Halte 2s, um die Leistungsknoten-Firmware dieses Release neu zu installieren.")
 UI_TEXT(HOLD_HINT_BAL_UPDATE, 94,
     "Hold 2s to update the balance node. Its reports stop until it connects again.",
     "Halte 2s, um den Auswuchtknoten zu aktualisieren. Messungen ruhen bis zur neuen Verbindung.")
 UI_TEXT(HOLD_HINT_BAL_REINSTALL, 94,
-    "Hold 2s to reinstall the balance node firmware this panel carries.",
-    "Halte 2s, um die Firmware des Auswuchtknotens neu zu installieren.")
+    "Hold 2s to reinstall the balance node firmware of this panel's release.",
+    "Halte 2s, um die Auswuchtknoten-Firmware dieses Release neu zu installieren.")
 UI_TEXT(HOLD_HINT_UNBIND, 94,
     "Hold 2s to clear all pin assignments.",
     "Halte 2s, um alle Pin-Zuordnungen zu löschen.")
@@ -7189,17 +7400,17 @@ UI_TEXT(HG_UPD_CU_HOLD, 0,
     "Sends the included build to the IOmcu. Outputs stay off until it ends.",
     "Sendet den enthaltenen Build an den IOmcu. Ausgänge bleiben aus, bis es endet.")
 UI_TEXT(HG_UPD_DIAL, 0,
-    "The Dial's version and the included one. The hold sends it; the Dial asks for a press.",
-    "Version des Dial und die enthaltene. Das Halten sendet sie; das Dial fragt nach einem Druck.")
+    "The Dial's version and the release's. The hold sends it; the Dial asks for a press.",
+    "Version des Dial und die des Release. Das Halten sendet sie; das Dial fragt nach einem Druck.")
 UI_TEXT(HG_UPD_DEVS, 0,
     "How many devices reported a version, and how many run another one. The button opens their rows.",
     "Wie viele Geräte eine Version meldeten und wie viele eine andere haben. Die Taste öffnet ihre Zeilen.")
 UI_TEXT(HG_UPD_PNODE, 0,
-    "The power node's version and the included one. The hold sends it; BOOT held 1s accepts.",
-    "Version des Knotens und die enthaltene. Das Halten sendet sie; BOOT 1s gehalten nimmt an.")
+    "The power node's version and the release's. The hold sends it; BOOT held 1s accepts.",
+    "Version des Knotens und die des Release. Das Halten sendet sie; BOOT 1s gehalten nimmt an.")
 UI_TEXT(HG_UPD_BAL, 0,
-    "The balance node's version and the included one. The hold sends it; BOOT held 1s accepts.",
-    "Version des Knotens und die enthaltene. Das Halten sendet sie; BOOT 1s gehalten nimmt an.")
+    "The balance node's version and the release's. The hold sends it; BOOT held 1s accepts.",
+    "Version des Knotens und die des Release. Das Halten sendet sie; BOOT 1s gehalten nimmt an.")
 UI_TEXT(HG_UPD_DEVS_CANCEL, 0,
     "Ends the update before its last byte; the device keeps its firmware. Grey while it installs.",
     "Beendet das Update vor dem letzten Byte; das Gerät behält seine Firmware. Grau beim Installieren.")
@@ -7213,8 +7424,8 @@ UI_TEXT(HG_UPD_CARD, 0,
     "The current step: versions, what it does, why it waits. The last card: all firmware is current.",
     "Der aktuelle Schritt: Versionen, was er tut, worauf er wartet. Zuletzt: alle Firmware aktuell.")
 UI_TEXT(HG_UPD_C6, 0,
-    "Sends the included build to the C6 radio, which carries Wi-Fi. The panel restarts then.",
-    "Sendet den enthaltenen Build an den C6-Funk, der das WLAN trägt. Danach startet das Panel neu.")
+    "Sends the release's build to the C6 radio, which carries Wi-Fi. The panel restarts then.",
+    "Sendet den Build des Release an den C6-Funk, der das WLAN trägt. Danach startet das Panel neu.")
 UI_TEXT(HG_UPD_OPTIONS, 0,
     "Reminder at start, Releases and Single updates. Grey while a check, a download or an update runs.",
     "Erinnerung, Releases und Einzelne Updates. Grau, solange Suche, Download oder Update läuft.")
@@ -8805,9 +9016,105 @@ UI_TEXT(UP_FAILED, 0,
 UI_TEXT(UP_FAILED_2, 0,
     "The current firmware is unchanged and stays installed.",
     "Die aktuelle Firmware bleibt unverändert installiert.")
+/* PANEL UPDATE's reason under "Writing failed.", one per reason the
+ * install's console line names (update_fail_text(), fw_err_t): one line
+ * of the 12 x 24 face, 81 cells. */
+UI_TEXT(UP_WHY_EMPTY, 81,
+    "The image is empty.",
+    "Das Image ist leer.")
+UI_TEXT(UP_WHY_SHORT, 81,
+    "The image is shorter than its header or segments say.",
+    "Das Image ist kürzer, als Header oder Segmente angeben.")
+UI_TEXT(UP_WHY_TOO_BIG, 81,
+    "The image is larger than the slot.",
+    "Das Image ist größer als der Slot.")
+UI_TEXT(UP_WHY_NOT_IMAGE, 81,
+    "Not an application image.",
+    "Kein Anwendungs-Image.")
+UI_TEXT(UP_WHY_CHIP, 81,
+    "The image is built for another chip.",
+    "Das Image ist für einen anderen Chip gebaut.")
+UI_TEXT(UP_WHY_NO_DESC, 81,
+    "The image has no application descriptor.",
+    "Dem Image fehlt die Anwendungsbeschreibung.")
+UI_TEXT(UP_WHY_PROJECT, 81,
+    "The image is another project's application.",
+    "Das Image ist die Anwendung eines anderen Projekts.")
+UI_TEXT(UP_WHY_VERSION, 81,
+    "The image's version is not MAJOR.MINOR.PATCH.",
+    "Die Version des Images ist nicht MAJOR.MINOR.PATCH.")
+UI_TEXT(UP_WHY_NO_HASH, 81,
+    "The image has no appended SHA-256.",
+    "Dem Image fehlt der angehängte SHA-256.")
+UI_TEXT(UP_WHY_LENGTH, 81,
+    "The image's segments do not add up to its length.",
+    "Die Segmente des Images ergeben nicht seine Länge.")
+UI_TEXT(UP_WHY_HASH, 81,
+    "The image's SHA-256 does not match.",
+    "Der SHA-256 des Images stimmt nicht.")
+UI_TEXT(UP_WHY_READ, 81,
+    "The image broke off before its last byte.",
+    "Das Image brach vor seinem letzten Byte ab.")
+UI_TEXT(UP_WHY_RUNNING, 81,
+    "The image is the build that runs now.",
+    "Das Image ist die Firmware, die gerade läuft.")
+UI_TEXT(UP_WHY_MEMORY, 81,
+    "No memory to stage the image in.",
+    "Kein Speicher für das Image.")
+UI_TEXT(UP_WHY_FLASH, 81,
+    "An erase, a write or the final check of the flash failed.",
+    "Löschen, Schreiben oder Prüfen des Flash ist fehlgeschlagen.")
+UI_TEXT(UP_WHY_BUSY, 81,
+    "Another image is being received or waits.",
+    "Ein anderes Image wird empfangen oder wartet.")
+UI_TEXT(UP_WHY_QUIET, 81,
+    "The control task did not stand still within 1500ms.",
+    "Die Steuerung stand nicht innerhalb von 1500ms still.")
+UI_TEXT(UP_WHY_RADIO, 81,
+    "Wi-Fi did not switch off within 20s.",
+    "WLAN ging nicht innerhalb von 20s aus.")
+UI_TEXT(UP_WHY_GATE, 81,
+    "The bench did not allow a flash write: ARMED, an output on, a run or an update.",
+    "Prüfstand nicht bereit zum Flashen: ARMED, Ausgang an, Lauf oder Update.")
+UI_TEXT(UP_WHY_GONE, 81,
+    "No staged image to install.",
+    "Kein bereitgestelltes Image zum Installieren.")
+UI_TEXT(UP_WHY_OTHER, 81,
+    "Reason not known.",
+    "Grund unbekannt.")
 UI_TEXT(UP_CLOSE, 0,
     "CLOSE",
     "SCHLIESSEN")
+/* The release signature of the image (fw_sig.h): on the question on
+ * WI-FI, on PANEL UPDATE while it writes, and on PANEL UPDATE's second
+ * hold in a build that enforces it (RCBENCH_SIGN_ENFORCE). */
+UI_TEXT(UPS_SIGNED, 0,
+    "SIGNED BY THE RCBENCH RELEASE KEY",
+    "VOM RCBENCH-RELEASE-SCHLÜSSEL SIGNIERT")
+UI_TEXT(UPS_HEAD, 0,
+    "NOT SIGNED BY THE RCBENCH RELEASE KEY",
+    "NICHT VOM RCBENCH-RELEASE-SCHLÜSSEL SIGNIERT")
+UI_TEXT(UPS_NONE, 0,
+    "The image comes with no signature.",
+    "Das Image hat keine Signatur.")
+UI_TEXT(UPS_BAD, 0,
+    "The signature does not match.",
+    "Die Signatur passt nicht.")
+UI_TEXT(UPS_NOTE_1, 0,
+    "Install only an image you built yourself or trust.",
+    "Installiere nur ein selbst gebautes oder vertrautes Image.")
+UI_TEXT(UPS_TITLE, 0,
+    "PANEL FIRMWARE %s",
+    "PANEL-FIRMWARE %s")
+UI_TEXT(UPS_BYTES, 0,
+    "%lu bytes, checked",
+    "%lu Bytes, geprüft")
+UI_TEXT(UPS_NOTE_2, 0,
+    "Nothing is written until the hold below completes.",
+    "Geschrieben wird erst, wenn das Halten unten fertig ist.")
+UI_TEXT(UPS_HOLD, 0,
+    "HOLD 2s: INSTALL ANYWAY",
+    "2s HALTEN: TROTZDEM INSTALLIEREN")
 
 /* ------------------------------------- UPDATES, the reminder, the download */
 UI_TEXT(UPD_CHECK, 0,
@@ -8877,8 +9184,8 @@ UI_TEXT(UPD_CU_INSTALL, 0,
  * did not name or an image not carried, the hold and the update's share
  * sent.  updates-c6 and updates-c6-* measure each. */
 UI_TEXT(UPD_C6_LINE, 0,
-    "C6 radio: %s. Included: %s.",
-    "C6-Funk: %s. Auf diesem Panel: %s.")
+    "C6 radio: %s. Release: %s.",
+    "C6-Funk: %s. Release: %s.")
 UI_TEXT(UPD_C6_NOT_REPORTED, 0,
     "not reported",
     "nicht gemeldet")
@@ -8889,19 +9196,19 @@ UI_TEXT(UPD_C6_HOLD, 0,
     "HOLD 2s TO UPDATE THE C6 RADIO",
     "2s HALTEN ZUM C6-FUNK-UPDATE")
 UI_TEXT(UPD_C6_REINSTALL, 0,
-    "HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE",
-    "2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN")
+    "HOLD 2s TO REINSTALL THE C6 RADIO",
+    "2s HALTEN: C6-FUNK NEU INSTALLIEREN")
 UI_TEXT(UPD_C6_PROGRESS, 0,
     "C6 UPDATE %u%%",
     "C6-UPDATE %u%%")
 /* The band's line for a tap on the C6 RADIO row's grey hold: why it is
  * grey (upd_c6_reason()). */
 UI_TEXT(C6_WHY_NO_IMAGE, 94,
-    "This panel includes no C6 radio firmware.",
-    "Dieses Panel enthält keine C6-Funk-Firmware.")
+    "This release has no C6 radio firmware.",
+    "Dieses Release enthält keine C6-Funk-Firmware.")
 UI_TEXT(C6_WHY_BAD_IMAGE, 94,
-    "The included C6 radio firmware failed its check.",
-    "Die enthaltene C6-Funk-Firmware hat die Prüfung nicht bestanden.")
+    "The C6 radio firmware of this release failed its check.",
+    "Die C6-Funk-Firmware dieses Release hat die Prüfung nicht bestanden.")
 UI_TEXT(C6_WHY_UPDATING, 94,
     "The C6 radio update is running.",
     "Das C6-Funk-Update läuft.")
@@ -8941,6 +9248,9 @@ UI_TEXT(C6_WHY_PROG, 94,
 UI_TEXT(C6_WHY_ENDING, 94,
     "The C6 update waits for the C6 radio's last answer.",
     "Das C6-Update wartet auf die letzte Antwort des C6-Funks.")
+UI_TEXT(C6_WHY_RESTART, 94,
+    "C6 radio updated. The panel restarts once SAFE with all outputs off.",
+    "C6-Funk aktualisiert. Neustart, sobald SAFE und alle Ausgänge aus sind.")
 /* SETUP > UPDATES' DIAL FIRMWARE row (upd_dev.h): the M5Stack Dial's
  * version, the image this panel carries, and the 2s hold that sends it over
  * Bluetooth LE (devupd.h). */
@@ -8948,8 +9258,8 @@ UI_TEXT(UPD_DIAL_HEAD, 0,
     "DIAL FIRMWARE",
     "DIAL-FIRMWARE")
 UI_TEXT(UPD_DIAL_LINE, 0,
-    "Dial: %s. Included: %s.",
-    "Dial: %s. Im Panel: %s.")
+    "Dial: %s. Release: %s.",
+    "Dial: %s. Release: %s.")
 UI_TEXT(UPD_DEV_NOT_LINKED, 0,
     "not connected",
     "nicht verbunden")
@@ -8969,14 +9279,20 @@ UI_TEXT(UPD_DIAL_PROGRESS, 0,
     "DIAL UPDATE %u%%",
     "DIAL-UPDATE %u%%")
 UI_TEXT(UPD_NODE_LINE, 0,
-    "Node: %s. Included: %s.",
-    "Knoten: %s. Im Panel: %s.")
+    "Node: %s. Release: %s.",
+    "Knoten: %s. Release: %s.")
+UI_TEXT(UPD_DNODE_LINE, 0,
+    "Display node: %s. Release: %s.",
+    "Anzeigeknoten: %s. Release: %s.")
 UI_TEXT(UPD_NODE_PRESS, 0,
     "HOLD BOOT 1s ON THE NODE: %us",
     "BOOT AM KNOTEN 1s HALTEN: %us")
 UI_TEXT(UPD_PNODE_HEAD, 0,
     "POWER NODE FIRMWARE",
     "LEISTUNGSKNOTEN-FIRMWARE")
+UI_TEXT(UPD_DNODE_HEAD, 0,
+    "DISPLAY NODE FIRMWARE",
+    "ANZEIGEKNOTEN-FIRMWARE")
 UI_TEXT(UPD_PNODE_HOLD, 0,
     "HOLD 2s TO UPDATE THE POWER NODE",
     "2s HALTEN ZUM LEISTUNGSKNOTEN-UPDATE")
@@ -9016,8 +9332,8 @@ UI_TEXT(UPD_SINGLE_HEAD, 0,
     "Single updates and reinstalls. The steps on UPDATES are the normal way.",
     "Einzelne Updates und Neuinstallationen. Der normale Weg sind die Schritte auf UPDATES.")
 UI_TEXT(UPD_SINGLE_NOTE, 0,
-    "Each hold updates one part on its own. A reinstall writes the included firmware again to a C6 or a device that already runs it.",
-    "Jedes Halten aktualisiert ein Teil für sich. Neu installieren schreibt die enthaltene Firmware erneut auf einen C6 oder ein Gerät, das sie schon hat.")
+    "Each hold updates one part on its own. A reinstall writes this release's image, downloaded or from the SD card, again to a C6 or a device that already runs it.",
+    "Jedes Halten aktualisiert ein Teil für sich. Neu installieren schreibt das Image dieses Release, geladen oder von der SD-Karte, erneut auf einen C6 oder ein Gerät, das es schon hat.")
 /* SINGLE UPDATES' WIRELESS DEVICES entry and the page it opens (upd_dev.c). */
 UI_TEXT(UPD_DEVS_HEAD, 0,
     "WIRELESS DEVICES",
@@ -9039,14 +9355,14 @@ UI_TEXT(UPD_DEVS_NOTE, 0,
     "Ein Gerät schreibt nichts, bevor das Update am Gerät selbst innerhalb von 30s angenommen ist: ein Druck auf die Taste am Dial oder BOOT am Knoten 1s gehalten. ARMED ist gesperrt, solange ein Update läuft.")
 /* The band's line for a tap on a device row's grey hold (upd_dev_reason()). */
 UI_TEXT(DEV_WHY_NO_IMAGE, 94,
-    "This panel includes no firmware for this device.",
-    "Dieses Panel enthält keine Firmware für dieses Gerät.")
+    "This release has no firmware for this device.",
+    "Dieses Release enthält keine Firmware für dieses Gerät.")
 UI_TEXT(DEV_WHY_BAD_IMAGE, 94,
-    "The included firmware for this device failed its check.",
-    "Die enthaltene Firmware für dieses Gerät hat die Prüfung nicht bestanden.")
+    "The firmware of this release for this device failed its check.",
+    "Die Firmware dieses Release für dieses Gerät hat die Prüfung nicht bestanden.")
 UI_TEXT(DEV_WHY_CHECKING, 94,
-    "The included firmware for this device is being checked.",
-    "Die enthaltene Firmware für dieses Gerät wird geprüft.")
+    "The firmware of this release for this device is being checked.",
+    "Die Firmware dieses Release für dieses Gerät wird geprüft.")
 UI_TEXT(DEV_WHY_NOT_LINKED, 94,
     "Connect the device on WIRELESS first.",
     "Verbinde das Gerät zuerst auf WIRELESS.")
@@ -9081,6 +9397,9 @@ UI_TEXT(UPD_WIZ_N_DIAL, 0,
 UI_TEXT(UPD_WIZ_N_PNODE, 0,
     "POWER NODE",
     "LEISTUNGSKNOTEN")
+UI_TEXT(UPD_WIZ_N_DNODE, 0,
+    "DISPLAY NODE",
+    "ANZEIGEKNOTEN")
 UI_TEXT(UPD_WIZ_N_BAL, 0,
     "BALANCE NODE",
     "AUSWUCHTKNOTEN")
@@ -9138,6 +9457,9 @@ UI_TEXT(UPD_WIZ_T_NOT_BOUND, 0,
 UI_TEXT(UPD_WIZ_T_OFF, 0,
     "OFF",
     "AUS")
+UI_TEXT(UPD_WIZ_T_NO_BLE, 0,
+    "NO BLUETOOTH",
+    "KEIN BLUETOOTH")
 UI_TEXT(UPD_WIZ_HEAD, 0,
     "STEP %u OF %u: %s",
     "SCHRITT %u VON %u: %s")
@@ -9155,6 +9477,83 @@ UI_TEXT(UPD_WIZ_END_NO_CHECK, 0,
 UI_TEXT(UPD_WIZ_DO_PANEL, 0,
     "The panel restarts into %s. The steps for the IOmcu and the devices follow after the restart.",
     "Das Panel startet mit %s neu. Die Schritte für IOmcu und Geräte folgen nach dem Neustart.")
+/* UPDATES' C6 RADIO and device steps: where the hold takes the image from
+ * (upd_fetch.c, devimg.h).  The control while the image is on its way,
+ * the hold that reads the SD card, the card's line that names the file,
+ * a failed attempt's line with its code, and the reasons. */
+UI_TEXT(UPD_FETCH_HOLD_CARD, 44,
+    "HOLD 2s TO UPDATE FROM THE SD CARD",
+    "2s HALTEN: UPDATE VON DER SD-KARTE")
+UI_TEXT(UPD_FETCH_NET, 44,
+    "DOWNLOADING %u%%",
+    "DOWNLOAD %u%%")
+UI_TEXT(UPD_FETCH_CHECK, 44,
+    "CHECKING THE FILE",
+    "DATEI WIRD GEPRÜFT")
+UI_TEXT(UPD_FETCH_CARD, 44,
+    "READING THE SD CARD",
+    "SD-KARTE WIRD GELESEN")
+UI_TEXT(UPD_FETCH_FROM_NET, 123,
+    "The hold downloads %s from GitHub first.",
+    "Das Halten lädt zuerst %s von GitHub.")
+UI_TEXT(UPD_FETCH_FROM_CARD, 123,
+    "The hold reads %s from the SD card.",
+    "Das Halten liest %s von der SD-Karte.")
+UI_TEXT(UPD_FETCH_IN_RAM, 123,
+    "%s is downloaded and checked.",
+    "%s ist geladen und geprüft.")
+/* An image in memory without a valid release signature (fw_sig.h), in a
+ * build that warns: the card's line in the warning colour with UPS_NONE or
+ * UPS_BAD as the reason, and the band once it arrives. */
+UI_TEXT(UPD_FETCH_IN_RAM_NOSIG, 123,
+    "%s: not signed by the rcbench release key. %s",
+    "%s: nicht vom rcbench-Release-Schlüssel signiert. %s")
+UI_TEXT(UPD_FETCH_NOSIG_NOTE, 94,
+    "%s is not signed by the rcbench release key.",
+    "%s ist nicht vom rcbench-Release-Schlüssel signiert.")
+UI_TEXT(UPD_FETCH_FAIL_NET, 123,
+    "Download failed (%s): %s",
+    "Download fehlgeschlagen (%s): %s")
+UI_TEXT(UPD_FETCH_FAIL_CARD, 123,
+    "SD card failed (%s): %s",
+    "SD-Karte fehlgeschlagen (%s): %s")
+UI_TEXT(UPD_FETCH_FAIL_CHECK, 123,
+    "Check failed (%s): %s",
+    "Prüfung fehlgeschlagen (%s): %s")
+UI_TEXT(UPD_FETCH_NO_CARD, 81,
+    "No SD card.",
+    "Keine SD-Karte.")
+UI_TEXT(UPD_FETCH_NO_FILE, 81,
+    "%s is not on the SD card.",
+    "%s fehlt auf der SD-Karte.")
+UI_TEXT(UPD_FETCH_READ, 81,
+    "The SD card could not be read.",
+    "Die SD-Karte ließ sich nicht lesen.")
+UI_TEXT(UPD_FETCH_SIZE, 81,
+    "The file is empty or larger than the device's slot.",
+    "Die Datei ist leer oder größer als der Platz im Gerät.")
+UI_TEXT(UPD_FETCH_MEMORY, 81,
+    "No memory for the file.",
+    "Kein Speicher für die Datei.")
+UI_TEXT(UPD_FETCH_SUMS, 81,
+    "SHA256SUMS on the SD card is out of form.",
+    "SHA256SUMS auf der SD-Karte ist fehlerhaft.")
+UI_TEXT(UPD_FETCH_ROLE, 81,
+    "The file is the firmware of another device.",
+    "Die Datei ist die Firmware eines anderen Geräts.")
+UI_TEXT(UPD_FETCH_VERSION, 81,
+    "The file is version %s; this release has %s.",
+    "Die Datei hat Version %s, dieses Release %s.")
+UI_TEXT(UPD_FETCH_NOT_FW, 81,
+    "The file is no firmware for this device.",
+    "Die Datei ist keine Firmware für dieses Gerät.")
+UI_TEXT(UPD_FETCH_NOSIG, 81,
+    "The file is not signed by the rcbench release key.",
+    "Die Datei ist nicht vom rcbench-Release-Schlüssel signiert.")
+/* The version a C6 or device step installs: the release's file. */
+UI_TEXT(UPD_WIZ_FOR_PANEL, 41,
+    "For this panel: %s",
+    "Für dieses Panel: %s")
 UI_TEXT(UPD_WIZ_DO_C6, 0,
     "The panel restarts after this step.",
     "Nach diesem Schritt startet das Panel neu.")
@@ -10304,7 +10703,7 @@ UI_SETTING_LABEL(SET_LOG_USER,
     "Testaufzeichnungen")
 UI_SETTING_HELP(SET_LOG_USER,
     "AUTOMATIC TEST, LIMIT RUN, RUDDER AUTO",
-    "AUTOMATISCHER TEST, ENDLAGENLAUF, RUDER AUTO")
+    "AUTOMATISCHER TEST, LIMIT RUN, RUDER AUTO")
 UI_SETTING_LABEL(SET_WEB_WRITES,
     "Browser writes",
     "Schreiben per Browser")
@@ -10671,7 +11070,7 @@ UI_SERVO_TEXT(SERVO_STR_START_TEST_RUNS,
     "AUTOMATISCHER TEST LÄUFT")
 UI_SERVO_TEXT(SERVO_STR_START_LIMIT_RUNS,
     "LIMIT RUN IS RUNNING",
-    "ENDLAGENLAUF LÄUFT")
+    "LIMIT RUN LÄUFT")
 UI_SERVO_TEXT(SERVO_STR_START_PROG_5V,
     "PROG 5V OFF: START SWITCHES IT ON",
     "PROG 5V AUS: START SCHALTET ES EIN")
@@ -11553,6 +11952,38 @@ UI_WEB_TEXT(P_FW_NOTE,
     "hoch. Das Panel prüft sie und fragt "
     "nach einer Bestätigung. Halte INSTALLIEREN "
     "am Panel 2s, um sie zu installieren.")
+UI_WEB_TEXT(P_SIG_NOTE,
+    "Choose its signature rcbench-panel-p4-vX.Y.Z.bin.sig with it. "
+    "An image without a valid signature of the rcbench release key "
+    "installs with a warning on the panel.",
+    "Wähle dazu ihre Signatur rcbench-panel-p4-vX.Y.Z.bin.sig. "
+    "Ein Image ohne gültige Signatur des rcbench-Release-Schlüssels "
+    "wird mit einer Warnung am Panel installiert.")
+UI_WEB_TEXT(P_SIG_NOTE_ACK,
+    "Choose its signature rcbench-panel-p4-vX.Y.Z.bin.sig with it. "
+    "An image without a valid signature of the rcbench release key "
+    "needs a second hold of 2s on the panel.",
+    "Wähle dazu ihre Signatur rcbench-panel-p4-vX.Y.Z.bin.sig. "
+    "Ein Image ohne gültige Signatur des rcbench-Release-Schlüssels "
+    "braucht am Panel ein zweites Halten von 2s.")
+UI_WEB_TEXT(P_IMAGE,
+    "Firmware (.bin) ",
+    "Firmware (.bin) ")
+UI_WEB_TEXT(P_SIGNATURE,
+    "Signature (.sig, optional) ",
+    "Signatur (.sig, optional) ")
+UI_WEB_TEXT(P_SIG_SIZE,
+    "The signature file is not 8 to 72 bytes long.",
+    "Die Signaturdatei ist nicht 8 bis 72 Bytes lang.")
+UI_WEB_TEXT(P_UP_SIGNED,
+    " Signed by the rcbench release key.",
+    " Vom rcbench-Release-Schlüssel signiert.")
+UI_WEB_TEXT(P_UP_UNSIGNED,
+    " Not signed by the rcbench release key: no signature came with it.",
+    " Nicht vom rcbench-Release-Schlüssel signiert: keine Signatur dabei.")
+UI_WEB_TEXT(P_UP_BADSIG,
+    " Not signed by the rcbench release key: the signature does not match.",
+    " Nicht vom rcbench-Release-Schlüssel signiert: die Signatur passt nicht.")
 UI_WEB_TEXT(P_UPLOAD,
     "Upload",
     "Hochladen")
@@ -12549,8 +12980,8 @@ UI_TEXT(RUD_SRC_NO_MAGNET, 36,
     "ANGLE: %s SEES NO MAGNET",
     "WINKEL: %s SIEHT KEINEN MAGNETEN")
 UI_TEXT(RUD_SRC_STALE, 36,
-    "ANGLE: %s NOT ANSWERING",
-    "WINKEL: %s ANTWORTET NICHT")
+    "ANGLE: %s NO READING",
+    "WINKEL: %s KEIN MESSWERT")
 UI_TEXT(RUD_SRC_LIVE, 0,
     "ANGLE: %s",
     "WINKEL: %s")
@@ -12777,7 +13208,7 @@ UI_TEXT(IMU_ERR_SCAN, 53,
  * its state words (25 cells of 8 x 16), the scan's and the bind's rows. */
 UI_TEXT(SET_HUB_WIRELESS, 0,
     "IMU, DIAL, POWER, BALANCE NODES",
-    "IMU, DIAL, LEISTUNG, AUSWUCHTEN")
+    "IMU, DIAL, SENSORKNOTEN")
 UI_SETTING_LABEL(SET_DIAL_EN,
     "Dial",
     "Dial")
@@ -12836,14 +13267,14 @@ UI_TEXT(DIAL_ROW_SCAN, 43,
     "Scan for Dial",
     "Dial suchen")
 UI_TEXT(DIAL_ROW_SCAN_HELP, 43,
-    "Lists the Dials in range for 10s",
-    "Listet 10s lang Dials in Reichweite")
+    "Opens SEARCH and scans 10s for Dials",
+    "Öffnet SEARCH, sucht 10s nach Dials")
 UI_TEXT(DIAL_ROW_BIND, 43,
     "Bound Dial",
     "Gebundenes Dial")
 UI_TEXT(DIAL_ROW_BIND_HELP, 43,
-    "A tap lists the Dials the last scan found",
-    "Tippen listet die Dials der letzten Suche")
+    "Opens SEARCH on the last scan's Dials",
+    "Öffnet SEARCH mit den Dials der Suche")
 UI_TEXT(DIAL_SCAN_GO, 18,
     "SCAN",
     "SUCHEN")
@@ -12873,24 +13304,41 @@ UI_TEXT(DIAL_SCAN_ARMED, 94,
 UI_TEXT(DIAL_SCAN_OFF, 94,
     "BLUETOOTH IS NOT READY: NO DIAL SCAN",
     "BLUETOOTH NICHT BEREIT: KEINE DIAL-SUCHE")
-/* BOUND DIAL tapped with no list to pick from, and a bind the controller
- * refused: a scan runs, or the list changed under the pick. */
-UI_TEXT(DIAL_BIND_EMPTY, 94,
-    "NO DIAL LISTED: TAP SCAN FOR DIAL FIRST",
-    "KEIN DIAL GELISTET: ERST AUF DIAL SUCHEN TIPPEN")
+/* A bind refused: a scan runs, or the list changed under the pick. */
 UI_TEXT(DIAL_BIND_SCANNING, 94,
     "A SCAN IS RUNNING: PICK THE DIAL WHEN IT ENDS",
     "SUCHE LÄUFT: DAS DIAL NACH DEM ENDE WÄHLEN")
-/* A found list's last row, on SCAN FOR DIAL, SCAN FOR NODE and the BOUND
- * rows: a new scan. */
-UI_TEXT(WL_SCAN_AGAIN, 40,
+/* SEARCH (wl_search.h), the screen SCAN FOR DIAL, SCAN FOR NODE and the
+ * BOUND rows open: SCAN AGAIN, a new scan; the scan's state over the
+ * list; BOUND over the bound device; the bind question and its BIND. */
+UI_TEXT(WL_SCAN_AGAIN, 0,
     "SCAN AGAIN",
     "AKTUALISIEREN")
-/* BOUND NODE tapped with no list to pick from, on POWER NODE and BALANCE
- * NODE. */
-UI_TEXT(NODE_BIND_EMPTY, 94,
-    "NO NODE LISTED: TAP SCAN FOR NODE FIRST",
-    "KEIN KNOTEN GELISTET: ERST AUF KNOTEN SUCHEN TIPPEN")
+UI_TEXT(WLS_SCANNING, 0,
+    "SCANNING: %us LEFT",
+    "SUCHE LÄUFT: NOCH %us")
+UI_TEXT(WLS_FOUND, 0,
+    "FOUND %u: TAP ONE TO BIND IT",
+    "%u GEFUNDEN: ZUM BINDEN EINES ANTIPPEN")
+UI_TEXT(WLS_NO_SCAN, 53,
+    "NO SCAN YET: TAP SCAN AGAIN",
+    "NOCH KEINE SUCHE: AKTUALISIEREN ANTIPPEN")
+UI_TEXT(WLS_BOUND, 0,
+    "BOUND",
+    "GEBUNDEN")
+UI_TEXT(WLS_ASK_TITLE, 0,
+    "BIND %s?",
+    "%s BINDEN?")
+UI_TEXT(WLS_ASK_WAS, 0,
+    "IN PLACE OF %s",
+    "ANSTELLE VON %s")
+UI_TEXT(WLS_ASK_KEEP, 0,
+    "SETUP KEEPS THE BIND AND ASKS FOR A SAVE",
+    "SETUP BEHÄLT DIE BINDUNG UND FORDERT SPEICHERN AN")
+UI_TEXT(WLS_BIND, 0,
+    "BIND",
+    "BINDEN")
+/* A node's bind refused while a scan runs. */
 UI_TEXT(NODE_BIND_SCANNING, 94,
     "A SCAN IS RUNNING: PICK THE NODE WHEN IT ENDS",
     "SUCHE LÄUFT: DEN KNOTEN NACH DEM ENDE WÄHLEN")
@@ -12964,14 +13412,14 @@ UI_TEXT(PNODE_ROW_SCAN, 43,
     "Scan for node",
     "Knoten suchen")
 UI_TEXT(PNODE_ROW_SCAN_HELP, 43,
-    "Lists the power nodes in range for 10s",
-    "Listet 10s lang Knoten in Reichweite")
+    "Opens SEARCH, scans 10s for power nodes",
+    "Öffnet SEARCH, sucht 10s nach Knoten")
 UI_TEXT(PNODE_ROW_BIND, 43,
     "Bound node",
     "Gebundener Knoten")
 UI_TEXT(PNODE_ROW_BIND_HELP, 43,
-    "A tap lists the nodes the last scan found",
-    "Tippen listet die Knoten der letzten Suche")
+    "Opens SEARCH on the last scan's nodes",
+    "Öffnet SEARCH mit den Knoten der Suche")
 UI_TEXT(PNODE_ROW_BAT, 43,
     "Node battery",
     "Knotenakku")
@@ -13052,14 +13500,14 @@ UI_TEXT(BNODE_ROW_SCAN, 43,
     "Scan for node",
     "Knoten suchen")
 UI_TEXT(BNODE_ROW_SCAN_HELP, 43,
-    "Lists the balance nodes in range for 10s",
-    "Listet 10s lang Knoten in Reichweite")
+    "Opens SEARCH, scans 10s for balance nodes",
+    "Öffnet SEARCH, sucht 10s nach Knoten")
 UI_TEXT(BNODE_ROW_BIND, 43,
     "Bound node",
     "Gebundener Knoten")
 UI_TEXT(BNODE_ROW_BIND_HELP, 43,
-    "A tap lists the nodes the last scan found",
-    "Tippen listet die Knoten der letzten Suche")
+    "Opens SEARCH on the last scan's nodes",
+    "Öffnet SEARCH mit den Knoten der Suche")
 UI_TEXT(BNODE_ROW_BAT, 43,
     "Node battery",
     "Knotenakku")

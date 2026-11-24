@@ -202,6 +202,11 @@ const char *upd_wiz_name(unsigned i)
         TX_UPD_WIZ_N_PANEL, TX_UPD_WIZ_N_IOMCU, TX_UPD_WIZ_N_C6,
         TX_UPD_WIZ_N_DIAL,  TX_UPD_WIZ_N_PNODE, TX_UPD_WIZ_N_BAL,
     };
+    /* The power node's step names the display node while its row sends
+     * the display node's image. */
+    if (i == UPD_WIZ_PNODE && upd_dev_view(UPD_DEV_PNODE)->display) {
+        return TR(UPD_WIZ_N_DNODE);
+    }
     return ui_tr(k_name[i < UPD_WIZ_STEPS ? i : 0u]);
 }
 
@@ -231,6 +236,7 @@ static const char *tag_text(upd_wiz_tag_t t)
         [UPD_WIZ_TAG_NOT_CONNECTED] = TX_UPD_WIZ_T_NOT_CONNECTED,
         [UPD_WIZ_TAG_NOT_BOUND]     = TX_UPD_WIZ_T_NOT_BOUND,
         [UPD_WIZ_TAG_OFF]           = TX_UPD_WIZ_T_OFF,
+        [UPD_WIZ_TAG_NO_BLE]        = TX_UPD_WIZ_T_NO_BLE,
     };
     const size_t n = sizeof(k_tag) / sizeof(k_tag[0]);
     return ui_tr(k_tag[(size_t)t < n ? (size_t)t : 0u]);

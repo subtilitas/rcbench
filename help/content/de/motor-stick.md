@@ -58,7 +58,7 @@ Die rechte Spalte enthält ÄNDERN, den angezeigten Bereich und die Blättertast
 
 Die Fußleiste lautet `[ESC STICK] [START n] [OPTIONEN]`; während eines Laufs steht in der Mitte ABBRECHEN, danach OK. Ein Hinweis über der Fußleiste sagt, warum START nicht starten kann, oder dass das Profil nicht geprüft ist.
 
-OPTIONEN öffnet die Liste mit den Netzteileinstellungen und den Pieptonzeiten. Es nimmt einen Druck bei SAFE und ohne laufenden Lauf an; scharf schalten unter der offenen Liste schließt sie.
+OPTIONEN öffnet die Liste mit den Netzteileinstellungen und den Pieptonzeiten. Es nimmt einen Druck bei SAFE und ohne laufenden Lauf an; ein Schalten auf ARMED unter der offenen Liste schließt sie.
 
 ![Die Optionsliste](view:motor-stick-timing)
 

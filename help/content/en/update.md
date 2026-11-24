@@ -16,6 +16,16 @@ The hold first switches off the radio. The panel then stops polling and withhold
 
 How long the erase and the write take is not measured.
 
+## The release signature
+
+![Writing an image without a signature](view:panel-update-unsigned)
+
+The last line says what the release key says about the image: `SIGNED BY THE RCBENCH RELEASE KEY`, or `NOT SIGNED BY THE RCBENCH RELEASE KEY.` with the reason, `The image comes with no signature.` or `The signature does not match.` An image without a valid signature installs with the single 2s hold and this warning, until the stable release that enforces the signature.
+
+![A build that enforces the signature](view:panel-update-anyway)
+
+A build with `RCBENCH_SIGN_ENFORCE=1` writes nothing after the first hold. It shows the reason and asks for a second 2s hold, `HOLD 2s: INSTALL ANYWAY`. CANCEL, STOP, ARMED and leaving the screen drop the image.
+
 ## Written and checked
 
 ![Written and checked: the panel restarts](view:panel-update-done)
@@ -32,7 +42,7 @@ A fault, watchdog reset, restart or power cut before the build is kept restores 
 
 ![The write failed](view:panel-update-failed)
 
-A failed write leaves the startup selection unchanged, so the existing firmware continues to run. After an upload, CLOSE returns to the page that opened [Wi-Fi](wifi.md): [SETUP](setup.md), [LOGS](logs.md) or [Updates](updates.md). After a download, it returns to [Updates](updates.md) or the menu.
+A failed write leaves the startup selection unchanged, so the existing firmware continues to run. The line under `Writing failed.` names the reason, as the console does, for example `Wi-Fi did not switch off within 20s.` or `An erase, a write or the final check of the flash failed.` After an upload, CLOSE returns to the page that opened [Wi-Fi](wifi.md): [SETUP](setup.md), [LOGS](logs.md) or [Updates](updates.md). After a download, it returns to [Updates](updates.md) or the menu.
 
 ## Current limitations
 

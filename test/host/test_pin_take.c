@@ -145,7 +145,7 @@ static void panel_reads(const outbind_t *b, bind_read_t state)
 {
     static bind_reading_t r;
     if (state == BIND_READ_OK) {
-        uint16_t slots[LINK_OS_COUNT], cc[LINK_CC_COUNT];
+        uint16_t slots[LINK_OS_ALL] = { 0 }, cc[LINK_CC_ALL] = { 0 };
         (void)outbind_to_slots(b, slots);
         outbind_to_chan_cfg(b, cc, 1000u, 2000u);
         (void)bind_link_classify(&r, b->board, slots, cc);

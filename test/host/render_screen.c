@@ -39,6 +39,7 @@
 #include "render_files.h"
 #include "render_help.h"
 #include "render_imu.h"
+#include "render_sbk.h"
 #include "render_outputs.h"
 #include "render_rudder.h"
 #include "render_upd_wiz.h"
@@ -2253,6 +2254,7 @@ static ui_screen_id_t id_of(const char *name)
         { "upd-remind", SCREEN_UPD_REMIND },
         { "layout",     SCREEN_LAYOUT },
         { "imu",        SCREEN_IMU },
+        { "set-load",   SCREEN_SET_LOAD },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         if (strcmp(name, k[i].name) == 0) {
@@ -2446,15 +2448,20 @@ static void pose_wifi(const char *view)
         v.up = WIFI_UP_STAGED;
         strcpy(v.new_ver, EX_NEWER);
         v.offer = WIFI_OFFER_NEWER;
+        /* Signed, but the older image came with no signature and the
+         * rebuild with one that does not match. */
+        v.sig = FW_SIG_OK;
         if (strcmp(view, "wifi-older") == 0) {
             strcpy(v.new_ver, EX_OLDER);
             v.offer = WIFI_OFFER_OLDER;
             v.gate = WIFI_GATE_DRAWING;
+            v.sig = FW_SIG_NONE;
         } else if (strcmp(view, "wifi-coproc") == 0) {
             v.gate = WIFI_GATE_COPROC;
         } else if (strcmp(view, "wifi-rebuild") == 0) {
             strcpy(v.new_ver, EX_RUNNING);
             v.offer = WIFI_OFFER_REBUILD;
+            v.sig = FW_SIG_BAD;
         } else if (strcmp(view, "wifi-installed") == 0) {
             strcpy(v.new_ver, EX_RUNNING);
             v.offer = WIFI_OFFER_INSTALLED;
@@ -2823,6 +2830,10 @@ static void pose_upd(const char *view)
             bn->row = DEVUPD_ROW_UPDATING;
             bn->phase = DEVUPD_SEND;
             bn->percent = 42u;
+        } else if (strcmp(view, "updates-node-display") == 0) {
+            /* The display node bound as the power node. */
+            pn->row = DEVUPD_ROW_READY;
+            pn->display = true;
         } else if (strcmp(view, "updates-node-progress") == 0) {
             pn->phase = DEVUPD_SEND;
             pn->percent = 42u;
@@ -2852,6 +2863,15 @@ static void pose_update(const char *view)
     u.total = 1843200u;
     u.written = 720896u;
     u.state = UPDATE_WRITING;
+    u.sig = FW_SIG_OK;
+    if (strcmp(view, "panel-update-unsigned") == 0) {
+        u.sig = FW_SIG_NONE;      /* warns, and writes */
+    } else if (strcmp(view, "panel-update-anyway") == 0) {
+        /* A build with RCBENCH_SIGN_ENFORCE: the second hold. */
+        u.written = 0u;
+        u.state = UPDATE_UNSIGNED;
+        u.sig = FW_SIG_BAD;
+    }
     if (strncmp(view, "panel-download", 14) == 0) {
         upd_view_t v;
         memset(&v, 0, sizeof(v));
@@ -2872,6 +2892,8 @@ static void pose_update(const char *view)
     } else if (strcmp(view, "panel-update-failed") == 0) {
         u.written = 262144u;
         u.state = UPDATE_FAILED;
+        snprintf(u.what, sizeof(u.what), "%s",
+                 update_fail_text(FW_ERR_FLASH));
     }
     update_screen_set(&u);
 }
@@ -3575,7 +3597,17 @@ static void pose_motor_tools(ui_screen_id_t id, const char *view)
                 stick_open("Hobbywing", NULL);  /* its FLYFUN models */
             }
         } else if (strcmp(view, "motor-stick") != 0) {
-            stick_open("Hobbywing", "hobbywing-flyfun-8item");
+            /* motor-stick-flydragon-run and -done: the same run on the
+             * Flycolor FlyDragon Lite+ 40A, item 3 changed. */
+            const bool fly = strncmp(view, "motor-stick-flydragon-", 22) == 0;
+            if (fly) {
+                view = strcmp(view + 22, "run") == 0 ? "motor-stick-run"
+                                                     : "motor-stick-done";
+                stick_open_model("Flycolor", "flycolor-flydragon-lite-plus",
+                                 "FlyDragon Lite+ 40A");
+            } else {
+                stick_open("Hobbywing", "hobbywing-flyfun-8item");
+            }
             if (strncmp(view, "motor-stick-timing", 18) == 0) {
                 /* The footer's SETTINGS: the 14 stick settings. */
                 tap(RS_SET_X, UI_BAND_H + RS_RUN_CY);
@@ -3588,6 +3620,8 @@ static void pose_motor_tools(ui_screen_id_t id, const char *view)
                     tap(v.x + v.w / 2, UI_BAND_H + v.y + v.h / 2);
                     kp_type(esc_stick_panel_keypad(), "250");
                 }
+            } else if (fly) {
+                tap(RS_STEP_UP_X, UI_BAND_H + RS_STEP_CY(2));
             } else {
                 /* Cutoff mode to hard, startup mode to soft. */
                 for (int i = 0; i < 2; ++i) {
@@ -3641,7 +3675,8 @@ static void pose_motor_tools(ui_screen_id_t id, const char *view)
                           && run->det.high)
                          || (strcmp(view, "motor-stick-tone") == 0
                              && beep_in))
-                        && run->phase == ESC_STICK_ITEMS && run->groups >= 4u
+                        && run->phase == ESC_STICK_ITEMS
+                        && run->groups >= (fly ? 2u : 4u)
                         && esc_stick_beeps(run) >= 2u) {
                         break;
                     }
@@ -5155,6 +5190,15 @@ int main(int argc, char **argv)
         s_caps = (uint16_t)(LINK_CAP_SERVO_PWM | LINK_CAP_ESC_DRIVE
                             | LINK_CAP_ESC_TELEM | LINK_CAP_PACK_SENSE);
     }
+    if (strcmp(view, "overview-pnode") == 0) {
+        /* The INA228 OFF on SETUP > SENSORS, so no pack sensing from the
+         * IOmcu, and the power node the pack's source: ON, INA228 SOURCE
+         * NODE, a node bound.  MOTOR & ESC without the mark. */
+        s_caps &= (uint16_t)~LINK_CAP_PACK_SENSE;
+        settings_set(SET_PNODE_EN, 1.0f);
+        settings_set(SET_I228_SRC, 1.0f);
+        settings_set_text(SET_TEXT_PNODE_ADDR, "7C:DF:A1:12:34:56 P");
+    }
     st.capabilities = s_caps;
     st.simulated = sim || (id == SCREEN_MOTOR
                            && strcmp(view, "motor-live") != 0
@@ -5234,6 +5278,7 @@ int main(int argc, char **argv)
     pose_shown_setup(id, view);
     pose_shown_tools(id, view);
     render_imu_pose(view);
+    render_sbk_pose(view);
     /* Last: the guide opens over the screen as the poses left it. */
     if (render_help_view(shot_view)) {
         render_help_pose(shot_view);

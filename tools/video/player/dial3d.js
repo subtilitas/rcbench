@@ -263,7 +263,9 @@ export function buildDial(gltf, bases = null, nut = null) {
   ground.position.y -= dial.lift;
   scene.add(dial.root);
   return {
-    scene, cam, ...dial,
+    // A touch on the Dial's face finds its pixels under this name on
+    // every rig that holds a Dial.
+    scene, cam, ...dial, dialPixel: dial.pixel,
     setLid: () => {},
     setServoPort: () => {},
     setServo: () => {},

@@ -63,7 +63,8 @@ passen.
   Bedienung und heißt PAUSIERT; PAUSE, die Bedienung, bleibt Englisch.
 - Die Seitentitel: MOTOR & ESC, SERVO, SUPPLY, RECEIVER, LOGS, SETUP,
   BATTERY, BALANCE, OUTPUTS, SENSORS, SD CARD, WI-FI, FILES, UPDATES, UPDATE,
-  PANEL UPDATE. Die Titel der Busfehler-Seite sind übersetzt: CAN BUS FAULT
+  PANEL UPDATE, und LIVE, SWEEP, TEST und LIMIT RUN von SERVO. Der Lauf selbst
+  heißt im deutschen Fließtext Endlagenlauf. Die Titel der Busfehler-Seite sind übersetzt: CAN BUS FAULT
   heißt CAN-BUS-FEHLER und LINK LOST heißt VERBINDUNG VERLOREN. Eine Kachel, ein Tab des Streifens von LOGS und das Band des
   Bildschirms, den sie öffnet, tragen dasselbe Wort. Ein Hinweis, der eine
   Seite nennt, nennt sie beim Titel: "der Seite SUPPLY".
@@ -340,7 +341,7 @@ Konfliktmarkierungen stehen.
 python3 tools/render_ui.py --fit
 ```
 
-baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 753 Ansichten auf
+baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 776 Ansichten auf
 Englisch und auf Deutsch und schlägt fehl, wenn ein Text in einer der beiden
 Sprachen
 
@@ -399,7 +400,7 @@ ein Wort mit einer Beschriftung der Oberfläche teilen.
 
 ## Eine Sprache hinzufügen
 
-Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 4.069
+Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 4.207
 Einträge mit ID und 115 Optionen, 10 davon mit leerem Englisch.
 
 1. Ergänze die Spalte in jedem Eintrag von `shared/text/include/ui_text.def`

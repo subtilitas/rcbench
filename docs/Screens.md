@@ -201,7 +201,7 @@ dialogs also have no "?".
 | Dock | 480 x 488px, 8px from the panel's left or right edge, y 64 to 552; the page says which side |
 | Live half | the other 528px of the body; the screen draws there and keeps running |
 | Header | the page's title and "page / pages" |
-| Item | its number in a 28px badge, the control's name in the accent colour, then what it does in the 10 x 20px face, 41 characters a row, 3 rows at most |
+| Item | its number in a 28px badge, the control's name in the accent colour, then what it does in the 10 x 20px face, 41 characters a row, 3 rows at most, broken at a space; a row ends before SD CARD, PD MINI, MOTOR & ESC, ESC STICK, LIMIT RUN, RUDDER AUTO, RUDER AUTO or PANEL UPDATE rather than inside it (`ui_help_row_len()`) |
 | Items a page | 5 at most |
 | Web line | `More: subtilitas.github.io/rcbench/help/`, German `Mehr: subtilitas.github.io/rcbench/help/de/` |
 | PREV and NEXT | 124 x 48px, 8px apart, in the band from x 8 to 264, y 6 to 54, in the home tag's place, the same on every page |
@@ -297,6 +297,7 @@ ARMED.
 | UPDATES, OPTIONS | 2 | as a settings list |
 | UPDATES, SINGLE UPDATES | 2 | the IOmcu section, its hold, the WIRELESS DEVICES entry; the heading, the C6 radio's hold, BACK |
 | UPDATES, the wireless devices' page | 1 | the three device rows, CANCEL UPDATE while an update runs, BACK |
+| SEARCH | 2 | the found list; the card, SCAN AGAIN |
 
 ![SETUP's guide at page 1](img/help-setup.png)
 
@@ -496,7 +497,6 @@ showing the folder lists the new file when it next refreshes.
 | Stack of `shot` | lowest 5,116B unused of 7,168B |
 | Runs on a panel | 30 shots in a row: no error, no restart. No FLIP TIMEOUT and no watchdog line. `FM_ERR_BUSY` was not produced in 3 runs with a save and a Wi-Fi page write overlapping: both sides wait and complete |
 | Second contact on a panel | 6 of 6 checks passed: a second contact during a hold takes no picture and its press acts; a contact already down takes no hold; STOP during a hold acts; a hold over the guide with a second contact takes none; the popup waits for all contacts to lift and presses no key; 5 contacts down at once on a list leave no stuck press |
-| Not run on a panel | no card in the slot, pixel equality of the PNG with a rendered frame, a glass contact together with an injector contact |
 
 The save first writes `<name>.PNG.NEW`, then renames it. Canceling the save
 or removing the card leaves no file with the requested name. A power cut
@@ -629,13 +629,13 @@ changes. An arriving alert replaces a visible hint.
 | HOLD 2s TO DOWNLOAD & INSTALL on UPDATES and in the update reminder | `Hold 2s to download and install.` |
 | HOLD 2s TO UPDATE THE IOMCU on UPDATES' step 2 and on SINGLE UPDATES | `Hold 2s to update the IOmcu.` |
 | HOLD 2s TO UPDATE THE C6 RADIO on SINGLE UPDATES | `Hold 2s to update the C6 radio. Wi-Fi stays off until it ends.` |
-| HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE on SINGLE UPDATES | `Hold 2s to reinstall the C6 firmware this panel carries. Wi-Fi stays off until it ends.` |
+| HOLD 2s TO REINSTALL THE C6 RADIO on SINGLE UPDATES | `Hold 2s to reinstall the C6 firmware of this panel's release. Wi-Fi is off while it is sent.` |
 | HOLD 2s TO UPDATE THE DIAL on SINGLE UPDATES | `Hold 2s to update the Dial. Its knob stops until it connects again.` |
-| HOLD 2s TO REINSTALL THE DIAL FIRMWARE on SINGLE UPDATES | `Hold 2s to reinstall the Dial firmware this panel carries.` |
+| HOLD 2s TO REINSTALL THE DIAL FIRMWARE on SINGLE UPDATES | `Hold 2s to reinstall the Dial firmware of this panel's release.` |
 | HOLD 2s TO UPDATE THE POWER NODE on SINGLE UPDATES | `Hold 2s to update the power node. Its readings stop until it connects again.` |
-| HOLD 2s TO REINSTALL THE POWER NODE on SINGLE UPDATES | `Hold 2s to reinstall the power node firmware this panel carries.` |
+| HOLD 2s TO REINSTALL THE POWER NODE on SINGLE UPDATES | `Hold 2s to reinstall the power node firmware of this panel's release.` |
 | HOLD 2s TO UPDATE THE BALANCE NODE on SINGLE UPDATES | `Hold 2s to update the balance node. Its reports stop until it connects again.` |
-| HOLD 2s TO REINSTALL THE BALANCE NODE on SINGLE UPDATES | `Hold 2s to reinstall the balance node firmware this panel carries.` |
+| HOLD 2s TO REINSTALL THE BALANCE NODE on SINGLE UPDATES | `Hold 2s to reinstall the balance node firmware of this panel's release.` |
 | HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS on OUTPUTS | `Hold 2s to clear all pin assignments.` |
 | OVERWRITE on FILES' editor's question | `Hold 2s to overwrite.` |
 | HOLD 2s TO ACKNOWLEDGE on the bus-fault screen | `Hold 2s to acknowledge.` |
@@ -717,7 +717,9 @@ with 8px clearance at each side:
 
 SIMULATED marks a tile when the bench does not report the screen's data
 source: either the IOmcu lacks the capability or the sensor is disabled
-under SETUP > SENSORS. The screen still opens and uses its model.
+under SETUP > SENSORS. For MOTOR & ESC the power node counts as the pack's
+sensor as well (SETUP > WIRELESS, [Nodes](Nodes.md#the-panel)). The
+screen still opens and uses its model.
 
 The mark describes the screen as a whole, not each displayed value.
 RECEIVER and BATTERY carry the mark and show no values. SERVO can appear
@@ -727,13 +729,24 @@ source of its readings.
 
 | Tile | Without the mark when |
 | --- | --- |
-| MOTOR & ESC | the IOmcu drives ESCs and holds an INA228 set-up enabled on SETUP, SENSORS |
+| MOTOR & ESC | the IOmcu drives ESCs, and either holds an INA228 set-up enabled on SETUP, SENSORS or the power node is the pack's source: Power node ON, INA228 source NODE and a node bound |
 | SERVO | the IOmcu drives servo PWM outputs |
 | SUPPLY | the PD mini is enabled in SUPPLY's PD mini settings whatever the IOmcu reports; otherwise the panel runs its own model of a supply |
 | RECEIVER, BATTERY, BALANCE | never in this release: no IOmcu reports these capabilities |
 
 The capability bits come from the IOmcu at bring-up. With no IOmcu
 answering, MOTOR & ESC and SERVO carry the mark too.
+
+Both sources of pack sensing count as configured, whether they answer or
+not. An enabled INA228 that does not answer, or a bound node that is not
+connected, leaves MOTOR & ESC without the mark. SETUP > WIRELESS shows the
+node's link, and an ARM of MOTOR & ESC with INA228 source NODE is refused
+while no node reading came in the last 100ms.
+
+The menu with the IOmcu's INA228 OFF and the power node as the pack's
+source:
+
+![The menu with the power node as the pack's source](img/overview-pnode.png)
 
 The menu in the light theme:
 
@@ -1155,10 +1168,17 @@ TABLE lists four channels, each with its extreme value. A channel with no
 reading shows `--`.
 
 The speed reads up to 65,535rpm, the ceiling of the IOmcu's register. A
-speed above it shows `>65535` on the card and in TABLE. A peak of 65,535rpm
-or more shows `>65535`. The plot draws such a speed at 65,535rpm. rpm/V and
-the Dial show no speed while it is above the ceiling, and the balance node
-gets none.
+speed above it shows `>65535` on the card and in TABLE, and so does a peak
+above it. A peak of exactly 65,535rpm shows 65535. An IOmcu of link
+protocol 4.39 or older (firmware 0.23.15 or older) does not mark its peak:
+a peak above 65,535rpm shows 65535. The plot draws a speed above the
+ceiling at 65,535rpm. rpm/V shows no speed while it is above the ceiling.
+Current limitations: the Dial's LIVE_MOTOR has no bit for a speed above
+the ceiling, so the Dial shows no speed while the speed is above
+65,535rpm. In its no-index mode the balance node takes the bench's speed
+as RPM, 1 to 60,000rpm: while the speed is above 65,535rpm the panel sends
+it 0, which returns the node to the index, and from 60,000 to 65,535rpm it
+sends 60,000.
 
 When the INA228 is enabled under SETUP > SENSORS and answers (BENCH flag
 bit 5), it supplies voltage, current and power. These are the means of the
@@ -3990,7 +4010,7 @@ Below the name are the entry's kind and state:
 
 | State | Meaning |
 |---|---|
-| FIXED | a folder used by the bench: the two log folders, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF`, `BENCH/ESCW/CONF`, `BENCH/BALANCE` and their parent folders, including `BENCH` and `USER`. RENAME and MOVE are unavailable because they would move its contents away from the expected path. NEW can create these folders; DELETE can remove an empty one. Each writer recreates its folder before writing, and readers treat a missing folder as they would on a new card |
+| FIXED | a folder used by the bench: the two log folders, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF`, `BENCH/ESCW/CONF`, `BENCH/BALANCE`, `BENCH/SETUP` and their parent folders, including `BENCH` and `USER`. RENAME and MOVE are unavailable because they would move its contents away from the expected path. NEW can create these folders; DELETE can remove an empty one. Each writer recreates its folder before writing, and readers treat a missing folder as they would on a new card |
 | LOCKED | the programmers' records, `BENCH/KST/CONF/KST.TXT`, `BENCH/HITEC/CONF/HITEC.TXT` and `BENCH/ESCW/CONF/ESCW.TXT`, plus their `KST.NEW`, `HITEC.NEW` and `ESCW.NEW` files while being written. Only INFO is available |
 | WRITING | a file open in the logger. Only INFO is available |
 
@@ -4853,6 +4873,12 @@ ESP32-P4 (chip ID 0x0012), the application's project name `rcbench-panel`, a ver
 form MAJOR.MINOR.PATCH and the appended SHA-256 (secure hash algorithm, 256
 bits). A second upload is refused while an image is waiting. CANCEL on the panel
 discards that image.
+A second file picker takes the image's release signature,
+`rcbench-panel-p4-vX.Y.Z.bin.sig`, 8 to 72 bytes; the page refuses another
+size before a byte is sent (`The signature file is not 8 to 72 bytes
+long.`). The signature is optional. It goes with the image in the same
+request, and the panel's answer ends with what the release key says
+([The release signature](#the-release-signature)).
 The screen shows the bytes received while an upload runs. The upload
 writes no flash: the panel keeps the file in PSRAM (pseudo-static
 random-access memory) until PANEL UPDATE writes it.
@@ -5170,6 +5196,29 @@ that runs already is not offered:
 ![The same version, another build](img/wifi-rebuild.png)
 ![The build that runs](img/wifi-installed.png)
 
+#### The release signature
+
+The question says what the release key says about the image, in one line
+under the versions: `SIGNED BY THE RCBENCH RELEASE KEY` in green, or `NOT
+SIGNED BY THE RCBENCH RELEASE KEY.` in amber with the reason, `The image
+comes with no signature.` or `The signature does not match.` The older
+image above came without its `.sig`; the rebuild came with a signature of
+another key. PANEL UPDATE repeats the line while it writes:
+
+![Writing an image without a signature](img/panel-update-unsigned.png)
+
+The panel verifies an ECDSA (elliptic curve digital signature algorithm)
+P-256 signature over the whole image against the release public key
+compiled into its firmware ([Security policy](../SECURITY.md#release-signatures)).
+Until the stable release that enforces the signature, an image without a
+valid one installs with the single 2s hold and this warning. A build with
+`RCBENCH_SIGN_ENFORCE=1` stops after the hold instead: PANEL UPDATE shows
+the reason and a second 2s hold, `HOLD 2s: INSTALL ANYWAY`. Nothing is
+written before that hold completes; CANCEL, STOP, ARMED and leaving the
+screen drop the image.
+
+![A build that enforces the signature: the second hold](img/panel-update-anyway.png)
+
 INSTALL is a 2s hold (`HOLD 2s TO INSTALL`). The browser cannot start it.
 It needs the bench SAFE, the supply output off, no log run open, no board
 drawing being fetched or kept and no update of the IOmcu running
@@ -5192,7 +5241,11 @@ the panel restarts.
 ![Written and checked](img/panel-update-done.png)
 
 The splash shows the new version, and the band says
-`Panel firmware 0.22.1 installed.`. If writing fails, the installed build remains the startup build. CLOSE
+`Panel firmware 0.22.1 installed.`. If writing fails, the installed build remains the startup build. The
+line under `Writing failed.` names the reason the console line names, in the
+warning colour: for example `Wi-Fi did not switch off within 20s.`, `The
+control task did not stand still within 1500ms.` or `An erase, a write or the
+final check of the flash failed.`. CLOSE
 returns to the menu or, after a GitHub download, to the screen that started
 the download.
 
@@ -6268,8 +6321,8 @@ The DIAL entry's rows ([The M5Stack Dial](Dial.md#the-panel)):
 | Row | Values | Default | What it does |
 | --- | --- | --- | --- |
 | Dial | ON, OFF | OFF | the link to the bound Dial; OFF ends it without an error |
-| Scan for Dial | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | at `FOUND n` a tap opens Bound Dial's list; otherwise a tap scans 10s, and a switch to ARMED stops it; while ARMED it scans nothing and the band reads `NO DIAL SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; while a scan runs it starts none and the band reads `A SCAN IS RUNNING: IT ENDS WITHIN 10s`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO DIAL SCAN` |
-| Bound Dial | the bound Dial's name, else its address, else `NONE` | `NONE` | a tap lists the Dials the last scan found, `DIAL-3A10  -52dBm`, up to 6, the bound one marked, and `SCAN AGAIN` last; a tap on a Dial binds it and asks for a save, `SCAN AGAIN` scans as Scan for Dial does. With no list the band reads `NO DIAL LISTED: TAP SCAN FOR DIAL FIRST`, while a scan runs `A SCAN IS RUNNING: PICK THE DIAL WHEN IT ENDS` |
+| Scan for Dial | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | a tap opens SEARCH ([WIRELESS: SEARCH](#wireless-search)) and scans 10s; a switch to ARMED stops the scan; while ARMED it scans nothing and the band reads `NO DIAL SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; while a scan runs it starts none and the band reads `A SCAN IS RUNNING: IT ENDS WITHIN 10s`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO DIAL SCAN`. SEARCH opens in each case |
+| Bound Dial | the bound Dial's name, else its address, else `NONE` | `NONE` | a tap opens SEARCH on the last scan's list, without a scan |
 | Dial step, throttle | 0.5%, 1%, 2%, 5% | 1% | the throttle a detent moves on MOTOR & ESC |
 | Dial step, servo | 0.5°, 1°, 2°, 5° | 1° | the horn angle a detent moves on SERVO |
 
@@ -6291,8 +6344,8 @@ ESC's voltage, current, power and totals.
 | --- | --- | --- | --- |
 | Power node | ON, OFF | OFF | the link to the bound node; OFF ends it without an error |
 | INA228 source | WIRED, NODE | WIRED | WIRED: the IOmcu's INA228 on SENSORS; NODE: the power node's readings. Shown while the node is off too, so the source can go back to WIRED without switching the node on |
-| Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | at `FOUND n` a tap opens Bound node's list; otherwise a tap scans 10s, and a switch to ARMED stops it; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN`; while a scan runs, `A SCAN IS RUNNING: IT ENDS WITHIN 10s` |
-| Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap lists the power nodes the last scan found, `rcbench-pwr-3456  -58dBm`, up to 6, the bound one marked, and `SCAN AGAIN` last; a tap on a node binds it and asks for a save, `SCAN AGAIN` scans. A balance node is not listed. With no list the band reads `NO NODE LISTED: TAP SCAN FOR NODE FIRST`, while a scan runs `A SCAN IS RUNNING: PICK THE NODE WHEN IT ENDS`; a pick refused because the list changed reads `NODE NOT BOUND: THE LIST CHANGED, PICK IT AGAIN` |
+| Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | a tap opens SEARCH ([WIRELESS: SEARCH](#wireless-search)) and scans 10s for power nodes; a switch to ARMED stops the scan; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN`; while a scan runs, `A SCAN IS RUNNING: IT ENDS WITHIN 10s`. SEARCH opens in each case. A balance node is not listed |
+| Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap opens SEARCH on the last scan's list, without a scan |
 | Node battery | `3.92V`, `LOW 3.41V`, `NO CELL`, `READ FAILED`, `NOT LINKED` | | the cell voltage of the node's last STATUS, sent every 1000ms; `LOW` under 3.5V, `NO CELL` on USB alone |
 
 RESET POWER NODE sets Power node back to OFF and INA228 source to WIRED;
@@ -6333,14 +6386,61 @@ The BALANCE NODE entry's rows ([Balancing](Balance.md#measuring-with-the-balance
 | Row | Values | Default | What it does |
 | --- | --- | --- | --- |
 | Balance node | ON, OFF | OFF | the link to the bound node; OFF ends it, and its loss is no error: the node measures and drives nothing |
-| Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | at `FOUND n` a tap opens Bound node's list; otherwise a tap scans 10s for nodes that advertise the balance role, and a switch to ARMED stops it; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN`; while a scan runs, `A SCAN IS RUNNING: IT ENDS WITHIN 10s` |
-| Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap lists the nodes the last scan found, `rcbench-bal-3456  -58dBm`, up to 6, the bound one marked, and `SCAN AGAIN` last; a tap on a node binds it and asks for a save, `SCAN AGAIN` scans. With no list the band reads `NO NODE LISTED: TAP SCAN FOR NODE FIRST`, while a scan runs `A SCAN IS RUNNING: PICK THE NODE WHEN IT ENDS`; a pick refused because the list changed reads `NODE NOT BOUND: THE LIST CHANGED, PICK IT AGAIN` |
+| Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | a tap opens SEARCH ([WIRELESS: SEARCH](#wireless-search)) and scans 10s for nodes that advertise the balance role; a switch to ARMED stops the scan; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN`; while a scan runs, `A SCAN IS RUNNING: IT ENDS WITHIN 10s`. SEARCH opens in each case |
+| Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap opens SEARCH on the last scan's list, without a scan |
 | Node battery | `3.91V`, `3.40V LOW` (under 3.50V), `NO READING`, `--` | | the node's cell from the STATUS it sends on STREAM beside its reports; `--` before the first on a link |
 | Trial mass | 0.01g to 20.00g in 0.01g steps | 0.50g | the mass taped on for the trial runs of MOTOR & ESC > BALANCE |
 
 RESET BALANCE NODE sets Balance node back to OFF and Trial mass to 0.50g;
 the bound node stays. A node whose INFO names another role or protocol
 reads `ROLE r, PROTOCOL p` and its reports are not taken.
+
+### WIRELESS: SEARCH
+
+![SEARCH on the power node, two nodes found](img/setup-wireless-search.png)
+
+SEARCH finds and binds the Dial, the power node or the balance node.
+SCAN FOR DIAL and SCAN FOR NODE open it and ask for a scan of 10s;
+BOUND DIAL and BOUND NODE open it on the last scan's list without one. A
+scan the row refuses (ARMED, a scan running, Bluetooth not ready) says
+why on the band, and SEARCH opens on the last list. The home
+tag returns to SETUP > WIRELESS on the device's entry.
+
+| Part | Where, body coordinates | What it shows or does |
+| --- | --- | --- |
+| State line | x 16, y 12 | `SCANNING: 7s LEFT` while a scan runs, counted down from 10s; `FOUND n: TAP ONE TO BIND IT`; `NONE FOUND`; `STOPPED BY ARM`; `NO SCAN YET: TAP SCAN AGAIN` |
+| Found list | rows of 640 x 48px at a 52px pitch from x 16, y 44 | the devices the last scan found, strongest first, up to 8: the name, else the address, and the RSSI, `rcbench-pwr-3456  -58dBm`; the bound one lit in the accent colour. The controller empties the list when a scan starts and fills it when the scan ends |
+| Card | x 680, 328px wide, y 12 to 136 | the device's kind, its link state as on the left list, `BOUND` and the bound device's name, else its address, else `NONE` |
+| SCAN AGAIN | 328 x 56px at x 680, y 156 | a new scan of 10s with the rules of SCAN FOR DIAL and SCAN FOR NODE; grey while a scan runs, where a tap reads `A SCAN IS RUNNING: IT ENDS WITHIN 10s` |
+
+![SEARCH's bind question](img/setup-wireless-search-bind.png)
+
+A tap on a found device opens the bind question in place of the list,
+700 x 280px at x 162, y 100: `BIND POWER NODE?` (`BIND DIAL?`,
+`BIND BALANCE NODE?`), the device's name, its address and RSSI, the bound
+device it takes the place of, `SETUP KEEPS THE BIND AND ASKS FOR A SAVE`,
+then CANCEL and BIND, 300 x 56px each. CANCEL and the home tag close it
+and bind nothing. BIND asks the controller to bind the device by its
+place in the list; the question closes and SEARCH stays. The card and
+the lit row follow when the controller has bound it, and the panel keeps
+the address and the name in SETUP and asks for a save.
+
+BIND binds nothing, closes the question and says why on the band:
+
+- while a scan runs: `A SCAN IS RUNNING: PICK THE NODE WHEN IT ENDS`,
+  `A SCAN IS RUNNING: PICK THE DIAL WHEN IT ENDS` for the Dial;
+- when the tapped device is not at its place in the list:
+  `NODE NOT BOUND: THE LIST CHANGED, PICK IT AGAIN`,
+  `DIAL NOT BOUND: THE LIST CHANGED, PICK IT AGAIN` for the Dial.
+
+A tap on a device while a scan runs opens no question and reads the
+scan's text. A bind the controller refuses after BIND, behind a scan
+that started first or a list that changed, reads the same texts.
+
+A change of the device's view, an RSSI, the seconds left or the link
+state, repaints SEARCH. It closes no question and drops no press.
+
+![SEARCH during a scan for the Dial](img/setup-wireless-search-scan.png)
 
 ### SD CARD: which logs are written, and where
 
@@ -6384,13 +6484,205 @@ in force unchanged, and the line right of the title says why:
 | more than 2 folders | `A/B/C` (`A/B` is taken) | `At most 2 folder levels` |
 | a character other than A-Z, 0-9, `_` and `-` | `MY LOGS` | `A-Z, 0-9, _ and - only` |
 | a device name of Windows: CON, PRN, AUX, NUL, COM1 to COM9, LPT1 to LPT9 | `AUX/LOGS` | `Reserved name` |
-| a folder of the bench's own files: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW`, `BENCH/BALANCE` | `BENCH/KST` (`BENCH/KSTX` is taken) | `Reserved for the bench's files` |
+| a folder of the bench's own files: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW`, `BENCH/BALANCE`, `BENCH/SETUP` | `BENCH/KST` (`BENCH/KSTX` is taken) | `Reserved for the bench's files` |
 
 Every folder name accepted by the panel is a FAT (File Allocation Table)
 8.3 short name, identical on every computer. The longest folder is 17 characters,
 `ABCDEFGH/12345678`. If a stored folder name is invalid, for example one saved by another
 firmware version, the panel does not write there: the logs go to the
 default folder of their kind, and LOGS lists that folder.
+
+### SD CARD: the settings backup
+
+The panel keeps its settings in NVS (non-volatile storage) on its own flash.
+A full flash of the panel erases NVS, and the bindings of the Dial, the
+nodes and the IMU with it. The settings backup keeps a copy on the card.
+
+![SD CARD at the end of its list: SAVE SETTINGS written](img/setup-card-backup.png)
+
+| Row | Tap | Value | Takes no tap |
+| --- | --- | --- | --- |
+| Save settings | writes the stored settings as `BENCH/SETUP/SETTINGS.TXT`; each tap replaces it | `WRITING`, `WRITTEN`, `CARD FULL` or `FAILED, CODE n` (the codes below) | `No card`; `Changes not saved: SAVE them first` while SAVE is offered: the file holds what the store holds, not an edit |
+| Load settings | opens BACKUP | none | `Not while ARMED` |
+
+**The files.** All of them are in `BENCH/SETUP`, a FIXED folder of
+[Files](#files):
+
+| File | Written |
+| --- | --- |
+| `SETTINGS.TXT` | by Save settings |
+| `AUTO1.TXT` | at each write of the settings to NVS while a card is in: the newest copy |
+| `AUTO2.TXT`, `AUTO3.TXT` | the copies before it; the next copy removes `AUTO3.TXT` |
+| `AUTO.TMP`, `SETTINGS.TMP` | a file while it is written |
+
+A file is written whole under its `.TMP` name first. Only then do the copies
+move on: `AUTO3.TXT` goes, `AUTO2.TXT` becomes `AUTO3.TXT`, `AUTO1.TXT`
+becomes `AUTO2.TXT`, and the new file becomes `AUTO1.TXT`. A full card or a
+failed write leaves the copies as they were. The writes run on the logger
+task, beside the logs; the screens and the control task do not wait for
+the card. Each request takes the card's job lock that FILES and the Wi-Fi
+page's writes share, and does not wait for it: while one of them holds
+it, the request waits for the logger's next pass. A copy therefore never
+moves the files while an edit of one of them is saved.
+
+**The automatic copy.** A save that reaches NVS with a card mounted owes a
+copy; a save without a card writes none, and a card put in later gets none
+for it. While BACKUP shows, an owed copy waits and is written when BACKUP is
+left, so the files listed keep their names and dates; after each copy, the
+list is read again. A copy that does not reach the card shows once in the
+alert band:
+`Settings copy not written: the card is full.` or `Settings copy not
+written: card code n.` The next failure shows again only after a copy that
+worked. A failed copy is no error of the bench: the outputs, the supply and
+ARMED stay as they are. It loses nothing the bench drives, and the
+settings themselves are in NVS.
+
+**BACKUP.** Load settings opens it, and it reads the folder anew each time:
+
+![BACKUP: the card's settings files, the newest chosen](img/setup-backup.png)
+
+- Left, one card per file: its name, the date of its `Written:` line and
+  the panel version of its `Panel:` line, as the first 256B of the file
+  give them: a line past them reads `date not known` or `panel not
+  known`, and a line they cut shows its part inside them. `date not
+  known` also stands for a
+  file written while the panel's clock was not set: the panel has no RTC
+  (real-time clock) chip and sets its clock only from an NTP (Network Time
+  Protocol) answer. A file that is no settings file reads `No settings
+  file: code n` (the file codes below).
+- A tap on a file chooses it. Right, the chosen file's name, date and
+  version.
+- HOLD 2s TO LOAD loads the chosen file: a 2s hold, as every action that
+  replaces much. A release before 2s shows `Hold 2s to load the settings
+  file.` in the alert band. It takes no press while ARMED, while no file is
+  chosen, or for a file that is no settings file; the line above it says
+  which.
+- BACK, or the home tag, returns to SD CARD.
+- A card pulled or swapped while BACKUP shows clears the list, the choice
+  and a hold under way; the list shows `No card.`, and the next card is
+  listed anew.
+- The list reads each file whole, up to 24,576B, the largest file a load
+  takes; a read stops at 24,577B, so a list reads 98,308B at most for the
+  four files. It keeps the CRC-32 (cyclic redundancy check) of each
+  file's bytes, the sum FILES' editor and the Wi-Fi page's ETag use. A load
+  checks that the file read is the file listed: the same size and the same
+  CRC-32. A file written again since, by a browser, FILES or a computer,
+  loads nothing, also when the edit keeps the size and every first line;
+  the alert band shows
+  `The settings file changed on the card: choose again.`, and the list is
+  read again with nothing chosen. A rewrite to other bytes of the same
+  size and the same CRC-32 is not detected.
+
+A load replaces every setting: the file's value where a line gives one, the
+default where none does. The values take effect at once, as an edit does,
+and the save to NVS is asked for: it is taken the next time the bench is
+idle (see [Keeping the values](#keeping-the-values)). The answer takes the
+place of the list:
+
+![A hand-edited file loaded, three lines refused](img/setup-backup-loaded.png)
+
+`<file> loaded: n changed, m refused`, then each refused line: its number,
+its key, its code and the reason. The first 16 refused lines are kept; a
+line under them counts the rest. A file that is refused whole loads
+nothing and reads `<file> refused: code n, line m.` A file whose read ends
+in a frame that sees the bench ARMED, or an ARM that waits or is queued,
+is not loaded either, whatever the bench was at the hold:
+`<file> not loaded: the bench is ARMED.`
+
+**The restore offer.** A panel that starts with the defaults only (NVS held
+no settings, or the defaults after an erase) reads the card's newest file at
+the card's first mount. If that file holds other settings, BACKUP opens over
+the menu as soon as the bench is SAFE and the menu shows:
+
+![The restore offer at start](img/setup-backup-offer.png)
+
+The newest file is chosen: the latest `Written:` date where two files have
+one, else `AUTO1.TXT`, `AUTO2.TXT`, `AUTO3.TXT`, `SETTINGS.TXT` in that
+order. HOLD 2s TO LOAD loads it; SKIP or the home tag returns to the menu.
+The offer comes once a start. Until it is answered, no automatic copy is
+written, so a copy of the defaults does not push a good copy one place on.
+A save of other settings before the offer shows ends the offer, and so
+does a file loaded by hand through Load settings. A card pulled or swapped
+before the offer is answered sends it back to the start: the next card is
+listed and its newest file read again; an offer on the screen shows `No
+card.` until then, and comes back with that card's newest file chosen.
+
+**What the file holds.** Every setting of the schema (the lists of SETUP,
+MOTOR & ESC > SETTINGS, SUPPLY, SERVO, the four INA3221 keys of 0.21 that
+no list shows, and Units) and every string: the DUT name, the two log
+folders, and the bindings of the IMU, the Dial, the power node and the
+balance node, each an address and a name. Sensor SCL is not written: it
+follows Sensor SDA.
+
+**What it does not hold.** The Wi-Fi home network and its password,
+HOTSPOT PASSWORD, ACCESS CODE and the access code switch. They are in
+another NVS store, and they stay out: a card is read on every computer it
+goes into, and a file that is loaded must not switch the access code off
+or name a network the panel joins. BACKUP says so under the files. They
+are set again on [Wi-Fi](#wi-fi) after a full flash. The notes the panel
+keeps about an update (`fw_ota`) are no settings and stay out too.
+
+**The format, version 1.** Text a person reads and edits, one line a
+setting:
+
+```
+rcbench settings, format 1
+Panel: 0.23.15
+Written: 2026-11-21 14:05:33 UTC
+# Not in this file: the Wi-Fi home network and its password,
+# HOTSPOT PASSWORD and ACCESS CODE.
+# One line a setting: <key> = <value>.  A setting without a line loads
+# its default.  Keep the last line, end.
+pack_cells = 6                  # Cells, 1 to 14S
+theme = DARK                    # Theme: DARK, LIGHT
+plot_pan1 = OFF                 # One finger pans: ON, OFF
+srv_dut = "SERVO"               # Device under test, for the report
+dial_ble = "D4:F9:8D:00:3A:10 R" # Bound Dial: BLE address and its type
+end
+```
+
+- The key is the setting's NVS key; the comment after `#` names the
+  setting in English and gives its range or its options.
+- A number has as many digits after the point as its step; a switch is
+  `ON` or `OFF`; a choice is the English text of its option; a string is in
+  double quotes, `\"` and `\\` for a quote and a backslash, at most 23
+  bytes.
+- Keys and the words of a switch or a choice are read without case. Spaces
+  and tabs around a key and a value, empty lines, comments, LF and CR LF,
+  and a UTF-8 byte order mark are taken.
+- The last line that is not blank and not a comment is `end`. A file cut
+  short has none and is refused whole.
+- A file is 24,576 bytes at most; one the panel writes is about 12,100.
+
+| File code | Refused whole |
+| --- | --- |
+| 2 | more than 24,576 bytes |
+| 3 | line 1 is not `rcbench settings, format n` |
+| 4 | the format is not a number from 1 to 999 |
+| 5 | a format above 1, written by a newer panel |
+| 6 | no `end` as the last line: the file is cut |
+
+| Line code | Reason | The line is skipped because |
+| --- | --- | --- |
+| 1 | not key = value | no `=`, no key, or another `<word>:` line |
+| 2 | unknown key | no setting has that key |
+| 3 | key given twice | the key had a line before; the first one counts |
+| 4 | value not readable | not a number, no option of the choice, not ON or OFF, a string not in quotes |
+| 5 | out of range | outside the range, off the step by half a step or more, or a pin the row does not take |
+| 6 | text too long | a string over 23 bytes |
+| 7 | follows another | `sns_scl`, which follows Sensor SDA |
+| 8 | in use, kept | a task holds the setting, as the servo programmer holds a pin of its port; the setting keeps its value |
+
+| Card code | Meaning |
+| --- | --- |
+| 1 | no card |
+| 2 | the card is full |
+| 3 | the card takes no file: write protected, or a file holds a folder's name |
+| 4 | a write, a rename or a remove failed |
+| 5 | a read failed |
+| 6 | the file is gone |
+| 7 | the file is over 24,576 bytes |
+| 8 | a request the folder does not take |
 
 ### Keeping the values
 
@@ -6701,7 +6993,9 @@ Once the hold completes, the update occupies the panel: the link to
 the IOmcu goes down, the outputs are off, the IOmcu refuses ARM
 until the update ends, and the progress fills the screen. It has no band and
 no STOP, as the bus-fault screen has none: the bench cannot switch to ARMED
-behind it.
+behind it. Until the update ends the panel refuses the supply's OUTPUT ON,
+PROG 5V ON and a programmer session's start, for example with `Supply
+output not switched on: the IOmcu update is running.`
 
 ![The progress](img/coproc-update-progress.png)
 
@@ -6750,8 +7044,11 @@ release ([The release line](#the-release-line)).
 ![UPDATES: the last card](img/updates.png)
 
 UPDATES leads through six steps in a fixed order: PANEL, IOMCU, C6 RADIO,
-DIAL, POWER NODE and BALANCE NODE. The panel image carries every other
-image, so PANEL comes first. The C6 radio comes before the wireless
+DIAL, POWER NODE and BALANCE NODE. The panel image carries the IOmcu
+images; the C6 radio's and the wireless devices' images are files of the
+release the panel runs, which their step's hold fetches
+([Device images](#device-images)). A newer panel release brings newer
+images for every later step, so PANEL comes first. The C6 radio comes before the wireless
 devices: their transfers run on its Bluetooth LE (Low Energy) controller,
 and its update restarts the panel. Only the current step has a control
 ([The steps](#the-steps)).
@@ -6845,7 +7142,7 @@ send.
 | --- | --- | --- |
 | 1 PANEL | a check found a newer release | `HOLD 2s TO DOWNLOAD & INSTALL` ([The download](#the-download)); the card names the release and says that the panel restarts into it |
 | 2 IOMCU | the IOmcu runs another build than the carried one | `HOLD 2s TO UPDATE THE IOMCU` ([The IOmcu](#the-iomcu)); `The firmware on this panel is older.` in the warning colour for an older image |
-| 3 C6 RADIO | the C6 reports another version than the carried image's | `HOLD 2s TO UPDATE THE C6 RADIO` ([The C6 radio](#the-c6-radio)); the card says `The panel restarts after this step.` |
+| 3 C6 RADIO | the C6 reports another version than the release's C6 image | `HOLD 2s TO UPDATE THE C6 RADIO` ([The C6 radio](#the-c6-radio)); the card says `The panel restarts after this step.` |
 | 4 DIAL | the connected Dial runs another version | `HOLD 2s TO UPDATE THE DIAL` ([The Dial](#the-dial)) |
 | 5 POWER NODE | the connected power node runs another version | `HOLD 2s TO UPDATE THE POWER NODE` ([The sensor nodes](#the-sensor-nodes)) |
 | 6 BALANCE NODE | the connected balance node runs another version | `HOLD 2s TO UPDATE THE BALANCE NODE` |
@@ -6865,16 +7162,17 @@ alert's line in the warning colour, and the hold is the retry.
 | Tag | Meaning |
 | --- | --- |
 | `NEXT` | the current step: its control is live, or grey with the reason on the card |
-| `CURRENT` | runs the carried or newest version; its number box is filled in the OK colour |
+| `CURRENT` | runs the carried, the release's or the newest version; its number box is filled in the OK colour |
 | `LATER` | a step after the current one with another version; while PANEL is current with a newer release, also IOMCU and every connected device: the release carries newer images for them |
-| `UPDATING`, `CHECKING` | its update runs; or a short wait: the IOmcu's build check, the carried image's check, Bluetooth LE's start, another update's end. The card says which; no control |
+| `UPDATING`, `CHECKING` | its update runs, or its image is downloaded, read from the SD card or checked ([Device images](#device-images)); or a short wait: the IOmcu's build check, Bluetooth LE's start, another update's end. The card says which; no control |
 | `FAILED` | its last attempt since the panel's start ended without an install |
 | `SKIPPED` | SKIP THIS STEP was tapped since the panel's start |
 | `NOT CHECKED` | PANEL: no check result at this start |
 | `NO LINK`, `NOT CONNECTED` | no IOmcu answers; a bound device is not connected |
 | `NOT BOUND` | no device of the kind is bound on WIRELESS |
 | `OFF` | a device is bound and its switch on WIRELESS is OFF: the panel runs no link to it |
-| `NO FIRMWARE`, `BAD FIRMWARE`, `CHECK FAILED`, `USB ONLY`, `NO ANSWER`, `NOT REPORTED` | nothing to act on: the panel carries no image, the carried image fails its check, the IOmcu's build check gave no answer, the IOmcu takes no update over CAN, the C6 failed its link, the C6 named no version |
+| `NO BLUETOOTH` | a device is bound and ON, and Bluetooth LE cannot link it: the C6's link failed, or the host has no sync with the C6 |
+| `NO FIRMWARE`, `BAD FIRMWARE`, `CHECK FAILED`, `USB ONLY`, `NO ANSWER`, `NOT REPORTED` | nothing to act on: the panel carries no IOmcu image, the carried IOmcu image fails its check, the IOmcu's build check gave no answer, the IOmcu takes no update over CAN, the C6 failed its link, the C6 named no version |
 
 A step with nothing to act on is passed. While an update run stands after
 a restart, the IOmcu without a link and a bound device that is not
@@ -6883,7 +7181,10 @@ or `Switch the Dial on and keep it within range.`, with SKIP THIS STEP,
 and the step goes on by itself once the target links. Outside a run they
 are passed and named on the last card. A bound device whose switch on
 WIRELESS is OFF never waits, in a run or outside one: its row reads `OFF`
-and the last card names it.
+and the last card names it. Nor does a bound device that is ON while
+Bluetooth LE cannot link it: its row reads `NO BLUETOOTH` and the last card
+names it. While Bluetooth LE starts, a bound device that is ON waits in a
+run.
 
 ![A step held while ARMED](img/updates-held.png)
 
@@ -6927,7 +7228,7 @@ Under the heading: the
 running version, the home network, the last check's result, and the steps
 that were passed: `Not connected: POWER NODE.`,
 `No update here: C6 RADIO. The list names the reason.` (a device that
-reads `OFF` among them) and
+reads `OFF` or `NO BLUETOOTH` among them) and
 `Skipped: DIAL.`, then the notes on the reminder and RELEASES. SHOW
 SKIPPED STEPS stands under them while a step is skipped. CHECK FOR
 UPDATES is drawn in the accent colour.
@@ -7187,8 +7488,8 @@ IOmcu's ([The C6 radio](#the-c6-radio)). The footer reads
 | Control | Action |
 | --- | --- |
 | `HOLD 2s TO UPDATE THE IOMCU` | Starts the IOmcu's update from the image this panel carries ([The IOmcu](#the-iomcu)). |
-| `HOLD 2s TO UPDATE THE C6 RADIO` | Sends the C6 radio's image this panel carries to the board's ESP32-C6 ([The C6 radio](#the-c6-radio)). |
-| `HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE` | The same, while the C6 reports the carried version ([The C6 radio](#the-c6-radio)). |
+| `HOLD 2s TO UPDATE THE C6 RADIO` | Fetches the C6 radio's image of the release the panel runs and sends it to the board's ESP32-C6 ([The C6 radio](#the-c6-radio), [Device images](#device-images)). |
+| `HOLD 2s TO REINSTALL THE C6 RADIO` | The same, while the C6 reports the release's version ([The C6 radio](#the-c6-radio)). |
 | `WIRELESS DEVICE FIRMWARE` | Opens the page of the Dial's and the sensor nodes' firmware rows over this page ([The wireless devices](#the-wireless-devices)). While an update runs the button reads that row's label. |
 | `BACK` | Closes the page: UPDATES shows again. |
 
@@ -7240,14 +7541,122 @@ offer opens UPDATES for it. An IOmcu of another protocol major shows NO
 LINK in the band and still takes the update; its offer opens UPDATES as
 any other.
 
+### Device images
+
+The panel image carries the IOmcu images only. The C6 radio's, the Dial's,
+the power node's, the balance node's and the display node's application
+images are files of
+the release the panel runs, tag `vMAJOR.MINOR.PATCH` of the panel's own
+version, which the web flasher and the release page offer as well:
+
+| Step | File | Most bytes |
+| --- | --- | ---: |
+| C6 RADIO | `rcbench-c6-<esp_hosted version>.bin`, `rcbench-c6-2.13.0.bin` | 1,966,080 |
+| DIAL | `rcbench-dial-<version>.bin` | 3,145,728 |
+| POWER NODE | `rcbench-node-pwr-<version>.bin` | 1,572,864 |
+| BALANCE NODE | `rcbench-node-bal-<version>.bin` | 1,572,864 |
+| DISPLAY NODE, the POWER NODE step while the bound power node is the ES3C28P display node | `rcbench-node-display-<version>.bin` | 1,572,864 |
+
+A step's hold takes the image from one of three places, and the card names
+the file and the place:
+
+| Card line | Where the hold takes it |
+| --- | --- |
+| `The hold downloads rcbench-dial-0.23.17.bin from GitHub first.` | GitHub: the default with a home network kept. |
+| `The hold reads BENCH/UPDATES/rcbench-dial-0.23.17.bin from the SD card.` | The SD card, folder `BENCH/UPDATES`: after a failed download, and always without a home network. The control reads `HOLD 2s TO UPDATE FROM THE SD CARD`. A failed card read sends the next hold to GitHub again. |
+| `rcbench-dial-0.23.17.bin is downloaded and checked.` | The memory: an earlier hold fetched it. It stays in PSRAM (pseudo-static random-access memory) until the panel restarts. |
+
+The download takes the panel's own download path ([The download](#the-download)):
+the home network, `SHA256SUMS` of the release, then the file, each through
+at most 3 redirects to GitHub's hosts over HTTPS, 180s at most from the
+start. The file's `Content-Length` is over 0 and at most the step's most
+bytes; the file goes into one PSRAM buffer of that length, and its SHA-256
+must be the one `SHA256SUMS` names for it. The radio goes off after it, as
+after a check. A card read takes the file of the same name from
+`BENCH/UPDATES`; when that folder also holds a `SHA256SUMS` that names the
+file, the file's SHA-256 must be that line's. Either way the image then
+passes the checks the senders make: an ESP-IDF application of the
+device's chip and project, its own appended SHA-256, for the Dial and the
+nodes the role in its head, and the release's version. The checks and the
+card read run on the task `devimg` ([Performance: Stacks](Performance.md#stacks)).
+
+The image's release signature is checked as the panel image's
+([SECURITY.md](../SECURITY.md)): the download fetches `<file>.sig` beside
+the file, and a card read takes `<file>.sig` beside the file in
+`BENCH/UPDATES`. A missing `.sig` is no signature; one outside 8 to 72
+bytes, or one that does not verify under the release key, does not match.
+While the build warns (`RCBENCH_SIGN_ENFORCE` 0, every build up to the
+stable release that enforces it) such an image is kept and sent: the band
+says `rcbench-dial-0.23.17.bin is not signed by the rcbench release key.`,
+and the step's card reads `rcbench-dial-0.23.17.bin: not signed by the
+rcbench release key. The image comes with no signature.`, or `The
+signature does not match.`, in the warning colour. A build that
+enforces it refuses the image with `V07`.
+
+The control shows what runs: `DOWNLOADING 43%`, `CHECKING THE FILE`,
+`READING THE SD CARD`. CANCEL UPDATE during a device's download, card read or check drops the
+update the hold asked for and ends the download; an image that still
+passes stays in memory for the next hold. Once the
+image passed, the update the hold asked for starts by itself when its
+gate is open; it waits up to 20,000ms for the radio to go off after the
+download, and the panel ends the radio's time request for it. Any other
+closed gate drops the start: the band names the reason, and the next hold
+starts the update from the image in memory. Until the start, the row
+and the step show the update as under way: no SKIP THIS STEP and no
+other hold; on a wireless device's step CANCEL UPDATE drops the start.
+
+A download needs what a check needs: a home network, the bench SAFE with
+no arm waiting, the supply output off, no log run, no other update and no
+panel install. While ARMED no download starts: the step's hold is grey,
+and a press names the reason in the band. ARMED, the supply, a log run,
+STOP or WI-FI opening end a download under way. No output changes state
+for a download, a card read or a check. One image is on its way at a
+time.
+
+![The Dial's step after a failed download: the hold reads the SD card](img/updates-step-dial-card.png)
+
+A failed attempt shows on the step's card in the warning colour, with a
+code of a letter and two digits; the step reads `FAILED` and its hold is
+the retry from the next place:
+
+| Line | Codes |
+| --- | --- |
+| `Download failed (D10): No connection to GitHub.` | `D` and the download's result, worded as the panel's own download ([The download](#the-download)): `D04` no home network kept, `D05` the gate, `D06` ended from outside (ARMED, the supply, a log run, STOP, WI-FI, CANCEL UPDATE), `D07` the join failed, `D08` the radio did not come up, `D09` the 180s ran out, `D10` no connection, `D11` an HTTP status refused, `D12` an answer out of form, `D13` `SHA256SUMS` missing or without the file's line, `D14` the SHA-256 differs from `SHA256SUMS`, `D16` no memory |
+| `SD card failed (S02): BENCH/UPDATES/rcbench-dial-0.23.17.bin is not on the SD card.` | `S01` no card, `S02` no such file, `S03` the read failed, `S04` empty or over the step's most bytes, `S05` no memory, `S06` the card's `SHA256SUMS` out of form or naming the file twice |
+| `Check failed (V05): The file is version 0.23.16; this release has 0.23.17.` | `V01` empty or over the most bytes, `V02` the SHA-256 differs from the card's `SHA256SUMS`, `V03` no application of the device's chip and project, or its own SHA-256 differs, `V04` another device's role, `V05` another version, `V07` no valid release signature in a build that enforces it |
+
+The console names each step:
+
+    I (…) devimg: rcbench-dial-0.23.17.bin: download of v0.23.17's file, job 3
+    I (…) devimg: rcbench-dial-0.23.17.bin: 850816 bytes, SHA-256 as SHA256SUMS; checking
+    I (…) devimg: rcbench-dial-0.23.17.bin: 0.23.17 850816 bytes, SHA-256 1a2b3c4d, from GitHub
+    W (…) devimg: image 1: Download failed (D10): No connection to GitHub.
+
+Current limitations:
+
+- The time a download takes on a real network is not measured.
+- A panel that runs a build no release has (a version without its tag)
+  finds no file on GitHub: `D13`, as GitHub answers 404 for the release's
+  `SHA256SUMS`. Its images come from the SD card.
+- An image stays in PSRAM until the panel restarts, up to the four most
+  bytes above together, 8,257,536 bytes.
+- While `RCBENCH_SIGN_ENFORCE` is 0 an image without a valid release
+  signature is sent after the warning: an SD-card image is then held to
+  its size, its chip, project, role and version, its own appended SHA-256
+  and a card `SHA256SUMS` that names it only ([SECURITY.md](../SECURITY.md)).
+
 ### The C6 radio
 
 Under the heading, SINGLE UPDATES shows the board's ESP32-C6, which carries Wi-Fi and
-Bluetooth: `C6 radio: 2.13.0. Included: 2.13.0.`, the version the C6
+Bluetooth: `C6 radio: 2.13.0. Release: 2.13.0.`, the version the C6
 reported at the first Wi-Fi start since the panel started, or
-`not reported`, and the version of the image this panel carries, or
-`none`. Under it `HOLD 2s TO UPDATE THE C6 RADIO`, or `HOLD 2s TO REINSTALL
-THIS PANEL'S C6 FIRMWARE` while the C6 reports the carried version. While the update runs the
+`not reported`, and the esp_hosted version of the release's C6 image.
+Under it `HOLD 2s TO UPDATE THE C6 RADIO`, or `HOLD 2s TO REINSTALL
+THE C6 RADIO` while the C6 reports that version. The hold
+fetches the image first while it is not in memory
+([Device images](#device-images)); the button then reads `DOWNLOADING 43%`,
+`CHECKING THE FILE` or `READING THE SD CARD`, and the update starts once
+the image passed its checks. While the update runs the
 button reads `C6 UPDATE 37%`, the share of the image the C6 took. The
 steps, their limits and how each ends are in
 [The ESP32-C6 radio: The C6's firmware](C6.md#the-c6s-firmware).
@@ -7259,9 +7668,7 @@ grey, and a tap on it shows the first reason on the alert band:
 
 | Band | Condition |
 | --- | --- |
-| `This panel includes no C6 radio firmware.` | The panel was built without the C6's image. |
-| `The included C6 radio firmware failed its check.` | The carried image is no ESP32-C6 build of esp_hosted, or its SHA-256 differs. |
-| `The C6 radio update is running.` | An update runs. |
+| `The C6 radio update is running.` | An update runs, or its image is on its way. |
 | `The C6 radio did not answer. Restart the panel.` | The link to the C6 failed since the panel started; the C6 is held in reset. |
 | `The C6 update requires SAFE.` | ARMED, or an arm waiting. |
 | `The C6 update requires the supply output off.` | The supply output is on or switching on. |
@@ -7273,13 +7680,14 @@ grey, and a tap on it shows the first reason on the alert band:
 | `The C6 update waits: Bluetooth is starting.` | Bluetooth LE's start task `blestart` runs. |
 | `The C6 update waits for the wireless device update to finish.` | A Dial's update runs or was asked for ([The Dial](#the-dial)). |
 | `The C6 update requires the servo and ESC programmers closed. Select LEAVE there first.` | A KST, Hitec or ESC programmer holds a port, or a session starts. |
-| `The C6 update waits for the C6 radio's last answer.` | A step of an ended update has not returned from its call, or the update ended and the panel's restart is due. |
+| `The C6 update waits for the C6 radio's last answer.` | A step of an ended update has not returned from its call. |
+| `C6 radio updated. The panel restarts once SAFE with all outputs off.` | The update ended with a success and the panel's restart is due: 3s after the end at the earliest, and only on a bench that is SAFE with all outputs off. |
 
 A C6 that reports no version, as the shipped one does, is offered the
-update. A C6 that reports the carried version is offered the reinstall:
+update. A C6 that reports the release's version is offered the reinstall:
 images of one esp_hosted version with other settings report the same
 version, such as one with 3 Bluetooth LE connections and one with 5
-([The ESP32-C6 radio: The image the panel carries](C6.md#the-image-the-panel-carries)).
+([The ESP32-C6 radio: The C6 image](C6.md#the-c6-image)).
 The alert band says how an update ended:
 
 | Alert | Meaning |
@@ -7302,14 +7710,15 @@ GitHub check and the IOmcu's update wait.
 
 The WIRELESS DEVICES entry on SINGLE UPDATES counts the devices:
 `Connected: 1 of 3. Another version: 0.` names the devices that reported
-a version and those whose row offers another version than the carried
-one. A tap on `WIRELESS DEVICE FIRMWARE` opens the page; while an update
+a version and those whose row offers another version than the
+release's. A tap on `WIRELESS DEVICE FIRMWARE` opens the page; while an update
 runs the button reads that row's label.
 
 ![The WIRELESS DEVICES entry while the Dial asks for its press](img/updates-dial.png)
 
 The page covers SINGLE UPDATES. It holds one row per device, at body
-y 24, 128 and 232: DIAL FIRMWARE, POWER NODE FIRMWARE and BALANCE NODE
+y 24, 128 and 232: DIAL FIRMWARE, POWER NODE FIRMWARE (DISPLAY NODE
+FIRMWARE while the bound power node is the display node) and BALANCE NODE
 FIRMWARE. Each row's heading and line take 496px from x 16, its hold
 480 x 56px from x 528. A note under the rows says how a device accepts an
 update. `BACK` in the footer's right slot and the home tag close the page
@@ -7320,22 +7729,23 @@ runs, the other rows' holds are grey.
 
 | Control | Action |
 | --- | --- |
-| `HOLD 2s TO UPDATE THE DIAL` | Sends the M5Stack Dial's image this panel carries to the linked Dial over Bluetooth LE ([The Dial](#the-dial)). |
-| `HOLD 2s TO REINSTALL THE DIAL FIRMWARE` | The same, while the Dial reports the carried version. |
-| `HOLD 2s TO UPDATE THE POWER NODE` | Sends the power node's image this panel carries to the bound power node ([The sensor nodes](#the-sensor-nodes)). |
-| `HOLD 2s TO REINSTALL THE POWER NODE` | The same, while the node reports the carried version. |
-| `HOLD 2s TO UPDATE THE BALANCE NODE` | Sends the balance node's image this panel carries to the bound balance node. |
-| `HOLD 2s TO REINSTALL THE BALANCE NODE` | The same, while the node reports the carried version. |
+| `HOLD 2s TO UPDATE THE DIAL` | Fetches the M5Stack Dial's image of the release the panel runs and sends it to the linked Dial over Bluetooth LE ([The Dial](#the-dial), [Device images](#device-images)). |
+| `HOLD 2s TO REINSTALL THE DIAL FIRMWARE` | The same, while the Dial reports the release's version. |
+| `HOLD 2s TO UPDATE THE POWER NODE` | Fetches the power node's image of the release and sends it to the bound power node: the C6 node's, or the display node's on the ES3C28P ([The sensor nodes](#the-sensor-nodes)). |
+| `HOLD 2s TO REINSTALL THE POWER NODE` | The same, while the node reports the release's version. |
+| `HOLD 2s TO UPDATE THE BALANCE NODE` | Fetches the balance node's image of the release and sends it to the bound balance node. |
+| `HOLD 2s TO REINSTALL THE BALANCE NODE` | The same, while the node reports the release's version. |
+| `HOLD 2s TO UPDATE FROM THE SD CARD` | On any of the rows above, after a failed download or without a home network: reads the image from the SD card ([Device images](#device-images)). |
 | `CANCEL UPDATE` | In the footer's middle slot while an update runs; a plain tap. Before END it ends the update: the device drops what it took and keeps its firmware, and the band reads `<device> update stopped: canceled on UPDATES. Previous firmware is running.` From END on the device installs whatever comes: the key is grey, a tap puts `The device installs the update and cannot stop now. Its result follows.` in the band, and the result follows as without the tap. |
 | `BACK` | Closes the page: SINGLE UPDATES shows again. |
 
 ### The Dial
 
 The DIAL FIRMWARE row shows the M5Stack Dial's firmware:
-`Dial: 0.21.0. Included: 0.22.0.`, the version the linked Dial's INFO
-named, or `not connected`, and the version of the Dial image this panel
-carries, or `none`. Beside it `HOLD 2s TO UPDATE THE DIAL`, or `HOLD 2s TO
-REINSTALL THE DIAL FIRMWARE` while the Dial reports the carried version.
+`Dial: 0.21.0. Release: 0.22.0.`, the version the linked Dial's INFO
+named, or `not connected`, and the version of the release the panel
+runs. Beside it `HOLD 2s TO UPDATE THE DIAL`, or `HOLD 2s TO
+REINSTALL THE DIAL FIRMWARE` while the Dial reports that version.
 The Dial and its update are in [The M5Stack Dial: Update over Bluetooth
 LE](Dial.md#update-over-bluetooth-le).
 
@@ -7343,6 +7753,7 @@ While the update runs the button reads, one after the other:
 
 | Button | Step |
 | --- | --- |
+| `DOWNLOADING 43%`, `CHECKING THE FILE`, `READING THE SD CARD` | the Dial's image is on its way ([Device images](#device-images)) |
 | `DIAL UPDATE: CONNECTING` | the Dial's knob link ends, and the update connects to the bound Dial |
 | `PRESS THE DIAL TO ACCEPT: 27s` | the Dial took BEGIN and asks for a press of its screen button; the seconds are the Dial's |
 | `DIAL UPDATE 37%` | the share of the image the Dial took |
@@ -7355,9 +7766,6 @@ reason on the alert band:
 | Band | Condition |
 | --- | --- |
 | `The device update is running.` | An update runs or was asked for. |
-| `This panel includes no firmware for this device.` | The panel was built without the Dial's image. |
-| `The included firmware for this device is being checked.` | The carried image's check has not run since the start. |
-| `The included firmware for this device failed its check.` | The carried image is no ESP32-S3 application of the project `rcbench-dial` with the Dial's role, is larger than the Dial's slot of 3,145,728 bytes, or its appended SHA-256 differs. |
 | `The device update requires SAFE.` | ARMED, or an arm waiting. |
 | `The device update waits for the other update to finish.` | The C6's or the IOmcu's update, or the panel's download or install, runs. |
 | `Connect the device on WIRELESS first.` | No Dial is linked, or its INFO has not come. |
@@ -7399,6 +7807,9 @@ another version as stopped, `connection lost`.
 
 While the update runs, ARM is refused with `Cannot switch to ARMED: a
 wireless device update is running.`, and the C6's update waits. The
+supply's OUTPUT ON, PROG 5V ON and a programmer session's start are
+refused with an alert that names the update, for example `Supply output
+not switched on: the Dial update is running.`. The
 panel's own download and install wait as well, with `Waiting for the
 wireless device update to finish.`: their restart would cut the transfer,
 and the device drops a partial image. The knob
@@ -7408,11 +7819,24 @@ gap is no loss error. The transfer time is not measured.
 ### The sensor nodes
 
 The POWER NODE FIRMWARE and BALANCE NODE FIRMWARE rows show a node's
-firmware: `Node: 0.23.14. Included: 0.23.15.`, the version the node's
+firmware: `Node: 0.23.16. Release: 0.23.17.`, the version the node's
 STATUS packet named on the current link, or `not connected`, and the
-version of the node image this panel carries, or `none`. The two roles'
+version of the release the panel runs. The two roles'
 images differ: the power node's row sends the power image, the balance
-node's the balance image, and a node refuses the other role's image. The
+node's the balance image, and a node refuses the other role's image.
+
+The power node's row sends the image of the board the node's INFO names
+(field `board`): `rcbench-node-pwr-<version>.bin` for the ESP32-C6-Zero
+(board 1), `rcbench-node-display-<version>.bin` for the ES3C28P display
+node (board 2). For the display node the row's heading reads `DISPLAY
+NODE FIRMWARE`, its line `Display node: 0.23.17. Release: 0.23.18.`,
+UPDATES' step `DISPLAY NODE`, and the band's lines name the `Display
+node`. The hold, its labels and the BOOT ask (IO0 on the display node)
+are the power node's. Before the first byte the panel holds the image to
+that board's chip and update kind; a mismatch ends the update with
+`Display node update stopped: image for another board. Previous firmware
+is running.` A board no image is for reads `NO FIRMWARE`, and a tap on
+the hold says `This release has no firmware for this device.` The
 nodes and their update are in [The sensor nodes: Update over Bluetooth
 LE](Nodes.md#update-over-bluetooth-le).
 
@@ -7432,9 +7856,10 @@ within 30s to accept the update.` when the node asks. The grey hold's
 reasons are the Dial's ([The Dial](#the-dial)); `Connect the device on
 WIRELESS first.` stands until the node is linked, its INFO taken and its
 first STATUS packet on the link has named its version. A node image that
-fails its check is no ESP32-C6 application of the project `rcbench-node`
-with that node's role, is larger than the node's slot of 1,572,864 bytes,
-or its appended SHA-256 differs.
+fails its check is no application of the node's chip (ESP32-C6, or
+ESP32-S3 for the display node) and the project `rcbench-node` with that
+node's role, is larger than the node's slot of 1,572,864 bytes, or its
+appended SHA-256 differs.
 
 From the hold to the end the node's own client keeps its link ended, as
 the node's OFF does; SETUP > WIRELESS shows the node OFF meanwhile. That
@@ -7445,7 +7870,7 @@ back. Once the update ends the node's client connects again from SETUP's
 values, and the row's version comes from the first STATUS packet on the
 new link.
 
-The alert band's lines name the node: `Power node updated to 0.23.15.
+The alert band's lines name the node: `Power node updated to 0.23.17.
 It connects again by itself.`, `Balance node update stopped: <reason>.
 Previous firmware is running.`, `Power node did not report after its
 update. Check its version on UPDATES.` The reasons are the Dial's;
@@ -7485,8 +7910,9 @@ Its result is on UPDATES.
 
 The 2s hold confirms both download and installation. There is no further
 question after the download. The
-panel joins the home network within 30s, then fetches two files of the
-release's tag over HTTPS, `SHA256SUMS` and `rcbench-panel-p4-v0.23.0.bin`.
+panel joins the home network within 30s, then fetches three files of the
+release's tag over HTTPS, `SHA256SUMS`, `rcbench-panel-p4-v0.23.0.bin` and
+its signature `rcbench-panel-p4-v0.23.0.bin.sig`.
 GitHub answers each with a redirect to its file host; the panel follows at
 most 3 redirects, and only to `github.com`, `release-assets.githubusercontent.com`
 and `objects.githubusercontent.com`. Then:
@@ -7500,6 +7926,12 @@ and `objects.githubusercontent.com`. Then:
    in `SHA256SUMS`.
 4. Every check an uploaded image passes ([Installing](#installing-panel-update))
    runs, and the image must name the release's version.
+5. The panel fetches the image's signature, `rcbench-panel-p4-v0.23.0.bin.sig`,
+   by the same rules and verifies it ([The release signature](#the-release-signature)).
+   An HTTP status other than 200 means no signature, and a body outside 8 to
+   72 bytes a signature that does not match; the download goes on to the
+   install either way. A connection that breaks, STOP or the time budget
+   ends the download.
 
 Only after these checks does installation begin, following the same steps
 as INSTALL: the radio switches off completely, the image is written, the

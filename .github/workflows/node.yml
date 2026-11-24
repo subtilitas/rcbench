@@ -3,17 +3,19 @@ name: Node image
 # The sensor nodes' firmware (firmware/node) for the ESP32-C6 on a
 # Waveshare ESP32-C6-Zero, built with ESP-IDF v6.1 from a clean build
 # directory each, once for each role: the power node and the balance node;
-# and the display node, the power role on the ES3C28P 2.8" ESP32-S3 display
-# board.  The build fails on a warning from the node's own code
+# the display node, the power role on the ES3C28P 2.8" ESP32-S3 display
+# board; and the servo node, the servo role on the same board.  The build fails on a warning from the node's own code
 # (main/CMakeLists.txt sets -Werror).
 #
 # Called by ci.yml and by release.yml, which publishes the images.
-# Artifact "node", for each build (pwr, bal, display):
+# Artifact "node", for each build (pwr, bal, display, srv):
 # rcbench-node-<build>-<version>.bin, the application, and
 # rcbench-node-<build>-merged-<version>.bin, bootloader, partition table and
 # application for 0x0 over USB (docs/Nodes.md, "Building and flashing").
-# The panel carries the pwr and bal applications; the display node is
-# flashed over USB only.
+# A panel downloads each application of a release for the node's update
+# over Bluetooth LE (shared/devupd/devimg.c); the merged image is for USB.
+# The servo node takes no update over Bluetooth LE: its merged image is
+# for USB.
 
 on:
   workflow_call:
@@ -71,6 +73,19 @@ jobs:
             && idf.py -B build-display merge-bin
             -o rcbench-node-display-merged.bin
 
+      - name: Build the servo node
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v6.1
+          target: esp32s3
+          path: 'firmware/node'
+          command: >-
+            idf.py -B build-srv -D SDKCONFIG=build-srv/sdkconfig
+            -D IDF_TARGET=esp32s3
+            -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.s3_es3c28p;sdkconfig.servo" build
+            && idf.py -B build-srv merge-bin
+            -o rcbench-node-srv-merged.bin
+
       # Each generated sdkconfig holds every setting of the defaults files
       # its build names: a misspelled option, or one whose dependencies are
       # off, fails here.
@@ -84,6 +99,10 @@ jobs:
           python3 tools/check_sdkconfig.py --check --project firmware/node \
             --defaults sdkconfig.defaults --defaults sdkconfig.s3_es3c28p \
             --sdkconfig firmware/node/build-display/sdkconfig
+          python3 tools/check_sdkconfig.py --check --project firmware/node \
+            --defaults sdkconfig.defaults --defaults sdkconfig.s3_es3c28p \
+            --defaults sdkconfig.servo \
+            --sdkconfig firmware/node/build-srv/sdkconfig
 
       - name: Name the images for their version
         run: |
@@ -91,7 +110,7 @@ jobs:
                   shared/link/include/rcbench_version.h | paste -sd.)
           test -n "$ver"
           mkdir -p node-dist
-          for role in pwr bal display; do
+          for role in pwr bal display srv; do
             cp "firmware/node/build-$role/rcbench-node.bin" \
                "node-dist/rcbench-node-$role-$ver.bin"
             cp "firmware/node/build-$role/rcbench-node-$role-merged.bin" \
@@ -105,6 +124,15 @@ jobs:
           fi
           if grep -aq 'bal: ADC ' firmware/node/build-pwr/rcbench-node.bin; then
             echo "::error::the power image carries the balance role"
+            exit 1
+          fi
+          # The servo role's link is in the servo image only.
+          if ! grep -aq 'srv: UART0 ' firmware/node/build-srv/rcbench-node.bin; then
+            echo "::error::the servo image lacks the servo role"
+            exit 1
+          fi
+          if grep -aq 'srv: UART0 ' firmware/node/build-display/rcbench-node.bin; then
+            echo "::error::the display image carries the servo role"
             exit 1
           fi
           # The display node's image names the ESP32-S3 and its own update

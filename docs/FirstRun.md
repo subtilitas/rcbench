@@ -151,7 +151,14 @@ spelling, so `@flash_args` needs esptool 5 or later.
 
    A browser flasher that writes one file at an offset, such as the ESP Web
    Tool, takes `rcbench-panel-merged.bin` at 0x0, with the same effect as
-   the first command.
+   the first command. The rcbench
+   [web flasher](https://subtilitas.github.io/rcbench/flash/) writes the
+   merged image of a release to the panel, and the install image to the
+   IOmcu over WebUSB, in Chrome or Edge on a desktop computer
+   ([flasher/README.md](../flasher/README.md)). Its "Keep settings" box,
+   on by default, leaves out the NVS partition at 0xD000, so the panel
+   keeps its settings as with `@flash_args`; unticked, it writes the whole
+   merged image.
 4. Power both boards with the link wired. An IOmcu loaded in step 2 runs
    the build the panel carries, and the panel offers no update. The panel
    fetches the board drawing ([§4](#4-first-link-up-the-board-drawing)).
@@ -176,7 +183,7 @@ simulation ([Bringing up the link](Bringup.md#the-bus-fault-screen)).
 
 An IOmcu on 0.19.0 or later carries the partition table from its USB load
 and takes the image the panel carries over CAN. The panel's link protocol
-is 4.39, and an IOmcu of 0.19.0 or later speaks 4.22 or later: the major,
+is 4.41, and an IOmcu of 0.19.0 or later speaks 4.22 or later: the major,
 4, is the same, so the two boards link before and after the update.
 
 1. Power both boards with the link wired. At link-up the panel compares
@@ -209,18 +216,24 @@ The time of the update over CAN is not measured.
 ### The C6 radio over SDIO
 
 The board's ESP32-C6 carries Wi-Fi and Bluetooth and runs esp_hosted's
-firmware. A panel image carries the C6 firmware of its esp_hosted version,
-2.13.0; the C6 as shipped reports none (`not reported`).
+firmware. The panel's release publishes the C6 firmware of its esp_hosted
+version, 2.13.0, as `rcbench-c6-2.13.0.bin`; the panel image does not carry
+it, and the C6 as shipped reports none (`not reported`).
 
 1. Start Wi-Fi once (WI-FI > ACCESS POINT), so the C6 is asked its version,
    then switch it off.
 2. On SETUP > UPDATES the C6 RADIO row reads `C6 radio: not reported.
-   Included: 2.13.0.`. Hold `HOLD 2s TO UPDATE THE C6 RADIO` for 2s with the
-   bench SAFE and the supply output off. The button counts `C6 UPDATE 0%`
-   to `100%`.
+   Release: 2.13.0.`. Hold `HOLD 2s TO UPDATE THE C6 RADIO` for 2s with the
+   bench SAFE and the supply output off. With a home network kept on
+   WI-FI the button counts `DOWNLOADING 0%` to `100%` while the panel
+   downloads the image; without one, copy `rcbench-c6-2.13.0.bin` from the
+   release to the SD card's `BENCH/UPDATES` first, and the hold reads
+   `HOLD 2s TO UPDATE FROM THE SD CARD`
+   ([Screens: Device images](Screens.md#device-images)). Then the button
+   counts `C6 UPDATE 0%` to `100%`.
 3. The band says `C6 radio updated to 2.13.0. The panel restarts.`, and
    the panel restarts 3s later. After the next Wi-Fi start the row reads
-   `C6 radio: 2.13.0. Included: 2.13.0.`.
+   `C6 radio: 2.13.0. Release: 2.13.0.`.
 
 A C6 that refuses the update leaves `The C6 radio takes no update over
 SDIO. Flash it over header H4.`; it keeps its firmware and Wi-Fi works as
@@ -518,8 +531,7 @@ carry their voltage. Otherwise tick the pin's cell
 | Resolution | 1µs |
 
 **Measure and record:** the actual frame period, the pulse at both ends of
-travel, and the jitter. Bit timings are the largest unverified surface in the
-tree.
+travel, and the jitter.
 
 **Then:** confirm the servo screen lets go when it is told to, and only
 then. Lifting the finger does not stop the output: the screen holds the

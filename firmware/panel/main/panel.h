@@ -24,6 +24,7 @@
 #include "freertos/semphr.h"
 
 #include "arming.h"
+#include "fw_c6.h"
 #include "stop_latch.h"
 #include "bench_state.h"
 #include "dial_ctl.h"
@@ -1766,15 +1767,25 @@ extern atomic_uint s_arms_taken;
 /** @brief A servo or ESC programmer holds a port (s_prog_taken) or a
  *         session's start is claimed (fw_c6_prog_open()), for the render
  *         side; control task writes, in kst_port_look() and
- *         prog_start_refused_c6(). */
+ *         prog_start_refused_upd(). */
 extern atomic_bool s_prog_open;
 /**
- * @brief A programmer session's start, judged against the C6 radio's
- *        update: claims the start for the update's gate, then refuses it
- *        with the band's alert while the update is busy.  Control task.
+ * @brief A programmer session's start, judged against the updates: claims
+ *        the start for the C6 radio update's gate, then refuses it with the
+ *        band's alert while any update runs (panel_upd_refuses()).  Control
+ *        task.
  * @return true when the start is refused: the caller answers BUSY
  */
-bool prog_start_refused_c6(void);
+bool prog_start_refused_upd(void);
+/**
+ * @brief Whether an update refuses @p ask now: the C6 radio's (to the
+ *        panel's restart), the IOmcu's, or a wireless device's
+ *        (fw_upd_refuses()).  A refusal posts the band's alert that names
+ *        the update (upd_refusal_line()).  Control task.
+ * @param ask FW_C6_ASK_SUPPLY_ON, FW_C6_ASK_PROG5V_ON or FW_C6_ASK_SESSION
+ * @return true when @p ask is refused
+ */
+bool panel_upd_refuses(fw_c6_ask_t ask);
 /**
  * @brief Whether the supply's output is on, stored by the control task when
  *        it switches.

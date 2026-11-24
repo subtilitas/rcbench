@@ -1,0 +1,227 @@
+(footprint "ES3C28P_GPIO_JST_PH_B4B-PH-K-S"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(property "Reference" "REF**"
+		(at 3 -3.2 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "7f0fd19b-cbb4-5b91-9ef0-e95379a01e23")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "ES3C28P_GPIO_JST_PH_B4B-PH-K-S"
+		(at 3 5.8 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "1d4bd46f-33df-5628-bd56-ce59aa662a75")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "dfe90d63-ab85-5d71-90c1-c53abe938928")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" "LCDWIKI ES3C28P 4-GPIO socket P3 (Expanded IO) on a JST PH B4B-PH-K-S header, 2.0mm, pins 1:1. Pin 1 IO2, pin 2 IO3, pin 3 IO14, pin 4 IO21: ESP32-S3 GPIOs, bidirectional, 3.3V logic, no resistor on the ES3C28P. No GND pin. GPIO3 is a strapping pin. Pin order from the LCDWIKI schematic and print."
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "d55678bf-e5e8-5048-9786-d87223f78584")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr through_hole)
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_rect
+		(start -1.95 -1.7)
+		(end 7.95 2.8)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.SilkS")
+		(uuid "f2eec56e-68b2-514b-955c-71aa562819a1")
+	)
+	(fp_poly
+		(pts (xy -0.35 -1.5) (xy 0.35 -1.5) (xy 0 -1.1))
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.SilkS")
+		(uuid "cba640ac-8e8c-529d-b130-b619476e1546")
+	)
+	(fp_text user "IO2"
+		(at 0 3.6 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "c1f16fde-8979-56e2-9372-95b1f97841c3")
+		(effects
+			(font
+				(size 0.6 0.6)
+				(thickness 0.09)
+			)
+		)
+	)
+	(fp_text user "IO3"
+		(at 2 4.4 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "9b6cc737-0c26-5f2d-9490-73cdfd781722")
+		(effects
+			(font
+				(size 0.6 0.6)
+				(thickness 0.09)
+			)
+		)
+	)
+	(fp_text user "IO14"
+		(at 4 3.6 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "8fc3b5fb-cd25-5875-8d37-5bc5978c2730")
+		(effects
+			(font
+				(size 0.6 0.6)
+				(thickness 0.09)
+			)
+		)
+	)
+	(fp_text user "IO21"
+		(at 6 4.4 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "a595b07c-69b7-5d59-b196-3b9b157de41c")
+		(effects
+			(font
+				(size 0.6 0.6)
+				(thickness 0.09)
+			)
+		)
+	)
+	(fp_rect
+		(start -1.95 -1.7)
+		(end 7.95 2.8)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "2c905002-78ec-5945-8ba8-abb874946d44")
+	)
+	(fp_poly
+		(pts (xy -0.35 -1.5) (xy 0.35 -1.5) (xy 0 -1.1))
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "1d77590e-53f0-5c4b-8029-924569c1e097")
+	)
+	(fp_text user "ES3C28P GPIO"
+		(at 3 1.9 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "c14fb764-2b3f-5a21-ab8e-38435723d46b")
+		(effects
+			(font
+				(size 0.7 0.7)
+				(thickness 0.1)
+			)
+		)
+	)
+	(fp_rect
+		(start -2.2 -1.95)
+		(end 8.2 3.05)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "f4b5fc2d-e500-5b3d-abe5-720927e0e421")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 3 0.55 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "60615ff8-63e4-5ded-9fd4-9cbeaf110205")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" thru_hole rect
+		(at 0 0)
+		(size 1.2 1.75)
+		(drill 0.8)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "5670f32a-505a-54a2-95cf-d6e6de7c71b1")
+	)
+	(pad "2" thru_hole oval
+		(at 2 0)
+		(size 1.2 1.75)
+		(drill 0.8)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "eb0bf2da-2818-5ef5-8cda-027519a34871")
+	)
+	(pad "3" thru_hole oval
+		(at 4 0)
+		(size 1.2 1.75)
+		(drill 0.8)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "466ee29d-9e90-5ad5-85a5-f6910ecbf67d")
+	)
+	(pad "4" thru_hole oval
+		(at 6 0)
+		(size 1.2 1.75)
+		(drill 0.8)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "40d6459e-e1a8-524d-b1c2-46e716ab71dd")
+	)
+	(embedded_fonts no)
+	(model "${RCBENCH_MODULES_3D}/ES3C28P_GPIO_JST_PH_B4B-PH-K-S.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)

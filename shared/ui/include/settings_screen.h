@@ -245,6 +245,13 @@ int settings_hub_cat_tile(setting_cat_t cat);
 void settings_screen_open_on(setting_cat_t cat, int entry);
 
 /**
+ * @brief SETUP's next entry keeps its list as it was left: the category,
+ *        the entry and the scroll, with nothing over it.  SEARCH
+ *        (wl_search.h) calls it on its way back to SETUP > WIRELESS.
+ */
+void settings_screen_resume(void);
+
+/**
  * @brief Whether a tile of the hub opens screen @p id.  The home tag of such a
  * screen leads back to SETUP rather than to the menu.
  *

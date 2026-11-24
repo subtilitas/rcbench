@@ -1,0 +1,30 @@
+{
+  "name": "rcbench-flasher",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "node tools/licenses.ts --check && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "licenses": "node tools/licenses.ts",
+    "size": "node tools/size.ts",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "esptool-js": "0.7.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.0",
+    "@types/node": "24.19.2",
+    "@types/w3c-web-serial": "1.0.9",
+    "@types/w3c-web-usb": "1.0.14",
+    "typescript": "7.0.2",
+    "vite": "8.3.4"
+  }
+}

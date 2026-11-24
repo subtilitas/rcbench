@@ -5,7 +5,8 @@
 # protocols/phase_tap/rp2350/tone_cap.pio, test/host/test_kst_pio.c for
 # protocols/kst/rp2350/kst_line.pio, test/host/test_hitec_pio.c for
 # protocols/hitec/rp2350/hitec_line.pio, test/host/test_ew_pio.c for
-# protocols/escwire/rp2350/ew_line.pio) assembles the program with a small
+# protocols/escwire/rp2350/ew_line.pio, test/host/test_pass_pio.c for
+# protocols/passthru/rp2350/pass.pio) assembles the program with a small
 # assembler and runs the words in a model of the state machine.  This holds
 # pioasm's output for the same file to the list the host test is held to, so
 # the model runs what the chip runs.

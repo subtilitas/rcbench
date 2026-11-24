@@ -106,6 +106,22 @@ Apache License 2.0. esp_wifi_remote's dummy_src.c is an empty file without a
 licence line.
 
 
+Mbed TLS in the host test build
+-------------------------------
+
+The panel verifies the release signature of its image with Mbed TLS
+(shared/fwupdate/fw_sign.c), the copy ESP-IDF v6.1 ships: Mbed TLS 4.1.0
+with TF-PSA-Crypto 1.1.0. The host test build compiles the same release
+from a source tree or from the release tarball that CMake downloads and
+checks against its SHA-256 (test/host/CMakeLists.txt). No Mbed TLS source
+file is stored in this repository.
+
+  Copyright The Mbed TLS Contributors
+  Licensed under the Apache License, Version 2.0 or the GNU General Public
+  License, version 2 or later, at the user's choice.
+  https://github.com/Mbed-TLS/mbedtls/blob/mbedtls-4.1.0/LICENSE
+
+
 Components the M5Stack Dial build fetches
 -----------------------------------------
 
@@ -141,6 +157,48 @@ hardware/mechanical/vendor/m5stack_dial/LICENSE. The STEP models
 are generated from that mesh by hardware/mechanical/m5dial.py, which fits
 surfaces to its triangles. They hold M5Stack's geometry of the 9 plastic
 parts and are under the same licence.
+
+
+Libraries the web flasher bundles
+---------------------------------
+
+The web flasher (flasher/) is built with Vite into a static page at
+/rcbench/flash/ on the project's GitHub Pages site. Its build bundles these
+packages; flasher/package-lock.json pins them, and they are not in this
+repository. The page ships their licence texts as licenses.txt beside it
+(flasher/public/licenses.txt, written by flasher/tools/licenses.ts) and links
+the file in its footer.
+
+  esptool-js 0.7.1      Apache License 2.0
+                        Copyright (c) 2023 Espressif Systems (Shanghai) Co.
+                        Ltd.  The package ships no NOTICE file.  It carries
+                        the flasher stub images of esptool's stub_flasher/2
+                        set, built from github.com/espressif/esp-flasher-stub
+                        by Espressif, Apache License 2.0 or MIT License at
+                        the user's option.
+  pako 2.2.0            MIT License and zlib License
+                        Copyright (C) 2014-2017 by Vitaly Puzrin and Andrei
+                        Tuputcyn; the zlib port (C) 1995-2013 Jean-loup
+                        Gailly and Mark Adler.
+  atob-lite 2.0.0       MIT License, by Hugh Kennedy; the licence file
+                        carries no copyright line.
+
+The PICOBOOT client and the UF2 reader of the page (flasher/src/picoboot.ts,
+flasher/src/uf2.ts) are written for this project. Their command values,
+command layout, status codes and family IDs follow boot/picoboot.h,
+boot/picoboot_constants.h and boot/uf2.h of pico-sdk 2.3.0, and the order of
+a transfer, the RP2350-E10 rule, the target partition and the reboot
+parameters follow picotool 2.3.0 (picoboot_connection.c, main.cpp). No code
+is copied. Both are under these terms:
+
+  Copyright (c) 2020 Raspberry Pi (Trading) Ltd.
+  SPDX-License-Identifier: BSD-3-Clause
+
+The full BSD 3-Clause text is in flasher/tools/pico-BSD-3-Clause.txt and in
+licenses.txt beside the page. Facts of the RP2350 datasheet (CC BY-ND 4.0)
+are used; none of its text or figures is copied.
+
+Vite, TypeScript and Playwright build and test the page and are not shipped.
 
 
 Design and protocol references
@@ -199,7 +257,8 @@ Protocol, firmware, software and interface names:
   OpenYGE, S.BUS, S.BUS2, JETI EX Bus, SRXL2, HoTT, SUMD, iBUS, CRSF, DShot,
   OneShot, MultiShot, KISS, BLHeli, BLHeli_S, BLHeli_32, Bluejay, AM32,
   ESCape32, VESC, ArduPilot, PX4, Betaflight, DroneCAN, FreeRTOS, ESP-IDF,
-  pico-sdk, OpenOCD, sigrok, KingstVIS, Qwiic, Bluetooth, Wi-Fi, USB-C.
+  pico-sdk, picotool, esptool, OpenOCD, sigrok, KingstVIS, Qwiic, Bluetooth,
+  Wi-Fi, USB-C, Chrome, Edge, Firefox, Safari, Windows, macOS, ChromeOS.
   DShot is the name of a protocol; no owner and no trademark is stated for
   it, and this project claims no right in the name.
 

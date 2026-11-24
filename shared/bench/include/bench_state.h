@@ -184,16 +184,22 @@ static inline bool bench_state_rpm_over(const bench_state_t *b)
 }
 
 /**
- * @brief True when the peak speed is at the register's ceiling.
+ * @brief True when the peak speed is above the register's ceiling of
+ *        65,535rpm.
  *
- * LINK_BN_RPM_MAX has no valid bit: 65535 stands for 65,535rpm or more.
+ * From the link, LINK_BN_RPM_MAX_OVER says so (protocol 4.40): with it
+ * RPM_MAX's 65535 is a bound, without it 65,535rpm.  An IOmcu of 4.39 or
+ * older never sets the bit, so its 65535 reads as 65,535rpm.  A peak
+ * the panel holds unencoded, above 65,535rpm, is a bound as well.
  *
  * @param b The state to test.
  * @return true when the peak is a bound, not a reading.
  */
 static inline bool bench_state_rpm_max_over(const bench_state_t *b)
 {
-    return b != NULL && b->rpm_max >= BENCH_RPM_REG_MAX;
+    return b != NULL
+           && ((b->flags & (uint16_t)LINK_BN_RPM_MAX_OVER) != 0u
+               || b->rpm_max > BENCH_RPM_REG_MAX);
 }
 
 /**
@@ -215,7 +221,9 @@ void bench_state_from_regs(bench_state_t *b, const uint16_t *regs,
  * @brief Encode into a BENCH page, for the IOmcu and for round-trip tests.
  *
  * A speed above 65,535rpm goes as LINK_BN_RPM 65535 with LINK_BN_RPM_OK
- * clear (bench_state_rpm_over()); a peak above it as LINK_BN_RPM_MAX 65535.
+ * clear (bench_state_rpm_over()); a peak above it as LINK_BN_RPM_MAX 65535
+ * with LINK_BN_RPM_MAX_OVER set, and any other peak with the bit clear
+ * (bench_state_rpm_max_over()).
  *
  * @param b    The state to encode.
  * @param regs The page to fill, LINK_BN_COUNT registers.
@@ -319,6 +327,9 @@ void bench_throttle_to_row(const bench_throttle_t *t, bench_state_t *b);
 
 /**
  * @brief Clear the peaks without disturbing the live readings.
+ *
+ * Each peak restarts at its live reading; the peak speed is a bound
+ * (LINK_BN_RPM_MAX_OVER) when the live speed is one.
  *
  * @param b The state whose peaks are cleared.
  */
@@ -459,18 +470,37 @@ typedef struct {
     double  mah;  /**< charge, mAh; double, see below */
     double  wh;  /**< energy, Wh; double, see below */
     uint8_t counted;   /**< BENCH_COUNTED_* */
-    float   run_s;     /**< driving time counted since the reset */
+    /**
+     * @brief Driving time counted since the reset, ms: each step rounded to
+     *        the ms and summed as an integer, so the sum does not drift.  A
+     *        float sum of 50ms steps reads 3,602.3s after 1h.  Stops at
+     *        UINT32_MAX, 49.7 days.
+     */
+    uint32_t run_ms;
 } bench_totals_t;
 
 /**
- * @brief How long into a run the INA228's totals are not taken, in seconds.
+ * @brief How long into a run the INA228's totals are not taken, in ms.
  *
  * An IOmcu builds the BENCH page from its 50Hz sample, so one that does not
  * clear the page on the arm (bench_state_run_starts()) can carry the last run's
  * totals with LINK_BN_TOTALS_OK for up to 20ms after it; the panel counts on
  * its own until five such samples have passed.
  */
-#define BENCH_TOTALS_SETTLE_S 0.1f
+#define BENCH_TOTALS_SETTLE_MS 100u
+
+/**
+ * @brief Add a step to the driving time of @p t, rounded to the ms; the sum
+ *        stops at UINT32_MAX.
+ *
+ * @param t    The totals.
+ * @param dt_s The step in s, already clamped to 0 .. BENCH_TOTALS_MAX_STEP_S.
+ */
+static inline void bench_totals_add_time(bench_totals_t *t, float dt_s)
+{
+    const uint32_t step_ms = (uint32_t)(dt_s * 1000.0f + 0.5f);
+    t->run_ms = (t->run_ms > UINT32_MAX - step_ms) ? UINT32_MAX : t->run_ms + step_ms;
+}
 
 /**
  * @brief A run begins: nothing counted.
@@ -487,7 +517,7 @@ void bench_totals_reset(bench_totals_t *t);
  * @p dt_s is the time since the last call, clamped to
  * 0 .. BENCH_TOTALS_MAX_STEP_S, so a loop that stalled counts at most one
  * second of its last reading.  With LINK_BN_TOTALS_OK in @p b's flags and
- * BENCH_TOTALS_SETTLE_S of the run counted, the count is @p b's own charge
+ * BENCH_TOTALS_SETTLE_MS of the run counted, the count is @p b's own charge
  * and energy instead, both counted.
  *
  * @param t       The running totals.

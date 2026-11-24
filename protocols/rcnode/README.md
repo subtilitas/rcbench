@@ -144,8 +144,9 @@ LANG refuses it with ATT error 0x13.
   left for tests and for no registered company), `r`, `c`, the protocol
   version and the role. A central that scans with duplicate filtering
   lists the node from this report alone.
-- Scan response, 18 bytes: the complete name `rcbench-pwr-XXXX` or
-  `rcbench-bal-XXXX` (the two address bytes printed last, upper-case hex).
+- Scan response, 18 bytes: the complete name `rcbench-pwr-XXXX`,
+  `rcbench-bal-XXXX` or `rcbench-srv-XXXX` (the two address bytes printed
+  last, upper-case hex).
 - `rcnode_adv_match()` takes a report's advertising or scan response. The
   manufacturer data names the role first, then the name. The service UUID
   alone matches with role 0. A structure whose length runs past the end
@@ -155,6 +156,10 @@ LANG refuses it with ATT error 0x13.
   name.
 - `rcnode_name_role()` takes a name a scan kept and gives the role its
   prefix names, 0 for another name.
+- Role 3 (`RCNODE_ROLE_SERVO`), the remote servo node's ES3C28P, has its
+  name and its advertising. `rcnode_adv_match()`, `rcnode_adv_maker_role()`
+  and `rcnode_name_role()` give role 0 for it, and no packet or control op
+  of this module is the servo role's.
 
 ### The power node's windows
 

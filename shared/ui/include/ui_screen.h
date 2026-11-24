@@ -78,6 +78,14 @@ typedef enum {
     SCREEN_SERVO_RAUTO,
     SCREEN_SERVO_KST,
     SCREEN_SERVO_HITEC,
+    /* SEARCH, from SETUP > WIRELESS' scan and bound rows of the Dial and
+     * the nodes: the found devices and the bind (wl_search.h); its home
+     * tag returns to WIRELESS on the device's entry. */
+    SCREEN_WL_SEARCH,
+    /* BACKUP, from SETUP > SD CARD's row LOAD SETTINGS and, as the
+     * restore offer, over OVERVIEW at start (sbk_screen.h): the card's
+     * settings files and the hold that loads one. */
+    SCREEN_SET_LOAD,
     SCREEN_COUNT
 } ui_screen_id_t;
 
