@@ -29,7 +29,9 @@
  * ESC wire line's pin while it has one), or before that the pin the page
  * last asked for (kst_hw_pin(), esc_hw_pin()).  A channel is active while
  * an OUTPUTS slot or a programming port with a function is bound to its
- * output's pin.
+ * output's pin, or its PASS SOURCE is PASS-THROUGH.  Without the port
+ * switches no write activates another channel while a session is open
+ * (rsn_lock(), rail_bind.h).
  *
  * On the other boards (IOMCU_BOARD_RSN 0) each function does nothing: no
  * pin is touched, no fault is set and nothing is refused.
@@ -48,6 +50,7 @@
 #include "iomcu_rsn_pio.h"
 #include "power_page.h"
 #include "prog_rail.h"
+#include "rail_bind.h"
 #include "rsn_pins.h"
 
 #if IOMCU_BOARD_RSN
@@ -211,7 +214,8 @@ uint16_t rsn_pass(uint32_t now)
     if (trip != 0u) {
         prog_rail_off(&s_rail);     /* no session switches a trip back on */
     }
-    /* A port on whose output became a throttle afterwards goes off. */
+    /* A port on whose output became a throttle goes off: at the binding
+     * write itself (rsn_throttle_hold()), and here for anything else. */
     (void)power_hold(&s_power, throttles());
     drive();
     const uint32_t half = s_chip_ok ? RSN_LED_OK_MS : RSN_LED_REFUSED_MS;
@@ -301,7 +305,8 @@ static int session_port(void)
 
 void rsn_throttle_hold(void)
 {
-    (void)power_hold(&s_power, throttles());
+    (void)rail_bind_hold(&s_power, &s_outputs, &s_prog,
+                         outbind_roles(IOMCU_BOARD_ID));
     drive();
 }
 
@@ -352,6 +357,25 @@ void rsn_prog_tell(void)
     drive();
 }
 
+/**
+ * @brief The programming sessions open now: each programming port a KST or
+ *        HITEC session holds out of PWM, every port while the ESC_WIRE page
+ *        holds its line.
+ *
+ * @return Bit q for programming port q; 0 with no session.
+ */
+static uint8_t open_sessions(void)
+{
+    return (uint8_t)(kst_port_quiet_mask(&s_kst)
+                     | hitec_port_quiet_mask(&s_hitec)
+                     | (esc_port_supply_hold(&s_esc) ? 0xFFu : 0u));
+}
+
+uint16_t rsn_lock(void)
+{
+    return rail_bind_lock(&s_power, open_sessions() != 0u, session_port());
+}
+
 uint8_t rsn_prog_refused(void)
 {
     /* CONNECT's rules read the BEC check and the active ports only. */
@@ -364,10 +388,7 @@ uint8_t rsn_prog_refused(void)
         k_of[q] = (pin != PROG_PORT_NO_PIN) ? out_of(pin) : PROG_RAIL_NO_PORT;
     }
     /* One programming session at a time on the node (PLAN 2.1, 2.6). */
-    const uint8_t held = (uint8_t)(kst_port_quiet_mask(&s_kst)
-                                   | hitec_port_quiet_mask(&s_hitec)
-                                   | (esc_port_supply_hold(&s_esc) ? 0xFFu
-                                                                   : 0u));
+    const uint8_t held = open_sessions();
     return prog_rail_connect_mask(&s_power, k_of, IOMCU_PROG_PORTS, held, &c);
 }
 
@@ -449,6 +470,8 @@ int rsn_prog_set(bool on, uint16_t mv, uint16_t ma)
 void rsn_prog_tell(void) {}
 
 uint8_t rsn_prog_refused(void) { return 0u; }
+
+uint16_t rsn_lock(void) { return 0u; }
 
 bool rsn_esc_refused(void) { return false; }
 

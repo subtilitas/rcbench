@@ -82,6 +82,17 @@ history is in git.
 
 ### Changed
 
+- IOmcu, remote servo node (board 3) without the port switches (POWER
+  `FITTED` 0): while a KST, Hitec or ESC wire session is open, a write
+  that activates another channel is refused with BUSY: an OUTPUTS slot or
+  BIND commit binding a driver on another output (`WHY` 6), a PROG port
+  given a function on another output, a PASS `SOURCE` set to
+  PASS-THROUGH. Judged at the write against the sessions open then. With
+  the switches nothing changes
+  ([Link, Programming on the common rail](docs/Link.md#programming-on-the-common-rail)).
+- IOmcu, board 3: a port that is on when an OUTPUTS, BIND, CHAN_CFG,
+  PROG or PASS write makes its output a throttle goes off in that write, before
+  the next main-loop pass renders a frame on it, not one pass later.
 - A plain DShot or PPM pad has its input enable cleared while its PIO
   block drives it, on every board; a bidirectional DShot pad keeps it
   ([DShot: Which pin](docs/DShot.md#which-pin)).

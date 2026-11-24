@@ -45,7 +45,7 @@
 static pass_page_t p;
 static pass_dec_t  d;
 
-static const pass_ctx_t SAFE  = { false, 0u };
+static const pass_ctx_t SAFE  = { false, 0u, 0u };
 
 static outputs_t bank;
 
@@ -65,7 +65,7 @@ static const outputs_t *armed_for(uint8_t roles)
     outputs_arm_roles(&bank, roles, 0u);
     return &bank;
 }
-static const pass_ctx_t ARMED = { true, 0u };
+static const pass_ctx_t ARMED = { true, 0u, 0u };
 
 static uint8_t src(unsigned k, uint16_t v, const pass_ctx_t *c)
 {
@@ -143,14 +143,14 @@ TEST_CASE(bad_values_read_only_registers_and_ranges_are_refused_whole)
 TEST_CASE(off_and_pass_through_are_refused_on_a_pin_held_elsewhere)
 {
     pass_page_init(&p, true, 0u);
-    const pass_ctx_t held = { false, (uint16_t)(1u << 3) };
+    const pass_ctx_t held = { false, (uint16_t)(1u << 3), 0u };
     CHECK_EQ(src(3, LINK_PA_SRC_PASS, &held), LINK_NACK_BUSY);
     CHECK_EQ(src(3, LINK_PA_SRC_OFF, &held), LINK_NACK_BUSY);
     CHECK_EQ(src(3, LINK_PA_SRC_BENCH, &held), 0u);
     CHECK_EQ(src(4, LINK_PA_SRC_PASS, &held), 0u);
     CHECK_EQ(pass_page_held(&p), 1u << 4);
     /* A channel the page holds already moves between OFF and PASS-THROUGH. */
-    const pass_ctx_t also = { false, (uint16_t)(1u << 4) };
+    const pass_ctx_t also = { false, (uint16_t)(1u << 4), 0u };
     CHECK_EQ(src(4, LINK_PA_SRC_OFF, &also), 0u);
 }
 
@@ -436,7 +436,7 @@ TEST_CASE(a_programming_ports_pin_is_busy_for_every_source_change)
     CHECK_EQ(pass_page_busy(NULL, NULL, 0u), 0u);
     /* OFF and PASS-THROUGH on the port's pin: BUSY, SOURCE stays BENCH. */
     pass_page_init(&p, true, 0u);
-    const pass_ctx_t c = { false, pass_page_busy(&o, &pg, 0u) };
+    const pass_ctx_t c = { false, pass_page_busy(&o, &pg, 0u), 0u };
     CHECK_EQ(src(2, LINK_PA_SRC_OFF, &c), LINK_NACK_BUSY);
     CHECK_EQ(src(2, LINK_PA_SRC_PASS, &c), LINK_NACK_BUSY);
     CHECK_EQ(reg(LINK_PA_SOURCE(2)), LINK_PA_SRC_BENCH);
@@ -445,7 +445,7 @@ TEST_CASE(a_programming_ports_pin_is_busy_for_every_source_change)
     const uint16_t none = (uint16_t)LINK_PG_PIN_NONE;
     CHECK_EQ(prog_port_write(&pg, (uint8_t)LINK_PG_REG(0u, LINK_PG_PIN), 1u,
                              &none, &o, 0u, false, 0u), 0u);
-    const pass_ctx_t c2 = { false, pass_page_busy(&o, &pg, 0u) };
+    const pass_ctx_t c2 = { false, pass_page_busy(&o, &pg, 0u), 0u };
     CHECK_EQ(src(2, LINK_PA_SRC_OFF, &c2), 0u);
 }
 

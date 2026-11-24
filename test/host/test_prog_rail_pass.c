@@ -35,7 +35,7 @@
 static pass_page_t g_pa;
 static pass_dec_t  g_dec;
 
-static const pass_ctx_t SAFE = { false, 0u };
+static const pass_ctx_t SAFE = { false, 0u, 0u };
 
 /* A bank armed for every role. */
 static const outputs_t *all_armed(void)

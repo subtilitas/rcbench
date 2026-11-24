@@ -510,7 +510,7 @@ TEST_CASE(a_pass_through_throttle_is_a_throttle_port)
 {
     const outbind_roles_t *r = outbind_roles((uint16_t)OUTBIND_BOARD_RSN);
     if (r == NULL) { T_FAIL("no board 3"); return; }
-    const pass_ctx_t safe = { false, 0u };
+    const pass_ctx_t safe = { false, 0u, 0u };
     const uint16_t pass = LINK_PA_SRC_PASS;
     outputs_t o;
     pass_page_t pa;

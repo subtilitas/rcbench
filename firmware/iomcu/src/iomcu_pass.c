@@ -209,7 +209,10 @@ static void passing_follow(void)
 uint8_t thru_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in)
 {
     (void)ctx;
-    const pass_ctx_t c = { .armed = armed(), .busy = busy() };
+    /* The sessions as they stand at this write: without the port
+     * switches no channel goes to PASS-THROUGH while one is open. */
+    const pass_ctx_t c = { .armed = armed(), .busy = busy(),
+                           .locked = rsn_lock() };
     const uint8_t nack = pass_page_write(&s_thru, off, n, in, &c);
     if (nack == 0u) {
         /* The pins the pages now hold are no slot's, and their pads go

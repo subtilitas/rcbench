@@ -1284,9 +1284,10 @@ void rsn_off(void);
 uint16_t rsn_pass(uint32_t now);
 /**
  * @brief A port whose output became a throttle switched off now, not one
- *        pass later (power_hold() over power_throttle()): call right after
- *        a PASS SOURCE write and a CHAN_CFG role change.  Nothing on boards
- *        1 and 2.
+ *        pass later (rail_bind_hold(): power_hold() over power_throttle()),
+ *        and the switches driven: call right after every taken write that
+ *        can make an output a throttle (OUTPUTS, BIND, CHAN_CFG, PROG, PASS
+ *        SOURCE).  Nothing on boards 1 and 2.
  */
 void rsn_throttle_hold(void);
 /**
@@ -1345,6 +1346,15 @@ bool rsn_esc_open_ok(uint8_t pin);
  * @return true then; false on the other boards.
  */
 bool rsn_esc_refused(void);
+/**
+ * @brief The outputs whose channel no write may activate now
+ *        (rail_bind_lock()): without the port switches, while a KST, Hitec
+ *        or ESC wire session is open, every output but the session's.
+ *        Judged against the sessions as they stand at the call.
+ *
+ * @return Bit k for output k; 0 with the switches and on the other boards.
+ */
+uint16_t rsn_lock(void);
 /**
  * @brief The POWER page's read (power_read()).
  *

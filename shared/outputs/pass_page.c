@@ -139,6 +139,11 @@ uint8_t pass_page_write(pass_page_t *p, uint8_t off, uint8_t n,
             && (c->busy & (1u << k)) != 0u) {
             return (uint8_t)LINK_NACK_BUSY;
         }
+        if (p->source[k] != (uint16_t)LINK_PA_SRC_PASS
+            && want[k] == (uint16_t)LINK_PA_SRC_PASS
+            && (c->locked & (1u << k)) != 0u) {
+            return (uint8_t)LINK_NACK_BUSY;
+        }
     }
     memcpy(p->source, want, sizeof(want));
     for (unsigned k = 0; k < LINK_PA_CHANNELS; ++k) {
