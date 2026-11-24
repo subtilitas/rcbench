@@ -1,0 +1,329 @@
+{
+ "name": "stop",
+ "lang": "en",
+ "music": "pachelbel-canon",
+ "music_gain": 0.5,
+ "voice": {
+  "blend": {
+   "af_heart": 0.6,
+   "af_nicole": 0.4
+  },
+  "lang": "en-us",
+  "speed": 0.94
+ },
+ "brand": "STOP",
+ "steps": 4,
+ "chapters": [
+  "Stop",
+  "While it is latched",
+  "Reset",
+  "The stop button"
+ ],
+ "scenes": [
+  {
+   "type": "case",
+   "dur": 12.0,
+   "display": {
+    "view": "motor-plot",
+    "screen": "motor"
+   },
+   "title": {
+    "from": 0.3,
+    "to": 5.0,
+    "kicker": "rcbench · safety",
+    "heading": "STOP",
+    "text": "One touch stops the bench.<br>A 2s hold resets it."
+   },
+   "chips": [
+    {
+     "from": 5.4,
+     "to": 12.0,
+     "n": "i",
+     "text": "STOP on every screen"
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      -300,
+      175,
+      300
+     ],
+     [
+      -95,
+      10,
+      0
+     ]
+    ],
+    [
+     4.6,
+     [
+      -250,
+      200,
+      300
+     ],
+     [
+      -80,
+      12,
+      0
+     ]
+    ],
+    [
+     6.4,
+     [
+      -60,
+      190,
+      330
+     ],
+     [
+      -10,
+      40,
+      0
+     ]
+    ],
+    [
+     12.0,
+     [
+      -40,
+      185,
+      320
+     ],
+     [
+      -5,
+      40,
+      0
+     ]
+    ]
+   ],
+   "labels": [
+    {
+     "from": 6.8,
+     "to": 11.6,
+     "anchor": {
+      "pixel": [
+       934,
+       29
+      ]
+     },
+     "at": [
+      1340,
+      200
+     ],
+     "side": "l",
+     "n": "i",
+     "title": "STOP",
+     "text": "Top right of every screen, in the band."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.6,
+     "text": "This video shows how stop works on the R C bench."
+    },
+    {
+     "at": 6.6,
+     "text": "Stop sits at the top right of every screen."
+    }
+   ]
+  },
+  {
+   "type": "screen",
+   "screen": "motor",
+   "steps": [
+    {
+     "view": "motor-plot",
+     "dur": 4.0,
+     "n": 1,
+     "chip": "Stop",
+     "title": "A motor runs",
+     "text": "The bench is <b>ARMED</b>. A motor runs at 64% throttle.",
+     "say": "Step 1. The bench is armed and a motor runs at 64 percent throttle.",
+     "target": [
+      300,
+      420
+     ]
+    },
+    {
+     "view": "motor-plot",
+     "dur": 3.0,
+     "n": 1,
+     "chip": "Stop",
+     "title": "One touch",
+     "text": "Touch <b>STOP</b>. It acts on the press.",
+     "say": "Touch stop. It acts on the press.",
+     "target": [
+      934,
+      29
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "stop-latched",
+     "dur": 7.0,
+     "n": 1,
+     "chip": "Stop",
+     "title": "Stopped and latched",
+     "text": "The bench is <b>SAFE</b>. Every output is off: motor and servo outputs, the PD mini output and the programming ports' 5V.",
+     "say": "The bench is safe. Every output is off: the motor and servo outputs, the P D mini output, and the 5 volts of the programming ports.",
+     "target": [
+      300,
+      420
+     ],
+     "style": "warn"
+    },
+    {
+     "view": "stop-latched",
+     "dur": 5.4,
+     "n": 1,
+     "chip": "Stop",
+     "title": "Stopped and latched",
+     "text": "<b>STOPPED</b> stays in its yellow frame when the finger lifts and when the screen changes. The chip reads <b>STOP</b>.",
+     "say": "The stop latches. It stays when the finger lifts, and when the screen changes.",
+     "target": [
+      934,
+      29
+     ]
+    },
+    {
+     "view": "stop-latched",
+     "dur": 3.4,
+     "n": 2,
+     "chip": "While it is latched",
+     "title": "ARM is refused",
+     "text": "Press <b>ARM</b>.",
+     "say": "Step 2. While stop is latched, press arm.",
+     "target": [
+      512,
+      527
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "stop-refused",
+     "dur": 8.0,
+     "n": 2,
+     "chip": "While it is latched",
+     "title": "ARM is refused",
+     "text": "<b>ARM</b>, <b>OUTPUT ON</b>, <b>PROG 5V ON</b> and the start of a test or a limit run are refused. An arm does not clear this stop.",
+     "say": "The bench refuses. Arm, output on, the programming ports' 5 volts and the start of a run all stay refused. An arm does not clear this stop.",
+     "target": [
+      300,
+      580
+     ],
+     "style": "warn"
+    },
+    {
+     "view": "stop-refused",
+     "dur": 3.4,
+     "n": 3,
+     "chip": "Reset",
+     "title": "A short touch",
+     "text": "Touch <b>STOP</b> again and let go.",
+     "say": "Step 3. The reset is a hold. A short touch on stop",
+     "target": [
+      934,
+      29
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "stop-short",
+     "dur": 3.6,
+     "n": 3,
+     "chip": "Reset",
+     "title": "A short touch",
+     "text": "A release before 2s resets nothing: <b>Hold 2s to reset the STOP.</b>",
+     "say": "resets nothing, and the bench says so.",
+     "target": [
+      300,
+      580
+     ]
+    },
+    {
+     "view": "stop-holding",
+     "dur": 5.6,
+     "n": 3,
+     "chip": "Reset",
+     "title": "Hold 2s",
+     "text": "Hold <b>STOP</b> for 2s with one unbroken contact. The fill fades from red to the frame's yellow.",
+     "say": "Hold stop for two seconds, with one unbroken contact. The fill fades from red to the yellow of the frame.",
+     "target": [
+      934,
+      29
+     ],
+     "action": "hold"
+    },
+    {
+     "view": "stop-holding",
+     "dur": 5.0,
+     "n": 3,
+     "chip": "Reset",
+     "title": "The bench checks",
+     "text": "The panel waits until the IOmcu reports every output off, at least 500ms after the last STOP. Then the heartbeat resumes.",
+     "say": "Before it resets, the panel waits until the I O M C U reports every output off.",
+     "target": [
+      934,
+      29
+     ]
+    },
+    {
+     "view": "stop-reset",
+     "dur": 7.0,
+     "n": 3,
+     "chip": "Reset",
+     "title": "Reset",
+     "text": "The chip reads <b>SAFE</b>. The bench stays SAFE: <b>ARM</b>, <b>OUTPUT ON</b> and <b>PROG 5V ON</b> each need their own hold.",
+     "say": "The stop is reset and the bench stays safe. Arm, output on, and the programming ports' 5 volts each need their own hold again.",
+     "target": [
+      512,
+      527
+     ],
+     "style": "ok"
+    },
+    {
+     "view": "band-hwstop",
+     "dur": 8.4,
+     "n": 4,
+     "chip": "The stop button",
+     "title": "The stop button",
+     "text": "With <b>SETUP › PANEL › Hardware stop</b> ON, the bench's stop button shows as <b>HWSTOP</b>. It opens the heartbeat line: the IOmcu is SAFE and refuses ARM.",
+     "say": "Step 4. The bench's own stop button opens the heartbeat line to the I O M C U. The chip reads hardware stop, and the I O M C U is safe and refuses arm.",
+     "target": [
+      606,
+      29
+     ],
+     "screen": "overview"
+    },
+    {
+     "view": "band-hwstop",
+     "dur": 6.0,
+     "n": 4,
+     "chip": "The stop button",
+     "title": "Release it",
+     "text": "Release the button. <b>HWSTOP</b> goes 80 to 180ms after the line closes. The bench stays SAFE: hold <b>ARM</b> for 2s.",
+     "say": "Release the button, and the chip goes. The bench stays safe until arm is held for two seconds.",
+     "target": [
+      420,
+      100
+     ],
+     "screen": "overview"
+    }
+   ]
+  },
+  {
+   "type": "end",
+   "dur": 8,
+   "heading": "STOP",
+   "items": [
+    "One touch: SAFE, every output off",
+    "Latched: ARM and every ON refused",
+    "Hold STOP 2s to reset",
+    "After the reset: SAFE, each output needs its hold",
+    "A restart of the panel comes up unlatched and SAFE"
+   ],
+   "say": "One touch stops the bench. A two second hold resets it, and nothing switches on by itself.",
+   "note": "Reference: docs/Stop.md, docs/Safety.md."
+  }
+ ]
+}

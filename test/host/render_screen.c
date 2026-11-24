@@ -93,6 +93,7 @@
 #include "ui_setlist.h"
 #include "logview_spots.h"
 #include "motor_spots.h"
+#include "stop_hold.h"
 #include "ui_band.h"
 #include "prog5v_box.h"
 #include "prog_choice.h"
@@ -2899,6 +2900,59 @@ static void pose_update(const char *view)
 }
 
 /*
+ * A latched STOP on the screen the storyboard names, for tools/video only;
+ * no page shows these.  stop-latched: STOPPED over HOLD 2s TO RESET in its
+ * frame, the chip STOP.  stop-refused: the alert an ARM or an ON gets
+ * meanwhile.  stop-short: a hold let go after 0.5s and its hint.
+ * stop-holding: 1s into the reset's hold, the fill half way to the frame's
+ * yellow.  stop-reset: the hold complete and the stop taken, SAFE.
+ */
+static void stop_video_view(const char *view, ui_bench_status_t *st)
+{
+    if (strncmp(view, "stop-", 5) != 0) {
+        return;
+    }
+    const gfx_rect_t r = ui_band_stop_rect();
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .flags = TOUCH_FLAG_STOP_LATCHED,
+                        .point = { .id = 1,
+                                   .x = (int16_t)(r.x + r.w / 2),
+                                   .y = (int16_t)(r.y + r.h / 2),
+                                   .strength = 40 } };
+    const char *v = view + 5;
+    const int ticks = strcmp(v, "short") == 0 ? 25
+                      : strcmp(v, "holding") == 0 ? 50
+                      : strcmp(v, "reset") == 0 ? 110 : 0;
+
+    st->armed = false;
+    st->armed_roles = 0u;
+    st->stop_latched = true;
+    ui_router_set_status(st);
+    if (strcmp(v, "refused") == 0) {
+        ui_router_set_alert(TR(ALERT_STOP_HELD));
+    }
+    if (ticks > 0) {
+        ui_router_event(&e);
+        for (int i = 0; i < ticks; ++i) {
+            ui_router_tick(0.02f);
+        }
+    }
+    if (strcmp(v, "short") == 0 || strcmp(v, "reset") == 0) {
+        e.type = TOUCH_EVENT_UP;
+        ui_router_event(&e);
+    }
+    if (strcmp(v, "reset") == 0) {
+        /* The control task has carried the reset out. */
+        (void)stop_hold_take_reset();
+        st->stop_latched = false;
+        ui_router_set_status(st);
+        for (int i = 0; i < 30; ++i) {
+            ui_router_tick(0.02f);
+        }
+    }
+}
+
+/*
  * A help bubble of the band, opened by a tap on its chip over the menu.
  * The status is the view's: band-fault has the three bits this release
  * sets, band-fault-all every bit and one this panel has no name for --
@@ -3075,10 +3129,14 @@ static void pose_motor_supply(ui_screen_id_t id, const char *view,
          * bench is armed, and arming clears it.  Posed the other way round
          * the trace would be empty. */
         motor_screen_set_armed(true);
-        for (int i = 0; i < 780; ++i) {
+        /* A stop- view (tools/video) is motor-plot 6s after a STOP: the
+         * throttle at 0, the motor run down, the bench SAFE. */
+        const bool stopped = strncmp(view, "stop-", 5) == 0;
+        for (int i = 0; i < (stopped ? 900 : 780); ++i) {
             const float t = (float)i * 0.05f;
             float th = 0.0f;
-            if (t < 4.0f)                { th = 0.0f; }
+            if (t >= 39.0f)              { th = 0.0f; }
+            else if (t < 4.0f)           { th = 0.0f; }
             else if (t < 12.0f)          { th = 22.0f; }
             else if (t < 20.0f)          { th = 46.0f; }
             else if (t < 24.0f)          { th = 88.0f; }
@@ -3088,7 +3146,7 @@ static void pose_motor_supply(ui_screen_id_t id, const char *view,
             /* motor-plot is motor-table before the tap on TABLE: the
              * plot of a run with an IOmcu answering, for tools/video. */
             if (strcmp(view, "motor-table") == 0
-                || strcmp(view, "motor-plot") == 0
+                || strcmp(view, "motor-plot") == 0 || stopped
                 || strcmp(view, "motor-refused") == 0) {
                 /* An IOmcu reading an INA228: BENCH's numbers are the
                  * INA228's, and the ESC's own telemetry reads 0.18V and
@@ -3103,7 +3161,7 @@ static void pose_motor_supply(ui_screen_id_t id, const char *view,
             bench_totals_show(&totals, &bench);
             motor_screen_push(&bench);
         }
-        motor_screen_set_throttle(64.0f);
+        motor_screen_set_throttle(stopped ? 0.0f : 64.0f);
         /* Two pins bound as motors, as the panel reads them from the
          * binding. */
         motor_screen_set_throttle_pins(((uint64_t)1u << 0) | ((uint64_t)1u << 1),
@@ -3115,7 +3173,7 @@ static void pose_motor_supply(ui_screen_id_t id, const char *view,
          * views are of a SAFE bench after a run, but the one ARMED. */
         if (strcmp(view, "motor-held") == 0
             || strcmp(view, "motor-logname") == 0
-            || strncmp(view, "motor-settings", 14) == 0) {
+            || strncmp(view, "motor-settings", 14) == 0 || stopped) {
             motor_screen_set_armed(false);
         }
     }
@@ -4049,7 +4107,9 @@ static bool pose_carrier_views(ui_screen_id_t id, const char *view)
         || (strncmp(view, "servo-kst-", 10) == 0
             && strstr(view, "-input") == NULL
             && strstr(view, "-idle-") == NULL
-            && strstr(view, "-portlist-") == NULL)) {
+            && strstr(view, "-portlist-") == NULL)
+        || (strncmp(view, "servo-hitec-", 12) == 0
+            && strcmp(view, "servo-hitec-rbmod") != 0)) {
         prog5v_box_publish((uint8_t)PROG_SUPPLY_ON, 21u, 0u);
         prog5v_box_reading(true, 5018u, 86, 1u);
     } else {
@@ -5204,6 +5264,7 @@ int main(int argc, char **argv)
                            && strcmp(view, "motor-live") != 0
                            && strcmp(view, "motor-table") != 0
                            && strcmp(view, "motor-plot") != 0
+                           && strncmp(view, "stop-", 5) != 0
                            && strcmp(view, "motor-refused") != 0
                            && strcmp(view, "motor-idle") != 0
                            && strcmp(view, "motor-port") != 0
@@ -5274,6 +5335,7 @@ int main(int argc, char **argv)
         band_view(view, &st);
     }
     pose_shown_views(view);
+    stop_video_view(view, &st);
 
     pose_shown_setup(id, view);
     pose_shown_tools(id, view);

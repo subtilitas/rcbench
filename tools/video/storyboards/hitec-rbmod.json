@@ -1,0 +1,754 @@
+{
+ "name": "hitec-rbmod",
+ "lang": "en",
+ "music": "pachelbel-canon",
+ "music_gain": 0.5,
+ "voice": {
+  "blend": {
+   "af_heart": 0.6,
+   "af_nicole": 0.4
+  },
+  "lang": "en-us",
+  "speed": 0.94
+ },
+ "brand": "Hitec servo programmer",
+ "steps": 7,
+ "chapters": [
+  "Plug in",
+  "Open the programmer",
+  "Connect",
+  "Read the tabs",
+  "Edit",
+  "Write",
+  "Leave programming"
+ ],
+ "scenes": [
+  {
+   "type": "case",
+   "dur": 25.6,
+   "display": {
+    "view": "servo-hub-rbmod",
+    "screen": "servo"
+   },
+   "title": {
+    "from": 0.3,
+    "to": 4.9,
+    "kicker": "rcbench · rbmod carrier",
+    "heading": "Programming<br>a Hitec servo",
+    "text": "Plug in, connect, edit, write.<br>7 steps on the bench's touch screen."
+   },
+   "chips": [
+    {
+     "from": 5.2,
+     "to": 12.2,
+     "n": "i",
+     "text": "Inside the case"
+    },
+    {
+     "from": 13,
+     "to": 25.6,
+     "n": 1,
+     "text": "Plug the servo into J1"
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      -300,
+      175,
+      300
+     ],
+     [
+      -95,
+      10,
+      0
+     ]
+    ],
+    [
+     4.4,
+     [
+      -250,
+      200,
+      300
+     ],
+     [
+      -80,
+      12,
+      0
+     ]
+    ],
+    [
+     5.6,
+     [
+      -170,
+      215,
+      270
+     ],
+     [
+      0,
+      18,
+      0
+     ]
+    ],
+    [
+     7.4,
+     [
+      -110,
+      265,
+      235
+     ],
+     [
+      5,
+      26,
+      0
+     ]
+    ],
+    [
+     11,
+     [
+      -80,
+      275,
+      235
+     ],
+     [
+      8,
+      26,
+      0
+     ]
+    ],
+    [
+     14.3,
+     [
+      70,
+      82,
+      300
+     ],
+     [
+      34,
+      13,
+      40
+     ]
+    ],
+    [
+     18.6,
+     [
+      82,
+      74,
+      290
+     ],
+     [
+      38,
+      13,
+      40
+     ]
+    ],
+    [
+     20.6,
+     [
+      86,
+      34,
+      176
+     ],
+     [
+      62,
+      12,
+      64
+     ]
+    ],
+    [
+     25.6,
+     [
+      92,
+      32,
+      172
+     ],
+     [
+      64,
+      12,
+      64
+     ]
+    ]
+   ],
+   "lid": [
+    [
+     5.4,
+     0
+    ],
+    [
+     7,
+     48
+    ],
+    [
+     10.6,
+     48
+    ],
+    [
+     12.2,
+     0
+    ]
+   ],
+   "servo": {
+    "connector": "J1",
+    "position": 2,
+    "appear": 20.8,
+    "plug": [
+     22.0,
+     23.8
+    ]
+   },
+   "labels": [
+    {
+     "from": 7.1,
+     "to": 10.7,
+     "anchor": "rbmod",
+     "at": [
+      1390,
+      560
+     ],
+     "size": "sm",
+     "title": "rbmod carrier",
+     "text": "RP2350 IOmcu board. Its headers J1 and J2 face the case wall."
+    },
+    {
+     "from": 7.1,
+     "to": 10.7,
+     "anchor": "pdmini",
+     "at": [
+      90,
+      640
+     ],
+     "size": "sm",
+     "side": "r",
+     "title": "PD mini",
+     "text": "Adjustable supply for the servo outputs on J2."
+    },
+    {
+     "from": 7.1,
+     "to": 10.7,
+     "anchor": "display",
+     "at": [
+      120,
+      190
+     ],
+     "size": "sm",
+     "side": "r",
+     "title": "Display and panel",
+     "text": "7 inch touch screen, 1024 x 600, on the ESP32-P4."
+    },
+    {
+     "from": 14.6,
+     "to": 19.3,
+     "anchor": "J1",
+     "at": [
+      1340,
+      330
+     ],
+     "side": "b",
+     "style": "ok",
+     "n": "J1",
+     "title": "PROG ports",
+     "text": "<b>PROGP01</b> to <b>PROGP04</b>. Fixed 5 V, switched by the bench. Hitec servos are programmed here."
+    },
+    {
+     "from": 14.6,
+     "to": 19.3,
+     "anchor": "J2",
+     "at": [
+      250,
+      330
+     ],
+     "size": "sm",
+     "side": "b",
+     "style": "muted",
+     "title": "J2 · servo outputs",
+     "text": "PWM01 to PWM04. Not used for programming."
+    },
+    {
+     "from": 21.2,
+     "to": 25.4,
+     "anchor": "plug",
+     "at": [
+      1380,
+      560
+     ],
+     "n": 1,
+     "title": "Plug in one servo",
+     "text": "One servo on one position. <b>GND wire at the top</b>, towards the display. Signal wire at the bottom."
+    }
+   ],
+   "pinout": {
+    "from": 20.4,
+    "to": 25.4,
+    "connector": "J1",
+    "select": 2,
+    "subtitle": "Seen from outside the case, display up"
+   },
+   "say": [
+    {
+     "at": 0.6,
+     "text": "This video shows how the R C bench reads and writes the settings of a Hitec servo, on a bench with the R B mod carrier."
+    },
+    {
+     "at": 7.1,
+     "text": "The carrier sits under the display."
+    },
+    {
+     "at": 14.6,
+     "text": "Its header J 1 holds the four programming ports. The bench switches their 5 volts."
+    },
+    {
+     "at": 21.2,
+     "text": "Step 1. Plug the servo into one position, with the ground wire at the top, towards the display."
+    }
+   ]
+  },
+  {
+   "type": "screen",
+   "screen": "servo",
+   "steps": [
+    {
+     "view": "servo-hub-rbmod",
+     "dur": 4.0,
+     "n": 2,
+     "chip": "Open the programmer",
+     "title": "Open the Hitec programmer",
+     "text": "On the <b>SERVO</b> hub, tap <b>HITEC</b>.",
+     "say": "Step 2. On the servo hub, tap Hitec.",
+     "target": [
+      512,
+      415
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-hitec-rbmod",
+     "dur": 5.0,
+     "n": 3,
+     "chip": "Connect",
+     "title": "The series",
+     "text": "<b>SERIES</b> reads <b>D SERIES</b> or <b>CLASSIC</b>, the HS-5xxx and HS-7xxx servos. A tap changes it.",
+     "say": "Step 3. The series row reads D series or classic. This servo is a D 485, a D series servo.",
+     "target": [
+      237,
+      211
+     ]
+    },
+    {
+     "view": "servo-hitec-rbmod",
+     "dur": 5.2,
+     "n": 3,
+     "chip": "Connect",
+     "title": "Connect",
+     "text": "Hold <b>CONNECT</b> for 2s. The bench switches the ports' 5V on and takes the port out of PWM.",
+     "say": "Hold connect for two seconds. The bench switches the ports' 5 volts on and takes the port out of P W M.",
+     "target": [
+      542,
+      156
+     ],
+     "action": "hold"
+    },
+    {
+     "view": "servo-hitec-reading-rbmod",
+     "dur": 3.0,
+     "n": 3,
+     "chip": "Connect",
+     "title": "Reading the servo",
+     "text": "The 21 registers of a D series servo, each with 3 tries. <b>ABORT</b> stops the read.",
+     "say": "The bench reads the 21 registers of the servo.",
+     "target": [
+      542,
+      156
+     ]
+    },
+    {
+     "view": "servo-hitec-read-rbmod",
+     "dur": 5.0,
+     "n": 3,
+     "chip": "Connect",
+     "title": "The servo is read",
+     "text": "The model is named: <b>D485HW</b>. <b>INA PROG 5V</b> shows the ports' voltage and current.",
+     "say": "The servo is read and its model is named. The meter on the right shows the voltage and the current of the programming ports.",
+     "target": [
+      880,
+      261
+     ],
+     "style": "ok"
+    },
+    {
+     "view": "servo-hitec-read-rbmod",
+     "dur": 3.2,
+     "n": 4,
+     "chip": "Read the tabs",
+     "title": "MOTION",
+     "text": "Tap the <b>MOTION</b> tab.",
+     "say": "Step 4. The settings are on four tabs. Tap motion.",
+     "target": [
+      195,
+      99
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-hitec-motion-rbmod",
+     "dur": 4.6,
+     "n": 4,
+     "chip": "Read the tabs",
+     "title": "MOTION",
+     "text": "<b>SPEED</b>, <b>DEAD BAND</b> and <b>SOFT START</b>. The stored value stands in brackets.",
+     "say": "Motion holds speed, dead band and soft start. The value the servo stores stands in brackets.",
+     "target": [
+      487,
+      211
+     ]
+    },
+    {
+     "view": "servo-hitec-motion-rbmod",
+     "dur": 2.4,
+     "n": 4,
+     "chip": "Read the tabs",
+     "title": "TRAVEL",
+     "text": "Tap <b>TRAVEL</b>.",
+     "say": "Tap travel.",
+     "target": [
+      316,
+      99
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-hitec-travel-rbmod",
+     "dur": 4.6,
+     "n": 4,
+     "chip": "Read the tabs",
+     "title": "TRAVEL",
+     "text": "<b>NEUTRAL</b>, <b>LEFT END</b> and <b>RIGHT END</b> in counts and degrees, and <b>DIRECTION</b>.",
+     "say": "Travel holds the neutral and both end points, in counts and in degrees, and the direction.",
+     "target": [
+      487,
+      211
+     ]
+    },
+    {
+     "view": "servo-hitec-travel-rbmod",
+     "dur": 2.4,
+     "n": 4,
+     "chip": "Read the tabs",
+     "title": "PROTECT",
+     "text": "Tap <b>PROTECT</b>.",
+     "say": "Tap protect.",
+     "target": [
+      437,
+      99
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-hitec-protect-rbmod",
+     "dur": 4.2,
+     "n": 4,
+     "chip": "Read the tabs",
+     "title": "PROTECT",
+     "text": "<b>FAILSAFE</b>, <b>OVERLOAD PROTECTION</b> and <b>SMART SENSOR</b>.",
+     "say": "Protect holds the failsafe, the overload protection and the smart sensor.",
+     "target": [
+      487,
+      211
+     ]
+    },
+    {
+     "view": "servo-hitec-protect-rbmod",
+     "dur": 2.4,
+     "n": 4,
+     "chip": "Read the tabs",
+     "title": "INFO",
+     "text": "Tap <b>INFO</b>.",
+     "say": "Tap info.",
+     "target": [
+      558,
+      99
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-hitec-info-rbmod",
+     "dur": 4.0,
+     "n": 4,
+     "chip": "Read the tabs",
+     "title": "INFO",
+     "text": "The model, the <b>ID</b>, the position and registers with no known setting.",
+     "say": "Info shows the model, the I D and the horn's position.",
+     "target": [
+      237,
+      211
+     ]
+    },
+    {
+     "view": "servo-hitec-info-rbmod",
+     "dur": 3.0,
+     "n": 5,
+     "chip": "Edit",
+     "title": "Back to MOTION",
+     "text": "Tap <b>MOTION</b>.",
+     "say": "Step 5. To change a value, go back to motion.",
+     "target": [
+      195,
+      99
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-hitec-motion-rbmod",
+     "dur": 2.6,
+     "n": 5,
+     "chip": "Edit",
+     "title": "Edit SOFT START",
+     "text": "Tap the value of <b>SOFT START</b>.",
+     "say": "Tap the value of soft start.",
+     "target": [
+      487,
+      267
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-hitec-list-rbmod",
+     "dur": 3.4,
+     "n": 5,
+     "chip": "Edit",
+     "title": "Edit SOFT START",
+     "text": "A list offers 20% to 100%. Tap <b>60%</b>.",
+     "say": "A list offers its five values. Tap 60 percent.",
+     "target": [
+      317,
+      247
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-hitec-edit-rbmod",
+     "dur": 5.0,
+     "n": 5,
+     "chip": "Edit",
+     "title": "Marked, not written",
+     "text": "A <b>*</b> and the accent fill mark a value that differs from the servo's. Nothing has reached the servo.",
+     "say": "A star and the bright fill mark a value that differs from the servo's. Nothing has reached the servo yet.",
+     "target": [
+      487,
+      267
+     ]
+    },
+    {
+     "view": "servo-hitec-edit-rbmod",
+     "dur": 2.4,
+     "n": 5,
+     "chip": "Edit",
+     "title": "Edit SPEED",
+     "text": "Tap the value of <b>SPEED</b>.",
+     "say": "Tap the value of speed.",
+     "target": [
+      487,
+      155
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-hitec-pad-rbmod",
+     "dur": 2.6,
+     "n": 5,
+     "chip": "Edit",
+     "title": "Edit SPEED",
+     "text": "The keypad shows the range, 10 to 100%. Tap <b>5</b>.",
+     "say": "The keypad shows the range. Tap 5,",
+     "target": [
+      240,
+      292
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-hitec-typed5-rbmod",
+     "dur": 1.6,
+     "n": 5,
+     "chip": "Edit",
+     "title": "Edit SPEED",
+     "text": "Tap <b>0</b>.",
+     "say": "0,",
+     "target": [
+      87,
+      451
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-hitec-typed-rbmod",
+     "dur": 1.8,
+     "n": 5,
+     "chip": "Edit",
+     "title": "Edit SPEED",
+     "text": "Tap <b>OK</b>.",
+     "say": "and O K.",
+     "target": [
+      471,
+      451
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-hitec-edited-rbmod",
+     "dur": 4.4,
+     "n": 5,
+     "chip": "Edit",
+     "title": "Two edits",
+     "text": "Both values carry their <b>*</b>. The footer reads <b>WRITE 2 VALUES</b>.",
+     "say": "Both values carry their star, and the footer counts two values to write.",
+     "target": [
+      512,
+      527
+     ]
+    },
+    {
+     "view": "servo-hitec-edited-rbmod",
+     "dur": 2.6,
+     "n": 6,
+     "chip": "Write",
+     "title": "Back to SERVO",
+     "text": "Tap the <b>SERVO</b> tab.",
+     "say": "Step 6. Tap the servo tab.",
+     "target": [
+      74,
+      99
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-hitec-towrite-rbmod",
+     "dur": 5.2,
+     "n": 6,
+     "chip": "Write",
+     "title": "Before the write",
+     "text": "The note says what the write does: the servo saves, restarts and ignores signals for 1s.",
+     "say": "The note says what the write does besides the values: the servo saves, restarts, and ignores signals for one second.",
+     "target": [
+      300,
+      372
+     ]
+    },
+    {
+     "view": "servo-hitec-holding-rbmod",
+     "dur": 4.6,
+     "n": 6,
+     "chip": "Write",
+     "title": "Hold to write",
+     "text": "Hold <b>WRITE 2 VALUES</b> for 2s. The button fades from green to amber.",
+     "say": "Hold write 2 values for two seconds. The button fades from green to amber.",
+     "target": [
+      508,
+      322
+     ],
+     "action": "hold"
+    },
+    {
+     "view": "servo-hitec-backup-saving-rbmod",
+     "dur": 5.2,
+     "n": 6,
+     "chip": "Write",
+     "title": "The backup file",
+     "text": "Before the first write of a session, the servo's values as read go into a file on the card.",
+     "say": "Before the first write of a session, the bench saves the values it read from the servo in a backup file on the card.",
+     "target": [
+      190,
+      366
+     ]
+    },
+    {
+     "view": "servo-hitec-writing-card-rbmod",
+     "dur": 3.4,
+     "n": 6,
+     "chip": "Write",
+     "title": "Writing",
+     "text": "Do not unplug the servo or the bench while writing.",
+     "say": "Then it writes. Do not unplug the servo or the bench meanwhile.",
+     "target": [
+      150,
+      334
+     ],
+     "style": "warn",
+     "tag": "DO NOT UNPLUG"
+    },
+    {
+     "view": "servo-hitec-backup-file-rbmod",
+     "dur": 5.4,
+     "n": 6,
+     "chip": "Write",
+     "title": "Written and verified",
+     "text": "The 21 registers are read back and compared. The tab names the backup file, <b>HITEC001</b>.",
+     "say": "The bench reads the servo back and compares. Two values are written and verified, and the tab names the backup file.",
+     "target": [
+      170,
+      480
+     ],
+     "style": "ok"
+    },
+    {
+     "view": "servo-hitec-backup-file-rbmod",
+     "dur": 2.6,
+     "n": 7,
+     "chip": "Leave programming",
+     "title": "Leave",
+     "text": "Tap <b>LEAVE</b>.",
+     "say": "Step 7. Tap leave.",
+     "target": [
+      542,
+      156
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-hitec-leave-rbmod",
+     "dur": 5.4,
+     "n": 7,
+     "chip": "Leave programming",
+     "title": "Leave programming",
+     "text": "Hold <b>HOLD 2s TO LEAVE</b> for 2s. The servo restarts, receives the tester's signal and may move.",
+     "say": "Hold for two seconds to leave. The servo restarts. It then receives the tester's signal and may move.",
+     "target": [
+      177,
+      459
+     ],
+     "action": "hold"
+    },
+    {
+     "view": "servo-hitec-left-rbmod",
+     "dur": 3.6,
+     "n": 7,
+     "chip": "Leave programming",
+     "title": "Done",
+     "text": "The port is back in tester mode.",
+     "say": "The port is back in tester mode.",
+     "target": [
+      300,
+      480
+     ],
+     "style": "ok"
+    }
+   ]
+  },
+  {
+   "type": "end",
+   "dur": 8,
+   "heading": "Hitec servo programmed",
+   "items": [
+    "Plug into J1",
+    "SERVO › HITEC",
+    "Hold CONNECT",
+    "MOTION, TRAVEL, PROTECT, INFO",
+    "Edit: * marks a change",
+    "Hold WRITE n VALUES",
+    "LEAVE"
+   ],
+   "say": "The servo holds its new values, and the card holds the values it had before.",
+   "note": "Reference: docs/HitecProgrammer.md."
+  }
+ ]
+}

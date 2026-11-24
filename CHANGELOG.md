@@ -8,6 +8,12 @@ history is in git.
 
 ### Added
 
+- Storyboards `hitec-rbmod`, programming a Hitec D series servo on the
+  rbmod carrier in 7 steps, and `stop`, STOP as an emergency stop in 4
+  steps. The renderer draws the Hitec views on the carrier
+  (`servo-hitec-read-rbmod`: PROG 5V and INA PROG 5V in the PD mini's
+  place), 8 states of one write with a card in, and 5 states of a
+  latched STOP and its reset on MOTOR & ESC, for `tools/video` only.
 - Remote servo node IOmcu (board 3): pass-through. PIO0 runs MIRROR, which
   copies each of the 9 receiver inputs to its servo output every cycle
   (13.3 to 20ns at the pad), and CAPTURE, which pushes the 18 pins' state

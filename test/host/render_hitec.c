@@ -445,6 +445,54 @@ static bool files_view(const char *v)
 {
     hitec_image_t img;
 
+    /* Seven states for tools/video only, one run with a card in: -pad
+     * SPEED's keypad after the first edit, -typed5 with 5 on it, -typed
+     * with 50, -edited with both edits on MOTION,
+     * -towrite with them on SERVO, -holding 1s into the hold of WRITE 2
+     * VALUES, -writing-card the write under way after the backup file,
+     * and -left after LEAVE's hold. */
+    if (strcmp(v, "-typed") == 0 || strcmp(v, "-typed5") == 0
+        || strcmp(v, "-pad") == 0) {
+        (void)hitec_prog_edit(hitec_panel_model(), HITEC_P_D_SOFT_START, 60);
+        hrow(HITEC_PANEL_MOTION, TR(HP_SPEED));
+        if (strcmp(v, "-pad") != 0) {
+            htap(ui_keypad_key_rect(hitec_panel_keypad(), UI_KEY_5));
+        }
+        if (strcmp(v, "-typed") == 0) {
+            htap(ui_keypad_key_rect(hitec_panel_keypad(), UI_KEY_0));
+        }
+        return true;
+    }
+    if (strcmp(v, "-edited") == 0) {
+        hedits();
+        htap(hitec_panel_tab_rect(HITEC_PANEL_MOTION));
+        return true;
+    }
+    if (strcmp(v, "-towrite") == 0 || strcmp(v, "-holding") == 0) {
+        hwrite_ready();
+        if (strcmp(v, "-holding") == 0) {
+            hwrite_press(50, 0u, false);
+        }
+        return true;
+    }
+    if (strcmp(v, "-writing-card") == 0) {
+        hwrite_ready();
+        hwrite_press(105, 1u, true);
+        hwait(HITEC_PROG_WRITING);
+        prun(40u);
+        ui_router_tick(0.02f);
+        return true;
+    }
+    if (strcmp(v, "-left") == 0) {
+        hwrite_ready();
+        hwrite();
+        hwait(HITEC_PROG_HELD);
+        hhome();
+        hhold();
+        hwait(HITEC_PROG_PWM);
+        ui_router_tick(0.02f);
+        return true;
+    }
     if (strcmp(v, "-files") == 0 || strcmp(v, "-files-next") == 0) {
         static const char *const k_names[] = {
             "ELEV.TXT", "HITEC001.TXT", "HITEC002.TXT", "RUDDER.TXT",
@@ -701,7 +749,7 @@ static bool classic_view(const char *v)
  */
 static void hpd_readings(int n)
 {
-    if (!g_hw.has_supply) {
+    if (!g_hw.has_supply || g_fixed) {
         return;
     }
     const bool on = g_hw.v.online && g_hw.v.on;
@@ -737,12 +785,23 @@ static void hitec_view_steps(const char *view)
         && strcmp(view + n - (sizeof(k_hand) - 1u), k_hand) == 0;
     snprintf(vb, sizeof(vb), "%.*s",
              (int)(hand ? n - (sizeof(k_hand) - 1u) : n), view);
+    /* A view with -rbmod is its view on the rbmod carrier: the ports' own
+     * fixed 5V in the PD mini's place, on or off, with no reading at the
+     * HITEC page.  tools/video draws its storyboards from these. */
+    static const char k_rbmod[] = "-rbmod";
+    const size_t m = strlen(vb);
+    const bool carrier = m >= sizeof(k_rbmod) - 1u
+        && strcmp(vb + m - (sizeof(k_rbmod) - 1u), k_rbmod) == 0;
+    if (carrier) {
+        vb[m - (sizeof(k_rbmod) - 1u)] = '\0';
+    }
     const char *v = vb + strlen("servo-hitec");
     const bool c_view = classic_view(v);
 
     /* The PD mini answers with its output off; CONNECT switches it on. */
     rig_at(hand || strcmp(v, "-nopd") == 0 || strcmp(v, "-move-nopd") == 0
                ? SUPPLY_NONE : SUPPLY_READY, true);
+    g_fixed = carrier;
     if (c_view) {
         servo_hs5645();
     } else {
@@ -942,7 +1001,8 @@ void render_hitec_view(const char *view)
     hitec_view_steps(view);
     /* The PD mini's output and readings as the rig's supply has them,
      * handed over the way panel_frame.c hands each reading. */
-    supply_screen_set_output(g_hw.has_supply && g_hw.v.online && g_hw.v.on);
+    supply_screen_set_output(!g_fixed && g_hw.has_supply && g_hw.v.online
+                             && g_hw.v.on);
     hpd_readings(100);
 }
 

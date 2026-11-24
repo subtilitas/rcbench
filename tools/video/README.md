@@ -66,6 +66,8 @@ python3 tools/make_video.py features               # build/video/features.mp4
 python3 tools/make_video.py rbmod-rework           # build/video/rbmod-rework.mp4
 python3 tools/make_video.py rbmod-build            # build/video/rbmod-build.mp4
 python3 tools/make_video.py dial                   # build/video/dial.mp4
+python3 tools/make_video.py hitec-rbmod            # build/video/hitec-rbmod.mp4
+python3 tools/make_video.py stop                   # build/video/stop.mp4
 python3 tools/make_video.py ../MiniRcBench/docs/video/minircbench-build.json   # a storyboard of another repository, by its path
 python3 tools/make_video.py hitec-precharge        # build/video/hitec-precharge.mp4
 python3 tools/video_scope.py                       # plots/hitec-precharge.json, with ngspice
@@ -148,6 +150,8 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `storyboards/rbmod-first-program.json` | first programming of a bench with the rbmod carrier in 6 chapters: the release's files on GitHub, the panel through the ESP Web Tool with the merged image at 0x0, the IOmcu through its drive RP2350 on a Windows desktop, the first start, the update from GitHub on SETUP > UPDATES and the upload over the panel's access point; the panel, the carrier and the RP2350-CAN from their STEP models; narrated, 321.22s, Pachelbel's Canon at half level |
 | `storyboards/auto-rudder.json` | setting a rudder's end points with RUDDER AUTO in 4 steps: the sensor on a pad of Gecko Tape on the flap, the sensor connected, the flap moved with the M5Stack Dial on SERVO LIVE, and the run, limit search first, at 1.5 times its speed with the flap following the run's own angle; narrated, 300.77s, Pachelbel's Canon at half level |
 | `storyboards/auto-rudder-de.json` | `auto-rudder` in German: the same scenes, times and touches, the panel's screens and the Dial's faces in German, the recorded run drawn in German (`video_rauto DIR de`), narrated by Piper's `de_DE-thorsten-high`, 297.17s |
+| `storyboards/hitec-rbmod.json` | programming a Hitec D series servo on the rbmod carrier in 7 steps: the servo into J1, SERVO > HITEC, the 2s hold on CONNECT, the tabs MOTION, TRAVEL, PROTECT and INFO, SOFT START set to 60% and SPEED to 50%, the 2s hold on WRITE 2 VALUES with the backup file HITEC001 on the card, and LEAVE; 31 screen steps, 14 taps and 3 holds; narrated, bed `pachelbel-canon` at half level; 140.4s without the narration's stretch, not rendered with it. MOVE SERVO and FIND STOP are not in it: the carrier refuses them |
+| `storyboards/stop.json` | STOP as an emergency stop in 4 steps: the touch on a running motor, the latch, ARM refused, a short touch and its hint, the 2s hold with the fill fading to yellow, the reset to SAFE, and the HWSTOP chip of the bench's stop button; 13 screen steps, 3 taps and 1 hold; narrated, bed `pachelbel-canon` at half level; 93.2s without the narration's stretch, not rendered with it |
 | `player/part3d.js` | one part from its STEP model, turned and rolled over |
 | `web/capture.js` | captures the releases page of the repository on GitHub and the ESP Web Tool at esptool.spacehuhn.com into `stills/web-*.png`, 1280 x 800 CSS pixels at 2 device pixels each, and writes the places of their controls to `stills/web.json`. The ESP Web Tool is the page as served; its serial library is replaced by a stand-in that answers as an ESP32-P4, since no board is on the capturing computer |
 | `stills/web-*.png`, `stills/web.json` | 13 captures of those two pages and the places of the controls a pointer goes to |
@@ -346,7 +350,14 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
    views take `-rbmod` after a state, `servo-kst-read-rbmod`, for that
    state on the carrier; `-idle`, `-portlist`, `-typed` and `-edited`
    exist for videos only, as does `motor-plot`, the plot of a run on
-   MOTOR & ESC with an IOmcu answering.
+   MOTOR & ESC with an IOmcu answering. The Hitec views take `-rbmod`
+   the same way, `servo-hitec-read-rbmod`: PROG 5V in the PD MINI row's
+   place and the meter on INA PROG 5V. `-pad`, `-typed5`, `-typed`,
+   `-edited`, `-towrite`, `-holding`, `-writing-card` and `-left` are
+   the states of one write with a card in, for videos only. `stop-latched`,
+   `stop-refused`, `stop-short`, `stop-holding` and `stop-reset` are a
+   latched STOP and its reset on MOTOR & ESC, 6s after the STOP of
+   `motor-plot`'s run.
 3. Copy `storyboards/kst-rbmod.json`, replace the steps, and read each
    `target` from the view's PNG.
 4. `--stills` at a few times shows the layout before a full render.
