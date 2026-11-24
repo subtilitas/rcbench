@@ -21,6 +21,18 @@ history is in git.
   against a simulated ESC (`test/host/oy_sim.h`). No pin driver, link
   page or screen uses it
   ([OpenYGE](docs/OpenYGE.md#9-status-in-rcbench)).
+- `hardware/mechanical/_gen_knob.py`: a rotary knob 64mm across round a
+  fixed Waveshare ESP32-S3-Touch-LCD-1.85, on the dial base's bottom
+  part, 56.2mm high. Printed parts `knob_case`, `knob_spacer`,
+  `knob_clamp`, `knob_rotor`, `knob_bezel` and `knob_carrier` as STEP
+  and STL; the rotor turns on 2 bearings 6704-2RS, and its bezel holds
+  the acrylic window. An AS5600 beside 22 magnets Ø4 x 1.5mm reads
+  11 x 4096 counts a turn. The display's carrier locks into the shaft
+  with a bayonet. A tab on the bezel carries a grounded copper patch
+  over the display's glass, to try the touch panel as the encoder.
+  `--check` runs in CI and also moves the carrier through the
+  bayonet's path
+  ([Mechanical parts](hardware/mechanical/README.md#rotary-knob-with-a-round-display)).
 - `hardware/mechanical/`: `esp32_s3_lcd_185.step`, the Waveshare
   ESP32-S3-Touch-LCD-1.85, a round 1.85" display board 55.00mm across and
   9.70mm over all, measured from Waveshare's STEP file with
