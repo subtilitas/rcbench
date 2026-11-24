@@ -167,6 +167,11 @@ within 0.124mm of the mesh and agree with M5Stack's drawing within 0.2mm.
 The connectors follow their makers' drawings, the display, the main board
 and the screw heads are estimated, the encoder and springs are absent, and
 no dimension is verified on a part.
+It holds a STEP model of the Waveshare ESP32-S3-Touch-LCD-1.85, a round
+1.85" display board, of 491 solids, measured in Waveshare's STEP file of
+2026-07-03, which is not in the repository; and models of a 6704-2RS ball
+bearing (20 x 27 x 4mm, ring bores estimated) and a clear acrylic disc
+49.5mm across and 2mm thick.
 
 ## Decided
 
