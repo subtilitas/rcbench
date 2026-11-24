@@ -30,8 +30,8 @@ FOLDERS = {
         "display_node_lid", "display_node_xt60_box",
         "display_node_xt60_lid", "flap_drive",
         "ina228_node_bezel", "ina228_node_frame", "ina228_node_plate",
-        "ina228_xt90_case", "knob_carrier", "knob_case", "knob_clamp",
-        "knob_rotor", "knob_spacer"),
+        "ina228_xt90_case", "knob_bezel", "knob_carrier", "knob_case",
+        "knob_clamp", "knob_rotor", "knob_spacer"),
     "parts": (
         "acrylic_disc_49_5", "bearing_6704_2rs", "esc_motor_set",
         "estop_m16_assembly", "estop_m16_button", "estop_m16_nut",

@@ -24,7 +24,8 @@ Printed parts, written to models/casing/ as STEP and STL:
                   inserts from below), a cable hole and a hole for the
                   sensor's wires; the shaft, a tube 20 / 14 with a
                   collar 21.6 under the lower bearing, rising from the
-                  floor to the carrier; the wall the AS5600 module is
+                  floor to the carrier, with the bayonet's 3 L-shaped
+                  slots in its bore at the top; the wall the AS5600 module is
                   screwed to with 4 M3. Prints floor down, no support.
     knob_spacer   sleeve 21.6 / 20 between the bearings' inner rings
     knob_clamp    sleeve 21.6 / 20 from the upper bearing to the
@@ -33,11 +34,17 @@ Printed parts, written to models/casing/ as STEP and STL:
                   outer rings and the 22 magnet pockets, open to the
                   side, 0.1 over the magnet, which is glued in; web
                   over the sensor; skirt 64 / 60 from 0.5 over the
-                  case's rim; lip under the window with an opening of
-                  47; the window's seat 49.7 across
-    knob_carrier  plate 54 across, 2 thick, on the shaft; the display's
-                  3 inserts take M2 screws through it; 3 M2 into the
-                  shaft's wall
+                  case's rim up to the bezel
+    knob_bezel    the skirt's top, 2.7 high: the lip under the window
+                  with an opening of 47 and the window's seat 49.7
+                  across; a spigot inside the skirt, 0.1 off it, glued
+                  in. A part of its own, so the display, 55 across, goes
+                  in from the top before it
+    knob_carrier  plate 54 across, 2 thick; the display's 3 inserts
+                  take countersunk M2 screws through it from below; a
+                  spigot under it locks into the shaft's top with a
+                  bayonet of 3 lugs, a turn of 30 degrees clockwise
+                  seen from the top, over a ridge in each slot
 
 Placed bought parts, models/parts/: knob_magnets.step, the 22 magnets,
 and knob_as5600.step, the AS5600 module, where they sit. No assembly
@@ -55,17 +62,20 @@ display's USB socket is at -y; the AS5600 module stands at +x. All
 sizes mm.
 
 Stack, z: floor -19 to -17, its outer ring -17 to -15 over the bottom
-part's rim; collar -17 to -13; bearings -13 to -9 and -3 to 1; rotor
-hub -16 to 8, web 6 to 8, skirt 0.5 to 23.7, lip 21.0 to 21.7; carrier
-9 to 11; display from 11 (its inserts' ends) to 20.7 (its glass's
-front); window 21.7 to 23.7, 0.3 over the display's glass. Magnets
--6.25 to -4.75 on a circle of 17; the AS5600's chip faces them from
-r = 20.5, 1.5 off the hub, at z -5.5. The module's board stands 0.15 over
-the floor and ends 0.35 under the web. The knob is 56.2 high with the
-base's bottom part.
+part's rim; collar -17 to -13; bearings -13 to -9 and -3 to 1; rotor hub
+-16 to 8, web 6 to 8, skirt 0.5 to 21.0; bezel 21.0 to 23.7, its lip
+21.0 to 21.7, its spigot down to 19.5; carrier 9 to 11; display from 11
+(its inserts' ends) to 20.7 (its glass's front); window 21.7 to 23.7,
+0.3 over the display's glass. Magnets -6.25 to -4.75 on a circle of 17;
+the AS5600's chip faces them from r = 20.5, 1.5 off the hub, at z -5.5.
+The module's board stands 0.15 over the floor and ends 0.35 under the
+web. The knob is 56.2 high with the base's bottom part.
 
 ``check`` fails when a part is not one valid solid, when the case has
-material in a flute, or when two solids of the assembly share volume.
+material in a flute, when two solids of the assembly share volume, or
+when the carrier's lugs do not travel the shaft's slots: down at the
+entry, then the turn to the lock, where the nubs meet the ridges in one
+stretch and no deeper than 0.1.
 
 Usage:
     python3 hardware/mechanical/_gen_knob.py           write
@@ -89,7 +99,7 @@ from OCP.BRepAlgoAPI import (BRepAlgoAPI_Common, BRepAlgoAPI_Cut,
                              BRepAlgoAPI_Fuse)
 from OCP.BRepCheck import BRepCheck_Analyzer
 from OCP.BRepMesh import BRepMesh_IncrementalMesh
-from OCP.BRepPrimAPI import BRepPrimAPI_MakeCylinder
+from OCP.BRepPrimAPI import BRepPrimAPI_MakeCone, BRepPrimAPI_MakeCylinder
 from OCP.gp import gp_Ax2, gp_Dir, gp_Pnt
 from OCP.StlAPI import StlAPI_Writer
 
@@ -116,7 +126,7 @@ FLOOR_TOP = JOINT + FLOOR_T
 SHAFT_D, BORE_D, SHAFT_TOP = 20.0, 14.0, 9.0
 COLLAR_D, COLLAR_TOP = 21.6, -13.0
 SHAFT_SLOT = (2.5, -14.5)
-CABLE_D, WIRE_D = 12.0, 5.0
+WIRE_D = 5.0
 M3_CLEAR = 3.4
 # Bearings 6704-2RS: z of each one's lower face, width.
 BEARING_Z, BEARING_W = (-13.0, -3.0), 4.0
@@ -127,13 +137,33 @@ WEB_Z = (6.0, 8.0)
 SKIRT = (30.0, 32.0, 0.5, 23.7)
 LIP = (23.5, 21.0, 21.7)
 SEAT_D = 49.7
+# The bezel: the skirt's top from the lip's underside up, with the lip
+# and the window's seat; its spigot inside the skirt, inner radius,
+# play, lower end.
+SPIGOT_IN = (29.0, 0.1, 19.5)
 # Magnets: count, circle radius, diameter, thickness, z of the lower
 # face; pocket play.
 MAGNETS = (22, 17.0, 4.0, 1.5, -6.25)
 POCKET_PLAY = 0.1
 # Carrier: diameter, z; M2 holes into the shaft's wall.
 CARRIER_D, CARRIER_Z = 54.0, (9.0, 11.0)
-CARRIER_SCREW_R, M2_CLEAR = 8.5, 2.4
+M2_CLEAR = 2.4
+# Countersunk M2 (ISO 10642): the countersink's diameter at the
+# carrier's underside, 90 degrees.
+COUNTERSINK = 4.0
+# Bayonet: the carrier's spigot, outer and inner diameter, its lower
+# end; the 3 lugs' angles when locked, outer radius, width, z; the
+# turn from the entry to the lock, clockwise seen from the top; the
+# nub under each lug's middle: width, lower end; the slots' outer
+# radius, floor and roof; the ridge each nub passes over just before
+# the lock: width, top. The ridge lies under the lug, 0.1 clear of it,
+# so only the nub meets it.
+SPIGOT = (13.6, 10.0, 4.5)
+LUG_AT, LUG_R, LUG_W, LUG_Z = (90.0, 210.0, 330.0), 8.5, 3.0, (4.7, 6.0)
+NUB = (0.6, 4.5)
+LUG_TURN = 30.0
+SLOT_R, SLOT_Z, SLOT_W = 8.7, (4.3, 6.1), 3.4
+RIDGE = (0.8, 4.6)
 # The display: z of its glass's front; its inserts in the model frame.
 DISPLAY_TOP = 20.7
 INSERTS = ((15.73, -14.9), (15.73, 14.1), (-21.27, 0.0))
@@ -223,9 +253,7 @@ def case():
     half, slot_top = SHAFT_SLOT
     body = _cut(body, _cyl(BORE_D / 2, JOINT - 1, SHAFT_TOP + 1),
                 base._box(0.0, -half, FLOOR_TOP, COLLAR_D, half, slot_top))
-    for a in (30.0, 150.0, 270.0):
-        x, y = _polar(CARRIER_SCREW_R, a)
-        body = _cut(body, _cyl(0.8, SHAFT_TOP - 6.0, SHAFT_TOP + 1, x, y))
+    body = _cut(body, *_bayonet_slots())
     # The wall behind the module, with the module's 4 holes and a window
     # for its wires.
     side, b_thick, _c, inset, _hole, (cx, _cy) = MODULE
@@ -254,20 +282,33 @@ def sleeve(z0, z1):
     return _ring(SHAFT_D / 2, COLLAR_D / 2, z0, z1)
 
 
+def bezel():
+    """The skirt's top with the lip and the window's seat.
+
+    A part of its own: the display, 55.0 across, goes in from the top
+    past where the lip, 47.0 across, lies.
+    """
+    r0, r1, _s0, s1 = SKIRT
+    rim, l0, l1 = LIP
+    inner, play, low = SPIGOT_IN
+    return base._merged(_fuse(
+        _ring(r0 - 0.01, r1, l0, s1),
+        _ring(rim, r0, l0, l1),
+        _ring(SEAT_D / 2, r0, l1, s1),
+        _ring(inner, r0 - play, low, l0 + 0.01)))
+
+
 def rotor():
-    """Hub, web, skirt, lip and the window's seat, with the pockets."""
+    """Hub, web and skirt up to the bezel, with the pockets."""
     z0, z1 = HUB_Z
     hub = _ring(HUB_BORE / 2, HUB_D / 2, z0, z1)
     lower = BEARING_Z[0] + BEARING_W
     shoulder = _ring(SHOULDER_D / 2, HUB_BORE / 2 + 0.01, lower,
                      BEARING_Z[1])
     web = _ring(HUB_D / 2 - 0.01, SKIRT[0] + 0.01, *WEB_Z)
-    r0, r1, s0, s1 = SKIRT
-    skirt = _ring(r0, r1, s0, s1)
-    rim, l0, l1 = LIP
-    lip = _ring(rim, r0 + 0.01, l0, l1)
-    seat = _ring(SEAT_D / 2, r0 + 0.01, l1, s1)
-    body = _fuse(hub, shoulder, web, skirt, lip, seat)
+    r0, r1, s0, _s1 = SKIRT
+    skirt = _ring(r0, r1, s0, LIP[1])
+    body = _fuse(hub, shoulder, web, skirt)
     count, radius, diameter, thick, mz = MAGNETS
     half = diameter / 2 + POCKET_PLAY
     for k in range(count):
@@ -280,17 +321,69 @@ def rotor():
     return base._merged(body)
 
 
+def _sector(r0, r1, z0, z1, a0, a1):
+    """The part of a ring between the angles a0 and a1, a0 < a1."""
+    outer = BRepPrimAPI_MakeCylinder(
+        gp_Ax2(gp_Pnt(0, 0, z0), gp_Dir(0, 0, 1)), r1, z1 - z0,
+        math.radians(a1 - a0)).Shape()
+    return base._turned(_cut(outer, _cyl(r0, z0 - 1, z1 + 1)), a0)
+
+
+def _radial_box(r0, r1, width, z0, z1, angle):
+    """A box from radius r0 to r1, ``width`` wide, at ``angle``."""
+    return base._turned(base._box(r0, -width / 2, z0, r1, width / 2, z1),
+                        angle)
+
+
+def _bayonet_slots():
+    """The shaft's 3 L-shaped slots for the carrier's lugs.
+
+    Each lug enters down a slot at its locked angle + LUG_TURN, turns
+    clockwise seen from the top along the slot's foot and passes over a
+    ridge just before it reaches its locked angle.
+    """
+    inner = BORE_D / 2 - 0.5
+    z0, z1 = SLOT_Z
+    half = math.degrees(SLOT_W / 2 / LUG_R) + 1.0
+    width, top = RIDGE
+    # A flat side spans the most degrees at the bore: the ridge stands
+    # 0.2 clear of the locked lug's nub there.
+    bore = BORE_D / 2
+    clear = (math.degrees(math.atan((NUB[0] / 2 + 0.2) / bore))
+             + math.degrees(math.atan(width / 2 / bore)))
+    out = []
+    for a in LUG_AT:
+        entry = a + LUG_TURN
+        foot = _sector(inner, SLOT_R, z0, z1, a - half, entry + half)
+        ridge = _radial_box(inner, SLOT_R, width, z0 - 0.1, top, a + clear)
+        out.append(_cut(foot, ridge))
+        out.append(_radial_box(inner, SLOT_R, SLOT_W, z0, SHAFT_TOP + 1,
+                               entry))
+    return out
+
+
 def carrier():
-    """The display's carrier on the shaft."""
-    plate = _cyl(CARRIER_D / 2, *CARRIER_Z)
-    holes = [_cyl(CABLE_D / 2, CARRIER_Z[0] - 1, CARRIER_Z[1] + 1)]
-    for a in (30.0, 150.0, 270.0):
-        x, y = _polar(CARRIER_SCREW_R, a)
-        holes.append(_cyl(1.1, CARRIER_Z[0] - 1, CARRIER_Z[1] + 1, x, y))
+    """The display's carrier with its spigot and the bayonet's lugs."""
+    z0, z1 = CARRIER_Z
+    outer, inner, low = SPIGOT
+    body = _fuse(_cyl(CARRIER_D / 2, z0, z1),
+                 _cyl(outer / 2, low, z0 + 0.01))
+    lz0, lz1 = LUG_Z
+    for a in LUG_AT:
+        body = _fuse(body, _radial_box(outer / 2 - 0.3, LUG_R, LUG_W, lz0,
+                                       lz1, a),
+                     _radial_box(outer / 2 - 0.3, LUG_R, NUB[0], NUB[1],
+                                 lz0 + 0.01, a))
+    holes = [_cyl(inner / 2, low - 1, z1 + 1)]
     for x, y in INSERTS:
-        holes.append(_cyl(M2_CLEAR / 2, CARRIER_Z[0] - 1,
-                          CARRIER_Z[1] + 1, x, y))
-    return base._merged(_cut(plate, *holes))
+        holes.append(_cyl(M2_CLEAR / 2, z0 - 1, z1 + 1, x, y))
+        # The countersink for the screw's head, flush with the
+        # underside, which lies 1.0 over the rotor's web.
+        depth = (COUNTERSINK - M2_CLEAR) / 2
+        holes.append(BRepPrimAPI_MakeCone(
+            gp_Ax2(gp_Pnt(x, y, z0 - 0.01), gp_Dir(0, 0, 1)),
+            COUNTERSINK / 2 + 0.01, M2_CLEAR / 2, depth + 0.01).Shape())
+    return base._merged(_cut(body, *holes))
 
 
 def module():
@@ -326,6 +419,7 @@ def parts():
         "knob_spacer": sleeve(b0 + BEARING_W, b1),
         "knob_clamp": sleeve(b1 + BEARING_W, SHAFT_TOP),
         "knob_rotor": rotor(),
+        "knob_bezel": bezel(),
         "knob_carrier": carrier(),
     }
 
@@ -397,9 +491,52 @@ def bought():
 
 def assembly(built):
     """Every solid of the knob, as (name, solid, colour)."""
-    printed = [(stem, solid, ROTOR_RGB if stem == "knob_rotor" else GRAPHITE)
+    turning = ("knob_rotor", "knob_bezel")
+    printed = [(stem, solid, ROTOR_RGB if stem in turning else GRAPHITE)
                for stem, solid in built.items()]
     return printed + bought()
+
+
+def bayonet_path(built):
+    """Check that the carrier's lugs travel the shaft's slots.
+
+    The carrier goes down at its entry angle, then turns to the lock in
+    steps of 1 degree; the volume it shares with the case is taken at
+    each place. The nubs meet the ridges in one stretch of the turn,
+    each by at most 0.1 deep.
+
+    Returns:
+        A list of error texts, empty when all is well.
+    """
+    case, carrier = built["knob_case"], built["knob_carrier"]
+
+    def shared(angle, dz):
+        moved = base._moved(carrier, z=dz, angle=angle)
+        return base.volume(BRepAlgoAPI_Common(moved, case).Shape())
+
+    errors = []
+    for dz in (6.0, 3.0, 1.5, 0.5):
+        if shared(LUG_TURN, dz) > 1e-3:
+            errors.append(f"knob_carrier: the lugs stick {dz}mm over "
+                          "their place, going down")
+    steps = [shared(float(a), 0.0) for a in range(int(LUG_TURN), -1, -1)]
+    touched = [k for k, v in enumerate(steps) if v > 1e-3]
+    if steps[0] > 1e-3 or steps[-1] > 1e-3:
+        errors.append("knob_carrier: a lug meets the case at the entry or "
+                      "the lock")
+    if not touched:
+        errors.append("knob_carrier: no nub meets a ridge; nothing holds "
+                      "the lock")
+    elif touched != list(range(touched[0], touched[-1] + 1)):
+        errors.append("knob_carrier: the nubs meet the case in more than "
+                      "one stretch of the turn")
+    # A nub over its ridge: as wide as the nub, from the bore to the
+    # lug's end, 0.1 deep.
+    full = NUB[0] * (LUG_R - BORE_D / 2) * 0.1 * len(LUG_AT)
+    if max(steps) > 1.05 * full:
+        errors.append(f"knob_carrier: the turn shares {max(steps):.2f}mm3 "
+                      "with the case, more than the nubs and ridges")
+    return errors
 
 
 def check(built, items):
@@ -412,7 +549,7 @@ def check(built, items):
     Returns:
         A list of error texts, empty when all is well.
     """
-    errors = []
+    errors = bayonet_path(built)
     for stem, solid in built.items():
         if not BRepCheck_Analyzer(solid).IsValid():
             errors.append(f"{stem}: not a valid solid")
@@ -477,8 +614,9 @@ def render(items, directory):
         image.Save(TCollection_AsciiString(str(_models.render(
             directory, name))))
 
-    lift = {"window": 75.0, "display": 62.0, "knob_carrier": 50.0,
-            "knob_clamp": 42.0, "knob_rotor": 32.0, "magnet": 32.0,
+    lift = {"window": 100.0, "knob_bezel": 88.0, "display": 62.0,
+            "knob_carrier": 50.0, "knob_clamp": 42.0, "knob_rotor": 32.0,
+            "magnet": 32.0,
             "bearing": 18.0, "knob_spacer": 18.0, "knob_case": 0.0,
             "as5600": 0.0, "dial_base_bottom": -30.0, "cell": -22.0}
     apart = [(n, base._moved(s, z=lift.get(n, 0.0)), c)

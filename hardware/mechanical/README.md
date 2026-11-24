@@ -365,11 +365,12 @@ so the knob stands 56.2mm high with the bottom part.
 
 | File | Content | Print |
 | --- | --- | --- |
-| `knob_case.step`, `.stl` | the base's wall from the joint to the case's rim, open at the top; floor with a ring over the bottom part's rim, 4 bosses for threaded inserts, a cable hole of 14 and a wire hole of 5; the shaft, a tube 20 / 14 with a collar 21.6 under the lower bearing, up to 9.0 over the rim; the wall the AS5600 module is screwed to; 22.2cm3 | floor down, no support |
+| `knob_case.step`, `.stl` | the base's wall from the joint to the case's rim, open at the top; floor with a ring over the bottom part's rim, 4 bosses for threaded inserts, a cable hole of 14 and a wire hole of 5; the shaft, a tube 20 / 14 with a collar 21.6 under the lower bearing, up to 9.0 over the rim, with the bayonet's 3 L-shaped slots in its bore at the top; the wall the AS5600 module is screwed to; 22.1cm3 | floor down, no support |
 | `knob_spacer.step`, `.stl` | sleeve 21.6 / 20, 6.0 long, between the bearings' inner rings; 0.3cm3 | on end |
 | `knob_clamp.step`, `.stl` | sleeve 21.6 / 20, 8.0 long, from the upper bearing to the carrier; 0.4cm3 | on end |
-| `knob_rotor.step`, `.stl` | hub 38 / 27 with a shoulder of 24 between the bearings' outer rings and 22 magnet pockets; a web over the sensor; a skirt 64 / 60; a lip with an opening of 47 under the window; the window's seat 49.7 across; 28.6cm3 | window seat down; the lip and the web need support |
-| `knob_carrier.step`, `.stl` | plate 54 across, 2.0 thick: 3 M2 into the shaft, 3 M2 into the display's inserts, a cable hole of 12; 4.3cm3 | flat, no support |
+| `knob_rotor.step`, `.stl` | hub 38 / 27 with a shoulder of 24 between the bearings' outer rings and 22 magnet pockets; a web over the sensor; a skirt 64 / 60 up to the bezel; 25.0cm3 | skirt's top down; the web and the hub's top need support |
+| `knob_bezel.step`, `.stl` | the skirt's top, 2.7 high: a lip with an opening of 47 under the window, the window's seat 49.7 across, a spigot inside the skirt with 0.1 play; 3.8cm3 | top down, no support |
+| `knob_carrier.step`, `.stl` | plate 54 across, 2.0 thick, with 3 countersunk holes for M2 into the display's inserts; a spigot 13.6 / 10.0 under it, 4.5 long, with the bayonet's 3 lugs; 4.7cm3 | plate down, no support |
 | `knob_magnets.step` | the 22 magnets where they sit, N red and S blue | bought |
 | `knob_as5600.step` | the AS5600 module where it stands | bought |
 
@@ -390,7 +391,8 @@ moved along z make the knob:
 | Case floor | -19.0 to -17.0; its outer ring to -15.0 |
 | Shaft's collar | -17.0 to -13.0 |
 | Bearings | -13.0 to -9.0 and -3.0 to 1.0 |
-| Rotor | hub -16.0 to 8.0, web 6.0 to 8.0, skirt 0.5 to 23.7 |
+| Rotor | hub -16.0 to 8.0, web 6.0 to 8.0, skirt 0.5 to 21.0 |
+| Bezel | 21.0 to 23.7, its lip 21.0 to 21.7, its spigot down to 19.5 |
 | Magnets | -6.25 to -4.75, on a circle of 34.0 |
 | AS5600 chip | its face 20.5 from the axis, 1.5 off the hub, centred at -5.5 |
 | Carrier | 9.0 to 11.0 |
@@ -408,26 +410,39 @@ firmware counts the sensor's wraps to keep the knob's turn.
 
 Assembly: melt the 4 inserts into the case from below. Screw the AS5600
 module to the case's wall with 4 M3, its chip towards the axis, and lead
-its wires through the wall's window and the floor's wire hole. Glue
-the magnets into their pockets from the hub's side with cyanoacrylate,
-N and S up in turn: each pocket is 0.1mm larger than the magnet all
-round and open to the side, so it does not hold a magnet by itself. Set
-the acrylic disc in the rotor's seat. Slide the lower bearing
-onto the shaft, the rotor over it, the spacer and the upper bearing,
-then the clamp. Screw the carrier to the shaft with 3 M2 and the display
-to the carrier with 3 M2. Lay the cell in the bottom part, close with
-the 4 M3 x 12 of the dial base.
+its wires through the wall's window and the floor's wire hole. Glue the
+magnets into their pockets from the hub's side with cyanoacrylate, N and
+S up in turn: each pocket is 0.1mm larger than the magnet all round and
+open to the side, so it does not hold a magnet by itself. Slide the
+lower bearing onto the shaft, the rotor over it, the spacer and the
+upper bearing, then the clamp. Screw the display to the carrier on the
+bench with 3 countersunk M2 x 4 from below; their heads lie flush, 1.0
+over the rotor's web. Lead the display's wires down the spigot and the
+shaft's bore. Lower the display into the skirt, set the spigot's lugs in
+the slots with the display's USB socket 30 degrees anticlockwise of -y
+seen from the top, press down and turn the display 30 degrees
+clockwise. Each lug's nub passes over a ridge 0.1 high over the last 10
+degrees, which holds the lock. Set the acrylic disc in the bezel's seat
+and glue the bezel onto the skirt with cyanoacrylate. The bezel is a
+part of its own because the display, 55.0 across, does not pass its
+lip's opening of 47.0. Lay the cell in the bottom part and close the
+base with the 4 M3 x 12 of the dial base.
 
 `_gen_knob.py` builds the printed parts with OpenCASCADE. Its `--check`
 runs in CI and fails when a file differs from the script, when a part is
-not one valid solid, when the case fills a flute, or when two solids of
-the knob share volume.
+not one valid solid, when the case fills a flute, when two solids of
+the knob share volume, or when the carrier's lugs do not travel the
+shaft's slots. That check moves the carrier down at its entry angle and
+turns it to the lock in steps of 1 degree; the nubs may meet the ridges
+in one stretch of the turn, 0.1 deep at most.
 
 Limits:
 
 - Nothing is printed or tried. No fit is measured.
-- The display is held in from the top only by its 3 screws; the window
-  turns 0.3mm over its glass. The display's USB-C socket is enclosed:
+- The bayonet holds the display by the 0.1mm of its ridges alone; how
+  much torque on the glass turns it out of the lock is not measured.
+  The lugs leave the carrier 0.1mm of axial play. The window turns 0.3mm
+  over the display's glass. The display's USB-C socket is enclosed:
   how the board is programmed and charged in the knob is open.
 - The magnets' field at 1.5mm from the chip is not measured. The AS5600
   takes 30 to 90mT; whether 22 magnets of this size give it, and how
@@ -435,8 +450,9 @@ Limits:
 - The wires from the display down the shaft's bore and from the module
   through the floor to the cell are not drawn, nor the module's pin
   headers, nor a switch or charger for the cell.
-- The rotor's lip and web overhang the skirt and need support when
+- The rotor's web and the hub's top overhang and need support when
   printed.
+- The bezel is glued on: to take the display out, the glue is cut.
 
 ```sh
 python3 hardware/mechanical/_gen_knob.py                 # write STEP and STL
