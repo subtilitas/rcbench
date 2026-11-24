@@ -59,6 +59,16 @@ const wls_device_t *wl_search_device(void) { return wls.dev; }
 
 bool wl_search_asking(void) { return wls.asking; }
 
+bool wl_search_unbind_ready(void)
+{
+    if (wls.asking || wls.dev == NULL || wls.dev->unbind == NULL) {
+        return false;
+    }
+    wls_view_t v;
+    wl_search_view(&v);
+    return v.bound_addr[0] != '\0';
+}
+
 const wls_dev_t *wl_search_asked(void)
 {
     return wls.asking ? &wls.ask : NULL;
@@ -106,6 +116,9 @@ const char *wl_search_state_line(char *buf, size_t n)
 /** @brief The press dropped: nothing acts on its release. */
 static void drop_press(void)
 {
+    if (wls.hit == WLS_HIT_UNBIND) {
+        (void)ui_hold_left(&wls.unbind);
+    }
     wls.have_press = false;
     wls.hit = WLS_HIT_NONE;
     wls.press_addr[0] = '\0';
@@ -178,7 +191,7 @@ static void bind(void)
 /**
  * @brief What lies under (@p x, @p y) and takes a press now: the
  *        question's buttons while it is open and nothing else, else SCAN
- *        AGAIN or a found device.
+ *        AGAIN, UNBIND (live or grey) or a found device.
  * @param x The body's x.
  * @param y The body's y.
  * @return WLS_HIT_*.
@@ -196,6 +209,9 @@ static int hit_at(int x, int y)
     }
     if (gfx_rect_contains(wl_search_part(WLS_PART_AGAIN), x, y)) {
         return WLS_HIT_AGAIN;
+    }
+    if (gfx_rect_contains(wl_search_part(WLS_PART_UNBIND), x, y)) {
+        return WLS_HIT_UNBIND;
     }
     wls_view_t v;
     wl_search_view(&v);
@@ -234,6 +250,12 @@ static void act(int hit, const char *addr)
     case WLS_HIT_BIND:
         bind();
         break;
+    case WLS_HIT_UNBIND:
+        /* A tap on a grey UNBIND: a live one takes a hold, not a tap. */
+        if (!wl_search_unbind_ready()) {
+            say(TX_WLS_UNBIND_NONE);
+        }
+        break;
     default:
         break;
     }
@@ -266,39 +288,91 @@ static void event(const touch_event_t *evt)
                 wl_search_view(&v);
                 memcpy(wls.press_addr, v.found[wls.hit - WLS_HIT_DEV0].addr,
                        sizeof(wls.press_addr));
+            } else if (wls.hit == WLS_HIT_UNBIND && wl_search_unbind_ready()) {
+                ui_hold_begin(&wls.unbind, TX_HOLD_HINT_WLS_UNBIND);
             }
         }
         touched();
         return;
     }
-    if (!wls.have_press || evt->point.id != wls.press_id
-        || evt->type != TOUCH_EVENT_UP) {
+    if (!wls.have_press || evt->point.id != wls.press_id) {
+        return;
+    }
+    const gfx_rect_t un = wl_search_part(WLS_PART_UNBIND);
+    const bool held = wls.hit == WLS_HIT_UNBIND
+                      && (wls.unbind.down || wls.unbind.fired);
+    if (evt->type == TOUCH_EVENT_MOVE) {
+        /* Off UNBIND the hold is over; sliding back does not resume it. */
+        if (held && !gfx_rect_contains(un, x, y)
+            && ui_hold_leave(&wls.unbind)) {
+            drop_press();
+        }
+        return;
+    }
+    if (evt->type != TOUCH_EVENT_UP) {
         return;
     }
     const int hit = wls.hit;
     char addr[WLS_ADDR_MAX];
     memcpy(addr, wls.press_addr, sizeof(addr));
+    if (held) {
+        /* The hold's release: its hint when let go early, nothing else. */
+        (void)ui_hold_end(&wls.unbind, evt, un);
+        wls.hit = WLS_HIT_NONE;
+    }
     drop_press();
-    if (touch_event_is_tap_up(evt) && hit_at(x, y) == hit) {
+    if (!held && touch_event_is_tap_up(evt) && hit_at(x, y) == hit) {
         act(hit, addr);
     }
 }
 
-/** @brief ui_screen_t's reset: no device, nothing pressed or asked. */
+/**
+ * @brief ui_screen_t's tick: UNBIND's flash, its hold, and a hold the
+ *        bound device left before it fired.  The unbind is asked once, on
+ *        the frame the hold reaches UI_HOLD_S.
+ * @param dt_s The frame's time, s.
+ */
+static void tick(float dt_s)
+{
+    if (wls.unbind.down || wls.unbind.flash_ms > 0) {
+        touched();
+    }
+    ui_hold_flash_step(&wls.unbind, dt_s);
+    if (wls.hit != WLS_HIT_UNBIND || !wls.unbind.down) {
+        return;
+    }
+    if (!wls.unbind.fired && !wl_search_unbind_ready()) {
+        drop_press();       /* nothing bound any more: nothing to unbind */
+        return;
+    }
+    if (ui_hold_tick(&wls.unbind, dt_s)) {
+        if (wls.dev != NULL && wls.dev->unbind != NULL) {
+            wls.dev->unbind();
+        }
+        ui_hold_reached(&wls.unbind);
+        touched();
+    }
+}
+
+/** @brief ui_screen_t's reset: no device, nothing pressed, asked or
+ *         held. */
 static void reset(void)
 {
     memset(&wls, 0, sizeof(wls));
     wls.hit = WLS_HIT_NONE;
+    ui_hold_reset(&wls.unbind);
 }
 
 /** @brief ui_screen_t's cancel: the press ends without acting. */
 static void cancel(void) { drop_press(); }
 
-/** @brief ui_screen_t's enter: the list, no press, no question. */
+/** @brief ui_screen_t's enter: the list, no press, no question, no
+ *         hold. */
 static void enter(void)
 {
     drop_press();
     close_ask();
+    ui_hold_reset(&wls.unbind);
 }
 
 /** @brief ui_screen_t's leave: the press and the question end; the way
@@ -307,6 +381,7 @@ static void leave(void)
 {
     drop_press();
     close_ask();
+    ui_hold_reset(&wls.unbind);
     if (ui_router_leaving_to() == SCREEN_SETUP) {
         settings_screen_resume();
     }
@@ -334,6 +409,7 @@ static const ui_screen_t k_screen = {
     .reset   = reset,
     .enter   = enter,
     .leave   = leave,
+    .tick    = tick,
     .event   = event,
     .cancel  = cancel,
     .render  = wls_render,

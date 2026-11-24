@@ -376,6 +376,24 @@ bool pnode_ctl_bind(pnode_ctl_t *c, uint8_t i, uint32_t now_ms)
     return true;
 }
 
+bool pnode_ctl_unbind(pnode_ctl_t *c, uint32_t now_ms)
+{
+    if (c == NULL || !c->b.bound) {
+        return false;
+    }
+    memset(c->cfg.addr, 0, sizeof(c->cfg.addr));
+    memset(c->cfg.name, 0, sizeof(c->cfg.name));
+    bleu_bind(&c->b, NULL, now_ms);
+    c->known_board = 0u;
+    c->run_owed = false;
+    ++c->bind_seq;
+    c->cfg.bind_seq = c->bind_seq;
+    follow_link(c, now_ms);
+    /* After follow_link(): the link's end is the operator's, no loss. */
+    c->lost = false;
+    return true;
+}
+
 void pnode_ctl_event(pnode_ctl_t *c, const bleu_evt_t *e, uint32_t now_ms)
 {
     if (c == NULL || e == NULL) {

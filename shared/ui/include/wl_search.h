@@ -24,6 +24,17 @@
  * question closes either way.  After a bind the screen stays and marks
  * the device as the bound one once the controller has bound it.
  *
+ * UNBIND, under SCAN AGAIN, is a 2s hold (ui_hold_t): held to UI_HOLD_S it
+ * asks the entry's unbind once, which forgets the bound device, ends its
+ * link and keeps the empty address in SETUP with a save asked.  It takes
+ * the hold only while the view names a bound device; with none it is
+ * drawn grey and a tap says NOTHING IS BOUND on the band.  A bound device
+ * that goes while the finger holds (another bind, the device switched
+ * OFF) ends the hold without an unbind.  The bench's state does not
+ * refuse it: an unbind while ARMED acts on what uses the device as its
+ * lost link does (the Dial: an error, SAFE; the power node read by a run:
+ * the dropout rule; the balance node: stale readings).
+ *
  * The screen keeps no copy of the list: each frame it reads the entry's
  * view (wls_device_t's view()).  A view that changes (RSSI, the scan's
  * progress, the link) repaints it and never closes the question or drops
@@ -89,6 +100,9 @@ typedef struct {
     void (*scan)(void);
     /** @brief The bind of found device @p i, queued for the controller. */
     void (*bind)(uint8_t i);
+    /** @brief The unbind of the bound device, queued for the
+     *         controller. */
+    void (*unbind)(void);
 } wls_device_t;
 
 /** @brief The screen's parts a test or the guide aims at. */
@@ -99,6 +113,7 @@ typedef enum {
     WLS_PART_BOX,       /**< the question's box */
     WLS_PART_LIST,      /**< the list's area, every row's */
     WLS_PART_CARD,      /**< the device's kind, state and bound device */
+    WLS_PART_UNBIND,    /**< UNBIND, the 2s hold */
     WLS_PART_COUNT
 } wls_part_t;
 
@@ -150,6 +165,13 @@ bool wl_search_asking(void);
  * @return Its copy as the tap took it; NULL with no question.
  */
 const wls_dev_t *wl_search_asked(void);
+
+/**
+ * @brief Whether UNBIND takes its hold: the view names a bound device and
+ *        no question is open.
+ * @return True while it is drawn live.
+ */
+bool wl_search_unbind_ready(void);
 
 /**
  * @brief Found device @p i's row, in the body's coordinates.

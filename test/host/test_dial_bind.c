@@ -23,6 +23,7 @@
  * - a_pick_waits_for_one_running_attempt_at_most
  * - a_bind_drops_the_backoff_of_an_old_dial
  * - the_found_row_and_bind_land_on_index_0_at_1024x600
+ * - an_unbind_forgets_the_dial_and_a_pick_binds_it_again
  *
  * SPDX-License-Identifier: MIT
  */
@@ -90,6 +91,7 @@ static struct {
     uint32_t   kept_seq;      /* the binds the frame kept in SETUP */
     unsigned   bound_lines;   /* "dial: bound ..." console lines */
     unsigned   refused_lines; /* bind refusals on the console */
+    unsigned   unbound_lines; /* "dial: unbound ..." console lines */
     unsigned   scan_lines;    /* "scan for 10000ms" console lines */
     uint32_t   t_bind;        /* when `blec` ran the last BIND */
     uint32_t   t_connect;     /* the Dial's first CONNECT after it */
@@ -257,6 +259,10 @@ static void run_command(const dial_cmd_t *cmd)
             ++g.bound_lines;
         } else {
             ++g.refused_lines;
+        }
+    } else if (cmd->kind == DIAL_CMD_UNBIND) {
+        if (dial_ctl_unbind(&g.c, g.now)) {
+            ++g.unbound_lines;
         }
     }
 }
@@ -952,6 +958,38 @@ TEST_CASE(the_found_row_and_bind_land_on_index_0_at_1024x600)
     }
 }
 
+/* A bound Dial, UP, unbound on SEARCH by UNBIND held 2s: the link ends,
+ * SETUP keeps the empty address and name with a save asked, BOUND DIAL
+ * reads NONE and no connect follows.  A pick binds it again and it comes
+ * UP. */
+TEST_CASE(an_unbind_forgets_the_dial_and_a_pick_binds_it_again)
+{
+    start("", 0u, false);
+    (void)scan();
+    tap_row(&wireless_pane_bind_row);
+    pick(0);
+    (void)until_up(2000u);
+    CHECK_EQ(dial_ctl_link(&g.c), DIAL_LINK_UP);
+    CHECK(wl_search_unbind_ready());
+    wbr_hold_unbind(run, 2000u);
+    run(3u * FRAME_MS);
+    CHECK_EQ(g.unbound_lines, 1u);
+    CHECK(!g.c.b.bound);
+    CHECK_EQ(dial_ctl_link(&g.c), DIAL_LINK_NONE);
+    CHECK_STR_EQ(settings_text(SET_TEXT_DIAL_ADDR), "");
+    CHECK_STR_EQ(settings_text(SET_TEXT_DIAL_NAME), "");
+    CHECK(settings_save_asked());
+    CHECK_STR_EQ(value_of(&wireless_pane_bind_row), TR(DIAL_BIND_NONE));
+    CHECK(!wl_search_unbind_ready());
+    const unsigned connects = g.dial_connects;
+    run(3000u);
+    CHECK_EQ(g.dial_connects, connects);
+    pick(0);
+    (void)until_up(2000u);
+    CHECK_EQ(dial_ctl_link(&g.c), DIAL_LINK_UP);
+    CHECK_STR_EQ(settings_text(SET_TEXT_DIAL_ADDR), DIAL_TEXT);
+}
+
 int main(void)
 {
     RUN(a_pick_in_the_frame_found_shows_binds_and_connects);
@@ -963,5 +1001,6 @@ int main(void)
     RUN(a_pick_waits_for_one_running_attempt_at_most);
     RUN(a_bind_drops_the_backoff_of_an_old_dial);
     RUN(the_found_row_and_bind_land_on_index_0_at_1024x600);
+    RUN(an_unbind_forgets_the_dial_and_a_pick_binds_it_again);
     return test_summary("dial_bind");
 }

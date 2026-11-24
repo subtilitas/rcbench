@@ -2612,6 +2612,12 @@ UI_TEXT(HG_WLS_CARD, 0,
 UI_TEXT(HG_WLS_AGAIN, 0,
     "Scans 10s again. Refused while ARMED and while a scan runs; the band says why.",
     "Sucht erneut 10s. Abgelehnt bei ARMED und während einer Suche; das Band nennt den Grund.")
+UI_TEXT(HG_WLS_UNBIND_NAME, 0,
+    "UNBIND",
+    "BINDUNG LÖSEN")
+UI_TEXT(HG_WLS_UNBIND, 0,
+    "Held 2s: forgets the bound device, ends its link and asks for a save. A run that uses it acts as on a lost link. Grey with nothing bound.",
+    "2s gehalten: vergisst das gebundene Gerät, trennt die Verbindung und fordert Speichern an. Ein Lauf, der es nutzt, reagiert wie auf eine verlorene Verbindung. Grau, wenn nichts gebunden ist.")
 
 /* ---------------------------------------------------------------- LOGS */
 UI_TEXT(LOG_NO_SOURCE, 36,
@@ -6689,6 +6695,9 @@ UI_TEXT(HOLD_HINT_DOWNLOAD, 94,
 UI_TEXT(HOLD_HINT_SBK_LOAD, 94,
     "Hold 2s to load the settings file.",
     "Halte 2s, um die Einstellungsdatei zu laden.")
+UI_TEXT(HOLD_HINT_WLS_UNBIND, 94,
+    "Hold 2s to unbind the device.",
+    "Halte 2s, um die Bindung zu lösen.")
 UI_TEXT(HOLD_HINT_IOMCU_UPDATE, 94,
     "Hold 2s to update the IOmcu.",
     "Halte 2s, um den IOmcu zu aktualisieren.")
@@ -13338,6 +13347,14 @@ UI_TEXT(WLS_ASK_KEEP, 0,
 UI_TEXT(WLS_BIND, 0,
     "BIND",
     "BINDEN")
+/* SEARCH's UNBIND, a 2s hold on the card: the label, the band's text for a
+ * press with nothing bound. */
+UI_TEXT(WLS_UNBIND, 0,
+    "HOLD 2s: UNBIND",
+    "2s HALTEN: BINDUNG LÖSEN")
+UI_TEXT(WLS_UNBIND_NONE, 94,
+    "NOTHING IS BOUND: NOTHING TO UNBIND",
+    "NICHTS GEBUNDEN: KEINE BINDUNG ZU LÖSEN")
 /* A node's bind refused while a scan runs. */
 UI_TEXT(NODE_BIND_SCANNING, 94,
     "A SCAN IS RUNNING: PICK THE NODE WHEN IT ENDS",

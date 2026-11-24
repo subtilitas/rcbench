@@ -5,7 +5,9 @@
  *        touches.
  *
  * The guide's first page marks the list with the dock on the right, the
- * second the device's card and SCAN AGAIN with the dock on the left.  The
+ * second the device's card, SCAN AGAIN and UNBIND with the dock on the
+ * left.  UNBIND is not among the Dial's focus items: nothing the Dial
+ * sends completes a hold.  The
  * screen drives no output, so both show while ARMED.  The question has no
  * pages.
  *
@@ -47,6 +49,8 @@ gfx_rect_t wl_search_part(wls_part_t part)
     switch (part) {
     case WLS_PART_AGAIN:
         return gfx_rect_make(WLS_SX, WLS_AGAIN_Y, WLS_SW, WLS_BTN_H);
+    case WLS_PART_UNBIND:
+        return gfx_rect_make(WLS_SX, WLS_UNBIND_Y, WLS_SW, WLS_BTN_H);
     case WLS_PART_CANCEL:
         return gfx_rect_make(WLS_Q_CANCEL_X, WLS_Q_BTN_Y, WLS_Q_BTN_W,
                              WLS_BTN_H);
@@ -113,7 +117,7 @@ static void draw_list(gfx_canvas_t *c, const wls_view_t *v)
 
 /**
  * @brief The right column: the device's kind, its link state, the bound
- *        device and SCAN AGAIN.
+ *        device, SCAN AGAIN and UNBIND, grey with nothing bound.
  * @param c The canvas.
  * @param v The view.
  */
@@ -133,6 +137,11 @@ static void draw_card(gfx_canvas_t *c, const wls_view_t *v)
                    UI_PANEL_HI,
                    !wls.asking && wls.have_press && wls.hit == WLS_HIT_AGAIN,
                    !v->scanning, WLS_F_LABEL);
+    ui_hold_button(c, wl_search_part(WLS_PART_UNBIND), TR(WLS_UNBIND),
+                   UI_PANEL_HI, UI_WARN, &wls.unbind,
+                   !wls.asking && wls.have_press
+                       && wls.hit == WLS_HIT_UNBIND,
+                   v->bound_addr[0] != '\0', WLS_F_LABEL);
 }
 
 /**
@@ -247,6 +256,8 @@ bool wls_help_page(int i, ui_help_page_t *out)
                          wl_search_part(WLS_PART_CARD), UI_HELP_AT_RIGHT);
     (void)ui_help_add(out, TR(WL_SCAN_AGAIN), TX_HG_WLS_AGAIN,
                       wl_search_part(WLS_PART_AGAIN));
+    (void)ui_help_add(out, TR(HG_WLS_UNBIND_NAME), TX_HG_WLS_UNBIND,
+                      wl_search_part(WLS_PART_UNBIND));
     return true;
 }
 

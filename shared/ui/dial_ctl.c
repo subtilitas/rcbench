@@ -262,6 +262,20 @@ bool dial_ctl_bind(dial_ctl_t *c, uint8_t i, uint32_t now_ms)
     return true;
 }
 
+bool dial_ctl_unbind(dial_ctl_t *c, uint32_t now_ms)
+{
+    if (c == NULL || !c->b.bound) {
+        return false;
+    }
+    memset(c->cfg.addr, 0, sizeof(c->cfg.addr));
+    memset(c->cfg.name, 0, sizeof(c->cfg.name));
+    bleu_bind(&c->b, NULL, now_ms);
+    ++c->bind_seq;
+    c->cfg.bind_seq = c->bind_seq;
+    follow_link(c, now_ms);
+    return true;
+}
+
 /**
  * @brief One EVENT's bytes: decoded, the link's clock, the turn and the
  *        gesture counted.  The buttons' held states are read by nobody.

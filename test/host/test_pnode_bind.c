@@ -18,6 +18,7 @@
  * - a_scan_tap_while_a_scan_runs_says_so
  * - a_scan_the_controller_refuses_says_so
  * - search_counts_the_scan_down_and_lists_the_node
+ * - an_unbind_forgets_the_node_and_a_pick_binds_it_again
  *
  * SPDX-License-Identifier: MIT
  */
@@ -62,6 +63,7 @@ static struct {
     uint32_t     kept_seq;       /* the binds the frame kept in SETUP */
     unsigned     bound_lines;    /* "node: bound ..." console lines */
     unsigned     refused_lines;  /* bind refusals on the console */
+    unsigned     unbound_lines;  /* "node: unbound ..." console lines */
     unsigned     scan_lines;     /* "scan for 10000ms" console lines */
     unsigned     scan_no_lines;  /* scan refusals on the console */
 } g;
@@ -89,6 +91,10 @@ static void run_command(const pnode_cmd_t *cmd)
             ++g.bound_lines;
         } else {
             ++g.refused_lines;
+        }
+    } else if (cmd->kind == PNODE_CMD_UNBIND) {
+        if (pnode_ctl_unbind(&g.c, g.now)) {
+            ++g.unbound_lines;
         }
     }
 }
@@ -486,6 +492,56 @@ TEST_CASE(search_counts_the_scan_down_and_lists_the_node)
     CHECK_EQ(g.scan_lines, 1u);
 }
 
+/* A bound, linked node unbound on SEARCH by UNBIND held 2s: the link ends,
+ * SETUP keeps the empty address and name and asks for a save, which
+ * writes them to the store; BOUND NODE and SEARCH read NONE and UNBIND
+ * goes grey; no post binds it back.  A pick on SEARCH binds the node again
+ * and links it. */
+TEST_CASE(an_unbind_forgets_the_node_and_a_pick_binds_it_again)
+{
+    start();
+    settings_set_store(&s_text_store);
+    scan();
+    tap_row(BIND_ROW);
+    CHECK(!wl_search_unbind_ready());
+    pick(0);
+    run(200u);
+    CHECK(linked());
+    CHECK(settings_save_tick(true));
+    CHECK_STR_EQ(s_saved_text[SET_TEXT_PNODE_ADDR], NODE_TEXT);
+    CHECK(wl_search_unbind_ready());
+    wbr_hold_unbind(run, 2000u);
+    run(3u * FRAME_MS);
+    CHECK_EQ(g.unbound_lines, 1u);
+    CHECK(!g.c.b.bound);
+    CHECK(!g.c.linked);
+    CHECK_EQ(g.peer.connects, 1u);
+    CHECK_STR_EQ(settings_text(SET_TEXT_PNODE_ADDR), "");
+    CHECK_STR_EQ(settings_text(SET_TEXT_PNODE_NAME), "");
+    CHECK(settings_save_asked());
+    CHECK(settings_save_tick(true));
+    CHECK_STR_EQ(s_saved_text[SET_TEXT_PNODE_ADDR], "");
+    CHECK_STR_EQ(s_saved_text[SET_TEXT_PNODE_NAME], "");
+    CHECK_STR_EQ(wbr_value(BIND_ROW), TR(DIAL_BIND_NONE));
+    wls_view_t v;
+    wl_search_view(&v);
+    CHECK_STR_EQ(v.bound_addr, "");
+    CHECK(!wl_search_unbind_ready());
+    CHECK_EQ(ui_router_current(), SCREEN_WL_SEARCH);
+    run(3000u);
+    CHECK(!g.c.b.bound);
+    CHECK_EQ(g.peer.connects, 1u);
+    pick(0);
+    run(200u);
+    CHECK_EQ(g.bound_lines, 2u);
+    CHECK(linked());
+    CHECK_EQ(g.peer.connects, 2u);
+    CHECK_STR_EQ(settings_text(SET_TEXT_PNODE_ADDR), NODE_TEXT);
+    CHECK_STR_EQ(wbr_value(BIND_ROW), NODE_NAME);
+    CHECK_EQ(g.q_drops, 0u);
+    settings_set_store(NULL);
+}
+
 int main(void)
 {
     RUN(a_pick_binds_keeps_and_links_the_node);
@@ -494,5 +550,6 @@ int main(void)
     RUN(a_scan_tap_while_a_scan_runs_says_so);
     RUN(a_scan_the_controller_refuses_says_so);
     RUN(search_counts_the_scan_down_and_lists_the_node);
+    RUN(an_unbind_forgets_the_node_and_a_pick_binds_it_again);
     return test_summary("pnode_bind");
 }

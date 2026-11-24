@@ -689,6 +689,19 @@ fourth client, owner 3
   the bind; it carries the count of binds SETUP had kept, and the
   controller keeps the bound node for a count behind its own and takes the
   other values. The balance node does the same.
+- **Unbind.** UNBIND on SEARCH, a 2s hold
+  ([Screens](Screens.md#wireless-search)), sends UNBIND to the `blec`
+  task. The controller (`pnode_ctl_unbind()`, `bal_ctl_unbind()`) ends
+  the link with a disconnect, or cancels the connect under way, clears the
+  bound address and name and counts the change as a bind, so the frame
+  writes the empty address and name to SETUP and asks for a save. No
+  connect follows. The link's end is no LOST. UPDATES reads no board for
+  the node until the next INFO of a bound node. The console logs `node: unbound <address>`
+  (`bal:` for the balance node), and `unbind refused: no node bound` when
+  nothing was bound. ARMED does not refuse it: a run that counts on the
+  power node gets no reading after it and ends as an error once the
+  dropout passes 300ms, as on a lost link. The balance node's readings go
+  stale.
 - **The link.** The panel subscribes to STREAM and reads INFO once after
   each subscribe. A node whose INFO names another protocol than 1, another
   role than power, or an INA228 set-up that `ina228_calibrate()` does not

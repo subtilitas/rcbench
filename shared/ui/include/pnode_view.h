@@ -104,6 +104,7 @@ typedef enum {
     PNODE_CMD_NONE = 0, /**< none */
     PNODE_CMD_SCAN,     /**< SCAN FOR NODE */
     PNODE_CMD_BIND,     /**< bind the found node arg */
+    PNODE_CMD_UNBIND,   /**< forget the bound node, end its link */
 } pnode_cmd_kind_t;
 
 /** @brief One command. */

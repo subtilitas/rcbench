@@ -441,6 +441,21 @@ bool bal_ctl_bind(bal_ctl_t *c, uint8_t i, uint32_t now_ms)
     return true;
 }
 
+bool bal_ctl_unbind(bal_ctl_t *c, uint32_t now_ms)
+{
+    if (c == NULL || !c->b.bound) {
+        return false;
+    }
+    memset(c->cfg.addr, 0, sizeof(c->cfg.addr));
+    memset(c->cfg.name, 0, sizeof(c->cfg.name));
+    bleu_bind(&c->b, NULL, now_ms);
+    c->have_rep = false;
+    ++c->bind_seq;
+    c->cfg.bind_seq = c->bind_seq;
+    follow_link(c, now_ms);
+    return true;
+}
+
 /**
  * @brief The mode the report asks for: no-index once BAL_NOIDX_REPORTS in
  *        a row came without an index edge, the index again with the first

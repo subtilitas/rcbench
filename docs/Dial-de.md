@@ -314,6 +314,14 @@ Konsole schreibt `dial: bind of n refused`. Ein gebundenes Dial schreibt
 Ein Tippen auf DIAL SUCHEN oder AKTUALISIEREN, während eine Suche läuft,
 startet keine; das Band zeigt `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`.
 
+BINDUNG LÖSEN auf SEARCH, 2s gehalten, vergisst das gebundene Dial: Die
+Verbindung endet, das Panel behält eine leere Adresse und einen leeren
+Namen in SETUP und fordert Speichern an, und es verbindet sich bis zur
+nächsten Bindung mit keinem Dial. Die Konsole schreibt
+`dial: unbound <Adresse>`. Ein Dial, das beim Lösen UP oder DEGRADED ist,
+ist sofort verloren, und bei ARMED ist dieser Verlust ein Fehler: SAFE,
+jeder Ausgang aus.
+
 Der Connect nach dem Binden startet sofort, wenn die Central frei ist. Eine
 IMU oder ein Knoten, EIN und an ein Gerät außer Reichweite gebunden, hält
 den einen Connect 5.000ms pro Versuch. Der Connect nach dem Binden nimmt
@@ -754,7 +762,8 @@ verschiedener Reihenfolge; GPIO1 ist in beiden Fällen der Pin dieser Nummer.
 - `forget` oder das Halten von 10s mit dem gebundenen Panel in Reichweite:
   Das Panel kennt die Adresse des Dial noch, verbindet sich wieder und
   abonniert, und das Dial bindet es erneut. Um ein anderes Panel zu binden,
-  zuerst das Dial am alten Panel lösen.
+  zuerst das Dial am alten Panel lösen (BINDUNG LÖSEN auf SEARCH,
+  [Suchen und Binden](#suchen-und-binden)).
 - Zeichen außerhalb von ASCII, des Gradzeichens und der deutschen
   Buchstaben erscheinen als `?`.
 - Das Senden eines ganzen Frames dauert bei 40MHz etwa 23ms (gerechnet,
