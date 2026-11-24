@@ -56,7 +56,7 @@ const char *svs_fn_name(servo_fn_t fn)
 bool svs_port_line(char *out, size_t n)
 {
     return servo_target_line(out, n, s.drive_target, s.drive_pin, s.drive_pwm,
-                             s.pins, s.pins_known);
+                             s.pins, s.pin_proto, s.pins_known);
 }
 
 /** @brief The PORT button's label, left in it. */

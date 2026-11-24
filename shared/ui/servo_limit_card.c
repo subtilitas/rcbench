@@ -264,7 +264,7 @@ static void result_lines(lc_lines_t *L)
          * do. */
         (void)servo_target_line(b, sizeof(b), s.lim_out.target,
                                 s.lim_out.gpio, s.lim_out.pwm, s.lim_out.pins,
-                                s.lim_out.known);
+                                s.lim_out.proto, s.lim_out.known);
         add(L, UI_C_TEXT_DIM, b);
     }
     lim_file_name(b, sizeof(b));
@@ -390,7 +390,7 @@ void lim_render(gfx_canvas_t *c)
              ui_theme_color(UI_C_TEXT_DIM), 1);
     char out[32], meter[20];
     (void)servo_target_line(out, sizeof(out), s.drive_target, s.drive_pin,
-                            s.drive_pwm, s.pins, s.pins_known);
+                            s.drive_pwm, s.pins, s.pin_proto, s.pins_known);
     snprintf(line, sizeof(line), TR(SV_LIM_LINE), out,
              servo_limrun_running(&s.lim)
                  ? s.lim.cfg.meter

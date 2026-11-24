@@ -309,6 +309,10 @@ atomic_ullong s_throttle_pins;
 atomic_bool   s_throttle_pins_known;
 atomic_uint   s_throttle_proto;
 
+/* The protocol the surface pins are bound as (outbind_role_proto()), for
+ * the SERVO screens' port line. */
+atomic_uint   s_servo_proto;
+
 /**
  * @brief A reading, into the snapshot the outputs and picker screens take.
  */
@@ -372,6 +376,9 @@ void read_outputs_binding(void)
         atomic_store(&s_servo_pins,
                      outputs_role_pins(r.slots, r.cfg, OUT_ROLE_SURFACE));
         atomic_store(&s_servo_pins_known, true);
+        atomic_store(&s_servo_proto,
+                     (unsigned)outbind_role_proto(r.slots, r.cfg,
+                                                  OUT_ROLE_SURFACE));
         servo_link_binding(outputs_role_channels(r.slots, r.cfg,
                                                  OUT_ROLE_SURFACE),
                            true);
@@ -386,6 +393,7 @@ void read_outputs_binding(void)
      */
     atomic_store(&s_servo_pins, 0u);
     atomic_store(&s_servo_pins_known, false);
+    atomic_store(&s_servo_proto, 0u);
     servo_link_binding(0u, false);
     post_reading(&r);
     switch (r.state) {
