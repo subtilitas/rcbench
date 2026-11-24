@@ -1476,6 +1476,8 @@ extern atomic_ullong s_throttle_pins;
 extern atomic_bool   s_throttle_pins_known;
 /** @brief The protocol the throttle is bound as (outbind_role_proto()). */
 extern atomic_uint   s_throttle_proto;
+/** @brief The protocol the surface pins are bound as (outbind_role_proto()). */
+extern atomic_uint   s_servo_proto;
 /** @brief The THROTTLE in force at the IOmcu, for the log's rows.  Control
  *         task only. */
 extern bench_throttle_t s_bench_throttle;

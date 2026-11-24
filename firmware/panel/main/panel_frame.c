@@ -325,6 +325,8 @@ void panel_frame_loop(void)
                 (uint8_t)atomic_load(&s_throttle_proto));
             servo_screen_set_pins(atomic_load(&s_servo_pins),
                                   atomic_load(&s_servo_pins_known));
+            servo_screen_set_pin_protocol(
+                (uint8_t)atomic_load(&s_servo_proto));
             /* On the carrier the INA3221 channel read at 1kHz is the rail
              * of those pins: a new rail is a new map. */
             if (settings_sensors_set_tester_rail(

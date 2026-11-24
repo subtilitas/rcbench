@@ -782,6 +782,13 @@ jobs:
       - name: Dial base matches its spec and clears dial, nut and cell
         run: python3 hardware/mechanical/_gen_dial_base.py --check
 
+      # The rotary knob on the dial base's bottom part is built with
+      # OpenCASCADE: the files match their spec, each printed part is
+      # one valid solid, the case fills no flute, and no two solids of
+      # the knob share volume.
+      - name: Knob matches its spec and no two of its solids collide
+        run: python3 hardware/mechanical/_gen_knob.py --check
+
       # The KST X10's frame, its linkage and the slice of wing with the
       # flap are built with OpenCASCADE round the servo's model: the
       # files match their spec, each solid is valid and in one piece,

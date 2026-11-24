@@ -790,7 +790,7 @@ TEST_CASE(the_port_line_names_the_pin_the_buttons_drive)
         CHECK_STR_EQ(port, k[i].text);
         char line[32];
         CHECK_EQ(servo_target_line(line, sizeof(line), k[i].drive, k[i].pin,
-                                   true, k[i].pins, true),
+                                   true, k[i].pins, 0u, true),
                  k[i].warn);
         CHECK_STR_EQ(line, k[i].text);
         press(RUD_C_2000);
