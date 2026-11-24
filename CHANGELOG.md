@@ -15,8 +15,10 @@ history is in git.
   and STL; the rotor turns on 2 bearings 6704-2RS, and its bezel holds
   the acrylic window. An AS5600 beside 22 magnets Ø4 x 1.5mm reads
   11 x 4096 counts a turn. The display's carrier locks into the shaft
-  with a bayonet. `--check` runs in CI and also moves the carrier
-  through the bayonet's path
+  with a bayonet. A tab on the bezel carries a grounded copper patch
+  over the display's glass, to try the touch panel as the encoder.
+  `--check` runs in CI and also moves the carrier through the
+  bayonet's path
   ([Mechanical parts](hardware/mechanical/README.md#rotary-knob-with-a-round-display)).
 - `hardware/mechanical/`: `esp32_s3_lcd_185.step`, the Waveshare
   ESP32-S3-Touch-LCD-1.85, a round 1.85" display board 55.00mm across and

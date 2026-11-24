@@ -38,9 +38,11 @@ Printed parts, written to models/casing/ as STEP and STL:
     knob_bezel    the skirt's top, 2.7 high: the lip under the window
                   with an opening of 47 and the window's seat 49.7
                   across, the window glued in with epoxy; a spigot
-                  inside the skirt, 0.1 off it, glued in with epoxy. A
-                  part of its own, so the display, 55 across, goes in
-                  from the top before it
+                  inside the skirt, 0.1 off it, glued in with epoxy; the
+                  finger, a tab under the lip 6 wide from r 18.5 that
+                  carries a patch of copper tape 0.15 over the display's
+                  glass. A part of its own, so the display, 55 across,
+                  goes in from the top before it
     knob_carrier  plate 54 across, 2 thick; the display's 3 inserts
                   take countersunk M2 screws through it from below; a
                   spigot under it locks into the shaft's top with a
@@ -142,6 +144,11 @@ SEAT_D = 49.7
 # and the window's seat; its spigot inside the skirt, inner radius,
 # play, lower end.
 SPIGOT_IN = (29.0, 0.1, 19.5)
+# The finger: a tab under the lip that carries a patch of copper tape
+# over the display's glass, for trying the touch panel as the encoder.
+# Its inner radius, width, lower face and angle; the lower face lies
+# 0.15 over the glass, so a tape 0.06 thick hovers 0.09 over it.
+FINGER = (18.5, 6.0, 20.85, 0.0)
 # Magnets: count, circle radius, diameter, thickness, z of the lower
 # face; pocket play.
 MAGNETS = (22, 17.0, 4.0, 1.5, -6.25)
@@ -292,11 +299,13 @@ def bezel():
     r0, r1, _s0, s1 = SKIRT
     rim, l0, l1 = LIP
     inner, play, low = SPIGOT_IN
+    reach, width, under, angle = FINGER
     return base._merged(_fuse(
         _ring(r0 - 0.01, r1, l0, s1),
         _ring(rim, r0, l0, l1),
         _ring(SEAT_D / 2, r0, l1, s1),
-        _ring(inner, r0 - play, low, l0 + 0.01)))
+        _ring(inner, r0 - play, low, l0 + 0.01),
+        _radial_box(reach, rim + 0.5, width, under, l1, angle)))
 
 
 def rotor():

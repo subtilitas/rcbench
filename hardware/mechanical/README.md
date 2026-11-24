@@ -369,7 +369,7 @@ so the knob stands 56.2mm high with the bottom part.
 | `knob_spacer.step`, `.stl` | sleeve 21.6 / 20, 6.0 long, between the bearings' inner rings; 0.3cm3 | on end |
 | `knob_clamp.step`, `.stl` | sleeve 21.6 / 20, 8.0 long, from the upper bearing to the carrier; 0.4cm3 | on end |
 | `knob_rotor.step`, `.stl` | hub 38 / 27 with a shoulder of 24 between the bearings' outer rings and 22 magnet pockets; a web over the sensor; a skirt 64 / 60 up to the bezel; 25.0cm3 | skirt's top down; the web and the hub's top need support |
-| `knob_bezel.step`, `.stl` | the skirt's top, 2.7 high: a lip with an opening of 47 under the window, the window's seat 49.7 across, a spigot inside the skirt with 0.1 play; 3.8cm3 | top down, no support |
+| `knob_bezel.step`, `.stl` | the skirt's top, 2.7 high: a lip with an opening of 47 under the window, the window's seat 49.7 across, a spigot inside the skirt with 0.1 play; the finger, a tab under the lip 6 wide from r 18.5, its underside 0.15 over the display's glass; 3.9cm3 | top down; the finger reaches 5.5 into the open seat and needs support |
 | `knob_carrier.step`, `.stl` | plate 54 across, 2.0 thick, with 3 countersunk holes for M2 into the display's inserts; a spigot 13.6 / 10.0 under it, 4.5 long, with the bayonet's 3 lugs; 4.7cm3 | plate down, no support |
 | `knob_magnets.step` | the 22 magnets where they sit, N red and S blue | bought |
 | `knob_as5600.step` | the AS5600 module where it stands | bought |
@@ -407,6 +407,19 @@ field at the chip turns 360 degrees for each N-S pair, 11 times a knob
 turn: 11 x 4096 = 45056 counts a turn, 45 counts for each of 1000 steps.
 The method follows 0x23's MicroManipulatorStepper (MIT licence). The
 firmware counts the sensor's wraps to keep the knob's turn.
+
+Touch finger, a second encoder to try on the same build: a patch of
+copper tape, 6 x 4.5mm and 0.06mm thick, on the underside of the
+bezel's finger hovers 0.09mm over the display's glass at r 18.5 to 23.0,
+inside the view area, which ends at r 23.04. The touch controller, a
+CST816, reports it as a touch; its angle is the knob's angle, about
+1030 pixels a turn at r 21. The patch is tied to the display's ground:
+copper tape from the patch over the lip, down the skirt's inside, over
+the web and down the hub's bore to the upper bearing's outer ring;
+through the bearing; from its inner ring copper tape on the shaft
+under the clamp, over the shaft's top into its bore, and a wire up to
+the display's GND. The tape adds 0.06 to each side of both bearing
+fits.
 
 Assembly: melt the 4 inserts into the case from below. Screw the AS5600
 module to the case's wall with 4 M3, its chip towards the axis, and lead
@@ -455,6 +468,15 @@ Limits:
   headers, nor a switch or charger for the cell.
 - The rotor's web and the hub's top overhang and need support when
   printed.
+- The touch finger is not tried. Unknown: whether the CST816 sees the
+  patch at 0.09mm; how much its reported place jitters; what it reports
+  when the patch lies on the glass at power-on, which it takes into its
+  baseline; whether its AutoReset and LongPressTime, which drop a touch
+  held for seconds, can be turned off; how well a ball bearing, whose
+  balls run on a film of grease, carries the ground while it turns. A
+  bronze spring wiping a copper band on the hub would replace the
+  bearing in that path. The CST816 reports 1 touch: with the patch on
+  the glass, touches by hand are not read reliably.
 - The window and the bezel are glued: to take the display out, the
   bezel's glue is cut.
 
