@@ -31,9 +31,10 @@ Printed parts, written to models/casing/ as STEP and STL:
                   carrier, which clamps the inner rings
     knob_rotor    hub 38 / 27 with a shoulder 24 between the bearings'
                   outer rings and the 22 magnet pockets, open to the
-                  side; web over the sensor; skirt 64 / 60 from 0.5 over
-                  the case's rim; lip under the window with an opening
-                  of 47; the window's seat 49.7 across
+                  side, 0.1 over the magnet, which is glued in; web
+                  over the sensor; skirt 64 / 60 from 0.5 over the
+                  case's rim; lip under the window with an opening of
+                  47; the window's seat 49.7 across
     knob_carrier  plate 54 across, 2 thick, on the shaft; the display's
                   3 inserts take M2 screws through it; 3 M2 into the
                   shaft's wall

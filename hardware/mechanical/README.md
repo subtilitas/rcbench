@@ -408,9 +408,11 @@ firmware counts the sensor's wraps to keep the knob's turn.
 
 Assembly: melt the 4 inserts into the case from below. Screw the AS5600
 module to the case's wall with 4 M3, its chip towards the axis, and lead
-its wires through the wall's window and the floor's wire hole. Press
-the magnets into their pockets from the hub's side, N and S up in turn,
-and set the acrylic disc in the rotor's seat. Slide the lower bearing
+its wires through the wall's window and the floor's wire hole. Glue
+the magnets into their pockets from the hub's side with cyanoacrylate,
+N and S up in turn: each pocket is 0.1mm larger than the magnet all
+round and open to the side, so it does not hold a magnet by itself. Set
+the acrylic disc in the rotor's seat. Slide the lower bearing
 onto the shaft, the rotor over it, the spacer and the upper bearing,
 then the clamp. Screw the carrier to the shaft with 3 M2 and the display
 to the carrier with 3 M2. Lay the cell in the bottom part, close with
