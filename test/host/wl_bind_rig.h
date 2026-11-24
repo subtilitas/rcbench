@@ -15,6 +15,7 @@
  * - test_dial_bind.c
  * - test_pnode_bind.c
  * - test_bal_bind.c
+ * - test_wl_search.c
  *
  * SPDX-License-Identifier: MIT
  */
@@ -116,6 +117,30 @@ static inline void wbr_home_at(int *x, int *y)
     const gfx_rect_t r = ui_home_tag_rect(ui_router_title(ui_router_current()));
     *x = r.x + r.w / 2;
     *y = r.y + r.h / 2;
+}
+
+/** @brief A step of wbr_hold(): 250ms, which a float sums exactly. */
+#define WBR_HOLD_STEP_MS 250u
+
+/**
+ * @brief SEARCH's UNBIND pressed through the glass and held @p ms (a
+ *        multiple of WBR_HOLD_STEP_MS), @p run moving the clock and the
+ *        router ticked by each step, then released over it.
+ * @param run Moves the suite's clock by its argument in ms; NULL for none.
+ * @param ms  The hold, ms: UI_HOLD_S (2000ms) fires it.
+ */
+static inline void wbr_hold_unbind(void (*run)(uint32_t), uint32_t ms)
+{
+    const gfx_rect_t r = wbr_part(WLS_PART_UNBIND);
+    const int x = r.x + r.w / 2, y = r.y + r.h / 2;
+    wbr_down(x, y);
+    for (uint32_t t = 0u; t < ms; t += WBR_HOLD_STEP_MS) {
+        if (run != NULL) {
+            run(WBR_HOLD_STEP_MS);
+        }
+        ui_router_tick((float)WBR_HOLD_STEP_MS / 1000.0f);
+    }
+    wbr_up(x, y);
 }
 
 /** @brief SEARCH's scan state line, valid until the next call. */

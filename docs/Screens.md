@@ -6412,6 +6412,7 @@ tag returns to SETUP > WIRELESS on the device's entry.
 | Found list | rows of 640 x 48px at a 52px pitch from x 16, y 44 | the devices the last scan found, strongest first, up to 8: the name, else the address, and the RSSI, `rcbench-pwr-3456  -58dBm`; the bound one lit in the accent colour. The controller empties the list when a scan starts and fills it when the scan ends |
 | Card | x 680, 328px wide, y 12 to 136 | the device's kind, its link state as on the left list, `BOUND` and the bound device's name, else its address, else `NONE` |
 | SCAN AGAIN | 328 x 56px at x 680, y 156 | a new scan of 10s with the rules of SCAN FOR DIAL and SCAN FOR NODE; grey while a scan runs, where a tap reads `A SCAN IS RUNNING: IT ENDS WITHIN 10s` |
+| UNBIND | 328 x 56px at x 680, y 228 | `HOLD 2s: UNBIND`, a 2s hold that forgets the bound device (below); released before 2000ms the band reads `Hold 2s to unbind the device.`; grey while nothing is bound, where a tap reads `NOTHING IS BOUND: NOTHING TO UNBIND` |
 
 ![SEARCH's bind question](img/setup-wireless-search-bind.png)
 
@@ -6439,6 +6440,27 @@ that started first or a list that changed, reads the same texts.
 
 A change of the device's view, an RSSI, the seconds left or the link
 state, repaints SEARCH. It closes no question and drops no press.
+
+UNBIND held 2000ms asks the controller to forget the bound device, once.
+The controller ends the link (a disconnect, or the pending connect
+cancelled) and connects to nothing after it. The panel keeps an empty
+address and name in SETUP and asks for a save, so the device stays
+unbound after a restart. The card reads `NONE`, the left list's BOUND
+row reads `NONE`, and UNBIND turns grey. A pick on SEARCH binds a device
+again. A finger that slides off UNBIND, or a bound device that goes
+before 2000ms (another bind, the device switched OFF), ends the hold
+without an unbind. The bind question covers UNBIND while it is open.
+UNBIND is not among the Dial's focus items: nothing the Dial sends
+completes a hold.
+
+ARMED does not refuse UNBIND. What uses the device meets the unbind as
+it meets a lost link:
+
+| Device | While a run uses it |
+| --- | --- |
+| Dial | a Dial UP or DEGRADED is lost at once; while ARMED that is an error: SAFE, every output off |
+| Power node | the readings stop; a run that counts on the node (INA228 SOURCE NODE, a run that reads BENCH) rides the dropout up to 300ms, then ends as an error, every output off; an arm on NODE is refused while no reading comes |
+| Balance node | the readings go stale; the node drives no output, so nothing else happens |
 
 ![SEARCH during a scan for the Dial](img/setup-wireless-search-scan.png)
 

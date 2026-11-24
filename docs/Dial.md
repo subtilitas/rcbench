@@ -295,6 +295,13 @@ changed under it, reads the same texts, and the console logs
 A tap on SCAN FOR DIAL or SCAN AGAIN while a scan runs starts none; the
 band reads `A SCAN IS RUNNING: IT ENDS WITHIN 10s`.
 
+UNBIND on SEARCH, held 2s, forgets the bound Dial: the link ends, the
+panel keeps an empty address and name in SETUP with a save asked, and it
+connects to no Dial until the next bind. The console logs
+`dial: unbound <address>`. A Dial that is UP or DEGRADED when it is
+unbound is lost at once, and while ARMED that loss is an error: SAFE,
+every output off.
+
 The connect after a bind starts at once while the central is free. An IMU
 or a node that is ON and bound to a device out of range holds the one
 connect for 5,000ms an attempt. The bind's connect takes the hub's next
@@ -706,7 +713,7 @@ documentation and by M5Unified; GPIO1 is the pin by number either way.
 - `forget`, or the 10s hold, with the bound panel in range: the panel still
   holds the Dial's address, connects again and subscribes, and the Dial
   binds it again. To bind another panel, unbind the Dial on the old one
-  first.
+  first (UNBIND on SEARCH, [Scan and bind](#scan-and-bind)).
 - Characters outside ASCII, the degree sign and the German letters draw as
   `?`.
 - The flush of a whole frame takes about 23ms at 40MHz (arithmetic, not

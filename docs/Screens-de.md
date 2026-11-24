@@ -6946,6 +6946,7 @@ führt zurück zu SETUP > WIRELESS auf den Eintrag des Geräts.
 | Fundliste | Zeilen von 640 x 48px im Abstand von 52px ab x 16, y 44 | die Geräte der letzten Suche, das stärkste zuerst, bis zu 8: der Name, sonst die Adresse, und der RSSI, `rcbench-pwr-3456  -58dBm`; das gebundene in der Akzentfarbe hervorgehoben. Der Controller leert die Liste beim Start einer Suche und füllt sie an ihrem Ende |
 | Karte | x 680, 328px breit, y 12 bis 136 | die Art des Geräts, seine Verbindung wie in der linken Liste, `GEBUNDEN` und der Name des gebundenen Geräts, sonst seine Adresse, sonst `KEINS` |
 | AKTUALISIEREN | 328 x 56px bei x 680, y 156 | eine neue Suche von 10s mit den Regeln von Dial suchen und Knoten suchen; grau während einer Suche, dort zeigt Tippen `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s` |
+| BINDUNG LÖSEN | 328 x 56px bei x 680, y 228 | `2s HALTEN: BINDUNG LÖSEN`, ein Halten von 2s, das das gebundene Gerät vergisst (unten); vor 2000ms losgelassen zeigt das Band `Halte 2s, um die Bindung zu lösen.`; grau, solange nichts gebunden ist, dort zeigt Tippen `NICHTS GEBUNDEN: KEINE BINDUNG ZU LÖSEN` |
 
 ![Die Bindungsfrage von SEARCH](img/de/setup-wireless-search-bind.png)
 
@@ -6976,6 +6977,29 @@ Texte.
 Eine Änderung der Sicht des Geräts, ein RSSI, die verbleibenden Sekunden
 oder der Zustand der Verbindung, zeichnet SEARCH neu. Sie schließt keine
 Frage und bricht kein Antippen ab.
+
+BINDUNG LÖSEN, 2000ms gehalten, fordert beim Controller einmal an, das
+gebundene Gerät zu vergessen. Der Controller trennt die Verbindung (ein
+Disconnect, oder der laufende Connect wird abgebrochen) und verbindet sich
+danach mit nichts. Das Panel behält eine leere Adresse und einen leeren
+Namen in SETUP und fordert Speichern an, so bleibt das Gerät auch nach
+einem Neustart ungebunden. Die Karte zeigt `KEINS`, die Zeile GEBUNDEN der
+linken Liste zeigt `KEINS`, und BINDUNG LÖSEN wird grau. Eine Wahl auf
+SEARCH bindet wieder ein Gerät. Ein Finger, der von BINDUNG LÖSEN
+gleitet, oder ein gebundenes Gerät, das vor 2000ms wegfällt (eine andere
+Bindung, das Gerät AUS), beendet das Halten ohne Lösen. Die Bindungsfrage
+verdeckt BINDUNG LÖSEN, solange sie offen ist. BINDUNG LÖSEN gehört nicht
+zu den Fokuselementen des Dial: Nichts, was das Dial sendet, schließt ein
+Halten ab.
+
+ARMED lehnt BINDUNG LÖSEN nicht ab. Was das Gerät nutzt, trifft das Lösen
+wie eine verlorene Verbindung:
+
+| Gerät | Während ein Lauf es nutzt |
+| --- | --- |
+| Dial | ein Dial in UP oder DEGRADED ist sofort verloren; bei ARMED ist das ein Fehler: SAFE, jeder Ausgang aus |
+| Leistungsknoten | die Messwerte enden; ein Lauf, der auf den Knoten zählt (INA228-QUELLE KNOTEN, ein Lauf, der BENCH liest), überbrückt den Ausfall bis 300ms und endet dann als Fehler, jeder Ausgang aus; ein Scharfschalten auf KNOTEN wird abgelehnt, solange kein Messwert kommt |
+| Auswuchtknoten | die Messwerte veralten; der Knoten treibt keinen Ausgang, sonst geschieht nichts |
 
 ![SEARCH während einer Suche nach dem Dial](img/de/setup-wireless-search-scan.png)
 

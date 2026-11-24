@@ -21,6 +21,17 @@ history is in git.
   against a simulated ESC (`test/host/oy_sim.h`). No pin driver, link
   page or screen uses it
   ([OpenYGE](docs/OpenYGE.md#9-status-in-rcbench)).
+- SETUP > WIRELESS > SEARCH: UNBIND (`HOLD 2s: UNBIND`, DE
+  `2s HALTEN: BINDUNG LÖSEN`), a 2s hold on the card under SCAN AGAIN, for
+  the Dial, the power node and the balance node. It forgets the bound
+  device: the link ends, SETUP keeps an empty address and name with a save
+  asked, BOUND reads `NONE`, and no connect follows until the next bind.
+  Grey with nothing bound, where a tap reads
+  `NOTHING IS BOUND: NOTHING TO UNBIND`. ARMED does not refuse it; a run
+  that uses the device meets it as a lost link: a Dial lost while ARMED
+  is an error (SAFE, every output off), a run on the power node ends as an
+  error once the dropout passes 300ms, and the balance node's readings go
+  stale ([Screens](docs/Screens.md#wireless-search)).
 - `hardware/mechanical/_gen_knob.py`: a rotary knob 64mm across round a
   fixed Waveshare ESP32-S3-Touch-LCD-1.85, on the dial base's bottom
   part, 56.2mm high. Printed parts `knob_case`, `knob_spacer`,
