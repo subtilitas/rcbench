@@ -6,7 +6,7 @@ This specification describes the frame format, telemetry payload,
 parameter access and status encoding, including the calculations
 needed for an implementation.
 
-> Implementation work takes place in a separate repository. This page is
+> This page is
 > the reference specification intended for review by YGE. The codec under
 > `protocols/openyge/` is built and tested but not connected to the firmware.
 
@@ -478,8 +478,8 @@ write withdraws the whole table.
 is intended to handle periodic polling, sequence matching, read and
 write timeouts, and fallback to listening for a pre-v3 ESC. It first
 needs the turnaround measurement, U2 in section 8, and the timing of
-section 10. Implementation work
-takes place in a separate repository.
+section 10. The session, the pin driver and the screens are the
+slices of programming for YGE ESCs; this page is their specification.
 
 Open decision: which ESC protocols beyond OpenYGE are supported. The source
 material sits beside Hobbywing, Kontronik, Scorpion, OMP, ZTW, APD, FLY,

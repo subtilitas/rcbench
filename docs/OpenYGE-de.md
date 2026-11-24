@@ -12,7 +12,6 @@ die eine Implementierung benötigt.
 > heran, damit widersprüchliche Fassungen eines Byte-Layouts nicht zu
 > unterschiedlichen Implementierungen führen.
 
-> Die Implementierung wird in einem separaten Repository entwickelt.
 > Diese Seite gehört zur maßgeblichen Spezifikation für die Prüfung
 > durch YGE. Der Codec unter `protocols/openyge/` ist gebaut und getestet,
 > aber nicht an die Firmware angebunden.
@@ -499,8 +498,9 @@ zurück.
 Nicht gebaut: `openyge_session.c`, die Anfrage-Antwort-State-Machine (Pollen
 im Frametakt, Abgleich der Sequenznummer, Lese- und Schreibtimeouts, Rückfall
 aufs Zuhören bei einem ESC vor v3). Sie braucht zuerst die Messung der
-Umschaltzeit, U2 in Abschnitt 8, und das Timing aus Abschnitt 10. Die Implementierung wird in einem eigenen
-Repository verfolgt.
+Umschaltzeit, U2 in Abschnitt 8, und das Timing aus Abschnitt 10. Session,
+Pin-Treiber und Bildschirme sind die Slices der Programmierung für YGE-ESCs;
+diese Seite ist ihre Spezifikation.
 
 Offene Entscheidung: welche ESC-Protokolle außer OpenYGE unterstützt werden.
 Das Ausgangsmaterial steht neben Hobbywing, Kontronik, Scorpion, OMP, ZTW,
