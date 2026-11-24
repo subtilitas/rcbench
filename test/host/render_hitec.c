@@ -875,6 +875,12 @@ static void hitec_view_steps(const char *view)
         hseries(-1);
         return;
     }
+    if (strcmp(v, "-portlist") == 0) {
+        /* The READY card's PORT (its first row) before CONNECT: the list
+         * of the programming ports, for tools/video only. */
+        htap_at(SV_RDY_X, UI_BAND_H + SV_RDY_ROW_Y(0));
+        return;
+    }
     if (strcmp(v, "-card-series") == 0) {
         /* The READY card's SERIES (its second row): D SERIES and CLASSIC
          * over the left column. */

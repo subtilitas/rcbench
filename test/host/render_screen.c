@@ -4109,7 +4109,8 @@ static bool pose_carrier_views(ui_screen_id_t id, const char *view)
             && strstr(view, "-idle-") == NULL
             && strstr(view, "-portlist-") == NULL)
         || (strncmp(view, "servo-hitec-", 12) == 0
-            && strcmp(view, "servo-hitec-rbmod") != 0)) {
+            && strcmp(view, "servo-hitec-rbmod") != 0
+            && strstr(view, "-portlist-") == NULL)) {
         prog5v_box_publish((uint8_t)PROG_SUPPLY_ON, 21u, 0u);
         prog5v_box_reading(true, 5018u, 86, 1u);
     } else {

@@ -324,12 +324,40 @@
     },
     {
      "view": "servo-hitec-rbmod",
+     "dur": 3.0,
+     "n": 3,
+     "chip": "Connect",
+     "title": "Choose the port",
+     "text": "Tap <b>PORT</b> on the READY card.",
+     "say": "Step 3. Tap port on the ready card.",
+     "target": [
+      880,
+      171
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-hitec-portlist-rbmod",
+     "dur": 3.6,
+     "n": 3,
+     "chip": "Connect",
+     "title": "Choose the port",
+     "text": "Pick the position the servo is plugged into: <b>PROGP01</b> to <b>PROGP04</b>.",
+     "say": "Pick the position the servo is plugged into.",
+     "target": [
+      317,
+      203
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-hitec-rbmod",
      "dur": 5.0,
      "n": 3,
      "chip": "Connect",
      "title": "The series",
      "text": "<b>SERIES</b> reads <b>D SERIES</b> or <b>CLASSIC</b>, the HS-5xxx and HS-7xxx servos. A tap changes it.",
-     "say": "Step 3. The series row reads D series or classic. This servo is a D 485, a D series servo.",
+     "say": "The series row reads D series or classic. This servo is a D 485, a D series servo.",
      "target": [
       237,
       211
@@ -922,7 +950,7 @@
    "items": [
     "Plug into J1",
     "SERVO › HITEC",
-    "Hold CONNECT",
+    "PORT, hold CONNECT",
     "MOTION, TRAVEL, PROTECT, INFO",
     "Edit: * marks a change",
     "Hold WRITE n VALUES",
