@@ -167,6 +167,49 @@ TEST_CASE(a_read_that_never_completes_ends_at_the_cap)
     CHECK_EQ(g_s.state, OY_ST_IDLE);
 }
 
+/* A read whose last missing index (31) arrives @p off_ms from the table
+ * read cap.  With @p late_step the session steps 1ms before the arrival
+ * and next 3ms later, past the cap.  The result of the step that takes it. */
+static oy_res_t last_index_at(int32_t off_ms, bool late_step)
+{
+    sim_reset(0);
+    sim.skip = 31;
+    if (sim_connect(&g_s) != OY_OK || oy_session_read(&g_s) != OY_BUSY) {
+        return OY_ERR_STATE;
+    }
+    const uint32_t t0 = g_s.t_op;
+    while (sim.us - t0 < (OY_TABLE_CAP_MS - 150u) * MS) {
+        (void)sim_run_ms(&g_s, 1u);
+    }
+    while (g_s.awaiting) {
+        (void)sim_run_ms(&g_s, 1u);
+    }
+    const uint32_t send = g_s.t_reply + OY_REQ_PERIOD_MS * MS;
+    const uint32_t arrive = t0 + OY_TABLE_CAP_MS * MS + (uint32_t)(off_ms * 1000);
+    sim.skip = -1;
+    sim.cyc = 31;
+    sim.late_n = 1;
+    sim.late_us = arrive - send;
+    while (sim.us != arrive - MS) {
+        if (sim_run_ms(&g_s, 1u) != OY_BUSY) {
+            return OY_ERR_STATE;   /* ended before the arrival */
+        }
+    }
+    sim.us = late_step ? arrive + 2u * MS : arrive;
+    return oy_session_step(&g_s);
+}
+
+TEST_CASE(the_table_read_cap_holds_when_the_last_reply_is_taken)
+{
+    CHECK_EQ(last_index_at(-1, false), OY_OK);          /* 9999ms */
+    CHECK_EQ(g_s.count, 32u);
+    CHECK_EQ(last_index_at(0, false), OY_NO_TABLE);     /* 10000ms */
+    CHECK_EQ(g_s.state, OY_ST_IDLE);
+    /* Arrived at 9998ms, taken by a step at 10000ms + 1ms. */
+    CHECK_EQ(last_index_at(-2, true), OY_NO_TABLE);
+    CHECK_EQ(g_s.state, OY_ST_IDLE);
+}
+
 /* Takeover with the first reply @p late_ms late; frames sent. */
 static unsigned late_take(uint32_t late_ms, oy_res_t *r)
 {
@@ -409,6 +452,7 @@ int main(void)
     RUN(a_silent_esc_at_boot_ends_silent_after_three_tries);
     RUN(a_table_reads_at_every_count_limit);
     RUN(a_read_that_never_completes_ends_at_the_cap);
+    RUN(the_table_read_cap_holds_when_the_last_reply_is_taken);
     RUN(a_reply_at_199ms_counts_and_one_at_201ms_is_dropped);
     RUN(a_late_step_does_not_let_an_expired_reply_count);
     RUN(two_misses_are_tried_again_and_a_third_is_silent);

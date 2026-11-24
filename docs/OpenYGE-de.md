@@ -574,6 +574,9 @@ Wo `openyge_session.c` es anders führt:
   ein verspäteter Schritt keine abgelaufene Antwort zählen lässt.
 - Eine Antwort auf eine Anfrage, die vor Beginn eines Lesens oder
   Schreibens gesendet wurde, trägt keinen Wert in dieses Lesen.
+- Eine Antwort, die bei oder nach der Lesegrenze von 10000ms übernommen
+  wird, beendet das Lesen mit `NO_TABLE`, nach einem Schreiben mit
+  `PARTIAL`, auch wenn sie die Tabelle vervollständigt.
 - Nach der Übernahme verwirft es `TELE_AUTO`-Frames.
 - Eine Anzahl von 0 oder über 64 beendet ein Lesen sofort mit `NO_TABLE`.
 - Jedes Schreiben folgt 40ms nach der vorigen Antwort, der Anfrageperiode.

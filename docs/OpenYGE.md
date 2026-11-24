@@ -547,6 +547,8 @@ Where `openyge_session.c` runs it differently:
   late step does not let an expired reply count.
 - A reply to a request sent before a read or a write began carries no
   value into that read.
+- A reply taken at or past the 10000ms table read cap ends the read with
+  `NO_TABLE`, or `PARTIAL` after a write, even when it completes the table.
 - After the takeover it drops `TELE_AUTO` frames.
 - A count of 0 or above 64 ends a read at once with `NO_TABLE`.
 - Each write goes 40ms after the previous reply, the request period.

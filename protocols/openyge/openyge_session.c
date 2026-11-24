@@ -201,12 +201,20 @@ static void table_done(oy_session_t *s)
 
 /**
  * @brief Take the (index, value) pair of a telemetry frame into the table.
- * @param s the session
+ *        At or past the table read cap nothing is taken and the read ends,
+ *        also when the step that takes the frame runs late.
+ * @param s   the session
+ * @param now the clock, us
  */
-static void observe(oy_session_t *s)
+static void observe(oy_session_t *s, uint32_t now)
 {
     const uint16_t pidx  = rd16(s->fr.payload + PAY_PIDX);
     const uint16_t pdata = rd16(s->fr.payload + PAY_PDATA);
+
+    if (since(now, s->t_op) >= OY_TABLE_CAP_MS * US_PER_MS) {
+        fail(s, OY_NO_TABLE);
+        return;
+    }
 
     if (pidx == OPENYGE_P_COUNT
         && (pdata == 0u || pdata > OPENYGE_MAX_PARAMS)) {
@@ -246,7 +254,7 @@ static void answered(oy_session_t *s, uint32_t now)
     case OY_ST_READ:
     case OY_ST_RECHECK:
     case OY_ST_VERIFY:
-        observe(s);
+        observe(s, now);
         break;
     default:
         break;   /* READY: a request between operations */
@@ -282,7 +290,7 @@ static void on_frame(oy_session_t *s, uint32_t now)
     }
     if (s->legacy) {
         if (f->hdr.legacy && s->state == OY_ST_READ) {
-            observe(s);
+            observe(s, now);
         } else {
             ++s->dropped;
         }
