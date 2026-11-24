@@ -21,7 +21,10 @@
  * OY_REQ_PERIOD_MS after each reply, also between operations.  Every frame
  * passes oy_guard_frame() right before the driver.  Each try of a request
  * or a write carries a new sequence number, so a reply that comes after its
- * request was sent again is dropped.
+ * request was sent again is dropped.  A reply is judged against its timeout
+ * when it is taken, so a late step does not let an expired reply count.  A
+ * reply to a request sent before an operation began counts as a reply
+ * between operations, never as part of the operation.
  *
  * A result other than OY_OK that an operation reaches ends the session:
  * nothing more is sent until oy_session_enter().  A command refused before
@@ -135,6 +138,7 @@ typedef struct {
     uint8_t  addr;       /**< the ESC's address                              */
     uint8_t  seq;        /**< the sequence number of the last frame sent     */
     uint8_t  tries;      /**< sends of the request outstanding               */
+    uint8_t  sent_in;    /**< the state the outstanding frame was sent in    */
     bool     legacy;     /**< the ESC sends legacy headers: listen only      */
     bool     awaiting;   /**< a request or write is outstanding              */
     bool     wrote;      /**< a write frame of this operation went out       */

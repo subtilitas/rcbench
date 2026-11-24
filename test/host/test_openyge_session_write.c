@@ -169,6 +169,78 @@ TEST_CASE(a_write_reply_at_399ms_counts_and_one_at_401ms_is_dropped)
     CHECK(g_s.dropped >= 1u);
 }
 
+TEST_CASE(a_late_step_does_not_let_an_expired_write_reply_count)
+{
+    ready();
+    sim.wlate_n = 1;
+    sim.wlate_us = (OY_WRITE_TIMEOUT_MS + 1u) * MS;
+    g_d[21] = 13;
+    CHECK_EQ(sim_write(&g_s, g_d), OY_BUSY);
+    for (unsigned i = 0; i < 2u * OY_TABLE_CAP_MS && writes_from(0) == 0u; ++i) {
+        (void)sim_run_ms(&g_s, 1u);
+    }
+    const uint32_t t = sim.sent[write_at(0)].t;
+    sim.us = t + (OY_WRITE_TIMEOUT_MS - 1u) * MS;
+    CHECK_EQ(oy_session_step(&g_s), OY_BUSY);
+    sim.us = t + (OY_WRITE_TIMEOUT_MS + 1u) * MS;
+    CHECK_EQ(oy_session_step(&g_s), OY_BUSY);
+    CHECK_EQ(g_s.state, OY_ST_WRITE);
+    CHECK_EQ(writes_from(0), 2u);
+    CHECK_EQ(g_s.misses, 1u);
+    CHECK_EQ(sim_until(&g_s, 3u * OY_TABLE_CAP_MS), OY_OK);
+}
+
+TEST_CASE(a_reply_to_a_request_before_the_write_is_not_part_of_its_read)
+{
+    /* A request between operations is out and its reply is on the way,
+     * carrying an index as it was.  The ESC then changes that index and a
+     * write starts: the read before it must see the change. */
+    ready();
+    unsigned guard = 0;
+    uint16_t idx = 0;
+    for (;;) {
+        (void)sim_run_ms(&g_s, 1u);
+        if (g_s.awaiting && sim.nq == 1u) {
+            idx = (uint16_t)(sim.q[0].b[OPENYGE_HDR_V3 + 22u]
+                             | (sim.q[0].b[OPENYGE_HDR_V3 + 23u] << 8));
+            if (idx != 0u && idx != 21u) {
+                break;
+            }
+        }
+        if (++guard > 5000u) {
+            T_FAIL("no request in flight");
+            return;
+        }
+    }
+    sim.table[idx] = (uint16_t)(sim.table[idx] + 1u);
+    g_d[21] = 13;
+    CHECK_EQ(sim_write(&g_s, g_d), OY_BUSY);
+    CHECK_EQ(sim_until(&g_s, 2u * OY_TABLE_CAP_MS), OY_CHANGED);
+    CHECK_EQ(writes_from(0), 0u);
+
+    /* The same for a read: the read copy holds the value as changed. */
+    ready();
+    guard = 0;
+    for (;;) {
+        (void)sim_run_ms(&g_s, 1u);
+        if (g_s.awaiting && sim.nq == 1u) {
+            idx = (uint16_t)(sim.q[0].b[OPENYGE_HDR_V3 + 22u]
+                             | (sim.q[0].b[OPENYGE_HDR_V3 + 23u] << 8));
+            if (idx != 0u) {
+                break;
+            }
+        }
+        if (++guard > 5000u) {
+            T_FAIL("no request in flight");
+            return;
+        }
+    }
+    sim.table[idx] = (uint16_t)(sim.table[idx] + 1u);
+    CHECK_EQ(oy_session_read(&g_s), OY_BUSY);
+    CHECK_EQ(sim_until(&g_s, OY_TABLE_CAP_MS), OY_OK);
+    CHECK_EQ(g_s.orig[idx], sim.table[idx]);
+}
+
 TEST_CASE(write_replies_with_crc_errors_are_tried_three_times)
 {
     ready();
@@ -417,6 +489,8 @@ int main(void)
     RUN(writes_the_esc_does_not_store_end_not_taken);
     RUN(a_write_stored_in_part_ends_partial);
     RUN(a_write_reply_at_399ms_counts_and_one_at_401ms_is_dropped);
+    RUN(a_late_step_does_not_let_an_expired_write_reply_count);
+    RUN(a_reply_to_a_request_before_the_write_is_not_part_of_its_read);
     RUN(write_replies_with_crc_errors_are_tried_three_times);
     RUN(three_write_misses_stop_the_writes_and_the_read_after_decides);
     RUN(an_esc_lost_after_a_write_ends_partial);

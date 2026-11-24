@@ -543,6 +543,10 @@ Where `openyge_session.c` runs it differently:
   sends without one are a miss. A missed request ends the session with
   `SILENT`. A missed write stops the writes, and the table read after
   decides the result.
+- It judges a reply against its timeout when it takes the reply, so a
+  late step does not let an expired reply count.
+- A reply to a request sent before a read or a write began carries no
+  value into that read.
 - After the takeover it drops `TELE_AUTO` frames.
 - A count of 0 or above 64 ends a read at once with `NO_TABLE`.
 - Each write goes 40ms after the previous reply, the request period.

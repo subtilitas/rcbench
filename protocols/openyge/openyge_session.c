@@ -58,6 +58,17 @@ static bool reading(uint8_t st)
 }
 
 /**
+ * @brief The timeout of the outstanding frame.
+ * @param s the session
+ * @return OY_WRITE_TIMEOUT_MS for a write, else OY_READ_TIMEOUT_MS, in us
+ */
+static uint32_t timeout_us(const oy_session_t *s)
+{
+    return (s->sent_in == OY_ST_WRITE ? OY_WRITE_TIMEOUT_MS
+                                      : OY_READ_TIMEOUT_MS) * US_PER_MS;
+}
+
+/**
  * @brief End the running operation.  OY_OK keeps the ESC; any other result
  *        ends the session.
  * @param s the session
@@ -138,6 +149,7 @@ static void send(oy_session_t *s, uint32_t now)
         return;
     }
     s->seq      = seq;
+    s->sent_in  = s->state;
     s->awaiting = true;
     s->t_req    = now;
     ++s->tries;
@@ -218,6 +230,9 @@ static void answered(oy_session_t *s, uint32_t now)
     s->tries    = 0;
     s->t_reply  = now;
 
+    if (s->sent_in != s->state) {
+        return;   /* sent before this operation began: carries no part of it */
+    }
     switch (s->state) {
     case OY_ST_TAKE:
         finish(s, OY_OK);
@@ -277,7 +292,7 @@ static void on_frame(oy_session_t *s, uint32_t now)
                              ? OPENYGE_FT_WRITE_PARAM_RESP
                              : OPENYGE_FT_TELE_RESP;
     if (f->hdr.legacy || !s->awaiting || f->hdr.seq != s->seq
-        || f->hdr.type != want) {
+        || f->hdr.type != want || since(now, s->t_req) > timeout_us(s)) {
         ++s->dropped;   /* auto frames, late replies, other sequences */
         return;
     }
@@ -362,9 +377,7 @@ static void timers(oy_session_t *s, uint32_t now)
         return;   /* nothing is ever sent to a legacy ESC */
     }
     if (s->awaiting) {
-        const uint32_t ms = (s->state == OY_ST_WRITE) ? OY_WRITE_TIMEOUT_MS
-                                                      : OY_READ_TIMEOUT_MS;
-        if (since(now, s->t_req) < ms * US_PER_MS) {
+        if (since(now, s->t_req) < timeout_us(s)) {
             return;
         }
         s->awaiting = false;

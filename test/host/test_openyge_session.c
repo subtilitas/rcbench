@@ -196,6 +196,31 @@ TEST_CASE(a_reply_at_199ms_counts_and_one_at_201ms_is_dropped)
     CHECK_EQ(g_s.seq, sim.sent[1].b[4]);
 }
 
+TEST_CASE(a_late_step_does_not_let_an_expired_reply_count)
+{
+    /* Steps at 199ms and 201ms after the request, none at 200ms: the reply
+     * that came at 201ms is past its timeout when it is taken. */
+    sim_reset(0);
+    sim.auto_us = 0;
+    sim.late_n = 1;
+    sim.late_us = (OY_READ_TIMEOUT_MS + 1u) * MS;
+    CHECK_EQ(oy_session_init(&g_s, &SIM_DRIVER), OY_OK);
+    CHECK_EQ(oy_session_enter(&g_s, OY_BOOT_MS_MIN), OY_BUSY);
+    while (sim.n_sent == 0u && sim.us < 10000u * MS) {
+        (void)sim_run_ms(&g_s, 1u);
+    }
+    const uint32_t t = sim.sent[0].t;
+    sim.us = t + (OY_READ_TIMEOUT_MS - 1u) * MS;
+    CHECK_EQ(oy_session_step(&g_s), OY_BUSY);
+    sim.us = t + (OY_READ_TIMEOUT_MS + 1u) * MS;
+    CHECK_EQ(oy_session_step(&g_s), OY_BUSY);
+    CHECK_EQ(g_s.state, OY_ST_TAKE);
+    CHECK_EQ(sim.n_sent, 2u);
+    CHECK_EQ(g_s.misses, 1u);
+    CHECK_EQ(sim_until(&g_s, 1000u), OY_OK);
+    CHECK_EQ(sim.n_sent, 2u);
+}
+
 TEST_CASE(two_misses_are_tried_again_and_a_third_is_silent)
 {
     sim_reset(0);
@@ -385,6 +410,7 @@ int main(void)
     RUN(a_table_reads_at_every_count_limit);
     RUN(a_read_that_never_completes_ends_at_the_cap);
     RUN(a_reply_at_199ms_counts_and_one_at_201ms_is_dropped);
+    RUN(a_late_step_does_not_let_an_expired_reply_count);
     RUN(two_misses_are_tried_again_and_a_third_is_silent);
     RUN(crc_errors_are_tried_three_times);
     RUN(a_sequence_mismatch_is_tried_three_times);

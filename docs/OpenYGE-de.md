@@ -570,6 +570,10 @@ Wo `openyge_session.c` es anders führt:
   fehlgeschlagene Anfrage beendet die Session mit `SILENT`. Ein
   fehlgeschlagenes Schreiben beendet die Schreibzugriffe, und das Lesen der
   Tabelle danach entscheidet das Ergebnis.
+- Es prüft eine Antwort gegen ihren Timeout, wenn es sie übernimmt, sodass
+  ein verspäteter Schritt keine abgelaufene Antwort zählen lässt.
+- Eine Antwort auf eine Anfrage, die vor Beginn eines Lesens oder
+  Schreibens gesendet wurde, trägt keinen Wert in dieses Lesen.
 - Nach der Übernahme verwirft es `TELE_AUTO`-Frames.
 - Eine Anzahl von 0 oder über 64 beendet ein Lesen sofort mit `NO_TABLE`.
 - Jedes Schreiben folgt 40ms nach der vorigen Antwort, der Anfrageperiode.
