@@ -35,7 +35,9 @@ a new session needs beyond it.
 | `storyboards/dial.json` | the M5Stack Dial going into its printed base and coming into use in 7 steps, 295.69s, narrated, bed `pachelbel-canon` at half level; `dial_base` puts the Dial into its printed hand-held base, and step 1 assembles it |
 | `player/mini3d.js`, `boards/minircbench-wiring.json` | the `mini` model and the wiring drawing of the MiniRcBench; its storyboards `minircbench-build` and `minircbench-features` and their stills are in the MiniRcBench repository under `docs/video/` and render here by path; `tools/video_cad.py --parts` converts its assembly |
 | `storyboards/rbmod-first-program.json`, `player/part3d.js`, `player/windows.js`, `web/capture.js` | first programming of a bench with the rbmod carrier in 6 chapters, 321.22s, narrated, bed `pachelbel-canon` at half level; STEP models of the panel, the carrier and the RP2350-CAN, captures of the releases page and of the ESP Web Tool, a drawn Windows desktop for the drive RP2350 |
-| `storyboards/auto-rudder.json`, `player/rudder3d.js`, `test/host/video_rauto.c` | setting a rudder's end points with RUDDER AUTO in 4 steps, 302.70s, narrated, bed `pachelbel-canon` at half level; the wing slice, the IMU on Gecko Tape, the Dial in its base and the cased bench in one 3D scene, the display and the flap following one run of the host suites' rig |
+| `storyboards/auto-rudder.json`, `player/rudder3d.js`, `test/host/video_rauto.c` | setting a rudder's end points with RUDDER AUTO in 4 steps, 300.77s, narrated, bed `pachelbel-canon` at half level; the wing slice, the IMU on Gecko Tape, the Dial in its base and the cased bench in one 3D scene, the display and the flap following one run of the host suites' rig |
+| `storyboards/hitec-rbmod.json` | programming a Hitec D series servo on the rbmod carrier in 8 steps, 46 screen steps; written and checked with `--check` and 32 stills, not rendered with its narration, not heard, not seen by the owner |
+| `storyboards/stop.json` | STOP as an emergency stop in 4 steps, 13 screen steps; the same state |
 | `storyboards/thumbnail.json` | thumbnail of the feature tour, `--stills 3` |
 | `tools/video_scope.py`, `player/scope.js`, `plots/hitec-precharge.json` | the `scope` scene: plots and a circuit from a figure; the figure of the D series signal wire is simulated with ngspice 42 |
 | `storyboards/hitec-precharge.json` | precharge and sample on an RP2350 pin in 6 steps, narrated in the voice of `features`, bed `pachelbel-canon` at half level; 348.67s, 10,460 frames, rendered on 2026-11-22 from 1547c7dca with Blender 5.3.0 for its 910 3D frames (EEVEE on 7 MI50 cards, 114s) and the browser player for its 2D layer (596s). Owner, 2026-11-22, in 3 rounds: the video is abstract. It shows the technique and the solution: no pull-up is possible because several protocols share the pin. It names no servo maker and not rcbench, and it keeps the graphs and the measurements. The script before it, with the servo and rcbench named, was rendered at 361.63s from dac65c733; the first, with the panel's screens, at 339.20s from 2b5940f3a. It opens with 1 `part` scene, `rp2350_can`; the 6 `scope` scenes that follow have no 3D layer, and the sixth step draws the 3 captures of `testbench/captures/hitec32` (branch `inbox/hitec32-captures`) |
@@ -248,8 +250,17 @@ Owner, 2026-11-14:
 
 ## Limits that still hold
 
-- The Hitec views show a PD MINI row: the renderer has no carrier pose
-  for them.
+- Step 7 of `hitec-rbmod` shows MOVE SERVO and FIND STOP on the carrier,
+  which the firmware refuses there: `hitec_prog_move_gate()`
+  (`shared/bench/hitec_move.c`) takes only a PD mini's reading, and the
+  carrier measures the ports' 5V on INA3221 0x40 CH3. The owner asked for
+  the move to be faked and listed as work to do (2026-11-24): the views
+  come from a rig whose fixed 5V carries a reading (`g_fixed_reads`), and
+  `STATUS.md` lists the firmware change under its open items. The
+  video's texts say nothing of this (owner's rule on test state).
+- `hitec-rbmod` and `stop` are in English only.
+- The two storyboards come from one generator outside the tree, as
+  `auto-rudder` does.
 - The colours of the model are set by part name in `case_cad.js`; the
   STEP file has none.
 - The sound and the voice were judged by the owner's ear, not measured

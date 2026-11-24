@@ -8,6 +8,15 @@ history is in git.
 
 ### Added
 
+- Storyboards `hitec-rbmod`, programming a Hitec D series servo on the
+  rbmod carrier in 8 steps, and `stop`, STOP as an emergency stop in 4
+  steps. The renderer draws the Hitec views on the carrier
+  (`servo-hitec-read-rbmod`: PROG 5V and INA PROG 5V in the PD mini's
+  place), 8 states of one write with a card in, MOVE SERVO on the
+  carrier from a rig whose fixed 5V carries a reading, and 5 states of a
+  latched STOP and its reset on MOTOR & ESC, for `tools/video` only. The
+  firmware refuses MOVE SERVO on the carrier; `STATUS.md` lists the
+  change under its open items.
 - Remote servo node IOmcu (board 3): pass-through. PIO0 runs MIRROR, which
   copies each of the 9 receiver inputs to its servo output every cycle
   (13.3 to 20ns at the pad), and CAPTURE, which pushes the 18 pins' state
@@ -666,7 +675,7 @@ The entries below cover the 11 pull requests merged since v0.23.15: #893 to
   the drive RP2350 runs on a drawn Windows desktop
   ([Videos from storyboards](tools/video/README.md)).
 - Storyboard `auto-rudder`: RUDDER AUTO setting a rudder's end points in 4
-  steps, narrated, 302.70s. One 3D scene holds a wing slice with its flap,
+  steps, narrated, 300.77s. One 3D scene holds a wing slice with its flap,
   the IMU on double-sided gel tape, the M5Stack Dial in its base and the
   cased bench; `test/host/video_rauto.c` runs RUDDER AUTO on the host
   suites' rig, and the display and the flap follow that run.
