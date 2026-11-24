@@ -172,6 +172,10 @@ It holds a STEP model of the Waveshare ESP32-S3-Touch-LCD-1.85, a round
 2026-07-03, which is not in the repository; and models of a 6704-2RS ball
 bearing (20 x 27 x 4mm, ring bores estimated) and a clear acrylic disc
 49.5mm across and 2mm thick.
+It holds a rotary knob round that display on the dial base's bottom
+part: 5 printed parts, 2 bearings, an acrylic window and an AS5600
+beside 22 magnets for 11 x 4096 counts a turn. Nothing of it is printed
+or tried, and the magnets' field at the sensor is not measured.
 
 ## Decided
 

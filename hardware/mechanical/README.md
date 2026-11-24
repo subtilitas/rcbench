@@ -10,6 +10,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `estop_m16.py` | spec of the M16 emergency stop button: dimensions, sources, estimates |
 | `m5dial.py` | spec of the M5Stack Dial: dimensions, sources, estimates |
 | `_gen_dial_base.py` | builds the two parts of a hand-held base for the M5Stack Dial with OpenCASCADE, checks their fit round dial, nut and cell, writes STEP and STL |
+| `_gen_knob.py` | builds a rotary knob round a fixed round display on the dial base's bottom part with OpenCASCADE, checks the fit of all its parts, writes STEP and STL |
 | `panel_7b.py` | spec of the panel board, the Waveshare ESP32-P4-WIFI6-Touch-LCD-7B: dimensions, sources, estimates |
 | `ina228_xt90.py` | spec of the INA228 current sensor module with 2 XT90PW connectors and of its case: dimensions, sources, estimates |
 | `ina219_cjmcu219.py` | spec of the INA219 current sensor board, print CJMCU |
@@ -74,6 +75,7 @@ python3 hardware/kicad/tools/step_check.py         # also checks models/
 python3 hardware/mechanical/check_refit.py         # needs numpy; 2 minutes
 python3 hardware/mechanical/check_overlap.py       # 2 minutes
 python3 hardware/mechanical/_gen_dial_base.py --check   # 1 minute
+python3 hardware/mechanical/_gen_knob.py --check        # 1 minute
 python3 hardware/mechanical/_gen_flap_drive.py --check  # 10 seconds
 python3 hardware/mechanical/_gen_node_case.py --check   # 20 seconds
 python3 hardware/mechanical/_gen_display_case.py --check  # 10 seconds
@@ -342,6 +344,101 @@ Limits:
 ```sh
 python3 hardware/mechanical/_gen_dial_base.py            # write STEP and STL
 xvfb-run -a python3 hardware/mechanical/_gen_dial_base.py \
+    --render hardware/mechanical/renders
+```
+
+## Rotary knob with a round display
+
+A knob 64mm across that turns round a fixed display, on the bottom part
+of the dial base. The Waveshare ESP32-S3-Touch-LCD-1.85 stands still on
+a shaft. A rotor turns round it on 2 ball bearings 6704-2RS and carries
+the clear acrylic disc 49.5 x 2mm as its window: the glass turns with
+the knob. 22 magnets in the rotor's hub and an AS5600 angle sensor
+beside them read the turn. The base's top part gives way to a new case,
+so the knob stands 56.2mm high with the bottom part.
+
+![Knob](renders/parts/knob.png)
+
+| | |
+| --- | --- |
+| ![Taken apart](renders/parts/knob_exploded.png) | ![Cut open](renders/parts/knob_section.png) |
+
+| File | Content | Print |
+| --- | --- | --- |
+| `knob_case.step`, `.stl` | the base's wall from the joint to the case's rim, open at the top; floor with a ring over the bottom part's rim, 4 bosses for threaded inserts, a cable hole of 14 and a wire hole of 5; the shaft, a tube 20 / 14 with a collar 21.6 under the lower bearing, up to 9.0 over the rim; the wall the AS5600 module is screwed to; 22.2cm3 | floor down, no support |
+| `knob_spacer.step`, `.stl` | sleeve 21.6 / 20, 6.0 long, between the bearings' inner rings; 0.3cm3 | on end |
+| `knob_clamp.step`, `.stl` | sleeve 21.6 / 20, 8.0 long, from the upper bearing to the carrier; 0.4cm3 | on end |
+| `knob_rotor.step`, `.stl` | hub 38 / 27 with a shoulder of 24 between the bearings' outer rings and 22 magnet pockets; a web over the sensor; a skirt 64 / 60; a lip with an opening of 47 under the window; the window's seat 49.7 across; 28.6cm3 | window seat down; the lip and the web need support |
+| `knob_carrier.step`, `.stl` | plate 54 across, 2.0 thick: 3 M2 into the shaft, 3 M2 into the display's inserts, a cable hole of 12; 4.3cm3 | flat, no support |
+| `knob_magnets.step` | the 22 magnets where they sit, N red and S blue | bought |
+| `knob_as5600.step` | the AS5600 module where it stands | bought |
+
+The files are in the dial base's frame: z = 0 is the case's rim, where
+the base's top plate was; the joint is at z = -19.0; the display's USB
+socket is at -y; the AS5600 module stands at +x. No assembly file is
+written. These files, `dial_base_bottom.step` as it is and these models
+moved along z make the knob:
+
+| Model | z, mm |
+| --- | --- |
+| `bearing_6704_2rs.step` | -13.0 and -3.0 |
+| `esp32_s3_lcd_185.step` | +20.7 |
+| `acrylic_disc_49_5.step` | +21.7 |
+
+| Stack | z, mm |
+| --- | --- |
+| Case floor | -19.0 to -17.0; its outer ring to -15.0 |
+| Shaft's collar | -17.0 to -13.0 |
+| Bearings | -13.0 to -9.0 and -3.0 to 1.0 |
+| Rotor | hub -16.0 to 8.0, web 6.0 to 8.0, skirt 0.5 to 23.7 |
+| Magnets | -6.25 to -4.75, on a circle of 34.0 |
+| AS5600 chip | its face 20.5 from the axis, 1.5 off the hub, centred at -5.5 |
+| Carrier | 9.0 to 11.0 |
+| Display | 11.0, the ends of its inserts, to 20.7, its glass's front |
+| Window | 21.7 to 23.7, 0.3 over the display's glass |
+| Top | 23.7; the base's foot at -32.5 |
+
+Encoder: the 22 magnets, Ø4 x 1.5mm, magnetised through their thickness,
+stand with N and S up in turn. The AS5600 stands upright beside the hub,
+its chip's plane holding the direction of travel and the knob's axis. The
+field at the chip turns 360 degrees for each N-S pair, 11 times a knob
+turn: 11 x 4096 = 45056 counts a turn, 45 counts for each of 1000 steps.
+The method follows 0x23's MicroManipulatorStepper (MIT licence). The
+firmware counts the sensor's wraps to keep the knob's turn.
+
+Assembly: melt the 4 inserts into the case from below. Screw the AS5600
+module to the case's wall with 4 M3, its chip towards the axis, and lead
+its wires through the wall's window and the floor's wire hole. Press
+the magnets into their pockets from the hub's side, N and S up in turn,
+and set the acrylic disc in the rotor's seat. Slide the lower bearing
+onto the shaft, the rotor over it, the spacer and the upper bearing,
+then the clamp. Screw the carrier to the shaft with 3 M2 and the display
+to the carrier with 3 M2. Lay the cell in the bottom part, close with
+the 4 M3 x 12 of the dial base.
+
+`_gen_knob.py` builds the printed parts with OpenCASCADE. Its `--check`
+runs in CI and fails when a file differs from the script, when a part is
+not one valid solid, when the case fills a flute, or when two solids of
+the knob share volume.
+
+Limits:
+
+- Nothing is printed or tried. No fit is measured.
+- The display is held in from the top only by its 3 screws; the window
+  turns 0.3mm over its glass. The display's USB-C socket is enclosed:
+  how the board is programmed and charged in the knob is open.
+- The magnets' field at 1.5mm from the chip is not measured. The AS5600
+  takes 30 to 90mT; whether 22 magnets of this size give it, and how
+  even the 11 turns of the field are, is unknown.
+- The wires from the display down the shaft's bore and from the module
+  through the floor to the cell are not drawn, nor the module's pin
+  headers, nor a switch or charger for the cell.
+- The rotor's lip and web overhang the skirt and need support when
+  printed.
+
+```sh
+python3 hardware/mechanical/_gen_knob.py                 # write STEP and STL
+xvfb-run -a python3 hardware/mechanical/_gen_knob.py \
     --render hardware/mechanical/renders
 ```
 

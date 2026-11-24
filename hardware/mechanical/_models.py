@@ -30,12 +30,14 @@ FOLDERS = {
         "display_node_lid", "display_node_xt60_box",
         "display_node_xt60_lid", "flap_drive",
         "ina228_node_bezel", "ina228_node_frame", "ina228_node_plate",
-        "ina228_xt90_case"),
+        "ina228_xt90_case", "knob_carrier", "knob_case", "knob_clamp",
+        "knob_rotor", "knob_spacer"),
     "parts": (
         "acrylic_disc_49_5", "bearing_6704_2rs", "esc_motor_set",
         "estop_m16_assembly", "estop_m16_button", "estop_m16_nut",
         "estop_m16_shim", "flap_drive_assembly", "flap_drive_wing",
-        "flycolor_flydragon_lite_40a", "hitec_d485hw",
+        "flycolor_flydragon_lite_40a", "hitec_d485hw", "knob_as5600",
+        "knob_magnets",
         "kst_x10", "lipo_102540_1000mah", "lipo_702030_380mah", "m5dial",
         "m5dial_nut", "motor_simulator", "servo_standard", "tmotor_at2814",
         "wit_imu"),
@@ -59,7 +61,8 @@ VIEWS = {
         "ina228_node_case_section"),
     "parts": (
         "flap_drive_above", "flap_drive_below", "flap_drive_section",
-        "flap_drive_unit", "flap_drive_unit_2"),
+        "flap_drive_unit", "flap_drive_unit_2", "knob", "knob_exploded",
+        "knob_section"),
 }
 VIEW = {name: folder for folder, names in VIEWS.items() for name in names}
 RENDERS = ROOT.parent / "renders"
