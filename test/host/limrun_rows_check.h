@@ -21,7 +21,7 @@
 /**
  * @brief Read @p csv, LIMITnnn.CSV as the outbox handed it out, with LOGS'
  *        reader, and hold every row to the run's own: 11 columns by header
- *        name and unit, no time axis, one row a judged position, the
+ *        name and unit and info after them, no time axis, one row a judged position, the
  *        numbers to the written precision, an endpoint on each BOUND row
  *        only.
  * @param r   The run that wrote it.
@@ -42,7 +42,8 @@ static inline void rows_read_back(const servo_limrun_t *r, const char *csv)
     log_analysis_t a;
     CHECK_EQ(log_csv_analyse(&src, NULL, &a), LOG_OK);
     CHECK_EQ(a.delimiter, ';');
-    CHECK_EQ(a.n_columns, 11);
+    CHECK_EQ(a.n_columns, 12);
+    CHECK_STR_EQ(a.columns[11].name, "info");
     CHECK_EQ(a.row_count, (int)r->rows_n);
     CHECK_EQ(a.ragged_rows, 0);
     CHECK(!a.cut_row);

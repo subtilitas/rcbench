@@ -22,6 +22,7 @@
 #include "servo_limrun_rig.h"
 
 #include "limrun_rows_check.h"
+#include "info_check.h"
 
 /** @brief The CSV's line @p k, 0 the header, without its line feed. */
 static void csv_line_of(unsigned k, char *out, size_t cap)
@@ -79,7 +80,7 @@ TEST_CASE(a_search_only_run_writes_a_row_a_judged_position_and_reads_back)
     csv_line_of(0u, line, sizeof(line));
     CHECK_STR_EQ(line, "row;search;side;pulse (us);current (A);voltage (V);"
                        "angle (deg);state;free (A);threshold (A);"
-                       "end point (us)");
+                       "end point (us);info");
     rows_read_back(&g.run, g.csv);
     CHECK_EQ(rows_shape(&g.run, 1500u), 2u);
 
@@ -318,6 +319,31 @@ TEST_CASE(the_csv_line_needs_a_finished_run_and_room)
     CHECK_EQ(strlen(small), 7u);
 }
 
+/* The run's description, info, the last column: on the first row and on
+ * no other, its longest value read back whole, 12 columns, which a reader
+ * of firmware 0.23.17 takes. */
+TEST_CASE(the_first_row_carries_the_run_description)
+{
+    rig_init(0u, false);
+    g.cfg.program = false;
+    g.enc = true;
+    log_info_t want;
+    info_longest(&want);
+    CHECK_EQ(log_info_format(&want, g.cfg.info, sizeof(g.cfg.info)),
+             LOG_INFO_MAX - 1u);
+    CHECK(start());
+    run_for(RUN_MS);
+    CHECK_EQ(g.run.verdict, SERVO_LIMRUN_FOUND);
+    log_info_t got;
+    info_read_back(g.csv, 12, true, &got);
+    info_same(&got, &want);
+    char line[SERVO_TEST_LINE_MAX];
+    csv_line_of(1u, line, sizeof(line));
+    CHECK(strstr(line, ";dut=MG90S_METAL_GEAR_NO_123&note=") != NULL);
+    csv_line_of(2u, line, sizeof(line));
+    CHECK_EQ(line[strlen(line) - 1u], ';');
+}
+
 int main(void)
 {
     RUN(a_search_only_run_writes_a_row_a_judged_position_and_reads_back);
@@ -326,5 +352,6 @@ int main(void)
     RUN(a_run_aborted_in_the_first_search_writes_the_rows_it_judged);
     RUN(a_run_ended_at_the_read_writes_the_report_alone);
     RUN(the_csv_line_needs_a_finished_run_and_room);
+    RUN(the_first_row_carries_the_run_description);
     return test_summary("servo_limrun_rows");
 }

@@ -84,6 +84,8 @@ One file is one run, in the folder of its kind. Its name says what started it:
 | root | `BENCHnnn.CSV`, `ESCnnn.CSV`, `SERVOnnn.CSV` | runs of firmware 0.21.0 and older; in the root, `SERVOnnn` is a servo test |
 | root | `SERVOnnn.TXT` alone | a limit run of firmware 0.21.0 and older |
 
+The last column of each CSV the bench writes, `info`, describes the run on the first data row: `dut=MG90S&note=greased&date=2026-11-24T10:31&fw=0.23.18`. `dut` is DUT name and `note` the Run note from the [SERVO lists](servo-settings.md), each up to 23 characters; `date` is the panel's local date and time at the start, left out while the clock is unset; `fw` is the firmware. AUTOMATIC TEST, LIMIT RUN and RUDDER AUTO add `servo`, `meter` and `angle`; MOTOR and SUPPLY files carry no `dut`. Inside a value each `&`, `=`, `;` and `"` is written `_`. Firmware 0.23.17's LOGS reads every such file but a SERVO file with three INA3221 groups, which has 26 columns.
+
 The name follows the screen whose ARM armed the bench, also on an IOmcu older than 0.18.0, which arms the throttle outputs with every switch to ARMED.
 
 A run's name may carry a label behind its number, such as `MOTOR042_kv1200.CSV`; RENAME LOG on [Motor and ESC](motor.md#the-log-of-a-run) writes one. The label follows one `_`, holds up to 46 bytes behind a five-letter prefix, and may hold full stops and further `_`. The run keeps its number, its kind and its place in the list, and the next run takes one above it.

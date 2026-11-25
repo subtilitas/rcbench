@@ -886,10 +886,13 @@ static void log_row(servo_test_t *t, const sample_t *m, uint8_t mode,
                  gap);
     }
     const size_t used = strlen(line);
-    snprintf(line + used, sizeof(line) - used, ";%s;%s%s%s",
+    /* The run's description, info, on the first data row the outbox takes;
+     * empty on every later one. */
+    snprintf(line + used, sizeof(line) - used, ";%s;%s%s%s;%s",
              servo_test_meter_word(t->cfg.meter.kind), tail,
              t->cfg.enc_on ? ";" : "",
-             t->cfg.enc_on ? servo_test_enc_source(&t->cfg) : "");
+             t->cfg.enc_on ? servo_test_enc_source(&t->cfg) : "",
+             t->rows == 0u ? t->cfg.info : "");
     put_line(t, SERVO_TEST_OUT_CSV, line);
 }
 

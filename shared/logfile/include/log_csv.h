@@ -33,11 +33,13 @@ extern "C" {
 /**
  * @brief Ceilings.
  *
- * 25 columns: the fullest file the bench writes, a SERVO run's with three
- * INA3221 groups (log_writer.h); the import view scrolls its list.  A wider
- * file is refused, and reporting the limit beats a silent truncation.
+ * 26 columns: the fullest file the bench writes, a SERVO run's with three
+ * INA3221 groups and its `info` column (log_writer.h, log_info.h); the
+ * import view scrolls its list.  A wider file is refused, and reporting the
+ * limit beats a silent truncation.  Firmware 0.23.17 and older take 25
+ * (log_csv_opts_t.max_columns reads as they do).
  */
-#define LOG_MAX_COLUMNS 25
+#define LOG_MAX_COLUMNS 26
 /** @brief Most series the build materialises. */
 #define LOG_MAX_SERIES  4
 /** @brief Room for a column name, bytes, with its terminator. */
@@ -247,6 +249,10 @@ typedef struct {
     int time_index;          /**< -2 detects, -1 forces none, >= 0 forces it */
     const char *time_unit;   /**< NULL guesses                              */
     int max_rows;            /**< 0 uses LOG_DEFAULT_MAX_ROWS               */
+    /** @brief The most columns taken, a wider file refused with
+     *         LOG_ERR_TOO_MANY_COLUMNS; 0 or more than LOG_MAX_COLUMNS
+     *         uses LOG_MAX_COLUMNS.  25 reads as firmware 0.23.17 does. */
+    int max_columns;
 } log_csv_opts_t;
 
 /** @brief Row cap used when the options give 0, rows. */

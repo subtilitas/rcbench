@@ -298,6 +298,9 @@ typedef struct {
                                end the run as SERVO_TEST_AB_IMU_SILENT and
                                _IMU_GAPS; false names the AS5600        */
     char     firmware[16];  /**< the servo's firmware, for the report */
+    /** @brief The `info` cell of LIMITnnn.CSV's first row (log_info.h), ""
+     *         for an empty one. */
+    char     info[SERVO_RUN_INFO_MAX];
     /** @brief The report's language: SERVO_STR_COUNT entries, NULL for
      *         English. */
     const char *const *text;
@@ -439,7 +442,7 @@ typedef struct {
 /** @brief LIMITnnn.CSV's header row (servo_limrun_csv_line()). */
 #define SERVO_LIMRUN_CSV_HEAD                                               \
     "row;search;side;pulse (us);current (A);voltage (V);angle (deg);"       \
-    "state;free (A);threshold (A);end point (us)"
+    "state;free (A);threshold (A);end point (us);info"
 
 /** @brief What a judged position was: the `state` column. */
 typedef enum {
@@ -843,7 +846,8 @@ bool servo_limrun_report_line(const servo_limrun_t *r, unsigned idx,
  * the pulse in us; the mean current in A to 1mA; the rail voltage in V to
  * 10mV; the angle in degrees to 0.01deg, empty without one; the state, BASE,
  * FREE or BOUND; the free current in A; the threshold in A, empty on a BASE
- * row; the endpoint in us on a BOUND row, else empty.
+ * row; the endpoint in us on a BOUND row, else empty; the run's description
+ * (servo_limrun_cfg_t.info) on row 1, else empty.
  *
  * @param r   Run state.
  * @param idx Line index, 0 the header.

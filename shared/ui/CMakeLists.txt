@@ -82,6 +82,7 @@ set(SRCS
     servo_hub.c
     servo_footer.c
     servo_lists.c
+    run_info.c
     servo_pick.c
     servo_run_supply.c
     servo_angle_pick.c

@@ -70,18 +70,19 @@ static void line_of(unsigned k, char *out, size_t cap)
     out[take] = '\0';
 }
 
-/* The last two cells before `source` of row @p k, as "pulse;angle": the
- * text between the third-last and the last separator. */
+/* The two cells before `source` and `info` of row @p k, as "pulse;angle":
+ * the text between the fourth-last and the second-last separator. */
 static void servo_cells(unsigned k, char *out, size_t cap)
 {
     char row[LOG_WRITER_LINE_MAX];
     line_of(k, row, sizeof(row));
-    int seps[3] = { -1, -1, -1 };
+    int seps[4] = { -1, -1, -1, -1 };
     for (int i = 0; row[i] != '\0'; ++i) {
         if (row[i] == ';') {
             seps[0] = seps[1];
             seps[1] = seps[2];
-            seps[2] = i;
+            seps[2] = seps[3];
+            seps[3] = i;
         }
     }
     out[0] = '\0';

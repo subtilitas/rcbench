@@ -24,8 +24,8 @@ static const char *const k_head =
 /**
  * @brief A MOTOR file's commanded throttle, after rpm.
  *
- * A SERVO file has none: its run arms no motor, and with the column its 25
- * cells would be 26, one more than the reader takes (LOG_MAX_COLUMNS).
+ * A SERVO file has none: its run arms no motor, and with the column its 26
+ * cells would be 27, one more than the reader takes (LOG_MAX_COLUMNS).
  */
 static const char *const k_throttle = "throttle (%);";
 /** @brief The header of a bench file from the ESC temperature to window. */
@@ -37,7 +37,9 @@ static const char *const k_ch123 =
     "ch1 current (A);ch1 max (A);ch1 voltage (V);"
     "ch2 current (A);ch2 max (A);ch2 voltage (V);"
     "ch3 current (A);ch3 max (A);ch3 voltage (V);";
-static const char *const k_tail = "source\n";  /**< the last column */
+/** @brief The last two columns: what produced the row, and the run's
+ *         description (log_info.h). */
+static const char *const k_tail = "source;" LOG_INFO_HEAD "\n";
 
 /** @brief The supply figures of a SERVO run's row, by column (log_rail_t). */
 enum {
@@ -83,7 +85,7 @@ static const char *bench_source_word(const bench_state_t *b)
  * of the two the supply was holding. */
 static const char *const k_supply_header =
     "time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;"
-    "charge (mAh);energy (Wh);source\n";
+    "charge (mAh);energy (Wh);source;" LOG_INFO_HEAD "\n";
 
 /**
  * @brief A short write latches the writer, and the bytes the sink took stay in
@@ -184,6 +186,33 @@ void log_writer_set_cols(log_writer_t *w, const log_cols_t *cols)
             ++w->cols.n;
         }
     }
+}
+
+void log_writer_set_info(log_writer_t *w, const char *cell)
+{
+    if (w == NULL || w->rows > 0u) {
+        return;
+    }
+    size_t k = 0u;
+    if (cell != NULL) {
+        for (; cell[k] != '\0' && k + 1u < sizeof(w->info); ++k) {
+            const unsigned char c = (unsigned char)cell[k];
+            w->info[k] = (c < 0x20u || c == 0x7Fu || c == ';' || c == '"')
+                             ? '_' : cell[k];
+        }
+    }
+    w->info[k] = '\0';
+}
+
+/**
+ * @brief The `info` cell of the next row: the run's description on the
+ *        first, empty on every other.
+ * @param w The writer.
+ * @return The cell.
+ */
+static const char *info_cell(const log_writer_t *w)
+{
+    return (w->rows == 0u) ? w->info : "";
 }
 
 /** @brief A SERVO run's file: the commanded pulse and the measured angle,
@@ -361,8 +390,11 @@ bool log_writer_supply_row(log_writer_t *w, float t_s,
     if (w->failed) {
         return false;
     }
-    char line[160];
-    int n = fmt(line, sizeof(line), t_s, 3);
+    /* In the writer, not on the stack: the first row carries the info
+     * cell. */
+    char *line = w->line;
+    const size_t cap = sizeof(w->line);
+    int n = fmt(line, cap, t_s, 3);
     if (n <= 0) {
         return false;   /* a row with no time is not a row */
     }
@@ -374,7 +406,6 @@ bool log_writer_supply_row(log_writer_t *w, float t_s,
     /* What was asked is always known; what arrived only when it did.  A row
      * that does not fit -- a value no supply gives, from a driver that has
      * gone wrong -- fails the log as an oversized bench row does. */
-    const size_t cap = sizeof(line);
     const bool fits =
         cell(line, cap, &n, true, s->set_v, 2)
         && cell(line, cap, &n, v_ok, s->v, 2)
@@ -386,7 +417,8 @@ bool log_writer_supply_row(log_writer_t *w, float t_s,
                 (float)s->charge_mah, 0)
         && cell(line, cap, &n, (s->counted & BENCH_COUNTED_ENERGY) != 0u,
                 (float)s->energy_wh, 2)
-        && text_cell(line, cap, &n, source_word(s->modelled));
+        && text_cell(line, cap, &n, source_word(s->modelled))
+        && text_cell(line, cap, &n, info_cell(w));
     if (!fits || (size_t)n + 2u >= cap) {
         w->failed = true;
         return false;
@@ -501,7 +533,7 @@ static bool bench_row(log_writer_t *w, float t_s, const bench_state_t *b,
              RAIL_E, 2, false },
     };
 
-    /* In the writer, not on the stack: up to 25 cells, every one checked
+    /* In the writer, not on the stack: up to 26 cells, every one checked
      * against the end. */
     char *line = w->line;
     const size_t cap = sizeof(w->line);
@@ -615,7 +647,8 @@ static bool bench_row(log_writer_t *w, float t_s, const bench_state_t *b,
                && cell(line, cap, &n, sv != NULL && sv->angle_ok,
                        (sv != NULL) ? sv->angle_deg : 0.0f, 1);
     }
-    fits = fits && text_cell(line, cap, &n, bench_source_word(b));
+    fits = fits && text_cell(line, cap, &n, bench_source_word(b))
+           && text_cell(line, cap, &n, info_cell(w));
     if (!fits || (size_t)n + 2u >= cap) {
         w->failed = true;
         return false;

@@ -433,6 +433,8 @@ ENGLISH_QUOTES = {
     ("Servo-de.md", "MODEL"),
     ("Servo-de.md", "OFF"),
     ("Servo-de.md", "HOLD"),
+    # The info cell's meter, written in English (log_info.h).
+    ("Screens-de.md", "MODEL"),
     # LIMITnnn.CSV's and RUDDRnnn.CSV's cells, written in English.
     ("Servo-de.md", "LOW"),
     ("Servo-de.md", "HIGH"),

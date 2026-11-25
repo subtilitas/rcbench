@@ -851,8 +851,9 @@ TEST_CASE(the_csv_reads_back_in_the_viewer_old_and_new)
         log_analysis_t an;
         CHECK_EQ(log_csv_analyse(&src, &opts, &an), LOG_OK);
         const int enc = (variant == 2u) ? 3 : 0;
-        /* And the angle source's column last. */
-        CHECK_EQ(an.n_columns, (int)COLS + enc + ((variant == 2u) ? 1 : 0));
+        /* And the angle source's column, then info last. */
+        CHECK_EQ(an.n_columns, (int)COLS + enc + ((variant == 2u) ? 1 : 0) + 1);
+        CHECK_STR_EQ(an.columns[an.n_columns - 1].name, "info");
         if (variant == 2u) {
             CHECK_STR_EQ(an.columns[COLS + 3].name, "angle source");
             CHECK(!an.columns[COLS + 3].numeric);
@@ -880,13 +881,14 @@ TEST_CASE(the_csv_reads_back_in_the_viewer_old_and_new)
                  "time (s);test;step;phase;command (us);position (us);"
                  "set (V);voltage (V);limit (A);current (A);power (W);"
                  "mode;travel (ms);meter;window;current max (A);"
-                 "current min (A);voltage min (V);clipped");
-    CHECK_EQ(strlen(servo_test_csv_header_enc()), 247u);
+                 "current min (A);voltage min (V);clipped;info");
+    CHECK_EQ(strlen(servo_test_csv_header_enc()), 252u);
     CHECK(strstr(servo_test_csv_header_enc(),
                  ";travel (ms);angle (deg);travel angle (ms);angle gap (ms);"
                  "meter;window;")
           != NULL);
-    CHECK(strstr(servo_test_csv_header_enc(), ";clipped;angle source") != NULL);
+    CHECK(strstr(servo_test_csv_header_enc(), ";clipped;angle source;info")
+          != NULL);
 
     static const struct {
         const char *name;
@@ -1049,7 +1051,7 @@ TEST_CASE(a_recorded_log_with_windows_missing_ends_the_run_at_its_first_gap)
     CHECK_EQ(rows_with(h.out.csv, COL_METER, "INA3221"), upto);
     /* The first row is the file's first window. */
     char want[96];
-    snprintf(want, sizeof(want), ";INA3221;19750;%.3f;%.3f;%.3f;0\n",
+    snprintf(want, sizeof(want), ";INA3221;19750;%.3f;%.3f;%.3f;0;\n",
              (double)rec[0].max_ma / 1000.0, (double)rec[0].mean_ma / 1000.0,
              (double)rec[0].mv / 1000.0);
     CHECK(strstr(h.out.csv, want) != NULL);

@@ -23,6 +23,7 @@
 #include "log_name.h"
 #include "prog_choice.h"
 #include "rcbench_version.h"
+#include "run_info.h"
 #include "sensors_rows.h"
 #include "servo_limrun.h"
 #include "settings.h"
@@ -235,6 +236,11 @@ void test_cfg_bench(servo_test_cfg_t *c)
                               : (uint8_t)test_ina_why();
     }
     snprintf(c->firmware, sizeof(c->firmware), "%s", RCBENCH_VERSION_STRING);
+    run_info_servo(c->info, sizeof(c->info), c->type,
+                   c->meter.name[0] != '\0'
+                       ? c->meter.name
+                       : servo_test_meter_word(c->meter.kind),
+                   c->enc_on ? servo_test_enc_source(c) : NULL);
     /* The report in the language showing at the start; the CSV in English
      * whatever it is. */
     c->text = ui_servo_table();

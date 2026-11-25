@@ -21,6 +21,7 @@
 
 #include "bench_state.h"
 #include "log_cols.h"
+#include "log_info.h"
 #include "sense_link.h"
 #include "supply.h"
 
@@ -46,8 +47,9 @@ typedef struct {
     void *ctx;  /**< passed to write and flush */
 } log_sink_t;
 
-/** @brief The longest bench row, terminator included. */
-#define LOG_WRITER_LINE_MAX 256
+/** @brief The longest bench row, terminator included: 256 bytes of figures
+ *         and the first row's `info` cell (LOG_INFO_MAX). */
+#define LOG_WRITER_LINE_MAX (256u + LOG_INFO_MAX)
 
 /**
  * @brief A log writer: its sink, its counts and its latched failure.
@@ -67,10 +69,13 @@ typedef struct {
     bool       by_map;
     log_cols_t cols;  /**< the INA3221 column groups when by_map is set */
     /**
-     * @brief A bench row as it is built: up to 25 cells, here rather than on the
+     * @brief A bench row as it is built: up to 26 cells, here rather than on the
      *        stack of the task that writes the card.
      */
     char       line[LOG_WRITER_LINE_MAX];
+    /** @brief The `info` cell the first row carries (log_writer_set_info()),
+     *         "" for an empty one. */
+    char       info[LOG_INFO_MAX];
 } log_writer_t;
 
 /*
@@ -137,6 +142,20 @@ void log_writer_init(log_writer_t *w, const log_sink_t *sink);
  * @param cols The INA3221 columns, or NULL.
  */
 void log_writer_set_cols(log_writer_t *w, const log_cols_t *cols);
+
+/**
+ * @brief The run's description (log_info.h), written into the file's last
+ *        column, `info`, on its first row; every later row leaves the cell
+ *        empty.  A `;`, a `"` and a control character in @p cell are written
+ *        `_`, so the cell stays one cell.
+ *
+ * Taken until the first row is written, ignored after.  Without a call the
+ * column is there and its cells are empty.
+ *
+ * @param w    The writer.
+ * @param cell The cell (log_info_format()), or NULL for an empty one.
+ */
+void log_writer_set_info(log_writer_t *w, const char *cell);
 
 /**
  * @brief Write the header row.
@@ -302,6 +321,8 @@ void log_servo_unpack(uint32_t packed, bool row_modelled, log_servo_t *out);
  *
  * The header is the motor run's without `throttle (%)` and with
  * `pulse (us);angle (deg)` before `source`, so both files read by one rule.
+ * With CH1 to CH3, or 3 groups of the map, the file has 26 columns, one
+ * more than firmware 0.23.17's LOGS takes.
  * The supply's cells are written as a supply file writes them: voltage
  * and power to 0.01, current to 0.001, charge to 1mAh, energy to 0.01Wh; a
  * cell rail has no reading or total of is empty, and so are all five with
@@ -329,7 +350,7 @@ bool log_writer_servo_row(log_writer_t *w, float t_s, const bench_state_t *b,
  *
  * The file's first row writes the supply header -- time; set (V);
  * voltage (V); limit (A); current (A); power (W); mode; charge (mAh);
- * energy (Wh); source -- so a file is one kind or the other and the caller keeps it
+ * energy (Wh); source; info -- so a file is one kind or the other and the caller keeps it
  * so.  Readings that did not arrive, and totals nothing counted, are empty
  * cells; the mode is CV, CC or OFF, and empty while the supply does not
  * answer.  Same returns, commits and latch as log_writer_row().

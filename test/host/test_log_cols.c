@@ -180,11 +180,11 @@ TEST_CASE(the_header_and_rows_follow_the_groups)
     CHECK(strstr(g_sink.buf,
                  "window;port 1 current (A);port 1 max (A);"
                  "port 1 voltage (V);out 1 current (A);out 1 max (A);"
-                 "out 1 voltage (V);source\n") != NULL);
-    CHECK(strstr(g_sink.buf, ";77;1.234;-0.050;5.012;0.020;0.040;;measured\n")
+                 "out 1 voltage (V);source;info\n") != NULL);
+    CHECK(strstr(g_sink.buf, ";77;1.234;-0.050;5.012;0.020;0.040;;measured;\n")
           != NULL);
-    CHECK(strstr(g_sink.buf, ";78;;;;;;;measured\n") != NULL);
-    CHECK(strstr(g_sink.buf, ";79;;;5.012;0.020;0.040;;measured\n") != NULL);
+    CHECK(strstr(g_sink.buf, ";78;;;;;;;measured;\n") != NULL);
+    CHECK(strstr(g_sink.buf, ";79;;;5.012;0.020;0.040;;measured;\n") != NULL);
     /* After the header the columns hold: a late set is ignored. */
     log_writer_set_cols(&w, NULL);
     CHECK(w.by_map);
@@ -202,7 +202,7 @@ TEST_CASE(without_a_map_the_file_keeps_ch1_to_ch3)
     b.servo_min_mv[0] = 4800u;
     CHECK(log_writer_row(&w, 0.0f, &b));
     CHECK(strstr(g_sink.buf, "window;ch1 current (A);") != NULL);
-    CHECK(strstr(g_sink.buf, ";5;0.500;0.600;4.800;;;;;;;measured\n")
+    CHECK(strstr(g_sink.buf, ";5;0.500;0.600;4.800;;;;;;;measured;\n")
           != NULL);
 }
 
@@ -229,7 +229,7 @@ TEST_CASE(the_reader_takes_the_groups_as_ina3221)
     log_csv_opts_default(&opts);
     log_analysis_t a;
     CHECK_EQ(log_csv_analyse(&src, &opts, &a), LOG_OK);
-    CHECK_EQ(a.n_columns, 24);
+    CHECK_EQ(a.n_columns, 25);
     CHECK_STR_EQ(a.columns[14].name, "port 1 current");
     CHECK_STR_EQ(a.columns[20].name, "supply current");
     CHECK_STR_EQ(log_field_meta("port 1 current").group, "INA3221");
@@ -319,7 +319,7 @@ TEST_CASE(the_longest_column_name_reads_back_whole)
     log_csv_opts_default(&opts);
     log_analysis_t a;
     CHECK_EQ(log_csv_analyse(&src, &opts, &a), LOG_OK);
-    CHECK_EQ(a.n_columns, 21);
+    CHECK_EQ(a.n_columns, 22);
     CHECK_STR_EQ(a.columns[16].name, "supply 0x43 ch3 voltage");
     CHECK_STR_EQ(a.columns[16].unit, "V");
 }

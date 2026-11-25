@@ -14,6 +14,8 @@
  */
 #include "servo_test_rig.h"
 
+#include "info_check.h"
+
 /* ------------------------------------------------------------------ tests */
 
 /* Two steps run through: each measures idle, moving and holding current and
@@ -599,6 +601,43 @@ TEST_CASE(the_words_come_from_one_table)
     CHECK(!servo_test_rates(&t, NULL, NULL, NULL));
 }
 
+/* The run's description, info, the last column: on the first data row
+ * and on no other, its longest value read back whole beside the angle
+ * source's columns: 24 columns, 20 without an angle source, both of which
+ * a reader of firmware 0.23.17 takes. */
+TEST_CASE(the_first_data_row_carries_the_run_description)
+{
+    for (int enc = 0; enc < 2; ++enc) {
+        rig_fresh();
+        servo_test_cfg_t c;
+        cfg_defaults(&c);
+        c.idle_max_a = 0.3f;
+        c.hold_max_a = 0.3f;
+        c.travel_max_ms = 1000u;
+        if (enc != 0) {
+            c.enc_on = true;
+            c.enc_center = ENC_CENTER_COUNT;
+            c.enc_cmd_deg[0] = -400.0f * ENC_DEG_PER_US;
+            c.enc_cmd_deg[1] =  400.0f * ENC_DEG_PER_US;
+            snprintf(c.enc_source, sizeof(c.enc_source), "IMU X+");
+            g.enc_model_on = true;
+            g.enc_valid = true;
+            g.enc_every = 40u;
+            g.enc_deg_per_us = ENC_DEG_PER_US;
+        }
+        log_info_t want;
+        info_longest(&want);
+        CHECK_EQ(log_info_format(&want, c.info, sizeof(c.info)),
+                 LOG_INFO_MAX - 1u);
+        CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+        run_out(120000u);
+        CHECK_EQ(g.t.rows_lost, 0u);
+        log_info_t got;
+        info_read_back(g.csv_text, enc != 0 ? 24 : 20, true, &got);
+        info_same(&got, &want);
+    }
+}
+
 int main(void)
 {
     RUN(a_run_measures_each_step_and_passes);
@@ -614,6 +653,7 @@ int main(void)
     RUN(a_servo_that_does_not_move_is_not_measurable);
     RUN(every_abort_switches_off_lets_go_and_reports);
     RUN(the_words_come_from_one_table);
+    RUN(the_first_data_row_carries_the_run_description);
     free(g.csv_text);
     return test_summary("servo_test");
 }

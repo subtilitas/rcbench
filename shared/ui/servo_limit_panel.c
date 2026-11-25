@@ -31,6 +31,7 @@
 #include "kst_port.h"
 #include "log_name.h"
 #include "rcbench_version.h"
+#include "run_info.h"
 #include "sensors_rows.h"
 #include "servo_limrun.h"
 #include "settings.h"
@@ -230,6 +231,9 @@ static void lim_cfg(servo_limrun_cfg_t *c)
     (void)enc_name(c->source, sizeof(c->source));
     c->enc_imu = (enc_src() == SERVO_ANGLE_IMU);
     snprintf(c->firmware, sizeof(c->firmware), "%s", RCBENCH_VERSION_STRING);
+    run_info_servo(c->info, sizeof(c->info), c->type, c->meter,
+                   c->enc_on ? (c->source[0] != '\0' ? c->source : "AS5600")
+                             : NULL);
     c->text = ui_servo_table();
 }
 

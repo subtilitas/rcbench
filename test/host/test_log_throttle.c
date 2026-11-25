@@ -143,7 +143,7 @@ TEST_CASE(a_motor_row_carries_the_commanded_throttle)
     log_csv_opts_default(&opts);
     log_analysis_t a;
     CHECK_EQ(log_csv_analyse(&src, &opts, &a), LOG_OK);
-    CHECK_EQ(a.n_columns, 24);
+    CHECK_EQ(a.n_columns, 25);
     CHECK_EQ(a.ragged_rows, 0);
     CHECK_STR_EQ(a.columns[5].name, "throttle");
     CHECK_STR_EQ(a.columns[5].unit, "%");

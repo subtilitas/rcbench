@@ -214,7 +214,7 @@ render side in one atomic word; a figure whose source is not the row's is an emp
 `log_servo_pack()` in `shared/bench/log_writer.c`, `servo_screen_log_pulse()`,
 `servo_screen_log_angle()`; host-tested in `test_servo_runlog`, `test_servo_runlog_cols` and
 `test_servo_log_figures`; the panel's calls in `panel_poll.c` and `panel_frame.c` are not
-host-tested); LOGS reads up to 25 columns and opens a SERVO file with `pulse`, `angle`,
+host-tested); LOGS reads up to 26 columns and opens a SERVO file with `pulse`, `angle`,
 `current` and `voltage` chosen (`log_fields_picks()`, `test_servo_runlog_cols`); a poll that
 brings more than one INA3221 window writes one row for each, the sample in the last; the
 rule is `shared/bench/log_cadence.c`, host-tested in `test_log_cadence` against a model of
@@ -1813,7 +1813,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 650 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 651 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1889,7 +1889,7 @@ The host suite is 650 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_fm_recheck`, `test_fm_req`, `test_files_screen`, `test_files_ops`, `test_files_open`,
 `test_files_view`, `test_files_edit`, `test_files_save`, `test_files_changed`,
 `test_files_rescan`, `test_logs_strip`, `test_textkey_editor`, `test_textkey_see`,
-`test_textkey_cursor`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_servo_runlog`,
+`test_textkey_cursor`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_log_info`, `test_servo_runlog`,
 `test_servo_runlog_cols`, `test_servo_log_figures`, `test_log_cadence`, `test_perf_watch`, `test_pass_stats`, `test_report_lines`, `test_report_steps`,
 `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`,
 `test_kst_pio`, `test_kst_port`, `test_kst_port_cut`, `test_kst_link`, `test_prog_port`,
@@ -2540,16 +2540,16 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_screen_draw.c` | 466 | 440 | 94.4% |
 | `shared/ui/servo_settings_panel.c` | 683 | 626 | 91.7% |
 | `shared/ui/servo_settings_draw.c` | 348 | 316 | 90.8% |
-| `shared/ui/servo_test_panel.c` | 463 | 454 | 98.1% |
+| `shared/ui/servo_test_panel.c` | 467 | 457 | 97.9% |
 | `shared/ui/servo_test_ready.c` | 356 | 348 | 97.8% |
 | `shared/ui/servo_test_list.c` | 53 | 49 | 92.5% |
-| `shared/ui/servo_limit_panel.c` | 340 | 328 | 96.5% |
+| `shared/ui/servo_limit_panel.c` | 343 | 331 | 96.5% |
 | `shared/ui/servo_limit_ready.c` | 295 | 287 | 97.3% |
 | `shared/ui/servo_limit_card.c` | 206 | 184 | 89.3% |
 | `shared/ui/servo_limit_seam.c` | 90 | 86 | 95.6% |
 | `shared/ui/servo_workbench.c` | 183 | 179 | 97.8% |
 | `shared/ui/servo_rudder_panel.c` | 479 | 474 | 99.0% |
-| `shared/ui/servo_rudder_auto_panel.c` | 673 | 614 | 91.2% |
+| `shared/ui/servo_rudder_auto_panel.c` | 674 | 615 | 91.2% |
 | `shared/ui/servo_rudder_auto_ready.c` | 310 | 304 | 98.1% |
 | `shared/ui/servo_ready.c` | 554 | 538 | 97.1% |
 | `shared/ui/servo_power_view.c` | 95 | 89 | 93.7% |
@@ -2561,6 +2561,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_hub.c` | 215 | 208 | 96.7% |
 | `shared/ui/servo_footer.c` | 161 | 158 | 98.1% |
 | `shared/ui/servo_lists.c` | 252 | 249 | 98.8% |
+| `shared/ui/run_info.c` | 22 | 22 | 100.0% |
 | `shared/ui/servo_pick.c` | 99 | 99 | 100.0% |
 | `shared/ui/servo_run_supply.c` | 82 | 81 | 98.8% |
 | `shared/ui/servo_angle_pick.c` | 260 | 252 | 96.9% |
@@ -2679,10 +2680,11 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/settings/settings_file.c` | 370 | 364 | 98.4% |
 | `shared/settings/settings_backup.c` | 164 | 159 | 97.0% |
 | `shared/logfile/log_numbers.c` | 396 | 374 | 94.4% |
-| `shared/logfile/log_csv.c` | 514 | 488 | 94.9% |
+| `shared/logfile/log_csv.c` | 518 | 492 | 95.0% |
 | `shared/logfile/log_reader.c` | 212 | 201 | 94.8% |
 | `shared/logfile/log_fields.c` | 72 | 71 | 98.6% |
 | `shared/logfile/log_name.c` | 171 | 171 | 100.0% |
+| `shared/logfile/log_info.c` | 117 | 116 | 99.2% |
 | `shared/logfile/log_take.c` | 96 | 95 | 99.0% |
 | `shared/logfile/card_tree.c` | 77 | 77 | 100.0% |
 | `shared/logfile/fault_log.c` | 58 | 58 | 100.0% |
@@ -2715,7 +2717,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/servo/servo_sync.c` | 181 | 175 | 96.7% |
 | `shared/servo/servo_sweep.c` | 118 | 114 | 96.6% |
 | `shared/servo/servo_move.c` | 145 | 145 | 100.0% |
-| `shared/servo/servo_test.c` | 809 | 796 | 98.4% |
+| `shared/servo/servo_test.c` | 810 | 797 | 98.4% |
 | `shared/servo/servo_brownout.c` | 35 | 35 | 100.0% |
 | `shared/servo/servo_rudder.c` | 45 | 45 | 100.0% |
 | `shared/servo/servo_str.c` | 53 | 53 | 100.0% |
@@ -2725,7 +2727,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/servo/servo_gap.c` | 33 | 33 | 100.0% |
 | `shared/servo/servo_angle.c` | 33 | 33 | 100.0% |
 | `shared/servo/servo_rudder_auto.c` | 697 | 681 | 97.7% |
-| `shared/servo/servo_rudder_auto_report.c` | 391 | 390 | 99.7% |
+| `shared/servo/servo_rudder_auto_report.c` | 398 | 397 | 99.8% |
 | `shared/servo/servo_rudder_auto_verify.c` | 31 | 30 | 96.8% |
 | `shared/servo/servo_rudder_auto_search.c` | 198 | 190 | 96.0% |
 | `shared/servo/servo_settle.c` | 63 | 63 | 100.0% |
@@ -2896,7 +2898,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/bench/hitec_rx_link.c` | 57 | 57 | 100.0% |
 | `shared/bench/knob.c` | 47 | 47 | 100.0% |
 | `shared/bench/panel_i2c.c` | 10 | 10 | 100.0% |
-| `shared/bench/log_writer.c` | 317 | 305 | 96.2% |
+| `shared/bench/log_writer.c` | 332 | 320 | 96.4% |
 | `shared/bench/log_cols.c` | 54 | 54 | 100.0% |
 | `shared/bench/log_cadence.c` | 50 | 50 | 100.0% |
 | `shared/bench/perf_watch.c` | 68 | 68 | 100.0% |
@@ -2956,7 +2958,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **107959** | **105659** | **97.9%** |
+| **total** | **108133** | **105831** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

@@ -128,7 +128,7 @@ Mit der IMU als WINKELQUELLE auf Achse Z (Gieren) zeigt die Zeile WINKEL `IMU-GI
 
 ![Die OPTIONEN von RUDER AUTO](view:servo-rudder-auto-settings)
 
-Die OPTIONEN von RUDER AUTO führen die Ziele, RESERVE, TOLERANZ, SERVO, SERVOPULSE und WINKELQUELLE, dann STROM und Warten vor PWM wie die [Liste des Endlagenlaufs](servo-settings.md#die-optionen-des-endlagenlaufs): STROM ist SET A von SUPPLY, Warten vor PWM die Wartezeit des KST-Programmierers, die VERLASSEN des Laufs sendet. Dann der Name des Prüflings und die Testaufzeichnungen: der Name des Hubs, der über dem Bericht steht, und der Schalter von SETUP > SD CARD. Mit Testaufzeichnungen AUS schreibt der Lauf weder RUDDRnnn.TXT noch RUDDRnnn.CSV. Die Karte BEREIT hat zehn Zeilen, so viele, wie sie fasst; die Testaufzeichnungen sind hier eine Zeile der Liste.
+Die OPTIONEN von RUDER AUTO führen die Ziele, RESERVE, TOLERANZ, SERVO, SERVOPULSE und WINKELQUELLE, dann STROM und Warten vor PWM wie die [Liste des Endlagenlaufs](servo-settings.md#die-optionen-des-endlagenlaufs): STROM ist SET A von SUPPLY, Warten vor PWM die Wartezeit des KST-Programmierers, die VERLASSEN des Laufs sendet. Dann der Name des Prüflings, die Notiz zum Lauf und die Testaufzeichnungen: der Name des Hubs, der über dem Bericht steht, die Notiz des Hubs, die die Spalte `info` der CSV trägt, und der Schalter von SETUP > SD CARD. Mit Testaufzeichnungen AUS schreibt der Lauf weder RUDDRnnn.TXT noch RUDDRnnn.CSV. Die Karte BEREIT hat zehn Zeilen, so viele, wie sie fasst; die Testaufzeichnungen sind hier eine Zeile der Liste.
 
 ## Was der Winkel ist
 

@@ -78,9 +78,9 @@ screen. The screen is `shared/ui/servo_limit_panel.c`, its left card
 - OPTIONS opens the run's list: MODE (SEARCH ONLY or SEARCH + PROGRAM),
   SERVO (KST/CHASERVO, HITEC D SERIES or HITEC CLASSIC, the programmer the
   run's sessions go to, [Hitec servos](#hitec-servos)), SERVO PULSES (KEEP
-  or 1000-2000), CURRENT, the programmer's Wait before PWM, DUT name and
-  User logs. CURRENT is SUPPLY's SET A ([The run's current
-  limit](#the-runs-current-limit)). DUT name is the hub's, User logs SETUP
+  or 1000-2000), CURRENT, the programmer's Wait before PWM, DUT name, Run
+  note and User logs. CURRENT is SUPPLY's SET A ([The run's current
+  limit](#the-runs-current-limit)). DUT name and Run note are the hub's, User logs SETUP
   > SD CARD's: one setting each, whichever list sets it; the READY card has
   no room for a LOG row. The run programs at 5.0V and has no voltage row
   ([The run's 5.0V](#the-runs-50v)), and no Programming current row: no
@@ -683,16 +683,17 @@ judged no position has no `Positions:` line.
 | `free (A)` | the search's free current after the position: the mean of its `BASE` rows |
 | `threshold (A)` | the larger of 1.8 x free and free + 0.15A; empty on a `BASE` row |
 | `end point (us)` | on a `BOUND` row the endpoint the search reports, 25µs inside the last free position; else empty |
+| `info` | on row 1 the run's description: DUT name, Run note, date, firmware, servo type, meter and angle source ([Logs](Screens.md#logs)); else empty |
 
 The programmed run above, its first rows and its first search's bound row:
 
 ```text
-row;search;side;pulse (us);current (A);voltage (V);angle (deg);state;free (A);threshold (A);end point (us)
-1;1;LOW;1500;0.120;6.00;;BASE;0.120;;
-2;1;LOW;1490;0.119;6.00;;BASE;0.120;;
-3;1;LOW;1480;0.120;6.00;;BASE;0.120;;
-4;1;LOW;1470;0.121;6.00;;FREE;0.120;0.270;
-31;1;LOW;1200;0.627;6.00;;BOUND;0.120;0.270;1235
+row;search;side;pulse (us);current (A);voltage (V);angle (deg);state;free (A);threshold (A);end point (us);info
+1;1;LOW;1500;0.120;6.00;;BASE;0.120;;;dut=SERVO&note=greased&date=2026-11-24T10:31&fw=0.23.18&servo=DIGITAL&meter=INA3221 0x41 CH2
+2;1;LOW;1490;0.119;6.00;;BASE;0.120;;;
+3;1;LOW;1480;0.120;6.00;;BASE;0.120;;;
+4;1;LOW;1470;0.121;6.00;;FREE;0.120;0.270;;
+31;1;LOW;1200;0.627;6.00;;BOUND;0.120;0.270;1235;
 ```
 
 LOGS lists `LIMITnnn.CSV` beside its report, CSV first; DELETE on the CSV
@@ -772,7 +773,7 @@ The voltage steps are the run's Step 4.8V and Step 6.0V (TEST's OPTIONS
 list), and with HV SERVO on, Step 7.4V and Step 8.4V. HV SERVO is off at every restart. The
 run's ends are RANGE of the travel either side of PULSE CENTER: Range on
 TEST's list is SWEEP's setting, and OUTPUT under it opens the servo
-profile. Dwell time is SWEEP's too, DUT name and Report the hub's. A run
+profile. Dwell time is SWEEP's too, DUT name, Run note and Report the hub's. A run
 with a step above 6.0V starts only through the HV SERVOS ONLY warning held for
 2s. The current limit through the run is SUPPLY's SET A, which the READY
 card's PD MINI row shows and a tap there sets
@@ -1424,10 +1425,11 @@ writes:
 | `voltage min (V)` | V | on the INA3221: the lowest bus voltage sample in the window |
 | `clipped` | | on the INA3221: samples in the window at an end of the range, held at 255 |
 | `angle source` | | with an angle source in use: its name, `AS5600` or `IMU X+`, on every row |
+| `info` | | on the first row the run's description: DUT name, Run note, date, firmware, servo type, meter and angle source ([Logs](Screens.md#logs)); empty on every other row |
 
 The six meter columns occupy positions 14 to 19 without angle data,
 or 17 to 22 with angle data. When an angle source is in use, its name
-follows in column 23. On the PD mini and the model, the five columns
+follows in column 23. `info` is the last column, 20 or 24. On the PD mini and the model, the five columns
 after `meter` are empty. Older files with fewer columns, 13 without
 AS5600 or 15 or 21 with it, also open in the log viewer: the parser
 identifies columns from their header names.
@@ -1788,11 +1790,11 @@ link is not authenticated (`SECURITY.md`, the Bluetooth IMU).
   beside the degrees. MARGIN: 0 to 50%, 10% (`rud_margin`), KST/Chaservo
   only (below). TOLERANCE: 0.1 to 5.0°, 0.5° (`rud_tol`). A tap opens the
   keypad. The same four,
-  SERVO, SERVO PULSES, ANGLE SOURCE, CURRENT, Wait before PWM, DUT name
-  and User logs are in OPTIONS. CURRENT is SUPPLY's SET A, as on LIMIT
+  SERVO, SERVO PULSES, ANGLE SOURCE, CURRENT, Wait before PWM, DUT name,
+  Run note and User logs are in OPTIONS. CURRENT is SUPPLY's SET A, as on LIMIT
   RUN ([The run's current limit](#the-runs-current-limit)); Wait before
-  PWM is the KST programmer's wait the run's LEAVE sends. DUT name is the
-  hub's, User logs SETUP > SD CARD's; the READY card has no room for a LOG
+  PWM is the KST programmer's wait the run's LEAVE sends. DUT name and Run
+  note are the hub's, User logs SETUP > SD CARD's; the READY card has no room for a LOG
   row.
 - The goal of a side, at 1000us and 2000us, is its target: TARGET 20.0°
   is measured and programmed as 20.0° at 2000us, whatever MARGIN reads.
@@ -2267,14 +2269,15 @@ column. Three columns after `within` name each row without that
 convention: `kind` (`STEP`, `VERIFY` or `SEARCH`), `pulse (us)` (the pulse
 the row was measured at) and `current (A)` (a `SEARCH` row's mean current,
 to 1mA; empty on the other rows). The first 9 columns are those of firmware
-0.23.17 and older, unchanged, and LOGS reads files with 9 columns and with
-12 alike:
+0.23.17 and older, unchanged. The last column, `info`, holds the run's
+description on the first row ([Logs](Screens.md#logs)). LOGS reads files
+with 9 columns and with 13 alike:
 
 ```text
-step;side (us);write;value;measured (deg);goal (deg);measured (mm);goal (mm);within;kind;pulse (us);current (A)
-1;1000;0;;30.00;27.50;50.00;46.17;0;STEP;1000;
-7;1000;V;;27.60;27.50;46.33;46.17;1;VERIFY;1000;
-10;1500;S;150;0.00;;;;;SEARCH;1500;0.150
+step;side (us);write;value;measured (deg);goal (deg);measured (mm);goal (mm);within;kind;pulse (us);current (A);info
+1;1000;0;;30.00;27.50;50.00;46.17;0;STEP;1000;;dut=AILERON L&date=2026-11-24T10:31&fw=0.23.18&servo=DIGITAL&angle=IMU X+
+7;1000;V;;27.60;27.50;46.33;46.17;1;VERIFY;1000;;
+10;1500;S;150;0.00;;;;;SEARCH;1500;0.150;
 ```
 
 End points read as the programming page shows them, with the unit named

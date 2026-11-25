@@ -68,5 +68,10 @@ else()
         target_sources(rcbench_bench PRIVATE kst_card.c hitec_card_run.c esc_card.c
                        imu.c)
         target_link_libraries(rcbench_bench PUBLIC rcbench_logfile rcbench_witmotion)
+    else()
+        # log_writer.h takes the info cell's sizes from log_info.h; the
+        # IOmcu has no card layer and needs only that header.
+        target_include_directories(rcbench_bench PUBLIC
+                                   "${CMAKE_CURRENT_LIST_DIR}/../logfile/include")
     endif()
 endif()

@@ -141,7 +141,7 @@ TEST_CASE(a_run_with_the_encoder_reports_the_angle_beside_the_current)
         for (const char *q = p + 1; q < e; ++q) {
             fields += (*q == ';') ? 1u : 0u;
         }
-        CHECK_EQ(fields, 23u);
+        CHECK_EQ(fields, 24u);
         ++rows;
         /* Cells 13 and 14: the angle and the settle. */
         const char *angle = csv_cell(p + 1, 13u);
@@ -152,8 +152,8 @@ TEST_CASE(a_run_with_the_encoder_reports_the_angle_beside_the_current)
         }
         with_settle += (settle[1] != ';') ? 1u : 0u;
         with_angle += (angle[1] != ';') ? 1u : 0u;
-        /* The meter's six, and the angle source last. */
-        CHECK(strncmp(csv_cell(p + 1, 15u), ";;PDMINI;;;;;;AS5600\n", 21) == 0);
+        /* The meter's six, the angle source and the empty info cell. */
+        CHECK(strncmp(csv_cell(p + 1, 15u), ";;PDMINI;;;;;;AS5600;\n", 22) == 0);
         p = e;
     }
     CHECK(rows > 40u);
@@ -189,7 +189,7 @@ TEST_CASE(without_the_encoder_the_run_and_its_files_are_as_before)
         for (const char *q = p + 1; q < e; ++q) {
             fields += (*q == ';') ? 1u : 0u;
         }
-        CHECK_EQ(fields, 19u);
+        CHECK_EQ(fields, 20u);
         p = e;
     }
 }

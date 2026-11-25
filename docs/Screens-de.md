@@ -1337,7 +1337,7 @@ INA3221 eingeschaltet ist.
 
 
 ```
-time (s);voltage (V);current (A);power (W);rpm (rpm);throttle (%);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V);source
+time (s);voltage (V);current (A);power (W);rpm (rpm);throttle (%);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V);source;info
 ```
 
 In MOTOR-Dateien entsprechen `voltage`, `current` und `power` der Anzeige
@@ -1380,7 +1380,7 @@ Eine durch ARM auf SERVO begonnene SERVO-Datei hat keine Spalte
 zusätzliche Spalten:
 
 ```
-...;ch3 voltage (V);pulse (us);angle (deg);source
+...;ch3 voltage (V);pulse (us);angle (deg);source;info
 ```
 
 - `voltage`, `current`, `power`, `charge` und `energy` sind die des
@@ -1420,7 +1420,10 @@ Zeilen, deren INA228-Werte vom Leistungsknoten kommen (INA228-Quelle NODE,
 bei Zeilen aus dem Panelmodell (Markierung SIMULIERT). Netzteildateien
 haben dieselbe letzte Spalte, ohne `node`. Dateien ohne diese Spalte enden bei
 `ch3 voltage` oder `energy`. LOGS und die Werkzeuge lesen beide Formen;
-`source` ist eine Textspalte und wird nicht als Kurve dargestellt.
+`source` ist eine Textspalte und wird nicht als Kurve dargestellt. Danach
+hält `info` die Beschreibung des Laufs in der ersten Zeile: den Namen des
+Prüflings in einer SERVO-Datei, die Notiz zum Lauf, das Datum und die
+Firmware ([Logs](#logs)).
 
 `ina voltage` und `ina current` stammen vom INA228, dem des IOmcu oder dem
 des Leistungsknotens, und sind leer, wenn er nicht die Quelle ist. `esc current` ist der Telemetriestrom des ESC: aus
@@ -1457,7 +1460,7 @@ die Kanalspalten deren Stand beim Öffnen der Datei: je eine Gruppe von
 drei Spalten pro Kanal, der ein Ziel überwacht, benannt nach diesem Ziel:
 
 ```
-window;port 1 current (A);port 1 max (A);port 1 voltage (V);out 3 current (A);out 3 max (A);out 3 voltage (V);supply current (A);supply max (A);supply voltage (V);source
+window;port 1 current (A);port 1 max (A);port 1 voltage (V);out 3 current (A);out 3 max (A);out 3 voltage (V);supply current (A);supply max (A);supply voltage (V);source;info
 ```
 
 - Ein Kanal bekommt eine Gruppe, solange sein Baustein bestückt ist, sein
@@ -1467,11 +1470,12 @@ window;port 1 current (A);port 1 max (A);port 1 voltage (V);out 3 current (A);ou
   die anderen von 0x40 CH1 bis 0x43 CH3.
 - Zwei Kanäle an einem Ziel tragen den Kanal im Namen:
   `out 3 0x41 ch2 current (A)`.
-- Höchstens 3 Gruppen, 24 Spalten in einer MOTOR-Datei und 25 in einer
-  SERVO-Datei: der vierte überwachende Kanal und alle weiteren stehen in
-  keiner Datei. LOGS liest höchstens 25 Spalten.
+- Höchstens 3 Gruppen, 25 Spalten in einer MOTOR-Datei und 26 in einer
+  SERVO-Datei, `info` mitgezählt: der vierte überwachende Kanal und alle
+  weiteren stehen in keiner Datei. LOGS liest höchstens 26 Spalten,
+  Firmware 0.23.17 und älter 25.
 - Eine Datei mit weniger Gruppen endet früher mit `source`: 14 + 3 x
-  Gruppen + 1 Spalten, in einer SERVO-Datei 1 mehr. Ohne überwachenden Kanal hat die
+  Gruppen + 2 Spalten, in einer SERVO-Datei 1 mehr. Ohne überwachenden Kanal hat die
   Datei keine Kanalspalten.
 
 Die Gruppe für den Kanal am Ziel des Servotesters stammt aus dem
@@ -1927,7 +1931,7 @@ der Reihenfolge der Nutzung.
 | LIVE | LIVE | das Zifferblatt, den Drehknopf, die Anzeigen SOLL-PULSBREITE, GEMESSEN und STROM; OPTIONEN öffnet das Servoprofil |
 | SWEEP | SWEEP | das Zifferblatt mit dem Sweep; OPTIONEN öffnet KURVE, TEMPO, BEREICH und HALTEZEIT |
 | TEST | TEST | das Feld AUTOMATISCHER TEST, die Grenzen von SUPPLY, der Verlauf und das Feld des Laufs, die Karte BEREIT an der Stelle des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet die Liste des automatischen Tests |
-| LIMIT RUN | LIMIT RUN | Modus- und Ausgangszeile, UNTERES ENDE und OBERES ENDE und die Zustandszeilen auf der linken Karte, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet MODUS, SERVO, SERVOPULSE, STROM, Warten vor PWM, den Namen des Prüflings und die Testaufzeichnungen ([Starten](Servo-de.md#starten)) |
+| LIMIT RUN | LIMIT RUN | Modus- und Ausgangszeile, UNTERES ENDE und OBERES ENDE und die Zustandszeilen auf der linken Karte, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet MODUS, SERVO, SERVOPULSE, STROM, Warten vor PWM, den Namen des Prüflings, die Notiz zum Lauf und die Testaufzeichnungen ([Starten](Servo-de.md#starten)) |
 | RUDER | RUDER | Ausschlag in ° und mm, LÄNGE, 1000us, ZENTRIEREN, 2000us, NULLPUNKT und MAX LÖSCHEN, -10us und +10us ohne antwortenden Drehknopf ([Ruderausschlag](Servo-de.md#ruderausschlag)) |
 | RUDER AUTO | RUDER AUTO | das Feld von AUTO statt LÄNGE und der Fahrtasten, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste ([AUTO-Endpoints](Servo-de.md#auto-endpoints)) |
 | KST | SERVO > KST | die Programmierung für KST und Chaservo über dem linken Feld, die Karte BEREIT statt des Ausgangsfelds, WERTE SCHREIBEN in der Fußleiste ([Programmierer](#programmierer)) |
@@ -2981,18 +2985,18 @@ Eine Änderung gilt bis SPEICHERN als nicht gespeichert.
 
 | Bildschirm | OPTIONEN öffnet |
 | --- | --- |
-| der Hub | das Servoprofil: AUSGANG mit TYP, PULSRATE, PULS MIN, PULS MITTE, PULS MAX, TRIMMUNG, WEG, UMKEHREN und HV-SERVO; PRÜFLING mit NAME und BERICHT |
+| der Hub | das Servoprofil: AUSGANG mit TYP, PULSRATE, PULS MIN, PULS MITTE, PULS MAX, TRIMMUNG, WEG, UMKEHREN und HV-SERVO; PRÜFLING mit NAME, Notiz zum Lauf und BERICHT |
 | LIVE | das Servoprofil, die Liste des Hubs; darunter WINKEL mit SENSOR-MITTE |
 | SWEEP | KURVE, TEMPO, Bereich und Haltezeit |
-| TEST | SPANNUNGSSTUFEN: Stufe 4.8V, Stufe 6.0V, HV-SERVO, Stufe 7.4V, Stufe 8.4V; BROWN-OUT: Brown-out, Brown-out Mindestspannung, Brown-out-Schritt; GRENZWERTE: Blockierschwelle, Ruhestrom max, Haltestrom max, Stellzeit max; DAUER UND ZEITEN: Länge nach, Testzeit, Bewegungen, Haltezeit, Einschwingzeit; BEREICH: Bereich, AUSGANG; PRÜFLING: Name des Prüflings, Bericht |
-| LIMIT RUN | MODUS, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, STROM, Warten vor PWM, Name des Prüflings und Testaufzeichnungen; ein Lauf programmiert mit 5,0V ([Servo](Servo-de.md#die-50v-des-laufs)). STROM ist SET A von SUPPLY, `SET A 2.00A`, ein Tipp sein Tastenfeld; `--` und gesperrt ohne PD mini ([Servo](Servo-de.md#die-strombegrenzung-des-laufs)) |
+| TEST | SPANNUNGSSTUFEN: Stufe 4.8V, Stufe 6.0V, HV-SERVO, Stufe 7.4V, Stufe 8.4V; BROWN-OUT: Brown-out, Brown-out Mindestspannung, Brown-out-Schritt; GRENZWERTE: Blockierschwelle, Ruhestrom max, Haltestrom max, Stellzeit max; DAUER UND ZEITEN: Länge nach, Testzeit, Bewegungen, Haltezeit, Einschwingzeit; BEREICH: Bereich, AUSGANG; PRÜFLING: Name des Prüflings, Notiz zum Lauf, Bericht |
+| LIMIT RUN | MODUS, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, STROM, Warten vor PWM, Name des Prüflings, Notiz zum Lauf und Testaufzeichnungen; ein Lauf programmiert mit 5,0V ([Servo](Servo-de.md#die-50v-des-laufs)). STROM ist SET A von SUPPLY, `SET A 2.00A`, ein Tipp sein Tastenfeld; `--` und gesperrt ohne PD mini ([Servo](Servo-de.md#die-strombegrenzung-des-laufs)) |
 | RUDER | LÄNGE, SENSOR-MITTE und WINKELQUELLE |
-| RUDER AUTO | die Ziele, MARGIN, TOLERANZ, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, WINKELQUELLE, STROM, Warten vor PWM, Name des Prüflings und Testaufzeichnungen; STROM wie bei LIMIT RUN |
+| RUDER AUTO | die Ziele, MARGIN, TOLERANZ, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, WINKELQUELLE, STROM, Warten vor PWM, Name des Prüflings, Notiz zum Lauf und Testaufzeichnungen; STROM wie bei LIMIT RUN |
 | SERVO > KST | KST EXPERT MODE, eine Ebene tiefer |
 | HITEC | SERIE und EMPFANG |
 
 Bereich und Haltezeit sind je eine Einstellung auf SWEEP und TEST, Name
-des Prüflings und Bericht die des Hubs, Testaufzeichnungen die von SETUP >
+des Prüflings, Notiz zum Lauf und Bericht die des Hubs, Testaufzeichnungen die von SETUP >
 SD CARD: eine Änderung in einer Liste lesen alle anderen Listen, Karten
 und Läufe.
 
@@ -3080,6 +3084,7 @@ Die 56px hohen Tasten 2s HALTEN ZUM ÜBERNEHMEN und ABBRECHEN enden 8px
 | LIMIT RUN > OPTIONEN | SERVO | KST/CHASERVO, HITEC D-SERIE oder HITEC KLASSISCH; der Programmierer, an den die Sitzungen des Laufs gehen. Die eigene gespeicherte Einstellung des Endlagenlaufs, dieselbe wie die Zeile SERVO der Karte BEREIT |
 | LIMIT RUN > OPTIONEN | SERVOPULSE | BEHALTEN oder 1000-2000; gesperrt, solange PORT nicht auf PROG-PORT oder SERVO auf HITEC steht. 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos in der Lesesitzung des Laufs, vor der Suche, auf 1000,0 und 2000,0us. Vorgabe BEHALTEN; für die Sitzung |
 | Liste des Hubs | NAME | der Prüfling, bis 23 Zeichen, für den Bericht |
+| Liste des Hubs | Notiz zum Lauf | der Zustand des Laufs, bis 23 Zeichen, `greased` oder `200g on the horn`: steht in der Spalte `info` der Datei jedes Laufs, bis sie geändert wird ([Logs](#logs)); vorgegeben leer |
 | Liste des Hubs | BERICHT | ein Textbericht neben der Aufzeichnung jedes Tests |
 | Listen von LIVE und RUDER | SENSOR-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert seit dem aktuellen Verbindungsaufbau (keinen nach einem Verbindungsverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, SENSORS, AS5600-Mitte |
 | SERVO > KST > OPTIONEN | KST EXPERT MODE | ob der [Programmierer für KST- und Chaservo-Servos](ServoProgrammer-de.md#expertenmodus) DEAD BAND, BOOST, STRETCH, PAIRING LÖSEN und den Reiter GESPERRT zeigt; standardmäßig AUS, EIN nach 2s Halten (ein kürzerer Druck zeigt den Hinweis auf dem Band), AUS mit einem Tipp. Bleibt über einen Neustart erhalten |
@@ -3632,12 +3637,13 @@ eine Zeile alle 50ms, solange Auto-Aufzeichnungen unter [Setup](#setup) > SD CAR
 auf EIN steht:
 
 ```
-time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);energy (Wh);source
+time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);energy (Wh);source;info
 ```
 
 Fehlende Messwerte bleiben als Zellen leer. `mode` ist CV, CC oder OFF,
 bei nicht antwortendem Netzteil leer. `source` ist `measured` für
-PD-mini-Messwerte und `model` für das Panelmodell.
+PD-mini-Messwerte und `model` für das Panelmodell. `info` hält die Notiz
+zum Lauf, das Datum und die Firmware in der ersten Zeile ([Logs](#logs)).
 
 Prüfstandsläufe haben Vorrang bei der Aufzeichnung: ARM während eines
 Netzteillaufs schließt dessen Datei. Ist der Ausgang beim nächsten SAFE
@@ -3908,7 +3914,33 @@ Ordner Auto-Aufzeichnungen und Ordner Testaufzeichnungen:
 | `BENCH/LOGS` | `SUPPLnnn.CSV` | ein Einschalten des SUPPLY-Ausgangs, solange der Prüfstand SAFE ist |
 | `USER/LOGS` | `ATESTnnn.CSV` | ein AUTOMATISCHER TEST; sein Bericht ist `ATESTnnn.TXT` |
 | `USER/LOGS` | `LIMITnnn.CSV` | ein Lauf von LIMIT RUN, eine Zeile je bewerteter Stellung ([Format](Servo-de.md#eingebaute-mechanische-endlage)); sein Bericht ist `LIMITnnn.TXT`, allein bei einem Lauf, der keine Stellung bewertet hat, oder einem von Firmware 0.23.17 und älter |
-| `USER/LOGS` | `RUDDRnnn.CSV` | ein Lauf von RUDER AUTO, eine Zeile je Messung, 12 Spalten (9 von Firmware 0.23.17 und älter); sein Bericht ist `RUDDRnnn.TXT` |
+| `USER/LOGS` | `RUDDRnnn.CSV` | ein Lauf von RUDER AUTO, eine Zeile je Messung, 13 Spalten, `info` die letzte (9 von Firmware 0.23.17 und älter); sein Bericht ist `RUDDRnnn.TXT` |
+
+Jede dieser sechs Arten endet mit einer Textspalte `info`: der eigenen
+Beschreibung des Laufs in der ersten Datenzeile, in jeder weiteren Zeile
+leer. Sie hält Paare `key=value`, verbunden mit `&`, in der Reihenfolge der
+Tabelle:
+
+```text
+dut=MG90S&note=greased&date=2026-11-24T10:31&fw=0.23.18
+```
+
+| Schlüssel | Wert | Dateien |
+| --- | --- | --- |
+| `dut` | Name des Prüflings aus den SERVO-Listen, bis 23 Zeichen | `SERVO`, `ATEST`, `LIMIT`, `RUDDR` |
+| `note` | Notiz zum Lauf aus den SERVO-Listen, bis 23 Zeichen | alle sechs |
+| `date` | das lokale Datum und die Uhrzeit des Panels beim Start des Laufs, `YYYY-MM-DDTHH:MM`; fehlt, solange die Uhr nicht gestellt ist | alle sechs |
+| `fw` | die Firmwareversion des Panels | alle sechs |
+| `servo` | der TYP des Profils | `ATEST`, `LIMIT`, `RUDDR` |
+| `meter` | das Messgerät des Stroms: ein INA3221-Kanal, `PDMINI` oder `MODEL` | `ATEST`, `LIMIT`, `RUDDR` |
+| `angle` | die Winkelquelle, `AS5600` oder die IMU mit ihrer Achse | `ATEST`, `LIMIT`, `RUDDR`, mit einer Winkelquelle |
+
+Ein Schlüssel mit leerem Wert fehlt. In einem Wert wird jedes `&`, `=`, `;`,
+`"` und Steuerzeichen als `_` geschrieben: `MG90S "2"` liest sich zurück als
+`MG90S _2_`. LOGS nimmt `info` als Textspalte und zeichnet nichts davon. Eine
+Datei von Firmware 0.23.17 und älter hat keine Spalte `info`. LOGS von
+Firmware 0.23.17 liest jede neue Datei außer einer SERVO-Datei mit drei
+INA3221-Gruppen: 26 Spalten, eine mehr als die 25, die es nimmt.
 
 Der Name folgt der Seite, die ARM angefordert hat: Gas-Ausgänge ergeben
 `MOTORnnn`, Ruder `SERVOnnn`. Ein IOmcu vor Protokoll 4.18 aktiviert bei
