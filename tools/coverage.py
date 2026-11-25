@@ -327,6 +327,7 @@ TRACKED = [
     "protocols/openyge/openyge_map.c",
     "protocols/openyge/openyge_guard.c",
     "protocols/openyge/openyge_session.c",
+    "protocols/openyge/openyge_file.c",
     "shared/esc/esc_json.c",
     "shared/esc/esc_json_lex.c",
     "shared/esc/esc_registry.c",

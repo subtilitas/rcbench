@@ -491,6 +491,7 @@ Gebaut, auf dem Host getestet, nicht eingebunden:
       openyge_map.c          the fields of section 5.3: access, writable values
       openyge_guard.c        the gate every outgoing frame passes
       openyge_session.c      boot wait, listen, takeover, read, write, verify
+      openyge_file.c         the settings file: write, read, load check
 
 Der Decoder zählt Frames, CRC-Fehler, Resyncs und getrennt davon Frames, deren
 CRC stimmte, deren Aufbau aber unmöglich war. Nichts wird über den
@@ -512,6 +513,55 @@ bricht ohne gesendeten Frame ab, wenn sie abweicht. Nach den Schreibzugriffen
 liest es die ganze Tabelle erneut und vergleicht sie mit dem Ziel.
 Pin-Treiber, Link-Pages und Bildschirme sind nicht gebaut, daher führt
 keine der beiden Platinen die Session aus.
+
+### 9.1 Einstellungsdatei
+
+`openyge_file.c` schreibt eine gelesene Tabelle in eine Textdatei, liest
+sie zurück und hält sie gegen die zuletzt gelesene Tabelle. Das erste
+Schreiben einer Session sichert die Tabelle nach
+`BENCH/YGE/CONF/YGE001-<type>.TXT`, mit dem Typcode aus Index 11 im Namen
+(`YGE001-5712.TXT`, Nummern 001 bis 999). Format 1:
+
+    YGE ESC settings, format 1
+    Type: 5712 165 HVT
+    Firmware: 1.03555
+    Serial: 4660
+    Count: 32
+    00 PARAMETER COUNT = 32
+    01 ESC MODE = 2
+    ...
+    31 RPM SETPOINT = 0
+    checksum 1A2B3C4D
+
+- `Type` ist Index 11, mit dem Modellnamen aus Abschnitt 5.3, wenn der
+  Code einen hat. `Firmware` ist Index 12-13 als u32 / 100000 mit 5
+  Nachkommastellen. `Serial` ist Index 14-15 als u32. `Count` ist Index 0,
+  16 bis 64.
+- Eine Zeile je Index von 0 bis count − 1: 2 Ziffern, der Schlüssel des
+  Felds aus der Map (`RAW` ab Index 32), ` = `, der Wert 0 bis 65535 dezimal.
+- Zeichen 0x20 bis 0x7E, höchstens 64 je Zeile, LF (line feed) oder CR LF
+  (carriage return, line feed) auf jeder Zeile, höchstens 4620B je Datei.
+- Die Prüfsumme ist CRC-32 (IEEE 802.3: Polynom 0x04C11DB7 reflektiert,
+  Start 0xFFFFFFFF, Endinversion) über alle Zeilen davor, jedes Zeilenende
+  als ein LF gezählt, in 8 hexadezimalen Großbuchstaben-Ziffern.
+
+Der Parser lehnt ab, mit festem Code und der Zeile: einen Text über 4620B
+(2), einen anderen Kopf (3), eine Version außerhalb 1 bis 999 (4) oder
+über 1 (5), einen Text ohne Prüfsummenzeile (6), LF und CR LF in einer
+Datei (7), eine Zeile außer Form (8), eine Anzahl außerhalb 16 bis 64
+oder eine andere Zahl von Indexzeilen (9), eine abweichende Prüfsumme
+(10), eine Zeile hinter der Prüfsumme (11), einen Schlüssel, der nicht
+der der Map ist, oder eine Kopfzeile, die von ihren Indizes abweicht (12),
+und eine letzte Zeile `edited` (13). Eine geänderte Datei hat keine
+Prüfsumme, die sie hält; daher lädt keine bearbeitete Datei.
+
+Ein Laden übernimmt aus der Datei die Indizes, die die Map mit CHECK oder
+edit kennzeichnet, von Index 26 nur Bit 0 und 1, und behält jeden anderen
+Wert des ESC. Es lehnt eine Datei eines anderen Typcodes oder einer
+anderen Anzahl ab, und einen Entwurf, den der Guard ablehnt: Der Entwurf
+wird von `oy_guard_approve()` auf einer Kopie des Guards beurteilt, daher
+gibt ein Laden nie einen Entwurf, den der Guard stoppen würde, und gibt
+keinen frei.
 
 Offene Entscheidung: welche ESC-Protokolle außer OpenYGE unterstützt werden.
 Das Ausgangsmaterial steht neben Hobbywing, Kontronik, Scorpion, OMP, ZTW,

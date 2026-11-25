@@ -50,3 +50,9 @@ protocols/kst/README.md: `Max. Duty = 10 %`
 shared/esc/profiles/yge-rc-setup.json: "name": "YGE 7 S"
 shared/esc/profiles/yge-rc-setup.json: "name": "YGE 8 S"
 shared/esc/profiles/yge-rc-setup.json: "name": "YGE 12 S"
+
+# The settings file of programming for YGE ESCs, quoted as
+# openyge_file.c writes it: index 31's key is RPM SETPOINT.
+docs/OpenYGE.md: 31 RPM SETPOINT = 0
+docs/OpenYGE-de.md: 31 RPM SETPOINT = 0
+protocols/openyge/include/openyge_file.h: 31 RPM SETPOINT = 0
