@@ -48,8 +48,20 @@ history is in git.
   park the line and switch the PD mini and PROG_SUPPLY off at once, also in
   a write. From OPEN to the give the bank does not arm, and KST, HITEC,
   ESC_WIRE and YGE_PROG exclude each other on every port. The bench
-  console's `yge` drives the page in the IOMCU_CONSOLE build. The panel
-  sends nothing to it yet ([Programming for YGE ESCs](docs/LinkYge.md)).
+  console's `yge` drives the page in the IOMCU_CONSOLE build
+  ([Programming for YGE ESCs](docs/LinkYge.md)).
+- Programming for YGE ESCs, the panel's half of the pages: a pin the page
+  holds at the first read after a panel restart is closed, again every
+  1000ms while the page answers `WRITING` or `NOT_BACK`. While a pin is
+  held, by the panel or the bench console, ARM is refused with the ESC
+  programmer's alert and the band's SAFE chip names the port. A `FAULT` or
+  `NOT_BACK` on the page, or 10 failed reads of it over a hold, is an
+  error: every output off. Every stop the panel latches is the page's
+  `STOP`. The session model behind the coming screens: CONNECT as OPEN,
+  ENTER and READ; WRITE refused before any frame for a draft the guard
+  refuses; the first write of a session saves the backup
+  `YGE001-<type>.TXT` first, and without a card keeps the old values in
+  RAM only and says so ([Programming for YGE ESCs](docs/LinkYge.md#the-panels-half)).
 - Programming for YGE ESCs, the ESC simulator for the station Pi:
   `testbench/ygesim/ygesim.py` answers `TELE_REQ` and `WRITE_PARAM_REQ` on
   the Pi's UART (115200 baud 8N1, TX and RX joined on one wire, its own

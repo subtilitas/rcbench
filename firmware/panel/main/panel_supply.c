@@ -1117,8 +1117,9 @@ void prog_supply_service(void)
 
 /**
  * @brief The port a programmer session holds the ports' 5V with, for the
- *        PROG 5V box: the KST session's, else the Hitec page's; some port
- *        while the page says one holds it and neither session does.
+ *        PROG 5V box: the KST session's, else the Hitec page's, else the
+ *        YGE_PROG page's; some port while the page says one holds it and no
+ *        session does.
  * @return 0 to 3, PROG5V_HELD_SOME or PROG5V_HELD_NONE
  */
 static uint8_t prog5v_held_port(void)
@@ -1127,7 +1128,8 @@ static uint8_t prog5v_held_port(void)
     kst_link_readout(&s_kst_link, &rd);
     return prog5v_box_held_port(kst_prog_port_taken(&rd) ? (int)rd.port_no
                                                          : -1,
-                                hitec_taken_port(),
+                                hitec_taken_port() >= 0 ? hitec_taken_port()
+                                                        : yge_taken_port(),
                                 s_prog_taken
                                 || prog_supply_link_port(&s_psup_link));
 }

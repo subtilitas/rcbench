@@ -508,6 +508,9 @@ ASSERTED = {
         "shared/outputs/yge_port.c": (
             "LINK_YD_COUNT * 2u == OPENYGE_MAX_PARAMS",
         ),
+        "shared/bench/include/yge_link.h": (
+            "YGE_LINK_VALUES_MAX == OPENYGE_MAX_PARAMS",
+        ),
     },
     "passthru": {
         "shared/outputs/pass_page.c": (
