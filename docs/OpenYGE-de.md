@@ -513,7 +513,11 @@ bricht ohne gesendeten Frame ab, wenn sie abweicht. Nach den Schreibzugriffen
 liest es die ganze Tabelle erneut und vergleicht sie mit dem Ziel.
 Link-Pages und Bildschirme sind nicht gebaut, daher führt keine der
 beiden Platinen die Session aus. Der Pin-Treiber ist gebaut
-(Abschnitt 9.2).
+(Abschnitt 9.2). Auf dem Pi der Station spielt
+[`testbench/ygesim/ygesim.py`](../testbench/ygesim/README.md) einen ESC
+am UART: 32 Parameter, Schreibzugriffe gespeichert, und die Modi
+`normal`, `silent`, `late` (250ms), `crc` (10%), `seq`, `legacy` und
+`count33`, die Eingaben des Stationsschritts H2.
 
 ### 9.1 Einstellungsdatei
 

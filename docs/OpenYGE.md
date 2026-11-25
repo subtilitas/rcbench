@@ -489,7 +489,11 @@ marks CHECK or edit, within their Writable values. A write reads the table
 again first and stops with nothing sent when it differs. After the writes
 it reads the whole table again and compares it with the target. The link
 pages and the screens are not built, so neither board runs the session.
-The pin driver is built (section 9.2).
+The pin driver is built (section 9.2). On the station Pi,
+[`testbench/ygesim/ygesim.py`](../testbench/ygesim/README.md) plays an
+ESC on the UART: 32 parameters, writes stored, and the modes `normal`,
+`silent`, `late` (250ms), `crc` (10%), `seq`, `legacy` and `count33`,
+the inputs of station step H2.
 
 ### 9.1 Settings file
 
