@@ -72,6 +72,11 @@ static void copy_cells(char *dst, const char *s, int cells)
         cells--;
         len = gfx_text_prefix(s, cells);
     }
+    /* gfx_text_prefix() stops at the NUL; the bound states it here. */
+    const size_t n = strlen(s);
+    if (len > n) {
+        len = n;
+    }
     while (len > 0u && s[len - 1u] == ' ') {
         len--;
     }
