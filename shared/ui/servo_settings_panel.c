@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "esc_wire_panel.h"
+#include "prog_registry.h"
 #include "kst_panel.h"
 #include "outputs.h"
 #include "servo_angle_pick.h"
@@ -163,7 +163,7 @@ static void set_point_typed(int target, float typed)
     /* A programming port that took the supply while the keypad stood:
      * SUPPLY's own keypad takes nothing then either. */
     if (supply_screen_port_held()) {
-        ui_action_refused(esc_wire_panel_holds_port()
+        ui_action_refused(prog_reg_esc_holds()
                               ? TR(SUP_HELD_REFUSED_ESC)
                               : TR(SUP_HELD_REFUSED));
         close_alone();

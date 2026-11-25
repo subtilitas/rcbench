@@ -38,6 +38,7 @@ Reference
 - [The OpenYGE protocol](OpenYGE.md)
 - [ESC programming profiles](EscProfiles.md)
 - [ESC signal wire](EscWire.md)
+- [YGE ESC programming](YgeProgramming.md)
 - [Performance](Performance.md)
 - [Interface language](Language.md)
 
@@ -79,5 +80,6 @@ Referenz
 - [Das OpenYGE-Protokoll](OpenYGE-de.md)
 - [ESC-Programmierprofile](EscProfiles-de.md)
 - [ESC-Signalleitung](EscWire-de.md)
+- [YGE-ESC-Programmierung](YgeProgramming-de.md)
 - [Performance](Performance-de.md)
 - [Sprache der Oberfläche](Language-de.md)

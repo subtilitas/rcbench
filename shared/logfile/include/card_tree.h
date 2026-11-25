@@ -105,6 +105,12 @@ extern "C" {
 #define CARD_ESCW_CONF   "BENCH/ESCW/CONF"
 
 /**
+ * @brief YGE ESC settings files and the backups of programming for YGE ESCs
+ *        (OY_FILE_STEM): YGE001-5712.TXT for type code 5712.
+ */
+#define CARD_YGE_CONF    "BENCH/YGE/CONF"
+
+/**
  * @brief The balance node's solutions, BALANCE.CSV: a row each time the
  *        runs of MOTOR & ESC > BALANCE are solved.
  */
@@ -208,8 +214,8 @@ typedef enum {
     CARD_FOLDER_RESERVED,  /**< a device name: CON, PRN, AUX, NUL, COM1 to
                                 COM9, LPT1 to LPT9                         */
     CARD_FOLDER_BENCH,     /**< the bench's own: BENCH/ESC, BENCH/KST,
-                                BENCH/HITEC, BENCH/ESCW, BENCH/BALANCE,
-                                BENCH/SETUP and below                      */
+                                BENCH/HITEC, BENCH/ESCW, BENCH/YGE,
+                                BENCH/BALANCE, BENCH/SETUP and below       */
 } card_folder_t;
 
 /**

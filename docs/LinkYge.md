@@ -115,8 +115,8 @@ the page's line, the PD mini and PROG_SUPPLY are all the IOmcu has on.
 
 `shared/bench/yge_link.c` sends the requests and follows them on every
 panel; `shared/bench/yge_prog.c` and `yge_prog_file.c` hold the session's
-flow, its refusals and its backup. The screens are not built yet: the panel
-follows a page the bench console holds, and drives no session of its own.
+flow, its refusals and its backup. The screens are
+[YGE ESC programming](YgeProgramming.md) under MOTOR & ESC > PROGRAM.
 
 | Event | What the panel does |
 |---|---|
@@ -161,8 +161,6 @@ counted.
 - **A stop in a write.** Condition: a STOP, a stop edge, an error or a link loss
   between a write's first frame and the end of its read after. The table the
   ESC holds is not known until the next read.
-- **No screens.** The panel follows the page and closes a hold it finds
-  after a restart; the bench console's `yge` drives a session.
 - **A pin held by the bench console goes with a panel restart.** Condition:
   `yge open` on the console, then a panel restart. The panel cannot tell it
   from its own hold.

@@ -20,7 +20,7 @@ extern "C" {
 #endif
 
 /** @brief The most tabs one row holds. */
-#define UI_TABS_MAX 6
+#define UI_TABS_MAX 7
 
 /** @brief A row of tabs: their labels, where they are, which is selected
  *         and the press under way. */

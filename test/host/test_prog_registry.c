@@ -16,6 +16,7 @@
 #include "link_pages.h"
 #include "esc_wire_panel.h"
 #include "prog_registry.h"
+#include "yge_panel.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 
@@ -165,10 +166,16 @@ TEST_CASE(the_shipped_table_is_sound_and_lists_the_kst_programmer)
     CHECK_EQ(hitec->needs_capability, (uint16_t)LINK_CAP_SERVO_PWM);
     CHECK(hitec->page_set == &hitec_panel_pages);
     CHECK(!hitec->full_width);
-    /* MOTOR & ESC's list: ESC STICK and the signal wire. */
+    /* MOTOR & ESC's list: ESC STICK, the signal wire and YGE. */
     prog_list_build(&l, rows, n, PROG_DEV_MOTOR, UI_WB_PROGRAM, NULL);
-    CHECK_EQ(l.total, 2u);
-    CHECK_EQ(l.count, 2u);
+    CHECK_EQ(l.total, 3u);
+    CHECK_EQ(l.count, 3u);
+    const prog_reg_row_t *yge = &rows[l.e[2].row];
+
+    CHECK_EQ(yge->needs_capability, (uint16_t)LINK_CAP_YGE);
+    CHECK_EQ(yge->port, PROG_REG_NO_PORT);
+    CHECK(yge->page_set == &yge_pages);
+    CHECK(yge->full_width);
     const prog_reg_row_t *wire = &rows[l.e[1].row];
 
     CHECK_EQ(wire->needs_capability, (uint16_t)LINK_CAP_PROGRAM);
@@ -274,7 +281,8 @@ TEST_CASE(a_list_over_its_maximum_fails_the_check)
  * A device's sessions: each page set its rows open, once, in the table's
  * order, and none of the other device's; a row that opens a set full
  * width makes the set full width.  The shipped table: SERVO opens the KST
- * session and the Hitec one, MOTOR & ESC ESC STICK, full width.
+ * session and the Hitec one, MOTOR & ESC ESC STICK, the signal wire and
+ * YGE, full width.
  */
 TEST_CASE(a_devices_sessions_are_each_listed_once)
 {
@@ -284,9 +292,11 @@ TEST_CASE(a_devices_sessions_are_each_listed_once)
     CHECK(set[0] == &kst_panel_pages);
     CHECK(set[1] == &hitec_panel_pages);
     CHECK(!prog_reg_full_width(&hitec_panel_pages));
-    CHECK_EQ(prog_reg_sets(PROG_DEV_MOTOR, set), 2);
+    CHECK_EQ(prog_reg_sets(PROG_DEV_MOTOR, set), 3);
     CHECK(set[0] == &esc_stick_pages);
     CHECK(set[1] == &esc_wire_pages);
+    CHECK(set[2] == &yge_pages);
+    CHECK(prog_reg_full_width(&yge_pages));
     CHECK(prog_reg_full_width(&esc_wire_pages));
     CHECK(prog_reg_full_width(&esc_stick_pages));
     CHECK(!prog_reg_full_width(&kst_panel_pages));

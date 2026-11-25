@@ -38,6 +38,7 @@
 #include "files_screen.h"
 #include "fm_logname.h"
 #include "esc_card.h"
+#include "yge_card.h"
 #include "esc_link.h"
 #include "esc_prog.h"
 #include "yge_link.h"
@@ -272,6 +273,9 @@ typedef struct {
     hitec_prog_feed_t hitec;
     /** @brief What the ESC programmer's model is fed; see esc_publish(). */
     esc_prog_feed_t esc;
+    /** @brief What the model of programming for YGE ESCs is fed; see
+     *         yge_publish(). */
+    yge_prog_feed_t yge;
     /** @brief The IOmcu's update; see cu_service(). */
     cu_snap_t     cu;
 } panel_snap_t;
@@ -1472,6 +1476,16 @@ void esc_publish(esc_prog_feed_t *f);
 
 /** @brief The YGE_PROG page's module (4.42); control task only. */
 extern yge_link_t      s_yge_link;
+/** @brief The gate the commands of programming for YGE ESCs are claimed at. */
+extern yge_prog_gate_t s_yge_gate;
+/** @brief Those commands, app_main -> control task. */
+extern QueueHandle_t   s_yge_q;
+/** @brief Those commands; control task, before yge_pass(). */
+void yge_commands(void);
+/** @brief What the model of programming for YGE ESCs is fed; under the
+ *         snapshot's lock.
+ *  @param f receives the feed */
+void yge_publish(yge_prog_feed_t *f);
 /** @brief One pass of the YGE_PROG page's module and a stop; control task,
  *         every pass.
  *  @param link_up whether the IOmcu answers */
@@ -2143,6 +2157,22 @@ extern atomic_uint     s_esc_card_sent;
 extern atomic_uint     s_esc_card_answered;
 /** @brief Runs the request handed over, on the log task. */
 void esc_card_serve(void);
+/** @brief Programming for YGE ESCs in the render loop: fed, its commands
+ *         queued, and its card requests handed to the log task. */
+void yge_ui_service(void);
+/** @brief The card request of programming for YGE ESCs, filled by the
+ *         render loop. */
+extern yge_card_req_t  s_yge_card_req;
+/** @brief The mount it was taken under. */
+extern unsigned        s_yge_card_mount;
+/** @brief The answer, filled by the log task. */
+extern yge_card_done_t s_yge_card_done;
+/** @brief Requests handed over. */
+extern atomic_uint     s_yge_card_sent;
+/** @brief Requests answered. */
+extern atomic_uint     s_yge_card_answered;
+/** @brief Runs the request handed over, on the log task. */
+void yge_card_serve(void);
 extern unsigned s_tq_lost;  /**< Touch events lost from s_touch_q, counted. */
 /**
  * @brief Whether the supply's output is on, or an ON for it waits in the

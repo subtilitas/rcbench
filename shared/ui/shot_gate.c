@@ -17,6 +17,7 @@
 #include "link_pages.h"
 #include "servo_screen.h"
 #include "supply_screen.h"
+#include "yge_panel.h"
 
 void shot_facts_read(const shot_bench_t *b, shot_facts_t *out)
 {
@@ -34,10 +35,10 @@ void shot_facts_read(const shot_bench_t *b, shot_facts_t *out)
     out->prog5v_off = !b->prog5v_on && !b->prog5v_coming;
     out->port_free = !b->hitec_holds && !supply_screen_port_held()
                      && !kst_panel_holds_port() && !hitec_panel_holds_port()
-                     && esc_wire_panel_idle();
+                     && esc_wire_panel_idle() && yge_panel_idle();
     out->no_session = !kst_panel_is_open() && !hitec_panel_is_open()
                       && esc_stick_panel_stage() == 0
-                      && esc_wire_panel_idle();
+                      && esc_wire_panel_idle() && yge_panel_idle();
     out->no_program_io = !b->card_job_out;
     out->no_motion = !servo_screen_sweeping() && !servo_screen_paused();
     out->no_test = !b->testing && !servo_screen_testing()

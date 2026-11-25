@@ -1681,12 +1681,15 @@ abgelehnt, bleiben alle Änderungen ungespeichert, und SPEICHERN zeigt
 
 ![Die Liste von PROGRAMMIEREN](img/de/motor-program.png)
 
-PROGRAMMIEREN zeigt zwei Verfahren zur ESC-Programmierung aus derselben
+PROGRAMMIEREN zeigt drei Verfahren zur ESC-Programmierung aus derselben
 Tabelle wie SERVO (`shared/ui/prog_registry.c`,
 [Programmierer](#programmierer)). `ESCs per Gasknüppel` gehört zur Gruppe
 STICK-MENÜ. Rechts steht `GASAUSGANG >`: Das Verfahren verwendet die
 Gas-Pins, keinen Programmierport, und benötigt keine Fähigkeit des IOmcu.
-Die zweite Zeile öffnet die unten beschriebene Signalleitungs-Sitzung.
+Die zweite Zeile öffnet die unten beschriebene Signalleitungs-Sitzung. Die
+dritte, `YGE-ESCs` in TELEMETRIEKABEL, öffnet die
+[YGE-ESC-Programmierung](YgeProgramming-de.md); sie bleibt gedimmt, bis der
+IOmcu `LINK_CAP_YGE` meldet.
 
 Solange auf dem Prüfstand, wie er ist, kein Lauf starten kann, nennt die
 Zeile den ersten Grund anstelle von `GASAUSGANG`, in der Warnfarbe, und

@@ -1,7 +1,10 @@
 /**
  * @file
- * @brief The ESC programmer's files on the card: the log task runs what the render
- *        loop handed over (esc_card.h, panel.h), and replaces the record of a write.
+ * @brief The ESC programmers' files on the card: the log task runs what the
+ *        render loop handed over (esc_card.h, yge_card.h, panel.h), and
+ *        replaces the record of a write of the signal wire.  One store reaches
+ *        a folder: CARD_ESCW_CONF for the signal wire, CARD_YGE_CONF for
+ *        programming for YGE ESCs.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -15,14 +18,24 @@
 
 #include "card_tree.h"
 #include "esc_card.h"
+#include "openyge_file.h"
 #include "panel.h"
 #include "servo_store.h"
 #include "storage.h"
+#include "yge_card.h"
 
-/** @brief The mount point, the folder, a name of the store and its
+/** @brief The mount point, the longer folder, a name of the store and its
  *         separators. */
 #define PATH_MAX_LEN (sizeof(STORAGE_MOUNT_POINT) + sizeof(CARD_ESCW_CONF) \
                       + STORAGE_NAME_MAX + 2u)
+
+_Static_assert(sizeof(CARD_YGE_CONF) <= sizeof(CARD_ESCW_CONF),
+               "PATH_MAX_LEN holds a path of either folder");
+
+/** @brief The signal wire's folder, a store's context. */
+static char s_escw_dir[] = CARD_ESCW_CONF;
+/** @brief The folder of programming for YGE ESCs, a store's context. */
+static char s_yge_dir[] = CARD_YGE_CONF;
 
 /** @brief The request (panel.h). */
 esc_card_req_t  s_esc_card_req;
@@ -36,35 +49,36 @@ atomic_uint       s_esc_card_sent;
 atomic_uint       s_esc_card_answered;
 
 /**
- * @brief The full path of @p name inside the folder.
+ * @brief The full path of @p name inside a folder.
  *
+ * @param dir      The folder, under the mount point.
  * @param name     The name; "" for the folder itself.
  * @param out      Receives the path.
  * @param out_size Bytes at @p out.
  */
-static void path_of(const char *name, char *out, size_t out_size)
+static void path_of(const char *dir, const char *name, char *out,
+                    size_t out_size)
 {
     if (name[0] == '\0') {
-        snprintf(out, out_size, "%s/%s", STORAGE_MOUNT_POINT,
-                 CARD_ESCW_CONF);
+        snprintf(out, out_size, "%s/%s", STORAGE_MOUNT_POINT, dir);
     } else {
-        snprintf(out, out_size, "%s/%s/%s", STORAGE_MOUNT_POINT,
-                 CARD_ESCW_CONF, name);
+        snprintf(out, out_size, "%s/%s/%s", STORAGE_MOUNT_POINT, dir, name);
     }
 }
 
 /**
- * @brief Whether the folder is there.
+ * @brief Whether a folder is there.
  *
+ * @param dir The folder, under the mount point.
  * @return 1: a folder has its name; 0: nothing has it; -1: the card does
  *         not say, or a file has the name.
  */
-static int dir_state(void)
+static int dir_state(const char *dir)
 {
     char path[PATH_MAX_LEN];
     struct stat st;
 
-    path_of("", path, sizeof(path));
+    path_of(dir, "", path, sizeof(path));
     if (stat(path, &st) == 0) {
         return S_ISDIR(st.st_mode) ? 1 : -1;
     }
@@ -119,7 +133,7 @@ static void walk_entry(const storage_entry_t *entry, void *ctx)
 /**
  * @brief servo_store_io_t.walk over the folder's ".txt" files.
  *
- * @param ctx       Unused.
+ * @param ctx       The folder.
  * @param visit     The store's visit.
  * @param visit_ctx Its context.
  * @return false when the folder does not read to its end.
@@ -127,21 +141,20 @@ static void walk_entry(const storage_entry_t *entry, void *ctx)
 static bool io_walk(void *ctx, servo_store_visit_fn visit, void *visit_ctx)
 {
     files_walk_t w = { .visit = visit, .ctx = visit_ctx };
-    const int state = dir_state();
+    const int state = dir_state(ctx);
 
-    (void)ctx;
     if (state <= 0) {
         /* A folder that does not exist has no entry. */
         return state == 0;
     }
-    return storage_walk(CARD_ESCW_CONF, ".txt", walk_entry, &w, NULL) >= 0;
+    return storage_walk(ctx, ".txt", walk_entry, &w, NULL) >= 0;
 }
 
 /**
  * @brief servo_store_io_t.size, by storage_stat(): stat()'s 32-bit st_size
  *        reads a file of 4GiB and more as a small one.
  *
- * @param ctx  Unused.
+ * @param ctx  The folder.
  * @param name The file.
  * @return Its size; -1 for none.
  */
@@ -150,8 +163,7 @@ static int32_t io_size(void *ctx, const char *name)
     char path[PATH_MAX_LEN];
     storage_stat_t st;
 
-    (void)ctx;
-    path_of(name, path, sizeof(path));
+    path_of(ctx, name, path, sizeof(path));
     if (storage_stat(path, &st) != ESP_OK || st.is_dir
         || st.size > (uint64_t)INT32_MAX) {
         return -1;
@@ -162,7 +174,7 @@ static int32_t io_size(void *ctx, const char *name)
 /**
  * @brief servo_store_io_t.read.
  *
- * @param ctx  Unused.
+ * @param ctx  The folder.
  * @param name The file.
  * @param buf  Receives up to @p cap bytes.
  * @param cap  Bytes at @p buf.
@@ -175,8 +187,7 @@ static int32_t io_read(void *ctx, const char *name, char *buf, size_t cap)
     size_t n;
     bool failed;
 
-    (void)ctx;
-    path_of(name, path, sizeof(path));
+    path_of(ctx, name, path, sizeof(path));
     f = fopen(path, "rb");
     if (f == NULL) {
         return -1;
@@ -191,7 +202,7 @@ static int32_t io_read(void *ctx, const char *name, char *buf, size_t cap)
  * @brief servo_store_io_t.create: the folder made where it is missing, the
  *        file created new, written, committed and closed.
  *
- * @param ctx  Unused.
+ * @param ctx  The folder.
  * @param name The file.
  * @param data Its bytes.
  * @param len  Their count.
@@ -206,10 +217,8 @@ static servo_store_io_result_t io_create(void *ctx, const char *name,
     card_dir_t made;
     int fd;
 
-    (void)ctx;
-    made = dir_state() > 0 ? CARD_DIR_OK
-                           : card_make_dirs(CARD_ESCW_CONF,
-                                            panel_card_make_dir, NULL);
+    made = dir_state(ctx) > 0 ? CARD_DIR_OK
+                              : card_make_dirs(ctx, panel_card_make_dir, NULL);
     if (made != CARD_DIR_OK) {
         /* A file holding a level's name, or a card that takes no folder,
          * is a card that takes no file until it is seen to. */
@@ -217,7 +226,7 @@ static servo_store_io_result_t io_create(void *ctx, const char *name,
                    ? SERVO_STORE_IO_DENIED
                    : SERVO_STORE_IO_ERROR;
     }
-    path_of(name, path, sizeof(path));
+    path_of(ctx, name, path, sizeof(path));
     fd = open(path, O_WRONLY | O_CREAT | O_EXCL, 0664);
     if (fd < 0) {
         return errno == EEXIST   ? SERVO_STORE_IO_EXISTS
@@ -251,7 +260,7 @@ static servo_store_io_result_t io_create(void *ctx, const char *name,
 /**
  * @brief servo_store_io_t.remove.
  *
- * @param ctx  Unused.
+ * @param ctx  The folder.
  * @param name The file.
  * @return SERVO_STORE_IO_OK, SERVO_STORE_IO_DENIED for a card that takes no
  *         change, else SERVO_STORE_IO_ERROR.
@@ -260,8 +269,7 @@ static servo_store_io_result_t io_remove(void *ctx, const char *name)
 {
     char path[PATH_MAX_LEN];
 
-    (void)ctx;
-    path_of(name, path, sizeof(path));
+    path_of(ctx, name, path, sizeof(path));
     if (unlink(path) == 0) {
         return SERVO_STORE_IO_OK;
     }
@@ -270,7 +278,7 @@ static servo_store_io_result_t io_remove(void *ctx, const char *name)
 
 /** @brief The card for esc_card_run(). */
 static const servo_store_io_t k_io = {
-    .ctx = NULL,
+    .ctx = s_escw_dir,
     .stem = EW_FILE_STEM,
     .mounted = io_mounted,
     .walk = io_walk,
@@ -302,8 +310,8 @@ static void record_write(void)
         return;
     }
     if (card_make_dirs(CARD_ESCW_CONF, panel_card_make_dir, NULL) == CARD_DIR_OK) {
-        path_of(EW_FILE_STEM ".NEW", path_new, sizeof(path_new));
-        path_of(EW_FILE_STEM SERVO_STORE_EXT, path, sizeof(path));
+        path_of(s_escw_dir, EW_FILE_STEM ".NEW", path_new, sizeof(path_new));
+        path_of(s_escw_dir, EW_FILE_STEM SERVO_STORE_EXT, path, sizeof(path));
         FILE *f = fopen(path_new, "w");
 
         if (f != NULL) {
@@ -347,4 +355,52 @@ void esc_card_serve(void)
         s_held = false;
     }
     atomic_store(&s_esc_card_answered, sent);
+}
+
+/* ---------------------------------------------- programming for YGE ESCs */
+
+/** @brief The request (panel.h). */
+yge_card_req_t  s_yge_card_req;
+/** @brief The mount it was taken under (panel.h). */
+unsigned        s_yge_card_mount;
+/** @brief The answer (panel.h). */
+yge_card_done_t s_yge_card_done;
+/** @brief Requests handed over (panel.h). */
+atomic_uint     s_yge_card_sent;
+/** @brief Requests answered (panel.h). */
+atomic_uint     s_yge_card_answered;
+
+/** @brief The card for yge_card_run(): BENCH/YGE/CONF, YGE001 to YGE999. */
+static const servo_store_io_t k_yge_io = {
+    .ctx = s_yge_dir,
+    .stem = OY_FILE_STEM,
+    .mounted = io_mounted,
+    .walk = io_walk,
+    .size = io_size,
+    .read = io_read,
+    .create = io_create,
+    .tagged = true,
+    .remove = io_remove,
+};
+
+/**
+ * @brief Run the request of programming for YGE ESCs the render loop handed
+ *        over (panel.h).
+ */
+void yge_card_serve(void)
+{
+    const unsigned sent = atomic_load(&s_yge_card_sent);
+
+    if (sent == atomic_load(&s_yge_card_answered)) {
+        return;
+    }
+    /* Held across the request's card calls, on the volume it was taken
+     * under: a card mounted in its place since is no card to it. */
+    s_held = storage_hold_mount(s_yge_card_mount);
+    yge_card_run(&k_yge_io, &s_yge_card_req, &s_yge_card_done);
+    if (s_held) {
+        storage_release();
+        s_held = false;
+    }
+    atomic_store(&s_yge_card_answered, sent);
 }
