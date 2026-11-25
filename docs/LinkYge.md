@@ -111,6 +111,45 @@ command and changes nothing.
 the page's line, the PD mini and PROG_SUPPLY are all the IOmcu has on.
 `LINK_YP_F_FAULT` tells the panel, which follows it to the bench's SAFE state.
 
+## The panel's half
+
+`shared/bench/yge_link.c` sends the requests and follows them on every
+panel; `shared/bench/yge_prog.c` and `yge_prog_file.c` hold the session's
+flow, its refusals and its backup. The screens are not built yet: the panel
+follows a page the bench console holds, and drives no session of its own.
+
+| Event | What the panel does |
+|---|---|
+| Registers 0 to 22 | every 5ms in a request, 100ms while a pin is held, 500ms while free |
+| First read after a panel restart, a pin held | CLOSE; again every 1000ms while the page answers `WRITING` or stays `NOT_BACK`. No request is taken until the page is free. |
+| A link that came back, no restart | nothing is closed |
+| The STOP key, or any stop the panel latches | the `STOP` operation, as soon as the page is known and holds a pin; a stop in a gap of the link goes after it. A `BAD_VALUE`, a SEQ another writer moved: read, and again, 6 times at most. |
+| `FAULT` rises, or the state reaches `NOT_BACK` | an error: all outputs off (`prog_faults_follow()`). A `FAULT` standing on the first read after a link came up is not counted. |
+| The state reaches `NOT_BACK` | an alert naming the port |
+| A pin held, any writer's | ARM refused, with the ESC programmer's alert; the band's SAFE chip names the port; the PROG page is not written |
+| A stop latched | no command but CLOSE, LEAVE and ABORT goes (`yge_prog_cmd_allowed()`) |
+| 10 reads of the page failed in a row, in a request | the request ends. With a hold in the last read: an error, and `STOP` |
+| A request running 90000ms after the page took it | ABORT |
+| A read copy with a new `READS`, `READ_CRC` or `ENTRIES` | fetched from blocks 0 and, for more than 32 entries, 1, and held against `oy_guard_table_crc()` = `READ_CRC`; 3 fetches, then given up until the page names another copy. No request is taken while it comes. |
+
+What a session asks, in order:
+
+| Request | What goes |
+|---|---|
+| CONNECT, at the end of the operator's 2s hold | OPEN, ENTER with the key, READ, each after the one before ended `LINK_YGE_RESULT_DONE`; `BY HAND` stops at `HAND_WAIT` until HAND_DONE. Refused, with nothing sent: ARMED, a stop latched, no page, a pin held, a port past 3, a boot wait outside 1000 to 20000ms; for `SWITCHED` a voltage outside 3000 to 20000mV or a limit outside 50 to 3000mA, or above SUPPLY's for the board. |
+| WRITE, at the end of the operator's 2s hold | refused, with nothing sent, on a table without `LINK_YP_F_WRITABLE`, a draft of another read copy, a draft equal to the copy, or a draft the guard of `protocols/openyge` refuses (the index it names). The first write of a session saves the backup first, below. |
+| LEAVE | LEAVE when the ESC answers, then CLOSE; CLOSE alone otherwise. Goes with a stop latched. |
+
+**The session's backup.** The table as the session's first whole read found
+it. The first WRITE of the session asks the card to save it as
+`BENCH/YGE/CONF/YGE001-<type>.TXT` (the format of
+`protocols/openyge/include/openyge_file.h`, type code 5712 gives
+`YGE001-5712`), and the WRITE goes when the card has answered. With no card,
+a card that is not FAT32 or exFAT, or a save that fails, the WRITE goes and
+the old values are kept in RAM only; the message says so. A card silent
+10000ms, a stop, an ARM or an ESC gone before the answer: the WRITE goes
+nowhere.
+
 ## Current limitations
 
 - **A link that came back keeps the hold.** Condition: the link went silent for
@@ -120,8 +159,11 @@ the page's line, the PD mini and PROG_SUPPLY are all the IOmcu has on.
 - **A stop in a write.** Condition: a STOP, a stop edge, an error or a link loss
   between a write's first frame and the end of its read after. The table the
   ESC holds is not known until the next read.
-- **No panel half.** The panel sends nothing to these pages yet; the bench
-  console's `yge` drives them.
+- **No screens.** The panel follows the page and closes a hold it finds
+  after a restart; the bench console's `yge` drives a session.
+- **A pin held by the bench console goes with a panel restart.** Condition:
+  `yge open` on the console, then a panel restart. The panel cannot tell it
+  from its own hold.
 - **A firmware update** that starts while the page is held counts as a stop.
 
 ## Registers

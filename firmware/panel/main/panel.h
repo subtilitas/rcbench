@@ -40,6 +40,7 @@
 #include "esc_card.h"
 #include "esc_link.h"
 #include "esc_prog.h"
+#include "yge_link.h"
 #include "hitec_link.h"
 #include "hitec_prog.h"
 #include "hitec_rx_link.h"
@@ -1468,6 +1469,19 @@ bool esc_taken(void);
 /** @brief What the ESC programmer's model is fed; under the snapshot's lock.
  *  @param f receives the feed */
 void esc_publish(esc_prog_feed_t *f);
+
+/** @brief The YGE_PROG page's module (4.42); control task only. */
+extern yge_link_t      s_yge_link;
+/** @brief One pass of the YGE_PROG page's module and a stop; control task,
+ *         every pass.
+ *  @param link_up whether the IOmcu answers */
+void yge_pass(bool link_up);
+/** @brief Whether the YGE_PROG page holds a pin.
+ *  @return true while it does */
+bool yge_taken(void);
+/** @brief The programming port the YGE_PROG page holds, as last read.
+ *  @return 0 to 3; -1 while it holds none */
+int yge_taken_port(void);
 
 /**
  * @brief Where the tester's commands go, into s_drive for the SERVO screen:

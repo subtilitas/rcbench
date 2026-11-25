@@ -385,7 +385,7 @@ prog_row_state_t prog_reg_state(const prog_reg_row_t *rows, size_t n,
  * same in every language. */
 static const char *const k_cap_name[] = {
     "ESC DRIVE", "ESC TELEMETRY", "SERVO PWM", "SERVO SENSE", "PACK SENSE",
-    "RECEIVER", "VIBRATION", "CELLS", "PROGRAM",
+    "RECEIVER", "VIBRATION", "CELLS", "PROGRAM", "YGE",
 };
 
 const char *prog_reg_cap_name(uint16_t bit)

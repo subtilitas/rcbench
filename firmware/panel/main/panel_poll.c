@@ -514,6 +514,8 @@ static void link_came_up(const link_msg_t *reply)
     /* And the ESC programmer's (4.34): a pin held over a panel restart is
      * closed at its first read. */
     esc_link_came_up(&s_esc_link, reply->regs[LINK_ID_PROTOCOL_MINOR]);
+    /* And programming for YGE ESCs (4.42): the same at its first read. */
+    yge_link_came_up(&s_yge_link, reply->regs[LINK_ID_PROTOCOL_MINOR]);
     /* And the programming ports' (4.13): not known until it is read. */
     prog_link_came_up(&s_prog_link, reply->regs[LINK_ID_PROTOCOL_MINOR]);
     prog_drive_publish();
@@ -754,6 +756,7 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
             kst_link_lost(&s_kst_link);
             hitec_link_lost(&s_hitec_link);
             esc_link_lost(&s_esc_link);
+            yge_link_lost(&s_yge_link);
             /* And no port is the target or names a pin, and the SERVO
              * screen's TARGET row says no link. */
             prog_link_lost(&s_prog_link);

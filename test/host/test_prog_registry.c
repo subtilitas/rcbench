@@ -363,12 +363,21 @@ TEST_CASE(a_row_the_iomcu_lacks_is_dimmed_with_its_reason)
     /* A row that needs nothing is live with nothing reported. */
     r[0].needs_capability = 0u;
     CHECK_EQ(prog_reg_state(r, 1, 0, 0u), PROG_ROW_LIVE);
+    /* Programming for YGE ESCs dims on an IOmcu without LINK_CAP_YGE. */
+    r[0].needs_capability = LINK_CAP_YGE;
+    CHECK_EQ(prog_reg_state(r, 1, 0, LINK_CAP_PROGRAM), PROG_ROW_NO_CAP);
+    CHECK(prog_reg_detail(r, 1, 0, LINK_CAP_PROGRAM, out, sizeof(out)));
+    CHECK_STR_EQ(out, "IOMCU HAS NO YGE");
+    CHECK_EQ(prog_reg_state(r, 1, 0, LINK_CAP_PROGRAM | LINK_CAP_YGE),
+             PROG_ROW_LIVE);
+    r[0].needs_capability = 0u;
 
     /* Every named bit, and none for others. */
     CHECK_STR_EQ(prog_reg_cap_name(LINK_CAP_ESC_DRIVE), "ESC DRIVE");
     CHECK_STR_EQ(prog_reg_cap_name(LINK_CAP_PROGRAM), "PROGRAM");
     CHECK_STR_EQ(prog_reg_cap_name(0u), "");
-    CHECK_STR_EQ(prog_reg_cap_name(1u << 9), "");
+    CHECK_STR_EQ(prog_reg_cap_name(LINK_CAP_YGE), "YGE");
+    CHECK_STR_EQ(prog_reg_cap_name(1u << 10), "");
     CHECK_STR_EQ(prog_reg_cap_name(3u), "");
 
     /* Out of range and no room. */
