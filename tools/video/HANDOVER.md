@@ -38,7 +38,7 @@ a new session needs beyond it.
 | `storyboards/auto-rudder.json`, `player/rudder3d.js`, `test/host/video_rauto.c` | setting a rudder's end points with RUDDER AUTO in 4 steps, 300.77s, narrated, bed `pachelbel-canon` at half level; the wing slice, the IMU on Gecko Tape, the Dial in its base and the cased bench in one 3D scene, the display and the flap following one run of the host suites' rig |
 | `storyboards/hitec-rbmod.json` | programming a Hitec D series servo on the rbmod carrier in 8 steps, 46 screen steps; rendered with its narration, 299.47s; not heard and not seen by the owner |
 | `storyboards/origin.json` | the project's origin in 7 chapters; rendered with its narration, 474.90s; not heard and not seen by the owner |
-| `storyboards/stop.json` | STOP as an emergency stop in 4 steps, 12 screen steps, each touch on STOP as press and release, and the red stop button pressed and released in a case scene; 113.9s as written, not rendered in this form |
+| `storyboards/stop.json` | STOP as an emergency stop in 4 steps, 12 screen steps, each touch on STOP as press and release, and the red stop button pressed and released in a case scene; 113.9s as written, 131.53s rendered with the narration; not heard and not seen by the owner in this form |
 | `storyboards/thumbnail.json` | thumbnail of the feature tour, `--stills 3` |
 | `tools/video_scope.py`, `player/scope.js`, `plots/hitec-precharge.json` | the `scope` scene: plots and a circuit from a figure; the figure of the D series signal wire is simulated with ngspice 42 |
 | `storyboards/hitec-precharge.json` | precharge and sample on an RP2350 pin in 6 steps, narrated in the voice of `features`, bed `pachelbel-canon` at half level; 348.67s, 10,460 frames, rendered on 2026-11-22 from 1547c7dca with Blender 5.3.0 for its 910 3D frames (EEVEE on 7 MI50 cards, 114s) and the browser player for its 2D layer (596s). Owner, 2026-11-22, in 3 rounds: the video is abstract. It shows the technique and the solution: no pull-up is possible because several protocols share the pin. It names no servo maker and not rcbench, and it keeps the graphs and the measurements. The script before it, with the servo and rcbench named, was rendered at 361.63s from dac65c733; the first, with the panel's screens, at 339.20s from 2b5940f3a. It opens with 1 `part` scene, `rp2350_can`; the 6 `scope` scenes that follow have no 3D layer, and the sixth step draws the 3 captures of `testbench/captures/hitec32` (branch `inbox/hitec32-captures`) |
@@ -260,6 +260,10 @@ Owner, 2026-11-14:
   `STATUS.md` lists the firmware change under its open items. The
   video's texts say nothing of this (owner's rule on test state).
 - `hitec-rbmod`, `stop` and `origin` are in English only.
+- `hardware/mechanical/models/parts/estop_m16_button.step` has the head's
+  underside on the bezel's front face: the model leaves no room for the
+  5mm of travel, and the pressed head passes through the bezel. The head
+  covers it at the cameras of `stop`.
 - In the screen scenes of `hitec-rbmod` a card's leader line crosses
   text on the display where the target is a button's centre; a step's
   `point` moves the line's end, as in `stop`. The narration stretches
