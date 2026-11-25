@@ -164,6 +164,8 @@ A printed case of 3 parts round the
 sensor node, 91.4mm x 55.4mm x 28.0mm, 56.7mm across the bulge behind
 the I2C pocket. It
 has no ears; the node hangs in its cable.
+The bezel's top edge and the plate's bottom edge are rounded 1.5mm
+all round.
 
 ![Case of the sensor node](renders/casing/ina228_node_case.png)
 

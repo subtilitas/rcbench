@@ -8,7 +8,8 @@
 The case holds the layout of ina228_node.py: the INA228 module with its
 2 XT90PW connectors at the bottom, the Matek mBEC12S beside the plus
 bar, the ES3C28P display board on top. It has no ears; the node hangs
-in its cable.
+in its cable. The bezel's top edge and the plate's bottom edge are
+rounded 1.5 all round.
 
 How it is held: 4 screws M3 x 8 go from below through the plate and the
 INA228 board's 4 holes into threaded inserts in the frame's columns,
@@ -124,6 +125,8 @@ STEPS = (15.3, 1.0, 0.65, 4)
 MIC_ROOM = (-56.3, 34.0, -52.9, 36.25, 16.2)
 WALL = 2.4
 RADIUS = 3.5 + GAP      # the cavity's corners, round the display's
+EDGE = 1.5              # the round on the bezel's top and the plate's
+                        # underside, all round the outline
 PLATE = (2.4, 1.6)      # thickness, its upper face under the board
 STAND = 6.4             # the plate's stands under the board, diameter
 TOP = 1.2               # the bezel's plate over the touch panel
@@ -225,6 +228,42 @@ def outer(z0, z1):
                    RADIUS + WALL, z0, z1)
 
 
+def outer_rounded(z0, z1, edge, at):
+    """The outline between two heights, its edge at z0 or z1 rounded.
+
+    The round's centre line is the outline grown in by the radius, the
+    radius from the face: rods along the straight sides, a torus at each
+    corner, kept to its corner's quarter.
+    """
+    x0, y0 = X0 - WALL, Y0 - WALL
+    x1, y1 = X1 + WALL, Y1 + WALL
+    big, r = RADIUS + WALL, edge
+    zc = z1 - r if at == "top" else z0 + r
+    body = (rounded(x0, y0, x1, y1, big, z0, zc) if at == "top"
+            else rounded(x0, y0, x1, y1, big, zc, z1))
+    parts = [body, rounded(x0 + r, y0 + r, x1 - r, y1 - r, big - r, z0, z1)]
+    for y in (y0 + r, y1 - r):
+        parts.append(BRepPrimAPI_MakeCylinder(
+            gp_Ax2(gp_Pnt(x0 + big, y, zc), gp_Dir(1, 0, 0)), r,
+            x1 - x0 - 2 * big).Shape())
+    for x in (x0 + r, x1 - r):
+        parts.append(BRepPrimAPI_MakeCylinder(
+            gp_Ax2(gp_Pnt(x, y0 + big, zc), gp_Dir(0, 1, 0)), r,
+            y1 - y0 - 2 * big).Shape())
+    for x, sx in ((x0 + big, -1), (x1 - big, 1)):
+        for y, sy in ((y0 + big, -1), (y1 - big, 1)):
+            ring = BRepPrimAPI_MakeTorus(
+                gp_Ax2(gp_Pnt(x, y, zc), gp_Dir(0, 0, 1)), big - r,
+                r).Shape()
+            far = x + sx * 2 * big, y + sy * 2 * big
+            quarter = _box(min(x, far[0]), min(y, far[1]), zc - r,
+                           max(x, far[0]), max(y, far[1]), zc + r)
+            parts.append(BRepAlgoAPI_Common(ring, quarter).Shape())
+    # A part thinner than 2 radii: the rods stand out of the far face.
+    return BRepAlgoAPI_Common(_fuse(*parts),
+                              _box(x0, y0, z0, x1, y1, z1)).Shape()
+
+
 def cavity(z0, z1):
     """The room inside the wall between two heights."""
     return rounded(X0, Y0, X1, Y1, RADIUS, z0, z1)
@@ -315,7 +354,7 @@ def wedges(size):
 def plate():
     """The bottom plate with its lip, 4 stands and the screws' recesses."""
     clear, head, sunk = SCREW
-    solid = _fuse(outer(Z_PLATE, Z_FLOOR),
+    solid = _fuse(outer_rounded(Z_PLATE, Z_FLOOR, EDGE, "bottom"),
                   ring(LIP[0], Z_FLOOR - 0.1, Z_FLOOR + LIP[1]))
     for x, y in INA_HOLES:
         solid = _fuse(solid, _cylinder(x, y, STAND / 2, Z_PLATE,
@@ -432,7 +471,8 @@ def bezel():
     """The rim round the display board, its plate and its 4 posts."""
     clear, head, sunk = SCREW
     under = TOUCH + OVER
-    solid = _cut(outer(Z_SPLIT, Z_TOP), cavity(Z_SPLIT - 1, under))
+    solid = _cut(outer_rounded(Z_SPLIT, Z_TOP, EDGE, "top"),
+                 cavity(Z_SPLIT - 1, under))
     solid = _fuse(solid, *wedges(WEDGE[0]), split(i2c_room()[1])[1])
     radius = INSERT[0] / 2 + INSERT[2]
     for hole in DISPLAY_HOLES:
