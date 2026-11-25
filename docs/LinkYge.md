@@ -137,7 +137,7 @@ What a session asks, in order:
 | Request | What goes |
 |---|---|
 | CONNECT, at the end of the operator's 2s hold | OPEN, ENTER with the key, READ, each after the one before ended `LINK_YGE_RESULT_DONE`; `BY HAND` stops at `HAND_WAIT` until HAND_DONE. Refused, with nothing sent: ARMED, a stop latched, no page, a pin held, a port past 3, a boot wait outside 1000 to 20000ms; for `SWITCHED` a voltage outside 3000 to 20000mV or a limit outside 50 to 3000mA, or above SUPPLY's for the board. |
-| WRITE, at the end of the operator's 2s hold | refused, with nothing sent, on a table without `LINK_YP_F_WRITABLE`, a draft of another read copy, a draft equal to the copy, or a draft the guard of `protocols/openyge` refuses (the index it names). The first write of a session saves the backup first, below. |
+| WRITE, at the end of the operator's 2s hold | refused, with nothing sent, on a table without `LINK_YP_F_WRITABLE`, a draft of another read copy, a draft equal to the copy, or a draft the guard of `protocols/openyge` refuses (the index it names). A draft carries the `READS` and `READ_CRC` of the read copy it was made from, and the WRITE sends those: a draft of an earlier read is refused here as stale, and the page refuses it with `STALE` when the panel has not yet seen the newer read. A file's draft is made against the read copy held at the load, and the next read copy ends it. The first write of a session saves the backup first, below. |
 | LEAVE | LEAVE when the ESC answers, then CLOSE; CLOSE alone otherwise. Goes with a stop latched. |
 
 **The session's backup.** The table as the session's first whole read found

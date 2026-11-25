@@ -196,7 +196,8 @@ TEST_CASE(a_stop_latched_lets_only_close_leave_and_abort_through)
     model_run(5u);
     CHECK_EQ(yge_prog_read(&g_m), YGE_PROG_MSG_STOPPED);
     CHECK_EQ(yge_prog_clear(&g_m), YGE_PROG_MSG_STOPPED);
-    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 32u),
+    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 32u, g_f.image.reads,
+                            g_f.image.read_crc),
              YGE_PROG_MSG_STOPPED);
     CHECK_EQ(yge_prog_enter_again(&g_m, &k_conn), YGE_PROG_MSG_STOPPED);
     CHECK_EQ(yge_prog_hand_done(&g_m), YGE_PROG_MSG_STOPPED);
@@ -229,7 +230,8 @@ TEST_CASE(the_first_write_saves_the_backup_first)
     connected();
     CHECK(!yge_prog_card_take(&g_m, g_text, sizeof(g_text), &len, g_tag,
                               sizeof(g_tag), &g_card_id));
-    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 32u),
+    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 32u, g_f.image.reads,
+                            g_f.image.read_crc),
              YGE_PROG_MSG_NONE);
     model_run(100u);
     CHECK_EQ(commands_of(LINK_YGE_OP_WRITE), 0);
@@ -249,7 +251,8 @@ TEST_CASE(the_first_write_saves_the_backup_first)
     CHECK_EQ(commands_of(LINK_YGE_OP_WRITE), 1);
     CHECK_EQ(sim.table[21], 13u);
     /* The second write of the session goes at once. */
-    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 14u), 32u),
+    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 14u), 32u, g_f.image.reads,
+                            g_f.image.read_crc),
              YGE_PROG_MSG_NONE);
     CHECK(!yge_prog_card_take(&g_m, g_text, sizeof(g_text), &len, g_tag,
                               sizeof(g_tag), &g_card_id));
@@ -270,7 +273,8 @@ TEST_CASE(no_card_keeps_the_old_values_in_ram_and_writes)
     rig_up();
     model_up();
     connected();
-    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 32u),
+    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 32u, g_f.image.reads,
+                            g_f.image.read_crc),
              YGE_PROG_MSG_NONE);
     CHECK(yge_prog_card_take(&g_m, g_text, sizeof(g_text), &len, g_tag,
                              sizeof(g_tag), &g_card_id));
@@ -295,7 +299,8 @@ TEST_CASE(a_card_silent_10000ms_sends_no_write)
     rig_up();
     model_up();
     connected();
-    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 32u),
+    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 32u, g_f.image.reads,
+                            g_f.image.read_crc),
              YGE_PROG_MSG_NONE);
     CHECK(yge_prog_card_take(&g_m, g_text, sizeof(g_text), &len, g_tag,
                              sizeof(g_tag), &g_card_id));
@@ -324,7 +329,8 @@ TEST_CASE(a_late_card_answer_of_an_ended_session_is_dropped)
     rig_up();
     model_up();
     connected();
-    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 32u),
+    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 32u, g_f.image.reads,
+                            g_f.image.read_crc),
              YGE_PROG_MSG_NONE);
     CHECK(yge_prog_card_take(&g_m, g_text, sizeof(g_text), &len, g_tag,
                              sizeof(g_tag), &g_card_id));
@@ -338,7 +344,8 @@ TEST_CASE(a_late_card_answer_of_an_ended_session_is_dropped)
     model_run(500u);
     CHECK_EQ(yge_prog_message(&g_m, NULL), YGE_PROG_MSG_LEFT);
     connected();
-    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 32u),
+    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 32u, g_f.image.reads,
+                            g_f.image.read_crc),
              YGE_PROG_MSG_NONE);
     CHECK(yge_prog_card_take(&g_m, g_text, sizeof(g_text), &len, g_tag,
                              sizeof(g_tag), &g_card_id));
@@ -371,7 +378,8 @@ TEST_CASE(a_stop_while_the_card_saves_sends_no_write)
     rig_up();
     model_up();
     connected();
-    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 32u),
+    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 32u, g_f.image.reads,
+                            g_f.image.read_crc),
              YGE_PROG_MSG_NONE);
     CHECK(yge_prog_card_take(&g_m, g_text, sizeof(g_text), &len, g_tag,
                              sizeof(g_tag), &g_card_id));
@@ -393,26 +401,34 @@ TEST_CASE(every_refusal_of_a_write_sends_nothing)
 
     rig_up();
     model_up();
-    CHECK_EQ(yge_prog_write(&g_m, NULL, 32u), YGE_PROG_MSG_BUSY);
-    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 32u),
+    CHECK_EQ(yge_prog_write(&g_m, NULL, 32u, g_f.image.reads,
+                            g_f.image.read_crc), YGE_PROG_MSG_BUSY);
+    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 32u, g_f.image.reads,
+                            g_f.image.read_crc),
              YGE_PROG_MSG_NOT_READY);
     connected();
     /* The guard's word, here, before anything goes. */
-    CHECK_EQ(yge_prog_write(&g_m, draft_with(25u, 1u), 32u), YGE_PROG_MSG_GUARD);
+    CHECK_EQ(yge_prog_write(&g_m, draft_with(25u, 1u), 32u, g_f.image.reads,
+                            g_f.image.read_crc), YGE_PROG_MSG_GUARD);
     (void)yge_prog_message(&g_m, &detail);
     CHECK_EQ(detail, OY_REF_TELEMETRY);
     CHECK_EQ(yge_prog_bad(&g_m), 25u);
-    CHECK_EQ(yge_prog_write(&g_m, draft_with(11u, 1u), 32u), YGE_PROG_MSG_GUARD);
+    CHECK_EQ(yge_prog_write(&g_m, draft_with(11u, 1u), 32u, g_f.image.reads,
+                            g_f.image.read_crc), YGE_PROG_MSG_GUARD);
     CHECK_EQ(yge_prog_bad(&g_m), 11u);
-    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 0u), 32u), YGE_PROG_MSG_GUARD);
+    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 0u), 32u, g_f.image.reads,
+                            g_f.image.read_crc), YGE_PROG_MSG_GUARD);
     (void)yge_prog_message(&g_m, &detail);
     CHECK_EQ(detail, OY_REF_VALUE);
-    CHECK_EQ(yge_prog_write(&g_m, g_f.image.value, 32u), YGE_PROG_MSG_NO_CHANGE);
-    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 31u),
+    CHECK_EQ(yge_prog_write(&g_m, g_f.image.value, 32u, g_f.image.reads,
+                            g_f.image.read_crc), YGE_PROG_MSG_NO_CHANGE);
+    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 31u, g_f.image.reads,
+                            g_f.image.read_crc),
              YGE_PROG_MSG_STALE);
     g_armed = true;
     model_run(5u);
-    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 32u),
+    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 32u, g_f.image.reads,
+                            g_f.image.read_crc),
              YGE_PROG_MSG_ARMED);
     g_armed = false;
     model_run(100u);
@@ -436,7 +452,8 @@ TEST_CASE(a_read_only_table_is_not_written)
     CHECK_EQ(yge_prog_message(&g_m, NULL), YGE_PROG_MSG_READ_DONE);
     memcpy(d, g_f.image.value, sizeof(d));
     d[21] = 13u;
-    CHECK_EQ(yge_prog_write(&g_m, d, 32u), YGE_PROG_MSG_READ_ONLY);
+    CHECK_EQ(yge_prog_write(&g_m, d, 32u, g_f.image.reads,
+                            g_f.image.read_crc), YGE_PROG_MSG_READ_ONLY);
     (void)yge_prog_message(&g_m, &detail);
     CHECK_EQ(detail, OY_REF_RO_FIRMWARE);
     model_run(100u);
@@ -456,7 +473,7 @@ TEST_CASE(a_file_against_the_read_copy)
     CHECK_EQ(yge_prog_file_load(&g_m, "x\n", 2u, &line),
              YGE_PROG_MSG_FILE_REFUSED);
     CHECK_EQ(line, 1u);
-    CHECK(yge_prog_file_draft(&g_m, NULL) == NULL);
+    CHECK(yge_prog_file_draft(&g_m, NULL, NULL, NULL) == NULL);
     connected();
     memcpy(t, g_f.image.value, sizeof(t));
     t[21] = 13u;
@@ -465,7 +482,7 @@ TEST_CASE(a_file_against_the_read_copy)
     CHECK_EQ(yge_prog_file_load(&g_m, g_text, len, NULL), YGE_PROG_MSG_LOADED);
     (void)yge_prog_message(&g_m, &detail);
     CHECK_EQ(detail, 1u);
-    const uint16_t *d = yge_prog_file_draft(&g_m, &n);
+    const uint16_t *d = yge_prog_file_draft(&g_m, &n, NULL, NULL);
 
     CHECK(d != NULL);
     CHECK_EQ(n, 32u);
@@ -477,7 +494,7 @@ TEST_CASE(a_file_against_the_read_copy)
              YGE_PROG_MSG_LOAD_REFUSED);
     (void)yge_prog_message(&g_m, &detail);
     CHECK_EQ(detail, OY_LOAD_TYPE);
-    CHECK(yge_prog_file_draft(&g_m, NULL) == NULL);
+    CHECK(yge_prog_file_draft(&g_m, NULL, NULL, NULL) == NULL);
 }
 
 TEST_CASE(an_abort_and_an_error_say_what_ended_it)

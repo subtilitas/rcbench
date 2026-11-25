@@ -534,13 +534,16 @@ static yge_prog_msg_t guard_judge(yge_prog_t *p, const uint16_t *draft,
     return yge_prog_say(p, YGE_PROG_MSG_GUARD, (uint16_t)r);
 }
 
-yge_prog_msg_t yge_prog_write(yge_prog_t *p, const uint16_t *draft, uint16_t n)
+yge_prog_msg_t yge_prog_write(yge_prog_t *p, const uint16_t *draft, uint16_t n,
+                              uint16_t reads, uint16_t read_crc)
 {
     if (p == NULL || draft == NULL) {
         return YGE_PROG_MSG_BUSY;
     }
     const yge_link_image_t *im = &p->f.image;
-    yge_prog_msg_t m = yge_prog_write_gate(p, n, im->reads, im->read_crc);
+    /* The draft's own base, never the copy held now: a draft of an earlier
+     * read is STALE here, and the page refuses it on the same numbers. */
+    yge_prog_msg_t m = yge_prog_write_gate(p, n, reads, read_crc);
 
     if (m == YGE_PROG_MSG_READ_ONLY) {
         return yge_prog_say(p, m, p->f.rd.ro_why);
@@ -562,15 +565,15 @@ yge_prog_msg_t yge_prog_write(yge_prog_t *p, const uint16_t *draft, uint16_t n)
     }
     (void)yge_prog_say(p, YGE_PROG_MSG_NONE, 0u);
     if (p->backup_state != (uint8_t)YGE_PROG_BACKUP_HELD) {
-        yge_prog_write_go(p, draft, n, im->reads, im->read_crc);
+        yge_prog_write_go(p, draft, n, reads, read_crc);
         return YGE_PROG_MSG_NONE;
     }
     /* The first write of the session: the backup to the card first. */
     p->flow = YGE_PROG_FLOW_BACKUP;
     memcpy(p->pend, draft, (size_t)n * sizeof(draft[0]));
     p->pend_n = n;
-    p->pend_reads = im->reads;
-    p->pend_crc = im->read_crc;
+    p->pend_reads = reads;
+    p->pend_crc = read_crc;
     p->card_ms = p->f.now_ms;
     p->card_owed = (uint8_t)(p->card_out != 0u ? 0u : 1u);
     return YGE_PROG_MSG_NONE;

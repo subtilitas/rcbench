@@ -109,6 +109,11 @@ void yge_prog_backup_follow(yge_prog_t *p)
         }
         return;
     }
+    /* A loaded draft belongs to the read copy it was loaded against. */
+    if (p->load_ok && (im->gen == 0u || im->reads != p->load_reads
+                       || im->read_crc != p->load_crc)) {
+        p->load_ok = 0u;
+    }
     if (p->backup_state != (uint8_t)YGE_PROG_BACKUP_NONE || im->gen == 0u
         || rd->state != (uint8_t)LINK_YGE_READY || im->reads != rd->reads
         || im->read_crc != rd->read_crc || im->entries == 0u
@@ -231,16 +236,25 @@ yge_prog_msg_t yge_prog_file_load(yge_prog_t *p, const char *text, size_t len,
         return yge_prog_say(p, YGE_PROG_MSG_LOAD_REFUSED, (uint16_t)l);
     }
     p->load_ok = 1u;
+    p->load_reads = p->f.image.reads;
+    p->load_crc = p->f.image.read_crc;
     return yge_prog_say(p, YGE_PROG_MSG_LOADED, p->load.changed);
 }
 
-const uint16_t *yge_prog_file_draft(const yge_prog_t *p, uint16_t *n)
+const uint16_t *yge_prog_file_draft(const yge_prog_t *p, uint16_t *n,
+                                    uint16_t *reads, uint16_t *read_crc)
 {
     if (p == NULL || !p->load_ok) {
         return NULL;
     }
     if (n != NULL) {
         *n = p->load.count;
+    }
+    if (reads != NULL) {
+        *reads = p->load_reads;
+    }
+    if (read_crc != NULL) {
+        *read_crc = p->load_crc;
     }
     return p->load.draft;
 }

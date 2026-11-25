@@ -217,7 +217,8 @@ TEST_CASE(a_write_before_any_read_sends_nothing)
     ready_on(0u);
     model_run(600u);
     CHECK_EQ(g_f.rd.state, LINK_YGE_READY);
-    CHECK_EQ(yge_prog_write(&g_m, sim.table, 32u), YGE_PROG_MSG_NOT_READ);
+    CHECK_EQ(yge_prog_write(&g_m, sim.table, 32u, g_f.image.reads,
+                            g_f.image.read_crc), YGE_PROG_MSG_NOT_READ);
     model_run(100u);
     CHECK_EQ(g_commands, 0);
 }
@@ -268,7 +269,7 @@ TEST_CASE(every_call_takes_null)
     CHECK_EQ(yge_prog_taken_port(NULL), -1);
     CHECK_EQ(yge_prog_backup_where(NULL), YGE_PROG_BACKUP_NONE);
     CHECK_EQ(yge_prog_backup_text(NULL, NULL, 0u), 0u);
-    CHECK(yge_prog_file_draft(NULL, NULL) == NULL);
+    CHECK(yge_prog_file_draft(NULL, NULL, NULL, NULL) == NULL);
     CHECK(!yge_prog_guard_of(NULL, NULL));
 }
 

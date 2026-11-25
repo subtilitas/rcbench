@@ -240,6 +240,8 @@ typedef struct {
     oy_file_t loaded;        /**< the file                                    */
     oy_file_load_t load;     /**< the draft it gives                          */
     uint8_t  load_ok;        /**< load holds a draft                          */
+    uint16_t load_reads;     /**< the read copy the load was made from        */
+    uint16_t load_crc;       /**< and its CRC                                 */
 } yge_prog_t;
 
 /**
@@ -303,12 +305,20 @@ yge_prog_msg_t yge_prog_read(yge_prog_t *p);
 
 /**
  * @brief WRITE a draft of the read copy, at the end of the operator's 2s hold.
- * @param p     The model.
- * @param draft The draft, index 0 first.
- * @param n     Its values, the read copy's entries.
+ *        The draft carries the read copy it was made from: its LINK_YP_READS
+ *        and LINK_YP_READ_CRC, taken when the draft was started or loaded
+ *        (yge_prog_file_draft()).  A draft of another read copy than the one
+ *        held now is refused here with YGE_PROG_MSG_STALE; the IOmcu refuses
+ *        it as well, as those numbers are the ones that go.
+ * @param p        The model.
+ * @param draft    The draft, index 0 first.
+ * @param n        Its values, the read copy's entries.
+ * @param reads    LINK_YP_READS of the read copy the draft was made from.
+ * @param read_crc LINK_YP_READ_CRC of that read copy.
  * @return YGE_PROG_MSG_NONE when it goes, else why not.
  */
-yge_prog_msg_t yge_prog_write(yge_prog_t *p, const uint16_t *draft, uint16_t n);
+yge_prog_msg_t yge_prog_write(yge_prog_t *p, const uint16_t *draft, uint16_t n,
+                              uint16_t reads, uint16_t read_crc);
 
 /**
  * @brief LEAVE, then CLOSE; CLOSE alone when no ESC answers.
@@ -488,12 +498,17 @@ yge_prog_msg_t yge_prog_file_load(yge_prog_t *p, const char *text, size_t len,
                                   unsigned *line);
 
 /**
- * @brief The draft of the last yge_prog_file_load() that was LOADED.
- * @param p The model.
- * @param n Receives its values; may be NULL.
+ * @brief The draft of the last yge_prog_file_load() that was LOADED, with the
+ *        read copy it was made from.  A new read copy ends it: the file is
+ *        loaded again against that one.
+ * @param p        The model.
+ * @param n        Receives its values; may be NULL.
+ * @param reads    Receives the LINK_YP_READS it was made from; may be NULL.
+ * @param read_crc Receives that read copy's LINK_YP_READ_CRC; may be NULL.
  * @return The draft, NULL for none.
  */
-const uint16_t *yge_prog_file_draft(const yge_prog_t *p, uint16_t *n);
+const uint16_t *yge_prog_file_draft(const yge_prog_t *p, uint16_t *n,
+                                    uint16_t *reads, uint16_t *read_crc);
 
 /**
  * @brief The guard of protocols/openyge as the read copy sets it: the table,
