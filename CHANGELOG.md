@@ -8,6 +8,22 @@ history is in git.
 
 ### Added
 
+- Programming for YGE ESCs, the pin driver: `rp2350/oy_line.c` drives
+  the telemetry wire on one RP2350 pin behind `oy_driver_t` with one PIO
+  (programmable input/output) state machine of 25 words and 2 DMA (direct
+  memory access) channels. 115200 baud 8N1 at 16 cycles a bit, divider
+  81 + 97/256 at 150MHz (8680ns, 16ppm off). A frame goes out push-pull
+  while the line is high between bytes; the pad is released 16 cycles
+  after the last stop bit's edge and the receiver runs again, with no echo
+  of the frame's own bytes. A low stop bit is counted; the receive buffer
+  holds 256 bytes and the bytes after a full buffer are dropped and
+  counted. Line states: input with pull-down before the supply reads on
+  and at once on a fault, STOP or link loss; input with pull-up while
+  listening. The arithmetic (`openyge_pio.c`) and the program run in the
+  suite `openyge_pio`. The IOMCU_CONSOLE build adds `oyline <gpio>
+  tx|rx|cut` for a logic analyser; the released images do not change
+  ([OpenYGE](docs/OpenYGE.md#92-pin-driver),
+  [Bench console](docs/BenchConsole.md#the-telemetry-wires-pin-driver)).
 - LIMIT RUN writes `LIMITnnn.CSV` in `USER/LOGS` before its report
   `LIMITnnn.TXT`, under the same number: one row a position a search
   judged, columns `row`, `search` (1 the first search of a side, 2 a

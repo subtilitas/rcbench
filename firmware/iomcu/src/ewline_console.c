@@ -257,7 +257,7 @@ bool ewline_console_line(void *ctx, char **tok, unsigned n)
         console_hw_say("err usage: ewline <gpio> tx|abort|rx\n");
         return true;
     }
-    if (s_step != NULL) {
+    if (s_step != NULL || s_console_pins != 0u) {
         console_hw_say("err ewline: a test runs\n");
         return true;
     }

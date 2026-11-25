@@ -511,8 +511,9 @@ Abschnitt 5.3 mit CHECK oder edit kennzeichnet, innerhalb ihrer
 schreibbaren Werte. Ein Schreiben liest die Tabelle zuerst erneut und
 bricht ohne gesendeten Frame ab, wenn sie abweicht. Nach den Schreibzugriffen
 liest es die ganze Tabelle erneut und vergleicht sie mit dem Ziel.
-Pin-Treiber, Link-Pages und Bildschirme sind nicht gebaut, daher führt
-keine der beiden Platinen die Session aus.
+Link-Pages und Bildschirme sind nicht gebaut, daher führt keine der
+beiden Platinen die Session aus. Der Pin-Treiber ist gebaut
+(Abschnitt 9.2).
 
 ### 9.1 Einstellungsdatei
 
@@ -567,6 +568,49 @@ Offene Entscheidung: welche ESC-Protokolle außer OpenYGE unterstützt werden.
 Das Ausgangsmaterial steht neben Hobbywing, Kontronik, Scorpion, OMP, ZTW,
 APD, FLY, Graupner und XDFly; mehrere teilen sich eine State Machine, keines
 ein Frameformat. Erst ein Protokoll auf Hardware beweisen, dann ein zweites.
+
+### 9.2 Pin-Treiber
+
+`protocols/openyge/rp2350/oy_line.c` treibt die Telemetrieleitung an einem
+RP2350-Pin hinter `oy_driver_t`. Sein PIO-Programm (programmable
+input/output) ist `oy_line.pio`; die Arithmetik, die es füttert und liest,
+ist `openyge_pio.c`. Die Host-Suite `openyge_pio` lässt das Programm in
+einem Modell der State Machine laufen, und der IOmcu-Build hält die Wörter
+von pioasm an dieselbe Liste (`test/host/fixtures/oy_line_words.txt`). Der
+IOmcu linkt den Treiber; nur der Test `oyline` des Konsolen-Builds ruft
+ihn auf.
+
+| | |
+| --- | --- |
+| Ressourcen | 1 State Machine, 25 Befehlswörter, 2 DMA-Kanäle (direct memory access), kein Interrupt |
+| Bit | 16 Zyklen der State Machine; Teiler 81 + 97/256 bei 150MHz: 8680ns, 16ppm Abweichung |
+| Frame hinaus | 1 bis 140 Bytes, Push-Pull, nur solange die Leitung zwischen Bytes high ist |
+| Freigabe | 16 Zyklen nach der Flanke des letzten Stoppbits: am Ende des Stoppbits |
+| Echo | keines: der Empfänger läuft nicht, während ein Frame hinausgeht |
+| Empfang | Datenbits 22 + 16 k Zyklen nach der Abtastung, die das Startbit sah, das Stoppbit bei 150; ein Sender bis 4% daneben ohne Lücken |
+| Rahmenfehler | ein Stoppbit low: das Byte wird übergeben und gezählt |
+| Empfangspuffer | 256 Einträge zu 2B; die Bytes nach einem vollen Puffer werden verworfen, einmal je Füllung gezählt |
+| Später Frame | ein Frame, der 1000ms nach seiner längsten Zeit bis zur Freigabe noch nicht hinaus ist, auf einer low gehaltenen Leitung, wird beim nächsten Senden verworfen und gezählt |
+
+| Wann | Pad |
+| --- | --- |
+| Bevor die Versorgung als an gemeldet wird | Eingang, Pull-down, Eingangspuffer aus |
+| Zuhören | Eingang, Pull-up von 50 bis 80kΩ, bis U1 gemessen ist |
+| Senden | getrieben, beide Pegel |
+| Fehler, STOP, Link-Verlust | Eingang, sofort Pull-down; die State Machine hält zuerst an |
+
+Die Dauer jedes Treiberaufrufs ist nicht bekannt; H1 hält sie mit dem
+Konsolentest fest. Sein Stationsschritt (`IOMCU_CONSOLE=ON`, Port 0 an
+GPIO 13, Logikanalysator bei 1.65V):
+
+| Befehl | Bestanden |
+| --- | --- |
+| `oyline 13 tx` | Bitzeit 8.68µs auf 0.5% genau; 3 Anfragen zu 12B dekodieren wie gesendet mit gültiger CRC; das Pad innerhalb 1 Bit nach jedem letzten Stoppbit freigegeben, die Leitung high am Pull-up; low am Pull-down im geparkten Zustand |
+| `oyline 13 rx` | `match=1 crc_ok=1 framing=0`, dann `framing=1` für die Anfrage mit einem Stoppbit low |
+| `oyline 13 cut` | die Leitung fällt 0.5ms in die Anfrage hinein am Pull-down auf low |
+
+Die Session-Schritte von H1 (Öffnen, Einstieg BY HAND, STOP, Link-Trennung)
+brauchen die IOmcu-Page.
 
 ---
 
