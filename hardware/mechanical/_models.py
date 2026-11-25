@@ -60,9 +60,9 @@ VIEWS = {
         "ina228_node_case_exploded", "ina228_node_case_joints",
         "ina228_node_case_section"),
     "parts": (
-        "flap_drive_above", "flap_drive_below", "flap_drive_section",
-        "flap_drive_unit", "flap_drive_unit_2", "knob", "knob_exploded",
-        "knob_section"),
+        "bench_front", "bench_iso", "bench_top", "flap_drive_above",
+        "flap_drive_below", "flap_drive_section", "flap_drive_unit",
+        "flap_drive_unit_2", "knob", "knob_exploded", "knob_section"),
 }
 VIEW = {name: folder for folder, names in VIEWS.items() for name in names}
 RENDERS = ROOT.parent / "renders"

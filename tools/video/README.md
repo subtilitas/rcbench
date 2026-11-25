@@ -141,6 +141,7 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `player/case3d.js` | the case as a mockup of boxes, its connectors and its named points |
 | `player/case_cad.js` | the case from its CAD (computer-aided design) assembly: colours by part name, merged meshes, the same named points |
 | `../video_cad.py` | converts the case's STEP assembly into `cad/case.glb`, the model `case_cad.js` loads |
+| `../../hardware/mechanical/_gen_bench.py` | writes the hardware test bench from the owner's photos into `cad/bench.glb`, a named node per part ([Mechanical parts](../../hardware/mechanical/README.md#hardware-test-bench-for-the-video)) |
 | `player/dial3d.js` | the M5Stack Dial from its STEP model: one mesh a solid, the knob ring turning, two faces cross-fading on the glass |
 | `player/duo3d.js` | the case and the Dial in one scene: the case's display takes shots of the panel's screen, the Dial's display its faces |
 | `player/mini3d.js` | the MiniRcBench from its assembly: one group a component in its solids' colours, the case and its buttons coloured here, the two male servo connectors and the 4 screws drawn as plain solids, the display showing a still |

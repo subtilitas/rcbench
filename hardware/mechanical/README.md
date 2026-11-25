@@ -10,6 +10,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `estop_m16.py` | spec of the M16 emergency stop button: dimensions, sources, estimates |
 | `m5dial.py` | spec of the M5Stack Dial: dimensions, sources, estimates |
 | `_gen_dial_base.py` | builds the two parts of a hand-held base for the M5Stack Dial with OpenCASCADE, checks their fit round dial, nut and cell, writes STEP and STL |
+| `_gen_bench.py` | builds the hardware test bench from the owner's photos as a GLB with named nodes for the video, `tools/video/cad/bench.glb` |
 | `_gen_knob.py` | builds a rotary knob round a fixed round display on the dial base's bottom part with OpenCASCADE, checks the fit of all its parts, writes STEP and STL |
 | `panel_7b.py` | spec of the panel board, the Waveshare ESP32-P4-WIFI6-Touch-LCD-7B: dimensions, sources, estimates |
 | `ina228_xt90.py` | spec of the INA228 current sensor module with 2 XT90PW connectors and of its case: dimensions, sources, estimates |
@@ -485,6 +486,93 @@ python3 hardware/mechanical/_gen_knob.py                 # write STEP and STL
 xvfb-run -a python3 hardware/mechanical/_gen_knob.py \
     --render hardware/mechanical/renders
 ```
+
+## Hardware test bench, for the video
+
+`_gen_bench.py` writes a 3D model of the hardware test bench, the rig the
+hwbench tooling drives, as one GLB with a named node per part. The video
+loads it from `tools/video/cad/bench.glb`. That folder is not in git,
+because the video tools write their GLB files there from their sources.
+The model is drawn from the owner's 8 photos of 2026-11-25.
+
+![Test bench](renders/parts/bench_iso.png)
+
+| | |
+| --- | --- |
+| ![From above](renders/parts/bench_top.png) | ![From the front](renders/parts/bench_front.png) |
+
+| Property | Value |
+| --- | --- |
+| Format | glTF 2.0 binary, 1.5MB |
+| Units | metres |
+| Up axis | +y, as glTF defines it |
+| Origin | the acrylic sheet's front left corner, on its top face |
+| Axes | +x to the right, -z away from the viewer, towards the panel and the wall |
+| Script's frame | mm, z up: GLB (x, y, z) = (x, z, -y) / 1000 |
+
+```sh
+pip install cadquery-ocp==8.0.1.1.0 trimesh numpy
+xvfb-run -a python3 hardware/mechanical/_gen_bench.py \
+    tools/video/cad/bench.glb --render hardware/mechanical/renders
+```
+
+Each node holds one mesh per colour, named `<node>_mesh<k>`. A node's
+origin is the pivot below, in the script's frame (mm, z up).
+
+| Node | Parent | Content | Pivot |
+| --- | --- | --- | --- |
+| `bench` | | everything | origin |
+| `sheet` | bench | clear acrylic sheet, 605 x 500 x 5 | origin |
+| `base_board` | bench | black board under the sheet, 463 x 392 x 18 | origin |
+| `panel` | bench | Waveshare ESP32-P4 7 inch, `panel_7b.step`, tilted 15 degrees on 2 legs | (398, 447, 0) |
+| `iomcu` | bench | a Pico, 51 x 21, on a blue screw-terminal carrier, 89 x 73 | (410, 352, 0) |
+| `injector` | bench | the touch injector: a small blue board with 2 pin header rows, 23.5 x 18 | (470, 236, 0) |
+| `sensor_perfboard` | bench | green perfboard, 50 x 40, with a black square module, 23 x 23 | (478, 288, 0) |
+| `servo` | bench | `servo_standard.step` at the sheet's right edge | (600, 205, 0) |
+| `as5600` | servo | the AS5600 module, blue, 23 x 23, taped over the servo's output | (600, 198, 47) |
+| `load_resistor` | bench | gold aluminium-housed power resistor, 50 x 28 x 15 | (326, 318, 0) |
+| `instruments` | bench | group | origin |
+| `logic_analyzer` | instruments | Kingst LA2016, 105 x 61 x 18 | (342, 260, 0) |
+| `supplies` | bench | group | origin |
+| `supply_pd_meter` | supplies | USB PD (power delivery) board with its display and terminal block, 37 x 53 | origin |
+| `supply_buck` | supplies | blue buck module, 22 x 17 | origin |
+| `supply_usbc_board` | supplies | USB-C board with a red LED, 25 x 15 | origin |
+| `host_computer` | bench | black vented case, 70 x 115 x 35, Ethernet towards the viewer | (105, 362, 0) |
+| `usb_hub` | bench | black USB hub, 30 x 120 x 22 | (162, 350, 0) |
+| `power_bank` | bench | black cylinder, 24 across and 115 long | (192, 350, 12) |
+| `ring_lamp` | bench | ring lamp facing down, 260 across, opening 200, 22 thick | (330, 150, 600) |
+| `camera` | bench | group: the camera rig | origin |
+| `camera_clamp` | camera | clamp on the sheet's front edge | (480, 0, 0) |
+| `camera_pole` | camera | pole with a foam grip, leaning back | (480, -16, 30) |
+| `camera_arm` | camera | ball arm with its knob | (452, 70, 330) |
+| `camera_base` | camera | the camera's base, 47 across, hanging under its mount | (425, 135, 345) |
+| `camera_pan` | camera_base | the yoke | (425, 135, 322) |
+| `camera_tilt` | camera_pan | the head with the lens, 30 degrees off the vertical | (425, 135, 287) |
+
+To turn the camera, rotate `camera_pan` about the GLB's y axis and
+`camera_tilt` about its x axis. Both turn about their own origins.
+
+Scale: the panel and the Pico set it. The panel's glass is 164.3 x
+99.2mm (`panel_7b.step`), and a Pico is 51 x 21mm. In the near top-down
+photo, the panel's long side is 415 of 2000 pixels: 2.53 pixels per mm.
+At that scale the carrier under the Pico measures 89 x 73mm in the side
+photo.
+
+Limits:
+
+- Every size and place except the panel's and the Pico's is read from
+  the photos and is an estimate. Perspective is not corrected, so places
+  are within about ±20mm. Neither the sheet's far edge nor the black
+  board's is fully in a photo.
+- The gold block taped down with tesa strips is drawn as a power
+  resistor; what it is is not confirmed.
+- The black square module on the perfboard is not identified.
+- The camera has the shape of an OBSBOT Tiny; its model is not confirmed
+  and its size is estimated.
+- The ring lamp's reflection is the white ring in the photos. Its size,
+  height and place are estimates, and its mount is not drawn.
+- Not drawn: cables, the cabinet, the monitor, the soldering station, the
+  light tent.
 
 ## Panel board
 
