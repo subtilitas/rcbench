@@ -187,8 +187,8 @@ def iomcu():
     for x in (-40.0, 40.0):
         for y in (-32.0, 32.0):
             parts.append((cbox(x, y, 0.0, 4.0, 4.0, 3.0), METAL))
-    out = [(place(s, dx=cx, dy=cy), c) for s, c in parts]
-    return out + seated("pcb/rp2350_can.step", cx, cy, 4.6 + 8.5, rz=90.0,
+    out = [(place(s, dx=cx, dy=cy, rz=90.0), c) for s, c in parts]
+    return out + seated("pcb/rp2350_can.step", cx, cy, 4.6 + 8.5, rz=180.0,
                         colour=GREEN)
 
 
@@ -203,8 +203,11 @@ def touch_injector():
 
 
 def ina3221():
-    """The INA3221 module (ina3221_module.step) on a green perfboard."""
-    cx, cy = 478.0, 288.0
+    """The INA3221 module on a perfboard in front of the IOmcu's carrier.
+
+    ina3221_module.step on a green perfboard of 50 x 40 (estimate).
+    """
+    cx, cy = 415.0, 280.0
     return ([(cbox(cx, cy, 0, 50.0, 40.0, 1.6), GREEN)]
             + seated("pcb/ina3221_module.step", cx - 4.0, cy, 4.0))
 
@@ -425,7 +428,7 @@ NODES = [
     ("panel", "bench", panel, (398.0, 447.0, 0)),
     ("iomcu", "bench", iomcu, (410.0, 352.0, 0)),
     ("injector", "bench", touch_injector, (470.0, 236.0, 0)),
-    ("ina3221", "bench", ina3221, (478.0, 288.0, 0)),
+    ("ina3221", "bench", ina3221, (415.0, 280.0, 0)),
     ("servo", "bench", servo, (600.0, 205.0, 0)),
     ("as5600", "servo", as5600, (600.0, 198.0, 47.0)),
     ("imu", "servo", imu, (575.0, 112.0, 0)),

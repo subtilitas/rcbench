@@ -527,9 +527,9 @@ repository's STEP models, at its documented size.
 | `sheet` | bench | clear acrylic sheet, 605 x 500 x 5 | photo estimate | origin |
 | `base_board` | bench | black board under the sheet, 463 x 392 x 18 | photo estimate | origin |
 | `panel` | bench | Waveshare ESP32-P4 7 inch, tilted 15 degrees on 2 legs | model `panel_7b.step`; tilt and legs estimated | (398, 447, 0) |
-| `iomcu` | bench | Waveshare RP2350-CAN on a blue screw-terminal carrier, 89 x 73 | model `rp2350_can.step`; carrier from the photo | (410, 352, 0) |
+| `iomcu` | bench | Waveshare RP2350-CAN on a blue screw-terminal carrier, 73 x 89, its long side towards the panel | model `rp2350_can.step`; carrier from the photo | (410, 352, 0) |
 | `injector` | bench | Waveshare RP2350-Zero touch injector, 23.5 x 18, pin headers | datasheet outline; parts drawn as boxes | (470, 236, 0) |
-| `ina3221` | bench | INA3221 module on a green perfboard, 50 x 40 | model `ina3221_module.step`; perfboard estimated | (478, 288, 0) |
+| `ina3221` | bench | INA3221 module on a green perfboard, 50 x 40, in front of the carrier | model `ina3221_module.step`; perfboard estimated | (415, 280, 0) |
 | `servo` | bench | Hitec D485HW at the sheet's right edge | model `hitec_d485hw.step` | (600, 205, 0) |
 | `as5600` | servo | AS5600 encoder module over the servo's output | model `AS5600_Encoder_22.5x22.5mm.step` | (600, 198, 47) |
 | `imu` | servo | WIT BWT901CL beside the servo | model `wit_imu.step` | (575, 112, 0) |
