@@ -2911,6 +2911,42 @@ UI_TEXT(LOG_KIND_LIMIT, 0,
 UI_TEXT(LOG_KIND_RUDDR, 0,
     "RUDDER AUTO",
     "RUDDER AUTO")
+UI_TEXT(LOG_KIND_ATEST, 0,
+    "AUTOMATIC TEST",
+    "AUTOMATISCHER TEST")
+UI_TEXT(LOG_KIND_SERVO, 0,
+    "SERVO RUN",
+    "SERVO-LAUF")
+UI_TEXT(LOG_KIND_MOTOR, 0,
+    "MOTOR RUN",
+    "MOTOR-LAUF")
+UI_TEXT(LOG_KIND_SUPPL, 0,
+    "SUPPLY RUN",
+    "NETZTEIL-LAUF")
+/* The graph of a time file (log_graph_draw.c): the summary with the run's
+ * duration and rate, the strips' labels, the hatch's words and the tags of
+ * a cell above its range and of a clipped meter window. */
+UI_TEXT(LOG_GRAPH_SUMMARY_TIME, 0,
+    "%s   %d ROWS   %.2fs   %.0fHz   %s",
+    "%s   %d ZEILEN   %.2fs   %.0fHz   %s")
+UI_TEXT(LOG_STRIP_PHASE, 0,
+    "PHASE",
+    "PHASE")
+UI_TEXT(LOG_STRIP_CC, 0,
+    "CC",
+    "CC")
+UI_TEXT(LOG_STRIP_MODEL, 0,
+    "MODEL",
+    "MODELL")
+UI_TEXT(LOG_ROWS_MISSING, 0,
+    "ROWS MISSING",
+    "ZEILEN FEHLEN")
+UI_TEXT(LOG_MK_OVER, 1,
+    ">",
+    ">")
+UI_TEXT(LOG_MK_CLIP, 8,
+    "CLIPPED",
+    "BEGRENZT")
 UI_TEXT(LOG_TAB_SEARCH, 0,
     "SEARCH",
     "SUCHE")
@@ -3064,6 +3100,9 @@ UI_TEXT(HG_LOG_GRAPH_CHIP, 0,
 UI_TEXT(HG_LOG_GRAPH_AREA, 0,
     "Over the pulse, a line a search and side; later searches dashed. A finger sets the cursor.",
     "Über dem Puls, eine Linie je Suche und Seite; spätere Suchen gestrichelt. Ein Finger setzt den Cursor.")
+UI_TEXT(HG_LOG_TIME_AREA, 0,
+    "Rows at their time; missing rows hatched. Under it the strips. One finger: cursor; two: zoom.",
+    "Zeilen zu ihrer Zeit; fehlende Zeilen schraffiert. Darunter die Streifen. Ein Finger: Cursor; zwei: Zoom.")
 UI_TEXT(HG_LOG_GRAPH_STEP, 0,
     "Move the cursor to the next point the graph draws.",
     "Bewegen den Cursor zum nächsten Punkt der Grafik.")

@@ -145,7 +145,7 @@ Berichte lassen sich auch über [WLAN](wifi.md) herunterladen.
 | MOTOR-Lauf | `MOTORnnn.CSV`, `ESCnnn.CSV` | `throttle`, `rpm`, `current`, `voltage` |
 | SERVO-Lauf | `SERVOnnn.CSV`, `BENCHnnn.CSV` | `pulse`, `angle`, `current`, `voltage` |
 
-Eine Spalte, die der Datei fehlt, entfällt. Eine LIMIT-RUN- oder RUDDER-AUTO-Datei öffnet in [der Grafik](#die-grafik-eines-limit-run-oder-rudder-auto) über ihrem Puls. Jede andere CSV und ein Laufname über Spalten keiner Art öffnen die Importansicht.
+Fehlt einem AUTOMATIC TEST, einem SUPPLY-, MOTOR- oder SERVO-Lauf eine Spalte, nimmt er die erste Zahlenspalte, deren Name auf diesen Namen endet: ein Lauf mit leeren Zellen in `current` und `voltage` zeichnet `ch1 current` und `ch1 voltage` von INA3221-Kanal 1. Jede andere Spalte, die der Datei fehlt, entfällt. Eine LIMIT-RUN- oder RUDDER-AUTO-Datei öffnet in [der Grafik](#die-grafik-eines-limit-run-oder-rudder-auto) über ihrem Puls, die anderen Arten in [der Grafik über ihrer Zeit](#ein-lauf-über-seiner-zeit). Jede andere CSV und ein Laufname über Spalten keiner Art öffnen die Importansicht.
 
 ## Die Importansicht
 
@@ -182,7 +182,31 @@ Die Kopfzeile nennt Datei, Zeilenzahl, Dauer und Abtastrate. Jede Spalte hat ein
 
 ![Die Liste von MEHR](view:logs-plot-more)
 
-Die Grafik verteilt Datenzeilen gleichmäßig nach Zeilennummer. Ihre Beschriftung stammt aus der Zeitspalte. Eine Datenlücke erscheint daher als Sprung in den Zeitangaben.
+Eine Laufdatei des Prüfstands steht über ihrer Zeit, wie der nächste Abschnitt zeigt. Eine Datei, die GRAFIK der Importansicht öffnet, verteilt ihre Zeilen gleichmäßig nach Zeilennummer: ihre Beschriftung stammt aus der Zeitspalte, eine Datenlücke erscheint daher als Sprung in den Zeitangaben.
+
+## Ein Lauf über seiner Zeit
+
+![Ein AUTOMATIC TEST: seine Schritte und seine Phasen, das Halten eingeschlossen](view:logs-atest-graph)
+
+Ein AUTOMATIC TEST, ein SUPPLY-, ein MOTOR- und ein SERVO-Lauf öffnen in der Grafik mit jeder Zeile bei ihrer Zeit. Die Kopfzeile nennt nach Dauer und Rate die Art: `ATEST012.CSV   1734 ZEILEN   186.20s   9Hz   AUTOMATISCHER TEST`.
+
+- Ein Zeitschritt länger als 3 mittlere Zeilenabstände (Median) und länger als 0.5s ist eine Lücke: die Linien brechen ab, die Lücke ist schraffiert, mit `ZEILEN FEHLEN`, wo es hineinpasst. Der AUTOMATIC TEST schreibt eine Zeile je Messwert, auch beim Halten; ein Halten ist darum keine Lücke.
+- Eine Datei, deren Zeitspalte zurückspringt, steht nach Zeilennummer und zeigt keine Dauer.
+- Jeder Schritt eines AUTOMATIC TEST beginnt mit einer Linie und seiner Nummer auf einem Schild.
+- Ein Balken am oberen Rand zeigt Zeilen über ihrem Bereich (`>65535` rpm, Schild `>`) in der Warnfarbe und begrenzte Messfenster (`clipped` über 0, Schild `BEGRENZT`) in der Gefahrenfarbe.
+- Tippe auf einen Chip, um seine Reihe hervorzuheben, erneut, um sie auszublenden, ein drittes Mal, um sie zurückzuholen. Zwei Finger zoomen und verschieben in der Zeit: die Zeit zwischen den Fingern bleibt unter ihnen. Ein Finger und `<`, `>` wirken wie in der Grafik oben.
+
+![Ein SUPPLY-Lauf: die Streifen CC und MODELL und eine Lücke](view:logs-supply-graph)
+
+Bis zu zwei Streifen von 6px stehen unter den Linien, jeder mit seiner Beschriftung am linken Ende:
+
+| Streifen | Läufe | Gefärbt, wo |
+|---|---|---|
+| PHASE | AUTOMATIC TEST | jede `phase` in ihrer Farbe; die Beschriftung nennt die Phase am Cursor, `PHASE MOVE` |
+| CC | AUTOMATIC TEST, SUPPLY | `mode` CC ist |
+| MODELL | SERVO, MOTOR, SUPPLY | `source` `model` ist: die Zeile stammt aus dem Modell des Panels |
+
+Ein Streifen erscheint nur, wo eine Zeile ihn setzt.
 
 ## Die Grafik eines LIMIT RUN oder RUDDER AUTO
 

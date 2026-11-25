@@ -399,6 +399,21 @@ TEST_CASE(a_file_with_a_column_missing_picks_the_rest)
                              LOG_MAX_SERIES) == 1);
     CHECK_STR_EQ(col(picks[0]), "measured");
 
+    /* A time run without a numeric `current` and `voltage` takes an
+     * INA3221 channel's (test_logview_time.c: a file whose cells of the
+     * two are empty). */
+    analyse("time (s);rpm (rpm);window;ch1 current (A);ch1 max (A);"
+            "ch1 voltage (V)");
+    REQUIRE(log_preset_picks(LOG_PRESET_SERVO, &g_an, picks,
+                             LOG_MAX_SERIES) == 2);
+    CHECK_STR_EQ(col(picks[0]), "ch1 current");
+    CHECK_STR_EQ(col(picks[1]), "ch1 voltage");
+    /* An XY preset takes no stand-in. */
+    analyse("row;search;side;pulse (us);ch1 current (A);state");
+    REQUIRE(log_preset_picks(LOG_PRESET_LIMIT, &g_an, picks,
+                             LOG_MAX_SERIES) == 1);
+    CHECK_STR_EQ(col(picks[0]), "pulse");
+
     /* A file named for a kind that holds none of its columns. */
     analyse("time (s);value");
     CHECK_EQ(log_preset_picks(LOG_PRESET_LIMIT, &g_an, picks,

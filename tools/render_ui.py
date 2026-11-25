@@ -637,6 +637,12 @@ SCREENS = {
     "logs-limit-graph": ("logs-limit-graph.png", "logs", "dark"),
     "logs-ruddr-search": ("logs-ruddr-search.png", "logs", "dark"),
     "logs-ruddr-steps": ("logs-ruddr-steps.png", "logs", "dark"),
+    # The graph of a time file: the AUTOMATIC TEST and the SERVO run of
+    # INA3221 windows of test/host/fixtures, a SUPPLY run with its CC and
+    # MODEL strips and a gap.
+    "logs-atest-graph": ("logs-atest-graph.png", "logs", "dark"),
+    "logs-windows-graph": ("logs-windows-graph.png", "logs", "dark"),
+    "logs-supply-graph": ("logs-supply-graph.png", "logs", "dark"),
     "logs-delete":("logs-delete.png","logs",       "dark"),
     # LOGS' ROOT tab: the runs of firmware 0.21.0 and older.
     "logs-root":  ("logs-root.png",  "logs",       "dark"),
@@ -1019,6 +1025,7 @@ def build(tmp: pathlib.Path, trace: bool = False) -> pathlib.Path:
     # band-inject view draws INJECT's bubble and --fit measures it.
     cmd = ["cc", "-O2", "-g", *STRICT, *FP_FLAGS,
            "-DRCBENCH_TOUCH_INJECTOR=1",
+           f'-DRENDER_FIXTURE_DIR="{REPO / "test" / "host" / "fixtures"}"',
            "-o", str(exe)]
     if trace:
         cmd += ["-DGFX_TEXT_TRACE"]

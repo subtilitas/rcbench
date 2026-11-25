@@ -52,6 +52,18 @@ void log_set_allocator(void *(*alloc_fn)(size_t), void (*free_fn)(void *))
     s_mem.release = (free_fn != NULL) ? free_fn : free;
 }
 
+void *log_mem_alloc(size_t bytes)
+{
+    return s_mem.alloc(bytes);
+}
+
+void log_mem_free(void *p)
+{
+    if (p != NULL) {
+        s_mem.release(p);
+    }
+}
+
 const char *log_err_str(log_err_t err)
 {
     switch (err) {

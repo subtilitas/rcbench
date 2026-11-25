@@ -402,6 +402,20 @@ void log_data_free(log_data_t *data);
  */
 void log_set_allocator(void *(*alloc_fn)(size_t), void (*free_fn)(void *));
 
+/**
+ * @brief A block from the allocator log_set_allocator() names, for what a
+ *        reader keeps beside the sample arrays.
+ * @param bytes  Its size.
+ * @return the block, NULL when it cannot be had.
+ */
+void *log_mem_alloc(size_t bytes);
+
+/**
+ * @brief Free a block of log_mem_alloc().
+ * @param p  The block; NULL does nothing.
+ */
+void log_mem_free(void *p);
+
 #ifdef __cplusplus
 }
 #endif

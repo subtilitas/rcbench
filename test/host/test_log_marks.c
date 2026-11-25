@@ -428,7 +428,7 @@ TEST_CASE(rows_past_the_ceiling_are_cut)
 TEST_CASE(markers_past_the_ceiling_are_counted)
 {
     memset(&g_mk, 0, sizeof(g_mk));
-    const log_mark_t m = { LOG_MARK_LAST, false, -1, 1.0f, 1.0f, 1.0f };
+    const log_mark_t m = { LOG_MARK_LAST, false, -1, 1.0f, 1.0f, 1.0f, -1, -1 };
     for (int i = 0; i < LOG_MARKS_MAX; ++i) {
         CHECK(log_marks_add(&g_mk, &m));
     }

@@ -145,7 +145,7 @@ OPEN reads the file's header. A run file the bench wrote opens in the plot at on
 | MOTOR run | `MOTORnnn.CSV`, `ESCnnn.CSV` | `throttle`, `rpm`, `current`, `voltage` |
 | SERVO run | `SERVOnnn.CSV`, `BENCHnnn.CSV` | `pulse`, `angle`, `current`, `voltage` |
 
-A column the file lacks is left out. A LIMIT RUN or RUDDER AUTO file opens in [the graph](#the-graph-of-a-limit-run-or-rudder-auto) over its pulse. Any other CSV, and a run's name over columns of no kind, opens in the import view.
+An AUTOMATIC TEST, SUPPLY, MOTOR or SERVO run that lacks a column takes the first numeric column whose name ends in that name: a run with empty `current` and `voltage` cells plots INA3221 channel 1's `ch1 current` and `ch1 voltage`. Any other column the file lacks is left out. A LIMIT RUN or RUDDER AUTO file opens in [the graph](#the-graph-of-a-limit-run-or-rudder-auto) over its pulse, the other kinds in [the graph over their time](#a-run-over-its-time). Any other CSV, and a run's name over columns of no kind, opens in the import view.
 
 ## The import view
 
@@ -182,7 +182,31 @@ The header names the file, its rows, its duration and its sample rate. Each colu
 
 ![MORE's list](view:logs-plot-more)
 
-The rows are spaced evenly by row number. The labels under the plot are the file's time column, so a gap in the rows is a jump in the labels.
+A run file the bench wrote stands over its time, as the next section shows. A file opened by the import view's PLOT is spaced evenly by row number: its labels are the file's time column, so a gap in the rows is a jump in the labels.
+
+## A run over its time
+
+![An AUTOMATIC TEST: its steps and its phases, holds included](view:logs-atest-graph)
+
+An AUTOMATIC TEST, a SUPPLY, a MOTOR and a SERVO run open in the graph with each row at its time. The summary adds the kind to the duration and the rate: `ATEST012.CSV   1734 ROWS   186.20s   9Hz   AUTOMATIC TEST`.
+
+- A step in time longer than 3 median row intervals and longer than 0.5s is a gap: the lines break and the gap is hatched, with `ROWS MISSING` where it fits. The AUTOMATIC TEST writes a row for every meter reading, holds included, so a hold is no gap.
+- A file whose time column steps back is placed by row number and shows no duration.
+- Each step of an AUTOMATIC TEST starts a line with the step's number on a tag.
+- A bar at the plot's top marks rows above their range (`>65535` rpm, tag `>`) in the warning colour and clipped meter windows (`clipped` above 0, tag `CLIPPED`) in the danger colour.
+- Tap a chip to focus its series, again to hide it, a third time to bring it back. Two fingers zoom and pan in time: the time between the fingers stays under them. One finger and `<`, `>` work as on the plot.
+
+![A SUPPLY run: the CC and MODEL strips and a gap](view:logs-supply-graph)
+
+Up to two strips of 6px stand under the lines, each with its label at its left end:
+
+| Strip | Runs | Coloured where |
+|---|---|---|
+| PHASE | AUTOMATIC TEST | each `phase` in its own colour; the label names the phase at the cursor, `PHASE MOVE` |
+| CC | AUTOMATIC TEST, SUPPLY | `mode` is CC |
+| MODEL | SERVO, MOTOR, SUPPLY | `source` is `model`: the row came from the panel's model |
+
+A strip shows only where a row sets it.
 
 ## The graph of a LIMIT RUN or RUDDER AUTO
 

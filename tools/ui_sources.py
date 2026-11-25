@@ -320,6 +320,7 @@ SOURCES = [
     "shared/ui/log_viewer_events.c",
     "shared/ui/log_graph.c",
     "shared/ui/log_graph_xy.c",
+    "shared/ui/log_graph_time.c",
     "shared/ui/log_graph_draw.c",
     "shared/ui/graph_key.c",
     "shared/ui/logs_strip.c",

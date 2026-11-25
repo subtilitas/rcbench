@@ -1818,7 +1818,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 670 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 671 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1887,7 +1887,7 @@ The host suite is 670 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_sense_trace_setup`, `test_sense_trace_lines`, `test_tone`, `test_edge_ring`,
 `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_pass_decode`, `test_pass_ring`, `test_pass_pio`, `test_pass_page`, `test_tone_link`, `test_endpoints_link`,
 `test_hitec_rx_link`, `test_knob`, `test_panel_i2c`, `test_bind_link`, `test_out16`, `test_servo_link`,
-`test_servo_link_restart`, `test_logview`, `test_logview_preset`, `test_logview_graph`, `test_logview_report`, `test_graph_key`, `test_logview_plot`,
+`test_servo_link_restart`, `test_logview`, `test_logview_preset`, `test_logview_graph`, `test_logview_time`, `test_logview_report`, `test_graph_key`, `test_logview_plot`,
 `test_logview_rank`, `test_logview_pages`, `test_logview_tabs`, `test_logview_delete`,
 `test_logview_touch`, `test_logview_layout`, `test_logview_row`, `test_log_name`,
 `test_log_take`, `test_card_tree`, `test_fm_tree`, `test_fm_ops`, `test_fm_logname`, `test_fm_match`,
@@ -2486,7 +2486,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-1108 committed screenshots to the current render, 554 in English and the same 554 in German, and `render_ui.py --fit` fails on a string that
+1114 committed screenshots to the current render, 557 in English and the same 557 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -2526,7 +2526,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_help.c` | 400 | 389 | 97.2% |
 | `shared/ui/help_outputs.c` | 74 | 72 | 97.3% |
 | `shared/ui/help_setup.c` | 95 | 92 | 96.8% |
-| `shared/ui/help_logs.c` | 71 | 69 | 97.2% |
+| `shared/ui/help_logs.c` | 74 | 72 | 97.3% |
 | `shared/ui/help_files.c` | 24 | 23 | 95.8% |
 | `shared/ui/help_upd.c` | 78 | 75 | 96.2% |
 | `shared/ui/help_wifi.c` | 59 | 59 | 100.0% |
@@ -2633,12 +2633,13 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/esc_stick_draw_run.c` | 595 | 551 | 92.6% |
 | `shared/ui/esc_stick_guide.c` | 72 | 71 | 98.6% |
 | `shared/ui/log_viewer_screen.c` | 387 | 377 | 97.4% |
-| `shared/ui/log_viewer_load.c` | 253 | 231 | 91.3% |
+| `shared/ui/log_viewer_load.c` | 256 | 234 | 91.4% |
 | `shared/ui/log_viewer_draw.c` | 444 | 430 | 96.8% |
-| `shared/ui/log_viewer_events.c` | 497 | 485 | 97.6% |
-| `shared/ui/log_graph.c` | 155 | 151 | 97.4% |
+| `shared/ui/log_viewer_events.c` | 520 | 508 | 97.7% |
+| `shared/ui/log_graph.c` | 211 | 206 | 97.6% |
 | `shared/ui/log_graph_xy.c` | 85 | 82 | 96.5% |
-| `shared/ui/log_graph_draw.c` | 250 | 232 | 92.8% |
+| `shared/ui/log_graph_time.c` | 240 | 230 | 95.8% |
+| `shared/ui/log_graph_draw.c` | 447 | 426 | 95.3% |
 | `shared/ui/graph_key.c` | 92 | 92 | 100.0% |
 | `shared/ui/logs_strip.c` | 40 | 37 | 92.5% |
 | `shared/ui/log_select.c` | 56 | 56 | 100.0% |
@@ -2723,11 +2724,11 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/settings/settings_file.c` | 370 | 364 | 98.4% |
 | `shared/settings/settings_backup.c` | 164 | 159 | 97.0% |
 | `shared/logfile/log_numbers.c` | 396 | 374 | 94.4% |
-| `shared/logfile/log_csv.c` | 536 | 509 | 95.0% |
+| `shared/logfile/log_csv.c` | 542 | 515 | 95.0% |
 | `shared/logfile/log_reader.c` | 212 | 201 | 94.8% |
 | `shared/logfile/log_fields.c` | 82 | 81 | 98.8% |
-| `shared/logfile/log_preset.c` | 49 | 49 | 100.0% |
-| `shared/logfile/log_marks.c` | 239 | 233 | 97.5% |
+| `shared/logfile/log_preset.c` | 70 | 69 | 98.6% |
+| `shared/logfile/log_marks.c` | 339 | 324 | 95.6% |
 | `shared/logfile/log_name.c` | 171 | 171 | 100.0% |
 | `shared/logfile/log_info.c` | 117 | 116 | 99.2% |
 | `shared/logfile/log_take.c` | 96 | 95 | 99.0% |
@@ -3014,7 +3015,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **112685** | **110184** | **97.8%** |
+| **total** | **113334** | **110809** | **97.8%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
