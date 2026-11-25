@@ -1003,6 +1003,7 @@ void app_main(void)
      * bench's timing must not depend on how long a frame takes.
      */
     /* Before the control task: the relay they share starts initialised. */
+    log_clock_start();
     panel_console_start();
     ESP_ERROR_CHECK(xTaskCreatePinnedToCore(control_task, "control", 6144,
                                             NULL, 10, NULL, 1) == pdPASS

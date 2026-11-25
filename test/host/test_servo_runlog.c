@@ -118,7 +118,7 @@ TEST_CASE(a_servo_row_with_a_supply_reading_carries_its_figures)
     line_of(1u, got, sizeof(got));
     /* time; voltage; current; power; rpm; esc; motor; charge; energy; ina
      * voltage; ina current; esc current; window; ch1 to ch3; source. */
-    CHECK_STR_EQ(got, "1.000;6.00;0.035;0.21;;;;1;0.01;;;;;;;;;;;;;;;;measured");
+    CHECK_STR_EQ(got, "1.000;6.00;0.035;0.21;;;;1;0.01;;;;;;;;;;;;;;;;measured;");
 }
 
 TEST_CASE(a_servo_rail_counts_50mA_up_to_100000mAh)
@@ -154,7 +154,7 @@ TEST_CASE(a_servo_row_without_a_supply_reading_has_empty_supply_cells)
     s.online = false;
     s.ok = 0u;
     const bench_state_t b = bench_empty();
-    static const char k_empty[] = "1.000;;;;;;;;;;;;;;;;;;;;;;;;measured";
+    static const char k_empty[] = "1.000;;;;;;;;;;;;;;;;;;;;;;;;measured;";
 
     log_writer_t w = writer();
     log_rail_t r;
@@ -198,7 +198,7 @@ TEST_CASE(a_supply_reading_with_one_half_writes_only_that_half)
     CHECK(log_writer_servo_row(&w, 1.0f, &b, &r, NULL));
     char got[LOG_WRITER_LINE_MAX];
     line_of(1u, got, sizeof(got));
-    CHECK_STR_EQ(got, "1.000;;0.035;;;;;0;;;;;;;;;;;;;;;;;measured");
+    CHECK_STR_EQ(got, "1.000;;0.035;;;;;0;;;;;;;;;;;;;;;;;measured;");
 }
 
 TEST_CASE(the_supply_model_stays_out_of_a_measured_row)
@@ -221,7 +221,7 @@ TEST_CASE(the_supply_model_stays_out_of_a_measured_row)
     CHECK(log_writer_servo_row(&w, 2.0f, &b, &r, NULL));
     char got[LOG_WRITER_LINE_MAX];
     line_of(1u, got, sizeof(got));
-    CHECK_STR_EQ(got, "2.000;6.00;0.035;0.21;;;;;;;;;;;;;;;;;;;;;model");
+    CHECK_STR_EQ(got, "2.000;6.00;0.035;0.21;;;;;;;;;;;;;;;;;;;;;model;");
 
     /* A PD mini reading still fresh when the link drops: the bench row is
      * the model's, and the measured supply is withheld from it. */
@@ -266,7 +266,7 @@ TEST_CASE(a_measured_row_after_a_modelled_stretch_takes_no_model_totals)
     CHECK(log_writer_servo_row(&w, 3.0f, &b, &r, NULL));
     char got[LOG_WRITER_LINE_MAX];
     line_of(1u, got, sizeof(got));
-    CHECK_STR_EQ(got, "3.000;;;;;;;;;;;;;;;;;;;;;;;;measured");
+    CHECK_STR_EQ(got, "3.000;;;;;;;;;;;;;;;;;;;;;;;;measured;");
 
     log_rail_take(&r, &s, true);
     log_rail_count(&t, &r, 0.0f, true);
@@ -299,7 +299,7 @@ TEST_CASE(a_servo_row_keeps_the_bench_columns)
     line_of(1u, got, sizeof(got));
     CHECK_STR_EQ(got,
                  "1.000;6.00;0.035;0.21;1200;31.5;;;;5.95;0.04;0.30;;;;;;;;;;;"
-                 ";;measured");
+                 ";;measured;");
 }
 
 /* ------------------------------------------------------- the run totals */
@@ -356,7 +356,7 @@ TEST_CASE(a_motor_row_is_unchanged)
     CHECK(log_writer_row(&w, 1.0f, &b));
     char got[LOG_WRITER_LINE_MAX];
     line_of(1u, got, sizeof(got));
-    CHECK_STR_EQ(got, "1.000;;;;11419;;46.3;;;;;;;;;;;;;;;;;measured");
+    CHECK_STR_EQ(got, "1.000;;;;11419;;46.3;;;;;;;;;;;;;;;;;measured;");
 
     b = bench_empty();
     b.flags = (uint16_t)LINK_BN_CURRENT_OK;
@@ -366,7 +366,7 @@ TEST_CASE(a_motor_row_is_unchanged)
     log_writer_t w2 = writer();
     CHECK(log_writer_row(&w2, 1.0f, &b));
     line_of(1u, got, sizeof(got));
-    CHECK_STR_EQ(got, "1.000;;10.00;;;;;;5;;;;10.00;;;;;;;;;;;measured");
+    CHECK_STR_EQ(got, "1.000;;10.00;;;;;;5;;;;10.00;;;;;;;;;;;measured;");
 }
 
 TEST_CASE(a_servo_file_has_the_motor_files_columns_but_throttle_and_two_more)
@@ -400,11 +400,11 @@ TEST_CASE(a_servo_file_has_the_motor_files_columns_but_throttle_and_two_more)
         char servo[512];
         line_of(0u, servo, sizeof(servo));
         char want[512];
-        const size_t keep = strlen(motor) - strlen("source");
-        snprintf(want, sizeof(want), "%.*spulse (us);angle (deg);source",
-                 (int)keep, motor);
+        const size_t keep = strlen(motor) - strlen("source;info");
+        snprintf(want, sizeof(want),
+                 "%.*spulse (us);angle (deg);source;info", (int)keep, motor);
         CHECK_STR_EQ(servo, want);
-        CHECK(strncmp(motor + keep, "source", 6) == 0);
+        CHECK(strncmp(motor + keep, "source;info", 11) == 0);
         /* And the row of a sample with a throttle has no cell of it. */
         line_of(1u, servo, sizeof(servo));
         CHECK(strstr(servo, "25.0") == NULL);
@@ -437,7 +437,7 @@ TEST_CASE(a_servo_run_reads_back_with_its_supply_columns)
     log_analysis_t a;
     CHECK_EQ(log_csv_analyse(&src, &opts, &a), LOG_OK);
     CHECK_EQ(a.ragged_rows, 0);
-    CHECK_EQ(a.n_columns, 25);
+    CHECK_EQ(a.n_columns, 26);
     CHECK_EQ(a.time_index, 0);
     for (int c = 1; c <= 3; ++c) {
         CHECK(a.columns[c].numeric);

@@ -460,7 +460,7 @@ TEST_CASE(the_csv_reads_back_in_the_viewer)
     log_csv_opts_default(&opts);
     log_analysis_t an;
     CHECK_EQ(log_csv_analyse(&src, &opts, &an), LOG_OK);
-    CHECK_EQ(an.n_columns, 19);
+    CHECK_EQ(an.n_columns, 20);
     CHECK_EQ(an.delimiter, ';');
     CHECK_EQ(an.ragged_rows, 0);
     CHECK_EQ(an.time_index, 0);
@@ -468,7 +468,7 @@ TEST_CASE(the_csv_reads_back_in_the_viewer)
     CHECK(an.columns[9].numeric);        /* current (A) */
     CHECK(an.columns[0].monotonic);
     /* An arrival carries its travel time, and every row its meter. */
-    CHECK(strstr(g.csv_text, ";CV;700;PDMINI;;;;;\n") != NULL);
+    CHECK(strstr(g.csv_text, ";CV;700;PDMINI;;;;;;\n") != NULL);
 }
 
 /* ---------------------------------------------------- the move's deadline */

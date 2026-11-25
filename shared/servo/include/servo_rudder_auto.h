@@ -325,6 +325,9 @@ typedef struct {
     char     meter[20];       /**< the INA3221 channel; "" names it INA3221 */
     char     source[12];      /**< servo_angle_name() */
     char     firmware[16];    /**< the bench's version */
+    /** @brief The `info` cell of RUDDRnnn.CSV's first row (log_info.h), ""
+     *         for an empty one. */
+    char     info[SERVO_RUN_INFO_MAX];
     const char *const *text;  /**< SERVO_STR_COUNT entries, NULL English */
 } servo_rauto_cfg_t;
 

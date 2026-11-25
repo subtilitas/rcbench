@@ -166,6 +166,7 @@ void publish_log_auto(void)
 void settings_text_changed(setting_text_id_t id)
 {
     publish_log_folder(id);
+    log_set_run_text(id, settings_text(id));
     panel_imu_text_changed(id);
     panel_dial_text_changed(id);
     panel_pnode_text_changed(id);

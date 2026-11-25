@@ -297,6 +297,9 @@ typedef enum {
     SET_TEXT_BNODE_ADDR,     /**< the bound balance node's BLE address and
                                   its type; key bnode_ble                 */
     SET_TEXT_BNODE_NAME,     /**< its name, "rcbench-bal-3A10"          */
+    SET_TEXT_RUN_NOTE,       /**< RUN NOTE: the run's condition, typed
+                                  beside DUT NAME, for the files' info
+                                  cell (log_info.h); key srv_note        */
     SETTING_TEXT_COUNT
 } setting_text_id_t;
 

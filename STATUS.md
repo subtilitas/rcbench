@@ -214,7 +214,7 @@ render side in one atomic word; a figure whose source is not the row's is an emp
 `log_servo_pack()` in `shared/bench/log_writer.c`, `servo_screen_log_pulse()`,
 `servo_screen_log_angle()`; host-tested in `test_servo_runlog`, `test_servo_runlog_cols` and
 `test_servo_log_figures`; the panel's calls in `panel_poll.c` and `panel_frame.c` are not
-host-tested); LOGS reads up to 25 columns and opens a SERVO file with `pulse`, `angle`,
+host-tested); LOGS reads up to 26 columns and opens a SERVO file with `pulse`, `angle`,
 `current` and `voltage` chosen (`log_fields_picks()`, `test_servo_runlog_cols`); a poll that
 brings more than one INA3221 window writes one row for each, the sample in the last; the
 rule is `shared/bench/log_cadence.c`, host-tested in `test_log_cadence` against a model of
@@ -1810,7 +1810,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 648 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 649 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1886,7 +1886,7 @@ The host suite is 648 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_fm_recheck`, `test_fm_req`, `test_files_screen`, `test_files_ops`, `test_files_open`,
 `test_files_view`, `test_files_edit`, `test_files_save`, `test_files_changed`,
 `test_files_rescan`, `test_logs_strip`, `test_textkey_editor`, `test_textkey_see`,
-`test_textkey_cursor`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_servo_runlog`,
+`test_textkey_cursor`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_log_info`, `test_servo_runlog`,
 `test_servo_runlog_cols`, `test_servo_log_figures`, `test_log_cadence`, `test_perf_watch`, `test_pass_stats`, `test_report_lines`, `test_report_steps`,
 `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`,
 `test_kst_pio`, `test_kst_port`, `test_kst_port_cut`, `test_kst_link`, `test_prog_port`,

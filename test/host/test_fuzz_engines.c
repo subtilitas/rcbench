@@ -346,9 +346,12 @@ static void one_servo_run(uint32_t seed, unsigned id)
                 RULE(fields_of(text) == csv_fields,
                      "a CSV row of %u fields under a header of %u: %s",
                      fields_of(text), csv_fields, text);
-                RULE(strstr(text, "nan") == NULL
-                     && strstr(text, "inf") == NULL, "nan or inf in %s",
-                     text);
+                /* A row's numbers; the header's last column is "info". */
+                RULE(fields_of(text) != csv_fields || text[0] < '0'
+                     || text[0] > '9'
+                     || (strstr(text, "nan") == NULL
+                         && strstr(text, "inf") == NULL),
+                     "nan or inf in %s", text);
             }
             servo_test_pop(&st);
         }

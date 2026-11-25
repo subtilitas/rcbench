@@ -8,6 +8,22 @@ history is in git.
 
 ### Added
 
+- Every CSV the bench writes ends in a text column `info`: the run's own
+  description on the first data row, empty on the others, as `key=value`
+  pairs joined by `&`, such as
+  `dut=MG90S&note=greased&date=2026-11-24T10:31&fw=0.23.18`. `SERVOnnn`,
+  `ATESTnnn`, `LIMITnnn` and `RUDDRnnn` carry DUT name (`dut`); all six
+  kinds the Run note (`note`), the local date and time at the start
+  (`date`, left out while the clock is unset) and the firmware (`fw`);
+  `ATESTnnn`, `LIMITnnn` and `RUDDRnnn` also the servo type, the meter and
+  the angle source. A `&`, `=`, `;` or `"` inside a value is written `_`.
+  Firmware 0.23.17's LOGS reads every new file but a SERVO file with three
+  INA3221 groups, 26 columns; LOGS takes 26 columns
+  ([Screens](docs/Screens.md#logs)).
+- Run note on the SERVO lists, under DUT name on the hub's, TEST's, LIMIT
+  RUN's and RUDDER AUTO's: up to 23 characters on the name keyboard,
+  empty by default, kept as DUT name is (key `srv_note`), and written into
+  the `info` column of every run's file until it is changed.
 - LIMIT RUN writes `LIMITnnn.CSV` in `USER/LOGS` before its report
   `LIMITnnn.TXT`, under the same number: one row a position a search
   judged, columns `row`, `search` (1 the first search of a side, 2 a
@@ -150,8 +166,8 @@ history is in git.
 
 - `RUDDRnnn.CSV` has 3 more columns after its 9: `kind` (`STEP`, `VERIFY`,
   `SEARCH`), `pulse (us)` and `current (A)` (a SEARCH row's mean current,
-  to 1mA). The first 9 columns are unchanged; LOGS reads files of 9 and of
-  12 columns.
+  to 1mA), then `info`. The first 9 columns are unchanged; LOGS reads files
+  of 9 and of 13 columns.
 - OpenYGE specification ([OpenYGE](docs/OpenYGE.md)): section 5.3 lists
   indices 0 to 31 with values, scale, unit, writable values, access
   (identity, telemetry, raw, CHECK, edit) and sources, checked against the

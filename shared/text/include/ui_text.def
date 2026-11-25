@@ -1947,6 +1947,11 @@ UI_TEXT(SET_DISCARD, 0,
 UI_TEXT(SET_DUT_NAME, 0,
     "DUT name",
     "Name des Prüflings")
+/* RUN NOTE: the run's condition, typed beside DUT NAME on the SERVO lists
+ * and written into every run's file. */
+UI_TEXT(SET_RUN_NOTE, 0,
+    "Run note",
+    "Notiz zum Lauf")
 /* SETUP > SD CARD's two folders: a row's name, its keyboard's title, and
  * the row's help. */
 UI_TEXT(SET_AUTO_DIR, 0,

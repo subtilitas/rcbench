@@ -106,11 +106,13 @@ bool servo_limrun_csv_line(const servo_limrun_t *r, unsigned idx, char *buf,
     if (w->state == SERVO_LIMRUN_ROW_BOUND) {
         snprintf(end, sizeof(end), "%u", (unsigned)w->end_us);
     }
-    snprintf(buf, n, "%u;%u;%s;%u;%.3f;%.2f;%s;%s;%.3f;%s;%s", idx,
+    /* The run's description, info, on the first row and empty after. */
+    snprintf(buf, n, "%u;%u;%s;%u;%.3f;%.2f;%s;%s;%.3f;%s;%s;%s", idx,
              (unsigned)w->search, w->side == SERVO_LIMRUN_HI ? "HIGH" : "LOW",
              (unsigned)w->pulse_us, (double)w->ma / 1000.0,
              (double)w->mv / 1000.0, deg,
              k_state[w->state <= SERVO_LIMRUN_ROW_BOUND ? w->state : 0u],
-             (double)w->free_ma / 1000.0, thr, end);
+             (double)w->free_ma / 1000.0, thr, end,
+             idx == 1u ? r->cfg.info : "");
     return true;
 }

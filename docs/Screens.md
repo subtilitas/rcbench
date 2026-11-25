@@ -1237,7 +1237,7 @@ give the spacing of the rows while the INA3221 is enabled.
 
 
 ```
-time (s);voltage (V);current (A);power (W);rpm (rpm);throttle (%);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V);source
+time (s);voltage (V);current (A);power (W);rpm (rpm);throttle (%);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V);source;info
 ```
 
 In a MOTOR file `voltage`, `current` and `power` are what MOTOR & ESC
@@ -1276,7 +1276,7 @@ A SERVO file, from a switch to ARMED on SERVO, has no `throttle` column:
 the switch arms no motor. It has two more columns before `source`:
 
 ```
-...;ch3 voltage (V);pulse (us);angle (deg);source
+...;ch3 voltage (V);pulse (us);angle (deg);source;info
 ```
 
 - `voltage`, `current`, `power`, `charge` and `energy` are the servo rail's
@@ -1313,6 +1313,8 @@ INA228 figures come from the power node (INA228 source NODE,
 produced by the panel's model (the SIMULATED mark). Supply files use the
 same final column, without `node`. Files without it end at `ch3 voltage` or `energy`;
 LOGS and the tools read both forms. `source` is text and is never plotted.
+After it, `info` holds the run's description on the first row: DUT name on
+a SERVO file, the run note, the date and the firmware ([Logs](#logs)).
 
 `ina voltage` and `ina current` come from the INA228, the IOmcu's or the
 power node's, and are empty when it is not the source. `esc current` is the ESC's telemetry current, read from
@@ -1345,7 +1347,7 @@ channel columns follow that map as it stands when the file opens, one group
 of three per channel that watches a target, named after the target:
 
 ```
-window;port 1 current (A);port 1 max (A);port 1 voltage (V);out 3 current (A);out 3 max (A);out 3 voltage (V);supply current (A);supply max (A);supply voltage (V);source
+window;port 1 current (A);port 1 max (A);port 1 voltage (V);out 3 current (A);out 3 max (A);out 3 voltage (V);supply current (A);supply max (A);supply voltage (V);source;info
 ```
 
 - A channel takes a group while its part is fitted, its shunt is not 0 and
@@ -1355,10 +1357,10 @@ window;port 1 current (A);port 1 max (A);port 1 voltage (V);out 3 current (A);ou
   others from 0x40 CH1 to 0x43 CH3.
 - Two channels on one target add the channel to the name:
   `out 3 0x41 ch2 current (A)`.
-- At most 3 groups, 24 columns in a MOTOR file and 25 in a SERVO file: the
-  fourth watching channel and later are in no file. LOGS reads at most 25
-  columns.
-- A file with fewer groups ends `source` earlier: 14 + 3 x groups + 1
+- At most 3 groups, 25 columns in a MOTOR file and 26 in a SERVO file,
+  `info` included: the fourth watching channel and later are in no file.
+  LOGS reads at most 26 columns, firmware 0.23.17 and older 25.
+- A file with fewer groups ends `source` earlier: 14 + 3 x groups + 2
   columns, and 1 more in a SERVO file. With no channel watching anything the file has no channel
   column.
 
@@ -1787,7 +1789,7 @@ SERVO opens on its hub: eight tiles of 328 x 130px in SETUP's grid, at x
 | LIVE | LIVE | the dial, the knob, the readings COMMANDED, MEASURED and CURRENT; OPTIONS opens the servo profile |
 | SWEEP | SWEEP | the dial with the sweep; OPTIONS opens CURVE, SPEED, RANGE and DWELL TIME |
 | TEST | TEST | the AUTOMATIC TEST card, SUPPLY's caps, the plot and the run's box, the READY card in place of the output card, HOLD 2s: ARM + START in the footer; OPTIONS opens the automatic test's list |
-| LIMIT RUN | LIMIT RUN | the mode and output lines, LOW END and HIGH END and the state lines on the left card, the READY card in place of the output card, HOLD 2s: ARM + START in the footer; OPTIONS opens MODE, SERVO, SERVO PULSES, CURRENT, Wait before PWM, DUT NAME and USER LOGS ([Running it](Servo.md#running-it)) |
+| LIMIT RUN | LIMIT RUN | the mode and output lines, LOW END and HIGH END and the state lines on the left card, the READY card in place of the output card, HOLD 2s: ARM + START in the footer; OPTIONS opens MODE, SERVO, SERVO PULSES, CURRENT, Wait before PWM, DUT NAME, RUN NOTE and USER LOGS ([Running it](Servo.md#running-it)) |
 | RUDDER | RUDDER | deflection in ° and mm, LENGTH, 1000us, CENTER, 2000us, ZERO and RESET MAX, -10us and +10us without a knob that answers ([Rudder deflection](Servo.md#rudder-deflection)) |
 | RUDDER AUTO | RUDDER AUTO | AUTO's box in place of LENGTH and the drive buttons, the READY card in place of the output card, HOLD 2s: ARM + START in the footer ([AUTO end points](Servo.md#auto-end-points)) |
 | KST | SERVO > KST | the KST and Chaservo programmer over the left card ([Programmer](#programmer)) |
@@ -2755,18 +2757,18 @@ until SAVE.
 
 | Screen | OPTIONS opens |
 | --- | --- |
-| the hub | the servo profile: OUTPUT with TYPE, FRAME RATE, PULSE MIN, PULSE CENTER, PULSE MAX, TRIM, TRAVEL, REVERSE and HV SERVO; DUT with NAME and REPORT |
+| the hub | the servo profile: OUTPUT with TYPE, FRAME RATE, PULSE MIN, PULSE CENTER, PULSE MAX, TRIM, TRAVEL, REVERSE and HV SERVO; DUT with NAME, Run note and REPORT |
 | LIVE | the servo profile, the hub's list; ANGLE with ENC CENTER under it |
 | SWEEP | CURVE, SPEED, Range and Dwell time |
-| TEST | VOLTAGE STEPS: Step 4.8V, Step 6.0V, HV SERVO, Step 7.4V, Step 8.4V; BROWN-OUT: Brown-out, Brown-out minimum voltage, Brown-out step; PASS/FAIL LIMITS: Stall threshold, Idle current max, Holding current max, Travel time max; LENGTH AND TIMING: Length by, Test time, Movements, Dwell time, Settling time; RANGE: Range, OUTPUT; DUT: DUT name, Report |
-| LIMIT RUN | MODE, SERVO, Hitec D receive (with SERVO at HITEC D SERIES), SERVO PULSES, CURRENT, Wait before PWM, DUT name and User logs; a run programs at 5.0V ([Servo](Servo.md#the-runs-50v)). CURRENT is SUPPLY's SET A, `SET A 2.00A`, a tap its keypad; `--` and locked without a PD mini ([Servo](Servo.md#the-runs-current-limit)) |
+| TEST | VOLTAGE STEPS: Step 4.8V, Step 6.0V, HV SERVO, Step 7.4V, Step 8.4V; BROWN-OUT: Brown-out, Brown-out minimum voltage, Brown-out step; PASS/FAIL LIMITS: Stall threshold, Idle current max, Holding current max, Travel time max; LENGTH AND TIMING: Length by, Test time, Movements, Dwell time, Settling time; RANGE: Range, OUTPUT; DUT: DUT name, Run note, Report |
+| LIMIT RUN | MODE, SERVO, Hitec D receive (with SERVO at HITEC D SERIES), SERVO PULSES, CURRENT, Wait before PWM, DUT name, Run note and User logs; a run programs at 5.0V ([Servo](Servo.md#the-runs-50v)). CURRENT is SUPPLY's SET A, `SET A 2.00A`, a tap its keypad; `--` and locked without a PD mini ([Servo](Servo.md#the-runs-current-limit)) |
 | RUDDER | LENGTH, ENC CENTER and ANGLE SOURCE |
-| RUDDER AUTO | the targets, MARGIN, TOLERANCE, SERVO, Hitec D receive (with SERVO at HITEC D SERIES), SERVO PULSES, ANGLE SOURCE, CURRENT, Wait before PWM, DUT name and User logs; CURRENT as LIMIT RUN's |
+| RUDDER AUTO | the targets, MARGIN, TOLERANCE, SERVO, Hitec D receive (with SERVO at HITEC D SERIES), SERVO PULSES, ANGLE SOURCE, CURRENT, Wait before PWM, DUT name, Run note and User logs; CURRENT as LIMIT RUN's |
 | SERVO > KST | KST EXPERT MODE, one level down |
 | HITEC | SERIES and RECEIVE |
 
-Range and Dwell time are one setting each on SWEEP and TEST, DUT name and
-Report the hub's, User logs SETUP > SD CARD's: a change on one list is
+Range and Dwell time are one setting each on SWEEP and TEST, DUT name, Run
+note and Report the hub's, User logs SETUP > SD CARD's: a change on one list is
 what every other list, card and run reads.
 
 The profile opens from a function screen too, in its OPTIONS list's
@@ -2850,6 +2852,7 @@ APPLY and CANCEL buttons ending 8px above the card floor.
 | LIMIT RUN > OPTIONS | SERVO | KST/CHASERVO, HITEC D SERIES or HITEC CLASSIC; the programmer the run's sessions go to. The limit run's own stored setting, the same as the READY card's SERVO row |
 | LIMIT RUN > OPTIONS | SERVO PULSES | KEEP or 1000-2000; locked while PORT is not on a PROG PORT or SERVO is on a HITEC entry. 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0us in the run's read session, before the search. KEEP by default; for the session |
 | the hub's list | NAME | the device under test, up to 23 characters, for the report |
+| the hub's list | Run note | the run's condition, up to 23 characters, `greased` or `200g on the horn`: written into the `info` column of every run's file until it is changed ([Logs](#logs)); empty by default |
 | the hub's list | REPORT | a text report beside each test's log |
 | LIVE's and RUDDER's lists | ENC CENTER | a tap takes the live count as the center, with the servo at its neutral, and sets nothing without a reading from the current link (none after a link loss until a new one arrives) or while the sensor reports no magnet; the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, SENSORS, AS5600 center |
 | SERVO > KST > OPTIONS | KST EXPERT MODE | whether the [KST and Chaservo programmer](ServoProgrammer.md#expert-mode) shows DEAD BAND, BOOST, STRETCH, RELEASE PAIRING and the LOCKED tab; OFF by default, ON after a 2s hold (a shorter press shows the hint on the band), OFF with a tap. Kept across restarts |
@@ -3359,12 +3362,13 @@ A run is recorded to a `SUPPLnnn.CSV` of its own in `BENCH/LOGS`, one row
 every 50ms, while Auto logs on [Setup](#setup) > SD CARD is ON:
 
 ```
-time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);energy (Wh);source
+time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);energy (Wh);source;info
 ```
 
 Missing readings leave empty cells. `mode` is CV, CC or OFF, or empty when
 the supply does not answer. `source` is `measured` for PD mini readings
-and `model` for the panel's model.
+and `model` for the panel's model. `info` holds the run note, the date and
+the firmware on the first row ([Logs](#logs)).
 
 Bench runs take logging priority: ARM during a supply run closes its file.
 If the output is still on at the next SAFE, a new supply file begins.
@@ -3613,7 +3617,32 @@ folder and User log folder under [Setup](#setup) > SD CARD:
 | `BENCH/LOGS` | `SUPPLnnn.CSV` | one switch-on of the SUPPLY output while the bench is SAFE |
 | `USER/LOGS` | `ATESTnnn.CSV` | one AUTOMATIC TEST; its report is `ATESTnnn.TXT` |
 | `USER/LOGS` | `LIMITnnn.CSV` | one LIMIT RUN, a row a judged position ([format](Servo.md#installed-mechanical-limit)); its report is `LIMITnnn.TXT`, alone for a run that judged no position or one of firmware 0.23.17 and older |
-| `USER/LOGS` | `RUDDRnnn.CSV` | one AUTO end points run on RUDDER, a row a measure, 12 columns (9 from firmware 0.23.17 and older); its report is `RUDDRnnn.TXT` |
+| `USER/LOGS` | `RUDDRnnn.CSV` | one AUTO end points run on RUDDER, a row a measure, 13 columns, `info` the last (9 from firmware 0.23.17 and older); its report is `RUDDRnnn.TXT` |
+
+Each of these six kinds ends in a text column `info`: the run's own
+description on the first data row, empty on every other row. It holds
+`key=value` pairs joined by `&`, in the order of the table:
+
+```text
+dut=MG90S&note=greased&date=2026-11-24T10:31&fw=0.23.18
+```
+
+| Key | Value | Files |
+| --- | --- | --- |
+| `dut` | DUT name from the SERVO lists, up to 23 characters | `SERVO`, `ATEST`, `LIMIT`, `RUDDR` |
+| `note` | Run note from the SERVO lists, up to 23 characters | all six |
+| `date` | the panel's local date and time at the run's start, `YYYY-MM-DDTHH:MM`; left out while the clock is unset | all six |
+| `fw` | the panel's firmware version | all six |
+| `servo` | the profile's TYPE | `ATEST`, `LIMIT`, `RUDDR` |
+| `meter` | the meter of the current: an INA3221 channel, `PDMINI` or `MODEL` | `ATEST`, `LIMIT`, `RUDDR` |
+| `angle` | the angle source, `AS5600` or the IMU with its axis | `ATEST`, `LIMIT`, `RUDDR`, with an angle source |
+
+A key with an empty value is left out. Inside a value each `&`, `=`, `;`,
+`"` and control character is written `_`: `MG90S "2"` reads back as
+`MG90S _2_`. LOGS takes `info` as a text column and plots none of it. A file
+of firmware 0.23.17 and older has no `info` column. Firmware 0.23.17's LOGS
+reads every new file but a SERVO file with three INA3221 groups: 26 columns,
+one past the 25 it takes.
 
 The name follows the screen that armed the bench: an arm that asks for the
 throttle outputs writes `MOTORnnn`, an arm that asks for the surfaces writes

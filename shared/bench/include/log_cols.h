@@ -5,9 +5,10 @@
  *        after what it watches: FAST's channel first, then the others in
  *        channel order, at most LOG_COLS_GROUPS of them.
  *
- * The reader takes 25 columns (LOG_MAX_COLUMNS).  A MOTOR file's other
- * columns are 15 of them and a SERVO file's 16, so a channel past the
- * third watching one is not logged.
+ * The reader takes 26 columns (LOG_MAX_COLUMNS).  A MOTOR file's other
+ * columns are 16 of them and a SERVO file's 17, the `info` column
+ * (log_info.h) among them, so a channel past the third watching one is not
+ * logged.
  *
  * A channel takes a group when its part is enabled, its shunt is not 0
  * and its WATCH is not NONE.  The group is "<target> current (A);
@@ -33,9 +34,9 @@ extern "C" {
 /** @brief The most groups: one per channel of the sensor map. */
 #define LOG_COLS_MAX     LINK_SM_CHANNELS
 /**
- * @brief The groups a file carries: a MOTOR file's 15 other columns and 3
- *        groups of 3 make 24, and a SERVO file's 16 and 9 make the 25 the
- *        reader takes (LOG_MAX_COLUMNS).
+ * @brief The groups a file carries: a MOTOR file's 16 other columns and 3
+ *        groups of 3 make 25, and a SERVO file's 17 and 9 make the 26 the
+ *        reader takes (LOG_MAX_COLUMNS); firmware 0.23.17 takes 25.
  */
 #define LOG_COLS_GROUPS  3u
 /** @brief "supply 0x43 ch3" and its terminator. */

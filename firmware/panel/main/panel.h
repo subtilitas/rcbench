@@ -29,6 +29,7 @@
 #include "bench_state.h"
 #include "dial_ctl.h"
 #include "log_cols.h"
+#include "settings.h"
 #include "bind_link.h"
 #include "card_tree.h"
 #include "busfault_screen.h"
@@ -787,6 +788,21 @@ typedef enum {
  * @param dir a folder card_folder_check() takes, a path from the card's root
  */
 void log_set_folder(log_folder_t kind, const char *dir);
+
+/**
+ * @brief DUT NAME or RUN NOTE as the settings now hold it, for the `info`
+ *        cell of the next bench run's file (run_info_bench()).  Called by
+ *        the text observer on app_main; other strings are ignored.
+ * @param id   SET_TEXT_DUT_NAME or SET_TEXT_RUN_NOTE
+ * @param text the string in force
+ */
+void log_set_run_text(setting_text_id_t id, const char *text);
+
+/**
+ * @brief Name time() as the clock of every run's date (log_info_set_clock()):
+ *        called once on app_main before the tasks that start runs.
+ */
+void log_clock_start(void);
 
 /**
  * @brief The open markers and the folder each was opened in, read as one, for

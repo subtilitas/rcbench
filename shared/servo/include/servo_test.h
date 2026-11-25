@@ -469,6 +469,9 @@ typedef struct {
     uint8_t  ina_why;       /**< servo_test_ina_t: why the INA3221 that is
                                  on in SETUP is not this run's meter    */
     char     firmware[16];  /**< the servo's firmware, for the report */
+    /** @brief The `info` cell of ATESTnnn.CSV's first data row
+     *         (log_info.h), "" for an empty one. */
+    char     info[SERVO_RUN_INFO_MAX];
     /**
      * @brief The report's language: a table of SERVO_STR_COUNT entries, each
      *        NULL for the English, or NULL for English throughout.  The CSV is

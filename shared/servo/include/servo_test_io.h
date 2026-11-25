@@ -136,10 +136,17 @@ typedef struct {
 
 /* --------------------------------------------------- what it hands out */
 
+/** @brief Bytes of a run's `info` cell, the terminator included: the
+ *         panel's run description (LOG_INFO_MAX in log_info.h), carried on
+ *         the first data row of ATESTnnn.CSV, LIMITnnn.CSV and
+ *         RUDDRnnn.CSV. */
+#define SERVO_RUN_INFO_MAX 168u
+
 /** @brief The longest line a log row or a report line takes, terminator
  *         included: the CSV's header with the angle source's columns is
- *         247 characters. */
-#define SERVO_TEST_LINE_MAX 256u
+ *         252 characters, and the first data row carries the `info` cell
+ *         beside its figures. */
+#define SERVO_TEST_LINE_MAX (256u + SERVO_RUN_INFO_MAX)
 
 /** @brief What the run hands out for the caller to write. */
 typedef enum {

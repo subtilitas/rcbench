@@ -159,6 +159,7 @@ void log_csv_opts_default(log_csv_opts_t *opts)
     opts->ambiguous_as = LOG_AMBIG_THOUSANDS;
     opts->time_index = LOG_TIME_AUTO;
     opts->max_rows = LOG_DEFAULT_MAX_ROWS;
+    opts->max_columns = LOG_MAX_COLUMNS;
 }
 
 /**
@@ -529,7 +530,11 @@ static log_err_t scan_geometry(log_source_t *src, char delimiter,
         out->cut_row = reader.cut;   /* a header cut off is no header */
         return LOG_ERR_NO_HEADER;
     }
-    if (s_work.row.total > LOG_MAX_COLUMNS) {
+    /* The caller's ceiling, held to the build's: 0 is the build's. */
+    const int ceiling = (opts->max_columns > 0
+                         && opts->max_columns < LOG_MAX_COLUMNS)
+                            ? opts->max_columns : LOG_MAX_COLUMNS;
+    if (s_work.row.total > ceiling) {
         return LOG_ERR_TOO_MANY_COLUMNS;
     }
     out->n_columns = s_work.row.total;

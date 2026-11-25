@@ -84,6 +84,8 @@ Jede Datei enthält einen Lauf und liegt im Ordner seiner Art. Der Name kennzeic
 | Stammverzeichnis | `BENCHnnn.CSV`, `ESCnnn.CSV`, `SERVOnnn.CSV` | Läufe von Firmware 0.21.0 und älter; im Stammverzeichnis ist `SERVOnnn` ein Servotest |
 | Stammverzeichnis | `SERVOnnn.TXT` allein | ein Endlagenlauf von Firmware 0.21.0 und älter |
 
+Die letzte Spalte jeder CSV des Prüfstands, `info`, beschreibt den Lauf in der ersten Datenzeile: `dut=MG90S&note=greased&date=2026-11-24T10:31&fw=0.23.18`. `dut` ist der Name des Prüflings und `note` die Notiz zum Lauf aus den [SERVO-Listen](servo-settings.md), je bis 23 Zeichen; `date` ist das lokale Datum mit Uhrzeit des Panels beim Start und fehlt, solange die Uhr nicht gestellt ist; `fw` ist die Firmware. AUTOMATISCHER TEST, LIMIT RUN und RUDER AUTO fügen `servo`, `meter` und `angle` an; MOTOR- und SUPPLY-Dateien tragen kein `dut`. In einem Wert wird jedes `&`, `=`, `;` und `"` als `_` geschrieben. LOGS von Firmware 0.23.17 liest jede solche Datei außer einer SERVO-Datei mit drei INA3221-Gruppen, die 26 Spalten hat.
+
 Der Name richtet sich nach der Seite, deren ARM den Prüfstand aktiviert hat. Das gilt auch bei IOmcu-Versionen vor 0.18.0, die bei jedem Schalten auf ARMED die Gasausgänge mit aktivieren.
 
 Ein Laufname darf hinter seiner Nummer ein Label tragen, etwa `MOTOR042_kv1200.CSV`; LOG UMBENENNEN auf [Motor und ESC](motor.md#das-log-eines-laufs) schreibt eines. Das Label folgt auf ein `_`, hat hinter einem Präfix aus fünf Buchstaben höchstens 46 Bytes und darf Punkte und weitere `_` enthalten. Der Lauf behält Nummer, Art und Platz in der Liste, und der nächste Lauf erhält die Nummer darüber.

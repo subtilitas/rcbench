@@ -16,9 +16,10 @@
  *     they are not either side of PULSE CENTER: RANGE, the share of the
  *     travel a run covers, and OUTPUT, the profile in force, whose tap
  *     opens the profile (svs_profile_open()) on PULSE MIN;
- *   - DUT: the device under test's NAME and REPORT.
+ *   - DUT: the device under test's NAME, the RUN NOTE and REPORT.
  *
- * RANGE and DWELL TIME are SWEEP's too, NAME and REPORT the hub's: one
+ * RANGE and DWELL TIME are SWEEP's too, NAME, RUN NOTE and REPORT the
+ * hub's: one
  * setting each, whichever list sets it.  The list writes nothing to the
  * card on a change: SAVE writes, and the leave warning's DISCARD puts the
  * stored values back through settings_apply_all().  HV SERVO is the
@@ -214,6 +215,8 @@ const ui_setlist_row_t svs_test_rows[SVS_TEST_ROWS] = {
     UI_SL_ROW_CUSTOM(&k_output),
     UI_SL_ROW_HEADING(TX_SV_PG_DUT, NULL),
     { (uint8_t)UI_SL_TEXT, (int8_t)SET_TEXT_DUT_NAME, (setting_id_t)0,
+      TX_COUNT, NULL },
+    { (uint8_t)UI_SL_TEXT, (int8_t)SET_TEXT_RUN_NOTE, (setting_id_t)0,
       TX_COUNT, NULL },
     UI_SL_ROW_SETTING(SET_SERVO_REPORT),
 };
