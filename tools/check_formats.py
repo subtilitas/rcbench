@@ -47,6 +47,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SHARED = ROOT / "shared"
 PROTOCOLS = ROOT / "protocols"
+THIRD_PARTY = ROOT / "third_party"
 DEF = SHARED / "text" / "include" / "ui_text.def"
 UI_TEXT_H = SHARED / "ui" / "include" / "ui_text.h"
 # The files that look the servo test's words up, each with its macro: the
@@ -215,6 +216,10 @@ def main() -> int:
         # they are, since no lookup is swapped in them.
         for d in sorted(PROTOCOLS.glob("*/include")):
             includes += ["-I", str(d)]
+        # The vendored libraries' headers (third_party/), as system
+        # headers: their own warnings are not this check's.
+        for d in sorted(THIRD_PARTY.glob("*/")):
+            includes += ["-isystem", str(d)]
         sources = sorted(p for p in tree.rglob("*.c")
                          if not p.name.startswith("gfx_font"))
         mbed = mbedtls_includes(ROOT, os.environ)

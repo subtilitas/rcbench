@@ -1,0 +1,13 @@
+# The labels test/host/render_label.c draws and compares with the PNG of the
+# same name in this folder; test/tools/test_label_qr.py decodes each code.
+# name|roll|kind|text|DUT NAME  (kind: id, or test with the version)
+#
+# SPDX-License-Identifier: MIT
+40x30|40x30|id|KST_X10-0000A|WING LEFT
+40x30_long|40x30|id|KST X10 HV WING L-ZZZZZ|AILERON RIGHT OUTBOARD
+40x30_nodut|40x30|id|SERVO-00000|
+48x30|48x30|id|KST_X10-0000A|WING LEFT
+30x20|30x20|id|KST_X10-0000A|WING LEFT
+15x30|15x30|id|KST_X10-0000A|WING LEFT
+25x100|25x100|id|KST_X10-0000A|WING LEFT
+test_40x30|40x30|test|0.23.17|

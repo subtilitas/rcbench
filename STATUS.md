@@ -1734,6 +1734,20 @@ the same loop (the search from the neutral outward to a bind, the end point into
 nothing written) is host-tested against the same model with a horn held at a block
 (`test_hitec_find`, `test_hitec_panel_find`).
 
+### Servo label
+
+The label of a servo id for a Supvan T50M Pro label printer is built and host-tested; no
+screen prints it yet. `shared/ui/label_bitmap.c` holds the printer's column-major bitmap,
+48 bytes a column, least significant bit first; reading (0, 0) on a 40x30mm roll is column 0,
+head row 351, and (319, 223) is column 223, head row 32 (`test_label_bitmap`).
+`shared/ui/label_layout.c` places the QR (Quick Response) code from the vendored qrcodegen
+1.8.0 (`third_party/qrcodegen`) at level M, versions 1 to 3, quiet zone 2 modules, beside or
+over the prefix, the serial and DUT NAME, for rolls of 15 to 48mm by 20 to 100mm
+(`test_label_layout`). `render_label` writes a label as a PNG in reading orientation; the host
+suite compares 8 labels with `test/host/fixtures/label/`, and `test/tools/test_label_qr.py`
+decodes their codes with OpenCV or zbarimg. Print quality and a scan of a printed label are
+not measured.
+
 ## The tree
 
 Directories only. `git ls-files <directory>` lists the files of one.
@@ -1818,7 +1832,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 671 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 673 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1948,7 +1962,8 @@ The host suite is 671 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
 `test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_srv_policy`, `test_node_srv_poll`, `test_node_view`,
 `test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client`, `test_devimg`, `test_devimg_board`, `test_upd_dev`, `test_upd_fetch`,
-`test_upd_wizard`, `test_upd_wizard_map`, `test_upd_wiz_view` and `test_harness`.
+`test_upd_wizard`, `test_upd_wizard_map`, `test_upd_wiz_view`, `test_label_bitmap`, `test_label_layout`
+and `test_harness`.
 
 The harness is `test/host/greatest.h`, written for this project. `CHECK_EQ` compares
 integers and pointers as `long` and does not compile on a floating operand; `CHECK_FEQ`
