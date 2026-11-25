@@ -350,6 +350,9 @@ typedef enum {
     SERVO_STR_L_R_RESTORE_HITEC,
     SERVO_STR_L_R_MODE_PROGRAM_HITEC,
     SERVO_STR_L_R_MODE_PROGRAM_NONE_HITEC,
+    /* LIMITnnn.CSV's rows in the limit run's report. */
+    SERVO_STR_L_R_ROWS,
+    SERVO_STR_L_R_ROWS_PAST,
     SERVO_STR_COUNT
 } servo_str_t;
 

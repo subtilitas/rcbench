@@ -289,7 +289,7 @@ ARMED.
 | OUTPUTS, grid view | 1 | the protocol list's face, the first cell, LAST WRITE; on a PROG PORT entry its face and rows |
 | LOGS, file list | 2 | the folder tabs, a row, RESCAN, WI-FI; FILES, PREV and NEXT when paged, the scroll bar, DELETE, OPEN |
 | LOGS, import view | 2 | DETECTED, SEP, NUM; the columns, BACK, PLOT |
-| LOGS, plot | 1 | a series chip, the plot, BACK, `<` and `>` |
+| LOGS, plot | 2 | a series chip, the plot, BACK, `<` and `>`; MORE |
 | FILES, panes | 3 | LOGS, the left pane's folder, a row and scroll bar; RESCAN, COPY, MOVE, RENAME; the right pane, DELETE, NEW, INFO, OPEN |
 | WI-FI, radio off | 3 | ACCESS POINT, JOIN HOME NETWORK, CHOOSE HOME NETWORK, FORGET HOME NETWORK, ACCESS CODE ON or OFF; HOTSPOT PASSWORD and ACCESS CODE, RANDOM or KEPT; the card |
 | WI-FI, radio on | 1, 2 with the writes' button | the rows while the page is served, the lines under them, WI-FI OFF; the browser writes' button |
@@ -1237,7 +1237,7 @@ give the spacing of the rows while the INA3221 is enabled.
 
 
 ```
-time (s);voltage (V);current (A);power (W);rpm (rpm);throttle (%);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V);source
+time (s);voltage (V);current (A);power (W);rpm (rpm);throttle (%);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V);source;info
 ```
 
 In a MOTOR file `voltage`, `current` and `power` are what MOTOR & ESC
@@ -1276,7 +1276,7 @@ A SERVO file, from a switch to ARMED on SERVO, has no `throttle` column:
 the switch arms no motor. It has two more columns before `source`:
 
 ```
-...;ch3 voltage (V);pulse (us);angle (deg);source
+...;ch3 voltage (V);pulse (us);angle (deg);source;info
 ```
 
 - `voltage`, `current`, `power`, `charge` and `energy` are the servo rail's
@@ -1313,6 +1313,8 @@ INA228 figures come from the power node (INA228 source NODE,
 produced by the panel's model (the SIMULATED mark). Supply files use the
 same final column, without `node`. Files without it end at `ch3 voltage` or `energy`;
 LOGS and the tools read both forms. `source` is text and is never plotted.
+After it, `info` holds the run's description on the first row: DUT name on
+a SERVO file, the run note, the date and the firmware ([Logs](#logs)).
 
 `ina voltage` and `ina current` come from the INA228, the IOmcu's or the
 power node's, and are empty when it is not the source. `esc current` is the ESC's telemetry current, read from
@@ -1345,7 +1347,7 @@ channel columns follow that map as it stands when the file opens, one group
 of three per channel that watches a target, named after the target:
 
 ```
-window;port 1 current (A);port 1 max (A);port 1 voltage (V);out 3 current (A);out 3 max (A);out 3 voltage (V);supply current (A);supply max (A);supply voltage (V);source
+window;port 1 current (A);port 1 max (A);port 1 voltage (V);out 3 current (A);out 3 max (A);out 3 voltage (V);supply current (A);supply max (A);supply voltage (V);source;info
 ```
 
 - A channel takes a group while its part is fitted, its shunt is not 0 and
@@ -1355,10 +1357,10 @@ window;port 1 current (A);port 1 max (A);port 1 voltage (V);out 3 current (A);ou
   others from 0x40 CH1 to 0x43 CH3.
 - Two channels on one target add the channel to the name:
   `out 3 0x41 ch2 current (A)`.
-- At most 3 groups, 24 columns in a MOTOR file and 25 in a SERVO file: the
-  fourth watching channel and later are in no file. LOGS reads at most 25
-  columns.
-- A file with fewer groups ends `source` earlier: 14 + 3 x groups + 1
+- At most 3 groups, 25 columns in a MOTOR file and 26 in a SERVO file,
+  `info` included: the fourth watching channel and later are in no file.
+  LOGS reads at most 26 columns, firmware 0.23.17 and older 25.
+- A file with fewer groups ends `source` earlier: 14 + 3 x groups + 2
   columns, and 1 more in a SERVO file. With no channel watching anything the file has no channel
   column.
 
@@ -1552,13 +1554,15 @@ written with it. A refused write leaves all changes unsaved and SAVE reads
 
 ![PROGRAM's list](img/motor-program.png)
 
-PROGRAM shows two ESC-programming rows in the task area, using the same
+PROGRAM shows three ESC-programming rows in the task area, using the same
 registry as SERVO (`shared/ui/prog_registry.c`,
 [Programmer](#programmer)). `ESCs via throttle stick` (German
 `ESCs per Gasknüppel`) belongs to STICK MENU (`STICK-MENÜ`). Its right side
 reads `THROTTLE OUTPUT >`: it drives the throttle pins, uses no programming
-port and requires no IOmcu capability. The other row opens the signal-wire
-session described below.
+port and requires no IOmcu capability. The second row opens the signal-wire
+session described below. The third, `YGE ESCs` in TELEMETRY WIRE, opens
+[YGE ESC programming](YgeProgramming.md); it stays dimmed until the IOmcu
+reports `LINK_CAP_YGE`.
 
 While a run cannot start on the bench as it stands, the row names the first
 reason in place of `THROTTLE OUTPUT`, in the warning colour, and still opens
@@ -1787,7 +1791,7 @@ SERVO opens on its hub: eight tiles of 328 x 130px in SETUP's grid, at x
 | LIVE | LIVE | the dial, the knob, the readings COMMANDED, MEASURED and CURRENT; OPTIONS opens the servo profile |
 | SWEEP | SWEEP | the dial with the sweep; OPTIONS opens CURVE, SPEED, RANGE and DWELL TIME |
 | TEST | TEST | the AUTOMATIC TEST card, SUPPLY's caps, the plot and the run's box, the READY card in place of the output card, HOLD 2s: ARM + START in the footer; OPTIONS opens the automatic test's list |
-| LIMIT RUN | LIMIT RUN | the mode and output lines, LOW END and HIGH END and the state lines on the left card, the READY card in place of the output card, HOLD 2s: ARM + START in the footer; OPTIONS opens MODE, SERVO, SERVO PULSES, CURRENT, Wait before PWM, DUT NAME and USER LOGS ([Running it](Servo.md#running-it)) |
+| LIMIT RUN | LIMIT RUN | the mode and output lines, LOW END and HIGH END and the state lines on the left card, the READY card in place of the output card, HOLD 2s: ARM + START in the footer; OPTIONS opens MODE, SERVO, SERVO PULSES, CURRENT, Wait before PWM, DUT NAME, RUN NOTE and USER LOGS ([Running it](Servo.md#running-it)) |
 | RUDDER | RUDDER | deflection in ° and mm, LENGTH, 1000us, CENTER, 2000us, ZERO and RESET MAX, -10us and +10us without a knob that answers ([Rudder deflection](Servo.md#rudder-deflection)) |
 | RUDDER AUTO | RUDDER AUTO | AUTO's box in place of LENGTH and the drive buttons, the READY card in place of the output card, HOLD 2s: ARM + START in the footer ([AUTO end points](Servo.md#auto-end-points)) |
 | KST | SERVO > KST | the KST and Chaservo programmer over the left card ([Programmer](#programmer)) |
@@ -2549,8 +2553,10 @@ ARMED; the ARM row reads SAFE while a session holds the bench SAFE.
 After the run's last command the bench switches to SAFE. STOP,
 SAFE, link loss, leaving the screen, an automatic-test abort condition or
 a FAIL ends the run with every output off; after a FAIL in a session the
-supply goes off once the LEAVE gave the port back. The verdict, values or endpoints and
-`LIMITnnn.TXT`, or `USER LOGS OFF` when User logs is OFF, stay on the
+supply goes off once the LEAVE gave the port back. The run writes
+`LIMITnnn.CSV`, a row a judged position, and the report `LIMITnnn.TXT`. The
+verdict, values or endpoints and `LIMITnnn.TXT`, or `USER LOGS OFF` when
+User logs is OFF, stay on the
 state lines until the next run.
 
 On the rbmod carrier, PROG 5V supplies a programming-port run and replaces
@@ -2753,18 +2759,18 @@ until SAVE.
 
 | Screen | OPTIONS opens |
 | --- | --- |
-| the hub | the servo profile: OUTPUT with TYPE, FRAME RATE, PULSE MIN, PULSE CENTER, PULSE MAX, TRIM, TRAVEL, REVERSE and HV SERVO; DUT with NAME and REPORT |
+| the hub | the servo profile: OUTPUT with TYPE, FRAME RATE, PULSE MIN, PULSE CENTER, PULSE MAX, TRIM, TRAVEL, REVERSE and HV SERVO; DUT with NAME, Run note and REPORT |
 | LIVE | the servo profile, the hub's list; ANGLE with ENC CENTER under it |
 | SWEEP | CURVE, SPEED, Range and Dwell time |
-| TEST | VOLTAGE STEPS: Step 4.8V, Step 6.0V, HV SERVO, Step 7.4V, Step 8.4V; BROWN-OUT: Brown-out, Brown-out minimum voltage, Brown-out step; PASS/FAIL LIMITS: Stall threshold, Idle current max, Holding current max, Travel time max; LENGTH AND TIMING: Length by, Test time, Movements, Dwell time, Settling time; RANGE: Range, OUTPUT; DUT: DUT name, Report |
-| LIMIT RUN | MODE, SERVO, Hitec D receive (with SERVO at HITEC D SERIES), SERVO PULSES, CURRENT, Wait before PWM, DUT name and User logs; a run programs at 5.0V ([Servo](Servo.md#the-runs-50v)). CURRENT is SUPPLY's SET A, `SET A 2.00A`, a tap its keypad; `--` and locked without a PD mini ([Servo](Servo.md#the-runs-current-limit)) |
+| TEST | VOLTAGE STEPS: Step 4.8V, Step 6.0V, HV SERVO, Step 7.4V, Step 8.4V; BROWN-OUT: Brown-out, Brown-out minimum voltage, Brown-out step; PASS/FAIL LIMITS: Stall threshold, Idle current max, Holding current max, Travel time max; LENGTH AND TIMING: Length by, Test time, Movements, Dwell time, Settling time; RANGE: Range, OUTPUT; DUT: DUT name, Run note, Report |
+| LIMIT RUN | MODE, SERVO, Hitec D receive (with SERVO at HITEC D SERIES), SERVO PULSES, CURRENT, Wait before PWM, DUT name, Run note and User logs; a run programs at 5.0V ([Servo](Servo.md#the-runs-50v)). CURRENT is SUPPLY's SET A, `SET A 2.00A`, a tap its keypad; `--` and locked without a PD mini ([Servo](Servo.md#the-runs-current-limit)) |
 | RUDDER | LENGTH, ENC CENTER and ANGLE SOURCE |
-| RUDDER AUTO | the targets, MARGIN, TOLERANCE, SERVO, Hitec D receive (with SERVO at HITEC D SERIES), SERVO PULSES, ANGLE SOURCE, CURRENT, Wait before PWM, DUT name and User logs; CURRENT as LIMIT RUN's |
+| RUDDER AUTO | the targets, MARGIN, TOLERANCE, SERVO, Hitec D receive (with SERVO at HITEC D SERIES), SERVO PULSES, ANGLE SOURCE, CURRENT, Wait before PWM, DUT name, Run note and User logs; CURRENT as LIMIT RUN's |
 | SERVO > KST | KST EXPERT MODE, one level down |
 | HITEC | SERIES and RECEIVE |
 
-Range and Dwell time are one setting each on SWEEP and TEST, DUT name and
-Report the hub's, User logs SETUP > SD CARD's: a change on one list is
+Range and Dwell time are one setting each on SWEEP and TEST, DUT name, Run
+note and Report the hub's, User logs SETUP > SD CARD's: a change on one list is
 what every other list, card and run reads.
 
 The profile opens from a function screen too, in its OPTIONS list's
@@ -2848,6 +2854,7 @@ APPLY and CANCEL buttons ending 8px above the card floor.
 | LIMIT RUN > OPTIONS | SERVO | KST/CHASERVO, HITEC D SERIES or HITEC CLASSIC; the programmer the run's sessions go to. The limit run's own stored setting, the same as the READY card's SERVO row |
 | LIMIT RUN > OPTIONS | SERVO PULSES | KEEP or 1000-2000; locked while PORT is not on a PROG PORT or SERVO is on a HITEC entry. 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0us in the run's read session, before the search. KEEP by default; for the session |
 | the hub's list | NAME | the device under test, up to 23 characters, for the report |
+| the hub's list | Run note | the run's condition, up to 23 characters, `greased` or `200g on the horn`: written into the `info` column of every run's file until it is changed ([Logs](#logs)); empty by default |
 | the hub's list | REPORT | a text report beside each test's log |
 | LIVE's and RUDDER's lists | ENC CENTER | a tap takes the live count as the center, with the servo at its neutral, and sets nothing without a reading from the current link (none after a link loss until a new one arrives) or while the sensor reports no magnet; the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, SENSORS, AS5600 center |
 | SERVO > KST > OPTIONS | KST EXPERT MODE | whether the [KST and Chaservo programmer](ServoProgrammer.md#expert-mode) shows DEAD BAND, BOOST, STRETCH, RELEASE PAIRING and the LOCKED tab; OFF by default, ON after a 2s hold (a shorter press shows the hint on the band), OFF with a tap. Kept across restarts |
@@ -3357,12 +3364,13 @@ A run is recorded to a `SUPPLnnn.CSV` of its own in `BENCH/LOGS`, one row
 every 50ms, while Auto logs on [Setup](#setup) > SD CARD is ON:
 
 ```
-time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);energy (Wh);source
+time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);energy (Wh);source;info
 ```
 
 Missing readings leave empty cells. `mode` is CV, CC or OFF, or empty when
 the supply does not answer. `source` is `measured` for PD mini readings
-and `model` for the panel's model.
+and `model` for the panel's model. `info` holds the run note, the date and
+the firmware on the first row ([Logs](#logs)).
 
 Bench runs take logging priority: ARM during a supply run closes its file.
 If the output is still on at the next SAFE, a new supply file begins.
@@ -3521,15 +3529,22 @@ NO PACK. The picture above is rendered from a model.
 
 ![The file browser](img/logs.png)
 
-Browse the card, open a file, check what the import detected, then plot:
+Browse the card and open a file. A run file the bench wrote opens in the
+plot with its kind's columns; any other CSV opens in the import view
+first:
 
-![The import view](img/logs-import.png)
-![The plot](img/logs-plot.png)
-
+![A MOTOR run as it opens: throttle, rpm, current and voltage](img/logs-plot.png)
 ![A SERVO run as it opens: pulse, angle, current and voltage](img/logs-servo-plot.png)
+![A LIMIT RUN in the graph: current and angle over the pulse](img/logs-limit-graph.png)
+![A RUDDER AUTO's search in the graph](img/logs-ruddr-search.png)
+![A RUDDER AUTO's steps in the graph](img/logs-ruddr-steps.png)
+![MORE on the plot: COLUMNS](img/logs-plot-more.png)
+![The import view, reached by MORE > COLUMNS](img/logs-import.png)
 
-The home tag moves up one level, like BACK: plot to import view, import
-view to file list, file list to menu. In the DELETE dialog it acts as CANCEL.
+The home tag moves up one level, like BACK: the plot to where it came
+from (the file list after OPEN, the import view after PLOT), import view
+to file list, file list to menu. Over MORE's list it closes the list. In
+the DELETE dialog it acts as CANCEL.
 
 The LOGS tile opens a shared strip with LOGS and FILES: two 499 x 40px
 tabs across the top of the body, y 5 to 45. These screen titles stay the
@@ -3571,19 +3586,81 @@ the full body and show no footer.
 The import view shows DETECTED (400px wide) beside the column list (600px,
 7 rows at a pitch of 48px), with four buttons of 246 x 52px under them.
 The plot is 992 x 316px under four series chips of 240 x 44px; under it
-run the time labels, then BACK (140 x 52px), `<` and `>` (96 x 52px) and
-the cursor's line. The DELETE question is a box of 700 x 280px with CANCEL
+run the time labels, then BACK (140 x 52px), `<` and `>` (96 x 52px), the
+cursor's line and MORE (140 x 52px) at the right end. MORE opens a choice
+list of 300 x 64px over it, 8px above the footer, with one row of 56px:
+COLUMNS opens the import view's column list. A press beside the list
+closes it and presses nothing. The DELETE question is a box of 700 x 280px with CANCEL
 and DELETE of 300 x 56px. Labels, rows, buttons and the import's warnings
 draw in the 10 x 20 face; the sentences of the empty list, the question,
 the boxes that say why nothing shows and the file messages in 12 x 24; the
 plot's time labels and the ranges of the columns and the chips in 8 x 16.
 
+OPEN matches a file to the kind of run it holds by its header's column
+names first and its name second (`shared/logfile/log_preset.c`). A
+labelled name (`MOTOR042_kv1200.CSV`), a name in lower case and the files
+of firmware 0.21.0 and later match as well. A matched file opens in the
+plot with the kind's columns, each where the file holds it as numbers; a
+column the file lacks is left out, and nothing takes its place:
+
+| Kind | Header holds | Name | Columns plotted |
+| --- | --- | --- | --- |
+| LIMIT RUN | `search`, `side`, `pulse`, `state` | `LIMITnnn` | `pulse`, `current`, `angle` |
+| RUDDER AUTO | `step`, `side`, `write`, `within` | `RUDDRnnn` | `pulse`, `current`, `measured` |
+| AUTOMATIC TEST | `test`, `phase`, `command` | `ATESTnnn` | `command`, `current`, `voltage`, `angle` |
+| SUPPLY run | `set`, `limit`, `mode` | `SUPPLnnn` | `set`, `voltage`, `limit`, `current` |
+| MOTOR run | `rpm` and `throttle` | `MOTORnnn`, `ESCnnn` | `throttle`, `rpm`, `current`, `voltage` |
+| SERVO run | `pulse`, `angle`, `source` | `SERVOnnn`, `BENCHnnn` | `pulse`, `angle`, `current`, `voltage` |
+
+A LIMIT RUN and a RUDDER AUTO file open in the graph: their rows placed
+over the pulse (RUDDER AUTO's STEPS: over the step), not over the row
+number. The graph shows the whole file of up to 2,048 rows; a longer file,
+and one without its pulse column (RUDDER AUTO of firmware 0.23.17), is
+plotted by row number as the other kinds are. A bench file of firmware 0.21.0 names
+neither `throttle` nor `pulse`: `ESCnnn.CSV` opens as a MOTOR run,
+`BENCHnnn.CSV` and `SERVOnnn.CSV` as a SERVO run, and the same header
+under any other name as a MOTOR run. A file that matches no kind, a file
+named as a run that holds none of its kind's columns, and a file the
+reader refuses open in the import view.
+
+The graph (`shared/ui/log_graph*.c`, `shared/logfile/log_marks.c`) keeps
+the plot's geometry: the summary line names the file, its rows and its
+kind (`LIMIT006.CSV   116 ROWS   LIMIT RUN`); a chip of 240 x 44px a
+series; the plot 992 x 316px; the x labels in the x column's unit under
+it; the cursor's line in the footer (`pulse 1040us   row 112 of 116`).
+
+| Picture | x | Series | A line a | Markers |
+| --- | --- | --- | --- | --- |
+| LIMIT RUN | `pulse` | `current`, `angle` | search and side; search 1 solid, 2 (after the overset) and 3 (the last check) dashed | C center (the first row's pulse); per side B bound (its last BOUND row) and E end point (that row's `end point`), L last position at the side's outermost pulse where that is not its bound; F free current and T threshold as levels of `current` from the center to the side's outermost pulse |
+| RUDDER AUTO, SEARCH | `pulse` | `current`, `measured` | side: a new line where the pulse turns back | C center, E end point (the steps' `side`), L the outermost position of each side |
+| RUDDER AUTO, STEPS | `step` | `measured`, `goal` | side; the 3 verifies as points | a measure outside the tolerance (`within` 0) in the warning colour; a 10px tick at the plot's foot under each measure after a write |
+
+- The x scale runs from the lowest x value of the rows drawn and the
+  markers to the highest, unpadded: those two stand on the plot's first and
+  last pixel column. Each series has its own scale, padded 6% each way and
+  never across zero.
+- A marker's tag holds its letter, 14 x 18px, in two rows at the plot's
+  top; the chips the series leave hold the legend of the letters (German:
+  M, A, E, L, F, S). RUDDER AUTO shows SEARCH and STEPS as two tabs of
+  115 x 38px in the fourth chip's place; a tab loads its picture's columns.
+- A tap on a chip focuses its series: drawn 2px thick, its scale's top and
+  foot at the plot's left edge in its colour. A second tap hides it, a
+  third brings it back focused.
+- One finger on the plot puts the cursor on the nearest row drawn: nearest
+  in x, and of rows at one column the one nearest the finger on the first
+  series shown. `<` and `>` step to the next row the picture draws. The
+  chips show each series' value at the cursor in the decimals of its
+  scale.
+- Two fingers do not zoom the graph; MORE > COLUMNS reaches the import
+  view, whose PLOT draws the picked columns by row number.
+
 The CSV (comma-separated values) reader accepts decimal commas or points,
 a units row and rows of different lengths. The import view shows its
-interpretation before plotting. It initially selects up to 4 numeric
-columns. SERVO files prefer `pulse`, `angle`, `current` and `voltage`,
-then other numeric columns where any preferred column has no numbers.
-Other files select their first 4 numeric columns.
+interpretation before plotting. Reached by MORE > COLUMNS, it keeps the
+plot's columns selected. Opened for a file no kind matches, it selects up
+to 4 numeric columns: in a file with a numeric `pulse` column `pulse`,
+`angle`, `current` and `voltage` first, then other numeric columns; in
+any other file its first 4 numeric columns.
 
 Each numeric column shows its minimum and maximum. It uses one decimal
 place below 1000 at both ends, otherwise none: `11.9..12.6V` or
@@ -3610,8 +3687,33 @@ folder and User log folder under [Setup](#setup) > SD CARD:
 | `BENCH/LOGS` | `MOTORnnn.CSV` | one switch to ARMED from MOTOR & ESC's ARM or a stick run on its PROGRAM |
 | `BENCH/LOGS` | `SUPPLnnn.CSV` | one switch-on of the SUPPLY output while the bench is SAFE |
 | `USER/LOGS` | `ATESTnnn.CSV` | one AUTOMATIC TEST; its report is `ATESTnnn.TXT` |
-| `USER/LOGS` | `LIMITnnn.TXT` | one LIMIT RUN's report, with no CSV beside it |
-| `USER/LOGS` | `RUDDRnnn.CSV` | one AUTO end points run on RUDDER, a row a measure; its report is `RUDDRnnn.TXT` |
+| `USER/LOGS` | `LIMITnnn.CSV` | one LIMIT RUN, a row a judged position ([format](Servo.md#installed-mechanical-limit)); its report is `LIMITnnn.TXT`, alone for a run that judged no position or one of firmware 0.23.17 and older |
+| `USER/LOGS` | `RUDDRnnn.CSV` | one AUTO end points run on RUDDER, a row a measure, 13 columns, `info` the last (9 from firmware 0.23.17 and older); its report is `RUDDRnnn.TXT` |
+
+Each of these six kinds ends in a text column `info`: the run's own
+description on the first data row, empty on every other row. It holds
+`key=value` pairs joined by `&`, in the order of the table:
+
+```text
+dut=MG90S&note=greased&date=2026-11-24T10:31&fw=0.23.18
+```
+
+| Key | Value | Files |
+| --- | --- | --- |
+| `dut` | DUT name from the SERVO lists, up to 23 characters | `SERVO`, `ATEST`, `LIMIT`, `RUDDR` |
+| `note` | Run note from the SERVO lists, up to 23 characters | all six |
+| `date` | the panel's local date and time at the run's start, `YYYY-MM-DDTHH:MM`; left out while the clock is unset | all six |
+| `fw` | the panel's firmware version | all six |
+| `servo` | the profile's TYPE | `ATEST`, `LIMIT`, `RUDDR` |
+| `meter` | the meter of the current: an INA3221 channel, `PDMINI` or `MODEL` | `ATEST`, `LIMIT`, `RUDDR` |
+| `angle` | the angle source, `AS5600` or the IMU with its axis | `ATEST`, `LIMIT`, `RUDDR`, with an angle source |
+
+A key with an empty value is left out. Inside a value each `&`, `=`, `;`,
+`"` and control character is written `_`: `MG90S "2"` reads back as
+`MG90S _2_`. LOGS takes `info` as a text column and plots none of it. A file
+of firmware 0.23.17 and older has no `info` column. Firmware 0.23.17's LOGS
+reads every new file but a SERVO file with three INA3221 groups: 26 columns,
+one past the 25 it takes.
 
 The name follows the screen that armed the bench: an arm that asks for the
 throttle outputs writes `MOTORnnn`, an arm that asks for the surfaces writes
@@ -3669,7 +3771,8 @@ the panel rescans next time, allowing a deleted highest number to be reused.
 LOGS lists CSV runs and recognised reports. DELETE on a run also removes
 its matching report. A report is a `.TXT` with a run name, identified by
 `log_report_number()`, the same rule FILES uses. Examples are `ATESTnnn.TXT`
-with or without `ATESTnnn.CSV`, `LIMITnnn.TXT` without CSV, and root-level
+with or without `ATESTnnn.CSV`, `LIMITnnn.TXT` with or without
+`LIMITnnn.CSV`, and root-level
 `SERVOnnn.TXT` from firmware 0.21.0 or earlier. Other `.TXT` files are
 not listed. A CSV and its report are separate rows, CSV first: OPEN
 imports the CSV or opens the report in the [text viewer](#the-text-viewer).
@@ -3782,7 +3885,8 @@ zoom out, move both together to pan. The view stays where released;
 a bar below the plot marks its position within the run. The narrowest
 view has 8 samples and the widest covers the run. One finger or `<` and
 `>` moves the cursor. Moving it beyond a zoomed edge carries the view
-along. BACK returns to import.
+along. BACK returns to the file list, or to the import view when its PLOT
+opened the plot.
 
 The plot spaces rows evenly by row number. Labels and cursor readout use
 the file's time column relative to its first row; header duration is last
@@ -4052,7 +4156,8 @@ above the row of buttons, using the 12 x 24 font.
 | OPEN | enters a folder, opens a recognised log CSV in LOGS, or opens another file in the text viewer, subject to the limits below |
 
 A CSV listed by LOGS in one of its three folders (ROOT, USER, BENCH)
-opens in the import view on that folder's [Logs](#logs) tab. If it exceeds
+opens on that folder's [Logs](#logs) tab: a run file the bench wrote in
+the plot, any other CSV in the import view. If it exceeds
 2GiB minus 1 byte, LOGS shows its file list and the reason instead. If the
 card was swapped after FILES listed it, nothing opens and the message is
 `The card was taken out or swapped. Tap RESCAN.`
@@ -6412,6 +6517,7 @@ tag returns to SETUP > WIRELESS on the device's entry.
 | Found list | rows of 640 x 48px at a 52px pitch from x 16, y 44 | the devices the last scan found, strongest first, up to 8: the name, else the address, and the RSSI, `rcbench-pwr-3456  -58dBm`; the bound one lit in the accent colour. The controller empties the list when a scan starts and fills it when the scan ends |
 | Card | x 680, 328px wide, y 12 to 136 | the device's kind, its link state as on the left list, `BOUND` and the bound device's name, else its address, else `NONE` |
 | SCAN AGAIN | 328 x 56px at x 680, y 156 | a new scan of 10s with the rules of SCAN FOR DIAL and SCAN FOR NODE; grey while a scan runs, where a tap reads `A SCAN IS RUNNING: IT ENDS WITHIN 10s` |
+| UNBIND | 328 x 56px at x 680, y 228 | `HOLD 2s: UNBIND`, a 2s hold that forgets the bound device (below); released before 2000ms the band reads `Hold 2s to unbind the device.`; grey while nothing is bound, where a tap reads `NOTHING IS BOUND: NOTHING TO UNBIND` |
 
 ![SEARCH's bind question](img/setup-wireless-search-bind.png)
 
@@ -6440,6 +6546,27 @@ that started first or a list that changed, reads the same texts.
 A change of the device's view, an RSSI, the seconds left or the link
 state, repaints SEARCH. It closes no question and drops no press.
 
+UNBIND held 2000ms asks the controller to forget the bound device, once.
+The controller ends the link (a disconnect, or the pending connect
+cancelled) and connects to nothing after it. The panel keeps an empty
+address and name in SETUP and asks for a save, so the device stays
+unbound after a restart. The card reads `NONE`, the left list's BOUND
+row reads `NONE`, and UNBIND turns grey. A pick on SEARCH binds a device
+again. A finger that slides off UNBIND, or a bound device that goes
+before 2000ms (another bind, the device switched OFF), ends the hold
+without an unbind. The bind question covers UNBIND while it is open.
+UNBIND is not among the Dial's focus items: nothing the Dial sends
+completes a hold.
+
+ARMED does not refuse UNBIND. What uses the device meets the unbind as
+it meets a lost link:
+
+| Device | While a run uses it |
+| --- | --- |
+| Dial | a Dial UP or DEGRADED is lost at once; while ARMED that is an error: SAFE, every output off |
+| Power node | the readings stop; a run that counts on the node (INA228 SOURCE NODE, a run that reads BENCH) rides the dropout up to 300ms, then ends as an error, every output off; an arm on NODE is refused while no reading comes |
+| Balance node | the readings go stale; the node drives no output, so nothing else happens |
+
 ![SEARCH during a scan for the Dial](img/setup-wireless-search-scan.png)
 
 ### SD CARD: which logs are written, and where
@@ -6449,7 +6576,7 @@ state, repaints SEARCH. It closes no question and drops no press.
 | Setting | Range | Default | Writes |
 | --- | --- | --- | --- |
 | Auto logs | OFF, ON | ON | `SERVOnnn.CSV`, `MOTORnnn.CSV` and `SUPPLnnn.CSV` in Auto log folder: a log of each ARMED and supply run |
-| User logs | OFF, ON | ON | `ATESTnnn.CSV` with its `ATESTnnn.TXT`, `LIMITnnn.TXT`, and `RUDDRnnn.CSV` with its `RUDDRnnn.TXT`, in User log folder: the AUTOMATIC TEST, the LIMIT RUN and RUDDER AUTO, each as the setting stands at the run's start |
+| User logs | OFF, ON | ON | `ATESTnnn.CSV` with its `ATESTnnn.TXT`, `LIMITnnn.CSV` with its `LIMITnnn.TXT`, and `RUDDRnnn.CSV` with its `RUDDRnnn.TXT`, in User log folder: the AUTOMATIC TEST, the LIMIT RUN and RUDDER AUTO, each as the setting stands at the run's start |
 | Browser writes | OPEN, ACCESS CODE, HOLD, OFF | OPEN | nothing itself: what a browser needs to change the card through WI-FI's page ([Browser writes](#browser-writes)) |
 | Auto log folder | a folder, see below | `BENCH/LOGS` | where Auto logs writes |
 | User log folder | a folder, see below | `USER/LOGS` | where User logs writes |

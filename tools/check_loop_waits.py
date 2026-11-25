@@ -152,6 +152,16 @@ ALLOWED = (
      _CONSOLE),
     ("firmware/iomcu/src/ewline_console.c", "feed_answer", "sleep", None,
      _CONSOLE),
+    ("firmware/iomcu/src/oyline_console.c", "feed_byte", "sleep", None,
+     _CONSOLE),
+    ("firmware/iomcu/src/oyline_console.c", "feed", "sleep", None,
+     _CONSOLE),
+    ("firmware/iomcu/src/oyline_console.c", "feed", "clock", None,
+     "the console build's driver test: each oy_line_rx() of a fed request "
+     "timed, 1 call of 32 bytes and 1 that finds none"),
+    ("firmware/iomcu/src/oyline_console.c", "drain", "clock", None,
+     "the console build's driver test: each oy_line_rx() timed, at most 9 "
+     "calls of 32 bytes for the buffer of 256 and 1 that finds none"),
     ("firmware/iomcu/src/iomcu_sense.c", "supply_boot_off", "clock", None,
      "boot, before the main loop: the PD mini read and switched off, "
      "SUPPLY_PAGE_BOOT_OFF_MS (3500ms) at most"),

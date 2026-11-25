@@ -309,6 +309,10 @@ atomic_ullong s_throttle_pins;
 atomic_bool   s_throttle_pins_known;
 atomic_uint   s_throttle_proto;
 
+/* The protocol the surface pins are bound as (outbind_role_proto()), for
+ * the SERVO screens' port line. */
+atomic_uint   s_servo_proto;
+
 /**
  * @brief A reading, into the snapshot the outputs and picker screens take.
  */
@@ -372,6 +376,9 @@ void read_outputs_binding(void)
         atomic_store(&s_servo_pins,
                      outputs_role_pins(r.slots, r.cfg, OUT_ROLE_SURFACE));
         atomic_store(&s_servo_pins_known, true);
+        atomic_store(&s_servo_proto,
+                     (unsigned)outbind_role_proto(r.slots, r.cfg,
+                                                  OUT_ROLE_SURFACE));
         servo_link_binding(outputs_role_channels(r.slots, r.cfg,
                                                  OUT_ROLE_SURFACE),
                            true);
@@ -386,6 +393,7 @@ void read_outputs_binding(void)
      */
     atomic_store(&s_servo_pins, 0u);
     atomic_store(&s_servo_pins_known, false);
+    atomic_store(&s_servo_proto, 0u);
     servo_link_binding(0u, false);
     post_reading(&r);
     switch (r.state) {
@@ -506,6 +514,8 @@ static void link_came_up(const link_msg_t *reply)
     /* And the ESC programmer's (4.34): a pin held over a panel restart is
      * closed at its first read. */
     esc_link_came_up(&s_esc_link, reply->regs[LINK_ID_PROTOCOL_MINOR]);
+    /* And programming for YGE ESCs (4.42): the same at its first read. */
+    yge_link_came_up(&s_yge_link, reply->regs[LINK_ID_PROTOCOL_MINOR]);
     /* And the programming ports' (4.13): not known until it is read. */
     prog_link_came_up(&s_prog_link, reply->regs[LINK_ID_PROTOCOL_MINOR]);
     prog_drive_publish();
@@ -746,6 +756,7 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
             kst_link_lost(&s_kst_link);
             hitec_link_lost(&s_hitec_link);
             esc_link_lost(&s_esc_link);
+            yge_link_lost(&s_yge_link);
             /* And no port is the target or names a pin, and the SERVO
              * screen's TARGET row says no link. */
             prog_link_lost(&s_prog_link);
@@ -1037,6 +1048,7 @@ void publish_snapshot(const bench_state_t *bench, bool link_up,
     kst_publish(&s_snap.kst);
     hitec_publish(&s_snap.hitec);
     esc_publish(&s_snap.esc);
+    yge_publish(&s_snap.yge);
     snap_unlock();
 
     /* One queue entry per sample, so none of the plot's time base is lost to

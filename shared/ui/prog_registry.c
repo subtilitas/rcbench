@@ -22,6 +22,7 @@
 #include "ui_pinlist.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
+#include "yge_panel.h"
 
 /*
  * The rows.  Four live rows:
@@ -43,6 +44,10 @@
  *     on a throttle slot or a DShot port (esc_wire_panel.h).  It holds no
  *     programming port of this list: the IOmcu's ESC_WIRE page has the pin.
  *     It needs LINK_CAP_PROGRAM.  Full width.
+ *   - MOTOR & ESC: programming for YGE ESCs over the ESC's telemetry wire on
+ *     a programming port its CONNECT page chooses (yge_panel.h).  The
+ *     IOmcu's YGE_PROG page has the pin.  It needs LINK_CAP_YGE.  Full
+ *     width.
  *
  * A row per firmware adds nothing: identification reads which one it is.  The
  * next maker is one more row here and its page_set.
@@ -60,6 +65,8 @@ static const prog_reg_row_t k_rows[] = {
     { PROG_DEV_MOTOR, UI_WB_PROGRAM, TX_PL_ESC_WIRE, TX_PL_GRP_WIRE,
       TX_PL_WIRE_TRANSPORT, PROG_REG_NO_PORT, LINK_CAP_PROGRAM, &esc_wire_pages,
       true },
+    { PROG_DEV_MOTOR, UI_WB_PROGRAM, TX_PL_YGE, TX_PL_GRP_TELEM,
+      TX_PL_YGE_TRANSPORT, PROG_REG_NO_PORT, LINK_CAP_YGE, &yge_pages, true },
 };
 
 /** @brief The registry's state, one instance per image. */
@@ -102,12 +109,17 @@ uint8_t prog_reg_port(const prog_reg_row_t *r)
 bool prog_reg_servo_holds(void)
 {
     return kst_panel_holds_port() || hitec_panel_holds_port()
-           || esc_wire_panel_holds_port();
+           || prog_reg_esc_holds();
+}
+
+bool prog_reg_esc_holds(void)
+{
+    return esc_wire_panel_holds_port() || yge_panel_holds_port();
 }
 
 const char *prog_reg_hold_alert(void)
 {
-    return esc_wire_panel_holds_port() ? TR(ALERT_ARM_ESC) : TR(ALERT_ARM_PROG);
+    return prog_reg_esc_holds() ? TR(ALERT_ARM_ESC) : TR(ALERT_ARM_PROG);
 }
 
 const prog_reg_row_t *prog_registry(size_t *count)
@@ -385,7 +397,7 @@ prog_row_state_t prog_reg_state(const prog_reg_row_t *rows, size_t n,
  * same in every language. */
 static const char *const k_cap_name[] = {
     "ESC DRIVE", "ESC TELEMETRY", "SERVO PWM", "SERVO SENSE", "PACK SENSE",
-    "RECEIVER", "VIBRATION", "CELLS", "PROGRAM",
+    "RECEIVER", "VIBRATION", "CELLS", "PROGRAM", "YGE",
 };
 
 const char *prog_reg_cap_name(uint16_t bit)

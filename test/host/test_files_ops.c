@@ -637,7 +637,7 @@ TEST_CASE(open_hands_a_log_folders_csv_to_logs)
     CHECK(pick(1, "ATEST005.CSV"));
     tap_foot(FS_SPOT_OPEN);
     CHECK_EQ(ui_router_current(), SCREEN_LOGS);
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_PLOT);
     CHECK_STR_EQ(log_viewer_open_name(), "ATEST005.CSV");
     CHECK_EQ(log_viewer_tab(), LOG_TAB_USER);
     /* A file OPEN refuses, with the import of ATEST005.CSV left open in

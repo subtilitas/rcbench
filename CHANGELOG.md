@@ -8,6 +8,159 @@ history is in git.
 
 ### Added
 
+- LOGS opens a run file the bench wrote in the plot at once, with the
+  columns of its kind: LIMIT RUN `pulse`, `current`, `angle`; RUDDER AUTO
+  `pulse`, `current`, `measured`; AUTOMATIC TEST `command`, `current`,
+  `voltage`, `angle`; SUPPLY `set`, `voltage`, `limit`, `current`; MOTOR
+  `throttle`, `rpm`, `current`, `voltage`; SERVO `pulse`, `angle`,
+  `current`, `voltage`. The kind comes from the header's column names
+  first and the file's name second, so labelled names, lower-case names
+  and the files of firmware 0.21.0 and later match
+  (`shared/logfile/log_preset.c`, 7 presets). MORE (140 x 52px) at the
+  plot's right end opens a list whose COLUMNS reaches the import view;
+  BACK and the home tag return to the file list, or to the import view
+  when its PLOT opened the plot. Any other CSV opens in the import view
+  ([Screens](docs/Screens.md#logs)).
+- LOGS draws a LIMIT RUN's and a RUDDER AUTO's file as a graph over the
+  pulse instead of the row number: a line for each search and side, the
+  first search solid and the later ones dashed; markers C center, B bound,
+  E end point, L last position (a side's outermost pulse that is not its
+  bound), and the levels F free current and T threshold; a chip a series
+  with its value at the cursor. A tap on a chip focuses its series (2px, its scale at the plot's
+  left edge), a second hides it, a third brings it back. RUDDER AUTO's
+  file has the tabs SEARCH and STEPS; STEPS draws each measure against its
+  goal, a measure outside the tolerance in the warning colour and a tick
+  under each measure after a write. One finger and `<`, `>` move the
+  cursor over the points drawn. Files up to 2,048 rows
+  (`shared/ui/log_graph*.c`, `shared/logfile/log_marks.c`;
+  [Screens](docs/Screens.md#logs)).
+- Every CSV the bench writes ends in a text column `info`: the run's own
+  description on the first data row, empty on the others, as `key=value`
+  pairs joined by `&`, such as
+  `dut=MG90S&note=greased&date=2026-11-24T10:31&fw=0.23.18`. `SERVOnnn`,
+  `ATESTnnn`, `LIMITnnn` and `RUDDRnnn` carry DUT name (`dut`); all six
+  kinds the Run note (`note`), the local date and time at the start
+  (`date`, left out while the clock is unset) and the firmware (`fw`);
+  `ATESTnnn`, `LIMITnnn` and `RUDDRnnn` also the servo type, the meter and
+  the angle source. A `&`, `=`, `;` or `"` inside a value is written `_`.
+  Firmware 0.23.17's LOGS reads every new file but a SERVO file with three
+  INA3221 groups, 26 columns; LOGS takes 26 columns
+  ([Screens](docs/Screens.md#logs)).
+- Run note on the SERVO lists, under DUT name on the hub's, TEST's, LIMIT
+  RUN's and RUDDER AUTO's: up to 23 characters on the name keyboard,
+  empty by default, kept as DUT name is (key `srv_note`), and written into
+  the `info` column of every run's file until it is changed.
+- Programming for YGE ESCs, the IOmcu's link pages: `YGE_PROG` (0x44) and
+  `YGE_DATA` (0x45), protocol 4.42, run one OpenYGE session on a
+  programming port and report `LINK_CAP_YGE` (bit 9). Operations OPEN,
+  CLOSE, ENTER, HAND_DONE, READ, WRITE, LEAVE, STOP, ABORT and CLEAR; no raw
+  transaction. ENTER and WRITE need the key a panel sends at the end of its
+  2s hold. Power `SWITCHED` on the PD mini (the default) or `BY HAND`
+  (HAND_DONE up to 60000ms); the line stays parked until the ESC has power.
+  STOP, a stop edge, an error, the heartbeat lost or the link silent 200ms
+  park the line and switch the PD mini and PROG_SUPPLY off at once, also in
+  a write. From OPEN to the give the bank does not arm, and KST, HITEC,
+  ESC_WIRE and YGE_PROG exclude each other on every port. The bench
+  console's `yge` drives the page in the IOMCU_CONSOLE build
+  ([Programming for YGE ESCs](docs/LinkYge.md)).
+- Programming for YGE ESCs, the screens: MOTOR & ESC > PROGRAM lists
+  `YGE ESCs` with `OPENYGE` in the group `TELEMETRY WIRE`, dimmed until the
+  IOmcu reports `LINK_CAP_YGE`. CONNECT takes PORT, POWER (`SWITCHED` by
+  default or `BY HAND`), VOLTAGE, CURRENT LIMIT and BOOT WAIT (1.0s to
+  20.0s, 5.0s by default) and is a red 2s hold. Tabs IDENTITY, MODE & BEC,
+  PROTECTION, START, GOVERNOR & RPM, STICK and RAW; CHECK fields in the
+  warning colour, named with their new value above the footer; RAW and
+  POLE PAIRS read-only. A choice lists only its writable values; the keypad
+  refuses a value outside them. `WRITE n VALUES` is a red 2s hold, greyed
+  with nothing changed; the first write saves the backup to
+  `BENCH/YGE/CONF` first. FILES loads a file into the draft. LEAVE over
+  edits not written is a page held 2s. The strip names port, GPIO, supply
+  or `BY HAND`, and SAFE. `BENCH/YGE` is the bench's own folder in the
+  file manager ([YGE ESC programming](docs/YgeProgramming.md)).
+- Programming for YGE ESCs, the panel's half of the pages: a pin the page
+  holds at the first read after a panel restart is closed, again every
+  1000ms while the page answers `WRITING` or `NOT_BACK`. While a pin is
+  held, by the panel or the bench console, ARM is refused with the ESC
+  programmer's alert and the band's SAFE chip names the port. A `FAULT` or
+  `NOT_BACK` on the page, or 10 failed reads of it over a hold, is an
+  error: every output off. Every stop the panel latches is the page's
+  `STOP`. The session model behind the coming screens: CONNECT as OPEN,
+  ENTER and READ; WRITE refused before any frame for a draft the guard
+  refuses; the first write of a session saves the backup
+  `YGE001-<type>.TXT` first, and without a card keeps the old values in
+  RAM only and says so ([Programming for YGE ESCs](docs/LinkYge.md#the-panels-half)).
+- Programming for YGE ESCs, the ESC simulator for the station Pi:
+  `testbench/ygesim/ygesim.py` answers `TELE_REQ` and `WRITE_PARAM_REQ` on
+  the Pi's UART (115200 baud 8N1, TX and RX joined on one wire, its own
+  echo dropped) with a table of 32 parameters, one index a reply, and
+  stores writes. Modes: `normal`, `silent`, `late` (250ms), `crc` (10% of
+  the replies), `seq` (sequence number plus 1), `legacy` (version 2 auto
+  frames only) and `count33`; `--auto` sends `TELE_AUTO` every 50ms until
+  the first request. Python 3 and pyserial 3.5
+  ([ygesim](testbench/ygesim/README.md)).
+- Programming for YGE ESCs, the pin driver: `rp2350/oy_line.c` drives
+  the telemetry wire on one RP2350 pin behind `oy_driver_t` with one PIO
+  (programmable input/output) state machine of 25 words and 2 DMA (direct
+  memory access) channels. 115200 baud 8N1 at 16 cycles a bit, divider
+  81 + 97/256 at 150MHz (8680ns, 16ppm off). A frame goes out push-pull
+  while the line is high between bytes; the pad is released 16 cycles
+  after the last stop bit's edge and the receiver runs again, with no echo
+  of the frame's own bytes. A low stop bit is counted; the receive buffer
+  holds 256 bytes and the bytes after a full buffer are dropped and
+  counted. Line states: input with pull-down before the supply reads on
+  and at once on a fault, STOP or link loss; input with pull-up while
+  listening. The arithmetic (`openyge_pio.c`) and the program run in the
+  suite `openyge_pio`. The IOMCU_CONSOLE build adds `oyline <gpio>
+  tx|rx|cut` for a logic analyser; the released images do not change
+  ([OpenYGE](docs/OpenYGE.md#92-pin-driver),
+  [Bench console](docs/BenchConsole.md#the-telemetry-wires-pin-driver)).
+- LIMIT RUN writes `LIMITnnn.CSV` in `USER/LOGS` before its report
+  `LIMITnnn.TXT`, under the same number: one row a position a search
+  judged, columns `row`, `search` (1 the first search of a side, 2 a
+  search after a write, 3 the last check), `side` (`LOW`, `HIGH`),
+  `pulse (us)`, `current (A)` (the 80ms mean, to 1mA), `voltage (V)`
+  (the INA3221 window's rail voltage, to 10mV), `angle (deg)` (empty
+  without an angle source), `state` (`BASE`, `FREE`, `BOUND`), `free (A)`,
+  `threshold (A)` and `end point (us)` on the bound row. At most 600
+  rows, about 27kB; positions judged past row 600 are counted, and the
+  report's `Positions:` line names both figures. A run that judged no
+  position writes the report alone. LOGS lists the CSV beside its report;
+  DELETE on the CSV removes the report too. USER's empty-list line reads
+  `Tests are saved as ATESTnnn, LIMITnnn and RUDDRnnn.CSV.`
+  ([Servo](docs/Servo.md#installed-mechanical-limit)).
+- Programming for YGE ESCs, the core in `protocols/openyge/`: the field
+  map of docs/OpenYGE.md section 5.3 (`openyge_map.c`), the guard every
+  outgoing frame passes (`openyge_guard.c`) and the session
+  (`openyge_session.c`). The session waits 5000ms after power-on (1000
+  to 20000ms), listens up to 3000ms, takes the ESC over, reads the table
+  and writes every field marked CHECK or edit with a whole-table read
+  before and after. Read timeout 200ms, write timeout 400ms, 3 tries,
+  table read cap 10000ms. Results: OK, SILENT, NO_TABLE, NOT_KNOWN,
+  CHANGED, NOT_TAKEN, PARTIAL, GUARD. The suites `openyge_map`,
+  `openyge_guard`, `openyge_session` and `openyge_session_write` run it
+  against a simulated ESC (`test/host/oy_sim.h`). No pin driver, link
+  page or screen uses it
+  ([OpenYGE](docs/OpenYGE.md#9-status-in-rcbench)).
+- Programming for YGE ESCs, the settings file (`openyge_file.c`): a table
+  as read written as text (type code, firmware, serial, count, every index
+  with its key and value, CRC-32 checksum line), read back, and held
+  against the table read last. The backup name is
+  `BENCH/YGE/CONF/YGE001-<type>.TXT`. A file over 4620B, of another type
+  code or count, damaged, edited, or with a value the guard refuses does
+  not load; a load passes `oy_guard_approve()` on a copy of the guard.
+  Suite `openyge_file`
+  ([OpenYGE](docs/OpenYGE.md#91-settings-file)).
+- SETUP > WIRELESS > SEARCH: UNBIND (`HOLD 2s: UNBIND`, DE
+  `2s HALTEN: BINDUNG LÖSEN`), a 2s hold on the card under SCAN AGAIN, for
+  the Dial, the power node and the balance node. It forgets the bound
+  device: the link ends, SETUP keeps an empty address and name with a save
+  asked, BOUND reads `NONE`, and no connect follows until the next bind.
+  Grey with nothing bound, where a tap reads
+  `NOTHING IS BOUND: NOTHING TO UNBIND`. ARMED does not refuse it; a run
+  that uses the device meets it as a lost link: a Dial lost while ARMED
+  is an error (SAFE, every output off), a run on the power node ends as an
+  error once the dropout passes 300ms, and the balance node's readings go
+  stale ([Screens](docs/Screens.md#wireless-search)).
 - `hardware/mechanical/_gen_knob.py`: a rotary knob 64mm across round a
   fixed Waveshare ESP32-S3-Touch-LCD-1.85, on the dial base's bottom
   part, 56.2mm high. Printed parts `knob_case`, `knob_spacer`,
@@ -110,6 +263,10 @@ history is in git.
 
 ### Changed
 
+- `RUDDRnnn.CSV` has 3 more columns after its 9: `kind` (`STEP`, `VERIFY`,
+  `SEARCH`), `pulse (us)` and `current (A)` (a SEARCH row's mean current,
+  to 1mA), then `info`. The first 9 columns are unchanged; LOGS reads files
+  of 9 and of 13 columns.
 - OpenYGE specification ([OpenYGE](docs/OpenYGE.md)): section 5.3 lists
   indices 0 to 31 with values, scale, unit, writable values, access
   (identity, telemetry, raw, CHECK, edit) and sources, checked against the
@@ -159,6 +316,14 @@ history is in git.
   C6-Funk; bind texts read binden and gebunden, as the panel's BINDEN.
 - German docs and help name the bench states ARMED and SAFE in place of
   scharf and entschärft.
+
+### Fixed
+
+- SERVO function screens: the PORT row and the footer name the function the
+  surface pins are bound as, `PPM GPIO 20` with PPM bound on GPIO 20,
+  `SERVO PWM GPIO 20` with SERVO PWM, and `MIXED GPIO 20` (DE `GEMISCHT`)
+  with both. They read `SERVO PWM` for every bound function before. The
+  name is the catalogue's and stays English in German.
 
 ## 0.23.17 - 2026-11-23
 

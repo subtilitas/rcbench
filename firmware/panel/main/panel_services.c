@@ -151,23 +151,28 @@ __attribute__((noinline)) void kst_port_look(void)
 {
     kst_link_readout_t rd;
     kst_link_readout(&s_kst_link, &rd);
-    s_prog_taken = kst_prog_port_taken(&rd) || hitec_taken() || esc_taken();
+    s_prog_taken = kst_prog_port_taken(&rd) || hitec_taken() || esc_taken()
+                   || yge_taken();
     /* With a start claimed and not yet read back as a held port. */
     atomic_store(&s_prog_open,
                  fw_c6_prog_open(&s_c6_prog, s_prog_taken, now_ms()));
     /* The port the band's SAFE chip names: the KST session's, else the
-     * Hitec page's, else some port while a HITEC hold has no number. */
+     * Hitec page's, else the YGE_PROG page's, else some port while a HITEC
+     * or YGE_PROG hold has no number. */
     atomic_store(&s_prog_band,
                  (unsigned)prog5v_box_held_port(
                      kst_prog_port_taken(&rd) ? (int)rd.port_no : -1,
-                     hitec_taken_port(), hitec_taken()));
+                     hitec_taken_port() >= 0 ? hitec_taken_port()
+                                             : yge_taken_port(),
+                     hitec_taken() || yge_taken()));
 }
 
 uint32_t prog_faults(void)
 {
     return kst_link_faults(&s_kst_link)
            + hitec_prog_gate_faults(&s_hitec_gate)
-           + esc_link_faults(&s_esc_link);
+           + esc_link_faults(&s_esc_link)
+           + yge_link_faults(&s_yge_link);
 }
 
 /**
@@ -182,8 +187,8 @@ static __attribute__((noinline)) void prog_hold_look(void)
     prog_link_hold_by(&s_prog_link,
                       kst_prog_port_taken(&rd) ? PROG_LINK_WAIT_KST
                       : hitec_taken()          ? PROG_LINK_WAIT_HITEC
-                      : esc_taken()            ? PROG_LINK_WAIT_ESC
-                                               : PROG_LINK_WAIT_NONE);
+                      : esc_taken() || yge_taken() ? PROG_LINK_WAIT_ESC
+                                                   : PROG_LINK_WAIT_NONE);
 }
 
 /** @brief The part names as the alerts print them. */

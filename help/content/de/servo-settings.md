@@ -67,7 +67,7 @@ Die Kopfzeile von AUSGANG zeigt den Status der Pulsrate, in Warnfarbe, solange d
 
 ![Die Liste OPTIONEN von TEST](view:servo-test-settings)
 
-OPTIONEN in der Fußleiste von TEST oder ein Tippen auf BEREICH auf der Karte BEREIT von TEST öffnet die Liste des automatischen Tests, nur bei SAFE. Sie hat 21 Zeilen unter sechs Überschriften; die Zeile jeder Überschrift sagt, was ihre Zeilen gerade bewirken, die von BEREICH die Enden des Laufs, `1100-1900us`. SPEICHERN in der Leiste behält eine Änderung; wer mit einer Änderung geht, wird nach SPEICHERN oder VERWERFEN gefragt. TEST ZURÜCKSETZEN setzt jede Zeile auf ihre Vorgabe und HV-SERVO auf AUS. Die Liste schließt, sobald der Prüfstand ARMED schaltet oder ein Lauf startet. Bereich und Haltezeit sind auch die von SWEEP, Name des Prüflings und Bericht die des Hubs: je eine Einstellung, welche Liste sie auch setzt.
+OPTIONEN in der Fußleiste von TEST oder ein Tippen auf BEREICH auf der Karte BEREIT von TEST öffnet die Liste des automatischen Tests, nur bei SAFE. Sie hat 22 Zeilen unter sechs Überschriften; die Zeile jeder Überschrift sagt, was ihre Zeilen gerade bewirken, die von BEREICH die Enden des Laufs, `1100-1900us`. SPEICHERN in der Leiste behält eine Änderung; wer mit einer Änderung geht, wird nach SPEICHERN oder VERWERFEN gefragt. TEST ZURÜCKSETZEN setzt jede Zeile auf ihre Vorgabe und HV-SERVO auf AUS. Die Liste schließt, sobald der Prüfstand ARMED schaltet oder ein Lauf startet. Bereich und Haltezeit sind auch die von SWEEP, Name des Prüflings, Notiz zum Lauf und Bericht die des Hubs: je eine Einstellung, welche Liste sie auch setzt.
 
 | Überschrift | Option | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|---|
@@ -89,6 +89,7 @@ OPTIONEN in der Fußleiste von TEST oder ein Tippen auf BEREICH auf der Karte BE
 | BEREICH | Bereich | 10 bis 100% | 80% | der Anteil des Wegs, den die Bewegungen beiderseits von PULS MITTE abdecken |
 | BEREICH | AUSGANG | das Profil | STANDARD PWM 50Hz 1000-2000 | Typ, Pulsrate und Pulsbereich in Kraft; ein Tippen öffnet das Profil |
 | PRÜFLING | Name des Prüflings | bis 23 Zeichen | SERVO | steht über jedem Bericht |
+| PRÜFLING | Notiz zum Lauf | bis 23 Zeichen | leer | der Zustand des Laufs, `greased` oder `200g on the horn`, in der Spalte `info` der Datei jedes Laufs, bis sie geändert wird ([Logs](logs.md#was-ein-lauf-schreibt)) |
 | PRÜFLING | Bericht | EIN, AUS | EIN | ein Textbericht zu jeder Testaufzeichnung |
 
 ![HV-SERVO eingeschaltet](view:servo-hv)
@@ -116,9 +117,10 @@ OPTIONEN in der Fußleiste von LIMIT RUN öffnet die Liste. Außerhalb eines PRO
 | STROM | Grenzen von SUPPLY | SET A von SUPPLY | die Strombegrenzung des Laufs, SET A von SUPPLY, wo ein PD mini das Servo speist: ein Tippen öffnet das Tastenfeld von SUPPLY. Ohne PD mini `--`, gesperrt: die eigene Versorgung des Servos begrenzt den Strom |
 | Warten vor PWM | 0 bis 10000ms | 100ms | vom Ende des Programmierens bis zum ersten Puls |
 | Name des Prüflings | bis 23 Zeichen | SERVO | NAME des Hubs; steht über jedem Bericht |
-| Testaufzeichnungen | EIN, AUS | EIN | die von SETUP > SD CARD: AUS, ein Lauf schreibt kein LIMITnnn.TXT |
+| Notiz zum Lauf | bis 23 Zeichen | leer | die Notiz des Hubs; in der Spalte `info` der CSV des Laufs |
+| Testaufzeichnungen | EIN, AUS | EIN | die von SETUP > SD CARD: AUS, ein Lauf schreibt weder LIMITnnn.CSV noch LIMITnnn.TXT |
 
-Die Liste hat keine Spannung: ein Lauf programmiert mit 5,0V ([Die Versorgung: 5,0V](servo.md#die-versorgung-5-0v)). Die Liste von RUDER AUTO endet mit denselben Zeilen Name des Prüflings und Testaufzeichnungen. Die Karten BEREIT beider Seiten haben zehn Zeilen, so viele, wie sie fassen; die Testaufzeichnungen sind dort eine Zeile der Liste und nur auf TEST eine Zeile der Karte.
+Die Liste hat keine Spannung: ein Lauf programmiert mit 5,0V ([Die Versorgung: 5,0V](servo.md#die-versorgung-5-0v)). Die Liste von RUDER AUTO endet mit denselben Zeilen Name des Prüflings, Notiz zum Lauf und Testaufzeichnungen. Die Karten BEREIT beider Seiten haben zehn Zeilen, so viele, wie sie fassen; die Testaufzeichnungen sind dort eine Zeile der Liste und nur auf TEST eine Zeile der Karte.
 
 ## Die Grenzen von SUPPLY
 
@@ -131,6 +133,7 @@ Die aktiven Spannungs- und Stromgrenzen begrenzen Sollwerte und Laufstufen. Sie 
 | Option | Wirkung |
 |---|---|
 | NAME | Prüflingsname mit bis zu 23 Zeichen; steht über jedem Bericht. |
+| Notiz zum Lauf | der Zustand des Laufs, bis 23 Zeichen, auf der Namenstastatur: steht in der Spalte `info` der Datei jedes Laufs, auch SERVO, MOTOR und SUPPLY, bis sie geändert wird; vorgegeben leer |
 | BERICHT | Speichert neben jeder Testaufzeichnung einen Textbericht `ATESTnnn.TXT`, solange Testaufzeichnungen unter SETUP > SD CARD EIN ist. |
 
 ## Die Liste von RUDER und die Seite von KST

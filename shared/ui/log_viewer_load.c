@@ -2,7 +2,8 @@
  * @file log_viewer_load.c
  * @brief The log viewer's loading: a file the browse view opens is analysed
  *        (its delimiter, decimal convention and time column, see
- *        shared/logfile), its chosen columns are read, and lv_compute_spans()
+ *        shared/logfile), a file the bench wrote takes its preset's columns
+ *        (log_preset.h), its chosen columns are read, and lv_compute_spans()
  *        turns them into the plot's scaled traces; a report goes to the
  *        text viewer.  log_viewer_screen.c holds
  *        the state, the card's listing and paging and the screen's interface
@@ -19,12 +20,13 @@
 #include "files_screen.h"
 #include "log_fields.h"
 #include "log_name.h"
+#include "log_preset.h"
 #include "log_viewer_screen.h"
 #include "settings.h"
 #include "ui_screen.h"
 #include "ui_text.h"
 
-#include "log_viewer_int.h"
+#include "log_graph_int.h"
 
 /* ------------------------------------------------------------- loading --- */
 
@@ -358,6 +360,8 @@ void lv_load_data(void)
         return;
     }
     log_err_t err = log_csv_build(&src, &s.an, s.picked, s.n_picked, &s.data);
+    /* An XY file's traces and markers, read while the file is open. */
+    const bool graph = (err == LOG_OK) && lg_read(&src);
     if (s.io.close != NULL) {
         s.io.close(s.io.ctx);
     }
@@ -376,6 +380,9 @@ void lv_load_data(void)
     lv_quiet();
     lv_compute_spans();
     s.view = VIEW_PLOT;
+    if (graph) {
+        lg_start();
+    }
 }
 
 /**
@@ -397,8 +404,30 @@ static void open_text(uint64_t size)
     ui_router_goto(SCREEN_FILES);
 }
 
+/**
+ * @brief A file the bench wrote (log_preset_match()) goes from its analysis
+ *        to the plot, with the preset's columns picked.  A file no preset
+ *        matches, one that holds none of the preset's columns and one that
+ *        does not load stay in the import view, which says why.
+ */
+static void open_preset(void)
+{
+    s.preset = s.have_analysis ? log_preset_match(&s.an, s.name)
+                               : LOG_PRESET_NONE;
+    int picks[LOG_MAX_SERIES] = { 0 };
+    const int n = log_preset_picks(s.preset, &s.an, picks, LOG_MAX_SERIES);
+    if (n <= 0) {
+        return;
+    }
+    memcpy(s.picked, picks, sizeof(picks));
+    s.n_picked = n;
+    s.col_scroll = 0;
+    lv_load_data();
+}
+
 /*
- * OPEN on the selected row: a CSV file to the import view, a report
+ * OPEN on the selected row: a CSV file a preset matches to the plot
+ * (open_preset()), any other CSV file to the import view, a report
  * (log_report_number()) to the text viewer (open_text()).  A folder and a
  * file over LOG_VIEWER_OPEN_MAX are not opened; the footer says why.  What
  * the import and the plot held was another file's and is dropped.
@@ -429,12 +458,16 @@ void lv_open_selected(void)
      * was another file's. */
     if (log_report_number(s.name) >= 0) {
         s.have_analysis = false;
+        s.preset = LOG_PRESET_NONE;
         lv_drop_data();
         open_text(s.files[s.sel].size);
         return;
     }
     s.delim_index = -1;
     s.conv = LOG_CONV_AUTO;
+    s.more_open = false;
+    s.plot_from_import = false;
     lv_run_analysis();
     s.view = VIEW_IMPORT;
+    open_preset();
 }

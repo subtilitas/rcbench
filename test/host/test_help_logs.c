@@ -15,6 +15,8 @@
 
 #include "logview_rig.h"
 
+#include "log_graph.h"
+
 #include "help_check.h"
 #include "ui_help.h"
 
@@ -64,6 +66,24 @@ static void pose_plot(void)
     tap(PLOT_X, IM_BTN_CY);
 }
 
+/** @brief A MOTOR run opened from the list: the plot at once. */
+static void pose_run_plot(void)
+{
+    fresh();
+    g_bench_files = true;
+    log_viewer_refresh();
+    log_viewer_show(LOG_TAB_BENCH, "MOTOR042_kv1200.CSV", g_mounts);
+}
+
+/** @brief A LIMIT RUN opened from the list: the graph at once. */
+static void pose_graph(void)
+{
+    fresh();
+    g_bench_files = true;
+    log_viewer_refresh();
+    log_viewer_show(LOG_TAB_BENCH, "LIMIT007.CSV", g_mounts);
+}
+
 /**
  * @brief Whether @p p marks an item with @p text.
  * @param p    The page.
@@ -86,7 +106,32 @@ TEST_CASE(every_page_of_logs_fits)
     CHECK_EQ(check_every_state(screen(), pose_paged, "paged"), 2);
     CHECK_EQ(check_every_state(screen(), pose_empty, "empty"), 2);
     CHECK_EQ(check_every_state(screen(), pose_import, "import"), 2);
-    CHECK_EQ(check_every_state(screen(), pose_plot, "plot"), 1);
+    CHECK_EQ(check_every_state(screen(), pose_plot, "plot"), 2);
+    CHECK_EQ(check_every_state(screen(), pose_run_plot, "run plot"), 2);
+    CHECK_EQ(check_every_state(screen(), pose_graph, "graph"), 2);
+}
+
+/* The graph's pages: its chip, the plot, BACK and the keys that step over
+ * the points drawn; MORE and the markers' legend on the second page of a
+ * LIMIT RUN, which has no tabs. */
+TEST_CASE(the_graph_marks_its_chips_legend_and_plot)
+{
+    ui_help_page_t p;
+    pose_graph();
+    REQUIRE(log_graph_shown());
+    REQUIRE(ui_help_page(screen(), false, 0, &p));
+    CHECK_EQ(p.title, TX_HG_LOG_TITLE_PLOT);
+    CHECK_EQ(p.count, 4);
+    CHECK(marks(&p, TX_HG_LOG_GRAPH_CHIP));
+    CHECK(marks(&p, TX_HG_LOG_GRAPH_AREA));
+    CHECK(marks(&p, TX_HG_LOG_GRAPH_STEP));
+    CHECK(marks(&p, TX_HG_LOG_BACK_LIST));
+    CHECK(!marks(&p, TX_HG_LOG_CHIP));
+    REQUIRE(ui_help_page(screen(), false, 1, &p));
+    CHECK_EQ(p.count, 2);
+    CHECK(marks(&p, TX_HG_LOG_MORE));
+    CHECK(marks(&p, TX_HG_LOG_GRAPH_LEGEND));
+    CHECK(!marks(&p, TX_HG_LOG_GRAPH_TABS));
 }
 
 TEST_CASE(the_list_marks_paging_and_the_bar_only_where_they_show)
@@ -130,7 +175,16 @@ TEST_CASE(the_import_view_and_the_plot_mark_their_controls)
     CHECK_EQ(p.count, 4);
     CHECK(marks(&p, TX_HG_LOG_CHIP));
     CHECK(marks(&p, TX_HG_LOG_BACK_IMPORT));
-    CHECK(!ui_help_page(screen(), false, 1, &p));
+    REQUIRE(ui_help_page(screen(), false, 1, &p));
+    CHECK_EQ(p.count, 1);
+    CHECK(marks(&p, TX_HG_LOG_MORE));
+    CHECK(!ui_help_page(screen(), false, 2, &p));
+    /* Opened from the list, BACK goes to the list. */
+    pose_run_plot();
+    REQUIRE(log_viewer_view() == LOG_VIEW_PLOT);
+    REQUIRE(ui_help_page(screen(), false, 0, &p));
+    CHECK(marks(&p, TX_HG_LOG_BACK_LIST));
+    CHECK(!marks(&p, TX_HG_LOG_BACK_IMPORT));
 }
 
 TEST_CASE(the_delete_question_leaves_no_page)
@@ -148,6 +202,7 @@ int main(void)
     RUN(every_page_of_logs_fits);
     RUN(the_list_marks_paging_and_the_bar_only_where_they_show);
     RUN(the_import_view_and_the_plot_mark_their_controls);
+    RUN(the_graph_marks_its_chips_legend_and_plot);
     RUN(the_delete_question_leaves_no_page);
     return test_summary("help_logs");
 }

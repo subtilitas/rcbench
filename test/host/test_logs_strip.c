@@ -348,13 +348,14 @@ TEST_CASE(logs_takes_no_tab_over_a_file_or_the_delete_question)
 {
     fresh_strip();
     const uint32_t nav = ui_router_navigations();
-    /* BENCH's rows: the report, chosen as the newest, then the CSV. */
+    /* BENCH's rows: the report, chosen as the newest, then the CSV, a
+     * run's name: the plot. */
     btap(LV_ROW_CX, LV_ROW_CY(1));
     btap(LV_OPEN_CX, LV_BR_FOOT_CY);
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_PLOT);
     tab(TAB_FILES);
     CHECK_EQ(ui_router_navigations(), nav);
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_PLOT);
     tag();
     CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
     CHECK_EQ(ui_router_current(), SCREEN_LOGS);
@@ -376,7 +377,7 @@ TEST_CASE(files_opens_a_csv_in_logs_and_the_strip_goes_back)
     CHECK(pick(0, "ATEST011.CSV"));
     tap_foot(FS_SPOT_OPEN);
     CHECK_EQ(ui_router_current(), SCREEN_LOGS);
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_PLOT);
     CHECK_STR_EQ(log_viewer_open_name(), "ATEST011.CSV");
     /* One tag to the list, the FILES tab to where it was. */
     tag();
@@ -630,13 +631,13 @@ TEST_CASE(the_wifi_button_takes_no_press_under_a_question_or_a_file)
     btap(LV_WIFI_CX, LV_BR_FOOT_CY);
     CHECK_EQ(ui_router_navigations(), nav);
     tag();                              /* CANCEL */
-    /* The CSV's import view: the spot is its first footer button. */
+    /* The CSV, a run's name, in the plot: the spot is its < key. */
     btap(LV_ROW_CX, LV_ROW_CY(1));
     btap(LV_OPEN_CX, LV_BR_FOOT_CY);
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_PLOT);
     btap(LV_WIFI_CX, LV_FOOT_CY);
     CHECK_EQ(ui_router_navigations(), nav);
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_PLOT);
     tag();
     CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
     /* And back on the list it works. */

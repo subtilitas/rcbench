@@ -39,6 +39,7 @@
 
 #include "card_state.h"
 #include "log_csv.h"
+#include "log_preset.h"
 #include "ui_screen.h"
 
 #ifdef __cplusplus
@@ -230,6 +231,15 @@ void log_viewer_set_io(const log_viewer_io_t *io);
  * @return the view
  */
 log_viewer_view_t log_viewer_view(void);
+
+/**
+ * @brief The preset the open file matched (log_preset.h): OPEN on such a
+ *        file goes to the plot with the preset's columns.
+ *
+ * @return the preset, LOG_PRESET_NONE for a file no preset matches, a
+ *         report and no file
+ */
+log_preset_id_t log_viewer_preset(void);
 
 /**
  * @brief The tab BROWSE shows.

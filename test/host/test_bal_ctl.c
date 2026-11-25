@@ -548,6 +548,43 @@ TEST_CASE(off_ends_the_link_and_hands_on_nothing)
     CHECK(!v.scan_done);
 }
 
+/* SEARCH's UNBIND, ARMED, with a report taken: the link ends at once,
+ * nothing is bound, the report goes and the link reads NONE.  As on a lost
+ * link nothing else happens: no CONTROL write, no connect.  A second
+ * unbind changes nothing. */
+TEST_CASE(an_unbind_ends_the_link_and_drops_the_report)
+{
+    brig_t r;
+    brig_up(&r);
+    r.armed = true;
+    const rcnode_bal_report_t p = brig_steady(420u, 2650u, 8000u);
+    brig_report(&r, &p);
+    CHECK_EQ(bal_ctl_link(&r.c, r.now), BAL_LINK_UP);
+    const uint32_t seq = r.c.bind_seq;
+    CHECK(bal_ctl_unbind(&r.c, r.now));
+    CHECK_EQ(r.c.bind_seq, seq + 1u);
+    CHECK_EQ(r.c.cfg.bind_seq, r.c.bind_seq);
+    CHECK_STR_EQ(r.c.cfg.addr, "");
+    CHECK_STR_EQ(r.c.cfg.name, "");
+    brig_run(&r, 10u);
+    CHECK(!r.c.linked);
+    CHECK(!r.c.b.bound);
+    CHECK_EQ(bal_ctl_link(&r.c, r.now), BAL_LINK_NONE);
+    rcnode_bal_report_t got;
+    uint32_t age;
+    CHECK(!bal_ctl_report(&r.c, r.now, &got, &age));
+    bal_view_t v;
+    bal_ctl_view(&r.c, r.now, &v);
+    CHECK_STR_EQ(v.bound_addr, "");
+    const unsigned nw = r.nw, connects = r.connects;
+    bal_ctl_drive(&r.c, 4u, 0u);
+    brig_run(&r, 3u * BLEU_RETRY_MS);
+    CHECK_EQ(r.nw, nw);
+    CHECK_EQ(r.connects, connects);
+    CHECK(!bal_ctl_unbind(&r.c, r.now));
+    CHECK_EQ(r.c.bind_seq, seq + 1u);
+}
+
 /* The update's hand-over: the hold ends the link and keeps it ended
  * whatever SETUP sends, drops the old image's report and takes no packet;
  * the take-back connects again, and the version comes from the first
@@ -740,6 +777,7 @@ int main(void)
     RUN(a_config_text_is_cut_to_its_field);
     RUN(seq_gaps_and_foreign_packets_are_counted);
     RUN(off_ends_the_link_and_hands_on_nothing);
+    RUN(an_unbind_ends_the_link_and_drops_the_report);
     RUN(info_finds_a_node_restart_and_a_reconnect_is_none);
     RUN(the_radio_states_read_through);
     RUN(the_update_hold_hands_the_link_over_and_takes_it_back);

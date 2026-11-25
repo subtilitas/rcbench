@@ -20,7 +20,7 @@
 #include "ui_tabs.h"
 #include "ui_text.h"
 
-#include "log_viewer_int.h"
+#include "log_graph_int.h"
 
 /* --------------------------------------------------------------- events -- */
 
@@ -500,7 +500,10 @@ static void import_event(const touch_event_t *e)
             break;
         case 3:
             if (s.have_analysis && s.n_picked > 0) {
+                /* The columns picked, by row number: no preset's graph. */
+                s.preset = LOG_PRESET_NONE;
                 lv_load_data();
+                s.plot_from_import = s.have_data;
             }
             break;
         case 4:
@@ -648,14 +651,67 @@ static void pan_apply(int x)
 }
 
 /**
+ * @brief MORE's choice list on the plot: COLUMNS tapped opens the import
+ *        view's column list; a press anywhere else above the alert band
+ *        closes the list and acts on nothing.  A press on the band does
+ *        nothing, as it does with an alert showing there.
+ * @param e  the event
+ */
+static void more_event(const touch_event_t *e)
+{
+    const gfx_rect_t row = PV_MORE_ROW(0);
+    switch (e->type) {
+    case TOUCH_EVENT_DOWN:
+        if (!tap_begin(e)) {
+            break;
+        }
+        s.press_btn = gfx_rect_contains(row, e->point.x, e->point.y) ? 0 : -1;
+        if (s.press_btn < 0 && e->point.y < SCREEN_H - UI_ALERT_H
+            && !gfx_rect_contains(PV_MORE_LIST, e->point.x, e->point.y)) {
+            /* Closed on the press; the contact stays held so its release
+             * presses nothing beneath. */
+            s.more_open = false;
+            s.more_hold = true;
+        }
+        log_viewer_invalidate();
+        break;
+    case TOUCH_EVENT_UP:
+        if (!tap_mine(e)) {
+            break;
+        }
+        if (s.more_open && s.press_btn == 0 && tap_on(e, row)) {
+            s.more_open = false;
+            s.view = VIEW_IMPORT;
+        }
+        s.tap_have = false;
+        s.more_hold = false;
+        s.press_btn = -1;
+        log_viewer_invalidate();
+        break;
+    default:
+        break;
+    }
+}
+
+/**
  * @brief Takes a touch event for the plot: the cursor, the pinch zoom, the pan
- *        and the footer's buttons.
+ *        and the footer's buttons, BACK, < and >, and MORE.
  */
 static void plot_event(const touch_event_t *e)
 {
-    const gfx_rect_t btns[3] = {
-        PV_BACK, PV_PREV, PV_NEXT,
+    const gfx_rect_t btns[4] = {
+        PV_BACK, PV_PREV, PV_NEXT, PV_MORE,
     };
+
+    /* The list, and the press that closed it until its release. */
+    if (s.more_open || s.more_hold) {
+        more_event(e);
+        return;
+    }
+    /* An XY file's graph takes its chips, tabs and plot (log_graph.c). */
+    if (lg_event(e)) {
+        return;
+    }
 
     /* Two fingers on the plot own it until one lifts; a third is ignored. */
     if (s.pinch) {
@@ -689,7 +745,7 @@ static void plot_event(const touch_event_t *e)
         if (s.pressing || s.press_btn >= 0) {
             break;   /* a second finger elsewhere presses nothing */
         }
-        s.press_btn = hit_button(btns, 3, e->point.x, e->point.y);
+        s.press_btn = hit_button(btns, 4, e->point.x, e->point.y);
         if (s.press_btn >= 0) {
             s.tap_have = false;
             (void)tap_begin(e);
@@ -742,8 +798,19 @@ static void plot_event(const touch_event_t *e)
         /* A press that slid off its button is not a tap on it. */
         const int btn = (s.press_btn >= 0 && tap_on(e, btns[s.press_btn]))
                             ? s.press_btn : -1;
+        if (btn == 0 || btn == 3) {
+            /* The view or MORE's list takes the glass: a finger still on
+             * the graph's chip or plot presses nothing more. */
+            lg_cancel();
+        }
         if (btn == 0) {
-            s.view = VIEW_IMPORT;
+            /* Back where the plot came from: the import's PLOT, or the
+             * list's OPEN on a file a preset matched. */
+            s.view = s.plot_from_import ? VIEW_IMPORT : VIEW_BROWSE;
+        } else if (btn == 3) {
+            s.more_open = true;
+        } else if ((btn == 1 || btn == 2) && lg_step(btn == 1 ? -1 : 1)) {
+            /* The graph steps to the next row it draws. */
         } else if (btn == 1 && s.cursor > 0) {
             s.cursor--;
             follow_cursor();

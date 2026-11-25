@@ -264,6 +264,7 @@ static void begin_search(servo_limrun_t *r, uint8_t side,
     r->cmd_us    = r->ctr_us;
     r->cmd_due   = true;
     r->searched  = true;
+    r->judged    = 0u;
     memset(&r->probe, 0, sizeof(r->probe));
 }
 
@@ -817,11 +818,15 @@ void servo_limrun_window(servo_limrun_t *r, const servo_test_win_t *w)
     }
     const uint16_t before = r->lf.cmd_us;
     const uint16_t free_before = r->lf.last_free_us;
+    const bool measuring = r->lf.measuring;
     /* The magnitude, as the protections read it: a shunt fitted the other
      * way round reads a bound servo as a more negative current. */
     const uint16_t cmd = servo_limit_step(&r->lf,
                                           (float)mag(w->mean_ma) / 1000.0f,
                                           at);
+    if (measuring && !r->lf.measuring) {
+        limrun_row_take(r, before, w->mean_mv);   /* a position judged */
+    }
     if (r->enc_valid && r->lf.last_free_us != free_before) {
         /* The angle at the furthest free position so far: the servo is
          * still there. */

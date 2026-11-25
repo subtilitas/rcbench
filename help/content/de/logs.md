@@ -10,7 +10,7 @@ LOGS listet CSV-Aufzeichnungen (Comma-Separated Values) und Berichte auf der SD-
 
 Drei Reiter oben links wählen den Ordner: STAMM für das Stammverzeichnis, USER für den Ordner Testaufzeichnungen (Vorgabe `USER/LOGS`) und BENCH für den Ordner Auto-Aufzeichnungen (Vorgabe `BENCH/LOGS`). WI-FI unten links öffnet [WLAN](wifi.md). FILES daneben öffnet [Files](files.md) zum Kopieren, Verschieben, Umbenennen und Löschen.
 
-Das Home-Feld führt wie ZURÜCK jeweils eine Ebene zurück: von der Grafik zur Importansicht, dann zur Dateiliste und zum Menü. In der Rückfrage zu LÖSCHEN wirkt es wie ABBRECHEN.
+Das Home-Feld führt wie ZURÜCK jeweils eine Ebene zurück: von der Grafik dorthin, woher sie kam (nach ÖFFNEN zur Dateiliste, nach GRAFIK zur Importansicht), von der Importansicht zur Dateiliste und zum Menü. Über der Liste von MEHR schließt es die Liste. In der Rückfrage zu LÖSCHEN wirkt es wie ABBRECHEN.
 
 ## Keine Karte
 
@@ -18,7 +18,7 @@ Das Home-Feld führt wie ZURÜCK jeweils eine Ebene zurück: von der Grafik zur 
 
 Ohne eingebundene Karte zeigt der Bereich `KEINE AUFZEICHNUNGEN` und `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` Bei einem leeren oder noch nicht angelegten Ordner erscheint `Keine .csv-Dateien in BENCH/LOGS.` oder `Keine .csv-Dateien in USER/LOGS.`, im Stammverzeichnis `Keine .csv-Dateien im Hauptverzeichnis.`
 
-Die Zeile darunter beschreibt den Reiter: `Läufe heißen SERVOnnn, MOTORnnn oder SUPPLnnn.CSV.`, `Tests heißen ATESTnnn, RUDDRnnn.CSV und LIMITnnn.TXT.` oder `Läufe von Firmware 0.21.0 und älter.` Sind AUTO-AUFZEICHNUNGEN oder TESTAUFZEICHNUNGEN unter [SETUP > SD CARD](setup.md) ausgeschaltet, zeigt BENCH beziehungsweise USER stattdessen `AUTO-AUFZEICHNUNGEN AUS unter SD CARD.` oder `TESTAUFZEICHNUNGEN AUS unter SD CARD.`
+Die Zeile darunter beschreibt den Reiter: `Läufe heißen SERVOnnn, MOTORnnn oder SUPPLnnn.CSV.`, `Tests heißen ATESTnnn, LIMITnnn und RUDDRnnn.CSV.` oder `Läufe von Firmware 0.21.0 und älter.` Sind AUTO-AUFZEICHNUNGEN oder TESTAUFZEICHNUNGEN unter [SETUP > SD CARD](setup.md) ausgeschaltet, zeigt BENCH beziehungsweise USER stattdessen `AUTO-AUFZEICHNUNGEN AUS unter SD CARD.` oder `TESTAUFZEICHNUNGEN AUS unter SD CARD.`
 
 AKTUALISIEREN liest die Karte erneut. Die Reiter funktionieren auch ohne Karte; jeder Tipp prüft erneut, ob eine eingesetzt wurde.
 
@@ -51,7 +51,7 @@ WI-FI in der Tastenzeile öffnet [WLAN](wifi.md) für Downloads im Browser. Das 
 | AKTUALISIEREN | liest die gezeigte Seite erneut und wählt ihren neuesten Lauf |
 | VORIGE, NÄCHSTE | die Seite davor und danach; sichtbar mit mehr als 48 Dateien auf der Karte |
 | LÖSCHEN | fragt nach und entfernt dann die gewählte Datei; grau, solange nichts gewählt ist, bei ARMED und während ein Lauf aufgezeichnet wird |
-| ÖFFNEN | öffnet die gewählte CSV-Datei in der Importansicht, einen Bericht im Textbetrachter; grau, solange nichts gewählt ist |
+| ÖFFNEN | öffnet eine Laufdatei des Prüfstands in der Grafik, jede andere CSV-Datei in der Importansicht, einen Bericht im Textbetrachter; grau, solange nichts gewählt ist |
 
 Die Fußleiste unter der Liste nennt den Bildschirm, LOGS. OPTIONEN rechts öffnet die Liste SD CARD von [SETUP](setup.md#sd-card): die Aufzeichnungsschalter und die beiden Aufzeichnungsordner. Deren Home-Feld führt hierher zurück.
 
@@ -79,10 +79,12 @@ Jede Datei enthält einen Lauf und liegt im Ordner seiner Art. Der Name kennzeic
 | `BENCH/LOGS` | `MOTORnnn.CSV` | ein Schalten auf ARMED von ARM auf MOTOR & ESC oder einem Stick-Lauf auf dessen PROGRAMMIEREN |
 | `BENCH/LOGS` | `SUPPLnnn.CSV` | ein Einschalten des SUPPLY-Ausgangs, solange der Prüfstand SAFE ist |
 | `USER/LOGS` | `ATESTnnn.CSV` | ein AUTOMATISCHER TEST; sein Bericht ist `ATESTnnn.TXT` |
-| `USER/LOGS` | `LIMITnnn.TXT` | der Bericht eines Laufs von LIMIT RUN, ohne CSV daneben |
+| `USER/LOGS` | `LIMITnnn.CSV` | ein Lauf von LIMIT RUN, eine Zeile je bewerteter Stellung; sein Bericht ist `LIMITnnn.TXT`, allein bei einem Lauf, der keine Stellung bewertet hat, oder einem von Firmware 0.23.17 und älter |
 | `USER/LOGS` | `RUDDRnnn.CSV` | ein Lauf von RUDER AUTO, eine Zeile je Messung; sein Bericht ist `RUDDRnnn.TXT` |
 | Stammverzeichnis | `BENCHnnn.CSV`, `ESCnnn.CSV`, `SERVOnnn.CSV` | Läufe von Firmware 0.21.0 und älter; im Stammverzeichnis ist `SERVOnnn` ein Servotest |
 | Stammverzeichnis | `SERVOnnn.TXT` allein | ein Endlagenlauf von Firmware 0.21.0 und älter |
+
+Die letzte Spalte jeder CSV des Prüfstands, `info`, beschreibt den Lauf in der ersten Datenzeile: `dut=MG90S&note=greased&date=2026-11-24T10:31&fw=0.23.18`. `dut` ist der Name des Prüflings und `note` die Notiz zum Lauf aus den [SERVO-Listen](servo-settings.md), je bis 23 Zeichen; `date` ist das lokale Datum mit Uhrzeit des Panels beim Start und fehlt, solange die Uhr nicht gestellt ist; `fw` ist die Firmware. AUTOMATISCHER TEST, LIMIT RUN und RUDER AUTO fügen `servo`, `meter` und `angle` an; MOTOR- und SUPPLY-Dateien tragen kein `dut`. In einem Wert wird jedes `&`, `=`, `;` und `"` als `_` geschrieben. LOGS von Firmware 0.23.17 liest jede solche Datei außer einer SERVO-Datei mit drei INA3221-Gruppen, die 26 Spalten hat.
 
 Der Name richtet sich nach der Seite, deren ARM den Prüfstand aktiviert hat. Das gilt auch bei IOmcu-Versionen vor 0.18.0, die bei jedem Schalten auf ARMED die Gasausgänge mit aktivieren.
 
@@ -96,7 +98,7 @@ Das Panel legt jeden Ordner an, wenn es zum ersten Mal hineinschreibt, eine Eben
 
 Jeder Ordner hat eine eigene Nummernfolge. Ein neuer Lauf erhält die höchste vorhandene Nummer plus eins, unabhängig vom Namenspräfix und einschließlich der Namen aus Firmware 0.21.0. Gelöschte Nummern werden nicht erneut verwendet. Enthält ein Ordner die Nummer 999, nimmt er keinen weiteren Lauf an, auch bei freien niedrigeren Nummern.
 
-Die Liste zeigt Berichte mit Laufnamen: `ATESTnnn.TXT` mit oder ohne zugehörige `ATESTnnn.CSV`, `LIMITnnn.TXT` und im Stammverzeichnis `SERVOnnn.TXT` aus Firmware 0.21.0 und älter. Lauf und Bericht stehen in getrennten Zeilen, die CSV zuerst. LÖSCHEN beim Lauf löscht den Bericht mit. Andere `.TXT`-Dateien zeigt nur FILES.
+Die Liste zeigt Berichte mit Laufnamen: `ATESTnnn.TXT` mit oder ohne zugehörige `ATESTnnn.CSV`, `LIMITnnn.TXT` mit oder ohne zugehörige `LIMITnnn.CSV` und im Stammverzeichnis `SERVOnnn.TXT` aus Firmware 0.21.0 und älter. Lauf und Bericht stehen in getrennten Zeilen, die CSV zuerst. LÖSCHEN beim Lauf löscht den Bericht mit. Andere `.TXT`-Dateien zeigt nur FILES.
 
 Die Sortierung folgt absteigenden Nummern über alle Präfixe hinweg: `MOTOR043.CSV`, dann `SERVO042.CSV`, dann `SUPPL041.CSV`.
 
@@ -128,11 +130,26 @@ Die ersten fünf hinterlassen keine Datei. Die letzten vier hinterlassen eine Da
 
 Berichte lassen sich auch über [WLAN](wifi.md) herunterladen.
 
+## Was wo öffnet
+
+ÖFFNEN liest die Kopfzeile der Datei. Eine Laufdatei des Prüfstands öffnet sofort die Grafik, mit den Spalten ihrer Art. Die Art ergibt sich zuerst aus den Spaltennamen der Kopfzeile, dann aus dem Dateinamen. So werden auch ein Name mit Zusatz (`MOTOR042_kv1200.CSV`), ein Name in Kleinbuchstaben und die Dateien ab Firmware 0.21.0 erkannt.
+
+| Art | Name | Gezeichnete Spalten |
+|---|---|---|
+| LIMIT RUN | `LIMITnnn.CSV` | `pulse`, `current`, `angle` |
+| RUDDER AUTO | `RUDDRnnn.CSV` | `pulse`, `current`, `measured` |
+| AUTOMATIC TEST | `ATESTnnn.CSV` | `command`, `current`, `voltage`, `angle` |
+| SUPPLY-Lauf | `SUPPLnnn.CSV` | `set`, `voltage`, `limit`, `current` |
+| MOTOR-Lauf | `MOTORnnn.CSV`, `ESCnnn.CSV` | `throttle`, `rpm`, `current`, `voltage` |
+| SERVO-Lauf | `SERVOnnn.CSV`, `BENCHnnn.CSV` | `pulse`, `angle`, `current`, `voltage` |
+
+Eine Spalte, die der Datei fehlt, entfällt. Eine LIMIT-RUN- oder RUDDER-AUTO-Datei öffnet in [der Grafik](#die-grafik-eines-limit-run-oder-rudder-auto) über ihrem Puls. Jede andere CSV und ein Laufname über Spalten keiner Art öffnen die Importansicht.
+
 ## Die Importansicht
 
 ![Was der Import erkannt hat](view:logs-import)
 
-ÖFFNEN liest die Datei und zeigt vor dem Zeichnen das erkannte Importformat.
+Die Importansicht zeigt vor dem Zeichnen das erkannte Importformat. MEHR > SPALTEN in der Grafik öffnet sie für eine Laufdatei, mit den Spalten der Grafik gewählt.
 
 | Zeile | Zeigt |
 |---|---|
@@ -143,7 +160,7 @@ Berichte lassen sich auch über [WLAN](wifi.md) herunterladen.
 | UNGLEICHE ZEILEN | Zeilen mit einer anderen Zellenzahl als die Kopfzeile |
 | BELEGE | die Zellen, die Deutsch, Englisch oder keins von beiden belegt haben |
 
-Die rechte Liste zeigt jede Spalte mit ihrem ersten Wert und dem Bereich vom kleinsten bis zum größten Wert. Bis zu 4 Spalten werden automatisch gewählt. Bei SERVO-Dateien haben die numerischen Spalten `pulse`, `angle`, `current` und `voltage` Vorrang, danach folgen weitere Zahlenspalten. Bei anderen Dateien werden die ersten 4 Zahlenspalten gewählt.
+Die rechte Liste zeigt jede Spalte mit ihrem ersten Wert und dem Bereich vom kleinsten bis zum größten Wert. Für eine Datei keiner Art werden bis zu 4 Spalten automatisch gewählt: hat die Datei eine numerische Spalte `pulse`, zuerst die numerischen Spalten `pulse`, `angle`, `current` und `voltage`, danach weitere Zahlenspalten; jede andere Datei beginnt mit ihren ersten 4 Zahlenspalten.
 
 Tippe auf eine Zahlenspalte, um sie zur Grafik hinzuzufügen oder daraus zu entfernen. Der Titel zählt die Auswahl, etwa `GRAFIK  4/4`. Sehen Werte oder Spalten falsch aus, wechsle mit TRENNZEICHEN und ZAHLENFORMAT durch die Möglichkeiten, beginnend bei AUTO. ZURÜCK führt zur Dateiliste. GRAFIK zeichnet die gewählten Spalten.
 
@@ -158,9 +175,41 @@ Die Kopfzeile nennt Datei, Zeilenzahl, Dauer und Abtastrate. Jede Spalte hat ein
 - Bewege den Cursor mit einem Finger oder mit `<` und `>`. Unten rechts stehen Zeit und Messpunkt.
 - Zoome mit zwei Fingern: auseinanderziehen zum Vergrößern, zusammenziehen zum Verkleinern. Bewege beide Finger zum Verschieben. Die Ansicht reicht von mindestens 8 Messpunkten bis zum gesamten Lauf.
 - Ist Ein Finger schiebt unter SETUP, PANEL eingeschaltet, verschiebt ein Finger eine vergrößerte Ansicht seitwärts, sobald er sich mehr als 10px bewegt.
-- ZURÜCK führt zur Importansicht.
+- ZURÜCK führt zur Dateiliste, oder zur Importansicht, wenn deren GRAFIK die Grafik geöffnet hat.
+- MEHR öffnet eine Liste mit SPALTEN, das zur Importansicht führt, um andere Spalten zu wählen. Ein Druck neben die Liste schließt sie.
+
+![Die Liste von MEHR](view:logs-plot-more)
 
 Die Grafik verteilt Datenzeilen gleichmäßig nach Zeilennummer. Ihre Beschriftung stammt aus der Zeitspalte. Eine Datenlücke erscheint daher als Sprung in den Zeitangaben.
+
+## Die Grafik eines LIMIT RUN oder RUDDER AUTO
+
+![Ein LIMIT RUN: current und angle über dem Puls](view:logs-limit-graph)
+
+Die Datei eines LIMIT RUN und eines RUDDER AUTO öffnet in der Grafik: jede Zeile über ihrem Puls, eine Linie je Suche und Seite. Die Kopfzeile nennt Datei, Zeilen und Art, `LIMIT006.CSV   116 ZEILEN   LIMIT RUN`. Die Grafik zeigt die ganze Datei mit bis zu 2.048 Zeilen; eine längere öffnet in der Kurvenansicht nach Zeilennummer.
+
+| Buchstabe | Markierung | Wo |
+|---|---|---|
+| M | Mitte | der Puls, an dem jede Suche beginnt |
+| A | Anschlag | der Puls, an dem die letzte Suche der Seite den Anschlag fand |
+| E | Endpunkt | der für die Seite geschriebene Endpunkt, 25us vor dem Anschlag |
+| L | letzte Position | der äußerste Puls einer Seite, wo er nicht ihr Anschlag ist: ohne Anschlag, oder eine frühere Suche lief weiter |
+| F | Freistrom | ein Pegel über den Pulsen der Seite |
+| S | Schwelle | der Strom, über dem eine Position als Anschlag gilt |
+
+- Die erste Suche ist durchgezogen, die Suche nach dem Überstellen (2) und die letzte Prüfung (3) gestrichelt.
+- Der kleinste und der größte Puls stehen auf der ersten und der letzten Spalte der Grafik.
+- Tippe auf einen Chip: seine Reihe wird 2px dick, Ober- und Unterende ihrer Skala stehen am linken Rand der Grafik. Erneutes Tippen blendet die Reihe aus, ein drittes holt sie zurück.
+- Ein Finger setzt den Cursor auf den nächsten Punkt; `<` und `>` gehen zum nächsten gezeichneten Punkt. Jeder Chip zeigt seinen Wert am Cursor; die Zeile in der Fußleiste lautet `pulse 1040us   Zeile 112 von 116`.
+- Zwei Finger zoomen die Grafik nicht.
+
+![Die Suche eines RUDDER AUTO](view:logs-ruddr-search)
+
+Die Datei eines RUDDER AUTO hat zwei Bilder auf den Reitern SUCHE und SCHRITTE. SUCHE zeichnet Strom und Winkel über den Pulsen der Suche, eine Linie je Seite, mit M, E am Endpunkt jeder Seite und L an der äußersten Position jeder Seite.
+
+![Die Schritte eines RUDDER AUTO](view:logs-ruddr-steps)
+
+SCHRITTE zeichnet jede Messung und ihr Ziel über dem Schritt, eine Linie je Seite, und die 3 Prüfmessungen als Punkte. Eine Messung außerhalb der Toleranz erscheint in der Warnfarbe; ein Strich am Fuß der Grafik markiert jede Messung nach einem Schreiben.
 
 ## Eine Datei löschen
 

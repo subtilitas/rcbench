@@ -132,7 +132,7 @@ TEST_CASE(a_written_run_reads_back)
     log_csv_opts_default(&opts);
     log_analysis_t an;
     CHECK_EQ(log_csv_analyse(&src, &opts, &an), LOG_OK);
-    CHECK_EQ(an.n_columns, 24);
+    CHECK_EQ(an.n_columns, 25);
     CHECK_EQ(an.row_count, 120);
     /* Detected, not assumed: the file never says which convention it uses. */
     CHECK_EQ(an.delimiter, ';');
@@ -206,7 +206,7 @@ TEST_CASE(a_column_nothing_measured_is_empty_rather_than_zero)
      * temperature has no sensor; with no current there is no charge or
      * energy to count; and the sample carries no throttle.  Seven empty
      * cells, and the ones that did answer carry numbers. */
-    CHECK_STR_EQ(got, "1.000;;;;11419;;46.3;;;;;;;;;;;;;;;;;measured");
+    CHECK_STR_EQ(got, "1.000;;;;11419;;46.3;;;;;;;;;;;;;;;;;measured;");
 }
 
 /*
@@ -236,11 +236,11 @@ TEST_CASE(a_speed_above_the_ceiling_is_written_as_a_bound)
     const char *p = strchr(g_mem.buf, '\n');
     CHECK(p != NULL);
     ++p;
-    CHECK(strncmp(p, "1.000;;;;>65535;;;;;;;;;;;;;;;;;;;measured\n", 42) == 0);
+    CHECK(strncmp(p, "1.000;;;;>65535;;;;;;;;;;;;;;;;;;;measured;\n", 43) == 0);
     p = strchr(p, '\n');
     CHECK(p != NULL);
     ++p;
-    CHECK(strncmp(p, "2.000;;;;65535;;;;;;;;;;;;;;;;;;;measured\n", 41) == 0);
+    CHECK(strncmp(p, "2.000;;;;65535;;;;;;;;;;;;;;;;;;;measured;\n", 42) == 0);
 
     /* The file still reads: the bound is a cell with the number 65535. */
     log_source_t src;
@@ -331,7 +331,7 @@ TEST_CASE(charge_and_energy_are_written_only_when_counted)
     snprintf(got, sizeof(got), "%s", p);
     char *nl = strchr(got, '\n');
     if (nl != NULL) { *nl = '\0'; }
-    CHECK_STR_EQ(got, "1.000;;10.00;;;;;;5;;;;10.00;;;;;;;;;;;measured");
+    CHECK_STR_EQ(got, "1.000;;10.00;;;;;;5;;;;10.00;;;;;;;;;;;measured;");
 }
 
 TEST_CASE(the_values_survive_the_round_trip)
@@ -435,8 +435,8 @@ TEST_CASE(the_sources_survive_the_round_trip)
     CHECK(strstr(g_mem.buf, ";ina voltage (V);ina current (A);"
                             "esc current (A);window;") != NULL);
     static const char k_rows[] =
-        "1.000;24.31;31.20;758;;;;;;;24.31;31.20;36.75;;;;;;;;;;;measured\n"
-        "1.050;24.10;40.05;0;;;;;;;;;40.05;;;;;;;;;;;measured\n";
+        "1.000;24.31;31.20;758;;;;;;;24.31;31.20;36.75;;;;;;;;;;;measured;\n"
+        "1.050;24.10;40.05;0;;;;;;;;;40.05;;;;;;;;;;;measured;\n";
     const char *row = strchr(g_mem.buf, '\n') + 1;
     CHECK_STR_EQ(row, k_rows);
 
@@ -447,7 +447,7 @@ TEST_CASE(the_sources_survive_the_round_trip)
     log_csv_opts_default(&opts);
     log_analysis_t an;
     CHECK_EQ(log_csv_analyse(&src, &opts, &an), LOG_OK);
-    CHECK_EQ(an.n_columns, 24);
+    CHECK_EQ(an.n_columns, 25);
     CHECK_EQ(an.ragged_rows, 0);
 
     log_source_t src2;
@@ -497,8 +497,8 @@ TEST_CASE(each_window_goes_into_one_row)
     CHECK(strstr(g_mem.buf, ";window;ch1 current (A);ch1 max (A);"
                             "ch1 voltage (V);ch2 current (A)") != NULL);
     static const char k_rows[] =
-        "1.000;;;;;;;;;;;;;812;0.412;1.638;5.874;;;;;;;measured\n"
-        "1.050;;;;;;;;;;;;;;;;;;;;;;;measured\n";
+        "1.000;;;;;;;;;;;;;812;0.412;1.638;5.874;;;;;;;measured;\n"
+        "1.050;;;;;;;;;;;;;;;;;;;;;;;measured;\n";
     const char *row = strchr(g_mem.buf, '\n') + 1;
     CHECK_STR_EQ(row, k_rows);
 
@@ -509,7 +509,7 @@ TEST_CASE(each_window_goes_into_one_row)
     log_csv_opts_default(&opts);
     log_analysis_t an;
     CHECK_EQ(log_csv_analyse(&src, &opts, &an), LOG_OK);
-    CHECK_EQ(an.n_columns, 24);
+    CHECK_EQ(an.n_columns, 25);
     CHECK_EQ(an.ragged_rows, 0);
     log_source_t src2;
     log_mem_ctx_t ctx2;
@@ -1190,7 +1190,7 @@ TEST_CASE(a_bench_log_has_one_row_for_every_window_at_a_53_ms_poll)
     log_csv_opts_default(&opts);
     log_analysis_t an;
     CHECK_EQ(log_csv_analyse(&src, &opts, &an), LOG_OK);
-    CHECK_EQ(an.n_columns, 24);
+    CHECK_EQ(an.n_columns, 25);
     CHECK_EQ(an.ragged_rows, 0);
     CHECK_EQ(an.time_index, 0);
     CHECK_EQ(an.row_count, (int)r.rows);
@@ -1335,13 +1335,13 @@ TEST_CASE(a_window_without_voltage_samples_has_an_empty_voltage_cell)
 
     char want[512];
     snprintf(want, sizeof(want),
-             ";;;;;;;;;;;;;%u;0.412;0.412;;;;;;;;measured\n"
-             ";;;;;;;;;;;;;%u;;;5.874;;;;;;;measured\n"
-             ";;;;;;;;;;;;;%u;;;;;;;;;;measured\n"
-             ";;;;;;;;;;;;;%u;-0.003;-0.003;6.000;;;;;;;measured\n"
-             ";;;;;;;;;;;;;%u;0.000;0.000;0.000;;;;;;;measured\n"
-             ";;;;;;;;;;;;;%u;0.077;0.077;;;;;;;;measured\n"
-             ";;;;;;;;;;;;;%u;0.080;0.080;6.000;;;;;;;measured\n",
+             ";;;;;;;;;;;;;%u;0.412;0.412;;;;;;;;measured;\n"
+             ";;;;;;;;;;;;;%u;;;5.874;;;;;;;measured;\n"
+             ";;;;;;;;;;;;;%u;;;;;;;;;;measured;\n"
+             ";;;;;;;;;;;;;%u;-0.003;-0.003;6.000;;;;;;;measured;\n"
+             ";;;;;;;;;;;;;%u;0.000;0.000;0.000;;;;;;;measured;\n"
+             ";;;;;;;;;;;;;%u;0.077;0.077;;;;;;;;measured;\n"
+             ";;;;;;;;;;;;;%u;0.080;0.080;6.000;;;;;;;measured;\n",
              (unsigned)n0, (unsigned)(uint16_t)(n0 + 1u),
              (unsigned)(uint16_t)(n0 + 2u), (unsigned)(uint16_t)(n0 + 3u),
              (unsigned)(uint16_t)(n0 + 4u), (unsigned)(uint16_t)(n0 + 5u),
@@ -1416,20 +1416,20 @@ TEST_CASE(a_bench_row_names_its_source)
     if (hdr_end == NULL) {
         return;
     }
-    CHECK(memcmp(hdr_end - 7, ";source", 7) == 0);
+    CHECK(memcmp(hdr_end - 12, ";source;info", 12) == 0);
     const char *r1 = hdr_end + 1;
     const char *r1_end = strchr(r1, '\n');
     CHECK(r1_end != NULL);
     if (r1_end == NULL) {
         return;
     }
-    CHECK(memcmp(r1_end - 9, ";measured", 9) == 0);
+    CHECK(memcmp(r1_end - 10, ";measured;", 10) == 0);
     const char *r2_end = strchr(r1_end + 1, '\n');
     CHECK(r2_end != NULL);
     if (r2_end == NULL) {
         return;
     }
-    CHECK(memcmp(r2_end - 6, ";model", 6) == 0);
+    CHECK(memcmp(r2_end - 7, ";model;", 7) == 0);
 }
 
 /* A row whose INA228 figures are the power node's says "node", and its ina
@@ -1454,7 +1454,7 @@ TEST_CASE(a_bench_row_from_the_power_node_says_node)
     b.flags = LINK_BN_SENSED | LINK_BN_SIMULATED;
     CHECK(log_writer_row(&w, 1.15f, &b));
     const char *p = strchr(g_mem.buf, '\n');
-    const char *want[4] = { ";node", ";measured", ";measured", ";model" };
+    const char *want[4] = { ";node;", ";measured;", ";measured;", ";model;" };
     for (int k = 0; k < 4; ++k) {
         CHECK(p != NULL);
         if (p == NULL) {

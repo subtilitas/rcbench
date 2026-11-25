@@ -40,13 +40,14 @@ typedef struct {
 
 /**
  * @brief Per string setting: the name for the warning, a row and its
- *        keyboard's title, and the row's help line.  The DUT name has no
- *        row on SETUP.
+ *        keyboard's title, and the row's help line.  The DUT name and the
+ *        run note have no row on SETUP.
  */
 static const text_ui_t k_text_ui[SETTING_TEXT_COUNT] = {
     [SET_TEXT_DUT_NAME]     = { TX_SET_DUT_NAME, TX_COUNT },
     [SET_TEXT_LOG_AUTO_DIR] = { TX_SET_AUTO_DIR, TX_SET_AUTO_DIR_HELP },
     [SET_TEXT_LOG_USER_DIR] = { TX_SET_USER_DIR, TX_SET_USER_DIR_HELP },
+    [SET_TEXT_RUN_NOTE]     = { TX_SET_RUN_NOTE, TX_COUNT },
 };
 
 const char *ui_setlist_text_label(setting_text_id_t id)
@@ -486,8 +487,8 @@ static void open_keypad(ui_setlist_t *sl, int index)
 /**
  * @brief A tap on the row of string @p id: its keyboard, on the text in
  *        force.  The log folders take the folder mode (ui_textkey.h); the
- *        DUT name the name keyboard, spaces and up to UI_TEXTKEY_MAX
- *        characters.
+ *        DUT name and the run note the name keyboard, spaces and up to
+ *        UI_TEXTKEY_MAX characters.
  * @param sl The list.
  * @param id The string.
  */
@@ -496,7 +497,7 @@ static void open_text(ui_setlist_t *sl, setting_text_id_t id)
     if ((int)id < 0 || id >= SETTING_TEXT_COUNT) {
         return;
     }
-    if (id == SET_TEXT_DUT_NAME) {
+    if (id == SET_TEXT_DUT_NAME || id == SET_TEXT_RUN_NOTE) {
         ui_textkey_open(&sl->tk, TK_AREA, ui_tr(k_text_ui[id].label),
                         settings_text(id), UI_TEXTKEY_MAX);
     } else {

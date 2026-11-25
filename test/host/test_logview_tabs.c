@@ -212,7 +212,7 @@ static void top_name(char *out, size_t n)
     tap(400, BR_ROW_Y(0));
     tap(400, BR_ROW_Y(0));
     snprintf(out, n, "%s", log_viewer_open_name());
-    tap(BACK_X, IM_BTN_CY);
+    tap_back();
 }
 
 TEST_CASE(three_tabs_list_three_folders_and_bench_comes_first)
@@ -590,9 +590,13 @@ TEST_CASE(a_file_opened_in_one_tab_is_read_again_from_its_folder)
     ui_router_goto(SCREEN_LOGS);
     tap(TAB_X(0), TAB_Y);
     tap(400, BR_ROW_Y(0));
-    tap(400, BR_ROW_Y(0));                   /* ATEST005.CSV, imported */
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+    tap(400, BR_ROW_Y(0));                   /* ATEST005.CSV, plotted */
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_PLOT);
     CHECK_STR_EQ(log_viewer_open_name(), "ATEST005.CSV");
+    /* MORE > COLUMNS: its import. */
+    tap(LV_PV_MORE_CX, LV_FOOT_CY);
+    tap(LV_MORE_ROW_CX, LV_MORE_ROW_CY);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
     /* Left with the import on screen; a run is written meanwhile, so LOGS
      * comes back on BENCH with the import still showing. */
     g_fc.written = 1u;

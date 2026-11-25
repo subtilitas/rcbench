@@ -1947,6 +1947,11 @@ UI_TEXT(SET_DISCARD, 0,
 UI_TEXT(SET_DUT_NAME, 0,
     "DUT name",
     "Name des Prüflings")
+/* RUN NOTE: the run's condition, typed beside DUT NAME on the SERVO lists
+ * and written into every run's file. */
+UI_TEXT(SET_RUN_NOTE, 0,
+    "Run note",
+    "Notiz zum Lauf")
 /* SETUP > SD CARD's two folders: a row's name, its keyboard's title, and
  * the row's help. */
 UI_TEXT(SET_AUTO_DIR, 0,
@@ -2490,6 +2495,9 @@ UI_TEXT(HG_MO_STICK, 0,
 UI_TEXT(HG_MO_WIRE, 0,
     "Reads and writes the ESC over its signal wire. Grey until the IOmcu offers it.",
     "Liest und schreibt den ESC über die Signalleitung. Grau ohne IOmcu dafür.")
+UI_TEXT(HG_MO_YGE, 0,
+    "Reads and writes a YGE ESC over its telemetry wire. Grey until the IOmcu offers it.",
+    "Liest und schreibt einen YGE-ESC über sein Telemetriekabel. Grau ohne IOmcu dafür.")
 UI_TEXT(HG_MO_TARGET, 0,
     "The protocol and pins the throttle drives. A tap opens OUTPUTS on them; locked while not SAFE.",
     "Protokoll und Pins, die das Gas treibt. Tippen öffnet OUTPUTS dazu; gesperrt außer bei SAFE.")
@@ -2612,6 +2620,12 @@ UI_TEXT(HG_WLS_CARD, 0,
 UI_TEXT(HG_WLS_AGAIN, 0,
     "Scans 10s again. Refused while ARMED and while a scan runs; the band says why.",
     "Sucht erneut 10s. Abgelehnt bei ARMED und während einer Suche; das Band nennt den Grund.")
+UI_TEXT(HG_WLS_UNBIND_NAME, 0,
+    "UNBIND",
+    "BINDUNG LÖSEN")
+UI_TEXT(HG_WLS_UNBIND, 0,
+    "Held 2s: forgets the bound device, ends its link and asks for a save. A run that uses it acts as on a lost link. Grey with nothing bound.",
+    "2s gehalten: vergisst das gebundene Gerät, trennt die Verbindung und fordert Speichern an. Ein Lauf, der es nutzt, reagiert wie auf eine verlorene Verbindung. Grau, wenn nichts gebunden ist.")
 
 /* ---------------------------------------------------------------- LOGS */
 UI_TEXT(LOG_NO_SOURCE, 36,
@@ -2705,8 +2719,8 @@ UI_TEXT(LOG_RUNS_HERE, 64,
     "Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.",
     "Läufe heißen SERVOnnn, MOTORnnn oder SUPPLnnn.CSV.")
 UI_TEXT(LOG_TESTS_HERE, 64,
-    "Tests are saved as ATESTnnn, RUDDRnnn.CSV and LIMITnnn.TXT.",
-    "Tests heißen ATESTnnn, RUDDRnnn.CSV und LIMITnnn.TXT.")
+    "Tests are saved as ATESTnnn, LIMITnnn and RUDDRnnn.CSV.",
+    "Tests heißen ATESTnnn, LIMITnnn und RUDDRnnn.CSV.")
 UI_TEXT(LOG_ROOT_HERE, 64,
     "Runs of firmware 0.21.0 and older.",
     "Läufe von Firmware 0.21.0 und älter.")
@@ -2858,6 +2872,12 @@ UI_TEXT(LOG_BACK, 0,
 UI_TEXT(LOG_PLOT, 0,
     "PLOT",
     "GRAFIK")
+UI_TEXT(LOG_MORE, 0,
+    "MORE",
+    "MEHR")
+UI_TEXT(LOG_COLUMNS, 0,
+    "COLUMNS",
+    "SPALTEN")
 UI_TEXT(LOG_NOTHING_LOADED, 64,
     "NO FILE LOADED",
     "KEINE DATEI GELADEN")
@@ -2879,6 +2899,69 @@ UI_TEXT(LOG_AT_ROW, 50,
 UI_TEXT(LOG_UNREADABLE_CELLS, 50,
     "%d CELLS UNREADABLE",
     "%d ZELLEN UNLESBAR")
+/* The graph of an XY file (log_graph_draw.c): the summary's kind, RUDDR's
+ * two tabs, the cursor's line, the markers' letters and words, and the
+ * legend of STEPS. */
+UI_TEXT(LOG_GRAPH_SUMMARY, 0,
+    "%s   %d ROWS   %s",
+    "%s   %d ZEILEN   %s")
+UI_TEXT(LOG_KIND_LIMIT, 0,
+    "LIMIT RUN",
+    "LIMIT RUN")
+UI_TEXT(LOG_KIND_RUDDR, 0,
+    "RUDDER AUTO",
+    "RUDDER AUTO")
+UI_TEXT(LOG_TAB_SEARCH, 0,
+    "SEARCH",
+    "SUCHE")
+UI_TEXT(LOG_TAB_STEPS, 0,
+    "STEPS",
+    "SCHRITTE")
+UI_TEXT(LOG_AT_X, 0,
+    "%s %s   row %d of %d",
+    "%s %s   Zeile %d von %d")
+UI_TEXT(LOG_MK_CENTER, 0,
+    "C",
+    "M")
+UI_TEXT(LOG_MK_BOUND, 0,
+    "B",
+    "A")
+UI_TEXT(LOG_MK_END, 0,
+    "E",
+    "E")
+UI_TEXT(LOG_MK_LAST, 0,
+    "L",
+    "L")
+UI_TEXT(LOG_MK_FREE, 0,
+    "F",
+    "F")
+UI_TEXT(LOG_MK_THRESHOLD, 0,
+    "T",
+    "S")
+UI_TEXT(LOG_MARK_CENTER, 0,
+    "CENTER",
+    "MITTE")
+UI_TEXT(LOG_MARK_BOUND, 0,
+    "BOUND",
+    "ANSCHLAG")
+UI_TEXT(LOG_MARK_END, 0,
+    "END POINT",
+    "ENDPUNKT")
+UI_TEXT(LOG_MARK_LAST, 0,
+    "LAST POSITION",
+    "LETZTE POSITION")
+UI_TEXT(LOG_MARK_FREE, 0,
+    "FREE",
+    "FREI")
+UI_TEXT(LOG_MARK_THRESHOLD, 0,
+    "THRESHOLD",
+    "SCHWELLE")
+UI_TEXT(LOG_LEG_OUTSIDE, 0,
+    "OUTSIDE TOLERANCE",
+    "AUSSERHALB TOLERANZ")
+UI_TEXT(LOG_LEG_WRITE, 0,
+    "WRITE",
+    "SCHREIBEN")
 
 /* The screen guide's pages of LOGS (help_logs.c): the titles, the names of
  * marks the screen draws no label for, and what each mark does. */
@@ -2943,8 +3026,8 @@ UI_TEXT(HG_LOG_DELETE, 0,
     "Asks first, then deletes the selected file from the card.",
     "Fragt zuerst und löscht dann die gewählte Datei von der Karte.")
 UI_TEXT(HG_LOG_OPEN, 0,
-    "A CSV opens in the import view, a report in the text viewer of FILES.",
-    "Eine CSV öffnet die Importansicht, ein Bericht den Textbetrachter von FILES.")
+    "A bench run opens in the plot, another CSV in the import view, a report in FILES' text viewer.",
+    "Ein Prüfstandslauf öffnet die Grafik, andere CSV die Importansicht, ein Bericht den Textbetrachter.")
 UI_TEXT(HG_LOG_DETECTED, 0,
     "How the reader takes the file: separator, number format, rows, columns and the time axis.",
     "Wie der Leser die Datei nimmt: Trennzeichen, Zahlenformat, Zeilen, Spalten und Zeitachse.")
@@ -2975,6 +3058,30 @@ UI_TEXT(HG_LOG_BACK_IMPORT, 0,
 UI_TEXT(HG_LOG_STEP, 0,
     "Move the cursor one row; past the edge of a zoom the view moves along.",
     "Bewegen den Cursor um eine Zeile; am Rand eines Zooms wandert die Ansicht mit.")
+UI_TEXT(HG_LOG_GRAPH_CHIP, 0,
+    "Its value at the cursor. Tap: its scale at the plot's left edge. Again: hidden. Again: back.",
+    "Ihr Wert am Cursor. Tippen: ihre Skala am linken Rand. Erneut: aus. Erneut: zurück.")
+UI_TEXT(HG_LOG_GRAPH_AREA, 0,
+    "Over the pulse, a line a search and side; later searches dashed. A finger sets the cursor.",
+    "Über dem Puls, eine Linie je Suche und Seite; spätere Suchen gestrichelt. Ein Finger setzt den Cursor.")
+UI_TEXT(HG_LOG_GRAPH_STEP, 0,
+    "Move the cursor to the next point the graph draws.",
+    "Bewegen den Cursor zum nächsten Punkt der Grafik.")
+UI_TEXT(HG_LOG_LEGEND_NAME, 0,
+    "MARKERS",
+    "MARKER")
+UI_TEXT(HG_LOG_GRAPH_LEGEND, 0,
+    "The markers' letters. STEPS: a point outside the tolerance; a tick after a write.",
+    "Buchstaben der Markierungen. SCHRITTE: Punkt außer Toleranz; Strich nach Schreiben.")
+UI_TEXT(HG_LOG_PICTURE_NAME, 0,
+    "PICTURE",
+    "BILD")
+UI_TEXT(HG_LOG_GRAPH_TABS, 0,
+    "SEARCH: current and angle over the pulse. STEPS: each measure and its goal.",
+    "SUCHE: Strom und Winkel über dem Puls. SCHRITTE: jede Messung und ihr Ziel.")
+UI_TEXT(HG_LOG_MORE, 0,
+    "Opens a list. COLUMNS goes to the import view, to pick other columns.",
+    "Öffnet eine Liste. SPALTEN führt zur Importansicht, um andere Spalten zu wählen.")
 /* --------------------------------------------------------------- FILES */
 /* The footer's buttons, 118px: a label that leaves under 6px at each side
  * in the 10 x 20 face (10 cells at most) is drawn in the 8 x 16 face.
@@ -3455,6 +3562,15 @@ UI_TEXT(PL_GRP_WIRE, 40,
 UI_TEXT(PL_WIRE_TRANSPORT, 40,
     "SIGNAL WIRE",
     "SIGNALLEITUNG")
+UI_TEXT(PL_YGE, 31,
+    "YGE ESCs",
+    "YGE-ESCs")
+UI_TEXT(PL_GRP_TELEM, 40,
+    "TELEMETRY WIRE",
+    "TELEMETRIEKABEL")
+UI_TEXT(PL_YGE_TRANSPORT, 40,
+    "OPENYGE",
+    "OPENYGE")
 UI_TEXT(EW_BACK, 0,
     "BACK",
     "ZURÜCK")
@@ -4530,6 +4646,275 @@ UI_TEXT(EW_HE_BEACON, 100,
 UI_TEXT(EW_HE_LED, 100,
     "LED bit mask, limited to the LEDs the target has.",
     "LED-Bitmaske, begrenzt auf die LEDs der Platine.")
+/* Programming for YGE ESCs (yge_panel*.c).  Field names, mode names, BEC,
+ * F3C and OpenYGE stay English in every language. */
+UI_TEXT(YG_TAB_ID, 15,
+    "IDENTITY",
+    "IDENTITÄT")
+UI_TEXT(YG_TAB_MODE, 15,
+    "MODE & BEC",
+    "MODE & BEC")
+UI_TEXT(YG_TAB_PROTECT, 15,
+    "PROTECTION",
+    "SCHUTZ")
+UI_TEXT(YG_TAB_START, 15,
+    "START",
+    "START")
+UI_TEXT(YG_TAB_GOV, 15,
+    "GOVERNOR & RPM",
+    "GOVERNOR & RPM")
+UI_TEXT(YG_TAB_STICK, 15,
+    "STICK",
+    "STICK")
+UI_TEXT(YG_TAB_RAW, 15,
+    "RAW",
+    "RAW")
+UI_TEXT(YG_CONNECT_TITLE, 48,
+    "YGE ESCs, TELEMETRY WIRE",
+    "YGE-ESCs, TELEMETRIEKABEL")
+UI_TEXT(YG_ROW_PORT, 26,
+    "PORT",
+    "PORT")
+UI_TEXT(YG_ROW_BOOT, 26,
+    "BOOT WAIT",
+    "BOOT-WARTEZEIT")
+UI_TEXT(YG_TARGET_PORT, 23,
+    "PORT %u",
+    "PORT %u")
+UI_TEXT(YG_WARN_PROP, 98,
+    "Take the propeller off.",
+    "Nimm den Propeller ab.")
+UI_TEXT(YG_WARN_WIRE, 147,
+    "Connect the telemetry signal and ground only. Unplug the throttle lead; its center wire (BEC) stays off the bench.",
+    "Schließe nur Telemetriesignal und Masse an. Zieh das Gaskabel ab; seine mittlere Ader (BEC) bleibt vom Prüfstand getrennt.")
+UI_TEXT(YG_WARN_STICK, 98,
+    "Run the mode setup (ESC STICK) before this: it sets every value.",
+    "Führe vorher die Mode-Einstellung aus (ESC STICK): Sie setzt alle Werte.")
+UI_TEXT(YG_WARN_BATTERY, 98,
+    "YGE allows batteries only as the ESC's power. BY HAND uses the ESC's own battery.",
+    "YGE erlaubt nur Akkus als Versorgung des ESC. BY HAND nutzt den eigenen Akku des ESC.")
+UI_TEXT(YG_LEAVE, 24,
+    "LEAVE",
+    "VERLASSEN")
+UI_TEXT(YG_LEAVE_EDITS, 98,
+    "%u edits are not written and are lost:",
+    "%u Änderungen sind nicht geschrieben und gehen verloren:")
+UI_TEXT(YG_CHECK_ONE, 100,
+    "CHECK %s %s",
+    "PRÜFE %s %s")
+UI_TEXT(YG_CHECK_MORE, 100,
+    "CHECK %s %s, +%u MORE",
+    "PRÜFE %s %s, +%u WEITERE")
+UI_TEXT(YG_ID_NOT_READ, 98,
+    "No table read. READ AGAIN reads it.",
+    "Keine Tabelle gelesen. NEU AUSLESEN liest sie.")
+UI_TEXT(YG_ID_TYPE_NAME, 98,
+    "ESC TYPE %s (%u)",
+    "ESC-TYP %s (%u)")
+UI_TEXT(YG_ID_TYPE, 98,
+    "ESC TYPE %u",
+    "ESC-TYP %u")
+UI_TEXT(YG_ID_FIRMWARE, 98,
+    "FIRMWARE %lu.%05lu",
+    "FIRMWARE %lu.%05lu")
+UI_TEXT(YG_ID_SERIAL, 98,
+    "SERIAL %lu",
+    "SERIENNUMMER %lu")
+UI_TEXT(YG_ID_COUNT, 98,
+    "PARAMETERS %u",
+    "PARAMETER %u")
+UI_TEXT(YG_NOTE_POLES, 100,
+    "POLE PAIRS: whether the ESC counts pairs or poles is not known. Read-only.",
+    "POLE PAIRS: Ob der ESC Paare oder Pole zählt, ist nicht bekannt. Nur lesen.")
+UI_TEXT(YG_NOTE_RAW, 100,
+    "Meaning not known: shown as numbers and written back as read.",
+    "Bedeutung nicht bekannt: als Zahl gezeigt und wie gelesen zurückgeschrieben.")
+UI_TEXT(YG_HELD_1, 49,
+    "The pin stays held. No ESC session runs.",
+    "Der Pin bleibt belegt. Keine ESC-Sitzung läuft.")
+UI_TEXT(YG_HAND_NOW, 100,
+    "Connect the ESC's battery now, then tap POWER IS ON.",
+    "Schließe jetzt den Akku des ESC an. Tippe dann auf VERSORGUNG EIN.")
+UI_TEXT(YG_HAND_LIMIT, 100,
+    "The bench waits 60s at most.",
+    "Der Prüfstand wartet höchstens 60s.")
+UI_TEXT(YG_CARD_WAIT, 96,
+    "The backup is saved to the card before the write starts.",
+    "Das Backup wird vor dem Schreiben auf der Karte gespeichert.")
+UI_TEXT(YG_CARD_BUSY, 100,
+    "The card is busy. Try again.",
+    "Die Karte ist belegt. Versuche es erneut.")
+UI_TEXT(YG_CARD_LATE, 100,
+    "Card reply no longer matches the current screen state. Nothing loaded.",
+    "Kartenantwort passt nicht mehr zum Bildschirm. Nichts geladen.")
+UI_TEXT(YG_FILES_NONE, 100,
+    "No YGE files in BENCH/YGE/CONF.",
+    "Keine YGE-Dateien in BENCH/YGE/CONF.")
+UI_TEXT(YG_BACKUP_SAVED, 100,
+    "Backup saved as %s. Writing.",
+    "Backup als %s gespeichert. Schreiben läuft.")
+UI_TEXT(YG_CARD_FULL, 100,
+    "The card is full, or YGE001 to YGE999 are taken.",
+    "Die Karte ist voll, oder YGE001 bis YGE999 sind vergeben.")
+UI_TEXT(YG_CARD_LARGE, 100,
+    "The file is over 4620B: not a YGE file.",
+    "Die Datei ist größer als 4620B: keine YGE-Datei.")
+UI_TEXT(YG_CARD_FORMAT, 100,
+    "The table gives no file.",
+    "Aus der Tabelle entsteht keine Datei.")
+UI_TEXT(YG_CARD_SILENT, 100,
+    "The card did not answer within 10s: nothing written.",
+    "Die Karte antwortete nicht innerhalb von 10s: nichts geschrieben.")
+UI_TEXT(YG_STRIP_HAND, 30,
+    "BY HAND",
+    "BY HAND")
+UI_TEXT(YG_ST_FREE, 56,
+    "FREE",
+    "FREI")
+UI_TEXT(YG_ST_STOPPING, 56,
+    "TAKING THE PORT",
+    "PORT WIRD ÜBERNOMMEN")
+UI_TEXT(YG_ST_OPEN, 56,
+    "PIN HELD",
+    "PIN GEHALTEN")
+UI_TEXT(YG_ST_POWER_OFF, 56,
+    "SUPPLY OFF",
+    "VERSORGUNG AUS")
+UI_TEXT(YG_ST_POWER_ON, 56,
+    "SUPPLY ON",
+    "VERSORGUNG EIN")
+UI_TEXT(YG_ST_HAND, 56,
+    "WAITING FOR POWER",
+    "WARTE AUF VERSORGUNG")
+UI_TEXT(YG_ST_RUN, 56,
+    "RUNNING",
+    "LÄUFT")
+UI_TEXT(YG_ST_READY, 56,
+    "READY",
+    "BEREIT")
+UI_TEXT(YG_ST_NOT_BACK, 56,
+    "PIN NOT BACK",
+    "PIN NICHT ZURÜCK")
+UI_TEXT(YG_SS_WAIT, 98,
+    "Boot wait %u.%us: the ESC starts up.",
+    "Boot-Wartezeit %u.%us: Der ESC startet.")
+UI_TEXT(YG_SS_LISTEN, 98,
+    "Listening for the ESC's frames.",
+    "Warte auf Frames des ESC.")
+UI_TEXT(YG_SS_TAKE, 98,
+    "Taking over: requests until the ESC answers.",
+    "Übernahme: Anfragen, bis der ESC antwortet.")
+UI_TEXT(YG_SS_READ, 98,
+    "Reading the table: %u indices seen.",
+    "Tabelle wird gelesen: %u Indizes gesehen.")
+UI_TEXT(YG_SS_RECHECK, 98,
+    "Reading the table before the write.",
+    "Tabelle wird vor dem Schreiben gelesen.")
+UI_TEXT(YG_SS_WRITE, 98,
+    "Writing index %u.",
+    "Schreibe Index %u.")
+UI_TEXT(YG_SS_VERIFY, 98,
+    "Reading the table back.",
+    "Tabelle wird zurückgelesen.")
+UI_TEXT(YG_LINE_PARK, 98,
+    "GPIO %u PARKED",
+    "GPIO %u GEPARKT")
+UI_TEXT(YG_LINE_LISTEN, 98,
+    "GPIO %u LISTENING",
+    "GPIO %u EMPFANGSBEREIT")
+UI_TEXT(YG_MSG_NO_PAGE, 100,
+    "This IOmcu has no YGE_PROG page: update it.",
+    "Dieser IOmcu hat keine YGE_PROG-Seite: aktualisiere ihn.")
+UI_TEXT(YG_MSG_NOT_READY, 100,
+    "No ESC has answered.",
+    "Kein ESC hat geantwortet.")
+UI_TEXT(YG_MSG_NOT_READ, 100,
+    "No whole table read in this session: READ AGAIN first.",
+    "Keine ganze Tabelle in dieser Sitzung gelesen: zuerst NEU AUSLESEN.")
+UI_TEXT(YG_MSG_READ_ONLY, 100,
+    "Read-only: %s",
+    "Nur lesen: %s")
+UI_TEXT(YG_MSG_NO_CHANGE, 100,
+    "The draft equals the ESC's table: nothing to write.",
+    "Der Entwurf gleicht der Tabelle des ESC: nichts zu schreiben.")
+UI_TEXT(YG_MSG_GUARD, 100,
+    "Write refused before any frame: %s (index %u), code %u.",
+    "Schreiben vor jedem Frame abgelehnt: %s (Index %u), Code %u.")
+UI_TEXT(YG_MSG_HAND_WAIT, 100,
+    "Connect the ESC's battery, then tap POWER IS ON.",
+    "Schließe den Akku des ESC an. Tippe dann auf VERSORGUNG EIN.")
+UI_TEXT(YG_MSG_LEFT, 100,
+    "YGE session closed. The pin is back on its port.",
+    "YGE-Sitzung beendet. Der Pin ist zurück an seinem Port.")
+UI_TEXT(YG_MSG_BACKUP_RAM, 100,
+    "%s The old values are kept in RAM only.",
+    "%s Die alten Werte bleiben nur im RAM.")
+UI_TEXT(YG_MSG_FILE_REFUSED, 100,
+    "File refused, code %u, line %u.",
+    "Datei abgelehnt, Code %u, Zeile %u.")
+UI_TEXT(YG_MSG_LOAD_REFUSED, 100,
+    "File not loaded: %s",
+    "Datei nicht geladen: %s")
+UI_TEXT(YG_MSG_LOADED, 100,
+    "%u values loaded from the file into the draft. WRITE sends them.",
+    "%u Werte aus der Datei in den Entwurf geladen. SCHREIBEN sendet sie.")
+UI_TEXT(YG_SES_SILENT, 100,
+    "The ESC did not answer: all outputs off.",
+    "Der ESC antwortete nicht: alle Ausgänge aus.")
+UI_TEXT(YG_SES_NO_TABLE, 100,
+    "No whole table came: all outputs off.",
+    "Keine ganze Tabelle kam an: alle Ausgänge aus.")
+UI_TEXT(YG_SES_NOT_KNOWN, 100,
+    "The table is read-only: nothing written.",
+    "Die Tabelle ist nur lesbar: nichts geschrieben.")
+UI_TEXT(YG_SES_CHANGED, 100,
+    "The ESC's table changed since it was read: nothing written.",
+    "Die Tabelle des ESC änderte sich seit dem Lesen: nichts geschrieben.")
+UI_TEXT(YG_SES_NOT_TAKEN, 100,
+    "The ESC kept its values: the table reads as before.",
+    "Der ESC behielt seine Werte: die Tabelle liest sich wie vorher.")
+UI_TEXT(YG_SES_PARTIAL, 100,
+    "The table read back differs from the draft: READ AGAIN and check it.",
+    "Die zurückgelesene Tabelle weicht vom Entwurf ab: NEU AUSLESEN und prüfen.")
+UI_TEXT(YG_SES_GUARD, 100,
+    "The IOmcu's guard refused a frame: nothing of it sent.",
+    "Der Wächter des IOmcu lehnte einen Frame ab: nichts davon gesendet.")
+UI_TEXT(YG_SES_OTHER, 100,
+    "The session ended with an error: all outputs off.",
+    "Die Sitzung endete mit einem Fehler: alle Ausgänge aus.")
+UI_TEXT(YG_RO_LEGACY, 100,
+    "the ESC sends legacy headers.",
+    "Der ESC sendet alte Kopfzeilen.")
+UI_TEXT(YG_RO_COUNT, 100,
+    "the parameter count is not 32.",
+    "Die Parameterzahl ist nicht 32.")
+UI_TEXT(YG_RO_FIRMWARE, 100,
+    "firmware below V1.03547.",
+    "Firmware unter V1.03547.")
+UI_TEXT(YG_RO_OTHER, 100,
+    "no table is written.",
+    "Keine Tabelle wird geschrieben.")
+UI_TEXT(YG_REF_TARGET, 100,
+    "No such programming port.",
+    "Diesen Programmier-Port gibt es nicht.")
+UI_TEXT(YG_REF_HELD, 100,
+    "KST, HITEC, the ESC signal wire or a firmware update is using the bench.",
+    "KST, HITEC, die ESC-Signalleitung oder ein Firmware-Update belegt den Prüfstand.")
+UI_TEXT(YG_REF_NO_PIN, 100,
+    "This programming port has no pin.",
+    "Dieser Programmier-Port hat keinen Pin.")
+UI_TEXT(YG_REF_SESSION, 100,
+    "The session refused the request.",
+    "Die Sitzung lehnte die Anfrage ab.")
+UI_TEXT(YG_LOAD_TYPE, 100,
+    "the file is for another ESC type.",
+    "Die Datei gehört zu einem anderen ESC-Typ.")
+UI_TEXT(YG_LOAD_COUNT, 100,
+    "the file has another parameter count.",
+    "Die Datei hat eine andere Parameterzahl.")
+UI_TEXT(YG_LOAD_GUARD, 100,
+    "a value is outside its writable set, or the table is read-only.",
+    "Ein Wert liegt außerhalb seines Bereichs, oder die Tabelle ist nur lesbar.")
 /* A count of a page of rows: ESC STICK's list. */
 UI_TEXT(PG_RANGE_OF, 0,
     "%d-%d of %d",
@@ -5445,6 +5830,10 @@ UI_TEXT(SV_TARGET, 0,
 UI_TEXT(SV_TARGET_NONE, 23,
     "NO SERVO PWM PIN",
     "KEIN SERVO-PWM-PIN")
+/* Before the pins, for pins bound as more than one protocol. */
+UI_TEXT(SV_TARGET_MIXED, 23,
+    "MIXED",
+    "GEMISCHT")
 UI_TEXT(SV_TARGET_UNREAD, 23,
     "PINS NOT READ",
     "PINS NICHT AUSGELESEN")
@@ -6163,6 +6552,9 @@ UI_TEXT(ALERT_ESC_NOT_BACK_SLOT, 94,
 UI_TEXT(ALERT_ESC_NOT_BACK_PORT, 94,
     "ESC wire: port %u did not take its pin back. ARM stays refused; CLOSE tries again.",
     "ESC-Leitung: Port %u nahm seinen Pin nicht zurück. ARM bleibt gesperrt; CLOSE läuft erneut.")
+UI_TEXT(ALERT_YGE_NOT_BACK, 94,
+    "YGE ESC: port %u did not take its pin back. ARM stays refused; CLOSE tries again.",
+    "YGE-ESC: Port %u nahm seinen Pin nicht zurück. ARM bleibt gesperrt; CLOSE läuft erneut.")
 UI_TEXT(ALERT_PDMINI_OLD, 94,
     "IOmcu firmware too old to reset the PD mini.",
     "IOmcu-Firmware zu alt, um den PD mini zurückzusetzen.")
@@ -6689,6 +7081,9 @@ UI_TEXT(HOLD_HINT_DOWNLOAD, 94,
 UI_TEXT(HOLD_HINT_SBK_LOAD, 94,
     "Hold 2s to load the settings file.",
     "Halte 2s, um die Einstellungsdatei zu laden.")
+UI_TEXT(HOLD_HINT_WLS_UNBIND, 94,
+    "Hold 2s to unbind the device.",
+    "Halte 2s, um die Bindung zu lösen.")
 UI_TEXT(HOLD_HINT_IOMCU_UPDATE, 94,
     "Hold 2s to update the IOmcu.",
     "Halte 2s, um den IOmcu zu aktualisieren.")
@@ -11933,6 +12328,15 @@ UI_SERVO_TEXT(SERVO_STR_L_R_BENCH,
     "Prüfstand: die gefundenen Enden werden "
     "nicht auf PULS MIN und PULS MAX "
     "angewendet.")
+UI_SERVO_TEXT(SERVO_STR_L_R_ROWS,
+    "Positions:      judged %u, all in the CSV",
+    "Stellungen:      bewertet %u, alle in der "
+    "CSV")
+UI_SERVO_TEXT(SERVO_STR_L_R_ROWS_PAST,
+    "Positions:      judged %lu, in the CSV %u, "
+    "past its cap %lu",
+    "Stellungen:      bewertet %lu, in der CSV "
+    "%u, über ihrer Grenze %lu")
 
 /* ===================================================== the Wi-Fi page
  * The page the panel serves on Wi-Fi (wa_page.c), in the language the
@@ -13338,6 +13742,14 @@ UI_TEXT(WLS_ASK_KEEP, 0,
 UI_TEXT(WLS_BIND, 0,
     "BIND",
     "BINDEN")
+/* SEARCH's UNBIND, a 2s hold on the card: the label, the band's text for a
+ * press with nothing bound. */
+UI_TEXT(WLS_UNBIND, 0,
+    "HOLD 2s: UNBIND",
+    "2s HALTEN: BINDUNG LÖSEN")
+UI_TEXT(WLS_UNBIND_NONE, 94,
+    "NOTHING IS BOUND: NOTHING TO UNBIND",
+    "NICHTS GEBUNDEN: KEINE BINDUNG ZU LÖSEN")
 /* A node's bind refused while a scan runs. */
 UI_TEXT(NODE_BIND_SCANNING, 94,
     "A SCAN IS RUNNING: PICK THE NODE WHEN IT ENDS",

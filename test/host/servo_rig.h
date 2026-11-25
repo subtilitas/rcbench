@@ -132,10 +132,10 @@ static inline void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
 #define WARN_Y        (436 - 8 - 56 + 28)
 
 /* The hub's list, row by row: the profile under OUTPUT, then the device
- * under test. */
+ * under test, its NAME, the RUN NOTE and REPORT. */
 enum {
     HL_OUTPUT = 0, HL_TYPE, HL_RATE, HL_MIN, HL_CENTER, HL_MAX, HL_TRIM,
-    HL_TRAVEL, HL_REVERSE, HL_HV, HL_DUT, HL_NAME, HL_REPORT,
+    HL_TRAVEL, HL_REVERSE, HL_HV, HL_DUT, HL_NAME, HL_NOTE, HL_REPORT,
 };
 
 /* Function @p fn's screen shown, as its enter() shows it, without a leave
@@ -158,13 +158,14 @@ static inline void open_sweep(void)     { go(SERVO_FN_SWEEP); }
 static inline void open_kst(void)       { go(SERVO_FN_KST); }
 static inline void close_kst(void)      { (void)scr->back(); }
 /* TEST's SETTINGS list (servo_test_list.c), row by row: six headings
- * and the automatic test's 21 rows. */
+ * and the automatic test's 22 rows. */
 enum {
     TL_H_STEPS = 0, TL_STEP_48, TL_STEP_60, TL_HV, TL_STEP_74, TL_STEP_84,
     TL_H_BO, TL_BROWNOUT, TL_BO_FLOOR, TL_BO_STEP,
     TL_H_LIMITS, TL_STALL, TL_IDLE, TL_HOLD, TL_TRAVEL,
     TL_H_LENGTH, TL_LEN_BY, TL_LEN_S, TL_MOVES, TL_DWELL, TL_SETTLE,
-    TL_H_RANGE, TL_RANGE, TL_OUTPUT, TL_H_DUT, TL_NAME, TL_REPORT, TL_ROWS,
+    TL_H_RANGE, TL_RANGE, TL_OUTPUT, TL_H_DUT, TL_NAME, TL_NOTE, TL_REPORT,
+    TL_ROWS,
 };
 
 
@@ -172,13 +173,13 @@ enum {
  * SERIES, D RECEIVE is row LL_RX and the rows from SERVO PULSES on move
  * down one. */
 enum { LL_MODE = 0, LL_SERVO, LL_PULSES, LL_CURRENT, LL_WAIT, LL_NAME,
-       LL_LOG, LL_ROWS };
+       LL_NOTE, LL_LOG, LL_ROWS };
 enum { LL_RX = 2 };
 /* RUDDER AUTO's list: its SERVO row, D RECEIVE under it with HITEC D
- * SERIES; without D RECEIVE CURRENT and PROG WAIT, then DUT NAME and USER
- * LOGS last. */
+ * SERIES; without D RECEIVE CURRENT and PROG WAIT, then DUT NAME, RUN NOTE
+ * and USER LOGS last. */
 enum { RAL_SERVO = 4, RAL_RX = 5, RAL_CURRENT = 7, RAL_WAIT = 8,
-       RAL_NAME = 9, RAL_LOG = 10, RAL_ROWS = 11 };
+       RAL_NAME = 9, RAL_NOTE = 10, RAL_LOG = 11, RAL_ROWS = 12 };
 /* SWEEP's list: CURVE, SPEED, RANGE and DWELL TIME. */
 enum { SWL_CURVE = 0, SWL_SPEED, SWL_RANGE, SWL_DWELL, SWL_ROWS };
 

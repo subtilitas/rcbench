@@ -23,6 +23,7 @@
  * - the_question_leaves_no_stale_pixels
  * - the_footer_message_follows_the_language
  * - a_plot_that_cannot_load_says_why_in_the_language_showing
+ * - a_limit_runs_csv_takes_its_report_with_it
  *
  * SPDX-License-Identifier: MIT
  */
@@ -448,6 +449,31 @@ TEST_CASE(a_plot_that_cannot_load_says_why_in_the_language_showing)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/*
+ * The report that goes with a run on DELETE (log_name_report_of(), which
+ * panel_card.c's card_remove() deletes after the run): a LIMIT RUN's
+ * LIMITnnn.CSV takes LIMITnnn.TXT, labelled or in lower case as well; a
+ * report takes nothing, and a name that is no run log none.
+ */
+TEST_CASE(a_limit_runs_csv_takes_its_report_with_it)
+{
+    char txt[LOG_RUN_NAME_MAX];
+    log_name_report_of(txt, sizeof(txt), "LIMIT006.CSV");
+    CHECK_STR_EQ(txt, "LIMIT006.TXT");
+    log_name_report_of(txt, sizeof(txt), "limit006.csv");
+    CHECK_STR_EQ(txt, "LIMIT006.TXT");
+    log_name_report_of(txt, sizeof(txt), "LIMIT006_aileron.CSV");
+    CHECK_STR_EQ(txt, "LIMIT006.TXT");
+    log_name_report_of(txt, sizeof(txt), "LIMIT999.CSV");
+    CHECK_STR_EQ(txt, "LIMIT999.TXT");
+    log_name_report_of(txt, sizeof(txt), "LIMIT006.TXT");
+    CHECK_STR_EQ(txt, "");
+    log_name_report_of(txt, sizeof(txt), "LIMIT000.CSV");
+    CHECK_STR_EQ(txt, "");
+    log_name_report_of(txt, sizeof(txt), "LIMITS.CSV");
+    CHECK_STR_EQ(txt, "");
+}
+
 int main(void)
 {
     RUN(delete_asks_first_and_deletes_only_the_file_it_named);
@@ -467,5 +493,6 @@ int main(void)
     RUN(the_question_leaves_no_stale_pixels);
     RUN(the_footer_message_follows_the_language);
     RUN(a_plot_that_cannot_load_says_why_in_the_language_showing);
+    RUN(a_limit_runs_csv_takes_its_report_with_it);
     return test_summary("logview_delete");
 }

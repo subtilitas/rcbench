@@ -335,7 +335,7 @@ The state lines keep the result until the next run: the verdict, the reason or t
 ![A programmed servo](view:servo-limrun-pass)
 ![Search only](view:servo-limrun-found)
 
-The run writes `LIMITnnn.TXT` in `USER/LOGS` regardless of REPORT, unless User logs is OFF. It records the searched output, both searches' end points, servo pulse limits and any pulse write, and LEFT ANGLE and RIGHT ANGLE before and after. It also includes travel fractions, overset and final values, values written, write and session counts, meter, AS5600 angle at each last free position when fitted, and verdict or reason. Wi-Fi and updates wait until the report file is closed.
+The run writes `LIMITnnn.CSV` and its report `LIMITnnn.TXT` in `USER/LOGS` regardless of REPORT, unless User logs is OFF. The CSV holds one row a position the searches judged, at most 600: the search (1 first, 2 after a write, 3 the last check), the side, the pulse in us, the current in A, the rail voltage in V, the angle, BASE, FREE or BOUND, the free current, the threshold and, on the bound row, the endpoint. A run that judged no position writes the report alone. The report records the searched output, both searches' end points, servo pulse limits and any pulse write, and LEFT ANGLE and RIGHT ANGLE before and after. It also includes travel fractions, overset and final values, values written, write and session counts, meter, AS5600 angle at each last free position when fitted, and verdict or reason. Wi-Fi and updates wait until the report file is closed.
 
 ## Current limitations
 

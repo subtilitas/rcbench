@@ -8,14 +8,14 @@ set(SRCS outputs.c outputs_pages.c out_bind.c out_bind_take.c out_board_rbmod.c 
          out_pwm_map.c out_store_map.c out_store_range.c
          out_store_rec.c servo_page.c supply_page.c sense_page.c sense_map.c
          sense_limit.c tone_page.c prog_supply.c
-         out_stage.c bind_link.c kst_port.c hitec_port.c esc_port.c esc_console.c prog_port.c
+         out_stage.c bind_link.c kst_port.c hitec_port.c esc_port.c esc_console.c yge_port.c yge_console.c prog_port.c
          servo_cmd.c servo_link.c page_console.c console_tunnel.c
          out_render.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include
                            REQUIRES link servo bench sense pdmini phase_tap kst
-                                    hitec escwire dshot passthru)
+                                    hitec escwire openyge dshot passthru)
 else()
     add_library(rcbench_outputs STATIC ${SRCS})
     target_include_directories(rcbench_outputs PUBLIC include)
@@ -23,5 +23,6 @@ else()
                                                  rcbench_sense rcbench_pdmini
                                                  rcbench_phase_tap rcbench_kst
                                                  rcbench_hitec rcbench_escwire
+                                                 rcbench_openyge
                                                  rcbench_dshot rcbench_passthru)
 endif()

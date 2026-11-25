@@ -66,6 +66,7 @@ static const struct {
     [SET_TEXT_PNODE_NAME]   = { "pnode_name", "", SET_CAT_COUNT },
     [SET_TEXT_BNODE_ADDR]   = { "bnode_ble", "", SET_CAT_COUNT },
     [SET_TEXT_BNODE_NAME]   = { "bnode_name", "", SET_CAT_COUNT },
+    [SET_TEXT_RUN_NOTE]     = { "srv_note", "", SET_CAT_COUNT },
 }; /**< the string settings' table */
 
 /** @brief The values, the copy the medium holds, the store and the hooks. */

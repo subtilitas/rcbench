@@ -40,7 +40,6 @@
  */
 
 #include "esc_stick_panel.h"
-#include "esc_wire_panel.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -369,7 +368,7 @@ static bool sp_plan(esc_stick_change_t *ch, size_t *n,
      * are exclusive. */
     if (prog_reg_servo_holds()) {
         snprintf(st->note, sizeof(st->note), "%s",
-                 esc_wire_panel_holds_port() ? TR(SP_ESC_HELD) : TR(SP_KST_HELD));
+                 prog_reg_esc_holds() ? TR(SP_ESC_HELD) : TR(SP_KST_HELD));
         return false;
     }
     const char *why = NULL;

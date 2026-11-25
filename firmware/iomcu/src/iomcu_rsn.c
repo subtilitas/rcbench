@@ -23,8 +23,8 @@
  *   LED         GPIO 39: 500ms on, 500ms off on an A4 chip; 100ms on,
  *               100ms off on a refused one.
  *
- * Programming on the common rail (prog_rail.h): a KST, Hitec or ESC wire
- * session's supply is the PD mini through its output's switch.  The
+ * Programming on the common rail (prog_rail.h): a KST, Hitec, ESC wire or
+ * YGE session's supply is the PD mini through its output's switch.  The
  * session's output is the one whose pin its programming port holds (the
  * ESC wire line's pin while it has one), or before that the pin the page
  * last asked for (kst_hw_pin(), esc_hw_pin()).  A channel is active while
@@ -276,8 +276,8 @@ static void rail_ctx(prog_rail_ctx_t *c)
 }
 
 /**
- * @brief The session's output: its programming port's pin while KST or
- *        HITEC holds one, the ESC wire line's pin while it has one, else
+ * @brief The session's output: its programming port's pin while KST,
+ *        HITEC or YGE_PROG holds one, the ESC wire line's pin while it has one, else
  *        the pin last asked for.
  *
  * @return The output, or PROG_RAIL_NO_PORT.
@@ -285,7 +285,8 @@ static void rail_ctx(prog_rail_ctx_t *c)
 static int session_port(void)
 {
     const uint8_t q = (uint8_t)((kst_port_quiet_mask(&s_kst)
-                                 | hitec_port_quiet_mask(&s_hitec))
+                                 | hitec_port_quiet_mask(&s_hitec)
+                                 | yge_port_quiet_mask(&s_yge))
                                 & ((1u << IOMCU_PROG_PORTS) - 1u));
     for (uint8_t i = 0u; i < IOMCU_PROG_PORTS; ++i) {
         if ((q & (1u << i)) != 0u) {
@@ -343,7 +344,8 @@ int rsn_prog_set(bool on, uint16_t mv, uint16_t ma)
 
 void rsn_prog_tell(void)
 {
-    const bool held = ports_hold_supply() || esc_port_supply_hold(&s_esc);
+    const bool held = ports_hold_supply() || esc_port_supply_hold(&s_esc)
+                      || yge_port_supply_hold(&s_yge);
     const bool writing = ports_writing() || esc_port_writing(&s_esc);
     prog_rail_port(&s_rail, session_port());
     /* A pending ON is judged against the rules as they stand now. */
@@ -358,8 +360,8 @@ void rsn_prog_tell(void)
 }
 
 /**
- * @brief The programming sessions open now: each programming port a KST or
- *        HITEC session holds out of PWM, every port while the ESC_WIRE page
+ * @brief The programming sessions open now: each programming port a KST,
+ *        HITEC or YGE_PROG session holds out of PWM, every port while the ESC_WIRE page
  *        holds its line.
  *
  * @return Bit q for programming port q; 0 with no session.
@@ -368,6 +370,7 @@ static uint8_t open_sessions(void)
 {
     return (uint8_t)(kst_port_quiet_mask(&s_kst)
                      | hitec_port_quiet_mask(&s_hitec)
+                     | yge_port_quiet_mask(&s_yge)
                      | (esc_port_supply_hold(&s_esc) ? 0xFFu : 0u));
 }
 

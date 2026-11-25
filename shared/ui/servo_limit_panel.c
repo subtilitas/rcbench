@@ -31,6 +31,7 @@
 #include "kst_port.h"
 #include "log_name.h"
 #include "rcbench_version.h"
+#include "run_info.h"
 #include "sensors_rows.h"
 #include "servo_limrun.h"
 #include "settings.h"
@@ -222,13 +223,17 @@ static void lim_cfg(servo_limrun_cfg_t *c)
     snprintf(c->type, sizeof(c->type), "%s", type()->name);
     c->frame_hz = s.frame_hz;
     (void)servo_target_line(c->output, sizeof(c->output), s.drive_target,
-                            s.drive_pin, s.drive_pwm, s.pins, s.pins_known);
+                            s.drive_pin, s.drive_pwm, s.pins, s.pin_proto,
+                            s.pins_known);
     c->shunt_dmohm = settings_sensors_meter_dmohm();
     (void)sensors_rows_meter(c->meter, sizeof(c->meter));
     c->enc_on = enc_on_now();
     (void)enc_name(c->source, sizeof(c->source));
     c->enc_imu = (enc_src() == SERVO_ANGLE_IMU);
     snprintf(c->firmware, sizeof(c->firmware), "%s", RCBENCH_VERSION_STRING);
+    run_info_servo(c->info, sizeof(c->info), c->type, c->meter,
+                   c->enc_on ? (c->source[0] != '\0' ? c->source : "AS5600")
+                             : NULL);
     c->text = ui_servo_table();
 }
 
@@ -513,7 +518,8 @@ static bool lim_start(void)
     /* The output's line as it reads now, with the pulse the steps
      * switched on. */
     (void)servo_target_line(c.output, sizeof(c.output), s.drive_target,
-                            s.drive_pin, s.drive_pwm, s.pins, s.pins_known);
+                            s.drive_pin, s.drive_pwm, s.pins, s.pin_proto,
+                            s.pins_known);
     if (!servo_limrun_start(&s.lim, &c, test_now())) {
         s.lim_note = TR(SV_LIM_REFUSED);
         return false;
@@ -524,6 +530,7 @@ static bool lim_start(void)
     s.lim_out.pwm    = s.drive_pwm;
     s.lim_out.known  = s.pins_known;
     s.lim_out.pins   = s.pins;
+    s.lim_out.proto  = s.pin_proto;
     s.lim_changes = s.changes;
     s.lim_safe_due = false;
     if (c.read) {

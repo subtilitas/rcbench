@@ -33,11 +33,13 @@ extern "C" {
 /**
  * @brief Ceilings.
  *
- * 25 columns: the fullest file the bench writes, a SERVO run's with three
- * INA3221 groups (log_writer.h); the import view scrolls its list.  A wider
- * file is refused, and reporting the limit beats a silent truncation.
+ * 26 columns: the fullest file the bench writes, a SERVO run's with three
+ * INA3221 groups and its `info` column (log_writer.h, log_info.h); the
+ * import view scrolls its list.  A wider file is refused, and reporting the
+ * limit beats a silent truncation.  Firmware 0.23.17 and older take 25
+ * (log_csv_opts_t.max_columns reads as they do).
  */
-#define LOG_MAX_COLUMNS 25
+#define LOG_MAX_COLUMNS 26
 /** @brief Most series the build materialises. */
 #define LOG_MAX_SERIES  4
 /** @brief Room for a column name, bytes, with its terminator. */
@@ -247,6 +249,10 @@ typedef struct {
     int time_index;          /**< -2 detects, -1 forces none, >= 0 forces it */
     const char *time_unit;   /**< NULL guesses                              */
     int max_rows;            /**< 0 uses LOG_DEFAULT_MAX_ROWS               */
+    /** @brief The most columns taken, a wider file refused with
+     *         LOG_ERR_TOO_MANY_COLUMNS; 0 or more than LOG_MAX_COLUMNS
+     *         uses LOG_MAX_COLUMNS.  25 reads as firmware 0.23.17 does. */
+    int max_columns;
 } log_csv_opts_t;
 
 /** @brief Row cap used when the options give 0, rows. */
@@ -348,6 +354,35 @@ typedef struct {
  */
 log_err_t log_csv_build(log_source_t *src, const log_analysis_t *a,
                         const int *columns, int n_columns, log_data_t *out);
+
+/**
+ * @brief A row's cells for log_csv_each_row().
+ * @param ctx    The caller's context.
+ * @param row    The row's index: the index of its samples in a build of
+ *               the same file and analysis, from 0.
+ * @param cells  Its cells, white space trimmed; never NULL.
+ * @param n      How many, at most LOG_MAX_COLUMNS; a short row has fewer
+ *               than the header.
+ * @return false to stop the walk.
+ */
+typedef bool (*log_row_fn)(void *ctx, int row, const char *const *cells,
+                           int n);
+
+/**
+ * @brief Walk the rows log_csv_build() takes, in its order, and hand each
+ *        one's cells to @p fn: the text columns a build leaves out, row for
+ *        row with its samples.  A file whose time column runs backwards is
+ *        turned round by the build and not by the walk.
+ * @param src  The input.
+ * @param a    The analysis.
+ * @param fn   Takes each row.
+ * @param ctx  Handed to @p fn.
+ * @return LOG_OK; LOG_ERR_ARG with a NULL argument, LOG_ERR_READ when the
+ *         source cannot rewind or a read fails, LOG_ERR_NO_HEADER for an
+ *         empty source.
+ */
+log_err_t log_csv_each_row(log_source_t *src, const log_analysis_t *a,
+                           log_row_fn fn, void *ctx);
 
 /**
  * @brief Free the sample arrays of a build.

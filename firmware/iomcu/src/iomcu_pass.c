@@ -154,7 +154,8 @@ void thru_service(uint32_t now_ms)
         if (stalled) {
             f |= LINK_PA_F_STALL;
         }
-        if (pass_page_session(&s_kst, &s_hitec, &s_esc)) {
+        if (pass_page_session(&s_kst, &s_hitec, &s_esc)
+            || (yge_port_quiet_mask(&s_yge) | yge_port_pin_mask(&s_yge)) != 0u) {
             f |= LINK_PA_F_SESSION;
         }
         pass_page_flag(&s_thru, f);

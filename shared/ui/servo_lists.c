@@ -21,13 +21,13 @@
  * CURVE, SPEED, RANGE and DWELL TIME; RUDDER's LENGTH, ENC CENTER (taken
  * from the AS5600's reading) and ANGLE SOURCE (read-only, a tap opens
  * SETUP > SENSORS on it); RUDDER AUTO's targets, MARGIN, TOLERANCE, SERVO,
- * SERVO PULSES, ANGLE SOURCE, CURRENT, PROG WAIT, DUT NAME and USER LOGS;
- * LIMIT RUN's MODE, SERVO, SERVO PULSES, CURRENT, PROG WAIT, DUT NAME and
- * USER LOGS.  CURRENT is SUPPLY's SET A, the limit a run takes where a PD
+ * SERVO PULSES, ANGLE SOURCE, CURRENT, PROG WAIT, DUT NAME, RUN NOTE and
+ * USER LOGS; LIMIT RUN's MODE, SERVO, SERVO PULSES, CURRENT, PROG WAIT, DUT
+ * NAME, RUN NOTE and USER LOGS.  CURRENT is SUPPLY's SET A, the limit a run takes where a PD
  * mini feeds the servo, locked where none does; a run programs at 5.0V
  * (servo_run_supply.c).  HITEC's SERIES and RECEIVE; TEST's rows of the
- * automatic test (servo_test_list.c).  RANGE, DWELL TIME, DUT NAME, REPORT
- * and USER LOGS are one setting each, whichever list sets them.  USER
+ * automatic test (servo_test_list.c).  RANGE, DWELL TIME, DUT NAME, RUN
+ * NOTE, REPORT and USER LOGS are one setting each, whichever list sets them.  USER
  * LOGS is a list row on LIMIT RUN and RUDDER AUTO: their READY cards hold
  * READY_ROWS_MAX rows already.
  * LIMIT RUN's and RUDDER AUTO's SERVO is each screen's own (servo_pick.c);
@@ -179,6 +179,12 @@ static const ui_setlist_custom_t k_hv = {
 #define ROW_DUT_NAME                                                         \
     { (uint8_t)UI_SL_TEXT, (int8_t)SET_TEXT_DUT_NAME, (setting_id_t)0,       \
       TX_COUNT, NULL }
+/** @brief The RUN NOTE row under DUT NAME: the run's condition, typed on
+ *         the name keyboard and written into every run's file (log_info.h)
+ *         until it is changed. */
+#define ROW_RUN_NOTE                                                         \
+    { (uint8_t)UI_SL_TEXT, (int8_t)SET_TEXT_RUN_NOTE, (setting_id_t)0,       \
+      TX_COUNT, NULL }
 
 /** @brief The profile's rows, then the device under test's: the hub's
  *         list, and LIVE's first rows. */
@@ -195,6 +201,7 @@ static const ui_setlist_custom_t k_hv = {
     UI_SL_ROW_CUSTOM(&k_hv),                                                 \
     UI_SL_ROW_HEADING(TX_SV_PG_DUT, NULL),                                   \
     ROW_DUT_NAME,                                                            \
+    ROW_RUN_NOTE,                                                            \
     UI_SL_ROW_SETTING(SET_SERVO_REPORT)
 
 /** @brief The hub's rows: the profile, then the device under test. */
@@ -374,8 +381,8 @@ static const ui_setlist_row_t k_rudder_rows[] = {
     UI_SL_ROW_CUSTOM(&k_src),
 };
 /** @brief RUDDER AUTO's list: the targets, MARGIN, TOLERANCE, the servo,
- *         its pulses, ANGLE SOURCE, CURRENT (SET A), PROG WAIT, DUT NAME
- *         and USER LOGS. */
+ *         its pulses, ANGLE SOURCE, CURRENT (SET A), PROG WAIT, DUT NAME,
+ *         RUN NOTE and USER LOGS. */
 static const ui_setlist_row_t k_rauto_rows[] = {
     UI_SL_ROW_SETTING(SET_RUDDER_DEFL_LO),
     UI_SL_ROW_SETTING(SET_RUDDER_DEFL_HI),
@@ -387,6 +394,7 @@ static const ui_setlist_row_t k_rauto_rows[] = {
     UI_SL_ROW_CUSTOM(&rcur_row),
     UI_SL_ROW_SETTING(SET_SERVO_PROG_WAIT),
     ROW_DUT_NAME,
+    ROW_RUN_NOTE,
     UI_SL_ROW_SETTING(SET_LOG_USER),
 };
 /** @brief RUDDER AUTO's list with its SERVO at HITEC CLASSIC: MARGIN at
@@ -402,6 +410,7 @@ static const ui_setlist_row_t k_rauto_c_rows[] = {
     UI_SL_ROW_CUSTOM(&rcur_row),
     UI_SL_ROW_SETTING(SET_SERVO_PROG_WAIT),
     ROW_DUT_NAME,
+    ROW_RUN_NOTE,
     UI_SL_ROW_SETTING(SET_LOG_USER),
 };
 /** @brief RUDDER AUTO's list with its SERVO at HITEC D SERIES: MARGIN at
@@ -418,10 +427,11 @@ static const ui_setlist_row_t k_rauto_d_rows[] = {
     UI_SL_ROW_CUSTOM(&rcur_row),
     UI_SL_ROW_SETTING(SET_SERVO_PROG_WAIT),
     ROW_DUT_NAME,
+    ROW_RUN_NOTE,
     UI_SL_ROW_SETTING(SET_LOG_USER),
 };
 /** @brief LIMIT RUN's list: MODE, the servo, its pulses, CURRENT (SET A),
- *         the programmer's wait, DUT NAME and USER LOGS. */
+ *         the programmer's wait, DUT NAME, RUN NOTE and USER LOGS. */
 static const ui_setlist_row_t k_limrun_rows[] = {
     UI_SL_ROW_CUSTOM(&k_mode),
     UI_SL_ROW_CUSTOM(&svs_family_row),
@@ -429,6 +439,7 @@ static const ui_setlist_row_t k_limrun_rows[] = {
     UI_SL_ROW_CUSTOM(&rcur_row),
     UI_SL_ROW_SETTING(SET_SERVO_PROG_WAIT),
     ROW_DUT_NAME,
+    ROW_RUN_NOTE,
     UI_SL_ROW_SETTING(SET_LOG_USER),
 };
 /** @brief LIMIT RUN's list with its SERVO at HITEC D SERIES: D RECEIVE
@@ -441,6 +452,7 @@ static const ui_setlist_row_t k_limrun_d_rows[] = {
     UI_SL_ROW_CUSTOM(&rcur_row),
     UI_SL_ROW_SETTING(SET_SERVO_PROG_WAIT),
     ROW_DUT_NAME,
+    ROW_RUN_NOTE,
     UI_SL_ROW_SETTING(SET_LOG_USER),
 };
 /** @brief HITEC's list: SERIES and D receive. */

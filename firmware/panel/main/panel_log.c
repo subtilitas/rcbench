@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>        /* mkdir(), stat() */
+#include <time.h>
 #include <unistd.h>          /* fsync(), which is what commits a row to FAT */
 
 #include "esp_log.h"
@@ -26,12 +27,14 @@
 #include "fault_log.h"
 #include "log_name.h"
 #include "log_take.h"
+#include "log_info.h"
 #include "log_viewer_screen.h"
 #include "log_writer.h"
 #include "panel.h"
 #include "panel_sbk.h"
 #include "panel_bal.h"
 #include "panel_trial.h"
+#include "run_info.h"
 #include "storage.h"
 #include "ui_card_text.h"
 #include "ui_text.h"
@@ -197,6 +200,35 @@ void log_set_folder(log_folder_t kind, const char *dir)
     taskENTER_CRITICAL(&s_dir_mux);
     snprintf(s_dir_want[kind], CARD_DIR_MAX, "%s", dir);
     taskEXIT_CRITICAL(&s_dir_mux);
+}
+
+/** @brief DUT NAME and RUN NOTE as the text observer last said them, for a
+ *         bench run's info cell.  Under s_dir_mux: 24 bytes each. */
+static char s_run_text[2][SETTINGS_TEXT_MAX] = { "SERVO", "" };
+
+void log_set_run_text(setting_text_id_t id, const char *text)
+{
+    const int k = (id == SET_TEXT_DUT_NAME) ? 0
+                  : (id == SET_TEXT_RUN_NOTE) ? 1 : -1;
+    if (k < 0 || text == NULL) {
+        return;
+    }
+    char copy[SETTINGS_TEXT_MAX];
+    snprintf(copy, sizeof(copy), "%s", text);
+    taskENTER_CRITICAL(&s_dir_mux);
+    memcpy(s_run_text[k], copy, sizeof(copy));
+    taskEXIT_CRITICAL(&s_dir_mux);
+}
+
+/** @brief log_info_set_clock()'s clock: time(), s since 1970 in UTC. */
+static int64_t clock_now(void)
+{
+    return (int64_t)time(NULL);
+}
+
+void log_clock_start(void)
+{
+    log_info_set_clock(clock_now);
 }
 
 /**
@@ -466,6 +498,24 @@ static log_prefix_t run_prefix(log_run_kind_t kind)
 }
 
 /**
+ * @brief The open run's info cell (run_info.h): DUT NAME on a SERVO run's
+ *        file, RUN NOTE, the date and the version.  Its own frame, not
+ *        log_open()'s, so the take's card chain does not carry it.
+ * @param kind The run's kind.
+ */
+static __attribute__((noinline)) void log_open_info(log_run_kind_t kind)
+{
+    char text[2][SETTINGS_TEXT_MAX];
+    taskENTER_CRITICAL(&s_dir_mux);
+    memcpy(text, s_run_text, sizeof(text));
+    taskEXIT_CRITICAL(&s_dir_mux);
+    char cell[LOG_INFO_MAX];
+    run_info_bench(cell, sizeof(cell),
+                   (kind == LOG_RUN_SERVO) ? text[0] : NULL, text[1]);
+    log_writer_set_info(&s_log, cell);
+}
+
+/**
  * @brief Open the run's file in AUTO LOG FOLDER, on the logger task:
  *        MOTORnnn.CSV for a run armed on MOTOR & ESC or ESC STICK,
  *        SERVOnnn.CSV for one armed on SERVO, SUPPLnnn.CSV for a supply run.
@@ -529,6 +579,7 @@ static void log_open(uint32_t run, log_run_kind_t kind)
      * run's file keeps them, as the map takes no change while it drives. */
     log_cols_t cols;
     log_writer_set_cols(&s_log, sense_log_cols(&cols) ? &cols : NULL);
+    log_open_info(kind);
 }
 
 /**
@@ -607,8 +658,9 @@ static void log_drop(void)
 /*
  * The tests' files, in USER LOG FOLDER: the AUTOMATIC TEST's CSV as
  * ATESTnnn.CSV under the folder's next number and its report as
- * ATESTnnn.TXT under the same number; a limit run's report alone as
- * LIMITnnn.TXT under the next number.  The render loop hands the lines
+ * ATESTnnn.TXT under the same number; a limit run's LIMITnnn.CSV and its
+ * report LIMITnnn.TXT the same way, or the report alone when the run judged
+ * no position.  The render loop hands the lines
  * over through s_test_q (servo_screen_test_peek()) and this task writes
  * them; with USER LOGS off the render loop hands over nothing.  The armed
  * bench's own log writes no row while a test runs (log_cadence_bench_run()),
@@ -647,8 +699,8 @@ static bool     s_test_file_bad;
 
 /**
  * @brief Run @p number's file in the test folder as a path on the card:
- *        ATESTnnn.CSV, ATESTnnn.TXT, LIMITnnn.TXT, RUDDRnnn.CSV or
- *        RUDDRnnn.TXT.
+ *        ATESTnnn.CSV, ATESTnnn.TXT, LIMITnnn.CSV, LIMITnnn.TXT,
+ *        RUDDRnnn.CSV or RUDDRnnn.TXT.
  *
  * @param prefix  LOG_PREFIX_ATEST, LOG_PREFIX_LIMIT or LOG_PREFIX_RUDDR.
  * @param number  The run's number.
@@ -707,12 +759,14 @@ static void test_close(void)
  * The file's path goes to the console as take_create() opens it,
  * "logging to ..."; a take that opens no file logs why.
  *
- * @param txt    true for a report alone (SERVO_TEST_OUT_OPEN_TXT, the limit
- *               run): its LIMITnnn.TXT is opened under the number, and no
- *               CSV.  false for a CSV first, its report after it: the
- *               AUTOMATIC TEST's ATESTnnn.CSV, AUTO's RUDDRnnn.CSV.
+ * @param txt    true for a report alone (SERVO_TEST_OUT_OPEN_TXT, a limit
+ *               run that judged no position): its LIMITnnn.TXT is opened
+ *               under the number, and no CSV.  false for a CSV first, its
+ *               report after it: the AUTOMATIC TEST's ATESTnnn.CSV, the
+ *               limit run's LIMITnnn.CSV, AUTO's RUDDRnnn.CSV.
  * @param prefix The run's writer as the screen names it; LOG_PREFIX_ATEST
- *               for one that is not LOG_PREFIX_RUDDR.
+ *               for one that is neither LOG_PREFIX_LIMIT nor
+ *               LOG_PREFIX_RUDDR.
  */
 static void test_open(bool txt, log_prefix_t prefix)
 {
@@ -720,8 +774,9 @@ static void test_open(bool txt, log_prefix_t prefix)
     s_test_num    = -1;
     s_test_txt    = txt;
     s_test_prefix = txt ? LOG_PREFIX_LIMIT
-                  : (prefix == LOG_PREFIX_RUDDR) ? LOG_PREFIX_RUDDR
-                                                 : LOG_PREFIX_ATEST;
+                  : (prefix == LOG_PREFIX_RUDDR || prefix == LOG_PREFIX_LIMIT)
+                        ? prefix
+                        : LOG_PREFIX_ATEST;
     s_test_lines  = 0u;
     s_test_failed = false;
     s_test_txt_bad = false;
@@ -1099,6 +1154,7 @@ void log_task(void *arg)
         hitec_record_write();
         hitec_card_serve();
         esc_card_serve();
+        yge_card_serve();
         /* And the settings backup's request, when one waits. */
         panel_sbk_card_serve();
         /* And a balance solution's CSV row, when one waits. */

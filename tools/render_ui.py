@@ -67,6 +67,8 @@ SOURCES = [
     "protocols/kst/kst_wire.c",
     "test/host/render_hitec.c",
     "test/host/render_esc_wire.c",
+    # Programming for YGE ESCs: the session fed by hand.
+    "test/host/render_yge.c",
     # The screen guide's views: opened and turned by taps.
     "test/host/render_help.c",
     # SERVO's RUDDER task: its tab tapped, the angle fed, ZERO taken.
@@ -560,6 +562,39 @@ SCREENS = {
     "motor-wire-am-card": ("motor-wire-am-card.png", "motor", "dark"),
     "motor-wire-erased-leave": (
         "motor-wire-erased-leave.png", "motor", "dark"),
+    # Programming for YGE ESCs: CONNECT and its editors, the entry and BY
+    # HAND, every tab of a read 165 HVT, an edit with its CHECK line, WRITE
+    # waiting for the card and writing, LEAVE over edits, a read-only table,
+    # a stop, a pin held, another writer's pin, one not back, and a finger
+    # on each hold.
+    "motor-yge-connect": ("motor-yge-connect.png", "motor", "dark"),
+    "motor-yge-port": ("motor-yge-port.png", "motor", "dark"),
+    "motor-yge-hand": ("motor-yge-hand.png", "motor", "dark"),
+    "motor-yge-boot": ("motor-yge-boot.png", "motor", "dark"),
+    "motor-yge-entering": ("motor-yge-entering.png", "motor", "dark"),
+    "motor-yge-handwait": ("motor-yge-handwait.png", "motor", "dark"),
+    "motor-yge-id": ("motor-yge-id.png", "motor", "dark"),
+    "motor-yge-mode": ("motor-yge-mode.png", "motor", "dark"),
+    "motor-yge-protect": ("motor-yge-protect.png", "motor", "dark"),
+    "motor-yge-start": ("motor-yge-start.png", "motor", "dark"),
+    "motor-yge-gov": ("motor-yge-gov.png", "motor", "dark"),
+    "motor-yge-stick": ("motor-yge-stick.png", "motor", "dark"),
+    "motor-yge-raw": ("motor-yge-raw.png", "motor", "dark"),
+    "motor-yge-choice": ("motor-yge-choice.png", "motor", "dark"),
+    "motor-yge-number": ("motor-yge-number.png", "motor", "dark"),
+    "motor-yge-check": ("motor-yge-check.png", "motor", "dark"),
+    "motor-yge-leave": ("motor-yge-leave.png", "motor", "dark"),
+    "motor-yge-card": ("motor-yge-card.png", "motor", "dark"),
+    "motor-yge-writing": ("motor-yge-writing.png", "motor", "dark"),
+    "motor-yge-files": ("motor-yge-files.png", "motor", "dark"),
+    "motor-yge-readonly": ("motor-yge-readonly.png", "motor", "dark"),
+    "motor-yge-stopped": ("motor-yge-stopped.png", "motor", "dark"),
+    "motor-yge-held": ("motor-yge-held.png", "motor", "dark"),
+    "motor-yge-other": ("motor-yge-other.png", "motor", "dark"),
+    "motor-yge-not-back": ("motor-yge-not-back.png", "motor", "dark"),
+    "motor-yge-fill-connect": ("motor-yge-fill-connect.png", "motor", "dark"),
+    "motor-yge-fill-write": ("motor-yge-fill-write.png", "motor", "dark"),
+    "motor-yge-fill-leave": ("motor-yge-fill-leave.png", "motor", "dark"),
     # ESC STICK, opened from that row, full width under the output strip.
     "motor-stick": ("motor-stick.png", "motor", "dark"),
     "motor-stick-items": ("motor-stick-items.png", "motor", "dark"),
@@ -591,8 +626,15 @@ SCREENS = {
                                 "motor", "dark"),
     "logs-import":("logs-import.png","logs",       "dark"),
     "logs-plot":  ("logs-plot.png",  "logs",       "dark"),
+    # MORE's list on the plot: COLUMNS, to the import view.
+    "logs-plot-more": ("logs-plot-more.png", "logs", "dark"),
     # A SERVO run opened: pulse, angle, current and voltage chosen.
     "logs-servo-plot": ("logs-servo-plot.png", "logs", "dark"),
+    # The graph of an XY file: a LIMIT RUN over its pulse, a RUDDER AUTO's
+    # search and its steps.
+    "logs-limit-graph": ("logs-limit-graph.png", "logs", "dark"),
+    "logs-ruddr-search": ("logs-ruddr-search.png", "logs", "dark"),
+    "logs-ruddr-steps": ("logs-ruddr-steps.png", "logs", "dark"),
     "logs-delete":("logs-delete.png","logs",       "dark"),
     # LOGS' ROOT tab: the runs of firmware 0.21.0 and older.
     "logs-root":  ("logs-root.png",  "logs",       "dark"),
@@ -1057,6 +1099,16 @@ FIT_ONLY = {
     "help-logs-import": (None, "logs", "dark"),
     "help-logs-import-2": (None, "logs", "dark"),
     "help-logs-plot": (None, "logs", "dark"),
+    "help-logs-plot-2": (None, "logs", "dark"),
+    # LOGS' plot opened by the import's PLOT, and its guide: BACK to the
+    # import view.
+    "logs-plot-import": (None, "logs", "dark"),
+    "help-logs-plot-import": (None, "logs", "dark"),
+    # The graph's guide: a LIMIT RUN's pages, RUDDER AUTO's second with
+    # its tabs.
+    "help-logs-limit-graph": (None, "logs", "dark"),
+    "help-logs-limit-graph-2": (None, "logs", "dark"),
+    "help-logs-ruddr-search-2": (None, "logs", "dark"),
     "help-files-2": (None, "files", "dark"),
     "help-files-3": (None, "files", "dark"),
     # SERVO's guide: LIVE's READY and controls pages, each task's own
@@ -1402,6 +1454,7 @@ OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot", "outputs-take",
                  "overview-alert", "hold-hint-arm", "hold-hint-output",
                  "setup-dim-stored",
                  "setup-folder", "servo-name", "files-new",
+                 "logs-plot-more",
                  "files-edit-unsaved", "files-edit-revert",
                  "files-edit-open", "files-edit-changed", "files-edit-see25",
                  "files-edit-see50"} | {

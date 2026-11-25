@@ -830,7 +830,8 @@ typedef struct {
         uint8_t  gpio;       /**< that port's GPIO, or SERVO_SCREEN_NO_PIN */
         bool     pwm;        /**< that port renders its pulse             */
         bool     known;      /**< a binding was read                      */
-        uint64_t pins;       /**< the SERVO PWM GPIOs, bit n = GPIO n     */
+        uint64_t pins;       /**< the surface GPIOs, bit n = GPIO n       */
+        uint8_t  proto;      /**< the protocol they are bound as          */
     } lim_out;               /**< what the run drives, as lim_start() read it */
     /* The outbox the logger last peeked, PEEK_*, and whose files' number
      * comes back (servo_screen_test_files()). */
@@ -845,7 +846,8 @@ typedef struct {
     uint8_t  drive_target; /**< 0 the outputs, 1 + n programming port n */
     uint8_t  drive_pin;    /**< that port's GPIO, or SERVO_SCREEN_NO_PIN */
     bool     drive_pwm;    /**< that port renders its pulse              */
-    uint64_t pins;         /**< GPIOs bound as SERVO PWM, bit n = GPIO n */
+    uint64_t pins;         /**< the surface GPIOs, bit n = GPIO n        */
+    uint8_t  pin_proto;    /**< the protocol they are bound as, 0 none known */
     bool     pins_known;   /**< a binding was read                       */
     uint32_t drawn_ctrl[2];  /**< ctrl_rev as each buffer drew it */
     unsigned drawn_mask;  /**< the parts drawn into each buffer, a bit a part */
@@ -1970,8 +1972,8 @@ enum { FP_NONE = 0, FP_PORT, FP_SETTINGS, FP_TILE };
 
 /* --- servo_test_list.c: TEST's SETTINGS list ------------------------------ */
 
-/** @brief TEST's list rows: six headings and 21 rows. */
-#define SVS_TEST_ROWS 27
+/** @brief TEST's list rows: six headings and 22 rows. */
+#define SVS_TEST_ROWS 28
 /** @brief TEST's RANGE row, the one its READY card's RANGE opens on. */
 #define SVS_TEST_ROW_RANGE 22
 /** @brief TEST's rows (ui_setlist.h), in the list's order. */
@@ -2021,13 +2023,13 @@ void svs_list_tick(float dt_s);
 
 /** @brief The profile's rows in the hub's list: OUTPUT, TYPE, FRAME RATE,
  *         PULSE MIN, CENTER and MAX, TRIM, TRAVEL, REVERSE, HV SERVO, then
- *         DUT, its NAME and REPORT. */
+ *         DUT, its NAME, RUN NOTE and REPORT. */
 enum {
     SVS_PROF_OUTPUT = 0, /**< the OUTPUT heading             */
     SVS_PROF_TYPE,       /**< TYPE                           */
     SVS_PROF_RATE,       /**< FRAME RATE                     */
     SVS_PROF_MIN,        /**< PULSE MIN                      */
-    SVS_PROF_ROWS = 13   /**< the hub list's rows            */
+    SVS_PROF_ROWS = 14   /**< the hub list's rows            */
 };
 /** @brief The profile, the hub's list, opened in the list's place on the
  *         screen shown and scrolled to @p row, or the refusal of
@@ -2107,7 +2109,7 @@ bool svs_hub_p5_on(void);
 /** @brief The PORT button: PORT and the port line. @param c the canvas */
 void draw_port(gfx_canvas_t *c);
 /** @brief The port line: what the tester drives, servo_target_line()'s
- *         words, `SERVO PWM GPIO 2` or `PROG PORT 1 GPIO 13`, `NO SERVO
+ *         words, `SERVO PWM GPIO 2`, `PPM GPIO 20` or `PROG PORT 1 GPIO 13`, `NO SERVO
  *         PWM PIN` with none.
  * @param out takes it @param n its size
  * @return true in the warning colour: a port, no pin, no link */

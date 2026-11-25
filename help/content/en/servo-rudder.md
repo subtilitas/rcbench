@@ -128,7 +128,7 @@ With the IMU as ANGLE SOURCE on AXIS Z (yaw), the ANGLE row reads `IMU YAW REFUS
 
 ![RUDDER AUTO's OPTIONS list](view:servo-rudder-auto-settings)
 
-RUDDER AUTO's OPTIONS list holds the targets, MARGIN, TOLERANCE, SERVO, SERVO PULSES and ANGLE SOURCE, then CURRENT and Wait before PWM as on [LIMIT RUN's list](servo-settings.md#the-limit-run-s-settings): CURRENT is SUPPLY's SET A, and Wait before PWM the KST programmer's wait the run's LEAVE sends. Then DUT name and User logs: the hub's name, which heads the report, and SETUP > SD CARD's switch. With User logs OFF the run writes neither RUDDRnnn.TXT nor RUDDRnnn.CSV. The READY card holds ten rows, the most it has room for, so User logs is a list row here.
+RUDDER AUTO's OPTIONS list holds the targets, MARGIN, TOLERANCE, SERVO, SERVO PULSES and ANGLE SOURCE, then CURRENT and Wait before PWM as on [LIMIT RUN's list](servo-settings.md#the-limit-run-s-settings): CURRENT is SUPPLY's SET A, and Wait before PWM the KST programmer's wait the run's LEAVE sends. Then DUT name, Run note and User logs: the hub's name, which heads the report, the hub's note, which the CSV's `info` column carries, and SETUP > SD CARD's switch. With User logs OFF the run writes neither RUDDRnnn.TXT nor RUDDRnnn.CSV. The READY card holds ten rows, the most it has room for, so User logs is a list row here.
 
 ## What the angle is
 

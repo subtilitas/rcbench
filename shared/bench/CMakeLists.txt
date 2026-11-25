@@ -32,6 +32,9 @@ set(SRCS
     esc_link.c
     esc_prog.c
     esc_prog_file.c
+    yge_link.c
+    yge_prog.c
+    yge_prog_file.c
     hitec_rx_link.c
     hitec_link.c
     hitec_prog.c
@@ -50,23 +53,29 @@ set(SRCS
     panel_i2c.c
 )
 
-# kst_card.c, hitec_card_run.c and esc_card.c stand between the programmers and the
+# kst_card.c, hitec_card_run.c, esc_card.c and yge_card.c stand between the programmers and the
 # card layer in shared/logfile.  It is built where that layer is: on the panel and on the
 # host, which adds shared/logfile before this directory.  The IOmcu has
 # no card and builds this directory without it.  imu.c, the Bluetooth IMU's
 # reading from protocols/witmotion, is the panel's alone and goes with them.
 if(ESP_PLATFORM)
-    idf_component_register(SRCS ${SRCS} kst_card.c hitec_card_run.c esc_card.c imu.c
+    idf_component_register(SRCS ${SRCS} kst_card.c hitec_card_run.c esc_card.c yge_card.c imu.c
                            INCLUDE_DIRS include
-                           REQUIRES link kst hitec escwire dshot logfile witmotion)
+                           REQUIRES link kst hitec escwire openyge dshot logfile witmotion)
 else()
     add_library(rcbench_bench STATIC ${SRCS})
     target_include_directories(rcbench_bench PUBLIC include)
     target_link_libraries(rcbench_bench PUBLIC rcbench_link rcbench_kst
-                          rcbench_hitec rcbench_escwire rcbench_dshot m)
+                          rcbench_hitec rcbench_escwire rcbench_openyge
+                          rcbench_dshot m)
     if(TARGET rcbench_logfile)
-        target_sources(rcbench_bench PRIVATE kst_card.c hitec_card_run.c esc_card.c
+        target_sources(rcbench_bench PRIVATE kst_card.c hitec_card_run.c esc_card.c yge_card.c
                        imu.c)
         target_link_libraries(rcbench_bench PUBLIC rcbench_logfile rcbench_witmotion)
+    else()
+        # log_writer.h takes the info cell's sizes from log_info.h; the
+        # IOmcu has no card layer and needs only that header.
+        target_include_directories(rcbench_bench PUBLIC
+                                   "${CMAKE_CURRENT_LIST_DIR}/../logfile/include")
     endif()
 endif()

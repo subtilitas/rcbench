@@ -313,7 +313,7 @@ alle ihre Hilfeseiten auch in ARMED sichtbar.
 | OUTPUTS, Rasteransicht | 1 | die Fläche der Protokollliste, das erste Feld, LETZTER SCHREIBVORGANG; bei einem Eintrag PROG PORT seine Fläche und Zeilen |
 | LOGS, Dateiliste | 2 | die Ordner-Tabs, eine Zeile, AKTUALISIEREN, WI-FI; FILES, VORIGE und NÄCHSTE bei mehreren Seiten, die Scrollleiste, LÖSCHEN, ÖFFNEN |
 | LOGS, Importansicht | 2 | ERKANNT, TRENNZ., ZAHLEN; die Spalten, ZURÜCK, GRAFIK |
-| LOGS, Grafik | 1 | ein Reihen-Chip, die Grafik, ZURÜCK, `<` und `>` |
+| LOGS, Grafik | 2 | ein Reihen-Chip, die Grafik, ZURÜCK, `<` und `>`; MEHR |
 | FILES, Spalten | 3 | LOGS, Ordner, Zeile und Scrollleiste der linken Spalte; AKTUALISIEREN, KOPIEREN, VERSCHIEBEN, UMBENENNEN; die rechte Spalte, LÖSCHEN, NEU, INFO, ÖFFNEN |
 | WI-FI, WLAN aus | 3 | WLAN-HOTSPOT, MIT HEIMNETZ VERBINDEN, HEIMNETZ WÄHLEN, HEIMNETZ LÖSCHEN, ZUGANGSCODE EIN oder AUS; HOTSPOT-PASSWORT und ZUGANGSCODE, ZUFALL oder FEST; die Karte |
 | WI-FI, WLAN an | 1, 2 mit der Taste für Browser-Schreibzugriffe | die Zeilen, solange die Seite erreichbar ist, die Zeilen darunter, WLAN AUS; die Taste für Browser-Schreibzugriffe |
@@ -1337,7 +1337,7 @@ INA3221 eingeschaltet ist.
 
 
 ```
-time (s);voltage (V);current (A);power (W);rpm (rpm);throttle (%);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V);source
+time (s);voltage (V);current (A);power (W);rpm (rpm);throttle (%);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V);source;info
 ```
 
 In MOTOR-Dateien entsprechen `voltage`, `current` und `power` der Anzeige
@@ -1380,7 +1380,7 @@ Eine durch ARM auf SERVO begonnene SERVO-Datei hat keine Spalte
 zusätzliche Spalten:
 
 ```
-...;ch3 voltage (V);pulse (us);angle (deg);source
+...;ch3 voltage (V);pulse (us);angle (deg);source;info
 ```
 
 - `voltage`, `current`, `power`, `charge` und `energy` sind die des
@@ -1420,7 +1420,10 @@ Zeilen, deren INA228-Werte vom Leistungsknoten kommen (INA228-Quelle NODE,
 bei Zeilen aus dem Panelmodell (Markierung SIMULIERT). Netzteildateien
 haben dieselbe letzte Spalte, ohne `node`. Dateien ohne diese Spalte enden bei
 `ch3 voltage` oder `energy`. LOGS und die Werkzeuge lesen beide Formen;
-`source` ist eine Textspalte und wird nicht als Kurve dargestellt.
+`source` ist eine Textspalte und wird nicht als Kurve dargestellt. Danach
+hält `info` die Beschreibung des Laufs in der ersten Zeile: den Namen des
+Prüflings in einer SERVO-Datei, die Notiz zum Lauf, das Datum und die
+Firmware ([Logs](#logs)).
 
 `ina voltage` und `ina current` stammen vom INA228, dem des IOmcu oder dem
 des Leistungsknotens, und sind leer, wenn er nicht die Quelle ist. `esc current` ist der Telemetriestrom des ESC: aus
@@ -1457,7 +1460,7 @@ die Kanalspalten deren Stand beim Öffnen der Datei: je eine Gruppe von
 drei Spalten pro Kanal, der ein Ziel überwacht, benannt nach diesem Ziel:
 
 ```
-window;port 1 current (A);port 1 max (A);port 1 voltage (V);out 3 current (A);out 3 max (A);out 3 voltage (V);supply current (A);supply max (A);supply voltage (V);source
+window;port 1 current (A);port 1 max (A);port 1 voltage (V);out 3 current (A);out 3 max (A);out 3 voltage (V);supply current (A);supply max (A);supply voltage (V);source;info
 ```
 
 - Ein Kanal bekommt eine Gruppe, solange sein Baustein bestückt ist, sein
@@ -1467,11 +1470,12 @@ window;port 1 current (A);port 1 max (A);port 1 voltage (V);out 3 current (A);ou
   die anderen von 0x40 CH1 bis 0x43 CH3.
 - Zwei Kanäle an einem Ziel tragen den Kanal im Namen:
   `out 3 0x41 ch2 current (A)`.
-- Höchstens 3 Gruppen, 24 Spalten in einer MOTOR-Datei und 25 in einer
-  SERVO-Datei: der vierte überwachende Kanal und alle weiteren stehen in
-  keiner Datei. LOGS liest höchstens 25 Spalten.
+- Höchstens 3 Gruppen, 25 Spalten in einer MOTOR-Datei und 26 in einer
+  SERVO-Datei, `info` mitgezählt: der vierte überwachende Kanal und alle
+  weiteren stehen in keiner Datei. LOGS liest höchstens 26 Spalten,
+  Firmware 0.23.17 und älter 25.
 - Eine Datei mit weniger Gruppen endet früher mit `source`: 14 + 3 x
-  Gruppen + 1 Spalten, in einer SERVO-Datei 1 mehr. Ohne überwachenden Kanal hat die
+  Gruppen + 2 Spalten, in einer SERVO-Datei 1 mehr. Ohne überwachenden Kanal hat die
   Datei keine Kanalspalten.
 
 Die Gruppe für den Kanal am Ziel des Servotesters stammt aus dem
@@ -1677,12 +1681,15 @@ abgelehnt, bleiben alle Änderungen ungespeichert, und SPEICHERN zeigt
 
 ![Die Liste von PROGRAMMIEREN](img/de/motor-program.png)
 
-PROGRAMMIEREN zeigt zwei Verfahren zur ESC-Programmierung aus derselben
+PROGRAMMIEREN zeigt drei Verfahren zur ESC-Programmierung aus derselben
 Tabelle wie SERVO (`shared/ui/prog_registry.c`,
 [Programmierer](#programmierer)). `ESCs per Gasknüppel` gehört zur Gruppe
 STICK-MENÜ. Rechts steht `GASAUSGANG >`: Das Verfahren verwendet die
 Gas-Pins, keinen Programmierport, und benötigt keine Fähigkeit des IOmcu.
-Die zweite Zeile öffnet die unten beschriebene Signalleitungs-Sitzung.
+Die zweite Zeile öffnet die unten beschriebene Signalleitungs-Sitzung. Die
+dritte, `YGE-ESCs` in TELEMETRIEKABEL, öffnet die
+[YGE-ESC-Programmierung](YgeProgramming-de.md); sie bleibt gedimmt, bis der
+IOmcu `LINK_CAP_YGE` meldet.
 
 Solange auf dem Prüfstand, wie er ist, kein Lauf starten kann, nennt die
 Zeile den ersten Grund anstelle von `GASAUSGANG`, in der Warnfarbe, und
@@ -1927,7 +1934,7 @@ der Reihenfolge der Nutzung.
 | LIVE | LIVE | das Zifferblatt, den Drehknopf, die Anzeigen SOLL-PULSBREITE, GEMESSEN und STROM; OPTIONEN öffnet das Servoprofil |
 | SWEEP | SWEEP | das Zifferblatt mit dem Sweep; OPTIONEN öffnet KURVE, TEMPO, BEREICH und HALTEZEIT |
 | TEST | TEST | das Feld AUTOMATISCHER TEST, die Grenzen von SUPPLY, der Verlauf und das Feld des Laufs, die Karte BEREIT an der Stelle des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet die Liste des automatischen Tests |
-| LIMIT RUN | LIMIT RUN | Modus- und Ausgangszeile, UNTERES ENDE und OBERES ENDE und die Zustandszeilen auf der linken Karte, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet MODUS, SERVO, SERVOPULSE, STROM, Warten vor PWM, den Namen des Prüflings und die Testaufzeichnungen ([Starten](Servo-de.md#starten)) |
+| LIMIT RUN | LIMIT RUN | Modus- und Ausgangszeile, UNTERES ENDE und OBERES ENDE und die Zustandszeilen auf der linken Karte, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet MODUS, SERVO, SERVOPULSE, STROM, Warten vor PWM, den Namen des Prüflings, die Notiz zum Lauf und die Testaufzeichnungen ([Starten](Servo-de.md#starten)) |
 | RUDER | RUDER | Ausschlag in ° und mm, LÄNGE, 1000us, ZENTRIEREN, 2000us, NULLPUNKT und MAX LÖSCHEN, -10us und +10us ohne antwortenden Drehknopf ([Ruderausschlag](Servo-de.md#ruderausschlag)) |
 | RUDER AUTO | RUDER AUTO | das Feld von AUTO statt LÄNGE und der Fahrtasten, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste ([AUTO-Endpoints](Servo-de.md#auto-endpoints)) |
 | KST | SERVO > KST | die Programmierung für KST und Chaservo über dem linken Feld, die Karte BEREIT statt des Ausgangsfelds, WERTE SCHREIBEN in der Fußleiste ([Programmierer](#programmierer)) |
@@ -2758,7 +2765,9 @@ hält. Nach dem letzten Befehl des Laufs schaltet der Prüfstand auf SAFE.
 STOP, SAFE, Link-Verlust, das Verlassen des Bildschirms, ein Abbruchgrund
 des automatischen Tests oder ein NICHT BESTANDEN beenden den Lauf mit
 allen Ausgängen aus; nach einem NICHT BESTANDEN in einer Sitzung geht die
-Versorgung aus, sobald das LEAVE den Port zurückgegeben hat. Urteil, Werte oder Endlagen und `LIMITnnn.TXT`, bei ausgeschalteten
+Versorgung aus, sobald das LEAVE den Port zurückgegeben hat. Der Lauf schreibt
+`LIMITnnn.CSV`, eine Zeile je bewerteter Stellung, und den Bericht
+`LIMITnnn.TXT`. Urteil, Werte oder Endlagen und `LIMITnnn.TXT`, bei ausgeschalteten
 Testaufzeichnungen `TESTAUFZEICHNUNGEN AUS`, bleiben bis zum nächsten Lauf
 auf den Zustandszeilen.
 
@@ -2979,18 +2988,18 @@ Eine Änderung gilt bis SPEICHERN als nicht gespeichert.
 
 | Bildschirm | OPTIONEN öffnet |
 | --- | --- |
-| der Hub | das Servoprofil: AUSGANG mit TYP, PULSRATE, PULS MIN, PULS MITTE, PULS MAX, TRIMMUNG, WEG, UMKEHREN und HV-SERVO; PRÜFLING mit NAME und BERICHT |
+| der Hub | das Servoprofil: AUSGANG mit TYP, PULSRATE, PULS MIN, PULS MITTE, PULS MAX, TRIMMUNG, WEG, UMKEHREN und HV-SERVO; PRÜFLING mit NAME, Notiz zum Lauf und BERICHT |
 | LIVE | das Servoprofil, die Liste des Hubs; darunter WINKEL mit SENSOR-MITTE |
 | SWEEP | KURVE, TEMPO, Bereich und Haltezeit |
-| TEST | SPANNUNGSSTUFEN: Stufe 4.8V, Stufe 6.0V, HV-SERVO, Stufe 7.4V, Stufe 8.4V; BROWN-OUT: Brown-out, Brown-out Mindestspannung, Brown-out-Schritt; GRENZWERTE: Blockierschwelle, Ruhestrom max, Haltestrom max, Stellzeit max; DAUER UND ZEITEN: Länge nach, Testzeit, Bewegungen, Haltezeit, Einschwingzeit; BEREICH: Bereich, AUSGANG; PRÜFLING: Name des Prüflings, Bericht |
-| LIMIT RUN | MODUS, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, STROM, Warten vor PWM, Name des Prüflings und Testaufzeichnungen; ein Lauf programmiert mit 5,0V ([Servo](Servo-de.md#die-50v-des-laufs)). STROM ist SET A von SUPPLY, `SET A 2.00A`, ein Tipp sein Tastenfeld; `--` und gesperrt ohne PD mini ([Servo](Servo-de.md#die-strombegrenzung-des-laufs)) |
+| TEST | SPANNUNGSSTUFEN: Stufe 4.8V, Stufe 6.0V, HV-SERVO, Stufe 7.4V, Stufe 8.4V; BROWN-OUT: Brown-out, Brown-out Mindestspannung, Brown-out-Schritt; GRENZWERTE: Blockierschwelle, Ruhestrom max, Haltestrom max, Stellzeit max; DAUER UND ZEITEN: Länge nach, Testzeit, Bewegungen, Haltezeit, Einschwingzeit; BEREICH: Bereich, AUSGANG; PRÜFLING: Name des Prüflings, Notiz zum Lauf, Bericht |
+| LIMIT RUN | MODUS, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, STROM, Warten vor PWM, Name des Prüflings, Notiz zum Lauf und Testaufzeichnungen; ein Lauf programmiert mit 5,0V ([Servo](Servo-de.md#die-50v-des-laufs)). STROM ist SET A von SUPPLY, `SET A 2.00A`, ein Tipp sein Tastenfeld; `--` und gesperrt ohne PD mini ([Servo](Servo-de.md#die-strombegrenzung-des-laufs)) |
 | RUDER | LÄNGE, SENSOR-MITTE und WINKELQUELLE |
-| RUDER AUTO | die Ziele, MARGIN, TOLERANZ, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, WINKELQUELLE, STROM, Warten vor PWM, Name des Prüflings und Testaufzeichnungen; STROM wie bei LIMIT RUN |
+| RUDER AUTO | die Ziele, MARGIN, TOLERANZ, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, WINKELQUELLE, STROM, Warten vor PWM, Name des Prüflings, Notiz zum Lauf und Testaufzeichnungen; STROM wie bei LIMIT RUN |
 | SERVO > KST | KST EXPERT MODE, eine Ebene tiefer |
 | HITEC | SERIE und EMPFANG |
 
 Bereich und Haltezeit sind je eine Einstellung auf SWEEP und TEST, Name
-des Prüflings und Bericht die des Hubs, Testaufzeichnungen die von SETUP >
+des Prüflings, Notiz zum Lauf und Bericht die des Hubs, Testaufzeichnungen die von SETUP >
 SD CARD: eine Änderung in einer Liste lesen alle anderen Listen, Karten
 und Läufe.
 
@@ -3078,6 +3087,7 @@ Die 56px hohen Tasten 2s HALTEN ZUM ÜBERNEHMEN und ABBRECHEN enden 8px
 | LIMIT RUN > OPTIONEN | SERVO | KST/CHASERVO, HITEC D-SERIE oder HITEC KLASSISCH; der Programmierer, an den die Sitzungen des Laufs gehen. Die eigene gespeicherte Einstellung des Endlagenlaufs, dieselbe wie die Zeile SERVO der Karte BEREIT |
 | LIMIT RUN > OPTIONEN | SERVOPULSE | BEHALTEN oder 1000-2000; gesperrt, solange PORT nicht auf PROG-PORT oder SERVO auf HITEC steht. 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos in der Lesesitzung des Laufs, vor der Suche, auf 1000,0 und 2000,0us. Vorgabe BEHALTEN; für die Sitzung |
 | Liste des Hubs | NAME | der Prüfling, bis 23 Zeichen, für den Bericht |
+| Liste des Hubs | Notiz zum Lauf | der Zustand des Laufs, bis 23 Zeichen, `greased` oder `200g on the horn`: steht in der Spalte `info` der Datei jedes Laufs, bis sie geändert wird ([Logs](#logs)); vorgegeben leer |
 | Liste des Hubs | BERICHT | ein Textbericht neben der Aufzeichnung jedes Tests |
 | Listen von LIVE und RUDER | SENSOR-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert seit dem aktuellen Verbindungsaufbau (keinen nach einem Verbindungsverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, SENSORS, AS5600-Mitte |
 | SERVO > KST > OPTIONEN | KST EXPERT MODE | ob der [Programmierer für KST- und Chaservo-Servos](ServoProgrammer-de.md#expertenmodus) DEAD BAND, BOOST, STRETCH, PAIRING LÖSEN und den Reiter GESPERRT zeigt; standardmäßig AUS, EIN nach 2s Halten (ein kürzerer Druck zeigt den Hinweis auf dem Band), AUS mit einem Tipp. Bleibt über einen Neustart erhalten |
@@ -3630,12 +3640,13 @@ eine Zeile alle 50ms, solange Auto-Aufzeichnungen unter [Setup](#setup) > SD CAR
 auf EIN steht:
 
 ```
-time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);energy (Wh);source
+time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);energy (Wh);source;info
 ```
 
 Fehlende Messwerte bleiben als Zellen leer. `mode` ist CV, CC oder OFF,
 bei nicht antwortendem Netzteil leer. `source` ist `measured` für
-PD-mini-Messwerte und `model` für das Panelmodell.
+PD-mini-Messwerte und `model` für das Panelmodell. `info` hält die Notiz
+zum Lauf, das Datum und die Firmware in der ersten Zeile ([Logs](#logs)).
 
 Prüfstandsläufe haben Vorrang bei der Aufzeichnung: ARM während eines
 Netzteillaufs schließt dessen Datei. Ist der Ausgang beim nächsten SAFE
@@ -3806,17 +3817,22 @@ Zellenmonitor zeigt der Prüfstand KEIN AKKU. Das Bild oben stammt aus einem Mod
 
 ![Der Dateibrowser](img/de/logs.png)
 
-Öffne eine Datei auf der Karte, prüfe die Erkennung in der Importansicht
-und zeichne anschließend die gewählten Datenreihen:
+Öffne eine Datei auf der Karte. Eine Laufdatei des Prüfstands öffnet die
+Grafik mit den Spalten ihrer Art; jede andere CSV öffnet zuerst die
+Importansicht:
 
-![Die Importansicht](img/de/logs-import.png)
-![Die Grafik](img/de/logs-plot.png)
-
+![Ein MOTOR-Lauf, wie er öffnet: throttle, rpm, current und voltage](img/de/logs-plot.png)
 ![Ein SERVO-Lauf, wie er öffnet: pulse, angle, current und voltage](img/de/logs-servo-plot.png)
+![Ein LIMIT RUN in der Grafik: current und angle über dem Puls](img/de/logs-limit-graph.png)
+![Die Suche eines RUDDER AUTO in der Grafik](img/de/logs-ruddr-search.png)
+![Die Schritte eines RUDDER AUTO in der Grafik](img/de/logs-ruddr-steps.png)
+![MEHR auf der Grafik: SPALTEN](img/de/logs-plot-more.png)
+![Die Importansicht, über MEHR > SPALTEN erreicht](img/de/logs-import.png)
 
-Das Home-Feld führt wie ZURÜCK eine Ebene zurück: von Grafik zu Import,
-vom Import zur Dateiliste und von dort ins Menü. In der LÖSCHEN-Rückfrage
-wirkt es als ABBRECHEN.
+Das Home-Feld führt wie ZURÜCK eine Ebene zurück: von der Grafik dorthin,
+woher sie kam (nach ÖFFNEN zur Dateiliste, nach GRAFIK zur Importansicht),
+vom Import zur Dateiliste und von dort ins Menü. Über der Liste von MEHR
+schließt es die Liste. In der LÖSCHEN-Rückfrage wirkt es als ABBRECHEN.
 
 Die Kachel LOGS öffnet eine gemeinsame Leiste für LOGS und FILES: zwei
 499 x 40px große Registerkarten über die Inhaltsbreite, von y 5 bis 45.
@@ -3863,7 +3879,10 @@ Die Importansicht zeigt ERKANNT (400px) neben der Spaltenliste (600px,
 7 Zeilen bei 48px Abstand), darunter vier Tasten von 246 x 52px.
 Die Grafik ist 992 x 316px groß, mit vier Datenreihen-Chips von 240 x 44px
 darüber. Darunter stehen Zeitmarken, ZURÜCK (140 x 52px), `<` und `>`
-(96 x 52px) sowie die Cursorzeile. Die LÖSCHEN-Rückfrage ist 700 x 280px
+(96 x 52px), die Cursorzeile und rechts MEHR (140 x 52px). MEHR öffnet
+darüber eine Auswahlliste von 300 x 64px, 8px über der Fußleiste, mit
+einer Zeile von 56px: SPALTEN öffnet die Spaltenliste der Importansicht.
+Ein Druck neben die Liste schließt sie und löst nichts aus. Die LÖSCHEN-Rückfrage ist 700 x 280px
 groß, mit ABBRECHEN und LÖSCHEN von je 300 x 56px.
 
 Beschriftungen, Zeilen, Tasten und Importwarnungen verwenden 10 x 20.
@@ -3871,12 +3890,77 @@ Leere-Listen-Texte, Rückfragen, Erklärungsfelder und Dateimeldungen
 verwenden 12 x 24. Zeitmarken und Wertebereiche der Spalten und Chips
 stehen in 8 x 16.
 
+ÖFFNEN ordnet eine Datei der Art von Lauf zu, die sie enthält: zuerst
+nach den Spaltennamen ihrer Kopfzeile, dann nach ihrem Namen
+(`shared/logfile/log_preset.c`). Ein Name mit Zusatz
+(`MOTOR042_kv1200.CSV`), ein Name in Kleinbuchstaben und die Dateien ab
+Firmware 0.21.0 werden ebenso erkannt. Eine erkannte Datei öffnet die
+Grafik mit den Spalten ihrer Art, jede, soweit die Datei sie als Zahlen
+enthält; eine fehlende Spalte entfällt, und keine andere rückt nach:
+
+| Art | Kopfzeile enthält | Name | Gezeichnete Spalten |
+| --- | --- | --- | --- |
+| LIMIT RUN | `search`, `side`, `pulse`, `state` | `LIMITnnn` | `pulse`, `current`, `angle` |
+| RUDDER AUTO | `step`, `side`, `write`, `within` | `RUDDRnnn` | `pulse`, `current`, `measured` |
+| AUTOMATIC TEST | `test`, `phase`, `command` | `ATESTnnn` | `command`, `current`, `voltage`, `angle` |
+| SUPPLY-Lauf | `set`, `limit`, `mode` | `SUPPLnnn` | `set`, `voltage`, `limit`, `current` |
+| MOTOR-Lauf | `rpm` und `throttle` | `MOTORnnn`, `ESCnnn` | `throttle`, `rpm`, `current`, `voltage` |
+| SERVO-Lauf | `pulse`, `angle`, `source` | `SERVOnnn`, `BENCHnnn` | `pulse`, `angle`, `current`, `voltage` |
+
+Eine LIMIT-RUN- und eine RUDDER-AUTO-Datei öffnen in der Grafik: ihre
+Zeilen über dem Puls (bei RUDDER AUTO auf SCHRITTE über dem Schritt), nicht
+über der Zeilennummer. Die Grafik zeigt die ganze Datei mit bis zu 2.048
+Zeilen; eine längere Datei und eine ohne Pulsspalte (RUDDER AUTO der
+Firmware 0.23.17) zeichnet LOGS wie die anderen Arten nach Zeilennummer.
+Eine Prüfstandsdatei der Firmware 0.21.0 nennt weder `throttle` noch `pulse`:
+`ESCnnn.CSV` öffnet als MOTOR-Lauf, `BENCHnnn.CSV` und `SERVOnnn.CSV` als
+SERVO-Lauf, und dieselbe Kopfzeile unter jedem anderen Namen als
+MOTOR-Lauf. Eine Datei keiner Art, eine Datei mit dem Namen eines Laufs
+ohne eine Spalte ihrer Art und eine Datei, die der Leser ablehnt, öffnen
+die Importansicht.
+
+Die Grafik (`shared/ui/log_graph*.c`, `shared/logfile/log_marks.c`)
+behält die Maße der Kurvenansicht: die Kopfzeile nennt Datei, Zeilen und
+Art (`LIMIT006.CSV   116 ZEILEN   LIMIT RUN`); ein Chip von 240 x 44px je
+Reihe; die Grafik 992 x 316px; darunter die x-Beschriftung in der Einheit
+der x-Spalte; die Cursorzeile in der Fußleiste
+(`pulse 1040us   Zeile 112 von 116`).
+
+| Bild | x | Reihen | Eine Linie je | Markierungen |
+| --- | --- | --- | --- | --- |
+| LIMIT RUN | `pulse` | `current`, `angle` | Suche und Seite; Suche 1 durchgezogen, 2 (nach dem Überstellen) und 3 (die letzte Prüfung) gestrichelt | M Mitte (Puls der ersten Zeile); je Seite A Anschlag (ihre letzte BOUND-Zeile) und E Endpunkt (deren `end point`), L letzte Position am äußersten Puls der Seite, wo er nicht ihr Anschlag ist; F Freistrom und S Schwelle als Pegel von `current` von der Mitte bis zum äußersten Puls der Seite |
+| RUDDER AUTO, SUCHE | `pulse` | `current`, `measured` | Seite: eine neue Linie, wo der Puls umkehrt | M Mitte, E Endpunkt (`side` der Schritte), L die äußerste Position jeder Seite |
+| RUDDER AUTO, SCHRITTE | `step` | `measured`, `goal` | Seite; die 3 Prüfmessungen als Punkte | eine Messung außerhalb der Toleranz (`within` 0) in der Warnfarbe; ein Strich von 10px am Fuß der Grafik unter jeder Messung nach einem Schreiben |
+
+- Die x-Skala reicht vom kleinsten x-Wert der gezeichneten Zeilen und
+  der Markierungen bis zum größten, ohne Rand: diese beiden stehen auf der
+  ersten und der letzten Pixelspalte der Grafik. Jede Reihe hat ihre
+  eigene Skala, 6% Rand je Seite und nie über die Null hinweg.
+- Das Schild einer Markierung trägt ihren Buchstaben, 14 x 18px, in zwei
+  Reihen am oberen Rand der Grafik; die Chips, die die Reihen frei
+  lassen, tragen die Legende der Buchstaben (Englisch: C, B, E, L, F, T).
+  RUDDER AUTO zeigt SUCHE und SCHRITTE als zwei Reiter von 115 x 38px am
+  Platz des vierten Chips; ein Reiter lädt die Spalten seines Bilds.
+- Ein Tippen auf einen Chip hebt seine Reihe hervor: 2px dick, Ober- und
+  Unterende ihrer Skala am linken Rand der Grafik in ihrer Farbe. Ein
+  zweites Tippen blendet sie aus, ein drittes holt sie hervorgehoben
+  zurück.
+- Ein Finger auf der Grafik setzt den Cursor auf die nächste gezeichnete
+  Zeile: nächste in x, und von Zeilen in einer Spalte die, deren erste
+  gezeigte Reihe dem Finger am nächsten liegt. `<` und `>` gehen zur
+  nächsten Zeile, die das Bild zeichnet. Die Chips zeigen den Wert jeder
+  Reihe am Cursor in den Nachkommastellen ihrer Skala.
+- Zwei Finger zoomen die Grafik nicht; MEHR > SPALTEN führt zur
+  Importansicht, deren GRAFIK die gewählten Spalten nach Zeilennummer
+  zeichnet.
+
 Der CSV-Leser (Comma-Separated Values) nimmt Dezimalkomma und -punkt,
 Einheitenzeilen und unterschiedlich lange Zeilen an. Die Importansicht
-zeigt seine Erkennung vor dem Zeichnen. Anfangs sind bis zu 4 numerische
-Spalten gewählt. SERVO-Dateien bevorzugen `pulse`, `angle`, `current` und
-`voltage`. Enthält eine davon keine Zahlen, folgen andere Zahlenspalten.
-Andere Dateien wählen die ersten 4 Zahlenspalten.
+zeigt seine Erkennung vor dem Zeichnen. Über MEHR > SPALTEN erreicht,
+behält sie die Spalten der Grafik gewählt. Für eine Datei keiner Art
+wählt sie bis zu 4 Zahlenspalten: in einer Datei mit einer numerischen
+Spalte `pulse` zuerst `pulse`, `angle`, `current` und `voltage`, dann
+andere Zahlenspalten; in jeder anderen Datei die ersten 4 Zahlenspalten.
 
 Jede Zahlenspalte zeigt Minimum und Maximum. Liegen beide unter 1000,
 erscheint eine Nachkommastelle, sonst keine: `11.9..12.6V` oder
@@ -3905,8 +3989,34 @@ Ordner Auto-Aufzeichnungen und Ordner Testaufzeichnungen:
 | `BENCH/LOGS` | `MOTORnnn.CSV` | ein Schalten auf ARMED von ARM auf MOTOR & ESC oder einem Stick-Lauf auf dessen PROGRAMMIEREN |
 | `BENCH/LOGS` | `SUPPLnnn.CSV` | ein Einschalten des SUPPLY-Ausgangs, solange der Prüfstand SAFE ist |
 | `USER/LOGS` | `ATESTnnn.CSV` | ein AUTOMATISCHER TEST; sein Bericht ist `ATESTnnn.TXT` |
-| `USER/LOGS` | `LIMITnnn.TXT` | der Bericht eines Laufs von LIMIT RUN, ohne CSV daneben |
-| `USER/LOGS` | `RUDDRnnn.CSV` | ein Lauf von RUDER AUTO, eine Zeile je Messung; sein Bericht ist `RUDDRnnn.TXT` |
+| `USER/LOGS` | `LIMITnnn.CSV` | ein Lauf von LIMIT RUN, eine Zeile je bewerteter Stellung ([Format](Servo-de.md#eingebaute-mechanische-endlage)); sein Bericht ist `LIMITnnn.TXT`, allein bei einem Lauf, der keine Stellung bewertet hat, oder einem von Firmware 0.23.17 und älter |
+| `USER/LOGS` | `RUDDRnnn.CSV` | ein Lauf von RUDER AUTO, eine Zeile je Messung, 13 Spalten, `info` die letzte (9 von Firmware 0.23.17 und älter); sein Bericht ist `RUDDRnnn.TXT` |
+
+Jede dieser sechs Arten endet mit einer Textspalte `info`: der eigenen
+Beschreibung des Laufs in der ersten Datenzeile, in jeder weiteren Zeile
+leer. Sie hält Paare `key=value`, verbunden mit `&`, in der Reihenfolge der
+Tabelle:
+
+```text
+dut=MG90S&note=greased&date=2026-11-24T10:31&fw=0.23.18
+```
+
+| Schlüssel | Wert | Dateien |
+| --- | --- | --- |
+| `dut` | Name des Prüflings aus den SERVO-Listen, bis 23 Zeichen | `SERVO`, `ATEST`, `LIMIT`, `RUDDR` |
+| `note` | Notiz zum Lauf aus den SERVO-Listen, bis 23 Zeichen | alle sechs |
+| `date` | das lokale Datum und die Uhrzeit des Panels beim Start des Laufs, `YYYY-MM-DDTHH:MM`; fehlt, solange die Uhr nicht gestellt ist | alle sechs |
+| `fw` | die Firmwareversion des Panels | alle sechs |
+| `servo` | der TYP des Profils | `ATEST`, `LIMIT`, `RUDDR` |
+| `meter` | das Messgerät des Stroms: ein INA3221-Kanal, `PDMINI` oder `MODEL` | `ATEST`, `LIMIT`, `RUDDR` |
+| `angle` | die Winkelquelle, `AS5600` oder die IMU mit ihrer Achse | `ATEST`, `LIMIT`, `RUDDR`, mit einer Winkelquelle |
+
+Ein Schlüssel mit leerem Wert fehlt. In einem Wert wird jedes `&`, `=`, `;`,
+`"` und Steuerzeichen als `_` geschrieben: `MG90S "2"` liest sich zurück als
+`MG90S _2_`. LOGS nimmt `info` als Textspalte und zeichnet nichts davon. Eine
+Datei von Firmware 0.23.17 und älter hat keine Spalte `info`. LOGS von
+Firmware 0.23.17 liest jede neue Datei außer einer SERVO-Datei mit drei
+INA3221-Gruppen: 26 Spalten, eine mehr als die 25, die es nimmt.
 
 Der Name folgt der Seite, die ARM angefordert hat: Gas-Ausgänge ergeben
 `MOTORnnn`, Ruder `SERVOnnn`. Ein IOmcu vor Protokoll 4.18 aktiviert bei
@@ -3971,7 +4081,8 @@ LOGS listet CSV-Läufe und erkannte Berichte. LÖSCHEN eines Laufs entfernt
 auch seinen passenden Bericht. Ein Bericht ist eine `.TXT` mit Laufnamen,
 erkannt durch `log_report_number()`, nach derselben Regel wie FILES.
 Beispiele sind `ATESTnnn.TXT` mit oder ohne `ATESTnnn.CSV`, `LIMITnnn.TXT`
-ohne CSV und `SERVOnnn.TXT` im Stammverzeichnis von Firmware 0.21.0 oder
+mit oder ohne `LIMITnnn.CSV` und `SERVOnnn.TXT` im Stammverzeichnis von
+Firmware 0.21.0 oder
 älter. Andere `.TXT`-Dateien fehlen in der Liste. CSV und Bericht sind
 getrennte Zeilen, CSV zuerst. ÖFFNEN importiert die CSV oder öffnet den
 Bericht im [Textbetrachter](#der-textbetrachter).
@@ -4097,7 +4208,8 @@ Der Ausschnitt bleibt nach dem Loslassen bestehen; ein Balken darunter
 zeigt seine Lage im Lauf. Der kleinste Ausschnitt umfasst 8 Werte, der
 größte den ganzen Lauf. Ein Finger oder `<` und `>` bewegt den Cursor.
 Wandert er über einen vergrößerten Rand, folgt der Ausschnitt. ZURÜCK
-öffnet die Importansicht.
+führt zur Dateiliste, oder zur Importansicht, wenn deren GRAFIK die
+Grafik geöffnet hat.
 
 Die Grafik verteilt Zeilen gleichmäßig nach Zeilennummer. Beschriftung
 und Cursoranzeige verwenden die Zeitspalte relativ zur ersten Zeile.
@@ -4390,8 +4502,9 @@ Meldungsfeld über der Tastenzeile, in der Schrift 12 x 24.
 | ÖFFNEN | öffnet einen Ordner, eine erkannte Aufzeichnungs-CSV in LOGS oder eine andere Datei im Textbetrachter; dabei gelten die folgenden Grenzen |
 
 Eine CSV-Datei, die LOGS in einem seiner drei Ordner (STAMM, USER, BENCH)
-listet, öffnet sich in der Importansicht auf der zugehörigen Registerkarte
-von [Logs](#logs). Überschreitet sie 2GiB minus 1 Byte, zeigt LOGS
+listet, öffnet sich auf der zugehörigen Registerkarte von [Logs](#logs):
+eine Laufdatei des Prüfstands in der Grafik, jede andere CSV in der
+Importansicht. Überschreitet sie 2GiB minus 1 Byte, zeigt LOGS
 stattdessen die Dateiliste mit dem Grund. Wurde die Karte seit dem
 Einlesen der FILES-Liste getauscht, öffnet sich nichts. Die Meldung lautet
 `Die Karte wurde entnommen oder getauscht. Tippe auf AKTUALISIEREN.`
@@ -6946,6 +7059,7 @@ führt zurück zu SETUP > WIRELESS auf den Eintrag des Geräts.
 | Fundliste | Zeilen von 640 x 48px im Abstand von 52px ab x 16, y 44 | die Geräte der letzten Suche, das stärkste zuerst, bis zu 8: der Name, sonst die Adresse, und der RSSI, `rcbench-pwr-3456  -58dBm`; das gebundene in der Akzentfarbe hervorgehoben. Der Controller leert die Liste beim Start einer Suche und füllt sie an ihrem Ende |
 | Karte | x 680, 328px breit, y 12 bis 136 | die Art des Geräts, seine Verbindung wie in der linken Liste, `GEBUNDEN` und der Name des gebundenen Geräts, sonst seine Adresse, sonst `KEINS` |
 | AKTUALISIEREN | 328 x 56px bei x 680, y 156 | eine neue Suche von 10s mit den Regeln von Dial suchen und Knoten suchen; grau während einer Suche, dort zeigt Tippen `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s` |
+| BINDUNG LÖSEN | 328 x 56px bei x 680, y 228 | `2s HALTEN: BINDUNG LÖSEN`, ein Halten von 2s, das das gebundene Gerät vergisst (unten); vor 2000ms losgelassen zeigt das Band `Halte 2s, um die Bindung zu lösen.`; grau, solange nichts gebunden ist, dort zeigt Tippen `NICHTS GEBUNDEN: KEINE BINDUNG ZU LÖSEN` |
 
 ![Die Bindungsfrage von SEARCH](img/de/setup-wireless-search-bind.png)
 
@@ -6977,6 +7091,29 @@ Eine Änderung der Sicht des Geräts, ein RSSI, die verbleibenden Sekunden
 oder der Zustand der Verbindung, zeichnet SEARCH neu. Sie schließt keine
 Frage und bricht kein Antippen ab.
 
+BINDUNG LÖSEN, 2000ms gehalten, fordert beim Controller einmal an, das
+gebundene Gerät zu vergessen. Der Controller trennt die Verbindung (ein
+Disconnect, oder der laufende Connect wird abgebrochen) und verbindet sich
+danach mit nichts. Das Panel behält eine leere Adresse und einen leeren
+Namen in SETUP und fordert Speichern an, so bleibt das Gerät auch nach
+einem Neustart ungebunden. Die Karte zeigt `KEINS`, die Zeile GEBUNDEN der
+linken Liste zeigt `KEINS`, und BINDUNG LÖSEN wird grau. Eine Wahl auf
+SEARCH bindet wieder ein Gerät. Ein Finger, der von BINDUNG LÖSEN
+gleitet, oder ein gebundenes Gerät, das vor 2000ms wegfällt (eine andere
+Bindung, das Gerät AUS), beendet das Halten ohne Lösen. Die Bindungsfrage
+verdeckt BINDUNG LÖSEN, solange sie offen ist. BINDUNG LÖSEN gehört nicht
+zu den Fokuselementen des Dial: Nichts, was das Dial sendet, schließt ein
+Halten ab.
+
+ARMED lehnt BINDUNG LÖSEN nicht ab. Was das Gerät nutzt, trifft das Lösen
+wie eine verlorene Verbindung:
+
+| Gerät | Während ein Lauf es nutzt |
+| --- | --- |
+| Dial | ein Dial in UP oder DEGRADED ist sofort verloren; bei ARMED ist das ein Fehler: SAFE, jeder Ausgang aus |
+| Leistungsknoten | die Messwerte enden; ein Lauf, der auf den Knoten zählt (INA228-QUELLE KNOTEN, ein Lauf, der BENCH liest), überbrückt den Ausfall bis 300ms und endet dann als Fehler, jeder Ausgang aus; ein Scharfschalten auf KNOTEN wird abgelehnt, solange kein Messwert kommt |
+| Auswuchtknoten | die Messwerte veralten; der Knoten treibt keinen Ausgang, sonst geschieht nichts |
+
 ![SEARCH während einer Suche nach dem Dial](img/de/setup-wireless-search-scan.png)
 
 ### SD CARD: welche Logs geschrieben werden, und wohin
@@ -6986,7 +7123,7 @@ Frage und bricht kein Antippen ab.
 | Einstellung | Bereich | Vorgabe | Schreibt |
 | --- | --- | --- | --- |
 | Auto-Aufzeichnungen | AUS, EIN | EIN | `SERVOnnn.CSV`, `MOTORnnn.CSV` und `SUPPLnnn.CSV` in Ordner Auto-Aufzeichnungen: eine Aufzeichnung je ARMED- und Netzteil-Lauf |
-| Testaufzeichnungen | AUS, EIN | EIN | `ATESTnnn.CSV` mit seiner `ATESTnnn.TXT`, `LIMITnnn.TXT` und `RUDDRnnn.CSV` mit seiner `RUDDRnnn.TXT` in Ordner Testaufzeichnungen: den AUTOMATISCHEN TEST, LIMIT RUN und RUDER AUTO, jeweils wie die Einstellung beim Start des Laufs steht |
+| Testaufzeichnungen | AUS, EIN | EIN | `ATESTnnn.CSV` mit seiner `ATESTnnn.TXT`, `LIMITnnn.CSV` mit seiner `LIMITnnn.TXT` und `RUDDRnnn.CSV` mit seiner `RUDDRnnn.TXT` in Ordner Testaufzeichnungen: den AUTOMATISCHEN TEST, LIMIT RUN und RUDER AUTO, jeweils wie die Einstellung beim Start des Laufs steht |
 | Schreiben per Browser | OFFEN, ZUGANGSCODE, HALTEN, AUS | OFFEN | selbst nichts: was ein Browser braucht, um die Karte über die Seite von WI-FI zu ändern ([Schreiben per Browser](#schreiben-per-browser)) |
 | Ordner Auto-Aufzeichnungen | ein Ordner, siehe unten | `BENCH/LOGS` | wohin Auto-Aufzeichnungen schreibt |
 | Ordner Testaufzeichnungen | ein Ordner, siehe unten | `USER/LOGS` | wohin Testaufzeichnungen schreibt |

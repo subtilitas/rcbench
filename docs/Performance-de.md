@@ -438,9 +438,9 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 168 | 1 984 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 264 | 1 888 |
 | `control` | `control_task` | 6 144 | 3 616 | 1 488 |
-| `runlog` | `log_task` | 6 656 | 3 856 | 1 760 |
+| `runlog` | `log_task` | 6 656 | 4 016 | 1 600 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
 | `blec` | `blec_task`, die Verbindung jedes Bluetooth-LE-Clients über den Hub: die Werte der IMU, des Dial und beider Sensorknoten aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_blec.c`, die Seite der IMU in `panel_imu.c`, die des Dial in `panel_dial.c`, die des Leistungsknotens in `panel_pnode.c`, die des Auswuchtknotens in `panel_bal.c`, das Update der Funkgeräte in `panel_devupd.c`) | 4 096 | 1 808 | 1 248 |
 | `blestart` | `ble_start_task`, die Verbindung zum C6, seine Controller-Anfragen, der Start des Hosts und das Warten auf seinen Sync, dann weg (`panel_ble.c`) | 4 096 | 1 200 | 1 856 |
@@ -496,8 +496,10 @@ und den Zeitstempel, den es schreibt (`get_fattime()`, `localtime_r()`, die
 Zeitzonen-Auswertung `_tzset_unlocked()` von picolibc und das `sscanf()`
 darunter). Das Werkzeug folgt jedem Aufruf, den das Einbinden machen kann,
 darunter `f_mkfs()`, das ein Einbinden ohne Formatieren nie erreicht. Der Start eines Laufs bindet die Karte ebenfalls auf diesem Task
-ein (`storage_check()`). Die Kette braucht 3 824 Bytes; der Stack von 6 656
-Bytes lässt 1 792 über der Marge von 1 024 Bytes.
+ein (`storage_check()`). Die Kette braucht 4 016 Bytes, darunter eine Zeile
+eines Servotests von 424 Bytes (`SERVO_TEST_LINE_MAX`) im Rahmen von
+`log_task()`; der Stack von 6 656 Bytes lässt 1 600 über der Marge von
+1 024 Bytes.
 
 Die tiefste Kette von `wifi_ctl` ist der Start des Netzwerk-Stacks in
 `worker()`: `esp_netif_init()` in `netif_add()` und `netif_set_addr()` von
@@ -537,7 +539,7 @@ oben ist deshalb eine Untergrenze:
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `UI_HOOK_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`,
   `SERVO_STORE_CALLS`):
-  389
+  395
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Sprünge über ein Register: eine Sprungtabelle, die in ihrer Funktion
@@ -702,7 +704,7 @@ Jede Tiefe ist eine Untergrenze:
 
 - Aufrufe über ein Register werden nicht verfolgt, außer dem Lese- und dem
   Schreib-Handler einer Page, die das Werkzeug aus der Page-Tabelle des
-  Links liest: 266 solche Aufrufe sind von `main` aus erreichbar, im Image,
+  Links liest: 316 solche Aufrufe sind von `main` aus erreichbar, im Image,
   das CI baut (arm-none-eabi-gcc 14.2.1);
 - der Frame von 1 088 Bytes von `two_way_long_needle()` der newlib bleibt
   außen vor. `strstr()` ruft sie für ein Suchmuster ab 255 Zeichen auf, und

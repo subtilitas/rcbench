@@ -47,7 +47,7 @@ output signals.
 page, offset and count; a frame carries up to four registers; the transport
 does no reassembly; the IOmcu transmits only when asked. Worst-case
 payload 52kB/s against 12 to 30kB/s of expected traffic. Protocol version
-4.41. A request whose answer is lost is sent once more after 50ms.
+4.42. A request whose answer is lost is sent once more after 50ms.
 [Reference](docs/Link.md).
 
 **Safety.** The panel's control task drives GPIO28 (`PANEL_HEARTBEAT_PIN`, IO28 of header P3) from the core that does
@@ -214,7 +214,7 @@ render side in one atomic word; a figure whose source is not the row's is an emp
 `log_servo_pack()` in `shared/bench/log_writer.c`, `servo_screen_log_pulse()`,
 `servo_screen_log_angle()`; host-tested in `test_servo_runlog`, `test_servo_runlog_cols` and
 `test_servo_log_figures`; the panel's calls in `panel_poll.c` and `panel_frame.c` are not
-host-tested); LOGS reads up to 25 columns and opens a SERVO file with `pulse`, `angle`,
+host-tested); LOGS reads up to 26 columns and opens a SERVO file with `pulse`, `angle`,
 `current` and `voltage` chosen (`log_fields_picks()`, `test_servo_runlog_cols`); a poll that
 brings more than one INA3221 window writes one row for each, the sample in the last; the
 rule is `shared/bench/log_cadence.c`, host-tested in `test_log_cadence` against a model of
@@ -1586,7 +1586,10 @@ free), both ends searched again; at most 8 values a run, a later session reading
 type, REVERSION, pulses or range ending it, RESTORE offering the values before the run, a
 session after the run saving its own backup.
 
-Report `LIMITnnn.TXT` in `USER/LOGS` (`shared/servo/servo_limrun_report.c`). Host-tested
+`LIMITnnn.CSV`, one row a judged position, at most 600 (`shared/servo/servo_limrun_rows.c`),
+then the report `LIMITnnn.TXT` in `USER/LOGS` (`shared/servo/servo_limrun_report.c`); the CSV is
+read back by LOGS' reader in `test_servo_limrun_rows` (6 cases: the cap, a run aborted in the
+first search, a run ended at the read) and in a Hitec case of `test_servo_limrun_hitec`. Host-tested
 against `servo_sim` behind a modelled KST servo (`test_servo_limrun`,
 `test_servo_limrun_abort` and `test_servo_limrun_report` over `servo_limrun_rig.h`, 30 + 16
 + 4 cases, among them the low stop from 920 to 1440us in 3us steps with both pulse settings;
@@ -1600,7 +1603,20 @@ Built and tested against a modelled servo.
 
 ### OpenYGE codec
 
-Built and tested; not wired in. The implementation is pursued in a separate repository.
+Built and tested on the host; the IOmcu runs the session behind the link pages YGE_PROG and
+YGE_DATA (protocol 4.42, [docs/LinkYge.md](docs/LinkYge.md), `shared/outputs/yge_port.c`).
+The panel's half (`shared/bench/yge_link.c`, `yge_prog.c`, `yge_prog_file.c`) follows the page
+on every panel: CLOSE at the first read after a restart, ARM refused and the band's SAFE chip
+while a pin is held, the page's errors followed to all outputs off; no screen yet.
+`protocols/openyge/` holds the frame codec, the
+status decoder, the parameter cache, the field map of
+[docs/OpenYGE.md](docs/OpenYGE.md#53-parameter-table) section 5.3, the guard every outgoing
+frame passes, and the session state machine of programming for YGE ESCs (boot wait, listen,
+takeover, table read, writes with a read before and after). The session suites run it against
+a simulated ESC (`test/host/oy_sim.h`). The pin driver `rp2350/oy_line.c` (one PIO state
+machine, 2 DMA channels, 115200 baud 8N1) runs under YGE_PROG and in the IOMCU_CONSOLE build's
+`oyline` test; its program runs in a model in `test_openyge_pio`. The page's rules run on the
+host in `test_yge_port`, `test_yge_port_stop`, `test_yge_port_gate` and `test_yge_console`.
 
 ### ESC programming profiles
 
@@ -1763,9 +1779,9 @@ rcbench/
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `files` · `sbus` | yes | | yes |
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` · `mstime` · `fwupdate` | yes | yes | yes |
 | `artwork` · `esc` · `webaccess` · `clock` | yes | | yes |
-| `openyge` · `ppm` · `i2c_txq` | | yes | yes |
+| `ppm` · `i2c_txq` | | yes | yes |
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` · `passthru` | yes | yes | yes |
-| `escwire` | yes | yes | yes |
+| `escwire` · `openyge` | yes | yes | yes |
 | `witmotion` | yes | | yes |
 | `hc05` · `dial` | | | yes |
 | `bleuart` · `dialknob` · `vibe` · `rcnode` · `bleota` · `devupd` | yes | | yes |
@@ -1787,7 +1803,7 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 | --- | --- | --- |
 | `ci.yml` | push to `main`, the label `ci` added to a pull request, tag `v*`, manual | on Ubuntu 26.04: the host suite in five parallel jobs, joined by the job the branch ruleset requires; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check`; the Codecov upload in a job of its own that no required check needs, which fails when the upload fails; the font, screenshot, fit, translated-format, docs, mutation-run figure and wiki-link checks; `check_protocols.py --check`; `pio_budget.py --check`, the PIO and DMA budget of every board; clang-tidy 22.1.8 and cppcheck 2.17.1 over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff with its docstring (D) rules; the pytest cases of the tools (`test/tools/`); `tools/doc_check.py --check`, the Doxygen comments of the C sources against `tools/doc_check_baseline.txt`, which on a pull request also fails on any warning in a C file the pull request adds or on a line it changes, on a C file it changes that has no `@file` block with a `@brief`, and on a comment block without `@brief` it adds or edits; on a pull request `tools/mutate.py` on the changed lines of `shared/` and of the cores under `protocols/`, which reports survivors and does not fail on one; the panel build on ESP-IDF (Espressif Internet-of-Things Development Framework) v6.1 for the ESP32-P4, with the check of the generated sdkconfig against `sdkconfig.defaults`, of the image against its update slot, of the embedded IOmcu image, of the touch injector and of exFAT, and a second build without the injector; the pico-sdk build of the IOmcu with `pinmap_check.py` and the stack check of its two cores, a second build with `-DSENSE_TRACE=ON`, with the same stack check, that fails when the default image holds a trace symbol, and a third with `-DIOMCU_CONSOLE=ON`, with the same stack check, that fails when the default image holds a console symbol; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/`, manual | waits for the CI run on the same commit (`tools/ci_gate.py`, at most 5400s) and publishes `docs/` to the GitHub wiki when it passed |
-| `mutation.yml` | Sunday 03:17 UTC, manual | the mutants of the lines of `shared/safety` and `shared/outputs` (7694 mutants in 100 files) in 6 parallel shards, no mutant limit; `shared/safety` leads the list, `arming.c`, `heartbeat.c`, `stop_latch.c`, `touch_loss.c` and `prog5v_lost.c` at its head, and shard i takes every 6th mutant from place i; no mutant is started after 18000s in a shard, about 428 mutants at 42s each, so the 699 mutants of `shared/safety` run every week and about 1,869 of the 6995 of `shared/outputs`; a shard that leaves mutants unrun says so in a warning annotation and in its summary, with the count for each file; does not fail on a survivor or on mutants left; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
+| `mutation.yml` | Sunday 03:17 UTC, manual | the mutants of the lines of `shared/safety` and `shared/outputs` (8105 mutants in 104 files) in 6 parallel shards, no mutant limit; `shared/safety` leads the list, `arming.c`, `heartbeat.c`, `stop_latch.c`, `touch_loss.c` and `prog5v_lost.c` at its head, and shard i takes every 6th mutant from place i; no mutant is started after 18000s in a shard, about 428 mutants at 42s each, so the 699 mutants of `shared/safety` run every week and about 1,869 of the 7406 of `shared/outputs`; a shard that leaves mutants unrun says so in a warning annotation and in its summary, with the count for each file; does not fail on a survivor or on mutants left; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
 | `release.yml` | tag `v*`, manual for a tag | waits for the CI run on the tagged commit and, when it passed, builds both images, packages them with checksums, creates a release, a pre-release for an odd minor number (`tools/release_kind.py`); beside that, without holding the release back, runs the configurator data check (`configurator/core/tools/check-annotate.sh --warn-only`) and shows each warning, such as a release tag newer than the configurator data, as an annotation and in the run summary |
 | `dial.yml` | called by `ci.yml` and `release.yml` | the M5Stack Dial's image on ESP-IDF v6.1 for the ESP32-S3 and its test build with `RCBENCH_DIAL_HOOKS=ON`; the generated sdkconfig against `sdkconfig.defaults`, both images against their update slot, no hook in the released image; artifact `dial` |
 | `pages.yml` | the label `ci` added to a pull request, and a push to `main`, touching `configurator/`, `help/`, `docs/img/`, the help generator, the `Doxyfile` or `tools/install_doxygen.sh` (a push to a pull request starts no run); a push to `main` touching the C sources as well | type check, tests, data check, size budget and Playwright browser tests of the configurator; the web help; the C API (application programming interface) reference built by Doxygen 1.18.0; on a push to `main` it publishes the built page to GitHub Pages, with the help under `help/` and the API reference under `api/`. A run that changes only the C sources, the `Doxyfile` or `tools/install_doxygen.sh` builds the configurator page without its checks and runs no Playwright test |
@@ -1802,7 +1818,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 643 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 669 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1846,7 +1862,7 @@ The host suite is 643 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_safety_gate`, `test_flash_gate`, `test_reset_cause`, `test_boot_diag`, `test_touch_loss`,
 `test_frame_watch`, `test_loop_watch`, `test_error_stop`, `test_error_sites`, `test_error_steps`, `test_servo_limit`,
 `test_servo_limrun`, `test_servo_limrun_gaps`, `test_servo_limrun_abort`,
-`test_servo_limrun_error`, `test_servo_limrun_report`, `test_servo_sync`,
+`test_servo_limrun_error`, `test_servo_limrun_report`, `test_servo_limrun_rows`, `test_servo_sync`,
 `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_brownout`,
 `test_servo_brownout_page`, `test_servo_test_judge`, `test_servo_test_replay`,
 `test_servo_test_enc`, `test_servo_gap`, `test_servo_report_width`, `test_servo_test_win`,
@@ -1862,7 +1878,8 @@ The host suite is 643 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_picker_screen`, `test_picker_screen_hold`, `test_picker_screen_table`,
 `test_picker_tags`, `test_pin_take`, `test_pin_take_grid`, `test_picker_layout`, `test_picker_cat`, `test_board_drawing`, `test_busfault_screen`, `test_busfault_reconnect`,
 `test_coproc_update_screen`, `test_upd_coproc`, `test_upd_layout`, `test_text`, `test_text_formats`,
-`test_openyge_frame`, `test_openyge_status`, `test_openyge_params`, `test_esc_profiles`, `test_esc_profile_family`,
+`test_openyge_frame`, `test_openyge_status`, `test_openyge_params`, `test_openyge_map`,
+`test_openyge_guard`, `test_openyge_session`, `test_openyge_session_write`, `test_openyge_file`, `test_esc_profiles`, `test_esc_profile_family`,
 `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`,
 `test_esc_stick_entry`, `test_esc_stick_tap`, `test_esc_stick_profile_timing`, `test_esc_stick_marker`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`,
 `test_sense_parts`, `test_sense_map`, `test_sense_limit`, `test_sense_svc`,
@@ -1870,14 +1887,14 @@ The host suite is 643 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_sense_trace_setup`, `test_sense_trace_lines`, `test_tone`, `test_edge_ring`,
 `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_pass_decode`, `test_pass_ring`, `test_pass_pio`, `test_pass_page`, `test_tone_link`, `test_endpoints_link`,
 `test_hitec_rx_link`, `test_knob`, `test_panel_i2c`, `test_bind_link`, `test_out16`, `test_servo_link`,
-`test_servo_link_restart`, `test_logview`, `test_logview_report`, `test_logview_plot`,
+`test_servo_link_restart`, `test_logview`, `test_logview_preset`, `test_logview_graph`, `test_logview_report`, `test_logview_plot`,
 `test_logview_rank`, `test_logview_pages`, `test_logview_tabs`, `test_logview_delete`,
 `test_logview_touch`, `test_logview_layout`, `test_logview_row`, `test_log_name`,
 `test_log_take`, `test_card_tree`, `test_fm_tree`, `test_fm_ops`, `test_fm_logname`, `test_fm_match`,
 `test_fm_recheck`, `test_fm_req`, `test_files_screen`, `test_files_ops`, `test_files_open`,
 `test_files_view`, `test_files_edit`, `test_files_save`, `test_files_changed`,
 `test_files_rescan`, `test_logs_strip`, `test_textkey_editor`, `test_textkey_see`,
-`test_textkey_cursor`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_servo_runlog`,
+`test_textkey_cursor`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_log_info`, `test_log_preset`, `test_log_marks`, `test_servo_runlog`,
 `test_servo_runlog_cols`, `test_servo_log_figures`, `test_log_cadence`, `test_perf_watch`, `test_pass_stats`, `test_report_lines`, `test_report_steps`,
 `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`,
 `test_kst_pio`, `test_kst_port`, `test_kst_port_cut`, `test_kst_link`, `test_prog_port`,
@@ -2250,6 +2267,39 @@ session error, TORN and LOST included, the line parked and the supply off.
 `test_esc_port_gate` runs the page with the safety gate and PROG_SUPPLY: no ARM stored in
 the hold arms the bank at the CLOSE, and an error switches PROG_SUPPLY off.
 `test_console_tunnel` and `test_esc_console` run the console's `esc` command on the page.
+`test_yge_port`, `test_yge_port_stop` and `test_yge_port_gate` run the YGE_PROG and YGE_DATA
+pages (`shared/outputs/yge_port.c`) on the simulated ESC of `test/host/oy_sim.h`, with the
+pin's, the line's and the supply's hooks faked (`test/host/yge_port_rig.h`): every refusal of
+OPEN, ENTER and WRITE, STOPPING at 49ms and 50ms, the switched entry in its order, BY HAND at
+60000ms and 60001ms, a read and a write, CLOSE and LEAVE while writing, a stop, an abort and
+a lost link in each state and in a write, the link silent 199ms and 200ms and the heartbeat
+lost through the safety gate, each session error and a supply gone with the line parked and
+the supply and PROG_SUPPLY off, and an IOmcu restart freeing the port. `test_yge_console`
+runs the console's `yge` command on the page.
+`test_yge_link`, `test_yge_link_fetch`, `test_yge_prog`, `test_yge_prog_ends` and `test_yge_prog_base` run the panel's half
+(`shared/bench/yge_link.c`, `yge_prog.c`, `yge_prog_file.c`) against that page
+(`test/host/yge_link_rig.h`): the CLOSE at link-up after a panel restart, again 1000ms after
+`WRITING` and `NOT_BACK`, none over a link that came back; the key with ENTER and WRITE only;
+the read copy in 1 and 2 blocks against its CRC, a wrong one fetched 3 times and given up;
+9 and 10 failed reads; a FAULT counted on its edge and acted on with every output off; ARM
+refused while the port is held; a stop latched letting only CLOSE, LEAVE and ABORT through;
+the first write's backup to the card, without a card kept in RAM, a card silent 9999ms and
+10000ms; every refusal of CONNECT and WRITE sending nothing; a file loaded against the read
+copy; each way a request ends and each result of the page with its own word, a stop or an ARM
+between OPEN and ENTER, a command never carried out taken back at 2000ms; a draft of an earlier
+read refused on the panel and, sent past it, by the page as `STALE` with no frame to the ESC, and a
+loaded draft ended by the next read.
+`test_yge_card` runs the card's side (`shared/bench/yge_card.c`): the backup saved as
+`YGE001-5712`, a list in pages of 12, a load at and past 4620B, each refusal of the card.
+`test_yge_panel`, `test_yge_panel_write`, `test_yge_panel_stages` and `test_yge_panel_screens`
+run the screens (`shared/ui/yge_panel*.c`, `test/host/yge_panel_rig.h`) on that bench: CONNECT
+and WRITE released at 1999ms with nothing sent and held to 2000ms; WRITE greyed with no change,
+the backup before the first write, no card keeping RAM, a card silent 10000ms sending no write;
+a choice listing only its writable values and the keypad refusing outside them; the CHECK line;
+LEAVE and READ AGAIN over edits a page held 2s; a file loaded; a stop leaving CLEAR STOP and PIN
+BACK; ABORT on the press with another finger down; a link loss closing the editors; another
+writer's pin released; BY HAND; the revision unchanged at rest; every text and row in its field
+in English and German; every page drawn and every message said in both languages.
 `test_outputs_hw` and `test_outputs_hw_ports` hold that a held slot or DShot port is let go
 alone and comes back the same.
 
@@ -2436,7 +2486,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-1038 committed screenshots to the current render, 519 in English and the same 519 in German, and `render_ui.py --fit` fails on a string that
+1102 committed screenshots to the current render, 551 in English and the same 551 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -2470,13 +2520,13 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/touch/touch_map.c` | 128 | 128 | 100.0% |
 | `shared/touch/touch_merge.c` | 165 | 165 | 100.0% |
 | `shared/ui/ui_theme.c` | 47 | 46 | 97.9% |
-| `shared/ui/ui_widgets.c` | 432 | 424 | 98.2% |
+| `shared/ui/ui_widgets.c` | 432 | 425 | 98.4% |
 | `shared/ui/ui_icons.c` | 199 | 199 | 100.0% |
 | `shared/ui/ui_band.c` | 385 | 372 | 96.6% |
 | `shared/ui/ui_help.c` | 400 | 388 | 97.0% |
 | `shared/ui/help_outputs.c` | 74 | 72 | 97.3% |
 | `shared/ui/help_setup.c` | 95 | 92 | 96.8% |
-| `shared/ui/help_logs.c` | 54 | 53 | 98.2% |
+| `shared/ui/help_logs.c` | 71 | 69 | 97.2% |
 | `shared/ui/help_files.c` | 24 | 23 | 95.8% |
 | `shared/ui/help_upd.c` | 78 | 75 | 96.2% |
 | `shared/ui/help_wifi.c` | 59 | 59 | 100.0% |
@@ -2486,7 +2536,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_tabs.c` | 97 | 89 | 91.8% |
 | `shared/ui/ui_workbench.c` | 65 | 65 | 100.0% |
 | `shared/ui/ui_target_row.c` | 93 | 92 | 98.9% |
-| `shared/ui/prog_registry.c` | 438 | 436 | 99.5% |
+| `shared/ui/prog_registry.c` | 440 | 438 | 99.5% |
 | `shared/ui/ui_text.c` | 140 | 139 | 99.3% |
 | `shared/ui/ui_router.c` | 612 | 600 | 98.0% |
 | `shared/ui/ui_router_alert.c` | 36 | 36 | 100.0% |
@@ -2500,9 +2550,9 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/motor_draw.c` | 397 | 388 | 97.7% |
 | `shared/ui/motor_workbench.c` | 172 | 166 | 96.5% |
 | `shared/ui/motor_settings_page.c` | 88 | 88 | 100.0% |
-| `shared/ui/motor_program_page.c` | 193 | 185 | 95.8% |
+| `shared/ui/motor_program_page.c` | 198 | 187 | 94.4% |
 | `shared/ui/motor_logname.c` | 191 | 185 | 96.9% |
-| `shared/ui/motor_guide.c` | 68 | 66 | 97.1% |
+| `shared/ui/motor_guide.c` | 72 | 70 | 97.2% |
 | `shared/ui/supply_screen.c` | 597 | 584 | 97.8% |
 | `shared/ui/supply_events.c` | 329 | 328 | 99.7% |
 | `shared/ui/supply_draw.c` | 414 | 395 | 95.4% |
@@ -2523,21 +2573,21 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_board.c` | 56 | 56 | 100.0% |
 | `shared/ui/servo_screen.c` | 374 | 363 | 97.1% |
 | `shared/ui/servo_screen_sweep.c` | 509 | 486 | 95.5% |
-| `shared/ui/servo_screen_link.c` | 424 | 415 | 97.9% |
+| `shared/ui/servo_screen_link.c` | 429 | 420 | 97.9% |
 | `shared/ui/servo_screen_touch.c` | 313 | 307 | 98.1% |
 | `shared/ui/servo_screen_draw.c` | 466 | 440 | 94.4% |
 | `shared/ui/servo_settings_panel.c` | 683 | 626 | 91.7% |
 | `shared/ui/servo_settings_draw.c` | 348 | 316 | 90.8% |
-| `shared/ui/servo_test_panel.c` | 463 | 454 | 98.1% |
+| `shared/ui/servo_test_panel.c` | 467 | 457 | 97.9% |
 | `shared/ui/servo_test_ready.c` | 356 | 348 | 97.8% |
 | `shared/ui/servo_test_list.c` | 53 | 49 | 92.5% |
-| `shared/ui/servo_limit_panel.c` | 337 | 325 | 96.4% |
+| `shared/ui/servo_limit_panel.c` | 343 | 331 | 96.5% |
 | `shared/ui/servo_limit_ready.c` | 295 | 287 | 97.3% |
 | `shared/ui/servo_limit_card.c` | 206 | 184 | 89.3% |
 | `shared/ui/servo_limit_seam.c` | 90 | 86 | 95.6% |
-| `shared/ui/servo_workbench.c` | 178 | 174 | 97.8% |
+| `shared/ui/servo_workbench.c` | 183 | 179 | 97.8% |
 | `shared/ui/servo_rudder_panel.c` | 479 | 474 | 99.0% |
-| `shared/ui/servo_rudder_auto_panel.c` | 671 | 612 | 91.2% |
+| `shared/ui/servo_rudder_auto_panel.c` | 674 | 615 | 91.2% |
 | `shared/ui/servo_rudder_auto_ready.c` | 310 | 304 | 98.1% |
 | `shared/ui/servo_ready.c` | 554 | 538 | 97.1% |
 | `shared/ui/servo_power_view.c` | 95 | 89 | 93.7% |
@@ -2546,9 +2596,10 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_rudder_flap.c` | 101 | 99 | 98.0% |
 | `shared/ui/servo_guide.c` | 309 | 304 | 98.4% |
 | `shared/ui/servo_fn.c` | 85 | 84 | 98.8% |
-| `shared/ui/servo_hub.c` | 214 | 207 | 96.7% |
+| `shared/ui/servo_hub.c` | 215 | 208 | 96.7% |
 | `shared/ui/servo_footer.c` | 161 | 158 | 98.1% |
 | `shared/ui/servo_lists.c` | 252 | 249 | 98.8% |
+| `shared/ui/run_info.c` | 22 | 22 | 100.0% |
 | `shared/ui/servo_pick.c` | 99 | 99 | 100.0% |
 | `shared/ui/servo_run_supply.c` | 82 | 81 | 98.8% |
 | `shared/ui/servo_angle_pick.c` | 260 | 252 | 96.9% |
@@ -2580,10 +2631,13 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/esc_stick_draw.c` | 446 | 434 | 97.3% |
 | `shared/ui/esc_stick_draw_run.c` | 595 | 551 | 92.6% |
 | `shared/ui/esc_stick_guide.c` | 72 | 71 | 98.6% |
-| `shared/ui/log_viewer_screen.c` | 343 | 334 | 97.4% |
-| `shared/ui/log_viewer_load.c` | 234 | 212 | 90.6% |
-| `shared/ui/log_viewer_draw.c` | 430 | 416 | 96.7% |
-| `shared/ui/log_viewer_events.c` | 457 | 445 | 97.4% |
+| `shared/ui/log_viewer_screen.c` | 354 | 345 | 97.5% |
+| `shared/ui/log_viewer_load.c` | 252 | 230 | 91.3% |
+| `shared/ui/log_viewer_draw.c` | 444 | 430 | 96.8% |
+| `shared/ui/log_viewer_events.c` | 496 | 484 | 97.6% |
+| `shared/ui/log_graph.c` | 155 | 151 | 97.4% |
+| `shared/ui/log_graph_xy.c` | 85 | 80 | 94.1% |
+| `shared/ui/log_graph_draw.c` | 250 | 231 | 92.4% |
 | `shared/ui/logs_strip.c` | 40 | 37 | 92.5% |
 | `shared/ui/log_select.c` | 56 | 56 | 100.0% |
 | `shared/ui/files_screen.c` | 703 | 681 | 96.9% |
@@ -2640,22 +2694,22 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/imu_screen.c` | 373 | 364 | 97.6% |
 | `shared/ui/imu_screen_draw.c` | 132 | 131 | 99.2% |
 | `shared/ui/imu_guide.c` | 33 | 32 | 97.0% |
-| `shared/ui/dial_ctl.c` | 256 | 240 | 93.8% |
+| `shared/ui/dial_ctl.c` | 266 | 250 | 94.0% |
 | `shared/ui/dial_stream.c` | 242 | 234 | 96.7% |
 | `shared/ui/dial_panel.c` | 231 | 219 | 94.8% |
 | `shared/ui/ui_focus.c` | 430 | 381 | 88.6% |
 | `shared/ui/ui_focus_list.c` | 71 | 67 | 94.4% |
 | `shared/ui/ui_focus_screens.c` | 23 | 22 | 95.7% |
-| `shared/ui/wireless_pane.c` | 243 | 240 | 98.8% |
-| `shared/ui/wireless_pnode.c` | 150 | 148 | 98.7% |
-| `shared/ui/wl_search.c` | 175 | 162 | 92.6% |
-| `shared/ui/wl_search_draw.c` | 139 | 132 | 95.0% |
-| `shared/ui/pnode_ctl.c` | 299 | 289 | 96.7% |
+| `shared/ui/wireless_pane.c` | 246 | 243 | 98.8% |
+| `shared/ui/wireless_pnode.c` | 153 | 151 | 98.7% |
+| `shared/ui/wl_search.c` | 219 | 205 | 93.6% |
+| `shared/ui/wl_search_draw.c` | 147 | 140 | 95.2% |
+| `shared/ui/pnode_ctl.c` | 312 | 302 | 96.8% |
 | `shared/ui/pnode_meter.c` | 261 | 257 | 98.5% |
 | `shared/ui/settings_panes.c` | 43 | 43 | 100.0% |
-| `shared/ui/bal_ctl.c` | 363 | 346 | 95.3% |
+| `shared/ui/bal_ctl.c` | 374 | 357 | 95.5% |
 | `shared/ui/node_balance.c` | 346 | 339 | 98.0% |
-| `shared/ui/wireless_bal.c` | 190 | 187 | 98.4% |
+| `shared/ui/wireless_bal.c` | 193 | 190 | 98.5% |
 | `shared/ui/motor_balance.c` | 184 | 181 | 98.4% |
 | `shared/ui/sbk_ctl.c` | 290 | 264 | 91.0% |
 | `shared/ui/sbk_screen.c` | 160 | 146 | 91.2% |
@@ -2667,10 +2721,13 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/settings/settings_file.c` | 370 | 364 | 98.4% |
 | `shared/settings/settings_backup.c` | 164 | 159 | 97.0% |
 | `shared/logfile/log_numbers.c` | 396 | 374 | 94.4% |
-| `shared/logfile/log_csv.c` | 514 | 488 | 94.9% |
+| `shared/logfile/log_csv.c` | 536 | 509 | 95.0% |
 | `shared/logfile/log_reader.c` | 212 | 201 | 94.8% |
-| `shared/logfile/log_fields.c` | 72 | 71 | 98.6% |
+| `shared/logfile/log_fields.c` | 82 | 81 | 98.8% |
+| `shared/logfile/log_preset.c` | 49 | 49 | 100.0% |
+| `shared/logfile/log_marks.c` | 239 | 233 | 97.5% |
 | `shared/logfile/log_name.c` | 171 | 171 | 100.0% |
+| `shared/logfile/log_info.c` | 117 | 116 | 99.2% |
 | `shared/logfile/log_take.c` | 96 | 95 | 99.0% |
 | `shared/logfile/card_tree.c` | 77 | 77 | 100.0% |
 | `shared/logfile/fault_log.c` | 58 | 58 | 100.0% |
@@ -2703,25 +2760,31 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/servo/servo_sync.c` | 181 | 175 | 96.7% |
 | `shared/servo/servo_sweep.c` | 118 | 114 | 96.6% |
 | `shared/servo/servo_move.c` | 145 | 145 | 100.0% |
-| `shared/servo/servo_test.c` | 809 | 796 | 98.4% |
+| `shared/servo/servo_test.c` | 810 | 797 | 98.4% |
 | `shared/servo/servo_brownout.c` | 35 | 35 | 100.0% |
 | `shared/servo/servo_rudder.c` | 45 | 45 | 100.0% |
 | `shared/servo/servo_str.c` | 53 | 53 | 100.0% |
 | `shared/servo/servo_report.c` | 545 | 545 | 100.0% |
-| `shared/servo/servo_limrun.c` | 654 | 628 | 96.0% |
-| `shared/servo/servo_limrun_report.c` | 316 | 313 | 99.0% |
+| `shared/servo/servo_limrun.c` | 658 | 632 | 96.0% |
+| `shared/servo/servo_limrun_report.c` | 331 | 328 | 99.1% |
 | `shared/servo/servo_gap.c` | 33 | 33 | 100.0% |
 | `shared/servo/servo_angle.c` | 33 | 33 | 100.0% |
 | `shared/servo/servo_rudder_auto.c` | 697 | 681 | 97.7% |
-| `shared/servo/servo_rudder_auto_report.c` | 390 | 389 | 99.7% |
+| `shared/servo/servo_rudder_auto_report.c` | 398 | 397 | 99.8% |
 | `shared/servo/servo_rudder_auto_verify.c` | 31 | 30 | 96.8% |
 | `shared/servo/servo_rudder_auto_search.c` | 198 | 190 | 96.0% |
 | `shared/servo/servo_settle.c` | 63 | 63 | 100.0% |
 | `shared/servo/servo_limrun_family.c` | 29 | 29 | 100.0% |
+| `shared/servo/servo_limrun_rows.c` | 58 | 58 | 100.0% |
 | `shared/servo/servo_start_seq.c` | 205 | 198 | 96.6% |
 | `protocols/openyge/openyge_frame.c` | 173 | 170 | 98.3% |
 | `protocols/openyge/openyge_status.c` | 39 | 39 | 100.0% |
 | `protocols/openyge/openyge_params.c` | 66 | 66 | 100.0% |
+| `protocols/openyge/openyge_map.c` | 29 | 29 | 100.0% |
+| `protocols/openyge/openyge_guard.c` | 110 | 110 | 100.0% |
+| `protocols/openyge/openyge_pio.c` | 86 | 86 | 100.0% |
+| `protocols/openyge/openyge_session.c` | 272 | 269 | 98.9% |
+| `protocols/openyge/openyge_file.c` | 348 | 342 | 98.3% |
 | `shared/esc/esc_json.c` | 625 | 583 | 93.3% |
 | `shared/esc/esc_json_lex.c` | 292 | 285 | 97.6% |
 | `shared/esc/esc_registry.c` | 168 | 166 | 98.8% |
@@ -2782,6 +2845,8 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/outputs/esc_port.c` | 585 | 585 | 100.0% |
 | `shared/outputs/console_tunnel.c` | 78 | 78 | 100.0% |
 | `shared/outputs/esc_console.c` | 92 | 92 | 100.0% |
+| `shared/outputs/yge_port.c` | 489 | 484 | 99.0% |
+| `shared/outputs/yge_console.c` | 90 | 90 | 100.0% |
 | `shared/outputs/page_console.c` | 585 | 561 | 95.9% |
 | `shared/outputs/prog_port.c` | 460 | 460 | 100.0% |
 | `shared/bench/kst_link.c` | 450 | 448 | 99.6% |
@@ -2789,6 +2854,15 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/bench/esc_prog.c` | 371 | 346 | 93.3% |
 | `shared/bench/esc_prog_file.c` | 173 | 158 | 91.3% |
 | `shared/bench/esc_card.c` | 121 | 114 | 94.2% |
+| `shared/bench/yge_link.c` | 536 | 509 | 95.0% |
+| `shared/bench/yge_prog.c` | 402 | 390 | 97.0% |
+| `shared/bench/yge_prog_file.c` | 138 | 129 | 93.5% |
+| `shared/bench/yge_card.c` | 101 | 101 | 100.0% |
+| `shared/ui/yge_panel.c` | 367 | 337 | 91.8% |
+| `shared/ui/yge_panel_edit.c` | 318 | 289 | 90.9% |
+| `shared/ui/yge_panel_touch.c` | 325 | 290 | 89.2% |
+| `shared/ui/yge_panel_draw.c` | 337 | 323 | 95.8% |
+| `shared/ui/yge_panel_text.c` | 193 | 193 | 100.0% |
 | `shared/ui/esc_wire_edit.c` | 391 | 382 | 97.7% |
 | `shared/ui/esc_wire_touch.c` | 357 | 340 | 95.2% |
 | `shared/ui/esc_wire_draw.c` | 449 | 438 | 97.5% |
@@ -2878,7 +2952,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/bench/hitec_rx_link.c` | 57 | 57 | 100.0% |
 | `shared/bench/knob.c` | 47 | 47 | 100.0% |
 | `shared/bench/panel_i2c.c` | 10 | 10 | 100.0% |
-| `shared/bench/log_writer.c` | 317 | 305 | 96.2% |
+| `shared/bench/log_writer.c` | 332 | 320 | 96.4% |
 | `shared/bench/log_cols.c` | 54 | 54 | 100.0% |
 | `shared/bench/log_cadence.c` | 50 | 50 | 100.0% |
 | `shared/bench/perf_watch.c` | 68 | 68 | 100.0% |
@@ -2938,7 +3012,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **106925** | **104635** | **97.9%** |
+| **total** | **112345** | **109844** | **97.8%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -3193,7 +3267,7 @@ stop, a pulled cable, the input lowered under a live set point in 0.5V steps.
 `stack_check.py --iomcu` measures 1560 bytes for the deepest chain and 528 for one interrupt
 on the 4096-byte stack, 1752 bytes above the 256-byte margin. The figures are those of the
 image CI builds with arm-none-eabi-gcc 14.2.1, and `stack_check.py --iomcu --check-doc`
-holds them. The depth is a lower bound: 266 calls through a register are not followed. The
+holds them. The depth is a lower bound: 316 calls through a register are not followed. The
 stack has no guard (`PICO_USE_STACK_GUARDS` is off). Not measured on hardware. An image
 built with another option set is measured only when CI builds it.
 

@@ -108,7 +108,11 @@ typedef struct {
     /* what came out */
     char report[16384];
     size_t report_len;
+    char csv[49152];             /* LIMITnnn.CSV as handed out            */
+    size_t csv_len;
+    unsigned csv_lines;          /* its lines, the header included        */
     unsigned opens, lines, ends;
+    unsigned opens_txt;          /* of opens, those of a report alone     */
     unsigned phases;             /* a bit per phase seen                  */
 } rig_t;
 
@@ -215,8 +219,18 @@ static inline void drain(void)
         if (k == SERVO_TEST_OUT_NONE) {
             return;
         }
-        if (k == SERVO_TEST_OUT_OPEN_TXT) {
+        if (k == SERVO_TEST_OUT_OPEN || k == SERVO_TEST_OUT_OPEN_TXT) {
             ++g.opens;
+            g.opens_txt += k == SERVO_TEST_OUT_OPEN_TXT ? 1u : 0u;
+        } else if (k == SERVO_TEST_OUT_CSV) {
+            const size_t n = strlen(text);
+            ++g.csv_lines;
+            if (g.csv_len + n + 2u < sizeof(g.csv)) {
+                memcpy(g.csv + g.csv_len, text, n);
+                g.csv_len += n;
+                g.csv[g.csv_len++] = '\n';
+                g.csv[g.csv_len] = '\0';
+            }
         } else if (k == SERVO_TEST_OUT_END) {
             ++g.ends;
         } else if (k == SERVO_TEST_OUT_TXT) {

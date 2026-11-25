@@ -16,6 +16,7 @@
 
 #include "ewline_console.h"
 #include "console_tunnel.h"
+#include "oyline_console.h"
 #include "page_console.h"
 
 /**
@@ -36,10 +37,23 @@ static console_tunnel_t s_tunnel;
  */
 static char s_out[PAGE_CONSOLE_OUT_LINE * 2u];
 
+/**
+ * @brief The console's commands beyond the page console's: the drivers'
+ *        tests.
+ * @param ctx unused
+ * @param tok the line's tokens
+ * @param n   how many
+ * @return true when the line was one of theirs
+ */
+static bool console_ext_line(void *ctx, char **tok, unsigned n)
+{
+    return ewline_console_line(ctx, tok, n) || oyline_console_line(ctx, tok, n);
+}
+
 void console_hw_init(const link_dev_t *dev)
 {
     page_console_init(&s_console, dev);
-    page_console_set_ext(&s_console, ewline_console_line, NULL);
+    page_console_set_ext(&s_console, console_ext_line, NULL);
     console_tunnel_init(&s_tunnel, &s_console, (uint16_t)get_rand_32());
 }
 
@@ -54,6 +68,7 @@ void console_hw_pass(void)
     }
     page_console_poll(&s_console);
     ewline_console_pass();
+    oyline_console_pass();
     /* Room as the transmit buffer has it now: a write of no more than that
      * returns without waiting for the host.  The room filled, a line cut
      * where it ends, so a line of any length leaves whatever

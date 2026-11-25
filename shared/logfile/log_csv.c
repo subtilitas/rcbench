@@ -159,6 +159,7 @@ void log_csv_opts_default(log_csv_opts_t *opts)
     opts->ambiguous_as = LOG_AMBIG_THOUSANDS;
     opts->time_index = LOG_TIME_AUTO;
     opts->max_rows = LOG_DEFAULT_MAX_ROWS;
+    opts->max_columns = LOG_MAX_COLUMNS;
 }
 
 /**
@@ -529,7 +530,11 @@ static log_err_t scan_geometry(log_source_t *src, char delimiter,
         out->cut_row = reader.cut;   /* a header cut off is no header */
         return LOG_ERR_NO_HEADER;
     }
-    if (s_work.row.total > LOG_MAX_COLUMNS) {
+    /* The caller's ceiling, held to the build's: 0 is the build's. */
+    const int ceiling = (opts->max_columns > 0
+                         && opts->max_columns < LOG_MAX_COLUMNS)
+                            ? opts->max_columns : LOG_MAX_COLUMNS;
+    if (s_work.row.total > ceiling) {
         return LOG_ERR_TOO_MANY_COLUMNS;
     }
     out->n_columns = s_work.row.total;
@@ -1182,4 +1187,37 @@ log_err_t log_csv_build(log_source_t *src, const log_analysis_t *a,
     }
     series_stats(out, count);
     return LOG_OK;
+}
+
+log_err_t log_csv_each_row(log_source_t *src, const log_analysis_t *a,
+                           log_row_fn fn, void *ctx)
+{
+    if (src == NULL || a == NULL || fn == NULL) {
+        return LOG_ERR_ARG;
+    }
+    if (!src->rewind(src->ctx)) {
+        return LOG_ERR_READ;
+    }
+    log_reader_t reader;
+    log_reader_init(&reader, src);
+    if (!next_row(&reader, a->delimiter, &s_work.row)) {
+        return LOG_ERR_NO_HEADER;
+    }
+    /* The rows log_csv_build() takes, in its order: blank ones skipped, no
+     * more than pass one counted. */
+    const char *cells[LOG_MAX_COLUMNS];
+    int i = 0;
+    while (i < a->row_count && next_row(&reader, a->delimiter, &s_work.row)) {
+        if (!row_has_content(&s_work.row)) {
+            continue;
+        }
+        for (int c = 0; c < s_work.row.n; ++c) {
+            cells[c] = trim(s_work.row.fields[c]);
+        }
+        if (!fn(ctx, i, cells, s_work.row.n)) {
+            break;
+        }
+        ++i;
+    }
+    return reader.failed ? LOG_ERR_READ : LOG_OK;
 }

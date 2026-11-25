@@ -14,7 +14,9 @@
  *     at a pitch of 48px, drawn 44px tall from x 16; the scroll bar
  *     x 952 to 1008, from y 138, 284px tall;
  *   - the footer y 440 to 492: RESCAN x 8, DELETE x 728, OPEN x 876,
- *     140px each, WI-FI x 156, 100px; the import's four buttons 246px from x 8, 8px apart; the plot's BACK x 8 (140px), < x 156 and > x 260 (96px);
+ *     140px each, WI-FI x 156, 100px; the import's four buttons 246px from x 8, 8px apart; the plot's BACK x 8 (140px), < x 156 and > x 260 (96px), MORE x 876
+ *     (140px); MORE's list 300 x 64px right-aligned from y 368, its row
+ *     COLUMNS x 720 to 1012, y 372 to 428;
  *   - the import's column list from x 416, y 44: its rows at a pitch of
  *     48px under a 30px heading;
  *   - the plot x 16 to 1008, y 88 to 404;
@@ -101,6 +103,9 @@
 #define LV_PV_BACK_CX 78            /**< BACK under the plot. */
 #define LV_PV_PREV_CX 204           /**< <. */
 #define LV_PV_NEXT_CX 308           /**< >. */
+#define LV_PV_MORE_CX 946           /**< MORE. */
+#define LV_MORE_ROW_CX 866          /**< MORE's list, its row COLUMNS. */
+#define LV_MORE_ROW_CY 400          /**< And its row. */
 
 /** @brief The empty list's box: the reason's line from LV_EMPTY_WHY_Y, what
  *  the folder holds from LV_EMPTY_HINT_Y, both 24px tall, x LV_EMPTY_X0
@@ -113,3 +118,10 @@
 #define LV_DQ_CY      332           /**< The DELETE question's buttons. */
 #define LV_DQ_CANCEL_CX 336         /**< CANCEL. */
 #define LV_DQ_DELETE_CX 688         /**< DELETE. */
+
+/* The graph of an XY file (log_graph_int.h): the series' chips in the
+ * chips' row, 240 x 44px from x 8, y 28, 16px apart; RUDDR's two tabs in
+ * the fourth slot, 115 x 38px from x 779, y 31, 4px apart. */
+#define LV_GR_CHIP_CX(j) (8 + (j) * 256 + 120)  /**< Chip slot j. */
+#define LV_GR_CHIP_CY    50                     /**< The chips' middle. */
+#define LV_GR_TAB_CX(i)  (779 + (i) * 119 + 57) /**< SEARCH, STEPS. */

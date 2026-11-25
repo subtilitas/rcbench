@@ -491,12 +491,13 @@ jobs:
       # protocol cores and the host tests.  A module's rp2350/ folder is not
       # in the host build; cppcheck reads it with the firmware.
       # render_screen.c, render_files.c, render_hitec.c, render_esc_wire.c,
-      # render_help.c, render_shot.c, render_rudder.c, render_imu.c,
-      # render_dial.c, render_node.c, render_upd_wiz.c, render_outputs.c and
-      # bench_frame.c are built by tools/render_ui.py, tools/render_dial.py,
-      # tools/render_node.py and tools/frame_cost.py, not by CMake, so they
-      # have no compile command here; the three render tools build the first
-      # twelve with -Werror, cppcheck reads all thirteen.
+      # render_yge.c, render_help.c, render_shot.c, render_rudder.c,
+      # render_imu.c, render_dial.c, render_node.c, render_upd_wiz.c,
+      # render_outputs.c and bench_frame.c are built by tools/render_ui.py,
+      # tools/render_dial.py, tools/render_node.py and tools/frame_cost.py,
+      # not by CMake, so they have no compile command here; the three render
+      # tools build the first thirteen with -Werror, cppcheck reads all
+      # fourteen.
       # Configuration and the reason for each disabled check are in
       # .clang-tidy and test/host/.clang-tidy.  Every file runs on every
       # run; no result is kept between runs.
@@ -509,6 +510,7 @@ jobs:
                         -e 'test/host/render_files.c' \
                         -e 'test/host/render_hitec.c' \
                         -e 'test/host/render_esc_wire.c' \
+                        -e 'test/host/render_yge.c' \
                         -e 'test/host/render_help.c' \
                         -e 'test/host/render_shot.c' \
                         -e 'test/host/render_rudder.c' \
@@ -538,7 +540,7 @@ jobs:
       # rules ask for a Google-style docstring on every module, public
       # function, class and method; no file is excused them.
       - name: ruff
-        run: ruff check tools/ test/tools/ test/host/ hardware/kicad/ hardware/mechanical/
+        run: ruff check tools/ test/tools/ test/host/ hardware/kicad/ hardware/mechanical/ testbench/
 
   # cppcheck runs in a job of its own beside clang-tidy, which checks every
   # file on every run: 4min to 9min (minutes) on the runners measured.
@@ -700,7 +702,8 @@ jobs:
       # checked-in tables were made with.  numpy, OpenCASCADE (cadquery-ocp)
       # and OpenCV are what the cases of test_make_video.py,
       # test_dial_base.py, test_panel_7b.py and test_ina228_xt90.py import;
-      # shapely is what test_rbmod_v2.py's reader cases import;
+      # shapely is what test_rbmod_v2.py's reader cases import; pyserial
+      # is what test_ygesim.py's loop:// case opens;
       # the model checks below the pytest step use the first two as well.
       # A case whose tool or module is missing fails here and skips on a
       # developer's machine (conftest.py, skip_or_fail and import_or_fail).
@@ -708,7 +711,7 @@ jobs:
         run: >-
           python3 -m pip install --quiet pytest==9.1.1 markdown-it-py==3.0.0
           pillow==12.3.0 numpy==2.5.3 cadquery-ocp==8.0.1.1.0
-          opencv-python-headless==5.0.0.93 shapely==2.2.0
+          opencv-python-headless==5.0.0.93 shapely==2.2.0 pyserial==3.5
 
       # test_check_protocols.py holds the check's reading of a .pio file
       # to the C pioasm writes.  pioasm is built from the pinned pico-sdk
@@ -1258,7 +1261,7 @@ jobs:
           arm-none-eabi-nm firmware/iomcu/build-console/rcbench-iomcu.elf \
             | grep -q page_console_key
           if arm-none-eabi-nm firmware/iomcu/build/rcbench-iomcu.elf \
-              | grep -iE 'page_console|console_hw|console_tunnel|ewline'; then
+              | grep -iE 'page_console|console_hw|console_tunnel|ewline|oyline'; then
             echo "::error::the default image holds console code"
             exit 1
           fi

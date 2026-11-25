@@ -208,6 +208,21 @@ pnode_scan_t pnode_ctl_scan(pnode_ctl_t *c, bool armed, uint32_t now_ms);
 bool pnode_ctl_bind(pnode_ctl_t *c, uint8_t i, uint32_t now_ms);
 
 /**
+ * @brief SEARCH's UNBIND: forget the bound node, at once.  The link ends
+ *        (a DISCONNECT, or the connect cancelled), cfg.addr and cfg.name
+ *        are cleared, the board is no longer known and bind_seq counts
+ *        it, so the frame writes the empty address back to SETUP with a
+ *        save.  The link's end is no loss (no LOST, as for another bind),
+ *        but the readings stop: a run that counts on the node meets the
+ *        dropout rule (pnode_meter.h) as on a lost link and ends as an
+ *        error once the gap passes SERVO_GAP_MAX_MS (300ms).
+ * @param c      The controller.
+ * @param now_ms The clock.
+ * @return false with nothing bound or @p c NULL: nothing changes.
+ */
+bool pnode_ctl_unbind(pnode_ctl_t *c, uint32_t now_ms);
+
+/**
  * @brief One event of the host stack: to the central; a notification of
  *        STREAM to the meter; INFO's read taken.
  * @param c      The controller.

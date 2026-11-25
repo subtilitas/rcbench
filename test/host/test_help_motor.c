@@ -132,11 +132,15 @@ TEST_CASE(program_marks_each_row_with_its_own_text)
     REQUIRE(motor_screen_task() == (int)UI_WB_PROGRAM);
     REQUIRE(ui_help_page(motor_screen(), false, 0, &p));
     CHECK_EQ(p.title, TX_HG_MO_TITLE_PROG);
-    CHECK_EQ(p.count, 4);
+    CHECK_EQ(p.count, 5);
     CHECK(marks(&p, TX_HG_MO_STICK));
     CHECK(marks(&p, TX_HG_MO_WIRE));
+    CHECK(marks(&p, TX_HG_MO_YGE));
     CHECK_STR_EQ(p.item[1].label, TR(PL_STICK));
     CHECK_STR_EQ(p.item[2].label, TR(PL_ESC_WIRE));
+    CHECK_STR_EQ(p.item[3].label, TR(PL_YGE));
+    /* Each row's mark ends a badge past its name. */
+    CHECK_EQ(p.item[3].rect.w, 12 + 8 * 10 + 36);
     REQUIRE(ui_help_page(motor_screen(), false, 1, &p));
     CHECK_EQ(p.title, TX_HG_MO_TITLE_CTL);
 }

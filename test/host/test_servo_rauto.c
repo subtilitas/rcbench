@@ -21,6 +21,9 @@
  */
 #include "servo_rauto_rig.h"
 
+#include "info_check.h"
+#include "log_csv.h"
+
 TEST_CASE(a_linear_servo_lands_within_tolerance_in_one_write_a_side)
 {
     rig_init(1000u);
@@ -328,16 +331,33 @@ TEST_CASE(the_report_lists_every_step_and_the_csv_one_row_a_step)
     CHECK_EQ(g.run.vn, SERVO_RAUTO_VERIFY_N);
     CHECK_EQ(g.rows, 1u + 6u + 3u + 102u);
     static const char head[] = "step;side (us);write;value;measured (deg);"
-                               "goal (deg);measured (mm);goal (mm);within\n";
+                               "goal (deg);measured (mm);goal (mm);within;"
+                               "kind;pulse (us);current (A);info\n";
     CHECK(strncmp(g.csv, head, sizeof(head) - 1u) == 0);
-    CHECK(strstr(g.csv, "\n1;1000;0;;30.00;27.50;50.00;46.17;0\n") != NULL);
-    CHECK(strstr(g.csv, "\n3;1000;1;138;27.60;27.50;46.33;46.17;1\n") != NULL);
+    CHECK(strstr(g.csv, "\n1;1000;0;;30.00;27.50;50.00;46.17;0;STEP;1000;;\n") != NULL);
+    CHECK(strstr(g.csv, "\n3;1000;1;138;27.60;27.50;46.33;46.17;1;STEP;1000;;\n") != NULL);
     CHECK(strstr(g.csv, "\n6;1000;1;138;27.60;27.50;") != NULL);
-    CHECK(strstr(g.csv, "\n7;1000;V;;27.60;27.50;46.33;46.17;1\n") != NULL);
-    CHECK(strstr(g.csv, "\n9;1500;V;;0.00;0.00;0.00;0.00;1\n") != NULL);
+    CHECK(strstr(g.csv, "\n7;1000;V;;27.60;27.50;46.33;46.17;1;VERIFY;1000;;\n") != NULL);
+    CHECK(strstr(g.csv, "\n9;1500;V;;0.00;0.00;0.00;0.00;1;VERIFY;1500;;\n") != NULL);
     /* The search's positions last: S, the current in mA, the angle. */
-    CHECK(strstr(g.csv, "\n10;1500;S;150;0.00;;;;\n") != NULL);
-    CHECK(strstr(g.csv, ";1000;S;150;-30.00;;;;\n") != NULL);
+    CHECK(strstr(g.csv, "\n10;1500;S;150;0.00;;;;;SEARCH;1500;0.150;\n") != NULL);
+    CHECK(strstr(g.csv, ";1000;S;150;-30.00;;;;;SEARCH;1000;0.150;\n") != NULL);
+    /* Read back by LOGS' reader: 13 columns, a row a measure, the kind a
+     * text column, the current in A on the search's rows only. */
+    {
+        static log_source_t src;
+        static log_mem_ctx_t ctx;
+        log_analysis_t a;
+        log_source_memory(&src, &ctx, g.csv, strlen(g.csv));
+        CHECK_EQ(log_csv_analyse(&src, NULL, &a), LOG_OK);
+        CHECK_EQ(a.n_columns, 13);
+        CHECK_EQ(a.row_count, (int)g.rows - 1);
+        CHECK_EQ(a.ragged_rows, 0);
+        CHECK(!a.columns[9].numeric);
+        CHECK_STR_EQ(a.columns[11].unit, "A");
+        CHECK_EQ(a.columns[11].non_empty, (int)g.run.srow_n);
+        CHECK_EQ(a.columns[10].non_empty, a.row_count);
+    }
 
     /* German, a backup named, no length: the mm columns empty. */
     static const char *de[SERVO_STR_COUNT];
@@ -353,7 +373,7 @@ TEST_CASE(the_report_lists_every_step_and_the_csv_one_row_a_step)
     run_for(RAUTO_MS);
     CHECK(in_report("RCBENCH RUDER-AUTO-BERICHT"));
     CHECK(in_report("Backup:         KST00007.KST"));
-    CHECK(strstr(g.csv, "\n1;1000;0;;30.00;27.50;;;0\n") != NULL);
+    CHECK(strstr(g.csv, "\n1;1000;0;;30.00;27.50;;;0;STEP;1000;;\n") != NULL);
 
     char buf[64];
     CHECK(!servo_rauto_report_line(NULL, 0u, buf, sizeof(buf)));
@@ -742,6 +762,29 @@ TEST_CASE(restore_goes_once_a_read_shows_the_values_back_or_changed)
     }
 }
 
+/* The run's description, info, the last column: on the first row and on
+ * no other, its longest value read back whole, 13 columns, which a reader
+ * of firmware 0.23.17 takes. */
+TEST_CASE(the_first_row_carries_the_run_description)
+{
+    rig_init(0u);
+    g.cfg.len_mm = 100.0f;
+    log_info_t want;
+    info_longest(&want);
+    CHECK_EQ(log_info_format(&want, g.cfg.info, sizeof(g.cfg.info)),
+             LOG_INFO_MAX - 1u);
+    CHECK(start());
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
+    log_info_t got;
+    info_read_back(g.csv, 13, true, &got);
+    info_same(&got, &want);
+    CHECK(strstr(g.csv, "\n1;1000;0;;30.00;27.50;50.00;46.17;0;STEP;1000;;"
+                        "dut=MG90S_METAL_GEAR_NO_123&") != NULL);
+    CHECK(strstr(g.csv, "\n3;1000;1;138;27.60;27.50;46.33;46.17;1;STEP;"
+                        "1000;;\n") != NULL);
+}
+
 int main(void)
 {
     RUN(restore_goes_once_a_read_shows_the_values_back_or_changed);
@@ -765,5 +808,6 @@ int main(void)
     RUN(both_ends_on_one_side_under_twice_the_tolerance_do_not_pass);
     RUN(the_goal_must_exceed_twice_the_tolerance);
     RUN(the_clock_wrap_inside_a_settle_does_not_end_it);
+    RUN(the_first_row_carries_the_run_description);
     return test_summary("servo_rauto");
 }

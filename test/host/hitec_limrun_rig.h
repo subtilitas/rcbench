@@ -71,6 +71,9 @@ typedef struct {
 
     char report[16384];
     size_t report_len;
+    char csv[49152];             /* LIMITnnn.CSV as handed out            */
+    size_t csv_len;
+    unsigned opens, opens_txt;   /* OPEN and OPEN_TXT handed out          */
 } hrig_t;
 
 static hrig_t h;
@@ -150,6 +153,17 @@ static inline void h_drain(void)
         const servo_test_out_t k = servo_limrun_peek(&h.run, &text);
         if (k == SERVO_TEST_OUT_NONE) {
             return;
+        }
+        h.opens += k == SERVO_TEST_OUT_OPEN ? 1u : 0u;
+        h.opens_txt += k == SERVO_TEST_OUT_OPEN_TXT ? 1u : 0u;
+        if (k == SERVO_TEST_OUT_CSV) {
+            const size_t n = strlen(text);
+            if (h.csv_len + n + 2u < sizeof(h.csv)) {
+                memcpy(h.csv + h.csv_len, text, n);
+                h.csv_len += n;
+                h.csv[h.csv_len++] = '\n';
+                h.csv[h.csv_len] = '\0';
+            }
         }
         if (k == SERVO_TEST_OUT_TXT) {
             const size_t n = strlen(text);

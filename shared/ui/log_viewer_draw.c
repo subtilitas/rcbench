@@ -22,7 +22,7 @@
 #include "ui_widgets.h"
 #include "wall_clock.h"
 
-#include "log_viewer_int.h"
+#include "log_graph_int.h"
 
 /* -------------------------------------------------------------- browse --- */
 
@@ -549,11 +549,8 @@ static void render_import(gfx_canvas_t *c)
 
 /* ---------------------------------------------------------------- plot --- */
 
-/**
- * @brief Draws the plot's grid into the band of @p rows rows that starts at
- *        row @p band_y0.
- */
-static void draw_grid_band(gfx_canvas_t *band, int band_y0, int rows)
+/** @brief Draw the plot's grid into a band (log_graph_int.h). */
+void lv_grid_band(gfx_canvas_t *band, int band_y0, int rows)
 {
     for (int i = 1; i < PV_DIV_X; ++i) {
         int x = (PV_W * i) / PV_DIV_X;
@@ -604,7 +601,7 @@ void log_viewer_summary(char *out, size_t n)
         return;
     }
     out[0] = '\0';
-    if (!s.have_data) {
+    if (!s.have_data || lg_summary(out, n)) {
         return;
     }
     if (s.data.time_name[0] != '\0') {
@@ -618,27 +615,12 @@ void log_viewer_summary(char *out, size_t n)
 }
 
 /**
- * @brief Draws the plot view: the summary, the series' chips, the traces in
- *        bands, the time axis and the footer.
+ * @brief Draws the time plot between the summary and the footer: the
+ *        series' chips, the traces in bands, the cursor and the time axis.
  */
-static void render_plot(gfx_canvas_t *c)
+static void render_rows(gfx_canvas_t *c)
 {
     char line[160];
-
-    if (!s.have_data) {
-        const gfx_rect_t box = PV_NONE;
-        char msg[LV_MSG_MAX];
-        const char *why = lv_message(msg, sizeof(msg));
-        ui_panel(c, box, TR(LOG_NOTHING_LOADED), UI_WARN);
-        gfx_text(c, box.x + 24, box.y + 52,
-                 why[0] ? why : TR(LOG_PICK_FIRST),
-                 LV_FONT_BODY, UI_TEXT, 1);
-        return;
-    }
-
-    log_viewer_summary(line, sizeof(line));
-    gfx_text_in(c, gfx_rect_make(LV_L + 4, PV_SUM_Y, LV_W - 8, 20), line,
-                LV_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_LEFT);
 
     /* --- legend, doubling as the cursor readout ------------------------ */
     int ci = (s.cursor >= 0 && s.cursor < s.data.count) ? s.cursor : 0;
@@ -681,7 +663,7 @@ static void render_plot(gfx_canvas_t *c)
         }
         gfx_canvas_init(&band, lv_plot.band, PV_W, rows, PV_W);
         gfx_clear(&band, UI_PANEL_SUNK);
-        draw_grid_band(&band, PV_Y + by, rows);
+        lv_grid_band(&band, PV_Y + by, rows);
         for (int k = 0; k < s.data.n_fields; ++k) {
             draw_trace_band(&band, k, PV_Y + by, rows);
         }
@@ -732,16 +714,52 @@ static void render_plot(gfx_canvas_t *c)
         gfx_text(c, tx, PV_PANEL.y + PV_PANEL.h + 4, t, LV_FONT_FINE,
                  UI_TEXT_FAINT, 1);
     }
+}
+
+/**
+ * @brief Draws the plot view: the summary, the time plot (render_rows()) or
+ *        an XY file's graph (lg_render()), the footer and MORE's list while
+ *        it is open.
+ */
+static void render_plot(gfx_canvas_t *c)
+{
+    char line[160];
+
+    if (!s.have_data) {
+        const gfx_rect_t box = PV_NONE;
+        char msg[LV_MSG_MAX];
+        const char *why = lv_message(msg, sizeof(msg));
+        ui_panel(c, box, TR(LOG_NOTHING_LOADED), UI_WARN);
+        gfx_text(c, box.x + 24, box.y + 52,
+                 why[0] ? why : TR(LOG_PICK_FIRST),
+                 LV_FONT_BODY, UI_TEXT, 1);
+        return;
+    }
+
+    log_viewer_summary(line, sizeof(line));
+    gfx_text_in(c, gfx_rect_make(LV_L + 4, PV_SUM_Y, LV_W - 8, 20), line,
+                LV_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_LEFT);
+    if (lg_on()) {
+        lg_render(c);
+    } else {
+        render_rows(c);
+    }
+    const int ci = (s.cursor >= 0 && s.cursor < s.data.count) ? s.cursor : 0;
 
     /* --- footer --------------------------------------------------------- */
-    ui_button_font(c, PV_BACK, TR(LOG_BACK), UI_PANEL_HI, s.press_btn == 0,
-                   true, LV_FONT_LABEL);
+    /* With MORE's list open, press_btn 0 is its row, not BACK. */
+    ui_button_font(c, PV_BACK, TR(LOG_BACK), UI_PANEL_HI,
+                   s.press_btn == 0 && !s.more_open, true, LV_FONT_LABEL);
     ui_button_font(c, PV_PREV, "<", UI_PANEL_HI, s.press_btn == 1, true,
                    LV_FONT_LABEL);
     ui_button_font(c, PV_NEXT, ">", UI_PANEL_HI, s.press_btn == 2, true,
                    LV_FONT_LABEL);
+    ui_button_font(c, PV_MORE, TR(LOG_MORE), UI_PANEL_HI,
+                   s.press_btn == 3 || s.more_open, true, LV_FONT_LABEL);
 
-    if (s.data.time_name[0] != '\0') {
+    if (lg_cursor_line(line, sizeof(line))) {
+        /* The graph's x and row. */
+    } else if (s.data.time_name[0] != '\0') {
         snprintf(line, sizeof(line), TR(LOG_AT_TIME),
                  (double)s.data.time[ci], ci + 1, s.data.count);
     } else {
@@ -759,6 +777,11 @@ static void render_plot(gfx_canvas_t *c)
         snprintf(line, sizeof(line), TR(LOG_UNREADABLE_CELLS),
                  s.data.unparsed_cells);
         gfx_text(c, PV_LINE_X, FOOT_Y + 28, line, LV_FONT_LABEL, UI_WARN, 1);
+    }
+    if (s.more_open) {
+        ui_choice_list(c, PV_MORE_LIST);
+        ui_choice_row(c, PV_MORE_ROW(0), TR(LOG_COLUMNS), false,
+                      s.press_btn == 0);
     }
 }
 

@@ -85,9 +85,10 @@ SERVO-Funktionsbildschirms. Der Bildschirm steht in
   PROGRAMMIEREN), SERVO (KST/CHASERVO, HITEC D-SERIE oder HITEC
   KLASSISCH, der Programmierer, an den die Sitzungen des Laufs gehen,
   [Hitec-Servos](#hitec-servos)), SERVOPULSE (BEHALTEN oder 1000-2000),
-  STROM, Warten vor PWM des Programmierers, den Namen des Prüflings und
-  die Testaufzeichnungen. STROM ist SET A von SUPPLY ([Die Strombegrenzung
-  des Laufs](#die-strombegrenzung-des-laufs)). Der Name ist der des Hubs,
+  STROM, Warten vor PWM des Programmierers, den Namen des Prüflings, die
+  Notiz zum Lauf und die Testaufzeichnungen. STROM ist SET A von SUPPLY
+  ([Die Strombegrenzung des Laufs](#die-strombegrenzung-des-laufs)). Name
+  und Notiz sind die des Hubs,
   die Testaufzeichnungen die von SETUP > SD CARD: je eine Einstellung,
   welche Liste sie auch setzt; die Karte BEREIT hat keinen Platz für eine
   Zeile LOG. Der Lauf programmiert mit 5,0V und hat keine Zeile für die
@@ -656,10 +657,12 @@ die der Lauf zuerst fand.
 ![Nur Suche](img/de/servo-limrun-found.png)
 ![Die Pulse des Servos außerhalb von PULS MIN und PULS MAX](img/de/servo-limrun-range.png)
 
-Der Bericht ist eine eigene `LIMITnnn.TXT` in `USER/LOGS` ohne CSV-Datei
-daneben, unter der nächsten freien Nummer dieses Ordners, geschrieben
-unabhängig davon, was BERICHT auf PRÜFLING sagt. Mit Testaufzeichnungen AUS unter
-SETUP > SD CARD wird kein Bericht geschrieben
+Der Lauf schreibt `LIMITnnn.CSV`, eine Zeile je Stellung, die seine Suchen
+bewertet haben, und den Bericht `LIMITnnn.TXT` unter derselben Nummer in
+`USER/LOGS`, der nächsten freien Nummer dieses Ordners, unabhängig davon, was
+BERICHT auf PRÜFLING sagt. Ein Lauf, der vor seiner ersten bewerteten
+Stellung endet, schreibt nur den Bericht. Mit Testaufzeichnungen AUS unter
+SETUP > SD CARD wird keine der beiden Dateien geschrieben
 ([Setup](Screens-de.md#sd-card-welche-logs-geschrieben-werden-und-wohin)). Während eines Laufs schreiben weder die Prüfstands- noch die
 Netzteilaufzeichnung eine Zeile. Die Laufzeit und Summen der
 Netzteilaufzeichnung werden weitergezählt. Vom Start bis zum Schließen
@@ -706,6 +709,7 @@ Unteres Ende:    frei bis 1000us; frei 0.120A
 Oberes Ende:     frei bis 2000us; frei 0.120A
 
 Einheit: Die Einheit von LEFT ANGLE und RIGHT ANGLE ist unbekannt. Der Weg wird als linear zur Pulsbreite von NEUTRAL bis PULSE LOWER und PULSE UPPER angenommen. Das ist nicht gemessen.
+Stellungen:      bewertet 265, alle in der CSV
 Prüfstand: die gefundenen Enden werden nicht auf PULS MIN und PULS MAX angewendet.
 ```
 
@@ -719,6 +723,47 @@ Laufs sicherte, auch wenn dieses Schreiben gesendet wurde und verloren ging,
 nie die Datei eines früheren Laufs. Die Zeile `Gesucht:` nennt Mitte und Enden der Suche; ein
 Lauf, der vor seiner ersten Suche endete, hat keine. Ein Lauf an einem
 SERVO-PWM-Pin hat keine Zeile `Servopulse:`.
+
+`LIMITnnn.CSV` enthält eine Zeile je Stellung, die eine Suche bewertet hat,
+in der Reihenfolge der Bewertung: jede Suche von ihrer Mitte nach außen, die
+untere Seite zuerst. Die Zellen trennt `;`, mit Dezimalpunkt, wie in jeder
+CSV des Prüfstands. Die Datei hält höchstens 600 Zeilen
+(`SERVO_LIMRUN_ROWS_MAX`), etwa 27kB: 6 Suchen über 1000µs Weg in Schritten
+zu 10µs. Eine Stellung, die nach Zeile 600 bewertet wird, wird gezählt und
+nicht geschrieben; die Zeile `Stellungen:` des Berichts nennt beide Zahlen,
+`Stellungen:      bewertet 637, in der CSV 600, über ihrer Grenze 37`. Ein
+Lauf, der keine Stellung bewertet hat, hat keine Zeile `Stellungen:`.
+
+| Spalte | Inhalt |
+| --- | --- |
+| `row` | die Nummer der Zeile ab 1 |
+| `search` | `1` die erste Suche einer Seite, `2` eine Suche nach einem Schreiben (die des Vorhalts oder die, die findet, welches Register die Seite begrenzt), `3` die letzte Prüfung |
+| `side` | `LOW` (kürzere Pulse) oder `HIGH` |
+| `pulse (us)` | der befohlene Puls |
+| `current (A)` | der mittlere Strom über die 80ms der Stellung, auf 1mA |
+| `voltage (V)` | die Schienenspannung des INA3221-Fensters, das die Stellung bewertete, auf 10mV |
+| `angle (deg)` | der Winkel der Winkelquelle ab ENC CENTER, auf 0.01°; leer ohne Winkel |
+| `state` | `BASE` für die ersten 3 Stellungen jeder Suche, die den freien Strom bilden; `FREE` unter der Schwelle; `BOUND` darüber, die letzte Zeile der Suche |
+| `free (A)` | der freie Strom der Suche nach der Stellung: das Mittel ihrer `BASE`-Zeilen |
+| `threshold (A)` | der größere Wert aus 1.8 x frei und frei + 0.15A; leer in einer `BASE`-Zeile |
+| `end point (us)` | in einer `BOUND`-Zeile der Endpunkt, den die Suche meldet, 25µs innerhalb der letzten freien Stellung; sonst leer |
+| `info` | in Zeile 1 die Beschreibung des Laufs: Name des Prüflings, Notiz zum Lauf, Datum, Firmware, Servotyp, Messgerät und Winkelquelle ([Logs](Screens-de.md#logs)); sonst leer |
+
+Der programmierte Lauf oben, seine ersten Zeilen und die blockierte Zeile
+seiner ersten Suche:
+
+```text
+row;search;side;pulse (us);current (A);voltage (V);angle (deg);state;free (A);threshold (A);end point (us);info
+1;1;LOW;1500;0.120;6.00;;BASE;0.120;;;dut=SERVO&note=greased&date=2026-11-24T10:31&fw=0.23.18&servo=DIGITAL&meter=INA3221 0x41 CH2
+2;1;LOW;1490;0.119;6.00;;BASE;0.120;;;
+3;1;LOW;1480;0.120;6.00;;BASE;0.120;;;
+4;1;LOW;1470;0.121;6.00;;FREE;0.120;0.270;;
+31;1;LOW;1200;0.627;6.00;;BOUND;0.120;0.270;1235;
+```
+
+LOGS listet `LIMITnnn.CSV` neben seinem Bericht, die CSV zuerst; LÖSCHEN auf
+der CSV entfernt auch den Bericht ([Logs](Screens-de.md#logs)). Eine
+`LIMITnnn.TXT` von Firmware 0.23.17 und älter hat keine CSV daneben.
 
 Der vollständige Endlagenlauf und die Zahlen oben wurden nicht an einem
 echten Servo gemessen. Unbekannt bleiben die Einheit von LEFT ANGLE und
@@ -799,7 +844,7 @@ Die Spannungsstufen sind Stufe 4.8V und Stufe 6.0V des Laufs (Liste OPTIONEN von
 Enden des Laufs liegen um Bereich des Wegs beiderseits von PULS MITTE:
 Bereich in der Liste von TEST ist die Einstellung von SWEEP, und AUSGANG
 darunter öffnet das Servoprofil. Haltezeit ist ebenfalls die von SWEEP,
-Name des Prüflings und Bericht die des Hubs. Ein
+Name des Prüflings, Notiz zum Lauf und Bericht die des Hubs. Ein
 Lauf mit einer Stufe über 6,0V startet nur über die Warnung NUR HV-SERVOS,
 2s gehalten. Die Strombegrenzung im Lauf ist SET A von SUPPLY, die die
 Zeile PD MINI der Karte BEREIT zeigt und ein Tippen dort setzt
@@ -1457,7 +1502,7 @@ Ein Lauf nimmt die nächste Laufnummer des Ordners `USER/LOGS`, und die
 eigene Task der SD-Karte schreibt seine Dateien dorthin: `ATESTnnn.CSV`, eine
 Zeile je Messwert des Messgeräts des Laufs, und mit BERICHT an (OPTIONEN >
 PRÜFLING) `ATESTnnn.TXT`. Die Nummer gehört zu einer Reihe mit den
-`LIMITnnn.TXT` der Endlagenläufe in diesem Ordner
+`LIMITnnn`-Dateien der Endlagenläufe in diesem Ordner
 ([Logs](Screens-de.md#logs)). Mit Testaufzeichnungen AUS unter SETUP > SD CARD,
 gelesen beim Start des Laufs, schreibt der Lauf keine Datei, und das Ergebnis
 nennt `TESTAUFZEICHNUNGEN AUS`. Die Karte BEREIT von TEST zeigt sie in
@@ -1505,10 +1550,11 @@ wie jede Aufzeichnung des Prüfstands:
 | `voltage min (V)` | V | am INA3221: der tiefste Messwert der Busspannung im Fenster |
 | `clipped` | | am INA3221: Messwerte des Fensters an einem Bereichsende, bei 255 gehalten |
 | `angle source` | | bei verwendeter Winkelquelle: ihr Name, `AS5600` oder `IMU X+`, in jeder Zeile |
+| `info` | | in der ersten Zeile die Beschreibung des Laufs: Name des Prüflings, Notiz zum Lauf, Datum, Firmware, Servotyp, Messgerät und Winkelquelle ([Logs](Screens-de.md#logs)); in jeder weiteren Zeile leer |
 
 Die sechs Messgerätespalten stehen ohne Winkeldaten an Position 14 bis
 19, mit Winkeldaten an Position 17 bis 22. Bei verwendeter Winkelquelle
-folgt ihr Name in Spalte 23. Beim PD mini und beim Modell bleiben die
+folgt ihr Name in Spalte 23. `info` ist die letzte Spalte, 20 oder 24. Beim PD mini und beim Modell bleiben die
 fünf Spalten nach `meter` leer. Auch ältere Dateien mit weniger Spalten
 lassen sich öffnen: 13 ohne AS5600 oder 15 beziehungsweise 21 mit AS5600.
 Die Aufzeichnungsansicht erkennt die Spalten an den Namen in der Kopfzeile.
@@ -1831,7 +1877,8 @@ Bluetooth-IMU).
   vorgegeben 0,5°
   (`rud_tol`). Ein Tippen öffnet das Tastenfeld. Dieselben vier, SERVO,
   SERVO-PULSE, WINKELQUELLE, STROM, Warten vor PWM, der Name des
-  Prüflings und die Testaufzeichnungen stehen in OPTIONEN. STROM ist SET A
+  Prüflings, die Notiz zum Lauf und die Testaufzeichnungen stehen in
+  OPTIONEN. STROM ist SET A
   von SUPPLY, wie auf LIMIT RUN ([Die Strombegrenzung des
   Laufs](#die-strombegrenzung-des-laufs)); Warten vor PWM ist die
   Wartezeit des KST-Programmierers, die VERLASSEN des Laufs sendet. Der
@@ -2364,7 +2411,21 @@ innerhalb der Toleranz liegt, und das Nachmessen: eine Zeile je Messung,
 Die Messungen oben gelten.` Die CSV führt die Messungen des Nachmessens
 nach den Schritten, `V` in der Spalte write und die Spalte value leer,
 und danach die Stellungen der Suche, `S` in der Spalte write, der Strom
-in mA in der Spalte value und der Winkel in der Spalte measured.
+in mA in der Spalte value und der Winkel in der Spalte measured. Drei
+Spalten nach `within` benennen jede Zeile ohne diese Regel: `kind`
+(`STEP`, `VERIFY` oder `SEARCH`), `pulse (us)` (der Puls, bei dem die Zeile
+gemessen wurde) und `current (A)` (der mittlere Strom einer `SEARCH`-Zeile,
+auf 1mA; in den anderen Zeilen leer). Die ersten 9 Spalten sind die von
+Firmware 0.23.17 und älter, unverändert. Die letzte Spalte, `info`, hält
+die Beschreibung des Laufs in der ersten Zeile ([Logs](Screens-de.md#logs)).
+LOGS liest Dateien mit 9 und mit 13 Spalten gleich:
+
+```text
+step;side (us);write;value;measured (deg);goal (deg);measured (mm);goal (mm);within;kind;pulse (us);current (A);info
+1;1000;0;;30.00;27.50;50.00;46.17;0;STEP;1000;;dut=AILERON L&date=2026-11-24T10:31&fw=0.23.18&servo=DIGITAL&angle=IMU X+
+7;1000;V;;27.60;27.50;46.33;46.17;1;VERIFY;1000;;
+10;1500;S;150;0.00;;;;;SEARCH;1500;0.150;
+```
 
 Endpoints erscheinen so, wie die Programmierseite sie zeigt, mit der
 Einheit in den Registerzeilen des Berichts (`(Zählwerte)`, `(Rohwert)`) und

@@ -254,8 +254,8 @@ TEST_CASE(the_csv_header_ends_in_angle_source_and_each_row_names_it)
     imu_on(2u, false);
     hold_start(2.3f);
     test_run_out();
-    CHECK(ends_in(bench.csv_head, ";clipped;angle source"));
-    CHECK(ends_in(bench.csv_last, ";IMU Z+"));
+    CHECK(ends_in(bench.csv_head, ";clipped;angle source;info"));
+    CHECK(ends_in(bench.csv_last, ";IMU Z+;"));
     CHECK(bench.csv > 40u);
 
     bench_fresh();
@@ -269,8 +269,8 @@ TEST_CASE(the_csv_header_ends_in_angle_source_and_each_row_names_it)
     bench_frames(100u);
     hold_start(2.3f);
     test_run_out();
-    CHECK(ends_in(bench.csv_head, ";clipped;angle source"));
-    CHECK(ends_in(bench.csv_last, ";AS5600"));
+    CHECK(ends_in(bench.csv_head, ";clipped;angle source;info"));
+    CHECK(ends_in(bench.csv_last, ";AS5600;"));
 
     /* The IMU chosen and stale at the start: the run reads no angles and
      * the report says why. */
@@ -282,7 +282,7 @@ TEST_CASE(the_csv_header_ends_in_angle_source_and_each_row_names_it)
     hold_start(2.3f);
     CHECK(servo_screen_testing());
     test_run_out();
-    CHECK(ends_in(bench.csv_head, ";clipped"));
+    CHECK(ends_in(bench.csv_head, ";clipped;info"));
     CHECK(strstr(bench.report, "Angle source:   IMU Y+, no reading at the "
                                "start, no angles")
           != NULL);
@@ -295,7 +295,7 @@ TEST_CASE(the_csv_header_ends_in_angle_source_and_each_row_names_it)
     settings_set(SET_ENC_EN, 0.0f);
     hold_start(2.3f);
     test_run_out();
-    CHECK(ends_in(bench.csv_head, ";clipped"));
+    CHECK(ends_in(bench.csv_head, ";clipped;info"));
     CHECK(strstr(bench.csv_last, "AS5600") == NULL);
 }
 
@@ -530,13 +530,15 @@ TEST_CASE(the_old_csv_header_without_the_column_still_reads)
         "1.000;STEP;1;HOLD;1500;;6.00;6.00;2.00;0.120;0.720;CV;;"
         "1.23;;;PDMINI;;;;;";
     static char old_text[1024], new_text[1024];
+    /* The header without the info column after it (log_info.h). */
     const char *head = servo_test_csv_header_enc();
-    const size_t cut = strlen(head) - strlen(";angle source");
-    CHECK(ends_in(head, ";angle source"));
+    CHECK(ends_in(head, ";angle source;info"));
+    const size_t full = strlen(head) - strlen(";info");
+    const size_t cut = full - strlen(";angle source");
     snprintf(old_text, sizeof(old_text), "%.*s\n%s\n%s\n", (int)cut, head,
              k_row, k_row);
-    snprintf(new_text, sizeof(new_text), "%s\n%s;IMU X+\n%s;IMU X+\n", head,
-             k_row, k_row);
+    snprintf(new_text, sizeof(new_text), "%.*s\n%s;IMU X+\n%s;IMU X+\n",
+             (int)full, head, k_row, k_row);
     log_analysis_t a, b;
     CHECK(analyse(old_text, &a));
     CHECK(analyse(new_text, &b));

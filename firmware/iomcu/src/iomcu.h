@@ -13,6 +13,7 @@
  * iomcu_kst.c    the KST page and the port's hardware
  * iomcu_hitec.c  the HITEC page and the port's hardware
  * iomcu_esc.c    the ESC_WIRE and ESC_DATA pages and the pin's way there and back
+ * iomcu_yge.c    the YGE_PROG and YGE_DATA pages and the port's way there and back
  * iomcu_sense.c  SUPPLY, SENSE, SERVO_SENSE, SERVO_WIN, SENSE_MAP,
  *                SENSE_WIN_A, SENSE_WIN_B and SENSE_LIMIT
  * iomcu_tone.c   the TONE page and the phase tap's capture
@@ -46,6 +47,8 @@
 #include "hitec_line.h"
 #include "hitec_port.h"
 #include "esc_port.h"
+#include "yge_port.h"
+#include "oy_line.h"
 #include "update_hw.h"
 #include "ew_line.h"
 #include "iomcu_pins.h"
@@ -94,7 +97,7 @@ extern iomcu_state_t s_state;
  */
 #define IOMCU_CAPABILITIES \
     ((uint16_t)(LINK_CAP_SERVO_PWM | LINK_CAP_ESC_DRIVE | LINK_CAP_ESC_TELEM \
-                | LINK_CAP_PROGRAM))
+                | LINK_CAP_PROGRAM | LINK_CAP_YGE))
 /**
  * @brief The SERVO page: the PWM target's frame rate and the sweep.
  *
@@ -166,7 +169,10 @@ extern uint64_t      s_base_reserved;
 /** @brief A programming port was out of PWM at the last ports_hold_follow(). */
 extern bool          s_ports_held;
 #if IOMCU_CONSOLE
-/** @brief The pin the console's test of a driver holds (ewline_console.c). */
+/**
+ * @brief The pin the console's test of a driver holds (ewline_console.c,
+ *        oyline_console.c); one test runs at a time.
+ */
 extern uint64_t      s_console_pins;
 #endif
 /**
@@ -208,6 +214,14 @@ extern hitec_line_t  s_hitec_line; /**< the wire driver of s_hitec */
  */
 extern esc_port_t    s_esc;
 extern ew_pin_line_t s_esc_line; /**< the wire driver of s_esc */
+/**
+ * @brief The YGE_PROG and YGE_DATA pages (shared/outputs/yge_port.h) and the
+ * telemetry wire's driver a programming port's pin is handed to.
+ *
+ * Not kept: a restart finds the port free.
+ */
+extern yge_port_t     s_yge;
+extern oy_pin_line_t  s_yge_line; /**< the wire driver of s_yge */
 extern link_dev_t    s_dev; /**< the link's device end */
 
 /**
@@ -583,6 +597,46 @@ void esc_data_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
  * @return 0, or a link_nack_t.
  */
 uint8_t esc_data_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
+
+/* iomcu_yge.c */
+/**
+ * @brief Prepares the YGE_PROG page and its line.
+ */
+void yge_init(void);
+/**
+ * @brief Reads YGE_PROG.
+ * @param ctx The iomcu_state_t.
+ * @param off First register.
+ * @param n   Registers.
+ * @param out Receives them.
+ */
+void yge_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+/**
+ * @brief Writes YGE_PROG.
+ * @param ctx The iomcu_state_t.
+ * @param off First register.
+ * @param n   Registers.
+ * @param in  Their values.
+ * @return 0, or a link_nack_t.
+ */
+uint8_t yge_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
+/**
+ * @brief Reads YGE_DATA.
+ * @param ctx The iomcu_state_t.
+ * @param off First register.
+ * @param n   Registers.
+ * @param out Receives them.
+ */
+void yge_data_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+/**
+ * @brief Writes YGE_DATA.
+ * @param ctx The iomcu_state_t.
+ * @param off First register.
+ * @param n   Registers.
+ * @param in  Their values.
+ * @return 0, or a link_nack_t.
+ */
+uint8_t yge_data_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
 
 /* iomcu_hitec.c */
 /**
@@ -1517,8 +1571,8 @@ static inline bool heartbeat_edge(void)
 
 /**
  * @brief What holds the bank down: the programming ports out of PWM, held by the
- * KST, HITEC or ESC_WIRE page, in any state but PWM and free; ESC_PORT_QUIET_SLOT
- * for an output slot the ESC_WIRE page holds.
+ * KST, HITEC, ESC_WIRE or YGE_PROG page, in any state but PWM and free;
+ * ESC_PORT_QUIET_SLOT for an output slot the ESC_WIRE page holds.
  *
  * @return One bit per programming port, and ESC_PORT_QUIET_SLOT.
  */
@@ -1526,7 +1580,8 @@ static inline uint8_t ports_quiet(void)
 {
     return (uint8_t)(kst_port_quiet_mask(&s_kst)
                      | hitec_port_quiet_mask(&s_hitec)
-                     | esc_port_quiet_mask(&s_esc));
+                     | esc_port_quiet_mask(&s_esc)
+                     | yge_port_quiet_mask(&s_yge));
 }
 
 /**
@@ -1547,42 +1602,52 @@ static inline uint8_t ports_wire(void)
 {
     return (uint8_t)(kst_port_pin_mask(&s_kst)
                      | hitec_port_pin_mask(&s_hitec)
-                     | esc_port_pin_mask(&s_esc));
+                     | esc_port_pin_mask(&s_esc)
+                     | yge_port_pin_mask(&s_yge));
 }
 
 /**
  * @brief Each wire page told which ports the others hold: neither KST nor HITEC
  * takes a port the other has.  An ESC session and a servo session share one PD
- * mini, so ESC_WIRE and the two exclude each other on every port; a firmware
- * update keeps ESC_WIRE out as well.
+ * mini, so ESC_WIRE, YGE_PROG and the two exclude each other on every port
+ * (yge_port_others()); a firmware update keeps ESC_WIRE and YGE_PROG out as
+ * well.
  *
- * Called before and after a write of KST, HITEC or ESC_WIRE and once a pass:
+ * Called before and after a write of KST, HITEC, ESC_WIRE or YGE_PROG and once
+ * a pass:
  * a command is judged against the masks as they stand at it, after a PROG
  * or OUTPUTS write earlier in the same batch of frames.
  */
 static inline void ports_exclusive(void)
 {
     const uint8_t esc = esc_port_supply_hold(&s_esc) ? 0xFFu : 0u;
+    const uint8_t yge = yge_port_supply_hold(&s_yge) ? 0xFFu : 0u;
 
     /* What the held output needs back: no write takes its PIO room. */
     prog_port_freeze(&s_prog, esc != 0u);
     tone_page_freeze(&s_tone, esc != 0u);
-    supply_page_wire_freeze(&s_supply, esc != 0u);
+    supply_page_wire_freeze(&s_supply, (esc | yge) != 0u);
 
     /* The node's rail: CONNECT refused for a BEC found, and without the
      * port switches while another channel is active (iomcu_rsn.c). */
     const uint8_t rail = rsn_prog_refused();
 
     kst_port_other_mask(&s_kst, (uint8_t)(hitec_port_quiet_mask(&s_hitec) | esc
-                                          | rail));
+                                          | yge | rail));
     hitec_port_other_mask(&s_hitec, (uint8_t)(kst_port_quiet_mask(&s_kst) | esc
-                                              | rail));
+                                              | yge | rail));
     esc_port_other(&s_esc, (uint8_t)(kst_port_quiet_mask(&s_kst)
                                      | hitec_port_quiet_mask(&s_hitec)
+                                     | yge_port_quiet_mask(&s_yge)
                                      | (update_hw_holds_arm() ? 0x80u : 0u)
                                      | (s_supply_attach && !s_pd_open ? 0x40u
                                                                       : 0u)
                                      | (rsn_esc_refused() ? 0x20u : 0u)));
+    yge_port_other(&s_yge, yge_port_others((uint8_t)(kst_port_quiet_mask(&s_kst)
+                                                     | hitec_port_quiet_mask(&s_hitec)),
+                                           esc != 0u,
+                                           s_supply_attach && !s_pd_open,
+                                           update_hw_holds_arm(), rail));
 }
 
 /**
@@ -1618,19 +1683,20 @@ static inline bool ports_writing(void)
  *        the PROG_SUPPLY page on a board that switches the ports' own
  *        supply, the SUPPLY page on any other.  The other one is told no
  *        port holds it: on the rbmod carrier the PD mini feeds the servo
- *        rails and no programming port.  An ESC session holds the SUPPLY page
- *        on every board, and PROG_SUPPLY where it is fitted.
+ *        rails and no programming port.  An ESC or YGE session holds the
+ *        SUPPLY page on every board, and PROG_SUPPLY where it is fitted.
  */
 static inline void ports_tell_supply(void)
 {
     const bool own = prog_supply_fitted(&s_psup);
     const bool hold = ports_hold_supply();
     const bool writing = ports_writing();
-    supply_page_hold(&s_supply, (!own && hold) || esc_port_supply_hold(&s_esc));
+    const bool esc = esc_port_supply_hold(&s_esc) || yge_port_supply_hold(&s_yge);
+    supply_page_hold(&s_supply, (!own && hold) || esc);
     supply_page_port_writes(&s_supply,
                             (!own && writing) || esc_port_writing(&s_esc));
     /* Under an ESC session its ON is refused, on the rule of a port's hold. */
-    prog_supply_hold(&s_psup, (own && hold) || esc_port_supply_hold(&s_esc));
+    prog_supply_hold(&s_psup, (own && hold) || esc);
     prog_supply_port_writes(&s_psup, own && writing);
     /* The node's rail: a panel's OFF of the session's output waits for the
      * write as the PD mini's does. */

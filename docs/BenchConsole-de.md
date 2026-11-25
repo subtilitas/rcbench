@@ -91,13 +91,13 @@ Danach folgt `err output full, N bytes dropped`.
 
 ```text
 > r 0x00 0 2
-data page=0x00 off=0 n=2: 0x0004 0x0029
+data page=0x00 off=0 n=2: 0x0004 0x002A
 > w 0x2A 4 1 5000 1000
 nack page=0x2A off=4: NOT_ARMED (5)
 ```
 
 Getippte Zeilen stehen hier nach `> `; die Konsole gibt keinen Prompt aus.
-Die erste Zeile liest die Protokollversion, 4.41. Die zweite ist das
+Die erste Zeile liest die Protokollversion, 4.42. Die zweite ist das
 Einschalten von SUPPLY mit 5000mV und 1000mA, abgewiesen, weil kein Panel
 einen Heartbeat sendet. Mit laufendem Panel wird dieselbe Zeile angenommen:
 
@@ -324,6 +324,42 @@ low, und vor dem ersten Startbit jedes Frames zeigt sich ein High-Puls von 6,5us
 3,26us bei 38400baud. Ein Test auf so einer Leitung kann mit `n=`-Werten enden,
 die nicht passen.
 
+## Der Pin-Treiber der Telemetrieleitung
+
+`oyline <gpio> tx|rx|cut` lässt den Pin-Treiber der Programmierung für
+YGE-ESCs (`protocols/openyge/rp2350/oy_line.h`) auf einem freien Pin laufen,
+für einen Logic Analyser ohne angeschlossenen ESC. Das ist keine Page und
+hat keinen Schlüssel: der eine Frame, den es sendet, ist eine
+Telemetrie-Anfrage (`TELE_REQ`, 12B, Gerät 1), nie ein Schreiben. Es weist
+einen Pin so ab wie `ewline` und läuft nur, solange kein anderer
+Treibertest läuft. Ein ARM während eines Tests schließt die Leitung sofort
+und antwortet `oyline armed`.
+
+| Test | Auf dem Pin, der Reihe nach |
+|---|---|
+| `tx` | geparkt 20ms; zuhören 20ms; die Anfrage 3-mal, jede bis zu ihrer Freigabe und gefolgt von 40ms Zuhören; geparkt 20ms |
+| `rx` | zuhören 5ms; die Anfrage über die Overrides des Pins auf das Pad getrieben; zuhören 5ms; die Anfrage noch einmal mit einem Low-Stoppbit an ihrem fünften Byte und 2 Idle-Bitzeiten danach; zuhören 5ms; geparkt 5ms |
+| `cut` | zuhören 5ms; die Anfrage, 0.5ms nach ihrem Start geparkt; geparkt 20ms; zuhören 5ms; die Anfrage bis zu ihrer Freigabe; zuhören 5ms; geparkt 20ms |
+
+Geparkt ist ein Eingang mit Pull-down, zuhören ein Eingang mit Pull-up.
+Jede Einspeisung von `rx` blockiert die Hauptschleife für ihre 12B, 1.04ms.
+
+```
+oyline open gpio=13 bit=8680ns div=81+97/256
+oyline feed n=12 framing=0 match=1 crc_ok=1
+oyline feed n=12 framing=1 match=1 crc_ok=1
+oyline done gpio=13 sent=0 dropped=0 rx=24 framing=1 full=0 tx_max=<t>us rx_max=<t>us park=<t>us out_max=<t>us
+```
+
+`match` vergleicht die geholten Bytes mit den eingespeisten; ein
+Low-Stoppbit lässt die Daten wie eingespeist, daher bleiben `match` und
+`crc_ok` 1. Die letzte Zeile zählt die gesendeten Anfragen, die nach einer
+low gehaltenen Leitung verworfenen Anfragen, die empfangenen Bytes, die
+Bytes mit Low-Stoppbit und die Pufferfüllungen, dann nennt sie den
+längsten Aufruf jeder Art und die längste Zeit von einer Übergabe bis zu
+ihrer Freigabe, in Mikrosekunden. Diese Zeiten sind vor dem
+Stationsschritt H1 nicht bekannt ([OpenYGE](OpenYGE-de.md#92-pin-treiber)).
+
 ## Die ESC-Einstellungs-Page
 
 `esc` greift mit denselben Frames wie das Panel auf
@@ -350,6 +386,39 @@ esc state=2 op=1 result=2 ref=0 flags=0x0008 line=0 gpio=5 ses=0 fw=0 layout=0 w
 
 `state`, `result`, `ref`, `flags` und `line` sind die Register
 [ihrer Page](LinkEsc-de.md#register); `ses` ist das letzte Ergebnis der Session.
+
+## Die YGE-Page
+
+`yge` greift mit denselben Frames wie das Panel auf [die Page
+YGE_PROG](LinkYge-de.md) der Programmierung für YGE-ESCs zu. Es gelten
+dieselben Prüfungen und Ablehnungen. Wie andere Pages, die einen Heartbeat
+benötigen, braucht sie neben der Konsole ein laufendes Panel. ENTER trägt den
+Schlüssel, den ein Panel am Ende seines 2-s-Halts sendet. Keiner dieser
+Befehle schreibt in einen ESC. Die Funktion ist nicht in veröffentlichten
+Images enthalten.
+
+```
+yge
+yge open port <n>
+yge enter mv=<mV> ma=<mA> [boot=<ms>]
+yge enter hand [boot=<ms>]
+yge done|read|leave|stop|abort|clear|close
+```
+
+SWITCHED braucht `mv` und `ma`, ohne Vorgabewert; `boot` ist ohne Angabe
+5000ms. `done` ist HAND_DONE. Jeder Befehl antwortet mit einer Zeile:
+
+```
+yge state=2 op=1 result=2 ref=0 flags=0x0008 line=0 gpio=13 port=0 ses=0 guard=0 entries=0 reads=0 type=0 fw=0 t=52ms
+```
+
+`state`, `result`, `ref`, `flags` und `line` sind die Register
+[ihrer Page](LinkYge-de.md#register); `ses` ist das letzte Ergebnis der
+Session und `guard` die letzte Ablehnung des Guards; `entries`, `reads`,
+`type` und `fw` sind die der gelesenen Kopie. Der Stationsschritt H1
+([OpenYGE](OpenYGE-de.md#8-offene-messungen)) führt `yge open port 0`,
+`yge enter hand` an einer leeren Leitung, dann `yge stop`, dann eine
+Linkunterbrechung aus.
 
 ## Über den Link, ohne USB am IOmcu
 

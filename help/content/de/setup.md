@@ -162,7 +162,7 @@ Der MT6701 arbeitet im I2C-Modus mit MODE auf High unter Adresse 0x06. Sein Bus 
 | Einstellung | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
 | Auto-Aufzeichnungen | EIN, AUS | EIN | eine Aufzeichnung je ARMED- und Netzteillauf in Ordner Auto-Aufzeichnungen: `SERVOnnn.CSV`, `MOTORnnn.CSV`, `SUPPLnnn.CSV` |
-| Testaufzeichnungen | EIN, AUS | EIN | `ATESTnnn.CSV` und Bericht des AUTOMATISCHEN TESTS, `LIMITnnn.TXT` von LIMIT RUN und `RUDDRnnn.CSV` und Bericht von RUDER AUTO in Ordner Testaufzeichnungen |
+| Testaufzeichnungen | EIN, AUS | EIN | `ATESTnnn.CSV` und Bericht des AUTOMATISCHEN TESTS, `LIMITnnn.CSV` und Bericht von LIMIT RUN und `RUDDRnnn.CSV` und Bericht von RUDER AUTO in Ordner Testaufzeichnungen |
 | Schreiben per Browser | OFFEN, ZUGANGSCODE, HALTEN, AUS | OFFEN | was die Browserseite von WI-FI braucht, um die Karte zu ändern: [WLAN](wifi.md#schreiben-per-browser) |
 | Ordner Auto-Aufzeichnungen | ein Ordner | `BENCH/LOGS` | wohin Auto-Aufzeichnungen schreibt |
 | Ordner Testaufzeichnungen | ein Ordner | `USER/LOGS` | wohin Testaufzeichnungen schreibt |
@@ -187,7 +187,7 @@ Bei einem unzulässigen Ordner bleibt die Tastatur offen und die Einstellung unv
 | über 2 Ordner | `A/B/C`; `A/B` wird genommen | `Höchstens 2 Ordnerebenen` |
 | ein Zeichen außer A-Z, 0-9, `_` und `-` | `MY LOGS` | `Nur A-Z, 0-9, _ und -` |
 | ein Gerätename von Windows: CON, PRN, AUX, NUL, COM1 bis COM9, LPT1 bis LPT9 | `AUX/LOGS` | `Reservierter Name` |
-| `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW`, `BENCH/BALANCE` oder `BENCH/SETUP`, die eigenen Dateien des Prüfstands | `BENCH/KST`; `BENCH/KSTX` wird genommen | `Für Prüfstand-Dateien reserviert` |
+| `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW`, `BENCH/YGE`, `BENCH/BALANCE` oder `BENCH/SETUP`, die eigenen Dateien des Prüfstands | `BENCH/KST`; `BENCH/KSTX` wird genommen | `Für Prüfstand-Dateien reserviert` |
 
 Die letzten beiden Zeilen, Einstellungen sichern und Einstellungen laden, legen die Einstellungen des Panels auf die Karte und laden sie zurück. Siehe [Sicherung der Einstellungen](setup-backup.md).
 

@@ -37,7 +37,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "esc_wire_panel.h"
+#include "prog_registry.h"
 #include "hitec_panel.h"
 #include "link_pages.h"
 #include "port_view.h"
@@ -358,7 +358,7 @@ static void sync_tabs(void)
 static void carrier_reason(char *buf, size_t cap)
 {
     const uint8_t port = (uint8_t)(p.port + 1);
-    if (esc_wire_panel_holds_port()) {
+    if (prog_reg_esc_holds()) {
         snprintf(buf, cap, "%s", TR(OUT_PORT_HELD_ESC));
     } else if (hitec_panel_holds_port()) {
         snprintf(buf, cap, "%s", TR(OUT_PORT_HELD_HITEC));
@@ -399,7 +399,7 @@ bool outputs_screen_port_reason(char *buf, size_t cap)
         snprintf(buf, cap, "%s", TR(OUT_PORT_SOLDERED));
     } else if (carrier_tester()) {
         carrier_reason(buf, cap);
-    } else if (esc_wire_panel_holds_port()) {
+    } else if (prog_reg_esc_holds()) {
         snprintf(buf, cap, "%s", TR(OUT_PORT_HELD_ESC));
     } else if (hitec_panel_holds_port()) {
         snprintf(buf, cap, "%s", TR(OUT_PORT_HELD_HITEC));

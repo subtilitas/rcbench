@@ -33,6 +33,7 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 #include "ui_workbench.h"
+#include "yge_panel.h"
 
 /* Last: its layout macros have short names. */
 #include "motor_screen_int.h"
@@ -290,10 +291,16 @@ void mpp_render_page(gfx_canvas_t *c)
  * room for two more pins. */
 #define STRIP_TARGET_CELLS 26u
 
-/** @brief Writes the supply's state as the output strip shows it. */
+/** @brief Writes the supply's state as the output strip shows it: BY HAND
+ *         while programming for YGE ESCs leaves the ESC's power to the
+ *         operator. */
 static void supply_text(char *out, size_t size)
 {
     const supply_state_t *st = supply_screen_reading();
+    if (mpp_shown() == &yge_pages && yge_panel_by_hand()) {
+        snprintf(out, size, "%s", TR(YG_STRIP_HAND));
+        return;
+    }
     if (st == NULL || !st->online) {
         snprintf(out, size, "%s", TR(PL_STRIP_SUP_NONE));
         return;
@@ -315,8 +322,9 @@ static void supply_text(char *out, size_t size)
 }
 
 /**
- * @brief The strip's output: the signal-wire session names the pin it holds or would
- *        take, every other the throttle's.
+ * @brief The strip's output: the signal-wire session and programming for YGE
+ *        ESCs name the pin they hold or would take, every other the
+ *        throttle's.
  * @param out   Takes the text.
  * @param size  Bytes at @p out.
  * @param proto The throttle's protocol.
@@ -329,6 +337,9 @@ static bool strip_target(char *out, size_t size, uint8_t proto, uint64_t pins,
 {
     if (mpp_shown() == &esc_wire_pages) {
         return esc_wire_panel_target_text(out, size);
+    }
+    if (mpp_shown() == &yge_pages) {
+        return yge_panel_target_text(out, size);
     }
     return motor_throttle_target(out, size, proto, pins, known, STRIP_TARGET_CELLS);
 }

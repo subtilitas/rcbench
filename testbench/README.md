@@ -781,6 +781,7 @@ firmware and the decoder agree, and no more than that.
       WIRING.md      what to connect, in order, with a check after each step
       host/          the scripts the Pi runs: capture, self-test
       decoders/      protocol decoders, and their offline verification
+      ygesim/        a YGE ESC on the Pi's UART, for the session's station step
       captures/      run artefacts, not committed; reference/ is
 
 ---

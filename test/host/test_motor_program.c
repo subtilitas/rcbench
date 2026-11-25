@@ -23,6 +23,7 @@
 #include "gfx.h"
 #include "motor_screen.h"
 #include "prog_registry.h"
+#include "yge_panel.h"
 #include "settings.h"
 #include "splash_screen.h"
 #include "supply_screen.h"
@@ -193,12 +194,22 @@ TEST_CASE(program_lists_the_stick_menu_and_no_modelled_protocol)
             CHECK(rows[i].full_width);
             continue;
         }
+        if (rows[i].page_set == &yge_pages) {
+            /* Dimmed until the IOmcu reports the YGE page. */
+            CHECK_EQ(rows[i].needs_capability, (unsigned)LINK_CAP_YGE);
+            CHECK_EQ(prog_reg_state(rows, n, i, LINK_CAP_PROGRAM),
+                     (int)PROG_ROW_NO_CAP);
+            CHECK_EQ(prog_reg_state(rows, n, i, LINK_CAP_YGE),
+                     (int)PROG_ROW_LIVE);
+            CHECK(rows[i].full_width);
+            continue;
+        }
         CHECK(rows[i].page_set == &esc_stick_pages);
         CHECK(rows[i].full_width);
         CHECK_EQ(rows[i].group, (int)TX_PL_GRP_STICK);
         CHECK_EQ(prog_reg_state(rows, n, i, 0u), (int)PROG_ROW_LIVE);
     }
-    CHECK_EQ(motor, 2);
+    CHECK_EQ(motor, 3);
     CHECK_STR_EQ(TR(PL_GRP_STICK), "STICK MENU");
     CHECK_STR_EQ(TR(PL_STICK), "ESCs via throttle stick");
     ui_text_set_language(UI_LANG_DE);

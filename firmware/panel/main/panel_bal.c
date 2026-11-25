@@ -176,6 +176,14 @@ static void run_command(const bal_cmd_t *cmd, uint32_t now)
                      s_ctl.b.scanning ? "a scan runs" : "not in the list",
                      (unsigned)s_ctl.found_n, (unsigned)s_ctl.bind_refused);
         }
+    } else if (cmd->kind == BAL_CMD_UNBIND) {
+        char was[sizeof(s_ctl.cfg.addr)];
+        memcpy(was, s_ctl.cfg.addr, sizeof(was));
+        if (bal_ctl_unbind(&s_ctl, now)) {
+            ESP_LOGI(TAG, "unbound %s", was);
+        } else {
+            ESP_LOGW(TAG, "unbind refused: no node bound");
+        }
     }
 }
 

@@ -13,13 +13,19 @@
 # it back, both through log_name.c.  log_take.c takes a run's number in its
 # folder, card_tree.h names the folders, card_tree.c makes them and checks a
 # log folder set on SETUP, and fault_log.c keeps the fault log under its
-# 1MiB cap.
+# 1MiB cap.  log_info.c writes and reads the `info` cell, a run's own
+# description on the first data row of its file; its date follows the wall
+# clock's rules (shared/clock).  log_marks.c reads the traces and markers
+# of a LIMIT RUN's and a RUDDER AUTO's file for LOGS' graph.
 set(SRCS
     log_numbers.c
     log_csv.c
     log_reader.c
     log_fields.c
+    log_preset.c
+    log_marks.c
     log_name.c
+    log_info.c
     log_take.c
     card_tree.c
     fault_log.c
@@ -27,9 +33,10 @@ set(SRCS
 )
 
 if(ESP_PLATFORM)
-    idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include)
+    idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include
+                           PRIV_REQUIRES clock)
 else()
     add_library(rcbench_logfile STATIC ${SRCS})
     target_include_directories(rcbench_logfile PUBLIC include)
-    target_link_libraries(rcbench_logfile PUBLIC m)
+    target_link_libraries(rcbench_logfile PUBLIC m PRIVATE rcbench_clock)
 endif()

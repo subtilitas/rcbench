@@ -171,15 +171,18 @@ const char *servo_test_start_name(servo_test_start_t why)
 /** @brief The meter's columns, after the angle source's. */
 #define CSV_METER ";meter;window;current max (A);current min (A);" \
                   "voltage min (V);clipped"
+/** @brief The last column: the run's description on the first data row
+ *         (log_info.h). */
+#define CSV_INFO  ";info"
 
 const char *servo_test_csv_header(void)
 {
-    return CSV_BASE CSV_METER;
+    return CSV_BASE CSV_METER CSV_INFO;
 }
 
 const char *servo_test_csv_header_enc(void)
 {
-    return CSV_BASE CSV_ENC CSV_METER CSV_SRC;
+    return CSV_BASE CSV_ENC CSV_METER CSV_SRC CSV_INFO;
 }
 
 const char *servo_test_meter_word(uint8_t kind)

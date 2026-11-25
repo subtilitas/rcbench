@@ -29,6 +29,7 @@
 #include "bench_state.h"
 #include "dial_ctl.h"
 #include "log_cols.h"
+#include "settings.h"
 #include "bind_link.h"
 #include "card_tree.h"
 #include "busfault_screen.h"
@@ -37,8 +38,10 @@
 #include "files_screen.h"
 #include "fm_logname.h"
 #include "esc_card.h"
+#include "yge_card.h"
 #include "esc_link.h"
 #include "esc_prog.h"
+#include "yge_link.h"
 #include "hitec_link.h"
 #include "hitec_prog.h"
 #include "hitec_rx_link.h"
@@ -270,6 +273,9 @@ typedef struct {
     hitec_prog_feed_t hitec;
     /** @brief What the ESC programmer's model is fed; see esc_publish(). */
     esc_prog_feed_t esc;
+    /** @brief What the model of programming for YGE ESCs is fed; see
+     *         yge_publish(). */
+    yge_prog_feed_t yge;
     /** @brief The IOmcu's update; see cu_service(). */
     cu_snap_t     cu;
 } panel_snap_t;
@@ -787,6 +793,21 @@ typedef enum {
  * @param dir a folder card_folder_check() takes, a path from the card's root
  */
 void log_set_folder(log_folder_t kind, const char *dir);
+
+/**
+ * @brief DUT NAME or RUN NOTE as the settings now hold it, for the `info`
+ *        cell of the next bench run's file (run_info_bench()).  Called by
+ *        the text observer on app_main; other strings are ignored.
+ * @param id   SET_TEXT_DUT_NAME or SET_TEXT_RUN_NOTE
+ * @param text the string in force
+ */
+void log_set_run_text(setting_text_id_t id, const char *text);
+
+/**
+ * @brief Name time() as the clock of every run's date (log_info_set_clock()):
+ *        called once on app_main before the tasks that start runs.
+ */
+void log_clock_start(void);
 
 /**
  * @brief The open markers and the folder each was opened in, read as one, for
@@ -1453,6 +1474,29 @@ bool esc_taken(void);
  *  @param f receives the feed */
 void esc_publish(esc_prog_feed_t *f);
 
+/** @brief The YGE_PROG page's module (4.42); control task only. */
+extern yge_link_t      s_yge_link;
+/** @brief The gate the commands of programming for YGE ESCs are claimed at. */
+extern yge_prog_gate_t s_yge_gate;
+/** @brief Those commands, app_main -> control task. */
+extern QueueHandle_t   s_yge_q;
+/** @brief Those commands; control task, before yge_pass(). */
+void yge_commands(void);
+/** @brief What the model of programming for YGE ESCs is fed; under the
+ *         snapshot's lock.
+ *  @param f receives the feed */
+void yge_publish(yge_prog_feed_t *f);
+/** @brief One pass of the YGE_PROG page's module and a stop; control task,
+ *         every pass.
+ *  @param link_up whether the IOmcu answers */
+void yge_pass(bool link_up);
+/** @brief Whether the YGE_PROG page holds a pin.
+ *  @return true while it does */
+bool yge_taken(void);
+/** @brief The programming port the YGE_PROG page holds, as last read.
+ *  @return 0 to 3; -1 while it holds none */
+int yge_taken_port(void);
+
 /**
  * @brief Where the tester's commands go, into s_drive for the SERVO screen:
  *        from each pass of prog_link_service() and from the link-lost edge.
@@ -1476,6 +1520,8 @@ extern atomic_ullong s_throttle_pins;
 extern atomic_bool   s_throttle_pins_known;
 /** @brief The protocol the throttle is bound as (outbind_role_proto()). */
 extern atomic_uint   s_throttle_proto;
+/** @brief The protocol the surface pins are bound as (outbind_role_proto()). */
+extern atomic_uint   s_servo_proto;
 /** @brief The THROTTLE in force at the IOmcu, for the log's rows.  Control
  *         task only. */
 extern bench_throttle_t s_bench_throttle;
@@ -2111,6 +2157,22 @@ extern atomic_uint     s_esc_card_sent;
 extern atomic_uint     s_esc_card_answered;
 /** @brief Runs the request handed over, on the log task. */
 void esc_card_serve(void);
+/** @brief Programming for YGE ESCs in the render loop: fed, its commands
+ *         queued, and its card requests handed to the log task. */
+void yge_ui_service(void);
+/** @brief The card request of programming for YGE ESCs, filled by the
+ *         render loop. */
+extern yge_card_req_t  s_yge_card_req;
+/** @brief The mount it was taken under. */
+extern unsigned        s_yge_card_mount;
+/** @brief The answer, filled by the log task. */
+extern yge_card_done_t s_yge_card_done;
+/** @brief Requests handed over. */
+extern atomic_uint     s_yge_card_sent;
+/** @brief Requests answered. */
+extern atomic_uint     s_yge_card_answered;
+/** @brief Runs the request handed over, on the log task. */
+void yge_card_serve(void);
 extern unsigned s_tq_lost;  /**< Touch events lost from s_touch_q, counted. */
 /**
  * @brief Whether the supply's output is on, or an ON for it waits in the

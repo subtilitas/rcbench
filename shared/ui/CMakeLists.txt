@@ -82,6 +82,7 @@ set(SRCS
     servo_hub.c
     servo_footer.c
     servo_lists.c
+    run_info.c
     servo_pick.c
     servo_run_supply.c
     servo_angle_pick.c
@@ -98,6 +99,11 @@ set(SRCS
     esc_wire_draw.c
     esc_wire_text.c
     esc_wire_help.c
+    yge_panel.c
+    yge_panel_edit.c
+    yge_panel_touch.c
+    yge_panel_draw.c
+    yge_panel_text.c
     hitec_panel.c
     hitec_panel_text.c
     hitec_panel_edit.c
@@ -122,6 +128,9 @@ set(SRCS
     log_viewer_load.c
     log_viewer_draw.c
     log_viewer_events.c
+    log_graph.c
+    log_graph_xy.c
+    log_graph_draw.c
     logs_strip.c
     log_select.c
     settings_screen.c

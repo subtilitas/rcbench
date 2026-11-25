@@ -67,7 +67,7 @@ OUTPUT's heading line reports the rate status, in the warning colour while the r
 
 ![TEST's OPTIONS list](view:servo-test-settings)
 
-OPTIONS in TEST's footer, or a tap on RANGE on TEST's READY card, opens the automatic test's list, on a SAFE bench only. It has 21 rows under six headings; each heading's line names what its rows give, RANGE's the run's ends, `1100-1900us`. A change is kept by SAVE in the strip; leaving with a change asks SAVE or DISCARD. RESET TEST puts every row to its default and HV SERVO off. The list closes as the bench arms or a run starts. Range and Dwell time are SWEEP's too, DUT name and Report the hub's: one setting each, whichever list sets it.
+OPTIONS in TEST's footer, or a tap on RANGE on TEST's READY card, opens the automatic test's list, on a SAFE bench only. It has 22 rows under six headings; each heading's line names what its rows give, RANGE's the run's ends, `1100-1900us`. A change is kept by SAVE in the strip; leaving with a change asks SAVE or DISCARD. RESET TEST puts every row to its default and HV SERVO off. The list closes as the bench arms or a run starts. Range and Dwell time are SWEEP's too, DUT name, Run note and Report the hub's: one setting each, whichever list sets it.
 
 | Heading | Setting | Range | Default | What it does |
 |---|---|---|---|---|
@@ -89,6 +89,7 @@ OPTIONS in TEST's footer, or a tap on RANGE on TEST's READY card, opens the auto
 | RANGE | Range | 10 to 100% | 80% | the share of the travel the moves cover, either side of PULSE CENTER |
 | RANGE | OUTPUT | the profile | STANDARD PWM 50Hz 1000-2000 | the type, frame rate and pulse range in force; a tap opens the profile |
 | DUT | DUT name | up to 23 characters | SERVO | heads each report |
+| DUT | Run note | up to 23 characters | empty | the run's condition, `greased` or `200g on the horn`, in the `info` column of every run's file until changed ([Logs](logs.md#what-a-run-writes)) |
 | DUT | Report | ON, OFF | ON | a text report beside each test's log |
 
 ![HV SERVO on](view:servo-hv)
@@ -116,9 +117,10 @@ OPTIONS in LIMIT RUN's footer opens the list. Off a PROG PORT, MODE, SERVO and S
 | CURRENT | SUPPLY's caps | SUPPLY's SET A | the run's current limit, SUPPLY's SET A, where a PD mini feeds the servo: a tap opens SUPPLY's keypad. Without a PD mini `--`, locked: the servo's own supply limits the current |
 | Wait before PWM | 0 to 10000ms | 100ms | from the end of programming to the first pulse |
 | DUT name | up to 23 characters | SERVO | the hub's NAME; heads each report |
-| User logs | ON, OFF | ON | SETUP > SD CARD's: OFF, a run writes no LIMITnnn.TXT |
+| Run note | up to 23 characters | empty | the hub's Run note; in the `info` column of the run's CSV |
+| User logs | ON, OFF | ON | SETUP > SD CARD's: OFF, a run writes neither LIMITnnn.CSV nor LIMITnnn.TXT |
 
-The list has no voltage: a run programs at 5.0V ([The supply: 5.0V](servo.md#the-supply-5-0v)). RUDDER AUTO's list ends with the same DUT name and User logs. The READY cards of both hold ten rows, the most they have room for, so User logs is a list row there and a card row on TEST only.
+The list has no voltage: a run programs at 5.0V ([The supply: 5.0V](servo.md#the-supply-5-0v)). RUDDER AUTO's list ends with the same DUT name, Run note and User logs. The READY cards of both hold ten rows, the most they have room for, so User logs is a list row there and a card row on TEST only.
 
 ## SUPPLY's caps
 
@@ -131,6 +133,7 @@ The active voltage and current caps constrain set points and run steps. They app
 | Setting | What it does |
 |---|---|
 | NAME | the device under test, up to 23 characters; it heads each report |
+| Run note | the run's condition, up to 23 characters, on the name keyboard: written into the `info` column of every run's file, SERVO, MOTOR and SUPPLY included, until it is changed; empty by default |
 | REPORT | a text report, `ATESTnnn.TXT`, beside each test's log, while User logs on SETUP > SD CARD is ON |
 
 ## RUDDER's list and KST's page

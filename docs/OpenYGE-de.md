@@ -13,8 +13,9 @@ die eine Implementierung benötigt.
 > unterschiedlichen Implementierungen führen.
 
 > Diese Seite gehört zur maßgeblichen Spezifikation für die Prüfung
-> durch YGE. Der Codec unter `protocols/openyge/` ist gebaut und getestet,
-> aber nicht an die Firmware angebunden.
+> durch YGE. Das Modul unter `protocols/openyge/` läuft auf dem IOmcu hinter
+> der Page YGE_PROG ([Programmierung für YGE-ESCs](LinkYge-de.md)); das Panel
+> nutzt es noch nicht.
 
 **° markiert eine erschlossene Bedeutung.** Diese Einträge beruhen auf
 Feldnamen und üblicher Praxis bei ESCs (Electronic Speed Controller,
@@ -467,9 +468,10 @@ Prüfungen am Telemetrieframe, aus denselben Aufzeichnungen:
 
 ## 9. Stand in rcbench
 
-Keine der beiden Platinen führt das Protokoll aus. Das IOmcu-Image
-bindet das Modul ein, das Panel-Image nicht; keines ruft es auf. Der
-Entwurf sieht die Verarbeitung auf dem IOmcu vor: eine
+Der IOmcu führt die Session hinter den Pages YGE_PROG und YGE_DATA aus
+([Programmierung für YGE-ESCs](LinkYge-de.md)). Das Panel-Image bindet das
+Modul ein und ruft es nicht auf; die Hälfte des Panels und die Bildschirme
+sind gebaut ([YGE-ESC-Programmierung](YgeProgramming-de.md)). Der Entwurf sieht die Verarbeitung auf dem IOmcu vor: eine
 Anfrage-Antwort-Schleife mit 20Hz, Umschaltzeiten im Mikrosekundenbereich
 und einen Timeout, der auch ohne eintreffende Bytes abläuft. Das Panel
 würde das Ergebnis als `bench_state` über das Page-Protokoll erhalten.
@@ -482,12 +484,17 @@ selbst, sodass jedes modellierte Feld von `bench_state` eine Quelle hat, bevor
 der Stromsensor bestückt ist. Die Angaben des ESC und der Shunt des Prüfstands
 sind unabhängige Messungen.
 
-Gebaut, auf dem Host getestet, nicht eingebunden:
+Gebaut und auf dem Host getestet; die Page YGE_PROG des IOmcu ruft die
+Session auf:
 
     protocols/openyge/
       openyge_frame.c        encode, decode and the CRC, openyge_crc()
       openyge_status.c       status1 -> state, subject, warnings, faults
       openyge_params.c       the parameter cache and its completeness rule
+      openyge_map.c          the fields of section 5.3: access, writable values
+      openyge_guard.c        the gate every outgoing frame passes
+      openyge_session.c      boot wait, listen, takeover, read, write, verify
+      openyge_file.c         the settings file: write, read, load check
 
 Der Decoder zählt Frames, CRC-Fehler, Resyncs und getrennt davon Frames, deren
 CRC stimmte, deren Aufbau aber unmöglich war. Nichts wird über den
@@ -495,17 +502,129 @@ Empfangspuffer gecastet. `openyge_params_get` gibt false zurück, bis jeder
 Index eingetroffen ist, und ein anstehendes Schreiben zieht die ganze Tabelle
 zurück.
 
-Nicht gebaut: `openyge_session.c`, die Anfrage-Antwort-State-Machine (Pollen
-im Frametakt, Abgleich der Sequenznummer, Lese- und Schreibtimeouts, Rückfall
-aufs Zuhören bei einem ESC vor v3). Sie braucht zuerst die Messung der
-Umschaltzeit, U2 in Abschnitt 8, und das Timing aus Abschnitt 10. Session,
-Pin-Treiber und Bildschirme sind die Slices der Programmierung für YGE-ESCs;
-diese Seite ist ihre Spezifikation.
+Die Session ist der Kern der Programmierung für YGE-ESCs. Sie hält das
+Timing aus Abschnitt 10 hinter `oy_driver_t` ein: einen Frame senden, die
+empfangenen Bytes holen, eine Uhr lesen. Die Host-Suites lassen sie gegen
+einen simulierten ESC laufen, der jeden Frame aufzeichnet. Jeder Frame
+läuft direkt vor dem Treiber durch `oy_guard_frame()`. Nur `TELE_REQ` und
+`WRITE_PARAM_REQ` gehen hinaus. Ein Schreiben braucht eine vollständig
+gelesene Tabelle aus derselben Session, eine Anzahl von 32, einen v3-Header
+und Firmware V1.03547 oder neuer. Schreibbar sind die Felder, die
+Abschnitt 5.3 mit CHECK oder edit kennzeichnet, innerhalb ihrer
+schreibbaren Werte. Ein Schreiben liest die Tabelle zuerst erneut und
+bricht ohne gesendeten Frame ab, wenn sie abweicht. Nach den Schreibzugriffen
+liest es die ganze Tabelle erneut und vergleicht sie mit dem Ziel. Der
+IOmcu führt sie an einem Programmierport hinter YGE_PROG aus
+(`shared/outputs/yge_port.c`); die Hälfte des Panels und die Bildschirme
+sind gebaut. Der Pin-Treiber ist gebaut (Abschnitt 9.2). Auf dem Pi der Station spielt
+[`testbench/ygesim/ygesim.py`](../testbench/ygesim/README.md) einen ESC
+am UART: 32 Parameter, Schreibzugriffe gespeichert, und die Modi
+`normal`, `silent`, `late` (250ms), `crc` (10%), `seq`, `legacy` und
+`count33`, die Eingaben des Stationsschritts H2.
+
+### 9.1 Einstellungsdatei
+
+`openyge_file.c` schreibt eine gelesene Tabelle in eine Textdatei, liest
+sie zurück und hält sie gegen die zuletzt gelesene Tabelle. Das erste
+Schreiben einer Session sichert die Tabelle nach
+`BENCH/YGE/CONF/YGE001-<type>.TXT`, mit dem Typcode aus Index 11 im Namen
+(`YGE001-5712.TXT`, Nummern 001 bis 999). Format 1:
+
+    YGE ESC settings, format 1
+    Type: 5712 165 HVT
+    Firmware: 1.03555
+    Serial: 4660
+    Count: 32
+    00 PARAMETER COUNT = 32
+    01 ESC MODE = 2
+    ...
+    31 RPM SETPOINT = 0
+    checksum 1A2B3C4D
+
+- `Type` ist Index 11, mit dem Modellnamen aus Abschnitt 5.3, wenn der
+  Code einen hat. `Firmware` ist Index 12-13 als u32 / 100000 mit 5
+  Nachkommastellen. `Serial` ist Index 14-15 als u32. `Count` ist Index 0,
+  16 bis 64.
+- Eine Zeile je Index von 0 bis count − 1: 2 Ziffern, der Schlüssel des
+  Felds aus der Map (`RAW` ab Index 32), ` = `, der Wert 0 bis 65535 dezimal.
+- Zeichen 0x20 bis 0x7E, höchstens 64 je Zeile, LF (line feed) oder CR LF
+  (carriage return, line feed) auf jeder Zeile, höchstens 4620B je Datei.
+- Die Prüfsumme ist CRC-32 (IEEE 802.3: Polynom 0x04C11DB7 reflektiert,
+  Start 0xFFFFFFFF, Endinversion) über alle Zeilen davor, jedes Zeilenende
+  als ein LF gezählt, in 8 hexadezimalen Großbuchstaben-Ziffern.
+
+Der Parser lehnt ab, mit festem Code und der Zeile: einen Text über 4620B
+(2), einen anderen Kopf (3), eine Version außerhalb 1 bis 999 (4) oder
+über 1 (5), einen Text ohne Prüfsummenzeile (6), LF und CR LF in einer
+Datei (7), eine Zeile außer Form (8), eine Anzahl außerhalb 16 bis 64
+oder eine andere Zahl von Indexzeilen (9), eine abweichende Prüfsumme
+(10), eine Zeile hinter der Prüfsumme (11), einen Schlüssel, der nicht
+der der Map ist, oder eine Kopfzeile, die von ihren Indizes abweicht (12),
+und eine letzte Zeile `edited` (13). Eine geänderte Datei hat keine
+Prüfsumme, die sie hält; daher lädt keine bearbeitete Datei.
+
+Ein Laden übernimmt aus der Datei die Indizes, die die Map mit CHECK oder
+edit kennzeichnet, von Index 26 nur Bit 0 und 1, und behält jeden anderen
+Wert des ESC. Es lehnt eine Datei eines anderen Typcodes oder einer
+anderen Anzahl ab, und einen Entwurf, den der Guard ablehnt: Der Entwurf
+wird von `oy_guard_approve()` auf einer Kopie des Guards beurteilt, daher
+gibt ein Laden nie einen Entwurf, den der Guard stoppen würde, und gibt
+keinen frei.
 
 Offene Entscheidung: welche ESC-Protokolle außer OpenYGE unterstützt werden.
 Das Ausgangsmaterial steht neben Hobbywing, Kontronik, Scorpion, OMP, ZTW,
 APD, FLY, Graupner und XDFly; mehrere teilen sich eine State Machine, keines
 ein Frameformat. Erst ein Protokoll auf Hardware beweisen, dann ein zweites.
+
+### 9.2 Pin-Treiber
+
+`protocols/openyge/rp2350/oy_line.c` treibt die Telemetrieleitung an einem
+RP2350-Pin hinter `oy_driver_t`. Sein PIO-Programm (programmable
+input/output) ist `oy_line.pio`; die Arithmetik, die es füttert und liest,
+ist `openyge_pio.c`. Die Host-Suite `openyge_pio` lässt das Programm in
+einem Modell der State Machine laufen, und der IOmcu-Build hält die Wörter
+von pioasm an dieselbe Liste (`test/host/fixtures/oy_line_words.txt`). Die
+Page YGE_PROG (`firmware/iomcu/src/iomcu_yge.c`) und der Test `oyline` des
+Konsolen-Builds rufen ihn auf.
+
+| | |
+| --- | --- |
+| Ressourcen | 1 State Machine, 25 Befehlswörter, 2 DMA-Kanäle (direct memory access), kein Interrupt |
+| Bit | 16 Zyklen der State Machine; Teiler 81 + 97/256 bei 150MHz: 8680ns, 16ppm Abweichung |
+| Frame hinaus | 1 bis 140 Bytes, Push-Pull, nur solange die Leitung zwischen Bytes high ist |
+| Freigabe | 16 Zyklen nach der Flanke des letzten Stoppbits: am Ende des Stoppbits |
+| Echo | keines: der Empfänger läuft nicht, während ein Frame hinausgeht |
+| Empfang | Datenbits 22 + 16 k Zyklen nach der Abtastung, die das Startbit sah, das Stoppbit bei 150; ein Sender bis 4% daneben ohne Lücken |
+| Rahmenfehler | ein Stoppbit low: das Byte wird übergeben und gezählt |
+| Empfangspuffer | 256 Einträge zu 2B; die Bytes nach einem vollen Puffer werden verworfen, einmal je Füllung gezählt |
+| Später Frame | ein Frame, der 1000ms nach seiner längsten Zeit bis zur Freigabe noch nicht hinaus ist, auf einer low gehaltenen Leitung, wird beim nächsten Senden verworfen und gezählt |
+
+| Wann | Pad |
+| --- | --- |
+| Bevor die Versorgung als an gemeldet wird | Eingang, Pull-down, Eingangspuffer aus |
+| Zuhören | Eingang, Pull-up von 50 bis 80kΩ, bis U1 gemessen ist |
+| Senden | getrieben, beide Pegel |
+| Fehler, STOP, Link-Verlust | Eingang, sofort Pull-down; die State Machine hält zuerst an |
+
+Die Dauer jedes Treiberaufrufs ist nicht bekannt; H1 hält sie mit dem
+Konsolentest fest. Sein Stationsschritt (`IOMCU_CONSOLE=ON`, Port 0 an
+GPIO 13, Logikanalysator bei 1.65V):
+
+| Befehl | Bestanden |
+| --- | --- |
+| `oyline 13 tx` | Bitzeit 8.68µs auf 0.5% genau; 3 Anfragen zu 12B dekodieren wie gesendet mit gültiger CRC; das Pad innerhalb 1 Bit nach jedem letzten Stoppbit freigegeben, die Leitung high am Pull-up; low am Pull-down im geparkten Zustand |
+| `oyline 13 rx` | `match=1 crc_ok=1 framing=0`, dann `framing=1` für die Anfrage mit einem Stoppbit low |
+| `oyline 13 cut` | die Leitung fällt 0.5ms in die Anfrage hinein am Pull-down auf low |
+
+Die Session-Schritte von H1 nutzen `yge` der Konsole im selben Build
+([Die Bench-Konsole](BenchConsole-de.md#die-yge-page)):
+
+| Befehl | Bestanden |
+| --- | --- |
+| `yge open port 0` | `state=2`, `gpio=13`; die Leitung low am Pull-down |
+| `yge enter hand` an einer leeren Leitung | `state=5`; die Leitung bleibt low, der Ausgang des PD mini bleibt aus |
+| `yge done`, dann `yge stop` | die Leitung nach `done` high am Pull-up, innerhalb 1ms nach `stop` low am Pull-down; Bit 0 von `flags` gesetzt |
+| eine Link-Trennung in `READY` oder in einer Anfrage | die Leitung sofort low am Pull-down; der PD mini aus innerhalb seiner Meldezeit |
 
 ---
 
@@ -514,9 +633,9 @@ ein Frameformat. Erst ein Protokoll auf Hardware beweisen, dann ein zweites.
 Die Zeiten, die ein Master beim Pollen und Schreiben einhält. Die Werte
 sind die Konstanten von RF-F. RF-F markiert beide Timeouts mit „zu
 bestätigen“ und die Schreibperiode als vorläufig; U2, U10 und U15 aus
-Abschnitt 8 klären sie. Die Spalte Session enthält die Werte für
-`openyge_session.c`, das nicht gebaut ist; ein als gewählt markierter Wert
-hat keine Quelle.
+Abschnitt 8 klären sie. Die Spalte Session enthält die Werte, die
+`openyge_session.c` verwendet, als benannte Konstanten in
+`openyge_session.h`; ein als gewählt markierter Wert hat keine Quelle.
 
 | Zeit | RF-F | Gezählt ab | Session |
 | --- | ---: | --- | --- |
@@ -528,7 +647,7 @@ hat keine Quelle.
 | Lese-Timeout | 200ms | dem Senden der Anfrage; „zu bestätigen“ | 200ms |
 | Schreib-Timeout | 400ms | dem Senden der Anfrage; „zu bestätigen“ | 400ms, 3 Versuche |
 | Frame-Timeout im Auto-Modus | 900ms bis hinab zu 60ms | dem vorigen Frame; er schrumpft auf den gemessenen Frameabstand plus 10ms, nie unter 60ms | – |
-| Tabelle lesen nach einem Schreiben | – | – | bis 10000ms, gewählt |
+| Tabelle lesen, auch nach einem Schreiben | – | – | bis 10000ms, gewählt |
 
 So führt RF-F die Session:
 
@@ -546,3 +665,26 @@ So führt RF-F die Session:
   Wert in den Cache. Die Tabelle gibt es erst wieder frei, wenn jeder Index
   neu gelesen wurde.
 - Ein ESC mit einem Header unter Version 3 schaltet es aufs Zuhören um.
+
+Wo `openyge_session.c` es anders führt:
+
+- Es übernimmt die Adresse aus dem ersten v3-Frame, den es beim Zuhören
+  empfängt. Es nimmt 1, wenn kein Frame kommt oder der Frame 0 nennt.
+- Jeder Versuch einer Anfrage oder eines Schreibens trägt eine neue `seq`.
+  Eine Antwort, die kommt, nachdem ihre Anfrage erneut gesendet wurde,
+  trägt die alte und wird verworfen.
+- Eine Antwort zählt, wenn sie innerhalb des Timeouts ihres Sendens
+  eintrifft. Drei Sendungen ohne Antwort sind ein Fehlschlag. Eine
+  fehlgeschlagene Anfrage beendet die Session mit `SILENT`. Ein
+  fehlgeschlagenes Schreiben beendet die Schreibzugriffe, und das Lesen der
+  Tabelle danach entscheidet das Ergebnis.
+- Es prüft eine Antwort gegen ihren Timeout, wenn es sie übernimmt, sodass
+  ein verspäteter Schritt keine abgelaufene Antwort zählen lässt.
+- Eine Antwort auf eine Anfrage, die vor Beginn eines Lesens oder
+  Schreibens gesendet wurde, trägt keinen Wert in dieses Lesen.
+- Eine Antwort, die bei oder nach der Lesegrenze von 10000ms übernommen
+  wird, beendet das Lesen mit `NO_TABLE`, nach einem Schreiben mit
+  `PARTIAL`, auch wenn sie die Tabelle vervollständigt.
+- Nach der Übernahme verwirft es `TELE_AUTO`-Frames.
+- Eine Anzahl von 0 oder über 64 beendet ein Lesen sofort mit `NO_TABLE`.
+- Jedes Schreiben folgt 40ms nach der vorigen Antwort, der Anfrageperiode.

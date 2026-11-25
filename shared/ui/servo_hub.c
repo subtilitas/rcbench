@@ -199,7 +199,8 @@ static uint32_t hub_sig(void)
     uint32_t sig = s.fp_rev * 2654435761u;
     sig = sig * 31u + s.ctrl_rev;
     sig = sig * 31u + (uint32_t)s.drive_target * 257u + s.drive_pin
-          + (s.drive_pwm ? 65536u : 0u) + (uint32_t)s.pins;
+          + (s.drive_pwm ? 65536u : 0u) + (uint32_t)s.pins
+          + (uint32_t)s.pin_proto * 4099u;
     sig = sig * 31u + ui_router_status()->capabilities;
     sig = sig * 31u + (prog_reg_servo_holds() ? 1u : 0u);
     sig = sig * 31u + (s.pins_known ? 1u : 0u);

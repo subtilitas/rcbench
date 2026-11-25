@@ -28,6 +28,7 @@
 #include "prog_choice.h"
 #include "prog_registry.h"
 #include "rcbench_version.h"
+#include "run_info.h"
 #include "sensors_rows.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -202,10 +203,12 @@ static void ra_cfg(servo_rauto_cfg_t *c)
     snprintf(c->dut, sizeof(c->dut), "%s", settings_text(SET_TEXT_DUT_NAME));
     snprintf(c->type, sizeof(c->type), "%s", type()->name);
     (void)servo_target_line(c->output, sizeof(c->output), s.drive_target,
-                            s.drive_pin, s.drive_pwm, s.pins, s.pins_known);
+                            s.drive_pin, s.drive_pwm, s.pins, s.pin_proto,
+                            s.pins_known);
     (void)sensors_rows_meter(c->meter, sizeof(c->meter));
     (void)enc_name(c->source, sizeof(c->source));
     snprintf(c->firmware, sizeof(c->firmware), "%s", RCBENCH_VERSION_STRING);
+    run_info_servo(c->info, sizeof(c->info), c->type, c->meter, c->source);
     c->text = ui_servo_table();
 }
 
@@ -581,7 +584,8 @@ static bool ra_start(void)
      * with the port's pulse the steps switched on. */
     servo_rauto_cfg_t c = s.ra.cfg;
     (void)servo_target_line(c.output, sizeof(c.output), s.drive_target,
-                            s.drive_pin, s.drive_pwm, s.pins, s.pins_known);
+                            s.drive_pin, s.drive_pwm, s.pins, s.pin_proto,
+                            s.pins_known);
     if (!servo_rauto_start(&s.ra.run, &c, test_now())) {
         s.ra.note = TR(RA_REFUSED);
         return false;

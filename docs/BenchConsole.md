@@ -83,13 +83,13 @@ are dropped, followed by `err output full, N bytes dropped`.
 
 ```text
 > r 0x00 0 2
-data page=0x00 off=0 n=2: 0x0004 0x0029
+data page=0x00 off=0 n=2: 0x0004 0x002A
 > w 0x2A 4 1 5000 1000
 nack page=0x2A off=4: NOT_ARMED (5)
 ```
 
 Lines typed are shown here after `> `; the console prints no prompt. The
-first line reads the protocol version, 4.41. The second is SUPPLY's ON at
+first line reads the protocol version, 4.42. The second is SUPPLY's ON at
 5000mV and 1000mA, refused because no panel sends a heartbeat. With a
 panel running, the same line is taken:
 
@@ -304,6 +304,40 @@ load on the line, such as a servo's signal wire, reads low on the pull-up alone,
 and a high pulse of 6.5us, 3.26us at 38400baud, shows before each frame's first
 start bit. A test on such a line can end in `n=` values that do not match.
 
+## The telemetry wire's pin driver
+
+`oyline <gpio> tx|rx|cut` runs the pin driver of programming for YGE ESCs
+(`protocols/openyge/rp2350/oy_line.h`) on a free pin, for a logic analyser
+with no ESC attached. It is not a page and has no key: the one frame it
+sends is a telemetry request (`TELE_REQ`, 12B, device 1), never a write. It
+refuses a pin the same way as `ewline` and runs only while no other driver
+test runs. An ARM during a test closes the line at once and answers
+`oyline armed`.
+
+| Test | On the pin, in order |
+|---|---|
+| `tx` | parked 20ms; listening 20ms; the request 3 times, each to its release and followed by 40ms listening; parked 20ms |
+| `rx` | listening 5ms; the request driven on the pad by the pin's overrides; listening 5ms; the request again with a low stop bit on its fifth byte and 2 idle bit times after it; listening 5ms; parked 5ms |
+| `cut` | listening 5ms; the request, parked 0.5ms after its start; parked 20ms; listening 5ms; the request to its release; listening 5ms; parked 20ms |
+
+Parked is an input with its pull-down, listening an input with its pull-up.
+Each `rx` feed blocks the main loop for its 12B, 1.04ms.
+
+```
+oyline open gpio=13 bit=8680ns div=81+97/256
+oyline feed n=12 framing=0 match=1 crc_ok=1
+oyline feed n=12 framing=1 match=1 crc_ok=1
+oyline done gpio=13 sent=0 dropped=0 rx=24 framing=1 full=0 tx_max=<t>us rx_max=<t>us park=<t>us out_max=<t>us
+```
+
+`match` compares the bytes taken with the bytes fed; a low stop bit leaves
+the data as fed, so `match` and `crc_ok` stay 1. The last line counts the
+requests sent, the requests dropped after a line held low, the bytes
+received, the bytes with a low stop bit and the buffer fills, then gives
+the longest call of each kind and the longest time from a hand-over to its
+release, in microseconds. Those times are not known before the station
+step H1 ([OpenYGE](OpenYGE.md#92-pin-driver)).
+
 ## The ESC settings page
 
 `esc` accesses [the ESC_WIRE page](LinkEsc.md) with the same frames as the
@@ -329,6 +363,36 @@ esc state=2 op=1 result=2 ref=0 flags=0x0008 line=0 gpio=5 ses=0 fw=0 layout=0 w
 
 `state`, `result`, `ref`, `flags` and `line` are the registers of
 [its page](LinkEsc.md#registers); `ses` is the session's last result.
+
+## The YGE page
+
+`yge` accesses [the YGE_PROG page](LinkYge.md) of programming for YGE ESCs
+with the same frames as the panel. The same checks and refusals apply. Like
+other pages that require a heartbeat, it requires a running panel alongside
+the console. ENTER carries the key a panel sends at the end of its 2s hold.
+None of its commands writes to an ESC. It is absent from released images.
+
+```
+yge
+yge open port <n>
+yge enter mv=<mV> ma=<mA> [boot=<ms>]
+yge enter hand [boot=<ms>]
+yge done|read|leave|stop|abort|clear|close
+```
+
+SWITCHED takes `mv` and `ma` with no default; `boot` defaults to 5000ms.
+`done` is HAND_DONE. Each command answers one line:
+
+```
+yge state=2 op=1 result=2 ref=0 flags=0x0008 line=0 gpio=13 port=0 ses=0 guard=0 entries=0 reads=0 type=0 fw=0 t=52ms
+```
+
+`state`, `result`, `ref`, `flags` and `line` are the registers of
+[its page](LinkYge.md#registers); `ses` is the session's last result and
+`guard` the guard's last refusal; `entries`, `reads`, `type` and `fw` are the
+read copy's. Station step H1 ([OpenYGE](OpenYGE.md#8-open-measurements)) runs
+`yge open port 0`, `yge enter hand` on an empty line, then `yge stop`, then a
+link cut.
 
 ## Over the link, with no USB on the IOmcu
 

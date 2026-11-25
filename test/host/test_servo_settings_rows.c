@@ -25,6 +25,7 @@
  * - dwell_is_one_setting_on_sweep_and_test
  * - report_and_dut_name_are_the_hubs_on_test
  * - dut_name_is_typed_on_limit_run_and_rudder_auto
+ * - run_note_sits_under_dut_name_on_every_list
  * - the_log_row_switches_user_logs_and_saves
  * - the_log_row_is_refused_under_a_run
  * - user_logs_is_a_list_row_on_limit_run_and_rudder_auto
@@ -372,6 +373,52 @@ TEST_CASE(dut_name_is_typed_on_limit_run_and_rudder_auto)
     CHECK_STR_EQ(settings_text(SET_TEXT_DUT_NAME), "SV");
 }
 
+/* RUN NOTE sits under DUT NAME on every SERVO list that has the name: the
+ * hub's, TEST's, LIMIT RUN's and RUDDER AUTO's.  It types on the name
+ * keyboard, spaces and 23 characters, and one note is what every list
+ * reads. */
+TEST_CASE(run_note_sits_under_dut_name_on_every_list)
+{
+    safe_on(SERVO_FN_LIMRUN);
+    settings_set_text(SET_TEXT_RUN_NOTE, "");
+    tap_settings();
+    const ui_setlist_t *sl = servo_screen_list();
+    CHECK(sl->open);
+    CHECK_EQ(sl->host->row(LL_NOTE).kind, (uint8_t)UI_SL_TEXT);
+    CHECK_EQ(sl->host->row(LL_NOTE).text, (int8_t)SET_TEXT_RUN_NOTE);
+    CHECK_EQ(sl->host->row(LL_NOTE - 1).text, (int8_t)SET_TEXT_DUT_NAME);
+    sl_tap(LL_NOTE);
+    CHECK(sl->tk.open);
+    CHECK(!sl->tk.folder);
+    /* X, a space, Y and 1: the name keyboard's keys. */
+    const int seq[] = { 31 /* X */, UI_TK_SPACE, 15 /* Y */, 0 /* 1 */,
+                        UI_TK_OK };
+    for (size_t i = 0; i < sizeof(seq) / sizeof(seq[0]); ++i) {
+        sl_text_key(seq[i]);
+    }
+    CHECK(!sl->tk.open);
+    CHECK_STR_EQ(settings_text(SET_TEXT_RUN_NOTE), "X Y1");
+    settings_request_save();
+    CHECK(home_tag());
+
+    go(SERVO_FN_RAUTO);
+    tap_settings();
+    CHECK_EQ(sl->host->row(RAL_NOTE).text, (int8_t)SET_TEXT_RUN_NOTE);
+    CHECK_EQ(sl->host->row(RAL_NOTE - 1).text, (int8_t)SET_TEXT_DUT_NAME);
+    CHECK(home_tag());
+    go(SERVO_FN_TEST);
+    tap_settings();
+    CHECK_EQ(sl->host->row(TL_NOTE).text, (int8_t)SET_TEXT_RUN_NOTE);
+    CHECK_EQ(sl->host->row(TL_NOTE - 1).text, (int8_t)SET_TEXT_DUT_NAME);
+    CHECK(home_tag());
+    go(SERVO_FN_HUB);
+    tap_settings();
+    CHECK_EQ(sl->host->row(HL_NOTE).text, (int8_t)SET_TEXT_RUN_NOTE);
+    CHECK_EQ(sl->host->row(HL_NOTE - 1).text, (int8_t)SET_TEXT_DUT_NAME);
+    CHECK_STR_EQ(ui_setlist_text_label(SET_TEXT_RUN_NOTE), "Run note");
+    settings_set_text(SET_TEXT_RUN_NOTE, "");
+}
+
 /* TEST's LOG row reads USER LOGS: ON green, OFF amber.  A tap switches it
  * and asks a save; LIMIT RUN's list then reads the same. */
 TEST_CASE(the_log_row_switches_user_logs_and_saves)
@@ -471,6 +518,7 @@ int main(void)
     RUN(dwell_is_one_setting_on_sweep_and_test);
     RUN(report_and_dut_name_are_the_hubs_on_test);
     RUN(dut_name_is_typed_on_limit_run_and_rudder_auto);
+    RUN(run_note_sits_under_dut_name_on_every_list);
     RUN(the_log_row_switches_user_logs_and_saves);
     RUN(the_log_row_is_refused_under_a_run);
     RUN(user_logs_is_a_list_row_on_limit_run_and_rudder_auto);

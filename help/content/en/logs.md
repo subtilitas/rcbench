@@ -10,7 +10,7 @@ LOGS lists CSV (comma-separated values) recordings and reports on the panel's SD
 
 The three tabs at the top left select a folder: ROOT for the card root, USER for the User log folder (`USER/LOGS` by default), and BENCH for the Auto log folder (`BENCH/LOGS` by default). WI-FI at the bottom left opens [Wi-Fi](wifi.md). FILES beside it opens [Files](files.md) to copy, move, rename or delete card files.
 
-The home tag works like BACK, returning one level at a time: plot to import view, import view to file list, file list to menu. In the DELETE question, it acts as CANCEL.
+The home tag works like BACK, returning one level at a time: the plot to where it came from (the file list after OPEN, the import view after PLOT), import view to file list, file list to menu. Over MORE's list it closes the list. In the DELETE question, it acts as CANCEL.
 
 ## No card
 
@@ -18,7 +18,7 @@ The home tag works like BACK, returning one level at a time: plot to import view
 
 Without a mounted card, the box shows `NO RECORDINGS` and `No card. Insert one and tap RESCAN.` An empty or uncreated folder shows `No .csv files in BENCH/LOGS.` or `No .csv files in USER/LOGS.` At the root, it shows `No .csv files in the top-level folder.`
 
-The line below describes the selected tab: `Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.`, `Tests are saved as ATESTnnn, RUDDRnnn.CSV and LIMITnnn.TXT.` or `Runs of firmware 0.21.0 and older.` When AUTO LOGS or USER LOGS is off under [SETUP > SD CARD](setup.md), BENCH or USER instead shows `AUTO LOGS OFF on SD CARD.` or `USER LOGS OFF on SD CARD.`
+The line below describes the selected tab: `Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.`, `Tests are saved as ATESTnnn, LIMITnnn and RUDDRnnn.CSV.` or `Runs of firmware 0.21.0 and older.` When AUTO LOGS or USER LOGS is off under [SETUP > SD CARD](setup.md), BENCH or USER instead shows `AUTO LOGS OFF on SD CARD.` or `USER LOGS OFF on SD CARD.`
 
 RESCAN reads the card again. Tabs remain usable without a card; each tab press also checks for an inserted card.
 
@@ -51,7 +51,7 @@ WI-FI in the row of buttons opens [Wi-Fi](wifi.md) for browser downloads; its ho
 | RESCAN | reads the page on screen again and selects its newest run |
 | PREV, NEXT | the page before and after; shown with more than 48 files on the card |
 | DELETE | asks, then removes the selected file; grey with nothing selected, while ARMED and while a run is being logged |
-| OPEN | opens the selected CSV file in the import view, a report in the text viewer; grey with nothing selected |
+| OPEN | opens a run file the bench wrote in the plot, any other CSV file in the import view, a report in the text viewer; grey with nothing selected |
 
 The footer under the list names the screen, LOGS. OPTIONS at its right opens the SD CARD list of [SETUP](setup.md#sd-card): the log switches and the two log folders. Its home tag returns here.
 
@@ -79,10 +79,12 @@ One file is one run, in the folder of its kind. Its name says what started it:
 | `BENCH/LOGS` | `MOTORnnn.CSV` | one switch to ARMED from MOTOR & ESC's ARM or a stick run on its PROGRAM |
 | `BENCH/LOGS` | `SUPPLnnn.CSV` | one switch-on of the SUPPLY output while the bench is SAFE |
 | `USER/LOGS` | `ATESTnnn.CSV` | one AUTOMATIC TEST; its report is `ATESTnnn.TXT` |
-| `USER/LOGS` | `LIMITnnn.TXT` | one LIMIT RUN's report, with no CSV beside it |
+| `USER/LOGS` | `LIMITnnn.CSV` | one LIMIT RUN, a row a judged position; its report is `LIMITnnn.TXT`, alone for a run that judged no position or one of firmware 0.23.17 and older |
 | `USER/LOGS` | `RUDDRnnn.CSV` | one AUTO end points run on RUDDER, a row a measure; its report is `RUDDRnnn.TXT` |
 | root | `BENCHnnn.CSV`, `ESCnnn.CSV`, `SERVOnnn.CSV` | runs of firmware 0.21.0 and older; in the root, `SERVOnnn` is a servo test |
 | root | `SERVOnnn.TXT` alone | a limit run of firmware 0.21.0 and older |
+
+The last column of each CSV the bench writes, `info`, describes the run on the first data row: `dut=MG90S&note=greased&date=2026-11-24T10:31&fw=0.23.18`. `dut` is DUT name and `note` the Run note from the [SERVO lists](servo-settings.md), each up to 23 characters; `date` is the panel's local date and time at the start, left out while the clock is unset; `fw` is the firmware. AUTOMATIC TEST, LIMIT RUN and RUDDER AUTO add `servo`, `meter` and `angle`; MOTOR and SUPPLY files carry no `dut`. Inside a value each `&`, `=`, `;` and `"` is written `_`. Firmware 0.23.17's LOGS reads every such file but a SERVO file with three INA3221 groups, which has 26 columns.
 
 The name follows the screen whose ARM armed the bench, also on an IOmcu older than 0.18.0, which arms the throttle outputs with every switch to ARMED.
 
@@ -96,7 +98,7 @@ The panel makes each folder the first time it writes there, one level at a time.
 
 Each folder has its own sequence. A new run uses one above the highest number found there, regardless of filename prefix, including names from firmware 0.21.0. Deleted numbers are not reused. Once a folder contains number 999, it accepts no further run, even if lower numbers are free.
 
-The list includes reports named like runs: `ATESTnnn.TXT` with or without its `ATESTnnn.CSV`, `LIMITnnn.TXT`, and root-level `SERVOnnn.TXT` from firmware 0.21.0 and older. A run and its report occupy separate rows, CSV first. DELETE on the run removes its report too. Other `.TXT` files appear only in FILES.
+The list includes reports named like runs: `ATESTnnn.TXT` with or without its `ATESTnnn.CSV`, `LIMITnnn.TXT` with or without its `LIMITnnn.CSV`, and root-level `SERVOnnn.TXT` from firmware 0.21.0 and older. A run and its report occupy separate rows, CSV first. DELETE on the run removes its report too. Other `.TXT` files appear only in FILES.
 
 Runs are ordered by descending number across all prefixes: `MOTOR043.CSV`, then `SERVO042.CSV`, then `SUPPL041.CSV`.
 
@@ -128,11 +130,26 @@ OPEN on a report opens it in the [text viewer](files.md#the-text-viewer), read-o
 
 [Wi-Fi](wifi.md) downloads every report as well.
 
+## What opens where
+
+OPEN reads the file's header. A run file the bench wrote opens in the plot at once, with the columns of its kind. The kind comes from the header's column names first and from the file's name second, so a labelled name (`MOTOR042_kv1200.CSV`), a name in lower case and the files of firmware 0.21.0 and later are recognised too.
+
+| Kind | Name | Columns plotted |
+|---|---|---|
+| LIMIT RUN | `LIMITnnn.CSV` | `pulse`, `current`, `angle` |
+| RUDDER AUTO | `RUDDRnnn.CSV` | `pulse`, `current`, `measured` |
+| AUTOMATIC TEST | `ATESTnnn.CSV` | `command`, `current`, `voltage`, `angle` |
+| SUPPLY run | `SUPPLnnn.CSV` | `set`, `voltage`, `limit`, `current` |
+| MOTOR run | `MOTORnnn.CSV`, `ESCnnn.CSV` | `throttle`, `rpm`, `current`, `voltage` |
+| SERVO run | `SERVOnnn.CSV`, `BENCHnnn.CSV` | `pulse`, `angle`, `current`, `voltage` |
+
+A column the file lacks is left out. A LIMIT RUN or RUDDER AUTO file opens in [the graph](#the-graph-of-a-limit-run-or-rudder-auto) over its pulse. Any other CSV, and a run's name over columns of no kind, opens in the import view.
+
 ## The import view
 
 ![What the import detected](view:logs-import)
 
-OPEN reads the file and previews the detected format before plotting it.
+The import view previews the detected format before plotting. MORE > COLUMNS on the plot opens it for a run file, with the plot's columns selected.
 
 | Line | Shows |
 |---|---|
@@ -143,7 +160,7 @@ OPEN reads the file and previews the detected format before plotting it.
 | UNEVEN ROWS | rows with another cell count than the header |
 | EVIDENCE | the cells that proved German, English or neither |
 
-The right list shows each column's first value and minimum-to-maximum range. Up to 4 columns are selected automatically. For SERVO files, numeric `pulse`, `angle`, `current` and `voltage` columns take priority, followed by other numeric columns. Other files start with the first 4 numeric columns.
+The right list shows each column's first value and minimum-to-maximum range. For a file of no kind, up to 4 columns are selected automatically: numeric `pulse`, `angle`, `current` and `voltage` columns first where the file has a numeric `pulse`, followed by other numeric columns; any other file starts with its first 4 numeric columns.
 
 Tap a numeric column to add or remove it; the title counts the selection, for example `PLOT  4/4`. If columns or values look wrong, use SEP and NUM to cycle through the format choices, starting with AUTO. BACK returns to the file list. PLOT draws the selected columns.
 
@@ -158,9 +175,41 @@ The header names the file, its rows, its duration and its sample rate. Each colu
 - One finger, `<` and `>` move the cursor. The line at the bottom right shows its time and sample.
 - Two fingers zoom: spread to zoom in, pinch to zoom out, move both to pan. The narrowest view is 8 samples, the widest the whole run.
 - With SETUP, PANEL, One finger pans on, a finger that moves more than 10px drags a zoomed view sideways.
-- BACK returns to the import view.
+- BACK returns to the file list, or to the import view when its PLOT opened the plot.
+- MORE opens a list with COLUMNS, which goes to the import view to pick other columns. A press beside the list closes it.
+
+![MORE's list](view:logs-plot-more)
 
 The rows are spaced evenly by row number. The labels under the plot are the file's time column, so a gap in the rows is a jump in the labels.
+
+## The graph of a LIMIT RUN or RUDDER AUTO
+
+![A LIMIT RUN: current and angle over the pulse](view:logs-limit-graph)
+
+A LIMIT RUN's and a RUDDER AUTO's file open in the graph: each row placed over its pulse, a line for each search and side. The summary names the file, its rows and its kind, `LIMIT006.CSV   116 ROWS   LIMIT RUN`. The graph shows the whole file of up to 2,048 rows; a longer one opens in the plot by row number.
+
+| Letter | Marker | Where |
+|---|---|---|
+| C | center | the pulse every search starts from |
+| B | bound | the pulse at which the side's last search found the stop |
+| E | end point | the end point written for that side, 25us short of the bound |
+| L | last position | the outermost pulse of a side where that is not its bound: a side with no bound, or an earlier search that ran further |
+| F | free current | a level across the side's pulses |
+| T | threshold | the current above which a position counts as bound |
+
+- The first search is drawn solid; the search after the overset (2) and the last check (3) dashed.
+- The lowest and the highest pulse stand on the plot's first and last column.
+- Tap a chip: its series is drawn 2px thick and its scale's top and foot show at the plot's left edge. Tap again to hide the series, a third time to bring it back.
+- One finger puts the cursor on the nearest point; `<` and `>` step to the next point drawn. Each chip shows its value at the cursor; the line in the footer reads `pulse 1040us   row 112 of 116`.
+- Two fingers do not zoom the graph.
+
+![A RUDDER AUTO's search](view:logs-ruddr-search)
+
+RUDDER AUTO's file has two pictures on the tabs SEARCH and STEPS. SEARCH draws the current and the angle over the search's pulses, a line a side, with C, E at each side's end point and L at each side's outermost position.
+
+![A RUDDER AUTO's steps](view:logs-ruddr-steps)
+
+STEPS draws each measure and its goal over the step, a line a side, and the 3 verifies as points. A measure outside the tolerance is drawn in the warning colour; a tick at the plot's foot marks each measure after a write.
 
 ## Deleting a file
 

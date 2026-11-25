@@ -172,6 +172,16 @@ SEARCH findet und bindet das Dial, den Leistungsknoten oder den Auswuchtknoten. 
 
 Tippe auf ein Gerät, um es zu binden: Die Frage zeigt Name, Adresse und Signal und das Gerät, das es ersetzt. BINDEN bindet es; SETUP behält es und fordert Speichern an, und SEARCH bleibt und hebt es hervor, sobald es gebunden ist. ABBRECHEN oder das Home-Feld binden nichts. BINDEN bindet nichts, solange eine Suche läuft, `SUCHE LÄUFT: DEN KNOTEN NACH DEM ENDE WÄHLEN`, oder wenn eine neue Suche die Liste unter der Frage änderte, `KNOTEN NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`; die Texte des Dials nennen das Dial.
 
+### Bindung lösen
+
+`2s HALTEN: BINDUNG LÖSEN`, unter AKTUALISIEREN, vergisst das gebundene Gerät. Halte es 2s: Die Verbindung endet, SETUP behält kein Gerät und fordert Speichern an, und die Karte zeigt `KEINS`. Vor 2s losgelassen, löst es nichts. Ist nichts gebunden, ist der Knopf grau, und Tippen zeigt `NICHTS GEBUNDEN: KEINE BINDUNG ZU LÖSEN`. Um das Gerät wieder zu nutzen, suche und binde es.
+
+ARMED lehnt es nicht ab. Ein Lauf, der das Gerät nutzt, trifft es wie eine verlorene Verbindung:
+
+- Dial: sofort verloren; bei ARMED ist das ein Fehler, und jeder Ausgang geht aus.
+- Leistungsknoten: Ein Lauf, der seinen INA228 liest, bekommt keinen Messwert und endet nach 300ms als Fehler, jeder Ausgang aus.
+- Auswuchtknoten: Seine Messwerte veralten.
+
 ## Verwandte Seiten
 
 - [Setup](setup.md)

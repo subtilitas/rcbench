@@ -429,9 +429,18 @@ TEST_CASE(a_search_only_limit_run_finds_both_ends_and_reports_them)
     CHECK(bench.released);
     CHECK(bench.out);                       /* a search leaves it on */
     CHECK_EQ(bench.disarms, 1u);            /* and the bench SAFE */
-    CHECK_EQ(bench.opens, 0u);
-    CHECK_EQ(bench.opens_txt, 1u);
-    CHECK_EQ(bench.csv, 0u);
+    /* LIMITnnn.CSV first, a row a judged position, then the report. */
+    CHECK_EQ(bench.opens, 1u);
+    CHECK_EQ(bench.opens_txt, 0u);
+    CHECK_STR_EQ(bench.csv_head, SERVO_LIMRUN_CSV_HEAD);
+    CHECK(bench.csv > 4u);
+    /* The last row: the high side's search ends on its bound position. */
+    CHECK(strstr(bench.csv_last, ";1;HIGH;") != NULL);
+    CHECK(strstr(bench.csv_last, ";BOUND;") != NULL);
+    char rows[64];
+    snprintf(rows, sizeof(rows), "Positions:      judged %u, all in the CSV\n",
+             bench.csv - 1u);
+    CHECK(strstr(bench.report, rows) != NULL);
     CHECK_EQ(bench.ends, 1u);
     CHECK(strstr(bench.report, "RCBENCH SERVO LIMIT REPORT\n") == bench.report);
     CHECK(strstr(bench.report, "FOUND") != NULL);

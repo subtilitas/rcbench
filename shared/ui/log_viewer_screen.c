@@ -46,7 +46,7 @@
 #include "ui_text.h"
 #include "ui_widgets.h"
 
-#include "log_viewer_int.h"
+#include "log_graph_int.h"
 
 const ui_color_id_t lv_series_color[LOG_MAX_SERIES] = {
     UI_C_VOLT, UI_C_CURR, UI_C_POWER, UI_C_RPM,
@@ -63,6 +63,11 @@ lv_plot_t lv_plot;
 log_viewer_view_t log_viewer_view(void)
 {
     return (log_viewer_view_t)s.view;
+}
+
+log_preset_id_t log_viewer_preset(void)
+{
+    return s.preset;
 }
 
 const char *log_viewer_open_name(void)
@@ -417,6 +422,7 @@ void lv_drop_data(void)
     s.win_n = 0;
     s.pinch = false;
     s.panning = false;
+    lg_drop();
 }
 
 /* The write gate of FILES (fm_gate()), asked for DELETE: shut while the
@@ -571,7 +577,9 @@ static void cancel(void)
     s.pinch     = false;
     s.panning   = false;
     s.bar_drag  = false;
+    s.more_hold = false;
     ui_tabs_cancel(&s.tabs);
+    lg_cancel();
     logs_strip_cancel();
     log_viewer_invalidate();
 }
@@ -693,7 +701,10 @@ static void enter(void)
     s.press_btn = -1;
     s.q_down    = false;
     s.bar_drag  = false;
+    s.more_open = false;
+    s.more_hold = false;
     ui_tabs_cancel(&s.tabs);
+    lg_cancel();
     logs_strip_cancel();
     /*
      * The tab of the file the logger created last, when it has created one
@@ -737,10 +748,12 @@ static void enter(void)
 /**
  * @brief The home tag: one level up, as each view's BACK.
  *
- * The plot to the import, the import to the file list.  Over the DELETE
- * question it is CANCEL: the file stays.  On the file list it leaves the
- * screen.  A press
- * held, a drag, a pan and a pinch end with the view they were made on.
+ * The plot to where it came from: the import view after the import's
+ * PLOT, the file list after OPEN on a file a preset matched.  The import
+ * to the file list.  Over MORE's list it closes the list, and over the
+ * DELETE question it is CANCEL: the file stays.  On the file list it
+ * leaves the screen.  A press held, a drag, a pan and a pinch end with the
+ * view they were made on.
  *
  * @return True when it climbed inside the screen, false to leave it.
  */
@@ -751,8 +764,12 @@ static bool back(void)
         s.doomed[0] = '\0';
         return true;
     }
+    if (s.view == VIEW_PLOT && s.more_open) {
+        s.more_open = false;
+        return true;
+    }
     if (s.view == VIEW_PLOT) {
-        s.view = VIEW_IMPORT;
+        s.view = s.plot_from_import ? VIEW_IMPORT : VIEW_BROWSE;
         return true;
     }
     if (s.view == VIEW_IMPORT) {
