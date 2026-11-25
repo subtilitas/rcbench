@@ -710,8 +710,11 @@ HITEC = Use("Hitec session", (("sm", "hitec_line"),), 2,
 HITEC_PRE = Use("Hitec D session with precharge",
                 (("sm", "hitec_line"), ("sm", "hitec_pre")), 3,
                 "protocols/hitec/rp2350/hitec_line.c, pre_claim()")
+#: The telemetry wire of programming for YGE ESCs: transmit and receive DMA.
+YGE = Use("YGE session", (("sm", "oy_line"),), 2,
+          "protocols/openyge/rp2350/oy_line.c")
 #: Every programming session.
-SESSIONS = (KST, ESCWIRE, HITEC, HITEC_PRE)
+SESSIONS = (KST, ESCWIRE, HITEC, HITEC_PRE, YGE)
 
 
 def _x(use: Use, n: int) -> tuple[Use, ...]:
@@ -848,7 +851,8 @@ RSN_RULES = (
 #: leaves 8 words and 3 state machines, an ESC wire line (25) 7 words,
 #: a Hitec line (30) 2 words.  The tool fails when the model differs.
 RSN_SESSION_SPARE = {"KST session": 2, "ESC wire session": 1,
-                     "Hitec session": 0, "Hitec D session with precharge": 0}
+                     "Hitec session": 0, "Hitec D session with precharge": 0,
+                     "YGE session": 1}
 
 
 def rsn_broken(session: Use | None, singles: int, pairs: int,
