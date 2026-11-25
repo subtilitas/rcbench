@@ -205,8 +205,8 @@ static bool views(int i, const char *name)
 }
 
 /**
- * @brief OPEN on @p name of pane @p i: LOGS, on @p tab, with the CSV in
- *        the import; and back to FILES.
+ * @brief OPEN on @p name of pane @p i: LOGS, on @p tab, with the CSV, a
+ *        run's name, in the plot; and back to FILES.
  * @return true when all of it held
  */
 static bool opens_in_logs(int i, const char *name, log_viewer_tab_t tab)
@@ -217,7 +217,7 @@ static bool opens_in_logs(int i, const char *name, log_viewer_tab_t tab)
     }
     tap_foot(FS_SPOT_OPEN);
     const bool ok = ui_router_current() == SCREEN_LOGS
-                    && log_viewer_view() == LOG_VIEW_IMPORT
+                    && log_viewer_view() == LOG_VIEW_PLOT
                     && strcmp(log_viewer_open_name(), name) == 0
                     && log_viewer_tab() == tab;
     if (!ok) {
@@ -301,7 +301,7 @@ TEST_CASE(logs_own_list_holds_and_opens_the_same_reports)
         lv_tap(LV_OPEN_CX, LV_BR_FOOT_CY);         /* OPEN */
         CHECK_STR_EQ(log_viewer_open_name(), want[r]);
         if (log_report_number(want[r]) < 0) {
-            CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+            CHECK_EQ(log_viewer_view(), LOG_VIEW_PLOT);
             log_viewer_screen()->back();
             CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
             continue;

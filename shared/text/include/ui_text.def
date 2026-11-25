@@ -2869,6 +2869,12 @@ UI_TEXT(LOG_BACK, 0,
 UI_TEXT(LOG_PLOT, 0,
     "PLOT",
     "GRAFIK")
+UI_TEXT(LOG_MORE, 0,
+    "MORE",
+    "MEHR")
+UI_TEXT(LOG_COLUMNS, 0,
+    "COLUMNS",
+    "SPALTEN")
 UI_TEXT(LOG_NOTHING_LOADED, 64,
     "NO FILE LOADED",
     "KEINE DATEI GELADEN")
@@ -2954,8 +2960,8 @@ UI_TEXT(HG_LOG_DELETE, 0,
     "Asks first, then deletes the selected file from the card.",
     "Fragt zuerst und löscht dann die gewählte Datei von der Karte.")
 UI_TEXT(HG_LOG_OPEN, 0,
-    "A CSV opens in the import view, a report in the text viewer of FILES.",
-    "Eine CSV öffnet die Importansicht, ein Bericht den Textbetrachter von FILES.")
+    "A bench run opens in the plot, another CSV in the import view, a report in FILES' text viewer.",
+    "Ein Prüfstandslauf öffnet die Grafik, andere CSV die Importansicht, ein Bericht den Textbetrachter.")
 UI_TEXT(HG_LOG_DETECTED, 0,
     "How the reader takes the file: separator, number format, rows, columns and the time axis.",
     "Wie der Leser die Datei nimmt: Trennzeichen, Zahlenformat, Zeilen, Spalten und Zeitachse.")
@@ -2986,6 +2992,9 @@ UI_TEXT(HG_LOG_BACK_IMPORT, 0,
 UI_TEXT(HG_LOG_STEP, 0,
     "Move the cursor one row; past the edge of a zoom the view moves along.",
     "Bewegen den Cursor um eine Zeile; am Rand eines Zooms wandert die Ansicht mit.")
+UI_TEXT(HG_LOG_MORE, 0,
+    "Opens a list. COLUMNS goes to the import view, to pick other columns.",
+    "Öffnet eine Liste. SPALTEN führt zur Importansicht, um andere Spalten zu wählen.")
 /* --------------------------------------------------------------- FILES */
 /* The footer's buttons, 118px: a label that leaves under 6px at each side
  * in the 10 x 20 face (10 cells at most) is drawn in the 8 x 16 face.

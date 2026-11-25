@@ -443,6 +443,8 @@ ENGLISH_QUOTES = {
     ("Servo-de.md", "within"),
     ("Servo-de.md", "VERIFY"),
     ("Servo-de.md", "SEARCH"),
+    # RUDDRnnn.CSV's column name in the table of LOGS' presets.
+    ("Screens-de.md", "within"),
     ("EscProfiles-de.md", "none"),
     ("Bringup-de.md", "none"),
     # Protocol state LINK_ESC_OPEN, not the translated OPEN file control.
