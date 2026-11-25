@@ -126,8 +126,9 @@ export function buildCase(displayImage) {
   box(22, 10, 30, mat(0x9a9fa8), -42, 11, D / 2 - 17, 2, tub);
   box(.6, 5, 11, mBlk, W / 2 + .05, 9, 36, 0, tub);
   cyl(9.8, 9.8, 5, mat(0x15171b), -58, 16, -D / 2 - 2.5, tub);
-  cyl(12.4, 11, 12, mat(0xd0122a, {roughness: .35, metalness: .2}),
-      -58, 16, -D / 2 - 11, tub);
+  const head = cyl(12.4, 11, 12,
+                   mat(0xd0122a, {roughness: .35, metalness: .2}),
+                   -58, 16, -D / 2 - 11, tub);
   // rbmod carrier with the RP2350-CAN module.
   box(82, 1.6, 74, mPcb, 46, 8, 20, 0, tub);
   box(52, 1.2, 21, mat(0x1b1e24), 40, 11.4, 8, 0, tub);
@@ -158,17 +159,28 @@ export function buildCase(displayImage) {
   scene.add(lid);
   box(W, 4, D, mat(0x0a0c10, {roughness: .3, metalness: .1}),
       0, H + 2, 0, 1.6, lid);
-  if (displayImage) {
-    const tex = new THREE.Texture(displayImage);
+  // The display's picture: a shot of the panel's screen, which a scene
+  // can change while it runs.
+  let scr = null, shown = null;
+  const setScreen = image => {
+    if (!image || image === shown) return;
+    const tex = new THREE.Texture(image);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = 8;
     tex.needsUpdate = true;
-    const scr = new THREE.Mesh(new THREE.PlaneGeometry(156, 91.4),
-      new THREE.MeshBasicMaterial({map: tex, toneMapped: false}));
-    scr.rotation.x = -Math.PI / 2;
-    scr.position.set(0, H + 4.06, 0);
-    lid.add(scr);
-  }
+    if (!scr) {
+      scr = new THREE.Mesh(new THREE.PlaneGeometry(156, 91.4),
+        new THREE.MeshBasicMaterial({toneMapped: false}));
+      scr.rotation.x = -Math.PI / 2;
+      scr.position.set(0, H + 4.06, 0);
+      lid.add(scr);
+    }
+    if (scr.material.map) scr.material.map.dispose();
+    scr.material.map = tex;
+    scr.material.needsUpdate = true;
+    shown = image;
+  };
+  setScreen(displayImage);
   box(172, 1.6, 104, mPcb2, 0, H - 3, 0, 0, lid);
   box(60, 5, 22, mat(0x1f2a28), -20, H - 6.4, -10, 0, lid);
 
@@ -218,11 +230,22 @@ export function buildCase(displayImage) {
     plug: () => [plugX, OY, D / 2 + 10 + servo.position.z],
   };
   return {
-    scene, cam, anchors, setServoPort,
+    scene, cam, anchors, setServoPort, setScreen,
     // A pixel of the display's 1024 x 600 screen, in the scene.
     pixel: (x, y) => lid.localToWorld(new THREE.Vector3(
       (x / 1024 - .5) * 156, H + 4.06, (y / 600 - .5) * 91.4)).toArray(),
     setLid: mm => { lid.position.y = mm; },
+    // The emergency stop's head, pressed in by 5mm at k = 1: the owner's
+    // figure, not on the button's drawing.  A scene that moves it is seen from the back: a
+    // light from there.
+    setStop: k => {
+      head.position.z = -D / 2 - 11 + 5 * k;
+      if (!head.userData.light) {
+        head.userData.light = new THREE.DirectionalLight(0xffffff, 2.2);
+        head.userData.light.position.set(-160, 180, -320);
+        scene.add(head.userData.light);
+      }
+    },
     // alpha fades the servo in; out is how far the plug is pulled, in mm.
     setServo: (alpha, out) => {
       servo.visible = alpha > 0;
