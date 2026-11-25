@@ -241,7 +241,7 @@ void test_cfg_bench(servo_test_cfg_t *c)
                    c->meter.name[0] != '\0'
                        ? c->meter.name
                        : servo_test_meter_word(c->meter.kind),
-                   c->enc_on ? servo_test_enc_source(c) : NULL);
+                   c->enc_on ? servo_test_enc_source(c) : NULL, "");
     /* The report in the language showing at the start; the CSV in English
      * whatever it is. */
     c->text = ui_servo_table();

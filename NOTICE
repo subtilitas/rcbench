@@ -106,6 +106,19 @@ Apache License 2.0. esp_wifi_remote's dummy_src.c is an empty file without a
 licence line.
 
 
+QR Code generator library (qrcodegen)
+-------------------------------------
+
+The panel draws the QR (Quick Response) code of a servo label with the C
+version of Project Nayuki's QR Code generator library, release 1.8.0 from
+https://github.com/nayuki/QR-Code-generator (commit
+720f62bddb7226106071d4728c292cb1df519ceb). Its two files are stored
+unchanged as third_party/qrcodegen/qrcodegen.c and qrcodegen.h, and a panel
+image contains their compiled code. They are under the MIT License,
+Copyright (c) Project Nayuki; the licence text is
+third_party/qrcodegen/LICENSE.
+
+
 Mbed TLS in the host test build
 -------------------------------
 

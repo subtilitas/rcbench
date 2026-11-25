@@ -6794,8 +6794,8 @@ settings themselves are in NVS.
 - A card pulled or swapped while BACKUP shows clears the list, the choice
   and a hold under way; the list shows `No card.`, and the next card is
   listed anew.
-- The list reads each file whole, up to 24,576B, the largest file a load
-  takes; a read stops at 24,577B, so a list reads 98,308B at most for the
+- The list reads each file whole, up to 32,768B, the largest file a load
+  takes; a read stops at 32,769B, so a list reads 131,076B at most for the
   four files. It keeps the CRC-32 (cyclic redundancy check) of each
   file's bytes, the sum FILES' editor and the Wi-Fi page's ETag use. A load
   checks that the file read is the file listed: the same size and the same
@@ -6879,17 +6879,17 @@ end
 - A number has as many digits after the point as its step; a switch is
   `ON` or `OFF`; a choice is the English text of its option; a string is in
   double quotes, `\"` and `\\` for a quote and a backslash, at most 23
-  bytes.
+  bytes, the servo id prefix `srv_pfx` at most 17.
 - Keys and the words of a switch or a choice are read without case. Spaces
   and tabs around a key and a value, empty lines, comments, LF and CR LF,
   and a UTF-8 byte order mark are taken.
 - The last line that is not blank and not a comment is `end`. A file cut
   short has none and is refused whole.
-- A file is 24,576 bytes at most; one the panel writes is about 12,100.
+- A file is 32,768 bytes at most; one the panel writes is about 12,400.
 
 | File code | Refused whole |
 | --- | --- |
-| 2 | more than 24,576 bytes |
+| 2 | more than 32,768 bytes |
 | 3 | line 1 is not `rcbench settings, format n` |
 | 4 | the format is not a number from 1 to 999 |
 | 5 | a format above 1, written by a newer panel |
@@ -6902,7 +6902,7 @@ end
 | 3 | key given twice | the key had a line before; the first one counts |
 | 4 | value not readable | not a number, no option of the choice, not ON or OFF, a string not in quotes |
 | 5 | out of range | outside the range, off the step by half a step or more, or a pin the row does not take |
-| 6 | text too long | a string over 23 bytes |
+| 6 | text too long | a string over 23 bytes, `srv_pfx` over 17 |
 | 7 | follows another | `sns_scl`, which follows Sensor SDA |
 | 8 | in use, kept | a task holds the setting, as the servo programmer holds a pin of its port; the setting keeps its value |
 
@@ -6914,7 +6914,7 @@ end
 | 4 | a write, a rename or a remove failed |
 | 5 | a read failed |
 | 6 | the file is gone |
-| 7 | the file is over 24,576 bytes |
+| 7 | the file is over 32,768 bytes |
 | 8 | a request the folder does not take |
 
 ### Keeping the values

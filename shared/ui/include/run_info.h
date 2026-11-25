@@ -6,14 +6,15 @@
  *
  * Which keys a file carries depends on its kind:
  *
- * | File          | dut | note | date | fw | servo | meter | angle |
- * | ------------- | --- | ---- | ---- | -- | ----- | ----- | ----- |
- * | ATEST, LIMIT, RUDDR | yes | yes | yes | yes | yes | yes | with an angle source |
- * | SERVO         | yes | yes  | yes  | yes | -    | -     | -     |
- * | MOTOR, SUPPL  | -   | yes  | yes  | yes | -    | -     | -     |
+ * | File          | dut | note | date | fw | servo | meter | angle | id |
+ * | ------------- | --- | ---- | ---- | -- | ----- | ----- | ----- | -- |
+ * | ATEST, LIMIT, RUDDR | yes | yes | yes | yes | yes | yes | with an angle source | the caller's |
+ * | SERVO         | yes | yes  | yes  | yes | -    | -     | -     | the caller's |
+ * | MOTOR, SUPPL  | -   | yes  | yes  | yes | -    | -     | -     | the caller's |
  *
  * A key with no value is left out: the date while the clock is unset, the
- * note while RUN NOTE is empty.
+ * note while RUN NOTE is empty, the id for a run filed under no labelled
+ * servo ("").
  *
  * SPDX-License-Identifier: MIT
  */
@@ -37,9 +38,11 @@ extern "C" {
  * @param servo The servo type; NULL or "" for none.
  * @param meter The meter of the current; NULL or "" for none.
  * @param angle The angle source; NULL or "" for none.
+ * @param id    The labelled servo the run files under; NULL or "" for
+ *              none.
  */
 void run_info_servo(char *out, size_t n, const char *servo, const char *meter,
-                    const char *angle);
+                    const char *angle, const char *id);
 
 /**
  * @brief The cell of a bench run's file (MOTOR, SERVO, SUPPL), from the
@@ -51,8 +54,10 @@ void run_info_servo(char *out, size_t n, const char *servo, const char *meter,
  * @param n    Size of @p out, bytes; LOG_INFO_MAX holds every cell.
  * @param dut  DUT NAME on a SERVO run, NULL otherwise.
  * @param note RUN NOTE; NULL or "" for none.
+ * @param id   The labelled servo the run files under; NULL or "" for none.
  */
-void run_info_bench(char *out, size_t n, const char *dut, const char *note);
+void run_info_bench(char *out, size_t n, const char *dut, const char *note,
+                    const char *id);
 
 #ifdef __cplusplus
 }

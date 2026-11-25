@@ -7366,9 +7366,9 @@ jedes Mal neu:
 - Eine Karte, die gezogen oder getauscht wird, während BACKUP zu sehen ist,
   leert die Liste, die Wahl und ein laufendes Halten; die Liste zeigt
   `Keine Karte.`, und die nächste Karte wird neu gelistet.
-- Die Liste liest jede Datei ganz, bis 24.576B, die größte Datei, die
-  Laden nimmt; ein Lesen endet bei 24.577B, also liest eine Liste höchstens
-  98.308B für die vier Dateien. Sie behält die CRC-32-Prüfsumme (Cyclic Redundancy Check)
+- Die Liste liest jede Datei ganz, bis 32.768B, die größte Datei, die
+  Laden nimmt; ein Lesen endet bei 32.769B, also liest eine Liste höchstens
+  131.076B für die vier Dateien. Sie behält die CRC-32-Prüfsumme (Cyclic Redundancy Check)
   ihrer Bytes, die Summe, die der Editor von FILES und das ETag der
   WLAN-Seite verwenden. Laden prüft, dass die gelesene Datei die gelistete
   ist: dieselbe Größe und dieselbe CRC-32. Eine seither neu geschriebene
@@ -7459,19 +7459,20 @@ end
 - Eine Zahl hat so viele Nachkommastellen wie ihr Schritt; ein Schalter ist
   `ON` oder `OFF`; eine Auswahl der englische Text ihrer Option; ein Text
   steht in doppelten Anführungszeichen, `\"` und `\\` für ein
-  Anführungszeichen und einen Backslash, höchstens 23 Bytes.
+  Anführungszeichen und einen Backslash, höchstens 23 Bytes, das Präfix der
+  Servo-ID `srv_pfx` höchstens 17.
 - Schlüssel und die Wörter von Schalter und Auswahl werden ohne Rücksicht
   auf Groß- und Kleinschreibung gelesen. Leerzeichen und Tabs um Schlüssel
   und Wert, leere Zeilen, Kommentare, LF und CR LF sowie eine
   UTF-8-Bytereihenfolgemarke werden angenommen.
 - Die letzte Zeile, die nicht leer und kein Kommentar ist, lautet `end`.
   Einer abgeschnittenen Datei fehlt sie, und sie wird ganz abgelehnt.
-- Eine Datei hat höchstens 24.576 Bytes; eine vom Panel geschriebene etwa
-  12.100.
+- Eine Datei hat höchstens 32.768 Bytes; eine vom Panel geschriebene etwa
+  12.400.
 
 | Datei-Code | Ganz abgelehnt |
 | --- | --- |
-| 2 | mehr als 24.576 Bytes |
+| 2 | mehr als 32.768 Bytes |
 | 3 | Zeile 1 ist nicht `rcbench settings, format n` |
 | 4 | das Format ist keine Zahl von 1 bis 999 |
 | 5 | ein Format über 1, von einem neueren Panel geschrieben |
@@ -7484,7 +7485,7 @@ end
 | 3 | Schlüssel doppelt | der Schlüssel schon eine Zeile hatte; die erste zählt |
 | 4 | Wert nicht lesbar | keine Zahl, keine Option der Auswahl, nicht ON oder OFF, ein Text ohne Anführungszeichen |
 | 5 | außerhalb des Bereichs | außerhalb des Bereichs, um einen halben Schritt oder mehr neben dem Raster, oder ein Pin, den die Zeile nicht nimmt |
-| 6 | Text zu lang | ein Text über 23 Bytes |
+| 6 | Text zu lang | ein Text über 23 Bytes, `srv_pfx` über 17 |
 | 7 | folgt einer anderen | `sns_scl`, der Sensor SDA folgt |
 | 8 | belegt, bleibt | eine Task die Einstellung hält, etwa der Servo-Programmierer einen Pin seines Ports; die Einstellung behält ihren Wert |
 
@@ -7496,7 +7497,7 @@ end
 | 4 | Schreiben, Umbenennen oder Entfernen fehlgeschlagen |
 | 5 | Lesen fehlgeschlagen |
 | 6 | die Datei ist weg |
-| 7 | die Datei hat mehr als 24.576 Bytes |
+| 7 | die Datei hat mehr als 32.768 Bytes |
 | 8 | eine Anfrage, die der Ordner nicht nimmt |
 
 ### Werte behalten

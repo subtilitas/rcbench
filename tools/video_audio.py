@@ -364,6 +364,8 @@ def events(board: dict) -> list:
                     found.append((at + 0.9, "swell", 0))
             if step.get("action") == "tap":
                 found.append((at + step["dur"] - 0.47, "tap", 0))
+            if step.get("action") == "press":
+                found.append((at + step["dur"] - 0.4, "tap", 0))
             if step.get("action") == "hold":
                 found.append((at + step["dur"] - 2.45, "hold", 0))
                 found.append((at + step["dur"] - 0.42, "done", 0))

@@ -163,6 +163,7 @@ export function buildCadCase(displayImage, gltf) {
          transparent: true, emissive: 0x00e5ff, emissiveIntensity: 0});
       const mesh = new THREE.Mesh(geo, m);
       mesh.castShadow = mesh.receiveShadow = true;
+      if (u === units.estop && look[0] === 0xd0122a) u.head = mesh;
       u.mats.push(m);
       u.group.add(mesh);
     }
@@ -257,6 +258,17 @@ export function buildCadCase(displayImage, gltf) {
       return units.lid.group.localToWorld(new THREE.Vector3(
         (x / 1024 - .5) * 154.2, TOP + .08, .5 + (y / 600 - .5) * 90.4)
         .sub(units.lid.home)).toArray();
+    },
+    // The emergency stop's head: k from 0, out, to 1, pressed in and
+    // latched, 5mm in: the owner's figure, not on the button's drawing.
+    // A scene that moves it is seen from the back: a light from there.
+    setStop: k => {
+      if (units.estop.head) units.estop.head.position.z = 5 * k;
+      if (!units.estop.light) {
+        units.estop.light = new THREE.DirectionalLight(0xffffff, 2.2);
+        units.estop.light.position.set(-160, 180, -320);
+        scene.add(units.estop.light);
+      }
     },
     setServoPort: () => {},
     setServo: () => {},

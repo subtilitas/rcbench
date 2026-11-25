@@ -208,7 +208,8 @@ static void ra_cfg(servo_rauto_cfg_t *c)
     (void)sensors_rows_meter(c->meter, sizeof(c->meter));
     (void)enc_name(c->source, sizeof(c->source));
     snprintf(c->firmware, sizeof(c->firmware), "%s", RCBENCH_VERSION_STRING);
-    run_info_servo(c->info, sizeof(c->info), c->type, c->meter, c->source);
+    run_info_servo(c->info, sizeof(c->info), c->type, c->meter, c->source,
+                   "");
     c->text = ui_servo_table();
 }
 

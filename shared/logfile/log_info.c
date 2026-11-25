@@ -36,7 +36,7 @@ typedef struct {
 /** @brief The keys in the order a cell carries them. */
 static const info_key_t k_keys[] = {
     INFO_KEY(dut), INFO_KEY(note), INFO_KEY(date), INFO_KEY(fw),
-    INFO_KEY(servo), INFO_KEY(meter), INFO_KEY(angle),
+    INFO_KEY(servo), INFO_KEY(meter), INFO_KEY(angle), INFO_KEY(id),
 };
 
 /** @brief The number of keys. */

@@ -2,7 +2,8 @@
  * The settings as a text file (shared/settings/settings_file.c): every
  * setting and string out and back, the header and its versions, the lines
  * a load refuses with their codes and line numbers, and what a load puts in
- * force.
+ * force.  And the strings of the labelled servos: ID PREFIX and the label
+ * printer's bind, with their keys, defaults and limits.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -50,6 +51,8 @@ static void every_value_moved(void)
         "D4:F9:8D:00:3A:10 R", "DIAL-3A10",
         "AA:BB:CC:DD:EE:FF P", "rcbench-pwr-3456",
         "11:22:33:44:55:66 R", "12345678901234567890123",
+        "after 200 cycles", "KST X10 LEFT WING",
+        "A4:C1:38:00:3A:10 P", "T50M Pro",
     };
     for (int i = 0; i < SETTING_TEXT_COUNT; ++i) {
         settings_set_text((setting_text_id_t)i, texts[i]);
@@ -535,6 +538,125 @@ TEST_CASE(a_fresh_panel_stores_the_defaults_only)
     CHECK_STR_EQ(settings_text_default(SETTING_TEXT_COUNT), "");
 }
 
+/*
+ * ID PREFIX and the label printer's bind: three strings set off SETUP, their
+ * keys and defaults, a build that never held them loading the defaults, and
+ * the prefix held to 17 characters where every other string takes 23.
+ */
+TEST_CASE(the_servo_prefix_and_printer_strings_are_kept_with_their_limits)
+{
+    fresh_model();
+    CHECK_STR_EQ(settings_text_key(SET_TEXT_SERVO_PREFIX), "srv_pfx");
+    CHECK_STR_EQ(settings_text_key(SET_TEXT_PRN_ADDR), "prn_ble");
+    CHECK_STR_EQ(settings_text_key(SET_TEXT_PRN_NAME), "prn_name");
+    CHECK_STR_EQ(settings_text_default(SET_TEXT_SERVO_PREFIX), "SERVO");
+    CHECK_STR_EQ(settings_text(SET_TEXT_SERVO_PREFIX), "SERVO");
+    CHECK_STR_EQ(settings_text(SET_TEXT_PRN_ADDR), "");
+    CHECK_STR_EQ(settings_text(SET_TEXT_PRN_NAME), "");
+    CHECK_EQ(settings_text_category(SET_TEXT_SERVO_PREFIX), SET_CAT_COUNT);
+    CHECK_EQ(settings_text_category(SET_TEXT_PRN_ADDR), SET_CAT_COUNT);
+    CHECK_EQ(settings_text_category(SET_TEXT_PRN_NAME), SET_CAT_COUNT);
+
+    /* The limits. */
+    CHECK_EQ(settings_text_max(SET_TEXT_SERVO_PREFIX), 17);
+    for (int i = 0; i < SETTING_TEXT_COUNT; ++i) {
+        if (i != SET_TEXT_SERVO_PREFIX) {
+            CHECK_EQ(settings_text_max((setting_text_id_t)i),
+                     SETTINGS_TEXT_MAX - 1);
+        }
+    }
+    CHECK_EQ(settings_text_max(SETTING_TEXT_COUNT), 0);
+    CHECK_EQ(settings_text_max((setting_text_id_t)-1), 0);
+    settings_set_text(SET_TEXT_SERVO_PREFIX, "KST X10 LEFT WING");
+    CHECK_STR_EQ(settings_text(SET_TEXT_SERVO_PREFIX), "KST X10 LEFT WING");
+    settings_set_text(SET_TEXT_SERVO_PREFIX, "KST X10 LEFT WINGS");
+    CHECK_STR_EQ(settings_text(SET_TEXT_SERVO_PREFIX), "KST X10 LEFT WING");
+    settings_set_text(SET_TEXT_PRN_NAME, "T50M Pro-1234567890ABCDEF");
+    CHECK_STR_EQ(settings_text(SET_TEXT_PRN_NAME), "T50M Pro-1234567890ABCD");
+
+    /* Kept and loaded back; a store of an older build gives the defaults. */
+    s_has_text = false;
+    settings_set_store(&s_text_store);
+    settings_init();
+    settings_set_text(SET_TEXT_SERVO_PREFIX, "KST_X10");
+    settings_set_text(SET_TEXT_PRN_ADDR, "A4:C1:38:00:3A:10 P");
+    settings_set_text(SET_TEXT_PRN_NAME, "T50M Pro");
+    CHECK(settings_save());
+    settings_init();
+    CHECK_STR_EQ(settings_text(SET_TEXT_SERVO_PREFIX), "KST_X10");
+    CHECK_STR_EQ(settings_text(SET_TEXT_PRN_ADDR), "A4:C1:38:00:3A:10 P");
+    CHECK_STR_EQ(settings_text(SET_TEXT_PRN_NAME), "T50M Pro");
+    /* A medium holding a longer prefix gives 17 characters of it. */
+    snprintf(s_saved_text[SET_TEXT_SERVO_PREFIX], SETTINGS_TEXT_MAX, "%s",
+             "ABCDEFGHIJKLMNOPQRSTUVW");
+    settings_init();
+    CHECK_STR_EQ(settings_text(SET_TEXT_SERVO_PREFIX), "ABCDEFGHIJKLMNOPQ");
+    settings_set_store(&s_mem_store);   /* keeps no string */
+    settings_init();
+    CHECK_STR_EQ(settings_text(SET_TEXT_SERVO_PREFIX), "SERVO");
+    CHECK_STR_EQ(settings_text(SET_TEXT_PRN_ADDR), "");
+    settings_set_store(NULL);
+}
+
+/** One string line alone in a file, parsed: whether it was taken. */
+static bool one_text_line(const char *key, const char *value)
+{
+    char body[96];
+    (void)snprintf(body, sizeof(body), "%s = \"%s\"\n", key, value);
+    const size_t n = file_of(body);
+    CHECK_EQ(sf_parse(g_text, n, &g_l, NULL), SF_OK);
+    return g_l.refused_n == 0 && g_l.taken == 1;
+}
+
+/*
+ * A file holds a string to its own limit: ID PREFIX to 17 characters, the
+ * printer's address and name to 23.  A longer prefix is refused with
+ * SF_LINE_LONG, as any string over its limit, and the setting keeps its
+ * value; an applied and saved file then differs in nothing.
+ */
+TEST_CASE(a_file_holds_each_new_string_to_its_own_limit)
+{
+    static const char k17[] = "KST X10 LEFT WING";
+    static const char k18[] = "KST X10 LEFT WINGS";
+    static const char k23[] = "KST X10 LEFT WING ABCDE";
+    static const char k24[] = "KST X10 LEFT WING ABCDEF";
+
+    fresh_store();
+    CHECK(one_text_line("srv_pfx", k17));
+    CHECK_STR_EQ(g_l.texts[SET_TEXT_SERVO_PREFIX], k17);
+    CHECK(sf_apply(&g_l) > 0);
+    CHECK_STR_EQ(settings_text(SET_TEXT_SERVO_PREFIX), k17);
+    CHECK(settings_save());
+    CHECK(!sf_differs(&g_l));
+
+    const char *const longer[] = { k18, k23, k24 };
+    for (size_t i = 0u; i < sizeof(longer) / sizeof(longer[0]); ++i) {
+        CHECK(!one_text_line("srv_pfx", longer[i]));
+        CHECK_EQ(g_l.refused_n, 1);
+        CHECK_EQ(g_l.refused[0].code, SF_LINE_LONG);
+        CHECK_STR_EQ(g_l.refused[0].key, "srv_pfx");
+        CHECK_EQ(g_l.refused[0].line, 2u);
+        CHECK_STR_EQ(g_l.texts[SET_TEXT_SERVO_PREFIX], "SERVO");
+        (void)sf_apply(&g_l);
+        CHECK_STR_EQ(settings_text(SET_TEXT_SERVO_PREFIX), "SERVO");
+        CHECK(settings_save());
+        CHECK(!sf_differs(&g_l));
+    }
+
+    static const setting_text_id_t k_full[] = { SET_TEXT_PRN_ADDR,
+                                                SET_TEXT_PRN_NAME };
+    for (size_t i = 0u; i < sizeof(k_full) / sizeof(k_full[0]); ++i) {
+        const char *key = settings_text_key(k_full[i]);
+        CHECK(one_text_line(key, k17));
+        CHECK(one_text_line(key, k18));
+        CHECK(one_text_line(key, k23));
+        CHECK_STR_EQ(g_l.texts[k_full[i]], k23);
+        CHECK(!one_text_line(key, k24));
+        CHECK_EQ(g_l.refused[0].code, SF_LINE_LONG);
+    }
+    settings_set_store(NULL);
+}
+
 int main(void)
 {
     RUN(every_setting_and_string_goes_out_and_comes_back);
@@ -550,5 +672,7 @@ int main(void)
     RUN(a_load_sets_the_file_and_the_defaults_and_leaves_a_held_one);
     RUN(a_file_of_the_stored_settings_differs_in_nothing);
     RUN(a_fresh_panel_stores_the_defaults_only);
+    RUN(the_servo_prefix_and_printer_strings_are_kept_with_their_limits);
+    RUN(a_file_holds_each_new_string_to_its_own_limit);
     return test_summary("settings_file");
 }

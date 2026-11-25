@@ -178,7 +178,7 @@ sb_result_t sb_write_auto(const sb_io_t *io, const char *text, size_t len);
  *        their bytes: AUTO1 to AUTO3, then SETTINGS.TXT.
  *
  * Each file is read whole into @p buf, at most SF_FILE_MAX + 1 bytes
- * (24,577B), so a full list reads at most 4 x 24,577 = 98,308B.  The first
+ * (32,769B), so a full list reads at most 4 x 32,769 = 131,076B.  The first
  * lines come from the first SB_HEAD_BYTES (256B).  A load compares the
  * file it reads with the sum, so an edit that keeps the size and the first
  * lines is found.

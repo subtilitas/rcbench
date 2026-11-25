@@ -32,24 +32,26 @@ static void put(char *out, size_t n, const char *in)
 }
 
 /**
- * @brief The fields every run has: the note, the date now and the bench's
- *        version, into a cleared @p in.
+ * @brief The fields every run has: the note, the date now, the bench's
+ *        version and the servo's id, into a cleared @p in.
  * @param in   Receives them.
  * @param note RUN NOTE, or NULL.
+ * @param id   The labelled servo's id, or NULL.
  */
-static void common(log_info_t *in, const char *note)
+static void common(log_info_t *in, const char *note, const char *id)
 {
     memset(in, 0, sizeof(*in));
     put(in->note, sizeof(in->note), note);
+    put(in->id, sizeof(in->id), id);
     log_info_date(in->date, sizeof(in->date), log_info_now());
     put(in->fw, sizeof(in->fw), RCBENCH_VERSION_STRING);
 }
 
 void run_info_servo(char *out, size_t n, const char *servo, const char *meter,
-                    const char *angle)
+                    const char *angle, const char *id)
 {
     log_info_t in;
-    common(&in, settings_text(SET_TEXT_RUN_NOTE));
+    common(&in, settings_text(SET_TEXT_RUN_NOTE), id);
     put(in.dut, sizeof(in.dut), settings_text(SET_TEXT_DUT_NAME));
     put(in.servo, sizeof(in.servo), servo);
     put(in.meter, sizeof(in.meter), meter);
@@ -57,10 +59,11 @@ void run_info_servo(char *out, size_t n, const char *servo, const char *meter,
     (void)log_info_format(&in, out, n);
 }
 
-void run_info_bench(char *out, size_t n, const char *dut, const char *note)
+void run_info_bench(char *out, size_t n, const char *dut, const char *note,
+                    const char *id)
 {
     log_info_t in;
-    common(&in, note);
+    common(&in, note, id);
     put(in.dut, sizeof(in.dut), dut);
     (void)log_info_format(&in, out, n);
 }
