@@ -503,7 +503,7 @@ The model is drawn from the owner's 8 photos of 2026-11-25.
 
 | Property | Value |
 | --- | --- |
-| Format | glTF 2.0 binary, 3.8MB |
+| Format | glTF 2.0 binary, 3.9MB |
 | Units | metres |
 | Up axis | +y, as glTF defines it |
 | Origin | the acrylic sheet's front left corner, on its top face |
@@ -533,14 +533,15 @@ repository's STEP models, at its documented size.
 | `servo` | bench | Hitec D485HW at the sheet's right edge | model `hitec_d485hw.step` | (600, 205, 0) |
 | `as5600` | servo | AS5600 encoder module over the servo's output | model `AS5600_Encoder_22.5x22.5mm.step` | (600, 198, 47) |
 | `imu` | servo | WIT BWT901CL beside the servo | model `wit_imu.step` | (575, 112, 0) |
-| `load_resistor` | bench | gold aluminium-housed power resistor, 50 x 28 x 15 | photo estimate; not in hwbench's list | (326, 318, 0) |
+| `servo_gold` | bench | gold-coloured servo held down with tesa tape; its type is not known | drawn as `servo_standard.step` in gold | (326, 318, 0) |
 | `instruments` | bench | group | | origin |
 | `logic_analyzer` | instruments | Kingst LA2016, 95 x 55 x 23 | datasheet | (342, 260, 0) |
 | `supplies` | bench | group | | origin |
 | `supply_pd_mini` | supplies | WeAct PD Power Mini, 61 x 40 | model `PD_Buck_WeAct_PDPowerMiniV1_61x40mm.step` | origin |
 | `supply_buck` | supplies | blue buck module, 22 x 17 | photo estimate | origin |
 | `supply_usbc_board` | supplies | USB-C board with a red LED, 25 x 15 | photo estimate | origin |
-| `host_pi5` | bench | Raspberry Pi 5 in a black vented case, 70 x 115 x 35, Ethernet towards the viewer | photo estimate of the case | (105, 362, 0) |
+| `unknown_box` | bench | black vented box with red LEDs, 70 x 115 x 35; what it is is not known | photo estimate | (105, 362, 0) |
+| `host_pi5` | unknown_box | Raspberry Pi 5, 85 x 56, under a clear cover, lying on the box | board from Raspberry Pi's drawing; cover estimated | (105, 362, 35) |
 | `usb_hub_1` | bench | black USB hub, 30 x 120 x 22 | photo estimate | (162, 350, 0) |
 | `usb_hub_2` | bench | black cylindrical USB hub, 24 across, 115 long | photo estimate | (192, 350, 12) |
 | `ring_lamp` | bench | ring lamp facing down, 260 across, opening 200, 22 thick | estimate from its reflection | (330, 150, 600) |
@@ -567,16 +568,20 @@ Limits:
   an estimate. Perspective is not corrected, so places are within about
   ±20mm. Neither the sheet's far edge nor the black board's is fully in
   a photo.
-- The gold block taped down with tesa strips is drawn as a power
-  resistor; what it is is not confirmed. The buck module and the USB-C
-  board are on the bench in the photos but not in hwbench's list.
+- hwbench reports the gold block taped down with tesa strips as a
+  servo of unknown type, and the black box under the Pi 5 as unknown.
+  The purple USB-C board's role is not known.
+- The camera pans -150 to +150 degrees and tilts -90 to +90 degrees
+  (hwbench's records). Its mount and height are not measured.
+- hwbench records no measured size or place on the rig.
 - The EMEET PIXY's listed size is 53 x 53 x 73mm; another listing gives
   56 x 43 x 22mm, probably for the camera head alone. The model takes
   the first.
 - The ring lamp's reflection is the white ring in the photos. Its size,
   height and place are estimates, and its mount is not drawn.
 - Not drawn: cables, the cabinet, the monitor, the soldering station, the
-  light tent.
+  light tent, the grey box with a diamond pattern on the desk beside the
+  sheet.
 
 Sources: Kingst LA2016, 95 x 55 x 23mm (Core Electronics, CNX Software);
 EMEET PIXY, 53 x 53 x 73mm (Mighty Gadget); Waveshare RP2350-Zero,
