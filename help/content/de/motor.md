@@ -164,6 +164,7 @@ LOG UMBENENNEN gibt dem seit dem Start des Panels geschlossenen MOTOR-Log ein La
 - Die Tastatur verdeckt ARM. ABBRECHEN oder das Home-Feld schließt sie ohne Änderung.
 - Das Alarmband meldet `Log umbenannt: MOTOR042_kv1200.CSV` 4s lang in Bernsteinfarbe oder den Grund in Rot, etwa `MOTOR042_kv1200.CSV ist dort bereits vorhanden.`
 - Nach einem Neustart bleibt der Knopf gedimmt, bis der nächste MOTOR-Lauf endet. Ältere Logs benennst du unter [Files](files.md) um.
+- GRAFIK links von LOG UMBENENNEN öffnet dieses Log als Grafik unter [Logs](logs.md); das Home-Feld dort führt hierher zurück. Die Taste erscheint, sobald seit dem Start ein MOTOR-Log geschlossen wurde, grau bei ARMED oder solange ein Log offen ist; ein Tipp nennt dann den Grund im Alarmband.
 
 ## Verwandte Seiten
 

@@ -393,6 +393,9 @@ typedef struct {
     unsigned open_mounts;               /**< the mount number when the open file's page was read */
     bool to_viewer;                     /**< the open report went to the text viewer: the list
                                              selects it again on the way back */
+    bool back_leaves;                   /**< the open file came from a result card's GRAPH:
+                                             the home tag on its graph leaves the screen
+                                             (log_viewer_back_leaves()) */
 
     /* A finger on the scroll bar: the thumb follows it, held where it took
      * the thumb, grab px below the thumb's top. */

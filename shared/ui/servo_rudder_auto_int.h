@@ -53,6 +53,10 @@ typedef enum {
     RA_C_COUNT      /**< the count, RA_C_NONE included     */
 } rauto_ctl_t;
 
+/** @brief s.ra.pressed while a finger is on RUDDER AUTO's GRAPH
+ *         (servo_graph_key.c): a press of the box, on no row of it. */
+#define RA_C_GRAPH ((uint8_t)RA_C_COUNT)
+
 /** @brief The lines the box draws: the step or the pulse range, the result,
  *         the servo or the report, the limit search's two ends, and the
  *         verify pass after programming. */

@@ -407,6 +407,11 @@ _Static_assert(MO_LOG_X >= MO_STRIP_X + 2 * MO_TAB_W + MO_TAB_GAP + 3,
 _Static_assert(MO_LOG_X + MO_LOG_W == LEFT_X + LEFT_W
                    && MO_LOG_X + MO_LOG_W < RIGHT_X,
                "RENAME LOG ends with the left column, left of the rail");
+/** @brief GRAPH, left of RENAME LOG with 8px between: 110 x 40px. */
+#define MO_GRAPH_W 110
+#define MO_GRAPH_X (MO_LOG_X - 8 - MO_GRAPH_W) /**< Its left edge: x 331. */
+_Static_assert(MO_GRAPH_X >= MO_STRIP_X + 2 * MO_TAB_W + MO_TAB_GAP + 3,
+               "GRAPH starts right of the strip's trough");
 
 /**
  * @brief Laid out: the keyboard closed, no press, no log, no request.
@@ -450,7 +455,7 @@ void mln_invalidate(void);
  */
 void mln_forget(int buf);
 /**
- * @brief RENAME LOG into the strip row, when its look changed since
+ * @brief RENAME LOG and GRAPH into the strip row, when their look changed since
  *        framebuffer @p buf last showed it.
  * @param c   The canvas.
  * @param buf The framebuffer, 0 or 1.

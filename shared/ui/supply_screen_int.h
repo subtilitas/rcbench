@@ -111,6 +111,9 @@
 #define CTL_H     (STOP_FLOOR - CTL_Y)    /**< To 8px over the footer. */
 #define BTN_H     UI_TAP_MIN              /**< RESET PEAKS' height, px. */
 #define RESET_Y   (CTL_Y + TITLE_H + 6)   /**< RESET PEAKS: y 354. */
+/** @brief GRAPH's width, px: right of RESET PEAKS with 8px between, at its
+ *         height; RESET PEAKS keeps 264px for SPITZENWERTE ZURÜCKSETZEN. */
+#define GRAPH_W   84
 /** @brief The programming ports' own supply's line under RESET PEAKS, px. */
 #define PROG5V_Y  (RESET_Y + BTN_H + 6)
 _Static_assert(PROG5V_Y + LINE_H <= CTL_Y + CTL_H - 4,
@@ -229,7 +232,7 @@ enum { S_VOLT = 0, S_CURR, S_POWER, S_READINGS, S_VSET = S_READINGS, S_ISET,
 enum { P_NONE = 0, P_OUTPUT, P_RESET, P_V_DOWN, P_V_UP, P_I_DOWN, P_I_UP,
        P_V_SLIDER, P_I_SLIDER, P_TABS, P_CARD_V, P_CARD_I, P_VALUE_V,
        P_VALUE_I, P_KEYPAD, P_APPLY, P_DISCARD, P_PROG5V, P_MODEL_LINE,
-       P_SETTINGS };
+       P_SETTINGS, P_GRAPH };
 
 /* Where a set point change came from, for the question it may need. */
 enum { FROM_SLIDER = 0, FROM_KEYPAD };
@@ -399,6 +402,8 @@ typedef struct {
     ui_hold_t       hold;               /**< hold counter of OUTPUT ON */
     gfx_rect_t      out_rect;           /**< OUTPUT ON / OFF */
     gfx_rect_t      reset_rect;         /**< RESET PEAKS */
+    gfx_rect_t      graph_rect;         /**< GRAPH, right of RESET PEAKS */
+    uint32_t        graph_sig;          /**< GRAPH's look as last followed */
     gfx_rect_t v_down,                      /**< voltage fine step down           */
                v_up,                        /**< voltage fine step up             */
                i_down,                      /**< current fine step down           */

@@ -1818,7 +1818,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 669 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 670 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1887,7 +1887,7 @@ The host suite is 669 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_sense_trace_setup`, `test_sense_trace_lines`, `test_tone`, `test_edge_ring`,
 `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_pass_decode`, `test_pass_ring`, `test_pass_pio`, `test_pass_page`, `test_tone_link`, `test_endpoints_link`,
 `test_hitec_rx_link`, `test_knob`, `test_panel_i2c`, `test_bind_link`, `test_out16`, `test_servo_link`,
-`test_servo_link_restart`, `test_logview`, `test_logview_preset`, `test_logview_graph`, `test_logview_report`, `test_logview_plot`,
+`test_servo_link_restart`, `test_logview`, `test_logview_preset`, `test_logview_graph`, `test_logview_report`, `test_graph_key`, `test_logview_plot`,
 `test_logview_rank`, `test_logview_pages`, `test_logview_tabs`, `test_logview_delete`,
 `test_logview_touch`, `test_logview_layout`, `test_logview_row`, `test_log_name`,
 `test_log_take`, `test_card_tree`, `test_fm_tree`, `test_fm_ops`, `test_fm_logname`, `test_fm_match`,
@@ -2486,7 +2486,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-1102 committed screenshots to the current render, 551 in English and the same 551 in German, and `render_ui.py --fit` fails on a string that
+1108 committed screenshots to the current render, 554 in English and the same 554 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

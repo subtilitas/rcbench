@@ -39,6 +39,7 @@
 #include <string.h>
 
 #include "card_tree.h"
+#include "fm_rules.h"
 #include "log_name.h"
 #include "settings.h"
 #include "ui_screen.h"
@@ -627,6 +628,32 @@ log_viewer_show_t log_viewer_show(log_viewer_tab_t tab, const char *name,
     return LOG_SHOW_NOT_LISTED;
 }
 
+unsigned log_viewer_mount_now(void)
+{
+    return lv_mounts_now();
+}
+
+void log_viewer_back_leaves(void)
+{
+    s.back_leaves = s.view == VIEW_PLOT;
+}
+
+bool log_viewer_tab_of(const char *dir, log_viewer_tab_t *tab)
+{
+    static const log_viewer_tab_t tabs[] = { LOG_TAB_USER, LOG_TAB_BENCH,
+                                             LOG_TAB_ROOT };
+    if (dir == NULL || tab == NULL) {
+        return false;
+    }
+    for (size_t k = 0; k < sizeof(tabs) / sizeof(tabs[0]); ++k) {
+        if (fm_same_path(dir, log_viewer_tab_dir(tabs[k]))) {
+            *tab = tabs[k];
+            return true;
+        }
+    }
+    return false;
+}
+
 /**
  * @brief The screen as a start leaves it: the BENCH tab, nothing open,
  *        nothing selected.
@@ -703,6 +730,8 @@ static void enter(void)
     s.bar_drag  = false;
     s.more_open = false;
     s.more_hold = false;
+    /* A way in is no GRAPH key's until the key says so, after it. */
+    s.back_leaves = false;
     ui_tabs_cancel(&s.tabs);
     lg_cancel();
     logs_strip_cancel();
@@ -749,7 +778,8 @@ static void enter(void)
  * @brief The home tag: one level up, as each view's BACK.
  *
  * The plot to where it came from: the import view after the import's
- * PLOT, the file list after OPEN on a file a preset matched.  The import
+ * PLOT, the file list after OPEN on a file a preset matched, and out of the
+ * screen to the result card whose GRAPH opened it.  The import
  * to the file list.  Over MORE's list it closes the list, and over the
  * DELETE question it is CANCEL: the file stays.  On the file list it
  * leaves the screen.  A press held, a drag, a pan and a pinch end with the
@@ -767,6 +797,13 @@ static bool back(void)
     if (s.view == VIEW_PLOT && s.more_open) {
         s.more_open = false;
         return true;
+    }
+    if (s.view == VIEW_PLOT && s.back_leaves) {
+        /* Opened by a result card's GRAPH: back to the card, and LOGS
+         * entered later shows its list. */
+        s.back_leaves = false;
+        s.view = VIEW_BROWSE;
+        return false;
     }
     if (s.view == VIEW_PLOT) {
         s.view = s.plot_from_import ? VIEW_IMPORT : VIEW_BROWSE;

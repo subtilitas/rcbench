@@ -283,15 +283,15 @@ bool opener_down(const touch_event_t *evt, gfx_rect_t r, int code)
 
 bool wb_rest(const touch_event_t *evt)
 {
-    return rudder_rest(evt) || rauto_rest(evt) || ready_rest(evt)
-           || foot_rest(evt);
+    return rudder_rest(evt) || svs_gk_rauto_rest(evt) || rauto_rest(evt)
+           || ready_rest(evt) || foot_rest(evt);
 }
 
-/* A press on TEST's page: the caps.  TEST's hold is the footer's; LIMIT
- * RUN's left card takes none. */
+/* A press on TEST's page: GRAPH in the run's box, the caps.  TEST's hold
+ * is the footer's; LIMIT RUN's left card takes GRAPH's alone. */
 void test_page_down(const touch_event_t *evt)
 {
-    if (s.fn != SERVO_FN_TEST) {
+    if (svs_gk_down(evt) || s.fn != SERVO_FN_TEST) {
         return;
     }
     (void)opener_down(evt, caps_open_rect(), OP_OPEN_CAPS);

@@ -23,6 +23,7 @@
 #include "card_tree.h"
 #include "fm_logname.h"
 #include "fm_rules.h"
+#include "graph_key.h"
 #include "log_name.h"
 #include "log_take.h"
 #include "motor_screen.h"
@@ -92,6 +93,7 @@ void motor_log_ui_service(void)
 {
     static bool out;
     static fm_logname_t last;
+    static fm_logname_t suppl;
     static log_marks_t marks;
     static char run_dir[CARD_DIR_MAX];
     static char test_dir[CARD_DIR_MAX];
@@ -104,7 +106,20 @@ void motor_log_ui_service(void)
     log_open_marks(&marks, run_dir, test_dir);
     const bool on_card = last.name[0] != '\0' && storage_mounted()
                          && storage_mount_count() == last.mount;
-    motor_screen_set_last_log(last.name, on_card, fm_logging(&marks));
+    const bool logging = fm_logging(&marks);
+    motor_screen_set_last_log(last.name, on_card, logging);
+    /* GRAPH on MOTOR & ESC and on SUPPLY: the logs closed last, grey while
+     * any log is open. */
+    graph_key_file_t f = { .run = last.name[0] != '\0', .open = logging,
+                           .name = last.name, .dir = last.dir,
+                           .mount = last.mount };
+    graph_key_set(GRAPH_KEY_MOTOR, &f);
+    log_last_suppl(&suppl);
+    f.run = suppl.name[0] != '\0';
+    f.name = suppl.name;
+    f.dir = suppl.dir;
+    f.mount = suppl.mount;
+    graph_key_set(GRAPH_KEY_SUPPLY, &f);
     if (!out && motor_screen_log_take(s_ren_label, sizeof(s_ren_label))) {
         /* The label before the count, which hands the request over. */
         atomic_fetch_add(&s_ren_sent, 1u);

@@ -807,6 +807,7 @@ static void plot_event(const touch_event_t *e)
             /* Back where the plot came from: the import's PLOT, or the
              * list's OPEN on a file a preset matched. */
             s.view = s.plot_from_import ? VIEW_IMPORT : VIEW_BROWSE;
+            s.back_leaves = false;      /* the list now: its own way out */
         } else if (btn == 3) {
             s.more_open = true;
         } else if ((btn == 1 || btn == 2) && lg_step(btn == 1 ? -1 : 1)) {

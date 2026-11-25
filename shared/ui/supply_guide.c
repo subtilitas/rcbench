@@ -150,6 +150,7 @@ static void page_control(ui_help_page_t *p)
     (void)ui_help_add(p, TR(SUP_SET_POINTS), TX_HG_SU_VALUES,
                       both(sup_set_value_rect(0), sup_set_value_rect(1)));
     (void)ui_help_add(p, TR(MO_RESET_PEAKS), TX_HG_SU_RESET, s.reset_rect);
+    (void)ui_help_add(p, TR(GK_KEY), TX_HG_GRAPH, supply_screen_graph_rect());
     (void)ui_help_add(p, supply_screen_output_live() ? TR(SUP_OUTPUT_OFF)
                                                      : TR(SUP_OUTPUT_ON),
                       TX_HG_SU_OUTPUT, s.out_rect);

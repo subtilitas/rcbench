@@ -163,11 +163,23 @@ static fm_logname_t   s_log_open;
  *        word.
  */
 static fm_logname_t   s_log_last;
+/**
+ * @brief The SUPPL log closed last since power-on, name "" for none: what
+ *        SUPPLY's GRAPH opens.  Under s_dir_mux, as s_log_last.
+ */
+static fm_logname_t   s_log_last_suppl;
 
 void log_last_motor(fm_logname_t *out)
 {
     taskENTER_CRITICAL(&s_dir_mux);
     *out = s_log_last;
+    taskEXIT_CRITICAL(&s_dir_mux);
+}
+
+void log_last_suppl(fm_logname_t *out)
+{
+    taskENTER_CRITICAL(&s_dir_mux);
+    *out = s_log_last_suppl;
     taskEXIT_CRITICAL(&s_dir_mux);
 }
 
@@ -180,13 +192,20 @@ void log_last_motor_named(const char *name)
 
 /**
  * @brief The run's file is closed, or let go: a MOTOR run's is the log
- *        RENAME LOG renames.  The logger task's.
+ *        RENAME LOG renames and MOTOR & ESC's GRAPH opens, a SUPPLY run's
+ *        the log SUPPLY's GRAPH opens.  The logger task's.
  */
 static void log_remember(void)
 {
-    if (s_log_open_kind == LOG_RUN_MOTOR && s_log_open.name[0] != '\0') {
+    if (s_log_open.name[0] != '\0'
+        && (s_log_open_kind == LOG_RUN_MOTOR
+            || s_log_open_kind == LOG_RUN_SUPPLY)) {
         taskENTER_CRITICAL(&s_dir_mux);
-        s_log_last = s_log_open;
+        if (s_log_open_kind == LOG_RUN_MOTOR) {
+            s_log_last = s_log_open;
+        } else {
+            s_log_last_suppl = s_log_open;
+        }
         taskEXIT_CRITICAL(&s_dir_mux);
     }
     s_log_open.name[0] = '\0';

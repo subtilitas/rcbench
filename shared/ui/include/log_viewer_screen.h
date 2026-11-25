@@ -288,6 +288,33 @@ log_viewer_show_t log_viewer_show(log_viewer_tab_t tab, const char *name,
                                   unsigned mount);
 
 /**
+ * @brief The I/O's mount number now (log_viewer_io_t mounts()), 0 without
+ *        one: what log_viewer_show() takes as @p mount for a file written
+ *        now.
+ * @return the number
+ */
+unsigned log_viewer_mount_now(void);
+
+/**
+ * @brief The file log_viewer_show() opened came from a result card's GRAPH
+ *        key: the home tag on its graph leaves the screen, for the card
+ *        that opened it (the router's openers), and does not climb to the
+ *        list.  Called after the router entered the screen; a file that
+ *        opened in no graph takes nothing.  The next way in, the plot's
+ *        BACK and that home tag forget it.
+ */
+void log_viewer_back_leaves(void);
+
+/**
+ * @brief The tab whose folder @p dir is, when LOGS lists the files of it:
+ *        ROOT, USER or BENCH, as SETUP > SD CARD names them now.
+ * @param dir a folder, a path from the card's root
+ * @param tab takes the tab
+ * @return false for a folder no tab lists, and for NULL
+ */
+bool log_viewer_tab_of(const char *dir, log_viewer_tab_t *tab);
+
+/**
  * @brief The file currently open, or "" -- the overview header shows this.
  *
  * @return the name

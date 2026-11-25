@@ -47,6 +47,10 @@
 #include "ui_layout.h"
 #include "ui_screen.h"
 
+/* Last: its layout macros have short names (W, H, PAD).  The GRAPH view
+ * poses a run's result in the screen's state. */
+#include "../../shared/ui/servo_screen_core_int.h"
+
 /**
  * @brief A tap of contact 1 at (@p x, @p y) of the body, through the
  *        router.
@@ -135,6 +139,41 @@ static void angle_list(const char *view)
     while (imu_screen_take(&c)) { }
 }
 
+/**
+ * @brief servo-rudder-auto-graph-rbmod: a run that ended PASS, both ends found
+ *        and the verify pass within, its RUDDR004.CSV written: GRAPH
+ *        right of TOLERANCE, live on the SAFE bench.
+ */
+static void graph_pose(void)
+{
+    servo_rauto_t *r = &s.ra.run;
+    r->state = SERVO_RAUTO_DONE;
+    r->out_done = true;             /* its lines and END handed over */
+    r->verdict = SERVO_RAUTO_PASS;
+    r->cfg.family = SERVO_RAUTO_FAM_KST;
+    r->servo.value[0] = 150u;
+    r->servo.value[1] = 150u;
+    r->cur[0] = 87u;
+    r->cur[1] = 95u;
+    r->ends[0].done = r->ends[1].done = true;
+    r->ends[0].bound = r->ends[1].bound = true;
+    r->ends[0].end_us = 1180u;
+    r->ends[1].end_us = 1840u;
+    r->vn = SERVO_RAUTO_VERIFY_N;
+    r->goal_deg[0] = -20.0f;
+    r->goal_deg[1] = 20.0f;
+    r->vdeg[0] = -20.1f;
+    r->vdeg[1] = 19.9f;
+    r->vdeg[2] = 0.1f;
+    for (unsigned k = 0; k < SERVO_RAUTO_VERIFY_N; ++k) {
+        r->vwithin[k] = true;
+    }
+    s.ra.off = false;
+    s.files_from = PEEK_RAUTO;
+    servo_screen_test_files(4, true);
+    ++s.ctrl_rev;
+}
+
 bool render_rudder_view(const char *view)
 {
     return strncmp(view, "servo-rudder", 12) == 0;
@@ -178,6 +217,9 @@ void render_rudder_pose(const char *view)
     }
     if (strcmp(view, "servo-rudder-auto-settings") == 0) {
         tap_body(SV_FOOT_SET_X, SV_FOOT_Y);
+    }
+    if (strcmp(view, "servo-rudder-auto-graph-rbmod") == 0) {
+        graph_pose();
     }
     if (strstr(view, "servo-rudder-angle") == view) {
         angle_list(view);

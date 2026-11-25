@@ -8,6 +8,19 @@ history is in git.
 
 ### Added
 
+- GRAPH (German `GRAFIK`) on the result cards opens the last run since
+  power-on in LOGS' graph: LIMIT RUN beside the report's line
+  (`LIMITnnn.CSV`), RUDDER AUTO right of TOLERANCE (`RUDDRnnn.CSV`), TEST
+  at the file's line in the run's box (`ATESTnnn.CSV`), MOTOR & ESC left of
+  RENAME LOG (the MOTOR log closed last) and SUPPLY right of RESET PEAKS
+  (the SUPPL log closed last). The home tag on that graph returns to the
+  card with its result. The key is hidden before a run and for a run with
+  User logs OFF, grey while ARMED or while the run's file is open; a tap on
+  the grey key says why in the card's first line (SERVO's cards) or the
+  alert band (MOTOR & ESC, SUPPLY), as does a tap after the card was
+  swapped. Leaving the card switches the bench to SAFE
+  (`shared/ui/graph_key.c`, `shared/ui/servo_graph_key.c`;
+  [Screens](docs/Screens.md#graph-on-the-result-cards)).
 - LOGS opens a run file the bench wrote in the plot at once, with the
   columns of its kind: LIMIT RUN `pulse`, `current`, `angle`; RUDDER AUTO
   `pulse`, `current`, `measured`; AUTOMATIC TEST `command`, `current`,

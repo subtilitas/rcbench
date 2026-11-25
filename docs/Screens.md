@@ -332,16 +332,16 @@ on the left card decides the first pages:
 | --- | --- |
 | SERVO hub | LIVE, LIMIT RUN, RUDDER and KST's tiles and the port line (5); a tile and OPTIONS (2) |
 | SERVO LIVE and SWEEP | the horn's angle, the dial and the readings (3) |
-| SERVO TEST | the AUTOMATIC TEST card, the caps and the plot (3); PORT, READY, the rail line, ARM + START and OPTIONS (5) |
-| SERVO LIMIT RUN | LOW END with HIGH END, and the state lines (2); PORT, READY, the rail line, ARM + START and OPTIONS (5) |
+| SERVO TEST | the AUTOMATIC TEST card, the caps, the plot and GRAPH in the run's box (3 or 4); PORT, READY, the rail line, ARM + START and OPTIONS (5) |
+| SERVO LIMIT RUN | LOW END with HIGH END, the state lines and GRAPH after a run (2 or 3); PORT, READY, the rail line, ARM + START and OPTIONS (5) |
 | SERVO RUDDER | LENGTH, the drive buttons, ZERO, RESET MAX and, without a knob that answers, -10us and +10us (4 or 5); DEFLECTION, TRAILING EDGE and the state lines (3) |
-| SERVO RUDDER AUTO | the targets, MARGIN and TOLERANCE, ZERO (3); DEFLECTION and TRAILING EDGE (2); PORT, READY, the rail line, ARM + START and OPTIONS (5) |
+| SERVO RUDDER AUTO | the targets, MARGIN and TOLERANCE, ZERO and GRAPH after a run (3 or 4); DEFLECTION and TRAILING EDGE (2); PORT, READY, the rail line, ARM + START and OPTIONS (5) |
 | SERVO LIVE, SWEEP and RUDDER, SAFE | PORT, READY, the rail line, ARM and OPTIONS (5); SET V, the plot, SPEED, the type and the buttons on LIVE and SWEEP (5), SET V, the plot, the type and the side view on RUDDER (4); SET V not on the rbmod carrier's programming port |
 | SERVO KST and HITEC, SERVO tab | the tabs, CONNECT, READ ALL and TYPE on KST, SERIES (FILES while the port is held) and READ ALL on HITEC, the notes (5); FILES and MORE on KST, MORE and AFTER STOP on HITEC, RESTORE, WRITE n VALUES (4); PORT, READY, the rail line, WRITE and OPTIONS (5) |
 | SERVO KST and HITEC, another tab | the tabs, the tab's first value, its `-` and `+` on a stepped KST row, MOVE SERVO on HITEC's D series TRAVEL, the notes (2 to 4); PORT, READY, the rail line, WRITE and OPTIONS (5) |
 | SERVO's lists (the hub, SWEEP, RUDDER, RUDDER AUTO, HITEC) | as a settings list |
 | SUPPLY LIVE | PLOT and TABLE, VOLTAGE and CURRENT LIMIT (3) |
-| SUPPLY LIVE, the rail | the range and the four reading cards (5); the set points' values, RESET PEAKS, OUTPUT ON and OPTIONS (4) |
+| SUPPLY LIVE, the rail | the range and the four reading cards (5); the set points' values, RESET PEAKS, GRAPH after a run, OUTPUT ON and OPTIONS (4 or 5) |
 | a settings list (MOTOR & ESC, ESC STICK, SUPPLY, SERVO) | a row, the strip's name and RESET name (3); a row's `-`, value and `+`, and SAVE (4) |
 
 A page whose dock would cover a control that stops an output is left out
@@ -378,8 +378,8 @@ show while ARMED.
 
 | Screen and state | Pages, items |
 | --- | --- |
-| MOTOR & ESC LIVE, SAFE | LIVE and PROGRAM, the telemetry card, THROTTLE and RENAME LOG (4); TARGET, the readings, RESET PEAKS, ARM and OPTIONS (5) |
-| MOTOR & ESC PROGRAM's list, SAFE | LIVE and PROGRAM, the two rows and RENAME LOG (4); the rail's page as on LIVE (5) |
+| MOTOR & ESC LIVE, SAFE | LIVE and PROGRAM, the telemetry card, THROTTLE, RENAME LOG and GRAPH after a run (4 or 5); TARGET, the readings, RESET PEAKS, ARM and OPTIONS (5) |
+| MOTOR & ESC PROGRAM's list, SAFE | LIVE and PROGRAM, the two rows, RENAME LOG and GRAPH after a run (4 or 5); the rail's page as on LIVE (5) |
 | ESC STICK, makers or models | BACK and the first row (2); SEARCH, `^` and `v`, and the count under the rows (3) |
 | ESC STICK, a profile | BACK, the first item and the note under the card (3); the first item's `-` and `+`, the side column's `^` and `v`, MANUAL INTERVENTION REQUIRED where the profile has manual steps, RUN and OPTIONS (4 or 5) |
 | ESC STICK's OPTIONS | as a settings list |
@@ -937,7 +937,9 @@ below starts at y 56. The menu tile always opens LIVE. Tap a tab to switch
 tasks. This does not add a navigation level or change LIVE's selected
 view, PLOT or TABLE. RENAME LOG (German `LOG UMBENENNEN`) stands in the
 same row on LIVE and on PROGRAM's list, 180 x 40px from x 449 to the left
-column's edge at x 629 ([RENAME LOG](#rename-log)).
+column's edge at x 629 ([RENAME LOG](#rename-log)). GRAPH (German
+`GRAFIK`), 110 x 40px from x 331, stands left of it once a MOTOR log has
+closed since power-on ([GRAPH on the result cards](#graph-on-the-result-cards)).
 
 | Task | The left column, 620px |
 | --- | --- |
@@ -1793,7 +1795,7 @@ SERVO opens on its hub: eight tiles of 328 x 130px in SETUP's grid, at x
 | TEST | TEST | the AUTOMATIC TEST card, SUPPLY's caps, the plot and the run's box, the READY card in place of the output card, HOLD 2s: ARM + START in the footer; OPTIONS opens the automatic test's list |
 | LIMIT RUN | LIMIT RUN | the mode and output lines, LOW END and HIGH END and the state lines on the left card, the READY card in place of the output card, HOLD 2s: ARM + START in the footer; OPTIONS opens MODE, SERVO, SERVO PULSES, CURRENT, Wait before PWM, DUT NAME, RUN NOTE and USER LOGS ([Running it](Servo.md#running-it)) |
 | RUDDER | RUDDER | deflection in ° and mm, LENGTH, 1000us, CENTER, 2000us, ZERO and RESET MAX, -10us and +10us without a knob that answers ([Rudder deflection](Servo.md#rudder-deflection)) |
-| RUDDER AUTO | RUDDER AUTO | AUTO's box in place of LENGTH and the drive buttons, the READY card in place of the output card, HOLD 2s: ARM + START in the footer ([AUTO end points](Servo.md#auto-end-points)) |
+| RUDDER AUTO | RUDDER AUTO | AUTO's box in place of LENGTH and the drive buttons, GRAPH right of TOLERANCE after a run ([GRAPH on the result cards](#graph-on-the-result-cards)), the READY card in place of the output card, HOLD 2s: ARM + START in the footer ([AUTO end points](Servo.md#auto-end-points)) |
 | KST | SERVO > KST | the KST and Chaservo programmer over the left card ([Programmer](#programmer)) |
 | HITEC | HITEC | the Hitec programmer over the left card ([Hitec programmer](#hitec-programmer)) |
 
@@ -2509,7 +2511,9 @@ until the next run. It shows PASS, FAIL or ABORTED with a reason, the
 longest travel time, highest holding current and files saved in `USER/LOGS`:
 `ATESTnnn.CSV`, followed by `+ .TXT` once the complete report reaches the
 card. With User logs OFF under [Setup](#setup) > SD CARD, it shows
-`USER LOGS OFF` and writes no files.
+`USER LOGS OFF` and writes no files. GRAPH at the file's line in the box
+opens `ATESTnnn.CSV` in LOGS' graph
+([GRAPH on the result cards](#graph-on-the-result-cards)).
 
 ![A result](img/servo-result.png)
 
@@ -2557,7 +2561,9 @@ supply goes off once the LEAVE gave the port back. The run writes
 `LIMITnnn.CSV`, a row a judged position, and the report `LIMITnnn.TXT`. The
 verdict, values or endpoints and `LIMITnnn.TXT`, or `USER LOGS OFF` when
 User logs is OFF, stay on the
-state lines until the next run.
+state lines until the next run. GRAPH beside the report's line opens
+`LIMITnnn.CSV` in LOGS' graph
+([GRAPH on the result cards](#graph-on-the-result-cards)).
 
 On the rbmod carrier, PROG 5V supplies a programming-port run and replaces
 the PD mini for power cycling. The hold switches it on. The PD mini on the
@@ -3078,7 +3084,9 @@ beneath the keypad or confirmation dialog.
 
 The 380px right-hand rail holds four 64px reading cards (VOLT, CURR, PWR,
 MODE), then CONTROL with the run totals in mAh and Wh on its title line
-and RESET PEAKS (48px). OUTPUT ON / OFF is the footer's middle slot, body
+and RESET PEAKS (264 x 48px), with GRAPH (84 x 48px) right of it once a
+SUPPL log has closed since power-on
+([GRAPH on the result cards](#graph-on-the-result-cards)). OUTPUT ON / OFF is the footer's middle slot, body
 y 444 to 492, x 348 to 676, where MOTOR & ESC places ARM. Both columns end
 at body y 436.
 
@@ -3542,7 +3550,8 @@ first:
 ![The import view, reached by MORE > COLUMNS](img/logs-import.png)
 
 The home tag moves up one level, like BACK: the plot to where it came
-from (the file list after OPEN, the import view after PLOT), import view
+from (the file list after OPEN, the import view after PLOT, the result
+card after its GRAPH), import view
 to file list, file list to menu. Over MORE's list it closes the list. In
 the DELETE dialog it acts as CANCEL.
 
@@ -3968,6 +3977,48 @@ is an error: the bench switches to SAFE and the supply off
 LOGS omits runs still being written. Their directory size can reflect
 only the last committed length until close, making an open run look
 finished if it were listed.
+
+### GRAPH on the result cards
+
+![GRAPH beside a LIMIT RUN's report](img/servo-limrun-pass.png)
+![GRAPH right of TOLERANCE on RUDDER AUTO](img/servo-rudder-auto-graph-rbmod.png)
+![GRAPH left of RENAME LOG on MOTOR & ESC](img/motor-graph.png)
+![GRAPH right of RESET PEAKS on SUPPLY](img/supply-graph.png)
+
+GRAPH (German `GRAFIK`) opens LOGS with the last run's CSV in the graph.
+Five cards carry it, for the last run since power-on:
+
+| Card | Where | The file |
+| --- | --- | --- |
+| LIMIT RUN | flush right beside the report's line, 96 x 40px; that line takes two rows | `LIMITnnn.CSV` in `USER/LOGS` |
+| RUDDER AUTO | right of TOLERANCE on its row, 90 x 48px | `RUDDRnnn.CSV` in `USER/LOGS` |
+| TEST | at the file's line in the run's box, 96 x 36px, until CLOSE | `ATESTnnn.CSV` in `USER/LOGS` |
+| MOTOR & ESC | left of RENAME LOG, 110 x 40px from x 331 | the MOTOR log closed last |
+| SUPPLY | right of RESET PEAKS in CONTROL, 84 x 48px | the SUPPL log closed last |
+
+The key is hidden before the first run, for a run started with User logs
+OFF, for a run the card took no file for, and for a LIMIT RUN that judged
+no position (its report alone). It is grey while the bench is ARMED and
+while the run's file is still open: the run goes on, its last lines or its
+END wait for the logger, or a log is open on MOTOR & ESC and SUPPLY. A tap
+on the grey key opens nothing and says why: in the card's first line on
+LIMIT RUN, RUDDER AUTO and TEST, in the alert band on MOTOR & ESC and
+SUPPLY.
+
+| Text | When |
+| --- | --- |
+| `Bench ARMED. Switch to SAFE to open the graph.` | the bench is ARMED |
+| `The run is still being written.` | the run's file is still open |
+| `LIMIT013.CSV is not on the card.` | the card in the slot is not the one the run wrote to, or the file is renamed or deleted |
+
+A tap on the live key leaves the card for LOGS on the file's tab with the
+file open, in the graph for a file a preset matches. Leaving the card
+switches the bench to SAFE, as every way out of a bench screen does. The
+home tag on that graph returns to the card, whose result still shows. LOGS
+entered later from its tile shows its list. The graph drives no output
+and shows no target. The key acts on the release of the finger that
+pressed it, over the key; a second finger elsewhere and a release slid
+off onto the band open nothing.
 
 ### The SD card's format
 

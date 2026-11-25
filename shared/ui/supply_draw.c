@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "graph_key.h"
 #include "prog_registry.h"
 #include "bench_state.h"
 #include "settings.h"
@@ -775,6 +776,10 @@ void sup_render(gfx_canvas_t *c, int buffer_index)
         ui_button_font(c, s.reset_rect, TR(MO_RESET_PEAKS),
                        ui_theme_color(UI_C_PANEL_SUNK), s.pressed == P_RESET,
                        true, SU_FONT_LABEL);
+        gfx_fill_rect(c, s.graph_rect.x, s.graph_rect.y, s.graph_rect.w,
+                      s.graph_rect.h, ui_theme_color(UI_C_PANEL));
+        graph_key_draw(c, s.graph_rect, GRAPH_KEY_SUPPLY,
+                       s.pressed == P_GRAPH, SU_FONT_LABEL);
         draw_prog_5v(c);
     }
     if (ctrl_moved || out_moved) {

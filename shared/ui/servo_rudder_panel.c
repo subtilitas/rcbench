@@ -465,7 +465,7 @@ void rudder_down(const touch_event_t *evt)
         && evt->point.id == s.rud.press_id) {
         step_end();
     }
-    if (!rudder_shown() || rauto_down(evt)) {
+    if (!rudder_shown() || svs_gk_rauto_down(evt) || rauto_down(evt)) {
         return;
     }
     for (int k = RUD_C_LENGTH; k < RUD_C_COUNT; ++k) {

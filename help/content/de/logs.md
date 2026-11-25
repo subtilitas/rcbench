@@ -10,7 +10,7 @@ LOGS listet CSV-Aufzeichnungen (Comma-Separated Values) und Berichte auf der SD-
 
 Drei Reiter oben links wählen den Ordner: STAMM für das Stammverzeichnis, USER für den Ordner Testaufzeichnungen (Vorgabe `USER/LOGS`) und BENCH für den Ordner Auto-Aufzeichnungen (Vorgabe `BENCH/LOGS`). WI-FI unten links öffnet [WLAN](wifi.md). FILES daneben öffnet [Files](files.md) zum Kopieren, Verschieben, Umbenennen und Löschen.
 
-Das Home-Feld führt wie ZURÜCK jeweils eine Ebene zurück: von der Grafik dorthin, woher sie kam (nach ÖFFNEN zur Dateiliste, nach GRAFIK zur Importansicht), von der Importansicht zur Dateiliste und zum Menü. Über der Liste von MEHR schließt es die Liste. In der Rückfrage zu LÖSCHEN wirkt es wie ABBRECHEN.
+Das Home-Feld führt wie ZURÜCK jeweils eine Ebene zurück: von der Grafik dorthin, woher sie kam (nach ÖFFNEN zur Dateiliste, nach GRAFIK zur Importansicht, nach GRAFIK einer Ergebniskarte zu dieser Karte), von der Importansicht zur Dateiliste und zum Menü. Über der Liste von MEHR schließt es die Liste. In der Rückfrage zu LÖSCHEN wirkt es wie ABBRECHEN.
 
 ## Keine Karte
 
@@ -43,6 +43,8 @@ Die Kopfzeile zeigt rechts neben den Reitern den gewählten Ordner, etwa `BENCH/
 LOGS öffnet den Reiter der zuletzt vom Panel geschriebenen Datei. Nach dem Start gilt BENCH, bis eine Datei geschrieben wurde. Ohne neue Datei seit dem letzten Besuch bleibt der zuvor gewählte Reiter erhalten. Ein Tipp auf einen Reiter liest seinen Ordner ab der ersten Seite.
 
 Die obere Leiste LOGS | FILES wechselt zwischen den beiden Seiten der Kachel. Das Home-Feld führt jeweils zum Menü. Die Leiste erscheint nur bei der Dateiliste, nicht über einer offenen Datei, Rückfrage oder einem Dialogfeld.
+
+GRAFIK auf LIMIT RUN, RUDER AUTO, TEST, MOTOR & ESC und SUPPLY öffnet den letzten Lauf dieser Karte seit dem Einschalten hier als Grafik. Beim Verlassen schaltet die Karte den Prüfstand auf SAFE. Das Home-Feld auf der Grafik führt zur Karte zurück, deren Ergebnis weiter dasteht. Die Taste ist grau, solange der Prüfstand ARMED ist oder die Datei des Laufs noch offen ist; ein Tipp sagt dann warum.
 
 WI-FI in der Tastenzeile öffnet [WLAN](wifi.md) für Downloads im Browser. Das dortige Home-Feld führt hierher zurück. Über der Löschrückfrage oder einer offenen Datei fehlt die Taste. Auch bei ARMED lässt sich WI-FI öffnen; die Bedienelemente der WLAN-Seite prüfen ihre eigenen Sperrbedingungen.
 

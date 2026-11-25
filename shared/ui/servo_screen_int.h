@@ -26,6 +26,7 @@
 #include <stdint.h>
 
 #include "gfx.h"
+#include "graph_key.h"
 #include "kst_panel.h"
 #include "prog5v_box.h"
 #include "servo_angle.h"
@@ -282,7 +283,7 @@ enum { OP_NONE = 0, OP_ROW, OP_TRIM_DN, OP_TRIM_UP, OP_KEYPAD,
        OP_TEXT, OP_CHOICE, OP_CHOICE_CANCEL, OP_WARN_APPLY, OP_WARN_CANCEL,
        OP_SUP_V, OP_SUP_I, OP_ASK_APPLY, OP_ASK_CANCEL, OP_TEST_START,
        OP_LIM_START, OP_RUN_CLOSE, OP_OPEN_CAPS,
-       OP_KST_EXPERT };
+       OP_KST_EXPERT, OP_GRAPH };
 
 /* What the list chooses -- the PORT button's port, the programmer family
  * (servo_pick.c) and the angle source (servo_angle_pick.c) among them --
@@ -841,6 +842,12 @@ typedef struct {
     /** @brief The logger has an OPEN or an END of the last run not answered yet
      * (servo_screen_test_logger_busy()). */
     bool      logger_busy;
+    /** @brief The mount each run's number came on, by PEEK_*: GRAPH opens
+     *  the file on that card only (servo_graph_key.c). */
+    unsigned  gk_mount[3];
+    /** @brief GRAPH as LIMIT RUN's card and TEST's box drew it last, by
+     *  graph_key_card_t; empty where it was not drawn. */
+    gfx_rect_t gk_rect[3];
 
     uint32_t ctrl_rev;  /**< a count of the controls' look */
     uint8_t  drive_target; /**< 0 the outputs, 1 + n programming port n */
@@ -1327,6 +1334,80 @@ bool lim_hold_down(const touch_event_t *evt);
  * @return the number
  */
 uint32_t lim_signature(void);
+
+/* --- servo_graph_key.c: GRAPH on LIMIT RUN, RUDDER AUTO and TEST -------- */
+
+/** @brief The three runs' files handed to graph_key.h as they stand now. */
+void svs_gk_sync(void);
+/**
+ * @brief Whether card @p k shows its key now.
+ * @param k GRAPH_KEY_LIMIT, GRAPH_KEY_RAUTO or GRAPH_KEY_ATEST
+ * @return true unless hidden
+ */
+bool svs_gk_shown(graph_key_card_t k);
+/**
+ * @brief Card @p k's key where it takes a press now: RUDDER AUTO's beside
+ *        TOLERANCE, LIMIT RUN's and TEST's where their card drew it.
+ * @param k the card
+ * @return the key; empty where it is not shown
+ */
+gfx_rect_t svs_gk_rect(graph_key_card_t k);
+/**
+ * @brief Card @p k's key in @p r, noted as the place it takes a press; a
+ *        hidden key draws nothing and takes none.
+ * @param c       the canvas
+ * @param k       the card
+ * @param r       the key
+ * @param pressed a finger is on it
+ */
+void svs_gk_draw(gfx_canvas_t *c, graph_key_card_t k, gfx_rect_t r,
+                 bool pressed);
+/**
+ * @brief A tap on card @p k's key: LOGS on the file (graph_key_tap()), or
+ *        the reason in the card's first line.
+ * @param k the card
+ * @return true when LOGS opened
+ */
+bool svs_gk_tap(graph_key_card_t k);
+/**
+ * @brief Why the last tap on card @p k's key opened nothing, while it holds.
+ * @param k the card
+ * @return the reason; NULL for none
+ */
+const char *svs_gk_note(graph_key_card_t k);
+/**
+ * @brief Card @p k's key and note as one number, for the card's signature.
+ * @param k the card
+ * @return the number
+ */
+uint32_t svs_gk_sig(graph_key_card_t k);
+/**
+ * @brief A DOWN on LIMIT RUN's card or TEST's box: GRAPH's press
+ *        (OP_GRAPH), one press at a time.
+ * @param evt the DOWN
+ * @return whether it landed on the key
+ */
+bool svs_gk_down(const touch_event_t *evt);
+/**
+ * @brief OP_GRAPH's tap release at (@p x, @p y): the tap, on the key.
+ * @param x the release's x
+ * @param y its y
+ */
+void svs_gk_up(int x, int y);
+/**
+ * @brief A DOWN on RUDDER AUTO's key: its press, as the box's controls
+ *        take theirs.
+ * @param evt the DOWN
+ * @return whether it landed on the key
+ */
+bool svs_gk_rauto_down(const touch_event_t *evt);
+/**
+ * @brief The rest of RUDDER AUTO's key press: the tap on its own contact's
+ *        release.
+ * @param evt the event
+ * @return whether it was the key's
+ */
+bool svs_gk_rauto_rest(const touch_event_t *evt);
 
 /* --- servo_limit_card.c: LIMIT RUN's left card and hold ------------------ */
 

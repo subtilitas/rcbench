@@ -89,6 +89,7 @@ static void page_live(ui_help_page_t *p)
                                        s.down_rect.h },
                          UI_HELP_AT_RIGHT);
     (void)ui_help_add(p, TR(MO_LOG_RENAME), TX_HG_MO_LOG, log_rect());
+    (void)ui_help_add(p, TR(GK_KEY), TX_HG_GRAPH, motor_screen_graph_rect());
 }
 
 /** @brief PROGRAM: the tabs, each row of the list and RENAME LOG.
@@ -118,6 +119,7 @@ static void page_program(ui_help_page_t *p)
         (void)ui_help_add_at(p, ui_tr(row->name), help, r, UI_HELP_AT_RIGHT);
     }
     (void)ui_help_add(p, TR(MO_LOG_RENAME), TX_HG_MO_LOG, log_rect());
+    (void)ui_help_add(p, TR(GK_KEY), TX_HG_GRAPH, motor_screen_graph_rect());
 }
 
 /** @brief The rail: TARGET, the readings, RESET PEAKS, and the footer's

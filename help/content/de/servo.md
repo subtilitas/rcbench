@@ -183,7 +183,7 @@ Ein längerer Ausfall beendet den Lauf mit `AS5600 antwortet nicht`, ein zweiter
 ![Ein Ergebnis](view:servo-result)
 ![Ein Ergebnis, vom INA3221 gemessen](view:servo-result-ina)
 
-Das Feld zeigt das Ergebnis bis SCHLIESSEN, die Zeile ZULETZT auf der Karte bis zum nächsten Lauf. Enthalten sind BESTANDEN, NICHT BESTANDEN oder ABGEBROCHEN mit Grund, längste Stellzeit, höchster Haltestrom und gespeicherte Dateien. Diese heißen `ATESTnnn.CSV` und bei geschriebenem Bericht `+ .TXT` in `USER/LOGS`. Bei Testaufzeichnungen AUS unter [SETUP](setup.md#sd-card) > SD CARD steht `TESTAUFZEICHNUNGEN AUS`; es wird keine Datei geschrieben.
+Das Feld zeigt das Ergebnis bis SCHLIESSEN, die Zeile ZULETZT auf der Karte bis zum nächsten Lauf. Enthalten sind BESTANDEN, NICHT BESTANDEN oder ABGEBROCHEN mit Grund, längste Stellzeit, höchster Haltestrom und gespeicherte Dateien. Diese heißen `ATESTnnn.CSV` und bei geschriebenem Bericht `+ .TXT` in `USER/LOGS`. Bei Testaufzeichnungen AUS unter [SETUP](setup.md#sd-card) > SD CARD steht `TESTAUFZEICHNUNGEN AUS`; es wird keine Datei geschrieben. GRAFIK in der Zeile der Datei im Feld öffnet `ATESTnnn.CSV` als Grafik unter [Logs](logs.md); das Home-Feld dort führt hierher zurück.
 
 ## Der Endlagenlauf
 
@@ -335,7 +335,7 @@ Die Zustandszeilen behalten das Ergebnis bis zum nächsten Lauf: Urteil, Grund o
 ![Ein programmiertes Servo](view:servo-limrun-pass)
 ![Nur Suche](view:servo-limrun-found)
 
-Der Lauf schreibt unabhängig von BERICHT `LIMITnnn.CSV` und den Bericht `LIMITnnn.TXT` in `USER/LOGS`, außer bei Testaufzeichnungen AUS. Die CSV hält eine Zeile je Stellung, die die Suchen bewertet haben, höchstens 600: die Suche (1 die erste, 2 nach einem Schreiben, 3 die letzte Prüfung), die Seite, den Puls in us, den Strom in A, die Schienenspannung in V, den Winkel, BASE, FREE oder BOUND, den freien Strom, die Schwelle und in der blockierten Zeile den Endpunkt. Ein Lauf, der keine Stellung bewertet hat, schreibt nur den Bericht. Der Bericht enthält Suchausgang, Endpunkte beider Suchen, Servopulse und mögliche Pulsänderungen sowie LEFT ANGLE und RIGHT ANGLE vorher und nachher. Hinzu kommen Weganteile, Vorhalt und Endwert, geschriebene Werte, Anzahl der Schreibvorgänge und Sitzungen, Messgerät, bei vorhandenem AS5600 die Winkel jeder letzten freien Position sowie Ergebnis oder Abbruchgrund. WLAN und Updates warten, bis die Berichtdatei geschlossen ist.
+Der Lauf schreibt unabhängig von BERICHT `LIMITnnn.CSV` und den Bericht `LIMITnnn.TXT` in `USER/LOGS`, außer bei Testaufzeichnungen AUS. Die CSV hält eine Zeile je Stellung, die die Suchen bewertet haben, höchstens 600: die Suche (1 die erste, 2 nach einem Schreiben, 3 die letzte Prüfung), die Seite, den Puls in us, den Strom in A, die Schienenspannung in V, den Winkel, BASE, FREE oder BOUND, den freien Strom, die Schwelle und in der blockierten Zeile den Endpunkt. Ein Lauf, der keine Stellung bewertet hat, schreibt nur den Bericht. GRAFIK neben dem Namen des Berichts auf der Karte öffnet `LIMITnnn.CSV` als Grafik unter [Logs](logs.md); das Home-Feld dort führt hierher zurück. Der Bericht enthält Suchausgang, Endpunkte beider Suchen, Servopulse und mögliche Pulsänderungen sowie LEFT ANGLE und RIGHT ANGLE vorher und nachher. Hinzu kommen Weganteile, Vorhalt und Endwert, geschriebene Werte, Anzahl der Schreibvorgänge und Sitzungen, Messgerät, bei vorhandenem AS5600 die Winkel jeder letzten freien Position sowie Ergebnis oder Abbruchgrund. WLAN und Updates warten, bis die Berichtdatei geschlossen ist.
 
 ## Aktuelle Einschränkungen
 

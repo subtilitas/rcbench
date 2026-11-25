@@ -1122,6 +1122,9 @@ void ov_rest(const touch_event_t *evt)
             servo_invalidate();
         }
         break;
+    case OP_GRAPH:
+        svs_gk_up(x, y);            /* LOGS, or why not in the card's line */
+        break;
     case OP_OPEN_CAPS:
         /* Asked again: a bench that armed under the finger stays armed. */
         if (gfx_rect_contains(caps_open_rect(), x, y)
