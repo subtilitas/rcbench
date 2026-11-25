@@ -598,6 +598,65 @@ TEST_CASE(the_servo_prefix_and_printer_strings_are_kept_with_their_limits)
     settings_set_store(NULL);
 }
 
+/** One string line alone in a file, parsed: whether it was taken. */
+static bool one_text_line(const char *key, const char *value)
+{
+    char body[96];
+    (void)snprintf(body, sizeof(body), "%s = \"%s\"\n", key, value);
+    const size_t n = file_of(body);
+    CHECK_EQ(sf_parse(g_text, n, &g_l, NULL), SF_OK);
+    return g_l.refused_n == 0 && g_l.taken == 1;
+}
+
+/*
+ * A file holds a string to its own limit: ID PREFIX to 17 characters, the
+ * printer's address and name to 23.  A longer prefix is refused with
+ * SF_LINE_LONG, as any string over its limit, and the setting keeps its
+ * value; an applied and saved file then differs in nothing.
+ */
+TEST_CASE(a_file_holds_each_new_string_to_its_own_limit)
+{
+    static const char k17[] = "KST X10 LEFT WING";
+    static const char k18[] = "KST X10 LEFT WINGS";
+    static const char k23[] = "KST X10 LEFT WING ABCDE";
+    static const char k24[] = "KST X10 LEFT WING ABCDEF";
+
+    fresh_store();
+    CHECK(one_text_line("srv_pfx", k17));
+    CHECK_STR_EQ(g_l.texts[SET_TEXT_SERVO_PREFIX], k17);
+    CHECK(sf_apply(&g_l) > 0);
+    CHECK_STR_EQ(settings_text(SET_TEXT_SERVO_PREFIX), k17);
+    CHECK(settings_save());
+    CHECK(!sf_differs(&g_l));
+
+    const char *const longer[] = { k18, k23, k24 };
+    for (size_t i = 0u; i < sizeof(longer) / sizeof(longer[0]); ++i) {
+        CHECK(!one_text_line("srv_pfx", longer[i]));
+        CHECK_EQ(g_l.refused_n, 1);
+        CHECK_EQ(g_l.refused[0].code, SF_LINE_LONG);
+        CHECK_STR_EQ(g_l.refused[0].key, "srv_pfx");
+        CHECK_EQ(g_l.refused[0].line, 2u);
+        CHECK_STR_EQ(g_l.texts[SET_TEXT_SERVO_PREFIX], "SERVO");
+        (void)sf_apply(&g_l);
+        CHECK_STR_EQ(settings_text(SET_TEXT_SERVO_PREFIX), "SERVO");
+        CHECK(settings_save());
+        CHECK(!sf_differs(&g_l));
+    }
+
+    static const setting_text_id_t k_full[] = { SET_TEXT_PRN_ADDR,
+                                                SET_TEXT_PRN_NAME };
+    for (size_t i = 0u; i < sizeof(k_full) / sizeof(k_full[0]); ++i) {
+        const char *key = settings_text_key(k_full[i]);
+        CHECK(one_text_line(key, k17));
+        CHECK(one_text_line(key, k18));
+        CHECK(one_text_line(key, k23));
+        CHECK_STR_EQ(g_l.texts[k_full[i]], k23);
+        CHECK(!one_text_line(key, k24));
+        CHECK_EQ(g_l.refused[0].code, SF_LINE_LONG);
+    }
+    settings_set_store(NULL);
+}
+
 int main(void)
 {
     RUN(every_setting_and_string_goes_out_and_comes_back);
@@ -614,5 +673,6 @@ int main(void)
     RUN(a_file_of_the_stored_settings_differs_in_nothing);
     RUN(a_fresh_panel_stores_the_defaults_only);
     RUN(the_servo_prefix_and_printer_strings_are_kept_with_their_limits);
+    RUN(a_file_holds_each_new_string_to_its_own_limit);
     return test_summary("settings_file");
 }

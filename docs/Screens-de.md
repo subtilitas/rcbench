@@ -7459,8 +7459,8 @@ end
 - Eine Zahl hat so viele Nachkommastellen wie ihr Schritt; ein Schalter ist
   `ON` oder `OFF`; eine Auswahl der englische Text ihrer Option; ein Text
   steht in doppelten Anführungszeichen, `\"` und `\\` für ein
-  Anführungszeichen und einen Backslash, höchstens 23 Bytes. Das Präfix der
-  Servo-ID `srv_pfx` behält seine ersten 17 Zeichen.
+  Anführungszeichen und einen Backslash, höchstens 23 Bytes, das Präfix der
+  Servo-ID `srv_pfx` höchstens 17.
 - Schlüssel und die Wörter von Schalter und Auswahl werden ohne Rücksicht
   auf Groß- und Kleinschreibung gelesen. Leerzeichen und Tabs um Schlüssel
   und Wert, leere Zeilen, Kommentare, LF und CR LF sowie eine
@@ -7485,7 +7485,7 @@ end
 | 3 | Schlüssel doppelt | der Schlüssel schon eine Zeile hatte; die erste zählt |
 | 4 | Wert nicht lesbar | keine Zahl, keine Option der Auswahl, nicht ON oder OFF, ein Text ohne Anführungszeichen |
 | 5 | außerhalb des Bereichs | außerhalb des Bereichs, um einen halben Schritt oder mehr neben dem Raster, oder ein Pin, den die Zeile nicht nimmt |
-| 6 | Text zu lang | ein Text über 23 Bytes |
+| 6 | Text zu lang | ein Text über 23 Bytes, `srv_pfx` über 17 |
 | 7 | folgt einer anderen | `sns_scl`, der Sensor SDA folgt |
 | 8 | belegt, bleibt | eine Task die Einstellung hält, etwa der Servo-Programmierer einen Pin seines Ports; die Einstellung behält ihren Wert |
 

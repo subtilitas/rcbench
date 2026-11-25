@@ -6879,7 +6879,7 @@ end
 - A number has as many digits after the point as its step; a switch is
   `ON` or `OFF`; a choice is the English text of its option; a string is in
   double quotes, `\"` and `\\` for a quote and a backslash, at most 23
-  bytes. The servo id prefix `srv_pfx` keeps its first 17 characters.
+  bytes, the servo id prefix `srv_pfx` at most 17.
 - Keys and the words of a switch or a choice are read without case. Spaces
   and tabs around a key and a value, empty lines, comments, LF and CR LF,
   and a UTF-8 byte order mark are taken.
@@ -6902,7 +6902,7 @@ end
 | 3 | key given twice | the key had a line before; the first one counts |
 | 4 | value not readable | not a number, no option of the choice, not ON or OFF, a string not in quotes |
 | 5 | out of range | outside the range, off the step by half a step or more, or a pin the row does not take |
-| 6 | text too long | a string over 23 bytes |
+| 6 | text too long | a string over 23 bytes, `srv_pfx` over 17 |
 | 7 | follows another | `sns_scl`, which follows Sensor SDA |
 | 8 | in use, kept | a task holds the setting, as the servo programmer holds a pin of its port; the setting keeps its value |
 

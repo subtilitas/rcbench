@@ -454,9 +454,10 @@ static bool value_of(setting_id_t id, span_t v, float *out)
     return number(v, out);
 }
 
-/** @brief A quoted string into @p out; SF_LINE_OK, SF_LINE_VALUE for one not
- *         in quotes or with a control byte, SF_LINE_LONG for one too long. */
-static sf_line_err_t quoted(span_t v, char out[SETTINGS_TEXT_MAX])
+/** @brief A quoted string of at most @p max characters into @p out;
+ *         SF_LINE_OK, SF_LINE_VALUE for one not in quotes or with a control
+ *         byte, SF_LINE_LONG for one over @p max (settings_text_max()). */
+static sf_line_err_t quoted(span_t v, size_t max, char out[SETTINGS_TEXT_MAX])
 {
     if (v.n < 2u || v.p[0] != '"' || v.p[v.n - 1u] != '"') {
         return SF_LINE_VALUE;
@@ -472,7 +473,7 @@ static sf_line_err_t quoted(span_t v, char out[SETTINGS_TEXT_MAX])
         if ((unsigned char)c < 0x20u || c == 0x7F) {
             return SF_LINE_VALUE;
         }
-        if (n >= SETTINGS_TEXT_MAX - 1u) {
+        if (n >= max || n >= SETTINGS_TEXT_MAX - 1u) {
             return SF_LINE_LONG;
         }
         out[n++] = c;
@@ -520,8 +521,10 @@ static void setting_in(sf_load_t *l, unsigned ln, span_t c)
             continue;
         }
         char t[SETTINGS_TEXT_MAX];
+        const size_t max =
+            (size_t)settings_text_max((setting_text_id_t)i);
         const sf_line_err_t e = (l->text_line[i] != 0u) ? SF_LINE_TWICE
-                                                        : quoted(v, t);
+                                                        : quoted(v, max, t);
         if (e != SF_LINE_OK) {
             refuse(l, ln, e, key);
         } else {

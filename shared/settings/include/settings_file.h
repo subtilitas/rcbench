@@ -111,7 +111,7 @@ typedef enum {
                                 or a string not in quotes                   */
     SF_LINE_RANGE = 5,     /**< a value the schema does not take
                                 (settings_takes())                          */
-    SF_LINE_LONG = 6,      /**< a string over SETTINGS_TEXT_MAX - 1 bytes   */
+    SF_LINE_LONG = 6,      /**< a string over settings_text_max() bytes    */
     SF_LINE_DERIVED = 7,   /**< a setting that follows another: sense_scl   */
     SF_LINE_HELD = 8,      /**< sf_apply(): held now, left as it is         */
 } sf_line_err_t;
