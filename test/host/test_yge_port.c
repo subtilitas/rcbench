@@ -424,6 +424,25 @@ TEST_CASE(by_hand_at_60000ms_and_60001ms)
     CHECK_ALL_OFF();
     (void)cmd(LINK_YGE_OP_HAND_DONE);
     CHECK_EQ(refusal(), LINK_YGE_REF_NOT_OPEN);
+    /* A HAND_DONE that arrives at 60001ms before any pass has timed the wait
+     * out: the error, not a start. */
+    to_hand_wait();
+    run_ms(YGE_PORT_HAND_MS);
+    sim.us += MS;
+    g.battery = true;
+    CHECK_EQ(cmd(LINK_YGE_OP_HAND_DONE), 0u);
+    CHECK_EQ(yge_port_state(&g_p), LINK_YGE_OPEN);
+    CHECK_EQ(result(), LINK_YGE_RESULT_TIMEOUT);
+    CHECK(flag(LINK_YP_F_FAULT));
+    CHECK_EQ(g.others_off, 1);
+    CHECK_ALL_OFF();
+    /* At 60000ms, before that pass, it is taken. */
+    to_hand_wait();
+    run_ms(YGE_PORT_HAND_MS - 1u);
+    sim.us += MS;
+    CHECK_EQ(cmd(LINK_YGE_OP_HAND_DONE), 0u);
+    CHECK_EQ(refusal(), LINK_YGE_REF_NONE);
+    CHECK_EQ(yge_port_state(&g_p), LINK_YGE_RUN);
     /* HAND_DONE elsewhere and when not safe. */
     to_hand_wait();
     g_p.safe = false;
