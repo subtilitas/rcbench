@@ -67,6 +67,9 @@ static const struct {
     [SET_TEXT_BNODE_ADDR]   = { "bnode_ble", "", SET_CAT_COUNT },
     [SET_TEXT_BNODE_NAME]   = { "bnode_name", "", SET_CAT_COUNT },
     [SET_TEXT_RUN_NOTE]     = { "srv_note", "", SET_CAT_COUNT },
+    [SET_TEXT_SERVO_PREFIX] = { "srv_pfx", "SERVO", SET_CAT_COUNT },
+    [SET_TEXT_PRN_ADDR]     = { "prn_ble", "", SET_CAT_COUNT },
+    [SET_TEXT_PRN_NAME]     = { "prn_name", "", SET_CAT_COUNT },
 }; /**< the string settings' table */
 
 /** @brief The values, the copy the medium holds, the store and the hooks. */
@@ -389,13 +392,14 @@ static void notify_changed(int id, float before)
 }
 
 /**
- * @brief String @p i set to @p text, cut to SETTINGS_TEXT_MAX - 1 characters;
+ * @brief String @p i set to @p text, cut to settings_text_max() characters;
  *        the text observer hears it when it moved. Whether it moved.
  */
 static bool text_to(int i, const char *text)
 {
     char next[SETTINGS_TEXT_MAX];
-    snprintf(next, sizeof(next), "%s", text);
+    snprintf(next, (size_t)settings_text_max((setting_text_id_t)i) + 1u, "%s",
+             text);
     if (strcmp(next, s.texts[i]) == 0) {
         return false;
     }
@@ -532,9 +536,9 @@ void settings_init(void)
     (void)settings_sensors_migrate(s.values);
     if (s.store && s.store->load_text) {
         (void)s.store->load_text(s.texts, SETTING_TEXT_COUNT);
-        /* Terminated whatever the medium held. */
+        /* Terminated at the string's limit whatever the medium held. */
         for (int i = 0; i < SETTING_TEXT_COUNT; ++i) {
-            s.texts[i][SETTINGS_TEXT_MAX - 1] = '\0';
+            s.texts[i][settings_text_max((setting_text_id_t)i)] = '\0';
         }
     }
     take_stored();
@@ -835,6 +839,15 @@ const char *settings_text_key(setting_text_id_t id)
         return NULL;
     }
     return k_text_defs[id].key;
+}
+
+int settings_text_max(setting_text_id_t id)
+{
+    if (id < 0 || id >= SETTING_TEXT_COUNT) {
+        return 0;
+    }
+    return (id == SET_TEXT_SERVO_PREFIX) ? SETTINGS_PREFIX_MAX
+                                         : SETTINGS_TEXT_MAX - 1;
 }
 
 const char *settings_text_default(setting_text_id_t id)

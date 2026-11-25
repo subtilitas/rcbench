@@ -346,6 +346,28 @@ TEST_CASE(the_benchs_own_folders_are_refused)
     CHECK_EQ(check("USER/KST", out), CARD_FOLDER_OK);
 }
 
+/* The labelled servos' folder, Servos, and the folders in it: on FAT the
+ * same folder as SERVOS. */
+TEST_CASE(the_servos_folder_is_refused_as_a_log_folder)
+{
+    char out[CARD_DIR_MAX] = "UNTOUCHED";
+    CHECK_EQ(check("SERVOS", out), CARD_FOLDER_BENCH);
+    CHECK_EQ(check("Servos", out), CARD_FOLDER_BENCH);
+    CHECK_EQ(check("servos", out), CARD_FOLDER_BENCH);
+    CHECK_EQ(check("SERVOS/X", out), CARD_FOLDER_BENCH);
+    CHECK_EQ(check("Servos/KST-0001", out), CARD_FOLDER_BENCH);
+    CHECK_STR_EQ(out, "UNTOUCHED");
+    /* A name that starts like it is another folder. */
+    CHECK_EQ(check("SERVOSX", out), CARD_FOLDER_OK);
+    CHECK_EQ(check("SERVO", out), CARD_FOLDER_OK);
+    CHECK_EQ(check("USER/SERVOS", out), CARD_FOLDER_OK);
+    CHECK_STR_EQ(out, "USER/SERVOS");
+    /* Servos/<id> of 23 characters fits a run's folder. */
+    CHECK_EQ(sizeof(CARD_SERVOS "/") - 1u + 23u + 1u, 31u);
+    CHECK(CARD_RUN_DIR_MAX >= 31);
+    CHECK(CARD_RUN_DIR_MAX >= CARD_DIR_MAX);
+}
+
 TEST_CASE(the_first_fault_from_the_left_answers)
 {
     char out[CARD_DIR_MAX];
@@ -405,6 +427,7 @@ int main(void)
     RUN(lower_case_is_taken_as_upper_case);
     RUN(every_device_name_is_refused_in_either_place);
     RUN(the_benchs_own_folders_are_refused);
+    RUN(the_servos_folder_is_refused_as_a_log_folder);
     RUN(the_first_fault_from_the_left_answers);
     RUN(a_short_out_and_null_arguments_are_refused);
     RUN(a_refused_folder_falls_back);

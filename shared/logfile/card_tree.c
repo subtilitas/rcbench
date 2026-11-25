@@ -99,6 +99,19 @@ static bool is_device(const char *name, size_t len)
 }
 
 /**
+ * @brief Whether the upper-case @p path is CARD_SERVOS or a folder in it.
+ * @param path The upper-case path, folders separated by "/".
+ * @return true for SERVOS and SERVOS/...
+ */
+static bool is_servos(const char *path)
+{
+    static const char k_servos[] = "SERVOS";
+    const size_t n = sizeof(k_servos) - 1u;
+    return strncmp(path, k_servos, n) == 0
+           && (path[n] == '\0' || path[n] == '/');
+}
+
+/**
  * @brief Whether @p path is a bench area folder or one below it.
  *
  * An area is the first 2 folders of a card_bench_dir() path.
@@ -162,7 +175,7 @@ card_folder_t card_folder_check(const char *in, char *out, size_t n)
         path[len++] = up;
     }
     path[len] = '\0';
-    if (is_bench(path)) {
+    if (is_bench(path) || is_servos(path)) {
         return CARD_FOLDER_BENCH;
     }
     if (out != NULL) {

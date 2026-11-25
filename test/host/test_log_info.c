@@ -164,6 +164,8 @@ TEST_CASE(the_longest_cell_fits_and_a_byte_less_takes_none)
     CHECK_STR_EQ(out.dut, "MG90S_METAL_GEAR_NO_123");
     CHECK_EQ(strlen(out.dut), 23u);
     CHECK_EQ(strlen(out.note), 23u);
+    CHECK_EQ(strlen(out.id), 23u);
+    CHECK_EQ(LOG_INFO_MAX, 195u);
 
     char small[LOG_INFO_MAX - 1u];
     CHECK_EQ(log_info_format(&in, small, sizeof(small)), 0u);
@@ -181,7 +183,7 @@ TEST_CASE(a_23_character_dut_name_and_run_note_reach_the_cell_whole)
     CHECK_EQ(strlen(settings_text(SET_TEXT_RUN_NOTE)), 23u);
     char cell[LOG_INFO_MAX];
     run_info_servo(cell, sizeof(cell), "KST X20-8.4 HV 333H",
-                   "INA3221 0x41 CH2 XY", "IMU X+ YAWS");
+                   "INA3221 0x41 CH2 XY", "IMU X+ YAWS", "");
     log_info_t out;
     CHECK(log_info_parse(cell, &out));
     CHECK_STR_EQ(out.dut, "ABCDEFGHIJKLMNOPQRSTUVW");
@@ -193,7 +195,7 @@ TEST_CASE(a_23_character_dut_name_and_run_note_reach_the_cell_whole)
     CHECK_STR_EQ(out.angle, "IMU X+ YAWS");
     /* A note longer than 23 characters is held to 23 by the setting. */
     settings_set_text(SET_TEXT_RUN_NOTE, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
-    run_info_servo(cell, sizeof(cell), NULL, NULL, NULL);
+    run_info_servo(cell, sizeof(cell), NULL, NULL, NULL, NULL);
     CHECK(log_info_parse(cell, &out));
     CHECK_STR_EQ(out.note, "ABCDEFGHIJKLMNOPQRSTUVW");
     CHECK_STR_EQ(out.servo, "");
@@ -203,6 +205,57 @@ TEST_CASE(a_23_character_dut_name_and_run_note_reach_the_cell_whole)
     CHECK_STR_EQ(settings_text(SET_TEXT_RUN_NOTE), "");
     settings_set_text(SET_TEXT_DUT_NAME, "SERVO");
     log_info_set_clock(NULL);
+}
+
+/* The labelled servo's id: the last key, 23 characters whole, from both
+ * run_info calls; a reader that knows the 7 keys of firmware 0.23.17 and
+ * skips any other reads the rest of the cell as before. */
+TEST_CASE(the_servo_id_is_the_last_key_and_an_old_reader_skips_it)
+{
+    log_info_t in;
+    memset(&in, 0, sizeof(in));
+    snprintf(in.dut, sizeof(in.dut), "MG90S");
+    snprintf(in.fw, sizeof(in.fw), "0.23.18");
+    snprintf(in.id, sizeof(in.id), "KST X10 LEFT WING-0000A");
+    CHECK_EQ(strlen(in.id), 23u);
+    char cell[LOG_INFO_MAX];
+    (void)log_info_format(&in, cell, sizeof(cell));
+    CHECK_STR_EQ(cell, "dut=MG90S&fw=0.23.18&id=KST X10 LEFT WING-0000A");
+    log_info_t out;
+    CHECK(log_info_parse(cell, &out));
+    CHECK_STR_EQ(out.id, "KST X10 LEFT WING-0000A");
+    CHECK_STR_EQ(out.dut, "MG90S");
+
+    /* 0.23.17's reader: the id's key is one it does not know. */
+    char old[LOG_INFO_MAX];
+    snprintf(old, sizeof(old), "%s", cell);
+    char *key = strstr(old, "&id=");
+    CHECK(key != NULL);
+    if (key != NULL) {
+        key[1] = 'x';                     /* "&xd=": a key it does not know */
+    }
+    CHECK(log_info_parse(old, &out));
+    CHECK_STR_EQ(out.dut, "MG90S");
+    CHECK_STR_EQ(out.fw, "0.23.18");
+    CHECK_STR_EQ(out.id, "");
+    /* An id alone is a cell with a known key. */
+    CHECK(log_info_parse("id=A-00001", &out));
+    CHECK_STR_EQ(out.id, "A-00001");
+
+    /* Both run_info calls carry it; NULL and "" leave it out. */
+    settings_init();
+    log_info_set_clock(NULL);
+    run_info_servo(cell, sizeof(cell), "DIGITAL", NULL, NULL,
+                   "KST X10 LEFT WING-0000A");
+    CHECK(log_info_parse(cell, &out));
+    CHECK_STR_EQ(out.id, "KST X10 LEFT WING-0000A");
+    CHECK(strstr(cell, "&servo=DIGITAL&id=KST X10 LEFT WING-0000A") != NULL);
+    run_info_bench(cell, sizeof(cell), "MG90S", "", "KST-00001");
+    CHECK_STR_EQ(cell, "dut=MG90S&fw=" RCBENCH_VERSION_STRING "&id=KST-00001");
+    run_info_bench(cell, sizeof(cell), "MG90S", "", NULL);
+    CHECK_STR_EQ(cell, "dut=MG90S&fw=" RCBENCH_VERSION_STRING);
+    run_info_servo(cell, sizeof(cell), NULL, NULL, NULL, "");
+    CHECK(strstr(cell, "id=") == NULL);
 }
 
 TEST_CASE(the_clock_unset_leaves_the_date_out)
@@ -231,15 +284,15 @@ TEST_CASE(the_clock_unset_leaves_the_date_out)
     log_info_set_clock(NULL);
     CHECK_EQ(log_info_now(), 0);
     char cell[LOG_INFO_MAX];
-    run_info_bench(cell, sizeof(cell), NULL, "dry");
+    run_info_bench(cell, sizeof(cell), NULL, "dry", "");
     CHECK_STR_EQ(cell, "note=dry&fw=" RCBENCH_VERSION_STRING);
     /* A clock that reads 1970: still no date. */
     g_now = 12345;
     log_info_set_clock(fixed_clock);
-    run_info_bench(cell, sizeof(cell), "MG90S", "");
+    run_info_bench(cell, sizeof(cell), "MG90S", "", NULL);
     CHECK_STR_EQ(cell, "dut=MG90S&fw=" RCBENCH_VERSION_STRING);
     g_now = NOV_24_1031;
-    run_info_bench(cell, sizeof(cell), "MG90S", NULL);
+    run_info_bench(cell, sizeof(cell), "MG90S", NULL, "");
     CHECK_STR_EQ(cell, "dut=MG90S&date=2026-11-24T10:31&fw="
                        RCBENCH_VERSION_STRING);
     log_info_set_clock(NULL);
@@ -314,7 +367,8 @@ TEST_CASE(a_motor_file_carries_note_date_and_fw_within_25_columns)
     g_now = NOV_24_1031;
     log_info_set_clock(fixed_clock);
     char cell[LOG_INFO_MAX];
-    run_info_bench(cell, sizeof(cell), NULL, "prop 9x6 \"APC\"; dry");
+    run_info_bench(cell, sizeof(cell), NULL, "prop 9x6 \"APC\"; dry",
+                   "");
     log_writer_t w = writer();
     log_writer_set_info(&w, cell);
     const bench_state_t b = bench_empty();
@@ -339,7 +393,7 @@ TEST_CASE(a_servo_file_carries_the_dut_name_and_takes_26_columns)
     g_now = NOV_24_1031;
     log_info_set_clock(fixed_clock);
     char cell[LOG_INFO_MAX];
-    run_info_bench(cell, sizeof(cell), "MG90S #2", "before");
+    run_info_bench(cell, sizeof(cell), "MG90S #2", "before", "");
     log_writer_t w = writer();
     log_writer_set_info(&w, cell);
     const bench_state_t b = bench_empty();
@@ -378,7 +432,7 @@ TEST_CASE(a_supply_file_carries_its_cell_on_the_first_row)
 {
     log_info_set_clock(NULL);           /* the clock unset: no date */
     char cell[LOG_INFO_MAX];
-    run_info_bench(cell, sizeof(cell), NULL, "load 2R");
+    run_info_bench(cell, sizeof(cell), NULL, "load 2R", "");
     log_writer_t w = writer();
     log_writer_set_info(&w, cell);
     supply_state_t s;
@@ -464,6 +518,7 @@ int main(void)
     RUN(amp_equals_semicolon_and_quote_are_written_as_underscores);
     RUN(the_longest_cell_fits_and_a_byte_less_takes_none);
     RUN(a_23_character_dut_name_and_run_note_reach_the_cell_whole);
+    RUN(the_servo_id_is_the_last_key_and_an_old_reader_skips_it);
     RUN(the_clock_unset_leaves_the_date_out);
     RUN(the_parser_skips_what_it_does_not_know);
     RUN(a_file_is_read_by_its_info_column_on_the_first_data_row);

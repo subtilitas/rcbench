@@ -35,6 +35,9 @@ static const char *const k_text_notes[SETTING_TEXT_COUNT] = {
     [SET_TEXT_BNODE_ADDR]   = "Bound balance node: BLE address and its type",
     [SET_TEXT_BNODE_NAME]   = "Bound balance node: name",
     [SET_TEXT_RUN_NOTE]     = "Run note, for the run's files",
+    [SET_TEXT_SERVO_PREFIX] = "Servo id prefix, for NEW ID",
+    [SET_TEXT_PRN_ADDR]     = "Bound label printer: BLE address and its type",
+    [SET_TEXT_PRN_NAME]     = "Bound label printer: name",
 };
 
 /* ================================================================ writing */

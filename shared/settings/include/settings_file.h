@@ -72,7 +72,7 @@ extern "C" {
 
 /** @brief Bytes of a file at most: sf_parse() refuses a longer text, and a
  *         file of sf_format() fits with CR LF line ends. */
-#define SF_FILE_MAX 24576u
+#define SF_FILE_MAX 32768u
 
 /** @brief Characters of a line sf_format() writes at most, the line end not
  *         counted. */
