@@ -121,6 +121,49 @@ die Leitung der Page, der PD mini und PROG_SUPPLY sind also alles, was der
 IOmcu an hat. `LINK_YP_F_FAULT` sagt es dem Panel, das ihm in den SAFE-Zustand
 des Prüfstands folgt.
 
+## Die Hälfte des Panels
+
+`shared/bench/yge_link.c` sendet die Anfragen und verfolgt sie auf jedem
+Panel; `shared/bench/yge_prog.c` und `yge_prog_file.c` halten den Ablauf der
+Sitzung, ihre Ablehnungen und ihre Sicherung. Die Seiten sind noch nicht
+gebaut: das Panel verfolgt eine Page, die die Bench-Konsole hält, und führt
+keine eigene Sitzung.
+
+| Ereignis | Was das Panel tut |
+|---|---|
+| Register 0 bis 22 | alle 5ms in einer Anfrage, 100ms bei gehaltenem Pin, 500ms sonst |
+| Erstes Lesen nach einem Panel-Neustart, ein Pin gehalten | CLOSE; erneut alle 1000ms, solange die Page `WRITING` antwortet oder in `NOT_BACK` bleibt. Keine Anfrage, bis die Page frei ist. |
+| Link zurück, kein Neustart | nichts wird geschlossen |
+| Die STOP-Taste oder jeder Stopp des Panels | die Operation `STOP`, sobald die Page bekannt ist und einen Pin hält; ein Stopp in einer Link-Lücke geht danach. Ein `BAD_VALUE`, eine SEQ eines anderen Schreibers: lesen und erneut, höchstens 6 Mal. |
+| `FAULT` steigt, oder der Zustand erreicht `NOT_BACK` | ein Fehler: alle Ausgänge aus (`prog_faults_follow()`). Ein `FAULT`, der beim ersten Lesen nach Link-Aufbau schon steht, zählt nicht. |
+| Der Zustand erreicht `NOT_BACK` | ein Alarm, der den Port nennt |
+| Ein Pin gehalten, von wem auch immer | ARM abgelehnt, mit dem Alarm der ESC-Programmierung; der SAFE-Chip des Bands nennt den Port; die PROG-Page wird nicht geschrieben |
+| Ein Stopp eingerastet | kein Befehl außer CLOSE, LEAVE und ABORT geht (`yge_prog_cmd_allowed()`) |
+| 10 Lesezugriffe der Page in Folge fehlgeschlagen, in einer Anfrage | die Anfrage endet. Mit einem Halten im letzten Lesen: ein Fehler, und `STOP` |
+| Eine Anfrage läuft 90000ms, nachdem die Page sie nahm | ABORT |
+| Eine Lesekopie mit neuem `READS`, `READ_CRC` oder `ENTRIES` | aus Block 0 und, bei mehr als 32 Einträgen, Block 1 geholt und gegen `oy_guard_table_crc()` = `READ_CRC` geprüft; 3 Abrufe, dann aufgegeben, bis die Page eine andere Kopie nennt. Keine Anfrage, solange sie kommt. |
+
+Was eine Sitzung anfragt, in dieser Reihenfolge:
+
+| Anfrage | Was geht |
+|---|---|
+| CONNECT, am Ende des 2s-Halts des Bedieners | OPEN, ENTER mit dem Schlüssel, READ, jedes nachdem das vorige mit `LINK_YGE_RESULT_DONE` endete; `BY HAND` hält bei `HAND_WAIT` bis HAND_DONE. Abgelehnt, ohne dass etwas gesendet wird: ARMED, ein Stopp eingerastet, keine Page, ein Pin gehalten, ein Port über 3, eine Boot-Wartezeit außerhalb 1000 bis 20000ms; bei `SWITCHED` eine Spannung außerhalb 3000 bis 20000mV oder ein Limit außerhalb 50 bis 3000mA, oder über dem von SUPPLY für das Board. |
+| WRITE, am Ende des 2s-Halts des Bedieners | abgelehnt, ohne dass etwas gesendet wird, bei einer Tabelle ohne `LINK_YP_F_WRITABLE`, einem Entwurf einer anderen Lesekopie, einem Entwurf gleich der Kopie, oder einem Entwurf, den der Guard von `protocols/openyge` ablehnt (mit dem Index, den er nennt). Ein Entwurf trägt `READS` und `READ_CRC` der Lesekopie, aus der er entstand, und das WRITE sendet genau diese: ein Entwurf eines früheren Lesens wird hier als veraltet abgelehnt, und die Page lehnt ihn mit `STALE` ab, wenn das Panel das neuere Lesen noch nicht gesehen hat. Der Entwurf einer Datei entsteht gegen die beim Laden gehaltene Lesekopie, und die nächste Lesekopie beendet ihn. Das erste Schreiben einer Sitzung sichert zuerst, siehe unten. |
+| LEAVE | LEAVE, wenn der ESC antwortet, dann CLOSE; sonst CLOSE allein. Geht auch mit eingerastetem Stopp. |
+
+**Die Sicherung der Sitzung.** Die Tabelle, wie das erste vollständige
+Lesen der Sitzung sie fand. Das erste WRITE der Sitzung lässt die Karte sie
+als `BENCH/YGE/CONF/YGE001-<type>.TXT` speichern (das Format von
+`protocols/openyge/include/openyge_file.h`, Typcode 5712 gibt
+`YGE001-5712`), und das WRITE geht, wenn die Karte geantwortet hat. Ohne
+Karte, mit einer Karte ohne FAT32 oder exFAT oder bei einem gescheiterten
+Speichern geht das WRITE, und die bisherigen Werte bleiben nur im
+Arbeitsspeicher; die Meldung sagt es. Eine Karte, die 10000ms schweigt, ein
+Stopp, ein ARM oder ein ESC, der vor der Antwort fehlt: das WRITE geht
+nirgends hin. Jede Anfrage an die Karte trägt eine Nummer; eine Antwort mit
+einer anderen Nummer, etwa eine, die nach dem Ende ihrer Sitzung kommt, wird
+verworfen und gezählt.
+
 ## Aktuelle Einschränkungen
 
 - **Ein zurückgekehrter Link behält den Halt.** Bedingung: der Link war über
@@ -131,8 +174,13 @@ des Prüfstands folgt.
   ein Fehler oder ein Linkverlust zwischen dem ersten Frame eines Schreibens
   und dem Ende seines Lesens danach. Die Tabelle, die der ESC hält, ist bis
   zum nächsten Lesen nicht bekannt.
-- **Keine Panel-Hälfte.** Das Panel sendet noch nichts an diese Pages; `yge`
-  an der Bench-Konsole steuert sie.
+- **Keine Seiten.** Das Panel verfolgt die Page und schließt ein Halten, das
+  es nach einem Neustart findet; `yge` an der Bench-Konsole führt eine
+  Sitzung.
+- **Ein von der Bench-Konsole gehaltener Pin geht mit einem
+  Panel-Neustart.** Bedingung: `yge open` an der Konsole, dann ein
+  Panel-Neustart. Das Panel kann ihn nicht von seinem eigenen Halten
+  unterscheiden.
 - **Ein Firmware-Update**, das startet, während die Page gehalten ist, zählt
   als Stopp.
 

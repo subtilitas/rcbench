@@ -479,6 +479,7 @@ void control_task(void *arg)
         hitec_pass(link_up);
         esc_commands();
         esc_pass(link_up);
+        yge_pass(link_up);
         (void)outputs_keepalive(&s_out, PANEL_CH_THROTTLE, now_ms());
         servo_link_service(link_up);
 

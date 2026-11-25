@@ -6271,6 +6271,9 @@ UI_TEXT(ALERT_ESC_NOT_BACK_SLOT, 94,
 UI_TEXT(ALERT_ESC_NOT_BACK_PORT, 94,
     "ESC wire: port %u did not take its pin back. ARM stays refused; CLOSE tries again.",
     "ESC-Leitung: Port %u nahm seinen Pin nicht zurück. ARM bleibt gesperrt; CLOSE läuft erneut.")
+UI_TEXT(ALERT_YGE_NOT_BACK, 94,
+    "YGE ESC: port %u did not take its pin back. ARM stays refused; CLOSE tries again.",
+    "YGE-ESC: Port %u nahm seinen Pin nicht zurück. ARM bleibt gesperrt; CLOSE läuft erneut.")
 UI_TEXT(ALERT_PDMINI_OLD, 94,
     "IOmcu firmware too old to reset the PD mini.",
     "IOmcu-Firmware zu alt, um den PD mini zurückzusetzen.")
