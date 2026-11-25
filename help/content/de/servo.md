@@ -335,7 +335,7 @@ Die Zustandszeilen behalten das Ergebnis bis zum nächsten Lauf: Urteil, Grund o
 ![Ein programmiertes Servo](view:servo-limrun-pass)
 ![Nur Suche](view:servo-limrun-found)
 
-Der Lauf schreibt unabhängig von BERICHT eine `LIMITnnn.TXT` in `USER/LOGS`, außer bei Testaufzeichnungen AUS. Sie enthält Suchausgang, Endpunkte beider Suchen, Servopulse und mögliche Pulsänderungen sowie LEFT ANGLE und RIGHT ANGLE vorher und nachher. Hinzu kommen Weganteile, Vorhalt und Endwert, geschriebene Werte, Anzahl der Schreibvorgänge und Sitzungen, Messgerät, bei vorhandenem AS5600 die Winkel jeder letzten freien Position sowie Ergebnis oder Abbruchgrund. WLAN und Updates warten, bis die Berichtdatei geschlossen ist.
+Der Lauf schreibt unabhängig von BERICHT `LIMITnnn.CSV` und den Bericht `LIMITnnn.TXT` in `USER/LOGS`, außer bei Testaufzeichnungen AUS. Die CSV hält eine Zeile je Stellung, die die Suchen bewertet haben, höchstens 600: die Suche (1 die erste, 2 nach einem Schreiben, 3 die letzte Prüfung), die Seite, den Puls in us, den Strom in A, die Schienenspannung in V, den Winkel, BASE, FREE oder BOUND, den freien Strom, die Schwelle und in der blockierten Zeile den Endpunkt. Ein Lauf, der keine Stellung bewertet hat, schreibt nur den Bericht. Der Bericht enthält Suchausgang, Endpunkte beider Suchen, Servopulse und mögliche Pulsänderungen sowie LEFT ANGLE und RIGHT ANGLE vorher und nachher. Hinzu kommen Weganteile, Vorhalt und Endwert, geschriebene Werte, Anzahl der Schreibvorgänge und Sitzungen, Messgerät, bei vorhandenem AS5600 die Winkel jeder letzten freien Position sowie Ergebnis oder Abbruchgrund. WLAN und Updates warten, bis die Berichtdatei geschlossen ist.
 
 ## Aktuelle Einschränkungen
 

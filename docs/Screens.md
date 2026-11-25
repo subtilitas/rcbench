@@ -2549,8 +2549,10 @@ ARMED; the ARM row reads SAFE while a session holds the bench SAFE.
 After the run's last command the bench switches to SAFE. STOP,
 SAFE, link loss, leaving the screen, an automatic-test abort condition or
 a FAIL ends the run with every output off; after a FAIL in a session the
-supply goes off once the LEAVE gave the port back. The verdict, values or endpoints and
-`LIMITnnn.TXT`, or `USER LOGS OFF` when User logs is OFF, stay on the
+supply goes off once the LEAVE gave the port back. The run writes
+`LIMITnnn.CSV`, a row a judged position, and the report `LIMITnnn.TXT`. The
+verdict, values or endpoints and `LIMITnnn.TXT`, or `USER LOGS OFF` when
+User logs is OFF, stay on the
 state lines until the next run.
 
 On the rbmod carrier, PROG 5V supplies a programming-port run and replaces
@@ -3610,8 +3612,8 @@ folder and User log folder under [Setup](#setup) > SD CARD:
 | `BENCH/LOGS` | `MOTORnnn.CSV` | one switch to ARMED from MOTOR & ESC's ARM or a stick run on its PROGRAM |
 | `BENCH/LOGS` | `SUPPLnnn.CSV` | one switch-on of the SUPPLY output while the bench is SAFE |
 | `USER/LOGS` | `ATESTnnn.CSV` | one AUTOMATIC TEST; its report is `ATESTnnn.TXT` |
-| `USER/LOGS` | `LIMITnnn.TXT` | one LIMIT RUN's report, with no CSV beside it |
-| `USER/LOGS` | `RUDDRnnn.CSV` | one AUTO end points run on RUDDER, a row a measure; its report is `RUDDRnnn.TXT` |
+| `USER/LOGS` | `LIMITnnn.CSV` | one LIMIT RUN, a row a judged position ([format](Servo.md#installed-mechanical-limit)); its report is `LIMITnnn.TXT`, alone for a run that judged no position or one of firmware 0.23.17 and older |
+| `USER/LOGS` | `RUDDRnnn.CSV` | one AUTO end points run on RUDDER, a row a measure, 12 columns (9 from firmware 0.23.17 and older); its report is `RUDDRnnn.TXT` |
 
 The name follows the screen that armed the bench: an arm that asks for the
 throttle outputs writes `MOTORnnn`, an arm that asks for the surfaces writes
@@ -3669,7 +3671,8 @@ the panel rescans next time, allowing a deleted highest number to be reused.
 LOGS lists CSV runs and recognised reports. DELETE on a run also removes
 its matching report. A report is a `.TXT` with a run name, identified by
 `log_report_number()`, the same rule FILES uses. Examples are `ATESTnnn.TXT`
-with or without `ATESTnnn.CSV`, `LIMITnnn.TXT` without CSV, and root-level
+with or without `ATESTnnn.CSV`, `LIMITnnn.TXT` with or without
+`LIMITnnn.CSV`, and root-level
 `SERVOnnn.TXT` from firmware 0.21.0 or earlier. Other `.TXT` files are
 not listed. A CSV and its report are separate rows, CSV first: OPEN
 imports the CSV or opens the report in the [text viewer](#the-text-viewer).
@@ -6471,7 +6474,7 @@ it meets a lost link:
 | Setting | Range | Default | Writes |
 | --- | --- | --- | --- |
 | Auto logs | OFF, ON | ON | `SERVOnnn.CSV`, `MOTORnnn.CSV` and `SUPPLnnn.CSV` in Auto log folder: a log of each ARMED and supply run |
-| User logs | OFF, ON | ON | `ATESTnnn.CSV` with its `ATESTnnn.TXT`, `LIMITnnn.TXT`, and `RUDDRnnn.CSV` with its `RUDDRnnn.TXT`, in User log folder: the AUTOMATIC TEST, the LIMIT RUN and RUDDER AUTO, each as the setting stands at the run's start |
+| User logs | OFF, ON | ON | `ATESTnnn.CSV` with its `ATESTnnn.TXT`, `LIMITnnn.CSV` with its `LIMITnnn.TXT`, and `RUDDRnnn.CSV` with its `RUDDRnnn.TXT`, in User log folder: the AUTOMATIC TEST, the LIMIT RUN and RUDDER AUTO, each as the setting stands at the run's start |
 | Browser writes | OPEN, ACCESS CODE, HOLD, OFF | OPEN | nothing itself: what a browser needs to change the card through WI-FI's page ([Browser writes](#browser-writes)) |
 | Auto log folder | a folder, see below | `BENCH/LOGS` | where Auto logs writes |
 | User log folder | a folder, see below | `USER/LOGS` | where User logs writes |

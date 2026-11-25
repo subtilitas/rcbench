@@ -2711,8 +2711,8 @@ UI_TEXT(LOG_RUNS_HERE, 64,
     "Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.",
     "Läufe heißen SERVOnnn, MOTORnnn oder SUPPLnnn.CSV.")
 UI_TEXT(LOG_TESTS_HERE, 64,
-    "Tests are saved as ATESTnnn, RUDDRnnn.CSV and LIMITnnn.TXT.",
-    "Tests heißen ATESTnnn, RUDDRnnn.CSV und LIMITnnn.TXT.")
+    "Tests are saved as ATESTnnn, LIMITnnn and RUDDRnnn.CSV.",
+    "Tests heißen ATESTnnn, LIMITnnn und RUDDRnnn.CSV.")
 UI_TEXT(LOG_ROOT_HERE, 64,
     "Runs of firmware 0.21.0 and older.",
     "Läufe von Firmware 0.21.0 und älter.")
@@ -11946,6 +11946,15 @@ UI_SERVO_TEXT(SERVO_STR_L_R_BENCH,
     "Prüfstand: die gefundenen Enden werden "
     "nicht auf PULS MIN und PULS MAX "
     "angewendet.")
+UI_SERVO_TEXT(SERVO_STR_L_R_ROWS,
+    "Positions:      judged %u, all in the CSV",
+    "Stellungen:      bewertet %u, alle in der "
+    "CSV")
+UI_SERVO_TEXT(SERVO_STR_L_R_ROWS_PAST,
+    "Positions:      judged %lu, in the CSV %u, "
+    "past its cap %lu",
+    "Stellungen:      bewertet %lu, in der CSV "
+    "%u, über ihrer Grenze %lu")
 
 /* ===================================================== the Wi-Fi page
  * The page the panel serves on Wi-Fi (wa_page.c), in the language the

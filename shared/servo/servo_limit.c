@@ -11,16 +11,6 @@
 
 #include "mstime.h"
 
-/**
- * @brief How many positions feed the free-running baseline before the knee test is
- * allowed to fire.
- *
- * Three, more than one: the first position is the center, where a surface
- * with any preload draws more than it does a few degrees out, and a baseline
- * from that single reading sits high enough to hide a real knee.  Three
- * positions average that away and are over within three steps of travel.
- */
-#define BASELINE_STEPS 3u
 
 /**
  * @brief Clamp a pulse width to the search travel and the pulse range.
@@ -168,15 +158,15 @@ static bool advance(servo_limit_t *lf)
  */
 static void judge(servo_limit_t *lf, float avg_a)
 {
-    if (lf->baseline_steps < BASELINE_STEPS) {
+    if (lf->baseline_steps < SERVO_LIMIT_BASELINE_STEPS) {
         lf->baseline_sum += (double)avg_a;
         ++lf->baseline_steps;
         lf->baseline_a = (float)(lf->baseline_sum / (double)lf->baseline_steps);
         lf->last_free_us = lf->cmd_us;
-        /* Advance, so the baseline covers BASELINE_STEPS positions rather
-         * than that many readings of one.  A preloaded surface draws most at
-         * center, and a baseline of center readings alone sits high enough to
-         * hide a real knee. */
+        /* Advance, so the baseline covers SERVO_LIMIT_BASELINE_STEPS
+         * positions rather than that many readings of one.  A preloaded
+         * surface draws most at center, and a baseline of center readings
+         * alone sits high enough to hide a real knee. */
         (void)advance(lf);
         return;
     }

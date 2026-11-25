@@ -66,7 +66,7 @@ TEST_CASE(a_programmed_run_verifies_both_ends_and_the_center_and_passes)
     CHECK(ended_safe());
     CHECK(!servo_rauto_restore(&g.run));
     CHECK(in_report("2000us  measured 27.60°  goal 27.50°  within"));
-    CHECK(strstr(g.csv, ";2000;V;;27.60;27.50;;;1\n") != NULL);
+    CHECK(strstr(g.csv, ";2000;V;;27.60;27.50;;;1;VERIFY;2000;\n") != NULL);
 }
 
 TEST_CASE(an_end_that_moves_after_the_last_write_fails_verify_on_that_end)

@@ -15,6 +15,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "hitec_limrun_rig.h"
+#include "limrun_rows_check.h"
 
 #include "servo_str.h"
 
@@ -55,6 +56,50 @@ TEST_CASE(a_d_series_run_lowers_0xb2_toward_0xc2_for_a_bound_left_side)
     /* Nothing asked for SERVO PULSES; each write a session of its own. */
     CHECK(h.write_ops >= 1u && h.write_ops <= 3u);
     CHECK_EQ(h.leaves, h.connects);
+}
+
+/* A Hitec run writes LIMITnnn.CSV as a KST run does: a row a judged
+ * position, the searches numbered, the bound side's rows ending on the
+ * endpoint its first search found, read back by LOGS' reader. */
+TEST_CASE(a_hitec_run_writes_its_judged_positions_before_the_report)
+{
+    h_init_d(0u, true);
+    left_only();
+    CHECK(h_start());
+    h_run_for(H_RUN_MS);
+    CHECK_EQ(h.run.verdict, SERVO_LIMRUN_PASS);
+    CHECK_EQ(h.opens, 1u);
+    CHECK_EQ(h.opens_txt, 0u);
+    CHECK_EQ(h.run.rows_past, 0u);
+    CHECK(h.run.rows_n > 0u);
+    CHECK(strncmp(h.csv, SERVO_LIMRUN_CSV_HEAD "\n",
+                  strlen(SERVO_LIMRUN_CSV_HEAD) + 1u) == 0);
+    rows_read_back(&h.run, h.csv);
+    CHECK(rows_shape(&h.run, H_CENTER) >= 5u);
+    /* The left side binds in the first search at its first bound pulse;
+     * the right one runs free to the model's 2150us. */
+    unsigned lo_bound = 0u;
+    unsigned hi_bound = 0u;
+    for (unsigned k = 0u; k < h.run.rows_n; ++k) {
+        const servo_limrun_row_t *w = &h.run.rows[k];
+        if (w->state != SERVO_LIMRUN_ROW_BOUND) {
+            continue;
+        }
+        if (w->side == SERVO_LIMRUN_HI) {
+            ++hi_bound;
+        } else if (w->search == 1u) {
+            ++lo_bound;
+            CHECK_EQ(w->pulse_us, h.run.first[SERVO_LIMRUN_LO].bind_us);
+            CHECK_EQ(w->end_us, h.run.first[SERVO_LIMRUN_LO].limit_us);
+        }
+        CHECK(w->search != 3u);
+    }
+    CHECK_EQ(lo_bound, 1u);
+    CHECK_EQ(hi_bound, 0u);
+    const servo_limrun_row_t *last = &h.run.rows[h.run.rows_n - 1u];
+    CHECK_EQ(last->search, 3u);
+    CHECK_EQ(last->pulse_us, 2150u);
+    CHECK(strstr(h.report, "Positions:      judged ") != NULL);
 }
 
 TEST_CASE(a_classic_run_writes_the_cell_of_the_bound_side)
@@ -320,6 +365,7 @@ TEST_CASE(the_family_pulses_are_the_hitec_model_and_none_for_kst)
 int main(void)
 {
     RUN(a_d_series_run_lowers_0xb2_toward_0xc2_for_a_bound_left_side);
+    RUN(a_hitec_run_writes_its_judged_positions_before_the_report);
     RUN(a_classic_run_writes_the_cell_of_the_bound_side);
     RUN(set_pulses_is_refused_with_a_hitec_family);
     RUN(no_servo_read_ends_not_hitec);

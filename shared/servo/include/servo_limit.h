@@ -66,6 +66,17 @@ typedef enum {
 #define SERVO_LIMIT_MIN_US 500u
 #define SERVO_LIMIT_MAX_US 2500u  /**< the longest pulse, us */
 
+/**
+ * @brief How many positions feed the free-running baseline before the knee test is
+ * allowed to fire.
+ *
+ * Three, more than one: the first position is the center, where a surface
+ * with any preload draws more than it does a few degrees out, and a baseline
+ * from that single reading sits high enough to hide a real knee.  Three
+ * positions average that away and are over within three steps of travel.
+ */
+#define SERVO_LIMIT_BASELINE_STEPS 3u
+
 /** @brief The settings of a limit search. */
 typedef struct {
     uint16_t center_us;      /**< where the search starts */

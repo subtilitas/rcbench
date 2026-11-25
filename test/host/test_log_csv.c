@@ -556,6 +556,65 @@ TEST_CASE(a_rising_counter_column_is_not_a_time_axis)
     CHECK_EQ(a.time_index, 0);
 }
 
+/* RUDDRnnn.CSV with kind, pulse (us) and current (A) after its nine
+ * columns, and a nine-column file of firmware 0.23.17 and older: both read,
+ * by the same header names, against the row index. */
+TEST_CASE(a_ruddr_file_reads_with_or_without_its_last_three_columns)
+{
+    static const char now[] =
+        "step;side (us);write;value;measured (deg);goal (deg);"
+        "measured (mm);goal (mm);within;kind;pulse (us);current (A)\n"
+        "1;1000;0;;30.00;27.50;;;0;STEP;1000;\n"
+        "2;1000;V;;27.60;27.50;;;1;VERIFY;1000;\n"
+        "3;1500;S;150;0.00;;;;;SEARCH;1500;0.150\n"
+        "4;1490;S;162;-0.90;;;;;SEARCH;1490;0.162\n";
+    static const char old[] =
+        "step;side (us);write;value;measured (deg);goal (deg);"
+        "measured (mm);goal (mm);within\n"
+        "1;1000;0;;30.00;27.50;;;0\n"
+        "2;1000;V;;27.60;27.50;;;1\n"
+        "3;1500;S;150;0.00;;;;\n"
+        "4;1490;S;162;-0.90;;;;\n";
+    static log_source_t src;
+    static log_mem_ctx_t ctx;
+    log_analysis_t a;
+
+    log_source_memory(&src, &ctx, now, strlen(now));
+    CHECK_EQ(log_csv_analyse(&src, NULL, &a), LOG_OK);
+    CHECK_EQ(a.n_columns, 12);
+    CHECK_EQ(a.row_count, 4);
+    CHECK_EQ(a.ragged_rows, 0);
+    CHECK_EQ(a.time_index, -1);
+    CHECK_STR_EQ(a.columns[9].name, "kind");
+    CHECK(!a.columns[9].numeric);
+    CHECK_STR_EQ(a.columns[10].name, "pulse");
+    CHECK_STR_EQ(a.columns[10].unit, "us");
+    CHECK_STR_EQ(a.columns[11].name, "current");
+    CHECK_STR_EQ(a.columns[11].unit, "A");
+    CHECK_EQ(a.columns[11].non_empty, 2);
+    const int cols[2] = { 10, 11 };
+    log_data_t d;
+    CHECK_EQ(log_csv_build(&src, &a, cols, 2, &d), LOG_OK);
+    CHECK_EQ(d.count, 4);
+    CHECK_NEAR(d.value[0][3], 1490.0, 1e-6);
+    CHECK_NEAR(d.value[1][3], 0.162, 1e-6);
+    log_data_free(&d);
+
+    log_source_memory(&src, &ctx, old, strlen(old));
+    CHECK_EQ(log_csv_analyse(&src, NULL, &a), LOG_OK);
+    CHECK_EQ(a.n_columns, 9);
+    CHECK_EQ(a.row_count, 4);
+    CHECK_EQ(a.ragged_rows, 0);
+    CHECK_EQ(a.time_index, -1);
+    CHECK_STR_EQ(a.columns[1].name, "side");
+    CHECK_STR_EQ(a.columns[1].unit, "us");
+    const int side[1] = { 1 };
+    CHECK_EQ(log_csv_build(&src, &a, side, 1, &d), LOG_OK);
+    CHECK_EQ(d.count, 4);
+    CHECK_NEAR(d.value[0][3], 1490.0, 1e-6);
+    log_data_free(&d);
+}
+
 TEST_CASE(a_time_axis_that_runs_backwards_falls_back_to_the_row_number)
 {
     /* The column was forced, and it descends.  Plotting it would draw the run
@@ -807,6 +866,7 @@ int main(void)
     RUN(a_time_unit_is_guessed_from_the_name_then_the_magnitude);
     RUN(a_time_unit_after_an_underscore_is_read);
     RUN(a_rising_counter_column_is_not_a_time_axis);
+    RUN(a_ruddr_file_reads_with_or_without_its_last_three_columns);
     RUN(a_time_axis_that_runs_backwards_falls_back_to_the_row_number);
     RUN(a_missing_time_cell_holds_the_clock_rather_than_jumping_to_zero);
     RUN(blackbox_column_names_keep_their_grouping_through_a_csv);

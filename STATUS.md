@@ -1586,7 +1586,10 @@ free), both ends searched again; at most 8 values a run, a later session reading
 type, REVERSION, pulses or range ending it, RESTORE offering the values before the run, a
 session after the run saving its own backup.
 
-Report `LIMITnnn.TXT` in `USER/LOGS` (`shared/servo/servo_limrun_report.c`). Host-tested
+`LIMITnnn.CSV`, one row a judged position, at most 600 (`shared/servo/servo_limrun_rows.c`),
+then the report `LIMITnnn.TXT` in `USER/LOGS` (`shared/servo/servo_limrun_report.c`); the CSV is
+read back by LOGS' reader in `test_servo_limrun_rows` (6 cases: the cap, a run aborted in the
+first search, a run ended at the read) and in a Hitec case of `test_servo_limrun_hitec`. Host-tested
 against `servo_sim` behind a modelled KST servo (`test_servo_limrun`,
 `test_servo_limrun_abort` and `test_servo_limrun_report` over `servo_limrun_rig.h`, 30 + 16
 + 4 cases, among them the low stop from 920 to 1440us in 3us steps with both pulse settings;
@@ -1807,7 +1810,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 647 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 648 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1851,7 +1854,7 @@ The host suite is 647 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_safety_gate`, `test_flash_gate`, `test_reset_cause`, `test_boot_diag`, `test_touch_loss`,
 `test_frame_watch`, `test_loop_watch`, `test_error_stop`, `test_error_sites`, `test_error_steps`, `test_servo_limit`,
 `test_servo_limrun`, `test_servo_limrun_gaps`, `test_servo_limrun_abort`,
-`test_servo_limrun_error`, `test_servo_limrun_report`, `test_servo_sync`,
+`test_servo_limrun_error`, `test_servo_limrun_report`, `test_servo_limrun_rows`, `test_servo_sync`,
 `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_brownout`,
 `test_servo_brownout_page`, `test_servo_test_judge`, `test_servo_test_replay`,
 `test_servo_test_enc`, `test_servo_gap`, `test_servo_report_width`, `test_servo_test_win`,

@@ -2758,7 +2758,9 @@ hält. Nach dem letzten Befehl des Laufs schaltet der Prüfstand auf SAFE.
 STOP, SAFE, Link-Verlust, das Verlassen des Bildschirms, ein Abbruchgrund
 des automatischen Tests oder ein NICHT BESTANDEN beenden den Lauf mit
 allen Ausgängen aus; nach einem NICHT BESTANDEN in einer Sitzung geht die
-Versorgung aus, sobald das LEAVE den Port zurückgegeben hat. Urteil, Werte oder Endlagen und `LIMITnnn.TXT`, bei ausgeschalteten
+Versorgung aus, sobald das LEAVE den Port zurückgegeben hat. Der Lauf schreibt
+`LIMITnnn.CSV`, eine Zeile je bewerteter Stellung, und den Bericht
+`LIMITnnn.TXT`. Urteil, Werte oder Endlagen und `LIMITnnn.TXT`, bei ausgeschalteten
 Testaufzeichnungen `TESTAUFZEICHNUNGEN AUS`, bleiben bis zum nächsten Lauf
 auf den Zustandszeilen.
 
@@ -3905,8 +3907,8 @@ Ordner Auto-Aufzeichnungen und Ordner Testaufzeichnungen:
 | `BENCH/LOGS` | `MOTORnnn.CSV` | ein Schalten auf ARMED von ARM auf MOTOR & ESC oder einem Stick-Lauf auf dessen PROGRAMMIEREN |
 | `BENCH/LOGS` | `SUPPLnnn.CSV` | ein Einschalten des SUPPLY-Ausgangs, solange der Prüfstand SAFE ist |
 | `USER/LOGS` | `ATESTnnn.CSV` | ein AUTOMATISCHER TEST; sein Bericht ist `ATESTnnn.TXT` |
-| `USER/LOGS` | `LIMITnnn.TXT` | der Bericht eines Laufs von LIMIT RUN, ohne CSV daneben |
-| `USER/LOGS` | `RUDDRnnn.CSV` | ein Lauf von RUDER AUTO, eine Zeile je Messung; sein Bericht ist `RUDDRnnn.TXT` |
+| `USER/LOGS` | `LIMITnnn.CSV` | ein Lauf von LIMIT RUN, eine Zeile je bewerteter Stellung ([Format](Servo-de.md#eingebaute-mechanische-endlage)); sein Bericht ist `LIMITnnn.TXT`, allein bei einem Lauf, der keine Stellung bewertet hat, oder einem von Firmware 0.23.17 und älter |
+| `USER/LOGS` | `RUDDRnnn.CSV` | ein Lauf von RUDER AUTO, eine Zeile je Messung, 12 Spalten (9 von Firmware 0.23.17 und älter); sein Bericht ist `RUDDRnnn.TXT` |
 
 Der Name folgt der Seite, die ARM angefordert hat: Gas-Ausgänge ergeben
 `MOTORnnn`, Ruder `SERVOnnn`. Ein IOmcu vor Protokoll 4.18 aktiviert bei
@@ -3971,7 +3973,8 @@ LOGS listet CSV-Läufe und erkannte Berichte. LÖSCHEN eines Laufs entfernt
 auch seinen passenden Bericht. Ein Bericht ist eine `.TXT` mit Laufnamen,
 erkannt durch `log_report_number()`, nach derselben Regel wie FILES.
 Beispiele sind `ATESTnnn.TXT` mit oder ohne `ATESTnnn.CSV`, `LIMITnnn.TXT`
-ohne CSV und `SERVOnnn.TXT` im Stammverzeichnis von Firmware 0.21.0 oder
+mit oder ohne `LIMITnnn.CSV` und `SERVOnnn.TXT` im Stammverzeichnis von
+Firmware 0.21.0 oder
 älter. Andere `.TXT`-Dateien fehlen in der Liste. CSV und Bericht sind
 getrennte Zeilen, CSV zuerst. ÖFFNEN importiert die CSV oder öffnet den
 Bericht im [Textbetrachter](#der-textbetrachter).
@@ -7010,7 +7013,7 @@ wie eine verlorene Verbindung:
 | Einstellung | Bereich | Vorgabe | Schreibt |
 | --- | --- | --- | --- |
 | Auto-Aufzeichnungen | AUS, EIN | EIN | `SERVOnnn.CSV`, `MOTORnnn.CSV` und `SUPPLnnn.CSV` in Ordner Auto-Aufzeichnungen: eine Aufzeichnung je ARMED- und Netzteil-Lauf |
-| Testaufzeichnungen | AUS, EIN | EIN | `ATESTnnn.CSV` mit seiner `ATESTnnn.TXT`, `LIMITnnn.TXT` und `RUDDRnnn.CSV` mit seiner `RUDDRnnn.TXT` in Ordner Testaufzeichnungen: den AUTOMATISCHEN TEST, LIMIT RUN und RUDER AUTO, jeweils wie die Einstellung beim Start des Laufs steht |
+| Testaufzeichnungen | AUS, EIN | EIN | `ATESTnnn.CSV` mit seiner `ATESTnnn.TXT`, `LIMITnnn.CSV` mit seiner `LIMITnnn.TXT` und `RUDDRnnn.CSV` mit seiner `RUDDRnnn.TXT` in Ordner Testaufzeichnungen: den AUTOMATISCHEN TEST, LIMIT RUN und RUDER AUTO, jeweils wie die Einstellung beim Start des Laufs steht |
 | Schreiben per Browser | OFFEN, ZUGANGSCODE, HALTEN, AUS | OFFEN | selbst nichts: was ein Browser braucht, um die Karte über die Seite von WI-FI zu ändern ([Schreiben per Browser](#schreiben-per-browser)) |
 | Ordner Auto-Aufzeichnungen | ein Ordner, siehe unten | `BENCH/LOGS` | wohin Auto-Aufzeichnungen schreibt |
 | Ordner Testaufzeichnungen | ein Ordner, siehe unten | `USER/LOGS` | wohin Testaufzeichnungen schreibt |

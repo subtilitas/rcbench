@@ -24,7 +24,21 @@ servo_test_out_t servo_limrun_peek(servo_limrun_t *r, const char **text)
         return SERVO_TEST_OUT_NONE;
     }
     if (!r->out_open) {
-        return SERVO_TEST_OUT_OPEN_TXT;
+        return r->rows_n > 0u ? SERVO_TEST_OUT_OPEN : SERVO_TEST_OUT_OPEN_TXT;
+    }
+    /* LIMITnnn.CSV first, then the report: the order the logger writes an
+     * automatic test's two files in, one open at a time. */
+    if (!r->out_csv) {
+        if (r->rows_n > 0u
+            && servo_limrun_csv_line(r, r->out_line, r->scratch,
+                                     sizeof(r->scratch))) {
+            if (text != NULL) {
+                *text = r->scratch;
+            }
+            return SERVO_TEST_OUT_CSV;
+        }
+        r->out_csv  = true;
+        r->out_line = 0u;
     }
     if (!r->out_end) {
         if (servo_limrun_report_line(r, r->out_line, r->scratch,
@@ -541,8 +555,9 @@ static bool prog_lines(const servo_limrun_t *r, cur_t *c)
 }
 
 /**
- * @brief The last lines of the report: the unit note when programming, and
- *        the bench line.
+ * @brief The last lines of the report: the unit note when programming, the
+ *        positions LIMITnnn.CSV holds and any past its cap, and the bench
+ *        line.
  *
  * @param r Run state.
  * @param c Cursor.
@@ -558,6 +573,16 @@ static bool tail_lines(const servo_limrun_t *r, cur_t *c)
         : r->cfg.family == SERVO_LIMRUN_FAM_HITEC_C ? SERVO_STR_L_R_UNIT_HITEC_C
                                                     : SERVO_STR_L_R_UNIT;
     if (r->cfg.program && text_line(c, unit)) {
+        return true;
+    }
+    if (r->rows_n > 0u && here(c)) {
+        if (r->rows_past > 0u) {
+            snprintf(c->buf, c->n, LS(L_R_ROWS_PAST),
+                     (unsigned long)r->rows_n + r->rows_past,
+                     (unsigned)r->rows_n, (unsigned long)r->rows_past);
+        } else {
+            snprintf(c->buf, c->n, LS(L_R_ROWS), (unsigned)r->rows_n);
+        }
         return true;
     }
     return text_line(c, SERVO_STR_L_R_BENCH);

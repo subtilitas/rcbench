@@ -3,7 +3,9 @@
  * @brief Host tests for the reports on LOGS.
  *
  * A servo automatic test writes ATESTnnn.CSV (comma-separated values) and
- * its report ATESTnnn.TXT, a LIMIT RUN writes LIMITnnn.TXT and no CSV, and
+ * its report ATESTnnn.TXT, a LIMIT RUN LIMITnnn.CSV and LIMITnnn.TXT (the
+ * report alone from firmware 0.23.17 and older, or a run that judged no
+ * position), and
  * firmware 0.21.0 and older wrote a limit run's SERVOnnn.TXT alone into the
  * card's root.  The failures under test: a report missing from the list,
  * beside its run's CSV or without it, a text file that is no report listed,
@@ -59,6 +61,9 @@ static log_mem_ctx_t g_mem;
 static int g_walks;             /* walks of a folder */
 static bool g_open_refuses;
 static char g_removed[LOG_VIEWER_NAME_MAX];
+/* remove() takes a run's report with it, as panel_card.c's card_remove()
+ * does by log_name_report_of(). */
+static bool g_remove_pairs;
 
 static const char k_limit_text[] =
     "RCBENCH SERVO LIMIT REPORT\n"
@@ -149,13 +154,24 @@ static bool fake_remove(const char *name, void *ctx)
 {
     (void)ctx;
     snprintf(g_removed, sizeof(g_removed), "%s", name);
+    char report[LOG_RUN_NAME_MAX] = "";
+    if (g_remove_pairs) {
+        log_name_report_of(report, sizeof(report), name);
+    }
+    bool found = false;
     for (int i = 0; i < g_n; ++i) {
         if (here(i) && strcmp(g_files[i].name, name) == 0) {
             g_files[i].gone = true;
-            return true;
+            found = true;
         }
     }
-    return false;
+    for (int i = 0; found && i < g_n; ++i) {
+        if (here(i) && report[0] != '\0'
+            && strcmp(g_files[i].name, report) == 0) {
+            g_files[i].gone = true;
+        }
+    }
+    return found;
 }
 
 static void fake_folder(const char *dir, void *ctx)
@@ -201,6 +217,7 @@ static void fresh(void)
     g_walks = 0;
     g_open_refuses = false;
     g_removed[0] = '\0';
+    g_remove_pairs = false;
     if (s_fb == NULL) {
         s_fb = calloc((size_t)W * H, sizeof(gfx_color_t));
         REQUIRE_ALLOC(s_fb);
@@ -403,6 +420,53 @@ TEST_CASE(a_limit_report_and_a_runs_report_are_listed_newest_first)
     CHECK_STR_EQ(log_viewer_open_name(), "LIMIT005.TXT");
     ui_router_goto(SCREEN_LOGS);
     draw();
+}
+
+/* A LIMIT RUN's LIMITnnn.CSV is a row of its own, beside its report and
+ * ahead of it; a report of an older run stays a row alone.  OPEN imports
+ * the CSV; DELETE on it removes the report with it. */
+TEST_CASE(a_limit_runs_csv_is_listed_beside_its_report_and_goes_with_it)
+{
+    static const char k_lim_csv[] =
+        "row;search;side;pulse (us);current (A);voltage (V);angle (deg);"
+        "state;free (A);threshold (A);end point (us)\n"
+        "1;1;LOW;1500;0.120;6.00;;BASE;0.120;;\n"
+        "2;1;LOW;1490;0.121;6.00;;BASE;0.121;;\n"
+        "3;1;LOW;1480;0.119;6.00;;BASE;0.120;;\n"
+        "4;1;LOW;1470;0.420;6.00;;BOUND;0.120;0.270;1505\n";
+    fresh();
+    add(CARD_USER_LOGS, "LIMIT004.TXT", k_limit_text);
+    add(CARD_USER_LOGS, "ATEST005.CSV", k_csv_text);
+    add(CARD_USER_LOGS, "LIMIT006.TXT", k_limit_text);
+    add(CARD_USER_LOGS, "LIMIT006.CSV", k_lim_csv);
+    show(LOG_TAB_USER);
+    char list[256];
+    rows(list, sizeof(list));
+    CHECK_STR_EQ(list, "LIMIT006.CSV LIMIT006.TXT ATEST005.CSV LIMIT004.TXT");
+    CHECK(log_select_lists("LIMIT006.CSV"));
+    CHECK(log_name_rank("LIMIT006.CSV", "LIMIT006.TXT") < 0);
+    /* The newest row is chosen: OPEN imports the CSV, 11 columns. */
+    tap(OPEN_X, FOOT_CY);
+    CHECK_STR_EQ(log_viewer_open_name(), "LIMIT006.CSV");
+    const log_analysis_t *a = log_viewer_analysis();
+    CHECK(a != NULL);
+    if (a != NULL) {
+        CHECK_EQ(a->n_columns, 11);
+        CHECK_EQ(a->row_count, 4);
+    }
+    draw();
+
+    fresh();
+    g_remove_pairs = true;
+    add(CARD_USER_LOGS, "LIMIT004.TXT", k_limit_text);
+    add(CARD_USER_LOGS, "LIMIT006.TXT", k_limit_text);
+    add(CARD_USER_LOGS, "LIMIT006.CSV", k_lim_csv);
+    show(LOG_TAB_USER);
+    tap(DELETE_X, FOOT_CY);
+    tap(DQ_DELETE_X, DQ_CY);
+    CHECK_STR_EQ(g_removed, "LIMIT006.CSV");
+    rows(list, sizeof(list));
+    CHECK_STR_EQ(list, "LIMIT004.TXT");
 }
 
 /* The list's tab counts the files on a single page as on several, in both
@@ -778,6 +842,7 @@ int main(void)
     RUN(the_list_and_files_report_label_are_one_rule);
     RUN(a_report_and_a_run_of_one_prefix_and_number_are_told_apart);
     RUN(a_limit_report_and_a_runs_report_are_listed_newest_first);
+    RUN(a_limit_runs_csv_is_listed_beside_its_report_and_goes_with_it);
     RUN(every_list_with_a_file_counts_its_files);
     RUN(a_servo_report_of_an_older_card_is_listed_in_the_root);
     RUN(a_runs_report_is_a_row_with_its_csv_there_or_not);

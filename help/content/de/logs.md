@@ -18,7 +18,7 @@ Das Home-Feld führt wie ZURÜCK jeweils eine Ebene zurück: von der Grafik zur 
 
 Ohne eingebundene Karte zeigt der Bereich `KEINE AUFZEICHNUNGEN` und `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` Bei einem leeren oder noch nicht angelegten Ordner erscheint `Keine .csv-Dateien in BENCH/LOGS.` oder `Keine .csv-Dateien in USER/LOGS.`, im Stammverzeichnis `Keine .csv-Dateien im Hauptverzeichnis.`
 
-Die Zeile darunter beschreibt den Reiter: `Läufe heißen SERVOnnn, MOTORnnn oder SUPPLnnn.CSV.`, `Tests heißen ATESTnnn, RUDDRnnn.CSV und LIMITnnn.TXT.` oder `Läufe von Firmware 0.21.0 und älter.` Sind AUTO-AUFZEICHNUNGEN oder TESTAUFZEICHNUNGEN unter [SETUP > SD CARD](setup.md) ausgeschaltet, zeigt BENCH beziehungsweise USER stattdessen `AUTO-AUFZEICHNUNGEN AUS unter SD CARD.` oder `TESTAUFZEICHNUNGEN AUS unter SD CARD.`
+Die Zeile darunter beschreibt den Reiter: `Läufe heißen SERVOnnn, MOTORnnn oder SUPPLnnn.CSV.`, `Tests heißen ATESTnnn, LIMITnnn und RUDDRnnn.CSV.` oder `Läufe von Firmware 0.21.0 und älter.` Sind AUTO-AUFZEICHNUNGEN oder TESTAUFZEICHNUNGEN unter [SETUP > SD CARD](setup.md) ausgeschaltet, zeigt BENCH beziehungsweise USER stattdessen `AUTO-AUFZEICHNUNGEN AUS unter SD CARD.` oder `TESTAUFZEICHNUNGEN AUS unter SD CARD.`
 
 AKTUALISIEREN liest die Karte erneut. Die Reiter funktionieren auch ohne Karte; jeder Tipp prüft erneut, ob eine eingesetzt wurde.
 
@@ -79,7 +79,7 @@ Jede Datei enthält einen Lauf und liegt im Ordner seiner Art. Der Name kennzeic
 | `BENCH/LOGS` | `MOTORnnn.CSV` | ein Schalten auf ARMED von ARM auf MOTOR & ESC oder einem Stick-Lauf auf dessen PROGRAMMIEREN |
 | `BENCH/LOGS` | `SUPPLnnn.CSV` | ein Einschalten des SUPPLY-Ausgangs, solange der Prüfstand SAFE ist |
 | `USER/LOGS` | `ATESTnnn.CSV` | ein AUTOMATISCHER TEST; sein Bericht ist `ATESTnnn.TXT` |
-| `USER/LOGS` | `LIMITnnn.TXT` | der Bericht eines Laufs von LIMIT RUN, ohne CSV daneben |
+| `USER/LOGS` | `LIMITnnn.CSV` | ein Lauf von LIMIT RUN, eine Zeile je bewerteter Stellung; sein Bericht ist `LIMITnnn.TXT`, allein bei einem Lauf, der keine Stellung bewertet hat, oder einem von Firmware 0.23.17 und älter |
 | `USER/LOGS` | `RUDDRnnn.CSV` | ein Lauf von RUDER AUTO, eine Zeile je Messung; sein Bericht ist `RUDDRnnn.TXT` |
 | Stammverzeichnis | `BENCHnnn.CSV`, `ESCnnn.CSV`, `SERVOnnn.CSV` | Läufe von Firmware 0.21.0 und älter; im Stammverzeichnis ist `SERVOnnn` ein Servotest |
 | Stammverzeichnis | `SERVOnnn.TXT` allein | ein Endlagenlauf von Firmware 0.21.0 und älter |
@@ -96,7 +96,7 @@ Das Panel legt jeden Ordner an, wenn es zum ersten Mal hineinschreibt, eine Eben
 
 Jeder Ordner hat eine eigene Nummernfolge. Ein neuer Lauf erhält die höchste vorhandene Nummer plus eins, unabhängig vom Namenspräfix und einschließlich der Namen aus Firmware 0.21.0. Gelöschte Nummern werden nicht erneut verwendet. Enthält ein Ordner die Nummer 999, nimmt er keinen weiteren Lauf an, auch bei freien niedrigeren Nummern.
 
-Die Liste zeigt Berichte mit Laufnamen: `ATESTnnn.TXT` mit oder ohne zugehörige `ATESTnnn.CSV`, `LIMITnnn.TXT` und im Stammverzeichnis `SERVOnnn.TXT` aus Firmware 0.21.0 und älter. Lauf und Bericht stehen in getrennten Zeilen, die CSV zuerst. LÖSCHEN beim Lauf löscht den Bericht mit. Andere `.TXT`-Dateien zeigt nur FILES.
+Die Liste zeigt Berichte mit Laufnamen: `ATESTnnn.TXT` mit oder ohne zugehörige `ATESTnnn.CSV`, `LIMITnnn.TXT` mit oder ohne zugehörige `LIMITnnn.CSV` und im Stammverzeichnis `SERVOnnn.TXT` aus Firmware 0.21.0 und älter. Lauf und Bericht stehen in getrennten Zeilen, die CSV zuerst. LÖSCHEN beim Lauf löscht den Bericht mit. Andere `.TXT`-Dateien zeigt nur FILES.
 
 Die Sortierung folgt absteigenden Nummern über alle Präfixe hinweg: `MOTOR043.CSV`, dann `SERVO042.CSV`, dann `SUPPL041.CSV`.
 

@@ -116,7 +116,7 @@ OPTIONEN in der Fußleiste von LIMIT RUN öffnet die Liste. Außerhalb eines PRO
 | STROM | Grenzen von SUPPLY | SET A von SUPPLY | die Strombegrenzung des Laufs, SET A von SUPPLY, wo ein PD mini das Servo speist: ein Tippen öffnet das Tastenfeld von SUPPLY. Ohne PD mini `--`, gesperrt: die eigene Versorgung des Servos begrenzt den Strom |
 | Warten vor PWM | 0 bis 10000ms | 100ms | vom Ende des Programmierens bis zum ersten Puls |
 | Name des Prüflings | bis 23 Zeichen | SERVO | NAME des Hubs; steht über jedem Bericht |
-| Testaufzeichnungen | EIN, AUS | EIN | die von SETUP > SD CARD: AUS, ein Lauf schreibt kein LIMITnnn.TXT |
+| Testaufzeichnungen | EIN, AUS | EIN | die von SETUP > SD CARD: AUS, ein Lauf schreibt weder LIMITnnn.CSV noch LIMITnnn.TXT |
 
 Die Liste hat keine Spannung: ein Lauf programmiert mit 5,0V ([Die Versorgung: 5,0V](servo.md#die-versorgung-5-0v)). Die Liste von RUDER AUTO endet mit denselben Zeilen Name des Prüflings und Testaufzeichnungen. Die Karten BEREIT beider Seiten haben zehn Zeilen, so viele, wie sie fassen; die Testaufzeichnungen sind dort eine Zeile der Liste und nur auf TEST eine Zeile der Karte.
 
