@@ -29,7 +29,9 @@
  * -# read zones 0x0000 to 0x0060 and zone 0x00B0; zone 0x000D bits 1-0 at
  *    01 or 11 (USB output) shows USB OUTPUT while the bench writes 00;
  * -# write each zone that differs from gm861_zone_want(), one frame a zone,
- *    read the zones back, and send one save frame if any zone was written.
+ *    read the zones back, and send one save frame if any write went out
+ *    since the last answered save, in this pass or an earlier one: a write
+ *    whose answer was lost may still have changed the module's RAM.
  *    A zone still wrong after 2 passes: NO ANSWER with gm861_bad_zone()
  *    naming it, held until gm861_recheck() or gm861_init(), so a module
  *    that refuses a setting does not take a flash write every few seconds;
@@ -132,13 +134,13 @@ typedef struct {
     bool          verify;              /**< this read is the read back after writes */
     bool          kick;                /**< start again at step 2 on the next step */
     bool          ack;                 /**< the answer due carries data 0x00 */
+    bool          unsaved;             /**< a write went out that the module may have applied; cleared by an answered save only */
     uint8_t       expect;              /**< data bytes of the answer due */
     uint8_t       tries;               /**< sends of the request out */
     uint8_t       probed;              /**< rates tried in this probe */
     uint8_t       passes;              /**< write passes of this sequence */
     uint8_t       rate;                /**< index into gm861_rates() */
     uint8_t       missed;              /**< heartbeats missed in a row */
-    uint8_t       wrote;               /**< zones written in this sequence */
     uint16_t      at;                  /**< the zone the write pass is at */
     uint16_t      bad_zone;            /**< the zone refused, or GM861_NO_ZONE */
     uint32_t      t0;                  /**< when the phase or the request began */

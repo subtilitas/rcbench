@@ -160,6 +160,7 @@ static size_t send(gm861_t *g, uint32_t now, uint8_t *tx, uint8_t type,
     g->due = now + GM861_ANSWER_MS + (bits + baud - 1u) / baud;
     if (type == GM861_T_WRITE) {
         ++g->writes;
+        g->unsaved = true;      /* until an answered save, answer or not */
     } else if (type == GM861_T_SAVE) {
         ++g->saves;
     }
@@ -175,7 +176,6 @@ static void to_level(gm861_t *g, uint32_t now)
     g->tries = 0u;
     g->probed = 0u;
     g->passes = 0u;
-    g->wrote = 0u;
     g->usb = false;
     g->verify = false;
 }
@@ -218,7 +218,7 @@ static void zones_read(gm861_t *g, uint32_t now)
     }
     const uint16_t first = next_diff(g, 0u);
     if (first == GM861_NO_ZONE) {
-        if (g->wrote > 0u) {
+        if (g->unsaved) {
             to_phase(g, GM861_P_SAVE);
         } else {
             to_ready(g, now);
@@ -256,7 +256,6 @@ static void answered(gm861_t *g, uint32_t now)
         zones_read(g, now);
         break;
     case GM861_P_WRITE:
-        ++g->wrote;
         g->at = next_diff(g, (uint16_t)(g->at + 1u));
         if (g->at == GM861_NO_ZONE) {
             g->verify = true;
@@ -266,6 +265,7 @@ static void answered(gm861_t *g, uint32_t now)
         }
         break;
     case GM861_P_SAVE:
+        g->unsaved = false;
         to_ready(g, now);
         break;
     case GM861_P_RESET:

@@ -526,6 +526,61 @@ TEST_CASE(two_answers_lost_in_a_row_end_the_pass_and_it_is_tried_again)
     check_set(r.m.flash, true);
 }
 
+TEST_CASE(a_last_write_applied_with_both_answers_lost_is_saved_on_the_retry)
+{
+    /* Request 16 is the last of the 13 writes (zone 0x00B0), 17 its
+     * resend.  The module applies both; both answers are lost.  The retry
+     * reads every zone as wanted, and the save must still go. */
+    rig_t r;
+    rig_init(&r, 9600u, 0u);
+    r.m.drop_from = 16u;
+    r.m.drop_count = 2u;
+    CHECK(run_until(&r, GM861_NO_ANSWER, 3000u) != UINT32_MAX);
+    CHECK_EQ(r.m.saves, 0u);
+    CHECK_EQ(r.m.ram[0xB0], 0x00u);         /* applied in RAM */
+    CHECK_EQ(r.m.flash[0xB0], 0x02u);       /* not in flash yet */
+    CHECK(run_until(&r, GM861_READY, GM861_RETRY_MS + 2000u) != UINT32_MAX);
+    CHECK_EQ(r.m.writes, 14u);              /* no write on the retry */
+    CHECK_EQ(r.m.saves, 1u);
+    check_set(r.m.flash, true);
+}
+
+TEST_CASE(a_save_whose_answers_are_lost_is_sent_again_on_the_retry)
+{
+    /* Request 19 is the save, 20 its resend: both answers lost. */
+    rig_t r;
+    rig_init(&r, 9600u, 0u);
+    r.m.drop_from = 19u;
+    r.m.drop_count = 2u;
+    CHECK(run_until(&r, GM861_NO_ANSWER, 3000u) != UINT32_MAX);
+    CHECK_EQ(r.m.saves, 2u);
+    CHECK(run_until(&r, GM861_READY, GM861_RETRY_MS + 2000u) != UINT32_MAX);
+    CHECK_EQ(r.m.saves, 3u);
+    /* Answered: the next recheck with nothing changed saves nothing. */
+    gm861_recheck(&r.g);
+    run_ms(&r, 100u);
+    CHECK(run_until(&r, GM861_READY, 3000u) != UINT32_MAX);
+    CHECK_EQ(r.m.saves, 3u);
+}
+
+TEST_CASE(a_write_unsaved_through_mute_retries_is_saved_when_the_module_answers)
+{
+    /* The last write and its resend lose their answers, then the module
+     * goes mute through the retries; when it answers again the save goes. */
+    rig_t r;
+    rig_init(&r, 9600u, 0u);
+    r.m.drop_from = 16u;
+    r.m.drop_count = 2u;
+    CHECK(run_until(&r, GM861_NO_ANSWER, 3000u) != UINT32_MAX);
+    r.m.mute = true;
+    run_ms(&r, 2u * GM861_RETRY_MS + 6000u);
+    CHECK_EQ(r.m.saves, 0u);
+    r.m.mute = false;
+    CHECK(run_until(&r, GM861_READY, GM861_RETRY_MS + 4000u) != UINT32_MAX);
+    CHECK_EQ(r.m.saves, 1u);
+    check_set(r.m.flash, true);
+}
+
 TEST_CASE(a_heartbeat_every_10s_three_lost_is_lost_then_back)
 {
     rig_t r;
@@ -704,6 +759,9 @@ int main(void)
     RUN(a_write_that_does_not_stick_is_named_and_not_saved);
     RUN(an_answer_lost_mid_sequence_is_asked_again);
     RUN(two_answers_lost_in_a_row_end_the_pass_and_it_is_tried_again);
+    RUN(a_last_write_applied_with_both_answers_lost_is_saved_on_the_retry);
+    RUN(a_save_whose_answers_are_lost_is_sent_again_on_the_retry);
+    RUN(a_write_unsaved_through_mute_retries_is_saved_when_the_module_answers);
     RUN(a_heartbeat_every_10s_three_lost_is_lost_then_back);
     RUN(a_module_gone_after_ready_stays_lost_until_it_answers);
     RUN(a_zone_changed_while_ready_is_put_back_at_the_next_recheck);

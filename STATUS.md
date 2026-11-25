@@ -1286,17 +1286,18 @@ and its suites stay in the host suite; no firmware builds them.
 Built and host-tested, the core only (`shared/scanner/`): no firmware links it yet. The line
 framer (`scan_line.c`, `test_scan_line`) splits the scanner's UART bytes into code lines of
 0x20 to 0x7E, at most 64 bytes, ended by CR, CR LF or LF, and answer frames of 1 to 97 data
-bytes with their CRC-CCITT; a line with another byte is dropped as noise, a line of 65 bytes
-or more is reported as too long, 100ms without a byte drops an open line or frame. The GM861
+bytes with their CRC-CCITT; a line with another byte is dropped as noise, a line of 65 bytes or
+more is reported as too long, 100ms without a byte drops an open line or frame. The GM861
 protocol (`gm861.c`, `test_gm861` against a simulated module) builds the read, write, save,
 heartbeat and factory reset frames, reproduces the CRC of every frame the manual prints, and
 runs the start sequence: 300ms start wait, RX low for 200ms as NOT CONNECTED, a probe at 8
 rates from 9600 to 1200 baud, a read of zones 0x0000 to 0x0060 and 0x00B0, one write a zone
-that differs, a read back and one save frame only after a write, then a heartbeat every 10s
-and LOST after 3 missed answers. A zone that reads back wrong after 2 passes holds the
-sequence in NO ANSWER with the zone named until a recheck, so the module's flash takes no
-write every 5s. The servo id check of the fuzz case in `test_scan_line` is a stand-in with
-the rules of `servo_id_parse()` until that function is on main.
+that differs, a read back and one save frame while any write since the last answered save is
+open (a write whose answer was lost counts, also across a retry), then a heartbeat every 10s
+and LOST after 3 missed answers. A zone that reads back wrong after 2 passes holds the sequence
+in NO ANSWER with the zone named until a recheck, so the module's flash takes no write every
+5s. The servo id check of the fuzz case in `test_scan_line` is a stand-in with the rules of
+`servo_id_parse()` until that function is on main.
 
 ### M5Stack Dial
 
