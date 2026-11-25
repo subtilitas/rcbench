@@ -37,6 +37,15 @@ history is in git.
   RUN's and RUDDER AUTO's: up to 23 characters on the name keyboard,
   empty by default, kept as DUT name is (key `srv_note`), and written into
   the `info` column of every run's file until it is changed.
+- Programming for YGE ESCs, the ESC simulator for the station Pi:
+  `testbench/ygesim/ygesim.py` answers `TELE_REQ` and `WRITE_PARAM_REQ` on
+  the Pi's UART (115200 baud 8N1, TX and RX joined on one wire, its own
+  echo dropped) with a table of 32 parameters, one index a reply, and
+  stores writes. Modes: `normal`, `silent`, `late` (250ms), `crc` (10% of
+  the replies), `seq` (sequence number plus 1), `legacy` (version 2 auto
+  frames only) and `count33`; `--auto` sends `TELE_AUTO` every 50ms until
+  the first request. Python 3 and pyserial 3.5
+  ([ygesim](testbench/ygesim/README.md)).
 - Programming for YGE ESCs, the pin driver: `rp2350/oy_line.c` drives
   the telemetry wire on one RP2350 pin behind `oy_driver_t` with one PIO
   (programmable input/output) state machine of 25 words and 2 DMA (direct
