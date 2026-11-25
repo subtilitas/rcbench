@@ -451,7 +451,8 @@ Telemetry frame checks, from the same captures:
 
 The IOmcu runs the session behind the YGE_PROG and YGE_DATA pages
 ([Programming for YGE ESCs](LinkYge.md)). The panel image links the module
-and does not call it; the panel's half and the screens are not built. The
+and does not call it; the panel's half and the screens are built
+([YGE ESC programming](YgeProgramming.md)). The
 design assigns the protocol to the IOmcu: a 20Hz request-response loop with turnaround
 timing in microseconds and a timeout that expires even when no bytes
 arrive. The panel would receive the result as `bench_state` through
@@ -491,7 +492,7 @@ marks CHECK or edit, within their Writable values. A write reads the table
 again first and stops with nothing sent when it differs. After the writes
 it reads the whole table again and compares it with the target. The IOmcu
 runs it on a programming port behind YGE_PROG (`shared/outputs/yge_port.c`);
-the panel's half and the screens are not built. The pin driver is built
+the panel's half and the screens are built. The pin driver is built
 (section 9.2). On the station Pi,
 [`testbench/ygesim/ygesim.py`](../testbench/ygesim/README.md) plays an
 ESC on the UART: 32 parameters, writes stored, and the modes `normal`,

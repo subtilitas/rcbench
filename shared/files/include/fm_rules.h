@@ -14,7 +14,7 @@
  *   FIXED   the bench's folders of card_tree.h (BENCH, BENCH/LOGS,
  *           BENCH/ESC, BENCH/ESC/CONF, BENCH/KST, BENCH/KST/CONF,
  *           BENCH/HITEC, BENCH/HITEC/CONF, BENCH/ESCW, BENCH/ESCW/CONF,
- *           BENCH/BALANCE, USER, USER/LOGS), the two log
+ *           BENCH/YGE, BENCH/YGE/CONF, BENCH/BALANCE, USER, USER/LOGS), the two log
  *           folders SETUP > SD CARD names and every folder above them: no
  *           RENAME, MOVE or DELETE.  What they hold is the person's.
  *   LOCKED  the programmers' records, BENCH/KST/CONF/KST.TXT and KST.NEW,

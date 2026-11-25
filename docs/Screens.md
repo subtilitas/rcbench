@@ -1554,13 +1554,15 @@ written with it. A refused write leaves all changes unsaved and SAVE reads
 
 ![PROGRAM's list](img/motor-program.png)
 
-PROGRAM shows two ESC-programming rows in the task area, using the same
+PROGRAM shows three ESC-programming rows in the task area, using the same
 registry as SERVO (`shared/ui/prog_registry.c`,
 [Programmer](#programmer)). `ESCs via throttle stick` (German
 `ESCs per Gasknüppel`) belongs to STICK MENU (`STICK-MENÜ`). Its right side
 reads `THROTTLE OUTPUT >`: it drives the throttle pins, uses no programming
-port and requires no IOmcu capability. The other row opens the signal-wire
-session described below.
+port and requires no IOmcu capability. The second row opens the signal-wire
+session described below. The third, `YGE ESCs` in TELEMETRY WIRE, opens
+[YGE ESC programming](YgeProgramming.md); it stays dimmed until the IOmcu
+reports `LINK_CAP_YGE`.
 
 While a run cannot start on the bench as it stands, the row names the first
 reason in place of `THROTTLE OUTPUT`, in the warning colour, and still opens

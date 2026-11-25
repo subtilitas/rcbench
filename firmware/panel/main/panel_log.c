@@ -1154,6 +1154,7 @@ void log_task(void *arg)
         hitec_record_write();
         hitec_card_serve();
         esc_card_serve();
+        yge_card_serve();
         /* And the settings backup's request, when one waits. */
         panel_sbk_card_serve();
         /* And a balance solution's CSV row, when one waits. */

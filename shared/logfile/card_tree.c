@@ -50,6 +50,7 @@ static const char *const k_bench_own[] = {
     CARD_KST_CONF,
     CARD_HITEC_CONF,
     CARD_ESCW_CONF,
+    CARD_YGE_CONF,
     CARD_BALANCE,
     CARD_SETUP,
 };
@@ -104,7 +105,7 @@ static bool is_device(const char *name, size_t len)
  *
  * @param path  The upper-case path, folders separated by "/".
  * @return true for BENCH/ESC, BENCH/KST, BENCH/HITEC, BENCH/ESCW,
- *         BENCH/BALANCE, BENCH/SETUP and below.
+ *         BENCH/YGE, BENCH/BALANCE, BENCH/SETUP and below.
  */
 static bool is_bench(const char *path)
 {

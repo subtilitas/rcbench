@@ -86,7 +86,7 @@ UPLOAD_HDR = "X-Rcbench-Upload"
 AUTO_LOGS = "BENCH/LOGS"
 USER_LOGS = "USER/LOGS"
 BENCH_DIRS = (AUTO_LOGS, USER_LOGS, "BENCH/ESC/CONF", "BENCH/KST/CONF",
-              "BENCH/HITEC/CONF", "BENCH/ESCW/CONF")
+              "BENCH/HITEC/CONF", "BENCH/ESCW/CONF", "BENCH/YGE/CONF")
 LOCKED_FILES = {"BENCH/KST/CONF": ("KST.TXT", "KST.NEW"),
                 "BENCH/HITEC/CONF": ("HITEC.TXT", "HITEC.NEW"),
                 "BENCH/ESCW/CONF": ("ESCW.TXT", "ESCW.NEW")}
@@ -524,6 +524,7 @@ class State:
         for d in ("BENCH", "BENCH/LOGS", "BENCH/ESC", "BENCH/ESC/CONF",
                   "BENCH/KST", "BENCH/KST/CONF", "BENCH/HITEC",
                   "BENCH/HITEC/CONF", "BENCH/ESCW", "BENCH/ESCW/CONF",
+                  "BENCH/YGE", "BENCH/YGE/CONF",
                   "USER", USER_LOGS, USER_LOGS + "/OLD"):
             c.dirs.add(d)
         stamp = 1790000000.0

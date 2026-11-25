@@ -57,13 +57,13 @@ static struct {
 } g;
 
 /* The ESC's power: the PD mini read on, or the battery. */
-static bool esc_powered(void)
+static RIG_MAY_GO_UNUSED bool esc_powered(void)
 {
     return g.battery || (g.v.asked_on && g.v.on);
 }
 
 /* An ESC that just got power starts from cold, its table kept. */
-static void esc_follow_power(void)
+static RIG_MAY_GO_UNUSED void esc_follow_power(void)
 {
     const bool now = esc_powered();
 
@@ -78,7 +78,7 @@ static void esc_follow_power(void)
     g.powered = now;
 }
 
-static bool rig_tx(void *ctx, const uint8_t *f, size_t n)
+static RIG_MAY_GO_UNUSED bool rig_tx(void *ctx, const uint8_t *f, size_t n)
 {
     esc_follow_power();
     if (!g.line_open || !g.listen) {
@@ -96,7 +96,7 @@ static bool rig_tx(void *ctx, const uint8_t *f, size_t n)
     return sim_tx(ctx, f, n);
 }
 
-static size_t rig_rx(void *ctx, uint8_t *buf, size_t cap)
+static RIG_MAY_GO_UNUSED size_t rig_rx(void *ctx, uint8_t *buf, size_t cap)
 {
     esc_follow_power();
     if (!g.line_open || !g.listen || !g.powered) {
@@ -105,13 +105,13 @@ static size_t rig_rx(void *ctx, uint8_t *buf, size_t cap)
     return sim_rx(ctx, buf, cap);
 }
 
-static uint8_t hw_pin(void *ctx, uint8_t port)
+static RIG_MAY_GO_UNUSED uint8_t hw_pin(void *ctx, uint8_t port)
 {
     (void)ctx;
     return port < 4u ? g.pin[port] : YGE_PORT_NO_PIN;
 }
 
-static bool hw_take(void *ctx, uint8_t port, uint8_t pin)
+static RIG_MAY_GO_UNUSED bool hw_take(void *ctx, uint8_t port, uint8_t pin)
 {
     (void)ctx;
     g.takes++;
@@ -122,7 +122,7 @@ static bool hw_take(void *ctx, uint8_t port, uint8_t pin)
     return g.take_ok;
 }
 
-static bool hw_give(void *ctx)
+static RIG_MAY_GO_UNUSED bool hw_give(void *ctx)
 {
     (void)ctx;
     g.gives++;
@@ -132,14 +132,14 @@ static bool hw_give(void *ctx)
     return !g.give_refused;
 }
 
-static void hw_line(void *ctx, bool listen)
+static RIG_MAY_GO_UNUSED void hw_line(void *ctx, bool listen)
 {
     (void)ctx;
     g.listen = listen;
     g.parks += listen ? 0 : 1;
 }
 
-static void hw_supply(void *ctx, supply_port_view_t *out)
+static RIG_MAY_GO_UNUSED void hw_supply(void *ctx, supply_port_view_t *out)
 {
     (void)ctx;
     if (g.v.asked_on && !g.never_on && !g.dropped
@@ -150,7 +150,7 @@ static void hw_supply(void *ctx, supply_port_view_t *out)
     *out = g.v;
 }
 
-static bool hw_supply_set(void *ctx, bool on, uint16_t mv, uint16_t ma)
+static RIG_MAY_GO_UNUSED bool hw_supply_set(void *ctx, bool on, uint16_t mv, uint16_t ma)
 {
     (void)ctx;
     if (on) {
@@ -173,7 +173,7 @@ static bool hw_supply_set(void *ctx, bool on, uint16_t mv, uint16_t ma)
     return true;
 }
 
-static void hw_others_off(void *ctx)
+static RIG_MAY_GO_UNUSED void hw_others_off(void *ctx)
 {
     (void)ctx;
     g.others_off++;
@@ -182,7 +182,7 @@ static void hw_others_off(void *ctx)
 
 /* ------------------------------------------------------------ the bench */
 
-static void rig_up(void)
+static RIG_MAY_GO_UNUSED void rig_up(void)
 {
     memset(&g, 0, sizeof(g));
     memset(g.pin, YGE_PORT_NO_PIN, sizeof(g.pin));
@@ -202,19 +202,19 @@ static void rig_up(void)
     (void)yge_port_init(&g_p, &hw);
 }
 
-static uint32_t now_ms(void)
+static RIG_MAY_GO_UNUSED uint32_t now_ms(void)
 {
     return sim.us / 1000u;
 }
 
 /* One pass, 1ms on. */
-static void pass_as(bool safe, bool stop)
+static RIG_MAY_GO_UNUSED void pass_as(bool safe, bool stop)
 {
     sim.us += MS;
     yge_port_step(&g_p, safe, stop, now_ms());
 }
 
-static void pass(void)
+static RIG_MAY_GO_UNUSED void pass(void)
 {
     pass_as(true, false);
 }
@@ -227,14 +227,14 @@ static RIG_MAY_GO_UNUSED void run_ms(uint32_t ms)
 }
 
 /* Passes until the state is left or @p ms have gone. */
-static void run_while(link_yge_state_t st, uint32_t ms)
+static RIG_MAY_GO_UNUSED void run_while(link_yge_state_t st, uint32_t ms)
 {
     for (uint32_t i = 0u; i < ms && yge_port_state(&g_p) == st; ++i) {
         pass();
     }
 }
 
-static uint16_t reg(unsigned i)
+static RIG_MAY_GO_UNUSED uint16_t reg(unsigned i)
 {
     uint16_t v = 0xDEADu;
 
@@ -247,12 +247,12 @@ static RIG_MAY_GO_UNUSED unsigned result(void)
     return reg(LINK_YP_RESULT) & 0xFFu;
 }
 
-static unsigned refusal(void)
+static RIG_MAY_GO_UNUSED unsigned refusal(void)
 {
     return reg(LINK_YP_RESULT) >> 8;
 }
 
-static bool flag(uint16_t f)
+static RIG_MAY_GO_UNUSED bool flag(uint16_t f)
 {
     return (reg(LINK_YP_FLAGS) & f) != 0u;
 }
@@ -267,7 +267,7 @@ static uint16_t g_st[LINK_YP_W_STAGED];
 
 #define ST_REG(r) g_st[(r) - LINK_YP_W_PORT]
 
-static void stage_defaults(uint16_t port)
+static RIG_MAY_GO_UNUSED void stage_defaults(uint16_t port)
 {
     memset(g_st, 0, sizeof(g_st));
     ST_REG(LINK_YP_W_PORT) = port;
@@ -277,14 +277,14 @@ static void stage_defaults(uint16_t port)
     ST_REG(LINK_YP_W_BOOT_MS) = (uint16_t)OY_BOOT_MS_MIN;
 }
 
-static uint8_t stage(void)
+static RIG_MAY_GO_UNUSED uint8_t stage(void)
 {
     return yge_port_write(&g_p, LINK_YP_W_PORT, LINK_YP_W_STAGED, g_st,
                           now_ms());
 }
 
 /* A command with the next SEQ; the CRC of g_st unless @p bad_crc. */
-static uint8_t cmd_full(link_yge_op_t op, uint16_t key, bool bad_crc)
+static RIG_MAY_GO_UNUSED uint8_t cmd_full(link_yge_op_t op, uint16_t key, bool bad_crc)
 {
     uint16_t f[LINK_YP_W_CMD_FRAME];
 
@@ -298,7 +298,7 @@ static uint8_t cmd_full(link_yge_op_t op, uint16_t key, bool bad_crc)
 
 /* A command; ENTER and WRITE carry the key, as a panel sends them after its
  * 2s hold. */
-static uint8_t cmd(link_yge_op_t op)
+static RIG_MAY_GO_UNUSED uint8_t cmd(link_yge_op_t op)
 {
     const bool keyed = op == LINK_YGE_OP_ENTER || op == LINK_YGE_OP_WRITE;
 
@@ -306,7 +306,7 @@ static uint8_t cmd(link_yge_op_t op)
 }
 
 /* OPEN of @p port, through STOPPING, to the pin held. */
-static void open_port(uint16_t port)
+static RIG_MAY_GO_UNUSED void open_port(uint16_t port)
 {
     stage_defaults(port);
     (void)stage();
@@ -316,7 +316,7 @@ static void open_port(uint16_t port)
 }
 
 /* ENTER as staged, to READY or the end of it. */
-static void enter_now(void)
+static RIG_MAY_GO_UNUSED void enter_now(void)
 {
     (void)cmd(LINK_YGE_OP_ENTER);
     run_while(LINK_YGE_POWER_OFF, 5000u);
@@ -339,7 +339,7 @@ static RIG_MAY_GO_UNUSED void read_now(void)
 }
 
 /* Put @p t, LINK_YP_ENTRIES values, in the draft, in blocks. */
-static void draft_put(const uint16_t *t)
+static RIG_MAY_GO_UNUSED void draft_put(const uint16_t *t)
 {
     uint16_t all[OPENYGE_MAX_PARAMS];
 

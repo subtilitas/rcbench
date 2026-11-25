@@ -252,16 +252,25 @@ uint8_t prog_reg_port(const prog_reg_row_t *r);
 /**
  * @brief Whether a programmer holds a pin: the KST programmer's session, the
  *        Hitec programmer's, whose word counts a port the HITEC page names held
- *        by another session too, or the ESC_WIRE page, any writer's.  ARM, the
- *        motor's TARGET row and a run that arms the bench wait for none.
+ *        by another session too, or an ESC programmer (prog_reg_esc_holds()).
+ *        ARM, the motor's TARGET row and a run that arms the bench wait for
+ *        none.
  * @return true while one holds one
  */
 bool prog_reg_servo_holds(void);
 
 /**
+ * @brief Whether an ESC programmer holds a pin: the ESC_WIRE page or the
+ *        YGE_PROG page, any writer's.  The screens that name the holder say
+ *        "ESC programmer" then.
+ * @return true while one holds one
+ */
+bool prog_reg_esc_holds(void);
+
+/**
  * @brief The alert a programmer's hold gives an ARM: it names the holder.
- * @return The ESC programmer's text while the ESC_WIRE page holds a pin, else the
- *         servo programmer's.
+ * @return The ESC programmer's text while the ESC_WIRE or the YGE_PROG page
+ *         holds a pin, else the servo programmer's.
  */
 const char *prog_reg_hold_alert(void);
 

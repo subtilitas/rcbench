@@ -50,6 +50,7 @@ Network) mit 1Mbit/s verbindet die beiden.
 | [Das OpenYGE-Protokoll](OpenYGE-de.md) | Spezifikation des ESC-Telemetrie- und Parameterprotokolls |
 | [ESC-Programmierprofile](EscProfiles-de.md) | Die Profile für die ESC-Programmierung |
 | [ESC-Signalleitung](EscWire-de.md) | Einstellungen eines ESC über die Signalleitung auslesen und schreiben: AM32, Bluejay, BLHeli_S, ESCape32 |
+| [YGE-ESC-Programmierung](YgeProgramming-de.md) | Die Parametertabelle eines YGE-ESC über sein Telemetriekabel auslesen und schreiben |
 | [Performance](Performance-de.md) | Zeichenbudget in Cache-Line-Fills |
 | [Sprache der Oberfläche](Language-de.md) | Die Sprache der Oberfläche und ihre Texte |
 

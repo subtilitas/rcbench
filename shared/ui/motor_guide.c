@@ -11,8 +11,8 @@
  * and keeps the TARGET row in view.  Either dock covers part of ARM and
  * DISARM in the footer's middle slot, x 348 to 676, so no page is offered
  * while the bench is not SAFE as this screen sees it: ARMED, an ARM asked
- * and unanswered, or a DISARM not yet answered.  RENAME LOG's keyboard
- * and the signal-wire session have no pages.
+ * and unanswered, or a DISARM not yet answered.  RENAME LOG's keyboard,
+ * the signal-wire session and the YGE session have no pages.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -20,6 +20,8 @@
 #include <string.h>
 
 #include "esc_stick_panel.h"
+#include "esc_wire_panel.h"
+#include "gfx.h"
 #include "ui_footer.h"
 #include "ui_help.h"
 #include "ui_setlist.h"
@@ -30,8 +32,13 @@
 /** @brief The most pages a state offers: the column's and the rail's. */
 #define GUIDE_MAX 2
 
-/** @brief The most PROGRAM rows a page marks: the two of the registry. */
-#define GUIDE_ROWS 2
+/** @brief The most PROGRAM rows a page marks: the three of the registry. */
+#define GUIDE_ROWS 3
+
+/** @brief A PROGRAM row's name starts this far right of the row's edge. */
+#define ROW_NAME_DX 12
+/** @brief A badge and a 4px gap either side of it, px. */
+#define ROW_BADGE_ROOM 36
 
 /** @brief A page's builder: fills @p out, a zeroed page. */
 typedef void (*guide_fn)(ui_help_page_t *out);
@@ -95,11 +102,20 @@ static void page_program(ui_help_page_t *p)
         if (!mpp_row(k, &r, &row)) {
             break;
         }
-        /* The badge at the row's right end, clear of its name. */
-        (void)ui_help_add_at(p, ui_tr(row->name),
-                             (row->page_set == &esc_stick_pages)
-                                 ? TX_HG_MO_STICK : TX_HG_MO_WIRE,
-                             r, UI_HELP_AT_RIGHT);
+        /* The mark ends a badge past the row's name: the badge stands
+         * right of the name, clear of it and of the row's tag at its right
+         * end. */
+        const ui_text_id_t help = (row->page_set == &esc_stick_pages)
+                                      ? TX_HG_MO_STICK
+                                  : (row->page_set == &esc_wire_pages)
+                                      ? TX_HG_MO_WIRE : TX_HG_MO_YGE;
+        const int w = ROW_NAME_DX + gfx_text_cells(ui_tr(row->name)) * 10
+                      + ROW_BADGE_ROOM;
+
+        if (w < r.w) {
+            r.w = (int16_t)w;
+        }
+        (void)ui_help_add_at(p, ui_tr(row->name), help, r, UI_HELP_AT_RIGHT);
     }
     (void)ui_help_add(p, TR(MO_LOG_RENAME), TX_HG_MO_LOG, log_rect());
 }

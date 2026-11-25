@@ -67,6 +67,8 @@ SOURCES = [
     "protocols/kst/kst_wire.c",
     "test/host/render_hitec.c",
     "test/host/render_esc_wire.c",
+    # Programming for YGE ESCs: the session fed by hand.
+    "test/host/render_yge.c",
     # The screen guide's views: opened and turned by taps.
     "test/host/render_help.c",
     # SERVO's RUDDER task: its tab tapped, the angle fed, ZERO taken.
@@ -560,6 +562,39 @@ SCREENS = {
     "motor-wire-am-card": ("motor-wire-am-card.png", "motor", "dark"),
     "motor-wire-erased-leave": (
         "motor-wire-erased-leave.png", "motor", "dark"),
+    # Programming for YGE ESCs: CONNECT and its editors, the entry and BY
+    # HAND, every tab of a read 165 HVT, an edit with its CHECK line, WRITE
+    # waiting for the card and writing, LEAVE over edits, a read-only table,
+    # a stop, a pin held, another writer's pin, one not back, and a finger
+    # on each hold.
+    "motor-yge-connect": ("motor-yge-connect.png", "motor", "dark"),
+    "motor-yge-port": ("motor-yge-port.png", "motor", "dark"),
+    "motor-yge-hand": ("motor-yge-hand.png", "motor", "dark"),
+    "motor-yge-boot": ("motor-yge-boot.png", "motor", "dark"),
+    "motor-yge-entering": ("motor-yge-entering.png", "motor", "dark"),
+    "motor-yge-handwait": ("motor-yge-handwait.png", "motor", "dark"),
+    "motor-yge-id": ("motor-yge-id.png", "motor", "dark"),
+    "motor-yge-mode": ("motor-yge-mode.png", "motor", "dark"),
+    "motor-yge-protect": ("motor-yge-protect.png", "motor", "dark"),
+    "motor-yge-start": ("motor-yge-start.png", "motor", "dark"),
+    "motor-yge-gov": ("motor-yge-gov.png", "motor", "dark"),
+    "motor-yge-stick": ("motor-yge-stick.png", "motor", "dark"),
+    "motor-yge-raw": ("motor-yge-raw.png", "motor", "dark"),
+    "motor-yge-choice": ("motor-yge-choice.png", "motor", "dark"),
+    "motor-yge-number": ("motor-yge-number.png", "motor", "dark"),
+    "motor-yge-check": ("motor-yge-check.png", "motor", "dark"),
+    "motor-yge-leave": ("motor-yge-leave.png", "motor", "dark"),
+    "motor-yge-card": ("motor-yge-card.png", "motor", "dark"),
+    "motor-yge-writing": ("motor-yge-writing.png", "motor", "dark"),
+    "motor-yge-files": ("motor-yge-files.png", "motor", "dark"),
+    "motor-yge-readonly": ("motor-yge-readonly.png", "motor", "dark"),
+    "motor-yge-stopped": ("motor-yge-stopped.png", "motor", "dark"),
+    "motor-yge-held": ("motor-yge-held.png", "motor", "dark"),
+    "motor-yge-other": ("motor-yge-other.png", "motor", "dark"),
+    "motor-yge-not-back": ("motor-yge-not-back.png", "motor", "dark"),
+    "motor-yge-fill-connect": ("motor-yge-fill-connect.png", "motor", "dark"),
+    "motor-yge-fill-write": ("motor-yge-fill-write.png", "motor", "dark"),
+    "motor-yge-fill-leave": ("motor-yge-fill-leave.png", "motor", "dark"),
     # ESC STICK, opened from that row, full width under the output strip.
     "motor-stick": ("motor-stick.png", "motor", "dark"),
     "motor-stick-items": ("motor-stick-items.png", "motor", "dark"),

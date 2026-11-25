@@ -1818,7 +1818,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 662 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 667 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -2289,6 +2289,17 @@ copy; each way a request ends and each result of the page with its own word, a s
 between OPEN and ENTER, a command never carried out taken back at 2000ms; a draft of an earlier
 read refused on the panel and, sent past it, by the page as `STALE` with no frame to the ESC, and a
 loaded draft ended by the next read.
+`test_yge_card` runs the card's side (`shared/bench/yge_card.c`): the backup saved as
+`YGE001-5712`, a list in pages of 12, a load at and past 4620B, each refusal of the card.
+`test_yge_panel`, `test_yge_panel_write`, `test_yge_panel_stages` and `test_yge_panel_screens`
+run the screens (`shared/ui/yge_panel*.c`, `test/host/yge_panel_rig.h`) on that bench: CONNECT
+and WRITE released at 1999ms with nothing sent and held to 2000ms; WRITE greyed with no change,
+the backup before the first write, no card keeping RAM, a card silent 10000ms sending no write;
+a choice listing only its writable values and the keypad refusing outside them; the CHECK line;
+LEAVE and READ AGAIN over edits a page held 2s; a file loaded; a stop leaving CLEAR STOP and PIN
+BACK; ABORT on the press with another finger down; a link loss closing the editors; another
+writer's pin released; BY HAND; the revision unchanged at rest; every text and row in its field
+in English and German; every page drawn and every message said in both languages.
 `test_outputs_hw` and `test_outputs_hw_ports` hold that a held slot or DShot port is let go
 alone and comes back the same.
 
@@ -2475,7 +2486,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-1040 committed screenshots to the current render, 520 in English and the same 520 in German, and `render_ui.py --fit` fails on a string that
+1096 committed screenshots to the current render, 548 in English and the same 548 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

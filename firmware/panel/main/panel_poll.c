@@ -1048,6 +1048,7 @@ void publish_snapshot(const bench_state_t *bench, bool link_up,
     kst_publish(&s_snap.kst);
     hitec_publish(&s_snap.hitec);
     esc_publish(&s_snap.esc);
+    yge_publish(&s_snap.yge);
     snap_unlock();
 
     /* One queue entry per sample, so none of the plot's time base is lost to

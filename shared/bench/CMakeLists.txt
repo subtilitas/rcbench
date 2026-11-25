@@ -53,13 +53,13 @@ set(SRCS
     panel_i2c.c
 )
 
-# kst_card.c, hitec_card_run.c and esc_card.c stand between the programmers and the
+# kst_card.c, hitec_card_run.c, esc_card.c and yge_card.c stand between the programmers and the
 # card layer in shared/logfile.  It is built where that layer is: on the panel and on the
 # host, which adds shared/logfile before this directory.  The IOmcu has
 # no card and builds this directory without it.  imu.c, the Bluetooth IMU's
 # reading from protocols/witmotion, is the panel's alone and goes with them.
 if(ESP_PLATFORM)
-    idf_component_register(SRCS ${SRCS} kst_card.c hitec_card_run.c esc_card.c imu.c
+    idf_component_register(SRCS ${SRCS} kst_card.c hitec_card_run.c esc_card.c yge_card.c imu.c
                            INCLUDE_DIRS include
                            REQUIRES link kst hitec escwire openyge dshot logfile witmotion)
 else()
@@ -69,7 +69,7 @@ else()
                           rcbench_hitec rcbench_escwire rcbench_openyge
                           rcbench_dshot m)
     if(TARGET rcbench_logfile)
-        target_sources(rcbench_bench PRIVATE kst_card.c hitec_card_run.c esc_card.c
+        target_sources(rcbench_bench PRIVATE kst_card.c hitec_card_run.c esc_card.c yge_card.c
                        imu.c)
         target_link_libraries(rcbench_bench PUBLIC rcbench_logfile rcbench_witmotion)
     else()

@@ -471,7 +471,7 @@ Prüfungen am Telemetrieframe, aus denselben Aufzeichnungen:
 Der IOmcu führt die Session hinter den Pages YGE_PROG und YGE_DATA aus
 ([Programmierung für YGE-ESCs](LinkYge-de.md)). Das Panel-Image bindet das
 Modul ein und ruft es nicht auf; die Hälfte des Panels und die Bildschirme
-sind nicht gebaut. Der Entwurf sieht die Verarbeitung auf dem IOmcu vor: eine
+sind gebaut ([YGE-ESC-Programmierung](YgeProgramming-de.md)). Der Entwurf sieht die Verarbeitung auf dem IOmcu vor: eine
 Anfrage-Antwort-Schleife mit 20Hz, Umschaltzeiten im Mikrosekundenbereich
 und einen Timeout, der auch ohne eintreffende Bytes abläuft. Das Panel
 würde das Ergebnis als `bench_state` über das Page-Protokoll erhalten.
@@ -516,7 +516,7 @@ bricht ohne gesendeten Frame ab, wenn sie abweicht. Nach den Schreibzugriffen
 liest es die ganze Tabelle erneut und vergleicht sie mit dem Ziel. Der
 IOmcu führt sie an einem Programmierport hinter YGE_PROG aus
 (`shared/outputs/yge_port.c`); die Hälfte des Panels und die Bildschirme
-sind nicht gebaut. Der Pin-Treiber ist gebaut (Abschnitt 9.2). Auf dem Pi der Station spielt
+sind gebaut. Der Pin-Treiber ist gebaut (Abschnitt 9.2). Auf dem Pi der Station spielt
 [`testbench/ygesim/ygesim.py`](../testbench/ygesim/README.md) einen ESC
 am UART: 32 Parameter, Schreibzugriffe gespeichert, und die Modi
 `normal`, `silent`, `late` (250ms), `crc` (10%), `seq`, `legacy` und

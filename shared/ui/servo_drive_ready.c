@@ -83,7 +83,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "esc_wire_panel.h"
 #include "imu_screen.h"
 #include "prog5v_box.h"
 #include "prog_choice.h"
@@ -385,7 +384,7 @@ static void supply_row(rdy_row_t *r)
             /* A programming port's: ARM leaves it to the port, and ARM's
              * own lock names the port. */
             r->st  = (uint8_t)RDY_WARN;
-            r->why = esc_wire_panel_holds_port() ? TR(SUP_HELD_REFUSED_ESC)
+            r->why = prog_reg_esc_holds() ? TR(SUP_HELD_REFUSED_ESC)
                                                  : TR(SUP_HELD_REFUSED);
         } else if (rail_fed()) {
             /* Fed from elsewhere: ARM leaves the PD mini off, so its set
@@ -970,7 +969,7 @@ bool drive_set_down(const touch_event_t *evt)
         /* No set point moves under a programming port, and the band says
          * why. */
         if (supply_screen_port_held()) {
-            ui_router_set_alert(esc_wire_panel_holds_port()
+            ui_router_set_alert(prog_reg_esc_holds()
                                     ? TR(SUP_HELD_REFUSED_ESC)
                                     : TR(SUP_HELD_REFUSED));
             return true;
