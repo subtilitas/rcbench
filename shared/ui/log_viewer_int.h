@@ -21,6 +21,7 @@
 
 #include "card_state.h"
 #include "gfx.h"
+#include "log_preset.h"
 #include "log_viewer_screen.h"
 #include "logs_strip.h"
 #include "touch_types.h"
@@ -29,6 +30,7 @@
 #include "ui_tabs.h"
 #include "ui_text.h"
 #include "ui_theme.h"
+#include "ui_widgets.h"
 
 /** @brief The screen's width, UI_PANEL_W px. */
 #define SCREEN_W UI_PANEL_W
@@ -273,12 +275,33 @@
 #define PV_EMPTY   (-1)
 /**
  * @brief The plot's footer: BACK, then < and >, 52px tall; the cursor's
- *        line in 10 x 20 from PV_LINE_X.
+ *        line in 10 x 20 from PV_LINE_X; MORE at the right end.
  */
 #define PV_BACK    gfx_rect_make(LV_L, FOOT_Y, 140, FOOT_H)
 #define PV_PREV    gfx_rect_make(LV_L + 148, FOOT_Y, 96, FOOT_H)  /**< <. */
 #define PV_NEXT    gfx_rect_make(LV_L + 252, FOOT_Y, 96, FOOT_H)  /**< >. */
 #define PV_LINE_X  (LV_L + 364)  /**< The cursor's line. */
+/** @brief MORE at the footer's right end, 140px: it opens the plot's
+ *         choice list. */
+#define PV_MORE    gfx_rect_make(LV_R - 140, FOOT_Y, 140, FOOT_H)
+/**
+ * @brief MORE's choice list, right-aligned over MORE and 8px above the
+ *        footer: PV_MORE_ROWS rows of UI_CHOICE_ROW_H (56) px, 4px in from
+ *        its edges, 300px wide.  Its one row, COLUMNS, opens the import
+ *        view's column list.
+ */
+#define PV_MORE_ROWS 1
+#define PV_MORE_W    300                                  /**< Its width. */
+#define PV_MORE_H    (PV_MORE_ROWS * UI_CHOICE_ROW_H + 8) /**< Its height. */
+/** @brief The list's box. */
+#define PV_MORE_LIST gfx_rect_make(LV_R - PV_MORE_W, \
+                                   FOOT_Y - 8 - PV_MORE_H, PV_MORE_W, \
+                                   PV_MORE_H)
+/** @brief The list's row @p i. */
+#define PV_MORE_ROW(i) gfx_rect_make(LV_R - PV_MORE_W + 4, \
+                                     FOOT_Y - 8 - PV_MORE_H + 4 \
+                                         + (i) * UI_CHOICE_ROW_H, \
+                                     PV_MORE_W - 8, UI_CHOICE_ROW_H)
 /** @brief The box the plot shows with nothing loaded: 64 cells of the
  *         12 x 24 face inside 24px margins. */
 #define PV_NONE    gfx_rect_make(104, 150, 816, 120)
@@ -317,6 +340,11 @@ _Static_assert(PV_POS_Y + PV_POS_H <= PV_TOP + PV_PANEL_H,
                "the position bar is inside the plot's panel");
 _Static_assert(CHIP_X + 4 * CHIP_W + 3 * CHIP_GAP <= LV_R,
                "the four chips stand in the screen's width");
+_Static_assert(PV_LINE_X + 48 * 10 + 8 <= LV_R - 140,
+               "the cursor's line of 48 cells ends 8px short of MORE");
+_Static_assert(UI_CHOICE_ROW_H >= UI_TAP_MIN, "a choice row is a finger tall");
+_Static_assert(FOOT_Y - 8 - PV_MORE_H >= PV_TOP,
+               "MORE's list stands over the plot's panel");
 
 /** @brief The view on screen. */
 typedef enum { VIEW_BROWSE = 0, VIEW_IMPORT, VIEW_PLOT } view_t;
@@ -405,6 +433,14 @@ typedef struct {
     int picked[LOG_MAX_SERIES];         /**< column indices picked as series */
     int n_picked;                       /**< number of picked columns */
     int col_scroll;                     /**< first column row shown on the import view */
+    /** @brief The preset the open file matched (log_preset.h), or
+     *         LOG_PRESET_NONE: OPEN on a matched file goes to the plot. */
+    log_preset_id_t preset;
+    bool plot_from_import;              /**< the import's PLOT opened the plot:
+                                             BACK returns there, not to the list */
+    bool more_open;                     /**< MORE's choice list is open on the plot */
+    bool more_hold;                     /**< the press that closed the list is down:
+                                             its release presses nothing */
 
     log_data_t data;                    /**< the plot's samples */
     bool have_data;                     /**< whether data is loaded */
@@ -592,7 +628,7 @@ struct ui_help_page;
 
 /**
  * @brief The screen guide's pages of LOGS in the view on top.
- * @return 2 on the list and the import view, 1 on the plot, 0 while the
+ * @return 2 on the list, the import view and the plot, 0 while the
  *         DELETE question is open.
  */
 int lv_help_count(void);
@@ -657,9 +693,11 @@ void lv_compute_spans(void);
  */
 void lv_load_data(void);
 /**
- * @brief Opens the selected row: a CSV file to the import view, a report to
- *        the text viewer FILES hosts (files_screen_open_text()); a folder
- *        or an oversized file is refused with a message.
+ * @brief Opens the selected row: a CSV file a preset matches
+ *        (log_preset.h) to the plot with the preset's columns, any other CSV
+ *        file to the import view, a report to the text viewer FILES hosts
+ *        (files_screen_open_text()); a folder or an oversized file is
+ *        refused with a message.
  */
 void lv_open_selected(void);
 

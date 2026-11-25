@@ -10,7 +10,7 @@ LOGS listet CSV-Aufzeichnungen (Comma-Separated Values) und Berichte auf der SD-
 
 Drei Reiter oben links wählen den Ordner: STAMM für das Stammverzeichnis, USER für den Ordner Testaufzeichnungen (Vorgabe `USER/LOGS`) und BENCH für den Ordner Auto-Aufzeichnungen (Vorgabe `BENCH/LOGS`). WI-FI unten links öffnet [WLAN](wifi.md). FILES daneben öffnet [Files](files.md) zum Kopieren, Verschieben, Umbenennen und Löschen.
 
-Das Home-Feld führt wie ZURÜCK jeweils eine Ebene zurück: von der Grafik zur Importansicht, dann zur Dateiliste und zum Menü. In der Rückfrage zu LÖSCHEN wirkt es wie ABBRECHEN.
+Das Home-Feld führt wie ZURÜCK jeweils eine Ebene zurück: von der Grafik dorthin, woher sie kam (nach ÖFFNEN zur Dateiliste, nach GRAFIK zur Importansicht), von der Importansicht zur Dateiliste und zum Menü. Über der Liste von MEHR schließt es die Liste. In der Rückfrage zu LÖSCHEN wirkt es wie ABBRECHEN.
 
 ## Keine Karte
 
@@ -51,7 +51,7 @@ WI-FI in der Tastenzeile öffnet [WLAN](wifi.md) für Downloads im Browser. Das 
 | AKTUALISIEREN | liest die gezeigte Seite erneut und wählt ihren neuesten Lauf |
 | VORIGE, NÄCHSTE | die Seite davor und danach; sichtbar mit mehr als 48 Dateien auf der Karte |
 | LÖSCHEN | fragt nach und entfernt dann die gewählte Datei; grau, solange nichts gewählt ist, bei ARMED und während ein Lauf aufgezeichnet wird |
-| ÖFFNEN | öffnet die gewählte CSV-Datei in der Importansicht, einen Bericht im Textbetrachter; grau, solange nichts gewählt ist |
+| ÖFFNEN | öffnet eine Laufdatei des Prüfstands in der Grafik, jede andere CSV-Datei in der Importansicht, einen Bericht im Textbetrachter; grau, solange nichts gewählt ist |
 
 Die Fußleiste unter der Liste nennt den Bildschirm, LOGS. OPTIONEN rechts öffnet die Liste SD CARD von [SETUP](setup.md#sd-card): die Aufzeichnungsschalter und die beiden Aufzeichnungsordner. Deren Home-Feld führt hierher zurück.
 
@@ -130,11 +130,26 @@ Die ersten fünf hinterlassen keine Datei. Die letzten vier hinterlassen eine Da
 
 Berichte lassen sich auch über [WLAN](wifi.md) herunterladen.
 
+## Was wo öffnet
+
+ÖFFNEN liest die Kopfzeile der Datei. Eine Laufdatei des Prüfstands öffnet sofort die Grafik, mit den Spalten ihrer Art. Die Art ergibt sich zuerst aus den Spaltennamen der Kopfzeile, dann aus dem Dateinamen. So werden auch ein Name mit Zusatz (`MOTOR042_kv1200.CSV`), ein Name in Kleinbuchstaben und die Dateien ab Firmware 0.21.0 erkannt.
+
+| Art | Name | Gezeichnete Spalten |
+|---|---|---|
+| LIMIT RUN | `LIMITnnn.CSV` | `pulse`, `current`, `angle` |
+| RUDDER AUTO | `RUDDRnnn.CSV` | `pulse`, `current`, `measured` |
+| AUTOMATIC TEST | `ATESTnnn.CSV` | `command`, `current`, `voltage`, `angle` |
+| SUPPLY-Lauf | `SUPPLnnn.CSV` | `set`, `voltage`, `limit`, `current` |
+| MOTOR-Lauf | `MOTORnnn.CSV`, `ESCnnn.CSV` | `throttle`, `rpm`, `current`, `voltage` |
+| SERVO-Lauf | `SERVOnnn.CSV`, `BENCHnnn.CSV` | `pulse`, `angle`, `current`, `voltage` |
+
+Eine Spalte, die der Datei fehlt, entfällt. Eine LIMIT-RUN- oder RUDDER-AUTO-Datei wird nach Zeilennummer gezeichnet, mit dem Puls als erster Linie. Jede andere CSV und ein Laufname über Spalten keiner Art öffnen die Importansicht.
+
 ## Die Importansicht
 
 ![Was der Import erkannt hat](view:logs-import)
 
-ÖFFNEN liest die Datei und zeigt vor dem Zeichnen das erkannte Importformat.
+Die Importansicht zeigt vor dem Zeichnen das erkannte Importformat. MEHR > SPALTEN in der Grafik öffnet sie für eine Laufdatei, mit den Spalten der Grafik gewählt.
 
 | Zeile | Zeigt |
 |---|---|
@@ -145,7 +160,7 @@ Berichte lassen sich auch über [WLAN](wifi.md) herunterladen.
 | UNGLEICHE ZEILEN | Zeilen mit einer anderen Zellenzahl als die Kopfzeile |
 | BELEGE | die Zellen, die Deutsch, Englisch oder keins von beiden belegt haben |
 
-Die rechte Liste zeigt jede Spalte mit ihrem ersten Wert und dem Bereich vom kleinsten bis zum größten Wert. Bis zu 4 Spalten werden automatisch gewählt. Bei SERVO-Dateien haben die numerischen Spalten `pulse`, `angle`, `current` und `voltage` Vorrang, danach folgen weitere Zahlenspalten. Bei anderen Dateien werden die ersten 4 Zahlenspalten gewählt.
+Die rechte Liste zeigt jede Spalte mit ihrem ersten Wert und dem Bereich vom kleinsten bis zum größten Wert. Für eine Datei keiner Art werden bis zu 4 Spalten automatisch gewählt: hat die Datei eine numerische Spalte `pulse`, zuerst die numerischen Spalten `pulse`, `angle`, `current` und `voltage`, danach weitere Zahlenspalten; jede andere Datei beginnt mit ihren ersten 4 Zahlenspalten.
 
 Tippe auf eine Zahlenspalte, um sie zur Grafik hinzuzufügen oder daraus zu entfernen. Der Titel zählt die Auswahl, etwa `GRAFIK  4/4`. Sehen Werte oder Spalten falsch aus, wechsle mit TRENNZEICHEN und ZAHLENFORMAT durch die Möglichkeiten, beginnend bei AUTO. ZURÜCK führt zur Dateiliste. GRAFIK zeichnet die gewählten Spalten.
 
@@ -160,7 +175,10 @@ Die Kopfzeile nennt Datei, Zeilenzahl, Dauer und Abtastrate. Jede Spalte hat ein
 - Bewege den Cursor mit einem Finger oder mit `<` und `>`. Unten rechts stehen Zeit und Messpunkt.
 - Zoome mit zwei Fingern: auseinanderziehen zum Vergrößern, zusammenziehen zum Verkleinern. Bewege beide Finger zum Verschieben. Die Ansicht reicht von mindestens 8 Messpunkten bis zum gesamten Lauf.
 - Ist Ein Finger schiebt unter SETUP, PANEL eingeschaltet, verschiebt ein Finger eine vergrößerte Ansicht seitwärts, sobald er sich mehr als 10px bewegt.
-- ZURÜCK führt zur Importansicht.
+- ZURÜCK führt zur Dateiliste, oder zur Importansicht, wenn deren GRAFIK die Grafik geöffnet hat.
+- MEHR öffnet eine Liste mit SPALTEN, das zur Importansicht führt, um andere Spalten zu wählen. Ein Druck neben die Liste schließt sie.
+
+![Die Liste von MEHR](view:logs-plot-more)
 
 Die Grafik verteilt Datenzeilen gleichmäßig nach Zeilennummer. Ihre Beschriftung stammt aus der Zeitspalte. Eine Datenlücke erscheint daher als Sprung in den Zeitangaben.
 

@@ -273,7 +273,7 @@ static void make_log_csv(void)
 
     size_t n = (size_t)snprintf(g_csv, sizeof(g_csv),
                                 "time (s);voltage (V);current (A);"
-                                "power (W);rpm (rpm)\n");
+                                "power (W);rpm (rpm);throttle (%%)\n");
     for (int i = 0; i < 320 && n + 80u < sizeof(g_csv); ++i) {
         const float t = (float)i * 0.05f;
         float th = 0.0f;
@@ -283,9 +283,9 @@ static void make_log_csv(void)
         else                        { th = 40.0f; }
         telemetry_sim_step(&sim, th, 0.05f, &b);
         n += (size_t)snprintf(g_csv + n, sizeof(g_csv) - n,
-                              "%.2f;%.2f;%.2f;%.0f;%.0f\n",
+                              "%.2f;%.2f;%.2f;%.0f;%.0f;%.0f\n",
                               (double)t, (double)b.voltage, (double)b.current,
-                              (double)b.power, (double)b.rpm);
+                              (double)b.power, (double)b.rpm, (double)th);
     }
 }
 
@@ -5130,16 +5130,23 @@ static void pose_shown_tools(ui_screen_id_t id, const char *view)
             render_files_settle();
         } else if (strcmp(view, "logs-servo-plot") == 0) {
             /* SERVO013.CSV, the second row of BENCH: a tap chooses it, a
-             * second opens it. */
+             * second opens it in the plot with the SERVO preset. */
             tap(LV_ROW_CX, UI_BAND_H + LV_ROW_CY(1));
             tap(LV_ROW_CX, UI_BAND_H + LV_ROW_CY(1));
         } else if (strcmp(view, "logs") != 0) {
             /* The newest run is chosen as the list opens: one tap opens
-             * it. */
+             * it, a MOTOR run, in the plot. */
             tap(LV_ROW_CX, UI_BAND_H + LV_ROW_CY(0));   /* open */
         }
-        if (strcmp(view, "logs-plot") == 0
-            || strcmp(view, "logs-servo-plot") == 0) {
+        const bool via_import = strcmp(view, "logs-plot-import") == 0;
+        if (strcmp(view, "logs-import") == 0 || via_import
+            || strcmp(view, "logs-plot-more") == 0) {
+            tap(LV_PV_MORE_CX, UI_BAND_H + LV_FOOT_CY);   /* MORE */
+        }
+        if (strcmp(view, "logs-import") == 0 || via_import) {
+            tap(LV_MORE_ROW_CX, UI_BAND_H + LV_MORE_ROW_CY);   /* COLUMNS */
+        }
+        if (via_import) {
             tap(LV_IM_BTN_CX(3), UI_BAND_H + LV_FOOT_CY);   /* PLOT */
         }
     }
