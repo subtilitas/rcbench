@@ -132,7 +132,8 @@ typedef struct {
     bool          answered;            /**< the answer to the request arrived */
     bool          usb;                 /**< this pass found zone 0x000D at USB output */
     bool          verify;              /**< this read is the read back after writes */
-    bool          kick;                /**< start again at step 2 on the next step */
+    bool          kick;                /**< start again at step 2 once no request is out */
+    bool          rewant;              /**< the wanted zones changed: verify again once no request is out */
     bool          ack;                 /**< the answer due carries data 0x00 */
     bool          unsaved;             /**< a write went out that the module may have applied; cleared by an answered save only */
     uint8_t       expect;              /**< data bytes of the answer due */
@@ -214,14 +215,22 @@ void gm861_stop(gm861_t *g);
 /**
  * @brief Read the zones again and put back what differs, from step 2.
  *
- * Also ends the hold after a zone refused.  Does nothing while OFF.
+ * Also ends the hold after a zone refused.  Takes effect once the request
+ * out ends, so a late answer is not taken for the probe's.  Does nothing
+ * while OFF.
  *
  * @param g The sequencer; NULL does nothing.
  */
 void gm861_recheck(gm861_t *g);
 
 /**
- * @brief Change the read mode; a READY module is rechecked.
+ * @brief Change the read mode, in any state but OFF.
+ *
+ * Once the request out ends, a sequence that has read the zones already
+ * (writing, saving, READY, or held on a refused zone) reads them again
+ * and writes what the new mode changes before it reports READY.  A
+ * sequence that has not read them yet uses the new mode when it does.
+ *
  * @param g    The sequencer; NULL does nothing.
  * @param mode The read mode.
  */

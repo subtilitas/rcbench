@@ -656,6 +656,95 @@ TEST_CASE(a_new_read_mode_is_written_at_once)
     CHECK_EQ(gm861_state(&r.g), GM861_OFF);
 }
 
+/** @brief Tick until the last frame sent is of @p type (and zone @p addr, unless 0xFFFF). */
+static bool run_to_send(rig_t *r, uint8_t type, uint16_t addr, uint32_t max_ms)
+{
+    for (uint32_t ms = 0u; ms <= max_ms; ms += 20u) {
+        const unsigned before = r->sent;
+        tick(r);
+        if (r->sent != before && r->last[2] == type
+            && (addr == 0xFFFFu
+                || (uint16_t)((r->last[4] << 8) | r->last[5]) == addr)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+TEST_CASE(a_mode_changed_while_the_save_is_out_is_written_and_saved)
+{
+    rig_t r;
+    rig_init(&r, 9600u, 0u);
+    CHECK(run_to_send(&r, GM861_T_SAVE, 0xFFFFu, 3000u));
+    gm861_set_mode(&r.g, GM861_MODE_CONTINUOUS);
+    CHECK(run_until(&r, GM861_READY, 3000u) != UINT32_MAX);
+    check_set(r.m.ram, false);
+    check_set(r.m.flash, false);
+    CHECK_EQ(r.m.saves, 2u);
+    run_ms(&r, 40000u);                     /* heartbeats change nothing */
+    CHECK_EQ(gm861_state(&r.g), GM861_READY);
+    check_set(r.m.flash, false);
+}
+
+TEST_CASE(a_mode_changed_during_a_write_of_each_pass_ends_ready_with_the_last_mode)
+{
+    /* Continuous during pass 1 (after zone 0x0000 went out as sensing),
+     * sensing again during pass 2's write of zone 0x0000: the second
+     * change must not use up the 2 passes and hold zone 0x0000. */
+    rig_t r;
+    rig_init(&r, 9600u, 0u);
+    CHECK(run_to_send(&r, GM861_T_WRITE, 0x0000u, 3000u));
+    CHECK(run_to_send(&r, GM861_T_WRITE, 0x0003u, 200u));
+    gm861_set_mode(&r.g, GM861_MODE_CONTINUOUS);
+    CHECK(run_to_send(&r, GM861_T_WRITE, 0x0000u, 3000u));
+    gm861_set_mode(&r.g, GM861_MODE_SENSING);
+    CHECK(run_until(&r, GM861_READY, 3000u) != UINT32_MAX);
+    CHECK_EQ(gm861_bad_zone(&r.g), GM861_NO_ZONE);
+    check_set(r.m.ram, true);
+    check_set(r.m.flash, true);
+}
+
+TEST_CASE(a_mode_changed_during_the_probe_is_the_one_written)
+{
+    rig_t r;
+    rig_init(&r, 9600u, 0u);
+    r.m.baud = 57600u;                      /* the second rate tried */
+    CHECK(run_to_send(&r, GM861_T_READ, 0x0000u, 1000u));
+    CHECK_EQ(gm861_baud(&r.g), 9600u);
+    gm861_set_mode(&r.g, GM861_MODE_CONTINUOUS);
+    CHECK(run_until(&r, GM861_READY, 3000u) != UINT32_MAX);
+    check_set(r.m.flash, false);
+    CHECK_EQ(r.m.saves, 1u);
+}
+
+TEST_CASE(a_mode_changed_while_a_zone_is_held_is_tried_again)
+{
+    rig_t r;
+    rig_init(&r, 9600u, 0u);
+    r.m.stuck = 0x0060u;
+    CHECK(run_until(&r, GM861_NO_ANSWER, 3000u) != UINT32_MAX);
+    r.m.stuck = 0xFFFFu;
+    gm861_set_mode(&r.g, GM861_MODE_CONTINUOUS);
+    CHECK(run_until(&r, GM861_READY, 3000u) != UINT32_MAX);
+    CHECK_EQ(gm861_bad_zone(&r.g), GM861_NO_ZONE);
+    check_set(r.m.flash, false);
+}
+
+TEST_CASE(a_recheck_while_a_request_is_out_waits_for_its_end)
+{
+    rig_t r;
+    rig_init(&r, 9600u, 0u);
+    r.m.mute = true;
+    CHECK(run_to_send(&r, GM861_T_READ, 0x0000u, 1000u));
+    const unsigned sent = r.sent;
+    gm861_recheck(&r.g);
+    tick(&r);
+    CHECK_EQ(r.sent, sent);                 /* the probe's wait runs out first */
+    r.m.mute = false;
+    CHECK(run_until(&r, GM861_READY, 6000u) != UINT32_MAX);
+    check_set(r.m.flash, true);
+}
+
 TEST_CASE(a_factory_reset_is_sent_and_the_module_set_again)
 {
     rig_t r;
@@ -766,6 +855,11 @@ int main(void)
     RUN(a_module_gone_after_ready_stays_lost_until_it_answers);
     RUN(a_zone_changed_while_ready_is_put_back_at_the_next_recheck);
     RUN(a_new_read_mode_is_written_at_once);
+    RUN(a_mode_changed_while_the_save_is_out_is_written_and_saved);
+    RUN(a_mode_changed_during_a_write_of_each_pass_ends_ready_with_the_last_mode);
+    RUN(a_mode_changed_during_the_probe_is_the_one_written);
+    RUN(a_mode_changed_while_a_zone_is_held_is_tried_again);
+    RUN(a_recheck_while_a_request_is_out_waits_for_its_end);
     RUN(a_factory_reset_is_sent_and_the_module_set_again);
     RUN(the_sequence_holds_across_the_clock_wrap);
     RUN(off_sends_nothing_and_null_arguments_do_nothing);

@@ -238,6 +238,29 @@ static void zones_read(gm861_t *g, uint32_t now)
     to_phase(g, GM861_P_WRITE);
 }
 
+/**
+ * @brief The wanted zones changed: a sequence past its first read reads
+ *        them again, with a fresh count of write passes.
+ */
+static void verify_again(gm861_t *g)
+{
+    switch (g->phase) {
+    case GM861_P_WRITE:
+    case GM861_P_SAVE:
+    case GM861_P_BEAT:
+    case GM861_P_HELD:
+        g->state = GM861_SETTING;
+        g->bad_zone = GM861_NO_ZONE;
+        g->passes = 0u;
+        g->usb = false;
+        g->verify = true;       /* gm861_found() keeps the first read */
+        to_phase(g, GM861_P_READ);
+        break;
+    default:   /* not read yet, reading, or starting over: the read uses the new mode */
+        break;
+    }
+}
+
 /** @brief The answer due has arrived: move on. */
 static void answered(gm861_t *g, uint32_t now)
 {
@@ -375,8 +398,8 @@ void gm861_set_mode(gm861_t *g, gm861_mode_t mode)
         return;
     }
     g->mode = mode;
-    if (g->state == GM861_READY) {
-        gm861_recheck(g);
+    if (g->state != GM861_OFF) {
+        g->rewant = true;
     }
 }
 
@@ -402,10 +425,6 @@ size_t gm861_step(gm861_t *g, uint32_t now_ms, bool rx_high, uint8_t *tx,
         g->started = true;
         g->t0 = now_ms;
     }
-    if (g->kick) {
-        g->kick = false;
-        to_level(g, now_ms);
-    }
     if (g->sent) {
         if (g->answered) {
             answered(g, now_ms);
@@ -414,6 +433,15 @@ size_t gm861_step(gm861_t *g, uint32_t now_ms, bool rx_high, uint8_t *tx,
         } else {
             return 0u;
         }
+    }
+    if (g->kick) {
+        g->kick = false;
+        g->rewant = false;
+        to_level(g, now_ms);
+    }
+    if (g->rewant) {
+        g->rewant = false;
+        verify_again(g);
     }
     switch (g->phase) {
     case GM861_P_START:
