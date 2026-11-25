@@ -141,6 +141,39 @@ def test_decoder_counts_crc_errors():
     assert dec.crc_errors == 1
 
 
+def test_decoder_skips_a_stalled_false_header():
+    """A false header claiming 64 bytes does not hold up the requests.
+
+    A5 03 03 40 then 3 requests: 40 bytes, short of the 64 the header
+    claims.  Each request decodes as it completes.
+    """
+    dec = ys.Decoder()
+    assert dec.feed(bytes((0xA5, 0x03, 0x03, 0x40))) == []
+    for s in (1, 2, 3):
+        assert [f.seq for f in dec.feed(request(s))] == [s]
+    assert dec.resyncs == 1 and dec.crc_errors == 0
+
+
+def test_decoder_waits_for_a_frame_still_arriving():
+    """A real frame in pieces is not dropped while its bytes come in."""
+    raw = ys.build_frame(ys.FT_TELE_RESP, ys.telemetry_payload(1, 2), 5, 1)
+    dec = ys.Decoder()
+    got = []
+    for k in range(0, len(raw), 5):
+        got += dec.feed(raw[k:k + 5])
+    assert [f.seq for f in got] == [5] and dec.resyncs == 0
+
+
+def test_false_header_then_session_polls():
+    """The simulator answers the requests behind a stalled false header."""
+    sim, wire = rig()
+    wire.master_send(bytes((0xA5, 0x03, 0x03, 0x40)))
+    sim.step(0.0)
+    for s in range(3):
+        assert len(poll(sim, wire, s, 0.2 * (s + 1))) == 1
+    assert sim.esc.stats["requests"] == 3
+
+
 def test_decoder_length_bounds():
     """A length below header plus CRC or above 64 is not a frame."""
     dec = ys.Decoder()
@@ -426,6 +459,7 @@ def test_summary_lists_counters_and_table():
     poll(sim, wire, 1, 0.0)
     lines = sim.summary()
     assert "requests=1" in lines[0] and "echo_missing=0" in lines[0]
+    assert "resyncs=0" in lines[0]
     assert lines[1] == "00 = 32" and len(lines) == 33
 
 

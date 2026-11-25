@@ -58,7 +58,7 @@ with one line of counters and the table, one index a line:
 1.034 rx WRITE_PARAM_REQ seq=19 dev=0x81 idx=21 val=13
 1.034 write idx=21 12->13
 1.037 tx WRITE_PARAM_RESP seq=19 pidx=19 pdata=20
-requests=40 writes=1 sent=41 auto=0 crc_broken=0 guarded=0 ignored=0 crc_errors_in=0 echo_missing=0 echo_mismatch=0
+requests=40 writes=1 sent=41 auto=0 crc_broken=0 guarded=0 ignored=0 crc_errors_in=0 resyncs=0 echo_missing=0 echo_mismatch=0
 00 = 32
 ...
 ```
@@ -70,6 +70,7 @@ requests=40 writes=1 sent=41 auto=0 crc_broken=0 guarded=0 ignored=0 crc_errors_
 | `crc_broken` | replies sent with a broken CRC (`crc` mode) |
 | `ignored` | frames with a valid CRC that are not a request to this ESC |
 | `crc_errors_in` | received frames whose CRC failed |
+| `resyncs` | incomplete frame starts dropped because a complete valid frame followed them |
 | `echo_missing` | echoes that did not come back within 50ms: GPIO 14 and 15 are not joined |
 | `echo_mismatch` | echoes that differed from the bytes sent: two senders at once |
 
@@ -106,9 +107,10 @@ on CH11 at 1.65V.
 | 2 | the session against `normal`: full read | the table equals ygesim's summary |
 | 3 | a write of 3 fields, then verify | 3 `write` lines in the log, result `OK`, `guarded=0` |
 | 4 | the session against `silent`, `late`, `crc`, `seq`, `legacy`, `count33` | each result as in the mode table above |
-| 5 | STOP during a write | the line parks low on the pull-down (CH11) and no further request reaches ygesim |
+| 5 | STOP during a write | no `rx` line in ygesim's log after the STOP; CH11 stays high, because the Pi's TX holds the wire idle-high through 1kΩ against the IOmcu's pull-down |
+| 6 | after step 5: end ygesim, note `pinctrl get 14`, then `pinctrl set 14 ip pn` to release the Pi's TX | CH11 falls low and stays low: GPIO 13 is an input on its pull-down, not driving. A pad still driving would hold the wire at its last level, high between bytes. Then restore GPIO 14 with the function `pinctrl get 14` showed |
 
-Steps 2 to 5 need the IOmcu page of slice 6.
+Steps 2 to 6 need the IOmcu page of slice 6.
 
 ## Tests
 

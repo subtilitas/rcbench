@@ -211,14 +211,50 @@ class Frame:
 class Decoder:
     """Frames from a byte stream: every sync candidate is tried.
 
+    A candidate whose header is plausible but whose bytes have not all
+    arrived waits, unless a complete frame with a valid CRC starts behind
+    it: then the candidate is noise and is dropped.
+
     Attributes:
         crc_errors: Candidates whose length fit and whose CRC failed.
+        resyncs: Incomplete candidates dropped for a valid frame behind
+            them.
     """
 
     def __init__(self):
         """Start with an empty buffer."""
         self.buf = bytearray()
         self.crc_errors = 0
+        self.resyncs = 0
+
+    def _length_at(self, i):
+        """The length a candidate at buf[i] claims, 0 when implausible.
+
+        Args:
+            i: The offset of a sync byte, with 4 bytes behind it.
+
+        Returns:
+            The frame length, or 0.
+        """
+        hdr = HDR_V3 if self.buf[i + 1] >= VERSION else HDR_LEGACY
+        n = self.buf[i + 3]
+        return n if hdr + 2 <= n <= MAX_FRAME else 0
+
+    def _valid_behind(self):
+        """The offset of the first complete valid frame after buf[0].
+
+        Returns:
+            The offset, or -1 when there is none.
+        """
+        j = self.buf.find(SYNC, 1)
+        while 0 < j <= len(self.buf) - 4:
+            n = self._length_at(j)
+            if n and j + n <= len(self.buf):
+                raw = self.buf[j:j + n]
+                if crc16(raw[:-2]) == (raw[-2] | raw[-1] << 8):
+                    return j
+            j = self.buf.find(SYNC, j + 1)
+        return -1
 
     def feed(self, data):
         """Take bytes and return the frames they complete.
@@ -239,13 +275,17 @@ class Decoder:
             del self.buf[:start]
             if len(self.buf) < 4:
                 return out
-            hdr = HDR_V3 if self.buf[1] >= VERSION else HDR_LEGACY
-            n = self.buf[3]
-            if n < hdr + 2 or n > MAX_FRAME:
+            n = self._length_at(0)
+            if not n:
                 del self.buf[0]
                 continue
             if len(self.buf) < n:
-                return out
+                j = self._valid_behind()
+                if j < 0:
+                    return out
+                self.resyncs += 1
+                del self.buf[:j]
+                continue
             raw = self.buf[:n]
             if crc16(raw[:-2]) != (raw[-2] | raw[-1] << 8):
                 self.crc_errors += 1
@@ -518,6 +558,7 @@ class Simulator:
             A list of str.
         """
         s = dict(self.esc.stats, crc_errors_in=self.decoder.crc_errors,
+                 resyncs=self.decoder.resyncs,
                  echo_missing=self.echo.missing,
                  echo_mismatch=self.echo.mismatch)
         lines = [" ".join("%s=%d" % kv for kv in s.items())]
