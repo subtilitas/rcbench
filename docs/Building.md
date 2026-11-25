@@ -38,6 +38,7 @@ rcbench/
     mstime/               wrap-safe comparisons of a 32-bit millisecond counter (header only)
     vibe/                 balance measurement: index comparator · 1x, 2x and blade-pass demodulator · two-run and four-run solvers
     dial/                 the M5Stack Dial's faces: lists, values, readings and rings, link and bind; host-rendered
+    scanner/              QR scanner: line and answer framer · GM861 command frames, CRC, wanted zones and start sequencer; host suite only
   protocols/              one module per external interface: a pure C core, its RP2350 pin driver in rp2350/, a README.md
     dshot/                DShot frames · GCR decode · eRPM · PIO driver, plain and bidirectional
     ppm/                  PPM frame layout · PIO and DMA driver
@@ -104,7 +105,7 @@ in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` · `passthru` | yes | yes | yes |
 | `escwire` · `openyge` | yes | yes | yes |
 | `witmotion` | yes | | yes |
-| `hc05` · `dial` | | | yes |
+| `hc05` · `dial` · `scanner` | | | yes |
 | `bleuart` · `dialknob` · `vibe` · `rcnode` · `bleota` · `devupd` | yes | | yes |
 
 ## Toolchains

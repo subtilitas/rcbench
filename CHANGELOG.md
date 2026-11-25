@@ -8,6 +8,14 @@ history is in git.
 
 ### Added
 
+- The QR scanner's core for a GM861 module on a panel UART (universal
+  asynchronous receiver-transmitter), pure C in `shared/scanner/`: a framer
+  for code lines (0x20 to 0x7E, at most 64 bytes, CR, CR LF or LF) and
+  command answers (CRC-CCITT), and the module's command frames with the
+  sequence that finds it at one of 8 rates from 1200 to 115200 baud, writes
+  only the zones that differ (serial output, sensing read mode, QR only,
+  tail CR LF), saves once after a write and sends a heartbeat every 10s. No
+  firmware links it yet (`test_scan_line`, `test_gm861`).
 - LOGS draws an AUTOMATIC TEST, a SUPPLY, a MOTOR and a SERVO run over
   its time: each row at its time in the window two fingers set, not at its
   row number. A step in time longer than the larger of 3 median row
