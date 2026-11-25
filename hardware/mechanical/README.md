@@ -51,6 +51,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `_trace_ina228_print.py` | traces the INA228 module's printed legends from the top photo into `_ina228_print.py` |
 | `_panel_7b_data.py` | the place and size of the panel board's parts, written by `_measure_step.py` |
 | `_measure_step.py` | measures Waveshare's STEP file of the panel board with OpenCASCADE |
+| `_measure_rcbench_case.py` | prints the solids, faces, volumes, boxes and placements of `models/casing/rcbench_case.step` with OpenCASCADE |
 | `_solid.py` | profiles of straight sides and arcs pushed along an axis, and round rods along a path of lines and arcs, turned and moved, as solids with flat, cylindrical and toroidal faces |
 | `_parts.py` | shapes of electronic parts: chip parts, leaded packages, wire sockets, USB sockets, card slot, buttons, pin header, shunt, both halves of the XT90PW |
 | `check_overlap.py` | fails when two solids share volume in the panel board's model, in the INA228 module with its case, in one of the 5 module boards, in the Core2350B's USB adapter board, in the ES3C28P, in the ESP32-S3-Touch-LCD-1.85, in the 6704-2RS bearing, in a cell, in the standard servo, in the KST X10, in the WitMotion sensor, in one of the 2 models of the rbmod carrier or in one of its 4 module boards |
@@ -62,7 +63,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `_surface.py`, `_segment.py` | the surfaces and their fits, and the faces grown on them, for `_refit.py` |
 | `check_refit.py` | holds the dial's solids, read back with OpenCASCADE, against the mesh |
 | `models/pcb/` | 18 models: 17 boards with their parts and the sensor node's layout; STEP |
-| `models/casing/` | 11 printed parts: the Dial's base, the display node's case in 2 variants, the sensor node's case, the INA228 module's case, the flap drive's frame; STEP, and STL for 9 of them |
+| `models/casing/` | 12 models: 11 printed parts (the Dial's base, the display node's case in 2 variants, the sensor node's case, the INA228 module's case, the flap drive's frame; STEP, and STL for 9 of them) and the bench's enclosure from Onshape, STEP only |
 | `models/parts/` | 20 models of bought parts and of assemblies: acrylic disc, 6704-2RS ball bearing, emergency stop button, M5Stack Dial and its nut, 3 servos, an ESC, a motor, the set of both and a motor simulator, 2 cells, inertial sensor, the flap drive's assembly and wing; STEP |
 | `renders/` | OpenCASCADE renders in the folders of `models/`: `pcb/`, `casing/`, `parts/`; a view of several models lies in the folder `_models.py` names for it. The contact sheet `all.png` lies beside the folders |
 | `vendor/` | third-party meshes, unchanged, each with its licence |
@@ -485,6 +486,53 @@ python3 hardware/mechanical/_gen_knob.py                 # write STEP and STL
 xvfb-run -a python3 hardware/mechanical/_gen_knob.py \
     --render hardware/mechanical/renders
 ```
+
+## Bench enclosure
+
+The bench's enclosure, designed in Onshape by the owner: `case_front`, a
+part named `base`, and 2 female XT60 sockets. The file is
+Onshape's export of 2026-11-17, kept as delivered (SHA-256
+`c54005ea49c552281feb1b0fc9785a857f98ee0b199269aa668386315c44d206`). It is
+not written by `gen_models.py`, and `_models.py` lists its stem under
+`casing`. It is an ISO 10303-21 file of schema AP242, where the other
+files here are AP214. The file's length unit is the metre; OpenCASCADE
+reads it in mm.
+
+![Bench enclosure](renders/casing/rcbench_case.png)
+
+| File | Content | Size |
+| --- | --- | --- |
+| `rcbench_case.step` | assembly `rcbench_case` of 4 solids in 2 levels, 989610 bytes; each solid is valid by OpenCASCADE's check | 171.3mm x 109.7mm x 36.8mm |
+
+The 4 solids, with their boxes in the assembly's frame, mm:
+
+| Product | Solids | Faces | Volume | x | y | z |
+| --- | ---: | ---: | ---: | --- | --- | --- |
+| `case_front` | 1 | 402 | 122.08cm3 | -3.640 to 167.640 | -8.085 to 101.085 | -8.780 to 28.020 |
+| `base` | 1 | 77 | 3.26cm3 | 9.160 to 42.360 | 86.085 to 101.585 | 6.470 to 22.270 |
+| `XT60EF_female001` | 1 | 22 | 0.12cm3 | 20.020 to 24.300 | 81.585 to 101.385 | 12.230 to 16.510 |
+| `XT60EF_female002` | 1 | 22 | 0.12cm3 | 27.220 to 31.500 | 81.585 to 101.385 | 12.230 to 16.510 |
+
+`base`, `XT60EF_female001` and `XT60EF_female002` form the subassembly
+`Unnamed <1>`, whose box is 33.2mm x 20.0mm x 15.8mm. `base` is 33.2mm x
+15.5mm x 15.8mm. Each socket is 4.28mm x 19.8mm x 4.28mm; the 2 sockets
+are 7.2mm apart centre to centre in x, with their axes along y, and
+`base`'s face at y = 101.585mm lies 0.2mm beyond the sockets' ends at
+y = 101.385mm.
+
+The frame is the assembly's, as Onshape wrote it. `case_front` sits in it
+moved by (0.06, -1.385, -8.78)mm from its own frame; the 3 other solids
+sit moved and turned from their products' frames, so that
+the sockets' axes lie along y. The file does not say which axis points up.
+
+The picture is OpenCASCADE's render, from above the front left. It draws
+`case_front` in magenta, the render's colour for a solid without a colour
+OpenCASCADE reads; the file holds 4 colours, and the 3 other solids carry
+colours that the shell hides in this view. Whether the parts fit each
+other is not checked: no check holds the 4 solids against each other, and
+no model of a board or a part sits in the enclosure. The file has no
+printing information. The wall thickness and the tolerances are not
+measured here.
 
 ## Panel board
 
