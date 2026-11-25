@@ -211,7 +211,10 @@ bool lg_event(const touch_event_t *e)
         return true;
     }
     if (e->type == TOUCH_EVENT_UP) {
-        if (lg.press == LG_PRESS_CHIP && chip_at(x, y) == lg.press_chip) {
+        /* A release the touch layer cut (TOUCH_FLAG_NO_TAP) ends the press
+         * and taps nothing. */
+        if (lg.press == LG_PRESS_CHIP && touch_event_is_tap_up(e)
+            && chip_at(x, y) == lg.press_chip) {
             chip_tap(lg.press_chip);
         }
         lg.press = LG_PRESS_NONE;

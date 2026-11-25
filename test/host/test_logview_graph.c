@@ -415,6 +415,44 @@ TEST_CASE(ruddr_tabs_switch_between_search_and_steps)
     draw();
 }
 
+/* A release the touch layer cut, a contact that jumped, taps no chip and
+ * ends the press: the next tap focuses. */
+TEST_CASE(a_cut_release_taps_no_chip)
+{
+    open_graph("LIMIT008.CSV");
+    send(TOUCH_EVENT_DOWN, LV_GR_CHIP_CX(0), LV_GR_CHIP_CY);
+    touch_event_t up = {
+        .type = TOUCH_EVENT_UP,
+        .flags = TOUCH_FLAG_NO_TAP,
+        .point = { .id = 1, .x = LV_GR_CHIP_CX(0), .y = LV_GR_CHIP_CY },
+    };
+    screen()->event(&up);
+    CHECK_EQ(log_graph_focus(), -1);
+    CHECK(!log_graph_hidden(1));
+    tap(LV_GR_CHIP_CX(0), LV_GR_CHIP_CY);
+    CHECK_EQ(log_graph_focus(), 1);
+}
+
+/* MORE > COLUMNS, then the import view's PLOT: the columns picked by row
+ * number, every row, no graph. */
+TEST_CASE(plot_from_the_import_view_draws_rows_not_the_graph)
+{
+    open_graph("RUDDR004.CSV");
+    REQUIRE(log_graph_shown());
+    tap(LV_PV_MORE_CX, LV_FOOT_CY);
+    tap(LV_MORE_ROW_CX, LV_MORE_ROW_CY);
+    REQUIRE(log_viewer_view() == LOG_VIEW_IMPORT);
+    tap(LV_IM_BTN_CX(3), LV_FOOT_CY);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_PLOT);
+    CHECK(!log_graph_shown());
+    CHECK_EQ(log_viewer_preset(), LOG_PRESET_NONE);
+    const log_data_t *d = log_viewer_data();
+    REQUIRE(d != NULL);
+    CHECK_EQ(d->count, 13);
+    CHECK_EQ(log_viewer_cursor(), 12);
+    draw();
+}
+
 /* BACK leaves the graph for the list; MORE > COLUMNS reaches the import
  * view, and its PLOT the time plot of the columns picked. */
 TEST_CASE(back_and_more_work_from_the_graph)
@@ -478,6 +516,8 @@ int main(void)
     RUN(the_cursor_moves_over_the_rows_drawn_only);
     RUN(ruddr_tabs_switch_between_search_and_steps);
     RUN(back_and_more_work_from_the_graph);
+    RUN(a_cut_release_taps_no_chip);
+    RUN(plot_from_the_import_view_draws_rows_not_the_graph);
     RUN(a_steady_frame_of_the_graph_does_no_work);
     RUN(the_graph_speaks_german);
     return test_summary("logview_graph");

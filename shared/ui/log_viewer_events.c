@@ -500,6 +500,8 @@ static void import_event(const touch_event_t *e)
             break;
         case 3:
             if (s.have_analysis && s.n_picked > 0) {
+                /* The columns picked, by row number: no preset's graph. */
+                s.preset = LOG_PRESET_NONE;
                 lv_load_data();
                 s.plot_from_import = s.have_data;
             }
