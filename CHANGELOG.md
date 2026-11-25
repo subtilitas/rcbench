@@ -180,6 +180,10 @@ history is in git.
   20 x 27 x 4mm; `acrylic_disc_49_5.step`, a clear acrylic disc 49.5mm
   across and 2mm thick
   ([Mechanical parts](hardware/mechanical/README.md#round-display-board-waveshare-esp32-s3-touch-lcd-185)).
+- Storyboard `origin`, the project's origin in 7 chapters: the reason,
+  ideas, the plan, development, testing, the test bench and the group
+  order of the rbmod carrier, with 7 posts of two RC-Network threads as
+  stills.
 - Storyboards `hitec-rbmod`, programming a Hitec D series servo on the
   rbmod carrier in 8 steps, and `stop`, STOP as an emergency stop in 4
   steps. The renderer draws the Hitec views on the carrier
