@@ -8,6 +8,7 @@
 
 #include "log_marks.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #include "log_fields.h"
@@ -25,6 +26,23 @@ typedef struct {
     float free_a;    /**< the free current of the last such row        */
     float thr_a;     /**< its threshold                                */
 } side_t;
+
+/** @brief What one strip column of a preset shows. */
+typedef struct {
+    log_preset_id_t id;      /**< the preset                     */
+    log_strip_kind_t kind;   /**< the strip                      */
+    const char *column;      /**< its column's name              */
+} strip_rule_t;
+
+/** @brief The strips of each time plot, in the order they stand. */
+static const strip_rule_t k_strip_rules[] = {
+    { LOG_PRESET_ATEST, LOG_STRIP_PHASE, "phase" },
+    { LOG_PRESET_ATEST, LOG_STRIP_CC, "mode" },
+    { LOG_PRESET_SERVO, LOG_STRIP_MODEL, "source" },
+    { LOG_PRESET_MOTOR, LOG_STRIP_MODEL, "source" },
+    { LOG_PRESET_SUPPL, LOG_STRIP_CC, "mode" },
+    { LOG_PRESET_SUPPL, LOG_STRIP_MODEL, "source" },
+};
 
 /** @brief A RUDDR row's kind. */
 typedef enum { RK_OTHER = 0, RK_STEP, RK_VERIFY, RK_SEARCH } row_kind_t;
@@ -59,6 +77,14 @@ typedef struct {
     float ends[2];                /**< SEARCH: the first two side values */
     int   n_ends;                 /**< how many                          */
     int   verify;                 /**< STEPS: the verifies' trace, -1    */
+    /* A time plot: the step, the spans being read, the strips' columns. */
+    int   c_step;                 /**< ATEST: `step`                     */
+    int   c_clip;                 /**< `clipped`                         */
+    bool  have_step;              /**< a step was read                   */
+    float step;                   /**< the last step read                */
+    int   span[2];                /**< OVER's and CLIP's open mark, -1   */
+    bool  time;                   /**< the preset is a time plot         */
+    bool  strip_set[LOG_STRIPS];  /**< a row set the strip               */
 } walk_t;
 
 bool log_marks_add(log_markset_t *mk, const log_mark_t *m)
@@ -82,7 +108,7 @@ bool log_marks_add(log_markset_t *mk, const log_mark_t *m)
  */
 static void add_line(log_markset_t *mk, log_mark_kind_t kind, float x)
 {
-    const log_mark_t m = { kind, false, -1, x, x, x };
+    const log_mark_t m = { kind, false, -1, x, x, x, -1, -1 };
     (void)log_marks_add(mk, &m);
 }
 
@@ -98,7 +124,7 @@ static void add_line(log_markset_t *mk, log_mark_kind_t kind, float x)
 static void add_level(log_markset_t *mk, log_mark_kind_t kind, int column,
                       float v, float x0, float x1)
 {
-    const log_mark_t m = { kind, true, column, v, x0, x1 };
+    const log_mark_t m = { kind, true, column, v, x0, x1, -1, -1 };
     (void)log_marks_add(mk, &m);
 }
 
@@ -324,21 +350,186 @@ static int steps_row(walk_t *w, row_kind_t rk, const char *const *cells,
 }
 
 /**
+ * @brief Open or widen the span of kind @p kind over row @p row: a row next
+ *        to the open span's last widens it, any other opens a new one.
+ * @param w     The walk.
+ * @param slot  0 OVER, 1 CLIP.
+ * @param kind  LOG_MARK_OVER or LOG_MARK_CLIP.
+ * @param row   The row.
+ */
+static void span_row(walk_t *w, int slot, log_mark_kind_t kind, int row)
+{
+    log_markset_t *mk = w->mk;
+    const int open = w->span[slot];
+    if (open >= 0 && mk->mark[open].row_end == row - 1) {
+        mk->mark[open].row_end = row;
+        return;
+    }
+    const log_mark_t m = { kind, false, -1, 0.0f, 0.0f, 0.0f, row, row };
+    w->span[slot] = log_marks_add(mk, &m) ? mk->n_marks - 1 : -1;
+}
+
+/**
+ * @brief A strip's code for a cell.
+ * @param st    The strip; PHASE learns a name it has not met.
+ * @param cell  The cell.
+ * @return the code: 0 for no value, a PHASE name's number, 1 for a CC or a
+ *         modelled row.
+ */
+static unsigned strip_code(log_strip_t *st, const char *cell)
+{
+    if (st->kind == LOG_STRIP_CC) {
+        return strcmp(cell, "CC") == 0 ? 1u : LOG_STRIP_NONE;
+    }
+    if (st->kind == LOG_STRIP_MODEL) {
+        return strcmp(cell, "model") == 0 ? 1u : LOG_STRIP_NONE;
+    }
+    if (cell[0] == '\0') {
+        return LOG_STRIP_NONE;
+    }
+    for (int k = 0; k < st->n_values; ++k) {
+        if (strncmp(st->value[k], cell, LOG_STRIP_NAME - 1) == 0) {
+            return (unsigned)k + 1u;
+        }
+    }
+    if (st->n_values >= LOG_STRIP_VALUES) {
+        return LOG_STRIP_OTHER;
+    }
+    snprintf(st->value[st->n_values], LOG_STRIP_NAME, "%s", cell);
+    return (unsigned)++st->n_values;
+}
+
+/**
+ * @brief A row of a time plot: its step line, its OVER and CLIP spans and
+ *        its strips' codes.
+ * @param w      The walk.
+ * @param row    The row.
+ * @param cells  Its cells.
+ * @param n      How many.
+ * @return true: the walk goes on; a row past the caller's cells sets cut
+ *         and has no strip codes.
+ */
+static bool time_row(walk_t *w, int row, const char *const *cells, int n)
+{
+    log_markset_t *mk = w->mk;
+    float v = 0.0f;
+    if (num(w, cell(cells, n, w->c_step), &v)
+        && (!w->have_step || v != w->step)) {
+        w->have_step = true;
+        w->step = v;
+        const log_mark_t m = { LOG_MARK_STEP, false, -1, v, v, v, row, row };
+        (void)log_marks_add(mk, &m);
+    }
+    bool over = false;
+    for (int c = 0; c < n && !over; ++c) {
+        over = cells[c][0] == '>';
+    }
+    if (over) {
+        span_row(w, 0, LOG_MARK_OVER, row);
+    }
+    if (num(w, cell(cells, n, w->c_clip), &v) && v > 0.0f) {
+        span_row(w, 1, LOG_MARK_CLIP, row);
+    }
+    if (mk->n_strips == 0) {
+        return true;
+    }
+    if (row >= mk->cells_cap) {
+        mk->cut = true;
+        return true;
+    }
+    unsigned byte = 0u;
+    for (int k = 0; k < mk->n_strips; ++k) {
+        const unsigned code = strip_code(&mk->strip[k],
+                                         cell(cells, n, mk->strip[k].column));
+        w->strip_set[k] = w->strip_set[k] || code != LOG_STRIP_NONE;
+        byte |= code << (4 * k);
+    }
+    mk->cells[row] = (uint8_t)byte;
+    return true;
+}
+
+/**
+ * @brief A time plot's strips, before the walk: one for each rule of the
+ *        preset whose column the file holds, where the caller gave cells.
+ * @param w  The walk.
+ */
+static void strips_begin(walk_t *w)
+{
+    log_markset_t *mk = w->mk;
+    if (mk->cells == NULL || mk->cells_cap <= 0) {
+        return;
+    }
+    for (size_t r = 0; r < sizeof(k_strip_rules) / sizeof(k_strip_rules[0])
+                       && mk->n_strips < LOG_STRIPS; ++r) {
+        const int c = (k_strip_rules[r].id == w->id)
+                          ? log_fields_find(w->an, k_strip_rules[r].column,
+                                            false)
+                          : -1;
+        if (c >= 0) {
+            log_strip_t *st = &mk->strip[mk->n_strips++];
+            st->kind = k_strip_rules[r].kind;
+            st->column = c;
+        }
+    }
+}
+
+/**
+ * @brief A time plot's strips, after the walk: a strip no row set is
+ *        dropped, and the codes of the one after it move down.
+ * @param w  The walk.
+ */
+static void strips_end(walk_t *w)
+{
+    log_markset_t *mk = w->mk;
+    for (int k = mk->n_strips - 1; k >= 0; --k) {
+        if (w->strip_set[k]) {
+            continue;
+        }
+        for (int r = 0; r < mk->rows && r < mk->cells_cap; ++r) {
+            const unsigned b = mk->cells[r];
+            mk->cells[r] = (uint8_t)((k == 0) ? (b >> 4) : (b & 0x0Fu));
+        }
+        if (k == 0 && mk->n_strips > 1) {
+            mk->strip[0] = mk->strip[1];
+            w->strip_set[0] = w->strip_set[1];
+        }
+        --mk->n_strips;
+    }
+}
+
+unsigned log_marks_strip_code(const log_markset_t *mk, int k, int row)
+{
+    if (mk == NULL || mk->cells == NULL || k < 0 || k >= mk->n_strips
+        || row < 0 || row >= mk->rows || row >= mk->cells_cap) {
+        return LOG_STRIP_NONE;
+    }
+    return (mk->cells[row] >> (4 * k)) & 0x0Fu;
+}
+
+/**
  * @brief Classify one row (log_row_fn).
  * @param ctx    The walk.
  * @param row    The row's index.
  * @param cells  Its cells.
  * @param n      How many.
- * @return false once LOG_MARKS_ROWS rows are read.
+ * @return false once an XY file's LOG_MARKS_ROWS rows are read; a time
+ *         plot's rows are all read.
  */
 static bool take_row(void *ctx, int row, const char *const *cells, int n)
 {
     walk_t *w = (walk_t *)ctx;
-    if (row >= LOG_MARKS_ROWS) {
+    if (row >= LOG_MARKS_ROWS && !w->time) {
         w->mk->cut = true;
         return false;
     }
     w->mk->rows = row + 1;
+    if (w->time) {
+        w->mk->n_traces = 1;
+        if (row < LOG_MARKS_ROWS) {
+            w->mk->row[row] = 0u;
+        }
+        return time_row(w, row, cells, n);
+    }
     int t = (int)LOG_TRACE_NONE;
     float x = 0.0f;
     const bool placed = num(w, cell(cells, n, w->c_x), &x);
@@ -463,7 +654,11 @@ log_err_t log_marks_read(log_source_t *src, const log_analysis_t *an,
     if (src == NULL || an == NULL || out == NULL) {
         return LOG_ERR_ARG;
     }
+    uint8_t *const cells = out->cells;
+    const int cap = out->cells_cap;
     memset(out, 0, sizeof(*out));
+    out->cells = cells;
+    out->cells_cap = (cells != NULL) ? cap : 0;
     walk_t w;
     memset(&w, 0, sizeof(w));
     w.mk = out;
@@ -483,11 +678,22 @@ log_err_t log_marks_read(log_source_t *src, const log_analysis_t *an,
     w.c_kind = log_fields_find(an, "kind", false);
     w.c_write = log_fields_find(an, "write", false);
     w.c_within = log_fields_find(an, "within", false);
+    w.c_step = (id == LOG_PRESET_ATEST) ? log_fields_find(an, "step", false)
+                                        : -1;
+    w.c_clip = log_fields_find(an, "clipped", false);
+    w.span[0] = -1;
+    w.span[1] = -1;
+    w.time = p != NULL && p->plot == LOG_PLOT_TIME;
+    if (w.time) {
+        strips_begin(&w);
+    }
     const log_err_t err = log_csv_each_row(src, an, take_row, &w);
     if (err != LOG_OK) {
         return err;
     }
-    if (id == LOG_PRESET_LIMIT) {
+    if (w.time) {
+        strips_end(&w);
+    } else if (id == LOG_PRESET_LIMIT) {
         limit_marks(&w);
     } else if (id == LOG_PRESET_RUDDR_SEARCH || id == LOG_PRESET_RUDDR_STEPS) {
         ruddr_marks(&w);

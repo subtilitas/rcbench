@@ -8,6 +8,22 @@ history is in git.
 
 ### Added
 
+- LOGS draws an AUTOMATIC TEST, a SUPPLY, a MOTOR and a SERVO run over
+  its time: each row at its time in the window two fingers set, not at its
+  row number. A step in time longer than the larger of 3 median row
+  intervals and 0.5s breaks the lines and is hatched, with `ROWS MISSING`
+  (`ZEILEN FEHLEN`) where it fits; a step of exactly that is no gap. Up to
+  two strips of 6px under the lines: PHASE (each `phase` a colour, the
+  phase at the cursor in its label), CC (`mode` CC) and MODEL (MODELL,
+  `source` model). An AUTOMATIC TEST's steps are lines with their number;
+  rows with a `>` cell (`>65535` rpm) and with `clipped` above 0 are bars
+  at the plot's top, at most 256 lines and bars a file. The summary names
+  the kind (`SERVO RUN`, `MOTOR RUN`, `SUPPLY RUN`, `AUTOMATIC TEST`;
+  German `SERVO-LAUF`, `MOTOR-LAUF`, `NETZTEIL-LAUF`,
+  `AUTOMATISCHER TEST`). A time run without a numeric `current` or
+  `voltage` plots the first column whose name ends in it, such as an
+  INA3221 channel's `ch1 current` (`shared/ui/log_graph_time.c`,
+  `shared/logfile/log_marks.c`; [Screens](docs/Screens.md#logs)).
 - GRAPH (German `GRAFIK`) on the result cards opens the last run since
   power-on in LOGS' graph: LIMIT RUN beside the report's line
   (`LIMITnnn.CSV`), RUDDER AUTO right of TOLERANCE (`RUDDRnnn.CSV`), TEST

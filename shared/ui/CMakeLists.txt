@@ -131,6 +131,7 @@ set(SRCS
     log_viewer_events.c
     log_graph.c
     log_graph_xy.c
+    log_graph_time.c
     log_graph_draw.c
     graph_key.c
     logs_strip.c

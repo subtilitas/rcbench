@@ -530,6 +530,11 @@ static void set_cursor_from_x(int x)
     if (!s.have_data || s.data.count <= 1) {
         return;
     }
+    if (lg_time_on()) {
+        /* A time file's row nearest the finger's time. */
+        s.cursor = lg_time_row_at(x);
+        return;
+    }
     int rel = x - PV_X;
     if (rel < 0) {
         rel = 0;

@@ -1,12 +1,14 @@
 /**
  * @file log_graph_draw.c
- * @brief LOGS' graph of an XY file, drawn: the series' chips with the value
- *        at the cursor, the markers' legend, RUDDR's tabs, the plot with its
+ * @brief LOGS' graph drawn: the series' chips with the value at the
+ *        cursor, the markers' legend, RUDDR's tabs, the plot with its
  *        levels, lines, traces and cursor, the focused series' scale and
- *        the x labels.  See log_graph_int.h.
+ *        the x labels; on a time file the gaps' hatch, the step lines, the
+ *        spans and the strips.  See log_graph_int.h.
  *
- * The plot's background, grid and levels are drawn in bands of PV_BAND
- * rows, as the time plot's; the lines, traces, tags and cursor over them.
+ * The plot's background, grid, levels, hatch and a time file's traces are
+ * drawn in bands of PV_BAND rows, as the plain time plot's; the lines, an
+ * XY file's traces, tags and cursor over them.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -36,6 +38,16 @@ static const mark_look_t k_look[LOG_MARK_KINDS] = {
     { TX_LOG_MK_LAST, TX_LOG_MARK_LAST, UI_C_TEXT_FAINT },
     { TX_LOG_MK_FREE, TX_LOG_MARK_FREE, UI_C_TEXT_DIM },
     { TX_LOG_MK_THRESHOLD, TX_LOG_MARK_THRESHOLD, UI_C_WARN },
+    /* A time file's: STEP's tag is its number, OVER's and CLIP's a word. */
+    { TX_LOG_MK_OVER, TX_LOG_MK_OVER, UI_C_TEXT_DIM },
+    { TX_LOG_MK_OVER, TX_LOG_MK_OVER, UI_C_WARN },
+    { TX_LOG_MK_CLIP, TX_LOG_MK_CLIP, UI_C_DANGER },
+};
+
+/** @brief A PHASE strip's colour for its codes 1 to LOG_STRIP_VALUES. */
+static const ui_color_id_t k_phase_col[LOG_STRIP_VALUES] = {
+    UI_C_ACCENT, UI_C_OK, UI_C_LILAC, UI_C_TEAL,
+    UI_C_WARN, UI_C_POWER, UI_C_RPM, UI_C_TEXT_DIM,
 };
 
 /** @brief The kinds each preset's legend names, ended by LOG_MARK_KINDS. */
@@ -105,8 +117,8 @@ static void draw_chips(gfx_canvas_t *c)
 {
     const int ci = (s.cursor >= 0 && s.cursor < s.data.count) ? s.cursor : 0;
     char line[48];
-    for (int k = 1; k < s.data.n_fields; ++k) {
-        const gfx_rect_t chip = LG_SLOT(k - 1);
+    for (int k = lg_k0(); k < s.data.n_fields; ++k) {
+        const gfx_rect_t chip = LG_SLOT(k - lg_k0());
         const gfx_color_t col = series_col(k);
         gfx_fill_chamfer_rect(c, chip.x, chip.y, chip.w, chip.h,
                               UI_CHAMFER_SM, UI_PANEL);
@@ -423,6 +435,15 @@ static void draw_cursor(gfx_canvas_t *c)
 }
 
 /**
+ * @brief The top of the tags' first row: under a time file's span bars.
+ * @return the pixel row.
+ */
+static int tags_top(void)
+{
+    return PV_Y + 2 + (lg.time ? LG_BAR_H : 0);
+}
+
+/**
  * @brief A figure at the plot's left edge on a box of the plot's
  *        background, so a trace under it does not cut it.
  * @param c    The canvas.
@@ -443,14 +464,14 @@ static void edge_label(gfx_canvas_t *c, int y, const char *txt,
 static void draw_focus_scale(gfx_canvas_t *c)
 {
     const int k = lg.focus;
-    if (k < 1 || k >= s.data.n_fields || lg.hidden[k]) {
+    if (k < lg_k0() || k >= s.data.n_fields || lg.hidden[k]) {
         return;
     }
     char txt[32];
     value_text(txt, sizeof(txt), k, lg.hi[k]);
-    edge_label(c, PV_Y + 2 * (LG_TAG_H + 2) + 4, txt, series_col(k));
+    edge_label(c, tags_top() + 2 * (LG_TAG_H + 2) + 2, txt, series_col(k));
     value_text(txt, sizeof(txt), k, lg.lo[k]);
-    edge_label(c, PV_Y + PV_H - LG_TICK_H - 20, txt, series_col(k));
+    edge_label(c, PV_Y + lg.plot_h - LG_TICK_H - 20, txt, series_col(k));
 }
 
 /** @brief The x labels under the plot, in the x column's unit, in the
@@ -475,8 +496,354 @@ static void draw_x_labels(gfx_canvas_t *c)
     }
 }
 
+/* --- a time file -------------------------------------------------------- */
+
+/**
+ * @brief The hatch of the gaps across a band of the traces: one pixel in
+ *        LG_HATCH along each falling diagonal.
+ * @param band     The band's canvas.
+ * @param band_y0  Its first row.
+ * @param rows     Its rows.
+ */
+static void hatch_band(gfx_canvas_t *band, int band_y0, int rows)
+{
+    const gfx_color_t col = UI_TEXT_FAINT;
+    for (int r = 0; r < rows; ++r) {
+        const int y = band_y0 + r;
+        if (y >= PV_Y + lg.plot_h) {
+            break;
+        }
+        for (int x = (LG_HATCH - (y % LG_HATCH)) % LG_HATCH; x < PV_W;
+             x += LG_HATCH) {
+            if ((lg.col[x] & LG_COL_GAP) != 0u) {
+                gfx_pixel(band, x, r, col);
+            }
+        }
+    }
+}
+
+/**
+ * @brief Series @p k's spans across a band: a column a line, two on the
+ *        focused series.
+ * @param band     The band's canvas.
+ * @param k        The series.
+ * @param band_y0  Its first row.
+ * @param rows     Its rows.
+ */
+static void spans_band(gfx_canvas_t *band, int k, int band_y0, int rows)
+{
+    const gfx_color_t col = series_col(k);
+    const int thick = (lg.focus == k) ? 2 : 1;
+    for (int x = 0; x < PV_W; ++x) {
+        const int y0 = lv_plot.span[k][x][0];
+        const int y1 = lv_plot.span[k][x][1];
+        if (y0 == PV_EMPTY || y1 < band_y0 || y0 >= band_y0 + rows) {
+            continue;
+        }
+        const int a = (y0 < band_y0) ? band_y0 : y0;
+        const int b = (y1 >= band_y0 + rows) ? band_y0 + rows - 1 : y1;
+        for (int t = 0; t < thick && x + t < PV_W; ++t) {
+            gfx_vline(band, x + t, a - band_y0, b - a + 1, col);
+        }
+    }
+}
+
+/**
+ * @brief The left edges and widths of the tags placed in the two rows, so
+ *        a tag that finds no room in either is left out.
+ */
+typedef struct {
+    int16_t x[2][LOG_MARKS_MAX];  /**< per row, each tag's left    */
+    int16_t w[2][LOG_MARKS_MAX];  /**< per row, each tag's width   */
+    int     n[2];                 /**< per row, how many           */
+} tag_rows_t;
+
+/**
+ * @brief The row a tag from @p tx, @p tw wide, takes: the first whose tags
+ *        leave it 2px a side.
+ * @param tr  The tags placed; the tag is counted in its row.
+ * @param tx  Its left.
+ * @param tw  Its width.
+ * @return 0 or 1; -1 when neither row has room.
+ */
+static int time_tag_row(tag_rows_t *tr, int tx, int tw)
+{
+    for (int r = 0; r < 2; ++r) {
+        bool room = true;
+        for (int i = 0; i < tr->n[r] && room; ++i) {
+            room = tx + tw + 2 <= tr->x[r][i]
+                   || tr->x[r][i] + tr->w[r][i] + 2 <= tx;
+        }
+        if (room) {
+            tr->x[r][tr->n[r]] = (int16_t)tx;
+            tr->w[r][tr->n[r]] = (int16_t)tw;
+            ++tr->n[r];
+            return r;
+        }
+    }
+    return -1;
+}
+
+/**
+ * @brief A time mark's tag text: STEP's number, OVER's and CLIP's word.
+ * @param m    The mark.
+ * @param out  Takes the text.
+ * @param n    Bytes at @p out.
+ */
+static void time_tag_text(const log_mark_t *m, char *out, size_t n)
+{
+    if (m->kind == LOG_MARK_STEP) {
+        ui_fmt(out, n, m->at, 0);
+    } else {
+        snprintf(out, n, "%s", ui_tr(k_look[m->kind].letter));
+    }
+}
+
+/**
+ * @brief A time file's marks: STEP a line down the traces, OVER and CLIP a
+ *        bar at the plot's top over their rows; or, drawn over the traces
+ *        and the cursor, their tags in two rows under the bars.
+ * @param c     The canvas.
+ * @param tags  Draw the tags, else the lines and bars.
+ */
+static void draw_time_marks(gfx_canvas_t *c, bool tags)
+{
+    static tag_rows_t tr;
+    tr.n[0] = 0;
+    tr.n[1] = 0;
+    char txt[16];
+    for (int m = 0; m < lg.mk.n_marks; ++m) {
+        const log_mark_t *mk = &lg.mk.mark[m];
+        const int last = s.win0 + s.win_n - 1;
+        if (mk->row < 0 || mk->row_end < s.win0 || mk->row > last) {
+            continue;
+        }
+        const int a = PV_X + lg_time_col(mk->row < s.win0 ? s.win0 : mk->row);
+        const int b = PV_X + lg_time_col(mk->row_end > last ? last
+                                                            : mk->row_end);
+        const gfx_color_t col = ui_theme_color(k_look[mk->kind].color);
+        if (!tags) {
+            if (mk->kind == LOG_MARK_STEP) {
+                gfx_vline(c, a, PV_Y, lg.plot_h, col);
+            } else {
+                const int w = (b - a + 1 < 2) ? 2 : b - a + 1;
+                gfx_fill_rect(c, (a + w > PV_X + PV_W) ? PV_X + PV_W - w : a,
+                              PV_Y, w, LG_BAR_H, col);
+            }
+            continue;
+        }
+        time_tag_text(mk, txt, sizeof(txt));
+        const int tw = gfx_text_width(LV_FONT_FINE, txt, 1) + 6;
+        int tx = (mk->kind == LOG_MARK_STEP) ? a - tw / 2 : a;
+        tx = (tx < PV_X) ? PV_X : (tx > PV_X + PV_W - tw) ? PV_X + PV_W - tw
+                                                           : tx;
+        const int r = time_tag_row(&tr, tx, tw);
+        if (r < 0) {
+            continue;
+        }
+        const int ty = tags_top() + r * (LG_TAG_H + 2);
+        gfx_fill_rect(c, tx, ty, tw, LG_TAG_H, col);
+        gfx_text_in(c, gfx_rect_make(tx, ty + 1, tw, LG_TAG_H - 2), txt,
+                    LV_FONT_FINE, UI_BG, 1, GFX_ALIGN_CENTER);
+    }
+}
+
+/**
+ * @brief Strip @p k's colour for code @p code.
+ * @param k     The strip.
+ * @param code  The code, not LOG_STRIP_NONE.
+ * @return the colour.
+ */
+static gfx_color_t strip_color(int k, unsigned code)
+{
+    switch (lg.mk.strip[k].kind) {
+    case LOG_STRIP_CC:
+        return UI_WARN;
+    case LOG_STRIP_MODEL:
+        return ui_theme_color(UI_C_LILAC);
+    case LOG_STRIP_PHASE:
+    default:
+        return (code >= 1u && code <= LOG_STRIP_VALUES)
+                   ? ui_theme_color(k_phase_col[code - 1u]) : UI_TEXT_FAINT;
+    }
+}
+
+/**
+ * @brief Strip @p k's label: its meaning, and a PHASE strip's name at the
+ *        cursor.
+ * @param k    The strip.
+ * @param out  Takes the label.
+ * @param n    Bytes at @p out.
+ */
+static void strip_label(int k, char *out, size_t n)
+{
+    const log_strip_t *st = &lg.mk.strip[k];
+    if (st->kind == LOG_STRIP_CC) {
+        snprintf(out, n, "%s", TR(LOG_STRIP_CC));
+        return;
+    }
+    if (st->kind == LOG_STRIP_MODEL) {
+        snprintf(out, n, "%s", TR(LOG_STRIP_MODEL));
+        return;
+    }
+    const unsigned code = log_marks_strip_code(&lg.mk, k, s.cursor);
+    snprintf(out, n, "%s %s", TR(LOG_STRIP_PHASE),
+             (code >= 1u && code <= (unsigned)st->n_values)
+                 ? st->value[code - 1u] : "");
+}
+
+/** @brief The strips under the traces: each a run of equal codes a fill,
+ *         its label at its left end on the plot's background. */
+static void draw_strips(gfx_canvas_t *c)
+{
+    char label[32];
+    for (int k = 0; k < lg.mk.n_strips; ++k) {
+        const int top = PV_Y + lg.plot_h + k * LG_STRIP_ROW;
+        const int y = top + (LG_STRIP_ROW - LG_STRIP_H) / 2;
+        int x0 = 0;
+        for (int x = 1; x <= PV_W; ++x) {
+            const unsigned code = lg.strip_col[k][x0];
+            if (x < PV_W && lg.strip_col[k][x] == code) {
+                continue;
+            }
+            if (code != LOG_STRIP_NONE) {
+                gfx_fill_rect(c, PV_X + x0, y, x - x0, LG_STRIP_H,
+                              strip_color(k, code));
+            }
+            x0 = x;
+        }
+        strip_label(k, label, sizeof(label));
+        const int w = gfx_text_width(LV_FONT_FINE, label, 1);
+        gfx_fill_rect(c, PV_X, top + 1, w + 6, 16, UI_PANEL_SUNK);
+        gfx_text(c, PV_X + 3, top + 1, label, LV_FONT_FINE, UI_TEXT_DIM, 1);
+    }
+}
+
+/** @brief ROWS MISSING in the widest gap of the window, where it fits. */
+static void draw_gap_words(gfx_canvas_t *c)
+{
+    int best = -1;
+    int best_w = 0;
+    for (int x = 0; x < PV_W;) {
+        if ((lg.col[x] & LG_COL_GAP) == 0u) {
+            ++x;
+            continue;
+        }
+        const int x0 = x;
+        while (x < PV_W && (lg.col[x] & LG_COL_GAP) != 0u) {
+            ++x;
+        }
+        if (x - x0 > best_w) {
+            best = x0;
+            best_w = x - x0;
+        }
+    }
+    const char *txt = TR(LOG_ROWS_MISSING);
+    const int w = gfx_text_width(LV_FONT_FINE, txt, 1);
+    if (best < 0 || best_w < w + 8) {
+        return;
+    }
+    const int tx = PV_X + best + (best_w - w) / 2;
+    const int ty = PV_Y + lg.plot_h / 2 - 8;
+    gfx_fill_rect(c, tx - 3, ty - 1, w + 6, 18, UI_PANEL_SUNK);
+    gfx_text(c, tx, ty, txt, LV_FONT_FINE, UI_TEXT_DIM, 1);
+}
+
+/** @brief The cursor: a line at its row's column down the traces and a
+ *         point on each series shown. */
+static void draw_time_cursor(gfx_canvas_t *c)
+{
+    const int col = lg_time_col(s.cursor);
+    if (col < 0) {
+        return;
+    }
+    gfx_vline(c, PV_X + col, PV_Y, lg.plot_h, UI_TEXT_DIM);
+    for (int k = 0; k < s.data.n_fields; ++k) {
+        if (lg.hidden[k] || lv_plot.span[k][col][0] == PV_EMPTY) {
+            continue;
+        }
+        const int y = (lv_plot.span[k][col][0] + lv_plot.span[k][col][1]) / 2;
+        gfx_fill_circle(c, PV_X + col, y, 3, series_col(k));
+    }
+}
+
+/** @brief The time labels under the plot in seconds, with no decimal for
+ *         a step between two labels of 10s and more, 1 from 1s, 2 from
+ *         0.1s, else 3; the row numbers of a file without a time column;
+ *         the bar of a zoomed window. */
+static void draw_time_labels(gfx_canvas_t *c)
+{
+    if (s.win_n > 0 && s.win_n < s.data.count) {
+        gfx_fill_rect(c, PV_X, PV_POS_Y, PV_W, PV_POS_H, UI_PANEL_SUNK);
+        int bx = PV_X + (int)(((long)s.win0 * PV_W) / s.data.count);
+        int bw = (int)(((long)s.win_n * PV_W) / s.data.count);
+        bw = (bw < 6) ? 6 : bw;
+        bx = (bx + bw > PV_X + PV_W) ? PV_X + PV_W - bw : bx;
+        gfx_fill_rect(c, bx, PV_POS_Y, bw, PV_POS_H, UI_ACCENT);
+    }
+    const float span = lg.t1 - lg.t0;
+    const float step = span / PV_DIV_X;
+    const int d = (step >= 10.0f) ? 0 : (step >= 1.0f) ? 1
+                  : (step >= 0.1f) ? 2 : 3;
+    char num[16];
+    char t[24];
+    for (int i = 0; i <= PV_DIV_X; ++i) {
+        if (lg.has_time) {
+            ui_fmt(num, sizeof(num), lg.t0 + span * (float)i / PV_DIV_X, d);
+            snprintf(t, sizeof(t), "%ss", num);
+        } else {
+            snprintf(t, sizeof(t), "%d",
+                     s.win0 + 1 + (s.win_n - 1) * i / PV_DIV_X);
+        }
+        const int x = PV_X + (PV_W - 1) * i / PV_DIV_X;
+        const int w = gfx_text_width(LV_FONT_FINE, t, 1);
+        int tx = x - w / 2;
+        tx = (tx < PV_X) ? PV_X : (tx + w > PV_X + PV_W) ? PV_X + PV_W - w : tx;
+        gfx_text(c, tx, PV_PANEL.y + PV_PANEL.h + 4, t, LV_FONT_FINE,
+                 UI_TEXT_FAINT, 1);
+    }
+}
+
+/**
+ * @brief A time file's graph: the chips, the plot's bands with the hatch
+ *        and the traces, the marks, the cursor, the strips, the tags, the
+ *        focused scale and the time labels.
+ * @param c  The canvas.
+ */
+static void render_time(gfx_canvas_t *c)
+{
+    draw_chips(c);
+    ui_panel(c, PV_PANEL, NULL, UI_ACCENT);
+    gfx_canvas_t band;
+    for (int by = 0; by < PV_H; by += PV_BAND) {
+        const int rows = (PV_H - by > PV_BAND) ? PV_BAND : PV_H - by;
+        gfx_canvas_init(&band, lv_plot.band, PV_W, rows, PV_W);
+        gfx_clear(&band, UI_PANEL_SUNK);
+        lv_grid_band(&band, PV_Y + by, rows);
+        hatch_band(&band, PV_Y + by, rows);
+        /* The first series last, on top. */
+        for (int k = s.data.n_fields - 1; k >= 0; --k) {
+            if (!lg.hidden[k]) {
+                spans_band(&band, k, PV_Y + by, rows);
+            }
+        }
+        gfx_blit(c, PV_X, PV_Y + by, lv_plot.band, PV_W, rows, PV_W);
+    }
+    draw_time_marks(c, false);
+    draw_gap_words(c);
+    draw_time_cursor(c);
+    draw_strips(c);
+    draw_time_marks(c, true);
+    draw_focus_scale(c);
+    draw_time_labels(c);
+}
+
 void lg_render(gfx_canvas_t *c)
 {
+    if (lg.time) {
+        render_time(c);
+        return;
+    }
     draw_chips(c);
     draw_legend(c);
     if (lg.tabbed) {

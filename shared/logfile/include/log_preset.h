@@ -113,8 +113,11 @@ log_preset_id_t log_preset_match(const log_analysis_t *an, const char *name);
 /**
  * @brief The columns LOGS' plot of rows loads for preset @p id: on an XY
  *        preset its x column first, then its series, each where the file
- *        holds it as a numeric column that is not the time axis.  A column the file lacks is left out, and nothing takes its
- *        place.
+ *        holds it as a numeric column that is not the time axis.  On a time
+ *        preset a series the file lacks is the first numeric column whose
+ *        name ends in a space and the series' name (`ch1 current` for
+ *        `current`); any other column the file lacks is left out, and
+ *        nothing takes its place.
  * @param id   The preset.
  * @param an   The file's analysis.
  * @param out  Takes the column indices.

@@ -1,7 +1,8 @@
 /**
  * @file log_graph.c
- * @brief LOGS' graph of an XY file: the load beside the plot's, the cursor,
- *        the chips' focus and the touches.  See log_graph_int.h.
+ * @brief LOGS' graph of a file the bench wrote: the load beside the plot's,
+ *        the cursor, the chips' focus and the touches.  See
+ *        log_graph_int.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -34,18 +35,62 @@ bool lg_drawn(int i)
            && (lg.mk.row[i] & LOG_ROW_TRACE) != LOG_TRACE_NONE;
 }
 
+int lg_k0(void)
+{
+    return lg.time ? 0 : 1;
+}
+
+/**
+ * @brief Free the strips' cells.
+ */
+static void free_cells(void)
+{
+    log_mem_free(lg.mk.cells);
+    lg.mk.cells = NULL;
+    lg.mk.cells_cap = 0;
+}
+
+/**
+ * @brief Whether the file the plot just built suits its preset's graph: an
+ *        XY file of at most LOG_MARKS_ROWS rows with its x column first, a
+ *        time file with a series.
+ * @param p  The preset.
+ * @return true when it does.
+ */
+static bool suits(const log_preset_t *p)
+{
+    if (p == NULL || s.data.n_fields < 1) {
+        return false;
+    }
+    if (p->plot == LOG_PLOT_TIME) {
+        return true;
+    }
+    return s.data.n_fields >= 2 && s.data.count <= LOG_MARKS_ROWS
+           && s.data.field[0].column == log_fields_find(&s.an, p->x, true);
+}
+
 bool lg_read(log_source_t *src)
 {
     lg.on = false;
+    lg.time = false;
+    free_cells();
     const log_preset_t *p = log_preset_get(s.preset);
-    if (p == NULL || p->plot != LOG_PLOT_XY || s.data.n_fields < 2
-        || s.data.count > LOG_MARKS_ROWS
-        || s.data.field[0].column != log_fields_find(&s.an, p->x, true)) {
+    if (!suits(p)) {
         return false;
+    }
+    lg.time = p->plot == LOG_PLOT_TIME;
+    if (lg.time && s.an.row_count > 0) {
+        /* A byte a row for the strips' codes; without it, no strips. */
+        lg.mk.cells = (uint8_t *)log_mem_alloc((size_t)s.an.row_count);
+        lg.mk.cells_cap = (lg.mk.cells != NULL) ? s.an.row_count : 0;
     }
     if (log_marks_read(src, &s.an, s.preset, &lg.mk) != LOG_OK
         || lg.mk.rows != s.data.count) {
+        free_cells();
         return false;
+    }
+    if (lg.time) {
+        lg_time_setup();
     }
     lg.on = true;
     return true;
@@ -59,6 +104,12 @@ void lg_start(void)
     lg.focus = -1;
     memset(lg.hidden, 0, sizeof(lg.hidden));
     lg.press = LG_PRESS_NONE;
+    lg.tabbed = false;
+    if (lg.time) {
+        /* The cursor on the run's end, as the plain time plot's. */
+        return;
+    }
+    lg.plot_h = PV_H;
     lg_scale();
     /* The cursor on the last row drawn: the run's end. */
     for (int i = s.data.count - 1; i >= 0; --i) {
@@ -79,6 +130,7 @@ void lg_drop(void)
 {
     lg.on = false;
     lg.press = LG_PRESS_NONE;
+    free_cells();
 }
 
 void lg_cancel(void)
@@ -91,7 +143,8 @@ void lg_cancel(void)
 
 bool lg_step(int dir)
 {
-    if (!lg_on()) {
+    if (!lg_on() || lg.time) {
+        /* A time file steps a row at a time, as the plain plot. */
         return false;
     }
     for (int i = s.cursor + dir; i >= 0 && i < s.data.count; i += dir) {
@@ -107,11 +160,11 @@ bool lg_step(int dir)
  * @brief A tap on series @p k's chip: focus it; a second tap hides it; a
  *        tap on a hidden series brings it back focused.  The bench screens'
  *        legend does the same (ui_plot_touch_series()).
- * @param k  The series, 1 to n_fields - 1.
+ * @param k  The series, lg_k0() to n_fields - 1.
  */
 static void chip_tap(int k)
 {
-    if (k < 1 || k >= LOG_MAX_SERIES) {
+    if (k < lg_k0() || k >= LOG_MAX_SERIES) {
         return;
     }
     if (lg.hidden[k]) {
@@ -129,12 +182,12 @@ static void chip_tap(int k)
  * @brief The chip of the series under (@p x, @p y).
  * @param x  Pixel column.
  * @param y  Pixel row.
- * @return the series, 1 to n_fields - 1; -1 for none.
+ * @return the series, lg_k0() to n_fields - 1; -1 for none.
  */
 static int chip_at(int x, int y)
 {
-    for (int k = 1; k < s.data.n_fields; ++k) {
-        if (gfx_rect_contains(LG_SLOT(k - 1), x, y)) {
+    for (int k = lg_k0(); k < s.data.n_fields; ++k) {
+        if (gfx_rect_contains(LG_SLOT(k - lg_k0()), x, y)) {
             return k;
         }
     }
@@ -219,14 +272,16 @@ bool lg_event(const touch_event_t *e)
         return false;
     }
     if (lg.press != LG_PRESS_NONE) {
-        /* A second finger: the graph keeps to the first. */
-        return gfx_rect_contains(PV_PANEL, x, y) || chip_at(x, y) > 0;
+        /* A second finger: the graph keeps to the first.  On a time file
+         * the plot is the plain plot's, which takes the finger. */
+        return (!lg.time && gfx_rect_contains(PV_PANEL, x, y))
+               || chip_at(x, y) >= 0;
     }
     const int k = chip_at(x, y);
-    if (k > 0) {
+    if (k >= 0) {
         lg.press = LG_PRESS_CHIP;
         lg.press_chip = k;
-    } else if (gfx_rect_contains(PV_PANEL, x, y)) {
+    } else if (!lg.time && gfx_rect_contains(PV_PANEL, x, y)) {
         lg.press = LG_PRESS_PLOT;
         const int row = lg_row_at(x, y);
         s.cursor = (row >= 0) ? row : s.cursor;
@@ -244,8 +299,14 @@ bool lg_event(const touch_event_t *e)
  */
 static const char *kind_text(void)
 {
-    return (s.preset == LOG_PRESET_LIMIT) ? TR(LOG_KIND_LIMIT)
-                                          : TR(LOG_KIND_RUDDR);
+    switch (s.preset) {
+    case LOG_PRESET_LIMIT:  return TR(LOG_KIND_LIMIT);
+    case LOG_PRESET_ATEST:  return TR(LOG_KIND_ATEST);
+    case LOG_PRESET_SERVO:  return TR(LOG_KIND_SERVO);
+    case LOG_PRESET_MOTOR:  return TR(LOG_KIND_MOTOR);
+    case LOG_PRESET_SUPPL:  return TR(LOG_KIND_SUPPL);
+    default:                return TR(LOG_KIND_RUDDR);
+    }
 }
 
 bool lg_summary(char *out, size_t n)
@@ -253,14 +314,21 @@ bool lg_summary(char *out, size_t n)
     if (!lg_on()) {
         return false;
     }
-    snprintf(out, n, TR(LOG_GRAPH_SUMMARY), s.name, s.data.count,
-             kind_text());
+    if (lg.time && lg.has_time) {
+        /* The duration and the rate as the plain plot's, then the kind. */
+        snprintf(out, n, TR(LOG_GRAPH_SUMMARY_TIME), s.name, s.data.count,
+                 s.data.duration_s, s.data.rate_hz, kind_text());
+    } else {
+        snprintf(out, n, TR(LOG_GRAPH_SUMMARY), s.name, s.data.count,
+                 kind_text());
+    }
     return true;
 }
 
 bool lg_cursor_line(char *out, size_t n)
 {
-    if (!lg_on()) {
+    if (!lg_on() || lg.time) {
+        /* A time file's line is the plain plot's: its time and row. */
         return false;
     }
     const int ci = (s.cursor >= 0 && s.cursor < s.data.count) ? s.cursor : 0;
@@ -307,7 +375,43 @@ bool log_graph_pressed(void)
 
 int log_graph_row_px(int i)
 {
+    if (lg_time_on()) {
+        const int c = lg_time_col(i);
+        return (c >= 0) ? PV_X + c : -1;
+    }
     return (lg_on() && i >= 0 && i < lg.mk.rows) ? lg.px[i] : -1;
+}
+
+bool log_graph_time(void)
+{
+    return lg_time_on();
+}
+
+bool log_graph_gap_before(int i)
+{
+    return lg_time_on() && lg_time_gap_before(i);
+}
+
+bool log_graph_gap_col(int x)
+{
+    const int c = x - PV_X;
+    return lg_time_on() && c >= 0 && c < PV_W
+           && (lg.col[c] & LG_COL_GAP) != 0u;
+}
+
+int log_graph_strip_y(int k)
+{
+    return (lg_time_on() && k >= 0 && k < lg.mk.n_strips)
+               ? PV_Y + lg.plot_h + k * LG_STRIP_ROW
+                     + (LG_STRIP_ROW - LG_STRIP_H) / 2
+               : -1;
+}
+
+unsigned log_graph_strip_at(int k, int x)
+{
+    const int c = x - PV_X;
+    return (lg_time_on() && k >= 0 && k < lg.mk.n_strips && c >= 0
+            && c < PV_W) ? lg.strip_col[k][c] : LOG_STRIP_NONE;
 }
 
 bool log_graph_cursor_line(char *out, size_t n)

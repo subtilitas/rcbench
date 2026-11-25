@@ -217,10 +217,11 @@ TEST_CASE(a_limit_file_opens_in_the_graph_over_its_pulse)
     const log_markset_t *mk = log_graph_marks();
     REQUIRE(mk != NULL);
     CHECK_EQ(mk->n_traces, 2);
-    /* A MOTOR run stays a time plot. */
+    CHECK(!log_graph_time());
+    /* A MOTOR run's graph is over its time (test_logview_time.c). */
     open_graph("MOTOR042_kv1200.CSV");
-    CHECK(!log_graph_shown());
-    CHECK(log_graph_marks() == NULL);
+    CHECK(log_graph_shown());
+    CHECK(log_graph_time());
 }
 
 /* The x scale runs from the lowest pulse to the highest with no pad: the

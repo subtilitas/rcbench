@@ -3836,6 +3836,9 @@ Importansicht:
 ![Ein LIMIT RUN in der Grafik: current und angle über dem Puls](img/de/logs-limit-graph.png)
 ![Die Suche eines RUDDER AUTO in der Grafik](img/de/logs-ruddr-search.png)
 ![Die Schritte eines RUDDER AUTO in der Grafik](img/de/logs-ruddr-steps.png)
+![Ein AUTOMATIC TEST über seiner Zeit: seine Schritte, seine Phasen und die Zeilen, die beim Halten einer Position fehlen](img/de/logs-atest-graph.png)
+![Ein SUPPLY-Lauf über seiner Zeit: die Streifen CC und MODELL, eine Lücke von 2s](img/de/logs-supply-graph.png)
+![Ein SERVO-Lauf aus INA3221-Fenstern über seiner Zeit](img/de/logs-windows-graph.png)
 ![MEHR auf der Grafik: SPALTEN](img/de/logs-plot-more.png)
 ![Die Importansicht, über MEHR > SPALTEN erreicht](img/de/logs-import.png)
 
@@ -3907,7 +3910,11 @@ nach den Spaltennamen ihrer Kopfzeile, dann nach ihrem Namen
 (`MOTOR042_kv1200.CSV`), ein Name in Kleinbuchstaben und die Dateien ab
 Firmware 0.21.0 werden ebenso erkannt. Eine erkannte Datei öffnet die
 Grafik mit den Spalten ihrer Art, jede, soweit die Datei sie als Zahlen
-enthält; eine fehlende Spalte entfällt, und keine andere rückt nach:
+enthält. Fehlt einer Zeitart (AUTOMATIC TEST, SUPPLY, MOTOR, SERVO) eine,
+nimmt sie die erste Zahlenspalte, deren Name auf ein Leerzeichen und
+diesen Namen endet: ein Lauf mit leeren Zellen in `current` und
+`voltage` zeichnet `ch1 current` und `ch1 voltage` von INA3221-Kanal 1.
+Jede andere fehlende Spalte entfällt, und keine andere rückt nach:
 
 | Art | Kopfzeile enthält | Name | Gezeichnete Spalten |
 | --- | --- | --- | --- |
@@ -3922,7 +3929,8 @@ Eine LIMIT-RUN- und eine RUDDER-AUTO-Datei öffnen in der Grafik: ihre
 Zeilen über dem Puls (bei RUDDER AUTO auf SCHRITTE über dem Schritt), nicht
 über der Zeilennummer. Die Grafik zeigt die ganze Datei mit bis zu 2.048
 Zeilen; eine längere Datei und eine ohne Pulsspalte (RUDDER AUTO der
-Firmware 0.23.17) zeichnet LOGS wie die anderen Arten nach Zeilennummer.
+Firmware 0.23.17) zeichnet LOGS wie eine Datei keiner Art nach
+Zeilennummer.
 Eine Prüfstandsdatei der Firmware 0.21.0 nennt weder `throttle` noch `pulse`:
 `ESCnnn.CSV` öffnet als MOTOR-Lauf, `BENCHnnn.CSV` und `SERVOnnn.CSV` als
 SERVO-Lauf, und dieselbe Kopfzeile unter jedem anderen Namen als
@@ -3964,6 +3972,50 @@ der x-Spalte; die Cursorzeile in der Fußleiste
 - Zwei Finger zoomen die Grafik nicht; MEHR > SPALTEN führt zur
   Importansicht, deren GRAFIK die gewählten Spalten nach Zeilennummer
   zeichnet.
+
+Ein AUTOMATIC TEST, ein SUPPLY-, ein MOTOR- und ein SERVO-Lauf öffnen in
+der Grafik über ihrer Zeit (`shared/ui/log_graph_time.c`). Die Kopfzeile
+nennt nach Dauer und Rate die Art
+(`ATEST012.CSV   870 ZEILEN   151.55s   10Hz   AUTOMATISCHER TEST`); die
+Chips gehören den vier Reihen, mit ihrem Wert am Cursor.
+
+- Eine Zeile steht bei ihrer Zeit im Fenster: die erste Zeile des
+  Fensters auf der ersten Pixelspalte der Grafik, die letzte auf der
+  letzten. Eine Datei, deren Zeitspalte zurückspringt, liest LOGS nach
+  Zeilennummer (der Leser verwirft ihre Zeitachse): ihre Zeilen stehen
+  gleichmäßig, und die Kopfzeile zeigt keine Dauer.
+- Ein Zeitschritt länger als das Größere aus 3 mittleren Zeilenabständen
+  (Median) und 0.5s ist eine Lücke: die Linien brechen dort ab, und die
+  Spalten zwischen den beiden Zeilen sind schraffiert, 1 Pixel von 8
+  entlang jeder Diagonalen. `ZEILEN FEHLEN` steht in der breitesten
+  Lücke, wo es hineinpasst. Ein Schritt von genau der Schwelle ist keine
+  Lücke. Der AUTOMATIC TEST schreibt keine Zeile, solange er eine Position
+  hält; jedes Halten ist darum eine Lücke.
+- Bis zu zwei Streifen von 6px stehen unter den Linien, jeder in einer
+  Zeile von 18px mit seiner Beschriftung in 8 x 16 am linken Ende; die
+  Linien nehmen die Höhe der Grafik weniger 18px je Streifen. PHASE
+  (AUTOMATIC TEST) färbt jeden Namen von `phase` in der Reihenfolge seines
+  Auftretens, und seine Beschriftung nennt die Phase am Cursor
+  (`PHASE MOVE`); CC (AUTOMATIC TEST, SUPPLY) zeigt die Zeilen mit `mode`
+  CC in der Warnfarbe; MODELL (SERVO, MOTOR, SUPPLY) die Zeilen mit
+  `source` `model`. Ein Streifen erscheint nur, wo eine Zeile ihn setzt.
+  In einer Pixelspalte nimmt der Streifen den Code ihrer ersten Zeile,
+  hält ihn über Spalten ohne Zeile und endet an einer Lücke.
+- Ein Schritt des AUTOMATIC TEST beginnt mit einer Linie über die Grafik
+  und seiner Nummer auf einem Schild. Eine Folge von Zeilen mit einer
+  Zelle, die mit `>` beginnt (eine Drehzahl über der Grenze ihres
+  Registers, `>65535`), ist ein Balken von 4px am oberen Rand in der
+  Warnfarbe mit dem Schild `>`; eine Folge von Zeilen mit `clipped` über 0
+  einer in der Gefahrenfarbe mit `BEGRENZT`. Die Schilder stehen in zwei
+  Reihen unter den Balken; ein Schild ohne Platz in beiden entfällt. Eine
+  Datei setzt höchstens 256 Linien und Balken; weitere werden gezählt und
+  nicht gezeichnet.
+- Ein Finger, zwei Finger, `<` und `>` wirken wie auf der Kurve nach
+  Zeilen: der Cursor geht zur Zeile, deren Zeit dem Finger am nächsten
+  steht, zwei Finger zoomen und verschieben das Fenster, `<` und `>` gehen
+  eine Zeile weiter und nehmen das Fenster mit. Ein Tippen auf einen Chip
+  hebt seine Reihe hervor, blendet sie aus und holt sie zurück wie in der
+  Grafik oben.
 
 Der CSV-Leser (Comma-Separated Values) nimmt Dezimalkomma und -punkt,
 Einheitenzeilen und unterschiedlich lange Zeilen an. Die Importansicht

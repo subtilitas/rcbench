@@ -229,6 +229,11 @@ void lv_compute_spans(void)
         s.win0 = 0;
         s.win_n = s.data.count;
     }
+    if (lg_time_on()) {
+        /* A time file's rows at their time (log_graph_time.c). */
+        lg_time_spans();
+        return;
+    }
     const int base = s.win0;
     const int count = s.win_n;
 

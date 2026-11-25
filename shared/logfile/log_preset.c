@@ -8,7 +8,9 @@
 
 #include "log_preset.h"
 
+#include <ctype.h>
 #include <stddef.h>
+#include <string.h>
 
 #include "log_fields.h"
 #include "log_name.h"
@@ -136,17 +138,69 @@ log_preset_id_t log_preset_match(const log_analysis_t *an, const char *name)
 }
 
 /**
+ * @brief Whether column name @p col ends in a space and @p word, its case
+ *        folded: `ch1 current` ends in ` current`.
+ * @param col   The column's name.
+ * @param word  The word.
+ * @return true when it does.
+ */
+static bool ends_in(const char *col, const char *word)
+{
+    const size_t nc = strlen(col);
+    const size_t nw = strlen(word);
+    if (nc <= nw || col[nc - nw - 1] != ' ') {
+        return false;
+    }
+    for (size_t i = 0; i < nw; ++i) {
+        if (tolower((unsigned char)col[nc - nw + i])
+            != tolower((unsigned char)word[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * @brief Whether column @p c is among the first @p n of @p out.
+ * @param out  The columns picked.
+ * @param n    How many.
+ * @param c    The column.
+ * @return true when it is picked.
+ */
+static bool picked(const int *out, int n, int c)
+{
+    for (int k = 0; k < n; ++k) {
+        if (out[k] == c) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * @brief Add the numeric column @p name to @p out where the file holds it.
- *        No preset names a column twice.
+ *        On a time plot a file without it numeric gives the first numeric
+ *        column whose name ends in ` <name>`: a run whose `current` and
+ *        `voltage` cells are empty plots its INA3221 channel's `ch1
+ *        current` and `ch1 voltage`.  No preset names a column twice.
  * @param an    The file's analysis.
  * @param name  The column's name.
+ * @param time  The preset is a time plot.
  * @param out   The columns picked so far.
  * @param n     How many.
  * @return The new count.
  */
-static int pick(const log_analysis_t *an, const char *name, int *out, int n)
+static int pick(const log_analysis_t *an, const char *name, bool time,
+                int *out, int n)
 {
-    const int c = log_fields_find(an, name, true);
+    int c = log_fields_find(an, name, true);
+    for (int k = 0; c < 0 && time && k < an->n_columns
+                    && k < LOG_MAX_COLUMNS; ++k) {
+        if (k != an->time_index && an->columns[k].numeric
+            && !picked(out, n, k) && ends_in(an->columns[k].name, name)) {
+            c = k;
+        }
+    }
     if (c < 0) {
         return n;
     }
@@ -161,13 +215,14 @@ int log_preset_picks(log_preset_id_t id, const log_analysis_t *an, int *out,
     if (p == NULL || an == NULL || out == NULL) {
         return 0;
     }
+    const bool time = p->plot == LOG_PLOT_TIME;
     int n = 0;
-    if (p->plot == LOG_PLOT_XY && n < max) {
-        n = pick(an, p->x, out, n);
+    if (!time && n < max) {
+        n = pick(an, p->x, false, out, n);
     }
     for (int k = 0; k < LOG_MAX_SERIES && p->series[k] != NULL && n < max;
          ++k) {
-        n = pick(an, p->series[k], out, n);
+        n = pick(an, p->series[k], time, out, n);
     }
     return n;
 }
