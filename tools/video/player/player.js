@@ -615,7 +615,9 @@ function drawScreen(sc, lt, a, pulse, ui) {
   // a third: the mark of a touch that acts on the press.
   if (b.action === 'press') fingerMark(tx, ty, q0 - (b.dur - .4), 9);
   if (b.action === 'down') fingerMark(tx, ty, 9, 9);
-  if (b.action === 'release') fingerMark(tx, ty, 9, .9 - q0);
+  if (b.action === 'release') {
+    fingerMark(tx, ty, 9, (b.lift ?? .9) - q0);
+  }
   if (b.action === 'tap') touchMark('tap', tx, ty, q0 - (b.dur - .75), 1);
   if (b.action === 'hold') touchMark('hold', tx, ty, q0 - (b.dur - 2.45), 1);
 }

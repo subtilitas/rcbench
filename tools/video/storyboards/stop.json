@@ -251,35 +251,17 @@
     },
     {
      "view": "stop-refused",
-     "dur": 3.4,
+     "dur": 5.4,
      "n": 3,
      "chip": "Reset",
      "title": "A short touch",
-     "text": "Press <b>STOP</b> again.",
-     "say": "Step 3. The reset is a hold. Press stop again",
+     "text": "Press <b>STOP</b> again and let go after 0.5s.",
+     "say": "Step 3. The reset is a hold. Press stop again and let go after half a second.",
      "target": [
       934,
       29
      ],
      "action": "press",
-     "point": [
-      1012,
-      29
-     ]
-    },
-    {
-     "view": "stop-short-down",
-     "dur": 2.6,
-     "n": 3,
-     "chip": "Reset",
-     "title": "A short touch",
-     "text": "The fill starts to fade from red to yellow.",
-     "say": "and let go after half a second.",
-     "target": [
-      934,
-      29
-     ],
-     "action": "down",
      "point": [
       1012,
       29
@@ -301,7 +283,8 @@
      "point": [
       960,
       582
-     ]
+     ],
+     "lift": 0.1
     },
     {
      "view": "stop-holding",

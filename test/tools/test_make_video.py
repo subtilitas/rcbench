@@ -73,6 +73,11 @@ def test_a_press_a_finger_down_and_a_release_are_actions():
         step.update(action=action, target=[934, 29], point=[1012, 29],
                     dur=2.0)
     assert make_video.check(board) == []
+    steps[2]["lift"] = 0.1
+    assert make_video.check(board) == []
+    steps[2]["lift"] = 1.8
+    assert any("lift" in e for e in make_video.check(board))
+    steps[2]["lift"] = 0.1
     steps[0]["dur"] = 1.0
     assert any("at least 1.4s" in e for e in make_video.check(board))
     steps[0]["dur"] = 2.0

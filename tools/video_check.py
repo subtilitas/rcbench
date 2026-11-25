@@ -795,6 +795,13 @@ def _check_screen(scene: dict, steps: int, where: str, errors: list) -> None:
                     and 0 <= place[1] < PANEL[1]):
                 errors.append(f"{at}: {name} must be [x, y] on the "
                               f"{PANEL[0]}x{PANEL[1]} display")
+        lift = step.get("lift")
+        if lift is not None and not (
+                action == "release" and _number(lift)
+                and 0 <= lift <= step.get("dur", 0) - 0.5):
+            errors.append(f"{at}: lift is the time in s a release step "
+                          "keeps the finger down, 0.5s or more before "
+                          "its end")
         if step.get("style", "ok") not in STYLES:
             errors.append(f"{at}: style must be one of {', '.join(STYLES)}")
 
