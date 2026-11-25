@@ -576,6 +576,7 @@ def main(argv):
     if "--render" in argv:
         render(argv[argv.index("--render") + 1])
     sc = scene()
+    out.parent.mkdir(parents=True, exist_ok=True)
     out.write_bytes(sc.export(file_type="glb"))
     print("wrote %s, %.1fMB, %d nodes" % (out, out.stat().st_size / 1e6,
                                           len(sc.graph.nodes)))
