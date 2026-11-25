@@ -108,7 +108,7 @@ typedef struct {
     /* the outbox */
     char report[16384];
     size_t report_len;
-    char csv[4096];
+    char csv[12288];
     size_t csv_len;
     unsigned opens, ends, lines, rows;
 } rauto_rig_t;

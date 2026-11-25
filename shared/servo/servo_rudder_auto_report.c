@@ -16,9 +16,13 @@
 #include <stdio.h>
 #include <string.h>
 
-/** @brief The CSV's columns: one row a measure. */
+/** @brief The CSV's columns: one row a measure.  The last three name the
+ *         row's kind (STEP, VERIFY, SEARCH), the pulse it was measured at and,
+ *         on a SEARCH row, the mean current in A; the first nine are those of
+ *         firmware 0.23.17 and older, unchanged. */
 #define RAUTO_CSV_HEAD "step;side (us);write;value;measured (deg);" \
-                       "goal (deg);measured (mm);goal (mm);within"
+                       "goal (deg);measured (mm);goal (mm);within;"  \
+                       "kind;pulse (us);current (A)"
 
 /* ------------------------------------------------------------ the outbox */
 
@@ -662,8 +666,9 @@ static bool csv_line(const servo_rauto_t *r, unsigned idx, char *buf,
         if (p->valid) {
             snprintf(deg, sizeof(deg), "%.2f", srow_deg(p));
         }
-        snprintf(buf, n, "%u;%u;S;%u;%s;;;;", idx, (unsigned)p->us,
-                 (unsigned)p->ma, deg);
+        snprintf(buf, n, "%u;%u;S;%u;%s;;;;;SEARCH;%u;%.3f", idx,
+                 (unsigned)p->us, (unsigned)p->ma, deg, (unsigned)p->us,
+                 (double)p->ma / 1000.0);
         return true;
     }
     if (idx > r->step_n) {
@@ -676,10 +681,10 @@ static bool csv_line(const servo_rauto_t *r, unsigned idx, char *buf,
             snprintf(gm, sizeof(gm), "%.2f",
                      (double)mm_of(verify_goal(r, k), r->cfg.len_mm));
         }
-        snprintf(buf, n, "%u;%u;V;;%.2f;%.2f;%s;%s;%u", idx,
+        snprintf(buf, n, "%u;%u;V;;%.2f;%.2f;%s;%s;%u;VERIFY;%u;", idx,
                  verify_us(r, k), verify_deg(r, k),
                  (double)verify_goal(r, k), mm, gm,
-                 r->vwithin[k] ? 1u : 0u);
+                 r->vwithin[k] ? 1u : 0u, verify_us(r, k));
         return true;
     }
     const servo_rauto_step_t *p = &r->steps[idx - 1u];
@@ -694,10 +699,10 @@ static bool csv_line(const servo_rauto_t *r, unsigned idx, char *buf,
         snprintf(gm, sizeof(gm), "%.2f",
                  (double)mm_of(p->goal_deg, r->cfg.len_mm));
     }
-    snprintf(buf, n, "%u;%u;%u;%s;%.2f;%.2f;%s;%s;%u", idx,
-             (unsigned)servo_rauto_side_us(r, p->side), (unsigned)p->n, v,
-             (double)p->measured_deg, (double)p->goal_deg, mm, gm,
-             p->within ? 1u : 0u);
+    const unsigned side_us = servo_rauto_side_us(r, p->side);
+    snprintf(buf, n, "%u;%u;%u;%s;%.2f;%.2f;%s;%s;%u;STEP;%u;", idx, side_us,
+             (unsigned)p->n, v, (double)p->measured_deg, (double)p->goal_deg,
+             mm, gm, p->within ? 1u : 0u, side_us);
     return true;
 }
 

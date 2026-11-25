@@ -607,8 +607,9 @@ static void log_drop(void)
 /*
  * The tests' files, in USER LOG FOLDER: the AUTOMATIC TEST's CSV as
  * ATESTnnn.CSV under the folder's next number and its report as
- * ATESTnnn.TXT under the same number; a limit run's report alone as
- * LIMITnnn.TXT under the next number.  The render loop hands the lines
+ * ATESTnnn.TXT under the same number; a limit run's LIMITnnn.CSV and its
+ * report LIMITnnn.TXT the same way, or the report alone when the run judged
+ * no position.  The render loop hands the lines
  * over through s_test_q (servo_screen_test_peek()) and this task writes
  * them; with USER LOGS off the render loop hands over nothing.  The armed
  * bench's own log writes no row while a test runs (log_cadence_bench_run()),
@@ -647,8 +648,8 @@ static bool     s_test_file_bad;
 
 /**
  * @brief Run @p number's file in the test folder as a path on the card:
- *        ATESTnnn.CSV, ATESTnnn.TXT, LIMITnnn.TXT, RUDDRnnn.CSV or
- *        RUDDRnnn.TXT.
+ *        ATESTnnn.CSV, ATESTnnn.TXT, LIMITnnn.CSV, LIMITnnn.TXT,
+ *        RUDDRnnn.CSV or RUDDRnnn.TXT.
  *
  * @param prefix  LOG_PREFIX_ATEST, LOG_PREFIX_LIMIT or LOG_PREFIX_RUDDR.
  * @param number  The run's number.
@@ -707,12 +708,14 @@ static void test_close(void)
  * The file's path goes to the console as take_create() opens it,
  * "logging to ..."; a take that opens no file logs why.
  *
- * @param txt    true for a report alone (SERVO_TEST_OUT_OPEN_TXT, the limit
- *               run): its LIMITnnn.TXT is opened under the number, and no
- *               CSV.  false for a CSV first, its report after it: the
- *               AUTOMATIC TEST's ATESTnnn.CSV, AUTO's RUDDRnnn.CSV.
+ * @param txt    true for a report alone (SERVO_TEST_OUT_OPEN_TXT, a limit
+ *               run that judged no position): its LIMITnnn.TXT is opened
+ *               under the number, and no CSV.  false for a CSV first, its
+ *               report after it: the AUTOMATIC TEST's ATESTnnn.CSV, the
+ *               limit run's LIMITnnn.CSV, AUTO's RUDDRnnn.CSV.
  * @param prefix The run's writer as the screen names it; LOG_PREFIX_ATEST
- *               for one that is not LOG_PREFIX_RUDDR.
+ *               for one that is neither LOG_PREFIX_LIMIT nor
+ *               LOG_PREFIX_RUDDR.
  */
 static void test_open(bool txt, log_prefix_t prefix)
 {
@@ -720,8 +723,9 @@ static void test_open(bool txt, log_prefix_t prefix)
     s_test_num    = -1;
     s_test_txt    = txt;
     s_test_prefix = txt ? LOG_PREFIX_LIMIT
-                  : (prefix == LOG_PREFIX_RUDDR) ? LOG_PREFIX_RUDDR
-                                                 : LOG_PREFIX_ATEST;
+                  : (prefix == LOG_PREFIX_RUDDR || prefix == LOG_PREFIX_LIMIT)
+                        ? prefix
+                        : LOG_PREFIX_ATEST;
     s_test_lines  = 0u;
     s_test_failed = false;
     s_test_txt_bad = false;

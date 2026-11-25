@@ -433,6 +433,14 @@ ENGLISH_QUOTES = {
     ("Servo-de.md", "MODEL"),
     ("Servo-de.md", "OFF"),
     ("Servo-de.md", "HOLD"),
+    # LIMITnnn.CSV's and RUDDRnnn.CSV's cells, written in English.
+    ("Servo-de.md", "LOW"),
+    ("Servo-de.md", "HIGH"),
+    ("Servo-de.md", "FREE"),
+    ("Servo-de.md", "BOUND"),
+    ("Servo-de.md", "within"),
+    ("Servo-de.md", "VERIFY"),
+    ("Servo-de.md", "SEARCH"),
     ("EscProfiles-de.md", "none"),
     ("Bringup-de.md", "none"),
     # Protocol state LINK_ESC_OPEN, not the translated OPEN file control.

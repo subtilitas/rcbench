@@ -116,7 +116,7 @@ OPTIONS in LIMIT RUN's footer opens the list. Off a PROG PORT, MODE, SERVO and S
 | CURRENT | SUPPLY's caps | SUPPLY's SET A | the run's current limit, SUPPLY's SET A, where a PD mini feeds the servo: a tap opens SUPPLY's keypad. Without a PD mini `--`, locked: the servo's own supply limits the current |
 | Wait before PWM | 0 to 10000ms | 100ms | from the end of programming to the first pulse |
 | DUT name | up to 23 characters | SERVO | the hub's NAME; heads each report |
-| User logs | ON, OFF | ON | SETUP > SD CARD's: OFF, a run writes no LIMITnnn.TXT |
+| User logs | ON, OFF | ON | SETUP > SD CARD's: OFF, a run writes neither LIMITnnn.CSV nor LIMITnnn.TXT |
 
 The list has no voltage: a run programs at 5.0V ([The supply: 5.0V](servo.md#the-supply-5-0v)). RUDDER AUTO's list ends with the same DUT name and User logs. The READY cards of both hold ten rows, the most they have room for, so User logs is a list row there and a card row on TEST only.
 

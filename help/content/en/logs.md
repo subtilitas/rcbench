@@ -18,7 +18,7 @@ The home tag works like BACK, returning one level at a time: plot to import view
 
 Without a mounted card, the box shows `NO RECORDINGS` and `No card. Insert one and tap RESCAN.` An empty or uncreated folder shows `No .csv files in BENCH/LOGS.` or `No .csv files in USER/LOGS.` At the root, it shows `No .csv files in the top-level folder.`
 
-The line below describes the selected tab: `Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.`, `Tests are saved as ATESTnnn, RUDDRnnn.CSV and LIMITnnn.TXT.` or `Runs of firmware 0.21.0 and older.` When AUTO LOGS or USER LOGS is off under [SETUP > SD CARD](setup.md), BENCH or USER instead shows `AUTO LOGS OFF on SD CARD.` or `USER LOGS OFF on SD CARD.`
+The line below describes the selected tab: `Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.`, `Tests are saved as ATESTnnn, LIMITnnn and RUDDRnnn.CSV.` or `Runs of firmware 0.21.0 and older.` When AUTO LOGS or USER LOGS is off under [SETUP > SD CARD](setup.md), BENCH or USER instead shows `AUTO LOGS OFF on SD CARD.` or `USER LOGS OFF on SD CARD.`
 
 RESCAN reads the card again. Tabs remain usable without a card; each tab press also checks for an inserted card.
 
@@ -79,7 +79,7 @@ One file is one run, in the folder of its kind. Its name says what started it:
 | `BENCH/LOGS` | `MOTORnnn.CSV` | one switch to ARMED from MOTOR & ESC's ARM or a stick run on its PROGRAM |
 | `BENCH/LOGS` | `SUPPLnnn.CSV` | one switch-on of the SUPPLY output while the bench is SAFE |
 | `USER/LOGS` | `ATESTnnn.CSV` | one AUTOMATIC TEST; its report is `ATESTnnn.TXT` |
-| `USER/LOGS` | `LIMITnnn.TXT` | one LIMIT RUN's report, with no CSV beside it |
+| `USER/LOGS` | `LIMITnnn.CSV` | one LIMIT RUN, a row a judged position; its report is `LIMITnnn.TXT`, alone for a run that judged no position or one of firmware 0.23.17 and older |
 | `USER/LOGS` | `RUDDRnnn.CSV` | one AUTO end points run on RUDDER, a row a measure; its report is `RUDDRnnn.TXT` |
 | root | `BENCHnnn.CSV`, `ESCnnn.CSV`, `SERVOnnn.CSV` | runs of firmware 0.21.0 and older; in the root, `SERVOnnn` is a servo test |
 | root | `SERVOnnn.TXT` alone | a limit run of firmware 0.21.0 and older |
@@ -96,7 +96,7 @@ The panel makes each folder the first time it writes there, one level at a time.
 
 Each folder has its own sequence. A new run uses one above the highest number found there, regardless of filename prefix, including names from firmware 0.21.0. Deleted numbers are not reused. Once a folder contains number 999, it accepts no further run, even if lower numbers are free.
 
-The list includes reports named like runs: `ATESTnnn.TXT` with or without its `ATESTnnn.CSV`, `LIMITnnn.TXT`, and root-level `SERVOnnn.TXT` from firmware 0.21.0 and older. A run and its report occupy separate rows, CSV first. DELETE on the run removes its report too. Other `.TXT` files appear only in FILES.
+The list includes reports named like runs: `ATESTnnn.TXT` with or without its `ATESTnnn.CSV`, `LIMITnnn.TXT` with or without its `LIMITnnn.CSV`, and root-level `SERVOnnn.TXT` from firmware 0.21.0 and older. A run and its report occupy separate rows, CSV first. DELETE on the run removes its report too. Other `.TXT` files appear only in FILES.
 
 Runs are ordered by descending number across all prefixes: `MOTOR043.CSV`, then `SERVO042.CSV`, then `SUPPL041.CSV`.
 

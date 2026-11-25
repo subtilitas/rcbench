@@ -44,6 +44,17 @@ servo_limrun_why_t limrun_not_servo(uint8_t family);
 bool limrun_family_ok(const servo_limrun_cfg_t *cfg);
 
 /**
+ * @brief Record the position the search under way just judged as the next
+ *        row of LIMITnnn.CSV, or count it past SERVO_LIMRUN_ROWS_MAX
+ *        (servo_limrun_rows.c).  Called once a judgment, right after
+ *        servo_limit_step(), before the search's end starts the next one.
+ * @param r        Run state: its search, side, phase and angle as they stand.
+ * @param pulse_us The pulse the position was judged at, us.
+ * @param mv       The rail voltage of the window that judged it, mV.
+ */
+void limrun_row_take(servo_limrun_t *r, uint16_t pulse_us, uint16_t mv);
+
+/**
  * @brief Distance from NEUTRAL to a side pulse limit, 0.1us, from the
  *        pulses given. servo_limrun_span() wraps this.
  *

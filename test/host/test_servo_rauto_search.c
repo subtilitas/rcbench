@@ -129,7 +129,7 @@ TEST_CASE(a_wide_throw_bound_past_the_target_is_written_shorter_at_its_end)
     CHECK(in_report("                -25.50° at the end 1075us; the side measured there, its angles scaled to 1000us by the linear map (x 1.176)"));
     CHECK(in_report("1075us  measured 20.00°  goal 20.00°  within"));
     CHECK(in_report("1075us  write 0  value -  measured 30.00°  goal 20.00°  outside"));
-    CHECK(strstr(g.csv, "\n1;1075;0;;30.00;20.00;;;0\n") != NULL);
+    CHECK(strstr(g.csv, "\n1;1075;0;;30.00;20.00;;;0;STEP;1075;\n") != NULL);
     CHECK(ended_safe());
 }
 
@@ -587,7 +587,7 @@ TEST_CASE(the_rows_fit_at_a_margin_of_50_percent)
     run_for(RAUTO_MS);
     CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
     /* The CSV's last row: the 2000us side's last position. */
-    CHECK(strstr(g.csv, ";2250;S;150;30.00;;;;\n") != NULL);
+    CHECK(strstr(g.csv, ";2250;S;150;30.00;;;;;SEARCH;2250;0.150\n") != NULL);
 }
 
 TEST_CASE(the_search_reaches_the_range_scaled_from_the_neutral)
