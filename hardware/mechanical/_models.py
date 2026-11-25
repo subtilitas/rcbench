@@ -7,6 +7,10 @@
 renders/ has the same 3 folders: a model's picture lies in the model's
 folder, a view of several models in the folder VIEWS names.
 
+A model that no generator writes, such as casing/rcbench_case.step from
+Onshape, is listed here like the others and kept as delivered:
+``gen_models.py --check`` finds no spec for it and does not compare it.
+
 Every stem is in exactly one folder. A generator asks ``path`` for its
 file; a stem that is not listed here is an error, so a new model is
 sorted when it is added.
@@ -31,7 +35,7 @@ FOLDERS = {
         "display_node_xt60_lid", "flap_drive",
         "ina228_node_bezel", "ina228_node_frame", "ina228_node_plate",
         "ina228_xt90_case", "knob_bezel", "knob_carrier", "knob_case",
-        "knob_clamp", "knob_rotor", "knob_spacer"),
+        "knob_clamp", "knob_rotor", "knob_spacer", "rcbench_case"),
     "parts": (
         "acrylic_disc_49_5", "bearing_6704_2rs", "esc_motor_set",
         "estop_m16_assembly", "estop_m16_button", "estop_m16_nut",
