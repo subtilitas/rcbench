@@ -522,15 +522,14 @@ y = 101.385mm.
 
 The frame is the assembly's, as Onshape wrote it. `case_front` sits in it
 moved by (0.06, -1.385, -8.78)mm from its own frame; the 3 other solids
-sit moved and turned from their products' frames, so that
-the sockets' axes lie along y. The file does not say which axis points up.
+sit moved and turned from their products' frames, so that the sockets'
+axes lie along y. The file does not say which axis points up.
 
 The picture is OpenCASCADE's render, from above the front left. It draws
-`case_front` in magenta, the render's colour for a solid without a colour
-OpenCASCADE reads; the file holds 4 colours, and the 3 other solids carry
-colours that the shell hides in this view. Whether the parts fit each
-other is not checked: no check holds the 4 solids against each other, and
-no model of a board or a part sits in the enclosure. The file has no
+`case_front` in the grey of the file's colour for that solid; the 3 other
+solids carry colours of their own that the shell hides in this view. Whether the parts fit each other is not checked: no
+check holds the 4 solids against each other, and no model of a board or a
+part sits in the enclosure. The file has no
 printing information. The wall thickness and the tolerances are not
 measured here.
 

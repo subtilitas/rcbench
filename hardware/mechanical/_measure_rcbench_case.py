@@ -23,6 +23,7 @@ from OCP.BRepBndLib import BRepBndLib
 from OCP.BRepCheck import BRepCheck_Analyzer
 from OCP.BRepGProp import BRepGProp
 from OCP.GProp import GProp_GProps
+from OCP.IFSelect import IFSelect_RetDone
 from OCP.STEPCAFControl import STEPCAFControl_Reader
 from OCP.TCollection import TCollection_ExtendedString
 from OCP.TDataStd import TDataStd_Name
@@ -96,20 +97,32 @@ def main(argv):
         argv: Command-line arguments without the program name: the file.
 
     Returns:
-        0 when every shape is valid, 1 otherwise.
+        0 when the file reads and every shape is valid; 1 when the file
+        is missing, does not read or transfer, holds no shape, or holds an
+        invalid one. The reason goes to stderr.
     """
     path = Path(argv[0]) if argv else DEFAULT
+    if not path.is_file():
+        print(f"{path}: no such file", file=sys.stderr)
+        return 1
     doc = TDocStd_Document(TCollection_ExtendedString("rcbench"))
     reader = STEPCAFControl_Reader()
     reader.SetNameMode(True)
-    reader.ReadFile(str(path))
-    reader.Transfer(doc)
+    if reader.ReadFile(str(path)) != IFSelect_RetDone:
+        print(f"{path}: not read as a STEP file", file=sys.stderr)
+        return 1
+    if not reader.Transfer(doc):
+        print(f"{path}: STEP content not transferred", file=sys.stderr)
+        return 1
     tool = XCAFDoc_DocumentTool.ShapeTool_s(doc.Main())
     valid = []
     child = TDF_ChildIterator(doc.Main().FindChild(1))
     while child.More():
         _walk(tool, child.Value(), 0, valid)
         child.Next()
+    if not valid:
+        print(f"{path}: no shape", file=sys.stderr)
+        return 1
     print("valid" if all(valid) else "INVALID")
     return 0 if all(valid) else 1
 
