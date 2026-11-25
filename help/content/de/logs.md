@@ -186,11 +186,11 @@ Eine Laufdatei des Prüfstands steht über ihrer Zeit, wie der nächste Abschnit
 
 ## Ein Lauf über seiner Zeit
 
-![Ein AUTOMATIC TEST: seine Schritte, seine Phasen und die Zeilen, die beim Halten einer Position fehlen](view:logs-atest-graph)
+![Ein AUTOMATIC TEST: seine Schritte und seine Phasen, das Halten eingeschlossen](view:logs-atest-graph)
 
-Ein AUTOMATIC TEST, ein SUPPLY-, ein MOTOR- und ein SERVO-Lauf öffnen in der Grafik mit jeder Zeile bei ihrer Zeit. Die Kopfzeile nennt nach Dauer und Rate die Art: `ATEST012.CSV   870 ZEILEN   151.55s   10Hz   AUTOMATISCHER TEST`.
+Ein AUTOMATIC TEST, ein SUPPLY-, ein MOTOR- und ein SERVO-Lauf öffnen in der Grafik mit jeder Zeile bei ihrer Zeit. Die Kopfzeile nennt nach Dauer und Rate die Art: `ATEST012.CSV   1734 ZEILEN   186.20s   9Hz   AUTOMATISCHER TEST`.
 
-- Ein Zeitschritt länger als 3 mittlere Zeilenabstände (Median) und länger als 0.5s ist eine Lücke: die Linien brechen ab, die Lücke ist schraffiert, mit `ZEILEN FEHLEN`, wo es hineinpasst. Der AUTOMATIC TEST schreibt keine Zeile, solange er eine Position hält; jedes Halten ist darum schraffiert.
+- Ein Zeitschritt länger als 3 mittlere Zeilenabstände (Median) und länger als 0.5s ist eine Lücke: die Linien brechen ab, die Lücke ist schraffiert, mit `ZEILEN FEHLEN`, wo es hineinpasst. Der AUTOMATIC TEST schreibt eine Zeile je Messwert, auch beim Halten; ein Halten ist darum keine Lücke.
 - Eine Datei, deren Zeitspalte zurückspringt, steht nach Zeilennummer und zeigt keine Dauer.
 - Jeder Schritt eines AUTOMATIC TEST beginnt mit einer Linie und seiner Nummer auf einem Schild.
 - Ein Balken am oberen Rand zeigt Zeilen über ihrem Bereich (`>65535` rpm, Schild `>`) in der Warnfarbe und begrenzte Messfenster (`clipped` über 0, Schild `BEGRENZT`) in der Gefahrenfarbe.

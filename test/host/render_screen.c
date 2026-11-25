@@ -387,8 +387,9 @@ static size_t limit_search(size_t at, int *row, int search, bool high,
     }
 }
 
-/* The time graph's files: an AUTOMATIC TEST and a SERVO run of INA3221
- * windows as the bench recorded them (test/host/fixtures, the folder
+/* The time graph's files: an AUTOMATIC TEST (the untrimmed MS24 run on
+ * the PD mini) and a SERVO run of INA3221 windows as the bench recorded
+ * them (test/host/fixtures, the folder
  * render_ui.py names in RENDER_FIXTURE_DIR), and a SUPPLY run of 0.05s
  * rows that holds the set voltage, falls into CC at 2.00A from 4.00s to
  * 7.00s, runs on the model from 9.00s and misses its rows from 11.00s to
@@ -396,7 +397,7 @@ static size_t limit_search(size_t at, int *row, int search, bool high,
 #ifndef RENDER_FIXTURE_DIR
 #define RENDER_FIXTURE_DIR "test/host/fixtures"
 #endif
-static char g_mg90s_csv[65536];
+static char g_atest_csv[131072];
 static char g_ms24_csv[98304];
 static char g_suppl_csv[32768];
 static bool g_time_card;
@@ -419,7 +420,7 @@ static void read_fixture(const char *name, char *out, size_t cap)
 
 static void make_time_csvs(void)
 {
-    read_fixture("servo-mg90s.csv", g_mg90s_csv, sizeof(g_mg90s_csv));
+    read_fixture("servo-ms24-pdmini.csv", g_atest_csv, sizeof(g_atest_csv));
     read_fixture("servo-ms24-windows.csv", g_ms24_csv, sizeof(g_ms24_csv));
     size_t at = (size_t)snprintf(g_suppl_csv, sizeof(g_suppl_csv), "%s\n",
                                  "time (s);set (V);voltage (V);limit (A);"
@@ -536,7 +537,7 @@ static const log_fake_t k_bench_time[] = {
     { "SUPPL016.CSV", 21950, 1792951620 },    /* 2026-10-25 18:07 */
 };
 static const log_fake_t k_user_time[] = {
-    { "ATEST012.CSV", 50239, 1792699380 },    /* 2026-10-22 20:03 */
+    { "ATEST012.CSV", 102873, 1792699380 },    /* 2026-10-22 20:03 */
 };
 static const log_fake_t k_user[] = {
     { "LIMIT006.TXT", 1873, 1792858800 },     /* 2026-10-24 16:20 */
@@ -663,7 +664,7 @@ static bool fake_open(const char *name, log_source_t *src, void *ctx)
         return true;
     }
     if (g_time_card) {
-        const char *text = (strncmp(name, "ATEST", 5) == 0) ? g_mg90s_csv
+        const char *text = (strncmp(name, "ATEST", 5) == 0) ? g_atest_csv
                            : (strncmp(name, "SERVO", 5) == 0) ? g_ms24_csv
                                                               : g_suppl_csv;
         log_source_memory(src, &g_csv_ctx, text, strlen(text));

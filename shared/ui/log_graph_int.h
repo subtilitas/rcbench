@@ -117,7 +117,8 @@ typedef struct {
     uint8_t press_id;               /**< the contact that holds it      */
     /* A time plot. */
     bool   has_time;                /**< rows stand at their time       */
-    double gap_s;                   /**< a longer step in time is a gap */
+    long   gap_ms;                  /**< a longer step in time is a gap,
+                                         in whole milliseconds          */
     float  t0;                      /**< the window's first time        */
     float  t1;                      /**< its last                       */
     /** @brief Per pixel column, LG_COL_ flags. */

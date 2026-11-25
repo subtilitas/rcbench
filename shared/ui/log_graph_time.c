@@ -58,8 +58,12 @@ void lg_time_setup(void)
         scale_of(k);
     }
     lg.has_time = s.data.time_name[0] != '\0';
-    const double medians = LG_GAP_MEDIANS * s.data.median_dt_s;
-    lg.gap_s = (medians > LG_GAP_MIN_S) ? medians : LG_GAP_MIN_S;
+    /* In whole milliseconds, as the bench writes its times: a median of
+     * 0.1s the build keeps as 0.1000000015 is 100ms. */
+    const long median_ms = lround(s.data.median_dt_s * 1000.0);
+    const long medians_ms = lround(LG_GAP_MEDIANS * (double)median_ms);
+    const long min_ms = lround(LG_GAP_MIN_S * 1000.0);
+    lg.gap_ms = (medians_ms > min_ms) ? medians_ms : min_ms;
     lg.plot_h = PV_H - lg.mk.n_strips * LG_STRIP_ROW;
 }
 
@@ -68,7 +72,10 @@ bool lg_time_gap_before(int i)
     if (!lg.has_time || i <= 0 || i >= s.data.count) {
         return false;
     }
-    return (double)s.data.time[i] - (double)s.data.time[i - 1] > lg.gap_s;
+    /* Whole milliseconds: the build keeps the times as floats, so 0.7s to
+     * 1.2s reads 0.50000006s, which is the threshold and no gap. */
+    const double dt = (double)s.data.time[i] - (double)s.data.time[i - 1];
+    return lround(dt * 1000.0) > lg.gap_ms;
 }
 
 /**

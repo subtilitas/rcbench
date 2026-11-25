@@ -3546,7 +3546,7 @@ first:
 ![A LIMIT RUN in the graph: current and angle over the pulse](img/logs-limit-graph.png)
 ![A RUDDER AUTO's search in the graph](img/logs-ruddr-search.png)
 ![A RUDDER AUTO's steps in the graph](img/logs-ruddr-steps.png)
-![An AUTOMATIC TEST over its time: its steps, its phases and the rows missing while a position was held](img/logs-atest-graph.png)
+![An AUTOMATIC TEST over its time: its steps and its phases, holds included](img/logs-atest-graph.png)
 ![A SUPPLY run over its time: the CC and MODEL strips, a gap of 2s](img/logs-supply-graph.png)
 ![A SERVO run of INA3221 windows over its time](img/logs-windows-graph.png)
 ![MORE on the plot: COLUMNS](img/logs-plot-more.png)
@@ -3673,7 +3673,7 @@ it; the cursor's line in the footer (`pulse 1040us   row 112 of 116`).
 An AUTOMATIC TEST, a SUPPLY, a MOTOR and a SERVO run open in the graph
 over their time (`shared/ui/log_graph_time.c`). The summary line adds the
 kind to the duration and the rate
-(`ATEST012.CSV   870 ROWS   151.55s   10Hz   AUTOMATIC TEST`); the chips
+(`ATEST012.CSV   1734 ROWS   186.20s   9Hz   AUTOMATIC TEST`); the chips
 are the four series' own, with their value at the cursor.
 
 - A row stands at its time in the window: the window's first row on the
@@ -3684,8 +3684,9 @@ are the four series' own, with their value at the cursor.
   0.5s is a gap: the traces break there and the columns between the two
   rows are hatched, 1 pixel in 8 along each diagonal. `ROWS MISSING`
   stands in the widest gap where it fits. A step of exactly the threshold
-  is no gap. The AUTOMATIC TEST writes no row while a position is held,
-  so each of its holds is a gap.
+  is no gap; steps and threshold compare in whole milliseconds, so 0.7s
+  to 1.2s at 0.1s rows is no gap. The AUTOMATIC TEST writes a row for every meter reading in
+  every phase, holds included, so a hold shows as rows, not as a gap.
 - Up to two strips of 6px stand under the traces, each in a row of 18px
   with its label in 8 x 16 at its left end; the traces take the plot's
   height less 18px a strip. PHASE (AUTOMATIC TEST) colours each `phase`

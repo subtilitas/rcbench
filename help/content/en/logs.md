@@ -186,11 +186,11 @@ A run file the bench wrote stands over its time, as the next section shows. A fi
 
 ## A run over its time
 
-![An AUTOMATIC TEST: its steps, its phases and the rows missing while a position was held](view:logs-atest-graph)
+![An AUTOMATIC TEST: its steps and its phases, holds included](view:logs-atest-graph)
 
-An AUTOMATIC TEST, a SUPPLY, a MOTOR and a SERVO run open in the graph with each row at its time. The summary adds the kind to the duration and the rate: `ATEST012.CSV   870 ROWS   151.55s   10Hz   AUTOMATIC TEST`.
+An AUTOMATIC TEST, a SUPPLY, a MOTOR and a SERVO run open in the graph with each row at its time. The summary adds the kind to the duration and the rate: `ATEST012.CSV   1734 ROWS   186.20s   9Hz   AUTOMATIC TEST`.
 
-- A step in time longer than 3 median row intervals and longer than 0.5s is a gap: the lines break and the gap is hatched, with `ROWS MISSING` where it fits. The AUTOMATIC TEST writes no row while it holds a position, so each hold is hatched.
+- A step in time longer than 3 median row intervals and longer than 0.5s is a gap: the lines break and the gap is hatched, with `ROWS MISSING` where it fits. The AUTOMATIC TEST writes a row for every meter reading, holds included, so a hold is no gap.
 - A file whose time column steps back is placed by row number and shows no duration.
 - Each step of an AUTOMATIC TEST starts a line with the step's number on a tag.
 - A bar at the plot's top marks rows above their range (`>65535` rpm, tag `>`) in the warning colour and clipped meter windows (`clipped` above 0, tag `CLIPPED`) in the danger colour.

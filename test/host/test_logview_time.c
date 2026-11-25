@@ -45,6 +45,7 @@
 /** @brief The bench's recordings, read from fixtures/. */
 static char g_mg90s[64 * 1024];
 static char g_ms24[96 * 1024];
+static char g_pdmini[128 * 1024];
 /** @brief The cases' own files, written by each case. */
 static char g_made[64 * 1024];
 
@@ -55,6 +56,7 @@ static const struct {
 } k_files[] = {
     { "ATEST012.CSV", g_mg90s },
     { "SERVO014.CSV", g_ms24 },
+    { "ATEST013.CSV", g_pdmini },
     { "MOTOR050.CSV", g_made },
     { "SUPPL051.CSV", g_made },
     { "ATEST052.CSV", g_made },
@@ -226,9 +228,10 @@ static int over_row(char *out, size_t n, int i)
 
 /* ------------------------------------------------------------- the cases */
 
-/* The AUTOMATIC TEST the bench recorded: drawn over its time, its steps a
- * line each, its phases a strip, the rows the logger did not write while a
- * position was held hatched. */
+/* The AUTOMATIC TEST the bench recorded, trimmed for the replay suite (of
+ * each command's MOVE and HOLD rows only those within 2.0s of its first and
+ * its last are kept): drawn over its time, its steps a line each, its
+ * phases a strip, the rows the trim took out hatched. */
 TEST_CASE(an_automatic_test_recorded_on_the_bench_draws_over_its_time)
 {
     char got[160];
@@ -285,6 +288,69 @@ TEST_CASE(an_automatic_test_recorded_on_the_bench_draws_over_its_time)
     /* The step line of step 2 down the traces, in the faint text. */
     CHECK(column_count(log_graph_row_px(405), LV_PV_TOP + 50,
                        log_graph_strip_y(0) - 6, UI_TEXT_DIM) > 100);
+}
+
+/* The untrimmed AUTOMATIC TEST of an MS24 on the PD mini: the writer
+ * takes a row at every meter reading in every phase, its 545 HOLD rows
+ * included, so no hold is a gap and nothing is hatched. */
+TEST_CASE(an_untrimmed_automatic_test_holds_without_a_gap)
+{
+    REQUIRE(read_fixture("servo-ms24-pdmini.csv", g_pdmini,
+                         sizeof(g_pdmini)));
+    REQUIRE(open_time("ATEST013.CSV"));
+    const log_data_t *d = log_viewer_data();
+    REQUIRE(d != NULL);
+    CHECK_EQ(d->count, 1734);
+    int gaps = 0;
+    for (int i = 1; i < d->count; ++i) {
+        gaps += log_graph_gap_before(i);
+    }
+    CHECK_EQ(gaps, 0);
+    int hatched = 0;
+    for (int x = PLOT_X0; x <= PLOT_X1; ++x) {
+        hatched += log_graph_gap_col(x);
+    }
+    CHECK_EQ(hatched, 0);
+}
+
+/* An AUTOMATIC TEST at the PD mini's 0.105s: a hold of 0.84s written row
+ * by row is no gap; 0.84s with no row in the middle of a move is one,
+ * hatched, the trace broken across it. */
+static int atest_row(char *out, size_t n, int i)
+{
+    /* Rows 0-9 MOVE, 10-17 HOLD, 18-21 MOVE, then 0.84s lost, 22-29 MOVE. */
+    const double t = 0.105 * (double)i + (i >= 22 ? 0.735 : 0.0);
+    const char *ph = (i >= 10 && i <= 17) ? "HOLD" : "MOVE";
+    return snprintf(out, n, "%.3f;STEP;1;%s;1900;%.3f;6.00;CV\n", t, ph,
+                    0.2 + 0.01 * (double)i);
+}
+
+TEST_CASE(an_automatic_test_hold_is_no_gap_and_rows_lost_mid_move_are)
+{
+    make("time (s);test;step;phase;command (us);current (A);voltage (V);"
+         "mode", 30, atest_row);
+    REQUIRE(open_time("ATEST052.CSV"));
+    int gaps = 0;
+    for (int i = 1; i < 30; ++i) {
+        gaps += log_graph_gap_before(i);
+    }
+    CHECK_EQ(gaps, 1);
+    CHECK(log_graph_gap_before(22));
+    for (int i = 10; i <= 18; ++i) {
+        CHECK(!log_graph_gap_before(i));
+    }
+    const int a = log_graph_row_px(21);
+    const int b = log_graph_row_px(22);
+    REQUIRE(b - a > 4);
+    CHECK(log_graph_gap_col((a + b) / 2));
+    CHECK(!log_graph_gap_col((log_graph_row_px(12) + log_graph_row_px(13))
+                             / 2));
+    const gfx_color_t cur = log_viewer_series_color(1);
+    int in_gap = 0;
+    for (int x = a + 1; x < b; ++x) {
+        in_gap += column_count(x, LV_PV_TOP + 50, LV_PV_BOTTOM - 20, cur);
+    }
+    CHECK_EQ(in_gap, 0);
 }
 
 /* The SERVO run of INA3221 windows: current and voltage over 69s, no strip
@@ -371,6 +437,41 @@ TEST_CASE(a_gap_of_the_threshold_is_none_and_one_interval_more_is_one)
                               UI_TEXT_FAINT);
     }
     CHECK(faint > 0);
+}
+
+/* 0.1s rows and a step from 0.7s to 1.2s: the floats the build keeps make
+ * it 0.50000006s, which is the 0.5s threshold and no gap; 0.7s to 1.201s,
+ * 1ms past it, is one. */
+static float g_jump_to;
+
+static int tenth_row(char *out, size_t n, int i)
+{
+    const double t = (i <= 7) ? 0.1 * (double)i
+                              : (double)g_jump_to + 0.1 * (double)(i - 8);
+    return snprintf(out, n, "%.3f;12.0;2.0;1000;20;measured\n", t);
+}
+
+TEST_CASE(a_step_of_the_threshold_in_float_times_is_no_gap)
+{
+    g_jump_to = 1.2f;
+    make("time (s);voltage (V);current (A);rpm (rpm);throttle (%);source",
+         30, tenth_row);
+    REQUIRE(open_time("MOTOR050.CSV"));
+    const log_data_t *d = log_viewer_data();
+    REQUIRE(d != NULL);
+    /* The floats' step is a hair over 0.5s. */
+    CHECK((double)d->time[8] - (double)d->time[7] > 0.5);
+    CHECK(!log_graph_gap_before(8));
+    g_jump_to = 1.201f;
+    make("time (s);voltage (V);current (A);rpm (rpm);throttle (%);source",
+         30, tenth_row);
+    REQUIRE(open_time("MOTOR050.CSV"));
+    CHECK(log_graph_gap_before(8));
+    int gaps = 0;
+    for (int i = 1; i < 30; ++i) {
+        gaps += log_graph_gap_before(i);
+    }
+    CHECK_EQ(gaps, 1);
 }
 
 /* A time that steps back: the build numbers the rows, so the graph spaces
@@ -626,8 +727,11 @@ TEST_CASE(a_time_file_speaks_german)
 int main(void)
 {
     RUN(an_automatic_test_recorded_on_the_bench_draws_over_its_time);
+    RUN(an_untrimmed_automatic_test_holds_without_a_gap);
+    RUN(an_automatic_test_hold_is_no_gap_and_rows_lost_mid_move_are);
     RUN(a_servo_run_of_ina3221_windows_draws_over_its_time);
     RUN(a_gap_of_the_threshold_is_none_and_one_interval_more_is_one);
+    RUN(a_step_of_the_threshold_in_float_times_is_no_gap);
     RUN(a_time_that_steps_back_spaces_the_rows_evenly);
     RUN(marks_past_256_are_counted_not_drawn);
     RUN(a_cell_above_its_range_and_a_clipped_window_are_spans);

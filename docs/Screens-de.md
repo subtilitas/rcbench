@@ -3836,7 +3836,7 @@ Importansicht:
 ![Ein LIMIT RUN in der Grafik: current und angle über dem Puls](img/de/logs-limit-graph.png)
 ![Die Suche eines RUDDER AUTO in der Grafik](img/de/logs-ruddr-search.png)
 ![Die Schritte eines RUDDER AUTO in der Grafik](img/de/logs-ruddr-steps.png)
-![Ein AUTOMATIC TEST über seiner Zeit: seine Schritte, seine Phasen und die Zeilen, die beim Halten einer Position fehlen](img/de/logs-atest-graph.png)
+![Ein AUTOMATIC TEST über seiner Zeit: seine Schritte und seine Phasen, das Halten eingeschlossen](img/de/logs-atest-graph.png)
 ![Ein SUPPLY-Lauf über seiner Zeit: die Streifen CC und MODELL, eine Lücke von 2s](img/de/logs-supply-graph.png)
 ![Ein SERVO-Lauf aus INA3221-Fenstern über seiner Zeit](img/de/logs-windows-graph.png)
 ![MEHR auf der Grafik: SPALTEN](img/de/logs-plot-more.png)
@@ -3976,7 +3976,7 @@ der x-Spalte; die Cursorzeile in der Fußleiste
 Ein AUTOMATIC TEST, ein SUPPLY-, ein MOTOR- und ein SERVO-Lauf öffnen in
 der Grafik über ihrer Zeit (`shared/ui/log_graph_time.c`). Die Kopfzeile
 nennt nach Dauer und Rate die Art
-(`ATEST012.CSV   870 ZEILEN   151.55s   10Hz   AUTOMATISCHER TEST`); die
+(`ATEST012.CSV   1734 ZEILEN   186.20s   9Hz   AUTOMATISCHER TEST`); die
 Chips gehören den vier Reihen, mit ihrem Wert am Cursor.
 
 - Eine Zeile steht bei ihrer Zeit im Fenster: die erste Zeile des
@@ -3989,8 +3989,11 @@ Chips gehören den vier Reihen, mit ihrem Wert am Cursor.
   Spalten zwischen den beiden Zeilen sind schraffiert, 1 Pixel von 8
   entlang jeder Diagonalen. `ZEILEN FEHLEN` steht in der breitesten
   Lücke, wo es hineinpasst. Ein Schritt von genau der Schwelle ist keine
-  Lücke. Der AUTOMATIC TEST schreibt keine Zeile, solange er eine Position
-  hält; jedes Halten ist darum eine Lücke.
+  Lücke; Schritt und Schwelle werden in ganzen Millisekunden verglichen,
+  0.7s bis 1.2s bei Zeilen von 0.1s ist also keine Lücke. Der AUTOMATIC
+  TEST schreibt in jeder Phase, das Halten
+  eingeschlossen, eine Zeile je Messwert; ein Halten erscheint darum als
+  Zeilen, nicht als Lücke.
 - Bis zu zwei Streifen von 6px stehen unter den Linien, jeder in einer
   Zeile von 18px mit seiner Beschriftung in 8 x 16 am linken Ende; die
   Linien nehmen die Höhe der Grafik weniger 18px je Streifen. PHASE
