@@ -49,6 +49,8 @@ typedef struct {
     bool     mute;          /**< answers nothing */
     bool     nak;           /**< answers a write with data 01 */
     uint16_t stuck;         /**< a zone that ignores writes; 0xFFFF none */
+    uint16_t flaky;         /**< a zone that ignores its first flaky_n writes; 0xFFFF none */
+    unsigned flaky_n;       /**< writes to @c flaky still to be ignored */
     unsigned drop_from;     /**< the first request whose answer is lost (1 = first) */
     unsigned drop_count;    /**< answers lost from drop_from on */
     unsigned drop_beats;    /**< heartbeat answers still to be lost */
@@ -86,6 +88,7 @@ static void sim_init(sim_t *m, uint32_t baud)
     memset(m, 0, sizeof(*m));
     m->baud = baud;
     m->stuck = 0xFFFFu;
+    m->flaky = 0xFFFFu;
     sim_stock(m);
 }
 
@@ -137,6 +140,8 @@ static void sim_rx(sim_t *m, const uint8_t *b, size_t n, uint32_t baud)
         if (addr == 0x00D9u && b[6] == 0x50u) {
             ++m->resets;
             sim_stock(m);
+        } else if (addr == m->flaky && m->flaky_n > 0u) {
+            --m->flaky_n;
         } else if (addr != m->stuck) {
             m->ram[addr] = b[6];
         }
@@ -717,6 +722,40 @@ TEST_CASE(a_mode_changed_during_the_probe_is_the_one_written)
     CHECK_EQ(r.m.saves, 1u);
 }
 
+TEST_CASE(a_mode_changed_during_the_last_write_of_pass_1_gets_2_fresh_passes)
+{
+    /* Zone 0x0060 takes its third write only.  The change at pass 1's
+     * last write (zone 0x00B0) comes due in the verify read; the new mode
+     * gets its own 2 passes, the second of which sets zone 0x0060. */
+    rig_t r;
+    rig_init(&r, 9600u, 0u);
+    r.m.flaky = 0x0060u;
+    r.m.flaky_n = 2u;
+    CHECK(run_to_send(&r, GM861_T_WRITE, 0x00B0u, 3000u));
+    gm861_set_mode(&r.g, GM861_MODE_CONTINUOUS);
+    CHECK(run_until(&r, GM861_READY, 3000u) != UINT32_MAX);
+    CHECK_EQ(gm861_bad_zone(&r.g), GM861_NO_ZONE);
+    check_set(r.m.ram, false);
+    check_set(r.m.flash, false);
+}
+
+TEST_CASE(a_mode_changed_during_the_last_write_of_pass_2_ends_ready)
+{
+    /* Continuous at pass 1's last write (zone 0x00B0), sensing again at
+     * pass 2's last and only write (zone 0x0000): both come due in a
+     * verify read, and neither may use up the passes of the next mode. */
+    rig_t r;
+    rig_init(&r, 9600u, 0u);
+    CHECK(run_to_send(&r, GM861_T_WRITE, 0x00B0u, 3000u));
+    gm861_set_mode(&r.g, GM861_MODE_CONTINUOUS);
+    CHECK(run_to_send(&r, GM861_T_WRITE, 0x0000u, 3000u));
+    gm861_set_mode(&r.g, GM861_MODE_SENSING);
+    CHECK(run_until(&r, GM861_READY, 3000u) != UINT32_MAX);
+    CHECK_EQ(gm861_bad_zone(&r.g), GM861_NO_ZONE);
+    check_set(r.m.ram, true);
+    check_set(r.m.flash, true);
+}
+
 TEST_CASE(a_mode_changed_while_a_zone_is_held_is_tried_again)
 {
     rig_t r;
@@ -858,6 +897,8 @@ int main(void)
     RUN(a_mode_changed_while_the_save_is_out_is_written_and_saved);
     RUN(a_mode_changed_during_a_write_of_each_pass_ends_ready_with_the_last_mode);
     RUN(a_mode_changed_during_the_probe_is_the_one_written);
+    RUN(a_mode_changed_during_the_last_write_of_pass_1_gets_2_fresh_passes);
+    RUN(a_mode_changed_during_the_last_write_of_pass_2_ends_ready);
     RUN(a_mode_changed_while_a_zone_is_held_is_tried_again);
     RUN(a_recheck_while_a_request_is_out_waits_for_its_end);
     RUN(a_factory_reset_is_sent_and_the_module_set_again);

@@ -1294,11 +1294,12 @@ runs the start sequence: 300ms start wait, RX low for 200ms as NOT CONNECTED, a 
 rates from 9600 to 1200 baud, a read of zones 0x0000 to 0x0060 and 0x00B0, one write a zone
 that differs, a read back and one save frame while any write since the last answered save is
 open (a write whose answer was lost counts, also across a retry), then a heartbeat every 10s
-and LOST after 3 missed answers. A change of read mode while the sequence writes, saves, is
-READY or holds a refused zone reads the zones again before READY. A zone that reads back wrong
-after 2 passes holds the sequence in NO ANSWER with the zone named until a recheck, so the
-module's flash takes no write every 5s. The servo id check of the fuzz case in `test_scan_line`
-is a stand-in with the rules of `servo_id_parse()` until that function is on main.
+and LOST after 3 missed answers. A change of read mode starts a fresh count of 2 write passes;
+while the sequence writes, saves, is READY or holds a refused zone, it reads the zones again
+before READY. A zone that reads back wrong after 2 passes holds the sequence in NO ANSWER with
+the zone named until a recheck, so the module's flash takes no write every 5s. The fuzz case in
+`test_scan_line` holds 10,000 random bytes against `servo_id_parse()`: no line it hands out is
+a servo id.
 
 ### M5Stack Dial
 

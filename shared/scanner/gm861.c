@@ -239,11 +239,14 @@ static void zones_read(gm861_t *g, uint32_t now)
 }
 
 /**
- * @brief The wanted zones changed: a sequence past its first read reads
- *        them again, with a fresh count of write passes.
+ * @brief The wanted zones changed: a fresh count of write passes in any
+ *        phase, and a sequence past its first read reads the zones again.
  */
 static void verify_again(gm861_t *g)
 {
+    /* The new wanted zones get the full budget of write passes, whatever
+     * phase the answer just handled moved to (a verify read included). */
+    g->passes = 0u;
     switch (g->phase) {
     case GM861_P_WRITE:
     case GM861_P_SAVE:
@@ -251,7 +254,6 @@ static void verify_again(gm861_t *g)
     case GM861_P_HELD:
         g->state = GM861_SETTING;
         g->bad_zone = GM861_NO_ZONE;
-        g->passes = 0u;
         g->usb = false;
         g->verify = true;       /* gm861_found() keeps the first read */
         to_phase(g, GM861_P_READ);

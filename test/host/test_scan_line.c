@@ -15,6 +15,7 @@
 #include <string.h>
 
 #include "scan_line.h"
+#include "servo_id.h"
 
 /** @brief The manual's CRC routine (10.1), as printed. */
 static uint16_t ref_crc(const uint8_t *p, size_t n)
@@ -386,62 +387,21 @@ TEST_CASE(a_frame_byte_inside_a_line_is_noise)
     CHECK_EQ(scan_line_counts(&s).noise, 1u);
 }
 
-/**
- * @brief Stand-in for servo_id_parse() (PLAN-A 2.1-2.2): prefix of 1 to 17
- *        characters of A-Z, 0-9, space, '-', '_', '.', then '-' and 5
- *        characters 0-9A-Z; lower case folded.
- *
- * SWAP: servo_id_parse() comes with shared/logfile/servo_id.h (slice A1).
- * Once it is on main, this function and its own test case go, and the
- * fuzz case calls servo_id_parse(text, NULL).
- */
-static bool id_like(const char *text)
+TEST_CASE(a_framed_id_line_is_taken_by_servo_id_parse)
 {
-    char id[24];                                /* SERVO_ID_MAX + 1 */
-    const size_t n = strlen(text);
-    if (n < 7u || n >= sizeof(id)) {
-        return false;
-    }
-    memcpy(id, text, n + 1u);
-    const size_t dash = n - 6u;
-    if (id[dash] != '-' || id[0] == ' ' || id[0] == '.'
-        || id[dash - 1u] == ' ') {
-        return false;
-    }
-    for (size_t i = 0; i < n; ++i) {
-        char c = id[i];
-        if (c >= 'a' && c <= 'z') {
-            c = (char)(c - 'a' + 'A');
-        }
-        const bool alnum = (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
-        if (i > dash && !alnum) {
-            return false;                       /* the serial */
-        }
-        if (i < dash && !alnum && c != ' ' && c != '-' && c != '_'
-            && c != '.') {
-            return false;                       /* the prefix */
-        }
-    }
-    return true;
-}
-
-TEST_CASE(the_id_stand_in_takes_ids_and_refuses_the_rest)
-{
-    CHECK(id_like("KST_X10-0000A"));
-    CHECK(id_like("A-ZZZZZ"));
-    CHECK(id_like("kst x10-0000a"));
-    CHECK(id_like("ABCDEFGHIJKLMNOPQ-00000"));
-    CHECK(!id_like("ABCDEFGHIJKLMNOPQR-00000"));
-    CHECK(!id_like("-00000"));
-    CHECK(!id_like("A-0000"));
-    CHECK(!id_like("A-000000"));
-    CHECK(!id_like("A;B-00000"));
-    CHECK(!id_like("A-0000_"));
-    CHECK(!id_like("A_00000"));
-    CHECK(!id_like(" A-00000"));
-    CHECK(!id_like(".A-00000"));
-    CHECK(!id_like("A -00000"));
-    CHECK(id_like("A.B-C_D-00000"));
+    scan_line_t s;
+    got_t g = { 0 };
+    char longer[SCAN_LINE_MAX + 2u];
+    scan_line_init(&s);
+    (void)feed(&s, "KST_X10-0000A\r\n", 15u, 0u, &g);
+    CHECK_EQ(g.lines, 1u);
+    CHECK(servo_id_parse(g.last, NULL));
+    /* 65 bytes ending in a well-formed id: too long, and no id. */
+    memset(longer, 'A', sizeof(longer));
+    memcpy(&longer[SCAN_LINE_MAX - 6u], "A-00001\r", 8u);
+    (void)feed(&s, longer, SCAN_LINE_MAX + 2u, 100u, &g);
+    CHECK_EQ(g.longs, 1u);
+    CHECK(!servo_id_parse(g.last, NULL));
 }
 
 /** @brief The suite's fixed pseudo-random sequence (32-bit LCG). */
@@ -461,7 +421,7 @@ TEST_CASE(ten_thousand_random_bytes_give_no_line_that_is_a_servo_id)
         const scan_out_t o = scan_line_feed(&s, (uint8_t)lcg(&seed), t);
         if (o == SCAN_OUT_LINE) {
             ++lines;
-            CHECK(!id_like(scan_line_text(&s)));
+            CHECK(!servo_id_parse(scan_line_text(&s), NULL));
         }
         CHECK(strlen(scan_line_text(&s)) <= SCAN_LINE_MAX);
     }
@@ -498,7 +458,7 @@ int main(void)
     RUN(a_frame_with_a_wrong_crc_or_length_is_dropped_and_counted);
     RUN(a_frame_cut_after_each_of_its_bytes_is_dropped_as_partial);
     RUN(a_frame_byte_inside_a_line_is_noise);
-    RUN(the_id_stand_in_takes_ids_and_refuses_the_rest);
+    RUN(a_framed_id_line_is_taken_by_servo_id_parse);
     RUN(ten_thousand_random_bytes_give_no_line_that_is_a_servo_id);
     RUN(a_null_framer_does_nothing);
     return test_summary("scan_line");
