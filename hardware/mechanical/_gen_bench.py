@@ -121,8 +121,29 @@ def place(shape, dx=0.0, dy=0.0, dz=0.0, rz=0.0, rx=0.0, ry=0.0):
 
 
 def read_step(name):
+    """The solids of a STEP file: under models/, or a path from hardware/."""
     import step_check
-    return step_check.read(HERE / "models" / name)[1]
+    path = HERE / "models" / name
+    if not path.exists():
+        path = HERE.parent / name
+    return step_check.read(path)[1]
+
+
+def seated(name, cx, cy, z0=0.0, rz=0.0, colour=DARK):
+    """A STEP model, its extent's middle on (cx, cy), its bottom on z0."""
+    import _gen_dial_base as base
+    from OCP.BRep import BRep_Builder
+    from OCP.TopoDS import TopoDS_Compound
+    items = read_step(name)
+    comp = TopoDS_Compound()
+    builder = BRep_Builder()
+    builder.MakeCompound(comp)
+    for s, _c in items:
+        builder.Add(comp, s)
+    x0, y0, zb, x1, y1, _z1 = base._extent(comp)
+    mx, my = (x0 + x1) / 2, (y0 + y1) / 2
+    return [(place(place(s, dx=-mx, dy=-my, dz=-zb), rz=rz, dx=cx, dy=cy,
+                   dz=z0), c or colour) for s, c in items]
 
 
 # ---- the parts, each a list of (solid, rgba) in the source frame ----
@@ -152,17 +173,13 @@ def panel():
     return out
 
 
-def pico(cx, cy, z0, rot):
-    """A Raspberry Pi Pico 2 sized board: 51 x 21 x 1.0, RP2350, USB."""
-    parts = [(cbox(0, 0, 0, 51.0, 21.0, 1.0), GREEN),
-             (cbox(0, 0, 1.0, 7.0, 7.0, 0.9), BLACK),
-             (cbox(-23.0, 0, 1.0, 6.0, 8.0, 3.0), METAL)]
-    return [(place(s, dx=cx, dy=cy, dz=z0, rz=rot), c) for s, c in parts]
-
-
 def iomcu():
-    """The IOmcu: a Pico on a blue screw-terminal carrier, 89 x 73."""
-    cx, cy, rot = 410.0, 352.0, 0.0
+    """The IOmcu: a Waveshare RP2350-CAN on its carrier.
+
+    rp2350_can.step, Pico size, on a blue screw-terminal carrier of
+    89 x 73 (carrier: photo estimate).
+    """
+    cx, cy = 410.0, 352.0
     parts = [(cbox(0, 0, 3.0, 89.0, 73.0, 1.6), BLUE)]
     for sy in (-1, 1):
         parts.append((cbox(0, sy * 31.0, 4.6, 80.0, 7.0, 8.5), TERMINAL))
@@ -170,12 +187,13 @@ def iomcu():
     for x in (-40.0, 40.0):
         for y in (-32.0, 32.0):
             parts.append((cbox(x, y, 0.0, 4.0, 4.0, 3.0), METAL))
-    out = [(place(s, dx=cx, dy=cy, rz=rot), c) for s, c in parts]
-    return out + pico(cx, cy, 4.6 + 8.5, rot)
+    out = [(place(s, dx=cx, dy=cy), c) for s, c in parts]
+    return out + seated("pcb/rp2350_can.step", cx, cy, 4.6 + 8.5, rz=90.0,
+                        colour=GREEN)
 
 
 def touch_injector():
-    """A small RP2040 board with two pin header rows, 23.5 x 18."""
+    """Waveshare RP2350-Zero, 23.5 x 18 (datasheet), pin headers down."""
     cx, cy = 470.0, 236.0
     parts = [(cbox(0, 0, 0, 23.5, 18.0, 1.0), BLUE),
              (cbox(0, 0, 1.0, 5.0, 5.0, 0.8), BLACK)]
@@ -184,28 +202,28 @@ def touch_injector():
     return [(place(s, dx=cx, dy=cy, rz=90.0), c) for s, c in parts]
 
 
-def sensor_perfboard():
-    """Green perfboard 50 x 40 with a black square module on it."""
+def ina3221():
+    """The INA3221 module (ina3221_module.step) on a green perfboard."""
     cx, cy = 478.0, 288.0
-    return [(cbox(cx, cy, 0, 50.0, 40.0, 1.6), GREEN),
-            (cbox(cx - 4.0, cy, 4.0, 23.0, 23.0, 1.6), BLACK),
-            (cbox(cx - 4.0, cy, 1.6, 20.0, 2.5, 2.4), BLACK)]
+    return ([(cbox(cx, cy, 0, 50.0, 40.0, 1.6), GREEN)]
+            + seated("pcb/ina3221_module.step", cx - 4.0, cy, 4.0))
 
 
 def servo():
-    """servo_standard.step standing at the sheet's right edge."""
-    out = []
-    for s, c in read_step("parts/servo_standard.step"):
-        out.append((place(s, dx=600.0, dy=205.0, rz=90.0), c or BLACK))
-    return out
+    """Hitec D485HW (hitec_d485hw.step) at the sheet's right edge."""
+    return seated("parts/hitec_d485hw.step", 600.0, 205.0, 0.0, rz=90.0,
+                  colour=BLACK)
 
 
 def as5600():
-    """The AS5600 module, blue, taped over the servo's output."""
-    cx, cy, z = 600.0, 198.0, 47.0
-    return [(cbox(cx, cy, z, 23.0, 23.0, 1.6), BLUE),
-            (cbox(cx, cy, z + 1.6, 5.0, 4.0, 1.5), BLACK),
-            (cbox(cx, cy + 6.0, z + 3.1, 26.0, 16.0, 0.3), LIGHT)]
+    """The AS5600 module over the servo's output (KiCad module model)."""
+    return seated("kicad/rcbench_modules.3dshapes/"
+                  "AS5600_Encoder_22.5x22.5mm.step", 600.0, 198.0, 47.0)
+
+
+def imu():
+    """The WIT BWT901CL (wit_imu.step) taped beside the servo."""
+    return seated("parts/wit_imu.step", 575.0, 112.0, 0.0, rz=90.0)
 
 
 def load_resistor():
@@ -221,22 +239,18 @@ def load_resistor():
 
 
 def logic_analyzer():
-    """Kingst LA2016, about 105 x 61 x 18, grey case, white top."""
+    """Kingst LA2016: 95 x 55 x 23 (datasheet), grey case, white top."""
     cx, cy = 342.0, 260.0
-    return [(cbox(cx, cy, 0, 105.0, 61.0, 16.0), GREY),
-            (cbox(cx, cy, 16.0, 101.0, 57.0, 1.5), LIGHT),
-            (cbox(cx + 54.0, cy, 4.0, 5.0, 22.0, 8.0), BLACK)]
+    return [(cbox(cx, cy, 0, 95.0, 55.0, 21.5), GREY),
+            (cbox(cx, cy, 21.5, 91.0, 51.0, 1.5), LIGHT),
+            (cbox(cx + 49.0, cy, 6.0, 5.0, 22.0, 10.0), BLACK)]
 
 
 def supplies():
-    """The PD meter with its display, a buck module, a USB-C board."""
-    out = []
-    pd = [(cbox(0, 0, 0, 37.0, 53.0, 1.6), BLACK),
-          (cbox(0, 6.0, 1.6, 26.0, 16.0, 3.0), (0.10, 0.20, 0.45)),
-          (cbox(0, -20.0, 1.6, 10.0, 10.0, 9.0), TERMINAL),
-          (cbox(0, 24.0, 1.6, 9.0, 7.5, 3.2), METAL)]
-    out.append(("pd_meter", [(place(s, dx=230.0, dy=368.0), c)
-                             for s, c in pd]))
+    """The WeAct PD Power Mini, a buck module, a USB-C board."""
+    out = [("pd_mini", seated("kicad/rcbench_modules.3dshapes/"
+                              "PD_Buck_WeAct_PDPowerMiniV1_61x40mm.step",
+                              232.0, 368.0, 0.0, rz=90.0))]
     buck = [(cbox(0, 0, 0, 22.0, 17.0, 1.2), BLUE),
             (cbox(0, 0, 1.2, 8.0, 8.0, 4.0), DARK)]
     out.append(("buck", [(place(s, dx=271.0, dy=383.0), c)
@@ -249,8 +263,12 @@ def supplies():
     return out
 
 
-def host_computer():
-    """The host: a black vented case 70 x 115 x 35, Ethernet forward."""
+def host_pi5():
+    """The host, a Raspberry Pi 5 in a black vented case.
+
+    The case, 70 x 115 x 35, is a photo estimate; Ethernet towards the
+    viewer.
+    """
     body = cbox(105.0, 362.0, 0, 70.0, 115.0, 35.0)
     vents = [cyl((x, y, 30.0), (0, 0, 1), 1.5, 6.0)
              for x in range(80, 132, 8) for y in range(320, 405, 8)]
@@ -259,7 +277,7 @@ def host_computer():
             (cbox(90.0, 372.0, 35.0, 4.0, 4.0, 0.5), RED)]
 
 
-def usb_hub():
+def usb_hub_1():
     hub = [(cbox(162.0, 350.0, 0, 30.0, 120.0, 22.0), BLACK)]
     for k in range(4):
         hub.append((cbox(147.9, 310.0 + 22.0 * k, 6.0, 0.3, 12.5, 5.0),
@@ -267,7 +285,8 @@ def usb_hub():
     return hub
 
 
-def power_bank():
+def usb_hub_2():
+    """The second USB hub, a black cylinder (photo estimate)."""
     return [(cyl((192.0, 292.0, 12.0), (0, 1, 0), 12.0, 115.0), BLACK)]
 
 
@@ -277,8 +296,8 @@ def power_bank():
 CLAMP = (480.0, 0.0)
 POLE_TOP = (452.0, 70.0, 330.0)
 CAM = (425.0, 135.0, 345.0)        # the camera's mount on its base
-PAN_AXIS = (425.0, 135.0, 322.0)   # pan turns about z through here
-TILT_AXIS = (425.0, 135.0, 287.0)  # tilt turns about x through here
+PAN_AXIS = (425.0, 135.0, 325.0)   # pan turns about z through here
+TILT_AXIS = (425.0, 135.0, 293.5)  # tilt turns about x through here
 
 
 def _rod(a, b, r):
@@ -326,9 +345,13 @@ def BRepPrimAPI_MakeSphere_(p, r):
 
 
 def camera_base():
-    """The camera's base, hanging from its mount, 47 across."""
+    """EMEET PIXY's base, 53 across and 20 high, hanging from its mount.
+
+    The PIXY is 53 x 53 x 73 over all (maker's listing at Mighty
+    Gadget); base, yoke and head share that height here by estimate.
+    """
     x, y, z = CAM
-    return [(cyl((x, y, PAN_AXIS[2]), (0, 0, 1), 23.5, z - PAN_AXIS[2]),
+    return [(cyl((x, y, PAN_AXIS[2]), (0, 0, 1), 26.5, z - PAN_AXIS[2]),
              DARK),
             (cyl((x, y, z), (0, 0, 1), 5.0, 8.0), METAL)]
 
@@ -336,24 +359,30 @@ def camera_base():
 def camera_pan():
     """The yoke under the base; turns about z through PAN_AXIS."""
     x, y, z = PAN_AXIS
-    yoke = fuse(cyl((x, y, z - 6.0), (0, 0, 1), 20.0, 6.0),
-                box(x - 27.0, y - 10.0, TILT_AXIS[2] - 4.0, x - 22.0,
-                    y + 10.0, z - 6.0),
-                box(x + 22.0, y - 10.0, TILT_AXIS[2] - 4.0, x + 27.0,
-                    y + 10.0, z - 6.0))
+    yoke = fuse(cyl((x, y, z - 5.0), (0, 0, 1), 22.0, 5.0),
+                box(x - 29.0, y - 10.0, TILT_AXIS[2] - 4.0, x - 25.5,
+                    y + 10.0, z - 5.0),
+                box(x + 25.5, y - 10.0, TILT_AXIS[2] - 4.0, x + 29.0,
+                    y + 10.0, z - 5.0))
     return [(yoke, DARK)]
 
 
 def camera_tilt():
-    """The head with the lens; turns about x through TILT_AXIS."""
+    """The head, 43 across and 50 wide, with its 2 lenses.
+
+    It turns about x through TILT_AXIS.
+    """
     x, y, z = TILT_AXIS
-    head = cyl((x - 21.5, y, z), (1, 0, 0), 21.0, 43.0)
-    lens = cyl((x, y, z - 21.0), (0, 0, -1), 9.0, 3.0)
-    glass = cyl((x, y, z - 24.0), (0, 0, -1), 7.0, 0.5)
-    # The lens looks down and away, 30 degrees off the vertical.
-    turned = [place(place(s, dx=-x, dy=-y, dz=-z), rx=-30.0, dx=x, dy=y,
-                    dz=z) for s in (head, lens, glass)]
-    return [(turned[0], DARK), (turned[1], BLACK), (turned[2], SCREEN)]
+    head = cyl((x - 25.0, y, z), (1, 0, 0), 21.5, 50.0)
+    parts = [(head, DARK)]
+    for dx in (-10.0, 10.0):
+        parts.append((cyl((x + dx, y, z - 21.5), (0, 0, -1), 7.0, 2.5),
+                      BLACK))
+        parts.append((cyl((x + dx, y, z - 24.0), (0, 0, -1), 5.5, 0.5),
+                      SCREEN))
+    # The lenses look down and away, 30 degrees off the vertical.
+    return [(place(place(s, dx=-x, dy=-y, dz=-z), rx=-30.0, dx=x, dy=y,
+                   dz=z), c) for s, c in parts]
 
 
 # The ring lamp above the bench: its reflection in the sheet is the white
@@ -380,16 +409,17 @@ NODES = [
     ("panel", "bench", panel, (398.0, 447.0, 0)),
     ("iomcu", "bench", iomcu, (410.0, 352.0, 0)),
     ("injector", "bench", touch_injector, (470.0, 236.0, 0)),
-    ("sensor_perfboard", "bench", sensor_perfboard, (478.0, 288.0, 0)),
+    ("ina3221", "bench", ina3221, (478.0, 288.0, 0)),
     ("servo", "bench", servo, (600.0, 205.0, 0)),
     ("as5600", "servo", as5600, (600.0, 198.0, 47.0)),
+    ("imu", "servo", imu, (575.0, 112.0, 0)),
     ("load_resistor", "bench", load_resistor, (326.0, 318.0, 0)),
     ("instruments", "bench", None, (0, 0, 0)),
     ("logic_analyzer", "instruments", logic_analyzer, (342.0, 260.0, 0)),
     ("supplies", "bench", None, (0, 0, 0)),
-    ("host_computer", "bench", host_computer, (105.0, 362.0, 0)),
-    ("usb_hub", "bench", usb_hub, (162.0, 350.0, 0)),
-    ("power_bank", "bench", power_bank, (192.0, 350.0, 12.0)),
+    ("host_pi5", "bench", host_pi5, (105.0, 362.0, 0)),
+    ("usb_hub_1", "bench", usb_hub_1, (162.0, 350.0, 0)),
+    ("usb_hub_2", "bench", usb_hub_2, (192.0, 350.0, 12.0)),
     ("ring_lamp", "bench", ring_lamp, RING[3]),
     ("camera", "bench", None, (0, 0, 0)),
     ("camera_clamp", "camera", clamp, (480.0, 0.0, 0)),
@@ -447,11 +477,11 @@ def scene(deflection=0.15):
     from trimesh.visual.material import PBRMaterial
     pivots = {n: p for n, _pa, _f, p in NODES}
     parents = {n: pa for n, pa, _f, _p in NODES}
-    for sub in ("pd_meter", "buck", "usbc_board"):
+    for sub in ("pd_mini", "buck", "usbc_board"):
         pivots["supply_" + sub] = (0, 0, 0)
         parents["supply_" + sub] = "supplies"
     sc = trimesh.Scene()
-    order = [n for n, *_ in NODES] + ["supply_pd_meter", "supply_buck",
+    order = [n for n, *_ in NODES] + ["supply_pd_mini", "supply_buck",
                                        "supply_usbc_board"]
 
     def world(n):

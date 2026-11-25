@@ -503,7 +503,7 @@ The model is drawn from the owner's 8 photos of 2026-11-25.
 
 | Property | Value |
 | --- | --- |
-| Format | glTF 2.0 binary, 1.5MB |
+| Format | glTF 2.0 binary, 3.8MB |
 | Units | metres |
 | Up axis | +y, as glTF defines it |
 | Origin | the acrylic sheet's front left corner, on its top face |
@@ -517,62 +517,70 @@ xvfb-run -a python3 hardware/mechanical/_gen_bench.py \
 ```
 
 Each node holds one mesh per colour, named `<node>_mesh<k>`. A node's
-origin is the pivot below, in the script's frame (mm, z up).
+origin is the pivot below, in the script's frame (mm, z up). The parts
+are the ones hwbench lists on the bench. "Model" means one of this
+repository's STEP models, at its documented size.
 
-| Node | Parent | Content | Pivot |
-| --- | --- | --- | --- |
-| `bench` | | everything | origin |
-| `sheet` | bench | clear acrylic sheet, 605 x 500 x 5 | origin |
-| `base_board` | bench | black board under the sheet, 463 x 392 x 18 | origin |
-| `panel` | bench | Waveshare ESP32-P4 7 inch, `panel_7b.step`, tilted 15 degrees on 2 legs | (398, 447, 0) |
-| `iomcu` | bench | a Pico, 51 x 21, on a blue screw-terminal carrier, 89 x 73 | (410, 352, 0) |
-| `injector` | bench | the touch injector: a small blue board with 2 pin header rows, 23.5 x 18 | (470, 236, 0) |
-| `sensor_perfboard` | bench | green perfboard, 50 x 40, with a black square module, 23 x 23 | (478, 288, 0) |
-| `servo` | bench | `servo_standard.step` at the sheet's right edge | (600, 205, 0) |
-| `as5600` | servo | the AS5600 module, blue, 23 x 23, taped over the servo's output | (600, 198, 47) |
-| `load_resistor` | bench | gold aluminium-housed power resistor, 50 x 28 x 15 | (326, 318, 0) |
-| `instruments` | bench | group | origin |
-| `logic_analyzer` | instruments | Kingst LA2016, 105 x 61 x 18 | (342, 260, 0) |
-| `supplies` | bench | group | origin |
-| `supply_pd_meter` | supplies | USB PD (power delivery) board with its display and terminal block, 37 x 53 | origin |
-| `supply_buck` | supplies | blue buck module, 22 x 17 | origin |
-| `supply_usbc_board` | supplies | USB-C board with a red LED, 25 x 15 | origin |
-| `host_computer` | bench | black vented case, 70 x 115 x 35, Ethernet towards the viewer | (105, 362, 0) |
-| `usb_hub` | bench | black USB hub, 30 x 120 x 22 | (162, 350, 0) |
-| `power_bank` | bench | black cylinder, 24 across and 115 long | (192, 350, 12) |
-| `ring_lamp` | bench | ring lamp facing down, 260 across, opening 200, 22 thick | (330, 150, 600) |
-| `camera` | bench | group: the camera rig | origin |
-| `camera_clamp` | camera | clamp on the sheet's front edge | (480, 0, 0) |
-| `camera_pole` | camera | pole with a foam grip, leaning back | (480, -16, 30) |
-| `camera_arm` | camera | ball arm with its knob | (452, 70, 330) |
-| `camera_base` | camera | the camera's base, 47 across, hanging under its mount | (425, 135, 345) |
-| `camera_pan` | camera_base | the yoke | (425, 135, 322) |
-| `camera_tilt` | camera_pan | the head with the lens, 30 degrees off the vertical | (425, 135, 287) |
+| Node | Parent | Content | Size from | Pivot |
+| --- | --- | --- | --- | --- |
+| `bench` | | everything | | origin |
+| `sheet` | bench | clear acrylic sheet, 605 x 500 x 5 | photo estimate | origin |
+| `base_board` | bench | black board under the sheet, 463 x 392 x 18 | photo estimate | origin |
+| `panel` | bench | Waveshare ESP32-P4 7 inch, tilted 15 degrees on 2 legs | model `panel_7b.step`; tilt and legs estimated | (398, 447, 0) |
+| `iomcu` | bench | Waveshare RP2350-CAN on a blue screw-terminal carrier, 89 x 73 | model `rp2350_can.step`; carrier from the photo | (410, 352, 0) |
+| `injector` | bench | Waveshare RP2350-Zero touch injector, 23.5 x 18, pin headers | datasheet outline; parts drawn as boxes | (470, 236, 0) |
+| `ina3221` | bench | INA3221 module on a green perfboard, 50 x 40 | model `ina3221_module.step`; perfboard estimated | (478, 288, 0) |
+| `servo` | bench | Hitec D485HW at the sheet's right edge | model `hitec_d485hw.step` | (600, 205, 0) |
+| `as5600` | servo | AS5600 encoder module over the servo's output | model `AS5600_Encoder_22.5x22.5mm.step` | (600, 198, 47) |
+| `imu` | servo | WIT BWT901CL beside the servo | model `wit_imu.step` | (575, 112, 0) |
+| `load_resistor` | bench | gold aluminium-housed power resistor, 50 x 28 x 15 | photo estimate; not in hwbench's list | (326, 318, 0) |
+| `instruments` | bench | group | | origin |
+| `logic_analyzer` | instruments | Kingst LA2016, 95 x 55 x 23 | datasheet | (342, 260, 0) |
+| `supplies` | bench | group | | origin |
+| `supply_pd_mini` | supplies | WeAct PD Power Mini, 61 x 40 | model `PD_Buck_WeAct_PDPowerMiniV1_61x40mm.step` | origin |
+| `supply_buck` | supplies | blue buck module, 22 x 17 | photo estimate | origin |
+| `supply_usbc_board` | supplies | USB-C board with a red LED, 25 x 15 | photo estimate | origin |
+| `host_pi5` | bench | Raspberry Pi 5 in a black vented case, 70 x 115 x 35, Ethernet towards the viewer | photo estimate of the case | (105, 362, 0) |
+| `usb_hub_1` | bench | black USB hub, 30 x 120 x 22 | photo estimate | (162, 350, 0) |
+| `usb_hub_2` | bench | black cylindrical USB hub, 24 across, 115 long | photo estimate | (192, 350, 12) |
+| `ring_lamp` | bench | ring lamp facing down, 260 across, opening 200, 22 thick | estimate from its reflection | (330, 150, 600) |
+| `camera` | bench | group: the camera rig | | origin |
+| `camera_clamp` | camera | clamp on the sheet's front edge | photo estimate | (480, 0, 0) |
+| `camera_pole` | camera | pole with a foam grip, leaning back | photo estimate | (480, -16, 30) |
+| `camera_arm` | camera | ball arm with its knob | photo estimate | (452, 70, 330) |
+| `camera_base` | camera | EMEET PIXY's base, 53 across, hanging under its mount | 53 x 53 x 73 over all, maker's listing; the split into base, yoke and head estimated | (425, 135, 345) |
+| `camera_pan` | camera_base | the yoke | as above | (425, 135, 325) |
+| `camera_tilt` | camera_pan | the head, 43 across and 50 wide, 2 lenses, 30 degrees off the vertical | as above | (425, 135, 293.5) |
 
 To turn the camera, rotate `camera_pan` about the GLB's y axis and
 `camera_tilt` about its x axis. Both turn about their own origins.
 
-Scale: the panel and the Pico set it. The panel's glass is 164.3 x
-99.2mm (`panel_7b.step`), and a Pico is 51 x 21mm. In the near top-down
-photo, the panel's long side is 415 of 2000 pixels: 2.53 pixels per mm.
-At that scale the carrier under the Pico measures 89 x 73mm in the side
-photo.
+Scale: the panel and the Pico-sized RP2350-CAN set it. The panel's glass
+is 164.3 x 99.2mm (`panel_7b.step`), and the RP2350-CAN is 51 x 21mm. In
+the near top-down photo, the panel's long side is 415 of 2000 pixels:
+2.53 pixels per mm. At that scale the carrier under the RP2350-CAN
+measures 89 x 73mm in the side photo.
 
 Limits:
 
-- Every size and place except the panel's and the Pico's is read from
-  the photos and is an estimate. Perspective is not corrected, so places
-  are within about ±20mm. Neither the sheet's far edge nor the black
-  board's is fully in a photo.
+- Every place on the sheet is read from the photos at that scale and is
+  an estimate. Perspective is not corrected, so places are within about
+  ±20mm. Neither the sheet's far edge nor the black board's is fully in
+  a photo.
 - The gold block taped down with tesa strips is drawn as a power
-  resistor; what it is is not confirmed.
-- The black square module on the perfboard is not identified.
-- The camera has the shape of an OBSBOT Tiny; its model is not confirmed
-  and its size is estimated.
+  resistor; what it is is not confirmed. The buck module and the USB-C
+  board are on the bench in the photos but not in hwbench's list.
+- The EMEET PIXY's listed size is 53 x 53 x 73mm; another listing gives
+  56 x 43 x 22mm, probably for the camera head alone. The model takes
+  the first.
 - The ring lamp's reflection is the white ring in the photos. Its size,
   height and place are estimates, and its mount is not drawn.
 - Not drawn: cables, the cabinet, the monitor, the soldering station, the
   light tent.
+
+Sources: Kingst LA2016, 95 x 55 x 23mm (Core Electronics, CNX Software);
+EMEET PIXY, 53 x 53 x 73mm (Mighty Gadget); Waveshare RP2350-Zero,
+23.5 x 18mm (Waveshare).
 
 ## Panel board
 
