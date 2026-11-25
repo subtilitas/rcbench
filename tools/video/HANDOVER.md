@@ -260,9 +260,11 @@ Owner, 2026-11-14:
   `STATUS.md` lists the firmware change under its open items. The
   video's texts say nothing of this (owner's rule on test state).
 - `hitec-rbmod`, `stop` and `origin` are in English only.
-- `origin` shows the test bench as two lists in a window. A 3D model of
-  the bench and photographs from its camera are not in the tree; no
-  dimension of the bench is recorded. The stills `origin-post*` are
+- `origin` shows the test bench in 3 frames of the bench's camera,
+  `origin-bench-host`, `-panel` and `-top`, 2560 x 1440 with labels drawn
+  on, released by the owner for the tree; the camera's other frames are
+  not. A 3D model of the bench is not in the tree; no dimension of the
+  bench is recorded. The stills `origin-post*` are
   captures of the author's own posts in the RC-Network thread
   `rcbench-universal-test-und-programmiergerät.12133255`, posts 1, 50,
   124, 166, 167 and 193. The stills `origin-order*` are posts 1 and 13

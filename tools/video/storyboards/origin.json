@@ -507,7 +507,7 @@
   },
   {
    "type": "case",
-   "dur": 90.02,
+   "dur": 92.26,
    "display": {
     "view": "motor-plot",
     "screen": "motor"
@@ -521,19 +521,19 @@
     },
     {
      "from": 18.54,
-     "to": 56.879999999999995,
+     "to": 59.12,
      "n": 6,
      "text": "How it is built"
     },
     {
-     "from": 57.08,
-     "to": 82.6,
+     "from": 59.32,
+     "to": 84.84,
      "n": 6,
      "text": "A test walk"
     },
     {
-     "from": 82.8,
-     "to": 89.62,
+     "from": 85.04,
+     "to": 91.86,
      "n": 6,
      "text": "3 November 2026"
     }
@@ -553,7 +553,7 @@
      ]
     ],
     [
-     90.02000000000001,
+     92.26,
      [
       150,
       300,
@@ -589,53 +589,35 @@
     },
     {
      "from": 18.54,
-     "to": 56.78,
+     "to": 59.02,
      "at": [
-      900,
-      170
+      790,
+      150
      ],
-     "w": 900,
-     "kind": "folder",
-     "title": "The test bench",
-     "body": [
-      {
-       "h": "Host"
-      },
-      {
-       "p": "Raspberry Pi 5: builds, loads, runs the walk"
-      },
-      {
-       "h": "Under test"
-      },
-      {
-       "p": "7 inch ESP32-P4 panel, 1024 x 600, and RP2350 IOmcu"
-      },
-      {
-       "h": "Hands"
-      },
-      {
-       "p": "RP2350-Zero on the touch bus, address 0x14: tap, hold, swipe"
-      },
-      {
-       "h": "Eyes"
-      },
-      {
-       "p": "Logic analyser, 16 channels, up to 200MHz"
-      },
-      {
-       "p": "Camera 3840 x 2160, pan ±150°, tilt ±90°"
-      },
-      {
-       "h": "Loads"
-      },
-      {
-       "p": "PD mini 1.0V to 14.2V, servos, AS5600 encoder, IMU"
-      }
-     ]
+     "w": 1080,
+     "kind": "browser",
+     "url": "bench camera, 3840 x 2160",
+     "page": {
+      "w": 1280,
+      "shots": [
+       [
+        0,
+        "origin-bench-host"
+       ],
+       [
+        30.24,
+        "origin-bench-panel"
+       ],
+       [
+        41.62,
+        "origin-bench-top"
+       ]
+      ]
+     }
     },
     {
-     "from": 57.08,
-     "to": 82.5,
+     "from": 59.32,
+     "to": 84.74000000000001,
      "at": [
       900,
       170
@@ -670,19 +652,19 @@
       },
       {
        "id": "n1",
-       "from": 74.62,
+       "from": 76.86,
        "log": "DShot   1000.06 frames/s"
       },
       {
        "id": "n2",
-       "from": 77.12,
+       "from": 79.36,
        "log": "PPM     40.002Hz"
       }
      ]
     },
     {
-     "from": 82.8,
-     "to": 89.62,
+     "from": 85.04,
+     "to": 91.86,
      "at": [
       790,
       150
@@ -716,18 +698,18 @@
     },
     {
      "at": 41.62,
-     "text": "A logic analyser with 16 channels, up to 200 megahertz, records what the pins put out. A camera with 3840 by 2160 pixels hangs above the bench. It pans and tilts to read the display."
+     "text": "A logic analyser with 16 channels, up to 200 megahertz, records what the pins put out. A camera with 3840 by 2160 pixels hangs above the bench. It pans and tilts to read the display. These pictures are its own."
     },
     {
-     "at": 57.08,
+     "at": 59.32,
      "text": "A test walk has seven steps. Plan. Read the bench's state. Build and load. For each step: a picture, a gesture, a picture, a capture. Compare the numbers with the criteria. Put the bench back to safe. Report."
     },
     {
-     "at": 74.62,
+     "at": 76.86,
      "text": "The numbers are plain. D Shot at 1000.06 frames per second. A P P M signal at 40.002 hertz."
     },
     {
-     "at": 82.8,
+     "at": 85.04,
      "text": "On the 3rd of November Julian writes: everything works. Finally."
     }
    ]
