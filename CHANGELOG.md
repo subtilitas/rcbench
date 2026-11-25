@@ -184,7 +184,10 @@ history is in git.
   `release`, one touch over three steps, and `point`, the end of the
   bubble's line. The storyboard `stop` shows each touch on STOP that way,
   from the renderer's views `stop-down`, `stop-short-down` and
-  `stop-held`.
+  `stop-held`. Case scenes take `estop`, keys that press the emergency
+  stop's head in, and the mockup's display takes `panel` shots; `stop`
+  shows the red stop button pressed, latched and released, with HWSTOP
+  on the display from the view `stop-hw`.
 - Storyboard `origin`, the project's origin in 7 chapters: the reason,
   ideas, the plan, development, testing, the test bench and the group
   order of the rbmod carrier, with 7 posts of two RC-Network threads as

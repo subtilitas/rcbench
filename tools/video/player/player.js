@@ -250,6 +250,7 @@ function drawCase(sc, lt, a, pulse, ui) {
     m.setFace(imgs['dial-' + before[1]], imgs['dial-' + name],
               lt < sc.faces[0][0] ? 0 : mix);
   }
+  if (sc.estop && m.setStop) m.setStop(track(sc.estop, lt));
   if (sc.turn && m.setTurn) m.setTurn(track(sc.turn, lt));
   if (sc.flip && m.setFlip) m.setFlip(track(sc.flip, lt));
   if (sc.spin && m.setSpin) m.setSpin(track(sc.spin, lt));

@@ -3026,6 +3026,7 @@ static void pose_update(const char *view)
  * meanwhile.  stop-short: a hold let go after 0.5s and its hint.
  * stop-holding: 1s into the reset's hold, the fill half way to the frame's
  * yellow.  stop-reset: the hold complete and the stop taken, SAFE.
+ * stop-hw: the bench's stop button pressed while ARMED, HWSTOP in the band.
  * stop-down: the first press with the finger still on STOP.
  * stop-short-down and stop-held: the finger on the latched STOP 0.5s and
  * 1.96s into the hold.
@@ -3058,6 +3059,13 @@ static void stop_video_view(const char *view, ui_bench_status_t *st)
 
     st->armed = false;
     st->armed_roles = 0u;
+    if (strcmp(v, "hw") == 0) {
+        /* The bench's stop button pressed while ARMED: SAFE, the
+         * heartbeat bit, no latch of the panel's STOP. */
+        st->faults = 0x10u;
+        ui_router_set_status(st);
+        return;
+    }
     st->stop_latched = true;
     ui_router_set_status(st);
     if (strcmp(v, "refused") == 0) {
@@ -5388,7 +5396,8 @@ int main(int argc, char **argv)
     s_rot_on = strcmp(view, "setup-rotation") == 0;
     s_tz_on = strcmp(view, "setup-time-zone") == 0;
     s_hwstop_on = strcmp(view, "setup-hw-stop") == 0
-                  || strcmp(view, "band-hwstop") == 0;
+                  || strcmp(view, "band-hwstop") == 0
+                  || strcmp(view, "stop-hw") == 0;
     s_tone_fed = strcmp(view, "motor-stick-tone") == 0;
 
     ui_theme_set(light ? UI_THEME_LIGHT : UI_THEME_DARK);

@@ -357,34 +357,271 @@
       1012,
       29
      ]
+    }
+   ]
+  },
+  {
+   "type": "case",
+   "dur": 37.339999999999996,
+   "display": {
+    "view": "motor-plot",
+    "screen": "motor"
+   },
+   "panel": [
+    [
+     0,
+     "motor-plot",
+     "motor"
+    ],
+    [
+     9.57,
+     "stop-hw",
+     "motor"
+    ],
+    [
+     28.040000000000003,
+     "stop-reset",
+     "motor"
+    ]
+   ],
+   "estop": [
+    [
+     0,
+     0
+    ],
+    [
+     9.17,
+     0
+    ],
+    [
+     9.42,
+     1
+    ],
+    [
+     27.540000000000003,
+     1
+    ],
+    [
+     27.890000000000004,
+     0
+    ]
+   ],
+   "camera": [
+    [
+     0,
+     [
+      -200,
+      120,
+      -160
+     ],
+     [
+      -58,
+      16,
+      -60
+     ]
+    ],
+    [
+     8.62,
+     [
+      -150,
+      60,
+      -150
+     ],
+     [
+      -58,
+      16,
+      -65
+     ]
+    ],
+    [
+     20.04,
+     [
+      -150,
+      60,
+      -150
+     ],
+     [
+      -58,
+      16,
+      -65
+     ]
+    ],
+    [
+     22.240000000000002,
+     [
+      -110,
+      210,
+      -250
+     ],
+     [
+      -30,
+      20,
+      -20
+     ]
+    ],
+    [
+     25.540000000000003,
+     [
+      -110,
+      210,
+      -250
+     ],
+     [
+      -30,
+      20,
+      -20
+     ]
+    ],
+    [
+     27.14,
+     [
+      -150,
+      60,
+      -150
+     ],
+     [
+      -58,
+      16,
+      -65
+     ]
+    ],
+    [
+     31.32,
+     [
+      -150,
+      60,
+      -150
+     ],
+     [
+      -58,
+      16,
+      -65
+     ]
+    ],
+    [
+     33.32,
+     [
+      -110,
+      210,
+      -250
+     ],
+     [
+      -30,
+      20,
+      -20
+     ]
+    ],
+    [
+     37.339999999999996,
+     [
+      -110,
+      210,
+      -250
+     ],
+     [
+      -30,
+      20,
+      -20
+     ]
+    ]
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 25.94,
+     "n": 4,
+     "text": "Press the stop button"
     },
     {
-     "view": "band-hwstop",
-     "dur": 8.4,
+     "from": 25.94,
+     "to": 37.339999999999996,
      "n": 4,
-     "chip": "The stop button",
-     "title": "The stop button",
-     "text": "With <b>SETUP › PANEL › Hardware stop</b> ON, the bench's stop button shows as <b>HWSTOP</b>. It opens the heartbeat line: the IOmcu is SAFE and refuses ARM.",
-     "say": "Step 4. The bench's own stop button opens the heartbeat line to the I O M C U. The chip reads hardware stop, and the I O M C U is safe and refuses arm.",
-     "target": [
-      606,
-      29
+     "text": "Turn to release"
+    }
+   ],
+   "labels": [
+    {
+     "from": 1.6,
+     "to": 8.319999999999999,
+     "anchor": "estop",
+     "at": [
+      1330,
+      250
      ],
-     "screen": "overview"
+     "size": "sm",
+     "title": "Stop button",
+     "text": "M16, red head. In series with the heartbeat line.",
+     "glow": "estop"
     },
     {
-     "view": "band-hwstop",
-     "dur": 6.0,
-     "n": 4,
-     "chip": "The stop button",
-     "title": "Release it",
-     "text": "Release the button. <b>HWSTOP</b> goes 80 to 180ms after the line closes. The bench stays SAFE: hold <b>ARM</b> for 2s.",
-     "say": "Release the button, and the chip goes. The bench stays safe until arm is held for two seconds.",
-     "target": [
-      420,
-      100
+     "from": 9.42,
+     "to": 19.84,
+     "anchor": "estop",
+     "at": [
+      1330,
+      250
      ],
-     "screen": "overview"
+     "size": "sm",
+     "title": "Pressed: latched in",
+     "text": "The line opens. No edge for 150ms: every output SAFE."
+    },
+    {
+     "from": 22.44,
+     "to": 25.34,
+     "anchor": "display",
+     "at": [
+      1330,
+      250
+     ],
+     "size": "sm",
+     "title": "HWSTOP",
+     "text": "With SETUP › PANEL › Hardware stop ON. The arm chip reads SAFE."
+    },
+    {
+     "from": 27.94,
+     "to": 31.119999999999997,
+     "anchor": "estop",
+     "at": [
+      1330,
+      250
+     ],
+     "size": "sm",
+     "title": "Turned: released",
+     "text": "The line closes. HWSTOP goes 80 to 180ms later."
+    },
+    {
+     "from": 33.519999999999996,
+     "to": 36.94,
+     "anchor": "display",
+     "at": [
+      1330,
+      250
+     ],
+     "size": "sm",
+     "title": "SAFE",
+     "text": "Hold ARM for 2s to arm again."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.6,
+     "text": "Step 4. The red stop button on the back of the case. The bench is armed and a motor runs."
+    },
+    {
+     "at": 8.62,
+     "text": "Press it. The head latches in and the button opens the heartbeat line. Within 150 milliseconds the I O M C U switches every output to safe."
+    },
+    {
+     "at": 20.64,
+     "text": "The display shows hardware stop, and the bench is safe."
+    },
+    {
+     "at": 25.94,
+     "text": "Turn the head to release it. It comes out, and the chip goes."
+    },
+    {
+     "at": 31.72,
+     "text": "The bench stays safe. Arm needs a new two second hold."
     }
    ]
   },
@@ -397,6 +634,7 @@
     "Latched: ARM and every ON refused",
     "Hold STOP 2s to reset",
     "After the reset: SAFE, each output needs its hold",
+    "The red stop button: press to stop, turn to release",
     "A restart of the panel comes up unlatched and SAFE"
    ],
    "say": "One touch stops the bench. A two second hold resets it, and nothing switches on by itself.",

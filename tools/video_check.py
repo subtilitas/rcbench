@@ -262,6 +262,13 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
                 and isinstance(key[1], str)):
             errors.append(f"{where} faces: a key is [t, the face's name]")
             break
+    for key in scene.get("estop", []):
+        if not (isinstance(key, list) and len(key) == 2
+                and _number(key[0]) and _number(key[1])
+                and 0 <= key[1] <= 1):
+            errors.append(f"{where} estop: a key is [t, k] with k from 0, "
+                          "out, to 1, pressed")
+            break
     last = -1.0
     for key in scene.get("panel", []):
         if not (isinstance(key, list) and len(key) in (2, 3)
