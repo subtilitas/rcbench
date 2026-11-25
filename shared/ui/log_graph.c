@@ -300,6 +300,11 @@ int log_graph_x_px(float x)
     return lg_x_px(x);
 }
 
+bool log_graph_pressed(void)
+{
+    return lg.press != LG_PRESS_NONE;
+}
+
 int log_graph_row_px(int i)
 {
     return (lg_on() && i >= 0 && i < lg.mk.rows) ? lg.px[i] : -1;

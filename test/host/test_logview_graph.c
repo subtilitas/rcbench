@@ -463,6 +463,73 @@ TEST_CASE(each_finger_ends_its_own_press_beside_a_held_tab)
     draw();
 }
 
+/* A finger on a chip while another taps MORE: the list cancels the
+ * chip's press; its release, under the list, taps nothing, and once the
+ * list is closed a new tap on the chip focuses it. */
+TEST_CASE(more_cancels_a_held_graph_press)
+{
+    open_graph("LIMIT008.CSV");
+    send_id(TOUCH_EVENT_DOWN, 1, LV_GR_CHIP_CX(0), LV_GR_CHIP_CY);
+    REQUIRE(log_graph_pressed());
+    send_id(TOUCH_EVENT_DOWN, 2, LV_PV_MORE_CX, LV_FOOT_CY);
+    send_id(TOUCH_EVENT_UP, 2, LV_PV_MORE_CX, LV_FOOT_CY);
+    CHECK(!log_graph_pressed());
+    send_id(TOUCH_EVENT_UP, 1, LV_GR_CHIP_CX(0), LV_GR_CHIP_CY);
+    CHECK_EQ(log_graph_focus(), -1);
+    /* A press beside the list closes it. */
+    send_id(TOUCH_EVENT_DOWN, 3, LV_PV_CX, LV_PV_CY);
+    send_id(TOUCH_EVENT_UP, 3, LV_PV_CX, LV_PV_CY);
+    REQUIRE(log_viewer_view() == LOG_VIEW_PLOT);
+    send_id(TOUCH_EVENT_DOWN, 4, LV_GR_CHIP_CX(0), LV_GR_CHIP_CY);
+    send_id(TOUCH_EVENT_UP, 4, LV_GR_CHIP_CX(0), LV_GR_CHIP_CY);
+    CHECK_EQ(log_graph_focus(), 1);
+    draw();
+}
+
+/* A finger on the plot while another taps BACK: the press ends with the
+ * graph left, and its release on the list moves no cursor. */
+TEST_CASE(back_cancels_a_held_graph_press)
+{
+    open_graph("LIMIT008.CSV");
+    send_id(TOUCH_EVENT_DOWN, 1, LV_PV_CX, LV_PV_CY);
+    REQUIRE(log_graph_pressed());
+    send_id(TOUCH_EVENT_DOWN, 2, LV_PV_BACK_CX, LV_FOOT_CY);
+    send_id(TOUCH_EVENT_UP, 2, LV_PV_BACK_CX, LV_FOOT_CY);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+    CHECK(!log_graph_pressed());
+    send_id(TOUCH_EVENT_UP, 1, LV_PV_CX, LV_PV_CY);
+    draw();
+}
+
+/* A finger on a chip while another taps STEPS: the picture reloads, the
+ * press is dropped with the old data, and the release taps nothing. */
+TEST_CASE(a_tab_change_drops_a_held_graph_press)
+{
+    open_graph("RUDDR004.CSV");
+    send_id(TOUCH_EVENT_DOWN, 1, LV_GR_CHIP_CX(0), LV_GR_CHIP_CY);
+    send_id(TOUCH_EVENT_DOWN, 2, LV_GR_TAB_CX(1), LV_GR_CHIP_CY);
+    send_id(TOUCH_EVENT_UP, 2, LV_GR_TAB_CX(1), LV_GR_CHIP_CY);
+    REQUIRE(log_viewer_preset() == LOG_PRESET_RUDDR_STEPS);
+    CHECK(!log_graph_pressed());
+    send_id(TOUCH_EVENT_UP, 1, LV_GR_CHIP_CX(0), LV_GR_CHIP_CY);
+    CHECK_EQ(log_graph_focus(), -1);
+    tap(LV_GR_CHIP_CX(0), LV_GR_CHIP_CY);
+    CHECK_EQ(log_graph_focus(), 1);
+}
+
+/* A finger on a chip while the file is opened again (FILES' OPEN): the
+ * reload drops the press, and the release taps nothing. */
+TEST_CASE(a_reload_drops_a_held_graph_press)
+{
+    open_graph("LIMIT008.CSV");
+    send_id(TOUCH_EVENT_DOWN, 1, LV_GR_CHIP_CX(0), LV_GR_CHIP_CY);
+    REQUIRE(log_viewer_show(LOG_TAB_USER, "LIMIT008.CSV", g_mounts)
+            == LOG_SHOW_OPEN);
+    CHECK(!log_graph_pressed());
+    send_id(TOUCH_EVENT_UP, 1, LV_GR_CHIP_CX(0), LV_GR_CHIP_CY);
+    CHECK_EQ(log_graph_focus(), -1);
+}
+
 /* MORE > COLUMNS, then the import view's PLOT: the columns picked by row
  * number, every row, no graph. */
 TEST_CASE(plot_from_the_import_view_draws_rows_not_the_graph)
@@ -547,6 +614,10 @@ int main(void)
     RUN(ruddr_tabs_switch_between_search_and_steps);
     RUN(back_and_more_work_from_the_graph);
     RUN(a_cut_release_taps_no_chip);
+    RUN(more_cancels_a_held_graph_press);
+    RUN(back_cancels_a_held_graph_press);
+    RUN(a_tab_change_drops_a_held_graph_press);
+    RUN(a_reload_drops_a_held_graph_press);
     RUN(each_finger_ends_its_own_press_beside_a_held_tab);
     RUN(plot_from_the_import_view_draws_rows_not_the_graph);
     RUN(a_steady_frame_of_the_graph_does_no_work);

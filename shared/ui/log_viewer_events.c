@@ -798,6 +798,11 @@ static void plot_event(const touch_event_t *e)
         /* A press that slid off its button is not a tap on it. */
         const int btn = (s.press_btn >= 0 && tap_on(e, btns[s.press_btn]))
                             ? s.press_btn : -1;
+        if (btn == 0 || btn == 3) {
+            /* The view or MORE's list takes the glass: a finger still on
+             * the graph's chip or plot presses nothing more. */
+            lg_cancel();
+        }
         if (btn == 0) {
             /* Back where the plot came from: the import's PLOT, or the
              * list's OPEN on a file a preset matched. */

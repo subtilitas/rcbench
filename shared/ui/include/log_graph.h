@@ -53,6 +53,13 @@ bool log_graph_hidden(int k);
 int log_graph_x_px(float x);
 
 /**
+ * @brief Whether a finger holds the graph's chip or plot: a press its
+ *        release ends.
+ * @return true while one does.
+ */
+bool log_graph_pressed(void);
+
+/**
  * @brief The pixel column of row @p i.
  * @param i  The row.
  * @return the column, -1 for a row the graph does not hold.
