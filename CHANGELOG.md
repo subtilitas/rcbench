@@ -8,6 +8,20 @@ history is in git.
 
 ### Added
 
+- The servo label's bitmap and layout for a label printer for Supvan
+  T50M Pro labels (`shared/ui/label_bitmap.c`, `label_layout.c`): the QR
+  code of the servo id at level M, versions 1 to 3, quiet zone 2 modules,
+  and beside it the prefix, the serial in the 20x36 face and DUT NAME in
+  up to 2 lines. The layout follows the roll: 15 to 48mm wide, 20 to 100mm
+  long, side by side or stacked; 40x30mm gives a 7-dot module (0.875mm)
+  and a 129-dot text column. The bitmap is the printer's column-major,
+  least-significant-bit-first layout, 48 bytes a column. The test label
+  carries `RCBENCH TEST`, the firmware version and the roll size. The host
+  tool `render_label` writes a label as a PNG in reading orientation. No
+  screen prints yet.
+- Nayuki's QR Code generator library 1.8.0 (MIT) in `third_party/qrcodegen`,
+  unchanged.
+
 - LOGS draws an AUTOMATIC TEST, a SUPPLY, a MOTOR and a SERVO run over
   its time: each row at its time in the window two fingers set, not at its
   row number. A step in time longer than the larger of 3 median row
@@ -212,6 +226,14 @@ history is in git.
   20 x 27 x 4mm; `acrylic_disc_49_5.step`, a clear acrylic disc 49.5mm
   across and 2mm thick
   ([Mechanical parts](hardware/mechanical/README.md#round-display-board-waveshare-esp32-s3-touch-lcd-185)).
+- Screen steps of `tools/video` take the actions `press`, `down` and
+  `release`, one touch over three steps, and `point`, the end of the
+  bubble's line. The storyboard `stop` shows each touch on STOP that way,
+  from the renderer's views `stop-down`, `stop-short-down` and
+  `stop-held`. Case scenes take `estop`, keys that press the emergency
+  stop's head in, and the mockup's display takes `panel` shots; `stop`
+  shows the red stop button pressed, latched and released, with HWSTOP
+  on the display from the view `stop-hw`.
 - Storyboard `origin`, the project's origin in 7 chapters: the reason,
   ideas, the plan, development, testing, the test bench and the group
   order of the rbmod carrier, with 7 posts of two RC-Network threads as
