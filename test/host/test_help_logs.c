@@ -64,6 +64,15 @@ static void pose_plot(void)
     tap(PLOT_X, IM_BTN_CY);
 }
 
+/** @brief A MOTOR run opened from the list: the plot at once. */
+static void pose_run_plot(void)
+{
+    fresh();
+    g_bench_files = true;
+    log_viewer_refresh();
+    log_viewer_show(LOG_TAB_BENCH, "MOTOR042_kv1200.CSV", g_mounts);
+}
+
 /**
  * @brief Whether @p p marks an item with @p text.
  * @param p    The page.
@@ -86,7 +95,8 @@ TEST_CASE(every_page_of_logs_fits)
     CHECK_EQ(check_every_state(screen(), pose_paged, "paged"), 2);
     CHECK_EQ(check_every_state(screen(), pose_empty, "empty"), 2);
     CHECK_EQ(check_every_state(screen(), pose_import, "import"), 2);
-    CHECK_EQ(check_every_state(screen(), pose_plot, "plot"), 1);
+    CHECK_EQ(check_every_state(screen(), pose_plot, "plot"), 2);
+    CHECK_EQ(check_every_state(screen(), pose_run_plot, "run plot"), 2);
 }
 
 TEST_CASE(the_list_marks_paging_and_the_bar_only_where_they_show)
@@ -130,7 +140,16 @@ TEST_CASE(the_import_view_and_the_plot_mark_their_controls)
     CHECK_EQ(p.count, 4);
     CHECK(marks(&p, TX_HG_LOG_CHIP));
     CHECK(marks(&p, TX_HG_LOG_BACK_IMPORT));
-    CHECK(!ui_help_page(screen(), false, 1, &p));
+    REQUIRE(ui_help_page(screen(), false, 1, &p));
+    CHECK_EQ(p.count, 1);
+    CHECK(marks(&p, TX_HG_LOG_MORE));
+    CHECK(!ui_help_page(screen(), false, 2, &p));
+    /* Opened from the list, BACK goes to the list. */
+    pose_run_plot();
+    REQUIRE(log_viewer_view() == LOG_VIEW_PLOT);
+    REQUIRE(ui_help_page(screen(), false, 0, &p));
+    CHECK(marks(&p, TX_HG_LOG_BACK_LIST));
+    CHECK(!marks(&p, TX_HG_LOG_BACK_IMPORT));
 }
 
 TEST_CASE(the_delete_question_leaves_no_page)

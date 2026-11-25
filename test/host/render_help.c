@@ -65,6 +65,8 @@ static const struct {
     { "help-logs-pages", "logs-pages" },
     { "help-logs-import", "logs-import" },
     { "help-logs-plot", "logs-plot" },
+    /* The plot opened by the import's PLOT: BACK to the import view. */
+    { "help-logs-plot-import", "logs-plot-import" },
     { "help-files", "files" },
     { "help-servo", "servo" },
     { "help-servo-test", "servo-test" },

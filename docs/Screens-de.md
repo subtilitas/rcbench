@@ -313,7 +313,7 @@ alle ihre Hilfeseiten auch in ARMED sichtbar.
 | OUTPUTS, Rasteransicht | 1 | die Fläche der Protokollliste, das erste Feld, LETZTER SCHREIBVORGANG; bei einem Eintrag PROG PORT seine Fläche und Zeilen |
 | LOGS, Dateiliste | 2 | die Ordner-Tabs, eine Zeile, AKTUALISIEREN, WI-FI; FILES, VORIGE und NÄCHSTE bei mehreren Seiten, die Scrollleiste, LÖSCHEN, ÖFFNEN |
 | LOGS, Importansicht | 2 | ERKANNT, TRENNZ., ZAHLEN; die Spalten, ZURÜCK, GRAFIK |
-| LOGS, Grafik | 1 | ein Reihen-Chip, die Grafik, ZURÜCK, `<` und `>` |
+| LOGS, Grafik | 2 | ein Reihen-Chip, die Grafik, ZURÜCK, `<` und `>`; MEHR |
 | FILES, Spalten | 3 | LOGS, Ordner, Zeile und Scrollleiste der linken Spalte; AKTUALISIEREN, KOPIEREN, VERSCHIEBEN, UMBENENNEN; die rechte Spalte, LÖSCHEN, NEU, INFO, ÖFFNEN |
 | WI-FI, WLAN aus | 3 | WLAN-HOTSPOT, MIT HEIMNETZ VERBINDEN, HEIMNETZ WÄHLEN, HEIMNETZ LÖSCHEN, ZUGANGSCODE EIN oder AUS; HOTSPOT-PASSWORT und ZUGANGSCODE, ZUFALL oder FEST; die Karte |
 | WI-FI, WLAN an | 1, 2 mit der Taste für Browser-Schreibzugriffe | die Zeilen, solange die Seite erreichbar ist, die Zeilen darunter, WLAN AUS; die Taste für Browser-Schreibzugriffe |
@@ -3814,17 +3814,19 @@ Zellenmonitor zeigt der Prüfstand KEIN AKKU. Das Bild oben stammt aus einem Mod
 
 ![Der Dateibrowser](img/de/logs.png)
 
-Öffne eine Datei auf der Karte, prüfe die Erkennung in der Importansicht
-und zeichne anschließend die gewählten Datenreihen:
+Öffne eine Datei auf der Karte. Eine Laufdatei des Prüfstands öffnet die
+Grafik mit den Spalten ihrer Art; jede andere CSV öffnet zuerst die
+Importansicht:
 
-![Die Importansicht](img/de/logs-import.png)
-![Die Grafik](img/de/logs-plot.png)
-
+![Ein MOTOR-Lauf, wie er öffnet: throttle, rpm, current und voltage](img/de/logs-plot.png)
 ![Ein SERVO-Lauf, wie er öffnet: pulse, angle, current und voltage](img/de/logs-servo-plot.png)
+![MEHR auf der Grafik: SPALTEN](img/de/logs-plot-more.png)
+![Die Importansicht, über MEHR > SPALTEN erreicht](img/de/logs-import.png)
 
-Das Home-Feld führt wie ZURÜCK eine Ebene zurück: von Grafik zu Import,
-vom Import zur Dateiliste und von dort ins Menü. In der LÖSCHEN-Rückfrage
-wirkt es als ABBRECHEN.
+Das Home-Feld führt wie ZURÜCK eine Ebene zurück: von der Grafik dorthin,
+woher sie kam (nach ÖFFNEN zur Dateiliste, nach GRAFIK zur Importansicht),
+vom Import zur Dateiliste und von dort ins Menü. Über der Liste von MEHR
+schließt es die Liste. In der LÖSCHEN-Rückfrage wirkt es als ABBRECHEN.
 
 Die Kachel LOGS öffnet eine gemeinsame Leiste für LOGS und FILES: zwei
 499 x 40px große Registerkarten über die Inhaltsbreite, von y 5 bis 45.
@@ -3871,7 +3873,10 @@ Die Importansicht zeigt ERKANNT (400px) neben der Spaltenliste (600px,
 7 Zeilen bei 48px Abstand), darunter vier Tasten von 246 x 52px.
 Die Grafik ist 992 x 316px groß, mit vier Datenreihen-Chips von 240 x 44px
 darüber. Darunter stehen Zeitmarken, ZURÜCK (140 x 52px), `<` und `>`
-(96 x 52px) sowie die Cursorzeile. Die LÖSCHEN-Rückfrage ist 700 x 280px
+(96 x 52px), die Cursorzeile und rechts MEHR (140 x 52px). MEHR öffnet
+darüber eine Auswahlliste von 300 x 64px, 8px über der Fußleiste, mit
+einer Zeile von 56px: SPALTEN öffnet die Spaltenliste der Importansicht.
+Ein Druck neben die Liste schließt sie und löst nichts aus. Die LÖSCHEN-Rückfrage ist 700 x 280px
 groß, mit ABBRECHEN und LÖSCHEN von je 300 x 56px.
 
 Beschriftungen, Zeilen, Tasten und Importwarnungen verwenden 10 x 20.
@@ -3879,12 +3884,39 @@ Leere-Listen-Texte, Rückfragen, Erklärungsfelder und Dateimeldungen
 verwenden 12 x 24. Zeitmarken und Wertebereiche der Spalten und Chips
 stehen in 8 x 16.
 
+ÖFFNEN ordnet eine Datei der Art von Lauf zu, die sie enthält: zuerst
+nach den Spaltennamen ihrer Kopfzeile, dann nach ihrem Namen
+(`shared/logfile/log_preset.c`). Ein Name mit Zusatz
+(`MOTOR042_kv1200.CSV`), ein Name in Kleinbuchstaben und die Dateien ab
+Firmware 0.21.0 werden ebenso erkannt. Eine erkannte Datei öffnet die
+Grafik mit den Spalten ihrer Art, jede, soweit die Datei sie als Zahlen
+enthält; eine fehlende Spalte entfällt, und keine andere rückt nach:
+
+| Art | Kopfzeile enthält | Name | Gezeichnete Spalten |
+| --- | --- | --- | --- |
+| LIMIT RUN | `search`, `side`, `pulse`, `state` | `LIMITnnn` | `pulse`, `current`, `angle` |
+| RUDDER AUTO | `step`, `side`, `write`, `within` | `RUDDRnnn` | `pulse`, `current`, `measured` |
+| AUTOMATIC TEST | `test`, `phase`, `command` | `ATESTnnn` | `command`, `current`, `voltage`, `angle` |
+| SUPPLY-Lauf | `set`, `limit`, `mode` | `SUPPLnnn` | `set`, `voltage`, `limit`, `current` |
+| MOTOR-Lauf | `rpm` und `throttle` | `MOTORnnn`, `ESCnnn` | `throttle`, `rpm`, `current`, `voltage` |
+| SERVO-Lauf | `pulse`, `angle`, `source` | `SERVOnnn`, `BENCHnnn` | `pulse`, `angle`, `current`, `voltage` |
+
+Die Zeilen einer LIMIT-RUN- und einer RUDDER-AUTO-Datei werden nach
+Zeilennummer gezeichnet, mit dem Puls als erster Linie. Eine
+Prüfstandsdatei der Firmware 0.21.0 nennt weder `throttle` noch `pulse`:
+`ESCnnn.CSV` öffnet als MOTOR-Lauf, `BENCHnnn.CSV` und `SERVOnnn.CSV` als
+SERVO-Lauf, und dieselbe Kopfzeile unter jedem anderen Namen als
+MOTOR-Lauf. Eine Datei keiner Art, eine Datei mit dem Namen eines Laufs
+ohne eine Spalte ihrer Art und eine Datei, die der Leser ablehnt, öffnen
+die Importansicht.
+
 Der CSV-Leser (Comma-Separated Values) nimmt Dezimalkomma und -punkt,
 Einheitenzeilen und unterschiedlich lange Zeilen an. Die Importansicht
-zeigt seine Erkennung vor dem Zeichnen. Anfangs sind bis zu 4 numerische
-Spalten gewählt. SERVO-Dateien bevorzugen `pulse`, `angle`, `current` und
-`voltage`. Enthält eine davon keine Zahlen, folgen andere Zahlenspalten.
-Andere Dateien wählen die ersten 4 Zahlenspalten.
+zeigt seine Erkennung vor dem Zeichnen. Über MEHR > SPALTEN erreicht,
+behält sie die Spalten der Grafik gewählt. Für eine Datei keiner Art
+wählt sie bis zu 4 Zahlenspalten: in einer Datei mit einer numerischen
+Spalte `pulse` zuerst `pulse`, `angle`, `current` und `voltage`, dann
+andere Zahlenspalten; in jeder anderen Datei die ersten 4 Zahlenspalten.
 
 Jede Zahlenspalte zeigt Minimum und Maximum. Liegen beide unter 1000,
 erscheint eine Nachkommastelle, sonst keine: `11.9..12.6V` oder
@@ -4132,7 +4164,8 @@ Der Ausschnitt bleibt nach dem Loslassen bestehen; ein Balken darunter
 zeigt seine Lage im Lauf. Der kleinste Ausschnitt umfasst 8 Werte, der
 größte den ganzen Lauf. Ein Finger oder `<` und `>` bewegt den Cursor.
 Wandert er über einen vergrößerten Rand, folgt der Ausschnitt. ZURÜCK
-öffnet die Importansicht.
+führt zur Dateiliste, oder zur Importansicht, wenn deren GRAFIK die
+Grafik geöffnet hat.
 
 Die Grafik verteilt Zeilen gleichmäßig nach Zeilennummer. Beschriftung
 und Cursoranzeige verwenden die Zeitspalte relativ zur ersten Zeile.
@@ -4425,8 +4458,9 @@ Meldungsfeld über der Tastenzeile, in der Schrift 12 x 24.
 | ÖFFNEN | öffnet einen Ordner, eine erkannte Aufzeichnungs-CSV in LOGS oder eine andere Datei im Textbetrachter; dabei gelten die folgenden Grenzen |
 
 Eine CSV-Datei, die LOGS in einem seiner drei Ordner (STAMM, USER, BENCH)
-listet, öffnet sich in der Importansicht auf der zugehörigen Registerkarte
-von [Logs](#logs). Überschreitet sie 2GiB minus 1 Byte, zeigt LOGS
+listet, öffnet sich auf der zugehörigen Registerkarte von [Logs](#logs):
+eine Laufdatei des Prüfstands in der Grafik, jede andere CSV in der
+Importansicht. Überschreitet sie 2GiB minus 1 Byte, zeigt LOGS
 stattdessen die Dateiliste mit dem Grund. Wurde die Karte seit dem
 Einlesen der FILES-Liste getauscht, öffnet sich nichts. Die Meldung lautet
 `Die Karte wurde entnommen oder getauscht. Tippe auf AKTUALISIEREN.`

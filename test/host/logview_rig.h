@@ -76,6 +76,28 @@ static const char k_ragged[] __attribute__((unused)) = "t,a,b\n0,1,2\n1,2\n2,3,4
 static const char k_plain[] __attribute__((unused)) =
     "left,right\n5,1.0\n3,2.0\n9,n/a\n4,4.0\n8,5.0\n7,6.0\n";
 
+/* A MOTOR run under a labelled name: its header names the throttle and the
+ * rpm, so OPEN goes to the plot (log_preset.h). */
+static const char k_motor_run[] __attribute__((unused)) =
+    "time (s);voltage (V);current (A);power (W);rpm (rpm);throttle (%);"
+    "source\n"
+    "0.000;12.00;1.00;12.0;1000;10;measured\n"
+    "0.050;11.90;2.00;23.8;2000;20;measured\n"
+    "0.100;11.80;3.00;35.4;3000;30;measured\n"
+    "0.150;11.70;4.00;46.8;4000;40;measured\n";
+
+/* A LIMIT RUN's CSV: an XY preset, its pulse first. */
+static const char k_limit_run[] __attribute__((unused)) =
+    "row;search;side;pulse (us);current (A);voltage (V);angle (deg);state;"
+    "free (A);threshold (A);end point (us);info\n"
+    "1;1;LOW;1490;0.050;5.00;-0.9;BASE;0.050;0.150;;\n"
+    "2;1;LOW;1480;0.052;5.00;-1.8;FREE;0.050;0.150;;\n"
+    "3;1;LOW;1470;0.210;4.98;-2.6;BOUND;0.050;0.150;1495;\n";
+
+/* A run's name over columns no preset knows: the import view. */
+static const char k_named_foreign[] __attribute__((unused)) =
+    "a;b\n1;2\n3;4\n";
+
 /* 400 rows of a ramp, written by long_file() before a zoom case opens it. */
 static char g_long[16384] __attribute__((unused));
 
@@ -93,7 +115,23 @@ static const struct {
     /* Appended, not inserted: the cases above address the card by index. */
     { "RAGGED.CSV", k_ragged },
     { "LONG.CSV", g_long },
+    /* The files the bench wrote: OPEN by their preset (log_preset.h).  On
+     * the card only for the cases that set g_bench_files. */
+    { "MOTOR042_kv1200.CSV", k_motor_run },
+    { "LIMIT007.CSV", k_limit_run },
+    { "RUDDR003.CSV", k_named_foreign },
 };
+
+/* Whether the card holds the three files the bench wrote (k_card's last
+ * three); fresh() clears it. */
+static bool g_bench_files __attribute__((unused));
+
+/** @brief Whether k_card's file @p text is one of the bench's three. */
+static inline bool bench_file(const char *text)
+{
+    return text == k_motor_run || text == k_limit_run
+           || text == k_named_foreign;
+}
 
 static bool g_no_card __attribute__((unused));
 static bool g_empty_card __attribute__((unused));
@@ -211,6 +249,9 @@ static inline int fake_list(log_viewer_file_t *out, int max_entries,
         }
         /* LONG.CSV is on the card only for the zoom cases that write it. */
         if (k_card[i].text == g_long && g_long[0] == '\0') {
+            continue;
+        }
+        if (bench_file(k_card[i].text) && !g_bench_files) {
             continue;
         }
         memset(&out[n], 0, sizeof(out[n]));
@@ -388,6 +429,7 @@ static inline void fresh(void)
     g_open_calls = 0;
     g_logging = false;
     g_long[0] = '\0';
+    g_bench_files = false;
     if (s_fb == NULL) {
         s_fb = calloc((size_t)W * H, sizeof(gfx_color_t));
         REQUIRE_ALLOC(s_fb);
@@ -553,6 +595,17 @@ static inline void check_tab(int a, int b, int n)
     }
 }
 
+/** @brief BACK of the view on screen: the plot's, a file the bench wrote
+ *  opened there (log_preset.h), or the import's. */
+static inline void tap_back(void)
+{
+    if (log_viewer_view() == LOG_VIEW_PLOT) {
+        tap(LV_PV_BACK_CX, LV_FOOT_CY);
+    } else {
+        tap(BACK_X, IM_BTN_CY);
+    }
+}
+
 /** @brief The run OPEN opens, which is the newest run on the page: the page's
  * identity, read without a getter.  Back to the list afterwards. */
 static inline void check_newest(int run)
@@ -561,7 +614,7 @@ static inline void check_newest(int run)
     char want[LOG_RUN_NAME_MAX];
     log_run_name(want, sizeof(want), run);
     CHECK_STR_EQ(log_viewer_open_name(), want);
-    tap(BACK_X, IM_BTN_CY);
+    tap_back();
     CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
 }
 
@@ -571,7 +624,7 @@ static inline int top_row_run(void)
     tap(400, BR_ROW_Y(0));
     tap(400, BR_ROW_Y(0));
     const int run = log_run_number(log_viewer_open_name());
-    tap(BACK_X, IM_BTN_CY);
+    tap_back();
     return run;
 }
 

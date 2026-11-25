@@ -289,7 +289,7 @@ ARMED.
 | OUTPUTS, grid view | 1 | the protocol list's face, the first cell, LAST WRITE; on a PROG PORT entry its face and rows |
 | LOGS, file list | 2 | the folder tabs, a row, RESCAN, WI-FI; FILES, PREV and NEXT when paged, the scroll bar, DELETE, OPEN |
 | LOGS, import view | 2 | DETECTED, SEP, NUM; the columns, BACK, PLOT |
-| LOGS, plot | 1 | a series chip, the plot, BACK, `<` and `>` |
+| LOGS, plot | 2 | a series chip, the plot, BACK, `<` and `>`; MORE |
 | FILES, panes | 3 | LOGS, the left pane's folder, a row and scroll bar; RESCAN, COPY, MOVE, RENAME; the right pane, DELETE, NEW, INFO, OPEN |
 | WI-FI, radio off | 3 | ACCESS POINT, JOIN HOME NETWORK, CHOOSE HOME NETWORK, FORGET HOME NETWORK, ACCESS CODE ON or OFF; HOTSPOT PASSWORD and ACCESS CODE, RANDOM or KEPT; the card |
 | WI-FI, radio on | 1, 2 with the writes' button | the rows while the page is served, the lines under them, WI-FI OFF; the browser writes' button |
@@ -3527,15 +3527,19 @@ NO PACK. The picture above is rendered from a model.
 
 ![The file browser](img/logs.png)
 
-Browse the card, open a file, check what the import detected, then plot:
+Browse the card and open a file. A run file the bench wrote opens in the
+plot with its kind's columns; any other CSV opens in the import view
+first:
 
-![The import view](img/logs-import.png)
-![The plot](img/logs-plot.png)
-
+![A MOTOR run as it opens: throttle, rpm, current and voltage](img/logs-plot.png)
 ![A SERVO run as it opens: pulse, angle, current and voltage](img/logs-servo-plot.png)
+![MORE on the plot: COLUMNS](img/logs-plot-more.png)
+![The import view, reached by MORE > COLUMNS](img/logs-import.png)
 
-The home tag moves up one level, like BACK: plot to import view, import
-view to file list, file list to menu. In the DELETE dialog it acts as CANCEL.
+The home tag moves up one level, like BACK: the plot to where it came
+from (the file list after OPEN, the import view after PLOT), import view
+to file list, file list to menu. Over MORE's list it closes the list. In
+the DELETE dialog it acts as CANCEL.
 
 The LOGS tile opens a shared strip with LOGS and FILES: two 499 x 40px
 tabs across the top of the body, y 5 to 45. These screen titles stay the
@@ -3577,19 +3581,47 @@ the full body and show no footer.
 The import view shows DETECTED (400px wide) beside the column list (600px,
 7 rows at a pitch of 48px), with four buttons of 246 x 52px under them.
 The plot is 992 x 316px under four series chips of 240 x 44px; under it
-run the time labels, then BACK (140 x 52px), `<` and `>` (96 x 52px) and
-the cursor's line. The DELETE question is a box of 700 x 280px with CANCEL
+run the time labels, then BACK (140 x 52px), `<` and `>` (96 x 52px), the
+cursor's line and MORE (140 x 52px) at the right end. MORE opens a choice
+list of 300 x 64px over it, 8px above the footer, with one row of 56px:
+COLUMNS opens the import view's column list. A press beside the list
+closes it and presses nothing. The DELETE question is a box of 700 x 280px with CANCEL
 and DELETE of 300 x 56px. Labels, rows, buttons and the import's warnings
 draw in the 10 x 20 face; the sentences of the empty list, the question,
 the boxes that say why nothing shows and the file messages in 12 x 24; the
 plot's time labels and the ranges of the columns and the chips in 8 x 16.
 
+OPEN matches a file to the kind of run it holds by its header's column
+names first and its name second (`shared/logfile/log_preset.c`). A
+labelled name (`MOTOR042_kv1200.CSV`), a name in lower case and the files
+of firmware 0.21.0 and later match as well. A matched file opens in the
+plot with the kind's columns, each where the file holds it as numbers; a
+column the file lacks is left out, and nothing takes its place:
+
+| Kind | Header holds | Name | Columns plotted |
+| --- | --- | --- | --- |
+| LIMIT RUN | `search`, `side`, `pulse`, `state` | `LIMITnnn` | `pulse`, `current`, `angle` |
+| RUDDER AUTO | `step`, `side`, `write`, `within` | `RUDDRnnn` | `pulse`, `current`, `measured` |
+| AUTOMATIC TEST | `test`, `phase`, `command` | `ATESTnnn` | `command`, `current`, `voltage`, `angle` |
+| SUPPLY run | `set`, `limit`, `mode` | `SUPPLnnn` | `set`, `voltage`, `limit`, `current` |
+| MOTOR run | `rpm` and `throttle` | `MOTORnnn`, `ESCnnn` | `throttle`, `rpm`, `current`, `voltage` |
+| SERVO run | `pulse`, `angle`, `source` | `SERVOnnn`, `BENCHnnn` | `pulse`, `angle`, `current`, `voltage` |
+
+The rows of a LIMIT RUN and a RUDDER AUTO file are plotted by row number,
+with the pulse as the first trace. A bench file of firmware 0.21.0 names
+neither `throttle` nor `pulse`: `ESCnnn.CSV` opens as a MOTOR run,
+`BENCHnnn.CSV` and `SERVOnnn.CSV` as a SERVO run, and the same header
+under any other name as a MOTOR run. A file that matches no kind, a file
+named as a run that holds none of its kind's columns, and a file the
+reader refuses open in the import view.
+
 The CSV (comma-separated values) reader accepts decimal commas or points,
 a units row and rows of different lengths. The import view shows its
-interpretation before plotting. It initially selects up to 4 numeric
-columns. SERVO files prefer `pulse`, `angle`, `current` and `voltage`,
-then other numeric columns where any preferred column has no numbers.
-Other files select their first 4 numeric columns.
+interpretation before plotting. Reached by MORE > COLUMNS, it keeps the
+plot's columns selected. Opened for a file no kind matches, it selects up
+to 4 numeric columns: in a file with a numeric `pulse` column `pulse`,
+`angle`, `current` and `voltage` first, then other numeric columns; in
+any other file its first 4 numeric columns.
 
 Each numeric column shows its minimum and maximum. It uses one decimal
 place below 1000 at both ends, otherwise none: `11.9..12.6V` or
@@ -3814,7 +3846,8 @@ zoom out, move both together to pan. The view stays where released;
 a bar below the plot marks its position within the run. The narrowest
 view has 8 samples and the widest covers the run. One finger or `<` and
 `>` moves the cursor. Moving it beyond a zoomed edge carries the view
-along. BACK returns to import.
+along. BACK returns to the file list, or to the import view when its PLOT
+opened the plot.
 
 The plot spaces rows evenly by row number. Labels and cursor readout use
 the file's time column relative to its first row; header duration is last
@@ -4084,7 +4117,8 @@ above the row of buttons, using the 12 x 24 font.
 | OPEN | enters a folder, opens a recognised log CSV in LOGS, or opens another file in the text viewer, subject to the limits below |
 
 A CSV listed by LOGS in one of its three folders (ROOT, USER, BENCH)
-opens in the import view on that folder's [Logs](#logs) tab. If it exceeds
+opens on that folder's [Logs](#logs) tab: a run file the bench wrote in
+the plot, any other CSV in the import view. If it exceeds
 2GiB minus 1 byte, LOGS shows its file list and the reason instead. If the
 card was swapped after FILES listed it, nothing opens and the message is
 `The card was taken out or swapped. Tap RESCAN.`
