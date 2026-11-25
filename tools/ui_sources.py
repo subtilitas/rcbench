@@ -94,6 +94,7 @@ SOURCES = [
     "shared/ui/servo_limit_panel.c",
     "shared/ui/servo_limit_ready.c",
     "shared/ui/servo_limit_card.c",
+    "shared/ui/servo_graph_key.c",
     "shared/ui/servo_limit_seam.c",
     "shared/ui/servo_workbench.c",
     "shared/ui/servo_rudder_panel.c",
@@ -319,7 +320,9 @@ SOURCES = [
     "shared/ui/log_viewer_events.c",
     "shared/ui/log_graph.c",
     "shared/ui/log_graph_xy.c",
+    "shared/ui/log_graph_time.c",
     "shared/ui/log_graph_draw.c",
+    "shared/ui/graph_key.c",
     "shared/ui/logs_strip.c",
     "shared/ui/log_select.c",
     "shared/ui/settings_screen.c",
@@ -426,6 +429,10 @@ INCLUDES = [
 
 # The files of shared/ui/CMakeLists.txt that SOURCES leaves out, and why.
 EXCLUDED = {
+    "shared/ui/label_bitmap.c":
+        "the printed label's canvas, the blec task's; no screen draws it",
+    "shared/ui/label_layout.c":
+        "the printed label's layout, the blec task's; no screen draws it",
     "shared/ui/ui_alert_slot.c":
         "the control task posts to it; no screen calls it",
     "shared/ui/port_mail.c":

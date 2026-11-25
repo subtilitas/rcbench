@@ -25,6 +25,7 @@
 #include <time.h>
 
 #include "card_tree.h"
+#include "graph_key.h"
 #include "log_name.h"
 #include "log_select.h"
 #include "log_viewer_screen.h"
@@ -386,6 +387,63 @@ static size_t limit_search(size_t at, int *row, int search, bool high,
     }
 }
 
+/* The time graph's files: an AUTOMATIC TEST (the untrimmed MS24 run on
+ * the PD mini) and a SERVO run of INA3221 windows as the bench recorded
+ * them (test/host/fixtures, the folder
+ * render_ui.py names in RENDER_FIXTURE_DIR), and a SUPPLY run of 0.05s
+ * rows that holds the set voltage, falls into CC at 2.00A from 4.00s to
+ * 7.00s, runs on the model from 9.00s and misses its rows from 11.00s to
+ * 13.00s. */
+#ifndef RENDER_FIXTURE_DIR
+#define RENDER_FIXTURE_DIR "test/host/fixtures"
+#endif
+static char g_atest_csv[131072];
+static char g_ms24_csv[98304];
+static char g_suppl_csv[32768];
+static bool g_time_card;
+
+/** @brief Read fixture @p name into @p out; an empty file when it cannot
+ *         be read, which the view then shows as such. */
+static void read_fixture(const char *name, char *out, size_t cap)
+{
+    char path[512];
+    snprintf(path, sizeof(path), "%s/%s", RENDER_FIXTURE_DIR, name);
+    out[0] = '\0';
+    FILE *f = fopen(path, "rb");
+    if (f == NULL) {
+        return;
+    }
+    const size_t n = fread(out, 1, cap - 1, f);
+    out[n] = '\0';
+    fclose(f);
+}
+
+static void make_time_csvs(void)
+{
+    read_fixture("servo-ms24-pdmini.csv", g_atest_csv, sizeof(g_atest_csv));
+    read_fixture("servo-ms24-windows.csv", g_ms24_csv, sizeof(g_ms24_csv));
+    size_t at = (size_t)snprintf(g_suppl_csv, sizeof(g_suppl_csv), "%s\n",
+                                 "time (s);set (V);voltage (V);limit (A);"
+                                 "current (A);power (W);mode;charge (mAh);"
+                                 "energy (Wh);source");
+    double mah = 0.0;
+    for (int i = 0; i <= 300; ++i) {
+        const double t = 0.05 * (double)i;
+        if (t > 11.0 && t < 13.0) {
+            continue;
+        }
+        const bool cc = t >= 4.0 && t < 7.0;
+        const double a = cc ? 2.0 : 0.6 + 0.4 * sin(t * 1.3) + 0.05 * t;
+        const double v = cc ? 7.4 - 0.25 * (t - 4.0) : 7.40 - 0.02 * a;
+        mah += a * 0.05 / 3.6;
+        at += (size_t)snprintf(g_suppl_csv + at, sizeof(g_suppl_csv) - at,
+                               "%.2f;7.40;%.3f;2.00;%.3f;%.2f;%s;%.1f;%.3f;"
+                               "%s\n", t, v, a, v * a, cc ? "CC" : "CV", mah,
+                               mah * 7.4 / 1000.0,
+                               t >= 9.0 ? "model" : "measured");
+    }
+}
+
 static void make_graph_csvs(void)
 {
     size_t at = (size_t)snprintf(g_limit_csv, sizeof(g_limit_csv), "%s\n",
@@ -470,6 +528,16 @@ static const log_fake_t k_user_graph[] = {
     { "RUDDR007.CSV", 9311, 1792945200 },     /* 2026-10-25 16:20 */
     { "LIMIT006.CSV", 7804, 1792858800 },     /* 2026-10-24 16:20 */
     { "LIMIT006.TXT", 1873, 1792858800 },
+};
+/* The folders of the time graph's views (logs-atest-graph,
+ * logs-windows-graph, logs-supply-graph): two bench recordings of
+ * test/host/fixtures and a SUPPLY run. */
+static const log_fake_t k_bench_time[] = {
+    { "SERVO015.CSV", 63441, 1793007660 },    /* 2026-10-26 09:41 */
+    { "SUPPL016.CSV", 21950, 1792951620 },    /* 2026-10-25 18:07 */
+};
+static const log_fake_t k_user_time[] = {
+    { "ATEST012.CSV", 102873, 1792699380 },    /* 2026-10-22 20:03 */
 };
 static const log_fake_t k_user[] = {
     { "LIMIT006.TXT", 1873, 1792858800 },     /* 2026-10-24 16:20 */
@@ -560,7 +628,13 @@ static int fake_list(log_viewer_file_t *out, int max_entries,
     } else {
         const log_fake_t *set = k_card;
         size_t count = sizeof(k_card) / sizeof(k_card[0]);
-        if (strcmp(g_fake_dir, CARD_AUTO_LOGS) == 0) {
+        if (strcmp(g_fake_dir, CARD_AUTO_LOGS) == 0 && g_time_card) {
+            set = k_bench_time;
+            count = sizeof(k_bench_time) / sizeof(k_bench_time[0]);
+        } else if (strcmp(g_fake_dir, CARD_USER_LOGS) == 0 && g_time_card) {
+            set = k_user_time;
+            count = sizeof(k_user_time) / sizeof(k_user_time[0]);
+        } else if (strcmp(g_fake_dir, CARD_AUTO_LOGS) == 0) {
             set = k_bench;
             count = sizeof(k_bench) / sizeof(k_bench[0]);
         } else if (strcmp(g_fake_dir, CARD_USER_LOGS) == 0 && g_graph_card) {
@@ -587,6 +661,13 @@ static bool fake_open(const char *name, log_source_t *src, void *ctx)
     }
     if (g_graph_card && strncmp(name, "RUDDR", 5) == 0) {
         log_source_memory(src, &g_csv_ctx, g_ruddr_csv, strlen(g_ruddr_csv));
+        return true;
+    }
+    if (g_time_card) {
+        const char *text = (strncmp(name, "ATEST", 5) == 0) ? g_atest_csv
+                           : (strncmp(name, "SERVO", 5) == 0) ? g_ms24_csv
+                                                              : g_suppl_csv;
+        log_source_memory(src, &g_csv_ctx, text, strlen(text));
         return true;
     }
     if (strncmp(name, "SERVO", 5) == 0 && g_servo_len > 0u) {
@@ -3026,6 +3107,10 @@ static void pose_update(const char *view)
  * meanwhile.  stop-short: a hold let go after 0.5s and its hint.
  * stop-holding: 1s into the reset's hold, the fill half way to the frame's
  * yellow.  stop-reset: the hold complete and the stop taken, SAFE.
+ * stop-hw: the bench's stop button pressed while ARMED, HWSTOP in the band.
+ * stop-down: the first press with the finger still on STOP.
+ * stop-short-down and stop-held: the finger on the latched STOP 0.5s and
+ * 1.96s into the hold.
  */
 static void stop_video_view(const char *view, ui_bench_status_t *st)
 {
@@ -3040,12 +3125,28 @@ static void stop_video_view(const char *view, ui_bench_status_t *st)
                                    .y = (int16_t)(r.y + r.h / 2),
                                    .strength = 40 } };
     const char *v = view + 5;
-    const int ticks = strcmp(v, "short") == 0 ? 25
+    /* down: the first press, the finger still on STOP.  short-down and
+     * held: the finger on a latched STOP after 0.5s and after 1.96s. */
+    const bool first = strcmp(v, "down") == 0;
+    const int ticks = first ? 3
+                      : strcmp(v, "short") == 0 ? 25
+                      : strcmp(v, "short-down") == 0 ? 25
                       : strcmp(v, "holding") == 0 ? 50
+                      : strcmp(v, "held") == 0 ? 98
                       : strcmp(v, "reset") == 0 ? 110 : 0;
+    if (first) {
+        e.flags = 0u;
+    }
 
     st->armed = false;
     st->armed_roles = 0u;
+    if (strcmp(v, "hw") == 0) {
+        /* The bench's stop button pressed while ARMED: SAFE, the
+         * heartbeat bit, no latch of the panel's STOP. */
+        st->faults = 0x10u;
+        ui_router_set_status(st);
+        return;
+    }
     st->stop_latched = true;
     ui_router_set_status(st);
     if (strcmp(v, "refused") == 0) {
@@ -3467,6 +3568,7 @@ static void pose_motor_supply(ui_screen_id_t id, const char *view,
             ui_router_goto(SCREEN_SUPPLY);
             tap(SU_TABLE_TAB_X, UI_BAND_H + SU_PANE_Y);
         } else if (strcmp(view, "supply-off") == 0
+                   || strcmp(view, "supply-graph") == 0
                    || strcmp(view, "supply-settings-off") == 0) {
             /* The screen guide's: the run's output switched off, as a
              * task's guide page is offered only then, on LIVE or on
@@ -3474,6 +3576,14 @@ static void pose_motor_supply(ui_screen_id_t id, const char *view,
             st.output = false;
             supply_screen_set_output(false);
             supply_screen_push(&st);
+            if (strcmp(view, "supply-graph") == 0) {
+                /* GRAPH right of RESET PEAKS: the run's SUPPL log
+                 * closed with the output's switch-off. */
+                const graph_key_file_t f = { .run = true,
+                                             .name = "SUPPL007.CSV",
+                                             .dir = CARD_AUTO_LOGS };
+                graph_key_set(GRAPH_KEY_SUPPLY, &f);
+            }
             if (strcmp(view, "supply-settings-off") == 0) {
                 ui_router_goto(SCREEN_SUPPLY);
                 tap(SU_SETTINGS_X, UI_BAND_H + SU_SETTINGS_Y);
@@ -4938,6 +5048,13 @@ static void pose_shown_views(const char *view)
         motor_screen_set_last_log("MOTOR042_kv1200.CSV", true, false);
         tap(MO_LOGBTN_X, UI_BAND_H + MO_TAB_Y);            /* RENAME LOG */
     }
+    /* GRAPH beside RENAME LOG after a run, the bench SAFE. */
+    if (strcmp(view, "motor-graph") == 0) {
+        motor_screen_set_last_log("MOTOR042_kv1200.CSV", true, false);
+        const graph_key_file_t f = { .run = true, .name = "MOTOR042_kv1200.CSV",
+                                     .dir = CARD_AUTO_LOGS };
+        graph_key_set(GRAPH_KEY_MOTOR, &f);
+    }
 }
 
 /**
@@ -5241,6 +5358,15 @@ static void pose_shown_tools(ui_screen_id_t id, const char *view)
         g_pages_card = (strcmp(view, "logs-pages") == 0);
         /* The graph's views: the USER folder holds a LIMIT RUN's and a
          * RUDDER AUTO's CSV. */
+        /* The time graph's views: BENCH holds a SERVO and a SUPPLY run,
+         * USER an AUTOMATIC TEST. */
+        const bool atest_graph = strcmp(view, "logs-atest-graph") == 0;
+        const bool windows_graph = strcmp(view, "logs-windows-graph") == 0;
+        const bool supply_graph = strcmp(view, "logs-supply-graph") == 0;
+        g_time_card = atest_graph || windows_graph || supply_graph;
+        if (g_time_card) {
+            make_time_csvs();
+        }
         const bool limit_graph = strcmp(view, "logs-limit-graph") == 0;
         const bool ruddr_graph = strncmp(view, "logs-ruddr-", 11) == 0;
         g_graph_card = limit_graph || ruddr_graph;
@@ -5292,6 +5418,21 @@ static void pose_shown_tools(ui_screen_id_t id, const char *view)
             if (strcmp(view, "logs-ruddr-steps") == 0) {
                 tap(LV_GR_TAB_CX(1), UI_BAND_H + LV_GR_CHIP_CY);
             }
+        } else if (g_time_card) {
+            /* The newest file of a folder is chosen as the list opens, so
+             * one tap opens it; SERVO015.CSV, the second row, takes two.
+             * A finger on the plot then puts the cursor on a row a third
+             * into the run, or into its CC stretch. */
+            if (atest_graph) {
+                tap(LV_TAB_CX(1), UI_BAND_H + LV_HEAD_CY);
+            }
+            const int row = windows_graph ? 1 : 0;
+            if (row > 0) {
+                tap(LV_ROW_CX, UI_BAND_H + LV_ROW_CY(row));
+            }
+            tap(LV_ROW_CX, UI_BAND_H + LV_ROW_CY(row));
+            tap(supply_graph ? LV_PV_X0 + 360 : LV_PV_X0 + 330,
+                UI_BAND_H + LV_PV_CY);
         } else if (strcmp(view, "logs-servo-plot") == 0) {
             /* SERVO013.CSV, the second row of BENCH: a tap chooses it, a
              * second opens it in the plot with the SERVO preset. */
@@ -5376,7 +5517,8 @@ int main(int argc, char **argv)
     s_rot_on = strcmp(view, "setup-rotation") == 0;
     s_tz_on = strcmp(view, "setup-time-zone") == 0;
     s_hwstop_on = strcmp(view, "setup-hw-stop") == 0
-                  || strcmp(view, "band-hwstop") == 0;
+                  || strcmp(view, "band-hwstop") == 0
+                  || strcmp(view, "stop-hw") == 0;
     s_tone_fed = strcmp(view, "motor-stick-tone") == 0;
 
     ui_theme_set(light ? UI_THEME_LIGHT : UI_THEME_DARK);
@@ -5456,6 +5598,7 @@ int main(int argc, char **argv)
                     && (strcmp(view, "motor-live") != 0 || s_live_armed)
                     && strcmp(view, "motor-held") != 0
                     && strcmp(view, "motor-logname") != 0
+                    && strcmp(view, "motor-graph") != 0
                     && strcmp(view, "motor-idle") != 0
                     && strcmp(view, "motor-port") != 0
                     && !mo_prog

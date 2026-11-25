@@ -1,9 +1,10 @@
 /**
  * @file log_graph_int.h
- * @brief LOGS' graph of an XY file: the state, and what log_graph.c (the
- *        load, the cursor and the touches), log_graph_xy.c (the scales and
- *        the rows' places) and log_graph_draw.c (the drawing) call in one
- *        another and the log viewer calls in them.
+ * @brief LOGS' graph of a file the bench wrote: the state, and what
+ *        log_graph.c (the load, the cursor and the touches), log_graph_xy.c
+ *        (an XY file's scales and rows' places), log_graph_time.c (a time
+ *        file's places, gaps and strips) and log_graph_draw.c (the drawing)
+ *        call in one another and the log viewer calls in them.
  *
  * A file whose preset is an XY plot (log_preset.h: LIMIT and RUDDR's two
  * pictures) is drawn over its x column instead of its row number: a trace a
@@ -11,8 +12,18 @@
  * value at the cursor.  A tap on a chip focuses its series, a second hides
  * it, a third brings it back; the focused series' scale stands at the plot's
  * left edge.  RUDDR's file shows SEARCH and STEPS on two tabs in the chips'
- * row.  The graph shows the whole file: the window two fingers set on a
+ * row.  The XY graph shows the whole file: the window two fingers set on a
  * time plot does not apply.
+ *
+ * A file whose preset is a time plot (ATEST, SERVO, MOTOR, SUPPL) is drawn
+ * over its time: a row stands at its time in the window two fingers set,
+ * not at its row number.  A step in time longer than the larger of 3
+ * median row intervals and LG_GAP_MIN_S breaks the traces and is hatched.
+ * Under the traces stand the file's strips (log_marks.h), LG_STRIP_ROW px
+ * each; over them ATEST's step lines and the OVER and CLIP spans.  The
+ * chips are the series' own, from the first slot; a tap focuses and hides
+ * as on an XY graph.  One finger, two fingers, < and > work as on the
+ * plain time plot (log_viewer_events.c).
  *
  * Included after log_viewer_int.h, whose layout it uses.  What one file
  * calls in another carries the prefix lg_.
@@ -48,8 +59,30 @@
 /** @brief A write's tick at the plot's foot, px tall. */
 #define LG_TICK_H   10
 
+/** @brief A strip's row under a time plot's traces, px: its 8 x 16 label
+ *         and, in its middle, the strip LG_STRIP_H tall. */
+#define LG_STRIP_ROW 18
+#define LG_STRIP_H   6   /**< The strip's height. */
+/** @brief A span's bar at a time plot's top, px tall. */
+#define LG_BAR_H     4
+/** @brief A hatch's pitch: one pixel in LG_HATCH along each diagonal. */
+#define LG_HATCH     8
+/** @brief The shortest step in time that is a gap, whatever the rate, s. */
+#define LG_GAP_MIN_S 0.5
+/** @brief A step in time is a gap past this many median row intervals. */
+#define LG_GAP_MEDIANS 3.0
+
+/** @brief lg_state_t.col: the column is in a gap, hatched. */
+#define LG_COL_GAP   0x01u
+#define LG_COL_BREAK 0x02u  /**< A gap ends just before the column. */
+#define LG_COL_ROW   0x04u  /**< A row stands in the column. */
+
 _Static_assert(LG_TAG_H * 2 + 4 < PV_H / 4,
                "two rows of tags stand in the plot's top grid row");
+_Static_assert(LG_STRIP_ROW >= 16 + 2 && LG_STRIP_H < LG_STRIP_ROW,
+               "a strip's row holds its label of the 8 x 16 face");
+_Static_assert(PV_H - LOG_STRIPS * LG_STRIP_ROW >= 3 * PV_H / 4,
+               "two strips leave the traces three quarters of the plot");
 _Static_assert(CHIP_H - 6 >= UI_TABS_LABEL_H,
                "the tabs draw their labels in the 10 x 20 face");
 
@@ -63,6 +96,8 @@ typedef enum {
 /** @brief The graph's state, beside the log viewer's. */
 typedef struct {
     bool on;                        /**< the open file shows as a graph */
+    bool time;                      /**< a time plot, else an XY plot   */
+    int  plot_h;                    /**< the traces' height, px         */
     log_markset_t mk;                 /**< its traces and markers         */
     float xlo;                      /**< the x scale's left end         */
     float xhi;                      /**< its right end                  */
@@ -80,6 +115,21 @@ typedef struct {
     lg_press_t press;               /**< the press under way            */
     int press_chip;                 /**< the chip pressed               */
     uint8_t press_id;               /**< the contact that holds it      */
+    /* A time plot. */
+    bool   has_time;                /**< rows stand at their time       */
+    long   gap_ms;                  /**< a longer step in time is a gap,
+                                         in whole milliseconds          */
+    float  t0;                      /**< the window's first time        */
+    float  t1;                      /**< its last                       */
+    bool   req;                     /**< two fingers set the range      */
+    float  req_lo;                  /**< its first time, s              */
+    float  req_hi;                  /**< its last time, s               */
+    int    req_w0;                  /**< the window it was set for      */
+    int    req_n;                   /**< and that window's rows         */
+    /** @brief Per pixel column, LG_COL_ flags. */
+    uint8_t col[PV_W];
+    /** @brief Per strip and pixel column, the strip's code. */
+    uint8_t strip_col[LOG_STRIPS][PV_W];
 } lg_state_t;
 
 /** @brief The graph's state, in log_graph.c. */
@@ -99,8 +149,16 @@ bool lg_read(log_source_t *src);
  *         cursor on the last row drawn, the tabs, no series focused. */
 void lg_start(void);
 
-/** @brief The plot's data is dropped: the graph shows nothing. */
+/** @brief The plot's data is dropped: the graph shows nothing, and the
+ *         strips' cells are freed. */
 void lg_drop(void);
+
+/**
+ * @brief The first series a chip stands for: 0 on a time plot, 1 on an XY
+ *        plot, whose series 0 is the x column.
+ * @return 0 or 1.
+ */
+int lg_k0(void);
 
 /** @brief A press under way is abandoned. */
 void lg_cancel(void);
@@ -160,7 +218,7 @@ int lg_x_px(float x);
  * @brief The pixel row of @p v on series @p k's scale.
  * @param k  The series.
  * @param v  The value.
- * @return the row, PV_Y to PV_Y + PV_H - 1.
+ * @return the row, PV_Y to PV_Y + lg.plot_h - 1.
  */
 int lg_y_px(int k, float v);
 
@@ -187,6 +245,104 @@ int lg_row_at(int x, int y);
  * @return true for a row of a trace.
  */
 bool lg_drawn(int i);
+
+/* --- log_graph_time.c --------------------------------------------------- */
+
+/**
+ * @brief Whether the plot shows a time file's graph.
+ * @return true with a time preset's file loaded.
+ */
+bool lg_time_on(void);
+
+/**
+ * @brief Set a time file's graph up from the data just built: the scales
+ *        over each series' whole run, the gap threshold, the traces'
+ *        height under the strips.
+ */
+void lg_time_setup(void);
+
+/**
+ * @brief Place the window's rows by their time: the traces' spans in
+ *        lv_plot, the gaps and the strips' codes per pixel column.  Called
+ *        for lv_compute_spans() while lg_time_on().
+ */
+void lg_time_spans(void);
+
+/**
+ * @brief The pixel column of row @p i in the window, from the plot's left.
+ * @param i  The row.
+ * @return 0 to PV_W - 1; -1 for a row outside the window or left or right
+ *         of the plot's range of time.
+ */
+int lg_time_col(int i);
+
+/**
+ * @brief Row @p i's place on the plot, unrounded and unclamped: below 0
+ *        left of the plot, above PV_W - 1 right of it.
+ * @param i  The row, in the window.
+ * @return the column, from the plot's left.
+ */
+float lg_time_colf(int i);
+
+/**
+ * @brief The row whose time stands nearest pixel column @p x, of the rows
+ *        the plot draws.
+ * @param x  The column, in the screen's coordinates.
+ * @return a row on the plot.
+ */
+int lg_time_row_at(int x);
+
+/**
+ * @brief Whether two fingers zoom and pan a time file in time: a time
+ *        graph whose file has a time column that rises over the run.
+ *        Otherwise they zoom and pan in rows.
+ * @return true for gestures in time.
+ */
+bool lg_time_gestures(void);
+
+/**
+ * @brief The time under pixel column @p x in the window.
+ * @param x  The column, in the screen's coordinates; clamped to the plot.
+ * @return the time, s from the run's first row.
+ */
+float lg_time_at(int x);
+
+/**
+ * @brief Show the time from @p t_lo to @p t_hi across the plot: the
+ *        window from the last row at or before @p t_lo to the first at or
+ *        after @p t_hi.  A range past either end of the run is moved inside
+ *        it, one longer than the run is the whole run; one that brackets
+ *        fewer than PV_MIN_WIN rows widens to PV_MIN_WIN rows at their own
+ *        times.
+ * @param t_lo  The range's first time, s.
+ * @param t_hi  Its last time, s.
+ */
+void lg_time_window(float t_lo, float t_hi);
+
+/**
+ * @brief The row the plot draws nearest row @p row: @p row itself on the
+ *        plot, else the first or the last row on it.
+ * @param row  The row.
+ * @return a row on the plot.
+ */
+int lg_time_drawn(int row);
+
+/**
+ * @brief Bring the cursor's row onto a time file's plot after < or >: a
+ *        row past the range of time moves the range so the row stands on
+ *        its nearer edge.
+ * @return true when the time graph took the step, the plain plot's rows
+ *         otherwise.
+ */
+bool lg_time_follow(void);
+
+/**
+ * @brief Whether the step in time from row @p i - 1 to row @p i is a gap.
+ * @param i  The row.
+ * @return true past the threshold, false for the first row and without a
+ *         time column.
+ */
+bool lg_time_gap_before(int i);
 
 /* --- log_graph_draw.c --------------------------------------------------- */
 

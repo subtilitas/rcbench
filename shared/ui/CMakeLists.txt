@@ -67,6 +67,7 @@ set(SRCS
     servo_limit_panel.c
     servo_limit_ready.c
     servo_limit_card.c
+    servo_graph_key.c
     servo_limit_seam.c
     servo_workbench.c
     servo_rudder_panel.c
@@ -130,7 +131,9 @@ set(SRCS
     log_viewer_events.c
     log_graph.c
     log_graph_xy.c
+    log_graph_time.c
     log_graph_draw.c
+    graph_key.c
     logs_strip.c
     log_select.c
     settings_screen.c
@@ -211,18 +214,20 @@ set(SRCS
     text_view.c
     text_view_draw.c
     text_view_keys.c
+    label_bitmap.c
+    label_layout.c
 )
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include
                            REQUIRES gfx touch bench logfile settings sbus link outputs servo can esc
                                     text files clock bleuart witmotion dialknob rcnode sense fwupdate vibe devupd
-                           PRIV_REQUIRES mstime)
+                           PRIV_REQUIRES mstime qrcodegen)
     # RCBENCH_TOUCH_INJECTOR comes with component text (shared/text).
 else()
     add_library(rcbench_ui STATIC ${SRCS})
     target_include_directories(rcbench_ui PUBLIC include "${CMAKE_CURRENT_LIST_DIR}/../link/include" "${CMAKE_CURRENT_LIST_DIR}/../can/include")
     # RCBENCH_TOUCH_INJECTOR comes with rcbench_text (shared/text).
     target_link_libraries(rcbench_ui PUBLIC rcbench_gfx rcbench_touch rcbench_bench rcbench_logfile rcbench_settings rcbench_sbus rcbench_link rcbench_outputs rcbench_can rcbench_esc rcbench_servo rcbench_text rcbench_files rcbench_clock rcbench_bleuart rcbench_witmotion rcbench_dialknob rcbench_rcnode rcbench_sense rcbench_fwupdate rcbench_vibe rcbench_devupd
-                          PRIVATE rcbench_mstime)
+                          PRIVATE rcbench_mstime rcbench_qrcodegen)
 endif()

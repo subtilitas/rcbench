@@ -1139,11 +1139,15 @@ static bool test_box_reads(int i, const char *text, ui_color_id_t col)
     scr->render(&cv, 0);
     want_fresh();
     const int y = SV_BOX_LINE_Y(i);
+    /* Up to GRAPH where the key stands at the line. */
+    const gfx_rect_t gk = servo_screen_graph_rect();
+    const int w = (gk.w > 0 && y + 20 > gk.y && y < gk.y + gk.h)
+                      ? gk.x - SV_BOX_X - 6 : SV_BOX_W - 4;
     const gfx_color_t bg = fb[(size_t)y * W + SV_BOX_X + 4];
-    gfx_fill_rect(&want_cv, SV_BOX_X + 2, (int16_t)y, SV_BOX_W - 4, 20, bg);
+    gfx_fill_rect(&want_cv, SV_BOX_X + 2, (int16_t)y, (int16_t)w, 20, bg);
     gfx_text(&want_cv, SV_BOX_X + 10, y, text, &gfx_font_10x20,
              ui_theme_color(col), 1);
-    return same_in(fb, want_fb, SV_BOX_X + 2, y, SV_BOX_W - 4, 20);
+    return same_in(fb, want_fb, SV_BOX_X + 2, y, w, 20);
 }
 
 /*

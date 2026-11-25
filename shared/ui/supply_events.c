@@ -11,6 +11,7 @@
 
 #include <math.h>
 
+#include "graph_key.h"
 #include "prog_registry.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -156,6 +157,10 @@ static void down(const touch_event_t *evt)
         sup_take(evt, P_RESET);
         return;
     }
+    if (gfx_rect_contains(supply_screen_graph_rect(), x, y)) {
+        sup_take(evt, P_GRAPH);
+        return;
+    }
     /* The PROG 5V box, on LIVE with nothing over it; locked while a port
      * holds the ports' 5V or it is not read, and the band says why. */
     if (sup_p5_shown()
@@ -277,6 +282,13 @@ static void released(int was, int x, int y)
     case P_RESET:
         if (gfx_rect_contains(s.reset_rect, x, y)) {
             s.pending.reset = true;
+        }
+        break;
+    case P_GRAPH:
+        /* LOGS on the last SUPPL log, or why not in the band. */
+        if (gfx_rect_contains(s.graph_rect, x, y)
+            && !graph_key_tap(GRAPH_KEY_SUPPLY)) {
+            ui_action_refused(graph_key_note(GRAPH_KEY_SUPPLY));
         }
         break;
     case P_CARD_V:
@@ -563,8 +575,20 @@ void sup_event(const touch_event_t *evt)
     }
 }
 
+gfx_rect_t supply_screen_graph_rect(void)
+{
+    return (graph_key_state(GRAPH_KEY_SUPPLY) != GRAPH_KEY_HIDDEN)
+               ? s.graph_rect : (gfx_rect_t){ 0, 0, 0, 0 };
+}
+
 void sup_tick(float dt_s)
 {
+    /* GRAPH's look: the last SUPPL log, ARMED, a log open. */
+    const uint32_t gsig = graph_key_sig(GRAPH_KEY_SUPPLY);
+    if (gsig != s.graph_sig) {
+        s.graph_sig = gsig;
+        ++s.ctrl_rev;
+    }
     sup_pd_tick();
     sup_list_tick(dt_s);
     /* The list hides OUTPUT OFF: an output that goes on under it, from a

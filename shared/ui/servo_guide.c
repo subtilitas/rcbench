@@ -150,6 +150,7 @@ static void page_test(ui_help_page_t *p)
     (void)ui_help_add(p, TR(SV_AUTO_TEST), TX_HG_SV_START, test_card_rect());
     (void)ui_help_add(p, TR(HG_SV_CAPS_NAME), TX_HG_SV_CAPS, caps_open_rect());
     (void)ui_help_add(p, TR(MO_TAB_PLOT), TX_HG_SV_PLOT, test_plot_rect());
+    (void)ui_help_add(p, TR(GK_KEY), TX_HG_GRAPH, svs_gk_rect(GRAPH_KEY_ATEST));
 }
 
 /** @brief LIMIT RUN: LOW END and HIGH END, and the state lines.
@@ -161,6 +162,7 @@ static void page_limrun(ui_help_page_t *p)
                       lim_ends_rect());
     (void)ui_help_add_at(p, TR(HG_SV_LR_LINES_NAME), TX_HG_SV_LR_LINES,
                          lim_lines_rect(), UI_HELP_AT_RIGHT);
+    (void)ui_help_add(p, TR(GK_KEY), TX_HG_GRAPH, svs_gk_rect(GRAPH_KEY_LIMIT));
 }
 
 /** @brief RUDDER: LENGTH, the drive buttons, ZERO, RESET MAX and, without
@@ -217,6 +219,7 @@ static void page_auto(ui_help_page_t *p)
                       both(rauto_rect(RA_C_MARGIN), rauto_rect(RA_C_TOL)));
     (void)ui_help_add(p, TR(RUD_ZERO), TX_HG_SV_RUD_ZERO,
                       rudder_rect(RUD_C_ZERO));
+    (void)ui_help_add(p, TR(GK_KEY), TX_HG_GRAPH, svs_gk_rect(GRAPH_KEY_RAUTO));
 }
 
 /** @brief RUDDER AUTO's, TEST's or LIMIT RUN's READY card, its rail line,

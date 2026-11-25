@@ -183,7 +183,7 @@ A longer outage ends the run with `AS5600 not answering`; a second within 10s en
 ![A result](view:servo-result)
 ![A result read from the INA3221](view:servo-result-ina)
 
-The box keeps the result until CLOSE; the card keeps its LAST line until the next run. The result includes PASS, FAIL or ABORTED with a reason, longest travel time, highest holding current and recorded files. These are `ATESTnnn.CSV` and, when written, `+ .TXT` for its report in `USER/LOGS`. With User logs OFF under [SETUP](setup.md#sd-card) > SD CARD, the line reads `USER LOGS OFF` and no file is written.
+The box keeps the result until CLOSE; the card keeps its LAST line until the next run. The result includes PASS, FAIL or ABORTED with a reason, longest travel time, highest holding current and recorded files. These are `ATESTnnn.CSV` and, when written, `+ .TXT` for its report in `USER/LOGS`. With User logs OFF under [SETUP](setup.md#sd-card) > SD CARD, the line reads `USER LOGS OFF` and no file is written. GRAPH at the file's line in the box opens `ATESTnnn.CSV` in the graph on [Logs](logs.md); the home tag there returns here.
 
 ## The limit run
 
@@ -335,7 +335,7 @@ The state lines keep the result until the next run: the verdict, the reason or t
 ![A programmed servo](view:servo-limrun-pass)
 ![Search only](view:servo-limrun-found)
 
-The run writes `LIMITnnn.CSV` and its report `LIMITnnn.TXT` in `USER/LOGS` regardless of REPORT, unless User logs is OFF. The CSV holds one row a position the searches judged, at most 600: the search (1 first, 2 after a write, 3 the last check), the side, the pulse in us, the current in A, the rail voltage in V, the angle, BASE, FREE or BOUND, the free current, the threshold and, on the bound row, the endpoint. A run that judged no position writes the report alone. The report records the searched output, both searches' end points, servo pulse limits and any pulse write, and LEFT ANGLE and RIGHT ANGLE before and after. It also includes travel fractions, overset and final values, values written, write and session counts, meter, AS5600 angle at each last free position when fitted, and verdict or reason. Wi-Fi and updates wait until the report file is closed.
+The run writes `LIMITnnn.CSV` and its report `LIMITnnn.TXT` in `USER/LOGS` regardless of REPORT, unless User logs is OFF. The CSV holds one row a position the searches judged, at most 600: the search (1 first, 2 after a write, 3 the last check), the side, the pulse in us, the current in A, the rail voltage in V, the angle, BASE, FREE or BOUND, the free current, the threshold and, on the bound row, the endpoint. A run that judged no position writes the report alone. GRAPH beside the report's name on the card opens `LIMITnnn.CSV` in the graph on [Logs](logs.md); the home tag there returns here. The report records the searched output, both searches' end points, servo pulse limits and any pulse write, and LEFT ANGLE and RIGHT ANGLE before and after. It also includes travel fractions, overset and final values, values written, write and session counts, meter, AS5600 angle at each last free position when fitted, and verdict or reason. Wi-Fi and updates wait until the report file is closed.
 
 ## Current limitations
 

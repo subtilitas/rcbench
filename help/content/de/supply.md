@@ -171,7 +171,7 @@ Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) s
 
 ## Das Log eines Laufs
 
-Jedes Einschalten des Ausgangs beginnt einen Lauf. Dabei wird die Grafik geleert; beim Ausschalten friert sie ein. Die Titelzeile von STEUERUNG summiert Ladung in mAh und Energie in Wh für diesen Lauf. SPITZENWERTE ZURÜCKSETZEN beginnt die Minima und Maxima beim aktuellen Messwert neu.
+Jedes Einschalten des Ausgangs beginnt einen Lauf. Dabei wird die Grafik geleert; beim Ausschalten friert sie ein. Die Titelzeile von STEUERUNG summiert Ladung in mAh und Energie in Wh für diesen Lauf. SPITZENWERTE ZURÜCKSETZEN beginnt die Minima und Maxima beim aktuellen Messwert neu. GRAFIK rechts davon öffnet das SUPPL-Log des Laufs als Grafik unter [Logs](logs.md), sobald der Ausgang aus ist; das Home-Feld dort führt hierher zurück. Solange der Ausgang ein ist, ist die Taste grau, und ein Tipp nennt den Grund im Alarmband.
 
 Bei Auto-Aufzeichnungen EIN unter [SETUP](setup.md#sd-card) > SD CARD erhält jeder Lauf eine eigene `SUPPLnnn.CSV` in `BENCH/LOGS` auf der SD-Karte (Secure Digital). Alle 50ms wird eine Zeile geschrieben: Sollwert, Spannung, Strombegrenzung, Strom, Leistung, Modus, Ladung, Energie und Quelle (`measured` oder `model`). Öffne die Datei unter [Logs](logs.md).
 

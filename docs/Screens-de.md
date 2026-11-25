@@ -356,16 +356,16 @@ Die Aufgabe auf der linken Karte bestimmt die ersten Hilfeseiten:
 | --- | --- |
 | SERVO Hub | die Kacheln LIVE, LIMIT RUN, RUDER und KST und die Portzeile (5); eine Kachel und OPTIONEN (2) |
 | SERVO LIVE und SWEEP | der Winkel des Ruderhorns, die Skala und die Messwerte (3) |
-| SERVO TEST | das Feld AUTOMATISCHER TEST, die Grenzen und der Verlauf (3); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
-| SERVO LIMIT RUN | UNTERES ENDE mit OBERES ENDE und die Zustandszeilen (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
+| SERVO TEST | das Feld AUTOMATISCHER TEST, die Grenzen, der Verlauf und GRAFIK im Feld des Laufs (3 oder 4); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
+| SERVO LIMIT RUN | UNTERES ENDE mit OBERES ENDE, die Zustandszeilen und GRAFIK nach einem Lauf (2 oder 3); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
 | SERVO RUDER | LÄNGE, die Fahrtasten, NULLPUNKT, MAX LÖSCHEN und ohne antwortenden Drehknopf -10us und +10us (4 oder 5); AUSSCHLAG, HINTERKANTE und die Statuszeilen (3) |
-| SERVO RUDER AUTO | die Sollwerte, RESERVE und TOLERANZ, NULLPUNKT (3); AUSSCHLAG und HINTERKANTE (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
+| SERVO RUDER AUTO | die Sollwerte, RESERVE und TOLERANZ, NULLPUNKT und GRAFIK nach einem Lauf (3 oder 4); AUSSCHLAG und HINTERKANTE (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
 | SERVO LIVE, SWEEP und RUDER, SAFE | PORT, BEREIT, die Schienenzeile, ARM und OPTIONEN (5); SET V, die Grafik, TEMPO, Typ und die Tasten auf LIVE und SWEEP (5), SET V, die Grafik, Typ und Seitenansicht auf RUDER (4); SET V nicht am Programmierport des rbmod-Carriers |
 | SERVO KST und HITEC, Reiter SERVO | die Reiter, VERBINDEN, ALLES AUSLESEN und TYP auf KST, SERIE (DATEIEN bei gehaltenem Port) und ALLES AUSLESEN auf HITEC, die Hinweise (5); DATEIEN und WEITERES auf KST, WEITERES und NACH STOP auf HITEC, ZURÜCKSPIELEN, n WERTE SCHREIBEN (4); PORT, BEREIT, die Schienenzeile, SCHREIBEN und OPTIONEN (5) |
 | SERVO KST und HITEC, ein anderer Reiter | die Reiter, der erste Wert des Reiters, sein `-` und `+` in einer KST-Zeile mit Schritten, SERVO BEWEGEN auf TRAVEL der D-Serie von HITEC, die Hinweise (2 bis 4); PORT, BEREIT, die Schienenzeile, SCHREIBEN und OPTIONEN (5) |
 | die Listen von SERVO (Hub, SWEEP, RUDER, RUDER AUTO, HITEC) | wie eine Optionsliste |
 | SUPPLY LIVE | GRAFIK und TABELLE, SPANNUNG und STROMBEGRENZUNG (3) |
-| SUPPLY LIVE, die rechte Spalte | der Bereich und die vier Messwertkarten (5); die Sollwerte, SPITZENWERTE ZURÜCKSETZEN, AUSGANG EIN und OPTIONEN (4) |
+| SUPPLY LIVE, die rechte Spalte | der Bereich und die vier Messwertkarten (5); die Sollwerte, SPITZENWERTE ZURÜCKSETZEN, GRAFIK nach einem Lauf, AUSGANG EIN und OPTIONEN (4 oder 5) |
 | eine Optionsliste (MOTOR & ESC, ESC STICK, SUPPLY, SERVO) | eine Zeile, der Name der Leiste und Name ZURÜCKSETZEN (3); `-`, Wert und `+` einer Zeile und SPEICHERN (4) |
 
 Eine Hilfeseite, deren Hilfefeld ein Bedienelement zum Anhalten eines
@@ -408,8 +408,8 @@ erscheinen beide Hilfeseiten auch bei ARMED.
 
 | Seite und Zustand | Hilfeseiten, Einträge |
 | --- | --- |
-| MOTOR & ESC LIVE, SAFE | LIVE und PROGRAMMIEREN, die Telemetriekarte, GAS und LOG UMBENENNEN (4); ZIEL, die Messwerte, SPITZENWERTE ZURÜCKSETZEN, ARM und OPTIONEN (5) |
-| MOTOR & ESC, Liste von PROGRAMMIEREN, SAFE | LIVE und PROGRAMMIEREN, die beiden Zeilen und LOG UMBENENNEN (4); die rechte Spalte wie bei LIVE (5) |
+| MOTOR & ESC LIVE, SAFE | LIVE und PROGRAMMIEREN, die Telemetriekarte, GAS, LOG UMBENENNEN und GRAFIK nach einem Lauf (4 oder 5); ZIEL, die Messwerte, SPITZENWERTE ZURÜCKSETZEN, ARM und OPTIONEN (5) |
+| MOTOR & ESC, Liste von PROGRAMMIEREN, SAFE | LIVE und PROGRAMMIEREN, die beiden Zeilen, LOG UMBENENNEN und GRAFIK nach einem Lauf (4 oder 5); die rechte Spalte wie bei LIVE (5) |
 | ESC STICK, Hersteller oder Modelle | ZURÜCK und die erste Zeile (2); SUCHE, `^` und `v` und die Anzahl unter den Zeilen (3) |
 | ESC STICK, ein Profil | ZURÜCK, der erste Punkt und der Hinweis unter der Karte (3); `-` und `+` des ersten Punkts, `^` und `v` der Seitenspalte, MANUELLER EINGRIFF NÖTIG bei einem Profil mit Handgriffen, START und OPTIONEN (4 oder 5) |
 | OPTIONEN von ESC STICK | wie eine Optionsliste |
@@ -1012,7 +1012,10 @@ auf eine Registerkarte, um die Aufgabe zu wechseln. Das fügt keine
 Navigationsebene hinzu und lässt die gewählte LIVE-Ansicht GRAFIK oder
 TABELLE unverändert. LOG UMBENENNEN steht auf LIVE und auf der Liste von
 PROGRAMMIEREN in derselben Zeile, 180 x 40px von x 449 bis zum Rand der
-linken Spalte bei x 629 ([LOG UMBENENNEN](#log-umbenennen)).
+linken Spalte bei x 629 ([LOG UMBENENNEN](#log-umbenennen)). GRAFIK,
+110 x 40px ab x 331, steht links davon, sobald seit dem Einschalten ein
+MOTOR-Log geschlossen wurde
+([GRAFIK auf den Ergebniskarten](#grafik-auf-den-ergebniskarten)).
 
 | Aufgabe | Die linke Spalte, 620px |
 | --- | --- |
@@ -1936,7 +1939,7 @@ der Reihenfolge der Nutzung.
 | TEST | TEST | das Feld AUTOMATISCHER TEST, die Grenzen von SUPPLY, der Verlauf und das Feld des Laufs, die Karte BEREIT an der Stelle des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet die Liste des automatischen Tests |
 | LIMIT RUN | LIMIT RUN | Modus- und Ausgangszeile, UNTERES ENDE und OBERES ENDE und die Zustandszeilen auf der linken Karte, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet MODUS, SERVO, SERVOPULSE, STROM, Warten vor PWM, den Namen des Prüflings, die Notiz zum Lauf und die Testaufzeichnungen ([Starten](Servo-de.md#starten)) |
 | RUDER | RUDER | Ausschlag in ° und mm, LÄNGE, 1000us, ZENTRIEREN, 2000us, NULLPUNKT und MAX LÖSCHEN, -10us und +10us ohne antwortenden Drehknopf ([Ruderausschlag](Servo-de.md#ruderausschlag)) |
-| RUDER AUTO | RUDER AUTO | das Feld von AUTO statt LÄNGE und der Fahrtasten, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste ([AUTO-Endpoints](Servo-de.md#auto-endpoints)) |
+| RUDER AUTO | RUDER AUTO | das Feld von AUTO statt LÄNGE und der Fahrtasten, GRAFIK rechts von TOLERANZ nach einem Lauf ([GRAFIK auf den Ergebniskarten](#grafik-auf-den-ergebniskarten)), die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste ([AUTO-Endpoints](Servo-de.md#auto-endpoints)) |
 | KST | SERVO > KST | die Programmierung für KST und Chaservo über dem linken Feld, die Karte BEREIT statt des Ausgangsfelds, WERTE SCHREIBEN in der Fußleiste ([Programmierer](#programmierer)) |
 | HITEC | HITEC | die Programmierung für Hitec über dem linken Feld, Karte und Fußleiste wie KST |
 
@@ -2718,7 +2721,9 @@ Grund, die längste Stellzeit, den höchsten Haltestrom und die in
 `USER/LOGS` gespeicherten Dateien: `ATESTnnn.CSV` und `+ .TXT`, sobald der
 vollständige Bericht die Karte erreicht hat. Bei Testaufzeichnungen AUS
 unter [Setup](#setup) > SD CARD steht `TESTAUFZEICHNUNGEN AUS`; es werden
-keine Dateien geschrieben.
+keine Dateien geschrieben. GRAFIK in der Zeile der Datei im Feld öffnet
+`ATESTnnn.CSV` als Grafik in LOGS
+([GRAFIK auf den Ergebniskarten](#grafik-auf-den-ergebniskarten)).
 
 ![Ein Ergebnis](img/de/servo-result.png)
 
@@ -2769,7 +2774,9 @@ Versorgung aus, sobald das LEAVE den Port zurückgegeben hat. Der Lauf schreibt
 `LIMITnnn.CSV`, eine Zeile je bewerteter Stellung, und den Bericht
 `LIMITnnn.TXT`. Urteil, Werte oder Endlagen und `LIMITnnn.TXT`, bei ausgeschalteten
 Testaufzeichnungen `TESTAUFZEICHNUNGEN AUS`, bleiben bis zum nächsten Lauf
-auf den Zustandszeilen.
+auf den Zustandszeilen. GRAFIK neben der Zeile des Berichts öffnet
+`LIMITnnn.CSV` als Grafik in LOGS
+([GRAFIK auf den Ergebniskarten](#grafik-auf-den-ergebniskarten)).
 
 Am Programmierport des rbmod-Carriers versorgt PROG 5V den Lauf und
 übernimmt das Aus- und Einschalten anstelle des PD mini. Das Halten
@@ -3323,7 +3330,10 @@ bleibt unter Tastenfeld und Bestätigungsdialog sichtbar.
 
 Die 380px breite rechte Leiste zeigt vier 64px hohe Messwertfelder
 SPANN., STROM, LEIST. und MODUS, darunter STEUERUNG mit mAh und Wh des
-Laufs in der Titelzeile und SPITZENWERTE ZURÜCKSETZEN (48px). AUSGANG EIN
+Laufs in der Titelzeile und SPITZENWERTE ZURÜCKSETZEN (264 x 48px), rechts
+davon GRAFIK (84 x 48px), sobald seit dem Einschalten ein SUPPL-Log
+geschlossen wurde
+([GRAFIK auf den Ergebniskarten](#grafik-auf-den-ergebniskarten)). AUSGANG EIN
 / AUS ist das mittlere Feld der Fußleiste, y 444 bis 492 des Inhalts,
 x 348 bis 676, wo MOTOR & ESC ARM hat. Beide Spalten enden bei y 436 des
 Inhalts.
@@ -3826,11 +3836,15 @@ Importansicht:
 ![Ein LIMIT RUN in der Grafik: current und angle über dem Puls](img/de/logs-limit-graph.png)
 ![Die Suche eines RUDDER AUTO in der Grafik](img/de/logs-ruddr-search.png)
 ![Die Schritte eines RUDDER AUTO in der Grafik](img/de/logs-ruddr-steps.png)
+![Ein AUTOMATIC TEST über seiner Zeit: seine Schritte und seine Phasen, das Halten eingeschlossen](img/de/logs-atest-graph.png)
+![Ein SUPPLY-Lauf über seiner Zeit: die Streifen CC und MODELL, eine Lücke von 2s](img/de/logs-supply-graph.png)
+![Ein SERVO-Lauf aus INA3221-Fenstern über seiner Zeit](img/de/logs-windows-graph.png)
 ![MEHR auf der Grafik: SPALTEN](img/de/logs-plot-more.png)
 ![Die Importansicht, über MEHR > SPALTEN erreicht](img/de/logs-import.png)
 
 Das Home-Feld führt wie ZURÜCK eine Ebene zurück: von der Grafik dorthin,
-woher sie kam (nach ÖFFNEN zur Dateiliste, nach GRAFIK zur Importansicht),
+woher sie kam (nach ÖFFNEN zur Dateiliste, nach GRAFIK zur Importansicht,
+nach GRAFIK einer Ergebniskarte zu dieser Karte),
 vom Import zur Dateiliste und von dort ins Menü. Über der Liste von MEHR
 schließt es die Liste. In der LÖSCHEN-Rückfrage wirkt es als ABBRECHEN.
 
@@ -3896,7 +3910,11 @@ nach den Spaltennamen ihrer Kopfzeile, dann nach ihrem Namen
 (`MOTOR042_kv1200.CSV`), ein Name in Kleinbuchstaben und die Dateien ab
 Firmware 0.21.0 werden ebenso erkannt. Eine erkannte Datei öffnet die
 Grafik mit den Spalten ihrer Art, jede, soweit die Datei sie als Zahlen
-enthält; eine fehlende Spalte entfällt, und keine andere rückt nach:
+enthält. Fehlt einer Zeitart (AUTOMATIC TEST, SUPPLY, MOTOR, SERVO) eine,
+nimmt sie die erste Zahlenspalte, deren Name auf ein Leerzeichen und
+diesen Namen endet: ein Lauf mit leeren Zellen in `current` und
+`voltage` zeichnet `ch1 current` und `ch1 voltage` von INA3221-Kanal 1.
+Jede andere fehlende Spalte entfällt, und keine andere rückt nach:
 
 | Art | Kopfzeile enthält | Name | Gezeichnete Spalten |
 | --- | --- | --- | --- |
@@ -3911,7 +3929,8 @@ Eine LIMIT-RUN- und eine RUDDER-AUTO-Datei öffnen in der Grafik: ihre
 Zeilen über dem Puls (bei RUDDER AUTO auf SCHRITTE über dem Schritt), nicht
 über der Zeilennummer. Die Grafik zeigt die ganze Datei mit bis zu 2.048
 Zeilen; eine längere Datei und eine ohne Pulsspalte (RUDDER AUTO der
-Firmware 0.23.17) zeichnet LOGS wie die anderen Arten nach Zeilennummer.
+Firmware 0.23.17) zeichnet LOGS wie eine Datei keiner Art nach
+Zeilennummer.
 Eine Prüfstandsdatei der Firmware 0.21.0 nennt weder `throttle` noch `pulse`:
 `ESCnnn.CSV` öffnet als MOTOR-Lauf, `BENCHnnn.CSV` und `SERVOnnn.CSV` als
 SERVO-Lauf, und dieselbe Kopfzeile unter jedem anderen Namen als
@@ -3953,6 +3972,57 @@ der x-Spalte; die Cursorzeile in der Fußleiste
 - Zwei Finger zoomen die Grafik nicht; MEHR > SPALTEN führt zur
   Importansicht, deren GRAFIK die gewählten Spalten nach Zeilennummer
   zeichnet.
+
+Ein AUTOMATIC TEST, ein SUPPLY-, ein MOTOR- und ein SERVO-Lauf öffnen in
+der Grafik über ihrer Zeit (`shared/ui/log_graph_time.c`). Die Kopfzeile
+nennt nach Dauer und Rate die Art
+(`ATEST012.CSV   1734 ZEILEN   186.20s   9Hz   AUTOMATISCHER TEST`); die
+Chips gehören den vier Reihen, mit ihrem Wert am Cursor.
+
+- Eine Zeile steht bei ihrer Zeit im Fenster: die erste Zeile des
+  Fensters auf der ersten Pixelspalte der Grafik, die letzte auf der
+  letzten. Eine Datei, deren Zeitspalte zurückspringt, liest LOGS nach
+  Zeilennummer (der Leser verwirft ihre Zeitachse): ihre Zeilen stehen
+  gleichmäßig, und die Kopfzeile zeigt keine Dauer.
+- Ein Zeitschritt länger als das Größere aus 3 mittleren Zeilenabständen
+  (Median) und 0.5s ist eine Lücke: die Linien brechen dort ab, und die
+  Spalten zwischen den beiden Zeilen sind schraffiert, 1 Pixel von 8
+  entlang jeder Diagonalen. `ZEILEN FEHLEN` steht in der breitesten
+  Lücke, wo es hineinpasst. Ein Schritt von genau der Schwelle ist keine
+  Lücke; Schritt und Schwelle werden in ganzen Millisekunden verglichen,
+  0.7s bis 1.2s bei Zeilen von 0.1s ist also keine Lücke. Der AUTOMATIC
+  TEST schreibt in jeder Phase, das Halten
+  eingeschlossen, eine Zeile je Messwert; ein Halten erscheint darum als
+  Zeilen, nicht als Lücke.
+- Bis zu zwei Streifen von 6px stehen unter den Linien, jeder in einer
+  Zeile von 18px mit seiner Beschriftung in 8 x 16 am linken Ende; die
+  Linien nehmen die Höhe der Grafik weniger 18px je Streifen. PHASE
+  (AUTOMATIC TEST) färbt jeden Namen von `phase` in der Reihenfolge seines
+  Auftretens, und seine Beschriftung nennt die Phase am Cursor
+  (`PHASE MOVE`); CC (AUTOMATIC TEST, SUPPLY) zeigt die Zeilen mit `mode`
+  CC in der Warnfarbe; MODELL (SERVO, MOTOR, SUPPLY) die Zeilen mit
+  `source` `model`. Ein Streifen erscheint nur, wo eine Zeile ihn setzt.
+  In einer Pixelspalte nimmt der Streifen den Code ihrer ersten Zeile,
+  hält ihn über Spalten ohne Zeile und endet an einer Lücke.
+- Ein Schritt des AUTOMATIC TEST beginnt mit einer Linie über die Grafik
+  und seiner Nummer auf einem Schild. Eine Folge von Zeilen mit einer
+  Zelle, die mit `>` beginnt (eine Drehzahl über der Grenze ihres
+  Registers, `>65535`), ist ein Balken von 4px am oberen Rand in der
+  Warnfarbe mit dem Schild `>`; eine Folge von Zeilen mit `clipped` über 0
+  einer in der Gefahrenfarbe mit `BEGRENZT`. Die Schilder stehen in zwei
+  Reihen unter den Balken; ein Schild ohne Platz in beiden entfällt. Eine
+  Datei setzt höchstens 256 Linien und Balken; weitere werden gezählt und
+  nicht gezeichnet.
+- Der Cursor geht zur Zeile, deren Zeit dem Finger am nächsten steht.
+  Zwei Finger zoomen und verschieben in der Zeit: die Zeit zwischen den
+  Fingern bleibt unter ihnen, und die Grafik zeigt die Zeilen, die den
+  gewählten Bereich einschließen, ihre Linien bis an die Ränder. Der
+  Bereich endet an der ersten und der letzten Zeit des Laufs und hält
+  mindestens 8 Zeilen. Eine Datei ohne Zeitspalte zoomt nach Zeilen wie
+  die Kurve nach Zeilen. `<` und `>` gehen eine Zeile weiter; über einen
+  Rand hinaus wandert der Bereich, bis diese Zeile am Rand steht. Der
+  Cursor bleibt auf einer Zeile, die die Grafik zeichnet. Ein Tippen auf einen Chip hebt seine Reihe hervor,
+  blendet sie aus und holt sie zurück wie in der Grafik oben.
 
 Der CSV-Leser (Comma-Separated Values) nimmt Dezimalkomma und -punkt,
 Einheitenzeilen und unterschiedlich lange Zeilen an. Die Importansicht
@@ -4299,6 +4369,56 @@ ist ein Fehler: Prüfstand SAFE, Netzteil aus
 LOGS listet keine Läufe, die noch geschrieben werden. Deren
 Verzeichnisgröße kann bis zum Schließen nur den zuletzt festgeschriebenen
 Stand zeigen. Ein offener Lauf könnte dadurch abgeschlossen wirken.
+
+### GRAFIK auf den Ergebniskarten
+
+![GRAFIK neben dem Bericht eines LIMIT RUN](img/de/servo-limrun-pass.png)
+![GRAFIK rechts von TOLERANZ auf RUDER AUTO](img/de/servo-rudder-auto-graph-rbmod.png)
+![GRAFIK links von LOG UMBENENNEN auf MOTOR & ESC](img/de/motor-graph.png)
+![GRAFIK rechts von SPITZENWERTE ZURÜCKSETZEN auf SUPPLY](img/de/supply-graph.png)
+
+GRAFIK öffnet LOGS mit der CSV des letzten Laufs als Grafik. Fünf Karten
+tragen die Taste, für den letzten Lauf seit dem Einschalten:
+
+| Karte | Wo | Die Datei |
+| --- | --- | --- |
+| LIMIT RUN | rechtsbündig neben der Zeile des Berichts, 96 x 40px; diese Zeile nimmt zwei Zeilen ein | `LIMITnnn.CSV` in `USER/LOGS` |
+| RUDER AUTO | rechts von TOLERANZ in deren Zeile, 90 x 48px | `RUDDRnnn.CSV` in `USER/LOGS` |
+| TEST | in der Zeile der Datei im Feld des Laufs, 96 x 36px, bis SCHLIESSEN | `ATESTnnn.CSV` in `USER/LOGS` |
+| MOTOR & ESC | links von LOG UMBENENNEN, 110 x 40px ab x 331 | das zuletzt geschlossene MOTOR-Log |
+| SUPPLY | rechts von SPITZENWERTE ZURÜCKSETZEN in STEUERUNG, 84 x 48px | das zuletzt geschlossene SUPPL-Log |
+
+Die Taste fehlt vor dem ersten Lauf, bei einem Lauf, der mit
+Testaufzeichnungen AUS begann, bei einem Lauf, für den die Karte keine
+Datei nahm, und bei einem LIMIT RUN, der keine Stellung bewertet hat (nur
+sein Bericht). Sie ist grau, solange der Prüfstand ARMED ist und solange
+die Datei des Laufs noch offen ist: Der Lauf läuft, seine letzten Zeilen
+oder sein Ende warten auf den Logger, oder auf MOTOR & ESC und SUPPLY ist
+ein Log offen. Ein Tipp auf die graue Taste öffnet nichts und sagt warum:
+in der ersten Zeile der Karte auf LIMIT RUN, RUDER AUTO und TEST, im
+Alarmband auf MOTOR & ESC und SUPPLY.
+
+Die Taste liest die Datei aus dem Ordner, in den sie geschrieben wurde.
+Ein Ordner Testaufzeichnungen oder Ordner Auto-Aufzeichnungen, unter SETUP > SD CARD nach
+dem Lauf geändert, gilt für den nächsten Lauf; die Taste dieses Laufs
+öffnet die Datei weiter im alten Ordner. Die Liste hinter dieser Grafik
+zeigt den neuen Ordner des Reiters.
+
+| Text | Wann |
+| --- | --- |
+| `Prüfstand ARMED. Für die Grafik auf SAFE schalten.` | der Prüfstand ist ARMED |
+| `Der Lauf wird noch geschrieben.` | die Datei des Laufs ist noch offen |
+| `LIMIT013.CSV ist nicht auf der Karte.` | die Karte im Slot ist nicht die, auf die der Lauf schrieb, oder die Datei ist umbenannt oder gelöscht |
+
+Ein Tipp auf die aktive Taste verlässt die Karte zu LOGS, auf dem
+Reiter der Datei mit der Datei offen, als Grafik bei einer Datei, die
+eine Vorlage erkennt. Das Verlassen der Karte schaltet den Prüfstand auf
+SAFE, wie jeder Weg aus einem Prüfstandsbildschirm. Das Home-Feld auf
+dieser Grafik führt zurück zur Karte, deren Ergebnis weiter dasteht.
+LOGS, später über seine Kachel geöffnet, zeigt seine Liste. Die Grafik
+treibt keinen Ausgang und zeigt kein Ziel. Die Taste wirkt beim Loslassen
+des Fingers, der sie gedrückt hat, über der Taste; ein zweiter Finger
+anderswo und ein Loslassen, das aufs Band gerutscht ist, öffnen nichts.
 
 ### Das Format der SD-Karte
 

@@ -452,7 +452,9 @@ static void reset(void)
     s.i_down = nudge_rect(1, false);
     s.i_up   = nudge_rect(1, true);
     s.out_rect   = ui_footer_rect(UI_FOOTER_HOLD);
-    s.reset_rect = (gfx_rect_t){ RC_X, RESET_Y, RC_W, BTN_H };
+    s.reset_rect = (gfx_rect_t){ RC_X, RESET_Y, RC_W - GRAPH_W - 8, BTN_H };
+    s.graph_rect = (gfx_rect_t){ RC_X + RC_W - GRAPH_W, RESET_Y, GRAPH_W,
+                                 BTN_H };
     /* The question's buttons stand clear of its last lines, which end 4px
      * above the alert band. */
     s.apply_btn   = (gfx_rect_t){ (int16_t)(OV_X + 40), ASK_BTN_Y,

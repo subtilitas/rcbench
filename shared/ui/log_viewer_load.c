@@ -162,7 +162,7 @@ void lv_run_analysis(void)
     }
 
     log_source_t src;
-    lv_point(s.open_tab);
+    lv_point_open();
     if (!open_name(&src)) {
         lv_say(TX_LOG_CANNOT_OPEN, s.name);
         return;
@@ -228,6 +228,11 @@ void lv_compute_spans(void)
     if (s.win_n <= 0 || s.win0 < 0 || s.win0 + s.win_n > s.data.count) {
         s.win0 = 0;
         s.win_n = s.data.count;
+    }
+    if (lg_time_on()) {
+        /* A time file's rows at their time (log_graph_time.c). */
+        lg_time_spans();
+        return;
     }
     const int base = s.win0;
     const int count = s.win_n;
@@ -354,7 +359,7 @@ void lv_load_data(void)
     }
 
     log_source_t src;
-    lv_point(s.open_tab);
+    lv_point_open();
     if (!open_name(&src)) {
         lv_say(TX_LOG_CANNOT_OPEN, s.name);
         return;
@@ -387,14 +392,14 @@ void lv_load_data(void)
 
 /**
  * @brief Open the report s.name names in the text viewer FILES hosts, from
- *        the folder of s.open_tab and the mount its page was read from;
- *        the home tag there returns to LOGS.  A report over
+ *        the folder it was opened from (s.open_dir) and the mount its page
+ *        was read from; the home tag there returns to LOGS.  A report over
  *        TEXT_BUF_FILE_MAX stays on the list with the reason.
  * @param size  the report's bytes as listed
  */
 static void open_text(uint64_t size)
 {
-    if (files_screen_open_text(log_viewer_tab_dir(s.open_tab), s.name,
+    if (files_screen_open_text(s.open_dir, s.name,
                                s.open_mounts, size, true) != FM_OK) {
         lv_say(TX_ED_TOO_LARGE, NULL);
         return;
@@ -452,6 +457,7 @@ void lv_open_selected(void)
     }
     snprintf(s.name, sizeof(s.name), "%s", s.files[s.sel].name);
     s.open_tab = s.tab;
+    snprintf(s.open_dir, sizeof(s.open_dir), "%s", lv_dir(s.tab));
     s.open_mounts = s.mounts;
     /* A report, its run's CSV beside it or not (log_select.h): its text
      * in the viewer, and no import.  What the import and the plot held

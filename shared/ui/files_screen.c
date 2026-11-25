@@ -610,26 +610,6 @@ int fs_bar_scroll_at(int i, int top)
 }
 
 /**
- * @brief The LOGS tab whose folder @p dir is, when LOGS shows the files of
- *        it.
- * @param dir  a folder
- * @param tab  takes the tab
- * @return true for the folder of ROOT, USER or BENCH
- */
-static bool logs_tab_of(const char *dir, log_viewer_tab_t *tab)
-{
-    static const log_viewer_tab_t tabs[] = { LOG_TAB_USER, LOG_TAB_BENCH,
-                                             LOG_TAB_ROOT };
-    for (size_t k = 0; k < sizeof(tabs) / sizeof(tabs[0]); ++k) {
-        if (fm_same_path(dir, log_viewer_tab_dir(tabs[k]))) {
-            *tab = tabs[k];
-            return true;
-        }
-    }
-    return false;
-}
-
-/**
  * @brief Whether OPEN hands entry @p e of folder @p dir to LOGS: a .csv
  *        file LOGS' list holds (log_select_lists()) in the folder of one of
  *        its tabs.  A report LOGS lists too (log_report_number()) opens in
@@ -641,8 +621,8 @@ static bool logs_tab_of(const char *dir, log_viewer_tab_t *tab)
 static bool logs_shows(const char *dir, const fm_entry_t *e)
 {
     log_viewer_tab_t tab;
-    return !e->is_dir && logs_tab_of(dir, &tab) && log_select_lists(e->name)
-           && log_report_number(e->name) < 0;
+    return !e->is_dir && log_viewer_tab_of(dir, &tab)
+           && log_select_lists(e->name) && log_report_number(e->name) < 0;
 }
 
 /* --------------------------------------------------------------- footer */
@@ -736,7 +716,7 @@ static void open_in_logs(const fm_entry_t *e)
 {
     log_viewer_tab_t tab;
     const log_viewer_show_t r =
-        logs_tab_of(s.pane[s.active].dir, &tab)
+        log_viewer_tab_of(s.pane[s.active].dir, &tab)
             ? log_viewer_show(tab, e->name, s.pane[s.active].mount)
             : LOG_SHOW_NOT_LISTED;
     if (r == LOG_SHOW_OTHER_CARD) {

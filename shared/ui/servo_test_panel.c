@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include "log_name.h"
+#include "log_viewer_screen.h"
 #include "prog_choice.h"
 #include "rcbench_version.h"
 #include "run_info.h"
@@ -488,6 +489,16 @@ void servo_screen_test_files(int number, bool report)
                   : f == PEEK_RAUTO ? &s.ra.report
                                     : &s.test_report;
     if (number != *file || report != *whole) {
+        if (number != *file) {
+            /* GRAPH's card and folder, kept for this run whatever the
+             * setting says since. */
+            s.gk_mount[f] = log_viewer_mount_now();
+            const char *dir = log_viewer_tab_dir(LOG_TAB_USER);
+            size_t n = strlen(dir);
+            n = n < CARD_DIR_MAX ? n : CARD_DIR_MAX - 1u;
+            memcpy(s.gk_dir[f], dir, n);
+            s.gk_dir[f][n] = '\0';
+        }
         *file  = number;
         *whole = report;
         ++s.ctrl_rev;
@@ -586,8 +597,18 @@ void draw_test_box(gfx_canvas_t *c)
     const int n2 = wrap_text(c, b.x + 10, b.y + 10 + BOX_PITCH, BOX_PITCH,
                              l2, BOX_CELLS, ui_theme_color(UI_C_TEXT),
                              SV_FONT_LABEL);
-    gfx_text(c, b.x + 10, b.y + 10 + BOX_PITCH * (1 + ((n2 > 1) ? n2 : 1)),
-             l3, SV_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
+    const int y3 = b.y + 10 + BOX_PITCH * (1 + ((n2 > 1) ? n2 : 1));
+    gfx_text(c, b.x + 10, y3, l3, SV_FONT_LABEL,
+             ui_theme_color(UI_C_TEXT_DIM), 1);
+    /* GRAPH at the file's line, flush right, once the run has ended:
+     * 36px tall from 4px over the line, clear of the line above. */
+    gfx_rect_t key = { (int16_t)(b.x + b.w - 10 - GRAPH_KEY_W),
+                       (int16_t)(y3 - 4), GRAPH_KEY_W, GRAPH_KEY_H - 4 };
+    if (running) {
+        key = (gfx_rect_t){ 0, 0, 0, 0 };
+    }
+    svs_gk_draw(c, GRAPH_KEY_ATEST, key,
+                s.ov_have && s.ov_pressed == OP_GRAPH);
     ui_button_font(c, test_btn_rect(),
                    running ? TR(SV_STOP_TEST) : TR(SUP_CLOSE),
                    running ? ui_theme_color(UI_C_DANGER)
@@ -701,7 +722,10 @@ static bool test_state_line(char *line, size_t n)
         (void)svs_seq_line(line, n);
         return false;
     }
-    const char *why = svs_seq_failure();
+    const char *why = svs_gk_note(GRAPH_KEY_ATEST);
+    if (why == NULL) {
+        why = svs_seq_failure();
+    }
     if (why == NULL && s.test_note != 0) {
         why = ui_servo_str((servo_str_t)s.test_note);
     }
@@ -773,6 +797,7 @@ uint32_t test_signature(void)
         (uint32_t)(uintptr_t)test_hold_blocked(NULL),
         (uint32_t)(uintptr_t)svs_seq_failure(),
         (uint32_t)s.test_note, test_needs_hv() ? 1u : 0u,
+        svs_gk_sig(GRAPH_KEY_ATEST),
     };
     uint32_t h = 2166136261u;           /* FNV-1a over the fields */
     for (size_t k = 0; k < sizeof(f) / sizeof(f[0]); ++k) {

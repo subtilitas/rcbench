@@ -10,7 +10,7 @@ LOGS listet CSV-Aufzeichnungen (Comma-Separated Values) und Berichte auf der SD-
 
 Drei Reiter oben links wählen den Ordner: STAMM für das Stammverzeichnis, USER für den Ordner Testaufzeichnungen (Vorgabe `USER/LOGS`) und BENCH für den Ordner Auto-Aufzeichnungen (Vorgabe `BENCH/LOGS`). WI-FI unten links öffnet [WLAN](wifi.md). FILES daneben öffnet [Files](files.md) zum Kopieren, Verschieben, Umbenennen und Löschen.
 
-Das Home-Feld führt wie ZURÜCK jeweils eine Ebene zurück: von der Grafik dorthin, woher sie kam (nach ÖFFNEN zur Dateiliste, nach GRAFIK zur Importansicht), von der Importansicht zur Dateiliste und zum Menü. Über der Liste von MEHR schließt es die Liste. In der Rückfrage zu LÖSCHEN wirkt es wie ABBRECHEN.
+Das Home-Feld führt wie ZURÜCK jeweils eine Ebene zurück: von der Grafik dorthin, woher sie kam (nach ÖFFNEN zur Dateiliste, nach GRAFIK zur Importansicht, nach GRAFIK einer Ergebniskarte zu dieser Karte), von der Importansicht zur Dateiliste und zum Menü. Über der Liste von MEHR schließt es die Liste. In der Rückfrage zu LÖSCHEN wirkt es wie ABBRECHEN.
 
 ## Keine Karte
 
@@ -43,6 +43,8 @@ Die Kopfzeile zeigt rechts neben den Reitern den gewählten Ordner, etwa `BENCH/
 LOGS öffnet den Reiter der zuletzt vom Panel geschriebenen Datei. Nach dem Start gilt BENCH, bis eine Datei geschrieben wurde. Ohne neue Datei seit dem letzten Besuch bleibt der zuvor gewählte Reiter erhalten. Ein Tipp auf einen Reiter liest seinen Ordner ab der ersten Seite.
 
 Die obere Leiste LOGS | FILES wechselt zwischen den beiden Seiten der Kachel. Das Home-Feld führt jeweils zum Menü. Die Leiste erscheint nur bei der Dateiliste, nicht über einer offenen Datei, Rückfrage oder einem Dialogfeld.
+
+GRAFIK auf LIMIT RUN, RUDER AUTO, TEST, MOTOR & ESC und SUPPLY öffnet den letzten Lauf dieser Karte seit dem Einschalten hier als Grafik. Beim Verlassen schaltet die Karte den Prüfstand auf SAFE. Das Home-Feld auf der Grafik führt zur Karte zurück, deren Ergebnis weiter dasteht. Die Taste ist grau, solange der Prüfstand ARMED ist oder die Datei des Laufs noch offen ist; ein Tipp sagt dann warum.
 
 WI-FI in der Tastenzeile öffnet [WLAN](wifi.md) für Downloads im Browser. Das dortige Home-Feld führt hierher zurück. Über der Löschrückfrage oder einer offenen Datei fehlt die Taste. Auch bei ARMED lässt sich WI-FI öffnen; die Bedienelemente der WLAN-Seite prüfen ihre eigenen Sperrbedingungen.
 
@@ -143,7 +145,7 @@ Berichte lassen sich auch über [WLAN](wifi.md) herunterladen.
 | MOTOR-Lauf | `MOTORnnn.CSV`, `ESCnnn.CSV` | `throttle`, `rpm`, `current`, `voltage` |
 | SERVO-Lauf | `SERVOnnn.CSV`, `BENCHnnn.CSV` | `pulse`, `angle`, `current`, `voltage` |
 
-Eine Spalte, die der Datei fehlt, entfällt. Eine LIMIT-RUN- oder RUDDER-AUTO-Datei öffnet in [der Grafik](#die-grafik-eines-limit-run-oder-rudder-auto) über ihrem Puls. Jede andere CSV und ein Laufname über Spalten keiner Art öffnen die Importansicht.
+Fehlt einem AUTOMATIC TEST, einem SUPPLY-, MOTOR- oder SERVO-Lauf eine Spalte, nimmt er die erste Zahlenspalte, deren Name auf diesen Namen endet: ein Lauf mit leeren Zellen in `current` und `voltage` zeichnet `ch1 current` und `ch1 voltage` von INA3221-Kanal 1. Jede andere Spalte, die der Datei fehlt, entfällt. Eine LIMIT-RUN- oder RUDDER-AUTO-Datei öffnet in [der Grafik](#die-grafik-eines-limit-run-oder-rudder-auto) über ihrem Puls, die anderen Arten in [der Grafik über ihrer Zeit](#ein-lauf-über-seiner-zeit). Jede andere CSV und ein Laufname über Spalten keiner Art öffnen die Importansicht.
 
 ## Die Importansicht
 
@@ -180,7 +182,31 @@ Die Kopfzeile nennt Datei, Zeilenzahl, Dauer und Abtastrate. Jede Spalte hat ein
 
 ![Die Liste von MEHR](view:logs-plot-more)
 
-Die Grafik verteilt Datenzeilen gleichmäßig nach Zeilennummer. Ihre Beschriftung stammt aus der Zeitspalte. Eine Datenlücke erscheint daher als Sprung in den Zeitangaben.
+Eine Laufdatei des Prüfstands steht über ihrer Zeit, wie der nächste Abschnitt zeigt. Eine Datei, die GRAFIK der Importansicht öffnet, verteilt ihre Zeilen gleichmäßig nach Zeilennummer: ihre Beschriftung stammt aus der Zeitspalte, eine Datenlücke erscheint daher als Sprung in den Zeitangaben.
+
+## Ein Lauf über seiner Zeit
+
+![Ein AUTOMATIC TEST: seine Schritte und seine Phasen, das Halten eingeschlossen](view:logs-atest-graph)
+
+Ein AUTOMATIC TEST, ein SUPPLY-, ein MOTOR- und ein SERVO-Lauf öffnen in der Grafik mit jeder Zeile bei ihrer Zeit. Die Kopfzeile nennt nach Dauer und Rate die Art: `ATEST012.CSV   1734 ZEILEN   186.20s   9Hz   AUTOMATISCHER TEST`.
+
+- Ein Zeitschritt länger als 3 mittlere Zeilenabstände (Median) und länger als 0.5s ist eine Lücke: die Linien brechen ab, die Lücke ist schraffiert, mit `ZEILEN FEHLEN`, wo es hineinpasst. Der AUTOMATIC TEST schreibt eine Zeile je Messwert, auch beim Halten; ein Halten ist darum keine Lücke.
+- Eine Datei, deren Zeitspalte zurückspringt, steht nach Zeilennummer und zeigt keine Dauer.
+- Jeder Schritt eines AUTOMATIC TEST beginnt mit einer Linie und seiner Nummer auf einem Schild.
+- Ein Balken am oberen Rand zeigt Zeilen über ihrem Bereich (`>65535` rpm, Schild `>`) in der Warnfarbe und begrenzte Messfenster (`clipped` über 0, Schild `BEGRENZT`) in der Gefahrenfarbe.
+- Tippe auf einen Chip, um seine Reihe hervorzuheben, erneut, um sie auszublenden, ein drittes Mal, um sie zurückzuholen. Zwei Finger zoomen und verschieben in der Zeit: die Zeit zwischen den Fingern bleibt unter ihnen. Ein Finger und `<`, `>` wirken wie in der Grafik oben.
+
+![Ein SUPPLY-Lauf: die Streifen CC und MODELL und eine Lücke](view:logs-supply-graph)
+
+Bis zu zwei Streifen von 6px stehen unter den Linien, jeder mit seiner Beschriftung am linken Ende:
+
+| Streifen | Läufe | Gefärbt, wo |
+|---|---|---|
+| PHASE | AUTOMATIC TEST | jede `phase` in ihrer Farbe; die Beschriftung nennt die Phase am Cursor, `PHASE MOVE` |
+| CC | AUTOMATIC TEST, SUPPLY | `mode` CC ist |
+| MODELL | SERVO, MOTOR, SUPPLY | `source` `model` ist: die Zeile stammt aus dem Modell des Panels |
+
+Ein Streifen erscheint nur, wo eine Zeile ihn setzt.
 
 ## Die Grafik eines LIMIT RUN oder RUDDER AUTO
 

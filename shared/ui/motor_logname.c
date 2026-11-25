@@ -13,6 +13,12 @@
  * tap in the field move it, and it opens at the label's end.  It types
  * the label alone, and its title names the run by its plain name.
  *
+ * GRAPH stands left of it once a MOTOR log has closed since power-on
+ * (graph_key.h, fed by the panel): it opens LOGS with that log in the
+ * graph.  Grey while ARMED or while a log is open; a tap on it then says
+ * why in the alert band.  One press at a time between the two buttons;
+ * each acts on its own contact's tap release.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -22,6 +28,7 @@
 
 #include "files_screen.h"
 #include "fm_io.h"
+#include "graph_key.h"
 #include "log_name.h"
 #include "motor_screen.h"
 #include "settings.h"
@@ -51,6 +58,9 @@ static struct {
     bool         out;         /**< taken, its answer not yet back          */
     bool         down;        /**< a press on the button                   */
     uint8_t      down_id;     /**< its contact                             */
+    bool         gdown;       /**< a press on GRAPH                        */
+    uint8_t      gdown_id;    /**< its contact                             */
+    uint32_t     gsig;        /**< GRAPH's look as last followed           */
     bool         live;        /**< the button's state as last followed     */
     uint32_t     rev;         /**< bumped when the button's look changes   */
     uint32_t     drawn[2];    /**< rev each framebuffer shows              */
@@ -68,6 +78,25 @@ static struct {
 static gfx_rect_t button_rect(void)
 {
     return (gfx_rect_t){ MO_LOG_X, MO_STRIP_Y, MO_LOG_W, MO_STRIP_H };
+}
+
+/**
+ * @brief GRAPH's rectangle, left of RENAME LOG in the strip row.
+ * @return x 331 to 441, the strip's 40px.
+ */
+static gfx_rect_t graph_rect(void)
+{
+    return (gfx_rect_t){ MO_GRAPH_X, MO_STRIP_Y, MO_GRAPH_W, MO_STRIP_H };
+}
+
+/**
+ * @brief A tap on GRAPH: LOGS on the log, or why not in the alert band.
+ */
+static void graph_tap(void)
+{
+    if (!graph_key_tap(GRAPH_KEY_MOTOR)) {
+        ui_action_refused(graph_key_note(GRAPH_KEY_MOTOR));
+    }
 }
 
 /**
@@ -233,15 +262,38 @@ bool mln_event(const touch_event_t *evt)
         return true;
     }
     const gfx_rect_t b = button_rect();
+    const gfx_rect_t gr = graph_rect();
     const int x = evt->point.x;
     const int y = evt->point.y;
     if (evt->type == TOUCH_EVENT_DOWN) {
-        if (g.down || !gfx_rect_contains(b, x, y)) {
+        const bool on_graph = graph_key_state(GRAPH_KEY_MOTOR)
+                                  != GRAPH_KEY_HIDDEN
+                              && gfx_rect_contains(gr, x, y);
+        if (!on_graph && !gfx_rect_contains(b, x, y)) {
             return false;
+        }
+        if (g.down || g.gdown) {
+            return true;                /* one press at a time */
+        }
+        if (on_graph) {
+            g.gdown = true;
+            g.gdown_id = evt->point.id;
+            ++g.rev;
+            return true;
         }
         g.down = true;
         g.down_id = evt->point.id;
         ++g.rev;
+        return true;
+    }
+    if (g.gdown && evt->point.id == g.gdown_id) {
+        if (evt->type == TOUCH_EVENT_UP) {
+            g.gdown = false;
+            ++g.rev;
+            if (touch_event_is_tap_up(evt) && gfx_rect_contains(gr, x, y)) {
+                graph_tap();
+            }
+        }
         return true;
     }
     if (!g.down || evt->point.id != g.down_id) {
@@ -267,8 +319,9 @@ void mln_close(void)
     if (g.k.open) {
         ui_textkey_close(&g.k);
     }
-    if (g.down) {
+    if (g.down || g.gdown) {
         g.down = false;
+        g.gdown = false;
         ++g.rev;
     }
 }
@@ -276,8 +329,9 @@ void mln_close(void)
 void mln_cancel(void)
 {
     ui_textkey_cancel_press(&g.k);
-    if (g.down) {
+    if (g.down || g.gdown) {
         g.down = false;
+        g.gdown = false;
         ++g.rev;
     }
 }
@@ -295,6 +349,11 @@ void mln_tick(void)
     }
     if (live != g.live) {
         g.live = live;
+        ++g.rev;
+    }
+    const uint32_t gsig = graph_key_sig(GRAPH_KEY_MOTOR);
+    if (gsig != g.gsig) {
+        g.gsig = gsig;
         ++g.rev;
     }
 }
@@ -321,6 +380,15 @@ void mln_render_button(gfx_canvas_t *c, int buf)
     gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_BG));
     ui_button_font(c, r, TR(MO_LOG_RENAME), ui_theme_color(UI_C_PANEL_SUNK),
                    g.down, g.live, MO_FONT_LABEL);
+    const gfx_rect_t gr = graph_rect();
+    gfx_fill_rect(c, gr.x, gr.y, gr.w, gr.h, ui_theme_color(UI_C_BG));
+    graph_key_draw(c, gr, GRAPH_KEY_MOTOR, g.gdown, MO_FONT_LABEL);
+}
+
+gfx_rect_t motor_screen_graph_rect(void)
+{
+    return (graph_key_state(GRAPH_KEY_MOTOR) != GRAPH_KEY_HIDDEN)
+               ? graph_rect() : (gfx_rect_t){ 0, 0, 0, 0 };
 }
 
 bool mln_render_over(gfx_canvas_t *c, int buf)

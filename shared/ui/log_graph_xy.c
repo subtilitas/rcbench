@@ -85,7 +85,7 @@ int lg_y_px(int k, float v)
     const float span = lg.hi[k] - lg.lo[k];
     float f = (span > 0.0f && isfinite(v)) ? (v - lg.lo[k]) / span : 0.0f;
     f = (f < 0.0f) ? 0.0f : (f > 1.0f) ? 1.0f : f;
-    return PV_Y + PV_H - 1 - (int)lroundf(f * (float)(PV_H - 1));
+    return PV_Y + lg.plot_h - 1 - (int)lroundf(f * (float)(lg.plot_h - 1));
 }
 
 void lg_scale(void)

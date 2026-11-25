@@ -104,9 +104,13 @@ static void graph_page(ui_help_page_t *p)
 {
     (void)ui_help_add(p, TR(HG_LOG_CHIP_NAME), TX_HG_LOG_GRAPH_CHIP,
                       LG_SLOT(0));
-    (void)ui_help_add(p, TR(LOG_PLOT), TX_HG_LOG_GRAPH_AREA, PV_PANEL);
+    (void)ui_help_add(p, TR(LOG_PLOT),
+                      lg.time ? TX_HG_LOG_TIME_AREA : TX_HG_LOG_GRAPH_AREA,
+                      PV_PANEL);
     (void)ui_help_add(p, TR(LOG_BACK), TX_HG_LOG_BACK_LIST, PV_BACK);
-    (void)ui_help_add(p, "< >", TX_HG_LOG_GRAPH_STEP, span(PV_PREV, PV_NEXT));
+    (void)ui_help_add(p, "< >",
+                      lg.time ? TX_HG_LOG_STEP : TX_HG_LOG_GRAPH_STEP,
+                      span(PV_PREV, PV_NEXT));
 }
 
 /**
@@ -120,7 +124,8 @@ static void plot_page(int i, ui_help_page_t *p)
     p->title = TX_HG_LOG_TITLE_PLOT;
     if (i == 1) {
         (void)ui_help_add(p, TR(LOG_MORE), TX_HG_LOG_MORE, PV_MORE);
-        if (lg_on() && s.data.n_fields - 1 <= (lg.tabbed ? 2 : 3)) {
+        if (lg_on() && !lg.time
+            && s.data.n_fields - 1 <= (lg.tabbed ? 2 : 3)) {
             (void)ui_help_add(p, TR(HG_LOG_LEGEND_NAME),
                               TX_HG_LOG_GRAPH_LEGEND,
                               LG_SLOT(s.data.n_fields - 1));

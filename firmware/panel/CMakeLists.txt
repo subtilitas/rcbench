@@ -15,6 +15,10 @@ foreach(module bleota bleuart dialknob rcnode dshot escwire hitec kst openyge pa
     list(APPEND EXTRA_COMPONENT_DIRS
          "${CMAKE_CURRENT_LIST_DIR}/../../protocols/${module}")
 endforeach()
+# Vendored libraries, unchanged: qrcodegen draws the servo label's QR code
+# (shared/ui/label_layout.c).
+list(APPEND EXTRA_COMPONENT_DIRS
+     "${CMAKE_CURRENT_LIST_DIR}/../../third_party/qrcodegen")
 
 # The application's version, as esp_app_desc_t carries it and an update
 # compares it: MAJOR.MINOR.PATCH from the one header every build reads.

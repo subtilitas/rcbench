@@ -42,18 +42,24 @@
 
 /* Buffer 0 drawn with LIMIT RUN open, and whether its line @p i -- 0 the
  * output and meter line, 1 on the state lines from the first -- reads
- * @p text in @p col on the card's fill, and nothing else across it. */
+ * @p text in @p col on the card's fill, and nothing else across it, up to
+ * GRAPH where the key stands beside it.  A state line stands where the
+ * card places it (servo_screen_limit_line_y()): LIM_STATE_Y while no key
+ * shows. */
 static bool lim_line_reads(int i, const char *text, ui_color_id_t col)
 {
     scr->render(&cv, 0);
     want_fresh();
-    const int y = (i == 0) ? LIM_OUT_Y : LIM_STATE_Y(i - 1);
+    const int y = (i == 0) ? LIM_OUT_Y : servo_screen_limit_line_y(i - 1);
     const int h = (i == 0) ? 20 : 24;
+    const gfx_rect_t gk = servo_screen_graph_rect();
+    const int w = (gk.w > 0 && y + h > gk.y && y < gk.y + gk.h)
+                      ? gk.x - LIM_X - 4 : 600;
     const gfx_color_t bg = fb[(size_t)y * W + LIM_X - 4];
-    gfx_fill_rect(&want_cv, LIM_X, (int16_t)y, 600, (int16_t)h, bg);
-    gfx_text_in(&want_cv, gfx_rect_make(LIM_X, y, 600, h), text,
+    gfx_fill_rect(&want_cv, LIM_X, (int16_t)y, (int16_t)w, (int16_t)h, bg);
+    gfx_text_in(&want_cv, gfx_rect_make(LIM_X, y, w, h), text,
                 &gfx_font_10x20, ui_theme_color(col), 1, GFX_ALIGN_LEFT);
-    return same_in(fb, want_fb, LIM_X, y, 600, h);
+    return same_in(fb, want_fb, LIM_X, y, w, h);
 }
 
 /* Whether a state line of LIMIT RUN's card reads @p text, in @p col: the

@@ -157,6 +157,8 @@ SCREENS = {
     # RENAME LOG's keyboard over the body after a run, on the label the
     # log carries.
     "motor-logname": ("motor-logname.png", "motor", "dark"),
+    # GRAPH left of RENAME LOG after a run, SAFE: the log closed last.
+    "motor-graph": ("motor-graph.png", "motor", "dark"),
     # A linked bench before its first run, no pin bound as a motor.
     "motor-idle": ("motor-idle.png", "motor", "dark"),
     # The same bench with PROG PORT 2 as DSHOT300 on GP14 and no pin bound
@@ -635,6 +637,12 @@ SCREENS = {
     "logs-limit-graph": ("logs-limit-graph.png", "logs", "dark"),
     "logs-ruddr-search": ("logs-ruddr-search.png", "logs", "dark"),
     "logs-ruddr-steps": ("logs-ruddr-steps.png", "logs", "dark"),
+    # The graph of a time file: the AUTOMATIC TEST and the SERVO run of
+    # INA3221 windows of test/host/fixtures, a SUPPLY run with its CC and
+    # MODEL strips and a gap.
+    "logs-atest-graph": ("logs-atest-graph.png", "logs", "dark"),
+    "logs-windows-graph": ("logs-windows-graph.png", "logs", "dark"),
+    "logs-supply-graph": ("logs-supply-graph.png", "logs", "dark"),
     "logs-delete":("logs-delete.png","logs",       "dark"),
     # LOGS' ROOT tab: the runs of firmware 0.21.0 and older.
     "logs-root":  ("logs-root.png",  "logs",       "dark"),
@@ -803,6 +811,9 @@ SCREENS = {
     "supply-confirm": ("supply-confirm.png", "supply", "dark"),
     # The PD mini enabled and not answering, the output never on.
     "supply-offline": ("supply-offline.png", "supply", "dark"),
+    # The output switched off after a run: GRAPH right of RESET PEAKS
+    # opens its SUPPL log.
+    "supply-graph": ("supply-graph.png", "supply", "dark"),
     "busfault-silent": ("busfault-silent.png", "busfault", "dark"),
     "busfault-lost": ("busfault-lost.png", "busfault", "dark"),
     # The link answering again for 3s: RECONNECT offered.
@@ -995,6 +1006,11 @@ SCREENS = {
                                       "servo", "dark"),
     "servo-rudder-auto-failed-rbmod": ("servo-rudder-auto-failed-rbmod.png",
                                        "servo", "dark"),
+    # On the carrier's PROG PORT 1, a run that ended PASS with its
+    # RUDDR004.CSV written: GRAPH right of TOLERANCE, live on the SAFE
+    # bench.
+    "servo-rudder-auto-graph-rbmod": ("servo-rudder-auto-graph-rbmod.png",
+                                      "servo", "dark"),
 }
 INCLUDES = ui_sources.INCLUDES
 
@@ -1009,6 +1025,7 @@ def build(tmp: pathlib.Path, trace: bool = False) -> pathlib.Path:
     # band-inject view draws INJECT's bubble and --fit measures it.
     cmd = ["cc", "-O2", "-g", *STRICT, *FP_FLAGS,
            "-DRCBENCH_TOUCH_INJECTOR=1",
+           f'-DRENDER_FIXTURE_DIR="{REPO / "test" / "host" / "fixtures"}"',
            "-o", str(exe)]
     if trace:
         cmd += ["-DGFX_TEXT_TRACE"]
@@ -1141,6 +1158,10 @@ FIT_ONLY = {
     "help-supply-settings":    (None, "supply", "dark"),
     "help-supply-settings-2":  (None, "supply", "dark"),
     "help-supply-pdmini":      (None, "supply", "dark"),
+    # The rail's page after a run: GRAPH right of RESET PEAKS.
+    "help-supply-graph-3":     (None, "supply", "dark"),
+    # MOTOR & ESC's LIVE page after a run, SAFE: GRAPH beside RENAME LOG.
+    "help-motor-graph":        (None, "motor", "dark"),
     "help-supply-pdmini-2":    (None, "supply", "dark"),
     # MOTOR & ESC's guide: the rail's page, PROGRAM's and the OPTIONS
     # list's; ESC STICK's on the makers, a maker's models, a profile with

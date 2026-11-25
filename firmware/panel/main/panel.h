@@ -830,6 +830,13 @@ void log_open_marks(log_marks_t *marks, char *run_dir, char *test_dir);
 void log_last_motor(fm_logname_t *out);
 
 /**
+ * @brief The SUPPLY run log the logger closed last since power-on, as
+ *        log_last_motor() gives the MOTOR one; name "" for none.  Any task.
+ * @param out  takes the record
+ */
+void log_last_suppl(fm_logname_t *out);
+
+/**
  * @brief The MOTOR log closed last carries @p name now: RENAME LOG renamed
  *        it.  The logger task's.
  * @param name  its new name
@@ -845,8 +852,9 @@ void log_rename_serve(void);
 
 /**
  * @brief RENAME LOG in the render loop: the record handed to MOTOR & ESC,
- *        its request handed to the logger and the answer back.  No card
- *        call is made here.
+ *        its request handed to the logger and the answer back; and the
+ *        MOTOR and SUPPL logs closed last handed to MOTOR & ESC's and
+ *        SUPPLY's GRAPH (graph_key.h).  No card call is made here.
  */
 void motor_log_ui_service(void);
 

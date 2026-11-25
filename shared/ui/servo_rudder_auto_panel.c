@@ -924,6 +924,9 @@ static void ends_line(char *b, size_t n, const servo_rauto_t *r)
  */
 static const char *idle_why(void)
 {
+    if (svs_gk_note(GRAPH_KEY_RAUTO) != NULL) {
+        return svs_gk_note(GRAPH_KEY_RAUTO);
+    }
     if (svs_seq_failure() != NULL) {
         return svs_seq_failure();
     }
@@ -1084,6 +1087,8 @@ void rauto_render(gfx_canvas_t *c)
     for (int k = RA_C_LO; k <= RA_C_TOL; ++k) {
         draw_row(c, (rauto_ctl_t)k);
     }
+    svs_gk_draw(c, GRAPH_KEY_RAUTO, svs_gk_rect(GRAPH_KEY_RAUTO),
+                s.ra.pressed == RA_C_GRAPH);
     const bool running = servo_rauto_running(&s.ra.run);
     const gfx_rect_t lr = rauto_lines_rect();
     gfx_fill_rect(c, lr.x, lr.y, lr.w, lr.h, ui_theme_color(UI_C_PANEL));
@@ -1233,6 +1238,7 @@ uint32_t rauto_sig(void)
         (uint32_t)svs_family_of(SERVO_FN_RAUTO),
         (uint32_t)s.min_us, (uint32_t)s.max_us,
         (uint32_t)lroundf(settings_get(SET_RUDDER_TOL) * 10.0f),
+        svs_gk_sig(GRAPH_KEY_RAUTO),
     };
     uint32_t h = 2166136261u;
     for (size_t k = 0; k < sizeof(v) / sizeof(v[0]); ++k) {
