@@ -246,6 +246,17 @@ static void start_session(yge_port_t *p)
 /* --- commands ------------------------------------------------------------ */
 
 /**
+ * @brief Whether the BY HAND wait has run out: more than YGE_PORT_HAND_MS
+ *        since ENTER.
+ * @param p the page
+ * @return true then
+ */
+static bool hand_over(const yge_port_t *p)
+{
+    return p->now_ms - p->t0_ms > YGE_PORT_HAND_MS;
+}
+
+/**
  * @brief Whether the staged registers carry the frame's CRC.
  * @param p  the page
  * @param in the frame
@@ -530,6 +541,12 @@ static link_yge_ref_t dispatch(yge_port_t *p, link_yge_op_t op,
         }
         if (!p->safe) {
             return LINK_YGE_REF_UNSAFE;
+        }
+        /* Judged at the command's own clock: a HAND_DONE past the wait is
+         * its timeout, whether or not a pass has seen it yet. */
+        if (hand_over(p)) {
+            all_off(p, LINK_YGE_RESULT_TIMEOUT);
+            return LINK_YGE_REF_NONE;
         }
         start_session(p);
         return LINK_YGE_REF_NONE;
@@ -870,7 +887,7 @@ void yge_port_step(yge_port_t *p, bool safe, bool stop, uint32_t now_ms)
         step_power_on(p);
         break;
     case LINK_YGE_HAND_WAIT:
-        if (now_ms - p->t0_ms > YGE_PORT_HAND_MS) {
+        if (hand_over(p)) {
             all_off(p, LINK_YGE_RESULT_TIMEOUT);
         }
         break;
