@@ -504,6 +504,11 @@ ASSERTED = {
             "SENSE_I2C_CLEAR_STRETCH_US == I2C_TXQ_CLEAR_STRETCH_US",
         ),
     },
+    "openyge": {
+        "shared/outputs/yge_port.c": (
+            "LINK_YD_COUNT * 2u == OPENYGE_MAX_PARAMS",
+        ),
+    },
     "passthru": {
         "shared/outputs/pass_page.c": (
             "LINK_PA_CHANNELS == PASS_CHANNELS",

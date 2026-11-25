@@ -20,8 +20,8 @@ receiver-transmitter) at 115200 baud, 8N1. The session reaches it through
 with the echo removed, `now_us()` is a free-running clock that may wrap.
 `rp2350/oy_line.c` implements that driver on one RP2350 pin with one PIO
 (programmable input/output) state machine and two DMA (direct memory
-access) channels; the IOmcu links it, and only the console build's test
-`oyline` calls it. The specification is `docs/OpenYGE.md` in the rcbench
+access) channels; in rcbench the IOmcu's YGE_PROG page and the console
+build's test `oyline` call it. The specification is `docs/OpenYGE.md` in the rcbench
 repository.
 
 ## Constraints

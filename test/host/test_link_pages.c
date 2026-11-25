@@ -1701,7 +1701,15 @@ TEST_CASE(the_status_page_counts_refused_frames_after_its_old_registers)
  */
 TEST_CASE(the_frozen_registers_keep_their_numbers)
 {
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 41u);
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 42u);
+    CHECK_EQ(LINK_MINOR_YGE, 42u);
+    CHECK_EQ(LINK_PAGE_YGE_PROG, 0x44u);
+    CHECK_EQ(LINK_PAGE_YGE_DATA, 0x45u);
+    CHECK_EQ(LINK_CAP_YGE, 1u << 9);
+    CHECK_EQ(LINK_YGE_KEY, 0x59C7u);
+    CHECK_EQ(LINK_YP_COUNT, 23);
+    CHECK_EQ(LINK_YP_W_COUNT, 13);
+    CHECK_EQ(LINK_YD_COUNT, 32u);
     CHECK_EQ(LINK_MINOR_OUT16, 41u);
     CHECK_EQ(LINK_MINOR_RPM_MAX_OVER, 40u);
     CHECK_EQ(LINK_MINOR_WATCHDOG, 39u);

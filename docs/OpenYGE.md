@@ -7,8 +7,9 @@ parameter access and status encoding, including the calculations
 needed for an implementation.
 
 > This page is
-> the reference specification intended for review by YGE. The codec under
-> `protocols/openyge/` is built and tested but not connected to the firmware.
+> the reference specification intended for review by YGE. The module under
+> `protocols/openyge/` runs on the IOmcu behind the YGE_PROG page
+> ([Programming for YGE ESCs](LinkYge.md)); the panel does not use it yet.
 
 **° marks an inferred meaning.** Those entries come from a field name and
 ordinary ESC (electronic speed controller) practice rather than from an
@@ -448,9 +449,10 @@ Telemetry frame checks, from the same captures:
 
 ## 9. Status in rcbench
 
-Neither board runs the protocol. The IOmcu image links the module, the
-panel image does not, and neither calls it. The design assigns the
-protocol to the IOmcu: a 20Hz request-response loop with turnaround
+The IOmcu runs the session behind the YGE_PROG and YGE_DATA pages
+([Programming for YGE ESCs](LinkYge.md)). The panel image links the module
+and does not call it; the panel's half and the screens are not built. The
+design assigns the protocol to the IOmcu: a 20Hz request-response loop with turnaround
 timing in microseconds and a timeout that expires even when no bytes
 arrive. The panel would receive the result as `bench_state` through
 the page protocol; OpenYGE frames would remain on the IOmcu side.
@@ -462,7 +464,7 @@ itself, so every modelled field of `bench_state` has a source before the
 current sensor is fitted. The ESC's own figures and the bench's shunt are
 independent measurements.
 
-Built, host-tested, not wired in:
+Built and host-tested; the IOmcu's YGE_PROG page calls the session:
 
     protocols/openyge/
       openyge_frame.c        encode, decode and the CRC, openyge_crc()
@@ -487,9 +489,10 @@ needs a complete table read in the same session, a count of 32, a v3
 header and firmware V1.03547 or later. Writable are the fields section 5.3
 marks CHECK or edit, within their Writable values. A write reads the table
 again first and stops with nothing sent when it differs. After the writes
-it reads the whole table again and compares it with the target. The link
-pages and the screens are not built, so neither board runs the session.
-The pin driver is built (section 9.2). On the station Pi,
+it reads the whole table again and compares it with the target. The IOmcu
+runs it on a programming port behind YGE_PROG (`shared/outputs/yge_port.c`);
+the panel's half and the screens are not built. The pin driver is built
+(section 9.2). On the station Pi,
 [`testbench/ygesim/ygesim.py`](../testbench/ygesim/README.md) plays an
 ESC on the UART: 32 parameters, writes stored, and the modes `normal`,
 `silent`, `late` (250ms), `crc` (10%), `seq`, `legacy` and `count33`,
@@ -552,8 +555,9 @@ RP2350 pin behind `oy_driver_t`. Its PIO (programmable input/output)
 program is `oy_line.pio`; the arithmetic that feeds and reads it is
 `openyge_pio.c`. The host suite `openyge_pio` runs the program in a model
 of the state machine, and the IOmcu build holds pioasm's words to the
-same list (`test/host/fixtures/oy_line_words.txt`). The IOmcu links the
-driver; only the console build's test `oyline` calls it.
+same list (`test/host/fixtures/oy_line_words.txt`). The YGE_PROG page
+(`firmware/iomcu/src/iomcu_yge.c`) and the console build's test `oyline`
+call it.
 
 | | |
 | --- | --- |
@@ -584,8 +588,15 @@ analyser at 1.65V):
 | `oyline 13 rx` | `match=1 crc_ok=1 framing=0`, then `framing=1` for the request with a low stop bit |
 | `oyline 13 cut` | the line falls to low on the pull-down 0.5ms into the request |
 
-The session steps of H1 (open, BY HAND entry, STOP, link cut) need the
-IOmcu page.
+The session steps of H1 use the console's `yge` on the same build
+([The bench console](BenchConsole.md#the-yge-page)):
+
+| Command | Pass |
+| --- | --- |
+| `yge open port 0` | `state=2`, `gpio=13`; the line low on the pull-down |
+| `yge enter hand` on an empty line | `state=5`; the line stays low, the PD mini output stays off |
+| `yge done`, then `yge stop` | the line high on the pull-up after `done`, low on the pull-down within 1ms of `stop`; `flags` bit 0 set |
+| a link cut in `READY` or a request | the line low on the pull-down at once; the PD mini off within its report time |
 
 ---
 

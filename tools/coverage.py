@@ -392,6 +392,8 @@ TRACKED = [
     "shared/outputs/esc_port.c",
     "shared/outputs/console_tunnel.c",
     "shared/outputs/esc_console.c",
+    "shared/outputs/yge_port.c",
+    "shared/outputs/yge_console.c",
     "shared/outputs/page_console.c",
     "shared/outputs/prog_port.c",
     "shared/bench/kst_link.c",

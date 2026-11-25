@@ -49,8 +49,9 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/safety" safety)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/text"   text)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/servo"  servo)
 # The OpenYGE ESC protocol and the telemetry wire's pin driver of programming
-# for YGE ESCs, which the console build's test (src/oyline_console.c) calls;
-# its PIO program is assembled and checked below.
+# for YGE ESCs, which the YGE_PROG page runs (src/iomcu_yge.c) and the console
+# build's test (src/oyline_console.c) calls; its PIO program is assembled and
+# checked below.
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/openyge" openyge)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/pdmini"  pdmini)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/phase_tap" phase_tap)
@@ -81,6 +82,7 @@ add_executable(rcbench-iomcu
     src/iomcu_kst.c
     src/iomcu_hitec.c
     src/iomcu_esc.c
+    src/iomcu_yge.c
     src/iomcu_sense.c
     src/iomcu_psup.c
     src/iomcu_tone.c
@@ -295,8 +297,7 @@ add_custom_command(TARGET rcbench-iomcu PRE_LINK
     VERBATIM)
 
 # The telemetry wire's line program of programming for YGE ESCs, the same way
-# (test/host/test_openyge_pio.c, fixtures/oy_line_words.txt).  The program is
-# assembled in every image; only the console build links code that loads it.
+# (test/host/test_openyge_pio.c, fixtures/oy_line_words.txt).
 add_custom_command(TARGET rcbench-iomcu PRE_LINK
     COMMAND ${CMAKE_COMMAND}
             -DHEADER=${CMAKE_CURRENT_BINARY_DIR}/openyge/rp2350/oy_line.pio.h

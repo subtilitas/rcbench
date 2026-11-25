@@ -47,7 +47,7 @@ output signals.
 page, offset and count; a frame carries up to four registers; the transport
 does no reassembly; the IOmcu transmits only when asked. Worst-case
 payload 52kB/s against 12 to 30kB/s of expected traffic. Protocol version
-4.41. A request whose answer is lost is sent once more after 50ms.
+4.42. A request whose answer is lost is sent once more after 50ms.
 [Reference](docs/Link.md).
 
 **Safety.** The panel's control task drives GPIO28 (`PANEL_HEARTBEAT_PIN`, IO28 of header P3) from the core that does
@@ -1603,15 +1603,17 @@ Built and tested against a modelled servo.
 
 ### OpenYGE codec
 
-Built and tested on the host; not wired in. `protocols/openyge/` holds the frame codec, the
+Built and tested on the host; the IOmcu runs the session behind the link pages YGE_PROG and
+YGE_DATA (protocol 4.42, [docs/LinkYge.md](docs/LinkYge.md), `shared/outputs/yge_port.c`), with
+no panel half or screen yet. `protocols/openyge/` holds the frame codec, the
 status decoder, the parameter cache, the field map of
 [docs/OpenYGE.md](docs/OpenYGE.md#53-parameter-table) section 5.3, the guard every outgoing
 frame passes, and the session state machine of programming for YGE ESCs (boot wait, listen,
 takeover, table read, writes with a read before and after). The session suites run it against
 a simulated ESC (`test/host/oy_sim.h`). The pin driver `rp2350/oy_line.c` (one PIO state
-machine, 2 DMA channels, 115200 baud 8N1) runs only in the IOMCU_CONSOLE build's `oyline`
-test; its program runs in a model in `test_openyge_pio`. No link page or screen uses the
-session.
+machine, 2 DMA channels, 115200 baud 8N1) runs under YGE_PROG and in the IOMCU_CONSOLE build's
+`oyline` test; its program runs in a model in `test_openyge_pio`. The page's rules run on the
+host in `test_yge_port`, `test_yge_port_stop`, `test_yge_port_gate` and `test_yge_console`.
 
 ### ESC programming profiles
 
@@ -1774,9 +1776,9 @@ rcbench/
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `files` · `sbus` | yes | | yes |
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` · `mstime` · `fwupdate` | yes | yes | yes |
 | `artwork` · `esc` · `webaccess` · `clock` | yes | | yes |
-| `openyge` · `ppm` · `i2c_txq` | | yes | yes |
+| `ppm` · `i2c_txq` | | yes | yes |
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` · `passthru` | yes | yes | yes |
-| `escwire` | yes | yes | yes |
+| `escwire` · `openyge` | yes | yes | yes |
 | `witmotion` | yes | | yes |
 | `hc05` · `dial` | | | yes |
 | `bleuart` · `dialknob` · `vibe` · `rcnode` · `bleota` · `devupd` | yes | | yes |
@@ -1798,7 +1800,7 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 | --- | --- | --- |
 | `ci.yml` | push to `main`, the label `ci` added to a pull request, tag `v*`, manual | on Ubuntu 26.04: the host suite in five parallel jobs, joined by the job the branch ruleset requires; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check`; the Codecov upload in a job of its own that no required check needs, which fails when the upload fails; the font, screenshot, fit, translated-format, docs, mutation-run figure and wiki-link checks; `check_protocols.py --check`; `pio_budget.py --check`, the PIO and DMA budget of every board; clang-tidy 22.1.8 and cppcheck 2.17.1 over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff with its docstring (D) rules; the pytest cases of the tools (`test/tools/`); `tools/doc_check.py --check`, the Doxygen comments of the C sources against `tools/doc_check_baseline.txt`, which on a pull request also fails on any warning in a C file the pull request adds or on a line it changes, on a C file it changes that has no `@file` block with a `@brief`, and on a comment block without `@brief` it adds or edits; on a pull request `tools/mutate.py` on the changed lines of `shared/` and of the cores under `protocols/`, which reports survivors and does not fail on one; the panel build on ESP-IDF (Espressif Internet-of-Things Development Framework) v6.1 for the ESP32-P4, with the check of the generated sdkconfig against `sdkconfig.defaults`, of the image against its update slot, of the embedded IOmcu image, of the touch injector and of exFAT, and a second build without the injector; the pico-sdk build of the IOmcu with `pinmap_check.py` and the stack check of its two cores, a second build with `-DSENSE_TRACE=ON`, with the same stack check, that fails when the default image holds a trace symbol, and a third with `-DIOMCU_CONSOLE=ON`, with the same stack check, that fails when the default image holds a console symbol; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/`, manual | waits for the CI run on the same commit (`tools/ci_gate.py`, at most 5400s) and publishes `docs/` to the GitHub wiki when it passed |
-| `mutation.yml` | Sunday 03:17 UTC, manual | the mutants of the lines of `shared/safety` and `shared/outputs` (7694 mutants in 100 files) in 6 parallel shards, no mutant limit; `shared/safety` leads the list, `arming.c`, `heartbeat.c`, `stop_latch.c`, `touch_loss.c` and `prog5v_lost.c` at its head, and shard i takes every 6th mutant from place i; no mutant is started after 18000s in a shard, about 428 mutants at 42s each, so the 699 mutants of `shared/safety` run every week and about 1,869 of the 6995 of `shared/outputs`; a shard that leaves mutants unrun says so in a warning annotation and in its summary, with the count for each file; does not fail on a survivor or on mutants left; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
+| `mutation.yml` | Sunday 03:17 UTC, manual | the mutants of the lines of `shared/safety` and `shared/outputs` (8105 mutants in 104 files) in 6 parallel shards, no mutant limit; `shared/safety` leads the list, `arming.c`, `heartbeat.c`, `stop_latch.c`, `touch_loss.c` and `prog5v_lost.c` at its head, and shard i takes every 6th mutant from place i; no mutant is started after 18000s in a shard, about 428 mutants at 42s each, so the 699 mutants of `shared/safety` run every week and about 1,869 of the 7406 of `shared/outputs`; a shard that leaves mutants unrun says so in a warning annotation and in its summary, with the count for each file; does not fail on a survivor or on mutants left; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
 | `release.yml` | tag `v*`, manual for a tag | waits for the CI run on the tagged commit and, when it passed, builds both images, packages them with checksums, creates a release, a pre-release for an odd minor number (`tools/release_kind.py`); beside that, without holding the release back, runs the configurator data check (`configurator/core/tools/check-annotate.sh --warn-only`) and shows each warning, such as a release tag newer than the configurator data, as an annotation and in the run summary |
 | `dial.yml` | called by `ci.yml` and `release.yml` | the M5Stack Dial's image on ESP-IDF v6.1 for the ESP32-S3 and its test build with `RCBENCH_DIAL_HOOKS=ON`; the generated sdkconfig against `sdkconfig.defaults`, both images against their update slot, no hook in the released image; artifact `dial` |
 | `pages.yml` | the label `ci` added to a pull request, and a push to `main`, touching `configurator/`, `help/`, `docs/img/`, the help generator, the `Doxyfile` or `tools/install_doxygen.sh` (a push to a pull request starts no run); a push to `main` touching the C sources as well | type check, tests, data check, size budget and Playwright browser tests of the configurator; the web help; the C API (application programming interface) reference built by Doxygen 1.18.0; on a push to `main` it publishes the built page to GitHub Pages, with the help under `help/` and the API reference under `api/`. A run that changes only the C sources, the `Doxyfile` or `tools/install_doxygen.sh` builds the configurator page without its checks and runs no Playwright test |
@@ -1813,7 +1815,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 651 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 655 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -2262,6 +2264,15 @@ session error, TORN and LOST included, the line parked and the supply off.
 `test_esc_port_gate` runs the page with the safety gate and PROG_SUPPLY: no ARM stored in
 the hold arms the bank at the CLOSE, and an error switches PROG_SUPPLY off.
 `test_console_tunnel` and `test_esc_console` run the console's `esc` command on the page.
+`test_yge_port`, `test_yge_port_stop` and `test_yge_port_gate` run the YGE_PROG and YGE_DATA
+pages (`shared/outputs/yge_port.c`) on the simulated ESC of `test/host/oy_sim.h`, with the
+pin's, the line's and the supply's hooks faked (`test/host/yge_port_rig.h`): every refusal of
+OPEN, ENTER and WRITE, STOPPING at 49ms and 50ms, the switched entry in its order, BY HAND at
+60000ms and 60001ms, a read and a write, CLOSE and LEAVE while writing, a stop, an abort and
+a lost link in each state and in a write, the link silent 199ms and 200ms and the heartbeat
+lost through the safety gate, each session error and a supply gone with the line parked and
+the supply and PROG_SUPPLY off, and an IOmcu restart freeing the port. `test_yge_console`
+runs the console's `yge` command on the page.
 `test_outputs_hw` and `test_outputs_hw_ports` hold that a held slot or DShot port is let go
 alone and comes back the same.
 
@@ -3213,7 +3224,7 @@ stop, a pulled cable, the input lowered under a live set point in 0.5V steps.
 `stack_check.py --iomcu` measures 1560 bytes for the deepest chain and 528 for one interrupt
 on the 4096-byte stack, 1752 bytes above the 256-byte margin. The figures are those of the
 image CI builds with arm-none-eabi-gcc 14.2.1, and `stack_check.py --iomcu --check-doc`
-holds them. The depth is a lower bound: 266 calls through a register are not followed. The
+holds them. The depth is a lower bound: 313 calls through a register are not followed. The
 stack has no guard (`PICO_USE_STACK_GUARDS` is off). Not measured on hardware. An image
 built with another option set is measured only when CI builds it.
 

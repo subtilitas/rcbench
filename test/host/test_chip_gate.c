@@ -88,6 +88,7 @@ TEST_CASE(a_write_that_could_drive_a_pin_is_refused)
     CHECK_EQ(one(LINK_PAGE_KST, 0u, 0u), NA);
     CHECK_EQ(one(LINK_PAGE_HITEC, 0u, 0u), NA);
     CHECK_EQ(one(LINK_PAGE_ESC_WIRE, 0u, 0u), NA);
+    CHECK_EQ(one(LINK_PAGE_YGE_PROG, 0u, 0u), NA);
     CHECK_EQ(one(LINK_PAGE_PROG, LINK_PG_FUNC(0u), LINK_PG_FN_SERVO_PWM), NA);
     CHECK_EQ(one(LINK_PAGE_PROG, LINK_PG_FUNC(3u), LINK_PG_FN_DSHOT600), NA);
     /* A slot with a driver, on each page that binds. */

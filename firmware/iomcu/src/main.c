@@ -100,6 +100,8 @@ hitec_port_t    s_hitec;
 hitec_line_t    s_hitec_line;
 esc_port_t      s_esc;
 ew_pin_line_t   s_esc_line; /**< the wire driver of s_esc */
+yge_port_t      s_yge;
+oy_pin_line_t   s_yge_line; /**< the wire driver of s_yge */
 link_dev_t      s_dev; /**< the link's device end */
 outputs_t       s_outputs;
 heartbeat_mon_t s_beat;
@@ -189,6 +191,8 @@ static const link_page_t k_pages[] = {
       bind_out_hi_write },
     { LINK_PAGE_ESC_WIRE,  LINK_EW_COUNT,  esc_read,       esc_write },
     { LINK_PAGE_ESC_DATA,  LINK_ED_COUNT,  esc_data_read,  esc_data_write },
+    { LINK_PAGE_YGE_PROG,  LINK_YP_COUNT,  yge_read,       yge_write },
+    { LINK_PAGE_YGE_DATA,  LINK_YD_COUNT,  yge_data_read,  yge_data_write },
 #if IOMCU_BOARD_RSN
     /* The servo rail's master and port switches (iomcu_rsn.c). */
     { LINK_PAGE_POWER,     LINK_PW_COUNT,  power_page_rd,  power_page_wr },
@@ -634,6 +638,7 @@ int main(void)
     };
     (void)hitec_port_init(&s_hitec, &hitec_hw);
     esc_init();
+    yge_init();
     hw_apply();
     /*
      * The PD mini's wiring, as last written, driven with the output off: a
@@ -932,6 +937,7 @@ int main(void)
         kst_port_bench_armed(&s_kst, arm_now);
         hitec_port_bench_armed(&s_hitec, arm_now);
         esc_port_bench_armed(&s_esc, arm_now);
+        yge_port_bench_armed(&s_yge, arm_now);
         /*
          * The KST port: a failsafe edge and a disarm stop its session, and
          * no frame starts while the heartbeat or the link is not trusted.
@@ -946,6 +952,9 @@ int main(void)
         hitec_port_step(&s_hitec, port_safe, port_stop, now);
         /* The ESC the same way, and an update that started stops it. */
         esc_port_step(&s_esc, port_safe, port_stop || update_hw_holds_arm(),
+                      now);
+        /* The YGE ESC the same way; a stop cuts a write as well. */
+        yge_port_step(&s_yge, port_safe, port_stop || update_hw_holds_arm(),
                       now);
         ports_hold_follow();
         s_kst_armed = arm_now;

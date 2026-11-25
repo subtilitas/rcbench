@@ -24,6 +24,19 @@ history is in git.
   RUN's and RUDDER AUTO's: up to 23 characters on the name keyboard,
   empty by default, kept as DUT name is (key `srv_note`), and written into
   the `info` column of every run's file until it is changed.
+- Programming for YGE ESCs, the IOmcu's link pages: `YGE_PROG` (0x44) and
+  `YGE_DATA` (0x45), protocol 4.42, run one OpenYGE session on a
+  programming port and report `LINK_CAP_YGE` (bit 9). Operations OPEN,
+  CLOSE, ENTER, HAND_DONE, READ, WRITE, LEAVE, STOP, ABORT and CLEAR; no raw
+  transaction. ENTER and WRITE need the key a panel sends at the end of its
+  2s hold. Power `SWITCHED` on the PD mini (the default) or `BY HAND`
+  (HAND_DONE up to 60000ms); the line stays parked until the ESC has power.
+  STOP, a stop edge, an error, the heartbeat lost or the link silent 200ms
+  park the line and switch the PD mini and PROG_SUPPLY off at once, also in
+  a write. From OPEN to the give the bank does not arm, and KST, HITEC,
+  ESC_WIRE and YGE_PROG exclude each other on every port. The bench
+  console's `yge` drives the page in the IOMCU_CONSOLE build. The panel
+  sends nothing to it yet ([Programming for YGE ESCs](docs/LinkYge.md)).
 - Programming for YGE ESCs, the ESC simulator for the station Pi:
   `testbench/ygesim/ygesim.py` answers `TELE_REQ` and `WRITE_PARAM_REQ` on
   the Pi's UART (115200 baud 8N1, TX and RX joined on one wire, its own
