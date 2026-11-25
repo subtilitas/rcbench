@@ -1,0 +1,883 @@
+{
+ "name": "origin",
+ "lang": "en",
+ "brand": "How it began",
+ "steps": 7,
+ "chapters": [
+  "The reason",
+  "Ideas",
+  "The plan",
+  "Development",
+  "Testing",
+  "The test bench",
+  "The group order"
+ ],
+ "music": "pachelbel-canon",
+ "music_gain": 0.5,
+ "voice": {
+  "blend": {
+   "af_heart": 0.6,
+   "af_nicole": 0.4
+  },
+  "lang": "en-us",
+  "speed": 0.94
+ },
+ "scenes": [
+  {
+   "type": "case",
+   "dur": 78.64,
+   "display": {
+    "view": "overview"
+   },
+   "title": {
+    "from": 0.3,
+    "to": 5.76,
+    "kicker": "rcbench",
+    "heading": "How RCBench<br>came to be",
+    "text": "From a forum post on 23 August 2026<br>to a bench that tests itself."
+   },
+   "chips": [
+    {
+     "from": 6.06,
+     "to": 50.08,
+     "n": 1,
+     "text": "One tool per brand"
+    },
+    {
+     "from": 50.28,
+     "to": 78.24000000000001,
+     "n": 1,
+     "text": "The wish list"
+    }
+   ],
+   "camera": [
+    [
+     0.0,
+     [
+      -360,
+      252,
+      470
+     ],
+     [
+      -40,
+      7,
+      0
+     ]
+    ],
+    [
+     6.06,
+     [
+      -360,
+      252,
+      470
+     ],
+     [
+      -40,
+      7,
+      0
+     ]
+    ],
+    [
+     26.3,
+     [
+      150,
+      300,
+      520
+     ],
+     [
+      150,
+      30,
+      0
+     ]
+    ],
+    [
+     70.94,
+     [
+      150,
+      300,
+      520
+     ],
+     [
+      150,
+      30,
+      0
+     ]
+    ],
+    [
+     72.74,
+     [
+      -360,
+      252,
+      470
+     ],
+     [
+      -40,
+      7,
+      0
+     ]
+    ],
+    [
+     78.64000000000001,
+     [
+      -360,
+      252,
+      470
+     ],
+     [
+      -40,
+      7,
+      0
+     ]
+    ]
+   ],
+   "labels": [
+    {
+     "from": 9.059999999999999,
+     "to": 24.400000000000002,
+     "anchor": "display",
+     "at": [
+      1330,
+      250
+     ],
+     "size": "sm",
+     "title": "Per brand",
+     "text": "1 programmer, 1 adapter, 1 PC program."
+    }
+   ],
+   "windows": [
+    {
+     "from": 26.8,
+     "to": 49.98,
+     "at": [
+      790,
+      150
+     ],
+     "w": 1080,
+     "kind": "browser",
+     "url": "rc-network.de/threads/rcbench-universal-test-und-programmiergerät/post-50",
+     "page": {
+      "w": 1280,
+      "shots": [
+       [
+        0,
+        "origin-post50"
+       ]
+      ]
+     }
+    },
+    {
+     "from": 50.58,
+     "to": 70.74,
+     "at": [
+      790,
+      150
+     ],
+     "w": 1080,
+     "kind": "browser",
+     "url": "rc-network.de/threads/rcbench-universal-test-und-programmiergerät",
+     "page": {
+      "w": 1280,
+      "shots": [
+       [
+        0,
+        "origin-post1"
+       ]
+      ]
+     }
+    }
+   ],
+   "say": [
+    {
+     "at": 1.2,
+     "text": "This video shows how R C bench came to be."
+    },
+    {
+     "at": 6.06,
+     "text": "A model aircraft carries servos and a speed controller. Each maker sets them with its own programmer, its own adapter and its own P C program. A workshop with three brands holds three boxes, three cables and three programs."
+    },
+    {
+     "at": 24.8,
+     "text": "Julian has had enough of that. In the R C Network forum he writes: everyone builds a rudimentary solution for their own product. Nobody thinks it through."
+    },
+    {
+     "at": 38.02,
+     "text": "Three buttons are enough to program a speed controller. It answers in beeps, and the customer has to guess: was that three short and six long?"
+    },
+    {
+     "at": 50.28,
+     "text": "On the 23rd of August 2026 he opens a thread with a wish list. Current sensors on every output. A programmer for speed controllers. Balancing. A servo tester. Servo programming. A log viewer. All of it on a 7 inch touch display for about 40 euros."
+    },
+    {
+     "at": 70.94,
+     "text": "One device for every brand, with a screen that says in plain words what it does."
+    }
+   ]
+  },
+  {
+   "type": "tour",
+   "steps": [
+    {
+     "dur": 3.0,
+     "n": 2,
+     "card": {
+      "title": "Ideas",
+      "text": "A forum thread of 242 posts."
+     }
+    },
+    {
+     "view": "overview",
+     "dur": 11.3,
+     "n": 2,
+     "kicker": "02 · Ideas",
+     "title": "The list becomes tiles",
+     "text": "Each wish of the first post stands as a tile on the home screen.",
+     "say": "The thread grows to 242 posts, and the list grows with it. Today each wish of the first post stands as a tile on the home screen."
+    },
+    {
+     "view": "servo",
+     "dur": 8.4,
+     "n": 2,
+     "kicker": "02 · Ideas",
+     "title": "Readers ask",
+     "text": "Large digits. A STOP twice the size. A real knob.",
+     "say": "Readers ask for large digits, for a stop button twice the size, and for a real knob to turn.",
+     "points": [
+      "Large digits",
+      "STOP on every screen",
+      "The Dial"
+     ]
+    },
+    {
+     "view": "servo-hitec",
+     "dur": 12.9,
+     "n": 2,
+     "kicker": "02 · Ideas",
+     "title": "Programmers on loan",
+     "text": "Forum members lend Hitec and KST programmers. Their traffic is captured on the wire.",
+     "say": "Servo programming, he writes, if someone lends me programmers. Forum members send Hitec and K S T programmers. Their traffic is captured on the wire."
+    },
+    {
+     "view": "motor-wire-am",
+     "dur": 10.8,
+     "n": 2,
+     "kicker": "02 · Ideas",
+     "title": "Speed controllers",
+     "text": "AM32 and BLHeli_S over the signal wire. YGE joins the thread.",
+     "say": "A M 32 and B L Heli S controllers are set over the signal wire. Y G E joins the thread. The author of B L Heli 32 declines."
+    },
+    {
+     "dur": 3.0,
+     "n": 3,
+     "card": {
+      "title": "The plan",
+      "text": "Two boards, one rule for protocols."
+     }
+    },
+    {
+     "view": "layout-rbmod",
+     "dur": 14.2,
+     "n": 3,
+     "kicker": "03 · The plan",
+     "title": "A panel and an IOmcu",
+     "text": "The touch panel draws. An RP2350 drives every pin. CAN at 1 Mbit/s links them.",
+     "say": "The plan splits the bench in two. A 7 inch touch panel draws the screens. An R P 2350, the I O M C U, drives every pin. A CAN bus at 1 megabit per second links them."
+    },
+    {
+     "view": "outputs-rbmod",
+     "dur": 11.6,
+     "n": 3,
+     "kicker": "03 · The plan",
+     "title": "From a Pico to a carrier",
+     "text": "The smallest build is one RP2350 board. Modules add current sensing. The rbmod carrier holds all of it.",
+     "say": "The smallest build is a single R P 2350 board. Modules add current sensing. The R B mod carrier holds all of it on one circuit board."
+    },
+    {
+     "view": "help-overview",
+     "dur": 13.2,
+     "n": 3,
+     "kicker": "03 · The plan",
+     "title": "Open, and from the wire",
+     "text": "MIT licence. A protocol comes from its specification or from the bench's own captures.",
+     "say": "The source is open under the M I T licence. A protocol comes from its specification or from the bench's own captures, never from another maker's program."
+    },
+    {
+     "dur": 3.0,
+     "n": 4,
+     "card": {
+      "title": "Development",
+      "text": "First commit on 26 August 2026."
+     }
+    }
+   ]
+  },
+  {
+   "type": "case",
+   "dur": 44.4,
+   "display": {
+    "view": "motor-plot",
+    "screen": "motor"
+   },
+   "chips": [
+    {
+     "from": 0,
+     "to": 17.62,
+     "n": 4,
+     "text": "Plan by a person, code by a tool"
+    },
+    {
+     "from": 17.82,
+     "to": 44.1,
+     "n": 4,
+     "text": "Three months"
+    }
+   ],
+   "camera": [
+    [
+     0.0,
+     [
+      150,
+      300,
+      520
+     ],
+     [
+      150,
+      30,
+      0
+     ]
+    ],
+    [
+     44.4,
+     [
+      150,
+      300,
+      520
+     ],
+     [
+      150,
+      30,
+      0
+     ]
+    ]
+   ],
+   "windows": [
+    {
+     "from": 0.4,
+     "to": 17.52,
+     "at": [
+      790,
+      150
+     ],
+     "w": 1080,
+     "kind": "browser",
+     "url": "rc-network.de/threads/rcbench-universal-test-und-programmiergerät/post-124",
+     "page": {
+      "w": 1280,
+      "shots": [
+       [
+        0,
+        "origin-post124"
+       ]
+      ]
+     }
+    },
+    {
+     "from": 17.82,
+     "to": 44.1,
+     "at": [
+      900,
+      200
+     ],
+     "w": 900,
+     "kind": "folder",
+     "title": "github.com/subtilitas/rcbench",
+     "body": [
+      {
+       "h": "26 August to 25 November 2026"
+      },
+      {
+       "log": "commits                  6231"
+      },
+      {
+       "log": "merged pull requests      884"
+      },
+      {
+       "log": "tagged versions            50"
+      },
+      {
+       "log": "test programs             643"
+      },
+      {
+       "log": "documentation pages        67"
+      },
+      {
+       "log": "line coverage           97.9%"
+      },
+      {
+       "p": "104635 of 106925 lines run in the test suite."
+      }
+     ]
+    }
+   ],
+   "say": [
+    {
+     "at": 0.6,
+     "text": "How does one person build this in three months? Julian has developed software for more than 30 years. He writes: the planning and the architecture are mine. Claude Code implements. This is no vibe coding."
+    },
+    {
+     "at": 17.82,
+     "text": "The first commit is made on the 26th of August 2026, three days after the first post. Three months later the repository holds 6231 commits, 884 merged pull requests and 50 tagged versions."
+    },
+    {
+     "at": 33.76,
+     "text": "Every change goes through a pull request, a review and the test suite. 97.9 percent of the lines are covered by tests."
+    }
+   ]
+  },
+  {
+   "type": "tour",
+   "steps": [
+    {
+     "view": "motor-plot",
+     "dur": 10.1,
+     "n": 4,
+     "kicker": "04 · Development",
+     "title": "Screen by screen",
+     "text": "Each function is planned on paper, built, and drawn by the renderer before it runs on the panel.",
+     "screen": "motor"
+    },
+    {
+     "view": "servo-limrun-found",
+     "dur": 10.4,
+     "n": 4,
+     "kicker": "04 · Development",
+     "title": "Measured, not assumed",
+     "text": "A servo set to 60° a side measures -59.55° and +60.00° on the encoder.",
+     "say": "Results are measured. A servo programmed to 60 degrees a side reads minus 59.55 and plus 60.00 degrees on the encoder."
+    },
+    {
+     "dur": 3.0,
+     "n": 5,
+     "card": {
+      "title": "Testing",
+      "text": "643 test programs on a computer, then the hardware."
+     }
+    },
+    {
+     "view": "splash",
+     "dur": 12.9,
+     "n": 5,
+     "kicker": "05 · Testing",
+     "title": "The host suite",
+     "text": "643 test programs run the firmware's code on a computer. No hardware is attached.",
+     "say": "Testing starts without hardware. 643 test programs run the firmware's code on a computer, with models of the servos, the controllers and the sensors."
+    },
+    {
+     "view": "logs-report",
+     "dur": 9.9,
+     "n": 5,
+     "kicker": "05 · Testing",
+     "title": "Every screen is drawn",
+     "text": "The same renderer draws each screen as a picture. The pictures of the documentation and of this video come from it.",
+     "say": "The same code draws each screen as a picture. The pictures in the documentation and in this video come from it."
+    },
+    {
+     "view": "band-fault",
+     "dur": 8.7,
+     "n": 5,
+     "kicker": "05 · Testing",
+     "title": "What a model cannot show",
+     "text": "Edges, timings and a touch on glass need the real boards.",
+     "say": "A model cannot show a real edge, a real timing or a finger on glass. That takes the real boards.",
+     "focus": [
+      832,
+      4,
+      188,
+      50
+     ]
+    },
+    {
+     "dur": 3.0,
+     "n": 6,
+     "card": {
+      "title": "The test bench",
+      "text": "A bench that operates the bench."
+     }
+    }
+   ]
+  },
+  {
+   "type": "case",
+   "dur": 92.26,
+   "display": {
+    "view": "motor-plot",
+    "screen": "motor"
+   },
+   "chips": [
+    {
+     "from": 0,
+     "to": 18.34,
+     "n": 6,
+     "text": "The hardware AI debugger"
+    },
+    {
+     "from": 18.54,
+     "to": 59.12,
+     "n": 6,
+     "text": "How it is built"
+    },
+    {
+     "from": 59.32,
+     "to": 84.84,
+     "n": 6,
+     "text": "A test walk"
+    },
+    {
+     "from": 85.04,
+     "to": 91.86,
+     "n": 6,
+     "text": "3 November 2026"
+    }
+   ],
+   "camera": [
+    [
+     0.0,
+     [
+      150,
+      300,
+      520
+     ],
+     [
+      150,
+      30,
+      0
+     ]
+    ],
+    [
+     92.26,
+     [
+      150,
+      300,
+      520
+     ],
+     [
+      150,
+      30,
+      0
+     ]
+    ]
+   ],
+   "windows": [
+    {
+     "from": 0.4,
+     "to": 18.24,
+     "at": [
+      790,
+      150
+     ],
+     "w": 1080,
+     "kind": "browser",
+     "url": "rc-network.de/threads/rcbench-universal-test-und-programmiergerät/post-167",
+     "page": {
+      "w": 1280,
+      "shots": [
+       [
+        0,
+        "origin-post167"
+       ]
+      ]
+     }
+    },
+    {
+     "from": 18.54,
+     "to": 59.02,
+     "at": [
+      790,
+      150
+     ],
+     "w": 1080,
+     "kind": "browser",
+     "url": "bench camera, 3840 x 2160",
+     "page": {
+      "w": 1280,
+      "shots": [
+       [
+        0,
+        "origin-bench-host"
+       ],
+       [
+        30.24,
+        "origin-bench-panel"
+       ],
+       [
+        41.62,
+        "origin-bench-top"
+       ]
+      ]
+     }
+    },
+    {
+     "from": 59.32,
+     "to": 84.74000000000001,
+     "at": [
+      900,
+      170
+     ],
+     "w": 900,
+     "kind": "folder",
+     "title": "The test bench",
+     "body": [
+      {
+       "h": "A test walk"
+      },
+      {
+       "log": "1  plan"
+      },
+      {
+       "log": "2  read the bench's state"
+      },
+      {
+       "log": "3  build and load"
+      },
+      {
+       "log": "4  still, gesture, still, capture"
+      },
+      {
+       "log": "5  numbers against the criteria"
+      },
+      {
+       "log": "6  bench back to SAFE"
+      },
+      {
+       "log": "7  report"
+      },
+      {
+       "id": "n1",
+       "from": 76.86,
+       "log": "DShot   1000.06 frames/s"
+      },
+      {
+       "id": "n2",
+       "from": 79.36,
+       "log": "PPM     40.002Hz"
+      }
+     ]
+    },
+    {
+     "from": 85.04,
+     "to": 91.86,
+     "at": [
+      790,
+      150
+     ],
+     "w": 1080,
+     "kind": "browser",
+     "url": "rc-network.de/threads/rcbench-universal-test-und-programmiergerät/post-193",
+     "page": {
+      "w": 1280,
+      "shots": [
+       [
+        0,
+        "origin-post193"
+       ]
+      ]
+     }
+    }
+   ],
+   "say": [
+    {
+     "at": 0.6,
+     "text": "On the 15th of October Julian shows his test setup in the thread and calls it the hardware A I debugger. A webcam reads the display. A logic analyser tests signals and buses. A small Pico emulates the touch panel."
+    },
+    {
+     "at": 18.54,
+     "text": "This is how it is built. A Raspberry Pi 5 is the host. It builds the firmware and loads it onto the panel and the I O M C U under test."
+    },
+    {
+     "at": 30.24,
+     "text": "An R P 2350 Zero sits on the panel's touch bus and answers as the touch controller. It taps, holds and swipes where a finger would."
+    },
+    {
+     "at": 41.62,
+     "text": "A logic analyser with 16 channels, up to 200 megahertz, records what the pins put out. A camera with 3840 by 2160 pixels hangs above the bench. It pans and tilts to read the display. These pictures are its own."
+    },
+    {
+     "at": 59.32,
+     "text": "A test walk has seven steps. Plan. Read the bench's state. Build and load. For each step: a picture, a gesture, a picture, a capture. Compare the numbers with the criteria. Put the bench back to safe. Report."
+    },
+    {
+     "at": 76.86,
+     "text": "The numbers are plain. D Shot at 1000.06 frames per second. A P P M signal at 40.002 hertz."
+    },
+    {
+     "at": 85.04,
+     "text": "On the 3rd of November Julian writes: everything works. Finally."
+    }
+   ]
+  },
+  {
+   "type": "case",
+   "dur": 64.52,
+   "display": {
+    "view": "layout-rbmod"
+   },
+   "chips": [
+    {
+     "from": 0,
+     "to": 50.14,
+     "n": 7,
+     "text": "The rbmod carrier at cost"
+    },
+    {
+     "from": 50.34,
+     "to": 64.12,
+     "n": 7,
+     "text": "25 boards"
+    }
+   ],
+   "camera": [
+    [
+     0.0,
+     [
+      150,
+      300,
+      520
+     ],
+     [
+      150,
+      30,
+      0
+     ]
+    ],
+    [
+     64.52000000000001,
+     [
+      150,
+      300,
+      520
+     ],
+     [
+      150,
+      30,
+      0
+     ]
+    ]
+   ],
+   "windows": [
+    {
+     "from": 0.4,
+     "to": 32.58,
+     "at": [
+      790,
+      150
+     ],
+     "w": 1080,
+     "kind": "browser",
+     "url": "rc-network.de/threads/rcbench-sammelbestellungsthread",
+     "page": {
+      "w": 1280,
+      "shots": [
+       [
+        0,
+        "origin-order1"
+       ]
+      ]
+     }
+    },
+    {
+     "from": 32.88,
+     "to": 50.040000000000006,
+     "at": [
+      900,
+      200
+     ],
+     "w": 900,
+     "kind": "folder",
+     "title": "rbmod carrier, group order",
+     "body": [
+      {
+       "h": "In the parcel"
+      },
+      {
+       "p": "1 board, 4 layers, 17 SMD parts fitted"
+      },
+      {
+       "p": "Angled servo pin headers, 3 x 4"
+      },
+      {
+       "log": "board and headers     12 EUR"
+      },
+      {
+       "log": "insured parcel         6 EUR"
+      },
+      {
+       "log": "other costs            2 EUR"
+      },
+      {
+       "log": "total                 20 EUR"
+      },
+      {
+       "h": "Licences"
+      },
+      {
+       "p": "Board: CC BY-NC-SA 4.0. Software: MIT."
+      }
+     ]
+    },
+    {
+     "from": 50.34,
+     "to": 64.12,
+     "at": [
+      790,
+      150
+     ],
+     "w": 1080,
+     "kind": "browser",
+     "url": "rc-network.de/threads/rcbench-sammelbestellungsthread/post-13",
+     "page": {
+      "w": 1280,
+      "shots": [
+       [
+        0,
+        "origin-order13"
+       ]
+      ]
+     }
+    }
+   ],
+   "say": [
+    {
+     "at": 0.6,
+     "text": "The story goes on in a second thread. On the 16th of November 2026 Julian opens a group order for the R B mod carrier: a circuit board with four layers that sits behind the display and joins the modules."
+    },
+    {
+     "at": 17.74,
+     "text": "It is privately financed. No shop, no profit. A board with its servo pin headers costs 20 euros, shipping included. A forum member handles payment and shipping in his spare time."
+    },
+    {
+     "at": 32.88,
+     "text": "The 17 surface mount parts are fitted. The builder buys the modules and solders them on. The board's design is under a Creative Commons licence for private builds. The software stays under the M I T licence."
+    },
+    {
+     "at": 50.34,
+     "text": "On the 22nd of November 25 boards are ordered. A day later 20 of them are taken. The order closes on the 29th of November, and a second batch follows in January."
+    }
+   ]
+  },
+  {
+   "type": "end",
+   "dur": 9,
+   "heading": "rcbench",
+   "items": [
+    "The reason",
+    "Ideas",
+    "The plan",
+    "Development",
+    "Testing",
+    "The test bench",
+    "The group order"
+   ],
+   "note": "MIT licence · github.com/subtilitas/rcbench",
+   "say": "That is how R C bench came to be. Its source and documentation are on GitHub."
+  }
+ ]
+}
