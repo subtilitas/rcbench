@@ -49,11 +49,14 @@ sys.path.insert(0, str(HERE.parent.parent / "mechanical"))
 import gen_models  # noqa: E402
 
 
-def read(path):
+def read(path, unlocated=False):
     """Read one STEP file into an XCAF document.
 
     Args:
         path: The file.
+        unlocated: When a solid has no colour in its place, look for one
+            on the solid without its placement. An assembly's component
+            that Onshape placed carries its colour there.
 
     Returns:
         (shape, colour of each solid or None, in file order).
@@ -73,6 +76,9 @@ def read(path):
     while ex.More():
         col = Quantity_Color()
         ok = colors.GetColor(ex.Current(), XCAFDoc_ColorSurf, col)
+        if not ok and unlocated:
+            ok = colors.GetColor(ex.Current().Located(TopLoc_Location()),
+                                 XCAFDoc_ColorSurf, col)
         found.append((ex.Current(), (col.Red(), col.Green(), col.Blue())
                       if ok else None))
         ex.Next()
