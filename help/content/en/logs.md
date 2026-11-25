@@ -10,7 +10,7 @@ LOGS lists CSV (comma-separated values) recordings and reports on the panel's SD
 
 The three tabs at the top left select a folder: ROOT for the card root, USER for the User log folder (`USER/LOGS` by default), and BENCH for the Auto log folder (`BENCH/LOGS` by default). WI-FI at the bottom left opens [Wi-Fi](wifi.md). FILES beside it opens [Files](files.md) to copy, move, rename or delete card files.
 
-The home tag works like BACK, returning one level at a time: the plot to where it came from (the file list after OPEN, the import view after PLOT), import view to file list, file list to menu. Over MORE's list it closes the list. In the DELETE question, it acts as CANCEL.
+The home tag works like BACK, returning one level at a time: the plot to where it came from (the file list after OPEN, the import view after PLOT, the result card after its GRAPH), import view to file list, file list to menu. Over MORE's list it closes the list. In the DELETE question, it acts as CANCEL.
 
 ## No card
 
@@ -43,6 +43,8 @@ The header shows the selected folder, such as `BENCH/LOGS`, to the right of the 
 LOGS opens on the tab containing the last file written by the panel. After startup, it uses BENCH until a file is written. If nothing has been written since the last visit, it retains the tab you left. Selecting a tab reads its folder from the first page.
 
 The top strip, LOGS | FILES, switches between the tile's two screens. Each screen's home tag returns to the menu. The strip appears only on the file list, not over an open file, question or box.
+
+GRAPH on LIMIT RUN, RUDDER AUTO, TEST, MOTOR & ESC and SUPPLY opens that card's last run since power-on here, in the graph. The card switches the bench to SAFE as it is left. The home tag on the graph returns to the card, whose result still shows. The key is grey while the bench is ARMED or the run's file is still open; a tap on it then says why.
 
 WI-FI in the row of buttons opens [Wi-Fi](wifi.md) for browser downloads; its home tag returns here. The button is hidden over the DELETE question or an open file. It can open Wi-Fi while ARMED, but Wi-Fi's own controls enforce their restrictions.
 

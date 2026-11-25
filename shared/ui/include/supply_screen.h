@@ -186,6 +186,13 @@ void supply_screen_open_pdmini(void);
 void supply_screen_open_limits(void);
 
 /**
+ * @brief GRAPH right of RESET PEAKS while it shows: a SUPPL log closed since
+ *        power-on (graph_key.h), in the body's coordinates.
+ * @return its rectangle; empty while hidden
+ */
+gfx_rect_t supply_screen_graph_rect(void);
+
+/**
  * @brief The section of the SETTINGS list in view.
  * @return 0 the limits, 1 the PD mini's heading in the pane's top half or
  *         above it, -1 with the list closed

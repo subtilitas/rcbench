@@ -47,7 +47,9 @@
  * CARD list from the footer's SETTINGS on LOGS and FILES; WI-FI from
  * UPDATES' button and LOGS' WI-FI button; SEARCH from the scan and bound
  * rows of SETUP > WIRELESS; LOAD SETTINGS from SETUP > SD CARD's row of that
- * name.  SETUP's WI-FI tile needs no row: WI-FI's parent is SETUP.
+ * name; LOGS from GRAPH on the result cards of LIMIT RUN, RUDDER AUTO,
+ * TEST, MOTOR & ESC and SUPPLY (graph_key.h).  SETUP's WI-FI tile needs no
+ * row: WI-FI's parent is SETUP.
  * A screen with no row here, or entered from a screen not on its row, leaves
  * to its tile's parent (ui_router_parent()): a SERVO function screen to the
  * SERVO hub.
@@ -78,6 +80,11 @@ static const struct {
     { SCREEN_SETUP,   SCREEN_FILES },
     { SCREEN_WL_SEARCH, SCREEN_SETUP },
     { SCREEN_SET_LOAD, SCREEN_SETUP },
+    { SCREEN_LOGS,    SCREEN_SERVO_LIMRUN },
+    { SCREEN_LOGS,    SCREEN_SERVO_RAUTO },
+    { SCREEN_LOGS,    SCREEN_SERVO_TEST },
+    { SCREEN_LOGS,    SCREEN_MOTOR },
+    { SCREEN_LOGS,    SCREEN_SUPPLY },
 };  /**< which screen opens which: the home tag of the opened one returns to its opener */
 
 bool ui_router_opens(ui_screen_id_t opener, ui_screen_id_t id)

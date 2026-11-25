@@ -25,6 +25,7 @@
 #include <time.h>
 
 #include "card_tree.h"
+#include "graph_key.h"
 #include "log_name.h"
 #include "log_select.h"
 #include "log_viewer_screen.h"
@@ -3467,6 +3468,7 @@ static void pose_motor_supply(ui_screen_id_t id, const char *view,
             ui_router_goto(SCREEN_SUPPLY);
             tap(SU_TABLE_TAB_X, UI_BAND_H + SU_PANE_Y);
         } else if (strcmp(view, "supply-off") == 0
+                   || strcmp(view, "supply-graph") == 0
                    || strcmp(view, "supply-settings-off") == 0) {
             /* The screen guide's: the run's output switched off, as a
              * task's guide page is offered only then, on LIVE or on
@@ -3474,6 +3476,14 @@ static void pose_motor_supply(ui_screen_id_t id, const char *view,
             st.output = false;
             supply_screen_set_output(false);
             supply_screen_push(&st);
+            if (strcmp(view, "supply-graph") == 0) {
+                /* GRAPH right of RESET PEAKS: the run's SUPPL log
+                 * closed with the output's switch-off. */
+                const graph_key_file_t f = { .run = true,
+                                             .name = "SUPPL007.CSV",
+                                             .dir = CARD_AUTO_LOGS };
+                graph_key_set(GRAPH_KEY_SUPPLY, &f);
+            }
             if (strcmp(view, "supply-settings-off") == 0) {
                 ui_router_goto(SCREEN_SUPPLY);
                 tap(SU_SETTINGS_X, UI_BAND_H + SU_SETTINGS_Y);
@@ -4938,6 +4948,13 @@ static void pose_shown_views(const char *view)
         motor_screen_set_last_log("MOTOR042_kv1200.CSV", true, false);
         tap(MO_LOGBTN_X, UI_BAND_H + MO_TAB_Y);            /* RENAME LOG */
     }
+    /* GRAPH beside RENAME LOG after a run, the bench SAFE. */
+    if (strcmp(view, "motor-graph") == 0) {
+        motor_screen_set_last_log("MOTOR042_kv1200.CSV", true, false);
+        const graph_key_file_t f = { .run = true, .name = "MOTOR042_kv1200.CSV",
+                                     .dir = CARD_AUTO_LOGS };
+        graph_key_set(GRAPH_KEY_MOTOR, &f);
+    }
 }
 
 /**
@@ -5456,6 +5473,7 @@ int main(int argc, char **argv)
                     && (strcmp(view, "motor-live") != 0 || s_live_armed)
                     && strcmp(view, "motor-held") != 0
                     && strcmp(view, "motor-logname") != 0
+                    && strcmp(view, "motor-graph") != 0
                     && strcmp(view, "motor-idle") != 0
                     && strcmp(view, "motor-port") != 0
                     && !mo_prog

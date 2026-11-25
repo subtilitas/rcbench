@@ -1060,6 +1060,21 @@ bool servo_screen_limit_prog(void);
  * @return @p buf; "" past the last
  */
 const char *servo_screen_limit_line(int i, char *buf, size_t n);
+/**
+ * @brief The top of LIMIT RUN's state line @p i as drawn now, in the body's
+ *        coordinates, for the tests: the report's line beside GRAPH stands
+ *        half a pitch lower, and the lines after it a pitch lower.
+ * @param i the line, from 0
+ * @return its top, px; past the last, where a line more would stand; -1
+ *         for a negative @p i
+ */
+int servo_screen_limit_line_y(int i);
+/**
+ * @brief GRAPH on the result card shown -- LIMIT RUN's, RUDDER AUTO's or
+ *        the run's box on TEST -- in the body's coordinates, for the tests.
+ * @return the key; empty where none takes a press
+ */
+gfx_rect_t servo_screen_graph_rect(void);
 
 /**
  * @brief The run's next item for the card, without taking it

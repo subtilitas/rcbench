@@ -94,6 +94,8 @@ static const struct {
     { "help-servo-limrun", "servo-limcard" },
     { "help-servo-dut", "servo-encoder" },
     { "help-supply", "supply-off" },
+    /* After a run: GRAPH right of RESET PEAKS. */
+    { "help-supply-graph", "supply-graph" },
     { "help-supply-settings", "supply-settings-off" },
     { "help-supply-pdmini", "supply-pdmini" },
     { "help-wifi", "wifi" },
@@ -110,6 +112,8 @@ static const struct {
     { "help-updates-nonet", "updates-nonet" },
     { "help-updates-ask", "updates-step-dial-ask" },
     { "help-motor", "motor-held" },
+    /* After a run, SAFE: GRAPH left of RENAME LOG. */
+    { "help-motor-graph", "motor-graph" },
     { "help-motor-program", "motor-program" },
     { "help-motor-settings", "motor-settings" },
     { "help-motor-stick", "motor-stick-items" },

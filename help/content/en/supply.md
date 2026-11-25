@@ -171,7 +171,7 @@ On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) PD mi
 
 ## The log of a run
 
-Each switch-on begins a run. The plot clears at switch-on and freezes at switch-off. The CONTROL title line accumulates charge in mAh and energy in Wh for that run. RESET PEAKS restarts the minima and maxima from the current reading.
+Each switch-on begins a run. The plot clears at switch-on and freezes at switch-off. The CONTROL title line accumulates charge in mAh and energy in Wh for that run. RESET PEAKS restarts the minima and maxima from the current reading. GRAPH right of it opens the run's SUPPL log in the graph on [Logs](logs.md) once the output is off; the home tag there returns here. While the output is on it is grey, and a tap says why in the alert band.
 
 Each run is written to its own `SUPPLnnn.CSV` in `BENCH/LOGS` on the SD (Secure Digital) card, while Auto logs on [SETUP](setup.md#sd-card) > SD CARD is ON, one row every 50ms, with the set point, voltage, limit, current, power, mode, charge, energy and source, `measured` or `model`. [Logs](logs.md) opens it.
 

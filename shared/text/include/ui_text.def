@@ -3082,6 +3082,23 @@ UI_TEXT(HG_LOG_GRAPH_TABS, 0,
 UI_TEXT(HG_LOG_MORE, 0,
     "Opens a list. COLUMNS goes to the import view, to pick other columns.",
     "Öffnet eine Liste. SPALTEN führt zur Importansicht, um andere Spalten zu wählen.")
+/* GRAPH on the result cards (graph_key.h): the key, and why a tap opens
+ * nothing, in the card's line (LIMIT RUN, RUDDER AUTO, TEST: TEST's state
+ * line is one row of 58 cells of the 10 x 20 face) or the alert band
+ * (MOTOR & ESC, SUPPLY).  A file not on the card is MO_LOG_MISSING. */
+UI_TEXT(GK_KEY, 0,
+    "GRAPH",
+    "GRAFIK")
+UI_TEXT(GK_ARMED, 58,
+    "Bench ARMED. Switch to SAFE to open the graph.",
+    "Prüfstand ARMED. Für die Grafik auf SAFE schalten.")
+UI_TEXT(GK_WRITING, 58,
+    "The run is still being written.",
+    "Der Lauf wird noch geschrieben.")
+UI_TEXT(HG_GRAPH, 0,
+    "Opens LOGS with this run's CSV in the graph. Grey while ARMED or while the run is written.",
+    "Öffnet LOGS mit der CSV dieses Laufs als Grafik. Grau bei ARMED und solange der Lauf geschrieben wird.")
+
 /* --------------------------------------------------------------- FILES */
 /* The footer's buttons, 118px: a label that leaves under 6px at each side
  * in the 10 x 20 face (10 cells at most) is drawn in the 8 x 16 face.

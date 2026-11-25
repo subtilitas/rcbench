@@ -143,6 +143,9 @@ static const char *mode_note(void)
  */
 static const char *idle_why(void)
 {
+    if (svs_gk_note(GRAPH_KEY_LIMIT) != NULL) {
+        return svs_gk_note(GRAPH_KEY_LIMIT);
+    }
     if (svs_seq_failure() != NULL) {
         return svs_seq_failure();
     }
@@ -156,6 +159,7 @@ typedef struct {
     char        t[LC_LINES][96]; /**< the texts                   */
     ui_color_id_t col[LC_LINES]; /**< their colours               */
     int         n;              /**< how many                    */
+    int         file;           /**< the report's line, -1 none  */
 } lc_lines_t;
 
 /** @brief The lines last built, 8 of 96 bytes, off the screen task's stack.
@@ -268,6 +272,7 @@ static void result_lines(lc_lines_t *L)
         add(L, UI_C_TEXT_DIM, b);
     }
     lim_file_name(b, sizeof(b));
+    L->file = (L->n < LC_LINES) ? L->n : -1;
     add(L, UI_C_TEXT_DIM, b);
 }
 
@@ -278,6 +283,7 @@ static void result_lines(lc_lines_t *L)
 static void lines_now(lc_lines_t *L)
 {
     memset(L, 0, sizeof(*L));
+    L->file = -1;
     const bool running = servo_limrun_running(&s.lim);
     char b[96];
     if (running) {
@@ -379,6 +385,57 @@ static void draw_end(gfx_canvas_t *c, int k)
 
 /* ------------------------------------------------------------ drawing */
 
+/**
+ * @brief The width line @p i wraps in: the column, less GRAPH and 10px
+ *        beside the report's line.
+ * @param L   the lines
+ * @param i   the line
+ * @param key GRAPH's place, empty for none
+ * @return the width, px
+ */
+static int line_w(const lc_lines_t *L, int i, gfx_rect_t key)
+{
+    return (i == L->file && key.w > 0) ? LC_W - GRAPH_KEY_W - 10 : LC_W;
+}
+
+/**
+ * @brief Where each line goes, and GRAPH: the report's line takes a band of
+ *        two pitches with its text centered in it and GRAPH flush right,
+ *        40px tall, 4px inside the band; every line after it moves down a
+ *        pitch.  A key that would end past the lines' room is left out.
+ * @param L    the lines
+ * @param y_of takes each line's top, px
+ * @param key  takes GRAPH's place; empty for none
+ * @return the top of a line after the last, px
+ */
+static int lines_place(const lc_lines_t *L, int y_of[LC_LINES],
+                       gfx_rect_t *key)
+{
+    const gfx_rect_t lr = lim_lines_rect();
+    *key = (gfx_rect_t){ 0, 0, 0, 0 };
+    int y = LC_LINE_Y;
+    for (int i = 0; i < L->n; ++i) {
+        if (i == L->file && svs_gk_shown(GRAPH_KEY_LIMIT)
+            && y + 4 + GRAPH_KEY_H <= lr.y + lr.h) {
+            *key = (gfx_rect_t){ (int16_t)(LC_X + LC_W - GRAPH_KEY_W),
+                                 (int16_t)(y + 4), GRAPH_KEY_W, GRAPH_KEY_H };
+            y_of[i] = y + LC_LINE_P / 2;
+            const int rows = ui_text_wrap(NULL, gfx_rect_make(0, 0,
+                                                     line_w(L, i, *key),
+                                                     LC_LINE_P),
+                                          LC_LINE_P, L->t[i], SV_FONT_LABEL,
+                                          0);
+            y += (rows > 1 ? rows + 1 : 2) * LC_LINE_P;
+            continue;
+        }
+        y_of[i] = y;
+        y += LC_LINE_P * ui_text_wrap(NULL, gfx_rect_make(0, 0, LC_W,
+                                                          LC_LINE_P),
+                                      LC_LINE_P, L->t[i], SV_FONT_LABEL, 0);
+    }
+    return y;
+}
+
 void lim_render(gfx_canvas_t *c)
 {
     const gfx_rect_t a = page_area();
@@ -402,20 +459,36 @@ void lim_render(gfx_canvas_t *c)
 
     lc_lines_t *const L = &s_lines;
     lines_now(L);
-    const gfx_rect_t lr = lim_lines_rect();
+    int y_of[LC_LINES];
+    gfx_rect_t key;
+    (void)lines_place(L, y_of, &key);
     const gfx_rect_t old = c->clip;
-    if (gfx_clip_intersect(c, lr)) {
-        int y = LC_LINE_Y;
+    if (gfx_clip_intersect(c, lim_lines_rect())) {
         for (int i = 0; i < L->n; ++i) {
-            y += LC_LINE_P
-                 * ui_text_wrap(c, gfx_rect_make(LC_X, y, LC_W, LC_LINE_P),
-                                LC_LINE_P, L->t[i], SV_FONT_LABEL,
-                                ui_theme_color(L->col[i]));
+            (void)ui_text_wrap(c, gfx_rect_make(LC_X, y_of[i],
+                                                line_w(L, i, key),
+                                                LC_LINE_P),
+                               LC_LINE_P, L->t[i], SV_FONT_LABEL,
+                               ui_theme_color(L->col[i]));
         }
     }
     c->clip = old;
+    svs_gk_draw(c, GRAPH_KEY_LIMIT, key,
+                s.ov_have && s.ov_pressed == OP_GRAPH);
     /* Under the lines, what feeds the servo as every SERVO plot shows it. */
     svs_power_view(c, lim_power_rect());
+}
+
+int servo_screen_limit_line_y(int i)
+{
+    lines_now(&s_lines);
+    int y_of[LC_LINES];
+    gfx_rect_t key;
+    const int end = lines_place(&s_lines, y_of, &key);
+    if (i < 0) {
+        return -1;
+    }
+    return (i < s_lines.n) ? y_of[i] : end + (i - s_lines.n) * LC_LINE_P;
 }
 
 const char *servo_screen_limit_line(int i, char *buf, size_t n)

@@ -71,7 +71,7 @@ servo-rudder                 4,101     513 KiB
 servo-test                       0       0 KiB
 servo-kst                        0       0 KiB
 servo-hitec                      0       0 KiB
-supply                       7,154     894 KiB
+supply                       7,697     962 KiB
 supply-chrome               45,677    5710 KiB
 analyser                         0       0 KiB
 logs                             0       0 KiB
@@ -91,7 +91,7 @@ settings-chrome             35,719    4465 KiB
 settings-list-chrome        37,319    4665 KiB
 battery-chrome              54,643    6830 KiB
 balance-chrome              57,992    7249 KiB
-motor-stick-chrome          41,487    5186 KiB
+motor-stick-chrome          42,805    5351 KiB
 motor-wire-chrome           40,331    5041 KiB
 picker                           0       0 KiB
 picker-chrome               41,655    5207 KiB
@@ -503,7 +503,7 @@ the tool cannot see, and each depth above is a lower bound for that reason:
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `UI_HOOK_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`,
   `SERVO_STORE_CALLS`):
-  395 such
+  394 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - jumps through a register: a switch table, which stays inside its

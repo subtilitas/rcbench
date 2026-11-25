@@ -164,6 +164,7 @@ RENAME LOG gives the MOTOR log closed since the panel started a label behind its
 - The keyboard covers ARM. CANCEL or the home tag closes it without a change.
 - The alert band says `Log renamed: MOTOR042_kv1200.CSV` in amber for 4s, or why not in red, such as `MOTOR042_kv1200.CSV already exists there.`
 - After a restart the button stays dimmed until the next MOTOR run ends. Rename older logs in [Files](files.md).
+- GRAPH left of RENAME LOG opens that log in the graph on [Logs](logs.md); the home tag there returns here. It shows once a MOTOR log has closed since the start, grey while ARMED or while a log is open; a tap then says why in the alert band.
 
 ## Related pages
 

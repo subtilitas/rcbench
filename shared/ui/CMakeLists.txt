@@ -67,6 +67,7 @@ set(SRCS
     servo_limit_panel.c
     servo_limit_ready.c
     servo_limit_card.c
+    servo_graph_key.c
     servo_limit_seam.c
     servo_workbench.c
     servo_rudder_panel.c
@@ -131,6 +132,7 @@ set(SRCS
     log_graph.c
     log_graph_xy.c
     log_graph_draw.c
+    graph_key.c
     logs_strip.c
     log_select.c
     settings_screen.c

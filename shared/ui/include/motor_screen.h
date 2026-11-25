@@ -476,6 +476,13 @@ bool motor_screen_logname_live(void);
  */
 const ui_textkey_t *motor_screen_logname_keyboard(void);
 
+/**
+ * @brief GRAPH left of RENAME LOG while it shows: a MOTOR log closed since
+ *        power-on (graph_key.h), in the body's coordinates.
+ * @return its rectangle; empty while hidden
+ */
+gfx_rect_t motor_screen_graph_rect(void);
+
 /** @brief Marks the whole screen to be drawn again. */
 void motor_invalidate(void);
 /**
