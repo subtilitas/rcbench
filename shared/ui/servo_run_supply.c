@@ -42,7 +42,7 @@
 #include <math.h>
 #include <stdio.h>
 
-#include "esc_wire_panel.h"
+#include "prog_registry.h"
 #include "servo_limrun.h"
 #include "settings.h"
 #include "supply.h"
@@ -188,7 +188,7 @@ const char *rcur_why(void)
     }
     /* SUPPLY's own keypad takes nothing then either. */
     if (supply_screen_port_held()) {
-        return esc_wire_panel_holds_port() ? TR(SUP_HELD_REFUSED_ESC)
+        return prog_reg_esc_holds() ? TR(SUP_HELD_REFUSED_ESC)
                                            : TR(SUP_HELD_REFUSED);
     }
     return NULL;

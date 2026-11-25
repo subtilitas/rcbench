@@ -203,6 +203,11 @@ void yge_prog_card_done(yge_prog_t *p, uint32_t id, uint8_t result)
     card_answer(p, result);
 }
 
+bool yge_prog_card_waits(const yge_prog_t *p)
+{
+    return p != NULL && p->flow == YGE_PROG_FLOW_BACKUP;
+}
+
 uint32_t yge_prog_card_stale(const yge_prog_t *p)
 {
     return p != NULL ? p->card_stale : 0u;

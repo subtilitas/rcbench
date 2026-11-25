@@ -45,6 +45,7 @@
 #include "render_upd_wiz.h"
 #include "render_shot.h"
 #include "render_esc_wire.h"
+#include "render_yge.h"
 #include "render_hitec.h"
 #include "sense_link.h"
 #include "settings.h"
@@ -3375,7 +3376,13 @@ static void pose_motor_tools(ui_screen_id_t id, const char *view)
 {
     if (id == SCREEN_MOTOR && strncmp(view, "motor-program", 13) == 0) {
         /* MOTOR & ESC > PROGRAM: the strip's second tab, the registry's
-         * list with its STICK MENU row. */
+         * list with its STICK MENU row, and the signal-wire and YGE rows
+         * live with the IOmcu's capabilities. */
+        s_caps |= LINK_CAP_PROGRAM | LINK_CAP_YGE;
+        ui_bench_status_t prog = k_status;
+
+        prog.capabilities = s_caps;
+        ui_router_set_status(&prog);
         ui_router_goto(SCREEN_MOTOR);
         tap(MO_TAB_PROGRAM_X, UI_BAND_H + MO_TAB_Y);
     }
@@ -3389,6 +3396,17 @@ static void pose_motor_tools(ui_screen_id_t id, const char *view)
         ui_router_goto(SCREEN_MOTOR);
         tap(MO_TAB_PROGRAM_X, UI_BAND_H + MO_TAB_Y);
         render_esc_wire_view(view);
+    }
+    if (id == SCREEN_MOTOR && strncmp(view, "motor-yge", 9) == 0) {
+        /* Programming for YGE ESCs, opened as PROGRAM's row opens it. */
+        s_caps |= LINK_CAP_YGE;
+        ui_bench_status_t yge = k_status;
+
+        yge.capabilities = s_caps;
+        ui_router_set_status(&yge);
+        ui_router_goto(SCREEN_MOTOR);
+        tap(MO_TAB_PROGRAM_X, UI_BAND_H + MO_TAB_Y);
+        render_yge_view(view);
     }
     if (id == SCREEN_MOTOR && strncmp(view, "motor-stick", 11) == 0) {
         /*
@@ -5240,6 +5258,7 @@ int main(int argc, char **argv)
     const bool mo_prog = id == SCREEN_MOTOR
                          && (strncmp(view, "motor-program", 13) == 0
                              || strncmp(view, "motor-wire", 10) == 0
+                             || strncmp(view, "motor-yge", 9) == 0
                              || strncmp(view, "motor-stick", 11) == 0);
     pose_motor_supply(id, view, mo_prog);
     pose_motor_tools(id, view);

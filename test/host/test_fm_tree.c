@@ -397,7 +397,7 @@ TEST_CASE(every_bench_folder_is_fixed_and_others_free)
     static const char *const fixed[] = {
         CARD_BENCH, CARD_AUTO_LOGS, "BENCH/ESC", CARD_ESC_CONF, "BENCH/KST",
         CARD_KST_CONF, "BENCH/HITEC", CARD_HITEC_CONF, "BENCH/ESCW",
-        CARD_ESCW_CONF, CARD_BALANCE, CARD_SETUP, CARD_USER,
+        CARD_ESCW_CONF, "BENCH/YGE", CARD_YGE_CONF, CARD_BALANCE, CARD_SETUP, CARD_USER,
         CARD_USER_LOGS,
     };
     for (size_t i = 0u; i < sizeof(fixed) / sizeof(fixed[0]); ++i) {

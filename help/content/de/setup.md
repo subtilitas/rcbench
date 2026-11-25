@@ -187,7 +187,7 @@ Bei einem unzulässigen Ordner bleibt die Tastatur offen und die Einstellung unv
 | über 2 Ordner | `A/B/C`; `A/B` wird genommen | `Höchstens 2 Ordnerebenen` |
 | ein Zeichen außer A-Z, 0-9, `_` und `-` | `MY LOGS` | `Nur A-Z, 0-9, _ und -` |
 | ein Gerätename von Windows: CON, PRN, AUX, NUL, COM1 bis COM9, LPT1 bis LPT9 | `AUX/LOGS` | `Reservierter Name` |
-| `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW`, `BENCH/BALANCE` oder `BENCH/SETUP`, die eigenen Dateien des Prüfstands | `BENCH/KST`; `BENCH/KSTX` wird genommen | `Für Prüfstand-Dateien reserviert` |
+| `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW`, `BENCH/YGE`, `BENCH/BALANCE` oder `BENCH/SETUP`, die eigenen Dateien des Prüfstands | `BENCH/KST`; `BENCH/KSTX` wird genommen | `Für Prüfstand-Dateien reserviert` |
 
 Die letzten beiden Zeilen, Einstellungen sichern und Einstellungen laden, legen die Einstellungen des Panels auf die Karte und laden sie zurück. Siehe [Sicherung der Einstellungen](setup-backup.md).
 

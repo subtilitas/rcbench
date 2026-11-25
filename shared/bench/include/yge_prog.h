@@ -217,6 +217,8 @@ typedef struct {
     uint8_t  aborted;        /**< ABORT went: the outcome it cuts is its own  */
     yge_prog_msg_t msg;      /**< the last message                            */
     uint16_t detail;         /**< its code                                    */
+    uint32_t says;           /**< counts the messages said, modulo 2^32: a
+                                  screen sees a message said again          */
     uint16_t bad;            /**< YGE_PROG_MSG_GUARD: the index refused       */
     uint16_t file_line;      /**< YGE_PROG_MSG_FILE_REFUSED: the line, from 1 */
 
@@ -365,6 +367,14 @@ void yge_prog_limits(yge_prog_t *p, uint16_t max_mv, uint16_t max_ma);
 yge_prog_msg_t yge_prog_message(const yge_prog_t *p, uint16_t *detail);
 
 /**
+ * @brief How many messages were said, the same one again included: a screen
+ *        that hid the last one shows the next.
+ * @param p The model.
+ * @return The count, modulo 2^32.
+ */
+uint32_t yge_prog_says(const yge_prog_t *p);
+
+/**
  * @brief The index of the last YGE_PROG_MSG_GUARD.
  * @param p The model.
  * @return The index; 0 for none.
@@ -467,6 +477,13 @@ bool yge_prog_card_take(yge_prog_t *p, char *out, size_t size, size_t *len,
  * @param result A yge_prog_card_t.
  */
 void yge_prog_card_done(yge_prog_t *p, uint32_t id, uint8_t result);
+
+/**
+ * @brief Whether a write waits for the card to save the session's backup.
+ * @param p The model.
+ * @return true then.
+ */
+bool yge_prog_card_waits(const yge_prog_t *p);
 
 /**
  * @brief The card's answers dropped because no request out was theirs.

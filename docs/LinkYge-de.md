@@ -125,9 +125,9 @@ des Prüfstands folgt.
 
 `shared/bench/yge_link.c` sendet die Anfragen und verfolgt sie auf jedem
 Panel; `shared/bench/yge_prog.c` und `yge_prog_file.c` halten den Ablauf der
-Sitzung, ihre Ablehnungen und ihre Sicherung. Die Seiten sind noch nicht
-gebaut: das Panel verfolgt eine Page, die die Bench-Konsole hält, und führt
-keine eigene Sitzung.
+Sitzung, ihre Ablehnungen und ihre Sicherung. Die Seiten sind
+[YGE-ESC-Programmierung](YgeProgramming-de.md) unter MOTOR & ESC >
+PROGRAMMIEREN.
 
 | Ereignis | Was das Panel tut |
 |---|---|
@@ -174,9 +174,6 @@ verworfen und gezählt.
   ein Fehler oder ein Linkverlust zwischen dem ersten Frame eines Schreibens
   und dem Ende seines Lesens danach. Die Tabelle, die der ESC hält, ist bis
   zum nächsten Lesen nicht bekannt.
-- **Keine Seiten.** Das Panel verfolgt die Page und schließt ein Halten, das
-  es nach einem Neustart findet; `yge` an der Bench-Konsole führt eine
-  Sitzung.
 - **Ein von der Bench-Konsole gehaltener Pin geht mit einem
   Panel-Neustart.** Bedingung: `yge open` an der Konsole, dann ein
   Panel-Neustart. Das Panel kann ihn nicht von seinem eigenen Halten

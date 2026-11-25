@@ -310,6 +310,7 @@ TEST_CASE(the_benchs_own_folders_are_refused)
     CHECK_EQ(check("BENCH/KST", out), CARD_FOLDER_BENCH);
     CHECK_EQ(check("BENCH/HITEC", out), CARD_FOLDER_BENCH);
     CHECK_EQ(check("BENCH/ESCW", out), CARD_FOLDER_BENCH);
+    CHECK_EQ(check("BENCH/YGE", out), CARD_FOLDER_BENCH);
     CHECK_EQ(check("BENCH/BALANCE", out), CARD_FOLDER_BENCH);
     CHECK_EQ(check("BENCH/SETUP", out), CARD_FOLDER_BENCH);
     CHECK_EQ(check("bench/setup", out), CARD_FOLDER_BENCH);
@@ -328,7 +329,7 @@ TEST_CASE(the_benchs_own_folders_are_refused)
         CHECK_EQ(check(area, out), CARD_FOLDER_BENCH);
         ++areas;
     }
-    CHECK_EQ((int)areas, 6);
+    CHECK_EQ((int)areas, 7);
     CHECK(card_bench_dir(areas) == NULL);
     /* Below them is 3 deep, refused before the bench is asked. */
     CHECK_EQ(check("BENCH/KST/CONF", out), CARD_FOLDER_DEEP);

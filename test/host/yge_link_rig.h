@@ -89,7 +89,7 @@ static RIG_MAY_GO_UNUSED bool link_wait(yge_link_outcome_t *o, uint32_t ms)
 }
 
 /* The counters of the exchanges back to 0. */
-static void link_counts_zero(void)
+static RIG_MAY_GO_UNUSED void link_counts_zero(void)
 {
     g_drop = 0;
     g_drop_status = 0;

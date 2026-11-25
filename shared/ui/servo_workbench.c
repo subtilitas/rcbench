@@ -23,7 +23,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "esc_wire_panel.h"
 #include "hitec_panel.h"
 #include "kst_panel.h"
 #include "out_bind.h"
@@ -82,9 +81,9 @@ bool prog_holds(void)
             return true;
         }
     }
-    /* The ESC_WIRE page is no page set of the SERVO screen, and one pin held
-     * holds the bank down all the same. */
-    return esc_wire_panel_holds_port();
+    /* The ESC_WIRE and YGE_PROG pages are no page sets of the SERVO screen,
+     * and one pin held holds the bank down all the same. */
+    return prog_reg_esc_holds();
 }
 
 void prog_init(void)

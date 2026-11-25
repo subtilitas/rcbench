@@ -99,6 +99,11 @@ set(SRCS
     esc_wire_draw.c
     esc_wire_text.c
     esc_wire_help.c
+    yge_panel.c
+    yge_panel_edit.c
+    yge_panel_touch.c
+    yge_panel_draw.c
+    yge_panel_text.c
     hitec_panel.c
     hitec_panel_text.c
     hitec_panel_edit.c

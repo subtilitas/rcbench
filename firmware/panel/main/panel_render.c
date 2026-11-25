@@ -17,6 +17,7 @@
 
 #include "board.h"
 #include "esc_wire_panel.h"
+#include "yge_panel.h"
 #include "flash_gate.h"
 #include "hitec_panel.h"
 #include "knob.h"
@@ -831,6 +832,39 @@ void esc_wire_ui_service(void)
         /* Before the count, which hands the request over. */
         s_esc_card_mount = storage_mount_count();
         atomic_fetch_add(&s_esc_card_sent, 1u);
+        card_out = true;
+    }
+}
+
+void yge_ui_service(void)
+{
+    static yge_prog_feed_t feed;
+    static yge_prog_cmd_t cmd;
+
+    snap_lock();
+    feed = s_snap.yge;
+    snap_unlock();
+    yge_panel_feed(&feed);
+    while (uxQueueSpacesAvailable(s_yge_q) > 0u && yge_panel_next_cmd(&cmd)) {
+        if (xQueueSend(s_yge_q, &cmd, 0) != pdTRUE) {
+            break;
+        }
+    }
+    if (yge_panel_card_look()) {
+        (void)storage_check();
+    }
+    /* The files: the log task has the card.  No card call is made here. */
+    static bool card_out;
+
+    if (card_out
+        && atomic_load(&s_yge_card_answered) == atomic_load(&s_yge_card_sent)) {
+        card_out = false;
+        yge_panel_card_done(&s_yge_card_done);
+    }
+    if (!card_out && yge_panel_card_take(&s_yge_card_req)) {
+        /* Before the count, which hands the request over. */
+        s_yge_card_mount = storage_mount_count();
+        atomic_fetch_add(&s_yge_card_sent, 1u);
         card_out = true;
     }
 }

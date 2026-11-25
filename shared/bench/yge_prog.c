@@ -43,7 +43,13 @@ yge_prog_msg_t yge_prog_say(yge_prog_t *p, yge_prog_msg_t m, uint16_t detail)
 {
     p->msg = m;
     p->detail = detail;
+    ++p->says;
     return m;
+}
+
+uint32_t yge_prog_says(const yge_prog_t *p)
+{
+    return p != NULL ? p->says : 0u;
 }
 
 yge_prog_cmd_t *yge_prog_issue(yge_prog_t *p, yge_prog_cmd_kind_t kind)

@@ -50,6 +50,20 @@ history is in git.
   ESC_WIRE and YGE_PROG exclude each other on every port. The bench
   console's `yge` drives the page in the IOMCU_CONSOLE build
   ([Programming for YGE ESCs](docs/LinkYge.md)).
+- Programming for YGE ESCs, the screens: MOTOR & ESC > PROGRAM lists
+  `YGE ESCs` with `OPENYGE` in the group `TELEMETRY WIRE`, dimmed until the
+  IOmcu reports `LINK_CAP_YGE`. CONNECT takes PORT, POWER (`SWITCHED` by
+  default or `BY HAND`), VOLTAGE, CURRENT LIMIT and BOOT WAIT (1.0s to
+  20.0s, 5.0s by default) and is a red 2s hold. Tabs IDENTITY, MODE & BEC,
+  PROTECTION, START, GOVERNOR & RPM, STICK and RAW; CHECK fields in the
+  warning colour, named with their new value above the footer; RAW and
+  POLE PAIRS read-only. A choice lists only its writable values; the keypad
+  refuses a value outside them. `WRITE n VALUES` is a red 2s hold, greyed
+  with nothing changed; the first write saves the backup to
+  `BENCH/YGE/CONF` first. FILES loads a file into the draft. LEAVE over
+  edits not written is a page held 2s. The strip names port, GPIO, supply
+  or `BY HAND`, and SAFE. `BENCH/YGE` is the bench's own folder in the
+  file manager ([YGE ESC programming](docs/YgeProgramming.md)).
 - Programming for YGE ESCs, the panel's half of the pages: a pin the page
   holds at the first read after a panel restart is closed, again every
   1000ms while the page answers `WRITING` or `NOT_BACK`. While a pin is
