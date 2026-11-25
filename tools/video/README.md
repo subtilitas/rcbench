@@ -216,7 +216,7 @@ A `case` scene:
 | `turn` | optional, `dial` and `duo` models: keys `[t, degrees]`, the knob ring's angle, clockwise seen from the front; the sound track clicks once per 22.5°, a detent |
 | `camera` | keys `[t, [x, y, z], [x, y, z]]`: position and target in mm |
 | `lid` | optional keys `[t, mm]`: how far the display is lifted |
-| `estop` | optional keys `[t, k]`, `mockup` and `cad` models: the emergency stop's head, `k` from 0, out, to 1, pressed in. The head moves 8mm, the owner's figure; the button's drawing gives no travel. The scene gets a light from the back wall's side. `tools/video/cad/case.glb` has no part named for the head, so the `cad` model's head does not move |
+| `estop` | optional keys `[t, k]`, `mockup` and `cad` models: the emergency stop's head, `k` from 0, out, to 1, pressed in. The head moves 5mm, the owner's figure; the button's drawing gives no travel. The scene gets a light from the back wall's side. `tools/video/cad/case.glb` has no part named for the head, so the `cad` model's head does not move |
 | `parts` | optional, `cad` model only: keys `[t, k]` per component, `k` from 1, out of sight along the component's way in, to 0, seated. A value held between two keys freezes the component in the air while the camera moves on. Components: `case`, `estop`, `xt60`, `usbc`, `pdmini`, `rbmod`, `mcu`, `ina`, `buck`, `trigger`, `lid`. The `mini` model's: `shell`, `buttons`, `plugs`, `boost`, `ina`, `cell`, `board`, `screws`. The `dial` model's, with `dial_base`: `upper`, the top part with the Dial and the nut, `dial` and `nut` within it, `cell`, `pad`, `screws` |
 | `display` | optional `{view}`: the renderer view on the model's display |
 | `title` | optional `{from, to, kicker, heading, text}` |

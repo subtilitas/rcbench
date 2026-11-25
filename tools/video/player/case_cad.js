@@ -260,10 +260,10 @@ export function buildCadCase(displayImage, gltf) {
         .sub(units.lid.home)).toArray();
     },
     // The emergency stop's head: k from 0, out, to 1, pressed in and
-    // latched, 8mm in: the owner's figure, not on the button's drawing.
+    // latched, 5mm in: the owner's figure, not on the button's drawing.
     // A scene that moves it is seen from the back: a light from there.
     setStop: k => {
-      if (units.estop.head) units.estop.head.position.z = 8 * k;
+      if (units.estop.head) units.estop.head.position.z = 5 * k;
       if (!units.estop.light) {
         units.estop.light = new THREE.DirectionalLight(0xffffff, 2.2);
         units.estop.light.position.set(-160, 180, -320);
