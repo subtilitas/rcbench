@@ -362,11 +362,16 @@ static bool checksum_fits(const line_t *l, uint32_t crc)
     uint32_t v = 0u;
 
     for (size_t i = CK_LINE - 8u; i < CK_LINE; ++i) {
-        const char *d = memchr(HEX, l->s[i], 16u);
-        if (d == NULL) {
+        const char c = l->s[i];
+        uint32_t d;
+        if (c >= '0' && c <= '9') {
+            d = (uint32_t)(c - '0');
+        } else if (c >= 'A' && c <= 'F') {
+            d = (uint32_t)(c - 'A') + 10u;
+        } else {
             return false;
         }
-        v = (v << 4) | (uint32_t)(d - HEX);
+        v = (v << 4) | d;
     }
     return v == crc;
 }
