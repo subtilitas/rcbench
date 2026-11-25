@@ -9,8 +9,8 @@ cmake_minimum_required(VERSION 3.16)
 # suite's with one source list.
 set(EXTRA_COMPONENT_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../shared")
 # The protocol modules are named one by one.  Only a module's core is compiled
-# here; its rp2350/ folder belongs to a pico-sdk build.  openyge is listed
-# for its planned use; no component requires it and the panel does not link it.
+# here; its rp2350/ folder belongs to a pico-sdk build.  The outputs
+# component requires openyge for the YGE_PROG page's rules (yge_port.c).
 foreach(module bleota bleuart dialknob rcnode dshot escwire hitec kst openyge passthru pdmini phase_tap ppm sbus witmotion)
     list(APPEND EXTRA_COMPONENT_DIRS
          "${CMAKE_CURRENT_LIST_DIR}/../../protocols/${module}")

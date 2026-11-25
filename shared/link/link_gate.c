@@ -85,6 +85,7 @@ uint8_t link_gate_drive(uint8_t page, uint8_t off, uint8_t n,
     case LINK_PAGE_KST:
     case LINK_PAGE_HITEC:
     case LINK_PAGE_ESC_WIRE:
+    case LINK_PAGE_YGE_PROG:
         refuse = true;          /* every command, CONNECT among them */
         break;
     case LINK_PAGE_PROG:

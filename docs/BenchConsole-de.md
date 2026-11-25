@@ -91,13 +91,13 @@ Danach folgt `err output full, N bytes dropped`.
 
 ```text
 > r 0x00 0 2
-data page=0x00 off=0 n=2: 0x0004 0x0029
+data page=0x00 off=0 n=2: 0x0004 0x002A
 > w 0x2A 4 1 5000 1000
 nack page=0x2A off=4: NOT_ARMED (5)
 ```
 
 Getippte Zeilen stehen hier nach `> `; die Konsole gibt keinen Prompt aus.
-Die erste Zeile liest die Protokollversion, 4.41. Die zweite ist das
+Die erste Zeile liest die Protokollversion, 4.42. Die zweite ist das
 Einschalten von SUPPLY mit 5000mV und 1000mA, abgewiesen, weil kein Panel
 einen Heartbeat sendet. Mit laufendem Panel wird dieselbe Zeile angenommen:
 
@@ -386,6 +386,39 @@ esc state=2 op=1 result=2 ref=0 flags=0x0008 line=0 gpio=5 ses=0 fw=0 layout=0 w
 
 `state`, `result`, `ref`, `flags` und `line` sind die Register
 [ihrer Page](LinkEsc-de.md#register); `ses` ist das letzte Ergebnis der Session.
+
+## Die YGE-Page
+
+`yge` greift mit denselben Frames wie das Panel auf [die Page
+YGE_PROG](LinkYge-de.md) der Programmierung für YGE-ESCs zu. Es gelten
+dieselben Prüfungen und Ablehnungen. Wie andere Pages, die einen Heartbeat
+benötigen, braucht sie neben der Konsole ein laufendes Panel. ENTER trägt den
+Schlüssel, den ein Panel am Ende seines 2-s-Halts sendet. Keiner dieser
+Befehle schreibt in einen ESC. Die Funktion ist nicht in veröffentlichten
+Images enthalten.
+
+```
+yge
+yge open port <n>
+yge enter mv=<mV> ma=<mA> [boot=<ms>]
+yge enter hand [boot=<ms>]
+yge done|read|leave|stop|abort|clear|close
+```
+
+SWITCHED braucht `mv` und `ma`, ohne Vorgabewert; `boot` ist ohne Angabe
+5000ms. `done` ist HAND_DONE. Jeder Befehl antwortet mit einer Zeile:
+
+```
+yge state=2 op=1 result=2 ref=0 flags=0x0008 line=0 gpio=13 port=0 ses=0 guard=0 entries=0 reads=0 type=0 fw=0 t=52ms
+```
+
+`state`, `result`, `ref`, `flags` und `line` sind die Register
+[ihrer Page](LinkYge-de.md#register); `ses` ist das letzte Ergebnis der
+Session und `guard` die letzte Ablehnung des Guards; `entries`, `reads`,
+`type` und `fw` sind die der gelesenen Kopie. Der Stationsschritt H1
+([OpenYGE](OpenYGE-de.md#8-offene-messungen)) führt `yge open port 0`,
+`yge enter hand` an einer leeren Leitung, dann `yge stop`, dann eine
+Linkunterbrechung aus.
 
 ## Über den Link, ohne USB am IOmcu
 

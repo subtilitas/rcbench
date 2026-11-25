@@ -13,8 +13,9 @@ die eine Implementierung benötigt.
 > unterschiedlichen Implementierungen führen.
 
 > Diese Seite gehört zur maßgeblichen Spezifikation für die Prüfung
-> durch YGE. Der Codec unter `protocols/openyge/` ist gebaut und getestet,
-> aber nicht an die Firmware angebunden.
+> durch YGE. Das Modul unter `protocols/openyge/` läuft auf dem IOmcu hinter
+> der Page YGE_PROG ([Programmierung für YGE-ESCs](LinkYge-de.md)); das Panel
+> nutzt es noch nicht.
 
 **° markiert eine erschlossene Bedeutung.** Diese Einträge beruhen auf
 Feldnamen und üblicher Praxis bei ESCs (Electronic Speed Controller,
@@ -467,9 +468,10 @@ Prüfungen am Telemetrieframe, aus denselben Aufzeichnungen:
 
 ## 9. Stand in rcbench
 
-Keine der beiden Platinen führt das Protokoll aus. Das IOmcu-Image
-bindet das Modul ein, das Panel-Image nicht; keines ruft es auf. Der
-Entwurf sieht die Verarbeitung auf dem IOmcu vor: eine
+Der IOmcu führt die Session hinter den Pages YGE_PROG und YGE_DATA aus
+([Programmierung für YGE-ESCs](LinkYge-de.md)). Das Panel-Image bindet das
+Modul ein und ruft es nicht auf; die Hälfte des Panels und die Bildschirme
+sind nicht gebaut. Der Entwurf sieht die Verarbeitung auf dem IOmcu vor: eine
 Anfrage-Antwort-Schleife mit 20Hz, Umschaltzeiten im Mikrosekundenbereich
 und einen Timeout, der auch ohne eintreffende Bytes abläuft. Das Panel
 würde das Ergebnis als `bench_state` über das Page-Protokoll erhalten.
@@ -482,7 +484,8 @@ selbst, sodass jedes modellierte Feld von `bench_state` eine Quelle hat, bevor
 der Stromsensor bestückt ist. Die Angaben des ESC und der Shunt des Prüfstands
 sind unabhängige Messungen.
 
-Gebaut, auf dem Host getestet, nicht eingebunden:
+Gebaut und auf dem Host getestet; die Page YGE_PROG des IOmcu ruft die
+Session auf:
 
     protocols/openyge/
       openyge_frame.c        encode, decode and the CRC, openyge_crc()
@@ -510,10 +513,10 @@ und Firmware V1.03547 oder neuer. Schreibbar sind die Felder, die
 Abschnitt 5.3 mit CHECK oder edit kennzeichnet, innerhalb ihrer
 schreibbaren Werte. Ein Schreiben liest die Tabelle zuerst erneut und
 bricht ohne gesendeten Frame ab, wenn sie abweicht. Nach den Schreibzugriffen
-liest es die ganze Tabelle erneut und vergleicht sie mit dem Ziel.
-Link-Pages und Bildschirme sind nicht gebaut, daher führt keine der
-beiden Platinen die Session aus. Der Pin-Treiber ist gebaut
-(Abschnitt 9.2). Auf dem Pi der Station spielt
+liest es die ganze Tabelle erneut und vergleicht sie mit dem Ziel. Der
+IOmcu führt sie an einem Programmierport hinter YGE_PROG aus
+(`shared/outputs/yge_port.c`); die Hälfte des Panels und die Bildschirme
+sind nicht gebaut. Der Pin-Treiber ist gebaut (Abschnitt 9.2). Auf dem Pi der Station spielt
 [`testbench/ygesim/ygesim.py`](../testbench/ygesim/README.md) einen ESC
 am UART: 32 Parameter, Schreibzugriffe gespeichert, und die Modi
 `normal`, `silent`, `late` (250ms), `crc` (10%), `seq`, `legacy` und
@@ -580,9 +583,9 @@ RP2350-Pin hinter `oy_driver_t`. Sein PIO-Programm (programmable
 input/output) ist `oy_line.pio`; die Arithmetik, die es füttert und liest,
 ist `openyge_pio.c`. Die Host-Suite `openyge_pio` lässt das Programm in
 einem Modell der State Machine laufen, und der IOmcu-Build hält die Wörter
-von pioasm an dieselbe Liste (`test/host/fixtures/oy_line_words.txt`). Der
-IOmcu linkt den Treiber; nur der Test `oyline` des Konsolen-Builds ruft
-ihn auf.
+von pioasm an dieselbe Liste (`test/host/fixtures/oy_line_words.txt`). Die
+Page YGE_PROG (`firmware/iomcu/src/iomcu_yge.c`) und der Test `oyline` des
+Konsolen-Builds rufen ihn auf.
 
 | | |
 | --- | --- |
@@ -613,8 +616,15 @@ GPIO 13, Logikanalysator bei 1.65V):
 | `oyline 13 rx` | `match=1 crc_ok=1 framing=0`, dann `framing=1` für die Anfrage mit einem Stoppbit low |
 | `oyline 13 cut` | die Leitung fällt 0.5ms in die Anfrage hinein am Pull-down auf low |
 
-Die Session-Schritte von H1 (Öffnen, Einstieg BY HAND, STOP, Link-Trennung)
-brauchen die IOmcu-Page.
+Die Session-Schritte von H1 nutzen `yge` der Konsole im selben Build
+([Die Bench-Konsole](BenchConsole-de.md#die-yge-page)):
+
+| Befehl | Bestanden |
+| --- | --- |
+| `yge open port 0` | `state=2`, `gpio=13`; die Leitung low am Pull-down |
+| `yge enter hand` an einer leeren Leitung | `state=5`; die Leitung bleibt low, der Ausgang des PD mini bleibt aus |
+| `yge done`, dann `yge stop` | die Leitung nach `done` high am Pull-up, innerhalb 1ms nach `stop` low am Pull-down; Bit 0 von `flags` gesetzt |
+| eine Link-Trennung in `READY` oder in einer Anfrage | die Leitung sofort low am Pull-down; der PD mini aus innerhalb seiner Meldezeit |
 
 ---
 

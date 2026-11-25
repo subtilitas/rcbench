@@ -79,6 +79,8 @@ typedef enum {
     LINK_PAGE_PASS        = 0x41, /**< pass-through and its capture, board 3 (4.41) */
     LINK_PAGE_PASS_STAT   = 0x42, /**< the capture's counts, board 3 (4.41) */
     LINK_PAGE_POWER       = 0x43, /**< the servo rail's switches, board 3 (4.41) */
+    LINK_PAGE_YGE_PROG    = 0x44, /**< programming for YGE ESCs (4.42)      */
+    LINK_PAGE_YGE_DATA    = 0x45, /**< its table, as blocks (4.42)          */
     /* Frozen: the same numbers, layout and meaning under every major. */
     LINK_PAGE_UPDATE_CTL  = 0xF0, /**< the IOmcu's own firmware update */
     LINK_PAGE_UPDATE_DATA = 0xF1, /**< and the 64 bytes of the block in hand */
@@ -182,7 +184,10 @@ typedef enum {
  * (board 3) serves POWER (0x43, link_pages_power.h), PASS and PASS_STAT
  * (0x41, 0x42, link_pages_pass.h).  The panel reads
  * LINK_ID_COUNT registers of IDENTITY from every IOmcu and registers 7
- * and 8 from a 4.41 IOmcu only.
+ * and 8 from a 4.41 IOmcu only.  From 4.42 YGE_PROG and YGE_DATA (0x44,
+ * 0x45, link_pages_yge.h) program a YGE ESC over its telemetry wire on a
+ * programming port, and IDENTITY reports LINK_CAP_YGE; an older IOmcu
+ * refuses both with LINK_NACK_BAD_PAGE.
  * An IOmcu never asks the panel's minor; a page an older panel does not
  * know is a page it never writes.
  *
@@ -195,9 +200,9 @@ typedef enum {
  * major change; it is a new page.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-/** @brief The minor this build speaks: 41, 16 slots and channels
- *         (LINK_MINOR_OUT16). */
-#define LINK_PROTOCOL_MINOR 41u
+/** @brief The minor this build speaks: 42, programming for YGE ESCs
+ *         (LINK_MINOR_YGE). */
+#define LINK_PROTOCOL_MINOR 42u
 
 /** @brief The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -789,6 +794,7 @@ enum {
 #include "link_pages_esc.h"
 #include "link_pages_pass.h"
 #include "link_pages_power.h"
+#include "link_pages_yge.h"
 
 /* --- the TONE page (protocol 4.8): the beeps of an ESC (electronic speed
  *     controller), heard on one motor phase.  One GPIO reads the phase
@@ -1096,6 +1102,7 @@ typedef enum {
     LINK_CAP_VIBRATION   = 1u << 6, /**< accelerometer and an index pulse  */
     LINK_CAP_CELLS       = 1u << 7, /**< a cell monitor on the balance lead*/
     LINK_CAP_PROGRAM     = 1u << 8, /**< ESC_WIRE, ESC_DATA (4.34)         */
+    LINK_CAP_YGE         = 1u << 9, /**< YGE_PROG, YGE_DATA (4.42)         */
 } link_cap_t;
 
 /* ------------------------------------------------------------------ status */

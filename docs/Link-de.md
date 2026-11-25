@@ -78,7 +78,7 @@ ist nicht gemessen.
 | ein Schreiben einer Einstellung: CHAN_CFG, OUTPUTS, BIND, SENSE_MAP, TONE und die anderen Einrichtungs-Pages | ja | aus der Kopie beantwortet; die Page wird einmal geschrieben |
 | CONTROL: ARM, THROTTLE, MOTOR_POLES, CLEAR | ja | aus der Kopie beantwortet: ARM schaltet einmal auf ARMED, CLEAR hebt das Failsafe einmal auf |
 | ein Schreiben, das stoppt: ARM 0, SUPPLY OFF, PROG_SUPPLY OFF | ja | wie jedes Schreiben. Der Stopp am Panel wartet nicht darauf: der Heartbeat endet im Durchlauf des STOP, worauf der Link auch wartet |
-| ein Schritt eines Programmierports: KST, HITEC, ESC_WIRE, ESC_DATA | ja | aus der Kopie beantwortet; Servo oder ESC (Electronic Speed Controller) bekommt den Schritt einmal |
+| ein Schritt eines Programmierports: KST, HITEC, ESC_WIRE, ESC_DATA, YGE_PROG, YGE_DATA | ja | aus der Kopie beantwortet; Servo oder ESC (Electronic Speed Controller) bekommt den Schritt einmal |
 | UPDATE_CTL und UPDATE_DATA bei der Prüfung nach einem Link-up: HASH_RUNNING, BUY, ABORT | ja | aus der Kopie beantwortet |
 | das Update selbst, BEGIN bis FINISH | nein | das Update baut zuerst den Link ab und läuft ohne Nummern; ein erneut gesendeter COMMIT schadet nicht ([Die Übertragung](#die-übertragung)) |
 | ACTIVATE | nein | der IOmcu startet 20ms nach seiner Antwort neu, und eine Wiederholung könnte das neue Image als eigener Befehl erreichen |
@@ -151,7 +151,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Das Protokoll verwendet Pages mit bis zu 32 Registern zu je sechzehn Bit.
 Gelesen und geschrieben wird in Registerfenstern. Der IOmcu sendet nur als Antwort auf eine Anfrage.
-Protokollversion 4.41. Die Major-Version ist Register 0 der Page 0. Die Major
+Protokollversion 4.42. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
@@ -285,7 +285,11 @@ vor, BIND-Register 2 `COMMIT_ALL` übernimmt alle vier vorbereiteten Pages,
 und WATCH von SENSE_MAP nennt die Ausgänge 9 bis 16 als 0x40 bis 0x47.
 Ein älterer IOmcu lehnt die fünf Pages mit BAD_PAGE und Register 2 mit
 BAD_RANGE ab; das Panel sendet sie nur an einen IOmcu ab 4.41
-([Slots und Kanäle 9 bis 16](#slots-und-kanäle-9-bis-16)).
+([Slots und Kanäle 9 bis 16](#slots-und-kanäle-9-bis-16)). Ab 4.42
+programmieren YGE_PROG (0x44) und YGE_DATA (0x45) einen YGE-ESC über sein
+Telemetriekabel an einem Programmierport, und der IOmcu meldet
+`LINK_CAP_YGE`; ein älterer IOmcu lehnt beide mit BAD_PAGE ab
+([Programmierung für YGE-ESCs](LinkYge-de.md)).
 Der IOmcu liest die Minor des Panels nicht. Ein älteres Panel schreibt
 keine Page, die es nicht kennt.
 
@@ -1173,6 +1177,12 @@ ESC_WIRE (0x3A) und ESC_DATA (0x3B) haben [eine eigene Seite](LinkEsc-de.md):
 Wahl des Pins, Eintritt in den Programmiermodus und Verlassen des Modus, die
 Auswirkungen der Ereignisse auf Leitung und Versorgung und die Register.
 
+### Programmierung für YGE-ESCs
+
+YGE_PROG (0x44) und YGE_DATA (0x45) haben [eine eigene Seite](LinkYge-de.md):
+der Programmierport, die Versorgung, die Boot-Wartezeit und die Übernahme, die
+Auswirkungen der Ereignisse auf Leitung und Versorgung und die Register.
+
 ### Die INA3221-Map und ihre Fenster
 
 SENSE_MAP (0x35), SENSE_LIMIT (0x36), SENSE_WIN_A (0x37) und SENSE_WIN_B
@@ -1278,6 +1288,8 @@ den eine Page als anderweitig gehalten ablehnt, eines je Angebot alle 5s.
 | 0x41 | PASS | lesen, schreiben | die Durchleitung des entfernten Servoknotens und ihre Pulsmessung (seit 4.41, nur Board 3; Board 1 und 2 lehnen sie mit BAD_PAGE ab): Register 0 bis 8 `SOURCE` von Kanal k (0 OFF, 1 PASS-THROUGH, 2 BENCH), 9 bis 17 `IN_US`, der letzte Puls an Eingang k in µs, 18 bis 26 `OUT_US`, der letzte Puls an Ausgang k wie gemessen, 27 `LOST` (Bit k: Eingang k verloren), 28 `WINDOW`, 29 `FLAGS`, 30 `GLITCH` (Bit k: ein Glitch an Eingang k). Register 0 bis 8 nehmen Schreiben; die übrigen lehnen es mit READ_ONLY ab. [Die Pages PASS und PASS_STAT](#die-pages-pass-und-pass_stat) nennt die Regeln |
 | 0x42 | PASS_STAT | lesen, schreiben | die Zähler der Messung (seit 4.41, nur Board 3): Register 0 bis 8 `PERIOD`, die Rahmenperiode von Eingang k in µs, 9 bis 17 `MISSED`, 18 bis 26 `FRAMES`, 27 RESET, 28 `GLITCHES`. Register 27 nimmt Schreiben; die übrigen lehnen es mit READ_ONLY ab |
 | 0x43 | POWER | lesen, schreiben | der Hauptschalter der Servoschiene und die 9 Portschalter des entfernten Servoknotens (seit 4.41, nur Board 3; Board 1 und 2 lehnen sie mit BAD_PAGE ab): Register 0 RAIL (0 oder 1), 1 FITTED (Bit k ein Schalter an Port k; 0 ohne die Schalter), 2 PORT_ON (Bit k Port k an, wie getrieben), 3 PORT_WANT (Bit k das Panel verlangt Port k), 4 TRIPPED (Bits 0 bis 8 das Critical-Alert-Flag von Kanal k, Bit 9 CRIT_N low, Bit 10 ein Schalter in thermischer Abschaltung, Bit 11 ein Auslösen von SENSE_LIMIT), 5 BEC (Bit k Port k las bei der letzten BEC-Prüfung 500mV oder mehr). Register 0 und 3 nehmen Schreiben; die übrigen lehnen es mit READ_ONLY ab. [Die Page POWER](#die-page-power) nennt die Regeln |
+| 0x44 | `YGE_PROG` | lesen, schreiben | Programmierung für YGE-ESCs über das Telemetriekabel des ESC an einem Programmierport (seit 4.42): Zustand, Leitung, Ergebnis, die Identität der gelesenen Kopie, Operationen ([Programmierung für YGE-ESCs](LinkYge-de.md)) |
+| 0x45 | `YGE_DATA` | lesen, schreiben | 32 Werte der gelesenen Kopie, des Entwurfs oder der zuletzt empfangenen Tabelle, der Block, den `YGE_PROG` nennt (seit 4.42) |
 | 0xE0 | `CONSOLE` | lesen, schreiben | nur in Debug-Konsolen-Builds (`IOMCU_CONSOLE`); kein veröffentlichtes Image hat sie: [Die Prüfstandskonsole](BenchConsole-de.md#über-den-link-ohne-usb-am-iomcu) |
 | 0xF0 | UPDATE_CTL | lesen, schreiben | das Firmware-Update des IOmcu selbst (seit 4.22; über Majors eingefroren): 32 Register. Version, Zustand, Fehler, Slot, Sektoren je Slot, nächster Block, Größe des Images, dann das Kommando in Register 8 mit bis zu 3 Argumenten und ein SHA-256-Digest in Register 16 bis 31. Ein Schreiben, das kein Kommando ist, wird mit READ_ONLY abgelehnt. [Firmware-Update über den Link](#firmware-update-über-den-link) hat die Regeln. Nichts wird behalten |
 | 0xF1 | UPDATE_DATA | lesen, schreiben | die 64 Byte des aktuellen Blocks, in jedem Register das niederwertige Byte zuerst (seit 4.22; über Majors eingefroren): 32 Register. FINISH nimmt den erwarteten SHA-256 aus Register 0 bis 15. Nichts wird behalten |
@@ -1307,7 +1319,7 @@ Anfrage ist keine Stille.
 Capabilities-Bitmap: Bit 0 ESC-Ansteuerung, Bit 1 ESC-Telemetrie, Bit 2
 Servo-PWM, Bit 3 Servo-Strommessung, Bit 4 Akkumessung, Bit 5 Empfängerbus,
 Bit 6 Vibrationssensor und Indeximpuls, Bit 7 Zellenmonitor, Bit 8
-Programmierung. Das Panel leitet daraus die Markierungen im Menü ab. Bits 3
+Programmierung, Bit 9 Programmierung für YGE-ESCs (seit 4.42). Das Panel leitet daraus die Markierungen im Menü ab. Bits 3
 und 4 beschreiben die konfigurierte Messung: Bit 3 den INA3221, Bit 4 den
 INA228, unabhängig davon, ob die konfigurierten Bauteile antworten (seit
 4.7). Schreibzugriffe auf SENSE können diese Fähigkeiten ändern. Gilt
@@ -1825,7 +1837,7 @@ ROM-Version ab 4. Auf jedem anderen Chip treibt er nichts:
   jedes Ausgangspad bleibt in seinem Reset-Zustand;
 - Fault-Bit 8 von STATUS ist ab dem Start gesetzt;
 - ARM, SUPPLY ON, RAIL 1 und Bits von PORT_WANT der Page POWER, jedes
-  Schreiben auf KST, HITEC und ESC_WIRE, eine PROG-FUNC außer NONE, ein
+  Schreiben auf KST, HITEC, ESC_WIRE und YGE_PROG, eine PROG-FUNC außer NONE, ein
   Slot mit Treiber auf OUTPUTS, OUTPUTS_HI, BIND_OUT oder BIND_OUT_HI und
   eine `SOURCE` der Page PASS außer BENCH werden mit NOT_ARMED abgelehnt, bevor ihre Page sie sieht
   (`shared/link/link_gate.c`). Jedes OFF wird genommen.

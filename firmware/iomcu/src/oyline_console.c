@@ -20,6 +20,7 @@
 #include "openyge.h"
 #include "oy_line.h"
 #include "page_console.h"
+#include "yge_console.h"
 
 /** @brief What one step does. */
 typedef enum {
@@ -175,6 +176,34 @@ static void finish(const char *why)
                    (unsigned long)s_out_max);
 }
 
+/**
+ * @brief A read of YGE_PROG, as a link request reads it.
+ * @param off the first register
+ * @param n   registers
+ * @param out takes them
+ */
+static void yge_io_read(uint8_t off, uint8_t n, uint16_t *out)
+{
+    yge_read(&s_state, off, n, out);
+}
+
+/**
+ * @brief A write of YGE_PROG, as a link request writes it.
+ * @param off the first register
+ * @param n   registers
+ * @param in  their values
+ * @return 0, or a link_nack_t
+ */
+static uint8_t yge_io_write(uint8_t off, uint8_t n, const uint16_t *in)
+{
+    return yge_write(&s_state, off, n, in);
+}
+
+/** @brief The `yge` command's way to the page. */
+static const yge_console_io_t k_yge_io = {
+    yge_io_read, yge_io_write, console_hw_say,
+};
+
 bool oyline_console_line(void *ctx, char **tok, unsigned n)
 {
     const step_t *steps = NULL;
@@ -182,6 +211,9 @@ bool oyline_console_line(void *ctx, char **tok, unsigned n)
     oy_line_err_t e;
 
     (void)ctx;
+    if (n != 0u && strcmp(tok[0], "yge") == 0) {
+        return yge_console_line(&k_yge_io, tok, n);
+    }
     if (n == 0u || strcmp(tok[0], "oyline") != 0) {
         return false;
     }

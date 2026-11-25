@@ -72,7 +72,7 @@ measured.
 | a write of a setting: CHAN_CFG, OUTPUTS, BIND, SENSE_MAP, TONE and the other set-up pages | yes | answered from the copy; the page is written once |
 | CONTROL: ARM, THROTTLE, MOTOR_POLES, CLEAR | yes | answered from the copy: ARM arms once, CLEAR lifts the failsafe once |
 | a write that stops: ARM 0, SUPPLY OFF, PROG_SUPPLY OFF | yes | as any write. The stop at the panel does not wait for it: the heartbeat stops in the pass of the STOP, whatever the link waits for |
-| a step of a programming port: KST, HITEC, ESC_WIRE, ESC_DATA | yes | answered from the copy; the servo or ESC (electronic speed controller) gets the step once |
+| a step of a programming port: KST, HITEC, ESC_WIRE, ESC_DATA, YGE_PROG, YGE_DATA | yes | answered from the copy; the servo or ESC (electronic speed controller) gets the step once |
 | UPDATE_CTL and UPDATE_DATA at the check after a link-up: HASH_RUNNING, BUY, ABORT | yes | answered from the copy |
 | the update itself, BEGIN to FINISH | no | the update takes the link down first and runs unnumbered; a COMMIT sent again is harmless ([The transfer](#the-transfer)) |
 | ACTIVATE | no | the IOmcu restarts 20ms after its answer, and a repeat could reach the new image as a command of its own |
@@ -136,7 +136,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 The protocol uses pages of up to 32 sixteen-bit registers, read and written in windows. The
-IOmcu transmits only in answer to a request. Protocol version 4.41. The
+IOmcu transmits only in answer to a request. Protocol version 4.42. The
 major version is register 0 of page 0. The major version changes when a register
 changes meaning or a page is renumbered. The minor version changes when a page or
 register is added at the end, where an older panel can ignore it.
@@ -260,7 +260,11 @@ BIND_OUT_HI (0x3F, 0x40) prepare them, BIND register 2 `COMMIT_ALL` takes
 all four prepared pages, and SENSE_MAP's `WATCH` names outputs 9 to 16 as
 0x40 to 0x47. An older IOmcu refuses the five pages with BAD_PAGE and
 register 2 with BAD_RANGE; the panel sends them to a 4.41 or later IOmcu
-only ([Slots and channels 9 to 16](#slots-and-channels-9-to-16)).
+only ([Slots and channels 9 to 16](#slots-and-channels-9-to-16)). From
+4.42 YGE_PROG (0x44) and YGE_DATA (0x45) program a YGE ESC over its
+telemetry wire on a programming port, and the IOmcu reports `LINK_CAP_YGE`;
+an older IOmcu refuses both with BAD_PAGE
+([Programming for YGE ESCs](LinkYge.md)).
 The IOmcu never reads the panel's minor; a page
 an older panel does not know is a page it never writes.
 
@@ -1062,6 +1066,12 @@ ESC_WIRE (0x3A) and ESC_DATA (0x3B) are described on [their own page](LinkEsc.md
 pin selection, entering and leaving programming mode, how events affect the
 line and supply, and the registers.
 
+### Programming for YGE ESCs
+
+YGE_PROG (0x44) and YGE_DATA (0x45) are described on [their own page](LinkYge.md):
+the programming port, the power, the boot wait and the takeover, how events
+affect the line and supply, and the registers.
+
 ### The INA3221 map and windows
 
 SENSE_MAP (0x35), SENSE_LIMIT (0x36), SENSE_WIN_A (0x37) and SENSE_WIN_B
@@ -1165,6 +1175,8 @@ per 5s offer.
 | 0x41 | PASS | read, write | the remote servo node's pass-through and its pulse capture (since 4.41, board 3 only; boards 1 and 2 refuse it with BAD_PAGE): registers 0 to 8 `SOURCE` of channel k (0 OFF, 1 PASS-THROUGH, 2 BENCH), 9 to 17 `IN_US`, input k's last pulse in µs, 18 to 26 `OUT_US`, output k's last pulse as captured, 27 `LOST` (bit k: input k lost), 28 `WINDOW`, 29 `FLAGS`, 30 `GLITCH` (bit k: a glitch on input k). Registers 0 to 8 take writes; the rest refuse them with READ_ONLY. [The PASS and PASS_STAT pages](#the-pass-and-pass_stat-pages) has the rules |
 | 0x42 | PASS_STAT | read, write | the capture's counts (since 4.41, board 3 only): registers 0 to 8 `PERIOD`, input k's frame period in µs, 9 to 17 `MISSED`, 18 to 26 `FRAMES`, 27 `RESET`, 28 `GLITCHES`. Register 27 takes writes; the rest refuse them with READ_ONLY |
 | 0x43 | POWER | read, write | the servo rail's master switch and the 9 port switches of the remote servo node (since 4.41, board 3 only; boards 1 and 2 refuse it with BAD_PAGE): register 0 `RAIL` (0 or 1), 1 `FITTED` (bit k a switch on port k; 0 without the switches), 2 `PORT_ON` (bit k port k on as driven), 3 `PORT_WANT` (bit k the panel asks for port k), 4 `TRIPPED` (bits 0 to 8 channel k's critical alert flag, bit 9 CRIT_N low, bit 10 a switch in thermal shutdown, bit 11 a SENSE_LIMIT trip), 5 `BEC` (bit k port k read 500mV or more at the last BEC check). Registers 0 and 3 take writes; the rest refuse them with READ_ONLY. [The POWER page](#the-power-page) has the rules |
+| 0x44 | `YGE_PROG` | read, write | programming for YGE ESCs over the ESC's telemetry wire on a programming port (since 4.42): state, line, result, the read copy's identity, operations ([Programming for YGE ESCs](LinkYge.md)) |
+| 0x45 | `YGE_DATA` | read, write | 32 values of the read copy, the draft or the last table received, the block `YGE_PROG` names (since 4.42) |
 | 0xE0 | `CONSOLE` | read, write | exists only in debug console builds (`IOMCU_CONSOLE`); no released image has it: [The bench console](BenchConsole.md#over-the-link-with-no-usb-on-the-iomcu) |
 | 0xF0 | UPDATE_CTL | read, write | the IOmcu's own firmware update (since 4.22; frozen across majors): 32 registers. Version, state, error, slot, slot sectors, next block, image size, then the command in register 8 with up to 3 arguments, and a SHA-256 digest in registers 16 to 31. A write that is not a command is refused with READ_ONLY. [Firmware update over the link](#firmware-update-over-the-link) has the rules. Nothing is kept |
 | 0xF1 | UPDATE_DATA | read, write | the 64 bytes of the block in hand, low byte first in each register (since 4.22; frozen across majors): 32 registers. FINISH takes the expected SHA-256 from registers 0 to 15. Nothing is kept |
@@ -1189,7 +1201,8 @@ panel polls, and the wait for the first one is not silence.
 
 Capabilities bitmap: bit 0 ESC drive, bit 1 ESC telemetry, bit 2 servo PWM, bit
 3 servo current sense, bit 4 pack sense, bit 5 receiver bus, bit 6 vibration
-sensor and index pulse, bit 7 cell monitor, bit 8 programming. The panel
+sensor and index pulse, bit 7 cell monitor, bit 8 programming, bit 9
+programming for YGE ESCs (since 4.42). The panel
 derives the menu marks from it. Bits 3 and 4 describe configured sensing:
 bit 3 the INA3221, bit 4 the INA228, whether or not the configured parts
 answer (since 4.7). SENSE writes can change these capabilities; when
@@ -1669,7 +1682,7 @@ chip it drives nothing:
   pad stays in its reset state;
 - STATUS fault bit 8 is set from the start;
 - ARM, SUPPLY ON, POWER's `RAIL` 1 and `PORT_WANT` bits, every write to KST,
-  HITEC and ESC_WIRE, a PROG FUNC other than NONE, an OUTPUTS, OUTPUTS_HI,
+  HITEC, ESC_WIRE and YGE_PROG, a PROG FUNC other than NONE, an OUTPUTS, OUTPUTS_HI,
   BIND_OUT or BIND_OUT_HI slot with a driver and a PASS `SOURCE` other than
   BENCH are refused with NOT_ARMED
   before their page sees them (`shared/link/link_gate.c`). Every OFF is
