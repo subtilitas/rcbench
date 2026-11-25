@@ -26,6 +26,7 @@ static bool g_stopped;
 static bool g_armed;
 static char g_text[OY_FILE_MAX];
 static char g_tag[8];
+static uint32_t g_card_id;
 
 /* What the control task does with a command (firmware/panel/main/panel_yge.c). */
 static void carry_out(const yge_prog_cmd_t *c)
@@ -361,21 +362,21 @@ TEST_CASE(the_first_write_saves_the_backup_first)
     model_up();
     connected();
     CHECK(!yge_prog_card_take(&g_m, g_text, sizeof(g_text), &len, g_tag,
-                              sizeof(g_tag)));
+                              sizeof(g_tag), &g_card_id));
     CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 32u),
              YGE_PROG_MSG_NONE);
     model_run(100u);
     CHECK_EQ(commands_of(LINK_YGE_OP_WRITE), 0);
     CHECK(yge_prog_busy(&g_m));
     CHECK(yge_prog_card_take(&g_m, g_text, sizeof(g_text), &len, g_tag,
-                             sizeof(g_tag)));
+                             sizeof(g_tag), &g_card_id));
     CHECK(!yge_prog_card_take(&g_m, g_text, sizeof(g_text), &len, g_tag,
-                              sizeof(g_tag)));
+                              sizeof(g_tag), &g_card_id));
     CHECK_EQ(strcmp(g_tag, "5712"), 0);
     CHECK_EQ(oy_file_parse(g_text, len, &f, NULL), OY_FILE_OK);
     CHECK_EQ(f.value[21], sim.table[21]);
     CHECK_EQ(f.value[21], 12u);
-    yge_prog_card_done(&g_m, YGE_PROG_CARD_OK);
+    yge_prog_card_done(&g_m, g_card_id, YGE_PROG_CARD_OK);
     CHECK_EQ(yge_prog_backup_where(&g_m), YGE_PROG_BACKUP_CARD);
     model_run(30000u);
     CHECK_EQ(yge_prog_message(&g_m, NULL), YGE_PROG_MSG_WRITE_DONE);
@@ -385,7 +386,7 @@ TEST_CASE(the_first_write_saves_the_backup_first)
     CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 14u), 32u),
              YGE_PROG_MSG_NONE);
     CHECK(!yge_prog_card_take(&g_m, g_text, sizeof(g_text), &len, g_tag,
-                              sizeof(g_tag)));
+                              sizeof(g_tag), &g_card_id));
     model_run(30000u);
     CHECK_EQ(yge_prog_message(&g_m, NULL), YGE_PROG_MSG_WRITE_DONE);
     CHECK_EQ(sim.table[21], 14u);
@@ -406,8 +407,8 @@ TEST_CASE(no_card_keeps_the_old_values_in_ram_and_writes)
     CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 32u),
              YGE_PROG_MSG_NONE);
     CHECK(yge_prog_card_take(&g_m, g_text, sizeof(g_text), &len, g_tag,
-                             sizeof(g_tag)));
-    yge_prog_card_done(&g_m, YGE_PROG_CARD_NO_CARD);
+                             sizeof(g_tag), &g_card_id));
+    yge_prog_card_done(&g_m, g_card_id, YGE_PROG_CARD_NO_CARD);
     CHECK_EQ(yge_prog_message(&g_m, &detail), YGE_PROG_MSG_BACKUP_RAM);
     CHECK_EQ(detail, YGE_PROG_CARD_NO_CARD);
     CHECK_EQ(yge_prog_backup_where(&g_m), YGE_PROG_BACKUP_RAM);
@@ -431,7 +432,7 @@ TEST_CASE(a_card_silent_10000ms_sends_no_write)
     CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 32u),
              YGE_PROG_MSG_NONE);
     CHECK(yge_prog_card_take(&g_m, g_text, sizeof(g_text), &len, g_tag,
-                             sizeof(g_tag)));
+                             sizeof(g_tag), &g_card_id));
     f = g_f;
     f.now_ms = g_m.card_ms + YGE_PROG_CARD_WAIT_MS - 1u;
     yge_prog_feed(&g_m, &f);
@@ -440,11 +441,61 @@ TEST_CASE(a_card_silent_10000ms_sends_no_write)
     yge_prog_feed(&g_m, &f);
     CHECK(!yge_prog_busy(&g_m));
     CHECK_EQ(yge_prog_message(&g_m, NULL), YGE_PROG_MSG_NO_ANSWER);
-    yge_prog_card_done(&g_m, YGE_PROG_CARD_OK);
+    yge_prog_card_done(&g_m, g_card_id, YGE_PROG_CARD_OK);
     model_run(500u);
     CHECK_EQ(commands_of(LINK_YGE_OP_WRITE), 0);
     CHECK_EQ(yge_prog_backup_where(&g_m), YGE_PROG_BACKUP_CARD);
     CHECK_EQ(sim.table[21], 12u);
+}
+
+/* A card answer still out when its session ended: dropped and counted, never
+ * the backup of the next session, which asks the card for its own. */
+TEST_CASE(a_late_card_answer_of_an_ended_session_is_dropped)
+{
+    size_t len = 0u;
+    yge_prog_feed_t f;
+
+    rig_up();
+    model_up();
+    connected();
+    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 32u),
+             YGE_PROG_MSG_NONE);
+    CHECK(yge_prog_card_take(&g_m, g_text, sizeof(g_text), &len, g_tag,
+                             sizeof(g_tag), &g_card_id));
+    const uint32_t old_id = g_card_id;
+
+    f = g_f;
+    f.now_ms = g_m.card_ms + YGE_PROG_CARD_WAIT_MS;
+    yge_prog_feed(&g_m, &f);
+    CHECK_EQ(yge_prog_message(&g_m, NULL), YGE_PROG_MSG_NO_ANSWER);
+    CHECK_EQ(yge_prog_leave(&g_m), YGE_PROG_MSG_NONE);
+    model_run(500u);
+    CHECK_EQ(yge_prog_message(&g_m, NULL), YGE_PROG_MSG_LEFT);
+    connected();
+    CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 32u),
+             YGE_PROG_MSG_NONE);
+    CHECK(yge_prog_card_take(&g_m, g_text, sizeof(g_text), &len, g_tag,
+                             sizeof(g_tag), &g_card_id));
+    CHECK(g_card_id != old_id);
+    /* The old answer, and one with no number. */
+    yge_prog_card_done(&g_m, old_id, YGE_PROG_CARD_OK);
+    yge_prog_card_done(&g_m, 0u, YGE_PROG_CARD_OK);
+    CHECK_EQ(yge_prog_card_stale(&g_m), 2u);
+    CHECK_EQ(yge_prog_card_stale(NULL), 0u);
+    CHECK_EQ(yge_prog_backup_where(&g_m), YGE_PROG_BACKUP_HELD);
+    CHECK(yge_prog_busy(&g_m));
+    model_run(500u);
+    CHECK_EQ(commands_of(LINK_YGE_OP_WRITE), 0);
+    /* Its own answer counts. */
+    yge_prog_card_done(&g_m, g_card_id, YGE_PROG_CARD_NO_CARD);
+    CHECK_EQ(yge_prog_backup_where(&g_m), YGE_PROG_BACKUP_RAM);
+    model_run(30000u);
+    CHECK_EQ(yge_prog_message(&g_m, NULL), YGE_PROG_MSG_WRITE_DONE);
+    CHECK_EQ(commands_of(LINK_YGE_OP_WRITE), 1);
+    /* Answered once: the same number again is stale. */
+    yge_prog_card_done(&g_m, g_card_id, YGE_PROG_CARD_OK);
+    CHECK_EQ(yge_prog_card_stale(&g_m), 3u);
+    CHECK_EQ(yge_prog_backup_where(&g_m), YGE_PROG_BACKUP_RAM);
 }
 
 TEST_CASE(a_stop_while_the_card_saves_sends_no_write)
@@ -457,13 +508,13 @@ TEST_CASE(a_stop_while_the_card_saves_sends_no_write)
     CHECK_EQ(yge_prog_write(&g_m, draft_with(21u, 13u), 32u),
              YGE_PROG_MSG_NONE);
     CHECK(yge_prog_card_take(&g_m, g_text, sizeof(g_text), &len, g_tag,
-                             sizeof(g_tag)));
+                             sizeof(g_tag), &g_card_id));
     g_stopped = true;
     model_run(5u);
     CHECK_EQ(yge_prog_message(&g_m, NULL), YGE_PROG_MSG_STOPPED);
     CHECK(!yge_prog_busy(&g_m));
     g_stopped = false;
-    yge_prog_card_done(&g_m, YGE_PROG_CARD_OK);
+    yge_prog_card_done(&g_m, g_card_id, YGE_PROG_CARD_OK);
     model_run(500u);
     CHECK_EQ(commands_of(LINK_YGE_OP_WRITE), 0);
     CHECK_EQ(sim.table[21], 12u);
@@ -500,7 +551,7 @@ TEST_CASE(every_refusal_of_a_write_sends_nothing)
     g_armed = false;
     model_run(100u);
     CHECK(!yge_prog_card_take(&g_m, g_text, sizeof(g_text), &len, g_tag,
-                              sizeof(g_tag)));
+                              sizeof(g_tag), &g_card_id));
     CHECK_EQ(commands_of(LINK_YGE_OP_WRITE), 0);
     CHECK(!yge_prog_busy(&g_m));
 }
@@ -602,6 +653,7 @@ int main(void)
     RUN(the_first_write_saves_the_backup_first);
     RUN(no_card_keeps_the_old_values_in_ram_and_writes);
     RUN(a_card_silent_10000ms_sends_no_write);
+    RUN(a_late_card_answer_of_an_ended_session_is_dropped);
     RUN(a_stop_while_the_card_saves_sends_no_write);
     RUN(every_refusal_of_a_write_sends_nothing);
     RUN(a_read_only_table_is_not_written);

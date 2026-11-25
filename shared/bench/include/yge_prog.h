@@ -227,6 +227,9 @@ typedef struct {
     uint16_t backup[YGE_LINK_VALUES_MAX]; /**< the table as first read        */
     uint8_t  card_owed;      /**< the card is to be asked for the backup      */
     uint8_t  card_out;       /**< it was asked and has not answered           */
+    uint32_t card_seq;       /**< the number of the last request to the card  */
+    uint32_t card_want;      /**< the request whose answer counts; 0 none     */
+    uint32_t card_stale;     /**< answers dropped as not that request's      */
     uint32_t card_ms;        /**< when the write asked for it                 */
     uint16_t pend_n;         /**< the write that waits for the card: values   */
     uint16_t pend[YGE_LINK_VALUES_MAX]; /**< its draft                        */
@@ -436,19 +439,31 @@ yge_prog_backup_t yge_prog_backup_where(const yge_prog_t *p);
  * @param len      Receives the bytes written.
  * @param tag      Takes the tag with its terminator.
  * @param tag_size Bytes at @p tag; 6 always fits.
+ * @param id       Receives the request's number, never 0, which its answer
+ *                 carries back to yge_prog_card_done().
  * @return true when the card is to save it; false when nothing is asked.
  */
 bool yge_prog_card_take(yge_prog_t *p, char *out, size_t size, size_t *len,
-                        char *tag, size_t tag_size);
+                        char *tag, size_t tag_size, uint32_t *id);
 
 /**
  * @brief The card's answer to yge_prog_card_take(): the write that waited
  *        goes.  With anything but YGE_PROG_CARD_OK the old values are kept in
- *        RAM only, and the message says so.
+ *        RAM only, and the message says so.  An answer whose @p id is not
+ *        the request out, one of a session that has ended among them, is
+ *        dropped and counted (yge_prog_card_stale()).
  * @param p      The model.
+ * @param id     The number yge_prog_card_take() gave the request.
  * @param result A yge_prog_card_t.
  */
-void yge_prog_card_done(yge_prog_t *p, uint8_t result);
+void yge_prog_card_done(yge_prog_t *p, uint32_t id, uint8_t result);
+
+/**
+ * @brief The card's answers dropped because no request out was theirs.
+ * @param p The model.
+ * @return The count, modulo 2^32.
+ */
+uint32_t yge_prog_card_stale(const yge_prog_t *p);
 
 /**
  * @brief The text of the session's backup, for a save by hand.

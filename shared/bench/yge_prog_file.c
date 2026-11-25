@@ -103,6 +103,9 @@ void yge_prog_backup_follow(yge_prog_t *p)
         if (rd->known) {
             p->backup_state = (uint8_t)YGE_PROG_BACKUP_NONE;
             p->load_ok = 0u;
+            /* An answer still out is of the session that ended. */
+            p->card_want = 0u;
+            p->card_out = 0u;
         }
         return;
     }
@@ -132,32 +135,16 @@ size_t yge_prog_backup_text(const yge_prog_t *p, char *out, size_t size)
     return oy_file_format(p->backup, p->backup_n, out, size);
 }
 
-bool yge_prog_card_take(yge_prog_t *p, char *out, size_t size, size_t *len,
-                        char *tag, size_t tag_size)
+/**
+ * @brief The answer of the request out: the backup's place, and the write
+ *        that waited goes.
+ * @param p      the model
+ * @param result a yge_prog_card_t
+ */
+static void card_answer(yge_prog_t *p, uint8_t result)
 {
-    if (p == NULL || out == NULL || len == NULL || tag == NULL
-        || !p->card_owed) {
-        return false;
-    }
-    p->card_owed = 0u;
-    *len = yge_prog_backup_text(p, out, size);
-    const int t = snprintf(tag, tag_size, "%u", (unsigned)p->backup[OY_I_TYPE]);
-
-    if (*len == 0u || t < 0 || (size_t)t >= tag_size) {
-        /* Nothing the card could hold: the old values stay in RAM. */
-        yge_prog_card_done(p, (uint8_t)YGE_PROG_CARD_FORMAT);
-        return false;
-    }
-    p->card_out = 1u;
-    return true;
-}
-
-void yge_prog_card_done(yge_prog_t *p, uint8_t result)
-{
-    if (p == NULL) {
-        return;
-    }
     p->card_out = 0u;
+    p->card_want = 0u;
     if (p->backup_state == (uint8_t)YGE_PROG_BACKUP_HELD) {
         p->backup_state = result == (uint8_t)YGE_PROG_CARD_OK
                               ? (uint8_t)YGE_PROG_BACKUP_CARD
@@ -172,6 +159,48 @@ void yge_prog_card_done(yge_prog_t *p, uint8_t result)
         && p->backup_state == (uint8_t)YGE_PROG_BACKUP_RAM) {
         (void)yge_prog_say(p, YGE_PROG_MSG_BACKUP_RAM, p->backup_why);
     }
+}
+
+bool yge_prog_card_take(yge_prog_t *p, char *out, size_t size, size_t *len,
+                        char *tag, size_t tag_size, uint32_t *id)
+{
+    if (p == NULL || out == NULL || len == NULL || tag == NULL || id == NULL
+        || !p->card_owed) {
+        return false;
+    }
+    p->card_owed = 0u;
+    *len = yge_prog_backup_text(p, out, size);
+    const int t = snprintf(tag, tag_size, "%u", (unsigned)p->backup[OY_I_TYPE]);
+
+    if (*len == 0u || t < 0 || (size_t)t >= tag_size) {
+        /* Nothing the card could hold: the old values stay in RAM. */
+        card_answer(p, (uint8_t)YGE_PROG_CARD_FORMAT);
+        return false;
+    }
+    if (++p->card_seq == 0u) {
+        p->card_seq = 1u;
+    }
+    p->card_want = p->card_seq;
+    p->card_out = 1u;
+    *id = p->card_seq;
+    return true;
+}
+
+void yge_prog_card_done(yge_prog_t *p, uint32_t id, uint8_t result)
+{
+    if (p == NULL) {
+        return;
+    }
+    if (id == 0u || id != p->card_want) {
+        ++p->card_stale;
+        return;
+    }
+    card_answer(p, result);
+}
+
+uint32_t yge_prog_card_stale(const yge_prog_t *p)
+{
+    return p != NULL ? p->card_stale : 0u;
 }
 
 yge_prog_msg_t yge_prog_file_load(yge_prog_t *p, const char *text, size_t len,

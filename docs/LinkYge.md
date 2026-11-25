@@ -148,7 +148,9 @@ it. The first WRITE of the session asks the card to save it as
 a card that is not FAT32 or exFAT, or a save that fails, the WRITE goes and
 the old values are kept in RAM only; the message says so. A card silent
 10000ms, a stop, an ARM or an ESC gone before the answer: the WRITE goes
-nowhere.
+nowhere. Each request to the card carries a number; an answer with another
+number, such as one that arrives after its session ended, is dropped and
+counted.
 
 ## Current limitations
 

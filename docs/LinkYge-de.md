@@ -160,7 +160,9 @@ Karte, mit einer Karte ohne FAT32 oder exFAT oder bei einem gescheiterten
 Speichern geht das WRITE, und die bisherigen Werte bleiben nur im
 Arbeitsspeicher; die Meldung sagt es. Eine Karte, die 10000ms schweigt, ein
 Stopp, ein ARM oder ein ESC, der vor der Antwort fehlt: das WRITE geht
-nirgends hin.
+nirgends hin. Jede Anfrage an die Karte trägt eine Nummer; eine Antwort mit
+einer anderen Nummer, etwa eine, die nach dem Ende ihrer Sitzung kommt, wird
+verworfen und gezählt.
 
 ## Aktuelle Einschränkungen
 
