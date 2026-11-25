@@ -84,6 +84,13 @@ bool log_graph_time(void);
 bool log_graph_gap_before(int i);
 
 /**
+ * @brief The time under pixel column @p x on a time file's graph.
+ * @param x  The column, in the screen's coordinates.
+ * @return the time, s from the run's first row; -1 on no time file.
+ */
+float log_graph_time_at(int x);
+
+/**
  * @brief Whether pixel column @p x lies in a gap, hatched.
  * @param x  The column, in the screen's coordinates.
  * @return true in a gap.

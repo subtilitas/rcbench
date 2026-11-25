@@ -194,7 +194,7 @@ An AUTOMATIC TEST, a SUPPLY, a MOTOR and a SERVO run open in the graph with each
 - A file whose time column steps back is placed by row number and shows no duration.
 - Each step of an AUTOMATIC TEST starts a line with the step's number on a tag.
 - A bar at the plot's top marks rows above their range (`>65535` rpm, tag `>`) in the warning colour and clipped meter windows (`clipped` above 0, tag `CLIPPED`) in the danger colour.
-- Tap a chip to focus its series, again to hide it, a third time to bring it back. One finger, two fingers, `<` and `>` work as on the plot.
+- Tap a chip to focus its series, again to hide it, a third time to bring it back. Two fingers zoom and pan in time: the time between the fingers stays under them. One finger and `<`, `>` work as on the plot.
 
 ![A SUPPLY run: the CC and MODEL strips and a gap](view:logs-supply-graph)
 

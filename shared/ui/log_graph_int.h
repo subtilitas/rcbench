@@ -121,6 +121,11 @@ typedef struct {
                                          in whole milliseconds          */
     float  t0;                      /**< the window's first time        */
     float  t1;                      /**< its last                       */
+    bool   req;                     /**< two fingers set the range      */
+    float  req_lo;                  /**< its first time, s              */
+    float  req_hi;                  /**< its last time, s               */
+    int    req_w0;                  /**< the window it was set for      */
+    int    req_n;                   /**< and that window's rows         */
     /** @brief Per pixel column, LG_COL_ flags. */
     uint8_t col[PV_W];
     /** @brief Per strip and pixel column, the strip's code. */
@@ -266,9 +271,18 @@ void lg_time_spans(void);
 /**
  * @brief The pixel column of row @p i in the window, from the plot's left.
  * @param i  The row.
- * @return 0 to PV_W - 1; -1 for a row outside the window.
+ * @return 0 to PV_W - 1; -1 for a row outside the window or left or right
+ *         of the plot's range of time.
  */
 int lg_time_col(int i);
+
+/**
+ * @brief Row @p i's place on the plot, unrounded and unclamped: below 0
+ *        left of the plot, above PV_W - 1 right of it.
+ * @param i  The row, in the window.
+ * @return the column, from the plot's left.
+ */
+float lg_time_colf(int i);
 
 /**
  * @brief The row whose time stands nearest pixel column @p x.
@@ -276,6 +290,33 @@ int lg_time_col(int i);
  * @return the row in the window.
  */
 int lg_time_row_at(int x);
+
+/**
+ * @brief Whether two fingers zoom and pan a time file in time: a time
+ *        graph whose file has a time column that rises over the run.
+ *        Otherwise they zoom and pan in rows.
+ * @return true for gestures in time.
+ */
+bool lg_time_gestures(void);
+
+/**
+ * @brief The time under pixel column @p x in the window.
+ * @param x  The column, in the screen's coordinates; clamped to the plot.
+ * @return the time, s from the run's first row.
+ */
+float lg_time_at(int x);
+
+/**
+ * @brief Show the time from @p t_lo to @p t_hi across the plot: the
+ *        window from the last row at or before @p t_lo to the first at or
+ *        after @p t_hi.  A range past either end of the run is moved inside
+ *        it, one longer than the run is the whole run; one that brackets
+ *        fewer than PV_MIN_WIN rows widens to PV_MIN_WIN rows at their own
+ *        times.
+ * @param t_lo  The range's first time, s.
+ * @param t_hi  Its last time, s.
+ */
+void lg_time_window(float t_lo, float t_hi);
 
 /**
  * @brief Whether the step in time from row @p i - 1 to row @p i is a gap.

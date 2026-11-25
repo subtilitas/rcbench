@@ -618,9 +618,16 @@ static void draw_time_marks(gfx_canvas_t *c, bool tags)
         if (mk->row < 0 || mk->row_end < s.win0 || mk->row > last) {
             continue;
         }
-        const int a = PV_X + lg_time_col(mk->row < s.win0 ? s.win0 : mk->row);
-        const int b = PV_X + lg_time_col(mk->row_end > last ? last
-                                                            : mk->row_end);
+        const float af = lg_time_colf(mk->row < s.win0 ? s.win0 : mk->row);
+        const float bf = lg_time_colf(mk->row_end > last ? last
+                                                         : mk->row_end);
+        if (bf < -0.5f || af > (float)PV_W - 0.5f
+            || (mk->kind == LOG_MARK_STEP && af < -0.5f)) {
+            continue;   /* left or right of the plot's range of time */
+        }
+        const int a = PV_X + ((af < 0.0f) ? 0 : (int)lroundf(af));
+        const int b = PV_X + ((bf > (float)(PV_W - 1)) ? PV_W - 1
+                                                       : (int)lroundf(bf));
         const gfx_color_t col = ui_theme_color(k_look[mk->kind].color);
         if (!tags) {
             if (mk->kind == LOG_MARK_STEP) {

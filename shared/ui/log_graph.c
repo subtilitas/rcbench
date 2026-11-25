@@ -73,6 +73,7 @@ bool lg_read(log_source_t *src)
 {
     lg.on = false;
     lg.time = false;
+    lg.req = false;
     free_cells();
     const log_preset_t *p = log_preset_get(s.preset);
     if (!suits(p)) {
@@ -390,6 +391,11 @@ bool log_graph_time(void)
 bool log_graph_gap_before(int i)
 {
     return lg_time_on() && lg_time_gap_before(i);
+}
+
+float log_graph_time_at(int x)
+{
+    return lg_time_on() ? lg_time_at(x) : -1.0f;
 }
 
 bool log_graph_gap_col(int x)

@@ -17,7 +17,9 @@ history is in git.
   phase at the cursor in its label), CC (`mode` CC) and MODEL (MODELL,
   `source` model). An AUTOMATIC TEST's steps are lines with their number;
   rows with a `>` cell (`>65535` rpm) and with `clipped` above 0 are bars
-  at the plot's top, at most 256 lines and bars a file. The summary names
+  at the plot's top, at most 256 lines and bars a file. Two fingers zoom
+  and pan such a run in time: the time between the fingers stays under
+  them, also across a gap. The summary names
   the kind (`SERVO RUN`, `MOTOR RUN`, `SUPPLY RUN`, `AUTOMATIC TEST`;
   German `SERVO-LAUF`, `MOTOR-LAUF`, `NETZTEIL-LAUF`,
   `AUTOMATISCHER TEST`). A time run without a numeric `current` or

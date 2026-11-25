@@ -3703,11 +3703,14 @@ are the four series' own, with their value at the cursor.
   above 0 one in the danger colour with `CLIPPED`. Tags stand in two rows
   under the bars; a tag that finds room in neither is left out. A file
   sets at most 256 lines and bars; more are counted and not drawn.
-- One finger, two fingers, `<` and `>` work as on the plot of rows:
-  the cursor goes to the row whose time stands nearest the finger, two
-  fingers zoom and pan the window, `<` and `>` step a row and carry the
-  window along. A chip tap focuses, hides and brings back its series as
-  on the graph above.
+- The cursor goes to the row whose time stands nearest the finger.
+  Two fingers zoom and pan in time: the time between the fingers stays
+  under them, and the plot shows the rows that bracket the range they
+  set, its lines running to the plot's edges. The range stops at the
+  run's first and last time and holds at least 8 rows. A file without a
+  time column zooms in rows, as the plot of rows does. `<` and `>` step a
+  row and carry the window along. A chip tap focuses, hides and brings
+  back its series as on the graph above.
 
 The CSV (comma-separated values) reader accepts decimal commas or points,
 a units row and rows of different lengths. The import view shows its

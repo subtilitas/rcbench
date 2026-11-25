@@ -599,14 +599,17 @@ TEST_CASE(two_fingers_zoom_a_time_file)
     int count = 0;
     log_viewer_window(&first, &count);
     REQUIRE(count < LV_PV_COLS);
-    CHECK_EQ(log_graph_row_px(first), PLOT_X0);
-    CHECK_EQ(log_graph_row_px(first + count - 1), PLOT_X1);
+    /* The window brackets the range the fingers set: its first row on or
+     * left of the plot, its last on or right of it, those between on it. */
+    CHECK(log_graph_row_px(first) <= PLOT_X0 + 8);
+    CHECK(log_graph_row_px(first + count - 1) == -1
+          || log_graph_row_px(first + count - 1) >= PLOT_X1 - 8);
     CHECK_EQ(log_graph_row_px(first + count), -1);
     /* Each row's strip code in its column; the columns between held. */
-    const int a = log_graph_row_px(first);
-    const int b = log_graph_row_px(first + 1);
-    REQUIRE(b > a + 1);
-    CHECK_EQ(log_graph_strip_at(0, a), (first % 2 == 0) ? 1u : 0u);
+    const int a = log_graph_row_px(first + 1);
+    const int b = log_graph_row_px(first + 2);
+    REQUIRE(a >= PLOT_X0 && b > a + 1);
+    CHECK_EQ(log_graph_strip_at(0, a), ((first + 1) % 2 == 0) ? 1u : 0u);
     CHECK_EQ(log_graph_strip_at(0, b - 1), log_graph_strip_at(0, a));
     /* > past the window's end moves it along. */
     while (log_viewer_cursor() > first + count - 1) {
@@ -724,6 +727,184 @@ TEST_CASE(a_time_file_speaks_german)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* ------------------------------------------------------ zoom and pan */
+
+/* Codex's file: rows 0-9 at 0-9s, rows 10-99 at 100-189s. */
+static int split_row(char *out, size_t n, int i)
+{
+    const int t = (i < 10) ? i : 90 + i;
+    return snprintf(out, n, "%d.000;12.0;%.2f;1000;20;measured\n", t,
+                    1.0 + 0.01 * (double)i);
+}
+
+/* Rows 0-49 at 0-49s, rows 50-99 at 100-149s. */
+static int halves_row(char *out, size_t n, int i)
+{
+    const int t = (i < 50) ? i : 50 + i;
+    return snprintf(out, n, "%d.000;12.0;%.2f;1000;20;measured\n", t,
+                    1.0 + 0.01 * (double)i);
+}
+
+/* No time column: the rows are their own axis. */
+static int untimed_row(char *out, size_t n, int i)
+{
+    return snprintf(out, n, "%.1f;%.2f;1000;20;measured\n",
+                    12.0 - 0.1 * (double)(i % 5), 1.0 + 0.01 * (double)(i % 7));
+}
+
+/**
+ * @brief Two fingers spread from (@p a0, @p b0) to (@p a1, @p b1) on the
+ *        plot's middle row and lift.
+ */
+static void pinch(int a0, int b0, int a1, int b1)
+{
+    send_id(TOUCH_EVENT_DOWN, 1, a0, LV_PV_CY);
+    send_id(TOUCH_EVENT_DOWN, 2, b0, LV_PV_CY);
+    send_id(TOUCH_EVENT_MOVE, 1, a1, LV_PV_CY);
+    send_id(TOUCH_EVENT_MOVE, 2, b1, LV_PV_CY);
+    send_id(TOUCH_EVENT_UP, 2, b1, LV_PV_CY);
+    send_id(TOUCH_EVENT_UP, 1, a1, LV_PV_CY);
+}
+
+/** @brief The row a finger at column @p x puts the cursor on. */
+static int row_under(int x)
+{
+    tap(x, LV_PV_CY);
+    return log_viewer_cursor();
+}
+
+/* A centered pinch of 2x on Codex's file: the row under the midpoint
+ * before is the row under it after, give or take one, and inside the
+ * window.  In rows the window was about 25-74, which left it out. */
+TEST_CASE(a_pinch_keeps_the_time_between_the_fingers)
+{
+    make("time (s);voltage (V);current (A);rpm (rpm);throttle (%);source",
+         100, split_row);
+    REQUIRE(open_time("MOTOR050.CSV"));
+    const int mid = PLOT_X0 + (LV_PV_COLS - 1) / 2;
+    const int before = row_under(mid);
+    const float t_before = log_graph_time_at(mid);
+    pinch(mid - 50, mid + 50, mid - 100, mid + 100);
+    int first = 0;
+    int count = 0;
+    log_viewer_window(&first, &count);
+    REQUIRE(count < 100);
+    CHECK(before >= first && before < first + count);
+    const int after = row_under(mid);
+    CHECK(abs(after - before) <= 1);
+    /* The window brackets the time asked for: 94.4s +-47.2s. */
+    const log_data_t *d = log_viewer_data();
+    REQUIRE(d != NULL);
+    CHECK(d->time[first] <= t_before - 47.0f);
+    CHECK(d->time[first + count - 1] >= t_before + 47.0f);
+    draw();
+}
+
+/* A pan across the gap: the time under the finger stays under it within
+ * a row interval, 1s, while the window crosses from 0-49s into 100-149s. */
+TEST_CASE(a_pan_across_the_gap_keeps_the_time_under_the_finger)
+{
+    make("time (s);voltage (V);current (A);rpm (rpm);throttle (%);source",
+         100, halves_row);
+    REQUIRE(open_time("MOTOR050.CSV"));
+    settings_set(SET_PLOT_PAN, 1.0f);
+    /* 3x in at 30s: a window of about 50s. */
+    const int x30 = PLOT_X0 + (int)lroundf(30.0f / 149.0f * 991.0f);
+    pinch(x30 - 40, x30 + 40, x30 - 120, x30 + 120);
+    int first = 0;
+    int count = 0;
+    log_viewer_window(&first, &count);
+    REQUIRE(first > 0 && first + count < 100);
+    const int x0 = PLOT_X0 + 900;
+    const int x1 = PLOT_X0 + 100;
+    send(TOUCH_EVENT_DOWN, x0, LV_PV_CY);
+    /* Past the slop first, then the rest. */
+    send(TOUCH_EVENT_MOVE, x0 - 20, LV_PV_CY);
+    const float t_slop = log_graph_time_at(x0 - 10);
+    send(TOUCH_EVENT_MOVE, x1, LV_PV_CY);
+    send(TOUCH_EVENT_UP, x1, LV_PV_CY);
+    int first2 = 0;
+    int count2 = 0;
+    log_viewer_window(&first2, &count2);
+    const log_data_t *d = log_viewer_data();
+    REQUIRE(d != NULL);
+    CHECK(d->time[first2 + count2 - 1] >= 100.0f);
+    CHECK(fabsf(log_graph_time_at(x1 + 10) - t_slop) <= 1.0f);
+    settings_set(SET_PLOT_PAN, 0.0f);
+    draw();
+}
+
+/* Zoom at both ends: the window keeps the file's first row with the
+ * fingers at the left edge and its last row at the right. */
+TEST_CASE(a_pinch_at_either_end_keeps_the_end)
+{
+    make("time (s);voltage (V);current (A);rpm (rpm);throttle (%);source",
+         100, halves_row);
+    REQUIRE(open_time("MOTOR050.CSV"));
+    /* The midpoint carried right past where 9s could stay under it: the
+     * window stops at 0s, the file's first row. */
+    pinch(PLOT_X0 + 10, PLOT_X0 + 110, PLOT_X0 + 500, PLOT_X0 + 700);
+    int first = 0;
+    int count = 0;
+    log_viewer_window(&first, &count);
+    CHECK_EQ(first, 0);
+    CHECK(count < 100);
+    CHECK_FEQ(log_graph_time_at(PLOT_X0), 0.0f);
+    /* Half the run's 149s across the plot: 74.5s from 0s. */
+    CHECK(fabsf(log_graph_time_at(PLOT_X0 + 600) - 600.0f / 991.0f * 74.5f)
+          < 0.5f);
+    /* And carried left at the run's end: it stops at 149s. */
+    REQUIRE(open_time("MOTOR050.CSV"));
+    pinch(PLOT_X1 - 110, PLOT_X1 - 10, PLOT_X1 - 700, PLOT_X1 - 500);
+    log_viewer_window(&first, &count);
+    CHECK_EQ(first + count, 100);
+    CHECK(first > 0);
+    CHECK_FEQ(log_graph_time_at(PLOT_X1), 149.0f);
+    CHECK(fabsf(log_graph_time_at(PLOT_X1 - 600)
+                - (74.5f + 391.0f / 991.0f * 74.5f)) < 0.5f);
+    /* < and > carry a zoomed window along by rows, as before. */
+    /* The pinch's first finger put the cursor under it. */
+    const int c0 = log_viewer_cursor();
+    for (int i = 0; i < count + 2; ++i) {
+        tap(LV_PV_PREV_CX, LV_FOOT_CY);
+    }
+    int first2 = 0;
+    int count2 = 0;
+    log_viewer_window(&first2, &count2);
+    CHECK_EQ(count2, count);
+    CHECK_EQ(first2, c0 - (count + 2));
+    draw();
+}
+
+/* A file without a time column zooms in rows, as the plain plot does: the
+ * same pinch gives the window the import view's PLOT gives. */
+TEST_CASE(an_untimed_file_zooms_in_rows)
+{
+    make("voltage (V);current (A);rpm (rpm);throttle (%);source", 100,
+         untimed_row);
+    REQUIRE(open_time("MOTOR050.CSV"));
+    const log_data_t *d = log_viewer_data();
+    REQUIRE(d != NULL);
+    REQUIRE(d->time_name[0] == '\0');
+    pinch(400, 500, 300, 700);
+    int first = 0;
+    int count = 0;
+    log_viewer_window(&first, &count);
+    /* The plain plot of the same rows, through the import view. */
+    REQUIRE(open_time("MOTOR050.CSV"));
+    tap(LV_PV_MORE_CX, LV_FOOT_CY);
+    tap(LV_MORE_ROW_CX, LV_MORE_ROW_CY);
+    tap(LV_IM_BTN_CX(3), LV_FOOT_CY);
+    REQUIRE(!log_graph_shown());
+    pinch(400, 500, 300, 700);
+    int pfirst = 0;
+    int pcount = 0;
+    log_viewer_window(&pfirst, &pcount);
+    CHECK_EQ(first, pfirst);
+    CHECK_EQ(count, pcount);
+    draw();
+}
+
 int main(void)
 {
     RUN(an_automatic_test_recorded_on_the_bench_draws_over_its_time);
@@ -737,6 +918,10 @@ int main(void)
     RUN(a_cell_above_its_range_and_a_clipped_window_are_spans);
     RUN(a_strip_that_changes_in_every_pixel_column);
     RUN(two_fingers_zoom_a_time_file);
+    RUN(a_pinch_keeps_the_time_between_the_fingers);
+    RUN(a_pan_across_the_gap_keeps_the_time_under_the_finger);
+    RUN(a_pinch_at_either_end_keeps_the_end);
+    RUN(an_untimed_file_zooms_in_rows);
     RUN(a_chip_tap_focuses_and_hides_a_time_series);
     RUN(held_presses_on_a_time_file_end_as_on_the_xy_graph);
     RUN(a_steady_frame_of_a_time_file_does_no_work);

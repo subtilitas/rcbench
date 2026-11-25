@@ -10,6 +10,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -585,9 +586,30 @@ static void pinch_start(uint8_t id0, int16_t x0, uint8_t id1, int16_t x1)
     if (s.pinch_d0 < 20.0f) {
         s.pinch_d0 = 20.0f;
     }
+    if (lg_time_gestures()) {
+        /* A time file: the time under the midpoint and the window's
+         * length in s. */
+        s.pinch_n0 = lg.t1 - lg.t0;
+        s.pinch_s0 = lg_time_at((int)lroundf(pinch_mid()));
+        return;
+    }
     s.pinch_n0 = (float)s.win_n;
     s.pinch_s0 = (float)s.win0 +
                  (pinch_mid() - (float)PV_X) * s.pinch_n0 / (float)PV_W;
+}
+
+/**
+ * @brief Both fingers moved on a time file: the time under the midpoint at
+ *        the start stays under the midpoint, the window's length in s
+ *        scales with the fingers' distance; the rows follow at the end.
+ * @param d  The fingers' distance now, px, at least 20.
+ */
+static void pinch_apply_time(float d)
+{
+    const float span = s.pinch_n0 * s.pinch_d0 / d;
+    const float f = (pinch_mid() - (float)PV_X) / (float)(PV_W - 1);
+    const float t_lo = s.pinch_s0 - f * span;
+    lg_time_window(t_lo, t_lo + span);
 }
 
 /** @brief Both fingers' positions changed: set the window from them. */
@@ -597,6 +619,10 @@ static void pinch_apply(void)
     float d = pinch_dist();
     if (d < 20.0f) {
         d = 20.0f;
+    }
+    if (lg_time_gestures()) {
+        pinch_apply_time(d);
+        return;
     }
     float n = s.pinch_n0 * s.pinch_d0 / d;
     const float min_n = (float)((count < PV_MIN_WIN) ? count : PV_MIN_WIN);
@@ -639,6 +665,14 @@ static bool pan_enabled(void)
  */
 static void pan_apply(int x)
 {
+    if (lg_time_gestures()) {
+        /* A time file: the time under the finger stays under it. */
+        const float span = s.pan_span;
+        const float t_lo = s.pan_t0 + (float)(s.pan_x0 - x) * span
+                                          / (float)(PV_W - 1);
+        lg_time_window(t_lo, t_lo + span);
+        return;
+    }
     const int max0 = s.data.count - s.win_n;
     float w0 = (float)s.pan_win0 +
                (float)(s.pan_x0 - x) * (float)s.win_n / (float)PV_W;
@@ -782,6 +816,8 @@ static void plot_event(const touch_event_t *e)
                                              ? s.pan_x0 + PV_PAN_SLOP
                                              : s.pan_x0 - PV_PAN_SLOP);
                     s.pan_win0 = s.win0;
+                    s.pan_t0 = lg.t0;
+                    s.pan_span = lg.t1 - lg.t0;
                 }
             }
             if (s.panning) {

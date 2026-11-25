@@ -4013,12 +4013,15 @@ Chips gehören den vier Reihen, mit ihrem Wert am Cursor.
   Reihen unter den Balken; ein Schild ohne Platz in beiden entfällt. Eine
   Datei setzt höchstens 256 Linien und Balken; weitere werden gezählt und
   nicht gezeichnet.
-- Ein Finger, zwei Finger, `<` und `>` wirken wie auf der Kurve nach
-  Zeilen: der Cursor geht zur Zeile, deren Zeit dem Finger am nächsten
-  steht, zwei Finger zoomen und verschieben das Fenster, `<` und `>` gehen
-  eine Zeile weiter und nehmen das Fenster mit. Ein Tippen auf einen Chip
-  hebt seine Reihe hervor, blendet sie aus und holt sie zurück wie in der
-  Grafik oben.
+- Der Cursor geht zur Zeile, deren Zeit dem Finger am nächsten steht.
+  Zwei Finger zoomen und verschieben in der Zeit: die Zeit zwischen den
+  Fingern bleibt unter ihnen, und die Grafik zeigt die Zeilen, die den
+  gewählten Bereich einschließen, ihre Linien bis an die Ränder. Der
+  Bereich endet an der ersten und der letzten Zeit des Laufs und hält
+  mindestens 8 Zeilen. Eine Datei ohne Zeitspalte zoomt nach Zeilen wie
+  die Kurve nach Zeilen. `<` und `>` gehen eine Zeile weiter und nehmen
+  das Fenster mit. Ein Tippen auf einen Chip hebt seine Reihe hervor,
+  blendet sie aus und holt sie zurück wie in der Grafik oben.
 
 Der CSV-Leser (Comma-Separated Values) nimmt Dezimalkomma und -punkt,
 Einheitenzeilen und unterschiedlich lange Zeilen an. Die Importansicht

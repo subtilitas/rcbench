@@ -485,6 +485,9 @@ typedef struct {
     int16_t pan_x0;                     /**< finger x where the pan began, px */
     int pan_win0;                       /**< window start where the pan began */
     int pan_cursor0;                    /**< cursor before the touch */
+    float pan_t0;                       /**< a time graph: the window's first
+                                             time where the pan began, s */
+    float pan_span;                     /**< and its length, s */
 
     /* press tracking, shared by the list views */
     bool pressing;                      /**< whether a press is on a list row or button */

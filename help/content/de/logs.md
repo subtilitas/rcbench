@@ -194,7 +194,7 @@ Ein AUTOMATIC TEST, ein SUPPLY-, ein MOTOR- und ein SERVO-Lauf öffnen in der Gr
 - Eine Datei, deren Zeitspalte zurückspringt, steht nach Zeilennummer und zeigt keine Dauer.
 - Jeder Schritt eines AUTOMATIC TEST beginnt mit einer Linie und seiner Nummer auf einem Schild.
 - Ein Balken am oberen Rand zeigt Zeilen über ihrem Bereich (`>65535` rpm, Schild `>`) in der Warnfarbe und begrenzte Messfenster (`clipped` über 0, Schild `BEGRENZT`) in der Gefahrenfarbe.
-- Tippe auf einen Chip, um seine Reihe hervorzuheben, erneut, um sie auszublenden, ein drittes Mal, um sie zurückzuholen. Ein Finger, zwei Finger, `<` und `>` wirken wie in der Grafik oben.
+- Tippe auf einen Chip, um seine Reihe hervorzuheben, erneut, um sie auszublenden, ein drittes Mal, um sie zurückzuholen. Zwei Finger zoomen und verschieben in der Zeit: die Zeit zwischen den Fingern bleibt unter ihnen. Ein Finger und `<`, `>` wirken wie in der Grafik oben.
 
 ![Ein SUPPLY-Lauf: die Streifen CC und MODELL und eine Lücke](view:logs-supply-graph)
 
