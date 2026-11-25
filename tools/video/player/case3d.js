@@ -235,11 +235,11 @@ export function buildCase(displayImage) {
     pixel: (x, y) => lid.localToWorld(new THREE.Vector3(
       (x / 1024 - .5) * 156, H + 4.06, (y / 600 - .5) * 91.4)).toArray(),
     setLid: mm => { lid.position.y = mm; },
-    // The emergency stop's head, pressed in by 3mm at k = 1; the travel
-    // is an estimate.  A scene that moves it is seen from the back: a
+    // The emergency stop's head, pressed in by 8mm at k = 1: the owner's
+    // figure, not on the button's drawing.  A scene that moves it is seen from the back: a
     // light from there.
     setStop: k => {
-      head.position.z = -D / 2 - 11 + 3 * k;
+      head.position.z = -D / 2 - 11 + 8 * k;
       if (!head.userData.light) {
         head.userData.light = new THREE.DirectionalLight(0xffffff, 2.2);
         head.userData.light.position.set(-160, 180, -320);
