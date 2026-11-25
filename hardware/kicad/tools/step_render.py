@@ -96,7 +96,7 @@ class Renderer:
             RuntimeError: When the image cannot be written.
         """
         self.ctx.RemoveAll(False)
-        _shape, found = step_check.read(path)
+        _shape, found = step_check.read(path, unlocated=True)
         edge = Prs3d_LineAspect(_rgb(0.15, 0.15, 0.15),
                                 Aspect_TypeOfLine.Aspect_TOL_SOLID, 1.0)
         for solid, col in found:

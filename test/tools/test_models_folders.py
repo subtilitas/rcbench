@@ -7,6 +7,7 @@ and a stray file is found.
 SPDX-License-Identifier: MIT
 """
 
+import hashlib
 import sys
 from pathlib import Path
 
@@ -19,11 +20,11 @@ import gen_models  # noqa: E402
 
 
 def test_each_stem_is_in_one_folder():
-    """3 folders, 57 stems, none twice."""
+    """3 folders, 58 stems, none twice."""
     assert list(_models.FOLDERS) == ["pcb", "casing", "parts"]
     stems = [stem for group in _models.FOLDERS.values() for stem in group]
-    assert len(stems) == len(set(stems)) == 57
-    assert [len(group) for group in _models.FOLDERS.values()] == [18, 17, 22]
+    assert len(stems) == len(set(stems)) == 58
+    assert [len(group) for group in _models.FOLDERS.values()] == [18, 18, 22]
 
 
 def test_every_file_lies_in_its_folder():
@@ -75,3 +76,11 @@ def test_render_path_makes_its_folder(tmp_path):
     assert (tmp_path / "casing").is_dir()
     with pytest.raises(KeyError, match="no model and no view"):
         _models.render(tmp_path, "no_such_view")
+
+
+def test_onshape_enclosure_is_kept_as_delivered():
+    """No generator writes casing/rcbench_case.step: its bytes are fixed."""
+    data = _models.path("rcbench_case").read_bytes()
+    assert len(data) == 989610
+    assert hashlib.sha256(data).hexdigest() == (
+        "c54005ea49c552281feb1b0fc9785a857f98ee0b199269aa668386315c44d206")
