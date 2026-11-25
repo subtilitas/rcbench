@@ -324,6 +324,42 @@ low, und vor dem ersten Startbit jedes Frames zeigt sich ein High-Puls von 6,5us
 3,26us bei 38400baud. Ein Test auf so einer Leitung kann mit `n=`-Werten enden,
 die nicht passen.
 
+## Der Pin-Treiber der Telemetrieleitung
+
+`oyline <gpio> tx|rx|cut` lässt den Pin-Treiber der Programmierung für
+YGE-ESCs (`protocols/openyge/rp2350/oy_line.h`) auf einem freien Pin laufen,
+für einen Logic Analyser ohne angeschlossenen ESC. Das ist keine Page und
+hat keinen Schlüssel: der eine Frame, den es sendet, ist eine
+Telemetrie-Anfrage (`TELE_REQ`, 12B, Gerät 1), nie ein Schreiben. Es weist
+einen Pin so ab wie `ewline` und läuft nur, solange kein anderer
+Treibertest läuft. Ein ARM während eines Tests schließt die Leitung sofort
+und antwortet `oyline armed`.
+
+| Test | Auf dem Pin, der Reihe nach |
+|---|---|
+| `tx` | geparkt 20ms; zuhören 20ms; die Anfrage 3-mal, jede bis zu ihrer Freigabe und gefolgt von 40ms Zuhören; geparkt 20ms |
+| `rx` | zuhören 5ms; die Anfrage über die Overrides des Pins auf das Pad getrieben; zuhören 5ms; die Anfrage noch einmal mit einem Low-Stoppbit an ihrem fünften Byte und 2 Idle-Bitzeiten danach; zuhören 5ms; geparkt 5ms |
+| `cut` | zuhören 5ms; die Anfrage, 0.5ms nach ihrem Start geparkt; geparkt 20ms; zuhören 5ms; die Anfrage bis zu ihrer Freigabe; zuhören 5ms; geparkt 20ms |
+
+Geparkt ist ein Eingang mit Pull-down, zuhören ein Eingang mit Pull-up.
+Jede Einspeisung von `rx` blockiert die Hauptschleife für ihre 12B, 1.04ms.
+
+```
+oyline open gpio=13 bit=8680ns div=81+97/256
+oyline feed n=12 framing=0 match=1 crc_ok=1
+oyline feed n=12 framing=1 match=1 crc_ok=1
+oyline done gpio=13 sent=0 dropped=0 rx=24 framing=1 full=0 tx_max=<t>us rx_max=<t>us park=<t>us out_max=<t>us
+```
+
+`match` vergleicht die geholten Bytes mit den eingespeisten; ein
+Low-Stoppbit lässt die Daten wie eingespeist, daher bleiben `match` und
+`crc_ok` 1. Die letzte Zeile zählt die gesendeten Anfragen, die nach einer
+low gehaltenen Leitung verworfenen Anfragen, die empfangenen Bytes, die
+Bytes mit Low-Stoppbit und die Pufferfüllungen, dann nennt sie den
+längsten Aufruf jeder Art und die längste Zeit von einer Übergabe bis zu
+ihrer Freigabe, in Mikrosekunden. Diese Zeiten sind vor dem
+Stationsschritt H1 nicht bekannt ([OpenYGE](OpenYGE-de.md#92-pin-treiber)).
+
 ## Die ESC-Einstellungs-Page
 
 `esc` greift mit denselben Frames wie das Panel auf

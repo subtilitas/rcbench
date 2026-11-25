@@ -537,12 +537,12 @@ def test_named_rules(session, singles, pairs, ppm, broken):
 
 
 def test_every_refused_fit_has_a_named_rule(progs):
-    """169 refused mixes fit the model; SESSION_BLOCK refuses each."""
+    """217 refused mixes fit the model; SESSION_BLOCK refuses each."""
     bp = pb.board_programs(pb.BOARD_RSN, progs)
     sw = pb.sweep(pb.BOARD_RSN, bp, ZERO)
     assert sw.failures == []
-    assert sw.refused_fit == 169
-    assert sw.explained == {"SESSION_BLOCK": 169}
+    assert sw.refused_fit == 217
+    assert sw.explained == {"SESSION_BLOCK": 217}
 
 
 def test_a_refusal_without_a_named_rule_fails(progs, monkeypatch):

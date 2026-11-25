@@ -48,6 +48,9 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/safety" safety)
 # servo_str.c reads the servo test's English from the one text table.
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/text"   text)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/servo"  servo)
+# The OpenYGE ESC protocol and the telemetry wire's pin driver of programming
+# for YGE ESCs, which the console build's test (src/oyline_console.c) calls;
+# its PIO program is assembled and checked below.
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/openyge" openyge)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/pdmini"  pdmini)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/phase_tap" phase_tap)
@@ -235,7 +238,8 @@ if(IOMCU_CONSOLE AND SENSE_TRACE)
                         "console: build one of them")
 endif()
 if(IOMCU_CONSOLE)
-    target_sources(rcbench-iomcu PRIVATE src/console_hw.c src/ewline_console.c)
+    target_sources(rcbench-iomcu PRIVATE src/console_hw.c src/ewline_console.c
+                                         src/oyline_console.c)
     target_link_libraries(rcbench-iomcu pico_rand)
     target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_CONSOLE=1)
 else()
@@ -290,6 +294,18 @@ add_custom_command(TARGET rcbench-iomcu PRE_LINK
             -P "${CMAKE_CURRENT_LIST_DIR}/cmake/pio_words.cmake"
     VERBATIM)
 
+# The telemetry wire's line program of programming for YGE ESCs, the same way
+# (test/host/test_openyge_pio.c, fixtures/oy_line_words.txt).  The program is
+# assembled in every image; only the console build links code that loads it.
+add_custom_command(TARGET rcbench-iomcu PRE_LINK
+    COMMAND ${CMAKE_COMMAND}
+            -DHEADER=${CMAKE_CURRENT_BINARY_DIR}/openyge/rp2350/oy_line.pio.h
+            -DWORDS=${CMAKE_CURRENT_LIST_DIR}/../../test/host/fixtures/oy_line_words.txt
+            -DNAME=oy_line
+            -DTEST=test_openyge_pio
+            -P "${CMAKE_CURRENT_LIST_DIR}/cmake/pio_words.cmake"
+    VERBATIM)
+
 # The IOmcu's own sources are held to the same warnings as the host
 # build, scoped to this target so the SDK's headers are not judged by them.
 # -Wconversion is off here: the SDK's register macros trip it, and the shared
@@ -327,6 +343,7 @@ target_link_libraries(rcbench-iomcu
     rcbench_hitec
     rcbench_hitec_rp2350
     rcbench_escwire_rp2350
+    rcbench_openyge_rp2350
     rcbench_i2c_txq
     rcbench_i2c_txq_rp2350
     rcbench_bench

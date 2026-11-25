@@ -304,6 +304,40 @@ load on the line, such as a servo's signal wire, reads low on the pull-up alone,
 and a high pulse of 6.5us, 3.26us at 38400baud, shows before each frame's first
 start bit. A test on such a line can end in `n=` values that do not match.
 
+## The telemetry wire's pin driver
+
+`oyline <gpio> tx|rx|cut` runs the pin driver of programming for YGE ESCs
+(`protocols/openyge/rp2350/oy_line.h`) on a free pin, for a logic analyser
+with no ESC attached. It is not a page and has no key: the one frame it
+sends is a telemetry request (`TELE_REQ`, 12B, device 1), never a write. It
+refuses a pin the same way as `ewline` and runs only while no other driver
+test runs. An ARM during a test closes the line at once and answers
+`oyline armed`.
+
+| Test | On the pin, in order |
+|---|---|
+| `tx` | parked 20ms; listening 20ms; the request 3 times, each to its release and followed by 40ms listening; parked 20ms |
+| `rx` | listening 5ms; the request driven on the pad by the pin's overrides; listening 5ms; the request again with a low stop bit on its fifth byte and 2 idle bit times after it; listening 5ms; parked 5ms |
+| `cut` | listening 5ms; the request, parked 0.5ms after its start; parked 20ms; listening 5ms; the request to its release; listening 5ms; parked 20ms |
+
+Parked is an input with its pull-down, listening an input with its pull-up.
+Each `rx` feed blocks the main loop for its 12B, 1.04ms.
+
+```
+oyline open gpio=13 bit=8680ns div=81+97/256
+oyline feed n=12 framing=0 match=1 crc_ok=1
+oyline feed n=12 framing=1 match=1 crc_ok=1
+oyline done gpio=13 sent=0 dropped=0 rx=24 framing=1 full=0 tx_max=<t>us rx_max=<t>us park=<t>us out_max=<t>us
+```
+
+`match` compares the bytes taken with the bytes fed; a low stop bit leaves
+the data as fed, so `match` and `crc_ok` stay 1. The last line counts the
+requests sent, the requests dropped after a line held low, the bytes
+received, the bytes with a low stop bit and the buffer fills, then gives
+the longest call of each kind and the longest time from a hand-over to its
+release, in microseconds. Those times are not known before the station
+step H1 ([OpenYGE](OpenYGE.md#92-pin-driver)).
+
 ## The ESC settings page
 
 `esc` accesses [the ESC_WIRE page](LinkEsc.md) with the same frames as the

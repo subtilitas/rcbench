@@ -486,14 +486,56 @@ needs a complete table read in the same session, a count of 32, a v3
 header and firmware V1.03547 or later. Writable are the fields section 5.3
 marks CHECK or edit, within their Writable values. A write reads the table
 again first and stops with nothing sent when it differs. After the writes
-it reads the whole table again and compares it with the target. The pin
-driver, the link pages and the screens are not built, so neither board
-runs the session.
+it reads the whole table again and compares it with the target. The link
+pages and the screens are not built, so neither board runs the session.
+The pin driver is built (section 9.2).
 
 Open decision: which ESC protocols beyond OpenYGE are supported. The source
 material sits beside Hobbywing, Kontronik, Scorpion, OMP, ZTW, APD, FLY,
 Graupner and XDFly, several sharing a state machine and none sharing a frame
 format. One protocol proven on hardware first, then a second.
+
+### 9.2 Pin driver
+
+`protocols/openyge/rp2350/oy_line.c` drives the telemetry wire on one
+RP2350 pin behind `oy_driver_t`. Its PIO (programmable input/output)
+program is `oy_line.pio`; the arithmetic that feeds and reads it is
+`openyge_pio.c`. The host suite `openyge_pio` runs the program in a model
+of the state machine, and the IOmcu build holds pioasm's words to the
+same list (`test/host/fixtures/oy_line_words.txt`). The IOmcu links the
+driver; only the console build's test `oyline` calls it.
+
+| | |
+| --- | --- |
+| Resources | 1 state machine, 25 instruction words, 2 DMA (direct memory access) channels, no interrupt |
+| Bit | 16 state machine cycles; divider 81 + 97/256 at 150MHz: 8680ns, 16ppm off |
+| Frame out | 1 to 140 bytes, push-pull, only while the line is high between bytes |
+| Release | 16 cycles after the last stop bit's edge: at the end of the stop bit |
+| Echo | none: the receiver does not run while a frame goes out |
+| Receive | data bits sampled 22 + 16 k cycles after the sample that saw the start bit, the stop bit at 150; a sender up to 4% off with no gaps |
+| Framing error | a low stop bit: the byte is handed over and counted |
+| Receive buffer | 256 entries of 2B; the bytes after a full buffer are dropped, counted once per fill |
+| Late frame | a frame still not out 1000ms after its longest time to the release, on a line held low, is dropped by the next send and counted |
+
+| When | Pad |
+| --- | --- |
+| Before the supply reads on | input, pull-down, input buffer off |
+| Listening | input, pull-up of 50 to 80kΩ, until U1 is measured |
+| Sending | driven, both levels |
+| Fault, STOP, link loss | input, pull-down at once; the state machine stops first |
+
+The time of each driver call is not known; H1 records it with the console
+test. Its station step (`IOMCU_CONSOLE=ON`, port 0 on GPIO 13, logic
+analyser at 1.65V):
+
+| Command | Pass |
+| --- | --- |
+| `oyline 13 tx` | bit time 8.68µs within 0.5%; 3 requests of 12B decode as sent with a valid CRC; the pad released within 1 bit after each last stop bit, the line high on the pull-up; low on the pull-down when parked |
+| `oyline 13 rx` | `match=1 crc_ok=1 framing=0`, then `framing=1` for the request with a low stop bit |
+| `oyline 13 cut` | the line falls to low on the pull-down 0.5ms into the request |
+
+The session steps of H1 (open, BY HAND entry, STOP, link cut) need the
+IOmcu page.
 
 ---
 

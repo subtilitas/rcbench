@@ -1,0 +1,78 @@
+;
+; The telemetry wire of programming for YGE ESCs (electronic speed
+; controllers): a half-duplex UART (universal asynchronous
+; receiver-transmitter) at 115200 baud, 8N1, on one pin.  The receiver runs
+; until a stream is in the transmit FIFO; the frame goes out push-pull, the
+; pad is released at the end of the last stop bit, and the receiver runs
+; again.
+;
+; The pad is the state machine's OUT, SET, IN and JMP pin.  The clock divider
+; makes one bit 16 cycles.  No autopull and no autopush: the program pulls
+; and pushes.  Both shift registers shift right.  The MOV STATUS source is
+; all ones while the transmit FIFO holds fewer than 1 word.  The words come
+; from the transmit FIFO in the order openyge_pio.h gives
+; (protocols/openyge/include): bit count, the bits.
+;
+; Receive.  The receiver looks for a low every 3 cycles while the line is
+; high, and for a stream in the transmit FIFO between two looks.  A low seen,
+; it has to be low still 8 cycles on, or the wait goes on.  The data bits are
+; sampled 22 to 134 cycles after the sample that saw the low, the stop bit at
+; 150.  The 9 bits go to the receive FIFO as one word with `push noblock`:
+; bits 23 to 30 the data, least significant first, bit 31 the stop bit.  A
+; full FIFO drops the word, and the receiver goes on.
+;
+; After a high stop bit the receiver looks for the next low at once, 153
+; cycles after the last one seen, so a sender 4% fast sending with no gaps
+; keeps its start bits ahead of the sample.  After a low stop bit it waits for
+; the idle level first: a line held low is one byte.
+;
+; Transmit.  The pad driven high first, then a bit time is `pull ifempty`,
+; `out pins` and `jmp y--`: 16 cycles.  The output drives both levels.
+;
+; Release.  `set pindirs, 0` comes 16 cycles after the last bit's `out pins`,
+; at the end of the stop bit.  The receiver does not run while the frame goes
+; out, so the frame's own bytes are not received.
+;
+; test/host/test_openyge_pio.c assembles this file, runs the words in a model
+; of the state machine and holds them to fixtures/oy_line_words.txt, which a
+; firmware build holds pioasm's output to.
+;
+; SPDX-License-Identifier: MIT
+;
+
+.program oy_line
+
+idle_hi:
+    mov x, status           ; all ones while the transmit FIFO is empty
+    jmp !x, send            ; a stream waits
+.wrap_target
+wait_lo:
+    jmp pin, idle_hi
+    set y, 7 [6]
+    jmp pin, wait_lo        ; high again in mid start bit: no start bit
+    nop [12]
+rbit:
+    in pins, 1 [14]
+    jmp y--, rbit
+    jmp pin, stop_high
+    in null, 1              ; the stop bit, 0
+    push noblock
+wait_hi:
+    jmp pin, wait_lo
+    jmp wait_hi
+send:
+    pull                    ; bits to send, less one
+    out y, 32
+    set pins, 1
+    set pindirs, 1          ; driven high before the first bit
+bit:
+    pull ifempty
+    out pins, 1 [13]
+    jmp y--, bit
+    nop
+    set pindirs, 0          ; release
+    jmp wait_lo
+stop_high:
+    in y, 1                 ; the stop bit, 1: Y is all ones after its loop
+    push noblock
+.wrap

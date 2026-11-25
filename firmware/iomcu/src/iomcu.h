@@ -166,7 +166,10 @@ extern uint64_t      s_base_reserved;
 /** @brief A programming port was out of PWM at the last ports_hold_follow(). */
 extern bool          s_ports_held;
 #if IOMCU_CONSOLE
-/** @brief The pin the console's test of a driver holds (ewline_console.c). */
+/**
+ * @brief The pin the console's test of a driver holds (ewline_console.c,
+ *        oyline_console.c); one test runs at a time.
+ */
 extern uint64_t      s_console_pins;
 #endif
 /**
