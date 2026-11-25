@@ -8,6 +8,13 @@ history is in git.
 
 ### Added
 
+- `hardware/mechanical/`: models of 4 parts measured from owner photos on
+  millimetre paper: `supvan_t50m_pro.step`, the Supvan KATASYMBOL T50M
+  Pro label printer (120.0 x 86.3 x 56.0mm); `usbc_plug_breakout.step`,
+  a USB-C plug on a breakout board; `charger_boost_2s4s.step`, a 2S to
+  4S USB-C boost charger board; `pd_trigger_pd31.step`, a purple USB-C
+  PD3.1 trigger board
+  ([Mechanical parts](hardware/mechanical/README.md#parts-measured-on-millimetre-paper)).
 - LOGS opens a run file the bench wrote in the plot at once, with the
   columns of its kind: LIMIT RUN `pulse`, `current`, `angle`; RUDDER AUTO
   `pulse`, `current`, `measured`; AUTOMATIC TEST `command`, `current`,

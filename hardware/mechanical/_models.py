@@ -19,12 +19,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent / "models"
 FOLDERS = {
     "pcb": (
-        "boost_5v_en", "core2350b", "core2350b_usb_adapter",
-        "dcdc_buck_mini", "es3c28p", "esp32_c6_zero", "esp32_s3_lcd_185",
-        "ina219_cjmcu219",
+        "boost_5v_en", "charger_boost_2s4s", "core2350b",
+        "core2350b_usb_adapter", "dcdc_buck_mini", "es3c28p",
+        "esp32_c6_zero", "esp32_s3_lcd_185", "ina219_cjmcu219",
         "ina228_node_layout", "ina228_xt90", "ina3221_module",
-        "lipo_charger_boost_5v", "matek_mbec12s", "panel_7b", "rbmod_v2",
-        "rbmod_v2_smd", "rp2350_can", "usbc_pd_trigger"),
+        "lipo_charger_boost_5v", "matek_mbec12s", "panel_7b",
+        "pd_trigger_pd31", "rbmod_v2",
+        "rbmod_v2_smd", "rp2350_can", "usbc_pd_trigger",
+        "usbc_plug_breakout"),
     "casing": (
         "dial_base_bottom", "dial_base_top", "display_node_box",
         "display_node_lid", "display_node_xt60_box",
@@ -37,10 +39,9 @@ FOLDERS = {
         "estop_m16_assembly", "estop_m16_button", "estop_m16_nut",
         "estop_m16_shim", "flap_drive_assembly", "flap_drive_wing",
         "flycolor_flydragon_lite_40a", "hitec_d485hw", "knob_as5600",
-        "knob_magnets",
-        "kst_x10", "lipo_102540_1000mah", "lipo_702030_380mah", "m5dial",
-        "m5dial_nut", "motor_simulator", "servo_standard", "tmotor_at2814",
-        "wit_imu"),
+        "knob_magnets", "kst_x10", "lipo_102540_1000mah",
+        "lipo_702030_380mah", "m5dial", "m5dial_nut", "motor_simulator",
+        "servo_standard", "supvan_t50m_pro", "tmotor_at2814", "wit_imu"),
 }
 FOLDER = {stem: folder for folder, stems in FOLDERS.items()
           for stem in stems}

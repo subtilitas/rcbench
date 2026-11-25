@@ -25,6 +25,10 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `_esp32_s3_lcd_185_data.py` | outlines, holes and the place and size of the parts of the ESP32-S3-Touch-LCD-1.85, written by `_measure_esp32_s3_lcd_185.py` |
 | `bearing_6704_2rs.py` | spec of the ball bearing 6704-2RS, 20 x 27 x 4mm |
 | `acrylic_disc.py` | spec of a clear acrylic disc, 49.5mm across and 2mm thick |
+| `supvan_t50m_pro.py` | spec of the Supvan KATASYMBOL T50M Pro label printer, measured from owner photos on millimetre paper |
+| `usbc_plug_breakout.py` | spec of a USB-C plug on a small breakout board with 4 wire pads, measured from owner photos |
+| `charger_boost_2s4s.py` | spec of the 2S to 4S USB-C boost charger board (print DDTCCRUB), measured from owner photos |
+| `pd_trigger_pd31.py` | spec of the purple USB-C PD3.1 trigger board, 5 to 48V, measured from owner photos |
 | `rp2350_can.py`, `ina3221_module.py`, `dcdc_buck_mini.py`, `usbc_pd_trigger.py` | specs of 4 module boards, part by part: Waveshare RP2350-CAN, INA3221 board, Mini560 buck converter, USB-C PD trigger board |
 | `matek_mbec12s.py` | spec of the Matek mBEC12S buck converter, 6V to 60V in |
 | `ina228_node.py` | layout of the remote INA228 sensor node: INA228 module, buck converter and display in place |
@@ -586,6 +590,24 @@ Limits:
 Sources: Kingst LA2016, 95 x 55 x 23mm (Core Electronics, CNX Software);
 EMEET PIXY, 53 x 53 x 73mm (Mighty Gadget); Waveshare RP2350-Zero,
 23.5 x 18mm (Waveshare).
+
+## Parts measured on millimetre paper
+
+Four parts are modelled from owner photos on millimetre paper
+(2026-11-25). Each spec's docstring lists its sources, the scale, the
+height correction and every estimated value.
+
+| File | Content | Size | Within |
+| --- | --- | --- | --- |
+| `parts/supvan_t50m_pro.step` | Supvan KATASYMBOL T50M Pro label printer: lid and base with the joint, sloping top, ribbed grip, orange lid lever, USB-C socket, label slit, control panel with power and print buttons and the LED bar, 4 feet, end slot; 87 solids | 120.0 x 86.3 x 56.0mm over the feet; the lever 3mm past one side | about 2mm |
+| `pcb/usbc_plug_breakout.step` | USB-C plug on a green breakout board: steel shell with the black insulator, black collar with steel bands, 24 tails on 12 pads each side, 4 wire pads (G, D+, D-, one unlabelled), R1 (0603); 76 solids | 15.4mm long; board 4.6 x 7.7mm behind the collar | about 0.1mm in plan |
+| `pcb/charger_boost_2s4s.step` | 2S to 4S USB-C boost charger, variant 4S 1A: USB-C socket, inductor, diode, 2 SOP-8 chips, shunt R100, capacitors, 2 LEDs, BAT and GND slotted pads, 2 holes of 3.1mm, print of both sides with the 2S/3S/4S and 1A/2A/4A jumpers; 225 solids | 17.9 x 36.8 x 1.6mm; socket 1.4mm past the edge | about 0.2mm in plan |
+| `pcb/pd_trigger_pd31.step` | purple USB-C PD3.1 trigger, low-voltage model: USB-C socket, 2 x 2mm chip, chip parts, jumper pads 1 to 3, + and - holes 7.9mm apart, the underside's voltage table (A: 5 to 20V, B: 5 to 48V); 110 solids | 13.0 x 10.0 x 1.0mm; socket 1.5mm past the edge | about 0.15mm in plan |
+
+Heights are read from edge-on photos where the owner took one (the
+charger, the PD trigger); the printer's from its side photo; the plug
+board's thickness and collar height are estimated. The printer's
+dimensions are not published by Supvan as far as a web search found.
 
 ## Panel board
 
