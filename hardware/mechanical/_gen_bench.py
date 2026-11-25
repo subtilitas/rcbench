@@ -226,16 +226,13 @@ def imu():
     return seated("parts/wit_imu.step", 575.0, 112.0, 0.0, rz=90.0)
 
 
-def load_resistor():
-    """A gold aluminium-housed power resistor, 50 x 28 x 15, finned."""
-    body = fuse(cbox(0, 0, 0, 50.0, 16.0, 15.0),
-                cbox(0, 0, 0, 36.0, 28.0, 3.0))
-    body = cut(body, *[cbox(0, y, 12.0, 52.0, 2.0, 4.0)
-                       for y in (-3.5, 0.0, 3.5)])
-    parts = [(body, GOLD)]
-    for x in (-27.0, 27.0):
-        parts.append((cbox(x, 0, 6.0, 4.0, 2.0, 4.0), METAL))
-    return [(place(s, dx=326.0, dy=318.0, rz=30.0), c) for s, c in parts]
+def servo_gold():
+    """A gold-coloured servo held down with tesa tape.
+
+    Its type is not known: drawn as servo_standard.step, in gold.
+    """
+    return [(s, GOLD) for s, _c in seated("parts/servo_standard.step",
+                                          326.0, 318.0, 0.0, rz=30.0)]
 
 
 def logic_analyzer():
@@ -263,18 +260,37 @@ def supplies():
     return out
 
 
-def host_pi5():
-    """The host, a Raspberry Pi 5 in a black vented case.
+def unknown_box():
+    """A black vented box with red LEDs, 70 x 115 x 35 (photo estimate).
 
-    The case, 70 x 115 x 35, is a photo estimate; Ethernet towards the
-    viewer.
+    What it is is not known; the Pi 5 lies on it.
     """
     body = cbox(105.0, 362.0, 0, 70.0, 115.0, 35.0)
     vents = [cyl((x, y, 30.0), (0, 0, 1), 1.5, 6.0)
              for x in range(80, 132, 8) for y in range(320, 405, 8)]
     return [(cut(body, *vents), DARK),
             (cbox(105.0, 304.0, 4.0, 16.0, 2.0, 13.5), METAL),
-            (cbox(90.0, 372.0, 35.0, 4.0, 4.0, 0.5), RED)]
+            (cbox(80.0, 412.0, 35.0, 4.0, 4.0, 0.5), RED)]
+
+
+def host_pi5():
+    """The host, a Raspberry Pi 5 under a clear cover, on the black box.
+
+    The board is 85 x 56 (Raspberry Pi's drawing); the cover and the
+    connectors' boxes are estimates.
+    """
+    z = 35.0
+    cx, cy = 105.0, 362.0
+    parts = [(cbox(0, 0, z, 56.0, 85.0, 1.6), GREEN),
+             (cbox(0, 0, z + 1.6, 15.0, 15.0, 1.2), METAL),
+             (cbox(0, -34.0, z + 1.6, 16.0, 21.0, 13.5), METAL),
+             (cbox(-9.0, 34.0, z + 1.6, 13.0, 17.0, 16.0), METAL),
+             (cbox(9.0, 34.0, z + 1.6, 13.0, 17.0, 16.0), METAL),
+             (cbox(0, 0, z + 19.0, 62.0, 91.0, 2.0), ACRYLIC)]
+    for x in (-24.5, 24.5):
+        for y in (-29.0, 29.0):
+            parts.append((cbox(x, y, z + 1.6, 4.0, 4.0, 17.4), METAL))
+    return [(place(s, dx=cx, dy=cy), c) for s, c in parts]
 
 
 def usb_hub_1():
@@ -413,11 +429,12 @@ NODES = [
     ("servo", "bench", servo, (600.0, 205.0, 0)),
     ("as5600", "servo", as5600, (600.0, 198.0, 47.0)),
     ("imu", "servo", imu, (575.0, 112.0, 0)),
-    ("load_resistor", "bench", load_resistor, (326.0, 318.0, 0)),
+    ("servo_gold", "bench", servo_gold, (326.0, 318.0, 0)),
     ("instruments", "bench", None, (0, 0, 0)),
     ("logic_analyzer", "instruments", logic_analyzer, (342.0, 260.0, 0)),
     ("supplies", "bench", None, (0, 0, 0)),
-    ("host_pi5", "bench", host_pi5, (105.0, 362.0, 0)),
+    ("unknown_box", "bench", unknown_box, (105.0, 362.0, 0)),
+    ("host_pi5", "unknown_box", host_pi5, (105.0, 362.0, 35.0)),
     ("usb_hub_1", "bench", usb_hub_1, (162.0, 350.0, 0)),
     ("usb_hub_2", "bench", usb_hub_2, (192.0, 350.0, 12.0)),
     ("ring_lamp", "bench", ring_lamp, RING[3]),
