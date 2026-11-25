@@ -3709,7 +3709,8 @@ are the four series' own, with their value at the cursor.
   set, its lines running to the plot's edges. The range stops at the
   run's first and last time and holds at least 8 rows. A file without a
   time column zooms in rows, as the plot of rows does. `<` and `>` step a
-  row and carry the window along. A chip tap focuses, hides and brings
+  row; past an edge the range moves so that row stands on the edge. The
+  cursor stays on a row the plot draws. A chip tap focuses, hides and brings
   back its series as on the graph above.
 
 The CSV (comma-separated values) reader accepts decimal commas or points,

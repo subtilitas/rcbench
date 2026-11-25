@@ -4019,8 +4019,9 @@ Chips gehören den vier Reihen, mit ihrem Wert am Cursor.
   gewählten Bereich einschließen, ihre Linien bis an die Ränder. Der
   Bereich endet an der ersten und der letzten Zeit des Laufs und hält
   mindestens 8 Zeilen. Eine Datei ohne Zeitspalte zoomt nach Zeilen wie
-  die Kurve nach Zeilen. `<` und `>` gehen eine Zeile weiter und nehmen
-  das Fenster mit. Ein Tippen auf einen Chip hebt seine Reihe hervor,
+  die Kurve nach Zeilen. `<` und `>` gehen eine Zeile weiter; über einen
+  Rand hinaus wandert der Bereich, bis diese Zeile am Rand steht. Der
+  Cursor bleibt auf einer Zeile, die die Grafik zeichnet. Ein Tippen auf einen Chip hebt seine Reihe hervor,
   blendet sie aus und holt sie zurück wie in der Grafik oben.
 
 Der CSV-Leser (Comma-Separated Values) nimmt Dezimalkomma und -punkt,

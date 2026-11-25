@@ -285,9 +285,10 @@ int lg_time_col(int i);
 float lg_time_colf(int i);
 
 /**
- * @brief The row whose time stands nearest pixel column @p x.
+ * @brief The row whose time stands nearest pixel column @p x, of the rows
+ *        the plot draws.
  * @param x  The column, in the screen's coordinates.
- * @return the row in the window.
+ * @return a row on the plot.
  */
 int lg_time_row_at(int x);
 
@@ -317,6 +318,23 @@ float lg_time_at(int x);
  * @param t_hi  Its last time, s.
  */
 void lg_time_window(float t_lo, float t_hi);
+
+/**
+ * @brief The row the plot draws nearest row @p row: @p row itself on the
+ *        plot, else the first or the last row on it.
+ * @param row  The row.
+ * @return a row on the plot.
+ */
+int lg_time_drawn(int row);
+
+/**
+ * @brief Bring the cursor's row onto a time file's plot after < or >: a
+ *        row past the range of time moves the range so the row stands on
+ *        its nearer edge.
+ * @return true when the time graph took the step, the plain plot's rows
+ *         otherwise.
+ */
+bool lg_time_follow(void);
 
 /**
  * @brief Whether the step in time from row @p i - 1 to row @p i is a gap.

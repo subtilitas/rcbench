@@ -549,6 +549,11 @@ static void set_cursor_from_x(int x)
 /** @brief Keep the cursor's sample on screen after an arrow press. */
 static void follow_cursor(void)
 {
+    if (lg_time_follow()) {
+        /* A time file: the range of time follows (log_graph_time.c). */
+        log_viewer_invalidate();
+        return;
+    }
     if (s.cursor < s.win0) {
         s.win0 = s.cursor;
         lv_compute_spans();

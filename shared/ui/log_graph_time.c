@@ -136,9 +136,45 @@ int lg_time_row_at(int x)
         }
     }
     if (a > s.win0 && t - s.data.time[a - 1] <= s.data.time[a] - t) {
-        return a - 1;
+        --a;
     }
-    return a;
+    return lg_time_drawn(a);
+}
+
+int lg_time_drawn(int row)
+{
+    const int last = s.win0 + s.win_n - 1;
+    int v0 = s.win0;
+    int v1 = last;
+    /* The rows on the plot are the window's less the brackets beyond the
+     * range of time: a run of rows from v0 to v1. */
+    while (v0 < last && lg_time_col(v0) < 0) {
+        ++v0;
+    }
+    while (v1 > v0 && lg_time_col(v1) < 0) {
+        --v1;
+    }
+    return (row < v0) ? v0 : (row > v1) ? v1 : row;
+}
+
+bool lg_time_follow(void)
+{
+    if (!lg_time_gestures() || s.cursor < 0 || s.cursor >= s.data.count) {
+        return false;
+    }
+    if (s.cursor >= s.win0 && s.cursor < s.win0 + s.win_n
+        && lg_time_col(s.cursor) >= 0) {
+        return true;
+    }
+    /* The range moves by the cursor's row: the row on its nearer edge. */
+    const float span = lg.t1 - lg.t0;
+    const float t = s.data.time[s.cursor];
+    if (t < lg.t0) {
+        lg_time_window(t, t + span);
+    } else {
+        lg_time_window(t - span, t);
+    }
+    return true;
 }
 
 bool lg_time_gestures(void)
@@ -361,6 +397,10 @@ void lg_time_spans(void)
         lg.req = false;
         lg.t0 = s.data.time[s.win0];
         lg.t1 = s.data.time[last];
+    }
+    if (lg_time_gestures() && s.cursor >= 0 && s.cursor < s.data.count) {
+        /* The cursor stays on a row the plot draws. */
+        s.cursor = lg_time_drawn(s.cursor);
     }
     gaps();
     for (int k = 0; k < s.data.n_fields; ++k) {

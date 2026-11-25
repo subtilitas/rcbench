@@ -863,16 +863,93 @@ TEST_CASE(a_pinch_at_either_end_keeps_the_end)
     CHECK(fabsf(log_graph_time_at(PLOT_X1 - 600)
                 - (74.5f + 391.0f / 991.0f * 74.5f)) < 0.5f);
     /* < and > carry a zoomed window along by rows, as before. */
-    /* The pinch's first finger put the cursor under it. */
-    const int c0 = log_viewer_cursor();
+    /* < past the left edge moves the range by the row stepped to; its
+     * length in time stays. */
+    const float span = log_graph_time_at(PLOT_X1)
+                       - log_graph_time_at(PLOT_X0);
     for (int i = 0; i < count + 2; ++i) {
         tap(LV_PV_PREV_CX, LV_FOOT_CY);
     }
-    int first2 = 0;
-    int count2 = 0;
-    log_viewer_window(&first2, &count2);
-    CHECK_EQ(count2, count);
-    CHECK_EQ(first2, c0 - (count + 2));
+    const int c = log_viewer_cursor();
+    CHECK(c < first);
+    CHECK_EQ(log_graph_row_px(c), PLOT_X0);
+    CHECK(fabsf(log_graph_time_at(PLOT_X1) - log_graph_time_at(PLOT_X0)
+                - span) < 0.01f);
+    draw();
+}
+
+/** @brief Whether the cursor's row stands on the plot. */
+static bool cursor_drawn(void)
+{
+    const int px_c = log_graph_row_px(log_viewer_cursor());
+    return px_c >= PLOT_X0 && px_c <= PLOT_X1;
+}
+
+/* After a zoom in time the window holds a row beyond each edge of the
+ * range.  < and > step onto the plot's rows only: past an edge the range
+ * moves by the row stepped to; a finger at either edge takes a row on the
+ * plot.  Codex's file: 47.25-141.75s brackets row 9 at 9s. */
+TEST_CASE(the_cursor_steps_over_the_rows_drawn_after_a_zoom)
+{
+    make("time (s);voltage (V);current (A);rpm (rpm);throttle (%);source",
+         100, split_row);
+    REQUIRE(open_time("MOTOR050.CSV"));
+    const int mid = PLOT_X0 + (LV_PV_COLS - 1) / 2;
+    pinch(mid - 50, mid + 50, mid - 100, mid + 100);
+    CHECK(cursor_drawn());
+    /* A finger at the left edge: row 10 at 100s, not the bracket row 9. */
+    tap(PLOT_X0, LV_PV_CY);
+    CHECK_EQ(log_viewer_cursor(), 10);
+    CHECK(cursor_drawn());
+    const float left = log_graph_time_at(PLOT_X0);
+    /* < onto row 9: the range moves to start at 9s. */
+    tap(LV_PV_PREV_CX, LV_FOOT_CY);
+    CHECK_EQ(log_viewer_cursor(), 9);
+    CHECK(cursor_drawn());
+    CHECK(log_graph_time_at(PLOT_X0) < left);
+    /* From 9s; the 6 rows that range brackets widen to 8, from 8s. */
+    CHECK_FEQ(log_graph_time_at(PLOT_X0), 8.0f);
+    for (int i = 0; i < 12; ++i) {
+        tap(LV_PV_PREV_CX, LV_FOOT_CY);
+        CHECK(cursor_drawn());
+    }
+    CHECK_EQ(log_viewer_cursor(), 0);
+    /* > to the right edge and past it: each row on the plot. */
+    tap(PLOT_X1, LV_PV_CY);
+    const int right = log_viewer_cursor();
+    CHECK(cursor_drawn());
+    for (int i = 0; i < 30; ++i) {
+        tap(LV_PV_NEXT_CX, LV_FOOT_CY);
+        CHECK(cursor_drawn());
+    }
+    CHECK_EQ(log_viewer_cursor(), right + 30);
+    CHECK_FEQ(log_graph_time_at(PLOT_X1),
+              log_viewer_data()->time[right + 30]);
+    /* The footer's sample is the cursor's, on the plot. */
+    draw();
+}
+
+/* Zooms and pans in time keep the cursor on a row the plot draws. */
+TEST_CASE(the_cursor_stays_on_the_plot_through_zoom_and_pan)
+{
+    make("time (s);voltage (V);current (A);rpm (rpm);throttle (%);source",
+         100, halves_row);
+    REQUIRE(open_time("MOTOR050.CSV"));
+    settings_set(SET_PLOT_PAN, 1.0f);
+    pinch(PLOT_X0 + 100, PLOT_X0 + 140, PLOT_X0 + 20, PLOT_X0 + 500);
+    CHECK(cursor_drawn());
+    /* A pan to later times: the cursor the pan gives back, at 15s, is
+     * left of the new range and moves onto its first row. */
+    send(TOUCH_EVENT_DOWN, PLOT_X1 - 10, LV_PV_CY);
+    send(TOUCH_EVENT_MOVE, PLOT_X1 - 400, LV_PV_CY);
+    CHECK(cursor_drawn());
+    send(TOUCH_EVENT_MOVE, PLOT_X0 + 10, LV_PV_CY);
+    CHECK(cursor_drawn());
+    send(TOUCH_EVENT_UP, PLOT_X0 + 10, LV_PV_CY);
+    CHECK(cursor_drawn());
+    pinch(PLOT_X1 - 140, PLOT_X1 - 100, PLOT_X1 - 500, PLOT_X1 - 20);
+    CHECK(cursor_drawn());
+    settings_set(SET_PLOT_PAN, 0.0f);
     draw();
 }
 
@@ -921,6 +998,8 @@ int main(void)
     RUN(a_pinch_keeps_the_time_between_the_fingers);
     RUN(a_pan_across_the_gap_keeps_the_time_under_the_finger);
     RUN(a_pinch_at_either_end_keeps_the_end);
+    RUN(the_cursor_steps_over_the_rows_drawn_after_a_zoom);
+    RUN(the_cursor_stays_on_the_plot_through_zoom_and_pan);
     RUN(an_untimed_file_zooms_in_rows);
     RUN(a_chip_tap_focuses_and_hides_a_time_series);
     RUN(held_presses_on_a_time_file_end_as_on_the_xy_graph);
