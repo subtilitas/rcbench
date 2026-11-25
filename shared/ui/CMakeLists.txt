@@ -128,6 +128,9 @@ set(SRCS
     log_viewer_load.c
     log_viewer_draw.c
     log_viewer_events.c
+    log_graph.c
+    log_graph_xy.c
+    log_graph_draw.c
     logs_strip.c
     log_select.c
     settings_screen.c

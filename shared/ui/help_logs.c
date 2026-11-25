@@ -8,7 +8,9 @@
  * dock on the left.  The import view: DETECTED, SEP and NUM with the dock
  * on the right; the columns, BACK and PLOT with the dock on the left.  The
  * plot: a series chip, the plot, BACK and the cursor's keys with the dock
- * on the right; MORE with the dock on the left.  The DELETE question leaves no page.  LOGS drives no
+ * on the right; MORE with the dock on the left.  An XY file's graph
+ * (log_graph_int.h): a series chip, the plot, BACK and the cursor's keys;
+ * MORE, the markers' legend and RUDDR's tabs.  The DELETE question leaves no page.  LOGS drives no
  * output, so every page shows while ARMED as well.
  *
  * SPDX-License-Identifier: MIT
@@ -19,7 +21,7 @@
 #include "logs_strip.h"
 #include "ui_help.h"
 
-#include "log_viewer_int.h"
+#include "log_graph_int.h"
 
 int lv_help_count(void)
 {
@@ -94,6 +96,20 @@ static void import_page(int i, ui_help_page_t *p)
 }
 
 /**
+ * @brief The graph's first page: a series chip, the plot, BACK and the
+ *        cursor's keys.
+ * @param p The page, its side set.
+ */
+static void graph_page(ui_help_page_t *p)
+{
+    (void)ui_help_add(p, TR(HG_LOG_CHIP_NAME), TX_HG_LOG_GRAPH_CHIP,
+                      LG_SLOT(0));
+    (void)ui_help_add(p, TR(LOG_PLOT), TX_HG_LOG_GRAPH_AREA, PV_PANEL);
+    (void)ui_help_add(p, TR(LOG_BACK), TX_HG_LOG_BACK_LIST, PV_BACK);
+    (void)ui_help_add(p, "< >", TX_HG_LOG_GRAPH_STEP, span(PV_PREV, PV_NEXT));
+}
+
+/**
  * @brief The plot's page @p i: a series chip, the plot, BACK (to the import
  *        view after its PLOT, else to the file list), < and >; then MORE.
  * @param i The page.
@@ -104,6 +120,19 @@ static void plot_page(int i, ui_help_page_t *p)
     p->title = TX_HG_LOG_TITLE_PLOT;
     if (i == 1) {
         (void)ui_help_add(p, TR(LOG_MORE), TX_HG_LOG_MORE, PV_MORE);
+        if (lg_on() && s.data.n_fields - 1 <= (lg.tabbed ? 2 : 3)) {
+            (void)ui_help_add(p, TR(HG_LOG_LEGEND_NAME),
+                              TX_HG_LOG_GRAPH_LEGEND,
+                              LG_SLOT(s.data.n_fields - 1));
+        }
+        if (lg_on() && lg.tabbed) {
+            (void)ui_help_add(p, TR(HG_LOG_PICTURE_NAME), TX_HG_LOG_GRAPH_TABS,
+                              LG_TABS);
+        }
+        return;
+    }
+    if (lg_on()) {
+        graph_page(p);
         return;
     }
     if (s.n_picked > 0) {

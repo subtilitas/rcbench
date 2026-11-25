@@ -356,6 +356,35 @@ log_err_t log_csv_build(log_source_t *src, const log_analysis_t *a,
                         const int *columns, int n_columns, log_data_t *out);
 
 /**
+ * @brief A row's cells for log_csv_each_row().
+ * @param ctx    The caller's context.
+ * @param row    The row's index: the index of its samples in a build of
+ *               the same file and analysis, from 0.
+ * @param cells  Its cells, white space trimmed; never NULL.
+ * @param n      How many, at most LOG_MAX_COLUMNS; a short row has fewer
+ *               than the header.
+ * @return false to stop the walk.
+ */
+typedef bool (*log_row_fn)(void *ctx, int row, const char *const *cells,
+                           int n);
+
+/**
+ * @brief Walk the rows log_csv_build() takes, in its order, and hand each
+ *        one's cells to @p fn: the text columns a build leaves out, row for
+ *        row with its samples.  A file whose time column runs backwards is
+ *        turned round by the build and not by the walk.
+ * @param src  The input.
+ * @param a    The analysis.
+ * @param fn   Takes each row.
+ * @param ctx  Handed to @p fn.
+ * @return LOG_OK; LOG_ERR_ARG with a NULL argument, LOG_ERR_READ when the
+ *         source cannot rewind or a read fails, LOG_ERR_NO_HEADER for an
+ *         empty source.
+ */
+log_err_t log_csv_each_row(log_source_t *src, const log_analysis_t *a,
+                           log_row_fn fn, void *ctx);
+
+/**
  * @brief Free the sample arrays of a build.
  *
  * @param data  The data to free.

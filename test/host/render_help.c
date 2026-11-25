@@ -67,6 +67,9 @@ static const struct {
     { "help-logs-plot", "logs-plot" },
     /* The plot opened by the import's PLOT: BACK to the import view. */
     { "help-logs-plot-import", "logs-plot-import" },
+    /* The graph of a LIMIT RUN, and RUDDER AUTO's with its tabs. */
+    { "help-logs-limit-graph", "logs-limit-graph" },
+    { "help-logs-ruddr-search", "logs-ruddr-search" },
     { "help-files", "files" },
     { "help-servo", "servo" },
     { "help-servo-test", "servo-test" },

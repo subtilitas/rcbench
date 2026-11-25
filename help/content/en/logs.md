@@ -143,7 +143,7 @@ OPEN reads the file's header. A run file the bench wrote opens in the plot at on
 | MOTOR run | `MOTORnnn.CSV`, `ESCnnn.CSV` | `throttle`, `rpm`, `current`, `voltage` |
 | SERVO run | `SERVOnnn.CSV`, `BENCHnnn.CSV` | `pulse`, `angle`, `current`, `voltage` |
 
-A column the file lacks is left out. A LIMIT RUN or RUDDER AUTO file is plotted by row number, with the pulse as the first trace. Any other CSV, and a run's name over columns of no kind, opens in the import view.
+A column the file lacks is left out. A LIMIT RUN or RUDDER AUTO file opens in [the graph](#the-graph-of-a-limit-run-or-rudder-auto) over its pulse. Any other CSV, and a run's name over columns of no kind, opens in the import view.
 
 ## The import view
 
@@ -181,6 +181,35 @@ The header names the file, its rows, its duration and its sample rate. Each colu
 ![MORE's list](view:logs-plot-more)
 
 The rows are spaced evenly by row number. The labels under the plot are the file's time column, so a gap in the rows is a jump in the labels.
+
+## The graph of a LIMIT RUN or RUDDER AUTO
+
+![A LIMIT RUN: current and angle over the pulse](view:logs-limit-graph)
+
+A LIMIT RUN's and a RUDDER AUTO's file open in the graph: each row placed over its pulse, a line for each search and side. The summary names the file, its rows and its kind, `LIMIT006.CSV   116 ROWS   LIMIT RUN`. The graph shows the whole file of up to 2,048 rows; a longer one opens in the plot by row number.
+
+| Letter | Marker | Where |
+|---|---|---|
+| C | center | the pulse every search starts from |
+| B | bound | the pulse at which the side's last search found the stop |
+| E | end point | the end point written for that side, 25us short of the bound |
+| L | last position | the outermost pulse of a side where that is not its bound: a side with no bound, or an earlier search that ran further |
+| F | free current | a level across the side's pulses |
+| T | threshold | the current above which a position counts as bound |
+
+- The first search is drawn solid; the search after the overset (2) and the last check (3) dashed.
+- The lowest and the highest pulse stand on the plot's first and last column.
+- Tap a chip: its series is drawn 2px thick and its scale's top and foot show at the plot's left edge. Tap again to hide the series, a third time to bring it back.
+- One finger puts the cursor on the nearest point; `<` and `>` step to the next point drawn. Each chip shows its value at the cursor; the line in the footer reads `pulse 1040us   row 112 of 116`.
+- Two fingers do not zoom the graph.
+
+![A RUDDER AUTO's search](view:logs-ruddr-search)
+
+RUDDER AUTO's file has two pictures on the tabs SEARCH and STEPS. SEARCH draws the current and the angle over the search's pulses, a line a side, with C, E at each side's end point and L at each side's outermost position.
+
+![A RUDDER AUTO's steps](view:logs-ruddr-steps)
+
+STEPS draws each measure and its goal over the step, a line a side, and the 3 verifies as points. A measure outside the tolerance is drawn in the warning colour; a tick at the plot's foot marks each measure after a write.
 
 ## Deleting a file
 

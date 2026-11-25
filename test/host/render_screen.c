@@ -345,6 +345,107 @@ static void make_servo_csv(void)
     }
 }
 
+/* The graph's files (logs-limit-graph, logs-ruddr-search, logs-ruddr-steps):
+ * a LIMIT RUN and a RUDDER AUTO as their writers lay them out.  The LIMIT
+ * RUN searches each side from 1500us in 20us steps, the low side bound at
+ * 940us and the high side at 2080us, the high side again after the
+ * overset (search 2) and the low side in the last check (search 3); the
+ * free current about 0.17A, the angle 0.045° a us. */
+static char g_limit_csv[24576];
+static char g_ruddr_csv[16384];
+static bool g_graph_card;
+
+/** @brief Append one LIMIT search of a side to g_limit_csv. */
+static size_t limit_search(size_t at, int *row, int search, bool high,
+                           int bound_us)
+{
+    const int dir = high ? 1 : -1;
+    for (int k = 0;; ++k) {
+        const int us = 1500 + dir * 20 * k;
+        const bool bound = (high ? us >= bound_us : us <= bound_us);
+        const int past = high ? us - (bound_us - 60) : (bound_us + 60) - us;
+        double a = 0.170 + 0.018 * sin((double)us / 37.0);
+        if (past > 0) {
+            a += 0.0045 * (double)past;
+        }
+        const double deg = (double)(us - 1500) * 0.045;
+        const char *state = k < 2 ? "BASE" : bound ? "BOUND" : "FREE";
+        char end[16] = "";
+        if (bound) {
+            snprintf(end, sizeof(end), "%d", us - dir * 25);
+        }
+        at += (size_t)snprintf(g_limit_csv + at, sizeof(g_limit_csv) - at,
+                               "%d;%d;%s;%d;%.3f;5.00;%.2f;%s;0.170;%s;%s;"
+                               "%s\n", *row, search, high ? "HIGH" : "LOW",
+                               us, a, deg, state, k < 2 ? "" : "0.320", end,
+                               *row == 1 ? "dut=X10 #3&fw=0.23.18" : "");
+        ++*row;
+        if (bound) {
+            return at;
+        }
+    }
+}
+
+static void make_graph_csvs(void)
+{
+    size_t at = (size_t)snprintf(g_limit_csv, sizeof(g_limit_csv), "%s\n",
+                                 "row;search;side;pulse (us);current (A);"
+                                 "voltage (V);angle (deg);state;free (A);"
+                                 "threshold (A);end point (us);info");
+    int row = 1;
+    at = limit_search(at, &row, 1, false, 940);
+    at = limit_search(at, &row, 1, true, 2080);
+    at = limit_search(at, &row, 2, true, 2060);
+    (void)limit_search(at, &row, 3, false, 960);
+
+    at = (size_t)snprintf(g_ruddr_csv, sizeof(g_ruddr_csv), "%s\n",
+                          "step;side (us);write;value;measured (deg);"
+                          "goal (deg);measured (mm);goal (mm);within;kind;"
+                          "pulse (us);current (A);info");
+    static const struct { int side; int n; int value; double deg; } k_st[] = {
+        { 1000, 0, 0, -26.40 }, { 1000, 1, 112, -28.90 },
+        { 1000, 2, 118, -29.80 }, { 2000, 0, 0, 27.10 },
+        { 2000, 1, 109, 29.60 },
+    };
+    int step = 1;
+    for (size_t k = 0; k < sizeof(k_st) / sizeof(k_st[0]); ++k, ++step) {
+        const double goal = k_st[k].side < 1500 ? -30.0 : 30.0;
+        const bool within = fabs(k_st[k].deg - goal) <= 0.5;
+        char v[16] = "";
+        if (k_st[k].value != 0) {
+            snprintf(v, sizeof(v), "%d", k_st[k].value);
+        }
+        at += (size_t)snprintf(g_ruddr_csv + at, sizeof(g_ruddr_csv) - at,
+                               "%d;%d;%d;%s;%.2f;%.2f;;;%d;STEP;%d;;%s\n",
+                               step, k_st[k].side, k_st[k].n, v, k_st[k].deg,
+                               goal, within ? 1 : 0, k_st[k].side,
+                               step == 1 ? "dut=X10 #3" : "");
+    }
+    static const struct { int us; double deg; double goal; } k_vf[] = {
+        { 1000, -29.70, -30.0 }, { 2000, 29.80, 30.0 }, { 1500, 0.30, 0.0 },
+    };
+    for (size_t k = 0; k < 3; ++k, ++step) {
+        at += (size_t)snprintf(g_ruddr_csv + at, sizeof(g_ruddr_csv) - at,
+                               "%d;%d;V;;%.2f;%.2f;;;%d;VERIFY;%d;;\n",
+                               step, k_vf[k].us, k_vf[k].deg, k_vf[k].goal,
+                               fabs(k_vf[k].deg - k_vf[k].goal) <= 0.5 ? 1 : 0,
+                               k_vf[k].us);
+    }
+    for (int side = 0; side < 2; ++side) {
+        for (int d = 0; d <= 500; d += 10, ++step) {
+            const int us = side == 0 ? 1500 - d : 1500 + d;
+            const int past = d - 440;
+            const int ma = 160 + (int)(14.0 * sin((double)us / 29.0))
+                           + (past > 0 ? past * 6 : 0);
+            const double deg = (double)(us - 1500) * 0.062;
+            at += (size_t)snprintf(g_ruddr_csv + at,
+                                   sizeof(g_ruddr_csv) - at,
+                                   "%d;%d;S;%d;%.2f;;;;;SEARCH;%d;%.3f;\n",
+                                   step, us, ma, deg, us, ma / 1000.0);
+        }
+    }
+}
+
 typedef struct {
     const char *name;
     uint32_t size;
@@ -362,6 +463,13 @@ static const log_fake_t k_bench[] = {
     { "SERVO013.CSV", 18422, 1792951620 },    /* 2026-10-25 18:07 */
     { "SUPPL012.CSV", 9210, 1792950720 },     /* 2026-10-25 17:52 */
     { "MOTOR011.CSV", 39100, FAKE_1980 },
+};
+/* The USER folder of the graph's views: the LIMIT RUN's CSV beside its
+ * report, the RUDDER AUTO's CSV. */
+static const log_fake_t k_user_graph[] = {
+    { "RUDDR007.CSV", 9311, 1792945200 },     /* 2026-10-25 16:20 */
+    { "LIMIT006.CSV", 7804, 1792858800 },     /* 2026-10-24 16:20 */
+    { "LIMIT006.TXT", 1873, 1792858800 },
 };
 static const log_fake_t k_user[] = {
     { "LIMIT006.TXT", 1873, 1792858800 },     /* 2026-10-24 16:20 */
@@ -455,6 +563,9 @@ static int fake_list(log_viewer_file_t *out, int max_entries,
         if (strcmp(g_fake_dir, CARD_AUTO_LOGS) == 0) {
             set = k_bench;
             count = sizeof(k_bench) / sizeof(k_bench[0]);
+        } else if (strcmp(g_fake_dir, CARD_USER_LOGS) == 0 && g_graph_card) {
+            set = k_user_graph;
+            count = sizeof(k_user_graph) / sizeof(k_user_graph[0]);
         } else if (strcmp(g_fake_dir, CARD_USER_LOGS) == 0) {
             set = k_user;
             count = sizeof(k_user) / sizeof(k_user[0]);
@@ -470,6 +581,14 @@ static bool fake_open(const char *name, log_source_t *src, void *ctx)
     (void)ctx;
     /* A SERVO run of BENCH/LOGS reads as one; every other file as the
      * motor run. */
+    if (g_graph_card && strncmp(name, "LIMIT", 5) == 0) {
+        log_source_memory(src, &g_csv_ctx, g_limit_csv, strlen(g_limit_csv));
+        return true;
+    }
+    if (g_graph_card && strncmp(name, "RUDDR", 5) == 0) {
+        log_source_memory(src, &g_csv_ctx, g_ruddr_csv, strlen(g_ruddr_csv));
+        return true;
+    }
     if (strncmp(name, "SERVO", 5) == 0 && g_servo_len > 0u) {
         log_source_memory(src, &g_csv_ctx, g_servo_csv, g_servo_len);
         return true;
@@ -5120,6 +5239,14 @@ static void pose_shown_tools(ui_screen_id_t id, const char *view)
                           : nofat ? &k_io_nofat : &k_io);
         /* logs-pages: a full card, on its fourth page. */
         g_pages_card = (strcmp(view, "logs-pages") == 0);
+        /* The graph's views: the USER folder holds a LIMIT RUN's and a
+         * RUDDER AUTO's CSV. */
+        const bool limit_graph = strcmp(view, "logs-limit-graph") == 0;
+        const bool ruddr_graph = strncmp(view, "logs-ruddr-", 11) == 0;
+        g_graph_card = limit_graph || ruddr_graph;
+        if (g_graph_card) {
+            make_graph_csvs();
+        }
         log_viewer_refresh();
         /*
          * LOGS' places from logview_spots.h, in the screen's coordinates.
@@ -5146,6 +5273,25 @@ static void pose_shown_tools(ui_screen_id_t id, const char *view)
             tap(LV_TAB_CX(1), UI_BAND_H + LV_HEAD_CY);
             tap(LV_ROW_CX, UI_BAND_H + LV_ROW_CY(0));
             render_files_settle();
+        } else if (g_graph_card) {
+            /* USER, the second tab: RUDDR007.CSV is the newest and chosen
+             * as the list opens; LIMIT006.CSV the row under it.  A tap on
+             * the chosen row opens it in the graph; on RUDDER AUTO's, a tap
+             * on STEPS shows its steps.  The cursor stepped back from the
+             * run's last row by < . */
+            tap(LV_TAB_CX(1), UI_BAND_H + LV_HEAD_CY);
+            if (limit_graph) {
+                tap(LV_ROW_CX, UI_BAND_H + LV_ROW_CY(1));
+                tap(LV_ROW_CX, UI_BAND_H + LV_ROW_CY(1));
+                for (int k = 0; k < 4; ++k) {
+                    tap(LV_PV_PREV_CX, UI_BAND_H + LV_FOOT_CY);
+                }
+            } else {
+                tap(LV_ROW_CX, UI_BAND_H + LV_ROW_CY(0));
+            }
+            if (strcmp(view, "logs-ruddr-steps") == 0) {
+                tap(LV_GR_TAB_CX(1), UI_BAND_H + LV_GR_CHIP_CY);
+            }
         } else if (strcmp(view, "logs-servo-plot") == 0) {
             /* SERVO013.CSV, the second row of BENCH: a tap chooses it, a
              * second opens it in the plot with the SERVO preset. */

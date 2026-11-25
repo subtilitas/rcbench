@@ -21,6 +21,19 @@ history is in git.
   BACK and the home tag return to the file list, or to the import view
   when its PLOT opened the plot. Any other CSV opens in the import view
   ([Screens](docs/Screens.md#logs)).
+- LOGS draws a LIMIT RUN's and a RUDDER AUTO's file as a graph over the
+  pulse instead of the row number: a line for each search and side, the
+  first search solid and the later ones dashed; markers C center, B bound,
+  E end point, L last position (a side's outermost pulse that is not its
+  bound), and the levels F free current and T threshold; a chip a series
+  with its value at the cursor. A tap on a chip focuses its series (2px, its scale at the plot's
+  left edge), a second hides it, a third brings it back. RUDDER AUTO's
+  file has the tabs SEARCH and STEPS; STEPS draws each measure against its
+  goal, a measure outside the tolerance in the warning colour and a tick
+  under each measure after a write. One finger and `<`, `>` move the
+  cursor over the points drawn. Files up to 2,048 rows
+  (`shared/ui/log_graph*.c`, `shared/logfile/log_marks.c`;
+  [Screens](docs/Screens.md#logs)).
 - Every CSV the bench writes ends in a text column `info`: the run's own
   description on the first data row, empty on the others, as `key=value`
   pairs joined by `&`, such as

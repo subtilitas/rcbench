@@ -54,6 +54,7 @@ entries:
 archive: libui.a
 entries:
     log_viewer_screen (rcbench_extram_bss)
+    log_graph (rcbench_extram_bss)
     servo_screen (rcbench_extram_bss)
     servo_screen_link (rcbench_extram_bss)
     ui_watermark (rcbench_extram_bss)

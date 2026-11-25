@@ -20,7 +20,7 @@
 #include "ui_tabs.h"
 #include "ui_text.h"
 
-#include "log_viewer_int.h"
+#include "log_graph_int.h"
 
 /* --------------------------------------------------------------- events -- */
 
@@ -500,6 +500,8 @@ static void import_event(const touch_event_t *e)
             break;
         case 3:
             if (s.have_analysis && s.n_picked > 0) {
+                /* The columns picked, by row number: no preset's graph. */
+                s.preset = LOG_PRESET_NONE;
                 lv_load_data();
                 s.plot_from_import = s.have_data;
             }
@@ -706,6 +708,10 @@ static void plot_event(const touch_event_t *e)
         more_event(e);
         return;
     }
+    /* An XY file's graph takes its chips, tabs and plot (log_graph.c). */
+    if (lg_event(e)) {
+        return;
+    }
 
     /* Two fingers on the plot own it until one lifts; a third is ignored. */
     if (s.pinch) {
@@ -792,12 +798,19 @@ static void plot_event(const touch_event_t *e)
         /* A press that slid off its button is not a tap on it. */
         const int btn = (s.press_btn >= 0 && tap_on(e, btns[s.press_btn]))
                             ? s.press_btn : -1;
+        if (btn == 0 || btn == 3) {
+            /* The view or MORE's list takes the glass: a finger still on
+             * the graph's chip or plot presses nothing more. */
+            lg_cancel();
+        }
         if (btn == 0) {
             /* Back where the plot came from: the import's PLOT, or the
              * list's OPEN on a file a preset matched. */
             s.view = s.plot_from_import ? VIEW_IMPORT : VIEW_BROWSE;
         } else if (btn == 3) {
             s.more_open = true;
+        } else if ((btn == 1 || btn == 2) && lg_step(btn == 1 ? -1 : 1)) {
+            /* The graph steps to the next row it draws. */
         } else if (btn == 1 && s.cursor > 0) {
             s.cursor--;
             follow_cursor();

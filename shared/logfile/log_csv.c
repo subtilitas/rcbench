@@ -1188,3 +1188,36 @@ log_err_t log_csv_build(log_source_t *src, const log_analysis_t *a,
     series_stats(out, count);
     return LOG_OK;
 }
+
+log_err_t log_csv_each_row(log_source_t *src, const log_analysis_t *a,
+                           log_row_fn fn, void *ctx)
+{
+    if (src == NULL || a == NULL || fn == NULL) {
+        return LOG_ERR_ARG;
+    }
+    if (!src->rewind(src->ctx)) {
+        return LOG_ERR_READ;
+    }
+    log_reader_t reader;
+    log_reader_init(&reader, src);
+    if (!next_row(&reader, a->delimiter, &s_work.row)) {
+        return LOG_ERR_NO_HEADER;
+    }
+    /* The rows log_csv_build() takes, in its order: blank ones skipped, no
+     * more than pass one counted. */
+    const char *cells[LOG_MAX_COLUMNS];
+    int i = 0;
+    while (i < a->row_count && next_row(&reader, a->delimiter, &s_work.row)) {
+        if (!row_has_content(&s_work.row)) {
+            continue;
+        }
+        for (int c = 0; c < s_work.row.n; ++c) {
+            cells[c] = trim(s_work.row.fields[c]);
+        }
+        if (!fn(ctx, i, cells, s_work.row.n)) {
+            break;
+        }
+        ++i;
+    }
+    return reader.failed ? LOG_ERR_READ : LOG_OK;
+}
