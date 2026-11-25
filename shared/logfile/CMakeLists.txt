@@ -21,6 +21,7 @@ set(SRCS
     log_csv.c
     log_reader.c
     log_fields.c
+    log_preset.c
     log_name.c
     log_info.c
     log_take.c

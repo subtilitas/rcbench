@@ -8,6 +8,19 @@ history is in git.
 
 ### Added
 
+- LOGS opens a run file the bench wrote in the plot at once, with the
+  columns of its kind: LIMIT RUN `pulse`, `current`, `angle`; RUDDER AUTO
+  `pulse`, `current`, `measured`; AUTOMATIC TEST `command`, `current`,
+  `voltage`, `angle`; SUPPLY `set`, `voltage`, `limit`, `current`; MOTOR
+  `throttle`, `rpm`, `current`, `voltage`; SERVO `pulse`, `angle`,
+  `current`, `voltage`. The kind comes from the header's column names
+  first and the file's name second, so labelled names, lower-case names
+  and the files of firmware 0.21.0 and later match
+  (`shared/logfile/log_preset.c`, 7 presets). MORE (140 x 52px) at the
+  plot's right end opens a list whose COLUMNS reaches the import view;
+  BACK and the home tag return to the file list, or to the import view
+  when its PLOT opened the plot. Any other CSV opens in the import view
+  ([Screens](docs/Screens.md#logs)).
 - Every CSV the bench writes ends in a text column `info`: the run's own
   description on the first data row, empty on the others, as `key=value`
   pairs joined by `&`, such as

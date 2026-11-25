@@ -273,6 +273,7 @@ TRACKED = [
     "shared/logfile/log_csv.c",
     "shared/logfile/log_reader.c",
     "shared/logfile/log_fields.c",
+    "shared/logfile/log_preset.c",
     "shared/logfile/log_name.c",
     "shared/logfile/log_info.c",
     "shared/logfile/log_take.c",

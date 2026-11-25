@@ -171,17 +171,34 @@ log_field_meta_t log_field_meta(const char *name)
 }
 
 /**
- * @brief The index of the numeric column named @p name, not the time axis.
+ * @brief Whether two names are equal with their case folded.
  *
- * @param an   The file's analysis.
- * @param name The column name.
- * @return The column's index, or -1.
+ * @param a The first name.
+ * @param b The second name.
+ * @return true when they are equal.
  */
-static int numeric_column(const log_analysis_t *an, const char *name)
+static bool same_name(const char *a, const char *b)
 {
-    for (int c = 0; c < an->n_columns; ++c) {
-        if (c != an->time_index && an->columns[c].numeric
-            && strcmp(an->columns[c].name, name) == 0) {
+    while (*a != '\0' && *b != '\0') {
+        if (tolower((unsigned char)*a) != tolower((unsigned char)*b)) {
+            return false;
+        }
+        ++a;
+        ++b;
+    }
+    return *a == *b;
+}
+
+int log_fields_find(const log_analysis_t *an, const char *name, bool numeric)
+{
+    if (an == NULL || name == NULL) {
+        return -1;
+    }
+    for (int c = 0; c < an->n_columns && c < LOG_MAX_COLUMNS; ++c) {
+        if (numeric && (c == an->time_index || !an->columns[c].numeric)) {
+            continue;
+        }
+        if (same_name(an->columns[c].name, name)) {
             return c;
         }
     }
@@ -212,12 +229,12 @@ int log_fields_picks(const log_analysis_t *an, int *out, int max)
         return 0;
     }
     int n = 0;
-    if (numeric_column(an, "pulse") >= 0) {
+    if (log_fields_find(an, "pulse", true) >= 0) {
         static const char *const k_servo[] = { "pulse", "angle", "current",
                                                "voltage" };
         for (size_t i = 0; i < sizeof(k_servo) / sizeof(k_servo[0]) && n < max;
              ++i) {
-            const int c = numeric_column(an, k_servo[i]);
+            const int c = log_fields_find(an, k_servo[i], true);
             if (c >= 0) {
                 out[n++] = c;
             }

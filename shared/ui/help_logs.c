@@ -1,14 +1,14 @@
 /**
  * @file
  * @brief LOGS' screen guide (log_viewer_int.h): two pages for the file
- *        list, two for the import view, one for the plot.
+ *        list, two for the import view, two for the plot.
  *
  * The list: the folder tabs, a row, RESCAN and WI-FI with the dock on the
  * right; FILES, PREV and NEXT, the scroll bar, DELETE and OPEN with the
  * dock on the left.  The import view: DETECTED, SEP and NUM with the dock
  * on the right; the columns, BACK and PLOT with the dock on the left.  The
  * plot: a series chip, the plot, BACK and the cursor's keys with the dock
- * on the right.  The DELETE question leaves no page.  LOGS drives no
+ * on the right; MORE with the dock on the left.  The DELETE question leaves no page.  LOGS drives no
  * output, so every page shows while ARMED as well.
  *
  * SPDX-License-Identifier: MIT
@@ -26,7 +26,7 @@ int lv_help_count(void)
     if (s.doomed[0] != '\0') {
         return 0;
     }
-    return (s.view == VIEW_PLOT) ? 1 : 2;
+    return 2;
 }
 
 /**
@@ -94,18 +94,27 @@ static void import_page(int i, ui_help_page_t *p)
 }
 
 /**
- * @brief The plot's page: a series chip, the plot, BACK, < and >.
+ * @brief The plot's page @p i: a series chip, the plot, BACK (to the import
+ *        view after its PLOT, else to the file list), < and >; then MORE.
+ * @param i The page.
  * @param p The page, its side set.
  */
-static void plot_page(ui_help_page_t *p)
+static void plot_page(int i, ui_help_page_t *p)
 {
     p->title = TX_HG_LOG_TITLE_PLOT;
+    if (i == 1) {
+        (void)ui_help_add(p, TR(LOG_MORE), TX_HG_LOG_MORE, PV_MORE);
+        return;
+    }
     if (s.n_picked > 0) {
         (void)ui_help_add(p, TR(HG_LOG_CHIP_NAME), TX_HG_LOG_CHIP,
                           gfx_rect_make(CHIP_X, CHIP_Y, CHIP_W, CHIP_H));
     }
     (void)ui_help_add(p, TR(LOG_PLOT), TX_HG_LOG_AREA, PV_PANEL);
-    (void)ui_help_add(p, TR(LOG_BACK), TX_HG_LOG_BACK_IMPORT, PV_BACK);
+    (void)ui_help_add(p, TR(LOG_BACK),
+                      s.plot_from_import ? TX_HG_LOG_BACK_IMPORT
+                                         : TX_HG_LOG_BACK_LIST,
+                      PV_BACK);
     (void)ui_help_add(p, "< >", TX_HG_LOG_STEP, span(PV_PREV, PV_NEXT));
 }
 
@@ -118,7 +127,7 @@ bool lv_help_page(int i, ui_help_page_t *out)
     out->armed_ok = true;
     out->side = (i == 0) ? UI_HELP_DOCK_RIGHT : UI_HELP_DOCK_LEFT;
     if (s.view == VIEW_PLOT) {
-        plot_page(out);
+        plot_page(i, out);
     } else if (s.view == VIEW_IMPORT) {
         import_page(i, out);
     } else {

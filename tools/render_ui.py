@@ -591,6 +591,8 @@ SCREENS = {
                                 "motor", "dark"),
     "logs-import":("logs-import.png","logs",       "dark"),
     "logs-plot":  ("logs-plot.png",  "logs",       "dark"),
+    # MORE's list on the plot: COLUMNS, to the import view.
+    "logs-plot-more": ("logs-plot-more.png", "logs", "dark"),
     # A SERVO run opened: pulse, angle, current and voltage chosen.
     "logs-servo-plot": ("logs-servo-plot.png", "logs", "dark"),
     "logs-delete":("logs-delete.png","logs",       "dark"),
@@ -1057,6 +1059,11 @@ FIT_ONLY = {
     "help-logs-import": (None, "logs", "dark"),
     "help-logs-import-2": (None, "logs", "dark"),
     "help-logs-plot": (None, "logs", "dark"),
+    "help-logs-plot-2": (None, "logs", "dark"),
+    # LOGS' plot opened by the import's PLOT, and its guide: BACK to the
+    # import view.
+    "logs-plot-import": (None, "logs", "dark"),
+    "help-logs-plot-import": (None, "logs", "dark"),
     "help-files-2": (None, "files", "dark"),
     "help-files-3": (None, "files", "dark"),
     # SERVO's guide: LIVE's READY and controls pages, each task's own
@@ -1402,6 +1409,7 @@ OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot", "outputs-take",
                  "overview-alert", "hold-hint-arm", "hold-hint-output",
                  "setup-dim-stored",
                  "setup-folder", "servo-name", "files-new",
+                 "logs-plot-more",
                  "files-edit-unsaved", "files-edit-revert",
                  "files-edit-open", "files-edit-changed", "files-edit-see25",
                  "files-edit-see50"} | {

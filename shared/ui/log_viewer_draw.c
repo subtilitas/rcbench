@@ -619,7 +619,7 @@ void log_viewer_summary(char *out, size_t n)
 
 /**
  * @brief Draws the plot view: the summary, the series' chips, the traces in
- *        bands, the time axis and the footer.
+ *        bands, the time axis, the footer and MORE's list while it is open.
  */
 static void render_plot(gfx_canvas_t *c)
 {
@@ -734,12 +734,15 @@ static void render_plot(gfx_canvas_t *c)
     }
 
     /* --- footer --------------------------------------------------------- */
-    ui_button_font(c, PV_BACK, TR(LOG_BACK), UI_PANEL_HI, s.press_btn == 0,
-                   true, LV_FONT_LABEL);
+    /* With MORE's list open, press_btn 0 is its row, not BACK. */
+    ui_button_font(c, PV_BACK, TR(LOG_BACK), UI_PANEL_HI,
+                   s.press_btn == 0 && !s.more_open, true, LV_FONT_LABEL);
     ui_button_font(c, PV_PREV, "<", UI_PANEL_HI, s.press_btn == 1, true,
                    LV_FONT_LABEL);
     ui_button_font(c, PV_NEXT, ">", UI_PANEL_HI, s.press_btn == 2, true,
                    LV_FONT_LABEL);
+    ui_button_font(c, PV_MORE, TR(LOG_MORE), UI_PANEL_HI,
+                   s.press_btn == 3 || s.more_open, true, LV_FONT_LABEL);
 
     if (s.data.time_name[0] != '\0') {
         snprintf(line, sizeof(line), TR(LOG_AT_TIME),
@@ -759,6 +762,11 @@ static void render_plot(gfx_canvas_t *c)
         snprintf(line, sizeof(line), TR(LOG_UNREADABLE_CELLS),
                  s.data.unparsed_cells);
         gfx_text(c, PV_LINE_X, FOOT_Y + 28, line, LV_FONT_LABEL, UI_WARN, 1);
+    }
+    if (s.more_open) {
+        ui_choice_list(c, PV_MORE_LIST);
+        ui_choice_row(c, PV_MORE_ROW(0), TR(LOG_COLUMNS), false,
+                      s.press_btn == 0);
     }
 }
 

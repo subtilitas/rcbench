@@ -41,6 +41,18 @@ typedef struct {
 log_field_meta_t log_field_meta(const char *name);
 
 /**
+ * @brief The column named @p name, its case folded: "Pulse" finds `pulse`.
+ *
+ * @param an       The file's analysis.
+ * @param name     The column's name without its unit, as log_column_t.name.
+ * @param numeric  true to find only a numeric column that is not the time
+ *                 axis; false to find any column, text and time included.
+ * @return The column's index, or -1 when there is none or @p an or @p name
+ *         is NULL.
+ */
+int log_fields_find(const log_analysis_t *an, const char *name, bool numeric);
+
+/**
  * @brief The columns LOGS plots in a file before the operator picks any.
  *
  * In a file with a numeric `pulse` column, a SERVO run's, its `pulse`,

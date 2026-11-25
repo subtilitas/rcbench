@@ -10,7 +10,7 @@ LOGS lists CSV (comma-separated values) recordings and reports on the panel's SD
 
 The three tabs at the top left select a folder: ROOT for the card root, USER for the User log folder (`USER/LOGS` by default), and BENCH for the Auto log folder (`BENCH/LOGS` by default). WI-FI at the bottom left opens [Wi-Fi](wifi.md). FILES beside it opens [Files](files.md) to copy, move, rename or delete card files.
 
-The home tag works like BACK, returning one level at a time: plot to import view, import view to file list, file list to menu. In the DELETE question, it acts as CANCEL.
+The home tag works like BACK, returning one level at a time: the plot to where it came from (the file list after OPEN, the import view after PLOT), import view to file list, file list to menu. Over MORE's list it closes the list. In the DELETE question, it acts as CANCEL.
 
 ## No card
 
@@ -51,7 +51,7 @@ WI-FI in the row of buttons opens [Wi-Fi](wifi.md) for browser downloads; its ho
 | RESCAN | reads the page on screen again and selects its newest run |
 | PREV, NEXT | the page before and after; shown with more than 48 files on the card |
 | DELETE | asks, then removes the selected file; grey with nothing selected, while ARMED and while a run is being logged |
-| OPEN | opens the selected CSV file in the import view, a report in the text viewer; grey with nothing selected |
+| OPEN | opens a run file the bench wrote in the plot, any other CSV file in the import view, a report in the text viewer; grey with nothing selected |
 
 The footer under the list names the screen, LOGS. OPTIONS at its right opens the SD CARD list of [SETUP](setup.md#sd-card): the log switches and the two log folders. Its home tag returns here.
 
@@ -130,11 +130,26 @@ OPEN on a report opens it in the [text viewer](files.md#the-text-viewer), read-o
 
 [Wi-Fi](wifi.md) downloads every report as well.
 
+## What opens where
+
+OPEN reads the file's header. A run file the bench wrote opens in the plot at once, with the columns of its kind. The kind comes from the header's column names first and from the file's name second, so a labelled name (`MOTOR042_kv1200.CSV`), a name in lower case and the files of firmware 0.21.0 and later are recognised too.
+
+| Kind | Name | Columns plotted |
+|---|---|---|
+| LIMIT RUN | `LIMITnnn.CSV` | `pulse`, `current`, `angle` |
+| RUDDER AUTO | `RUDDRnnn.CSV` | `pulse`, `current`, `measured` |
+| AUTOMATIC TEST | `ATESTnnn.CSV` | `command`, `current`, `voltage`, `angle` |
+| SUPPLY run | `SUPPLnnn.CSV` | `set`, `voltage`, `limit`, `current` |
+| MOTOR run | `MOTORnnn.CSV`, `ESCnnn.CSV` | `throttle`, `rpm`, `current`, `voltage` |
+| SERVO run | `SERVOnnn.CSV`, `BENCHnnn.CSV` | `pulse`, `angle`, `current`, `voltage` |
+
+A column the file lacks is left out. A LIMIT RUN or RUDDER AUTO file is plotted by row number, with the pulse as the first trace. Any other CSV, and a run's name over columns of no kind, opens in the import view.
+
 ## The import view
 
 ![What the import detected](view:logs-import)
 
-OPEN reads the file and previews the detected format before plotting it.
+The import view previews the detected format before plotting. MORE > COLUMNS on the plot opens it for a run file, with the plot's columns selected.
 
 | Line | Shows |
 |---|---|
@@ -145,7 +160,7 @@ OPEN reads the file and previews the detected format before plotting it.
 | UNEVEN ROWS | rows with another cell count than the header |
 | EVIDENCE | the cells that proved German, English or neither |
 
-The right list shows each column's first value and minimum-to-maximum range. Up to 4 columns are selected automatically. For SERVO files, numeric `pulse`, `angle`, `current` and `voltage` columns take priority, followed by other numeric columns. Other files start with the first 4 numeric columns.
+The right list shows each column's first value and minimum-to-maximum range. For a file of no kind, up to 4 columns are selected automatically: numeric `pulse`, `angle`, `current` and `voltage` columns first where the file has a numeric `pulse`, followed by other numeric columns; any other file starts with its first 4 numeric columns.
 
 Tap a numeric column to add or remove it; the title counts the selection, for example `PLOT  4/4`. If columns or values look wrong, use SEP and NUM to cycle through the format choices, starting with AUTO. BACK returns to the file list. PLOT draws the selected columns.
 
@@ -160,7 +175,10 @@ The header names the file, its rows, its duration and its sample rate. Each colu
 - One finger, `<` and `>` move the cursor. The line at the bottom right shows its time and sample.
 - Two fingers zoom: spread to zoom in, pinch to zoom out, move both to pan. The narrowest view is 8 samples, the widest the whole run.
 - With SETUP, PANEL, One finger pans on, a finger that moves more than 10px drags a zoomed view sideways.
-- BACK returns to the import view.
+- BACK returns to the file list, or to the import view when its PLOT opened the plot.
+- MORE opens a list with COLUMNS, which goes to the import view to pick other columns. A press beside the list closes it.
+
+![MORE's list](view:logs-plot-more)
 
 The rows are spaced evenly by row number. The labels under the plot are the file's time column, so a gap in the rows is a jump in the labels.
 
