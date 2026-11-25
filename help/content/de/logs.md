@@ -143,7 +143,7 @@ Berichte lassen sich auch über [WLAN](wifi.md) herunterladen.
 | MOTOR-Lauf | `MOTORnnn.CSV`, `ESCnnn.CSV` | `throttle`, `rpm`, `current`, `voltage` |
 | SERVO-Lauf | `SERVOnnn.CSV`, `BENCHnnn.CSV` | `pulse`, `angle`, `current`, `voltage` |
 
-Eine Spalte, die der Datei fehlt, entfällt. Eine LIMIT-RUN- oder RUDDER-AUTO-Datei wird nach Zeilennummer gezeichnet, mit dem Puls als erster Linie. Jede andere CSV und ein Laufname über Spalten keiner Art öffnen die Importansicht.
+Eine Spalte, die der Datei fehlt, entfällt. Eine LIMIT-RUN- oder RUDDER-AUTO-Datei öffnet in [der Grafik](#die-grafik-eines-limit-run-oder-rudder-auto) über ihrem Puls. Jede andere CSV und ein Laufname über Spalten keiner Art öffnen die Importansicht.
 
 ## Die Importansicht
 
@@ -181,6 +181,35 @@ Die Kopfzeile nennt Datei, Zeilenzahl, Dauer und Abtastrate. Jede Spalte hat ein
 ![Die Liste von MEHR](view:logs-plot-more)
 
 Die Grafik verteilt Datenzeilen gleichmäßig nach Zeilennummer. Ihre Beschriftung stammt aus der Zeitspalte. Eine Datenlücke erscheint daher als Sprung in den Zeitangaben.
+
+## Die Grafik eines LIMIT RUN oder RUDDER AUTO
+
+![Ein LIMIT RUN: current und angle über dem Puls](view:logs-limit-graph)
+
+Die Datei eines LIMIT RUN und eines RUDDER AUTO öffnet in der Grafik: jede Zeile über ihrem Puls, eine Linie je Suche und Seite. Die Kopfzeile nennt Datei, Zeilen und Art, `LIMIT006.CSV   116 ZEILEN   LIMIT RUN`. Die Grafik zeigt die ganze Datei mit bis zu 2.048 Zeilen; eine längere öffnet in der Kurvenansicht nach Zeilennummer.
+
+| Buchstabe | Markierung | Wo |
+|---|---|---|
+| M | Mitte | der Puls, an dem jede Suche beginnt |
+| A | Anschlag | der Puls, an dem die letzte Suche der Seite den Anschlag fand |
+| E | Endpunkt | der für die Seite geschriebene Endpunkt, 25us vor dem Anschlag |
+| L | letzte Position | der äußerste Puls einer Seite, wo er nicht ihr Anschlag ist: ohne Anschlag, oder eine frühere Suche lief weiter |
+| F | Freistrom | ein Pegel über den Pulsen der Seite |
+| S | Schwelle | der Strom, über dem eine Position als Anschlag gilt |
+
+- Die erste Suche ist durchgezogen, die Suche nach dem Überstellen (2) und die letzte Prüfung (3) gestrichelt.
+- Der kleinste und der größte Puls stehen auf der ersten und der letzten Spalte der Grafik.
+- Tippe auf einen Chip: seine Reihe wird 2px dick, Ober- und Unterende ihrer Skala stehen am linken Rand der Grafik. Erneutes Tippen blendet die Reihe aus, ein drittes holt sie zurück.
+- Ein Finger setzt den Cursor auf den nächsten Punkt; `<` und `>` gehen zum nächsten gezeichneten Punkt. Jeder Chip zeigt seinen Wert am Cursor; die Zeile in der Fußleiste lautet `pulse 1040us   Zeile 112 von 116`.
+- Zwei Finger zoomen die Grafik nicht.
+
+![Die Suche eines RUDDER AUTO](view:logs-ruddr-search)
+
+Die Datei eines RUDDER AUTO hat zwei Bilder auf den Reitern SUCHE und SCHRITTE. SUCHE zeichnet Strom und Winkel über den Pulsen der Suche, eine Linie je Seite, mit M, E am Endpunkt jeder Seite und L an der äußersten Position jeder Seite.
+
+![Die Schritte eines RUDDER AUTO](view:logs-ruddr-steps)
+
+SCHRITTE zeichnet jede Messung und ihr Ziel über dem Schritt, eine Linie je Seite, und die 3 Prüfmessungen als Punkte. Eine Messung außerhalb der Toleranz erscheint in der Warnfarbe; ein Strich am Fuß der Grafik markiert jede Messung nach einem Schreiben.
 
 ## Eine Datei löschen
 

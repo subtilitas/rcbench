@@ -118,3 +118,10 @@
 #define LV_DQ_CY      332           /**< The DELETE question's buttons. */
 #define LV_DQ_CANCEL_CX 336         /**< CANCEL. */
 #define LV_DQ_DELETE_CX 688         /**< DELETE. */
+
+/* The graph of an XY file (log_graph_int.h): the series' chips in the
+ * chips' row, 240 x 44px from x 8, y 28, 16px apart; RUDDR's two tabs in
+ * the fourth slot, 115 x 38px from x 779, y 31, 4px apart. */
+#define LV_GR_CHIP_CX(j) (8 + (j) * 256 + 120)  /**< Chip slot j. */
+#define LV_GR_CHIP_CY    50                     /**< The chips' middle. */
+#define LV_GR_TAB_CX(i)  (779 + (i) * 119 + 57) /**< SEARCH, STEPS. */

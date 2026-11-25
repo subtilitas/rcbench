@@ -46,7 +46,7 @@
 #include "ui_text.h"
 #include "ui_widgets.h"
 
-#include "log_viewer_int.h"
+#include "log_graph_int.h"
 
 const ui_color_id_t lv_series_color[LOG_MAX_SERIES] = {
     UI_C_VOLT, UI_C_CURR, UI_C_POWER, UI_C_RPM,
@@ -422,6 +422,7 @@ void lv_drop_data(void)
     s.win_n = 0;
     s.pinch = false;
     s.panning = false;
+    lg_drop();
 }
 
 /* The write gate of FILES (fm_gate()), asked for DELETE: shut while the
@@ -578,6 +579,7 @@ static void cancel(void)
     s.bar_drag  = false;
     s.more_hold = false;
     ui_tabs_cancel(&s.tabs);
+    lg_cancel();
     logs_strip_cancel();
     log_viewer_invalidate();
 }
@@ -702,6 +704,7 @@ static void enter(void)
     s.more_open = false;
     s.more_hold = false;
     ui_tabs_cancel(&s.tabs);
+    lg_cancel();
     logs_strip_cancel();
     /*
      * The tab of the file the logger created last, when it has created one

@@ -26,7 +26,7 @@
 #include "ui_screen.h"
 #include "ui_text.h"
 
-#include "log_viewer_int.h"
+#include "log_graph_int.h"
 
 /* ------------------------------------------------------------- loading --- */
 
@@ -360,6 +360,8 @@ void lv_load_data(void)
         return;
     }
     log_err_t err = log_csv_build(&src, &s.an, s.picked, s.n_picked, &s.data);
+    /* An XY file's traces and markers, read while the file is open. */
+    const bool graph = (err == LOG_OK) && lg_read(&src);
     if (s.io.close != NULL) {
         s.io.close(s.io.ctx);
     }
@@ -378,6 +380,9 @@ void lv_load_data(void)
     lv_quiet();
     lv_compute_spans();
     s.view = VIEW_PLOT;
+    if (graph) {
+        lg_start();
+    }
 }
 
 /**

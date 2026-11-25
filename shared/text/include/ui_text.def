@@ -2896,6 +2896,69 @@ UI_TEXT(LOG_AT_ROW, 50,
 UI_TEXT(LOG_UNREADABLE_CELLS, 50,
     "%d CELLS UNREADABLE",
     "%d ZELLEN UNLESBAR")
+/* The graph of an XY file (log_graph_draw.c): the summary's kind, RUDDR's
+ * two tabs, the cursor's line, the markers' letters and words, and the
+ * legend of STEPS. */
+UI_TEXT(LOG_GRAPH_SUMMARY, 0,
+    "%s   %d ROWS   %s",
+    "%s   %d ZEILEN   %s")
+UI_TEXT(LOG_KIND_LIMIT, 0,
+    "LIMIT RUN",
+    "LIMIT RUN")
+UI_TEXT(LOG_KIND_RUDDR, 0,
+    "RUDDER AUTO",
+    "RUDDER AUTO")
+UI_TEXT(LOG_TAB_SEARCH, 0,
+    "SEARCH",
+    "SUCHE")
+UI_TEXT(LOG_TAB_STEPS, 0,
+    "STEPS",
+    "SCHRITTE")
+UI_TEXT(LOG_AT_X, 0,
+    "%s %s   row %d of %d",
+    "%s %s   Zeile %d von %d")
+UI_TEXT(LOG_MK_CENTER, 0,
+    "C",
+    "M")
+UI_TEXT(LOG_MK_BOUND, 0,
+    "B",
+    "A")
+UI_TEXT(LOG_MK_END, 0,
+    "E",
+    "E")
+UI_TEXT(LOG_MK_LAST, 0,
+    "L",
+    "L")
+UI_TEXT(LOG_MK_FREE, 0,
+    "F",
+    "F")
+UI_TEXT(LOG_MK_THRESHOLD, 0,
+    "T",
+    "S")
+UI_TEXT(LOG_MARK_CENTER, 0,
+    "CENTER",
+    "MITTE")
+UI_TEXT(LOG_MARK_BOUND, 0,
+    "BOUND",
+    "ANSCHLAG")
+UI_TEXT(LOG_MARK_END, 0,
+    "END POINT",
+    "ENDPUNKT")
+UI_TEXT(LOG_MARK_LAST, 0,
+    "LAST POSITION",
+    "LETZTE POSITION")
+UI_TEXT(LOG_MARK_FREE, 0,
+    "FREE",
+    "FREI")
+UI_TEXT(LOG_MARK_THRESHOLD, 0,
+    "THRESHOLD",
+    "SCHWELLE")
+UI_TEXT(LOG_LEG_OUTSIDE, 0,
+    "OUTSIDE TOLERANCE",
+    "AUSSERHALB TOLERANZ")
+UI_TEXT(LOG_LEG_WRITE, 0,
+    "WRITE",
+    "SCHREIBEN")
 
 /* The screen guide's pages of LOGS (help_logs.c): the titles, the names of
  * marks the screen draws no label for, and what each mark does. */
@@ -2992,6 +3055,27 @@ UI_TEXT(HG_LOG_BACK_IMPORT, 0,
 UI_TEXT(HG_LOG_STEP, 0,
     "Move the cursor one row; past the edge of a zoom the view moves along.",
     "Bewegen den Cursor um eine Zeile; am Rand eines Zooms wandert die Ansicht mit.")
+UI_TEXT(HG_LOG_GRAPH_CHIP, 0,
+    "Its value at the cursor. Tap: its scale at the plot's left edge. Again: hidden. Again: back.",
+    "Ihr Wert am Cursor. Tippen: ihre Skala am linken Rand. Erneut: aus. Erneut: zurück.")
+UI_TEXT(HG_LOG_GRAPH_AREA, 0,
+    "Over the pulse, a line a search and side; later searches dashed. A finger sets the cursor.",
+    "Über dem Puls, eine Linie je Suche und Seite; spätere Suchen gestrichelt. Ein Finger setzt den Cursor.")
+UI_TEXT(HG_LOG_GRAPH_STEP, 0,
+    "Move the cursor to the next point the graph draws.",
+    "Bewegen den Cursor zum nächsten Punkt der Grafik.")
+UI_TEXT(HG_LOG_LEGEND_NAME, 0,
+    "MARKERS",
+    "MARKER")
+UI_TEXT(HG_LOG_GRAPH_LEGEND, 0,
+    "The markers' letters. STEPS: a point outside the tolerance; a tick after a write.",
+    "Buchstaben der Markierungen. SCHRITTE: Punkt außer Toleranz; Strich nach Schreiben.")
+UI_TEXT(HG_LOG_PICTURE_NAME, 0,
+    "PICTURE",
+    "BILD")
+UI_TEXT(HG_LOG_GRAPH_TABS, 0,
+    "SEARCH: current and angle over the pulse. STEPS: each measure and its goal.",
+    "SUCHE: Strom und Winkel über dem Puls. SCHRITTE: jede Messung und ihr Ziel.")
 UI_TEXT(HG_LOG_MORE, 0,
     "Opens a list. COLUMNS goes to the import view, to pick other columns.",
     "Öffnet eine Liste. SPALTEN führt zur Importansicht, um andere Spalten zu wählen.")

@@ -3533,6 +3533,9 @@ first:
 
 ![A MOTOR run as it opens: throttle, rpm, current and voltage](img/logs-plot.png)
 ![A SERVO run as it opens: pulse, angle, current and voltage](img/logs-servo-plot.png)
+![A LIMIT RUN in the graph: current and angle over the pulse](img/logs-limit-graph.png)
+![A RUDDER AUTO's search in the graph](img/logs-ruddr-search.png)
+![A RUDDER AUTO's steps in the graph](img/logs-ruddr-steps.png)
 ![MORE on the plot: COLUMNS](img/logs-plot-more.png)
 ![The import view, reached by MORE > COLUMNS](img/logs-import.png)
 
@@ -3607,13 +3610,47 @@ column the file lacks is left out, and nothing takes its place:
 | MOTOR run | `rpm` and `throttle` | `MOTORnnn`, `ESCnnn` | `throttle`, `rpm`, `current`, `voltage` |
 | SERVO run | `pulse`, `angle`, `source` | `SERVOnnn`, `BENCHnnn` | `pulse`, `angle`, `current`, `voltage` |
 
-The rows of a LIMIT RUN and a RUDDER AUTO file are plotted by row number,
-with the pulse as the first trace. A bench file of firmware 0.21.0 names
+A LIMIT RUN and a RUDDER AUTO file open in the graph: their rows placed
+over the pulse (RUDDER AUTO's STEPS: over the step), not over the row
+number. The graph shows the whole file of up to 2,048 rows; a longer file,
+and one without its pulse column (RUDDER AUTO of firmware 0.23.17), is
+plotted by row number as the other kinds are. A bench file of firmware 0.21.0 names
 neither `throttle` nor `pulse`: `ESCnnn.CSV` opens as a MOTOR run,
 `BENCHnnn.CSV` and `SERVOnnn.CSV` as a SERVO run, and the same header
 under any other name as a MOTOR run. A file that matches no kind, a file
 named as a run that holds none of its kind's columns, and a file the
 reader refuses open in the import view.
+
+The graph (`shared/ui/log_graph*.c`, `shared/logfile/log_marks.c`) keeps
+the plot's geometry: the summary line names the file, its rows and its
+kind (`LIMIT006.CSV   116 ROWS   LIMIT RUN`); a chip of 240 x 44px a
+series; the plot 992 x 316px; the x labels in the x column's unit under
+it; the cursor's line in the footer (`pulse 1040us   row 112 of 116`).
+
+| Picture | x | Series | A line a | Markers |
+| --- | --- | --- | --- | --- |
+| LIMIT RUN | `pulse` | `current`, `angle` | search and side; search 1 solid, 2 (after the overset) and 3 (the last check) dashed | C center (the first row's pulse); per side B bound (its last BOUND row) and E end point (that row's `end point`), L last position at the side's outermost pulse where that is not its bound; F free current and T threshold as levels of `current` from the center to the side's outermost pulse |
+| RUDDER AUTO, SEARCH | `pulse` | `current`, `measured` | side: a new line where the pulse turns back | C center, E end point (the steps' `side`), L the outermost position of each side |
+| RUDDER AUTO, STEPS | `step` | `measured`, `goal` | side; the 3 verifies as points | a measure outside the tolerance (`within` 0) in the warning colour; a 10px tick at the plot's foot under each measure after a write |
+
+- The x scale runs from the lowest x value of the rows drawn and the
+  markers to the highest, unpadded: those two stand on the plot's first and
+  last pixel column. Each series has its own scale, padded 6% each way and
+  never across zero.
+- A marker's tag holds its letter, 14 x 18px, in two rows at the plot's
+  top; the chips the series leave hold the legend of the letters (German:
+  M, A, E, L, F, S). RUDDER AUTO shows SEARCH and STEPS as two tabs of
+  115 x 38px in the fourth chip's place; a tab loads its picture's columns.
+- A tap on a chip focuses its series: drawn 2px thick, its scale's top and
+  foot at the plot's left edge in its colour. A second tap hides it, a
+  third brings it back focused.
+- One finger on the plot puts the cursor on the nearest row drawn: nearest
+  in x, and of rows at one column the one nearest the finger on the first
+  series shown. `<` and `>` step to the next row the picture draws. The
+  chips show each series' value at the cursor in the decimals of its
+  scale.
+- Two fingers do not zoom the graph; MORE > COLUMNS reaches the import
+  view, whose PLOT draws the picked columns by row number.
 
 The CSV (comma-separated values) reader accepts decimal commas or points,
 a units row and rows of different lengths. The import view shows its

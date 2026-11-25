@@ -20,7 +20,7 @@
 #include "ui_tabs.h"
 #include "ui_text.h"
 
-#include "log_viewer_int.h"
+#include "log_graph_int.h"
 
 /* --------------------------------------------------------------- events -- */
 
@@ -706,6 +706,10 @@ static void plot_event(const touch_event_t *e)
         more_event(e);
         return;
     }
+    /* An XY file's graph takes its chips, tabs and plot (log_graph.c). */
+    if (lg_event(e)) {
+        return;
+    }
 
     /* Two fingers on the plot own it until one lifts; a third is ignored. */
     if (s.pinch) {
@@ -798,6 +802,8 @@ static void plot_event(const touch_event_t *e)
             s.view = s.plot_from_import ? VIEW_IMPORT : VIEW_BROWSE;
         } else if (btn == 3) {
             s.more_open = true;
+        } else if ((btn == 1 || btn == 2) && lg_step(btn == 1 ? -1 : 1)) {
+            /* The graph steps to the next row it draws. */
         } else if (btn == 1 && s.cursor > 0) {
             s.cursor--;
             follow_cursor();

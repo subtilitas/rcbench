@@ -15,13 +15,15 @@
 # log folder set on SETUP, and fault_log.c keeps the fault log under its
 # 1MiB cap.  log_info.c writes and reads the `info` cell, a run's own
 # description on the first data row of its file; its date follows the wall
-# clock's rules (shared/clock).
+# clock's rules (shared/clock).  log_marks.c reads the traces and markers
+# of a LIMIT RUN's and a RUDDER AUTO's file for LOGS' graph.
 set(SRCS
     log_numbers.c
     log_csv.c
     log_reader.c
     log_fields.c
     log_preset.c
+    log_marks.c
     log_name.c
     log_info.c
     log_take.c

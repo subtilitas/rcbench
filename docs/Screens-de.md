@@ -3820,6 +3820,9 @@ Importansicht:
 
 ![Ein MOTOR-Lauf, wie er öffnet: throttle, rpm, current und voltage](img/de/logs-plot.png)
 ![Ein SERVO-Lauf, wie er öffnet: pulse, angle, current und voltage](img/de/logs-servo-plot.png)
+![Ein LIMIT RUN in der Grafik: current und angle über dem Puls](img/de/logs-limit-graph.png)
+![Die Suche eines RUDDER AUTO in der Grafik](img/de/logs-ruddr-search.png)
+![Die Schritte eines RUDDER AUTO in der Grafik](img/de/logs-ruddr-steps.png)
 ![MEHR auf der Grafik: SPALTEN](img/de/logs-plot-more.png)
 ![Die Importansicht, über MEHR > SPALTEN erreicht](img/de/logs-import.png)
 
@@ -3901,14 +3904,52 @@ enthält; eine fehlende Spalte entfällt, und keine andere rückt nach:
 | MOTOR-Lauf | `rpm` und `throttle` | `MOTORnnn`, `ESCnnn` | `throttle`, `rpm`, `current`, `voltage` |
 | SERVO-Lauf | `pulse`, `angle`, `source` | `SERVOnnn`, `BENCHnnn` | `pulse`, `angle`, `current`, `voltage` |
 
-Die Zeilen einer LIMIT-RUN- und einer RUDDER-AUTO-Datei werden nach
-Zeilennummer gezeichnet, mit dem Puls als erster Linie. Eine
-Prüfstandsdatei der Firmware 0.21.0 nennt weder `throttle` noch `pulse`:
+Eine LIMIT-RUN- und eine RUDDER-AUTO-Datei öffnen in der Grafik: ihre
+Zeilen über dem Puls (bei RUDDER AUTO auf SCHRITTE über dem Schritt), nicht
+über der Zeilennummer. Die Grafik zeigt die ganze Datei mit bis zu 2.048
+Zeilen; eine längere Datei und eine ohne Pulsspalte (RUDDER AUTO der
+Firmware 0.23.17) zeichnet LOGS wie die anderen Arten nach Zeilennummer.
+Eine Prüfstandsdatei der Firmware 0.21.0 nennt weder `throttle` noch `pulse`:
 `ESCnnn.CSV` öffnet als MOTOR-Lauf, `BENCHnnn.CSV` und `SERVOnnn.CSV` als
 SERVO-Lauf, und dieselbe Kopfzeile unter jedem anderen Namen als
 MOTOR-Lauf. Eine Datei keiner Art, eine Datei mit dem Namen eines Laufs
 ohne eine Spalte ihrer Art und eine Datei, die der Leser ablehnt, öffnen
 die Importansicht.
+
+Die Grafik (`shared/ui/log_graph*.c`, `shared/logfile/log_marks.c`)
+behält die Maße der Kurvenansicht: die Kopfzeile nennt Datei, Zeilen und
+Art (`LIMIT006.CSV   116 ZEILEN   LIMIT RUN`); ein Chip von 240 x 44px je
+Reihe; die Grafik 992 x 316px; darunter die x-Beschriftung in der Einheit
+der x-Spalte; die Cursorzeile in der Fußleiste
+(`pulse 1040us   Zeile 112 von 116`).
+
+| Bild | x | Reihen | Eine Linie je | Markierungen |
+| --- | --- | --- | --- | --- |
+| LIMIT RUN | `pulse` | `current`, `angle` | Suche und Seite; Suche 1 durchgezogen, 2 (nach dem Überstellen) und 3 (die letzte Prüfung) gestrichelt | M Mitte (Puls der ersten Zeile); je Seite A Anschlag (ihre letzte BOUND-Zeile) und E Endpunkt (deren `end point`), L letzte Position am äußersten Puls der Seite, wo er nicht ihr Anschlag ist; F Freistrom und S Schwelle als Pegel von `current` von der Mitte bis zum äußersten Puls der Seite |
+| RUDDER AUTO, SUCHE | `pulse` | `current`, `measured` | Seite: eine neue Linie, wo der Puls umkehrt | M Mitte, E Endpunkt (`side` der Schritte), L die äußerste Position jeder Seite |
+| RUDDER AUTO, SCHRITTE | `step` | `measured`, `goal` | Seite; die 3 Prüfmessungen als Punkte | eine Messung außerhalb der Toleranz (`within` 0) in der Warnfarbe; ein Strich von 10px am Fuß der Grafik unter jeder Messung nach einem Schreiben |
+
+- Die x-Skala reicht vom kleinsten x-Wert der gezeichneten Zeilen und
+  der Markierungen bis zum größten, ohne Rand: diese beiden stehen auf der
+  ersten und der letzten Pixelspalte der Grafik. Jede Reihe hat ihre
+  eigene Skala, 6% Rand je Seite und nie über die Null hinweg.
+- Das Schild einer Markierung trägt ihren Buchstaben, 14 x 18px, in zwei
+  Reihen am oberen Rand der Grafik; die Chips, die die Reihen frei
+  lassen, tragen die Legende der Buchstaben (Englisch: C, B, E, L, F, T).
+  RUDDER AUTO zeigt SUCHE und SCHRITTE als zwei Reiter von 115 x 38px am
+  Platz des vierten Chips; ein Reiter lädt die Spalten seines Bilds.
+- Ein Tippen auf einen Chip hebt seine Reihe hervor: 2px dick, Ober- und
+  Unterende ihrer Skala am linken Rand der Grafik in ihrer Farbe. Ein
+  zweites Tippen blendet sie aus, ein drittes holt sie hervorgehoben
+  zurück.
+- Ein Finger auf der Grafik setzt den Cursor auf die nächste gezeichnete
+  Zeile: nächste in x, und von Zeilen in einer Spalte die, deren erste
+  gezeigte Reihe dem Finger am nächsten liegt. `<` und `>` gehen zur
+  nächsten Zeile, die das Bild zeichnet. Die Chips zeigen den Wert jeder
+  Reihe am Cursor in den Nachkommastellen ihrer Skala.
+- Zwei Finger zoomen die Grafik nicht; MEHR > SPALTEN führt zur
+  Importansicht, deren GRAFIK die gewählten Spalten nach Zeilennummer
+  zeichnet.
 
 Der CSV-Leser (Comma-Separated Values) nimmt Dezimalkomma und -punkt,
 Einheitenzeilen und unterschiedlich lange Zeilen an. Die Importansicht

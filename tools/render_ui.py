@@ -595,6 +595,11 @@ SCREENS = {
     "logs-plot-more": ("logs-plot-more.png", "logs", "dark"),
     # A SERVO run opened: pulse, angle, current and voltage chosen.
     "logs-servo-plot": ("logs-servo-plot.png", "logs", "dark"),
+    # The graph of an XY file: a LIMIT RUN over its pulse, a RUDDER AUTO's
+    # search and its steps.
+    "logs-limit-graph": ("logs-limit-graph.png", "logs", "dark"),
+    "logs-ruddr-search": ("logs-ruddr-search.png", "logs", "dark"),
+    "logs-ruddr-steps": ("logs-ruddr-steps.png", "logs", "dark"),
     "logs-delete":("logs-delete.png","logs",       "dark"),
     # LOGS' ROOT tab: the runs of firmware 0.21.0 and older.
     "logs-root":  ("logs-root.png",  "logs",       "dark"),
@@ -1064,6 +1069,11 @@ FIT_ONLY = {
     # import view.
     "logs-plot-import": (None, "logs", "dark"),
     "help-logs-plot-import": (None, "logs", "dark"),
+    # The graph's guide: a LIMIT RUN's pages, RUDDER AUTO's second with
+    # its tabs.
+    "help-logs-limit-graph": (None, "logs", "dark"),
+    "help-logs-limit-graph-2": (None, "logs", "dark"),
+    "help-logs-ruddr-search-2": (None, "logs", "dark"),
     "help-files-2": (None, "files", "dark"),
     "help-files-3": (None, "files", "dark"),
     # SERVO's guide: LIVE's READY and controls pages, each task's own
