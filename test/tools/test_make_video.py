@@ -64,6 +64,42 @@ def test_a_hold_needs_its_lead_in():
     assert any("at least 3.1s" in e for e in make_video.check(board))
 
 
+def test_a_press_a_finger_down_and_a_release_are_actions():
+    """One touch over three steps, and a point for the bubble's line."""
+    board = _board()
+    steps = board["scenes"][1]["steps"]
+    for step, action in zip(steps[:3], ("press", "down", "release"),
+                            strict=True):
+        step.update(action=action, target=[934, 29], point=[1012, 29],
+                    dur=2.0)
+    assert make_video.check(board) == []
+    steps[2]["lift"] = 0.1
+    assert make_video.check(board) == []
+    steps[2]["lift"] = 1.8
+    assert any("lift" in e for e in make_video.check(board))
+    steps[2]["lift"] = 0.1
+    steps[0]["dur"] = 1.0
+    assert any("at least 1.4s" in e for e in make_video.check(board))
+    steps[0]["dur"] = 2.0
+    steps[1]["point"] = [1024, 29]
+    assert any("point" in e for e in make_video.check(board))
+
+
+def test_the_stop_buttons_keys_stretch_with_the_narration():
+    """The head moves with the panel's shots when a line runs long."""
+    scene = {"type": "case", "dur": 10, "camera": [[0, [0, 0, 1], [0, 0, 0]]],
+             "estop": [[0, 0], [4, 1], [8, 0]],
+             "panel": [[0, "motor-plot"], [4, "stop-hw"]],
+             "say": [{"at": 2, "text": "x"}]}
+    video_voice._stretch(scene, [0.0, 2, 10], [0.0, 6, 14])
+    assert [key[0] for key in scene["estop"]] == [0, 8, 12]
+    assert scene["panel"][1][0] == 8
+    scene["estop"][1][1] = 2
+    board = {"name": "x", "lang": "en", "brand": "x", "steps": 1,
+             "scenes": [scene]}
+    assert any("estop" in e for e in make_video.check(board))
+
+
 def test_a_target_off_the_display_is_refused():
     """A target lies on the 1024 x 600 display."""
     board = _board()

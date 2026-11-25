@@ -49,7 +49,9 @@ const COL = {'': '#00e5ff', warn: '#ffb400', ok: '#00f58c',
              muted: '#93a1b8'};
 
 const sb = await (await fetch('/storyboard.json')).json();
-const words = {tap: 'TAP', hold: 'HOLD 2 s', pos: 'pos', gpio: 'GPIO',
+const words = {tap: 'TAP', hold: 'HOLD 2 s', press: 'PRESS',
+               down: 'FINGER DOWN', release: 'RELEASE', pos: 'pos',
+               gpio: 'GPIO',
                ...(sb.words || {})};
 
 // Lay the scenes out on the timeline and load what they show.
@@ -248,6 +250,7 @@ function drawCase(sc, lt, a, pulse, ui) {
     m.setFace(imgs['dial-' + before[1]], imgs['dial-' + name],
               lt < sc.faces[0][0] ? 0 : mix);
   }
+  if (sc.estop && m.setStop) m.setStop(track(sc.estop, lt));
   if (sc.turn && m.setTurn) m.setTurn(track(sc.turn, lt));
   if (sc.flip && m.setFlip) m.setFlip(track(sc.flip, lt));
   if (sc.spin && m.setSpin) m.setSpin(track(sc.spin, lt));
@@ -598,14 +601,43 @@ function drawScreen(sc, lt, a, pulse, ui) {
                       1 - ramp(q0, b.dur - .22, b.dur - .02)) * a;
   const tag = b.action === 'tap' ? `<span class="tag tap">${words.tap}</span>`
     : b.action === 'hold' ? `<span class="tag hold">${words.hold}</span>`
+    : ['press', 'down', 'release'].includes(b.action)
+      ? `<span class="tag tap">${words[b.action]}</span>`
     : b.tag ? `<span class="tag warn">${b.tag}</span>` : '';
   if (ba > 0) {
-    bubble({x: 1398, y: cl(ty - 110, 190, 700), n: b.n, title: b.title,
+    const py = b.point ? SY + b.point[1] * SC : ty;
+    bubble({x: 1398, y: cl(py - 110, 190, 700), n: b.n, title: b.title,
             text: b.text, a: ba, pulse, style: b.style, tag,
-            ...(b.target ? {tx, ty} : {})});
+            ...(b.point ? {tx: SX + b.point[0] * SC, ty: SY + b.point[1] * SC}
+                : b.target ? {tx, ty} : {})});
+  }
+  // A finger that lands in one step, stays through the next and lifts in
+  // a third: the mark of a touch that acts on the press.
+  if (b.action === 'press') fingerMark(tx, ty, q0 - (b.dur - .4), 9);
+  if (b.action === 'down') fingerMark(tx, ty, 9, 9);
+  if (b.action === 'release') {
+    fingerMark(tx, ty, 9, (b.lift ?? .9) - q0);
   }
   if (b.action === 'tap') touchMark('tap', tx, ty, q0 - (b.dur - .75), 1);
   if (b.action === 'hold') touchMark('hold', tx, ty, q0 - (b.dur - 2.45), 1);
+}
+
+// A finger on the screen: it lands q seconds ago and lifts in `left`
+// seconds; the lift sends a ring outward over 0.45s.
+function fingerMark(tx, ty, q, left) {
+  if (q <= 0 || left <= -.45) return;
+  if (left > 0) {
+    const land = 1 - ramp(q, 0, .2);
+    ov.insertAdjacentHTML('beforeend',
+      `<circle cx="${tx}" cy="${ty}" r="${23 + 7 * land}"
+        fill="rgba(255,255,255,.58)" stroke="#fff" stroke-width="2.5"
+        opacity="${ramp(q, 0, .12)}"/>`);
+    return;
+  }
+  const rp = cl(-left / .45);
+  ov.insertAdjacentHTML('beforeend',
+    `<circle cx="${tx}" cy="${ty}" r="${26 + 54 * rp}" fill="none"
+      stroke="#fff" stroke-width="3" opacity="${(1 - rp) * .9}"/>`);
 }
 
 // A touch on a screen: the ring of a tap over 0.75s, or the ring of a
