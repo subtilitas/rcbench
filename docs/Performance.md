@@ -657,7 +657,7 @@ ones are counted as `tx_drop`.
 Each depth is a lower bound:
 
 - calls through a register are not followed, except a page's read and write
-  handler, which the tool reads out of the link's page table: 313 such calls
+  handler, which the tool reads out of the link's page table: 316 such calls
   are reachable from `main` in the image CI builds (arm-none-eabi-gcc
   14.2.1);
 - the 1,088-byte frame of newlib's `two_way_long_needle()` is left out.
