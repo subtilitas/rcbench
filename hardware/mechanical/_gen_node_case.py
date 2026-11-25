@@ -96,7 +96,7 @@ HOUSING_TOP = 11.5
 DISPLAY_Z = (16.7, 18.3)
 TOUCH = 22.6
 # The 4 holes of each board; a column joins the two of one corner.
-INA_HOLES = ((-51.21, 0.7), (18.94, 0.7), (-51.21, 39.5), (18.94, 39.5))
+INA_HOLES = ((-51.46, 0.7), (19.19, 0.7), (-51.46, 39.5), (19.19, 39.5))
 DISPLAY_HOLES = ((-55.11, -0.9), (22.89, -0.9), (-55.11, 41.1),
                  (22.89, 41.1))
 
