@@ -2,14 +2,15 @@
  "name": "origin",
  "lang": "en",
  "brand": "How it began",
- "steps": 6,
+ "steps": 7,
  "chapters": [
   "The reason",
   "Ideas",
   "The plan",
   "Development",
   "Testing",
-  "The test bench"
+  "The test bench",
+  "The group order"
  ],
  "music": "pachelbel-canon",
  "music_gain": 0.5,
@@ -732,6 +733,155 @@
    ]
   },
   {
+   "type": "case",
+   "dur": 64.52,
+   "display": {
+    "view": "layout-rbmod"
+   },
+   "chips": [
+    {
+     "from": 0,
+     "to": 50.14,
+     "n": 7,
+     "text": "The rbmod carrier at cost"
+    },
+    {
+     "from": 50.34,
+     "to": 64.12,
+     "n": 7,
+     "text": "25 boards"
+    }
+   ],
+   "camera": [
+    [
+     0.0,
+     [
+      150,
+      300,
+      520
+     ],
+     [
+      150,
+      30,
+      0
+     ]
+    ],
+    [
+     64.52000000000001,
+     [
+      150,
+      300,
+      520
+     ],
+     [
+      150,
+      30,
+      0
+     ]
+    ]
+   ],
+   "windows": [
+    {
+     "from": 0.4,
+     "to": 32.58,
+     "at": [
+      790,
+      150
+     ],
+     "w": 1080,
+     "kind": "browser",
+     "url": "rc-network.de/threads/rcbench-sammelbestellungsthread",
+     "page": {
+      "w": 1280,
+      "shots": [
+       [
+        0,
+        "origin-order1"
+       ]
+      ]
+     }
+    },
+    {
+     "from": 32.88,
+     "to": 50.040000000000006,
+     "at": [
+      900,
+      200
+     ],
+     "w": 900,
+     "kind": "folder",
+     "title": "rbmod carrier, group order",
+     "body": [
+      {
+       "h": "In the parcel"
+      },
+      {
+       "p": "1 board, 4 layers, 17 SMD parts fitted"
+      },
+      {
+       "p": "Angled servo pin headers, 3 x 4"
+      },
+      {
+       "log": "board and headers     12 EUR"
+      },
+      {
+       "log": "insured parcel         6 EUR"
+      },
+      {
+       "log": "other costs            2 EUR"
+      },
+      {
+       "log": "total                 20 EUR"
+      },
+      {
+       "h": "Licences"
+      },
+      {
+       "p": "Board: CC BY-NC-SA 4.0. Software: MIT."
+      }
+     ]
+    },
+    {
+     "from": 50.34,
+     "to": 64.12,
+     "at": [
+      790,
+      150
+     ],
+     "w": 1080,
+     "kind": "browser",
+     "url": "rc-network.de/threads/rcbench-sammelbestellungsthread/post-13",
+     "page": {
+      "w": 1280,
+      "shots": [
+       [
+        0,
+        "origin-order13"
+       ]
+      ]
+     }
+    }
+   ],
+   "say": [
+    {
+     "at": 0.6,
+     "text": "The story goes on in a second thread. On the 16th of November 2026 Julian opens a group order for the R B mod carrier: a circuit board with four layers that sits behind the display and joins the modules."
+    },
+    {
+     "at": 17.74,
+     "text": "It is privately financed. No shop, no profit. A board with its servo pin headers costs 20 euros, shipping included. A forum member handles payment and shipping in his spare time."
+    },
+    {
+     "at": 32.88,
+     "text": "The 17 surface mount parts are fitted. The builder buys the modules and solders them on. The board's design is under a Creative Commons licence for private builds. The software stays under the M I T licence."
+    },
+    {
+     "at": 50.34,
+     "text": "On the 22nd of November 25 boards are ordered. A day later 20 of them are taken. The order closes on the 29th of November, and a second batch follows in January."
+    }
+   ]
+  },
+  {
    "type": "end",
    "dur": 9,
    "heading": "rcbench",
@@ -741,7 +891,8 @@
     "The plan",
     "Development",
     "Testing",
-    "The test bench"
+    "The test bench",
+    "The group order"
    ],
    "note": "MIT licence · github.com/subtilitas/rcbench",
    "say": "That is how R C bench came to be. Its source and documentation are on GitHub."
