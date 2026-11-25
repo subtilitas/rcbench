@@ -183,9 +183,13 @@ width or height of 0 is `SV_ERR_NO_LABEL`.
   the job with the first error. An end before START was written, or in
   step 12, sends nothing.
 - A link drop in steps 1 to 3 ends the job with `SV_ERR_LINK`. A drop
-  after START waits 5s for the link. Back in time, the counter decides:
-  c0 - 1 is `SV_OK` with `relinked` set, c0 three times is `SV_ERR_LINK`.
-  Not back in time: `SV_ERR_LINK`. The job is never sent a second time.
+  after START waits 5s for the link. Back in time after BUF_FULL was
+  written, step 11 runs again first: INQUIRY_STA every 100ms until neither
+  printing nor busy, 15s at most (`SV_ERR_SILENT` and STOP_PRINT after
+  that), because the counter moves only once the label is out. Then, or
+  at once when BUF_FULL was not written, the counter decides: c0 - 1 is
+  `SV_OK` with `relinked` set, c0 three times is `SV_ERR_LINK`. Not back
+  in time: `SV_ERR_LINK`. The job is never sent a second time.
 - Times are unsigned differences of a 32-bit ms clock the caller passes,
   so a job runs across the clock's wrap.
 - `sv_job_t` is 752 bytes on a 32-bit target. No function allocates,
@@ -257,7 +261,7 @@ target_link_libraries(my_target PRIVATE rcbench_supvan)
 Under ESP-IDF the same CMakeLists.txt registers a component. The headers
 compile from C++. Code for the ESP32-P4 at `-Os`
 (`riscv32-esp-elf-gcc` 15.2.0): `lzlit.c` 710 bytes, `supvan_frame.c` 891,
-`supvan_page.c` 591, `supvan_job.c` 2,200.
+`supvan_page.c` 591, `supvan_job.c` 2,230.
 
 ## Source and credit
 
@@ -316,7 +320,7 @@ sponsored by them. The full notice is in the repository's
 | `test_lzlit` | the golden streams of `tools/lzlit.py`, fed whole and in pieces; the header; the overflow at one byte short and at the exact size; the bound up to 65,536 bytes; the carry path |
 | `test_supvan_frame` | the command against the report's bytes; an answer split 20 + 20 + 7 and fed 1 byte at a time; noise, a length out of range, two answers in one piece, the 0xF0 answer; each status bit; the material offsets; the roll limits at both ends |
 | `test_supvan_page` | 224 columns as 84 / 84 / 56 against the fixture; 1, 84 and 85 columns; the checksum at byte 255; the data frames against the fixture; frame counts at 1, 500, 501 bytes and 255 frames; the speed byte at each threshold |
-| `test_supvan_job` | the whole PRINT in order with its parameters and spacing; notifications before and after their writes' answers; a label used by an earlier print during step 3; each roll dimension on its own; QUERY alone; the counter 295 to 294, 295 three times, 294 on the second read, a changed UID, a jump; busy for 4.9s and 5.1s; the clock's wrap |
+| `test_supvan_job` | the whole PRINT in order with its parameters and spacing; notifications before and after their writes' answers; a label used by an earlier print during step 3; a reconnect while the label prints; each roll dimension on its own; QUERY alone; the counter 295 to 294, 295 three times, 294 on the second read, a changed UID, a jump; busy for 4.9s and 5.1s; the clock's wrap |
 | `test_supvan_job_ends` | the 7 error flags before START and in step 11; no answer at each step; a write refused and lost; an abort at each of steps 4 to 11 sends STOP_PRINT once; the link down at each step, back and not back inside 5s |
 | `test/tools/test_lzlit.py` | `lzlit.c` through `test/host/lzlit_cli.c` on 9 inputs up to 65,536 bytes: equal to `tools/lzlit.py`, decoded by liblzma |
 

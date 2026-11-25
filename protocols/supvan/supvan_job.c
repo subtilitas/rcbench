@@ -417,9 +417,17 @@ void sv_job_link(sv_job_t *j, bool up, uint32_t now_ms)
         if (j->step == SV_STEP_RELINK) {
             j->relinked = true;
             sv_rx_reset(&j->rx);
-            enter(j, SV_STEP_COUNTER, now_ms);
-            j->reads = 0u;
-            ask(j, SV_C_MATERIAL, now_ms);
+            if (j->full_sent) {
+                /* The label may still be printing: the counter moves only
+                 * once it is out, so step 11 runs first, with its 15s. */
+                enter(j, SV_STEP_DONE, now_ms);
+                ask(j, SV_C_INQUIRY, now_ms);
+            } else {
+                /* Without BUF_FULL the printer has no whole stream. */
+                enter(j, SV_STEP_COUNTER, now_ms);
+                j->reads = 0u;
+                ask(j, SV_C_MATERIAL, now_ms);
+            }
         }
         return;
     }
@@ -494,6 +502,9 @@ bool sv_job_tx(sv_job_t *j, uint32_t now_ms, const uint8_t **data,
         build_cmd(j);
         if (j->want == SV_C_START) {
             j->started = true;
+        }
+        if (j->want == SV_C_BUF_FULL) {
+            j->full_sent = true;
         }
         j->out_kind = j->want;
         if (j->step == SV_STEP_PAUSE) {

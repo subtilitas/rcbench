@@ -326,7 +326,8 @@ typedef enum {
     SV_STEP_COUNTER,   /**< 12: RETURN_MAT up to 3 times, 300ms apart */
     SV_STEP_STOP,      /**< STOP_PRINT after an end in steps 4 to 11 */
     SV_STEP_RELINK,    /**< the link dropped after START: 5s for it to
-                            come back, then the counter decides */
+                            come back; then step 11 when BUF_FULL was sent,
+                            and the counter decides */
     SV_STEP_END        /**< ended; sv_job_t.err says how */
 } sv_step_t;
 
@@ -365,6 +366,7 @@ typedef struct {
     uint8_t reads;         /**< counter reads */
     bool started;          /**< START_PRINT was handed out */
     bool rebased;          /**< step 3 re-read the counter after the wait */
+    bool full_sent;        /**< BUF_FULL was handed out */
     bool link;             /**< the link is up */
     bool in_flight;        /**< a write is out, its answer not in */
     uint8_t out_kind;      /**< what that write is: its command byte, or

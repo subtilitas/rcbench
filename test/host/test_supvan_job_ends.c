@@ -395,7 +395,9 @@ TEST_CASE(the_link_down_in_step_12_relinks_once)
     rig_link(r, false);
     CHECK_EQ(r->job.step, SV_STEP_RELINK);
     rig_link(r, true);
-    CHECK_EQ(r->job.step, SV_STEP_COUNTER);
+    /* BUF_FULL was written: step 11 checks the printer is idle first */
+    CHECK_EQ(r->job.step, SV_STEP_DONE);
+    CHECK(rig_run_to(r, SV_STEP_COUNTER, 1000u));
     /* a second drop after the relink ends the job */
     rig_link(r, false);
     CHECK(sv_job_ended(&r->job));
@@ -423,6 +425,84 @@ TEST_CASE(a_link_drop_while_stop_is_due_ends_with_the_first_error)
     CHECK_EQ(r->job.err, SV_ERR_COVER);
 }
 
+/**
+ * @brief Run a PRINT to step 11 with @p print_ms of printing, drop the
+ *        link 200ms after BUF_FULL and restore it.
+ * @param r        the rig
+ * @param print_ms how long the printer prints after BUF_FULL
+ * @param prints   whether the label is used
+ * @return true when the job was in step 11 at the drop
+ */
+static bool relink_while_printing(sv_rig_t *r, uint32_t print_ms, bool prints)
+{
+    if (!rig_start(r, SV_JOB_PRINT, 0u)) {
+        return false;
+    }
+    r->sim.print_ms = print_ms;
+    r->sim.prints = prints;
+    if (!run_to(r, SV_STEP_DONE)) {
+        return false;
+    }
+    while ((uint32_t)(r->now - r->sim.full_at) < 200u) {
+        rig_step(r);
+    }
+    rig_link(r, false);
+    rig_step(r);
+    rig_link(r, true);
+    return true;
+}
+
+TEST_CASE(a_reconnect_while_the_label_prints_waits_for_it)
+{
+    sv_rig_t *r = &s_r;
+    /* 1.7s of printing, the link back 200ms in: 1.5s still to go */
+    CHECK(relink_while_printing(r, 1700u, true));
+    CHECK_EQ(r->job.step, SV_STEP_DONE);
+    CHECK(rig_run(r, 20000u));
+    CHECK_EQ(r->job.err, SV_OK);
+    CHECK(r->job.relinked);
+    CHECK_EQ(r->job.last.left, 294u);
+    /* the counter is read only once the printer is idle */
+    const unsigned c = last_of(&r->sim, SV_C_MATERIAL);
+    CHECK(c < SIM_LOG_MAX && r->sim.log_at[c] - r->sim.full_at >= 1700u);
+    CHECK_EQ(sim_count(&r->sim, SV_C_STOP), 0u);
+}
+
+TEST_CASE(a_reconnect_while_a_label_that_fails_prints_is_link_lost)
+{
+    sv_rig_t *r = &s_r;
+    CHECK(relink_while_printing(r, 1700u, false));
+    CHECK(rig_run(r, 20000u));
+    CHECK_EQ(r->job.err, SV_ERR_LINK);
+    CHECK(r->job.relinked);
+    /* 3 counter reads after printing, not during it */
+    unsigned first = SIM_LOG_MAX;
+    for (unsigned i = r->sim.nlog; i-- > 0u;) {
+        if (r->sim.log[i] == SV_C_MATERIAL
+            && r->sim.log_at[i] > r->sim.full_at) {
+            first = i;
+        }
+    }
+    CHECK(first < SIM_LOG_MAX
+          && r->sim.log_at[first] - r->sim.full_at >= 1700u);
+    CHECK_EQ(sim_count(&r->sim, SV_C_MATERIAL), 2u + SV_COUNTER_READS);
+}
+
+TEST_CASE(printing_stuck_after_a_reconnect_is_silent_after_15s)
+{
+    sv_rig_t *r = &s_r;
+    CHECK(relink_while_printing(r, 60000u, true));
+    const uint32_t t0 = r->now;
+    CHECK(rig_run(r, 30000u));
+    CHECK_EQ(r->job.err, SV_ERR_SILENT);
+    CHECK(r->job.relinked);
+    CHECK(r->now - t0 >= SV_DONE_MS);
+    CHECK(r->now - t0 < SV_DONE_MS + 200u);
+    CHECK_EQ(sim_count(&r->sim, SV_C_STOP), 1u);
+    /* no counter read: no verdict from a label still under the head */
+    CHECK_EQ(sim_count(&r->sim, SV_C_MATERIAL), 2u);
+}
+
 int main(void)
 {
     RUN(each_error_flag_before_start_ends_the_job_without_stop);
@@ -441,5 +521,8 @@ int main(void)
     RUN(the_link_back_inside_5s_reads_the_counter_for_the_verdict);
     RUN(the_link_down_in_step_12_relinks_once);
     RUN(a_link_drop_while_stop_is_due_ends_with_the_first_error);
+    RUN(a_reconnect_while_the_label_prints_waits_for_it);
+    RUN(a_reconnect_while_a_label_that_fails_prints_is_link_lost);
+    RUN(printing_stuck_after_a_reconnect_is_silent_after_15s);
     return test_summary("supvan_job_ends");
 }
