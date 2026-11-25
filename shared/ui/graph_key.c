@@ -131,16 +131,21 @@ static void note(gk_t *r, graph_key_state_t st, const char *text)
 /**
  * @brief Hand record @p r's file to LOGS and enter it.
  * @param r the record
+ * @param k its card
  * @return true when LOGS opened the file
  */
-static bool open_in_logs(gk_t *r)
+static bool open_in_logs(gk_t *r, graph_key_card_t k)
 {
-    log_viewer_tab_t tab;
-    if (!log_viewer_tab_of(r->dir, &tab)
-        || log_viewer_show(tab, r->name, r->mount) != LOG_SHOW_OPEN) {
-        /* The folder no tab lists now, the card swapped since the run, or
-         * the file renamed or deleted: the card in the slot has no such
-         * file. */
+    /* The tab that lists the run's folder now; with a folder setting
+     * changed since the run, the tab the card's runs are written under,
+     * read from the run's folder. */
+    log_viewer_tab_t tab = (k == GRAPH_KEY_MOTOR || k == GRAPH_KEY_SUPPLY)
+                               ? LOG_TAB_BENCH
+                               : LOG_TAB_USER;
+    (void)log_viewer_tab_of(r->dir, &tab);
+    if (log_viewer_show_in(tab, r->dir, r->name, r->mount) != LOG_SHOW_OPEN) {
+        /* The card swapped since the run, or the file renamed or deleted:
+         * the card in the slot has no such file. */
         char t[GK_NOTE_MAX];
         snprintf(t, sizeof(t), TR(MO_LOG_MISSING), r->name);
         note(r, GRAPH_KEY_LIVE, t);
@@ -161,7 +166,7 @@ bool graph_key_tap(graph_key_card_t k)
     const graph_key_state_t st = state_of(r);
     switch (st) {
     case GRAPH_KEY_LIVE:
-        return open_in_logs(r);
+        return open_in_logs(r, k);
     case GRAPH_KEY_ARMED:
         note(r, st, TR(GK_ARMED));
         return false;

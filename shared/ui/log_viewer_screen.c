@@ -180,11 +180,25 @@ log_viewer_tab_t log_viewer_tab(void)
     return s.tab;
 }
 
+const char *lv_dir(log_viewer_tab_t tab)
+{
+    return (s.pin != NULL && tab == s.tab) ? s.pin : log_viewer_tab_dir(tab);
+}
+
 /* Point the I/O at @p tab's folder, for the call that follows. */
 void lv_point(log_viewer_tab_t tab)
 {
     if (s.io.folder != NULL) {
-        s.io.folder(log_viewer_tab_dir(tab), s.io.ctx);
+        s.io.folder(lv_dir(tab), s.io.ctx);
+    }
+}
+
+void lv_point_open(void)
+{
+    if (s.open_dir[0] == '\0') {
+        lv_point(s.open_tab);
+    } else if (s.io.folder != NULL) {
+        s.io.folder(s.open_dir, s.io.ctx);
     }
 }
 
@@ -626,6 +640,18 @@ log_viewer_show_t log_viewer_show(log_viewer_tab_t tab, const char *name,
         }
     }
     return LOG_SHOW_NOT_LISTED;
+}
+
+log_viewer_show_t log_viewer_show_in(log_viewer_tab_t tab, const char *dir,
+                                     const char *name, unsigned mount)
+{
+    if (dir == NULL || dir[0] == '\0') {
+        return LOG_SHOW_NOT_LISTED;
+    }
+    s.pin = dir;
+    const log_viewer_show_t r = log_viewer_show(tab, name, mount);
+    s.pin = NULL;
+    return r;
 }
 
 unsigned log_viewer_mount_now(void)

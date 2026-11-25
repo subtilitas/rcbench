@@ -4339,6 +4339,12 @@ ein Log offen. Ein Tipp auf die graue Taste öffnet nichts und sagt warum:
 in der ersten Zeile der Karte auf LIMIT RUN, RUDER AUTO und TEST, im
 Alarmband auf MOTOR & ESC und SUPPLY.
 
+Die Taste liest die Datei aus dem Ordner, in den sie geschrieben wurde.
+Ein Ordner Testaufzeichnungen oder Ordner Auto-Aufzeichnungen, unter SETUP > SD CARD nach
+dem Lauf geändert, gilt für den nächsten Lauf; die Taste dieses Laufs
+öffnet die Datei weiter im alten Ordner. Die Liste hinter dieser Grafik
+zeigt den neuen Ordner des Reiters.
+
 | Text | Wann |
 | --- | --- |
 | `Prüfstand ARMED. Für die Grafik auf SAFE schalten.` | der Prüfstand ist ARMED |

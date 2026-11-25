@@ -490,7 +490,14 @@ void servo_screen_test_files(int number, bool report)
                                     : &s.test_report;
     if (number != *file || report != *whole) {
         if (number != *file) {
-            s.gk_mount[f] = log_viewer_mount_now();     /* GRAPH's card */
+            /* GRAPH's card and folder, kept for this run whatever the
+             * setting says since. */
+            s.gk_mount[f] = log_viewer_mount_now();
+            const char *dir = log_viewer_tab_dir(LOG_TAB_USER);
+            size_t n = strlen(dir);
+            n = n < CARD_DIR_MAX ? n : CARD_DIR_MAX - 1u;
+            memcpy(s.gk_dir[f], dir, n);
+            s.gk_dir[f][n] = '\0';
         }
         *file  = number;
         *whole = report;

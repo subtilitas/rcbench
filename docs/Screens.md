@@ -4005,6 +4005,11 @@ on the grey key opens nothing and says why: in the card's first line on
 LIMIT RUN, RUDDER AUTO and TEST, in the alert band on MOTOR & ESC and
 SUPPLY.
 
+The key reads the file from the folder it was written to. A User log
+folder or Auto log folder changed under SETUP > SD CARD after the run
+applies to the next run; this run's key still opens the file in the old
+folder. The list behind that graph shows the tab's new folder.
+
 | Text | When |
 | --- | --- |
 | `Bench ARMED. Switch to SAFE to open the graph.` | the bench is ARMED |

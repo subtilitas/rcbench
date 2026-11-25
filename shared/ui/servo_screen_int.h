@@ -25,6 +25,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "card_tree.h"
 #include "gfx.h"
 #include "graph_key.h"
 #include "kst_panel.h"
@@ -845,6 +846,10 @@ typedef struct {
     /** @brief The mount each run's number came on, by PEEK_*: GRAPH opens
      *  the file on that card only (servo_graph_key.c). */
     unsigned  gk_mount[3];
+    /** @brief USER LOG FOLDER as it stood when each run's number came, by
+     *  PEEK_*: GRAPH reads the run's file there, whatever the setting says
+     *  since (servo_graph_key.c). */
+    char      gk_dir[3][CARD_DIR_MAX];
     /** @brief GRAPH as LIMIT RUN's card and TEST's box drew it last, by
      *  graph_key_card_t; empty where it was not drawn. */
     gfx_rect_t gk_rect[3];

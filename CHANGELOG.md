@@ -18,8 +18,9 @@ history is in git.
   User logs OFF, grey while ARMED or while the run's file is open; a tap on
   the grey key says why in the card's first line (SERVO's cards) or the
   alert band (MOTOR & ESC, SUPPLY), as does a tap after the card was
-  swapped. Leaving the card switches the bench to SAFE
-  (`shared/ui/graph_key.c`, `shared/ui/servo_graph_key.c`;
+  swapped. The key opens the file in the folder the run was written to,
+  also after User log folder or Auto log folder changed. Leaving the card
+  switches the bench to SAFE (`shared/ui/graph_key.c`, `shared/ui/servo_graph_key.c`;
   [Screens](docs/Screens.md#graph-on-the-result-cards)).
 - LOGS opens a run file the bench wrote in the plot at once, with the
   columns of its kind: LIMIT RUN `pulse`, `current`, `angle`; RUDDER AUTO

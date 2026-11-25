@@ -9,7 +9,8 @@
  *
  * The failures under test: a key that opens a file still being written,
  * opens one while ARMED, opens the same name on another card, opens with
- * USER LOGS off or before any run; a refusal nobody sees; a home tag that
+ * USER LOGS off or before any run; a key that reads the run's file from a
+ * log folder set after the run; a refusal nobody sees; a home tag that
  * climbs to LOGS' list instead of the card; a card that loses its result
  * on the way back; a second finger's release that taps the key; a release
  * slid onto the band that taps it.
@@ -100,11 +101,19 @@ static const gk_file_t k_card[] = {
     { CARD_USER_LOGS, "ATEST012.CSV", k_atest },
     { CARD_AUTO_LOGS, "MOTOR042.CSV", k_motor },
     { CARD_AUTO_LOGS, "SUPPL007.CSV", k_suppl },
+    /* The folders a setting changed after the runs names, each with a
+     * file of the same name: another run's. */
+    { "RUNS2", "LIMIT013.CSV", k_limit },
+    { "RUNS2", "RUDDR004.CSV", k_ruddr },
+    { "RUNS2", "ATEST012.CSV", k_atest },
+    { "AUTO2", "MOTOR042.CSV", k_motor },
+    { "AUTO2", "SUPPL007.CSV", k_suppl },
 };
 
 static char g_dir[CARD_DIR_MAX];  /**< the folder the screen points at */
 static unsigned g_mounts;         /**< the card's mount number          */
 static log_mem_ctx_t g_mem;       /**< the open file's read position    */
+static char g_opened[CARD_DIR_MAX];  /**< the folder of the last file opened */
 
 /** @brief List hook: the files of the folder pointed at, as one page.
  *  @param out takes the entries  @param max_entries room  @param page the
@@ -142,6 +151,7 @@ static bool fake_open(const char *name, log_source_t *src, void *ctx)
             && strcmp(k_card[i].name, name) == 0) {
             log_source_memory(src, &g_mem, k_card[i].text,
                               strlen(k_card[i].text));
+            snprintf(g_opened, sizeof(g_opened), "%s", g_dir);
             return true;
         }
     }
@@ -732,6 +742,100 @@ TEST_CASE(supply_graph_in_each_state)
     CHECK_EQ(ui_router_current(), SCREEN_SUPPLY);
 }
 
+/* ------------------------------------------- a folder changed since --- */
+
+/** @brief USER LOG FOLDER and AUTO LOG FOLDER changed in SETUP > SD CARD,
+ *  on the way out of card @p id and back: the next runs' folders. */
+static void move_folders_and_return(ui_screen_id_t id)
+{
+    ui_router_goto(SCREEN_OVERVIEW);
+    settings_set_text(SET_TEXT_LOG_USER_DIR, "RUNS2");
+    settings_set_text(SET_TEXT_LOG_AUTO_DIR, "AUTO2");
+    ui_router_goto(id);
+    frame();
+    g_opened[0] = '\0';
+}
+
+/** @brief Whether GRAPH opened @p name from @p dir in the graph, on @p tab.
+ *  @param name the file  @param dir its folder  @param tab the tab lit
+ *  @return true then */
+static bool opened_from(const char *name, const char *dir,
+                        log_viewer_tab_t tab)
+{
+    return logs_graph_of(name) && strcmp(g_opened, dir) == 0
+           && log_viewer_tab() == tab;
+}
+
+/* LIMIT RUN, the folder changed after the run: GRAPH opens the run's file
+ * in the folder it was written to, not the same name in the new one. */
+TEST_CASE(limit_run_graph_keeps_the_runs_folder)
+{
+    start();
+    limit_done(13);
+    move_folders_and_return(SCREEN_SERVO_LIMRUN);
+    CHECK_EQ(graph_key_state(GRAPH_KEY_LIMIT), GRAPH_KEY_LIVE);
+    tap_in(servo_screen_graph_rect());
+    CHECK(opened_from("LIMIT013.CSV", CARD_USER_LOGS, LOG_TAB_USER));
+    /* The list behind the graph is the tab's folder now. */
+    frame();
+    CHECK_STR_EQ(g_dir, "RUNS2");
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO_LIMRUN);
+    /* The next run's number came after the change: its folder. */
+    s.lim_file = 0;
+    answer(PEEK_LIM, 13);
+    frame();
+    tap_in(servo_screen_graph_rect());
+    CHECK(opened_from("LIMIT013.CSV", "RUNS2", LOG_TAB_USER));
+}
+
+/* RUDDER AUTO, the folder changed after the run. */
+TEST_CASE(rudder_auto_graph_keeps_the_runs_folder)
+{
+    start();
+    rauto_done(4);
+    move_folders_and_return(SCREEN_SERVO_RAUTO);
+    tap_in(servo_screen_graph_rect());
+    CHECK(opened_from("RUDDR004.CSV", CARD_USER_LOGS, LOG_TAB_USER));
+}
+
+/* AUTOMATIC TEST, the folder changed after the run. */
+TEST_CASE(automatic_test_graph_keeps_the_runs_folder)
+{
+    start();
+    test_done(12);
+    move_folders_and_return(SCREEN_SERVO_TEST);
+    tap_in(servo_screen_graph_rect());
+    CHECK(opened_from("ATEST012.CSV", CARD_USER_LOGS, LOG_TAB_USER));
+}
+
+/* MOTOR & ESC, the folder changed after the run: the logger's recorded
+ * folder, which no tab lists any more, on the BENCH tab. */
+TEST_CASE(motor_graph_keeps_the_runs_folder)
+{
+    start();
+    ui_router_goto(SCREEN_MOTOR);
+    last_log(GRAPH_KEY_MOTOR, "MOTOR042.CSV", CARD_AUTO_LOGS, false);
+    move_folders_and_return(SCREEN_MOTOR);
+    tap_in(motor_screen_graph_rect());
+    CHECK(opened_from("MOTOR042.CSV", CARD_AUTO_LOGS, LOG_TAB_BENCH));
+}
+
+/* SUPPLY, the folder changed after the run. */
+TEST_CASE(supply_graph_keeps_the_runs_folder)
+{
+    start();
+    ui_router_goto(SCREEN_SUPPLY);
+    supply_screen_settings_loaded();
+    last_log(GRAPH_KEY_SUPPLY, "SUPPL007.CSV", CARD_AUTO_LOGS, false);
+    move_folders_and_return(SCREEN_SUPPLY);
+    tap_in(supply_screen_graph_rect());
+    CHECK(opened_from("SUPPL007.CSV", CARD_AUTO_LOGS, LOG_TAB_BENCH));
+    /* An empty folder is no file's. */
+    CHECK_EQ(log_viewer_show_in(LOG_TAB_BENCH, "", "SUPPL007.CSV", g_mounts),
+             LOG_SHOW_NOT_LISTED);
+}
+
 /* ------------------------------------------------------- the shared key --- */
 
 /* graph_key.h alone: each state, the note's life, a card outside the
@@ -819,6 +923,11 @@ int main(void)
     RUN(automatic_test_graph_in_each_state);
     RUN(motor_graph_in_each_state);
     RUN(supply_graph_in_each_state);
+    RUN(limit_run_graph_keeps_the_runs_folder);
+    RUN(rudder_auto_graph_keeps_the_runs_folder);
+    RUN(automatic_test_graph_keeps_the_runs_folder);
+    RUN(motor_graph_keeps_the_runs_folder);
+    RUN(supply_graph_keeps_the_runs_folder);
     RUN(the_key_follows_its_run_and_forgets_a_stale_note);
     RUN(each_card_is_an_opener_of_logs);
     free(g_fb);

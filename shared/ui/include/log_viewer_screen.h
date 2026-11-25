@@ -288,6 +288,21 @@ log_viewer_show_t log_viewer_show(log_viewer_tab_t tab, const char *name,
                                   unsigned mount);
 
 /**
+ * @brief log_viewer_show() with the file read from @p dir, a folder recorded
+ *        when the file was written: a result card's GRAPH key.  A folder
+ *        setting changed since moves the tabs, not the run's file.  The
+ *        list behind the plot is @p tab's folder again at the next read.
+ * @param tab    the tab the file belongs to; its key is lit
+ * @param dir    the folder the file was written to; "" or NULL is
+ *               LOG_SHOW_NOT_LISTED
+ * @param name   the file's name in that folder
+ * @param mount  the mount number the file was written on
+ * @return what was found
+ */
+log_viewer_show_t log_viewer_show_in(log_viewer_tab_t tab, const char *dir,
+                                     const char *name, unsigned mount);
+
+/**
  * @brief The I/O's mount number now (log_viewer_io_t mounts()), 0 without
  *        one: what log_viewer_show() takes as @p mount for a file written
  *        now.

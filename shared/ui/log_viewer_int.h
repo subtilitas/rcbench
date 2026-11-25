@@ -20,6 +20,7 @@
 #include <stdint.h>
 
 #include "card_state.h"
+#include "card_tree.h"
 #include "gfx.h"
 #include "log_preset.h"
 #include "log_viewer_screen.h"
@@ -375,6 +376,12 @@ typedef struct {
     /* The tab of the file s.name names: the plot and the import read it
      * again from there whatever the tabs show since. */
     log_viewer_tab_t open_tab;          /**< tab of the file named by name */
+    /* The folder s.name was opened from, kept: a folder setting changed
+     * since moves the tab, not the open file. */
+    char open_dir[CARD_DIR_MAX];        /**< folder of the file named by name */
+    /* A recorded folder log_viewer_show_in() lists s.tab from, for the
+     * one call; NULL otherwise. */
+    const char *pin;                    /**< folder the tab reads for one show */
     /* The logger's count of files created, as this screen last saw it. */
     unsigned written_seen;              /**< the logger's count of files created, as last seen */
 
@@ -536,6 +543,17 @@ extern const log_viewer_tab_t lv_tab_at[LOG_TAB_COUNT];
  * @param tab the folder tab
  */
 void lv_point(log_viewer_tab_t tab);
+/**
+ * @brief Points the I/O at the folder of the open file (s.open_dir).
+ */
+void lv_point_open(void);
+/**
+ * @brief The folder @p tab lists now: a pinned folder during
+ *        log_viewer_show_in(), the tab's folder otherwise.
+ * @param tab the folder tab
+ * @return the folder's path
+ */
+const char *lv_dir(log_viewer_tab_t tab);
 /**
  * @brief Returns the card's name as the I/O reports it now.
  * @return the name, "" when there is none

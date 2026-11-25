@@ -6,7 +6,9 @@
  *
  * The three runs write into USER LOG FOLDER: LIMITnnn.CSV, ATESTnnn.CSV
  * and RUDDRnnn.CSV under the number the logger answers
- * (servo_screen_test_files()), on the mount it took then.  A run started
+ * (servo_screen_test_files()), on the mount and in the folder the answer
+ * came with: a USER LOG FOLDER changed since points the next run, not this
+ * one's key, at the new folder.  A run started
  * with USER LOGS off, a run the card took no file for, and a LIMIT RUN that
  * judged no position (its report alone) have no key.  The key is grey while
  * the run goes on, while its outbox still holds lines or its END, and while
@@ -49,11 +51,12 @@ static const gfx_rect_t k_none = { 0, 0, 0, 0 };
  * @param off     USER LOGS was off at its start
  * @param file    its number; 0 not yet, -1 none
  * @param csv     it writes, or wrote, a CSV
- * @param mount   the mount its number came on
+ * @param peek    its PEEK_* slot: the mount and the folder its number
+ *                came with
  */
 static void put(graph_key_card_t k, log_prefix_t prefix, bool ran,
                 bool running, bool drained, bool off, int file, bool csv,
-                unsigned mount)
+                uint8_t peek)
 {
     char name[LOG_RUN_NAME_MAX];
     name[0] = '\0';
@@ -64,8 +67,8 @@ static void put(graph_key_card_t k, log_prefix_t prefix, bool ran,
         .run   = ran && !off && file >= 0 && (running || csv),
         .open  = running || !drained || file == 0 || s.logger_busy,
         .name  = name,
-        .dir   = log_viewer_tab_dir(LOG_TAB_USER),
-        .mount = mount,
+        .dir   = s.gk_dir[peek],
+        .mount = s.gk_mount[peek],
     };
     graph_key_set(k, &f);
 }
@@ -74,14 +77,14 @@ void svs_gk_sync(void)
 {
     put(GRAPH_KEY_LIMIT, LOG_PREFIX_LIMIT, s.lim.state != SERVO_LIMRUN_IDLE,
         servo_limrun_running(&s.lim), servo_limrun_drained(&s.lim),
-        s.lim_off, s.lim_file, s.lim.rows_n > 0u, s.gk_mount[PEEK_LIM]);
+        s.lim_off, s.lim_file, s.lim.rows_n > 0u, PEEK_LIM);
     put(GRAPH_KEY_RAUTO, LOG_PREFIX_RUDDR,
         s.ra.run.state != SERVO_RAUTO_IDLE, servo_rauto_running(&s.ra.run),
         servo_rauto_drained(&s.ra.run), s.ra.off, s.ra.file, true,
-        s.gk_mount[PEEK_RAUTO]);
+        PEEK_RAUTO);
     put(GRAPH_KEY_ATEST, LOG_PREFIX_ATEST, s.test.state != SERVO_TEST_IDLE,
         servo_test_running(&s.test), servo_test_drained(&s.test),
-        s.test_off, s.test_file, true, s.gk_mount[PEEK_TEST]);
+        s.test_off, s.test_file, true, PEEK_TEST);
 }
 
 bool svs_gk_shown(graph_key_card_t k)
