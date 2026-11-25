@@ -1,8 +1,8 @@
 # openyge
 
 This module implements framing, CRC (cyclic redundancy check), telemetry,
-status, the parameter table and the programming session of the OpenYGE ESC
-(electronic speed controller) protocol.
+status, the parameter table, the programming session and the settings file
+of the OpenYGE ESC (electronic speed controller) protocol.
 
 | Part | Files | Depends on |
 |---|---|---|
@@ -10,6 +10,7 @@ status, the parameter table and the programming session of the OpenYGE ESC
 | Field map | `openyge_map.c`, `include/openyge_map.h` | C11 standard headers |
 | Guard | `openyge_guard.c`, `include/openyge_guard.h` | the core, the map |
 | Session | `openyge_session.c`, `include/openyge_session.h` | the core, the guard |
+| Settings file | `openyge_file.c`, `include/openyge_file.h` | the core, the map, the guard |
 | RP2350 pin driver | none | |
 
 The module has no pin driver. The wire is a half-duplex UART (universal
@@ -47,7 +48,15 @@ repository.
 - A write reads the table again first and ends `OY_CHANGED` with no frame
   sent when it differs. After the writes it reads the table again and ends
   `OY_OK`, `OY_NOT_TAKEN` or `OY_PARTIAL`.
-- No heap. Telemetry values use `float`; the map, guard and session do not.
+- Settings file, format 1 (docs/OpenYGE.md section 9.1): a header, the
+  type code, firmware, serial and count, one line `<ii> <KEY> = <value>`
+  per index, and a CRC-32 checksum line. At most 4620B, 64 characters a
+  line. Only a file whose checksum fits loads; an `edited` file is refused
+  with its own code. A load takes the CHECK and edit indices, of index 26
+  bits 0 and 1 only, refuses another type code or count, and passes the
+  draft through `oy_guard_approve()` on a copy of the guard.
+- No heap. Telemetry values use `float`; the map, guard, session and file
+  do not.
 - `openyge_motor_rpm()` and `openyge_head_rpm()` read index 20 as poles.
   On an ESC whose index 20 holds pole pairs they return twice the RPM
   (revolutions per minute) (docs/OpenYGE.md section 4).
@@ -99,6 +108,24 @@ Results: `OY_OK`, `OY_SILENT`, `OY_NO_TABLE`, `OY_NOT_KNOWN`, `OY_CHANGED`,
 every output off. `oy_session_abort()` cuts at once on STOP, a fault or a
 link loss, and `oy_session_cut_write()` says whether a write was cut after
 its first frame.
+
+`openyge_file.h`:
+
+```c
+n = oy_file_format(s.orig, s.count, text, OY_FILE_MAX);   // backup text
+oy_file_name(name, sizeof(name), 1, s.orig[11]);          // YGE001-5712.TXT
+if (oy_file_parse(text, n, &f, &line) == OY_FILE_OK
+    && oy_file_load(&f, &s.guard, &ld) == OY_LOAD_OK) {
+    oy_session_write(&s, ld.draft, ld.count, s.guard.read_no,
+                     s.guard.read_crc);
+}
+```
+
+Parser refusals: `OY_FILE_ERR_ARG` (1), `_OVERSIZED` (2), `_NOT_YGE` (3),
+`_VERSION` (4), `_NEWER` (5), `_TRUNCATED` (6), `_LINE_END` (7),
+`_MALFORMED` (8), `_COUNT` (9), `_CHECKSUM` (10), `_TRAILING` (11),
+`_MISMATCH` (12), `_EDITED` (13). Load results: `OY_LOAD_OK`, `_ARG`,
+`_TYPE`, `_COUNT`, `_GUARD` with the guard's reason and index.
 
 ## Use in another pico-sdk project
 
