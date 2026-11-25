@@ -5,7 +5,7 @@
  *        data row and empty on every other.
  *
  * The cell is `key=value` pairs joined by `&`, in the order dut, note, date,
- * fw, servo, meter, angle:
+ * fw, servo, meter, angle, id:
  *
  *     dut=MG90S&note=greased&date=2026-11-24T10:31&fw=0.23.18
  *
@@ -17,6 +17,9 @@
  * - servo: the servo type the run drove.
  * - meter: the meter that measured the current, "INA3221 0x41 CH2".
  * - angle: the angle source, "AS5600" or "IMU X+".
+ * - id: the labelled servo's id, "KST_X10-0000A" (servo_id.h), 23
+ *   characters at most; last, so a reader of firmware 0.23.17, which skips
+ *   a key it does not know, reads the rest.
  *
  * A key whose value is empty is left out.  Inside a value each `&`, `=`,
  * `;` and `"`, and each control character (0x00 to 0x1F and 0x7F), is
@@ -49,11 +52,11 @@ extern "C" {
 #define LOG_INFO_TEXT_MAX 24u
 
 /**
- * @brief Bytes of the longest cell, the terminator included: the seven keys
- *        with their `=` (35), six `&`, and the values at their longest
- *        (23 + 23 + 16 + 15 + 19 + 19 + 11 = 126) make 167 characters.
+ * @brief Bytes of the longest cell, the terminator included: the eight keys
+ *        with their `=` (38), seven `&`, and the values at their longest
+ *        (23 + 23 + 16 + 15 + 19 + 19 + 11 + 23 = 149) make 194 characters.
  */
-#define LOG_INFO_MAX 168u
+#define LOG_INFO_MAX 195u
 
 /** @brief A run's description: each field "" where the run has none. */
 typedef struct {
@@ -64,6 +67,7 @@ typedef struct {
     char servo[20];                /**< the servo type                      */
     char meter[20];                /**< the current's meter                 */
     char angle[12];                /**< the angle source                    */
+    char id[LOG_INFO_TEXT_MAX];    /**< the labelled servo's id             */
 } log_info_t;
 
 /**

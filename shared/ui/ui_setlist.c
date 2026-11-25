@@ -488,7 +488,7 @@ static void open_keypad(ui_setlist_t *sl, int index)
  * @brief A tap on the row of string @p id: its keyboard, on the text in
  *        force.  The log folders take the folder mode (ui_textkey.h); the
  *        DUT name and the run note the name keyboard, spaces and up to
- *        UI_TEXTKEY_MAX characters.
+ *        settings_text_max() characters.
  * @param sl The list.
  * @param id The string.
  */
@@ -499,7 +499,7 @@ static void open_text(ui_setlist_t *sl, setting_text_id_t id)
     }
     if (id == SET_TEXT_DUT_NAME || id == SET_TEXT_RUN_NOTE) {
         ui_textkey_open(&sl->tk, TK_AREA, ui_tr(k_text_ui[id].label),
-                        settings_text(id), UI_TEXTKEY_MAX);
+                        settings_text(id), settings_text_max(id));
     } else {
         ui_textkey_open_folder(&sl->tk, TK_AREA, ui_tr(k_text_ui[id].label),
                                settings_text(id));

@@ -530,7 +530,7 @@ static __attribute__((noinline)) void log_open_info(log_run_kind_t kind)
     taskEXIT_CRITICAL(&s_dir_mux);
     char cell[LOG_INFO_MAX];
     run_info_bench(cell, sizeof(cell),
-                   (kind == LOG_RUN_SERVO) ? text[0] : NULL, text[1]);
+                   (kind == LOG_RUN_SERVO) ? text[0] : NULL, text[1], "");
     log_writer_set_info(&s_log, cell);
 }
 

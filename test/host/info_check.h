@@ -78,8 +78,9 @@ static inline void info_read_back(const char *csv, int columns, bool filled,
 }
 
 /**
- * @brief The longest description: every field at its longest, each value
- *        holding a character the escape rule replaces.
+ * @brief The longest description: every field at its longest, the dut
+ *        holding characters the escape rule replaces, the id a labelled
+ *        servo's of 23 characters with spaces.
  * @param in Receives it.
  */
 static inline void info_longest(log_info_t *in)
@@ -92,6 +93,7 @@ static inline void info_longest(log_info_t *in)
     snprintf(in->servo, sizeof(in->servo), "%s", "KST X20-8.4 HV 333H");
     snprintf(in->meter, sizeof(in->meter), "%s", "INA3221 0x41 CH2 XY");
     snprintf(in->angle, sizeof(in->angle), "%s", "IMU X+ YAWS");
+    snprintf(in->id, sizeof(in->id), "%s", "KST X10 LEFT WING-ZZZZZ");
 }
 
 /**
@@ -117,4 +119,6 @@ static inline void info_same(const log_info_t *got, const log_info_t *want)
     CHECK_STR_EQ(got->meter, w);
     log_info_clean(w, sizeof(w), want->angle);
     CHECK_STR_EQ(got->angle, w);
+    log_info_clean(w, sizeof(w), want->id);
+    CHECK_STR_EQ(got->id, w);
 }

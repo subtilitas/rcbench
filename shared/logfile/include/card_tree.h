@@ -23,12 +23,17 @@
  *   /USER/
  *     LOGS/                    user-started tests: ATESTnnn, LIMITnnn
  *                              (USER LOG FOLDER, the default)
+ *   /Servos/                   a folder per labelled servo, named by its
+ *     KST_X10-0000A/           id (servo_id.h); the file names of its runs
+ *                              are servo_name.h's
  *   /                          run logs of firmware 0.21.0 and older
  *
- * Every folder name is upper case, 1 to 8 characters of A-Z, 0-9, "_" and
- * "-", without an extension: a FAT (File Allocation Table) 8.3 short name,
- * the same on every computer.  A path is relative to the card's root, its
- * folders separated by "/", with no "/" at either end; "" is the root.
+ * Every folder name but Servos and the folders in it is upper case, 1 to 8
+ * characters of A-Z, 0-9, "_" and "-", without an extension: a FAT (File
+ * Allocation Table) 8.3 short name, the same on every computer.  Servos and
+ * a servo's folder are long names of up to 23 characters.  A path is
+ * relative to the card's root, its folders separated by "/", with no "/" at
+ * either end; "" is the root.
  *
  * The two log folders are settings (SETUP > SD CARD): any folder
  * card_folder_check() takes, the defaults CARD_AUTO_LOGS and
@@ -158,6 +163,20 @@ const char *card_bench_dir(size_t i);
 #define CARD_DIR_MAX     24
 
 /**
+ * @brief The labelled servos' folder: a folder per servo, `Servos/<id>`
+ *        (servo_id_folder()).  A long name, spelled as the operator reads
+ *        it.
+ */
+#define CARD_SERVOS      "Servos"
+
+/**
+ * @brief Room for the folder a run's file is in and its terminator: a log
+ *        folder (CARD_DIR_MAX), or "Servos/" and an id of 23 characters,
+ *        30 characters.
+ */
+#define CARD_RUN_DIR_MAX 32
+
+/**
  * @brief What making a folder came to.
  */
 typedef enum {
@@ -215,7 +234,8 @@ typedef enum {
                                 COM9, LPT1 to LPT9                         */
     CARD_FOLDER_BENCH,     /**< the bench's own: BENCH/ESC, BENCH/KST,
                                 BENCH/HITEC, BENCH/ESCW, BENCH/YGE,
-                                BENCH/BALANCE, BENCH/SETUP and below       */
+                                BENCH/BALANCE, BENCH/SETUP and below, and
+                                SERVOS (CARD_SERVOS) and below            */
 } card_folder_t;
 
 /**
@@ -224,7 +244,8 @@ typedef enum {
  *        "-", lower case taken as upper case.
  *
  * A device name is refused in either place, and so is a folder the bench keeps
- * its own files in.  Both log folders may be one folder.  The first fault from
+ * its own files in: a bench area and CARD_SERVOS, which FAT holds as one
+ * folder with SERVOS.  Both log folders may be one folder.  The first fault from
  * the left is the answer.
  *
  * On CARD_FOLDER_OK, @p out (when not NULL) takes the path in upper case;

@@ -16,6 +16,20 @@ history is in git.
   only the zones that differ (serial output, sensing read mode, QR only,
   tail CR LF), saves once after a write and sends a heartbeat every 10s. No
   firmware links it yet (`test_scan_line`, `test_gm861`).
+- The servo label's bitmap and layout for a label printer for Supvan
+  T50M Pro labels (`shared/ui/label_bitmap.c`, `label_layout.c`): the QR
+  code of the servo id at level M, versions 1 to 3, quiet zone 2 modules,
+  and beside it the prefix, the serial in the 20x36 face and DUT NAME in
+  up to 2 lines. The layout follows the roll: 15 to 48mm wide, 20 to 100mm
+  long, side by side or stacked; 40x30mm gives a 7-dot module (0.875mm)
+  and a 129-dot text column. The bitmap is the printer's column-major,
+  least-significant-bit-first layout, 48 bytes a column. The test label
+  carries `RCBENCH TEST`, the firmware version and the roll size. The host
+  tool `render_label` writes a label as a PNG in reading orientation. No
+  screen prints yet.
+- Nayuki's QR Code generator library 1.8.0 (MIT) in `third_party/qrcodegen`,
+  unchanged.
+
 - LOGS draws an AUTOMATIC TEST, a SUPPLY, a MOTOR and a SERVO run over
   its time: each row at its time in the window two fingers set, not at its
   row number. A step in time longer than the larger of 3 median row
@@ -220,6 +234,14 @@ history is in git.
   20 x 27 x 4mm; `acrylic_disc_49_5.step`, a clear acrylic disc 49.5mm
   across and 2mm thick
   ([Mechanical parts](hardware/mechanical/README.md#round-display-board-waveshare-esp32-s3-touch-lcd-185)).
+- Screen steps of `tools/video` take the actions `press`, `down` and
+  `release`, one touch over three steps, and `point`, the end of the
+  bubble's line. The storyboard `stop` shows each touch on STOP that way,
+  from the renderer's views `stop-down`, `stop-short-down` and
+  `stop-held`. Case scenes take `estop`, keys that press the emergency
+  stop's head in, and the mockup's display takes `panel` shots; `stop`
+  shows the red stop button pressed, latched and released, with HWSTOP
+  on the display from the view `stop-hw`.
 - Storyboard `origin`, the project's origin in 7 chapters: the reason,
   ideas, the plan, development, testing, the test bench and the group
   order of the rbmod carrier, with 7 posts of two RC-Network threads as
@@ -304,8 +326,21 @@ history is in git.
 - A release publishes `rcbench-node-display-<version>.bin`, the display
   node's application, with its `.sig` and a line in `SHA256SUMS`, beside
   `rcbench-node-display-merged-<version>.bin` for USB.
+- Labelled servos, groundwork: servo ids `<prefix>-<serial>` (prefix 1 to
+  17 characters, serial 5 characters `00000` to `ZZZZZ`, 23 characters at
+  most), the run names of a servo's folder `Servos/<id>/<kind>_NNN.csv`
+  (`limit run`, `rudder auto`, `automatic test`, `servo run`; NNN 000 to
+  999), the active servo and the `id` key of a run's `info` cell
+  (`shared/logfile/servo_id.c`, `servo_name.c`, `servo_active.c`). No
+  screen uses them yet. The settings keep 3 more strings, written to the
+  settings file: `srv_pfx` (ID PREFIX, default `SERVO`, 17 characters at
+  most), `prn_ble` and `prn_name` (the label printer's bind). `SERVOS` and
+  the folders in it are refused as a log folder.
 
 ### Changed
+
+- A settings file is 32,768 bytes at most, up from 24,576; one the panel
+  writes is about 12,400. BACKUP's read buffer is 32,769 bytes.
 
 - `RUDDRnnn.CSV` has 3 more columns after its 9: `kind` (`STEP`, `VERIFY`,
   `SEARCH`), `pulse (us)` and `current (A)` (a SEARCH row's mean current,

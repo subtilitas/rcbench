@@ -233,7 +233,8 @@ static void lim_cfg(servo_limrun_cfg_t *c)
     snprintf(c->firmware, sizeof(c->firmware), "%s", RCBENCH_VERSION_STRING);
     run_info_servo(c->info, sizeof(c->info), c->type, c->meter,
                    c->enc_on ? (c->source[0] != '\0' ? c->source : "AS5600")
-                             : NULL);
+                             : NULL,
+                   "");
     c->text = ui_servo_table();
 }
 

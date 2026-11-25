@@ -429,6 +429,10 @@ INCLUDES = [
 
 # The files of shared/ui/CMakeLists.txt that SOURCES leaves out, and why.
 EXCLUDED = {
+    "shared/ui/label_bitmap.c":
+        "the printed label's canvas, the blec task's; no screen draws it",
+    "shared/ui/label_layout.c":
+        "the printed label's layout, the blec task's; no screen draws it",
     "shared/ui/ui_alert_slot.c":
         "the control task posts to it; no screen calls it",
     "shared/ui/port_mail.c":

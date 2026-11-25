@@ -1753,6 +1753,20 @@ the same loop (the search from the neutral outward to a bind, the end point into
 nothing written) is host-tested against the same model with a horn held at a block
 (`test_hitec_find`, `test_hitec_panel_find`).
 
+### Servo label
+
+The label of a servo id for a Supvan T50M Pro label printer is built and host-tested; no
+screen prints it yet. `shared/ui/label_bitmap.c` holds the printer's column-major bitmap,
+48 bytes a column, least significant bit first; reading (0, 0) on a 40x30mm roll is column 0,
+head row 351, and (319, 223) is column 223, head row 32 (`test_label_bitmap`).
+`shared/ui/label_layout.c` places the QR (Quick Response) code from the vendored qrcodegen
+1.8.0 (`third_party/qrcodegen`) at level M, versions 1 to 3, quiet zone 2 modules, beside or
+over the prefix, the serial and DUT NAME, for rolls of 15 to 48mm by 20 to 100mm
+(`test_label_layout`). `render_label` writes a label as a PNG in reading orientation; the host
+suite compares 8 labels with `test/host/fixtures/label/`, and `test/tools/test_label_qr.py`
+decodes their codes with OpenCV or zbarimg. Print quality and a scan of a printed label are
+not measured.
+
 ## The tree
 
 Directories only. `git ls-files <directory>` lists the files of one.
@@ -1837,7 +1851,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 673 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 678 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1913,7 +1927,7 @@ The host suite is 673 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_fm_recheck`, `test_fm_req`, `test_files_screen`, `test_files_ops`, `test_files_open`,
 `test_files_view`, `test_files_edit`, `test_files_save`, `test_files_changed`,
 `test_files_rescan`, `test_logs_strip`, `test_textkey_editor`, `test_textkey_see`,
-`test_textkey_cursor`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_log_info`, `test_log_preset`, `test_log_marks`, `test_servo_runlog`,
+`test_textkey_cursor`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_log_info`, `test_servo_id`, `test_servo_name`, `test_servo_active`, `test_log_preset`, `test_log_marks`, `test_servo_runlog`,
 `test_servo_runlog_cols`, `test_servo_log_figures`, `test_log_cadence`, `test_perf_watch`, `test_pass_stats`, `test_report_lines`, `test_report_steps`,
 `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`,
 `test_kst_pio`, `test_kst_port`, `test_kst_port_cut`, `test_kst_link`, `test_prog_port`,
@@ -1967,7 +1981,8 @@ The host suite is 673 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
 `test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_srv_policy`, `test_node_srv_poll`, `test_node_view`,
 `test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client`, `test_devimg`, `test_devimg_board`, `test_upd_dev`, `test_upd_fetch`,
-`test_upd_wizard`, `test_upd_wizard_map`, `test_upd_wiz_view` and `test_harness`.
+`test_upd_wizard`, `test_upd_wizard_map`, `test_upd_wiz_view`, `test_label_bitmap`, `test_label_layout`
+and `test_harness`.
 
 The harness is `test/host/greatest.h`, written for this project. `CHECK_EQ` compares
 integers and pointers as `long` and does not compile on a floating operand; `CHECK_FEQ`
@@ -2619,7 +2634,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_hub.c` | 215 | 208 | 96.7% |
 | `shared/ui/servo_footer.c` | 161 | 158 | 98.1% |
 | `shared/ui/servo_lists.c` | 252 | 249 | 98.8% |
-| `shared/ui/run_info.c` | 22 | 22 | 100.0% |
+| `shared/ui/run_info.c` | 23 | 23 | 100.0% |
 | `shared/ui/servo_pick.c` | 99 | 99 | 100.0% |
 | `shared/ui/servo_run_supply.c` | 82 | 81 | 98.8% |
 | `shared/ui/servo_angle_pick.c` | 260 | 252 | 96.9% |
@@ -2670,6 +2685,8 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/text_view.c` | 385 | 378 | 98.2% |
 | `shared/ui/text_view_draw.c` | 270 | 253 | 93.7% |
 | `shared/ui/text_view_keys.c` | 489 | 471 | 96.3% |
+| `shared/ui/label_bitmap.c` | 104 | 104 | 100.0% |
+| `shared/ui/label_layout.c` | 185 | 174 | 94.0% |
 | `shared/ui/settings_screen.c` | 333 | 324 | 97.3% |
 | `shared/ui/settings_draw.c` | 69 | 69 | 100.0% |
 | `shared/ui/settings_rows.c` | 49 | 48 | 98.0% |
@@ -2737,10 +2754,10 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/sbk_screen.c` | 160 | 146 | 91.2% |
 | `shared/ui/sbk_draw.c` | 155 | 132 | 85.2% |
 | `shared/ui/sbk_rows.c` | 37 | 36 | 97.3% |
-| `shared/settings/settings.c` | 454 | 447 | 98.5% |
+| `shared/settings/settings.c` | 458 | 451 | 98.5% |
 | `shared/settings/settings_sensors.c` | 150 | 149 | 99.3% |
 | `shared/settings/settings_text.c` | 14 | 13 | 92.9% |
-| `shared/settings/settings_file.c` | 370 | 364 | 98.4% |
+| `shared/settings/settings_file.c` | 372 | 366 | 98.4% |
 | `shared/settings/settings_backup.c` | 164 | 159 | 97.0% |
 | `shared/logfile/log_numbers.c` | 396 | 374 | 94.4% |
 | `shared/logfile/log_csv.c` | 542 | 515 | 95.0% |
@@ -2751,7 +2768,10 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/logfile/log_name.c` | 171 | 171 | 100.0% |
 | `shared/logfile/log_info.c` | 117 | 116 | 99.2% |
 | `shared/logfile/log_take.c` | 96 | 95 | 99.0% |
-| `shared/logfile/card_tree.c` | 77 | 77 | 100.0% |
+| `shared/logfile/card_tree.c` | 81 | 81 | 100.0% |
+| `shared/logfile/servo_id.c` | 144 | 144 | 100.0% |
+| `shared/logfile/servo_name.c` | 65 | 65 | 100.0% |
+| `shared/logfile/servo_active.c` | 37 | 37 | 100.0% |
 | `shared/logfile/fault_log.c` | 58 | 58 | 100.0% |
 | `shared/files/text_buf.c` | 494 | 493 | 99.8% |
 | `shared/files/text_hl.c` | 340 | 340 | 100.0% |
@@ -3034,9 +3054,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| `shared/scanner/scan_line.c` | 113 | 113 | 100.0% |
-| `shared/scanner/gm861.c` | 302 | 302 | 100.0% |
-| **total** | **113749** | **111224** | **97.8%** |
+| **total** | **113880** | **111344** | **97.8%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
