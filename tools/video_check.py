@@ -107,7 +107,7 @@ BEDS = ("pads", "bach-prelude", "pachelbel-canon", "vivaldi-spring",
 PART_FRAMES = 900
 VIEWS_KEPT = 4
 PART_LEAST = 1024
-ACTIONS = ("tap", "hold")
+ACTIONS = ("tap", "hold", "press", "down", "release")
 STYLES = ("ok", "warn", "muted")
 SCOPE_STYLES = ("", "ok", "warn", "muted", "red", "white", "violet")
 FITS = ("resistor", "zener", "cap", "link")
@@ -769,7 +769,10 @@ def _check_screen(scene: dict, steps: int, where: str, errors: list) -> None:
                           f"{', '.join(ACTIONS)}")
         # The touch mark needs its lead-in: 0.75s for a tap, 2.45s for a
         # hold, after the 0.6s the bubble takes to appear.
-        least = {"tap": 1.4, "hold": 3.1}.get(action, 0.9)
+        # A press lands 0.4s before its step ends; a release lifts 0.9s
+        # into its step.
+        least = {"tap": 1.4, "hold": 3.1, "press": 1.4,
+                 "release": 1.4}.get(action, 0.9)
         if not (_number(step.get("dur")) and step["dur"] >= least):
             errors.append(f"{at}: dur must be at least {least}s")
         if not (isinstance(step.get("n"), int) and 1 <= step["n"] <= steps):
@@ -777,12 +780,14 @@ def _check_screen(scene: dict, steps: int, where: str, errors: list) -> None:
         target = step.get("target")
         if target is None and action is not None:
             errors.append(f"{at}: a {action} needs a target")
-        if target is not None and not (
-                isinstance(target, list) and len(target) == 2
-                and 0 <= target[0] < PANEL[0]
-                and 0 <= target[1] < PANEL[1]):
-            errors.append(f"{at}: target must be [x, y] on the "
-                          f"{PANEL[0]}x{PANEL[1]} display")
+        for name in ("target", "point"):
+            place = step.get(name)
+            if place is not None and not (
+                    isinstance(place, list) and len(place) == 2
+                    and 0 <= place[0] < PANEL[0]
+                    and 0 <= place[1] < PANEL[1]):
+                errors.append(f"{at}: {name} must be [x, y] on the "
+                              f"{PANEL[0]}x{PANEL[1]} display")
         if step.get("style", "ok") not in STYLES:
             errors.append(f"{at}: style must be one of {', '.join(STYLES)}")
 

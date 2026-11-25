@@ -152,7 +152,7 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `storyboards/auto-rudder-de.json` | `auto-rudder` in German: the same scenes, times and touches, the panel's screens and the Dial's faces in German, the recorded run drawn in German (`video_rauto DIR de`), narrated by Piper's `de_DE-thorsten-high`, 297.17s |
 | `storyboards/hitec-rbmod.json` | programming a Hitec D series servo on the rbmod carrier in 8 steps: the servo into J1, SERVO > HITEC, the port from the READY card's list, the 2s hold on CONNECT, the tabs MOTION, TRAVEL, PROTECT and INFO, SOFT START set to 60% and SPEED to 50%, the 2s hold on WRITE 2 VALUES with the backup file HITEC001 on the card, MOVE SERVO with a step on LEFT END and FIND STOP on the left, the write of the end point found, and LEAVE; 46 screen steps, 22 taps and 5 holds; narrated, bed `pachelbel-canon` at half level; 213.2s as written, 299.47s rendered with the narration. The firmware refuses MOVE SERVO and FIND STOP on the carrier: step 7 is drawn from a host rig whose fixed 5V carries a current reading (`STATUS.md`, open items) |
 | `storyboards/origin.json` | the project's origin in 7 chapters: the reason, ideas, the plan, development, testing, the test bench and the group order of the rbmod carrier. 5 posts of the RC-Network thread of 23 August 2026 and 2 of the group order's thread of 16 November 2026 stand as stills `origin-post*` and `origin-order*` in browser windows, 16 screens in two tours, the repository's counts of 25 November 2026 (6231 commits, 884 merged pull requests, 50 tags, 643 test programs, 97.9% line coverage) the test bench in 3 frames of its own camera with labels, `origin-bench-*`, and its test walk as a list; narrated, bed `pachelbel-canon` at half level; 436.0s as written, 474.90s rendered with the narration. The test bench has no 3D model in it |
-| `storyboards/stop.json` | STOP as an emergency stop in 4 steps: the touch on a running motor, the latch, ARM refused, a short touch and its hint, the 2s hold with the fill fading to yellow, the reset to SAFE, and the HWSTOP chip of the bench's stop button; 13 screen steps, 3 taps and 1 hold; narrated, bed `pachelbel-canon` at half level; 93.2s as written, 122.30s rendered with the narration |
+| `storyboards/stop.json` | STOP as an emergency stop in 4 steps: the press on STOP with a motor running, the bench SAFE under the finger, the release, ARM refused, a press let go after 0.5s and its hint, the 2s hold with the fill fading to yellow, the release and the reset to SAFE, and the HWSTOP chip of the bench's stop button; 15 screen steps, 3 touches shown as press, finger down and release, 1 tap and 1 hold; narrated, bed `pachelbel-canon` at half level; 91.6s as written, not rendered in this form |
 | `player/part3d.js` | one part from its STEP model, turned and rolled over |
 | `web/capture.js` | captures the releases page of the repository on GitHub and the ESP Web Tool at esptool.spacehuhn.com into `stills/web-*.png`, 1280 x 800 CSS pixels at 2 device pixels each, and writes the places of their controls to `stills/web.json`. The ESP Web Tool is the page as served; its serial library is replaced by a stand-in that answers as an ESP32-P4, since no board is on the capturing computer |
 | `stills/web-*.png`, `stills/web.json` | 13 captures of those two pages and the places of the controls a pointer goes to |
@@ -313,11 +313,12 @@ A `screen` scene has `steps`:
 | Field | Meaning |
 | --- | --- |
 | `view` | the renderer's view name |
-| `dur` | length in s: at least 0.9, 1.4 with a tap, 3.1 with a hold |
+| `dur` | length in s: at least 0.9, 1.4 with a tap, a press or a release, 3.1 with a hold |
 | `n`, `chip` | the step number and the chip's text |
 | `title`, `text` | the bubble |
 | `target` | optional `[x, y]` on the 1024 x 600 display: where the pointer ends and the touch lands |
-| `action` | optional `tap` or `hold`; the hold ring fills in 2s |
+| `action` | optional `tap` or `hold`; the hold ring fills in 2s. `press`, `down` and `release` show one touch over three steps: the finger lands 0.4s before the end of the `press` step, stays through a `down` step and lifts 0.9s into the `release` step with a ring over 0.45s. The view of each step is the screen at that moment |
+| `point` | optional `[x, y]` on the display: where the bubble's line ends, in place of `target` |
 | `style`, `tag` | optional: `ok` or `warn`, and a warning tag's text |
 
 A `tour` scene has `steps`:
@@ -361,7 +362,8 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
    views alone. `-move-off`, `-move-towrite` and `-move-written` end the
    loop after FIND STOP and write the end point. `stop-latched`,
    `stop-refused`, `stop-short`, `stop-holding` and `stop-reset` are a
-   latched STOP and its reset on MOTOR & ESC, 6s after the STOP of
+   latched STOP and its reset on MOTOR & ESC, and `stop-down`,
+   `stop-short-down` and `stop-held` the same with the finger on STOP, 6s after the STOP of
    `motor-plot`'s run.
 3. Copy `storyboards/kst-rbmod.json`, replace the steps, and read each
    `target` from the view's PNG.

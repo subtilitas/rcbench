@@ -64,6 +64,22 @@ def test_a_hold_needs_its_lead_in():
     assert any("at least 3.1s" in e for e in make_video.check(board))
 
 
+def test_a_press_a_finger_down_and_a_release_are_actions():
+    """One touch over three steps, and a point for the bubble's line."""
+    board = _board()
+    steps = board["scenes"][1]["steps"]
+    for step, action in zip(steps[:3], ("press", "down", "release"),
+                            strict=True):
+        step.update(action=action, target=[934, 29], point=[1012, 29],
+                    dur=2.0)
+    assert make_video.check(board) == []
+    steps[0]["dur"] = 1.0
+    assert any("at least 1.4s" in e for e in make_video.check(board))
+    steps[0]["dur"] = 2.0
+    steps[1]["point"] = [1024, 29]
+    assert any("point" in e for e in make_video.check(board))
+
+
 def test_a_target_off_the_display_is_refused():
     """A target lies on the 1024 x 600 display."""
     board = _board()
