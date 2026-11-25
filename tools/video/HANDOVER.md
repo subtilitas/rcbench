@@ -37,6 +37,7 @@ a new session needs beyond it.
 | `storyboards/rbmod-first-program.json`, `player/part3d.js`, `player/windows.js`, `web/capture.js` | first programming of a bench with the rbmod carrier in 6 chapters, 321.22s, narrated, bed `pachelbel-canon` at half level; STEP models of the panel, the carrier and the RP2350-CAN, captures of the releases page and of the ESP Web Tool, a drawn Windows desktop for the drive RP2350 |
 | `storyboards/auto-rudder.json`, `player/rudder3d.js`, `test/host/video_rauto.c` | setting a rudder's end points with RUDDER AUTO in 4 steps, 300.77s, narrated, bed `pachelbel-canon` at half level; the wing slice, the IMU on Gecko Tape, the Dial in its base and the cased bench in one 3D scene, the display and the flap following one run of the host suites' rig |
 | `storyboards/hitec-rbmod.json` | programming a Hitec D series servo on the rbmod carrier in 8 steps, 46 screen steps; written and checked with `--check` and 32 stills, not rendered with its narration, not heard, not seen by the owner |
+| `storyboards/origin.json` | the project's origin in 6 chapters; written and checked with `--check` and 15 stills, not rendered with its narration |
 | `storyboards/stop.json` | STOP as an emergency stop in 4 steps, 13 screen steps; the same state |
 | `storyboards/thumbnail.json` | thumbnail of the feature tour, `--stills 3` |
 | `tools/video_scope.py`, `player/scope.js`, `plots/hitec-precharge.json` | the `scope` scene: plots and a circuit from a figure; the figure of the D series signal wire is simulated with ngspice 42 |
@@ -258,7 +259,13 @@ Owner, 2026-11-14:
   come from a rig whose fixed 5V carries a reading (`g_fixed_reads`), and
   `STATUS.md` lists the firmware change under its open items. The
   video's texts say nothing of this (owner's rule on test state).
-- `hitec-rbmod` and `stop` are in English only.
+- `hitec-rbmod`, `stop` and `origin` are in English only.
+- `origin` shows the test bench as two lists in a window. A 3D model of
+  the bench and photographs from its camera are not in the tree; no
+  dimension of the bench is recorded. The stills `origin-post*` are
+  captures of the author's own posts in the RC-Network thread
+  `rcbench-universal-test-und-programmiergerät.12133255`, posts 1, 50,
+  124, 166, 167 and 193. Its generator is outside the tree.
 - The two storyboards come from one generator outside the tree, as
   `auto-rudder` does.
 - The colours of the model are set by part name in `case_cad.js`; the
