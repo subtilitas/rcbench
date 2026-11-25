@@ -488,6 +488,9 @@ Gebaut, auf dem Host getestet, nicht eingebunden:
       openyge_frame.c        encode, decode and the CRC, openyge_crc()
       openyge_status.c       status1 -> state, subject, warnings, faults
       openyge_params.c       the parameter cache and its completeness rule
+      openyge_map.c          the fields of section 5.3: access, writable values
+      openyge_guard.c        the gate every outgoing frame passes
+      openyge_session.c      boot wait, listen, takeover, read, write, verify
 
 Der Decoder zählt Frames, CRC-Fehler, Resyncs und getrennt davon Frames, deren
 CRC stimmte, deren Aufbau aber unmöglich war. Nichts wird über den
@@ -495,12 +498,20 @@ Empfangspuffer gecastet. `openyge_params_get` gibt false zurück, bis jeder
 Index eingetroffen ist, und ein anstehendes Schreiben zieht die ganze Tabelle
 zurück.
 
-Nicht gebaut: `openyge_session.c`, die Anfrage-Antwort-State-Machine (Pollen
-im Frametakt, Abgleich der Sequenznummer, Lese- und Schreibtimeouts, Rückfall
-aufs Zuhören bei einem ESC vor v3). Sie braucht zuerst die Messung der
-Umschaltzeit, U2 in Abschnitt 8, und das Timing aus Abschnitt 10. Session,
-Pin-Treiber und Bildschirme sind die Slices der Programmierung für YGE-ESCs;
-diese Seite ist ihre Spezifikation.
+Die Session ist der Kern der Programmierung für YGE-ESCs. Sie hält das
+Timing aus Abschnitt 10 hinter `oy_driver_t` ein: einen Frame senden, die
+empfangenen Bytes holen, eine Uhr lesen. Die Host-Suites lassen sie gegen
+einen simulierten ESC laufen, der jeden Frame aufzeichnet. Jeder Frame
+läuft direkt vor dem Treiber durch `oy_guard_frame()`. Nur `TELE_REQ` und
+`WRITE_PARAM_REQ` gehen hinaus. Ein Schreiben braucht eine vollständig
+gelesene Tabelle aus derselben Session, eine Anzahl von 32, einen v3-Header
+und Firmware V1.03547 oder neuer. Schreibbar sind die Felder, die
+Abschnitt 5.3 mit CHECK oder edit kennzeichnet, innerhalb ihrer
+schreibbaren Werte. Ein Schreiben liest die Tabelle zuerst erneut und
+bricht ohne gesendeten Frame ab, wenn sie abweicht. Nach den Schreibzugriffen
+liest es die ganze Tabelle erneut und vergleicht sie mit dem Ziel.
+Pin-Treiber, Link-Pages und Bildschirme sind nicht gebaut, daher führt
+keine der beiden Platinen die Session aus.
 
 Offene Entscheidung: welche ESC-Protokolle außer OpenYGE unterstützt werden.
 Das Ausgangsmaterial steht neben Hobbywing, Kontronik, Scorpion, OMP, ZTW,
@@ -514,9 +525,9 @@ ein Frameformat. Erst ein Protokoll auf Hardware beweisen, dann ein zweites.
 Die Zeiten, die ein Master beim Pollen und Schreiben einhält. Die Werte
 sind die Konstanten von RF-F. RF-F markiert beide Timeouts mit „zu
 bestätigen“ und die Schreibperiode als vorläufig; U2, U10 und U15 aus
-Abschnitt 8 klären sie. Die Spalte Session enthält die Werte für
-`openyge_session.c`, das nicht gebaut ist; ein als gewählt markierter Wert
-hat keine Quelle.
+Abschnitt 8 klären sie. Die Spalte Session enthält die Werte, die
+`openyge_session.c` verwendet, als benannte Konstanten in
+`openyge_session.h`; ein als gewählt markierter Wert hat keine Quelle.
 
 | Zeit | RF-F | Gezählt ab | Session |
 | --- | ---: | --- | --- |
@@ -528,7 +539,7 @@ hat keine Quelle.
 | Lese-Timeout | 200ms | dem Senden der Anfrage; „zu bestätigen“ | 200ms |
 | Schreib-Timeout | 400ms | dem Senden der Anfrage; „zu bestätigen“ | 400ms, 3 Versuche |
 | Frame-Timeout im Auto-Modus | 900ms bis hinab zu 60ms | dem vorigen Frame; er schrumpft auf den gemessenen Frameabstand plus 10ms, nie unter 60ms | – |
-| Tabelle lesen nach einem Schreiben | – | – | bis 10000ms, gewählt |
+| Tabelle lesen, auch nach einem Schreiben | – | – | bis 10000ms, gewählt |
 
 So führt RF-F die Session:
 
@@ -546,3 +557,26 @@ So führt RF-F die Session:
   Wert in den Cache. Die Tabelle gibt es erst wieder frei, wenn jeder Index
   neu gelesen wurde.
 - Ein ESC mit einem Header unter Version 3 schaltet es aufs Zuhören um.
+
+Wo `openyge_session.c` es anders führt:
+
+- Es übernimmt die Adresse aus dem ersten v3-Frame, den es beim Zuhören
+  empfängt. Es nimmt 1, wenn kein Frame kommt oder der Frame 0 nennt.
+- Jeder Versuch einer Anfrage oder eines Schreibens trägt eine neue `seq`.
+  Eine Antwort, die kommt, nachdem ihre Anfrage erneut gesendet wurde,
+  trägt die alte und wird verworfen.
+- Eine Antwort zählt, wenn sie innerhalb des Timeouts ihres Sendens
+  eintrifft. Drei Sendungen ohne Antwort sind ein Fehlschlag. Eine
+  fehlgeschlagene Anfrage beendet die Session mit `SILENT`. Ein
+  fehlgeschlagenes Schreiben beendet die Schreibzugriffe, und das Lesen der
+  Tabelle danach entscheidet das Ergebnis.
+- Es prüft eine Antwort gegen ihren Timeout, wenn es sie übernimmt, sodass
+  ein verspäteter Schritt keine abgelaufene Antwort zählen lässt.
+- Eine Antwort auf eine Anfrage, die vor Beginn eines Lesens oder
+  Schreibens gesendet wurde, trägt keinen Wert in dieses Lesen.
+- Eine Antwort, die bei oder nach der Lesegrenze von 10000ms übernommen
+  wird, beendet das Lesen mit `NO_TABLE`, nach einem Schreiben mit
+  `PARTIAL`, auch wenn sie die Tabelle vervollständigt.
+- Nach der Übernahme verwirft es `TELE_AUTO`-Frames.
+- Eine Anzahl von 0 oder über 64 beendet ein Lesen sofort mit `NO_TABLE`.
+- Jedes Schreiben folgt 40ms nach der vorigen Antwort, der Anfrageperiode.

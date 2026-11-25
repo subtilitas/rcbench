@@ -1,18 +1,23 @@
 # openyge
 
 This module implements framing, CRC (cyclic redundancy check), telemetry,
-status and the parameter table of the OpenYGE ESC (electronic speed
-controller) protocol.
+status, the parameter table and the programming session of the OpenYGE ESC
+(electronic speed controller) protocol.
 
 | Part | Files | Depends on |
 |---|---|---|
 | Core | `openyge_frame.c`, `openyge_status.c`, `openyge_params.c`, `include/openyge.h` | C11 standard headers |
+| Field map | `openyge_map.c`, `include/openyge_map.h` | C11 standard headers |
+| Guard | `openyge_guard.c`, `include/openyge_guard.h` | the core, the map |
+| Session | `openyge_session.c`, `include/openyge_session.h` | the core, the guard |
 | RP2350 pin driver | none | |
 
 The module has no pin driver. The wire is a half-duplex UART (universal
-asynchronous receiver-transmitter) at 115200 baud, 8N1; the caller supplies
-the received bytes and transmits the encoded frames. The specification is
-`docs/OpenYGE.md` in the rcbench repository.
+asynchronous receiver-transmitter) at 115200 baud, 8N1. The session reaches
+it through `oy_driver_t`: `tx()` sends one frame, `rx()` hands over the
+received bytes with the echo removed, `now_us()` is a free-running clock
+that may wrap. The specification is `docs/OpenYGE.md` in the rcbench
+repository.
 
 ## Constraints
 
@@ -26,9 +31,26 @@ the received bytes and transmits the encoded frames. The specification is
 - Every field is assembled byte by byte. No struct is cast over a buffer.
 - The parameter table holds 64 indices (`OPENYGE_MAX_PARAMS`). A table is
   readable only when every index below its count has been seen.
-- The module encodes parameter write requests. The caller decides whether
-  to transmit them. The parameter indices are not confirmed against an ESC.
-- Telemetry values use `float`.
+- Every frame the session sends passes `oy_guard_frame()` right before
+  `tx()`. Only `TELE_REQ` with a zero payload and `WRITE_PARAM_REQ` of an
+  approved draft go out. A write needs a complete table read in the same
+  session, a count of 32, a v3 header and firmware V1.03547 or later; the
+  draft carries the read number and CRC of the read it was made from.
+- Writable are the indices the map marks CHECK or edit, within the
+  writable values of docs/OpenYGE.md section 5.3: 1, 2, 3, 5 to 10, 17,
+  18, 21 to 24, 27, and bits 0 and 1 of 26. Index 0, 11 to 15 and 25 are
+  never written; raw indices are written back as read.
+- Session timing, docs/OpenYGE.md section 10: boot wait 5000ms (1000 to
+  20000ms), listen 3000ms, a request 40ms after each reply, read timeout
+  200ms, write timeout 400ms, 3 tries, table read cap 10000ms. Each try
+  carries a new sequence number.
+- A write reads the table again first and ends `OY_CHANGED` with no frame
+  sent when it differs. After the writes it reads the table again and ends
+  `OY_OK`, `OY_NOT_TAKEN` or `OY_PARTIAL`.
+- No heap. Telemetry values use `float`; the map, guard and session do not.
+- `openyge_motor_rpm()` and `openyge_head_rpm()` read index 20 as poles.
+  On an ESC whose index 20 holds pole pairs they return twice the RPM
+  (revolutions per minute) (docs/OpenYGE.md section 4).
 
 ## Interface
 
@@ -57,6 +79,27 @@ bool     openyge_motor_rpm(const openyge_params_t *p, uint32_t erpm,
 valid CRC. The decoder counts frames, CRC errors, resynchronisations and
 frames rejected for invalid contents.
 
+`openyge_session.h`:
+
+```c
+oy_session_init(&s, &driver);
+oy_session_enter(&s, OY_BOOT_MS);               // WAIT, LISTEN, TAKE
+while (oy_session_step(&s) == OY_BUSY) { }      // call every 1ms
+oy_session_read(&s);                            // READ
+while (oy_session_step(&s) == OY_BUSY) { }
+memcpy(draft, s.orig, s.count * sizeof(draft[0]));
+draft[21] = 13u;                                // pinion teeth
+oy_session_write(&s, draft, s.count, s.guard.read_no, s.guard.read_crc);
+while (oy_session_step(&s) == OY_BUSY) { }      // RECHECK, WRITE, VERIFY
+```
+
+Results: `OY_OK`, `OY_SILENT`, `OY_NO_TABLE`, `OY_NOT_KNOWN`, `OY_CHANGED`,
+`OY_NOT_TAKEN`, `OY_PARTIAL`, `OY_GUARD`, `OY_ABORTED`. A result other than
+`OY_OK` that an operation reaches ends the session; the caller switches
+every output off. `oy_session_abort()` cuts at once on STOP, a fault or a
+link loss, and `oy_session_cut_write()` says whether a write was cut after
+its first frame.
+
 ## Use in another pico-sdk project
 
 ```cmake
@@ -64,7 +107,7 @@ add_subdirectory(protocols/openyge)
 target_link_libraries(my_target PRIVATE rcbench_openyge)
 ```
 
-The header compiles from C++.
+The headers compile from C++.
 
 ## Trademarks
 

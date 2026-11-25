@@ -8,6 +8,19 @@ history is in git.
 
 ### Added
 
+- Programming for YGE ESCs, the core in `protocols/openyge/`: the field
+  map of docs/OpenYGE.md section 5.3 (`openyge_map.c`), the guard every
+  outgoing frame passes (`openyge_guard.c`) and the session
+  (`openyge_session.c`). The session waits 5000ms after power-on (1000
+  to 20000ms), listens up to 3000ms, takes the ESC over, reads the table
+  and writes every field marked CHECK or edit with a whole-table read
+  before and after. Read timeout 200ms, write timeout 400ms, 3 tries,
+  table read cap 10000ms. Results: OK, SILENT, NO_TABLE, NOT_KNOWN,
+  CHANGED, NOT_TAKEN, PARTIAL, GUARD. The suites `openyge_map`,
+  `openyge_guard`, `openyge_session` and `openyge_session_write` run it
+  against a simulated ESC (`test/host/oy_sim.h`). No pin driver, link
+  page or screen uses it
+  ([OpenYGE](docs/OpenYGE.md#9-status-in-rcbench)).
 - SETUP > WIRELESS > SEARCH: UNBIND (`HOLD 2s: UNBIND`, DE
   `2s HALTEN: BINDUNG LÖSEN`), a 2s hold on the card under SCAN AGAIN, for
   the Dial, the power node and the balance node. It forgets the bound
