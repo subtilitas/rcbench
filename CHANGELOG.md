@@ -51,6 +51,15 @@ history is in git.
   against a simulated ESC (`test/host/oy_sim.h`). No pin driver, link
   page or screen uses it
   ([OpenYGE](docs/OpenYGE.md#9-status-in-rcbench)).
+- Programming for YGE ESCs, the settings file (`openyge_file.c`): a table
+  as read written as text (type code, firmware, serial, count, every index
+  with its key and value, CRC-32 checksum line), read back, and held
+  against the table read last. The backup name is
+  `BENCH/YGE/CONF/YGE001-<type>.TXT`. A file over 4620B, of another type
+  code or count, damaged, edited, or with a value the guard refuses does
+  not load; a load passes `oy_guard_approve()` on a copy of the guard.
+  Suite `openyge_file`
+  ([OpenYGE](docs/OpenYGE.md#91-settings-file)).
 - SETUP > WIRELESS > SEARCH: UNBIND (`HOLD 2s: UNBIND`, DE
   `2s HALTEN: BINDUNG LÖSEN`), a 2s hold on the card under SCAN AGAIN, for
   the Dial, the power node and the balance node. It forgets the bound

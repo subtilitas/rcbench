@@ -471,6 +471,7 @@ Built, host-tested, not wired in:
       openyge_map.c          the fields of section 5.3: access, writable values
       openyge_guard.c        the gate every outgoing frame passes
       openyge_session.c      boot wait, listen, takeover, read, write, verify
+      openyge_file.c         the settings file: write, read, load check
 
 The decoder counts frames, CRC errors, resyncs, and separately frames whose CRC
 held but whose shape was impossible. Nothing is cast over the receive buffer.
@@ -489,6 +490,51 @@ again first and stops with nothing sent when it differs. After the writes
 it reads the whole table again and compares it with the target. The link
 pages and the screens are not built, so neither board runs the session.
 The pin driver is built (section 9.2).
+
+### 9.1 Settings file
+
+`openyge_file.c` writes a table as read to a text file, reads it back,
+and holds it against the table read last. The first write of a session
+saves the backup to `BENCH/YGE/CONF/YGE001-<type>.TXT`, the type code of
+index 11 in the name (`YGE001-5712.TXT`, numbers 001 to 999). Format 1:
+
+    YGE ESC settings, format 1
+    Type: 5712 165 HVT
+    Firmware: 1.03555
+    Serial: 4660
+    Count: 32
+    00 PARAMETER COUNT = 32
+    01 ESC MODE = 2
+    ...
+    31 RPM SETPOINT = 0
+    checksum 1A2B3C4D
+
+- `Type` is index 11, with the model name of section 5.3 when the code
+  has one. `Firmware` is indices 12-13 as u32 / 100000 with 5 decimals.
+  `Serial` is indices 14-15 as u32. `Count` is index 0, 16 to 64.
+- One line per index from 0 to count − 1: 2 digits, the field's key from
+  the map (`RAW` from index 32 up), ` = `, the value 0 to 65535 in decimal.
+- Characters 0x20 to 0x7E, at most 64 a line, LF (line feed) or CR LF
+  (carriage return, line feed) on every line, at most 4620B a file.
+- The checksum is CRC-32 (IEEE 802.3: polynomial 0x04C11DB7 reflected,
+  start 0xFFFFFFFF, final inversion) over every line before it, each line
+  end counted as one LF, in 8 upper-case hexadecimal digits.
+
+The parser refuses, with a stable code and the line: a text over 4620B
+(2), another header (3), a version that is not 1 to 999 (4) or above 1
+(5), a text with no checksum line (6), LF and CR LF in one file (7), a
+line out of form (8), a count outside 16 to 64 or another number of index
+lines (9), a checksum that differs (10), a line behind the checksum (11),
+a key that is not the map's or a header line that differs from its
+indices (12), and an `edited` last line (13). A changed file has no
+checksum to hold it, so no edited file loads.
+
+A load takes the indices the map marks CHECK or edit from the file, of
+index 26 only bits 0 and 1, and keeps every other value of the ESC. It
+refuses a file of another type code or count, and a draft the guard
+refuses: the draft is judged by `oy_guard_approve()` on a copy of the
+guard, so a load never gives a draft the guard would stop, and approves
+none.
 
 Open decision: which ESC protocols beyond OpenYGE are supported. The source
 material sits beside Hobbywing, Kontronik, Scorpion, OMP, ZTW, APD, FLY,
