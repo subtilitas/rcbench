@@ -300,11 +300,22 @@ typedef enum {
     SET_TEXT_RUN_NOTE,       /**< RUN NOTE: the run's condition, typed
                                   beside DUT NAME, for the files' info
                                   cell (log_info.h); key srv_note        */
+    SET_TEXT_SERVO_PREFIX,   /**< ID PREFIX: the part of a labelled
+                                  servo's id before the "-" that NEW ID
+                                  uses, SETTINGS_PREFIX_MAX characters
+                                  (servo_id.h); key srv_pfx              */
+    SET_TEXT_PRN_ADDR,       /**< the bound label printer's BLE address and
+                                  its type; key prn_ble                   */
+    SET_TEXT_PRN_NAME,       /**< its name from the scan; key prn_name   */
     SETTING_TEXT_COUNT
 } setting_text_id_t;
 
 /** @brief Bytes of a string setting, the terminator included. */
 #define SETTINGS_TEXT_MAX 24
+
+/** @brief The longest ID PREFIX, characters: SERVO_ID_PREFIX_MAX, so the
+ *         prefix, "-" and 5 characters fill a string setting. */
+#define SETTINGS_PREFIX_MAX 17
 
 /** Called after a string actually changes, as settings_observer_fn is
  *  for a value: an edit, a discard, a reset and the load at start-up. */
@@ -672,6 +683,13 @@ const char *settings_text(setting_text_id_t id);
  */
 const char *settings_text_key(setting_text_id_t id);
 /**
+ * @brief The most characters string @p id holds, and its keyboard takes.
+ * @param id  The string.
+ * @return SETTINGS_PREFIX_MAX for SET_TEXT_SERVO_PREFIX, SETTINGS_TEXT_MAX
+ *         - 1 for every other string; 0 for an id out of range.
+ */
+int settings_text_max(setting_text_id_t id);
+/**
  * @brief A string's default: what a fresh panel holds and RESET sets.
  * @param id  The string.
  * @return The default; "" for an id out of range.  Never NULL.
@@ -701,7 +719,7 @@ bool settings_takes(setting_id_t id, float value);
 bool settings_stored_defaults(void);
 
 /**
- * @brief Set a string, cut to SETTINGS_TEXT_MAX - 1 characters; an edit like
+ * @brief Set a string, cut to settings_text_max() characters; an edit like
  * any other.
  * @param id    The string.
  * @param text  The text.

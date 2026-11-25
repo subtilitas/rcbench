@@ -17,6 +17,10 @@
 # description on the first data row of its file; its date follows the wall
 # clock's rules (shared/clock).  log_marks.c reads the traces and markers
 # of a LIMIT RUN's and a RUDDER AUTO's file for LOGS' graph.
+#
+# A labelled servo files its runs in a folder of its own, Servos/<id>:
+# servo_id.c checks, builds and counts the ids, servo_name.c names the runs
+# in the folder, and servo_active.c holds the servo the next run files under.
 set(SRCS
     log_numbers.c
     log_csv.c
@@ -30,6 +34,9 @@ set(SRCS
     card_tree.c
     fault_log.c
     servo_store.c
+    servo_id.c
+    servo_name.c
+    servo_active.c
 )
 
 if(ESP_PLATFORM)

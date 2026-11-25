@@ -140,7 +140,7 @@ typedef struct {
  *         panel's run description (LOG_INFO_MAX in log_info.h), carried on
  *         the first data row of ATESTnnn.CSV, LIMITnnn.CSV and
  *         RUDDRnnn.CSV. */
-#define SERVO_RUN_INFO_MAX 168u
+#define SERVO_RUN_INFO_MAX 195u
 
 /** @brief The longest line a log row or a report line takes, terminator
  *         included: the CSV's header with the angle source's columns is

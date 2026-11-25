@@ -318,8 +318,21 @@ history is in git.
 - A release publishes `rcbench-node-display-<version>.bin`, the display
   node's application, with its `.sig` and a line in `SHA256SUMS`, beside
   `rcbench-node-display-merged-<version>.bin` for USB.
+- Labelled servos, groundwork: servo ids `<prefix>-<serial>` (prefix 1 to
+  17 characters, serial 5 characters `00000` to `ZZZZZ`, 23 characters at
+  most), the run names of a servo's folder `Servos/<id>/<kind>_NNN.csv`
+  (`limit run`, `rudder auto`, `automatic test`, `servo run`; NNN 000 to
+  999), the active servo and the `id` key of a run's `info` cell
+  (`shared/logfile/servo_id.c`, `servo_name.c`, `servo_active.c`). No
+  screen uses them yet. The settings keep 3 more strings, written to the
+  settings file: `srv_pfx` (ID PREFIX, default `SERVO`, 17 characters at
+  most), `prn_ble` and `prn_name` (the label printer's bind). `SERVOS` and
+  the folders in it are refused as a log folder.
 
 ### Changed
+
+- A settings file is 32,768 bytes at most, up from 24,576; one the panel
+  writes is about 12,400. BACKUP's read buffer is 32,769 bytes.
 
 - `RUDDRnnn.CSV` has 3 more columns after its 9: `kind` (`STEP`, `VERIFY`,
   `SEARCH`), `pulse (us)` and `current (A)` (a SEARCH row's mean current,
