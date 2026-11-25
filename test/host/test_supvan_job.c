@@ -31,11 +31,12 @@ TEST_CASE(a_print_runs_every_step_in_order)
     CHECK_EQ(r->job.frame, 3);
     CHECK_EQ(r->job.mat.left, 295u);
     CHECK_EQ(r->job.last.left, 294u);
-    /* CHECK, MATERIAL, INQUIRY (ready), START, INQUIRY (printing),
-     * INQUIRY (buffer), BULK, 3 frames, BUF_FULL, INQUIRY until idle,
-     * MATERIAL (counter) */
+    /* CHECK, MATERIAL, INQUIRY (ready), MATERIAL (c0 once idle), START,
+     * INQUIRY (printing), INQUIRY (buffer), BULK, 3 frames, BUF_FULL,
+     * INQUIRY until idle, MATERIAL (counter) */
     const uint8_t head[] = { SV_C_CHECK,   SV_C_MATERIAL, SV_C_INQUIRY,
-                             SV_C_START,   SV_C_INQUIRY,  SV_C_INQUIRY,
+                             SV_C_MATERIAL, SV_C_START,   SV_C_INQUIRY,
+                             SV_C_INQUIRY,
                              SV_C_BULK,    SIM_DATA,      SIM_DATA,
                              SIM_DATA,     SV_C_BUF_FULL };
     CHECK(r->sim.nlog > sizeof head + 1u);
@@ -45,10 +46,10 @@ TEST_CASE(a_print_runs_every_step_in_order)
     }
     CHECK_EQ(r->sim.log[r->sim.nlog - 1u], SV_C_MATERIAL);
     CHECK_EQ(sim_count(&r->sim, SV_C_STOP), 0u);
-    CHECK_EQ(r->sim.log_p0[6], 512);
-    CHECK_EQ(r->sim.log_p1[6], 3);
-    CHECK_EQ(r->sim.log_p0[10], RIG_STREAM);
-    CHECK_EQ(r->sim.log_p1[10], 60); /* 1,234 / 3 = 411 a buffer */
+    CHECK_EQ(r->sim.log_p0[7], 512);
+    CHECK_EQ(r->sim.log_p1[7], 3);
+    CHECK_EQ(r->sim.log_p0[11], RIG_STREAM);
+    CHECK_EQ(r->sim.log_p1[11], 60); /* 1,234 / 3 = 411 a buffer */
     CHECK_EQ(r->sim.nfrag, 12u);
     CHECK_EQ(r->sim.bad_frames, 0u);
     CHECK(memcmp(r->sim.stream, r->stream, RIG_STREAM) == 0);
@@ -67,10 +68,10 @@ TEST_CASE(fragments_are_10ms_apart_and_buf_full_20ms_after_the_last)
     for (unsigned i = 1u; i < 12u; ++i) {
         CHECK_EQ(r->sim.frag_at[i] - r->sim.frag_at[i - 1u], 11u);
     }
-    CHECK_EQ(r->sim.log_at[10] - r->sim.frag_at[11], 21u);
+    CHECK_EQ(r->sim.log_at[11] - r->sim.frag_at[11], 21u);
     /* the polls in step 11 are 100ms after each answer (5ms latency) */
-    CHECK_EQ(r->sim.log_at[12] - r->sim.log_at[11], 105u);
     CHECK_EQ(r->sim.log_at[13] - r->sim.log_at[12], 105u);
+    CHECK_EQ(r->sim.log_at[14] - r->sim.log_at[13], 105u);
 }
 
 TEST_CASE(a_query_reads_the_device_the_roll_and_the_status_only)
@@ -143,7 +144,7 @@ TEST_CASE(a_counter_that_stays_three_times_is_not_printed)
     CHECK(rig_run(r, 20000u));
     CHECK_EQ(r->job.err, SV_ERR_NOT_PRINTED);
     CHECK_EQ(r->job.last.left, 295u);
-    CHECK_EQ(sim_count(&r->sim, SV_C_MATERIAL), 1u + 3u);
+    CHECK_EQ(sim_count(&r->sim, SV_C_MATERIAL), 2u + 3u);
     CHECK_EQ(sim_count(&r->sim, SV_C_STOP), 0u);
     const unsigned n = r->sim.nlog;
     CHECK_EQ(r->sim.log_at[n - 1u] - r->sim.log_at[n - 2u], 305u);
@@ -157,12 +158,12 @@ TEST_CASE(a_counter_that_moves_on_the_second_read_is_printed)
     r->sim.counter_lag = 1u;
     CHECK(rig_run(r, 20000u));
     CHECK_EQ(r->job.err, SV_OK);
-    CHECK_EQ(sim_count(&r->sim, SV_C_MATERIAL), 1u + 2u);
+    CHECK_EQ(sim_count(&r->sim, SV_C_MATERIAL), 2u + 2u);
     CHECK(rig_start(r, SV_JOB_PRINT, 0u));
     r->sim.counter_lag = 2u;
     CHECK(rig_run(r, 20000u));
     CHECK_EQ(r->job.err, SV_OK);
-    CHECK_EQ(sim_count(&r->sim, SV_C_MATERIAL), 1u + 3u);
+    CHECK_EQ(sim_count(&r->sim, SV_C_MATERIAL), 2u + 3u);
     CHECK(rig_start(r, SV_JOB_PRINT, 0u));
     r->sim.counter_lag = 3u;
     CHECK(rig_run(r, 20000u));
@@ -178,7 +179,7 @@ TEST_CASE(a_changed_uid_gives_no_verdict)
     r->sim.uid_after[6] ^= 0x01u;
     CHECK(rig_run(r, 20000u));
     CHECK_EQ(r->job.err, SV_ERR_ROLL);
-    CHECK_EQ(sim_count(&r->sim, SV_C_MATERIAL), 2u);
+    CHECK_EQ(sim_count(&r->sim, SV_C_MATERIAL), 3u);
 }
 
 TEST_CASE(a_counter_that_jumps_gives_no_verdict)
@@ -221,11 +222,11 @@ TEST_CASE(printing_and_buf_full_are_waited_for)
     CHECK(rig_run(r, 30000u));
     CHECK_EQ(r->job.err, SV_OK);
     /* START, then 6 polls for printing, 4 more for buf_full, then BULK */
-    CHECK_EQ(r->sim.log[3], SV_C_START);
-    for (unsigned i = 4u; i < 14u; ++i) {
+    CHECK_EQ(r->sim.log[4], SV_C_START);
+    for (unsigned i = 5u; i < 15u; ++i) {
         CHECK_EQ(r->sim.log[i], SV_C_INQUIRY);
     }
-    CHECK_EQ(r->sim.log[14], SV_C_BULK);
+    CHECK_EQ(r->sim.log[15], SV_C_BULK);
 }
 
 TEST_CASE(a_job_runs_across_the_clocks_wrap)
@@ -298,6 +299,82 @@ TEST_CASE(answers_to_other_commands_and_short_records_are_skipped)
     CHECK_EQ(r->job.err, SV_OK);
 }
 
+TEST_CASE(a_notification_before_its_writes_answer_keeps_the_stream_whole)
+{
+    sv_rig_t *r = &s_r;
+    /* the printer answers in the same ms as the write, the link confirms
+     * the write 3ms later: every answer is in before its write's own */
+    CHECK(rig_start(r, SV_JOB_PRINT, 0u));
+    r->sim.latency_ms = 0u;
+    r->ack_ms = 3u;
+    CHECK(rig_run(r, 20000u));
+    CHECK_EQ(r->job.err, SV_OK);
+    CHECK_EQ(r->sim.nfrag, 12u);
+    CHECK_EQ(r->sim.bad_frames, 0u);
+    CHECK(memcmp(r->sim.stream, r->stream, RIG_STREAM) == 0);
+    /* the first fragment is the frame's first 128 bytes */
+    CHECK_EQ(r->sim.log[8], SIM_DATA);
+}
+
+TEST_CASE(a_writes_answer_before_its_notification_keeps_the_stream_whole)
+{
+    sv_rig_t *r = &s_r;
+    CHECK(rig_start(r, SV_JOB_PRINT, 0u));
+    r->sim.latency_ms = 10u;
+    r->ack_ms = 0u;
+    CHECK(rig_run(r, 20000u));
+    CHECK_EQ(r->job.err, SV_OK);
+    CHECK_EQ(r->sim.nfrag, 12u);
+    CHECK_EQ(r->sim.bad_frames, 0u);
+    CHECK(memcmp(r->sim.stream, r->stream, RIG_STREAM) == 0);
+}
+
+TEST_CASE(a_label_used_while_busy_moves_the_baseline_not_the_verdict)
+{
+    sv_rig_t *r = &s_r;
+    /* an earlier print ends 400ms into step 3 and uses a label */
+    CHECK(rig_start(r, SV_JOB_PRINT, 0u));
+    r->sim.busy_until = 400u;
+    r->sim.busy_drop = 1u;
+    r->sim.prints = false;
+    CHECK(rig_run(r, 20000u));
+    CHECK_EQ(r->job.err, SV_ERR_NOT_PRINTED);
+    CHECK_EQ(r->job.mat.left, 294u);
+    CHECK(rig_start(r, SV_JOB_PRINT, 0u));
+    r->sim.busy_until = 400u;
+    r->sim.busy_drop = 1u;
+    CHECK(rig_run(r, 20000u));
+    CHECK_EQ(r->job.err, SV_OK);
+    CHECK_EQ(r->job.mat.left, 294u);
+    CHECK_EQ(r->job.last.left, 293u);
+}
+
+TEST_CASE(each_roll_dimension_of_the_layout_is_checked_on_its_own)
+{
+    sv_rig_t *r = &s_r;
+    /* width given, height any: a 40 x 30mm roll prints */
+    CHECK(rig_start(r, SV_JOB_PRINT, 0u));
+    r->z.h_mm = 0u;
+    CHECK(sv_job_start(&r->job, SV_JOB_PRINT, &r->z, 0u));
+    CHECK(rig_run(r, 20000u));
+    CHECK_EQ(r->job.err, SV_OK);
+    /* width any, height 30mm: a 40 x 20mm roll is refused */
+    CHECK(rig_start(r, SV_JOB_PRINT, 0u));
+    r->z.w_mm = 0u;
+    CHECK(sv_job_start(&r->job, SV_JOB_PRINT, &r->z, 0u));
+    r->sim.roll.h_mm = 20u;
+    CHECK(rig_run(r, 20000u));
+    CHECK_EQ(r->job.err, SV_ERR_ROLL);
+    CHECK_EQ(sim_count(&r->sim, SV_C_START), 0u);
+    /* width any, height 30mm: a 48 x 30mm roll prints */
+    CHECK(rig_start(r, SV_JOB_PRINT, 0u));
+    r->z.w_mm = 0u;
+    CHECK(sv_job_start(&r->job, SV_JOB_PRINT, &r->z, 0u));
+    r->sim.roll.w_mm = 48u;
+    CHECK(rig_run(r, 20000u));
+    CHECK_EQ(r->job.err, SV_OK);
+}
+
 int main(void)
 {
     RUN(a_print_runs_every_step_in_order);
@@ -315,5 +392,9 @@ int main(void)
     RUN(a_job_runs_across_the_clocks_wrap);
     RUN(a_print_without_a_usable_stream_does_not_start);
     RUN(answers_to_other_commands_and_short_records_are_skipped);
+    RUN(a_notification_before_its_writes_answer_keeps_the_stream_whole);
+    RUN(a_writes_answer_before_its_notification_keeps_the_stream_whole);
+    RUN(a_label_used_while_busy_moves_the_baseline_not_the_verdict);
+    RUN(each_roll_dimension_of_the_layout_is_checked_on_its_own);
     return test_summary("supvan_job");
 }

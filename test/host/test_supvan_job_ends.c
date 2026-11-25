@@ -108,8 +108,8 @@ TEST_CASE(each_error_flag_during_step_11_sends_stop_once)
         CHECK_EQ(r->job.err, k_flags[i].err);
         CHECK_EQ(sim_count(&r->sim, SV_C_STOP), 1u);
         CHECK_EQ(r->sim.log[r->sim.nlog - 1u], SV_C_STOP);
-        /* no counter read after an error */
-        CHECK_EQ(sim_count(&r->sim, SV_C_MATERIAL), 1u);
+        /* no counter read after an error: steps 2 and 3 read it */
+        CHECK_EQ(sim_count(&r->sim, SV_C_MATERIAL), 2u);
     }
 }
 
@@ -169,7 +169,8 @@ TEST_CASE(no_answer_at_each_later_step_is_silent)
         { SV_C_BULK, 0u, true, SV_ERR_SILENT },      /* 7 BULK */
         { SV_C_BUF_FULL, 0u, true, SV_ERR_SILENT },  /* 10 FULL */
         { SV_C_INQUIRY, 3u, true, SV_ERR_SILENT },   /* 11 DONE */
-        { SV_C_MATERIAL, 1u, false, SV_ERR_SILENT }, /* 12 COUNTER */
+        { SV_C_MATERIAL, 1u, false, SV_ERR_SILENT }, /* 3 c0 once idle */
+        { SV_C_MATERIAL, 2u, false, SV_ERR_SILENT }, /* 12 COUNTER */
     };
     for (size_t i = 0; i < sizeof k / sizeof k[0]; ++i) {
         CHECK(rig_start(r, SV_JOB_PRINT, 0u));

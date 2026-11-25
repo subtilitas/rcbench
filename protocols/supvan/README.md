@@ -153,7 +153,7 @@ width or height of 0 is `SV_ERR_NO_LABEL`.
 |---|---|---|---|
 | 1 CHECK | CHECK_DEVICE | answered | 1s, 1 retry: `SV_ERR_SILENT` |
 | 2 MATERIAL | RETURN_MAT | the roll and the counter c0 read | 1s, 1 retry: `SV_ERR_SILENT` |
-| 3 READY | INQUIRY_STA every 100ms | neither busy nor printing | 5s: `SV_ERR_BUSY` |
+| 3 READY | INQUIRY_STA every 100ms; for a PRINT then RETURN_MAT | neither busy nor printing; the counter c0 read again, same roll | 5s: `SV_ERR_BUSY` |
 | 4 START | START_PRINT | answered | 1s |
 | 5 PRINTING | INQUIRY_STA every 100ms | printing set | 3s |
 | 6 BUFFER | INQUIRY_STA every 100ms | buffer full clear | 3s |
@@ -167,9 +167,15 @@ width or height of 0 is `SV_ERR_NO_LABEL`.
 - A job that the printer cannot decode still ends with no error flag, so
   only the label counter proves a print.
 - An error flag in step 3 or later ends the job with its error.
+- c0 is read again at the end of step 3, once the printer is idle: an
+  earlier print that ends during the wait uses a label before START, not
+  after it. A roll other than step 2's at that read is `SV_ERR_ROLL`.
+- A write's answer is booked against the write it answers (a command or a
+  data fragment), not against the step. The printer's notification may
+  come before or after the link's answer to the same write.
 - A roll that differs from the one the stream was laid out for
-  (`sv_stream_t.w_mm`, `h_mm`; 0 any) ends a PRINT in step 2 with
-  `SV_ERR_ROLL`. A tag UID that changes between step 2 and step 12, or a
+  (`sv_stream_t.w_mm`, `h_mm`, each checked on its own; 0 any) ends a
+  PRINT in step 2 with `SV_ERR_ROLL`. A tag UID that changes between step 2 and step 12, or a
   counter that moves by other than 1, gives no verdict: `SV_ERR_ROLL`.
 - An end in steps 4 to 11 (an error, a timeout, a refused write or
   `sv_job_abort()`) sends STOP_PRINT once, after the write in flight is
@@ -251,7 +257,7 @@ target_link_libraries(my_target PRIVATE rcbench_supvan)
 Under ESP-IDF the same CMakeLists.txt registers a component. The headers
 compile from C++. Code for the ESP32-P4 at `-Os`
 (`riscv32-esp-elf-gcc` 15.2.0): `lzlit.c` 710 bytes, `supvan_frame.c` 891,
-`supvan_page.c` 591, `supvan_job.c` 2,100.
+`supvan_page.c` 591, `supvan_job.c` 2,200.
 
 ## Source and credit
 
@@ -310,7 +316,7 @@ sponsored by them. The full notice is in the repository's
 | `test_lzlit` | the golden streams of `tools/lzlit.py`, fed whole and in pieces; the header; the overflow at one byte short and at the exact size; the bound up to 65,536 bytes; the carry path |
 | `test_supvan_frame` | the command against the report's bytes; an answer split 20 + 20 + 7 and fed 1 byte at a time; noise, a length out of range, two answers in one piece, the 0xF0 answer; each status bit; the material offsets; the roll limits at both ends |
 | `test_supvan_page` | 224 columns as 84 / 84 / 56 against the fixture; 1, 84 and 85 columns; the checksum at byte 255; the data frames against the fixture; frame counts at 1, 500, 501 bytes and 255 frames; the speed byte at each threshold |
-| `test_supvan_job` | the whole PRINT in order with its parameters and spacing; QUERY alone; the counter 295 to 294, 295 three times, 294 on the second read, a changed UID, a jump; busy for 4.9s and 5.1s; the clock's wrap |
+| `test_supvan_job` | the whole PRINT in order with its parameters and spacing; notifications before and after their writes' answers; a label used by an earlier print during step 3; each roll dimension on its own; QUERY alone; the counter 295 to 294, 295 three times, 294 on the second read, a changed UID, a jump; busy for 4.9s and 5.1s; the clock's wrap |
 | `test_supvan_job_ends` | the 7 error flags before START and in step 11; no answer at each step; a write refused and lost; an abort at each of steps 4 to 11 sends STOP_PRINT once; the link down at each step, back and not back inside 5s |
 | `test/tools/test_lzlit.py` | `lzlit.c` through `test/host/lzlit_cli.c` on 9 inputs up to 65,536 bytes: equal to `tools/lzlit.py`, decoded by liblzma |
 

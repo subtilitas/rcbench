@@ -17,6 +17,8 @@
 
 /** @brief Sends of CHECK and RETURN_MAT in steps 1 and 2: one retry. */
 #define FIRST_TRIES 2u
+/** @brief out_kind of a data fragment; no command has this byte. */
+#define OUT_DATA 0xFFu
 /** @brief Data fragments a frame. */
 #define FRAGS (SV_FRAME_LEN / SV_FRAGMENT)
 
@@ -160,14 +162,34 @@ static void on_material(sv_job_t *j, const sv_material_t *m, uint32_t now)
             end(j, roll);
             return;
         }
-        if (j->z.w_mm != 0u
-            && (j->z.w_mm != m->w_mm || j->z.h_mm != m->h_mm)) {
+        if ((j->z.w_mm != 0u && j->z.w_mm != m->w_mm)
+            || (j->z.h_mm != 0u && j->z.h_mm != m->h_mm)) {
             end(j, SV_ERR_ROLL);
             return;
         }
     }
     enter(j, SV_STEP_READY, now);
     ask(j, SV_C_INQUIRY, now);
+}
+
+/**
+ * @brief The RETURN_MAT answer at the end of step 3: the baseline c0
+ *        START is measured against.
+ * @param j   the job
+ * @param m   the record
+ * @param now the clock
+ */
+static void on_rebase(sv_job_t *j, const sv_material_t *m, uint32_t now)
+{
+    if (memcmp(m->uid, j->mat.uid, SV_UID_LEN) != 0
+        || m->w_mm != j->mat.w_mm || m->h_mm != j->mat.h_mm) {
+        end(j, SV_ERR_ROLL);
+        return;
+    }
+    j->mat = *m;
+    j->rebased = true;
+    enter(j, SV_STEP_START, now);
+    ask(j, SV_C_START, now);
 }
 
 /**
@@ -213,8 +235,9 @@ static void on_status(sv_job_t *j, const sv_status_t *st, uint32_t now)
         } else if (j->kind == SV_JOB_QUERY) {
             end(j, SV_OK);
         } else {
-            enter(j, SV_STEP_START, now);
-            ask(j, SV_C_START, now);
+            /* An earlier print may have used a label while step 3 waited:
+             * the counter is read again now that the printer is idle. */
+            ask(j, SV_C_MATERIAL, now);
         }
         break;
     case SV_STEP_PRINTING:
@@ -276,6 +299,8 @@ static void on_frame(sv_job_t *j, const uint8_t *f, uint16_t n, uint32_t now)
         j->last = m;
         if (j->step == SV_STEP_MATERIAL) {
             on_material(j, &m, now);
+        } else if (j->step == SV_STEP_READY) {
+            on_rebase(j, &m, now);
         } else {
             on_counter(j, &m, now);
         }
@@ -348,13 +373,15 @@ void sv_job_written(sv_job_t *j, bool ok, uint32_t now_ms)
         return;
     }
     j->in_flight = false;
+    const uint8_t kind = j->out_kind;
+    j->out_kind = 0u;
     if (j->step == SV_STEP_END) {
         return;
     }
     if (j->step == SV_STEP_STOP) {
         /* The answer to STOP_PRINT ends the job; the answer to a write
          * that was out when the job failed lets STOP_PRINT go. */
-        if (j->stop_out) {
+        if (kind == SV_C_STOP) {
             end(j, (sv_err_t)j->end_err);
         }
         return;
@@ -363,7 +390,9 @@ void sv_job_written(sv_job_t *j, bool ok, uint32_t now_ms)
         fail(j, SV_ERR_WRITE, now_ms);
         return;
     }
-    if (j->step != SV_STEP_DATA) {
+    /* A command's answer may have moved the step on already (its
+     * notification came first): only a fragment's answer counts here. */
+    if (kind != OUT_DATA) {
         return;
     }
     if (++j->frag == FRAGS) {
@@ -395,6 +424,7 @@ void sv_job_link(sv_job_t *j, bool up, uint32_t now_ms)
         return;
     }
     j->in_flight = false;
+    j->out_kind = 0u;
     j->await = 0u;
     j->want = 0u;
     j->data_due = false;
@@ -457,6 +487,7 @@ bool sv_job_tx(sv_job_t *j, uint32_t now_ms, const uint8_t **data,
                                  (uint8_t)j->frame);
         }
         j->data_due = false;
+        j->out_kind = OUT_DATA;
         *data = j->buf + (size_t)j->frag * SV_FRAGMENT;
         *n = SV_FRAGMENT;
     } else {
@@ -464,7 +495,7 @@ bool sv_job_tx(sv_job_t *j, uint32_t now_ms, const uint8_t **data,
         if (j->want == SV_C_START) {
             j->started = true;
         }
-        j->stop_out = (j->want == SV_C_STOP);
+        j->out_kind = j->want;
         if (j->step == SV_STEP_PAUSE) {
             enter(j, SV_STEP_FULL, now_ms);
         }
@@ -487,8 +518,10 @@ void sv_job_tick(sv_job_t *j, uint32_t now_ms)
     }
     if (j->in_flight && passed(now_ms, j->t_sent, SV_ANSWER_MS)) {
         j->in_flight = false;
+        const uint8_t kind = j->out_kind;
+        j->out_kind = 0u;
         if (j->step == SV_STEP_STOP) {
-            if (j->stop_out) {
+            if (kind == SV_C_STOP) {
                 end(j, (sv_err_t)j->end_err);
             }
         } else {

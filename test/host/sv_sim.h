@@ -58,6 +58,8 @@ typedef struct {
     uint16_t write_frag;     /**< or the data fragment, from 1; 0 none */
     sim_write_t write_do;    /**< what that write gets */
     uint32_t latency_ms;     /**< from a command to its answer */
+    uint8_t busy_drop;       /**< labels an earlier print uses up when busy
+                                  ends (busy_until) */
     /* the simulator's own */
     uint8_t log[SIM_LOG_MAX];       /**< commands in order */
     uint32_t log_at[SIM_LOG_MAX];   /**< when each came */
@@ -84,6 +86,7 @@ typedef struct {
     unsigned nout;                  /**< its length */
     unsigned sent;                  /**< bytes of it given out */
     uint32_t out_at;                /**< when it may go */
+    bool dropped;                   /**< busy_drop is applied */
 } sv_sim_t;
 
 /**
@@ -184,6 +187,11 @@ static inline void sim_command(sv_sim_t *s, const uint8_t *c, uint32_t now)
         s->full_at = now;
     }
     sim_settle(s, now);
+    if (s->busy_drop != 0u && !s->dropped
+        && (uint32_t)(now - s->busy_until) < 0x80000000u) {
+        s->roll.left -= s->busy_drop;
+        s->dropped = true;
+    }
     if (cmd == s->silent_cmd && s->answers[cmd] >= s->silent_after) {
         return;
     }
@@ -361,6 +369,8 @@ typedef struct {
     bool link;            /**< the link's state */
     bool owed;            /**< a write's answer is owed to the job */
     bool owed_ok;         /**< that answer */
+    uint32_t owed_at;     /**< when the link gives that answer */
+    uint32_t ack_ms;      /**< a write's answer comes 1 + this ms after it */
 } sv_rig_t;
 
 /**
@@ -372,7 +382,7 @@ static inline void rig_step(sv_rig_t *r)
 {
     sv_job_tick(&r->job, r->now);
     if (r->link) {
-        if (r->owed) {
+        if (r->owed && (uint32_t)(r->now - r->owed_at) < 0x80000000u) {
             r->owed = false;
             sv_job_written(&r->job, r->owed_ok, r->now);
         }
@@ -382,6 +392,7 @@ static inline void rig_step(sv_rig_t *r)
             const sim_write_t w = sim_write(&r->sim, d, n, r->now);
             if (w != SIM_W_LOST) {
                 r->owed = true;
+                r->owed_at = r->now + 1u + r->ack_ms;
                 r->owed_ok = (w == SIM_W_OK);
             }
         }
@@ -457,6 +468,7 @@ static inline bool rig_start(sv_rig_t *r, sv_job_kind_t kind, uint32_t t0)
     r->now = t0;
     r->link = true;
     r->owed = false;
+    r->ack_ms = 0u;
     uint32_t x = 5u;
     for (unsigned i = 0; i < RIG_STREAM; ++i) {
         x = x * 1103515245u + 12345u;

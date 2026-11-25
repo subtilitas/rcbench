@@ -293,8 +293,8 @@ typedef struct {
     const uint8_t *data; /**< the LZMA stream */
     uint32_t len;        /**< its length, 1 to SV_STREAM_MAX bytes */
     uint16_t buffers;    /**< the print buffers it holds, for the speed */
-    uint8_t w_mm;        /**< the roll it was laid out for, 0 any */
-    uint8_t h_mm;        /**< the roll it was laid out for, 0 any */
+    uint8_t w_mm;        /**< the roll's width it was laid out for, 0 any */
+    uint8_t h_mm;        /**< the roll's height it was laid out for, 0 any */
 } sv_stream_t;
 
 /** @brief What a job does. */
@@ -310,7 +310,9 @@ typedef enum {
     SV_STEP_MATERIAL,  /**< 2: RETURN_MAT, the roll and counter c0; 1s,
                             1 retry */
     SV_STEP_READY,     /**< 3: INQUIRY every 100ms until neither busy nor
-                            printing; 5s, then SV_ERR_BUSY */
+                            printing, then for a PRINT RETURN_MAT once more:
+                            the counter c0 just before START; 5s, then
+                            SV_ERR_BUSY */
     SV_STEP_START,     /**< 4: START_PRINT, answered; 1s */
     SV_STEP_PRINTING,  /**< 5: INQUIRY until printing; 3s */
     SV_STEP_BUFFER,    /**< 6: INQUIRY until buf_full clear; 3s */
@@ -362,10 +364,14 @@ typedef struct {
     uint8_t frag;          /**< fragment of the frame, 0 to 3 */
     uint8_t reads;         /**< counter reads */
     bool started;          /**< START_PRINT was handed out */
+    bool rebased;          /**< step 3 re-read the counter after the wait */
     bool link;             /**< the link is up */
     bool in_flight;        /**< a write is out, its answer not in */
+    uint8_t out_kind;      /**< what that write is: its command byte, or
+                                0xFF for a data fragment; its answer is
+                                booked against this, not against the step,
+                                so a notification may come before it */
     bool data_due;         /**< a data fragment is due */
-    bool stop_out;         /**< the write out is STOP_PRINT */
     uint32_t t_step;       /**< step entered */
     uint32_t t_sent;       /**< last write handed out */
     uint32_t t_due;        /**< the next write is due */
@@ -399,6 +405,9 @@ void sv_job_rx(sv_job_t *j, const uint8_t *data, size_t n, uint32_t now_ms);
 
 /**
  * @brief The answer to the write sv_job_tx() handed out last.
+ *
+ * It is booked against that write, a command or a data fragment, so it may
+ * come before or after the printer's notification for the same write.
  * @param j      the job
  * @param ok     false: the link refused it
  * @param now_ms the clock
