@@ -213,6 +213,12 @@ design and were read as documentation rather than copied:
   BLHeli / BLHeli_S, AM32, ESCape32, VESC, Hitec
                       published protocol descriptions and configurator
                       behaviour
+  heeen/supvan-cups   the print protocol of Supvan T50-series label
+                      printers (docs/PROTOCOL.md and the record and buffer
+                      layouts of crates/supvan-proto), reverse-engineered
+                      by that project from the vendor's app; MIT License.
+                      protocols/supvan is written from that description and
+                      from captures of the station's printer
 
 Every protocol implementation here is written from a published specification
 or, where none is published, from captures of the wire, rather than from
@@ -264,7 +270,7 @@ Protocol, firmware, software and interface names:
 
 Board, module and component makers:
   Waveshare, WeAct, Osoyoo, DAOKAI, Matek, Raspberry Pi, Espressif, Kingst,
-  WitMotion,
+  WitMotion, Supvan, Katasymbol,
   Abracon, Allegro, ams OSRAM, Analog Devices, Arm, Bosch, Bourns, Broadcom,
   Coilcraft, Cypress, EPC, Fujitsu, Infineon, Isabellenhütte, JST, KEMET,
   Maxim, Melexis, Microchip, Molicel, Monolithic Power Systems, Murata, NDK,

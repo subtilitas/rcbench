@@ -1763,7 +1763,7 @@ rcbench/
   protocols/              one module per external interface: a pure C core,
                           its RP2350 pin driver in rp2350/, a README.md
     dshot/ ppm/ sbus/ openyge/ pdmini/ phase_tap/ passthru/ kst/ hitec/
-    escwire/ hc05/ bleuart/ dialknob/
+    escwire/ hc05/ bleuart/ dialknob/ supvan/
 
   firmware/panel/         ESP-IDF: main/, components/, sdkconfig.defaults,
                           partitions.csv
@@ -1783,7 +1783,7 @@ rcbench/
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` · `passthru` | yes | yes | yes |
 | `escwire` · `openyge` | yes | yes | yes |
 | `witmotion` | yes | | yes |
-| `hc05` · `dial` | | | yes |
+| `hc05` · `dial` · `supvan` | | | yes |
 | `bleuart` · `dialknob` · `vibe` · `rcnode` · `bleota` · `devupd` | yes | | yes |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
@@ -1818,7 +1818,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 671 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 676 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1948,7 +1948,8 @@ The host suite is 671 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
 `test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_srv_policy`, `test_node_srv_poll`, `test_node_view`,
 `test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client`, `test_devimg`, `test_devimg_board`, `test_upd_dev`, `test_upd_fetch`,
-`test_upd_wizard`, `test_upd_wizard_map`, `test_upd_wiz_view` and `test_harness`.
+`test_upd_wizard`, `test_upd_wizard_map`, `test_upd_wiz_view`,
+`test_lzlit`, `test_supvan_frame`, `test_supvan_page`, `test_supvan_job`, `test_supvan_job_ends` and `test_harness`.
 
 The harness is `test/host/greatest.h`, written for this project. `CHECK_EQ` compares
 integers and pointers as `long` and does not compile on a floating operand; `CHECK_FEQ`
