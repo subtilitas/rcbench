@@ -8,6 +8,20 @@ history is in git.
 
 ### Added
 
+- LIMIT RUN writes `LIMITnnn.CSV` in `USER/LOGS` before its report
+  `LIMITnnn.TXT`, under the same number: one row a position a search
+  judged, columns `row`, `search` (1 the first search of a side, 2 a
+  search after a write, 3 the last check), `side` (`LOW`, `HIGH`),
+  `pulse (us)`, `current (A)` (the 80ms mean, to 1mA), `voltage (V)`
+  (the INA3221 window's rail voltage, to 10mV), `angle (deg)` (empty
+  without an angle source), `state` (`BASE`, `FREE`, `BOUND`), `free (A)`,
+  `threshold (A)` and `end point (us)` on the bound row. At most 600
+  rows, about 27kB; positions judged past row 600 are counted, and the
+  report's `Positions:` line names both figures. A run that judged no
+  position writes the report alone. LOGS lists the CSV beside its report;
+  DELETE on the CSV removes the report too. USER's empty-list line reads
+  `Tests are saved as ATESTnnn, LIMITnnn and RUDDRnnn.CSV.`
+  ([Servo](docs/Servo.md#installed-mechanical-limit)).
 - Programming for YGE ESCs, the core in `protocols/openyge/`: the field
   map of docs/OpenYGE.md section 5.3 (`openyge_map.c`), the guard every
   outgoing frame passes (`openyge_guard.c`) and the session
@@ -134,6 +148,10 @@ history is in git.
 
 ### Changed
 
+- `RUDDRnnn.CSV` has 3 more columns after its 9: `kind` (`STEP`, `VERIFY`,
+  `SEARCH`), `pulse (us)` and `current (A)` (a SEARCH row's mean current,
+  to 1mA). The first 9 columns are unchanged; LOGS reads files of 9 and of
+  12 columns.
 - OpenYGE specification ([OpenYGE](docs/OpenYGE.md)): section 5.3 lists
   indices 0 to 31 with values, scale, unit, writable values, access
   (identity, telemetry, raw, CHECK, edit) and sources, checked against the

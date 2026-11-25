@@ -56,7 +56,7 @@ static struct {
     float sum;
     unsigned n;
     unsigned disarms, arms, dropped;
-    unsigned opens_txt, ends;
+    unsigned opens_txt, opens_csv, ends;
     char report[8192];
     size_t len;
     /* The panel's adoption of the port's set points (supply_link_adopted()),
@@ -81,6 +81,8 @@ static void lr_drain(void)
         }
         if (o == SERVO_TEST_OUT_OPEN_TXT) {
             lr.opens_txt++;
+        } else if (o == SERVO_TEST_OUT_OPEN) {
+            lr.opens_csv++;     /* LIMITnnn.CSV, then its report */
         } else if (o == SERVO_TEST_OUT_END) {
             lr.ends++;
         } else if (o == SERVO_TEST_OUT_TXT) {
@@ -389,7 +391,8 @@ TEST_CASE(a_limit_run_programs_the_servo_on_the_programming_port)
         CHECK(strstr(lr.report, "RCBENCH SERVO LIMIT REPORT\n") == lr.report);
         CHECK(strstr(lr.report, "PASS") != NULL);
         CHECK(strstr(lr.report, "Writes:") != NULL);
-        CHECK_EQ(lr.opens_txt, 1u);
+        CHECK_EQ(lr.opens_csv, 1u);
+        CHECK_EQ(lr.opens_txt, 0u);
         CHECK_EQ(lr.ends, 1u);
         CHECK(strstr(lr.report, "Pulse write:    PULSE LOWER 900.0 -> 1000.0"
                                 "us, PULSE UPPER 2100.0 -> 2000.0us") != NULL);

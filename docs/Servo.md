@@ -597,9 +597,11 @@ and HIGH END show the ends the run found first.
 ![Search only](img/servo-limrun-found.png)
 ![The servo's pulses outside PULSE MIN and PULSE MAX](img/servo-limrun-range.png)
 
-The report is a `LIMITnnn.TXT` of its own in `USER/LOGS`, with no CSV file
-beside it, under the next free number of that folder, written whatever DUT's
-REPORT says. With User logs OFF on SETUP > SD CARD no report is written
+The run writes `LIMITnnn.CSV`, one row a position its searches judged, and
+the report `LIMITnnn.TXT` under the same number in `USER/LOGS`, the next free
+number of that folder, whatever DUT's REPORT says. A run that ends before
+its first judged position writes the report alone. With User logs OFF on
+SETUP > SD CARD neither file is written
 ([Setup](Screens.md#sd-card-which-logs-are-written-and-where)). During a
 run neither the bench log nor the supply log writes a row; the supply
 log's time runs on through the run, as its totals do. From the run's start
@@ -645,6 +647,7 @@ Low end:        free to 1000us; free 0.120A
 High end:       free to 2000us; free 0.120A
 
 Unit: the units of LEFT ANGLE and RIGHT ANGLE are unknown. Travel is assumed linear with pulse width from NEUTRAL to PULSE LOWER and PULSE UPPER; this has not been measured.
+Positions:      judged 265, all in the CSV
 Bench: the ends found are not applied to PULSE MIN and PULSE MAX.
 ```
 
@@ -657,6 +660,44 @@ saved, also when that write was sent and lost, never an earlier run's file.
 The `Searched:` line
 names the search's center and ends; a run that ended before its first
 search has none. A run on a SERVO PWM pin has no `Servo pulses:` line.
+
+`LIMITnnn.CSV` holds one row a position a search judged, in the order
+judged: each search from its center outward, the low side first. Cells are
+separated by `;` with a decimal point, as in every bench CSV. The file holds
+at most 600 rows (`SERVO_LIMRUN_ROWS_MAX`), about 27kB: 6 searches over
+1000µs of travel at 10µs steps. A position judged past row 600 is counted,
+not written, and the report's `Positions:` line names both figures,
+`Positions:      judged 637, in the CSV 600, past its cap 37`. A run that
+judged no position has no `Positions:` line.
+
+| Column | Content |
+| --- | --- |
+| `row` | the row's number from 1 |
+| `search` | `1` the first search of a side, `2` a search after a write (the overset's, or the one that finds which register limits the side), `3` the last check |
+| `side` | `LOW` (shorter pulses) or `HIGH` |
+| `pulse (us)` | the pulse commanded |
+| `current (A)` | the mean current over the position's 80ms, to 1mA |
+| `voltage (V)` | the rail voltage of the INA3221 window that judged the position, to 10mV |
+| `angle (deg)` | the angle source's angle from ENC CENTER, to 0.01°; empty without an angle |
+| `state` | `BASE` for each search's first 3 positions, which set the free current; `FREE` under the threshold; `BOUND` above it, the search's last row |
+| `free (A)` | the search's free current after the position: the mean of its `BASE` rows |
+| `threshold (A)` | the larger of 1.8 x free and free + 0.15A; empty on a `BASE` row |
+| `end point (us)` | on a `BOUND` row the endpoint the search reports, 25µs inside the last free position; else empty |
+
+The programmed run above, its first rows and its first search's bound row:
+
+```text
+row;search;side;pulse (us);current (A);voltage (V);angle (deg);state;free (A);threshold (A);end point (us)
+1;1;LOW;1500;0.120;6.00;;BASE;0.120;;
+2;1;LOW;1490;0.119;6.00;;BASE;0.120;;
+3;1;LOW;1480;0.120;6.00;;BASE;0.120;;
+4;1;LOW;1470;0.121;6.00;;FREE;0.120;0.270;
+31;1;LOW;1200;0.627;6.00;;BOUND;0.120;0.270;1235
+```
+
+LOGS lists `LIMITnnn.CSV` beside its report, CSV first; DELETE on the CSV
+removes the report too ([Logs](Screens.md#logs)). A `LIMITnnn.TXT` of
+firmware 0.23.17 and older has no CSV beside it.
 
 The full limit run and its figures above have not been measured on a
 real servo. The unit of LEFT ANGLE and RIGHT ANGLE, their mapping to pulse
@@ -1336,7 +1377,7 @@ compared by its magnitude and in whole mA: see
 A run takes the next run number of the folder `USER/LOGS`, and the SD card's
 own task writes its files there: `ATESTnnn.CSV`, one row per reading of the
 run's meter, and with DUT's REPORT on, `ATESTnnn.TXT`. The number belongs to
-one series with the limit runs' `LIMITnnn.TXT` in that folder
+one series with the limit runs' `LIMITnnn` files in that folder
 ([Logs](Screens.md#logs)). With User logs OFF, read at the run's start,
 the run writes no file and the result names `USER LOGS OFF`. TEST's READY
 card shows User logs on its LOG row, `ON` or `OFF` in amber; a tap there
@@ -2222,7 +2263,19 @@ write: the measurements above are the last.` The CSV carries the verify
 pass's measures after the steps, `V` in the write column and the value
 column empty, and the search's positions after them, `S` in the write
 column, the current in mA in the value column and the angle in the measured
-column.
+column. Three columns after `within` name each row without that
+convention: `kind` (`STEP`, `VERIFY` or `SEARCH`), `pulse (us)` (the pulse
+the row was measured at) and `current (A)` (a `SEARCH` row's mean current,
+to 1mA; empty on the other rows). The first 9 columns are those of firmware
+0.23.17 and older, unchanged, and LOGS reads files with 9 columns and with
+12 alike:
+
+```text
+step;side (us);write;value;measured (deg);goal (deg);measured (mm);goal (mm);within;kind;pulse (us);current (A)
+1;1000;0;;30.00;27.50;50.00;46.17;0;STEP;1000;
+7;1000;V;;27.60;27.50;46.33;46.17;1;VERIFY;1000;
+10;1500;S;150;0.00;;;;;SEARCH;1500;0.150
+```
 
 End points read as the programming page shows them, with the unit named
 on the report's register lines (`(counts)`, `(raw value)`) and on the box's

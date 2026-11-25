@@ -320,6 +320,7 @@ TRACKED = [
     "shared/servo/servo_rudder_auto_search.c",
     "shared/servo/servo_settle.c",
     "shared/servo/servo_limrun_family.c",
+    "shared/servo/servo_limrun_rows.c",
     "shared/servo/servo_start_seq.c",
     "protocols/openyge/openyge_frame.c",
     "protocols/openyge/openyge_status.c",

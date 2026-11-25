@@ -156,8 +156,10 @@
  * SERVO_LIMRUN_WHY_NOT_HITEC.
  *
  * Pure: fed windows, the programmer's results and the clock, it moves
- * nothing itself.  Its report leaves through an outbox
- * (servo_limrun_peek()) as one LIMITnnn.TXT.
+ * nothing itself.  Its files leave through an outbox (servo_limrun_peek()):
+ * LIMITnnn.CSV, one row a position a search judged (servo_limrun_rows.c),
+ * then the report LIMITnnn.TXT under the same number.  A run that judged no
+ * position writes the report alone.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -428,6 +430,43 @@ typedef struct {
 /** @brief The entries of a run's outbox. */
 #define SERVO_LIMRUN_OUTBOX 2u
 
+/** @brief The rows LIMITnnn.CSV holds at most: one a judged position.  600
+ *         rows are 6 searches over 1000us of travel at 10us steps, about
+ *         27kB.  Positions judged past it are counted
+ *         (servo_limrun_t.rows_past) and the report names them. */
+#define SERVO_LIMRUN_ROWS_MAX 600u
+
+/** @brief LIMITnnn.CSV's header row (servo_limrun_csv_line()). */
+#define SERVO_LIMRUN_CSV_HEAD                                               \
+    "row;search;side;pulse (us);current (A);voltage (V);angle (deg);"       \
+    "state;free (A);threshold (A);end point (us)"
+
+/** @brief What a judged position was: the `state` column. */
+typedef enum {
+    SERVO_LIMRUN_ROW_BASE = 0, /**< one of the search's first
+                                    SERVO_LIMIT_BASELINE_STEPS: it feeds the
+                                    free current, no threshold yet          */
+    SERVO_LIMRUN_ROW_FREE,     /**< under the threshold                     */
+    SERVO_LIMRUN_ROW_BOUND,    /**< above it: the search ends here          */
+} servo_limrun_row_state_t;
+
+/** @brief One position a search judged: a row of LIMITnnn.CSV. */
+typedef struct {
+    uint16_t pulse_us;  /**< the pulse commanded, us                       */
+    uint16_t ma;        /**< the mean current over the 80ms, mA            */
+    uint16_t mv;        /**< the rail voltage of the window that judged it,
+                             mV                                            */
+    uint16_t free_ma;   /**< the search's free current after it, mA        */
+    uint16_t thr_ma;    /**< the bound threshold, mA; 0 on a BASE row      */
+    uint16_t end_us;    /**< the endpoint, us, on a BOUND row; else 0      */
+    float    deg;       /**< the angle from ENC CENTER, when angle_ok      */
+    uint8_t  search;    /**< 1 the first search, 2 a search after a write,
+                             3 the last check                              */
+    uint8_t  side;      /**< SERVO_LIMRUN_LO or SERVO_LIMRUN_HI            */
+    uint8_t  state;     /**< servo_limrun_row_state_t                      */
+    bool     angle_ok;  /**< the angle source had an angle                 */
+} servo_limrun_row_t;
+
 /** @brief The state of a limit run. */
 typedef struct {
     servo_limrun_cfg_t   cfg;  /**< the settings */
@@ -510,8 +549,16 @@ typedef struct {
     float    sup_v,         /**< its voltage set point then, V */
              sup_i;         /**< its current limit set point then, A */
 
-    /* The outbox: OPEN_TXT, the report's lines, END. */
-    unsigned out_line;      /**< the next line of the report              */
+    /* The judged positions, LIMITnnn.CSV's rows (servo_limrun_rows.c). */
+    servo_limrun_row_t rows[SERVO_LIMRUN_ROWS_MAX];  /**< in judging order */
+    uint16_t rows_n;        /**< rows held                                */
+    uint32_t rows_past;     /**< positions judged past SERVO_LIMRUN_ROWS_MAX */
+    uint8_t  judged;        /**< positions the search under way judged    */
+
+    /* The outbox: OPEN (OPEN_TXT with no row), the CSV's lines, the
+     * report's lines, END. */
+    unsigned out_line;      /**< the next line of the CSV, then the report */
+    bool     out_csv;       /**< the CSV's lines are handed out           */
     bool     out_open,      /**< the opening line is handed out */
              out_end,       /**< the report's lines are handed out */
              out_done;      /**< the closing line is handed out */
@@ -750,12 +797,15 @@ bool servo_limrun_original(const servo_limrun_t *r, uint16_t *left,
                            uint16_t *right);
 
 /**
- * @brief The report's lines, in order, then END; OPEN_TXT first.
+ * @brief The run's files, in order: OPEN, LIMITnnn.CSV's lines, the report's
+ *        lines, END.  A run with no judged position opens with OPEN_TXT and
+ *        hands out the report alone.
  *
  * @param r    Run state. NULL gives NONE.
  * @param text Out: text of the entry; empty when there is none.
- * @return kind of the next outbox entry: OPEN_TXT first, then TXT lines, then
- *        END; NONE when the run is not DONE or the report was handed out.
+ * @return kind of the next outbox entry: OPEN (OPEN_TXT with no row) first,
+ *        then CSV lines, then TXT lines, then END; NONE when the run is not
+ *        DONE or its files were handed out.
  */
 servo_test_out_t servo_limrun_peek(servo_limrun_t *r, const char **text);
 /**
@@ -784,6 +834,26 @@ bool servo_limrun_drained(const servo_limrun_t *r);
  */
 bool servo_limrun_report_line(const servo_limrun_t *r, unsigned idx,
                               char *buf, size_t n);
+
+/**
+ * @brief Line @p idx of LIMITnnn.CSV into @p buf: SERVO_LIMRUN_CSV_HEAD, then
+ *        one row a judged position, `;` between cells and a decimal point.
+ *
+ * A row: its number from 1; the search, 1, 2 or 3; the side, LOW or HIGH;
+ * the pulse in us; the mean current in A to 1mA; the rail voltage in V to
+ * 10mV; the angle in degrees to 0.01deg, empty without one; the state, BASE,
+ * FREE or BOUND; the free current in A; the threshold in A, empty on a BASE
+ * row; the endpoint in us on a BOUND row, else empty.
+ *
+ * @param r   Run state.
+ * @param idx Line index, 0 the header.
+ * @param buf Out: line text, without a line feed.
+ * @param n   Size of buf, bytes.
+ * @return true when line idx exists; false for NULL arguments, n of 0, a run
+ *        not DONE, or idx past the last row.
+ */
+bool servo_limrun_csv_line(const servo_limrun_t *r, unsigned idx, char *buf,
+                           size_t n);
 
 /**
  * @brief The table entries the screen and the report name these by.
