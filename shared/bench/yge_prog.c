@@ -275,8 +275,10 @@ static void watch_flags(yge_prog_t *p)
     const bool rose = (now & (uint16_t)~p->flags_seen) != 0u;
 
     p->flags_seen = now;
+    /* The STOP the link sends after a page that stopped answering is that
+     * error's own: its word stays. */
     if (rose && p->flow == YGE_PROG_FLOW_NONE && p->wait_id == 0u
-        && rd->phase == YGE_LINK_READY) {
+        && rd->phase == YGE_LINK_READY && p->msg != YGE_PROG_MSG_NO_ANSWER) {
         (void)say_result(p, rd->result, rd->ses);
     }
 }

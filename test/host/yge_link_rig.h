@@ -17,6 +17,7 @@
 static yge_link_t g_l;
 static int g_drop;          /* exchanges not answered from now on */
 static int g_drop_status;   /* reads of YGE_PROG not answered from now on */
+static int g_nack_cmd;      /* command frames refused with LINK_NACK_BUSY */
 static int g_exchanges;
 static int g_commands;      /* command frames the page was handed */
 static int g_data_reads;    /* reads of YGE_DATA */
@@ -43,6 +44,10 @@ static RIG_MAY_GO_UNUSED int link_xchg(void *ctx, const yge_link_xfer_t *x,
             g_cmd_key[g_commands] = x->regs[LINK_YP_W_KEY];
         }
         g_commands += x->off == 0u ? 1 : 0;
+        if (x->off == 0u && g_nack_cmd > 0) {
+            --g_nack_cmd;
+            return LINK_NACK_BUSY;
+        }
         return yge_port_write(&g_p, x->off, x->n, x->regs, now_ms());
     }
     if (x->page == LINK_PAGE_YGE_PROG) {
@@ -88,6 +93,7 @@ static void link_counts_zero(void)
 {
     g_drop = 0;
     g_drop_status = 0;
+    g_nack_cmd = 0;
     g_exchanges = 0;
     g_commands = 0;
     g_data_reads = 0;

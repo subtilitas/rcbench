@@ -1818,7 +1818,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 660 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 661 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -2276,7 +2276,7 @@ a lost link in each state and in a write, the link silent 199ms and 200ms and th
 lost through the safety gate, each session error and a supply gone with the line parked and
 the supply and PROG_SUPPLY off, and an IOmcu restart freeing the port. `test_yge_console`
 runs the console's `yge` command on the page.
-`test_yge_link`, `test_yge_link_fetch` and `test_yge_prog` run the panel's half
+`test_yge_link`, `test_yge_link_fetch`, `test_yge_prog` and `test_yge_prog_ends` run the panel's half
 (`shared/bench/yge_link.c`, `yge_prog.c`, `yge_prog_file.c`) against that page
 (`test/host/yge_link_rig.h`): the CLOSE at link-up after a panel restart, again 1000ms after
 `WRITING` and `NOT_BACK`, none over a link that came back; the key with ENTER and WRITE only;
@@ -2285,7 +2285,8 @@ the read copy in 1 and 2 blocks against its CRC, a wrong one fetched 3 times and
 refused while the port is held; a stop latched letting only CLOSE, LEAVE and ABORT through;
 the first write's backup to the card, without a card kept in RAM, a card silent 9999ms and
 10000ms; every refusal of CONNECT and WRITE sending nothing; a file loaded against the read
-copy.
+copy; each way a request ends and each result of the page with its own word, a stop or an ARM
+between OPEN and ENTER, and a command never carried out taken back at 2000ms.
 `test_outputs_hw` and `test_outputs_hw_ports` hold that a held slot or DShot port is let go
 alone and comes back the same.
 
