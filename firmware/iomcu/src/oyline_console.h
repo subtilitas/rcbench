@@ -3,7 +3,8 @@
  * @brief The IOMCU_CONSOLE build's test of the telemetry wire's pin driver of
  *        programming for YGE ESCs (electronic speed controllers), with no ESC
  *        attached: `oyline <gpio> tx`, `oyline <gpio> rx`, `oyline <gpio> cut`
- *        (docs/BenchConsole.md).
+ *        (docs/BenchConsole.md); and the `yge` command on the YGE_PROG page
+ *        (yge_console.h).
  *
  * A bench tool for a logic analyser.  It sends one fixed frame, a telemetry
  * request (`TELE_REQ`, 12B): no write.  It takes a pin only while the bank is
@@ -18,7 +19,7 @@
 #include <stdbool.h>
 
 /**
- * @brief A console line that starts with `oyline`.
+ * @brief A console line that starts with `oyline` or `yge`.
  * @param ctx unused
  * @param tok the line's tokens
  * @param n   how many

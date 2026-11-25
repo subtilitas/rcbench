@@ -22,8 +22,8 @@ extern "C" {
  *        LINK_NACK_NOT_ARMED to refuse it before any page does.
  *
  * Refused: a CONTROL ARM other than 0; a SUPPLY OUTPUT other than 0; a
- * POWER RAIL other than 0 or any PORT_WANT bit; every write to KST, HITEC
- * and ESC_WIRE (a programming session's CONNECT among them); a PROG FUNC
+ * POWER RAIL other than 0 or any PORT_WANT bit; every write to KST, HITEC,
+ * ESC_WIRE and YGE_PROG (a programming session's CONNECT among them); a PROG FUNC
  * other than NONE; an OUTPUTS, OUTPUTS_HI, BIND_OUT or BIND_OUT_HI slot
  * with a driver; a PASS SOURCE other than BENCH (OFF drives its pad low).
  * Everything else, and every other OFF, is passed on.
