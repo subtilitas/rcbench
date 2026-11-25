@@ -159,6 +159,35 @@ static void show_picture(log_preset_id_t id)
     lv_load_data();
 }
 
+/**
+ * @brief An event of the contact that holds the graph's press: MOVE drags
+ *        the cursor, UP ends the press and taps a chip.
+ * @param e  The event.
+ */
+static void own_press(const touch_event_t *e)
+{
+    const int x = e->point.x;
+    const int y = e->point.y;
+    if (e->type == TOUCH_EVENT_MOVE) {
+        if (lg.press == LG_PRESS_PLOT) {
+            const int row = lg_row_at(x, y);
+            s.cursor = (row >= 0) ? row : s.cursor;
+            log_viewer_invalidate();
+        }
+        return;
+    }
+    if (e->type == TOUCH_EVENT_UP) {
+        /* A release the touch layer cut (TOUCH_FLAG_NO_TAP) ends the press
+         * and taps nothing. */
+        if (lg.press == LG_PRESS_CHIP && touch_event_is_tap_up(e)
+            && chip_at(x, y) == lg.press_chip) {
+            chip_tap(lg.press_chip);
+        }
+        lg.press = LG_PRESS_NONE;
+        log_viewer_invalidate();
+    }
+}
+
 bool lg_event(const touch_event_t *e)
 {
     if (!lg_on()) {
@@ -166,6 +195,13 @@ bool lg_event(const touch_event_t *e)
     }
     const int x = e->point.x;
     const int y = e->point.y;
+    /* Each contact ends its own press: the one holding a chip or the plot
+     * is the graph's, whatever another finger does on the tabs. */
+    if (lg.press != LG_PRESS_NONE && e->point.id == lg.press_id
+        && e->type != TOUCH_EVENT_DOWN) {
+        own_press(e);
+        return true;
+    }
     if (lg.tabbed) {
         const bool held = lg.tabs.pressed >= 0;
         if (ui_tabs_event(&lg.tabs, e)) {
@@ -179,47 +215,26 @@ bool lg_event(const touch_event_t *e)
             return true;
         }
     }
-    if (e->type == TOUCH_EVENT_DOWN) {
-        if (lg.press != LG_PRESS_NONE) {
-            /* A second finger: the graph keeps to the first. */
-            return gfx_rect_contains(PV_PANEL, x, y) || chip_at(x, y) > 0;
-        }
-        const int k = chip_at(x, y);
-        if (k > 0) {
-            lg.press = LG_PRESS_CHIP;
-            lg.press_chip = k;
-        } else if (gfx_rect_contains(PV_PANEL, x, y)) {
-            lg.press = LG_PRESS_PLOT;
-            const int row = lg_row_at(x, y);
-            s.cursor = (row >= 0) ? row : s.cursor;
-        } else {
-            return false;
-        }
-        lg.press_id = e->point.id;
-        log_viewer_invalidate();
-        return true;
-    }
-    if (lg.press == LG_PRESS_NONE || e->point.id != lg.press_id) {
+    if (e->type != TOUCH_EVENT_DOWN) {
         return false;
     }
-    if (e->type == TOUCH_EVENT_MOVE) {
-        if (lg.press == LG_PRESS_PLOT) {
-            const int row = lg_row_at(x, y);
-            s.cursor = (row >= 0) ? row : s.cursor;
-            log_viewer_invalidate();
-        }
-        return true;
+    if (lg.press != LG_PRESS_NONE) {
+        /* A second finger: the graph keeps to the first. */
+        return gfx_rect_contains(PV_PANEL, x, y) || chip_at(x, y) > 0;
     }
-    if (e->type == TOUCH_EVENT_UP) {
-        /* A release the touch layer cut (TOUCH_FLAG_NO_TAP) ends the press
-         * and taps nothing. */
-        if (lg.press == LG_PRESS_CHIP && touch_event_is_tap_up(e)
-            && chip_at(x, y) == lg.press_chip) {
-            chip_tap(lg.press_chip);
-        }
-        lg.press = LG_PRESS_NONE;
-        log_viewer_invalidate();
+    const int k = chip_at(x, y);
+    if (k > 0) {
+        lg.press = LG_PRESS_CHIP;
+        lg.press_chip = k;
+    } else if (gfx_rect_contains(PV_PANEL, x, y)) {
+        lg.press = LG_PRESS_PLOT;
+        const int row = lg_row_at(x, y);
+        s.cursor = (row >= 0) ? row : s.cursor;
+    } else {
+        return false;
     }
+    lg.press_id = e->point.id;
+    log_viewer_invalidate();
     return true;
 }
 

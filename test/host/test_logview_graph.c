@@ -433,6 +433,36 @@ TEST_CASE(a_cut_release_taps_no_chip)
     CHECK_EQ(log_graph_focus(), 1);
 }
 
+/* Two fingers on RUDDR's graph: one on a chip, a second holding the tab
+ * already shown.  The first lifts first: its release ends its own press and
+ * taps its chip; the tab's release then changes nothing, and the next press
+ * on the plot moves the cursor. */
+TEST_CASE(each_finger_ends_its_own_press_beside_a_held_tab)
+{
+    open_graph("RUDDR004.CSV");
+    REQUIRE(log_graph_shown());
+    send_id(TOUCH_EVENT_DOWN, 1, LV_GR_CHIP_CX(0), LV_GR_CHIP_CY);
+    send_id(TOUCH_EVENT_DOWN, 2, LV_GR_TAB_CX(0), LV_GR_CHIP_CY);
+    send_id(TOUCH_EVENT_UP, 1, LV_GR_CHIP_CX(0), LV_GR_CHIP_CY);
+    CHECK_EQ(log_graph_focus(), 1);
+    send_id(TOUCH_EVENT_UP, 2, LV_GR_TAB_CX(0), LV_GR_CHIP_CY);
+    CHECK_EQ(log_viewer_preset(), LOG_PRESET_RUDDR_SEARCH);
+    /* The plot takes a new press: the cursor goes to the lowest pulse. */
+    send_id(TOUCH_EVENT_DOWN, 3, PLOT_X0, LV_PV_CY);
+    send_id(TOUCH_EVENT_UP, 3, PLOT_X0, LV_PV_CY);
+    CHECK_EQ(log_viewer_cursor(), 9);
+    /* The same with a finger dragging the plot's cursor. */
+    send_id(TOUCH_EVENT_DOWN, 1, LV_PV_CX, LV_PV_CY);
+    send_id(TOUCH_EVENT_DOWN, 2, LV_GR_TAB_CX(0), LV_GR_CHIP_CY);
+    send_id(TOUCH_EVENT_MOVE, 1, PLOT_X1, LV_PV_CY);
+    CHECK_EQ(log_viewer_cursor(), 12);
+    send_id(TOUCH_EVENT_UP, 1, PLOT_X1, LV_PV_CY);
+    send_id(TOUCH_EVENT_UP, 2, LV_GR_TAB_CX(0), LV_GR_CHIP_CY);
+    tap(LV_GR_CHIP_CX(1), LV_GR_CHIP_CY);
+    CHECK_EQ(log_graph_focus(), 2);
+    draw();
+}
+
 /* MORE > COLUMNS, then the import view's PLOT: the columns picked by row
  * number, every row, no graph. */
 TEST_CASE(plot_from_the_import_view_draws_rows_not_the_graph)
@@ -517,6 +547,7 @@ int main(void)
     RUN(ruddr_tabs_switch_between_search_and_steps);
     RUN(back_and_more_work_from_the_graph);
     RUN(a_cut_release_taps_no_chip);
+    RUN(each_finger_ends_its_own_press_beside_a_held_tab);
     RUN(plot_from_the_import_view_draws_rows_not_the_graph);
     RUN(a_steady_frame_of_the_graph_does_no_work);
     RUN(the_graph_speaks_german);
