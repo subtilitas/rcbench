@@ -120,9 +120,10 @@ static const char *const k_kind[FM_KIND_COUNT] = {
 };
 
 /** @brief The place words of fm_place_t. */
-static const char *const k_place[] = {
+static const char *const k_place[FM_PLACE_COUNT] = {
     [FM_PLACE_FREE] = "FREE", [FM_PLACE_FIXED] = "FIXED",
     [FM_PLACE_LOCKED] = "LOCKED", [FM_PLACE_FAULT] = "FAULT",
+    [FM_PLACE_SERVO] = "SERVO",
 };
 
 /* -------------------------------------------------------------- reasons */
@@ -563,7 +564,7 @@ void wa_api_list_json(const wa_api_t *api, wa_out_t *o)
         wa_api_json_key(o, "k", false);
         wa_api_json_str(o, (e->kind < FM_KIND_COUNT) ? k_kind[e->kind] : "OTHER");
         wa_api_json_key(o, "p", false);
-        wa_api_json_str(o, (e->place <= FM_PLACE_FAULT) ? k_place[e->place]
+        wa_api_json_str(o, (e->place < FM_PLACE_COUNT) ? k_place[e->place]
                                                  : "FREE");
         wa_api_json_key(o, "b", false);
         wa_api_json_bool(o, e->busy);

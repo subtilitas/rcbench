@@ -3410,6 +3410,9 @@ UI_TEXT(FM_RULE_FREE, 0,
 UI_TEXT(FM_RULE_FIXED, 0,
     "Bench folder: no RENAME or MOVE, DELETE only when empty.",
     "Prüfstand: kein UMBENENNEN/VERSCHIEBEN, LÖSCHEN nur leer.")
+UI_TEXT(FM_RULE_SERVO, 62,
+    "Servo id folder: no RENAME, MOVE or DELETE.",
+    "Servo-ID-Ordner: kein UMBENENNEN/VERSCHIEBEN/LÖSCHEN.")
 UI_TEXT(FM_RULE_LOCKED, 62,
     "The servo programmer's record: INFO only.",
     "Vermerk der Servoprogrammierung: nur INFO.")

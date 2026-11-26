@@ -286,6 +286,15 @@ cursor (`shared/ui/ui_textkey_cursor.c`; `test_textkey_cursor`, `test_files_ops`
 `->`, a tap in the field, typing and DEL at the cursor, a window of 48 characters that
 follows it, RENAME of a file starting before the last full stop.
 
+A labelled servo's folders (`test_fm_servo`, `test_files_open`, `test_wa_api`,
+`test_wa_api_write`): `Servos` and each id folder in it are the place SERVO, with no RENAME,
+MOVE or DELETE, DELETE also when empty; a folder that is no id and every file inside stay
+free; `limit run_000.csv` to `servo run_999.csv` and their reports are runs and reports in an
+id folder only; OPEN on a CSV there opens LOGS, read from that folder, in the import view
+(LOGS' presets follow main's names). DELETE of a servo run's CSV takes its report along. A file the
+logger has open in an id folder is busy as `log_marks_busy()` reads the marks; the marks of a
+servo folder's runs come with the filing slice.
+
 The requests run on the panel's task `cardjob` (`firmware/panel/main/panel_files.c`), not
 host-tested; after each job the logger forgets its folders' numbering
 (`log_series_forget_all()` in `shared/logfile/log_take.c`, `test_log_take`), so its next
@@ -1864,7 +1873,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 686 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 688 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1936,7 +1945,7 @@ The host suite is 686 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_link_restart`, `test_logview`, `test_logview_preset`, `test_logview_graph`, `test_logview_time`, `test_logview_report`, `test_graph_key`, `test_logview_plot`,
 `test_logview_rank`, `test_logview_pages`, `test_logview_tabs`, `test_logview_delete`,
 `test_logview_touch`, `test_logview_layout`, `test_logview_row`, `test_log_name`,
-`test_log_take`, `test_card_tree`, `test_fm_tree`, `test_fm_ops`, `test_fm_logname`, `test_fm_match`,
+`test_log_take`, `test_card_tree`, `test_fm_tree`, `test_fm_ops`, `test_fm_servo`, `test_fm_logname`, `test_fm_match`,
 `test_fm_recheck`, `test_fm_req`, `test_files_screen`, `test_files_ops`, `test_files_open`,
 `test_files_view`, `test_files_edit`, `test_files_save`, `test_files_changed`,
 `test_files_rescan`, `test_logs_strip`, `test_textkey_editor`, `test_textkey_see`,
@@ -1978,7 +1987,7 @@ The host suite is 686 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_hitec_panel_run`, `test_hitec_panel_move`, `test_hitec_panel_find`, `test_servo_rudder`,
 `test_servo_rudder_panel`, `test_servo_rudder_steps`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
 `test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_bleuart_profile`,
-`test_bleuart_hub`, `test_bleuart_backoff`, `test_bleuart_fair`, `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`,
+`test_bleuart_hub`, `test_bleuart_backoff`, `test_bleuart_fair`, `test_bleuart_ext`, `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`,
 `test_dial_ctl`, `test_dial_stream`, `test_dial_motor`, `test_dial_servo`, `test_dial_nav`,
 `test_dial_nav_hold`, `test_dial_bind`, `test_wireless_pane`,
 `test_pnode_meter`, `test_pnode_ctl`, `test_wireless_pnode`, `test_pnode_bind`,
@@ -2680,7 +2689,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/esc_stick_draw.c` | 446 | 434 | 97.3% |
 | `shared/ui/esc_stick_draw_run.c` | 595 | 551 | 92.6% |
 | `shared/ui/esc_stick_guide.c` | 72 | 71 | 98.6% |
-| `shared/ui/log_viewer_screen.c` | 387 | 377 | 97.4% |
+| `shared/ui/log_viewer_screen.c` | 389 | 379 | 97.4% |
 | `shared/ui/log_viewer_load.c` | 256 | 234 | 91.4% |
 | `shared/ui/log_viewer_draw.c` | 444 | 430 | 96.8% |
 | `shared/ui/log_viewer_events.c` | 520 | 508 | 97.7% |
@@ -2691,9 +2700,9 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/graph_key.c` | 92 | 92 | 100.0% |
 | `shared/ui/logs_strip.c` | 40 | 37 | 92.5% |
 | `shared/ui/log_select.c` | 56 | 56 | 100.0% |
-| `shared/ui/files_screen.c` | 697 | 675 | 96.8% |
+| `shared/ui/files_screen.c` | 702 | 680 | 96.9% |
 | `shared/ui/layout_screen.c` | 142 | 141 | 99.3% |
-| `shared/ui/files_draw.c` | 341 | 330 | 96.8% |
+| `shared/ui/files_draw.c` | 343 | 331 | 96.5% |
 | `shared/ui/files_events.c` | 228 | 227 | 99.6% |
 | `shared/ui/files_text.c` | 161 | 148 | 91.9% |
 | `shared/ui/text_view.c` | 385 | 378 | 98.2% |
@@ -2791,7 +2800,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/files/text_hl.c` | 340 | 340 | 100.0% |
 | `shared/files/fm_name.c` | 138 | 138 | 100.0% |
 | `shared/files/fm_select.c` | 76 | 76 | 100.0% |
-| `shared/files/fm_rules.c` | 182 | 181 | 99.5% |
+| `shared/files/fm_rules.c` | 203 | 202 | 99.5% |
 | `shared/files/fm_tree.c` | 229 | 225 | 98.2% |
 | `shared/files/fm_ops.c` | 511 | 505 | 98.8% |
 | `shared/files/fm_logname.c` | 26 | 24 | 92.3% |
@@ -2882,8 +2891,8 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `protocols/escwire/ew_file_load.c` | 93 | 93 | 100.0% |
 | `protocols/hc05/hc05.c` | 384 | 383 | 99.7% |
 | `protocols/hc05/hc05_line.c` | 125 | 125 | 100.0% |
-| `protocols/bleuart/bleuart.c` | 496 | 495 | 99.8% |
-| `protocols/bleuart/bleuart_adv.c` | 175 | 175 | 100.0% |
+| `protocols/bleuart/bleuart.c` | 524 | 522 | 99.6% |
+| `protocols/bleuart/bleuart_adv.c` | 180 | 180 | 100.0% |
 | `protocols/bleuart/bleuart_hub.c` | 317 | 315 | 99.4% |
 | `protocols/i2c_txq/i2c_txq.c` | 379 | 379 | 100.0% |
 | `protocols/witmotion/witmotion.c` | 118 | 118 | 100.0% |
@@ -3074,7 +3083,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
 | `shared/scanner/scan_line.c` | 113 | 113 | 100.0% |
 | `shared/scanner/gm861.c` | 319 | 319 | 100.0% |
-| **total** | **114873** | **112332** | **97.8%** |
+| **total** | **114936** | **112393** | **97.8%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

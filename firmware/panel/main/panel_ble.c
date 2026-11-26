@@ -1066,6 +1066,12 @@ bool panel_ble_do(const bleu_act_t *a, int *written)
         rc = ble_gattc_read(a->conn, a->h1, read_cb, arg_of(a->token));
         answer = BLEU_EV_READ;
         break;
+    case BLEU_ACT_WRITE_EXT:
+        /* Its bytes are the client's: panel_blec.c passes it to
+         * panel_ble_write_long(). One that comes here is refused. */
+        rc = BLE_HS_EINVAL;
+        answer = BLEU_EV_WRITE_DONE;
+        break;
     case BLEU_ACT_NONE:
     default:
         return false;
@@ -1075,6 +1081,20 @@ bool panel_ble_do(const bleu_act_t *a, int *written)
         post_answer(answer, a->token, a->conn, rc);
     }
     return false;
+}
+
+int panel_ble_write_long(uint16_t conn, uint16_t handle, const uint8_t *data,
+                         uint16_t n, uint16_t token)
+{
+    const int rc = (data == NULL || n == 0u || n > BLEU_WRITE_EXT_MAX)
+                       ? BLE_HS_EINVAL
+                       : ble_gattc_write_flat(conn, handle, data, n, write_cb,
+                                              arg_of(token));
+    if (rc != 0) {
+        ESP_LOGW(TAG, "long write refused: %d", rc);
+        post_answer(BLEU_EV_WRITE_DONE, token, conn, rc);
+    }
+    return rc;
 }
 
 int panel_ble_write_chunk(uint16_t conn, uint16_t handle, const uint8_t *hdr,

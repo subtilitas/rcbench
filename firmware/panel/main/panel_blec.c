@@ -39,10 +39,39 @@ static const char *TAG = "blec";
 _Static_assert(pdMS_TO_TICKS(BLEC_POLL_MS) >= 1,
                "the poll blocks for a tick at least: the task never spins");
 
+_Static_assert(PANEL_BLEC_PRINT < BLEU_HUB_CLIENTS,
+               "every owner is a client of the hub");
+
 /** @brief The hub, the task's own. */
 static bleu_hub_t s_hub;
 /** @brief The task was started. */
 static bool s_started;
+
+/**
+ * @brief The label printer's client until it is built: it takes no event,
+ *        gives no action and holds no bytes for a long write.
+ * @param a The BLEU_ACT_WRITE_EXT.
+ * @return NULL: none.
+ */
+static const uint8_t *print_stub_ext(const bleu_act_t *a)
+{
+    (void)a;
+    return NULL;
+}
+
+/**
+ * @brief The bytes of a long write of the client @p owner.
+ * @param owner The client, the action token's owner.
+ * @param a     The BLEU_ACT_WRITE_EXT; a->h2 bytes are asked for.
+ * @return The bytes, or NULL when the client holds none.
+ */
+static const uint8_t *client_ext(uint8_t owner, const bleu_act_t *a)
+{
+    if (owner == PANEL_BLEC_PRINT) {
+        return print_stub_ext(a);
+    }
+    return NULL;
+}
 
 /**
  * @brief An event to the client @p owner.
@@ -110,7 +139,13 @@ static void hand_out(uint32_t now)
         }
         while (bleu_hub_next_action(&s_hub, &a)) {
             int written = 0;
-            if (panel_ble_do(&a, &written)) {
+            if (a.kind == BLEU_ACT_WRITE_EXT) {
+                /* The bytes are the client's; a refusal is answered as an
+                 * event with the action's token. */
+                (void)panel_ble_write_long(
+                    a.conn, a.h1, client_ext(bleu_token_owner(a.token), &a),
+                    a.h2, a.token);
+            } else if (panel_ble_do(&a, &written)) {
                 /* A write without response is answered here, at once:
                  * its WRITE_DONE goes to the client before the next. */
                 bleu_hub_written(&s_hub, &a, written, now);
@@ -172,6 +207,7 @@ void panel_blec_start(void)
     (void)bleu_hub_add(&s_hub, PANEL_BLEC_PNODE);
     (void)bleu_hub_add(&s_hub, PANEL_BLEC_BAL);
     (void)bleu_hub_add(&s_hub, PANEL_BLEC_UPD);
+    (void)bleu_hub_add(&s_hub, PANEL_BLEC_PRINT);
     /*
      * Core 0 beside the renderer, at the knob's priority 2: polls of 5ms,
      * nothing with a deadline.  Stack 4096 bytes: the clients and the hub

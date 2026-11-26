@@ -58,6 +58,7 @@ static const app_text_t k_texts[] = {
     { "i.reading", T_FM_INFO_READING }, { "r.FREE", T_FM_RULE_FREE },
     { "r.FIXED", T_FM_RULE_FIXED },    { "r.LOCKED", T_FM_RULE_LOCKED },
     { "r.FAULT", T_FM_RULE_FAULT },    { "r.BUSY", T_FM_RULE_BUSY },
+    { "r.SERVO", T_FM_RULE_SERVO },
     { "select", T_FM_SELECT_FIRST },   { "ro", T_ED_READ_ONLY },
     { "line", T_ED_LINE_OF },          { "mixed", T_ED_MIXED_ENDS },
     { "vreading", T_ED_READING },      { "vempty", T_ED_EMPTY },

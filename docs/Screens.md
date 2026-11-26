@@ -4251,8 +4251,8 @@ Below the name are the entry's kind and state:
 | Kind | Entry |
 |---|---|
 | FOLDER | a folder |
-| LOG | a CSV file in the Auto or the User log folder |
-| REPORT | a `.TXT` report in either log folder |
+| LOG | a CSV file in the Auto or the User log folder, and a run in a servo's folder: `limit run_000.csv` in `Servos/KST_X10-0000A` |
+| REPORT | a `.TXT` report in either log folder, and a run's report in a servo's folder: `limit run_000.txt` |
 | SERVO FILE | a file in `BENCH/KST/CONF` |
 | ESC PROFILE | a `.JSON` file in `BENCH/ESC/CONF` |
 | FAULT LOG | `BENCH/RCBENCH.LOG` and its older and temporary copies |
@@ -4262,6 +4262,7 @@ Below the name are the entry's kind and state:
 | State | Meaning |
 |---|---|
 | FIXED | a folder used by the bench: the two log folders, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF`, `BENCH/ESCW/CONF`, `BENCH/BALANCE`, `BENCH/SETUP` and their parent folders, including `BENCH` and `USER`. RENAME and MOVE are unavailable because they would move its contents away from the expected path. NEW can create these folders; DELETE can remove an empty one. Each writer recreates its folder before writing, and readers treat a missing folder as they would on a new card |
+| FIXED | `Servos` and each servo's folder in it, named by the servo's id (`Servos/KST_X10-0000A`, any case). RENAME, MOVE and DELETE are unavailable, DELETE also on an empty folder: the folder's name is the id on the servo's label, and the highest id folder is the count of ids handed out. A folder in `Servos` that is no id (`Servos/notes`) and every file in a servo's folder are not FIXED |
 | LOCKED | the programmers' records, `BENCH/KST/CONF/KST.TXT`, `BENCH/HITEC/CONF/HITEC.TXT` and `BENCH/ESCW/CONF/ESCW.TXT`, plus their `KST.NEW`, `HITEC.NEW` and `ESCW.NEW` files while being written. Only INFO is available |
 | WRITING | a file open in the logger. Only INFO is available |
 
@@ -4297,14 +4298,17 @@ above the row of buttons, using the 12 x 24 font.
 | COPY | copies the selected file into the other pane's folder; folders cannot be copied |
 | MOVE | moves the selected file or folder into the other pane's folder |
 | RENAME | opens the keyboard with the entry's name |
-| DELETE | asks for confirmation; deleting a run's CSV also deletes its report; a folder must be empty |
+| DELETE | asks for confirmation; deleting a run's CSV also deletes its report, in a servo's folder too; a folder must be empty |
 | NEW | offers FOLDER or TEXT FILE, then the name keyboard; a new text file is empty |
 | INFO | shows the entry's name, folder, kind, size or entry count, time and rule |
 | OPEN | enters a folder, opens a recognised log CSV in LOGS, or opens another file in the text viewer, subject to the limits below |
 
 A CSV listed by LOGS in one of its three folders (ROOT, USER, BENCH)
 opens on that folder's [Logs](#logs) tab: a run file the bench wrote in
-the plot, any other CSV in the import view. If it exceeds
+the plot, any other CSV in the import view. A CSV in a servo's folder
+opens in LOGS, read from that folder: an ARMED run's `servo run_nnn.csv`
+on the BENCH tab, every other CSV on the USER tab. LOGS chooses its preset
+by the names of the log folders, so these files open in the import view. If it exceeds
 2GiB minus 1 byte, LOGS shows its file list and the reason instead. If the
 card was swapped after FILES listed it, nothing opens and the message is
 `The card was taken out or swapped. Tap RESCAN.`
@@ -5356,7 +5360,7 @@ is missing, the response is 403 and `CODE`.
 | Request | Answer |
 | --- | --- |
 | `GET /api/status` | JSON (JavaScript Object Notation): the panel's name, version and language, `"writes"` `open` or `closed` with the first reason a write is refused at the time of the request and its text (`WRITES_OFF`; `ARMED` or `LOGGING` while the write gate is shut; `WRITES_HOLD`; empty while open) and `"mode"`, the setting (`OPEN`, `CODE`, `HOLD`, `OFF`; with `CODE` each write's code decides), the card's mount number, name, size and free bytes, the limits: 48 entries a page, 1,048,576 bytes and 65,536 line ends a file, and the User log folder SETUP > SD CARD names (`USER/LOGS` by default) |
-| `GET /api/list?path=P&go=G&key=N&key_dir=D` | JSON: up to 48 entries of folder `P`, folders first, then names with case folded, as FILES lists them. Each entry has its name, whether it is a folder, its bytes, its kind (`FOLDER`, `RUN`, `REPORT`, `KST`, `PROFILE`, `FAULT`, `CSV`, `JSON`, `TEXT`, `OTHER`), its place (`FREE`, `FIXED`, `LOCKED`, `FAULT`) and whether the logger writes it. Then the mount number, the entries ahead of the page, the folder's total, the entries not listed, and whether a page stands before and after. `G` is `first` (the default), `last`, `next`, `prev` or `same`; the last three name the page by the entry `N` at its edge, `D` 1 for a folder. |
+| `GET /api/list?path=P&go=G&key=N&key_dir=D` | JSON: up to 48 entries of folder `P`, folders first, then names with case folded, as FILES lists them. Each entry has its name, whether it is a folder, its bytes, its kind (`FOLDER`, `RUN`, `REPORT`, `KST`, `PROFILE`, `FAULT`, `CSV`, `JSON`, `TEXT`, `OTHER`), its place (`FREE`, `FIXED`, `LOCKED`, `FAULT`, `SERVO` for `Servos` and a servo's id folder) and whether the logger writes it. Then the mount number, the entries ahead of the page, the folder's total, the entries not listed, and whether a page stands before and after. `G` is `first` (the default), `last`, `next`, `prev` or `same`; the last three name the page by the entry `N` at its edge, `D` 1 for a folder. |
 | `GET /api/info?path=P&dir=D&mount=M&etag=1` | JSON: the size and the time FAT stamped of `P`, -1 for none, and that time as INFO shows it, `2027-01-01 00:00` in the zone of SETUP > PANEL's Time zone, empty for a stamp in 1980 or none; for a folder (`D` 1) its entries, their bytes and the entries not listed. With `etag=1` a file also has `"etag"`, the CRC-32 `/api/file` gives as its ETag, of any bytes: the panel reads the card for it and the file does not cross the network. `""` for a file over 1,048,576 bytes, which is not read |
 | `GET /api/file?path=P&mount=M` | the bytes of text file `P` as the card holds them, BOM (byte order mark) included, with `ETag` (their CRC-32, cyclic redundancy check), `X-Rcbench-Eol` (`lf`, `crlf`, `cr` or `mixed`), `X-Rcbench-Lines` (the lines as FILES' viewer counts them: a line end at the file's end starts no line, so `a\nb\n` and `a\nb` have 2 and an empty file 0) and `X-Rcbench-Bom` (1 or 0) |
 

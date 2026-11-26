@@ -351,7 +351,9 @@ SOURCES = [
     "shared/logfile/log_name.c",
     "shared/logfile/log_info.c",
     "shared/logfile/card_tree.c",
+    # FILES' rules for a labelled servo's folders (fm_rules.c) and the scan flow.
     "shared/logfile/servo_id.c",
+    "shared/logfile/servo_name.c",
     "shared/logfile/servo_active.c",
     "shared/bench/bench_state.c",
     "shared/bench/telemetry_sim.c",

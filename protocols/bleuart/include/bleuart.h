@@ -79,6 +79,9 @@ extern "C" {
 #define BLEU_ADDR_TEXT_MAX 20u  /**< "00:0C:BF:08:19:29 P" + NUL */
 #define BLEU_EVT_DATA    40u    /**< data bytes one event carries */
 #define BLEU_WRITE_MAX   20u    /**< bytes of one command write */
+#define BLEU_WRITE_EXT_MAX 244u /**< bytes of one long write
+                                     (bleu_send_ext()): the ATT MTU of 247
+                                     less the 3-byte write header */
 #define BLEU_ACT_QUEUE   6u     /**< actions waiting for bleu_step() */
 #define BLEU_PARAM_MAX   20u    /**< bytes of the PARAM's value kept: 6DAA's
                                      8, a 20-byte value whole */
@@ -87,6 +90,10 @@ extern "C" {
 /** @brief The 16-bit service UUID (universally unique identifier) the
  *         sensor advertises; no Bluetooth SIG assignment. */
 #define BLEU_UUID16_ADV  0x18F0u
+/** @brief The Bluetooth base UUID 0000xxxx-0000-1000-8000-00805F9B34FB,
+ *         least significant byte first, with bytes 12 and 13 (the 16-bit
+ *         value) 0: a 16-bit UUID written as 128 bits. */
+extern const uint8_t bleu_uuid_base[16];
 /** @brief The CCCD's 16-bit UUID. */
 #define BLEU_UUID16_CCCD 0x2902u
 /** @brief The status a timeout gives a write or a scan. */
@@ -155,11 +162,17 @@ typedef enum {
  *         link then comes up and bleu_send() refuses. */
 #define BLEU_CHR_OPTIONAL 0x01u
 
-/** @brief One characteristic of a profile. */
+/** @brief One characteristic of a profile.  A discovered characteristic
+ *         is this one when its UUID equals uuid, or when uuid16 is set and
+ *         its UUID is uuid16 in 16 bits or in the 128 bits of the
+ *         Bluetooth base (bleu_uuid_base).  At least one of the two is
+ *         set. */
 typedef struct {
-    const uint8_t *uuid;  /**< 128-bit UUID, least significant byte first */
-    uint8_t        role;  /**< bleu_role_t */
-    uint8_t        flags; /**< BLEU_CHR_OPTIONAL */
+    const uint8_t *uuid;   /**< 128-bit UUID, least significant byte first;
+                                NULL none */
+    uint8_t        role;   /**< bleu_role_t */
+    uint8_t        flags;  /**< BLEU_CHR_OPTIONAL */
+    uint16_t       uuid16; /**< 16-bit UUID, 0 none */
 } bleu_chr_spec_t;
 
 /** @brief The parameters a connect asks for.  Interval in 1.25ms units,
@@ -193,6 +206,10 @@ typedef struct {
     uint16_t           adv_uuid16; /**< a 16-bit UUID a scan lists a device
                                         for as well, 0 none: 0x18F0 for
                                         the ISSC profile */
+    const uint8_t     *adv_oui; /**< 3 bytes in reading order, such as
+                                     A4 93 40: a scan lists a device with a
+                                     public address that starts with them
+                                     whatever it advertises; NULL none */
 } bleu_profile_t;
 
 /** @brief The ISSC Transparent UART profile, every machine's default:
@@ -212,6 +229,8 @@ typedef struct {
 #define BLEU_DEV_ISSC      0x02u /**< a report listed the profile's 128-bit
                                       service, the ISSC one by default */
 #define BLEU_DEV_NAME_FULL 0x04u /**< name is a complete local name */
+#define BLEU_DEV_OUI       0x08u /**< its public address starts with the
+                                      profile's adv_oui */
 /** @} */
 
 /** @brief A device a scan lists. */
@@ -312,6 +331,9 @@ typedef enum {
     BLEU_ACT_WRITE,      /**< write data to h1, with response */
     BLEU_ACT_WRITE_NR,   /**< write data to h1 without response; answer
                               with WRITE_DONE and the call's own status */
+    BLEU_ACT_WRITE_EXT,  /**< write with response to h1, h2 bytes that the
+                              machine's client holds, not the action
+                              (bleu_send_ext()); answer with WRITE_DONE */
 } bleu_act_kind_t;
 
 /** @brief One action for the caller. */
@@ -564,6 +586,22 @@ void bleu_fail_link(bleu_t *b, uint16_t status, uint32_t now_ms);
  *         length fits.
  */
 bool bleu_send(bleu_t *b, const uint8_t *data, size_t len, uint32_t now_ms);
+
+/**
+ * @brief Send @p len bytes to the peer on the CMD characteristic with
+ *        response, as a BLEU_ACT_WRITE_EXT: the action names the handle
+ *        (h1) and the length (h2), and the caller supplies the bytes when
+ *        it performs the action.  It takes the one write slot of
+ *        bleu_send(), with its token, its BLEU_WRITE_MS timeout and its
+ *        WRITE_DONE answer: a command write and a long write never overlap.
+ * @param b      The machine.
+ * @param len    The bytes, 1 to BLEU_WRITE_EXT_MAX and at most the link's
+ *               MTU less 3 (23 less 3 when the exchange failed).
+ * @param now_ms The clock.
+ * @return false, and nothing changes, unless bleu_can_send(), the CMD has
+ *         WRITE and the length fits.
+ */
+bool bleu_send_ext(bleu_t *b, uint16_t len, uint32_t now_ms);
 
 /**
  * @brief Take one event from the host stack.
