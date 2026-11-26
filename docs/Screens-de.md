@@ -4617,7 +4617,7 @@ Meldungsfeld über der Tastenzeile, in der Schrift 12 x 24.
 | KOPIEREN | kopiert die gewählte Datei in den Ordner des anderen Bereichs; Ordner können nicht kopiert werden |
 | VERSCHIEBEN | verschiebt die gewählte Datei oder den gewählten Ordner in den anderen Bereich |
 | UMBENENNEN | öffnet die Tastatur mit dem Namen des Eintrags |
-| LÖSCHEN | fragt nach Bestätigung; mit der CSV-Datei eines Laufs wird auch ihr Bericht gelöscht, außer im Ordner eines Servos, wo der Bericht bleibt; ein Ordner muss leer sein |
+| LÖSCHEN | fragt nach Bestätigung; mit der CSV-Datei eines Laufs wird auch ihr Bericht gelöscht, auch im Ordner eines Servos; ein Ordner muss leer sein |
 | NEU | bietet ORDNER oder TEXTDATEI an, danach die Tastatur für den Namen; eine neue Textdatei ist leer |
 | INFO | zeigt Name, Ordner, Art, Größe oder Anzahl der Einträge, Zeit und Regel |
 | ÖFFNEN | öffnet einen Ordner, eine erkannte Aufzeichnungs-CSV in LOGS oder eine andere Datei im Textbetrachter; dabei gelten die folgenden Grenzen |

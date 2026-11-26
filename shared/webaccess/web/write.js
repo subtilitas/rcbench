@@ -52,12 +52,23 @@ var RcbWr = (function () {
   var RUN_NAME =
     /^(ATEST|LIMIT|SERVO|MOTOR|SUPPL|RUDDR|BENCH|ESC)(\d{3})(_[\s\S]+)?\.CSV$/i;
 
-  // The report a run log takes along, as log_name_report_of() names it:
-  // the prefix and the number in upper case and ".TXT", a label left out,
-  // so MOTOR042_kv.CSV takes MOTOR042.TXT; '' for any other entry.
+  // A servo's run (servo_name.h): its stem, "_", 3 digits and ".csv", in
+  // any case.  The list calls it a RUN only in a servo's id folder.
+  var SERVO_RUN =
+    /^(limit run|rudder auto|automatic test|servo run)_(\d{3})\.csv$/i;
+
+  // The report a run log takes along, as fm_report_of() names it: the
+  // prefix and the number in upper case and ".TXT", a label left out, so
+  // MOTOR042_kv.CSV takes MOTOR042.TXT; a servo's run its stem and number
+  // in lower case and ".txt", limit run_007.csv limit run_007.txt; '' for
+  // any other entry.
   function reportOf(e) {
     if (e.d || e.k !== 'RUN') {
       return '';
+    }
+    var sv = SERVO_RUN.exec(e.n);
+    if (sv) {
+      return sv[1].toLowerCase() + '_' + sv[2] + '.txt';
     }
     var m = RUN_NAME.exec(e.n);
     if (!m || m[2] === '000') {

@@ -613,7 +613,8 @@ int fs_bar_scroll_at(int i, int top)
 /**
  * @brief Whether OPEN hands entry @p e of folder @p dir to LOGS: a .csv
  *        file LOGS' list holds (log_select_lists()) in the folder of one of
- *        its tabs or in a servo's id folder (servo_dir_parse()).  A report LOGS lists too (log_report_number()) opens in
+ *        its tabs or in a servo's id folder (servo_dir_parse()).  A
+ *        report LOGS lists too (log_report_number()) opens in
  *        the text viewer, as LOGS' own OPEN on it does.
  * @param dir  the entry's folder
  * @param e    the entry
@@ -759,7 +760,7 @@ static void doomed_report(const fm_tree_t *here, const fm_entry_t *e)
         return;
     }
     char report[FM_NAME_BUF];
-    log_name_report_of(report, sizeof(report), e->name);
+    fm_report_of(here->dir, e->name, report, sizeof(report));
     if (report[0] != '\0' && fm_tree_has_file(here, report) != FM_HAS_NO) {
         snprintf(s.doomed_report, sizeof(s.doomed_report), "%s", report);
     }

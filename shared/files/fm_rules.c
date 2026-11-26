@@ -458,6 +458,20 @@ fm_kind_t fm_kind_of(const char *dir, const char *name, bool is_dir)
     return FM_KIND_OTHER;
 }
 
+void fm_report_of(const char *dir, const char *name, char *out, size_t n)
+{
+    if (out == NULL || n == 0u) {
+        return;
+    }
+    bool report = true;
+    if (name != NULL && dir != NULL && servo_dir_parse(dir, NULL, 0u)
+        && servo_run_parse(name, NULL, &report) >= 0 && !report) {
+        servo_run_report_of(out, n, name);
+        return;
+    }
+    log_name_report_of(out, n, (name != NULL) ? name : "");
+}
+
 bool fm_read_at_start(const char *dir, const char *name)
 {
     return name != NULL && fm_same_path(dir, CARD_ESC_CONF)

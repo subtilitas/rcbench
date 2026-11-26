@@ -291,7 +291,7 @@ A labelled servo's folders (`test_fm_servo`, `test_files_open`, `test_wa_api`,
 MOVE or DELETE, DELETE also when empty; a folder that is no id and every file inside stay
 free; `limit run_000.csv` to `servo run_999.csv` and their reports are runs and reports in an
 id folder only; OPEN on a CSV there opens LOGS, read from that folder, in the import view
-(LOGS' presets follow main's names). DELETE of a servo run's CSV leaves its report. A file the
+(LOGS' presets follow main's names). DELETE of a servo run's CSV takes its report along. A file the
 logger has open in an id folder is busy as `log_marks_busy()` reads the marks; the marks of a
 servo folder's runs come with the filing slice.
 

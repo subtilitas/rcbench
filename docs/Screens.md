@@ -4257,7 +4257,7 @@ above the row of buttons, using the 12 x 24 font.
 | COPY | copies the selected file into the other pane's folder; folders cannot be copied |
 | MOVE | moves the selected file or folder into the other pane's folder |
 | RENAME | opens the keyboard with the entry's name |
-| DELETE | asks for confirmation; deleting a run's CSV also deletes its report, except in a servo's folder, where the report stays; a folder must be empty |
+| DELETE | asks for confirmation; deleting a run's CSV also deletes its report, in a servo's folder too; a folder must be empty |
 | NEW | offers FOLDER or TEXT FILE, then the name keyboard; a new text file is empty |
 | INFO | shows the entry's name, folder, kind, size or entry count, time and rule |
 | OPEN | enters a folder, opens a recognised log CSV in LOGS, or opens another file in the text viewer, subject to the limits below |

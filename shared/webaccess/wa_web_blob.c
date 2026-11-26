@@ -589,7 +589,7 @@ const char *const wa_web_hl_js[] = {
     NULL,
 };
 
-/** @brief write.js, 11659 bytes. */
+/** @brief write.js, 11836 bytes. */
 const char *const wa_web_write_js[] = {
     "var RcbWr = (function () {\n"
     "'use strict';\n"
@@ -602,9 +602,15 @@ const char *const wa_web_write_js[] = {
     "}\n"
     "var RUN_NAME =\n"
     "/^(ATEST|LIMIT|SERVO|MOTOR|SUPPL|RUDDR|BENCH|ESC)(\\d{3})(_[\\s\\S]+)\?\\.CSV$/i;\n"
+    "var SERVO_RUN =\n"
+    "/^(limit run|rudder auto|automatic test|servo run)_(\\d{3})\\.csv$/i;\n"
     "function reportOf(e) {\n"
     "if (e.d || e.k !== 'RUN') {\n"
     "return '';\n"
+    "}\n"
+    "var sv = SERVO_RUN.exec(e.n);\n"
+    "if (sv) {\n"
+    "return sv[1].toLowerCase() + '_' + sv[2] + '.txt';\n"
     "}\n"
     "var m = RUN_NAME.exec(e.n);\n"
     "if (!m || m[2] === '000') {\n"
@@ -675,7 +681,7 @@ const char *const wa_web_write_js[] = {
     "function box(title, lines) {\n"
     "ui.title.textContent = title;\n"
     "ui.body.textContent = '';\n"
-    "(lines || []).forEach(function (t) {\n"
+    "(lines || []).forEach(function (t) {\n",
     "ui.body.appendChild(c.el('p', '', t));\n"
     "});\n"
     "ui.err.textContent = '';\n"
@@ -683,7 +689,7 @@ const char *const wa_web_write_js[] = {
     "ui.code.hidden = true;\n"
     "ui.bar.hidden = true;\n"
     "ui.go.hidden = false;\n"
-    "ui.go.disabled = false;\n",
+    "ui.go.disabled = false;\n"
     "ui.cancel.disabled = false;\n"
     "ui.box.hidden = false;\n"
     "}\n"
@@ -768,14 +774,14 @@ const char *const wa_web_write_js[] = {
     "}\n"
     "function post(what, fields) {\n"
     "return retried(function () {\n"
-    "return send('POST', '/api/' + what, form(fields),\n"
+    "return send('POST', '/api/' + what, form(fields),\n",
     "{ 'Content-Type': 'application/x-www-form-urlencoded' });\n"
     "});\n"
     "}\n"
     "function etagOf(path, mount) {\n"
     "return c.queue(function () {\n"
     "return new Promise(function (done) {\n"
-    "var x = new XMLHttpRequest();\n",
+    "var x = new XMLHttpRequest();\n"
     "x.open('GET', '/api/info\?path=' + F.encPath(path) + '&dir=0&mount=' +\n"
     "mount + '&etag=1');\n"
     "x.onload = function () {\n"
@@ -854,14 +860,14 @@ const char *const wa_web_write_js[] = {
     "c.queue(function () {\n"
     "return fetch('/code', { method: 'POST', credentials: 'same-origin',\n"
     "redirect: 'manual', cache: 'no-store',\n"
-    "headers: { 'Content-Type': 'application/x-www-form-urlencoded' },\n"
+    "headers: { 'Content-Type': 'application/x-www-form-urlencoded' },\n",
     "body: 'code=' + encodeURIComponent(v) })\n"
     ".then(function (r) {\n"
     "return { w: RcbEd.codeAnswer(r) };\n"
     "}, function () {\n"
     "return { w: 'CLOSED' };\n"
     "});\n"
-    "}).then(function (a) {\n",
+    "}).then(function (a) {\n"
     "var next = RcbEd.codeNext(a.w, ui.codeFor === mine);\n"
     "if (next === 'DROP') {\n"
     "return;\n"
@@ -947,12 +953,12 @@ const char *const wa_web_write_js[] = {
     "return a.ok \? after(F.fmt(TX.made, n)) : refused(a, again);\n"
     "});\n"
     "});\n"
-    "}\n"
+    "}\n",
     "function newFile() {\n"
     "var p = pane();\n"
     "named(TX.newfile, '', TX['new'], function (n, again) {\n"
     "put(F.join(p.path, n), mountOf(p), '', { 'If-None-Match': '*' })\n"
-    ".then(function (a) {\n",
+    ".then(function (a) {\n"
     "return a.ok \? after(F.fmt(TX.made, n)) : refused(a, again);\n"
     "});\n"
     "});\n"
@@ -1015,13 +1021,13 @@ const char *const wa_web_write_js[] = {
     "ui.newdir = c.button(TX.newdir, 'btn', act('newdir', newDir));\n"
     "ui.newfile = c.button(TX.newfile, 'btn', act('newfile', newFile));\n"
     "ui.rename = c.button(TX.rename, 'btn', act('rename', rename));\n"
-    "ui.move = c.button(TX.move, 'btn', act('move', move));\n"
+    "ui.move = c.button(TX.move, 'btn', act('move', move));\n",
     "ui['delete'] = c.button(TX['delete'], 'btn', act('delete', del));\n"
     "['upload', 'newdir', 'newfile', 'rename', 'move', 'delete']\n"
     ".forEach(function (w) {\n"
     "row.appendChild(ui[w]);\n"
     "});\n"
-    "ui.file = c.el('input');\n",
+    "ui.file = c.el('input');\n"
     "ui.file.type = 'file';\n"
     "ui.file.hidden = true;\n"
     "ui.file.addEventListener('change', function () {\n"

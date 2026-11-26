@@ -71,7 +71,8 @@
  * it takes a body, and the SAVE of that body asks everything again.
  *
  * DELETE of a run's log takes its report with it, as LOGS' DELETE does:
- * ATEST042.CSV takes ATEST042.TXT (log_name_report_of()).  A report that
+ * ATEST042.CSV takes ATEST042.TXT, and `limit run_007.csv` in a servo's
+ * id folder `limit run_007.txt` (fm_report_of()).  A report that
  * cannot be deleted fails the job with the card's answer, the log gone
  * and the report there; the caller reads the folder again.  A folder is
  * moved or deleted only when it is empty.

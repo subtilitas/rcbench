@@ -228,6 +228,18 @@ fm_err_t fm_path_err(fm_path_t r);
 fm_kind_t fm_kind_of(const char *dir, const char *name, bool is_dir);
 
 /**
+ * @brief The report a DELETE of run log @p name in folder @p dir takes
+ *        along: ATEST042.CSV takes ATEST042.TXT (log_name_report_of()), and
+ *        in a servo's id folder `limit run_007.csv` takes
+ *        `limit run_007.txt` (servo_run_report_of()).
+ * @param dir   the folder, a path from the root; NULL is none
+ * @param name  the file's name
+ * @param out   takes the report's name; "" for a name that is no run log
+ * @param n     room at @p out, bytes
+ */
+void fm_report_of(const char *dir, const char *name, char *out, size_t n);
+
+/**
  * @brief Whether a file saved as @p name in @p dir is read only at the
  *        next start of the panel: an ESC profile.
  * @param dir   the folder

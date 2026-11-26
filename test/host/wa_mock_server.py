@@ -293,16 +293,24 @@ def kind_of(dirpath: str, name: str, is_dir: bool) -> str:
     return "CSV" if low.endswith(".csv") else "OTHER"
 
 
-def report_of(name: str) -> str:
-    """The report a run log takes along, as log_name_report_of() names it.
+def report_of(name: str, dirpath: str = "") -> str:
+    """The report a run log takes along, as fm_report_of() names it.
 
     Args:
         name: A run log's name, plain or labelled.
+        dirpath: Its folder.
 
     Returns:
         The prefix and the number in upper case and ".TXT", a label left
-        out: MOTOR042_kv.CSV takes MOTOR042.TXT; "" for any other name.
+        out: MOTOR042_kv.CSV takes MOTOR042.TXT; in a servo's id folder
+        the stem and the number in lower case and ".txt": limit run_007.csv
+        takes limit run_007.txt; "" for any other name.
     """
+    sm = SERVO_RUN.fullmatch(name)
+    if sm and servo_dir(dirpath):
+        if sm.group(2).lower() != "csv":
+            return ""
+        return name[:-4].lower() + ".txt"
     m = RUN_NAME.fullmatch(name)
     if not m or int(m.group(2)) < 1 or m.group(3).upper() != "CSV":
         return ""
@@ -1452,9 +1460,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
         folder, _, name = found[0].rpartition("/")
         card.remove(found[0])
         if not is_dir and kind_of(folder, name, False) == "RUN":
-            report = card.find(f"{folder}/{report_of(name)}"
-                               if folder else report_of(name))
-            if report and not report[1]:
+            rep = report_of(name, folder)
+            report = card.find(f"{folder}/{rep}" if folder else rep)
+            if rep and report and not report[1]:
                 card.remove(report[0])
         self.json(200, {"path": folder, "created": False, "note": ""})
 

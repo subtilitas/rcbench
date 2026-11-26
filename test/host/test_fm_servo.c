@@ -6,7 +6,8 @@
  *        run names of a servo folder labelled as runs and reports at 000
  *        and 999; the analyzer's files and anything else labelled by their
  *        extension; a file the logger has open INFO only; a COPY of a
- *        servo file into USER/LOGS; lower case as upper.
+ *        servo file into USER/LOGS; lower case as upper; a run's DELETE
+ *        with its report, a report without its CSV kept.
  *
  * Cases:
  * - servos_and_id_folders_take_no_rename_move_or_delete
@@ -17,7 +18,8 @@
  * - lower_case_is_read_as_upper
  * - a_servo_file_the_logger_holds_takes_info_only
  * - a_servo_file_copies_into_user_logs
- * - deleting_a_servo_run_leaves_its_report
+ * - deleting_a_servo_run_takes_its_report_along
+ * - a_report_whose_csv_is_missing_stays
  *
  * SPDX-License-Identifier: MIT
  */
@@ -283,24 +285,75 @@ TEST_CASE(a_servo_file_copies_into_user_logs)
     fk_free(&g_card);
 }
 
-TEST_CASE(deleting_a_servo_run_leaves_its_report)
+/**
+ * @brief Step the job to its end.
+ * @return its state then
+ */
+static fm_job_state_t run_out(void)
 {
-    /* The report a DELETE takes along is named by main's names
-     * (log_name_report_of()); a servo's report stays on the card. */
-    fresh();
-    fk_dir(&g_card, ID_DIR);
-    fk_file(&g_card, ID_DIR "/limit run_000.csv", NULL, 4u);
-    fk_file(&g_card, ID_DIR "/limit run_000.txt", NULL, 4u);
-    CHECK_EQ(fm_job_delete(&g_job, &g_bench, g_card.mount, ID_DIR,
-                           "limit run_000.csv", false), FM_OK);
     int steps = 0;
     while (fm_job_state(&g_job, NULL, NULL) == FM_JOB_RUNNING && steps < 100) {
         (void)fm_job_step(&g_job, &g_io, &g_bench, g_chunk, sizeof(g_chunk));
         ++steps;
     }
-    CHECK_EQ(fm_job_state(&g_job, NULL, NULL), FM_JOB_DONE);
+    return fm_job_state(&g_job, NULL, NULL);
+}
+
+TEST_CASE(deleting_a_servo_run_takes_its_report_along)
+{
+    fresh();
+    fk_dir(&g_card, ID_DIR);
+    fk_file(&g_card, ID_DIR "/limit run_000.csv", NULL, 4u);
+    fk_file(&g_card, ID_DIR "/limit run_000.txt", NULL, 4u);
+    fk_file(&g_card, ID_DIR "/automatic test_999.csv", NULL, 4u);
+    fk_file(&g_card, ID_DIR "/automatic test_999.txt", NULL, 4u);
+    fk_file(&g_card, ID_DIR "/limit run_001.txt", NULL, 4u);
+    CHECK_EQ(fm_job_delete(&g_job, &g_bench, g_card.mount, ID_DIR,
+                           "limit run_000.csv", false), FM_OK);
+    CHECK_EQ(run_out(), FM_JOB_DONE);
     CHECK(fk_get(&g_card, ID_DIR "/limit run_000.csv") == NULL);
+    CHECK(fk_get(&g_card, ID_DIR "/limit run_000.txt") == NULL);
+    /* Upper case on the card, as a computer may write it. */
+    CHECK_EQ(fm_job_delete(&g_job, &g_bench, g_card.mount, ID_DIR,
+                           "AUTOMATIC TEST_999.CSV", false), FM_OK);
+    CHECK_EQ(run_out(), FM_JOB_DONE);
+    CHECK(fk_get(&g_card, ID_DIR "/automatic test_999.csv") == NULL);
+    CHECK(fk_get(&g_card, ID_DIR "/automatic test_999.txt") == NULL);
+    /* Every other file is untouched. */
+    CHECK(fk_get(&g_card, ID_DIR "/limit run_001.txt") != NULL);
+    fk_free(&g_card);
+}
+
+TEST_CASE(a_report_whose_csv_is_missing_stays)
+{
+    fresh();
+    fk_dir(&g_card, ID_DIR);
+    fk_file(&g_card, ID_DIR "/limit run_000.txt", NULL, 4u);
+    fk_file(&g_card, ID_DIR "/limit run_001.csv", NULL, 4u);
+    /* Run 001 has no report: its DELETE takes the CSV alone, and run
+     * 000's report, whose CSV is gone, stays. */
+    CHECK_EQ(fm_job_delete(&g_job, &g_bench, g_card.mount, ID_DIR,
+                           "limit run_001.csv", false), FM_OK);
+    CHECK_EQ(run_out(), FM_JOB_DONE);
+    CHECK(fk_get(&g_card, ID_DIR "/limit run_001.csv") == NULL);
     CHECK(fk_get(&g_card, ID_DIR "/limit run_000.txt") != NULL);
+    /* A report's own DELETE takes nothing along. */
+    char out[32];
+    fm_report_of(ID_DIR, "limit run_000.txt", out, sizeof(out));
+    CHECK_STR_EQ(out, "");
+    /* The names: a servo's in its id folder, main's anywhere, none for
+     * a servo name outside an id folder. */
+    fm_report_of(ID_DIR, "servo run_999.csv", out, sizeof(out));
+    CHECK_STR_EQ(out, "servo run_999.txt");
+    fm_report_of(ID_DIR, "ATEST042.CSV", out, sizeof(out));
+    CHECK_STR_EQ(out, "ATEST042.TXT");
+    fm_report_of(CARD_USER_LOGS, "limit run_000.csv", out, sizeof(out));
+    CHECK_STR_EQ(out, "");
+    fm_report_of(NULL, "ATEST042.CSV", out, sizeof(out));
+    CHECK_STR_EQ(out, "ATEST042.TXT");
+    fm_report_of(ID_DIR, NULL, out, sizeof(out));
+    CHECK_STR_EQ(out, "");
+    fm_report_of(ID_DIR, "limit run_000.csv", NULL, 0u);
     fk_free(&g_card);
 }
 
@@ -314,6 +367,7 @@ int main(void)
     RUN(lower_case_is_read_as_upper);
     RUN(a_servo_file_the_logger_holds_takes_info_only);
     RUN(a_servo_file_copies_into_user_logs);
-    RUN(deleting_a_servo_run_leaves_its_report);
+    RUN(deleting_a_servo_run_takes_its_report_along);
+    RUN(a_report_whose_csv_is_missing_stays);
     return test_summary("fm_servo");
 }
