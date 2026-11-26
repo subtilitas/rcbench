@@ -2,10 +2,11 @@
  "name": "wurstblinker",
  "lang": "en",
  "brand": "Wurstblinker",
- "steps": 3,
+ "steps": 4,
  "chapters": [
   "The node",
   "On the bench",
+  "The kinetic upgrade",
   "Approval"
  ],
  "music": "vivaldi-spring",
@@ -608,15 +609,194 @@
       188,
       50
      ]
+    }
+   ]
+  },
+  {
+   "type": "case",
+   "model": "wurst-kinetic",
+   "dur": 25.94,
+   "chips": [
+    {
+     "from": 0,
+     "to": 14.680000000000001,
+     "n": 3,
+     "text": "Compressed air, 1 barrel"
     },
     {
-     "view": "help-overview",
-     "dur": 6.6,
+     "from": 14.88,
+     "to": 25.639999999999997,
      "n": 3,
-     "kicker": "03 · Approval",
+     "text": "1 sausage, 1 turn"
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      110,
+      170,
+      620
+     ],
+     [
+      110,
+      120,
+      0
+     ]
+    ],
+    [
+     9.3,
+     [
+      110,
+      170,
+      620
+     ],
+     [
+      110,
+      120,
+      0
+     ]
+    ],
+    [
+     10.8,
+     [
+      260,
+      170,
+      1150
+     ],
+     [
+      260,
+      120,
+      0
+     ]
+    ],
+    [
+     21.62,
+     [
+      260,
+      170,
+      1150
+     ],
+     [
+      260,
+      120,
+      0
+     ]
+    ],
+    [
+     23.02,
+     [
+      110,
+      170,
+      620
+     ],
+     [
+      110,
+      120,
+      0
+     ]
+    ],
+    [
+     25.939999999999998,
+     [
+      110,
+      170,
+      620
+     ],
+     [
+      110,
+      120,
+      0
+     ]
+    ]
+   ],
+   "fire": [
+    [
+     0,
+     0
+    ],
+    [
+     11.100000000000001,
+     0
+    ],
+    [
+     12.000000000000002,
+     1
+    ],
+    [
+     25.939999999999998,
+     1
+    ]
+   ],
+   "labels": [
+    {
+     "from": 6.2,
+     "to": 9.100000000000001,
+     "anchor": "tank",
+     "at": [
+      200,
+      760
+     ],
+     "side": "t",
+     "size": "sm",
+     "title": "Tank",
+     "text": "Compressed air. Pressure: not specified."
+    },
+    {
+     "from": 7.5,
+     "to": 10.600000000000001,
+     "anchor": "barrel",
+     "at": [
+      1330,
+      250
+     ],
+     "size": "sm",
+     "title": "Barrel",
+     "text": "Holds 1 Bockwurst of 180mm."
+    },
+    {
+     "from": 23.220000000000002,
+     "to": 25.639999999999997,
+     "anchor": "barrel",
+     "at": [
+      1330,
+      250
+     ],
+     "size": "sm",
+     "title": "Empty",
+     "text": "Reload by hand: 1 sausage."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.6,
+     "text": "The upgrade is the kinetic Wurstblinker. It has no arm."
+    },
+    {
+     "at": 5.9,
+     "text": "A tank holds compressed air. On the command a valve opens, and the sausage leaves through the barrel."
+    },
+    {
+     "at": 14.88,
+     "text": "One sausage signals one turn. Muzzle velocity and range are not measured."
+    },
+    {
+     "at": 21.62,
+     "text": "After the shot the node reports: empty."
+    }
+   ]
+  },
+  {
+   "type": "tour",
+   "steps": [
+    {
+     "view": "help-overview",
+     "dur": 9.0,
+     "n": 4,
+     "kicker": "04 · Approval",
      "title": "Approval",
-     "text": "Type approval as a direction indicator: not granted, not applied for.",
-     "say": "Approval as a direction indicator is not granted, and not applied for."
+     "text": "Type approval as a direction indicator: not granted, not applied for. Neither version.",
+     "say": "Approval as a direction indicator is not granted, and not applied for. That holds for both versions."
     }
    ]
   },
@@ -628,6 +808,7 @@
     "1 servo, 1 sausage",
     "90° out, 1.5 swings a second",
     "The limit run finds the sausage's stop",
+    "Kinetic: compressed air, 1 sausage a turn",
     "Not a product"
    ],
    "note": "A joke. The Wurstblinker is Brösel's, from the Werner comics.",

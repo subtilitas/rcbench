@@ -153,6 +153,7 @@ for (const sc of sb.scenes) {
       ? buildPart(await loadCad(`/cad/${sc.part}.glb`))
     : sc.model === 'rudder' ? buildRudder(await rudderParts())
     : sc.model === 'wurst' ? buildWurst()
+    : sc.model === 'wurst-kinetic' ? buildWurst(true)
     : buildCase(shown);
   if (sc.servo) sc.rig.setServoPort(sc.servo.connector, sc.servo.position);
 }
@@ -254,6 +255,7 @@ function drawCase(sc, lt, a, pulse, ui) {
   }
   if (sc.estop && m.setStop) m.setStop(track(sc.estop, lt));
   if (sc.swing && m.setSwing) m.setSwing(track(sc.swing, lt));
+  if (sc.fire && m.setFire) m.setFire(track(sc.fire, lt));
   if (sc.turn && m.setTurn) m.setTurn(track(sc.turn, lt));
   if (sc.flip && m.setFlip) m.setFlip(track(sc.flip, lt));
   if (sc.spin && m.setSpin) m.setSpin(track(sc.spin, lt));

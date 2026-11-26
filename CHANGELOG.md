@@ -398,7 +398,8 @@ history is in git.
   on the display from the view `stop-hw`. The head's latch sounds as a
   click.
 - Storyboard `wurstblinker`, a joke: a remote node that swings a sausage
-  out as a direction indicator, drawn by the cartoon model `wurst` of
+  out as a direction indicator, and a kinetic version that fires it out of
+  a barrel, drawn by the cartoon models `wurst` and `wurst-kinetic` of
   `tools/video`. Titles of every video carry a dark rim under the white
   text.
 - Storyboard `origin`, the project's origin in 7 chapters: the reason,
