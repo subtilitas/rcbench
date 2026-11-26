@@ -136,6 +136,23 @@ The active voltage and current caps constrain set points and run steps. They app
 | Run note | the run's condition, up to 23 characters, on the name keyboard: written into the `info` column of every run's file, SERVO, MOTOR and SUPPLY included, until it is changed; empty by default |
 | REPORT | a text report, `ATESTnnn.TXT`, beside each test's log, while User logs on SETUP > SD CARD is ON |
 
+## SERVO LABEL, on every list with DUT name
+
+![The SERVO LABEL rows](view:servo-label-rows)
+![SERVO ID's list](view:servo-label-pick)
+
+The hub's, LIVE's, TEST's, LIMIT RUN's and RUDDER AUTO's lists end with SERVO LABEL: the labelled servo the next run files under, in `Servos/<id>` on the card.
+
+| Row | What it does |
+|---|---|
+| ID prefix | the part before the `-` that NEW ID uses, up to 17 characters, `SERVO` by default; spaces at the ends are dropped; OK asks a save at once |
+| SERVO ID | the active servo's id, or NONE; a tap opens NONE, the card's 6 newest ids and TYPE ID. NONE clears it; an id makes it active |
+| NEW ID | `NEXT` and the next id, `NEXT KST_X10-00008`; a tap makes it, its folder, and that servo active |
+
+TYPE ID opens the keyboard on the saved prefix and its `-`, for a servo whose label is not at hand. It takes 23 characters, folds lower case to upper and trims nothing. An id that is not one is refused on the keyboard with the rule it breaks, such as `5 of 0-9, A-Z after the last -`. A taken id does what a scan of its label does: the same notices in the alert band, DUT name from a known servo's newest run, `NEW ON THIS CARD` for an id the card does not hold.
+
+SERVO ID and NEW ID are locked while a run holds the active servo, `RUN ACTIVE`. NEW ID is also locked with no card (`NO CARD`), at `ZZZZZ` (`NO FREE ID`) and with a prefix that starts with `.`; the row names the reason.
+
 ## RUDDER's list and KST's page
 
 ![RUDDER's list with the output encoder on](view:servo-encoder)

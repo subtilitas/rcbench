@@ -8,6 +8,15 @@ history is in git.
 
 ### Added
 
+- The SERVO lists that carry DUT NAME end with SERVO LABEL: ID PREFIX,
+  SERVO ID and NEW ID. SERVO ID picks NONE, one of the card's 6 newest ids,
+  or TYPE ID, which types an id on the name keyboard, 23 characters, lower
+  case folded to upper; a malformed id is refused on the keyboard with the
+  rule it breaks, and a taken one runs as a scan does, its chip box saying
+  typed. NEW ID shows the id it makes and is locked with its reason: no
+  card, `ZZZZZ`, a prefix starting with `.`, a run active
+  (`servo_label_rows.c`; `test_servo_label_rows`, `test_servo_scan`,
+  `test_scan_flow`).
 - SETUP > SENSORS > SCANNER, the ninth SENSORS entry: Scanner and Read
   mode, a line that every feature works by typing the servo id, the state
   and rate, the last scan with its age and what it did, the counts, Active
@@ -517,6 +526,10 @@ history is in git.
 
 ### Fixed
 
+- The 16x28 face draws `_`: it sat below the 28-row cell and drew nothing,
+  so `KST_X10-00007` read as `KST X10-00007`. `tools/gen_font.py` moves a
+  glyph whose whole ink falls below its cell up to the cell's last row
+  (`test_gfx_faces`). Labels set `KST_X10-` in 16x28 now.
 - SERVO function screens: the PORT row and the footer name the function the
   surface pins are bound as, `PPM GPIO 20` with PPM bound on GPIO 20,
   `SERVO PWM GPIO 20` with SERVO PWM, and `MIXED GPIO 20` (DE `GEMISCHT`)

@@ -66,8 +66,8 @@ extern "C" {
 #define UI_SL_LIST_Y 8
 /** @brief The list's right edge, px: 994, 8px left of the scroll bar. */
 #define UI_SL_LIST_R 994
-/** @brief The rows a choice list shows at most. */
-#define UI_SL_CHOICES_MAX 7
+/** @brief The rows a choice list shows at most: 7 at 56px, 8 at 52px. */
+#define UI_SL_CHOICES_MAX 8
 /** @brief The change lines the leave warning shows, the last of them the
  *         count of the rest when there are more. */
 #define UI_SL_WARN_LINES 10
@@ -218,6 +218,9 @@ typedef struct ui_setlist {
 
     ui_textkey_t      tk;               /**< the keyboard of a string         */
     setting_text_id_t tk_text;          /**< the string it types              */
+    /** @brief SERVO ID's keyboard (ui_setlist_type_id()): OK hands the id
+     *         to it; NULL for a string's keyboard. */
+    void (*tk_done)(const char *id);
     bool     drawn_tk;                  /**< it was open as last drawn        */
     uint32_t drawn_tk_rev;              /**< its revision as last drawn       */
 
@@ -297,6 +300,19 @@ bool ui_setlist_back(ui_setlist_t *sl);
  * @return True when it opened: the way out is held.
  */
 bool ui_setlist_warn(ui_setlist_t *sl);
+
+/**
+ * @brief The keyboard of a servo's id over the list, opened on @p text
+ *        (ui_textkey_open_servo_id()): OK hands the id, in upper case and
+ *        well formed, to @p done; CANCEL takes nothing.  A choice list
+ *        open closes.
+ * @param sl    The list.
+ * @param title The keyboard's title.
+ * @param text  What it starts with.
+ * @param done  Takes the id typed.
+ */
+void ui_setlist_type_id(ui_setlist_t *sl, const char *title,
+                        const char *text, void (*done)(const char *id));
 
 /**
  * @brief Whether something covers the list: the keypad, the keyboard, the

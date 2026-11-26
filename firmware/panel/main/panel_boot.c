@@ -24,10 +24,12 @@
 #include "panel.h"
 #include "panel_main.h"
 #include "panel_perf.h"
+#include "panel_servo.h"
 #include "sbk_ctl.h"
 #include "panel_trial.h"
 #include "rcbench_version.h"
 #include "selftest.h"
+#include "servo_label_rows.h"
 #include "settings.h"
 #include "settings_screen.h"
 #include "splash_screen.h"
@@ -41,6 +43,28 @@
 
 /** @brief Log tag. */
 static const char *TAG = "rcbench";
+
+/**
+ * @brief SERVO LABEL's card ids: the labelled servos' last walk.
+ * @param out Takes them.
+ * @return false with no card or a walk not read to its end.
+ */
+static bool label_ids(servo_ids_t *out)
+{
+    panel_servo_view_t v;
+    panel_servo_view(&v);
+    if (v.known) {
+        *out = v.ids;
+    }
+    return v.known && storage_mounted();
+}
+
+/** @brief SERVO LABEL's side of the card (servo_label_rows.h). */
+static const servo_label_io_t k_label_io = {
+    .ids = label_ids,
+    .new_id = panel_servo_new,
+    .new_busy = panel_servo_new_busy,
+};
 
 /* ------------------------------------------------------------ the CAN bus */
 
@@ -242,6 +266,9 @@ bool bring_up(void)
     /* FILES reaches the card through its own task, started at its first
      * request. */
     files_screen_set_io(&k_files_io);
+    /* The SERVO lists' SERVO LABEL rows read the card's ids and ask NEW
+     * ID through the labelled servos' walk (panel_servo.c). */
+    servo_label_set_io(&k_label_io);
     /* The Wi-Fi page's file API reads the same card from its server's
      * task. */
     wifi_access_set_files(panel_files_card(), panel_files_web_bench);

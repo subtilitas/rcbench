@@ -47,10 +47,12 @@ static flow_t s_flow = { .last = SERVO_SCAN_REPEAT };
  * @param too_long The scanner cut it.
  * @param now_ms   The millisecond clock.
  * @param st       The bench status this frame acts on.
+ * @param from     SERVO_ACTIVE_SCAN for a scanned line, SERVO_ACTIVE_TYPED
+ *                 for an id typed on SERVO ID's keyboard.
  * @return As scan_flow_line().
  */
 static bool line_with(const char *line, bool too_long, uint32_t now_ms,
-                      const ui_bench_status_t *st);
+                      const ui_bench_status_t *st, servo_active_from_t from);
 
 void scan_flow_set_look(scan_flow_look_fn fn)
 {
@@ -102,7 +104,8 @@ void scan_flow_tick(uint32_t now_ms, const ui_bench_status_t *st)
     const bool too_long = s_flow.too_long;
     atomic_store(&s_flow.state, MAIL_EMPTY);
     (void)line_with(line, too_long, now_ms,
-                    (st != NULL) ? st : ui_router_status());
+                    (st != NULL) ? st : ui_router_status(),
+                    SERVO_ACTIVE_SCAN);
 }
 
 /** @brief Whether a run is active, the arm read from @p st: the SERVO
@@ -229,25 +232,36 @@ scan_card_t scan_flow_card_of(servo_look_t look)
 
 bool scan_flow_line(const char *line, bool too_long, uint32_t now_ms)
 {
-    return line_with(line, too_long, now_ms, ui_router_status());
+    return line_with(line, too_long, now_ms, ui_router_status(),
+                     SERVO_ACTIVE_SCAN);
+}
+
+bool scan_flow_typed(const char *id)
+{
+    /* No clock: a typed id is never a repeat (servo_scan_decide_from()).
+     * The run check is scan_flow_run_active()'s, as for a scan: the
+     * router's status read through run_active_with(). */
+    return line_with(id, false, 0u, ui_router_status(), SERVO_ACTIVE_TYPED);
 }
 
 static bool line_with(const char *line, bool too_long, uint32_t now_ms,
-                      const ui_bench_status_t *st)
+                      const ui_bench_status_t *st, servo_active_from_t from)
 {
-    if (!screen_takes()) {
+    /* A typed id comes from SERVO's own keyboard: its screen is on top. */
+    if (from != SERVO_ACTIVE_TYPED && !screen_takes()) {
         return false;
     }
     if (line == NULL) {
         line = "";
     }
-    /* TEST on SETUP > SENSORS > SCANNER: the line shows there alone. */
-    if (scanner_pane_testing(now_ms)) {
+    /* TEST on SETUP > SENSORS > SCANNER: a scanned line shows there alone. */
+    if (from == SERVO_ACTIVE_SCAN && scanner_pane_testing(now_ms)) {
         scanner_pane_test_line(line, too_long, run_active_with(st), now_ms);
         return true;
     }
-    const servo_scan_t r = servo_scan_decide(line, too_long,
-                                             run_active_with(st), now_ms);
+    const servo_scan_t r = servo_scan_decide_from(line, too_long,
+                                                  run_active_with(st), now_ms,
+                                                  from);
     s_flow.last = r;
     scanner_pane_line(line, r, now_ms);
     char notice[UI_ALERT_MAX];

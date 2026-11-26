@@ -92,7 +92,7 @@ TEST_CASE(a_malformed_id_or_source_is_refused)
     CHECK(!servo_active_set("", SERVO_ACTIVE_SCAN, false));
     CHECK(!servo_active_set(NULL, SERVO_ACTIVE_SCAN, false));
     CHECK(!servo_active_set("KST-00002", SERVO_ACTIVE_NONE, false));
-    CHECK(!servo_active_set("KST-00002", (servo_active_from_t)4, false));
+    CHECK(!servo_active_set("KST-00002", (servo_active_from_t)5, false));
     CHECK(!servo_active_set("KST-00002", (servo_active_from_t)-1, false));
     CHECK_STR_EQ(servo_active_id(), "KST-00001");
     CHECK_EQ(servo_active_serial(), s0);

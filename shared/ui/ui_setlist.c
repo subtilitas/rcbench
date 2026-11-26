@@ -48,6 +48,7 @@ static const text_ui_t k_text_ui[SETTING_TEXT_COUNT] = {
     [SET_TEXT_LOG_AUTO_DIR] = { TX_SET_AUTO_DIR, TX_SET_AUTO_DIR_HELP },
     [SET_TEXT_LOG_USER_DIR] = { TX_SET_USER_DIR, TX_SET_USER_DIR_HELP },
     [SET_TEXT_RUN_NOTE]     = { TX_SET_RUN_NOTE, TX_COUNT },
+    [SET_TEXT_SERVO_PREFIX] = { TX_SET_SERVO_PREFIX, TX_SET_SERVO_PREFIX_HELP },
 };
 
 const char *ui_setlist_text_label(setting_text_id_t id)
@@ -252,6 +253,17 @@ int ui_setlist_row_at(const ui_setlist_t *sl, int x, int y)
     return -1;
 }
 
+/**
+ * @brief A choice row's height in a list of @p n rows: CHOICE_H up to 7,
+ *        CHOICE_H_TIGHT for 8, so 8 rows fit the pane.
+ * @param n The rows.
+ * @return The height, px.
+ */
+static int choice_h(int n)
+{
+    return (n > 7) ? CHOICE_H_TIGHT : CHOICE_H;
+}
+
 gfx_rect_t sl_choice_box(const ui_setlist_t *sl)
 {
     if (sl->choice_row < 0) {
@@ -265,7 +277,7 @@ gfx_rect_t sl_choice_box(const ui_setlist_t *sl)
     }
     /* Under the row where it fits, else above it, inside the pane. */
     const gfx_rect_t row = ui_setlist_row_rect(sl, sl->choice_row);
-    const int h = n * CHOICE_H + 8;
+    const int h = n * choice_h(n) + 8;
     int y = row.y + row.h;
     if (y + h > LIST_Y + LIST_H) {
         y = row.y - h;
@@ -279,10 +291,11 @@ gfx_rect_t sl_choice_box(const ui_setlist_t *sl)
 gfx_rect_t ui_setlist_choice_rect(const ui_setlist_t *sl, int k)
 {
     const gfx_rect_t b = sl_choice_box(sl);
-    if (b.w == 0 || k < 0 || 4 + (k + 1) * CHOICE_H > b.h) {
+    const int h = choice_h((b.h - 8) / CHOICE_H_TIGHT);
+    if (b.w == 0 || k < 0 || 4 + (k + 1) * h > b.h) {
         return gfx_rect_make(0, 0, 0, 0);
     }
-    return gfx_rect_make(b.x + 4, b.y + 4 + k * CHOICE_H, b.w - 8, CHOICE_H);
+    return gfx_rect_make(b.x + 4, b.y + 4 + k * h, b.w - 8, h);
 }
 
 /* ------------------------------------------------------------------ rows */
@@ -497,7 +510,8 @@ static void open_text(ui_setlist_t *sl, setting_text_id_t id)
     if ((int)id < 0 || id >= SETTING_TEXT_COUNT) {
         return;
     }
-    if (id == SET_TEXT_DUT_NAME || id == SET_TEXT_RUN_NOTE) {
+    if (id == SET_TEXT_DUT_NAME || id == SET_TEXT_RUN_NOTE
+        || id == SET_TEXT_SERVO_PREFIX) {
         ui_textkey_open(&sl->tk, TK_AREA, ui_tr(k_text_ui[id].label),
                         settings_text(id), settings_text_max(id));
     } else {
@@ -505,6 +519,17 @@ static void open_text(ui_setlist_t *sl, setting_text_id_t id)
                                settings_text(id));
     }
     sl->tk_text = id;
+    sl->tk_done = NULL;
+    invalidate(sl);
+}
+
+void ui_setlist_type_id(ui_setlist_t *sl, const char *title,
+                        const char *text, void (*done)(const char *id))
+{
+    sl->choice_row = -1;
+    ui_textkey_open_servo_id(&sl->tk, TK_AREA, title, text);
+    sl->tk_text = SETTING_TEXT_COUNT;
+    sl->tk_done = done;
     invalidate(sl);
 }
 
@@ -1016,7 +1041,16 @@ static void textkey_event(ui_setlist_t *sl, const touch_event_t *evt)
 {
     char text[SETTINGS_TEXT_MAX];
     if (ui_textkey_event(&sl->tk, evt, text, sizeof(text)) == UI_TEXTKEY_OK) {
-        settings_set_text(sl->tk_text, text);
+        if (sl->tk_done != NULL) {
+            sl->tk_done(text);
+        } else {
+            settings_set_text(sl->tk_text, text);
+            /* ID PREFIX is asked a save at once: the next NEW ID after a
+             * restart takes it. */
+            if (sl->tk_text == SET_TEXT_SERVO_PREFIX) {
+                settings_request_save();
+            }
+        }
     }
     if (sl->tk.revision != sl->drawn_tk_rev || sl->tk.open != sl->drawn_tk) {
         invalidate(sl);

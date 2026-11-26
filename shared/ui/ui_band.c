@@ -560,6 +560,8 @@ static bool help_para(const ui_bench_status_t *st, ui_band_chip_t chip,
                        ? TX_BH_SERVO_NEW
                    : (st->servo_from == (uint8_t)SERVO_ACTIVE_PICK)
                        ? TX_BH_SERVO_PICK
+                   : (st->servo_from == (uint8_t)SERVO_ACTIVE_TYPED)
+                       ? TX_BH_SERVO_TYPED
                        : TX_BH_SERVO_SCAN;
         if (st->servo_run) {
             ids[n++] = TX_BH_SERVO_RUN;

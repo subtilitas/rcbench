@@ -31,6 +31,7 @@
 
 #include <stdio.h>
 
+#include "servo_label_rows.h"
 #include "settings.h"
 #include "supply_screen.h"
 #include "ui_setlist.h"
@@ -219,6 +220,7 @@ const ui_setlist_row_t svs_test_rows[SVS_TEST_ROWS] = {
     { (uint8_t)UI_SL_TEXT, (int8_t)SET_TEXT_RUN_NOTE, (setting_id_t)0,
       TX_COUNT, NULL },
     UI_SL_ROW_SETTING(SET_SERVO_REPORT),
+    SERVO_LABEL_ROWS,
 };
 
 const char *svs_test_locked(setting_id_t id)

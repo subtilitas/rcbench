@@ -303,7 +303,7 @@ TEST_CASE(a_panel_face_draws_as_its_glyph_table_says)
 TEST_CASE(a_face_that_draws_no_dot_for_a_character_is_marked)
 {
     CHECK(label_face_draws(&gfx_font_16x28, "KST X10-0000A"));
-    CHECK(!label_face_draws(&gfx_font_16x28, "KST_X10-"));
+    CHECK(label_face_draws(&gfx_font_16x28, "KST_X10-"));
     CHECK(label_face_draws(&gfx_font_12x24, "KST_X10-"));
     CHECK(label_face_draws(&gfx_font_8x16, "M\xC3\x9CLLER"));
     CHECK(label_face_draws(&gfx_font_8x16, ""));

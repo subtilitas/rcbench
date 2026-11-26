@@ -62,6 +62,13 @@ void panel_servo_view(panel_servo_view_t *out);
 bool panel_servo_new(const char *prefix);
 
 /**
+ * @brief Whether a NEW ID asked through panel_servo_new() is not answered
+ *        yet.
+ * @return true from the ask to its answer.
+ */
+bool panel_servo_new_busy(void);
+
+/**
  * @brief The frame task's pass: a console line taken, a NEW ID answered
  *        made the active servo, and the active servo copied to the logger
  *        (log_set_run_servo()).

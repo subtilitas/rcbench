@@ -136,6 +136,23 @@ Die aktiven Spannungs- und Stromgrenzen begrenzen Sollwerte und Laufstufen. Sie 
 | Notiz zum Lauf | der Zustand des Laufs, bis 23 Zeichen, auf der Namenstastatur: steht in der Spalte `info` der Datei jedes Laufs, auch SERVO, MOTOR und SUPPLY, bis sie geändert wird; vorgegeben leer |
 | BERICHT | Speichert neben jeder Testaufzeichnung einen Textbericht `ATESTnnn.TXT`, solange Testaufzeichnungen unter SETUP > SD CARD EIN ist. |
 
+## SERVO-ETIKETT, in jeder Liste mit Name des Prüflings
+
+![Die Zeilen SERVO-ETIKETT](view:servo-label-rows)
+![Die Auswahl von SERVO-ID](view:servo-label-pick)
+
+Die Listen des Hubs, von LIVE, TEST, LIMIT RUN und RUDDER AUTO enden mit SERVO-ETIKETT: das beschriftete Servo, unter dem der nächste Lauf abgelegt wird, in `Servos/<id>` auf der Karte.
+
+| Zeile | Wirkung |
+|---|---|
+| ID-Präfix | der Teil vor dem `-`, den NEUE ID nimmt, bis 17 Zeichen, vorgegeben `SERVO`; Leerzeichen an den Enden fallen weg; OK fordert sofort ein Speichern an |
+| SERVO-ID | die ID des aktiven Servos oder KEINE; ein Tippen öffnet KEINE, die 6 neuesten IDs der Karte und ID TIPPEN. KEINE löscht es; eine ID macht es aktiv |
+| NEUE ID | `NÄCHSTE` und die nächste ID, `NÄCHSTE KST_X10-00008`; ein Tippen macht sie, ihren Ordner und dieses Servo aktiv |
+
+ID TIPPEN öffnet die Tastatur mit dem gespeicherten Präfix und seinem `-`, für ein Servo, dessen Etikett nicht zur Hand ist. Sie nimmt 23 Zeichen, macht Kleinbuchstaben groß und kürzt nichts. Eine Eingabe, die keine ID ist, lehnt die Tastatur mit der verletzten Regel ab, etwa `5 aus 0-9, A-Z nach dem letzten -`. Eine angenommene ID wirkt wie ein Scan ihres Etiketts: dieselben Hinweise im Meldeband, der Name des Prüflings aus dem neuesten Lauf eines bekannten Servos, `NEU AUF DIESER KARTE` für eine ID, die die Karte nicht hat.
+
+SERVO-ID und NEUE ID sind gesperrt, solange ein Lauf das aktive Servo hält, `LAUF AKTIV`. NEUE ID ist außerdem ohne Karte (`KEINE KARTE`), bei `ZZZZZ` (`KEINE FREIE ID`) und mit einem Präfix, das mit `.` beginnt, gesperrt; die Zeile nennt den Grund.
+
 ## Die Liste von RUDER und die Seite von KST
 
 ![Die Liste von RUDER mit eingeschaltetem Winkelsensor](view:servo-encoder)

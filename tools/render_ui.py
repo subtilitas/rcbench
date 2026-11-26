@@ -92,6 +92,9 @@ SOURCES = [
     # FILES' views run its requests on a card in memory, behind the host
     # card task.
     "test/host/render_files.c",
+    # SERVO LABEL's rows, SERVO ID's list and TYPE ID's keyboard on a card
+    # of 7 labelled servos.
+    "test/host/render_servo_label.c",
     "test/host/files_host_io.c",
     "test/host/fm_fake.c",
 ]
@@ -207,6 +210,8 @@ SCREENS = {
     # The hub's list, the servo profile; SWEEP's list; TEST's and LIMIT
     # RUN's cards and their pages of rows, one level down.
     "servo-settings": ("servo-settings.png", "servo", "dark"),
+    "servo-label-rows": ("servo-label-rows.png", "servo", "dark"),
+    "servo-label-pick": ("servo-label-pick.png", "servo", "dark"),
     # TRIM's keypad, signed: the +/- key, -25us typed.
     "servo-trim-keypad": ("servo-trim-keypad.png", "servo", "dark"),
     "servo-sweep-page": ("servo-sweep-page.png", "servo", "dark"),
@@ -1240,9 +1245,11 @@ FIT_ONLY = {
     # SAFE MOVE, and SAFE PROG with the port's number not known.
     "band-safe-move":   (None, "overview", "dark"),
     "band-safe-any":    (None, "overview", "dark"),
-    # The servo chip's box for an id set by NEW ID and for one picked.
+    # The servo chip's box for an id set by NEW ID, for one picked and for
+    # one typed.
     "band-servo-new":   (None, "overview", "dark"),
     "band-servo-pick":  (None, "overview", "dark"),
+    "band-servo-typed": (None, "overview", "dark"),
     "band-link-refused-max": (None, "overview", "dark"),
     "wifi-unavailable": (None, "wifi", "dark"),
     "wifi-ap-kept":     (None, "wifi", "dark"),
@@ -1409,6 +1416,12 @@ FIT_ONLY = {
     "help-servo-test-2": (None, "servo", "dark"),
     "servo-test-settings-length": (None, "servo", "dark"),
     "servo-test-settings-end": (None, "servo", "dark"),
+    # TYPE ID's keyboard on the hub's SERVO LABEL block: an id typed, and
+    # one refused with the serial's line.
+    "servo-label-type": (None, "servo", "dark"),
+    # The hub's list from TRAVEL to RUN NOTE, the rows above the block.
+    "servo-label-dut": (None, "servo", "dark"),
+    "servo-label-refused": (None, "servo", "dark"),
     # SUPPLY's TABLE; LIVE with a programming port holding the supply; and
     # SETTINGS with the PD mini's RESET PD MINI and the longest save line.
     "supply-table":     (None, "supply", "dark"),
@@ -1495,6 +1508,8 @@ OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot", "outputs-take",
                  "overview-alert", "hold-hint-arm", "hold-hint-output",
                  "setup-dim-stored",
                  "setup-folder", "servo-name", "files-new",
+                 "servo-label-pick", "servo-label-type",
+                 "servo-label-refused",
                  "logs-plot-more",
                  "files-edit-unsaved", "files-edit-revert",
                  "files-edit-open", "files-edit-changed", "files-edit-see25",

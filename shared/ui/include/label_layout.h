@@ -30,7 +30,7 @@
  *
  * | Line | Text | Face |
  * | --- | --- | --- |
- * | 1 | the prefix and its `-`: `KST_X10-` | the largest of 16x28, 12x24, 10x20, 8x16, 6x12 that holds it on one line and draws each of its characters (label_face_draws(): 16x28 has no `_`) |
+ * | 1 | the prefix and its `-`: `KST_X10-` | the largest of 16x28, 12x24, 10x20, 8x16, 6x12 that holds it on one line and draws each of its characters (label_face_draws()) |
  * | 2 | the serial: `0000A` | 20x36, else the largest of the list above that holds it |
  * | 3, 4 | DUT NAME, broken at a space or at the column's end, the rest cut | 8x16; 6x12 where 8x16 needs a third line |
  *

@@ -2536,9 +2536,61 @@ Mit einem aktiven gelabelten Servo gehen dessen Läufe in einen eigenen
 Ordner, `Servos/<id>`, zum Beispiel `Servos/KST_X10-0000A`. Eine ID ist ein
 Präfix von 1 bis 17 Zeichen, ein `-` und eine Seriennummer von 5 Zeichen
 `00000` bis `ZZZZZ`. Das aktive Servo setzen NEW ID, eine Wahl aus den 6
-neuesten IDs der Karte oder ein Scan seines Labels; nach einem Neustart ist
-keines aktiv. Die SERVO-Listen haben keine ID-Zeilen; die Debug-Konsole
-setzt es (unten).
+neuesten IDs der Karte, ein Scan seines Labels oder seine getippte ID; nach
+einem Neustart ist keines aktiv.
+
+### Zeilen SERVO-ETIKETT
+
+![Die Liste des Hubs an ihrem Block SERVO-ETIKETT](img/de/servo-label-rows.png)
+
+![Die Auswahl von SERVO-ID: KEINE, die 6 neuesten IDs der Karte und ID TIPPEN](img/de/servo-label-pick.png)
+
+Jede SERVO-Liste mit DUT NAME (die des Hubs, von LIVE, TEST, LIMIT RUN
+und RUDDER AUTO) endet mit dem Block SERVO-ETIKETT:
+
+| Zeile | Wert | Ein Tippen |
+| --- | --- | --- |
+| ID-Präfix | das Präfix, das NEUE ID nimmt (`srv_pfx`, vorgegeben `SERVO`) | die Namenstastatur, höchstens 17 Zeichen; Leerzeichen an den Enden fallen weg, innen bleiben sie; OK fordert sofort ein Speichern an |
+| SERVO-ID | die ID des aktiven Servos oder `KEINE` | eine Auswahl von bis zu 8 Zeilen zu 52px: `KEINE`, die 6 neuesten IDs der Karte, `ID TIPPEN` |
+| NEUE ID | `NÄCHSTE` und die ID, die NEUE ID macht, `NÄCHSTE KST_X10-00008` | die nächste ID, ihr Ordner und dieses Servo aktiv |
+
+- `KEINE` löscht das aktive Servo; eine ID der Liste macht es als Wahl
+  aktiv. Eine offene Liste behält die IDs, die sie zeigt, während der
+  Durchgang der Karte sich erneuert: ein Tippen nimmt die gezeichnete ID,
+  und eine ID, die die Karte beim Tippen nicht unter ihren 6 neuesten hat, wird
+  mit `NICHT MEHR AUF DER KARTE: neu wählen` abgelehnt.
+- Die Zeilen zeichnen sich neu, wenn sich das Servo oder die IDs der Karte
+  außerhalb der Liste ändern: die Antwort auf NEUE ID, ein Scan.
+- `ID TIPPEN` öffnet die Namenstastatur mit dem gespeicherten Präfix und
+  seinem `-`, für ein Servo, dessen Etikett nicht zur Hand oder nicht
+  lesbar ist. Die Tastatur nimmt 23 Zeichen. OK macht Kleinbuchstaben
+  in der genommenen ID groß und kürzt nichts; eine abgelehnte Eingabe
+  bleibt im Feld, wie getippt. Eine Eingabe, die keine ID ist, wird auf der
+  Tastatur abgelehnt, die offen bleibt; ihre Zeile nennt die verletzte
+  Regel:
+
+  | Verletzte Regel | Zeile |
+  | --- | --- |
+  | nichts vor dem letzten `-` | `Ein Präfix vor dem - fehlt` |
+  | nach dem letzten `-` nicht 5 Zeichen aus `0-9`, `A-Z` | `5 aus 0-9, A-Z nach dem letzten -` |
+  | ein Zeichen außer `A-Z`, `0-9`, Leerzeichen, `-`, `_`, `.` | `Präfix: A-Z, 0-9, Leerzeichen, - _ .` |
+  | ein Leerzeichen am Rand, ein `.` vorn | `Kein Leerzeichen am Rand, kein . vorn` |
+
+  Eine angenommene ID läuft genau wie eine gescannte Zeile (Screens-de.md,
+  Servo-Chip): dieselben Hinweise, dieselbe Ablehnung während eines Laufs,
+  DUT NAME aus dem neuesten Lauf eines bekannten Servos und `NEU AUF
+  DIESER KARTE` für eine ID, die die Karte nicht hat; ihren Ordner legt
+  ihr erster Lauf an. Der Kasten des Chips sagt, dass die ID getippt
+  wurde. Eine getippte ID fällt nie als Wiederholung weg.
+- SERVO-ID und NEUE ID sind gesperrt, solange ein Lauf das aktive Servo
+  hält: `LAUF AKTIV: der Lauf behält sein Servo bis zum Ende`. NEUE ID ist
+  von ihrem Tippen bis zur Antwort der Karte mit `NEUE ID LÄUFT: die Karte
+  antwortet` gesperrt, und gesperrt, ihr Wert leer, mit `KEINE KARTE: keine IDs zu zählen`
+  (keine Karte oder ein Durchgang durch `Servos`, der nicht bis zum Ende
+  las), `KEINE FREIE ID: diese Karte hat ZZZZZ`, `PRÄFIX BEGINNT MIT .:
+  ID-Präfix ändern` und `ID-Präfix ist kein Präfix: A-Z, 0-9, Leerzeichen,
+  - _ .` für ein Präfix mit einem anderen Zeichen.
+- Die Zeilen der Debug-Konsole unten tun dasselbe wie die Zeilen.
 
 | Lauf | Datei in `Servos/<id>` | Bericht |
 | --- | --- | --- |

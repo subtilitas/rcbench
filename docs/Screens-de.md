@@ -198,8 +198,9 @@ standardmäßig AUS, und mit AUS zeigt das Band FEHLER 10.
 
 Solange ein Servo aktiv ist, zeigt das Band seine ID in einem Chip links
 der anderen: das beschriftete Servo, unter dem der nächste Lauf abgelegt
-wird. Ein Scan seines Etiketts, NEUE ID oder eine Wahl aus den letzten IDs
-setzt es; ein Neustart löscht es. Ohne aktives Servo gibt es keinen Chip,
+wird. Ein Scan seines Etiketts, NEUE ID, eine Wahl aus den letzten IDs oder
+seine ID, getippt auf der Tastatur von SERVO-ID (Servo-de.md, Zeilen
+SERVO-ETIKETT), setzt es; ein Neustart löscht es. Ohne aktives Servo gibt es keinen Chip,
 und das Band ist wie ohne ihn.
 
 - Der Chip zeigt die ganze ID, höchstens 23 Zeichen. Wo die Reihe rechts
@@ -212,7 +213,8 @@ und das Band ist wie ohne ihn.
 - Solange ein Lauf aktiv ist (ein Servotest, ein Limit-Lauf, RUDDER AUTO,
   die Startsequenz eines davon oder der Prüfstand ARMED auf SERVO), hat der Chip die Akzentfarbe als
   Fläche: das Servo des Laufs, fest bis zu seinem Ende.
-- Sein Kasten sagt, wie das Servo gesetzt wurde (Scan, NEUE ID oder Wahl),
+- Sein Kasten sagt, wie das Servo gesetzt wurde (Scan, NEUE ID, Wahl oder
+  getippt),
   dass ein Lauf es hält und wie es wieder geht.
 
 Eine gescannte Zeile, vom Scanner oder vom `scan <text>` der

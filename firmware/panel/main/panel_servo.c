@@ -304,6 +304,11 @@ bool panel_servo_new(const char *prefix)
     return true;
 }
 
+bool panel_servo_new_busy(void)
+{
+    return atomic_load(&s_new_sent) != atomic_load(&s_new_done);
+}
+
 /**
  * @brief scan_flow_look_fn: the logger task is asked, which mounts a card
  *        put in since (storage_check()) and answers no card when none is
