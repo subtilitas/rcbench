@@ -438,7 +438,8 @@ static uint8_t answer_kind(uint8_t kind)
     case BLEU_ACT_MTU:       return BLEU_EV_MTU;
     case BLEU_ACT_SUBSCRIBE:
     case BLEU_ACT_WRITE:
-    case BLEU_ACT_WRITE_NR:  return BLEU_EV_WRITE_DONE;
+    case BLEU_ACT_WRITE_NR:
+    case BLEU_ACT_WRITE_EXT: return BLEU_EV_WRITE_DONE;
     case BLEU_ACT_READ:      return BLEU_EV_READ;
     default:                 return BLEU_EV_NONE;
     }
