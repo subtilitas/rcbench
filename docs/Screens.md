@@ -6788,7 +6788,12 @@ spare connection a device update also uses, so a request is refused
 while an update runs, and an update is refused while a request or a scan
 for printers runs. The printer advertises no service: a scan lists the
 devices whose public address starts with `A4:93:40`, never a device for
-the service it advertises, and a random address binds nothing.
+the service it advertises, and a random address binds nothing. A linked
+printer does not advertise: a scan inside the 30s linger ends the link
+first and starts once the disconnect is through, 2s later at most, so
+the bound printer is listed too. A request that runs refuses the scan.
+A bind of the bound address keeps Roll and Labels left; a bind of another
+address clears them to `--` until the next request.
 
 On the station (station step H1, a 40x30mm roll): the first link of a
 session took 4.94s, later ones 0.1s to 0.8s; the MTU was 240; the label

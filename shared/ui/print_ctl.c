@@ -250,10 +250,15 @@ void print_ctl_bind(print_ctl_t *c, const char *addr, const char *name,
                     uint32_t now_ms)
 {
     bleu_addr_t a;
-    /* A printer's address is public: a random one binds nothing. */
+    /* A printer's address is public: a random one binds nothing.  The
+     * address is kept as bleu_addr_format() writes it, so a bind of the
+     * bound printer in other letters is the same address. */
     const bool ok = addr != NULL && bleu_addr_parse(addr, &a)
                     && a.type == BLEU_ADDR_PUBLIC;
-    const char *text = ok ? addr : "";
+    char text[BLEU_ADDR_TEXT_MAX] = "";
+    if (ok) {
+        (void)bleu_addr_format(&a, true, text, sizeof(text));
+    }
     if (strcmp(text, c->addr) == 0 && strcmp(name != NULL ? name : "",
                                              c->name) == 0) {
         return;
@@ -305,19 +310,21 @@ static void scan_end(print_ctl_t *c, bool cut, uint32_t now_ms)
 }
 
 /**
- * @brief Start the scan that waits: the central on, unbound unless a link
- *        lingers, so no connect follows the scan.
+ * @brief Start the scan that waits: the central on and unbound, so no
+ *        connect follows the scan.  A lingering link ends first: a linked
+ *        printer does not advertise, and the scan would miss the bound
+ *        one.  The central holds the scan until the disconnect settles
+ *        (BLEU_SETTLE_MS at most); its BLEU_SCAN_MS run from then.
  * @param c      The controller.
  * @param now_ms The clock.
  */
 static void scan_go(print_ctl_t *c, uint32_t now_ms)
 {
     c->scan_due = false;
-    if (!c->on) {
-        bleu_bind(&c->b, NULL, now_ms);
-        c->on = true;
-        bleu_enable(&c->b, true, now_ms);
-    }
+    link_off(c, now_ms);
+    bleu_bind(&c->b, NULL, now_ms);
+    c->on = true;
+    bleu_enable(&c->b, true, now_ms);
     c->scan_on = bleu_scan(&c->b, now_ms);
     if (!c->scan_on) {
         ++c->scan_refused;

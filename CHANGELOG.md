@@ -579,6 +579,19 @@ history is in git.
 
 ### Fixed
 
+- SETUP > WIRELESS > PRINTER: SEARCH inside the 30s linger after a request
+  ends the link first and scans once the disconnect is through, 2s later
+  at most. A linked printer does not advertise, so the bound printer was
+  missing from the list (`NONE FOUND`) until the linger ended. A request
+  that runs still refuses the scan (`print_ctl.c`;
+  `test_print_ctl_scan`).
+- SETUP > WIRELESS > PRINTER: a bind of the bound address keeps Roll and
+  Labels left; they read `--` after it until the next request. The
+  controller compares the addresses as bleu_addr_format() writes them,
+  and the console's `print bind` stores that form, so an address typed in
+  small letters is the same printer. A bind of another address clears
+  both, as before (`print_ctl.c`, `panel_print.c`;
+  `test_print_ctl_scan`).
 - The 16x28 face draws `_`: it sat below the 28-row cell and drew nothing,
   so `KST_X10-00007` read as `KST X10-00007`. `tools/gen_font.py` moves a
   glyph whose whole ink falls below its cell up to the cell's last row

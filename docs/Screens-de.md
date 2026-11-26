@@ -7352,7 +7352,13 @@ die auch ein Geräte-Update nutzt: eine Anfrage wird während eines Updates
 abgelehnt, ein Update während einer Anfrage oder einer Druckersuche. Der
 Drucker zeigt keinen Dienst an: eine Suche listet die Geräte, deren
 öffentliche Adresse mit `A4:93:40` beginnt, nie ein Gerät wegen des
-Dienstes, den es anzeigt, und eine zufällige Adresse bindet nichts.
+Dienstes, den es anzeigt, und eine zufällige Adresse bindet nichts. Ein
+verbundener Drucker zeigt sich nicht an: eine Suche innerhalb der 30s
+beendet zuerst die Verbindung und startet, sobald die Trennung durch ist,
+spätestens 2s danach; so steht auch der gebundene Drucker in der Liste.
+Eine laufende Anfrage lehnt die Suche ab. Ein erneutes Binden der
+gebundenen Adresse behält Rolle und Etiketten übrig; das Binden einer
+anderen Adresse setzt beide bis zur nächsten Anfrage auf `--`.
 
 Auf der Station (Station-Schritt H1, Rolle 40x30mm): die erste Verbindung
 einer Sitzung dauerte 4.94s, spätere 0.1s bis 0.8s; die MTU war 240; das

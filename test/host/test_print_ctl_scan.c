@@ -8,7 +8,10 @@
  *        runs, while ARMED and while a device update runs, and the busy
  *        flag the update reads; a switch to ARMED stops the scan; a label
  *        stops it and prints; the wait for Bluetooth and its end at 10s; a
- *        lingering link stays through a scan; the frame task's ask.
+ *        lingering link ends before a scan, which then lists the bound
+ *        printer, and a job's link is left; a bind of the bound address
+ *        keeps the roll and labels left, another address clears them; the
+ *        frame task's ask.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -202,22 +205,110 @@ TEST_CASE(a_scan_waits_up_to_10s_for_bluetooth)
     CHECK_EQ(view(r)->scan_refused, 2u);
 }
 
-TEST_CASE(a_lingering_link_stays_through_a_scan)
+TEST_CASE(a_lingering_link_ends_before_a_scan)
 {
     pr_rig_t *r = &s_r;
     pr_init(r);
     CHECK(pr_ask(r, PRINT_REQ_QUERY, NULL, NULL));
     CHECK(pr_run(r, 10000u));
     REQUIRE(r->connected);
+    run_ms(r, 1000u);
     CHECK(pr_ask(r, PRINT_REQ_SCAN, NULL, NULL));
-    run_ms(r, 10100u);
-    CHECK(view(r)->scan_done);
+    CHECK(view(r)->scanning);
+    /* the link ends at once; the scan waits for its disconnect */
+    run_ms(r, 2u);
+    CHECK_EQ(r->discs, 1u);
+    CHECK(!r->connected);
+    CHECK_EQ(r->scans, 0u);
+    CHECK_EQ(view(r)->scan_left_s, 10u);
+    run_ms(r, 10u);
+    CHECK_EQ(r->scans, 1u);
+    REQUIRE(r->tok_scan != 0u);
+    /* unlinked, the bound printer advertises again and is listed */
+    pr_adv(r, PR_ADDR, "T0205C2608247368", -52);
+    run_ms(r, 2000u);
+    const print_view_t *v = view(r);
+    CHECK(v->scanning);
+    CHECK_EQ(v->found_n, 1u);
+    CHECK_STR_EQ(v->found[0].addr, PR_ADDR);
+    CHECK_EQ(v->found[0].rssi, -52);
+    /* the scan ends 10s after it started: no connect followed it, the
+     * roll the QUERY read stays */
+    run_ms(r, 8100u);
+    v = view(r);
+    CHECK(!v->scanning);
+    CHECK(v->scan_done);
+    CHECK_EQ(v->found_n, 1u);
+    CHECK(!r->c.on);
+    CHECK_EQ(r->connects, 1u);
+    CHECK_EQ(v->w_mm, r->sim.roll.w_mm);
+    CHECK(v->left >= 0);
+    /* the next request links again */
+    CHECK(pr_ask(r, PRINT_REQ_QUERY, NULL, NULL));
+    CHECK(pr_run(r, 10000u));
+    CHECK_EQ(r->c.phase, PRINT_DONE);
+    CHECK_EQ(r->connects, 2u);
+}
+
+TEST_CASE(a_scan_during_a_job_leaves_the_link)
+{
+    pr_rig_t *r = &s_r;
+    pr_init(r);
+    CHECK(pr_ask(r, PRINT_REQ_QUERY, NULL, NULL));
+    REQUIRE(pr_run_to(r, PRINT_READING, 10000u));
+    CHECK(!pr_ask(r, PRINT_REQ_SCAN, NULL, NULL));
     CHECK(r->connected);
     CHECK_EQ(r->discs, 0u);
-    /* the linger still ends it, 30s after the last answer */
-    run_ms(r, 20000u);
-    CHECK(!r->connected);
+    CHECK(pr_run(r, 10000u));
+    CHECK_EQ(r->c.phase, PRINT_DONE);
+    CHECK_EQ(r->scans, 0u);
+}
+
+TEST_CASE(a_bind_of_the_bound_address_keeps_the_roll)
+{
+    pr_rig_t *r = &s_r;
+    pr_init(r);
+    CHECK(pr_ask(r, PRINT_REQ_QUERY, NULL, NULL));
+    CHECK(pr_run(r, 10000u));
+    REQUIRE(view(r)->w_mm != 0u);
+    const int32_t left = view(r)->left;
+    REQUIRE(left >= 0);
+    /* the same address, the same name, and the scan's name anew */
+    print_ctl_bind(&r->c, PR_ADDR, "T0205C2608247368", r->now);
+    print_ctl_bind(&r->c, PR_ADDR, "", r->now);
+    print_ctl_bind(&r->c, PR_ADDR, "T0205C2608247368", r->now);
+    /* the same address in small letters, as a console may type it */
+    print_ctl_bind(&r->c, "a4:93:40:30:fa:71 P", "T0205C2608247368",
+                   r->now);
+    const print_view_t *v = view(r);
+    CHECK(v->bound);
+    CHECK_STR_EQ(v->addr, PR_ADDR);
+    CHECK_EQ(v->w_mm, r->sim.roll.w_mm);
+    CHECK_EQ(v->h_mm, r->sim.roll.h_mm);
+    CHECK_EQ(v->left, left);
+    CHECK(r->connected);
+    CHECK_EQ(r->discs, 0u);
+}
+
+TEST_CASE(a_bind_of_another_address_clears_the_roll)
+{
+    pr_rig_t *r = &s_r;
+    pr_init(r);
+    CHECK(pr_ask(r, PRINT_REQ_QUERY, NULL, NULL));
+    CHECK(pr_run(r, 10000u));
+    REQUIRE(view(r)->w_mm != 0u);
+    print_ctl_bind(&r->c, "A4:93:40:00:00:01 P", "T0205C2600000001",
+                   r->now);
+    const print_view_t *v = view(r);
+    CHECK(v->bound);
+    CHECK_STR_EQ(v->addr, "A4:93:40:00:00:01 P");
+    CHECK_EQ(v->w_mm, 0u);
+    CHECK_EQ(v->h_mm, 0u);
+    CHECK_EQ(v->left, -1);
+    /* the old printer's link ends */
+    run_ms(r, 2u);
     CHECK_EQ(r->discs, 1u);
+    CHECK(!r->connected);
 }
 
 TEST_CASE(a_random_address_binds_nothing)
@@ -262,7 +353,10 @@ int main(void)
     RUN(a_switch_to_armed_stops_the_scan);
     RUN(a_label_stops_the_scan_and_prints);
     RUN(a_scan_waits_up_to_10s_for_bluetooth);
-    RUN(a_lingering_link_stays_through_a_scan);
+    RUN(a_lingering_link_ends_before_a_scan);
+    RUN(a_scan_during_a_job_leaves_the_link);
+    RUN(a_bind_of_the_bound_address_keeps_the_roll);
+    RUN(a_bind_of_another_address_clears_the_roll);
     RUN(a_random_address_binds_nothing);
     RUN(the_frame_task_asks_a_scan_once);
     return test_summary("print_ctl_scan");

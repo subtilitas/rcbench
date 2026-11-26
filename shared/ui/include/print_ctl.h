@@ -46,7 +46,8 @@
  *   or a scan runs, while the bench is ARMED and while a device update
  *   runs; it waits up to PRINT_FIND_MS for Bluetooth to be ready.  A
  *   switch to ARMED stops it (scan_cut); a label, test label or query
- *   request stops it and goes on.
+ *   request stops it and goes on.  A link that lingers ends before the
+ *   scan starts: a linked printer does not advertise.
  *
  * Every function of the controller is called from one task.  Times are
  * unsigned differences of a free-running 32-bit ms clock.
@@ -263,7 +264,9 @@ void print_ctl_init(print_ctl_t *c, const char *version);
 /**
  * @brief Bind the printer by its address text, or unbind with "".  A job
  *        that runs keeps its link and ends first; the new address is taken
- *        at the next request.
+ *        at the next request.  A bind of the bound address, in any letter
+ *        case, keeps the roll and the labels left; another address
+ *        clears them.
  * @param c      The controller.
  * @param addr   `A4:93:40:30:FA:71 P`; "", a random address or text
  *               bleu_addr_parse() refuses unbinds.
