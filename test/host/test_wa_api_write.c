@@ -10,6 +10,7 @@
  *
  * Cases:
  * - put_makes_a_new_file_and_answers_its_etag
+ * - a_servo_folder_is_never_renamed_moved_or_deleted
  * - put_of_1mib_is_saved_and_one_byte_more_refused
  * - put_holds_the_viewers_limits_before_any_card_call
  * - put_with_the_read_etag_replaces_and_a_stale_one_is_412
@@ -749,6 +750,50 @@ TEST_CASE(delete_refusals)
     CHECK(clean());
 }
 
+TEST_CASE(a_servo_folder_is_never_renamed_moved_or_deleted)
+{
+    fresh();
+    CHECK_EQ(wa_api_mkdir(&g_api, "path=Servos"), WA_API_OK);
+    CHECK_EQ(wa_api_mkdir(&g_api, "path=Servos/KST%20X-00001"), WA_API_OK);
+    CHECK_EQ(wa_api_mkdir(&g_api, "path=Servos/notes"), WA_API_OK);
+    /* Empty, and still kept: the folder is the id on a label. */
+    CHECK_EQ(wa_api_delete(&g_api, "path=Servos/KST%20X-00001&dir=1"),
+             WA_API_FIXED);
+    CHECK_EQ(wa_api_delete(&g_api, "path=servos/kst%20x-00001&dir=1"),
+             WA_API_FIXED);
+    CHECK_EQ(wa_api_rename(&g_api,
+                           "from=Servos/KST%20X-00001&to=Servos/KST%20X-00002"
+                           "&dir=1"), WA_API_FIXED);
+    CHECK_EQ(wa_api_rename(&g_api, "from=Servos/KST%20X-00001"
+                                   "&to=Servos/notes/KST%20X-00001&dir=1"),
+             WA_API_FIXED);
+    CHECK_EQ(wa_api_rename(&g_api, "from=Servos&to=Old&dir=1"),
+             WA_API_FIXED);
+    CHECK(fk_get(&g_card, "Servos/KST X-00001") != NULL);
+    /* A file inside, and a folder that is no id: the person's. */
+    CHECK_EQ(put_s("path=Servos/KST%20X-00001/baseline.txt", NULL, "*", "x"),
+             WA_API_OK);
+    CHECK_EQ(wa_api_rename(&g_api, "from=Servos/KST%20X-00001/baseline.txt"
+                                   "&to=Servos/KST%20X-00001/old.txt"),
+             WA_API_OK);
+    CHECK_EQ(wa_api_delete(&g_api, "path=Servos/KST%20X-00001/old.txt"),
+             WA_API_OK);
+    CHECK_EQ(wa_api_delete(&g_api, "path=Servos/notes&dir=1"), WA_API_OK);
+    CHECK(fk_get(&g_card, "Servos/notes") == NULL);
+    CHECK_EQ(wa_api_delete(&g_api, "path=Servos&dir=1"), WA_API_FIXED);
+    /* A run's DELETE takes its report along; a report alone stays. */
+    fk_file(&g_card, "Servos/KST X-00001/limit run_000.csv", NULL, 3u);
+    fk_file(&g_card, "Servos/KST X-00001/limit run_000.txt", NULL, 3u);
+    fk_file(&g_card, "Servos/KST X-00001/limit run_001.txt", NULL, 3u);
+    CHECK_EQ(wa_api_delete(&g_api,
+                           "path=Servos/KST%20X-00001/limit%20run_000.csv"),
+             WA_API_OK);
+    CHECK(fk_get(&g_card, "Servos/KST X-00001/limit run_000.csv") == NULL);
+    CHECK(fk_get(&g_card, "Servos/KST X-00001/limit run_000.txt") == NULL);
+    CHECK(fk_get(&g_card, "Servos/KST X-00001/limit run_001.txt") != NULL);
+    CHECK(clean());
+}
+
 TEST_CASE(a_write_from_another_card_is_card_gone)
 {
     fresh();
@@ -987,6 +1032,7 @@ TEST_CASE(every_fixed_folder_the_api_makes_it_can_delete)
 int main(void)
 {
     RUN(put_makes_a_new_file_and_answers_its_etag);
+    RUN(a_servo_folder_is_never_renamed_moved_or_deleted);
     RUN(put_of_1mib_is_saved_and_one_byte_more_refused);
     RUN(put_holds_the_viewers_limits_before_any_card_call);
     RUN(put_with_the_read_etag_replaces_and_a_stale_one_is_412);

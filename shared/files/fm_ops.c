@@ -9,8 +9,6 @@
 
 #include <string.h>
 
-#include "log_name.h"
-
 /**
  * @brief The steps of a job, in the order they run.  A job without data
  *        does all of its work in STEP_CHECK.
@@ -153,7 +151,9 @@ static fm_err_t target_path(fm_job_t *job, const fm_bench_t *bench,
     case FM_PLACE_FAULT:
         return FM_ERR_FIXED;
     case FM_PLACE_FIXED:
+    case FM_PLACE_SERVO:
     case FM_PLACE_FREE:
+    case FM_PLACE_COUNT:
     default:
         break;
     }
@@ -231,7 +231,7 @@ fm_err_t fm_job_delete(fm_job_t *job, const fm_bench_t *bench,
     if (err == FM_OK && !is_dir) {
         /* A run's report goes with its log, as LOGS deletes it. */
         char report[FM_NAME_BUF];
-        log_name_report_of(report, sizeof(report), name);
+        fm_report_of(dir, name, report, sizeof(report));
         if (report[0] != '\0'
             && join(job->tmp, dir, report, false) != FM_OK) {
             job->tmp[0] = '\0';

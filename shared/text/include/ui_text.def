@@ -249,6 +249,23 @@ UI_TEXT(BH_ARMED_SIM, 0,
 UI_TEXT(BH_CLOCK, 0,
     "Shows the run time since switching to ARMED. At SAFE, the clock stops and keeps the last run time until the next ARM. It shows minutes and seconds, adding hours from 60min.",
     "Zeigt die Laufzeit seit dem Wechsel zu ARMED. Bei SAFE stoppt die Uhr und zeigt die letzte Laufzeit bis zum nächsten ARM. Anzeige in Minuten und Sekunden, ab 60min auch in Stunden.")
+/* The servo chip's box (scan_flow.h): how the active servo was set, a
+ * run that holds it, and how it goes. */
+UI_TEXT(BH_SERVO_SCAN, 0,
+    "The active servo, set by a scan of its label. The band shows its id on every screen.",
+    "Das aktive Servo, gesetzt durch einen Scan seines Etiketts. Das Band zeigt seine ID auf jeder Seite.")
+UI_TEXT(BH_SERVO_NEW, 0,
+    "The active servo, set by NEW ID. The band shows its id on every screen.",
+    "Das aktive Servo, gesetzt durch NEUE ID. Das Band zeigt seine ID auf jeder Seite.")
+UI_TEXT(BH_SERVO_PICK, 0,
+    "The active servo, picked from the recent ids on this card. The band shows its id on every screen.",
+    "Das aktive Servo, gewählt aus den letzten IDs auf dieser Karte. Das Band zeigt seine ID auf jeder Seite.")
+UI_TEXT(BH_SERVO_RUN, 0,
+    "A run is active and keeps this servo to its end. A scan of another label is refused until then.",
+    "Ein Lauf ist aktiv und behält dieses Servo bis zu seinem Ende. Ein Scan eines anderen Etiketts wird bis dahin abgelehnt.")
+UI_TEXT(BH_SERVO_GOES, 0,
+    "Outside a run, a scan of another label replaces it. A restart clears it.",
+    "Außerhalb eines Laufs ersetzt ein Scan eines anderen Etiketts es. Ein Neustart löscht es.")
 UI_TEXT(BH_F_LINK_SILENT, 0,
     "The IOmcu received no data for 200ms and switched itself to SAFE. The PD mini output is off. A panel restart or loose CAN cable can cause this. The fault bit stays set until the next ARM. If it returns, check the CAN cable.",
     "Der IOmcu hat 200ms keine Daten empfangen und selbst auf SAFE geschaltet. Der PD-mini-Ausgang ist aus. Ursache kann ein Panel-Neustart oder ein lockeres CAN-Kabel sein. Das Fehlerbit bleibt bis zum nächsten ARM gesetzt. Tritt es erneut auf, prüfe das CAN-Kabel.")
@@ -3393,6 +3410,9 @@ UI_TEXT(FM_RULE_FREE, 0,
 UI_TEXT(FM_RULE_FIXED, 0,
     "Bench folder: no RENAME or MOVE, DELETE only when empty.",
     "Prüfstand: kein UMBENENNEN/VERSCHIEBEN, LÖSCHEN nur leer.")
+UI_TEXT(FM_RULE_SERVO, 62,
+    "Servo id folder: no RENAME, MOVE or DELETE.",
+    "Servo-ID-Ordner: kein UMBENENNEN/VERSCHIEBEN/LÖSCHEN.")
 UI_TEXT(FM_RULE_LOCKED, 62,
     "The servo programmer's record: INFO only.",
     "Vermerk der Servoprogrammierung: nur INFO.")
@@ -6714,6 +6734,36 @@ UI_TEXT(ALERT_ARM_PROG, 94,
 UI_TEXT(ALERT_ARM_C6, 94,
     "Cannot switch to ARMED: the C6 radio update is running.",
     "ARMED gesperrt: Das C6-Funk-Update läuft.")
+/* A scanned line's notice in the alert band (scan_flow.c, PLAN-B 3.3):
+ * the id of 23 characters at most, a name of 23, a refused line's first
+ * 24 characters. */
+UI_TEXT(SCAN_SET, 94,
+    "SERVO %s",
+    "SERVO %s")
+UI_TEXT(SCAN_SET_NAME, 94,
+    "SERVO %s  %s",
+    "SERVO %s  %s")
+UI_TEXT(SCAN_NEW, 94,
+    "SERVO %s  NEW ON THIS CARD",
+    "SERVO %s  NEU AUF DIESER KARTE")
+UI_TEXT(SCAN_NO_CARD, 94,
+    "SERVO %s  NO CARD: RUNS ARE NOT FILED",
+    "SERVO %s  KEINE KARTE: LÄUFE WERDEN NICHT ABGELEGT")
+UI_TEXT(SCAN_SAME, 94,
+    "SERVO %s  ALREADY ACTIVE",
+    "SERVO %s  BEREITS AKTIV")
+UI_TEXT(SCAN_RUN, 94,
+    "RUN IN PROGRESS: IT STAYS ON %s. SCAN AFTER THE RUN.",
+    "LAUF AKTIV: ER BLEIBT BEI %s. NACH DEM LAUF SCANNEN.")
+UI_TEXT(SCAN_RUN_NONE, 94,
+    "RUN IN PROGRESS: SCAN AFTER THE RUN.",
+    "LAUF AKTIV: NACH DEM LAUF SCANNEN.")
+UI_TEXT(SCAN_MALFORMED, 94,
+    "NOT A SERVO ID: %.24s",
+    "KEINE SERVO-ID: %.24s")
+UI_TEXT(SCAN_TOO_LONG, 94,
+    "NOT A SERVO ID: CODE TOO LONG",
+    "KEINE SERVO-ID: CODE ZU LANG")
 /* The supply's ON, the PROG ports' 5V ON and a programmer session's start
  * refused under an update (fw_upd_refuses()); %s names the update, one of
  * the UPD_RUNS_ entries (upd_refusal_line()). */

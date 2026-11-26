@@ -378,7 +378,8 @@ typedef struct {
     log_viewer_tab_t open_tab;          /**< tab of the file named by name */
     /* The folder s.name was opened from, kept: a folder setting changed
      * since moves the tab, not the open file. */
-    char open_dir[CARD_DIR_MAX];        /**< folder of the file named by name */
+    char open_dir[CARD_RUN_DIR_MAX];    /**< folder of the file named by name:
+                                             a servo's `Servos/<id>` too */
     /* A recorded folder log_viewer_show_in() lists s.tab from, for the
      * one call; NULL otherwise. */
     const char *pin;                    /**< folder the tab reads for one show */

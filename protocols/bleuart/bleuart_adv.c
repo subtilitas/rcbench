@@ -43,6 +43,13 @@ const uint8_t bleu_uuid_param[16] = {
     0x02, 0x4D, 0xAA, 0x6D, 0x43, 0x53, 0x53, 0x49,
 };
 
+/** @brief The Bluetooth base UUID, 00000000-0000-1000-8000-00805F9B34FB;
+ *         a 16-bit UUID sits in bytes 12 and 13. */
+const uint8_t bleu_uuid_base[16] = {
+    0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80,
+    0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
 /** @brief AD types the parser reads. @{ */
 #define AD_FLAGS      0x01u /**< flags */
 #define AD_UUID16_ANY 0x02u /**< incomplete 16-bit UUID list */
@@ -185,14 +192,17 @@ static void resort(bleu_list_t *l, size_t i)
  * @param d    The row.
  * @param rssi The report's RSSI.
  * @param adv  What the report says.
+ * @param oui  The address starts with the profile's adv_oui.
  */
-static void merge(bleu_dev_t *d, int8_t rssi, const bleu_adv_t *adv)
+static void merge(bleu_dev_t *d, int8_t rssi, const bleu_adv_t *adv,
+                  bool oui)
 {
     if (rssi != RSSI_UNKNOWN) {
         d->rssi = rssi;
     }
     d->flags |= (uint8_t)((adv->has_18f0 ? BLEU_DEV_18F0 : 0u)
-                          | (adv->has_issc ? BLEU_DEV_ISSC : 0u));
+                          | (adv->has_issc ? BLEU_DEV_ISSC : 0u)
+                          | (oui ? BLEU_DEV_OUI : 0u));
     if (adv->name_kind == AD_NAME_FULL
         || (adv->name_kind == AD_NAME_SHORT
             && (d->flags & BLEU_DEV_NAME_FULL) == 0u)) {
@@ -221,6 +231,19 @@ static bool remember(bleu_list_t *l, const bleu_addr_t *a, bool matched)
     return true;
 }
 
+/**
+ * @brief Whether @p a is a public address that starts with @p p's adv_oui.
+ * @param p The profile; NULL has none.
+ * @param a The address, least significant byte first.
+ * @return true when it does.
+ */
+static bool oui_is(const bleu_profile_t *p, const bleu_addr_t *a)
+{
+    return p != NULL && p->adv_oui != NULL && a->type == BLEU_ADDR_PUBLIC
+           && a->val[5] == p->adv_oui[0] && a->val[4] == p->adv_oui[1]
+           && a->val[3] == p->adv_oui[2];
+}
+
 void bleu_list_report(bleu_list_t *l, const bleu_addr_t *addr, int8_t rssi,
                       const uint8_t *ad, size_t len)
 {
@@ -236,10 +259,11 @@ void bleu_list_report_for(bleu_list_t *l, const bleu_profile_t *p,
     }
     ++l->reports;
     bleu_adv_t adv;
-    const bool match = bleu_adv_parse_for(p, ad, len, &adv);
+    const bool oui = oui_is(p, addr);
+    const bool match = bleu_adv_parse_for(p, ad, len, &adv) || oui;
     for (size_t i = 0; i < l->found_n; ++i) {
         if (bleu_addr_eq(&l->found[i].addr, addr)) {
-            merge(&l->found[i], rssi, &adv);
+            merge(&l->found[i], rssi, &adv, oui);
             resort(l, i);
             return;
         }
@@ -271,7 +295,7 @@ void bleu_list_report_for(bleu_list_t *l, const bleu_profile_t *p,
     memset(&d, 0, sizeof d);
     d.addr = *addr;
     d.rssi = RSSI_UNKNOWN;
-    merge(&d, rssi, &adv);
+    merge(&d, rssi, &adv, oui);
     if (l->found_n == BLEU_FOUND_MAX) {
         bleu_dev_t *last = &l->found[BLEU_FOUND_MAX - 1u];
         if (rssi_key(d.rssi) <= rssi_key(last->rssi)) {

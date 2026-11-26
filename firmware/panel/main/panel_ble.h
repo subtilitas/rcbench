@@ -109,6 +109,22 @@ bool panel_ble_get(bleu_evt_t *out);
 bool panel_ble_do(const bleu_act_t *a, int *written);
 
 /**
+ * @brief Perform a client's BLEU_ACT_WRITE_EXT: write @p n bytes to
+ *        @p handle with response (ble_gattc_write_flat(), which copies
+ *        them).  Its answer comes as a BLEU_EV_WRITE_DONE with @p token; a
+ *        refusal, by NimBLE or for NULL data or a length outside 1 to
+ *        BLEU_WRITE_EXT_MAX, is answered at once with its status.
+ * @param conn   The connection.
+ * @param handle The value handle.
+ * @param data   The bytes; NULL is refused.
+ * @param n      Their count.
+ * @param token  The action's token.
+ * @return 0 when NimBLE took it, else the status the answer carries.
+ */
+int panel_ble_write_long(uint16_t conn, uint16_t handle, const uint8_t *data,
+                         uint16_t n, uint16_t token);
+
+/**
  * @brief Write one chunk of a device update without response: @p hdr_n
  *        bytes of header, then @p n bytes of the image, in one write.
  *        NimBLE takes the buffers whether it sends or not.

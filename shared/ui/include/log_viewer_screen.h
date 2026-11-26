@@ -268,9 +268,13 @@ typedef enum {
                                 does not hold (a file other than a .csv or
                                 a report, one the logger has open, one
                                 gone from the card)                      */
-    LOG_SHOW_OTHER_CARD    /**< the list was read from another mount than
+    LOG_SHOW_OTHER_CARD,   /**< the list was read from another mount than
                                 @p mount: the card was swapped; nothing is
                                 opened                                   */
+    LOG_SHOW_DIR_LONG      /**< log_viewer_show_in()'s folder is
+                                CARD_RUN_DIR_MAX characters or longer:
+                                nothing is listed or opened, rather than a
+                                folder cut short                         */
 } log_viewer_show_t;
 
 /**
@@ -294,7 +298,9 @@ log_viewer_show_t log_viewer_show(log_viewer_tab_t tab, const char *name,
  *        list behind the plot is @p tab's folder again at the next read.
  * @param tab    the tab the file belongs to; its key is lit
  * @param dir    the folder the file was written to; "" or NULL is
- *               LOG_SHOW_NOT_LISTED
+ *               LOG_SHOW_NOT_LISTED, and one of CARD_RUN_DIR_MAX
+ *               characters or more LOG_SHOW_DIR_LONG: `Servos/<id>` of
+ *               a 23-character id, 30 characters, is held whole
  * @param name   the file's name in that folder
  * @param mount  the mount number the file was written on
  * @return what was found

@@ -7,6 +7,7 @@
 
 #include "servo_active.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #include "servo_id.h"
@@ -85,4 +86,69 @@ void servo_active_set_printed(void)
         s.printed = true;
         ++s.serial;
     }
+}
+
+/* ------------------------------------------------------------ the scan */
+
+/** @brief The last line taken, for the repeat check. */
+typedef struct {
+    char     line[SERVO_SCAN_LINE_MAX + 1u];  /**< its first bytes          */
+    bool     too_long;                        /**< it was cut                */
+    bool     valid;                           /**< a line has been taken     */
+    uint32_t at_ms;                           /**< when                      */
+    uint32_t serial;                          /**< servo_active_serial() after it */
+} scan_last_t;
+
+/** @brief The one instance: no line after power-on. */
+static scan_last_t s_scan;
+
+/**
+ * @brief Whether @p line is the last line taken again, within
+ *        SERVO_SCAN_REPEAT_MS and with no change of the servo since.
+ */
+static bool scan_repeat(const char *line, bool too_long, uint32_t now_ms)
+{
+    return s_scan.valid && s_scan.too_long == too_long
+           && s_scan.serial == s.serial
+           && (uint32_t)(now_ms - s_scan.at_ms) < SERVO_SCAN_REPEAT_MS
+           && strncmp(s_scan.line, line, SERVO_SCAN_LINE_MAX) == 0
+           && strlen(line) <= SERVO_SCAN_LINE_MAX;
+}
+
+/** @brief What @p line does, before the repeat memory takes it. */
+static servo_scan_t scan_judge(const char *line, bool too_long,
+                               bool run_active)
+{
+    servo_id_t p;
+    if (too_long) {
+        return SERVO_SCAN_TOO_LONG;
+    }
+    if (!servo_id_parse(line, &p) || strcmp(p.text, line) != 0) {
+        return SERVO_SCAN_MALFORMED;
+    }
+    const bool same = s.from != SERVO_ACTIVE_NONE
+                      && strcmp(s.id.text, p.text) == 0;
+    if (run_active) {
+        return same ? SERVO_SCAN_RUN_OWN : SERVO_SCAN_REFUSED_RUN;
+    }
+    (void)servo_active_set(p.text, SERVO_ACTIVE_SCAN, false);
+    return same ? SERVO_SCAN_SAME : SERVO_SCAN_SET;
+}
+
+servo_scan_t servo_scan_decide(const char *line, bool too_long,
+                               bool run_active, uint32_t now_ms)
+{
+    if (line == NULL) {
+        line = "";
+    }
+    if (scan_repeat(line, too_long, now_ms)) {
+        return SERVO_SCAN_REPEAT;
+    }
+    const servo_scan_t r = scan_judge(line, too_long, run_active);
+    (void)snprintf(s_scan.line, sizeof(s_scan.line), "%s", line);
+    s_scan.too_long = too_long;
+    s_scan.valid = true;
+    s_scan.at_ms = now_ms;
+    s_scan.serial = s.serial;
+    return r;
 }

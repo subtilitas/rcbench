@@ -496,6 +496,10 @@ static TaskHandle_t s_task;
 static SemaphoreHandle_t s_job_lock;
 /** @brief cardjob's copy buffer, FM_CHUNK bytes of internal DMA RAM. */
 static uint8_t *s_chunk;
+/* The marks' folders hold any folder a run is written to, a servo's
+ * `Servos/<id>` of up to 30 characters among them (CARD_RUN_DIR_MAX). */
+_Static_assert(CARD_RUN_DIR_MAX >= CARD_DIR_MAX,
+               "a marks folder holds every log folder");
 /** @brief The logger's open files as cardjob last read them. */
 static log_marks_t s_job_marks;
 /** @brief The folder of s_job_marks' run. */

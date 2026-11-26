@@ -49,6 +49,7 @@
 #include "pdmini.h"
 #include "picker_screen.h"
 #include "prog_choice.h"
+#include "scan_flow.h"
 #include "sensors_rows.h"
 #include "servo_link.h"
 #include "servo_angle.h"
@@ -643,7 +644,7 @@ void panel_frame_loop(void)
          * dispatched; the band shows what the screens were told. */
         const bool armed = armed_now;
         const bool cu_active = cu.active;
-        const ui_bench_status_t status = {
+        ui_bench_status_t status = {
             .link_up     = link_up,
             .armed       = armed,
             .stop_latched = stop_latched,
@@ -673,6 +674,10 @@ void panel_frame_loop(void)
             .link_refused = link_refused,
             .mcu_temp_c  = mcu_temp_c,
         };
+        /* A scanned line that waits (`scan <text>`, the scanner), then
+         * the active servo on the band's chip. */
+        scan_flow_tick(now_ms(), &status);
+        scan_flow_status(&status);
         ui_router_set_status(&status);
         {
             /* The Dial's view and commands, and the screen model its

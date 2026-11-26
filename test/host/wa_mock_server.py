@@ -98,6 +98,30 @@ RUN_PREFIXES = ("ATEST", "LIMIT", "SERVO", "MOTOR", "SUPPL", "RUDDR",
 RUN_NAME = re.compile("(" + "|".join(RUN_PREFIXES)
                       + r")(\d{3})(?:_.+)?\.(CSV|TXT)", re.S | re.I)
 
+# A labelled servo's folder (servo_id.h, servo_name.h): `Servos/<id>`, the id
+# a prefix of 1 to 17 characters of A-Z, 0-9, space, "-", "_" and "." with no
+# space at either end and no "." at the start, a "-" and a serial of 5
+# characters of 0-9 and A-Z, in any case; and its run names.
+SERVOS = "Servos"
+SERVO_ID = re.compile(r"(?=.{7,23}$)(?![ .])[A-Z0-9 _.\-]{0,16}[A-Z0-9_.\-]"
+                      r"-[0-9A-Z]{5}", re.S | re.I)
+SERVO_RUN = re.compile(r"(limit run|rudder auto|automatic test|servo run)"
+                       r"_\d{3}\.(csv|txt)", re.S | re.I)
+
+
+def servo_dir(path: str) -> bool:
+    """Whether a folder is a servo's id folder (servo_dir_parse).
+
+    Args:
+        path: The folder from the root.
+
+    Returns:
+        True for `Servos/<id>` in any case.
+    """
+    head, _, tail = path.partition("/")
+    return fold(head) == fold(SERVOS) and bool(SERVO_ID.fullmatch(tail))
+
+
 REASONS = {400: "Bad Request", 403: "Forbidden", 404: "Not Found",
            409: "Conflict", 412: "Precondition Failed",
            413: "Content Too Large", 415: "Unsupported Media Type",
@@ -255,6 +279,9 @@ def kind_of(dirpath: str, name: str, is_dir: bool) -> str:
     path = f"{dirpath}/{name}" if dirpath else name
     if any(fold(path) == fold(f) for f in FAULT_FILES):
         return "FAULT"
+    sm = SERVO_RUN.fullmatch(name)
+    if sm and servo_dir(dirpath):
+        return "RUN" if sm.group(2).lower() == "csv" else "REPORT"
     m = RUN_NAME.fullmatch(name)
     if m and int(m.group(2)) >= 1:
         return "RUN" if m.group(3).upper() == "CSV" else "REPORT"
@@ -266,16 +293,24 @@ def kind_of(dirpath: str, name: str, is_dir: bool) -> str:
     return "CSV" if low.endswith(".csv") else "OTHER"
 
 
-def report_of(name: str) -> str:
-    """The report a run log takes along, as log_name_report_of() names it.
+def report_of(name: str, dirpath: str = "") -> str:
+    """The report a run log takes along, as fm_report_of() names it.
 
     Args:
         name: A run log's name, plain or labelled.
+        dirpath: Its folder.
 
     Returns:
         The prefix and the number in upper case and ".TXT", a label left
-        out: MOTOR042_kv.CSV takes MOTOR042.TXT; "" for any other name.
+        out: MOTOR042_kv.CSV takes MOTOR042.TXT; in a servo's id folder
+        the stem and the number in lower case and ".txt": limit run_007.csv
+        takes limit run_007.txt; "" for any other name.
     """
+    sm = SERVO_RUN.fullmatch(name)
+    if sm and servo_dir(dirpath):
+        if sm.group(2).lower() != "csv":
+            return ""
+        return name[:-4].lower() + ".txt"
     m = RUN_NAME.fullmatch(name)
     if not m or int(m.group(2)) < 1 or m.group(3).upper() != "CSV":
         return ""
@@ -460,10 +495,12 @@ def place_of(dirpath: str, name: str, is_dir: bool) -> str:
         is_dir: A folder.
 
     Returns:
-        FIXED, LOCKED, FAULT or FREE.
+        SERVO, FIXED, LOCKED, FAULT or FREE.
     """
     path = f"{dirpath}/{name}" if dirpath else name
     if is_dir:
+        if fold(path) == fold(SERVOS) or servo_dir(path):
+            return "SERVO"
         if path and any(within(path, d) for d in BENCH_DIRS):
             return "FIXED"
         return "FREE"
@@ -1170,6 +1207,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if op != "new":
             if place == "FIXED" and op in ("rename", "move"):
                 raise Refused("FIXED")
+            if place == "SERVO" and op in ("rename", "move", "delete"):
+                raise Refused("FIXED")
             if place == "LOCKED":
                 raise Refused("LOCKED")
             if place == "FAULT" and op in ("save", "rename", "move"):
@@ -1421,9 +1460,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
         folder, _, name = found[0].rpartition("/")
         card.remove(found[0])
         if not is_dir and kind_of(folder, name, False) == "RUN":
-            report = card.find(f"{folder}/{report_of(name)}"
-                               if folder else report_of(name))
-            if report and not report[1]:
+            rep = report_of(name, folder)
+            report = card.find(f"{folder}/{rep}" if folder else rep)
+            if rep and report and not report[1]:
                 card.remove(report[0])
         self.json(200, {"path": folder, "created": False, "note": ""})
 

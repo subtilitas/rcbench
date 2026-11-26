@@ -19,6 +19,7 @@ Von links nach rechts stehen das Home-Feld mit dem Seitennamen, die Status-Chips
 | INJECT | ersetzt BENCH und SIM, solange ein Touch-Injector an der I2C-Adresse 0x14 (Inter-Integrated Circuit) antwortet; das Panel sucht ihn einmal beim Start |
 | FEHLER 01 bis FEHLER 7F | ein vom IOmcu gemeldeter Fehlercode; ohne Fehler ist der Chip ausgeblendet |
 | HWSTOP | rot an der Stelle von FEHLER, solange [SETUP > PANEL > Hardware-STOP](setup.md#panel) EIN ist und das Heartbeat-Bit (10) gesetzt ist: Der STOP-Taster des Prüfstands ist gedrückt oder sein Kabel unterbrochen |
+| Servo-ID | das aktive Servo, links der anderen Chips: das beschriftete Servo, unter dem der nächste Lauf abgelegt wird; in der Akzentfarbe, solange ein Lauf es hält; `-0000A`, wo die Reihe zu wenig Platz hat |
 | SAFE, ARMED MOTOR, ARMED SERVO, ARMED, STOP | welche Ausgänge bei ARMED angesteuert werden; STOP bei eingerastetem Stopp; SAFE PROG und SAFE MOVE, solange ein Prüfstand bei SAFE einen Programmierport belegt oder ein Hitec-Servo bewegt |
 | Laufzeituhr | die Laufdauer seit dem Schalten auf ARMED in Minuten und Sekunden; bei SAFE bleibt die Dauer des letzten Laufs stehen |
 
@@ -99,6 +100,16 @@ Ein STOP-Taster am Prüfstand liegt in der Heartbeat-Leitung zwischen Panel und 
 - Der Prüfstand bleibt SAFE. Halte ARM 2s, um die Ausgänge wieder einzuschalten.
 - Gleichzeitig gesetzte weitere Bits stehen im Kasten von HWSTOP, der wie der von FEHLER über das Panel reicht. Sobald HWSTOP verschwindet, zeigt das Band sie wieder als FEHLER-Code.
 - Solange der eigene STOP des Panels eingerastet ist, während sein Lösen läuft und 1000ms danach hält das Panel den Heartbeat selbst an, und das Band zeigt weder HWSTOP noch FEHLER 10.
+
+## Servo-Chip
+
+![Der Servo-Chip und sein Kasten](view:band-servo)
+
+Ein Scan des Etiketts eines Servos macht es zum aktiven Servo; NEUE ID und eine Wahl aus den letzten IDs tun dasselbe. Der Chip zeigt seine ID auf jeder Seite, ein Neustart löscht es. Ein Scan wechselt keine Seite und startet nichts.
+
+- Während eines Laufs hat der Chip die Akzentfarbe als Fläche, und ein Scan eines anderen Etiketts wird abgelehnt: `LAUF AKTIV: ER BLEIBT BEI KST_X10-0000A. NACH DEM LAUF SCANNEN.` Scanne nach dem Lauf erneut.
+- Ein Code, der nicht genau eine ID ist, zeigt `KEINE SERVO-ID:` und seine ersten 24 Zeichen. Kleinbuchstaben, Leerzeichen und ein fehlender Bindestrich werden nicht umgewandelt oder gekürzt.
+- Dasselbe Etikett erneut innerhalb 3,0s wird verworfen; nach 3,0s sagt der Hinweis `BEREITS AKTIV`.
 
 ## Screenshot
 
