@@ -5,8 +5,8 @@
 // inverted hull 1.8mm outside it, before a pale disc that sets them off.
 // setSwing(k) turns the arm from k = 0, the sausage upright, to k = 1, the
 // sausage out to the right by 90 degrees.  buildWurst(true) is the kinetic
-// buildWurst(false, true) adds a dog to the right of the node, which
-// jumps 70mm with k.  buildWurst(true) is the kinetic
+// buildWurst(false, true) sets the node on a mast 620mm high and a dog on
+// the ground under the sausage, which jumps 260mm with k.  buildWurst(true) is the kinetic
 // node: a tank of compressed air and a barrel in the servo's place.
 // setFire(k) sends the sausage out of the barrel, from k = 0, loaded, to
 // k = 0.6, where its end meets a traffic light 987mm from the muzzle and
@@ -206,10 +206,21 @@ export function buildWurst(kinetic = false, dog = false) {
   scene.add(strokes);
 
   // The dog faces the node and jumps as the sausage comes down.
+  // With the dog the node stands on a mast, DEEP above the ground.
+  const DEEP = 620;
   const hound = new THREE.Group();
-  hound.position.set(370, 0, 10);
+  hound.position.set(250, -DEEP, 10);
   hound.visible = dog;
   scene.add(hound);
+  if (dog) {
+    add(rod(12, DEEP), 0x8a93a6, scene, 0, -DEEP / 2, 0);
+    add(rod(60, 10), 0x3a4a72, scene, 0, 5 - DEEP, 0);
+    ground.position.y = -DEEP;
+    const low = new THREE.Mesh(new THREE.CircleGeometry(560, 96),
+      new THREE.MeshBasicMaterial({color: 0xfff1c2}));
+    low.position.set(120, -330, -150);
+    scene.add(low);
+  }
   const FUR = 0xb9793f, EAR = 0x6b3f1e;
   add(new THREE.CapsuleGeometry(26, 70, 12, 32), FUR, hound, 0, 62, 0)
     .rotation.z = Math.PI / 2;
@@ -224,8 +235,8 @@ export function buildWurst(kinetic = false, dog = false) {
   add(rod(4, 38), FUR, hound, 64, 84, 0).rotation.z = -.8;
 
   const setSwing = k => {
-    hound.position.y = 70 * k;
-    hound.rotation.z = -.3 * k;
+    hound.position.y = 260 * k - (dog ? DEEP : 0);
+    hound.rotation.z = -.35 - .45 * k;
     pivot.rotation.z = -Math.PI / 2 * k;
     lamp.material.emissiveIntensity = k;
     strokes.visible = k > .85;
