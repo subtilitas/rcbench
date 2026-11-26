@@ -555,6 +555,11 @@ UI_TEXT(SPLASH_TAGLINE, 0,
 UI_TEXT(SPLASH_CREDIT, 0,
     "Designed by JuWi",
     "Entwickelt von JuWi")
+/* The maker's mark in the splash's bottom right corner: a name, so the
+ * same in both languages. */
+UI_TEXT(SPLASH_MAKER, 0,
+    "JuWi made",
+    "JuWi made")
 
 /* ----------------------------------------------------------- bus fault */
 UI_TEXT(BF_BUS_OFF_TEXT, 0,

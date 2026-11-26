@@ -136,7 +136,9 @@ static const char *mark_of(splash_result_t r)
  * SP_FONT_BODY (12 x 24) centered under it.  The seven steps in rows of
  * ROW_H from LIST_Y, each its label, its mark and its detail in
  * SP_FONT_BODY; the detail 47 cells from DETAIL_X to 24px short of the
- * panel's edge.  The credit in SP_FONT_LABEL (10 x 20) at the foot.
+ * panel's edge.  The credit in SP_FONT_LABEL (10 x 20) at the foot, and the
+ * maker's mark in the same face right-aligned in the foot's row, 24px from
+ * the panel's right edge.
  */
 /** @brief The mark's face, drawn at MARK_SCALE: 20 x 36. */
 #define SP_FONT_MARK  (&gfx_font_20x36)
@@ -167,6 +169,11 @@ static const char *mark_of(splash_result_t r)
 #define DETAIL_W      (W - 24 - DETAIL_X)
 /** @brief The credit's top. */
 #define CREDIT_Y      (H - 36)
+/** @brief The maker's mark's right margin and box width, px: 9 cells of
+ *         SP_FONT_LABEL fit in 100px, clear of the credit's 190px at the
+ *         center. */
+#define MAKER_MARGIN  24
+#define MAKER_W       100       /**< the mark's box, px */
 
 _Static_assert(LIST_Y + SPLASH_STEP_COUNT * ROW_H <= CREDIT_Y - 16,
                "the last step's row ends above the credit");
@@ -215,6 +222,13 @@ static void render(gfx_canvas_t *c, int buffer_index)
                                                               1) },
                     TR(SPLASH_CREDIT), SP_FONT_LABEL,
                     ui_theme_color(UI_C_TEXT_FAINT), 1, GFX_ALIGN_CENTER);
+        /* The maker's mark, in the credit's row at the right. */
+        gfx_text_in(c, (gfx_rect_t){ (int16_t)(W - MAKER_MARGIN - MAKER_W),
+                                     CREDIT_Y, MAKER_W,
+                                     (int16_t)gfx_text_height(SP_FONT_LABEL,
+                                                              1) },
+                    TR(SPLASH_MAKER), SP_FONT_LABEL,
+                    ui_theme_color(UI_C_TEXT_DIM), 1, GFX_ALIGN_RIGHT);
         s.drawn_mask |= bit;
     }
 
