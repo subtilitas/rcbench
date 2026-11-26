@@ -16,6 +16,10 @@ canvas#gl{position:absolute;inset:0;width:1920px;height:1080px}
 #dots i{width:44px;height:6px;border-radius:3px;background:rgba(255,255,255,.14)}
 #dots i.on{background:var(--cy)}
 #title{position:absolute;left:96px;top:330px;width:900px}
+/* A dark rim under the white text: it reads before a light scene too. */
+#title h1{-webkit-text-stroke:12px #05070b;paint-order:stroke fill}
+#title p,#title .k{-webkit-text-stroke:7px #05070b;paint-order:stroke fill}
+#brand{-webkit-text-stroke:3px #05070b;paint-order:stroke fill}
 #title .k{font-size:22px;letter-spacing:.3em;color:var(--cy);font-weight:700;text-transform:uppercase}
 #title h1{font-size:92px;line-height:1.02;font-weight:800;letter-spacing:-.025em;margin:22px 0 26px}
 #title p{font-size:30px;color:var(--mu);line-height:1.4}
