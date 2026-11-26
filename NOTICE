@@ -59,7 +59,6 @@ this repository: firmware/panel/dependencies.lock names them with their
 hashes, and a build downloads them into firmware/panel/managed_components/.
 A panel image contains their compiled code.
 
-  espressif/esp_wifi_remote 1.6.5        Apache License 2.0
   espressif/esp_hosted 2.13.0            Apache License 2.0, except the
                                          protobuf-c runtime below
   espressif/wifi_remote_over_eppp 0.3.3  Apache License 2.0 (not linked)
@@ -102,8 +101,7 @@ which serialises its messages to the C6, under these terms:
 
 esp_hosted's message code generated from its .proto file
 (common/proto/esp_hosted_rpc.pb-c.c and .h) belongs to Espressif under the
-Apache License 2.0. esp_wifi_remote's dummy_src.c is an empty file without a
-licence line.
+Apache License 2.0.
 
 
 QR Code generator library (qrcodegen)

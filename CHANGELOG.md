@@ -9,11 +9,11 @@ history is in git.
 ### Added
 
 - SETUP > PANEL's last row, About rcbench, opens ABOUT: the panel and the
-  IOmcu firmware's versions, `Design: Julian Wingert`, `JuWi made`,
-  `Copyright 2026 Julian Wingert`, the MIT and CC BY-NC-SA 4.0 licence
-  lines, the repository, the trademark notice, the 25 third-party
+  IOmcu firmware's versions, `Design: Julian Wingert`,
+  `Implemented by Claude and Julian`, `Copyright 2026 Julian Wingert`, the
+  MIT and CC BY-NC-SA 4.0 licence lines, the repository, the trademark notice, the 25 third-party
   components linked into the two images with SPDX identifier and copyright
-  lines, and the licence texts they ask for, 304,869 bytes in the panel
+  lines, and the licence texts they ask for, 302,913 bytes in the panel
   image. A drag, a 56px scroll bar, PAGE UP, PAGE DOWN and BACK
   (`about_screen.c`, `about_draw.c`; `test_about_screen`).
   `tools/gen_licenses.py` writes the screen's table and the one in the new

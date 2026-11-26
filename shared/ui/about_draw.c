@@ -20,12 +20,12 @@
 
 /*
  * The lines that stay as they are written in every language: the name as
- * the splash writes it, the designer, the maker's mark, the copyright
+ * the splash writes it, the designer, the implementers, the copyright
  * line, the licences' names and the repository.
  */
 #define AB_NAME      "rcbench"                         /**< the product */
 #define AB_DESIGN    "Design: Julian Wingert"          /**< the designer */
-#define AB_MARK      "JuWi made"                       /**< the maker's mark */
+#define AB_IMPL      "Implemented by Claude and Julian" /**< the implementers */
 #define AB_COPYRIGHT "Copyright 2026 Julian Wingert"   /**< the copyright */
 #define AB_LIC_SW    "MIT License (MIT)"               /**< LICENSE */
 /** @brief hardware/LICENSE. */
@@ -110,7 +110,7 @@ int ab_segs(ab_seg_t *segs)
         line('N', s_cu),
         line('B', NULL),
         line('N', AB_DESIGN),
-        line('N', AB_MARK),
+        line('N', AB_IMPL),
         line('N', AB_COPYRIGHT),
         line('B', NULL),
         line('H', TR(ABOUT_H_LICENCES)),

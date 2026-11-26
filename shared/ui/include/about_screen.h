@@ -12,7 +12,8 @@
  * - rcbench, the panel firmware's version (RCBENCH_VERSION_STRING, as
  *   UPDATES shows it) and the IOmcu's, as UPDATES' IOmcu section has it,
  *   or that no IOmcu has named one;
- * - Design: Julian Wingert, JuWi made, Copyright 2026 Julian Wingert;
+ * - Design: Julian Wingert, Implemented by Claude and Julian, Copyright
+ *   2026 Julian Wingert;
  * - LICENCES: firmware and software under the MIT License, the hardware
  *   designs in hardware/ under CC BY-NC-SA 4.0 (hardware/LICENSE), the
  *   repository github.com/subtilitas/rcbench;

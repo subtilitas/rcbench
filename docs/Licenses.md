@@ -13,7 +13,7 @@ list on SETUP > PANEL > About rcbench
 
 Copyright 2026 Julian Wingert
 
-Design: Julian Wingert. JuWi made.
+Design: Julian Wingert. Implemented by Claude and Julian.
 
 | Part | Licence | File |
 | --- | --- | --- |
@@ -84,7 +84,7 @@ LICENCE TEXTS AND NOTICES, as 9,324 rows of at most 92 cells.
 | Figure | Value |
 | --- | --- |
 | Texts in `third_party/notices/` and the two read in place | 23 |
-| ABOUT's table and texts in the image (`about_gen.c`'s rodata) | 304,869 bytes |
+| ABOUT's table and texts in the image (`about_gen.c`'s rodata) | 302,913 bytes |
 | Panel image with them | 4,024,688 bytes |
 | Application slot | 8,126,464 bytes, 4,101,776 bytes (50%) free |
 
@@ -94,7 +94,7 @@ The texts live in flash, not as a file on the SD (Secure Digital) card:
   IOmcu image it holds, from the moment it is flashed;
 - the card is optional and removable, and a file on it can be deleted or
   can belong to another release;
-- the 304,869 bytes are 3.8% of the application slot; picolibc's
+- the 302,913 bytes are 3.7% of the application slot; picolibc's
   COPYING.picolibc is 237,174 bytes of them.
 
 The screen draws the faces' characters only (printable ASCII, °, Ω and the

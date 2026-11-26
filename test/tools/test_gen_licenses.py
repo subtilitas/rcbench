@@ -66,3 +66,20 @@ def test_a_long_line_breaks_at_a_space_and_keeps_its_indent():
 def test_characters_outside_the_faces_are_spelled():
     """© becomes (c), an accent its letter, the German letters stay."""
     assert g.face("© Frédéric Häne\tx") == "(c) Frederic Häne       x"
+
+
+def test_notice_agrees_with_the_list_of_linked_components():
+    """NOTICE names esp_hosted as linked and nothing the list lacks."""
+    text = g.NOTICE.read_text(encoding="utf-8")
+    assert g.notice_problems(text) == []
+    stale = text.replace(
+        "  espressif/esp_hosted 2.13.0",
+        "  espressif/esp_wifi_remote 1.6.5        Apache License 2.0\n"
+        "  espressif/esp_hosted 2.13.0", 1)
+    assert g.notice_problems(stale) == [
+        "NOTICE lists espressif/esp_wifi_remote 1.6.5 as linked; the list "
+        "does not"]
+    gone = text.replace("  espressif/esp_hosted 2.13.0",
+                        "  espressif/esp_hosted 2.13.0 (not linked)", 1)
+    assert g.notice_problems(gone) == [
+        "NOTICE does not list espressif/esp_hosted 2.13.0 as linked"]

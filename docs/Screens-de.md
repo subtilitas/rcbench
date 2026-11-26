@@ -6603,7 +6603,7 @@ und einen 56px breiten Scrollbalken bei x 960. Von oben:
 | Teil | Zeilen |
 | --- | --- |
 | rcbench | die Version der Panel-Firmware, wie UPDATES sie zeigt; die der IOmcu-Firmware, sobald das IOmcu sie genannt hat, sonst `unbekannt: kein IOmcu hat geantwortet` |
-| Der Designer | `Design: Julian Wingert`, `JuWi made`, `Copyright 2026 Julian Wingert` |
+| Der Designer | `Design: Julian Wingert`, `Implemented by Claude and Julian`, `Copyright 2026 Julian Wingert` |
 | LIZENZEN | Firmware und Software unter der MIT License, die Hardware-Entwürfe in `hardware/` unter CC BY-NC-SA 4.0 (`hardware/LICENSE`), das Repository `github.com/subtilitas/rcbench` |
 | MARKEN | der Hinweis zur beschreibenden Nennung aus `NOTICE`: KST, CHASERVO, Hitec und jeder andere Name gehören ihren Inhabern und beschreiben nur die Kompatibilität |
 | FREMDKOMPONENTEN: PANEL-FIRMWARE | 18 Komponenten: Name und Version, SPDX-Kennung, Copyright-Zeilen |

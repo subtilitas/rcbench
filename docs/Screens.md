@@ -6078,7 +6078,7 @@ x 960. From the top:
 | Part | Rows |
 | --- | --- |
 | rcbench | the panel firmware's version, as UPDATES shows it; the IOmcu firmware's, once the IOmcu has named it, else `not known: no IOmcu has answered` |
-| The designer | `Design: Julian Wingert`, `JuWi made`, `Copyright 2026 Julian Wingert` |
+| The designer | `Design: Julian Wingert`, `Implemented by Claude and Julian`, `Copyright 2026 Julian Wingert` |
 | LICENCES | firmware and software under the MIT License, the hardware designs in `hardware/` under CC BY-NC-SA 4.0 (`hardware/LICENSE`), the repository `github.com/subtilitas/rcbench` |
 | TRADEMARKS | the referential-use notice of `NOTICE`: KST, CHASERVO and Hitec and every other name are their owners' and describe compatibility only |
 | THIRD-PARTY COMPONENTS: PANEL FIRMWARE | 18 components: name and version, SPDX identifier, copyright lines |

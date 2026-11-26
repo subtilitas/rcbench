@@ -28,13 +28,17 @@ linker took, traced to its source file and that file's licence header.
 
     tools/gen_licenses.py              write about_gen.c and the doc tables
     tools/gen_licenses.py --check      exit 1 when either differs from what
-                                       the list writes
+                                       the list writes, or when NOTICE's
+                                       list of fetched components names a
+                                       linked one the list does not, or
+                                       misses one it has
     tools/gen_licenses.py --refresh    copy the notice texts anew from
                                        their origins (needs the toolchains)
     tools/gen_licenses.py --sources    exit 1 when a stored notice differs
                                        from its origin; an origin that is
                                        not on this machine is named and
-                                       skipped
+                                       skipped; NOTICE is checked as with
+                                       --check
 
 The roots of the origins: IDF_PATH (~/esp/esp-idf-v6.1), PICO_SDK_PATH
 (~/toolchains/pico-sdk), RCBENCH_RISCV_TC (the riscv32-esp-elf toolchain
@@ -55,12 +59,16 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import sys
 import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
+NOTICE = REPO / "NOTICE"
+# The heading of NOTICE's section on the panel build's fetched components.
+PANEL_FETCHES = "Components the ESP32-P4 panel build fetches"
 NOTICES = REPO / "third_party" / "notices"
 OUT_C = REPO / "shared" / "ui" / "about_gen.c"
 DOCS = {"en": REPO / "docs" / "Licenses.md",
@@ -128,6 +136,8 @@ class Component:
     copyright: list[str]
     firmware: str                 # "panel" or "iomcu"
     notices: list[str] = field(default_factory=list)
+    registry: str = ""            # its name in the component registry, as
+                                  # NOTICE's list of fetched components has it
 
 
 @dataclass
@@ -237,7 +247,8 @@ COMPONENTS = [
               "ESP-IDF 6.1.0", "BSD-2-Clause",
               ["Copyright (c) 2016, Linaro Limited"], "panel", ["ubsan"]),
     Component("ESP-Hosted-MCU (link to the ESP32-C6)", "2.13.0",
-              "Apache-2.0", [ESPRESSIF], "panel", ["apache-2.0"]),
+              "Apache-2.0", [ESPRESSIF], "panel", ["apache-2.0"],
+              "espressif/esp_hosted"),
     Component("protobuf-c (in ESP-Hosted-MCU)", "1.4.1", "BSD-2-Clause",
               ["Copyright (c) 2008-2022, Dave Benson and the protobuf-c "
                "authors."], "panel", ["protobuf-c"]),
@@ -588,9 +599,41 @@ def outputs() -> dict[Path, str]:
     return out
 
 
+def notice_problems(text: str) -> list[str]:
+    """Where NOTICE's list of fetched components disagrees with the list.
+
+    In NOTICE's section on the panel build's components, a line
+    `  espressif/<name> <version>  <licence>` that is not
+    marked "(not linked)" is a linked component: it must be a component
+    here with that registry name and version, and every component here
+    with a registry name must be such a line.
+    """
+    lines = text.splitlines()
+    try:
+        start = lines.index(PANEL_FETCHES)
+    except ValueError:
+        return [f"NOTICE has no section {PANEL_FETCHES!r}"]
+    end = next((k for k in range(start + 2, len(lines) - 1)
+                if lines[k + 1].startswith("---")), len(lines))
+    linked = set()
+    for line in lines[start:end]:
+        m = re.match(r"^  (espressif/\S+) (\S+)\s+(.*)$", line)
+        if m and "(not linked)" not in m.group(3):
+            linked.add((m.group(1), m.group(2)))
+    listed = {(c.registry, c.version) for c in COMPONENTS if c.registry}
+    out = [f"NOTICE lists {n} {v} as linked; the list does not"
+           for n, v in sorted(linked - listed)]
+    out += [f"NOTICE does not list {n} {v} as linked" for n, v in
+            sorted(listed - linked)]
+    return out
+
+
 def check() -> int:
-    """Compare the files with what the list writes."""
+    """Compare the files with what the list writes, and NOTICE with it."""
     bad = 0
+    for problem in notice_problems(NOTICE.read_text(encoding="utf-8")):
+        print(problem)
+        bad += 1
     for n in NOTICE_LIST:
         if n.stored and not notice_path(n).exists():
             print(f"{notice_path(n).relative_to(REPO)}: missing")
@@ -609,6 +652,9 @@ def check() -> int:
 def sources(refresh: bool) -> int:
     """Hold the stored notices to their origins, or copy them anew."""
     bad = 0
+    for problem in notice_problems(NOTICE.read_text(encoding="utf-8")):
+        print(problem)
+        bad += 1
     for n in NOTICE_LIST:
         if not n.stored or n.root is None:
             continue

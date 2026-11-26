@@ -13,7 +13,7 @@ Panel zeigt dieselbe Liste unter SETUP > PANEL > Über rcbench
 
 Copyright 2026 Julian Wingert
 
-Design: Julian Wingert. JuWi made.
+Design: Julian Wingert. Implemented by Claude and Julian.
 
 | Teil | Lizenz | Datei |
 | --- | --- | --- |
@@ -86,7 +86,7 @@ Zeichen.
 | Größe | Wert |
 | --- | --- |
 | Texte in `third_party/notices/` und die zwei an Ort und Stelle gelesenen | 23 |
-| Tabelle und Texte von ABOUT im Image (Rodata von `about_gen.c`) | 304.869 Byte |
+| Tabelle und Texte von ABOUT im Image (Rodata von `about_gen.c`) | 302.913 Byte |
 | Panel-Image damit | 4.024.688 Byte |
 | Anwendungs-Slot | 8.126.464 Byte, 4.101.776 Byte (50%) frei |
 
@@ -97,7 +97,7 @@ Digital):
   IOmcu-Images, das es enthält, vom Flashen an;
 - die Karte ist optional und entnehmbar, und eine Datei darauf kann
   gelöscht sein oder zu einem anderen Release gehören;
-- die 304.869 Byte sind 3,8% des Anwendungs-Slots; COPYING.picolibc von
+- die 302.913 Byte sind 3,7% des Anwendungs-Slots; COPYING.picolibc von
   picolibc macht 237.174 Byte davon aus.
 
 Der Bildschirm zeichnet nur die Zeichen der Schriften (druckbares ASCII,

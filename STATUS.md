@@ -1333,13 +1333,13 @@ ID row's typed id comes with the SERVO LABEL rows.
 
 SETUP > PANEL's last row, About rcbench (`about_screen.c`, `about_draw.c`, `test_about_screen`),
 opens ABOUT: the panel firmware's version and the IOmcu's once named, `Design: Julian Wingert`,
-`JuWi made`, `Copyright 2026 Julian Wingert`, the MIT and CC BY-NC-SA 4.0 licence lines, the
-repository, the trademark notice, the 25 third-party components of the panel and the IOmcu
-firmware with SPDX identifier and copyright lines, 2 references, and the notice texts the
+`Implemented by Claude and Julian`, `Copyright 2026 Julian Wingert`, the MIT and CC BY-NC-SA 4.0
+licence lines, the repository, the trademark notice, the 25 third-party components of the panel and
+the IOmcu firmware with SPDX identifier and copyright lines, 2 references, and the notice texts the
 licences ask for: 9,355 rows of 24px, 17 on screen, a drag, a 56px scroll bar, PAGE UP and PAGE
-DOWN. The table and the texts are `about_gen.c`, 304,869 bytes of flash, which
-`tools/gen_licenses.py` writes from one list together with the table in `docs/Licenses.md`;
-its `--check` fails on drift and CI runs it.
+DOWN. The table and the texts are `about_gen.c`, 302,913 bytes of flash, which
+`tools/gen_licenses.py` writes from one list together with the table in `docs/Licenses.md`; its
+`--check` fails on drift and CI runs it.
 
 The scan flow (`scan_flow.c`, `test_scan_flow`; `servo_scan_decide()` in
 `servo_active.c`, `test_servo_scan`) takes a scanned line on the frame task:
