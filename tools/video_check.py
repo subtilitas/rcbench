@@ -49,7 +49,7 @@ VIDEO = REPO / "tools" / "video"
 CACHE = REPO / "build" / "video" / "cache"
 PANEL = (1024, 600)
 FRAME = (1920, 1080)
-ANCHORS = ("node", "antenna", "sausage", "tank", "barrel", "roll",
+ANCHORS = ("node", "antenna", "sausage", "tank", "barrel", "light", "dog",
            "wing", "servo", "hinge", "rod", "flap", "edge", "imu", "tape",
            "horn", "lead", "port", "display", "rbmod", "pdmini", "J1", "J2",
            "xt60", "usbc",
@@ -235,9 +235,10 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
     _keys(scene.get("camera"), 3, f"{where} camera", errors)
     if scene.get("model", "mockup") not in ("mockup", "cad", "dial", "duo",
                                             "mini", "part", "rudder",
-                                            "wurst", "wurst-kinetic"):
+                                            "wurst", "wurst-kinetic",
+                                            "wurst-dog"):
         errors.append(f"{where}: model must be mockup, cad, dial, duo, "
-                      "mini, part, rudder, wurst or wurst-kinetic")
+                      "mini, part, rudder, wurst, wurst-kinetic or wurst-dog")
     if scene.get("model") == "part" and not (
             isinstance(scene.get("part"), str) and scene["part"]
             and all(c.isalnum() or c in "-_" for c in scene["part"])):
@@ -266,7 +267,7 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
             break
     for name, ends in (("estop", "out, to 1, pressed"),
                        ("swing", "in, to 1, out"),
-                       ("fire", "loaded, to 1, landed")):
+                       ("fire", "loaded, to 1, on the ground")):
         for key in scene.get(name, []):
             if not (isinstance(key, list) and len(key) == 2
                     and _number(key[0]) and _number(key[1])

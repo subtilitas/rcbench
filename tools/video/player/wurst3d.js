@@ -5,18 +5,21 @@
 // inverted hull 1.8mm outside it, before a pale disc that sets them off.
 // setSwing(k) turns the arm from k = 0, the sausage upright, to k = 1, the
 // sausage out to the right by 90 degrees.  buildWurst(true) is the kinetic
+// buildWurst(false, true) adds a dog to the right of the node, which
+// jumps 70mm with k.  buildWurst(true) is the kinetic
 // node: a tank of compressed air and a barrel in the servo's place.
 // setFire(k) sends the sausage out of the barrel, from k = 0, loaded, to
-// k = 1, 1100mm on and 96mm lower, where it lies in a roll on a plate
-// before a second pale disc.
+// k = 0.6, where its end meets a traffic light 987mm from the muzzle and
+// the amber lamp takes over from the red one, and on to k = 1, where it
+// lies on the ground 260mm back after 1 turn in the air.
 //
 // SPDX-License-Identifier: MIT
 import * as THREE from 'three';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 
-const INK = 0x10131c, EDGE = 1.8;
+const INK = 0x10131c, EDGE = 1.8, HIT = .6;
 
-export function buildWurst(kinetic = false) {
+export function buildWurst(kinetic = false, dog = false) {
   const scene = new THREE.Scene();
   const cam = new THREE.PerspectiveCamera(30, 16 / 9, 5, 3000);
   scene.add(new THREE.AmbientLight(0xffffff, 1.5));
@@ -112,20 +115,31 @@ export function buildWurst(kinetic = false) {
     bore.rotation.y = Math.PI / 2;
     bore.position.set(223.4, 134, -10);
     scene.add(bore);
-    // The roll, its upper half folded back, on a plate where the sausage lands.
-    const far = new THREE.Mesh(new THREE.CircleGeometry(270, 96),
+    // A traffic light 987mm from the muzzle, before a second pale disc.
+    // It turns about its foot when the sausage hits it.
+    const far = new THREE.Mesh(new THREE.CircleGeometry(300, 96),
       new THREE.MeshBasicMaterial({color: 0xfff1c2}));
-    far.position.set(1220, 120, -160);
+    far.position.set(1150, 150, -160);
     scene.add(far);
-    add(rod(130, 6), 0xf4f1e6, scene, 1220, 3, -10);
-    add(box(204, 18, 66, 8), 0xe0a868, scene, 1220, 15, -6);
-    add(box(204, 18, 46, 8), 0xe0a868, scene, 1220, 40, -46).rotation.x = -1.1;
+    const light = new THREE.Group();
+    light.position.set(1240, 0, -10);
+    scene.add(light);
+    add(rod(34, 8), 0x232833, light, 0, 4, 0);
+    add(rod(6, 64), 0x8a93a6, light, 0, 40, 0);
+    add(box(60, 170, 50, 8), 0x2b303b, light, 0, 150, 0);
+    const lamps = [[205, 0xff3b4e], [150, 0xffb000], [95, 0x2fd06b]]
+      .map(([y, c]) => {
+        const m = add(new THREE.SphereGeometry(18, 24, 16), c, light,
+                      0, y, 20);
+        m.material.emissive = new THREE.Color(c);
+        return m;
+      });
     const shot = new THREE.Group();
     scene.add(shot);
     const wurst = add(new THREE.CapsuleGeometry(14, 152, 12, 32), 0xc8693a,
                       shot);
     knots(wurst);
-    // Four puffs at the muzzle, there for the first third of the flight.
+    // Four puffs at the muzzle, there for the first fifth of the way.
     const puffs = [[0, 0, 0, 30], [22, 20, 8, 22], [26, -16, -6, 20],
                    [48, 4, 4, 16]].map(([x, y, z, r]) => {
       const m = add(new THREE.SphereGeometry(r, 20, 14), 0xffffff, scene,
@@ -133,12 +147,18 @@ export function buildWurst(kinetic = false) {
       return m;
     });
     const setFire = k => {
-      const way = 1100 * k;
-      shot.position.set(120 + way, 134 - 96 * k * k, -10);
-      shot.rotation.z = -Math.PI / 2 - .5 * Math.sin(Math.PI * k);
+      // To HIT the sausage flies; from HIT on it bounces back and falls.
+      const u = Math.min(k / HIT, 1), v = Math.max((k - HIT) / (1 - HIT), 0);
+      shot.position.set(120 + 1000 * u - 260 * v,
+                        134 - 14 * u * u + 160 * v - 266 * v * v, -10);
+      shot.rotation.z = -Math.PI / 2 + 2 * Math.PI * v;
       shot.visible = k > 0;
       lamp.material.emissiveIntensity = k > 0 ? 1 : 0;
-      const puff = k > 0 && k < .35 ? Math.sin(Math.PI * k / .35) : 0;
+      light.rotation.z = -.12 * Math.exp(-3 * v) * Math.sin(14 * v);
+      lamps.forEach((m, i) => {
+        m.material.emissiveIntensity = (v > 0 ? i === 1 : i === 0) ? .9 : 0;
+      });
+      const puff = k > 0 && k < .2 ? Math.sin(Math.PI * k / .2) : 0;
       for (const m of puffs) {
         m.visible = puff > .25;
         m.scale.setScalar(Math.max(puff, .25));
@@ -149,7 +169,7 @@ export function buildWurst(kinetic = false) {
       scene, cam, setFire, ...idle,
       anchors: {...fixed, tank: () => [55, 78, 16],
                 barrel: () => [150, 134, 11],
-                roll: () => [1140, 15, 27],
+                light: () => [1240, 205, 28],
                 sausage: world(wurst, 0, 0, 14)},
     };
   }
@@ -185,7 +205,27 @@ export function buildWurst(kinetic = false) {
   }
   scene.add(strokes);
 
+  // The dog faces the node and jumps as the sausage comes down.
+  const hound = new THREE.Group();
+  hound.position.set(370, 0, 10);
+  hound.visible = dog;
+  scene.add(hound);
+  const FUR = 0xb9793f, EAR = 0x6b3f1e;
+  add(new THREE.CapsuleGeometry(26, 70, 12, 32), FUR, hound, 0, 62, 0)
+    .rotation.z = Math.PI / 2;
+  add(new THREE.SphereGeometry(24, 24, 16), FUR, hound, -62, 94, 0);
+  add(box(32, 16, 18, 5), FUR, hound, -90, 88, 0);
+  add(new THREE.SphereGeometry(5, 16, 12), INK, hound, -107, 91, 0);
+  add(new THREE.SphereGeometry(3.5, 12, 8), INK, hound, -74, 102, 20);
+  for (const z of [-17, 17]) {
+    add(box(11, 28, 6, 2.5), EAR, hound, -50, 104, z).rotation.z = .5;
+    for (const x of [-34, 36]) add(rod(6, 40), FUR, hound, x, 20, z * .8);
+  }
+  add(rod(4, 38), FUR, hound, 64, 84, 0).rotation.z = -.8;
+
   const setSwing = k => {
+    hound.position.y = 70 * k;
+    hound.rotation.z = -.3 * k;
     pivot.rotation.z = -Math.PI / 2 * k;
     lamp.material.emissiveIntensity = k;
     strokes.visible = k > .85;
@@ -194,6 +234,7 @@ export function buildWurst(kinetic = false) {
   return {
     scene, cam, setSwing, ...idle,
     anchors: {...fixed, servo: () => [40, 118, 3],
+              dog: world(hound, -62, 94, 24),
               sausage: world(wurst, 0, 40, 14)},
   };
 }
