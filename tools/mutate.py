@@ -94,7 +94,8 @@ COPIED = ("shared", "protocols", "test/host", "firmware/iomcu",
           "firmware/panel/components/storage", "firmware/panel/main/keys",
           "firmware/node/main",
           "testbench/touch-injector/core", "tools/gen_esc_profiles.py",
-          "third_party")
+          "tools/printer_files.py", "tools/printer_spec.py",
+          "tools/printer_steps.py", "third_party")
 # Where a mutant is made, and the folder under it where none is: a pin
 # driver is compiled by the IOmcu build only.
 MUTATED = ("shared", "protocols")
