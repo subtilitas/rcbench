@@ -76,6 +76,8 @@ TRACKED = [
     "shared/ui/ui_icons.c",
     "shared/ui/ui_band.c",
     "shared/ui/scan_flow.c",
+    "shared/ui/scanner_pane.c",
+    "shared/ui/scanner_code.c",
     "shared/ui/ui_help.c",
     "shared/ui/help_outputs.c",
     "shared/ui/help_setup.c",
@@ -582,6 +584,7 @@ TRACKED = [
     "shared/scanner/scan_line.c",
     "shared/scanner/gm861.c",
     "shared/scanner/scan_port.c",
+    "shared/scanner/scanner_codes.c",
 ]
 
 # Sources under shared/ that are tables and hold no function: gcc gives them

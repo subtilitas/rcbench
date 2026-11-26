@@ -200,7 +200,8 @@ TEST_CASE(a_list_marks_the_keys_of_a_row_whose_value_opens_the_keypad)
 
 /* The IMU and the Dial are the panel's, over Bluetooth LE through the
  * ESP32-C6: their entries' marks say so and not that the IOmcu reads them,
- * every SENSORS entry's says the IOmcu reads it. */
+ * every SENSORS entry's but the scanner's says the IOmcu reads it.  The
+ * scanner's, on the panel's header P3, says it is not needed. */
 TEST_CASE(the_imu_entry_says_the_panel_reads_it)
 {
     s_board = (uint16_t)OUTBIND_BOARD_UNKNOWN;
@@ -209,7 +210,9 @@ TEST_CASE(the_imu_entry_says_the_panel_reads_it)
         sensors_pane_select(e);
         ui_help_page_t p;
         REQUIRE(ui_help_page(settings_screen(), false, 0, &p));
-        CHECK_EQ(p.item[0].text, TX_HG_SET_ENTRY);
+        CHECK_EQ(p.item[0].text, (e == SENS_ENTRY_SCANNER)
+                                     ? TX_HG_SET_ENTRY_SCANNER
+                                     : TX_HG_SET_ENTRY);
     }
     for (int e = 0; e < WL_ENTRY_COUNT; ++e) {
         pose_hub();

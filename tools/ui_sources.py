@@ -38,6 +38,8 @@ SOURCES = [
     "shared/ui/ui_icons.c",
     "shared/ui/ui_band.c",
     "shared/ui/scan_flow.c",
+    "shared/ui/scanner_pane.c",
+    "shared/ui/scanner_code.c",
     "shared/ui/ui_plot.c",
     "shared/ui/ui_slider.c",
     "shared/ui/ui_tabs.c",
@@ -275,6 +277,7 @@ SOURCES = [
     "protocols/rcnode/rcnode.c",
     "protocols/rcnode/rcnode_adv.c",
     "shared/vibe/vibe_solve.c",
+    "shared/scanner/scanner_codes.c",
     # FILES, and the file manager's core it starts its jobs and keeps its
     # panes with (shared/files), the logger's open-file rule with it.
     "shared/ui/files_screen.c",
@@ -433,6 +436,7 @@ INCLUDES = [
     "protocols/dialknob/include",
     "protocols/rcnode/include",
     "shared/vibe/include",
+    "shared/scanner/include",
 ]
 
 # The files of shared/ui/CMakeLists.txt that SOURCES leaves out, and why.

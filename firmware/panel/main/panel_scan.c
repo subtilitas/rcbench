@@ -22,6 +22,7 @@
 #include "freertos/task.h"
 
 #include "panel.h"
+#include "scanner_pane.h"
 
 /** @brief The console lines' tag. */
 static const char *TAG = "scan";
@@ -48,6 +49,10 @@ static uint8_t s_found_cut;
 static portMUX_TYPE s_mux = portMUX_INITIALIZER_UNLOCKED;
 /** @brief SETUP's Scanner row, for the task. */
 static atomic_bool s_want_on;
+/** @brief SETUP asked for gm861_recheck(), for the task. */
+static atomic_bool s_want_recheck;
+/** @brief SETUP asked for gm861_factory_reset(), for the task. */
+static atomic_bool s_want_reset;
 /** @brief SETUP's READ MODE, for the task (gm861_mode_t). */
 static atomic_int s_want_mode;
 /** @brief The UART driver's event queue while UART1 is installed. */
@@ -237,6 +242,26 @@ static void publish(void)
 }
 
 /**
+ * @brief SETUP's commands to the sequencer: a recheck, a factory reset.
+ */
+static void commands(void)
+{
+    const bool recheck = atomic_exchange(&s_want_recheck, false);
+    const bool reset = atomic_exchange(&s_want_reset, false);
+    if (!recheck && !reset) {
+        return;
+    }
+    portENTER_CRITICAL(&s_mux);
+    if (reset) {
+        gm861_factory_reset(&s_port.g);
+    } else {
+        gm861_recheck(&s_port.g);
+    }
+    portEXIT_CRITICAL(&s_mux);
+    ESP_LOGI(TAG, "%s", reset ? "factory reset asked" : "recheck asked");
+}
+
+/**
  * @brief The task: SETUP's values, the bytes, the step and the view, every
  *        PANEL_SCAN_PERIOD_MS.
  * @param arg Unused.
@@ -250,6 +275,7 @@ static void scan_task(void *arg)
         apply(atomic_load(&s_want_on),
               (gm861_mode_t)atomic_load(&s_want_mode));
         if (s_port.on) {
+            commands();
             if (s_events != NULL) {
                 receive(now);
             }
@@ -295,6 +321,32 @@ bool panel_scan_take_line(char *line, size_t n, bool *too_long)
     const bool got = scan_port_take_line(&s_port, line, n, too_long);
     portEXIT_CRITICAL(&s_mux);
     return got;
+}
+
+void panel_scan_frame(uint32_t now)
+{
+    panel_scan_view_t pv;
+    panel_scan_view(&pv);
+    const scanner_view_t v = {
+        .on = pv.on,
+        .state = (uint8_t)pv.state,
+        .baud = pv.baud,
+        .bad_zone = pv.bad_zone,
+        .lines = pv.counts.lines,
+        .noise = pv.counts.noise,
+        .partial = pv.counts.partial,
+        .longs = pv.counts.overlong,
+        .bad_crc = pv.counts.bad_crc,
+    };
+    scanner_pane_set_view(&v, now);
+    scanner_cmd_t cmd;
+    while (scanner_pane_take(&cmd)) {
+        if (cmd == SCANNER_CMD_RESET) {
+            atomic_store(&s_want_reset, true);
+        } else if (cmd == SCANNER_CMD_RECHECK) {
+            atomic_store(&s_want_recheck, true);
+        }
+    }
 }
 
 bool panel_scan_has_line(void)

@@ -13,6 +13,7 @@
 #include "settings_rows_int.h"
 
 #include "sbk_screen.h"
+#include "scanner_pane.h"
 #include "sensors_pane.h"
 #include "settings_screen.h"
 #include "settings_sensors.h"
@@ -24,7 +25,8 @@
 
 /** @brief The most rows a list has: its settings, its strings and SD
  *         CARD's rows of the settings backup. */
-#define MAX_ENTRIES (MAX_ROWS + SETTING_TEXT_COUNT + SBK_SETUP_ROWS)
+#define MAX_ENTRIES (MAX_ROWS + SETTING_TEXT_COUNT + SBK_SETUP_ROWS \
+                     + SCANNER_ROWS_MAX)
 
 /**
  * @brief The list of @p cat in row order, its strings after its settings; the
@@ -55,6 +57,18 @@ static int entries(setting_cat_t cat, settings_row_t *out, int max)
             out[rows] = (settings_row_t){ ids[i], -1, NULL };
         }
         ++rows;
+    }
+    /* SENSORS > SCANNER: its rows after its two settings. */
+    if (cat == SET_CAT_SENSORS
+        && sensors_pane_selected() == SENS_ENTRY_SCANNER) {
+        const ui_setlist_custom_t *sc[SCANNER_ROWS_MAX];
+        const int ns = scanner_pane_rows(sc, SCANNER_ROWS_MAX);
+        for (int i = 0; i < ns && i < SCANNER_ROWS_MAX; ++i) {
+            if (out != NULL && rows < max) {
+                out[rows] = (settings_row_t){ (setting_id_t)0, -1, sc[i] };
+            }
+            ++rows;
+        }
     }
     setting_text_id_t texts[SETTING_TEXT_COUNT];
     const int nt = settings_texts_in_category(cat, texts, SETTING_TEXT_COUNT);

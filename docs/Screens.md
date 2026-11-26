@@ -6042,16 +6042,17 @@ open, and on every other screen.
 
 ### SENSORS: the split pane
 
-SENSORS groups the devices read by the IOmcu. The split view has 8 entries
-on the left and the selected entry's settings on the right. The panel's
+SENSORS groups the devices read by the IOmcu, and the panel's QR scanner.
+The split view has 9 entries on the left and the selected entry's settings
+on the right. The panel's
 Bluetooth IMU is on WIRELESS ([WIRELESS: the IMU and the
 Dial](#wireless-the-imu-and-the-dial)), in a split view of the same kind.
 
 ![SENSORS, two parts fitted](img/setup-sensors.png)
 
 The left list has room from body y 8 to 440, 4px above the strip, for 9
-entries of 220 x 48px at a 48px pitch. SENSORS fills 8, top to bottom SENSOR
-BUS, INA228, INA3221 0x40 to 0x43, AS5600 and PHASE TAP. An entry takes touches over its 48px and
+entries of 220 x 48px at a 48px pitch. SENSORS fills all 9, top to bottom
+SENSOR BUS, INA228, INA3221 0x40 to 0x43, AS5600, PHASE TAP and SCANNER. An entry takes touches over its 48px and
 draws its card 1px in from its top and bottom, 2px between two cards. An
 entry shows its name in the 12 x 24px face and its state under it in the
 8 x 16px face. The selected entry has the lit fill and the accent
@@ -6067,6 +6068,7 @@ of the 10 x 20px face.
 | INA3221 0x40 to 0x43 | a state of the table in [SENSORS: the INA3221 parts](#sensors-the-ina3221-parts) | 10 |
 | AS5600 | `ON`, `NOT ACCEPTED BY THE IOMCU` | 2 |
 | PHASE TAP | `ON`, `NOT ACCEPTED BY THE IOMCU` | 7 |
+| SCANNER | a state of the table in [SENSORS: the QR scanner](#sensors-the-qr-scanner) | 12; 2 while off |
 
 - An entry with an enable row shows that row alone and reads `OFF` while it is
   off. ON adds the entry's other rows under it.
@@ -6526,6 +6528,62 @@ pin taken, or once the tap is switched off and the page holds it off. Tap gap
 2ms with Tap lowest tone at 400Hz is refused by design: the gap has to be
 at least one period of the lowest tone, 2.5ms at 400Hz
 (`tone_init()`, `protocols/phase_tap/tone.c`).
+
+### SENSORS: the QR scanner
+
+![SENSORS, the scanner READY with a line taken](img/setup-scanner-ready.png)
+
+SCANNER is the GM861S module on the panel's header P3: UART1 (universal
+asynchronous receiver-transmitter), TX IO4, RX IO5, 3V3 and GND
+([wiring](Building.md#qr-scanner-wiring)). Every feature works without a
+scanner: the servo id is typed on the SERVO ID row. The page's row
+`Without a scanner` says so, ON or OFF.
+
+| Row | Kind | Content |
+| --- | --- | --- |
+| Scanner | setting, ON or OFF, default OFF | OFF: UART1 is not installed, IO4 and IO5 stay inputs, and the page lists this row and `Without a scanner` |
+| Read mode | setting, SENSING or CONTINUOUS | SENSING reads when the picture changes; CONTINUOUS keeps the light on and reads every 1.0s. Written to the module at once |
+| Without a scanner | text | the servo id is typed on SERVO ID |
+| State | text | the state and the rate, `READY 9600`; in NO ANSWER after a refused zone, the zone, `NO ANSWER 0x000D` |
+| Last scan | text | the last line, its first 13 characters, and its age in s |
+| Taken as | text | `SERVO`, `NOT A SERVO ID`, `CODE TOO LONG`, `REFUSED: RUN`; during TEST `TEST: OK`, `TEST: NOT AN ID`, `TEST: TOO LONG`, `TEST: RUN` |
+| Counts | text | lines, noise, partial, long, bad CRC (cyclic redundancy check) |
+| Active servo | choice list: NONE | NONE clears the active servo; refused during a run with `RUN IN PROGRESS: THE SERVO STAYS UNTIL THE RUN ENDS.` |
+| Test | key | 30s in which a scanned line shows on this page and leaves the active servo as it is; the value counts the seconds down |
+| Check again | key | reads the module's zones and writes back what differs; ends the hold on a zone the module refused |
+| Show setup code | key | opens SETUP CODE |
+| Factory reset | key | opens SETUP CODE, whose 2s hold sends the factory reset |
+
+| State | Ink | Meaning |
+| --- | --- | --- |
+| `OFF` | dim | the Scanner row is OFF |
+| `NOT CONNECTED` | dim | IO5 reads low against its pull-down for 200ms: no module; tried again every 5s |
+| `NO ANSWER` | dim | IO5 idles high and no rate of 8 answers; or a zone reads back wrong after 2 passes |
+| `USB OUTPUT` | dim | the module answers and sends as a USB keyboard; the bench writes serial output |
+| `SETTING` | dim | the bench writes the zones that differ and saves them |
+| `READY` | green | the zones read back as wanted; a heartbeat every 10s |
+| `LOST` | dim | 3 heartbeats without an answer; the sequence starts again |
+
+No state is a fault: none raises an alert, sets a fault bit or blocks a
+screen.
+
+![SENSORS, nothing on header P3](img/setup-scanner-not-connected.png)
+
+![SENSORS, a module that answers at no rate](img/setup-scanner-no-answer.png)
+
+SETUP CODE shows the module's "Serial Output" setup code, from page 15 of
+the GM861 manual, at 12px a module: 252px, with 48px of white around it.
+It brings a module that sends as a USB keyboard back to its UART. Beside it
+stand 3 steps, the state, `HOLD 2s: FACTORY RESET` and BACK. The hold takes
+a press while the Scanner row is ON and sends zone 0x00D9 = 0x50, after
+which the sequence starts from its probe. A release before 2s sends
+nothing and shows `Hold 2s to reset the scanner to its factory settings.`
+BACK returns to SENSORS on SCANNER.
+
+![SETUP CODE](img/setup-scanner-setup-code.png)
+
+The SERVO ID row's TYPE ID, which types an id without a scanner, comes
+with the SERVO LABEL rows; Active servo's list offers NONE until then.
 
 ### The Bluetooth IMU
 

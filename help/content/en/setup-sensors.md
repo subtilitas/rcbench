@@ -12,7 +12,7 @@ SENSORS on [SETUP](setup.md) configures the IOmcu's sensor bus, INA228, up to fo
 
 ![Two parts fitted, 0x40 online](view:setup-sensors)
 
-The 220px left list has 8 entries: SENSOR BUS, INA228, INA3221 0x40 to 0x43, AS5600 and PHASE TAP. Each shows a sensor name and status. Tap an entry to display its settings in the 754px right pane.
+The 220px left list has 9 entries: SENSOR BUS, INA228, INA3221 0x40 to 0x43, AS5600, PHASE TAP and SCANNER. Each shows a sensor name and status. Tap an entry to display its settings in the 754px right pane.
 
 - Disabled entries show only their enable row and the status `OFF`. Switching ON reveals the remaining settings.
 - Selection occurs on release within the entry and within 8px of the press. A longer slide neither selects nor scrolls.
@@ -188,6 +188,31 @@ The phase tap detects ESC beeps on one motor phase. An IOmcu GPIO reads the phas
 The IOmcu rejects ADC (analog-to-digital converter) pins, output-bound pins, and pins used by the sensor bus or PD mini. Tap gap must cover at least one period of Tap lowest tone: at the default 400Hz, a 2.5ms period requires 3ms. A rejected-value message clears once a valid value is applied. The [ESC STICK](motor-stick.md) run page shows the detected beeps.
 
 Vibration and Optical tacho have stored keys and no entry: no screen or IOmcu reads them in this release.
+
+## The QR scanner
+
+![The scanner READY, a label taken](view:setup-scanner-ready)
+
+SCANNER is the GM861S module on the panel's header P3: TX IO4, RX IO5, 3V3, GND. Every feature works without one: type the servo id on SERVO ID. The row `Without a scanner` says so.
+
+| Row | What it shows or does |
+|---|---|
+| Scanner, Read mode | the settings; Read mode SENSING reads when the picture changes, CONTINUOUS keeps the light on |
+| State | the state and the rate, `READY 9600`; `NOT CONNECTED` when nothing is on P3. No state raises an alert |
+| Last scan, Taken as | the last line, its age, and what it did: `SERVO`, `NOT A SERVO ID`, `CODE TOO LONG`, `REFUSED: RUN` |
+| Counts | lines, noise, partial, long, bad CRC |
+| Active servo | NONE clears the active servo; during a run it stays |
+| Test | for 30s a scan shows here and changes nothing: `TEST: OK` or why not |
+| Check again | the module's settings read and written again |
+| Show setup code, Factory reset | open SETUP CODE |
+
+![Nothing on header P3](view:setup-scanner-not-connected)
+
+![A module that answers at no rate](view:setup-scanner-no-answer)
+
+SETUP CODE shows the module's "Serial Output" setup code. Hold the scanner 10cm from the screen: a module that sends as a USB keyboard goes back to its serial output, and the state changes to READY within 5s. HOLD 2s: FACTORY RESET puts the module back to its factory settings; a release before 2s sends nothing. BACK returns to SCANNER.
+
+![SETUP CODE](view:setup-scanner-setup-code)
 
 ## Related pages
 

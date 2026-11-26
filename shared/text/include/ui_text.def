@@ -14015,6 +14015,166 @@ UI_SETTING_LABEL(SET_SCANNER_MODE,
 UI_SETTING_HELP(SET_SCANNER_MODE,
     "SENSING reads when the picture changes",
     "SENSING liest, wenn sich das Bild ändert")
+/* SETUP > SENSORS > SCANNER (scanner_pane.c): the entry, its states (25
+ * cells of 8 x 16), its rows (43 cells) and their values (18 cells). */
+UI_TEXT(SCN_ENTRY, 16,
+    "SCANNER",
+    "SCANNER")
+UI_TEXT(SCN_ST_NOT_CONNECTED, 25,
+    "NOT CONNECTED",
+    "NICHT VERBUNDEN")
+UI_TEXT(SCN_ST_NO_ANSWER, 25,
+    "NO ANSWER",
+    "KEINE ANTWORT")
+UI_TEXT(SCN_ST_USB, 25,
+    "USB OUTPUT",
+    "USB-AUSGABE")
+UI_TEXT(SCN_ST_SETTING, 25,
+    "SETTING",
+    "EINSTELLEN")
+UI_TEXT(SCN_ST_READY, 25,
+    "READY",
+    "BEREIT")
+UI_TEXT(SCN_ST_LOST, 25,
+    "LOST",
+    "LOST")
+UI_TEXT(SCN_ROW_NOTE, 43,
+    "Without a scanner",
+    "Ohne Scanner")
+UI_TEXT(SCN_ROW_NOTE_HELP, 43,
+    "Type the servo id on SERVO ID: all works",
+    "Servo-ID in SERVO ID tippen: alles geht")
+UI_TEXT(SCN_ROW_STATE, 43,
+    "State",
+    "Zustand")
+UI_TEXT(SCN_ROW_STATE_HELP, 43,
+    "Header P3: TX IO4, RX IO5, 9600 baud",
+    "Header P3: TX IO4, RX IO5, 9600 Baud")
+UI_TEXT(SCN_ROW_LAST, 43,
+    "Last scan",
+    "Letzter Scan")
+UI_TEXT(SCN_ROW_LAST_HELP, 43,
+    "The last line read, and its age",
+    "Die zuletzt gelesene Zeile und ihr Alter")
+UI_TEXT(SCN_ROW_TAKEN, 43,
+    "Taken as",
+    "Genommen als")
+UI_TEXT(SCN_ROW_TAKEN_HELP, 43,
+    "What the last line did",
+    "Was die letzte Zeile bewirkte")
+UI_TEXT(SCN_ROW_COUNTS, 43,
+    "Counts",
+    "Zähler")
+UI_TEXT(SCN_ROW_COUNTS_HELP, 43,
+    "Lines, noise, partial, long, bad CRC",
+    "Zeilen, Störung, Teil, lang, CRC falsch")
+UI_TEXT(SCN_ROW_ACTIVE, 43,
+    "Active servo",
+    "Aktives Servo")
+UI_TEXT(SCN_ROW_ACTIVE_HELP, 43,
+    "NONE clears it, not during a run",
+    "KEINES löscht es, nicht im Lauf")
+UI_TEXT(SCN_ROW_TEST, 43,
+    "Test",
+    "Test")
+UI_TEXT(SCN_ROW_TEST_HELP, 43,
+    "30s: a scan shows here, the servo stays",
+    "30s: Scan erscheint hier, Servo bleibt")
+UI_TEXT(SCN_ROW_RECHECK, 43,
+    "Check again",
+    "Erneut prüfen")
+UI_TEXT(SCN_ROW_RECHECK_HELP, 43,
+    "Reads and sets the module's zones again",
+    "Liest und setzt die Zonen erneut")
+UI_TEXT(SCN_ROW_CODE, 43,
+    "Show setup code",
+    "Einstellcode zeigen")
+UI_TEXT(SCN_ROW_CODE_HELP, 43,
+    "Brings a USB module back to serial",
+    "Holt ein USB-Modul zurück auf seriell")
+UI_TEXT(SCN_ROW_RESET, 43,
+    "Factory reset",
+    "Werkseinstellung")
+UI_TEXT(SCN_ROW_RESET_HELP, 43,
+    "Opens the setup code: hold 2s there",
+    "Öffnet den Einstellcode: dort 2s halten")
+UI_TEXT(SCN_V_NONE, 18,
+    "--",
+    "--")
+UI_TEXT(SCN_V_BAUD, 18,
+    "%s %u",
+    "%s %u")
+UI_TEXT(SCN_V_ZONE, 18,
+    "%s 0x%04X",
+    "%s 0x%04X")
+UI_TEXT(SCN_V_LAST, 18,
+    "%.*s %us",
+    "%.*s %us")
+UI_TEXT(SCN_V_NO_SERVO, 18,
+    "NONE",
+    "KEINES")
+UI_TEXT(SCN_V_TEST_GO, 18,
+    "START",
+    "START")
+UI_TEXT(SCN_V_TEST_LEFT, 18,
+    "SCAN A CODE %us",
+    "CODE SCANNEN %us")
+UI_TEXT(SCN_TAKEN_SERVO, 18,
+    "SERVO",
+    "SERVO")
+UI_TEXT(SCN_TAKEN_NOT_ID, 18,
+    "NOT A SERVO ID",
+    "KEINE SERVO-ID")
+UI_TEXT(SCN_TAKEN_LONG, 18,
+    "CODE TOO LONG",
+    "CODE ZU LANG")
+UI_TEXT(SCN_TAKEN_RUN, 18,
+    "REFUSED: RUN",
+    "ABGELEHNT: LAUF")
+UI_TEXT(SCN_TAKEN_TEST_OK, 18,
+    "TEST: OK",
+    "TEST: OK")
+UI_TEXT(SCN_TAKEN_TEST_NOT_ID, 18,
+    "TEST: NOT AN ID",
+    "TEST: KEINE ID")
+UI_TEXT(SCN_TAKEN_TEST_LONG, 18,
+    "TEST: TOO LONG",
+    "TEST: ZU LANG")
+UI_TEXT(SCN_TAKEN_TEST_RUN, 18,
+    "TEST: RUN",
+    "TEST: LAUF")
+UI_TEXT(SCN_LOCK_OFF, 43,
+    "The scanner is OFF in SETUP.",
+    "Der Scanner ist in SETUP aus.")
+UI_TEXT(SCAN_CLEAR_RUN, 94,
+    "RUN IN PROGRESS: THE SERVO STAYS UNTIL THE RUN ENDS.",
+    "LAUF AKTIV: DAS SERVO BLEIBT BIS ZUM ENDE DES LAUFS.")
+/* SETUP CODE (scanner_code.c): the code's head, the 3 steps, the state,
+ * the hold and its hint. */
+UI_TEXT(SCN_CODE_HEAD, 0,
+    "SERIAL OUTPUT",
+    "SERIELLE AUSGABE")
+UI_TEXT(SCN_STEP_1, 0,
+    "1 CHECK: TXD TO IO5, RXD TO IO4, 3.3V, GND.",
+    "1 PRÜFEN: TXD AN IO5, RXD AN IO4, 3.3V, GND.")
+UI_TEXT(SCN_STEP_2, 0,
+    "2 HOLD THE SCANNER 10cm FROM THE SCREEN.",
+    "2 DEN SCANNER 10cm VOR DEN BILDSCHIRM HALTEN.")
+UI_TEXT(SCN_STEP_3, 0,
+    "3 THE STATE CHANGES TO READY WITHIN 5s.",
+    "3 DER ZUSTAND WIRD INNERHALB VON 5s ZU BEREIT.")
+UI_TEXT(SCN_CODE_STATE, 0,
+    "STATE: %s",
+    "ZUSTAND: %s")
+UI_TEXT(SCN_RESET_HOLD, 0,
+    "HOLD 2s: FACTORY RESET",
+    "2s HALTEN: WERKSEINSTELLUNG")
+UI_TEXT(HOLD_HINT_SCN_RESET, 94,
+    "Hold 2s to reset the scanner to its factory settings.",
+    "Halte 2s, um den Scanner auf Werkseinstellung zu setzen.")
+UI_TEXT(HG_SET_ENTRY_SCANNER, 0,
+    "The QR scanner on header P3. All works without one: type the servo id on SERVO ID. A tap shows its rows on the right.",
+    "Der QR-Scanner an Header P3. Alles geht auch ohne: Servo-ID in SERVO ID tippen. Tippen zeigt rechts seine Zeilen.")
 UI_OPTIONS(scan_mode)
 UI_OPTION("SENSING", NULL)
 UI_OPTION("CONTINUOUS", NULL)
