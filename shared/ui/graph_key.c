@@ -27,7 +27,7 @@ typedef struct {
     bool     run;                       /**< a run whose CSV is or comes  */
     bool     open;                      /**< the run or its file is open  */
     char     name[LOG_LABELLED_SIZE];   /**< the CSV, "" while not known  */
-    char     dir[CARD_DIR_MAX];         /**< its folder                   */
+    char     dir[CARD_RUN_DIR_MAX];     /**< its folder                   */
     unsigned mount;                     /**< the mount it was written on  */
     /** @brief The reason the last tap opened nothing, "" for none. */
     char     note[GK_NOTE_MAX];

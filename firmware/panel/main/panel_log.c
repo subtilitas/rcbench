@@ -4,7 +4,9 @@
  * servo test and the fault log.  A run is written to AUTO LOG FOLDER, a
  * test to USER LOG FOLDER (SETUP > SD CARD; CARD_AUTO_LOGS and
  * CARD_USER_LOGS by default, card_tree.h), each under its folder's next
- * number (log_take.h).  The control task's side, which numbers
+ * number (log_take.h).  With a labelled servo active, a SERVO run and a
+ * test go to the servo's folder `Servos/<id>` under the next number of
+ * their kind (servo_take.h).  The control task's side, which numbers
  * the runs and posts the rows, is in main.c.
  *
  * SPDX-License-Identifier: MIT
@@ -32,9 +34,12 @@
 #include "log_writer.h"
 #include "panel.h"
 #include "panel_sbk.h"
+#include "panel_servo.h"
 #include "panel_bal.h"
 #include "panel_trial.h"
 #include "run_info.h"
+#include "servo_name.h"
+#include "servo_take.h"
 #include "storage.h"
 #include "ui_card_text.h"
 #include "ui_text.h"
@@ -123,6 +128,11 @@ static log_series_set_t s_series;
  *        and every folder is walked again.  The logger task's own.
  */
 static unsigned s_series_mount;
+/**
+ * @brief The numbering of the servo folder taken last (servo_take.h),
+ *        forgotten at another mount as s_series is.  The logger task's own.
+ */
+static servo_series_t s_servo_series;
 
 /*
  * The log folders.  s_dir_want is what SETUP > SD CARD names, written by
@@ -140,9 +150,10 @@ static portMUX_TYPE s_dir_mux = portMUX_INITIALIZER_UNLOCKED;
  */
 static char s_dir_want[LOG_FOLDERS][CARD_DIR_MAX] = { CARD_AUTO_LOGS,
                                                       CARD_USER_LOGS };
-/** @brief The folder each kind's open file was opened in. */
-static char s_dir_open[LOG_FOLDERS][CARD_DIR_MAX] = { CARD_AUTO_LOGS,
-                                                      CARD_USER_LOGS };
+/** @brief The folder each kind's open file was opened in: a log folder,
+ *         or a servo's `Servos/<id>`. */
+static char s_dir_open[LOG_FOLDERS][CARD_RUN_DIR_MAX] = { CARD_AUTO_LOGS,
+                                                          CARD_USER_LOGS };
 /**
  * @brief The folders this task took last; a change forgets every folder's
  *        numbering, so the next take walks its folder.  The logger task's
@@ -225,6 +236,43 @@ void log_set_folder(log_folder_t kind, const char *dir)
  *         bench run's info cell.  Under s_dir_mux: 24 bytes each. */
 static char s_run_text[2][SETTINGS_TEXT_MAX] = { "SERVO", "" };
 
+/** @brief The active servo as the frame task last copied it, for a SERVO
+ *         run's file; "" for none.  Under s_dir_mux. */
+static char s_run_servo[SERVO_ID_SIZE];
+
+void log_set_run_servo(const char *id)
+{
+    char copy[SERVO_ID_SIZE];
+    snprintf(copy, sizeof(copy), "%s", (id != NULL) ? id : "");
+    taskENTER_CRITICAL(&s_dir_mux);
+    memcpy(s_run_servo, copy, sizeof(copy));
+    taskEXIT_CRITICAL(&s_dir_mux);
+}
+
+/** @brief The last run filed in a servo's folder.  Under s_dir_mux. */
+static log_filed_t s_filed;
+
+void log_filed(log_filed_t *out)
+{
+    taskENTER_CRITICAL(&s_dir_mux);
+    *out = s_filed;
+    taskEXIT_CRITICAL(&s_dir_mux);
+}
+
+/**
+ * @brief Run @p number of kind @p kind of servo @p id is closed: counted
+ *        for the frame task (log_filed()).  The logger task's.
+ */
+static void filed(const char *id, servo_kind_t kind, int number)
+{
+    taskENTER_CRITICAL(&s_dir_mux);
+    ++s_filed.count;
+    memcpy(s_filed.id, id, sizeof(s_filed.id));
+    s_filed.kind = kind;
+    s_filed.number = number;
+    taskEXIT_CRITICAL(&s_dir_mux);
+}
+
 void log_set_run_text(setting_text_id_t id, const char *text)
 {
     const int k = (id == SET_TEXT_DUT_NAME) ? 0
@@ -265,11 +313,22 @@ static void folder_take(log_folder_t kind, char *dir)
     }
 }
 
+/**
+ * @brief Servo folder @p dir (CARD_RUN_DIR_MAX) marked as the folder of
+ *        @p kind's next file.  The logger task's.
+ */
+static void folder_mark(log_folder_t kind, const char *dir)
+{
+    taskENTER_CRITICAL(&s_dir_mux);
+    memcpy(s_dir_open[kind], dir, CARD_RUN_DIR_MAX);
+    taskEXIT_CRITICAL(&s_dir_mux);
+}
+
 void log_open_marks(log_marks_t *marks, char *run_dir, char *test_dir)
 {
     taskENTER_CRITICAL(&s_dir_mux);
-    memcpy(run_dir, s_dir_open[LOG_FOLDER_AUTO], CARD_DIR_MAX);
-    memcpy(test_dir, s_dir_open[LOG_FOLDER_USER], CARD_DIR_MAX);
+    memcpy(run_dir, s_dir_open[LOG_FOLDER_AUTO], CARD_RUN_DIR_MAX);
+    memcpy(test_dir, s_dir_open[LOG_FOLDER_USER], CARD_RUN_DIR_MAX);
     marks->run  = atomic_load(&s_log_open_run);
     marks->test = atomic_load(&s_test_open_run);
     marks->txt  = atomic_load(&s_test_open_txt);
@@ -299,7 +358,20 @@ typedef struct {
     atomic_uint *mark;  /**< The open marker the create sets. */
     int          tab;          /**< log_viewer_tab_t of the folder */
     bool         held;         /**< the volume is held for the take */
+    int          kind;         /**< the servo_kind_t of a take in a servo's
+                                    folder, -1 in a log folder */
 } take_ctx_t;
+
+/**
+ * @brief Room for a run's path: "/sdcard/", a folder of CARD_RUN_DIR_MAX,
+ *        "/" and a name of SERVO_NAME_SIZE: 63 bytes.  The longest,
+ *        "/sdcard/Servos/<23>/automatic test_999.csv", is 61 characters.
+ */
+#define RUN_PATH_MAX (sizeof(STORAGE_MOUNT_POINT) + CARD_RUN_DIR_MAX \
+                      + SERVO_NAME_SIZE)
+_Static_assert(sizeof(STORAGE_MOUNT_POINT) + (CARD_RUN_DIR_MAX - 1u) + 1u
+                   + (SERVO_NAME_SIZE - 1u) < RUN_PATH_MAX,
+               "a servo run's path fits RUN_PATH_MAX");
 
 /**
  * @brief log_take()'s mounted hook: whether the volume is held for the take.
@@ -328,7 +400,7 @@ static void take_path(const char *dir, const char *name, char *path, size_t n)
 card_dir_t panel_card_make_dir(void *ctx, const char *level)
 {
     (void)ctx;
-    char path[sizeof(STORAGE_MOUNT_POINT) + CARD_DIR_MAX];
+    char path[sizeof(STORAGE_MOUNT_POINT) + CARD_RUN_DIR_MAX];
     take_path(level, NULL, path, sizeof(path));
     const int err = (mkdir(path, 0775) == 0) ? 0 : errno;
     struct stat st;
@@ -386,7 +458,7 @@ static bool take_walk(void *ctx, const char *dir, log_take_visit_fn visit,
 static bool take_exists(void *ctx, const char *dir, const char *name)
 {
     (void)ctx;
-    char path[64];
+    char path[RUN_PATH_MAX];
     take_path(dir, name, path, sizeof(path));
     struct stat st;
     return stat(path, &st) == 0;
@@ -400,7 +472,7 @@ static bool take_create(void *ctx, const char *dir, const char *name,
                         int number)
 {
     const take_ctx_t *t = (const take_ctx_t *)ctx;
-    char path[64];
+    char path[RUN_PATH_MAX];
     take_path(dir, name, path, sizeof(path));
     /*
      * Claimed before the file exists, not after it does.  fopen makes the
@@ -410,7 +482,9 @@ static bool take_create(void *ctx, const char *dir, const char *name,
      * appending.  Cleared again if the open fails, so a card that refuses
      * every number leaves no run claimed.
      */
-    atomic_store(t->mark, (unsigned)number);
+    atomic_store(t->mark, (t->kind < 0)
+                              ? (unsigned)number
+                              : servo_run_mark((servo_kind_t)t->kind, number));
     /* Its own hold, kept until the file is closed (storage_fclose()). */
     *t->fp = storage_fopen(path, "w");
     if (*t->fp == NULL) {
@@ -424,13 +498,15 @@ static bool take_create(void *ctx, const char *dir, const char *name,
 }
 
 /**
- * @brief Run @p number's file in @p dir under @p prefix, opened into @p fp
- *        with
- * @p mark set: log_take() over the card.
+ * @brief Run @p number's file opened into @p fp with @p mark set: in log
+ *        folder @p dir under @p prefix (log_take()), or with servo @p id in
+ *        its folder under the kind of @p prefix (servo_take()).
  */
-static log_take_t take(const char *dir, log_prefix_t prefix, bool report,
-                       FILE **fp, atomic_uint *mark, int tab, int *number)
+static log_take_t take(const char *dir, const char *id, log_prefix_t prefix,
+                       bool report, FILE **fp, atomic_uint *mark, int tab,
+                       int *number)
 {
+    const bool servo = id != NULL && id[0] != '\0';
     /*
      * The card in the slot now: a run's start is one of the events that
      * looks (storage_check()), so a card pulled, swapped or put in since
@@ -439,10 +515,12 @@ static log_take_t take(const char *dir, log_prefix_t prefix, bool report,
      * task cannot let the volume go under them.
      */
     (void)storage_check();
-    take_ctx_t t = { fp, mark, tab, storage_hold() };
+    take_ctx_t t = { fp, mark, tab, storage_hold(),
+                     servo ? (int)servo_kind_of_prefix(prefix) : -1 };
     if (storage_mount_count() != s_series_mount) {
         s_series_mount = storage_mount_count();
         log_series_init(&s_series);
+        servo_series_init(&s_servo_series);
     }
     const log_take_io_t io = {
         .ctx      = &t,
@@ -452,12 +530,36 @@ static log_take_t take(const char *dir, log_prefix_t prefix, bool report,
         .exists   = take_exists,
         .create   = take_create,
     };
-    const log_take_t r = log_take(&s_series, &io, dir, prefix, report,
-                                  number);
+    const int64_t t0 = esp_timer_get_time();
+    const log_take_t r =
+        servo ? servo_take(&s_servo_series, &io, id,
+                           servo_kind_of_prefix(prefix), report, number)
+              : log_take(&s_series, &io, dir, prefix, report, number);
+    if (servo) {
+        /* The station's figure of a full servo folder's create time. */
+        ESP_LOGI(TAG, "servo take %s: run %d, %lldus", dir, *number,
+                 (long long)(esp_timer_get_time() - t0));
+    }
     if (t.held) {
         storage_release();
     }
     return r;
+}
+
+/**
+ * @brief The band's line for a servo folder whose kind @p k holds 999:
+ *        "Servo folder full: LIMIT RUN 999. ...".
+ * @return the line, in a static buffer of the logger task
+ */
+static const char *servo_full_text(servo_kind_t k)
+{
+    static char line[96];
+    const char *name = (k == SERVO_KIND_LIMIT)   ? TR(LOG_KIND_LIMIT)
+                       : (k == SERVO_KIND_RAUTO) ? TR(LOG_KIND_RUDDR)
+                       : (k == SERVO_KIND_ATEST) ? TR(LOG_KIND_ATEST)
+                                                 : TR(LOG_KIND_SERVO);
+    snprintf(line, sizeof(line), TR(ALERT_SERVO_FULL), name);
+    return line;
 }
 
 /** @brief The band's word for a take that wrote no file. */
@@ -474,6 +576,10 @@ static void take_alert(log_take_t r, const char *dir, const char *other)
 
 /** @brief The writer of the open run's file (log_writer.h). */
 static log_writer_t s_log;
+/** @brief The servo the open run files under, "" for none, and its
+ *         number.  The logger task's own. */
+static char s_log_id[SERVO_ID_SIZE];
+static int  s_log_num;   /**< see s_log_id */
 /**
  * @brief When the open run's last row arrived, or the run opened, now_ms().
  */
@@ -521,8 +627,10 @@ static log_prefix_t run_prefix(log_run_kind_t kind)
  *        file, RUN NOTE, the date and the version.  Its own frame, not
  *        log_open()'s, so the take's card chain does not carry it.
  * @param kind The run's kind.
+ * @param id   The servo the run files under, "" for none.
  */
-static __attribute__((noinline)) void log_open_info(log_run_kind_t kind)
+static __attribute__((noinline)) void log_open_info(log_run_kind_t kind,
+                                                    const char *id)
 {
     char text[2][SETTINGS_TEXT_MAX];
     taskENTER_CRITICAL(&s_dir_mux);
@@ -530,7 +638,7 @@ static __attribute__((noinline)) void log_open_info(log_run_kind_t kind)
     taskEXIT_CRITICAL(&s_dir_mux);
     char cell[LOG_INFO_MAX];
     run_info_bench(cell, sizeof(cell),
-                   (kind == LOG_RUN_SERVO) ? text[0] : NULL, text[1], "");
+                   (kind == LOG_RUN_SERVO) ? text[0] : NULL, text[1], id);
     log_writer_set_info(&s_log, cell);
 }
 
@@ -570,9 +678,21 @@ static void log_open(uint32_t run, log_run_kind_t kind)
      * mounted again, so its folder is walked afresh.
      */
     int number = -1;
-    char dir[CARD_DIR_MAX];
-    folder_take(LOG_FOLDER_AUTO, dir);
-    const log_take_t r = take(dir, run_prefix(kind), false,
+    char dir[CARD_RUN_DIR_MAX];
+    /* A SERVO run with a servo active files in its folder. */
+    s_log_id[0] = '\0';
+    if (kind == LOG_RUN_SERVO) {
+        taskENTER_CRITICAL(&s_dir_mux);
+        memcpy(s_log_id, s_run_servo, sizeof(s_log_id));
+        taskEXIT_CRITICAL(&s_dir_mux);
+    }
+    if (s_log_id[0] != '\0' && servo_id_folder(dir, sizeof(dir), s_log_id)) {
+        folder_mark(LOG_FOLDER_AUTO, dir);
+    } else {
+        s_log_id[0] = '\0';
+        folder_take(LOG_FOLDER_AUTO, dir);
+    }
+    const log_take_t r = take(dir, s_log_id, run_prefix(kind), false,
                               &s_log_file, &s_log_open_run, LOG_TAB_BENCH,
                               &number);
     if (r != LOG_TAKE_OK) {
@@ -583,13 +703,23 @@ static void log_open(uint32_t run, log_run_kind_t kind)
                    (r == LOG_TAKE_NO_CARD)
                        ? ui_card_text(storage_card_state(), UI_CARD_AT_RUN)
                    : (r == LOG_TAKE_UNREADABLE) ? TR(ALERT_CARD_UNREADABLE)
-                                                : TR(ALERT_CARD_FULL));
+                   : (s_log_id[0] != '\0') ? servo_full_text(SERVO_KIND_RUN)
+                                           : TR(ALERT_CARD_FULL));
+        s_log_id[0] = '\0';
         return;
     }
     s_log_open_kind = kind;
-    log_name_build(s_log_open.name, sizeof(s_log_open.name), run_prefix(kind),
-                   number, false);
-    memcpy(s_log_open.dir, dir, CARD_DIR_MAX);
+    s_log_num = number;
+    if (s_log_id[0] != '\0') {
+        /* A SERVO run is not RENAME LOG's: its name for the console. */
+        servo_run_name(s_log_open.name, sizeof(s_log_open.name),
+                       SERVO_KIND_RUN, number, false);
+        s_log_open.dir[0] = '\0';
+    } else {
+        log_name_build(s_log_open.name, sizeof(s_log_open.name),
+                       run_prefix(kind), number, false);
+        memcpy(s_log_open.dir, dir, CARD_DIR_MAX);
+    }
     s_log_open.mount = s_series_mount;  /* the take's (take()) */
     const log_sink_t sink = { .write = file_write, .flush = file_flush,
                               .ctx = s_log_file };
@@ -598,7 +728,7 @@ static void log_open(uint32_t run, log_run_kind_t kind)
      * run's file keeps them, as the map takes no change while it drives. */
     log_cols_t cols;
     log_writer_set_cols(&s_log, sense_log_cols(&cols) ? &cols : NULL);
-    log_open_info(kind);
+    log_open_info(kind, s_log_id);
 }
 
 /**
@@ -645,6 +775,10 @@ static void log_close(void)
     }
     s_log_file = NULL;
     log_remember();
+    if (s_log_id[0] != '\0') {
+        filed(s_log_id, SERVO_KIND_RUN, s_log_num);
+        s_log_id[0] = '\0';
+    }
     /*
      * And only now is the run something the viewer may read.  The length of a
      * FAT file lives in its directory entry, and f_close is what writes it --
@@ -671,6 +805,7 @@ static void log_drop(void)
     (void)storage_fclose(s_log_file);
     s_log_file = NULL;
     log_remember();
+    s_log_id[0] = '\0';
     atomic_store(&s_log_open_run, 0u);
 }
 
@@ -687,30 +822,51 @@ static void log_drop(void)
  * before the report is opened.
  */
 QueueHandle_t s_test_q;           /**< render loop -> logger */
-/* OPENs the render loop queued, and those this task has answered with a
- * number in s_test_file (-1: not recorded). */
+/* OPENs the render loop queued, and those this task has answered in
+ * s_test_files (log_test_files()). */
 atomic_uint s_test_opens_sent;
 atomic_uint s_test_opens_done;
 /* ENDs the render loop queued, and those this task has taken: a run's
  * file is closed and s_test_report set for it once they match. */
 unsigned    s_test_ends_sent;
 atomic_uint s_test_ends_done;
-atomic_int  s_test_file;
 /* Whether the last run's report reached the card whole; set at its END. */
 atomic_bool s_test_report;
 
 /* The logger task's own. */
 static FILE    *s_test_fp;  /**< The open test file, the CSV or the report. */
-static int      s_test_num;  /**< The run number of the open test file. */
+static int      s_test_num = -1;  /**< The open test file's run number, -1 for none. */
 static bool     s_test_txt;      /**< s_test_fp is the report */
 static log_prefix_t s_test_prefix; /**< the open run's writer            */
 static unsigned s_test_lines;    /**< lines since the last commit */
 /** @brief Whether the test's files had a failed write or close. */
 static bool     s_test_failed;
 static bool     s_test_txt_bad;  /**< a write or the close of the report failed */
-static char     s_test_dir[CARD_DIR_MAX];   /**< the folder of the run's files */
+static char     s_test_dir[CARD_RUN_DIR_MAX];   /**< the folder of the run's files */
+/** @brief The servo the run files under, "" for none. */
+static char     s_test_id[SERVO_ID_SIZE];
 /** @brief The open test file's path, for the console lines. */
-static char     s_test_path[64];
+static char     s_test_path[RUN_PATH_MAX];
+/** @brief The answer to the last OPEN, for the frame task.  Under
+ *         s_dir_mux. */
+static log_test_files_t s_test_files;
+
+void log_test_files(log_test_files_t *out)
+{
+    taskENTER_CRITICAL(&s_dir_mux);
+    *out = s_test_files;
+    taskEXIT_CRITICAL(&s_dir_mux);
+}
+
+/** @brief The open-file mark of the run's number: the number in a log
+ *         folder, servo_run_mark() in a servo's. */
+static unsigned test_mark(void)
+{
+    return (s_test_id[0] == '\0')
+               ? (unsigned)s_test_num
+               : servo_run_mark(servo_kind_of_prefix(s_test_prefix),
+                                s_test_num);
+}
 /** @brief The lines written to the open test file. */
 static unsigned s_test_count;
 /** @brief A write to the open test file failed. */
@@ -719,7 +875,8 @@ static bool     s_test_file_bad;
 /**
  * @brief Run @p number's file in the test folder as a path on the card:
  *        ATESTnnn.CSV, ATESTnnn.TXT, LIMITnnn.CSV, LIMITnnn.TXT,
- *        RUDDRnnn.CSV or RUDDRnnn.TXT.
+ *        RUDDRnnn.CSV or RUDDRnnn.TXT; in a servo's folder
+ *        `automatic test_NNN.csv` and the like.
  *
  * @param prefix  LOG_PREFIX_ATEST, LOG_PREFIX_LIMIT or LOG_PREFIX_RUDDR.
  * @param number  The run's number.
@@ -730,8 +887,13 @@ static bool     s_test_file_bad;
 static void test_path(log_prefix_t prefix, int number, bool txt, char *path,
                       size_t n)
 {
-    char name[LOG_RUN_NAME_MAX];
-    log_name_build(name, sizeof(name), prefix, number, txt);
+    char name[SERVO_NAME_SIZE];
+    if (s_test_id[0] != '\0') {
+        servo_run_name(name, sizeof(name), servo_kind_of_prefix(prefix),
+                       number, txt);
+    } else {
+        log_name_build(name, sizeof(name), prefix, number, txt);
+    }
     storage_path(s_test_dir, name, path, n);
 }
 
@@ -786,8 +948,10 @@ static void test_close(void)
  * @param prefix The run's writer as the screen names it; LOG_PREFIX_ATEST
  *               for one that is neither LOG_PREFIX_LIMIT nor
  *               LOG_PREFIX_RUDDR.
+ * @param id     The servo the run took at its START, "" for none: its
+ *               files go to `Servos/<id>` (servo_take.h).
  */
-static void test_open(bool txt, log_prefix_t prefix)
+static void test_open(bool txt, log_prefix_t prefix, const char *id)
 {
     test_close();
     s_test_num    = -1;
@@ -801,17 +965,33 @@ static void test_open(bool txt, log_prefix_t prefix)
     s_test_txt_bad = false;
     atomic_store(&s_test_report, false);
     int number = -1;
-    folder_take(LOG_FOLDER_USER, s_test_dir);
-    const log_take_t r = take(s_test_dir, s_test_prefix, txt,
+    s_test_id[0] = '\0';
+    servo_id_t p;
+    if (servo_id_parse(id, &p)
+        && servo_id_folder(s_test_dir, sizeof(s_test_dir), p.text)) {
+        memcpy(s_test_id, p.text, sizeof(s_test_id));
+        folder_mark(LOG_FOLDER_USER, s_test_dir);
+    } else {
+        folder_take(LOG_FOLDER_USER, s_test_dir);
+    }
+    const log_take_t r = take(s_test_dir, s_test_id, s_test_prefix, txt,
                               &s_test_fp,
                               txt ? &s_test_open_txt : &s_test_open_run,
                               LOG_TAB_USER, &number);
+    log_test_files_t f;
+    memset(&f, 0, sizeof(f));
+    f.state = -1;
+    memcpy(f.dir, s_test_dir, sizeof(f.dir));
+    f.mount = s_series_mount;  /* the take's (take()) */
     if (r == LOG_TAKE_OK) {
         s_test_num = number;
         test_path(s_test_prefix, number, txt,
                   s_test_path, sizeof(s_test_path));
         s_test_count = 0u;
         s_test_file_bad = false;
+        f.state = 1;
+        snprintf(f.name, sizeof(f.name), "%s",
+                 strrchr(s_test_path, '/') + 1);
     } else {
         s_test_fp = NULL;
         ESP_LOGW(TAG, "no test file in %s (take %d); this test is not "
@@ -820,9 +1000,13 @@ static void test_open(bool txt, log_prefix_t prefix)
         take_alert(r, s_test_dir,
                    (r == LOG_TAKE_NO_CARD)
                        ? ui_card_text(storage_card_state(), UI_CARD_AT_TEST)
+                   : (r == LOG_TAKE_FULL && s_test_id[0] != '\0')
+                       ? servo_full_text(servo_kind_of_prefix(s_test_prefix))
                        : TR(ALERT_CARD_SERVO));
     }
-    atomic_store(&s_test_file, s_test_num);
+    taskENTER_CRITICAL(&s_dir_mux);
+    s_test_files = f;
+    taskEXIT_CRITICAL(&s_dir_mux);
     atomic_fetch_add(&s_test_opens_done, 1u);
 }
 
@@ -840,7 +1024,7 @@ static void test_write(const test_line_t *l)
     if (l->kind == SERVO_TEST_OUT_OPEN
         || l->kind == SERVO_TEST_OUT_OPEN_TXT) {
         test_open(l->kind == SERVO_TEST_OUT_OPEN_TXT,
-                  (log_prefix_t)l->prefix);
+                  (log_prefix_t)l->prefix, l->text);
         return;
     }
     if (l->kind == SERVO_TEST_OUT_END) {
@@ -848,21 +1032,24 @@ static void test_write(const test_line_t *l)
         /* The report is on the card when it was opened and nothing about
          * it failed: what the SERVO screen names, and only then. */
         atomic_store(&s_test_report,
-                     s_test_num > 0 && s_test_txt && !s_test_txt_bad);
-        if (s_test_num > 0 && s_test_failed) {
+                     s_test_num >= 0 && s_test_txt && !s_test_txt_bad);
+        if (s_test_num >= 0 && s_test_failed) {
             control_alert(TR(ALERT_CARD_SERVO_SHORT));
+        }
+        if (s_test_num >= 0 && s_test_id[0] != '\0') {
+            filed(s_test_id, servo_kind_of_prefix(s_test_prefix), s_test_num);
         }
         s_test_num = -1;
         atomic_fetch_add(&s_test_ends_done, 1u);
         return;
     }
-    if (s_test_num <= 0) {
+    if (s_test_num < 0) {
         return;                         /* not recorded */
     }
     if (l->kind == SERVO_TEST_OUT_TXT && !s_test_txt) {
         /* The report follows the CSV: one file open at a time.  Its marker
          * is set before the CSV's goes, so the run stays open between. */
-        atomic_store(&s_test_open_txt, (unsigned)s_test_num);
+        atomic_store(&s_test_open_txt, test_mark());
         test_close();
         test_path(s_test_prefix, s_test_num, true, s_test_path,
                   sizeof(s_test_path));
@@ -1176,6 +1363,9 @@ void log_task(void *arg)
         yge_card_serve();
         /* And the settings backup's request, when one waits. */
         panel_sbk_card_serve();
+        /* And the card's servo ids: the walk after a mount or a FILES
+         * change, and a NEW ID's folder. */
+        panel_servo_card_serve();
         /* And a balance solution's CSV row, when one waits. */
         panel_bal_card_serve();
         /* And RENAME LOG's request, when one waits: refused while any log

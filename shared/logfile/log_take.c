@@ -7,6 +7,9 @@
 
 #include "log_take.h"
 
+#include "servo_name.h"
+#include "servo_take.h"
+
 #include <stdatomic.h>
 #include <stdio.h>
 #include <string.h>
@@ -25,6 +28,11 @@ void log_series_init(log_series_set_t *set)
 void log_series_forget_all(void)
 {
     atomic_fetch_add(&s_edits, 1u);
+}
+
+unsigned log_series_edits(void)
+{
+    return atomic_load(&s_edits);
 }
 
 /**
@@ -151,7 +159,7 @@ log_take_t log_take(log_series_set_t *set, const log_take_io_t *io,
     if (card_make_dirs(dir, take_level, (void *)io) != CARD_DIR_OK) {
         return LOG_TAKE_NO_FOLDER;
     }
-    const unsigned edits = atomic_load(&s_edits);
+    const unsigned edits = log_series_edits();
     if (edits != set->edits) {
         /* Another hand changed the card's files since the last take. */
         log_series_init(set);
@@ -206,6 +214,15 @@ bool log_marks_busy(const log_marks_t *marks, const char *dir,
                           && same_dir(marks->run_dir, dir);
     const bool test_here = marks->test_dir != NULL
                            && same_dir(marks->test_dir, dir);
+    if (servo_dir_parse(dir, NULL, 0u)) {
+        /* A servo's folder: a run and its report share one mark. */
+        servo_kind_t k = SERVO_KIND_COUNT;
+        const int n = servo_run_parse(name, &k, NULL);
+        const unsigned v = servo_run_mark(k, n);
+        return v != 0u
+               && ((run_here && v == marks->run)
+                   || (test_here && (v == marks->test || v == marks->txt)));
+    }
     return log_name_busy(name, run_here ? marks->run : 0u,
                          test_here ? marks->test : 0u,
                          test_here ? marks->txt : 0u);

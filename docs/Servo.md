@@ -2381,6 +2381,63 @@ IOmcu speaking protocol 4.6; an older one starts the curve over. A
 paused sweep is the moment to raise SPEED: the pause stays, and the resume
 runs at the new rate.
 
+## Labelled servos: filing
+
+With a labelled servo active, the runs of that servo go to a folder of
+its own, `Servos/<id>`, for example `Servos/KST_X10-0000A`. An id is a
+prefix of 1 to 17 characters, a `-` and a serial of 5 characters `00000`
+to `ZZZZZ`. The active servo is set by NEW ID, by a pick from the card's
+6 newest ids, or by a scan of its label; nothing is active after a
+restart. The SERVO lists carry no id rows; the debug console sets it
+(below).
+
+| Run | File in `Servos/<id>` | Report |
+| --- | --- | --- |
+| LIMIT RUN | `limit run_NNN.csv` | `limit run_NNN.txt` |
+| RUDDER AUTO | `rudder auto_NNN.csv` | `rudder auto_NNN.txt` |
+| AUTOMATIC TEST | `automatic test_NNN.csv` | `automatic test_NNN.txt` |
+| an ARMED run from LIVE, SWEEP or RUDDER | `servo run_NNN.csv` | none |
+
+- NNN counts per kind from 000 to 999: one above the highest number that
+  kind holds as a CSV or a report. A gap is not filled. A report shares
+  its CSV's number; a LIMIT RUN that judged no position takes the next
+  number for its report alone.
+- A test takes its servo at START, a SERVO run at the arm, and keeps it
+  to its last file. While a run holds it, a new servo is refused.
+- The content of each file is the content of the same run in a log
+  folder. The `info` cell carries the key `id`, and each report has the
+  line `Servo id:` under the device.
+- A kind that holds 999 takes no further run: the run goes on unrecorded
+  and the band says `Servo folder full: LIMIT RUN 999. Run not
+  recorded.` The other 3 kinds of that servo keep counting.
+- USER LOGS and AUTO LOGS still decide whether a test or a SERVO run
+  writes a file.
+- Without an active servo every run goes to its log folder,
+  `ATESTnnn.CSV` and the like.
+- The result cards print the name the logger wrote, and GRAPH opens that
+  file in that folder. Current limitation: LOGS keeps 24 bytes of a
+  folder, so for an id of 17 or more characters GRAPH names the file as
+  missing.
+- NEW ID makes the next id from ID PREFIX (`srv_pfx`, default `SERVO`)
+  and the highest serial on the card under any prefix, and makes its
+  folder at once: two NEW IDs give two ids. A fresh card starts at
+  `00000`; at `ZZZZZ` NEW ID is refused. The card is the only counter: a
+  second card counts on its own.
+
+Debug console lines (the `RCBENCH_PANEL_CONSOLE` build):
+
+| Line | Does |
+| --- | --- |
+| `servo` | the active servo, the card's id folders, the next serial, the 6 newest ids, the walk's time in ms, the last run filed |
+| `servo new` | NEW ID with ID PREFIX; the console names the id or why none was made |
+| `servo id KST_X10-0000A` | that id active, as a pick |
+| `servo none` | no servo active |
+
+The console also prints the walk of `Servos` (`servo ids: 12 folders,
+walk 40ms`) and each take in a servo's folder with its time in us. Not
+measured: the walk of 1,000 id folders and the create time in a folder of
+999 runs of one kind.
+
 ## Prerequisites
 
 Current sensing on the servo rail. The limit search reads the INA3221

@@ -285,6 +285,7 @@ typedef struct {
 
     /* For the report only. */
     char     dut[24];  /**< the servo's name, for the report */
+    char     servo_id[24];  /**< the labelled servo's id; "" for none */
     char     type[20];  /**< the servo's type, for the report */
     uint16_t frame_hz;  /**< the frame rate of the pulses, Hz, for the report */
     char     output[28];  /**< what it drives: "PROG PORT 1 GPIO 13" */

@@ -638,9 +638,31 @@ TEST_CASE(the_first_data_row_carries_the_run_description)
     }
 }
 
+/* A run filed under a labelled servo names its id on the line under the
+ * device; a run with none has no such line. */
+TEST_CASE(the_report_names_the_servo_id_under_the_device)
+{
+    rig_fresh();
+    servo_test_cfg_t c;
+    cfg_defaults(&c);
+    snprintf(c.servo_id, sizeof(c.servo_id), "KST X10 LEFT WING-ZZZZZ");
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_out(120000u);
+    CHECK(strstr(g.report, "Device:         DS3218\n"
+                           "Servo id:       KST X10 LEFT WING-ZZZZZ\n")
+          != NULL);
+    rig_fresh();
+    cfg_defaults(&c);
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_out(120000u);
+    CHECK(strstr(g.report, "Device:         DS3218\n") != NULL);
+    CHECK(strstr(g.report, "Servo id") == NULL);
+}
+
 int main(void)
 {
     RUN(a_run_measures_each_step_and_passes);
+    RUN(the_report_names_the_servo_id_under_the_device);
     RUN(the_travel_time_is_late_by_at_most_a_reading);
     RUN(length_by_time_moves_for_the_test_time);
     RUN(unequal_end_levels_do_not_arrive_early);

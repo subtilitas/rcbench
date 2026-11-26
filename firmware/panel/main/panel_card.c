@@ -285,8 +285,8 @@ static unsigned s_card_mount;
 static bool card_busy(const char *name)
 {
     log_marks_t marks;
-    char run_dir[CARD_DIR_MAX];
-    char test_dir[CARD_DIR_MAX];
+    char run_dir[CARD_RUN_DIR_MAX];
+    char test_dir[CARD_RUN_DIR_MAX];
     log_open_marks(&marks, run_dir, test_dir);
     return log_marks_busy(&marks, s_card_dir, name);
 }
@@ -630,8 +630,8 @@ static bool card_logging(void *ctx)
 {
     (void)ctx;
     log_marks_t marks;
-    char run_dir[CARD_DIR_MAX];
-    char test_dir[CARD_DIR_MAX];
+    char run_dir[CARD_RUN_DIR_MAX];
+    char test_dir[CARD_RUN_DIR_MAX];
     log_open_marks(&marks, run_dir, test_dir);
     return fm_logging(&marks);
 }

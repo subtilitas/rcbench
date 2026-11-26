@@ -220,6 +220,7 @@ static void lim_cfg(servo_limrun_cfg_t *c)
                     && lim_family() == SERVO_LIMRUN_FAM_KST;
     c->family     = c->read ? lim_family() : (uint8_t)SERVO_LIMRUN_FAM_KST;
     snprintf(c->dut, sizeof(c->dut), "%s", settings_text(SET_TEXT_DUT_NAME));
+    svs_servo_id(c->servo_id, sizeof(c->servo_id));
     snprintf(c->type, sizeof(c->type), "%s", type()->name);
     c->frame_hz = s.frame_hz;
     (void)servo_target_line(c->output, sizeof(c->output), s.drive_target,
@@ -234,7 +235,7 @@ static void lim_cfg(servo_limrun_cfg_t *c)
     run_info_servo(c->info, sizeof(c->info), c->type, c->meter,
                    c->enc_on ? (c->source[0] != '\0' ? c->source : "AS5600")
                              : NULL,
-                   "");
+                   c->servo_id);
     c->text = ui_servo_table();
 }
 

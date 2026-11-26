@@ -27,6 +27,7 @@
 #include "sense_link.h"
 #include "servo_cmd.h"
 #include "servo_source.h"
+#include "servo_take.h"
 #include "servo_test_io.h"
 #include "supply.h"
 #include "ui_focus.h"
@@ -1108,6 +1109,29 @@ void servo_screen_test_pop(void);
  * @param report whether the card took the .TXT whole
  */
 void servo_screen_test_files(int number, bool report);
+/**
+ * @brief Where the run's file went, as the logger answered its OPEN: the
+ *        state, the folder, the name and the mount (servo_take.h).
+ *
+ * The result cards print @p f's name; GRAPH reads that name in that folder
+ * on that mount, for a run filed in USER LOG FOLDER and one filed in a
+ * servo's `Servos/<id>` alike.  servo_screen_test_files() is this call
+ * for a run in USER LOG FOLDER, its name built from the number.  Ignored
+ * for a run started with USER LOGS off.
+ * @param f      the answer
+ * @param report whether the card took the report whole
+ */
+void servo_screen_test_files_at(const log_test_files_t *f, bool report);
+/**
+ * @brief Whether a run holds the active servo (servo_active.h): the bench
+ *        ARMED from SERVO, or a LIMIT RUN, a RUDDER AUTO or an AUTOMATIC
+ *        TEST under way or with lines or its END not yet handed to the
+ *        logger, or the logger still holding its OPEN or END.  What a
+ *        caller of servo_active_set() and servo_active_clear() passes as
+ *        run_active.
+ * @return true while a run holds its servo
+ */
+bool servo_screen_run_active(void);
 /**
  * @brief Whether the logger still holds an OPEN or an END the outbox gave
  *        it, or an OPEN waits for the queue.

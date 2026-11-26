@@ -290,6 +290,8 @@ TRACKED = [
     "shared/logfile/servo_id.c",
     "shared/logfile/servo_name.c",
     "shared/logfile/servo_active.c",
+    "shared/logfile/servo_take.c",
+    "shared/logfile/servo_trend.c",
     "shared/logfile/fault_log.c",
     "shared/files/text_buf.c",
     "shared/files/text_hl.c",

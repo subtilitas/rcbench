@@ -2530,6 +2530,65 @@ angehalten wurde, bei einem IOmcu mit Protokoll 4.6; ein älterer
 startet die Kurve von vorn. Ein angehaltener Sweep ist der Moment, TEMPO zu
 erhöhen: die Pause bleibt, und das Fortsetzen läuft mit der neuen Rate.
 
+## Gelabelte Servos: Ablage
+
+Mit einem aktiven gelabelten Servo gehen dessen Läufe in einen eigenen
+Ordner, `Servos/<id>`, zum Beispiel `Servos/KST_X10-0000A`. Eine ID ist ein
+Präfix von 1 bis 17 Zeichen, ein `-` und eine Seriennummer von 5 Zeichen
+`00000` bis `ZZZZZ`. Das aktive Servo setzen NEW ID, eine Wahl aus den 6
+neuesten IDs der Karte oder ein Scan seines Labels; nach einem Neustart ist
+keines aktiv. Die SERVO-Listen haben keine ID-Zeilen; die Debug-Konsole
+setzt es (unten).
+
+| Lauf | Datei in `Servos/<id>` | Bericht |
+| --- | --- | --- |
+| LIMIT RUN | `limit run_NNN.csv` | `limit run_NNN.txt` |
+| RUDDER AUTO | `rudder auto_NNN.csv` | `rudder auto_NNN.txt` |
+| AUTOMATISCHER TEST | `automatic test_NNN.csv` | `automatic test_NNN.txt` |
+| ein ARMED-Lauf aus LIVE, SWEEP oder RUDER | `servo run_NNN.csv` | keiner |
+
+- NNN zählt je Art von 000 bis 999: eins über der höchsten Nummer, die
+  diese Art als CSV oder Bericht hat. Eine Lücke wird nicht gefüllt. Ein
+  Bericht teilt die Nummer seiner CSV; ein LIMIT RUN ohne beurteilte
+  Stellung nimmt für den Bericht allein die nächste Nummer.
+- Ein Test nimmt sein Servo bei START, ein SERVO-Lauf beim Scharfschalten,
+  und behält es bis zur letzten Datei. Solange ein Lauf es hält, wird ein
+  neues Servo abgelehnt.
+- Der Inhalt jeder Datei ist der desselben Laufs in einem Log-Ordner. Die
+  Zelle `info` trägt den Schlüssel `id`, und jeder Bericht hat unter dem
+  Prüfling die Zeile `Servo-ID:`.
+- Eine Art, die 999 enthält, nimmt keinen weiteren Lauf: der Lauf geht
+  ohne Aufzeichnung weiter, und das Band meldet `Servo-Ordner voll: LIMIT
+  RUN 999. Lauf nicht aufgezeichnet.` Die 3 anderen Arten dieses Servos
+  zählen weiter.
+- USER LOGS und AUTO LOGS entscheiden weiter, ob ein Test oder ein
+  SERVO-Lauf eine Datei schreibt.
+- Ohne aktives Servo geht jeder Lauf in seinen Log-Ordner,
+  `ATESTnnn.CSV` und so weiter.
+- Die Ergebniskarten zeigen den Namen, den der Logger schrieb, und GRAFIK
+  öffnet diese Datei in diesem Ordner. Derzeitige Einschränkung: LOGS
+  behält 24 Bytes eines Ordners, daher meldet GRAFIK bei einer ID ab 17
+  Zeichen die Datei als fehlend.
+- NEW ID bildet die nächste ID aus ID PREFIX (`srv_pfx`, Vorgabe `SERVO`)
+  und der höchsten Seriennummer auf der Karte unter jedem Präfix und legt
+  den Ordner sofort an: zwei NEW ID ergeben zwei IDs. Eine neue Karte
+  beginnt bei `00000`; bei `ZZZZZ` wird NEW ID abgelehnt. Die Karte ist der
+  einzige Zähler: eine zweite Karte zählt für sich.
+
+Zeilen der Debug-Konsole (Build `RCBENCH_PANEL_CONSOLE`):
+
+| Zeile | Wirkung |
+| --- | --- |
+| `servo` | das aktive Servo, die ID-Ordner der Karte, die nächste Seriennummer, die 6 neuesten IDs, die Zeit des Durchlaufs in ms, der zuletzt abgelegte Lauf |
+| `servo new` | NEW ID mit ID PREFIX; die Konsole nennt die ID oder den Grund, warum keine entstand |
+| `servo id KST_X10-0000A` | diese ID aktiv, wie eine Wahl |
+| `servo none` | kein Servo aktiv |
+
+Die Konsole gibt auch den Durchlauf von `Servos` aus (`servo ids: 12
+folders, walk 40ms`) und jede Nummernvergabe in einem Servo-Ordner mit
+ihrer Zeit in us. Nicht gemessen: der Durchlauf von 1.000 ID-Ordnern und
+die Anlegezeit in einem Ordner mit 999 Läufen einer Art.
+
 ## Voraussetzungen
 
 Die Strommessung an der Servoschiene. Die Endlagensuche liest den

@@ -519,6 +519,13 @@ def test_take_calls_name_every_card_function_the_panel_hands_log_take():
     assert rest == set()
 
 
+def test_servo_take_calls_name_every_card_function_servo_take_makes():
+    """Servo take calls name every card function servo take makes."""
+    rest = io_table_holds(sc.SERVO_TAKE_CALLS, "log_take.h", "log_take_io_t",
+                          "servo_take.c", "panel_log.c")
+    assert rest == set()
+
+
 def test_fault_calls_name_every_card_function_of_the_fault_log():
     """Fault calls name every card function of the fault log."""
     rest = io_table_holds(sc.FAULT_CALLS, "fault_log.h", "fault_log_io_t",

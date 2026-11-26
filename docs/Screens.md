@@ -3766,6 +3766,7 @@ dut=MG90S&note=greased&date=2026-11-24T10:31&fw=0.23.18
 | `servo` | the profile's TYPE | `ATEST`, `LIMIT`, `RUDDR` |
 | `meter` | the meter of the current: an INA3221 channel, `PDMINI` or `MODEL` | `ATEST`, `LIMIT`, `RUDDR` |
 | `angle` | the angle source, `AS5600` or the IMU with its axis | `ATEST`, `LIMIT`, `RUDDR`, with an angle source |
+| `id` | the labelled servo's id, up to 23 characters ([Servo](Servo.md#labelled-servos-filing)) | the files of a labelled servo's folder |
 
 A key with an empty value is left out. Inside a value each `&`, `=`, `;`,
 `"` and control character is written `_`: `MG90S "2"` reads back as

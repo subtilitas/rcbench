@@ -213,6 +213,10 @@ static bool header_lines(const servo_test_t *t, cursor_t *c)
         snprintf(b, n, S(R_DEVICE), g->dut);
         return true;
     }
+    if (g->servo_id[0] != '\0' && here(c)) {
+        snprintf(b, n, S(R_SERVO_ID), g->servo_id);
+        return true;
+    }
     if (here(c)) {
         snprintf(b, n, S(R_FIRMWARE), g->firmware);
         return true;

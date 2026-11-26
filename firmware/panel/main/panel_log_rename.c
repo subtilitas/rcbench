@@ -52,9 +52,9 @@ static fm_job_t    s_ren_job;
 /** @brief The logger's open files as the rename's bench reads them. */
 static log_marks_t s_ren_marks;
 /** @brief The folder of s_ren_marks' run. */
-static char        s_ren_run_dir[CARD_DIR_MAX];
+static char        s_ren_run_dir[CARD_RUN_DIR_MAX];
 /** @brief The folder of s_ren_marks' test. */
-static char        s_ren_test_dir[CARD_DIR_MAX];
+static char        s_ren_test_dir[CARD_RUN_DIR_MAX];
 
 void log_rename_serve(void)
 {
@@ -95,8 +95,8 @@ void motor_log_ui_service(void)
     static fm_logname_t last;
     static fm_logname_t suppl;
     static log_marks_t marks;
-    static char run_dir[CARD_DIR_MAX];
-    static char test_dir[CARD_DIR_MAX];
+    static char run_dir[CARD_RUN_DIR_MAX];
+    static char test_dir[CARD_RUN_DIR_MAX];
 
     if (out && atomic_load(&s_ren_answered) == atomic_load(&s_ren_sent)) {
         out = false;

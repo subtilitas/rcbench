@@ -108,12 +108,16 @@ static const gk_file_t k_card[] = {
     { "RUNS2", "ATEST012.CSV", k_atest },
     { "AUTO2", "MOTOR042.CSV", k_motor },
     { "AUTO2", "SUPPL007.CSV", k_suppl },
+    /* A labelled servo's folder: long names, the first run 000. */
+    { "Servos/KST_X10-0000A", "limit run_000.csv", k_limit },
+    { "Servos/KST_X10-0000A", "limit run_000.txt", "LIMIT RUN\n" },
+    { "Servos/KST_X10-0000A", "automatic test_000.csv", k_atest },
 };
 
-static char g_dir[CARD_DIR_MAX];  /**< the folder the screen points at */
+static char g_dir[CARD_RUN_DIR_MAX];  /**< the folder the screen points at */
 static unsigned g_mounts;         /**< the card's mount number          */
 static log_mem_ctx_t g_mem;       /**< the open file's read position    */
-static char g_opened[CARD_DIR_MAX];  /**< the folder of the last file opened */
+static char g_opened[CARD_RUN_DIR_MAX];  /**< the folder of the last file opened */
 
 /** @brief List hook: the files of the folder pointed at, as one page.
  *  @param out takes the entries  @param max_entries room  @param page the
@@ -836,6 +840,84 @@ TEST_CASE(supply_graph_keeps_the_runs_folder)
              LOG_SHOW_NOT_LISTED);
 }
 
+/* ------------------------------------------------- a labelled servo --- */
+
+/** @brief The servo folder of the card's labelled runs. */
+#define SERVO_DIR "Servos/KST_X10-0000A"
+
+/** @brief The logger answers the last OPEN of outbox @p from with @p name
+ *  in SERVO_DIR on the card mounted now.  @param from PEEK_*  @param name
+ *  the CSV */
+static void answer_servo(uint8_t from, const char *name)
+{
+    s.files_from = from;
+    log_test_files_t f;
+    memset(&f, 0, sizeof(f));
+    f.state = 1;
+    snprintf(f.dir, sizeof(f.dir), "%s", SERVO_DIR);
+    snprintf(f.name, sizeof(f.name), "%s", name);
+    f.mount = g_mounts;
+    servo_screen_test_files_at(&f, true);
+}
+
+/* LIMIT RUN filed under a servo: run 000 is a run, the card names its
+ * report limit run_000.txt, and GRAPH opens limit run_000.csv in the
+ * servo's folder, which no tab lists, on the USER tab. */
+TEST_CASE(limit_run_graph_opens_a_labelled_servos_run_000)
+{
+    start();
+    limit_done(0);
+    CHECK_EQ(graph_key_state(GRAPH_KEY_LIMIT), GRAPH_KEY_WRITING);
+    answer_servo(PEEK_LIM, "limit run_000.csv");
+    frame();
+    CHECK_EQ(graph_key_state(GRAPH_KEY_LIMIT), GRAPH_KEY_LIVE);
+    CHECK(card_reads("limit run_000.txt"));
+    tap_in(servo_screen_graph_rect());
+    CHECK(opened_from("limit run_000.csv", SERVO_DIR, LOG_TAB_USER));
+    frame();
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO_LIMRUN);
+    /* A USER LOG FOLDER changed since leaves the run's folder as it was. */
+    move_folders_and_return(SCREEN_SERVO_LIMRUN);
+    tap_in(servo_screen_graph_rect());
+    CHECK(opened_from("limit run_000.csv", SERVO_DIR, LOG_TAB_USER));
+    /* The next run in a log folder answers by number, in that folder. */
+    frame();
+    tap_home();
+    s.lim_file = 0;
+    answer(PEEK_LIM, 13);
+    frame();
+    CHECK(card_reads("LIMIT013.TXT"));
+    tap_in(servo_screen_graph_rect());
+    CHECK(opened_from("LIMIT013.CSV", "RUNS2", LOG_TAB_USER));
+}
+
+/* AUTOMATIC TEST under a servo: the 22-character name reaches GRAPH. */
+TEST_CASE(automatic_test_graph_opens_a_22_character_name)
+{
+    start();
+    test_done(0);
+    answer_servo(PEEK_TEST, "automatic test_000.csv");
+    frame();
+    CHECK_EQ(strlen("automatic test_000.csv"), 22u);
+    CHECK_EQ(graph_key_state(GRAPH_KEY_ATEST), GRAPH_KEY_LIVE);
+    tap_in(servo_screen_graph_rect());
+    CHECK(opened_from("automatic test_000.csv", SERVO_DIR, LOG_TAB_USER));
+    /* The same answer again changes nothing; none is none. */
+    frame();
+    tap_home();
+    answer_servo(PEEK_TEST, "automatic test_000.csv");
+    CHECK_EQ(graph_key_state(GRAPH_KEY_ATEST), GRAPH_KEY_LIVE);
+    log_test_files_t none;
+    memset(&none, 0, sizeof(none));
+    none.state = -1;
+    s.files_from = PEEK_TEST;
+    servo_screen_test_files_at(&none, false);
+    frame();
+    CHECK_EQ(graph_key_state(GRAPH_KEY_ATEST), GRAPH_KEY_HIDDEN);
+    servo_screen_test_files_at(NULL, false);
+}
+
 /* ------------------------------------------------------- the shared key --- */
 
 /* graph_key.h alone: each state, the note's life, a card outside the
@@ -928,6 +1010,8 @@ int main(void)
     RUN(automatic_test_graph_keeps_the_runs_folder);
     RUN(motor_graph_keeps_the_runs_folder);
     RUN(supply_graph_keeps_the_runs_folder);
+    RUN(limit_run_graph_opens_a_labelled_servos_run_000);
+    RUN(automatic_test_graph_opens_a_22_character_name);
     RUN(the_key_follows_its_run_and_forgets_a_stale_note);
     RUN(each_card_is_an_opener_of_logs);
     free(g_fb);
