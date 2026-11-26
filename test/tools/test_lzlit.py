@@ -3,8 +3,11 @@
 test/host/lzlit_cli.c and protocols/supvan/lzlit.c are compiled here and
 run on fixed and seeded random inputs.  Each stream is decoded with
 Python's lzma (liblzma, an independent decoder) and compared with
-tools/lzlit.py's output byte for byte.  The fixtures of the C suites are
-held to tools/gen_supvan_fixtures.py.
+tools/lzlit.py's output byte for byte.  The generated fixtures of the C
+suites are held to tools/gen_supvan_fixtures.py, and the station's
+captures (H0) to the generator's rules: the full LZMA stream decodes to the
+print buffers, the buffers and data frames rebuild from the label's image
+and stream, and every captured write is a command or a frame fragment.
 
 SPDX-License-Identifier: MIT
 """
@@ -42,7 +45,7 @@ def _inputs():
         "random65536": bytes(rng.getrandbits(8) for _ in range(65536)),
         "bitmap": bytes(0xFF if (i // 48) % 9 < 4 else 0x00
                         for i in range(12288)),
-        "label": gen_supvan_fixtures.fixtures()["label-bufs.bin"],
+        "label": (gen_supvan_fixtures.OUT / "label-bufs.bin").read_bytes(),
     }
 
 
@@ -95,3 +98,61 @@ def test_the_fixtures_are_what_the_generator_writes():
     """test/host/fixtures/supvan holds the generator's bytes."""
     for name, body in gen_supvan_fixtures.fixtures().items():
         assert (gen_supvan_fixtures.OUT / name).read_bytes() == body, name
+
+
+def _captured(name):
+    """Return a capture of test/host/fixtures/supvan.
+
+    Args:
+        name: the file name.
+
+    Returns:
+        Its bytes.
+    """
+    return (gen_supvan_fixtures.OUT / name).read_bytes()
+
+
+def test_the_captured_stream_decodes_to_the_captured_buffers():
+    """label.lz is full LZMA; decoded it is label-bufs.bin."""
+    z = _captured("label.lz")
+    assert z[:13] == bytes([0x5D, 0x00, 0x20, 0x00, 0x00,
+                            0x00, 0x30, 0, 0, 0, 0, 0, 0])
+    raw = lzma.decompress(z, format=lzma.FORMAT_ALONE)
+    assert raw == _captured("label-bufs.bin")
+
+
+def test_the_captured_buffers_rebuild_from_the_labels_image():
+    """print_buffer() of the image gives label-bufs.bin, header and sum."""
+    g = gen_supvan_fixtures
+    bits = g.captured_bits()
+    rebuilt = b"".join(g.print_buffer(bits, g.LABEL_COLS, i)
+                       for i in range(g.LABEL_BUFS))
+    assert rebuilt == _captured("label-bufs.bin")
+
+
+def test_the_captured_frames_rebuild_from_the_stream():
+    """data_frames() of label.lz gives label-dataframes.bin."""
+    frames = gen_supvan_fixtures.data_frames(_captured("label.lz"))
+    assert frames == _captured("label-dataframes.bin")
+
+
+def test_every_captured_write_is_a_command_or_a_fragment():
+    """label-frames.bin: 29 records, 16-byte commands with their sum and
+    128-byte fragments that join to the data frames."""
+    f = _captured("label-frames.bin")
+    recs = []
+    o = 0
+    while o < len(f):
+        n = int.from_bytes(f[o:o + 2], "little")
+        recs.append(f[o + 2:o + 2 + n])
+        o += 2 + n
+    assert o == len(f)
+    assert len(recs) == 29
+    frags = b"".join(r for r in recs if len(r) == 128)
+    assert frags == _captured("label-dataframes.bin")
+    cmds = [r for r in recs if len(r) != 128]
+    assert len(cmds) == 21
+    for r in cmds:
+        assert len(r) == 16
+        assert r[:7] == bytes([0x7E, 0x5A, 0x0C, 0x00, 0x10, 0x01, 0xAA])
+        assert int.from_bytes(r[8:10], "little") == sum(r[10:16])

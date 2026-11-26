@@ -55,7 +55,7 @@ bench's station, with a 40 x 30mm roll (gap 3mm, type 1).
   0x10 BUF_FULL (P0 the stream length, P1 the speed byte), 0x14
   STOP_PRINT.
 
-### Status (INQUIRY_STA answer, 20 bytes or more)
+### Status (INQUIRY_STA answer, 20 bytes or more; 26 from the T50M Pro)
 
 | Byte | Bit | Field | Ends a job with |
 |---|---|---|---|
@@ -75,7 +75,7 @@ bench's station, with a 40 x 30mm roll (gap 3mm, type 1).
 With several flags set, the first of cover, no label, label, battery,
 head wins (`sv_status_error()`).
 
-### Material record (RETURN_MAT answer, 47 bytes or more)
+### Material record (RETURN_MAT answer, 47 bytes or more; 61 from the T50M Pro)
 
 | Bytes | Field |
 |---|---|
@@ -278,31 +278,28 @@ stream and that a completed job does not prove a print.
 
 ## Test fixtures
 
-`test/host/fixtures/supvan/` holds the streams and buffers the C suites
-compare with byte for byte. `tools/gen_supvan_fixtures.py` writes them from
-rules written a second time in Python, apart from the C;
-`--check` fails when a file differs, and `test/tools/test_lzlit.py` runs
-that check.
+`test/host/fixtures/supvan/` holds the station's captures of one 40 x
+30mm label (station step H0, 2026-11-26) and the streams that
+`tools/gen_supvan_fixtures.py` writes; the folder's README gives each
+file, its size and sha256.
 
 | File | Content | From |
 |---|---|---|
+| `label-bufs.bin` | the 3 print buffers sent | H0 |
+| `label.lz` | their stream, full LZMA | H0 |
+| `label-frames.bin` | every write to FFE9 in order | H0 |
+| `label-dataframes.bin` | the 2 data frames | H0 |
+| `label-cmds.tsv` | every command with its answer | H0 |
 | `lzlit-*.bin` | streams of 0, 1, 12,288 bytes, a pattern and 5,000 seeded random bytes | `tools/lzlit.py` |
-| `label-bufs.bin` | 3 print buffers of a 224-column test bitmap | the report's buffer rules |
-| `label.lz` | their stream | `tools/lzlit.py` |
-| `label-frames.bin` | its data frames | the report's frame rules |
+| `label-lit.lz` | the literal stream of `label-bufs.bin` | `tools/lzlit.py` |
 
-The command bytes, the 26-byte answer to command 0xF0 and the status and
-material offsets in `test_supvan_frame.c` are copied from the station's
-report; those cases say "report" beside each.
-
-**Station captures (H0).** The label files stand in for the station's
-captures of one label printed with `bleprint.py --lit`: its 3 raw buffers,
-its stream and its data frames, plus the raw RETURN_MAT answer of the
-40 x 30mm roll and the advertising bytes. When they arrive they replace
-`label-bufs.bin`, `label.lz` and `label-frames.bin`, and `label_bits()` in
-`tools/gen_supvan_fixtures.py` and `test/host/test_supvan_page.c` then
-draws the captured bitmap; the raw RETURN_MAT answer becomes the record in
-`test_supvan_frame.c`'s `material()`. The C tests stay as they are.
+`test/tools/test_lzlit.py` holds the captures to the Python rules: the
+stream decodes to the buffers, `print_buffer()` rebuilds the buffers from
+the label's image, `data_frames()` rebuilds the frames from the stream,
+and every captured write is a 16-byte command with its sum or a 128-byte
+fragment. The command bytes and the 26-byte answer to command 0xF0 in
+`test_supvan_frame.c` are copied from the station's report of 2026-11-25
+("report"); its RETURN_MAT and INQUIRY_STA answers from H0 ("H0").
 
 ## Trademarks
 
@@ -317,13 +314,13 @@ sponsored by them. The full notice is in the repository's
 
 | Suite | Holds |
 |---|---|
-| `test_lzlit` | the golden streams of `tools/lzlit.py`, fed whole and in pieces; the header; the overflow at one byte short and at the exact size; the bound up to 65,536 bytes; the carry path |
-| `test_supvan_frame` | the command against the report's bytes; an answer split 20 + 20 + 7 and fed 1 byte at a time; noise, a length out of range, two answers in one piece, the 0xF0 answer; each status bit; the material offsets; the roll limits at both ends |
-| `test_supvan_page` | 224 columns as 84 / 84 / 56 against the fixture; 1, 84 and 85 columns; the checksum at byte 255; the data frames against the fixture; frame counts at 1, 500, 501 bytes and 255 frames; the speed byte at each threshold |
+| `test_lzlit` | the golden streams of `tools/lzlit.py`, the captured label's included, fed whole and in pieces; the header; the overflow at one byte short and at the exact size; the bound up to 65,536 bytes; the carry path |
+| `test_supvan_frame` | the command against the report's bytes; H0's 61-byte RETURN_MAT answer split 20 + 20 + 21 and fed 1 byte at a time; noise, a length out of range, two answers in one piece, the 0xF0 answer; each status bit; H0's idle and printing status; the material offsets in H0's answers before and after the print; the roll limits at both ends |
+| `test_supvan_page` | the captured label's 224 columns as 84 / 84 / 56 against the captured buffers; 1, 84 and 85 columns; the checksum at byte 255; the data frames of the captured stream against the captured frames; the captured commands against `sv_cmd_build()`; frame counts at 1, 500, 501 bytes and 255 frames; the speed byte at each threshold |
 | `test_supvan_job` | the whole PRINT in order with its parameters and spacing; notifications before and after their writes' answers; a label used by an earlier print during step 3; a reconnect while the label prints; each roll dimension on its own; QUERY alone; the counter 295 to 294, 295 three times, 294 on the second read, a changed UID, a jump; busy for 4.9s and 5.1s; the clock's wrap |
 | `test_supvan_job_ends` | the 7 error flags before START and in step 11; no answer at each step; a write refused and lost; an abort at each of steps 4 to 11 sends STOP_PRINT once; the link down at each step, back and not back inside 5s |
-| `test/tools/test_lzlit.py` | `lzlit.c` through `test/host/lzlit_cli.c` on 9 inputs up to 65,536 bytes: equal to `tools/lzlit.py`, decoded by liblzma |
+| `test/tools/test_lzlit.py` | `lzlit.c` through `test/host/lzlit_cli.c` on 9 inputs up to 65,536 bytes: equal to `tools/lzlit.py`, decoded by liblzma; the H0 captures against the Python rules |
 
-The simulated printer is `test/host/sv_sim.h`. Its answer lengths (status
-24 bytes, material 47) are the simulator's; H0's captures give the
-printer's own.
+The simulated printer is `test/host/sv_sim.h`. Its answers have H0's
+form: status 26 bytes, material 61 bytes on H0's record, every other
+answer 23 bytes, bytes 4 to 6 `55 03 55`.
