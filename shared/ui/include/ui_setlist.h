@@ -88,7 +88,8 @@ typedef enum {
  * tap() a tap on the row calls it; with choices() a tap opens a choice list
  * of that many rows over the list, choice() names one, chosen() is the one
  * in force and pick() takes a tap on one.  locked() names why the row takes
- * no press now; its help line shows it in the warning colour.  On a
+ * no press now; its help line shows it in the warning colour.  label_of()
+ * names the row in place of label where the name follows a state.  On a
  * heading only value_text() and locked() are read: the line beside its
  * name, in the warning colour while locked() names something.
  */
@@ -112,7 +113,19 @@ typedef struct ui_setlist_custom {
     void (*pick)(int i);
     /** @brief Why the row takes no press, NULL while it takes one. */
     const char *(*locked)(void);
+    /** @brief The row's name now; NULL for label. */
+    ui_text_id_t (*label_of)(void);
 } ui_setlist_custom_t;
+
+/**
+ * @brief A custom row's name now: label_of()'s, else label.
+ * @param c The row.
+ * @return The text's id.
+ */
+static inline ui_text_id_t ui_setlist_custom_label(const ui_setlist_custom_t *c)
+{
+    return (c->label_of != NULL) ? c->label_of() : c->label;
+}
 
 /** @brief One row of a list. */
 typedef struct {

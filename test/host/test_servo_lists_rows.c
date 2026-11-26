@@ -243,7 +243,7 @@ TEST_CASE(enc_center_takes_the_live_count_of_an_as5600_only)
  * ZERO then reads SET. */
 TEST_CASE(lives_list_holds_enc_center_under_the_profile)
 {
-    enum { ANGLE = HL_NEW_ID + 1, ENC = HL_NEW_ID + 2 };
+    enum { ANGLE = HL_PRINT + 1, ENC = HL_PRINT + 2 };
     fresh();
     settings_set(SET_ENC_EN, 1.0f);
     settings_set(SET_ENC_CENTER, 0.0f);

@@ -2404,6 +2404,7 @@ LIMIT RUN's and RUDDER AUTO's) ends with the SERVO LABEL block:
 | ID PREFIX | the prefix NEW ID uses (`srv_pfx`, default `SERVO`) | the name keyboard, 17 characters at most; spaces at the ends are dropped, spaces inside kept; OK asks a save at once |
 | SERVO ID | the active servo's id, or `NONE` | a choice list of up to 8 rows at 52px: `NONE`, the card's 6 newest ids, `TYPE ID` |
 | NEW ID | `NEXT` and the id NEW ID makes, `NEXT KST_X10-00008` | the next id, its folder, and that servo active |
+| PRINT or PRINT AGAIN | the bound printer's name; the job's phase and progress; `PRINTED, 293 LEFT` or the error | the active servo's label on the bound printer |
 
 - `NONE` clears the active servo; an id of the list makes it active as a
   pick. An open list keeps the ids it shows while the card's walk
@@ -2439,6 +2440,34 @@ LIMIT RUN's and RUDDER AUTO's) ends with the SERVO LABEL block:
   ZZZZZ`, `PREFIX STARTS WITH .: change ID prefix`, and `ID prefix is no
   prefix: A-Z, 0-9, space, - _ .` for a prefix written with another
   character.
+- PRINT prints the active servo's label on the printer bound on SETUP >
+  WIRELESS > PRINTER (Screens.md, WIRELESS: the label printer): the QR
+  code of the id, the id and DUT NAME, laid out for the roll the printer
+  reports. The row reads PRINT AGAIN once a label of the active servo has
+  printed in this session, and for a servo whose id came from its label,
+  scanned or typed; the tap is the same. A label counts as printed when
+  the printer's label counter falls by 1.
+- PRINT's value follows the job from the tap: `CONNECTING`, `READING
+  ROLL`, `BUILDING LABEL`, `SENDING 3/5`, `PRINTING`, `CHECKING COUNT`,
+  then `PRINTED, 293 LEFT` or the error's text, which also goes to the
+  band. The result stays on the row until the next request or until
+  another servo is active; a job that ends while the list is shut shows
+  it on the next visit. Idle, the value names the bound printer.
+- PRINT is locked, the reason on its help line, with no servo active
+  (`NO SERVO ID: pick, type or make one above`), with no printer bound
+  (`NO PRINTER BOUND: bind one on WIRELESS in SETUP`), while a request or
+  a scan for printers runs (`PRINTER BUSY: the request runs to its end`),
+  while the bench is ARMED or a run holds the servo (`SAFE ONLY: no print
+  while ARMED or in a run`), and while a device update runs (`UPDATE
+  RUNNING: print after the update`). A job is not stopped from the row;
+  `print stop` on the console stops it.
+
+![PRINT naming the bound printer](img/servo-label-print.png)
+
+![A label in SENDING, PRINT locked](img/servo-label-printing.png)
+
+![The label printed: PRINT AGAIN](img/servo-label-printed.png)
+
 - The debug console's lines below do the same as the rows.
 
 | Run | File in `Servos/<id>` | Report |

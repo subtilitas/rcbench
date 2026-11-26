@@ -31,6 +31,7 @@
 #include "panel_dial.h"
 #include "print_ctl.h"
 #include "rcbench_version.h"
+#include "wireless_printer.h"
 
 /** @brief The console lines' tag. */
 static const char *TAG = "print";
@@ -145,7 +146,7 @@ void panel_print_blec_poll(uint32_t now)
         }
         const bool took = print_ctl_request(&s_ctl, &m.req, now);
         ESP_LOGI(TAG, "request %u %s%s%s", (unsigned)m.req.kind,
-                 took ? "taken" : "refused: a job runs",
+                 took ? "taken" : "refused: a job or a scan runs",
                  m.req.id[0] != '\0' ? " " : "", m.req.id);
     }
     print_ctl_poll(&s_ctl, now);
@@ -266,6 +267,10 @@ static void print_view_line(const print_view_t *v)
            v->linked ? "linked" : "not linked", (unsigned)v->w_mm,
            (unsigned)v->h_mm, (long)v->left, (unsigned)v->mtu,
            (unsigned)v->frame, (unsigned)v->frames);
+    for (unsigned i = 0u; i < v->found_n && i < PRINT_FOUND_MAX; ++i) {
+        printf("print: found %s %s %ddBm\n", v->found[i].addr,
+               v->found[i].name, (int)v->found[i].rssi);
+    }
 }
 
 /**
@@ -315,6 +320,9 @@ static void console_run(const char *line)
     } else if (strcmp(arg, "query") == 0) {
         print_ctl_query();
         printf("print: query asked\n");
+    } else if (strcmp(arg, "scan") == 0) {
+        printf("print: scan %s\n",
+               print_ctl_scan() ? "asked" : "refused: a job or a scan runs");
     } else if (strcmp(arg, "stop") == 0) {
         print_ctl_abort();
         printf("print: stop asked\n");
@@ -327,7 +335,7 @@ static void console_run(const char *line)
         printf("print: unbound\n");
     } else {
         printf("print: commands: print, print test, print id ID, "
-               "print query, print stop, print bind ADDRESS, "
+               "print query, print scan, print stop, print bind ADDRESS, "
                "print unbind\n");
     }
 }
@@ -345,13 +353,15 @@ void panel_print_console(const char *line)
 void panel_print_frame(void)
 {
     char line[sizeof(s_line)];
-    print_view_t v;
+    /* The frame task's own: too big for its stack with the scan's list. */
+    static print_view_t v;
     taskENTER_CRITICAL(&s_mux);
     memcpy(line, s_line, sizeof(line));
     s_line[0] = '\0';
     v = s_pub;
     taskEXIT_CRITICAL(&s_mux);
     print_ctl_show(&v);
+    wireless_printer_tick();
     if (line[0] != '\0') {
         console_run(line);
     }

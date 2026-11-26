@@ -8,6 +8,23 @@ history is in git.
 
 ### Added
 
+- SERVO LABEL's PRINT row prints the active servo's label, its id and
+  DUT NAME, on the bound printer and the roll it reports. It reads PRINT
+  AGAIN once that servo's label has printed in the session, and for a
+  scanned or typed id. Its value follows the job (`SENDING 3/5`) and keeps
+  `PRINTED, 293 LEFT` or the error, also after the list is left; the
+  error also goes to the band. Locked with its reason: no servo active,
+  no printer bound, a request running, ARMED or a run, a device update
+  (`servo_label_rows.c`; `test_servo_print_row`).
+- SETUP > WIRELESS > PRINTER: Scan for printer, Bound printer, Address,
+  State, Roll, Labels left, Read printer and Test label. SEARCH lists the
+  printers by the address prefix `A4:93:40`, a tap binds one into
+  `prn_ble` and `prn_name`, UNBIND is the 2s hold. A scan is refused while
+  ARMED, while a request or a device update runs; a bind and an unbind
+  while a request or an update runs; a device update while a request or a
+  scan runs. The console's `print scan` scans
+  (`wireless_printer.c`, `print_ctl.c`, `print_req.c`;
+  `test_wireless_printer`, `test_print_ctl_scan`, `test_print_ctl_ends`).
 - The SERVO lists that carry DUT NAME end with SERVO LABEL: ID PREFIX,
   SERVO ID and NEW ID. SERVO ID picks NONE, one of the card's 6 newest ids,
   or TYPE ID, which types an id on the name keyboard, 23 characters, lower

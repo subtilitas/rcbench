@@ -12,6 +12,10 @@
  * - servo-label-type: TYPE ID's keyboard, KST_X10-0000A typed.
  * - servo-label-refused: the same, KST_X10-0000 refused on OK: the
  *   serial's line.
+ * - servo-label-print: the block with the T50M Pro bound and idle: PRINT
+ *   names it.
+ * - servo-label-printing: KST_X10-00005's label in SENDING, 3 of 5 frames.
+ * - servo-label-printed: the label printed, 292 left: PRINT AGAIN.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -20,6 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "print_ctl.h"
 #include "servo_active.h"
 #include "servo_label_rows.h"
 #include "servo_screen.h"
@@ -93,6 +98,39 @@ static void type(const char *text)
     }
 }
 
+/**
+ * @brief The PRINT views: the T50M Pro bound, and its view for @p view.
+ * @param view servo-label-print, -printing or -printed.
+ */
+static void pose_print(const char *view)
+{
+    settings_set_text(SET_TEXT_PRN_ADDR, "A4:93:40:30:FA:71 P");
+    settings_set_text(SET_TEXT_PRN_NAME, "T0205C2608247368");
+    print_view_t v;
+    memset(&v, 0, sizeof(v));
+    v.bound = true;
+    v.left = 293;
+    v.w_mm = 40u;
+    v.h_mm = 30u;
+    v.gap_mm = 3u;
+    if (strcmp(view, "servo-label-print") != 0) {
+        v.kind = PRINT_REQ_LABEL;
+        v.linked = true;
+        v.jobs = 1u;
+        snprintf(v.id, sizeof(v.id), "KST_X10-00005");
+        v.phase = PRINT_SENDING;
+        v.frame = 3u;
+        v.frames = 5u;
+    }
+    if (strcmp(view, "servo-label-printed") == 0) {
+        v.phase = PRINT_DONE;
+        v.left = 292;
+        servo_active_set_printed();
+    }
+    v.rev = 1u;
+    print_ctl_show(&v);
+}
+
 bool render_servo_label_view(const char *view)
 {
     return strncmp(view, "servo-label-", 12) == 0;
@@ -108,9 +146,13 @@ void render_servo_label_pose(const char *view)
     (void)servo_active_set("KST_X10-00005", SERVO_ACTIVE_PICK, false);
     ui_setlist_t *sl = (ui_setlist_t *)servo_screen_list();
     /* The block's heading at the pane's top. */
-    ui_setlist_scroll_to(sl, LABEL_ROW + SVL_ROW_NEW);
+    ui_setlist_scroll_to(sl, LABEL_ROW + SVL_ROW_PRINT);
     ui_setlist_scroll_to(sl, LABEL_ROW);
     if (strcmp(view, "servo-label-rows") == 0) {
+        return;
+    }
+    if (strncmp(view, "servo-label-print", 17) == 0) {
+        pose_print(view);
         return;
     }
     if (strcmp(view, "servo-label-dut") == 0) {

@@ -2101,6 +2101,9 @@ UI_TEXT(HG_SET_ENTRY, 0,
 UI_TEXT(HG_SET_ENTRY_BAL, 0,
     "The balance node, a vibration and index sensor over Bluetooth LE. A tap shows its rows on the right.",
     "Der Auswuchtknoten, Vibrations- und Indexsensor über Bluetooth LE. Tippen zeigt rechts seine Zeilen.")
+UI_TEXT(HG_SET_ENTRY_PRINTER, 0,
+    "The label printer, a Supvan T50M Pro over Bluetooth LE. A tap shows its rows on the right.",
+    "Der Etikettendrucker, ein Supvan T50M Pro über Bluetooth LE. Tippen zeigt rechts seine Zeilen.")
 UI_TEXT(HG_SET_ENTRY_IMU, 0,
     "The panel reads it over Bluetooth LE through the ESP32-C6. A tap shows its rows on the right.",
     "Das Panel liest sie per Bluetooth LE über den ESP32-C6. Tippen zeigt rechts ihre Zeilen.")
@@ -6569,6 +6572,20 @@ UI_TEXT(SVL_PREFIX_DOT, 60,
 UI_TEXT(SVL_PREFIX_BAD, 60,
     "ID prefix is no prefix: A-Z, 0-9, space, - _ .",
     "ID-Präfix ist kein Präfix: A-Z, 0-9, Leerzeichen, - _ .")
+/* SERVO LABEL's PRINT row (servo_label_rows.c): its two names, its help
+ * line and the lock with no servo active. */
+UI_TEXT(SVL_PRINT, 0,
+    "PRINT",
+    "DRUCKEN")
+UI_TEXT(SVL_PRINT_AGAIN, 0,
+    "PRINT AGAIN",
+    "NOCHMAL DRUCKEN")
+UI_TEXT(SVL_PRINT_HELP, 60,
+    "The active servo's label: its id and DUT NAME",
+    "Etikett des aktiven Servos: ID und DUT NAME")
+UI_TEXT(SVL_PRINT_NO_ID, 60,
+    "NO SERVO ID: pick, type or make one above",
+    "KEINE SERVO-ID: oben wählen, tippen oder neu")
 UI_TEXT(SVL_FAMILY_HELP, 60,
     "The programmer a run writes the end points with",
     "Der Programmierer, mit dem ein Lauf die Endpunkte schreibt")
@@ -14387,6 +14404,138 @@ UI_TEXT(BNODE_SCAN_ARMED, 94,
 UI_TEXT(BNODE_SCAN_OFF, 94,
     "BLUETOOTH IS NOT READY: NO NODE SCAN",
     "BLUETOOTH NICHT BEREIT: KEINE KNOTENSUCHE")
+/* SETUP > WIRELESS > PRINTER (wireless_printer.c): the entry, its rows
+ * and their help lines, the printer's state and a request's phase, the
+ * roll, the locks of its rows and of PRINT, and the band's refusals. */
+UI_TEXT(PRN_ENTRY, 16,
+    "PRINTER",
+    "DRUCKER")
+UI_TEXT(PRN_ROW_SCAN, 43,
+    "Scan for printer",
+    "Drucker suchen")
+UI_TEXT(PRN_ROW_SCAN_HELP, 43,
+    "Opens SEARCH, scans 10s for printers",
+    "Öffnet SEARCH, sucht 10s nach Druckern")
+UI_TEXT(PRN_ROW_BIND, 43,
+    "Bound printer",
+    "Gebundener Drucker")
+UI_TEXT(PRN_ROW_BIND_HELP, 43,
+    "Opens SEARCH on the last scan's printers",
+    "Öffnet SEARCH mit den Druckern der Suche")
+UI_TEXT(PRN_ROW_ADDR, 43,
+    "Address",
+    "Adresse")
+UI_TEXT(PRN_ROW_ADDR_HELP, 43,
+    "The bound printer's Bluetooth address",
+    "Bluetooth-Adresse des Druckers")
+UI_TEXT(PRN_ROW_STATE, 43,
+    "State",
+    "Zustand")
+UI_TEXT(PRN_ROW_STATE_HELP, 43,
+    "The link, and the last request's result",
+    "Verbindung und Ergebnis der letzten Anfrage")
+UI_TEXT(PRN_ROW_ROLL, 43,
+    "Roll",
+    "Rolle")
+UI_TEXT(PRN_ROW_ROLL_HELP, 43,
+    "Label size and gap, read from the printer",
+    "Etikettengröße und Abstand, vom Drucker")
+UI_TEXT(PRN_ROW_LEFT, 43,
+    "Labels left",
+    "Etiketten übrig")
+UI_TEXT(PRN_ROW_LEFT_HELP, 43,
+    "The printer's count of the roll",
+    "Zähler des Druckers für die Rolle")
+UI_TEXT(PRN_ROW_QUERY, 43,
+    "Read printer",
+    "Drucker lesen")
+UI_TEXT(PRN_ROW_QUERY_HELP, 43,
+    "Reads the roll and the labels left",
+    "Liest Rolle und übrige Etiketten")
+UI_TEXT(PRN_ROW_TEST, 43,
+    "Test label",
+    "Testetikett")
+UI_TEXT(PRN_ROW_TEST_HELP, 43,
+    "Prints the bench's test label",
+    "Druckt das Testetikett des Bench")
+UI_TEXT(PRN_ST_NONE, 25,
+    "NOT BOUND",
+    "NICHT GEBUNDEN")
+UI_TEXT(PRN_ST_IDLE, 25,
+    "IDLE",
+    "BEREIT")
+UI_TEXT(PRN_ST_LINKED, 25,
+    "LINK UP",
+    "VERBUNDEN")
+UI_TEXT(PRN_PH_CONNECTING, 25,
+    "CONNECTING",
+    "VERBINDET")
+UI_TEXT(PRN_PH_READING, 25,
+    "READING ROLL",
+    "LIEST ROLLE")
+UI_TEXT(PRN_PH_BUILDING, 25,
+    "BUILDING LABEL",
+    "BAUT ETIKETT")
+UI_TEXT(PRN_PH_SENDING, 25,
+    "SENDING %u/%u",
+    "SENDET %u/%u")
+UI_TEXT(PRN_PH_PRINTING, 25,
+    "PRINTING",
+    "DRUCKT")
+UI_TEXT(PRN_PH_CHECKING, 25,
+    "CHECKING COUNT",
+    "PRÜFT ZÄHLER")
+UI_TEXT(PRN_PH_PRINTED, 25,
+    "PRINTED",
+    "GEDRUCKT")
+UI_TEXT(PRN_PH_PRINTED_LEFT, 25,
+    "PRINTED, %d LEFT",
+    "GEDRUCKT, %d ÜBRIG")
+UI_TEXT(PRN_PH_READ, 25,
+    "ROLL READ",
+    "ROLLE GELESEN")
+UI_TEXT(PRN_ROLL, 24,
+    "%ux%umm GAP %umm",
+    "%ux%umm ABST. %umm")
+UI_TEXT(PRN_LOCK_UNBOUND, 60,
+    "NO PRINTER BOUND: bind one on WIRELESS in SETUP",
+    "KEIN DRUCKER GEBUNDEN: in SETUP auf WIRELESS binden")
+UI_TEXT(PRN_LOCK_UNBOUND_HERE, 60,
+    "NO PRINTER BOUND: scan for one above",
+    "KEIN DRUCKER GEBUNDEN: oben einen suchen")
+UI_TEXT(PRN_LOCK_BUSY, 60,
+    "PRINTER BUSY: the request runs to its end",
+    "DRUCKER BELEGT: die Anfrage läuft zu Ende")
+UI_TEXT(PRN_LOCK_SAFE, 60,
+    "SAFE ONLY: no print while ARMED or in a run",
+    "NUR BEI SAFE: kein Druck bei ARMED oder im Lauf")
+UI_TEXT(PRN_LOCK_UPDATE, 60,
+    "UPDATE RUNNING: print after the update",
+    "UPDATE LÄUFT: nach dem Update drucken")
+UI_TEXT(PRN_SCAN_ARMED, 94,
+    "NO PRINTER SCAN WHILE ARMED: SWITCH TO SAFE FIRST",
+    "KEINE DRUCKERSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN")
+UI_TEXT(PRN_SCAN_JOB, 94,
+    "A PRINT IS RUNNING: SCAN WHEN IT ENDS",
+    "DRUCK LÄUFT: NACH DEM ENDE SUCHEN")
+UI_TEXT(PRN_SCAN_UPD, 94,
+    "AN UPDATE IS RUNNING: NO PRINTER SCAN",
+    "UPDATE LÄUFT: KEINE DRUCKERSUCHE")
+UI_TEXT(PRN_SCAN_OFF, 94,
+    "BLUETOOTH IS NOT READY: NO PRINTER SCAN",
+    "BLUETOOTH NICHT BEREIT: KEINE DRUCKERSUCHE")
+UI_TEXT(PRN_BIND_JOB, 94,
+    "A PRINT IS RUNNING: CHANGE THE BIND WHEN IT ENDS",
+    "DRUCK LÄUFT: BINDUNG NACH DEM ENDE ÄNDERN")
+UI_TEXT(PRN_BIND_UPD, 94,
+    "AN UPDATE IS RUNNING: CHANGE THE BIND AFTER IT",
+    "UPDATE LÄUFT: BINDUNG DANACH ÄNDERN")
+UI_TEXT(PRN_BIND_SCANNING, 94,
+    "A SCAN IS RUNNING: PICK THE PRINTER WHEN IT ENDS",
+    "SUCHE LÄUFT: DEN DRUCKER NACH DEM ENDE WÄHLEN")
+UI_TEXT(PRN_BIND_GONE, 94,
+    "PRINTER NOT BOUND: THE LIST CHANGED, PICK IT AGAIN",
+    "DRUCKER NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN")
 /* The quality words of a report (node_balance.h), 16 cells of 10 x 20. */
 UI_TEXT(NB_Q_SENSOR, 16,
     "SENSOR LEVEL",

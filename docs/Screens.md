@@ -6642,9 +6642,9 @@ a run ([Servo procedures](Servo.md)).
 ### WIRELESS: the IMU and the Dial
 
 WIRELESS holds the panel's Bluetooth LE devices in a split view of
-SENSORS' kind: 4 entries on the left, IMU, DIAL, BALANCE NODE and POWER
-NODE, each with its name and its state, and the selected entry's rows on
-the right. The first IMU ON, Dial ON, Power node ON or Balance node ON
+SENSORS' kind: 5 entries on the left, IMU, DIAL, BALANCE NODE, PRINTER
+and POWER NODE, each with its name and its state, and the selected
+entry's rows on the right. The first IMU ON, Dial ON, Power node ON or Balance node ON
 starts Bluetooth LE until the panel
 restarts.
 
@@ -6653,6 +6653,7 @@ restarts.
 | IMU | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO SENSOR BOUND`, `SCANNING`, `CONNECTING`, `BOUND`, `CONNECTED 50Hz`, `NO FRAMES` ([The Bluetooth IMU](#the-bluetooth-imu)) | 2 while off: IMU and ANGLE SOURCE; 7 while on |
 | DIAL | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO DIAL BOUND`, `SCANNING`, `CONNECTING`, `BOUND: NOT A DIAL`, `CONNECTED, NO EVENT`, `OTHER PROTOCOL n`, `CONNECTED`, `DEGRADED`, `DIAL LOST` | 1 while off; 5 while on |
 | BALANCE NODE | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO NODE BOUND`, `SCANNING`, `CONNECTING`, `BOUND: NOT A NODE`, `CONNECTED, READING INFO`, `ROLE r, PROTOCOL p`, `CONNECTED, NO REPORT`, `REPORTING` | 1 while off; 5 while on |
+| PRINTER | `NOT BOUND`, the bound printer's name while idle, `SCANNING`, `LINK UP`, a request's phase or its result ([WIRELESS: the label printer](#wireless-the-label-printer)) | 8 |
 | POWER NODE | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO NODE BOUND`, `SCANNING`, `CONNECTING`, `NOT A POWER NODE`, `CONNECTED, NO READING`, `OTHER PROTOCOL n`, `INA228 SET-UP REFUSED`, `NO INA228 ON THE NODE`, `CONNECTED`, `NO READING FOR 300ms`, `NODE LOST` ([WIRELESS: the power node](#wireless-the-power-node)) | 2 while off: Power node and INA228 SOURCE; 5 while on |
 
 ![WIRELESS on the DIAL entry](img/setup-wireless-dial.png)
@@ -6736,13 +6737,76 @@ RESET BALANCE NODE sets Balance node back to OFF and Trial mass to 0.50g;
 the bound node stays. A node whose INFO names another role or protocol
 reads `ROLE r, PROTOCOL p` and its reports are not taken.
 
+### WIRELESS: the label printer
+
+![WIRELESS on the PRINTER entry, the roll read](img/printer-idle.png)
+
+The PRINTER entry binds the label printer that prints the servo labels
+(SERVO LABEL's PRINT, [Servo.md](Servo.md)), a Supvan T50M Pro over
+Bluetooth LE. The printer has no switch: the panel links to it for a
+request and ends the link 30s after its last answer. The link uses the
+spare connection a device update also uses, so a request is refused
+while an update runs, and an update is refused while a request or a scan
+for printers runs. The printer advertises no service: a scan lists the
+devices whose public address starts with `A4:93:40`.
+
+On the station (station step H1, a 40x30mm roll): the first link of a
+session took 4.94s, later ones 0.1s to 0.8s; the MTU was 240; the label
+built in 37ms to 42ms into a stream of about 2,000 bytes; a label took
+4.2s to 6.7s from the request to `PRINTED`. A printer that goes off is
+sought only until the 30s linger after its last answer ends.
+
+| Row | Values | What it does |
+| --- | --- | --- |
+| Scan for printer | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | a tap opens SEARCH ([WIRELESS: SEARCH](#wireless-search)) and scans 10s for printers; while ARMED the band reads `NO PRINTER SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; while a request runs, `A PRINT IS RUNNING: SCAN WHEN IT ENDS`; while a device update runs, `AN UPDATE IS RUNNING: NO PRINTER SCAN`; while a scan runs, `A SCAN IS RUNNING: IT ENDS WITHIN 10s`; Bluetooth LE not ready 10s after the tap, `BLUETOOTH IS NOT READY: NO PRINTER SCAN`. A switch to ARMED stops a scan. SEARCH opens in each case |
+| Bound printer | the bound printer's name, else its address, else `NONE` | a tap opens SEARCH on the last scan's list, without a scan |
+| Address | `A4:93:40:30:FA:71 P`, or `--` | the bound address and its type |
+| State | `NOT BOUND`, `IDLE`, `LINK UP`, `SCANNING`, `CONNECTING`, `READING ROLL`, `BUILDING LABEL`, `SENDING 3/5`, `PRINTING`, `CHECKING COUNT`, `ROLL READ`, `PRINTED, 293 LEFT`, or the last request's error | the link and the last request |
+| Roll | `40x30mm GAP 3mm`, `NO LABEL`, `--` | the label size and gap the printer reported |
+| Labels left | `293`, `--` | the printer's own count of the roll |
+| Read printer | the bound printer's name | a tap reads the roll and the labels left; locked with no printer bound (`NO PRINTER BOUND: scan for one above`), while a request runs (`PRINTER BUSY: the request runs to its end`) and while an update runs (`UPDATE RUNNING: print after the update`) |
+| Test label | the bound printer's name | a tap prints the bench's test label; the locks of Read printer, and `SAFE ONLY: no print while ARMED or in a run` |
+
+![Nothing bound](img/printer-none.png)
+
+![A label in SENDING 3/5](img/printer-printing.png)
+
+![The label printed, 292 left](img/printer-done.png)
+
+The entry opened with a printer bound and its roll not read yet reads
+the roll once, while SAFE. RESET PRINTER changes nothing: the entry
+holds no setting, and the bind stays. A request that ends with an error
+puts its text on the band:
+
+| Text | Means |
+| --- | --- |
+| `NO PRINTER BOUND` | no address is bound |
+| `PRINTER NOT FOUND` | no link 10s after the request: the printer is off or out of range |
+| `BLUETOOTH NOT READY` | Bluetooth LE did not come up |
+| `NOT A LABEL PRINTER` | the bound device lacks the printer's service |
+| `PRINTER MTU TOO SMALL` | the link's MTU is under 131 bytes |
+| `COVER OPEN`, `NO LABEL`, `LABEL ERROR`, `PRINTER BATTERY LOW`, `PRINT HEAD HOT` | the printer's status |
+| `PRINTER BUSY` | the printer stayed busy for 5s |
+| `PRINTER NOT ANSWERING` | a step's answer missed |
+| `WRITE REFUSED` | the link refused a write |
+| `LINK LOST` | the link dropped mid-job and gave no verdict |
+| `LINK LOST, NOT PRINTED` | the link dropped, came back, and the counter stayed |
+| `NOT PRINTED` | the label counter stayed for 3 reads |
+| `ROLL CHANGED` | the roll changed during the job |
+| `LABEL TOO SMALL`, `LABEL TOO LARGE` | the roll is under 15 x 20mm or over 48 x 100mm |
+| `PRINT STOPPED` | `print stop` on the console |
+| `UPDATE RUNNING` | a device update runs |
+| `NO MEMORY` | the label's 100kB block was refused |
+| `SAFE ONLY` | the bench is ARMED |
+
 ### WIRELESS: SEARCH
 
 ![SEARCH on the power node, two nodes found](img/setup-wireless-search.png)
 
-SEARCH finds and binds the Dial, the power node or the balance node.
-SCAN FOR DIAL and SCAN FOR NODE open it and ask for a scan of 10s;
-BOUND DIAL and BOUND NODE open it on the last scan's list without one. A
+SEARCH finds and binds the Dial, the power node, the balance node or the
+label printer. SCAN FOR DIAL, SCAN FOR NODE and Scan for printer open it
+and ask for a scan of 10s; BOUND DIAL, BOUND NODE and Bound printer open
+it on the last scan's list without one. A
 scan the row refuses (ARMED, a scan running, Bluetooth not ready) says
 why on the band, and SEARCH opens on the last list. The home
 tag returns to SETUP > WIRELESS on the device's entry.
@@ -6773,7 +6837,15 @@ BIND binds nothing, closes the question and says why on the band:
   `A SCAN IS RUNNING: PICK THE DIAL WHEN IT ENDS` for the Dial;
 - when the tapped device is not at its place in the list:
   `NODE NOT BOUND: THE LIST CHANGED, PICK IT AGAIN`,
-  `DIAL NOT BOUND: THE LIST CHANGED, PICK IT AGAIN` for the Dial.
+  `DIAL NOT BOUND: THE LIST CHANGED, PICK IT AGAIN` for the Dial;
+- for the printer, while a request runs: `A PRINT IS RUNNING: CHANGE THE
+  BIND WHEN IT ENDS`; while a device update runs: `AN UPDATE IS RUNNING:
+  CHANGE THE BIND AFTER IT`. UNBIND held to 2000ms is refused with the
+  same texts.
+
+The printer's bind is no controller's: BIND writes the address and the
+name into SETUP (`prn_ble`, `prn_name`) and asks a save at once, and
+UNBIND clears both. The next request links to the new address.
 
 A tap on a device while a scan runs opens no question and reads the
 scan's text. A bind the controller refuses after BIND, behind a scan
@@ -6802,6 +6874,7 @@ it meets a lost link:
 | Dial | a Dial UP or DEGRADED is lost at once; while ARMED that is an error: SAFE, every output off |
 | Power node | the readings stop; a run that counts on the node (INA228 SOURCE NODE, a run that reads BENCH) rides the dropout up to 300ms, then ends as an error, every output off; an arm on NODE is refused while no reading comes |
 | Balance node | the readings go stale; the node drives no output, so nothing else happens |
+| Printer | refused while a request runs; the printer drives no output |
 
 ![SEARCH during a scan for the Dial](img/setup-wireless-search-scan.png)
 

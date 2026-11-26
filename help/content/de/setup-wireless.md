@@ -6,11 +6,11 @@ order: 62
 
 # Wireless
 
-WIRELESS auf [SETUP](setup.md) enthält die Bluetooth-LE-Geräte (Low Energy) des Panels: die IMU (Inertial Measurement Unit) WitMotion BWT901CL, das M5Stack Dial, einen Drehknopf ohne Kabel, den Leistungsknoten, einen INA228 am XT60 des ESC, und den Auswuchtknoten. Alle erreichen das Panel über den ESP32-C6 des Boards. Das erste IMU EIN, Dial EIN, Leistungsknoten EIN oder Auswuchtknoten EIN startet Bluetooth LE bis zum Neustart des Panels. Die Einstellungen gelten und werden gespeichert wie andere SETUP-Werte.
+WIRELESS auf [SETUP](setup.md) enthält die Bluetooth-LE-Geräte (Low Energy) des Panels: die IMU (Inertial Measurement Unit) WitMotion BWT901CL, das M5Stack Dial, einen Drehknopf ohne Kabel, den Leistungsknoten, einen INA228 am XT60 des ESC, den Auswuchtknoten und den Etikettendrucker, einen Supvan T50M Pro. Alle erreichen das Panel über den ESP32-C6 des Boards. Das erste IMU EIN, Dial EIN, Leistungsknoten EIN oder Auswuchtknoten EIN startet Bluetooth LE bis zum Neustart des Panels. Die Einstellungen gelten und werden gespeichert wie andere SETUP-Werte.
 
 ## Die linke Liste
 
-Die linke, 220px breite Liste hat 4 Einträge: IMU, DIAL, AUSWUCHTKNOTEN und LEISTUNGSKNOTEN. Jeder zeigt seinen Namen und seinen Zustand. Tippe auf einen Eintrag, um seine Einstellungen im 754px breiten rechten Bereich zu sehen. Die Liste funktioniert wie unter [Sensoren](setup-sensors.md#die-linke-liste): ein ausgeschalteter Eintrag zeigt nur seine Einschaltzeile und den Zustand `AUS`, jeder Eintrag behält seine Scrollposition, und die Rücksetztaste nennt den Eintrag, `DIAL ZURÜCKSETZEN`.
+Die linke, 220px breite Liste hat 5 Einträge: IMU, DIAL, AUSWUCHTKNOTEN, DRUCKER und LEISTUNGSKNOTEN. Jeder zeigt seinen Namen und seinen Zustand. Tippe auf einen Eintrag, um seine Einstellungen im 754px breiten rechten Bereich zu sehen. Die Liste funktioniert wie unter [Sensoren](setup-sensors.md#die-linke-liste): ein ausgeschalteter Eintrag zeigt nur seine Einschaltzeile und den Zustand `AUS`, jeder Eintrag behält seine Scrollposition, und die Rücksetztaste nennt den Eintrag, `DIAL ZURÜCKSETZEN`.
 
 ## Die IMU
 
@@ -158,11 +158,32 @@ Der Auswuchtknoten misst Vibration und Index eines Rotors für [Balance](balance
 
 `AUS`, `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `SUCHE LÄUFT` und `VERBINDE` lesen sich wie beim Dial.
 
+## Der Etikettendrucker
+
+![WIRELESS auf dem DRUCKER-Eintrag, die Rolle gelesen](view:printer-idle)
+![Ein Etikett, beendet mit DECKEL OFFEN](view:printer-error)
+
+Der Drucker druckt die Servo-Etiketten von DRUCKEN im SERVO-ETIKETT ([Servo-Einstellungen](servo-settings.md)). Er hat keinen Schalter: das Panel verbindet sich für eine Anfrage und beendet die Verbindung 30s nach seiner letzten Antwort. Eine Anfrage wird während eines Geräte-Updates abgelehnt, ein Update während einer Anfrage oder einer Druckersuche. Der Drucker zeigt keinen Dienst an: eine Suche listet die Geräte, deren öffentliche Adresse mit `A4:93:40` beginnt.
+
+| Zeile | Was sie zeigt oder tut |
+|---|---|
+| Drucker suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET`; Tippen öffnet [Search](#search) und sucht 10s. Abgelehnt bei ARMED, während eines Drucks oder Geräte-Updates und während einer Suche, der Grund im Band |
+| Gebundener Drucker | sein Name, sonst seine Adresse, sonst `KEINS`; Tippen öffnet [Search](#search) mit der Liste der letzten Suche |
+| Adresse | die gebundene Adresse, `A4:93:40:30:FA:71 P` |
+| Zustand | `NICHT GEBUNDEN`, `BEREIT`, `VERBUNDEN`, die Phase der Anfrage (`SENDET 3/5`) oder ihr Ergebnis (`GEDRUCKT, 293 ÜBRIG`, `DECKEL OFFEN`) |
+| Rolle | `40x30mm ABST. 3mm`, wie der Drucker sie meldet, `KEIN ETIKETT` |
+| Etiketten übrig | der Zähler des Druckers |
+| Drucker lesen | liest Rolle und übrige Etiketten |
+| Testetikett | druckt das Testetikett des Bench; nur bei SAFE |
+
+Drucker lesen und Testetikett sind ohne gebundenen Drucker, während einer Anfrage und während eines Updates gesperrt; die Hilfezeile nennt den Grund. Öffnen des Eintrags mit gebundenem Drucker liest seine Rolle einmal. Eine Anfrage, die mit einem Fehler endet, zeigt ihren Text im Band. DRUCKER ZURÜCKSETZEN behält die Bindung.
+
 ## Search
 
 ![SEARCH beim Leistungsknoten, zwei Knoten gefunden](view:setup-wireless-search)
+![SEARCH für den Drucker während einer Suche](view:printer-search)
 
-SEARCH findet und bindet das Dial, den Leistungsknoten oder den Auswuchtknoten. Dial suchen und Knoten suchen öffnen es und suchen 10s lang; Gebundenes Dial und Gebundener Knoten öffnen es mit der Liste der letzten Suche. Eine abgelehnte Suche nennt den Grund im Band, und SEARCH öffnet mit der letzten Liste. Das Home-Feld führt zurück zu WIRELESS auf den Eintrag des Geräts.
+SEARCH findet und bindet das Dial, den Leistungsknoten, den Auswuchtknoten oder den Etikettendrucker. Dial suchen, Knoten suchen und Drucker suchen öffnen es und suchen 10s lang; Gebundenes Dial, Gebundener Knoten und Gebundener Drucker öffnen es mit der Liste der letzten Suche. Bindung und BINDUNG LÖSEN des Druckers werden während eines Drucks oder Geräte-Updates abgelehnt. Eine abgelehnte Suche nennt den Grund im Band, und SEARCH öffnet mit der letzten Liste. Das Home-Feld führt zurück zu WIRELESS auf den Eintrag des Geräts.
 
 - Die Zeile über der Liste: `SUCHE LÄUFT: NOCH 7s`, `2 GEFUNDEN: ZUM BINDEN EINES ANTIPPEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` oder `NOCH KEINE SUCHE: AKTUALISIEREN ANTIPPEN`.
 - Die Liste: bis zu 8 Geräte, das stärkste zuerst, jedes mit Name oder Adresse und Signal in dBm. Das gebundene ist hervorgehoben. Die Liste leert sich beim Start einer Suche und füllt sich an ihrem Ende.

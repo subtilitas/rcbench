@@ -412,6 +412,38 @@ TEST_CASE(a_second_drop_in_step_11_gives_no_verdict)
     CHECK_EQ(r->c.err, PRINT_ERR_LINK);
 }
 
+TEST_CASE(a_printer_gone_after_a_silent_job_is_not_sought_past_the_linger)
+{
+    /* H1: the printer took the frames and went off while it printed; the
+     * job ends PRINTER NOT ANSWERING.  The central may retry within the
+     * linger; from PRINT_LINGER_MS after the end on, it seeks nothing. */
+    pr_rig_t *r = &s_r;
+    pr_init(r);
+    r->sim.print_ms = 3000u;
+    expect_id(r);
+    CHECK(pr_ask(r, PRINT_REQ_LABEL, ID, ""));
+    REQUIRE(pr_run_to(r, PRINT_PRINTING, 10000u));
+    /* off: no answer from here, no connect answered */
+    r->sim.silent_cmd = SV_C_INQUIRY;
+    r->sim.silent_after = (uint8_t)r->sim.answers[SV_C_INQUIRY];
+    r->present = false;
+    CHECK(pr_run(r, 20000u));
+    CHECK_EQ(r->c.phase, PRINT_FAILED);
+    CHECK_EQ(r->c.err, PRINT_ERR_SILENT);
+    pr_drop(r, false);
+    pr_wait(r, PRINT_LINGER_MS);
+    CHECK(!r->c.on);
+    const unsigned n = r->connects;
+    pr_wait(r, 1000u);
+    CHECK_EQ(r->connects, n);
+    pr_wait(r, 60000u);
+    CHECK_EQ(r->connects, n);
+    /* a new request seeks it again */
+    CHECK(pr_ask(r, PRINT_REQ_QUERY, NULL, NULL));
+    pr_wait(r, 100u);
+    CHECK_EQ(r->connects, n + 1u);
+}
+
 TEST_CASE(a_request_does_not_wait_out_a_grown_backoff)
 {
     /* The printer went off during the linger: the central waits out a
@@ -480,6 +512,7 @@ int main(void)
     RUN(a_drop_after_buf_full_with_a_reconnect_reads_printed);
     RUN(a_second_drop_in_the_counter_check_gives_no_verdict);
     RUN(a_second_drop_in_step_11_gives_no_verdict);
+    RUN(a_printer_gone_after_a_silent_job_is_not_sought_past_the_linger);
     RUN(a_request_does_not_wait_out_a_grown_backoff);
     RUN(an_abort_while_connecting_ends_the_connect);
     return test_summary("print_ctl_ends");

@@ -20,7 +20,8 @@
  * with the band's PNODE_SCAN_ARMED), BOUND NODE and NODE BATTERY under
  * them; SCAN FOR NODE and BOUND NODE open SEARCH as the Dial's rows do,
  * with NODE_BIND_SCANNING and NODE_BIND_GONE; its state is the panel's
- * (wireless_pane_set_pnode(), wireless_pnode.c).
+ * (wireless_pane_set_pnode(), wireless_pnode.c).  BALANCE NODE and
+ * PRINTER are wireless_bal.h's and wireless_printer.h's.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -46,6 +47,8 @@ enum {
     WL_ENTRY_DIAL,    /**< enable, scan, bind, two steps */
     WL_ENTRY_BAL,     /**< enable, scan, bind, battery, trial mass
                            (wireless_bal.h) */
+    WL_ENTRY_PRINTER, /**< scan, bind, address, state, roll, labels
+                           left, read, test label (wireless_printer.h) */
     WL_ENTRY_PNODE,   /**< enable, INA228 source, scan, bind, battery: last,
                            where its guide badge finds room under the long
                            German name */
@@ -69,6 +72,8 @@ int wireless_pane_selected(void);
 
 /**
  * @brief Selects the entry the pane shows; one out of range changes nothing.
+ *        PRINTER selected from another entry asks a QUERY
+ *        (wireless_printer_opened()).
  * @param entry The entry.
  */
 void wireless_pane_select(int entry);

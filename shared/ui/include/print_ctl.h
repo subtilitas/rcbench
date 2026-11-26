@@ -39,7 +39,14 @@
  *   STOPPED.
  * - A device update runs on the same spare link: the controller ends a
  *   lingering link while an update runs (print_ctl_gate()), and
- *   print_ctl_busy() tells the update a job runs.
+ *   print_ctl_busy() tells the update a job or a scan runs.
+ * - A scan (PRINT_REQ_SCAN) lists printers for SETUP > WIRELESS > PRINTER:
+ *   devices whose public address starts with A4:93:40, as the printer
+ *   advertises no service, BLEU_SCAN_MS long.  It is refused while a job
+ *   or a scan runs, while the bench is ARMED and while a device update
+ *   runs; it waits up to PRINT_FIND_MS for Bluetooth to be ready.  A
+ *   switch to ARMED stops it (scan_cut); a label, test label or query
+ *   request stops it and goes on.
  *
  * Every function of the controller is called from one task.  Times are
  * unsigned differences of a free-running 32-bit ms clock.
@@ -78,6 +85,8 @@ extern "C" {
 #define PRINT_NAME_SIZE 24u
 /** @brief Bytes of the firmware version text with its NUL. */
 #define PRINT_VERSION_SIZE 16u
+/** @brief Printers a scan lists. */
+#define PRINT_FOUND_MAX BLEU_FOUND_MAX
 
 /** @brief The Supvan profile: the vendor service
  *         0000e0ff-3c17-d293-8e48-14fe2e4da212, FFE1 the STREAM, FFE9 the
@@ -137,7 +146,8 @@ typedef enum {
     PRINT_REQ_LABEL,    /**< a servo label: id and DUT NAME */
     PRINT_REQ_TEST,     /**< the test label */
     PRINT_REQ_QUERY,    /**< the roll and the counter only */
-    PRINT_REQ_ABORT     /**< end the job that runs */
+    PRINT_REQ_ABORT,    /**< end the job that runs */
+    PRINT_REQ_SCAN      /**< list the printers in range */
 } print_req_kind_t;
 
 /** @brief A request. */
@@ -146,6 +156,14 @@ typedef struct {
     char    id[SERVO_ID_SIZE];    /**< PRINT_REQ_LABEL: the servo id */
     char    dut[PRINT_DUT_SIZE];  /**< PRINT_REQ_LABEL: DUT NAME, "" none */
 } print_req_t;
+
+/** @brief A printer a scan found. */
+typedef struct {
+    char   addr[BLEU_ADDR_TEXT_MAX]; /**< its address with its type */
+    char   name[BLEU_NAME_MAX];      /**< its name, "" when none came */
+    int8_t rssi;                     /**< dBm of its last report, 127
+                                          none */
+} print_dev_t;
 
 /** @brief What the screens read. */
 typedef struct {
@@ -165,6 +183,19 @@ typedef struct {
     int32_t  left;     /**< labels left, -1 unknown */
     uint16_t mtu;      /**< the link's MTU, 0 none */
     char     id[SERVO_ID_SIZE]; /**< the label in work or printed last */
+    char     addr[BLEU_ADDR_TEXT_MAX]; /**< the bound address, "" none */
+    char     name[PRINT_NAME_SIZE];    /**< the bound name, "" none */
+    bool     update;      /**< a device update runs or was asked for */
+    bool     scanning;    /**< a scan is asked or runs */
+    bool     scan_done;   /**< a scan ended since the start: found is its */
+    bool     scan_cut;    /**< that scan was stopped by a switch to ARMED */
+    uint8_t  scan_left_s; /**< the running scan's time left, s, rounded
+                               up */
+    uint8_t  found_n;     /**< the printers it found */
+    print_dev_t found[PRINT_FOUND_MAX]; /**< strongest first */
+    uint16_t scan_refused; /**< scans refused since the start */
+    uint16_t jobs;     /**< requests taken since the start: a new one
+                            with the same result reads as new */
     uint32_t rev;      /**< counts every change */
 } print_view_t;
 
@@ -194,6 +225,14 @@ typedef struct {
     bool         roll_known; /**< roll holds a record */
     int32_t      left;       /**< labels left, -1 unknown */
     bool         relinked;   /**< the last verdict came after a drop */
+    bool         scan_due;   /**< a scan waits for Bluetooth */
+    bool         scan_on;    /**< the central scans */
+    bool         scan_done;  /**< a scan ended since the start */
+    bool         scan_cut;   /**< the bench ARMED stopped it */
+    uint16_t     scan_refused; /**< scans refused */
+    uint16_t     jobs;       /**< requests taken */
+    uint32_t     t_scan;     /**< the scan was asked */
+    uint32_t     t_now;      /**< the clock at the last poll */
     /* the heap block and its parts */
     uint8_t     *blk;        /**< the block, NULL none */
     size_t       blk_want;   /**< bytes asked for, 0 none */
@@ -260,8 +299,9 @@ void print_ctl_gate(print_ctl_t *c, bool armed, bool update,
  * @param r      The request; PRINT_REQ_ABORT ends the job that runs.
  * @param now_ms The clock.
  * @return false, and nothing changes, while a job runs (an abort aside) or
- *         for a label whose id servo_id_parse() refuses; true otherwise,
- *         a refusal by the gate included (PRINT_FAILED with its error).
+ *         for a label whose id servo_id_parse() refuses; false for a scan
+ *         refused (scan_refused counts it); true otherwise, a refusal by
+ *         the gate included (PRINT_FAILED with its error).
  */
 bool print_ctl_request(print_ctl_t *c, const print_req_t *r,
                        uint32_t now_ms);
@@ -324,9 +364,11 @@ void print_ctl_block_give(print_ctl_t *c, void *blk, uint32_t now_ms);
 void *print_ctl_block_back(print_ctl_t *c);
 
 /**
- * @brief Whether a request runs: the device update's start is refused.
+ * @brief Whether a request or a scan runs: the device update's start is
+ *        refused.
  * @param c The controller.
- * @return true from the request's start to its end.
+ * @return true from the request's start to its end, and while a scan is
+ *         asked or runs.
  */
 bool print_ctl_busy(const print_ctl_t *c);
 
@@ -374,6 +416,13 @@ void print_ctl_query(void);
 
 /** @brief End the request in work; it wins over a request that waits. */
 void print_ctl_abort(void);
+
+/**
+ * @brief Ask for a scan for printers.
+ * @return false while a request waits or the view shows a job in work or
+ *         a scan.
+ */
+bool print_ctl_scan(void);
 
 /**
  * @brief Take the request that waits, for the controller's task.

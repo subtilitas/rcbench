@@ -264,8 +264,8 @@ static void draw_custom_row(const ui_setlist_t *sl, gfx_canvas_t *c,
 
     gfx_rect_t saved = gfx_clip_get(c);
     gfx_clip_intersect(c, gfx_rect_make(r.x, r.y, name_r - r.x, r.h));
-    gfx_text(c, r.x + 16, r.y + ROW_NAME_DY, ui_tr(cu->label), SL_F_HEAD,
-             UI_TEXT, 1);
+    gfx_text(c, r.x + 16, r.y + ROW_NAME_DY,
+             ui_tr(ui_setlist_custom_label(cu)), SL_F_HEAD, UI_TEXT, 1);
     const char *help = (lock != NULL) ? lock
                        : (cu->help != TX_COUNT) ? ui_tr(cu->help) : "";
     if (help[0] != '\0') {

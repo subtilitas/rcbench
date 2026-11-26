@@ -177,7 +177,7 @@ TEST_CASE(the_hub_footer_holds_no_arm_and_settings_opens_the_profile)
     tap(SV_FOOT_SET_X, UI_BAND_H + SV_FOOT_Y);
     const ui_setlist_t *sl = servo_screen_list();
     CHECK(sl->open);
-    CHECK_EQ(ui_setlist_count(sl), 18);
+    CHECK_EQ(ui_setlist_count(sl), 19);
     CHECK_EQ(ui_router_current(), SCREEN_SERVO);
 }
 

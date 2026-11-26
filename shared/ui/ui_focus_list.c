@@ -67,7 +67,8 @@ static const char *row_label(const ui_setlist_row_t *r)
     if (r->kind == UI_SL_TEXT) {
         return ui_setlist_text_label((setting_text_id_t)r->text);
     }
-    return (r->custom != NULL) ? ui_tr(r->custom->label) : "";
+    return (r->custom != NULL) ? ui_tr(ui_setlist_custom_label(r->custom))
+                               : "";
 }
 
 /**

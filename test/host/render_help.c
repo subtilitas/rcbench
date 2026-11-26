@@ -55,6 +55,7 @@ static const struct {
     { "help-setup-wireless-dial", "setup-wireless-dial" },
     { "help-setup-wireless-pnode", "setup-wireless-pnode" },
     { "help-setup-wireless-bal", "setup-wireless-bal" },
+    { "help-setup-wireless-printer", "printer-idle" },
     { "help-setup-wireless-search", "setup-wireless-search" },
     { "help-outputs", "outputs" },
     { "help-outputs-port", "outputs-port" },

@@ -1851,8 +1851,21 @@ scripted host stack that serves the GATT table the station read (H0): every erro
 printer gone at each stage, the MTU at 130 and 131, the linger at 30,000ms, and a
 23-character id and DUT NAME decoded from the stream the printer joined
 (`test_print_ctl`, `test_print_ctl_ends`). The console's `print test` and `print id <id>`
-on the station are step H1; the connect time, the build step's time and the frame loss of an
-IMU during a job are not measured.
+on the station are step H1: the first link of a session took 4.94s, later ones 0.1s to
+0.8s, the MTU was 240, the build 37ms to 42ms, a 40x30mm label 4.2s to 6.7s from the request
+to its verdict, and an IMU at 100Hz with the Dial linked lost no frame during a job.
+
+The screens' side of printing is `shared/ui/print_req.c` (the requests and the view the frame
+task reads) and `shared/ui/wireless_printer.c`: SETUP > WIRELESS > PRINTER with 8 rows, SEARCH
+fed by the controller's scan (`PRINT_REQ_SCAN`: public addresses `A4:93:40`, 10s, refused while
+ARMED, while a job, a scan or a device update runs, waiting up to 10s for Bluetooth LE), the
+bind into `prn_ble` and `prn_name`, and the frame-task tick that marks a printed servo and puts a
+request's error on the band. SERVO LABEL's PRINT row (`servo_label_rows.c`) sends the active
+servo's id and DUT NAME, reads PRINT AGAIN after a print and for a scanned or typed id, follows
+the job and keeps its verdict, and is locked with its reason. `print_ctl_busy()` counts a scan,
+so a device update is refused while one runs (`test_wireless_printer`, `test_print_ctl_scan`,
+`test_servo_print_row`; `test_print_ctl_ends` holds that a printer gone after a silent job is
+not sought past the 30s linger). A print from the screen on the station is step H3b.
 
 ## The tree
 
@@ -1938,7 +1951,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 697 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 700 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -2070,7 +2083,8 @@ The host suite is 697 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client`, `test_devimg`, `test_devimg_board`, `test_upd_dev`, `test_upd_fetch`,
 `test_upd_wizard`, `test_upd_wizard_map`, `test_upd_wiz_view`, `test_label_bitmap`, `test_label_layout`,
 `test_lzlit`, `test_supvan_frame`, `test_supvan_page`, `test_supvan_job`, `test_supvan_job_ends`,
-`test_print_ctl`, `test_print_ctl_ends` and `test_harness`.
+`test_print_ctl`, `test_print_ctl_ends`, `test_print_ctl_scan`, `test_wireless_printer`,
+`test_servo_print_row` and `test_harness`.
 
 The harness is `test/host/greatest.h`, written for this project. `CHECK_EQ` compares
 integers and pointers as `long` and does not compile on a floating operand; `CHECK_FEQ`
@@ -2608,7 +2622,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-1130 committed screenshots to the current render, 565 in English and the same 565 in German, and `render_ui.py --fit` fails on a string that
+1148 committed screenshots to the current render, 574 in English and the same 574 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
