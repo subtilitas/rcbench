@@ -274,8 +274,8 @@ static void print_view_line(const print_view_t *v)
 }
 
 /**
- * @brief Bind from the console: the address kept in SETUP, `P` added when
- *        no type follows it.
+ * @brief Bind from the console: the address kept in SETUP as the scan
+ *        writes it, `P` added when no type follows it.
  * @param text The address.
  */
 static void console_bind(const char *text)
@@ -294,6 +294,8 @@ static void console_bind(const char *text)
         printf("print: bind: not a public address: %s\n", text);
         return;
     }
+    /* Kept as the scan writes it: capital hex digits. */
+    (void)bleu_addr_format(&a, true, addr, sizeof(addr));
     settings_set_text(SET_TEXT_PRN_ADDR, addr);
     settings_set_text(SET_TEXT_PRN_NAME, "");
     settings_request_save();

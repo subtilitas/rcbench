@@ -7,7 +7,10 @@
  *        1.9s keeps the bind, held to 2s clears it; scan, bind and unbind
  *        refused while a job or a device update runs, the scan also while
  *        ARMED; Read printer and Test label with their locks; the QUERY
- *        when the entry opens; the tick's band notices.
+ *        when the entry opens; the tick's band notices; a BIND reads the
+ *        roll at once unless it is known, after a request in work, never
+ *        while ARMED; SEARCH marks a bound address SETUP holds in small
+ *        letters.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -467,6 +470,97 @@ TEST_CASE(a_random_address_is_not_bound)
     CHECK_STR_EQ(wbr_value(&wireless_printer_bind_row), "NONE");
 }
 
+/** @brief A view with ADDR_A found by the last scan. */
+static print_view_t found_view(void)
+{
+    print_view_t v = idle_view();
+    v.scan_done = true;
+    v.found_n = 1u;
+    snprintf(v.found[0].addr, sizeof v.found[0].addr, "%s", ADDR_A);
+    snprintf(v.found[0].name, sizeof v.found[0].name, "%s", NAME_A);
+    return v;
+}
+
+/** @brief SEARCH's first found printer tapped, then BIND. */
+static void bind_first(void)
+{
+    gfx_rect_t row;
+    if (!wbr_found(0, &row)) {
+        T_FAIL("no found row");
+        return;
+    }
+    tap(row.x + row.w / 2, row.y + row.h / 2);
+    const gfx_rect_t b = wbr_part(WLS_PART_BIND);
+    tap(b.x + b.w / 2, b.y + b.h / 2);
+}
+
+TEST_CASE(a_bind_reads_the_roll_at_once)
+{
+    /* UNBIND, then BIND of the same printer: the roll is read at once */
+    open_printer(false);
+    print_view_t v = found_view();
+    show(&v);
+    tap_row(&wireless_printer_bind_row);
+    REQUIRE(ui_router_current() == SCREEN_WL_SEARCH);
+    bind_first();
+    CHECK_STR_EQ(settings_text(SET_TEXT_PRN_ADDR), ADDR_A);
+    show(&v);
+    CHECK_EQ(taken(), PRINT_REQ_QUERY);
+    show(&v);
+    CHECK_EQ(taken(), PRINT_REQ_NONE);
+    /* the same printer with its roll known: no read */
+    v.w_mm = 40u;
+    v.h_mm = 30u;
+    show(&v);
+    bind_first();
+    show(&v);
+    CHECK_EQ(taken(), PRINT_REQ_NONE);
+    /* a request in work: the read follows its end */
+    bind_to("", "");
+    v = found_view();
+    v.kind = PRINT_REQ_TEST;
+    v.phase = PRINT_SENDING;
+    show(&v);
+    bind_first();
+    CHECK_STR_EQ(settings_text(SET_TEXT_PRN_ADDR), "");  /* refused */
+    v.phase = PRINT_DONE;
+    show(&v);
+    bind_first();
+    REQUIRE(strcmp(settings_text(SET_TEXT_PRN_ADDR), ADDR_A) == 0);
+    v.phase = PRINT_SENDING;        /* another request took the slot */
+    show(&v);
+    CHECK_EQ(taken(), PRINT_REQ_NONE);
+    v.phase = PRINT_DONE;
+    show(&v);
+    CHECK_EQ(taken(), PRINT_REQ_QUERY);
+    /* ARMED: no read, not after the switch to SAFE either */
+    bind_to("", "");
+    v = found_view();
+    show(&v);
+    set_armed(true);
+    bind_first();
+    REQUIRE(strcmp(settings_text(SET_TEXT_PRN_ADDR), ADDR_A) == 0);
+    show(&v);
+    set_armed(false);
+    show(&v);
+    CHECK_EQ(taken(), PRINT_REQ_NONE);
+}
+
+TEST_CASE(search_marks_a_bound_address_in_small_letters)
+{
+    open_printer(false);
+    bind_to("a4:93:40:30:fa:71 P", NAME_A);
+    (void)drain();
+    print_view_t v = found_view();
+    show(&v);
+    tap_row(&wireless_printer_bind_row);
+    REQUIRE(ui_router_current() == SCREEN_WL_SEARCH);
+    wls_view_t w;
+    wl_search_view(&w);
+    CHECK_STR_EQ(w.bound_addr, ADDR_A);
+    CHECK_STR_EQ(w.found[0].addr, w.bound_addr);
+}
+
 int main(void)
 {
     RUN(the_entry_holds_eight_rows_and_says_not_bound);
@@ -478,5 +572,7 @@ int main(void)
     RUN(read_printer_and_test_label_ask_and_lock);
     RUN(the_entry_opened_reads_an_unknown_roll_once);
     RUN(a_random_address_is_not_bound);
+    RUN(a_bind_reads_the_roll_at_once);
+    RUN(search_marks_a_bound_address_in_small_letters);
     return test_summary("wireless_printer");
 }
