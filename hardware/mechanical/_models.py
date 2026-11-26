@@ -45,7 +45,8 @@ FOLDERS = {
         "flycolor_flydragon_lite_40a", "hitec_d485hw", "knob_as5600",
         "knob_magnets", "kst_x10", "lipo_102540_1000mah",
         "lipo_702030_380mah", "m5dial", "m5dial_nut", "motor_simulator",
-        "servo_standard", "supvan_t50m_pro", "tmotor_at2814", "wit_imu"),
+        "servo_standard", "supvan_t50m_pro", "tmotor_at2814", "wit_imu",
+        "wurstblinker_kinetic", "wurstblinker_node"),
 }
 FOLDER = {stem: folder for folder, stems in FOLDERS.items()
           for stem in stems}

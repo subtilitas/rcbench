@@ -7355,7 +7355,20 @@ die auch ein Geräte-Update nutzt: eine Anfrage wird während eines Updates
 abgelehnt, ein Update während einer Anfrage oder einer Druckersuche. Der
 Drucker zeigt keinen Dienst an: eine Suche listet die Geräte, deren
 öffentliche Adresse mit `A4:93:40` beginnt, nie ein Gerät wegen des
-Dienstes, den es anzeigt, und eine zufällige Adresse bindet nichts.
+Dienstes, den es anzeigt, und eine zufällige Adresse bindet nichts. Ein
+verbundener Drucker zeigt sich nicht an: eine Suche innerhalb der 30s
+beendet zuerst die Verbindung und startet, sobald die Trennung durch ist,
+spätestens 2s danach; so steht auch der gebundene Drucker in der Liste.
+Eine laufende Anfrage lehnt die Suche ab. BINDEN auf SEARCH liest die
+Rolle bei SAFE sofort, so füllen sich Rolle und Etiketten übrig: für
+einen neuen Drucker und für denselben nach BINDUNG LÖSEN. Eine laufende
+Anfrage endet zuerst; der gebundene Drucker mit bekannter Rolle wird
+nicht erneut gelesen. BINDUNG LÖSEN setzt Zustand auf `NICHT GEBUNDEN`
+und Rolle und Etiketten übrig auf `--`, alle drei zusammen.
+Das Binden einer anderen Adresse leert Rolle und Etiketten übrig auch
+während einer Anfrage für den alten Drucker, und deren Ende lässt sie
+leer. SEARCH markiert den gebundenen Drucker, gleich in welcher
+Schreibweise SETUP seine Adresse hält.
 
 Auf der Station (Station-Schritt H1, Rolle 40x30mm): die erste Verbindung
 einer Sitzung dauerte 4.94s, spätere 0.1s bis 0.8s; die MTU war 240; das
