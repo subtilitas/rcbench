@@ -35,6 +35,17 @@ typedef struct {
 /** @brief The one instance. */
 static flow_t s_flow = { .last = SERVO_SCAN_REPEAT };
 
+/**
+ * @brief Run one line with the arm read from @p st.
+ * @param line     The line; NULL counts as "".
+ * @param too_long The scanner cut it.
+ * @param now_ms   The millisecond clock.
+ * @param st       The bench status this frame acts on.
+ * @return As scan_flow_line().
+ */
+static bool line_with(const char *line, bool too_long, uint32_t now_ms,
+                      const ui_bench_status_t *st);
+
 void scan_flow_set_look(scan_flow_look_fn fn)
 {
     s_flow.look = fn;
@@ -54,7 +65,7 @@ bool scan_flow_post(const char *line)
     return true;
 }
 
-void scan_flow_tick(uint32_t now_ms)
+void scan_flow_tick(uint32_t now_ms, const ui_bench_status_t *st)
 {
     int expect = MAIL_FULL;
     if (!atomic_compare_exchange_strong(&s_flow.state, &expect,
@@ -65,16 +76,22 @@ void scan_flow_tick(uint32_t now_ms)
     memcpy(line, s_flow.line, sizeof(line));
     const bool too_long = s_flow.too_long;
     atomic_store(&s_flow.state, MAIL_EMPTY);
-    (void)scan_flow_line(line, too_long, now_ms);
+    (void)line_with(line, too_long, now_ms,
+                    (st != NULL) ? st : ui_router_status());
 }
 
-bool scan_flow_run_active(void)
+/** @brief Whether a run is active, the arm read from @p st. */
+static bool run_active_with(const ui_bench_status_t *st)
 {
-    const ui_bench_status_t *st = ui_router_status();
     const bool servo_armed = st != NULL && st->armed
                              && (st->armed_roles & UI_ARMED_SERVO) != 0u;
     return servo_screen_testing() || servo_screen_limit_running()
            || servo_screen_rauto_running() || servo_armed;
+}
+
+bool scan_flow_run_active(void)
+{
+    return run_active_with(ui_router_status());
 }
 
 /** @brief Whether the screen on top takes a scanned line. */
@@ -127,6 +144,12 @@ static void set_notice(const char *id, char *out, size_t n)
 
 bool scan_flow_line(const char *line, bool too_long, uint32_t now_ms)
 {
+    return line_with(line, too_long, now_ms, ui_router_status());
+}
+
+static bool line_with(const char *line, bool too_long, uint32_t now_ms,
+                      const ui_bench_status_t *st)
+{
     if (!screen_takes()) {
         return false;
     }
@@ -134,7 +157,7 @@ bool scan_flow_line(const char *line, bool too_long, uint32_t now_ms)
         line = "";
     }
     const servo_scan_t r = servo_scan_decide(line, too_long,
-                                             scan_flow_run_active(), now_ms);
+                                             run_active_with(st), now_ms);
     s_flow.last = r;
     char notice[UI_ALERT_MAX];
     const char *id = servo_active_id();
@@ -177,7 +200,7 @@ void scan_flow_status(ui_bench_status_t *st)
     }
     st->servo_id = servo_active_id();
     st->servo_from = (uint8_t)servo_active_from();
-    st->servo_run = st->servo_id != NULL && scan_flow_run_active();
+    st->servo_run = st->servo_id != NULL && run_active_with(st);
 }
 
 void scan_flow_reset(void)

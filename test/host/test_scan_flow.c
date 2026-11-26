@@ -226,10 +226,10 @@ TEST_CASE(a_posted_line_runs_once_at_the_next_tick)
     /* One line waits: a second is refused, not queued. */
     CHECK(!scan_flow_post("KST_X10-0000B"));
     CHECK_STR_EQ(active(), "");
-    scan_flow_tick(t);
+    scan_flow_tick(t, NULL);
     CHECK_STR_EQ(active(), "KST_X10-0000A");
     ui_router_set_alert(NULL);
-    scan_flow_tick(t + 5000u);
+    scan_flow_tick(t + 5000u, NULL);
     CHECK_STR_EQ(notice(), "");
     CHECK(!scan_flow_post(NULL));
     /* A console line past 64 bytes goes as too long. */
@@ -237,8 +237,31 @@ TEST_CASE(a_posted_line_runs_once_at_the_next_tick)
     memset(longer, 'A', sizeof(longer) - 1u);
     longer[sizeof(longer) - 1u] = '\0';
     CHECK(scan_flow_post(longer));
-    scan_flow_tick(t + 6000u);
+    scan_flow_tick(t + 6000u, NULL);
     CHECK_EQ(scan_flow_last(), SERVO_SCAN_TOO_LONG);
+}
+
+TEST_CASE(a_line_in_the_frame_that_first_sees_a_servo_arm_is_refused)
+{
+    /* The band still shows the frame before: SAFE.  This frame's status,
+     * which the panel fills before the line runs, is ARMED on SERVO. */
+    const uint32_t t = start();
+    REQUIRE(scan_flow_line("KST_X10-0000A", false, t));
+    armed_servo(false);
+    ui_bench_status_t now = *ui_router_status();
+    now.armed = true;
+    now.armed_roles = UI_ARMED_SERVO;
+    CHECK(scan_flow_post("KST_X10-0000B"));
+    scan_flow_tick(t + 5000u, &now);
+    CHECK_EQ(scan_flow_last(), SERVO_SCAN_REFUSED_RUN);
+    CHECK_STR_EQ(active(), "KST_X10-0000A");
+    scan_flow_status(&now);
+    CHECK(now.servo_run);
+    /* SAFE in this frame: taken. */
+    now.armed = false;
+    CHECK(scan_flow_post("KST_X10-0000B"));
+    scan_flow_tick(t + 10000u, &now);
+    CHECK_STR_EQ(active(), "KST_X10-0000B");
 }
 
 TEST_CASE(the_status_carries_the_servo_its_source_and_the_run)
@@ -253,7 +276,9 @@ TEST_CASE(the_status_carries_the_servo_its_source_and_the_run)
     CHECK_STR_EQ(st.servo_id, "KST_X10-0000A");
     CHECK_EQ(st.servo_from, SERVO_ACTIVE_SCAN);
     CHECK(!st.servo_run);
-    armed_servo(true);
+    /* The arm of the status itself counts, the band's or not. */
+    st.armed = true;
+    st.armed_roles = UI_ARMED_SERVO;
     scan_flow_status(&st);
     CHECK(st.servo_run);
     scan_flow_status(NULL);
@@ -400,6 +425,7 @@ int main(void)
     RUN(the_same_id_twice_is_dropped_then_already_active);
     RUN(the_splash_and_an_update_take_no_line);
     RUN(a_posted_line_runs_once_at_the_next_tick);
+    RUN(a_line_in_the_frame_that_first_sees_a_servo_arm_is_refused);
     RUN(the_status_carries_the_servo_its_source_and_the_run);
     RUN(no_servo_no_chip_and_the_band_as_before);
     RUN(the_longest_id_shortens_then_the_mode_chip_makes_room);

@@ -672,7 +672,7 @@ void panel_frame_loop(void)
         };
         /* A scanned line that waits (`scan <text>`, the scanner), then
          * the active servo on the band's chip. */
-        scan_flow_tick(now_ms());
+        scan_flow_tick(now_ms(), &status);
         scan_flow_status(&status);
         ui_router_set_status(&status);
         {

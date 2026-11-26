@@ -80,9 +80,15 @@ bool scan_flow_post(const char *line);
 
 /**
  * @brief Frame task, once a frame: run the line that waits, if any.
+ *
+ * The arm is read from @p st, the status this frame acts on, not from the
+ * band's status of the frame before: a line in the frame that first sees
+ * an arm on SERVO is refused.
+ *
  * @param now_ms The millisecond clock.
+ * @param st     This frame's bench status; NULL reads the band's.
  */
-void scan_flow_tick(uint32_t now_ms);
+void scan_flow_tick(uint32_t now_ms, const ui_bench_status_t *st);
 
 /**
  * @brief Frame task: run one line now.
@@ -110,7 +116,7 @@ bool scan_flow_run_active(void);
 
 /**
  * @brief Put the active servo into @p st for the band: its id, how it was
- *        set and whether a run holds it.
+ *        set and whether a run holds it, the arm read from @p st itself.
  * @param st The status the band shows; NULL does nothing.
  */
 void scan_flow_status(ui_bench_status_t *st);
