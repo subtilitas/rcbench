@@ -30,6 +30,7 @@
 #include "panel.h"
 #include "esc_stick_panel.h"
 #include "screen_dim.h"
+#include "servo_active.h"
 #include "servo_link.h"
 #include "servo_screen.h"
 #include "settings.h"
@@ -366,8 +367,8 @@ void publish_supply_levels(void)
  * The servo test's lines, from the screen to the logger, as many as the
  * queue takes; the rest wait in the screen's outbox for the next frame.
  * Every frame, whichever screen is up, so a run ended by leaving SERVO still
- * writes its report.  And the files' number back to the screen, once the
- * logger has answered every OPEN sent.
+ * writes its report.  And where the files went back to the screen, once
+ * the logger has answered every OPEN sent.
  */
 void test_lines_service(void)
 {
@@ -381,9 +382,13 @@ void test_lines_service(void)
         test_line_t l;
         l.kind = (uint8_t)k;
         l.prefix = (uint8_t)servo_screen_test_prefix();
-        snprintf(l.text, sizeof(l.text), "%s", text);
         const bool open = k == SERVO_TEST_OUT_OPEN
                           || k == SERVO_TEST_OUT_OPEN_TXT;
+        /* An OPEN carries the servo the run took at its START: none can
+         * be set while the run holds it (servo_screen_run_active()). */
+        const char *id = servo_active_id();
+        snprintf(l.text, sizeof(l.text), "%s",
+                 open ? ((id != NULL) ? id : "") : text);
         if (xQueueSend(s_test_q, &l, 0) != pdTRUE) {
             open_waits = open;
             break;
@@ -403,8 +408,9 @@ void test_lines_service(void)
     const unsigned done = atomic_load(&s_test_opens_done);
     const unsigned ends = atomic_load(&s_test_ends_done);
     if (sent != 0u && !open_waits && done == sent) {
-        servo_screen_test_files(atomic_load(&s_test_file),
-                                atomic_load(&s_test_report));
+        log_test_files_t f;
+        log_test_files(&f);
+        servo_screen_test_files_at(&f, atomic_load(&s_test_report));
     }
     /* No run starts until the logger has taken the last run's OPEN and
      * END, and the screen has their answer: one number and one report

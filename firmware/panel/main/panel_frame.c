@@ -44,6 +44,7 @@
 #include "panel_perf.h"
 #include "panel_sbk.h"
 #include "panel_scan.h"
+#include "panel_servo.h"
 #include "panel_shot.h"
 #include "panel_trial.h"
 #include "pdmini.h"
@@ -572,6 +573,9 @@ void panel_frame_loop(void)
         outputs_screen_set_why((uint8_t)(last_write >> 8));
 
         flush_screen_commands(stops_now);
+        /* The active servo to the logger before a test's OPEN goes, a
+         * console line and a NEW ID's answer. */
+        panel_servo_frame();
         test_lines_service();
         /* An ON the supply screen sent and the control task dropped -- stale,
          * or lost to a full queue -- stops counting as live there. */

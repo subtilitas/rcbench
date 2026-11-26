@@ -831,6 +831,8 @@ void log_follow_runs(void)
     if (++s_log_run_ctr == 0u) {
         s_log_run_ctr = 1u;
     }
+    /* The servo of the arm, bound to the run before its level goes up. */
+    log_bind_run(s_log_run_ctr, wanted);
     atomic_store(&s_log_run_now, s_log_run_ctr);
 }
 

@@ -201,6 +201,7 @@ static void ra_cfg(servo_rauto_cfg_t *c)
         c->settle_band_deg = settings_get(SET_IMU_PREC);
     }
     snprintf(c->dut, sizeof(c->dut), "%s", settings_text(SET_TEXT_DUT_NAME));
+    svs_servo_id(c->servo_id, sizeof(c->servo_id));
     snprintf(c->type, sizeof(c->type), "%s", type()->name);
     (void)servo_target_line(c->output, sizeof(c->output), s.drive_target,
                             s.drive_pin, s.drive_pwm, s.pins, s.pin_proto,
@@ -209,7 +210,7 @@ static void ra_cfg(servo_rauto_cfg_t *c)
     (void)enc_name(c->source, sizeof(c->source));
     snprintf(c->firmware, sizeof(c->firmware), "%s", RCBENCH_VERSION_STRING);
     run_info_servo(c->info, sizeof(c->info), c->type, c->meter, c->source,
-                   "");
+                   c->servo_id);
     c->text = ui_servo_table();
 }
 
@@ -792,13 +793,13 @@ void rauto_cancel(void)
  */
 static void file_name(char *b, size_t n)
 {
-    char f[LOG_RUN_NAME_MAX + 4];
+    char f[SERVO_NAME_SIZE + 4];
     if (s.ra.off) {
         snprintf(b, n, "%s", TR(SV_USER_LOGS_OFF));
         return;
     }
     if (s.ra.file > 0) {
-        log_name_build(f, sizeof(f), LOG_PREFIX_RUDDR, s.ra.file, true);
+        svs_report_name(f, sizeof(f), PEEK_RAUTO);
     } else {
         snprintf(f, sizeof(f), "%s",
                  (s.ra.file < 0) ? TR(SV_NOT_RECORDED) : TR(SV_WRITING));

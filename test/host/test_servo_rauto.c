@@ -785,9 +785,25 @@ TEST_CASE(the_first_row_carries_the_run_description)
                         "1000;;\n") != NULL);
 }
 
+/* A run filed under a labelled servo names its id under the device. */
+TEST_CASE(the_report_names_the_servo_id_under_the_device)
+{
+    rig_init(0u);
+    snprintf(g.cfg.servo_id, sizeof(g.cfg.servo_id), "KST-00001");
+    CHECK(start());
+    run_for(RAUTO_MS);
+    CHECK(in_report("Servo id:       KST-00001"));
+    rig_init(0u);
+    CHECK(start());
+    run_for(RAUTO_MS);
+    CHECK(in_report("Device:         AILERON L"));
+    CHECK(!in_report("Servo id:"));
+}
+
 int main(void)
 {
     RUN(restore_goes_once_a_read_shows_the_values_back_or_changed);
+    RUN(the_report_names_the_servo_id_under_the_device);
     RUN(a_check_outside_the_tolerance_writes_that_side_again);
     RUN(a_first_measure_at_the_tolerance_gives_the_side_its_direction);
     RUN(a_found_register_is_not_tried_again_on_a_later_write);

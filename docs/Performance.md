@@ -411,9 +411,9 @@ its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 5,312 | 1,840 |
-| `control` | `control_task` | 6,144 | 3,616 | 1,488 |
-| `runlog` | `log_task` | 6,656 | 4,048 | 1,568 |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 5,328 | 1,824 |
+| `control` | `control_task` | 6,144 | 3,648 | 1,456 |
+| `runlog` | `log_task` | 6,656 | 4,144 | 1,472 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
 | `scan` | `scan_task`, the QR scanner's UART1 and its GM861 sequence (`panel_scan.c`) | 3,072 | 1,296 | 736 |
 | `blec` | `blec_task`, every Bluetooth LE client's link through the hub: the IMU's, the Dial's and both sensor nodes' SETUP values, the host stack's events and the actions to NimBLE (`panel_blec.c`, the IMU's side in `panel_imu.c`, the Dial's in `panel_dial.c`, the power node's in `panel_pnode.c`, the balance node's in `panel_bal.c`, the wireless devices' update in `panel_devupd.c`, the label printer's long write through `panel_ble_write_long()`) | 4,096 | 1,840 | 1,216 |
@@ -468,9 +468,9 @@ the time stamp it writes (`get_fattime()`, `localtime_r()`, picolibc's
 time-zone parse `_tzset_unlocked()` and the `sscanf()` under it). The tool
 follows every call the mount can make, `f_mkfs()` among them, which a
 mount that never formats does not reach. A run's start mounts the card on this task as well
-(`storage_check()`). The chain needs 4,048 bytes, a servo test's line of
+(`storage_check()`). The chain needs 4,144 bytes, a servo test's line of
 424 bytes (`SERVO_TEST_LINE_MAX`) in `log_task()`'s frame among them; the
-stack of 6,656 bytes leaves 1,568 above the 1,024-byte margin.
+stack of 6,656 bytes leaves 1,472 above the 1,024-byte margin.
 
 `wifi_ctl`'s deepest chain is the start of the network stack in `worker()`:
 `esp_netif_init()` into lwIP's `netif_add()` and `netif_set_addr()`, the

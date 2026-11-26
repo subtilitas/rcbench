@@ -34,6 +34,7 @@
 #include "fm_ops.h"
 #include "fm_rules.h"
 #include "log_take.h"
+#include "servo_take.h"
 
 /** @brief An id folder of the plan's examples. */
 #define ID_DIR CARD_SERVOS "/KST X-00001"
@@ -228,12 +229,18 @@ TEST_CASE(a_servo_file_the_logger_holds_takes_info_only)
      * of the logger's open files: FILES answers BUSY for every operation
      * but INFO exactly where it says busy. */
     fresh();
-    log_marks_t marks = { .run_dir = ID_DIR, .run = 7u,
-                          .test_dir = ID_DIR, .test = 7u, .txt = 7u };
+    /* In a servo's folder a mark is servo_run_mark(): run 7 of LIMIT RUN
+     * open as a test, run 7 of an ARMED SERVO run as the run. */
+    log_marks_t marks = { .run_dir = ID_DIR,
+                          .run = servo_run_mark(SERVO_KIND_RUN, 7),
+                          .test_dir = ID_DIR,
+                          .test = servo_run_mark(SERVO_KIND_LIMIT, 7),
+                          .txt = servo_run_mark(SERVO_KIND_LIMIT, 7) };
     g_bench.marks = &marks;
     static const char *const names[] = {
         "SERVO007.CSV", "ATEST007.TXT", "limit run_007.csv",
-        "limit run_000.csv", "notes.txt",
+        "limit run_007.txt", "servo run_007.csv", "limit run_000.csv",
+        "notes.txt",
     };
     for (size_t i = 0u; i < sizeof(names) / sizeof(names[0]); ++i) {
         const bool busy = log_marks_busy(&marks, ID_DIR, names[i]);
@@ -243,9 +250,15 @@ TEST_CASE(a_servo_file_the_logger_holds_takes_info_only)
         CHECK_EQ(fm_allowed(&g_bench, FM_OP_INFO, ID_DIR, names[i], false),
                  FM_OK);
     }
-    CHECK(fm_busy(&g_bench, ID_DIR, "SERVO007.CSV"));
+    CHECK(fm_busy(&g_bench, ID_DIR, "limit run_007.csv"));
+    CHECK(fm_busy(&g_bench, ID_DIR, "limit run_007.txt"));
+    CHECK(fm_busy(&g_bench, ID_DIR, "servo run_007.csv"));
+    CHECK(!fm_busy(&g_bench, ID_DIR, "limit run_000.csv"));
+    /* A log folder's name in a servo's folder is none the logger writes. */
+    CHECK(!fm_busy(&g_bench, ID_DIR, "SERVO007.CSV"));
     /* The same name in another id folder is another file. */
-    CHECK(!fm_busy(&g_bench, CARD_SERVOS "/KST X-00002", "SERVO007.CSV"));
+    CHECK(!fm_busy(&g_bench, CARD_SERVOS "/KST X-00002",
+                   "limit run_007.csv"));
     /* A write waits for the run whatever the file. */
     CHECK_EQ(fm_allowed(&g_bench, FM_OP_DELETE, ID_DIR, "notes.txt", false),
              FM_ERR_LOGGING);

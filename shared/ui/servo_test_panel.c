@@ -25,6 +25,7 @@
 #include "prog_choice.h"
 #include "rcbench_version.h"
 #include "run_info.h"
+#include "servo_active.h"
 #include "sensors_rows.h"
 #include "servo_limrun.h"
 #include "settings.h"
@@ -185,6 +186,7 @@ void test_cfg(servo_test_cfg_t *c)
     c->stall_a       = settings_get(SET_SERVO_STALL_A);
     c->report        = settings_get_bool(SET_SERVO_REPORT);
     snprintf(c->dut, sizeof(c->dut), "%s", settings_text(SET_TEXT_DUT_NAME));
+    svs_servo_id(c->servo_id, sizeof(c->servo_id));
     snprintf(c->type, sizeof(c->type), "%s", type()->name);
     if (in_force_dangerous()) {
         snprintf(c->danger, sizeof(c->danger), "%s %uHz", type()->name,
@@ -241,7 +243,7 @@ void test_cfg_bench(servo_test_cfg_t *c)
                    c->meter.name[0] != '\0'
                        ? c->meter.name
                        : servo_test_meter_word(c->meter.kind),
-                   c->enc_on ? servo_test_enc_source(c) : NULL, "");
+                   c->enc_on ? servo_test_enc_source(c) : NULL, c->servo_id);
     /* The report in the language showing at the start; the CSV in English
      * whatever it is. */
     c->text = ui_servo_table();
@@ -474,35 +476,106 @@ void servo_screen_test_pop(void)
     s.peek_from = PEEK_TEST;
 }
 
-void servo_screen_test_files(int number, bool report)
+/**
+ * @brief A token for the file @p f names: its number in a log folder
+ *        (1 to 999), its servo_run_mark() in a servo's folder (1,000 to
+ *        4,999), 1 for another name; 0 not yet, -1 none.  The cards read a
+ *        token above 0 as a file taken.
+ * @param f the answer
+ * @return the token
+ */
+static int file_token(const log_test_files_t *f)
+{
+    if (f->state <= 0) {
+        return (f->state < 0) ? -1 : 0;
+    }
+    const int n = log_name_number(f->name);
+    if (n > 0) {
+        return n;
+    }
+    servo_kind_t k = SERVO_KIND_COUNT;
+    const unsigned m = servo_run_mark(k, servo_run_parse(f->name, &k, NULL));
+    return (m != 0u) ? (int)m : 1;
+}
+
+void servo_screen_test_files_at(const log_test_files_t *f, bool report)
 {
     /* The last OPEN's answer, which is not the answer for a run whose
      * OPEN never went. */
-    const uint8_t f = s.files_from;
-    if (f == PEEK_LIM ? s.lim_off : f == PEEK_RAUTO ? s.ra.off : s.test_off) {
+    const uint8_t fr = s.files_from;
+    if (f == NULL
+        || (fr == PEEK_LIM ? s.lim_off : fr == PEEK_RAUTO ? s.ra.off
+                                                           : s.test_off)) {
         return;
     }
-    int *file = f == PEEK_LIM     ? &s.lim_file
-                : f == PEEK_RAUTO ? &s.ra.file
-                                  : &s.test_file;
-    bool *whole = f == PEEK_LIM     ? &s.lim_report
-                  : f == PEEK_RAUTO ? &s.ra.report
-                                    : &s.test_report;
-    if (number != *file || report != *whole) {
-        if (number != *file) {
+    int *file = fr == PEEK_LIM     ? &s.lim_file
+                : fr == PEEK_RAUTO ? &s.ra.file
+                                   : &s.test_file;
+    bool *whole = fr == PEEK_LIM     ? &s.lim_report
+                  : fr == PEEK_RAUTO ? &s.ra.report
+                                     : &s.test_report;
+    const int token = file_token(f);
+    const bool moved = token != *file
+                       || strcmp(s.files_name[fr], f->name) != 0
+                       || strcmp(s.gk_dir[fr], f->dir) != 0;
+    if (moved || report != *whole) {
+        if (moved) {
             /* GRAPH's card and folder, kept for this run whatever the
-             * setting says since. */
-            s.gk_mount[f] = log_viewer_mount_now();
-            const char *dir = log_viewer_tab_dir(LOG_TAB_USER);
-            size_t n = strlen(dir);
-            n = n < CARD_DIR_MAX ? n : CARD_DIR_MAX - 1u;
-            memcpy(s.gk_dir[f], dir, n);
-            s.gk_dir[f][n] = '\0';
+             * setting or the active servo says since. */
+            s.gk_mount[fr] = f->mount;
+            (void)snprintf(s.gk_dir[fr], sizeof(s.gk_dir[fr]), "%s", f->dir);
+            (void)snprintf(s.files_name[fr], sizeof(s.files_name[fr]), "%s",
+                           (token > 0) ? f->name : "");
         }
-        *file  = number;
+        *file  = token;
         *whole = report;
         ++s.ctrl_rev;
     }
+}
+
+void servo_screen_test_files(int number, bool report)
+{
+    const uint8_t fr = s.files_from;
+    const log_prefix_t prefix = fr == PEEK_LIM     ? LOG_PREFIX_LIMIT
+                                : fr == PEEK_RAUTO ? LOG_PREFIX_RUDDR
+                                                   : LOG_PREFIX_ATEST;
+    log_test_files_t f;
+    memset(&f, 0, sizeof(f));
+    f.state = (int8_t)((number > 0) ? 1 : (number < 0) ? -1 : 0);
+    if (number > 0) {
+        log_name_build(f.name, sizeof(f.name), prefix, number, false);
+    }
+    (void)snprintf(f.dir, sizeof(f.dir), "%s",
+                   log_viewer_tab_dir(LOG_TAB_USER));
+    f.mount = log_viewer_mount_now();
+    servo_screen_test_files_at(&f, report);
+}
+
+void svs_report_name(char *b, size_t n, uint8_t peek)
+{
+    (void)snprintf(b, n, "%s", s.files_name[peek]);
+    const size_t len = strlen(b);
+    if (len > 4u && b[len - 4u] == '.') {
+        /* The CSV's report beside it: .CSV to .TXT, .csv to .txt. */
+        const bool upper = b[len - 3u] == 'C';
+        (void)snprintf(b + len - 3u, n - (len - 3u), "%s",
+                       upper ? "TXT" : "txt");
+    }
+}
+
+void svs_servo_id(char *out, size_t n)
+{
+    const char *id = servo_active_id();
+    (void)snprintf(out, n, "%s", (id != NULL) ? id : "");
+}
+
+bool servo_screen_run_active(void)
+{
+    return s.gate.armed || svs_seq_busy() || servo_test_running(&s.test)
+           || (s.test.state != SERVO_TEST_IDLE && !servo_test_drained(&s.test))
+           || servo_limrun_running(&s.lim)
+           || !servo_limrun_drained(&s.lim) || servo_rauto_running(&s.ra.run)
+           || !servo_rauto_drained(&s.ra.run) || s.logger_busy;
 }
 
 void servo_screen_test_logger_busy(bool busy)
@@ -523,7 +596,7 @@ static void test_file_name(char *b, size_t n)
     if (s.test_off) {
         snprintf(b, n, "%s", TR(SV_USER_LOGS_OFF));
     } else if (s.test_file > 0) {
-        log_name_build(b, n, LOG_PREFIX_ATEST, s.test_file, false);
+        snprintf(b, n, "%s", s.files_name[PEEK_TEST]);
     } else {
         snprintf(b, n, "%s", (s.test_file < 0) ? TR(SV_NOT_RECORDED)
                                                 : TR(SV_WRITING));
@@ -586,7 +659,7 @@ void draw_test_box(gfx_canvas_t *c)
         } else {
             l2[0] = '\0';
         }
-        char f[LOG_RUN_NAME_MAX + 4];
+        char f[SERVO_NAME_SIZE + 4];
         test_file_name(f, sizeof(f));
         snprintf(l3, sizeof(l3), "%s%s", f,
                  (s.test_file > 0 && s.test_report) ? " + .TXT" : "");
@@ -773,9 +846,9 @@ void draw_test_lines(gfx_canvas_t *c)
                      ui_servo_str(servo_test_abort_str(s.test.why)));
             last = ui_theme_color(UI_C_WARN);
         } else {
-            char f[LOG_RUN_NAME_MAX + 4];
+            char f[SERVO_NAME_SIZE + 4];
             test_file_name(f, sizeof(f));
-            char name[LOG_RUN_NAME_MAX + 12];
+            char name[SERVO_NAME_SIZE + 12];
             snprintf(name, sizeof(name), "%s%s", f,
                      (s.test_file > 0 && s.test_report) ? " + .TXT" : "");
             snprintf(line, sizeof(line), TR(SV_CARD_LAST),

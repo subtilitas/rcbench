@@ -304,9 +304,26 @@ TEST_CASE(no_servo_answering_outside_a_connect_ends_nothing)
     servo_limrun_no_servo(NULL, g.now);
 }
 
+/* A run filed under a labelled servo names its id on the line under the
+ * device; a run with none has no such line. */
+TEST_CASE(the_report_names_the_servo_id_under_the_device)
+{
+    rig_init(0u, false);
+    snprintf(g.cfg.servo_id, sizeof(g.cfg.servo_id), "KST_X10-0000A");
+    CHECK(start());
+    run_for(RUN_MS);
+    CHECK(strstr(g.report, "aileron left\nServo id:       KST_X10-0000A\n")
+          != NULL);
+    rig_init(0u, false);
+    CHECK(start());
+    run_for(RUN_MS);
+    CHECK(strstr(g.report, "Servo id") == NULL);
+}
+
 int main(void)
 {
     RUN(the_report_holds_the_run);
+    RUN(the_report_names_the_servo_id_under_the_device);
     RUN(a_start_with_its_center_outside_min_and_max_is_refused);
     RUN(every_reason_and_phase_has_its_words);
     RUN(the_share_the_overset_and_the_final_value);

@@ -846,10 +846,14 @@ typedef struct {
     /** @brief The mount each run's number came on, by PEEK_*: GRAPH opens
      *  the file on that card only (servo_graph_key.c). */
     unsigned  gk_mount[3];
-    /** @brief USER LOG FOLDER as it stood when each run's number came, by
-     *  PEEK_*: GRAPH reads the run's file there, whatever the setting says
-     *  since (servo_graph_key.c). */
-    char      gk_dir[3][CARD_DIR_MAX];
+    /** @brief The folder the logger wrote each run's file to, by PEEK_*:
+     *  USER LOG FOLDER as it stood, or the servo's `Servos/<id>`.  GRAPH
+     *  reads the run's file there, whatever the setting says since
+     *  (servo_graph_key.c). */
+    char      gk_dir[3][CARD_RUN_DIR_MAX];
+    /** @brief Each run's CSV, or its lone report, as the logger named it,
+     *  by PEEK_*; "" until the answer (servo_screen_test_files_at()). */
+    char      files_name[3][SERVO_NAME_SIZE];
     /** @brief GRAPH as LIMIT RUN's card and TEST's box drew it last, by
      *  graph_key_card_t; empty where it was not drawn. */
     gfx_rect_t gk_rect[3];
@@ -1344,6 +1348,21 @@ uint32_t lim_signature(void);
 
 /** @brief The three runs' files handed to graph_key.h as they stand now. */
 void svs_gk_sync(void);
+/**
+ * @brief The report's name of run slot @p peek: the logger's name with
+ *        .CSV made .TXT (.csv made .txt), or the lone report's as it is.
+ * @param b    takes it; "" before the answer
+ * @param n    bytes at @p b
+ * @param peek PEEK_TEST, PEEK_LIM or PEEK_RAUTO
+ */
+void svs_report_name(char *b, size_t n, uint8_t peek);
+/**
+ * @brief The active servo's id (servo_active_id()), read once at a run's
+ *        START into its configuration: the run files by it to its end.
+ * @param out takes the id; "" with no servo active
+ * @param n   bytes at @p out
+ */
+void svs_servo_id(char *out, size_t n);
 /**
  * @brief Whether card @p k shows its key now.
  * @param k GRAPH_KEY_LIMIT, GRAPH_KEY_RAUTO or GRAPH_KEY_ATEST

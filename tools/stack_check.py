@@ -344,6 +344,13 @@ TAKE_CALLS = {
     "take_level": ("take_make_dir",),
 }
 
+# The same log_take_io_t for a labelled servo's folder (servo_take.c):
+# servo_take() makes every call, its helpers inlined.
+SERVO_TAKE_CALLS = {
+    "servo_take": ("take_mounted", "take_make_dir", "take_walk",
+                   "take_exists", "take_create"),
+}
+
 # card_make_fn (card_tree.c): every function a caller hands
 # card_make_dirs().
 CARD_CALLS = {
@@ -898,6 +905,8 @@ def main() -> int:
                                 UI_HOOK_CALLS),
                                ("TAKE_CALLS", "shared/logfile",
                                 TAKE_CALLS),
+                               ("SERVO_TAKE_CALLS", "shared/logfile",
+                                SERVO_TAKE_CALLS),
                                ("CARD_CALLS", "shared/logfile",
                                 CARD_CALLS),
                                ("FAULT_CALLS", "shared/logfile",

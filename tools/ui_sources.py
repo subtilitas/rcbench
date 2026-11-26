@@ -300,6 +300,9 @@ SOURCES = [
     "shared/files/shot_file.c",
     "shared/clock/wall_clock.c",
     "shared/logfile/log_take.c",
+    # The labelled servos' numbering and marks (servo_take.c); the ids,
+    # names and the active servo are listed with FILES' rules below.
+    "shared/logfile/servo_take.c",
     # The ESC profiles and the stick programmer MOTOR & ESC > PROGRAM's
     # ESC STICK session lists and runs.
     "shared/esc/esc_profiles_gen.c",

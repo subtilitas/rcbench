@@ -394,6 +394,20 @@ history is in git.
   settings file: `srv_pfx` (ID PREFIX, default `SERVO`, 17 characters at
   most), `prn_ble` and `prn_name` (the label printer's bind). `SERVOS` and
   the folders in it are refused as a log folder.
+- Labelled servos, filing: with a servo active, LIMIT RUN, RUDDER AUTO,
+  AUTOMATIC TEST and an ARMED run from SERVO write to `Servos/<id>/` as
+  `limit run_NNN.csv`, `rudder auto_NNN.csv`, `automatic test_NNN.csv`
+  and `servo run_NNN.csv`, each kind numbered 000 to 999 on its own, the
+  report beside its CSV (`shared/logfile/servo_take.c`). A test takes its
+  servo at START, a SERVO run at the arm. The `info` cell carries `id`,
+  the reports a `Servo id:` line. A kind at 999 records no further run
+  and the band says `Servo folder full: LIMIT RUN 999. Run not
+  recorded.` The result cards print the name written and GRAPH opens it
+  in its folder. The panel walks `Servos` after each mount and FILES
+  change; NEW ID makes the next id and its folder
+  (`firmware/panel/main/panel_servo.c`). Debug console lines `servo`,
+  `servo new`, `servo id <id>`, `servo none`
+  ([Servo](docs/Servo.md#labelled-servos-filing)).
 
 ### Changed
 

@@ -242,6 +242,10 @@ static bool head_lines(const servo_rauto_t *r, cur_t *c)
         snprintf(c->buf, c->n, LS(R_DEVICE), g->dut);
         return true;
     }
+    if (g->servo_id[0] != '\0' && here(c)) {
+        snprintf(c->buf, c->n, LS(R_SERVO_ID), g->servo_id);
+        return true;
+    }
     if (here(c)) {
         snprintf(c->buf, c->n, LS(R_FIRMWARE), g->firmware);
         return true;

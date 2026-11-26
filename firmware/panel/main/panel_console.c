@@ -6,6 +6,8 @@
  * USB-Serial-JTAG, and the output goes to both through stdout, as the log does.
  *
  * A typed line goes to the relay at its end.  A line that starts with the
+ * word `servo` stays on the panel too: `servo`, `servo new`, `servo id
+ * <id>` and `servo none` (panel_servo.h).  A line that starts with the
  * word `ble` stays on the panel: `ble scan` starts Bluetooth LE when it has
  * not started (panel_ble.h), waits for the host's sync and prints every
  * device a 10s scan hears.  A line that starts with the word `scan` stays
@@ -32,6 +34,7 @@
 #include "panel.h"
 #include "panel_ble.h"
 #include "panel_scan.h"
+#include "panel_servo.h"
 #include "scan_flow.h"
 
 /** @brief The console task's stack: printf and its buffers. */
@@ -280,6 +283,10 @@ static void console_key(int ch)
             s_typed = 0u;
         } else if (!s_long && strcmp(s_typing, "scan") == 0) {
             scan_dump();
+            s_typed = 0u;
+        } else if (!s_long && (strcmp(s_typing, "servo") == 0
+                               || strncmp(s_typing, "servo ", 6u) == 0)) {
+            panel_servo_console(s_typing);   /* the frame task runs it */
             s_typed = 0u;
         } else if (!s_long && strncmp(s_typing, "scan ", 5u) == 0) {
             printf("scan: %s\n", scan_flow_post(&s_typing[5])
