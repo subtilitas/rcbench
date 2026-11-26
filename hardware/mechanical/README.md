@@ -26,6 +26,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `bearing_6704_2rs.py` | spec of the ball bearing 6704-2RS, 20 x 27 x 4mm |
 | `acrylic_disc.py` | spec of a clear acrylic disc, 49.5mm across and 2mm thick |
 | `supvan_t50m_pro.py` | spec of the Supvan KATASYMBOL T50M Pro label printer, measured from owner photos on millimetre paper |
+| `wurstblinker.py` | spec of 2 joke models, the Wurstblinker node and the kinetic Wurstblinker node of the video `wurstblinker`; not hardware of the bench |
 | `usbc_plug_breakout.py` | spec of a USB-C plug on a small breakout board with 4 wire pads, measured from owner photos |
 | `charger_boost_2s4s.py` | spec of the 2S to 4S USB-C boost charger board (print DDTCCRUB), measured from owner photos |
 | `pd_trigger_pd31.py` | spec of the purple USB-C PD3.1 trigger board, 5 to 48V, measured from owner photos |
@@ -1472,6 +1473,21 @@ A flat round blank of clear acrylic, sold as "50mm": 49.5mm across and
 
 Whether the edges are square, rounded or chamfered is not known; the
 model draws them square.
+
+## Wurstblinker nodes
+
+Two joke models: the solids of the cartoon the video `wurstblinker` shows
+(`tools/video/player/wurst3d.js`). Neither is hardware of the bench and
+neither is built. Every size is chosen for the picture; none is measured.
+The sausage is a cylinder 180mm long and 28mm across with flat ends. The
+video draws its ends round, the antenna's tip and the lamp as balls and
+the 2 clips as rings of round wire; here they are cylinders and flat
+rings.
+
+| File | Content | Origin |
+| --- | --- | --- |
+| `wurstblinker_node.step` | stand 230 x 110 x 14mm, node board on a post, antenna, lamp, a servo on a post with its shaft towards -y, an arm, the sausage upright in 2 clips; 16 solids | the stand's middle, z = 0 under the stand; x to the right, z up; the shaft at x = 40, z = 128 |
+| `wurstblinker_kinetic.step` | the stand, board, antenna and lamp, a tank 52mm across on 2 posts with a gauge, a pipe, a valve block, a barrel 200mm long with a bore of 33mm along +x, 2 rings, the sausage loaded; 18 solids | as the node; the barrel's axis at y = 10, z = 134 |
 
 ## Licence
 

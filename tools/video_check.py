@@ -49,7 +49,8 @@ VIDEO = REPO / "tools" / "video"
 CACHE = REPO / "build" / "video" / "cache"
 PANEL = (1024, 600)
 FRAME = (1920, 1080)
-ANCHORS = ("wing", "servo", "hinge", "rod", "flap", "edge", "imu", "tape",
+ANCHORS = ("node", "antenna", "sausage", "tank", "barrel",
+           "wing", "servo", "hinge", "rod", "flap", "edge", "imu", "tape",
            "horn", "lead", "port", "display", "rbmod", "pdmini", "J1", "J2",
            "xt60", "usbc",
            "estop", "side", "plug", "panel", "case", "mcu",
@@ -233,9 +234,10 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
         return
     _keys(scene.get("camera"), 3, f"{where} camera", errors)
     if scene.get("model", "mockup") not in ("mockup", "cad", "dial", "duo",
-                                            "mini", "part", "rudder"):
+                                            "mini", "part", "rudder",
+                                            "wurst", "wurst-kinetic"):
         errors.append(f"{where}: model must be mockup, cad, dial, duo, "
-                      "mini, part or rudder")
+                      "mini, part, rudder, wurst or wurst-kinetic")
     if scene.get("model") == "part" and not (
             isinstance(scene.get("part"), str) and scene["part"]
             and all(c.isalnum() or c in "-_" for c in scene["part"])):
@@ -262,13 +264,16 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
                 and isinstance(key[1], str)):
             errors.append(f"{where} faces: a key is [t, the face's name]")
             break
-    for key in scene.get("estop", []):
-        if not (isinstance(key, list) and len(key) == 2
-                and _number(key[0]) and _number(key[1])
-                and 0 <= key[1] <= 1):
-            errors.append(f"{where} estop: a key is [t, k] with k from 0, "
-                          "out, to 1, pressed")
-            break
+    for name, ends in (("estop", "out, to 1, pressed"),
+                       ("swing", "in, to 1, out"),
+                       ("fire", "loaded, to 1, gone")):
+        for key in scene.get(name, []):
+            if not (isinstance(key, list) and len(key) == 2
+                    and _number(key[0]) and _number(key[1])
+                    and 0 <= key[1] <= 1):
+                errors.append(f"{where} {name}: a key is [t, k] with k "
+                              f"from 0, {ends}")
+                break
     last = -1.0
     for key in scene.get("panel", []):
         if not (isinstance(key, list) and len(key) in (2, 3)

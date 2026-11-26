@@ -411,6 +411,13 @@ history is in git.
   shows the red stop button pressed, latched and released, with HWSTOP
   on the display from the view `stop-hw`. The head's latch sounds as a
   click.
+- Storyboard `wurstblinker`, a joke: a remote node that swings a sausage
+  out as a direction indicator, and a kinetic version that fires it out of
+  a barrel, drawn by the cartoon models `wurst` and `wurst-kinetic` of
+  `tools/video`. The two models lie as STEP files under
+  `hardware/mechanical/models/parts/`, `wurstblinker_node.step` and
+  `wurstblinker_kinetic.step`. Titles of every video carry a dark rim under the white
+  text.
 - Storyboard `origin`, the project's origin in 7 chapters: the reason,
   ideas, the plan, development, testing, the test bench and the group
   order of the rbmod carrier, with 7 posts of two RC-Network threads as
