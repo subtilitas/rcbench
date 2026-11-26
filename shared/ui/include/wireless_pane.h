@@ -188,6 +188,9 @@ extern const ui_setlist_custom_t wireless_pane_pnode_scan_row;
 extern const ui_setlist_custom_t wireless_pane_pnode_bind_row;
 /** @brief NODE BATTERY, its fifth row; public for the tests. */
 extern const ui_setlist_custom_t wireless_pane_pnode_bat_row;
+/** @brief NODE INA228: the address the node found its INA228 at and the
+ *         shunt it holds, read only. */
+extern const ui_setlist_custom_t wireless_pane_pnode_i228_row;
 
 /** @brief SCAN FOR DIAL, the DIAL entry's second row; public for the
  *         tests. */

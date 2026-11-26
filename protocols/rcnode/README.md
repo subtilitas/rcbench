@@ -117,8 +117,9 @@ types only.
   not sent.
 - **Info.** The protocol version (1), the role, the board (1 = Waveshare
   ESP32-C6-Zero, 2 = the LCDWIKI ES3C28P 2.8" ESP32-S3 display board),
-  the address and its type, and for the power node the INA228's address,
-  ADCRANGE and shunt in µΩ.
+  the address and its type, and for the power node the INA228's address
+  the node found it at (0x40 to 0x4F; 0 before a find or after a search
+  that found none), ADCRANGE and the shunt in force in µΩ.
 
 ### Control
 
@@ -130,12 +131,16 @@ types only.
 | 0x04 | BLADES | 2 | 1 to 12, shared/vibe's `VIBE_BLADES_MAX` | balance |
 | 0x05 | RPM | 3 | 16 bits, 0 to 60000; 0 is the index mode | balance |
 | 0x06 | LANG | 2 | 0 English, 1 German: the language of a display node's texts | power |
+| 0x07 | SHUNT | 3 | 16 bits, 50 to 10000: the INA228 board's shunt in µΩ (`RCNODE_SHUNT_MIN_UOHM`, `RCNODE_SHUNT_MAX_UOHM`) | power |
 
 The decoder refuses an unknown operation, another length than the
 operation's, a RUN tag of 0, and a value out of range.
 `rcnode_ctl_for_role()` says which role takes which operation. A power
 node without a display takes LANG and ignores it; a node built before
-LANG refuses it with ATT error 0x13.
+LANG refuses it with ATT error 0x13. A power node keeps SHUNT through
+restarts, names it in INFO at once and ranges its INA228 for it; 200µΩ
+(`RCNODE_SHUNT_DEF_UOHM`, the MATEK I2C-INA-BM's) until one is written. A
+node built before SHUNT refuses it with ATT error 0x13.
 
 ### Advertising
 

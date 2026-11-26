@@ -33,6 +33,19 @@
  *   owed: a display node (docs/Nodes.md, "The display node") shows its
  *   texts in it.  A node that refuses the write (one built before LANG)
  *   gets it again only at the next link or change.
+ * - After INFO is taken on each link, and at each change of NODE SHUNT,
+ *   SHUNT goes to CONTROL with the setting when INFO names another shunt,
+ *   after any RUN write owed and never while the bench is ARMED or a
+ *   switch to ARMED waits: a shunt changed under a run would rescale its
+ *   readings.  A write the node takes is followed by a read of INFO, whose
+ *   shunt the view shows and the meter calibrates with; that read waits
+ *   while the bench is ARMED or the meter's run is live, so a run keeps
+ *   its full scale.  A write refused with ATT error 0x13 (a node built
+ *   before SHUNT, PNODE_ATT_NOT_ALLOWED) is counted for the band and sent
+ *   again only at the next link or change.  A write that times out or
+ *   fails otherwise may have been taken: INFO is read again (as above),
+ *   and SHUNT goes again when INFO still names another shunt.  A write the
+ *   link's drop ends leaves it to the next link's INFO.
  *
  * Every function of one controller is called from one task.  Times are
  * unsigned differences of a free-running 32-bit ms clock.
@@ -67,6 +80,11 @@ extern const bleu_profile_t pnode_profile;
 /** @brief pnode_ctl_t's lang_sent before a LANG write on the link. */
 #define PNODE_LANG_NONE 0xFFu
 
+/** @brief A write's status for ATT error 0x13, "value not allowed", as the
+ *         host stack reports it (NimBLE's BLE_HS_ATT_ERR(0x13)): the node
+ *         does not take the operation. */
+#define PNODE_ATT_NOT_ALLOWED 0x113u
+
 /** @brief Devices a scan keeps the role of (rcnode_adv_match()). */
 #define PNODE_ROLES_MAX 16u
 
@@ -84,6 +102,15 @@ typedef struct {
     uint8_t       info_proto;  /**< the protocol INFO named, 0 unread */
     uint8_t       info_role;   /**< the role INFO named, 0 unread */
     uint8_t       info_board;  /**< the board INFO named, 0 unread */
+    uint8_t       info_i228;   /**< the INA228's address INFO named, 0 none
+                                    found */
+    uint16_t      info_shunt;  /**< the shunt INFO named, µΩ, 0 unread */
+    uint16_t      shunt_sent;  /**< the shunt the SHUNT write last went
+                                    with on this link; 0 before */
+    bool          shunt_wr;    /**< a SHUNT write is in flight */
+    bool          info_owed;   /**< INFO to read again once the bench is
+                                    SAFE and the meter's run not live */
+    uint32_t      shunt_refused; /**< SHUNT writes the node refused */
     uint8_t       known_board; /**< the board the bound address's last
                                     accepted INFO named; kept over link
                                     ends and reconnects, 0 after an
@@ -234,8 +261,8 @@ void pnode_ctl_event(pnode_ctl_t *c, const bleu_evt_t *e, uint32_t now_ms);
 /**
  * @brief Advance to @p now_ms: the meter's run and dropout rule, a running
  *        scan stopped while @p armed, then the central's next action, else
- *        the RUN write owed, else the LANG write owed.  Call until it returns false, at least every
- *        10ms.
+ *        the RUN write owed, else the SHUNT write owed, else the LANG
+ *        write owed.  Call until it returns false, at least every 10ms.
  * @param c         The controller.
  * @param now_ms    The clock.
  * @param armed     The bench is ARMED, or a switch to ARMED waits.

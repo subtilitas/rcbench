@@ -43,7 +43,8 @@ static const setting_id_t k_dial[] = { SET_DIAL_EN, SET_DIAL_THR,
                                        SET_DIAL_SRV };
 /** @brief The power node's settings, the enable row first and INA228
  *         SOURCE second: both stand while the node is off. */
-static const setting_id_t k_pnode[] = { SET_PNODE_EN, SET_I228_SRC };
+static const setting_id_t k_pnode[] = { SET_PNODE_EN, SET_I228_SRC,
+                                         SET_PNODE_UOHM };
 
 _Static_assert(sizeof(k_imu) / sizeof(k_imu[0]) <= WL_ENTRY_ROWS_MAX,
                "the IMU's rows fit an entry");
@@ -300,6 +301,8 @@ int wireless_pane_rows(int entry, wl_row_t *out, int max)
             n = add_custom(out, max, n, &wireless_pane_pnode_scan_row);
             n = add_custom(out, max, n, &wireless_pane_pnode_bind_row);
             n = add_custom(out, max, n, &wireless_pane_pnode_bat_row);
+            n = add_custom(out, max, n, &wireless_pane_pnode_i228_row);
+            n = add_id(out, max, n, SET_PNODE_UOHM);
         }
     } else if (entry == WL_ENTRY_BAL) {
         n = wireless_bal_rows(out, max);
