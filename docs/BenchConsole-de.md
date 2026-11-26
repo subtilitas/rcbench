@@ -501,6 +501,36 @@ ESP32-C6](C6-de.md#bluetooth-le-über-den-esp32-c6)).
 | `ble: controller requests: sent, see the ble lines` | beide Anfragen sind gegangen |
 | `ble: controller requests: Bluetooth LE is not started or still starting` | vor dem ersten Start oder während sein Start-Task läuft; nichts wird gesendet |
 
+### Etikettendrucker: `print`
+
+Eine Zeile, die mit dem Wort `print` beginnt, bleibt auf dem Panel; die
+Frame-Task führt sie aus. Der Drucker ist der in SETUP unter `prn_ble`
+gekoppelte (`shared/ui/include/print_ctl.h`).
+
+| Eingabe | Wirkung |
+| --- | --- |
+| `print` | gibt den Stand aus: Drucker, Phase, Fehler, Verbindung, Rolle, verbleibende Etiketten, MTU, gesendete Frames |
+| `print test` | fordert das Testetikett an: Code von `RCBENCH TEST`, `RCBENCH`, Version, Rolle |
+| `print id <id>` | fordert das Etikett einer Servo-ID an, mit dem DUT NAME aus SETUP |
+| `print query` | liest Rolle und Etikettenzähler, druckt nichts |
+| `print stop` | beendet die laufende Anforderung: STOP_PRINT nach START, `DRUCK GESTOPPT` |
+| `print bind <address>` | legt `A4:93:40:30:FA:71` in `prn_ble` ab, ` P` angehängt ohne Typ, und fordert das Speichern an |
+| `print unbind` | leert `prn_ble` und `prn_name` |
+
+Eine Anforderung, während eine läuft, wird abgelehnt. Die `print`-Zeilen
+der `blec`-Task folgen jedem Phasenwechsel:
+
+| Zeile | Bedeutet |
+| --- | --- |
+| `print: request <kind> taken` | der Controller hat die Anforderung angenommen: 1 Etikett, 2 Test, 3 Abfrage, 4 Stopp |
+| `print: linked to <printer>: connect <ms>ms, set-up <ms>ms, MTU <n>, <n> attempts` | die Verbindung steht, die Rolle wird gelesen |
+| `print: roll <w>x<h>mm gap <g>mm, <n> left: building` | die Rolle ist gelesen; das Layout beginnt |
+| `print: block of <n> bytes taken` | der Heap-Block, zuerst aus PSRAM; ohne Block endet die Anforderung mit `KEIN SPEICHER` |
+| `print: built in <ms>ms: <n> buffers, stream <n> bytes` | der Stream steht; der Job beginnt |
+| `print: <n> frames sent, <ms>ms after the request` | BUF_FULL ist gesendet; der Drucker druckt |
+| `print: done in <ms>ms: <n> left` | gedruckt oder gelesen; `, after a reconnect`, wenn die Verbindung während des Jobs abbrach |
+| `print: failed after <ms>ms: error <n> (<text>)` | die Anforderung endete mit dem englischen Text des Fehlers |
+
 ### Raten
 
 Das Relay führt nach dem Polling des Panels höchstens einen Austausch
