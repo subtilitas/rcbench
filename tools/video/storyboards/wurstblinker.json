@@ -1078,7 +1078,7 @@
   {
    "type": "case",
    "model": "wurst-kinetic",
-   "dur": 21.22,
+   "dur": 20.98,
    "chips": [
     {
      "from": 0,
@@ -1088,7 +1088,7 @@
     },
     {
      "from": 11.68,
-     "to": 20.919999999999998,
+     "to": 20.68,
      "n": 4,
      "text": "Beta test"
     }
@@ -1108,7 +1108,7 @@
      ]
     ],
     [
-     21.22,
+     20.98,
      [
       130,
       175,
@@ -1127,7 +1127,7 @@
      1
     ],
     [
-     21.22,
+     20.98,
      1
     ]
    ],
@@ -1172,14 +1172,14 @@
     },
     {
      "from": 16.1,
-     "to": 20.919999999999998,
+     "to": 20.68,
      "anchor": "barrel",
      "at": [
       1330,
       250
      ],
      "size": "sm",
-     "title": "Mustard jar update",
+     "title": "Senfglas update",
      "text": "In development."
     }
    ],
@@ -1198,7 +1198,7 @@
     },
     {
      "at": 16.1,
-     "text": "A mustard jar update is in development."
+     "text": "A Senfglas update is in development."
     }
    ]
   },
@@ -1212,7 +1212,7 @@
     "The limit run finds the sausage's stop",
     "Kinetic: compressed air, 1 sausage a turn",
     "In intense beta testing",
-    "Mustard jar update: in development"
+    "Senfglas update: in development"
    ],
    "say": "The Wurstblinker node, and the kinetic Wurstblinker. Both in beta."
   }
