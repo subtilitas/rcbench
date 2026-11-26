@@ -576,6 +576,8 @@ TRACKED = [
     "shared/webaccess/wa_api_write.c",
     "shared/webaccess/wa_app.c",
     "shared/clock/wall_clock.c",
+    "shared/scanner/scan_line.c",
+    "shared/scanner/gm861.c",
 ]
 
 # Sources under shared/ that are tables and hold no function: gcc gives them
