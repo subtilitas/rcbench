@@ -206,6 +206,7 @@ TRACKED = [
     "shared/ui/text_view_keys.c",
     "shared/ui/label_bitmap.c",
     "shared/ui/label_layout.c",
+    "shared/ui/print_ctl.c",
     "shared/ui/settings_screen.c",
     "shared/ui/settings_draw.c",
     "shared/ui/settings_rows.c",

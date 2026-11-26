@@ -151,6 +151,7 @@ void publish_throttle_ramp(void)
 #include "panel_pnode.h"
 #include "panel_scan.h"
 #include "panel_imu.h"
+#include "panel_print.h"
 #include "upd_screen.h"
 #include "wifi_access.h"
 #include "wifi_screen.h"
@@ -1034,14 +1035,15 @@ void app_main(void)
                     ? ESP_OK : ESP_ERR_NO_MEM);
 
     knob_task_start();
-    /* The Bluetooth IMU's, the Dial's and both nodes' controllers,
-     * with the settings loaded, then the task of every Bluetooth LE
-     * client. */
+    /* The Bluetooth IMU's, the Dial's, both nodes' and the label
+     * printer's controllers, with the settings loaded, then the task of
+     * every Bluetooth LE client. */
     panel_imu_start();
     panel_dial_start();
     panel_pnode_start();
     panel_bal_start();
     panel_devupd_start();
+    panel_print_start();
     panel_blec_start();
     /* The QR scanner's task: UART1 on IO4 and IO5 while SETUP's Scanner
      * row is ON. */

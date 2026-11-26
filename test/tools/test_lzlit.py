@@ -137,8 +137,11 @@ def test_the_captured_frames_rebuild_from_the_stream():
 
 
 def test_every_captured_write_is_a_command_or_a_fragment():
-    """label-frames.bin: 29 records, 16-byte commands with their sum and
-    128-byte fragments that join to the data frames."""
+    """label-frames.bin holds 29 writes: commands and fragments.
+
+    The 16-byte commands carry their sum; the 128-byte fragments join to
+    the data frames.
+    """
     f = _captured("label-frames.bin")
     recs = []
     o = 0
