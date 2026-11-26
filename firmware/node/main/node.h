@@ -9,7 +9,8 @@
  * task serves the GATT (generic attribute profile) server.  `ble_tx` sends
  * the STREAM packets the role queues.  The power role adds `pwr`, its
  * sampler; the balance role adds `bal`, which reads the ADC stream.  The console's REPL (read-eval-print loop) runs in its own task.
- * A board with a display (node_board.h) adds `disp` (node_disp.c).
+ * A board with a display (node_board.h) adds `disp` (node_disp.c).  The
+ * node's own settings (name, INA228 address, shunt) are node_set.c's.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -20,6 +21,8 @@
 #include <stdint.h>
 
 #include "node_board.h"
+#include "node_scan.h"
+#include "node_store.h"
 #include "rcnode.h"
 
 #if NODE_BOARD_DISPLAY
@@ -137,6 +140,73 @@ const char *node_ble_name(void);
 
 /** @brief End the link and stop advertising, before a sleep. */
 void node_ble_stop(void);
+
+/**
+ * @brief Hold advertising off, or let it run again: the display node's
+ *        SETUP holds it off, so no panel links while it is open.
+ * @param on true holds it off.
+ */
+void node_ble_hold_adv(bool on);
+
+/** @brief The node's own name changed: the GAP name and the scan response
+ *  take it; advertising that runs restarts with it. */
+void node_ble_rename(void);
+
+/* ------------------------------------------------- the node's settings */
+
+/**
+ * @brief Read the settings from NVS (node_store.h), before the role starts.
+ * @param power The role keeps a shunt and an INA228 address.
+ */
+void node_set_start(bool power);
+
+/** @brief The values in force.  @param out Receives them. */
+void node_set_vals(nst_vals_t *out);
+
+/** @brief The last panel's language.  @return RCNODE_LANG_*. */
+uint8_t node_set_lang(void);
+
+/**
+ * @brief The display node's SETUP saved: stored, applied (the part set up
+ *        again, the name advertised), CONFIG sent when asked for.
+ * @param v The values.
+ * @return NST_CH_* of what changed.
+ */
+unsigned node_set_setup_save(const nst_vals_t *v);
+
+/**
+ * @brief A panel's write the settings own: CONFIG, NAME, I228, SHUNT, and
+ *        LANG, whose language is kept.  From the `node` task.
+ * @param c The write.
+ */
+void node_set_control(const rcnode_ctl_t *c);
+
+/** @brief The link ended: CONFIG is no longer sent. */
+void node_set_link_end(void);
+
+/** @brief The shunt in force, for INFO.  @return µΩ. */
+uint16_t node_set_shunt(void);
+
+#if !CONFIG_RCNODE_ROLE_BALANCE && !CONFIG_RCNODE_ROLE_SERVO
+/**
+ * @brief A new shunt for `pwr`: the part set up again at its next tick.
+ * @param uohm The shunt, µΩ.
+ */
+void node_pwr_set_shunt(uint16_t uohm);
+
+/**
+ * @brief A new address setting for `pwr`: the search starts again.
+ * @param setting RCNODE_I228_AUTO or 0x40 to 0x4F.
+ */
+void node_pwr_set_addr(uint8_t setting);
+
+/**
+ * @brief The power role's bus for the display node's I2C SCAN: every
+ *        address of 0x08 to 0x77 probed, the INA228s found by their IDs.
+ * @param out Receives the result.
+ */
+void node_pwr_scan(nscan_t *out);
+#endif
 
 /**
  * @brief A control write the node itself handles (SLEEP, OFF), or any write

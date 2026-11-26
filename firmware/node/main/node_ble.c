@@ -5,7 +5,11 @@
  *        `ble_tx` task that notifies the STREAM packets the role queues.
  *
  * One central at a time.  Advertising runs at a 100ms interval whenever no
- * link stands.  No pairing and no bonding: the readings are measurements,
+ * link stands and the display node's SETUP does not hold it off
+ * (node_ble_hold_adv()).  The scan response and the GAP (generic access
+ * profile) name carry the node's own name when one is set (node_set.c),
+ * else "rcbench-pwr-XXXX"; a central finds the node by its manufacturer
+ * data either way.  No pairing and no bonding: the readings are measurements,
  * and the panel's host has no security manager.  The panel asks for the
  * connection parameters; the node asks for none of its own.
  *
@@ -68,6 +72,7 @@ static char    s_name[RCNODE_NAME_MAX];         /**< the advertised name */
 static atomic_bool     s_linked;      /**< a central is connected */
 static atomic_bool     s_stream_sub;  /**< STREAM notifications on */
 static atomic_bool     s_stopping;    /**< node_ble_stop() ran: no new advertising */
+static atomic_bool     s_adv_held;    /**< node_ble_hold_adv(): no advertising */
 static atomic_uint     s_conn;        /**< the connection handle */
 static atomic_uint     s_dropped;     /**< STREAM packets not sent */
 static atomic_uint     s_stream_seq;  /**< the next STREAM seq */
@@ -193,16 +198,35 @@ static void make_uuid(ble_uuid128_t *u, uint16_t id)
     rcnode_uuid(id, u->value);
 }
 
-/** @brief Start advertising, unless node_ble_stop() ran. */
+/**
+ * @brief The node's name: its own when one is set, else rcnode_name()'s.
+ * @param out Receives it.
+ */
+static void own_name(char out[RCNODE_NAME_MAX])
+{
+    nst_vals_t v;
+    node_set_vals(&v);
+    if (v.name[0] != '\0') {
+        memcpy(out, v.name, RCNODE_UNAME_MAX + 1u);
+    } else {
+        (void)rcnode_name(s_role, s_addr, out);
+    }
+}
+
+/** @brief Start advertising, unless node_ble_stop() ran or SETUP holds
+ *         it off. */
 static void advertise(void)
 {
-    if (atomic_load(&s_stopping)) {
+    if (atomic_load(&s_stopping) || atomic_load(&s_adv_held)) {
         return;
     }
+    nst_vals_t v;
+    node_set_vals(&v);
     uint8_t ad[RCNODE_ADV_LEN];
     uint8_t rsp[RCNODE_RSP_LEN];
     const size_t n_ad = rcnode_adv_build(s_role, s_addr, ad, sizeof ad);
-    const size_t n_rsp = rcnode_rsp_build(s_role, s_addr, rsp, sizeof rsp);
+    const size_t n_rsp = rcnode_rsp_build_named(s_role, s_addr, v.name, rsp,
+                                                sizeof rsp);
     int rc = ble_gap_adv_set_data(ad, (int)n_ad);
     if (rc == 0) {
         rc = ble_gap_adv_rsp_set_data(rsp, (int)n_rsp);
@@ -247,6 +271,7 @@ static int gap_event(struct ble_gap_event *event, void *arg)
     case BLE_GAP_EVENT_DISCONNECT:
         atomic_store(&s_linked, false);
         atomic_store(&s_stream_sub, false);
+        node_set_link_end();
         devota_disconnected();
         ESP_LOGI(NODE_TAG, "ble: disconnected, reason 0x%03X",
                  event->disconnect.reason);
@@ -287,7 +312,7 @@ static void on_sync(void)
         ESP_LOGE(NODE_TAG, "ble: no address, rc %d", rc);
         return;
     }
-    (void)rcnode_name(s_role, s_addr, s_name);
+    own_name(s_name);
     (void)ble_svc_gap_device_name_set(s_name);
     ESP_LOGI(NODE_TAG, "ble: %s at %02X:%02X:%02X:%02X:%02X:%02X", s_name,
              s_addr[5], s_addr[4], s_addr[3], s_addr[2], s_addr[1], s_addr[0]);
@@ -462,6 +487,30 @@ bool node_ble_rssi(int8_t *dbm)
 const char *node_ble_name(void)
 {
     return s_name;
+}
+
+void node_ble_hold_adv(bool on)
+{
+    atomic_store(&s_adv_held, on);
+    if (on) {
+        (void)ble_gap_adv_stop();
+        ESP_LOGI(NODE_TAG, "ble: advertising held off for SETUP");
+    } else if (!atomic_load(&s_linked)) {
+        advertise();
+    }
+}
+
+void node_ble_rename(void)
+{
+    char name[RCNODE_NAME_MAX];
+    own_name(name);
+    memcpy(s_name, name, sizeof s_name);
+    (void)ble_svc_gap_device_name_set(s_name);
+    ESP_LOGI(NODE_TAG, "ble: named %s", s_name);
+    if (!atomic_load(&s_linked) && !atomic_load(&s_adv_held)) {
+        (void)ble_gap_adv_stop();
+        advertise();
+    }
 }
 
 void node_ble_stop(void)

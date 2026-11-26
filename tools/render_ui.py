@@ -1016,14 +1016,19 @@ SCREENS = {
     # scan, the first bound.
     "setup-wireless-dial": ("setup-wireless-dial.png", "setup", "dark"),
     # SETUP > WIRELESS on the POWER NODE entry: the node connected, INA228
-    # SOURCE NODE, one node found and bound, its cell at 3.92V, its INA228
-    # found at 0x40 on NODE SHUNT 500uΩ.
+    # SOURCE NODE, one node found and bound, named XT90 MAIN, its cell at
+    # 3.92V, its INA228 found at 0x40 on NODE SHUNT 500uΩ, its address AUTO.
     "setup-wireless-pnode": ("setup-wireless-pnode.png", "setup", "dark"),
-    # The same, the list dragged to its end: NODE INA228 and NODE SHUNT.
+    # The same, the list dragged to its end: NODE INA228, INA228 ADDRESS and
+    # NODE SHUNT.
     "setup-wireless-pnode-shunt": ("setup-wireless-pnode-shunt.png", "setup",
                                    "dark"),
+    # The same, NODE NAME tapped: the name keyboard on XT90 MAIN.
+    "setup-wireless-pnode-name": ("setup-wireless-pnode-name.png", "setup",
+                                  "dark"),
     # SETUP > WIRELESS on the BALANCE NODE entry: the node reporting, two
-    # found by a scan, the first bound, its cell at 3.91V.
+    # found by a scan, the first bound and named PROP 13X6, its cell at
+    # 3.91V.
     "setup-wireless-bal": ("setup-wireless-bal.png", "setup", "dark"),
     # SEARCH, opened by BOUND NODE of the power node: two nodes found, the
     # first bound; the second tapped, its bind question open; and opened
@@ -1536,6 +1541,7 @@ OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot", "outputs-take",
                  "overview-alert", "hold-hint-arm", "hold-hint-output",
                  "setup-dim-stored",
                  "setup-folder", "servo-name", "files-new",
+                 "setup-wireless-pnode-name",
                  "servo-label-pick", "servo-label-type",
                  "servo-label-refused",
                  "logs-plot-more",

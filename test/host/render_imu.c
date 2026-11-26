@@ -13,13 +13,16 @@
  * ANGLE SOURCE under it.  setup-wireless-dial: WIRELESS on the DIAL entry,
  * the Dial on and linked, a scan that found two Dials, the second bound.
  * setup-wireless-pnode: WIRELESS on the POWER NODE entry, the node on and
- * connected, INA228 SOURCE NODE, a scan that found one node, bound, its
- * cell at 3.92V, its INA228 found at 0x40 on NODE SHUNT 500uΩ.
+ * connected, INA228 SOURCE NODE, a scan that found one node named
+ * XT90 MAIN, bound, its cell at 3.92V, its INA228 found at 0x40 on NODE
+ * SHUNT 500uΩ, its address setting AUTO.
  * setup-wireless-pnode-shunt: the same, the list dragged to its end,
- * NODE INA228 and NODE SHUNT in view.
+ * NODE INA228, INA228 ADDRESS and NODE SHUNT in view.
+ * setup-wireless-pnode-name: the same, NODE NAME tapped, the name keyboard
+ * open on XT90 MAIN.
  * setup-wireless-bal: WIRELESS on the BALANCE NODE entry, the node on and
- * reporting, a scan that found two nodes, the first bound, its cell at
- * 3.91V.
+ * reporting, a scan that found two nodes, the first bound and named
+ * PROP 13X6, its cell at 3.91V.
  * setup-wireless-search: SEARCH from BOUND NODE of the power node, two
  * nodes found, the first bound and connected.  setup-wireless-search-bind:
  * the same with the second node tapped, the bind question open.
@@ -143,13 +146,16 @@ static void pose_pnode(void)
     p.scan_done = true;
     p.found_n = 1u;
     snprintf(p.found[0].addr, sizeof(p.found[0].addr), "7C:DF:A1:12:34:56 P");
-    snprintf(p.found[0].name, sizeof(p.found[0].name), "rcbench-pwr-3456");
+    snprintf(p.found[0].name, sizeof(p.found[0].name), "XT90 MAIN");
     p.found[0].rssi = -58;
     snprintf(p.bound_addr, sizeof(p.bound_addr), "%s", p.found[0].addr);
     snprintf(p.bound_name, sizeof(p.bound_name), "%s", p.found[0].name);
     p.proto = 1u;
     p.have_status = true;
     p.vbat_mv = 3920u;
+    p.have_cfg = true;
+    snprintf(p.node_name, sizeof(p.node_name), "XT90 MAIN");
+    p.i228_set = 0u;
     p.have_info = true;
     p.i228_addr = 0x40u;
     p.shunt_uohm = 500u;
@@ -193,7 +199,7 @@ static void pose_bal(void)
     b.scan_done = true;
     b.found_n = 2u;
     snprintf(b.found[0].addr, sizeof(b.found[0].addr), "7C:DF:A1:12:34:56 R");
-    snprintf(b.found[0].name, sizeof(b.found[0].name), "rcbench-bal-3456");
+    snprintf(b.found[0].name, sizeof(b.found[0].name), "PROP 13X6");
     b.found[0].rssi = -58;
     snprintf(b.found[1].addr, sizeof(b.found[1].addr), "7C:DF:A1:12:9A:0E R");
     snprintf(b.found[1].name, sizeof(b.found[1].name), "rcbench-bal-9A0E");
@@ -204,6 +210,8 @@ static void pose_bal(void)
     b.info_proto = 1u;
     b.bat_known = true;
     b.bat_mv = 3912u;
+    b.have_cfg = true;
+    snprintf(b.node_name, sizeof(b.node_name), "PROP 13X6");
     settings_set(SET_BNODE_EN, 1.0f);
     wireless_pane_set_bal(&b);
     settings_screen_open_on(SET_CAT_WIRELESS, WL_ENTRY_BAL);
@@ -280,6 +288,11 @@ void render_imu_pose(const char *view)
     if (strcmp(view, "setup-wireless-pnode-shunt") == 0) {
         pose_pnode();
         drag_list_up();
+        return;
+    }
+    if (strcmp(view, "setup-wireless-pnode-name") == 0) {
+        pose_pnode();
+        wireless_pane_pnode_name_row.tap();
         return;
     }
     if (strcmp(view, "setup-wireless-bal") == 0) {

@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
 """Render the display node's screen on the host and save it as PNG images.
 
-The screen is drawn by firmware/node/main/node_view.c, the code the
-display node's firmware runs, from the fixed models in
+The screen is drawn by firmware/node/main/node_view.c (the meter) and
+node_setup_view.c (the boot splash and SETUP), the code the display
+node's firmware runs, from the fixed models in
 test/host/render_node.c.  A PNG (Portable Network Graphics) image is
 written for each scene, 320 x 240 as the node's frame holds it: English
 (the node without a link) into docs/img/node-<scene>.png, German (linked
-to a panel set to German) into docs/img/de/node-<scene>.png.
+to a panel set to German, or the last panel's language on the splash and
+SETUP) into docs/img/de/node-<scene>.png.
 
     python3 tools/render_node.py                 # every scene, both languages
     python3 tools/render_node.py hold -o /tmp/h.png --lang de
     python3 tools/render_node.py --check         # the committed images match
 
 --check compares pixels, not encoded bytes, and fails on any difference.
-That every string fits where it is drawn is test_node_view's, in the host
-suite.
+That every string fits where it is drawn is test_node_view's and
+test_node_setup's, in the host suite.
 
 SPDX-License-Identifier: MIT
 """
@@ -41,6 +43,12 @@ FP_FLAGS = ["-ffp-contract=off"]
 SOURCES = [
     "test/host/render_node.c",
     "firmware/node/main/node_view.c",
+    "firmware/node/main/node_setup.c",
+    "firmware/node/main/node_setup_view.c",
+    "firmware/node/main/node_scan.c",
+    "protocols/rcnode/rcnode_cfg.c",
+    "shared/sense/ina228.c",
+    "shared/sense/sense_bus.c",
     *sorted(str(p.relative_to(REPO))
             for p in (REPO / "shared" / "gfx").glob("*.c")),
 ]
@@ -49,6 +57,7 @@ INCLUDES = [
     "firmware/node/main",
     "shared/gfx/include",
     "protocols/rcnode/include",
+    "shared/sense/include",
 ]
 
 # The scenes, in render_node.c's order: name -> what it shows.
@@ -56,6 +65,12 @@ SCENES = {
     "values": "a run's values with their highest and lowest",
     "no-sensor": "no window from the INA228",
     "hold": "a hold of 1.2s: the bar at 60%, the reset of all ahead",
+    "splash": "the boot splash 3.5s in: name, role, firmware, SETUP",
+    "setup-list": "SETUP's rows with a name, a scan, a fixed address",
+    "setup-name": "NAME's keyboard with a name typed",
+    "setup-scan": "I2C SCAN's answers, two INA228s among them",
+    "setup-addr": "INA228 ADDRESS's choice with 0x45 in force",
+    "setup-shunt": "SHUNT's keypad with a value refused",
 }
 
 LANGS = {"en": ".", "de": "de"}

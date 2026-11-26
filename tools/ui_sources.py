@@ -275,6 +275,7 @@ SOURCES = [
     # The balance node: its controller, its readings and runs, its WIRELESS
     # entry, MOTOR & ESC's BALANCE pane, and the packets and the solver.
     "shared/ui/bal_ctl.c",
+    "shared/ui/node_cfg_link.c",
     "shared/ui/node_balance.c",
     "shared/ui/wireless_bal.c",
     "shared/ui/motor_balance.c",
@@ -284,6 +285,7 @@ SOURCES = [
     "shared/ui/print_req.c",
     "protocols/rcnode/rcnode.c",
     "protocols/rcnode/rcnode_adv.c",
+    "protocols/rcnode/rcnode_cfg.c",
     "shared/vibe/vibe_solve.c",
     "shared/scanner/scanner_codes.c",
     # FILES, and the file manager's core it starts its jobs and keeps its

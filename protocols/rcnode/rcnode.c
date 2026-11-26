@@ -173,6 +173,7 @@ size_t rcnode_len(uint8_t type)
         { RCNODE_T_BAL_REPORT, RCNODE_BAL_REPORT_LEN },
         { RCNODE_T_STATUS,     RCNODE_STATUS_LEN },
         { RCNODE_T_INFO,       RCNODE_INFO_LEN },
+        { RCNODE_T_CONFIG,     RCNODE_CONFIG_LEN },
     };
     for (size_t k = 0; k < sizeof k_len / sizeof k_len[0]; ++k) {
         if (k_len[k].type == type) {
@@ -283,6 +284,61 @@ size_t rcnode_enc_info(const rcnode_info_t *p, uint8_t *out, size_t cap)
     return RCNODE_INFO_LEN;
 }
 
+/**
+ * @brief Write a name into its 16 bytes, NUL padded.
+ *
+ * @param b The 16 bytes.
+ * @param name The name, NUL-terminated, RCNODE_UNAME_MAX characters at most.
+ */
+static void put_name(uint8_t *b, const char *name)
+{
+    memset(b, 0, RCNODE_UNAME_MAX);
+    const size_t n = strnlen(name, RCNODE_UNAME_MAX);
+    memcpy(b, name, n);
+}
+
+/**
+ * @brief Read a name from its 16 bytes: the characters up to the first
+ *        NUL, every byte after it NUL.
+ *
+ * @param b The 16 bytes.
+ * @param out Receives the name, NUL-terminated.
+ * @return true when the padding is all NUL and rcnode_uname_ok() takes
+ *         the name.
+ */
+static bool get_name(const uint8_t *b, char out[RCNODE_UNAME_MAX + 1u])
+{
+    size_t n = 0u;
+    while (n < RCNODE_UNAME_MAX && b[n] != 0u) {
+        out[n] = (char)b[n];
+        ++n;
+    }
+    out[n] = '\0';
+    for (size_t k = n; k < RCNODE_UNAME_MAX; ++k) {
+        if (b[k] != 0u) {
+            return false;
+        }
+    }
+    return rcnode_uname_ok(out);
+}
+
+size_t rcnode_enc_config(const rcnode_config_t *p, uint8_t *out, size_t cap)
+{
+    if (p == NULL || out == NULL || cap < RCNODE_CONFIG_LEN
+        || strnlen(p->name, sizeof p->name) > RCNODE_UNAME_MAX
+        || !rcnode_uname_ok(p->name) || !rcnode_i228_ok(p->i228_set)) {
+        return 0u;
+    }
+    put_hdr(out, RCNODE_T_CONFIG, &p->hdr);
+    out[6] = p->flags;
+    out[7] = p->i228_set;
+    put16(out + 8, p->shunt_uohm);
+    put16(out + 10, p->shunt_agreed);
+    put16(out + 12, p->shunt_age_s);
+    put_name(out + 14, p->name);
+    return RCNODE_CONFIG_LEN;
+}
+
 /* ----------------------------------------------------------- decode */
 
 /**
@@ -357,6 +413,18 @@ static rcnode_err_t decode_body(const uint8_t *b, rcnode_pkt_t *p)
         return s->sensor < (uint8_t)RCNODE_SENSOR_COUNT ? RCNODE_OK
                                                         : RCNODE_ERR_RANGE;
     }
+    case RCNODE_T_CONFIG: {
+        rcnode_config_t *c = &p->u.config;
+        get_hdr(b, &c->hdr);
+        c->flags        = b[6];
+        c->i228_set     = b[7];
+        c->shunt_uohm   = get16(b + 8);
+        c->shunt_agreed = get16(b + 10);
+        c->shunt_age_s  = get16(b + 12);
+        const bool name_ok = get_name(b + 14, c->name);
+        return (name_ok && rcnode_i228_ok(c->i228_set)) ? RCNODE_OK
+                                                        : RCNODE_ERR_RANGE;
+    }
     default: {   /* RCNODE_T_INFO: the only other type with a length */
         rcnode_info_t *i = &p->u.info;
         get_hdr(b, &i->hdr);
@@ -411,12 +479,15 @@ static size_t ctl_len(uint8_t op)
 {
     switch (op) {
     case RCNODE_OP_SLEEP:
-    case RCNODE_OP_OFF:    return 1u;
+    case RCNODE_OP_OFF:
+    case RCNODE_OP_CONFIG: return 1u;
     case RCNODE_OP_RUN:
     case RCNODE_OP_BLADES:
-    case RCNODE_OP_LANG:   return 2u;
+    case RCNODE_OP_LANG:
+    case RCNODE_OP_I228:   return 2u;
     case RCNODE_OP_RPM:
     case RCNODE_OP_SHUNT:  return 3u;
+    case RCNODE_OP_NAME:   return 1u + RCNODE_UNAME_MAX;
     default:               return 0u;
     }
 }
@@ -445,6 +516,13 @@ static bool ctl_in_range(const rcnode_ctl_t *c)
         return c->shunt_uohm >= RCNODE_SHUNT_MIN_UOHM
                && c->shunt_uohm <= RCNODE_SHUNT_MAX_UOHM;
     }
+    if (c->op == RCNODE_OP_NAME) {
+        return strnlen(c->name, sizeof c->name) <= RCNODE_UNAME_MAX
+               && rcnode_uname_ok(c->name);
+    }
+    if (c->op == RCNODE_OP_I228) {
+        return rcnode_i228_ok(c->i228);
+    }
     return true;
 }
 
@@ -468,6 +546,10 @@ size_t rcnode_enc_ctl(const rcnode_ctl_t *c, uint8_t *out, size_t cap)
         out[1] = c->lang;
     } else if (c->op == RCNODE_OP_SHUNT) {
         put16(out + 1, c->shunt_uohm);
+    } else if (c->op == RCNODE_OP_NAME) {
+        put_name(out + 1, c->name);
+    } else if (c->op == RCNODE_OP_I228) {
+        out[1] = c->i228;
     }
     return n;
 }
@@ -500,6 +582,10 @@ rcnode_err_t rcnode_dec_ctl(const uint8_t *b, size_t n, rcnode_ctl_t *out)
         c.lang = b[1];
     } else if (c.op == RCNODE_OP_SHUNT) {
         c.shunt_uohm = get16(b + 1);
+    } else if (c.op == RCNODE_OP_NAME && !get_name(b + 1, c.name)) {
+        return RCNODE_ERR_RANGE;
+    } else if (c.op == RCNODE_OP_I228) {
+        c.i228 = b[1];
     }
     if (!ctl_in_range(&c)) {
         return RCNODE_ERR_RANGE;
@@ -517,12 +603,15 @@ bool rcnode_ctl_for_role(uint8_t role, uint8_t op)
     case RCNODE_OP_RUN:
     case RCNODE_OP_SLEEP:
     case RCNODE_OP_OFF:
+    case RCNODE_OP_CONFIG:
+    case RCNODE_OP_NAME:
         return true;
     case RCNODE_OP_BLADES:
     case RCNODE_OP_RPM:
         return role == RCNODE_ROLE_BALANCE;
     case RCNODE_OP_LANG:
     case RCNODE_OP_SHUNT:
+    case RCNODE_OP_I228:
         return role == RCNODE_ROLE_POWER;
     default:
         return false;

@@ -205,6 +205,7 @@ set(SRCS
     imu_guide.c
     dial_ctl.c
     pnode_ctl.c
+    node_cfg_link.c
     pnode_meter.c
     dial_stream.c
     dial_panel.c

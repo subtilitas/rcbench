@@ -10,6 +10,10 @@
  * is present.  Any other start (the RESET key, power on, a flash) starts
  * the node in full.
  *
+ * The control writes of the node's own settings (CONFIG, NAME, I228,
+ * SHUNT) go to node_set.c; LANG goes there too, to be kept, and to the
+ * role.
+ *
  * A board that is always on (NODE_BOARD_ALWAYS_ON, the display node) runs
  * no sleep policy: it neither sleeps when idle nor switches itself off on
  * its cell, and it refuses SLEEP from CONTROL and the console.  OFF is
@@ -219,7 +223,13 @@ static void node_loop(void)
                 go_down(NODE_SLEEP, pol.low_reads);
             } else if (c.op == RCNODE_OP_OFF) {
                 go_down(NODE_OFF, pol.low_reads);
+            } else if (c.op == RCNODE_OP_CONFIG || c.op == RCNODE_OP_NAME
+                       || c.op == RCNODE_OP_I228 || c.op == RCNODE_OP_SHUNT) {
+                node_set_control(&c);
             } else {
+                if (c.op == RCNODE_OP_LANG) {
+                    node_set_control(&c);   /* kept for the node's SETUP */
+                }
                 node_role.control(&c);
             }
             continue;
@@ -290,6 +300,7 @@ void app_main(void)
         ESP_LOGE(NODE_TAG, "nvs: %s", esp_err_to_name(e));
     }
     s_ctlq = xQueueCreate(CTL_QUEUE_LEN, sizeof(rcnode_ctl_t));
+    node_set_start(node_role.role == RCNODE_ROLE_POWER);
     node_role.start();
 #if NODE_BOARD_DISPLAY
     node_disp_start();

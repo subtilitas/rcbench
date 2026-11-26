@@ -6727,7 +6727,9 @@ ESC's voltage, current, power and totals.
 | INA228 source | WIRED, NODE | WIRED | WIRED: the IOmcu's INA228 on SENSORS; NODE: the power node's readings. Shown while the node is off too, so the source can go back to WIRED without switching the node on |
 | Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | a tap opens SEARCH ([WIRELESS: SEARCH](#wireless-search)) and scans 10s for power nodes; a switch to ARMED stops the scan; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN`; while a scan runs, `A SCAN IS RUNNING: IT ENDS WITHIN 10s`. SEARCH opens in each case. A balance node is not listed |
 | Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap opens SEARCH on the last scan's list, without a scan |
+| Node name | the node's name, `OLD FIRMWARE`, `NOT LINKED` | | a tap opens the name keyboard; OK writes NAME to the node while SAFE ([The nodes' own settings](Nodes-setup.md#the-settings-over-the-link)) |
 | Node battery | `3.92V`, `LOW 3.41V`, `NO CELL`, `READ FAILED`, `NOT LINKED` | | the cell voltage of the node's last STATUS, sent every 1000ms; `LOW` under 3.5V, `NO CELL` on USB alone |
+| INA228 address | `AUTO`, `0x40` to `0x4F`, `OLD FIRMWARE`, `NOT LINKED` | `AUTO` | `<` and `>` step it; each step writes I228 to the node while SAFE |
 
 RESET POWER NODE sets Power node back to OFF and INA228 source to WIRED;
 the bound node stays. The signal strength of a linked node is not shown:
@@ -6769,6 +6771,7 @@ The BALANCE NODE entry's rows ([Balancing](Balance.md#measuring-with-the-balance
 | Balance node | ON, OFF | OFF | the link to the bound node; OFF ends it, and its loss is no error: the node measures and drives nothing |
 | Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | a tap opens SEARCH ([WIRELESS: SEARCH](#wireless-search)) and scans 10s for nodes that advertise the balance role; a switch to ARMED stops the scan; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN`; while a scan runs, `A SCAN IS RUNNING: IT ENDS WITHIN 10s`. SEARCH opens in each case |
 | Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap opens SEARCH on the last scan's list, without a scan |
+| Node name | the node's name, `OLD FIRMWARE`, `NOT LINKED` | | a tap opens the name keyboard; OK writes NAME to the node while SAFE ([The nodes' own settings](Nodes-setup.md#the-settings-over-the-link)) |
 | Node battery | `3.91V`, `3.40V LOW` (under 3.50V), `NO READING`, `--` | | the node's cell from the STATUS it sends on STREAM beside its reports; `--` before the first on a link |
 | Trial mass | 0.01g to 20.00g in 0.01g steps | 0.50g | the mass taped on for the trial runs of MOTOR & ESC > BALANCE |
 

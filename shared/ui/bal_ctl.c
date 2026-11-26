@@ -111,6 +111,7 @@ static void link_reset(bal_ctl_t *c)
     c->bat_known = false;
     c->noidx_n = 0u;
     c->noidx = false;
+    ncl_link(&c->nc);
 }
 
 /**
@@ -162,6 +163,7 @@ static void follow_link(bal_ctl_t *c, uint32_t now_ms)
             && p.hdr.type == RCNODE_T_INFO) {
             c->info_role = p.u.info.role;
             c->info_proto = p.u.info.proto;
+            memcpy(c->info_addr, p.u.info.addr, sizeof(c->info_addr));
             c->info_ok = p.u.info.proto == RCNODE_PROTO
                          && p.u.info.role == RCNODE_ROLE_BALANCE;
             follow_boot(c, p.u.info.hdr.t_node, now_ms);
@@ -489,6 +491,9 @@ static void take_stream(bal_ctl_t *c, const uint8_t *data, size_t len,
         ++c->unread;
         return;
     }
+    if (ncl_packet(&c->nc, data, len, now_ms)) {
+        return;     /* the node's own settings, not a report */
+    }
     rcnode_pkt_t p;
     if (rcnode_decode(data, len, &p) != RCNODE_OK) {
         ++c->bad;
@@ -613,6 +618,7 @@ bool bal_ctl_step(bal_ctl_t *c, uint32_t now_ms, bool armed, bleu_act_t *out)
     }
     follow_link(c, now_ms);
     follow_write(c);
+    ncl_follow(&c->nc, &c->b, now_ms);
     /* No scan while ARMED: one started while SAFE ends at the switch. */
     if (armed && c->b.scanning) {
         bleu_scan_stop(&c->b, now_ms);
@@ -627,7 +633,20 @@ bool bal_ctl_step(bal_ctl_t *c, uint32_t now_ms, bool armed, bleu_act_t *out)
     if (write_due(c, now_ms)) {
         return bleu_step(&c->b, now_ms, out);
     }
+    /* The node's own settings' writes keep BAL_CTL_MS from the others. */
+    const bool paced = !c->wr_any || (uint32_t)(now_ms - c->t_wr) >= BAL_CTL_MS;
+    if (ncl_send(&c->nc, &c->b, c->info_ok && c->wr_op == 0u && paced, armed,
+                 now_ms)) {
+        c->wr_any = true;
+        c->t_wr = now_ms;
+        return bleu_step(&c->b, now_ms, out);
+    }
     return false;
+}
+
+ncl_req_t bal_ctl_name(bal_ctl_t *c, const char *name, bool armed)
+{
+    return c != NULL ? ncl_set_name(&c->nc, name, armed) : NCL_REQ_UNKNOWN;
 }
 
 bal_link_t bal_ctl_link(const bal_ctl_t *c, uint32_t now_ms)
@@ -698,6 +717,19 @@ void bal_ctl_view(const bal_ctl_t *c, uint32_t now_ms, bal_view_t *out)
     out->bind_refused = (uint16_t)c->bind_refused;
     out->scan_armed = (uint16_t)c->refused;
     out->scan_unready = (uint16_t)c->scan_unready;
+    if (c->linked && ncl_have(&c->nc)) {
+        out->have_cfg = true;
+        if (c->nc.cfg.name[0] != '\0') {
+            memcpy(out->node_name, c->nc.cfg.name, sizeof(out->node_name));
+        } else {
+            (void)rcnode_name(RCNODE_ROLE_BALANCE, c->info_addr,
+                              out->node_name);
+        }
+    }
+    out->cfg_refused = (uint16_t)c->nc.refused;
+    out->cfg_req_no = (uint16_t)c->nc.req_no;
+    out->cfg_req_why = c->nc.req_why;
+    out->cfg_dropped = (uint16_t)c->nc.dropped;
 }
 
 bool bal_ctl_report(const bal_ctl_t *c, uint32_t now_ms,

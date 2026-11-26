@@ -49,8 +49,10 @@ TEST_CASE(shunt_goes_when_info_names_another_and_info_is_read_again)
     run(&r, 500u);
     CHECK_EQ(r.shunts, 1u);
     CHECK_EQ(r.info_reads, 2u);
-    /* A link to a node that holds another shunt gets it again. */
+    /* A link to a node whose store was erased (its shunt and its agreed
+     * value the default) gets it again. */
     r.info.shunt_uohm = 200u;
+    r.cfg.shunt_agreed = 200u;
     bleu_evt_t e = ev(BLEU_EV_DISCONNECT, r.tok_conn);
     e.status = 0x213u;
     pnode_ctl_event(&r.c, &e, r.now);
