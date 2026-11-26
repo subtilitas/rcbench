@@ -94,6 +94,49 @@ bool servo_active_printed(void);
  */
 void servo_active_set_printed(void);
 
+/* ------------------------------------------------------------ the scan
+ * A scanned line decided against the active servo (PLAN-B 3.3).  The
+ * grammar is servo_id_parse()'s on the line as received: nothing is
+ * trimmed and no case is folded, so a line that is not exactly an id in
+ * upper case is no servo.  A line equal to the last one taken, less than
+ * SERVO_SCAN_REPEAT_MS after it and with no change of the active servo
+ * between (servo_active_serial()), is a repeat of the scanner's and is
+ * dropped. */
+
+/** @brief The bytes of a scanned line kept for the repeat check, as the
+ *         scanner's framer hands out at most (SCAN_LINE_MAX). */
+#define SERVO_SCAN_LINE_MAX 64u
+/** @brief A line equal to the last one within this many ms is a repeat. */
+#define SERVO_SCAN_REPEAT_MS 3000u
+
+/** @brief What a scanned line did. */
+typedef enum {
+    SERVO_SCAN_SET = 0,      /**< the line's id is the active servo now      */
+    SERVO_SCAN_SAME,         /**< the active servo, scanned again             */
+    SERVO_SCAN_REPEAT,       /**< the last line again within 3.0s: dropped    */
+    SERVO_SCAN_RUN_OWN,      /**< the run's own servo during the run: dropped */
+    SERVO_SCAN_REFUSED_RUN,  /**< another id during a run: nothing changed    */
+    SERVO_SCAN_MALFORMED,    /**< a complete line that is no servo id         */
+    SERVO_SCAN_TOO_LONG,     /**< a line past SERVO_SCAN_LINE_MAX             */
+} servo_scan_t;
+
+/**
+ * @brief Decide what a scanned line does, and make its id the active servo
+ *        (source SERVO_ACTIVE_SCAN) where it does.
+ *
+ * In this order: a repeat; a line too long; a malformed line; during a
+ * run, the run's own id (dropped) or another (refused); the active
+ * servo's id (SAME, its source becomes SERVO_ACTIVE_SCAN); else SET.
+ *
+ * @param line       The line without its CR LF; NULL counts as "".
+ * @param too_long   The scanner cut the line at SERVO_SCAN_LINE_MAX.
+ * @param run_active Whether a run is active.
+ * @param now_ms     The millisecond clock; compared wrap-safe.
+ * @return What the line did.
+ */
+servo_scan_t servo_scan_decide(const char *line, bool too_long,
+                               bool run_active, uint32_t now_ms);
+
 #ifdef __cplusplus
 }
 #endif

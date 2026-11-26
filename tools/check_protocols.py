@@ -392,6 +392,9 @@ ASSERTED = {
         "firmware/panel/main/panel_ble.c": (
             "BLEU_EVT_DATA >= BLE_HS_ADV_MAX_SZ",
         ),
+        "firmware/panel/main/panel_blec.c": (
+            "PANEL_BLEC_PRINT < BLEU_HUB_CLIENTS",
+        ),
         "firmware/panel/main/panel_devupd.c": (
             "PANEL_BLEC_UPD < BLEU_OWNER_MAX",
         ),

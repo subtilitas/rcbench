@@ -8,6 +8,7 @@ set(SRCS
     ui_widgets.c
     ui_icons.c
     ui_band.c
+    scan_flow.c
     ui_watermark.c
     ui_plot.c
     ui_slider.c

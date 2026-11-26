@@ -26,6 +26,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include "gm861.h"
@@ -46,7 +47,8 @@ typedef struct {
     uint16_t      bad_zone;    /**< the zone refused, or GM861_NO_ZONE */
     scan_counts_t counts;      /**< the framer's counts */
     uint32_t      drops;       /**< lines the full queue dropped */
-    uint32_t      errors;      /**< bytes with a UART error */
+    uint32_t      errors;      /**< UART framing and parity errors */
+    uint32_t      flushes;     /**< losses of input: overflows and errors */
     uint32_t      rev;         /**< counts each publish */
 } panel_scan_view_t;
 
@@ -70,6 +72,17 @@ void panel_scan_settings_changed(setting_id_t id);
 bool panel_scan_take(scan_event_t *out);
 
 /**
+ * @brief The oldest code line as the scan flow takes it
+ *        (scan_flow_take_fn): text and a too-long flag.  The frame task
+ *        hands it to scan_flow_pull() before scan_flow_tick().
+ * @param line     Receives the text.
+ * @param n        Its size.
+ * @param too_long Receives true for a line past SCAN_LINE_MAX.
+ * @return false when none waits.
+ */
+bool panel_scan_take_line(char *line, size_t n, bool *too_long);
+
+/**
  * @brief The last published view.
  * @param out Receives it.
  */
@@ -82,11 +95,3 @@ void panel_scan_view(panel_scan_view_t *out);
  * @param cut Receives zone 0x00B0 as read.
  */
 void panel_scan_found(uint8_t out[GM861_ZONES], uint8_t *cut);
-
-/**
- * @brief Queue @p text as a scanned line (scan_port_inject()): the console
- *        build's `scan <text>`.
- * @param text The text: printable ASCII, 1 to SCAN_LINE_MAX bytes.
- * @return false when refused.
- */
-bool panel_scan_inject(const char *text);

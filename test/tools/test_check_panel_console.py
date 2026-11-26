@@ -32,9 +32,9 @@ def test_a_wrong_call_is_refused():
     assert cp.main(["check"]) == 2
 
 
-def test_the_scanners_injected_line_fails_off():
-    """A released image holding `scan <text>` fails, by name or by line."""
-    assert cp.problems(b"\0panel_scan_inject\0", False) == [
-        "holds panel_scan_inject"]
-    assert cp.problems(b"scan: queued as a scanned line", False) == [
-        "holds scan: queued as a scanned line"]
+def test_the_scan_commands_fail_off():
+    """A released image holding `scan <text>` or `scan`'s dump fails."""
+    assert cp.problems(b"\0handed to the frame task\0", False) == [
+        "holds handed to the frame task"]
+    assert cp.problems(b"scan: zone 0x%04X%s\n", False) == [
+        "holds scan: zone 0x%04X"]

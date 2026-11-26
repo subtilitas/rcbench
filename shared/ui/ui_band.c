@@ -12,6 +12,7 @@
 
 #include "link_pages.h"
 #include "prog5v_box.h"
+#include "servo_active.h"
 #include "settings.h"
 #include "status_poll.h"
 #include "ui_text.h"
@@ -149,6 +150,8 @@ static const char *chip_label(const ui_bench_status_t *st,
         return (st->mode != NULL) ? st->mode : "";
     case UI_BAND_CHIP_LINK:
         return st->link_up ? "LINK" : TR(BAND_NO_LINK);
+    case UI_BAND_CHIP_SERVO:
+        return (st->servo_id != NULL) ? st->servo_id : "";
     default:
         return "";
     }
@@ -166,6 +169,8 @@ static bool chip_shown(const ui_bench_status_t *st, ui_band_chip_t chip)
     case UI_BAND_CHIP_HWSTOP: return ui_band_hwstop(st);
     case UI_BAND_CHIP_MODE:  return st->mode != NULL;
     case UI_BAND_CHIP_LINK:  return true;
+    case UI_BAND_CHIP_SERVO: return st->servo_id != NULL
+                                    && st->servo_id[0] != '\0';
     default:                 return false;
     }
 }
@@ -207,42 +212,104 @@ static bool chip_shown(const ui_bench_status_t *st, ui_band_chip_t chip)
 #define CHIP_PAD_R 4
 /** @brief LINK's dot: 12px more right of its label. */
 #define CHIP_DOT_W 12      /* more right of LINK's label */
-/** @brief The chips from STOP leftwards. */
+/**
+ * @brief The least left edge of a chip: 272px, right of the widest home
+ *        tag (MOTOR & ESC's ends at x 268).  Only the servo chip, the
+ *        last, can reach it: it shows its id's dash and 5 characters
+ *        (`-0000A`, 86px) where the whole id does not fit right of it,
+ *        and is left out where that does not fit either.
+ */
+#define CHIP_MIN_X 272
+/** @brief The chips from STOP leftwards; the servo chip last. */
 static const ui_band_chip_t k_order[] = {
     UI_BAND_CHIP_CLOCK, UI_BAND_CHIP_ARMED, UI_BAND_CHIP_HWSTOP,
     UI_BAND_CHIP_FAULT, UI_BAND_CHIP_MODE, UI_BAND_CHIP_LINK,
+    UI_BAND_CHIP_SERVO,
 };
 
 /** @brief The chips the band shows and their places. */
 typedef struct {
     bool       on[UI_BAND_CHIP_COUNT];  /**< the chips the band shows   */
     gfx_rect_t r[UI_BAND_CHIP_COUNT];   /**< each one's place, panel px */
+    bool       servo_short;             /**< the servo chip shows `-XXXXX` */
 } chips_t;
 
 /**
- * @brief Lay out the chips @p st shows, from STOP leftwards.
- * @param st The bench status.
- * @param l The layout, filled.
+ * @brief The label @p chip shows where the layout @p l placed it: the
+ *        servo chip's short form, else chip_label().
  */
-static void chips_layout(const ui_bench_status_t *st, chips_t *l)
+static const char *placed_label(const ui_bench_status_t *st,
+                                const chips_t *l, ui_band_chip_t chip,
+                                char *buf, size_t n)
+{
+    const char *label = chip_label(st, chip, buf, n);
+    if (chip == UI_BAND_CHIP_SERVO && l->servo_short) {
+        const size_t len = strlen(label);
+        /* The dash and the 5 characters after it. */
+        return (len > 6u) ? label + len - 6u : label;
+    }
+    return label;
+}
+
+/**
+ * @brief One pass of the layout from STOP leftwards.
+ * @param st        The bench status.
+ * @param l         The layout, filled.
+ * @param skip_mode Leave the mode chip out.
+ */
+static void chips_pass(const ui_bench_status_t *st, chips_t *l,
+                       bool skip_mode)
 {
     memset(l, 0, sizeof(*l));
     int right = ui_band_guide_rect().x - CHIP_GAP;
     for (size_t i = 0; i < sizeof(k_order) / sizeof(k_order[0]); ++i) {
         const ui_band_chip_t chip = k_order[i];
-        if (!chip_shown(st, chip)) {
+        if (!chip_shown(st, chip)
+            || (skip_mode && chip == UI_BAND_CHIP_MODE)) {
             continue;
         }
         char buf[24];
         const char *label = chip_label(st, chip, buf, sizeof(buf));
         /* LINK alone carries a dot. */
-        const int w = CHIP_INSET + gfx_text_width(UI_FONT_BAND, label, 1)
-                      + CHIP_PAD_R
-                      + (chip == UI_BAND_CHIP_LINK ? CHIP_DOT_W : 0);
+        int w = CHIP_INSET + gfx_text_width(UI_FONT_BAND, label, 1)
+                + CHIP_PAD_R + (chip == UI_BAND_CHIP_LINK ? CHIP_DOT_W : 0);
+        if (chip == UI_BAND_CHIP_SERVO && right - w < CHIP_MIN_X) {
+            l->servo_short = true;
+            label = placed_label(st, l, chip, buf, sizeof(buf));
+            w = CHIP_INSET + gfx_text_width(UI_FONT_BAND, label, 1)
+                + CHIP_PAD_R;
+            if (right - w < CHIP_MIN_X) {
+                continue;
+            }
+        }
         l->on[chip] = true;
         l->r[chip]  = (gfx_rect_t){ (int16_t)(right - w), CHIP_Y,
                                     (int16_t)w, CHIP_H };
         right = right - w - CHIP_GAP;
+    }
+}
+
+/**
+ * @brief Lay out the chips @p st shows, from STOP leftwards.
+ *
+ * Where the servo chip does not fit even in its short form, the mode chip
+ * makes room for it: LINK still tells BENCH from SIM, and SIMULATION
+ * still covers a simulated bench.  In the widest row of all, a clock of
+ * 10 hours or more, ARMED SERVO, FEHLER and LINK in German, the servo chip
+ * is left out.
+ * @param st The bench status.
+ * @param l The layout, filled.
+ */
+static void chips_layout(const ui_bench_status_t *st, chips_t *l)
+{
+    chips_pass(st, l, false);
+    if (chip_shown(st, UI_BAND_CHIP_SERVO) && !l->on[UI_BAND_CHIP_SERVO]
+        && l->on[UI_BAND_CHIP_MODE]) {
+        chips_t without;
+        chips_pass(st, &without, true);
+        if (without.on[UI_BAND_CHIP_SERVO]) {
+            *l = without;
+        }
     }
 }
 
@@ -488,6 +555,17 @@ static bool help_para(const ui_bench_status_t *st, ui_band_chip_t chip,
     case UI_BAND_CHIP_CLOCK:
         ids[n++] = TX_BH_CLOCK;
         break;
+    case UI_BAND_CHIP_SERVO:
+        ids[n++] = (st->servo_from == (uint8_t)SERVO_ACTIVE_NEW)
+                       ? TX_BH_SERVO_NEW
+                   : (st->servo_from == (uint8_t)SERVO_ACTIVE_PICK)
+                       ? TX_BH_SERVO_PICK
+                       : TX_BH_SERVO_SCAN;
+        if (st->servo_run) {
+            ids[n++] = TX_BH_SERVO_RUN;
+        }
+        ids[n++] = TX_BH_SERVO_GOES;
+        break;
     default:
         break;
     }
@@ -672,6 +750,13 @@ static void chip_look(const ui_bench_status_t *st, ui_band_chip_t chip,
         *dot = st->link_up ? ui_theme_color(UI_C_OK)
                            : ui_theme_color(UI_C_DANGER);
         break;
+    case UI_BAND_CHIP_SERVO:
+        /* A run holds the servo: the accent's fill, fixed to its end. */
+        if (st->servo_run) {
+            *fill = ui_theme_color(UI_C_ACCENT);
+            *ink  = ui_theme_color(UI_C_TEXT_ON_LIGHT);
+        }
+        break;
     default:
         break;
     }
@@ -802,7 +887,7 @@ uint32_t ui_band_key(const char *title, bool show_home,
             continue;
         }
         char buf[24];
-        const char *label = chip_label(st, chip, buf, sizeof(buf));
+        const char *label = placed_label(st, &l, chip, buf, sizeof(buf));
         gfx_color_t look[3];
         chip_look(st, chip, &look[0], &look[1], &look[2]);
         const int16_t box[5] = { (int16_t)chip, l.r[chip].x, l.r[chip].y,
@@ -847,7 +932,7 @@ void ui_band_render(gfx_canvas_t *c, const char *title, bool show_home,
             continue;
         }
         char buf[24];
-        const char *label = chip_label(st, chip, buf, sizeof(buf));
+        const char *label = placed_label(st, &l, chip, buf, sizeof(buf));
         gfx_color_t dot, fill, ink;
         chip_look(st, chip, &dot, &fill, &ink);
         ui_pill_ink(c, l.r[chip], label, dot, fill, ink, CHIP_INSET,

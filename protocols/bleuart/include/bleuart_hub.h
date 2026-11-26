@@ -83,8 +83,8 @@
 extern "C" {
 #endif
 
-/** @brief Clients a hub holds: owners 0 to 4. */
-#define BLEU_HUB_CLIENTS 5u
+/** @brief Clients a hub holds: owners 0 to 5. */
+#define BLEU_HUB_CLIENTS 6u
 /** @brief Events and actions each of the hub's two out queues holds. */
 #define BLEU_HUB_OUT     8u
 /** @brief A client that waits for a turn leaves the queue this many ms

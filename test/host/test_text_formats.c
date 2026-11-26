@@ -132,6 +132,15 @@ static const format_args_t k_args[] = {
      * in seconds; a pulse of 4 digits and a share of 100%. */
     { TX_HP_FIND_RUN, { "ENDE RECHTS", "37", "2", "40" } },
     { TX_HP_LIVE_END, { "ENDE RECHTS", "2000", "2000", "100" } },
+    /* A scan's notice: an id of SERVO_ID_MAX (23), a DUT NAME of
+     * SETTINGS_TEXT_MAX - 1 (23), a refused line's first 24 characters. */
+    { TX_SCAN_SET,       { "WWWWWWWWWWWWWWWWW-WWWWW" } },
+    { TX_SCAN_SET_NAME,  { "WWWWWWWWWWWWWWWWW-WWWWW",
+                           "WWWWWWWWWWWWWWWWWWWWWWW" } },
+    { TX_SCAN_NEW,       { "WWWWWWWWWWWWWWWWW-WWWWW" } },
+    { TX_SCAN_NO_CARD,   { "WWWWWWWWWWWWWWWWW-WWWWW" } },
+    { TX_SCAN_SAME,      { "WWWWWWWWWWWWWWWWW-WWWWW" } },
+    { TX_SCAN_RUN,       { "WWWWWWWWWWWWWWWWW-WWWWW" } },
 };
 
 /** @brief The arguments listed for @p id, or NULL. */

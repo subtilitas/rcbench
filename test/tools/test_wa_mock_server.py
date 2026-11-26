@@ -9,6 +9,8 @@ read from wa_api.c and ui_text.def.
 import http.client
 import json
 import pathlib
+import shutil
+import subprocess
 import sys
 import threading
 import zlib
@@ -500,3 +502,51 @@ def test_a_move_takes_a_name_of_63_bytes_that_a_save_refuses(api):
                                        "to": f"USER/LOGS/{name}", "dir": 0})
     assert (s, body["path"]) == (200, f"USER/LOGS/{name}")
     assert api.json("PUT", f"/api/file?path={name}", b"x")[0] == 400
+
+
+def test_servo_folders_are_servo_and_their_runs_runs():
+    """Servos and its id folders: SERVO; runs and reports in an id folder."""
+    assert m.place_of("", "Servos", True) == "SERVO"
+    assert m.place_of("servos", "kst x-00001", True) == "SERVO"
+    assert m.place_of("Servos", "KST X10 HV WING L-ZZZZZ", True) == "SERVO"
+    assert m.place_of("Servos", "ABCDEFGHIJKLMNOPQR-00000", True) == "FREE"
+    assert m.place_of("Servos", "notes", True) == "FREE"
+    assert m.place_of("Servos", ".X-00001", True) == "FREE"
+    assert m.place_of("Servos/KST X-00001", "limit run_000.csv",
+                      False) == "FREE"
+    assert m.kind_of("Servos/KST X-00001", "limit run_000.csv",
+                     False) == "RUN"
+    assert m.kind_of("Servos/KST X-00001", "automatic test_999.txt",
+                     False) == "REPORT"
+    assert m.kind_of("Servos/KST X-00001", "baseline.txt", False) == "TEXT"
+    assert m.kind_of("USER/LOGS", "limit run_000.csv", False) == "CSV"
+
+
+def test_a_servo_runs_report_is_named_in_its_id_folder_only():
+    """report_of() names a servo run's report as fm_report_of() does."""
+    d = "Servos/KST X-00001"
+    assert m.report_of("limit run_000.csv", d) == "limit run_000.txt"
+    assert m.report_of("AUTOMATIC TEST_999.CSV", d) == "automatic test_999.txt"
+    assert m.report_of("limit run_000.txt", d) == ""
+    assert m.report_of("limit run_000.csv", "USER/LOGS") == ""
+    assert m.report_of("ATEST042.CSV", d) == "ATEST042.TXT"
+
+
+def test_the_pages_delete_question_names_a_servo_runs_report():
+    """write.js reportOf() names the report the DELETE takes along."""
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("node is not on the path")
+    script = (
+        "const W = require(process.argv[1]);"
+        "const r = (n, k) => W.reportOf({ n: n, d: false, k: k });"
+        "console.log(JSON.stringify(["
+        "r('limit run_000.csv', 'RUN'), r('SERVO RUN_999.CSV', 'RUN'),"
+        "r('limit run_000.csv', 'CSV'), r('ATEST042_kv.CSV', 'RUN'),"
+        "r('limit run_000.txt', 'REPORT')]));")
+    out = subprocess.run(
+        [node, "-e", script,
+         str(REPO / "shared" / "webaccess" / "web" / "write.js")],
+        capture_output=True, text=True, check=True).stdout
+    assert json.loads(out) == ["limit run_000.txt", "servo run_999.txt", "",
+                               "ATEST042.TXT", ""]

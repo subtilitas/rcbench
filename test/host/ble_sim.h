@@ -120,6 +120,8 @@ typedef struct {
     uint16_t mtu;          /* the MTU the peer answers */
     bool no_svc;           /* the service is missing */
     bsim_chr_t chr[BSIM_CHR_MAX];
+    uint16_t chr16[BSIM_CHR_MAX]; /* not 0: chr[i] reported as this 16-bit
+                                     UUID, not its 128 bits */
     unsigned nchr;
     bsim_dsc_t dsc[BSIM_DSC_MAX];
     unsigned ndsc;
@@ -328,7 +330,8 @@ static void bsim_act(bsim_t *s, uint32_t t, const bleu_act_t *a)
                       : a->kind == BLEU_ACT_MTU       ? BSIM_Q_MTU
                       : a->kind == BLEU_ACT_SUBSCRIBE ? BSIM_Q_SUB
                       : a->kind == BLEU_ACT_READ      ? BSIM_Q_READ
-                      : a->kind == BLEU_ACT_WRITE     ? BSIM_Q_WRITE : 0u;
+                      : a->kind == BLEU_ACT_WRITE     ? BSIM_Q_WRITE
+                      : a->kind == BLEU_ACT_WRITE_EXT ? BSIM_Q_WRITE : 0u;
     if ((s->silent & q) != 0u) {
         return;
     }
@@ -431,8 +434,14 @@ static void bsim_act(bsim_t *s, uint32_t t, const bleu_act_t *a)
                 e->h1 = c->def;
                 e->h2 = c->val;
                 e->props = c->props;
-                e->len = 16;
-                memcpy(e->data, c->uuid, 16);
+                if (s->chr16[i] == 0u) {
+                    e->len = 16;
+                    memcpy(e->data, c->uuid, 16);
+                } else {
+                    e->len = 2;
+                    e->data[0] = (uint8_t)(s->chr16[i] & 0xFFu);
+                    e->data[1] = (uint8_t)(s->chr16[i] >> 8);
+                }
             }
         }
         (void)bsim_answer(s, at, BLEU_EV_CHR_DONE, a->token, st);
@@ -474,6 +483,7 @@ static void bsim_act(bsim_t *s, uint32_t t, const bleu_act_t *a)
         }
         break;
     case BLEU_ACT_WRITE:
+    case BLEU_ACT_WRITE_EXT:
         (void)bsim_answer(s, at, BLEU_EV_WRITE_DONE, a->token, st);
         break;
     case BLEU_ACT_WRITE_NR:

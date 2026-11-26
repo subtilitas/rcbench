@@ -152,16 +152,17 @@ size_t scan_port_step(scan_port_t *p, uint32_t now_ms, bool rx_high,
 bool scan_port_take(scan_port_t *p, scan_event_t *out);
 
 /**
- * @brief Queue @p text as a code line, as if the scanner had sent it: the
- *        console build's `scan <text>`.  Printable ASCII only, 1 to
- *        SCAN_LINE_MAX bytes.
- * @param p      The port.
- * @param text   The text.
- * @param now_ms The millisecond clock.
- * @return false, and nothing queued, for NULL, an empty text, one past
- *         SCAN_LINE_MAX or a byte outside 0x20 to 0x7E.
+ * @brief Take the oldest line as text and a too-long flag: the form the
+ *        scan flow's queue takes (scan_flow_take_fn in scan_flow.h).
+ * @param p        The port.
+ * @param line     Receives the text, NUL ended, cut to @p n - 1 bytes.
+ * @param n        Its size; SCAN_LINE_MAX + 1 holds every line.
+ * @param too_long Receives true for SCAN_EV_LONG, a line past
+ *                 SCAN_LINE_MAX of which @p line holds the first bytes.
+ * @return false when none waits, or for NULL or @p n of 0.
  */
-bool scan_port_inject(scan_port_t *p, const char *text, uint32_t now_ms);
+bool scan_port_take_line(scan_port_t *p, char *line, size_t n,
+                         bool *too_long);
 
 #ifdef __cplusplus
 }

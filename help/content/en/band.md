@@ -19,6 +19,7 @@ From left to right, the band contains the home tag and screen name, the status c
 | INJECT | in place of BENCH and SIM while a touch injector answers at I2C (Inter-Integrated Circuit) address 0x14; a panel looks for one once, at start-up |
 | FAULT 01 to FAULT 7F | a fault code the IOmcu reports; absent while there is none |
 | HWSTOP | in FAULT's place, red, while [SETUP > PANEL > Hardware stop](setup.md#panel) is ON and the heartbeat bit (10) is set: the bench's stop button is pressed or its cable is broken |
+| servo id | the active servo, left of the other chips: the labelled servo the next run files under; on the accent while a run holds it; `-0000A` where the row is short of room |
 | SAFE, ARMED MOTOR, ARMED SERVO, ARMED, STOP | what the switch to ARMED drives; STOP while a stop is latched; SAFE PROG and SAFE MOVE while a SAFE bench holds a programming port or moves a Hitec servo |
 | run clock | the length of the current run from the switch to ARMED, minutes and seconds; it holds the last run at SAFE |
 
@@ -98,6 +99,16 @@ A stop button on the bench sits in the heartbeat line between the panel and the 
 - The bench stays SAFE. Hold ARM for 2s to switch the outputs on again.
 - Other bits set at the same time are listed in HWSTOP's box, which spans the panel as FAULT's does. They show as a FAULT code again once HWSTOP goes.
 - While the panel's own STOP is latched, while its reset runs and for 1000ms after it, the panel withholds the heartbeat itself, and the band shows neither HWSTOP nor FAULT 10.
+
+## Servo chip
+
+![The servo chip and its box](view:band-servo)
+
+A scan of a servo's label makes it the active servo; NEW ID and a pick from the recent ids do the same. The chip shows its id on every screen, and a restart clears it. A scan changes no screen and starts nothing.
+
+- During a run the chip is on the accent's fill, and a scan of another label is refused: `RUN IN PROGRESS: IT STAYS ON KST_X10-0000A. SCAN AFTER THE RUN.` Scan again after the run.
+- A code that is not exactly an id shows `NOT A SERVO ID:` and its first 24 characters. Lower case, spaces and a missing dash are not folded or trimmed.
+- The same label again within 3.0s is dropped; after 3.0s the notice says `ALREADY ACTIVE`.
 
 ## Screenshot
 

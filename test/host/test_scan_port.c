@@ -4,8 +4,8 @@
  *        sequencer, the rate the UART is asked to open at, the queue of 4
  *        dropping its oldest, lost input (a flush or a UART error)
  *        dropping the open line and every byte up to 100ms of quiet, a line
- *        past 64 bytes, a stopped port, the console's injected line, the
- *        gap that drops a partial line, and NULL.
+ *        past 64 bytes, a stopped port, a new rate, the gap that drops a
+ *        partial line, and NULL.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -327,29 +327,6 @@ TEST_CASE(a_stopped_port_takes_and_sends_nothing_and_keeps_its_queue)
     CHECK_EQ(r, 9600u);
 }
 
-TEST_CASE(an_injected_line_is_queued_as_a_scan)
-{
-    scan_port_init(&s_p);
-    CHECK(scan_port_inject(&s_p, "KST X10-0000A", 5u));
-    char long_text[SCAN_LINE_MAX + 2u];
-    memset(long_text, 'A', SCAN_LINE_MAX + 1u);
-    long_text[SCAN_LINE_MAX + 1u] = '\0';
-    CHECK(!scan_port_inject(&s_p, long_text, 6u));
-    long_text[SCAN_LINE_MAX] = '\0';
-    CHECK(scan_port_inject(&s_p, long_text, 7u));
-    CHECK(!scan_port_inject(&s_p, "", 8u));
-    CHECK(!scan_port_inject(&s_p, "A\tB", 8u));
-    CHECK(!scan_port_inject(&s_p, NULL, 8u));
-    CHECK(!scan_port_inject(NULL, "A", 8u));
-    scan_event_t e;
-    CHECK(scan_port_take(&s_p, &e));
-    CHECK_EQ(e.kind, SCAN_EV_LINE);
-    CHECK_STR_EQ(e.text, "KST X10-0000A");
-    CHECK_EQ(e.at_ms, 5u);
-    CHECK(scan_port_take(&s_p, &e));
-    CHECK_EQ(strlen(e.text), SCAN_LINE_MAX);
-}
-
 TEST_CASE(null_is_taken_everywhere)
 {
     scan_port_init(NULL);
@@ -387,7 +364,6 @@ int main(void)
     RUN(a_line_past_64_bytes_is_handed_out_as_long);
     RUN(a_partial_line_is_dropped_after_100ms_by_the_step);
     RUN(a_stopped_port_takes_and_sends_nothing_and_keeps_its_queue);
-    RUN(an_injected_line_is_queued_as_a_scan);
     RUN(null_is_taken_everywhere);
     return test_summary("scan_port");
 }

@@ -37,6 +37,7 @@ SOURCES = [
     "shared/ui/ui_widgets.c",
     "shared/ui/ui_icons.c",
     "shared/ui/ui_band.c",
+    "shared/ui/scan_flow.c",
     "shared/ui/ui_plot.c",
     "shared/ui/ui_slider.c",
     "shared/ui/ui_tabs.c",
@@ -350,6 +351,10 @@ SOURCES = [
     "shared/logfile/log_name.c",
     "shared/logfile/log_info.c",
     "shared/logfile/card_tree.c",
+    # FILES' rules for labelled servos' folders (fm_rules.c), the scan flow.
+    "shared/logfile/servo_id.c",
+    "shared/logfile/servo_name.c",
+    "shared/logfile/servo_active.c",
     "shared/bench/bench_state.c",
     "shared/bench/telemetry_sim.c",
     "shared/bench/supply.c",

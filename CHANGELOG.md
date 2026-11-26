@@ -8,6 +8,36 @@ history is in git.
 
 ### Added
 
+- A scanned servo id sets the active servo, and the band shows it in a chip
+  left of the other chips, on the accent while a run holds it, shortened
+  to `-0000A` where the row has no room. Each scan raises a notice: the id,
+  `ALREADY ACTIVE`, the refusal during a run, or `NOT A SERVO ID`. The same
+  line within 3.0s is dropped. The debug console's `scan <text>` injects a
+  line (`scan_flow.c`, `servo_scan_decide()`; `test_scan_flow`,
+  `test_servo_scan`).
+- FILES and the Wi-Fi page keep a labelled servo's folders: `Servos` and
+  each id folder in it (`Servos/KST_X10-0000A`, any case) take no RENAME,
+  MOVE or DELETE, DELETE also when empty, and list with the place `SERVO`
+  and INFO's rule `Servo id folder: no RENAME, MOVE or DELETE.`. A folder
+  in `Servos` that is no id, and every file in an id folder, stay free. In
+  an id folder, `limit run_000.csv` to `servo run_999.csv` are runs and
+  their `.txt` reports are reports; OPEN on a CSV there opens it in LOGS,
+  read from that folder, on BENCH's tab for an ARMED run and on USER's for
+  the rest, and a report opens in the text viewer. DELETE of a run's CSV
+  there takes its report along, on the panel and on the Wi-Fi page. LOGS
+  holds a file's folder in 32 bytes, so the 30 characters of
+  `Servos/<id>` of a 23-character id open whole; a longer folder opens
+  nothing, with `Name or path is not valid on this card.`
+- The Bluetooth LE central gains what a label printer's link needs
+  (`protocols/bleuart`): a write with response of up to 244 bytes whose
+  bytes the client supplies (`bleu_send_ext()`, `BLEU_ACT_WRITE_EXT`),
+  refused past the link's MTU less 3; characteristics named by a 16-bit
+  UUID as well, matched in 16 bits and in the Bluetooth base's 128 bits
+  (`uuid16`); a scan that lists a device by its public address prefix
+  (`adv_oui`); and a sixth client of the hub (`BLEU_HUB_CLIENTS` 6). The
+  panel writes such a write with `panel_ble_write_long()` and holds owner
+  5 (`PANEL_BLEC_PRINT`) for the label printer, a stub until its client
+  is built. Connections stay at 5.
 - The QR scanner's core for a GM861 module on a panel UART (universal
   asynchronous receiver-transmitter), pure C in `shared/scanner/`: a framer
   for code lines (0x20 to 0x7E, at most 64 bytes, CR, CR LF or LF) and
@@ -20,11 +50,12 @@ history is in git.
   at 9600 baud 8N1, in the task `scan` (core 0, priority 2, every 20ms), while
   SETUP's Scanner row (`scan_en`, default OFF) is ON; `scan_mode` picks
   SENSING or CONTINUOUS. The port between UART and sequencer queues 4 code
-  lines and drops the oldest when full (`test_scan_port`). The console build
-  dumps the zones on `scan` and queues `scan <text>` as a scanned line;
-  released images hold neither. Wiring in
-  [Building](docs/Building.md#qr-scanner-wiring). No screen shows the lines
-  yet.
+  lines and drops the oldest when full (`test_scan_port`); the frame task
+  moves them one a frame into the scan flow, a cut line as too long
+  (`scan_flow_pull()`, `test_scan_wire`), so a scanned label sets the active
+  servo as the console's `scan <text>` does. The console build dumps the
+  zones on `scan`; released images do not. Wiring in
+  [Building](docs/Building.md#qr-scanner-wiring).
 - Print protocol for Supvan T50-series thermal label printers
   (`protocols/supvan`), the first part of labelled servos: the 16-byte
   commands, the answer joiner, the status and material record, the
@@ -267,7 +298,8 @@ history is in git.
   `stop-held`. Case scenes take `estop`, keys that press the emergency
   stop's head in, and the mockup's display takes `panel` shots; `stop`
   shows the red stop button pressed, latched and released, with HWSTOP
-  on the display from the view `stop-hw`.
+  on the display from the view `stop-hw`. The head's latch sounds as a
+  click.
 - Storyboard `origin`, the project's origin in 7 chapters: the reason,
   ideas, the plan, development, testing, the test bench and the group
   order of the rbmod carrier, with 7 posts of two RC-Network threads as

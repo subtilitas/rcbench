@@ -172,6 +172,47 @@ default, and OFF the band shows FAULT 10.
 - While the panel's own STOP is latched, while its reset runs and for
   1000ms after it, the band leaves out bit 10, as HWSTOP and as FAULT 10.
 
+### Servo chip
+
+![A scanned servo's chip and its box](img/band-servo.png)
+
+![The chip during a SERVO run, and the notice that refuses another label](img/band-servo-run.png)
+
+While a servo is active, the band shows its id in a chip left of the
+others: the labelled servo the next run files under. A scan of its label,
+NEW ID or a pick from the recent ids sets it; a restart clears it. With no
+servo active there is no chip, and the band is as without it.
+
+- The chip holds the whole id, 23 characters at most. Where the row has no
+  room right of x 272 (the end of the widest home tag), it shows the dash
+  and the 5 characters after it: `-0000A`. Where even that does not fit,
+  the BENCH or SIM chip gives way; LINK still tells the two apart. In the
+  widest row of all, a run clock of 10 hours or more, ARMED SERVO, FEHLER
+  and LINK in German, the chip is left out.
+- While a run is active (a servo test, a limit run, RUDDER AUTO, or the
+  bench ARMED on SERVO) the chip is drawn on the accent's fill: the run's
+  servo, fixed to its end.
+- Its box says how the servo was set (a scan, NEW ID or a pick), that a
+  run holds it, and how it goes.
+
+A scanned line, from the scanner or from the debug console's
+`scan <text>`, does one of these, with its notice in the alert band:
+
+| Line | Result | Notice |
+| --- | --- | --- |
+| an id, no run active | the id is the active servo; no screen changes | `SERVO KST_X10-0000A`; with the card's answer: its name, `NEW ON THIS CARD` or `NO CARD: RUNS ARE NOT FILED` |
+| the active servo's id after 3.0s | nothing changes | `SERVO KST_X10-0000A  ALREADY ACTIVE` |
+| the last line again within 3.0s, with no change of the servo between | dropped | none |
+| another id during a run | refused; the run keeps its servo | `RUN IN PROGRESS: IT STAYS ON KST_X10-0000A. SCAN AFTER THE RUN.`, or `RUN IN PROGRESS: SCAN AFTER THE RUN.` with no servo |
+| the run's own id during the run | dropped | none |
+| a line that is not exactly an id (lower case, a space, no dash, 4 or 6 characters after it, a web address) | refused | `NOT A SERVO ID: ` and the line's first 24 characters |
+| a line past 64 bytes | refused | `NOT A SERVO ID: CODE TOO LONG` |
+
+The splash and the two update screens take no line. A known servo's scan
+sets DUT NAME to the name of its newest run. The card's answer comes from
+the filing's look-up; a build without it names the id alone and leaves
+DUT NAME as it is.
+
 ### An ARM the IOmcu refuses
 
 The alert of a refused or given-up switch is built from the IOmcu's fault
@@ -4210,8 +4251,8 @@ Below the name are the entry's kind and state:
 | Kind | Entry |
 |---|---|
 | FOLDER | a folder |
-| LOG | a CSV file in the Auto or the User log folder |
-| REPORT | a `.TXT` report in either log folder |
+| LOG | a CSV file in the Auto or the User log folder, and a run in a servo's folder: `limit run_000.csv` in `Servos/KST_X10-0000A` |
+| REPORT | a `.TXT` report in either log folder, and a run's report in a servo's folder: `limit run_000.txt` |
 | SERVO FILE | a file in `BENCH/KST/CONF` |
 | ESC PROFILE | a `.JSON` file in `BENCH/ESC/CONF` |
 | FAULT LOG | `BENCH/RCBENCH.LOG` and its older and temporary copies |
@@ -4221,6 +4262,7 @@ Below the name are the entry's kind and state:
 | State | Meaning |
 |---|---|
 | FIXED | a folder used by the bench: the two log folders, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF`, `BENCH/ESCW/CONF`, `BENCH/BALANCE`, `BENCH/SETUP` and their parent folders, including `BENCH` and `USER`. RENAME and MOVE are unavailable because they would move its contents away from the expected path. NEW can create these folders; DELETE can remove an empty one. Each writer recreates its folder before writing, and readers treat a missing folder as they would on a new card |
+| FIXED | `Servos` and each servo's folder in it, named by the servo's id (`Servos/KST_X10-0000A`, any case). RENAME, MOVE and DELETE are unavailable, DELETE also on an empty folder: the folder's name is the id on the servo's label, and the highest id folder is the count of ids handed out. A folder in `Servos` that is no id (`Servos/notes`) and every file in a servo's folder are not FIXED |
 | LOCKED | the programmers' records, `BENCH/KST/CONF/KST.TXT`, `BENCH/HITEC/CONF/HITEC.TXT` and `BENCH/ESCW/CONF/ESCW.TXT`, plus their `KST.NEW`, `HITEC.NEW` and `ESCW.NEW` files while being written. Only INFO is available |
 | WRITING | a file open in the logger. Only INFO is available |
 
@@ -4256,14 +4298,17 @@ above the row of buttons, using the 12 x 24 font.
 | COPY | copies the selected file into the other pane's folder; folders cannot be copied |
 | MOVE | moves the selected file or folder into the other pane's folder |
 | RENAME | opens the keyboard with the entry's name |
-| DELETE | asks for confirmation; deleting a run's CSV also deletes its report; a folder must be empty |
+| DELETE | asks for confirmation; deleting a run's CSV also deletes its report, in a servo's folder too; a folder must be empty |
 | NEW | offers FOLDER or TEXT FILE, then the name keyboard; a new text file is empty |
 | INFO | shows the entry's name, folder, kind, size or entry count, time and rule |
 | OPEN | enters a folder, opens a recognised log CSV in LOGS, or opens another file in the text viewer, subject to the limits below |
 
 A CSV listed by LOGS in one of its three folders (ROOT, USER, BENCH)
 opens on that folder's [Logs](#logs) tab: a run file the bench wrote in
-the plot, any other CSV in the import view. If it exceeds
+the plot, any other CSV in the import view. A CSV in a servo's folder
+opens in LOGS, read from that folder: an ARMED run's `servo run_nnn.csv`
+on the BENCH tab, every other CSV on the USER tab. LOGS chooses its preset
+by the names of the log folders, so these files open in the import view. If it exceeds
 2GiB minus 1 byte, LOGS shows its file list and the reason instead. If the
 card was swapped after FILES listed it, nothing opens and the message is
 `The card was taken out or swapped. Tap RESCAN.`
@@ -5315,7 +5360,7 @@ is missing, the response is 403 and `CODE`.
 | Request | Answer |
 | --- | --- |
 | `GET /api/status` | JSON (JavaScript Object Notation): the panel's name, version and language, `"writes"` `open` or `closed` with the first reason a write is refused at the time of the request and its text (`WRITES_OFF`; `ARMED` or `LOGGING` while the write gate is shut; `WRITES_HOLD`; empty while open) and `"mode"`, the setting (`OPEN`, `CODE`, `HOLD`, `OFF`; with `CODE` each write's code decides), the card's mount number, name, size and free bytes, the limits: 48 entries a page, 1,048,576 bytes and 65,536 line ends a file, and the User log folder SETUP > SD CARD names (`USER/LOGS` by default) |
-| `GET /api/list?path=P&go=G&key=N&key_dir=D` | JSON: up to 48 entries of folder `P`, folders first, then names with case folded, as FILES lists them. Each entry has its name, whether it is a folder, its bytes, its kind (`FOLDER`, `RUN`, `REPORT`, `KST`, `PROFILE`, `FAULT`, `CSV`, `JSON`, `TEXT`, `OTHER`), its place (`FREE`, `FIXED`, `LOCKED`, `FAULT`) and whether the logger writes it. Then the mount number, the entries ahead of the page, the folder's total, the entries not listed, and whether a page stands before and after. `G` is `first` (the default), `last`, `next`, `prev` or `same`; the last three name the page by the entry `N` at its edge, `D` 1 for a folder. |
+| `GET /api/list?path=P&go=G&key=N&key_dir=D` | JSON: up to 48 entries of folder `P`, folders first, then names with case folded, as FILES lists them. Each entry has its name, whether it is a folder, its bytes, its kind (`FOLDER`, `RUN`, `REPORT`, `KST`, `PROFILE`, `FAULT`, `CSV`, `JSON`, `TEXT`, `OTHER`), its place (`FREE`, `FIXED`, `LOCKED`, `FAULT`, `SERVO` for `Servos` and a servo's id folder) and whether the logger writes it. Then the mount number, the entries ahead of the page, the folder's total, the entries not listed, and whether a page stands before and after. `G` is `first` (the default), `last`, `next`, `prev` or `same`; the last three name the page by the entry `N` at its edge, `D` 1 for a folder. |
 | `GET /api/info?path=P&dir=D&mount=M&etag=1` | JSON: the size and the time FAT stamped of `P`, -1 for none, and that time as INFO shows it, `2027-01-01 00:00` in the zone of SETUP > PANEL's Time zone, empty for a stamp in 1980 or none; for a folder (`D` 1) its entries, their bytes and the entries not listed. With `etag=1` a file also has `"etag"`, the CRC-32 `/api/file` gives as its ETag, of any bytes: the panel reads the card for it and the file does not cross the network. `""` for a file over 1,048,576 bytes, which is not read |
 | `GET /api/file?path=P&mount=M` | the bytes of text file `P` as the card holds them, BOM (byte order mark) included, with `ETag` (their CRC-32, cyclic redundancy check), `X-Rcbench-Eol` (`lf`, `crlf`, `cr` or `mixed`), `X-Rcbench-Lines` (the lines as FILES' viewer counts them: a line end at the file's end starts no line, so `a\nb\n` and `a\nb` have 2 and an empty file 0) and `X-Rcbench-Bom` (1 or 0) |
 

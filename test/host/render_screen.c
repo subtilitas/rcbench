@@ -25,6 +25,8 @@
 #include <time.h>
 
 #include "card_tree.h"
+#include "scan_flow.h"
+#include "servo_active.h"
 #include "graph_key.h"
 #include "log_name.h"
 #include "log_select.h"
@@ -3208,6 +3210,29 @@ static void band_view(const char *view, ui_bench_status_t *st)
         chip = UI_BAND_CHIP_MODE;
     } else if (strcmp(view, "band-clock") == 0) {
         chip = UI_BAND_CHIP_CLOCK;
+    } else if (strncmp(view, "band-servo", 10) == 0) {
+        /* The active servo's chip and box: a label scanned through the
+         * host's way in (scan_flow_line()), set by NEW ID (-new) or picked
+         * (-pick); -run with a SERVO run ARMED for 12:34 and another
+         * label refused during it. */
+        (void)servo_active_clear(false);
+        if (strcmp(view, "band-servo-new") == 0) {
+            (void)servo_active_set("KST_X10-0000A", SERVO_ACTIVE_NEW, false);
+        } else if (strcmp(view, "band-servo-pick") == 0) {
+            (void)servo_active_set("KST_X10-0000A", SERVO_ACTIVE_PICK, false);
+        } else {
+            (void)scan_flow_line("KST_X10-0000A", false, 1000u);
+        }
+        if (strcmp(view, "band-servo-run") == 0) {
+            st->armed = true;
+            st->armed_roles = UI_ARMED_SERVO;
+            st->run_seconds = 754u;
+            ui_router_set_status(st);
+            (void)scan_flow_line("KST_X10-0000B", false, 5000u);
+        }
+        ui_router_set_status(st);
+        scan_flow_status(st);
+        chip = UI_BAND_CHIP_SERVO;
     } else if (strcmp(view, "band-stop") == 0) {
         /* A latched STOP: STOPPED - HOLD 2s TO RESET in its frame, the
          * chip reading STOP, and its box. */

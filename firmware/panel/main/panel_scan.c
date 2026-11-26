@@ -230,6 +230,7 @@ static void publish(void)
     s_view.counts = scan_line_counts(&s_port.line);
     s_view.drops = s_port.drops;
     s_view.errors = s_port.errors;
+    s_view.flushes = s_port.flushes;
     ++s_view.rev;
     memcpy(s_found, gm861_found(&s_port.g, &s_found_cut), GM861_ZONES);
     portEXIT_CRITICAL(&s_mux);
@@ -296,6 +297,14 @@ bool panel_scan_take(scan_event_t *out)
     return got;
 }
 
+bool panel_scan_take_line(char *line, size_t n, bool *too_long)
+{
+    portENTER_CRITICAL(&s_mux);
+    const bool got = scan_port_take_line(&s_port, line, n, too_long);
+    portEXIT_CRITICAL(&s_mux);
+    return got;
+}
+
 void panel_scan_view(panel_scan_view_t *out)
 {
     portENTER_CRITICAL(&s_mux);
@@ -310,13 +319,3 @@ void panel_scan_found(uint8_t out[GM861_ZONES], uint8_t *cut)
     *cut = s_found_cut;
     portEXIT_CRITICAL(&s_mux);
 }
-
-#if RCBENCH_PANEL_CONSOLE
-bool panel_scan_inject(const char *text)
-{
-    portENTER_CRITICAL(&s_mux);
-    const bool ok = scan_port_inject(&s_port, text, now_ms());
-    portEXIT_CRITICAL(&s_mux);
-    return ok;
-}
-#endif
