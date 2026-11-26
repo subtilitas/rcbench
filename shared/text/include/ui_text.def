@@ -6577,6 +6577,11 @@ UI_TEXT(ALERT_CARD_LAST_WRITE, 94,
 UI_TEXT(ALERT_CARD_SERVO, 94,
     "Card missing or full. Servo test not recorded.",
     "Karte fehlt oder ist voll. Servotest nicht aufgezeichnet.")
+/* A labelled servo's folder holds run 999 of the run's kind: the kind's
+ * name (LOG_KIND_*).  The other kinds of that servo keep counting. */
+UI_TEXT(ALERT_SERVO_FULL, 94,
+    "Servo folder full: %s 999. Run not recorded.",
+    "Servo-Ordner voll: %s 999. Lauf nicht aufgezeichnet.")
 UI_TEXT(ALERT_CARD_NO_FAT_RUN, 94,
     "Card is neither FAT32 nor exFAT. Run not recorded.",
     "Karte ist weder FAT32 noch exFAT. Lauf nicht aufgezeichnet.")
@@ -11604,6 +11609,9 @@ UI_SERVO_TEXT(SERVO_STR_R_RESULT_BO_UNSEEN,
 UI_SERVO_TEXT(SERVO_STR_R_DEVICE,
     "Device:         %s",
     "Prüfling:        %s")
+UI_SERVO_TEXT(SERVO_STR_R_SERVO_ID,
+    "Servo id:       %s",
+    "Servo-ID:        %s")
 UI_SERVO_TEXT(SERVO_STR_R_FIRMWARE,
     "Firmware:       rcbench %s",
     "Firmware:        rcbench %s")

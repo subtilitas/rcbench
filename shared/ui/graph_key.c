@@ -27,7 +27,7 @@ typedef struct {
     bool     run;                       /**< a run whose CSV is or comes  */
     bool     open;                      /**< the run or its file is open  */
     char     name[LOG_LABELLED_SIZE];   /**< the CSV, "" while not known  */
-    char     dir[CARD_DIR_MAX];         /**< its folder                   */
+    char     dir[CARD_RUN_DIR_MAX];     /**< its folder                   */
     unsigned mount;                     /**< the mount it was written on  */
     /** @brief The reason the last tap opened nothing, "" for none. */
     char     note[GK_NOTE_MAX];
@@ -65,11 +65,20 @@ void graph_key_set(graph_key_card_t k, const graph_key_file_t *f)
         r->name[0] = '\0';
         return;
     }
+    const char *name = (f->name != NULL) ? f->name : "";
+    const char *dir = (f->dir != NULL) ? f->dir : "";
+    if (strlen(name) >= sizeof(r->name) || strlen(dir) >= sizeof(r->dir)) {
+        /* A name or folder that does not fit is refused, not cut: a cut
+         * one names another file. */
+        r->run = false;
+        r->open = false;
+        r->name[0] = '\0';
+        return;
+    }
     r->run = f->run;
     r->open = f->open;
-    snprintf(r->name, sizeof(r->name), "%s",
-             (f->name != NULL) ? f->name : "");
-    snprintf(r->dir, sizeof(r->dir), "%s", (f->dir != NULL) ? f->dir : "");
+    memcpy(r->name, name, strlen(name) + 1u);
+    memcpy(r->dir, dir, strlen(dir) + 1u);
     r->mount = f->mount;
 }
 

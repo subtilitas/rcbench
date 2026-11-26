@@ -5,10 +5,11 @@
  *        RUDDER AUTO right of MARGIN and TOLERANCE.
  *
  * The three runs write into USER LOG FOLDER: LIMITnnn.CSV, ATESTnnn.CSV
- * and RUDDRnnn.CSV under the number the logger answers
- * (servo_screen_test_files()), on the mount and in the folder the answer
- * came with: a USER LOG FOLDER changed since points the next run, not this
- * one's key, at the new folder.  A run started
+ * and RUDDRnnn.CSV; with a servo active, into `Servos/<id>` as
+ * `limit run_NNN.csv` and the like (servo_take.h).  The key opens the name
+ * the logger answers (servo_screen_test_files_at()), on the mount and in
+ * the folder the answer came with: a USER LOG FOLDER or an active servo
+ * changed since points the next run, not this one's key, elsewhere.  A run started
  * with USER LOGS off, a run the card took no file for, and a LIMIT RUN that
  * judged no position (its report alone) have no key.  The key is grey while
  * the run goes on, while its outbox still holds lines or its END, and while
@@ -41,10 +42,9 @@
 static const gfx_rect_t k_none = { 0, 0, 0, 0 };
 
 /**
- * @brief One run's key from its state: its file under @p prefix and
- *        @p file in USER LOG FOLDER.
+ * @brief One run's key from its state: its file as the logger named it,
+ *        in the folder the logger wrote it to.
  * @param k       the card
- * @param prefix  the run's writer
  * @param ran     a run since power-on
  * @param running it goes on
  * @param drained its outbox has handed every line and its END over
@@ -54,15 +54,11 @@ static const gfx_rect_t k_none = { 0, 0, 0, 0 };
  * @param peek    its PEEK_* slot: the mount and the folder its number
  *                came with
  */
-static void put(graph_key_card_t k, log_prefix_t prefix, bool ran,
+static void put(graph_key_card_t k, bool ran,
                 bool running, bool drained, bool off, int file, bool csv,
                 uint8_t peek)
 {
-    char name[LOG_RUN_NAME_MAX];
-    name[0] = '\0';
-    if (file > 0) {
-        log_name_build(name, sizeof(name), prefix, file, false);
-    }
+    const char *name = (file > 0) ? s.files_name[peek] : "";
     const graph_key_file_t f = {
         .run   = ran && !off && file >= 0 && (running || csv),
         .open  = running || !drained || file == 0 || s.logger_busy,
@@ -75,14 +71,14 @@ static void put(graph_key_card_t k, log_prefix_t prefix, bool ran,
 
 void svs_gk_sync(void)
 {
-    put(GRAPH_KEY_LIMIT, LOG_PREFIX_LIMIT, s.lim.state != SERVO_LIMRUN_IDLE,
+    put(GRAPH_KEY_LIMIT, s.lim.state != SERVO_LIMRUN_IDLE,
         servo_limrun_running(&s.lim), servo_limrun_drained(&s.lim),
         s.lim_off, s.lim_file, s.lim.rows_n > 0u, PEEK_LIM);
-    put(GRAPH_KEY_RAUTO, LOG_PREFIX_RUDDR,
+    put(GRAPH_KEY_RAUTO,
         s.ra.run.state != SERVO_RAUTO_IDLE, servo_rauto_running(&s.ra.run),
         servo_rauto_drained(&s.ra.run), s.ra.off, s.ra.file, true,
         PEEK_RAUTO);
-    put(GRAPH_KEY_ATEST, LOG_PREFIX_ATEST, s.test.state != SERVO_TEST_IDLE,
+    put(GRAPH_KEY_ATEST, s.test.state != SERVO_TEST_IDLE,
         servo_test_running(&s.test), servo_test_drained(&s.test),
         s.test_off, s.test_file, true, PEEK_TEST);
 }

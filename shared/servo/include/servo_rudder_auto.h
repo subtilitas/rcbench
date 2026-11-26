@@ -320,6 +320,7 @@ typedef struct {
                                    window */
     /* For the report only. */
     char     dut[24];         /**< DUT NAME */
+    char     servo_id[24];    /**< the labelled servo's id; "" for none */
     char     type[20];        /**< the servo type's name */
     char     output[28];      /**< what it drives: "PROG PORT 1 GPIO 13" */
     char     meter[20];       /**< the INA3221 channel; "" names it INA3221 */

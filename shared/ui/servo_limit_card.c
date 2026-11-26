@@ -68,7 +68,7 @@ static void lim_file_name(char *b, size_t n)
     if (s.lim_off) {
         snprintf(b, n, "%s", TR(SV_USER_LOGS_OFF));
     } else if (s.lim_file > 0) {
-        log_name_build(b, n, LOG_PREFIX_LIMIT, s.lim_file, true);
+        svs_report_name(b, n, PEEK_LIM);
     } else {
         snprintf(b, n, "%s", (s.lim_file < 0) ? TR(SV_NOT_RECORDED)
                                                : TR(SV_WRITING));

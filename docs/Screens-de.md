@@ -4123,6 +4123,7 @@ dut=MG90S&note=greased&date=2026-11-24T10:31&fw=0.23.18
 | `servo` | der TYP des Profils | `ATEST`, `LIMIT`, `RUDDR` |
 | `meter` | das Messgerät des Stroms: ein INA3221-Kanal, `PDMINI` oder `MODEL` | `ATEST`, `LIMIT`, `RUDDR` |
 | `angle` | die Winkelquelle, `AS5600` oder die IMU mit ihrer Achse | `ATEST`, `LIMIT`, `RUDDR`, mit einer Winkelquelle |
+| `id` | die ID des gelabelten Servos, bis 23 Zeichen ([Servo](Servo-de.md#gelabelte-servos-ablage)) | die Dateien im Ordner eines gelabelten Servos |
 
 Ein Schlüssel mit leerem Wert fehlt. In einem Wert wird jedes `&`, `=`, `;`,
 `"` und Steuerzeichen als `_` geschrieben: `MG90S "2"` liest sich zurück als

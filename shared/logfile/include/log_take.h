@@ -131,6 +131,13 @@ void log_series_init(log_series_set_t *set);
 void log_series_forget_all(void);
 
 /**
+ * @brief log_series_forget_all()'s count: a taker that keeps numbers of its
+ *        own (servo_take.h) walks again when it moved.
+ * @return The count; it wraps.
+ */
+unsigned log_series_edits(void);
+
+/**
  * @brief The numbering of folder @p dir, case folded: its slot, or a free one,
  *        or the slot @p set gives up next, cleared.
  *
@@ -198,7 +205,9 @@ log_take_t log_take(log_series_set_t *set, const log_take_io_t *io,
  *        automatic log's run in @p run_dir, and a test's CSV and report in @p
  *        test_dir.
  *
- * A number of 0 is no file open.
+ * A number of 0 is no file open.  In a servo's folder (servo_name.h) a
+ * mark is servo_run_mark(): 1,000 to 4,999, so that folder's run 000 is
+ * marked too.
  */
 typedef struct {
     const char *run_dir;   /**< folder of the automatic log's run          */
@@ -215,7 +224,9 @@ typedef struct {
  *        USER/LOGS/ATEST005.CSV does not hold back BENCH/LOGS/SERVO005.CSV.
  *
  * Folders compare with case folded.  With both kinds in one folder, both kinds'
- * marks apply.
+ * marks apply.  In a servo's folder `Servos/<id>` a name servo_run_parse()
+ * takes is busy when its servo_run_mark() is an open mark: a run's CSV and
+ * its report share one; any other name there is free.
  *
  * @param marks  The open files.
  * @param dir    The folder of the file.

@@ -84,8 +84,10 @@ typedef struct {
 void graph_key_reset(void);
 
 /**
- * @brief Card @p k's last run, as it stands now.  A name or a folder longer
- *        than the key keeps is cut.
+ * @brief Card @p k's last run, as it stands now.  The key keeps a name of
+ *        LOG_LABELLED_MAX bytes and a folder of CARD_RUN_DIR_MAX - 1, a
+ *        servo's `Servos/<id>` with an id of 23 characters; a longer one is
+ *        refused, as no run, rather than cut to another file's name.
  * @param k the card; one outside the enum is ignored
  * @param f the run; NULL forgets it
  */

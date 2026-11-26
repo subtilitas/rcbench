@@ -438,9 +438,9 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 312 | 1 840 |
-| `control` | `control_task` | 6 144 | 3 616 | 1 488 |
-| `runlog` | `log_task` | 6 656 | 4 048 | 1 568 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 328 | 1 824 |
+| `control` | `control_task` | 6 144 | 3 648 | 1 456 |
+| `runlog` | `log_task` | 6 656 | 4 144 | 1 472 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
 | `blec` | `blec_task`, die Verbindung jedes Bluetooth-LE-Clients über den Hub: die Werte der IMU, des Dial und beider Sensorknoten aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_blec.c`, die Seite der IMU in `panel_imu.c`, die des Dial in `panel_dial.c`, die des Leistungsknotens in `panel_pnode.c`, die des Auswuchtknotens in `panel_bal.c`, das Update der Funkgeräte in `panel_devupd.c`, der lange Schreibzugriff des Etikettendruckers über `panel_ble_write_long()`) | 4 096 | 1 840 | 1 216 |
 | `blestart` | `ble_start_task`, die Verbindung zum C6, seine Controller-Anfragen, der Start des Hosts und das Warten auf seinen Sync, dann weg (`panel_ble.c`) | 4 096 | 1 200 | 1 856 |
@@ -496,9 +496,9 @@ und den Zeitstempel, den es schreibt (`get_fattime()`, `localtime_r()`, die
 Zeitzonen-Auswertung `_tzset_unlocked()` von picolibc und das `sscanf()`
 darunter). Das Werkzeug folgt jedem Aufruf, den das Einbinden machen kann,
 darunter `f_mkfs()`, das ein Einbinden ohne Formatieren nie erreicht. Der Start eines Laufs bindet die Karte ebenfalls auf diesem Task
-ein (`storage_check()`). Die Kette braucht 4 048 Bytes, darunter eine Zeile
+ein (`storage_check()`). Die Kette braucht 4 144 Bytes, darunter eine Zeile
 eines Servotests von 424 Bytes (`SERVO_TEST_LINE_MAX`) im Rahmen von
-`log_task()`; der Stack von 6 656 Bytes lässt 1 568 über der Marge von
+`log_task()`; der Stack von 6 656 Bytes lässt 1 472 über der Marge von
 1 024 Bytes.
 
 Die tiefste Kette von `wifi_ctl` ist der Start des Netzwerk-Stacks in
@@ -539,7 +539,7 @@ oben ist deshalb eine Untergrenze:
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `UI_HOOK_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`,
   `SERVO_STORE_CALLS`):
-  395
+  397
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Sprünge über ein Register: eine Sprungtabelle, die in ihrer Funktion

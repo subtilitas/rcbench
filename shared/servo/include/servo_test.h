@@ -452,6 +452,7 @@ typedef struct {
 
     /* For the report only: the settings in force. */
     char     dut[24];  /**< the servo's name, for the report */
+    char     servo_id[24];  /**< the labelled servo's id; "" for none */
     char     type[20];  /**< the servo's type, for the report */
     char     danger[40];    /**< the red tag, or empty                  */
     bool     hv;            /**< HV SERVO                               */

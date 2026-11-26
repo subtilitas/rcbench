@@ -14,6 +14,7 @@
 
 #include "greatest.h"
 
+#include "servo_active.h"
 #include "servo_limrun.h"
 #include "servo_screen.h"
 #include "servo_sim.h"
@@ -746,9 +747,44 @@ TEST_CASE(the_knob_moves_nothing_while_a_limit_run_drives_the_horn)
     CHECK(moved > 0u);                      /* the search moved it */
 }
 
+/* A labelled servo: the run takes the servo active at its start into its
+ * files' info and its report, and holds it to its end; a pick or a clear
+ * during the run is refused.  After the run the servo can change again. */
+TEST_CASE(a_limit_run_holds_the_servo_active_at_its_start)
+{
+    lim_bench();
+    /* ARMED from SERVO holds the servo too; the hold arms a SAFE bench. */
+    CHECK(servo_screen_run_active());
+    servo_screen_set_armed(false);
+    bench_frames(100u);
+    CHECK(servo_active_clear(false));
+    CHECK(!servo_screen_run_active());
+    CHECK(servo_active_set("KST_X10-0000A", SERVO_ACTIVE_NEW,
+                           servo_screen_run_active()));
+    lim_hold(2.3f);
+    CHECK(servo_screen_limit_running());
+    CHECK(servo_screen_run_active());
+    CHECK(!servo_active_set("KST_X10-0000B", SERVO_ACTIVE_PICK,
+                            servo_screen_run_active()));
+    CHECK(!servo_active_clear(servo_screen_run_active()));
+    CHECK_STR_EQ(servo_active_id(), "KST_X10-0000A");
+    lim_run_out();
+    CHECK(strstr(bench.report, "Servo id:       KST_X10-0000A\n") != NULL);
+    CHECK_EQ(bench.ends, 1u);
+    /* The logger holding the END still holds the servo. */
+    servo_screen_test_logger_busy(true);
+    CHECK(servo_screen_run_active());
+    servo_screen_test_logger_busy(false);
+    servo_screen_set_armed(false);
+    bench_frames(100u);
+    CHECK(!servo_screen_run_active());
+    CHECK(servo_active_clear(servo_screen_run_active()));
+}
+
 int main(void)
 {
     RUN(a_limit_run_starts_only_on_the_ina3221);
+    RUN(a_limit_run_holds_the_servo_active_at_its_start);
     RUN(a_limit_run_needs_a_powered_rail_and_a_bound_output);
     RUN(on_the_carrier_no_servo_pwm_output_is_named_as_such);
     RUN(programming_is_not_offered_off_the_programming_port);

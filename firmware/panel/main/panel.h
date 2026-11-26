@@ -32,6 +32,7 @@
 #include "settings.h"
 #include "bind_link.h"
 #include "card_tree.h"
+#include "servo_take.h"
 #include "busfault_screen.h"
 #include "coproc_update_screen.h"
 #include "endpoints_link.h"
@@ -619,8 +620,8 @@ void panel_files_unlock(bool wrote);
  *        logger's open files, into a task's own marks.
  * @param out       takes the bench
  * @param marks     takes the open files; outlives the bench's use
- * @param run_dir   takes their run's folder, CARD_DIR_MAX bytes
- * @param test_dir  takes their test's folder, CARD_DIR_MAX bytes
+ * @param run_dir   takes their run's folder, CARD_RUN_DIR_MAX bytes
+ * @param test_dir  takes their test's folder, CARD_RUN_DIR_MAX bytes
  */
 void panel_files_bench(fm_bench_t *out, log_marks_t *marks, char *run_dir,
                        char *test_dir);
@@ -804,6 +805,40 @@ void log_set_folder(log_folder_t kind, const char *dir);
 void log_set_run_text(setting_text_id_t id, const char *text);
 
 /**
+ * @brief The active servo (servo_active.h) as the frame task last copied
+ *        it, for a SERVO run's file: a run armed from SERVO with a servo
+ *        active files into `Servos/<id>/servo run_NNN.csv` and carries the
+ *        `id` key.  Called on the frame task when the active servo changes.
+ * @param id the id; NULL or "" for none
+ */
+void log_set_run_servo(const char *id);
+
+/**
+ * @brief Run @p run of kind @p kind starts: a SERVO run takes the servo
+ *        log_set_run_servo() last named, kept for that run's file whatever
+ *        is set after (servo_bind_t).  Called on the control task before
+ *        the run's level goes up.
+ * @param run  the run's number
+ * @param kind its kind
+ */
+void log_bind_run(uint32_t run, log_run_kind_t kind);
+
+/** @brief The last run whose files in a servo's folder the logger closed. */
+typedef struct {
+    unsigned     count;              /**< runs filed since power-on       */
+    char         id[SERVO_ID_SIZE];  /**< its servo                       */
+    servo_kind_t kind;               /**< its kind                        */
+    int          number;             /**< its number, 0 to 999            */
+} log_filed_t;
+
+/**
+ * @brief The last run filed in a servo's folder, read as one; the frame
+ *        task hands it to servo_trend_filed().
+ * @param out takes it
+ */
+void log_filed(log_filed_t *out);
+
+/**
  * @brief Name time() as the clock of every run's date (log_info_set_clock()):
  *        called once on app_main before the tasks that start runs.
  */
@@ -812,12 +847,12 @@ void log_clock_start(void);
 /**
  * @brief The open markers and the folder each was opened in, read as one, for
  *        the viewer's card_busy(): @p run_dir and @p test_dir take
- *        CARD_DIR_MAX bytes and @p marks points into them.
+ *        CARD_RUN_DIR_MAX bytes and @p marks points into them.
  * @param marks takes the open markers; points into @p run_dir and @p test_dir
  * @param run_dir takes the folder the automatic log's run was opened in,
- *        CARD_DIR_MAX bytes
+ *        CARD_RUN_DIR_MAX bytes
  * @param test_dir takes the folder a test's files were opened in,
- *        CARD_DIR_MAX bytes
+ *        CARD_RUN_DIR_MAX bytes
  */
 void log_open_marks(log_marks_t *marks, char *run_dir, char *test_dir);
 
@@ -928,7 +963,9 @@ typedef struct {
 typedef struct {
     uint8_t kind;                        /**< a servo_test_out_t */
     uint8_t prefix;                      /**< an OPEN's log_prefix_t */
-    char    text[SERVO_TEST_LINE_MAX];  /**< The line's text. */
+    char    text[SERVO_TEST_LINE_MAX];  /**< The line's text; an OPEN's is
+                                             the active servo's id, "" for
+                                             none */
 } test_line_t;
 
 /**
@@ -957,13 +994,18 @@ extern atomic_uint s_log_run_now;
  * the logger, and what the logger made of them. */
 /** @brief OPENs of a servo test's files the render loop queued. */
 extern atomic_uint s_test_opens_sent;
-/** @brief OPENs the logger has answered with a number in s_test_file. */
+/** @brief OPENs the logger has answered (log_test_files()). */
 extern atomic_uint s_test_opens_done;
 /** @brief ENDs of a servo test the render loop queued. */
 extern unsigned    s_test_ends_sent;
 extern atomic_uint s_test_ends_done;  /**< ENDs the logger has taken. */
-/** @brief The test file's number, -1 when it is not recorded. */
-extern atomic_int  s_test_file;
+/**
+ * @brief The logger's answer to the last OPEN: where the run's file went
+ *        (servo_take.h), read as one.  Its state is 1 once a file is open,
+ *        -1 when the run is not recorded.
+ * @param out takes it
+ */
+void log_test_files(log_test_files_t *out);
 /**
  * @brief Whether the last run's report reached the card whole; set at its
  *        END.
