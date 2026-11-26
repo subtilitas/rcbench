@@ -57,7 +57,7 @@ rcbench/
     dialknob/             the M5Stack Dial's knob protocol: packets both ways, turn tracker, link state, face model; no pin driver
     rcnode/               the sensor nodes' BLE packets, control writes, advertising, 20ms windows; no pin driver
     bleota/               firmware update over BLE: service, control writes, notifications, chunks, the device side; no pin driver
-    supvan/               print protocol of Supvan T50-series label printers: frames, status, material record, print buffers, data frames, job machine, literal-only LZMA encoder; no pin driver; host suite only
+    supvan/               print protocol of Supvan T50-series label printers: frames, status, material record, print buffers, data frames, job machine, literal-only LZMA encoder; no pin driver; the panel and the host suite
   firmware/
     panel/                ESP-IDF project (ESP32-P4)
     iomcu/                pico-sdk project (RP2350)
@@ -106,8 +106,8 @@ in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` · `passthru` | yes | yes | yes |
 | `escwire` · `openyge` | yes | yes | yes |
 | `witmotion` | yes | | yes |
-| `hc05` · `dial` · `supvan` | | | yes |
-| `bleuart` · `dialknob` · `vibe` · `rcnode` · `bleota` · `devupd` · `scanner` | yes | | yes |
+| `hc05` · `dial` | | | yes |
+| `bleuart` · `dialknob` · `vibe` · `rcnode` · `bleota` · `devupd` · `scanner` · `supvan` | yes | | yes |
 
 ## Toolchains
 

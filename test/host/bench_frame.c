@@ -69,9 +69,10 @@
  * The count depends on the addresses the frame touches, and the stack's
  * depends on what the kernel and valgrind place above it: argv, the
  * environment, the path of the executable and of the working directory.
- * main() therefore moves the stack to one fixed phase within STACK_SPAN
- * and copies the mode out of argv before anything is drawn, so the count
- * is the same from any directory and with any environment.
+ * main() therefore moves the stack to one fixed phase within STACK_SPAN,
+ * copies the mode out of argv and reads 1MiB in order (g_wipe) before
+ * anything is drawn, so the frames start from one cache state and the
+ * count is the same from any directory and with any environment.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -138,6 +139,19 @@ static const ui_bench_status_t k_status = {
 #define STACK_PHASE (32u * 1024u)
 /* The longest mode name; a longer one runs as `frame`. */
 #define MODE_MAX    32u
+
+/*
+ * Bytes read before the first frame to empty every cache frame_cost.py
+ * models: 1MiB, twice the largest L2 the ESP32-P4 takes (512KiB).  Read in
+ * order, it fills every set of an LRU cache of up to 1MiB with its own
+ * lines, so the frames start from one cache state whatever start-up left.
+ */
+#define WIPE_BYTES  (1024u * 1024u)
+/* The stride of the read: the shortest line modelled, 64 bytes. */
+#define WIPE_STRIDE 64u
+
+/* The buffer the wipe reads; never written. */
+static uint8_t g_wipe[WIPE_BYTES];
 
 /* The mode, copied out of argv: argv's strings sit above the stack, at an
  * address that moves with the environment's length. */
@@ -852,5 +866,12 @@ int main(int argc, char **argv)
     const size_t drop = (size_t)((sp - STACK_PHASE) & (STACK_SPAN - 1u));
     char gap[drop + 1u];
     __asm__ volatile("" : : "r"(gap) : "memory");
+    /* Start-up's lines sit at addresses that move with the path and the
+     * environment, and where they share a set with a frame's lines they
+     * can move a fill between the 1-frame and the 11-frame run.  Reading
+     * g_wipe in order evicts them, from both runs alike. */
+    for (size_t i = 0u; i < WIPE_BYTES; i += WIPE_STRIDE) {
+        (void)*(volatile const uint8_t *)&g_wipe[i];
+    }
     return bench(frames, g_mode);
 }

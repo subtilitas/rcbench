@@ -145,8 +145,9 @@ est. ms and est. fps: not measured
 
 The count repeats exactly on every run of the same tree: the tool gives
 cachegrind the geometry of all three caches, so none is taken from the host's
-CPU, and the bench draws from a stack at a fixed offset within 64KB, so argv,
-the environment and the paths do not move it. `test_frame_cost.py` measures
+CPU, the bench draws from a stack at a fixed offset within 64KB, and it reads
+1MiB in order before the first frame, which leaves every modelled cache holding
+only those lines, so argv, the environment and the paths do not move it. `test_frame_cost.py` measures
 five modes twice and fails on one fill of difference. The compiler, the C
 library and valgrind still shape the count. The table holds the figures of the
 ubuntu-26.04 runner of CI (continuous integration), and a machine with other
@@ -416,7 +417,7 @@ its stack less 1024 bytes.
 | `runlog` | `log_task` | 6,656 | 4,128 | 1,488 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
 | `scan` | `scan_task`, the QR scanner's UART1 and its GM861 sequence (`panel_scan.c`) | 3,072 | 1,296 | 736 |
-| `blec` | `blec_task`, every Bluetooth LE client's link through the hub: the IMU's, the Dial's and both sensor nodes' SETUP values, the host stack's events and the actions to NimBLE (`panel_blec.c`, the IMU's side in `panel_imu.c`, the Dial's in `panel_dial.c`, the power node's in `panel_pnode.c`, the balance node's in `panel_bal.c`, the wireless devices' update in `panel_devupd.c`, the label printer's long write through `panel_ble_write_long()`) | 4,096 | 1,840 | 1,216 |
+| `blec` | `blec_task`, every Bluetooth LE client's link through the hub: the IMU's, the Dial's and both sensor nodes' SETUP values, the host stack's events and the actions to NimBLE (`panel_blec.c`, the IMU's side in `panel_imu.c`, the Dial's in `panel_dial.c`, the power node's in `panel_pnode.c`, the balance node's in `panel_bal.c`, the wireless devices' update in `panel_devupd.c`, the label printer's link, job, layout and encoding in `panel_print.c`, 1,584 bytes deep, and its long write through `panel_ble_write_long()`) | 4,096 | 1,840 | 1,216 |
 | `blestart` | `ble_start_task`, the C6's link, its controller requests, the host's start and the wait for its sync, then gone (`panel_ble.c`) | 4,096 | 1,200 | 1,856 |
 | `nimble_host` | `ble_host_task`, NimBLE's host: HCI (host controller interface) to and from the C6, the scan's reports, the connection's and GATT's answers (`panel_ble.c`) | 4,096 | 1,936 | 1,120 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,392 | 1,664 |

@@ -209,6 +209,7 @@ static void on_counter(sv_job_t *j, const sv_material_t *m, uint32_t now)
         /* another roll, or a count that moved by other than 1 */
         end(j, SV_ERR_ROLL);
     } else if (j->reads >= SV_COUNTER_READS) {
+        j->counted = true;
         end(j, j->relinked ? SV_ERR_LINK : SV_ERR_NOT_PRINTED);
     } else {
         ask(j, SV_C_MATERIAL, now + SV_COUNTER_MS);

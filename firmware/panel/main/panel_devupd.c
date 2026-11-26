@@ -34,6 +34,7 @@
 #include "panel_devimg.h"
 #include "panel_dial.h"
 #include "panel_pnode.h"
+#include "panel_print.h"
 #include "ui_screen.h"
 #include "ui_text.h"
 #include "upd_dev.h"
@@ -526,7 +527,16 @@ void panel_devupd_blec_poll(uint32_t now)
     if (dev >= DEV_N) {
         dev = 0u;
     }
-    if (take == DEVUPD_TAKE_START) {
+    if (take == DEVUPD_TAKE_START && panel_print_busy()) {
+        /* The label printer's job holds the spare link: refused, as the
+         * printer refuses a job while an update runs. */
+        s_cur = dev;
+        s_cur_img = t[dev].img;
+        ESP_LOGW(TAG, "%s update refused: a label print runs", cur_word());
+        s_t0 = now;
+        s_stage = STAGE_HOLD;
+        finish(false, DEVUPD_E_PRINT, 0u, now);
+    } else if (take == DEVUPD_TAKE_START) {
         /* A pending unknown install is reported first, from its own
          * device: the new update never reads as its result. */
         settle(t, now, true);
@@ -651,6 +661,7 @@ static const char *fail_text(const end_t *p, char *buf, size_t n)
         case DEVUPD_E_TIMEOUT: return TR(DEV_FAIL_TIMEOUT);
         case DEVUPD_E_WRITE:   return TR(DEV_FAIL_WRITE);
         case DEVUPD_E_ARMED:   return TR(DEV_FAIL_ARMED);
+        case DEVUPD_E_PRINT:   return TR(DEV_FAIL_PRINT);
         case DEVUPD_E_ABORTED: return TR(DEV_FAIL_CANCELLED);
         case DEVUPD_E_STALLED: return TR(DEV_FAIL_STALLED);
         case DEVUPD_E_NO_SERVICE: return TR(DEV_FAIL_NO_SERVICE);

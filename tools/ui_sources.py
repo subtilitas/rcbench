@@ -301,9 +301,12 @@ SOURCES = [
     "shared/files/shot_file.c",
     "shared/clock/wall_clock.c",
     "shared/logfile/log_take.c",
-    # The labelled servos' numbering and marks (servo_take.c); the ids,
-    # names and the active servo are listed with FILES' rules below.
+    # The labelled servos' numbering and marks (servo_take.c) and the
+    # newest run's DUT NAME a scan reads (servo_look.c, under scan_flow.c);
+    # the ids, names and the active servo are listed with FILES' rules
+    # below.
     "shared/logfile/servo_take.c",
+    "shared/logfile/servo_look.c",
     # The ESC profiles and the stick programmer MOTOR & ESC > PROGRAM's
     # ESC STICK session lists and runs.
     "shared/esc/esc_profiles_gen.c",
@@ -442,6 +445,9 @@ EXCLUDED = {
         "the printed label's canvas, the blec task's; no screen draws it",
     "shared/ui/label_layout.c":
         "the printed label's layout, the blec task's; no screen draws it",
+    "shared/ui/print_ctl.c":
+        "the label printer's central and job, the blec task's; no screen "
+        "draws it",
     "shared/ui/ui_alert_slot.c":
         "the control task posts to it; no screen calls it",
     "shared/ui/port_mail.c":

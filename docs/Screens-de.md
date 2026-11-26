@@ -210,8 +210,8 @@ und das Band ist wie ohne ihn.
   beiden weiterhin. In der breitesten Reihe überhaupt, einer Laufzeituhr ab
   10 Stunden, ARMED SERVO, FEHLER und VERBINDUNG auf Deutsch, fehlt der
   Chip.
-- Solange ein Lauf aktiv ist (ein Servotest, ein Limit-Lauf, RUDDER AUTO
-  oder der Prüfstand ARMED auf SERVO), hat der Chip die Akzentfarbe als
+- Solange ein Lauf aktiv ist (ein Servotest, ein Limit-Lauf, RUDDER AUTO,
+  die Startsequenz eines davon oder der Prüfstand ARMED auf SERVO), hat der Chip die Akzentfarbe als
   Fläche: das Servo des Laufs, fest bis zu seinem Ende.
 - Sein Kasten sagt, wie das Servo gesetzt wurde (Scan, NEUE ID, Wahl oder
   getippt),
@@ -230,10 +230,36 @@ Debug-Konsole, bewirkt eines davon, mit ihrem Hinweis im Alarmband:
 | eine Zeile, die nicht genau eine ID ist (Kleinbuchstaben, ein Leerzeichen, kein Bindestrich, 4 oder 6 Zeichen danach, eine Webadresse) | abgelehnt | `KEINE SERVO-ID: ` und die ersten 24 Zeichen der Zeile |
 | eine Zeile über 64 Byte | abgelehnt | `KEINE SERVO-ID: CODE ZU LANG` |
 
-Der Startbildschirm und die beiden Update-Seiten nehmen keine Zeile an. Der
-Scan eines bekannten Servos setzt DUT NAME auf den Namen seines neuesten
-Laufs. Die Antwort der Karte kommt aus der Suche der Ablage; ein Build ohne
-sie nennt nur die ID und lässt DUT NAME, wie er ist.
+Der Startbildschirm und die beiden Update-Seiten nehmen keine Zeile an. Ein
+Lauf zählt vom Halten auf START oder ARM bis zu seiner letzten geschriebenen
+Datei: Ein Scan während einer Startsequenz wird abgelehnt.
+
+Die Antwort der Karte kommt vom Logger-Task, einige Frames nach dem Scan.
+Der Hinweis nennt zuerst nur die ID, dann ersetzt ihn die Antwort:
+
+| Die Karte | Hinweis | DUT NAME |
+| --- | --- | --- |
+| keine Karte eingebunden, beim Scan oder bei der Suche | `KEINE KARTE: LÄUFE WERDEN NICHT ABGELEGT` | bleibt |
+| kein Ordner `Servos/<id>`, oder ein Ordner ohne CSV eines Laufs | `NEU AUF DIESER KARTE` | bleibt |
+| Läufe mit gleichen Namen | der Name | der Name |
+| Läufe mit verschiedenen Namen, jeder Stempel ein echtes Datum | der Name des neuesten Stempels | dieser Name |
+| Läufe mit verschiedenen Namen, ein Stempel aus 1980 oder zwei gleiche neueste Stempel | nur die ID | bleibt |
+| Läufe ohne Wert `dut`, oder eine erste Datenzeile über 2.048 Byte | nur die ID | bleibt |
+| ein Ordner, der sich nicht lesen lässt | nur die ID | bleibt |
+
+Der Name eines Laufs ist der Wert `dut` der Zelle `info` in seiner ersten
+Datenzeile. Die Suche liest den Ordner einmal und von jeder Art die höchste
+Nummer (LIMIT RUN, RUDDER AUTO, AUTOMATIC TEST, SERVO-Lauf): bis zu 4
+Lesevorgänge von 2.048 Byte. Die Nummern zählen je Art, und ein
+FAT-Zeitstempel (File Allocation Table) ist keine Reihenfolge: Eine Datei,
+geschrieben bevor die Uhr gestellt ist, trägt 1980. Eine Art, deren Lauf
+keinen Namen trägt, bleibt außen vor. Ein falscher Name ist schlechter als
+keiner, daher geben verschiedene Namen ohne echte Daten keinen.
+
+Eine Antwort wird verworfen, wenn seitdem eine andere ID gesetzt wurde oder
+ein Lauf begonnen hat. Ein seit dem Scan getippter DUT NAME bleibt, und der
+Hinweis nennt nur die ID. Der Logger-Task bindet eine seit dem Start
+eingesteckte Karte ein, bevor er antwortet.
 
 ### Ein ARM, das der IOmcu ablehnt
 

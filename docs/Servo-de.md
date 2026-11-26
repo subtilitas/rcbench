@@ -2617,6 +2617,8 @@ und RUDDER AUTO) endet mit dem Block SERVO-ETIKETT:
   SERVO-Lauf eine Datei schreibt.
 - Ohne aktives Servo geht jeder Lauf in seinen Log-Ordner,
   `ATESTnnn.CSV` und so weiter.
+- Ein Scan eines Servos mit Läufen auf der Karte setzt DUT NAME aus seinen
+  Läufen ([Seiten](Screens-de.md#servo-chip)).
 - Die Ergebniskarten zeigen den Namen, den der Logger schrieb, und GRAFIK
   öffnet diese Datei in diesem Ordner. Ein Ordner fasst bis zu 31 Zeichen,
   daher öffnet sich jede ID bis 23 Zeichen vollständig.

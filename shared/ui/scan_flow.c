@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "servo_id.h"
 #include "servo_screen.h"
 #include "settings.h"
 #include "ui_text.h"
@@ -30,6 +31,10 @@ typedef struct {
     bool              too_long;                       /**< it was cut        */
     scan_flow_look_fn look;                           /**< the card's look-up */
     servo_scan_t      last;                           /**< the last result   */
+    char              pending[SERVO_ID_SIZE];         /**< id whose answer is
+                                                           due; "" for none */
+    char              pending_dut[SETTINGS_TEXT_MAX]; /**< DUT NAME at its
+                                                           scan             */
 } flow_t;
 
 /** @brief The one instance. */
@@ -102,13 +107,14 @@ void scan_flow_tick(uint32_t now_ms, const ui_bench_status_t *st)
                     SERVO_ACTIVE_SCAN);
 }
 
-/** @brief Whether a run is active, the arm read from @p st. */
+/** @brief Whether a run is active, the arm read from @p st: the SERVO
+ *         screens' own check (start sequences included) or the bench
+ *         ARMED on SERVO. */
 static bool run_active_with(const ui_bench_status_t *st)
 {
     const bool servo_armed = st != NULL && st->armed
                              && (st->armed_roles & UI_ARMED_SERVO) != 0u;
-    return servo_screen_testing() || servo_screen_limit_running()
-           || servo_screen_rauto_running() || servo_armed;
+    return servo_screen_run_active() || servo_armed;
 }
 
 bool scan_flow_run_active(void)
@@ -130,19 +136,17 @@ static bool screen_takes(void)
 }
 
 /**
- * @brief The notice of a line that set the active servo, after the card's
- *        look-up; a known servo's name becomes DUT NAME.
- * @param id  The id.
- * @param out The notice.
- * @param n   Its size.
+ * @brief The notice for what the card knows of @p id; a known servo's name
+ *        becomes DUT NAME.
+ * @param card What the card knows.
+ * @param id   The id.
+ * @param name The newest run's name, "" for none.
+ * @param out  The notice.
+ * @param n    Its size.
  */
-static void set_notice(const char *id, char *out, size_t n)
+static void card_notice(scan_card_t card, const char *id, const char *name,
+                        char *out, size_t n)
 {
-    char name[SETTINGS_TEXT_MAX] = "";
-    const scan_card_t card = (s_flow.look != NULL)
-                                 ? s_flow.look(id, name, sizeof(name))
-                                 : SCAN_CARD_UNKNOWN;
-    name[sizeof(name) - 1u] = '\0';
     switch (card) {
     case SCAN_CARD_NONE:
         (void)snprintf(out, n, TR(SCAN_NO_CARD), id);
@@ -164,6 +168,67 @@ static void set_notice(const char *id, char *out, size_t n)
     }
 }
 
+/**
+ * @brief The notice of a line that set the active servo, after the card's
+ *        look-up.  A hook that answers SCAN_CARD_UNKNOWN leaves the id
+ *        pending for scan_flow_answer().
+ * @param id  The id.
+ * @param out The notice.
+ * @param n   Its size.
+ */
+static void set_notice(const char *id, char *out, size_t n)
+{
+    char name[SETTINGS_TEXT_MAX] = "";
+    const scan_card_t card = (s_flow.look != NULL)
+                                 ? s_flow.look(id, name, sizeof(name))
+                                 : SCAN_CARD_UNKNOWN;
+    name[sizeof(name) - 1u] = '\0';
+    s_flow.pending[0] = '\0';
+    if (s_flow.look != NULL && card == SCAN_CARD_UNKNOWN) {
+        (void)snprintf(s_flow.pending, sizeof(s_flow.pending), "%s", id);
+        (void)snprintf(s_flow.pending_dut, sizeof(s_flow.pending_dut), "%s",
+                       settings_text(SET_TEXT_DUT_NAME));
+    }
+    card_notice(card, id, name, out, n);
+}
+
+bool scan_flow_answer(const char *id, scan_card_t card, const char *name)
+{
+    if (id == NULL || s_flow.pending[0] == '\0'
+        || strcmp(id, s_flow.pending) != 0) {
+        return false;
+    }
+    s_flow.pending[0] = '\0';
+    const char *active = servo_active_id();
+    if (card == SCAN_CARD_UNKNOWN || active == NULL || strcmp(active, id) != 0
+        || run_active_with(ui_router_status())) {
+        return false;
+    }
+    /* A DUT NAME typed since the scan stays: the answer names the id. */
+    const bool typed = strcmp(settings_text(SET_TEXT_DUT_NAME),
+                              s_flow.pending_dut) != 0;
+    char cut[SETTINGS_TEXT_MAX];
+    (void)snprintf(cut, sizeof(cut), "%s",
+                   (name != NULL && !typed) ? name : "");
+    char notice[UI_ALERT_MAX];
+    card_notice(card, id, cut, notice, sizeof(notice));
+    ui_router_set_notice(notice);
+    return true;
+}
+
+scan_card_t scan_flow_card_of(servo_look_t look)
+{
+    switch (look) {
+    case SERVO_LOOK_NO_FOLDER:
+    case SERVO_LOOK_NO_RUNS:
+        return SCAN_CARD_NEW;
+    case SERVO_LOOK_RUNS:
+        return SCAN_CARD_KNOWN;
+    default:
+        return SCAN_CARD_UNKNOWN;
+    }
+}
+
 bool scan_flow_line(const char *line, bool too_long, uint32_t now_ms)
 {
     return line_with(line, too_long, now_ms, ui_router_status(),
@@ -172,7 +237,9 @@ bool scan_flow_line(const char *line, bool too_long, uint32_t now_ms)
 
 bool scan_flow_typed(const char *id)
 {
-    /* No clock: a typed id is never a repeat (servo_scan_decide_from()). */
+    /* No clock: a typed id is never a repeat (servo_scan_decide_from()).
+     * The run check is scan_flow_run_active()'s, as for a scan: the
+     * router's status read through run_active_with(). */
     return line_with(id, false, 0u, ui_router_status(), SERVO_ACTIVE_TYPED);
 }
 
@@ -239,4 +306,5 @@ void scan_flow_reset(void)
     atomic_store(&s_flow.state, MAIL_EMPTY);
     s_flow.look = NULL;
     s_flow.last = SERVO_SCAN_REPEAT;
+    s_flow.pending[0] = '\0';
 }

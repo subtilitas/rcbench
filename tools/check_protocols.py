@@ -430,6 +430,15 @@ ASSERTED = {
             "RCNODE_CTL_MAX <= BLEU_WRITE_MAX",
             "BAL_BLE_OWNER < BLEU_OWNER_MAX",
         ),
+        # The printer's central: its owner in a token, a command in one
+        # write, a data fragment in one long write, an address in the
+        # view's printer field.
+        "shared/ui/print_ctl.c": (
+            "PRINT_BLE_OWNER < BLEU_OWNER_MAX",
+            "SV_CMD_LEN <= BLEU_WRITE_MAX",
+            "SV_FRAGMENT <= BLEU_WRITE_EXT_MAX",
+            "PRINT_NAME_SIZE >= BLEU_ADDR_TEXT_MAX",
+        ),
     },
     "dialknob": {
         "shared/ui/dial_ctl.c": (
@@ -560,6 +569,15 @@ ASSERTED = {
             "RCNODE_BF_RESTARTED == VIBE_F_RESTARTED",
             "RCNODE_BLADES_MAX == VIBE_BLADES_MAX",
             "(BAL_VIBE_FLAGS & RCNODE_BF_COUNTS) == 0u",
+        ),
+    },
+    "supvan": {
+        # A command is one write, a data fragment one long write, and the
+        # least MTU carries a fragment with the ATT header.
+        "shared/ui/print_ctl.c": (
+            "SV_CMD_LEN <= BLEU_WRITE_MAX",
+            "SV_FRAGMENT <= BLEU_WRITE_EXT_MAX",
+            "PRINT_MTU_MIN == SV_FRAGMENT + 3u",
         ),
     },
     "witmotion": {

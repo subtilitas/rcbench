@@ -25,6 +25,8 @@
  * - the_late_new_id_answer_repaints_both_rows
  * - a_scan_with_the_list_open_repaints_servo_id
  * - a_pick_takes_the_id_drawn_after_a_refresh
+ * - a_typed_id_is_refused_while_a_test_has_not_drained
+ * - a_typed_id_takes_dut_name_from_the_late_answer
  *
  * SPDX-License-Identifier: MIT
  */
@@ -638,6 +640,68 @@ TEST_CASE(a_pick_takes_the_id_drawn_after_a_refresh)
     CHECK_STR_EQ(active(), "KST-00005");
 }
 
+/* An AUTOMATIC TEST stopped by SAFE, its END not yet handed to the
+ * logger: the run still holds its servo (servo_screen_run_active()), with
+ * the bench SAFE and no test running.  A typed id is refused, as a scan. */
+TEST_CASE(a_typed_id_is_refused_while_a_test_has_not_drained)
+{
+    fresh_hub();
+    (void)home_tag();
+    CHECK(servo_active_set("KST-00001", SERVO_ACTIVE_PICK, false));
+    hold_start(2.3f);
+    bench_frames(400u);
+    CHECK(servo_screen_testing());
+    /* SAFE from the IOmcu; frames pass without the logger taking a line. */
+    servo_screen_set_armed(false);
+    for (int i = 0; i < 10; ++i) {
+        bench.now += 20u;
+        servo_screen_clock(bench.now);
+        scr->tick(0.02f);
+    }
+    ui_bench_status_t st = *ui_router_status();
+    st.armed = false;
+    st.armed_roles = 0u;
+    ui_router_set_status(&st);
+    CHECK(!servo_screen_testing());
+    CHECK(servo_screen_run_active());
+    CHECK(scan_flow_run_active());
+    CHECK(scan_flow_typed("KST-00002"));
+    CHECK_EQ(scan_flow_last(), SERVO_SCAN_REFUSED_RUN);
+    CHECK_STR_EQ(active(), "KST-00001");
+    bench_frames(100u);
+    CHECK(!servo_screen_run_active());
+    CHECK(scan_flow_typed("KST-00002"));
+    CHECK_EQ(scan_flow_last(), SERVO_SCAN_SET);
+}
+
+/* The card's look-up answers later, as the panel's logger task does
+ * (SCAN_CARD_UNKNOWN, then scan_flow_answer()): a typed known id takes DUT
+ * NAME from the answer; a DUT NAME typed by hand before it stays. */
+TEST_CASE(a_typed_id_takes_dut_name_from_the_late_answer)
+{
+    fresh_hub();
+    s_look = SCAN_CARD_UNKNOWN;
+    s_look_name[0] = '\0';
+    scan_flow_set_look(look);
+    type_id_open();
+    type("0000A");
+    sl_text_key(UI_TK_OK);
+    CHECK_STR_EQ(active(), "KST-0000A");
+    CHECK_STR_EQ(settings_text(SET_TEXT_DUT_NAME), "");
+    CHECK(scan_flow_answer("KST-0000A", SCAN_CARD_KNOWN, "LEFT AILERON"));
+    CHECK_STR_EQ(settings_text(SET_TEXT_DUT_NAME), "LEFT AILERON");
+
+    settings_set_text(SET_TEXT_DUT_NAME, "");
+    type_id_open();
+    type("0000B");
+    sl_text_key(UI_TK_OK);
+    CHECK_STR_EQ(active(), "KST-0000B");
+    settings_set_text(SET_TEXT_DUT_NAME, "MINE");
+    CHECK(scan_flow_answer("KST-0000B", SCAN_CARD_KNOWN, "RIGHT FLAP"));
+    CHECK_STR_EQ(settings_text(SET_TEXT_DUT_NAME), "MINE");
+    scan_flow_set_look(NULL);
+}
+
 int main(void)
 {
     RUN(the_block_is_on_every_list_with_dut_name);
@@ -657,5 +721,7 @@ int main(void)
     RUN(the_late_new_id_answer_repaints_both_rows);
     RUN(a_scan_with_the_list_open_repaints_servo_id);
     RUN(a_pick_takes_the_id_drawn_after_a_refresh);
+    RUN(a_typed_id_is_refused_while_a_test_has_not_drained);
+    RUN(a_typed_id_takes_dut_name_from_the_late_answer);
     return test_summary("servo_label_rows");
 }

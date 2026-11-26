@@ -541,6 +541,13 @@ def test_servo_take_calls_name_every_card_function_servo_take_makes():
     assert rest == set()
 
 
+def test_servo_look_calls_name_every_card_function_of_a_scans_look_up():
+    """Servo look calls name every card function of a scan's look-up."""
+    rest = io_table_holds(sc.SERVO_LOOK_CALLS, "servo_look.h",
+                          "servo_look_io_t", "servo_look.c", "panel_servo.c")
+    assert rest == set()
+
+
 def test_fault_calls_name_every_card_function_of_the_fault_log():
     """Fault calls name every card function of the fault log."""
     rest = io_table_holds(sc.FAULT_CALLS, "fault_log.h", "fault_log_io_t",

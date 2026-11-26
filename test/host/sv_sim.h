@@ -6,9 +6,10 @@
  *        runs busy, printing and buf_full over time, and moves the label
  *        counter when a job with the right stream ends.
  *
- * Answers carry byte 4 = 0x55, as the station's printer does over BLE.
- * The answer lengths (status 24 bytes, material 47, the rest 16) are the
- * simulator's; H0's captures settle the printer's own.
+ * Answers have the station's form (H0, test/host/fixtures/supvan/
+ * README.md): bytes 4 to 6 55 03 55, a status of 26 bytes, a material
+ * record of 61 bytes on H0's answer with the sum of bytes 10 to 60 in
+ * bytes 8 and 9, every other answer 23 bytes.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -141,6 +142,8 @@ static inline uint8_t *sim_answer(sv_sim_t *s, uint8_t cmd, unsigned len,
     s->out[2] = (uint8_t)(len - SV_HEAD);
     s->out[3] = 0u;
     s->out[4] = 0x55u;
+    s->out[5] = 0x03u;
+    s->out[6] = 0x55u;
     s->out[SV_CMD_AT] = cmd;
     s->nout = len;
     s->sent = 0u;
@@ -196,7 +199,7 @@ static inline void sim_command(sv_sim_t *s, const uint8_t *c, uint32_t now)
         return;
     }
     if (cmd == SV_C_INQUIRY) {
-        uint8_t *f = sim_answer(s, cmd, 24u, now);
+        uint8_t *f = sim_answer(s, cmd, 26u, now);
         if (s->started) {
             s->inquiries++;
         }
@@ -222,7 +225,18 @@ static inline void sim_command(sv_sim_t *s, const uint8_t *c, uint32_t now)
         if (cut) {
             s->short_mat--;
         }
-        uint8_t *f = sim_answer(s, cmd, cut ? 46u : 47u, now);
+        /* H0's answer before the print, the record written over it */
+        static const uint8_t h0[61] = {
+            0x7E, 0x5A, 0x39, 0x00, 0x55, 0x03, 0x55, 0x30, 0xE4, 0x08,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x1D, 0x01, 0x3D, 0xED, 0x1E, 0x10, 0x80, 0x56,
+            0x6A, 0x0A, 0x26, 0xE2, 0xA1, 0xC7, 0xA9, 0x79, 0x15, 0x01,
+            0x28, 0x1E, 0x03, 0x26, 0x01, 0x00, 0x00, 0xA4, 0x06, 0xB0,
+            0x04, 0x1A, 0x08, 0x16, 0x0E, 0x1C, 0x39, 0x00, 0x00, 0x03,
+            0x00 };
+        uint8_t *f = sim_answer(s, cmd, cut ? 46u : 61u, now);
+        memcpy(f, h0, cut ? 46u : 61u);
+        f[2] = (uint8_t)((cut ? 46u : 61u) - SV_HEAD);
         sv_material_t m = s->roll;
         if (s->printed) {
             if (s->mat_reads++ >= s->counter_lag && s->prints
@@ -245,10 +259,16 @@ static inline void sim_command(sv_sim_t *s, const uint8_t *c, uint32_t now)
             f[44] = (uint8_t)(m.left >> 8);
             f[45] = (uint8_t)(m.left >> 16);
             f[46] = (uint8_t)(m.left >> 24);
+            uint16_t sum = 0u;
+            for (unsigned i = 10u; i < 61u; ++i) {
+                sum = (uint16_t)(sum + f[i]);
+            }
+            f[8] = (uint8_t)sum;
+            f[9] = (uint8_t)(sum >> 8);
         }
         return;
     }
-    (void)sim_answer(s, cmd, 16u, now);
+    (void)sim_answer(s, cmd, 23u, now);
 }
 
 /**

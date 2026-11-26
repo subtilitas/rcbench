@@ -24,6 +24,20 @@ history is in git.
   line within 3.0s is dropped. The debug console's `scan <text>` injects a
   line (`scan_flow.c`, `servo_scan_decide()`; `test_scan_flow`,
   `test_servo_scan`).
+- A scan of a servo with runs on the card sets DUT NAME to the `dut` value
+  its runs' `info` cells carry, and the notice names it; a servo new on
+  the card, or one whose folder holds no run, gives `NEW ON THIS CARD` and
+  leaves DUT NAME. The panel's logger task lists `Servos/<id>` once and
+  reads 2,048 bytes at most of each kind's highest-numbered CSV, up to 4.
+  Names that agree name the servo; names that differ take the newest FAT
+  stamp only when every stamp is a date after 1980, otherwise no name. A
+  first data row past 2,048 bytes gives no name. The answer reaches the
+  band frames after the scan and is dropped once another id is set or a
+  run starts; a DUT NAME typed since the scan stays (`servo_look.c`,
+  `scan_flow_answer()`; `test_scan_look`).
+- A scan during a start sequence (the hold on START or ARM until the run)
+  is refused like a scan during the run: the scan's run check is
+  `servo_screen_run_active()`.
 - FILES and the Wi-Fi page keep a labelled servo's folders: `Servos` and
   each id folder in it (`Servos/KST_X10-0000A`, any case) take no RENAME,
   MOVE or DELETE, DELETE also when empty, and list with the place `SERVO`
@@ -45,8 +59,30 @@ history is in git.
   (`uuid16`); a scan that lists a device by its public address prefix
   (`adv_oui`); and a sixth client of the hub (`BLEU_HUB_CLIENTS` 6). The
   panel writes such a write with `panel_ble_write_long()` and holds owner
-  5 (`PANEL_BLEC_PRINT`) for the label printer, a stub until its client
-  is built. Connections stay at 5.
+  5 (`PANEL_BLEC_PRINT`) for the label printer. Connections stay at 5.
+- The panel prints a servo label on a Supvan T50M Pro over Bluetooth LE
+  (`print_ctl.c`, `panel_print.c`). The printer is bound by its address
+  (`prn_ble`); the link is made for a request, hurried, and ends 30s after
+  the printer's last answer, so a second label inside that time uses it.
+  A label reads the roll and its counter, lays out the id and DUT NAME
+  for that roll, fills and encodes one print buffer each 5ms poll in one
+  heap block (41,763 bytes or less for 40 x 30mm, PSRAM first), sends the
+  job and takes the counter's verdict. A link not up within 10s ends with
+  `PRINTER NOT FOUND`, `BLUETOOTH NOT READY` or `NOT A LABEL PRINTER`; an
+  MTU under 131 with `PRINTER MTU TOO SMALL`; a link dropped during the
+  job and back within 5s with `PRINTED` or `LINK LOST, NOT PRINTED`, and
+  not back, or dropped again before the counter was read, with `LINK
+  LOST`. A request connects at once, whatever retry gap a printer that
+  was off left; an abort while connecting ends the connect. A label is refused while ARMED (`SAFE ONLY`)
+  and every request while a device update runs (`UPDATE RUNNING`); a
+  device update is refused while a label print runs. 23 error texts in EN
+  and DE. The debug console's `print`, `print test`, `print id <id>`,
+  `print query`, `print stop`, `print bind <address>` and `print unbind`
+  drive it (`test_print_ctl`, `test_print_ctl_ends`).
+- A Bluetooth LE profile with `cccd_next` subscribes at the handle after
+  the stream characteristic's value with no descriptor discovery and never
+  reads the CCCD back, as the Supvan printer refuses Find Information
+  (`protocols/bleuart`).
 - The QR scanner's core for a GM861 module on a panel UART (universal
   asynchronous receiver-transmitter), pure C in `shared/scanner/`: a framer
   for code lines (0x20 to 0x7E, at most 64 bytes, CR, CR LF or LF) and
@@ -73,8 +109,11 @@ history is in git.
   the label counter falls by 1. A literal-only LZMA encoder writes the
   stream (12,336 bytes of state, no dictionary), byte-identical to
   `tools/lzlit.py`. The protocol follows heeen/supvan-cups (MIT) and the
-  station's captures. No screen uses it yet
-  ([README](protocols/supvan/README.md)).
+  station's captures. The host suites compare it with the station's
+  captures of one 40 x 30mm label (2026-11-26): the 3 print buffers, the
+  full LZMA stream, every write and every answer
+  ([README](protocols/supvan/README.md),
+  [fixtures](test/host/fixtures/supvan/README.md)).
 - `hardware/mechanical/`: models of 4 parts measured from owner photos on
   millimetre paper: `supvan_t50m_pro.step`, the Supvan KATASYMBOL T50M
   Pro label printer (120.0 x 86.3 x 56.0mm); `usbc_plug_breakout.step`,
