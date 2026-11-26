@@ -8,6 +8,17 @@ history is in git.
 
 ### Added
 
+- SETUP > PANEL's last row, About rcbench, opens ABOUT: the panel and the
+  IOmcu firmware's versions, `Design: Julian Wingert`,
+  `Implemented by Claude and Julian`, `Copyright 2026 Julian Wingert`,
+  `RCBench@doesnt.fly`, the MIT and CC BY-NC-SA 4.0 licence lines, the repository, the trademark notice, the 25 third-party
+  components linked into the two images with SPDX identifier and copyright
+  lines, and the licence texts they ask for, 321,709 bytes in the panel
+  image. A drag, a 56px scroll bar, PAGE UP, PAGE DOWN and BACK
+  (`about_screen.c`, `about_draw.c`; `test_about_screen`).
+  `tools/gen_licenses.py` writes the screen's table and the one in the new
+  page `docs/Licenses.md` from one list; CI runs its `--check`
+  (`test_gen_licenses.py`).
 - The splash's credit line at the foot reads `JuWi made`, the same in
   English and German (`SPLASH_CREDIT`; `splash.png`, `de/splash.png`).
 - SERVO LABEL's PRINT row prints the active servo's label, its id and

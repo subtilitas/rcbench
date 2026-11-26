@@ -214,6 +214,11 @@ jobs:
       - name: The checked-in scanner setup code matches its generator
         run: python3 tools/gen_scanner_codes.py --check
 
+      # ABOUT's third-party table and notice texts and the table of
+      # docs/Licenses.md are written from one list; neither may drift.
+      - name: The ABOUT table and docs/Licenses.md match their list
+        run: python3 tools/gen_licenses.py --check
+
       # The KiCad library of the modules is generated from the specs in
       # hardware/kicad/modules and checked in, so KiCad users need no Python.
       - name: The checked-in KiCad library matches its specs
@@ -498,13 +503,13 @@ jobs:
       # in the host build; cppcheck reads it with the firmware.
       # render_screen.c, render_files.c, render_hitec.c, render_esc_wire.c,
       # render_yge.c, render_help.c, render_shot.c, render_rudder.c,
-      # render_imu.c, render_scanner.c, render_printer.c, render_dial.c,
-      # render_node.c, render_upd_wiz.c, render_outputs.c,
+      # render_imu.c, render_scanner.c, render_about.c, render_printer.c,
+      # render_dial.c, render_node.c, render_upd_wiz.c, render_outputs.c,
       # render_servo_label.c and bench_frame.c are built by
       # tools/render_ui.py, tools/render_dial.py, tools/render_node.py and
       # tools/frame_cost.py, not by CMake, so they have no compile command
-      # here; the three render tools build the first sixteen with -Werror,
-      # cppcheck reads all seventeen.
+      # here; the three render tools build the first seventeen with -Werror,
+      # cppcheck reads all eighteen.
       # Configuration and the reason for each disabled check are in
       # .clang-tidy and test/host/.clang-tidy.  Every file runs on every
       # run; no result is kept between runs.
@@ -523,6 +528,7 @@ jobs:
                         -e 'test/host/render_rudder.c' \
                         -e 'test/host/render_imu.c' \
                         -e 'test/host/render_scanner.c' \
+                        -e 'test/host/render_about.c' \
                         -e 'test/host/render_printer.c' \
                         -e 'test/host/render_dial.c' \
                         -e 'test/host/render_node.c' \

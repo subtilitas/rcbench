@@ -155,6 +155,21 @@ After the set minutes without a touch, the backlight's PWM (pulse-width modulati
 
 The sensor is an MT6701 in its I2C mode, MODE pin high, at 0x06. Nothing else of the board is on its bus. The panel never addresses 0x14 or 0x5D for it, where the GT911 touch controller answers on the touch bus, nor 0x00 to 0x03 or 0x78 to 0x7F, which the I2C specification reserves. With no sensor fitted, Rotary knob ON probes 0x06 every 100ms. The host tests show that this changes nothing else; on the panel it is not measured. Wiring: [Building](https://github.com/subtilitas/rcbench/blob/main/docs/Building.md#rotary-knob-wiring).
 
+### About rcbench
+
+![ABOUT at its top](view:setup-about)
+
+PANEL's last row, About rcbench, opens ABOUT. It shows the panel firmware's version and the IOmcu's, the designer, the project's licences (MIT for the firmware and software, CC BY-NC-SA 4.0 for the hardware designs), the trademark notice, every third-party component of the panel and the IOmcu firmware with its licence and copyright lines, and the licence texts those licences ask to go with the firmware.
+
+- **Scroll**: drag on the rows; each 24px moves one row.
+- **Bar**: press the bar on the right to jump there, or drag its thumb. Its travel spans the whole column.
+- **PAGE UP**, **PAGE DOWN**: 17 rows, one screen.
+- **BACK** or the home tag: back to PANEL's list where it was left.
+
+![ABOUT scrolled to the licences](view:setup-about-licences)
+
+The same table is on the [Licences page](https://github.com/subtilitas/rcbench/blob/main/docs/Licenses.md).
+
 ## SD CARD
 
 ![SD CARD](view:setup-card)

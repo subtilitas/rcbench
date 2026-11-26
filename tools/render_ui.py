@@ -80,6 +80,8 @@ SOURCES = [
     "test/host/render_imu.c",
     # The QR scanner: SETUP > SENSORS > SCANNER handed a view, SETUP CODE.
     "test/host/render_scanner.c",
+    # ABOUT: the IOmcu's version named, the column scrolled.
+    "test/host/render_about.c",
     # The label printer: SETUP > WIRELESS > PRINTER handed a view, SEARCH.
     "test/host/render_printer.c",
     # The settings backup: its files on a folder in memory, the driver's
@@ -763,6 +765,11 @@ SCREENS = {
                                 "dark"),
     "setup-scanner-setup-code": ("setup-scanner-setup-code.png",
                                  "scan-code", "dark"),
+    # ABOUT from PANEL's About rcbench: its top, scrolled 8 rows to the
+    # licences and the trademark notice, and its end.
+    "setup-about": ("setup-about.png", "about", "dark"),
+    "setup-about-licences": ("setup-about-licences.png", "about", "dark"),
+    "setup-about-end": ("setup-about-end.png", "about", "dark"),
     "setup-sensors-old": ("setup-sensors-old.png", "setup", "dark"),
     "setup-sensors-limit": ("setup-sensors-limit.png", "setup", "dark"),
     # SENSORS on the rbmod carrier: 0x40 soldered, its rows on the rails.

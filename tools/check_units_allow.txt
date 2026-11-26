@@ -56,3 +56,9 @@ shared/esc/profiles/yge-rc-setup.json: "name": "YGE 12 S"
 docs/OpenYGE.md: 31 RPM SETPOINT = 0
 docs/OpenYGE-de.md: 31 RPM SETPOINT = 0
 protocols/openyge/include/openyge_file.h: 31 RPM SETPOINT = 0
+
+# Copyright lines of picolibc's and newlib's licence files, which ABOUT
+# shows as their licences ask: a year followed by a holder's name.
+shared/ui/about_gen.c: Copyright: 2020  C-SKY Microsystems
+shared/ui/about_gen.c: Copyright: 1984,2000 S.L. Moshier
+shared/ui/about_gen.c: Copyright (c) 1984,2000 S.L. Moshier

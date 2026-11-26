@@ -1794,6 +1794,76 @@ UI_TEXT(SBK_LINE_DERIVED, 24,
 UI_TEXT(SBK_LINE_HELD, 24,
     "in use, kept",
     "belegt, bleibt")
+/* ABOUT (about_screen.h), from SETUP > PANEL's last row.  The product's
+ * name, the designer, the implementers' line, the copyright line, the
+ * mail address, the licences' names and SPDX ids and the repository stay
+ * as written and are not here;
+ * the generated table and notices (about_gen.h) neither.  A heading is
+ * drawn in the 12 x 24 face, 78 cells; a line in the 10 x 20 face, 93
+ * cells a row. */
+UI_TEXT(ABOUT_ROW, 0,
+    "About rcbench",
+    "Über rcbench")
+UI_TEXT(ABOUT_ROW_HELP, 0,
+    "Versions, design, licences, third-party notices",
+    "Versionen, Design, Lizenzen, Fremdkomponenten")
+UI_TEXT(ABOUT_FIRMWARE, 0,
+    "Panel firmware %s",
+    "Panel-Firmware %s")
+UI_TEXT(ABOUT_IOMCU, 0,
+    "IOmcu firmware %s",
+    "IOmcu-Firmware %s")
+UI_TEXT(ABOUT_NOT_KNOWN, 40,
+    "not known: no IOmcu has answered",
+    "unbekannt: kein IOmcu hat geantwortet")
+UI_TEXT(ABOUT_H_LICENCES, 0,
+    "LICENCES",
+    "LIZENZEN")
+UI_TEXT(ABOUT_LIC_SOFTWARE, 0,
+    "Firmware and software: %s",
+    "Firmware und Software: %s")
+UI_TEXT(ABOUT_LIC_HARDWARE, 0,
+    "Hardware designs in hardware/: %s",
+    "Hardware-Entwürfe in hardware/: %s")
+UI_TEXT(ABOUT_REPO, 0,
+    "Source code and designs: %s",
+    "Quellcode und Entwürfe: %s")
+UI_TEXT(ABOUT_H_TRADEMARKS, 0,
+    "TRADEMARKS",
+    "MARKEN")
+UI_TEXT(ABOUT_TRADEMARKS, 0,
+    "KST, CHASERVO and Hitec and their logos are trademarks or registered trademarks of their respective manufacturers. Every other product and company name here is a name or trademark of its owner. rcbench uses these names only to describe compatibility. It is not affiliated with any of the owners and is neither supported nor sponsored by them. NOTICE in the repository lists the names.",
+    "KST, CHASERVO und Hitec sowie ihre Logos sind Marken oder eingetragene Marken ihrer jeweiligen Hersteller. Jeder andere Produkt- und Firmenname hier ist ein Name oder eine Marke seines Inhabers. rcbench nennt diese Namen nur, um die Kompatibilität zu beschreiben. Es ist mit keinem der Inhaber verbunden und wird von keinem unterstützt oder gesponsert. NOTICE im Repository listet die Namen auf.")
+UI_TEXT(ABOUT_H_PANEL, 0,
+    "THIRD-PARTY COMPONENTS: PANEL FIRMWARE",
+    "FREMDKOMPONENTEN: PANEL-FIRMWARE")
+UI_TEXT(ABOUT_H_IOMCU, 78,
+    "THIRD-PARTY COMPONENTS: IOMCU FIRMWARE",
+    "FREMDKOMPONENTEN: IOMCU-FIRMWARE")
+UI_TEXT(ABOUT_IOMCU_LINE, 186,
+    "The panel image carries the IOmcu image and installs it on the IOmcu.",
+    "Das Panel-Image enthält das IOmcu-Image und installiert es auf dem IOmcu.")
+UI_TEXT(ABOUT_H_REFS, 78,
+    "DESIGN AND PROTOCOL REFERENCES",
+    "DESIGN- UND PROTOKOLLREFERENZEN")
+UI_TEXT(ABOUT_REFS_LINE, 186,
+    "Read as documentation; neither firmware holds code of theirs.",
+    "Als Dokumentation gelesen; keine der Firmwares enthält Code daraus.")
+UI_TEXT(ABOUT_H_NOTICES, 78,
+    "LICENCE TEXTS AND NOTICES",
+    "LIZENZTEXTE UND HINWEISE")
+UI_TEXT(ABOUT_NOTICES_LINE, 186,
+    "Each component's copyright lines and licence text, as its licence asks; the Apache License 2.0 once, at the end.",
+    "Copyright-Zeilen und Lizenztext jeder Komponente, wie ihre Lizenz es verlangt; die Apache License 2.0 einmal, am Ende.")
+UI_TEXT(ABOUT_BACK, 0,
+    "BACK",
+    "ZURÜCK")
+UI_TEXT(ABOUT_PAGE_UP, 0,
+    "PAGE UP",
+    "SEITE HOCH")
+UI_TEXT(ABOUT_PAGE_DOWN, 0,
+    "PAGE DOWN",
+    "SEITE RUNTER")
 UI_TEXT(SET_HUB_OUTPUTS, 0,
     "PROTOCOLS, PINS, BOARD",
     "PROTOKOLLE, PINS, PLATINE")

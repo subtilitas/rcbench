@@ -90,6 +90,10 @@ typedef enum {
      * Factory reset (scanner_code.h): the scanner's setup code and the
      * factory reset's hold. */
     SCREEN_SCAN_CODE,
+    /* ABOUT, from SETUP > PANEL's row About rcbench (about_screen.h): the
+     * versions, the designer, the licences, the trademark notice and the
+     * third-party components with their notice texts. */
+    SCREEN_ABOUT,
     SCREEN_COUNT
 } ui_screen_id_t;
 

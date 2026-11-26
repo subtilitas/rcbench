@@ -53,9 +53,9 @@ LANG_DIR = {"en": "", "de": "de/"}
 NO_PAGE = {"SCREEN_SPLASH"}
 
 # SERVO's function screens, which the hub opens, SEARCH, which WIRELESS'
-# scan and bound rows open, and BACKUP, which SD CARD's Load settings
-# opens: each is described on the page named here (its id), not on a page
-# of its own.
+# scan and bound rows open, BACKUP, which SD CARD's Load settings opens,
+# and ABOUT, which PANEL's About rcbench opens: each is described on the
+# page named here (its id), not on a page of its own.
 COVERED_BY = {
     "SCREEN_SERVO_LIVE": "servo",
     "SCREEN_SERVO_SWEEP": "servo",
@@ -68,6 +68,7 @@ COVERED_BY = {
     "SCREEN_WL_SEARCH": "setup-wireless",
     "SCREEN_SET_LOAD": "setup-backup",
     "SCREEN_SCAN_CODE": "setup-sensors",
+    "SCREEN_ABOUT": "setup",
 }
 
 HEADER_KEYS = ("screen", "title", "order")
