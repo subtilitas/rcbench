@@ -22,9 +22,9 @@
  * (scan_flow_set_look()): no card, new on this card, or known with the
  * DUT NAME of its newest run.  A known servo's name becomes DUT NAME
  * (SET_TEXT_DUT_NAME).  Without a hook the notice names the id alone and
- * DUT NAME stays.  The panel's hook (panel_servo.c) answers no card at
- * once and SCAN_CARD_UNKNOWN otherwise: the notice names the id, and the
- * card's answer comes frames later from its logger task through
+ * DUT NAME stays.  The panel's hook (panel_servo.c) answers
+ * SCAN_CARD_UNKNOWN: the notice names the id, and the card's answer, no
+ * card among them, comes frames later from its logger task through
  * scan_flow_answer(), which raises the full notice.
  *
  * State of the frame task, but the mailbox, which any number of tasks
@@ -81,7 +81,8 @@ void scan_flow_set_look(scan_flow_look_fn fn);
  * Dropped, and false, when @p id is not that id, when another line set an
  * id since, when the id is no longer active, when a run is active (DUT
  * NAME is not changed under a run), or for SCAN_CARD_UNKNOWN.  Each id's
- * answer is taken once.
+ * answer is taken once.  A DUT NAME changed since the scan (typed by hand)
+ * stays: the notice then names the id alone.
  *
  * @param id   The id asked.
  * @param card What the card knows.

@@ -8,8 +8,8 @@
  * is published under s_mux by the logger task and read by the frame task.
  * A console line is a slot under s_mux the frame task empties.  A scan's
  * look-up (scan_flow_set_look()) is a third request and answer of the
- * same kind: the frame task answers no card at once and asks the logger
- * task for the rest, whose answer goes to scan_flow_answer().
+ * same kind: the frame task asks the logger task, whose answer goes to
+ * scan_flow_answer().
  *
  * SPDX-License-Identifier: MIT
  */
@@ -305,16 +305,14 @@ bool panel_servo_new(const char *prefix)
 }
 
 /**
- * @brief scan_flow_look_fn: no card at once; otherwise the logger task is
- *        asked and the answer comes through panel_servo_frame().
+ * @brief scan_flow_look_fn: the logger task is asked, which mounts a card
+ *        put in since (storage_check()) and answers no card when none is
+ *        held; the answer comes through panel_servo_frame().
  */
 static scan_card_t scan_look(const char *id, char *name, size_t n)
 {
     (void)name;
     (void)n;
-    if (!storage_mounted()) {
-        return SCAN_CARD_NONE;
-    }
     taskENTER_CRITICAL(&s_mux);
     (void)snprintf(s_look_id, sizeof(s_look_id), "%s", id);
     taskEXIT_CRITICAL(&s_mux);

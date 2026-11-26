@@ -219,14 +219,24 @@ notice first names the id alone, then the answer replaces it:
 | --- | --- | --- |
 | no card mounted, at the scan or at the look-up | `NO CARD: RUNS ARE NOT FILED` | stays |
 | no folder `Servos/<id>`, or a folder with no run's CSV | `NEW ON THIS CARD` | stays |
-| runs; the newest has a `dut` value in its `info` cell | the name | the name |
+| runs whose names agree | the name | the name |
+| runs whose names differ, every stamp a real date | the name of the newest stamp | that name |
+| runs whose names differ, a stamp in 1980 or two newest stamps equal | the id alone | stays |
 | runs without a `dut` value, or a first data row past 2,048 bytes | the id alone | stays |
 | a folder that does not read | the id alone | stays |
 
-The newest run is the CSV with the latest FAT (File Allocation Table)
-stamp; equal stamps go to the higher number. The look-up lists the folder
-once and reads 2,048 bytes at most of one file. An answer is dropped when
-another id was set since, or when a run started since.
+A run's name is the `dut` value of the `info` cell on its first data row.
+The look-up lists the folder once and reads each kind's highest number
+(LIMIT RUN, RUDDER AUTO, AUTOMATIC TEST, SERVO run): up to 4 reads of
+2,048 bytes. Numbers count per kind, and a FAT (File Allocation Table)
+stamp is no order: a file written before the clock is set carries 1980. A
+kind whose run carries no name is left out. A wrong name is worse than
+none, so names that differ without real dates give none.
+
+An answer is dropped when another id was set since, or when a run started
+since. A DUT NAME typed since the scan stays, and the notice names the id
+alone. The logger task mounts a card put in since the start before it
+answers.
 
 ### An ARM the IOmcu refuses
 

@@ -177,36 +177,93 @@ static const char *notice(void)
 
 /* ----------------------------------------------------------- the look */
 
-TEST_CASE(the_newest_run_by_stamp_names_the_servo)
+/** @brief FAT stamps: a date in 1980, as before NTP, and dates in 2026. */
+#define STAMP_1980  0x00210000u   /* 1980-01-01 00:00 */
+#define STAMP_FEB   0x5C410000u   /* 2026-02-01 00:00 */
+#define STAMP_MAR   0x5C610000u   /* 2026-03-01 00:00 */
+#define STAMP_APR   0x5C810000u   /* 2026-04-01 00:00 */
+
+/** @brief A CSV of DUT NAME @p dut in buffer @p i of the case. */
+static const char *csv_of(int i, const char *dut)
+{
+    static char bufs[4][1024];
+    test_csv(bufs[i], sizeof(bufs[i]), dut);
+    return bufs[i];
+}
+
+/* Before NTP every file carries 1980; another file of 2026 is no newer:
+ * within a kind the highest number names the servo. */
+TEST_CASE(offline_the_higher_number_wins_within_its_kind)
 {
     (void)start();
-    static char a[1024], b[1024], c[1024];
-    test_csv(a, sizeof(a), "OLDER");
-    test_csv(b, sizeof(b), "NEWEST");
-    test_csv(c, sizeof(c), "HIGHER NUMBER");
-    card_add("Servos/KST_X10-0000A", 0u, NULL);
-    card_add("Servos/KST_X10-0000A/automatic test_000.csv", 0x5B7A0000u, a);
-    card_add("Servos/KST_X10-0000A/limit run_001.csv", 0x5B7B0000u, b);
-    card_add("Servos/KST_X10-0000A/automatic test_007.csv", 0x5B790000u, c);
+    card_add("Servos/KST_X10-0000A/limit run_000.csv", STAMP_APR,
+             csv_of(0, "OLDER"));
+    card_add("Servos/KST_X10-0000A/limit run_001.csv", STAMP_1980,
+             csv_of(1, "NEWER"));
     /* A report is no run: its name is not read. */
-    card_add("Servos/KST_X10-0000A/limit run_002.txt", 0x5B7C0000u, "x");
+    card_add("Servos/KST_X10-0000A/limit run_002.txt", STAMP_APR, "x");
     char name[LOG_INFO_TEXT_MAX];
     CHECK_EQ(look_up("KST_X10-0000A", name, sizeof(name)), SERVO_LOOK_RUNS);
-    CHECK_STR_EQ(name, "NEWEST");
+    CHECK_STR_EQ(name, "NEWER");
     CHECK_EQ(s_reads, 1);
 }
 
-TEST_CASE(equal_stamps_go_to_the_higher_number)
+/* Kinds that agree name the servo; a kind whose run has no name is left
+ * out, whatever its stamp. */
+TEST_CASE(two_kinds_agreeing_name_the_servo)
 {
     (void)start();
-    static char a[1024], b[1024];
-    test_csv(a, sizeof(a), "RUN 3");
-    test_csv(b, sizeof(b), "RUN 12");
-    card_add("Servos/KST_X10-0000A/servo run_003.csv", 0x00210000u, a);
-    card_add("Servos/KST_X10-0000A/servo run_012.csv", 0x00210000u, b);
+    card_add("Servos/KST_X10-0000A/limit run_000.csv", STAMP_1980,
+             csv_of(0, "WING"));
+    card_add("Servos/KST_X10-0000A/automatic test_002.csv", STAMP_1980,
+             csv_of(1, "WING"));
+    card_add("Servos/KST_X10-0000A/servo run_000.csv", STAMP_APR,
+             "a;info\n1;\n");
     char name[LOG_INFO_TEXT_MAX];
     CHECK_EQ(look_up("KST_X10-0000A", name, sizeof(name)), SERVO_LOOK_RUNS);
-    CHECK_STR_EQ(name, "RUN 12");
+    CHECK_STR_EQ(name, "WING");
+    /* One read per kind: 3 here, 4 at most. */
+    CHECK_EQ(s_reads, 3);
+}
+
+/* Kinds that differ, every stamp a real date: the newest kind's highest
+ * run, not a lower number of a kind with a later stamp. */
+TEST_CASE(two_kinds_disagreeing_with_real_dates_take_the_newest)
+{
+    (void)start();
+    card_add("Servos/KST_X10-0000A/limit run_004.csv", STAMP_FEB,
+             csv_of(0, "A"));
+    card_add("Servos/KST_X10-0000A/automatic test_001.csv", STAMP_MAR,
+             csv_of(1, "B"));
+    card_add("Servos/KST_X10-0000A/automatic test_000.csv", STAMP_APR,
+             csv_of(2, "C"));
+    char name[LOG_INFO_TEXT_MAX];
+    CHECK_EQ(look_up("KST_X10-0000A", name, sizeof(name)), SERVO_LOOK_RUNS);
+    CHECK_STR_EQ(name, "B");
+}
+
+/* Kinds that differ with a 1980 stamp among them, or two equal newest
+ * stamps: no name.  The notice names the id alone and DUT NAME stays. */
+TEST_CASE(two_kinds_disagreeing_with_a_1980_stamp_give_no_name)
+{
+    (void)start();
+    card_add("Servos/KST_X10-0000A/limit run_002.csv", STAMP_1980,
+             csv_of(0, "A"));
+    card_add("Servos/KST_X10-0000A/automatic test_000.csv", STAMP_APR,
+             csv_of(1, "B"));
+    char name[LOG_INFO_TEXT_MAX] = "X";
+    CHECK_EQ(look_up("KST_X10-0000A", name, sizeof(name)), SERVO_LOOK_RUNS);
+    CHECK_STR_EQ(name, "");
+    card_clear();
+    card_add("Servos/KST_X10-0000B/limit run_002.csv", STAMP_APR,
+             csv_of(2, "A"));
+    card_add("Servos/KST_X10-0000B/automatic test_000.csv", STAMP_APR,
+             csv_of(3, "B"));
+    CHECK_EQ(look_up("KST_X10-0000B", name, sizeof(name)), SERVO_LOOK_RUNS);
+    CHECK_STR_EQ(name, "");
+    CHECK(!servo_look_stamp_valid(STAMP_1980));
+    CHECK(!servo_look_stamp_valid(0x01FF0000u));   /* 1980-12-31 */
+    CHECK(servo_look_stamp_valid(0x02210000u));    /* 1981-01-01 */
 }
 
 TEST_CASE(no_folder_no_runs_and_a_folder_that_does_not_read)
@@ -344,15 +401,33 @@ TEST_CASE(a_late_answer_after_another_scan_or_under_a_run_is_dropped)
     CHECK_EQ(scan_flow_card_of(SERVO_LOOK_UNREADABLE), SCAN_CARD_UNKNOWN);
 }
 
+/* DUT NAME typed by hand between the scan and the answer stays; the
+ * notice names the id alone. */
+TEST_CASE(a_dut_name_typed_before_the_answer_stays)
+{
+    const uint32_t t = start();
+    card_add("Servos/KST_X10-0000A/limit run_000.csv", STAMP_1980,
+             csv_of(0, "LEFT AILERON"));
+    settings_set_text(SET_TEXT_DUT_NAME, "OLD NAME");
+    CHECK(scan_flow_line("KST_X10-0000A", false, t));
+    settings_set_text(SET_TEXT_DUT_NAME, "TYPED");
+    CHECK(answer());
+    CHECK_STR_EQ(settings_text(SET_TEXT_DUT_NAME), "TYPED");
+    CHECK_STR_EQ(notice(), "SERVO KST_X10-0000A");
+}
+
 int main(void)
 {
-    RUN(the_newest_run_by_stamp_names_the_servo);
-    RUN(equal_stamps_go_to_the_higher_number);
+    RUN(offline_the_higher_number_wins_within_its_kind);
+    RUN(two_kinds_agreeing_name_the_servo);
+    RUN(two_kinds_disagreeing_with_real_dates_take_the_newest);
+    RUN(two_kinds_disagreeing_with_a_1980_stamp_give_no_name);
     RUN(no_folder_no_runs_and_a_folder_that_does_not_read);
     RUN(a_row_the_read_cuts_gives_no_name);
     RUN(the_info_column_is_found_by_its_header_and_blank_rows_skipped);
     RUN(a_known_ids_scan_sets_dut_name_from_the_card);
     RUN(an_unknown_ids_scan_leaves_dut_name);
     RUN(a_late_answer_after_another_scan_or_under_a_run_is_dropped);
+    RUN(a_dut_name_typed_before_the_answer_stays);
     return test_summary("scan_look");
 }

@@ -239,15 +239,25 @@ Der Hinweis nennt zuerst nur die ID, dann ersetzt ihn die Antwort:
 | --- | --- | --- |
 | keine Karte eingebunden, beim Scan oder bei der Suche | `KEINE KARTE: LÄUFE WERDEN NICHT ABGELEGT` | bleibt |
 | kein Ordner `Servos/<id>`, oder ein Ordner ohne CSV eines Laufs | `NEU AUF DIESER KARTE` | bleibt |
-| Läufe; der neueste hat einen Wert `dut` in seiner Zelle `info` | der Name | der Name |
+| Läufe mit gleichen Namen | der Name | der Name |
+| Läufe mit verschiedenen Namen, jeder Stempel ein echtes Datum | der Name des neuesten Stempels | dieser Name |
+| Läufe mit verschiedenen Namen, ein Stempel aus 1980 oder zwei gleiche neueste Stempel | nur die ID | bleibt |
 | Läufe ohne Wert `dut`, oder eine erste Datenzeile über 2.048 Byte | nur die ID | bleibt |
 | ein Ordner, der sich nicht lesen lässt | nur die ID | bleibt |
 
-Der neueste Lauf ist die CSV mit dem spätesten FAT-Zeitstempel (File
-Allocation Table); bei gleichen Stempeln gilt die höhere Nummer. Die Suche
-liest den Ordner einmal und von einer Datei höchstens 2.048 Byte. Eine
-Antwort wird verworfen, wenn seitdem eine andere ID gesetzt wurde oder ein
-Lauf begonnen hat.
+Der Name eines Laufs ist der Wert `dut` der Zelle `info` in seiner ersten
+Datenzeile. Die Suche liest den Ordner einmal und von jeder Art die höchste
+Nummer (LIMIT RUN, RUDDER AUTO, AUTOMATIC TEST, SERVO-Lauf): bis zu 4
+Lesevorgänge von 2.048 Byte. Die Nummern zählen je Art, und ein
+FAT-Zeitstempel (File Allocation Table) ist keine Reihenfolge: Eine Datei,
+geschrieben bevor die Uhr gestellt ist, trägt 1980. Eine Art, deren Lauf
+keinen Namen trägt, bleibt außen vor. Ein falscher Name ist schlechter als
+keiner, daher geben verschiedene Namen ohne echte Daten keinen.
+
+Eine Antwort wird verworfen, wenn seitdem eine andere ID gesetzt wurde oder
+ein Lauf begonnen hat. Ein seit dem Scan getippter DUT NAME bleibt, und der
+Hinweis nennt nur die ID. Der Logger-Task bindet eine seit dem Start
+eingesteckte Karte ein, bevor er antwortet.
 
 ### Ein ARM, das der IOmcu ablehnt
 

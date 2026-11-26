@@ -1334,12 +1334,14 @@ mailbox while it is empty (`scan_flow_pull()`, `test_scan_wire`), one a
 frame, a cut line as too long. The run check is `servo_screen_run_active()`,
 start sequences included, or the bench ARMED on SERVO. The card's look-up
 (`servo_look.c`, `test_scan_look`) runs on the logger task
-(`panel_servo.c`): no card answers at once; otherwise the folder
-`Servos/<id>` is listed once and the newest run's CSV (latest FAT stamp,
-the higher number on equal stamps) read for 2,048 bytes at most. A servo
-with runs sets DUT NAME from that run's `info` cell, a servo without
+(`panel_servo.c`), which mounts a card put in since the start: the folder
+`Servos/<id>` is listed once and each kind's highest-numbered CSV read for
+2,048 bytes at most, up to 4 reads. A servo with runs sets DUT NAME when
+the kinds' names agree, or, where they differ, from the newest FAT stamp
+when every stamp is a date after 1980; otherwise no name. A servo without
 folder or runs is new on the card, and the answer reaches the band through
-`scan_flow_answer()`, dropped once another id is set or a run starts. The
+`scan_flow_answer()`, dropped once another id is set or a run starts; a
+DUT NAME typed since the scan stays. The
 look-up's time is logged in us per scan (`servo look: ... in Nus`); not
 measured on the station.
 

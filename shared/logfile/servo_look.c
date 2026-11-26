@@ -15,15 +15,21 @@
 #include "servo_id.h"
 #include "servo_name.h"
 
-/** @brief The folder's walk: the newest run's CSV so far. */
+/** @brief One kind's highest run in the folder. */
 typedef struct {
-    char     name[SERVO_NAME_SIZE];  /**< its name; "" for none yet */
-    uint32_t stamp;                  /**< its FAT stamp             */
-    int      number;                 /**< its number                */
+    char     name[SERVO_NAME_SIZE];  /**< its CSV's name; "" for none */
+    uint32_t stamp;                  /**< its FAT stamp               */
+    int      number;                 /**< its number                  */
+} look_kind_t;
+
+/** @brief The folder's walk: each kind's highest run. */
+typedef struct {
+    look_kind_t kind[SERVO_KIND_COUNT];  /**< by servo_kind_t */
 } look_walk_t;
 
 /**
- * @brief servo_look_visit_fn: keep the entry when it is a newer run.
+ * @brief servo_look_visit_fn: keep the entry when it is its kind's highest
+ *        run so far.
  * @param walk   The walk, a look_walk_t.
  * @param name   The entry's name.
  * @param is_dir Whether it is a folder.
@@ -34,18 +40,25 @@ static void look_visit(void *walk, const char *name, bool is_dir,
 {
     look_walk_t *w = (look_walk_t *)walk;
     bool report = true;
+    servo_kind_t k = SERVO_KIND_COUNT;
     const int number = (!is_dir && name != NULL)
-                           ? servo_run_parse(name, NULL, &report) : -1;
-    if (number < 0 || report || strlen(name) >= sizeof(w->name)) {
+                           ? servo_run_parse(name, &k, &report) : -1;
+    if (number < 0 || report || (unsigned)k >= SERVO_KIND_COUNT
+        || strlen(name) >= SERVO_NAME_SIZE) {
         return;
     }
-    if (w->name[0] != '\0'
-        && (stamp < w->stamp || (stamp == w->stamp && number <= w->number))) {
+    look_kind_t *o = &w->kind[k];
+    if (o->name[0] != '\0' && number <= o->number) {
         return;
     }
-    (void)snprintf(w->name, sizeof(w->name), "%s", name);
-    w->stamp = stamp;
-    w->number = number;
+    (void)snprintf(o->name, sizeof(o->name), "%s", name);
+    o->stamp = stamp;
+    o->number = number;
+}
+
+bool servo_look_stamp_valid(uint32_t stamp)
+{
+    return (stamp >> 25) != 0u;  /* FAT's year field: years after 1980 */
 }
 
 /**
@@ -188,7 +201,8 @@ servo_look_t servo_look(const servo_look_io_t *io, const char *id,
         || !servo_id_folder(dir, sizeof(dir), id)) {
         return SERVO_LOOK_NO_FOLDER;
     }
-    look_walk_t w = { .name = "" };
+    look_walk_t w;
+    memset(&w, 0, sizeof(w));
     const int listed = io->list(io->ctx, dir, look_visit, &w);
     if (listed == SERVO_LOOK_LIST_NO_DIR) {
         return SERVO_LOOK_NO_FOLDER;
@@ -196,13 +210,52 @@ servo_look_t servo_look(const servo_look_io_t *io, const char *id,
     if (listed < 0) {
         return SERVO_LOOK_UNREADABLE;
     }
-    if (w.name[0] == '\0') {
+    /* Each kind's highest run's name; the kinds that agree name it. */
+    char best[LOG_INFO_TEXT_MAX] = "";
+    uint32_t best_stamp = 0u;
+    bool runs = false;
+    bool differ = false;
+    bool all_valid = true;
+    bool tie = false;
+    for (unsigned k = 0u; k < (unsigned)SERVO_KIND_COUNT; ++k) {
+        const look_kind_t *o = &w.kind[k];
+        if (o->name[0] == '\0') {
+            continue;
+        }
+        runs = true;
+        char path[CARD_RUN_DIR_MAX + SERVO_NAME_SIZE];
+        (void)snprintf(path, sizeof(path), "%s/%s", dir, o->name);
+        const size_t got = (io->read != NULL && buf != NULL && buf_n > 0u)
+                               ? io->read(io->ctx, path, buf, buf_n) : 0u;
+        char dut[LOG_INFO_TEXT_MAX];
+        if (!servo_look_info(buf, (got <= buf_n) ? got : buf_n, dut,
+                             sizeof(dut))
+            || dut[0] == '\0') {
+            continue;
+        }
+        all_valid = all_valid && servo_look_stamp_valid(o->stamp);
+        if (best[0] == '\0') {
+            (void)snprintf(best, sizeof(best), "%s", dut);
+            best_stamp = o->stamp;
+            continue;
+        }
+        const bool same = strcmp(dut, best) == 0;
+        differ = differ || !same;
+        if (o->stamp > best_stamp) {
+            (void)snprintf(best, sizeof(best), "%s", dut);
+            best_stamp = o->stamp;
+            tie = false;
+        } else if (o->stamp == best_stamp && !same) {
+            tie = true;
+        }
+    }
+    if (!runs) {
         return SERVO_LOOK_NO_RUNS;
     }
-    char path[CARD_RUN_DIR_MAX + SERVO_NAME_SIZE];
-    (void)snprintf(path, sizeof(path), "%s/%s", dir, w.name);
-    const size_t got = (io->read != NULL && buf != NULL && buf_n > 0u)
-                           ? io->read(io->ctx, path, buf, buf_n) : 0u;
-    (void)servo_look_info(buf, (got <= buf_n) ? got : buf_n, name, n);
+    /* Names that differ: the newest stamp, only when every stamp is a real
+     * date and one is newest; else no name, never a wrong one. */
+    if (!differ || (all_valid && !tie)) {
+        (void)snprintf(name, n, "%s", best);
+    }
     return SERVO_LOOK_RUNS;
 }

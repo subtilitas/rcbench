@@ -33,6 +33,8 @@ typedef struct {
     servo_scan_t      last;                           /**< the last result   */
     char              pending[SERVO_ID_SIZE];         /**< id whose answer is
                                                            due; "" for none */
+    char              pending_dut[SETTINGS_TEXT_MAX]; /**< DUT NAME at its
+                                                           scan             */
 } flow_t;
 
 /** @brief The one instance. */
@@ -181,6 +183,8 @@ static void set_notice(const char *id, char *out, size_t n)
     s_flow.pending[0] = '\0';
     if (s_flow.look != NULL && card == SCAN_CARD_UNKNOWN) {
         (void)snprintf(s_flow.pending, sizeof(s_flow.pending), "%s", id);
+        (void)snprintf(s_flow.pending_dut, sizeof(s_flow.pending_dut), "%s",
+                       settings_text(SET_TEXT_DUT_NAME));
     }
     card_notice(card, id, name, out, n);
 }
@@ -197,8 +201,12 @@ bool scan_flow_answer(const char *id, scan_card_t card, const char *name)
         || run_active_with(ui_router_status())) {
         return false;
     }
+    /* A DUT NAME typed since the scan stays: the answer names the id. */
+    const bool typed = strcmp(settings_text(SET_TEXT_DUT_NAME),
+                              s_flow.pending_dut) != 0;
     char cut[SETTINGS_TEXT_MAX];
-    (void)snprintf(cut, sizeof(cut), "%s", (name != NULL) ? name : "");
+    (void)snprintf(cut, sizeof(cut), "%s",
+                   (name != NULL && !typed) ? name : "");
     char notice[UI_ALERT_MAX];
     card_notice(card, id, cut, notice, sizeof(notice));
     ui_router_set_notice(notice);
