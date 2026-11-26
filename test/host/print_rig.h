@@ -485,7 +485,8 @@ static inline bool pr_ask(pr_rig_t *r, uint8_t kind, const char *id,
 
 /**
  * @brief One advertising report, due now: H0's flags, name and
- *        manufacturer data, no service UUID.
+ *        manufacturer data, no service UUID.  None from the rig's printer
+ *        (PR_ADDR) while it is linked.
  * @param r    the rig
  * @param addr the advertiser, `A4:93:40:30:FA:71 P`
  * @param name its name, 16 characters
@@ -494,6 +495,10 @@ static inline bool pr_ask(pr_rig_t *r, uint8_t kind, const char *id,
 static inline void pr_adv(pr_rig_t *r, const char *addr, const char *name,
                           int8_t rssi)
 {
+    /* A linked printer does not advertise, as the T50M Pro on H3b. */
+    if (r->connected && strcmp(addr, PR_ADDR) == 0) {
+        return;
+    }
     bleu_evt_t *e = pr_ev(r, BLEU_EV_ADV, 0u, r->now);
     if (e == NULL) {
         return;
