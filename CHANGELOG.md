@@ -606,13 +606,21 @@ history is in git.
   missing from the list (`NONE FOUND`) until the linger ended. A request
   that runs still refuses the scan (`print_ctl.c`;
   `test_print_ctl_scan`).
-- SETUP > WIRELESS > PRINTER: a bind of the bound address keeps Roll and
-  Labels left; they read `--` after it until the next request. The
-  controller compares the addresses as bleu_addr_format() writes them,
-  and the console's `print bind` stores that form, so an address typed in
-  small letters is the same printer. A bind of another address clears
-  both, as before (`print_ctl.c`, `panel_print.c`;
+- SETUP > WIRELESS > PRINTER: UNBIND, then SEARCH's BIND of the same
+  printer left Roll and Labels left at `--` until the next request, with
+  State still `ROLL READ` (station step H3b). A BIND now reads the roll at
+  once while SAFE, after a request in work ends; the bound printer with
+  its roll known is not read again. A bind of another address sets State
+  back to `IDLE`, and clears Roll and Labels left also while a request
+  for the old printer runs, whose end leaves them clear
+  (`wireless_printer.c`, `print_ctl.c`; `test_wireless_printer`,
   `test_print_ctl_scan`).
+- SETUP > WIRELESS > PRINTER: printer addresses compare as
+  bleu_addr_format() writes them, capital hex digits. The console's
+  `print bind` stores that form, and SEARCH marks the bound printer when
+  SETUP holds its address in small letters (`print_ctl.c`,
+  `panel_print.c`, `wireless_printer.c`; `test_print_ctl_scan`,
+  `test_wireless_printer`).
 - The 16x28 face draws `_`: it sat below the 28-row cell and drew nothing,
   so `KST_X10-00007` read as `KST X10-00007`. `tools/gen_font.py` moves a
   glyph whose whole ink falls below its cell up to the cell's last row

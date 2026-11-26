@@ -35,6 +35,9 @@ static struct {
     uint16_t refused;  /**< its scan_refused */
 } s_seen; /**< the one instance */
 
+/** @brief A BIND waits to read its printer's roll (bind_query_follow()). */
+static bool     s_bind_query;
+
 /** @brief The ids whose label printed this session, oldest first. */
 static char     s_printed[WL_PRINTED_MAX][SERVO_ID_SIZE];
 /** @brief The ids in s_printed. */
@@ -86,6 +89,22 @@ static bool printer_addr(const char *text)
 bool wireless_printer_bound(void)
 {
     return printer_addr(settings_text(SET_TEXT_PRN_ADDR));
+}
+
+/**
+ * @brief The bound address as bleu_addr_format() writes it, whatever the
+ *        letter case SETUP holds, as the scan lists the printers.
+ * @param out The text, "" with nothing bound.
+ * @param n   Its size, at least BLEU_ADDR_TEXT_MAX.
+ */
+static void bound_addr(char *out, size_t n)
+{
+    bleu_addr_t a;
+    out[0] = '\0';
+    if (bleu_addr_parse(settings_text(SET_TEXT_PRN_ADDR), &a)
+        && a.type == BLEU_ADDR_PUBLIC) {
+        (void)bleu_addr_format(&a, true, out, n);
+    }
 }
 
 /** @brief Whether the bench is ARMED or a SERVO run holds it. */
@@ -232,10 +251,15 @@ static void search_bind(uint8_t i)
         ui_router_set_alert(TR(PRN_BIND_GONE));
         return;
     }
+    char was[BLEU_ADDR_TEXT_MAX];
+    bound_addr(was, sizeof(was));
+    /* The bound printer with its roll known needs no read. */
+    const bool known = strcmp(was, v->found[i].addr) == 0 && v->w_mm != 0u;
     settings_set_text(SET_TEXT_PRN_ADDR, v->found[i].addr);
     settings_set_text(SET_TEXT_PRN_NAME, v->found[i].name);
     settings_request_save();
     settings_screen_invalidate();
+    s_bind_query = !known && !unsafe();
 }
 
 /** @brief SEARCH's UNBIND: SETUP's address and name cleared, a save
@@ -251,6 +275,7 @@ static void search_unbind(void)
     settings_set_text(SET_TEXT_PRN_NAME, "");
     settings_request_save();
     settings_screen_invalidate();
+    s_bind_query = false;
 }
 
 /**
@@ -273,8 +298,7 @@ static void search_view(wls_view_t *out)
                       v->found[i].rssi);
     }
     if (wireless_printer_bound()) {
-        snprintf(out->bound_addr, sizeof(out->bound_addr), "%s",
-                 settings_text(SET_TEXT_PRN_ADDR));
+        bound_addr(out->bound_addr, sizeof(out->bound_addr));
         snprintf(out->bound_name, sizeof(out->bound_name), "%s",
                  settings_text(SET_TEXT_PRN_NAME));
     }
@@ -508,9 +532,29 @@ static void job_ended(const print_view_t *v)
     }
 }
 
+/**
+ * @brief The QUERY a BIND asked: posted once nothing is in work, no scan
+ *        and no update runs; given up when the bench is ARMED or a run
+ *        holds it, or nothing is bound any more.
+ */
+static void bind_query_follow(void)
+{
+    const print_view_t *v = print_ctl_view();
+    if (!s_bind_query) {
+        return;
+    }
+    if (!wireless_printer_bound() || unsafe()) {
+        s_bind_query = false;
+    } else if (!print_view_busy(v) && !v->scanning && !v->update) {
+        print_ctl_query();
+        s_bind_query = false;
+    }
+}
+
 void wireless_printer_tick(void)
 {
     const print_view_t *v = print_ctl_view();
+    bind_query_follow();
     if (s_seen.valid && v->rev == s_seen.rev && v->jobs == s_seen.jobs) {
         return;
     }
@@ -540,4 +584,5 @@ void wireless_printer_reset(void)
 {
     memset(&s_seen, 0, sizeof(s_seen));
     s_printed_n = 0u;
+    s_bind_query = false;
 }

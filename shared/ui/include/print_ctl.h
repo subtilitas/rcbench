@@ -265,8 +265,10 @@ void print_ctl_init(print_ctl_t *c, const char *version);
  * @brief Bind the printer by its address text, or unbind with "".  A job
  *        that runs keeps its link and ends first; the new address is taken
  *        at the next request.  A bind of the bound address, in any letter
- *        case, keeps the roll and the labels left; another address
- *        clears them.
+ *        case, keeps the roll and the labels left.  Another address
+ *        clears them at once, also while a job runs, whose end leaves
+ *        them clear; with no job in work it also ends the link and sets
+ *        the phase back to PRINT_IDLE with no request kind.
  * @param c      The controller.
  * @param addr   `A4:93:40:30:FA:71 P`; "", a random address or text
  *               bleu_addr_parse() refuses unbinds.

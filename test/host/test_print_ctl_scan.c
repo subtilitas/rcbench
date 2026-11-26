@@ -10,7 +10,8 @@
  *        stops it and prints; the wait for Bluetooth and its end at 10s; a
  *        lingering link ends before a scan, which then lists the bound
  *        printer, and a job's link is left; a bind of the bound address
- *        keeps the roll and labels left, another address clears them; the
+ *        keeps the roll and labels left, another address clears them and
+ *        State, also while a job runs, whose end leaves them clear; the
  *        frame task's ask.
  *
  * SPDX-License-Identifier: MIT
@@ -305,10 +306,38 @@ TEST_CASE(a_bind_of_another_address_clears_the_roll)
     CHECK_EQ(v->w_mm, 0u);
     CHECK_EQ(v->h_mm, 0u);
     CHECK_EQ(v->left, -1);
+    /* State reads IDLE: the last request was the old printer's */
+    CHECK_EQ(v->phase, PRINT_IDLE);
+    CHECK_EQ(v->kind, PRINT_REQ_NONE);
     /* the old printer's link ends */
     run_ms(r, 2u);
     CHECK_EQ(r->discs, 1u);
     CHECK(!r->connected);
+}
+
+TEST_CASE(a_bind_of_another_address_during_a_job_clears_the_roll)
+{
+    pr_rig_t *r = &s_r;
+    pr_init(r);
+    CHECK(pr_ask(r, PRINT_REQ_QUERY, NULL, NULL));
+    CHECK(pr_run(r, 10000u));
+    REQUIRE(view(r)->w_mm != 0u);
+    /* a second QUERY on the lingering link, another printer bound in it */
+    CHECK(pr_ask(r, PRINT_REQ_QUERY, NULL, NULL));
+    REQUIRE(r->c.phase == PRINT_READING);
+    print_ctl_bind(&r->c, "A4:93:40:00:00:01 P", "T0205C2600000001",
+                   r->now);
+    const print_view_t *v = view(r);
+    CHECK_EQ(v->w_mm, 0u);
+    CHECK_EQ(v->left, -1);
+    CHECK_EQ(v->phase, PRINT_READING);
+    /* the job ends on the old printer: its roll is not the new one's */
+    CHECK(pr_run(r, 10000u));
+    v = view(r);
+    CHECK_EQ(v->phase, PRINT_DONE);
+    CHECK_EQ(v->w_mm, 0u);
+    CHECK_EQ(v->h_mm, 0u);
+    CHECK_EQ(v->left, -1);
 }
 
 TEST_CASE(a_random_address_binds_nothing)
@@ -357,6 +386,7 @@ int main(void)
     RUN(a_scan_during_a_job_leaves_the_link);
     RUN(a_bind_of_the_bound_address_keeps_the_roll);
     RUN(a_bind_of_another_address_clears_the_roll);
+    RUN(a_bind_of_another_address_during_a_job_clears_the_roll);
     RUN(a_random_address_binds_nothing);
     RUN(the_frame_task_asks_a_scan_once);
     return test_summary("print_ctl_scan");
