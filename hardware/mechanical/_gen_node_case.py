@@ -31,12 +31,17 @@ Openings:
              display board's I2C socket, under the board, every
              edge inside rounded 2.0, so the opening at the split is
              0.5 deep, and its edge in the wall's inner face rounded
-             2.0 on 3 sides; the wall bulges out 1.3 behind it, its edges
-             rounded 3.2 round the same centres, so 1.2 of wall stays
-             everywhere; the bulge's top reaches 0.57 into the bezel
+             2.0 on 3 sides; the wall's bow leaves 1.30 of wall behind
+             it at the least, at its end towards -x
     mic      a hole of 1.6 in the bezel over the board's microphone
              hole
     display  a window of 59.1 x 44.6 over the view area
+
+Outline: the plate, the frame and the bezel share it. Its end walls are
+straight; its long walls bow out 1.5 at the middle in arcs of 520.8
+between the corners' rounds, which they meet at an angle of 4.3
+degrees. The cavity keeps the rounded rectangle, so the long walls are
+2.4 thick at the corners and 3.9 in the middle.
 
 Printing: the frame with its upper face on the bed, the bezel with its
 front on the bed, the plate with its underside on the bed. No part
@@ -50,8 +55,9 @@ socket's axis is 3.6 over that housing's top.
 
 Shapes are boxes, upright cylinders and, for the wedges, prisms over
 triangles with given corners that meet flat faces only. The I2C pocket
-and its bulge add cylinders along x and y and balls, each meeting flat
-faces or a round of the same radius tangentially. A cone, or a
+adds cylinders along x and y and balls, each meeting flat faces or a
+round of the same radius tangentially; the arcs of the long walls are
+upright cylinders, their edge rounds tori. A cone, or a
 slanted cut through a round face, meets its neighbours in curves
 OpenCASCADE computes differently from one processor to the next, and
 the STEP text is compared in CI.
@@ -85,6 +91,7 @@ from OCP.BRepCheck import BRepCheck_Analyzer
 from OCP.BRepMesh import BRepMesh_IncrementalMesh
 from OCP.BRepPrimAPI import (BRepPrimAPI_MakeCylinder, BRepPrimAPI_MakePrism,
                              BRepPrimAPI_MakeSphere, BRepPrimAPI_MakeTorus)
+from OCP.OCP.collections import List_TopoDS_Shape
 from OCP.gp import gp_Ax2, gp_Dir, gp_Pnt, gp_Trsf, gp_Vec
 from OCP.StlAPI import StlAPI_Writer
 
@@ -124,6 +131,9 @@ STEPS = (15.3, 1.0, 0.65, 4)
 MIC_ROOM = (-56.3, 34.0, -52.9, 36.25, 16.2)
 WALL = 2.4
 RADIUS = 3.5 + GAP      # the cavity's corners, round the display's
+BOW = 1.5               # the long walls' arcs past the straight wall, at
+                        # the middle: room for 1.2 of wall behind the I2C
+                        # pocket
 EDGE = 1.5              # the round on the bezel's top and the plate's
                         # underside, all round the outline
 PLATE = (2.4, 1.6)      # thickness, its upper face under the board
@@ -149,9 +159,9 @@ MIC = (-55.11, 35.1, 1.6)
 # socket of 1.25mm pitch that hangs under the board at the long wall at
 # +y, z 13.3 to 16.7, its face 0.8 from the wall: a pocket in that wall,
 # x0, x1 (the socket's wings), depth into the wall, height under the
-# split, the wall left outside it, the edges' radius. The wall bulges
-# out behind the pocket by depth + skin - WALL. The shapes are drawn in
-# the wall at -y and mirrored across the case's middle.
+# split, the wall left outside it, the edges' radius. The long walls'
+# bow (BOW) gives the wall behind it its thickness. The shapes are drawn
+# in the wall at -y and mirrored across the case's middle.
 I2C = (-28.1, -17.95, 2.5, 8.0, 1.2, 2.0)
 # The joints hold the frame's wall, which the screws clamp at its 4
 # columns only, from moving inwards.
@@ -183,6 +193,21 @@ def _fuse(*shapes):
     for shape in shapes[1:]:
         out = BRepAlgoAPI_Fuse(out, shape).Shape()
     return out
+
+
+def _fuse_all(shapes):
+    """The union of shapes in one boolean operation."""
+    first, rest = List_TopoDS_Shape(), List_TopoDS_Shape()
+    first.Append(shapes[0])
+    for shape in shapes[1:]:
+        rest.Append(shape)
+    union = BRepAlgoAPI_Fuse()
+    union.SetArguments(first)
+    union.SetTools(rest)
+    # Faces of the tori and the caps that touch count as one within this.
+    union.SetFuzzyValue(1e-5)
+    union.Build()
+    return union.Shape()
 
 
 def _cut(shape, *tools):
@@ -222,10 +247,40 @@ def rounded_box(x0, y0, z0, x1, y1, z1, radius):
     return _fuse(*parts)
 
 
+def _arcs():
+    """The long walls' arcs.
+
+    Returns x where each meets its corners, the radius, and the centre's
+    y for the arc at -y and the one at +y.
+    """
+    x0, x1 = X0 + RADIUS, X1 - RADIUS
+    half = (x1 - x0) / 2
+    radius = (half * half + BOW * BOW) / (2 * BOW)
+    return (x0, x1, radius, Y0 - WALL - BOW + radius,
+            Y1 + WALL + BOW - radius)
+
+
+def _barrel(z0, z1, inset=0.0):
+    """The 2 caps the arcs add over the long walls, grown in by inset."""
+    x0, x1, radius, low, high = _arcs()
+    middle = (x0 + x1) / 2
+    caps = []
+    for cy, y0, y1 in ((low, -BIG, Y0 - WALL + 1), (high, Y1 + WALL - 1,
+                                                    BIG)):
+        disc = _cylinder(middle, cy, radius - inset, z0, z1)
+        caps.append(BRepAlgoAPI_Common(disc, _box(x0, y0, z0, x1, y1,
+                                                  z1)).Shape())
+    return caps
+
+
 def outer(z0, z1):
-    """The case's outline between two heights."""
-    return rounded(X0 - WALL, Y0 - WALL, X1 + WALL, Y1 + WALL,
-                   RADIUS + WALL, z0, z1)
+    """The case's outline between two heights.
+
+    A rounded rectangle whose long walls bow out by BOW in arcs between
+    the corners.
+    """
+    return _fuse(rounded(X0 - WALL, Y0 - WALL, X1 + WALL, Y1 + WALL,
+                         RADIUS + WALL, z0, z1), *_barrel(z0, z1))
 
 
 def outer_rounded(z0, z1, edge, at):
@@ -233,7 +288,8 @@ def outer_rounded(z0, z1, edge, at):
 
     The round's centre line is the outline grown in by the radius, the
     radius from the face: rods along the straight sides, a torus at each
-    corner, kept to its corner's quarter.
+    corner, kept to its corner's quarter, and a torus of the arc's radius
+    less the round's along each long wall's arc.
     """
     x0, y0 = X0 - WALL, Y0 - WALL
     x1, y1 = X1 + WALL, Y1 + WALL
@@ -259,9 +315,26 @@ def outer_rounded(z0, z1, edge, at):
             quarter = _box(min(x, far[0]), min(y, far[1]), zc - r,
                            max(x, far[0]), max(y, far[1]), zc + r)
             parts.append(BRepAlgoAPI_Common(ring, quarter).Shape())
-    # A part thinner than 2 radii: the rods stand out of the far face.
-    return BRepAlgoAPI_Common(_fuse(*parts),
-                              _box(x0, y0, z0, x1, y1, z1)).Shape()
+    parts += _barrel(z0, z1, r)
+    parts += _barrel(z0, zc) if at == "top" else _barrel(zc, z1)
+    ax0, ax1, radius, low, high = _arcs()
+    for cy, b0, b1 in ((low, -BIG, y0 + r), (high, y1 - r, BIG)):
+        ring = BRepPrimAPI_MakeTorus(
+            gp_Ax2(gp_Pnt((ax0 + ax1) / 2, cy, zc), gp_Dir(0, 0, 1)),
+            radius - r, r).Shape()
+        parts.append(BRepAlgoAPI_Common(
+            ring, _box(ax0, b0, max(z0, zc - r), ax1, b1,
+                       min(z1, zc + r))).Shape())
+    # One fuse of all parts; a chain of fuses loses pieces where the
+    # tori touch the caps. Even so the half at -y comes out short on some
+    # heights, so the half at +y is kept and mirrored. The clip also
+    # trims the rods, which stand out of the far face of a part thinner
+    # than 2 radii.
+    middle = (Y0 + Y1) / 2
+    half = BRepAlgoAPI_Common(_fuse_all(parts),
+                              _box(x0, middle, z0, x1, y1 + BOW,
+                                   z1)).Shape()
+    return _fuse(half, _to_far_wall(half))
 
 
 def cavity(z0, z1):
@@ -373,21 +446,11 @@ def _to_far_wall(shape):
 
 
 def i2c_room():
-    """The pocket for the I2C plug and the wall's bulge behind it."""
-    pocket, bulge = _i2c_room_near()
-    return _to_far_wall(pocket), _to_far_wall(bulge)
-
-
-def _i2c_room_near():
-    """i2c_room drawn in the wall at -y."""
-    x0, x1, depth, high, skin, r = I2C
+    """The pocket for the I2C plug, in the wall at +y."""
+    x0, x1, depth, high, _, r = I2C
     pocket = rounded_box(x0, Y0 - depth, Z_SPLIT - high, x1, Y0 + 2 * r,
                          Z_SPLIT, r)
-    # The same box grown by the skin, kept to the wall's outer part.
-    grown = rounded_box(x0 - skin, Y0 - depth - skin, Z_SPLIT - high - skin,
-                        x1 + skin, Y0 + 2 * r, Z_SPLIT + skin, r + skin)
-    bulge = _cut(grown, _box(-BIG, Y0 - WALL + 1, -BIG, BIG, BIG, BIG))
-    return _fuse(pocket, mouth()), bulge
+    return _to_far_wall(_fuse(pocket, mouth()))
 
 
 def _across(x0, z0, x1, z1, radius, y0, y1):
@@ -438,22 +501,16 @@ def mouth():
 
 
 def i2c_span():
-    """The wall's stretch beside the I2C pocket, bulge included."""
+    """The wall's stretch beside the I2C pocket and its skin."""
     x0, x1, _, _, skin, _ = I2C
     return _box(x0 - skin, Y1 - 2, Z_SPLIT - 3, x1 + skin, Y1 + WALL + 2,
                 Z_SPLIT + 1)
 
 
-def split(shape):
-    """The parts of a shape under and over the split."""
-    over = _box(-BIG, -BIG, Z_SPLIT, BIG, BIG, BIG)
-    return _cut(shape, over), BRepAlgoAPI_Common(shape, over).Shape()
-
-
 def frame():
     """The wall from the plate to the display board, with the columns."""
-    pocket, bulge = i2c_room()
-    solid = _cut(_fuse(outer(Z_FLOOR, Z_SPLIT), split(bulge)[0]),
+    pocket = i2c_room()
+    solid = _cut(outer(Z_FLOOR, Z_SPLIT),
                  cavity(Z_FLOOR - 1, Z_SPLIT + 1))
     holes = []
     for k in range(4):
@@ -467,7 +524,8 @@ def frame():
     holes.append(_box(end[0], TOOL[0], z1 - 0.1, end[1], TOOL[1], TOOL[2]))
     holes.append(_box(end[0], USB[0], TOOL[2] - 0.1, end[1], USB[1],
                       Z_SPLIT + 1))
-    holes.append(_box(CARD[0], Y0 - WALL - 1, CARD[2], CARD[1], Y0 + 1,
+    holes.append(_box(CARD[0], Y0 - WALL - BOW - 1, CARD[2], CARD[1],
+                      Y0 + 1,
                       Z_SPLIT + 1))
     holes.append(ring(LIP[0] + LIP[2], Z_FLOOR - 1,
                       Z_FLOOR + LIP[1] + LIP[3]))
@@ -482,7 +540,7 @@ def bezel():
     under = TOUCH + OVER
     solid = _cut(outer_rounded(Z_SPLIT, Z_TOP, EDGE, "top"),
                  cavity(Z_SPLIT - 1, under))
-    solid = _fuse(solid, *wedges(WEDGE[0]), split(i2c_room()[1])[1])
+    solid = _fuse(solid, *wedges(WEDGE[0]))
     radius = INSERT[0] / 2 + INSERT[2]
     for hole in DISPLAY_HOLES:
         solid = _fuse(solid, _corner(hole, radius,
@@ -492,7 +550,7 @@ def bezel():
              _cylinder(MIC[0], MIC[1], MIC[2] / 2, under - 1, Z_TOP + 1),
              _box(X1 - 1, USB[0], Z_SPLIT - 2, X1 + WALL + 1, USB[1],
                   USB[2]),
-             _box(CARD[0], Y0 - WALL - 1, Z_SPLIT - 2, CARD[1], Y0 + 1,
+             _box(CARD[0], Y0 - WALL - BOW - 1, Z_SPLIT - 2, CARD[1], Y0 + 1,
                   Z_SPLIT),
              # The wedge stays out of the I2C plug's pocket.
              _cut(i2c_span(), _box(-BIG, -BIG, Z_SPLIT, BIG, BIG, BIG))]

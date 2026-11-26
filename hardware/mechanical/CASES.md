@@ -161,9 +161,12 @@ Limits:
 
 A printed case of 3 parts round the
 [layout](README.md#remote-ina228-sensor-node-layout) of the remote INA228
-sensor node, 91.4mm x 55.4mm x 28.0mm, 56.7mm across the bulge behind
-the I2C pocket. It
+sensor node, 91.4mm x 58.4mm x 28.0mm. It
 has no ears; the node hangs in its cable.
+The end walls are straight. The long walls bow out 1.5mm at the middle,
+in arcs of 520.8mm radius between the corners' 6.2mm rounds, which they
+meet at 4.3 degrees. The cavity stays a rounded rectangle, so the long
+walls are 2.4mm thick at the corners and 3.9mm at the middle.
 The bezel's top edge and the plate's bottom edge are rounded 1.5mm
 all round.
 
@@ -218,7 +221,7 @@ parts that hang 0.9mm down from that board.
 | USB Type-C | end wall over the socket half's opening, through frame and bezel | 13.0 x 4.4 |
 | RESET, BOOT | a slot under the USB notch | 26.6 x 2.6 |
 | microSD | long wall at the header's side | 16.0 x 2.8 |
-| I2C plug | pocket in the other long wall in front of the display board's I2C socket (x -28.1 to -17.95, its face 0.8 from the wall), under the board; every inside edge and its edge in the wall's inner face rounded 2.0; the wall bulges out 1.3 behind it and keeps 1.2 | 10.15 wide, 2.5 deep, 8.0 high |
+| I2C plug | pocket in the other long wall in front of the display board's I2C socket (x -28.1 to -17.95, its face 0.8 from the wall), under the board; every inside edge and its edge in the wall's inner face rounded 2.0; the long wall's bow keeps 1.30 or more of wall behind it | 10.15 wide, 2.5 deep, 8.0 high |
 | Microphone | bezel, over the board's microphone hole | 1.6 round |
 | Display | bezel, 0.5 round the view area | 59.1 x 44.6 |
 

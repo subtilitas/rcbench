@@ -52,18 +52,16 @@ def test_files_are_current(built):
 
 
 def test_case_has_its_size(built):
-    """91.4 x 55.4 outside, 28.0 high: plate 2.4, frame 18.3, bezel 7.3.
+    """91.4 x 58.4 outside, 28.0 high: plate 2.4, frame 18.3, bezel 7.3.
 
-    The bulge behind the I2C pocket stands 1.3 proud of the frame's wall
-    at -y; its top, a round of 3.2 about a centre 2.0 under the split,
-    reaches 0.6 into the bezel there.
+    The long walls bow out 1.5 at the middle: 55.4 over the straight
+    walls, 58.4 over the arcs.
     """
     boxes = {stem: _extent(solid) for stem, solid in built.items()}
-    over = 2.5 - 2.0 - case.WALL + (3.2 ** 2 - 2.0 ** 2) ** 0.5
-    for stem, box in boxes.items():
+    for box in boxes.values():
         assert box[3] - box[0] == pytest.approx(91.4, abs=0.01)
-        bulge = {FRAME: 1.3, BEZEL: over}.get(stem, 0.0)
-        assert box[4] - box[1] == pytest.approx(55.4 + bulge, abs=0.01)
+        assert box[4] - box[1] == pytest.approx(55.4 + 2 * case.BOW,
+                                                abs=0.01)
     assert boxes[PLATE][2] == pytest.approx(-4.0, abs=0.01)
     assert boxes[PLATE][5] == pytest.approx(-0.05, abs=0.01)
     assert boxes[FRAME][2] == pytest.approx(-1.6, abs=0.01)
@@ -231,3 +229,35 @@ def test_bezel_wedges_lie_in_the_walls_cut_edge(built):
                               z - 0.01)) == pytest.approx(0.0, abs=1e-6)
     assert filled(bezel, _box(-58.0, y - 1.3, z - 1.3, -47.0, y,
                               z - 0.01)) == pytest.approx(0.0, abs=1e-6)
+
+
+def test_wall_behind_the_i2c_pocket(built):
+    """1.2 of wall stays behind the I2C pocket: the long wall's bow."""
+    x0, x1, depth, high, skin, r = case.I2C
+    y = case.Y1 + depth
+    behind = _box(x0 + r, y + 0.01, case.Z_SPLIT - high + r, x1 - r,
+                  y + skin, case.Z_SPLIT - r)
+    assert filled(built[FRAME], behind) == pytest.approx(volume(behind),
+                                                         rel=1e-6)
+    pocket = _box(x0 + r, case.Y1 + 0.01, case.Z_SPLIT - high + r, x1 - r,
+                  y - 0.01, case.Z_SPLIT - r)
+    assert filled(built[FRAME], pocket) == pytest.approx(0.0, abs=1e-6)
+
+
+@pytest.mark.parametrize("z0, z1, at", [
+    (case.Z_SPLIT, case.Z_TOP, "top"), (case.Z_PLATE, case.Z_FLOOR,
+                                         "bottom")])
+def test_rounded_outline_is_whole(z0, z1, at):
+    """The bezel's and the plate's rounded outlines are whole.
+
+    Both halves alike, and the volume that of the outline without the
+    round less under 5%. The booleans of tori against flat caps can drop
+    pieces; this holds the result to the shape.
+    """
+    shape = case.outer_rounded(z0, z1, case.EDGE, at)
+    middle = (case.Y0 + case.Y1) / 2
+    low = filled(shape, _box(-200, -200, -200, 200, middle, 200))
+    high = filled(shape, _box(-200, middle, -200, 200, 200, 200))
+    assert low == pytest.approx(high, rel=1e-6)
+    whole = volume(case.outer(z0, z1))
+    assert 0.95 * whole < low + high < whole
