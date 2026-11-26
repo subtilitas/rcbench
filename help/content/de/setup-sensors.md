@@ -12,7 +12,7 @@ SENSORS auf [SETUP](setup.md) konfiguriert den Sensorbus des IOmcu, den INA228, 
 
 ![Zwei Bausteine bestückt, 0x40 online](view:setup-sensors)
 
-Die linke, 220px breite Liste hat 8 Einträge: SENSORBUS, INA228, INA3221 0x40 bis 0x43, AS5600 und PHASENABGRIFF. Jeder zeigt Sensorname und Status. Tippe auf einen Eintrag, um seine Einstellungen im 754px breiten rechten Bereich zu sehen.
+Die linke, 220px breite Liste hat 9 Einträge: SENSORBUS, INA228, INA3221 0x40 bis 0x43, AS5600, PHASENABGRIFF und SCANNER. Jeder zeigt Sensorname und Status. Tippe auf einen Eintrag, um seine Einstellungen im 754px breiten rechten Bereich zu sehen.
 
 - Ausgeschaltete Einträge zeigen nur die Einschaltzeile und den Status `AUS`. EIN blendet die übrigen Einstellungen ein.
 - Die Auswahl erfolgt beim Loslassen innerhalb des Eintrags und höchstens 8px vom Druckpunkt entfernt. Längeres Ziehen wählt und scrollt nichts.
@@ -188,6 +188,31 @@ Der Phasenabgriff erkennt ESC-Pieptöne an einer Motorphase. Ein IOmcu-GPIO lies
 Der IOmcu lehnt ADC-Pins (Analog-Digital-Umsetzer), zugeordnete Ausgangspins sowie vom Sensorbus oder PD mini belegte Pins ab. Abgriff-Pause muss mindestens eine Periode von Tiefster Ton abdecken. Bei der Vorgabe 400Hz dauert sie 2,5ms, daher sind 3ms nötig. Die Meldung zu einem abgelehnten Wert verschwindet nach Übernahme eines gültigen Werts. Die Laufseite von [ESC STICK](motor-stick.md) zeigt die erkannten Pieptöne.
 
 Vibration und Optischer Tacho besitzen gespeicherte Schlüssel, aber keinen Eintrag. In diesem Release verwendet weder eine Seite noch der IOmcu diese Werte.
+
+## Der QR-Scanner
+
+![Der Scanner BEREIT, ein Etikett genommen](view:setup-scanner-ready)
+
+SCANNER ist das GM861S-Modul an Header P3 des Panels: TX IO4, RX IO5, 3V3, GND. Jede Funktion geht ohne Scanner: Tippe die Servo-ID in SERVO ID. Die Zeile `Ohne Scanner` sagt das.
+
+| Zeile | Was sie zeigt oder tut |
+|---|---|
+| Scanner, Lesemodus | die Einstellungen; SENSING liest, wenn sich das Bild ändert, CONTINUOUS hält das Licht an |
+| Zustand | Zustand und Baudrate, `BEREIT 9600`; `NICHT VERBUNDEN`, wenn nichts an P3 hängt. Kein Zustand löst einen Alarm aus |
+| Letzter Scan, Genommen als | die letzte Zeile, ihr Alter und was sie bewirkte: `SERVO`, `KEINE SERVO-ID`, `CODE ZU LANG`, `ABGELEHNT: LAUF` |
+| Zähler | Zeilen, Störung, Teil, lang, CRC falsch |
+| Aktives Servo | KEINES löscht das aktive Servo; während eines Laufs bleibt es |
+| Test | 30s lang erscheint ein Scan hier und ändert nichts: `TEST: OK` oder warum nicht |
+| Erneut prüfen | die Einstellungen des Moduls erneut gelesen und geschrieben |
+| Einstellcode zeigen, Werkseinstellung | öffnen SETUP CODE |
+
+![Nichts an Header P3](view:setup-scanner-not-connected)
+
+![Ein Modul, das auf keiner Baudrate antwortet](view:setup-scanner-no-answer)
+
+SETUP CODE zeigt den Einstellcode "Serial Output" des Moduls. Halte den Scanner 10cm vor den Bildschirm: Ein Modul, das als USB-Tastatur sendet, kehrt zu seiner seriellen Ausgabe zurück, und der Zustand wird innerhalb von 5s zu BEREIT. 2s HALTEN: WERKSEINSTELLUNG setzt das Modul auf seine Werkseinstellungen; Loslassen vor 2s sendet nichts. ZURÜCK kehrt zu SCANNER zurück.
+
+![SETUP CODE](view:setup-scanner-setup-code)
 
 ## Verwandte Seiten
 

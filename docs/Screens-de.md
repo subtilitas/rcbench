@@ -6591,8 +6591,8 @@ Tastatur und auf jedem anderen Bildschirm.
 
 ### SENSORS: die geteilte Ansicht
 
-SENSORS fasst die vom IOmcu ausgelesenen Geräte in einer geteilten Ansicht
-zusammen. Links stehen 8 Einträge; rechts erscheinen die Einstellungen des
+SENSORS fasst die vom IOmcu ausgelesenen Geräte und den QR-Scanner des
+Panels in einer geteilten Ansicht zusammen. Links stehen 9 Einträge; rechts erscheinen die Einstellungen des
 gewählten Eintrags. Die Bluetooth-IMU des Panels steht unter WIRELESS
 ([WIRELESS: die IMU und das Dial](#wireless-die-imu-und-das-dial)), in einer
 geteilten Ansicht derselben Art.
@@ -6600,8 +6600,9 @@ geteilten Ansicht derselben Art.
 ![SENSORS, zwei Bausteine bestückt](img/de/setup-sensors.png)
 
 Die linke Liste hat von Body-y 8 bis 440, 4px über dem Streifen, Platz für 9
-Einträge von 220 x 48px im Abstand von 48px. SENSORS belegt 8, von oben nach
-unten SENSORBUS, INA228, INA3221 0x40 bis 0x43, AS5600 und PHASENABGRIFF. Ein Eintrag nimmt
+Einträge von 220 x 48px im Abstand von 48px. SENSORS belegt alle 9, von oben
+nach unten SENSORBUS, INA228, INA3221 0x40 bis 0x43, AS5600, PHASENABGRIFF
+und SCANNER. Ein Eintrag nimmt
 Berührungen über seine 48px an und zeichnet seine Karte 1px innerhalb seiner
 Ober- und Unterkante, 2px zwischen zwei Karten. Jeder Eintrag zeigt seinen Namen in der Schrift 12 x 24px und darunter
 seinen Zustand in 8 x 16px. Der gewählte Eintrag hat die helle Füllung und
@@ -6617,6 +6618,7 @@ Schrift 10 x 20px.
 | INA3221 0x40 bis 0x43 | ein Zustand der Tabelle unter [SENSORS: die INA3221-Bausteine](#sensors-die-ina3221-bausteine) | 10 |
 | AS5600 | `EIN`, `VOM IOMCU ABGELEHNT` | 2 |
 | PHASENABGRIFF | `EIN`, `VOM IOMCU ABGELEHNT` | 7 |
+| SCANNER | ein Zustand der Tabelle unter [SENSORS: der QR-Scanner](#sensors-der-qr-scanner) | 12; 2 im ausgeschalteten Zustand |
 
 - Bei einem ausgeschalteten Eintrag mit Einschaltzeile erscheint nur diese
   Zeile; sein Zustand lautet `AUS`. EIN blendet die übrigen Zeilen ein.
@@ -7102,6 +7104,64 @@ ausgeschaltet ist und die Page ihn aus hält. Abgriff-Pause 2ms mit Tiefster
 Ton 400Hz wird gewollt abgelehnt: die Pause muss mindestens eine Periode
 des tiefsten Tons lang sein, 2,5ms bei 400Hz (`tone_init()`,
 `protocols/phase_tap/tone.c`).
+
+### SENSORS: der QR-Scanner
+
+![SENSORS, der Scanner BEREIT mit einer genommenen Zeile](img/de/setup-scanner-ready.png)
+
+SCANNER ist das GM861S-Modul an Header P3 des Panels: UART1 (UART:
+universal asynchronous receiver-transmitter), TX IO4, RX IO5, 3V3 und GND
+([Verdrahtung](Building-de.md#verdrahtung-des-qr-scanners)). Jede Funktion
+geht ohne Scanner: Die Servo-ID wird in der Zeile SERVO ID getippt. Die
+Zeile `Ohne Scanner` sagt das, ob EIN oder AUS.
+
+| Zeile | Art | Inhalt |
+| --- | --- | --- |
+| Scanner | Einstellung, EIN oder AUS, Standard AUS | AUS: UART1 ist nicht installiert, IO4 und IO5 bleiben Eingänge, und die Seite zeigt diese Zeile und `Ohne Scanner` |
+| Lesemodus | Einstellung, SENSING oder CONTINUOUS | SENSING liest, wenn sich das Bild ändert; CONTINUOUS hält das Licht an und liest alle 1,0s. Wird sofort ins Modul geschrieben |
+| Ohne Scanner | Text | die Servo-ID wird in SERVO ID getippt |
+| Zustand | Text | Zustand und Baudrate, `BEREIT 9600`; in KEINE ANTWORT nach einer abgelehnten Zone die Zone, `KEINE ANTWORT 0x000D` |
+| Letzter Scan | Text | die letzte Zeile, ihre ersten 13 Zeichen, und ihr Alter in s |
+| Genommen als | Text | `SERVO`, `KEINE SERVO-ID`, `CODE ZU LANG`, `ABGELEHNT: LAUF`; während TEST `TEST: OK`, `TEST: KEINE ID`, `TEST: ZU LANG`, `TEST: LAUF` |
+| Zähler | Text | Zeilen, Störung, Teil, lang, CRC falsch (CRC: cyclic redundancy check) |
+| Aktives Servo | Auswahlliste: KEINES | KEINES löscht das aktive Servo; während eines Laufs abgelehnt mit `LAUF AKTIV: DAS SERVO BLEIBT BIS ZUM ENDE DES LAUFS.` |
+| Test | Taste | 30s, in denen eine gescannte Zeile auf dieser Seite erscheint und das aktive Servo bleibt, wie es ist; der Wert zählt die Sekunden herunter |
+| Erneut prüfen | Taste | liest die Zonen des Moduls und schreibt zurück, was abweicht; beendet das Halten auf einer abgelehnten Zone |
+| Einstellcode zeigen | Taste | öffnet SETUP CODE |
+| Werkseinstellung | Taste | öffnet SETUP CODE, dessen 2s-Halten den Werksreset sendet |
+
+| Zustand | Farbe | Bedeutung |
+| --- | --- | --- |
+| `AUS` | gedimmt | die Zeile Scanner ist AUS |
+| `NICHT VERBUNDEN` | gedimmt | IO5 liest 200ms lang low gegen seinen Pull-down: kein Modul; alle 5s neu versucht |
+| `KEINE ANTWORT` | gedimmt | IO5 ruht high und keine der 8 Baudraten antwortet; oder eine Zone liest nach 2 Durchgängen falsch zurück |
+| `USB-AUSGABE` | gedimmt | das Modul antwortet und sendet als USB-Tastatur; der Bench schreibt serielle Ausgabe |
+| `EINSTELLEN` | gedimmt | der Bench schreibt die abweichenden Zonen und speichert sie |
+| `BEREIT` | grün | die Zonen lesen wie gewünscht zurück; alle 10s ein Heartbeat |
+| `LOST` | gedimmt | 3 Heartbeats ohne Antwort; der Ablauf beginnt neu |
+
+Kein Zustand ist ein Fehler: Keiner löst einen Alarm aus, setzt ein
+Fehlerbit oder sperrt einen Bildschirm.
+
+![SENSORS, nichts an Header P3](img/de/setup-scanner-not-connected.png)
+
+![SENSORS, ein Modul, das auf keiner Baudrate antwortet](img/de/setup-scanner-no-answer.png)
+
+SETUP CODE zeigt den Einstellcode "Serial Output" des Moduls, von Seite 15
+des GM861-Handbuchs, mit 12px je Modul: 252px, mit 48px Weiß ringsum. Er
+holt ein Modul, das als USB-Tastatur sendet, zurück auf seinen UART.
+Daneben stehen 3 Schritte, der Zustand, `2s HALTEN: WERKSEINSTELLUNG` und
+ZURÜCK. Das Halten nimmt einen Druck an, solange die Zeile Scanner EIN ist,
+und sendet Zone 0x00D9 = 0x50; danach beginnt der Ablauf mit seiner
+Suche. Loslassen vor 2s sendet nichts und zeigt `Halte 2s, um den Scanner
+auf Werkseinstellung zu setzen.` ZURÜCK kehrt zu SENSORS auf SCANNER
+zurück.
+
+![SETUP CODE](img/de/setup-scanner-setup-code.png)
+
+TYPE ID in der Zeile SERVO ID, das eine ID ohne Scanner eintippt, kommt
+mit den Zeilen SERVO LABEL; bis dahin bietet die Liste von Aktives Servo
+KEINES.
 
 ### Die Bluetooth-IMU
 

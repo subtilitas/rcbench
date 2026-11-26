@@ -76,6 +76,14 @@ void panel_scan_settings_changed(setting_id_t id);
 bool panel_scan_take_line(char *line, size_t n, bool *too_long);
 
 /**
+ * @brief Frame task: the view to SETUP > SENSORS > SCANNER
+ *        (scanner_pane_set_view()), and its commands (Check again, Factory
+ *        reset) to the task, which runs them at its next pass.
+ * @param now The millisecond clock.
+ */
+void panel_scan_frame(uint32_t now);
+
+/**
  * @brief Whether a code line waits (scan_flow_has_fn): the frame task asks
  *        before scan_flow_pull() reserves the mailbox.
  * @return true when the port's queue holds a line.

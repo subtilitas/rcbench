@@ -1292,7 +1292,7 @@ and its suites stay in the host suite; no firmware builds them.
 
 ### QR scanner (GM861)
 
-Built and host-tested (`shared/scanner/`), linked into the panel with no screen yet. The line
+Built and host-tested (`shared/scanner/`), linked into the panel, with its page under SETUP > SENSORS. The line
 framer (`scan_line.c`, `test_scan_line`) splits the scanner's UART bytes into code lines of
 0x20 to 0x7E, at most 64 bytes, ended by CR, CR LF or LF, and answer frames of 1 to 97 data
 bytes with their CRC-CCITT; a line with another byte is dropped as noise, a line of 65 bytes or
@@ -1320,6 +1320,16 @@ TX IO4 and RX IO5 of header P3 (wiring in [Building](docs/Building.md#qr-scanner
 while SETUP's Scanner row (`scan_en`, default OFF) is ON; READ MODE (`scan_mode`) is SENSING
 or CONTINUOUS. The console build prints the state, the counts and the zones as read before the
 first write on `scan`; `tools/check_panel_console.py` holds it out of released images.
+
+SETUP > SENSORS > SCANNER (`scanner_pane.c`, `scanner_code.c`, `test_scanner_pane`) lists the two
+settings, the line that every feature works by typing the servo id, the state and rate, the last
+line with its age and what it did, the counts, the active servo with NONE (refused during a run),
+TEST (30s in which a line shows on the page and changes nothing), Check again (`gm861_recheck()`),
+and SETUP CODE: the "Serial Output" setup code of the GM861 manual at 12px a module, and a 2s hold
+that sends the factory reset. `tools/gen_scanner_codes.py` holds the stored 21 x 21 matrix to its
+finder and timing patterns, format bits and Reed-Solomon check (`test_scanner_codes` checks the C
+table). No state of the scanner raises an alert. ACTIVE SERVO's list offers NONE alone; the SERVO
+ID row's typed id comes with the SERVO LABEL rows.
 
 The scan flow (`scan_flow.c`, `test_scan_flow`; `servo_scan_decide()` in
 `servo_active.c`, `test_servo_scan`) takes a scanned line on the frame task:
@@ -1908,7 +1918,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 694 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 696 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -2017,7 +2027,7 @@ The host suite is 694 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_wa_api_write`, `test_sense_i2c`, `test_storage`, `test_storage_swap`, `test_text_buf`,
 `test_text_hl`, `test_text_hl_limrun`, `test_i2c_txq`, `test_i2c_txq_calls`,
 `test_i2c_txq_wire`, `test_sense_txq`, `test_sense_txq_svc`, `test_fm_name`, `test_png_enc`,
-`test_shot_file`, `test_shot`, `test_shot_popup`, `test_screen_dim`, `test_wall_clock`, `test_mstime`, `test_witmotion`, `test_scan_line`, `test_gm861`, `test_scan_port`, `test_scan_wire`,
+`test_shot_file`, `test_shot`, `test_shot_popup`, `test_screen_dim`, `test_wall_clock`, `test_mstime`, `test_witmotion`, `test_scan_line`, `test_gm861`, `test_scan_port`, `test_scan_wire`, `test_scanner_codes`, `test_scanner_pane`,
 `test_servo_angle`, `test_servo_source_angle`, `test_hitec_prog_run` and
 `test_hitec_panel_run`, `test_hitec_panel_move`, `test_hitec_panel_find`, `test_servo_rudder`,
 `test_servo_rudder_panel`, `test_servo_rudder_steps`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
@@ -2578,7 +2588,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-1118 committed screenshots to the current render, 559 in English and the same 559 in German, and `render_ui.py --fit` fails on a string that
+1126 committed screenshots to the current render, 563 in English and the same 563 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -2615,7 +2625,9 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_widgets.c` | 432 | 425 | 98.4% |
 | `shared/ui/ui_icons.c` | 199 | 199 | 100.0% |
 | `shared/ui/ui_band.c` | 421 | 408 | 96.9% |
-| `shared/ui/scan_flow.c` | 147 | 144 | 98.0% |
+| `shared/ui/scan_flow.c` | 151 | 148 | 98.0% |
+| `shared/ui/scanner_pane.c` | 176 | 160 | 90.9% |
+| `shared/ui/scanner_code.c` | 148 | 136 | 91.9% |
 | `shared/ui/ui_help.c` | 400 | 389 | 97.2% |
 | `shared/ui/help_outputs.c` | 74 | 72 | 97.3% |
 | `shared/ui/help_setup.c` | 95 | 92 | 96.8% |
@@ -2633,7 +2645,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_text.c` | 140 | 139 | 99.3% |
 | `shared/ui/ui_router.c` | 612 | 600 | 98.0% |
 | `shared/ui/ui_router_alert.c` | 36 | 36 | 100.0% |
-| `shared/ui/ui_router_screens.c` | 62 | 62 | 100.0% |
+| `shared/ui/ui_router_screens.c` | 64 | 64 | 100.0% |
 | `shared/ui/ui_alert_slot.c` | 39 | 39 | 100.0% |
 | `shared/ui/ui_value_ask.c` | 8 | 8 | 100.0% |
 | `shared/ui/splash_screen.c` | 72 | 69 | 95.8% |
@@ -2749,11 +2761,11 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/print_ctl.c` | 429 | 392 | 91.4% |
 | `shared/ui/settings_screen.c` | 333 | 324 | 97.3% |
 | `shared/ui/settings_draw.c` | 69 | 69 | 100.0% |
-| `shared/ui/settings_rows.c` | 49 | 48 | 98.0% |
+| `shared/ui/settings_rows.c` | 56 | 54 | 96.4% |
 | `shared/ui/ui_setlist.c` | 626 | 611 | 97.6% |
 | `shared/ui/ui_setlist_draw.c` | 283 | 264 | 93.3% |
 | `shared/ui/ui_footer.c` | 42 | 41 | 97.6% |
-| `shared/ui/sensors_pane.c` | 103 | 103 | 100.0% |
+| `shared/ui/sensors_pane.c` | 107 | 107 | 100.0% |
 | `shared/ui/sensors_rows.c` | 250 | 250 | 100.0% |
 | `shared/ui/outputs_screen.c` | 615 | 610 | 99.2% |
 | `shared/ui/outputs_view.c` | 73 | 72 | 98.6% |
@@ -3124,7 +3136,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/scanner/scan_line.c` | 113 | 113 | 100.0% |
 | `shared/scanner/gm861.c` | 319 | 319 | 100.0% |
 | `shared/scanner/scan_port.c` | 112 | 111 | 99.1% |
-| **total** | **115975** | **113390** | **97.8%** |
+| **total** | **116316** | **113702** | **97.8%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

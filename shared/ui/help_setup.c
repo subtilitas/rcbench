@@ -132,7 +132,8 @@ static int first_row(bool keys)
 static ui_text_id_t entry_text(int pane, int e)
 {
     if (pane != STG_PANE_WIRELESS) {
-        return TX_HG_SET_ENTRY;
+        return (e == SENS_ENTRY_SCANNER) ? TX_HG_SET_ENTRY_SCANNER
+                                         : TX_HG_SET_ENTRY;
     }
     switch (e) {
     case WL_ENTRY_DIAL:  return TX_HG_SET_ENTRY_DIAL;

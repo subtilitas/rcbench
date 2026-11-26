@@ -8,6 +8,14 @@ history is in git.
 
 ### Added
 
+- SETUP > SENSORS > SCANNER, the ninth SENSORS entry: Scanner and Read
+  mode, a line that every feature works by typing the servo id, the state
+  and rate, the last scan with its age and what it did, the counts, Active
+  servo with NONE (refused during a run), TEST (30s in which a scan shows
+  on the page and changes nothing), Check again, and SETUP CODE: the
+  GM861's "Serial Output" setup code at 12px a module (252px) with a 2s
+  hold for the factory reset. `tools/gen_scanner_codes.py` writes and
+  checks the code's matrix. No scanner state raises an alert.
 - A scanned servo id sets the active servo, and the band shows it in a chip
   left of the other chips, on the accent while a run holds it, shortened
   to `-0000A` where the row has no room. Each scan raises a notice: the id,

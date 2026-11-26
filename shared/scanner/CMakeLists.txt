@@ -6,7 +6,7 @@
 # outside this folder and the C standard headers.  The panel's UART task
 # moves the bytes; the host suite holds both files (test_scan_line,
 # test_gm861) against a simulated module.
-set(SRCS scan_line.c gm861.c scan_port.c)
+set(SRCS scan_line.c gm861.c scan_port.c scanner_codes.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include)

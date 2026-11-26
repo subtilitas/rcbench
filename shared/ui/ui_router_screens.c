@@ -26,6 +26,7 @@
 #include "overview_screen.h"
 #include "picker_screen.h"
 #include "sbk_screen.h"
+#include "scanner_code.h"
 #include "servo_screen.h"
 #include "settings_screen.h"
 #include "splash_screen.h"
@@ -80,6 +81,7 @@ static const struct {
     { SCREEN_SETUP,   SCREEN_FILES },
     { SCREEN_WL_SEARCH, SCREEN_SETUP },
     { SCREEN_SET_LOAD, SCREEN_SETUP },
+    { SCREEN_SCAN_CODE, SCREEN_SETUP },
     { SCREEN_LOGS,    SCREEN_SERVO_LIMRUN },
     { SCREEN_LOGS,    SCREEN_SERVO_RAUTO },
     { SCREEN_LOGS,    SCREEN_SERVO_TEST },
@@ -130,6 +132,7 @@ const ui_screen_t *ui_router_screen(ui_screen_id_t id)
     case SCREEN_SERVO_HITEC:  return servo_fn_screen(SERVO_FN_HITEC);
     case SCREEN_WL_SEARCH:    return wl_search_screen();
     case SCREEN_SET_LOAD:     return sbk_screen();
+    case SCREEN_SCAN_CODE:    return scanner_code_screen();
     default:              return overview_screen();
     }
 }
@@ -142,6 +145,7 @@ void ui_router_screens_invalidate(void)
     log_viewer_invalidate();
     settings_screen_invalidate();
     sbk_screen_invalidate();
+    scanner_code_invalidate();
     analyser_invalidate();
     balance_invalidate();
     battery_invalidate();

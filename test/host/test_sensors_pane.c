@@ -45,18 +45,18 @@ static const char *state_of(int e, gfx_color_t *ink)
 
 /* ------------------------------------------------------------ the entries */
 
-TEST_CASE(the_list_names_8_entries_in_order)
+TEST_CASE(the_list_names_9_entries_in_order)
 {
     fresh_hub();
     static const char *const en[SENS_ENTRY_COUNT] = {
         "SENSOR BUS", "INA228", "INA3221 0x40", "INA3221 0x41",
-        "INA3221 0x42", "INA3221 0x43", "AS5600", "PHASE TAP",
+        "INA3221 0x42", "INA3221 0x43", "AS5600", "PHASE TAP", "SCANNER",
     };
     static const char *const de[SENS_ENTRY_COUNT] = {
         "SENSORBUS", "INA228", "INA3221 0x40", "INA3221 0x41",
-        "INA3221 0x42", "INA3221 0x43", "AS5600", "PHASENABGRIFF",
+        "INA3221 0x42", "INA3221 0x43", "AS5600", "PHASENABGRIFF", "SCANNER",
     };
-    CHECK_EQ(SENS_ENTRY_COUNT, 8);
+    CHECK_EQ(SENS_ENTRY_COUNT, 9);
     char buf[24];
     for (int e = 0; e < SENS_ENTRY_COUNT; ++e) {
         ui_text_set_language(UI_LANG_EN);
@@ -72,8 +72,7 @@ TEST_CASE(the_list_names_8_entries_in_order)
 }
 
 /* Each row of SET_CAT_SENSORS on one entry, but for the two with no firmware
- * behind them, whose keys stay, and the QR scanner's two, whose SCANNER
- * entry is slice S4's. */
+ * behind them, whose keys stay.  The QR scanner's two are SCANNER's. */
 TEST_CASE(every_sensor_row_has_one_entry_and_balance_has_none)
 {
     fresh_hub();
@@ -85,14 +84,12 @@ TEST_CASE(every_sensor_row_has_one_entry_and_balance_has_none)
         const int e = sensors_pane_entry_of(ids[i]);
         if (e < 0) {
             CHECK(ids[i] == SET_VIBE_EN || ids[i] == SET_OPTICAL_EN
-                  || ids[i] == SET_OPTICAL_PIN
-                  || ids[i] == SET_SCANNER_ENABLE
-                  || ids[i] == SET_SCANNER_MODE);
+                  || ids[i] == SET_OPTICAL_PIN);
         } else {
             ++on_entry;
         }
     }
-    CHECK_EQ(on_entry, 55);
+    CHECK_EQ(on_entry, 57);
     CHECK_EQ(sensors_pane_entry_of(SET_HITEC_RX), -1);
     CHECK_STR_EQ(settings_def(SET_VIBE_EN)->key, "vibe_en");
     CHECK_STR_EQ(settings_def(SET_OPTICAL_EN)->key, "optical_en");
@@ -166,7 +163,7 @@ TEST_CASE(the_pane_stands_beside_the_list_and_the_keys_stay)
     CHECK_EQ(settings_screen_row_rect(0).x, PANE_X);
     CHECK_EQ(settings_screen_row_part(0, SETTINGS_ROW_PLUS).x, PLUS_X);
     CHECK_EQ(settings_screen_row_part(0, SETTINGS_ROW_MINUS).x, MINUS_X);
-    /* The ninth slot, which no pane fills yet, ends 4px above the strip. */
+    /* The ninth slot, SENSORS' SCANNER, ends 4px above the strip. */
     gfx_rect_t last = settings_screen_entry_rect(8);
     CHECK(last.x + last.w < PANE_X);
     CHECK_EQ(last.y + last.h, 8 + 432);
@@ -742,7 +739,7 @@ TEST_CASE(the_carrier_holds_its_soldered_rows_on_the_pane)
 
 int main(void)
 {
-    RUN(the_list_names_8_entries_in_order);
+    RUN(the_list_names_9_entries_in_order);
     RUN(every_sensor_row_has_one_entry_and_balance_has_none);
     RUN(a_moved_row_keeps_its_key);
     RUN(rows_appear_when_a_sensor_is_enabled);

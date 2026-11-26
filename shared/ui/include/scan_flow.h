@@ -12,6 +12,10 @@
  * scan_flow_line() runs a line at once on the frame task; the host suite
  * and the renderer inject lines through it.
  *
+ * While TEST runs on SETUP > SENSORS > SCANNER (scanner_pane_testing()) a
+ * line goes to that page alone and changes nothing else.  Every other line
+ * runs, and the page keeps it with what it did (scanner_pane_line()).
+ *
  * A line runs through servo_scan_decide() (servo_active.h) with the run
  * state of the screens (scan_flow_run_active()) and raises the notice of
  * PLAN-B 3.3 (ui_router_set_notice()).  A scan starts no run, arms

@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "scanner_pane.h"
 #include "servo_id.h"
 #include "servo_screen.h"
 #include "settings.h"
@@ -240,9 +241,15 @@ static bool line_with(const char *line, bool too_long, uint32_t now_ms,
     if (line == NULL) {
         line = "";
     }
+    /* TEST on SETUP > SENSORS > SCANNER: the line shows there alone. */
+    if (scanner_pane_testing(now_ms)) {
+        scanner_pane_test_line(line, too_long, run_active_with(st), now_ms);
+        return true;
+    }
     const servo_scan_t r = servo_scan_decide(line, too_long,
                                              run_active_with(st), now_ms);
     s_flow.last = r;
+    scanner_pane_line(line, r, now_ms);
     char notice[UI_ALERT_MAX];
     const char *id = servo_active_id();
     switch (r) {
