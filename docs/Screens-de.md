@@ -7199,9 +7199,9 @@ Laufs ([Servoverfahren](Servo-de.md)).
 ### WIRELESS: die IMU und das Dial
 
 WIRELESS enthält die Bluetooth-LE-Geräte des Panels in einer geteilten
-Ansicht wie SENSORS: links 4 Einträge, IMU, DIAL, AUSWUCHTKNOTEN und
-LEISTUNGSKNOTEN, jeder mit Namen und Zustand, rechts die Zeilen des
-gewählten Eintrags. Das erste IMU EIN, Dial EIN, Leistungsknoten EIN oder
+Ansicht wie SENSORS: links 5 Einträge, IMU, DIAL, AUSWUCHTKNOTEN,
+DRUCKER und LEISTUNGSKNOTEN, jeder mit Namen und Zustand, rechts die
+Zeilen des gewählten Eintrags. Das erste IMU EIN, Dial EIN, Leistungsknoten EIN oder
 Auswuchtknoten EIN startet Bluetooth LE bis zum
 Neustart des Panels.
 
@@ -7210,6 +7210,7 @@ Neustart des Panels.
 | IMU | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN SENSOR GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN`, `VERBUNDEN 50Hz`, `KEINE FRAMES` ([Die Bluetooth-IMU](#die-bluetooth-imu)) | 2 bei AUS: IMU und WINKELQUELLE; 7 bei EIN |
 | DIAL | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN DIAL GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN: KEIN DIAL`, `VERBUNDEN, KEIN EREIGNIS`, `ANDERES PROTOKOLL n`, `VERBUNDEN`, `GESTÖRT`, `DIAL VERLOREN` | 1 bei AUS; 5 bei EIN |
 | AUSWUCHTKNOTEN | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN KNOTEN GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN: KEIN KNOTEN`, `VERBUNDEN, LIEST INFO`, `ROLLE r, PROTOKOLL p`, `VERBUNDEN, KEIN BERICHT`, `BERICHTET` | 1 bei AUS; 5 bei EIN |
+| DRUCKER | `NICHT GEBUNDEN`, im Leerlauf der Name des gebundenen Druckers, `SUCHE LÄUFT`, `VERBUNDEN`, die Phase einer Anfrage oder ihr Ergebnis ([WIRELESS: der Etikettendrucker](#wireless-der-etikettendrucker)) | 8 |
 | LEISTUNGSKNOTEN | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN KNOTEN GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `KEIN LEISTUNGSKNOTEN`, `VERBUNDEN, KEIN MESSWERT`, `ANDERES PROTOKOLL n`, `INA228-SETUP ABGELEHNT`, `KEIN INA228 AM KNOTEN`, `VERBUNDEN`, `300ms KEIN MESSWERT`, `KNOTEN VERLOREN` ([WIRELESS: der Leistungsknoten](#wireless-der-leistungsknoten)) | 2 bei AUS: Leistungsknoten und INA228-QUELLE; 5 bei EIN |
 
 ![WIRELESS auf dem DIAL-Eintrag](img/de/setup-wireless-dial.png)
@@ -7298,14 +7299,80 @@ AUSWUCHTKNOTEN ZURÜCKSETZEN setzt Auswuchtknoten auf AUS und Testmasse auf
 andere Rolle oder ein anderes Protokoll nennt, zeigt `ROLLE r, PROTOKOLL p`,
 und seine Berichte werden nicht übernommen.
 
+### WIRELESS: der Etikettendrucker
+
+![WIRELESS auf dem DRUCKER-Eintrag, die Rolle gelesen](img/de/printer-idle.png)
+
+Der DRUCKER-Eintrag bindet den Etikettendrucker, der die Servo-Etiketten
+druckt (DRUCKEN im SERVO-ETIKETT, [Servo-de.md](Servo-de.md)), einen
+Supvan T50M Pro über Bluetooth LE. Der Drucker hat keinen Schalter: das
+Panel verbindet sich für eine Anfrage und beendet die Verbindung 30s
+nach seiner letzten Antwort. Die Verbindung nutzt die freie Verbindung,
+die auch ein Geräte-Update nutzt: eine Anfrage wird während eines Updates
+abgelehnt, ein Update während einer Anfrage oder einer Druckersuche. Der
+Drucker zeigt keinen Dienst an: eine Suche listet die Geräte, deren
+öffentliche Adresse mit `A4:93:40` beginnt, nie ein Gerät wegen des
+Dienstes, den es anzeigt, und eine zufällige Adresse bindet nichts.
+
+Auf der Station (Station-Schritt H1, Rolle 40x30mm): die erste Verbindung
+einer Sitzung dauerte 4.94s, spätere 0.1s bis 0.8s; die MTU war 240; das
+Etikett entstand in 37ms bis 42ms zu einem Datenstrom von etwa 2.000 Byte;
+ein Etikett dauerte 4.2s bis 6.7s von der Anfrage bis `GEDRUCKT`. Ein
+Drucker, der ausgeht, wird nur bis zum Ende der 30s nach seiner letzten
+Antwort gesucht.
+
+| Zeile | Werte | Wirkung |
+| --- | --- | --- |
+| Drucker suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | Tippen öffnet SEARCH ([WIRELESS: SEARCH](#wireless-search)) und sucht 10s nach Druckern; bei ARMED zeigt das Band `KEINE DRUCKERSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; während einer Anfrage `DRUCK LÄUFT: NACH DEM ENDE SUCHEN`; während eines Geräte-Updates `UPDATE LÄUFT: KEINE DRUCKERSUCHE`; während einer Suche `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`; ist Bluetooth LE 10s nach dem Tippen nicht bereit, `BLUETOOTH NICHT BEREIT: KEINE DRUCKERSUCHE`. Das Schalten auf ARMED beendet eine Suche. SEARCH öffnet in jedem Fall |
+| Gebundener Drucker | der Name des gebundenen Druckers, sonst seine Adresse, sonst `KEINS` | Tippen öffnet SEARCH mit der Liste der letzten Suche, ohne Suche |
+| Adresse | `A4:93:40:30:FA:71 P` oder `--` | die gebundene Adresse und ihr Typ |
+| Zustand | `NICHT GEBUNDEN`, `BEREIT`, `VERBUNDEN`, `SUCHE LÄUFT`, `VERBINDET`, `LIEST ROLLE`, `BAUT ETIKETT`, `SENDET 3/5`, `DRUCKT`, `PRÜFT ZÄHLER`, `ROLLE GELESEN`, `GEDRUCKT, 293 ÜBRIG` oder der Fehler der letzten Anfrage | Verbindung und letzte Anfrage |
+| Rolle | `40x30mm ABST. 3mm`, `KEIN ETIKETT`, `--` | Etikettengröße und Abstand, wie der Drucker sie meldet |
+| Etiketten übrig | `293`, `--` | der Zähler des Druckers für die Rolle |
+| Drucker lesen | der Name des gebundenen Druckers | Tippen liest Rolle und übrige Etiketten; gesperrt ohne gebundenen Drucker (`KEIN DRUCKER GEBUNDEN: oben einen suchen`), während einer Anfrage (`DRUCKER BELEGT: die Anfrage läuft zu Ende`) und während eines Updates (`UPDATE LÄUFT: nach dem Update drucken`) |
+| Testetikett | der Name des gebundenen Druckers | Tippen druckt das Testetikett des Bench; die Sperren von Drucker lesen und `NUR BEI SAFE: kein Druck bei ARMED oder im Lauf` |
+
+![Nichts gebunden](img/de/printer-none.png)
+
+![Ein Etikett in SENDET 3/5](img/de/printer-printing.png)
+
+![Das Etikett gedruckt, 292 übrig](img/de/printer-done.png)
+
+Der Eintrag, geöffnet mit gebundenem Drucker und noch nicht gelesener
+Rolle, liest die Rolle einmal, bei SAFE. DRUCKER ZURÜCKSETZEN ändert
+nichts: der Eintrag hält keine Einstellung, und die Bindung bleibt. Eine
+Anfrage, die mit einem Fehler endet, zeigt seinen Text im Band:
+
+| Text | Bedeutet |
+| --- | --- |
+| `KEIN DRUCKER GEBUNDEN` | keine Adresse gebunden |
+| `DRUCKER NICHT GEFUNDEN` | 10s nach der Anfrage keine Verbindung: der Drucker ist aus oder außer Reichweite |
+| `BLUETOOTH NICHT BEREIT` | Bluetooth LE kam nicht hoch |
+| `KEIN ETIKETTENDRUCKER` | dem gebundenen Gerät fehlt der Dienst des Druckers |
+| `DRUCKER-MTU ZU KLEIN` | die MTU der Verbindung liegt unter 131 Byte |
+| `DECKEL OFFEN`, `KEIN ETIKETT`, `ETIKETTENFEHLER`, `DRUCKERAKKU SCHWACH`, `DRUCKKOPF HEISS` | der Status des Druckers |
+| `DRUCKER BESCHÄFTIGT` | der Drucker blieb 5s beschäftigt |
+| `DRUCKER ANTWORTET NICHT` | die Antwort eines Schritts blieb aus |
+| `SCHREIBEN ABGELEHNT` | die Verbindung lehnte ein Schreiben ab |
+| `VERBINDUNG VERLOREN` | die Verbindung riss im Auftrag ab, ohne Ergebnis |
+| `VERBINDUNG WEG, NICHT GEDRUCKT` | die Verbindung riss ab, kam wieder, und der Zähler blieb |
+| `NICHT GEDRUCKT` | der Etikettenzähler blieb bei 3 Lesungen gleich |
+| `ROLLE GEWECHSELT` | die Rolle wechselte im Auftrag |
+| `ETIKETT ZU KLEIN`, `ETIKETT ZU GROSS` | die Rolle ist kleiner als 15 x 20mm oder größer als 48 x 100mm |
+| `DRUCK GESTOPPT` | `print stop` auf der Konsole |
+| `UPDATE LÄUFT` | ein Geräte-Update läuft |
+| `KEIN SPEICHER` | der Block von 100kB für das Etikett wurde verweigert |
+| `NUR BEI SAFE` | der Bench ist ARMED |
+
 ### WIRELESS: SEARCH
 
 ![SEARCH beim Leistungsknoten, zwei Knoten gefunden](img/de/setup-wireless-search.png)
 
-SEARCH findet und bindet das Dial, den Leistungsknoten oder den
-Auswuchtknoten. Dial suchen und Knoten suchen öffnen es und fordern eine
-Suche von 10s an; Gebundenes Dial und Gebundener Knoten öffnen es mit der
-Liste der letzten Suche, ohne Suche. Eine Suche, die die Zeile ablehnt
+SEARCH findet und bindet das Dial, den Leistungsknoten, den
+Auswuchtknoten oder den Etikettendrucker. Dial suchen, Knoten suchen und
+Drucker suchen öffnen es und fordern eine Suche von 10s an; Gebundenes
+Dial, Gebundener Knoten und Gebundener Drucker öffnen es mit der Liste der
+letzten Suche, ohne Suche. Eine Suche, die die Zeile ablehnt
 (ARMED, eine laufende Suche, Bluetooth nicht bereit), nennt den Grund im
 Band, und SEARCH öffnet mit der letzten Liste. Das Home-Feld
 führt zurück zu SETUP > WIRELESS auf den Eintrag des Geräts.
@@ -7337,7 +7404,16 @@ BINDEN bindet nichts, schließt die Frage und nennt den Grund im Band:
   beim Dial `SUCHE LÄUFT: DAS DIAL NACH DEM ENDE WÄHLEN`;
 - wenn das angetippte Gerät nicht an seinem Platz in der Liste steht:
   `KNOTEN NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`, beim Dial
-  `DIAL NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`.
+  `DIAL NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`;
+- beim Drucker während einer Anfrage: `DRUCK LÄUFT: BINDUNG NACH DEM ENDE
+  ÄNDERN`; während eines Geräte-Updates: `UPDATE LÄUFT: BINDUNG DANACH
+  ÄNDERN`. BINDUNG LÖSEN, 2000ms gehalten, wird mit denselben Texten
+  abgelehnt.
+
+Die Bindung des Druckers gehört keinem Controller: BINDEN schreibt
+Adresse und Name in SETUP (`prn_ble`, `prn_name`) und fordert sofort
+Speichern an, BINDUNG LÖSEN leert beide. Die nächste Anfrage verbindet
+mit der neuen Adresse.
 
 Tippen auf ein Gerät während einer Suche öffnet keine Frage und zeigt den
 Text der Suche. Eine Bindung, die der Controller nach BINDEN ablehnt, hinter
@@ -7370,6 +7446,7 @@ wie eine verlorene Verbindung:
 | Dial | ein Dial in UP oder DEGRADED ist sofort verloren; bei ARMED ist das ein Fehler: SAFE, jeder Ausgang aus |
 | Leistungsknoten | die Messwerte enden; ein Lauf, der auf den Knoten zählt (INA228-QUELLE KNOTEN, ein Lauf, der BENCH liest), überbrückt den Ausfall bis 300ms und endet dann als Fehler, jeder Ausgang aus; ein Scharfschalten auf KNOTEN wird abgelehnt, solange kein Messwert kommt |
 | Auswuchtknoten | die Messwerte veralten; der Knoten treibt keinen Ausgang, sonst geschieht nichts |
+| Drucker | abgelehnt, während eine Anfrage läuft; der Drucker treibt keinen Ausgang |
 
 ![SEARCH während einer Suche nach dem Dial](img/de/setup-wireless-search-scan.png)
 

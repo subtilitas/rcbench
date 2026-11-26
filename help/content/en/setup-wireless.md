@@ -6,11 +6,11 @@ order: 62
 
 # Wireless
 
-WIRELESS on [SETUP](setup.md) holds the panel's Bluetooth LE (Low Energy) devices: the WitMotion BWT901CL IMU (inertial measurement unit), the M5Stack Dial, a wireless knob, the power node, an INA228 on the ESC's XT60, and the balance node. All reach the panel through the board's ESP32-C6. The first IMU ON, Dial ON, Power node ON or Balance node ON starts Bluetooth LE until the panel restarts. Settings are retained and saved like other SETUP values.
+WIRELESS on [SETUP](setup.md) holds the panel's Bluetooth LE (Low Energy) devices: the WitMotion BWT901CL IMU (inertial measurement unit), the M5Stack Dial, a wireless knob, the power node, an INA228 on the ESC's XT60, the balance node, and the label printer, a Supvan T50M Pro. All reach the panel through the board's ESP32-C6. The first IMU ON, Dial ON, Power node ON or Balance node ON starts Bluetooth LE until the panel restarts. Settings are retained and saved like other SETUP values.
 
 ## The left list
 
-The 220px left list has 4 entries: IMU, DIAL, BALANCE NODE and POWER NODE. Each shows its name and its state. Tap an entry to display its settings in the 754px right pane. The list works as on [Sensors](setup-sensors.md#the-left-list): an entry that is off shows its enable row alone and the state `OFF`, each entry keeps its scroll position, and RESET names the entry, `RESET DIAL`.
+The 220px left list has 5 entries: IMU, DIAL, BALANCE NODE, PRINTER and POWER NODE. Each shows its name and its state. Tap an entry to display its settings in the 754px right pane. The list works as on [Sensors](setup-sensors.md#the-left-list): an entry that is off shows its enable row alone and the state `OFF`, each entry keeps its scroll position, and RESET names the entry, `RESET DIAL`.
 
 ## The IMU
 
@@ -158,11 +158,32 @@ The balance node measures the vibration and the index of a rotor for [Balance](b
 
 `OFF`, `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `SCANNING` and `CONNECTING` read as for the Dial.
 
+## The label printer
+
+![WIRELESS on the PRINTER entry, the roll read](view:printer-idle)
+![A label ended with COVER OPEN](view:printer-error)
+
+The printer prints the servo labels of SERVO LABEL's PRINT ([Servo settings](servo-settings.md)). It has no switch: the panel links to it for a request and ends the link 30s after its last answer. A request is refused while a device update runs, and an update while a request or a scan for printers runs. The printer advertises no service: a scan lists the devices whose public address starts with `A4:93:40`.
+
+| Row | What it shows or does |
+|---|---|
+| Scan for printer | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM`; a tap opens [Search](#search) and scans 10s. Refused while ARMED, while a print or a device update runs, and while a scan runs, the reason in the band |
+| Bound printer | its name, else its address, else `NONE`; a tap opens [Search](#search) on the last scan's list |
+| Address | the bound address, `A4:93:40:30:FA:71 P` |
+| State | `NOT BOUND`, `IDLE`, `LINK UP`, the request's phase (`SENDING 3/5`) or its result (`PRINTED, 293 LEFT`, `COVER OPEN`) |
+| Roll | `40x30mm GAP 3mm` as the printer reports it, `NO LABEL` |
+| Labels left | the printer's own count |
+| Read printer | reads the roll and the labels left |
+| Test label | prints the bench's test label; SAFE only |
+
+Read printer and Test label are locked with no printer bound, while a request runs and while an update runs; the help line names the reason. Opening the entry with a printer bound reads its roll once. A request that ends with an error puts its text in the band. RESET PRINTER keeps the bind.
+
 ## Search
 
 ![SEARCH on the power node, two nodes found](view:setup-wireless-search)
+![SEARCH for the printer while a scan runs](view:printer-search)
 
-SEARCH finds and binds the Dial, the power node or the balance node. Scan for Dial and Scan for node open it and scan 10s; Bound Dial and Bound node open it on the last scan's list. A refused scan says why in the band, and SEARCH opens on the last list. The home tag returns to WIRELESS on the device's entry.
+SEARCH finds and binds the Dial, the power node, the balance node or the label printer. Scan for Dial, Scan for node and Scan for printer open it and scan 10s; Bound Dial, Bound node and Bound printer open it on the last scan's list. The printer's bind and its UNBIND are refused while a print or a device update runs. A refused scan says why in the band, and SEARCH opens on the last list. The home tag returns to WIRELESS on the device's entry.
 
 - The line over the list: `SCANNING: 7s LEFT`, `FOUND 2: TAP ONE TO BIND IT`, `NONE FOUND`, `STOPPED BY ARM` or `NO SCAN YET: TAP SCAN AGAIN`.
 - The list: up to 8 devices, strongest first, each with its name or address and its signal in dBm. The bound one is lit. The list empties when a scan starts and fills when it ends.

@@ -104,9 +104,10 @@ carries the machine's profile's advertised service: its 16-bit UUID
 (`adv_uuid16`, 0 for none) in a 16-bit UUID list (AD types 0x02 and 0x03)
 or its 128-bit UUID (`adv_svc`, NULL for the service UUID `svc`) in a
 128-bit list (0x06 and 0x07). A profile with `adv_oui` (3 bytes in
-reading order, NULL for none) also lists a device with a public address
+reading order, NULL for none) lists only a device with a public address
 that starts with them, whatever it advertises (`BLEU_DEV_OUI`); a random
-address with the same bytes is not listed by it. The ISSC profile advertises 0x18F0 and the
+address with the same bytes, and a device that only advertises the
+service, are not listed by it. The ISSC profile advertises 0x18F0 and the
 ISSC service UUID. The listing is a hint: 0x18F0 is no Bluetooth SIG
 assignment and other modules may use it. The connect checks the service.
 `bleu_adv_parse_for()` and `bleu_list_report_for()` take the profile;

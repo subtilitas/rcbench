@@ -10,6 +10,7 @@
  * | ID PREFIX | the prefix NEW ID uses | the name keyboard, 17 characters at most; OK asks a save at once |
  * | SERVO ID | the active servo's id, or NONE | a choice list: NONE, the card's 6 highest ids, TYPE ID |
  * | NEW ID | NEXT and the id it makes | the next id from the card, its folder, and the servo active |
+ * | PRINT or PRINT AGAIN | the printer's name, the job's phase, its result | the active servo's label: its id and DUT NAME |
  *
  * SERVO ID's NONE calls servo_active_clear(); an id of the list makes it
  * active (SERVO_ACTIVE_PICK); TYPE ID opens the name keyboard on the
@@ -19,6 +20,17 @@
  * servo's newest run.  SERVO ID and NEW ID are locked while a run holds
  * the active servo (servo_screen_run_active()); NEW ID also without a
  * card, at ZZZZZ and with a prefix that is none, the reason on the row.
+ *
+ * PRINT asks print_ctl for the active servo's label on the bound printer
+ * (wireless_printer.h); the roll the printer reports sets its size.  The
+ * row reads PRINT AGAIN once a label of the active servo has printed in
+ * this session, and for a servo whose id came from its label: scanned or
+ * typed.  It is locked, the reason on its help line, with no servo
+ * active, with no printer bound, while a job or a scan runs, while the
+ * bench is ARMED or a run holds the servo (SAFE ONLY), and while a device
+ * update runs.  Its value is the printer's name; from the tap on, the
+ * job's phase and progress; after the job, PRINTED with the labels left,
+ * or the error, until the next request or until another servo is active.
  *
  * What the card holds comes through servo_label_io_t, the panel's
  * (panel_servo.c's walk and NEW ID request); without it the card reads
@@ -76,6 +88,7 @@ enum {
     SVL_ROW_PREFIX,    /**< ID PREFIX               */
     SVL_ROW_ID,        /**< SERVO ID                */
     SVL_ROW_NEW,       /**< NEW ID                  */
+    SVL_ROW_PRINT,     /**< PRINT or PRINT AGAIN    */
     SVL_ROWS           /**< the rows of the block   */
 };
 
@@ -83,15 +96,18 @@ enum {
 extern const ui_setlist_custom_t svl_id_row;
 /** @brief NEW ID's row. */
 extern const ui_setlist_custom_t svl_new_row;
+/** @brief PRINT's row. */
+extern const ui_setlist_custom_t svl_print_row;
 
 /** @brief The block's rows, for a list's table: the heading, ID PREFIX,
- *         SERVO ID and NEW ID. */
+ *         SERVO ID, NEW ID and PRINT. */
 #define SERVO_LABEL_ROWS                                                     \
     UI_SL_ROW_HEADING(TX_SVL_LABEL, NULL),                                   \
     { (uint8_t)UI_SL_TEXT, (int8_t)SET_TEXT_SERVO_PREFIX, (setting_id_t)0,   \
       TX_COUNT, NULL },                                                      \
     UI_SL_ROW_CUSTOM(&svl_id_row),                                           \
-    UI_SL_ROW_CUSTOM(&svl_new_row)
+    UI_SL_ROW_CUSTOM(&svl_new_row),                                          \
+    UI_SL_ROW_CUSTOM(&svl_print_row)
 
 /**
  * @brief SERVO ID's choice list as it stands: NONE, the ids, TYPE ID.
@@ -101,8 +117,8 @@ int servo_label_choices(void);
 
 /**
  * @brief Frame task, with a SERVO list open: the rows repaint when the
- *        active servo, the card's ids or NEW ID's request changed since the
- *        last call.
+ *        active servo, the card's ids, NEW ID's request, the bound printer
+ *        or the print's view changed since the last call.
  */
 void servo_label_tick(void);
 
@@ -117,6 +133,12 @@ uint32_t servo_label_repaints(void);
  * @return The reason; NULL while it takes one.
  */
 const char *servo_label_new_why(void);
+
+/**
+ * @brief Why PRINT takes no press now.
+ * @return The reason; NULL while it takes one.
+ */
+const char *servo_label_print_why(void);
 
 #ifdef __cplusplus
 }

@@ -509,20 +509,21 @@ gekoppelte (`shared/ui/include/print_ctl.h`).
 
 | Eingabe | Wirkung |
 | --- | --- |
-| `print` | gibt den Stand aus: Drucker, Phase, Fehler, Verbindung, Rolle, verbleibende Etiketten, MTU, gesendete Frames |
+| `print` | gibt den Stand aus: Drucker, Phase, Fehler, Verbindung, Rolle, verbleibende Etiketten, MTU, gesendete Frames; dann eine Zeile je Drucker der letzten Suche |
 | `print test` | fordert das Testetikett an: Code von `RCBENCH TEST`, `RCBENCH`, Version, Rolle |
 | `print id <id>` | fordert das Etikett einer Servo-ID an, mit dem DUT NAME aus SETUP |
 | `print query` | liest Rolle und Etikettenzähler, druckt nichts |
+| `print scan` | sucht 10s nach Druckern (Adressen `A4:93:40:...`); `print` listet sie |
 | `print stop` | beendet die laufende Anforderung: STOP_PRINT nach START, `DRUCK GESTOPPT` |
-| `print bind <address>` | legt `A4:93:40:30:FA:71` in `prn_ble` ab, ` P` angehängt ohne Typ, und fordert das Speichern an |
+| `print bind <address>` | legt `A4:93:40:30:FA:71` in `prn_ble` ab, ` P` angehängt ohne Typ, und fordert das Speichern an; eine zufällige Adresse (` R`) wird abgelehnt |
 | `print unbind` | leert `prn_ble` und `prn_name` |
 
-Eine Anforderung, während eine läuft, wird abgelehnt. Die `print`-Zeilen
+Eine Anforderung, während eine läuft, wird abgelehnt; eine Suche auch, während eine läuft. Die `print`-Zeilen
 der `blec`-Task folgen jedem Phasenwechsel:
 
 | Zeile | Bedeutet |
 | --- | --- |
-| `print: request <kind> taken` | der Controller hat die Anforderung angenommen: 1 Etikett, 2 Test, 3 Abfrage, 4 Stopp |
+| `print: request <kind> taken` | der Controller hat die Anforderung angenommen: 1 Etikett, 2 Test, 3 Abfrage, 4 Stopp, 5 Suche |
 | `print: linked to <printer>: connect <ms>ms, set-up <ms>ms, MTU <n>, <n> attempts` | die Verbindung steht, die Rolle wird gelesen |
 | `print: roll <w>x<h>mm gap <g>mm, <n> left: building` | die Rolle ist gelesen; das Layout beginnt |
 | `print: block of <n> bytes taken` | der Heap-Block, zuerst aus PSRAM; ohne Block endet die Anforderung mit `KEIN SPEICHER` |

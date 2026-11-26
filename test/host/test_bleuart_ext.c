@@ -351,7 +351,8 @@ TEST_CASE(a_scan_lists_by_address_prefix_by_service_or_not_at_all)
     bleu_list_report_for(&l, &k_prn, &rnd, -50, ad, n);
     CHECK_EQ(l.found_n, 1u);
     CHECK_EQ(l.hidden, 1u);
-    /* another prefix that advertises the profile's service */
+    /* another prefix that advertises the profile's service: a profile
+     * with a prefix lists by the prefix alone, so it is hidden */
     uint8_t ad2[18];
     ad2[0] = 17u;
     ad2[1] = 0x07u;
@@ -359,15 +360,21 @@ TEST_CASE(a_scan_lists_by_address_prefix_by_service_or_not_at_all)
     const bleu_addr_t svc = { { 1, 2, 3, 0x41, 0x93, 0xA4 },
                               BLEU_ADDR_PUBLIC };
     bleu_list_report_for(&l, &k_prn, &svc, -70, ad2, sizeof ad2);
-    CHECK_EQ(l.found_n, 2u);
-    CHECK_EQ(l.found[1].flags & BLEU_DEV_ISSC, BLEU_DEV_ISSC);
-    CHECK_EQ(l.found[1].flags & BLEU_DEV_OUI, 0u);
+    CHECK_EQ(l.found_n, 1u);
+    CHECK_EQ(l.hidden, 2u);
     /* another prefix, no service: hidden */
     const bleu_addr_t other = { { 1, 2, 3, 0x40, 0x93, 0xA5 },
                                 BLEU_ADDR_PUBLIC };
     bleu_list_report_for(&l, &k_prn, &other, -40, ad, n);
-    CHECK_EQ(l.found_n, 2u);
-    CHECK_EQ(l.hidden, 2u);
+    CHECK_EQ(l.found_n, 1u);
+    CHECK_EQ(l.hidden, 3u);
+    /* without the prefix the same profile lists by the service */
+    bleu_profile_t by_svc = k_prn;
+    by_svc.adv_oui = NULL;
+    bleu_list_clear(&l);
+    bleu_list_report_for(&l, &by_svc, &svc, -70, ad2, sizeof ad2);
+    CHECK_EQ(l.found_n, 1u);
+    CHECK_EQ(l.found[0].flags & BLEU_DEV_ISSC, BLEU_DEV_ISSC);
     /* a profile without a prefix does not list the printer */
     bleu_profile_t no_oui = k_prn;
     no_oui.adv_oui = NULL;

@@ -48,7 +48,7 @@ bool svs_profile_shown(void);
 void svs_profile_open(int row);
 
 /** @brief The hub list's rows: OUTPUT to HV SERVO, DUT, NAME and REPORT. */
-#define HL_ROWS (HL_NEW_ID + 1)
+#define HL_ROWS (HL_PRINT + 1)
 
 /** @brief Whether the open list holds the profile's rows: the hub's, or
  *         LIVE's with ANGLE and ENC CENTER under them.

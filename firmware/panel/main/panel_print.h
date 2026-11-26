@@ -91,7 +91,7 @@ void panel_print_text_changed(setting_text_id_t id);
 /**
  * @brief A console line that starts with `print`, on the console's task:
  *        `print` (the view), `print test`, `print id ID`, `print query`,
- *        `print stop`, `print bind ADDRESS`, `print unbind`.
+ *        `print scan`, `print stop`, `print bind ADDRESS`, `print unbind`.
  * @param line The line.
  */
 void panel_print_console(const char *line);

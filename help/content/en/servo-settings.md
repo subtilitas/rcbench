@@ -148,10 +148,16 @@ The hub's, LIVE's, TEST's, LIMIT RUN's and RUDDER AUTO's lists end with SERVO LA
 | ID prefix | the part before the `-` that NEW ID uses, up to 17 characters, `SERVO` by default; spaces at the ends are dropped; OK asks a save at once |
 | SERVO ID | the active servo's id, or NONE; a tap opens NONE, the card's 6 newest ids and TYPE ID. NONE clears it; an id makes it active |
 | NEW ID | `NEXT` and the next id, `NEXT KST_X10-00008`; a tap makes it, its folder, and that servo active |
+| PRINT | the active servo's label on the printer bound on [Wireless](setup-wireless.md#the-label-printer): its QR code, its id and DUT name. The value names the printer, then follows the job, `SENDING 3/5`, and ends on `PRINTED, 293 LEFT` or the error, which also goes to the band |
 
 TYPE ID opens the keyboard on the saved prefix and its `-`, for a servo whose label is not at hand. It takes 23 characters, folds lower case to upper and trims nothing. An id that is not one is refused on the keyboard with the rule it breaks, such as `5 of 0-9, A-Z after the last -`. A taken id does what a scan of its label does: the same notices in the alert band, DUT name from a known servo's newest run, `NEW ON THIS CARD` for an id the card does not hold.
 
 SERVO ID and NEW ID are locked while a run holds the active servo, `RUN ACTIVE`. NEW ID is also locked with no card (`NO CARD`), at `ZZZZZ` (`NO FREE ID`) and with a prefix that starts with `.`; the row names the reason.
+
+![PRINT, the printer bound](view:servo-label-print)
+![The label printed: PRINT AGAIN](view:servo-label-printed)
+
+PRINT reads PRINT AGAIN for a servo whose label printed in this session, one of the last 8 ids printed, and for a servo whose id was scanned or typed; the tap is the same. PRINT is locked with no servo active, with no printer bound, while a request runs, while ARMED or a run holds the servo (`SAFE ONLY`) and while a device update runs. A result stays on the row until the next request or another servo, also after the list was left.
 
 ## RUDDER's list and KST's page
 

@@ -211,6 +211,7 @@ set(SRCS
     bal_ctl.c
     node_balance.c
     wireless_bal.c
+    wireless_printer.c
     motor_balance.c
     files_draw.c
     files_events.c
@@ -221,6 +222,7 @@ set(SRCS
     label_bitmap.c
     label_layout.c
     print_ctl.c
+    print_req.c
 )
 
 if(ESP_PLATFORM)

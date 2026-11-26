@@ -2553,6 +2553,7 @@ und RUDDER AUTO) endet mit dem Block SERVO-ETIKETT:
 | ID-Präfix | das Präfix, das NEUE ID nimmt (`srv_pfx`, vorgegeben `SERVO`) | die Namenstastatur, höchstens 17 Zeichen; Leerzeichen an den Enden fallen weg, innen bleiben sie; OK fordert sofort ein Speichern an |
 | SERVO-ID | die ID des aktiven Servos oder `KEINE` | eine Auswahl von bis zu 8 Zeilen zu 52px: `KEINE`, die 6 neuesten IDs der Karte, `ID TIPPEN` |
 | NEUE ID | `NÄCHSTE` und die ID, die NEUE ID macht, `NÄCHSTE KST_X10-00008` | die nächste ID, ihr Ordner und dieses Servo aktiv |
+| DRUCKEN oder NOCHMAL DRUCKEN | der Name des gebundenen Druckers; Phase und Fortschritt des Auftrags; `GEDRUCKT, 293 ÜBRIG` oder der Fehler | das Etikett des aktiven Servos auf dem gebundenen Drucker |
 
 - `KEINE` löscht das aktive Servo; eine ID der Liste macht es als Wahl
   aktiv. Eine offene Liste behält die IDs, die sie zeigt, während der
@@ -2590,6 +2591,37 @@ und RUDDER AUTO) endet mit dem Block SERVO-ETIKETT:
   las), `KEINE FREIE ID: diese Karte hat ZZZZZ`, `PRÄFIX BEGINNT MIT .:
   ID-Präfix ändern` und `ID-Präfix ist kein Präfix: A-Z, 0-9, Leerzeichen,
   - _ .` für ein Präfix mit einem anderen Zeichen.
+- DRUCKEN druckt das Etikett des aktiven Servos auf dem Drucker, der in
+  SETUP > WIRELESS > DRUCKER gebunden ist (Screens-de.md, WIRELESS: der
+  Etikettendrucker): den QR-Code der ID, die ID und DUT NAME, gesetzt für
+  die Rolle, die der Drucker meldet. Die Zeile heißt NOCHMAL DRUCKEN,
+  für ein Servo, dessen Etikett in dieser Sitzung gedruckt wurde, gleich
+  welches Servo beim Ende des Auftrags aktiv war (das Panel behält die
+  letzten 8 gedruckten IDs), und für ein Servo, dessen ID von seinem
+  Etikett kam, gescannt oder getippt; das Tippen ist dasselbe. Ein Etikett gilt als gedruckt, wenn
+  der Etikettenzähler des Druckers um 1 fällt.
+- Der Wert von DRUCKEN folgt dem Auftrag ab dem Tippen: `VERBINDET`,
+  `LIEST ROLLE`, `BAUT ETIKETT`, `SENDET 3/5`, `DRUCKT`, `PRÜFT ZÄHLER`,
+  dann `GEDRUCKT, 293 ÜBRIG` oder der Text des Fehlers, der auch ins Band
+  geht. Das Ergebnis bleibt bis zur nächsten Anfrage oder bis ein anderes
+  Servo aktiv ist; ein Auftrag, der bei geschlossener Liste endet, zeigt
+  es beim nächsten Öffnen. Im Leerlauf nennt der Wert den gebundenen
+  Drucker.
+- DRUCKEN ist gesperrt, der Grund in seiner Hilfezeile: ohne aktives
+  Servo (`KEINE SERVO-ID: oben wählen, tippen oder neu`), ohne gebundenen
+  Drucker (`KEIN DRUCKER GEBUNDEN: in SETUP auf WIRELESS binden`), während
+  einer Anfrage oder Druckersuche (`DRUCKER BELEGT: die Anfrage läuft zu
+  Ende`), bei ARMED oder während ein Lauf das Servo hält (`NUR BEI SAFE:
+  kein Druck bei ARMED oder im Lauf`) und während eines Geräte-Updates
+  (`UPDATE LÄUFT: nach dem Update drucken`). Ein Auftrag wird nicht über
+  die Zeile gestoppt; `print stop` auf der Konsole stoppt ihn.
+
+![DRUCKEN nennt den gebundenen Drucker](img/de/servo-label-print.png)
+
+![Ein Etikett in SENDET, DRUCKEN gesperrt](img/de/servo-label-printing.png)
+
+![Das Etikett gedruckt: NOCHMAL DRUCKEN](img/de/servo-label-printed.png)
+
 - Die Zeilen der Debug-Konsole unten tun dasselbe wie die Zeilen.
 
 | Lauf | Datei in `Servos/<id>` | Bericht |
