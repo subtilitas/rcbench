@@ -14001,6 +14001,24 @@ UI_SETTING_LABEL(SET_BAL_TRIAL,
 UI_SETTING_HELP(SET_BAL_TRIAL,
     "The mass taped on for the trial runs, g",
     "Die für die Testläufe aufgeklebte Masse, g")
+/* --- the QR scanner (panel_scan.c, SETUP > SENSORS > SCANNER): the
+ * GM861S on header P3, UART1, TX IO4, RX IO5. --------------------------- */
+UI_SETTING_LABEL(SET_SCANNER_ENABLE,
+    "Scanner",
+    "Scanner")
+UI_SETTING_HELP(SET_SCANNER_ENABLE,
+    "QR scanner on header P3, TX IO4, RX IO5",
+    "QR-Scanner an Header P3, TX IO4, RX IO5")
+UI_SETTING_LABEL(SET_SCANNER_MODE,
+    "Read mode",
+    "Lesemodus")
+UI_SETTING_HELP(SET_SCANNER_MODE,
+    "SENSING reads when the picture changes",
+    "SENSING liest, wenn sich das Bild ändert")
+UI_OPTIONS(scan_mode)
+UI_OPTION("SENSING", NULL)
+UI_OPTION("CONTINUOUS", NULL)
+UI_OPTIONS_END(scan_mode)
 UI_TEXT(BNODE_ENTRY, 16,
     "BALANCE NODE",
     "AUSWUCHTKNOTEN")

@@ -65,6 +65,25 @@ bool scan_flow_post(const char *line)
     return true;
 }
 
+bool scan_flow_pull(scan_flow_has_fn has, scan_flow_take_fn take)
+{
+    int expect = MAIL_EMPTY;
+    if (has == NULL || take == NULL || !has()
+        || !atomic_compare_exchange_strong(&s_flow.state, &expect,
+                                           MAIL_WRITING)) {
+        return false;
+    }
+    bool too_long = false;
+    if (!take(s_flow.line, sizeof(s_flow.line), &too_long)) {
+        atomic_store(&s_flow.state, MAIL_EMPTY);
+        return false;
+    }
+    s_flow.line[sizeof(s_flow.line) - 1u] = '\0';
+    s_flow.too_long = too_long;
+    atomic_store(&s_flow.state, MAIL_FULL);
+    return true;
+}
+
 void scan_flow_tick(uint32_t now_ms, const ui_bench_status_t *st)
 {
     int expect = MAIL_FULL;

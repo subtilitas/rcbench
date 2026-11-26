@@ -1292,7 +1292,7 @@ and its suites stay in the host suite; no firmware builds them.
 
 ### QR scanner (GM861)
 
-Built and host-tested, the core only (`shared/scanner/`): no firmware links it yet. The line
+Built and host-tested (`shared/scanner/`), linked into the panel with no screen yet. The line
 framer (`scan_line.c`, `test_scan_line`) splits the scanner's UART bytes into code lines of
 0x20 to 0x7E, at most 64 bytes, ended by CR, CR LF or LF, and answer frames of 1 to 97 data
 bytes with their CRC-CCITT; a line with another byte is dropped as noise, a line of 65 bytes or
@@ -1310,6 +1310,17 @@ the zone named until a recheck, so the module's flash takes no write every 5s. T
 `test_scan_line` holds 10,000 random bytes against `servo_id_parse()`: no line it hands out is
 a servo id.
 
+The port (`scan_port.c`, `test_scan_port`) moves the bytes between them: answer frames to the
+sequencer, code lines to a queue of 4 that drops its oldest when full, and the rate the
+sequencer asks for back to the UART. Lost input (a FIFO or buffer overflow) and a UART framing
+or parity error drop the open line or frame and every byte until 100ms pass without one, so no
+part of a line around a loss is queued; a change of rate drops the open line. The
+panel's task `scan` (`panel_scan.c`, core 0, priority 2, every 20ms) runs the port on UART1,
+TX IO4 and RX IO5 of header P3 (wiring in [Building](docs/Building.md#qr-scanner-wiring)),
+while SETUP's Scanner row (`scan_en`, default OFF) is ON; READ MODE (`scan_mode`) is SENSING
+or CONTINUOUS. The console build prints the state, the counts and the zones as read before the
+first write on `scan`; `tools/check_panel_console.py` holds it out of released images.
+
 The scan flow (`scan_flow.c`, `test_scan_flow`; `servo_scan_decide()` in
 `servo_active.c`, `test_servo_scan`) takes a scanned line on the frame task:
 an id in upper case exactly as `servo_id_parse()` writes it sets the active
@@ -1317,8 +1328,10 @@ servo outside a run; another id during a run is refused; the last line again
 within 3.0s with no change of the servo between is dropped. Each result but a
 drop raises its notice in the alert band, and the band shows the active servo
 in a chip left of the others (`UI_BAND_CHIP_SERVO`). The panel takes lines
-from the debug console's `scan <text>` through a mailbox of one line; the
-scanner's UART task is not built. The card's look-up (new, known with the
+through a mailbox of one line: the debug console's `scan <text>`, and the
+scanner's, which the frame task moves from the port's queue into the
+mailbox while it is empty (`scan_flow_pull()`, `test_scan_wire`), one a
+frame, a cut line as too long. The card's look-up (new, known with the
 name of its newest run, no card) is a hook no firmware registers yet, so the
 panel's notice names the id alone and DUT NAME stays.
 
@@ -1838,8 +1851,8 @@ rcbench/
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` · `passthru` | yes | yes | yes |
 | `escwire` · `openyge` | yes | yes | yes |
 | `witmotion` | yes | | yes |
-| `hc05` · `dial` · `supvan` · `scanner` | | | yes |
-| `bleuart` · `dialknob` · `vibe` · `rcnode` · `bleota` · `devupd` | yes | | yes |
+| `hc05` · `dial` · `supvan` | | | yes |
+| `bleuart` · `dialknob` · `vibe` · `rcnode` · `bleota` · `devupd` · `scanner` | yes | | yes |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
 `ESP_PLATFORM` and a static library otherwise. The panel sets
@@ -1873,7 +1886,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 689 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 691 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1982,7 +1995,7 @@ The host suite is 689 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_wa_api_write`, `test_sense_i2c`, `test_storage`, `test_storage_swap`, `test_text_buf`,
 `test_text_hl`, `test_text_hl_limrun`, `test_i2c_txq`, `test_i2c_txq_calls`,
 `test_i2c_txq_wire`, `test_sense_txq`, `test_sense_txq_svc`, `test_fm_name`, `test_png_enc`,
-`test_shot_file`, `test_shot`, `test_shot_popup`, `test_screen_dim`, `test_wall_clock`, `test_mstime`, `test_witmotion`, `test_scan_line`, `test_gm861`,
+`test_shot_file`, `test_shot`, `test_shot_popup`, `test_screen_dim`, `test_wall_clock`, `test_mstime`, `test_witmotion`, `test_scan_line`, `test_gm861`, `test_scan_port`, `test_scan_wire`,
 `test_servo_angle`, `test_servo_source_angle`, `test_hitec_prog_run` and
 `test_hitec_panel_run`, `test_hitec_panel_move`, `test_hitec_panel_find`, `test_servo_rudder`,
 `test_servo_rudder_panel`, `test_servo_rudder_steps`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
@@ -2580,7 +2593,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_widgets.c` | 432 | 425 | 98.4% |
 | `shared/ui/ui_icons.c` | 199 | 199 | 100.0% |
 | `shared/ui/ui_band.c` | 421 | 408 | 96.9% |
-| `shared/ui/scan_flow.c` | 104 | 103 | 99.0% |
+| `shared/ui/scan_flow.c` | 117 | 114 | 97.4% |
 | `shared/ui/ui_help.c` | 400 | 389 | 97.2% |
 | `shared/ui/help_outputs.c` | 74 | 72 | 97.3% |
 | `shared/ui/help_setup.c` | 95 | 92 | 96.8% |
@@ -3086,7 +3099,8 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
 | `shared/scanner/scan_line.c` | 113 | 113 | 100.0% |
 | `shared/scanner/gm861.c` | 319 | 319 | 100.0% |
-| **total** | **115257** | **112713** | **97.8%** |
+| `shared/scanner/scan_port.c` | 112 | 111 | 99.1% |
+| **total** | **115382** | **112835** | **97.8%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

@@ -3,9 +3,12 @@
  * @brief The scan flow: a scanned line made into the active servo, the
  *        alert band's notice for it, and the band's servo chip.
  *
- * A line reaches the flow two ways.  scan_flow_post() takes one from any
- * task (the debug console's `scan <text>`, the scanner's UART task) into a
- * mailbox of one line; scan_flow_tick() on the frame task runs it.
+ * A line reaches the flow three ways.  scan_flow_post() takes one from any
+ * task (the debug console's `scan <text>`) into a mailbox of one line;
+ * scan_flow_pull() fills the mailbox on the frame task from a queue of its
+ * caller's (the scanner's, panel_scan_take_line()), only while the queue
+ * holds a line and the mailbox is empty, so a line the mailbox cannot take stays in that queue; and
+ * scan_flow_tick() on the frame task runs the line that waits.
  * scan_flow_line() runs a line at once on the frame task; the host suite
  * and the renderer inject lines through it.
  *
@@ -77,6 +80,34 @@ void scan_flow_set_look(scan_flow_look_fn fn);
  * @return false when NULL, or when a line still waits: this one is dropped.
  */
 bool scan_flow_post(const char *line);
+
+/**
+ * @brief Take one line from the caller's queue.
+ * @param line     Receives the line without its CR LF, NUL ended.
+ * @param n        Its size, SERVO_SCAN_LINE_MAX + 1.
+ * @param too_long Receives true for a line the scanner cut at
+ *                 SERVO_SCAN_LINE_MAX.
+ * @return false when the queue is empty.
+ */
+typedef bool (*scan_flow_take_fn)(char *line, size_t n, bool *too_long);
+
+/**
+ * @brief Whether the caller's queue holds a line, without taking it.
+ * @return true when one waits.
+ */
+typedef bool (*scan_flow_has_fn)(void);
+
+/**
+ * @brief Frame task, before scan_flow_tick(): fill an empty mailbox with
+ *        the oldest line of @p take.  An empty queue (@p has false) leaves
+ *        the mailbox untouched, so a console line is never refused for it.
+ *        A full mailbox (a console line waits) leaves the queue alone: its
+ *        line is taken a frame later.
+ * @param has  Whether the queue holds a line; NULL does nothing.
+ * @param take The queue; NULL does nothing.
+ * @return true when a line went into the mailbox.
+ */
+bool scan_flow_pull(scan_flow_has_fn has, scan_flow_take_fn take);
 
 /**
  * @brief Frame task, once a frame: run the line that waits, if any.

@@ -442,6 +442,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | `control` | `control_task` | 6 144 | 3 648 | 1 456 |
 | `runlog` | `log_task` | 6 656 | 4 144 | 1 472 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
+| `scan` | `scan_task`, UART1 des QR-Scanners und sein GM861-Ablauf (`panel_scan.c`) | 3 072 | 1 296 | 736 |
 | `blec` | `blec_task`, die Verbindung jedes Bluetooth-LE-Clients über den Hub: die Werte der IMU, des Dial und beider Sensorknoten aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_blec.c`, die Seite der IMU in `panel_imu.c`, die des Dial in `panel_dial.c`, die des Leistungsknotens in `panel_pnode.c`, die des Auswuchtknotens in `panel_bal.c`, das Update der Funkgeräte in `panel_devupd.c`, der lange Schreibzugriff des Etikettendruckers über `panel_ble_write_long()`) | 4 096 | 1 840 | 1 216 |
 | `blestart` | `ble_start_task`, die Verbindung zum C6, seine Controller-Anfragen, der Start des Hosts und das Warten auf seinen Sync, dann weg (`panel_ble.c`) | 4 096 | 1 200 | 1 856 |
 | `nimble_host` | `ble_host_task`, der Host von NimBLE: HCI (Host Controller Interface) zum C6 und zurück, die Berichte des Scans, die Antworten der Verbindung und von GATT (`panel_ble.c`) | 4 096 | 1 936 | 1 120 |
@@ -486,7 +487,7 @@ Prüfstandskonsole](BenchConsole-de.md)) hat einen Task mehr.
 
 | Task des Konsolen-Builds | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `console` | `console_task`, die seriellen Ports zur Konsole des IOmcu, und `ble scan` (`panel_console.c`) | 4 096 | 1 344 | 1 712 |
+| `console` | `console_task`, die seriellen Ports zur Konsole des IOmcu, `ble scan`, `scan` mit den Zonen des QR-Scanners und `scan <text>` an den Scan-Ablauf (`panel_console.c`) | 4 096 | 1 632 | 1 424 |
 
 Die tiefste Kette von `runlog` bindet die SD-Karte ein: die Liste der
 Servodateien, die die Karte bedient (`hitec_card_run()`, `list()`,
@@ -539,7 +540,7 @@ oben ist deshalb eine Untergrenze:
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `UI_HOOK_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`,
   `SERVO_STORE_CALLS`):
-  397
+  399
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Sprünge über ein Register: eine Sprungtabelle, die in ihrer Funktion
@@ -600,6 +601,7 @@ zeigt Speicherbedarf, den das Werkzeug nicht verfolgt.
 | `control` | 6 144 | nicht gemessen |
 | `runlog` | 6 656 | nicht gemessen |
 | `knob` | 3 072 | nicht gemessen |
+| `scan` | 3 072 | nicht gemessen |
 | `blec` | 4 096 | nicht gemessen |
 | `touch` | 4 096 | nicht gemessen |
 | `wifi_ctl` | 6 912 | nicht gemessen |

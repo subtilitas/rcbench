@@ -43,6 +43,7 @@
 #include "panel_main.h"
 #include "panel_perf.h"
 #include "panel_sbk.h"
+#include "panel_scan.h"
 #include "panel_servo.h"
 #include "panel_shot.h"
 #include "panel_trial.h"
@@ -65,6 +66,10 @@
 #include "ui_screen.h"
 #include "ui_board.h"
 #include "ui_text.h"
+
+_Static_assert(SCAN_LINE_MAX == SERVO_SCAN_LINE_MAX,
+               "the scanner's line (scan_line.h) is the scan flow's line "
+               "(servo_active.h): scan_flow_pull() takes it whole");
 
 /**
  * @brief A link that was up and stopped, said on the panel rather than on a console.
@@ -674,8 +679,11 @@ void panel_frame_loop(void)
             .link_refused = link_refused,
             .mcu_temp_c  = mcu_temp_c,
         };
-        /* A scanned line that waits (`scan <text>`, the scanner), then
-         * the active servo on the band's chip. */
+        /* The scanner's oldest line into the flow's mailbox when it is
+         * free (one a frame; the rest wait in the port's queue), then the
+         * line that waits (the scanner's or `scan <text>`), then the
+         * active servo on the band's chip. */
+        (void)scan_flow_pull(panel_scan_has_line, panel_scan_take_line);
         scan_flow_tick(now_ms(), &status);
         scan_flow_status(&status);
         ui_router_set_status(&status);

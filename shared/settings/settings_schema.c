@@ -619,4 +619,17 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
     [SET_BAL_TRIAL] = {
         "bal_trial_g", "g",
         SET_CAT_WIRELESS, SET_TYPE_FLOAT, 0.01f, 20.0f, 0.01f, 0.5f, NULL, 0 },
+    /*
+     * The QR scanner (panel_scan.h, docs/Building.md): ON opens UART1 on
+     * IO4 (TX) and IO5 (RX) of header P3 and runs the GM861 sequence
+     * (gm861.h); OFF leaves both pins inputs.  READ MODE is zone 0x0000's
+     * bits 1-0 (gm861_mode_t): SENSING reads when the picture changes,
+     * CONTINUOUS keeps the light on and reads every 1.0s.
+     */
+    [SET_SCANNER_ENABLE] = {
+        "scan_en", "",
+        SET_CAT_SENSORS, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
+    [SET_SCANNER_MODE] = {
+        "scan_mode", "",
+        SET_CAT_SENSORS, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(scan_mode) },
 };

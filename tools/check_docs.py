@@ -1269,6 +1269,12 @@ FACTS = [
      ("IOMCU_HEARTBEAT_PIN",)),
     ("STATUS.md", rf"control task drives GPIO{N} \(`PANEL_HEARTBEAT_PIN`",
      ("PANEL_HEARTBEAT_PIN",)),
+    ("docs/Building.md", rf"`BOARD_SCAN_PIN_TX` GPIO{N} and"
+     rf"\s+`BOARD_SCAN_PIN_RX` GPIO{N} ",
+     ("BOARD_SCAN_PIN_TX", "BOARD_SCAN_PIN_RX")),
+    ("docs/Building-de.md", rf"`BOARD_SCAN_PIN_TX` GPIO{N} und"
+     rf"\s+`BOARD_SCAN_PIN_RX` GPIO{N} ",
+     ("BOARD_SCAN_PIN_TX", "BOARD_SCAN_PIN_RX")),
     ("docs/Link.md", rf"on GPIO{N} \(RX\) and GPIO{N} \(TX\)",
      ("PANEL_CAN_PIN_RX", "PANEL_CAN_PIN_TX")),
     ("docs/Link-de.md", rf"auf GPIO{N} \(RX\) und GPIO{N} \(TX",

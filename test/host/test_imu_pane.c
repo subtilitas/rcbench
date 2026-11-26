@@ -84,8 +84,9 @@ TEST_CASE(the_imu_entry_shows_its_rows_under_on)
     /* The IMU's 9, the Dial's 3, the power node's 2 and the balance
      * node's 2. */
     CHECK_EQ(n, 16);
-    /* SENSORS holds no IMU row: 65 less the IMU's 7. */
-    CHECK_EQ(settings_in_category(SET_CAT_SENSORS, ids, 96), 58);
+    /* SENSORS holds no IMU row: 65 less the IMU's 7, and the QR
+     * scanner's 2. */
+    CHECK_EQ(settings_in_category(SET_CAT_SENSORS, ids, 96), 60);
 }
 
 TEST_CASE(the_state_column_reads_every_link_state_in_its_colour)

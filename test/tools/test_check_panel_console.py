@@ -30,3 +30,11 @@ def test_one_mark_is_enough_to_fail_off():
 def test_a_wrong_call_is_refused():
     """A call without a setting and a path ends 2."""
     assert cp.main(["check"]) == 2
+
+
+def test_the_scan_commands_fail_off():
+    """A released image holding `scan <text>` or `scan`'s dump fails."""
+    assert cp.problems(b"\0handed to the frame task\0", False) == [
+        "holds handed to the frame task"]
+    assert cp.problems(b"scan: zone 0x%04X%s\n", False) == [
+        "holds scan: zone 0x%04X"]

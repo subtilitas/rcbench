@@ -245,6 +245,9 @@ typedef enum {
     /* --- the balance node (SETUP > WIRELESS > BALANCE NODE, bal_ctl.h) -- */
     SET_BNODE_EN,
     SET_BAL_TRIAL,
+    /* --- the QR scanner (SETUP > SENSORS > SCANNER, panel_scan.h) ------- */
+    SET_SCANNER_ENABLE,
+    SET_SCANNER_MODE,
 
     SETTING_COUNT
 } setting_id_t;

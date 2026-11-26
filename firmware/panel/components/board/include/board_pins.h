@@ -233,9 +233,24 @@ extern "C" {
 /* --- IMU --- */
 /*
  * The WitMotion BWT901CL reaches the panel over Bluetooth LE through the
- * board's ESP32-C6 (panel_ble.c, docs/IMU.md): no pin of its own.  IO4,
- * IO5 and IO29 of header P3 are free.
+ * board's ESP32-C6 (panel_ble.c, docs/IMU.md): no pin of its own.
  */
+
+/* ---------------------------------------------------------- QR scanner */
+/**
+ * @brief The QR scanner (a GM861S module, panel_scan.h) on UART1, IO4 and
+ *        IO5 of header P3, with the header's 3V3 and GND.  Module pin 4
+ *        (RXD) takes the panel's TX, module pin 5 (TXD) drives the
+ *        panel's RX.  UART0 is the console's.  IO2, IO3 and IO29 of P3
+ *        stay free.
+ */
+#define BOARD_SCAN_UART    1
+/** @brief Panel TX to the module's RXD (pin 4): IO4 of header P3. */
+#define BOARD_SCAN_PIN_TX  GPIO_NUM_4
+/** @brief Panel RX from the module's TXD (pin 5): IO5 of header P3. */
+#define BOARD_SCAN_PIN_RX  GPIO_NUM_5
+/** @brief The module's default rate, 9600 baud 8N1; the probe tries others. */
+#define BOARD_SCAN_BAUD    9600
 
 #ifdef __cplusplus
 }

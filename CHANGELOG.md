@@ -44,8 +44,18 @@ history is in git.
   command answers (CRC-CCITT), and the module's command frames with the
   sequence that finds it at one of 8 rates from 1200 to 115200 baud, writes
   only the zones that differ (serial output, sensing read mode, QR only,
-  tail CR LF), saves once after a write and sends a heartbeat every 10s. No
-  firmware links it yet (`test_scan_line`, `test_gm861`).
+  tail CR LF), saves once after a write and sends a heartbeat every 10s
+  (`test_scan_line`, `test_gm861`).
+- The panel runs the QR scanner on UART1, TX IO4 and RX IO5 of header P3,
+  at 9600 baud 8N1, in the task `scan` (core 0, priority 2, every 20ms), while
+  SETUP's Scanner row (`scan_en`, default OFF) is ON; `scan_mode` picks
+  SENSING or CONTINUOUS. The port between UART and sequencer queues 4 code
+  lines and drops the oldest when full (`test_scan_port`); the frame task
+  moves them one a frame into the scan flow, a cut line as too long
+  (`scan_flow_pull()`, `test_scan_wire`), so a scanned label sets the active
+  servo as the console's `scan <text>` does. The console build dumps the
+  zones on `scan`; released images do not. Wiring in
+  [Building](docs/Building.md#qr-scanner-wiring).
 - Print protocol for Supvan T50-series thermal label printers
   (`protocols/supvan`), the first part of labelled servos: the 16-byte
   commands, the answer joiner, the status and material record, the
