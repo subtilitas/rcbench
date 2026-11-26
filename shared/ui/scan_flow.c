@@ -65,10 +65,10 @@ bool scan_flow_post(const char *line)
     return true;
 }
 
-bool scan_flow_pull(scan_flow_take_fn take)
+bool scan_flow_pull(scan_flow_has_fn has, scan_flow_take_fn take)
 {
     int expect = MAIL_EMPTY;
-    if (take == NULL
+    if (has == NULL || take == NULL || !has()
         || !atomic_compare_exchange_strong(&s_flow.state, &expect,
                                            MAIL_WRITING)) {
         return false;

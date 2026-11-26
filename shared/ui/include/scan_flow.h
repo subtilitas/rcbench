@@ -6,8 +6,8 @@
  * A line reaches the flow three ways.  scan_flow_post() takes one from any
  * task (the debug console's `scan <text>`) into a mailbox of one line;
  * scan_flow_pull() fills the mailbox on the frame task from a queue of its
- * caller's (the scanner's, panel_scan_take()), only while the mailbox is
- * empty, so a line the mailbox cannot take stays in that queue; and
+ * caller's (the scanner's, panel_scan_take_line()), only while the queue
+ * holds a line and the mailbox is empty, so a line the mailbox cannot take stays in that queue; and
  * scan_flow_tick() on the frame task runs the line that waits.
  * scan_flow_line() runs a line at once on the frame task; the host suite
  * and the renderer inject lines through it.
@@ -92,13 +92,22 @@ bool scan_flow_post(const char *line);
 typedef bool (*scan_flow_take_fn)(char *line, size_t n, bool *too_long);
 
 /**
+ * @brief Whether the caller's queue holds a line, without taking it.
+ * @return true when one waits.
+ */
+typedef bool (*scan_flow_has_fn)(void);
+
+/**
  * @brief Frame task, before scan_flow_tick(): fill an empty mailbox with
- *        the oldest line of @p take.  A full mailbox (a console line
- *        waits) leaves the queue alone: its line is taken a frame later.
+ *        the oldest line of @p take.  An empty queue (@p has false) leaves
+ *        the mailbox untouched, so a console line is never refused for it.
+ *        A full mailbox (a console line waits) leaves the queue alone: its
+ *        line is taken a frame later.
+ * @param has  Whether the queue holds a line; NULL does nothing.
  * @param take The queue; NULL does nothing.
  * @return true when a line went into the mailbox.
  */
-bool scan_flow_pull(scan_flow_take_fn take);
+bool scan_flow_pull(scan_flow_has_fn has, scan_flow_take_fn take);
 
 /**
  * @brief Frame task, once a frame: run the line that waits, if any.

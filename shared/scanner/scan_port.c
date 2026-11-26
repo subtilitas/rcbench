@@ -6,7 +6,6 @@
  */
 #include "scan_port.h"
 
-#include <stdio.h>
 #include <string.h>
 
 void scan_port_init(scan_port_t *p)
@@ -196,7 +195,18 @@ bool scan_port_take_line(scan_port_t *p, char *line, size_t n,
     if (!scan_port_take(p, &e)) {
         return false;
     }
-    (void)snprintf(line, n, "%s", e.text);
+    /* A bounded copy: this runs under the caller's spinlock. */
+    size_t len = 0u;
+    while (len < n - 1u && len < SCAN_LINE_MAX && e.text[len] != '\0') {
+        line[len] = e.text[len];
+        ++len;
+    }
+    line[len] = '\0';
     *too_long = e.kind == SCAN_EV_LONG;
     return true;
+}
+
+bool scan_port_has_line(const scan_port_t *p)
+{
+    return p != NULL && p->q_n != 0u;
 }

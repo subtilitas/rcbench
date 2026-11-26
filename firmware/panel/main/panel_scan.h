@@ -15,8 +15,8 @@
  * - ON: 9600 baud 8N1, a receive buffer of 256 bytes, no transmit buffer;
  *   RX has the pull-down on, so a pin with no module reads low (NOT
  *   CONNECTED) and a module idling high is seen.
- * - The code lines wait in the port's queue of 4 for panel_scan_take(); a
- *   full queue drops its oldest line.
+ * - The code lines wait in the port's queue of 4 for panel_scan_take_line();
+ *   a full queue drops its oldest line.
  *
  * No scanner is not a fault: no state of the scanner raises an alert or
  * blocks anything.
@@ -65,13 +65,6 @@ void panel_scan_start(void);
 void panel_scan_settings_changed(setting_id_t id);
 
 /**
- * @brief The oldest code line, for the frame task.
- * @param out Receives it.
- * @return false when none waits.
- */
-bool panel_scan_take(scan_event_t *out);
-
-/**
  * @brief The oldest code line as the scan flow takes it
  *        (scan_flow_take_fn): text and a too-long flag.  The frame task
  *        hands it to scan_flow_pull() before scan_flow_tick().
@@ -81,6 +74,13 @@ bool panel_scan_take(scan_event_t *out);
  * @return false when none waits.
  */
 bool panel_scan_take_line(char *line, size_t n, bool *too_long);
+
+/**
+ * @brief Whether a code line waits (scan_flow_has_fn): the frame task asks
+ *        before scan_flow_pull() reserves the mailbox.
+ * @return true when the port's queue holds a line.
+ */
+bool panel_scan_has_line(void);
 
 /**
  * @brief The last published view.

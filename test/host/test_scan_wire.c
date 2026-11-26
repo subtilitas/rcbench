@@ -11,6 +11,8 @@
  * - a_long_line_arrives_as_too_long
  * - a_console_line_waiting_keeps_the_port_line_for_the_next_frame
  * - an_empty_queue_leaves_the_mailbox_free
+ * - a_console_line_is_taken_while_the_port_queue_is_empty
+ * - a_line_is_cut_to_the_room_given
  *
  * SPDX-License-Identifier: MIT
  */
@@ -22,9 +24,6 @@
 #include "scan_port.h"
 #include "servo_active.h"
 
-_Static_assert(SCAN_LINE_MAX == SERVO_SCAN_LINE_MAX,
-               "the port's line is the flow's line");
-
 /** @brief The scanner's port, off the stack. */
 static scan_port_t s_port;
 
@@ -32,6 +31,30 @@ static scan_port_t s_port;
 static bool take(char *line, size_t n, bool *too_long)
 {
     return scan_port_take_line(&s_port, line, n, too_long);
+}
+
+/** @brief Whether the port holds a line. */
+static bool has(void)
+{
+    return scan_port_has_line(&s_port);
+}
+
+/** @brief A take that must not run: the queue is empty. */
+static bool take_never(char *line, size_t n, bool *too_long)
+{
+    (void)line;
+    (void)n;
+    (void)too_long;
+    T_FAIL("take called with an empty queue");
+    return false;
+}
+
+/** @brief A has that answers empty, and posts a console line while it
+ *         is asked, as the console task may in that window. */
+static bool has_empty_posting(void)
+{
+    CHECK(scan_flow_post("KST_X10-0000F"));
+    return false;
 }
 
 /** @brief A case's start: the menu up, no servo, a started port. */
@@ -60,7 +83,7 @@ static void scanned(const char *s, uint32_t t)
 /** @brief The frame task's part of one frame. */
 static void frame(uint32_t t)
 {
-    (void)scan_flow_pull(take);
+    (void)scan_flow_pull(has, take);
     scan_flow_tick(t, NULL);
 }
 
@@ -114,7 +137,7 @@ TEST_CASE(a_console_line_waiting_keeps_the_port_line_for_the_next_frame)
     const uint32_t t = start();
     CHECK(scan_flow_post("KST_X10-0000C"));
     scanned("KST_X10-0000D\r", t);
-    CHECK(!scan_flow_pull(take));
+    CHECK(!scan_flow_pull(has, take));
     CHECK_EQ(s_port.q_n, 1u);
     scan_flow_tick(t + 16u, NULL);
     CHECK_STR_EQ(active(), "KST_X10-0000C");
@@ -125,8 +148,10 @@ TEST_CASE(a_console_line_waiting_keeps_the_port_line_for_the_next_frame)
 TEST_CASE(an_empty_queue_leaves_the_mailbox_free)
 {
     (void)start();
-    CHECK(!scan_flow_pull(take));
-    CHECK(!scan_flow_pull(NULL));
+    CHECK(!scan_flow_pull(has, take_never));
+    CHECK(!scan_flow_pull(NULL, take));
+    CHECK(!scan_flow_pull(has, NULL));
+    CHECK(!scan_port_has_line(NULL));
     CHECK(scan_flow_post("KST_X10-0000E"));
     char buf[4];
     bool cut = true;
@@ -136,6 +161,29 @@ TEST_CASE(an_empty_queue_leaves_the_mailbox_free)
     CHECK(!scan_port_take_line(NULL, buf, sizeof buf, &cut));
 }
 
+/* A console line posted while the frame task asks an empty queue is
+ * taken: the mailbox is not reserved for an empty queue. */
+TEST_CASE(a_console_line_is_taken_while_the_port_queue_is_empty)
+{
+    const uint32_t t = start();
+    CHECK(!scan_flow_pull(has_empty_posting, take_never));
+    scan_flow_tick(t + 16u, NULL);
+    CHECK_EQ(scan_flow_last(), SERVO_SCAN_SET);
+    CHECK_STR_EQ(active(), "KST_X10-0000F");
+}
+
+/* A line cut to the room the caller gives is NUL ended inside it. */
+TEST_CASE(a_line_is_cut_to_the_room_given)
+{
+    (void)start();
+    scanned("KST_X10-0000G\r", 1u);
+    char buf[5];
+    bool cut = true;
+    CHECK(scan_port_take_line(&s_port, buf, sizeof buf, &cut));
+    CHECK_STR_EQ(buf, "KST_");
+    CHECK(!cut);
+}
+
 int main(void)
 {
     RUN(a_port_line_sets_the_active_servo);
@@ -143,5 +191,7 @@ int main(void)
     RUN(a_long_line_arrives_as_too_long);
     RUN(a_console_line_waiting_keeps_the_port_line_for_the_next_frame);
     RUN(an_empty_queue_leaves_the_mailbox_free);
+    RUN(a_console_line_is_taken_while_the_port_queue_is_empty);
+    RUN(a_line_is_cut_to_the_room_given);
     return test_summary("scan_wire");
 }

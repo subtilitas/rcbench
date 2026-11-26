@@ -289,20 +289,20 @@ void panel_scan_settings_changed(setting_id_t id)
     }
 }
 
-bool panel_scan_take(scan_event_t *out)
-{
-    portENTER_CRITICAL(&s_mux);
-    const bool got = scan_port_take(&s_port, out);
-    portEXIT_CRITICAL(&s_mux);
-    return got;
-}
-
 bool panel_scan_take_line(char *line, size_t n, bool *too_long)
 {
     portENTER_CRITICAL(&s_mux);
     const bool got = scan_port_take_line(&s_port, line, n, too_long);
     portEXIT_CRITICAL(&s_mux);
     return got;
+}
+
+bool panel_scan_has_line(void)
+{
+    portENTER_CRITICAL(&s_mux);
+    const bool has = scan_port_has_line(&s_port);
+    portEXIT_CRITICAL(&s_mux);
+    return has;
 }
 
 void panel_scan_view(panel_scan_view_t *out)

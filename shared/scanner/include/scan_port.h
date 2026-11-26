@@ -164,6 +164,13 @@ bool scan_port_take(scan_port_t *p, scan_event_t *out);
 bool scan_port_take_line(scan_port_t *p, char *line, size_t n,
                          bool *too_long);
 
+/**
+ * @brief Whether a line waits, without taking it.
+ * @param p The port.
+ * @return true when the queue holds a line; false for NULL.
+ */
+bool scan_port_has_line(const scan_port_t *p);
+
 #ifdef __cplusplus
 }
 #endif
