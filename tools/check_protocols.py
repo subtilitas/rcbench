@@ -558,6 +558,15 @@ ASSERTED = {
             "RCNODE_BAL_REPORT_LEN <= BLEU_EVT_DATA",
             "RCNODE_CTL_MAX <= BLEU_WRITE_MAX",
         ),
+        # The power node's shunt fits INFO's and SHUNT's 16 bits, the
+        # smallest shunt's full scale the INA228 driver's limit, and the
+        # default is the MATEK's 204.8A.
+        "firmware/node/main/node_pwr_sens.c": (
+            "RCNODE_SHUNT_MAX_UOHM <= UINT16_MAX",
+            "(uint64_t)PSENS_FS_NV "
+            "<= (uint64_t)INA228_FS_MA_LIMIT * RCNODE_SHUNT_MIN_UOHM",
+            "PSENS_FS_NV / RCNODE_SHUNT_DEF_UOHM == 204800u",
+        ),
         # The balance report's flags are shared/vibe's, bit for bit.
         "firmware/node/main/node_bal.c": (
             "RCNODE_BF_VALID == VIBE_F_VALID",

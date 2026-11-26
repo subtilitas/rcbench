@@ -347,8 +347,10 @@ typedef struct {
  * | 16-19 | the role's part: power i228_addr, adcrange, shunt_uohm (2) |
  *
  * The power node's part names the INA228's set-up, so the panel turns the
- * raw accumulators into charge and energy with the same calibration.  A
- * balance node sends 0 in those 4 bytes.
+ * raw accumulators into charge and energy with the same calibration: the
+ * address the node found the part at, 0x40 to 0x4F, or 0 before one is
+ * found; ADCRANGE; the shunt in force.  A balance node sends 0 in those 4
+ * bytes.
  */
 typedef struct {
     rcnode_hdr_t hdr;         /**< seq counts INFO reads */
@@ -357,7 +359,7 @@ typedef struct {
     uint8_t      board;       /**< RCNODE_BOARD_* */
     uint8_t      addr_type;   /**< 0 public, 1 random */
     uint8_t      addr[6];     /**< least significant byte first */
-    uint8_t      i228_addr;   /**< power: the INA228's 7-bit address */
+    uint8_t      i228_addr;   /**< power: the INA228's 7-bit address, 0 none found */
     uint8_t      adcrange;    /**< power: CONFIG.ADCRANGE, 0 or 1 */
     uint16_t     shunt_uohm;  /**< power: the shunt, µΩ */
 } rcnode_info_t;
@@ -384,6 +386,7 @@ typedef struct {
 #define RCNODE_OP_BLADES 0x04u  /**< 2 bytes: op, count; balance only */
 #define RCNODE_OP_RPM    0x05u  /**< 3 bytes: op, rpm (16 bits); balance only, 0 = index mode */
 #define RCNODE_OP_LANG   0x06u  /**< 2 bytes: op, RCNODE_LANG_*; power only: the language of a display node's texts */
+#define RCNODE_OP_SHUNT  0x07u  /**< 3 bytes: op, the INA228's shunt in µΩ (16 bits); power only */
 /** @} */
 
 /** @brief RCNODE_OP_LANG's values: the panel's language. @{ */
@@ -395,6 +398,9 @@ typedef struct {
 #define RCNODE_BLADES_MIN  1u  /**< the fewest blades */
 #define RCNODE_BLADES_MAX 12u  /**< the most blades: shared/vibe's VIBE_BLADES_MAX */
 #define RCNODE_RPM_MAX  60000u  /**< the highest rpm; the ADXL335 at 4.7nF passes 1,060Hz, 63,600rpm */
+#define RCNODE_SHUNT_MIN_UOHM    50u  /**< the smallest shunt: 819.2A full scale at ADCRANGE 1 */
+#define RCNODE_SHUNT_MAX_UOHM 10000u  /**< the largest shunt: 4.096A full scale at ADCRANGE 1 */
+#define RCNODE_SHUNT_DEF_UOHM   200u  /**< the MATEK I2C-INA-BM's shunt, the power node's default */
 /** @} */
 
 /** @brief The longest control write, bytes. */
@@ -407,6 +413,7 @@ typedef struct {
     uint8_t  blades;  /**< RCNODE_OP_BLADES: the count */
     uint16_t rpm;     /**< RCNODE_OP_RPM: the rotation rate, 0 for index mode */
     uint8_t  lang;    /**< RCNODE_OP_LANG: RCNODE_LANG_* */
+    uint16_t shunt_uohm; /**< RCNODE_OP_SHUNT: the shunt, µΩ, RCNODE_SHUNT_MIN_UOHM to RCNODE_SHUNT_MAX_UOHM */
 } rcnode_ctl_t;
 
 /* ------------------------------------------------------------- codec */
@@ -526,8 +533,8 @@ size_t rcnode_enc_ctl(const rcnode_ctl_t *c, uint8_t *out, size_t cap);
  * @return RCNODE_OK; RCNODE_ERR_TYPE for an unknown operation,
  * RCNODE_ERR_LEN for another length than the operation's,
  * RCNODE_ERR_RANGE for a RUN tag of 0 (the tag before any RUN), a blade
- * count or an rpm out of range, or a language other than RCNODE_LANG_EN
- * and RCNODE_LANG_DE.
+ * count, an rpm or a shunt out of range, or a language other than
+ * RCNODE_LANG_EN and RCNODE_LANG_DE.
  */
 rcnode_err_t rcnode_dec_ctl(const uint8_t *b, size_t n, rcnode_ctl_t *out);
 
@@ -536,8 +543,8 @@ rcnode_err_t rcnode_dec_ctl(const uint8_t *b, size_t n, rcnode_ctl_t *out);
  *
  * @param role RCNODE_ROLE_*.
  * @param op RCNODE_OP_*.
- * @return true for RUN, SLEEP and OFF on both roles, LANG on the power
- * role, and BLADES and RPM on the balance role.
+ * @return true for RUN, SLEEP and OFF on both roles, LANG and SHUNT on the
+ * power role, and BLADES and RPM on the balance role.
  */
 bool rcnode_ctl_for_role(uint8_t role, uint8_t op);
 

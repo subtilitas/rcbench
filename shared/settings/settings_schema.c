@@ -599,7 +599,11 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
      * MOTOR & ESC's voltage, current and totals: WIRED the IOmcu's part,
      * NODE the power node's readings over Bluetooth LE.  NODE feeds no
      * protection; a run then ends on the node's dropouts as servo_gap.h
-     * says (pnode_meter.h).
+     * says (pnode_meter.h).  NODE SHUNT is the shunt of the INA228 board
+     * on the node, in uOhm: RCNODE_SHUNT_MIN_UOHM to RCNODE_SHUNT_MAX_UOHM,
+     * the MATEK I2C-INA-BM's 200 by default.  The panel writes it to the
+     * node, which keeps it and ranges the part for it (ADCRANGE 1, 40.96mV
+     * over the shunt); changed on a SAFE bench only.
      */
     [SET_PNODE_EN] = {
         "pnode_en", "",
@@ -607,6 +611,9 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
     [SET_I228_SRC] = {
         "i228_src", "",
         SET_CAT_WIRELESS, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(i228_src) },
+    [SET_PNODE_UOHM] = {
+        "pnode_uohm", "uΩ",
+        SET_CAT_WIRELESS, SET_TYPE_INT, 50, 10000, 1, 200, NULL, 0 },
     /*
      * The balance node (bal_ctl.h, docs/Balance.md): ON starts Bluetooth LE
      * and connects the bound node.  TRIAL MASS is the mass the trial runs

@@ -408,6 +408,16 @@ bool bleu_can_send(const bleu_t *b)
            && !b->rd_busy && !b->param_due;
 }
 
+bool bleu_reread(bleu_t *b)
+{
+    if (!bleu_link_up(b) || b->param_val == 0u || b->param_due
+        || b->rd_busy) {
+        return false;
+    }
+    b->param_due = true;
+    return true;
+}
+
 bool bleu_send(bleu_t *b, const uint8_t *data, size_t len, uint32_t now_ms)
 {
     if (!bleu_can_send(b) || data == NULL || len == 0u

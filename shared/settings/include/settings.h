@@ -242,6 +242,7 @@ typedef enum {
     /* --- the power node (SETUP > WIRELESS > POWER NODE, pnode_ctl.h) ---- */
     SET_PNODE_EN,
     SET_I228_SRC,
+    SET_PNODE_UOHM,
     /* --- the balance node (SETUP > WIRELESS > BALANCE NODE, bal_ctl.h) -- */
     SET_BNODE_EN,
     SET_BAL_TRIAL,
@@ -412,11 +413,12 @@ void settings_set_armed(settings_armed_fn fn);
  *        endpoints on MOTOR & ESC > SETTINGS are locked while ARMED.
  *        Screen rotation, which moves every control under the finger, the
  *        PD mini's wiring, whose change switches off the supply an ARMED
- *        servo may run from, and INA228 SOURCE, whose change would swap
- *        a run's readings and its dropout rule under it.
+ *        servo may run from, INA228 SOURCE, whose change would swap
+ *        a run's readings and its dropout rule under it, and NODE SHUNT,
+ *        whose change would rescale them.
  * @param id The setting.
  * @return True for SET_SCREEN_ROT, SET_PDMINI_EN, SET_PDMINI_TX, SET_PDMINI_RX,
- *         SET_PDMINI_BAUD and SET_I228_SRC.
+ *         SET_PDMINI_BAUD, SET_I228_SRC and SET_PNODE_UOHM.
  */
 bool settings_safe_only(setting_id_t id);
 

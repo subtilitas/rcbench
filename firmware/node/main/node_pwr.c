@@ -1,13 +1,21 @@
 /**
  * @file node_pwr.c
- * @brief The power role: the MATEK I2C-INA-BM's INA228 (200µΩ, address
- *        0x45) on the node's I2C (Inter-Integrated Circuit) bus, the 20ms
+ * @brief The power role: an INA228 board on the node's I2C
+ *        (Inter-Integrated Circuit) bus at any of 0x40 to 0x4F, the 20ms
  *        windows and the 500ms accumulators.
  *
  * The driver and the register codec are shared/sense's ina228.c and
- * sense_bus.c, the IOmcu's own, on ESP-IDF's i2c_master here.  The set-up
+ * sense_bus.c, the IOmcu's own, on ESP-IDF's i2c_master here; the search
+ * of the address and the shunt setting are node_pwr_sens.c's.  The set-up
  * is the bench's: INA228_ADC_BENCH (bus and shunt 540µs, temperature 50µs,
- * averaging 1, a result every 1130µs), ADCRANGE 1 for 204.8A.
+ * averaging 1, a result every 1130µs), ADCRANGE 1: 204.8A on the MATEK
+ * I2C-INA-BM's 200µΩ, the default.
+ *
+ * The shunt is kept in NVS (non-volatile storage), namespace "pwr", key
+ * "shunt_uohm".  A SHUNT write (protocols/rcnode) is stored there, goes
+ * into INFO at once and reaches `pwr` at its next tick, which sets the
+ * part up again with it.  The address found is kept in RTC (real-time
+ * clock) memory through deep sleep for the timer wake's check.
  *
  * The `pwr` task runs on a 1130µs timer: CURRENT and VBUS, two 3-byte
  * reads, into the window (protocols/rcnode, rcnode_win_add()).  Every 40ms
@@ -40,16 +48,17 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
+#include "nvs.h"
+
+#include "esp_attr.h"
 #include "ina228.h"
+#include "node_pwr_sens.h"
 #include "sense_bus.h"
 
 /** @brief The bus and the part. @{ */
 #define PWR_SDA  NODE_PIN_SDA  /**< SDA */
 #define PWR_SCL  NODE_PIN_SCL  /**< SCL */
 #define PWR_HZ     400000u  /**< the bus clock */
-#define PWR_ADDR     0x45u  /**< the MATEK as shipped */
-#define PWR_SHUNT_UOHM 200u  /**< the MATEK's shunt, µΩ */
-#define PWR_MAX_MA  204800u  /**< the MATEK's range, mA: ADCRANGE 1 */
 #define PWR_XFER_MS      5    /**< one transaction's timeout */
 _Static_assert(pdMS_TO_TICKS(PWR_XFER_MS) >= 1,
                "an I2C timeout under one tick ends every transaction");
@@ -61,9 +70,12 @@ _Static_assert(pdMS_TO_TICKS(PWR_XFER_MS) >= 1,
 /** @} */
 
 static i2c_master_bus_handle_t s_bus;   /**< the I2C bus */
-static i2c_master_dev_handle_t s_dev;   /**< the INA228 */
+static i2c_master_dev_handle_t s_dev;   /**< the INA228, or the address asked */
+static uint8_t     s_dev_addr;          /**< the address s_dev is set to */
 static sense_bus_t s_sbus;              /**< shared/sense's view of the bus */
-static ina228_t    s_ina;               /**< the driver */
+static psens_t     s_sns;               /**< the search, the shunt, the driver */
+/** @brief The address found, kept through deep sleep; 0 none. */
+RTC_DATA_ATTR static uint8_t s_rtc_addr;
 static TaskHandle_t s_task;             /**< `pwr` */
 static esp_timer_handle_t s_timer;      /**< the 1130µs tick */
 static bool s_set_up_once;              /**< the part has been set up since the start */
@@ -82,6 +94,9 @@ static atomic_uint s_windows;           /**< windows closed, for the console */
 static atomic_int  s_last_i;            /**< the last window's mean, µA */
 static atomic_int  s_last_v;            /**< the last window's mean, 2mV steps */
 static atomic_uint s_last_n;            /**< the last window's samples */
+static atomic_uint s_shunt_req;         /**< a SHUNT for `pwr`, µΩ; 0 none */
+static atomic_uint s_shunt;             /**< the shunt for INFO, µΩ */
+static atomic_uint s_addr;              /**< the address for INFO, 0 none */
 
 /**
  * @brief An ESP-IDF error as a sensor bus error.
@@ -98,10 +113,32 @@ static sense_err_t sense_of(esp_err_t e)
 }
 
 /**
+ * @brief The device handle pointed at @p addr: one handle serves the
+ *        search's addresses and the part found.
+ *
+ * @param addr 0x40 to 0x4F.
+ * @return SENSE_OK, or SENSE_BAD_ARG for another address or a failed change.
+ */
+static sense_err_t dev_at(uint8_t addr)
+{
+    if (addr < INA228_ADDR_MIN || addr > INA228_ADDR_MAX) {
+        return SENSE_BAD_ARG;
+    }
+    if (addr != s_dev_addr) {
+        if (i2c_master_device_change_address(s_dev, addr, PWR_XFER_MS)
+            != ESP_OK) {
+            return SENSE_BAD_ARG;
+        }
+        s_dev_addr = addr;
+    }
+    return SENSE_OK;
+}
+
+/**
  * @brief sense_i2c_t's read: the register address, then @p n bytes.
  *
  * @param ctx Unused.
- * @param addr The part's address; only PWR_ADDR has a device handle.
+ * @param addr The part's address, 0x40 to 0x4F.
  * @param reg The register.
  * @param buf Receives the bytes.
  * @param n Their count.
@@ -111,8 +148,9 @@ static sense_err_t bus_read(void *ctx, uint8_t addr, uint8_t reg,
                             uint8_t *buf, size_t n)
 {
     (void)ctx;
-    if (addr != PWR_ADDR) {
-        return SENSE_BAD_ARG;
+    const sense_err_t e = dev_at(addr);
+    if (e != SENSE_OK) {
+        return e;
     }
     return sense_of(i2c_master_transmit_receive(s_dev, &reg, 1, buf, n,
                                                 PWR_XFER_MS));
@@ -122,7 +160,7 @@ static sense_err_t bus_read(void *ctx, uint8_t addr, uint8_t reg,
  * @brief sense_i2c_t's write: the register address, then @p n bytes.
  *
  * @param ctx Unused.
- * @param addr The part's address.
+ * @param addr The part's address, 0x40 to 0x4F.
  * @param reg The register.
  * @param buf The bytes, 2 at most.
  * @param n Their count.
@@ -133,7 +171,7 @@ static sense_err_t bus_write(void *ctx, uint8_t addr, uint8_t reg,
 {
     (void)ctx;
     uint8_t b[3];
-    if (addr != PWR_ADDR || n > 2u) {
+    if (n > 2u || dev_at(addr) != SENSE_OK) {
         return SENSE_BAD_ARG;
     }
     b[0] = reg;
@@ -165,12 +203,13 @@ static bool bus_up(void)
     i2c_device_config_t dc;
     memset(&dc, 0, sizeof dc);
     dc.dev_addr_length = I2C_ADDR_BIT_LEN_7;
-    dc.device_address  = PWR_ADDR;
+    dc.device_address  = INA228_ADDR_MIN;
     dc.scl_speed_hz    = PWR_HZ;
     if (i2c_master_bus_add_device(s_bus, &dc, &s_dev) != ESP_OK) {
         s_dev = NULL;
         return false;
     }
+    s_dev_addr = INA228_ADDR_MIN;
     static const sense_i2c_t io = { bus_read, bus_write, NULL };
     sense_bus_init(&s_sbus, &io);
     return true;
@@ -186,7 +225,7 @@ static bool bus_up(void)
 static bool read_raw40(uint8_t reg, uint64_t *raw)
 {
     uint8_t b[5];
-    if (sense_part_read(&s_ina.part, reg, b, sizeof b) != SENSE_OK) {
+    if (sense_part_read(&s_sns.ina.part, reg, b, sizeof b) != SENSE_OK) {
         return false;
     }
     *raw = sense_be40(b);
@@ -205,7 +244,7 @@ static void slow_step(uint64_t t_us)
         /* DIAG_ALRT first: reading CHARGE and ENERGY clears their
          * overflow flags (Table 7-16). */
         uint16_t diag = 0u;
-        if (ina228_read_diag(&s_ina, &diag) == SENSE_OK) {
+        if (ina228_read_diag(&s_sns.ina, &diag) == SENSE_OK) {
             if ((diag & INA228_DIAG_CHARGEOF) != 0u) {
                 s_diag_of |= RCNODE_AF_CHARGE_OF;
             }
@@ -222,7 +261,7 @@ static void slow_step(uint64_t t_us)
          * not sent under the old epoch.  A read back that fails confirms
          * nothing either.  Both values are dropped then. */
         bool lost = false;
-        if (ina228_verify(&s_ina, &lost) != SENSE_OK || lost) {
+        if (ina228_verify(&s_sns.ina, &lost) != SENSE_OK || lost) {
             if (lost) {
                 atomic_store(&s_online, false);
             }
@@ -237,7 +276,7 @@ static void slow_step(uint64_t t_us)
             }
         }
         int32_t mdegc = 0;
-        if (ina228_read_dietemp(&s_ina, &mdegc) == SENSE_OK) {
+        if (ina228_read_dietemp(&s_sns.ina, &mdegc) == SENSE_OK) {
             s_acc.temp = (int16_t)(mdegc / 10);
             s_acc.flags |= RCNODE_AF_TEMP_OK;
         }
@@ -278,11 +317,17 @@ static void sample_step(uint32_t now_ms, rcnode_sample_t *s)
         (void)i2c_master_bus_reset(s_bus);
         sense_bus_recovered(&s_sbus, now_ms);
     }
+    const unsigned req = atomic_exchange(&s_shunt_req, 0u);
+    if (req != 0u) {
+        (void)psens_set_shunt(&s_sns, req);
+    }
     const bool was = atomic_load(&s_online);
-    const bool now = ina228_step(&s_ina, now_ms);
-    if (now && !was) {
-        /* Each set-up writes RSTACC: the accumulators restart from 0. */
-        if (s_set_up_once) {
+    const bool now = psens_step(&s_sns, now_ms);
+    const bool rearm = now && psens_take_rearm(&s_sns);
+    if ((now && !was) || rearm) {
+        /* Each set-up writes RSTACC: the accumulators restart from 0.  A
+         * shunt change's set-up is no reset of the part. */
+        if (s_set_up_once && !rearm) {
             atomic_fetch_add(&s_resets, 1u);
         }
         s_set_up_once = true;
@@ -290,14 +335,18 @@ static void sample_step(uint32_t now_ms, rcnode_sample_t *s)
         s_acc.charge = 0u;
         s_acc.energy = 0u;
     }
+    atomic_store(&s_addr, psens_addr(&s_sns));
+    if (psens_addr(&s_sns) != 0u) {
+        s_rtc_addr = psens_addr(&s_sns);
+    }
     atomic_store(&s_online, now);
     if (!now) {
         return;
     }
     sense_value_t i;
     int32_t v = 0;
-    if (ina228_read_current(&s_ina, &i) != SENSE_OK
-        || ina228_read_vbus(&s_ina, &v) != SENSE_OK) {
+    if (ina228_read_current(&s_sns.ina, &i) != SENSE_OK
+        || ina228_read_vbus(&s_sns.ina, &v) != SENSE_OK) {
         return;
     }
     s->ok   = true;
@@ -354,7 +403,7 @@ static void pwr_task(void *arg)
         if (atomic_load(&s_online) && t >= next_verify) {
             next_verify = t + PWR_VERIFY_US;
             bool lost = false;
-            (void)ina228_verify(&s_ina, &lost);
+            (void)ina228_verify(&s_sns.ina, &lost);
             if (lost) {
                 atomic_store(&s_online, false);
             }
@@ -377,6 +426,48 @@ static void tick(void *arg)
     xTaskNotifyGive(s_task);
 }
 
+/**
+ * @brief psens_store_t's read: the shunt from NVS.
+ *
+ * @param ctx Unused.
+ * @param uohm Receives it.
+ * @return false when none is stored or NVS failed.
+ */
+static bool nvs_load(void *ctx, uint16_t *uohm)
+{
+    (void)ctx;
+    nvs_handle_t h;
+    if (nvs_open("pwr", NVS_READONLY, &h) != ESP_OK) {
+        return false;
+    }
+    const bool ok = nvs_get_u16(h, "shunt_uohm", uohm) == ESP_OK;
+    nvs_close(h);
+    return ok;
+}
+
+/**
+ * @brief psens_store_t's write: the shunt to NVS, committed.
+ *
+ * @param ctx Unused.
+ * @param uohm The shunt.
+ * @return false when NVS failed.
+ */
+static bool nvs_save(void *ctx, uint16_t uohm)
+{
+    (void)ctx;
+    nvs_handle_t h;
+    if (nvs_open("pwr", NVS_READWRITE, &h) != ESP_OK) {
+        return false;
+    }
+    const bool ok = nvs_set_u16(h, "shunt_uohm", uohm) == ESP_OK
+                    && nvs_commit(h) == ESP_OK;
+    nvs_close(h);
+    return ok;
+}
+
+/** @brief The shunt's store. */
+static const psens_store_t k_store = { nvs_load, nvs_save, NULL };
+
 /** @brief Start the bus, the driver, `pwr` and its timer. */
 static void pwr_start(void)
 {
@@ -385,13 +476,11 @@ static void pwr_start(void)
                  PWR_SCL);
         return;
     }
-    const ina228_setup_err_t e = ina228_init(&s_ina, &s_sbus, PWR_ADDR,
-                                             PWR_SHUNT_UOHM, PWR_MAX_MA,
-                                             INA228_ADC_BENCH);
-    if (e != INA228_SETUP_OK) {
-        ESP_LOGE(NODE_TAG, "pwr: INA228 set-up refused, %d", (int)e);
-        return;
-    }
+    const uint16_t uohm = psens_shunt_load(&k_store);
+    psens_init(&s_sns, &s_sbus, uohm);
+    atomic_store(&s_shunt, uohm);
+    ESP_LOGI(NODE_TAG, "pwr: shunt %uuOhm, INA228 searched at 0x40 to 0x4F",
+             (unsigned)uohm);
     xTaskCreate(pwr_task, "pwr", 4096, NULL, configMAX_PRIORITIES - 2, &s_task);
     const esp_timer_create_args_t ta = {
         .callback = tick,
@@ -413,7 +502,8 @@ i2c_master_bus_handle_t node_pwr_bus(void)
 /**
  * @brief RUN: the tag goes to `pwr`, which restarts the extremes.  LANG:
  *        the screen's language on a board with a display; ignored on one
- *        without.
+ *        without.  SHUNT: INFO's value at once, then NVS, then `pwr`
+ *        sets the part up with it at its next tick.
  *
  * @param c The write.
  */
@@ -421,6 +511,14 @@ static void pwr_control(const rcnode_ctl_t *c)
 {
     if (c->op == RCNODE_OP_RUN) {
         atomic_store(&s_run_tag, (int)c->tag);
+    }
+    if (c->op == RCNODE_OP_SHUNT && psens_shunt_ok(c->shunt_uohm)) {
+        atomic_store(&s_shunt, c->shunt_uohm);
+        if (!psens_shunt_save(&k_store, c->shunt_uohm)) {
+            ESP_LOGW(NODE_TAG, "pwr: shunt %uuOhm not stored, kept until a restart",
+                     (unsigned)c->shunt_uohm);
+        }
+        atomic_store(&s_shunt_req, c->shunt_uohm);
     }
 #if NODE_BOARD_DISPLAY
     if (c->op == RCNODE_OP_LANG) {
@@ -455,7 +553,7 @@ static uint8_t sensor_word(sense_state_t st)
  */
 static void pwr_status(rcnode_status_t *s)
 {
-    s->sensor = sensor_word(ina228_state(&s_ina));
+    s->sensor = sensor_word(psens_state(&s_sns));
     s->errors = s_sbus.errors;
     s->resets = (uint16_t)atomic_load(&s_resets);
     if (atomic_load(&s_online)) {
@@ -473,9 +571,9 @@ static void pwr_status(rcnode_status_t *s)
  */
 static void pwr_info(rcnode_info_t *i)
 {
-    i->i228_addr  = PWR_ADDR;
-    i->adcrange   = s_ina.cal.adcrange;
-    i->shunt_uohm = PWR_SHUNT_UOHM;
+    i->i228_addr  = (uint8_t)atomic_load(&s_addr);
+    i->adcrange   = 1u;     /* every shunt runs at ADCRANGE 1 (node_pwr_sens.h) */
+    i->shunt_uohm = (uint16_t)atomic_load(&s_shunt);
 }
 
 /**
@@ -491,12 +589,18 @@ static void pwr_line(char *buf, size_t n)
     const int i_ua = atomic_load(&s_last_i);
     const int v = atomic_load(&s_last_v);
     const int i_ma = i_ua / 1000;
-    snprintf(buf, n, "%u win/s, n %u, %d.%02dV %s%d.%03dA, part %s, epoch %u",
+    const unsigned a = atomic_load(&s_addr) & 0xFFu;
+    char at[16] = "";
+    if (a != 0u) {
+        snprintf(at, sizeof at, " at 0x%02X", a);
+    }
+    snprintf(buf, n, "%u win/s, n %u, %d.%02dV %s%d.%03dA, part %s%s, "
+             "%uuOhm, epoch %u",
              w - s_prev, atomic_load(&s_last_n), v / 500, (v % 500) / 5,
              i_ua < 0 ? "-" : "", (i_ma < 0 ? -i_ma : i_ma) / 1000,
              (i_ma < 0 ? -i_ma : i_ma) % 1000,
-             atomic_load(&s_online) ? "online" : "not answering",
-             (unsigned)s_acc.epoch);
+             atomic_load(&s_online) ? "online" : "not answering", at,
+             atomic_load(&s_shunt), (unsigned)s_acc.epoch);
     s_prev = w;
 }
 
@@ -515,9 +619,31 @@ static void pwr_sleep(void)
         vTaskDelay(pdMS_TO_TICKS(10));      /* a sample under way ends */
     }
     if (s_dev != NULL) {
-        (void)sense_bus_write16(&s_sbus, PWR_ADDR, INA228_ADC_CONFIG,
-                                ina228_adc_config(INA228_MODE_SHUTDOWN, 4, 4, 0, 0));
+        /* The part online now, else the kept address once it still holds
+         * an INA228: nothing else in 0x40 to 0x4F is written. */
+        const uint8_t online = atomic_load(&s_online) ? psens_addr(&s_sns) : 0u;
+        (void)psens_shut_down(&s_sbus, online, s_rtc_addr);
     }
+}
+
+/**
+ * @brief The address for the timer wake's check: the one kept through
+ *        deep sleep when it still holds an INA228, else the first of 0x40
+ *        to 0x4F that does.
+ *
+ * @return The address, 0 for none.
+ */
+static uint8_t wake_addr(void)
+{
+    if (s_rtc_addr != 0u && psens_is_ina228(&s_sbus, s_rtc_addr, NULL)) {
+        return s_rtc_addr;
+    }
+    for (uint8_t a = INA228_ADDR_MIN; a <= INA228_ADDR_MAX; ++a) {
+        if (psens_is_ina228(&s_sbus, a, NULL)) {
+            return a;
+        }
+    }
+    return 0u;
 }
 
 /**
@@ -532,11 +658,14 @@ static bool pwr_wake(int32_t *vbus_uv)
     bool answered = false;
     *vbus_uv = 0;
     if (bus_up()) {
+        const uint8_t a = wake_addr();
+        s_rtc_addr = a;
         const uint16_t trig = ina228_adc_config(0x1u, 4, 4, 0, 0);
         uint8_t b[3];
-        if (sense_bus_write16(&s_sbus, PWR_ADDR, INA228_ADC_CONFIG, trig) == SENSE_OK) {
+        if (a != 0u
+            && sense_bus_write16(&s_sbus, a, INA228_ADC_CONFIG, trig) == SENSE_OK) {
             esp_rom_delay_us(1500);
-            if (sense_bus_read(&s_sbus, PWR_ADDR, INA228_VBUS, b, sizeof b) == SENSE_OK) {
+            if (sense_bus_read(&s_sbus, a, INA228_VBUS, b, sizeof b) == SENSE_OK) {
                 answered = true;
                 *vbus_uv = ina228_vbus_uv(ina228_code20(sense_be24(b)));
             }
