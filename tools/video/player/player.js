@@ -154,6 +154,7 @@ for (const sc of sb.scenes) {
     : sc.model === 'rudder' ? buildRudder(await rudderParts())
     : sc.model === 'wurst' ? buildWurst()
     : sc.model === 'wurst-kinetic' ? buildWurst(true)
+    : sc.model === 'wurst-dog' ? buildWurst(false, true)
     : buildCase(shown);
   if (sc.servo) sc.rig.setServoPort(sc.servo.connector, sc.servo.position);
 }
