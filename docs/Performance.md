@@ -457,7 +457,7 @@ console](BenchConsole.md)) has one task more.
 
 | Task of the console build | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `console` | `console_task`, the serial ports to the IOmcu's console, and `ble scan` (`panel_console.c`) | 4,096 | 1,280 | 1,776 |
+| `console` | `console_task`, the serial ports to the IOmcu's console, and `ble scan` (`panel_console.c`) | 4,096 | 1,344 | 1,712 |
 
 `runlog`'s deepest chain mounts the SD card: the listing of the servo
 files the card serves (`hitec_card_run()`, `list()`, `servo_store_preset()`,
@@ -503,7 +503,7 @@ the tool cannot see, and each depth above is a lower bound for that reason:
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `UI_HOOK_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`,
   `SERVO_STORE_CALLS`):
-  394 such
+  395 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - jumps through a register: a switch table, which stays inside its

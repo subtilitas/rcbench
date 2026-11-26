@@ -118,6 +118,11 @@ SCREENS = {
     # SETUP > PANEL > Hardware stop ON and the heartbeat bit: the red
     # HWSTOP chip in FAULT's place, and its box.
     "band-hwstop": ("band-hwstop.png", "overview", "dark"),
+    # A scanned servo: its id's chip left of the others, and its box;
+    # -run with a SERVO run ARMED, the chip on the accent, and the notice
+    # that refuses another label during the run.
+    "band-servo": ("band-servo.png", "overview", "dark"),
+    "band-servo-run": ("band-servo-run.png", "overview", "dark"),
     # An alert across the bottom of the menu, with its x.
     "overview-alert": ("overview-alert.png", "overview", "dark"),
     # The menu with the IOmcu's INA228 OFF and the power node as the pack's
@@ -1223,6 +1228,9 @@ FIT_ONLY = {
     # SAFE MOVE, and SAFE PROG with the port's number not known.
     "band-safe-move":   (None, "overview", "dark"),
     "band-safe-any":    (None, "overview", "dark"),
+    # The servo chip's box for an id set by NEW ID and for one picked.
+    "band-servo-new":   (None, "overview", "dark"),
+    "band-servo-pick":  (None, "overview", "dark"),
     "band-link-refused-max": (None, "overview", "dark"),
     "wifi-unavailable": (None, "wifi", "dark"),
     "wifi-ap-kept":     (None, "wifi", "dark"),

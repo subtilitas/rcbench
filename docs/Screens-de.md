@@ -190,6 +190,49 @@ standardmäßig AUS, und mit AUS zeigt das Band FEHLER 10.
   läuft und 1000ms danach lässt das Band Bit 10 weg, als HWSTOP und als
   FEHLER 10.
 
+### Servo-Chip
+
+![Der Chip eines gescannten Servos und sein Kasten](img/de/band-servo.png)
+
+![Der Chip während eines SERVO-Laufs und der Hinweis, der ein anderes Etikett ablehnt](img/de/band-servo-run.png)
+
+Solange ein Servo aktiv ist, zeigt das Band seine ID in einem Chip links
+der anderen: das beschriftete Servo, unter dem der nächste Lauf abgelegt
+wird. Ein Scan seines Etiketts, NEUE ID oder eine Wahl aus den letzten IDs
+setzt es; ein Neustart löscht es. Ohne aktives Servo gibt es keinen Chip,
+und das Band ist wie ohne ihn.
+
+- Der Chip zeigt die ganze ID, höchstens 23 Zeichen. Wo die Reihe rechts
+  von x 272 (dem Ende des breitesten Home-Felds) keinen Platz hat, zeigt er
+  den Bindestrich und die 5 Zeichen danach: `-0000A`. Wo auch das nicht
+  passt, weicht der Chip BENCH oder SIM; VERBINDUNG unterscheidet die
+  beiden weiterhin. In der breitesten Reihe überhaupt, einer Laufzeituhr ab
+  10 Stunden, ARMED SERVO, FEHLER und VERBINDUNG auf Deutsch, fehlt der
+  Chip.
+- Solange ein Lauf aktiv ist (ein Servotest, ein Limit-Lauf, RUDDER AUTO
+  oder der Prüfstand ARMED auf SERVO), hat der Chip die Akzentfarbe als
+  Fläche: das Servo des Laufs, fest bis zu seinem Ende.
+- Sein Kasten sagt, wie das Servo gesetzt wurde (Scan, NEUE ID oder Wahl),
+  dass ein Lauf es hält und wie es wieder geht.
+
+Eine gescannte Zeile, vom Scanner oder vom `scan <text>` der
+Debug-Konsole, bewirkt eines davon, mit ihrem Hinweis im Alarmband:
+
+| Zeile | Ergebnis | Hinweis |
+| --- | --- | --- |
+| eine ID, kein Lauf aktiv | die ID ist das aktive Servo; keine Seite wechselt | `SERVO KST_X10-0000A`; mit der Antwort der Karte: sein Name, `NEU AUF DIESER KARTE` oder `KEINE KARTE: LÄUFE WERDEN NICHT ABGELEGT` |
+| die ID des aktiven Servos nach 3,0s | nichts ändert sich | `SERVO KST_X10-0000A  BEREITS AKTIV` |
+| die letzte Zeile erneut innerhalb 3,0s, ohne Wechsel des Servos dazwischen | verworfen | keiner |
+| eine andere ID während eines Laufs | abgelehnt; der Lauf behält sein Servo | `LAUF AKTIV: ER BLEIBT BEI KST_X10-0000A. NACH DEM LAUF SCANNEN.`, ohne Servo `LAUF AKTIV: NACH DEM LAUF SCANNEN.` |
+| die eigene ID des Laufs während des Laufs | verworfen | keiner |
+| eine Zeile, die nicht genau eine ID ist (Kleinbuchstaben, ein Leerzeichen, kein Bindestrich, 4 oder 6 Zeichen danach, eine Webadresse) | abgelehnt | `KEINE SERVO-ID: ` und die ersten 24 Zeichen der Zeile |
+| eine Zeile über 64 Byte | abgelehnt | `KEINE SERVO-ID: CODE ZU LANG` |
+
+Der Startbildschirm und die beiden Update-Seiten nehmen keine Zeile an. Der
+Scan eines bekannten Servos setzt DUT NAME auf den Namen seines neuesten
+Laufs. Die Antwort der Karte kommt aus der Suche der Ablage; ein Build ohne
+sie nennt nur die ID und lässt DUT NAME, wie er ist.
+
 ### Ein ARM, das der IOmcu ablehnt
 
 Der Alarm eines abgelehnten oder aufgegebenen Schaltens entsteht aus den

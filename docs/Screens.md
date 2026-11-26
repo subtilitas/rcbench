@@ -172,6 +172,47 @@ default, and OFF the band shows FAULT 10.
 - While the panel's own STOP is latched, while its reset runs and for
   1000ms after it, the band leaves out bit 10, as HWSTOP and as FAULT 10.
 
+### Servo chip
+
+![A scanned servo's chip and its box](img/band-servo.png)
+
+![The chip during a SERVO run, and the notice that refuses another label](img/band-servo-run.png)
+
+While a servo is active, the band shows its id in a chip left of the
+others: the labelled servo the next run files under. A scan of its label,
+NEW ID or a pick from the recent ids sets it; a restart clears it. With no
+servo active there is no chip, and the band is as without it.
+
+- The chip holds the whole id, 23 characters at most. Where the row has no
+  room right of x 272 (the end of the widest home tag), it shows the dash
+  and the 5 characters after it: `-0000A`. Where even that does not fit,
+  the BENCH or SIM chip gives way; LINK still tells the two apart. In the
+  widest row of all, a run clock of 10 hours or more, ARMED SERVO, FEHLER
+  and LINK in German, the chip is left out.
+- While a run is active (a servo test, a limit run, RUDDER AUTO, or the
+  bench ARMED on SERVO) the chip is drawn on the accent's fill: the run's
+  servo, fixed to its end.
+- Its box says how the servo was set (a scan, NEW ID or a pick), that a
+  run holds it, and how it goes.
+
+A scanned line, from the scanner or from the debug console's
+`scan <text>`, does one of these, with its notice in the alert band:
+
+| Line | Result | Notice |
+| --- | --- | --- |
+| an id, no run active | the id is the active servo; no screen changes | `SERVO KST_X10-0000A`; with the card's answer: its name, `NEW ON THIS CARD` or `NO CARD: RUNS ARE NOT FILED` |
+| the active servo's id after 3.0s | nothing changes | `SERVO KST_X10-0000A  ALREADY ACTIVE` |
+| the last line again within 3.0s, with no change of the servo between | dropped | none |
+| another id during a run | refused; the run keeps its servo | `RUN IN PROGRESS: IT STAYS ON KST_X10-0000A. SCAN AFTER THE RUN.`, or `RUN IN PROGRESS: SCAN AFTER THE RUN.` with no servo |
+| the run's own id during the run | dropped | none |
+| a line that is not exactly an id (lower case, a space, no dash, 4 or 6 characters after it, a web address) | refused | `NOT A SERVO ID: ` and the line's first 24 characters |
+| a line past 64 bytes | refused | `NOT A SERVO ID: CODE TOO LONG` |
+
+The splash and the two update screens take no line. A known servo's scan
+sets DUT NAME to the name of its newest run. The card's answer comes from
+the filing's look-up; a build without it names the id alone and leaves
+DUT NAME as it is.
+
 ### An ARM the IOmcu refuses
 
 The alert of a refused or given-up switch is built from the IOmcu's fault

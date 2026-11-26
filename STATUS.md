@@ -1310,6 +1310,18 @@ the zone named until a recheck, so the module's flash takes no write every 5s. T
 `test_scan_line` holds 10,000 random bytes against `servo_id_parse()`: no line it hands out is
 a servo id.
 
+The scan flow (`scan_flow.c`, `test_scan_flow`; `servo_scan_decide()` in
+`servo_active.c`, `test_servo_scan`) takes a scanned line on the frame task:
+an id in upper case exactly as `servo_id_parse()` writes it sets the active
+servo outside a run; another id during a run is refused; the last line again
+within 3.0s with no change of the servo between is dropped. Each result but a
+drop raises its notice in the alert band, and the band shows the active servo
+in a chip left of the others (`UI_BAND_CHIP_SERVO`). The panel takes lines
+from the debug console's `scan <text>` through a mailbox of one line; the
+scanner's UART task is not built. The card's look-up (new, known with the
+name of its newest run, no card) is a hook no firmware registers yet, so the
+panel's notice names the id alone and DUT NAME stays.
+
 ### M5Stack Dial
 
 Built and host-tested: the knob protocol of the M5Stack Dial v1.1 over BLE
@@ -1861,7 +1873,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 685 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 688 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1937,7 +1949,7 @@ The host suite is 685 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_fm_recheck`, `test_fm_req`, `test_files_screen`, `test_files_ops`, `test_files_open`,
 `test_files_view`, `test_files_edit`, `test_files_save`, `test_files_changed`,
 `test_files_rescan`, `test_logs_strip`, `test_textkey_editor`, `test_textkey_see`,
-`test_textkey_cursor`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_log_info`, `test_servo_id`, `test_servo_name`, `test_servo_active`, `test_log_preset`, `test_log_marks`, `test_servo_runlog`,
+`test_textkey_cursor`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_log_info`, `test_servo_id`, `test_servo_name`, `test_servo_active`, `test_servo_scan`, `test_scan_flow`, `test_scan_input`, `test_log_preset`, `test_log_marks`, `test_servo_runlog`,
 `test_servo_runlog_cols`, `test_servo_log_figures`, `test_log_cadence`, `test_perf_watch`, `test_pass_stats`, `test_report_lines`, `test_report_steps`,
 `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`,
 `test_kst_pio`, `test_kst_port`, `test_kst_port_cut`, `test_kst_link`, `test_prog_port`,
@@ -2531,7 +2543,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-1114 committed screenshots to the current render, 557 in English and the same 557 in German, and `render_ui.py --fit` fails on a string that
+1118 committed screenshots to the current render, 559 in English and the same 559 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -2567,7 +2579,8 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_theme.c` | 47 | 46 | 97.9% |
 | `shared/ui/ui_widgets.c` | 432 | 425 | 98.4% |
 | `shared/ui/ui_icons.c` | 199 | 199 | 100.0% |
-| `shared/ui/ui_band.c` | 385 | 372 | 96.6% |
+| `shared/ui/ui_band.c` | 421 | 408 | 96.9% |
+| `shared/ui/scan_flow.c` | 104 | 103 | 99.0% |
 | `shared/ui/ui_help.c` | 400 | 389 | 97.2% |
 | `shared/ui/help_outputs.c` | 74 | 72 | 97.3% |
 | `shared/ui/help_setup.c` | 95 | 92 | 96.8% |
@@ -2782,7 +2795,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/logfile/card_tree.c` | 81 | 81 | 100.0% |
 | `shared/logfile/servo_id.c` | 144 | 144 | 100.0% |
 | `shared/logfile/servo_name.c` | 65 | 65 | 100.0% |
-| `shared/logfile/servo_active.c` | 37 | 37 | 100.0% |
+| `shared/logfile/servo_active.c` | 66 | 66 | 100.0% |
 | `shared/logfile/fault_log.c` | 58 | 58 | 100.0% |
 | `shared/files/text_buf.c` | 494 | 493 | 99.8% |
 | `shared/files/text_hl.c` | 340 | 340 | 100.0% |
@@ -3071,7 +3084,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
 | `shared/scanner/scan_line.c` | 113 | 113 | 100.0% |
 | `shared/scanner/gm861.c` | 319 | 319 | 100.0% |
-| **total** | **114936** | **112393** | **97.8%** |
+| **total** | **115105** | **112561** | **97.8%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

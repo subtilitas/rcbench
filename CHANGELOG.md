@@ -8,6 +8,13 @@ history is in git.
 
 ### Added
 
+- A scanned servo id sets the active servo, and the band shows it in a chip
+  left of the other chips, on the accent while a run holds it, shortened
+  to `-0000A` where the row has no room. Each scan raises a notice: the id,
+  `ALREADY ACTIVE`, the refusal during a run, or `NOT A SERVO ID`. The same
+  line within 3.0s is dropped. The debug console's `scan <text>` injects a
+  line (`scan_flow.c`, `servo_scan_decide()`; `test_scan_flow`,
+  `test_servo_scan`).
 - FILES and the Wi-Fi page keep a labelled servo's folders: `Servos` and
   each id folder in it (`Servos/KST_X10-0000A`, any case) take no RENAME,
   MOVE or DELETE, DELETE also when empty, and list with the place `SERVO`
