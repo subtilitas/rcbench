@@ -95,7 +95,7 @@ On the bench screens:
 
 ![WIRELESS on the POWER NODE entry, connected](view:setup-wireless-pnode)
 
-The power node is an ESP32-C6 with its own cell that reads an INA228 on the ESC's (electronic speed controller's) XT60 and sends its readings over Bluetooth LE. INA228 source decides whose INA228 MOTOR & ESC shows: the IOmcu's, wired, or the node's.
+The power node is an ESP32-C6 with its own cell that reads an INA228 board in the ESC's (electronic speed controller's) supply line and sends its readings over Bluetooth LE. The node finds the INA228 at any address from 0x40 to 0x4F. INA228 source decides whose INA228 MOTOR & ESC shows: the IOmcu's, wired, or the node's.
 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
@@ -104,6 +104,10 @@ The power node is an ESP32-C6 with its own cell that reads an INA228 on the ESC'
 | Scan for node | `SCAN` | | a tap opens [Search](#search) and scans 10s for the power nodes in range; a switch to ARMED stops the scan, `STOPPED BY ARM`; refused while ARMED, with `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST` in the band |
 | Bound node | `NONE` or the node's name | `NONE` | a tap opens [Search](#search) on the last scan's list. RESET keeps the bound node |
 | Node battery | `3.92V`, `LOW 3.41V`, `NO CELL`, `READ FAILED`, `NOT LINKED` | | the node's cell, from its status every 1s; `LOW` under 3.5V |
+| Node INA228 | `0x40, 500uΩ`, `NOT FOUND`, `NOT LINKED` | | the address the node found its INA228 at, and the shunt the node holds, from its INFO after each connect and each shunt change |
+| Node shunt | 50 to 10000µΩ | 200µΩ | the shunt of the INA228 board on the node; the MATEK I2C-INA-BM's is 200µΩ. The panel writes it to the node after each connect and each change when the node holds another; the node keeps it through restarts. The full scale is 40.96mV over the shunt: 204.8A on 200µΩ, 81.92A on 500µΩ, 4.096A on 10000µΩ. Each change clears the node's charge and energy totals. Does not change while ARMED. A node whose firmware takes no shunt: `POWER NODE TAKES NO SHUNT: UPDATE ITS FIRMWARE` in the band |
+
+![WIRELESS on the POWER NODE entry, scrolled to Node INA228 and Node shunt](view:setup-wireless-pnode-shunt)
 
 With INA228 source on NODE:
 
@@ -112,7 +116,7 @@ With INA228 source on NODE:
 - With Power node ON and a node bound, the MOTOR & ESC tile on the [menu](overview.md#the-simulated-mark) carries no SIMULATED mark, also with the IOmcu's INA228 OFF and with the node not connected.
 - An ARM of MOTOR & ESC or ESC STICK is refused while Power node is OFF or no reading came in the last 100ms, with `Cannot switch to ARMED: no power node readings. Set INA228 source WIRED or connect the node.` in the band. SERVO and OUTPUTS arm whatever the node does.
 - In a MOTOR & ESC or ESC STICK run, a gap without a reading of up to 300ms rides, once in 10s. A longer gap, or a second one within 10s, switches the bench to SAFE with all outputs off, and the band shows `POWER NODE READINGS LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF`. A SERVO or OUTPUTS run does not end on the node.
-- INA228 source does not change while ARMED.
+- INA228 source and Node shunt do not change while ARMED.
 - The node's readings feed no protection: the current limits and trips read their own sensors.
 
 | State | When |

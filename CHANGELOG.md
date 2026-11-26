@@ -27,6 +27,20 @@ history is in git.
   (`wireless_printer.c`, `print_ctl.c`, `print_req.c`, `bleuart_adv.c`;
   `test_wireless_printer`, `test_print_ctl_scan`, `test_print_ctl_ends`,
   `test_bleuart_ext`).
+- The power node finds its INA228 at any address from 0x40 to 0x4F: at
+  the start and at each new probe it reads MANUFACTURER_ID and DEVICE_ID
+  from 0x40 upwards, one address each 1130µs tick, and takes the first
+  that answers 5449h with die 228h; other makers and other TI dies are
+  skipped and never written. INFO, the console line and SETUP > WIRELESS >
+  POWER NODE's new Node INA228 row name the address
+  (`node_pwr_sens.c`; `test_node_pwr_sens`).
+- NODE SHUNT on SETUP > WIRELESS > POWER NODE, 50 to 10000µΩ, 200µΩ by
+  default: the panel writes it to the node as the control write SHUNT
+  (0x07), the node keeps it in NVS, names it in INFO and sets its INA228 up
+  for it without a restart, ADCRANGE 1, 40.96mV over the shunt. Held while
+  ARMED; a node that refuses it raises `POWER NODE TAKES NO SHUNT: UPDATE
+  ITS FIRMWARE` (`pnode_ctl.c`, `bleu_reread()`; `test_pnode_ctl`,
+  `test_wireless_pnode`, `test_rcnode`).
 - The SERVO lists that carry DUT NAME end with SERVO LABEL: ID PREFIX,
   SERVO ID and NEW ID. SERVO ID picks NONE, one of the card's 6 newest ids,
   or TYPE ID, which types an id on the name keyboard, 23 characters, lower

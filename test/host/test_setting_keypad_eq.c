@@ -145,8 +145,9 @@ TEST_CASE(every_stepped_value_typed_is_the_stepped_value)
      * (settings_tap_pin_valid()), not 48.  IMU filter's 1 to 50 are 50.
      * IMU settling time's 0.5 to 10.0s in 0.5s steps are 20, IMU
      * precision's 0.05 to 1.00° in 0.05° steps 20.  The trial mass's 0.01
-     * to 20.00g in 0.01g steps are 2,000. */
-    CHECK_EQ(checked, 190950);
+     * to 20.00g in 0.01g steps are 2,000.  NODE SHUNT's 50 to 10000uΩ in
+     * 1uΩ steps are 9,951. */
+    CHECK_EQ(checked, 200901);
     CHECK_EQ(bad, 0);
 }
 

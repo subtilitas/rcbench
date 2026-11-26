@@ -14,7 +14,9 @@
  * the Dial on and linked, a scan that found two Dials, the second bound.
  * setup-wireless-pnode: WIRELESS on the POWER NODE entry, the node on and
  * connected, INA228 SOURCE NODE, a scan that found one node, bound, its
- * cell at 3.92V.
+ * cell at 3.92V, its INA228 found at 0x40 on NODE SHUNT 500uΩ.
+ * setup-wireless-pnode-shunt: the same, the list dragged to its end,
+ * NODE INA228 and NODE SHUNT in view.
  * setup-wireless-bal: WIRELESS on the BALANCE NODE entry, the node on and
  * reporting, a scan that found two nodes, the first bound, its cell at
  * 3.91V.
@@ -131,7 +133,8 @@ static void pose_dial(void)
 }
 
 /** @brief WIRELESS on the POWER NODE entry: on, connected, NODE chosen,
- *         one node found and bound, its cell at 3.92V. */
+ *         one node found and bound, its cell at 3.92V, its INA228 at 0x40
+ *         on 500uΩ. */
 static void pose_pnode(void)
 {
     pnode_view_t p;
@@ -147,10 +150,35 @@ static void pose_pnode(void)
     p.proto = 1u;
     p.have_status = true;
     p.vbat_mv = 3920u;
+    p.have_info = true;
+    p.i228_addr = 0x40u;
+    p.shunt_uohm = 500u;
     settings_set(SET_PNODE_EN, 1.0f);
     settings_set(SET_I228_SRC, 1.0f);
+    settings_set(SET_PNODE_UOHM, 500.0f);
     wireless_pane_set_pnode(&p);
     settings_screen_open_on(SET_CAT_WIRELESS, WL_ENTRY_PNODE);
+}
+
+/**
+ * @brief The open SETUP list dragged up by its pane's height, from 8px
+ *        above the pane's foot, through the router.
+ */
+static void drag_list_up(void)
+{
+    const gfx_rect_t pane = settings_screen_list_rect();
+    const int y0 = UI_BAND_H + pane.y + pane.h - 8;
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = 300, .y = (int16_t)y0,
+                                   .strength = 40 } };
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_MOVE;
+    for (int y = y0 - 8; y > y0 - pane.h; y -= 8) {
+        e.point.y = (int16_t)y;
+        ui_router_event(&e);
+    }
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
 }
 
 /**
@@ -247,6 +275,11 @@ void render_imu_pose(const char *view)
     }
     if (strcmp(view, "setup-wireless-pnode") == 0) {
         pose_pnode();
+        return;
+    }
+    if (strcmp(view, "setup-wireless-pnode-shunt") == 0) {
+        pose_pnode();
+        drag_list_up();
         return;
     }
     if (strcmp(view, "setup-wireless-bal") == 0) {

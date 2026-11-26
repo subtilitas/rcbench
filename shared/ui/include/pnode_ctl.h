@@ -33,6 +33,13 @@
  *   owed: a display node (docs/Nodes.md, "The display node") shows its
  *   texts in it.  A node that refuses the write (one built before LANG)
  *   gets it again only at the next link or change.
+ * - After INFO is taken on each link, and at each change of NODE SHUNT,
+ *   SHUNT goes to CONTROL with the setting when INFO names another shunt,
+ *   after any RUN write owed and never while the bench is ARMED or a
+ *   switch to ARMED waits: a shunt changed under a run would rescale its
+ *   readings.  A write the node takes is followed by a read of INFO, whose
+ *   shunt the view shows; a refused one (a node built before SHUNT) is
+ *   counted for the band and sent again only at the next link or change.
  *
  * Every function of one controller is called from one task.  Times are
  * unsigned differences of a free-running 32-bit ms clock.
@@ -84,6 +91,13 @@ typedef struct {
     uint8_t       info_proto;  /**< the protocol INFO named, 0 unread */
     uint8_t       info_role;   /**< the role INFO named, 0 unread */
     uint8_t       info_board;  /**< the board INFO named, 0 unread */
+    uint8_t       info_i228;   /**< the INA228's address INFO named, 0 none
+                                    found */
+    uint16_t      info_shunt;  /**< the shunt INFO named, µΩ, 0 unread */
+    uint16_t      shunt_sent;  /**< the shunt the SHUNT write last went
+                                    with on this link; 0 before */
+    bool          shunt_wr;    /**< a SHUNT write is in flight */
+    uint32_t      shunt_refused; /**< SHUNT writes the node refused */
     uint8_t       known_board; /**< the board the bound address's last
                                     accepted INFO named; kept over link
                                     ends and reconnects, 0 after an
@@ -234,8 +248,8 @@ void pnode_ctl_event(pnode_ctl_t *c, const bleu_evt_t *e, uint32_t now_ms);
 /**
  * @brief Advance to @p now_ms: the meter's run and dropout rule, a running
  *        scan stopped while @p armed, then the central's next action, else
- *        the RUN write owed, else the LANG write owed.  Call until it returns false, at least every
- *        10ms.
+ *        the RUN write owed, else the SHUNT write owed, else the LANG
+ *        write owed.  Call until it returns false, at least every 10ms.
  * @param c         The controller.
  * @param now_ms    The clock.
  * @param armed     The bench is ARMED, or a switch to ARMED waits.

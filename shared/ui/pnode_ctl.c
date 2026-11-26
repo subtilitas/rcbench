@@ -120,6 +120,8 @@ static bool take_info(pnode_ctl_t *c, uint32_t now_ms)
     c->info_proto = p.u.info.proto;
     c->info_role = p.u.info.role;
     c->info_board = p.u.info.board;
+    c->info_i228 = p.u.info.i228_addr;
+    c->info_shunt = p.u.info.shunt_uohm;
     c->info_ok = p.u.info.proto == RCNODE_PROTO
                  && p.u.info.role == RCNODE_ROLE_POWER
                  && pnode_meter_info(&c->m, &p.u.info);
@@ -146,6 +148,10 @@ static void follow_link(pnode_ctl_t *c, uint32_t now_ms)
         c->info_proto = 0u;
         c->info_role = 0u;
         c->info_board = 0u;
+        c->info_i228 = 0u;
+        c->info_shunt = 0u;
+        c->shunt_sent = 0u;
+        c->shunt_wr = false;
         c->was_up = false;
         c->m.have_status = false;
         c->lang_sent = PNODE_LANG_NONE;
@@ -469,6 +475,55 @@ static bool send_lang(pnode_ctl_t *c, uint32_t now_ms)
     return true;
 }
 
+/**
+ * @brief The SHUNT write owed, when the central can send, no RUN write
+ *        waits and the bench is SAFE: NODE SHUNT, once a link and once a
+ *        change, when INFO names another shunt.
+ * @param c      The controller.
+ * @param armed  The bench is ARMED, or a switch to ARMED waits.
+ * @param now_ms The clock.
+ * @return true when it was handed to the central.
+ */
+static bool send_shunt(pnode_ctl_t *c, bool armed, uint32_t now_ms)
+{
+    const uint16_t want = c->cfg.shunt_uohm;
+    if (armed || c->run_owed || !c->info_ok || !c->info_read || c->shunt_wr
+        || want == 0u || want == c->info_shunt || want == c->shunt_sent
+        || !bleu_can_send(&c->b)) {
+        return false;
+    }
+    rcnode_ctl_t w;
+    memset(&w, 0, sizeof(w));
+    w.op = RCNODE_OP_SHUNT;
+    w.shunt_uohm = want;
+    uint8_t buf[RCNODE_CTL_MAX];
+    const size_t n = rcnode_enc_ctl(&w, buf, sizeof(buf));
+    if (n == 0u || !bleu_send(&c->b, buf, n, now_ms)) {
+        return false;
+    }
+    c->shunt_sent = want;
+    c->shunt_wr = true;
+    return true;
+}
+
+/**
+ * @brief The SHUNT write in flight ended: taken, INFO is read again for
+ *        the shunt the node now holds; refused, it is counted.
+ * @param c The controller.
+ */
+static void follow_shunt(pnode_ctl_t *c)
+{
+    if (!c->shunt_wr || c->b.wr == BLEU_WR_BUSY) {
+        return;
+    }
+    c->shunt_wr = false;
+    if (c->b.wr != BLEU_WR_OK) {
+        ++c->shunt_refused;
+    } else if (bleu_reread(&c->b)) {
+        c->info_read = false;
+    }
+}
+
 void pnode_ctl_lang(pnode_ctl_t *c, uint8_t lang)
 {
     if (c != NULL) {
@@ -483,6 +538,7 @@ bool pnode_ctl_step(pnode_ctl_t *c, uint32_t now_ms, bool armed,
         return false;
     }
     follow_link(c, now_ms);
+    follow_shunt(c);
     if (pnode_meter_step(&c->m, now_ms, armed, c->cfg.src_node,
                          bench_run)) {
         c->run_owed = true;
@@ -506,7 +562,8 @@ bool pnode_ctl_step(pnode_ctl_t *c, uint32_t now_ms, bool armed,
         return true;
     }
     take_scan(c);
-    if (send_run(c, now_ms) || send_lang(c, now_ms)) {
+    if (send_run(c, now_ms) || send_shunt(c, armed, now_ms)
+        || send_lang(c, now_ms)) {
         return bleu_step(&c->b, now_ms, out);
     }
     return false;
@@ -581,6 +638,15 @@ void pnode_ctl_view(const pnode_ctl_t *c, uint32_t now_ms, pnode_view_t *out)
         memcpy(out->bound_name, c->cfg.name, sizeof(out->bound_name));
     }
     out->proto = c->info_proto;
+    /* INFO's last read on this link: a read again after a SHUNT write
+     * keeps the last one's values until it ends. */
+    if (c->linked && c->info_proto == RCNODE_PROTO
+        && c->info_role == RCNODE_ROLE_POWER) {
+        out->have_info = true;
+        out->i228_addr = c->info_i228;
+        out->shunt_uohm = c->info_shunt;
+    }
+    out->shunt_refused = (uint16_t)c->shunt_refused;
     out->bind_refused = (uint16_t)c->bind_refused;
     out->scan_armed = (uint16_t)c->refused;
     out->scan_unready = (uint16_t)c->scan_unready;

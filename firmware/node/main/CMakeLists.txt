@@ -17,7 +17,7 @@ elseif(CONFIG_RCNODE_ROLE_SERVO)
     list(APPEND SRCS node_bat.c node_srv.c node_srv_link.c node_srv_hb.c
                      node_srv_policy.c node_srv_poll.c)
 else()
-    list(APPEND SRCS node_bat.c node_pwr.c)
+    list(APPEND SRCS node_bat.c node_pwr.c node_pwr_sens.c)
 endif()
 if(CONFIG_RCNODE_BOARD_ES3C28P AND NOT CONFIG_RCNODE_ROLE_SERVO)
     # The display node: the screen's logic, the display, the touch.

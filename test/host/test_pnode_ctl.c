@@ -14,7 +14,10 @@
  * reaching the controller's count; POWER NODE OFF ending everything; the
  * update's hold handing the link to the update client and taking it back
  * with no STALE or LOST on the way, and the version read back from the
- * first STATUS after the reconnect.
+ * first STATUS after the reconnect; NODE SHUNT written once a link and
+ * once a change when INFO names another shunt, never while ARMED, INFO
+ * read again after the node takes it, and a refusal counted and not
+ * repeated.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -57,6 +60,9 @@ typedef struct {
     unsigned    langs;    /**< LANG writes */
     uint8_t     lang;     /**< the last one's language */
     uint16_t    lang_status; /**< the ATT status the node answers LANG with */
+    unsigned    shunts;   /**< SHUNT writes */
+    uint16_t    shunt_status; /**< the ATT status the node answers SHUNT with */
+    unsigned    info_reads; /**< INFO reads answered */
     uint8_t     wr[4];    /**< the last one's bytes */
     uint8_t     wr_len;   /**< its length */
     uint8_t     seq;      /**< the node's STREAM seq */
@@ -147,6 +153,7 @@ static void act(rig_t *r, const bleu_act_t *a)
         }
         e = ev(BLEU_EV_READ, a->token);
         e.len = (uint8_t)rcnode_enc_info(&r->info, e.data, sizeof e.data);
+        ++r->info_reads;
         if (r->fail_info > 0u) {
             --r->fail_info;
             e.len = 0u;
@@ -161,6 +168,20 @@ static void act(rig_t *r, const bleu_act_t *a)
             r->lang = a->data[1];
             e = ev(BLEU_EV_WRITE_DONE, a->token);
             e.status = r->lang_status;
+            pnode_ctl_event(&r->c, &e, r->now);
+            break;
+        }
+        if (a->len == 3u && a->data[0] == RCNODE_OP_SHUNT) {
+            /* The node takes it into INFO at once (node_pwr.c). */
+            ++r->shunts;
+            r->wr_len = 3u;
+            memcpy(r->wr, a->data, 3u);
+            e = ev(BLEU_EV_WRITE_DONE, a->token);
+            e.status = r->shunt_status;
+            if (e.status == 0u) {
+                r->info.shunt_uohm =
+                    (uint16_t)(a->data[1] | (a->data[2] << 8));
+            }
             pnode_ctl_event(&r->c, &e, r->now);
             break;
         }
@@ -598,6 +619,94 @@ TEST_CASE(a_node_that_refuses_lang_keeps_its_link_and_is_not_asked_again)
     CHECK_EQ(r.wr[0], RCNODE_OP_RUN);
 }
 
+/** @brief NODE SHUNT set to @p uohm in SETUP. */
+static void set_shunt(rig_t *r, uint16_t uohm)
+{
+    pnode_cfg_t cfg = r->c.cfg;
+    cfg.shunt_uohm = uohm;
+    pnode_ctl_config(&r->c, &cfg, r->now);
+}
+
+TEST_CASE(shunt_goes_when_info_names_another_and_info_is_read_again)
+{
+    rig_t r;
+    up(&r, true);
+    CHECK_EQ(r.shunts, 0u);           /* no NODE SHUNT given: none */
+    CHECK_EQ(r.info_reads, 1u);
+    set_shunt(&r, 200u);              /* INFO's own: none */
+    run(&r, 20u);
+    CHECK_EQ(r.shunts, 0u);
+    set_shunt(&r, 500u);
+    run(&r, 20u);
+    CHECK_EQ(r.shunts, 1u);
+    CHECK_EQ(r.wr[0], RCNODE_OP_SHUNT);
+    CHECK_EQ(r.wr[1], 0xF4u);
+    CHECK_EQ(r.wr[2], 0x01u);
+    /* INFO again: the shunt the node now holds, and the meter's
+     * calibration with it. */
+    CHECK_EQ(r.info_reads, 2u);
+    CHECK(r.c.info_ok);
+    CHECK_EQ(r.c.info_shunt, 500u);
+    CHECK_EQ(r.c.m.cal.shunt_uohm, 500u);
+    pnode_view_t v;
+    pnode_ctl_view(&r.c, r.now, &v);
+    CHECK(v.have_info);
+    CHECK_EQ(v.i228_addr, 0x45u);
+    CHECK_EQ(v.shunt_uohm, 500u);
+    run(&r, 500u);
+    CHECK_EQ(r.shunts, 1u);
+    CHECK_EQ(r.info_reads, 2u);
+    /* A link to a node that holds another shunt gets it again. */
+    r.info.shunt_uohm = 200u;
+    bleu_evt_t e = ev(BLEU_EV_DISCONNECT, r.tok_conn);
+    e.status = 0x213u;
+    pnode_ctl_event(&r.c, &e, r.now);
+    run(&r, BLEU_RETRY_MS + 100u);
+    CHECK(r.c.linked);
+    CHECK_EQ(r.shunts, 2u);
+    CHECK_EQ(r.c.info_shunt, 500u);
+}
+
+TEST_CASE(shunt_waits_while_armed_and_goes_at_safe)
+{
+    rig_t r;
+    up(&r, true);
+    window(&r, RCNODE_WF_ONLINE);
+    r.armed = true;
+    run(&r, 5u);
+    CHECK_EQ(r.writes, 1u);           /* the RUN marker */
+    set_shunt(&r, 1000u);
+    run(&r, 200u);
+    CHECK_EQ(r.shunts, 0u);
+    CHECK_EQ(r.c.m.cal.shunt_uohm, 200u);
+    r.armed = false;
+    run(&r, 20u);
+    CHECK_EQ(r.shunts, 1u);
+    CHECK_EQ(r.c.info_shunt, 1000u);
+}
+
+TEST_CASE(a_node_that_refuses_shunt_is_counted_and_not_asked_again)
+{
+    rig_t r;
+    up(&r, true);
+    r.shunt_status = 0x113u;          /* a node built before SHUNT */
+    set_shunt(&r, 500u);
+    run(&r, 500u);
+    CHECK_EQ(r.shunts, 1u);
+    CHECK_EQ(r.c.shunt_refused, 1u);
+    CHECK_EQ(r.info_reads, 1u);
+    CHECK(r.c.linked);
+    pnode_view_t v;
+    pnode_ctl_view(&r.c, r.now, &v);
+    CHECK_EQ(v.shunt_refused, 1u);
+    CHECK_EQ(v.shunt_uohm, 200u);
+    /* Another value is another try. */
+    set_shunt(&r, 600u);
+    run(&r, 20u);
+    CHECK_EQ(r.shunts, 2u);
+    CHECK_EQ(r.c.shunt_refused, 2u);
+}
+
 TEST_CASE(power_node_off_ends_the_link_and_is_no_loss)
 {
     rig_t r;
@@ -972,6 +1081,9 @@ int main(void)
     RUN(the_scan_lists_power_nodes_and_binds_one);
     RUN(the_run_marker_goes_at_the_arm_and_after_a_drop_within_the_run);
     RUN(an_unbind_ends_the_link_and_a_run_on_node_errors_as_on_a_drop);
+    RUN(shunt_goes_when_info_names_another_and_info_is_read_again);
+    RUN(shunt_waits_while_armed_and_goes_at_safe);
+    RUN(a_node_that_refuses_shunt_is_counted_and_not_asked_again);
     RUN(power_node_off_ends_the_link_and_is_no_loss);
     RUN(lang_goes_once_a_link_and_once_a_change_after_run);
     RUN(a_node_that_refuses_lang_keeps_its_link_and_is_not_asked_again);

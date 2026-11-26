@@ -102,7 +102,8 @@ bool panel_pnode_blec_off(void);
 uint8_t panel_pnode_blec_board(void);
 
 /**
- * @brief A value changed: SET_PNODE_EN and SET_I228_SRC go to the task.
+ * @brief A value changed: SET_PNODE_EN, SET_I228_SRC and SET_PNODE_UOHM go
+ *        to the task.
  * @param id The setting.
  */
 void panel_pnode_settings_changed(setting_id_t id);

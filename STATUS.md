@@ -1480,6 +1480,23 @@ control task's side (`firmware/panel/main/panel_pnode.c`, `panel_poll.c`,
 `panel_supply.c`, the ARM refusal in `panel_arm.c`). The latency from a window to the panel's read is not
 measured.
 
+The node's INA228 at any address from 0x40 to 0x4F and NODE SHUNT, built
+and host-tested, not run with an INA228 board: the node's search and
+shunt setting (`firmware/node/main/node_pwr_sens.c`, `test_node_pwr_sens`
+over the modelled bus: the INA228 at 0x40, at 0x4F and none, at most two
+transactions a 1130µs tick, the NACKs not counted as errors, the display
+board's 0x38 and 0x18 never asked, another maker and another TI die
+skipped and never written, a part found reset searched again 1000ms on
+at its new address, a stuck bus holding the search; CURRENT and POWER on
+200µΩ, 500µΩ and 1000µΩ against the datasheet's equations 2, 4 and 5, a
+live shunt change, the range 50 to 10,000µΩ, the store; the MATEK on the
+default shunt byte for byte the fixed 0x45 set-up's windows and INFO);
+the SHUNT write (`test_rcnode`); the panel's write once a link and once a
+change when INFO names another shunt, held while ARMED, INFO read again
+(`bleu_reread()`) and a refusal counted (`test_pnode_ctl`); NODE INA228
+and NODE SHUNT on the entry (`test_wireless_pnode`). The current against
+a known load on a board other than the MATEK is not measured.
+
 ### The display node
 
 Built and host-tested, not run on a board: the power node on the LCDWIKI
@@ -1954,7 +1971,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 700 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 701 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -2082,7 +2099,7 @@ The host suite is 700 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`, `test_servo_dial_runs`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
-`test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_srv_policy`, `test_node_srv_poll`, `test_node_view`,
+`test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_pwr_sens`, `test_node_srv_policy`, `test_node_srv_poll`, `test_node_view`,
 `test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client`, `test_devimg`, `test_devimg_board`, `test_upd_dev`, `test_upd_fetch`,
 `test_upd_wizard`, `test_upd_wizard_map`, `test_upd_wiz_view`, `test_label_bitmap`, `test_label_layout`,
 `test_lzlit`, `test_supvan_frame`, `test_supvan_page`, `test_supvan_job`, `test_supvan_job_ends`,
