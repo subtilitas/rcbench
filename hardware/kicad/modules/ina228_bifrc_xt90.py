@@ -5,7 +5,9 @@ side, underside, case; not in the repository), measured with
 hardware/mechanical/_photo_grid.py. The
 grid gives the scale; the board's size and the screw holes' spacing come
 from the underside photo, corrected for the board's height over the
-paper (11.65mm, camera 196mm over the paper). Every other position is
+paper (11.65mm, camera 196mm over the paper). The holes' long spacing is
+the owner's correction after a printed case: the photo's 70.15mm is
+0.5mm short, and the holes are 70.65mm apart. Every other position is
 read from the top and the underside photo, laid onto each other by the
 4 screw holes.
 
@@ -39,7 +41,7 @@ import math
 
 NAME = "INA228_BIFRC_XT90_80x48mm"
 DESC = ("INA228 current and voltage monitor with 2 XT90PW, board print "
-        "BIFRC V1.1, 80.1 x 48.6mm, 4 screw holes 70.15 x 38.8mm apart. "
+        "BIFRC V1.1, 80.1 x 48.6mm, 4 screw holes 70.65 x 38.8mm apart. "
         "Shunt (print 0m50) in the minus line between BAT- and ESC-; the plus "
         "bar runs straight through. Header print L A V G 5: 1 L = SCL, "
         "2 A = SDA, 3 V = 3.3V chip supply, 4 G = GND, 5 = hole without pin. "
@@ -51,7 +53,7 @@ DESC = ("INA228 current and voltage monitor with 2 XT90PW, board print "
 BW, BH = 80.1, 48.6
 HDR_Y = 44.4
 HDR_X = [56.16 + 2.54 * i for i in range(5)]
-HOLES = [(4.95, 4.9), (75.1, 4.9), (4.95, 43.7), (75.1, 43.7)]
+HOLES = [(4.70, 4.9), (75.35, 4.9), (4.70, 43.7), (75.35, 43.7)]
 
 PLUS_BAR = (23.45, 16.8, 57.15, 21.9)
 BATN_BAR = (23.45, 27.5, 31.95, 33.0)

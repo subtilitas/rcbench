@@ -18,6 +18,13 @@ history is in git.
   `tools/lzlit.py`. The protocol follows heeen/supvan-cups (MIT) and the
   station's captures. No screen uses it yet
   ([README](protocols/supvan/README.md)).
+- `hardware/mechanical/`: models of 4 parts measured from owner photos on
+  millimetre paper: `supvan_t50m_pro.step`, the Supvan KATASYMBOL T50M
+  Pro label printer (120.0 x 86.3 x 56.0mm); `usbc_plug_breakout.step`,
+  a USB-C plug on a breakout board; `charger_boost_2s4s.step`, a 2S to
+  4S USB-C boost charger board; `pd_trigger_pd31.step`, a purple USB-C
+  PD3.1 trigger board
+  ([Mechanical parts](hardware/mechanical/README.md#parts-measured-on-millimetre-paper)).
 - The servo label's bitmap and layout for a label printer for Supvan
   T50M Pro labels (`shared/ui/label_bitmap.c`, `label_layout.c`): the QR
   code of the servo id at level M, versions 1 to 3, quiet zone 2 modules,

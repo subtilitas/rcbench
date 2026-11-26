@@ -52,11 +52,18 @@ def test_files_are_current(built):
 
 
 def test_case_has_its_size(built):
-    """91.4 x 55.4 outside, 28.0 high: plate 2.4, frame 18.3, bezel 7.3."""
+    """91.4 x 55.4 outside, 28.0 high: plate 2.4, frame 18.3, bezel 7.3.
+
+    The bulge behind the I2C pocket stands 1.3 proud of the frame's wall
+    at -y; its top, a round of 3.2 about a centre 2.0 under the split,
+    reaches 0.6 into the bezel there.
+    """
     boxes = {stem: _extent(solid) for stem, solid in built.items()}
-    for box in boxes.values():
+    over = 2.5 - 2.0 - case.WALL + (3.2 ** 2 - 2.0 ** 2) ** 0.5
+    for stem, box in boxes.items():
         assert box[3] - box[0] == pytest.approx(91.4, abs=0.01)
-        assert box[4] - box[1] == pytest.approx(55.4, abs=0.01)
+        bulge = {FRAME: 1.3, BEZEL: over}.get(stem, 0.0)
+        assert box[4] - box[1] == pytest.approx(55.4 + bulge, abs=0.01)
     assert boxes[PLATE][2] == pytest.approx(-4.0, abs=0.01)
     assert boxes[PLATE][5] == pytest.approx(-0.05, abs=0.01)
     assert boxes[FRAME][2] == pytest.approx(-1.6, abs=0.01)
@@ -195,11 +202,14 @@ def test_bezel_wedges_lie_in_the_walls_cut_edge(built):
     frame, bezel = built[FRAME], built[BEZEL]
     z = case.Z_SPLIT
     assert len(case.wedges(wedge)) == 4
+    # Over the I2C pocket the wall keeps its full top: no wedge, no cut.
     for solid in case.wedges(wedge):
         assert filled(bezel, solid) > 0.5 * volume(solid)
-        assert filled(frame, solid) == pytest.approx(0.0, abs=1e-6)
+        assert filled(frame, case._cut(solid, case.i2c_span())) == (
+            pytest.approx(0.0, abs=1e-6))
     for solid in case.wedges(cut):
-        assert filled(frame, solid) == pytest.approx(0.0, abs=1e-6)
+        assert filled(frame, case._cut(solid, case.i2c_span())) == (
+            pytest.approx(0.0, abs=1e-6))
     # In the wall at -y, mid-way: the wedge under the rim, the wall cut.
     y = case.Y0
     assert filled(bezel, _box(-10.0, y - 0.3, z - 0.3, -9.0, y - 0.01,

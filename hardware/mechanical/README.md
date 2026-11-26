@@ -10,6 +10,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `estop_m16.py` | spec of the M16 emergency stop button: dimensions, sources, estimates |
 | `m5dial.py` | spec of the M5Stack Dial: dimensions, sources, estimates |
 | `_gen_dial_base.py` | builds the two parts of a hand-held base for the M5Stack Dial with OpenCASCADE, checks their fit round dial, nut and cell, writes STEP and STL |
+| `_gen_bench.py` | builds the hardware test bench from the owner's photos as a GLB with named nodes for the video, `tools/video/cad/bench.glb` |
 | `_gen_knob.py` | builds a rotary knob round a fixed round display on the dial base's bottom part with OpenCASCADE, checks the fit of all its parts, writes STEP and STL |
 | `panel_7b.py` | spec of the panel board, the Waveshare ESP32-P4-WIFI6-Touch-LCD-7B: dimensions, sources, estimates |
 | `ina228_xt90.py` | spec of the INA228 current sensor module with 2 XT90PW connectors and of its case: dimensions, sources, estimates |
@@ -24,6 +25,10 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `_esp32_s3_lcd_185_data.py` | outlines, holes and the place and size of the parts of the ESP32-S3-Touch-LCD-1.85, written by `_measure_esp32_s3_lcd_185.py` |
 | `bearing_6704_2rs.py` | spec of the ball bearing 6704-2RS, 20 x 27 x 4mm |
 | `acrylic_disc.py` | spec of a clear acrylic disc, 49.5mm across and 2mm thick |
+| `supvan_t50m_pro.py` | spec of the Supvan KATASYMBOL T50M Pro label printer, measured from owner photos on millimetre paper |
+| `usbc_plug_breakout.py` | spec of a USB-C plug on a small breakout board with 4 wire pads, measured from owner photos |
+| `charger_boost_2s4s.py` | spec of the 2S to 4S USB-C boost charger board (print DDTCCRUB), measured from owner photos |
+| `pd_trigger_pd31.py` | spec of the purple USB-C PD3.1 trigger board, 5 to 48V, measured from owner photos |
 | `rp2350_can.py`, `ina3221_module.py`, `dcdc_buck_mini.py`, `usbc_pd_trigger.py` | specs of 4 module boards, part by part: Waveshare RP2350-CAN, INA3221 board, Mini560 buck converter, USB-C PD trigger board |
 | `matek_mbec12s.py` | spec of the Matek mBEC12S buck converter, 6V to 60V in |
 | `ina228_node.py` | layout of the remote INA228 sensor node: INA228 module, buck converter and display in place |
@@ -487,6 +492,124 @@ xvfb-run -a python3 hardware/mechanical/_gen_knob.py \
     --render hardware/mechanical/renders
 ```
 
+## Hardware test bench, for the video
+
+`_gen_bench.py` writes a 3D model of the hardware test bench, the rig the
+hwbench tooling drives, as one GLB with a named node per part. The video
+loads it from `tools/video/cad/bench.glb`. That folder is not in git,
+because the video tools write their GLB files there from their sources.
+The model is drawn from the owner's 8 photos of 2026-11-25.
+
+![Test bench](renders/parts/bench_iso.png)
+
+| | |
+| --- | --- |
+| ![From above](renders/parts/bench_top.png) | ![From the front](renders/parts/bench_front.png) |
+
+| Property | Value |
+| --- | --- |
+| Format | glTF 2.0 binary, 3.9MB |
+| Units | metres |
+| Up axis | +y, as glTF defines it |
+| Origin | the acrylic sheet's front left corner, on its top face |
+| Axes | +x to the right, -z away from the viewer, towards the panel and the wall |
+| Script's frame | mm, z up: GLB (x, y, z) = (x, z, -y) / 1000 |
+
+```sh
+pip install cadquery-ocp==8.0.1.1.0 trimesh numpy
+xvfb-run -a python3 hardware/mechanical/_gen_bench.py \
+    tools/video/cad/bench.glb --render hardware/mechanical/renders
+```
+
+Each node holds one mesh per colour, named `<node>_mesh<k>`. A node's
+origin is the pivot below, in the script's frame (mm, z up). The parts
+are the ones hwbench lists on the bench. "Model" means one of this
+repository's STEP models, at its documented size.
+
+| Node | Parent | Content | Size from | Pivot |
+| --- | --- | --- | --- | --- |
+| `bench` | | everything | | origin |
+| `sheet` | bench | clear acrylic sheet, 605 x 500 x 5 | photo estimate | origin |
+| `base_board` | bench | black board under the sheet, 463 x 392 x 18 | photo estimate | origin |
+| `panel` | bench | Waveshare ESP32-P4 7 inch, tilted 15 degrees on 2 legs | model `panel_7b.step`; tilt and legs estimated | (398, 447, 0) |
+| `iomcu` | bench | Waveshare RP2350-CAN on a blue screw-terminal carrier, 73 x 89, its long side towards the panel | model `rp2350_can.step`; carrier from the photo | (410, 352, 0) |
+| `injector` | bench | Waveshare RP2350-Zero touch injector, 23.5 x 18, pin headers | datasheet outline; parts drawn as boxes | (470, 236, 0) |
+| `ina3221` | bench | INA3221 module on a green perfboard, 50 x 40, in front of the carrier | model `ina3221_module.step`; perfboard estimated | (415, 280, 0) |
+| `servo` | bench | Hitec D485HW at the sheet's right edge | model `hitec_d485hw.step` | (600, 205, 0) |
+| `as5600` | servo | AS5600 encoder module over the servo's output | model `AS5600_Encoder_22.5x22.5mm.step` | (600, 198, 47) |
+| `imu` | servo | WIT BWT901CL beside the servo | model `wit_imu.step` | (575, 112, 0) |
+| `servo_gold` | bench | gold-coloured servo held down with tesa tape; its type is not known | drawn as `servo_standard.step` in gold | (326, 318, 0) |
+| `instruments` | bench | group | | origin |
+| `logic_analyzer` | instruments | Kingst LA2016, 95 x 55 x 23 | datasheet | (342, 260, 0) |
+| `supplies` | bench | group | | origin |
+| `supply_pd_mini` | supplies | WeAct PD Power Mini, 61 x 40 | model `PD_Buck_WeAct_PDPowerMiniV1_61x40mm.step` | origin |
+| `supply_buck` | supplies | blue buck module, 22 x 17 | photo estimate | origin |
+| `supply_usbc_board` | supplies | USB-C board with a red LED, 25 x 15 | photo estimate | origin |
+| `unknown_box` | bench | black vented box with red LEDs, 70 x 115 x 35; what it is is not known | photo estimate | (105, 362, 0) |
+| `host_pi5` | unknown_box | Raspberry Pi 5, 85 x 56, under a clear cover, lying on the box | board from Raspberry Pi's drawing; cover estimated | (105, 362, 35) |
+| `usb_hub_1` | bench | black USB hub, 30 x 120 x 22 | photo estimate | (162, 350, 0) |
+| `usb_hub_2` | bench | black cylindrical USB hub, 24 across, 115 long | photo estimate | (192, 350, 12) |
+| `ring_lamp` | bench | ring lamp facing down, 260 across, opening 200, 22 thick | estimate from its reflection | (330, 150, 600) |
+| `camera` | bench | group: the camera rig | | origin |
+| `camera_clamp` | camera | clamp on the sheet's front edge | photo estimate | (480, 0, 0) |
+| `camera_pole` | camera | pole with a foam grip, leaning back | photo estimate | (480, -16, 30) |
+| `camera_arm` | camera | ball arm with its knob | photo estimate | (452, 70, 330) |
+| `camera_base` | camera | EMEET PIXY's base, 53 across, hanging under its mount | 53 x 53 x 73 over all, maker's listing; the split into base, yoke and head estimated | (425, 135, 345) |
+| `camera_pan` | camera_base | the yoke | as above | (425, 135, 325) |
+| `camera_tilt` | camera_pan | the head, 43 across and 50 wide, 2 lenses, 30 degrees off the vertical | as above | (425, 135, 293.5) |
+
+To turn the camera, rotate `camera_pan` about the GLB's y axis and
+`camera_tilt` about its x axis. Both turn about their own origins.
+
+Scale: the panel and the Pico-sized RP2350-CAN set it. The panel's glass
+is 164.3 x 99.2mm (`panel_7b.step`), and the RP2350-CAN is 51 x 21mm. In
+the near top-down photo, the panel's long side is 415 of 2000 pixels:
+2.53 pixels per mm. At that scale the carrier under the RP2350-CAN
+measures 89 x 73mm in the side photo.
+
+Limits:
+
+- Every place on the sheet is read from the photos at that scale and is
+  an estimate. Perspective is not corrected, so places are within about
+  ±20mm. Neither the sheet's far edge nor the black board's is fully in
+  a photo.
+- hwbench reports the gold block taped down with tesa strips as a
+  servo of unknown type, and the black box under the Pi 5 as unknown.
+  The purple USB-C board's role is not known.
+- The camera pans -150 to +150 degrees and tilts -90 to +90 degrees
+  (hwbench's records). Its mount and height are not measured.
+- hwbench records no measured size or place on the rig.
+- The EMEET PIXY's listed size is 53 x 53 x 73mm; another listing gives
+  56 x 43 x 22mm, probably for the camera head alone. The model takes
+  the first.
+- The ring lamp's reflection is the white ring in the photos. Its size,
+  height and place are estimates, and its mount is not drawn.
+- Not drawn: cables, the cabinet, the monitor, the soldering station, the
+  light tent, the grey box with a diamond pattern on the desk beside the
+  sheet.
+
+Sources: Kingst LA2016, 95 x 55 x 23mm (Core Electronics, CNX Software);
+EMEET PIXY, 53 x 53 x 73mm (Mighty Gadget); Waveshare RP2350-Zero,
+23.5 x 18mm (Waveshare).
+
+## Parts measured on millimetre paper
+
+Four parts are modelled from owner photos on millimetre paper
+(2026-11-25). Each spec's docstring lists its sources, the scale, the
+height correction and every estimated value.
+
+| File | Content | Size | Within |
+| --- | --- | --- | --- |
+| `parts/supvan_t50m_pro.step` | Supvan KATASYMBOL T50M Pro label printer: lid and base with the joint, sloping top, ribbed grip, orange lid lever, USB-C socket, label slit, control panel with power and print buttons and the LED bar, 4 feet, end slot; 87 solids | 120.0 x 86.3 x 56.0mm over the feet; the lever 3mm past one side | about 2mm |
+| `pcb/usbc_plug_breakout.step` | USB-C plug on a green breakout board: steel shell with the black insulator, black collar with steel bands, 24 tails on 12 pads each side, 4 wire pads (G, D+, D-, one unlabelled), R1 (0603); 76 solids | 15.4mm long; board 4.6 x 7.7mm behind the collar | about 0.1mm in plan |
+| `pcb/charger_boost_2s4s.step` | 2S to 4S USB-C boost charger, variant 4S 1A: USB-C socket, inductor, diode, 2 SOP-8 chips, shunt R100, capacitors, 2 LEDs, BAT and GND slotted pads, 2 holes of 3.1mm, print of both sides with the 2S/3S/4S and 1A/2A/4A jumpers; 225 solids | 17.9 x 36.8 x 1.6mm; socket 1.4mm past the edge | about 0.2mm in plan |
+| `pcb/pd_trigger_pd31.step` | purple USB-C PD3.1 trigger, low-voltage model: USB-C socket, 2 x 2mm chip, chip parts, jumper pads 1 to 3, + and - holes 7.9mm apart, the underside's voltage table (A: 5 to 20V, B: 5 to 48V); 110 solids | 13.0 x 10.0 x 1.0mm; socket 1.5mm past the edge | about 0.15mm in plan |
+
+Heights are read from edge-on photos where the owner took one (the
+charger, the PD trigger); the printer's from its side photo; the plug
+board's thickness and collar height are estimated. The printer's
+dimensions are not published by Supvan as far as a web search found.
+
 ## Bench enclosure
 
 The bench's enclosure, designed in Onshape by the owner: `case_front`, a
@@ -653,7 +776,7 @@ frame.
 
 | Part | Size, mm | From |
 | --- | --- | --- |
-| Board | 80.1 x 48.6 x 1.6, corners 2.4; 4 screw holes of 3.05 in tinned rings of 5.1, 70.15 x 38.8 apart | P; thickness O |
+| Board | 80.1 x 48.6 x 1.6, corners 2.4; 4 screw holes of 3.05 in tinned rings of 5.1, 70.65 x 38.8 apart | P; the 70.65 the owner's correction after a printed case (P gave 70.15); thickness O |
 | Slots through the board | 42 of 2.2 x 0.9: rows of 12, 6 and 3 slanted 45 degrees at 2.95 pitch, 5 along the board, 8 under each connector | P |
 | XT90PW-M, pin half | housing 20.8 x 9.9, 20.7 long, 25.7 with the rear plate; 2.25 past the board's edge | W, P |
 | XT90PW-F, socket half | collar 20.8 x 9.9 and 7.8 long, nose 19.2 x 8.3 and 11.2 long, 24.0 with the rear plate; 1.05 past the board's edge | W, P |
