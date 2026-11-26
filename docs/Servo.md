@@ -2415,9 +2415,8 @@ restart. The SERVO lists carry no id rows; the debug console sets it
 - Without an active servo every run goes to its log folder,
   `ATESTnnn.CSV` and the like.
 - The result cards print the name the logger wrote, and GRAPH opens that
-  file in that folder. Current limitation: LOGS keeps 24 bytes of a
-  folder, so for an id of 17 or more characters GRAPH names the file as
-  missing.
+  file in that folder. A folder holds up to 31 characters, so every id up
+  to 23 characters opens whole.
 - NEW ID makes the next id from ID PREFIX (`srv_pfx`, default `SERVO`)
   and the highest serial on the card under any prefix, and makes its
   folder at once: two NEW IDs give two ids. A fresh card starts at

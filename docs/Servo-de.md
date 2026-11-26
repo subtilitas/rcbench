@@ -2566,9 +2566,8 @@ setzt es (unten).
 - Ohne aktives Servo geht jeder Lauf in seinen Log-Ordner,
   `ATESTnnn.CSV` und so weiter.
 - Die Ergebniskarten zeigen den Namen, den der Logger schrieb, und GRAFIK
-  öffnet diese Datei in diesem Ordner. Derzeitige Einschränkung: LOGS
-  behält 24 Bytes eines Ordners, daher meldet GRAFIK bei einer ID ab 17
-  Zeichen die Datei als fehlend.
+  öffnet diese Datei in diesem Ordner. Ein Ordner fasst bis zu 31 Zeichen,
+  daher öffnet sich jede ID bis 23 Zeichen vollständig.
 - NEW ID bildet die nächste ID aus ID PREFIX (`srv_pfx`, Vorgabe `SERVO`)
   und der höchsten Seriennummer auf der Karte unter jedem Präfix und legt
   den Ordner sofort an: zwei NEW ID ergeben zwei IDs. Eine neue Karte
