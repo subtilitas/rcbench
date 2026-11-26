@@ -98,6 +98,30 @@ RUN_PREFIXES = ("ATEST", "LIMIT", "SERVO", "MOTOR", "SUPPL", "RUDDR",
 RUN_NAME = re.compile("(" + "|".join(RUN_PREFIXES)
                       + r")(\d{3})(?:_.+)?\.(CSV|TXT)", re.S | re.I)
 
+# A labelled servo's folder (servo_id.h, servo_name.h): `Servos/<id>`, the id
+# a prefix of 1 to 17 characters of A-Z, 0-9, space, "-", "_" and "." with no
+# space at either end and no "." at the start, a "-" and a serial of 5
+# characters of 0-9 and A-Z, in any case; and its run names.
+SERVOS = "Servos"
+SERVO_ID = re.compile(r"(?=.{7,23}$)(?![ .])[A-Z0-9 _.\-]{0,16}[A-Z0-9_.\-]"
+                      r"-[0-9A-Z]{5}", re.S | re.I)
+SERVO_RUN = re.compile(r"(limit run|rudder auto|automatic test|servo run)"
+                       r"_\d{3}\.(csv|txt)", re.S | re.I)
+
+
+def servo_dir(path: str) -> bool:
+    """Whether a folder is a servo's id folder (servo_dir_parse).
+
+    Args:
+        path: The folder from the root.
+
+    Returns:
+        True for `Servos/<id>` in any case.
+    """
+    head, _, tail = path.partition("/")
+    return fold(head) == fold(SERVOS) and bool(SERVO_ID.fullmatch(tail))
+
+
 REASONS = {400: "Bad Request", 403: "Forbidden", 404: "Not Found",
            409: "Conflict", 412: "Precondition Failed",
            413: "Content Too Large", 415: "Unsupported Media Type",
@@ -255,6 +279,9 @@ def kind_of(dirpath: str, name: str, is_dir: bool) -> str:
     path = f"{dirpath}/{name}" if dirpath else name
     if any(fold(path) == fold(f) for f in FAULT_FILES):
         return "FAULT"
+    sm = SERVO_RUN.fullmatch(name)
+    if sm and servo_dir(dirpath):
+        return "RUN" if sm.group(2).lower() == "csv" else "REPORT"
     m = RUN_NAME.fullmatch(name)
     if m and int(m.group(2)) >= 1:
         return "RUN" if m.group(3).upper() == "CSV" else "REPORT"
@@ -460,10 +487,12 @@ def place_of(dirpath: str, name: str, is_dir: bool) -> str:
         is_dir: A folder.
 
     Returns:
-        FIXED, LOCKED, FAULT or FREE.
+        SERVO, FIXED, LOCKED, FAULT or FREE.
     """
     path = f"{dirpath}/{name}" if dirpath else name
     if is_dir:
+        if fold(path) == fold(SERVOS) or servo_dir(path):
+            return "SERVO"
         if path and any(within(path, d) for d in BENCH_DIRS):
             return "FIXED"
         return "FREE"
@@ -1169,6 +1198,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         place = place_of(folder, name, is_dir)
         if op != "new":
             if place == "FIXED" and op in ("rename", "move"):
+                raise Refused("FIXED")
+            if place == "SERVO" and op in ("rename", "move", "delete"):
                 raise Refused("FIXED")
             if place == "LOCKED":
                 raise Refused("LOCKED")

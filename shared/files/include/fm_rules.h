@@ -17,6 +17,13 @@
  *           BENCH/YGE, BENCH/YGE/CONF, BENCH/BALANCE, USER, USER/LOGS), the two log
  *           folders SETUP > SD CARD names and every folder above them: no
  *           RENAME, MOVE or DELETE.  What they hold is the person's.
+ *   SERVO   `Servos` and each servo's id folder in it (servo_dir_parse():
+ *           `Servos/KST_X10-0000A`): no RENAME, MOVE or DELETE, DELETE
+ *           refused even when empty.  The folder's name is the id on a
+ *           label, and the highest one is the count of ids handed out.  A
+ *           folder in `Servos` that is no id (`Servos/notes`), and every
+ *           file in an id folder, runs and the analyzer's `trend_*.csv`
+ *           and `baseline.txt` alike, are FREE.
  *   LOCKED  the programmers' records, BENCH/KST/CONF/KST.TXT and KST.NEW,
  *           BENCH/HITEC/CONF/HITEC.TXT and HITEC.NEW,
  *           BENCH/ESCW/CONF/ESCW.TXT and ESCW.NEW: INFO only.  A hand edit can
@@ -76,7 +83,9 @@ typedef enum {
     FM_PLACE_FREE = 0,
     FM_PLACE_FIXED,
     FM_PLACE_LOCKED,
-    FM_PLACE_FAULT
+    FM_PLACE_FAULT,
+    FM_PLACE_SERVO,
+    FM_PLACE_COUNT
 } fm_place_t;
 
 /**
@@ -207,6 +216,10 @@ fm_err_t fm_path_err(fm_path_t r);
 
 /**
  * @brief The kind of @p name in folder @p dir.
+ *
+ * In a servo's id folder a name servo_run_parse() takes is a run
+ * (`limit run_000.csv`) or its report (`limit run_000.txt`); elsewhere the
+ * same name is a CSV or a text file.
  * @param dir     the folder, a path from the root
  * @param name    the entry's name
  * @param is_dir  the entry is a folder

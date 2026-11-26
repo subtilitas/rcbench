@@ -26,6 +26,7 @@
 #include "log_name.h"
 #include "log_select.h"
 #include "log_viewer_screen.h"
+#include "servo_name.h"
 #include "text_view.h"
 #include "ui_screen.h"
 #include "ui_text.h"
@@ -612,7 +613,7 @@ int fs_bar_scroll_at(int i, int top)
 /**
  * @brief Whether OPEN hands entry @p e of folder @p dir to LOGS: a .csv
  *        file LOGS' list holds (log_select_lists()) in the folder of one of
- *        its tabs.  A report LOGS lists too (log_report_number()) opens in
+ *        its tabs or in a servo's id folder (servo_dir_parse()).  A report LOGS lists too (log_report_number()) opens in
  *        the text viewer, as LOGS' own OPEN on it does.
  * @param dir  the entry's folder
  * @param e    the entry
@@ -621,7 +622,8 @@ int fs_bar_scroll_at(int i, int top)
 static bool logs_shows(const char *dir, const fm_entry_t *e)
 {
     log_viewer_tab_t tab;
-    return !e->is_dir && log_viewer_tab_of(dir, &tab)
+    return !e->is_dir
+           && (log_viewer_tab_of(dir, &tab) || servo_dir_parse(dir, NULL, 0u))
            && log_select_lists(e->name) && log_report_number(e->name) < 0;
 }
 
@@ -708,17 +710,26 @@ static void start_job(fm_err_t err, const char *name)
 
 /**
  * @brief OPEN on a file LOGS shows: LOGS, on that file's tab, with it
- *        open.  A file LOGS' list does not hold now, one gone from the
+ *        open; a CSV of a servo's id folder read from that folder.  A file LOGS' list does not hold now, one gone from the
  *        card since this list was read, stays here with FM_E_NOT_FOUND.
  * @param e  the entry
  */
 static void open_in_logs(const fm_entry_t *e)
 {
+    const fm_tree_t *here = &s.pane[s.active];
     log_viewer_tab_t tab;
-    const log_viewer_show_t r =
-        log_viewer_tab_of(s.pane[s.active].dir, &tab)
-            ? log_viewer_show(tab, e->name, s.pane[s.active].mount)
-            : LOG_SHOW_NOT_LISTED;
+    servo_kind_t kind = SERVO_KIND_COUNT;
+    log_viewer_show_t r;
+    if (log_viewer_tab_of(here->dir, &tab)) {
+        r = log_viewer_show(tab, e->name, here->mount);
+    } else {
+        /* A servo's folder, read where it is: an ARMED run on BENCH's
+         * tab, as the AUTO LOG FOLDER's runs, every other CSV on USER's. */
+        (void)servo_run_parse(e->name, &kind, NULL);
+        r = log_viewer_show_in((kind == SERVO_KIND_RUN) ? LOG_TAB_BENCH
+                                                        : LOG_TAB_USER,
+                               here->dir, e->name, here->mount);
+    }
     if (r == LOG_SHOW_OTHER_CARD) {
         fs_say_err(FM_ERR_CARD_GONE, e->name);
         return;

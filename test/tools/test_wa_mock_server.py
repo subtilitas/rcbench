@@ -500,3 +500,21 @@ def test_a_move_takes_a_name_of_63_bytes_that_a_save_refuses(api):
                                        "to": f"USER/LOGS/{name}", "dir": 0})
     assert (s, body["path"]) == (200, f"USER/LOGS/{name}")
     assert api.json("PUT", f"/api/file?path={name}", b"x")[0] == 400
+
+
+def test_servo_folders_are_servo_and_their_runs_runs():
+    """Servos and its id folders: SERVO; runs and reports in an id folder."""
+    assert m.place_of("", "Servos", True) == "SERVO"
+    assert m.place_of("servos", "kst x-00001", True) == "SERVO"
+    assert m.place_of("Servos", "KST X10 HV WING L-ZZZZZ", True) == "SERVO"
+    assert m.place_of("Servos", "ABCDEFGHIJKLMNOPQR-00000", True) == "FREE"
+    assert m.place_of("Servos", "notes", True) == "FREE"
+    assert m.place_of("Servos", ".X-00001", True) == "FREE"
+    assert m.place_of("Servos/KST X-00001", "limit run_000.csv",
+                      False) == "FREE"
+    assert m.kind_of("Servos/KST X-00001", "limit run_000.csv",
+                     False) == "RUN"
+    assert m.kind_of("Servos/KST X-00001", "automatic test_999.txt",
+                     False) == "REPORT"
+    assert m.kind_of("Servos/KST X-00001", "baseline.txt", False) == "TEXT"
+    assert m.kind_of("USER/LOGS", "limit run_000.csv", False) == "CSV"

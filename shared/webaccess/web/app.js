@@ -363,7 +363,7 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
       if (e.p === 'LOCKED') {
         return TX.locked;
       }
-      return e.p === 'FIXED' ? TX.fixed : '';
+      return (e.p === 'FIXED' || e.p === 'SERVO') ? TX.fixed : '';
     }
 
     function heading(p) {

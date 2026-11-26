@@ -193,9 +193,11 @@ static const char *state_word(const fm_entry_t *e)
     }
     switch ((fm_place_t)e->place) {
     case FM_PLACE_LOCKED: return TR(FM_LOCKED);
-    case FM_PLACE_FIXED:  return TR(FM_FIXED);
+    case FM_PLACE_FIXED:
+    case FM_PLACE_SERVO:  return TR(FM_FIXED);
     case FM_PLACE_FAULT:
     case FM_PLACE_FREE:
+    case FM_PLACE_COUNT:
     default:              return NULL;
     }
 }
@@ -431,7 +433,9 @@ static const char *rule_words(const fm_entry_t *e)
     case FM_PLACE_FIXED:  return TR(FM_RULE_FIXED);
     case FM_PLACE_LOCKED: return TR(FM_RULE_LOCKED);
     case FM_PLACE_FAULT:  return TR(FM_RULE_FAULT);
+    case FM_PLACE_SERVO:  return TR(FM_RULE_SERVO);
     case FM_PLACE_FREE:
+    case FM_PLACE_COUNT:
     default:              return TR(FM_RULE_FREE);
     }
 }

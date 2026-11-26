@@ -153,7 +153,9 @@ static fm_err_t target_path(fm_job_t *job, const fm_bench_t *bench,
     case FM_PLACE_FAULT:
         return FM_ERR_FIXED;
     case FM_PLACE_FIXED:
+    case FM_PLACE_SERVO:
     case FM_PLACE_FREE:
+    case FM_PLACE_COUNT:
     default:
         break;
     }

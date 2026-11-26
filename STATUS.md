@@ -286,6 +286,15 @@ cursor (`shared/ui/ui_textkey_cursor.c`; `test_textkey_cursor`, `test_files_ops`
 `->`, a tap in the field, typing and DEL at the cursor, a window of 48 characters that
 follows it, RENAME of a file starting before the last full stop.
 
+A labelled servo's folders (`test_fm_servo`, `test_files_open`, `test_wa_api`,
+`test_wa_api_write`): `Servos` and each id folder in it are the place SERVO, with no RENAME,
+MOVE or DELETE, DELETE also when empty; a folder that is no id and every file inside stay
+free; `limit run_000.csv` to `servo run_999.csv` and their reports are runs and reports in an
+id folder only; OPEN on a CSV there opens LOGS, read from that folder, in the import view
+(LOGS' presets follow main's names). DELETE of a servo run's CSV leaves its report. A file the
+logger has open in an id folder is busy as `log_marks_busy()` reads the marks; the marks of a
+servo folder's runs come with the filing slice.
+
 The requests run on the panel's task `cardjob` (`firmware/panel/main/panel_files.c`), not
 host-tested; after each job the logger forgets its folders' numbering
 (`log_series_forget_all()` in `shared/logfile/log_take.c`, `test_log_take`), so its next
@@ -1852,7 +1861,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 683 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 684 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1924,7 +1933,7 @@ The host suite is 683 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_link_restart`, `test_logview`, `test_logview_preset`, `test_logview_graph`, `test_logview_time`, `test_logview_report`, `test_graph_key`, `test_logview_plot`,
 `test_logview_rank`, `test_logview_pages`, `test_logview_tabs`, `test_logview_delete`,
 `test_logview_touch`, `test_logview_layout`, `test_logview_row`, `test_log_name`,
-`test_log_take`, `test_card_tree`, `test_fm_tree`, `test_fm_ops`, `test_fm_logname`, `test_fm_match`,
+`test_log_take`, `test_card_tree`, `test_fm_tree`, `test_fm_ops`, `test_fm_servo`, `test_fm_logname`, `test_fm_match`,
 `test_fm_recheck`, `test_fm_req`, `test_files_screen`, `test_files_ops`, `test_files_open`,
 `test_files_view`, `test_files_edit`, `test_files_save`, `test_files_changed`,
 `test_files_rescan`, `test_logs_strip`, `test_textkey_editor`, `test_textkey_see`,

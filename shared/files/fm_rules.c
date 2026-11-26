@@ -12,6 +12,7 @@
 
 #include "card_tree.h"
 #include "log_name.h"
+#include "servo_name.h"
 
 /** @brief The journal's name, KST.TXT (KST_CARD_STEM of kst_card.h, which
  *         this layer does not include), as the panel writes it. */
@@ -180,6 +181,17 @@ bool fm_path_within(const char *outer, const char *inner)
 }
 
 /**
+ * @brief Whether folder @p path is `Servos` or a servo's id folder in it,
+ *        case folded: the folders whose names are the ids on the labels.
+ * @param path  the folder's path
+ * @return true for one of them
+ */
+static bool servo_kept(const char *path)
+{
+    return fm_same_path(path, CARD_SERVOS) || servo_dir_parse(path, NULL, 0u);
+}
+
+/**
  * @brief Whether folder @p path is one of the bench's or a log folder, or
  *        stands above one.
  * @param bench  the log folders in force; may be NULL
@@ -223,6 +235,9 @@ fm_place_t fm_place_of(const fm_bench_t *bench, const char *dir,
         return FM_PLACE_FREE;
     }
     if (is_dir) {
+        if (servo_kept(path)) {
+            return FM_PLACE_SERVO;
+        }
         return fixed_dir(bench, path) ? FM_PLACE_FIXED : FM_PLACE_FREE;
     }
     if (fm_same_path(dir, CARD_KST_CONF)
@@ -327,6 +342,14 @@ fm_err_t fm_allowed(const fm_bench_t *bench, fm_op_t op, const char *dir,
             return FM_ERR_FIXED;
         }
         break;
+    case FM_PLACE_SERVO:
+        /* An id folder is the counter of the labels: deleting the highest
+         * would hand its id out again, even empty, and a new name would
+         * part the folder from its label. */
+        if (op == FM_OP_MOVE || op == FM_OP_RENAME || op == FM_OP_DELETE) {
+            return FM_ERR_FIXED;
+        }
+        break;
     case FM_PLACE_LOCKED:
         if (op != FM_OP_INFO) {
             return FM_ERR_LOCKED;
@@ -340,6 +363,7 @@ fm_err_t fm_allowed(const fm_bench_t *bench, fm_op_t op, const char *dir,
         break;
     }
     case FM_PLACE_FREE:
+    case FM_PLACE_COUNT:
     default:
         break;
     }
@@ -409,6 +433,11 @@ fm_kind_t fm_kind_of(const char *dir, const char *name, bool is_dir)
                 }
             }
         }
+    }
+    bool report = false;
+    if (dir != NULL && servo_dir_parse(dir, NULL, 0u)
+        && servo_run_parse(name, NULL, &report) >= 0) {
+        return report ? FM_KIND_REPORT : FM_KIND_RUN;
     }
     if (log_run_number(name) >= 0) {
         return FM_KIND_RUN;

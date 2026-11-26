@@ -589,7 +589,7 @@ const char *const wa_web_hl_js[] = {
     NULL,
 };
 
-/** @brief write.js, 11612 bytes. */
+/** @brief write.js, 11659 bytes. */
 const char *const wa_web_write_js[] = {
     "var RcbWr = (function () {\n"
     "'use strict';\n"
@@ -655,6 +655,9 @@ const char *const wa_web_write_js[] = {
     "if ((e.p === 'FIXED' || e.p === 'FAULT') && what !== 'delete') {\n"
     "return TX['e.FIXED'];\n"
     "}\n"
+    "if (e.p === 'SERVO') {\n"
+    "return TX['e.FIXED'];\n"
+    "}\n"
     "if (what === 'move') {\n"
     "var o = c.st.panes[1 - c.st.active];\n"
     "if (!o || !o.list || o.path.toUpperCase() === s.p.path.toUpperCase()) {\n"
@@ -680,10 +683,10 @@ const char *const wa_web_write_js[] = {
     "ui.code.hidden = true;\n"
     "ui.bar.hidden = true;\n"
     "ui.go.hidden = false;\n"
-    "ui.go.disabled = false;\n"
+    "ui.go.disabled = false;\n",
     "ui.cancel.disabled = false;\n"
     "ui.box.hidden = false;\n"
-    "}\n",
+    "}\n"
     "function codeEnd() {\n"
     "ui.codeFor = null;\n"
     "ui.codeGo.disabled = false;\n"
@@ -772,9 +775,9 @@ const char *const wa_web_write_js[] = {
     "function etagOf(path, mount) {\n"
     "return c.queue(function () {\n"
     "return new Promise(function (done) {\n"
-    "var x = new XMLHttpRequest();\n"
+    "var x = new XMLHttpRequest();\n",
     "x.open('GET', '/api/info\?path=' + F.encPath(path) + '&dir=0&mount=' +\n"
-    "mount + '&etag=1');\n",
+    "mount + '&etag=1');\n"
     "x.onload = function () {\n"
     "var j;\n"
     "try {\n"
@@ -858,13 +861,13 @@ const char *const wa_web_write_js[] = {
     "}, function () {\n"
     "return { w: 'CLOSED' };\n"
     "});\n"
-    "}).then(function (a) {\n"
+    "}).then(function (a) {\n",
     "var next = RcbEd.codeNext(a.w, ui.codeFor === mine);\n"
     "if (next === 'DROP') {\n"
     "return;\n"
     "}\n"
     "codeEnd();\n"
-    "if (next === 'SAVE') {\n",
+    "if (next === 'SAVE') {\n"
     "mine.again();\n"
     "} else if (next === 'ASK') {\n"
     "ui.err.textContent = TX.codewrong;\n"
@@ -949,13 +952,13 @@ const char *const wa_web_write_js[] = {
     "var p = pane();\n"
     "named(TX.newfile, '', TX['new'], function (n, again) {\n"
     "put(F.join(p.path, n), mountOf(p), '', { 'If-None-Match': '*' })\n"
-    ".then(function (a) {\n"
+    ".then(function (a) {\n",
     "return a.ok \? after(F.fmt(TX.made, n)) : refused(a, again);\n"
     "});\n"
     "});\n"
     "}\n"
     "function rename() {\n"
-    "var s = selected();\n",
+    "var s = selected();\n"
     "named(TX.tkname, s.e.n, TX.rename, function (n, again) {\n"
     "post('rename', { from: F.encPath(F.join(s.p.path, s.e.n)),\n"
     "to: F.encPath(F.join(s.p.path, n)), dir: s.e.d \? 1 : 0,\n"
@@ -1018,10 +1021,10 @@ const char *const wa_web_write_js[] = {
     ".forEach(function (w) {\n"
     "row.appendChild(ui[w]);\n"
     "});\n"
-    "ui.file = c.el('input');\n"
+    "ui.file = c.el('input');\n",
     "ui.file.type = 'file';\n"
     "ui.file.hidden = true;\n"
-    "ui.file.addEventListener('change', function () {\n",
+    "ui.file.addEventListener('change', function () {\n"
     "if (ui.file.files && ui.file.files.length === 1) {\n"
     "upload(ui.file.files[0]);\n"
     "}\n"
@@ -1767,7 +1770,7 @@ const char *const wa_web_edit_js[] = {
     NULL,
 };
 
-/** @brief app.js, 17310 bytes. */
+/** @brief app.js, 17331 bytes. */
 const char *const wa_web_app_js[] = {
     "var RcbFm = (function () {\n"
     "'use strict';\n"
@@ -2054,7 +2057,7 @@ const char *const wa_web_app_js[] = {
     "if (e.p === 'LOCKED') {\n"
     "return TX.locked;\n"
     "}\n"
-    "return e.p === 'FIXED' \? TX.fixed : '';\n"
+    "return (e.p === 'FIXED' || e.p === 'SERVO') \? TX.fixed : '';\n"
     "}\n"
     "function heading(p) {\n"
     "var L = p.list;\n"
@@ -2128,8 +2131,8 @@ const char *const wa_web_app_js[] = {
     "u.up.textContent = p.path === '' \? cardName() : '\\u2039 ' + p.path;\n"
     "var paged = !!(L && L.total > 0 && (L.prev || L.next));\n"
     "u.prev.hidden = !paged;\n"
-    "u.next.hidden = !paged;\n"
-    "u.prev.disabled = !(L && L.prev);\n",
+    "u.next.hidden = !paged;\n",
+    "u.prev.disabled = !(L && L.prev);\n"
     "u.next.disabled = !(L && L.next);\n"
     "u.head.textContent = heading(p);\n"
     "var f = document.activeElement;\n"
@@ -2238,8 +2241,8 @@ const char *const wa_web_app_js[] = {
     "})();\n"
     "}\n"
     "function infoRow(t, key, value, warn) {\n"
-    "var tr = el('tr', warn \? 'warn' : '');\n"
-    "tr.appendChild(el('th', '', key));\n",
+    "var tr = el('tr', warn \? 'warn' : '');\n",
+    "tr.appendChild(el('th', '', key));\n"
     "tr.appendChild(el('td', '', value));\n"
     "t.appendChild(tr);\n"
     "}\n"
@@ -2312,8 +2315,8 @@ const char *const wa_web_app_js[] = {
     "return out;\n"
     "}\n"
     "function drawView() {\n"
-    "var n = view.L.s.length;\n"
-    "var top = Math.floor(ui.scroll.scrollTop / LH);\n",
+    "var n = view.L.s.length;\n",
+    "var top = Math.floor(ui.scroll.scrollTop / LH);\n"
     "var rows = Math.ceil(ui.scroll.clientHeight / LH) + 1;\n"
     "ui.vline.textContent = F.fmt(TX.line, Math.min(top + 1, n), n);\n"
     "if (top >= view.from && Math.min(top + rows, n) <= view.to &&\n"
@@ -2386,10 +2389,10 @@ const char *const wa_web_app_js[] = {
     "drawView();\n"
     "});\n"
     "}\n"
-    "function closeView() {\n"
+    "function closeView() {\n",
     "if (editor && editor.closing()) {\n"
     "return;\n"
-    "}\n",
+    "}\n"
     "ui.viewer.hidden = true;\n"
     "behind(false);\n"
     "viewSeq++;\n"
@@ -2466,8 +2469,8 @@ const char *const wa_web_app_js[] = {
     "ui.box.appendChild(card);\n"
     "root.appendChild(ui.box);\n"
     "ui.viewer = el('div', 'viewer');\n"
-    "ui.viewer.hidden = true;\n"
-    "var vh = el('div', 'vh');\n",
+    "ui.viewer.hidden = true;\n",
+    "var vh = el('div', 'vh');\n"
     "ui.vpath = el('span', 'vp');\n"
     "ui.vsize = el('span', '');\n"
     "ui.vline = el('span', '');\n"

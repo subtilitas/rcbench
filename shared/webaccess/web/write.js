@@ -117,6 +117,10 @@ var RcbWr = (function () {
       if ((e.p === 'FIXED' || e.p === 'FAULT') && what !== 'delete') {
         return TX['e.FIXED'];
       }
+      // A servo's folder: its name is the id on a label.
+      if (e.p === 'SERVO') {
+        return TX['e.FIXED'];
+      }
       if (what === 'move') {
         var o = c.st.panes[1 - c.st.active];
         if (!o || !o.list || o.path.toUpperCase() === s.p.path.toUpperCase()) {
