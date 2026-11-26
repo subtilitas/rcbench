@@ -467,6 +467,16 @@ history is in git.
 
 ### Changed
 
+- A servo label that cannot hold both the id's lines and DUT NAME shows
+  DUT NAME alone under or beside the code; the id stays in the code. DUT
+  NAME takes the largest face of 16x28, 12x24, 10x20, 8x16 and 6x12 that
+  holds it in 1 or 2 lines, else 6x12, cut. On a 25 x 25mm roll (200 x 184
+  dots) `WING LEFT` is one line of 10x20 and a 23-character DUT NAME one
+  184-dot line of 8x16. An empty DUT NAME keeps the id lines; rolls that
+  hold everything (40 x 30mm, 48 x 30mm, 30 x 20mm, 15 x 30mm,
+  25 x 100mm) are unchanged (`label_layout.c`; `test_label_layout`, 3 new
+  fixtures in `test/host/fixtures/label/`).
+
 - A settings file is 32,768 bytes at most, up from 24,576; one the panel
   writes is about 12,400. BACKUP's read buffer is 32,769 bytes.
 

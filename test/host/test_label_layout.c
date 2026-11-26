@@ -249,13 +249,128 @@ TEST_CASE(a_module_under_4_dots_is_too_small)
 
 TEST_CASE(lines_that_do_not_fit_go_from_the_bottom_then_join)
 {
-    /* 15 x 20mm: 32 dots under the code; prefix and serial as one line. */
-    CHECK_EQ(lay(15u, 20u, "KST_X10-0000A", "WING LEFT"), LABEL_OK);
+    /* 15 x 20mm: 32 dots under the code; without DUT NAME prefix and
+     * serial are one line. */
+    CHECK_EQ(lay(15u, 20u, "KST_X10-0000A", ""), LABEL_OK);
     CHECK(s_info.line[2].face == NULL);
     CHECK(s_info.line[3].face == NULL);
     CHECK(s_info.line[1].face == NULL);
     CHECK_STR_EQ(s_info.line[0].text, "KST_X10-0000A");
     CHECK(s_info.line[0].face == &gfx_font_8x16);
+    CHECK_DRAWN();
+    /* With DUT NAME it is DUT NAME alone, in 10x20. */
+    CHECK_EQ(lay(15u, 20u, "KST_X10-0000A", "WING LEFT"), LABEL_OK);
+    CHECK(s_info.line[0].face == NULL);
+    CHECK(s_info.line[1].face == NULL);
+    CHECK_STR_EQ(s_info.line[2].text, "WING LEFT");
+    CHECK(s_info.line[2].face == &gfx_font_10x20);
+    CHECK(s_info.line[3].face == NULL);
+    CHECK_DRAWN();
+}
+
+/**
+ * @brief Whether a drawn line reads @p s.
+ * @param s  the text
+ * @return true when one of the four lines is @p s
+ */
+static bool drawn(const char *s)
+{
+    for (unsigned i = 0u; i < LABEL_LINES; i++) {
+        if (s_info.line[i].face != NULL
+            && strcmp(s_info.line[i].text, s) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+TEST_CASE(a_25x25_label_shows_dut_name_under_the_code_not_the_id)
+{
+    /* 200 x 184 dots, version 1 at 6 dots: 22 dots under the code, one
+     * line of 10x20.  The id stays in the code. */
+    CHECK_EQ(lay(25u, 25u, "KST_X10-0000A", "WING LEFT"), LABEL_OK);
+    CHECK(s_info.stacked);
+    CHECK_EQ(s_info.version, 1);
+    CHECK_EQ(s_info.module, 6);
+    CHECK(s_info.line[0].face == NULL);
+    CHECK(s_info.line[1].face == NULL);
+    CHECK_STR_EQ(s_info.line[2].text, "WING LEFT");
+    CHECK(s_info.line[2].face == &gfx_font_10x20);
+    CHECK(s_info.line[3].face == NULL);
+    CHECK_EQ(s_info.line[2].x, 8);
+    CHECK_EQ(s_info.line[2].y, 4 + 150 + 4);
+    CHECK(!drawn("KST_X10-0000A"));
+    CHECK_DRAWN();
+}
+
+TEST_CASE(a_25x25_label_without_dut_name_shows_the_id)
+{
+    CHECK_EQ(lay(25u, 25u, "KST_X10-0000A", ""), LABEL_OK);
+    CHECK_STR_EQ(s_info.line[0].text, "KST_X10-0000A");
+    CHECK(s_info.line[0].face == &gfx_font_10x20);
+    CHECK(s_info.line[1].face == NULL);
+    CHECK(s_info.line[2].face == NULL);
+    CHECK_DRAWN();
+    /* Spaces alone are no DUT NAME. */
+    CHECK_EQ(lay(25u, 25u, "KST_X10-0000A", "   "), LABEL_OK);
+    CHECK_STR_EQ(s_info.line[0].text, "KST_X10-0000A");
+    CHECK(s_info.line[2].face == NULL);
+    CHECK_DRAWN();
+}
+
+TEST_CASE(a_25x25_label_holds_23_characters_of_dut_name_in_8x16)
+{
+    /* Version 2 at 5 dots: 26 dots under the code; 23 cells of 8x16 are
+     * the 184-dot column. */
+    CHECK_EQ(lay(25u, 25u, "KST_X10_HV_WING_L-ZZZZZ",
+                 "AILERON LEFT OUTBOARD 2"), LABEL_OK);
+    CHECK_EQ(s_info.version, 2);
+    CHECK_EQ(s_info.module, 5);
+    CHECK(s_info.line[0].face == NULL);
+    CHECK(s_info.line[1].face == NULL);
+    CHECK_STR_EQ(s_info.line[2].text, "AILERON LEFT OUTBOARD 2");
+    CHECK(s_info.line[2].face == &gfx_font_8x16);
+    CHECK_EQ(s_info.line[2].w, 184);
+    CHECK(s_info.line[3].face == NULL);
+    CHECK_DRAWN();
+    /* 24 characters: one line of 6x12, as two lines do not fit. */
+    CHECK_EQ(lay(25u, 25u, "KST_X10_HV_WING_L-ZZZZZ",
+                 "AILERON LEFT OUTBOARD 2B"), LABEL_OK);
+    CHECK_STR_EQ(s_info.line[2].text, "AILERON LEFT OUTBOARD 2B");
+    CHECK(s_info.line[2].face == &gfx_font_6x12);
+    CHECK(s_info.line[3].face == NULL);
+    CHECK_DRAWN();
+    /* Past 30 cells of 6x12: the first line, broken at a space. */
+    CHECK_EQ(lay(25u, 25u, "KST_X10_HV_WING_L-ZZZZZ",
+                 "LEFT WING AILERON OUTBOARD SERVO"), LABEL_OK);
+    CHECK_STR_EQ(s_info.line[2].text, "LEFT WING AILERON OUTBOARD");
+    CHECK(s_info.line[2].face == &gfx_font_6x12);
+    CHECK(s_info.line[3].face == NULL);
+    CHECK_DRAWN();
+}
+
+TEST_CASE(labels_that_hold_everything_keep_the_id_and_dut_name)
+{
+    const uint8_t rolls[][2] = { { 40u, 30u }, { 48u, 30u }, { 25u, 100u },
+                                 { 30u, 20u }, { 15u, 30u } };
+    for (size_t r = 0u; r < sizeof rolls / sizeof rolls[0]; r++) {
+        CHECK_EQ(lay(rolls[r][0], rolls[r][1], "KST_X10-0000A", "WING LEFT"),
+                 LABEL_OK);
+        CHECK_STR_EQ(s_info.line[0].text, "KST_X10-");
+        CHECK_STR_EQ(s_info.line[1].text, "0000A");
+        CHECK_STR_EQ(s_info.line[2].text, "WING LEFT");
+        CHECK(s_info.line[2].face == &gfx_font_8x16);
+        CHECK_DRAWN();
+    }
+}
+
+TEST_CASE(the_test_label_keeps_its_version_where_the_roll_is_small)
+{
+    const label_roll_t roll = { 25u, 25u };
+    s_bmp = (label_bmp_t){ .bits = s_bits, .cap = sizeof s_bits };
+    CHECK_EQ(label_layout_test(&roll, "0.23.17", &s_bmp, &s_info), LABEL_OK);
+    CHECK(s_info.line[0].face != NULL);
+    CHECK(s_info.line[2].face == NULL);
     CHECK_DRAWN();
 }
 
@@ -363,13 +478,15 @@ TEST_CASE(ids_with_spaces_and_of_7_and_23_characters_draw)
                                 "KST X10 HV WING L-ZZZZZ",
                                 "KST_X10_HV_WING_L-ZZZZZ" };
     const uint8_t rolls[][2] = { { 40u, 30u }, { 48u, 30u }, { 30u, 20u },
-                                 { 15u, 30u }, { 25u, 100u } };
+                                 { 15u, 30u }, { 25u, 100u },
+                                 { 25u, 25u } };
     for (size_t i = 0u; i < sizeof ids / sizeof ids[0]; i++) {
         for (size_t r = 0u; r < sizeof rolls / sizeof rolls[0]; r++) {
             CHECK_EQ(lay(rolls[r][0], rolls[r][1], ids[i],
                          "AILERON RIGHT OUTBOARD"), LABEL_OK);
             CHECK_DRAWN();
-            CHECK(s_info.line[1].face != NULL || s_info.line[0].face != NULL);
+            CHECK(s_info.line[1].face != NULL || s_info.line[0].face != NULL
+                  || s_info.line[2].face != NULL);
         }
     }
 }
@@ -419,6 +536,11 @@ int main(void)
     RUN(the_module_follows_the_roll);
     RUN(a_module_under_4_dots_is_too_small);
     RUN(lines_that_do_not_fit_go_from_the_bottom_then_join);
+    RUN(a_25x25_label_shows_dut_name_under_the_code_not_the_id);
+    RUN(a_25x25_label_without_dut_name_shows_the_id);
+    RUN(a_25x25_label_holds_23_characters_of_dut_name_in_8x16);
+    RUN(labels_that_hold_everything_keep_the_id_and_dut_name);
+    RUN(the_test_label_keeps_its_version_where_the_roll_is_small);
     RUN(the_prefix_takes_the_largest_face_that_holds_it);
     RUN(dut_name_takes_two_lines_of_8x16_broken_at_a_space);
     RUN(dut_name_that_needs_a_third_line_is_6x12_and_cut);

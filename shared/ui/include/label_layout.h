@@ -2,7 +2,8 @@
  * @file label_layout.h
  * @brief The servo label: the QR (Quick Response) code of the servo id and,
  *        beside or under it, the id's prefix, its serial large and the DUT
- *        NAME, laid out for the loaded roll.
+ *        NAME, laid out for the loaded roll; DUT NAME alone where both do
+ *        not fit.
  *
  * The QR code holds the id's text and nothing else, at error correction
  * level M (raised where the version stays the same), versions 1 to 3, the
@@ -39,6 +40,24 @@
  * line in the largest face that holds both.  A line that no face holds is
  * cut to the 6x12 cells that fit.  The id splits at its last `-`; an id
  * without one is line 2 alone.
+ *
+ * Where the height drops a line of DUT NAME, the label holds DUT NAME
+ * alone and the id is in the code only: lines 1 and 2 are not drawn, and
+ * DUT NAME takes the largest of 16x28, 12x24, 10x20, 8x16, 6x12 that holds
+ * it in 1 or 2 lines, broken as above, and draws each of its characters;
+ * else 6x12 in the lines that fit, the rest cut.  An empty DUT NAME keeps
+ * the id lines.  The test label keeps its lines 1 and 2.  Per roll, for
+ * `KST_X10-0000A` and `WING LEFT`:
+ *
+ * | Roll | Dots | Code | Lines |
+ * | --- | --- | --- | --- |
+ * | 40 x 30mm, 48 x 30mm, 30 x 20mm | 320 x 224, 384 x 224, 240 x 144 | side by side | prefix, serial, DUT NAME |
+ * | 15 x 30mm, 25 x 100mm | 120 x 224, 200 x 784 | stacked | prefix, serial, DUT NAME |
+ * | 25 x 25mm | 200 x 184 | stacked, module 6, 22 dots under it | DUT NAME in 10x20; without it the id in 10x20 |
+ * | 15 x 20mm | 120 x 144 | stacked, module 4, 32 dots under it | DUT NAME in 10x20; without it the id in 8x16 |
+ *
+ * A 23-character id is version 2: on 25 x 25mm at module 5, with 26 dots
+ * under the code; a 23-character DUT NAME is one 184-dot line of 8x16.
  *
  * Pure C: no heap, no clock; the QR matrix and qrcodegen's work buffer are
  * in label_info_t, which the caller places.

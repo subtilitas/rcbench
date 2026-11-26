@@ -37,6 +37,7 @@ typedef struct {
     const char *head;  /**< line 1                                        */
     const char *big;   /**< line 2                                        */
     const char *dut;   /**< lines 3 and 4                                 */
+    bool dut_first;    /**< DUT NAME alone where it and the id do not fit  */
 } label_parts_t;
 
 /** @brief The text area: x from @c x to @c x_end, y from @c y to @c y_end. */
@@ -174,6 +175,38 @@ static int lines_needed(const char *s, int cpl)
 }
 
 /**
+ * @brief Set lines 3 and 4 to DUT NAME in @p face: the first broken at a
+ *        space or at the column's end, the second the rest, cut.
+ * @param l3     line 3
+ * @param l4     line 4
+ * @param s      DUT NAME, no leading space
+ * @param face   the face
+ * @param width  the column, dots
+ * @param lines  lines to fill, 1 or 2
+ */
+static void put_dut(label_line_t *l3, label_line_t *l4, const char *s,
+                    const gfx_font_t *face, int width, int lines)
+{
+    const int cpl = width / (int)face->width;
+    if (*s == '\0' || cpl < 1) {
+        return;
+    }
+    const size_t end = line_end(s, cpl);
+    label_line_t *const out[2] = { l3, l4 };
+    const char *part[2] = { s, skip_spaces(s + end) };
+    for (int i = 0; i < lines && i < 2; i++) {
+        const int cells = (i == 0) ? gfx_text_cells(s) - gfx_text_cells(s + end)
+                                   : gfx_text_cells(part[1]);
+        copy_cells(out[i]->text, part[i], imin(cells, cpl));
+        if (out[i]->text[0] != '\0') {
+            out[i]->face = face;
+            out[i]->w = (uint16_t)(gfx_text_cells(out[i]->text) * face->width);
+            out[i]->h = face->height;
+        }
+    }
+}
+
+/**
  * @brief DUT NAME in two lines at most: 8x16 where it needs two or fewer,
  *        else 6x12; the first broken at a space, the second the rest, cut.
  * @param l3     line 3
@@ -189,22 +222,41 @@ static void set_dut(label_line_t *l3, label_line_t *l4, const char *dut,
     if (lines_needed(s, width / (int)face->width) > 2) {
         face = FACE_MIN;
     }
-    const int cpl = width / (int)face->width;
-    if (*s == '\0' || cpl < 1) {
-        return;
-    }
-    const size_t end = line_end(s, cpl);
-    label_line_t *const out[2] = { l3, l4 };
-    const char *part[2] = { s, skip_spaces(s + end) };
-    for (int i = 0; i < 2; i++) {
-        const int cells = (i == 0) ? gfx_text_cells(s) - gfx_text_cells(s + end)
-                                   : gfx_text_cells(part[1]);
-        copy_cells(out[i]->text, part[i], imin(cells, cpl));
-        if (out[i]->text[0] != '\0') {
-            out[i]->face = face;
-            out[i]->w = (uint16_t)(gfx_text_cells(out[i]->text) * face->width);
-            out[i]->h = face->height;
+    put_dut(l3, l4, s, face, width, 2);
+}
+
+/**
+ * @brief DUT NAME without the id: the largest of 16x28, 12x24, 10x20, 8x16
+ *        and 6x12 that holds it in one or two lines of @p height and draws
+ *        each of its characters; else 6x12 in the lines that fit, cut.
+ * @param l3      line 3
+ * @param l4      line 4
+ * @param dut     DUT NAME
+ * @param width   the column, dots
+ * @param height  the room, dots
+ */
+static void set_dut_alone(label_line_t *l3, label_line_t *l4,
+                          const char *dut, int width, int height)
+{
+    const char *s = skip_spaces(dut);
+    const gfx_font_t *face = FACE_MIN;
+    for (size_t i = 0u; i < sizeof k_head / sizeof k_head[0]; i++) {
+        const int cpl = width / (int)k_head[i]->width;
+        if (cpl < 1) {
+            continue;
         }
+        const int n = lines_needed(s, cpl);
+        if (n <= 2 && n * ((int)k_head[i]->height + (int)LABEL_GAP)
+                          - (int)LABEL_GAP <= height
+            && label_face_draws(k_head[i], s)) {
+            face = k_head[i];
+            break;
+        }
+    }
+    const int lines = (height + (int)LABEL_GAP)
+                      / ((int)face->height + (int)LABEL_GAP);
+    if (lines > 0) {
+        put_dut(l3, l4, s, face, width, lines);
     }
 }
 
@@ -289,7 +341,22 @@ static void draw_lines(label_bmp_t *out, label_info_t *info,
     if (p->dut != NULL && p->dut[0] != '\0') {
         set_dut(&l[2], &l[3], p->dut, width);
     }
+    const bool dut_set = l[2].face != NULL;
+    const bool dut_two = l[3].face != NULL;
     shrink_lines(info, p, room);
+    /* A DUT NAME line the height dropped: the label cannot hold both, and
+     * DUT NAME takes the room alone; the code still carries the id. */
+    if (p->dut_first && dut_set
+        && (l[2].face == NULL || (dut_two && l[3].face == NULL))) {
+        label_line_t alone[2];
+        memset(alone, 0, sizeof alone);
+        set_dut_alone(&alone[0], &alone[1], p->dut, width, height);
+        if (alone[0].face != NULL) {
+            memset(l, 0, LABEL_LINES * sizeof l[0]);
+            l[2] = alone[0];
+            l[3] = alone[1];
+        }
+    }
     /* Side by side the block is centered beside the code; stacked it
      * starts right under the code, as long rolls leave room below. */
     int y = info->stacked ? room->y
@@ -386,6 +453,7 @@ label_err_t label_layout(const label_roll_t *roll, const label_text_t *t,
         .head = head,
         .big  = id + ((dash != NULL) ? (size_t)(dash - id) + 1u : 0u),
         .dut  = (t != NULL && t->dut != NULL) ? t->dut : "",
+        .dut_first = true,
     };
     return draw_label(roll, &p, out, info);
 }
@@ -403,6 +471,7 @@ label_err_t label_layout_test(const label_roll_t *roll, const char *version,
         .head = "RCBENCH",
         .big  = (version != NULL) ? version : "",
         .dut  = size,
+        .dut_first = false,
     };
     return draw_label(roll, &p, out, info);
 }

@@ -1837,8 +1837,10 @@ head row 351, and (319, 223) is column 223, head row 32 (`test_label_bitmap`).
 `shared/ui/label_layout.c` places the QR (Quick Response) code from the vendored qrcodegen
 1.8.0 (`third_party/qrcodegen`) at level M, versions 1 to 3, quiet zone 2 modules, beside or
 over the prefix, the serial and DUT NAME, for rolls of 15 to 48mm by 20 to 100mm
-(`test_label_layout`). `render_label` writes a label as a PNG in reading orientation; the host
-suite compares 8 labels with `test/host/fixtures/label/`, and `test/tools/test_label_qr.py`
+(`test_label_layout`). Where the height cannot hold the id's lines and DUT NAME, DUT NAME
+stands alone and the id is in the code only: on 25x25mm `WING LEFT` is one line of 10x20.
+`render_label` writes a label as a PNG in reading orientation; the host
+suite compares 11 labels with `test/host/fixtures/label/`, and `test/tools/test_label_qr.py`
 decodes their codes with OpenCV or zbarimg. Print quality and a scan of a printed label are
 not measured.
 
