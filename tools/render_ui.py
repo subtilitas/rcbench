@@ -80,6 +80,8 @@ SOURCES = [
     "test/host/render_imu.c",
     # The QR scanner: SETUP > SENSORS > SCANNER handed a view, SETUP CODE.
     "test/host/render_scanner.c",
+    # The label printer: SETUP > WIRELESS > PRINTER handed a view, SEARCH.
+    "test/host/render_printer.c",
     # The settings backup: its files on a folder in memory, the driver's
     # requests run between frames.
     "test/host/render_sbk.c",
@@ -212,6 +214,11 @@ SCREENS = {
     "servo-settings": ("servo-settings.png", "servo", "dark"),
     "servo-label-rows": ("servo-label-rows.png", "servo", "dark"),
     "servo-label-pick": ("servo-label-pick.png", "servo", "dark"),
+    # SERVO LABEL's PRINT row: the printer bound and idle; a label in
+    # SENDING; printed, the row then PRINT AGAIN.
+    "servo-label-print": ("servo-label-print.png", "servo", "dark"),
+    "servo-label-printing": ("servo-label-printing.png", "servo", "dark"),
+    "servo-label-printed": ("servo-label-printed.png", "servo", "dark"),
     # TRIM's keypad, signed: the +/- key, -25us typed.
     "servo-trim-keypad": ("servo-trim-keypad.png", "servo", "dark"),
     "servo-sweep-page": ("servo-sweep-page.png", "servo", "dark"),
@@ -740,6 +747,15 @@ SCREENS = {
     "setup-sensors": ("setup-sensors.png", "setup", "dark"),
     # SENSORS > SCANNER: READY with a line taken, NOT CONNECTED, NO ANSWER;
     # and SETUP CODE over it.
+    # SETUP > WIRELESS > PRINTER: nothing bound; the T50M Pro bound with
+    # its roll read; SEARCH while a scan runs; a label in SENDING, printed,
+    # and ended with COVER OPEN.
+    "printer-none": ("printer-none.png", "setup", "dark"),
+    "printer-idle": ("printer-idle.png", "setup", "dark"),
+    "printer-search": ("printer-search.png", "setup", "dark"),
+    "printer-printing": ("printer-printing.png", "setup", "dark"),
+    "printer-done": ("printer-done.png", "setup", "dark"),
+    "printer-error": ("printer-error.png", "setup", "dark"),
     "setup-scanner-ready": ("setup-scanner-ready.png", "setup", "dark"),
     "setup-scanner-not-connected": ("setup-scanner-not-connected.png",
                                     "setup", "dark"),
@@ -1124,6 +1140,7 @@ FIT_ONLY = {
     "help-setup-wireless-dial": (None, "setup", "dark"),
     "help-setup-wireless-pnode": (None, "setup", "dark"),
     "help-setup-wireless-bal": (None, "setup", "dark"),
+    "help-setup-wireless-printer": (None, "setup", "dark"),
     "help-setup-wireless-search": (None, "setup", "dark"),
     "help-setup-wireless-search-2": (None, "setup", "dark"),
     "help-outputs-2": (None, "outputs", "dark"),

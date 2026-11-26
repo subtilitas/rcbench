@@ -1,12 +1,11 @@
 /**
  * @file
  * @brief The SERVO LABEL rows (servo_label_rows.h): SERVO ID's value and
- *        choice list, TYPE ID's keyboard, NEW ID's value, tap and locks.
+ *        choice list, TYPE ID's keyboard, NEW ID's value, tap and locks,
+ *        PRINT's name, value, tap and locks.
  *
  * The rows are custom rows of the SERVO lists (ui_setlist.h); ID PREFIX is
  * the string row of SET_TEXT_SERVO_PREFIX, which the list types itself.
- * The row PRINT that a printed label needs goes under NEW ID in
- * SERVO_LABEL_ROWS.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -16,12 +15,14 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "print_ctl.h"
 #include "scan_flow.h"
 #include "servo_active.h"
 #include "servo_screen.h"
 #include "settings.h"
 #include "ui_text.h"
 #include "ui_widgets.h"
+#include "wireless_printer.h"
 
 #include "servo_screen_int.h"
 
@@ -277,11 +278,89 @@ const ui_setlist_custom_t svl_new_row = {
     .value_text = new_value, .tap = new_tap, .locked = servo_label_new_why,
 };
 
+/* --------------------------------------------------------------- PRINT */
+
+/** @brief PRINT AGAIN's case: a label of the active servo printed in this
+ *         session, while it was active or not, or its id came from its
+ *         label, scanned or typed. */
+static bool printed_before(void)
+{
+    const servo_active_from_t from = servo_active_from();
+    return servo_active_printed()
+           || wireless_printer_printed(servo_active_id())
+           || from == SERVO_ACTIVE_SCAN || from == SERVO_ACTIVE_TYPED;
+}
+
+/** @brief PRINT's name: PRINT, or PRINT AGAIN. */
+static ui_text_id_t print_label(void)
+{
+    return printed_before() ? TX_SVL_PRINT_AGAIN : TX_SVL_PRINT;
+}
+
+const char *servo_label_print_why(void)
+{
+    const print_view_t *v = print_ctl_view();
+    if (servo_active_id() == NULL) {
+        return TR(SVL_PRINT_NO_ID);
+    }
+    if (!wireless_printer_bound()) {
+        return TR(PRN_LOCK_UNBOUND);
+    }
+    if (print_view_busy(v) || v->scanning) {
+        return TR(PRN_LOCK_BUSY);
+    }
+    if (ui_router_status()->armed || servo_screen_run_active()) {
+        return TR(PRN_LOCK_SAFE);
+    }
+    if (v->update) {
+        return TR(PRN_LOCK_UPDATE);
+    }
+    return NULL;
+}
+
+/** @brief PRINT's value: the job in work, the active servo's last result,
+ *         else the bound printer's name. */
+static void print_value(char *out, size_t n)
+{
+    const print_view_t *v = print_ctl_view();
+    const char *id = servo_active_id();
+    const bool mine = v->kind == PRINT_REQ_LABEL && id != NULL
+                      && strcmp(v->id, id) == 0 && v->phase != PRINT_IDLE;
+    if (print_view_busy(v) || mine) {
+        (void)wireless_printer_job_word(v, out, n);
+        return;
+    }
+    wireless_printer_name(out, n);
+}
+
+/** @brief A tap on PRINT: the active servo's id and DUT NAME to the
+ *         printer. */
+static void print_tap(void)
+{
+    const char *why = servo_label_print_why();
+    if (why == NULL
+        && !print_ctl_label(servo_active_id(),
+                            settings_text(SET_TEXT_DUT_NAME))) {
+        why = TR(PRN_LOCK_BUSY);
+    }
+    if (why != NULL) {
+        ui_router_set_alert(why);
+    }
+    ++s.sl_rev;
+    servo_invalidate();
+}
+
+const ui_setlist_custom_t svl_print_row = {
+    .label = TX_SVL_PRINT, .help = TX_SVL_PRINT_HELP,
+    .value_text = print_value, .tap = print_tap,
+    .locked = servo_label_print_why, .label_of = print_label,
+};
+
 /* ---------------------------------------------------------------- the tick */
 
 /** @brief What the rows showed at the last tick, and the repaints asked. */
 typedef struct {
-    uint32_t key;       /**< servo_active_serial(), the ids, NEW ID's ask */
+    uint32_t key;       /**< the active servo, the ids, NEW ID, the print */
     bool     valid;     /**< a key was taken                              */
     uint32_t repaints;  /**< the repaints asked                           */
 } seen_t;
@@ -308,7 +387,11 @@ static uint32_t rows_key(void)
     }
     h = (h ^ ids.highest) * 16777619u;
     h = (h ^ servo_active_serial()) * 16777619u;
-    h = (h ^ ((card ? 1u : 0u) | (new_busy() ? 2u : 0u))) * 16777619u;
+    h = (h ^ ((card ? 1u : 0u) | (new_busy() ? 2u : 0u)
+              | (wireless_printer_bound() ? 4u : 0u))) * 16777619u;
+    const print_view_t *v = print_ctl_view();
+    h = (h ^ v->rev) * 16777619u;
+    h = (h ^ v->jobs) * 16777619u;
     return h;
 }
 

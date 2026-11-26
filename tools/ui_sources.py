@@ -275,6 +275,10 @@ SOURCES = [
     "shared/ui/node_balance.c",
     "shared/ui/wireless_bal.c",
     "shared/ui/motor_balance.c",
+    # The label printer: SETUP > WIRELESS > PRINTER, and the requests and
+    # the view the screens share with the blec task's controller.
+    "shared/ui/wireless_printer.c",
+    "shared/ui/print_req.c",
     "protocols/rcnode/rcnode.c",
     "protocols/rcnode/rcnode_adv.c",
     "shared/vibe/vibe_solve.c",
@@ -441,6 +445,7 @@ INCLUDES = [
     "protocols/rcnode/include",
     "shared/vibe/include",
     "shared/scanner/include",
+    "protocols/supvan/include",
 ]
 
 # The files of shared/ui/CMakeLists.txt that SOURCES leaves out, and why.

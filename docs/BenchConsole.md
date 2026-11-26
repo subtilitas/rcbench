@@ -484,20 +484,21 @@ task runs it. The printer is the one bound in SETUP's `prn_ble`
 
 | Line typed | Does |
 | --- | --- |
-| `print` | prints the view: the printer, phase, error, link, roll, labels left, MTU, frames sent |
+| `print` | prints the view: the printer, phase, error, link, roll, labels left, MTU, frames sent; then one line per printer the last scan found |
 | `print test` | asks for the test label: the code of `RCBENCH TEST`, `RCBENCH`, the version, the roll |
 | `print id <id>` | asks for the label of a servo id, with SETUP's DUT NAME |
 | `print query` | reads the roll and the label counter, prints nothing |
+| `print scan` | scans 10s for printers (addresses `A4:93:40:...`); `print` lists them |
 | `print stop` | ends the request in work: STOP_PRINT after START, `PRINT STOPPED` |
-| `print bind <address>` | keeps `A4:93:40:30:FA:71` in `prn_ble`, ` P` added when no type follows, and asks a save |
+| `print bind <address>` | keeps `A4:93:40:30:FA:71` in `prn_ble`, ` P` added when no type follows, and asks a save; a random address (` R`) is refused |
 | `print unbind` | clears `prn_ble` and `prn_name` |
 
-A request while one is in work is refused. The `print` lines of the
+A request while one is in work is refused; a scan also while one runs. The `print` lines of the
 `blec` task follow each change of phase:
 
 | Line | Means |
 | --- | --- |
-| `print: request <kind> taken` | the controller took the request: 1 label, 2 test, 3 query, 4 stop |
+| `print: request <kind> taken` | the controller took the request: 1 label, 2 test, 3 query, 4 stop, 5 scan |
 | `print: linked to <printer>: connect <ms>ms, set-up <ms>ms, MTU <n>, <n> attempts` | the link is up and the roll is being read |
 | `print: roll <w>x<h>mm gap <g>mm, <n> left: building` | the roll is read; the layout starts |
 | `print: block of <n> bytes taken` | the heap block, PSRAM first; `refused` ends with `NO MEMORY` |

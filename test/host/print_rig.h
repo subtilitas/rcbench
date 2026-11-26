@@ -2,7 +2,8 @@
  * @file print_rig.h
  * @brief The label printer's controller (print_ctl.h) on a scripted host
  *        stack with the simulated printer of sv_sim.h behind it, for the
- *        suites test_print_ctl.c and test_print_ctl_ends.c.
+ *        suites test_print_ctl.c, test_print_ctl_ends.c,
+ *        test_print_ctl_scan.c and test_wireless_printer.c.
  *
  * The scripted stack serves the T50M Pro's GATT table as the station read
  * it (H0, test/host/fixtures/supvan/README.md): the vendor service at
@@ -13,6 +14,7 @@
  * connect is answered after 20ms while the printer is present; a write is
  * answered 1ms after it; the printer's answers come as notifications of
  * 20 bytes on 0x000E.  The heap block comes from malloc(), or is refused.
+ * A scan is counted; its reports are the case's (pr_adv()).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -78,6 +80,9 @@ typedef struct {
     unsigned    allocs;   /**< blocks given */
     unsigned    frees;    /**< blocks handed back */
     size_t      last_want; /**< the last block's size */
+    unsigned    scans;    /**< SCAN actions */
+    unsigned    scan_stops; /**< SCAN_STOP actions */
+    uint16_t    tok_scan; /**< the last scan's token */
 } pr_rig_t;
 
 /**
@@ -241,6 +246,13 @@ static inline void pr_act(pr_rig_t *r, const bleu_act_t *a)
         }
         break;
     }
+    case BLEU_ACT_SCAN:
+        ++r->scans;
+        r->tok_scan = a->token;
+        break;
+    case BLEU_ACT_SCAN_STOP:
+        ++r->scan_stops;
+        break;
     default:
         break;
     }
@@ -469,6 +481,62 @@ static inline bool pr_ask(pr_rig_t *r, uint8_t kind, const char *id,
         strncpy(q.dut, dut, sizeof(q.dut) - 1u);
     }
     return print_ctl_request(&r->c, &q, r->now);
+}
+
+/**
+ * @brief One advertising report, due now: H0's flags, name and
+ *        manufacturer data, no service UUID.
+ * @param r    the rig
+ * @param addr the advertiser, `A4:93:40:30:FA:71 P`
+ * @param name its name, 16 characters
+ * @param rssi its RSSI, dBm
+ */
+static inline void pr_adv(pr_rig_t *r, const char *addr, const char *name,
+                          int8_t rssi)
+{
+    bleu_evt_t *e = pr_ev(r, BLEU_EV_ADV, 0u, r->now);
+    if (e == NULL) {
+        return;
+    }
+    (void)bleu_addr_parse(addr, &e->addr);
+    e->rssi = rssi;
+    const size_t k = strlen(name);
+    uint8_t *d = e->data;
+    d[0] = 0x02u;
+    d[1] = 0x01u;
+    d[2] = 0x02u;
+    d[3] = (uint8_t)(k + 1u);
+    d[4] = 0x09u;
+    memcpy(&d[5], name, k);
+    e->len = (uint8_t)(5u + k);
+}
+
+/**
+ * @brief One advertising report, due now, that carries the Supvan
+ *        service's 128-bit UUID and a name.
+ * @param r    the rig
+ * @param addr the advertiser
+ * @param rssi its RSSI, dBm
+ */
+static inline void pr_adv_svc(pr_rig_t *r, const char *addr, int8_t rssi)
+{
+    static const uint8_t svc[16] = { 0x12, 0xA2, 0x4D, 0x2E, 0xFE, 0x14,
+                                     0x48, 0x8E, 0x93, 0xD2, 0x17, 0x3C,
+                                     0xFF, 0xE0, 0x00, 0x00 };
+    bleu_evt_t *e = pr_ev(r, BLEU_EV_ADV, 0u, r->now);
+    if (e == NULL) {
+        return;
+    }
+    (void)bleu_addr_parse(addr, &e->addr);
+    e->rssi = rssi;
+    uint8_t *d = e->data;
+    d[0] = 17u;
+    d[1] = 0x07u;
+    memcpy(&d[2], svc, sizeof(svc));
+    d[18] = 5u;
+    d[19] = 0x09u;
+    memcpy(&d[20], "FAKE", 4u);
+    e->len = 24u;
 }
 
 #endif /* PRINT_RIG_H */

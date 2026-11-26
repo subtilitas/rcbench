@@ -12,6 +12,7 @@
 
 #include "sensors_rows.h"
 #include "wireless_bal.h"
+#include "wireless_printer.h"
 #include "settings_screen.h"
 #include "ui_screen.h"
 #include "ui_text.h"
@@ -211,7 +212,11 @@ int wireless_pane_selected(void)
 void wireless_pane_select(int entry)
 {
     if (entry >= 0 && entry < WL_ENTRY_COUNT) {
+        const bool opened = entry == WL_ENTRY_PRINTER && s_selected != entry;
         s_selected = entry;
+        if (opened) {
+            wireless_printer_opened();
+        }
     }
 }
 
@@ -298,6 +303,8 @@ int wireless_pane_rows(int entry, wl_row_t *out, int max)
         }
     } else if (entry == WL_ENTRY_BAL) {
         n = wireless_bal_rows(out, max);
+    } else if (entry == WL_ENTRY_PRINTER) {
+        n = wireless_printer_rows(out, max);
     }
     return n;
 }
@@ -316,6 +323,8 @@ const char *wireless_pane_name(int entry, char *buf, size_t n)
         snprintf(buf, n, "%s", TR(PNODE_ENTRY));
     } else if (entry == WL_ENTRY_BAL) {
         snprintf(buf, n, "%s", TR(BNODE_ENTRY));
+    } else if (entry == WL_ENTRY_PRINTER) {
+        snprintf(buf, n, "%s", TR(PRN_ENTRY));
     }
     return buf;
 }
@@ -412,6 +421,8 @@ const char *wireless_pane_state(int entry, char *buf, size_t n,
         }
     } else if (entry == WL_ENTRY_BAL) {
         (void)wireless_bal_state(buf, n, ink);
+    } else if (entry == WL_ENTRY_PRINTER) {
+        (void)wireless_printer_state(buf, n, ink);
     }
     return buf;
 }

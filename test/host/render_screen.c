@@ -42,6 +42,7 @@
 #include "render_files.h"
 #include "render_help.h"
 #include "render_imu.h"
+#include "render_printer.h"
 #include "render_scanner.h"
 #include "render_sbk.h"
 #include "render_outputs.h"
@@ -5692,6 +5693,7 @@ int main(int argc, char **argv)
     pose_shown_tools(id, view);
     render_imu_pose(view);
     render_scanner_pose(view);
+    render_printer_pose(view);
     render_sbk_pose(view);
     /* Last: the guide opens over the screen as the poses left it. */
     if (render_help_view(shot_view)) {

@@ -207,9 +207,11 @@ typedef struct {
                                         for as well, 0 none: 0x18F0 for
                                         the ISSC profile */
     const uint8_t     *adv_oui; /**< 3 bytes in reading order, such as
-                                     A4 93 40: a scan lists a device with a
-                                     public address that starts with them
-                                     whatever it advertises; NULL none */
+                                     A4 93 40: a scan lists only a device
+                                     with a public address that starts
+                                     with them, whatever it advertises,
+                                     and never one for its service alone;
+                                     NULL none */
     bool               cccd_next; /**< no descriptor discovery: the
                                      STREAM's CCCD is the handle after its
                                      value, as for a peer whose Find

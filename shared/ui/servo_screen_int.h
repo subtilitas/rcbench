@@ -2078,8 +2078,8 @@ enum { FP_NONE = 0, FP_PORT, FP_SETTINGS, FP_TILE };
 /* --- servo_test_list.c: TEST's SETTINGS list ------------------------------ */
 
 /** @brief TEST's list rows: six headings and 22 rows, then the SERVO
- *         LABEL block's heading and 3 rows. */
-#define SVS_TEST_ROWS 32
+ *         LABEL block's heading and 4 rows. */
+#define SVS_TEST_ROWS 33
 /** @brief TEST's RANGE row, the one its READY card's RANGE opens on. */
 #define SVS_TEST_ROW_RANGE 22
 /** @brief TEST's rows (ui_setlist.h), in the list's order. */
@@ -2135,8 +2135,8 @@ enum {
     SVS_PROF_TYPE,       /**< TYPE                           */
     SVS_PROF_RATE,       /**< FRAME RATE                     */
     SVS_PROF_MIN,        /**< PULSE MIN                      */
-    SVS_PROF_ROWS = 18   /**< the hub list's rows, the SERVO LABEL
-                              block's 4 last                  */
+    SVS_PROF_ROWS = 19   /**< the hub list's rows, the SERVO LABEL
+                              block's 5 last                  */
 };
 /** @brief The profile, the hub's list, opened in the list's place on the
  *         screen shown and scrolled to @p row, or the refusal of

@@ -1,7 +1,7 @@
 /**
  * @file print_ctl.c
- * @brief The label printer's controller and the frame task's requests
- *        (print_ctl.h).
+ * @brief The label printer's controller (print_ctl.h), the `blec`
+ *        task's.  The frame task's requests and view are print_req.c's.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -250,7 +250,9 @@ void print_ctl_bind(print_ctl_t *c, const char *addr, const char *name,
                     uint32_t now_ms)
 {
     bleu_addr_t a;
-    const bool ok = addr != NULL && bleu_addr_parse(addr, &a);
+    /* A printer's address is public: a random one binds nothing. */
+    const bool ok = addr != NULL && bleu_addr_parse(addr, &a)
+                    && a.type == BLEU_ADDR_PUBLIC;
     const char *text = ok ? addr : "";
     if (strcmp(text, c->addr) == 0 && strcmp(name != NULL ? name : "",
                                              c->name) == 0) {
@@ -280,12 +282,111 @@ void print_ctl_radio(print_ctl_t *c, imu_radio_t radio, uint32_t now_ms)
     }
 }
 
+/**
+ * @brief End the scan: its list stays in the central.  A central the scan
+ *        switched on with no link up goes off.
+ * @param c      The controller.
+ * @param cut    The bench ARMED stopped it.
+ * @param now_ms The clock.
+ */
+static void scan_end(print_ctl_t *c, bool cut, uint32_t now_ms)
+{
+    if (c->scan_on && c->b.scanning) {
+        bleu_scan_stop(&c->b, now_ms);
+    }
+    c->scan_due = false;
+    c->scan_on = false;
+    c->scan_done = true;
+    c->scan_cut = cut;
+    if (!in_work(c->phase) && !bleu_link_up(&c->b)) {
+        link_off(c, now_ms);
+    }
+    ++c->rev;
+}
+
+/**
+ * @brief Start the scan that waits: the central on, unbound unless a link
+ *        lingers, so no connect follows the scan.
+ * @param c      The controller.
+ * @param now_ms The clock.
+ */
+static void scan_go(print_ctl_t *c, uint32_t now_ms)
+{
+    c->scan_due = false;
+    if (!c->on) {
+        bleu_bind(&c->b, NULL, now_ms);
+        c->on = true;
+        bleu_enable(&c->b, true, now_ms);
+    }
+    c->scan_on = bleu_scan(&c->b, now_ms);
+    if (!c->scan_on) {
+        ++c->scan_refused;
+        scan_end(c, false, now_ms);
+        c->scan_done = false;
+    }
+    ++c->rev;
+}
+
+/**
+ * @brief A scan request: refused while a job or a scan runs, while ARMED
+ *        and while an update runs; else it starts, or waits for Bluetooth.
+ * @param c      The controller.
+ * @param now_ms The clock.
+ * @return false when refused.
+ */
+static bool scan_ask(print_ctl_t *c, uint32_t now_ms)
+{
+    if (in_work(c->phase) || c->scan_due || c->scan_on || c->armed
+        || c->update || c->radio == IMU_RADIO_NO_LINK) {
+        ++c->scan_refused;
+        ++c->rev;
+        return false;
+    }
+    c->scan_done = false;
+    c->scan_cut = false;
+    c->scan_due = true;
+    c->t_scan = now_ms;
+    ++c->rev;
+    if (c->radio == IMU_RADIO_READY) {
+        scan_go(c, now_ms);
+    }
+    return true;
+}
+
+/**
+ * @brief The scan's course each poll: its start once Bluetooth is ready,
+ *        its give-up PRINT_FIND_MS after the ask, its end.
+ * @param c      The controller.
+ * @param now_ms The clock.
+ */
+static void scan_follow(print_ctl_t *c, uint32_t now_ms)
+{
+    if (c->scan_due) {
+        if (c->radio == IMU_RADIO_READY) {
+            scan_go(c, now_ms);
+        } else if (now_ms - c->t_scan >= PRINT_FIND_MS
+                   || c->radio == IMU_RADIO_NO_LINK) {
+            ++c->scan_refused;
+            scan_end(c, false, now_ms);
+            c->scan_done = false;
+        }
+    } else if (c->scan_on && !c->b.scanning) {
+        scan_end(c, false, now_ms);
+    }
+}
+
 void print_ctl_gate(print_ctl_t *c, bool armed, bool update,
                     uint32_t now_ms)
 {
+    if (c->update != update) {
+        ++c->rev;
+    }
     c->armed = armed;
     c->update = update;
-    if (update && !in_work(c->phase)) {
+    if (armed && (c->scan_due || c->scan_on)) {
+        scan_end(c, true, now_ms);
+    }
+    if (update && !in_work(c->phase) && !c->scan_on) {
         link_off(c, now_ms);
     }
 }
@@ -315,6 +416,9 @@ bool print_ctl_request(print_ctl_t *c, const print_req_t *r,
     if (c == NULL || r == NULL) {
         return false;
     }
+    if (r->kind == PRINT_REQ_SCAN) {
+        return scan_ask(c, now_ms);
+    }
     if (r->kind == PRINT_REQ_ABORT) {
         if (!in_work(c->phase)) {
             return false;
@@ -334,10 +438,15 @@ bool print_ctl_request(print_ctl_t *c, const print_req_t *r,
     if (r->kind == PRINT_REQ_LABEL && !servo_id_parse(r->id, &id)) {
         return false;
     }
+    if (c->scan_due || c->scan_on) {
+        /* The label wins: the scan ends with the list it has. */
+        scan_end(c, false, now_ms);
+    }
     c->req = *r;
     c->req.id[sizeof(c->req.id) - 1u] = '\0';
     c->req.dut[sizeof(c->req.dut) - 1u] = '\0';
     c->t_req = now_ms;
+    ++c->jobs;
     c->relinked = false;
     c->seen_frame = 0u;
     bleu_addr_t a;
@@ -631,7 +740,9 @@ void print_ctl_poll(print_ctl_t *c, uint32_t now_ms)
     if (c == NULL) {
         return;
     }
+    c->t_now = now_ms;
     follow(c, now_ms);
+    scan_follow(c, now_ms);
     if (c->phase == PRINT_CONNECTING) {
         if (c->b.st == BLEU_ST_NOT_PEER) {
             finish(c, PRINT_ERR_NOT_PRINTER, now_ms);
@@ -660,7 +771,7 @@ void print_ctl_poll(print_ctl_t *c, uint32_t now_ms)
         build_step(c, now_ms);
     }
     /* The linger's end, or a device update that wants the spare link. */
-    if (!in_work(c->phase) && c->on
+    if (!in_work(c->phase) && c->on && !c->scan_on
         && (c->update || now_ms - c->t_quiet >= PRINT_LINGER_MS)) {
         link_off(c, now_ms);
     }
@@ -668,7 +779,7 @@ void print_ctl_poll(print_ctl_t *c, uint32_t now_ms)
 
 bool print_ctl_busy(const print_ctl_t *c)
 {
-    return c != NULL && in_work(c->phase);
+    return c != NULL && (in_work(c->phase) || c->scan_due || c->scan_on);
 }
 
 void print_ctl_view_of(const print_ctl_t *c, print_view_t *out)
@@ -693,143 +804,27 @@ void print_ctl_view_of(const print_ctl_t *c, print_view_t *out)
     out->mtu = out->linked ? c->b.mtu : 0u;
     copy_text(out->id, sizeof(out->id),
               c->req.kind == PRINT_REQ_LABEL ? c->req.id : "");
+    copy_text(out->addr, sizeof(out->addr), c->addr);
+    copy_text(out->name, sizeof(out->name), c->name);
+    out->update = c->update;
+    out->scanning = c->scan_due || c->scan_on;
+    out->scan_done = c->scan_done;
+    out->scan_cut = c->scan_cut;
+    out->scan_left_s =
+        c->scan_due ? (uint8_t)(BLEU_SCAN_MS / 1000u)
+                    : (uint8_t)((bleu_scan_left_ms(&c->b, c->t_now) + 999u)
+                                / 1000u);
+    const uint8_t n = c->b.list.found_n < PRINT_FOUND_MAX
+                          ? c->b.list.found_n : (uint8_t)PRINT_FOUND_MAX;
+    out->found_n = n;
+    for (uint8_t i = 0u; i < n; ++i) {
+        const bleu_dev_t *d = &c->b.list.found[i];
+        (void)bleu_addr_format(&d->addr, true, out->found[i].addr,
+                               sizeof(out->found[i].addr));
+        copy_text(out->found[i].name, sizeof(out->found[i].name), d->name);
+        out->found[i].rssi = d->rssi;
+    }
+    out->scan_refused = c->scan_refused;
+    out->jobs = c->jobs;
     out->rev = c->rev;
-}
-
-ui_text_id_t print_err_text(uint8_t err)
-{
-    static const ui_text_id_t k[PRINT_ERR_COUNT] = {
-        [PRINT_OK] = TX_PRINT_ERR_SILENT,
-        [PRINT_ERR_NO_PRINTER] = TX_PRINT_ERR_NO_PRINTER,
-        [PRINT_ERR_NOT_FOUND] = TX_PRINT_ERR_NOT_FOUND,
-        [PRINT_ERR_RADIO] = TX_PRINT_ERR_RADIO,
-        [PRINT_ERR_NOT_PRINTER] = TX_PRINT_ERR_NOT_PRINTER,
-        [PRINT_ERR_MTU] = TX_PRINT_ERR_MTU,
-        [PRINT_ERR_COVER] = TX_PRINT_ERR_COVER,
-        [PRINT_ERR_NO_LABEL] = TX_PRINT_ERR_NO_LABEL,
-        [PRINT_ERR_LABEL] = TX_PRINT_ERR_LABEL,
-        [PRINT_ERR_BATTERY] = TX_PRINT_ERR_BATTERY,
-        [PRINT_ERR_HOT] = TX_PRINT_ERR_HOT,
-        [PRINT_ERR_BUSY] = TX_PRINT_ERR_BUSY,
-        [PRINT_ERR_SILENT] = TX_PRINT_ERR_SILENT,
-        [PRINT_ERR_WRITE] = TX_PRINT_ERR_WRITE,
-        [PRINT_ERR_LINK] = TX_PRINT_ERR_LINK,
-        [PRINT_ERR_LINK_NOT_PRINTED] = TX_PRINT_ERR_LINK_NOT_PRINTED,
-        [PRINT_ERR_NOT_PRINTED] = TX_PRINT_ERR_NOT_PRINTED,
-        [PRINT_ERR_ROLL] = TX_PRINT_ERR_ROLL,
-        [PRINT_ERR_SMALL] = TX_PRINT_ERR_SMALL,
-        [PRINT_ERR_LARGE] = TX_PRINT_ERR_LARGE,
-        [PRINT_ERR_ABORTED] = TX_PRINT_ERR_ABORTED,
-        [PRINT_ERR_UPDATE] = TX_PRINT_ERR_UPDATE,
-        [PRINT_ERR_MEMORY] = TX_PRINT_ERR_MEMORY,
-        [PRINT_ERR_ARMED] = TX_PRINT_ERR_ARMED,
-    };
-    return err < PRINT_ERR_COUNT ? k[err] : TX_PRINT_ERR_SILENT;
-}
-
-bool print_view_busy(const print_view_t *v)
-{
-    return v != NULL && in_work(v->phase);
-}
-
-/* The frame task's side. */
-
-/** @brief The request that waits for the controller's task. */
-static print_req_t  s_req;
-/** @brief s_req holds one. */
-static bool         s_req_due;
-/** @brief An abort waits. */
-static bool         s_abort_due;
-/** @brief The controller's last view as the glue kept it. */
-static print_view_t s_view = { .left = -1 };
-
-/**
- * @brief Queue a request when none waits and none is in work.
- * @param r The request.
- * @return true when queued.
- */
-static bool post(const print_req_t *r)
-{
-    if (s_req_due || s_abort_due || in_work(s_view.phase)) {
-        return false;
-    }
-    s_req = *r;
-    s_req_due = true;
-    return true;
-}
-
-bool print_ctl_label(const char *id, const char *dut)
-{
-    servo_id_t sid;
-    if (id == NULL || !servo_id_parse(id, &sid)) {
-        return false;
-    }
-    print_req_t r;
-    memset(&r, 0, sizeof(r));
-    r.kind = PRINT_REQ_LABEL;
-    copy_text(r.id, sizeof(r.id), id);
-    copy_text(r.dut, sizeof(r.dut), dut);
-    return post(&r);
-}
-
-bool print_ctl_test(void)
-{
-    print_req_t r;
-    memset(&r, 0, sizeof(r));
-    r.kind = PRINT_REQ_TEST;
-    return post(&r);
-}
-
-void print_ctl_query(void)
-{
-    print_req_t r;
-    memset(&r, 0, sizeof(r));
-    r.kind = PRINT_REQ_QUERY;
-    (void)post(&r);
-}
-
-void print_ctl_abort(void)
-{
-    s_req_due = false;
-    s_abort_due = true;
-}
-
-bool print_ctl_take(print_req_t *out)
-{
-    if (out == NULL) {
-        return false;
-    }
-    if (s_abort_due) {
-        s_abort_due = false;
-        memset(out, 0, sizeof(*out));
-        out->kind = PRINT_REQ_ABORT;
-        return true;
-    }
-    if (!s_req_due) {
-        return false;
-    }
-    *out = s_req;
-    s_req_due = false;
-    return true;
-}
-
-void print_ctl_show(const print_view_t *v)
-{
-    if (v != NULL) {
-        s_view = *v;
-    }
-}
-
-const print_view_t *print_ctl_view(void)
-{
-    return &s_view;
-}
-
-void print_ctl_reset(void)
-{
-    memset(&s_req, 0, sizeof(s_req));
-    s_req_due = false;
-    s_abort_due = false;
-    memset(&s_view, 0, sizeof(s_view));
-    s_view.left = -1;
 }
