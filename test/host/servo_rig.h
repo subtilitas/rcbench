@@ -132,10 +132,12 @@ static inline void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
 #define WARN_Y        (436 - 8 - 56 + 28)
 
 /* The hub's list, row by row: the profile under OUTPUT, then the device
- * under test, its NAME, the RUN NOTE and REPORT. */
+ * under test, its NAME, the RUN NOTE and REPORT, then the SERVO LABEL
+ * block: its heading, ID PREFIX, SERVO ID and NEW ID. */
 enum {
     HL_OUTPUT = 0, HL_TYPE, HL_RATE, HL_MIN, HL_CENTER, HL_MAX, HL_TRIM,
     HL_TRAVEL, HL_REVERSE, HL_HV, HL_DUT, HL_NAME, HL_NOTE, HL_REPORT,
+    HL_LABEL, HL_PREFIX, HL_SERVO_ID, HL_NEW_ID,
 };
 
 /* Function @p fn's screen shown, as its enter() shows it, without a leave
@@ -165,6 +167,7 @@ enum {
     TL_H_LIMITS, TL_STALL, TL_IDLE, TL_HOLD, TL_TRAVEL,
     TL_H_LENGTH, TL_LEN_BY, TL_LEN_S, TL_MOVES, TL_DWELL, TL_SETTLE,
     TL_H_RANGE, TL_RANGE, TL_OUTPUT, TL_H_DUT, TL_NAME, TL_NOTE, TL_REPORT,
+    TL_LABEL, TL_PREFIX, TL_SERVO_ID, TL_NEW_ID,
     TL_ROWS,
 };
 
@@ -173,13 +176,15 @@ enum {
  * SERIES, D RECEIVE is row LL_RX and the rows from SERVO PULSES on move
  * down one. */
 enum { LL_MODE = 0, LL_SERVO, LL_PULSES, LL_CURRENT, LL_WAIT, LL_NAME,
-       LL_NOTE, LL_LOG, LL_ROWS };
+       LL_NOTE, LL_LOG, LL_LABEL, LL_PREFIX, LL_SERVO_ID, LL_NEW_ID,
+       LL_ROWS };
 enum { LL_RX = 2 };
 /* RUDDER AUTO's list: its SERVO row, D RECEIVE under it with HITEC D
  * SERIES; without D RECEIVE CURRENT and PROG WAIT, then DUT NAME, RUN NOTE
  * and USER LOGS last. */
 enum { RAL_SERVO = 4, RAL_RX = 5, RAL_CURRENT = 7, RAL_WAIT = 8,
-       RAL_NAME = 9, RAL_NOTE = 10, RAL_LOG = 11, RAL_ROWS = 12 };
+       RAL_NAME = 9, RAL_NOTE = 10, RAL_LOG = 11, RAL_LABEL = 12,
+       RAL_PREFIX = 13, RAL_SERVO_ID = 14, RAL_NEW_ID = 15, RAL_ROWS = 16 };
 /* SWEEP's list: CURVE, SPEED, RANGE and DWELL TIME. */
 enum { SWL_CURVE = 0, SWL_SPEED, SWL_RANGE, SWL_DWELL, SWL_ROWS };
 

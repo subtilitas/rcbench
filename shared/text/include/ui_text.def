@@ -260,6 +260,9 @@ UI_TEXT(BH_SERVO_NEW, 0,
 UI_TEXT(BH_SERVO_PICK, 0,
     "The active servo, picked from the recent ids on this card. The band shows its id on every screen.",
     "Das aktive Servo, gewählt aus den letzten IDs auf dieser Karte. Das Band zeigt seine ID auf jeder Seite.")
+UI_TEXT(BH_SERVO_TYPED, 0,
+    "The active servo, set by its id typed on SERVO ID's keyboard. The band shows its id on every screen.",
+    "Das aktive Servo, gesetzt durch seine ID, getippt auf der Tastatur von SERVO-ID. Das Band zeigt seine ID auf jeder Seite.")
 UI_TEXT(BH_SERVO_RUN, 0,
     "A run is active and keeps this servo to its end. A scan of another label is refused until then.",
     "Ein Lauf ist aktiv und behält dieses Servo bis zu seinem Ende. Ein Scan eines anderen Etiketts wird bis dahin abgelehnt.")
@@ -396,6 +399,23 @@ UI_TEXT(TEXTKEY_NAME_CHAR, 40,
 UI_TEXT(TEXTKEY_NAME_EDGE, 40,
     "No space or full stop at either end",
     "Kein Leerzeichen oder Punkt am Rand")
+/* SERVO ID's keyboard (ui_textkey_open_servo_id()): why OK refused the
+ * id typed, by servo_id_why()'s rule. */
+UI_TEXT(TEXTKEY_ID_EMPTY, 40,
+    "A prefix before the - is needed",
+    "Ein Präfix vor dem - fehlt")
+UI_TEXT(TEXTKEY_ID_LONG, 40,
+    "At most 17 + 1 + 5 characters",
+    "Höchstens 17 + 1 + 5 Zeichen")
+UI_TEXT(TEXTKEY_ID_SERIAL, 40,
+    "5 of 0-9, A-Z after the last -",
+    "5 aus 0-9, A-Z nach dem letzten -")
+UI_TEXT(TEXTKEY_ID_CHAR, 40,
+    "Prefix: A-Z, 0-9, space, - _ .",
+    "Präfix: A-Z, 0-9, Leerzeichen, - _ .")
+UI_TEXT(TEXTKEY_ID_EDGE, 40,
+    "No space at an end, no . first",
+    "Kein Leerzeichen am Rand, kein . vorn")
 UI_TEXT(TK_SHOW, 0,
     "SHOW",
     "ANZEIGEN")
@@ -1971,6 +1991,14 @@ UI_TEXT(SET_RUN_NOTE, 0,
     "Notiz zum Lauf")
 /* SETUP > SD CARD's two folders: a row's name, its keyboard's title, and
  * the row's help. */
+/* ID PREFIX: the string row of the SERVO LABEL block (servo_label_rows.h),
+ * its keyboard's title and its help line. */
+UI_TEXT(SET_SERVO_PREFIX, 0,
+    "ID prefix",
+    "ID-Präfix")
+UI_TEXT(SET_SERVO_PREFIX_HELP, 60,
+    "The part before the - that NEW ID uses, 17 characters",
+    "Der Teil vor dem -, den NEUE ID nimmt, 17 Zeichen")
 UI_TEXT(SET_AUTO_DIR, 0,
     "Auto log folder",
     "Ordner Auto-Aufzeichnungen")
@@ -6490,6 +6518,51 @@ UI_TEXT(SV_ANG_RUN_OFF, 20,
 UI_TEXT(SV_ANG_RUN_NONE, 20,
     "%s NO READING",
     "%s KEIN MESSWERT")
+/* The SERVO LABEL block of the SERVO lists (servo_label_rows.c): its
+ * heading, SERVO ID and its choice list, TYPE ID's keyboard, NEW ID, and
+ * the reasons a row takes no press. */
+UI_TEXT(SVL_LABEL, 0,
+    "SERVO LABEL",
+    "SERVO-ETIKETT")
+UI_TEXT(SVL_SERVO_ID, 0,
+    "SERVO ID",
+    "SERVO-ID")
+UI_TEXT(SVL_SERVO_ID_HELP, 60,
+    "The servo of the next run: pick one, NONE or TYPE ID",
+    "Das Servo des nächsten Laufs: wählen, KEINE oder ID TIPPEN")
+UI_TEXT(SVL_ID_NONE, 23,
+    "NONE",
+    "KEINE")
+UI_TEXT(SVL_TYPE_ID, 23,
+    "TYPE ID",
+    "ID TIPPEN")
+UI_TEXT(SVL_TYPE_ID_TITLE, 24,
+    "SERVO ID",
+    "SERVO-ID")
+UI_TEXT(SVL_NEW_ID, 0,
+    "NEW ID",
+    "NEUE ID")
+UI_TEXT(SVL_NEW_ID_HELP, 60,
+    "The next id on this card, its folder, and it active",
+    "Die nächste ID dieser Karte, ihr Ordner, und sie aktiv")
+UI_TEXT(SVL_NEXT, 7,
+    "NEXT",
+    "NÄCHSTE")
+UI_TEXT(SVL_RUN_ACTIVE, 60,
+    "RUN ACTIVE: the run keeps its servo to its end",
+    "LAUF AKTIV: der Lauf behält sein Servo bis zum Ende")
+UI_TEXT(SVL_NO_CARD, 60,
+    "NO CARD: no ids to count",
+    "KEINE KARTE: keine IDs zu zählen")
+UI_TEXT(SVL_NO_FREE_ID, 60,
+    "NO FREE ID: this card holds ZZZZZ",
+    "KEINE FREIE ID: diese Karte hat ZZZZZ")
+UI_TEXT(SVL_PREFIX_DOT, 60,
+    "PREFIX STARTS WITH .: change ID prefix",
+    "PRÄFIX BEGINNT MIT .: ID-Präfix ändern")
+UI_TEXT(SVL_PREFIX_BAD, 60,
+    "ID prefix is no prefix: A-Z, 0-9, space, - _ .",
+    "ID-Präfix ist kein Präfix: A-Z, 0-9, Leerzeichen, - _ .")
 UI_TEXT(SVL_FAMILY_HELP, 60,
     "The programmer a run writes the end points with",
     "Der Programmierer, mit dem ein Lauf die Endpunkte schreibt")

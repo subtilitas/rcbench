@@ -180,7 +180,8 @@ default, and OFF the band shows FAULT 10.
 
 While a servo is active, the band shows its id in a chip left of the
 others: the labelled servo the next run files under. A scan of its label,
-NEW ID or a pick from the recent ids sets it; a restart clears it. With no
+NEW ID, a pick from the recent ids or its id typed on SERVO ID's keyboard
+(Servo.md, SERVO LABEL rows) sets it; a restart clears it. With no
 servo active there is no chip, and the band is as without it.
 
 - The chip holds the whole id, 23 characters at most. Where the row has no
@@ -192,7 +193,7 @@ servo active there is no chip, and the band is as without it.
 - While a run is active (a servo test, a limit run, RUDDER AUTO, or the
   bench ARMED on SERVO) the chip is drawn on the accent's fill: the run's
   servo, fixed to its end.
-- Its box says how the servo was set (a scan, NEW ID or a pick), that a
+- Its box says how the servo was set (a scan, NEW ID, a pick or typed), that a
   run holds it, and how it goes.
 
 A scanned line, from the scanner or from the debug console's

@@ -3,8 +3,9 @@
  * @brief The active servo: the labelled servo the bench's next run files
  *        under, and the one owner of it.
  *
- * A servo becomes active by a scan of its label, by NEW ID, or by a pick
- * from the card's recent ids (servo_active_from_t); NONE clears it.  Every
+ * A servo becomes active by a scan of its label, by NEW ID, by a pick
+ * from the card's recent ids, or by its id typed where no scanner or
+ * label is at hand (servo_active_from_t); NONE clears it.  Every
  * one of those goes through servo_active_set() or servo_active_clear().
  * Both refuse while a run is active and change nothing then: a run takes
  * its servo at its START (a test) or at the arm (a SERVO run) and keeps it
@@ -36,6 +37,7 @@ typedef enum {
     SERVO_ACTIVE_SCAN,      /**< its label was scanned                  */
     SERVO_ACTIVE_NEW,       /**< NEW ID made it                         */
     SERVO_ACTIVE_PICK,      /**< picked from the card's recent ids      */
+    SERVO_ACTIVE_TYPED,     /**< its id typed on SERVO ID's keyboard    */
 } servo_active_from_t;
 
 /**
@@ -58,8 +60,8 @@ servo_active_from_t servo_active_from(void);
  *
  * @param id         The id; servo_id_parse() must take it.  Kept in upper
  *                   case.
- * @param from       SERVO_ACTIVE_SCAN, SERVO_ACTIVE_NEW or
- *                   SERVO_ACTIVE_PICK.
+ * @param from       SERVO_ACTIVE_SCAN, SERVO_ACTIVE_NEW,
+ *                   SERVO_ACTIVE_PICK or SERVO_ACTIVE_TYPED.
  * @param run_active Whether a run is active.
  * @return false, and nothing changed, while @p run_active, for a malformed
  *         id and for SERVO_ACTIVE_NONE or a source out of range.
@@ -136,6 +138,24 @@ typedef enum {
  */
 servo_scan_t servo_scan_decide(const char *line, bool too_long,
                                bool run_active, uint32_t now_ms);
+
+/**
+ * @brief servo_scan_decide() for a line from @p from: SERVO_ACTIVE_SCAN is
+ *        servo_scan_decide() itself; SERVO_ACTIVE_TYPED is an id typed on
+ *        SERVO ID's keyboard, decided by the same rules but for the
+ *        repeat, which is the scanner's: a typed line is never a repeat
+ *        and leaves the scanner's last line as it was.
+ * @param line       The line; NULL counts as "".
+ * @param too_long   The line was cut at SERVO_SCAN_LINE_MAX.
+ * @param run_active Whether a run is active.
+ * @param now_ms     The millisecond clock.
+ * @param from       SERVO_ACTIVE_SCAN or SERVO_ACTIVE_TYPED; any other
+ *                   source counts as SERVO_ACTIVE_SCAN.
+ * @return What the line did.
+ */
+servo_scan_t servo_scan_decide_from(const char *line, bool too_long,
+                                    bool run_active, uint32_t now_ms,
+                                    servo_active_from_t from);
 
 #ifdef __cplusplus
 }

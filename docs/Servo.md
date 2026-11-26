@@ -2387,9 +2387,52 @@ With a labelled servo active, the runs of that servo go to a folder of
 its own, `Servos/<id>`, for example `Servos/KST_X10-0000A`. An id is a
 prefix of 1 to 17 characters, a `-` and a serial of 5 characters `00000`
 to `ZZZZZ`. The active servo is set by NEW ID, by a pick from the card's
-6 newest ids, or by a scan of its label; nothing is active after a
-restart. The SERVO lists carry no id rows; the debug console sets it
-(below).
+6 newest ids, by a scan of its label, or by its id typed; nothing is
+active after a restart.
+
+### SERVO LABEL rows
+
+![The hub's list at its SERVO LABEL block](img/servo-label-rows.png)
+
+![SERVO ID's choice list: NONE, the card's 6 newest ids and TYPE ID](img/servo-label-pick.png)
+
+Every SERVO list that carries DUT NAME (the hub's, LIVE's, TEST's,
+LIMIT RUN's and RUDDER AUTO's) ends with the SERVO LABEL block:
+
+| Row | Value | A tap |
+| --- | --- | --- |
+| ID PREFIX | the prefix NEW ID uses (`srv_pfx`, default `SERVO`) | the name keyboard, 17 characters at most; spaces at the ends are dropped, spaces inside kept; OK asks a save at once |
+| SERVO ID | the active servo's id, or `NONE` | a choice list of up to 8 rows at 52px: `NONE`, the card's 6 newest ids, `TYPE ID` |
+| NEW ID | `NEXT` and the id NEW ID makes, `NEXT KST_X10-00008` | the next id, its folder, and that servo active |
+
+- `NONE` clears the active servo; an id of the list makes it active as a
+  pick.
+- `TYPE ID` opens the name keyboard on the saved prefix and its `-`, for
+  a servo whose label is not at hand or not readable. The keyboard takes
+  23 characters. OK folds lower case to upper and trims nothing. An id
+  that is not one is refused on the keyboard, which stays open; its line
+  names the rule broken:
+
+  | Rule broken | Line |
+  | --- | --- |
+  | nothing before the last `-` | `A prefix before the - is needed` |
+  | not 5 characters of `0-9`, `A-Z` after the last `-` | `5 of 0-9, A-Z after the last -` |
+  | a character other than `A-Z`, `0-9`, space, `-`, `_`, `.` | `Prefix: A-Z, 0-9, space, - _ .` |
+  | a space at an end, a `.` first | `No space at an end, no . first` |
+
+  A taken id runs exactly as a scanned line (Screens.md, Servo chip):
+  the same notices, the same refusal during a run, DUT NAME from a known
+  servo's newest run, and `NEW ON THIS CARD` for an id the card does not
+  hold; its folder is made by its first run. The chip's box says the id
+  was typed. A typed id is never dropped as a repeat.
+- SERVO ID and NEW ID are locked while a run holds the active servo:
+  `RUN ACTIVE: the run keeps its servo to its end`. NEW ID is also
+  locked, its value empty, with `NO CARD: no ids to count` (no card, or
+  a walk of `Servos` not read to its end), `NO FREE ID: this card holds
+  ZZZZZ`, `PREFIX STARTS WITH .: change ID prefix`, and `ID prefix is no
+  prefix: A-Z, 0-9, space, - _ .` for a prefix written with another
+  character.
+- The debug console's lines below do the same as the rows.
 
 | Run | File in `Servos/<id>` | Report |
 | --- | --- | --- |

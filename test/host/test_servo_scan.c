@@ -7,7 +7,9 @@
  * (lower case, a space, a missing dash, 4 or 6 characters after it); a
  * scan that changes the servo of a run under way; the scanner's repeat of
  * one label taken twice; and a repeat window that swallows a deliberate
- * rescan after the servo changed.
+ * rescan after the servo changed.  A typed id (servo_scan_decide_from(),
+ * SERVO_ACTIVE_TYPED) is decided by the same rules but is never a repeat
+ * and leaves the scanner's repeat memory alone.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -186,6 +188,45 @@ TEST_CASE(the_longest_ids_are_taken_whole)
              SERVO_SCAN_SET);
 }
 
+TEST_CASE(a_typed_id_is_never_a_repeat_and_keeps_the_scanners_memory)
+{
+    const uint32_t t = fresh();
+    REQUIRE_EQ(servo_scan_decide("KST_X10-0000A", false, false, t),
+               SERVO_SCAN_SET);
+    /* The same id typed at once: the servo again, its source typed. */
+    CHECK_EQ(servo_scan_decide_from("KST_X10-0000A", false, false, t + 10u,
+                                    SERVO_ACTIVE_TYPED),
+             SERVO_SCAN_SAME);
+    CHECK_EQ(servo_active_from(), SERVO_ACTIVE_TYPED);
+    CHECK_EQ(servo_scan_decide_from("KST_X10-0000A", false, false, t + 20u,
+                                    SERVO_ACTIVE_TYPED),
+             SERVO_SCAN_SAME);
+    /* Another typed id sets it; malformed and run rules hold. */
+    CHECK_EQ(servo_scan_decide_from("KST_X10-0000B", false, false, t + 30u,
+                                    SERVO_ACTIVE_TYPED),
+             SERVO_SCAN_SET);
+    CHECK_EQ(servo_scan_decide_from("kst_x10-0000c", false, false, t + 40u,
+                                    SERVO_ACTIVE_TYPED),
+             SERVO_SCAN_MALFORMED);
+    CHECK_EQ(servo_scan_decide_from("KST_X10-0000C", false, true, t + 50u,
+                                    SERVO_ACTIVE_TYPED),
+             SERVO_SCAN_REFUSED_RUN);
+    CHECK_STR_EQ(ACTIVE(), "KST_X10-0000B");
+    /* The scanner's last line is still 0000A: its window ended with the
+     * change of the servo, so a scan of A sets it again. */
+    CHECK_EQ(servo_scan_decide("KST_X10-0000A", false, false, t + 60u),
+             SERVO_SCAN_SET);
+    CHECK_EQ(servo_active_from(), SERVO_ACTIVE_SCAN);
+    /* Without a change between, a typed line leaves the window running. */
+    REQUIRE_EQ(servo_scan_decide("nope", false, false, t + 5000u),
+               SERVO_SCAN_MALFORMED);
+    CHECK_EQ(servo_scan_decide_from("nope", false, false, t + 5010u,
+                                    SERVO_ACTIVE_TYPED),
+             SERVO_SCAN_MALFORMED);
+    CHECK_EQ(servo_scan_decide("nope", false, false, t + 5020u),
+             SERVO_SCAN_REPEAT);
+}
+
 int main(void)
 {
     RUN(an_id_sets_the_active_servo_from_a_scan);
@@ -198,5 +239,6 @@ int main(void)
     RUN(a_change_of_the_servo_between_ends_the_repeat_window);
     RUN(a_scan_of_the_new_id_servo_makes_its_source_the_scan);
     RUN(the_longest_ids_are_taken_whole);
+    RUN(a_typed_id_is_never_a_repeat_and_keeps_the_scanners_memory);
     return test_summary("servo_scan");
 }

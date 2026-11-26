@@ -411,6 +411,20 @@ TEST_CASE(a_tap_on_the_chip_opens_its_box_under_the_band)
     st.servo_from = (uint8_t)SERVO_ACTIVE_PICK;
     CHECK(ui_band_help_rect(&st, UI_BAND_CHIP_SERVO, &box));
     ui_band_help_render(&cv, &st, UI_BAND_CHIP_SERVO);
+    /* A typed id has its own text too: its box draws apart from a scan's
+     * (BH_SERVO_TYPED). */
+    st.servo_from = (uint8_t)SERVO_ACTIVE_SCAN;
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    ui_band_help_render(&cv, &st, UI_BAND_CHIP_SERVO);
+    const size_t px = (size_t)W * H;
+    gfx_color_t *scan_fb = malloc(px * sizeof(gfx_color_t));
+    REQUIRE(scan_fb != NULL);
+    memcpy(scan_fb, fb, px * sizeof(gfx_color_t));
+    st.servo_from = (uint8_t)SERVO_ACTIVE_TYPED;
+    memset(fb, 0, px * sizeof(gfx_color_t));
+    ui_band_help_render(&cv, &st, UI_BAND_CHIP_SERVO);
+    CHECK(memcmp(scan_fb, fb, px * sizeof(gfx_color_t)) != 0);
+    free(scan_fb);
 }
 
 int main(void)

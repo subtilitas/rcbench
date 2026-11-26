@@ -86,6 +86,7 @@ set(SRCS
     servo_lists.c
     run_info.c
     servo_pick.c
+    servo_label_rows.c
     servo_run_supply.c
     servo_angle_pick.c
     kst_panel.c

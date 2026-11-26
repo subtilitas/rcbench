@@ -52,6 +52,7 @@
 #include "hitec_panel.h"
 #include "kst_panel.h"
 #include "servo_angle_pick.h"
+#include "servo_label_rows.h"
 #include "settings.h"
 #include "ui_setlist.h"
 #include "ui_text.h"
@@ -202,7 +203,8 @@ static const ui_setlist_custom_t k_hv = {
     UI_SL_ROW_HEADING(TX_SV_PG_DUT, NULL),                                   \
     ROW_DUT_NAME,                                                            \
     ROW_RUN_NOTE,                                                            \
-    UI_SL_ROW_SETTING(SET_SERVO_REPORT)
+    UI_SL_ROW_SETTING(SET_SERVO_REPORT),                                     \
+    SERVO_LABEL_ROWS
 
 /** @brief The hub's rows: the profile, then the device under test. */
 static const ui_setlist_row_t k_hub_rows[] = {
@@ -396,6 +398,7 @@ static const ui_setlist_row_t k_rauto_rows[] = {
     ROW_DUT_NAME,
     ROW_RUN_NOTE,
     UI_SL_ROW_SETTING(SET_LOG_USER),
+    SERVO_LABEL_ROWS,
 };
 /** @brief RUDDER AUTO's list with its SERVO at HITEC CLASSIC: MARGIN at
  *         0% and locked. */
@@ -412,6 +415,7 @@ static const ui_setlist_row_t k_rauto_c_rows[] = {
     ROW_DUT_NAME,
     ROW_RUN_NOTE,
     UI_SL_ROW_SETTING(SET_LOG_USER),
+    SERVO_LABEL_ROWS,
 };
 /** @brief RUDDER AUTO's list with its SERVO at HITEC D SERIES: MARGIN at
  *         0% and locked, D RECEIVE under SERVO. */
@@ -429,6 +433,7 @@ static const ui_setlist_row_t k_rauto_d_rows[] = {
     ROW_DUT_NAME,
     ROW_RUN_NOTE,
     UI_SL_ROW_SETTING(SET_LOG_USER),
+    SERVO_LABEL_ROWS,
 };
 /** @brief LIMIT RUN's list: MODE, the servo, its pulses, CURRENT (SET A),
  *         the programmer's wait, DUT NAME, RUN NOTE and USER LOGS. */
@@ -441,6 +446,7 @@ static const ui_setlist_row_t k_limrun_rows[] = {
     ROW_DUT_NAME,
     ROW_RUN_NOTE,
     UI_SL_ROW_SETTING(SET_LOG_USER),
+    SERVO_LABEL_ROWS,
 };
 /** @brief LIMIT RUN's list with its SERVO at HITEC D SERIES: D RECEIVE
  *         under SERVO. */
@@ -454,6 +460,7 @@ static const ui_setlist_row_t k_limrun_d_rows[] = {
     ROW_DUT_NAME,
     ROW_RUN_NOTE,
     UI_SL_ROW_SETTING(SET_LOG_USER),
+    SERVO_LABEL_ROWS,
 };
 /** @brief HITEC's list: SERIES and D receive. */
 static const ui_setlist_row_t k_hitec_rows[] = {

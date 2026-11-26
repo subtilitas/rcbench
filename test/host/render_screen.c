@@ -45,6 +45,7 @@
 #include "render_sbk.h"
 #include "render_outputs.h"
 #include "render_rudder.h"
+#include "render_servo_label.h"
 #include "render_upd_wiz.h"
 #include "render_shot.h"
 #include "render_esc_wire.h"
@@ -3212,14 +3213,16 @@ static void band_view(const char *view, ui_bench_status_t *st)
         chip = UI_BAND_CHIP_CLOCK;
     } else if (strncmp(view, "band-servo", 10) == 0) {
         /* The active servo's chip and box: a label scanned through the
-         * host's way in (scan_flow_line()), set by NEW ID (-new) or picked
-         * (-pick); -run with a SERVO run ARMED for 12:34 and another
+         * host's way in (scan_flow_line()), set by NEW ID (-new), picked
+         * (-pick) or typed on SERVO ID's keyboard (-typed); -run with a SERVO run ARMED for 12:34 and another
          * label refused during it. */
         (void)servo_active_clear(false);
         if (strcmp(view, "band-servo-new") == 0) {
             (void)servo_active_set("KST_X10-0000A", SERVO_ACTIVE_NEW, false);
         } else if (strcmp(view, "band-servo-pick") == 0) {
             (void)servo_active_set("KST_X10-0000A", SERVO_ACTIVE_PICK, false);
+        } else if (strcmp(view, "band-servo-typed") == 0) {
+            (void)scan_flow_typed("KST_X10-0000A");
         } else {
             (void)scan_flow_line("KST_X10-0000A", false, 1000u);
         }
@@ -4683,6 +4686,7 @@ static ui_screen_id_t servo_view_screen(const char *view)
         { "servo-hub", false, SERVO_FN_HUB },
         { "servo-hv-live", true, SERVO_FN_KST },
         { "servo-settings", true, SERVO_FN_HUB },
+        { "servo-label-", false, SERVO_FN_HUB },
         { "servo-rate-", false, SERVO_FN_HUB },
         { "servo-warning", true, SERVO_FN_HUB },
         { "servo-name", true, SERVO_FN_HUB },
@@ -4951,6 +4955,7 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
         /* The footer's SETTINGS: the hub's list, a function's list (TEST's
          * among them), LIMIT RUN's page of rows, KST's EXPERT MODE page. */
         const bool on_list = strcmp(view, "servo-settings") == 0
+                             || render_servo_label_view(view)
                              || strcmp(view, "servo-sweep-page") == 0
                              || strcmp(view, "servo-warning") == 0
                              || strcmp(view, "servo-encoder") == 0
@@ -4971,8 +4976,10 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
             /* ... to its LENGTH AND TIMING heading, row 15, ... */
             ui_setlist_scroll_to((ui_setlist_t *)servo_screen_list(), 15);
         } else if (strcmp(view, "servo-test-settings-end") == 0) {
-            /* ... and to its last row, REPORT under DUT. */
-            ui_setlist_scroll_to((ui_setlist_t *)servo_screen_list(), 26);
+            /* ... and to its RANGE heading, row 21, at the top: RANGE,
+             * OUTPUT and DUT down to REPORT, above the SERVO LABEL block
+             * the hub's servo-label-rows shows. */
+            ui_setlist_scroll_to((ui_setlist_t *)servo_screen_list(), 21);
         } else if (strcmp(view, "servo-warning") == 0) {
             servo_list_tap(1, UI_SL_PART_VALUE);      /* TYPE */
             tap(165, UI_BAND_H + 256);                /* HELI CYCLIC */
@@ -5670,6 +5677,7 @@ int main(int argc, char **argv)
         render_files_pose(view);
     }
     render_rudder_pose(view);
+    render_servo_label_pose(view);
     (void)render_outputs_pose(view);
     rauto_rbmod_hold(view);
     if (strncmp(view, "band-", 5) == 0) {

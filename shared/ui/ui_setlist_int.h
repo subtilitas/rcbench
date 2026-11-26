@@ -106,6 +106,9 @@ _Static_assert(WARN_NOTE_Y + 2 * WARN_NOTE_PITCH <= WARN_H - 4,
 #define CHOICE_W 400
 /** @brief A choice row's height, px: UI_CHOICE_ROW_H, 56. */
 #define CHOICE_H 56
+/** @brief A choice row's height in a list of 8 rows, px: 8 x 52 + 8 fits
+ *         the pane's 428. */
+#define CHOICE_H_TIGHT 52
 
 /* --- ui_setlist.c: what the drawing reads ------------------------------- */
 

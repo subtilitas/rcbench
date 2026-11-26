@@ -413,7 +413,7 @@ its stack less 1024 bytes.
 | --- | --- | ---: | ---: | ---: |
 | `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 5,328 | 1,824 |
 | `control` | `control_task` | 6,144 | 3,648 | 1,456 |
-| `runlog` | `log_task` | 6,656 | 4,144 | 1,472 |
+| `runlog` | `log_task` | 6,656 | 4,128 | 1,488 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
 | `scan` | `scan_task`, the QR scanner's UART1 and its GM861 sequence (`panel_scan.c`) | 3,072 | 1,296 | 736 |
 | `blec` | `blec_task`, every Bluetooth LE client's link through the hub: the IMU's, the Dial's and both sensor nodes' SETUP values, the host stack's events and the actions to NimBLE (`panel_blec.c`, the IMU's side in `panel_imu.c`, the Dial's in `panel_dial.c`, the power node's in `panel_pnode.c`, the balance node's in `panel_bal.c`, the wireless devices' update in `panel_devupd.c`, the label printer's long write through `panel_ble_write_long()`) | 4,096 | 1,840 | 1,216 |

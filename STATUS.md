@@ -1335,6 +1335,22 @@ frame, a cut line as too long. The card's look-up (new, known with the
 name of its newest run, no card) is a hook no firmware registers yet, so the
 panel's notice names the id alone and DUT NAME stays.
 
+The SERVO LABEL rows (`servo_label_rows.c`, `test_servo_label_rows`) end
+every SERVO list that carries DUT NAME: ID PREFIX (the name keyboard, 17
+characters, a save asked at once), SERVO ID (a choice list of NONE, the
+card's 6 newest ids and TYPE ID, 8 rows at 52px) and NEW ID (`NEXT` and the
+id it makes). TYPE ID opens the name keyboard on the prefix and its `-`
+(`ui_textkey_open_servo_id()`): 23 characters, lower case folded to upper on
+OK, nothing trimmed, an id `servo_id_why()` refuses kept on the keyboard with
+its rule's line. A taken id runs through `scan_flow_typed()`, the scan's
+rules and notices with the source `SERVO_ACTIVE_TYPED` and no repeat window
+(`servo_scan_decide_from()`), and the chip's box says typed. SERVO ID and
+NEW ID are locked while `servo_screen_run_active()`; NEW ID also with no
+card, at `ZZZZZ`, with a prefix that starts with `.` or holds another
+character. The card's ids and NEW ID's request reach the rows through
+`servo_label_io_t`, which `panel_boot.c` registers with `panel_servo.c`'s
+walk and request; the host suite holds the rows against a fake of it.
+
 ### M5Stack Dial
 
 Built and host-tested: the knob protocol of the M5Stack Dial v1.1 over BLE
@@ -1886,7 +1902,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 691 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 692 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1962,7 +1978,7 @@ The host suite is 691 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_fm_recheck`, `test_fm_req`, `test_files_screen`, `test_files_ops`, `test_files_open`,
 `test_files_view`, `test_files_edit`, `test_files_save`, `test_files_changed`,
 `test_files_rescan`, `test_logs_strip`, `test_textkey_editor`, `test_textkey_see`,
-`test_textkey_cursor`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_log_info`, `test_servo_id`, `test_servo_name`, `test_servo_active`, `test_servo_take`, `test_servo_scan`, `test_scan_flow`, `test_scan_input`, `test_log_preset`, `test_log_marks`, `test_servo_runlog`,
+`test_textkey_cursor`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_log_info`, `test_servo_id`, `test_servo_name`, `test_servo_active`, `test_servo_take`, `test_servo_scan`, `test_scan_flow`, `test_servo_label_rows`, `test_scan_input`, `test_log_preset`, `test_log_marks`, `test_servo_runlog`,
 `test_servo_runlog_cols`, `test_servo_log_figures`, `test_log_cadence`, `test_perf_watch`, `test_pass_stats`, `test_report_lines`, `test_report_steps`,
 `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`,
 `test_kst_pio`, `test_kst_port`, `test_kst_port_cut`, `test_kst_link`, `test_prog_port`,
@@ -2556,7 +2572,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-1118 committed screenshots to the current render, 559 in English and the same 559 in German, and `render_ui.py --fit` fails on a string that
+1122 committed screenshots to the current render, 561 in English and the same 561 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

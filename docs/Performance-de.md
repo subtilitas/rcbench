@@ -440,7 +440,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | --- | --- | ---: | ---: | ---: |
 | `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 328 | 1 824 |
 | `control` | `control_task` | 6 144 | 3 648 | 1 456 |
-| `runlog` | `log_task` | 6 656 | 4 144 | 1 472 |
+| `runlog` | `log_task` | 6 656 | 4 128 | 1 488 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
 | `scan` | `scan_task`, UART1 des QR-Scanners und sein GM861-Ablauf (`panel_scan.c`) | 3 072 | 1 296 | 736 |
 | `blec` | `blec_task`, die Verbindung jedes Bluetooth-LE-Clients über den Hub: die Werte der IMU, des Dial und beider Sensorknoten aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_blec.c`, die Seite der IMU in `panel_imu.c`, die des Dial in `panel_dial.c`, die des Leistungsknotens in `panel_pnode.c`, die des Auswuchtknotens in `panel_bal.c`, das Update der Funkgeräte in `panel_devupd.c`, der lange Schreibzugriff des Etikettendruckers über `panel_ble_write_long()`) | 4 096 | 1 840 | 1 216 |

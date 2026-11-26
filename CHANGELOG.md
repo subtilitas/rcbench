@@ -8,6 +8,15 @@ history is in git.
 
 ### Added
 
+- The SERVO lists that carry DUT NAME end with SERVO LABEL: ID PREFIX,
+  SERVO ID and NEW ID. SERVO ID picks NONE, one of the card's 6 newest ids,
+  or TYPE ID, which types an id on the name keyboard, 23 characters, lower
+  case folded to upper; a malformed id is refused on the keyboard with the
+  rule it breaks, and a taken one runs as a scan does, its chip box saying
+  typed. NEW ID shows the id it makes and is locked with its reason: no
+  card, `ZZZZZ`, a prefix starting with `.`, a run active
+  (`servo_label_rows.c`; `test_servo_label_rows`, `test_servo_scan`,
+  `test_scan_flow`).
 - A scanned servo id sets the active servo, and the band shows it in a chip
   left of the other chips, on the accent while a run holds it, shortened
   to `-0000A` where the row has no room. Each scan raises a notice: the id,

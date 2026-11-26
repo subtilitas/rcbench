@@ -12,6 +12,7 @@
 
 #include "card_tree.h"
 #include "fm_name.h"
+#include "servo_id.h"
 #include "ui_layout.h"
 #include "ui_text.h"
 #include "ui_theme.h"
@@ -148,6 +149,15 @@ void ui_textkey_open_folder(ui_textkey_t *k, gfx_rect_t area,
     ui_textkey_open(k, area, title, text, UI_TEXTKEY_MAX);
     if (k != NULL) {
         k->folder = true;
+    }
+}
+
+void ui_textkey_open_servo_id(ui_textkey_t *k, gfx_rect_t area,
+                              const char *title, const char *text)
+{
+    ui_textkey_open(k, area, title, text, UI_TEXTKEY_MAX);
+    if (k != NULL) {
+        k->servo_id = true;
     }
 }
 
@@ -590,6 +600,24 @@ static ui_textkey_result_t press(ui_textkey_t *k, int key, char *out,
             ui_textkey_close(k);
             return UI_TEXTKEY_OK;
         }
+        if (k->servo_id) {           /* upper case, as the label prints it */
+            for (int i = 0; i < k->len; ++i) {
+                if (k->text[i] >= 'a' && k->text[i] <= 'z') {
+                    k->text[i] = (char)(k->text[i] - ('a' - 'A'));
+                }
+            }
+            const servo_id_err_t r = servo_id_why(k->text);
+            if (r != SERVO_ID_OK) {
+                k->refused = true;
+                k->why     = (uint8_t)r;
+                return UI_TEXTKEY_NONE;
+            }
+            if (out != NULL && n > 0u) {
+                snprintf(out, n, "%s", k->text);
+            }
+            ui_textkey_close(k);
+            return UI_TEXTKEY_OK;
+        }
         if (k->wifi && k->len < (k->secret ? UI_TEXTKEY_PASS_MIN : 1)) {
             k->refused = true;       /* the radio would refuse it */
             return UI_TEXTKEY_NONE;
@@ -706,6 +734,24 @@ static const char *folder_why(uint8_t why)
     case CARD_FOLDER_BENCH:    return TR(TEXTKEY_DIR_BENCH);
     case CARD_FOLDER_EMPTY:
     default:                   return TR(TEXTKEY_DIR_EMPTY);
+    }
+}
+
+/**
+ * @brief Why a servo's id was refused, in the words of its line.
+ * @param why A servo_id_err_t.
+ * @return The line.
+ */
+static const char *servo_id_why_line(uint8_t why)
+{
+    switch ((servo_id_err_t)why) {
+    case SERVO_ID_LONG:   return TR(TEXTKEY_ID_LONG);
+    case SERVO_ID_CHAR:   return TR(TEXTKEY_ID_CHAR);
+    case SERVO_ID_EDGE:   return TR(TEXTKEY_ID_EDGE);
+    case SERVO_ID_SERIAL: return TR(TEXTKEY_ID_SERIAL);
+    case SERVO_ID_EMPTY:
+    case SERVO_ID_OK:
+    default:              return TR(TEXTKEY_ID_EMPTY);
     }
 }
 
@@ -875,6 +921,8 @@ static void draw_field(const ui_textkey_t *k, gfx_canvas_t *c)
         snprintf(room, sizeof(room), "%s", folder_why(k->why));
     } else if (k->refused && k->file) {
         snprintf(room, sizeof(room), "%s", file_why(k->why));
+    } else if (k->refused && k->servo_id) {
+        snprintf(room, sizeof(room), "%s", servo_id_why_line(k->why));
     } else if (k->refused && k->wifi) {
         if (k->secret) {
             snprintf(room, sizeof(room), TR(TEXTKEY_SHORT),

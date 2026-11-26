@@ -10,7 +10,9 @@
  * holds a line and the mailbox is empty, so a line the mailbox cannot take stays in that queue; and
  * scan_flow_tick() on the frame task runs the line that waits.
  * scan_flow_line() runs a line at once on the frame task; the host suite
- * and the renderer inject lines through it.
+ * and the renderer inject lines through it.  scan_flow_typed() runs an id
+ * typed on SERVO ID's keyboard the same way, its source
+ * SERVO_ACTIVE_TYPED.
  *
  * A line runs through servo_scan_decide() (servo_active.h) with the run
  * state of the screens (scan_flow_run_active()) and raises the notice of
@@ -130,6 +132,16 @@ void scan_flow_tick(uint32_t now_ms, const ui_bench_status_t *st);
  *         update); else true, with scan_flow_last() saying what it did.
  */
 bool scan_flow_line(const char *line, bool too_long, uint32_t now_ms);
+
+/**
+ * @brief Frame task: an id typed on SERVO ID's keyboard, run now as a
+ *        scanned line is (servo_scan_decide_from(), SERVO_ACTIVE_TYPED):
+ *        the same notices, the same run refusal, DUT NAME from a known
+ *        servo's newest run; never a repeat.
+ * @param id The id as typed, upper case; NULL counts as "".
+ * @return As scan_flow_line().
+ */
+bool scan_flow_typed(const char *id);
 
 /**
  * @brief What the last line taken did.

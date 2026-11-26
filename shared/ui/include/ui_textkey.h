@@ -23,6 +23,13 @@
  * outside A-Z, 0-9, "_" and "-", a reserved name, a folder of the bench's
  * own files.  The keys and the rest of the layout are the name's.
  *
+ * Opened for a servo's id (ui_textkey_open_servo_id()) it types an id
+ * such as KST_X10-0000A, 23 characters at most, on the name's keys: OK
+ * folds lower case to upper, trims nothing, and takes the id only when
+ * servo_id_why() (servo_id.h) does.  A refused OK keeps the keyboard
+ * open, and its line names the rule broken: no prefix, too long, the
+ * serial, a character, an edge.
+ *
  * Opened for Wi-Fi (ui_textkey_open_wifi()) it types a network name of up
  * to 32 bytes or a password of 8 to 63 characters: any printable ASCII
  * (American Standard Code for Information Interchange) character, lower
@@ -199,6 +206,7 @@ typedef struct {
     bool       search;      /**< a search pattern: see the top        */
     bool       folder;      /**< a folder of the card: see the top    */
     bool       file;        /**< a file name: see the top             */
+    bool       servo_id;    /**< a servo's id: see the top            */
     const char *ok_label;   /**< what OK reads; NULL is "OK"           */
     uint8_t    why;         /**< a folder's refusal, card_folder_t; a
                                  file name's, fm_name_t              */
@@ -251,6 +259,17 @@ void ui_textkey_open_search(ui_textkey_t *k, gfx_rect_t area,
  */
 void ui_textkey_open_folder(ui_textkey_t *k, gfx_rect_t area,
                             const char *title, const char *text);
+
+/**
+ * @brief Open for a servo's id; see the top of this file.  Up to
+ *        UI_TEXTKEY_MAX (23) characters, the id's most.
+ * @param k     The keyboard; NULL does nothing.
+ * @param area  Where it draws and takes presses.
+ * @param title What is typed, top left.
+ * @param text  The text it starts with: the saved prefix and its "-".
+ */
+void ui_textkey_open_servo_id(ui_textkey_t *k, gfx_rect_t area,
+                              const char *title, const char *text);
 
 /**
  * @brief Open for a Wi-Fi password or network name; see the top of this
