@@ -19,6 +19,8 @@ history is in git.
   `tools/gen_licenses.py` writes the screen's table and the one in the new
   page `docs/Licenses.md` from one list; CI runs its `--check`
   (`test_gen_licenses.py`).
+- The splash's credit line at the foot reads `JuWi made`, the same in
+  English and German (`SPLASH_CREDIT`; `splash.png`, `de/splash.png`).
 - SERVO LABEL's PRINT row prints the active servo's label, its id and
   DUT NAME, on the bound printer and the roll it reports. It reads PRINT
   AGAIN for one of the session's last 8 ids printed, whichever servo was
@@ -38,6 +40,15 @@ history is in git.
   (`wireless_printer.c`, `print_ctl.c`, `print_req.c`, `bleuart_adv.c`;
   `test_wireless_printer`, `test_print_ctl_scan`, `test_print_ctl_ends`,
   `test_bleuart_ext`).
+- Label printers from description files: `protocols/prnengine` reads a
+  printer file (`rcbench printer, format 1`, at most 8,192B, codes E01 to
+  E30 with a line) into a fixed 6,080B spec and runs QUERY and PRINT jobs
+  in 2,048B; `protocols/printers/supvan-t50m-pro.prn` (MIT) describes the
+  T50M Pro and drives it with the bytes, kinds and times of `sv_job`.
+  `tools/printer_files.py --check` reads every file of record in CI. No
+  firmware links the engine (`test_prn_job_vs_sv`, `test_prn_image`,
+  `test_prn_parse`, `test_prn_tmpl`, `test_prn_job`, `test_prn_fuzz`,
+  `prn_parity`, `prnengine_symbols`).
 - The SERVO lists that carry DUT NAME end with SERVO LABEL: ID PREFIX,
   SERVO ID and NEW ID. SERVO ID picks NONE, one of the card's 6 newest ids,
   or TYPE ID, which types an id on the name keyboard, 23 characters, lower

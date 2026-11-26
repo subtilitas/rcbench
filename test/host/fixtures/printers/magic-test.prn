@@ -1,0 +1,89 @@
+rcbench printer, format 1
+# SPDX-License-Identifier: MIT
+#
+# A printer of the engine's suites, not a real one: a big-endian length
+# joiner with a tail and a CRC check, chunks without padding, the verdict
+# "result".
+id magic-test
+name MAGIC TEST
+version 1
+licence MIT
+source https://example.invalid/magic-test
+
+match oui 11:22:33
+match name MAGIC
+
+service 12345678-9abc-def0-1234-56789abcdef0
+chr cmd FFF1 write
+chr rx FFF2 notify
+cccd discover
+mtu_min 100
+conn 24 40 2 600
+
+head_dots 200
+dots_mm 8
+line 25 lsb 1 no
+label feed bottom
+label dot0 left
+label align center
+label margin 2 2
+roll source record
+roll limits 10 25 10 100
+
+page size 512
+page lines 16
+page head AA {pflags:u8} {lines:be16} {mlead:u8} {ck:sum8:0:-1}
+page flags 01 80
+compress none
+chunk size 100
+chunk pad no
+chunk max 20
+chunk frame A5 {idx:u8} {total:u8} {len:be16:0:-1} {data} {ck:crc32le:0:-5}
+write cmd req
+write data req 64 0
+table speed mean_page 300:7 else 9
+
+tmpl q A5 {a:u8} {p0:le32} {p1:u8} {c0:u8}
+
+rx join magic_len A55A 2 be16 5 7 64
+rx tail 0D
+rx check {ck:sum8:0:-3}
+rx key 4
+answer 01 12
+answer 02 7
+field 01 roll_w 5 u8
+field 01 roll_h 6 u8
+field 01 left 7 le16
+field 01 uid 9 be16
+field 02 result 5 u8
+field 02 busy 5 bit 7
+
+step hello
+  send q a=1 p0=stream_len p1=frames
+  expect 01
+  within 400
+  roll
+  check roll_w = lay_w else ROLL
+  save c0 left
+  relink verdict
+step data
+  data
+  within 800
+  else SILENT
+  relink verdict
+step finish
+  send q a=2 p1=speed
+  expect 02
+  poll 30
+  until busy clear
+  within 900
+  flags on
+  relink finish
+
+job query hello
+job print hello data finish
+abort q a=3 from data to finish
+relink_ms 2000
+answer_ms 250
+verdict result result 0 5
+end

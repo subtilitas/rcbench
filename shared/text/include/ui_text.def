@@ -553,8 +553,8 @@ UI_TEXT(SPLASH_TAGLINE, 0,
     "motor, ESC and servo test bench",
     "Prüfstand für Motor, ESC und Servo")
 UI_TEXT(SPLASH_CREDIT, 0,
-    "Designed by JuWi",
-    "Entwickelt von JuWi")
+    "JuWi made",
+    "JuWi made")
 
 /* ----------------------------------------------------------- bus fault */
 UI_TEXT(BF_BUS_OFF_TEXT, 0,
