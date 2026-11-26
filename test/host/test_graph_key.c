@@ -112,6 +112,9 @@ static const gk_file_t k_card[] = {
     { "Servos/KST_X10-0000A", "limit run_000.csv", k_limit },
     { "Servos/KST_X10-0000A", "limit run_000.txt", "LIMIT RUN\n" },
     { "Servos/KST_X10-0000A", "automatic test_000.csv", k_atest },
+    /* A 23-character id's folder, 30 characters. */
+    { "Servos/KST X10 LEFT WING-ZZZZZ", "limit run_000.csv", k_limit },
+    { "Servos/KST X10 LEFT WING-ZZZZZ", "limit run_000.txt", "LIMIT RUN\n" },
 };
 
 static char g_dir[CARD_RUN_DIR_MAX];  /**< the folder the screen points at */
@@ -919,10 +922,10 @@ TEST_CASE(automatic_test_graph_opens_a_22_character_name)
 }
 
 /* A 23-character id: its folder `Servos/<id>` of 30 characters reaches
- * the GRAPH key whole; a folder that does not fit is refused, not cut.
- * LOGS' own folder buffers take the 30 characters with #973; this case
- * stops at the key. */
-TEST_CASE(the_key_keeps_a_23_character_ids_folder_whole)
+ * the GRAPH key whole, and GRAPH opens the run in LOGS from that folder,
+ * the whole path through LOGS' own buffers; a folder that does not fit
+ * the key is refused, not cut. */
+TEST_CASE(graph_opens_a_23_character_ids_run_whole_in_logs)
 {
     static const char dir[] = "Servos/KST X10 LEFT WING-ZZZZZ";
     CHECK_EQ(strlen(dir), 30u);
@@ -940,6 +943,11 @@ TEST_CASE(the_key_keeps_a_23_character_ids_folder_whole)
     CHECK_STR_EQ(s.gk_dir[PEEK_LIM], dir);
     CHECK_EQ(graph_key_state(GRAPH_KEY_LIMIT), GRAPH_KEY_LIVE);
     CHECK(card_reads("limit run_000.txt"));
+    tap_in(servo_screen_graph_rect());
+    CHECK(opened_from("limit run_000.csv", dir, LOG_TAB_USER));
+    frame();
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO_LIMRUN);
 
     /* graph_key.h alone: 31 characters fit, 32 are refused. */
     char longest[CARD_RUN_DIR_MAX + 1];
@@ -1058,7 +1066,7 @@ int main(void)
     RUN(supply_graph_keeps_the_runs_folder);
     RUN(limit_run_graph_opens_a_labelled_servos_run_000);
     RUN(automatic_test_graph_opens_a_22_character_name);
-    RUN(the_key_keeps_a_23_character_ids_folder_whole);
+    RUN(graph_opens_a_23_character_ids_run_whole_in_logs);
     RUN(the_key_follows_its_run_and_forgets_a_stale_note);
     RUN(each_card_is_an_opener_of_logs);
     free(g_fb);

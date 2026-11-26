@@ -145,8 +145,9 @@ est. ms and est. fps: not measured
 
 The count repeats exactly on every run of the same tree: the tool gives
 cachegrind the geometry of all three caches, so none is taken from the host's
-CPU, and the bench draws from a stack at a fixed offset within 64KB, so argv,
-the environment and the paths do not move it. `test_frame_cost.py` measures
+CPU, the bench draws from a stack at a fixed offset within 64KB, and it reads
+1MiB in order before the first frame, which leaves every modelled cache holding
+only those lines, so argv, the environment and the paths do not move it. `test_frame_cost.py` measures
 five modes twice and fails on one fill of difference. The compiler, the C
 library and valgrind still shape the count. The table holds the figures of the
 ubuntu-26.04 runner of CI (continuous integration), and a machine with other

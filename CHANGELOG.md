@@ -15,6 +15,20 @@ history is in git.
   line within 3.0s is dropped. The debug console's `scan <text>` injects a
   line (`scan_flow.c`, `servo_scan_decide()`; `test_scan_flow`,
   `test_servo_scan`).
+- A scan of a servo with runs on the card sets DUT NAME to the `dut` value
+  its runs' `info` cells carry, and the notice names it; a servo new on
+  the card, or one whose folder holds no run, gives `NEW ON THIS CARD` and
+  leaves DUT NAME. The panel's logger task lists `Servos/<id>` once and
+  reads 2,048 bytes at most of each kind's highest-numbered CSV, up to 4.
+  Names that agree name the servo; names that differ take the newest FAT
+  stamp only when every stamp is a date after 1980, otherwise no name. A
+  first data row past 2,048 bytes gives no name. The answer reaches the
+  band frames after the scan and is dropped once another id is set or a
+  run starts; a DUT NAME typed since the scan stays (`servo_look.c`,
+  `scan_flow_answer()`; `test_scan_look`).
+- A scan during a start sequence (the hold on START or ARM until the run)
+  is refused like a scan during the run: the scan's run check is
+  `servo_screen_run_active()`.
 - FILES and the Wi-Fi page keep a labelled servo's folders: `Servos` and
   each id folder in it (`Servos/KST_X10-0000A`, any case) take no RENAME,
   MOVE or DELETE, DELETE also when empty, and list with the place `SERVO`
