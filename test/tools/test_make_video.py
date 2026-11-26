@@ -91,12 +91,15 @@ def test_the_stop_buttons_keys_stretch_with_the_narration():
              "estop": [[0, 0], [4, 1], [8, 0]],
              "panel": [[0, "motor-plot"], [4, "stop-hw"]],
              "say": [{"at": 2, "text": "x"}]}
+    board = {"name": "x", "lang": "en", "brand": "x", "steps": 1,
+             "scenes": [scene]}
+    # One click where the head latches in, none where it comes out.
+    assert [e for e in video_audio.events(board) if e[1] == "click"] \
+        == [(4, "click", 0)]
     video_voice._stretch(scene, [0.0, 2, 10], [0.0, 6, 14])
     assert [key[0] for key in scene["estop"]] == [0, 8, 12]
     assert scene["panel"][1][0] == 8
     scene["estop"][1][1] = 2
-    board = {"name": "x", "lang": "en", "brand": "x", "steps": 1,
-             "scenes": [scene]}
     assert any("estop" in e for e in make_video.check(board))
 
 

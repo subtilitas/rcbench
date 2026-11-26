@@ -284,6 +284,11 @@ def events(board: dict) -> list:
             for a, b in zip(lid, lid[1:], strict=False):
                 if a[1] != b[1]:
                     found.append((start + a[0], "low", 0))
+            # The emergency stop's head latches in: a click.
+            stop = scene.get("estop", [])
+            for a, b in zip(stop, stop[1:], strict=False):
+                if a[1] < 1 <= b[1]:
+                    found.append((start + b[0], "click", 0))
             # A component of the model takes its seat: a soft tap.
             for keys in scene.get("parts", {}).values():
                 if keys and keys[-1][1] == 0:
@@ -724,6 +729,13 @@ def render(board: dict, path: pathlib.Path, clips=()) -> float:
             sig, tt = tone(hz(notes[2] + 24), 0.2, ((1, 1.0), (2, 0.3)))
             sig *= np.exp(-tt / 0.03) * np.minimum(1.0, tt / 0.002)
             put(fx, t, sig, -0.2, 0.13)
+        elif kind == "click":
+            # A latch: 12ms of bright noise over a thud that dies in 40ms.
+            tt = np.arange(int(0.12 * RATE)) / RATE
+            sig = noise(0.12, 1800.0, 7000.0) * np.exp(-tt / 0.012)
+            sig = sig + 0.8 * np.sin(2 * np.pi * 170.0 * tt) \
+                * np.exp(-tt / 0.04)
+            put(fx, t, sig * np.minimum(1.0, tt / 0.001), -0.1, 0.22)
         elif kind == "hold":
             tt = np.arange(int(2.0 * RATE)) / RATE
             f = hz(notes[0]) * 2.0 ** (tt / 2.0)
