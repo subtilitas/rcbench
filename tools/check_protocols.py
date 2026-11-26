@@ -3,7 +3,10 @@ r"""Hold every module under protocols/ to the rule that lets it leave.
 
 A module under protocols/ is built in other pico-sdk projects, C and C++,
 without the rest of this repository (CONTRIBUTING.md, "Where code goes").
-This tool reads each module and fails when one of these does not hold:
+A folder named in DATA_DIRS holds data, not a module: the label printer
+files of protocols/printers.  It is no module and fails when it holds a C
+file, a header, a PIO program or a CMakeLists.txt.  This tool reads each
+module and fails when one of these does not hold:
 
 - the module has a README.md, a CMakeLists.txt, a header under include/
   and a C file beside them, and an rp2350/ folder holds a .pio file, a C
@@ -336,6 +339,8 @@ PIO_BLOCK_END_RE = re.compile(r"%\}[ \t\r]*")
 PIO_DIRECTIVE_RE = re.compile(r"\.(lang_opt|program)(?![A-Za-z0-9_])", re.I)
 C_COMMENT_RE = re.compile(r"/\*.*?\*/|//[^\n]*", re.S)
 SOURCE_SUFFIXES = (".c", ".h", ".pio")
+# Folders of data under protocols/: no module, and no code in them.
+DATA_DIRS = ("printers",)
 
 # Brand names that a module README names; a README that names one carries a
 # section whose heading has "Trademark" in it.
@@ -828,10 +833,24 @@ def source_includes(path: pathlib.Path) -> list[tuple[str, str]]:
 
 
 def modules(root: pathlib.Path = PROTOCOLS) -> list[pathlib.Path]:
-    """The module folders under @p root, sorted."""
+    """The module folders under @p root, sorted; DATA_DIRS left out."""
     if not root.is_dir():
         return []
-    return sorted(p for p in root.iterdir() if p.is_dir())
+    return sorted(p for p in root.iterdir()
+                  if p.is_dir() and p.name not in DATA_DIRS)
+
+
+def data_problems(root: pathlib.Path = PROTOCOLS) -> list[str]:
+    """Code in a data folder under @p root, one line per file."""
+    problems = []
+    for name in DATA_DIRS:
+        for path in sorted((root / name).rglob("*")):
+            if path.is_file() and (path.suffix in SOURCE_SUFFIXES
+                                   or path.name == "CMakeLists.txt"):
+                rel = path.relative_to(root.parent).as_posix()
+                problems.append(f"{rel} is code in the data folder "
+                                f"{root.name}/{name}/")
+    return problems
 
 
 def is_driver(path: pathlib.Path, module: pathlib.Path) -> bool:
@@ -1169,6 +1188,7 @@ def check(root: pathlib.Path = PROTOCOLS) -> list[str]:
         problems += readme_problems(module)
         problems += cmake_problems(module)
         problems += header_problems(module, cc, cxx)
+    problems += data_problems(root)
     problems += assertion_problems(root, ASSERTED if root == PROTOCOLS
                                    else {})
     return problems

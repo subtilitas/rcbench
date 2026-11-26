@@ -8,6 +8,15 @@ history is in git.
 
 ### Added
 
+- Label printers from description files: `protocols/prnengine` reads a
+  printer file (`rcbench printer, format 1`, at most 8,192B, codes E01 to
+  E30 with a line) into a fixed 6,080B spec and runs QUERY and PRINT jobs
+  in 2,048B; `protocols/printers/supvan-t50m-pro.prn` (MIT) describes the
+  T50M Pro and drives it with the bytes, kinds and times of `sv_job`.
+  `tools/printer_files.py --check` reads every file of record in CI. No
+  firmware links the engine (`test_prn_job_vs_sv`, `test_prn_image`,
+  `test_prn_parse`, `test_prn_tmpl`, `test_prn_job`, `test_prn_fuzz`,
+  `prn_parity`, `prnengine_symbols`).
 - The SERVO lists that carry DUT NAME end with SERVO LABEL: ID PREFIX,
   SERVO ID and NEW ID. SERVO ID picks NONE, one of the card's 6 newest ids,
   or TYPE ID, which types an id on the name keyboard, 23 characters, lower

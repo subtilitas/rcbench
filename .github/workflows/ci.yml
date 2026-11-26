@@ -542,6 +542,12 @@ jobs:
       - name: Every translated format matches its call
         run: python3 tools/check_formats.py
 
+      # Every printer file of record reads under the format of
+      # protocols/printers/README.md, carries the MIT licence, its SPDX line
+      # and a source, and is named after its id.
+      - name: The printer files hold the format
+        run: python3 tools/printer_files.py --check protocols/printers/*.prn
+
       # The tools in tools/ are held to the same standard as the C: each of
       # them can fail a build, so a bug in one is a bug in the gate.  Their
       # tests are held to it too, and the script of the host suite.  The D

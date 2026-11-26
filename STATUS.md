@@ -1857,6 +1857,26 @@ printer gone at each stage, the MTU at 130 and 131, the linger at 30,000ms, and 
 on the station are step H1; the connect time, the build step's time and the frame loss of an
 IMU during a job are not measured.
 
+### Printer description files
+
+`protocols/prnengine` drives a label printer from a text file of data,
+`protocols/printers/<id>.prn` (format reference in
+`protocols/printers/README.md`); no firmware links it. The reader takes a
+file of at most 8,192B into a fixed 6,080B spec with no heap, or refuses it
+with a code E01 to E30 and a line. The engine renders templates, builds
+pages and chunk or row frames, joins answers and runs QUERY and PRINT jobs
+in a 2,048B job. `supvan-t50m-pro.prn` (MIT) drives the T50M Pro with the
+same bytes as `protocols/supvan`: the pages, the literal stream and the
+data frames of the station's capture H0 byte for byte, each of its 29
+writes, and `sv_job` beside the engine through every scenario of
+`test_supvan_job` and `test_supvan_job_ends` with each write's bytes, kind
+and time equal (`test_prn_job_vs_sv`, `test_prn_image`). The reader, the
+templates and the job also run in `test_prn_parse`, `test_prn_tmpl`,
+`test_prn_job` and `test_prn_fuzz`; `tools/printer_files.py --check` reads
+every file of record in CI and agrees with the C reader on 3,000 changed
+files (`prn_parity`). The engine calls `memcpy()`, `memset()`, `memcmp()`
+and `strlen()` only (`prnengine_symbols`).
+
 ## The tree
 
 Directories only. `git ls-files <directory>` lists the files of one.
@@ -1886,7 +1906,8 @@ rcbench/
   protocols/              one module per external interface: a pure C core,
                           its RP2350 pin driver in rp2350/, a README.md
     dshot/ ppm/ sbus/ openyge/ pdmini/ phase_tap/ passthru/ kst/ hitec/
-    escwire/ hc05/ bleuart/ dialknob/ supvan/
+    escwire/ hc05/ bleuart/ dialknob/ supvan/ prnengine/
+    printers/             label printer files (.prn): data, no code
 
   firmware/panel/         ESP-IDF: main/, components/, sdkconfig.defaults,
                           partitions.csv
@@ -1906,7 +1927,7 @@ rcbench/
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` · `passthru` | yes | yes | yes |
 | `escwire` · `openyge` | yes | yes | yes |
 | `witmotion` | yes | | yes |
-| `hc05` · `dial` | | | yes |
+| `hc05` · `dial` · `prnengine` | | | yes |
 | `bleuart` · `dialknob` · `vibe` · `rcnode` · `bleota` · `devupd` · `scanner` · `supvan` | yes | | yes |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
@@ -1941,7 +1962,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 697 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 703 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -2073,6 +2094,7 @@ The host suite is 697 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client`, `test_devimg`, `test_devimg_board`, `test_upd_dev`, `test_upd_fetch`,
 `test_upd_wizard`, `test_upd_wizard_map`, `test_upd_wiz_view`, `test_label_bitmap`, `test_label_layout`,
 `test_lzlit`, `test_supvan_frame`, `test_supvan_page`, `test_supvan_job`, `test_supvan_job_ends`,
+`test_prn_job_vs_sv`, `test_prn_image`, `test_prn_tmpl`, `test_prn_parse`, `test_prn_job`, `test_prn_fuzz`,
 `test_print_ctl`, `test_print_ctl_ends` and `test_harness`.
 
 The harness is `test/host/greatest.h`, written for this project. `CHECK_EQ` compares
