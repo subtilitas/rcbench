@@ -140,7 +140,7 @@ uint32_t prn_ck(uint8_t kind, const uint8_t *p, size_t n)
 static bool put(uint8_t *out, uint8_t enc, uint64_t v)
 {
     const unsigned w = prn_enc_width(enc);
-    if (w == 0u || (w < 8u && (v >> (8u * w)) != 0u)) {
+    if (w == 0u || (v >> (8u * w)) != 0u) { /* w is 1, 2 or 4 */
         return false;
     }
     const bool be = enc == PRN_E_BE16 || enc == PRN_E_BE32;

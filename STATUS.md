@@ -1889,6 +1889,10 @@ templates and the job also run in `test_prn_parse`, `test_prn_tmpl`,
 every file of record in CI and agrees with the C reader on 3,000 changed
 files (`prn_parity`). The engine calls `memcpy()`, `memset()`, `memcmp()`
 and `strlen()` only (`prnengine_symbols`).
+`tools/mutate.py --files protocols/prnengine/prn_tmpl.c` makes 77 mutants: 67 killed, 6
+do not compile, 4 survive. The 4 change the condition that leaves `{ck:svpage}` to
+`prn_page_fill()`. No file the reader takes can tell them apart: an svpage token is
+never a length token, and the checksum of that kind is 0, the bytes the skip leaves.
 
 ## The tree
 

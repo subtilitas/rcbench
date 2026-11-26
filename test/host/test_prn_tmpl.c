@@ -197,6 +197,56 @@ TEST_CASE(data_is_padded_and_the_frame_kept_to_its_room)
     }
 }
 
+TEST_CASE(each_table_and_bound_at_its_last_entry_and_one_past)
+{
+    size_t n = 0u;
+    memset(&ctx, 0, sizeof ctx);
+    /* a sum stops at its last byte */
+    const uint8_t *p = (const uint8_t *)"123456789";
+    CHECK_EQ(prn_ck(PRN_CK_SUM8, p, 8u), 0xA4u); /* 436 mod 256 */
+    CHECK_EQ(prn_ck(PRN_CK_XOR8, p, 8u), 0x08u);
+    /* the last argument and the last variable; one past each */
+    ctx.arg[PRN_ARGS - 1u] = 0x5Au;
+    ctx.var[1] = 0x11u;
+    ctx.var[PRN_V_COUNT - 1u] = 0x22u;
+    const prn_tok_t good[3] = {
+        { PRN_T_ARG, PRN_E_U8, (int8_t)(PRN_ARGS - 1u), 0 },
+        { PRN_T_VAR, PRN_E_U8, 1, 0 },
+        { PRN_T_VAR, PRN_E_U8, (int8_t)(PRN_V_COUNT - 1u), 0 },
+    };
+    const uint8_t want[3] = { 0x5Au, 0x11u, 0x22u };
+    for (unsigned i = 0; i < 3u; ++i) {
+        const prn_tseq_t one = run_of(&good[i], 1u);
+        CHECK(prn_tmpl_render(&s, one, &ctx, out, sizeof out, &n));
+        CHECK_EQ(out[0], want[i]);
+    }
+    const prn_tok_t past = { PRN_T_VAR, PRN_E_U8, (int8_t)PRN_V_COUNT, 0 };
+    CHECK(!prn_tmpl_render(&s, run_of(&past, 1u), &ctx, out, sizeof out,
+                           &n));
+    /* the pool's last token */
+    memset(&s, 0, sizeof s);
+    s.tok[PRN_TOKENS - 1u].type = PRN_T_BYTE;
+    s.tok[PRN_TOKENS - 1u].x = 0x33u;
+    const prn_tseq_t last = { (uint16_t)(PRN_TOKENS - 1u), 1u };
+    CHECK(prn_tmpl_render(&s, last, &ctx, out, sizeof out, &n));
+    CHECK_EQ(out[0], 0x33u);
+    /* a range of the first byte alone: {ck:sum8:0:0} */
+    const prn_tok_t first[2] = { { PRN_T_BYTE, 0x41u, 0, 0 },
+                                 { PRN_T_CK, PRN_CK_SUM8, 0, 0 } };
+    CHECK(prn_tmpl_render(&s, run_of(first, 2u), &ctx, out, sizeof out, &n));
+    CHECK_EQ(n, 2u);
+    CHECK_EQ(out[1], 0x41u);
+    /* a length token after the run is no part of it */
+    const prn_tok_t tail[2] = { { PRN_T_BYTE, 0x41u, 0, 0 },
+                                { PRN_T_LEN, PRN_E_U8, 0, -1 } };
+    (void)run_of(tail, 2u);
+    const prn_tseq_t head = { 0u, 1u };
+    memset(out, 0xEE, 4u);
+    CHECK(prn_tmpl_render(&s, head, &ctx, out, sizeof out, &n));
+    CHECK_EQ(n, 1u);
+    CHECK_EQ(out[1], 0xEEu);
+}
+
 int main(void)
 {
     RUN(each_checksum_kind_gives_its_reference_value);
@@ -205,5 +255,6 @@ int main(void)
     RUN(values_at_the_top_of_each_encoding_and_one_past);
     RUN(a_length_too_large_for_its_encoding_is_refused);
     RUN(data_is_padded_and_the_frame_kept_to_its_room);
+    RUN(each_table_and_bound_at_its_last_entry_and_one_past);
     return test_summary("prn_tmpl");
 }
