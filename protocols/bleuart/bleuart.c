@@ -620,6 +620,16 @@ static void link_event(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms)
     case BLEU_EV_CHR_DONE:
         if (b->st == BLEU_ST_DISC_CHR
             && step_done(b, e, e->status != 0u || chrs_ok(b), now_ms)) {
+            if (prof_of(b)->cccd_next) {
+                /* The handle after the value, inside the characteristic,
+                 * without a Find Information the peer refuses. */
+                b->cccd = (b->tx_val < b->tx_end) ? (uint16_t)(b->tx_val + 1u)
+                                                  : 0u;
+                if (step_done(b, e, b->cccd != 0u, now_ms)) {
+                    (void)step_to(b, BLEU_ST_MTU, BLEU_ACT_MTU, 0, 0, now_ms);
+                }
+                break;
+            }
             (void)step_to(b, BLEU_ST_DISC_DSC, BLEU_ACT_DISC_DSCS,
                           b->tx_val, b->tx_end, now_ms);
         }
