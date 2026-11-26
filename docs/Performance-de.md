@@ -486,7 +486,7 @@ Prüfstandskonsole](BenchConsole-de.md)) hat einen Task mehr.
 
 | Task des Konsolen-Builds | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `console` | `console_task`, die seriellen Ports zur Konsole des IOmcu, und `ble scan` (`panel_console.c`) | 4 096 | 1 280 | 1 776 |
+| `console` | `console_task`, die seriellen Ports zur Konsole des IOmcu, und `ble scan` (`panel_console.c`) | 4 096 | 1 344 | 1 712 |
 
 Die tiefste Kette von `runlog` bindet die SD-Karte ein: die Liste der
 Servodateien, die die Karte bedient (`hitec_card_run()`, `list()`,
