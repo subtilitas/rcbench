@@ -152,6 +152,7 @@ static void follow_link(pnode_ctl_t *c, uint32_t now_ms)
         c->info_shunt = 0u;
         c->shunt_sent = 0u;
         c->shunt_wr = false;
+        c->info_owed = false;
         c->was_up = false;
         c->m.have_status = false;
         c->lang_sent = PNODE_LANG_NONE;
@@ -488,7 +489,7 @@ static bool send_shunt(pnode_ctl_t *c, bool armed, uint32_t now_ms)
 {
     const uint16_t want = c->cfg.shunt_uohm;
     if (armed || c->run_owed || !c->info_ok || !c->info_read || c->shunt_wr
-        || want == 0u || want == c->info_shunt || want == c->shunt_sent
+        || c->info_owed || want == 0u || want == c->info_shunt || want == c->shunt_sent
         || !bleu_can_send(&c->b)) {
         return false;
     }
@@ -507,19 +508,31 @@ static bool send_shunt(pnode_ctl_t *c, bool armed, uint32_t now_ms)
 }
 
 /**
- * @brief The SHUNT write in flight ended: taken, INFO is read again for
- *        the shunt the node now holds; refused, it is counted.
- * @param c The controller.
+ * @brief The SHUNT write in flight ended, and INFO's read owed after it.
+ *        Taken: INFO is owed.  Refused with PNODE_ATT_NOT_ALLOWED: counted,
+ *        not sent again on this link before a change.  Ended by the link's
+ *        drop: nothing, the next link reads INFO.  Timed out or failed
+ *        otherwise: the node may hold it, so INFO is owed, and SHUNT goes
+ *        again when INFO still names another shunt.  The read owed goes
+ *        only while the bench is SAFE and the meter's run is not live.
+ * @param c     The controller.
+ * @param armed The bench is ARMED, or a switch to ARMED waits.
  */
-static void follow_shunt(pnode_ctl_t *c)
+static void follow_shunt(pnode_ctl_t *c, bool armed)
 {
-    if (!c->shunt_wr || c->b.wr == BLEU_WR_BUSY) {
-        return;
+    if (c->shunt_wr && c->b.wr != BLEU_WR_BUSY) {
+        c->shunt_wr = false;
+        if (c->b.wr == BLEU_WR_OK) {
+            c->info_owed = true;
+        } else if (c->b.wr_status == PNODE_ATT_NOT_ALLOWED) {
+            ++c->shunt_refused;
+        } else if (c->b.wr_status != BLEU_STATUS_LOST) {
+            c->info_owed = true;
+            c->shunt_sent = 0u;
+        }
     }
-    c->shunt_wr = false;
-    if (c->b.wr != BLEU_WR_OK) {
-        ++c->shunt_refused;
-    } else if (bleu_reread(&c->b)) {
+    if (c->info_owed && !armed && !c->m.live && bleu_reread(&c->b)) {
+        c->info_owed = false;
         c->info_read = false;
     }
 }
@@ -538,7 +551,7 @@ bool pnode_ctl_step(pnode_ctl_t *c, uint32_t now_ms, bool armed,
         return false;
     }
     follow_link(c, now_ms);
-    follow_shunt(c);
+    follow_shunt(c, armed);
     if (pnode_meter_step(&c->m, now_ms, armed, c->cfg.src_node,
                          bench_run)) {
         c->run_owed = true;

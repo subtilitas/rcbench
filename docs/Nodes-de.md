@@ -781,11 +781,11 @@ Panels. Der Auswuchtknoten ist der vierte Client, Owner 3
   nicht ergibt, sendet nichts, was das Panel nimmt. Die Central abonniert
   eine Characteristic, deshalb sendet der Knoten sein STATUS-Paket auch auf
   STREAM; die Akkuzeile liest es.
-- **Der Shunt.** Nach INFO auf jeder Verbindung und bei jeder Änderung von
-  KNOTEN-SHUNT schreibt das Panel SHUNT, wenn INFO einen anderen Shunt
-  nennt, nach einem ausstehenden RUN-Write und nie bei ARMED, und liest
-  INFO danach neu. Ein Knoten vor SHUNT lehnt ihn ab: `LEISTUNGSKNOTEN
-  NIMMT KEINEN SHUNT: FIRMWARE AKTUALISIEREN` im Band.
+- **Der Shunt.** Nach INFO auf jeder Verbindung und jeder Änderung von
+  KNOTEN-SHUNT schreibt das Panel SHUNT, wenn INFO einen anderen nennt,
+  nach einem ausstehenden RUN-Write, nie bei ARMED, und liest INFO bei
+  SAFE neu; ein Timeout liest INFO und schreibt erneut. ATT-Fehler 0x13
+  gibt `LEISTUNGSKNOTEN NIMMT KEINEN SHUNT: FIRMWARE AKTUALISIEREN`.
 - **Der RUN-Marker.** Bei jedem Schalten auf ARMED schreibt das Panel RUN
   mit dem Tag des Laufs, 1 bis 255, auf CONTROL. Eine Verbindung, die dann
   nicht steht, bekommt den Write, wenn sie innerhalb des Laufs wiederkommt.

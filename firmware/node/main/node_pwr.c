@@ -618,9 +618,11 @@ static void pwr_sleep(void)
         (void)esp_timer_stop(s_timer);
         vTaskDelay(pdMS_TO_TICKS(10));      /* a sample under way ends */
     }
-    if (s_dev != NULL && s_rtc_addr != 0u) {
-        (void)sense_bus_write16(&s_sbus, s_rtc_addr, INA228_ADC_CONFIG,
-                                ina228_adc_config(INA228_MODE_SHUTDOWN, 4, 4, 0, 0));
+    if (s_dev != NULL) {
+        /* The part online now, else the kept address once it still holds
+         * an INA228: nothing else in 0x40 to 0x4F is written. */
+        const uint8_t online = atomic_load(&s_online) ? psens_addr(&s_sns) : 0u;
+        (void)psens_shut_down(&s_sbus, online, s_rtc_addr);
     }
 }
 

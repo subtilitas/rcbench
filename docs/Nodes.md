@@ -731,9 +731,9 @@ fourth client, owner 3
   its STATUS packet on STREAM as well; the battery row reads it.
 - **The shunt.** After INFO on each link and at each change of NODE SHUNT,
   the panel writes SHUNT when INFO names another shunt, after a RUN write
-  owed and never while ARMED, then reads INFO again. A node built before
-  SHUNT refuses it: `POWER NODE TAKES NO SHUNT: UPDATE ITS FIRMWARE` on
-  the band.
+  owed and never while ARMED, then reads INFO again once SAFE; a timeout
+  reads INFO and writes again. ATT error 0x13 (a node built before SHUNT)
+  gives `POWER NODE TAKES NO SHUNT: UPDATE ITS FIRMWARE`.
 - **The RUN marker.** At each switch to ARMED the panel writes RUN with the
   run's tag, 1 to 255, to CONTROL. A link that is down then gets the write
   when it comes back within the run. A link that comes back within the run

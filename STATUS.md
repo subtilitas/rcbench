@@ -1488,12 +1488,15 @@ transactions a 1130µs tick, the NACKs not counted as errors, the display
 board's 0x38 and 0x18 never asked, another maker and another TI die
 skipped and never written, a part found reset searched again 1000ms on
 at its new address, a stuck bus holding the search; CURRENT and POWER on
-200µΩ, 500µΩ and 1000µΩ against the datasheet's equations 2, 4 and 5, a
+50µΩ, 200µΩ, 500µΩ, 1000µΩ and 10,000µΩ against the datasheet's equations 2, 4 and 5, a
 live shunt change, the range 50 to 10,000µΩ, the store; the MATEK on the
 default shunt byte for byte the fixed 0x45 set-up's windows and INFO);
 the SHUNT write (`test_rcnode`); the panel's write once a link and once a
 change when INFO names another shunt, held while ARMED, INFO read again
-(`bleu_reread()`) and a refusal counted (`test_pnode_ctl`); NODE INA228
+(`bleu_reread()`) once SAFE and the meter's run not live, a refusal
+(ATT error 0x13) counted, a timeout read back and written again, a write
+lost with the link left to the next INFO (`test_pnode_shunt`); the sleep's
+shutdown written only to an INA228; NODE INA228
 and NODE SHUNT on the entry (`test_wireless_pnode`). The current against
 a known load on a board other than the MATEK is not measured.
 
@@ -1971,7 +1974,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 701 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 702 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -2088,7 +2091,7 @@ The host suite is 701 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_bleuart_hub`, `test_bleuart_backoff`, `test_bleuart_fair`, `test_bleuart_ext`, `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`,
 `test_dial_ctl`, `test_dial_stream`, `test_dial_motor`, `test_dial_servo`, `test_dial_nav`,
 `test_dial_nav_hold`, `test_dial_bind`, `test_wireless_pane`,
-`test_pnode_meter`, `test_pnode_ctl`, `test_wireless_pnode`, `test_pnode_bind`,
+`test_pnode_meter`, `test_pnode_ctl`, `test_pnode_shunt`, `test_wireless_pnode`, `test_pnode_bind`,
 `test_settings_panes`, `test_bal_ctl`, `test_node_balance`, `test_wireless_bal`, `test_bal_bind`, `test_wl_search`,
 `test_motor_balance`,
 `test_dial_face`, `test_dial_fit`, `test_dial_button`,

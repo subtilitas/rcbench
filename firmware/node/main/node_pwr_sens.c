@@ -136,6 +136,23 @@ bool psens_is_ina228(sense_bus_t *bus, uint8_t addr, bool *other_ti)
     return ask(bus, addr, other_ti) == ASK_FOUND;
 }
 
+uint8_t psens_shut_down(sense_bus_t *bus, uint8_t online_addr, uint8_t kept)
+{
+    if (bus == NULL) {
+        return 0u;
+    }
+    uint8_t a = online_addr;
+    if (a == 0u && kept != 0u && psens_is_ina228(bus, kept, NULL)) {
+        a = kept;
+    }
+    if (a == 0u) {
+        return 0u;
+    }
+    (void)sense_bus_write16(bus, a, INA228_ADC_CONFIG,
+                            ina228_adc_config(INA228_MODE_SHUTDOWN, 4, 4, 0, 0));
+    return a;
+}
+
 /**
  * @brief The driver set up at @p addr with the shunt in force; it probes
  *        the part at its next step.

@@ -39,7 +39,7 @@ history is in git.
   (0x07), the node keeps it in NVS, names it in INFO and sets its INA228 up
   for it without a restart, ADCRANGE 1, 40.96mV over the shunt. Held while
   ARMED; a node that refuses it raises `POWER NODE TAKES NO SHUNT: UPDATE
-  ITS FIRMWARE` (`pnode_ctl.c`, `bleu_reread()`; `test_pnode_ctl`,
+  ITS FIRMWARE` (`pnode_ctl.c`, `bleu_reread()`; `test_pnode_shunt`,
   `test_wireless_pnode`, `test_rcnode`).
 - The SERVO lists that carry DUT NAME end with SERVO LABEL: ID PREFIX,
   SERVO ID and NEW ID. SERVO ID picks NONE, one of the card's 6 newest ids,

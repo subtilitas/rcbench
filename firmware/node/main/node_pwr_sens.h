@@ -181,6 +181,20 @@ sense_state_t psens_state(const psens_t *s);
  */
 bool psens_is_ina228(sense_bus_t *bus, uint8_t addr, bool *other_ti);
 
+/**
+ * @brief The part to its lowest current before sleep: ADC_CONFIG to
+ *        shutdown, written only to an INA228.  The online part's address
+ *        is taken as it is; another address, the one kept through deep
+ *        sleep, is written only after psens_is_ina228() finds an INA228
+ *        there, so a board unplugged or swapped for another part in 0x40
+ *        to 0x4F (a PCA9685, an ADS1115) is not written.
+ * @param bus         The bus.
+ * @param online_addr The address of the part online now, 0 for none.
+ * @param kept        The address kept from the last find, 0 for none.
+ * @return The address written, 0 for none.
+ */
+uint8_t psens_shut_down(sense_bus_t *bus, uint8_t online_addr, uint8_t kept);
+
 #ifdef __cplusplus
 }
 #endif

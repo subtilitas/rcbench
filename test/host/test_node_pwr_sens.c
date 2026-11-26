@@ -243,12 +243,15 @@ static fake_part_t *online_on(uint16_t uohm, double amps, double volts)
 
 TEST_CASE(the_shunt_scales_current_and_power_by_the_datasheet_equations)
 {
-    static const uint16_t shunts[] = { 200u, 500u, 1000u };
-    static const uint32_t fs_ma[] = { 204800u, 81920u, 40960u };
-    for (size_t k = 0; k < 3u; ++k) {
+    /* 3.21A on 10000µΩ: 32.1mV, inside the 40.96mV of ADCRANGE 1. */
+    static const uint16_t shunts[] = { 50u, 200u, 500u, 1000u, 10000u };
+    static const uint32_t fs_ma[] = { 819200u, 204800u, 81920u, 40960u,
+                                      4096u };
+    static const double amps[] = { 12.345, 12.345, 12.345, 12.345, 3.21 };
+    for (size_t k = 0; k < 5u; ++k) {
         const uint16_t uohm = shunts[k];
         const double r = uohm * 1e-6;
-        const fake_part_t *p = online_on(uohm, 12.345, 22.2);
+        const fake_part_t *p = online_on(uohm, amps[k], 22.2);
         CHECK_EQ(psens_max_ma(uohm), fs_ma[k]);
         CHECK_EQ(s.cal.adcrange, 1u);
         CHECK_EQ(s.cal.shunt_cal, 4096u);
@@ -259,12 +262,12 @@ TEST_CASE(the_shunt_scales_current_and_power_by_the_datasheet_equations)
         sense_value_t ua;
         CHECK_EQ(ina228_read_current(&s.ina, &ua), SENSE_OK);
         CHECK_NEAR((double)ua.value, code * lsb_a(r) * 1e6, 1.0);
-        CHECK_NEAR((double)ua.value, 12.345e6, lsb_a(r) * 1e6);
+        CHECK_NEAR((double)ua.value, amps[k] * 1e6, lsb_a(r) * 1e6);
         const uint32_t pcode = (uint32_t)fake_value228(p, INA228_POWER);
         uint64_t uw = 0u;
         CHECK_EQ(ina228_read_power(&s.ina, &uw), SENSE_OK);
         CHECK_NEAR((double)uw, pcode * 3.2 * lsb_a(r) * 1e6, 1.0);
-        CHECK_NEAR((double)uw, 12.345 * 22.2 * 1e6, 3.2 * lsb_a(r) * 1e6);
+        CHECK_NEAR((double)uw, amps[k] * 22.2 * 1e6, 3.2 * lsb_a(r) * 1e6);
     }
 }
 
@@ -463,6 +466,32 @@ TEST_CASE(the_wake_check_asks_one_address_and_takes_only_an_ina228)
     CHECK_EQ(touched(codec), 0u);
 }
 
+/* Sleep's shutdown write: the part online, or the kept address only when
+ * an INA228 still answers there; nothing for no part, another maker's
+ * part or a TI part of another die at the kept address. */
+TEST_CASE(sleep_writes_shutdown_only_to_an_ina228)
+{
+    display_bus();
+    fake_part_t *ina = fake_add(&fb, FAKE_INA228, 0x40u, 200e-6);
+    CHECK_EQ(psens_shut_down(&bus, 0u, 0x41u), 0u);       /* none there */
+    CHECK_EQ(writes_to(ina), 0u);
+    fake_part_t *pca = fake_add(&fb, FAKE_INA228, 0x41u, 200e-6);
+    pca->maker = 0x1234u;                                  /* a PCA9685 */
+    CHECK_EQ(psens_shut_down(&bus, 0u, 0x41u), 0u);
+    CHECK_EQ(writes_to(pca), 0u);
+    pca->maker = INA228_MAKER_ID;
+    pca->device = 0x2381u;                                 /* an INA238 */
+    CHECK_EQ(psens_shut_down(&bus, 0u, 0x41u), 0u);
+    CHECK_EQ(writes_to(pca), 0u);
+    CHECK_EQ(psens_shut_down(&bus, 0u, 0x40u), 0x40u);
+    CHECK_EQ(ina->reg[INA228_ADC_CONFIG],
+             ina228_adc_config(INA228_MODE_SHUTDOWN, 4, 4, 0, 0));
+    CHECK_EQ(psens_shut_down(&bus, 0x40u, 0u), 0x40u);     /* online */
+    CHECK_EQ(psens_shut_down(&bus, 0u, 0u), 0u);
+    CHECK_EQ(touched(touch), 0u);
+    CHECK_EQ(touched(codec), 0u);
+}
+
 int main(void)
 {
     RUN(an_ina228_at_0x40_is_found_at_the_first_address_and_probed_next);
@@ -478,5 +507,6 @@ int main(void)
     RUN(the_shunt_persists_and_a_value_out_of_range_is_never_stored);
     RUN(the_matek_on_the_default_shunt_gives_byte_identical_frames);
     RUN(the_wake_check_asks_one_address_and_takes_only_an_ina228);
+    RUN(sleep_writes_shutdown_only_to_an_ina228);
     return test_summary("node_pwr_sens");
 }
