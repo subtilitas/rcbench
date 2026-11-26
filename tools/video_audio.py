@@ -294,12 +294,20 @@ def events(board: dict) -> list:
             for n, (a, b) in enumerate(zip(swing, swing[1:], strict=False)):
                 if a[1] < 1 <= b[1]:
                     found.append((start + b[0], "tick", n % 4))
-            # The kinetic Wurstblinker fires: a pop and a rush of air.
+            # The kinetic Wurstblinker fires: a pop and a rush of air, and
+            # a click where the sausage meets the traffic light, at 0.6,
+            # and a tap where it lands.
             fire = scene.get("fire", [])
             for a, b in zip(fire, fire[1:], strict=False):
                 if a[1] == 0 < b[1]:
                     found.append((start + a[0], "pop", 0))
                     found.append((start + a[0], "whoosh", 0))
+                if a[1] < 0.6 <= b[1]:
+                    found.append((start + a[0] + (0.6 - a[1])
+                                  / (b[1] - a[1]) * (b[0] - a[0]),
+                                  "click", 0))
+                if a[1] < 1 <= b[1]:
+                    found.append((start + b[0], "tap", 0))
             # A component of the model takes its seat: a soft tap.
             for keys in scene.get("parts", {}).values():
                 if keys and keys[-1][1] == 0:

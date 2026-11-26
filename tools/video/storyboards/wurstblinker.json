@@ -7,7 +7,7 @@
   "The node",
   "On the bench",
   "The kinetic upgrade",
-  "Approval"
+  "Beta test"
  ],
  "music": "vivaldi-spring",
  "music_gain": 0.5,
@@ -614,8 +614,297 @@
   },
   {
    "type": "case",
+   "model": "wurst-dog",
+   "dur": 9.72,
+   "chips": [
+    {
+     "from": 0,
+     "to": 9.42,
+     "n": 2,
+     "text": "1 dog"
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      170,
+      170,
+      520
+     ],
+     [
+      130,
+      150,
+      0
+     ]
+    ],
+    [
+     0.4,
+     [
+      170,
+      170,
+      520
+     ],
+     [
+      130,
+      150,
+      0
+     ]
+    ],
+    [
+     2.2,
+     [
+      140,
+      -120,
+      2150
+     ],
+     [
+      140,
+      -190,
+      0
+     ]
+    ],
+    [
+     9.72,
+     [
+      140,
+      -120,
+      2150
+     ],
+     [
+      140,
+      -190,
+      0
+     ]
+    ]
+   ],
+   "swing": [
+    [
+     0,
+     0
+    ],
+    [
+     1.4,
+     0
+    ],
+    [
+     1.62,
+     1
+    ],
+    [
+     1.84,
+     1
+    ],
+    [
+     2.06,
+     0
+    ],
+    [
+     2.07,
+     0
+    ],
+    [
+     2.29,
+     1
+    ],
+    [
+     2.51,
+     1
+    ],
+    [
+     2.73,
+     0
+    ],
+    [
+     2.73,
+     0
+    ],
+    [
+     2.95,
+     1
+    ],
+    [
+     3.17,
+     1
+    ],
+    [
+     3.39,
+     0
+    ],
+    [
+     3.4,
+     0
+    ],
+    [
+     3.62,
+     1
+    ],
+    [
+     3.84,
+     1
+    ],
+    [
+     4.06,
+     0
+    ],
+    [
+     4.07,
+     0
+    ],
+    [
+     4.29,
+     1
+    ],
+    [
+     4.51,
+     1
+    ],
+    [
+     4.73,
+     0
+    ],
+    [
+     4.73,
+     0
+    ],
+    [
+     4.95,
+     1
+    ],
+    [
+     5.17,
+     1
+    ],
+    [
+     5.39,
+     0
+    ],
+    [
+     5.4,
+     0
+    ],
+    [
+     5.62,
+     1
+    ],
+    [
+     5.84,
+     1
+    ],
+    [
+     6.06,
+     0
+    ],
+    [
+     6.07,
+     0
+    ],
+    [
+     6.29,
+     1
+    ],
+    [
+     6.51,
+     1
+    ],
+    [
+     6.73,
+     0
+    ],
+    [
+     6.74,
+     0
+    ],
+    [
+     6.96,
+     1
+    ],
+    [
+     7.18,
+     1
+    ],
+    [
+     7.4,
+     0
+    ],
+    [
+     7.4,
+     0
+    ],
+    [
+     7.62,
+     1
+    ],
+    [
+     7.84,
+     1
+    ],
+    [
+     8.06,
+     0
+    ],
+    [
+     8.07,
+     0
+    ],
+    [
+     8.29,
+     1
+    ],
+    [
+     8.51,
+     1
+    ],
+    [
+     8.73,
+     0
+    ],
+    [
+     8.74,
+     0
+    ],
+    [
+     8.96,
+     1
+    ],
+    [
+     9.18,
+     1
+    ],
+    [
+     9.4,
+     0
+    ],
+    [
+     9.72,
+     0
+    ]
+   ],
+   "labels": [
+    {
+     "from": 2.6,
+     "to": 9.42,
+     "anchor": "dog",
+     "at": [
+      1380,
+      620
+     ],
+     "size": "sm",
+     "title": "Dog",
+     "text": "Jumps 1.5 times a second."
+    }
+   ],
+   "say": [
+    {
+     "at": 2.2,
+     "text": "Field tests run with one dog."
+    }
+   ]
+  },
+  {
+   "type": "case",
    "model": "wurst-kinetic",
-   "dur": 25.94,
+   "dur": 22.08,
    "chips": [
     {
      "from": 0,
@@ -625,7 +914,7 @@
     },
     {
      "from": 14.88,
-     "to": 25.639999999999997,
+     "to": 21.779999999999998,
      "n": 3,
      "text": "1 sausage, 1 turn"
     }
@@ -660,51 +949,51 @@
     [
      10.8,
      [
-      260,
-      170,
-      1150
+      670,
+      200,
+      2100
      ],
      [
-      260,
+      670,
+      90,
+      0
+     ]
+    ],
+    [
+     13.3,
+     [
+      670,
+      200,
+      2100
+     ],
+     [
+      670,
+      90,
+      0
+     ]
+    ],
+    [
+     14.700000000000001,
+     [
+      1090,
+      160,
+      900
+     ],
+     [
+      1090,
       120,
       0
      ]
     ],
     [
-     21.62,
+     22.08,
      [
-      260,
-      170,
-      1150
+      1090,
+      160,
+      900
      ],
      [
-      260,
-      120,
-      0
-     ]
-    ],
-    [
-     23.02,
-     [
-      110,
-      170,
-      620
-     ],
-     [
-      110,
-      120,
-      0
-     ]
-    ],
-    [
-     25.939999999999998,
-     [
-      110,
-      170,
-      620
-     ],
-     [
-      110,
+      1090,
       120,
       0
      ]
@@ -720,11 +1009,15 @@
      0
     ],
     [
-     12.000000000000002,
+     11.8,
+     0.6
+    ],
+    [
+     12.700000000000001,
      1
     ],
     [
-     25.939999999999998,
+     22.08,
      1
     ]
    ],
@@ -755,16 +1048,16 @@
      "text": "Holds 1 Bockwurst of 180mm."
     },
     {
-     "from": 23.220000000000002,
-     "to": 25.639999999999997,
-     "anchor": "barrel",
+     "from": 14.900000000000002,
+     "to": 21.779999999999998,
+     "anchor": "light",
      "at": [
-      1330,
-      250
+      1400,
+      200
      ],
      "size": "sm",
-     "title": "Empty",
-     "text": "Reload by hand: 1 sausage."
+     "title": "Traffic light",
+     "text": "987mm from the muzzle. Undamaged."
     }
    ],
    "say": [
@@ -778,25 +1071,134 @@
     },
     {
      "at": 14.88,
-     "text": "One sausage signals one turn. Muzzle velocity and range are not measured."
-    },
-    {
-     "at": 21.62,
-     "text": "After the shot the node reports: empty."
+     "text": "One sausage signals one turn. It bounces off a traffic light, one metre on."
     }
    ]
   },
   {
-   "type": "tour",
-   "steps": [
+   "type": "case",
+   "model": "wurst-kinetic",
+   "dur": 20.98,
+   "chips": [
     {
-     "view": "help-overview",
-     "dur": 9.0,
+     "from": 0,
+     "to": 11.48,
      "n": 4,
-     "kicker": "04 · Approval",
+     "text": "Approval"
+    },
+    {
+     "from": 11.68,
+     "to": 20.68,
+     "n": 4,
+     "text": "Beta test"
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      110,
+      170,
+      620
+     ],
+     [
+      110,
+      120,
+      0
+     ]
+    ],
+    [
+     20.98,
+     [
+      130,
+      175,
+      540
+     ],
+     [
+      110,
+      122,
+      0
+     ]
+    ]
+   ],
+   "fire": [
+    [
+     0,
+     1
+    ],
+    [
+     20.98,
+     1
+    ]
+   ],
+   "labels": [
+    {
+     "from": 0.6,
+     "to": 5.64,
+     "anchor": "barrel",
+     "at": [
+      1330,
+      250
+     ],
+     "size": "sm",
+     "title": "Empty",
+     "text": "Reload by hand: 1 sausage."
+    },
+    {
+     "from": 6.54,
+     "to": 10.78,
+     "anchor": "node",
+     "at": [
+      150,
+      250
+     ],
+     "side": "r",
+     "size": "sm",
      "title": "Approval",
-     "text": "Type approval as a direction indicator: not granted, not applied for. Neither version.",
-     "say": "Approval as a direction indicator is not granted, and not applied for. That holds for both versions."
+     "text": "As a direction indicator: not applied for."
+    },
+    {
+     "from": 11.68,
+     "to": 15.2,
+     "anchor": "tank",
+     "at": [
+      200,
+      760
+     ],
+     "side": "t",
+     "size": "sm",
+     "title": "Beta test",
+     "text": "Intense. 1 sausage a run."
+    },
+    {
+     "from": 16.1,
+     "to": 20.68,
+     "anchor": "barrel",
+     "at": [
+      1330,
+      250
+     ],
+     "size": "sm",
+     "title": "Senfglas update",
+     "text": "In development."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.6,
+     "text": "After the shot the node reports: empty. It is reloaded by hand."
+    },
+    {
+     "at": 6.54,
+     "text": "Approval as a direction indicator is not applied for."
+    },
+    {
+     "at": 11.68,
+     "text": "The Wurstblinker is in intense beta testing."
+    },
+    {
+     "at": 16.1,
+     "text": "A Senfglas update is in development."
     }
    ]
   },
@@ -809,10 +1211,10 @@
     "90° out, 1.5 swings a second",
     "The limit run finds the sausage's stop",
     "Kinetic: compressed air, 1 sausage a turn",
-    "Not a product"
+    "In intense beta testing",
+    "Senfglas update: in development"
    ],
-   "note": "A joke. The Wurstblinker is Brösel's, from the Werner comics.",
-   "say": "The Wurstblinker node is not a product. The idea is Brösel's, from the Werner comics."
+   "say": "The Wurstblinker node, and the kinetic Wurstblinker. Both in beta."
   }
  ]
 }
