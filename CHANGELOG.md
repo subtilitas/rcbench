@@ -17,7 +17,10 @@ history is in git.
   their `.txt` reports are reports; OPEN on a CSV there opens it in LOGS,
   read from that folder, on BENCH's tab for an ARMED run and on USER's for
   the rest, and a report opens in the text viewer. DELETE of a run's CSV
-  there takes its report along, on the panel and on the Wi-Fi page.
+  there takes its report along, on the panel and on the Wi-Fi page. LOGS
+  holds a file's folder in 32 bytes, so the 30 characters of
+  `Servos/<id>` of a 23-character id open whole; a longer folder opens
+  nothing, with `Name or path is not valid on this card.`
 - The QR scanner's core for a GM861 module on a panel UART (universal
   asynchronous receiver-transmitter), pure C in `shared/scanner/`: a framer
   for code lines (0x20 to 0x7E, at most 64 bytes, CR, CR LF or LF) and

@@ -17,6 +17,8 @@
  * - a_report_being_written_or_gone_says_so
  * - a_report_finished_off_screen_opens_from_logs
  * - a_servo_folders_csv_opens_in_logs_and_its_report_in_the_viewer
+ * - a_run_of_a_23_character_id_opens_from_its_own_folder
+ * - a_folder_past_logs_room_opens_nothing
  *
  * SPDX-License-Identifier: MIT
  */
@@ -35,6 +37,8 @@
 
 /** @brief The folder LOGS points its calls at. */
 static char s_lv_dir[CARD_RUN_DIR_MAX];
+/** @brief The folder of the file LOGS opened last. */
+static char s_lv_opened[CARD_RUN_DIR_MAX];
 /** @brief The open file's bytes as LOGS reads them. */
 static log_mem_ctx_t s_lv_mem;
 
@@ -101,6 +105,7 @@ static bool lv_open(const char *name, log_source_t *src, void *ctx)
     for (int i = 0; i < g_h.card.count; ++i) {
         const char *here = name_in(i, s_lv_dir);
         if (here != NULL && strcmp(here, name) == 0) {
+            snprintf(s_lv_opened, sizeof(s_lv_opened), "%s", s_lv_dir);
             log_source_memory(src, &s_lv_mem,
                               (const char *)g_h.card.n[i].data,
                               g_h.card.n[i].size);
@@ -514,6 +519,56 @@ TEST_CASE(a_servo_folders_csv_opens_in_logs_and_its_report_in_the_viewer)
     log_viewer_set_io(NULL);
 }
 
+/*
+ * Ids of 23 characters: `Servos/<id>` is 30 characters, past the 23 of a
+ * log folder setting.  Two ids that share their first 16 characters each
+ * open their own run, read from their own folder whole.
+ */
+TEST_CASE(a_run_of_a_23_character_id_opens_from_its_own_folder)
+{
+    static const char *const ids[] = { "ABCDEFGHIJKLMNOPQ-00001",
+                                       "ABCDEFGHIJKLMNOPR-00002" };
+    static const char k_csv2[] = "time,voltage\n0.0,5.0\n0.1,5.1\n";
+    for (size_t k = 0u; k < 2u; ++k) {
+        fresh_reports();
+        char path[96];
+        for (size_t j = 0u; j < 2u; ++j) {
+            snprintf(path, sizeof(path), "Servos/%s/limit run_000.csv",
+                     ids[j]);
+            put(path, (j == 0u) ? k_csv : k_csv2);
+        }
+        ui_router_goto(SCREEN_SETUP);
+        ui_router_goto(SCREEN_FILES);
+        settle();
+        CHECK(open_dir(0, "Servos"));
+        CHECK(open_dir(0, ids[k]));
+        s_lv_opened[0] = '\0';
+        CHECK(in_logs(0, "limit run_000.csv", LOG_TAB_USER));
+        char want[CARD_RUN_DIR_MAX];
+        snprintf(want, sizeof(want), "Servos/%s", ids[k]);
+        CHECK_EQ(strlen(want), 30u);
+        CHECK_STR_EQ(s_lv_opened, want);
+    }
+    log_viewer_set_io(NULL);
+}
+
+/*
+ * A folder LOGS cannot hold whole is refused, not cut: nothing opens and
+ * the list is not read from a shorter folder.
+ */
+TEST_CASE(a_folder_past_logs_room_opens_nothing)
+{
+    fresh_reports();
+    char dir[CARD_RUN_DIR_MAX + 8];
+    memset(dir, 'D', sizeof(dir) - 1u);
+    dir[sizeof(dir) - 1u] = '\0';
+    s_lv_dir[0] = '\0';
+    CHECK_EQ(log_viewer_show_in(LOG_TAB_USER, dir, "ATEST011.CSV",
+                                g_h.card.mount), LOG_SHOW_DIR_LONG);
+    CHECK_STR_EQ(s_lv_dir, "");
+    log_viewer_set_io(NULL);
+}
+
 int main(void)
 {
     RUN(every_report_the_list_labels_opens_in_the_viewer);
@@ -522,6 +577,8 @@ int main(void)
     RUN(a_report_being_written_or_gone_says_so);
     RUN(a_report_finished_off_screen_opens_from_logs);
     RUN(a_servo_folders_csv_opens_in_logs_and_its_report_in_the_viewer);
+    RUN(a_run_of_a_23_character_id_opens_from_its_own_folder);
+    RUN(a_folder_past_logs_room_opens_nothing);
     fh_free(&g_h);
     free(s_fb);
     return test_summary("files_open");

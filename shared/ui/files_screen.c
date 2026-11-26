@@ -736,7 +736,9 @@ static void open_in_logs(const fm_entry_t *e)
         return;
     }
     if (r != LOG_SHOW_OPEN) {
-        fs_say_err(FM_ERR_NOT_FOUND, e->name);
+        /* A folder LOGS cannot hold whole opens nothing, not a cut one. */
+        fs_say_err((r == LOG_SHOW_DIR_LONG) ? FM_ERR_NAME : FM_ERR_NOT_FOUND,
+                   e->name);
         return;
     }
     ui_router_goto(SCREEN_LOGS);

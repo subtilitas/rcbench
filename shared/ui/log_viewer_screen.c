@@ -648,6 +648,9 @@ log_viewer_show_t log_viewer_show_in(log_viewer_tab_t tab, const char *dir,
     if (dir == NULL || dir[0] == '\0') {
         return LOG_SHOW_NOT_LISTED;
     }
+    if (strlen(dir) >= sizeof(s.open_dir)) {
+        return LOG_SHOW_DIR_LONG;
+    }
     s.pin = dir;
     const log_viewer_show_t r = log_viewer_show(tab, name, mount);
     s.pin = NULL;
