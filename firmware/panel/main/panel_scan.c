@@ -141,6 +141,10 @@ static void apply(bool on, gm861_mode_t mode)
         scan_port_stop(&s_port);
         portEXIT_CRITICAL(&s_mux);
         uart_close();
+        /* A recheck or reset asked just before OFF is not kept for the
+         * next ON. */
+        atomic_store(&s_want_recheck, false);
+        atomic_store(&s_want_reset, false);
         ESP_LOGI(TAG, "off");
     } else if (on && mode != s_mode) {
         portENTER_CRITICAL(&s_mux);

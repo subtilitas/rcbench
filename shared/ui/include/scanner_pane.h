@@ -115,9 +115,12 @@ bool scanner_pane_take(scanner_cmd_t *out);
 void scanner_pane_ask(scanner_cmd_t cmd);
 
 /**
- * @brief Whether TEST's window is open at @p now_ms.
+ * @brief Whether TEST's window is open at @p now_ms.  Leaving the page
+ *        ends TEST at once: another screen on top, another SENSORS entry,
+ *        or the Scanner row OFF.  Coming back does not open it again.
  * @param now_ms The millisecond clock.
- * @return true from TEST's tap until SCANNER_TEST_MS after it.
+ * @return true from TEST's tap until SCANNER_TEST_MS after it, while the
+ *         page shows.
  */
 bool scanner_pane_testing(uint32_t now_ms);
 

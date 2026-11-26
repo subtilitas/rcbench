@@ -14,6 +14,7 @@
 #include "gm861.h"
 #include "scan_flow.h"
 #include "scanner_code.h"
+#include "sensors_pane.h"
 #include "servo_id.h"
 #include "settings.h"
 #include "settings_screen.h"
@@ -90,7 +91,10 @@ static uint32_t test_left_s(void)
     if (!scanner_pane_testing(s.now)) {
         return 0u;
     }
-    return (SCANNER_TEST_MS - (uint32_t)(s.now - s.test_at) + 999u) / 1000u;
+    /* Open through its last ms: the row shows 1s, not START, at 30.000s. */
+    const uint32_t left =
+        (SCANNER_TEST_MS - (uint32_t)(s.now - s.test_at) + 999u) / 1000u;
+    return left > 0u ? left : 1u;
 }
 
 /** @brief Whether two views show the same. */
@@ -112,7 +116,7 @@ void scanner_pane_set_view(const scanner_view_t *v, uint32_t now_ms)
     }
     s.now = now_ms;
     if (s.testing && !scanner_pane_testing(now_ms)) {
-        s.testing = false;
+        s.testing = false;      /* the window ran out */
         settings_screen_invalidate();
     }
     /* The ages and TEST's count move once a second. */
@@ -145,9 +149,34 @@ bool scanner_pane_take(scanner_cmd_t *out)
     return true;
 }
 
+/**
+ * @brief Whether TEST's page shows: SETUP on top, its list on SENSORS >
+ *        SCANNER, the Scanner row ON.
+ * @return true while it does.
+ */
+static bool page_shows(void)
+{
+    return ui_router_current() == SCREEN_SETUP
+           && settings_screen_category() == (int)SET_CAT_SENSORS
+           && sensors_pane_selected() == SENS_ENTRY_SCANNER
+           && settings_get_bool(SET_SCANNER_ENABLE);
+}
+
+/** @brief Whether TEST's window is open at @p now: tapped, the page shown
+ *         since, and SCANNER_TEST_MS not past. */
+static bool window_open(uint32_t now)
+{
+    return s.testing && (uint32_t)(now - s.test_at) <= SCANNER_TEST_MS;
+}
+
 bool scanner_pane_testing(uint32_t now_ms)
 {
-    return s.testing && (uint32_t)(now_ms - s.test_at) <= SCANNER_TEST_MS;
+    /* The page left ends TEST for good: coming back does not open it. */
+    if (s.testing && !page_shows()) {
+        s.testing = false;
+        settings_screen_invalidate();
+    }
+    return window_open(now_ms);
 }
 
 /**

@@ -16,6 +16,7 @@
 #include "scanner_codes.h"
 #include "scanner_pane.h"
 #include "sensors_pane.h"
+#include "settings_screen.h"
 #include "servo_active.h"
 #include "ui_text.h"
 #include "ui_theme.h"
@@ -53,6 +54,14 @@ static uint32_t start(void)
                                .baud = 9600u, .bad_zone = GM861_NO_ZONE };
     scanner_pane_set_view(&v, t);
     return t;
+}
+
+/** @brief SETUP open on SENSORS > SCANNER, where TEST runs. */
+static void on_page(void)
+{
+    ui_router_goto(SCREEN_SETUP);
+    settings_screen_open_on(SET_CAT_SENSORS, SENS_ENTRY_SCANNER);
+    ui_router_tick(1.0f / 60.0f);
 }
 
 /** @brief The clock moves to @p t. */
@@ -151,6 +160,7 @@ TEST_CASE(not_connected_is_a_state_in_dim_and_raises_nothing)
 TEST_CASE(a_scan_inside_test_changes_nothing_and_one_after_30s_does)
 {
     const uint32_t t = start();
+    on_page();
     CHECK_STR_EQ(value(TX_SCN_ROW_TEST), TR(SCN_V_TEST_GO));
     row(TX_SCN_ROW_TEST)->tap();
     CHECK(scanner_pane_testing(t));
@@ -164,6 +174,9 @@ TEST_CASE(a_scan_inside_test_changes_nothing_and_one_after_30s_does)
     CHECK_STR_EQ(value(TX_SCN_ROW_TAKEN), TR(SCN_TAKEN_TEST_OK));
     CHECK(scan_flow_line("HELLO", false, t + 29999u));
     CHECK_EQ(scanner_pane_taken(), SCANNER_TAKEN_TEST_NOT_ID);
+    at(t + 30000u);
+    CHECK(scanner_pane_testing(t + 30000u));
+    CHECK_STR_EQ(value(TX_SCN_ROW_TEST), "SCAN A CODE 1s");
     CHECK(scan_flow_line("X", true, t + 30000u));
     CHECK_EQ(scanner_pane_taken(), SCANNER_TAKEN_TEST_LONG);
     CHECK(ui_router_alert() == NULL);
@@ -184,6 +197,7 @@ TEST_CASE(test_during_a_run_shows_the_refusal_and_keeps_the_servo)
     CHECK(scan_flow_line(ID_A, false, t));
     REQUIRE(strcmp(active(), ID_A) == 0);
     armed_servo(true);
+    on_page();
     row(TX_SCN_ROW_TEST)->tap();
     CHECK(scan_flow_line(ID_B, false, t + 5000u));
     CHECK_EQ(scanner_pane_taken(), SCANNER_TAKEN_TEST_RUN);
@@ -331,12 +345,50 @@ TEST_CASE(the_code_is_drawn_dark_on_white_at_12px_a_module)
              GFX_WHITE);
 }
 
+/* TEST ends when its page goes: a screen change, another SENSORS entry,
+ * Scanner OFF.  A scan after it runs the flow: the servo is set and the
+ * notice raised. */
+TEST_CASE(test_ends_when_the_page_is_left)
+{
+    uint32_t t = start();
+    on_page();
+    row(TX_SCN_ROW_TEST)->tap();
+    REQUIRE(scanner_pane_testing(t));
+    ui_router_goto(SCREEN_OVERVIEW);
+    ui_router_tick(1.0f / 60.0f);
+    CHECK(!scanner_pane_testing(t + 1000u));
+    CHECK(scan_flow_line(ID_A, false, t + 1000u));
+    CHECK_EQ(scan_flow_last(), SERVO_SCAN_SET);
+    CHECK_STR_EQ(active(), ID_A);
+    CHECK(ui_router_alert() != NULL);
+    /* Back on the page TEST is off until tapped again. */
+    on_page();
+    CHECK(!scanner_pane_testing(t + 1100u));
+
+    t = start();
+    on_page();
+    row(TX_SCN_ROW_TEST)->tap();
+    sensors_pane_select(SENS_ENTRY_TAP);
+    CHECK(!scanner_pane_testing(t + 500u));
+    sensors_pane_select(SENS_ENTRY_SCANNER);
+    CHECK(!scanner_pane_testing(t + 600u));
+
+    t = start();
+    on_page();
+    row(TX_SCN_ROW_TEST)->tap();
+    settings_set(SET_SCANNER_ENABLE, 0.0f);
+    CHECK(!scanner_pane_testing(t + 500u));
+    settings_set(SET_SCANNER_ENABLE, 1.0f);
+    CHECK(!scanner_pane_testing(t + 600u));
+}
+
 int main(void)
 {
     RUN(off_lists_the_line_on_typing_alone_and_on_lists_every_row);
     RUN(not_connected_is_a_state_in_dim_and_raises_nothing);
     RUN(a_scan_inside_test_changes_nothing_and_one_after_30s_does);
     RUN(test_during_a_run_shows_the_refusal_and_keeps_the_servo);
+    RUN(test_ends_when_the_page_is_left);
     RUN(last_scan_names_what_each_line_did);
     RUN(none_during_a_run_is_refused_and_clears_outside_one);
     RUN(check_again_asks_the_panel_and_off_locks_it);
