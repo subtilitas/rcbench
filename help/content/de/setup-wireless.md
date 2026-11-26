@@ -103,11 +103,15 @@ Der Leistungsknoten ist ein ESP32-C6 mit eigener Zelle, der ein INA228-Board in 
 | INA228-Quelle | WIRED, NODE | WIRED | WIRED: der INA228 des IOmcu ([Sensoren](setup-sensors.md)); NODE: die Messwerte des Leistungsknotens. Auch bei ausgeschaltetem Knoten sichtbar, damit die Quelle auf WIRED zurück kann |
 | Knoten suchen | `SUCHEN` | | Tippen öffnet [SEARCH](#search) und sucht 10s lang nach den Leistungsknoten in Reichweite; das Schalten auf ARMED beendet die Suche, `DURCH ARM BEENDET`; bei ARMED abgelehnt, mit `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN` im Band |
 | Gebundener Knoten | `KEINS` oder der Name des Knotens | `KEINS` | Tippen öffnet [SEARCH](#search) mit der Liste der letzten Suche. Zurücksetzen behält den gebundenen Knoten |
+| Knotenname | der Name des Knotens, `ALTE FIRMWARE`, `NICHT VERBUNDEN` | | der im Knoten gespeicherte Name, bis 16 Zeichen A bis Z, 0 bis 9, Leerzeichen, `-`, `_`, `.`. Tippen öffnet die Tastatur; OK schreibt ihn zum Knoten, ein leerer Name löscht ihn. Gebundener Knoten und Search zeigen ihn. Nur bei SAFE und verbunden |
 | Knotenakku | `3.92V`, `SCHWACH 3.41V`, `KEINE ZELLE`, `LESEFEHLER`, `NICHT VERBUNDEN` | | die Zelle des Knotens aus seinem Status jede 1s; `SCHWACH` unter 3.5V |
 | INA228 am Knoten | `0x40, 500uΩ`, `NICHT GEFUNDEN`, `NICHT VERBUNDEN` | | die Adresse, auf der der Knoten seinen INA228 gefunden hat, und der Shunt, den der Knoten hält, aus seiner INFO nach jedem Verbinden und jeder Shunt-Änderung |
-| Knoten-Shunt | 50 bis 10000µΩ | 200µΩ | der Shunt des INA228-Boards am Knoten; der des MATEK I2C-INA-BM hat 200µΩ. Das Panel schreibt ihn nach jedem Verbinden und jeder Änderung zum Knoten, wenn der Knoten einen anderen hält; der Knoten behält ihn über Neustarts. Der Messbereich ist 40.96mV über dem Shunt: 204.8A bei 200µΩ, 81.92A bei 500µΩ, 4.096A bei 10000µΩ. Jede Änderung löscht die Ladungs- und Energiesummen des Knotens. Ändert sich bei ARMED nicht. Ein Knoten, dessen Firmware keinen Shunt nimmt: `LEISTUNGSKNOTEN NIMMT KEINEN SHUNT: FIRMWARE AKTUALISIEREN` im Band |
+| INA228-Adresse | AUTO, 0x40 bis 0x4F | AUTO | AUTO: der Knoten sucht 0x40 bis 0x4F ab; eine feste Adresse: der Knoten fragt nur diese. Jeder Schritt mit `<` oder `>` schreibt sie zum Knoten. Nur bei SAFE und verbunden |
+| Knoten-Shunt | 50 bis 10000µΩ | 200µΩ | der Shunt des INA228-Boards am Knoten; der des MATEK I2C-INA-BM hat 200µΩ. Das Panel schreibt ihn nach jedem Verbinden und jeder Änderung zum Knoten, wenn der Knoten einen anderen hält; der Knoten behält ihn über Neustarts. Der Messbereich ist 40.96mV über dem Shunt: 204.8A bei 200µΩ, 81.92A bei 500µΩ, 4.096A bei 10000µΩ. Jede Änderung löscht die Ladungs- und Energiesummen des Knotens. Das eigene SETUP des Anzeigeknotens setzt den Shunt auch; die letzte Änderung gewinnt, und eine Änderung am Knoten kommt bei der nächsten Verbindung in diese Einstellung. Ändert sich bei ARMED nicht. Ein Knoten, dessen Firmware keinen Shunt nimmt: `LEISTUNGSKNOTEN NIMMT KEINEN SHUNT: FIRMWARE AKTUALISIEREN` im Band |
 
-![WIRELESS auf dem LEISTUNGSKNOTEN-Eintrag, bis INA228 am Knoten und Knoten-Shunt gescrollt](view:setup-wireless-pnode-shunt)
+![WIRELESS auf dem LEISTUNGSKNOTEN-Eintrag, bis INA228 am Knoten, INA228-Adresse und Knoten-Shunt gescrollt](view:setup-wireless-pnode-shunt)
+
+![Knotenname getippt: die Namenstastatur](view:setup-wireless-pnode-name)
 
 Mit INA228-Quelle auf NODE:
 
@@ -116,7 +120,7 @@ Mit INA228-Quelle auf NODE:
 - Mit Leistungsknoten EIN und einem gebundenen Knoten trägt die Kachel MOTOR & ESC im [Menü](overview.md#die-marke-simuliert) keine Marke SIMULIERT, auch bei ausgeschaltetem INA228 des IOmcu und ohne Verbindung zum Knoten.
 - Ein ARM von MOTOR & ESC oder ESC STICK wird abgelehnt, solange Leistungsknoten AUS ist oder in den letzten 100ms kein Messwert kam, mit `ARMED gesperrt: Leistungsknoten sendet nicht. INA228-Quelle WIRED oder Knoten verbinden.` im Band. SERVO und OUTPUTS schalten unabhängig vom Knoten auf ARMED.
 - In einem Lauf von MOTOR & ESC oder ESC STICK wird eine Lücke ohne Messwert bis 300ms überbrückt, einmal in 10s. Eine längere Lücke oder eine zweite innerhalb von 10s schaltet den Prüfstand auf SAFE mit allen Ausgängen aus, und das Band zeigt `MESSWERTE DES LEISTUNGSKNOTENS BEI ARMED VERLOREN: AUF SAFE GESCHALTET, ALLE AUSGÄNGE AUS`. Ein SERVO- oder OUTPUTS-Lauf endet nicht am Knoten.
-- INA228-Quelle und Knoten-Shunt ändern sich bei ARMED nicht.
+- INA228-Quelle, Knoten-Shunt, Knotenname und INA228-Adresse ändern sich bei ARMED nicht: `KEINE KNOTENEINSTELLUNG BEI ARMED: ERST AUF SAFE SCHALTEN`. Ein Knoten, dessen Firmware keinen Namen kennt: `KNOTEN NIMMT KEINEN NAMEN UND KEINE ADRESSE: FIRMWARE AKTUALISIEREN`.
 - Die Messwerte des Knotens speisen keine Schutzfunktion: Stromgrenzen und Abschaltungen lesen ihre eigenen Sensoren.
 
 | Zustand | Wann |
@@ -148,6 +152,7 @@ Der Auswuchtknoten misst Vibration und Index eines Rotors für [Balance](balance
 | Auswuchtknoten | EIN, AUS | AUS | Bluetooth LE und die Verbindung zum gebundenen Knoten; AUS beendet die Verbindung |
 | Knoten suchen | `SUCHEN` | | Tippen öffnet [SEARCH](#search) und sucht 10s lang nach den Auswuchtknoten in Reichweite, `rcbench-bal-XXXX`; das Schalten auf ARMED beendet die Suche; bei ARMED abgelehnt, mit `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN` im Band |
 | Gebundener Knoten | `KEINS` oder der Name des Knotens | `KEINS` | Tippen öffnet [SEARCH](#search) mit der Liste der letzten Suche. Zurücksetzen behält den gebundenen Knoten |
+| Knotenname | der Name des Knotens, `ALTE FIRMWARE`, `NICHT VERBUNDEN` | | der im Knoten gespeicherte Name, bis 16 Zeichen A bis Z, 0 bis 9, Leerzeichen, `-`, `_`, `.`. Tippen öffnet die Tastatur; OK schreibt ihn zum Knoten, ein leerer Name löscht ihn. Gebundener Knoten und Search zeigen ihn. Nur bei SAFE und verbunden |
 | Knotenakku | `3.91V`, `3.40V NIEDRIG`, `KEIN WERT`, `--` | | die Zelle des Knotens, aus dem STATUS, den der Knoten neben seinen Berichten sendet; NIEDRIG unter 3.50V |
 | Testmasse | 0.01g bis 20.00g | 0.50g | die Masse, die für die Testläufe auf [MOTOR & ESC](motor.md#wuchten) aufgeklebt wird |
 

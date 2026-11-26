@@ -183,6 +183,17 @@ const ui_textkey_t *settings_screen_textkey(void);
 const ui_keypad_t *settings_screen_keypad(void);
 
 /**
+ * @brief A node's own name typed over the list (ui_setlist_type_name()):
+ *        a row of WIRELESS' node entries opens it; OK hands the name to
+ *        @p done.
+ * @param title The keyboard's title.
+ * @param text  What it starts with.
+ * @param done  Takes the name typed; "" clears it.
+ */
+void settings_screen_type_name(const char *title, const char *text,
+                               void (*done)(const char *name));
+
+/**
  * @brief The setting the open keypad types.
  * @return Its setting_id_t, or -1 while the keypad is closed.
  */

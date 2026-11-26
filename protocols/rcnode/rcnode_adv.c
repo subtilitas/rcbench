@@ -91,14 +91,25 @@ size_t rcnode_adv_build(uint8_t role, const uint8_t addr[6], uint8_t *out,
 size_t rcnode_rsp_build(uint8_t role, const uint8_t addr[6], uint8_t *out,
                         size_t cap)
 {
+    return rcnode_rsp_build_named(role, addr, NULL, out, cap);
+}
+
+size_t rcnode_rsp_build_named(uint8_t role, const uint8_t addr[6],
+                              const char *uname, uint8_t *out, size_t cap)
+{
     char name[RCNODE_NAME_MAX];
     if (out == NULL || cap < RCNODE_RSP_LEN || !rcnode_name(role, addr, name)) {
         return 0u;
     }
-    out[0] = (uint8_t)(1u + RCNODE_NAME_MAX - 1u);
+    const bool own = uname != NULL && uname[0] != '\0' && rcnode_uname_ok(uname);
+    const char *s = own ? uname : name;
+    const size_t n = strlen(s);     /* 16 at most either way */
+    out[0] = (uint8_t)(1u + n);
     out[1] = AD_NAME_FULL;
-    memcpy(out + 2, name, RCNODE_NAME_MAX - 1u);
-    return RCNODE_RSP_LEN;
+    for (size_t k = 0u; k < n; ++k) {   /* the AD field carries no NUL */
+        out[2u + k] = (uint8_t)s[k];
+    }
+    return 2u + n;
 }
 
 /**

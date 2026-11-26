@@ -1,8 +1,10 @@
 /*
- * The scripted host stack and power node that test_pnode_ctl and
- * test_pnode_shunt drive pnode_ctl.h with: the node's service and
- * characteristics, its INFO, its answers to CONTROL writes, and the
- * STREAM packets it sends.
+ * The scripted host stack and power node that test_pnode_ctl,
+ * test_pnode_shunt and test_pnode_cfg drive pnode_ctl.h with: the node's
+ * service and characteristics, its INFO, its own settings and CONFIG
+ * (node_store.h's rules), its answers to CONTROL writes, and the STREAM
+ * packets it sends.  By default the node takes CONFIG; old_node makes it
+ * one built before CONFIG, NAME and I228.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -58,7 +60,32 @@ typedef struct {
     uint8_t     seq;      /**< the node's STREAM seq */
     bool        hold_read; /**< INFO reads wait for read_answer() */
     uint16_t    read_tok; /**< the waiting read's token, 0 for none */
+    bool        old_node; /**< built before CONFIG: refuses it with 0x13
+                               and NAME by its length */
+    bool        cfg_silent; /**< takes CONFIG and sends none */
+    bool        cfg_on;   /**< CONFIG was asked on this link */
+    rcnode_config_t cfg;  /**< the node's own settings */
+    unsigned    cfgs;     /**< CONFIG writes */
+    unsigned    cfg_sent; /**< CONFIG packets sent */
+    unsigned    names;    /**< NAME writes */
+    unsigned    i228s;    /**< I228 writes */
 } rig_t;
+
+/** @brief One STREAM notification of @p n bytes. */
+static inline void notify(rig_t *r, const uint8_t *b, size_t n);
+
+/** @brief The node's CONFIG on STREAM, once asked on this link. */
+static inline void push_cfg(rig_t *r)
+{
+    if (!r->cfg_on || r->cfg_silent) {
+        return;
+    }
+    r->cfg.shunt_uohm = r->info.shunt_uohm;
+    uint8_t b[RCNODE_PKT_MAX];
+    const size_t n = rcnode_enc_config(&r->cfg, b, sizeof b);
+    ++r->cfg_sent;
+    notify(r, b, n);
+}
 
 /** @brief An event with its kind and token. */
 static inline bleu_evt_t ev(uint8_t kind, uint16_t token)
@@ -162,21 +189,59 @@ static inline void act(rig_t *r, const bleu_act_t *a)
             break;
         }
         if (a->len == 3u && a->data[0] == RCNODE_OP_SHUNT) {
-            /* The node takes it into INFO at once (node_pwr.c). */
+            /* The node takes it into INFO at once (node_pwr.c), and as
+             * the agreed value (node_store.h). */
             ++r->shunts;
             r->wr_len = 3u;
             memcpy(r->wr, a->data, 3u);
+            const uint16_t v = (uint16_t)(a->data[1] | (a->data[2] << 8));
             if (r->shunt_status == 0u && !r->shunt_ignore) {
-                r->info.shunt_uohm =
-                    (uint16_t)(a->data[1] | (a->data[2] << 8));
+                r->info.shunt_uohm = v;
+                r->cfg.shunt_agreed = v;
+                r->cfg.shunt_age_s = RCNODE_AGE_NONE;
             }
             if (r->shunt_hold) {
+                /* The node took it; its answer is lost on the way. */
                 r->shunt_tok = a->token;
+                if (r->shunt_status == 0u && !r->shunt_ignore) {
+                    push_cfg(r);
+                }
                 break;
             }
             e = ev(BLEU_EV_WRITE_DONE, a->token);
             e.status = r->shunt_status;
             pnode_ctl_event(&r->c, &e, r->now);
+            if (r->shunt_status == 0u) {
+                push_cfg(r);
+            }
+            break;
+        }
+        if (a->len >= 1u && (a->data[0] == RCNODE_OP_CONFIG
+                             || a->data[0] == RCNODE_OP_NAME
+                             || a->data[0] == RCNODE_OP_I228)) {
+            const uint8_t op = a->data[0];
+            r->cfgs += op == RCNODE_OP_CONFIG ? 1u : 0u;
+            r->names += op == RCNODE_OP_NAME ? 1u : 0u;
+            r->i228s += op == RCNODE_OP_I228 ? 1u : 0u;
+            rcnode_ctl_t c;
+            e = ev(BLEU_EV_WRITE_DONE, a->token);
+            if (r->old_node) {
+                e.status = op == RCNODE_OP_NAME ? 0x10Du : 0x113u;
+            } else if (rcnode_dec_ctl(a->data, a->len, &c) != RCNODE_OK) {
+                e.status = 0x113u;
+            }
+            pnode_ctl_event(&r->c, &e, r->now);
+            if (e.status != 0u) {
+                break;
+            }
+            if (op == RCNODE_OP_CONFIG) {
+                r->cfg_on = true;
+            } else if (op == RCNODE_OP_NAME) {
+                memcpy(r->cfg.name, c.name, sizeof r->cfg.name);
+            } else {
+                r->cfg.i228_set = c.i228;
+            }
+            push_cfg(r);
             break;
         }
         ++r->writes;
@@ -187,6 +252,7 @@ static inline void act(rig_t *r, const bleu_act_t *a)
         break;
     case BLEU_ACT_DISCONNECT:
         ++r->discs;
+        r->cfg_on = false;
         e = ev(BLEU_EV_DISCONNECT, r->tok_conn);
         e.status = 0x216u;
         pnode_ctl_event(&r->c, &e, r->now);
@@ -289,6 +355,10 @@ static inline void init(rig_t *r, bool src_node)
     r->info.i228_addr = 0x45u;
     r->info.adcrange = 1u;
     r->info.shunt_uohm = 200u;
+    r->cfg.flags = RCNODE_CF_SHUNT;
+    r->cfg.shunt_uohm = 200u;
+    r->cfg.shunt_agreed = 200u;
+    r->cfg.shunt_age_s = RCNODE_AGE_NONE;
     pnode_ctl_init(&r->c);
     pnode_cfg_t cfg;
     memset(&cfg, 0, sizeof cfg);

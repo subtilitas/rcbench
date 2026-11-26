@@ -7285,7 +7285,9 @@ Spannung, Strom, Leistung und Summen von MOTOR & ESC liefert.
 | INA228-Quelle | WIRED, NODE | WIRED | WIRED: der INA228 des IOmcu unter SENSORS; NODE: die Messwerte des Leistungsknotens. Auch bei ausgeschaltetem Knoten sichtbar, damit die Quelle ohne Einschalten des Knotens auf WIRED zurück kann |
 | Knoten suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | Tippen öffnet SEARCH ([WIRELESS: SEARCH](#wireless-search)) und sucht 10s lang nach Leistungsknoten; das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE KNOTENSUCHE`; während einer Suche `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`. SEARCH öffnet in jedem Fall. Ein Auswuchtknoten wird nicht gelistet |
 | Gebundener Knoten | der Name des gebundenen Knotens, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen öffnet SEARCH mit der Liste der letzten Suche, ohne Suche |
+| Knotenname | der Name des Knotens, `ALTE FIRMWARE`, `NICHT VERBUNDEN` | | Tippen öffnet die Namenstastatur; OK schreibt NAME bei SAFE zum Knoten ([Die eigenen Einstellungen der Knoten](Nodes-setup-de.md#die-einstellungen-über-die-verbindung)) |
 | Knotenakku | `3.92V`, `SCHWACH 3.41V`, `KEINE ZELLE`, `LESEFEHLER`, `NICHT VERBUNDEN` | | die Zellspannung aus dem letzten STATUS des Knotens, alle 1000ms gesendet; `SCHWACH` unter 3.5V, `KEINE ZELLE` an USB allein |
+| INA228-Adresse | `AUTO`, `0x40` bis `0x4F`, `ALTE FIRMWARE`, `NICHT VERBUNDEN` | `AUTO` | `<` und `>` schalten sie; jeder Schritt schreibt I228 bei SAFE zum Knoten |
 
 LEISTUNGSKNOTEN ZURÜCKSETZEN setzt Leistungsknoten auf AUS und
 INA228-Quelle auf WIRED zurück; der gebundene Knoten bleibt. Die
@@ -7331,6 +7333,7 @@ Die Zeilen des AUSWUCHTKNOTEN-Eintrags ([Auswuchten](Balance-de.md#messen-mit-de
 | Auswuchtknoten | EIN, AUS | AUS | die Verbindung zum gebundenen Knoten; AUS beendet sie, und sein Verlust ist kein Fehler: der Knoten misst und steuert nichts |
 | Knoten suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | Tippen öffnet SEARCH ([WIRELESS: SEARCH](#wireless-search)) und sucht 10s lang nach Knoten, die die Rolle Auswuchten anzeigen; das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE KNOTENSUCHE`; während einer Suche `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`. SEARCH öffnet in jedem Fall |
 | Gebundener Knoten | der Name des gebundenen Knotens, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen öffnet SEARCH mit der Liste der letzten Suche, ohne Suche |
+| Knotenname | der Name des Knotens, `ALTE FIRMWARE`, `NICHT VERBUNDEN` | | Tippen öffnet die Namenstastatur; OK schreibt NAME bei SAFE zum Knoten ([Die eigenen Einstellungen der Knoten](Nodes-setup-de.md#die-einstellungen-über-die-verbindung)) |
 | Knotenakku | `3.91V`, `3.40V NIEDRIG` (unter 3.50V), `KEIN WERT`, `--` | | die Zelle des Knotens aus dem STATUS, den er auf STREAM neben seinen Berichten sendet; `--` vor dem ersten auf einer Verbindung |
 | Testmasse | 0.01g bis 20.00g in Schritten von 0.01g | 0.50g | die Masse, die für die Testläufe von MOTOR & ESC > WUCHTEN aufgeklebt wird |
 

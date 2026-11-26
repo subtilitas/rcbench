@@ -1,7 +1,7 @@
 /**
  * @file
  * @brief SETUP > WIRELESS' BALANCE NODE entry: ON/OFF, SCAN FOR NODE, the
- *        bound node, its battery and the trial mass, and the node's state
+ *        bound node, its name, its battery and the trial mass, and the node's state
  *        word on the entry's line.
  *
  * The panel hands the controller's view in each frame
@@ -28,7 +28,7 @@ extern "C" {
 
 /**
  * @brief The entry's rows: ON/OFF, and while ON the scan, the bound node,
- *        the battery and the trial mass.
+ *        the node's name, the battery and the trial mass.
  * @param out The rows, NULL to count.  @param max Their room.
  * @return The count.
  */
@@ -84,6 +84,9 @@ extern const ui_setlist_custom_t wireless_bal_scan_row;
 extern const ui_setlist_custom_t wireless_bal_bind_row;
 /** @brief NODE BATTERY, a row that only shows; public for the tests. */
 extern const ui_setlist_custom_t wireless_bal_bat_row;
+/** @brief NODE NAME: the node's own name (node_cfg_link.h); a tap opens
+ *         the name keyboard while SAFE with the node's settings known. */
+extern const ui_setlist_custom_t wireless_bal_name_row;
 
 #ifdef __cplusplus
 }

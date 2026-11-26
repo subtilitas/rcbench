@@ -53,15 +53,16 @@ TEST_CASE(the_entry_shows_its_rows_under_on)
     CHECK(rows[0].custom == NULL);
     CHECK(!settings_get_bool(SET_BNODE_EN));
     settings_set(SET_BNODE_EN, 1.0f);
-    CHECK_EQ(wireless_pane_rows(WL_ENTRY_BAL, rows, WL_ENTRY_ROWS_MAX), 5);
+    CHECK_EQ(wireless_pane_rows(WL_ENTRY_BAL, rows, WL_ENTRY_ROWS_MAX), 6);
     CHECK(rows[1].custom == &wireless_bal_scan_row);
     CHECK(rows[2].custom == &wireless_bal_bind_row);
-    CHECK(rows[3].custom == &wireless_bal_bat_row);
-    CHECK_EQ(rows[4].id, SET_BAL_TRIAL);
-    CHECK(rows[4].custom == NULL);
+    CHECK(rows[3].custom == &wireless_bal_name_row);
+    CHECK(rows[4].custom == &wireless_bal_bat_row);
+    CHECK_EQ(rows[5].id, SET_BAL_TRIAL);
+    CHECK(rows[5].custom == NULL);
     /* Counting needs no room; a short room counts all. */
-    CHECK_EQ(wireless_pane_rows(WL_ENTRY_BAL, NULL, 0), 5);
-    CHECK_EQ(wireless_pane_rows(WL_ENTRY_BAL, rows, 2), 5);
+    CHECK_EQ(wireless_pane_rows(WL_ENTRY_BAL, NULL, 0), 6);
+    CHECK_EQ(wireless_pane_rows(WL_ENTRY_BAL, rows, 2), 6);
     CHECK_EQ(wireless_pane_entry_of(SET_BNODE_EN), WL_ENTRY_BAL);
     CHECK_EQ(wireless_pane_entry_of(SET_BAL_TRIAL), WL_ENTRY_BAL);
     char name[32];
@@ -81,7 +82,7 @@ TEST_CASE(the_entry_shows_its_rows_under_on)
     open_wireless(SET_BNODE_EN);
     CHECK_EQ(settings_screen_category(), SET_CAT_WIRELESS);
     CHECK_EQ(wireless_pane_selected(), WL_ENTRY_BAL);
-    CHECK_EQ(settings_screen_rows(SET_CAT_WIRELESS), 5);
+    CHECK_EQ(settings_screen_rows(SET_CAT_WIRELESS), 6);
 }
 
 TEST_CASE(a_scan_while_armed_is_refused_with_a_band_text)

@@ -29,6 +29,12 @@
  * 5449h with another die (an INA238, say), and starts again SENSE_RETRY_MS
  * after its end.
  *
+ * A fixed address.  The node's SETUP and the panel can fix the address
+ * (RCNODE_OP_I228, node_store.h): the search then asks that one address,
+ * with the same check, and nothing else.  psens_set_addr() ends the
+ * binding and starts the search at the next step.  A stored setting out of
+ * range reads as AUTO.
+ *
  * The shunt.  A setting of the node in µΩ, RCNODE_SHUNT_MIN_UOHM (50) to
  * RCNODE_SHUNT_MAX_UOHM (10,000), RCNODE_SHUNT_DEF_UOHM (200, the MATEK's)
  * by default.  The range is always ADCRANGE 1 (±40.96mV): the full scale
@@ -38,8 +44,8 @@
  * shunt scales the conversion alone: 78.125nV over the shunt a step of
  * CURRENT, 3.2 times that times VBUS's step for POWER.  A change sets the
  * part up again at its address: the set-up clears CHARGE and ENERGY and
- * the accumulators' epoch counts it.  The store keeps the setting through
- * restarts; a stored value out of range reads as the default.
+ * the accumulators' epoch counts it.  node_store.h keeps the setting
+ * through restarts; a stored value out of range reads as the default.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -59,18 +65,6 @@ extern "C" {
 /** @brief ADCRANGE 1's full scale across the shunt, nV (Table 7-9). */
 #define PSENS_FS_NV 40960000u
 
-/** @brief Where the setting is kept: the node's NVS (non-volatile storage),
- *         a fake in the host suite. */
-typedef struct {
-    /** @brief Read the stored shunt.  @param ctx ctx.  @param uohm Receives
-     *  it.  @return false when none is stored or the read failed. */
-    bool (*load)(void *ctx, uint16_t *uohm);
-    /** @brief Store the shunt.  @param ctx ctx.  @param uohm The value.
-     *  @return false when the write failed. */
-    bool (*save)(void *ctx, uint16_t uohm);
-    void *ctx;  /**< passed to load and save unchanged */
-} psens_store_t;
-
 /** @brief The INA228, its search and its shunt.  Members are private but
  *         for the tests. */
 typedef struct {
@@ -80,6 +74,7 @@ typedef struct {
     uint16_t      shunt_uohm; /**< the shunt in force, µΩ */
     uint8_t       addr;       /**< the address of the last find, 0 none */
     uint8_t       next;       /**< the search's next address, 0 none runs */
+    uint8_t       fixed;      /**< the only address asked, 0 AUTO */
     bool          bound;      /**< the driver is set up at addr */
     bool          searched;   /**< a search has ended or found */
     bool          other_ti;   /**< this search met 5449h with another die */
@@ -102,23 +97,6 @@ bool psens_shunt_ok(uint32_t uohm);
  * @return The full scale, mA.
  */
 uint32_t psens_max_ma(uint16_t uohm);
-
-/**
- * @brief The shunt the store holds.
- * @param st The store; NULL reads as nothing stored.
- * @return The stored value when psens_shunt_ok() takes it, else
- *         RCNODE_SHUNT_DEF_UOHM.
- */
-uint16_t psens_shunt_load(const psens_store_t *st);
-
-/**
- * @brief Store a shunt.
- * @param st   The store.
- * @param uohm The shunt, µΩ.
- * @return false for a value psens_shunt_ok() refuses (nothing is written),
- *         a NULL store or a failed write.
- */
-bool psens_shunt_save(const psens_store_t *st, uint32_t uohm);
 
 /**
  * @brief Set up: nothing bound, a search due at the first step.
@@ -145,6 +123,16 @@ bool psens_step(psens_t *s, uint32_t now_ms);
  * @return false for a value psens_shunt_ok() refuses: nothing changes.
  */
 bool psens_set_shunt(psens_t *s, uint32_t uohm);
+
+/**
+ * @brief The address setting: AUTO searches 0x40 to 0x4F, a fixed address
+ *        asks that one alone.  A change ends the binding; the search
+ *        starts at the next step.
+ * @param s       The sensor.
+ * @param setting RCNODE_I228_AUTO or 0x40 to 0x4F; another value is AUTO.
+ * @return true when the setting changed.
+ */
+bool psens_set_addr(psens_t *s, uint8_t setting);
 
 /**
  * @brief Whether the last set-up was a shunt change's, read once: such a

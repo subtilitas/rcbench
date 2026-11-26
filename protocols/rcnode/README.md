@@ -31,8 +31,9 @@ server on its own Bluetooth stack. The caller moves the bytes.
   that are not defined.
 - All packets are 20 bytes or fewer, which fits the default ATT (attribute
   protocol) MTU (maximum transmission unit) of 23, except the balance
-  report: 24 bytes, which needs an MTU of 27 or more. The node asks for an
-  MTU of 247.
+  report: 24 bytes, which needs an MTU of 27 or more, and CONFIG: 30 bytes
+  (`RCNODE_PKT_MAX`), which needs 33 or more. The node and the panel ask
+  for an MTU of 247.
 - The service and characteristic UUIDs (universally unique identifiers)
   share the base `72636265-6E63-6800-XXXX-000000000000`. The first 7 bytes
   spell "rcbench" in ASCII.
@@ -42,7 +43,7 @@ server on its own Bluetooth stack. The caller moves the bytes.
 | 0100 | the node service | | |
 | 0101 | STREAM | NOTIFY | power: windows, accumulators, run extremes; balance: reports; both: `RCNODE_T_STATUS` |
 | 0102 | STATUS | READ, NOTIFY | `RCNODE_T_STATUS`, notified every 1000ms |
-| 0103 | CONTROL | WRITE, WRITE WITHOUT RESPONSE | 1 to 3 bytes, below |
+| 0103 | CONTROL | WRITE, WRITE WITHOUT RESPONSE | 1 to 17 bytes (`RCNODE_CTL_MAX`), below |
 | 0104 | INFO | READ | `RCNODE_T_INFO` |
 
 ### Packets
@@ -55,6 +56,7 @@ server on its own Bluetooth stack. The caller moves the bytes.
 | 0x20 | `RCNODE_T_BAL_REPORT` | STREAM | 24 bytes | every 250ms |
 | 0x30 | `RCNODE_T_STATUS` | STATUS, STREAM | 20 bytes | every 1000ms and on a read |
 | 0x31 | `RCNODE_T_INFO` | INFO | 20 bytes | on a read |
+| 0x32 | `RCNODE_T_CONFIG` | STREAM | 30 bytes | after CONFIG on the link, at once and after each change |
 
 The byte tables of each packet are in `include/rcnode.h`, beside its
 struct.
@@ -120,6 +122,16 @@ types only.
   the address and its type, and for the power node the INA228's address
   the node found it at (0x40 to 0x4F; 0 before a find or after a search
   that found none), ADCRANGE and the shunt in force in µΩ.
+- **Config.** The node's own settings: flags (`RCNODE_CF_SHUNT`: the role
+  keeps a shunt and an address), the INA228 address setting
+  (`RCNODE_I228_AUTO` 0, or 0x40 to 0x4F), the shunt in force and the
+  shunt both ends last agreed on (µΩ), the seconds since the node's own
+  change of the shunt (`RCNODE_AGE_NONE` 0xFFFF for none since its start),
+  and the name in 16 bytes, NUL padded ("" for none). The decoder refuses
+  a name `rcnode_uname_ok()` does not take, padding that is not NUL and an
+  address setting out of range; the panel holds a shunt it takes to 50 to
+  10,000µΩ. A node sends it only after a central wrote CONFIG on the link, so
+  a central built before it never receives one; INFO keeps its 20 bytes.
 
 ### Control
 
@@ -131,7 +143,10 @@ types only.
 | 0x04 | BLADES | 2 | 1 to 12, shared/vibe's `VIBE_BLADES_MAX` | balance |
 | 0x05 | RPM | 3 | 16 bits, 0 to 60000; 0 is the index mode | balance |
 | 0x06 | LANG | 2 | 0 English, 1 German: the language of a display node's texts | power |
-| 0x07 | SHUNT | 3 | 16 bits, 50 to 10000: the INA228 board's shunt in µΩ (`RCNODE_SHUNT_MIN_UOHM`, `RCNODE_SHUNT_MAX_UOHM`) | power |
+| 0x07 | SHUNT | 3 | 16 bits, 50 to 10000: the INA228 board's shunt in µΩ (`RCNODE_SHUNT_MIN_UOHM`, `RCNODE_SHUNT_MAX_UOHM`); also the agreed shunt | power |
+| 0x08 | CONFIG | 1 | | both |
+| 0x09 | NAME | 17 | 16 bytes, NUL padded: 0 to 16 characters A to Z, 0 to 9, space, `-`, `_`, `.`, no space at either end (`RCNODE_UNAME_MAX`, `rcnode_uname_ok()`); "" clears it | both |
+| 0x0A | I228 | 2 | `RCNODE_I228_AUTO` (0), or a fixed address 0x40 to 0x4F | power |
 
 The decoder refuses an unknown operation, another length than the
 operation's, a RUN tag of 0, and a value out of range.
@@ -142,6 +157,19 @@ restarts, names it in INFO at once and ranges its INA228 for it; 200µΩ
 (`RCNODE_SHUNT_DEF_UOHM`, the MATEK I2C-INA-BM's) until one is written. A
 node built before SHUNT refuses it with ATT error 0x13.
 
+A node keeps NAME and I228 through restarts. A node built before them
+refuses CONFIG and I228 by their operation (ATT error 0x13) and NAME by
+its length (ATT error 0x0D). A stored name or address out of range reads
+as its default.
+
+**The shunt in step.** `rcnode_shunt_sync()` decides, from the panel's
+setting, the node's shunt and agreed shunt and the two ages, what the
+panel does after CONFIG: KEEP, WRITE (the panel's setting to the node),
+ADOPT (the node's shunt into the panel's setting) or ACK (SHUNT with the
+node's value, so the node marks it agreed). A change made only on one end
+goes to the other; with changes on both ends the younger wins, a change of
+unknown age is the oldest, and equal ages or two unknown go to the node.
+
 ### Advertising
 
 - Legacy advertising, 29 bytes: flags 0x06, the service UUID in a complete
@@ -151,7 +179,9 @@ node built before SHUNT refuses it with ATT error 0x13.
   lists the node from this report alone.
 - Scan response, 18 bytes: the complete name `rcbench-pwr-XXXX`,
   `rcbench-bal-XXXX` or `rcbench-srv-XXXX` (the two address bytes printed
-  last, upper-case hex).
+  last, upper-case hex). A node with its own NAME sends that name instead,
+  up to 18 bytes (`rcnode_rsp_build_named()`); the role stays in the
+  manufacturer data.
 - `rcnode_adv_match()` takes a report's advertising or scan response. The
   manufacturer data names the role first, then the name. The service UUID
   alone matches with role 0. A structure whose length runs past the end
@@ -200,6 +230,11 @@ rcnode_err_t rcnode_decode(const uint8_t *b, size_t n, rcnode_pkt_t *out);
 size_t       rcnode_enc_ctl(const rcnode_ctl_t *c, uint8_t *out, size_t cap);
 rcnode_err_t rcnode_dec_ctl(const uint8_t *b, size_t n, rcnode_ctl_t *out);
 bool         rcnode_ctl_for_role(uint8_t role, uint8_t op);
+size_t       rcnode_enc_config(const rcnode_config_t *p, uint8_t *out, size_t cap);
+bool         rcnode_uname_ok(const char *name);
+bool         rcnode_i228_ok(uint8_t v);
+rcnode_sync_t rcnode_shunt_sync(uint16_t panel, uint16_t node, uint16_t agreed,
+                                uint16_t node_age_s, uint32_t panel_age_ms);
 uint8_t      rcnode_seq_lost(uint8_t prev, uint8_t now);
 int32_t      rcnode_t_diff(uint32_t later, uint32_t earlier);
 int64_t      rcnode_sext40(uint64_t raw);
@@ -217,6 +252,8 @@ void         rcnode_run_step(rcnode_run_t *r, const rcnode_pwr_win_t *closed, in
 bool         rcnode_name(uint8_t role, const uint8_t addr[6], char out[RCNODE_NAME_MAX]);
 size_t       rcnode_adv_build(uint8_t role, const uint8_t addr[6], uint8_t *out, size_t cap);
 size_t       rcnode_rsp_build(uint8_t role, const uint8_t addr[6], uint8_t *out, size_t cap);
+size_t       rcnode_rsp_build_named(uint8_t role, const uint8_t addr[6], const char *name,
+                                    uint8_t *out, size_t cap);
 bool         rcnode_adv_match(const uint8_t *ad, size_t len, uint8_t *role);
 uint8_t      rcnode_adv_maker_role(const uint8_t *ad, size_t len);
 uint8_t      rcnode_name_role(const char *name);

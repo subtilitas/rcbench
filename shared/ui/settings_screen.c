@@ -778,6 +778,12 @@ const ui_keypad_t *settings_screen_keypad(void)
     return &s.sl.kp;
 }
 
+void settings_screen_type_name(const char *title, const char *text,
+                               void (*done)(const char *name))
+{
+    ui_setlist_type_name(&s.sl, title, text, done);
+}
+
 int settings_screen_keypad_setting(void)
 {
     return ui_setlist_keypad_setting(&s.sl);

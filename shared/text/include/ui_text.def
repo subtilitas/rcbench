@@ -14227,6 +14227,43 @@ UI_TEXT(PNODE_I228_AT, 18,
 UI_TEXT(PNODE_I228_NONE, 18,
     "NOT FOUND",
     "NICHT GEFUNDEN")
+/* NODE NAME and INA228 ADDRESS: the node's own settings (node_cfg_link.h),
+ * written to the linked node; OLD FIRMWARE for a node built before them.
+ * The band's texts: a change asked while ARMED, without a link, from a
+ * node built before them, and one the node refused. */
+UI_TEXT(PNODE_ROW_NAME, 43,
+    "Node name",
+    "Knotenname")
+UI_TEXT(PNODE_ROW_NAME_HELP, 43,
+    "Kept on the node, 16 characters at most",
+    "Im Knoten gespeichert, höchstens 16 Zeichen")
+UI_TEXT(PNODE_ROW_ADDR, 43,
+    "INA228 address",
+    "INA228-Adresse")
+UI_TEXT(PNODE_ROW_ADDR_HELP, 43,
+    "AUTO searches 0x40 to 0x4F, else this one",
+    "AUTO sucht 0x40 bis 0x4F, sonst nur diese")
+UI_TEXT(PNODE_ADDR_AUTO, 18,
+    "AUTO",
+    "AUTO")
+UI_TEXT(PNODE_CFG_OLD, 18,
+    "OLD FIRMWARE",
+    "ALTE FIRMWARE")
+UI_TEXT(PNODE_CFG_ARMED, 94,
+    "NO NODE SETTING CHANGE WHILE ARMED: SWITCH TO SAFE FIRST",
+    "KEINE KNOTENEINSTELLUNG BEI ARMED: ERST AUF SAFE SCHALTEN")
+UI_TEXT(PNODE_CFG_UNLINKED, 94,
+    "NODE NOT LINKED: ITS SETTINGS CHANGE ONLY OVER THE LINK",
+    "KNOTEN NICHT VERBUNDEN: EINSTELLUNGEN NUR ÜBER DIE VERBINDUNG")
+UI_TEXT(PNODE_CFG_NONE, 94,
+    "THE NODE TAKES NO NAME OR ADDRESS: UPDATE ITS FIRMWARE",
+    "KNOTEN NIMMT KEINEN NAMEN UND KEINE ADRESSE: FIRMWARE AKTUALISIEREN")
+UI_TEXT(BNODE_CFG_NONE, 94,
+    "THE NODE TAKES NO NAME: UPDATE ITS FIRMWARE",
+    "KNOTEN NIMMT KEINEN NAMEN: FIRMWARE AKTUALISIEREN")
+UI_TEXT(PNODE_CFG_REFUSED, 94,
+    "THE NODE REFUSED THE SETTING",
+    "DER KNOTEN HAT DIE EINSTELLUNG ABGELEHNT")
 /* The band's texts: the scan refused while ARMED, the link's notices, and
  * the error of the node's readings lost while ARMED with INA228 SOURCE
  * NODE. */

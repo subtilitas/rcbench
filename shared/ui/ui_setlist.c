@@ -533,6 +533,16 @@ void ui_setlist_type_id(ui_setlist_t *sl, const char *title,
     invalidate(sl);
 }
 
+void ui_setlist_type_name(ui_setlist_t *sl, const char *title,
+                          const char *text, void (*done)(const char *name))
+{
+    sl->choice_row = -1;
+    ui_textkey_open_node_name(&sl->tk, TK_AREA, title, text);
+    sl->tk_text = SETTING_TEXT_COUNT;
+    sl->tk_done = done;
+    invalidate(sl);
+}
+
 /** @brief No press in progress, and no repeat running for one.
  *  @param sl The list. */
 static void drop_press(ui_setlist_t *sl)

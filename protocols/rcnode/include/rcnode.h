@@ -57,6 +57,7 @@ extern "C" {
 #define RCNODE_T_BAL_REPORT 0x20u  /**< STREAM, balance: one report, every 250ms */
 #define RCNODE_T_STATUS     0x30u  /**< STATUS, both roles */
 #define RCNODE_T_INFO       0x31u  /**< INFO, both roles */
+#define RCNODE_T_CONFIG     0x32u  /**< STREAM, both roles: the node's own settings, after RCNODE_OP_CONFIG */
 /** @} */
 
 /** @brief Packet lengths in bytes, header included. @{ */
@@ -67,7 +68,8 @@ extern "C" {
 #define RCNODE_BAL_REPORT_LEN 24u  /**< needs an ATT (attribute protocol) MTU of 27 or more */
 #define RCNODE_STATUS_LEN    20u  /**< RCNODE_T_STATUS */
 #define RCNODE_INFO_LEN      20u  /**< RCNODE_T_INFO */
-#define RCNODE_PKT_MAX       24u   /**< the longest packet */
+#define RCNODE_CONFIG_LEN    30u  /**< RCNODE_T_CONFIG: needs an ATT MTU of 33 or more */
+#define RCNODE_PKT_MAX       30u   /**< the longest packet */
 /** @} */
 
 /** @brief Timing the node keeps. @{ */
@@ -364,19 +366,6 @@ typedef struct {
     uint16_t     shunt_uohm;  /**< power: the shunt, µΩ */
 } rcnode_info_t;
 
-/** @brief Any packet, by type. */
-typedef struct {
-    rcnode_hdr_t hdr;  /**< the header; hdr.type selects the member */
-    union {
-        rcnode_pwr_win_t    win;     /**< RCNODE_T_PWR_WIN */
-        rcnode_pwr_acc_t    acc;     /**< RCNODE_T_PWR_ACC */
-        rcnode_pwr_run_t    run;     /**< RCNODE_T_PWR_RUN */
-        rcnode_bal_report_t bal;     /**< RCNODE_T_BAL_REPORT */
-        rcnode_status_t     status;  /**< RCNODE_T_STATUS */
-        rcnode_info_t       info;    /**< RCNODE_T_INFO */
-    } u;  /**< the decoded packet, its own hdr included */
-} rcnode_pkt_t;
-
 /* ------------------------------------------------------------- control */
 
 /** @brief Control operations, byte 0 of a CONTROL write. @{ */
@@ -386,7 +375,10 @@ typedef struct {
 #define RCNODE_OP_BLADES 0x04u  /**< 2 bytes: op, count; balance only */
 #define RCNODE_OP_RPM    0x05u  /**< 3 bytes: op, rpm (16 bits); balance only, 0 = index mode */
 #define RCNODE_OP_LANG   0x06u  /**< 2 bytes: op, RCNODE_LANG_*; power only: the language of a display node's texts */
-#define RCNODE_OP_SHUNT  0x07u  /**< 3 bytes: op, the INA228's shunt in µΩ (16 bits); power only */
+#define RCNODE_OP_SHUNT  0x07u  /**< 3 bytes: op, the INA228's shunt in µΩ (16 bits); power only; also the value both ends agree on */
+#define RCNODE_OP_CONFIG 0x08u  /**< 1 byte: RCNODE_T_CONFIG on STREAM now and after each change on this link */
+#define RCNODE_OP_NAME   0x09u  /**< 17 bytes: op, the name in 16 bytes, NUL padded (rcnode_uname_ok()) */
+#define RCNODE_OP_I228   0x0Au  /**< 2 bytes: op, RCNODE_I228_AUTO or a fixed address 0x40 to 0x4F; power only */
 /** @} */
 
 /** @brief RCNODE_OP_LANG's values: the panel's language. @{ */
@@ -403,8 +395,16 @@ typedef struct {
 #define RCNODE_SHUNT_DEF_UOHM   200u  /**< the MATEK I2C-INA-BM's shunt, the power node's default */
 /** @} */
 
-/** @brief The longest control write, bytes. */
-#define RCNODE_CTL_MAX 3u
+/** @brief The node's own name and the INA228's address setting. @{ */
+#define RCNODE_UNAME_MAX  16u   /**< the longest name, characters */
+#define RCNODE_I228_AUTO   0u   /**< RCNODE_OP_I228: the search of 0x40 to 0x4F */
+#define RCNODE_I228_MIN 0x40u   /**< the lowest fixed address */
+#define RCNODE_I228_MAX 0x4Fu   /**< the highest fixed address */
+#define RCNODE_AGE_NONE 0xFFFFu /**< RCNODE_T_CONFIG's shunt_age_s: no change on the node since its start */
+/** @} */
+
+/** @brief The longest control write, bytes: RCNODE_OP_NAME. */
+#define RCNODE_CTL_MAX 17u
 
 /** @brief A control write. */
 typedef struct {
@@ -414,7 +414,68 @@ typedef struct {
     uint16_t rpm;     /**< RCNODE_OP_RPM: the rotation rate, 0 for index mode */
     uint8_t  lang;    /**< RCNODE_OP_LANG: RCNODE_LANG_* */
     uint16_t shunt_uohm; /**< RCNODE_OP_SHUNT: the shunt, µΩ, RCNODE_SHUNT_MIN_UOHM to RCNODE_SHUNT_MAX_UOHM */
+    char     name[RCNODE_UNAME_MAX + 1u]; /**< RCNODE_OP_NAME: the name, NUL-terminated, "" for none */
+    uint8_t  i228;    /**< RCNODE_OP_I228: RCNODE_I228_AUTO or RCNODE_I228_MIN to RCNODE_I228_MAX */
 } rcnode_ctl_t;
+
+/** @brief RCNODE_T_CONFIG flags. @{ */
+#define RCNODE_CF_SHUNT 0x01u  /**< the role keeps a shunt and an INA228 address: the power role */
+/** @} */
+
+/**
+ * @brief The node's own settings, RCNODE_T_CONFIG, 30 bytes, on STREAM.
+ *
+ * | Byte  | Field        |
+ * |-------|--------------|
+ * | 0-5   | header       |
+ * | 6     | flags        |
+ * | 7     | i228_set     |
+ * | 8-9   | shunt_uohm   |
+ * | 10-11 | shunt_agreed |
+ * | 12-13 | shunt_age_s  |
+ * | 14-29 | name         |
+ *
+ * A node sends it only after a central wrote RCNODE_OP_CONFIG on the link,
+ * at once and after each change of a value in it, so a central built
+ * before it never sees one.  shunt_agreed is the shunt both ends last
+ * agreed on: the value of the last SHUNT write, or the stored shunt before
+ * any.  shunt_age_s is the time since the node's own SETUP changed the
+ * shunt, in s, RCNODE_AGE_NONE when it did not since the node started
+ * (rcnode_shunt_sync()).  The name is NUL padded; all 16 bytes may be
+ * characters.  Without RCNODE_CF_SHUNT, i228_set and the three shunt fields
+ * are 0.
+ */
+typedef struct {
+    rcnode_hdr_t hdr;            /**< seq: the STREAM's */
+    uint8_t      flags;          /**< RCNODE_CF_* */
+    uint8_t      i228_set;       /**< RCNODE_I228_AUTO or a fixed address */
+    uint16_t     shunt_uohm;     /**< the shunt in force, µΩ */
+    uint16_t     shunt_agreed;   /**< the shunt both ends last agreed on, µΩ */
+    uint16_t     shunt_age_s;    /**< s since the node's own change, RCNODE_AGE_NONE none */
+    char         name[RCNODE_UNAME_MAX + 1u]; /**< NUL-terminated, "" none */
+} rcnode_config_t;
+
+/** @brief What rcnode_shunt_sync() tells the central to do. */
+typedef enum {
+    RCNODE_SYNC_KEEP = 0,  /**< both ends hold the agreed value */
+    RCNODE_SYNC_WRITE,     /**< the panel's value is newer: SHUNT with it */
+    RCNODE_SYNC_ADOPT,     /**< the node's value is newer: the panel takes it */
+    RCNODE_SYNC_ACK,       /**< both hold the same new value: SHUNT with it marks it agreed */
+} rcnode_sync_t;
+
+/** @brief Any packet, by type. */
+typedef struct {
+    rcnode_hdr_t hdr;  /**< the header; hdr.type selects the member */
+    union {
+        rcnode_pwr_win_t    win;     /**< RCNODE_T_PWR_WIN */
+        rcnode_pwr_acc_t    acc;     /**< RCNODE_T_PWR_ACC */
+        rcnode_pwr_run_t    run;     /**< RCNODE_T_PWR_RUN */
+        rcnode_bal_report_t bal;     /**< RCNODE_T_BAL_REPORT */
+        rcnode_status_t     status;  /**< RCNODE_T_STATUS */
+        rcnode_info_t       info;    /**< RCNODE_T_INFO */
+        rcnode_config_t     config;  /**< RCNODE_T_CONFIG */
+    } u;  /**< the decoded packet, its own hdr included */
+} rcnode_pkt_t;
 
 /* ------------------------------------------------------------- codec */
 
@@ -503,7 +564,9 @@ size_t rcnode_enc_info(const rcnode_info_t *p, uint8_t *out, size_t cap);
  *
  * The length must be the type's exactly.  A balance report's phase of 3600
  * or more, or a quality over 100, a status's sensor state past the last, an
- * info's role or protocol of 0, are refused as RCNODE_ERR_RANGE.  Flag bits
+ * info's role or protocol of 0, a config's name that rcnode_uname_ok()
+ * refuses or its address that rcnode_i228_ok() refuses, are refused as
+ * RCNODE_ERR_RANGE.  Flag bits
  * that are not defined are kept and not refused.
  *
  * @param b The bytes.
@@ -533,8 +596,9 @@ size_t rcnode_enc_ctl(const rcnode_ctl_t *c, uint8_t *out, size_t cap);
  * @return RCNODE_OK; RCNODE_ERR_TYPE for an unknown operation,
  * RCNODE_ERR_LEN for another length than the operation's,
  * RCNODE_ERR_RANGE for a RUN tag of 0 (the tag before any RUN), a blade
- * count, an rpm or a shunt out of range, or a language other than
- * RCNODE_LANG_EN and RCNODE_LANG_DE.
+ * count, an rpm or a shunt out of range, a language other than
+ * RCNODE_LANG_EN and RCNODE_LANG_DE, a name rcnode_uname_ok() refuses, or
+ * an INA228 address rcnode_i228_ok() refuses.
  */
 rcnode_err_t rcnode_dec_ctl(const uint8_t *b, size_t n, rcnode_ctl_t *out);
 
@@ -543,10 +607,67 @@ rcnode_err_t rcnode_dec_ctl(const uint8_t *b, size_t n, rcnode_ctl_t *out);
  *
  * @param role RCNODE_ROLE_*.
  * @param op RCNODE_OP_*.
- * @return true for RUN, SLEEP and OFF on both roles, LANG and SHUNT on the
- * power role, and BLADES and RPM on the balance role.
+ * @return true for RUN, SLEEP, OFF, CONFIG and NAME on both roles, LANG,
+ * SHUNT and I228 on the power role, and BLADES and RPM on the balance role.
  */
 bool rcnode_ctl_for_role(uint8_t role, uint8_t op);
+
+/* ------------------------------------------------- the node's settings */
+
+/**
+ * @brief Whether a name is one a node keeps: 0 to RCNODE_UNAME_MAX (16)
+ * characters of A to Z, 0 to 9, space, "-", "_" and ".", the characters of
+ * the panel's name keyboard (ui_textkey.h), and no space at either end.
+ * "" is no name.
+ *
+ * @param s The name, NUL-terminated; NULL is refused.
+ * @return true when the node keeps it.
+ */
+bool rcnode_uname_ok(const char *s);
+
+/**
+ * @brief Whether an INA228 address setting is one a node keeps.
+ *
+ * @param a The setting.
+ * @return true for RCNODE_I228_AUTO and RCNODE_I228_MIN to RCNODE_I228_MAX.
+ */
+bool rcnode_i228_ok(uint8_t a);
+
+/**
+ * @brief Encode the node's settings.
+ *
+ * @param p The settings; p->hdr.type is ignored.
+ * @param out The buffer.
+ * @param cap The buffer's size.
+ * @return RCNODE_CONFIG_LEN; 0 for a small buffer, a NULL argument, a name
+ * rcnode_uname_ok() refuses or an address rcnode_i228_ok() refuses.
+ */
+size_t rcnode_enc_config(const rcnode_config_t *p, uint8_t *out, size_t cap);
+
+/**
+ * @brief The last change of the shunt wins: what the central does with the
+ * panel's setting and the node's RCNODE_T_CONFIG.
+ *
+ * A side changed the shunt when its value differs from the agreed one.
+ * Only the panel changed: WRITE.  Only the node changed: ADOPT.  Both
+ * hold the same value: ACK when it is not the agreed one yet, else KEEP.
+ * Both changed to different values: the younger change wins, by the ages
+ * at the moment of the decision.  An age that is not known (the node's
+ * RCNODE_AGE_NONE, the panel's UINT32_MAX: a change from before its own
+ * start) is older than any known one.  Equal ages and two unknown ages go
+ * to the node: its value is the one its part measures with.
+ *
+ * @param panel        The panel's setting, µΩ.
+ * @param node         The node's shunt in force, µΩ.
+ * @param agreed       The node's shunt_agreed, µΩ.
+ * @param node_age_s   The node's shunt_age_s.
+ * @param panel_age_ms The time since the panel's setting changed, ms;
+ *                     UINT32_MAX for not known.
+ * @return The action.
+ */
+rcnode_sync_t rcnode_shunt_sync(uint16_t panel, uint16_t node,
+                                uint16_t agreed, uint16_t node_age_s,
+                                uint32_t panel_age_ms);
 
 /* --------------------------------------------------------- arithmetic */
 
@@ -726,7 +847,8 @@ void rcnode_run_step(rcnode_run_t *r, const rcnode_pwr_win_t *closed, int tag);
 /** @brief Advertising data the node sends, bytes: flags, the 128-bit service
  *  UUID, manufacturer data. */
 #define RCNODE_ADV_LEN  29u
-/** @brief The scan response: the complete name. */
+/** @brief The scan response: the complete name, rcnode_name()'s or the
+ *  node's own of RCNODE_UNAME_MAX (16) characters at most. */
 #define RCNODE_RSP_LEN  18u
 
 /**
@@ -771,6 +893,23 @@ size_t rcnode_adv_build(uint8_t role, const uint8_t addr[6], uint8_t *out,
  */
 size_t rcnode_rsp_build(uint8_t role, const uint8_t addr[6], uint8_t *out,
                         size_t cap);
+
+/**
+ * @brief The scan response with the node's own name: the complete name is
+ * @p uname when rcnode_uname_ok() takes it and it is not "", else
+ * rcnode_name()'s.  A central built before the node's own name lists the
+ * node by the manufacturer data and shows the name as it comes.
+ *
+ * @param role RCNODE_ROLE_*.
+ * @param addr The address, least significant byte first.
+ * @param uname The node's own name, NULL or "" for none.
+ * @param out Receives 2 bytes and the name's length, RCNODE_RSP_LEN at most.
+ * @param cap The buffer's size, RCNODE_RSP_LEN or more.
+ * @return The bytes written, 0 for an unknown role, a small buffer or a
+ * NULL argument.
+ */
+size_t rcnode_rsp_build_named(uint8_t role, const uint8_t addr[6],
+                              const char *uname, uint8_t *out, size_t cap);
 
 /**
  * @brief The role a node's name names: "rcbench-pwr-" or "rcbench-bal-" at

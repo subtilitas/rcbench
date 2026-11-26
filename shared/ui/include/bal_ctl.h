@@ -34,6 +34,10 @@
  *   came without an index edge, and 0 (the index mode) once one comes with
  *   one.  At most one write each BAL_CTL_MS, so the link the Dial shares
  *   carries 4 writes a second at most.
+ * - The node's own name (node_cfg_link.h): CONFIG is asked once a link
+ *   after INFO, after any BLADES or RPM write owed; NAME goes on SETUP's
+ *   request (bal_ctl_name()), never while the bench is ARMED.  A node
+ *   built before CONFIG refuses it and keeps its link.
  *
  * Every function of one controller is called from one task.  Times are
  * unsigned differences of a free-running 32-bit ms clock.
@@ -48,6 +52,7 @@
 
 #include "bleuart.h"
 #include "imu_ble.h"
+#include "node_cfg_link.h"
 #include "rcnode.h"
 
 #ifdef __cplusplus
@@ -149,6 +154,12 @@ typedef struct {
     uint16_t  scan_unready; /**< scans the controller refused while OFF,
                                  held, without sync or with a scan running,
                                  counted */
+    bool      have_cfg;   /**< the node's own settings came on this link
+                               (node_cfg_link.h) */
+    char      node_name[RCNODE_NAME_MAX]; /**< its name, or
+                               "rcbench-bal-XXXX" without one */
+    uint16_t  cfg_refused; /**< NAME writes the node refused, counted: a
+                                change is a refusal to show */
 } bal_view_t;
 
 /** @brief A command of SETUP > WIRELESS for the controller. */
@@ -157,12 +168,14 @@ typedef enum {
     BAL_CMD_SCAN,     /**< SCAN FOR NODE */
     BAL_CMD_BIND,     /**< bind the found node arg */
     BAL_CMD_UNBIND,   /**< forget the bound node, end its link */
+    BAL_CMD_NAME,     /**< NODE NAME: text to the linked node */
 } bal_cmd_kind_t;
 
 /** @brief One command. */
 typedef struct {
     uint8_t kind; /**< bal_cmd_kind_t */
     uint8_t arg;  /**< BAL_CMD_BIND: the index in the found list */
+    char    text[RCNODE_UNAME_MAX + 1u]; /**< BAL_CMD_NAME: the name */
 } bal_cmd_t;
 
 /** @brief The controller.  Its members are private but for the tests. */
@@ -220,6 +233,8 @@ typedef struct {
     uint8_t     fw[3];        /**< its firmware, MAJOR, MINOR, PATCH */
     bool        held;         /**< an update holds the link off
                                    (bal_ctl_hold()) */
+    ncl_t       nc;           /**< the node's own settings on this link */
+    uint8_t     info_addr[6]; /**< the address INFO named */
 } bal_ctl_t;
 
 /** @brief Clear: OFF, nothing bound, 2 blades.  @param c NULL does
@@ -340,6 +355,16 @@ void bal_ctl_drive(bal_ctl_t *c, uint8_t blades, uint32_t rpm);
  * @return true when @p out holds one.
  */
 bool bal_ctl_step(bal_ctl_t *c, uint32_t now_ms, bool armed, bleu_act_t *out);
+
+/**
+ * @brief SETUP's NODE NAME for the linked node (node_cfg_link.h).
+ * @param c     The controller.
+ * @param name  The name; "" clears it.
+ * @param armed The bench is ARMED, or a switch to ARMED waits.
+ * @return NCL_REQ_OK when queued, or the refusal; NCL_REQ_UNKNOWN for a
+ *         NULL controller.
+ */
+ncl_req_t bal_ctl_name(bal_ctl_t *c, const char *name, bool armed);
 
 /**
  * @brief Where the node stands at @p now_ms.

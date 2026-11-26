@@ -106,6 +106,8 @@ extern "C" {
 
 /** @brief The longest name or search it takes, in characters. */
 #define UI_TEXTKEY_MAX 23
+/** @brief The longest node name, in characters: RCNODE_UNAME_MAX. */
+#define UI_TEXTKEY_NODE_MAX 16
 /** @brief The longest Wi-Fi password, in characters. */
 #define UI_TEXTKEY_PASS_MAX 63
 /** @brief The shortest Wi-Fi password, in characters. */
@@ -207,6 +209,7 @@ typedef struct {
     bool       folder;      /**< a folder of the card: see the top    */
     bool       file;        /**< a file name: see the top             */
     bool       servo_id;    /**< a servo's id: see the top            */
+    bool       may_empty;   /**< a node's name: OK takes "" as well   */
     const char *ok_label;   /**< what OK reads; NULL is "OK"           */
     uint8_t    why;         /**< a folder's refusal, card_folder_t; a
                                  file name's, fm_name_t              */
@@ -236,6 +239,18 @@ typedef struct {
  */
 void ui_textkey_open(ui_textkey_t *k, gfx_rect_t area, const char *title,
                      const char *text, int max_len);
+
+/**
+ * @brief Open for a node's own name (node_cfg_link.h): the name keyboard
+ *        with UI_TEXTKEY_NODE_MAX (16) characters at most, and OK on an
+ *        empty name takes "", which clears the node's name.
+ * @param k     The keyboard; NULL does nothing.
+ * @param area  Where it draws.
+ * @param title The row's name.
+ * @param text  The name in force.
+ */
+void ui_textkey_open_node_name(ui_textkey_t *k, gfx_rect_t area,
+                               const char *title, const char *text);
 
 /**
  * @brief Open for a search pattern; see the top of this file.

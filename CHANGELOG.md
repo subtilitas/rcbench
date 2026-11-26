@@ -8,6 +8,26 @@ history is in git.
 
 ### Added
 
+- The display node shows a boot splash for 10s: `rcbench`, the role, its
+  name, the firmware and `JuWi made`, with a SETUP button until a panel
+  links; a link goes to the meter at once. The node's SETUP sets NAME (16
+  characters), INA228 ADDRESS (AUTO or a fixed 0x40 to 0x4F) and SHUNT
+  (50 to 10,000µΩ), runs an I2C SCAN of 0x08 to 0x77 that writes to no
+  part and marks the INA228s, and leaves without saving on BACK or after
+  60s idle. The node does not advertise while SETUP is open
+  (`node_setup.c`, `node_setup_view.c`, `node_scan.c`, `node_store.c`,
+  `node_set.c`; `test_node_setup`, `test_node_scan`, `test_node_store`;
+  `docs/Nodes-setup.md`).
+- rcnode: CONTROL ops CONFIG (0x08), NAME (0x09) and I228 (0x0A), and the
+  30-byte `RCNODE_T_CONFIG` on STREAM, sent only after CONFIG on the link.
+  A named node advertises its name. `rcnode_shunt_sync()` keeps the
+  panel's NODE SHUNT and the node's own shunt in step: the last change
+  wins (`rcnode_cfg.c`; `test_rcnode_cfg`).
+- SETUP > WIRELESS: POWER NODE gets Node name and INA228 address, BALANCE
+  NODE gets Node name; the writes go over the link while SAFE. Bound node
+  and SEARCH show the node's name (`node_cfg_link.c`, `pnode_ctl.c`,
+  `bal_ctl.c`, `wireless_pnode.c`, `wireless_bal.c`; `test_pnode_cfg`,
+  `test_wireless_pnode_cfg`, `test_bal_cfg`).
 - SETUP > PANEL's last row, About rcbench, opens ABOUT: the panel and the
   IOmcu firmware's versions, `Design: Julian Wingert`,
   `Implemented by Claude and Julian`, `Copyright 2026 Julian Wingert`,
