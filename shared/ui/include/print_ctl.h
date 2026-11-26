@@ -115,10 +115,11 @@ typedef enum {
     PRINT_ERR_BUSY,         /**< busy for 5s before START */
     PRINT_ERR_SILENT,       /**< a step's answer missed */
     PRINT_ERR_WRITE,        /**< the link refused a write */
-    PRINT_ERR_LINK,         /**< the link dropped and did not come back:
-                                 the counter gave no verdict */
+    PRINT_ERR_LINK,         /**< the link dropped and did not come back,
+                                 or dropped again before the counter was
+                                 read: no verdict */
     PRINT_ERR_LINK_NOT_PRINTED, /**< the link dropped, came back, and the
-                                     counter stayed */
+                                     counter read 3 times stayed */
     PRINT_ERR_NOT_PRINTED,  /**< the counter stayed for 3 reads */
     PRINT_ERR_ROLL,         /**< the roll changed during the job */
     PRINT_ERR_SMALL,        /**< the roll is under 15 x 20mm */

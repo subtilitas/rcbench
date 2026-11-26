@@ -188,11 +188,13 @@ width or height of 0 is `SV_ERR_NO_LABEL`.
   printing nor busy, 15s at most (`SV_ERR_SILENT` and STOP_PRINT after
   that), because the counter moves only once the label is out. Then, or
   at once when BUF_FULL was not written, the counter decides: c0 - 1 is
-  `SV_OK` with `relinked` set, c0 three times is `SV_ERR_LINK`. Not back
-  in time: `SV_ERR_LINK`. The job is never sent a second time.
+  `SV_OK` with `relinked` set, c0 three times is `SV_ERR_LINK` with
+  `counted` set. Not back in time, or a second drop after the link came
+  back: `SV_ERR_LINK` with `counted` clear, no verdict. The job is never
+  sent a second time.
 - Times are unsigned differences of a 32-bit ms clock the caller passes,
   so a job runs across the clock's wrap.
-- `sv_job_t` is 752 bytes on a 32-bit target. No function allocates,
+- `sv_job_t` is 756 bytes on a 32-bit target (RISC-V and Arm). No function allocates,
   blocks, reads a clock or keeps a global.
 
 ## Interface

@@ -374,6 +374,11 @@ typedef struct {
                                 booked against this, not against the step,
                                 so a notification may come before it */
     bool data_due;         /**< a data fragment is due */
+    /* documented, in the padding of the private bytes */
+    bool counted;          /**< the counter was read SV_COUNTER_READS
+                                times and stayed: with SV_ERR_LINK, the
+                                label was not printed; without it a link
+                                error gives no verdict */
     uint32_t t_step;       /**< step entered */
     uint32_t t_sent;       /**< last write handed out */
     uint32_t t_due;        /**< the next write is due */

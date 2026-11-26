@@ -48,7 +48,9 @@ history is in git.
   `PRINTER NOT FOUND`, `BLUETOOTH NOT READY` or `NOT A LABEL PRINTER`; an
   MTU under 131 with `PRINTER MTU TOO SMALL`; a link dropped during the
   job and back within 5s with `PRINTED` or `LINK LOST, NOT PRINTED`, and
-  not back with `LINK LOST`. A label is refused while ARMED (`SAFE ONLY`)
+  not back, or dropped again before the counter was read, with `LINK
+  LOST`. A request connects at once, whatever retry gap a printer that
+  was off left; an abort while connecting ends the connect. A label is refused while ARMED (`SAFE ONLY`)
   and every request while a device update runs (`UPDATE RUNNING`); a
   device update is refused while a label print runs. 23 error texts in EN
   and DE. The debug console's `print`, `print test`, `print id <id>`,

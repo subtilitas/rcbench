@@ -98,21 +98,22 @@ static bool in_work(uint8_t phase)
 
 /**
  * @brief Ask the central for the link, hurried; it connects once the
- *        radio is synced.
+ *        radio is synced.  A central that waits out a retry gap (a printer
+ *        that was off during the linger: up to BLEU_BACKOFF_MAX_MS) is
+ *        bound again, which drops the gap and the backoff: the request's
+ *        connect goes at once.  A connect under way is left to run.
  * @param c      The controller.
  * @param now_ms The clock.
  */
 static void link_on(print_ctl_t *c, uint32_t now_ms)
 {
-    if (!c->on) {
-        bleu_addr_t a;
-        if (!bleu_addr_parse(c->addr, &a)) {
-            return;
-        }
-        bleu_bind(&c->b, &a, now_ms);
-        bleu_hurry(&c->b);
-        c->on = true;
+    bleu_addr_t a;
+    if (!bleu_addr_parse(c->addr, &a)) {
+        return;
     }
+    bleu_bind(&c->b, &a, now_ms);
+    bleu_hurry(&c->b);
+    c->on = true;
     bleu_enable(&c->b, c->radio == IMU_RADIO_READY, now_ms);
 }
 
@@ -155,15 +156,18 @@ static void drop_block(print_ctl_t *c)
  */
 static void finish(print_ctl_t *c, uint8_t err, uint32_t now_ms)
 {
+    const bool linking = c->phase == PRINT_CONNECTING;
     c->phase = (err == PRINT_OK) ? PRINT_DONE : PRINT_FAILED;
     c->err = err;
     c->job_on = false;
     c->t_quiet = now_ms;
     drop_block(c);
-    /* A link that never took a job is not kept. */
+    /* A link that never took a job is not kept: an abort while it was
+     * being made ends the connect too. */
     if (err == PRINT_ERR_NOT_FOUND || err == PRINT_ERR_RADIO
         || err == PRINT_ERR_NOT_PRINTER || err == PRINT_ERR_MTU
-        || err == PRINT_ERR_UPDATE) {
+        || err == PRINT_ERR_UPDATE
+        || (err == PRINT_ERR_ABORTED && linking)) {
         link_off(c, now_ms);
     }
     ++c->rev;
@@ -185,10 +189,12 @@ static void to_phase(print_ctl_t *c, uint8_t phase)
 /**
  * @brief The request's error for a job's.
  * @param e        sv_err_t.
- * @param relinked The verdict came after a link drop.
+ * @param counted  The counter was read three times after a link drop
+ *                 and stayed: not printed.  Without it a link error
+ *                 gives no verdict.
  * @return print_err_t.
  */
-static uint8_t err_of_job(uint8_t e, bool relinked)
+static uint8_t err_of_job(uint8_t e, bool counted)
 {
     switch (e) {
     case SV_OK:              return PRINT_OK;
@@ -200,7 +206,7 @@ static uint8_t err_of_job(uint8_t e, bool relinked)
     case SV_ERR_BUSY:        return PRINT_ERR_BUSY;
     case SV_ERR_WRITE:       return PRINT_ERR_WRITE;
     case SV_ERR_LINK:
-        return relinked ? PRINT_ERR_LINK_NOT_PRINTED : PRINT_ERR_LINK;
+        return counted ? PRINT_ERR_LINK_NOT_PRINTED : PRINT_ERR_LINK;
     case SV_ERR_NOT_PRINTED: return PRINT_ERR_NOT_PRINTED;
     case SV_ERR_ROLL:        return PRINT_ERR_ROLL;
     case SV_ERR_SMALL:       return PRINT_ERR_SMALL;
@@ -611,7 +617,7 @@ static void job_end(print_ctl_t *c, uint32_t now_ms)
         c->roll_known = false;
     }
     c->relinked = j->relinked;
-    const uint8_t err = err_of_job(j->err, j->relinked);
+    const uint8_t err = err_of_job(j->err, j->counted);
     if (err != PRINT_OK || j->kind == SV_JOB_PRINT
         || c->req.kind == PRINT_REQ_QUERY) {
         finish(c, err, now_ms);

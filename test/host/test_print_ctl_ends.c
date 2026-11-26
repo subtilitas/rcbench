@@ -6,7 +6,10 @@
  *        English and German; the printer gone (the
  *        connect unanswered for 10s, and the link dropped in SENDING with a
  *        reconnect inside 5s that prints, one whose counter stays, and
- *        none); the MTU at 130 refused and 131 taken; the heap block
+ *        none); a second drop after the reconnect, in the counter check
+ *        and in step 11, giving no verdict; a request that does not wait
+ *        out a retry gap grown to 30s; an abort while connecting ending
+ *        the connect; the MTU at 130 refused and 131 taken; the heap block
  *        refused; a device update running, and print_ctl_busy() for the
  *        update's refusal.
  *
@@ -359,6 +362,106 @@ TEST_CASE(a_drop_after_buf_full_with_a_reconnect_reads_printed)
     CHECK(v.relinked);
 }
 
+/**
+ * @brief Run until the job is in @p step after its reconnect.
+ * @param r    the rig
+ * @param step sv_step_t
+ * @return true when it got there
+ */
+static bool to_relinked_step(pr_rig_t *r, uint8_t step)
+{
+    for (uint32_t k = 0; k < 10000u; ++k) {
+        if (r->c.job_on && r->c.job.relinked && r->c.job.step == step) {
+            return true;
+        }
+        pr_ms(r);
+    }
+    return false;
+}
+
+TEST_CASE(a_second_drop_in_the_counter_check_gives_no_verdict)
+{
+    /* Dropped in SENDING, back inside 5s, dropped again before the
+     * counter was read 3 times: no verdict, LINK LOST. */
+    pr_rig_t *r = &s_r;
+    pr_init(r);
+    drop_in_sending(r, true);
+    REQUIRE(to_relinked_step(r, SV_STEP_COUNTER));
+    pr_drop(r, false);
+    CHECK(pr_run(r, 10000u));
+    CHECK_EQ(r->c.phase, PRINT_FAILED);
+    CHECK_EQ(r->c.err, PRINT_ERR_LINK);
+    CHECK(!r->c.job.counted);
+}
+
+TEST_CASE(a_second_drop_in_step_11_gives_no_verdict)
+{
+    /* Dropped after BUF_FULL, back inside 5s, dropped again while step
+     * 11 waits for the print: the label may be out, LINK LOST. */
+    pr_rig_t *r = &s_r;
+    pr_init(r);
+    r->sim.print_ms = 3000u;
+    expect_id(r);
+    CHECK(pr_ask(r, PRINT_REQ_LABEL, ID, ""));
+    REQUIRE(pr_run_to(r, PRINT_PRINTING, 10000u));
+    pr_drop(r, true);
+    REQUIRE(to_relinked_step(r, SV_STEP_DONE));
+    pr_drop(r, false);
+    CHECK(pr_run(r, 10000u));
+    CHECK_EQ(r->c.phase, PRINT_FAILED);
+    CHECK_EQ(r->c.err, PRINT_ERR_LINK);
+}
+
+TEST_CASE(a_request_does_not_wait_out_a_grown_backoff)
+{
+    /* The printer went off during the linger: the central waits out a
+     * retry gap that has grown to 30s.  The printer is back; a request
+     * connects at once, not when the gap ends. */
+    pr_rig_t *r = &s_r;
+    pr_init(r);
+    expect_id(r);
+    CHECK(pr_ask(r, PRINT_REQ_LABEL, ID, ""));
+    CHECK(pr_run(r, 10000u));
+    REQUIRE(r->c.phase == PRINT_DONE);
+    pr_drop(r, false);
+    for (uint32_t k = 0; k < 10000u && r->c.b.st != BLEU_ST_WAIT; ++k) {
+        pr_ms(r);
+    }
+    REQUIRE(r->c.b.st == BLEU_ST_WAIT);
+    r->c.b.gap_ms = BLEU_BACKOFF_MAX_MS;
+    r->c.b.backoff_ms = BLEU_BACKOFF_MAX_MS;
+    r->c.b.t_gap = r->now;
+    r->present = true;
+    sim_init(&r->sim);
+    expect_id(r);
+    const unsigned n = r->connects;
+    CHECK(pr_ask(r, PRINT_REQ_LABEL, ID, ""));
+    pr_wait(r, 100u);
+    CHECK_EQ(r->connects, n + 1u);
+    CHECK(pr_run(r, 10000u));
+    CHECK_EQ(r->c.phase, PRINT_DONE);
+}
+
+TEST_CASE(an_abort_while_connecting_ends_the_connect)
+{
+    pr_rig_t *r = &s_r;
+    pr_init(r);
+    r->present = false;
+    expect_id(r);
+    CHECK(pr_ask(r, PRINT_REQ_LABEL, ID, ""));
+    pr_wait(r, 2000u);
+    REQUIRE(r->c.phase == PRINT_CONNECTING);
+    CHECK(pr_ask(r, PRINT_REQ_ABORT, NULL, NULL));
+    CHECK_EQ(r->c.err, PRINT_ERR_ABORTED);
+    /* The printer comes on: no connect follows, no link is held. */
+    r->present = true;
+    const unsigned n = r->connects;
+    pr_wait(r, 40000u);
+    CHECK_EQ(r->connects, n);
+    CHECK(!r->connected);
+    CHECK(!bleu_link_up(&r->c.b));
+}
+
 int main(void)
 {
     RUN(the_requests_refused_before_a_link);
@@ -375,5 +478,9 @@ int main(void)
     RUN(a_drop_in_sending_with_no_reconnect_is_link_lost);
     RUN(a_drop_in_sending_with_a_reconnect_gives_the_counters_verdict);
     RUN(a_drop_after_buf_full_with_a_reconnect_reads_printed);
+    RUN(a_second_drop_in_the_counter_check_gives_no_verdict);
+    RUN(a_second_drop_in_step_11_gives_no_verdict);
+    RUN(a_request_does_not_wait_out_a_grown_backoff);
+    RUN(an_abort_while_connecting_ends_the_connect);
     return test_summary("print_ctl_ends");
 }
