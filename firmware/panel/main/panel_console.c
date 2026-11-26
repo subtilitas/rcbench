@@ -8,7 +8,8 @@
  * A typed line goes to the relay at its end.  A line that starts with the
  * word `ble` stays on the panel: `ble scan` starts Bluetooth LE when it has
  * not started (panel_ble.h), waits for the host's sync and prints every
- * device a 10s scan hears.
+ * device a 10s scan hears.  `scan TEXT` hands TEXT to the scan flow
+ * as a line the scanner read (scan_flow_post()); the frame task runs it.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -27,6 +28,7 @@
 #include "console_relay.h"
 #include "panel.h"
 #include "panel_ble.h"
+#include "scan_flow.h"
 
 /** @brief The console task's stack: printf and its buffers. */
 #define CONSOLE_STACK 4096u
@@ -228,6 +230,11 @@ static void console_key(int ch)
         if (!s_long && (strcmp(s_typing, "ble") == 0
                         || strncmp(s_typing, "ble ", 4u) == 0)) {
             ble_command(s_typing);
+            s_typed = 0u;
+        } else if (!s_long && strncmp(s_typing, "scan ", 5u) == 0) {
+            printf("scan: %s\n", scan_flow_post(&s_typing[5])
+                                     ? "handed to the frame task"
+                                     : "refused, a line still waits");
             s_typed = 0u;
         } else {
             flush_typed();

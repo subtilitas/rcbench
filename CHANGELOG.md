@@ -8,6 +8,13 @@ history is in git.
 
 ### Added
 
+- A scanned servo id sets the active servo, and the band shows it in a chip
+  left of the other chips, on the accent while a run holds it, shortened
+  to `-0000A` where the row has no room. Each scan raises a notice: the id,
+  `ALREADY ACTIVE`, the refusal during a run, or `NOT A SERVO ID`. The same
+  line within 3.0s is dropped. The debug console's `scan <text>` injects a
+  line (`scan_flow.c`, `servo_scan_decide()`; `test_scan_flow`,
+  `test_servo_scan`).
 - The QR scanner's core for a GM861 module on a panel UART (universal
   asynchronous receiver-transmitter), pure C in `shared/scanner/`: a framer
   for code lines (0x20 to 0x7E, at most 64 bytes, CR, CR LF or LF) and

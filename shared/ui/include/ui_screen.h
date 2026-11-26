@@ -423,6 +423,18 @@ typedef struct {
      * different temperatures and this one is the display's.
      */
     float mcu_temp_c;
+
+    /**
+     * @brief The active servo's id (servo_active_id()), or NULL for none:
+     *        the band's servo chip.  scan_flow_status() fills the three
+     *        servo fields.
+     */
+    const char *servo_id;
+    /** @brief How it was set: a servo_active_from_t. */
+    uint8_t servo_from;
+    /** @brief A run holds it (scan_flow_run_active()): the chip on the
+     *         accent's fill. */
+    bool servo_run;
 } ui_bench_status_t;
 
 /**
@@ -446,6 +458,9 @@ typedef enum {
     /** @brief HWSTOP, in FAULT's place while SETUP > PANEL > Hardware stop
      *         is ON and LINK_FAULT_HEARTBEAT is set (ui_band_hwstop()). */
     UI_BAND_CHIP_HWSTOP,
+    /** @brief The active servo's id, left of the other chips
+     *         (ui_bench_status_t.servo_id). */
+    UI_BAND_CHIP_SERVO,
     UI_BAND_CHIP_COUNT
 } ui_band_chip_t;
 
