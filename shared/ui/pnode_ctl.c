@@ -157,6 +157,8 @@ static void follow_link(pnode_ctl_t *c, uint32_t now_ms)
         c->was_up = false;
         c->m.have_status = false;
         c->lang_sent = PNODE_LANG_NONE;
+        c->adopt_uohm = 0u;
+        c->sync_taken = 0u;
         ncl_link(&c->nc);
     } else if (!up && c->linked) {
         c->lost = c->was_up;
@@ -485,7 +487,9 @@ static bool send_lang(pnode_ctl_t *c, uint32_t now_ms)
 
 /**
  * @brief The SHUNT write owed, when the central can send, no RUN write
- *        waits and the bench is SAFE: NODE SHUNT, once a link and once a
+ *        waits and the bench is SAFE: with CONFIG known, what
+ *        rcnode_shunt_sync() decides at each change of NODE SHUNT and each
+ *        CONFIG taken; without it, NODE SHUNT once a link and once a
  *        change, when INFO names another shunt.
  * @param c      The controller.
  * @param armed  The bench is ARMED, or a switch to ARMED waits.
@@ -495,9 +499,15 @@ static bool send_lang(pnode_ctl_t *c, uint32_t now_ms)
 static bool send_shunt(pnode_ctl_t *c, bool armed, uint32_t now_ms)
 {
     const uint16_t want = c->cfg.shunt_uohm;
+    if (c->adopt_uohm != 0u && want == c->adopt_uohm) {
+        c->adopt_uohm = 0u;         /* the take is seen: NODE SHUNT holds it */
+    }
+    /* A CONFIG since the last decision decides again, also for a value
+     * already sent: one that came after the fallback to INFO's rule. */
+    const bool fresh = ncl_have(&c->nc) && c->nc.taken != c->sync_taken;
     if (armed || c->run_owed || !c->info_ok || !c->info_read || c->shunt_wr
         || c->info_owed || want == 0u || ncl_pending(&c->nc)
-        || want == c->shunt_sent || !bleu_can_send(&c->b)) {
+        || (want == c->shunt_sent && !fresh) || !bleu_can_send(&c->b)) {
         return false;
     }
     if (ncl_have(&c->nc)) {
@@ -513,6 +523,7 @@ static bool send_shunt(pnode_ctl_t *c, bool armed, uint32_t now_ms)
             ++c->adopt_seq;
         }
         if (r != RCNODE_SYNC_WRITE && r != RCNODE_SYNC_ACK) {
+            c->sync_taken = c->nc.taken;
             return false;
         }
     } else if (want == c->info_shunt) {
@@ -529,6 +540,7 @@ static bool send_shunt(pnode_ctl_t *c, bool armed, uint32_t now_ms)
     }
     c->shunt_sent = want;
     c->shunt_wr = true;
+    c->sync_taken = c->nc.taken;
     return true;
 }
 
@@ -709,6 +721,9 @@ void pnode_ctl_view(const pnode_ctl_t *c, uint32_t now_ms, pnode_view_t *out)
     out->adopt_uohm = c->adopt_uohm;
     out->adopt_seq = c->adopt_seq;
     out->cfg_refused = (uint16_t)c->nc.refused;
+    out->cfg_req_no = (uint16_t)c->nc.req_no;
+    out->cfg_req_why = c->nc.req_why;
+    out->cfg_dropped = (uint16_t)c->nc.dropped;
     out->bind_refused = (uint16_t)c->bind_refused;
     out->scan_armed = (uint16_t)c->refused;
     out->scan_unready = (uint16_t)c->scan_unready;

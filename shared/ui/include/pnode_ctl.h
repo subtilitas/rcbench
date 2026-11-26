@@ -47,14 +47,17 @@
  *   and SHUNT goes again when INFO still names another shunt.  A write the
  *   link's drop ends leaves it to the next link's INFO.
  * - The node's own settings (node_cfg_link.h): after INFO, CONFIG is
- *   asked once a link.  Until CONFIG or its refusal decides it, no SHUNT
- *   goes.  With CONFIG known, the last change of the shunt wins
+ *   asked, twice at most a link.  Until CONFIG, its refusal or the wait
+ *   decides it, no SHUNT goes.  With CONFIG known, the last change of the shunt wins
  *   (rcnode_shunt_sync()): the panel's NODE SHUNT against CONFIG's shunt,
  *   agreed shunt and age.  WRITE sends SHUNT with the setting; ADOPT
  *   names the node's shunt in the view (adopt_uohm, adopt_seq), which the
  *   frame task writes into NODE SHUNT while the bench is SAFE; ACK sends
- *   SHUNT with the value both hold, so the node marks it agreed.  The
- *   setting's age is the time since pnode_ctl_config() saw it change, not
+ *   SHUNT with the value both hold, so the node marks it agreed.  Each
+ *   CONFIG taken decides again, also one that comes after the fallback to
+ *   INFO's rule.  adopt_uohm clears on a new link and once NODE SHUNT
+ *   holds it, so the same node value is taken again after a panel change.
+ *   The setting's age is the time since pnode_ctl_config() saw it change, not
  *   known before the first change since the panel's start.  A node that
  *   refuses CONFIG (one built before it) gets the rule above: SHUNT when
  *   INFO names another shunt.  Nothing of this runs while the bench is
@@ -164,7 +167,10 @@ typedef struct {
     bool          shunt_set_known; /**< NODE SHUNT changed since the start */
     uint32_t      shunt_set_ms; /**< ...when */
     uint16_t      adopt_uohm;  /**< the node's shunt the panel is to take, 0
-                                    none */
+                                    none; cleared on a new link and once
+                                    NODE SHUNT holds it */
+    uint32_t      sync_taken;  /**< nc.taken the shunt was last decided on:
+                                    a CONFIG after it decides again */
     uint32_t      adopt_seq;   /**< counts each value to take */
 } pnode_ctl_t;
 

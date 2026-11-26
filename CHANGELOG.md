@@ -12,8 +12,9 @@ history is in git.
   name, the firmware and `JuWi made`, with a SETUP button until a panel
   links; a link goes to the meter at once. The node's SETUP sets NAME (16
   characters), INA228 ADDRESS (AUTO or a fixed 0x40 to 0x4F) and SHUNT
-  (50 to 10,000µΩ), runs an I2C SCAN of 0x08 to 0x77 that writes to no
-  part and marks the INA228s, and leaves without saving on BACK or after
+  (50 to 10,000µΩ), runs an I2C SCAN of 0x08 to 0x77 that writes no
+  register (address-only probes; a 1-byte register pointer and a 2-byte
+  read only at answering 0x40 to 0x4F) and marks the INA228s, and leaves without saving on BACK or after
   60s idle. The node does not advertise while SETUP is open
   (`node_setup.c`, `node_setup_view.c`, `node_scan.c`, `node_store.c`,
   `node_set.c`; `test_node_setup`, `test_node_scan`, `test_node_store`;

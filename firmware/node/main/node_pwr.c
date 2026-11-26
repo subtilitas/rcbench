@@ -510,12 +510,14 @@ static bool scan_probe(void *ctx, uint8_t addr)
 }
 
 /**
- * @brief nscan_io_t's register read, through the scan's own handle.
- * @param ctx Unused.  @param addr The address.  @param reg The register.
- * @param v Receives it, big-endian on the wire.
+ * @brief nscan_io_t's write and read, through the scan's own handle.
+ * @param ctx Unused.  @param addr The address.  @param wr The bytes written.
+ * @param wn Their count.  @param rd Receives the bytes read.
+ * @param rn Their count.
  * @return true when it read.
  */
-static bool scan_read16(void *ctx, uint8_t addr, uint8_t reg, uint16_t *v)
+static bool scan_xfer(void *ctx, uint8_t addr, const uint8_t *wr, size_t wn,
+                      uint8_t *rd, size_t rn)
 {
     (void)ctx;
     if (s_scan_dev == NULL) {
@@ -532,13 +534,8 @@ static bool scan_read16(void *ctx, uint8_t addr, uint8_t reg, uint16_t *v)
                != ESP_OK) {
         return false;
     }
-    uint8_t b[2];
-    if (i2c_master_transmit_receive(s_scan_dev, &reg, 1, b, sizeof b,
-                                    PWR_XFER_MS) != ESP_OK) {
-        return false;
-    }
-    *v = sense_be16(b);
-    return true;
+    return i2c_master_transmit_receive(s_scan_dev, wr, wn, rd, rn,
+                                       PWR_XFER_MS) == ESP_OK;
 }
 
 void node_pwr_scan(nscan_t *out)
@@ -547,7 +544,7 @@ void node_pwr_scan(nscan_t *out)
         nscan_run(NULL, out);
         return;
     }
-    const nscan_io_t io = { scan_probe, scan_read16, NULL };
+    const nscan_io_t io = { scan_probe, scan_xfer, NULL };
     nscan_run(&io, out);
     ESP_LOGI(NODE_TAG, "pwr: I2C scan, %u answered, %u INA228", (unsigned)out->n,
              (unsigned)out->n_ina228);

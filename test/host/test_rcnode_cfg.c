@@ -250,6 +250,24 @@ TEST_CASE(sync_both_changed_the_last_change_wins)
              RCNODE_SYNC_ADOPT);
 }
 
+TEST_CASE(sync_ages_past_the_node_cap_compare_as_equal)
+{
+    /* The node's age stops at 65,534s; the panel's saturates there too,
+     * so neither side's cap makes it the younger: equal goes to the node. */
+    const uint32_t cap_ms = 65534000u;
+    CHECK_EQ(rcnode_shunt_sync(300u, 500u, 200u, 65534u, cap_ms),
+             RCNODE_SYNC_ADOPT);
+    CHECK_EQ(rcnode_shunt_sync(300u, 500u, 200u, 65534u, cap_ms + 1000u),
+             RCNODE_SYNC_ADOPT);
+    CHECK_EQ(rcnode_shunt_sync(300u, 500u, 200u, 65534u, 4000000000u),
+             RCNODE_SYNC_ADOPT);
+    /* Under the cap, the younger still wins either way. */
+    CHECK_EQ(rcnode_shunt_sync(300u, 500u, 200u, 65534u, cap_ms - 1000u),
+             RCNODE_SYNC_WRITE);
+    CHECK_EQ(rcnode_shunt_sync(300u, 500u, 200u, 65533u, cap_ms),
+             RCNODE_SYNC_ADOPT);
+}
+
 int main(void)
 {
     RUN(a_name_is_16_characters_of_the_name_keyboard_trimmed);
@@ -262,5 +280,6 @@ int main(void)
     RUN(the_scan_response_carries_the_own_name_or_the_default);
     RUN(sync_one_side_changed_goes_its_way);
     RUN(sync_both_changed_the_last_change_wins);
+    RUN(sync_ages_past_the_node_cap_compare_as_equal);
     return test_summary("rcnode_cfg");
 }

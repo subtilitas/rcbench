@@ -4,9 +4,9 @@
  *
  * The failures this is about: an address of 0x08 to 0x77 skipped (the
  * edges, the display board's codec at 0x18 and touch at 0x38), a reserved
- * address asked, a part written to, the INA228 check run outside 0x40 to
- * 0x4F, and a part of another maker or another TI die marked as an
- * INA228.
+ * address asked, a byte written other than the 1-byte register pointer of
+ * the INA228 check, the INA228 check run outside 0x40 to 0x4F, and a part
+ * of another maker or another TI die marked as an INA228.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -32,6 +32,10 @@ typedef struct {
     unsigned      reads[128];    /**< per address */
     uint8_t       regs_seen[8];  /**< the registers read, in order */
     unsigned      reg_n;
+    unsigned      writes[128];   /**< data writes per address */
+    unsigned      bytes_written; /**< data bytes written, all addresses */
+    unsigned      bad_writes;    /**< writes other than one register pointer
+                                      byte, or reads other than 2 bytes */
     bool          fail_reads;
 } bus_t;
 
@@ -54,10 +58,20 @@ static bool f_probe(void *ctx, uint8_t addr)
     return at(b, addr) != NULL;
 }
 
-/** @brief nscan_io_t's register read. */
-static bool f_read16(void *ctx, uint8_t addr, uint8_t reg, uint16_t *v)
+/** @brief nscan_io_t's write and read: every data byte written counted. */
+static bool f_xfer(void *ctx, uint8_t addr, const uint8_t *wr, size_t wn,
+                   uint8_t *rd, size_t rn)
 {
     bus_t *b = ctx;
+    if (wn > 0u) {
+        ++b->writes[addr & 0x7Fu];
+        b->bytes_written += (unsigned)wn;
+    }
+    if (wn != 1u || rn != 2u || rd == NULL) {
+        ++b->bad_writes;
+        return false;
+    }
+    const uint8_t reg = wr[0];
     ++b->reads[addr & 0x7Fu];
     if (b->reg_n < sizeof b->regs_seen) {
         b->regs_seen[b->reg_n++] = reg;
@@ -66,8 +80,10 @@ static bool f_read16(void *ctx, uint8_t addr, uint8_t reg, uint16_t *v)
     if (p == NULL || b->fail_reads) {
         return false;
     }
-    *v = reg == INA228_MANUFACTURER ? p->maker
-       : reg == INA228_DEVICE_ID    ? p->device : 0u;
+    const uint16_t v = reg == INA228_MANUFACTURER ? p->maker
+                     : reg == INA228_DEVICE_ID    ? p->device : 0u;
+    rd[0] = (uint8_t)(v >> 8);
+    rd[1] = (uint8_t)v;
     return true;
 }
 
@@ -90,7 +106,7 @@ TEST_CASE(every_address_of_0x08_to_0x77_is_probed_once_and_no_other)
     memset(&b, 0, sizeof b);
     b.parts = k_parts;
     b.n = sizeof k_parts / sizeof k_parts[0];
-    const nscan_io_t io = { f_probe, f_read16, &b };
+    const nscan_io_t io = { f_probe, f_xfer, &b };
     nscan_t r;
     nscan_run(&io, &r);
     for (unsigned a = 0u; a < 128u; ++a) {
@@ -114,7 +130,7 @@ TEST_CASE(only_ina228s_are_marked_by_the_maker_and_die_check)
     memset(&b, 0, sizeof b);
     b.parts = k_parts;
     b.n = sizeof k_parts / sizeof k_parts[0];
-    const nscan_io_t io = { f_probe, f_read16, &b };
+    const nscan_io_t io = { f_probe, f_xfer, &b };
     nscan_t r;
     nscan_run(&io, &r);
     CHECK_EQ(r.n_ina228, 2u);
@@ -138,7 +154,7 @@ TEST_CASE(nothing_is_written_and_ids_are_read_only_in_0x40_to_0x4f)
     b.n = sizeof k_parts / sizeof k_parts[0];
     /* The bus calls hold no write: the probe carries no data byte, and
      * the reads are MANUFACTURER_ID and DEVICE_ID alone. */
-    const nscan_io_t io = { f_probe, f_read16, &b };
+    const nscan_io_t io = { f_probe, f_xfer, &b };
     nscan_t r;
     nscan_run(&io, &r);
     for (unsigned a = 0u; a < 128u; ++a) {
@@ -160,7 +176,7 @@ TEST_CASE(an_empty_bus_and_failed_reads_mark_nothing)
 {
     bus_t b;
     memset(&b, 0, sizeof b);
-    const nscan_io_t io = { f_probe, f_read16, &b };
+    const nscan_io_t io = { f_probe, f_xfer, &b };
     nscan_t r;
     nscan_run(&io, &r);
     CHECK(r.done);
@@ -177,11 +193,40 @@ TEST_CASE(an_empty_bus_and_failed_reads_mark_nothing)
     CHECK(!nscan_answered(NULL, 0x40u));
 }
 
+TEST_CASE(the_only_bytes_written_are_one_register_pointer_each_in_0x40_to_0x4f)
+{
+    bus_t b;
+    memset(&b, 0, sizeof b);
+    b.parts = k_parts;
+    b.n = sizeof k_parts / sizeof k_parts[0];
+    const nscan_io_t io = { f_probe, f_xfer, &b };
+    nscan_t r;
+    nscan_run(&io, &r);
+    CHECK_EQ(b.bad_writes, 0u);
+    unsigned sum = 0u;
+    for (unsigned a = 0u; a < 128u; ++a) {
+        const bool range = a >= INA228_ADDR_MIN && a <= INA228_ADDR_MAX;
+        if (b.writes[a] != 0u && !(range && at(&b, (uint8_t)a) != NULL)) {
+            T_FAIL("address 0x%02X written %u times", a, b.writes[a]);
+        }
+        sum += b.writes[a];
+    }
+    /* 0x40 and 0x45 (INA228) and 0x4A (INA238): two pointers each; 0x48
+     * answers no TI maker ID: one. */
+    CHECK_EQ(b.writes[0x40], 2u);
+    CHECK_EQ(b.writes[0x45], 2u);
+    CHECK_EQ(b.writes[0x4A], 2u);
+    CHECK_EQ(b.writes[0x48], 1u);
+    CHECK_EQ(sum, 7u);
+    CHECK_EQ(b.bytes_written, 7u);   /* 1 byte a write, no register data */
+}
+
 int main(void)
 {
     RUN(every_address_of_0x08_to_0x77_is_probed_once_and_no_other);
     RUN(only_ina228s_are_marked_by_the_maker_and_die_check);
     RUN(nothing_is_written_and_ids_are_read_only_in_0x40_to_0x4f);
     RUN(an_empty_bus_and_failed_reads_mark_nothing);
+    RUN(the_only_bytes_written_are_one_register_pointer_each_in_0x40_to_0x4f);
     return test_summary("node_scan");
 }

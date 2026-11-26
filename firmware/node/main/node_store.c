@@ -194,7 +194,7 @@ bool nst_sends_config(const nst_t *s)
     return s != NULL && s->asked;
 }
 
-void nst_config(const nst_t *s, uint32_t now_ms, rcnode_config_t *out)
+void nst_config(nst_t *s, uint32_t now_ms, rcnode_config_t *out)
 {
     if (out == NULL) {
         return;
@@ -204,6 +204,10 @@ void nst_config(const nst_t *s, uint32_t now_ms, rcnode_config_t *out)
         out->shunt_age_s = RCNODE_AGE_NONE;
         return;
     }
+    /* CONFIG's own seq, as STATUS has: a STREAM seq would read as a lost
+     * packet in the central's count of the meter's packets. */
+    out->hdr.seq = s->cfg_seq;
+    s->cfg_seq = (uint8_t)(s->cfg_seq + 1u);
     memcpy(out->name, s->v.name, sizeof out->name);
     out->shunt_age_s = RCNODE_AGE_NONE;
     if (!s->power) {

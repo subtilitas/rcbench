@@ -727,6 +727,9 @@ void bal_ctl_view(const bal_ctl_t *c, uint32_t now_ms, bal_view_t *out)
         }
     }
     out->cfg_refused = (uint16_t)c->nc.refused;
+    out->cfg_req_no = (uint16_t)c->nc.req_no;
+    out->cfg_req_why = c->nc.req_why;
+    out->cfg_dropped = (uint16_t)c->nc.dropped;
 }
 
 bool bal_ctl_report(const bal_ctl_t *c, uint32_t now_ms,

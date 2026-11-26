@@ -30,6 +30,22 @@ static bool get_bit(const uint8_t bits[16], uint8_t a)
 }
 
 /**
+ * @brief A 16-bit register: its 1-byte pointer written, 2 bytes read.
+ * @param io The bus.  @param a The address.  @param reg The register.
+ * @param v Receives it, big-endian on the wire.
+ * @return true when it read.
+ */
+static bool read16(const nscan_io_t *io, uint8_t a, uint8_t reg, uint16_t *v)
+{
+    uint8_t b[2];
+    if (!io->xfer(io->ctx, a, &reg, 1u, b, sizeof b)) {
+        return false;
+    }
+    *v = (uint16_t)((b[0] << 8) | b[1]);
+    return true;
+}
+
+/**
  * @brief The INA228 check of #985: MANUFACTURER_ID, then DEVICE_ID from a
  *        part that answers TI's 5449h.
  * @param io The bus.  @param a The address.
@@ -39,10 +55,10 @@ static bool is_ina228(const nscan_io_t *io, uint8_t a)
 {
     uint16_t maker = 0u;
     uint16_t device = 0u;
-    return io->read16 != NULL
-           && io->read16(io->ctx, a, INA228_MANUFACTURER, &maker)
+    return io->xfer != NULL
+           && read16(io, a, INA228_MANUFACTURER, &maker)
            && maker == INA228_MAKER_ID
-           && io->read16(io->ctx, a, INA228_DEVICE_ID, &device)
+           && read16(io, a, INA228_DEVICE_ID, &device)
            && ina228_identity_ok(maker, device);
 }
 

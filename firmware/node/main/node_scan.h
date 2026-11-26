@@ -6,19 +6,22 @@
  *
  * Each address of 0x08 to 0x77 (112) gets one probe: its address byte and
  * a STOP, with no data byte, as ESP-IDF's i2c_master_probe() sends it.  An
- * address that acknowledges answers.  No part is written to: the probe
- * carries no data, and the only other transaction is the INA228 check
- * (ina228_identity_ok(), #985's), two 16-bit register reads of
- * MANUFACTURER_ID (3Eh) and DEVICE_ID (3Fh), at the answering addresses of
- * 0x40 to 0x4F only.  A register read sends the register's number before
- * its repeated START, as every read of the power role does.  0x00 to 0x07
- * and 0x78 to 0x7F are I2C's reserved addresses and are not asked.
+ * address that acknowledges answers.  The only other transaction is the
+ * INA228 check (ina228_identity_ok(), #985's) at the answering addresses
+ * of 0x40 to 0x4F only: MANUFACTURER_ID (3Eh), then DEVICE_ID (3Fh) from a
+ * part that answers 5449h.  Each is a write of 1 byte, the register
+ * pointer, then a repeated START and a read of 2 bytes, as every read of
+ * the power role and #985's search do.  The pointer write selects the
+ * register to read and writes no register; no other byte is written.
+ * 0x00 to 0x07 and 0x78 to 0x7F are I2C's reserved addresses and are not
+ * asked.
  *
  * SPDX-License-Identifier: MIT
  */
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -35,10 +38,13 @@ typedef struct {
     /** @brief The address byte and a STOP, no data.  @param ctx ctx.
      *  @param addr The address.  @return true when it acknowledged. */
     bool (*probe)(void *ctx, uint8_t addr);
-    /** @brief A 16-bit register, big-endian.  @param ctx ctx.  @param addr
-     *  The address.  @param reg The register.  @param v Receives it.
-     *  @return true when it read. */
-    bool (*read16)(void *ctx, uint8_t addr, uint8_t reg, uint16_t *v);
+    /** @brief A write of @p wn bytes, then a repeated START and a read of
+     *  @p rn bytes: every data byte the scan puts on the bus passes here.
+     *  @param ctx ctx.  @param addr The address.  @param wr The bytes
+     *  written.  @param wn Their count.  @param rd Receives the bytes read.
+     *  @param rn Their count.  @return true when both acknowledged. */
+    bool (*xfer)(void *ctx, uint8_t addr, const uint8_t *wr, size_t wn,
+                 uint8_t *rd, size_t rn);
     void *ctx;  /**< passed unchanged */
 } nscan_io_t;
 

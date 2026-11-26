@@ -655,7 +655,9 @@ size_t rcnode_enc_config(const rcnode_config_t *p, uint8_t *out, size_t cap);
  * at the moment of the decision.  An age that is not known (the node's
  * RCNODE_AGE_NONE, the panel's UINT32_MAX: a change from before its own
  * start) is older than any known one.  Equal ages and two unknown ages go
- * to the node: its value is the one its part measures with.
+ * to the node: its value is the one its part measures with.  A known
+ * panel age saturates at 65,534s, where the node's shunt_age_s does, so
+ * two changes older than 18.2h count as equal.
  *
  * @param panel        The panel's setting, µΩ.
  * @param node         The node's shunt in force, µΩ.

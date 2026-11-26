@@ -13,6 +13,7 @@
  */
 #include "settings_rig.h"
 
+#include "node_cfg_link.h"
 #include "rcnode.h"
 #include "ui_textkey.h"
 
@@ -108,6 +109,52 @@ TEST_CASE(an_address_step_queues_the_write_while_safe)
     CHECK_EQ(c.arg, 0x46u);
     CHECK(!wireless_pane_take_pnode(&c));
     CHECK(wireless_pane_pnode_addr_row.locked() == NULL);
+}
+
+TEST_CASE(two_quick_steps_go_two_addresses_on_until_the_echo)
+{
+    fresh_hub();
+    drain();
+    set_armed(false);
+    wireless_pane_set_pnode(NULL);
+    pnode_view_t v = linked("N", 0x45u);
+    wireless_pane_set_pnode(&v);
+    wireless_pane_pnode_addr_row.step(1);
+    wireless_pane_pnode_addr_row.step(1);   /* before the node's CONFIG */
+    pnode_cmd_t c;
+    CHECK(wireless_pane_take_pnode(&c));
+    CHECK_EQ(c.arg, 0x46u);
+    CHECK(wireless_pane_take_pnode(&c));
+    CHECK_EQ(c.arg, 0x47u);
+    /* The first echo: 0x46.  A step now goes from the node's answer. */
+    v.i228_set = 0x46u;
+    wireless_pane_set_pnode(&v);
+    v.i228_set = 0x47u;
+    wireless_pane_set_pnode(&v);
+    wireless_pane_pnode_addr_row.step(-1);
+    CHECK(wireless_pane_take_pnode(&c));
+    CHECK_EQ(c.arg, 0x46u);
+}
+
+TEST_CASE(a_refused_request_or_a_dropped_write_shows_on_the_band)
+{
+    fresh_hub();
+    pnode_view_t v = linked("N", 0u);
+    wireless_pane_set_pnode(&v);
+    v.cfg_req_no = 1u;
+    v.cfg_req_why = NCL_REQ_UNKNOWN;
+    v.have_cfg = false;               /* the link dropped before the write */
+    wireless_pane_set_pnode(&v);
+    CHECK_STR_EQ(ui_router_alert(), TR(PNODE_CFG_NONE));
+    v.cfg_req_no = 2u;
+    v.cfg_req_why = NCL_REQ_ARMED;
+    wireless_pane_set_pnode(&v);
+    CHECK_STR_EQ(ui_router_alert(), TR(PNODE_CFG_ARMED));
+    const uint32_t n0 = ui_router_alert_number();
+    v.cfg_dropped = 1u;
+    wireless_pane_set_pnode(&v);
+    CHECK(ui_router_alert_number() != n0);
+    CHECK_STR_EQ(ui_router_alert(), TR(PNODE_CFG_DROPPED));
 }
 
 TEST_CASE(no_change_while_armed_or_without_the_settings)
@@ -217,6 +264,8 @@ int main(void)
     RUN(the_rows_say_what_the_node_holds);
     RUN(address_steps_go_auto_0x40_to_0x4f_and_around);
     RUN(an_address_step_queues_the_write_while_safe);
+    RUN(two_quick_steps_go_two_addresses_on_until_the_echo);
+    RUN(a_refused_request_or_a_dropped_write_shows_on_the_band);
     RUN(no_change_while_armed_or_without_the_settings);
     RUN(a_refused_setting_says_so_on_the_band_once);
     RUN(name_opens_the_keyboard_and_ok_queues_it_even_empty);

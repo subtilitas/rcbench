@@ -520,7 +520,7 @@ Der Bildschirm zeigt nach dem Einschalten 10s lang einen Startbildschirm
 mit einer SETUP-Taste, die es gibt, bis sich ein Panel verbindet, dann das
 Messbild: Spannung, Strom und Leistung, jede mit Höchst- und Tiefstwert.
 Das eigene SETUP des Knotens setzt NAME, INA228-ADRESSE (AUTO oder fest)
-und SHUNT und hat einen I2C-SCAN, der in kein Bauteil schreibt.
+und SHUNT und hat einen I2C-SCAN, der kein Register beschreibt.
 Bildschirme, Touch, Sprache und wie der Shunt mit KNOTEN-SHUNT am Panel
 gleich bleibt, stehen in
 [Der Bildschirm des Anzeigeknotens und die eigenen Einstellungen der Knoten](Nodes-setup-de.md).

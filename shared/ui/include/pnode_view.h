@@ -107,6 +107,12 @@ typedef struct {
                                  to write while SAFE */
     uint16_t    cfg_refused; /**< NAME and ADDRESS writes the node refused,
                                   counted: a change is a refusal to show */
+    uint16_t    cfg_req_no; /**< NAME and ADDRESS requests the controller
+                                 refused, counted: a change is a refusal
+                                 to show */
+    uint8_t     cfg_req_why; /**< the last one's ncl_req_t */
+    uint16_t    cfg_dropped; /**< NAME and ADDRESS writes a link's drop
+                                  ended, counted: a change is a notice */
     bool        have_status; /**< a STATUS came on this link */
     bool        bat_low;    /**< it says RCNODE_ST_BAT_LOW: under 3.5V */
     bool        bat_none;   /**< it says RCNODE_ST_BAT_NONE: no cell */

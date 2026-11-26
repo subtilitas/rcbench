@@ -246,6 +246,30 @@ TEST_CASE(every_state_word_fits_25_cells_in_its_colour)
     CHECK_STR_EQ(wireless_pane_bal_word(&v, NULL, 0, NULL), "");
 }
 
+TEST_CASE(a_name_refused_or_dropped_shows_on_the_band)
+{
+    fresh_hub();
+    wireless_pane_set_bal(NULL);
+    bal_view_t v;
+    memset(&v, 0, sizeof v);
+    v.link = BAL_LINK_UP;
+    v.info_role = RCNODE_ROLE_BALANCE;
+    v.have_cfg = true;
+    wireless_pane_set_bal(&v);
+    v.cfg_req_no = 1u;
+    v.cfg_req_why = NCL_REQ_ARMED;
+    wireless_pane_set_bal(&v);
+    CHECK_STR_EQ(ui_router_alert(), TR(PNODE_CFG_ARMED));
+    v.cfg_req_no = 2u;
+    v.cfg_req_why = NCL_REQ_UNKNOWN;
+    wireless_pane_set_bal(&v);
+    CHECK_STR_EQ(ui_router_alert(), TR(BNODE_CFG_NONE));
+    v.cfg_dropped = 1u;
+    wireless_pane_set_bal(&v);
+    CHECK_STR_EQ(ui_router_alert(), TR(PNODE_CFG_DROPPED));
+    wireless_pane_set_bal(NULL);
+}
+
 TEST_CASE(reset_keeps_the_bind)
 {
     fresh_hub();
@@ -313,6 +337,7 @@ int main(void)
     RUN(the_rows_open_search);
     RUN(the_battery_row_reads_the_status);
     RUN(every_state_word_fits_25_cells_in_its_colour);
+    RUN(a_name_refused_or_dropped_shows_on_the_band);
     RUN(reset_keeps_the_bind);
     return test_summary("wireless_bal");
 }

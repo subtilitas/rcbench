@@ -116,7 +116,7 @@ TEST_CASE(an_older_node_keeps_its_link_and_gets_the_shunt_as_before)
     CHECK_EQ(r.c.shunt_refused, 0u);
 }
 
-TEST_CASE(shunt_waits_for_config_and_a_silent_node_after_2s)
+TEST_CASE(shunt_waits_for_config_asked_twice_then_a_silent_node)
 {
     rig_t r;
     init(&r, true);
@@ -124,12 +124,111 @@ TEST_CASE(shunt_waits_for_config_and_a_silent_node_after_2s)
     boot_shunt(&r, 500u);
     run(&r, 50u);
     CHECK_EQ(r.c.nc.st, NCL_WAIT);
-    run(&r, NCL_WAIT_MS - 100u);
+    run(&r, NCL_WAIT_MS + 100u);
+    CHECK_EQ(r.cfgs, 2u);             /* asked once more */
     CHECK_EQ(r.shunts, 0u);           /* nothing before the settings */
-    run(&r, 200u);
+    run(&r, NCL_WAIT_MS - 300u);
+    CHECK_EQ(r.shunts, 0u);
+    run(&r, 400u);
     CHECK_EQ(r.c.nc.st, NCL_NONE);
+    CHECK_EQ(r.cfgs, 2u);
     CHECK_EQ(r.shunts, 1u);
     CHECK_EQ(r.c.info_shunt, 500u);
+}
+
+TEST_CASE(a_lost_config_is_asked_again_and_the_node_change_kept)
+{
+    /* The node's SETUP set 500; its answer to the first ask is lost. */
+    rig_t r;
+    init(&r, true);
+    boot_shunt(&r, 200u);
+    r.info.shunt_uohm = 500u;
+    r.cfg.shunt_agreed = 200u;
+    r.cfg.shunt_age_s = 3u;
+    r.cfg_mute = 1u;
+    run(&r, NCL_WAIT_MS + 200u);
+    CHECK_EQ(r.cfgs, 2u);
+    CHECK(ncl_have(&r.c.nc));
+    CHECK_EQ(r.shunts, 0u);           /* not overwritten */
+    CHECK_EQ(view(&r).adopt_uohm, 500u);
+    CHECK_EQ(view(&r).adopt_seq, 1u);
+}
+
+TEST_CASE(a_late_config_after_the_fallback_decides_again)
+{
+    /* The node takes both asks and sends nothing in time: INFO's rule
+     * writes the panel's 200.  A CONFIG sent before that write arrives
+     * late: the node's change of 500, 3s old.  It is decided again,
+     * though 200 is the value already sent. */
+    rig_t r;
+    init(&r, true);
+    r.cfg_silent = true;
+    boot_shunt(&r, 200u);
+    r.info.shunt_uohm = 500u;
+    r.cfg.shunt_agreed = 200u;
+    r.cfg.shunt_age_s = 3u;
+    run(&r, 2u * NCL_WAIT_MS + 300u);
+    CHECK_EQ(r.c.nc.st, NCL_NONE);
+    CHECK_EQ(r.shunts, 1u);
+    CHECK_EQ(r.c.shunt_sent, 200u);
+    rcnode_config_t late;
+    memset(&late, 0, sizeof late);
+    late.flags = RCNODE_CF_SHUNT;
+    late.shunt_uohm = 500u;
+    late.shunt_agreed = 200u;
+    late.shunt_age_s = 3u;
+    uint8_t b[RCNODE_PKT_MAX];
+    const size_t n = rcnode_enc_config(&late, b, sizeof b);
+    notify(&r, b, n);
+    run(&r, 20u);
+    CHECK_EQ(view(&r).adopt_uohm, 500u);
+    CHECK_EQ(view(&r).adopt_seq, 1u);
+}
+
+TEST_CASE(the_same_node_value_is_taken_again_after_a_panel_change)
+{
+    /* The node sets 500 and the panel takes it; the user sets 300 on the
+     * panel, which is written; the node sets 500 again and links anew:
+     * taken again, not left at 300 against the node's 500. */
+    rig_t r;
+    init(&r, true);
+    boot_shunt(&r, 200u);
+    r.info.shunt_uohm = 500u;
+    r.cfg.shunt_agreed = 200u;
+    r.cfg.shunt_age_s = 3u;
+    run(&r, 50u);
+    CHECK_EQ(view(&r).adopt_seq, 1u);
+    set_shunt(&r, 500u);              /* the frame task's take */
+    run(&r, 50u);
+    CHECK_EQ(r.cfg.shunt_agreed, 500u);
+    set_shunt(&r, 300u);
+    run(&r, 50u);
+    CHECK_EQ(r.info.shunt_uohm, 300u);
+    CHECK_EQ(r.cfg.shunt_agreed, 300u);
+    /* The node's SETUP sets 500 again, 2s before the new link. */
+    bleu_evt_t e = ev(BLEU_EV_DISCONNECT, r.tok_conn);
+    e.status = 0x213u;
+    pnode_ctl_event(&r.c, &e, r.now);
+    r.cfg_on = false;
+    r.info.shunt_uohm = 500u;
+    r.cfg.shunt_age_s = 2u;
+    r.now += 60000u;                  /* the panel's change, a minute old */
+    run(&r, BLEU_RETRY_MS + 100u);
+    CHECK_EQ(view(&r).adopt_uohm, 500u);
+    CHECK_EQ(view(&r).adopt_seq, 2u);
+}
+
+TEST_CASE(a_config_between_windows_counts_no_lost_packet)
+{
+    rig_t r;
+    up(&r, true);
+    window(&r, RCNODE_WF_ONLINE);
+    window(&r, RCNODE_WF_ONLINE);
+    /* The node's CONFIG carries its own seq, not STREAM's. */
+    r.cfg.hdr.seq = 77u;
+    push_cfg(&r);
+    window(&r, RCNODE_WF_ONLINE);
+    CHECK_EQ(r.c.m.lost, 0u);
 }
 
 TEST_CASE(sync_a_node_change_is_taken_not_overwritten_on_link)
@@ -260,12 +359,48 @@ TEST_CASE(a_refused_name_is_counted_for_the_band)
     CHECK_EQ(r.names, 1u);
 }
 
+TEST_CASE(a_refused_request_and_a_dropped_write_are_counted_for_the_band)
+{
+    rig_t r;
+    init(&r, true);                   /* no link, no CONFIG yet */
+    CHECK_EQ(pnode_ctl_name(&r.c, "X", false), NCL_REQ_UNKNOWN);
+    pnode_view_t v = view(&r);
+    CHECK_EQ(v.cfg_req_no, 1u);
+    CHECK_EQ(v.cfg_req_why, NCL_REQ_UNKNOWN);
+    run(&r, 50u);
+    CHECK_EQ(pnode_ctl_i228(&r.c, 0x40u, true), NCL_REQ_ARMED);
+    CHECK_EQ(view(&r).cfg_req_no, 2u);
+    CHECK_EQ(view(&r).cfg_req_why, NCL_REQ_ARMED);
+    /* Asked while SAFE, held while ARMED, then the link drops: not sent
+     * on the next link, and counted. */
+    CHECK_EQ(pnode_ctl_name(&r.c, "LATER", false), NCL_REQ_OK);
+    r.armed = true;
+    run(&r, 50u);
+    CHECK_EQ(r.names, 0u);
+    bleu_evt_t e = ev(BLEU_EV_DISCONNECT, r.tok_conn);
+    e.status = 0x213u;
+    pnode_ctl_event(&r.c, &e, r.now);
+    r.cfg_on = false;
+    r.armed = false;
+    run(&r, BLEU_RETRY_MS + 100u);
+    CHECK(view(&r).have_cfg);
+    CHECK_EQ(r.names, 0u);
+    v = view(&r);
+    CHECK_EQ(v.cfg_dropped, 1u);
+    CHECK_EQ(v.cfg_req_no, 2u);       /* kept across the link */
+}
+
 int main(void)
 {
     RUN(config_is_asked_once_a_link_and_names_the_node);
     RUN(address_auto_and_fixed_go_to_the_node);
     RUN(an_older_node_keeps_its_link_and_gets_the_shunt_as_before);
-    RUN(shunt_waits_for_config_and_a_silent_node_after_2s);
+    RUN(shunt_waits_for_config_asked_twice_then_a_silent_node);
+    RUN(a_lost_config_is_asked_again_and_the_node_change_kept);
+    RUN(a_late_config_after_the_fallback_decides_again);
+    RUN(the_same_node_value_is_taken_again_after_a_panel_change);
+    RUN(a_config_between_windows_counts_no_lost_packet);
+    RUN(a_refused_request_and_a_dropped_write_are_counted_for_the_band);
     RUN(sync_a_node_change_is_taken_not_overwritten_on_link);
     RUN(sync_the_node_change_after_a_restart_still_wins_over_an_old_panel);
     RUN(sync_a_panel_change_is_written);

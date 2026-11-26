@@ -88,10 +88,13 @@ the name before.
 ![I2C SCAN's answers](img/node-setup-scan.png)
 
 The scan asks every 7-bit address of 0x08 to 0x77 once (112 addresses) with
-an address byte and a STOP, and no data byte: no part is written to. At an
-answering address of 0x40 to 0x4F it reads MANUFACTURER_ID (3Eh) and, from
-a part that answers 5449h, DEVICE_ID (3Fh): an INA228 answers die 228h
-(`ina228_identity_ok()`, the power node's own search). Each answer shows
+an address byte and a STOP, and no data byte. Only at an answering address
+of 0x40 to 0x4F does it send data: a write of 1 byte, the register pointer
+3Eh (MANUFACTURER_ID), then a repeated START and a read of 2 bytes; from a
+part that answers 5449h, the same with 3Fh (DEVICE_ID). An INA228 answers
+die 228h (`ina228_identity_ok()`, the power node's own search, which does
+the same). The pointer selects the register to read; no register is ever
+written. Each answer shows
 as a chip; an INA228's text is green. 0x00 to 0x07 and 0x78 to 0x7F are
 I2C's reserved addresses and are not asked. With more than 30 answers, 29
 show and the 30th cell reads `+N`. AGAIN scans once more; BACK returns to the rows.
@@ -194,7 +197,7 @@ NODE ([Screens](Screens.md#wireless-the-power-node)).
 | Panel row | Entry | Values | A press |
 | --- | --- | --- | --- |
 | Node name | POWER NODE, BALANCE NODE | the node's name; `rcbench-pwr-XXXX` without one; `NOT LINKED`; `OLD FIRMWARE` | opens the name keyboard on the name; OK writes NAME, an empty name clears it |
-| INA228 address | POWER NODE | `AUTO`, `0x40` to `0x4F`, `NOT LINKED`, `OLD FIRMWARE` | `<` and `>` step AUTO, 0x40 ... 0x4F, AUTO; each step writes I228 |
+| INA228 address | POWER NODE | `AUTO`, `0x40` to `0x4F`, `NOT LINKED`, `OLD FIRMWARE` | `<` and `>` step AUTO, 0x40 ... 0x4F, AUTO; each step writes I228, from the value last asked for until the node's CONFIG answers, so two quick steps go two addresses on |
 | Node shunt | POWER NODE | 50 to 10,000uΩ | the panel's setting; the sync below |
 
 ![The name keyboard on the panel](img/setup-wireless-pnode-name.png)
@@ -205,8 +208,12 @@ SETTING CHANGE WHILE ARMED: SWITCH TO SAFE FIRST`, and a write asked while
 SAFE waits for SAFE. A node not linked reads `NODE NOT LINKED: ITS
 SETTINGS CHANGE ONLY OVER THE LINK`; a node built before these settings
 reads `THE NODE TAKES NO NAME OR ADDRESS: UPDATE ITS FIRMWARE` (`THE NODE
-TAKES NO NAME: UPDATE ITS FIRMWARE` for a balance node). A write the node
-refuses reads `THE NODE REFUSED THE SETTING`.
+TAKES NO NAME: UPDATE ITS FIRMWARE` for a balance node). The same texts
+show when the request passes the row but the controller refuses it, the
+link having dropped in between, say. A write the node refuses reads `THE
+NODE REFUSED THE SETTING`. A NAME or INA228 ADDRESS that waits, or is in
+flight, when the link drops is not sent again on the next link: the band
+reads `THE LINK DROPPED: THE NODE SETTING WAS NOT WRITTEN, SET IT AGAIN`.
 
 BOUND NODE shows the node's name. The panel keeps it in SETUP
 (`SET_TEXT_PNODE_NAME`, `SET_TEXT_BNODE_NAME`) while SAFE, so it shows
@@ -252,6 +259,8 @@ time since the panel's setting changed:
 
 The panel's age is known from the first change of NODE SHUNT after the
 panel's start; a change from before the start counts as unknown. The
+node's age stops at 65,534s (18.2h), and the panel's counts no further:
+two changes older than that are equal, and the node's value stays. The
 node's age is known from its own change to its next restart. So a change
 made on the node's SETUP right before a link wins over a panel value set
 in an earlier session, and a NODE SHUNT changed after the node's change
@@ -262,10 +271,18 @@ runs at the next SAFE. The take into NODE SHUNT asks a save. The meter of
 a run reads INFO's shunt: the INFO read again after each SHUNT
 write waits while the bench is ARMED or the meter's run is live.
 
+**A CONFIG that does not come.** The panel asks CONFIG a second time when
+none comes within 2000ms (`NCL_WAIT_MS`) of the first ask's answer. With
+none 2000ms after the second, the node is treated as one built before
+CONFIG (below), and the panel writes SHUNT by INFO's rule. A CONFIG that
+comes after that is decided again by the table above, also when the
+panel's value is the one already written: a node-side change it carries
+is taken back into NODE SHUNT and written to the node. A node on a link
+with an MTU (maximum transmission unit) under 33 cannot send the 30 bytes
+of CONFIG at all; on it, INFO's rule overwrites a node-side change.
+
 **Older ends.** A node built before CONFIG refuses it with ATT error 0x13;
-the panel then writes SHUNT whenever INFO names another shunt.
-A node that takes CONFIG and sends none within 2000ms (`NCL_WAIT_MS`), on
-an MTU (maximum transmission unit) under 33, say, is treated the same. A
+the panel then writes SHUNT whenever INFO names another shunt. A
 panel built before CONFIG never writes it, so the node never sends
 RCNODE_T_CONFIG to it; INFO keeps its 20 bytes. Such a panel writes SHUNT
 whenever INFO names another shunt: it overwrites a node-side change.
@@ -279,7 +296,8 @@ whenever INFO names another shunt: it overwrites a node-side change.
   while SETUP is open, so no bench reads a node whose settings are being
   edited.
 - The panel writes no node setting while ARMED, and takes none.
-- The I2C SCAN writes no data to any part.
+- The I2C SCAN writes no register: its only data bytes are the 1-byte
+  register pointers 3Eh and 3Fh at answering addresses of 0x40 to 0x4F.
 - A stored name or address out of range reads as its default.
 
 ## Current limitations
@@ -288,6 +306,14 @@ whenever INFO names another shunt: it overwrites a node-side change.
   SETUP at its next link.
 - The panel's INA228 ADDRESS writes at each step: stepping from AUTO to
   0x4F writes 16 times, and the node searches anew at each.
+- Two panels that link to the same node in turn swap the shunt: the
+  agreed value is the node's, one for all panels. When panel A wrote 500
+  and panel B holds 300 from its own earlier change, B's link reads its
+  own setting as changed and the node's as not, and writes 300; A's next
+  link does the same with 500.
+- A link with an MTU under 33 carries no CONFIG: the panel falls back to
+  INFO's rule after the two asks, 4000ms, and overwrites a node-side
+  change.
 - The splash, SETUP and the scan on the ES3C28P are not measured on a
   delivered board: the touch's turn, the scan's time on the bus and its
   effect on the sampler.

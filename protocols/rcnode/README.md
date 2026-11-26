@@ -130,8 +130,10 @@ types only.
   and the name in 16 bytes, NUL padded ("" for none). The decoder refuses
   a name `rcnode_uname_ok()` does not take, padding that is not NUL and an
   address setting out of range; the panel holds a shunt it takes to 50 to
-  10,000µΩ. A node sends it only after a central wrote CONFIG on the link, so
-  a central built before it never receives one; INFO keeps its 20 bytes.
+  10,000µΩ. Its `seq` is CONFIG's own count, as STATUS's is, so a gap in
+  STREAM's `seq` stays a lost packet. A node sends it only after a central
+  wrote CONFIG on the link, so a central built before it never receives
+  one; INFO keeps its 20 bytes.
 
 ### Control
 

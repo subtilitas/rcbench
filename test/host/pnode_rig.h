@@ -63,6 +63,7 @@ typedef struct {
     bool        old_node; /**< built before CONFIG: refuses it with 0x13
                                and NAME by its length */
     bool        cfg_silent; /**< takes CONFIG and sends none */
+    unsigned    cfg_mute; /**< CONFIG asks taken and left unanswered first */
     bool        cfg_on;   /**< CONFIG was asked on this link */
     rcnode_config_t cfg;  /**< the node's own settings */
     unsigned    cfgs;     /**< CONFIG writes */
@@ -232,6 +233,10 @@ static inline void act(rig_t *r, const bleu_act_t *a)
             }
             pnode_ctl_event(&r->c, &e, r->now);
             if (e.status != 0u) {
+                break;
+            }
+            if (op == RCNODE_OP_CONFIG && r->cfg_mute > 0u) {
+                --r->cfg_mute;            /* its answer lost on the way */
                 break;
             }
             if (op == RCNODE_OP_CONFIG) {

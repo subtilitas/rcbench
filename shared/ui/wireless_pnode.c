@@ -14,6 +14,7 @@
 #include "settings_screen.h"
 #include "ui_screen.h"
 #include "ui_text.h"
+#include "node_cfg_link.h"
 #include "ui_textkey.h"
 #include "ui_theme.h"
 #include "wl_search.h"
@@ -29,6 +30,10 @@ static pnode_view_t s_node;
 static pnode_cmd_t s_q[CMD_Q];
 /** @brief The commands in s_q. */
 static unsigned    s_q_n;
+/** @brief The INA228 ADDRESS last asked for, until the node echoes it. */
+static uint8_t     s_addr_asked;
+/** @brief s_addr_asked waits for its echo. */
+static bool        s_addr_ask;
 
 /**
  * @brief Queue a command; a full queue drops it.
@@ -88,6 +93,7 @@ static bool view_same(const pnode_view_t *a, const pnode_view_t *b)
         || a->shunt_refused != b->shunt_refused
         || a->have_cfg != b->have_cfg || a->i228_set != b->i228_set
         || a->cfg_refused != b->cfg_refused || a->adopt_seq != b->adopt_seq
+        || a->cfg_req_no != b->cfg_req_no || a->cfg_dropped != b->cfg_dropped
         || strncmp(a->node_name, b->node_name, sizeof a->node_name) != 0
         || a->scan_armed != b->scan_armed
         || a->scan_unready != b->scan_unready
@@ -125,6 +131,13 @@ void wireless_pane_set_pnode(const pnode_view_t *v)
     const bool shunt_no = v != NULL
                           && next.shunt_refused != s_node.shunt_refused;
     const bool cfg_no = v != NULL && next.cfg_refused != s_node.cfg_refused;
+    const bool req_no = v != NULL && next.cfg_req_no != s_node.cfg_req_no;
+    const bool dropped = v != NULL && next.cfg_dropped != s_node.cfg_dropped;
+    if (v == NULL || !next.have_cfg || next.i228_set == s_addr_asked
+        || next.i228_set != s_node.i228_set || cfg_no || req_no || dropped) {
+        s_addr_ask = false;     /* the node's echo or answer, a refusal, a
+                                   drop, or no link: steps go from CONFIG */
+    }
     s_node = next;
     settings_screen_invalidate();
     const bool scanning = s_node.link == PNODE_LINK_SCANNING;
@@ -140,6 +153,13 @@ void wireless_pane_set_pnode(const pnode_view_t *v)
         ui_router_set_alert(TR(PNODE_SHUNT_REFUSED));
     } else if (cfg_no) {
         ui_router_set_alert(TR(PNODE_CFG_REFUSED));
+    } else if (req_no) {
+        ui_router_set_alert(
+            s_node.cfg_req_why == NCL_REQ_ARMED ? TR(PNODE_CFG_ARMED)
+            : s_node.cfg_req_why == NCL_REQ_BAD ? TR(PNODE_CFG_REFUSED)
+            : s_node.have_info ? TR(PNODE_CFG_NONE) : TR(PNODE_CFG_UNLINKED));
+    } else if (dropped) {
+        ui_router_set_alert(TR(PNODE_CFG_DROPPED));
     }
 }
 
@@ -434,7 +454,12 @@ uint8_t wireless_pane_pnode_addr_next(uint8_t from, int dir)
 static void addr_step(int dir)
 {
     if (cfg_may()) {
-        push(PNODE_CMD_I228, wireless_pane_pnode_addr_next(s_node.i228_set, dir));
+        /* From the value last asked for until the node's CONFIG echoes
+         * it, so two quick steps go two addresses on. */
+        const uint8_t from = s_addr_ask ? s_addr_asked : s_node.i228_set;
+        s_addr_asked = wireless_pane_pnode_addr_next(from, dir);
+        s_addr_ask = true;
+        push(PNODE_CMD_I228, s_addr_asked);
     }
 }
 

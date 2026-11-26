@@ -330,6 +330,7 @@ static bool same_view(const bal_view_t *a, const bal_view_t *b)
         || a->scan_armed != b->scan_armed
         || a->scan_unready != b->scan_unready
         || a->have_cfg != b->have_cfg || a->cfg_refused != b->cfg_refused
+        || a->cfg_req_no != b->cfg_req_no || a->cfg_dropped != b->cfg_dropped
         || strcmp(a->node_name, b->node_name) != 0
         || strcmp(a->bound_addr, b->bound_addr) != 0
         || strcmp(a->bound_name, b->bound_name) != 0) {
@@ -365,6 +366,8 @@ void wireless_pane_set_bal(const bal_view_t *v)
     const bool scan_no = v != NULL
                          && next.scan_unready != s_bal.scan_unready;
     const bool cfg_no = v != NULL && next.cfg_refused != s_bal.cfg_refused;
+    const bool req_no = v != NULL && next.cfg_req_no != s_bal.cfg_req_no;
+    const bool dropped = v != NULL && next.cfg_dropped != s_bal.cfg_dropped;
     s_bal = next;
     settings_screen_invalidate();
     const bool scanning = s_bal.link == BAL_LINK_SCANNING;
@@ -378,6 +381,14 @@ void wireless_pane_set_bal(const bal_view_t *v)
                                      : TR(BNODE_SCAN_OFF));
     } else if (cfg_no) {
         ui_router_set_alert(TR(PNODE_CFG_REFUSED));
+    } else if (req_no) {
+        ui_router_set_alert(
+            s_bal.cfg_req_why == NCL_REQ_ARMED ? TR(PNODE_CFG_ARMED)
+            : s_bal.cfg_req_why == NCL_REQ_BAD ? TR(PNODE_CFG_REFUSED)
+            : s_bal.info_role != 0u ? TR(BNODE_CFG_NONE)
+                                    : TR(PNODE_CFG_UNLINKED));
+    } else if (dropped) {
+        ui_router_set_alert(TR(PNODE_CFG_DROPPED));
     }
 }
 

@@ -321,6 +321,24 @@ TEST_CASE(config_goes_out_only_after_the_central_asked_on_the_link)
     CHECK_EQ(RCNODE_INFO_LEN, 20u);
 }
 
+TEST_CASE(config_counts_its_own_seq_not_streams)
+{
+    /* Each CONFIG takes the next of its own count: no STREAM seq is
+     * taken, so the meter's count of lost packets on the central does not
+     * move by a CONFIG between two windows. */
+    nst_t s;
+    nst_load(&s, NULL, true);
+    rcnode_config_t a;
+    rcnode_config_t b;
+    nst_config(&s, 0u, &a);
+    nst_config(&s, 0u, &b);
+    CHECK_EQ((unsigned)(uint8_t)(b.hdr.seq - a.hdr.seq), 1u);
+    for (unsigned k = 0u; k < 255u; ++k) {
+        nst_config(&s, 0u, &b);
+    }
+    CHECK_EQ(b.hdr.seq, a.hdr.seq);       /* wraps at 256 */
+}
+
 int main(void)
 {
     RUN(an_empty_store_reads_as_every_default);
@@ -334,5 +352,6 @@ int main(void)
     RUN(the_age_saturates_and_survives_the_clock_wrap);
     RUN(the_last_panel_language_is_kept);
     RUN(config_goes_out_only_after_the_central_asked_on_the_link);
+    RUN(config_counts_its_own_seq_not_streams);
     return test_summary("node_store");
 }

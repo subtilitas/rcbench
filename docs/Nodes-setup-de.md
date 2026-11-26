@@ -92,11 +92,14 @@ ABBRUCH behält den alten Namen.
 ![Die Antworten des I2C-SCAN](img/de/node-setup-scan.png)
 
 Der Scan fragt jede 7-Bit-Adresse von 0x08 bis 0x77 einmal (112 Adressen)
-mit einem Adressbyte und einem STOP, ohne Datenbyte: Kein Bauteil wird
-beschrieben. An einer antwortenden Adresse von 0x40 bis 0x4F liest er
-MANUFACTURER_ID (3Eh) und, von einem Bauteil mit 5449h, DEVICE_ID (3Fh):
-Ein INA228 antwortet mit Die 228h (`ina228_identity_ok()`, die Suche des
-Leistungsknotens). Jede Antwort erscheint als Feld; der Text eines INA228
+mit einem Adressbyte und einem STOP, ohne Datenbyte. Nur an einer
+antwortenden Adresse von 0x40 bis 0x4F sendet er Daten: einen
+Schreibzugriff von 1 Byte, den Registerzeiger 3Eh (MANUFACTURER_ID), dann
+einen wiederholten START und ein Lesen von 2 Byte; von einem Bauteil mit
+5449h dasselbe mit 3Fh (DEVICE_ID). Ein INA228 antwortet mit Die 228h
+(`ina228_identity_ok()`, die Suche des Leistungsknotens, die es ebenso
+macht). Der Zeiger wählt das zu lesende Register; kein Register wird je
+beschrieben. Jede Antwort erscheint als Feld; der Text eines INA228
 ist grün. 0x00 bis 0x07 und 0x78 bis 0x7F sind reservierte I2C-Adressen und
 werden nicht gefragt. Bei mehr als 30 Antworten zeigen sich 29, und das
 30. Feld zeigt `+N`. ERNEUT scannt
@@ -208,7 +211,7 @@ LEISTUNGSKNOTEN oder AUSWUCHTKNOTEN
 | Zeile am Panel | Eintrag | Werte | Druck |
 | --- | --- | --- | --- |
 | Knotenname | LEISTUNGSKNOTEN, AUSWUCHTKNOTEN | der Name des Knotens; ohne Namen `rcbench-pwr-XXXX`; `NICHT VERBUNDEN`; `ALTE FIRMWARE` | öffnet die Namenstastatur mit dem Namen; OK schreibt NAME, ein leerer Name löscht ihn |
-| INA228-Adresse | LEISTUNGSKNOTEN | `AUTO`, `0x40` bis `0x4F`, `NICHT VERBUNDEN`, `ALTE FIRMWARE` | `<` und `>` schalten AUTO, 0x40 ... 0x4F, AUTO; jeder Schritt schreibt I228 |
+| INA228-Adresse | LEISTUNGSKNOTEN | `AUTO`, `0x40` bis `0x4F`, `NICHT VERBUNDEN`, `ALTE FIRMWARE` | `<` und `>` schalten AUTO, 0x40 ... 0x4F, AUTO; jeder Schritt schreibt I228, vom zuletzt erbetenen Wert aus, bis CONFIG des Knotens antwortet: Zwei schnelle Schritte gehen zwei Adressen weiter |
 | Knoten-Shunt | LEISTUNGSKNOTEN | 50 bis 10.000uΩ | die Einstellung des Panels; der Abgleich unten |
 
 ![Die Namenstastatur am Panel](img/de/setup-wireless-pnode-name.png)
@@ -221,8 +224,13 @@ nicht verbundener Knoten zeigt `KNOTEN NICHT VERBUNDEN: EINSTELLUNGEN NUR
 ÜBER DIE VERBINDUNG`; ein Knoten aus der Zeit vor diesen Einstellungen
 zeigt `KNOTEN NIMMT KEINEN NAMEN UND KEINE ADRESSE: FIRMWARE
 AKTUALISIEREN` (`KNOTEN NIMMT KEINEN NAMEN: FIRMWARE AKTUALISIEREN` beim
-Auswuchtknoten). Ein Schreibzugriff, den der Knoten ablehnt, zeigt `DER
-KNOTEN HAT DIE EINSTELLUNG ABGELEHNT`.
+Auswuchtknoten). Dieselben Texte zeigen sich, wenn die Zeile die Anfrage
+durchlässt, die Steuerung sie aber ablehnt, etwa weil die Verbindung
+dazwischen abriss. Ein Schreibzugriff, den der Knoten ablehnt, zeigt `DER
+KNOTEN HAT DIE EINSTELLUNG ABGELEHNT`. Ein NAME oder eine INA228-ADRESSE,
+die beim Abriss der Verbindung wartet oder unterwegs ist, geht auf der
+nächsten Verbindung nicht erneut: Das Band zeigt `VERBINDUNG GETRENNT:
+EINSTELLUNG NICHT GESCHRIEBEN, NEU SETZEN`.
 
 GEBUNDENER KNOTEN zeigt den Namen des Knotens. Das Panel hält ihn bei
 SAFE im SETUP (`SET_TEXT_PNODE_NAME`, `SET_TEXT_BNODE_NAME`), so zeigt er
@@ -271,7 +279,9 @@ vereinbartem Wert des Knotens, dem Alter am Knoten und der Zeit seit der
 
 Das Alter am Panel ist ab der ersten Änderung von KNOTEN-SHUNT nach dem
 Start des Panels bekannt; eine Änderung von vor dem Start gilt als
-unbekannt. Das Alter am Knoten ist von seiner eigenen Änderung bis zu
+unbekannt. Das Alter am Knoten endet bei 65.534s (18,2h), und das am Panel
+zählt nicht weiter: Zwei ältere Änderungen sind gleich alt, und der Wert
+des Knotens bleibt. Das Alter am Knoten ist von seiner eigenen Änderung bis zu
 seinem nächsten Neustart bekannt. So gewinnt eine Änderung im SETUP des
 Knotens kurz vor einer Verbindung gegen einen Panel-Wert aus einer früheren
 Sitzung, und ein KNOTEN-SHUNT, der nach der Änderung am Knoten geändert
@@ -283,11 +293,21 @@ fordert ein Speichern an. Das Messbild eines Laufs liest den
 Shunt aus INFO: Das erneute Lesen von INFO nach jedem SHUNT wartet, solange
 der Prüfstand ARMED ist oder der Lauf des Messbilds läuft.
 
+**Ein CONFIG, das nicht kommt.** Das Panel fragt CONFIG ein zweites Mal,
+wenn innerhalb von 2000ms (`NCL_WAIT_MS`) nach der Antwort auf die erste
+Frage keines kommt. Ohne CONFIG 2000ms nach der zweiten gilt der Knoten
+als einer aus der Zeit vor CONFIG (unten), und das Panel schreibt SHUNT
+nach der Regel von INFO. Ein CONFIG, das danach kommt, wird nach der
+Tabelle oben neu entschieden, auch wenn der Wert des Panels der schon
+geschriebene ist: Eine Änderung am Knoten darin kommt zurück in
+KNOTEN-SHUNT und wird zum Knoten geschrieben. Ein Knoten auf einer
+Verbindung mit einer MTU (maximale Übertragungseinheit) unter 33 kann die
+30 Bytes von CONFIG gar nicht senden; bei ihm überschreibt die Regel von
+INFO eine Änderung am Knoten.
+
 **Ältere Enden.** Ein Knoten aus der Zeit vor CONFIG lehnt es mit
 ATT-Fehler 0x13 ab; das Panel schreibt dann SHUNT, wann immer INFO einen
-anderen Shunt nennt. Ein Knoten, der CONFIG annimmt und
-innerhalb von 2000ms (`NCL_WAIT_MS`) keines sendet, etwa bei einer MTU
-(maximale Übertragungseinheit) unter 33, gilt genauso. Ein Panel aus der
+anderen Shunt nennt. Ein Panel aus der
 Zeit vor CONFIG schreibt es nie, also sendet der Knoten ihm nie
 RCNODE_T_CONFIG; INFO behält seine 20 Bytes. Ein solches Panel schreibt
 SHUNT, wann immer INFO einen anderen Shunt nennt: Es überschreibt eine
@@ -303,7 +323,9 @@ SHUNT, wann immer INFO einen anderen Shunt nennt: Es überschreibt eine
   dessen Einstellungen gerade geändert werden.
 - Das Panel schreibt bei ARMED keine Knoteneinstellung und übernimmt
   keine.
-- Der I2C-SCAN schreibt keine Daten in ein Bauteil.
+- Der I2C-SCAN beschreibt kein Register: Seine einzigen Datenbytes sind
+  die 1-Byte-Registerzeiger 3Eh und 3Fh an antwortenden Adressen von 0x40
+  bis 0x4F.
 - Ein gespeicherter Name oder eine Adresse außerhalb des Bereichs gilt als
   Vorgabe.
 
@@ -313,6 +335,15 @@ SHUNT, wann immer INFO einen anderen Shunt nennt: Es überschreibt eine
   Knotens geänderten Shunt bei seiner nächsten Verbindung.
 - Die INA228-ADRESSE am Panel schreibt bei jedem Schritt: Von AUTO bis
   0x4F sind es 16 Schreibzugriffe, und der Knoten sucht bei jedem neu.
+- Zwei Panels, die sich abwechselnd mit demselben Knoten verbinden,
+  tauschen den Shunt hin und her: Der vereinbarte Wert ist der des
+  Knotens, einer für alle Panels. Schrieb Panel A 500 und hält Panel B
+  300 aus einer eigenen früheren Änderung, sieht B bei seiner Verbindung
+  die eigene Einstellung als geändert und die des Knotens nicht und
+  schreibt 300; die nächste Verbindung von A macht dasselbe mit 500.
+- Eine Verbindung mit einer MTU unter 33 trägt kein CONFIG: Das Panel
+  fällt nach den zwei Fragen, 4000ms, auf die Regel von INFO zurück und
+  überschreibt eine Änderung am Knoten.
 - Startbildschirm, SETUP und Scan auf dem ES3C28P sind an einem
   gelieferten Board nicht gemessen: die Drehung des Touch, die Zeit des
   Scans auf dem Bus und seine Wirkung auf den Abtaster.

@@ -1516,15 +1516,20 @@ only before a link and a link during the splash going to the meter, the
 60s idle end, each row's edits, BACK dropping them, SAVE's changes and
 the drawing of each screen (`test_node_setup`); the I2C SCAN over fake
 parts at every address 0x08 to 0x77, INA228s by maker and die, the ID
-reads only at 0x40 to 0x4F, no write (`test_node_scan`); the names,
-addresses and shunts stored and read back, a bad stored value read as its
-default, the agreed shunt and the change's age, CONFIG sent only after a
-central asked (`test_node_store`); CONFIG, NAME and I228 encoded and
+reads only at 0x40 to 0x4F, each data write a 1-byte register pointer
+there (`test_node_scan`); the names, addresses and shunts stored and read
+back, a bad stored value read as its default, the agreed shunt and the
+change's age, CONFIG sent only after a central asked and on its own seq
+(`test_node_store`); CONFIG, NAME and I228 encoded and
 decoded, the name rule and the sync rule both ways with the last change
-winning (`test_rcnode_cfg`); the panel's CONFIG, held SHUNT, ADOPT and
-ACK, NAME and I228 writes held while ARMED, a node built before CONFIG
-(`test_pnode_cfg`, `test_bal_cfg`); the WIRELESS rows, the name keyboard
-and the name on Bound node (`test_wireless_pnode_cfg`). The splash, the
+winning, ages past 65,534s equal (`test_rcnode_cfg`); the panel's CONFIG
+asked twice, held SHUNT, ADOPT and ACK, the same node value taken again
+after a panel change, a late CONFIG decided again, no lost packet counted
+for a CONFIG, NAME and I228 writes held while ARMED, refused requests and
+writes a drop ended counted, a node built before CONFIG (`test_pnode_cfg`,
+`test_bal_cfg`); the WIRELESS rows, the name keyboard, address steps from
+the value asked, the band's notices and the name on Bound node
+(`test_wireless_pnode_cfg`, `test_wireless_bal`). The splash, the
 SETUP screens and the panel rows are rendered (`render_node.py`,
 `render_ui.py`); the touch on a delivered board is not measured
 ([The nodes' own settings](docs/Nodes-setup.md)).

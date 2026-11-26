@@ -160,6 +160,10 @@ typedef struct {
                                "rcbench-bal-XXXX" without one */
     uint16_t  cfg_refused; /**< NAME writes the node refused, counted: a
                                 change is a refusal to show */
+    uint16_t  cfg_req_no; /**< NAME requests the controller refused,
+                               counted: a change is a refusal to show */
+    uint8_t   cfg_req_why; /**< the last one's ncl_req_t */
+    uint16_t  cfg_dropped; /**< NAME writes a link's drop ended, counted */
 } bal_view_t;
 
 /** @brief A command of SETUP > WIRELESS for the controller. */

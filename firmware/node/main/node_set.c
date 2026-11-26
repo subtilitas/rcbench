@@ -167,12 +167,13 @@ static void push_config(void)
     rcnode_config_t c;
     lock();
     const bool due = nst_sends_config(&s_st);
-    nst_config(&s_st, now_ms(), &c);
+    if (due) {
+        nst_config(&s_st, now_ms(), &c);
+    }
     unlock();
     if (!due) {
         return;
     }
-    c.hdr.seq = node_ble_stream_seq();
     c.hdr.t_node = (uint32_t)node_us();
     uint8_t b[RCNODE_CONFIG_LEN];
     const size_t n = rcnode_enc_config(&c, b, sizeof b);

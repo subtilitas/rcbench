@@ -6,19 +6,24 @@
  *        (bal_ctl.h) each run one beside their central.  Pure C, under the
  *        host suite (test_node_cfg_link).
  *
- * After INFO is taken on each link, CONTROL gets RCNODE_OP_CONFIG once.
- * A node built before CONFIG refuses it (ATT error 0x13): the settings
- * are not known on that link (NCL_NONE), and the controller works as it
- * did before them.  A node that takes it sends RCNODE_T_CONFIG on STREAM;
- * one that does not come within NCL_WAIT_MS (2000ms) of the write's answer
- * (an MTU under 33, say) counts as NCL_NONE as well.  A later CONFIG, which
- * the node sends after each change, is taken in any state.
+ * After INFO is taken on each link, CONTROL gets RCNODE_OP_CONFIG.  A node
+ * built before CONFIG refuses it (ATT error 0x13): the settings are not
+ * known on that link (NCL_NONE), and the controller works as it does for
+ * such a node.  A node that takes it sends RCNODE_T_CONFIG on STREAM.  When
+ * none comes within NCL_WAIT_MS (2000ms) of the write's answer, CONFIG is
+ * asked once more (NCL_ASKS asks in all); without a CONFIG NCL_WAIT_MS
+ * after the last, the link counts as NCL_NONE (an MTU under 33, say).  A
+ * later CONFIG, which the node sends after each change, is taken in any
+ * state and counted (taken), so the controller decides the shunt again.
  *
  * NAME and I228 are written only with the settings known (NCL_HAVE), never
  * while the bench is ARMED or a switch to ARMED waits, one write at a
  * time, each after any write the controller owes first.  A write the node
- * refuses is counted for the band; one that the link's drop ends is not
- * sent again.  The node answers a change with CONFIG.
+ * refuses is counted for the band (refused), and so is a request refused
+ * here (req_no, with its reason in req_why).  A NAME or I228 that waits or
+ * is in flight when the link drops is not sent again on the next link: it
+ * is counted for the band (dropped).  The three counts last across links.
+ * The node answers a change with CONFIG.
  *
  * Times are unsigned differences of a free-running 32-bit ms clock.
  *
@@ -39,6 +44,8 @@ extern "C" {
 
 /** @brief The longest wait for CONFIG after its ask was taken, ms. */
 #define NCL_WAIT_MS 2000u
+/** @brief CONFIG asks on a link before the node counts as one without it. */
+#define NCL_ASKS 2u
 
 /** @brief Where the settings stand on this link. */
 typedef enum {
@@ -72,11 +79,18 @@ typedef struct {
     bool            i228_owed; /**< I228 waits */
     uint8_t         i228;      /**< its value */
     uint32_t        refused;   /**< NAME and I228 writes the node refused */
-    uint32_t        taken;     /**< CONFIG packets taken */
+    uint32_t        taken;     /**< CONFIG packets taken on this link */
+    uint8_t         asks;      /**< CONFIG asks on this link */
+    bool            wr_set;    /**< the write in flight is NAME or I228 */
+    uint32_t        req_no;    /**< NAME and I228 requests refused here */
+    uint8_t         req_why;   /**< the last one's ncl_req_t */
+    uint32_t        dropped;   /**< NAME and I228 writes a link's drop ended */
 } ncl_t;
 
 /**
- * @brief A new link: nothing known, nothing owed.
+ * @brief A new link: nothing known, nothing owed.  A NAME or I228 still
+ *        owed or in flight counts in dropped; refused, req_no, req_why and
+ *        dropped are kept.
  * @param n The state; NULL does nothing.
  */
 void ncl_link(ncl_t *n);
@@ -115,7 +129,7 @@ void ncl_follow(ncl_t *n, const bleu_t *b, uint32_t now_ms);
 bool ncl_send(ncl_t *n, bleu_t *b, bool ready, bool armed, uint32_t now_ms);
 
 /**
- * @brief Ask for a NAME write.
+ * @brief Ask for a NAME write.  A refusal counts in req_no.
  * @param n     The state.
  * @param name  The name; "" clears it.
  * @param armed The bench is ARMED, or a switch to ARMED waits.
@@ -124,7 +138,7 @@ bool ncl_send(ncl_t *n, bleu_t *b, bool ready, bool armed, uint32_t now_ms);
 ncl_req_t ncl_set_name(ncl_t *n, const char *name, bool armed);
 
 /**
- * @brief Ask for an I228 write.
+ * @brief Ask for an I228 write.  A refusal counts in req_no.
  * @param n     The state.
  * @param a     RCNODE_I228_AUTO or 0x40 to 0x4F.
  * @param armed The bench is ARMED, or a switch to ARMED waits.

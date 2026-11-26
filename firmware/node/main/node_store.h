@@ -83,6 +83,7 @@ typedef struct {
     uint32_t   changed_ms; /**< when, the node's ms clock */
     uint32_t   failed;     /**< store writes that failed */
     bool       asked;      /**< the central on the link wrote CONFIG */
+    uint8_t    cfg_seq;    /**< the next CONFIG's seq, its own count */
 } nst_t;
 
 /**
@@ -147,14 +148,16 @@ void nst_ask(nst_t *s, bool on);
 bool nst_sends_config(const nst_t *s);
 
 /**
- * @brief The settings as RCNODE_T_CONFIG carries them, the header left 0.
+ * @brief The settings as RCNODE_T_CONFIG carries them: the header's seq is
+ *        CONFIG's own count, apart from STREAM's (the next one taken), and
+ *        t_node is left 0.
  * @param s      The settings.
  * @param now_ms The node's ms clock.
  * @param out    Receives them.  shunt_age_s is the time since the node's
  *               own change, whole seconds, up to 65,534; RCNODE_AGE_NONE
  *               without one.
  */
-void nst_config(const nst_t *s, uint32_t now_ms, rcnode_config_t *out);
+void nst_config(nst_t *s, uint32_t now_ms, rcnode_config_t *out);
 
 #ifdef __cplusplus
 }

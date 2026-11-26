@@ -18,9 +18,19 @@ enum { WR_NONE = 0, WR_ASK, WR_SET };
 
 void ncl_link(ncl_t *n)
 {
-    if (n != NULL) {
-        memset(n, 0, sizeof(*n));
+    if (n == NULL) {
+        return;
     }
+    const bool lost = n->name_owed || n->i228_owed || (n->wr && n->wr_set);
+    const uint32_t refused = n->refused;
+    const uint32_t req_no = n->req_no;
+    const uint8_t req_why = n->req_why;
+    const uint32_t dropped = n->dropped + (lost ? 1u : 0u);
+    memset(n, 0, sizeof(*n));
+    n->refused = refused;
+    n->req_no = req_no;
+    n->req_why = req_why;
+    n->dropped = dropped;
 }
 
 bool ncl_packet(ncl_t *n, const uint8_t *data, size_t len, uint32_t now_ms)
@@ -52,12 +62,18 @@ void ncl_follow(ncl_t *n, const bleu_t *b, uint32_t now_ms)
             } else if (b->wr_status != BLEU_STATUS_LOST) {
                 n->st = NCL_NONE;   /* a node built before CONFIG */
             }
-        } else if (b->wr != BLEU_WR_OK && b->wr_status != BLEU_STATUS_LOST) {
-            ++n->refused;
+        } else if (b->wr != BLEU_WR_OK) {
+            if (b->wr_status == BLEU_STATUS_LOST) {
+                ++n->dropped;
+            } else {
+                ++n->refused;
+            }
         }
+        n->wr_set = false;
     }
     if (n->st == NCL_WAIT && now_ms - n->asked_ms >= NCL_WAIT_MS) {
-        n->st = NCL_NONE;
+        /* No CONFIG: ask once more, then count the node as one without. */
+        n->st = n->asks < NCL_ASKS ? NCL_UNKNOWN : NCL_NONE;
     }
 }
 
@@ -87,6 +103,7 @@ bool ncl_send(ncl_t *n, bleu_t *b, bool ready, bool armed, uint32_t now_ms)
         }
         n->st = NCL_ASKING;
         n->wr = true;
+        ++n->asks;
         return true;
     }
     if (n->st != NCL_HAVE || armed) {
@@ -107,6 +124,7 @@ bool ncl_send(ncl_t *n, bleu_t *b, bool ready, bool armed, uint32_t now_ms)
         return false;
     }
     n->wr = true;
+    n->wr_set = true;
     return true;
 }
 
@@ -123,14 +141,31 @@ static ncl_req_t may(const ncl_t *n, bool armed)
     return ncl_have(n) ? NCL_REQ_OK : NCL_REQ_UNKNOWN;
 }
 
+/**
+ * @brief A request's answer, a refusal counted.
+ * @param n The state.  @param r The answer.
+ * @return @p r.
+ */
+static ncl_req_t answer(ncl_t *n, ncl_req_t r)
+{
+    if (r != NCL_REQ_OK) {
+        ++n->req_no;
+        n->req_why = (uint8_t)r;
+    }
+    return r;
+}
+
 ncl_req_t ncl_set_name(ncl_t *n, const char *name, bool armed)
 {
+    if (n == NULL) {
+        return NCL_REQ_UNKNOWN;
+    }
     const ncl_req_t r = may(n, armed);
     if (r != NCL_REQ_OK) {
-        return r;
+        return answer(n, r);
     }
     if (name == NULL || !rcnode_uname_ok(name)) {  /* 16 characters at most */
-        return NCL_REQ_BAD;
+        return answer(n, NCL_REQ_BAD);
     }
     memset(n->name, 0, sizeof(n->name));
     memcpy(n->name, name, strlen(name));
@@ -140,12 +175,15 @@ ncl_req_t ncl_set_name(ncl_t *n, const char *name, bool armed)
 
 ncl_req_t ncl_set_i228(ncl_t *n, uint8_t a, bool armed)
 {
+    if (n == NULL) {
+        return NCL_REQ_UNKNOWN;
+    }
     const ncl_req_t r = may(n, armed);
     if (r != NCL_REQ_OK) {
-        return r;
+        return answer(n, r);
     }
     if (!rcnode_i228_ok(a) || (n->cfg.flags & RCNODE_CF_SHUNT) == 0u) {
-        return NCL_REQ_BAD;
+        return answer(n, NCL_REQ_BAD);
     }
     n->i228 = a;
     n->i228_owed = true;

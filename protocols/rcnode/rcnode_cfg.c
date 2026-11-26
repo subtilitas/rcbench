@@ -67,6 +67,10 @@ rcnode_sync_t rcnode_shunt_sync(uint16_t panel, uint16_t node,
         return panel_age_ms == UINT32_MAX ? RCNODE_SYNC_ADOPT
                                           : RCNODE_SYNC_WRITE;
     }
+    /* The panel's age saturates where the node's does (65,534s, 18.2h):
+     * two changes past it compare as equal, and equal goes to the node. */
+    const uint32_t cap_ms = (uint32_t)(RCNODE_AGE_NONE - 1u) * 1000u;
+    const uint32_t panel_ms = panel_age_ms < cap_ms ? panel_age_ms : cap_ms;
     const uint32_t node_ms = (uint32_t)node_age_s * 1000u;
-    return node_ms <= panel_age_ms ? RCNODE_SYNC_ADOPT : RCNODE_SYNC_WRITE;
+    return node_ms <= panel_ms ? RCNODE_SYNC_ADOPT : RCNODE_SYNC_WRITE;
 }

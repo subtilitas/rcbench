@@ -493,7 +493,7 @@ The screen shows a boot splash for 10s after power-on, with a SETUP button
 offered until a panel links, then the meter: voltage, current and power,
 each with its highest and lowest. The node's own SETUP sets its NAME, its
 INA228 ADDRESS (AUTO or fixed) and its SHUNT, and runs an I2C SCAN that
-writes to no part. The screens, the touch, the language and how the shunt
+writes no register. The screens, the touch, the language and how the shunt
 stays in step with the panel's NODE SHUNT are on
 [The display node's screen and the nodes' own settings](Nodes-setup.md).
 
