@@ -1,7 +1,7 @@
 {
  "name": "stop",
  "lang": "en",
- "music": "pachelbel-canon",
+ "music": "bach-cello",
  "music_gain": 0.5,
  "voice": {
   "blend": {
