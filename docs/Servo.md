@@ -2414,6 +2414,8 @@ restart. The SERVO lists carry no id rows; the debug console sets it
   writes a file.
 - Without an active servo every run goes to its log folder,
   `ATESTnnn.CSV` and the like.
+- A scan of a servo with runs on the card sets DUT NAME from its newest
+  run ([Screens](Screens.md#servo-chip)).
 - The result cards print the name the logger wrote, and GRAPH opens that
   file in that folder. A folder holds up to 31 characters, so every id up
   to 23 characters opens whole.

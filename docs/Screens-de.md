@@ -209,8 +209,8 @@ und das Band ist wie ohne ihn.
   beiden weiterhin. In der breitesten Reihe überhaupt, einer Laufzeituhr ab
   10 Stunden, ARMED SERVO, FEHLER und VERBINDUNG auf Deutsch, fehlt der
   Chip.
-- Solange ein Lauf aktiv ist (ein Servotest, ein Limit-Lauf, RUDDER AUTO
-  oder der Prüfstand ARMED auf SERVO), hat der Chip die Akzentfarbe als
+- Solange ein Lauf aktiv ist (ein Servotest, ein Limit-Lauf, RUDDER AUTO,
+  die Startsequenz eines davon oder der Prüfstand ARMED auf SERVO), hat der Chip die Akzentfarbe als
   Fläche: das Servo des Laufs, fest bis zu seinem Ende.
 - Sein Kasten sagt, wie das Servo gesetzt wurde (Scan, NEUE ID oder Wahl),
   dass ein Lauf es hält und wie es wieder geht.
@@ -228,10 +228,26 @@ Debug-Konsole, bewirkt eines davon, mit ihrem Hinweis im Alarmband:
 | eine Zeile, die nicht genau eine ID ist (Kleinbuchstaben, ein Leerzeichen, kein Bindestrich, 4 oder 6 Zeichen danach, eine Webadresse) | abgelehnt | `KEINE SERVO-ID: ` und die ersten 24 Zeichen der Zeile |
 | eine Zeile über 64 Byte | abgelehnt | `KEINE SERVO-ID: CODE ZU LANG` |
 
-Der Startbildschirm und die beiden Update-Seiten nehmen keine Zeile an. Der
-Scan eines bekannten Servos setzt DUT NAME auf den Namen seines neuesten
-Laufs. Die Antwort der Karte kommt aus der Suche der Ablage; ein Build ohne
-sie nennt nur die ID und lässt DUT NAME, wie er ist.
+Der Startbildschirm und die beiden Update-Seiten nehmen keine Zeile an. Ein
+Lauf zählt vom Halten auf START oder ARM bis zu seiner letzten geschriebenen
+Datei: Ein Scan während einer Startsequenz wird abgelehnt.
+
+Die Antwort der Karte kommt vom Logger-Task, einige Frames nach dem Scan.
+Der Hinweis nennt zuerst nur die ID, dann ersetzt ihn die Antwort:
+
+| Die Karte | Hinweis | DUT NAME |
+| --- | --- | --- |
+| keine Karte eingebunden, beim Scan oder bei der Suche | `KEINE KARTE: LÄUFE WERDEN NICHT ABGELEGT` | bleibt |
+| kein Ordner `Servos/<id>`, oder ein Ordner ohne CSV eines Laufs | `NEU AUF DIESER KARTE` | bleibt |
+| Läufe; der neueste hat einen Wert `dut` in seiner Zelle `info` | der Name | der Name |
+| Läufe ohne Wert `dut`, oder eine erste Datenzeile über 2.048 Byte | nur die ID | bleibt |
+| ein Ordner, der sich nicht lesen lässt | nur die ID | bleibt |
+
+Der neueste Lauf ist die CSV mit dem spätesten FAT-Zeitstempel (File
+Allocation Table); bei gleichen Stempeln gilt die höhere Nummer. Die Suche
+liest den Ordner einmal und von einer Datei höchstens 2.048 Byte. Eine
+Antwort wird verworfen, wenn seitdem eine andere ID gesetzt wurde oder ein
+Lauf begonnen hat.
 
 ### Ein ARM, das der IOmcu ablehnt
 

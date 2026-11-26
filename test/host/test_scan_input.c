@@ -307,7 +307,11 @@ TEST_CASE(a_scan_under_three_contacts_keeps_them_and_stop_counts_on_the_press)
     CHECK_EQ(scanned.moved, plain.moved);
     CHECK(scanned.stopped);
     CHECK(!scanned.again);
-    CHECK_STR_EQ(active(), "KST_X10-0000B");
+    /* LIVE ARMED is a run (servo_screen_run_active()): both lines run
+     * through the flow in their frames and are refused, the bench keeping
+     * no servo. */
+    CHECK_EQ(scan_flow_last(), SERVO_SCAN_REFUSED_RUN);
+    CHECK_STR_EQ(active(), "");
 }
 
 int main(void)

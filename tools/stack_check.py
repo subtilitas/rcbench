@@ -351,6 +351,12 @@ SERVO_TAKE_CALLS = {
                    "take_exists", "take_create"),
 }
 
+# servo_look_io_t (servo_look.c): a scan's look-up on the runlog task
+# lists the servo's folder and reads its newest run (panel_servo.c).
+SERVO_LOOK_CALLS = {
+    "servo_look": ("look_list", "look_read"),
+}
+
 # card_make_fn (card_tree.c): every function a caller hands
 # card_make_dirs().
 CARD_CALLS = {
@@ -907,6 +913,8 @@ def main() -> int:
                                 TAKE_CALLS),
                                ("SERVO_TAKE_CALLS", "shared/logfile",
                                 SERVO_TAKE_CALLS),
+                               ("SERVO_LOOK_CALLS", "shared/logfile",
+                                SERVO_LOOK_CALLS),
                                ("CARD_CALLS", "shared/logfile",
                                 CARD_CALLS),
                                ("FAULT_CALLS", "shared/logfile",

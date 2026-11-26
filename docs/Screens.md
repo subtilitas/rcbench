@@ -189,8 +189,8 @@ servo active there is no chip, and the band is as without it.
   the BENCH or SIM chip gives way; LINK still tells the two apart. In the
   widest row of all, a run clock of 10 hours or more, ARMED SERVO, FEHLER
   and LINK in German, the chip is left out.
-- While a run is active (a servo test, a limit run, RUDDER AUTO, or the
-  bench ARMED on SERVO) the chip is drawn on the accent's fill: the run's
+- While a run is active (a servo test, a limit run, RUDDER AUTO, the
+  start sequence of one of them, or the bench ARMED on SERVO) the chip is drawn on the accent's fill: the run's
   servo, fixed to its end.
 - Its box says how the servo was set (a scan, NEW ID or a pick), that a
   run holds it, and how it goes.
@@ -208,10 +208,25 @@ A scanned line, from the scanner or from the debug console's
 | a line that is not exactly an id (lower case, a space, no dash, 4 or 6 characters after it, a web address) | refused | `NOT A SERVO ID: ` and the line's first 24 characters |
 | a line past 64 bytes | refused | `NOT A SERVO ID: CODE TOO LONG` |
 
-The splash and the two update screens take no line. A known servo's scan
-sets DUT NAME to the name of its newest run. The card's answer comes from
-the filing's look-up; a build without it names the id alone and leaves
-DUT NAME as it is.
+The splash and the two update screens take no line. A run counts from the
+hold on START or ARM to its last file written: a scan during a start
+sequence is refused.
+
+The card's answer comes from the logger task, frames after the scan. The
+notice first names the id alone, then the answer replaces it:
+
+| The card | Notice | DUT NAME |
+| --- | --- | --- |
+| no card mounted, at the scan or at the look-up | `NO CARD: RUNS ARE NOT FILED` | stays |
+| no folder `Servos/<id>`, or a folder with no run's CSV | `NEW ON THIS CARD` | stays |
+| runs; the newest has a `dut` value in its `info` cell | the name | the name |
+| runs without a `dut` value, or a first data row past 2,048 bytes | the id alone | stays |
+| a folder that does not read | the id alone | stays |
+
+The newest run is the CSV with the latest FAT (File Allocation Table)
+stamp; equal stamps go to the higher number. The look-up lists the folder
+once and reads 2,048 bytes at most of one file. An answer is dropped when
+another id was set since, or when a run started since.
 
 ### An ARM the IOmcu refuses
 

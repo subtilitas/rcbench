@@ -6,7 +6,10 @@
  * request counted up by the frame task and an answer counted up by the
  * logger task, with the prefix and the answer under s_mux; the walk's view
  * is published under s_mux by the logger task and read by the frame task.
- * A console line is a slot under s_mux the frame task empties.
+ * A console line is a slot under s_mux the frame task empties.  A scan's
+ * look-up (scan_flow_set_look()) is a third request and answer of the
+ * same kind: the frame task answers no card at once and asks the logger
+ * task for the rest, whose answer goes to scan_flow_answer().
  *
  * SPDX-License-Identifier: MIT
  */
@@ -21,16 +24,21 @@
 #include "freertos/FreeRTOS.h"
 
 #include "card_tree.h"
+#include "log_info.h"
 #include "log_take.h"
 #include "panel.h"
+#include "scan_flow.h"
 #include "servo_active.h"
+#include "servo_look.h"
+#include "servo_name.h"
 #include "servo_screen.h"
 #include "servo_trend.h"
 #include "storage.h"
 
 static const char *TAG = "rcbench";  /**< ESP-IDF log tag. */
 
-/** @brief Guards s_view, s_prefix, s_new_id, s_new_why and s_line. */
+/** @brief Guards s_view, s_prefix, s_new_id, s_new_why, s_line and the
+ *         look-up's id and answer. */
 static portMUX_TYPE s_mux = portMUX_INITIALIZER_UNLOCKED;
 
 /** @brief The last walk's view; the logger task writes it. */
@@ -52,6 +60,25 @@ static atomic_uint s_new_sent;
 static atomic_uint s_new_done;
 /** @brief The frame task's: the answer count it took last. */
 static unsigned s_new_taken;
+
+/** @brief The look-up's id, copied by the frame task. */
+static char s_look_id[SERVO_ID_SIZE];
+/** @brief The look-up's answer: the id it is for. */
+static char s_look_for[SERVO_ID_SIZE];
+/** @brief The look-up's answer: what the card holds. */
+static servo_look_t s_look_got;
+/** @brief The look-up's answer: whether the card was held for it. */
+static bool s_look_held;
+/** @brief The look-up's answer: the newest run's DUT NAME. */
+static char s_look_name[LOG_INFO_TEXT_MAX];
+/** @brief Look-ups asked, by the frame task. */
+static atomic_uint s_look_sent;
+/** @brief Look-ups answered, by the logger task. */
+static atomic_uint s_look_done;
+/** @brief The frame task's: the answer count it took last. */
+static unsigned s_look_taken;
+/** @brief The logger task's room for the newest run's start. */
+static char s_look_buf[SERVO_LOOK_READ];
 
 /** @brief A console line waiting for the frame task; "" for none. */
 static char s_line[48];
@@ -136,14 +163,80 @@ static panel_servo_new_t new_id(const char *prefix, char *id)
     return PANEL_SERVO_NEW_OK;
 }
 
+/** @brief A folder's walk for servo_look(): its visit and its state. */
+typedef struct {
+    servo_look_visit_fn visit;  /**< servo_look()'s visit */
+    void               *walk;   /**< its state            */
+} look_list_t;
+
+/** @brief storage_walk()'s callback: one CSV of the servo's folder. */
+static void look_entry(const storage_entry_t *entry, void *ctx)
+{
+    const look_list_t *l = (const look_list_t *)ctx;
+    l->visit(l->walk, entry->name, entry->is_dir, entry->stamp);
+}
+
+/** @brief servo_look_io_t's list: one storage_walk() of the CSVs. */
+static int look_list(void *ctx, const char *dir, servo_look_visit_fn visit,
+                     void *walk)
+{
+    (void)ctx;
+    look_list_t l = { .visit = visit, .walk = walk };
+    const int n = storage_walk(dir, ".csv", look_entry, &l, NULL);
+    return (n == STORAGE_WALK_NO_DIR) ? SERVO_LOOK_LIST_NO_DIR : n;
+}
+
+/** @brief servo_look_io_t's read: the first @p n bytes of @p path. */
+static size_t look_read(void *ctx, const char *path, char *buf, size_t n)
+{
+    (void)ctx;
+    char full[sizeof(STORAGE_MOUNT_POINT) + CARD_RUN_DIR_MAX
+              + SERVO_NAME_SIZE];
+    (void)snprintf(full, sizeof(full), STORAGE_MOUNT_POINT "/%s", path);
+    FILE *f = storage_fopen(full, "rb");
+    if (f == NULL) {
+        return 0u;
+    }
+    const size_t got = fread(buf, 1u, n, f);
+    (void)storage_fclose(f);
+    return got;
+}
+
+/**
+ * @brief The look-up on the card held now (@p held), timed.
+ * @param id   The id.
+ * @param held Whether the card is held.
+ */
+static void look_up(const char *id, bool held)
+{
+    const int64_t t0 = esp_timer_get_time();
+    char name[LOG_INFO_TEXT_MAX] = "";
+    servo_look_t got = SERVO_LOOK_UNREADABLE;
+    if (held) {
+        const servo_look_io_t io = { .list = look_list, .read = look_read };
+        got = servo_look(&io, id, name, sizeof(name), s_look_buf,
+                         sizeof(s_look_buf));
+    }
+    const unsigned us = (unsigned)(esp_timer_get_time() - t0);
+    taskENTER_CRITICAL(&s_mux);
+    memcpy(s_look_for, id, sizeof(s_look_for));
+    s_look_held = held;
+    s_look_got = got;
+    memcpy(s_look_name, name, sizeof(s_look_name));
+    taskEXIT_CRITICAL(&s_mux);
+    ESP_LOGI(TAG, "servo look: %s %d \"%s\" in %uus", id, (int)got, name, us);
+}
+
 void panel_servo_card_serve(void)
 {
     const unsigned sent = atomic_load(&s_new_sent);
     const bool asked = sent != atomic_load(&s_new_done);
+    const unsigned look_sent = atomic_load(&s_look_sent);
+    const bool look = look_sent != atomic_load(&s_look_done);
     const unsigned mount = storage_mount_count();
     const unsigned edits = log_series_edits();
     const bool stale = mount != s_view_mount || edits != s_view_edits;
-    if (!asked && !stale) {
+    if (!asked && !stale && !look) {
         return;
     }
     (void)storage_check();
@@ -176,6 +269,14 @@ void panel_servo_card_serve(void)
         taskEXIT_CRITICAL(&s_mux);
         atomic_store(&s_new_done, sent);
     }
+    if (look) {
+        char id[SERVO_ID_SIZE];
+        taskENTER_CRITICAL(&s_mux);
+        memcpy(id, s_look_id, sizeof(id));
+        taskEXIT_CRITICAL(&s_mux);
+        look_up(id, held);
+        atomic_store(&s_look_done, look_sent);
+    }
     if (held) {
         storage_release();
     }
@@ -201,6 +302,47 @@ bool panel_servo_new(const char *prefix)
     taskEXIT_CRITICAL(&s_mux);
     atomic_fetch_add(&s_new_sent, 1u);
     return true;
+}
+
+/**
+ * @brief scan_flow_look_fn: no card at once; otherwise the logger task is
+ *        asked and the answer comes through panel_servo_frame().
+ */
+static scan_card_t scan_look(const char *id, char *name, size_t n)
+{
+    (void)name;
+    (void)n;
+    if (!storage_mounted()) {
+        return SCAN_CARD_NONE;
+    }
+    taskENTER_CRITICAL(&s_mux);
+    (void)snprintf(s_look_id, sizeof(s_look_id), "%s", id);
+    taskEXIT_CRITICAL(&s_mux);
+    atomic_fetch_add(&s_look_sent, 1u);
+    return SCAN_CARD_UNKNOWN;
+}
+
+/** @brief The look-up's answer, once all asked are answered. */
+static void take_look(void)
+{
+    const unsigned done = atomic_load(&s_look_done);
+    if (done == s_look_taken || done != atomic_load(&s_look_sent)) {
+        return;
+    }
+    s_look_taken = done;
+    char id[SERVO_ID_SIZE];
+    char name[LOG_INFO_TEXT_MAX];
+    servo_look_t got;
+    bool held;
+    taskENTER_CRITICAL(&s_mux);
+    memcpy(id, s_look_for, sizeof(id));
+    memcpy(name, s_look_name, sizeof(name));
+    got = s_look_got;
+    held = s_look_held;
+    taskEXIT_CRITICAL(&s_mux);
+    /* A card gone between the scan and the logger's pass: no card. */
+    (void)scan_flow_answer(id, held ? scan_flow_card_of(got) : SCAN_CARD_NONE,
+                           name);
 }
 
 /** @brief The console's word for how NEW ID ended. */
@@ -293,6 +435,12 @@ void panel_servo_console(const char *line)
 
 void panel_servo_frame(void)
 {
+    static bool s_hooked;
+    if (!s_hooked) {
+        s_hooked = true;
+        scan_flow_set_look(scan_look);
+    }
+    take_look();
     char line[sizeof(s_line)];
     taskENTER_CRITICAL(&s_mux);
     memcpy(line, s_line, sizeof(line));

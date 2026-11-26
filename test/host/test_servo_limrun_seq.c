@@ -18,6 +18,7 @@
  * - on_the_carrier_one_hold_switches_port_pwm_and_5v_arms_and_starts
  * - the_5v_read_back_has_1000ms_and_a_late_one_ends_all_off
  * - the_steps_hold_the_servo_the_hold_fired_on
+ * - a_scan_during_the_steps_is_refused
  * - armed_has_500ms_and_a_refused_arm_ends_all_off
  * - a_pd_mini_off_on_a_dead_rail_is_switched_on_by_the_hold
  * - a_pd_mini_off_on_a_rail_fed_from_elsewhere_refuses_the_hold
@@ -40,6 +41,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "servo_rauto_kst_rig.h"
+#include "scan_flow.h"
 #include "servo_active.h"
 #include "ui_setlist.h"
 
@@ -772,11 +774,45 @@ TEST_CASE(the_steps_hold_the_servo_the_hold_fired_on)
     (void)servo_active_clear(false);
 }
 
+/* The scan's run check is the SERVO screens' own: from the hold to the
+ * run, before anything is ARMED or running, a scan of another id is
+ * refused and the steps keep their servo. */
+TEST_CASE(a_scan_during_the_steps_is_refused)
+{
+    lim_carrier(800u - 20u);
+    scan_flow_reset();
+    CHECK(servo_active_clear(false));
+    CHECK(servo_active_set("KST-00001", SERVO_ACTIVE_NEW,
+                           servo_screen_run_active()));
+    lim_hold_for(2100u);
+    CHECK(svs_seq_busy());
+    CHECK(!servo_screen_limit_running());
+    const ui_bench_status_t *st = ui_router_status();
+    CHECK(!(st->armed && (st->armed_roles & UI_ARMED_SERVO) != 0u));
+    CHECK(scan_flow_run_active());
+    /* The rig stands on the splash, which takes no line. */
+    ui_router_goto(SCREEN_OVERVIEW);
+    CHECK(scan_flow_line("KST-00002", false, 900000u));
+    CHECK_EQ(scan_flow_last(), SERVO_SCAN_REFUSED_RUN);
+    CHECK_STR_EQ(txt(servo_active_id()), "KST-00001");
+    ui_router_goto(SCREEN_SPLASH);
+    ui_router_set_alert(NULL);
+    ra_ms(1200u);
+    CHECK(servo_screen_limit_running());
+    lim_press(2);
+    ra_ms(2000u);
+    ra.p5_task = false;
+    carrier_done();
+    servo_screen_test_logger_busy(false);
+    (void)servo_active_clear(false);
+}
+
 int main(void)
 {
     RUN(on_the_carrier_one_hold_switches_port_pwm_and_5v_arms_and_starts);
     RUN(the_5v_read_back_has_1000ms_and_a_late_one_ends_all_off);
     RUN(the_steps_hold_the_servo_the_hold_fired_on);
+    RUN(a_scan_during_the_steps_is_refused);
     RUN(armed_has_500ms_and_a_refused_arm_ends_all_off);
     RUN(a_pd_mini_off_on_a_dead_rail_is_switched_on_by_the_hold);
     RUN(a_pd_mini_off_on_a_rail_fed_from_elsewhere_refuses_the_hold);

@@ -1331,9 +1331,17 @@ in a chip left of the others (`UI_BAND_CHIP_SERVO`). The panel takes lines
 through a mailbox of one line: the debug console's `scan <text>`, and the
 scanner's, which the frame task moves from the port's queue into the
 mailbox while it is empty (`scan_flow_pull()`, `test_scan_wire`), one a
-frame, a cut line as too long. The card's look-up (new, known with the
-name of its newest run, no card) is a hook no firmware registers yet, so the
-panel's notice names the id alone and DUT NAME stays.
+frame, a cut line as too long. The run check is `servo_screen_run_active()`,
+start sequences included, or the bench ARMED on SERVO. The card's look-up
+(`servo_look.c`, `test_scan_look`) runs on the logger task
+(`panel_servo.c`): no card answers at once; otherwise the folder
+`Servos/<id>` is listed once and the newest run's CSV (latest FAT stamp,
+the higher number on equal stamps) read for 2,048 bytes at most. A servo
+with runs sets DUT NAME from that run's `info` cell, a servo without
+folder or runs is new on the card, and the answer reaches the band through
+`scan_flow_answer()`, dropped once another id is set or a run starts. The
+look-up's time is logged in us per scan (`servo look: ... in Nus`); not
+measured on the station.
 
 ### M5Stack Dial
 
@@ -1886,7 +1894,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 691 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 692 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1962,7 +1970,7 @@ The host suite is 691 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_fm_recheck`, `test_fm_req`, `test_files_screen`, `test_files_ops`, `test_files_open`,
 `test_files_view`, `test_files_edit`, `test_files_save`, `test_files_changed`,
 `test_files_rescan`, `test_logs_strip`, `test_textkey_editor`, `test_textkey_see`,
-`test_textkey_cursor`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_log_info`, `test_servo_id`, `test_servo_name`, `test_servo_active`, `test_servo_take`, `test_servo_scan`, `test_scan_flow`, `test_scan_input`, `test_log_preset`, `test_log_marks`, `test_servo_runlog`,
+`test_textkey_cursor`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_log_info`, `test_servo_id`, `test_servo_name`, `test_servo_active`, `test_servo_take`, `test_servo_scan`, `test_scan_flow`, `test_scan_look`, `test_scan_input`, `test_log_preset`, `test_log_marks`, `test_servo_runlog`,
 `test_servo_runlog_cols`, `test_servo_log_figures`, `test_log_cadence`, `test_perf_watch`, `test_pass_stats`, `test_report_lines`, `test_report_steps`,
 `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`,
 `test_kst_pio`, `test_kst_port`, `test_kst_port_cut`, `test_kst_link`, `test_prog_port`,
