@@ -282,6 +282,9 @@ TEST_CASE(a_shunt_change_sets_the_part_up_again_and_rescales_the_same_code)
     CHECK(psens_step(&s, 100u));
     CHECK(psens_take_rearm(&s));
     CHECK(!psens_take_rearm(&s));
+    /* The fake bus counts the writes behind psens_step(): cppcheck cannot
+     * see that, so it takes the count as unchanged. */
+    // cppcheck-suppress knownConditionTrueFalse
     CHECK(p->writes[INA228_CONFIG] > rstacc);   /* RSTACC and back */
     CHECK_EQ(psens_addr(&s), 0x40u);
     /* The same 10A drop read on a 500µΩ setting: 2/5 of it. */
