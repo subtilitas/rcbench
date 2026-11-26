@@ -71,6 +71,37 @@ log_take_t servo_take(servo_series_t *s, const log_take_io_t *io,
                       const char *id, servo_kind_t kind, bool report,
                       int *number);
 
+/** @brief How many runs' servos servo_bind_t keeps. */
+#define SERVO_BIND_RUNS 4u
+
+/**
+ * @brief The servo each of the last SERVO_BIND_RUNS runs was armed with:
+ *        a copy taken at the run's start, so a servo set or cleared after
+ *        it, while the run's rows still wait for the logger, files no run
+ *        that started before.
+ */
+typedef struct {
+    uint32_t run[SERVO_BIND_RUNS];                  /**< 0 for unused  */
+    char     id[SERVO_BIND_RUNS][SERVO_ID_SIZE];    /**< "" for none   */
+    unsigned next;                                  /**< slot to write */
+} servo_bind_t;
+
+/**
+ * @brief Run @p run starts with servo @p id: kept, the oldest run given up.
+ * @param b   The record.
+ * @param run The run's number, above 0.
+ * @param id  The active servo; NULL or "" for none.
+ */
+void servo_bind_put(servo_bind_t *b, uint32_t run, const char *id);
+
+/**
+ * @brief The servo run @p run started with.
+ * @param b   The record.
+ * @param run The run's number.
+ * @return The id; "" for none, for run 0 and for a run no longer kept.
+ */
+const char *servo_bind_get(const servo_bind_t *b, uint32_t run);
+
 /** @brief The lowest open-file mark of a run in a servo's folder. */
 #define SERVO_MARK_BASE 1000u
 

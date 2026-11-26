@@ -813,6 +813,16 @@ void log_set_run_text(setting_text_id_t id, const char *text);
  */
 void log_set_run_servo(const char *id);
 
+/**
+ * @brief Run @p run of kind @p kind starts: a SERVO run takes the servo
+ *        log_set_run_servo() last named, kept for that run's file whatever
+ *        is set after (servo_bind_t).  Called on the control task before
+ *        the run's level goes up.
+ * @param run  the run's number
+ * @param kind its kind
+ */
+void log_bind_run(uint32_t run, log_run_kind_t kind);
+
 /** @brief The last run whose files in a servo's folder the logger closed. */
 typedef struct {
     unsigned     count;              /**< runs filed since power-on       */

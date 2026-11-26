@@ -239,6 +239,17 @@ static char s_run_text[2][SETTINGS_TEXT_MAX] = { "SERVO", "" };
 /** @brief The active servo as the frame task last copied it, for a SERVO
  *         run's file; "" for none.  Under s_dir_mux. */
 static char s_run_servo[SERVO_ID_SIZE];
+/** @brief The servo each recent run started with (log_bind_run()).  Under
+ *         s_dir_mux. */
+static servo_bind_t s_run_bind;
+
+void log_bind_run(uint32_t run, log_run_kind_t kind)
+{
+    taskENTER_CRITICAL(&s_dir_mux);
+    servo_bind_put(&s_run_bind, run,
+                   (kind == LOG_RUN_SERVO) ? s_run_servo : "");
+    taskEXIT_CRITICAL(&s_dir_mux);
+}
 
 void log_set_run_servo(const char *id)
 {
@@ -679,11 +690,13 @@ static void log_open(uint32_t run, log_run_kind_t kind)
      */
     int number = -1;
     char dir[CARD_RUN_DIR_MAX];
-    /* A SERVO run with a servo active files in its folder. */
+    /* A SERVO run armed with a servo active files in its folder: the
+     * servo of its arm (log_bind_run()), whatever is active since. */
     s_log_id[0] = '\0';
     if (kind == LOG_RUN_SERVO) {
         taskENTER_CRITICAL(&s_dir_mux);
-        memcpy(s_log_id, s_run_servo, sizeof(s_log_id));
+        snprintf(s_log_id, sizeof(s_log_id), "%s",
+                 servo_bind_get(&s_run_bind, run));
         taskEXIT_CRITICAL(&s_dir_mux);
     }
     if (s_log_id[0] != '\0' && servo_id_folder(dir, sizeof(dir), s_log_id)) {

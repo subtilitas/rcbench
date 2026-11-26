@@ -18,6 +18,29 @@ void servo_series_init(servo_series_t *s)
     }
 }
 
+void servo_bind_put(servo_bind_t *b, uint32_t run, const char *id)
+{
+    if (b == NULL || run == 0u) {
+        return;
+    }
+    const unsigned i = b->next % SERVO_BIND_RUNS;
+    b->run[i] = run;
+    (void)snprintf(b->id[i], sizeof(b->id[i]), "%s", (id != NULL) ? id : "");
+    b->next = (i + 1u) % SERVO_BIND_RUNS;
+}
+
+const char *servo_bind_get(const servo_bind_t *b, uint32_t run)
+{
+    if (b != NULL && run != 0u) {
+        for (unsigned i = 0u; i < SERVO_BIND_RUNS; ++i) {
+            if (b->run[i] == run) {
+                return b->id[i];
+            }
+        }
+    }
+    return "";
+}
+
 unsigned servo_run_mark(servo_kind_t kind, int number)
 {
     if ((int)kind < 0 || kind >= SERVO_KIND_COUNT || number < SERVO_RUN_FIRST

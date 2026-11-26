@@ -571,7 +571,7 @@ void svs_servo_id(char *out, size_t n)
 
 bool servo_screen_run_active(void)
 {
-    return s.gate.armed || servo_test_running(&s.test)
+    return s.gate.armed || svs_seq_busy() || servo_test_running(&s.test)
            || (s.test.state != SERVO_TEST_IDLE && !servo_test_drained(&s.test))
            || servo_limrun_running(&s.lim)
            || !servo_limrun_drained(&s.lim) || servo_rauto_running(&s.ra.run)

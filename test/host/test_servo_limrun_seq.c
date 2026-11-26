@@ -17,6 +17,7 @@
  * Cases:
  * - on_the_carrier_one_hold_switches_port_pwm_and_5v_arms_and_starts
  * - the_5v_read_back_has_1000ms_and_a_late_one_ends_all_off
+ * - the_steps_hold_the_servo_the_hold_fired_on
  * - armed_has_500ms_and_a_refused_arm_ends_all_off
  * - a_pd_mini_off_on_a_dead_rail_is_switched_on_by_the_hold
  * - a_pd_mini_off_on_a_rail_fed_from_elsewhere_refuses_the_hold
@@ -39,6 +40,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "servo_rauto_kst_rig.h"
+#include "servo_active.h"
 #include "ui_setlist.h"
 
 /* servo_screen_int.h's current-limit helpers, which this suite does not
@@ -741,10 +743,40 @@ TEST_CASE(set_a_names_the_limit_run_under_the_steps_and_the_run)
     CHECK(!servo_screen_limit_running());
 }
 
+/* The steps of the hold hold the active servo: the run's configuration
+ * took its id when the hold fired, so a pick or a clear before the run
+ * starts is refused, and the run files under the servo of the hold. */
+TEST_CASE(the_steps_hold_the_servo_the_hold_fired_on)
+{
+    lim_carrier(800u - 20u);
+    CHECK(servo_active_clear(false));
+    CHECK(!servo_screen_run_active());
+    CHECK(servo_active_set("KST-00001", SERVO_ACTIVE_NEW,
+                           servo_screen_run_active()));
+    lim_hold_for(2100u);
+    CHECK(svs_seq_busy());
+    CHECK(!servo_screen_limit_running());
+    CHECK(servo_screen_run_active());
+    CHECK(!servo_active_set("KST-00002", SERVO_ACTIVE_PICK,
+                            servo_screen_run_active()));
+    CHECK(!servo_active_clear(servo_screen_run_active()));
+    CHECK_STR_EQ(txt(servo_active_id()), "KST-00001");
+    ra_ms(1200u);
+    CHECK(servo_screen_limit_running());
+    CHECK_STR_EQ(txt(servo_active_id()), "KST-00001");
+    lim_press(2);
+    ra_ms(2000u);
+    ra.p5_task = false;
+    carrier_done();
+    servo_screen_test_logger_busy(false);
+    (void)servo_active_clear(false);
+}
+
 int main(void)
 {
     RUN(on_the_carrier_one_hold_switches_port_pwm_and_5v_arms_and_starts);
     RUN(the_5v_read_back_has_1000ms_and_a_late_one_ends_all_off);
+    RUN(the_steps_hold_the_servo_the_hold_fired_on);
     RUN(armed_has_500ms_and_a_refused_arm_ends_all_off);
     RUN(a_pd_mini_off_on_a_dead_rail_is_switched_on_by_the_hold);
     RUN(a_pd_mini_off_on_a_rail_fed_from_elsewhere_refuses_the_hold);

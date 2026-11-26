@@ -465,6 +465,38 @@ TEST_CASE(a_filed_run_is_heard)
     CHECK_STR_EQ(servo_trend_last()->id, "");
 }
 
+/* A SERVO run's servo is the one active at its arm: a servo set or
+ * cleared after the disarm, while the run's rows still wait for a delayed
+ * logger, reaches no run that started before. */
+TEST_CASE(a_run_keeps_the_servo_of_its_arm)
+{
+    servo_bind_t b;
+    memset(&b, 0, sizeof(b));
+    char active[SERVO_ID_SIZE] = ID;
+    servo_bind_put(&b, 5u, active);            /* run 5 armed */
+    /* Disarmed; `servo id` and `servo none` before the logger looks. */
+    snprintf(active, sizeof(active), "%s", "KST_X10-0000B");
+    servo_bind_put(&b, 6u, active);            /* run 6 armed */
+    active[0] = '\0';
+    servo_bind_put(&b, 7u, active);            /* run 7, no servo */
+    CHECK_STR_EQ(servo_bind_get(&b, 5u), ID);
+    CHECK_STR_EQ(servo_bind_get(&b, 6u), "KST_X10-0000B");
+    CHECK_STR_EQ(servo_bind_get(&b, 7u), "");
+    /* 4 runs kept; the oldest given up names none. */
+    servo_bind_put(&b, 8u, ID);
+    servo_bind_put(&b, 9u, ID);
+    CHECK_STR_EQ(servo_bind_get(&b, 5u), "");
+    CHECK_STR_EQ(servo_bind_get(&b, 6u), "KST_X10-0000B");
+    CHECK_STR_EQ(servo_bind_get(&b, 9u), ID);
+    CHECK_STR_EQ(servo_bind_get(&b, 0u), "");
+    CHECK_STR_EQ(servo_bind_get(NULL, 9u), "");
+    servo_bind_put(&b, 0u, ID);                /* no run: nothing kept */
+    servo_bind_put(NULL, 3u, ID);
+    servo_bind_put(&b, 10u, NULL);
+    CHECK_STR_EQ(servo_bind_get(&b, 10u), "");
+    CHECK_STR_EQ(servo_bind_get(&b, 6u), "");
+}
+
 int main(void)
 {
     RUN(the_first_run_of_each_kind_is_000_in_a_folder_made_on_the_way);
@@ -478,5 +510,6 @@ int main(void)
     RUN(no_card_a_walk_that_fails_and_wrong_arguments_take_nothing);
     RUN(a_servo_runs_marks_hold_its_csv_and_report_from_run_000);
     RUN(a_filed_run_is_heard);
+    RUN(a_run_keeps_the_servo_of_its_arm);
     return test_summary("servo_take");
 }
