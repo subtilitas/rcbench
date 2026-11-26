@@ -1056,11 +1056,6 @@ hat jeder Startschritt eine 40px hohe Zeile mit Name, Status (`OK`, `--`,
 Das Detail beginnt bei x 432 und wird nach 47 Zeichen abgeschnitten,
 24px vor dem rechten Rand.
 
-Am Fuß des Splash stehen zwei Zeilen in der Schrift 10 x 20px: der
-Hinweis auf den Entwickler, mittig, und die Herstellermarke `JuWi made`,
-rechtsbündig 24px vom rechten Rand. Die Marke lautet auf Englisch und
-Deutsch gleich `JuWi made`.
-
 Jedes Subsystem meldet sein Startergebnis: Platine, Anzeige, Touch,
 SD-Karte, Einstellungen, Verbindung und IOmcu. Die Platinenzeile zeigt die
 Firmware-Version des Panels. Die IOmcu-Zeile zeigt dessen gemeldete

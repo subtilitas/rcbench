@@ -553,11 +553,6 @@ UI_TEXT(SPLASH_TAGLINE, 0,
     "motor, ESC and servo test bench",
     "Prüfstand für Motor, ESC und Servo")
 UI_TEXT(SPLASH_CREDIT, 0,
-    "Designed by JuWi",
-    "Entwickelt von JuWi")
-/* The maker's mark in the splash's bottom right corner: a name, so the
- * same in both languages. */
-UI_TEXT(SPLASH_MAKER, 0,
     "JuWi made",
     "JuWi made")
 

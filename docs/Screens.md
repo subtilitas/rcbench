@@ -979,10 +979,6 @@ y 200, each startup step has a 40px row with its name, status (`OK`, `--`,
 `!!`, or `..` while running) and detail, all in 12 x 24px. The detail
 starts at x 432 and is clipped after 47 characters, 24px from the right edge.
 
-The foot of the splash holds two lines in the 10 x 20px font: the credit,
-centered, and the maker's mark `JuWi made`, right-aligned 24px from the
-right edge. The mark reads `JuWi made` in English and German alike.
-
 Each subsystem reports its startup result: board, display, touch, SD card,
 settings, link and IOmcu. The board line shows the panel's firmware version.
 The IOmcu line shows its reported protocol and firmware versions, allowing
