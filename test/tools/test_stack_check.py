@@ -86,6 +86,21 @@ def test_the_console_tables_hold_the_option_tasks_and_no_other():
         assert ble <= set(sc.doc_rows(text, header)), page.name
 
 
+def test_the_scanner_task_is_created_and_listed_with_its_stack():
+    """The QR scanner's task is read and listed.
+
+    The `scan` task is read from panel_scan.c at 3,072 bytes, and both
+    pages' main table carry it at that stack.
+    """
+    tasks, errors = sc.task_stacks()
+    assert errors == []
+    scan = [t for t in tasks if t[1] == "scan"]
+    assert [(t[0], t[2]) for t in scan] == [("scan_task", 3072)]
+    for page, header, _, _ in sc.PERFORMANCE:
+        rows = sc.doc_rows(page.read_text(encoding="utf-8"), header)
+        assert rows["scan"][0] == 3072, page.name
+
+
 def test_a_console_build_is_held_to_the_console_table_only():
     """With option tasks measured, the main table and the count are not read.
 

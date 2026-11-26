@@ -400,8 +400,8 @@ ein Wort mit einer Beschriftung der Oberfläche teilen.
 
 ## Eine Sprache hinzufügen
 
-Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 4.356
-Einträge mit ID und 115 Optionen, 10 davon mit leerem Englisch.
+Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 4.360
+Einträge mit ID und 117 Optionen, 10 davon mit leerem Englisch.
 
 1. Ergänze die Spalte in jedem Eintrag von `shared/text/include/ui_text.def`
    und den Parameter in jedem Makro, das eine Spalte liest: 8

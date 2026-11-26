@@ -31,6 +31,7 @@
 #include "panel_bal.h"
 #include "panel_dial.h"
 #include "panel_pnode.h"
+#include "panel_scan.h"
 #include "panel_imu.h"
 #include "panel_main.h"
 #include "sdkconfig.h"
@@ -297,6 +298,8 @@ void settings_changed(setting_id_t id)
         panel_pnode_settings_changed(id);
     } else if (id == SET_BNODE_EN) {
         panel_bal_settings_changed(id);
+    } else if (id == SET_SCANNER_ENABLE || id == SET_SCANNER_MODE) {
+        panel_scan_settings_changed(id);
     } else if (settings_sensors_row(id)) {
         publish_sense();          /* SETUP > SENSORS */
     } else {

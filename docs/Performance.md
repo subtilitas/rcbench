@@ -415,6 +415,7 @@ its stack less 1024 bytes.
 | `control` | `control_task` | 6,144 | 3,616 | 1,488 |
 | `runlog` | `log_task` | 6,656 | 4,048 | 1,568 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
+| `scan` | `scan_task`, the QR scanner's UART1 and its GM861 sequence (`panel_scan.c`) | 3,072 | 1,280 | 752 |
 | `blec` | `blec_task`, every Bluetooth LE client's link through the hub: the IMU's, the Dial's and both sensor nodes' SETUP values, the host stack's events and the actions to NimBLE (`panel_blec.c`, the IMU's side in `panel_imu.c`, the Dial's in `panel_dial.c`, the power node's in `panel_pnode.c`, the balance node's in `panel_bal.c`, the wireless devices' update in `panel_devupd.c`) | 4,096 | 1,808 | 1,248 |
 | `blestart` | `ble_start_task`, the C6's link, its controller requests, the host's start and the wait for its sync, then gone (`panel_ble.c`) | 4,096 | 1,200 | 1,856 |
 | `nimble_host` | `ble_host_task`, NimBLE's host: HCI (host controller interface) to and from the C6, the scan's reports, the connection's and GATT's answers (`panel_ble.c`) | 4,096 | 1,936 | 1,120 |
@@ -457,7 +458,7 @@ console](BenchConsole.md)) has one task more.
 
 | Task of the console build | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `console` | `console_task`, the serial ports to the IOmcu's console, and `ble scan` (`panel_console.c`) | 4,096 | 1,280 | 1,776 |
+| `console` | `console_task`, the serial ports to the IOmcu's console, `ble scan`, and `scan` with the QR scanner's zones (`panel_console.c`) | 4,096 | 1,584 | 1,472 |
 
 `runlog`'s deepest chain mounts the SD card: the listing of the servo
 files the card serves (`hitec_card_run()`, `list()`, `servo_store_preset()`,
@@ -559,6 +560,7 @@ tool does not follow.
 | `control` | 6,144 | not measured |
 | `runlog` | 6,656 | not measured |
 | `knob` | 3,072 | not measured |
+| `scan` | 3,072 | not measured |
 | `blec` | 4,096 | not measured |
 | `touch` | 4,096 | not measured |
 | `wifi_ctl` | 6,912 | not measured |

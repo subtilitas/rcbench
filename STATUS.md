@@ -1283,7 +1283,7 @@ and its suites stay in the host suite; no firmware builds them.
 
 ### QR scanner (GM861)
 
-Built and host-tested, the core only (`shared/scanner/`): no firmware links it yet. The line
+Built and host-tested (`shared/scanner/`), linked into the panel with no screen yet. The line
 framer (`scan_line.c`, `test_scan_line`) splits the scanner's UART bytes into code lines of
 0x20 to 0x7E, at most 64 bytes, ended by CR, CR LF or LF, and answer frames of 1 to 97 data
 bytes with their CRC-CCITT; a line with another byte is dropped as noise, a line of 65 bytes or
@@ -1300,6 +1300,16 @@ before READY. A zone that reads back wrong after 2 passes holds the sequence in 
 the zone named until a recheck, so the module's flash takes no write every 5s. The fuzz case in
 `test_scan_line` holds 10,000 random bytes against `servo_id_parse()`: no line it hands out is
 a servo id.
+
+The port (`scan_port.c`, `test_scan_port`) moves the bytes between them: answer frames to the
+sequencer, code lines to a queue of 4 that drops its oldest when full, a byte with a UART
+framing or parity error fed as 0x00, and the rate the sequencer asks for back to the UART. The
+panel's task `scan` (`panel_scan.c`, core 0, priority 2, every 20ms) runs the port on UART1,
+TX IO4 and RX IO5 of header P3 (wiring in [Building](docs/Building.md#qr-scanner-wiring)),
+while SETUP's Scanner row (`scan_en`, default OFF) is ON; READ MODE (`scan_mode`) is SENSING
+or CONTINUOUS. No screen shows the lines yet. The console build prints the state, the counts
+and the zones as read before the first write on `scan`, and queues `scan <text>` as a scanned
+line; `tools/check_panel_console.py` holds both out of released images.
 
 ### M5Stack Dial
 
@@ -1817,8 +1827,8 @@ rcbench/
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` · `passthru` | yes | yes | yes |
 | `escwire` · `openyge` | yes | yes | yes |
 | `witmotion` | yes | | yes |
-| `hc05` · `dial` · `supvan` · `scanner` | | | yes |
-| `bleuart` · `dialknob` · `vibe` · `rcnode` · `bleota` · `devupd` | yes | | yes |
+| `hc05` · `dial` · `supvan` | | | yes |
+| `bleuart` · `dialknob` · `vibe` · `rcnode` · `bleota` · `devupd` · `scanner` | yes | | yes |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
 `ESP_PLATFORM` and a static library otherwise. The panel sets
@@ -1852,7 +1862,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 683 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 684 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1961,7 +1971,7 @@ The host suite is 683 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_wa_api_write`, `test_sense_i2c`, `test_storage`, `test_storage_swap`, `test_text_buf`,
 `test_text_hl`, `test_text_hl_limrun`, `test_i2c_txq`, `test_i2c_txq_calls`,
 `test_i2c_txq_wire`, `test_sense_txq`, `test_sense_txq_svc`, `test_fm_name`, `test_png_enc`,
-`test_shot_file`, `test_shot`, `test_shot_popup`, `test_screen_dim`, `test_wall_clock`, `test_mstime`, `test_witmotion`, `test_scan_line`, `test_gm861`,
+`test_shot_file`, `test_shot`, `test_shot_popup`, `test_screen_dim`, `test_wall_clock`, `test_mstime`, `test_witmotion`, `test_scan_line`, `test_gm861`, `test_scan_port`,
 `test_servo_angle`, `test_servo_source_angle`, `test_hitec_prog_run` and
 `test_hitec_panel_run`, `test_hitec_panel_move`, `test_hitec_panel_find`, `test_servo_rudder`,
 `test_servo_rudder_panel`, `test_servo_rudder_steps`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,

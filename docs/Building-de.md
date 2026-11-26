@@ -38,7 +38,7 @@ rcbench/
     mstime/               überlaufsichere Vergleiche eines 32-Bit-Millisekundenzählers (nur Header)
     vibe/                 Messung der Unwucht: Index-Komparator · Demodulator für 1x, 2x und Blattfrequenz · Löser für zwei und vier Läufe
     dial/                 die Faces des M5Stack Dial: Listen, Werte, Messwerte und Ringe, Link und Binden; auf dem Host gerendert
-    scanner/              QR-Scanner: Framer für Zeilen und Antworten · GM861-Befehlsframes, CRC, gewünschte Zonen und Startablauf; nur Host-Suite
+    scanner/              QR-Scanner: Framer für Zeilen und Antworten · GM861-Befehlsframes, CRC, gewünschte Zonen und Startablauf · der Port zwischen ihnen und dem UART-Task des Panels
   protocols/              ein Modul je externem Interface: ein Kern in reinem C, sein RP2350-Pin-Treiber in rp2350/, eine README.md
     dshot/                DShot-Frames · GCR-Dekodierung · eRPM · PIO-Treiber, einfach und bidirektional
     ppm/                  PPM-Frame-Layout · PIO- und DMA-Treiber
@@ -106,8 +106,8 @@ als INTERFACE-Bibliothek `rcbench_<modul>_rp2350`. Includes sind flach:
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` · `passthru` | ja | ja | ja |
 | `escwire` · `openyge` | ja | ja | ja |
 | `witmotion` | ja | | ja |
-| `hc05` · `dial` · `scanner` | | | ja |
-| `bleuart` · `dialknob` · `vibe` · `rcnode` · `bleota` · `devupd` | ja | | ja |
+| `hc05` · `dial` | | | ja |
+| `bleuart` · `dialknob` · `vibe` · `rcnode` · `bleota` · `devupd` · `scanner` | ja | | ja |
 
 ## Toolchains
 
@@ -207,6 +207,37 @@ SCL nach VDD; die eigenen Pull-ups eines Breakouts gehen an dessen VDD, hier
 
 Der Knopf ist deaktiviert, bis du unter SETUP, PANEL die Einstellung `Drehknopf` einschaltest.
 [Bildschirme](Screens-de.md#panel-der-drehknopf) beschreibt seine Funktion.
+
+## Verdrahtung des QR-Scanners
+
+Der QR-Scanner ist ein GM861S-Modul an UART1 (UART: universal asynchronous
+receiver-transmitter) des ESP32-P4, auf zwei freien Pins des 12-poligen
+Headers P3: `BOARD_SCAN_PIN_TX` GPIO4 und `BOARD_SCAN_PIN_RX` GPIO5 in
+`firmware/panel/components/board/include/board_pins.h`, mit 9600 Baud 8N1
+(8 Datenbits, keine Parität, 1 Stoppbit). Der 6-polige Stecker des Moduls
+geht so an P3:
+
+| GM861S-Pin | Signal | Panel-Header P3 |
+|---|---|---|
+| 1 | D+ | offen |
+| 2 | D- | offen |
+| 3 | GND | GND |
+| 4 | RXD | IO4 (das Panel sendet) |
+| 5 | TXD | IO5 (das Panel empfängt) |
+| 6 | VCC 3,3V | 3V3, höchstens 70mA |
+
+- Kabel: höchstens 30cm. Beide Seiten arbeiten mit 3,3V; kein Pegelwandler.
+- IO34 und IO36 von P3 sind Strapping-Pins und bleiben frei. IO2 und IO3
+  sind das andere freie Paar. Header H8 ist UART0, die Konsole, und bleibt
+  frei.
+- Mit SETUP, SENSORS, Scanner OFF ist UART1 nicht installiert und IO4 und
+  IO5 sind Eingänge ohne Pull. ON installiert UART1 mit dem Pull-down an
+  IO5: Ein Pin ohne Modul liest low (NOT CONNECTED), ein Modul, das high
+  ruht, wird erkannt. Der Task `scan` (Kern 0, Priorität 2, alle 20ms)
+  findet die Baudrate des Moduls, setzt die Zonen, die der Bench braucht,
+  und speichert sie im Modul (`shared/scanner/gm861.h`).
+- Die Last auf der 3V3-Schiene bei eingeschaltetem Licht des Moduls ist
+  nicht gemessen.
 
 ## Der Header des Touch-Busses
 

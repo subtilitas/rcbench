@@ -20,8 +20,10 @@ from pathlib import Path
 # The task's and the relay's symbols and the line at a link edge, compiled in
 # with RCBENCH_PANEL_CONSOLE only (firmware/panel/main/panel_console.c).  The
 # empty inline functions of a build without it leave their own names in the
-# debug information, so panel_console_pass is no mark.
-MARKS = (b"console_task", b"console_relay_next", b"console: link %s")
+# debug information, so panel_console_pass is no mark.  `scan <text>`, the
+# QR scanner's injected line (panel_scan.c), is the console build's alone.
+MARKS = (b"console_task", b"console_relay_next", b"console: link %s",
+         b"panel_scan_inject", b"scan: queued as a scanned line")
 
 
 def problems(image: bytes, want_on: bool) -> list[str]:

@@ -657,6 +657,41 @@ TEST_CASE(a_file_holds_each_new_string_to_its_own_limit)
     settings_set_store(NULL);
 }
 
+/*
+ * The QR scanner's two settings: a file of 0.23.17, which has neither
+ * line, loads with both at their defaults (OFF, SENSING) and its other
+ * values; set and saved, a file written then carries both and reads back.
+ */
+TEST_CASE(the_scanner_settings_load_from_a_0_23_17_file_and_save_back)
+{
+    fresh_store();
+    CHECK_STR_EQ(settings_def(SET_SCANNER_ENABLE)->key, "scan_en");
+    CHECK_STR_EQ(settings_def(SET_SCANNER_MODE)->key, "scan_mode");
+    settings_set(SET_SCANNER_ENABLE, 1.0f);
+    settings_set(SET_SCANNER_MODE, 1.0f);
+    const size_t n = file_of("Panel: 0.23.17\nimu_en = ON\n");
+    CHECK_EQ(sf_parse(g_text, n, &g_l, NULL), SF_OK);
+    CHECK_EQ(g_l.refused_n, 0);
+    CHECK_EQ(g_l.taken, 1);
+    CHECK(sf_apply(&g_l) > 0);
+    CHECK(!settings_get_bool(SET_SCANNER_ENABLE));
+    CHECK_EQ(settings_get_int(SET_SCANNER_MODE), 0);
+    CHECK(settings_get_bool(SET_IMU_EN));
+
+    settings_set(SET_SCANNER_ENABLE, 1.0f);
+    settings_set(SET_SCANNER_MODE, 1.0f);
+    CHECK(settings_save());
+    const size_t m = write_file();
+    CHECK(strstr(g_text, "scan_en = ON") != NULL);
+    CHECK(strstr(g_text, "scan_mode = CONTINUOUS") != NULL);
+    CHECK_EQ(sf_parse(g_text, m, &g_l, NULL), SF_OK);
+    CHECK_EQ(g_l.refused_n, 0);
+    CHECK_FEQ(g_l.values[SET_SCANNER_ENABLE], 1.0f);
+    CHECK_FEQ(g_l.values[SET_SCANNER_MODE], 1.0f);
+    CHECK(!sf_differs(&g_l));
+    settings_set_store(NULL);
+}
+
 int main(void)
 {
     RUN(every_setting_and_string_goes_out_and_comes_back);
@@ -674,5 +709,6 @@ int main(void)
     RUN(a_fresh_panel_stores_the_defaults_only);
     RUN(the_servo_prefix_and_printer_strings_are_kept_with_their_limits);
     RUN(a_file_holds_each_new_string_to_its_own_limit);
+    RUN(the_scanner_settings_load_from_a_0_23_17_file_and_save_back);
     return test_summary("settings_file");
 }

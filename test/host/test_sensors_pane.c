@@ -72,19 +72,22 @@ TEST_CASE(the_list_names_8_entries_in_order)
 }
 
 /* Each row of SET_CAT_SENSORS on one entry, but for the two with no firmware
- * behind them; their keys stay. */
+ * behind them, whose keys stay, and the QR scanner's two, whose SCANNER
+ * entry is slice S4's. */
 TEST_CASE(every_sensor_row_has_one_entry_and_balance_has_none)
 {
     fresh_hub();
     setting_id_t ids[96];
     const int n = settings_in_category(SET_CAT_SENSORS, ids, 96);
-    CHECK_EQ(n, 58);
+    CHECK_EQ(n, 60);
     int on_entry = 0;
     for (int i = 0; i < n; ++i) {
         const int e = sensors_pane_entry_of(ids[i]);
         if (e < 0) {
             CHECK(ids[i] == SET_VIBE_EN || ids[i] == SET_OPTICAL_EN
-                  || ids[i] == SET_OPTICAL_PIN);
+                  || ids[i] == SET_OPTICAL_PIN
+                  || ids[i] == SET_SCANNER_ENABLE
+                  || ids[i] == SET_SCANNER_MODE);
         } else {
             ++on_entry;
         }

@@ -149,6 +149,7 @@ void publish_throttle_ramp(void)
 #include "panel_devupd.h"
 #include "panel_dial.h"
 #include "panel_pnode.h"
+#include "panel_scan.h"
 #include "panel_imu.h"
 #include "upd_screen.h"
 #include "wifi_access.h"
@@ -1040,6 +1041,9 @@ void app_main(void)
     panel_bal_start();
     panel_devupd_start();
     panel_blec_start();
+    /* The QR scanner's task: UART1 on IO4 and IO5 while SETUP's Scanner
+     * row is ON. */
+    panel_scan_start();
 
     /* What internal RAM holds with every task of the panel running and the
      * radio off. */

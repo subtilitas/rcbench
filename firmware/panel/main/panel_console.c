@@ -8,7 +8,10 @@
  * A typed line goes to the relay at its end.  A line that starts with the
  * word `ble` stays on the panel: `ble scan` starts Bluetooth LE when it has
  * not started (panel_ble.h), waits for the host's sync and prints every
- * device a 10s scan hears.
+ * device a 10s scan hears.  A line that starts with the word `scan` stays
+ * too: `scan` prints the QR scanner's state, its counts and the zones as
+ * read before the first write; `scan <text>` queues the text as if the
+ * scanner had read it (panel_scan.h).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -27,6 +30,7 @@
 #include "console_relay.h"
 #include "panel.h"
 #include "panel_ble.h"
+#include "panel_scan.h"
 
 /** @brief The console task's stack: printf and its buffers. */
 #define CONSOLE_STACK 4096u
@@ -203,6 +207,59 @@ static void ble_pass(void)
     }
 }
 
+/** @brief gm861_state_t's names for the `scan` line. */
+static const char *const k_scan_states[] = {
+    "OFF", "NOT CONNECTED", "NO ANSWER", "USB OUTPUT", "SETTING", "READY",
+    "LOST",
+};
+_Static_assert(sizeof(k_scan_states) / sizeof(k_scan_states[0])
+                   == (size_t)GM861_LOST + 1u,
+               "a name for each scanner state");
+
+/**
+ * @brief A typed line that starts with `scan`: the state and the zone dump,
+ *        or `scan <text>` queued as a scanned line.
+ * @param line The line, without its end.
+ */
+static void scan_command(const char *line)
+{
+    if (line[4] == ' ') {
+        if (panel_scan_inject(&line[5])) {
+            printf("scan: queued as a scanned line\n");
+        } else {
+            printf("scan: refused: 1 to %u printable ASCII characters\n",
+                   (unsigned)SCAN_LINE_MAX);
+        }
+        return;
+    }
+    panel_scan_view_t v;
+    panel_scan_view(&v);
+    printf("scan: %s, %s, UART1 %u baud, bad zone 0x%04X, lines %u, "
+           "frames %u, bad CRC %u, long %u, partial %u, noise %u, "
+           "dropped %u, UART errors %u\n",
+           v.on ? "ON" : "OFF",
+           (size_t)v.state < sizeof(k_scan_states) / sizeof(k_scan_states[0])
+               ? k_scan_states[v.state] : "?",
+           (unsigned)v.baud, (unsigned)v.bad_zone, (unsigned)v.counts.lines,
+           (unsigned)v.counts.frames, (unsigned)v.counts.bad_crc,
+           (unsigned)v.counts.overlong,
+           (unsigned)v.counts.partial, (unsigned)v.counts.noise,
+           (unsigned)v.drops, (unsigned)v.errors);
+    uint8_t z[GM861_ZONES];
+    uint8_t cut = 0u;
+    panel_scan_found(z, &cut);
+    for (size_t row = 0u; row < GM861_ZONES; row += 16u) {
+        char hex[16u * 3u + 1u];
+        size_t n = 0u;
+        for (size_t i = row; i < row + 16u && i < GM861_ZONES; ++i) {
+            n += (size_t)snprintf(&hex[n], sizeof(hex) - n, " %02X", z[i]);
+        }
+        hex[n] = '\0';
+        printf("scan: zone 0x%04X%s\n", (unsigned)row, hex);
+    }
+    printf("scan: zone 0x00B0 %02X\n", (unsigned)cut);
+}
+
 /**
  * @brief The held line's characters to the relay.
  */
@@ -228,6 +285,10 @@ static void console_key(int ch)
         if (!s_long && (strcmp(s_typing, "ble") == 0
                         || strncmp(s_typing, "ble ", 4u) == 0)) {
             ble_command(s_typing);
+            s_typed = 0u;
+        } else if (!s_long && (strcmp(s_typing, "scan") == 0
+                               || strncmp(s_typing, "scan ", 5u) == 0)) {
+            scan_command(s_typing);
             s_typed = 0u;
         } else {
             flush_typed();

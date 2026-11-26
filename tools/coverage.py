@@ -578,6 +578,7 @@ TRACKED = [
     "shared/clock/wall_clock.c",
     "shared/scanner/scan_line.c",
     "shared/scanner/gm861.c",
+    "shared/scanner/scan_port.c",
 ]
 
 # Sources under shared/ that are tables and hold no function: gcc gives them

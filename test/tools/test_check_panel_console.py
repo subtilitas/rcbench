@@ -30,3 +30,11 @@ def test_one_mark_is_enough_to_fail_off():
 def test_a_wrong_call_is_refused():
     """A call without a setting and a path ends 2."""
     assert cp.main(["check"]) == 2
+
+
+def test_the_scanners_injected_line_fails_off():
+    """A released image holding `scan <text>` fails, by name or by line."""
+    assert cp.problems(b"\0panel_scan_inject\0", False) == [
+        "holds panel_scan_inject"]
+    assert cp.problems(b"scan: queued as a scanned line", False) == [
+        "holds scan: queued as a scanned line"]

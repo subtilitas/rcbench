@@ -38,7 +38,7 @@ rcbench/
     mstime/               wrap-safe comparisons of a 32-bit millisecond counter (header only)
     vibe/                 balance measurement: index comparator · 1x, 2x and blade-pass demodulator · two-run and four-run solvers
     dial/                 the M5Stack Dial's faces: lists, values, readings and rings, link and bind; host-rendered
-    scanner/              QR scanner: line and answer framer · GM861 command frames, CRC, wanted zones and start sequencer; host suite only
+    scanner/              QR scanner: line and answer framer · GM861 command frames, CRC, wanted zones and start sequencer · the port between them and the panel's UART task
   protocols/              one module per external interface: a pure C core, its RP2350 pin driver in rp2350/, a README.md
     dshot/                DShot frames · GCR decode · eRPM · PIO driver, plain and bidirectional
     ppm/                  PPM frame layout · PIO and DMA driver
@@ -106,8 +106,8 @@ in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` · `passthru` | yes | yes | yes |
 | `escwire` · `openyge` | yes | yes | yes |
 | `witmotion` | yes | | yes |
-| `hc05` · `dial` · `supvan` · `scanner` | | | yes |
-| `bleuart` · `dialknob` · `vibe` · `rcnode` · `bleota` · `devupd` | yes | | yes |
+| `hc05` · `dial` · `supvan` | | | yes |
+| `bleuart` · `dialknob` · `vibe` · `rcnode` · `bleota` · `devupd` · `scanner` | yes | | yes |
 
 ## Toolchains
 
@@ -201,6 +201,35 @@ breakout's own pull-ups go to its VDD, here 3.3V.
 
 The knob is off until SETUP, PANEL, Rotary knob is switched on.
 [Screens](Screens.md#panel-the-rotary-knob) describes what it does.
+
+## QR scanner wiring
+
+The QR scanner is a GM861S module on UART1 (universal asynchronous
+receiver-transmitter) of the ESP32-P4, on two free pins of the 12-pin header
+P3: `BOARD_SCAN_PIN_TX` GPIO4 and `BOARD_SCAN_PIN_RX` GPIO5 in
+`firmware/panel/components/board/include/board_pins.h`, at 9600 baud 8N1
+(8 data bits, no parity, 1 stop bit). The module's 6-pin connector goes to
+P3 as follows:
+
+| GM861S pin | Signal | Panel header P3 |
+|---|---|---|
+| 1 | D+ | open |
+| 2 | D- | open |
+| 3 | GND | GND |
+| 4 | RXD | IO4 (the panel sends) |
+| 5 | TXD | IO5 (the panel receives) |
+| 6 | VCC 3.3V | 3V3, 70mA at most |
+
+- Cable: 30cm at most. Both sides run at 3.3V; no level shifter.
+- IO34 and IO36 of P3 are strapping pins and stay unused. IO2 and IO3 are
+  the other free pair. Header H8 is UART0, the console's, and stays free.
+- With SETUP, SENSORS, Scanner OFF, UART1 is not installed and IO4 and IO5
+  are inputs without pulls. ON installs UART1 with the pull-down on IO5: a
+  pin with no module reads low (NOT CONNECTED), a module idling high is
+  seen. The task `scan` (core 0, priority 2, every 20ms) finds the module's
+  rate, sets the zones the bench needs and saves them in the module
+  (`shared/scanner/gm861.h`).
+- The load on the 3V3 rail with the module's light on is not measured.
 
 ## The touch bus header
 
