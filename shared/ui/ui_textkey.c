@@ -600,20 +600,24 @@ static ui_textkey_result_t press(ui_textkey_t *k, int key, char *out,
             ui_textkey_close(k);
             return UI_TEXTKEY_OK;
         }
-        if (k->servo_id) {           /* upper case, as the label prints it */
-            for (int i = 0; i < k->len; ++i) {
-                if (k->text[i] >= 'a' && k->text[i] <= 'z') {
-                    k->text[i] = (char)(k->text[i] - ('a' - 'A'));
+        if (k->servo_id) {
+            /* Upper case, as the label prints it, in a copy: a refused id
+             * stays in the field as typed. */
+            char up[sizeof(k->text)];
+            snprintf(up, sizeof(up), "%s", k->text);
+            for (char *p = up; *p != '\0'; ++p) {
+                if (*p >= 'a' && *p <= 'z') {
+                    *p = (char)(*p - ('a' - 'A'));
                 }
             }
-            const servo_id_err_t r = servo_id_why(k->text);
+            const servo_id_err_t r = servo_id_why(up);
             if (r != SERVO_ID_OK) {
                 k->refused = true;
                 k->why     = (uint8_t)r;
                 return UI_TEXTKEY_NONE;
             }
             if (out != NULL && n > 0u) {
-                snprintf(out, n, "%s", k->text);
+                snprintf(out, n, "%s", up);
             }
             ui_textkey_close(k);
             return UI_TEXTKEY_OK;

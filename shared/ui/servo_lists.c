@@ -824,6 +824,7 @@ void svs_list_tick(float dt_s)
     }
     if (s.sl.open) {
         ui_setlist_tick(&s.sl, dt_s);
+        servo_label_tick();
     }
 }
 

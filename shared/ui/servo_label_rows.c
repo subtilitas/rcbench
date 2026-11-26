@@ -46,6 +46,32 @@ static bool card_ids(servo_ids_t *out)
 
 /* ------------------------------------------------------------ SERVO ID */
 
+/** @brief The ids SERVO ID's choice list shows: taken from the card while
+ *         the list is shut, kept as drawn while it is open. */
+static servo_ids_t s_shown;
+
+/** @brief Whether SERVO ID's choice list is open over the list. */
+static bool id_list_open(void)
+{
+    if (s.sl.choice_row < 0 || s.sl.host == NULL) {
+        return false;
+    }
+    return s.sl.host->row(s.sl.choice_row).custom == &svl_id_row;
+}
+
+/**
+ * @brief The ids the choice list shows: the card's now while it is shut,
+ *        the ones drawn while it is open.
+ * @return s_shown.
+ */
+static const servo_ids_t *shown_ids(void)
+{
+    if (!id_list_open()) {
+        (void)card_ids(&s_shown);
+    }
+    return &s_shown;
+}
+
 /** @brief SERVO ID's value: the active id, or NONE. */
 static void id_value(char *out, size_t n)
 {
@@ -55,21 +81,18 @@ static void id_value(char *out, size_t n)
 
 int servo_label_choices(void)
 {
-    servo_ids_t ids;
-    (void)card_ids(&ids);
-    return 2 + (int)ids.recent_n;
+    return 2 + (int)shown_ids()->recent_n;
 }
 
 /** @brief Choice @p i: NONE, the ids highest first, TYPE ID last. */
 static const char *id_choice(int i)
 {
-    static servo_ids_t ids;
-    (void)card_ids(&ids);
+    const servo_ids_t *ids = shown_ids();
     if (i <= 0) {
         return TR(SVL_ID_NONE);
     }
-    if (i <= (int)ids.recent_n) {
-        return ids.recent[i - 1];
+    if (i <= (int)ids->recent_n) {
+        return ids->recent[i - 1];
     }
     return TR(SVL_TYPE_ID);
 }
@@ -82,10 +105,9 @@ static int id_chosen(void)
     if (id == NULL) {
         return 0;
     }
-    servo_ids_t ids;
-    (void)card_ids(&ids);
-    for (int i = 0; i < (int)ids.recent_n; ++i) {
-        if (strcmp(ids.recent[i], id) == 0) {
+    const servo_ids_t *ids = shown_ids();
+    for (int i = 0; i < (int)ids->recent_n; ++i) {
+        if (strcmp(ids->recent[i], id) == 0) {
             return i + 1;
         }
     }
@@ -112,19 +134,47 @@ static void type_open(void)
     ui_setlist_type_id(&s.sl, TR(SVL_TYPE_ID_TITLE), start, typed_done);
 }
 
-/** @brief Choice @p i tapped: NONE, an id of the card, or TYPE ID. */
+/**
+ * @brief Whether the card holds @p id among its newest ids now.
+ * @param id The id.
+ * @return true then.
+ */
+static bool card_holds(const char *id)
+{
+    servo_ids_t live;
+    if (!card_ids(&live)) {
+        return false;
+    }
+    for (int i = 0; i < (int)live.recent_n; ++i) {
+        if (strcmp(live.recent[i], id) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/** @brief Choice @p i tapped, as the list drew it: NONE, an id of the
+ *         card, or TYPE ID.  The list has shut by now; the ids it drew
+ *         are still s_shown. */
 static void id_pick(int i)
 {
     const bool run = servo_screen_run_active();
-    servo_ids_t ids;
-    (void)card_ids(&ids);
-    if (i > (int)ids.recent_n) {
+    if (i > (int)s_shown.recent_n) {
         type_open();
         return;
     }
+    char id[SERVO_ID_SIZE] = "";
+    if (i > 0) {
+        snprintf(id, sizeof(id), "%s", s_shown.recent[i - 1]);
+        if (!card_holds(id)) {
+            ui_action_refused(TR(SVL_ID_GONE));
+            ++s.sl_rev;
+            servo_invalidate();
+            return;
+        }
+    }
     const bool ok = (i <= 0) ? servo_active_clear(run)
-                             : servo_active_set(ids.recent[i - 1],
-                                                SERVO_ACTIVE_PICK, run);
+                             : servo_active_set(id, SERVO_ACTIVE_PICK, run);
     if (!ok) {
         ui_action_refused(TR(SVL_RUN_ACTIVE));
     }
@@ -176,10 +226,19 @@ static const char *next_id(char *out, size_t n)
     return NULL;
 }
 
+/** @brief Whether a NEW ID asked is not answered yet. */
+static bool new_busy(void)
+{
+    return s_io != NULL && s_io->new_busy != NULL && s_io->new_busy();
+}
+
 const char *servo_label_new_why(void)
 {
     if (servo_screen_run_active()) {
         return TR(SVL_RUN_ACTIVE);
+    }
+    if (new_busy()) {
+        return TR(SVL_NEW_BUSY);
     }
     char id[SERVO_ID_SIZE];
     return next_id(id, sizeof(id));
@@ -197,7 +256,8 @@ static void new_value(char *out, size_t n)
 }
 
 /** @brief A tap on NEW ID: the panel makes the id and its folder; the
- *         answer makes the servo active. */
+ *         answer makes the servo active, and servo_label_tick() repaints
+ *         the rows then. */
 static void new_tap(void)
 {
     const char *why = servo_label_new_why();
@@ -216,3 +276,59 @@ const ui_setlist_custom_t svl_new_row = {
     .label = TX_SVL_NEW_ID, .help = TX_SVL_NEW_ID_HELP,
     .value_text = new_value, .tap = new_tap, .locked = servo_label_new_why,
 };
+
+/* ---------------------------------------------------------------- the tick */
+
+/** @brief What the rows showed at the last tick, and the repaints asked. */
+typedef struct {
+    uint32_t key;       /**< servo_active_serial(), the ids, NEW ID's ask */
+    bool     valid;     /**< a key was taken                              */
+    uint32_t repaints;  /**< the repaints asked                           */
+} seen_t;
+
+/** @brief The one instance: nothing seen after power-on. */
+static seen_t s_seen;
+
+/**
+ * @brief A key of what the rows show: it changes with the active servo, the
+ *        card's ids and NEW ID's request.
+ * @return The key.
+ */
+static uint32_t rows_key(void)
+{
+    servo_ids_t ids;
+    const bool card = card_ids(&ids);
+    /* FNV-1a over the ids, then the counts and the flags. */
+    uint32_t h = 2166136261u;
+    for (int i = 0; i < (int)ids.recent_n; ++i) {
+        for (const char *p = ids.recent[i]; *p != '\0'; ++p) {
+            h = (h ^ (uint8_t)*p) * 16777619u;
+        }
+        h = (h ^ 0x2Du) * 16777619u;
+    }
+    h = (h ^ ids.highest) * 16777619u;
+    h = (h ^ servo_active_serial()) * 16777619u;
+    h = (h ^ ((card ? 1u : 0u) | (new_busy() ? 2u : 0u))) * 16777619u;
+    return h;
+}
+
+void servo_label_tick(void)
+{
+    const uint32_t key = rows_key();
+    if (s_seen.valid && key == s_seen.key) {
+        return;
+    }
+    const bool first = !s_seen.valid;
+    s_seen.key = key;
+    s_seen.valid = true;
+    if (!first) {
+        ++s_seen.repaints;
+        ++s.sl_rev;
+        servo_invalidate();
+    }
+}
+
+uint32_t servo_label_repaints(void)
+{
+    return s_seen.repaints;
+}

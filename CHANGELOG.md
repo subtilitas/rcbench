@@ -479,6 +479,10 @@ history is in git.
 
 ### Fixed
 
+- The 16x28 face draws `_`: it sat below the 28-row cell and drew nothing,
+  so `KST_X10-00007` read as `KST X10-00007`. `tools/gen_font.py` moves a
+  glyph whose whole ink falls below its cell up to the cell's last row
+  (`test_gfx_faces`). Labels set `KST_X10-` in 16x28 now.
 - SERVO function screens: the PORT row and the footer name the function the
   surface pins are bound as, `PPM GPIO 20` with PPM bound on GPIO 20,
   `SERVO PWM GPIO 20` with SERVO PWM, and `MIXED GPIO 20` (DE `GEMISCHT`)

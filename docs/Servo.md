@@ -2406,10 +2406,16 @@ LIMIT RUN's and RUDDER AUTO's) ends with the SERVO LABEL block:
 | NEW ID | `NEXT` and the id NEW ID makes, `NEXT KST_X10-00008` | the next id, its folder, and that servo active |
 
 - `NONE` clears the active servo; an id of the list makes it active as a
-  pick.
+  pick. An open list keeps the ids it shows while the card's walk
+  refreshes: a tap takes the id drawn under it, and an id the card does
+  not hold among its 6 newest at the tap is refused with `NOT ON THE CARD NOW:
+  pick again`.
+- The rows repaint when the servo or the card's ids change outside the
+  list: NEW ID's answer, a scan.
 - `TYPE ID` opens the name keyboard on the saved prefix and its `-`, for
   a servo whose label is not at hand or not readable. The keyboard takes
-  23 characters. OK folds lower case to upper and trims nothing. An id
+  23 characters. OK folds lower case to upper in the id it takes and
+  trims nothing; a refused id stays in the field as typed. An id
   that is not one is refused on the keyboard, which stays open; its line
   names the rule broken:
 
@@ -2427,7 +2433,8 @@ LIMIT RUN's and RUDDER AUTO's) ends with the SERVO LABEL block:
   was typed. A typed id is never dropped as a repeat.
 - SERVO ID and NEW ID are locked while a run holds the active servo:
   `RUN ACTIVE: the run keeps its servo to its end`. NEW ID is also
-  locked, its value empty, with `NO CARD: no ids to count` (no card, or
+  locked from its tap to the card's answer with `NEW ID UNDER WAY: the
+  card answers`, and locked, its value empty, with `NO CARD: no ids to count` (no card, or
   a walk of `Servos` not read to its end), `NO FREE ID: this card holds
   ZZZZZ`, `PREFIX STARTS WITH .: change ID prefix`, and `ID prefix is no
   prefix: A-Z, 0-9, space, - _ .` for a prefix written with another

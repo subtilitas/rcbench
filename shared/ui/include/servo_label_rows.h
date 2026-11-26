@@ -22,13 +22,18 @@
  *
  * What the card holds comes through servo_label_io_t, the panel's
  * (panel_servo.c's walk and NEW ID request); without it the card reads
- * as not there.
+ * as not there.  servo_label_tick() repaints the rows when the active
+ * servo, the card's ids or NEW ID's request change outside the list: NEW
+ * ID's late answer, a scan.  SERVO ID's open choice list keeps the ids it
+ * shows; a pick takes the id drawn, refused when the card holds it no
+ * more among its 6 newest.
  *
  * SPDX-License-Identifier: MIT
  */
 #pragma once
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "servo_id.h"
 #include "ui_setlist.h"
@@ -52,6 +57,11 @@ typedef struct {
      * @return false while one is under way.
      */
     bool (*new_id)(const char *prefix);
+    /**
+     * @brief Whether a NEW ID asked is not answered yet.
+     * @return true from the ask to its answer.
+     */
+    bool (*new_busy)(void);
 } servo_label_io_t;
 
 /**
@@ -88,6 +98,19 @@ extern const ui_setlist_custom_t svl_new_row;
  * @return Its rows, 2 to 8.
  */
 int servo_label_choices(void);
+
+/**
+ * @brief Frame task, with a SERVO list open: the rows repaint when the
+ *        active servo, the card's ids or NEW ID's request changed since the
+ *        last call.
+ */
+void servo_label_tick(void);
+
+/**
+ * @brief How many repaints servo_label_tick() asked, for the tests.
+ * @return The count.
+ */
+uint32_t servo_label_repaints(void);
 
 /**
  * @brief Why NEW ID takes no press now.

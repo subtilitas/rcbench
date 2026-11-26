@@ -6551,6 +6551,12 @@ UI_TEXT(SVL_NEXT, 7,
 UI_TEXT(SVL_RUN_ACTIVE, 60,
     "RUN ACTIVE: the run keeps its servo to its end",
     "LAUF AKTIV: der Lauf behält sein Servo bis zum Ende")
+UI_TEXT(SVL_NEW_BUSY, 60,
+    "NEW ID UNDER WAY: the card answers",
+    "NEUE ID LÄUFT: die Karte antwortet")
+UI_TEXT(SVL_ID_GONE, 60,
+    "NOT ON THE CARD NOW: pick again",
+    "NICHT MEHR AUF DER KARTE: neu wählen")
 UI_TEXT(SVL_NO_CARD, 60,
     "NO CARD: no ids to count",
     "KEINE KARTE: keine IDs zu zählen")

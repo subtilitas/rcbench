@@ -63,6 +63,7 @@ static bool label_ids(servo_ids_t *out)
 static const servo_label_io_t k_label_io = {
     .ids = label_ids,
     .new_id = panel_servo_new,
+    .new_busy = panel_servo_new_busy,
 };
 
 /* ------------------------------------------------------------ the CAN bus */

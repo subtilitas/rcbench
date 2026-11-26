@@ -203,6 +203,11 @@ bool panel_servo_new(const char *prefix)
     return true;
 }
 
+bool panel_servo_new_busy(void)
+{
+    return atomic_load(&s_new_sent) != atomic_load(&s_new_done);
+}
+
 /** @brief The console's word for how NEW ID ended. */
 static const char *new_word(panel_servo_new_t why)
 {

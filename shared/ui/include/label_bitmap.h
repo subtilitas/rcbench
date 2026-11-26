@@ -143,8 +143,7 @@ void label_fill(label_bmp_t *b, int x, int y, int w, int h);
  *        space.
  *
  * A glyph without a pixel of ink at the label's threshold would print as a
- * gap: the 16x28 face's `_` lies below its 28 rows, so `KST_X10-` in it
- * prints as `KST X10-`.  The layout skips such a face.
+ * gap, `KST_X10-` as `KST X10-`.  The layout skips such a face.
  *
  * @param font  the face
  * @param s     UTF-8 text

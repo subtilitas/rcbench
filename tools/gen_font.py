@@ -133,6 +133,37 @@ def codes(spec) -> list:
     return list(range(first, last + 1)) + list(extra)
 
 
+def lift(spec, font, code) -> int:
+    """How far up glyph @p code is drawn so its ink lands in the cell.
+
+    A glyph whose whole solid ink falls below the cell would draw nothing:
+    the 16x28 face sets `_` on rows 28 to 30 of a 28-row cell, so it read as
+    a space.  Such a glyph moves up until its last solid row is the cell's
+    last row, where an underline sits.  Every other glyph stays where the
+    face puts it (0).
+
+    Args:
+        spec: One row of FONTS.
+        font: The face at the row's size.
+        code: The code point.
+
+    Returns:
+        The rows to move up, as a negative y offset; 0 for most glyphs.
+    """
+    w, h, dx, dy, thr = spec[1], spec[2], spec[6], spec[7], spec[8]
+    pad = 24
+    img = Image.new("L", (w + 2 * pad, h + 2 * pad), 0)
+    ImageDraw.Draw(img).text((pad + dx, pad + dy), chr(code), font=font,
+                             fill=255)
+    lo, hi = thr - 62, thr + 62
+    solid = [y - pad for y in range(h + 2 * pad)
+             if any((img.getpixel((x, y)) - lo) * 255.0 / (hi - lo)
+                    >= SOLID - 0.5 for x in range(pad, pad + w))]
+    if not solid or min(solid) < h:
+        return 0
+    return (h - 1) - max(solid)
+
+
 def render(spec) -> dict:
     """Rasterise every glyph of one face into its cell.
 
@@ -155,7 +186,8 @@ def render(spec) -> dict:
     lo, hi = thr - ramp, thr + ramp
     for code in codes(spec):
         img = Image.new("L", (w, h), 0)
-        ImageDraw.Draw(img).text((dx, dy), chr(code), font=font, fill=255)
+        ImageDraw.Draw(img).text((dx, dy + lift(spec, font, code)), chr(code),
+                                 font=font, fill=255)
         rows = []
         for y in range(h):
             row = bytearray(w)
@@ -191,8 +223,8 @@ def clipped(spec) -> dict:
     result = {}
     for code in codes(spec):
         img = Image.new("L", (w + 2 * pad, h + 2 * pad), 0)
-        ImageDraw.Draw(img).text((pad + dx, pad + dy), chr(code), font=font,
-                                 fill=255)
+        ImageDraw.Draw(img).text((pad + dx, pad + dy + lift(spec, font, code)),
+                                 chr(code), font=font, fill=255)
         count = 0
         for y in range(h + 2 * pad):
             for x in range(w + 2 * pad):

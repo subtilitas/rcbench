@@ -1347,7 +1347,11 @@ rules and notices with the source `SERVO_ACTIVE_TYPED` and no repeat window
 (`servo_scan_decide_from()`), and the chip's box says typed. SERVO ID and
 NEW ID are locked while `servo_screen_run_active()`; NEW ID also with no
 card, at `ZZZZZ`, with a prefix that starts with `.` or holds another
-character. The card's ids and NEW ID's request reach the rows through
+character, and from its tap to the card's answer. The rows repaint when
+the active servo, the card's ids or NEW ID's request change outside the
+list (`servo_label_tick()`); an open SERVO ID list keeps the ids it drew,
+and a pick takes the drawn id, refused when the card does not hold it
+among its 6 newest at the tap. The card's ids and NEW ID's request reach the rows through
 `servo_label_io_t`, which `panel_boot.c` registers with `panel_servo.c`'s
 walk and request; the host suite holds the rows against a fake of it.
 

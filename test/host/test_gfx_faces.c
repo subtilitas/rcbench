@@ -4,7 +4,8 @@
  *
  * The faces are the 10x20, 12x24 and 20x36 text faces and the 32x44 numeral
  * face.  The cases cover cell size, glyph coverage, the German letters, cap
- * height, baseline and the cut at the canvas's right and bottom edge.
+ * height, baseline and the cut at the canvas's right and bottom edge, and
+ * `_` inside its cell, apart from a space, in every text face.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -347,6 +348,63 @@ TEST_CASE(new_faces_clip_at_the_bottom_edge_and_in_a_box)
 
 /* The roles name the faces the plan gives them; LABEL, HEAD and NUM keep
  * today's faces until a screen is moved. */
+/* Every text face the UI draws with, the 6x12 to the 20x36. */
+static const struct {
+    const gfx_font_t *font;
+    const char       *name;
+} k_text_faces[] = {
+    { &gfx_font_6x12, "6x12" },   { &gfx_font_8x16, "8x16" },
+    { &gfx_font_10x20, "10x20" }, { &gfx_font_12x24, "12x24" },
+    { &gfx_font_16x28, "16x28" }, { &gfx_font_20x36, "20x36" },
+};
+
+/* `_` draws inside its cell in every text face, in its lower half where an
+ * underline sits: the 16x28 face once set it below its 28 rows, so
+ * KST_X10-0000A read as KST X10-0000A. */
+TEST_CASE(underscore_draws_inside_the_cell_in_every_text_face)
+{
+    for (size_t i = 0; i < sizeof(k_text_faces) / sizeof(k_text_faces[0]);
+         ++i) {
+        const gfx_font_t *font = k_text_faces[i].font;
+        fresh();
+        (void)gfx_text(&s_c, 0, 0, "_", font, GFX_RED, 1);
+        int lit = 0;
+        int top = font->height;
+        for (int y = 0; y < font->height; ++y) {
+            for (int x = 0; x < font->width; ++x) {
+                if (s_pixels[y * STRIDE + x] != 0) {
+                    ++lit;
+                    top = (y < top) ? y : top;
+                }
+            }
+        }
+        if (lit < font->width / 2) {
+            T_FAIL("face %s: _ lights %d pixels", k_text_faces[i].name, lit);
+        }
+        if (top < font->height / 2) {
+            T_FAIL("face %s: _ starts on row %d", k_text_faces[i].name, top);
+        }
+    }
+}
+
+/* An id with `_` and one with a space in its place draw apart in every text
+ * face: a space is a prefix character of a servo id too. */
+TEST_CASE(underscore_and_space_draw_apart)
+{
+    for (size_t i = 0; i < sizeof(k_text_faces) / sizeof(k_text_faces[0]);
+         ++i) {
+        const gfx_font_t *font = k_text_faces[i].font;
+        fresh();
+        (void)gfx_text(&s_c, 0, 0, "K_X", font, GFX_RED, 1);
+        memcpy(s_a, s_pixels, sizeof(s_pixels));
+        fresh();
+        (void)gfx_text(&s_c, 0, 0, "K X", font, GFX_RED, 1);
+        if (same_pixels(s_a, s_pixels)) {
+            T_FAIL("face %s: K_X draws as K X", k_text_faces[i].name);
+        }
+    }
+}
+
 TEST_CASE(font_roles_point_at_the_planned_faces)
 {
     CHECK(UI_FONT_FINE == &gfx_font_8x16);
@@ -367,5 +425,7 @@ int main(void)
     RUN(new_faces_clip_at_the_right_edge);
     RUN(new_faces_clip_at_the_bottom_edge_and_in_a_box);
     RUN(font_roles_point_at_the_planned_faces);
+    RUN(underscore_draws_inside_the_cell_in_every_text_face);
+    RUN(underscore_and_space_draw_apart);
     return test_summary("gfx_faces");
 }

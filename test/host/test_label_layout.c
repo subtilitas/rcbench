@@ -264,10 +264,10 @@ TEST_CASE(the_prefix_takes_the_largest_face_that_holds_it)
     CHECK_EQ(lay(40u, 30u, "KST-0000A", ""), LABEL_OK);
     CHECK_STR_EQ(s_info.line[0].text, "KST-");
     CHECK(s_info.line[0].face == &gfx_font_16x28);
-    /* The 16x28 face's '_' has no ink in its 28 rows: 12x24 draws it. */
+    /* The 16x28 face draws '_' on its last rows: it takes KST_X10- too. */
     CHECK_EQ(lay(40u, 30u, "KST_X10-0000A", ""), LABEL_OK);
     CHECK_STR_EQ(s_info.line[0].text, "KST_X10-");
-    CHECK(s_info.line[0].face == &gfx_font_12x24);
+    CHECK(s_info.line[0].face == &gfx_font_16x28);
     {
         const label_line_t *l = &s_info.line[0];
         const int cell = l->face->width;

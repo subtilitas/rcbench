@@ -21,6 +21,10 @@
  * - a_malformed_id_is_refused_on_the_keyboard_with_its_reason
  * - a_23_character_id_is_taken_whole
  * - lower_case_comes_out_upper
+ * - a_refused_id_stays_in_the_field_as_typed
+ * - the_late_new_id_answer_repaints_both_rows
+ * - a_scan_with_the_list_open_repaints_servo_id
+ * - a_pick_takes_the_id_drawn_after_a_refresh
  *
  * SPDX-License-Identifier: MIT
  */
@@ -51,6 +55,7 @@ static struct {
     bool        card;          /**< a card and a walk read to its end */
     servo_ids_t ids;           /**< its ids                           */
     int         asked;         /**< NEW IDs asked                     */
+    bool        busy;          /**< a NEW ID asked, not answered yet  */
     char        prefix[24];    /**< the prefix of the last            */
 } g_card;
 
@@ -65,12 +70,20 @@ static bool f_ids(servo_ids_t *out)
 static bool f_new(const char *prefix)
 {
     ++g_card.asked;
+    g_card.busy = true;
     snprintf(g_card.prefix, sizeof(g_card.prefix), "%s", prefix);
     return true;
 }
 
+/** @brief The fake's new_busy(). */
+static bool f_busy(void)
+{
+    return g_card.busy;
+}
+
 /** @brief The fake as the rows' card side. */
-static const servo_label_io_t k_io = { .ids = f_ids, .new_id = f_new };
+static const servo_label_io_t k_io = { .ids = f_ids, .new_id = f_new,
+                                       .new_busy = f_busy };
 
 /**
  * @brief The card holds the ids @p ids, @p n of them, highest first.
@@ -546,6 +559,85 @@ TEST_CASE(lower_case_comes_out_upper)
     CHECK_EQ(servo_active_from(), SERVO_ACTIVE_TYPED);
 }
 
+TEST_CASE(a_refused_id_stays_in_the_field_as_typed)
+{
+    fresh_hub();
+    settings_set_text(SET_TEXT_SERVO_PREFIX, "kst");
+    type_id_open();
+    type("0000");
+    sl_text_key(UI_TK_OK);
+    CHECK(keyboard()->refused);
+    CHECK_STR_EQ(keyboard()->text, "kst-0000");
+    sl_text_key(UI_TK_CANCEL);
+}
+
+/* NEW ID asked: the row is locked until the card answers; the answer,
+ * frames later, makes the servo active and both rows repaint. */
+TEST_CASE(the_late_new_id_answer_repaints_both_rows)
+{
+    fresh_hub();
+    bench_frames(40u);
+    sl_tap(HL_NEW_ID);
+    CHECK_EQ(g_card.asked, 1);
+    bench_frames(40u);
+    CHECK_STR_EQ(svl_new_row.locked(), ui_tr(TX_SVL_NEW_BUSY));
+    svl_new_row.tap();
+    CHECK_EQ(g_card.asked, 1);
+    const uint32_t before = servo_label_repaints();
+    /* The answer: KST-00000 made, its folder on the card, it active. */
+    g_card.busy = false;
+    servo_ids_visit(&g_card.ids, "KST-00000", true);
+    CHECK(servo_active_set("KST-00000", SERVO_ACTIVE_NEW, false));
+    bench_frames(40u);
+    CHECK(servo_label_repaints() > before);
+    CHECK_STR_EQ(value_of(HL_SERVO_ID), "KST-00000");
+    CHECK_STR_EQ(value_of(HL_NEW_ID), "NEXT KST-00001");
+    CHECK(svl_new_row.locked() == NULL);
+}
+
+TEST_CASE(a_scan_with_the_list_open_repaints_servo_id)
+{
+    fresh_hub();
+    bench_frames(40u);
+    const uint32_t before = servo_label_repaints();
+    ui_bench_status_t st = *ui_router_status();
+    st.armed = false;
+    st.armed_roles = 0u;
+    ui_router_set_status(&st);
+    CHECK(scan_flow_typed("KST-0000S"));
+    bench_frames(40u);
+    CHECK(servo_label_repaints() > before);
+    CHECK_STR_EQ(value_of(HL_SERVO_ID), "KST-0000S");
+}
+
+/* The card's walk refreshes while SERVO ID's list is open: a new id on top
+ * moves every id down one.  A tap takes the id drawn under the finger; an
+ * id drawn that the card holds no more is refused. */
+TEST_CASE(a_pick_takes_the_id_drawn_after_a_refresh)
+{
+    static const char *const ids[] = { "KST-00006", "KST-00005",
+                                       "KST-00004", "KST-00003",
+                                       "KST-00002", "KST-00001" };
+    fresh_hub();
+    card_with(ids, 6);
+    sl_tap(HL_SERVO_ID);
+    CHECK_EQ(servo_screen_list()->choice_row, HL_SERVO_ID);
+    CHECK_STR_EQ(svl_id_row.choice(2), "KST-00005");
+    servo_ids_visit(&g_card.ids, "KST-00007", true);
+    bench_frames(40u);
+    CHECK_STR_EQ(svl_id_row.choice(2), "KST-00005");
+    gfx_rect_t r = ui_setlist_choice_rect(servo_screen_list(), 2);
+    tap(r.x + r.w / 2, r.y + r.h / 2);
+    CHECK_STR_EQ(active(), "KST-00005");
+    /* KST-00001 is drawn last; two more ids push it off the 6 newest. */
+    sl_tap(HL_SERVO_ID);
+    CHECK_STR_EQ(svl_id_row.choice(6), "KST-00002");
+    servo_ids_visit(&g_card.ids, "KST-00008", true);
+    r = ui_setlist_choice_rect(servo_screen_list(), 6);
+    tap(r.x + r.w / 2, r.y + r.h / 2);
+    CHECK_STR_EQ(active(), "KST-00005");
+}
+
 int main(void)
 {
     RUN(the_block_is_on_every_list_with_dut_name);
@@ -561,5 +653,9 @@ int main(void)
     RUN(a_malformed_id_is_refused_on_the_keyboard_with_its_reason);
     RUN(a_23_character_id_is_taken_whole);
     RUN(lower_case_comes_out_upper);
+    RUN(a_refused_id_stays_in_the_field_as_typed);
+    RUN(the_late_new_id_answer_repaints_both_rows);
+    RUN(a_scan_with_the_list_open_repaints_servo_id);
+    RUN(a_pick_takes_the_id_drawn_after_a_refresh);
     return test_summary("servo_label_rows");
 }

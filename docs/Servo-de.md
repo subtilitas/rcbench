@@ -2555,11 +2555,17 @@ und RUDDER AUTO) endet mit dem Block SERVO-ETIKETT:
 | NEUE ID | `NÄCHSTE` und die ID, die NEUE ID macht, `NÄCHSTE KST_X10-00008` | die nächste ID, ihr Ordner und dieses Servo aktiv |
 
 - `KEINE` löscht das aktive Servo; eine ID der Liste macht es als Wahl
-  aktiv.
+  aktiv. Eine offene Liste behält die IDs, die sie zeigt, während der
+  Durchgang der Karte sich erneuert: ein Tippen nimmt die gezeichnete ID,
+  und eine ID, die die Karte beim Tippen nicht unter ihren 6 neuesten hat, wird
+  mit `NICHT MEHR AUF DER KARTE: neu wählen` abgelehnt.
+- Die Zeilen zeichnen sich neu, wenn sich das Servo oder die IDs der Karte
+  außerhalb der Liste ändern: die Antwort auf NEUE ID, ein Scan.
 - `ID TIPPEN` öffnet die Namenstastatur mit dem gespeicherten Präfix und
   seinem `-`, für ein Servo, dessen Etikett nicht zur Hand oder nicht
   lesbar ist. Die Tastatur nimmt 23 Zeichen. OK macht Kleinbuchstaben
-  groß und kürzt nichts. Eine Eingabe, die keine ID ist, wird auf der
+  in der genommenen ID groß und kürzt nichts; eine abgelehnte Eingabe
+  bleibt im Feld, wie getippt. Eine Eingabe, die keine ID ist, wird auf der
   Tastatur abgelehnt, die offen bleibt; ihre Zeile nennt die verletzte
   Regel:
 
@@ -2578,7 +2584,8 @@ und RUDDER AUTO) endet mit dem Block SERVO-ETIKETT:
   wurde. Eine getippte ID fällt nie als Wiederholung weg.
 - SERVO-ID und NEUE ID sind gesperrt, solange ein Lauf das aktive Servo
   hält: `LAUF AKTIV: der Lauf behält sein Servo bis zum Ende`. NEUE ID ist
-  außerdem gesperrt, ihr Wert leer, mit `KEINE KARTE: keine IDs zu zählen`
+  von ihrem Tippen bis zur Antwort der Karte mit `NEUE ID LÄUFT: die Karte
+  antwortet` gesperrt, und gesperrt, ihr Wert leer, mit `KEINE KARTE: keine IDs zu zählen`
   (keine Karte oder ein Durchgang durch `Servos`, der nicht bis zum Ende
   las), `KEINE FREIE ID: diese Karte hat ZZZZZ`, `PRÄFIX BEGINNT MIT .:
   ID-Präfix ändern` und `ID-Präfix ist kein Präfix: A-Z, 0-9, Leerzeichen,
