@@ -8,6 +8,8 @@ history is in git.
 
 ### Added
 
+- The splash's credit line at the foot reads `JuWi made`, the same in
+  English and German (`SPLASH_CREDIT`; `splash.png`, `de/splash.png`).
 - SERVO LABEL's PRINT row prints the active servo's label, its id and
   DUT NAME, on the bound printer and the roll it reports. It reads PRINT
   AGAIN for one of the session's last 8 ids printed, whichever servo was
