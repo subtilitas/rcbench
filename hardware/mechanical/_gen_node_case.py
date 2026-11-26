@@ -27,8 +27,8 @@ Openings:
              notch lets a tool of 2mm at most reach under each
              plunger, 5.9 inside the wall's outer face.
     microSD  a notch of 16.0 x 2.8 in the long wall at the card's edge
-    I2C      a pocket of 10.16 x 2.5 x 8.0 in the same long wall over
-             the INA228 board's header, under the display board, every
+    I2C      a pocket of 10.15 x 2.5 x 8.0 in the other long wall at the
+             display board's I2C socket, under the board, every
              edge inside rounded 2.0, so the opening at the split is
              0.5 deep, and its edge in the wall's inner face rounded
              2.0 on 3 sides; the wall bulges out 1.3 behind it, its edges
@@ -81,12 +81,13 @@ from pathlib import Path
 from OCP.BRepAlgoAPI import (BRepAlgoAPI_Common, BRepAlgoAPI_Cut,
                              BRepAlgoAPI_Fuse)
 from OCP.BRepBuilderAPI import (BRepBuilderAPI_MakeFace,
-                                BRepBuilderAPI_MakePolygon)
+                                BRepBuilderAPI_MakePolygon,
+                                BRepBuilderAPI_Transform)
 from OCP.BRepCheck import BRepCheck_Analyzer
 from OCP.BRepMesh import BRepMesh_IncrementalMesh
 from OCP.BRepPrimAPI import (BRepPrimAPI_MakeCylinder, BRepPrimAPI_MakePrism,
                              BRepPrimAPI_MakeSphere, BRepPrimAPI_MakeTorus)
-from OCP.gp import gp_Ax2, gp_Dir, gp_Pnt, gp_Vec
+from OCP.gp import gp_Ax2, gp_Dir, gp_Pnt, gp_Trsf, gp_Vec
 from OCP.StlAPI import StlAPI_Writer
 
 import _gen_dial_base as base
@@ -147,12 +148,14 @@ CARD = (-32.15, -16.15, 13.9)
 GRILLE = ((-7.8, -4.6, -1.4, 1.8), 1.6, 3.5, 10.5)
 WINDOW = (-48.5, -2.2, 10.6, 42.4)
 MIC = (-55.11, 35.1, 1.6)
-# Room for the plug on the INA228 board's I2C header (pins at y 0, its
-# plastic x -1.27 to 8.89): a pocket in the long wall at -y under the
-# display board, x0, x1, depth into the wall, height under the split,
-# the wall left outside it, the edges' radius. The wall bulges out
-# behind the pocket by depth + skin - WALL.
-I2C = (-1.27, 8.89, 2.5, 8.0, 1.2, 2.0)
+# Room for the plug in the display board's I2C socket, a side-entry
+# socket of 1.25mm pitch that hangs under the board at the long wall at
+# +y, z 13.3 to 16.7, its face 0.8 from the wall: a pocket in that wall,
+# x0, x1 (the socket's wings), depth into the wall, height under the
+# split, the wall left outside it, the edges' radius. The wall bulges
+# out behind the pocket by depth + skin - WALL. The shapes are drawn in
+# the wall at -y and mirrored across the case's middle.
+I2C = (-28.1, -17.95, 2.5, 8.0, 1.2, 2.0)
 # The joints hold the frame's wall, which the screws clamp at its 4
 # columns only, from moving inwards.
 # Plate to frame: a lip all round on the plate, inside the lower edge
@@ -365,8 +368,21 @@ def plate():
     return solid
 
 
+def _to_far_wall(shape):
+    """The shape mirrored from the wall at -y into the wall at +y."""
+    turn = gp_Trsf()
+    turn.SetMirror(gp_Ax2(gp_Pnt(0, (Y0 + Y1) / 2, 0), gp_Dir(0, 1, 0)))
+    return BRepBuilderAPI_Transform(shape, turn, True).Shape()
+
+
 def i2c_room():
     """The pocket for the I2C plug and the wall's bulge behind it."""
+    pocket, bulge = _i2c_room_near()
+    return _to_far_wall(pocket), _to_far_wall(bulge)
+
+
+def _i2c_room_near():
+    """i2c_room drawn in the wall at -y."""
     x0, x1, depth, high, skin, r = I2C
     pocket = rounded_box(x0, Y0 - depth, Z_SPLIT - high, x1, Y0 + 2 * r,
                          Z_SPLIT, r)
@@ -427,7 +443,7 @@ def mouth():
 def i2c_span():
     """The wall's stretch beside the I2C pocket, bulge included."""
     x0, x1, _, _, skin, _ = I2C
-    return _box(x0 - skin, Y0 - WALL - 2, Z_SPLIT - 3, x1 + skin, Y0 + 2,
+    return _box(x0 - skin, Y1 - 2, Z_SPLIT - 3, x1 + skin, Y1 + WALL + 2,
                 Z_SPLIT + 1)
 
 
