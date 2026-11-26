@@ -735,7 +735,7 @@ def render(board: dict, path: pathlib.Path, clips=()) -> float:
             sig = noise(0.12, 1800.0, 7000.0) * np.exp(-tt / 0.012)
             sig = sig + 0.8 * np.sin(2 * np.pi * 170.0 * tt) \
                 * np.exp(-tt / 0.04)
-            put(fx, t, sig * np.minimum(1.0, tt / 0.001), -0.1, 0.22)
+            put(fx, t, sig * np.minimum(1.0, tt / 0.001), -0.1, 0.6)
         elif kind == "hold":
             tt = np.arange(int(2.0 * RATE)) / RATE
             f = hz(notes[0]) * 2.0 ** (tt / 2.0)
