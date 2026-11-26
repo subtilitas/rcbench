@@ -9,7 +9,9 @@
  * 0x0019.  INFO names RCNODE_PROTO and RCNODE_ROLE_BALANCE unless the case
  * sets others; STATUS, read or sent on STREAM by brig_status(), names the
  * rig's cell voltage and flags.  Every
- * CONTROL write is kept with its time.  The clock is the rig's; brig_run()
+ * CONTROL write is kept with its time, but CONFIG and NAME, which the
+ * node answers with its own settings on STREAM (node_store.h), or refuses
+ * as one built before them with old_node.  The clock is the rig's; brig_run()
  * steps the controller 1ms at a time.
  *
  * Only static inline helpers.
@@ -69,6 +71,11 @@ typedef struct {
     unsigned     nw;         /**< CONTROL writes kept */
     rcnode_ctl_t w[BRIG_WRITES];    /**< their decoded contents */
     uint32_t     w_ms[BRIG_WRITES]; /**< their times */
+    bool         old_node;   /**< built before CONFIG and NAME */
+    unsigned     cfgs;       /**< CONFIG writes */
+    unsigned     names;      /**< NAME writes */
+    uint32_t     cfg_ms;     /**< the last CONFIG or NAME write's time */
+    char         name[RCNODE_UNAME_MAX + 1u]; /**< the node's own name */
 } brig_t;
 
 /** @brief An event with its kind, token and connection. */
@@ -183,6 +190,33 @@ static inline void brig_act(brig_t *r, const bleu_act_t *a)
     case BLEU_ACT_WRITE:
     case BLEU_ACT_WRITE_NR:
         e = brig_ev(BLEU_EV_WRITE_DONE, a->token);
+        if (a->len >= 1u && (a->data[0] == RCNODE_OP_CONFIG
+                             || a->data[0] == RCNODE_OP_NAME)) {
+            rcnode_ctl_t c;
+            const bool name = a->data[0] == RCNODE_OP_NAME;
+            r->cfgs += name ? 0u : 1u;
+            r->names += name ? 1u : 0u;
+            r->cfg_ms = r->now;
+            if (r->old_node) {
+                e.status = name ? 0x10Du : 0x113u;
+            } else if (rcnode_dec_ctl(a->data, a->len, &c) != RCNODE_OK) {
+                e.status = 0x113u;
+            } else if (name) {
+                memcpy(r->name, c.name, sizeof r->name);
+            }
+            bal_ctl_event(&r->c, &e, r->now);
+            if (e.status == 0u) {
+                rcnode_config_t g;
+                memset(&g, 0, sizeof g);
+                g.shunt_age_s = RCNODE_AGE_NONE;
+                memcpy(g.name, r->name, sizeof g.name);
+                bleu_evt_t n = brig_ev(BLEU_EV_NOTIFY, 0u);
+                n.h1 = BRIG_STREAM_VAL;
+                n.len = (uint8_t)rcnode_enc_config(&g, n.data, sizeof n.data);
+                bal_ctl_event(&r->c, &n, r->now);
+            }
+            break;
+        }
         if (r->fail_writes > 0u) {
             --r->fail_writes;
             e.status = 0x10Eu;

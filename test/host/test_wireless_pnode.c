@@ -79,13 +79,15 @@ TEST_CASE(the_entry_shows_on_and_source_off_and_its_rows_on)
     CHECK_EQ((int)settings_def(SET_PNODE_UOHM)->min, RCNODE_SHUNT_MIN_UOHM);
     CHECK_EQ((int)settings_def(SET_PNODE_UOHM)->max, RCNODE_SHUNT_MAX_UOHM);
     settings_set(SET_PNODE_EN, 1.0f);
-    CHECK_EQ(wireless_pane_rows(WL_ENTRY_PNODE, rows, WL_ENTRY_ROWS_MAX), 7);
+    CHECK_EQ(wireless_pane_rows(WL_ENTRY_PNODE, rows, WL_ENTRY_ROWS_MAX), 9);
     CHECK(rows[2].custom == &wireless_pane_pnode_scan_row);
     CHECK(rows[3].custom == &wireless_pane_pnode_bind_row);
-    CHECK(rows[4].custom == &wireless_pane_pnode_bat_row);
-    CHECK(rows[5].custom == &wireless_pane_pnode_i228_row);
-    CHECK(rows[6].custom == NULL);
-    CHECK_EQ(rows[6].id, SET_PNODE_UOHM);
+    CHECK(rows[4].custom == &wireless_pane_pnode_name_row);
+    CHECK(rows[5].custom == &wireless_pane_pnode_bat_row);
+    CHECK(rows[6].custom == &wireless_pane_pnode_i228_row);
+    CHECK(rows[7].custom == &wireless_pane_pnode_addr_row);
+    CHECK(rows[8].custom == NULL);
+    CHECK_EQ(rows[8].id, SET_PNODE_UOHM);
     CHECK_EQ(wireless_pane_entry_of(SET_PNODE_UOHM), WL_ENTRY_PNODE);
     CHECK_EQ(wireless_pane_entry_of(SET_I228_SRC), WL_ENTRY_PNODE);
     CHECK_EQ(wireless_pane_entry_of(SET_PNODE_EN), WL_ENTRY_PNODE);
@@ -93,7 +95,7 @@ TEST_CASE(the_entry_shows_on_and_source_off_and_its_rows_on)
     open_wireless(SET_PNODE_EN);
     CHECK_EQ(settings_screen_category(), SET_CAT_WIRELESS);
     CHECK_EQ(wireless_pane_selected(), WL_ENTRY_PNODE);
-    CHECK_EQ(settings_screen_rows(SET_CAT_WIRELESS), 7);
+    CHECK_EQ(settings_screen_rows(SET_CAT_WIRELESS), 9);
 }
 
 TEST_CASE(a_node_scan_while_armed_is_refused_with_a_band_text)

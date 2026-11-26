@@ -328,6 +328,19 @@ void ui_setlist_type_id(ui_setlist_t *sl, const char *title,
                         const char *text, void (*done)(const char *id));
 
 /**
+ * @brief The keyboard of a node's own name over the list, opened on @p text
+ *        (ui_textkey_open_node_name()): OK hands the name, spaces at its
+ *        ends dropped, "" for none, to @p done; CANCEL takes nothing.  A
+ *        choice list open closes.
+ * @param sl    The list.
+ * @param title The keyboard's title.
+ * @param text  What it starts with.
+ * @param done  Takes the name typed.
+ */
+void ui_setlist_type_name(ui_setlist_t *sl, const char *title,
+                          const char *text, void (*done)(const char *name));
+
+/**
  * @brief Whether something covers the list: the keypad, the keyboard, the
  *        warning or a choice list.
  * @param sl The list.

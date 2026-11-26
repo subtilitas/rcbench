@@ -45,11 +45,12 @@ enum {
     WL_ENTRY_IMU = 0, /**< enable, angle source, axis, sign, rate,
                            algorithm, filter, settling time, precision */
     WL_ENTRY_DIAL,    /**< enable, scan, bind, two steps */
-    WL_ENTRY_BAL,     /**< enable, scan, bind, battery, trial mass
+    WL_ENTRY_BAL,     /**< enable, scan, bind, name, battery, trial mass
                            (wireless_bal.h) */
     WL_ENTRY_PRINTER, /**< scan, bind, address, state, roll, labels
                            left, read, test label (wireless_printer.h) */
-    WL_ENTRY_PNODE,   /**< enable, INA228 source, scan, bind, battery: last,
+    WL_ENTRY_PNODE,   /**< enable, INA228 source, scan, bind, name,
+                           battery, INA228, address, shunt: last,
                            where its guide badge finds room under the long
                            German name */
     WL_ENTRY_COUNT
@@ -191,6 +192,21 @@ extern const ui_setlist_custom_t wireless_pane_pnode_bat_row;
 /** @brief NODE INA228: the address the node found its INA228 at and the
  *         shunt it holds, read only. */
 extern const ui_setlist_custom_t wireless_pane_pnode_i228_row;
+/** @brief NODE NAME: the node's own name (node_cfg_link.h); a tap opens
+ *         the name keyboard while SAFE with the node's settings known. */
+extern const ui_setlist_custom_t wireless_pane_pnode_name_row;
+/** @brief INA228 ADDRESS: AUTO or 0x40 to 0x4F on the node; each step
+ *         writes the next while SAFE. */
+extern const ui_setlist_custom_t wireless_pane_pnode_addr_row;
+
+/**
+ * @brief The address setting a step of INA228 ADDRESS goes to: AUTO, then
+ *        0x40 to 0x4F, then AUTO again; back the other way.
+ * @param from The setting now; one out of range counts as AUTO.
+ * @param dir  -1 or +1.
+ * @return The next setting.
+ */
+uint8_t wireless_pane_pnode_addr_next(uint8_t from, int dir);
 
 /** @brief SCAN FOR DIAL, the DIAL entry's second row; public for the
  *         tests. */

@@ -122,6 +122,7 @@ static bool take_info(pnode_ctl_t *c, uint32_t now_ms)
     c->info_board = p.u.info.board;
     c->info_i228 = p.u.info.i228_addr;
     c->info_shunt = p.u.info.shunt_uohm;
+    memcpy(c->info_addr, p.u.info.addr, sizeof(c->info_addr));
     c->info_ok = p.u.info.proto == RCNODE_PROTO
                  && p.u.info.role == RCNODE_ROLE_POWER
                  && pnode_meter_info(&c->m, &p.u.info);
@@ -156,6 +157,9 @@ static void follow_link(pnode_ctl_t *c, uint32_t now_ms)
         c->was_up = false;
         c->m.have_status = false;
         c->lang_sent = PNODE_LANG_NONE;
+        c->adopt_uohm = 0u;
+        c->sync_taken = 0u;
+        ncl_link(&c->nc);
     } else if (!up && c->linked) {
         c->lost = c->was_up;
         c->info_ok = false;
@@ -252,6 +256,11 @@ void pnode_ctl_config(pnode_ctl_t *c, const pnode_cfg_t *cfg,
     }
     const pnode_cfg_t was = c->cfg;
     c->cfg = *cfg;
+    if (c->configured && was.shunt_uohm != cfg->shunt_uohm) {
+        /* NODE SHUNT changed: its age is known from here on. */
+        c->shunt_set_known = true;
+        c->shunt_set_ms = now_ms;
+    }
     if (cfg->bind_seq != c->bind_seq) {
         /* Read from SETUP before the frame kept the last bind there: its
          * address is the one before the bind, and taking it would unbind
@@ -412,7 +421,7 @@ void pnode_ctl_event(pnode_ctl_t *c, const bleu_evt_t *e, uint32_t now_ms)
     const bool stream = bleu_event(&c->b, e, now_ms);
     take_scan(c);
     follow_link(c, now_ms);
-    if (!stream || !is_on(c)) {
+    if (!stream || !is_on(c) || ncl_packet(&c->nc, e->data, e->len, now_ms)) {
         return;
     }
     if (!c->info_ok) {
@@ -478,7 +487,9 @@ static bool send_lang(pnode_ctl_t *c, uint32_t now_ms)
 
 /**
  * @brief The SHUNT write owed, when the central can send, no RUN write
- *        waits and the bench is SAFE: NODE SHUNT, once a link and once a
+ *        waits and the bench is SAFE: with CONFIG known, what
+ *        rcnode_shunt_sync() decides at each change of NODE SHUNT and each
+ *        CONFIG taken; without it, NODE SHUNT once a link and once a
  *        change, when INFO names another shunt.
  * @param c      The controller.
  * @param armed  The bench is ARMED, or a switch to ARMED waits.
@@ -488,10 +499,35 @@ static bool send_lang(pnode_ctl_t *c, uint32_t now_ms)
 static bool send_shunt(pnode_ctl_t *c, bool armed, uint32_t now_ms)
 {
     const uint16_t want = c->cfg.shunt_uohm;
+    if (c->adopt_uohm != 0u && want == c->adopt_uohm) {
+        c->adopt_uohm = 0u;         /* the take is seen: NODE SHUNT holds it */
+    }
+    /* A CONFIG since the last decision decides again, also for a value
+     * already sent: one that came after the fallback to INFO's rule. */
+    const bool fresh = ncl_have(&c->nc) && c->nc.taken != c->sync_taken;
     if (armed || c->run_owed || !c->info_ok || !c->info_read || c->shunt_wr
-        || c->info_owed || want == 0u || want == c->info_shunt || want == c->shunt_sent
-        || !bleu_can_send(&c->b)) {
+        || c->info_owed || want == 0u || ncl_pending(&c->nc)
+        || (want == c->shunt_sent && !fresh) || !bleu_can_send(&c->b)) {
         return false;
+    }
+    if (ncl_have(&c->nc)) {
+        const rcnode_config_t *g = &c->nc.cfg;
+        const uint32_t panel_age = c->shunt_set_known
+                                   ? now_ms - c->shunt_set_ms : UINT32_MAX;
+        const rcnode_sync_t r = rcnode_shunt_sync(
+            want, g->shunt_uohm, g->shunt_agreed,
+            ncl_node_age_s(&c->nc, now_ms), panel_age);
+        if (r == RCNODE_SYNC_ADOPT && c->adopt_uohm != g->shunt_uohm) {
+            /* The node's change is the newer: the frame task takes it. */
+            c->adopt_uohm = g->shunt_uohm;
+            ++c->adopt_seq;
+        }
+        if (r != RCNODE_SYNC_WRITE && r != RCNODE_SYNC_ACK) {
+            c->sync_taken = c->nc.taken;
+            return false;
+        }
+    } else if (want == c->info_shunt) {
+        return false;   /* a node without CONFIG: INFO decides */
     }
     rcnode_ctl_t w;
     memset(&w, 0, sizeof(w));
@@ -504,6 +540,7 @@ static bool send_shunt(pnode_ctl_t *c, bool armed, uint32_t now_ms)
     }
     c->shunt_sent = want;
     c->shunt_wr = true;
+    c->sync_taken = c->nc.taken;
     return true;
 }
 
@@ -552,6 +589,7 @@ bool pnode_ctl_step(pnode_ctl_t *c, uint32_t now_ms, bool armed,
     }
     follow_link(c, now_ms);
     follow_shunt(c, armed);
+    ncl_follow(&c->nc, &c->b, now_ms);
     if (pnode_meter_step(&c->m, now_ms, armed, c->cfg.src_node,
                          bench_run)) {
         c->run_owed = true;
@@ -575,11 +613,22 @@ bool pnode_ctl_step(pnode_ctl_t *c, uint32_t now_ms, bool armed,
         return true;
     }
     take_scan(c);
-    if (send_run(c, now_ms) || send_shunt(c, armed, now_ms)
-        || send_lang(c, now_ms)) {
+    if (send_run(c, now_ms)
+        || ncl_send(&c->nc, &c->b, c->info_ok && !c->run_owed, armed, now_ms)
+        || send_shunt(c, armed, now_ms) || send_lang(c, now_ms)) {
         return bleu_step(&c->b, now_ms, out);
     }
     return false;
+}
+
+ncl_req_t pnode_ctl_name(pnode_ctl_t *c, const char *name, bool armed)
+{
+    return c != NULL ? ncl_set_name(&c->nc, name, armed) : NCL_REQ_UNKNOWN;
+}
+
+ncl_req_t pnode_ctl_i228(pnode_ctl_t *c, uint8_t a, bool armed)
+{
+    return c != NULL ? ncl_set_i228(&c->nc, a, armed) : NCL_REQ_UNKNOWN;
 }
 
 pnode_link_t pnode_ctl_link(const pnode_ctl_t *c, uint32_t now_ms)
@@ -660,6 +709,21 @@ void pnode_ctl_view(const pnode_ctl_t *c, uint32_t now_ms, pnode_view_t *out)
         out->shunt_uohm = c->info_shunt;
     }
     out->shunt_refused = (uint16_t)c->shunt_refused;
+    if (c->linked && ncl_have(&c->nc)) {
+        out->have_cfg = true;
+        out->i228_set = c->nc.cfg.i228_set;
+        if (c->nc.cfg.name[0] != '\0') {
+            memcpy(out->node_name, c->nc.cfg.name, sizeof(out->node_name));
+        } else {
+            (void)rcnode_name(RCNODE_ROLE_POWER, c->info_addr, out->node_name);
+        }
+    }
+    out->adopt_uohm = c->adopt_uohm;
+    out->adopt_seq = c->adopt_seq;
+    out->cfg_refused = (uint16_t)c->nc.refused;
+    out->cfg_req_no = (uint16_t)c->nc.req_no;
+    out->cfg_req_why = c->nc.req_why;
+    out->cfg_dropped = (uint16_t)c->nc.dropped;
     out->bind_refused = (uint16_t)c->bind_refused;
     out->scan_armed = (uint16_t)c->refused;
     out->scan_unready = (uint16_t)c->scan_unready;

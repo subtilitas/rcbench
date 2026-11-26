@@ -33,24 +33,6 @@ uint32_t psens_max_ma(uint16_t uohm)
     return uohm != 0u ? PSENS_FS_NV / uohm : 0u;
 }
 
-uint16_t psens_shunt_load(const psens_store_t *st)
-{
-    uint16_t v = 0u;
-    if (st == NULL || st->load == NULL || !st->load(st->ctx, &v)
-        || !psens_shunt_ok(v)) {
-        return RCNODE_SHUNT_DEF_UOHM;
-    }
-    return v;
-}
-
-bool psens_shunt_save(const psens_store_t *st, uint32_t uohm)
-{
-    if (st == NULL || st->save == NULL || !psens_shunt_ok(uohm)) {
-        return false;
-    }
-    return st->save(st->ctx, (uint16_t)uohm);
-}
-
 /**
  * @brief The calibration of a shunt at ADCRANGE 1.
  * @param s The sensor; its shunt_uohm is set, cal is filled.
@@ -176,7 +158,7 @@ static void search_step(psens_t *s, uint32_t now_ms)
         if (s->searched && (int32_t)(now_ms - s->search_at) < 0) {
             return;
         }
-        s->next = INA228_ADDR_MIN;
+        s->next = s->fixed != 0u ? s->fixed : INA228_ADDR_MIN;
         s->other_ti = false;
     }
     const uint8_t a = s->next;
@@ -190,7 +172,7 @@ static void search_step(psens_t *s, uint32_t now_ms)
         bind(s, a);
         return;
     }
-    if (a < INA228_ADDR_MAX) {
+    if (s->fixed == 0u && a < INA228_ADDR_MAX) {
         s->next = (uint8_t)(a + 1u);
         return;
     }
@@ -230,6 +212,23 @@ bool psens_set_shunt(psens_t *s, uint32_t uohm)
         bind(s, s->addr);
         s->rearmed = s->bound;
     }
+    return true;
+}
+
+bool psens_set_addr(psens_t *s, uint8_t setting)
+{
+    const uint8_t f = (setting >= INA228_ADDR_MIN && setting <= INA228_ADDR_MAX)
+                      ? setting : 0u;
+    if (f == s->fixed) {
+        return false;
+    }
+    s->fixed = f;
+    s->bound = false;
+    s->rearmed = false;
+    s->addr = 0u;
+    s->next = 0u;
+    s->searched = false;
+    s->state = SENSE_PART_UNPROBED;
     return true;
 }
 

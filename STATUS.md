@@ -1499,7 +1499,7 @@ board's 0x38 and 0x18 never asked, another maker and another TI die
 skipped and never written, a part found reset searched again 1000ms on
 at its new address, a stuck bus holding the search; CURRENT and POWER on
 50µΩ, 200µΩ, 500µΩ, 1000µΩ and 10,000µΩ against the datasheet's equations 2, 4 and 5, a
-live shunt change, the range 50 to 10,000µΩ, the store; the MATEK on the
+live shunt change, the range 50 to 10,000µΩ, a fixed address asked alone; the MATEK on the
 default shunt byte for byte the fixed 0x45 set-up's windows and INFO);
 the SHUNT write (`test_rcnode`); the panel's write once a link and once a
 change when INFO names another shunt, held while ARMED, INFO read again
@@ -1509,6 +1509,30 @@ lost with the link left to the next INFO (`test_pnode_shunt`); the sleep's
 shutdown written only to an INA228; NODE INA228
 and NODE SHUNT on the entry (`test_wireless_pnode`). The current against
 a known load on a board other than the MATEK is not measured.
+
+The display node's splash and SETUP and the nodes' own settings, built
+and host-tested, not run on an ES3C28P: the splash's 10s, SETUP offered
+only before a link and a link during the splash going to the meter, the
+60s idle end, each row's edits, BACK dropping them, SAVE's changes and
+the drawing of each screen (`test_node_setup`); the I2C SCAN over fake
+parts at every address 0x08 to 0x77, INA228s by maker and die, the ID
+reads only at 0x40 to 0x4F, each data write a 1-byte register pointer
+there (`test_node_scan`); the names, addresses and shunts stored and read
+back, a bad stored value read as its default, the agreed shunt and the
+change's age, CONFIG sent only after a central asked and on its own seq
+(`test_node_store`); CONFIG, NAME and I228 encoded and
+decoded, the name rule and the sync rule both ways with the last change
+winning, ages past 65,534s equal (`test_rcnode_cfg`); the panel's CONFIG
+asked twice, held SHUNT, ADOPT and ACK, the same node value taken again
+after a panel change, a late CONFIG decided again, no lost packet counted
+for a CONFIG, NAME and I228 writes held while ARMED, refused requests and
+writes a drop ended counted, a node built before CONFIG (`test_pnode_cfg`,
+`test_bal_cfg`); the WIRELESS rows, the name keyboard, address steps from
+the value asked, the band's notices and the name on Bound node
+(`test_wireless_pnode_cfg`, `test_wireless_bal`). The splash, the
+SETUP screens and the panel rows are rendered (`render_node.py`,
+`render_ui.py`); the touch on a delivered board is not measured
+([The nodes' own settings](docs/Nodes-setup.md)).
 
 ### The display node
 
@@ -2009,7 +2033,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 709 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 716 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -2126,8 +2150,8 @@ The host suite is 709 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_bleuart_hub`, `test_bleuart_backoff`, `test_bleuart_fair`, `test_bleuart_ext`, `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`,
 `test_dial_ctl`, `test_dial_stream`, `test_dial_motor`, `test_dial_servo`, `test_dial_nav`,
 `test_dial_nav_hold`, `test_dial_bind`, `test_wireless_pane`,
-`test_pnode_meter`, `test_pnode_ctl`, `test_pnode_shunt`, `test_wireless_pnode`, `test_pnode_bind`,
-`test_settings_panes`, `test_bal_ctl`, `test_node_balance`, `test_wireless_bal`, `test_bal_bind`, `test_wl_search`,
+`test_pnode_meter`, `test_pnode_ctl`, `test_pnode_shunt`, `test_pnode_cfg`, `test_wireless_pnode`, `test_wireless_pnode_cfg`, `test_pnode_bind`,
+`test_settings_panes`, `test_bal_ctl`, `test_bal_cfg`, `test_node_balance`, `test_wireless_bal`, `test_bal_bind`, `test_wl_search`,
 `test_motor_balance`,
 `test_dial_face`, `test_dial_fit`, `test_dial_button`,
 `test_imu`, `test_imu_filter`, `test_imu_angles`,
@@ -2137,7 +2161,7 @@ The host suite is 709 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`, `test_servo_dial_runs`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
-`test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_pwr_sens`, `test_node_srv_policy`, `test_node_srv_poll`, `test_node_view`,
+`test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_rcnode_cfg`, `test_node_policy`, `test_node_pwr_sens`, `test_node_store`, `test_node_scan`, `test_node_setup`, `test_node_srv_policy`, `test_node_srv_poll`, `test_node_view`,
 `test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client`, `test_devimg`, `test_devimg_board`, `test_upd_dev`, `test_upd_fetch`,
 `test_upd_wizard`, `test_upd_wizard_map`, `test_upd_wiz_view`, `test_label_bitmap`, `test_label_layout`,
 `test_lzlit`, `test_supvan_frame`, `test_supvan_page`, `test_supvan_job`, `test_supvan_job_ends`,
@@ -2681,7 +2705,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-1156 committed screenshots to the current render, 578 in English and the same 578 in German, and `render_ui.py --fit` fails on a string that
+1170 committed screenshots to the current render, 585 in English and the same 585 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -2762,7 +2786,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/prog_choice.c` | 127 | 126 | 99.2% |
 | `shared/ui/ui_keypad.c` | 312 | 307 | 98.4% |
 | `shared/ui/ui_setting_keypad.c` | 138 | 135 | 97.8% |
-| `shared/ui/ui_textkey.c` | 608 | 585 | 96.2% |
+| `shared/ui/ui_textkey.c` | 613 | 590 | 96.2% |
 | `shared/ui/ui_textkey_cursor.c` | 111 | 109 | 98.2% |
 | `shared/ui/ui_shot.c` | 245 | 245 | 100.0% |
 | `shared/ui/shot_gate.c` | 65 | 65 | 100.0% |
@@ -2856,10 +2880,10 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/label_layout.c` | 267 | 254 | 95.1% |
 | `shared/ui/print_ctl.c` | 463 | 428 | 92.4% |
 | `shared/ui/print_req.c` | 73 | 70 | 95.9% |
-| `shared/ui/settings_screen.c` | 333 | 324 | 97.3% |
+| `shared/ui/settings_screen.c` | 336 | 327 | 97.3% |
 | `shared/ui/settings_draw.c` | 69 | 69 | 100.0% |
 | `shared/ui/settings_rows.c` | 61 | 59 | 96.7% |
-| `shared/ui/ui_setlist.c` | 642 | 628 | 97.8% |
+| `shared/ui/ui_setlist.c` | 649 | 635 | 97.8% |
 | `shared/ui/ui_setlist_draw.c` | 283 | 264 | 93.3% |
 | `shared/ui/ui_footer.c` | 42 | 41 | 97.6% |
 | `shared/ui/sensors_pane.c` | 107 | 107 | 100.0% |
@@ -2908,16 +2932,17 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_focus.c` | 430 | 381 | 88.6% |
 | `shared/ui/ui_focus_list.c` | 72 | 68 | 94.4% |
 | `shared/ui/ui_focus_screens.c` | 23 | 22 | 95.7% |
-| `shared/ui/wireless_pane.c` | 257 | 254 | 98.8% |
-| `shared/ui/wireless_pnode.c` | 168 | 166 | 98.8% |
+| `shared/ui/wireless_pane.c` | 259 | 256 | 98.8% |
+| `shared/ui/wireless_pnode.c` | 238 | 234 | 98.3% |
 | `shared/ui/wl_search.c` | 219 | 205 | 93.6% |
 | `shared/ui/wl_search_draw.c` | 147 | 140 | 95.2% |
-| `shared/ui/pnode_ctl.c` | 356 | 345 | 96.9% |
+| `shared/ui/pnode_ctl.c` | 400 | 388 | 97.0% |
+| `shared/ui/node_cfg_link.c` | 114 | 107 | 93.9% |
 | `shared/ui/pnode_meter.c` | 261 | 257 | 98.5% |
 | `shared/ui/settings_panes.c` | 43 | 43 | 100.0% |
-| `shared/ui/bal_ctl.c` | 374 | 357 | 95.5% |
+| `shared/ui/bal_ctl.c` | 397 | 380 | 95.7% |
 | `shared/ui/node_balance.c` | 346 | 339 | 98.0% |
-| `shared/ui/wireless_bal.c` | 193 | 190 | 98.5% |
+| `shared/ui/wireless_bal.c` | 237 | 205 | 86.5% |
 | `shared/ui/wireless_printer.c` | 280 | 270 | 96.4% |
 | `shared/ui/motor_balance.c` | 184 | 181 | 98.4% |
 | `shared/ui/sbk_ctl.c` | 290 | 264 | 91.0% |
@@ -3046,9 +3071,10 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `protocols/bleuart/bleuart_hub.c` | 317 | 315 | 99.4% |
 | `protocols/i2c_txq/i2c_txq.c` | 379 | 379 | 100.0% |
 | `protocols/witmotion/witmotion.c` | 118 | 118 | 100.0% |
-| `protocols/rcnode/rcnode.c` | 319 | 317 | 99.4% |
+| `protocols/rcnode/rcnode.c` | 372 | 370 | 99.5% |
 | `protocols/rcnode/rcnode_win.c` | 97 | 96 | 99.0% |
-| `protocols/rcnode/rcnode_adv.c` | 105 | 104 | 99.0% |
+| `protocols/rcnode/rcnode_adv.c` | 111 | 110 | 99.1% |
+| `protocols/rcnode/rcnode_cfg.c` | 32 | 32 | 100.0% |
 | `protocols/bleota/bleota.c` | 115 | 115 | 100.0% |
 | `protocols/bleota/bleota_dev.c` | 313 | 309 | 98.7% |
 | `protocols/dialknob/dialknob.c` | 530 | 520 | 98.1% |
@@ -3241,7 +3267,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/scanner/scan_line.c` | 113 | 113 | 100.0% |
 | `shared/scanner/gm861.c` | 319 | 319 | 100.0% |
 | `shared/scanner/scan_port.c` | 112 | 111 | 99.1% |
-| **total** | **119932** | **117195** | **97.7%** |
+| **total** | **120335** | **117559** | **97.7%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

@@ -35,6 +35,7 @@ static const setting_id_t k_bal[] = { SET_BNODE_EN, SET_BAL_TRIAL };
 static void push(uint8_t kind, uint8_t arg)
 {
     if (s_q_n < CMD_Q) {
+        memset(&s_q[s_q_n], 0, sizeof(s_q[0]));
         s_q[s_q_n].kind = kind;
         s_q[s_q_n].arg = arg;
         ++s_q_n;
@@ -214,6 +215,7 @@ int wireless_bal_rows(wl_row_t *out, int max)
         { SET_BNODE_EN, NULL },
         { (setting_id_t)0, &wireless_bal_scan_row },
         { (setting_id_t)0, &wireless_bal_bind_row },
+        { (setting_id_t)0, &wireless_bal_name_row },
         { (setting_id_t)0, &wireless_bal_bat_row },
         { SET_BAL_TRIAL, NULL },
     };
@@ -327,6 +329,9 @@ static bool same_view(const bal_view_t *a, const bal_view_t *b)
         || a->bind_refused != b->bind_refused
         || a->scan_armed != b->scan_armed
         || a->scan_unready != b->scan_unready
+        || a->have_cfg != b->have_cfg || a->cfg_refused != b->cfg_refused
+        || a->cfg_req_no != b->cfg_req_no || a->cfg_dropped != b->cfg_dropped
+        || strcmp(a->node_name, b->node_name) != 0
         || strcmp(a->bound_addr, b->bound_addr) != 0
         || strcmp(a->bound_name, b->bound_name) != 0) {
         return false;
@@ -360,6 +365,9 @@ void wireless_pane_set_bal(const bal_view_t *v)
     const bool armed_no = v != NULL && next.scan_armed != s_bal.scan_armed;
     const bool scan_no = v != NULL
                          && next.scan_unready != s_bal.scan_unready;
+    const bool cfg_no = v != NULL && next.cfg_refused != s_bal.cfg_refused;
+    const bool req_no = v != NULL && next.cfg_req_no != s_bal.cfg_req_no;
+    const bool dropped = v != NULL && next.cfg_dropped != s_bal.cfg_dropped;
     s_bal = next;
     settings_screen_invalidate();
     const bool scanning = s_bal.link == BAL_LINK_SCANNING;
@@ -371,5 +379,84 @@ void wireless_pane_set_bal(const bal_view_t *v)
     } else if (scan_no) {
         ui_router_set_alert(scanning ? TR(NODE_SCAN_RUNNING)
                                      : TR(BNODE_SCAN_OFF));
+    } else if (cfg_no) {
+        ui_router_set_alert(TR(PNODE_CFG_REFUSED));
+    } else if (req_no) {
+        ui_router_set_alert(
+            s_bal.cfg_req_why == NCL_REQ_ARMED ? TR(PNODE_CFG_ARMED)
+            : s_bal.cfg_req_why == NCL_REQ_BAD ? TR(PNODE_CFG_REFUSED)
+            : s_bal.info_role != 0u ? TR(BNODE_CFG_NONE)
+                                    : TR(PNODE_CFG_UNLINKED));
+    } else if (dropped) {
+        ui_router_set_alert(TR(PNODE_CFG_DROPPED));
     }
 }
+
+/* -------------------------------------------------------------- NODE NAME */
+
+/** @brief NODE NAME's value: the node's name, NOT LINKED, or OLD FIRMWARE
+ *         for a linked node built before its own settings.
+ *  @param out The text. @param n Its size. */
+static void name_value(char *out, size_t n)
+{
+    if (s_bal.have_cfg) {
+        snprintf(out, n, "%s", s_bal.node_name);
+    } else {
+        snprintf(out, n, "%s", s_bal.info_proto != 0u ? TR(PNODE_CFG_OLD)
+                                                      : TR(PNODE_BAT_UNKNOWN));
+    }
+}
+
+/**
+ * @brief Whether the name may change now: the band says why not.
+ * @return true while SAFE with the node's settings known.
+ */
+static bool name_may(void)
+{
+    if (ui_router_status()->armed) {
+        ui_router_set_alert(TR(PNODE_CFG_ARMED));
+        return false;
+    }
+    if (!s_bal.have_cfg) {
+        ui_router_set_alert(s_bal.info_proto != 0u ? TR(BNODE_CFG_NONE)
+                                                   : TR(PNODE_CFG_UNLINKED));
+        return false;
+    }
+    return true;
+}
+
+/** @brief The keyboard's OK: the name to the node.  @param name It. */
+static void name_typed(const char *name)
+{
+    if (!name_may() || s_q_n >= CMD_Q) {
+        return;
+    }
+    push(BAL_CMD_NAME, 0u);
+    snprintf(s_q[s_q_n - 1u].text, sizeof(s_q[0].text), "%s", name);
+}
+
+/** @brief NODE NAME tapped: the keyboard on the node's own name, empty
+ *         while it has none. */
+static void name_tap(void)
+{
+    if (!name_may()) {
+        return;
+    }
+    const bool own = rcnode_name_role(s_bal.node_name) == 0u;
+    settings_screen_type_name(TR(PNODE_ROW_NAME), own ? s_bal.node_name : "",
+                              name_typed);
+}
+
+/** @brief The row's lock line while ARMED.  @return Why, or NULL. */
+static const char *name_locked(void)
+{
+    return ui_router_status()->armed ? TR(MO_SET_SAFE_ONLY) : NULL;
+}
+
+const ui_setlist_custom_t wireless_bal_name_row = {
+    .label = TX_PNODE_ROW_NAME,
+    .help = TX_PNODE_ROW_NAME_HELP,
+    .value_text = name_value,
+    .tap = name_tap,
+    .locked = name_locked,
+};

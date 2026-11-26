@@ -103,11 +103,15 @@ The power node is an ESP32-C6 with its own cell that reads an INA228 board in th
 | INA228 source | WIRED, NODE | WIRED | WIRED: the IOmcu's INA228 ([Sensors](setup-sensors.md)); NODE: the power node's readings. Shown with the node off too, so the source can go back to WIRED |
 | Scan for node | `SCAN` | | a tap opens [Search](#search) and scans 10s for the power nodes in range; a switch to ARMED stops the scan, `STOPPED BY ARM`; refused while ARMED, with `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST` in the band |
 | Bound node | `NONE` or the node's name | `NONE` | a tap opens [Search](#search) on the last scan's list. RESET keeps the bound node |
+| Node name | the node's name, `OLD FIRMWARE`, `NOT LINKED` | | the name kept on the node, up to 16 characters A to Z, 0 to 9, space, `-`, `_`, `.`. A tap opens the keyboard; OK writes it to the node, an empty name clears it. Bound node and Search show it. Only while SAFE and linked |
 | Node battery | `3.92V`, `LOW 3.41V`, `NO CELL`, `READ FAILED`, `NOT LINKED` | | the node's cell, from its status every 1s; `LOW` under 3.5V |
 | Node INA228 | `0x40, 500uΩ`, `NOT FOUND`, `NOT LINKED` | | the address the node found its INA228 at, and the shunt the node holds, from its INFO after each connect and each shunt change |
-| Node shunt | 50 to 10000µΩ | 200µΩ | the shunt of the INA228 board on the node; the MATEK I2C-INA-BM's is 200µΩ. The panel writes it to the node after each connect and each change when the node holds another; the node keeps it through restarts. The full scale is 40.96mV over the shunt: 204.8A on 200µΩ, 81.92A on 500µΩ, 4.096A on 10000µΩ. Each change clears the node's charge and energy totals. Does not change while ARMED. A node whose firmware takes no shunt: `POWER NODE TAKES NO SHUNT: UPDATE ITS FIRMWARE` in the band |
+| INA228 address | AUTO, 0x40 to 0x4F | AUTO | AUTO: the node searches 0x40 to 0x4F; a fixed address: the node asks that one only. Each step of `<` or `>` writes it to the node. Only while SAFE and linked |
+| Node shunt | 50 to 10000µΩ | 200µΩ | the shunt of the INA228 board on the node; the MATEK I2C-INA-BM's is 200µΩ. The panel writes it to the node after each connect and each change when the node holds another; the node keeps it through restarts. The full scale is 40.96mV over the shunt: 204.8A on 200µΩ, 81.92A on 500µΩ, 4.096A on 10000µΩ. Each change clears the node's charge and energy totals. The display node's own SETUP sets the shunt too; the last change wins, and a change on the node comes into this setting at the next link. Does not change while ARMED. A node whose firmware takes no shunt: `POWER NODE TAKES NO SHUNT: UPDATE ITS FIRMWARE` in the band |
 
-![WIRELESS on the POWER NODE entry, scrolled to Node INA228 and Node shunt](view:setup-wireless-pnode-shunt)
+![WIRELESS on the POWER NODE entry, scrolled to Node INA228, INA228 address and Node shunt](view:setup-wireless-pnode-shunt)
+
+![Node name tapped: the name keyboard](view:setup-wireless-pnode-name)
 
 With INA228 source on NODE:
 
@@ -116,7 +120,7 @@ With INA228 source on NODE:
 - With Power node ON and a node bound, the MOTOR & ESC tile on the [menu](overview.md#the-simulated-mark) carries no SIMULATED mark, also with the IOmcu's INA228 OFF and with the node not connected.
 - An ARM of MOTOR & ESC or ESC STICK is refused while Power node is OFF or no reading came in the last 100ms, with `Cannot switch to ARMED: no power node readings. Set INA228 source WIRED or connect the node.` in the band. SERVO and OUTPUTS arm whatever the node does.
 - In a MOTOR & ESC or ESC STICK run, a gap without a reading of up to 300ms rides, once in 10s. A longer gap, or a second one within 10s, switches the bench to SAFE with all outputs off, and the band shows `POWER NODE READINGS LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF`. A SERVO or OUTPUTS run does not end on the node.
-- INA228 source and Node shunt do not change while ARMED.
+- INA228 source, Node shunt, Node name and INA228 address do not change while ARMED: `NO NODE SETTING CHANGE WHILE ARMED: SWITCH TO SAFE FIRST`. A node whose firmware has no name: `THE NODE TAKES NO NAME OR ADDRESS: UPDATE ITS FIRMWARE`.
 - The node's readings feed no protection: the current limits and trips read their own sensors.
 
 | State | When |
@@ -148,6 +152,7 @@ The balance node measures the vibration and the index of a rotor for [Balance](b
 | Balance node | ON, OFF | OFF | Bluetooth LE and the link to the bound node; OFF ends the link |
 | Scan for node | `SCAN` | | a tap opens [Search](#search) and scans 10s for the balance nodes in range, `rcbench-bal-XXXX`; a switch to ARMED stops the scan; refused while ARMED, with `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST` in the band |
 | Bound node | `NONE` or the node's name | `NONE` | a tap opens [Search](#search) on the last scan's list. RESET keeps the bound node |
+| Node name | the node's name, `OLD FIRMWARE`, `NOT LINKED` | | the name kept on the node, up to 16 characters A to Z, 0 to 9, space, `-`, `_`, `.`. A tap opens the keyboard; OK writes it to the node, an empty name clears it. Bound node and Search show it. Only while SAFE and linked |
 | Node battery | `3.91V`, `3.40V LOW`, `NO READING`, `--` | | the node's cell, from the STATUS the node sends beside its reports; LOW under 3.50V |
 | Trial mass | 0.01g to 20.00g | 0.50g | the mass taped on for the trial runs on [MOTOR & ESC](motor.md#balance) |
 

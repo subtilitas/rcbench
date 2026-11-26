@@ -300,8 +300,10 @@ int wireless_pane_rows(int entry, wl_row_t *out, int max)
         if (settings_get_bool(SET_PNODE_EN)) {
             n = add_custom(out, max, n, &wireless_pane_pnode_scan_row);
             n = add_custom(out, max, n, &wireless_pane_pnode_bind_row);
+            n = add_custom(out, max, n, &wireless_pane_pnode_name_row);
             n = add_custom(out, max, n, &wireless_pane_pnode_bat_row);
             n = add_custom(out, max, n, &wireless_pane_pnode_i228_row);
+            n = add_custom(out, max, n, &wireless_pane_pnode_addr_row);
             n = add_id(out, max, n, SET_PNODE_UOHM);
         }
     } else if (entry == WL_ENTRY_BAL) {

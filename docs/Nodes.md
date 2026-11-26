@@ -39,6 +39,9 @@ the project's notice.
 | the power node's battery reading | `firmware/node/main/node_bat.c` |
 | each board's pins, INFO board byte and update kind | `firmware/node/main/node_board.h` |
 | the display node's screen: values, highest and lowest, touch, formats, drawing, under the host suite | `firmware/node/main/node_view.c` |
+| the display node's splash and SETUP, the I2C SCAN, under the host suite | `firmware/node/main/node_setup.c`, `firmware/node/main/node_setup_view.c`, `firmware/node/main/node_scan.c` |
+| the node's own settings (NAME, INA228 ADDRESS, SHUNT) and RCNODE_T_CONFIG, the rules under the host suite | `firmware/node/main/node_store.c`, `firmware/node/main/node_set.c` |
+| the panel's side of the node's own settings, under the host suite | `shared/ui/node_cfg_link.c` |
 | the display node's display and touch | `firmware/node/main/node_lcd.c`, `firmware/node/main/node_disp.c` |
 | the console | `firmware/node/main/node_console.c` |
 | the servo role: the UART link to the Core2350B, the pump, the console's `srv` | `firmware/node/main/node_srv_link.c`, `firmware/node/main/node_srv.c` |
@@ -201,12 +204,17 @@ that answers 5449h with die 228h; another part is never written to, the
 FT6336G (0x38) and ES8311 (0x18) never asked. The search's NACKs (not
 acknowledged) do not count in `errors`. Without a find STATUS names
 `absent` or `wrong id`, and the search starts again 1000ms on, as after a
-part found reset. INFO names the address found, 0 for none.
+part found reset. INFO names the address found, 0 for none. INA228 ADDRESS
+(AUTO by default, or a fixed 0x40 to 0x4F, NVS namespace `node`, key
+`i228`) restricts the search to one address with the same check; the
+display node's SETUP and the panel's POWER NODE entry set it
+([Nodes-setup](Nodes-setup.md#the-settings-over-the-link)).
 
 **The shunt.** NODE SHUNT on the panel, 50 to 10,000µΩ, 200µΩ by default,
 goes to the node as SHUNT. The node keeps it in NVS (non-volatile storage,
 namespace `pwr`, key `shunt_uohm`), names it in INFO at once and sets the
-part up with it at the next tick. ADCRANGE 1 and SHUNT_CAL 4096 hold for
+part up with it at the next tick. The display node's SETUP sets it too; the
+last change wins ([The shunt in step](Nodes-setup.md#the-shunt-in-step)). ADCRANGE 1 and SHUNT_CAL 4096 hold for
 every shunt, the full scale is 40.96mV over the shunt: 819.2A on 50µΩ,
 204.8A on 200µΩ, 4.096A on 10,000µΩ. A change clears CHARGE and ENERGY and
 counts in `epoch`. The MATEK on 200µΩ gives the windows and INFO of the
@@ -477,65 +485,17 @@ unconfirmed, so the 5V goes into the USB-C socket. A cell on the battery
 socket is not needed; the node does not watch it, and STATUS reports what
 IO9 reads.
 
-### The screen
+### The screen and the node's SETUP
 
-![The display node without a link](img/node-values.png)
+![The boot splash](img/node-splash.png)
 
-The screen is 320 × 240, landscape. The band at the top names the link:
-`STANDALONE` without one, `CONNECTED` once a central is connected and
-subscribed. Under it are three rows: voltage, current and power. Each
-row shows its live value in 32x44 digits and, right of the line, its
-highest (red triangle) and lowest (blue triangle).
-
-| Value | Shown | Range |
-| --- | --- | --- |
-| voltage | 2 decimals | 0.00V to 99.99V |
-| current | 1 decimal | -999.9A to 999.9A |
-| power | 1 decimal under 100W, else whole watts | -99999W to 99999W |
-
-Each value is rounded half away from zero and clamped to its range; units
-follow without a space (`12.60V`, `35.2A`, `443W`). The live values are the
-mean of the INA228's 20ms windows since the last frame, 5 frames a second
-(`NV_FRAME_MS`, 200ms): about 10 windows a frame. A window's power is its
-mean voltage times its mean current. The highest and lowest are those of
-single windows since the start or the last reset; they live in RAM and a
-restart clears them. A window without a sample, or whose current samples
-all clipped, counts for nothing. Without a window since the last frame the
-values read `--` and the band reads `NO SENSOR`.
-
-![No window from the INA228](img/node-no-sensor.png)
-
-Only what changed is drawn and sent to the display: a frame with one new
-value sends that value's part of its row, not the frame of 153,600 bytes.
-
-### Touch
-
-| Touch | Does |
-| --- | --- |
-| a tap on a row's highest and lowest (x 220 to 319) | resets that row's two |
-| a hold of 2s anywhere | resets all six, once, while still held |
-
-Nothing else is a touch function. The hold fires on the first touch read
-that sees the finger 2s or more into the press. A press whose last touch
-read comes before 2s is a tap; the press ends 60ms after the last touch
-read, and the touch is read every 20ms. From 300ms of a press on, a bar at the band's foot fills toward the
-2s and the band reads `RESET ALL`.
-
-![A hold of 1.2s](img/node-hold.png)
-
-The FT6336G reports the panel's portrait frame; the firmware turns it for
-the landscape screen. That the turn matches the board is unconfirmed: each
-tap prints its point on the console (`disp: tap at 260,60: highest and
-lowest reset`). `NODE_LCD_TURN` 1 in `node_board.h` turns screen and touch
-by 180°.
-
-### Language
-
-The texts are English. While a panel is linked, they follow the panel's
-language: the panel writes LANG to CONTROL after INFO on each link and at
-each change of its language ([protocols/rcnode](../protocols/rcnode/README.md)).
-German shows `VERBUNDEN`, `KEIN SENSOR` and `ALLE ZURÜCKSETZEN`. Without a
-link the texts are English again.
+The screen shows a boot splash for 10s after power-on, with a SETUP button
+offered until a panel links, then the meter: voltage, current and power,
+each with its highest and lowest. The node's own SETUP sets its NAME, its
+INA228 ADDRESS (AUTO or fixed) and its SHUNT, and runs an I2C SCAN that
+writes no register. The screens, the touch, the language and how the shunt
+stays in step with the panel's NODE SHUNT are on
+[The display node's screen and the nodes' own settings](Nodes-setup.md).
 
 ### Power and sleep
 
@@ -733,7 +693,12 @@ fourth client, owner 3
   the panel writes SHUNT when INFO names another shunt, after a RUN write
   owed and never while ARMED, then reads INFO again once SAFE; a timeout
   reads INFO and writes again. ATT error 0x13 (a node built before SHUNT)
-  gives `POWER NODE TAKES NO SHUNT: UPDATE ITS FIRMWARE`.
+  gives `POWER NODE TAKES NO SHUNT: UPDATE ITS FIRMWARE`. A node that
+  takes CONFIG holds the write until its CONFIG came, and the last change
+  of the two ends wins ([The shunt in step](Nodes-setup.md#the-shunt-in-step)).
+- **The node's own settings.** After INFO the panel writes CONFIG; NODE
+  NAME and INA228 ADDRESS write NAME and I228 while SAFE
+  ([Nodes-setup](Nodes-setup.md#the-settings-over-the-link)).
 - **The RUN marker.** At each switch to ARMED the panel writes RUN with the
   run's tag, 1 to 255, to CONTROL. A link that is down then gets the write
   when it comes back within the run. A link that comes back within the run
@@ -1049,6 +1014,10 @@ I (5123) node: srv iomcu up, panel LINKED, SAFE, beat on, faults 0x0000, answere
 | `srv stop` | STOP, as the panel's |
 
 ## Current limitations
+
+- A panel built before CONFIG overwrites a shunt changed on the display
+  node's SETUP at its next link
+  ([Nodes-setup](Nodes-setup.md#current-limitations)).
 
 - The servo node has no panel packets and no control ops of its own yet in
   `protocols/rcnode`: its KEEPALIVE, STOP, ARM, SAFE and THROTTLE come
