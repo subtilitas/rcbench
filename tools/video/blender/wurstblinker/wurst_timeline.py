@@ -6,8 +6,9 @@ stretch applied) and writes one entry per video frame i, t = i / FPS:
 - scene, lt, a: scene index, time in the scene, and the 3D layer's
   opacity (player.js fades its WebGL canvas over FADE seconds at each
   scene change);
-- is3d: the scene is a "wurst" or "wurst-kinetic" case scene;
-- model: "wurst" or "wurst-kinetic" (3D scenes only);
+- is3d: the scene is a "wurst", "wurst-kinetic" or "wurst-dog" case
+  scene;
+- model: "wurst", "wurst-kinetic" or "wurst-dog" (3D scenes only);
 - cam, target: camera position and look-at point, mm, three.js axes;
 - swing, fire: wurst3d.js setSwing(k) and setFire(k), 0 to 1.
 
@@ -23,7 +24,7 @@ import sys
 
 FPS = 30
 FADE = 0.45
-MODELS = ("wurst", "wurst-kinetic")
+MODELS = ("wurst", "wurst-kinetic", "wurst-dog")
 
 
 def ss(x):

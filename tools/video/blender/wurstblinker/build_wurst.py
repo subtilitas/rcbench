@@ -5,7 +5,8 @@ script builds the same scene from the two STEP models of
 hardware/mechanical/wurstblinker.py, converted to .glb by
 tools/video_cad.py --solids, and keys it per video frame from a timeline
 (wurst_timeline.py): camera, the arm's swing, the lamp, the three
-strokes, the shot and the muzzle puffs.
+strokes, the dog's jump, the shot, its hit on the traffic light, its
+fall to the ground and the muzzle puffs.
 
 The look, as wurst3d.js draws it:
 
@@ -21,7 +22,9 @@ The look, as wurst3d.js draws it:
   out along its vertex normals, faces reversed, back faces culled, colour
   0x10131c.
 - A pale disc 0xfff1c2, radius 360mm, at (90, 150, -140) behind the
-  model.
+  model; the kinetic scene has a second one, radius 300mm, at
+  (1150, 150, -160) behind the traffic light, the dog scene a third,
+  radius 560mm, at (120, -330, -150).
 - The ground at y = 0 shows the sun's shadow only, at the player's
   opacity .5, inside the player's shadow camera (+-300mm, depth 10mm to
   900mm).
@@ -32,7 +35,9 @@ rings, the tank a flat-ended cylinder.  Each is replaced by its round
 shape (capsule, ball, torus) of the solid's size.  The boxes get their
 edges rounded with wurst3d.js's radii.  The sausage carries a knot at
 each end, the gauge a needle and the barrel a dark bore (wurst3d.js).
-The barrel's rings take the player's colour 0x5f6a80.
+The barrel's rings take the player's colour 0x5f6a80.  The traffic
+light, the mast, the dog and the further discs have no STEP model: they
+are built from wurst3d.js's sizes.
 
 Usage (Blender 5.3, headless):
 
@@ -682,6 +687,31 @@ def plain_box(w, h, d, r):
     return bm
 
 
+def cylinder(radius, height, segs=32):
+    """Make an upright cylinder (CylinderGeometry): smooth side, flat caps.
+
+    Args:
+        radius: The radius, mm.
+        height: The height (y), mm.
+        segs: Segments around.
+
+    Returns:
+        The bmesh about its centre.
+    """
+    bm = bmesh.new()
+    bmesh.ops.create_cone(
+        bm, cap_ends=True, segments=segs, radius1=radius, radius2=radius,
+        depth=height,
+    )
+    bmesh.ops.rotate(
+        bm, verts=bm.verts, cent=(0, 0, 0),
+        matrix=Matrix.Rotation(math.radians(-90), 3, "X"),
+    )
+    bm.normal_update()
+    smooth_shading(bm, False)
+    return bm
+
+
 def disc_bm(radius, segs=96):
     """Make a flat disc in the local xy plane.
 
@@ -912,13 +942,15 @@ def knots(parent, axis, half):
         finish(ball(4.5, 16, 12), nm("knot"), toon(KNOT), parent, tuple(p))
 
 
-def build(model, glb, kinetic):
+def build(model, glb, kinetic, dog=False):
     """Build one model with its moving parts and effects.
 
     Args:
-        model: "wurst" or "wurst-kinetic".
+        model: "wurst", "wurst-kinetic" or "wurst-dog".
         glb: The model's .glb file.
         kinetic: Build the kinetic node.
+        dog: Set the node on a mast over a dog (wurst3d.js
+            buildWurst(false, true)).
 
     Returns:
         A dict of the objects and materials the keys move.
@@ -980,8 +1012,11 @@ def build(model, glb, kinetic):
             s = finish(plain_box(ln, 5, 3, 1.2), nm("stroke"), mat_s,
                        strokes, at, outline=False, shadow=False)
             s.rotation_euler = (0, 0, a)
+        hound = None
+        if dog:
+            hound = build_dog(model, grp)
         return {"grp": grp, "pivot": pivot, "strokes": strokes,
-                "lamp": lamp_mat}
+                "lamp": lamp_mat, "hound": hound}
 
     shot_at = np.array([120.0, 134.0, -10.0])
     shot = empty(model + "_shot", grp, tuple(shot_at))
@@ -1001,6 +1036,23 @@ def build(model, glb, kinetic):
                   emission_material("bore", aces(srgb_lin(INK))), grp,
                   (223.4, 134, -10), outline=False, shadow=False)
     bore.rotation_euler = (0, math.pi / 2, 0)
+    # A traffic light 987mm from the muzzle, before a second pale disc;
+    # it turns about its foot when the sausage hits it (wurst3d.js).
+    finish(disc_bm(300), "far_disc",
+           emission_material("far_disc", aces(srgb_lin(0xFFF1C2))), grp,
+           (1150, 150, -160), outline=False, shadow=False)
+    light = empty(model + "_light", grp, (1240, 0, -10))
+    finish(cylinder(34, 8), "light_foot", toon(srgb_lin(0x232833)), light,
+           (0, 4, 0))
+    finish(cylinder(6, 64), "light_pole", toon(srgb_lin(0x8A93A6)), light,
+           (0, 40, 0))
+    finish(plain_box(60, 170, 50, 8), "light_housing",
+           toon(srgb_lin(0x2B303B)), light, (0, 150, 0))
+    lamps = []
+    for y, c in ((205, 0xFF3B4E), (150, 0xFFB000), (95, 0x2FD06B)):
+        mat = toon(srgb_lin(c), srgb_lin(c) * 0.9, key=f"light_{c:06x}")
+        finish(ball(18), nm("light_lamp"), mat, light, (0, y, 20))
+        lamps.append(mat)
     # Four puffs at the muzzle.
     puffs = []
     for x, y, z, r in ((0, 0, 0, 30), (22, 20, 8, 22), (26, -16, -6, 20),
@@ -1008,10 +1060,52 @@ def build(model, glb, kinetic):
         puffs.append(finish(ball(r, 20, 14), nm("puff"),
                             toon(srgb_lin(0xFFFFFF)), grp,
                             (250 + x, 134 + y, -10 + z)))
-    return {"grp": grp, "shot": shot, "puffs": puffs, "lamp": lamp_mat}
+    return {"grp": grp, "shot": shot, "puffs": puffs, "lamp": lamp_mat,
+            "light": light, "lamps": lamps}
+
+
+DEEP = 620.0  # wurst3d.js: the mast's height in the dog scene
+FUR, EAR = srgb_lin(0xB9793F), srgb_lin(0x6B3F1E)
+
+
+def build_dog(model, grp):
+    """Add the mast, its foot, the third disc and the dog (wurst3d.js).
+
+    Args:
+        model: The model's name.
+        grp: The model's group.
+
+    Returns:
+        The dog's group; its keys set the jump and the tilt.
+    """
+    finish(cylinder(12, DEEP), "mast", toon(srgb_lin(0x8A93A6)), grp,
+           (0, -DEEP / 2, 0))
+    finish(cylinder(60, 10), "mast_foot", toon(srgb_lin(0x3A4A72)), grp,
+           (0, 5 - DEEP, 0))
+    finish(disc_bm(560), "low_disc",
+           emission_material("low_disc", aces(srgb_lin(0xFFF1C2))), grp,
+           (120, -330, -150), outline=False, shadow=False)
+    hound = empty(model + "_hound", grp, (250, -DEEP, 10))
+    fur, ink = toon(FUR), toon(srgb_lin(INK))
+    finish(capsule(26, 70 + 2 * 26, 0), "dog_body", fur, hound, (0, 62, 0))
+    finish(ball(24), "dog_head", fur, hound, (-62, 94, 0))
+    finish(plain_box(32, 16, 18, 5), "dog_snout", fur, hound, (-90, 88, 0))
+    finish(ball(5, 16, 12), "dog_nose", ink, hound, (-107, 91, 0))
+    finish(ball(3.5, 12, 8), "dog_eye", ink, hound, (-74, 102, 20))
+    for z in (-17, 17):
+        ear = finish(plain_box(11, 28, 6, 2.5), nm("dog_ear"), toon(EAR),
+                     hound, (-50, 104, z))
+        ear.rotation_euler = (0, 0, 0.5)
+        for x in (-34, 36):
+            finish(cylinder(6, 40), nm("dog_leg"), fur, hound,
+                   (x, 20, z * 0.8))
+    tail = finish(cylinder(4, 38), "dog_tail", fur, hound, (64, 84, 0))
+    tail.rotation_euler = (0, 0, -0.8)
+    return hound
 
 
 NODE = build("wurst", CFG["glb_node"], False)
+DOG = build("wurst-dog", CFG["glb_node"], False, dog=True)
 KIN = build("wurst-kinetic", CFG["glb_kinetic"], True)
 
 # ------------------------------------------------------------------- camera
@@ -1115,33 +1209,60 @@ for c in range(3):
 
 # Objects with keys of their own (strokes, shot, puffs) carry the scene's
 # visibility in them.
-OWN = {NODE["strokes"], KIN["shot"], *KIN["puffs"]}
+OWN = {NODE["strokes"], DOG["strokes"], KIN["shot"], *KIN["puffs"]}
 OWN |= {c for o in list(OWN) for c in o.children_recursive}
-for model, parts in (("wurst", NODE), ("wurst-kinetic", KIN)):
+for model, parts in (("wurst", NODE), ("wurst-dog", DOG),
+                     ("wurst-kinetic", KIN)):
     on = [h["model"] == model for h in HELD]
     for ob in [parts["grp"], *parts["grp"].children_recursive]:
         if ob not in OWN:
             key(ob, "hide_render", 0, [0.0 if o else 1.0 for o in on],
                 constant=True)
 
-sw = [h.get("swing", 0.0) if h["model"] == "wurst" else 0.0 for h in HELD]
-key(NODE["pivot"], "rotation_euler", 2, [-math.pi / 2 * k for k in sw])
-key(NODE["lamp"].node_tree, GLOW, 0, sw)
-hide_keys([NODE["strokes"]],
-          [h["model"] == "wurst" and h.get("swing", 0.0) > 0.85
-           for h in HELD])
+# The ground lies DEEP lower in the dog scene.
+key(ground, "location", 1,
+    [-0.2 - (DEEP if h["model"] == "wurst-dog" else 0) for h in HELD],
+    constant=True)
+for model, parts in (("wurst", NODE), ("wurst-dog", DOG)):
+    sw = [h.get("swing", 0.0) if h["model"] == model else 0.0
+          for h in HELD]
+    key(parts["pivot"], "rotation_euler", 2, [-math.pi / 2 * k for k in sw])
+    key(parts["lamp"].node_tree, GLOW, 0, sw)
+    hide_keys([parts["strokes"]],
+              [h["model"] == model and k > 0.85 for h, k in zip(
+                  HELD, sw, strict=True)])
+    if parts["hound"] is not None:
+        # wurst3d.js setSwing: the dog jumps 260mm and tilts with k.
+        key(parts["hound"], "location", 1, [260 * k - DEEP for k in sw])
+        key(parts["hound"], "rotation_euler", 2,
+            [-0.35 - 0.45 * k for k in sw])
 
 kin_on = [h["model"] == "wurst-kinetic" for h in HELD]
 fk = [h.get("fire", 0.0) if on else 0.0 for h, on in zip(HELD, kin_on,
                                                           strict=True)]
+# wurst3d.js setFire: to HIT the sausage flies (u), from HIT on it bounces
+# back from the traffic light, turns once and falls to the ground (v).
+HIT = 0.6
+uu = [min(k / HIT, 1.0) for k in fk]
+vv = [max((k - HIT) / (1 - HIT), 0.0) for k in fk]
 shot = KIN["shot"]
-key(shot, "location", 0, [120 + 1100 * k for k in fk])
-key(shot, "location", 1, [134 - 145 * k * k for k in fk])
-key(shot, "rotation_euler", 2, [-0.5 * k for k in fk])
+key(shot, "location", 0,
+    [120 + 1000 * u - 260 * v for u, v in zip(uu, vv, strict=True)])
+key(shot, "location", 1,
+    [134 - 14 * u * u + 160 * v - 266 * v * v
+     for u, v in zip(uu, vv, strict=True)])
+key(shot, "rotation_euler", 2, [2 * math.pi * v for v in vv])
+key(KIN["light"], "rotation_euler", 2,
+    [-0.12 * math.exp(-3 * v) * math.sin(14 * v) for v in vv])
+for i, mat in enumerate(KIN["lamps"]):
+    # Red until the hit, amber from it; green stays dark.
+    key(mat.node_tree, GLOW, 0,
+        [1.0 if ((i == 1) if v > 0 else (i == 0)) else 0.0 for v in vv],
+        constant=True)
 hide_keys([shot], [on and k > 0 for on, k in zip(kin_on, fk, strict=True)])
 key(KIN["lamp"].node_tree, GLOW, 0, [1.0 if k > 0 else 0.0 for k in fk],
     constant=True)
-puff = [math.sin(math.pi * k / 0.35) if 0 < k < 0.35 else 0.0 for k in fk]
+puff = [math.sin(math.pi * k / 0.2) if 0 < k < 0.2 else 0.0 for k in fk]
 for p in KIN["puffs"]:
     for c in range(3):
         key(p, "scale", c, [max(v, 0.25) for v in puff])
