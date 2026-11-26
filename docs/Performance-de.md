@@ -148,9 +148,10 @@ est. ms and est. fps: not measured
 
 Die Zahl wiederholt sich bei jedem Lauf desselben Stands exakt: Das Werkzeug
 gibt cachegrind die Geometrie aller drei Caches vor, sodass keiner von der CPU
-des Hosts übernommen wird, und der Test zeichnet mit einem Stack an fester
-Position innerhalb von 64KB, sodass argv, die Umgebungsvariablen und die Pfade sie
-nicht verschieben. `test_frame_cost.py` misst fünf Modi zweimal und schlägt
+des Hosts übernommen wird, der Test zeichnet mit einem Stack an fester
+Position innerhalb von 64KB, und er liest vor dem ersten Frame 1MiB der Reihe
+nach, wonach jeder modellierte Cache nur diese Zeilen hält, sodass argv, die
+Umgebungsvariablen und die Pfade sie nicht verschieben. `test_frame_cost.py` misst fünf Modi zweimal und schlägt
 bei einem Unterschied von einem Fill fehl. Compiler, C-Bibliothek und valgrind prägen
 die Zahl weiterhin. Die Tabelle enthält die Zahlen des ubuntu-26.04-Runners
 der CI (Continuous Integration), und eine Maschine mit anderen Versionen misst
