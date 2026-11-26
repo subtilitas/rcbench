@@ -1,0 +1,637 @@
+{
+ "name": "wurstblinker",
+ "lang": "en",
+ "brand": "Wurstblinker",
+ "steps": 3,
+ "chapters": [
+  "The node",
+  "On the bench",
+  "Approval"
+ ],
+ "music": "vivaldi-spring",
+ "music_gain": 0.5,
+ "voice": {
+  "blend": {
+   "af_heart": 0.6,
+   "af_nicole": 0.4
+  },
+  "lang": "en-us",
+  "speed": 0.94
+ },
+ "scenes": [
+  {
+   "type": "case",
+   "model": "wurst",
+   "dur": 33.46,
+   "title": {
+    "from": 0.3,
+    "to": 7.28,
+    "kicker": "rcbench",
+    "heading": "The Wurstblinker<br>node",
+    "text": "A remote node with 1 servo<br>and 1 sausage."
+   },
+   "chips": [
+    {
+     "from": 7.58,
+     "to": 15.64,
+     "n": 1,
+     "text": "1 servo, 1 sausage"
+    },
+    {
+     "from": 15.84,
+     "to": 33.16,
+     "n": 1,
+     "text": "1.5 swings a second"
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      -320,
+      230,
+      820
+     ],
+     [
+      -250,
+      150,
+      0
+     ]
+    ],
+    [
+     7.58,
+     [
+      -320,
+      230,
+      820
+     ],
+     [
+      -250,
+      150,
+      0
+     ]
+    ],
+    [
+     9.58,
+     [
+      100,
+      150,
+      760
+     ],
+     [
+      100,
+      150,
+      0
+     ]
+    ],
+    [
+     15.84,
+     [
+      100,
+      150,
+      760
+     ],
+     [
+      100,
+      150,
+      0
+     ]
+    ],
+    [
+     25.86,
+     [
+      100,
+      150,
+      760
+     ],
+     [
+      100,
+      150,
+      0
+     ]
+    ],
+    [
+     27.46,
+     [
+      170,
+      170,
+      520
+     ],
+     [
+      130,
+      150,
+      0
+     ]
+    ],
+    [
+     33.459999999999994,
+     [
+      170,
+      170,
+      520
+     ],
+     [
+      130,
+      150,
+      0
+     ]
+    ]
+   ],
+   "swing": [
+    [
+     0,
+     0
+    ],
+    [
+     10.58,
+     0
+    ],
+    [
+     11.08,
+     1
+    ],
+    [
+     12.58,
+     1
+    ],
+    [
+     13.08,
+     0
+    ],
+    [
+     16.84,
+     0
+    ],
+    [
+     17.06,
+     1
+    ],
+    [
+     17.28,
+     1
+    ],
+    [
+     17.5,
+     0
+    ],
+    [
+     17.51,
+     0
+    ],
+    [
+     17.73,
+     1
+    ],
+    [
+     17.95,
+     1
+    ],
+    [
+     18.17,
+     0
+    ],
+    [
+     18.17,
+     0
+    ],
+    [
+     18.39,
+     1
+    ],
+    [
+     18.61,
+     1
+    ],
+    [
+     18.83,
+     0
+    ],
+    [
+     18.84,
+     0
+    ],
+    [
+     19.06,
+     1
+    ],
+    [
+     19.28,
+     1
+    ],
+    [
+     19.5,
+     0
+    ],
+    [
+     19.51,
+     0
+    ],
+    [
+     19.73,
+     1
+    ],
+    [
+     19.95,
+     1
+    ],
+    [
+     20.17,
+     0
+    ],
+    [
+     20.18,
+     0
+    ],
+    [
+     20.4,
+     1
+    ],
+    [
+     20.62,
+     1
+    ],
+    [
+     20.84,
+     0
+    ],
+    [
+     20.84,
+     0
+    ],
+    [
+     21.06,
+     1
+    ],
+    [
+     21.28,
+     1
+    ],
+    [
+     21.5,
+     0
+    ],
+    [
+     21.51,
+     0
+    ],
+    [
+     21.73,
+     1
+    ],
+    [
+     21.95,
+     1
+    ],
+    [
+     22.17,
+     0
+    ],
+    [
+     22.18,
+     0
+    ],
+    [
+     22.4,
+     1
+    ],
+    [
+     22.62,
+     1
+    ],
+    [
+     22.84,
+     0
+    ],
+    [
+     22.84,
+     0
+    ],
+    [
+     23.06,
+     1
+    ],
+    [
+     23.28,
+     1
+    ],
+    [
+     23.5,
+     0
+    ],
+    [
+     23.51,
+     0
+    ],
+    [
+     23.73,
+     1
+    ],
+    [
+     23.95,
+     1
+    ],
+    [
+     24.17,
+     0
+    ],
+    [
+     24.18,
+     0
+    ],
+    [
+     24.4,
+     1
+    ],
+    [
+     24.62,
+     1
+    ],
+    [
+     24.84,
+     0
+    ],
+    [
+     24.84,
+     0
+    ],
+    [
+     25.06,
+     1
+    ],
+    [
+     25.28,
+     1
+    ],
+    [
+     25.5,
+     0
+    ],
+    [
+     25.51,
+     0
+    ],
+    [
+     25.73,
+     1
+    ],
+    [
+     25.95,
+     1
+    ],
+    [
+     26.17,
+     0
+    ],
+    [
+     26.18,
+     0
+    ],
+    [
+     26.4,
+     1
+    ],
+    [
+     26.62,
+     1
+    ],
+    [
+     26.84,
+     0
+    ],
+    [
+     26.85,
+     0
+    ],
+    [
+     27.07,
+     1
+    ],
+    [
+     27.29,
+     1
+    ],
+    [
+     27.51,
+     0
+    ],
+    [
+     27.51,
+     0
+    ],
+    [
+     27.73,
+     1
+    ],
+    [
+     27.95,
+     1
+    ],
+    [
+     28.17,
+     0
+    ],
+    [
+     28.18,
+     0
+    ],
+    [
+     28.4,
+     1
+    ],
+    [
+     28.62,
+     1
+    ],
+    [
+     28.84,
+     0
+    ],
+    [
+     28.85,
+     0
+    ],
+    [
+     29.07,
+     1
+    ],
+    [
+     29.29,
+     1
+    ],
+    [
+     29.51,
+     0
+    ],
+    [
+     29.51,
+     0
+    ],
+    [
+     29.73,
+     1
+    ],
+    [
+     29.95,
+     1
+    ],
+    [
+     30.17,
+     0
+    ],
+    [
+     30.18,
+     0
+    ],
+    [
+     30.4,
+     1
+    ],
+    [
+     30.62,
+     1
+    ],
+    [
+     30.84,
+     0
+    ],
+    [
+     30.85,
+     0
+    ],
+    [
+     31.07,
+     1
+    ],
+    [
+     31.29,
+     1
+    ],
+    [
+     31.51,
+     0
+    ],
+    [
+     33.16,
+     0
+    ]
+   ],
+   "labels": [
+    {
+     "from": 8.18,
+     "to": 14.94,
+     "anchor": "node",
+     "at": [
+      150,
+      250
+     ],
+     "side": "r",
+     "size": "sm",
+     "title": "Remote node",
+     "text": "Takes its command from the bench by radio."
+    },
+    {
+     "from": 11.18,
+     "to": 15.34,
+     "anchor": "sausage",
+     "at": [
+      1380,
+      300
+     ],
+     "size": "sm",
+     "title": "Sausage",
+     "text": "On the servo's arm, held by 2 clips."
+    },
+    {
+     "from": 27.66,
+     "to": 32.26,
+     "anchor": "sausage",
+     "at": [
+      1380,
+      250
+     ],
+     "size": "sm",
+     "title": "Bockwurst",
+     "text": "180mm long, 28mm across. Other sausages: not tested."
+    }
+   ],
+   "say": [
+    {
+     "at": 1.2,
+     "text": "This video shows how R C bench signals a turn with a sausage."
+    },
+    {
+     "at": 7.58,
+     "text": "The Wurstblinker is a remote node. It carries one servo, and on the servo's arm one sausage."
+    },
+    {
+     "at": 15.84,
+     "text": "On a command from the bench the arm swings the sausage out by 90 degrees, and back, one and a half times a second."
+    },
+    {
+     "at": 25.86,
+     "text": "The sausage is a Bockwurst, 180 millimetres long. Other sausages are not tested."
+    }
+   ]
+  },
+  {
+   "type": "tour",
+   "steps": [
+    {
+     "view": "servo-limrun-found",
+     "dur": 9.2,
+     "n": 2,
+     "kicker": "02 · On the bench",
+     "title": "The stop of the sausage",
+     "text": "The limit run finds where the sausage meets the fuselage and stops 1.0° before it.",
+     "say": "On the bench, the limit run finds where the sausage meets the fuselage, and stops one degree before it."
+    },
+    {
+     "view": "servo",
+     "dur": 5.9,
+     "n": 2,
+     "kicker": "02 · On the bench",
+     "title": "Current of a sausage",
+     "text": "A Bockwurst of 180mm adds to the servo's load. How much: not measured.",
+     "say": "A sausage adds to the servo's load. How much is not measured."
+    },
+    {
+     "view": "band-stop",
+     "dur": 6.0,
+     "n": 2,
+     "kicker": "02 · On the bench",
+     "title": "STOP",
+     "text": "STOP switches every output off. The sausage stays where it is.",
+     "say": "Stop switches every output off. The sausage stays where it is.",
+     "focus": [
+      832,
+      4,
+      188,
+      50
+     ]
+    },
+    {
+     "view": "help-overview",
+     "dur": 6.6,
+     "n": 3,
+     "kicker": "03 · Approval",
+     "title": "Approval",
+     "text": "Type approval as a direction indicator: not granted, not applied for.",
+     "say": "Approval as a direction indicator is not granted, and not applied for."
+    }
+   ]
+  },
+  {
+   "type": "end",
+   "dur": 8,
+   "heading": "Wurstblinker node",
+   "items": [
+    "1 servo, 1 sausage",
+    "90° out, 1.5 swings a second",
+    "The limit run finds the sausage's stop",
+    "Not a product"
+   ],
+   "note": "A joke. The Wurstblinker is Brösel's, from the Werner comics.",
+   "say": "The Wurstblinker node is not a product. The idea is Brösel's, from the Werner comics."
+  }
+ ]
+}
