@@ -258,7 +258,14 @@ atomic_uint s_test_open_txt;
  *        the card's root, set by the viewer before each call
  *        (log_viewer_io_t.folder). The task that renders' own.
  */
-static char s_card_dir[CARD_DIR_MAX];
+static char s_card_dir[CARD_RUN_DIR_MAX];
+
+/**
+ * @brief The folder last set did not fit s_card_dir: nothing is listed,
+ *        opened or deleted until a folder that fits is set, rather than a
+ *        folder cut short.  The task that renders' own.
+ */
+static bool s_card_dir_long;
 
 /**
  * @brief The mount the viewer's page was read from (storage_mount_count()).
@@ -271,11 +278,11 @@ static unsigned s_card_mount;
 /**
  * @brief Room for a listed file's whole path below s_card_dir:
  *        "/sdcard/USER/LOGS/<name>".  sizeof the mount point takes its "/"
- *        after it, CARD_DIR_MAX the folder and its "/", STORAGE_NAME_MAX the
- *        longest name the listing keeps and the terminator: 96 bytes.  A path
+ *        after it, CARD_RUN_DIR_MAX the folder and its "/", STORAGE_NAME_MAX
+ *        the longest name the listing keeps and the terminator: 104 bytes.  A path
  *        cut short would open or delete nothing, or another file.
  */
-#define CARD_PATH_MAX (sizeof(STORAGE_MOUNT_POINT) + CARD_DIR_MAX \
+#define CARD_PATH_MAX (sizeof(STORAGE_MOUNT_POINT) + CARD_RUN_DIR_MAX \
                        + STORAGE_NAME_MAX)
 
 /**
@@ -285,8 +292,8 @@ static unsigned s_card_mount;
 static bool card_busy(const char *name)
 {
     log_marks_t marks;
-    char run_dir[CARD_DIR_MAX];
-    char test_dir[CARD_DIR_MAX];
+    char run_dir[CARD_RUN_DIR_MAX];
+    char test_dir[CARD_RUN_DIR_MAX];
     log_open_marks(&marks, run_dir, test_dir);
     return log_marks_busy(&marks, s_card_dir, name);
 }
@@ -298,7 +305,15 @@ static bool card_busy(const char *name)
 static void card_folder(const char *dir, void *ctx)
 {
     (void)ctx;
-    snprintf(s_card_dir, sizeof(s_card_dir), "%s", (dir != NULL) ? dir : "");
+    const char *d = (dir != NULL) ? dir : "";
+    s_card_dir_long = strlen(d) >= sizeof(s_card_dir);
+    if (s_card_dir_long) {
+        ESP_LOGW(TAG, "folder of %u characters is past %u: not read",
+                 (unsigned)strlen(d), (unsigned)sizeof(s_card_dir) - 1u);
+        s_card_dir[0] = '\0';
+        return;
+    }
+    snprintf(s_card_dir, sizeof(s_card_dir), "%s", d);
 }
 
 /**
@@ -426,6 +441,13 @@ static int card_list(log_viewer_file_t *out, int max_entries,
     if (!storage_mounted()) {
         return -1;
     }
+    if (s_card_dir_long) {
+        /* A folder past s_card_dir: an empty list, not a shorter folder. */
+        log_select_page_t none;
+        log_select_page_begin(&none, out, max_entries, page);
+        (void)log_select_page_end(&none, page);
+        return 0;
+    }
     card_pick_t pick;
     /*
      * The tick counts the render task's progress for its watchdog
@@ -493,8 +515,8 @@ static bool card_open(const char *name, log_source_t *src, void *ctx)
      * it out: a name can reach here from a list taken before the run started
      * -- the screen holds its list until it is opened again or RESCAN.
      */
-    if (card_busy(name)) {
-        ESP_LOGW(TAG, "%s is still being written", name);
+    if (s_card_dir_long || card_busy(name)) {
+        ESP_LOGW(TAG, "%s is still being written or out of reach", name);
         return false;
     }
     /* An open is an event that looks: a card swapped since the list is
@@ -577,8 +599,8 @@ static bool card_remove(const char *name, void *ctx)
         || strcmp(name, ".") == 0 || strcmp(name, "..") == 0) {
         return false;
     }
-    if (card_busy(name)) {
-        ESP_LOGW(TAG, "%s is still being written", name);
+    if (s_card_dir_long || card_busy(name)) {
+        ESP_LOGW(TAG, "%s is still being written or out of reach", name);
         return false;
     }
     /* The viewer closes what it reads before it lists again, so nothing is
@@ -609,9 +631,10 @@ static bool card_remove(const char *name, void *ctx)
      * file carrying the number.  The same prefix as the run's, so
      * ATESTnnn.CSV takes ATESTnnn.TXT, and in the root a servo test's
      * SERVOnnn.CSV or BENCHnnn.CSV of firmware 0.21.0 and older takes its
-     * report. */
-    char txt[LOG_RUN_NAME_MAX];
-    log_name_report_of(txt, sizeof(txt), name);
+     * report, and in a servo's folder `limit run_007.csv` takes
+     * `limit run_007.txt` (fm_report_of()). */
+    char txt[FM_NAME_BUF];
+    fm_report_of(s_card_dir, name, txt, sizeof(txt));
     if (txt[0] != '\0') {
         storage_path(s_card_dir, txt, path, sizeof(path));
         if (remove(path) == 0) {
@@ -630,8 +653,8 @@ static bool card_logging(void *ctx)
 {
     (void)ctx;
     log_marks_t marks;
-    char run_dir[CARD_DIR_MAX];
-    char test_dir[CARD_DIR_MAX];
+    char run_dir[CARD_RUN_DIR_MAX];
+    char test_dir[CARD_RUN_DIR_MAX];
     log_open_marks(&marks, run_dir, test_dir);
     return fm_logging(&marks);
 }

@@ -8,6 +8,19 @@ history is in git.
 
 ### Added
 
+- FILES and the Wi-Fi page keep a labelled servo's folders: `Servos` and
+  each id folder in it (`Servos/KST_X10-0000A`, any case) take no RENAME,
+  MOVE or DELETE, DELETE also when empty, and list with the place `SERVO`
+  and INFO's rule `Servo id folder: no RENAME, MOVE or DELETE.`. A folder
+  in `Servos` that is no id, and every file in an id folder, stay free. In
+  an id folder, `limit run_000.csv` to `servo run_999.csv` are runs and
+  their `.txt` reports are reports; OPEN on a CSV there opens it in LOGS,
+  read from that folder, on BENCH's tab for an ARMED run and on USER's for
+  the rest, and a report opens in the text viewer. DELETE of a run's CSV
+  there takes its report along, on the panel and on the Wi-Fi page. LOGS
+  holds a file's folder in 32 bytes, so the 30 characters of
+  `Servos/<id>` of a 23-character id open whole; a longer folder opens
+  nothing, with `Name or path is not valid on this card.`
 - The Bluetooth LE central gains what a label printer's link needs
   (`protocols/bleuart`): a write with response of up to 244 bytes whose
   bytes the client supplies (`bleu_send_ext()`, `BLEU_ACT_WRITE_EXT`),

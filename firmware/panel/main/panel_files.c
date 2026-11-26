@@ -496,12 +496,16 @@ static TaskHandle_t s_task;
 static SemaphoreHandle_t s_job_lock;
 /** @brief cardjob's copy buffer, FM_CHUNK bytes of internal DMA RAM. */
 static uint8_t *s_chunk;
+/* The marks' folders hold any folder a run is written to, a servo's
+ * `Servos/<id>` of up to 30 characters among them (CARD_RUN_DIR_MAX). */
+_Static_assert(CARD_RUN_DIR_MAX >= CARD_DIR_MAX,
+               "a marks folder holds every log folder");
 /** @brief The logger's open files as cardjob last read them. */
 static log_marks_t s_job_marks;
 /** @brief The folder of s_job_marks' run. */
-static char s_job_run_dir[CARD_DIR_MAX];
+static char s_job_run_dir[CARD_RUN_DIR_MAX];
 /** @brief The folder of s_job_marks' test. */
-static char s_job_test_dir[CARD_DIR_MAX];
+static char s_job_test_dir[CARD_RUN_DIR_MAX];
 
 /* The control task's snapshot and the logger's open files (panel.h). */
 void panel_files_bench(fm_bench_t *out, log_marks_t *marks, char *run_dir,
@@ -531,9 +535,9 @@ static void job_bench(fm_bench_t *out, void *ctx)
 /** @brief The logger's open files as the page's server last read them. */
 static log_marks_t s_web_marks;
 /** @brief The folder of s_web_marks' run. */
-static char s_web_run_dir[CARD_DIR_MAX];
+static char s_web_run_dir[CARD_RUN_DIR_MAX];
 /** @brief The folder of s_web_marks' test. */
-static char s_web_test_dir[CARD_DIR_MAX];
+static char s_web_test_dir[CARD_RUN_DIR_MAX];
 
 void panel_files_web_bench(fm_bench_t *out, void *ctx)
 {
@@ -765,9 +769,9 @@ static void fio_cancel(void *ctx)
  *         that renders' own. */
 static log_marks_t s_ui_marks;
 /** @brief The folder of s_ui_marks' run. */
-static char s_ui_run_dir[CARD_DIR_MAX];
+static char s_ui_run_dir[CARD_RUN_DIR_MAX];
 /** @brief The folder of s_ui_marks' test. */
-static char s_ui_test_dir[CARD_DIR_MAX];
+static char s_ui_test_dir[CARD_RUN_DIR_MAX];
 
 /**
  * @brief files_io_t bench(): the band's ARMED and link, and the logger's

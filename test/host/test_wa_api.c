@@ -14,6 +14,7 @@
  * - the_status_says_why_a_write_is_refused_by_mode_gate_and_hold
  * - a_write_is_allowed_by_mode_code_and_hold
  * - the_root_lists_folders_first_with_kind_place_and_busy
+ * - servo_folders_list_as_servo_and_their_runs_as_runs
  * - pages_of_0_1_47_48_49_entries
  * - pages_of_999_entries_forward_and_back_by_key
  * - a_bad_path_is_refused_before_any_card_call
@@ -382,6 +383,35 @@ TEST_CASE(the_root_lists_folders_first_with_kind_place_and_busy)
     CHECK_EQ(g_card.holds, 0);
 }
 
+TEST_CASE(servo_folders_list_as_servo_and_their_runs_as_runs)
+{
+    rig_fresh();
+    fk_dir(&g_card, "Servos/KST X-00001");
+    fk_dir(&g_card, "Servos/notes");
+    fk_file(&g_card, "Servos/KST X-00001/limit run_000.csv", NULL, 5u);
+    fk_file(&g_card, "Servos/KST X-00001/limit run_000.txt", NULL, 6u);
+    fk_file(&g_card, "Servos/KST X-00001/automatic test_999.csv", NULL, 7u);
+    fk_file(&g_card, "Servos/KST X-00001/baseline.txt", NULL, 8u);
+    CHECK_EQ(list(NULL), WA_API_OK);
+    CHECK(has(g_json, "{\"n\":\"Servos\",\"d\":true,\"s\":0,"
+                      "\"k\":\"FOLDER\",\"p\":\"SERVO\",\"b\":false}"));
+    CHECK_EQ(list("path=servos"), WA_API_OK);
+    CHECK(has(g_json, "{\"n\":\"KST X-00001\",\"d\":true,\"s\":0,"
+                      "\"k\":\"FOLDER\",\"p\":\"SERVO\",\"b\":false}"));
+    CHECK(has(g_json, "{\"n\":\"notes\",\"d\":true,\"s\":0,"
+                      "\"k\":\"FOLDER\",\"p\":\"FREE\",\"b\":false}"));
+    CHECK_EQ(list("path=Servos/KST%20X-00001"), WA_API_OK);
+    CHECK(has(g_json, "\"n\":\"limit run_000.csv\",\"d\":false,\"s\":5,"
+                      "\"k\":\"RUN\",\"p\":\"FREE\""));
+    CHECK(has(g_json, "\"n\":\"limit run_000.txt\",\"d\":false,\"s\":6,"
+                      "\"k\":\"REPORT\",\"p\":\"FREE\""));
+    CHECK(has(g_json, "\"n\":\"automatic test_999.csv\",\"d\":false,"
+                      "\"s\":7,\"k\":\"RUN\""));
+    CHECK(has(g_json, "\"n\":\"baseline.txt\",\"d\":false,\"s\":8,"
+                      "\"k\":\"TEXT\",\"p\":\"FREE\""));
+    CHECK_EQ(g_card.holds, 0);
+}
+
 TEST_CASE(pages_of_0_1_47_48_49_entries)
 {
     static const struct {
@@ -667,6 +697,7 @@ int main(void)
     RUN(the_status_says_why_a_write_is_refused_by_mode_gate_and_hold);
     RUN(a_write_is_allowed_by_mode_code_and_hold);
     RUN(the_root_lists_folders_first_with_kind_place_and_busy);
+    RUN(servo_folders_list_as_servo_and_their_runs_as_runs);
     RUN(pages_of_0_1_47_48_49_entries);
     RUN(pages_of_999_entries_forward_and_back_by_key);
     RUN(a_bad_path_is_refused_before_any_card_call);

@@ -4569,8 +4569,8 @@ Jede Zeile zeigt ein Symbol, den Namen und rechtsbündig die Größe
 | Art | Eintrag |
 |---|---|
 | ORDNER | ein Ordner |
-| AUFZEICHNUNG | eine CSV-Datei im Ordner Auto-Aufzeichnungen oder Testaufzeichnungen |
-| BERICHT | ein `.TXT`-Bericht in einem der beiden Aufzeichnungsordner |
+| AUFZEICHNUNG | eine CSV-Datei im Ordner Auto-Aufzeichnungen oder Testaufzeichnungen, und ein Lauf im Ordner eines Servos: `limit run_000.csv` in `Servos/KST_X10-0000A` |
+| BERICHT | ein `.TXT`-Bericht in einem der beiden Aufzeichnungsordner, und der Bericht eines Laufs im Ordner eines Servos: `limit run_000.txt` |
 | SERVODATEI | eine Datei in `BENCH/KST/CONF` |
 | ESC-PROFIL | eine `.JSON`-Datei in `BENCH/ESC/CONF` |
 | FEHLERPROTOKOLL | `BENCH/RCBENCH.LOG` und seine älteren und vorläufigen Kopien |
@@ -4580,6 +4580,7 @@ Jede Zeile zeigt ein Symbol, den Namen und rechtsbündig die Größe
 | Zustand | Bedeutung |
 |---|---|
 | FEST | ein vom Prüfstand verwendeter Ordner: die beiden Aufzeichnungsordner, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF`, `BENCH/ESCW/CONF`, `BENCH/BALANCE`, `BENCH/SETUP` und ihre übergeordneten Ordner, darunter `BENCH` und `USER`. UMBENENNEN und VERSCHIEBEN sind gesperrt, weil der Inhalt dadurch vom erwarteten Pfad verschoben würde. NEU kann diese Ordner anlegen; LÖSCHEN kann einen leeren entfernen. Jeder Schreiber legt seinen Ordner vor dem Schreiben erneut an. Leser behandeln einen fehlenden Ordner wie auf einer neuen Karte |
+| FEST | `Servos` und jeder Servo-Ordner darin, benannt nach der ID des Servos (`Servos/KST_X10-0000A`, in jeder Schreibung). UMBENENNEN, VERSCHIEBEN und LÖSCHEN sind gesperrt, LÖSCHEN auch bei einem leeren Ordner: Der Ordnername ist die ID auf dem Etikett des Servos, und der höchste ID-Ordner ist der Zähler der vergebenen IDs. Ein Ordner in `Servos`, der keine ID ist (`Servos/notes`), und jede Datei in einem Servo-Ordner sind nicht FEST |
 | GESPERRT | die Vermerke der Programmierungen, `BENCH/KST/CONF/KST.TXT`, `BENCH/HITEC/CONF/HITEC.TXT` und `BENCH/ESCW/CONF/ESCW.TXT`, sowie ihre Dateien `KST.NEW`, `HITEC.NEW` und `ESCW.NEW` während des Schreibens. Nur INFO ist verfügbar |
 | WIRD GESCHRIEBEN | eine im Logger offene Datei. Nur INFO ist verfügbar |
 
@@ -4616,7 +4617,7 @@ Meldungsfeld über der Tastenzeile, in der Schrift 12 x 24.
 | KOPIEREN | kopiert die gewählte Datei in den Ordner des anderen Bereichs; Ordner können nicht kopiert werden |
 | VERSCHIEBEN | verschiebt die gewählte Datei oder den gewählten Ordner in den anderen Bereich |
 | UMBENENNEN | öffnet die Tastatur mit dem Namen des Eintrags |
-| LÖSCHEN | fragt nach Bestätigung; mit der CSV-Datei eines Laufs wird auch ihr Bericht gelöscht; ein Ordner muss leer sein |
+| LÖSCHEN | fragt nach Bestätigung; mit der CSV-Datei eines Laufs wird auch ihr Bericht gelöscht, auch im Ordner eines Servos; ein Ordner muss leer sein |
 | NEU | bietet ORDNER oder TEXTDATEI an, danach die Tastatur für den Namen; eine neue Textdatei ist leer |
 | INFO | zeigt Name, Ordner, Art, Größe oder Anzahl der Einträge, Zeit und Regel |
 | ÖFFNEN | öffnet einen Ordner, eine erkannte Aufzeichnungs-CSV in LOGS oder eine andere Datei im Textbetrachter; dabei gelten die folgenden Grenzen |
@@ -4624,7 +4625,11 @@ Meldungsfeld über der Tastenzeile, in der Schrift 12 x 24.
 Eine CSV-Datei, die LOGS in einem seiner drei Ordner (STAMM, USER, BENCH)
 listet, öffnet sich auf der zugehörigen Registerkarte von [Logs](#logs):
 eine Laufdatei des Prüfstands in der Grafik, jede andere CSV in der
-Importansicht. Überschreitet sie 2GiB minus 1 Byte, zeigt LOGS
+Importansicht. Eine CSV im Ordner eines Servos öffnet sich in LOGS, aus
+diesem Ordner gelesen: `servo run_nnn.csv` eines ARMED-Laufs auf der
+Registerkarte BENCH, jede andere CSV auf USER. LOGS wählt seine Vorlage
+nach den Namen der Aufzeichnungsordner, daher öffnen sich diese Dateien
+in der Importansicht. Überschreitet sie 2GiB minus 1 Byte, zeigt LOGS
 stattdessen die Dateiliste mit dem Grund. Wurde die Karte seit dem
 Einlesen der FILES-Liste getauscht, öffnet sich nichts. Die Meldung lautet
 `Die Karte wurde entnommen oder getauscht. Tippe auf AKTUALISIEREN.`
@@ -5781,7 +5786,7 @@ Code nötig; fehlt er, lautet die Antwort 403 mit `CODE`.
 | Anfrage | Antwort |
 | --- | --- |
 | `GET /api/status` | JSON (JavaScript Object Notation): Name, Version und Sprache des Panels, `"writes"` `open` oder `closed` mit dem ersten Grund, aus dem ein Schreibzugriff zum Zeitpunkt der Anfrage abgelehnt wird, und seinem Text (`WRITES_OFF`; `ARMED` oder `LOGGING`, solange die Schreibsperre greift; `WRITES_HOLD`; leer, wenn offen) und `"mode"`, die Einstellung (`OPEN`, `CODE`, `HOLD`, `OFF`; bei `CODE` entscheidet der Code jedes Schreibzugriffs), Mount-Nummer, Name, Größe und freie Bytes der Karte, die Grenzen: 48 Einträge je Seite, 1.048.576 Bytes und 65.536 Zeilenenden je Datei, und der Ordner Testaufzeichnungen, den SETUP > SD CARD nennt (vorgegeben `USER/LOGS`) |
-| `GET /api/list?path=P&go=G&key=N&key_dir=D` | JSON: bis zu 48 Einträge des Ordners `P`, Ordner zuerst, dann Namen ohne Rücksicht auf Groß- und Kleinschreibung, wie FILES sie listet. Jeder Eintrag hat Namen, ob er ein Ordner ist, Bytes, Art (`FOLDER`, `RUN`, `REPORT`, `KST`, `PROFILE`, `FAULT`, `CSV`, `JSON`, `TEXT`, `OTHER`), Platz (`FREE`, `FIXED`, `LOCKED`, `FAULT`) und ob der Logger ihn schreibt. Dazu die Mount-Nummer, die Einträge vor der Seite, die Summe des Ordners, die nicht gelisteten Einträge und ob davor und danach eine Seite steht. `G` ist `first` (voreingestellt), `last`, `next`, `prev` oder `same`; die letzten drei nennen die Seite über den Eintrag `N` an ihrem Rand, `D` 1 für einen Ordner. |
+| `GET /api/list?path=P&go=G&key=N&key_dir=D` | JSON: bis zu 48 Einträge des Ordners `P`, Ordner zuerst, dann Namen ohne Rücksicht auf Groß- und Kleinschreibung, wie FILES sie listet. Jeder Eintrag hat Namen, ob er ein Ordner ist, Bytes, Art (`FOLDER`, `RUN`, `REPORT`, `KST`, `PROFILE`, `FAULT`, `CSV`, `JSON`, `TEXT`, `OTHER`), Platz (`FREE`, `FIXED`, `LOCKED`, `FAULT`, `SERVO` für `Servos` und den ID-Ordner eines Servos) und ob der Logger ihn schreibt. Dazu die Mount-Nummer, die Einträge vor der Seite, die Summe des Ordners, die nicht gelisteten Einträge und ob davor und danach eine Seite steht. `G` ist `first` (voreingestellt), `last`, `next`, `prev` oder `same`; die letzten drei nennen die Seite über den Eintrag `N` an ihrem Rand, `D` 1 für einen Ordner. |
 | `GET /api/info?path=P&dir=D&mount=M&etag=1` | JSON: Größe und FAT-Zeitstempel von `P`, -1 für keinen, und diese Zeit, wie INFO sie zeigt, `2027-01-01 00:00` in der Zone von SETUP > PANEL, `Zeitzone`, leer für einen Zeitstempel in 1980 oder keinen; für einen Ordner (`D` 1) seine Einträge, deren Bytes und die nicht gelisteten Einträge. Mit `etag=1` hat eine Datei auch `"etag"`, die CRC-32, die `/api/file` als ETag gibt, beliebiger Bytes: Das Panel liest dafür die Karte, und die Datei geht nicht über das Netz. `""` für eine Datei über 1.048.576 Bytes, die nicht gelesen wird |
 | `GET /api/file?path=P&mount=M` | die Bytes der Textdatei `P`, wie die Karte sie hält, BOM (Byte Order Mark) eingeschlossen, mit `ETag` (ihre CRC-32, Cyclic Redundancy Check), `X-Rcbench-Eol` (`lf`, `crlf`, `cr` oder `mixed`), `X-Rcbench-Lines` (die Zeilen, wie der Betrachter von FILES sie zählt: ein Zeilenende am Dateiende beginnt keine Zeile, also haben `a\nb\n` und `a\nb` 2 und eine leere Datei 0) und `X-Rcbench-Bom` (1 oder 0) |
 
