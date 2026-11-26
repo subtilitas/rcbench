@@ -21,6 +21,16 @@ history is in git.
   holds a file's folder in 32 bytes, so the 30 characters of
   `Servos/<id>` of a 23-character id open whole; a longer folder opens
   nothing, with `Name or path is not valid on this card.`
+- The Bluetooth LE central gains what a label printer's link needs
+  (`protocols/bleuart`): a write with response of up to 244 bytes whose
+  bytes the client supplies (`bleu_send_ext()`, `BLEU_ACT_WRITE_EXT`),
+  refused past the link's MTU less 3; characteristics named by a 16-bit
+  UUID as well, matched in 16 bits and in the Bluetooth base's 128 bits
+  (`uuid16`); a scan that lists a device by its public address prefix
+  (`adv_oui`); and a sixth client of the hub (`BLEU_HUB_CLIENTS` 6). The
+  panel writes such a write with `panel_ble_write_long()` and holds owner
+  5 (`PANEL_BLEC_PRINT`) for the label printer, a stub until its client
+  is built. Connections stay at 5.
 - The QR scanner's core for a GM861 module on a panel UART (universal
   asynchronous receiver-transmitter), pure C in `shared/scanner/`: a framer
   for code lines (0x20 to 0x7E, at most 64 bytes, CR, CR LF or LF) and
@@ -271,7 +281,8 @@ history is in git.
   `stop-held`. Case scenes take `estop`, keys that press the emergency
   stop's head in, and the mockup's display takes `panel` shots; `stop`
   shows the red stop button pressed, latched and released, with HWSTOP
-  on the display from the view `stop-hw`.
+  on the display from the view `stop-hw`. The head's latch sounds as a
+  click.
 - Storyboard `origin`, the project's origin in 7 chapters: the reason,
   ideas, the plan, development, testing, the test bench and the group
   order of the rbmod carrier, with 7 posts of two RC-Network threads as

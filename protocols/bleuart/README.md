@@ -52,7 +52,13 @@ unique identifier) 0x18F0. The stream bytes go to `protocols/witmotion`.
 
 A profile names the service by its 128-bit UUID (universally unique
 identifier), up to 4 characteristics (`BLEU_CHR_MAX`) with a role each,
-and the connect's parameters (`bleu_conn_params_t`):
+and the connect's parameters (`bleu_conn_params_t`). A characteristic is
+named by its 128-bit UUID (`uuid`), its 16-bit UUID (`uuid16`), or both.
+A discovered characteristic matches when it equals `uuid`, or when it is
+`uuid16` in 16 bits or in the 128 bits of the Bluetooth base
+0000xxxx-0000-1000-8000-00805F9B34FB (`bleu_uuid_base`). A peer that
+declares a 16-bit value in its own vendor base matches only through
+`uuid`, so a profile for such a peer names both:
 
 | Role | The peer's characteristic must have | Used |
 |---|---|---|
@@ -61,7 +67,8 @@ and the connect's parameters (`bleu_conn_params_t`):
 | `BLEU_ROLE_PARAM`, at most one | nothing: without READ it is not read | read once after each subscribe; its first 20 bytes (`BLEU_PARAM_MAX`) kept |
 | `BLEU_ROLE_NONE`, any | nothing | never written, read or subscribed |
 
-`bleu_profile_valid()` holds a profile to these counts and the parameters
+`bleu_profile_valid()` holds a profile to these counts, each entry to a
+`uuid` or a `uuid16`, and the parameters
 to their ranges: interval 6 to 3200 (7.5ms to 4s), minimum up to maximum,
 supervision timeout 10 to 3200 (100ms to 32s) and longer than twice
 (1 + latency) x the longest interval, connect scan interval 4 to 0x4000
@@ -89,7 +96,10 @@ duplicates filtered, and clears the list. A report is listed when it
 carries the machine's profile's advertised service: its 16-bit UUID
 (`adv_uuid16`, 0 for none) in a 16-bit UUID list (AD types 0x02 and 0x03)
 or its 128-bit UUID (`adv_svc`, NULL for the service UUID `svc`) in a
-128-bit list (0x06 and 0x07). The ISSC profile advertises 0x18F0 and the
+128-bit list (0x06 and 0x07). A profile with `adv_oui` (3 bytes in
+reading order, NULL for none) also lists a device with a public address
+that starts with them, whatever it advertises (`BLEU_DEV_OUI`); a random
+address with the same bytes is not listed by it. The ISSC profile advertises 0x18F0 and the
 ISSC service UUID. The listing is a hint: 0x18F0 is no Bluetooth SIG
 assignment and other modules may use it. The connect checks the service.
 `bleu_adv_parse_for()` and `bleu_list_report_for()` take the profile;
@@ -180,6 +190,16 @@ client cannot use, as a failed GATT step (`BLEU_ERR_GATT`): disconnect,
 and connect again after 1000ms (`BLEU_RETRY_MS`).
 No flow control exists on this service.
 
+`bleu_send_ext()` writes up to 244 bytes (`BLEU_WRITE_EXT_MAX`) with
+response, for a peer whose frames are longer than a command write. Its
+action, `BLEU_ACT_WRITE_EXT`, names the CMD's value handle (`h1`) and the
+length (`h2`) and carries no bytes: the caller supplies them when it
+performs the action. It takes the write slot of `bleu_send()`, with its
+token, its 1000ms timeout and its `BLEU_EV_WRITE_DONE`, so a command write
+and a long write never overlap. It is refused without `bleu_can_send()`,
+when the CMD lacks WRITE, for a length of 0 or over 244, and for one over
+the link's MTU less 3 (23 less 3 when the exchange failed).
+
 ## Interface
 
 `bleuart.h`:
@@ -195,6 +215,7 @@ bool   bleu_scan(bleu_t *b, uint32_t now_ms);
 void   bleu_scan_stop(bleu_t *b, uint32_t now_ms);
 void   bleu_fail_link(bleu_t *b, uint16_t status, uint32_t now_ms);
 bool   bleu_send(bleu_t *b, const uint8_t *data, size_t len, uint32_t now_ms);
+bool   bleu_send_ext(bleu_t *b, uint16_t len, uint32_t now_ms);
 bool   bleu_event(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms);
 bool   bleu_step(bleu_t *b, uint32_t now_ms, bleu_act_t *out);
 bool   bleu_link_up(const bleu_t *b);
@@ -234,6 +255,7 @@ event with status 0, also when the host stack reports it as an end code.
 | `BLEU_ACT_MTU` | `ble_gattc_exchange_mtu()`, 247 as the preferred MTU | `BLEU_EV_MTU` |
 | `BLEU_ACT_SUBSCRIBE`, `BLEU_ACT_WRITE` | `ble_gattc_write_flat()` of `data` to `h1` | `BLEU_EV_WRITE_DONE` |
 | `BLEU_ACT_WRITE_NR` | `ble_gattc_write_no_rsp_flat()` | `BLEU_EV_WRITE_DONE` with the call's status |
+| `BLEU_ACT_WRITE_EXT` | `ble_gattc_write_flat()` of `h2` bytes the caller supplies, to `h1` | `BLEU_EV_WRITE_DONE` |
 | `BLEU_ACT_READ` | `ble_gattc_read()` of `h1` | `BLEU_EV_READ` |
 
 Events without an action: `BLEU_EV_DISCONNECT` of a drop,
@@ -287,8 +309,8 @@ case only. Types other than public and random have no letter.
 
 ## The hub
 
-`bleuart_hub.h` runs up to 5 machines (`BLEU_HUB_CLIENTS`) on one host
-stack. Each machine gets its owner, 0 to 4, with `bleu_setup()`, and the
+`bleuart_hub.h` runs up to 6 machines (`BLEU_HUB_CLIENTS`) on one host
+stack. Each machine gets its owner, 0 to 5, with `bleu_setup()`, and the
 hub a client of that owner with `bleu_hub_add()`. The caller hands each
 event of the host stack to `bleu_hub_event()`, then each event
 `bleu_hub_next_event()` gives to that owner's machine. It hands each
@@ -335,7 +357,7 @@ The slot ends on its answer (`BLEU_EV_SCAN_END`, `BLEU_EV_CONNECT`, or a
 for a scan, 7000ms for a connect). With one client every action and every
 event passes as it would without the hub.
 
-The queue (`q`, up to 5 clients) holds the clients whose connect was
+The queue (`q`, up to 6 clients) holds the clients whose connect was
 answered busy or with the turn, first come first. A hurried client goes
 behind the hurried clients that wait and ahead of every other. A client
 whose connect a scan cut goes ahead of the unhurried clients that wait.
@@ -430,7 +452,15 @@ absent peripherals getting the slot after their two attempts, a sweep of
 within one attempt of each other client, the queue's order, a connect a
 scan cut waiting in front, the turn answered busy during a scan, and a
 client that does not come back leaving the queue after 200ms and not
-199ms. The table in `STATUS.md` has the line coverage per file.
+199ms; `test_bleuart_ext.c` the long write answered, timed out at
+1000ms and not 999ms, refused by the peer and lost with the link, never
+beside a command write, its length at 0, 244, 245 and the MTU's edge, a
+CMD without WRITE; a characteristic found by its 16-bit, its vendor
+128-bit and its Bluetooth-base 128-bit UUID and not by another; a scan
+listing by address prefix, by service and neither; a long write on
+another client's handle answered lost; 6 clients in the hub with the
+sixth waiting its turn behind a scan; and a sixth connection the host
+refuses leaving 5 links up. The table in `STATUS.md` has the line coverage per file.
 
 ```sh
 cmake -S test/host -B test/host/build

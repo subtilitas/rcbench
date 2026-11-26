@@ -40,6 +40,8 @@ _Static_assert(BLEU_SCAN_MS <= 0xFFFFu && BLEU_CONNECT_MS <= 0xFFFFu,
                "bleu_act_t.ms holds the scan and connect durations");
 _Static_assert(BLEU_WRITE_MAX + 3u <= 23u,
                "a command write fits the smallest MTU");
+_Static_assert(BLEU_WRITE_EXT_MAX + 3u <= BLEU_MTU,
+               "a long write fits the MTU asked");
 _Static_assert(BLEU_WRITE_MAX >= 16u,
                "a DISC_SVC action carries a 128-bit UUID in its data");
 
@@ -278,7 +280,8 @@ bool bleu_profile_valid(const bleu_profile_t *p)
     }
     unsigned n[BLEU_ROLE_PARAM + 1u] = { 0u };
     for (uint8_t i = 0; i < p->chr_n; ++i) {
-        if (p->chr[i].uuid == NULL || p->chr[i].role > BLEU_ROLE_PARAM) {
+        if ((p->chr[i].uuid == NULL && p->chr[i].uuid16 == 0u)
+            || p->chr[i].role > BLEU_ROLE_PARAM) {
             return false;
         }
         ++n[p->chr[i].role];
@@ -427,6 +430,27 @@ bool bleu_send(bleu_t *b, const uint8_t *data, size_t len, uint32_t now_ms)
     return true;
 }
 
+bool bleu_send_ext(bleu_t *b, uint16_t len, uint32_t now_ms)
+{
+    const uint16_t mtu = (b != NULL && b->mtu >= 23u) ? b->mtu : 23u;
+    if (!bleu_can_send(b) || (b->rx_props & BLEU_PROP_WRITE) == 0u
+        || len == 0u || len > BLEU_WRITE_EXT_MAX || len > mtu - 3u) {
+        return false;
+    }
+    bleu_act_t *a = push(b, BLEU_ACT_WRITE_EXT);
+    if (a == NULL) {
+        return false;
+    }
+    b->tok_wr = next_token(b);
+    a->token = b->tok_wr;
+    a->h1 = b->rx_val;
+    a->h2 = len;
+    b->wr = BLEU_WR_BUSY;
+    b->wr_status = 0;
+    b->t_wr = now_ms;
+    return true;
+}
+
 /**
  * @brief Whether @p e's data is the 16-bit UUID @p u16.
  * @param e   The event.
@@ -450,6 +474,30 @@ static bool uuid128_is(const bleu_evt_t *e, const uint8_t *u)
 }
 
 /**
+ * @brief Whether @p e's UUID is the characteristic @p c names: its 128-bit
+ *        UUID, or its 16-bit UUID in 16 bits or in the Bluetooth base's 128.
+ * @param e The CHR event.
+ * @param c The profile's entry.
+ * @return true when it is.
+ */
+static bool chr_is(const bleu_evt_t *e, const bleu_chr_spec_t *c)
+{
+    if (c->uuid != NULL && uuid128_is(e, c->uuid)) {
+        return true;
+    }
+    if (c->uuid16 == 0u) {
+        return false;
+    }
+    if (uuid16_is(e, c->uuid16)) {
+        return true;
+    }
+    return e->len == 16u && memcmp(e->data, bleu_uuid_base, 12u) == 0
+           && e->data[12] == (uint8_t)c->uuid16
+           && e->data[13] == (uint8_t)(c->uuid16 >> 8)
+           && e->data[14] == 0u && e->data[15] == 0u;
+}
+
+/**
  * @brief Take one characteristic of the service by its roles in the
  *        profile: every entry with its UUID takes it, so one
  *        characteristic can be the STREAM and the CMD, and each entry's
@@ -466,7 +514,7 @@ static void take_chr(bleu_t *b, const bleu_evt_t *e)
     }
     const bleu_profile_t *p = prof_of(b);
     for (uint8_t i = 0; i < p->chr_n; ++i) {
-        if (!uuid128_is(e, p->chr[i].uuid)) {
+        if (!chr_is(e, &p->chr[i])) {
             continue;
         }
         b->chr_val[i] = e->h2;

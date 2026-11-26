@@ -1,7 +1,7 @@
 /*
  * Several bleuart machines on one host stack through the hub of
  * protocols/bleuart (bleuart_hub.c), each against its own scripted peer of
- * test/host/ble_sim.h: the hub, up to 5 clients with their own addresses
+ * test/host/ble_sim.h: the hub, up to 6 clients with their own addresses
  * and stream bytes, the actions each peer took, and one ms of the panel's
  * task (rig_tick()).
  *
@@ -37,6 +37,7 @@ static const bleu_addr_t k_addr[NCL] = {
     { { 0x56, 0x34, 0x12, 0xA1, 0xDF, 0x7C }, BLEU_ADDR_PUBLIC },
     { { 0x44, 0x07, 0x5E, 0x91, 0x2B, 0xC8 }, BLEU_ADDR_RANDOM },
     { { 0x83, 0x6F, 0x21, 0x0D, 0xE4, 0x3C }, BLEU_ADDR_PUBLIC },
+    { { 0x71, 0xFA, 0x30, 0x40, 0x93, 0xA4 }, BLEU_ADDR_PUBLIC },
 };
 
 /* Each peer's stream bytes: its own, so a misrouted one shows. */
@@ -46,6 +47,7 @@ static const uint8_t k_bytes[NCL][4] = {
     { 0xC0, 0xC1, 0xC2, 0xC3 },
     { 0xD0, 0xD1, 0xD2, 0xD3 },
     { 0xE0, 0xE1, 0xE2, 0xE3 },
+    { 0xF0, 0xF1, 0xF2, 0xF3 },
 };
 static const uint8_t k_cut[] = { 4 };
 
