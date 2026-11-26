@@ -301,7 +301,8 @@ static void console_bind(const char *text)
  */
 static void console_run(const char *line)
 {
-    const char *arg = line + 5;
+    /* The console passes "print" or "print <words>"; arg is the words. */
+    const char *arg = (line[5] == ' ') ? line + 6 : line + 5;
     if (strcmp(line, "print") == 0) {
         print_view_line(print_ctl_view());
     } else if (strcmp(arg, "test") == 0) {
