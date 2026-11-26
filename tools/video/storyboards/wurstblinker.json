@@ -7,7 +7,7 @@
   "The node",
   "On the bench",
   "The kinetic upgrade",
-  "Approval"
+  "Beta test"
  ],
  "music": "vivaldi-spring",
  "music_gain": 0.5,
@@ -615,7 +615,7 @@
   {
    "type": "case",
    "model": "wurst-kinetic",
-   "dur": 25.94,
+   "dur": 21.2,
    "chips": [
     {
      "from": 0,
@@ -625,7 +625,7 @@
     },
     {
      "from": 14.88,
-     "to": 25.639999999999997,
+     "to": 20.9,
      "n": 3,
      "text": "1 sausage, 1 turn"
     }
@@ -660,52 +660,52 @@
     [
      10.8,
      [
-      260,
-      170,
-      1150
+      670,
+      200,
+      2100
      ],
      [
-      260,
-      120,
+      670,
+      90,
       0
      ]
     ],
     [
-     21.62,
+     12.600000000000001,
      [
-      260,
-      170,
-      1150
+      670,
+      200,
+      2100
      ],
      [
-      260,
-      120,
+      670,
+      90,
       0
      ]
     ],
     [
-     23.02,
+     14.0,
      [
-      110,
+      1220,
       170,
-      620
+      640
      ],
      [
-      110,
-      120,
+      1220,
+      70,
       0
      ]
     ],
     [
-     25.939999999999998,
+     21.2,
      [
-      110,
+      1220,
       170,
-      620
+      640
      ],
      [
-      110,
-      120,
+      1220,
+      70,
       0
      ]
     ]
@@ -720,11 +720,11 @@
      0
     ],
     [
-     12.000000000000002,
+     12.3,
      1
     ],
     [
-     25.939999999999998,
+     21.2,
      1
     ]
    ],
@@ -755,16 +755,16 @@
      "text": "Holds 1 Bockwurst of 180mm."
     },
     {
-     "from": 23.220000000000002,
-     "to": 25.639999999999997,
-     "anchor": "barrel",
+     "from": 14.200000000000001,
+     "to": 20.9,
+     "anchor": "roll",
      "at": [
-      1330,
+      1380,
       250
      ],
      "size": "sm",
-     "title": "Empty",
-     "text": "Reload by hand: 1 sausage."
+     "title": "Roll",
+     "text": "1100mm from the muzzle. Holds 1 sausage."
     }
    ],
    "say": [
@@ -778,25 +778,117 @@
     },
     {
      "at": 14.88,
-     "text": "One sausage signals one turn. Muzzle velocity and range are not measured."
-    },
-    {
-     "at": 21.62,
-     "text": "After the shot the node reports: empty."
+     "text": "It lands in a roll, 1.1 metres on. One sausage signals one turn."
     }
    ]
   },
   {
-   "type": "tour",
-   "steps": [
+   "type": "case",
+   "model": "wurst-kinetic",
+   "dur": 17.28,
+   "chips": [
     {
-     "view": "help-overview",
-     "dur": 9.0,
+     "from": 0,
+     "to": 7.54,
      "n": 4,
-     "kicker": "04 · Approval",
+     "text": "Approval"
+    },
+    {
+     "from": 7.74,
+     "to": 16.979999999999997,
+     "n": 4,
+     "text": "Beta test"
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      1220,
+      170,
+      640
+     ],
+     [
+      1220,
+      70,
+      0
+     ]
+    ],
+    [
+     17.279999999999998,
+     [
+      1250,
+      150,
+      500
+     ],
+     [
+      1220,
+      62,
+      0
+     ]
+    ]
+   ],
+   "fire": [
+    [
+     0,
+     1
+    ],
+    [
+     17.279999999999998,
+     1
+    ]
+   ],
+   "labels": [
+    {
+     "from": 0.6,
+     "to": 6.84,
+     "anchor": "roll",
+     "at": [
+      1330,
+      250
+     ],
+     "size": "sm",
      "title": "Approval",
-     "text": "Type approval as a direction indicator: not granted, not applied for. Neither version.",
-     "say": "Approval as a direction indicator is not granted, and not applied for. That holds for both versions."
+     "text": "As a direction indicator: not applied for. As lunch: granted."
+    },
+    {
+     "from": 7.74,
+     "to": 11.26,
+     "anchor": "sausage",
+     "at": [
+      1330,
+      250
+     ],
+     "size": "sm",
+     "title": "Beta test",
+     "text": "Intense. 1 sausage a run."
+    },
+    {
+     "from": 12.16,
+     "to": 16.979999999999997,
+     "anchor": "roll",
+     "at": [
+      200,
+      300
+     ],
+     "side": "r",
+     "size": "sm",
+     "title": "Mustard jar update",
+     "text": "In development."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.6,
+     "text": "Approval as a direction indicator is not applied for. As lunch, it is granted."
+    },
+    {
+     "at": 7.74,
+     "text": "The Wurstblinker is in intense beta testing."
+    },
+    {
+     "at": 12.16,
+     "text": "A mustard jar update is in development."
     }
    ]
   },
@@ -809,10 +901,10 @@
     "90° out, 1.5 swings a second",
     "The limit run finds the sausage's stop",
     "Kinetic: compressed air, 1 sausage a turn",
-    "Not a product"
+    "In intense beta testing",
+    "Mustard jar update: in development"
    ],
-   "note": "A joke. The Wurstblinker is Brösel's, from the Werner comics.",
-   "say": "The Wurstblinker node is not a product. The idea is Brösel's, from the Werner comics."
+   "say": "The Wurstblinker node, and the kinetic Wurstblinker. Both in beta."
   }
  ]
 }

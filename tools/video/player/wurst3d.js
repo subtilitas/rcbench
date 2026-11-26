@@ -7,7 +7,8 @@
 // sausage out to the right by 90 degrees.  buildWurst(true) is the kinetic
 // node: a tank of compressed air and a barrel in the servo's place.
 // setFire(k) sends the sausage out of the barrel, from k = 0, loaded, to
-// k = 1, 1100mm on and 145mm lower.
+// k = 1, 1100mm on and 96mm lower, where it lies in a roll on a plate
+// before a second pale disc.
 //
 // SPDX-License-Identifier: MIT
 import * as THREE from 'three';
@@ -111,6 +112,14 @@ export function buildWurst(kinetic = false) {
     bore.rotation.y = Math.PI / 2;
     bore.position.set(223.4, 134, -10);
     scene.add(bore);
+    // The roll, its upper half folded back, on a plate where the sausage lands.
+    const far = new THREE.Mesh(new THREE.CircleGeometry(270, 96),
+      new THREE.MeshBasicMaterial({color: 0xfff1c2}));
+    far.position.set(1220, 120, -160);
+    scene.add(far);
+    add(rod(130, 6), 0xf4f1e6, scene, 1220, 3, -10);
+    add(box(204, 18, 66, 8), 0xe0a868, scene, 1220, 15, -6);
+    add(box(204, 18, 46, 8), 0xe0a868, scene, 1220, 40, -46).rotation.x = -1.1;
     const shot = new THREE.Group();
     scene.add(shot);
     const wurst = add(new THREE.CapsuleGeometry(14, 152, 12, 32), 0xc8693a,
@@ -125,8 +134,8 @@ export function buildWurst(kinetic = false) {
     });
     const setFire = k => {
       const way = 1100 * k;
-      shot.position.set(120 + way, 134 - 145 * k * k, -10);
-      shot.rotation.z = -Math.PI / 2 - .5 * k;
+      shot.position.set(120 + way, 134 - 96 * k * k, -10);
+      shot.rotation.z = -Math.PI / 2 - .5 * Math.sin(Math.PI * k);
       shot.visible = k > 0;
       lamp.material.emissiveIntensity = k > 0 ? 1 : 0;
       const puff = k > 0 && k < .35 ? Math.sin(Math.PI * k / .35) : 0;
@@ -140,6 +149,7 @@ export function buildWurst(kinetic = false) {
       scene, cam, setFire, ...idle,
       anchors: {...fixed, tank: () => [55, 78, 16],
                 barrel: () => [150, 134, 11],
+                roll: () => [1140, 15, 27],
                 sausage: world(wurst, 0, 0, 14)},
     };
   }

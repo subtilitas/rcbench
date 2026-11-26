@@ -413,7 +413,7 @@ history is in git.
   click.
 - Storyboard `wurstblinker`, a joke: a remote node that swings a sausage
   out as a direction indicator, and a kinetic version that fires it out of
-  a barrel, drawn by the cartoon models `wurst` and `wurst-kinetic` of
+  a barrel into a roll 1100mm on, drawn by the cartoon models `wurst` and `wurst-kinetic` of
   `tools/video`. The two models lie as STEP files under
   `hardware/mechanical/models/parts/`, `wurstblinker_node.step` and
   `wurstblinker_kinetic.step`. Titles of every video carry a dark rim under the white

@@ -49,7 +49,7 @@ VIDEO = REPO / "tools" / "video"
 CACHE = REPO / "build" / "video" / "cache"
 PANEL = (1024, 600)
 FRAME = (1920, 1080)
-ANCHORS = ("node", "antenna", "sausage", "tank", "barrel",
+ANCHORS = ("node", "antenna", "sausage", "tank", "barrel", "roll",
            "wing", "servo", "hinge", "rod", "flap", "edge", "imu", "tape",
            "horn", "lead", "port", "display", "rbmod", "pdmini", "J1", "J2",
            "xt60", "usbc",
@@ -266,7 +266,7 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
             break
     for name, ends in (("estop", "out, to 1, pressed"),
                        ("swing", "in, to 1, out"),
-                       ("fire", "loaded, to 1, gone")):
+                       ("fire", "loaded, to 1, landed")):
         for key in scene.get(name, []):
             if not (isinstance(key, list) and len(key) == 2
                     and _number(key[0]) and _number(key[1])
