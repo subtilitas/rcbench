@@ -103,6 +103,30 @@ def test_a_module_with_every_part_passes_the_whole_check(tmp_path):
 
 
 @needs_compilers
+def test_a_data_folder_is_no_module(tmp_path):
+    """A data folder with data only passes and is no module."""
+    module(tmp_path)
+    data = tmp_path / "protocols" / cp.DATA_DIRS[0]
+    data.mkdir()
+    (data / "README.md").write_text("# data\n")
+    (data / "a.prn").write_text("end\n")
+    assert [m.name for m in cp.modules(tmp_path / "protocols")] == ["wire"]
+    assert cp.check(tmp_path / "protocols") == []
+
+
+def test_code_in_a_data_folder_is_flagged(tmp_path):
+    """A C file or a CMakeLists.txt in a data folder is flagged."""
+    data = tmp_path / "protocols" / cp.DATA_DIRS[0]
+    (data / "sub").mkdir(parents=True)
+    (data / "x.c").write_text("int x;\n")
+    (data / "sub" / "CMakeLists.txt").write_text("\n")
+    (data / "y.prn").write_text("end\n")
+    got = cp.data_problems(tmp_path / "protocols")
+    assert len(got) == 2
+    assert all("is code in the data folder" in line for line in got)
+
+
+@needs_compilers
 def test_the_tree_holds_the_rule():
     """The tree holds the rule."""
     assert cp.modules() != []

@@ -41,6 +41,7 @@ Reference
 - [YGE ESC programming](YgeProgramming.md)
 - [Performance](Performance.md)
 - [Interface language](Language.md)
+- [Licences](Licenses.md)
 
 _Deutsch_
 
@@ -83,3 +84,4 @@ Referenz
 - [YGE-ESC-Programmierung](YgeProgramming-de.md)
 - [Performance](Performance-de.md)
 - [Sprache der Oberfläche](Language-de.md)
+- [Lizenzen](Licenses-de.md)

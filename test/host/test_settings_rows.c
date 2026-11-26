@@ -214,8 +214,8 @@ TEST_CASE(the_shortest_list_fits_and_draws_no_scroll_bar)
 
 /*
  * The longest list, an INA3221 part's pane or PANEL's, scrolls to its last
- * row: that row ends at the pane's foot, its "+" key whole and a tap on it
- * steps the row's setting.  The bar is drawn.
+ * row: that row ends at the pane's foot and takes a tap: its "+" key steps
+ * the row's setting, PANEL's About rcbench opens ABOUT.  The bar is drawn.
  */
 TEST_CASE(the_longest_list_scrolls_to_its_last_row)
 {
@@ -242,6 +242,12 @@ TEST_CASE(the_longest_list_scrolls_to_its_last_row)
     const gfx_rect_t last = settings_screen_row_rect(longest - 1);
     CHECK_EQ(UI_BAND_H + last.y + last.h, LIST_Y + LIST_H);
     snap();
+    if (cat_longest == SET_CAT_APP) {
+        /* PANEL ends on About rcbench: the last row takes its tap. */
+        tap(last.x + 40, UI_BAND_H + last.y + last.h / 2);
+        CHECK_EQ(ui_router_current(), SCREEN_ABOUT);
+        return;
+    }
     const gfx_rect_t pl = settings_screen_row_part(longest - 1,
                                                    SETTINGS_ROW_PLUS);
     tap(pl.x + pl.w / 2, UI_BAND_H + pl.y + pl.h / 2);

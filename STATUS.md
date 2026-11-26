@@ -1331,6 +1331,16 @@ finder and timing patterns, format bits and Reed-Solomon check (`test_scanner_co
 table). No state of the scanner raises an alert. ACTIVE SERVO's list offers NONE alone; the SERVO
 ID row's typed id comes with the SERVO LABEL rows.
 
+SETUP > PANEL's last row, About rcbench (`about_screen.c`, `about_draw.c`, `test_about_screen`),
+opens ABOUT: the panel firmware's version and the IOmcu's once named, `Design: Julian Wingert`,
+`Implemented by Claude and Julian`, `Copyright 2026 Julian Wingert`, `RCBench@doesnt.fly`, the MIT
+and CC BY-NC-SA 4.0 licence lines, the repository, the trademark notice, the 25 third-party
+components of the panel and the IOmcu firmware with SPDX identifier and copyright lines, 2
+references, and the notice texts the licences ask for: rows of 24px, 17 on screen, a drag, a 56px
+scroll bar, PAGE UP and PAGE DOWN. The table and the texts are `about_gen.c`, 321,709 bytes of
+flash, which `tools/gen_licenses.py` writes from one list together with the table in
+`docs/Licenses.md`; its `--check` fails on drift and CI runs it.
+
 The scan flow (`scan_flow.c`, `test_scan_flow`; `servo_scan_decide()` in
 `servo_active.c`, `test_servo_scan`) takes a scanned line on the frame task:
 an id in upper case exactly as `servo_id_parse()` writes it sets the active
@@ -1890,6 +1900,30 @@ so a device update is refused while one runs (`test_wireless_printer`, `test_pri
 `test_servo_print_row`; `test_print_ctl_ends` holds that a printer gone after a silent job is
 not sought past the 30s linger). A print from the screen on the station is step H3b.
 
+### Printer description files
+
+`protocols/prnengine` drives a label printer from a text file of data,
+`protocols/printers/<id>.prn` (format reference in
+`protocols/printers/README.md`); no firmware links it. The reader takes a
+file of at most 8,192B into a fixed 6,080B spec with no heap, or refuses it
+with a code E01 to E30 and a line. The engine renders templates, builds
+pages and chunk or row frames, joins answers and runs QUERY and PRINT jobs
+in a 2,048B job. `supvan-t50m-pro.prn` (MIT) drives the T50M Pro with the
+same bytes as `protocols/supvan`: the pages, the literal stream and the
+data frames of the station's capture H0 byte for byte, each of its 29
+writes, and `sv_job` beside the engine through every scenario of
+`test_supvan_job` and `test_supvan_job_ends` with each write's bytes, kind
+and time equal (`test_prn_job_vs_sv`, `test_prn_image`). The reader, the
+templates and the job also run in `test_prn_parse`, `test_prn_tmpl`,
+`test_prn_job` and `test_prn_fuzz`; `tools/printer_files.py --check` reads
+every file of record in CI and agrees with the C reader on 3,000 changed
+files (`prn_parity`). The engine calls `memcpy()`, `memset()`, `memcmp()`
+and `strlen()` only (`prnengine_symbols`).
+`tools/mutate.py --files protocols/prnengine/prn_tmpl.c` makes 77 mutants: 67 killed, 6
+do not compile, 4 survive. The 4 change the condition that leaves `{ck:svpage}` to
+`prn_page_fill()`. No file the reader takes can tell them apart: an svpage token is
+never a length token, and the checksum of that kind is 0, the bytes the skip leaves.
+
 ## The tree
 
 Directories only. `git ls-files <directory>` lists the files of one.
@@ -1919,7 +1953,8 @@ rcbench/
   protocols/              one module per external interface: a pure C core,
                           its RP2350 pin driver in rp2350/, a README.md
     dshot/ ppm/ sbus/ openyge/ pdmini/ phase_tap/ passthru/ kst/ hitec/
-    escwire/ hc05/ bleuart/ dialknob/ supvan/
+    escwire/ hc05/ bleuart/ dialknob/ supvan/ prnengine/
+    printers/             label printer files (.prn): data, no code
 
   firmware/panel/         ESP-IDF: main/, components/, sdkconfig.defaults,
                           partitions.csv
@@ -1939,7 +1974,7 @@ rcbench/
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` · `passthru` | yes | yes | yes |
 | `escwire` · `openyge` | yes | yes | yes |
 | `witmotion` | yes | | yes |
-| `hc05` · `dial` | | | yes |
+| `hc05` · `dial` · `prnengine` | | | yes |
 | `bleuart` · `dialknob` · `vibe` · `rcnode` · `bleota` · `devupd` · `scanner` · `supvan` | yes | | yes |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
@@ -1974,7 +2009,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 702 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 709 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -2083,7 +2118,7 @@ The host suite is 702 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_wa_api_write`, `test_sense_i2c`, `test_storage`, `test_storage_swap`, `test_text_buf`,
 `test_text_hl`, `test_text_hl_limrun`, `test_i2c_txq`, `test_i2c_txq_calls`,
 `test_i2c_txq_wire`, `test_sense_txq`, `test_sense_txq_svc`, `test_fm_name`, `test_png_enc`,
-`test_shot_file`, `test_shot`, `test_shot_popup`, `test_screen_dim`, `test_wall_clock`, `test_mstime`, `test_witmotion`, `test_scan_line`, `test_gm861`, `test_scan_port`, `test_scan_wire`, `test_scanner_codes`, `test_scanner_pane`,
+`test_shot_file`, `test_shot`, `test_shot_popup`, `test_screen_dim`, `test_wall_clock`, `test_mstime`, `test_witmotion`, `test_scan_line`, `test_gm861`, `test_scan_port`, `test_scan_wire`, `test_scanner_codes`, `test_scanner_pane`, `test_about_screen`,
 `test_servo_angle`, `test_servo_source_angle`, `test_hitec_prog_run` and
 `test_hitec_panel_run`, `test_hitec_panel_move`, `test_hitec_panel_find`, `test_servo_rudder`,
 `test_servo_rudder_panel`, `test_servo_rudder_steps`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
@@ -2106,6 +2141,7 @@ The host suite is 702 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client`, `test_devimg`, `test_devimg_board`, `test_upd_dev`, `test_upd_fetch`,
 `test_upd_wizard`, `test_upd_wizard_map`, `test_upd_wiz_view`, `test_label_bitmap`, `test_label_layout`,
 `test_lzlit`, `test_supvan_frame`, `test_supvan_page`, `test_supvan_job`, `test_supvan_job_ends`,
+`test_prn_job_vs_sv`, `test_prn_image`, `test_prn_tmpl`, `test_prn_parse`, `test_prn_job`, `test_prn_fuzz`,
 `test_print_ctl`, `test_print_ctl_ends`, `test_print_ctl_scan`, `test_wireless_printer`,
 `test_servo_print_row` and `test_harness`.
 
@@ -2645,7 +2681,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-1150 committed screenshots to the current render, 575 in English and the same 575 in German, and `render_ui.py --fit` fails on a string that
+1156 committed screenshots to the current render, 578 in English and the same 578 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -2685,6 +2721,8 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/scan_flow.c` | 153 | 150 | 98.0% |
 | `shared/ui/scanner_pane.c` | 176 | 160 | 90.9% |
 | `shared/ui/scanner_code.c` | 148 | 136 | 91.9% |
+| `shared/ui/about_screen.c` | 190 | 175 | 92.1% |
+| `shared/ui/about_draw.c` | 137 | 132 | 96.3% |
 | `shared/ui/ui_help.c` | 400 | 389 | 97.2% |
 | `shared/ui/help_outputs.c` | 74 | 72 | 97.3% |
 | `shared/ui/help_setup.c` | 96 | 93 | 96.9% |
@@ -2702,7 +2740,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_text.c` | 140 | 139 | 99.3% |
 | `shared/ui/ui_router.c` | 612 | 600 | 98.0% |
 | `shared/ui/ui_router_alert.c` | 36 | 36 | 100.0% |
-| `shared/ui/ui_router_screens.c` | 64 | 64 | 100.0% |
+| `shared/ui/ui_router_screens.c` | 66 | 66 | 100.0% |
 | `shared/ui/ui_alert_slot.c` | 39 | 39 | 100.0% |
 | `shared/ui/ui_value_ask.c` | 8 | 8 | 100.0% |
 | `shared/ui/splash_screen.c` | 72 | 69 | 95.8% |
@@ -2820,7 +2858,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/print_req.c` | 73 | 70 | 95.9% |
 | `shared/ui/settings_screen.c` | 333 | 324 | 97.3% |
 | `shared/ui/settings_draw.c` | 69 | 69 | 100.0% |
-| `shared/ui/settings_rows.c` | 56 | 54 | 96.4% |
+| `shared/ui/settings_rows.c` | 61 | 59 | 96.7% |
 | `shared/ui/ui_setlist.c` | 642 | 628 | 97.8% |
 | `shared/ui/ui_setlist_draw.c` | 283 | 264 | 93.3% |
 | `shared/ui/ui_footer.c` | 42 | 41 | 97.6% |
@@ -3019,7 +3057,14 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `protocols/supvan/lzlit.c` | 68 | 68 | 100.0% |
 | `protocols/supvan/supvan_frame.c` | 122 | 122 | 100.0% |
 | `protocols/supvan/supvan_page.c` | 65 | 65 | 100.0% |
-| `protocols/supvan/supvan_job.c` | 307 | 302 | 98.4% |
+| `protocols/supvan/supvan_job.c` | 307 | 304 | 99.0% |
+| `protocols/prnengine/prn_parse.c` | 506 | 500 | 98.8% |
+| `protocols/prnengine/prn_parse_img.c` | 259 | 252 | 97.3% |
+| `protocols/prnengine/prn_parse_ext.c` | 637 | 622 | 97.7% |
+| `protocols/prnengine/prn_check.c` | 248 | 232 | 93.5% |
+| `protocols/prnengine/prn_tmpl.c` | 148 | 148 | 100.0% |
+| `protocols/prnengine/prn_image.c` | 110 | 96 | 87.3% |
+| `protocols/prnengine/prn_job.c` | 588 | 565 | 96.1% |
 | `shared/logfile/servo_store.c` | 267 | 265 | 99.2% |
 | `shared/outputs/kst_port.c` | 665 | 664 | 99.8% |
 | `shared/outputs/hitec_port.c` | 552 | 549 | 99.5% |
@@ -3196,7 +3241,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/scanner/scan_line.c` | 113 | 113 | 100.0% |
 | `shared/scanner/gm861.c` | 319 | 319 | 100.0% |
 | `shared/scanner/scan_port.c` | 112 | 111 | 99.1% |
-| **total** | **116996** | **114359** | **97.7%** |
+| **total** | **119826** | **117090** | **97.7%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
