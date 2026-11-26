@@ -99,6 +99,7 @@ static void cfg_from_settings(pnode_cfg_t *out)
     memset(out, 0, sizeof(*out));
     out->en = settings_get_bool(SET_PNODE_EN);
     out->src_node = settings_get_int(SET_I228_SRC) == 1;
+    out->shunt_uohm = (uint16_t)settings_get_int(SET_PNODE_UOHM);
     strncpy(out->addr, settings_text(SET_TEXT_PNODE_ADDR),
             sizeof(out->addr) - 1u);
     strncpy(out->name, settings_text(SET_TEXT_PNODE_NAME),
@@ -315,7 +316,7 @@ void panel_pnode_start(void)
 
 void panel_pnode_settings_changed(setting_id_t id)
 {
-    if (id == SET_PNODE_EN || id == SET_I228_SRC) {
+    if (id == SET_PNODE_EN || id == SET_I228_SRC || id == SET_PNODE_UOHM) {
         post_cfg();
     }
 }

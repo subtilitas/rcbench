@@ -528,7 +528,8 @@ static void host_release(int kind, int index, int x, int y)
 
 /**
  * @brief Why a row takes no change: a setting set on a SAFE bench only
- *        (settings_safe_only(): SCREEN ROTATION, INA228 SOURCE), held
+ *        (settings_safe_only(): SCREEN ROTATION, INA228 SOURCE, NODE
+ *        SHUNT), held
  *        while ARMED.  The list shows it in place of the help line and on
  *        the band at a press.
  * @param id The setting.

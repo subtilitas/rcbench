@@ -23,10 +23,13 @@ extern "C" {
 #define PNODE_FOUND_MAX 8u  /**< nodes a scan lists: BLEU_FOUND_MAX */
 /** @} */
 
-/** @brief What SETUP sets: SET_PNODE_EN, the bound node, SET_I228_SRC. */
+/** @brief What SETUP sets: SET_PNODE_EN, the bound node, SET_I228_SRC,
+ *         SET_PNODE_UOHM. */
 typedef struct {
     bool en;                    /**< POWER NODE ON */
     bool src_node;              /**< INA228 SOURCE is NODE */
+    uint16_t shunt_uohm;        /**< NODE SHUNT, µΩ, for the node's SHUNT
+                                     write; 0 sends none */
     char addr[PNODE_ADDR_MAX];  /**< SET_TEXT_PNODE_ADDR: "" none */
     char name[PNODE_NAME_MAX];  /**< SET_TEXT_PNODE_NAME */
     uint32_t bind_seq;          /**< the binds SETUP had kept when these
@@ -85,6 +88,12 @@ typedef struct {
     char        bound_addr[PNODE_ADDR_MAX]; /**< the bound node, "" none */
     char        bound_name[PNODE_NAME_MAX]; /**< its name, "" none */
     uint8_t     proto;      /**< the protocol its INFO named, 0 unread */
+    bool        have_info;  /**< INFO was taken on this link */
+    uint8_t     i228_addr;  /**< the INA228's address INFO named, 0 none
+                                 found */
+    uint16_t    shunt_uohm; /**< the shunt INFO named, µΩ */
+    uint16_t    shunt_refused; /**< SHUNT writes the node refused, counted:
+                                    a change is a refusal to show */
     bool        have_status; /**< a STATUS came on this link */
     bool        bat_low;    /**< it says RCNODE_ST_BAT_LOW: under 3.5V */
     bool        bat_none;   /**< it says RCNODE_ST_BAT_NONE: no cell */

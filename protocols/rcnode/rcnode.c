@@ -415,7 +415,8 @@ static size_t ctl_len(uint8_t op)
     case RCNODE_OP_RUN:
     case RCNODE_OP_BLADES:
     case RCNODE_OP_LANG:   return 2u;
-    case RCNODE_OP_RPM:    return 3u;
+    case RCNODE_OP_RPM:
+    case RCNODE_OP_SHUNT:  return 3u;
     default:               return 0u;
     }
 }
@@ -440,6 +441,10 @@ static bool ctl_in_range(const rcnode_ctl_t *c)
     if (c->op == RCNODE_OP_LANG) {
         return c->lang <= RCNODE_LANG_DE;
     }
+    if (c->op == RCNODE_OP_SHUNT) {
+        return c->shunt_uohm >= RCNODE_SHUNT_MIN_UOHM
+               && c->shunt_uohm <= RCNODE_SHUNT_MAX_UOHM;
+    }
     return true;
 }
 
@@ -461,6 +466,8 @@ size_t rcnode_enc_ctl(const rcnode_ctl_t *c, uint8_t *out, size_t cap)
         put16(out + 1, c->rpm);
     } else if (c->op == RCNODE_OP_LANG) {
         out[1] = c->lang;
+    } else if (c->op == RCNODE_OP_SHUNT) {
+        put16(out + 1, c->shunt_uohm);
     }
     return n;
 }
@@ -491,6 +498,8 @@ rcnode_err_t rcnode_dec_ctl(const uint8_t *b, size_t n, rcnode_ctl_t *out)
         c.rpm = get16(b + 1);
     } else if (c.op == RCNODE_OP_LANG) {
         c.lang = b[1];
+    } else if (c.op == RCNODE_OP_SHUNT) {
+        c.shunt_uohm = get16(b + 1);
     }
     if (!ctl_in_range(&c)) {
         return RCNODE_ERR_RANGE;
@@ -513,6 +522,7 @@ bool rcnode_ctl_for_role(uint8_t role, uint8_t op)
     case RCNODE_OP_RPM:
         return role == RCNODE_ROLE_BALANCE;
     case RCNODE_OP_LANG:
+    case RCNODE_OP_SHUNT:
         return role == RCNODE_ROLE_POWER;
     default:
         return false;

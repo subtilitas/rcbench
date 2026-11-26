@@ -465,6 +465,41 @@ TEST_CASE(lang_is_two_bytes_takes_en_and_de_and_only_the_power_role)
     CHECK(!rcnode_ctl_for_role(RCNODE_ROLE_BALANCE, RCNODE_OP_LANG));
 }
 
+TEST_CASE(shunt_is_three_bytes_takes_50_to_10000_uohm_and_only_the_power_role)
+{
+    uint8_t b[4];
+    rcnode_ctl_t c;
+    memset(&c, 0, sizeof c);
+    c.op = RCNODE_OP_SHUNT;
+    c.shunt_uohm = 500u;
+    CHECK_EQ(rcnode_enc_ctl(&c, b, sizeof b), 3);
+    CHECK_EQ(b[0], 0x07);
+    CHECK_EQ(b[1], 0xF4);                     /* least significant first */
+    CHECK_EQ(b[2], 0x01);
+    c.shunt_uohm = 49u;
+    CHECK_EQ(rcnode_enc_ctl(&c, b, sizeof b), 0);
+    c.shunt_uohm = 10001u;
+    CHECK_EQ(rcnode_enc_ctl(&c, b, sizeof b), 0);
+
+    rcnode_ctl_t d;
+    static const uint8_t lo[3] = { 0x07, 0x32, 0x00 };    /* 50 */
+    static const uint8_t hi[3] = { 0x07, 0x10, 0x27 };    /* 10000 */
+    static const uint8_t under[3] = { 0x07, 0x31, 0x00 }; /* 49 */
+    static const uint8_t over[3] = { 0x07, 0x11, 0x27 };  /* 10001 */
+    CHECK_EQ(rcnode_dec_ctl(lo, 3, &d), RCNODE_OK);
+    CHECK_EQ(d.op, RCNODE_OP_SHUNT);
+    CHECK_EQ(d.shunt_uohm, 50u);
+    CHECK_EQ(rcnode_dec_ctl(hi, 3, &d), RCNODE_OK);
+    CHECK_EQ(d.shunt_uohm, 10000u);
+    CHECK_EQ(rcnode_dec_ctl(under, 3, &d), RCNODE_ERR_RANGE);
+    CHECK_EQ(rcnode_dec_ctl(over, 3, &d), RCNODE_ERR_RANGE);
+    CHECK_EQ(d.shunt_uohm, 10000u);            /* left as it was */
+    CHECK_EQ(rcnode_dec_ctl(hi, 2, &d), RCNODE_ERR_LEN);
+
+    CHECK(rcnode_ctl_for_role(RCNODE_ROLE_POWER, RCNODE_OP_SHUNT));
+    CHECK(!rcnode_ctl_for_role(RCNODE_ROLE_BALANCE, RCNODE_OP_SHUNT));
+}
+
 TEST_CASE(seq_counts_losses_across_its_wrap_at_256)
 {
     CHECK_EQ(rcnode_seq_lost(5u, 6u), 0);
@@ -952,6 +987,7 @@ int main(void)
     RUN(every_control_write_has_its_bytes_and_its_limits);
     RUN(the_power_role_takes_run_sleep_off_and_not_the_balance_writes);
     RUN(lang_is_two_bytes_takes_en_and_de_and_only_the_power_role);
+    RUN(shunt_is_three_bytes_takes_50_to_10000_uohm_and_only_the_power_role);
     RUN(seq_counts_losses_across_its_wrap_at_256);
     RUN(t_node_differences_hold_across_the_wrap_at_2_32us);
     RUN(the_40_bit_accumulators_sign_extend_and_wrap);

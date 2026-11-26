@@ -14063,6 +14063,12 @@ UI_OPTIONS(i228_src)
 UI_OPTION("WIRED", NULL)
 UI_OPTION("NODE", NULL)
 UI_OPTIONS_END(i228_src)
+UI_SETTING_LABEL(SET_PNODE_UOHM,
+    "Node shunt",
+    "Knoten-Shunt")
+UI_SETTING_HELP(SET_PNODE_UOHM,
+    "The node's INA228 shunt; Matek: 200uΩ",
+    "Shunt des INA228 am Knoten; Matek: 200uΩ")
 UI_TEXT(PNODE_ENTRY, 16,
     "POWER NODE",
     "LEISTUNGSKNOTEN")
@@ -14120,6 +14126,20 @@ UI_TEXT(PNODE_BAT_ERR, 18,
 UI_TEXT(PNODE_BAT_UNKNOWN, 18,
     "NOT LINKED",
     "NICHT VERBUNDEN")
+/* NODE INA228: the address the node found its INA228 at and the shunt it
+ * holds, as its INFO names them. */
+UI_TEXT(PNODE_ROW_I228, 43,
+    "Node INA228",
+    "INA228 am Knoten")
+UI_TEXT(PNODE_ROW_I228_HELP, 43,
+    "Found at 0x40 to 0x4F; the shunt in force",
+    "Gefunden bei 0x40 bis 0x4F; Shunt aktiv")
+UI_TEXT(PNODE_I228_AT, 18,
+    "0x%02X, %uuΩ",
+    "0x%02X, %uuΩ")
+UI_TEXT(PNODE_I228_NONE, 18,
+    "NOT FOUND",
+    "NICHT GEFUNDEN")
 /* The band's texts: the scan refused while ARMED, the link's notices, and
  * the error of the node's readings lost while ARMED with INA228 SOURCE
  * NODE. */
@@ -14132,6 +14152,9 @@ UI_TEXT(PNODE_SCAN_OFF, 94,
 UI_TEXT(PNODE_STALE, 94,
     "POWER NODE: NO READING FOR 300ms",
     "LEISTUNGSKNOTEN: 300ms KEIN MESSWERT")
+UI_TEXT(PNODE_SHUNT_REFUSED, 94,
+    "POWER NODE TAKES NO SHUNT: UPDATE ITS FIRMWARE",
+    "LEISTUNGSKNOTEN NIMMT KEINEN SHUNT: FIRMWARE AKTUALISIEREN")
 UI_TEXT(PNODE_LOST_SAFE, 94,
     "POWER NODE LOST",
     "LEISTUNGSKNOTEN VERLOREN")

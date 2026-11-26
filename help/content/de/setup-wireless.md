@@ -95,7 +95,7 @@ Auf den Prüfstandsbildschirmen:
 
 ![WIRELESS auf dem LEISTUNGSKNOTEN-Eintrag, verbunden](view:setup-wireless-pnode)
 
-Der Leistungsknoten ist ein ESP32-C6 mit eigener Zelle, der einen INA228 am XT60 des ESC (Electronic Speed Controller, Motorregler) liest und seine Messwerte über Bluetooth LE sendet. INA228-Quelle legt fest, wessen INA228 MOTOR & ESC zeigt: den des IOmcu, verkabelt, oder den des Knotens.
+Der Leistungsknoten ist ein ESP32-C6 mit eigener Zelle, der ein INA228-Board in der Zuleitung des ESC (Electronic Speed Controller, Motorregler) liest und seine Messwerte über Bluetooth LE sendet. Der Knoten findet den INA228 auf jeder Adresse von 0x40 bis 0x4F. INA228-Quelle legt fest, wessen INA228 MOTOR & ESC zeigt: den des IOmcu, verkabelt, oder den des Knotens.
 
 | Einstellung | Bereich | Vorgabe | Wirkung |
 |---|---|---|---|
@@ -104,6 +104,10 @@ Der Leistungsknoten ist ein ESP32-C6 mit eigener Zelle, der einen INA228 am XT60
 | Knoten suchen | `SUCHEN` | | Tippen öffnet [SEARCH](#search) und sucht 10s lang nach den Leistungsknoten in Reichweite; das Schalten auf ARMED beendet die Suche, `DURCH ARM BEENDET`; bei ARMED abgelehnt, mit `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN` im Band |
 | Gebundener Knoten | `KEINS` oder der Name des Knotens | `KEINS` | Tippen öffnet [SEARCH](#search) mit der Liste der letzten Suche. Zurücksetzen behält den gebundenen Knoten |
 | Knotenakku | `3.92V`, `SCHWACH 3.41V`, `KEINE ZELLE`, `LESEFEHLER`, `NICHT VERBUNDEN` | | die Zelle des Knotens aus seinem Status jede 1s; `SCHWACH` unter 3.5V |
+| INA228 am Knoten | `0x40, 500uΩ`, `NICHT GEFUNDEN`, `NICHT VERBUNDEN` | | die Adresse, auf der der Knoten seinen INA228 gefunden hat, und der Shunt, den der Knoten hält, aus seiner INFO nach jedem Verbinden und jeder Shunt-Änderung |
+| Knoten-Shunt | 50 bis 10000µΩ | 200µΩ | der Shunt des INA228-Boards am Knoten; der des MATEK I2C-INA-BM hat 200µΩ. Das Panel schreibt ihn nach jedem Verbinden und jeder Änderung zum Knoten, wenn der Knoten einen anderen hält; der Knoten behält ihn über Neustarts. Der Messbereich ist 40.96mV über dem Shunt: 204.8A bei 200µΩ, 81.92A bei 500µΩ, 4.096A bei 10000µΩ. Jede Änderung löscht die Ladungs- und Energiesummen des Knotens. Ändert sich bei ARMED nicht. Ein Knoten, dessen Firmware keinen Shunt nimmt: `LEISTUNGSKNOTEN NIMMT KEINEN SHUNT: FIRMWARE AKTUALISIEREN` im Band |
+
+![WIRELESS auf dem LEISTUNGSKNOTEN-Eintrag, bis INA228 am Knoten und Knoten-Shunt gescrollt](view:setup-wireless-pnode-shunt)
 
 Mit INA228-Quelle auf NODE:
 
@@ -112,7 +116,7 @@ Mit INA228-Quelle auf NODE:
 - Mit Leistungsknoten EIN und einem gebundenen Knoten trägt die Kachel MOTOR & ESC im [Menü](overview.md#die-marke-simuliert) keine Marke SIMULIERT, auch bei ausgeschaltetem INA228 des IOmcu und ohne Verbindung zum Knoten.
 - Ein ARM von MOTOR & ESC oder ESC STICK wird abgelehnt, solange Leistungsknoten AUS ist oder in den letzten 100ms kein Messwert kam, mit `ARMED gesperrt: Leistungsknoten sendet nicht. INA228-Quelle WIRED oder Knoten verbinden.` im Band. SERVO und OUTPUTS schalten unabhängig vom Knoten auf ARMED.
 - In einem Lauf von MOTOR & ESC oder ESC STICK wird eine Lücke ohne Messwert bis 300ms überbrückt, einmal in 10s. Eine längere Lücke oder eine zweite innerhalb von 10s schaltet den Prüfstand auf SAFE mit allen Ausgängen aus, und das Band zeigt `MESSWERTE DES LEISTUNGSKNOTENS BEI ARMED VERLOREN: AUF SAFE GESCHALTET, ALLE AUSGÄNGE AUS`. Ein SERVO- oder OUTPUTS-Lauf endet nicht am Knoten.
-- INA228-Quelle ändert sich bei ARMED nicht.
+- INA228-Quelle und Knoten-Shunt ändern sich bei ARMED nicht.
 - Die Messwerte des Knotens speisen keine Schutzfunktion: Stromgrenzen und Abschaltungen lesen ihre eigenen Sensoren.
 
 | Zustand | Wann |

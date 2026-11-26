@@ -637,6 +637,16 @@ bool bleu_link_up(const bleu_t *b);
 bool bleu_can_send(const bleu_t *b);
 
 /**
+ * @brief Read the PARAM again on the link that stands, as after the
+ *        subscribe: the read waits for a command write in flight, then
+ *        param, param_len and param_status hold its result.
+ * @param b The machine.
+ * @return false with no link, no PARAM, or a PARAM read due or under way:
+ *         nothing changes.
+ */
+bool bleu_reread(bleu_t *b);
+
+/**
  * @brief Parse one advertising report's AD (advertising data) structures.
  *        A length 0 ends the data; a length past the end drops the rest.
  * @param ad  The bytes; NULL with @p len 0 is an empty report.

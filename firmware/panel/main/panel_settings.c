@@ -296,7 +296,8 @@ void settings_changed(setting_id_t id)
     } else if (id == SET_DIAL_EN || id == SET_DIAL_THR
                || id == SET_DIAL_SRV) {
         panel_dial_settings_changed(id);
-    } else if (id == SET_PNODE_EN || id == SET_I228_SRC) {
+    } else if (id == SET_PNODE_EN || id == SET_I228_SRC
+               || id == SET_PNODE_UOHM) {
         panel_pnode_settings_changed(id);
     } else if (id == SET_BNODE_EN) {
         panel_bal_settings_changed(id);

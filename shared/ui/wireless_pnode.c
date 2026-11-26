@@ -78,6 +78,9 @@ static bool view_same(const pnode_view_t *a, const pnode_view_t *b)
         || a->have_status != b->have_status || a->bat_low != b->bat_low
         || a->bat_none != b->bat_none || a->bat_err != b->bat_err
         || a->vbat_mv != b->vbat_mv || a->bind_refused != b->bind_refused
+        || a->have_info != b->have_info || a->i228_addr != b->i228_addr
+        || a->shunt_uohm != b->shunt_uohm
+        || a->shunt_refused != b->shunt_refused
         || a->scan_armed != b->scan_armed
         || a->scan_unready != b->scan_unready
         || strncmp(a->bound_addr, b->bound_addr, sizeof a->bound_addr) != 0
@@ -111,6 +114,8 @@ void wireless_pane_set_pnode(const pnode_view_t *v)
     const bool armed_no = v != NULL && next.scan_armed != s_node.scan_armed;
     const bool scan_no = v != NULL
                          && next.scan_unready != s_node.scan_unready;
+    const bool shunt_no = v != NULL
+                          && next.shunt_refused != s_node.shunt_refused;
     s_node = next;
     settings_screen_invalidate();
     const bool scanning = s_node.link == PNODE_LINK_SCANNING;
@@ -122,6 +127,8 @@ void wireless_pane_set_pnode(const pnode_view_t *v)
     } else if (scan_no) {
         ui_router_set_alert(scanning ? TR(NODE_SCAN_RUNNING)
                                      : TR(PNODE_SCAN_OFF));
+    } else if (shunt_no) {
+        ui_router_set_alert(TR(PNODE_SHUNT_REFUSED));
     }
 }
 
@@ -282,6 +289,30 @@ const ui_setlist_custom_t wireless_pane_pnode_bat_row = {
     .label = TX_PNODE_ROW_BAT,
     .help = TX_PNODE_ROW_BAT_HELP,
     .value_text = bat_value,
+};
+
+/* ------------------------------------------------------------ NODE INA228 */
+
+/** @brief NODE INA228's value: "0x40, 500uΩ" from INFO, NOT FOUND when the
+ *         node names no address, NOT LINKED before INFO.
+ *  @param out The text. @param n Its size. */
+static void i228_value(char *out, size_t n)
+{
+    if (!s_node.have_info) {
+        snprintf(out, n, "%s", TR(PNODE_BAT_UNKNOWN));
+    } else if (s_node.i228_addr == 0u) {
+        snprintf(out, n, "%s", TR(PNODE_I228_NONE));
+    } else {
+        snprintf(out, n, TR(PNODE_I228_AT), (unsigned)s_node.i228_addr,
+                 (unsigned)s_node.shunt_uohm);
+    }
+}
+
+/** @brief NODE INA228: the node's part and shunt, read only. */
+const ui_setlist_custom_t wireless_pane_pnode_i228_row = {
+    .label = TX_PNODE_ROW_I228,
+    .help = TX_PNODE_ROW_I228_HELP,
+    .value_text = i228_value,
 };
 
 /* ------------------------------------------------------------- the word */
