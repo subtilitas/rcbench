@@ -40,7 +40,7 @@
 			)
 		)
 	)
-	(property "Description" "INA228 current and voltage monitor with 2 XT90PW, board print BIFRC V1.1, 80.1 x 48.6mm, 4 screw holes 70.15 x 38.8mm apart. Shunt (print 0m50) in the minus line between BAT- and ESC-; the plus bar runs straight through. Header print L A V G 5: 1 L = SCL, 2 A = SDA, 3 V = 3.3V chip supply, 4 G = GND, 5 = hole without pin. Pads 6 + bar, 7 BAT-, 8 ESC-, 9 GND, 10 5V test pads. The screw holes carry circuitry (board print). Drawn from owner photos on squared paper; positions within about 0.3mm, connectors within about 0.5mm."
+	(property "Description" "INA228 current and voltage monitor with 2 XT90PW, board print BIFRC V1.1, 80.1 x 48.6mm, 4 screw holes 70.65 x 38.8mm apart. Shunt (print 0m50) in the minus line between BAT- and ESC-; the plus bar runs straight through. Header print L A V G 5: 1 L = SCL, 2 A = SDA, 3 V = 3.3V chip supply, 4 G = GND, 5 = hole without pin. Pads 6 + bar, 7 BAT-, 8 ESC-, 9 GND, 10 5V test pads. The screw holes carry circuitry (board print). Drawn from owner photos on squared paper; positions within about 0.3mm, connectors within about 0.5mm."
 		(at 0 0 0)
 		(unlocked yes)
 		(layer "F.Fab")
@@ -274,8 +274,8 @@
 		(uuid "f986a32b-096c-5fc3-b300-756acabfeab3")
 	)
 	(fp_circle
-		(center -51.21 -39.5)
-		(end -49.61 -39.5)
+		(center -51.46 -39.5)
+		(end -49.86 -39.5)
 		(stroke
 			(width 0.12)
 			(type solid)
@@ -285,8 +285,8 @@
 		(uuid "dc25b5d6-3f88-5d06-bd9e-b5b0367e9b42")
 	)
 	(fp_circle
-		(center -51.21 -39.5)
-		(end -48.66 -39.5)
+		(center -51.46 -39.5)
+		(end -48.91 -39.5)
 		(stroke
 			(width 0.12)
 			(type solid)
@@ -296,8 +296,8 @@
 		(uuid "dc863399-bd3b-5e8a-87ce-37a96d42efcd")
 	)
 	(fp_circle
-		(center 18.94 -39.5)
-		(end 20.54 -39.5)
+		(center 19.19 -39.5)
+		(end 20.79 -39.5)
 		(stroke
 			(width 0.12)
 			(type solid)
@@ -307,8 +307,8 @@
 		(uuid "54a33e73-b1f7-55dc-8ba2-d5c1c33050ef")
 	)
 	(fp_circle
-		(center 18.94 -39.5)
-		(end 21.49 -39.5)
+		(center 19.19 -39.5)
+		(end 21.74 -39.5)
 		(stroke
 			(width 0.12)
 			(type solid)
@@ -318,8 +318,8 @@
 		(uuid "a7d60abc-2168-5a7d-a0e1-f5c19b38bf6c")
 	)
 	(fp_circle
-		(center -51.21 -0.7)
-		(end -49.61 -0.7)
+		(center -51.46 -0.7)
+		(end -49.86 -0.7)
 		(stroke
 			(width 0.12)
 			(type solid)
@@ -329,8 +329,8 @@
 		(uuid "c0f263fe-6795-5425-938d-e9ac31c96c7d")
 	)
 	(fp_circle
-		(center -51.21 -0.7)
-		(end -48.66 -0.7)
+		(center -51.46 -0.7)
+		(end -48.91 -0.7)
 		(stroke
 			(width 0.12)
 			(type solid)
@@ -340,8 +340,8 @@
 		(uuid "9eb24985-4275-595f-9704-4eb2d4b80049")
 	)
 	(fp_circle
-		(center 18.94 -0.7)
-		(end 20.54 -0.7)
+		(center 19.19 -0.7)
+		(end 20.79 -0.7)
 		(stroke
 			(width 0.12)
 			(type solid)
@@ -351,8 +351,8 @@
 		(uuid "1948626d-1dd2-5651-9208-73b976b6aa9a")
 	)
 	(fp_circle
-		(center 18.94 -0.7)
-		(end 21.49 -0.7)
+		(center 19.19 -0.7)
+		(end 21.74 -0.7)
 		(stroke
 			(width 0.12)
 			(type solid)
@@ -770,8 +770,8 @@
 		(uuid "ec5a665d-cb4c-512d-a9a3-e5c76d620434")
 	)
 	(fp_circle
-		(center -51.21 -39.5)
-		(end -49.61 -39.5)
+		(center -51.46 -39.5)
+		(end -49.86 -39.5)
 		(stroke
 			(width 0.1)
 			(type solid)
@@ -781,8 +781,8 @@
 		(uuid "be5a72c0-1acc-5f0e-b665-d18be576fd66")
 	)
 	(fp_circle
-		(center -51.21 -39.5)
-		(end -48.66 -39.5)
+		(center -51.46 -39.5)
+		(end -48.91 -39.5)
 		(stroke
 			(width 0.1)
 			(type solid)
@@ -792,8 +792,8 @@
 		(uuid "34619ac1-468a-5193-a11f-f5fba15b2d0e")
 	)
 	(fp_circle
-		(center 18.94 -39.5)
-		(end 20.54 -39.5)
+		(center 19.19 -39.5)
+		(end 20.79 -39.5)
 		(stroke
 			(width 0.1)
 			(type solid)
@@ -803,8 +803,8 @@
 		(uuid "f1c31175-d873-5403-83a1-37edbc95de66")
 	)
 	(fp_circle
-		(center 18.94 -39.5)
-		(end 21.49 -39.5)
+		(center 19.19 -39.5)
+		(end 21.74 -39.5)
 		(stroke
 			(width 0.1)
 			(type solid)
@@ -814,8 +814,8 @@
 		(uuid "9160bd4a-66e8-5fea-a9df-ea33eeda02db")
 	)
 	(fp_circle
-		(center -51.21 -0.7)
-		(end -49.61 -0.7)
+		(center -51.46 -0.7)
+		(end -49.86 -0.7)
 		(stroke
 			(width 0.1)
 			(type solid)
@@ -825,8 +825,8 @@
 		(uuid "e48c5b6b-9b08-57dd-8b5e-d3705d0cc22e")
 	)
 	(fp_circle
-		(center -51.21 -0.7)
-		(end -48.66 -0.7)
+		(center -51.46 -0.7)
+		(end -48.91 -0.7)
 		(stroke
 			(width 0.1)
 			(type solid)
@@ -836,8 +836,8 @@
 		(uuid "baa2fecc-17a0-58ef-8d38-cd4ce7944e9f")
 	)
 	(fp_circle
-		(center 18.94 -0.7)
-		(end 20.54 -0.7)
+		(center 19.19 -0.7)
+		(end 20.79 -0.7)
 		(stroke
 			(width 0.1)
 			(type solid)
@@ -847,8 +847,8 @@
 		(uuid "a676a519-16d4-503a-826e-798dfa3384ff")
 	)
 	(fp_circle
-		(center 18.94 -0.7)
-		(end 21.49 -0.7)
+		(center 19.19 -0.7)
+		(end 21.74 -0.7)
 		(stroke
 			(width 0.1)
 			(type solid)
@@ -1431,28 +1431,28 @@
 		(uuid "741e8a4e-715d-5df8-89ae-7bef844d727b")
 	)
 	(pad "" np_thru_hole circle
-		(at -51.21 -39.5)
+		(at -51.46 -39.5)
 		(size 3.2 3.2)
 		(drill 3.2)
 		(layers "*.Mask")
 		(uuid "1450c3de-ad8e-51fa-b3fa-a84883c201a5")
 	)
 	(pad "" np_thru_hole circle
-		(at 18.94 -39.5)
+		(at 19.19 -39.5)
 		(size 3.2 3.2)
 		(drill 3.2)
 		(layers "*.Mask")
 		(uuid "cb699e9f-29b1-5a63-a623-270280a81fe2")
 	)
 	(pad "" np_thru_hole circle
-		(at -51.21 -0.7)
+		(at -51.46 -0.7)
 		(size 3.2 3.2)
 		(drill 3.2)
 		(layers "*.Mask")
 		(uuid "6d44ff7d-f4ac-5ca7-986a-c84407f6f18a")
 	)
 	(pad "" np_thru_hole circle
-		(at 18.94 -0.7)
+		(at 19.19 -0.7)
 		(size 3.2 3.2)
 		(drill 3.2)
 		(layers "*.Mask")

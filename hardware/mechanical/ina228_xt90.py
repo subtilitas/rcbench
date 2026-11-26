@@ -34,7 +34,10 @@ at x = 12.87 and x = 67.2, give 18.45 and 62.1 with W's distances.
 
 Case: the 4 holes of the case are 73.3 x 40.3 apart on the paper and
 70.15 x 38.8 on the board, so the standoffs' tops are 7.9 over the
-paper (camera 195.1 over the paper). The outline is 89.4 x 56.8 on the
+paper (camera 195.1 over the paper). A printed case showed the holes'
+long spacing 0.5 short: the board's holes are 70.65 apart (the owner's
+correction), and the case's holes follow them. The standoffs' 7.9 is
+kept from the photo. The outline is 89.4 x 56.8 on the
 paper, 84.8 x 53.9 at the rim's top.
 
 Not measured, estimated or drawn from the sources above:
