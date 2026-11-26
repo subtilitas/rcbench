@@ -76,6 +76,8 @@ TRACKED = [
     "shared/ui/ui_icons.c",
     "shared/ui/ui_band.c",
     "shared/ui/scan_flow.c",
+    "shared/ui/scanner_pane.c",
+    "shared/ui/scanner_code.c",
     "shared/ui/ui_help.c",
     "shared/ui/help_outputs.c",
     "shared/ui/help_setup.c",
@@ -606,6 +608,8 @@ DATA_ONLY = {
     "shared/gfx/gfx_font6x12.c",
     "shared/gfx/gfx_font20x36.c",
     "shared/gfx/gfx_font_num32x44.c",
+    # The scanner's setup code written by tools/gen_scanner_codes.py.
+    "shared/scanner/scanner_codes.c",
     # The Dial's ring tables written by tools/gen_dial_rings.py.
     "shared/dial/dial_rings.c",
     # The cats' drawings written by tools/gen_cats.py.

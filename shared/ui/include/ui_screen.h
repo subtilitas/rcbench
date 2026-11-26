@@ -86,6 +86,10 @@ typedef enum {
      * restore offer, over OVERVIEW at start (sbk_screen.h): the card's
      * settings files and the hold that loads one. */
     SCREEN_SET_LOAD,
+    /* SETUP CODE, from SETUP > SENSORS > SCANNER's Show setup code and
+     * Factory reset (scanner_code.h): the scanner's setup code and the
+     * factory reset's hold. */
+    SCREEN_SCAN_CODE,
     SCREEN_COUNT
 } ui_screen_id_t;
 

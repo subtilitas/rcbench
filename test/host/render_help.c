@@ -50,6 +50,7 @@ static const struct {
     { "help-setup-rbmod", "setup-rbmod" },
     { "help-setup-list", "setup-application" },
     { "help-setup-sensors", "setup-sensors" },
+    { "help-setup-scanner", "setup-scanner-ready" },
     { "help-setup-wireless-imu", "setup-wireless-imu" },
     { "help-setup-wireless-dial", "setup-wireless-dial" },
     { "help-setup-wireless-pnode", "setup-wireless-pnode" },

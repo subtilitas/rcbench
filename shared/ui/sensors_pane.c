@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 
+#include "scanner_pane.h"
 #include "sensors_rows.h"
 #include "settings_screen.h"
 #include "settings_sensors.h"
@@ -30,6 +31,10 @@ static const setting_id_t k_as5600[] = { SET_ENC_EN, SET_ENC_CENTER };
 static const setting_id_t k_tap[] = { SET_TONE_EN, SET_TONE_PIN, SET_TONE_F_MIN,
                                       SET_TONE_F_MAX, SET_TONE_SPLIT,
                                       SET_TONE_GAP, SET_TONE_PERIODS };
+/** @brief The QR scanner's settings, the enable row first; its other rows
+ *         are scanner_pane.h's. */
+static const setting_id_t k_scanner[] = { SET_SCANNER_ENABLE,
+                                          SET_SCANNER_MODE };
 
 /** @brief Appends @p table to all_rows()'s out, counted in its n. */
 #define COPY_ROWS(table)                                             \
@@ -53,6 +58,7 @@ static int all_rows(int entry, setting_id_t *out)
     case SENS_ENTRY_INA228: COPY_ROWS(k_ina228); break;
     case SENS_ENTRY_AS5600: COPY_ROWS(k_as5600); break;
     case SENS_ENTRY_TAP:    COPY_ROWS(k_tap);    break;
+    case SENS_ENTRY_SCANNER: COPY_ROWS(k_scanner); break;
     default: {
         const int a = entry - SENS_ENTRY_INA3221_0;
         if (a < 0 || a >= SET_INA_PARTS) {
@@ -121,6 +127,7 @@ const char *sensors_pane_name(int entry, char *buf, size_t n)
     case SENS_ENTRY_INA228: snprintf(buf, n, "INA228");              break;
     case SENS_ENTRY_AS5600: snprintf(buf, n, "AS5600");              break;
     case SENS_ENTRY_TAP:    snprintf(buf, n, "%s", TR(SET_HD_TAP));  break;
+    case SENS_ENTRY_SCANNER: snprintf(buf, n, "%s", TR(SCN_ENTRY));   break;
     default:
         if (entry >= SENS_ENTRY_INA3221_0
             && entry < SENS_ENTRY_INA3221_0 + SET_INA_PARTS) {
@@ -193,6 +200,8 @@ const char *sensors_pane_state(int entry, char *buf, size_t n, gfx_color_t *ink)
     }
     if (entry == SENS_ENTRY_BUS) {
         bus_state(buf, n, ink);
+    } else if (entry == SENS_ENTRY_SCANNER) {
+        (void)scanner_pane_state(buf, n, ink);
     } else if (!settings_get_bool(rows[0])) {
         snprintf(buf, n, "%s", TR(OFF));
     } else if (entry == SENS_ENTRY_INA228) {

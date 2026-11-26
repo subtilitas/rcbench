@@ -42,6 +42,7 @@
 #include "render_files.h"
 #include "render_help.h"
 #include "render_imu.h"
+#include "render_scanner.h"
 #include "render_sbk.h"
 #include "render_outputs.h"
 #include "render_rudder.h"
@@ -2460,6 +2461,7 @@ static ui_screen_id_t id_of(const char *name)
         { "layout",     SCREEN_LAYOUT },
         { "imu",        SCREEN_IMU },
         { "set-load",   SCREEN_SET_LOAD },
+        { "scan-code",  SCREEN_SCAN_CODE },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         if (strcmp(name, k[i].name) == 0) {
@@ -5689,6 +5691,7 @@ int main(int argc, char **argv)
     pose_shown_setup(id, view);
     pose_shown_tools(id, view);
     render_imu_pose(view);
+    render_scanner_pose(view);
     render_sbk_pose(view);
     /* Last: the guide opens over the screen as the poses left it. */
     if (render_help_view(shot_view)) {

@@ -67,6 +67,7 @@ COVERED_BY = {
     "SCREEN_SERVO_HITEC": "servo-programmer",
     "SCREEN_WL_SEARCH": "setup-wireless",
     "SCREEN_SET_LOAD": "setup-backup",
+    "SCREEN_SCAN_CODE": "setup-sensors",
 }
 
 HEADER_KEYS = ("screen", "title", "order")

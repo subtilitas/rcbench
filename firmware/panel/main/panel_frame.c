@@ -682,10 +682,12 @@ void panel_frame_loop(void)
             .link_refused = link_refused,
             .mcu_temp_c  = mcu_temp_c,
         };
-        /* The scanner's oldest line into the flow's mailbox when it is
-         * free (one a frame; the rest wait in the port's queue), then the
-         * line that waits (the scanner's or `scan <text>`), then the
-         * active servo on the band's chip. */
+        /* The scanner's view to SETUP > SENSORS > SCANNER and its
+         * commands to the scan task; the scanner's oldest line into the
+         * flow's mailbox when it is free (one a frame; the rest wait in
+         * the port's queue), then the line that waits (the scanner's or
+         * `scan <text>`), then the active servo on the band's chip. */
+        panel_scan_frame(now_ms());
         (void)scan_flow_pull(panel_scan_has_line, panel_scan_take_line);
         scan_flow_tick(now_ms(), &status);
         scan_flow_status(&status);

@@ -78,6 +78,8 @@ SOURCES = [
     # The Bluetooth IMU: its screen handed a view, SCAN tapped; SENSORS on
     # the IMU entry.
     "test/host/render_imu.c",
+    # The QR scanner: SETUP > SENSORS > SCANNER handed a view, SETUP CODE.
+    "test/host/render_scanner.c",
     # The settings backup: its files on a folder in memory, the driver's
     # requests run between frames.
     "test/host/render_sbk.c",
@@ -736,6 +738,15 @@ SCREENS = {
     # SENSORS: 0x40 and 0x41 fitted, on 0x40 online; and on 0x41, marked as an
     # IOmcu older than 4.25 leaves its rows.
     "setup-sensors": ("setup-sensors.png", "setup", "dark"),
+    # SENSORS > SCANNER: READY with a line taken, NOT CONNECTED, NO ANSWER;
+    # and SETUP CODE over it.
+    "setup-scanner-ready": ("setup-scanner-ready.png", "setup", "dark"),
+    "setup-scanner-not-connected": ("setup-scanner-not-connected.png",
+                                    "setup", "dark"),
+    "setup-scanner-no-answer": ("setup-scanner-no-answer.png", "setup",
+                                "dark"),
+    "setup-scanner-setup-code": ("setup-scanner-setup-code.png",
+                                 "scan-code", "dark"),
     "setup-sensors-old": ("setup-sensors-old.png", "setup", "dark"),
     "setup-sensors-limit": ("setup-sensors-limit.png", "setup", "dark"),
     # SENSORS on the rbmod carrier: 0x40 soldered, its rows on the rails.
@@ -1107,6 +1118,7 @@ FIT_ONLY = {
     "help-setup-list": (None, "setup", "dark"),
     "help-setup-list-2": (None, "setup", "dark"),
     "help-setup-sensors": (None, "setup", "dark"),
+    "help-setup-scanner": (None, "setup", "dark"),
     "help-setup-sensors-2": (None, "setup", "dark"),
     "help-setup-wireless-imu": (None, "setup", "dark"),
     "help-setup-wireless-dial": (None, "setup", "dark"),
