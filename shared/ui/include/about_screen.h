@@ -13,7 +13,7 @@
  *   UPDATES shows it) and the IOmcu's, as UPDATES' IOmcu section has it,
  *   or that no IOmcu has named one;
  * - Design: Julian Wingert, Implemented by Claude and Julian, Copyright
- *   2026 Julian Wingert;
+ *   2026 Julian Wingert, RCBench@doesnt.fly;
  * - LICENCES: firmware and software under the MIT License, the hardware
  *   designs in hardware/ under CC BY-NC-SA 4.0 (hardware/LICENSE), the
  *   repository github.com/subtilitas/rcbench;

@@ -6603,7 +6603,7 @@ und einen 56px breiten Scrollbalken bei x 960. Von oben:
 | Teil | Zeilen |
 | --- | --- |
 | rcbench | die Version der Panel-Firmware, wie UPDATES sie zeigt; die der IOmcu-Firmware, sobald das IOmcu sie genannt hat, sonst `unbekannt: kein IOmcu hat geantwortet` |
-| Der Designer | `Design: Julian Wingert`, `Implemented by Claude and Julian`, `Copyright 2026 Julian Wingert` |
+| Der Designer | `Design: Julian Wingert`, `Implemented by Claude and Julian`, `Copyright 2026 Julian Wingert`, `RCBench@doesnt.fly` |
 | LIZENZEN | Firmware und Software unter der MIT License, die Hardware-Entwürfe in `hardware/` unter CC BY-NC-SA 4.0 (`hardware/LICENSE`), das Repository `github.com/subtilitas/rcbench` |
 | MARKEN | der Hinweis zur beschreibenden Nennung aus `NOTICE`: KST, CHASERVO, Hitec und jeder andere Name gehören ihren Inhabern und beschreiben nur die Kompatibilität |
 | FREMDKOMPONENTEN: PANEL-FIRMWARE | 18 Komponenten: Name und Version, SPDX-Kennung, Copyright-Zeilen |
@@ -6613,7 +6613,8 @@ und einen 56px breiten Scrollbalken bei x 960. Von oben:
 
 ![ABOUT um 8 Zeilen gescrollt: die Lizenzen, der Markenhinweis, die erste Komponente](img/de/setup-about-licences.png)
 
-Die Spalte hat in beiden Sprachen 9.355 Zeilen. Ziehen auf ihr verschiebt sie um
+[Lizenzen](Licenses-de.md#wo-die-lizenztexte-stehen) zählt die Zeilen,
+die die Liste der Spalte gibt. Ziehen auf ihr verschiebt sie um
 eine Zeile je 24px, ausgehend von der Lage beim Drücken. Ein Druck auf den
 Balken setzt die Mitte des Griffs unter den Finger, ein Druck auf den Griff
 nimmt ihn, wo er gehalten wird, und Ziehen bewegt ihn: der Weg des Balkens

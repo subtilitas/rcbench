@@ -162,7 +162,7 @@ Der MT6701 arbeitet im I2C-Modus mit MODE auf High unter Adresse 0x06. Sein Bus 
 Die letzte Zeile von PANEL, Über rcbench, öffnet ABOUT. Es zeigt die Version der Panel-Firmware und die des IOmcu, den Designer, die Lizenzen des Projekts (MIT für Firmware und Software, CC BY-NC-SA 4.0 für die Hardware-Entwürfe), den Markenhinweis, jede Fremdkomponente der Panel- und der IOmcu-Firmware mit Lizenz und Copyright-Zeilen und die Lizenztexte, die diese Lizenzen zur Firmware verlangen.
 
 - **Scrollen**: auf den Zeilen ziehen; je 24px eine Zeile.
-- **Balken**: auf den Balken rechts drücken, um dorthin zu springen, oder seinen Griff ziehen. Sein Weg umfasst alle 9.355 Zeilen.
+- **Balken**: auf den Balken rechts drücken, um dorthin zu springen, oder seinen Griff ziehen. Sein Weg umfasst die ganze Spalte.
 - **SEITE HOCH**, **SEITE RUNTER**: 17 Zeilen, eine Seite.
 - **ZURÜCK** oder das Home-Tag: zurück zur Liste von PANEL, wo sie verlassen wurde.
 

@@ -12,7 +12,14 @@ firmware it is linked into.  From the list it writes
   (about_screen.h);
 - the table in docs/Licenses.md and docs/Licenses-de.md, between the
   marker lines `<!-- gen_licenses: begin -->` and `<!-- gen_licenses:
-  end -->`.
+  end -->`, and the table of figures between `<!-- gen_licenses: figures
+  begin -->` and `<!-- gen_licenses: figures end -->`: the components,
+  the references, the licence texts and the rows, counted from the list.
+
+It also holds NOTICE to the list: its section on the panel build's
+fetched components names every component firmware/panel/dependencies.lock
+fetches, marks those the image does not link "(not linked)" and the others
+not, and its list of references names every reference here.
 
 The notice texts are copies of the licence files in third_party/notices/,
 taken from the ESP-IDF tree, the toolchains, the pico-sdk and the managed
@@ -67,6 +74,9 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 NOTICE = REPO / "NOTICE"
+LOCK = REPO / "firmware" / "panel" / "dependencies.lock"
+# The heading of NOTICE's list of references.
+REFS_SECTION = "Design and protocol references"
 # The heading of NOTICE's section on the panel build's fetched components.
 PANEL_FETCHES = "Components the ESP32-P4 panel build fetches"
 NOTICES = REPO / "third_party" / "notices"
@@ -75,6 +85,8 @@ DOCS = {"en": REPO / "docs" / "Licenses.md",
         "de": REPO / "docs" / "Licenses-de.md"}
 BEGIN = "<!-- gen_licenses: begin -->"
 END = "<!-- gen_licenses: end -->"
+FIG_BEGIN = "<!-- gen_licenses: figures begin -->"
+FIG_END = "<!-- gen_licenses: figures end -->"
 
 # Cells of a row on the screen: 920px of the 10 x 20 face.
 CELLS = 92
@@ -102,6 +114,7 @@ ROOTS = {
     "hosted": REPO / "firmware" / "panel" / "managed_components"
     / "espressif__esp_hosted",
     "fonts": Path("/usr/share/doc/fonts-dejavu-core"),
+    "common": Path("/usr/share/common-licenses"),
     "repo": REPO,
 }
 
@@ -148,6 +161,7 @@ class Reference:
     copyright: list[str]
     use: str          # what it is used for, in docs/Licenses.md
     use_de: str       # the same in docs/Licenses-de.md
+    notice_key: str   # how NOTICE's list of references names it
 
 
 NOTICE_LIST = [
@@ -172,6 +186,7 @@ NOTICE_LIST = [
     Notice("ubsan", "idf", "components/esp_system/ubsan.c", 1, 25, "slash"),
     Notice("protobuf-c", "hosted", "common/protobuf-c/LICENSE"),
     Notice("gcc-runtime", "riscv", "share/licenses/gcc/COPYING.RUNTIME"),
+    Notice("mpl-2.0", "common", "MPL-2.0"),
     Notice("qrcodegen", "repo", "third_party/qrcodegen/LICENSE",
            stored=False),
     Notice("bitstream-vera", "fonts", "copyright", 8, 51, "deb"),
@@ -254,8 +269,12 @@ COMPONENTS = [
                "authors."], "panel", ["protobuf-c"]),
     Component("Mozilla CA root certificates (ESP-IDF certificate bundle, "
               "common authorities)", "Mozilla data of 2026-02-11", "MPL-2.0",
-              ["certdata.txt of Mozilla NSS, source: "
-               "https://curl.se/docs/caextract.html"], "panel", []),
+              ["components/mbedtls/esp_crt_bundle/cacrt_all.pem of ESP-IDF "
+               "v6.1 (Mozilla's certdata.txt of 2026-02-11, converted by "
+               "mk-ca-bundle.pl 1.32), filtered by cmn_crt_authorities.csv, "
+               "and cacrt_local.pem of the same folder",
+               "Source: https://curl.se/docs/caextract.html"], "panel",
+              ["mpl-2.0"]),
     Component("GCC runtime libraries (libgcc, libstdc++)", "15.2.0",
               "GPL-3.0-or-later WITH GCC-exception-3.1",
               ["Copyright (C) Free Software Foundation, Inc."], "panel",
@@ -300,10 +319,11 @@ REFERENCES = [
               "the literal-only encoder of protocols/supvan/lzlit.c and "
               "tools/lzlit.py",
               "der Literal-Encoder von protocols/supvan/lzlit.c und "
-              "tools/lzlit.py"),
+              "tools/lzlit.py", "LZMA SDK"),
     Reference("heeen/supvan-cups", "MIT", ["Copyright (c) 2026 Florian Häne"],
               "the print protocol facts of protocols/supvan",
-              "die Fakten des Druckprotokolls von protocols/supvan"),
+              "die Fakten des Druckprotokolls von protocols/supvan",
+              "heeen/supvan-cups"),
 ]
 
 # The doc tables' words, per language.
@@ -317,6 +337,31 @@ DOC_WORDS = {
            "panel": "Panel", "iomcu": "IOmcu",
            "refs": "| Referenz | Lizenz (SPDX) | Copyright | Verwendet für |"},
 }
+
+# The figures table's head and labels, per language, in doc_figures()'s
+# order.
+FIGURE_WORDS = {
+    "en": ["| Figure | Value |",
+           "Third-party components, panel firmware",
+           "Third-party components, IOmcu firmware",
+           "Design and protocol references",
+           "Licence texts: stored in `third_party/notices/` or read in place",
+           "Rows ABOUT shows from this list",
+           "Of them, rows of the licence texts",
+           "Cells in a row, at most"],
+    "de": ["| Größe | Wert |",
+           "Fremdkomponenten, Panel-Firmware",
+           "Fremdkomponenten, IOmcu-Firmware",
+           "Design- und Protokollreferenzen",
+           "Lizenztexte: in `third_party/notices/` gespeichert oder an Ort "
+           "und Stelle gelesen",
+           "Zeilen, die ABOUT aus dieser Liste zeigt",
+           "Davon Zeilen der Lizenztexte",
+           "Zeichen einer Zeile, höchstens"],
+}
+
+# The parts of parts(), as about_gen.h numbers them.
+ABOUT_GEN_NOTICES = 3
 
 # The faces' characters beyond printable ASCII (ui_text.def).
 FACE_EXTRA = set("°ΩÄÖÜäöüß")
@@ -578,15 +623,44 @@ def doc_table(lang: str) -> str:
     return "\n".join(out)
 
 
-def render_doc(lang: str, old: str) -> str:
-    """The page with the table between its markers renewed."""
+def thousands(n: int, lang: str) -> str:
+    """@p n with the thousands separator of @p lang."""
+    s = f"{n:,}"
+    return s.replace(",", ".") if lang == "de" else s
+
+
+def doc_figures(lang: str) -> str:
+    """The figures table of the page in @p lang."""
+    ps = parts()
+    rows = sum(len(p) for p in ps)
+    texts = len(NOTICE_LIST)
+    panel = sum(c.firmware == "panel" for c in COMPONENTS)
+    iomcu = sum(c.firmware == "iomcu" for c in COMPONENTS)
+    words = FIGURE_WORDS[lang]
+    values = [panel, iomcu, len(REFERENCES), texts, rows,
+              len(ps[ABOUT_GEN_NOTICES]), CELLS]
+    out = [words[0], "| --- | --- |"]
+    out += [f"| {label} | {thousands(v, lang)} |"
+            for label, v in zip(words[1:], values, strict=True)]
+    return "\n".join(out)
+
+
+def put_block(text: str, begin: str, end: str, body: str, name: str) -> str:
+    """@p text with the lines between @p begin and @p end renewed."""
     try:
-        head, rest = old.split(BEGIN + "\n", 1)
-        _, tail = rest.split(END, 1)
+        head, rest = text.split(begin + "\n", 1)
+        _, tail = rest.split(end, 1)
     except ValueError:
-        raise SystemExit(f"gen_licenses: {DOCS[lang].name} lacks the "
-                         "marker lines") from None
-    return head + BEGIN + "\n" + doc_table(lang) + "\n" + END + tail
+        raise SystemExit(f"gen_licenses: {name} lacks the marker lines "
+                         f"{begin}") from None
+    return head + begin + "\n" + body + "\n" + end + tail
+
+
+def render_doc(lang: str, old: str) -> str:
+    """The page with its table and its figures renewed."""
+    name = DOCS[lang].name
+    text = put_block(old, BEGIN, END, doc_table(lang), name)
+    return put_block(text, FIG_BEGIN, FIG_END, doc_figures(lang), name)
 
 
 # ------------------------------------------------------------ the modes
@@ -599,39 +673,85 @@ def outputs() -> dict[Path, str]:
     return out
 
 
-def notice_problems(text: str) -> list[str]:
-    """Where NOTICE's list of fetched components disagrees with the list.
-
-    In NOTICE's section on the panel build's components, a line
-    `  espressif/<name> <version>  <licence>` that is not
-    marked "(not linked)" is a linked component: it must be a component
-    here with that registry name and version, and every component here
-    with a registry name must be such a line.
-    """
+def section(text: str, heading: str) -> list[str] | None:
+    """The lines of NOTICE's section under @p heading, None without one."""
     lines = text.splitlines()
     try:
-        start = lines.index(PANEL_FETCHES)
+        start = lines.index(heading)
     except ValueError:
-        return [f"NOTICE has no section {PANEL_FETCHES!r}"]
+        return None
     end = next((k for k in range(start + 2, len(lines) - 1)
                 if lines[k + 1].startswith("---")), len(lines))
+    return lines[start:end]
+
+
+def lock_components(lock: str) -> set[tuple[str, str]]:
+    """The registry components dependencies.lock fetches, with versions."""
+    out = set()
+    name = None
+    for line in lock.splitlines():
+        m = re.match(r"^  (espressif/[^:\s]+):\s*$", line)
+        if m:
+            name = m.group(1)
+            continue
+        m = re.match(r"^    version: '?([^'\s]+)'?\s*$", line)
+        if m and name:
+            out.add((name, m.group(1)))
+            name = None
+    return out
+
+
+def notice_problems(text: str, lock: str) -> list[str]:
+    """Where NOTICE disagrees with the list and with dependencies.lock.
+
+    In NOTICE's section on the panel build's components, a line
+    `  espressif/<name> <version>  <licence>` that is not marked
+    "(not linked)" is a linked component: it must be a component here with
+    that registry name and version, and every component here with a
+    registry name must be such a line.  Every component dependencies.lock
+    fetches must have a line, linked or not, and every line a lock entry.
+    Every reference here must start a line of NOTICE's references.
+    """
+    body = section(text, PANEL_FETCHES)
+    if body is None:
+        return [f"NOTICE has no section {PANEL_FETCHES!r}"]
+    listed_all = set()
     linked = set()
-    for line in lines[start:end]:
+    for line in body:
         m = re.match(r"^  (espressif/\S+) (\S+)\s+(.*)$", line)
-        if m and "(not linked)" not in m.group(3):
-            linked.add((m.group(1), m.group(2)))
+        if m:
+            listed_all.add((m.group(1), m.group(2)))
+            if "(not linked)" not in m.group(3):
+                linked.add((m.group(1), m.group(2)))
     listed = {(c.registry, c.version) for c in COMPONENTS if c.registry}
     out = [f"NOTICE lists {n} {v} as linked; the list does not"
            for n, v in sorted(linked - listed)]
     out += [f"NOTICE does not list {n} {v} as linked" for n, v in
             sorted(listed - linked)]
+    fetched = lock_components(lock)
+    out += [f"NOTICE lacks {n} {v}, which dependencies.lock fetches"
+            for n, v in sorted(fetched - listed_all)]
+    out += [f"NOTICE lists {n} {v}, which dependencies.lock does not fetch"
+            for n, v in sorted(listed_all - fetched)]
+    refs = section(text, REFS_SECTION)
+    if refs is None:
+        return [*out, f"NOTICE has no section {REFS_SECTION!r}"]
+    out += [f"NOTICE's references lack {r.notice_key}" for r in REFERENCES
+            if not any(x.startswith("  " + r.notice_key + " ")
+                       for x in refs)]
     return out
+
+
+def notice_now() -> list[str]:
+    """NOTICE's problems as the tree stands."""
+    return notice_problems(NOTICE.read_text(encoding="utf-8"),
+                           LOCK.read_text(encoding="utf-8"))
 
 
 def check() -> int:
     """Compare the files with what the list writes, and NOTICE with it."""
     bad = 0
-    for problem in notice_problems(NOTICE.read_text(encoding="utf-8")):
+    for problem in notice_now():
         print(problem)
         bad += 1
     for n in NOTICE_LIST:
@@ -652,7 +772,7 @@ def check() -> int:
 def sources(refresh: bool) -> int:
     """Hold the stored notices to their origins, or copy them anew."""
     bad = 0
-    for problem in notice_problems(NOTICE.read_text(encoding="utf-8")):
+    for problem in notice_now():
         print(problem)
         bad += 1
     for n in NOTICE_LIST:

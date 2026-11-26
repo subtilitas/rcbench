@@ -1796,8 +1796,8 @@ UI_TEXT(SBK_LINE_HELD, 24,
     "belegt, bleibt")
 /* ABOUT (about_screen.h), from SETUP > PANEL's last row.  The product's
  * name, the designer, the implementers' line, the copyright line, the
- * licences' names and SPDX ids and the repository stay as written and are
- * not here;
+ * mail address, the licences' names and SPDX ids and the repository stay
+ * as written and are not here;
  * the generated table and notices (about_gen.h) neither.  A heading is
  * drawn in the 12 x 24 face, 78 cells; a line in the 10 x 20 face, 93
  * cells a row. */

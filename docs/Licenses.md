@@ -13,6 +13,8 @@ list on SETUP > PANEL > About rcbench
 
 Copyright 2026 Julian Wingert
 
+RCBench@doesnt.fly
+
 Design: Julian Wingert. Implemented by Claude and Julian.
 
 | Part | Licence | File |
@@ -48,7 +50,7 @@ with no SPDX (Software Package Data Exchange) list identifier carries a
 | UBSan handlers (ESP-IDF esp_system, from HelenOS) | ESP-IDF 6.1.0 | `BSD-2-Clause` | Copyright (c) 2016, Linaro Limited | panel |
 | ESP-Hosted-MCU (link to the ESP32-C6) | 2.13.0 | `Apache-2.0` | Copyright 2015-2026 Espressif Systems (Shanghai) CO LTD | panel |
 | protobuf-c (in ESP-Hosted-MCU) | 1.4.1 | `BSD-2-Clause` | Copyright (c) 2008-2022, Dave Benson and the protobuf-c authors. | panel |
-| Mozilla CA root certificates (ESP-IDF certificate bundle, common authorities) | Mozilla data of 2026-02-11 | `MPL-2.0` | certdata.txt of Mozilla NSS, source: https://curl.se/docs/caextract.html | panel |
+| Mozilla CA root certificates (ESP-IDF certificate bundle, common authorities) | Mozilla data of 2026-02-11 | `MPL-2.0` | components/mbedtls/esp_crt_bundle/cacrt_all.pem of ESP-IDF v6.1 (Mozilla's certdata.txt of 2026-02-11, converted by mk-ca-bundle.pl 1.32), filtered by cmn_crt_authorities.csv, and cacrt_local.pem of the same folder<br>Source: https://curl.se/docs/caextract.html | panel |
 | GCC runtime libraries (libgcc, libstdc++) | 15.2.0 | `GPL-3.0-or-later WITH GCC-exception-3.1` | Copyright (C) Free Software Foundation, Inc. | panel |
 | QR Code generator library (qrcodegen) | 1.8.0 | `MIT` | Copyright (c) Project Nayuki | panel |
 | DejaVu Sans Mono (glyph bitmaps of tools/gen_font.py) | 2.37 | `Bitstream-Vera` | Copyright (c) 2003 by Bitstream, Inc. All Rights Reserved.<br>DejaVu changes are in public domain. | panel |
@@ -78,15 +80,33 @@ the pico-sdk.
 The MIT, BSD, ISC and Bitstream Vera licences ask that their copyright
 notice and permission text go with every binary copy; the Apache License
 2.0 asks for its text and the NOTICE file of a component that has one
-(NimBLE). These texts are in the panel image and show on ABOUT, under
-LICENCE TEXTS AND NOTICES, as 9,324 rows of at most 92 cells.
+(NimBLE); the MPL 2.0 (Mozilla Public License) asks that the recipient
+learn where the source is, here curl's extract of Mozilla's certificate
+data, and the screen carries its text too. These texts are in the panel image and show on ABOUT, under
+LICENCE TEXTS AND NOTICES. `tools/gen_licenses.py` writes this table of
+figures with the rest and its `--check` holds it:
+
+<!-- gen_licenses: figures begin -->
+| Figure | Value |
+| --- | --- |
+| Third-party components, panel firmware | 18 |
+| Third-party components, IOmcu firmware | 7 |
+| Design and protocol references | 2 |
+| Licence texts: stored in `third_party/notices/` or read in place | 24 |
+| Rows ABOUT shows from this list | 9,704 |
+| Of them, rows of the licence texts | 9,577 |
+| Cells in a row, at most | 92 |
+<!-- gen_licenses: figures end -->
+
+The flash figures are measured on the ESP-IDF v6.1 panel build of
+2026-11-26 (`idf.py` with `IDF_TARGET=esp32p4`, `size -A` of
+`about_gen.c.obj`); a change of the texts moves them.
 
 | Figure | Value |
 | --- | --- |
-| Texts in `third_party/notices/` and the two read in place | 23 |
-| ABOUT's table and texts in the image (`about_gen.c`'s rodata) | 302,913 bytes |
-| Panel image with them | 4,024,688 bytes |
-| Application slot | 8,126,464 bytes, 4,101,776 bytes (50%) free |
+| ABOUT's table and texts in the image (`about_gen.c`'s rodata) | 321,709 bytes |
+| Panel image with them | 4,043,264 bytes |
+| Application slot | 8,126,464 bytes, 4,083,200 bytes (50%) free |
 
 The texts live in flash, not as a file on the SD (Secure Digital) card:
 
@@ -94,7 +114,7 @@ The texts live in flash, not as a file on the SD (Secure Digital) card:
   IOmcu image it holds, from the moment it is flashed;
 - the card is optional and removable, and a file on it can be deleted or
   can belong to another release;
-- the 302,913 bytes are 3.7% of the application slot; picolibc's
+- the 321,709 bytes are 4.0% of the application slot; picolibc's
   COPYING.picolibc is 237,174 bytes of them.
 
 The screen draws the faces' characters only (printable ASCII, °, Ω and the

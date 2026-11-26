@@ -162,7 +162,7 @@ The sensor is an MT6701 in its I2C mode, MODE pin high, at 0x06. Nothing else of
 PANEL's last row, About rcbench, opens ABOUT. It shows the panel firmware's version and the IOmcu's, the designer, the project's licences (MIT for the firmware and software, CC BY-NC-SA 4.0 for the hardware designs), the trademark notice, every third-party component of the panel and the IOmcu firmware with its licence and copyright lines, and the licence texts those licences ask to go with the firmware.
 
 - **Scroll**: drag on the rows; each 24px moves one row.
-- **Bar**: press the bar on the right to jump there, or drag its thumb. Its travel spans all 9,355 rows.
+- **Bar**: press the bar on the right to jump there, or drag its thumb. Its travel spans the whole column.
 - **PAGE UP**, **PAGE DOWN**: 17 rows, one screen.
 - **BACK** or the home tag: back to PANEL's list where it was left.
 
