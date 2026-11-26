@@ -467,6 +467,18 @@ history is in git.
 
 ### Changed
 
+- A servo label whose height drops a DUT NAME line shows the id joined in
+  one line over DUT NAME in smaller faces: the pair of 16x28, 12x24, 10x20,
+  8x16 and 6x12 with the larger DUT NAME face that fits. Where no pair
+  fits, DUT NAME stands alone and the id is in the QR code only. On a
+  25 x 25mm roll (200 x 184 dots, 22 dots under the code) `WING LEFT` is
+  one line of 10x20 and a 23-character DUT NAME one 184-dot line of 8x16;
+  on 15 x 20mm, 25 x 30mm and 30 x 30mm the id stays in 6x12 over DUT
+  NAME. An empty DUT NAME, or one whose characters would all print as `?`,
+  keeps the id lines; rolls that hold everything (40 x 30mm, 48 x 30mm,
+  30 x 20mm, 15 x 30mm, 25 x 100mm) are unchanged (`label_layout.c`;
+  `test_label_layout`, 3 new fixtures in `test/host/fixtures/label/`).
+
 - A settings file is 32,768 bytes at most, up from 24,576; one the panel
   writes is about 12,400. BACKUP's read buffer is 32,769 bytes.
 
