@@ -918,6 +918,52 @@ TEST_CASE(automatic_test_graph_opens_a_22_character_name)
     servo_screen_test_files_at(NULL, false);
 }
 
+/* A 23-character id: its folder `Servos/<id>` of 30 characters reaches
+ * the GRAPH key whole; a folder that does not fit is refused, not cut.
+ * LOGS' own folder buffers take the 30 characters with #973; this case
+ * stops at the key. */
+TEST_CASE(the_key_keeps_a_23_character_ids_folder_whole)
+{
+    static const char dir[] = "Servos/KST X10 LEFT WING-ZZZZZ";
+    CHECK_EQ(strlen(dir), 30u);
+    start();
+    limit_done(0);
+    s.files_from = PEEK_LIM;
+    log_test_files_t f;
+    memset(&f, 0, sizeof(f));
+    f.state = 1;
+    snprintf(f.dir, sizeof(f.dir), "%s", dir);
+    snprintf(f.name, sizeof(f.name), "%s", "limit run_000.csv");
+    f.mount = g_mounts;
+    servo_screen_test_files_at(&f, true);
+    frame();
+    CHECK_STR_EQ(s.gk_dir[PEEK_LIM], dir);
+    CHECK_EQ(graph_key_state(GRAPH_KEY_LIMIT), GRAPH_KEY_LIVE);
+    CHECK(card_reads("limit run_000.txt"));
+
+    /* graph_key.h alone: 31 characters fit, 32 are refused. */
+    char longest[CARD_RUN_DIR_MAX + 1];
+    memset(longest, 'D', sizeof(longest));
+    longest[CARD_RUN_DIR_MAX - 1] = '\0';
+    graph_key_file_t k = { .run = true, .open = false,
+                           .name = "limit run_000.csv", .dir = longest,
+                           .mount = g_mounts };
+    graph_key_set(GRAPH_KEY_MOTOR, &k);
+    CHECK_EQ(graph_key_state(GRAPH_KEY_MOTOR), GRAPH_KEY_LIVE);
+    longest[CARD_RUN_DIR_MAX - 1] = 'D';
+    longest[CARD_RUN_DIR_MAX] = '\0';
+    graph_key_set(GRAPH_KEY_MOTOR, &k);
+    CHECK_EQ(graph_key_state(GRAPH_KEY_MOTOR), GRAPH_KEY_HIDDEN);
+    char name[LOG_LABELLED_SIZE + 1];
+    memset(name, 'N', sizeof(name));
+    name[LOG_LABELLED_SIZE] = '\0';
+    k.dir = CARD_AUTO_LOGS;
+    k.name = name;
+    graph_key_set(GRAPH_KEY_MOTOR, &k);
+    CHECK_EQ(graph_key_state(GRAPH_KEY_MOTOR), GRAPH_KEY_HIDDEN);
+    graph_key_set(GRAPH_KEY_MOTOR, NULL);
+}
+
 /* ------------------------------------------------------- the shared key --- */
 
 /* graph_key.h alone: each state, the note's life, a card outside the
@@ -1012,6 +1058,7 @@ int main(void)
     RUN(supply_graph_keeps_the_runs_folder);
     RUN(limit_run_graph_opens_a_labelled_servos_run_000);
     RUN(automatic_test_graph_opens_a_22_character_name);
+    RUN(the_key_keeps_a_23_character_ids_folder_whole);
     RUN(the_key_follows_its_run_and_forgets_a_stale_note);
     RUN(each_card_is_an_opener_of_logs);
     free(g_fb);
