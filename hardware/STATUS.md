@@ -145,8 +145,9 @@ not drawn.
 It holds STEP models of the INA228 current sensor module with its two XT90PW
 connectors, 225 solids with the print, and of its printed case. The board is
 measured from three owner photos on 5mm squared paper: positions within about
-0.2mm, the board's 80.1mm x 48.6mm and the screw holes' 70.15mm x 38.8mm within
-about 0.3mm. The connectors follow a dealer's dimension drawing of XT90PW; the
+0.2mm, the board's 80.1mm x 48.6mm within about 0.3mm; the screw holes are
+70.65mm x 38.8mm apart, the long spacing corrected by the owner after a printed
+case. The connectors follow a dealer's dimension drawing of XT90PW; the
 board's thickness and the shunt's heights are the owner's measurements. Solder
 heights, the tails' diameter, and the case's floor and rim are estimated; the case's
 standoff height, 7.9mm, is within about 0.6mm. The KiCad module of the board

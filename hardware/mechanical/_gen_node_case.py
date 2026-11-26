@@ -8,7 +8,8 @@
 The case holds the layout of ina228_node.py: the INA228 module with its
 2 XT90PW connectors at the bottom, the Matek mBEC12S beside the plus
 bar, the ES3C28P display board on top. It has no ears; the node hangs
-in its cable.
+in its cable. The bezel's top edge and the plate's bottom edge are
+rounded 1.5 all round.
 
 How it is held: 4 screws M3 x 8 go from below through the plate and the
 INA228 board's 4 holes into threaded inserts in the frame's columns,
@@ -26,6 +27,13 @@ Openings:
              notch lets a tool of 2mm at most reach under each
              plunger, 5.9 inside the wall's outer face.
     microSD  a notch of 16.0 x 2.8 in the long wall at the card's edge
+    I2C      a pocket of 10.16 x 2.5 x 8.0 in the same long wall over
+             the INA228 board's header, under the display board, every
+             edge inside rounded 2.0, so the opening at the split is
+             0.5 deep, and its edge in the wall's inner face rounded
+             2.0 on 3 sides; the wall bulges out 1.3 behind it, its edges
+             rounded 3.2 round the same centres, so 1.2 of wall stays
+             everywhere; the bulge's top reaches 0.57 into the bezel
     speaker  4 slots of 1.6 x 7.0 in the other long wall beside the
              speaker socket; the room behind them is 18 x 14 x 10
     mic      a hole of 1.6 in the bezel over the board's microphone
@@ -43,7 +51,9 @@ thicker than 7.0 meets the plug in the XT90 housing under it: the
 socket's axis is 3.6 over that housing's top.
 
 Shapes are boxes, upright cylinders and, for the wedges, prisms over
-triangles with given corners that meet flat faces only. A cone, or a
+triangles with given corners that meet flat faces only. The I2C pocket
+and its bulge add cylinders along x and y and balls, each meeting flat
+faces or a round of the same radius tangentially. A cone, or a
 slanted cut through a round face, meets its neighbours in curves
 OpenCASCADE computes differently from one processor to the next, and
 the STEP text is compared in CI.
@@ -74,8 +84,9 @@ from OCP.BRepBuilderAPI import (BRepBuilderAPI_MakeFace,
                                 BRepBuilderAPI_MakePolygon)
 from OCP.BRepCheck import BRepCheck_Analyzer
 from OCP.BRepMesh import BRepMesh_IncrementalMesh
-from OCP.BRepPrimAPI import BRepPrimAPI_MakePrism
-from OCP.gp import gp_Pnt, gp_Vec
+from OCP.BRepPrimAPI import (BRepPrimAPI_MakeCylinder, BRepPrimAPI_MakePrism,
+                             BRepPrimAPI_MakeSphere, BRepPrimAPI_MakeTorus)
+from OCP.gp import gp_Ax2, gp_Dir, gp_Pnt, gp_Vec
 from OCP.StlAPI import StlAPI_Writer
 
 import _gen_dial_base as base
@@ -96,7 +107,7 @@ HOUSING_TOP = 11.5
 DISPLAY_Z = (16.7, 18.3)
 TOUCH = 22.6
 # The 4 holes of each board; a column joins the two of one corner.
-INA_HOLES = ((-51.21, 0.7), (18.94, 0.7), (-51.21, 39.5), (18.94, 39.5))
+INA_HOLES = ((-51.46, 0.7), (19.19, 0.7), (-51.46, 39.5), (19.19, 39.5))
 DISPLAY_HOLES = ((-55.11, -0.9), (22.89, -0.9), (-55.11, 41.1),
                  (22.89, 41.1))
 
@@ -114,6 +125,8 @@ STEPS = (15.3, 1.0, 0.65, 4)
 MIC_ROOM = (-56.3, 34.0, -52.9, 36.25, 16.2)
 WALL = 2.4
 RADIUS = 3.5 + GAP      # the cavity's corners, round the display's
+EDGE = 1.5              # the round on the bezel's top and the plate's
+                        # underside, all round the outline
 PLATE = (2.4, 1.6)      # thickness, its upper face under the board
 STAND = 6.4             # the plate's stands under the board, diameter
 TOP = 1.2               # the bezel's plate over the touch panel
@@ -134,6 +147,12 @@ CARD = (-32.15, -16.15, 13.9)
 GRILLE = ((-7.8, -4.6, -1.4, 1.8), 1.6, 3.5, 10.5)
 WINDOW = (-48.5, -2.2, 10.6, 42.4)
 MIC = (-55.11, 35.1, 1.6)
+# Room for the plug on the INA228 board's I2C header (pins at y 0, its
+# plastic x -1.27 to 8.89): a pocket in the long wall at -y under the
+# display board, x0, x1, depth into the wall, height under the split,
+# the wall left outside it, the edges' radius. The wall bulges out
+# behind the pocket by depth + skin - WALL.
+I2C = (-1.27, 8.89, 2.5, 8.0, 1.2, 2.0)
 # The joints hold the frame's wall, which the screws clamp at its 4
 # columns only, from moving inwards.
 # Plate to frame: a lip all round on the plate, inside the lower edge
@@ -181,10 +200,68 @@ def rounded(x0, y0, x1, y1, radius, z0, z1):
                    for x in (x0 + r, x1 - r) for y in (y0 + r, y1 - r)])
 
 
+def rounded_box(x0, y0, z0, x1, y1, z1, radius):
+    """A block with every edge rounded: boxes, rods and corner balls."""
+    r = radius
+    xs, ys, zs = (x0 + r, x1 - r), (y0 + r, y1 - r), (z0 + r, z1 - r)
+    parts = [_box(x0 + r, y0 + r, z0, x1 - r, y1 - r, z1),
+             _box(x0 + r, y0, z0 + r, x1 - r, y1, z1 - r),
+             _box(x0, y0 + r, z0 + r, x1, y1 - r, z1 - r)]
+    for along, a0, a1 in (((1, 0, 0), x0 + r, x1 - r),
+                          ((0, 1, 0), y0 + r, y1 - r),
+                          ((0, 0, 1), z0 + r, z1 - r)):
+        axis = along.index(1)
+        for u in (xs, ys, zs)[(axis + 1) % 3]:
+            for v in (xs, ys, zs)[(axis + 2) % 3]:
+                at = [0.0, 0.0, 0.0]
+                at[axis], at[(axis + 1) % 3], at[(axis + 2) % 3] = a0, u, v
+                parts.append(BRepPrimAPI_MakeCylinder(
+                    gp_Ax2(gp_Pnt(*at), gp_Dir(*along)), r, a1 - a0).Shape())
+    parts += [BRepPrimAPI_MakeSphere(gp_Pnt(x, y, z), r).Shape()
+              for x in xs for y in ys for z in zs]
+    return _fuse(*parts)
+
+
 def outer(z0, z1):
     """The case's outline between two heights."""
     return rounded(X0 - WALL, Y0 - WALL, X1 + WALL, Y1 + WALL,
                    RADIUS + WALL, z0, z1)
+
+
+def outer_rounded(z0, z1, edge, at):
+    """The outline between two heights, its edge at z0 or z1 rounded.
+
+    The round's centre line is the outline grown in by the radius, the
+    radius from the face: rods along the straight sides, a torus at each
+    corner, kept to its corner's quarter.
+    """
+    x0, y0 = X0 - WALL, Y0 - WALL
+    x1, y1 = X1 + WALL, Y1 + WALL
+    big, r = RADIUS + WALL, edge
+    zc = z1 - r if at == "top" else z0 + r
+    body = (rounded(x0, y0, x1, y1, big, z0, zc) if at == "top"
+            else rounded(x0, y0, x1, y1, big, zc, z1))
+    parts = [body, rounded(x0 + r, y0 + r, x1 - r, y1 - r, big - r, z0, z1)]
+    for y in (y0 + r, y1 - r):
+        parts.append(BRepPrimAPI_MakeCylinder(
+            gp_Ax2(gp_Pnt(x0 + big, y, zc), gp_Dir(1, 0, 0)), r,
+            x1 - x0 - 2 * big).Shape())
+    for x in (x0 + r, x1 - r):
+        parts.append(BRepPrimAPI_MakeCylinder(
+            gp_Ax2(gp_Pnt(x, y0 + big, zc), gp_Dir(0, 1, 0)), r,
+            y1 - y0 - 2 * big).Shape())
+    for x, sx in ((x0 + big, -1), (x1 - big, 1)):
+        for y, sy in ((y0 + big, -1), (y1 - big, 1)):
+            ring = BRepPrimAPI_MakeTorus(
+                gp_Ax2(gp_Pnt(x, y, zc), gp_Dir(0, 0, 1)), big - r,
+                r).Shape()
+            far = x + sx * 2 * big, y + sy * 2 * big
+            quarter = _box(min(x, far[0]), min(y, far[1]), zc - r,
+                           max(x, far[0]), max(y, far[1]), zc + r)
+            parts.append(BRepAlgoAPI_Common(ring, quarter).Shape())
+    # A part thinner than 2 radii: the rods stand out of the far face.
+    return BRepAlgoAPI_Common(_fuse(*parts),
+                              _box(x0, y0, z0, x1, y1, z1)).Shape()
 
 
 def cavity(z0, z1):
@@ -277,7 +354,7 @@ def wedges(size):
 def plate():
     """The bottom plate with its lip, 4 stands and the screws' recesses."""
     clear, head, sunk = SCREW
-    solid = _fuse(outer(Z_PLATE, Z_FLOOR),
+    solid = _fuse(outer_rounded(Z_PLATE, Z_FLOOR, EDGE, "bottom"),
                   ring(LIP[0], Z_FLOOR - 0.1, Z_FLOOR + LIP[1]))
     for x, y in INA_HOLES:
         solid = _fuse(solid, _cylinder(x, y, STAND / 2, Z_PLATE,
@@ -288,9 +365,83 @@ def plate():
     return solid
 
 
+def i2c_room():
+    """The pocket for the I2C plug and the wall's bulge behind it."""
+    x0, x1, depth, high, skin, r = I2C
+    pocket = rounded_box(x0, Y0 - depth, Z_SPLIT - high, x1, Y0 + 2 * r,
+                         Z_SPLIT, r)
+    # The same box grown by the skin, kept to the wall's outer part.
+    grown = rounded_box(x0 - skin, Y0 - depth - skin, Z_SPLIT - high - skin,
+                        x1 + skin, Y0 + 2 * r, Z_SPLIT + skin, r + skin)
+    bulge = _cut(grown, _box(-BIG, Y0 - WALL + 1, -BIG, BIG, BIG, BIG))
+    return _fuse(pocket, mouth()), bulge
+
+
+def _across(x0, z0, x1, z1, radius, y0, y1):
+    """A block along y, its 4 edges along y rounded."""
+    r = radius
+    return _fuse(_box(x0 + r, y0, z0, x1 - r, y1, z1),
+                 _box(x0, y0, z0 + r, x1, y1, z1 - r),
+                 *[BRepPrimAPI_MakeCylinder(gp_Ax2(gp_Pnt(x, y0, z),
+                                                   gp_Dir(0, 1, 0)),
+                                            r, y1 - y0).Shape()
+                   for x in (x0 + r, x1 - r) for z in (z0 + r, z1 - r)])
+
+
+def mouth():
+    """The rounding of the pocket's edge in the wall's inner face.
+
+    The edge runs round the pocket's outline there, a rectangle with
+    corners of the pocket's radius; the round is a quarter circle of the
+    same radius, its centre line that outline grown by the radius, the
+    radius into the wall: straight rods along x and z, a torus at each
+    corner.
+    """
+    x0, x1, _, high, _, r = I2C
+    z0, z1 = Z_SPLIT - high, Z_SPLIT
+    y = Y0 - r
+    grown = r + r
+    slab = _across(x0 - r, z0 - r, x1 + r, z1 + r, grown, y, Y0 + 1)
+    inside = _across(x0, z0, x1, z1, r, y - 1, Y0 + 2)
+    tube = []
+    for a, b in ((x0 + r, x1 - r),):
+        for z in (z0 - r, z1 + r):
+            tube.append(BRepPrimAPI_MakeCylinder(
+                gp_Ax2(gp_Pnt(a, y, z), gp_Dir(1, 0, 0)), r, b - a).Shape())
+    for x in (x0 - r, x1 + r):
+        tube.append(BRepPrimAPI_MakeCylinder(
+            gp_Ax2(gp_Pnt(x, y, z0 + r), gp_Dir(0, 0, 1)), r,
+            z1 - z0 - 2 * r).Shape())
+    # Each torus kept to its corner's quarter, away from the rods.
+    for x, sx in ((x0 + r, -1), (x1 - r, 1)):
+        for z, sz in ((z0 + r, -1), (z1 - r, 1)):
+            ring = BRepPrimAPI_MakeTorus(
+                gp_Ax2(gp_Pnt(x, y, z), gp_Dir(0, 1, 0)), grown, r).Shape()
+            far = x + sx * 2 * grown, z + sz * 2 * grown
+            quarter = _box(min(x, far[0]), y - grown, min(z, far[1]),
+                           max(x, far[0]), y + grown, max(z, far[1]))
+            tube.append(BRepAlgoAPI_Common(ring, quarter).Shape())
+    return _cut(slab, inside, *tube)
+
+
+def i2c_span():
+    """The wall's stretch beside the I2C pocket, bulge included."""
+    x0, x1, _, _, skin, _ = I2C
+    return _box(x0 - skin, Y0 - WALL - 2, Z_SPLIT - 3, x1 + skin, Y0 + 2,
+                Z_SPLIT + 1)
+
+
+def split(shape):
+    """The parts of a shape under and over the split."""
+    over = _box(-BIG, -BIG, Z_SPLIT, BIG, BIG, BIG)
+    return _cut(shape, over), BRepAlgoAPI_Common(shape, over).Shape()
+
+
 def frame():
     """The wall from the plate to the display board, with the columns."""
-    solid = _cut(outer(Z_FLOOR, Z_SPLIT), cavity(Z_FLOOR - 1, Z_SPLIT + 1))
+    pocket, bulge = i2c_room()
+    solid = _cut(_fuse(outer(Z_FLOOR, Z_SPLIT), split(bulge)[0]),
+                 cavity(Z_FLOOR - 1, Z_SPLIT + 1))
     holes = []
     for k in range(4):
         body, bores = column(k)
@@ -311,15 +462,18 @@ def frame():
                           Y1 + WALL + 1, z1))
     holes.append(ring(LIP[0] + LIP[2], Z_FLOOR - 1,
                       Z_FLOOR + LIP[1] + LIP[3]))
-    return _cut(solid, *holes, *wedges(WEDGE[1]))
+    # No groove for the bezel's wedge over the pocket's ceiling.
+    grooves = [_cut(w, i2c_span()) for w in wedges(WEDGE[1])]
+    return _cut(solid, *holes, *grooves, pocket)
 
 
 def bezel():
     """The rim round the display board, its plate and its 4 posts."""
     clear, head, sunk = SCREW
     under = TOUCH + OVER
-    solid = _cut(outer(Z_SPLIT, Z_TOP), cavity(Z_SPLIT - 1, under))
-    solid = _fuse(solid, *wedges(WEDGE[0]))
+    solid = _cut(outer_rounded(Z_SPLIT, Z_TOP, EDGE, "top"),
+                 cavity(Z_SPLIT - 1, under))
+    solid = _fuse(solid, *wedges(WEDGE[0]), split(i2c_room()[1])[1])
     radius = INSERT[0] / 2 + INSERT[2]
     for hole in DISPLAY_HOLES:
         solid = _fuse(solid, _corner(hole, radius,
@@ -330,7 +484,9 @@ def bezel():
              _box(X1 - 1, USB[0], Z_SPLIT - 2, X1 + WALL + 1, USB[1],
                   USB[2]),
              _box(CARD[0], Y0 - WALL - 1, Z_SPLIT - 2, CARD[1], Y0 + 1,
-                  Z_SPLIT)]
+                  Z_SPLIT),
+             # The wedge stays out of the I2C plug's pocket.
+             _cut(i2c_span(), _box(-BIG, -BIG, Z_SPLIT, BIG, BIG, BIG))]
     for x, y in DISPLAY_HOLES:
         holes.append(_cylinder(x, y, clear / 2, DISPLAY_Z[1] - 1,
                                Z_TOP + 1))
