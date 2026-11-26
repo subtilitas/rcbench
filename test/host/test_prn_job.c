@@ -695,6 +695,90 @@ TEST_CASE(a_job_ends_within_120s)
     CHECK_EQ(s_j.err, PRN_OK);
 }
 
+/**
+ * @brief Start a T50M Pro PRINT and put it at position 5 (printing), armed,
+ *        with the job's 120s passed.
+ * @param s         the spec
+ * @param in_flight a write of the step is out
+ * @return true when the job started
+ */
+static bool t50m_armed_at_cap(const prn_spec_t *s, bool in_flight)
+{
+    static uint8_t stream[64];
+    const prn_stream_t z = { stream, sizeof stream, 1u, 8u, 40u, 30u };
+    s_now = 0xFFFFF000u;
+    if (!prn_job_start(&s_j, s, PRN_JOB_PRINT, &z, s_now)) {
+        return false;
+    }
+    s_j.phase = PRN_PH_STEP;
+    s_j.pos = 5u;
+    s_j.armed = true;
+    s_j.want = false;
+    s_j.await = false;
+    s_j.in_flight = in_flight;
+    s_j.out_kind = in_flight ? 1u : 0u; /* a command */
+    s_j.t_sent = s_now;
+    s_now += PRN_JOB_MS;
+    return true;
+}
+
+/**
+ * @brief Hand out the next write and hold it to the abort command.
+ * @return true when the write is `cmd a=0x14`
+ */
+static bool abort_goes_out(void)
+{
+    const uint8_t *p = NULL;
+    uint16_t n = 0u;
+    prn_write_t k = PRN_W_REQ;
+    if (!prn_job_tx(&s_j, s_now, &p, &n, &k) || s_j.phase != PRN_PH_STOP) {
+        return false;
+    }
+    return p == s_j.cmd && memchr(p, 0x14, n) != NULL;
+}
+
+TEST_CASE(the_cap_in_the_abort_range_still_sends_the_abort)
+{
+    static prn_spec_t t50m;
+    static char txt[PRN_FILE_MAX + 1u];
+    size_t n = 0u;
+    CHECK(prn_load_t50m(&t50m, txt, &n));
+    /* the tick first, then the write */
+    CHECK(t50m_armed_at_cap(&t50m, false));
+    prn_job_tick(&s_j, s_now);
+    CHECK(!prn_job_ended(&s_j));
+    CHECK(abort_goes_out());
+    prn_job_tick(&s_j, s_now);
+    CHECK(!prn_job_ended(&s_j));
+    prn_job_written(&s_j, true, s_now + 20u);
+    CHECK(prn_job_ended(&s_j));
+    CHECK_EQ(s_j.err, PRN_ENGINE);
+    /* the write first, then the tick */
+    CHECK(t50m_armed_at_cap(&t50m, false));
+    CHECK(abort_goes_out()); /* prn_job_tx() ticks first */
+    prn_job_tick(&s_j, s_now + 500u);
+    CHECK(!prn_job_ended(&s_j));
+    prn_job_written(&s_j, true, s_now);
+    CHECK_EQ(s_j.err, PRN_ENGINE);
+    /* a write in flight: the abort follows its answer */
+    CHECK(t50m_armed_at_cap(&t50m, true));
+    prn_job_tick(&s_j, s_now);
+    CHECK_EQ(s_j.phase, PRN_PH_STOP);
+    s_now += 999u;
+    prn_job_tick(&s_j, s_now);
+    prn_job_written(&s_j, true, s_now);
+    CHECK(abort_goes_out());
+    prn_job_written(&s_j, true, s_now);
+    CHECK_EQ(s_j.err, PRN_ENGINE);
+    /* a caller that never writes: STOP ends at 2 x answer_ms + the gap */
+    CHECK(t50m_armed_at_cap(&t50m, false));
+    prn_job_tick(&s_j, s_now);
+    const uint32_t t0 = s_now;
+    CHECK(run_out(10000u));
+    CHECK_EQ(s_now - t0, 2u * t50m.answer_ms + t50m.gap_ms);
+    CHECK_EQ(s_j.err, PRN_ENGINE);
+}
+
 int main(void)
 {
     if (!load("rows-test.prn", &s_rows) || !load("magic-test.prn", &s_magic)) {
@@ -711,5 +795,6 @@ int main(void)
     RUN(a_job_that_cannot_run_does_not_start);
     RUN(a_value_too_large_for_its_encoding_ends_the_job_with_engine);
     RUN(a_job_ends_within_120s);
+    RUN(the_cap_in_the_abort_range_still_sends_the_abort);
     return test_summary("prn_job");
 }

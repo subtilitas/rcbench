@@ -27,7 +27,8 @@
  * every write comes from the job's own buffers and is at most the
  * command room or the file's fragment, which is at most mtu_min - 3; no
  * write while one is in flight, while the link is down or after the end;
- * the abort template at most once; every job ends within PRN_JOB_MS.
+ * the abort template at most once; every job ends within PRN_JOB_MS, plus
+ * 2 x answer_ms and the data gap for one that sends the abort.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -458,7 +459,8 @@ static bool one_job(uint32_t seed, unsigned id)
     const uint32_t cap = (s->frag > PRN_CMD_MAX) ? s->frag : PRN_CMD_MAX;
     FCHECK(s->frag + 3u <= s->mtu_min);
     while (!prn_job_ended(&s_j)) {
-        FCHECK((uint32_t)(now - t0) <= PRN_JOB_MS);
+        FCHECK((uint32_t)(now - t0)
+               <= PRN_JOB_MS + 2u * (uint32_t)s->answer_ms + s->gap_ms);
         prn_job_tick(&s_j, now);
         if (owed && link && (uint32_t)(now - owed_at) < 0x80000000u) {
             owed = false;

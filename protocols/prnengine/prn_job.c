@@ -13,7 +13,8 @@
  * - a link drop in a step with `relink`, after a write of such a step went
  *   out, waits relink_ms and goes on at the target; a second drop ends
  *   the job with PRN_LINK and no verdict;
- * - every job ends within PRN_JOB_MS.
+ * - every job ends within PRN_JOB_MS; one that is in STOP then gets
+ *   2 x answer_ms + the data gap more to send the abort template.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -947,6 +948,17 @@ static void write_lost(prn_job_t *j, uint32_t now)
     fail(j, data ? (prn_err_t)step_at(j, j->pos)->else_err : PRN_SILENT, now);
 }
 
+/**
+ * @brief The longest STOP: the write in flight's answer, the data gap and
+ *        the abort template's answer.
+ * @param s the spec
+ * @return milliseconds
+ */
+static uint32_t stop_ms(const prn_spec_t *s)
+{
+    return 2u * (uint32_t)s->answer_ms + s->gap_ms;
+}
+
 void prn_job_tick(prn_job_t *j, uint32_t now_ms)
 {
     if (j->phase == PRN_PH_IDLE || j->phase == PRN_PH_END) {
@@ -954,12 +966,16 @@ void prn_job_tick(prn_job_t *j, uint32_t now_ms)
     }
     const prn_spec_t *s = j->spec;
     if (passed(now_ms, j->t_job, PRN_JOB_MS)) {
-        if (j->phase == PRN_PH_STOP) {
-            end(j, (prn_err_t)j->end_err);
-        } else {
+        if (j->phase != PRN_PH_STOP) {
             fail(j, PRN_ENGINE, now_ms);
+            return;
         }
-        return;
+        /* STOP keeps the time to answer the write in flight and the abort
+         * template; its own deadlines end it inside that time */
+        if (passed(now_ms, j->t_step, stop_ms(s))) {
+            end(j, (prn_err_t)j->end_err);
+            return;
+        }
     }
     if (j->phase == PRN_PH_RELINK) {
         if (passed(now_ms, j->t_step, s->relink_ms)) {

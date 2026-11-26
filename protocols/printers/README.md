@@ -64,7 +64,7 @@ which printer a file describes.
 | `rows` | template with `{data}` once | one frame a head line |
 | `write cmd`, `write data` | `req`/`nr`; `req`/`nr` frag gap | frag 16 to 244B and at most `mtu_min` - 3 (E18); gap 0 to 500ms after each write's answer |
 | `table speed` | `mean_page`/`stream_len`, up to 12 `above:value`, `else` value | `{speed}`; `above` strictly falling (E19) |
-| `tmpl` | name, up to 40 tokens | up to 16 |
+| `tmpl` | name, up to 40 tokens; the 120B line holds at most 37 | up to 16 |
 | `rx join` | `magic_len` magic off enc add min max, or `notify` min max | the `sv_rx_feed()` rule: bytes before the magic dropped, a length outside min to max drops one byte |
 | `rx tail`, `rx check`, `rx key` | 1 to 4 bytes; one `{ck:...}` token; offset 0 to 15 | a frame without the tail or with another checksum is dropped; the checksum sits after its range |
 | `answer` | key min | up to 8; a shorter frame of that key is no answer |

@@ -64,14 +64,15 @@ if (prn_job_ended(&job)) { /* job.err: prn_err_t */ }
 | `prn_job_t` | 2,048B on x86-64 (frame buffer 1,184B, command 160B, joiner 128B); `_Static_assert` at 2,048B |
 | stack, ESP32-P4 build (GCC 14.2 `-Os`, `-fstack-usage`) | `prn_parse()` 432B frame (the reader state with the 121B line), 672B deepest chain; `prn_job_tx()` 304B, `prn_job_rx()` 272B, `prn_page_fill()` 256B deepest chain; `sv_job_tx()` 80B, `sv_job_rx()` 144B |
 | heap | none |
-| a job | ends within `PRN_JOB_MS`, 120s, as `PRN_ENGINE` |
+| a job | ends within `PRN_JOB_MS`, 120s, as `PRN_ENGINE`; inside the `abort` range it then has 2 x `answer_ms` + the data gap more to send the abort template |
 
 ### Limits a file from the card cannot pass
 
 - A file is at most 8,192B, a line 120B, a file 256 lines; any byte
   outside 0x20 to 0x7E, TAB, and CR before LF is E02.
 - Every table has a fixed size, checked before the write: 14 match lines,
-  16 templates of 40 tokens and 384 tokens in all, 8 answers, 24 fields,
+  16 templates of at most 40 tokens (a 120B line holds at most 37: `tmpl`, a
+  one-letter name and 2-character tokens) and 384 tokens in all, 8 answers, 24 fields,
   12 error lines, 24 steps, 4 checks and 4 saves a step.
 - The reader runs one pass with no recursion; its work is linear in the
   file's size.
@@ -119,7 +120,7 @@ that case.
 | `test_prn_image` | layers 1 and 2: pages equal `label-bufs.bin`, their literal stream `label-lit.lz`, chunk frames of `label.lz` equal `label-dataframes.bin`, commands equal the 21 requests of `label-cmds.tsv`, each of the 29 writes of `label-frames.bin` is a write the engine makes; pages for 1 to 300 lines against `sv_buf_fill()`, chunks of 1 to 2,000B against `sv_chunk_build()`, the speed table against `sv_speed()` |
 | `test_prn_parse` | E01 to E30 with their lines, CRLF, the limits on both sides, damaged specs, the match score |
 | `test_prn_tmpl` | every checksum kind against its reference value over "123456789", ranges at both ends, encodings at their top and one past |
-| `test_prn_job` | rows, writes without response, wait, delay, polls on two conditions, a length joiner with a tail and a check, relinks, the verdicts `done` and `result`, start refusals, `PRN_ENGINE`, the 120s limit |
+| `test_prn_job` | rows, writes without response, wait, delay, polls on two conditions, a length joiner with a tail and a check, relinks, the verdicts `done` and `result`, start refusals, `PRN_ENGINE`, the 120s limit, the limit inside the T50M Pro's abort range with the tick or the write first and with a write in flight |
 | `test_prn_fuzz` | the reader on every cut and every line removed, doubled and swapped, and on 3 seeds x 6,000 changed files; the job on 3 seeds x 500 random printers |
 | `prn_parity` | `test/host/prn_parity.py`: the C reader and `tools/printer_files.py` on 2 seeds x 1,500 changed files: the same verdict, code, line and dump |
 
