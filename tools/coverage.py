@@ -78,6 +78,8 @@ TRACKED = [
     "shared/ui/scan_flow.c",
     "shared/ui/scanner_pane.c",
     "shared/ui/scanner_code.c",
+    "shared/ui/about_screen.c",
+    "shared/ui/about_draw.c",
     "shared/ui/ui_help.c",
     "shared/ui/help_outputs.c",
     "shared/ui/help_setup.c",
@@ -601,6 +603,8 @@ DATA_ONLY = {
     "protocols/escwire/ew_map_bj.c",
     "protocols/escwire/ew_map_am.c",
     "protocols/escwire/ew_map_e32.c",
+    # The ABOUT screen's table and notices, written by tools/gen_licenses.py.
+    "shared/ui/about_gen.c",
     # Glyph bitmaps written by tools/gen_font.py.
     "shared/gfx/gfx_font8x16.c",
     "shared/gfx/gfx_font16x28.c",

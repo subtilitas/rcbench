@@ -22,6 +22,7 @@ exclude *.json | data: drawings, anchors, profiles and the configurator's packag
 exclude test/host/fixtures/* | recorded bench captures the host suite replays as they were taken
 exclude hardware/kicad/rcbench_modules.* | generated: the KiCad library hardware/kicad/tools/gen_all.py writes from the specs and CI holds with --check
 exclude *.step | CAD data: STEP models are geometry, not code, and no line count applies to them
+exclude third_party/notices/* | licence texts copied verbatim from the toolchains by tools/gen_licenses.py --refresh
 
 # What stays over 1,000 code lines after the plan.
 shared/bench/kst_prog.c | 2037 +-100 | row 7 moved the card and file parts out; the session engine stays one file

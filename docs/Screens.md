@@ -5698,11 +5698,12 @@ default and is described under [Logs](#logs). Keyboard transparency sets how
 much of the text shows through the text editor's keyboard: OFF, 25% or 50%,
 OFF by default; described under [The text editor](#the-text-editor). Demo mode
 hides the SIMULATION watermark and leaves the band's SIM chip
-([The status band](#the-status-band)). Hardware stop, the last row and OFF
-by default, shows the heartbeat fault as HWSTOP in place of FAULT 10
-([HWSTOP](#hwstop)).
+([The status band](#the-status-band)). Hardware stop, OFF by default,
+shows the heartbeat fault as HWSTOP in place of FAULT 10
+([HWSTOP](#hwstop)). The last row, About rcbench, opens ABOUT
+([PANEL: About rcbench](#panel-about-rcbench)).
 
-![PANEL scrolled to Hardware stop, stored ON](img/setup-hw-stop.png)
+![PANEL scrolled to its end: Hardware stop stored ON, About rcbench](img/setup-hw-stop.png)
 
 Seven settings are stored without affecting firmware operation. Cells,
 Capacity and Internal R appear on MOTOR & ESC. Units has a stored key but no
@@ -6065,6 +6066,43 @@ home tag does. A number the keypad takes is set by turning on its keypad:
 PRESS is OK, HOLD is CANCEL. No ring shows while the Dial is OFF or not
 linked, while ARMED, with the guide, the screenshot popup or a keyboard
 open, and on every other screen.
+
+### PANEL: About rcbench
+
+![ABOUT at its top](img/setup-about.png)
+
+About rcbench, PANEL's last row, opens ABOUT across the body. Its column
+holds 17 rows of 24px, from body y 8 to 416, and a scroll bar 56px wide at
+x 960. From the top:
+
+| Part | Rows |
+| --- | --- |
+| rcbench | the panel firmware's version, as UPDATES shows it; the IOmcu firmware's, once the IOmcu has named it, else `not known: no IOmcu has answered` |
+| The designer | `Design: Julian Wingert`, `JuWi made`, `Copyright 2026 Julian Wingert` |
+| LICENCES | firmware and software under the MIT License, the hardware designs in `hardware/` under CC BY-NC-SA 4.0 (`hardware/LICENSE`), the repository `github.com/subtilitas/rcbench` |
+| TRADEMARKS | the referential-use notice of `NOTICE`: KST, CHASERVO and Hitec and every other name are their owners' and describe compatibility only |
+| THIRD-PARTY COMPONENTS: PANEL FIRMWARE | 18 components: name and version, SPDX identifier, copyright lines |
+| THIRD-PARTY COMPONENTS: IOMCU FIRMWARE | 7 components; the panel image carries the IOmcu image |
+| DESIGN AND PROTOCOL REFERENCES | the LZMA specification and heeen/supvan-cups; neither firmware holds code of theirs |
+| LICENCE TEXTS AND NOTICES | each component's copyright lines and licence text, the Apache License 2.0 once at the end |
+
+![ABOUT scrolled 8 rows: the licences, the trademark notice, the first component](img/setup-about-licences.png)
+
+The column holds 9,355 rows in either language. A drag on it moves it a row per
+24px from where it stood at the press. A press on the bar puts the thumb's
+middle under the finger, a press on the thumb takes it where it is held,
+and a drag moves it: the bar's travel spans the whole column. PAGE UP and
+PAGE DOWN in the footer move 17 rows and are dimmed at the first and the
+last screen. BACK and the home tag return to PANEL's list at the scroll it
+was left at. Every control acts on the release of a tap within 8px of its
+press.
+
+![ABOUT at its end: the last rows of the Apache License 2.0](img/setup-about-end.png)
+
+The table and the texts are `shared/ui/about_gen.c`, which
+`tools/gen_licenses.py` writes from one list; [Licences](Licenses.md)
+holds the same table, and `tools/gen_licenses.py --check` fails when the
+screen's rows and the page differ from that list.
 
 ### SENSORS: the split pane
 

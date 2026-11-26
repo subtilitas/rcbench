@@ -11,6 +11,9 @@ set(SRCS
     scan_flow.c
     scanner_pane.c
     scanner_code.c
+    about_screen.c
+    about_draw.c
+    about_gen.c
     ui_watermark.c
     ui_plot.c
     ui_slider.c

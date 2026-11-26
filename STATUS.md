@@ -1331,6 +1331,16 @@ finder and timing patterns, format bits and Reed-Solomon check (`test_scanner_co
 table). No state of the scanner raises an alert. ACTIVE SERVO's list offers NONE alone; the SERVO
 ID row's typed id comes with the SERVO LABEL rows.
 
+SETUP > PANEL's last row, About rcbench (`about_screen.c`, `about_draw.c`, `test_about_screen`),
+opens ABOUT: the panel firmware's version and the IOmcu's once named, `Design: Julian Wingert`,
+`JuWi made`, `Copyright 2026 Julian Wingert`, the MIT and CC BY-NC-SA 4.0 licence lines, the
+repository, the trademark notice, the 25 third-party components of the panel and the IOmcu
+firmware with SPDX identifier and copyright lines, 2 references, and the notice texts the
+licences ask for: 9,355 rows of 24px, 17 on screen, a drag, a 56px scroll bar, PAGE UP and PAGE
+DOWN. The table and the texts are `about_gen.c`, 304,869 bytes of flash, which
+`tools/gen_licenses.py` writes from one list together with the table in `docs/Licenses.md`;
+its `--check` fails on drift and CI runs it.
+
 The scan flow (`scan_flow.c`, `test_scan_flow`; `servo_scan_decide()` in
 `servo_active.c`, `test_servo_scan`) takes a scanned line on the frame task:
 an id in upper case exactly as `servo_id_parse()` writes it sets the active
@@ -1954,7 +1964,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 700 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 701 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -2063,7 +2073,7 @@ The host suite is 700 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_wa_api_write`, `test_sense_i2c`, `test_storage`, `test_storage_swap`, `test_text_buf`,
 `test_text_hl`, `test_text_hl_limrun`, `test_i2c_txq`, `test_i2c_txq_calls`,
 `test_i2c_txq_wire`, `test_sense_txq`, `test_sense_txq_svc`, `test_fm_name`, `test_png_enc`,
-`test_shot_file`, `test_shot`, `test_shot_popup`, `test_screen_dim`, `test_wall_clock`, `test_mstime`, `test_witmotion`, `test_scan_line`, `test_gm861`, `test_scan_port`, `test_scan_wire`, `test_scanner_codes`, `test_scanner_pane`,
+`test_shot_file`, `test_shot`, `test_shot_popup`, `test_screen_dim`, `test_wall_clock`, `test_mstime`, `test_witmotion`, `test_scan_line`, `test_gm861`, `test_scan_port`, `test_scan_wire`, `test_scanner_codes`, `test_scanner_pane`, `test_about_screen`,
 `test_servo_angle`, `test_servo_source_angle`, `test_hitec_prog_run` and
 `test_hitec_panel_run`, `test_hitec_panel_move`, `test_hitec_panel_find`, `test_servo_rudder`,
 `test_servo_rudder_panel`, `test_servo_rudder_steps`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
@@ -2625,7 +2635,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-1148 committed screenshots to the current render, 574 in English and the same 574 in German, and `render_ui.py --fit` fails on a string that
+1154 committed screenshots to the current render, 577 in English and the same 577 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

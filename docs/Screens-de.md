@@ -6188,11 +6188,12 @@ standardmäßig aus; Einzelheiten stehen unter [Logs](#logs). Tastaturtransparen
 Texts durch die Tastatur des Texteditors scheint: AUS, 25% oder 50%,
 standardmäßig AUS; beschrieben unter [Der Texteditor](#der-texteditor).
 Demo-Modus blendet das Wasserzeichen SIMULATION aus und lässt den SIM-Chip des
-Bands stehen ([Das Statusband](#das-statusband)). Hardware-STOP, die letzte
-Zeile und standardmäßig AUS, zeigt den Heartbeat-Fehler als HWSTOP statt
-FEHLER 10 ([HWSTOP](#hwstop)).
+Bands stehen ([Das Statusband](#das-statusband)). Hardware-STOP,
+standardmäßig AUS, zeigt den Heartbeat-Fehler als HWSTOP statt FEHLER 10
+([HWSTOP](#hwstop)). Die letzte Zeile, Über rcbench, öffnet ABOUT
+([PANEL: Über rcbench](#panel-über-rcbench)).
 
-![PANEL bis Hardware-STOP gescrollt, gespeichert EIN](img/de/setup-hw-stop.png)
+![PANEL bis zum Ende gescrollt: Hardware-STOP gespeichert EIN, Über rcbench](img/de/setup-hw-stop.png)
 
 Sieben Einstellungen werden gespeichert, ohne den Firmwarebetrieb zu
 beeinflussen. Zellen, Kapazität und Innenwiderstand erscheinen unter
@@ -6590,6 +6591,44 @@ auf ihrem Ziffernfeld durch Drehen eingestellt: PRESS ist OK, HOLD ist
 CANCEL. Kein Rahmen erscheint, solange das Dial OFF oder nicht verbunden
 ist, bei ARMED, bei offener Hilfe, offenem Screenshot-Popup oder offener
 Tastatur und auf jedem anderen Bildschirm.
+
+### PANEL: Über rcbench
+
+![ABOUT oben](img/de/setup-about.png)
+
+Über rcbench, die letzte Zeile von PANEL, öffnet ABOUT über die ganze
+Breite. Seine Spalte zeigt 17 Zeilen zu 24px, von y 8 bis 416 im Körper,
+und einen 56px breiten Scrollbalken bei x 960. Von oben:
+
+| Teil | Zeilen |
+| --- | --- |
+| rcbench | die Version der Panel-Firmware, wie UPDATES sie zeigt; die der IOmcu-Firmware, sobald das IOmcu sie genannt hat, sonst `unbekannt: kein IOmcu hat geantwortet` |
+| Der Designer | `Design: Julian Wingert`, `JuWi made`, `Copyright 2026 Julian Wingert` |
+| LIZENZEN | Firmware und Software unter der MIT License, die Hardware-Entwürfe in `hardware/` unter CC BY-NC-SA 4.0 (`hardware/LICENSE`), das Repository `github.com/subtilitas/rcbench` |
+| MARKEN | der Hinweis zur beschreibenden Nennung aus `NOTICE`: KST, CHASERVO, Hitec und jeder andere Name gehören ihren Inhabern und beschreiben nur die Kompatibilität |
+| FREMDKOMPONENTEN: PANEL-FIRMWARE | 18 Komponenten: Name und Version, SPDX-Kennung, Copyright-Zeilen |
+| FREMDKOMPONENTEN: IOMCU-FIRMWARE | 7 Komponenten; das Panel-Image enthält das IOmcu-Image |
+| DESIGN- UND PROTOKOLLREFERENZEN | die LZMA-Spezifikation und heeen/supvan-cups; keine der Firmwares enthält Code daraus |
+| LIZENZTEXTE UND HINWEISE | Copyright-Zeilen und Lizenztext jeder Komponente, die Apache License 2.0 einmal am Ende |
+
+![ABOUT um 8 Zeilen gescrollt: die Lizenzen, der Markenhinweis, die erste Komponente](img/de/setup-about-licences.png)
+
+Die Spalte hat in beiden Sprachen 9.355 Zeilen. Ziehen auf ihr verschiebt sie um
+eine Zeile je 24px, ausgehend von der Lage beim Drücken. Ein Druck auf den
+Balken setzt die Mitte des Griffs unter den Finger, ein Druck auf den Griff
+nimmt ihn, wo er gehalten wird, und Ziehen bewegt ihn: der Weg des Balkens
+umfasst die ganze Spalte. SEITE HOCH und SEITE RUNTER in der Fußzeile
+bewegen 17 Zeilen und sind auf der ersten und der letzten Seite gedimmt.
+ZURÜCK und das Home-Tag führen zur Liste von PANEL zurück, in der Lage, in
+der sie verlassen wurde. Jedes Bedienelement wirkt beim Loslassen eines
+Tippens innerhalb von 8px um den Druckpunkt.
+
+![ABOUT am Ende: die letzten Zeilen der Apache License 2.0](img/de/setup-about-end.png)
+
+Tabelle und Texte stehen in `shared/ui/about_gen.c`, das
+`tools/gen_licenses.py` aus einer Liste schreibt; [Lizenzen](Licenses-de.md)
+enthält dieselbe Tabelle, und `tools/gen_licenses.py --check` schlägt fehl,
+wenn die Zeilen des Bildschirms oder die Seite von dieser Liste abweichen.
 
 ### SENSORS: die geteilte Ansicht
 
