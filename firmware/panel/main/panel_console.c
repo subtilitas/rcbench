@@ -14,7 +14,10 @@
  * too: `scan` alone prints the QR scanner's state, its counts and the zones
  * as read before the first write (panel_scan.h); `scan TEXT` hands TEXT to
  * the scan flow as a line the scanner read (scan_flow_post()), and the
- * frame task runs it.
+ * frame task runs it.  A line that starts with the word `print` stays too:
+ * `print`, `print test`, `print id ID`, `print query`, `print stop`,
+ * `print bind ADDRESS` and `print unbind` go to the frame task
+ * (panel_print.h).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -33,6 +36,7 @@
 #include "console_relay.h"
 #include "panel.h"
 #include "panel_ble.h"
+#include "panel_print.h"
 #include "panel_scan.h"
 #include "panel_servo.h"
 #include "scan_flow.h"
@@ -287,6 +291,10 @@ static void console_key(int ch)
         } else if (!s_long && (strcmp(s_typing, "servo") == 0
                                || strncmp(s_typing, "servo ", 6u) == 0)) {
             panel_servo_console(s_typing);   /* the frame task runs it */
+            s_typed = 0u;
+        } else if (!s_long && (strcmp(s_typing, "print") == 0
+                               || strncmp(s_typing, "print ", 6u) == 0)) {
+            panel_print_console(s_typing);   /* the frame task runs it */
             s_typed = 0u;
         } else if (!s_long && strncmp(s_typing, "scan ", 5u) == 0) {
             printf("scan: %s\n", scan_flow_post(&s_typing[5])

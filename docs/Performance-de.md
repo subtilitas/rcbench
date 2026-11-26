@@ -148,9 +148,10 @@ est. ms and est. fps: not measured
 
 Die Zahl wiederholt sich bei jedem Lauf desselben Stands exakt: Das Werkzeug
 gibt cachegrind die Geometrie aller drei Caches vor, sodass keiner von der CPU
-des Hosts übernommen wird, und der Test zeichnet mit einem Stack an fester
-Position innerhalb von 64KB, sodass argv, die Umgebungsvariablen und die Pfade sie
-nicht verschieben. `test_frame_cost.py` misst fünf Modi zweimal und schlägt
+des Hosts übernommen wird, der Test zeichnet mit einem Stack an fester
+Position innerhalb von 64KB, und er liest vor dem ersten Frame 1MiB der Reihe
+nach, wonach jeder modellierte Cache nur diese Zeilen hält, sodass argv, die
+Umgebungsvariablen und die Pfade sie nicht verschieben. `test_frame_cost.py` misst fünf Modi zweimal und schlägt
 bei einem Unterschied von einem Fill fehl. Compiler, C-Bibliothek und valgrind prägen
 die Zahl weiterhin. Die Tabelle enthält die Zahlen des ubuntu-26.04-Runners
 der CI (Continuous Integration), und eine Maschine mit anderen Versionen misst
@@ -443,7 +444,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | `runlog` | `log_task` | 6 656 | 4 144 | 1 472 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
 | `scan` | `scan_task`, UART1 des QR-Scanners und sein GM861-Ablauf (`panel_scan.c`) | 3 072 | 1 296 | 736 |
-| `blec` | `blec_task`, die Verbindung jedes Bluetooth-LE-Clients über den Hub: die Werte der IMU, des Dial und beider Sensorknoten aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_blec.c`, die Seite der IMU in `panel_imu.c`, die des Dial in `panel_dial.c`, die des Leistungsknotens in `panel_pnode.c`, die des Auswuchtknotens in `panel_bal.c`, das Update der Funkgeräte in `panel_devupd.c`, der lange Schreibzugriff des Etikettendruckers über `panel_ble_write_long()`) | 4 096 | 1 840 | 1 216 |
+| `blec` | `blec_task`, die Verbindung jedes Bluetooth-LE-Clients über den Hub: die Werte der IMU, des Dial und beider Sensorknoten aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_blec.c`, die Seite der IMU in `panel_imu.c`, die des Dial in `panel_dial.c`, die des Leistungsknotens in `panel_pnode.c`, die des Auswuchtknotens in `panel_bal.c`, das Update der Funkgeräte in `panel_devupd.c`, Verbindung, Job, Layout und Kodierung des Etikettendruckers in `panel_print.c`, 1 584 Byte tief, und sein langer Schreibzugriff über `panel_ble_write_long()`) | 4 096 | 1 840 | 1 216 |
 | `blestart` | `ble_start_task`, die Verbindung zum C6, seine Controller-Anfragen, der Start des Hosts und das Warten auf seinen Sync, dann weg (`panel_ble.c`) | 4 096 | 1 200 | 1 856 |
 | `nimble_host` | `ble_host_task`, der Host von NimBLE: HCI (Host Controller Interface) zum C6 und zurück, die Berichte des Scans, die Antworten der Verbindung und von GATT (`panel_ble.c`) | 4 096 | 1 936 | 1 120 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 392 | 1 664 |

@@ -476,6 +476,36 @@ ESP32-C6](C6.md#bluetooth-le-through-the-esp32-c6)).
 | `ble: controller requests: sent, see the ble lines` | both requests went |
 | `ble: controller requests: Bluetooth LE is not started or still starting` | before the first start, or while its start task runs; nothing is sent |
 
+### Label printer: `print`
+
+A line that starts with the word `print` stays on the panel; the frame
+task runs it. The printer is the one bound in SETUP's `prn_ble`
+(`shared/ui/include/print_ctl.h`).
+
+| Line typed | Does |
+| --- | --- |
+| `print` | prints the view: the printer, phase, error, link, roll, labels left, MTU, frames sent |
+| `print test` | asks for the test label: the code of `RCBENCH TEST`, `RCBENCH`, the version, the roll |
+| `print id <id>` | asks for the label of a servo id, with SETUP's DUT NAME |
+| `print query` | reads the roll and the label counter, prints nothing |
+| `print stop` | ends the request in work: STOP_PRINT after START, `PRINT STOPPED` |
+| `print bind <address>` | keeps `A4:93:40:30:FA:71` in `prn_ble`, ` P` added when no type follows, and asks a save |
+| `print unbind` | clears `prn_ble` and `prn_name` |
+
+A request while one is in work is refused. The `print` lines of the
+`blec` task follow each change of phase:
+
+| Line | Means |
+| --- | --- |
+| `print: request <kind> taken` | the controller took the request: 1 label, 2 test, 3 query, 4 stop |
+| `print: linked to <printer>: connect <ms>ms, set-up <ms>ms, MTU <n>, <n> attempts` | the link is up and the roll is being read |
+| `print: roll <w>x<h>mm gap <g>mm, <n> left: building` | the roll is read; the layout starts |
+| `print: block of <n> bytes taken` | the heap block, PSRAM first; `refused` ends with `NO MEMORY` |
+| `print: built in <ms>ms: <n> buffers, stream <n> bytes` | the stream is built; the job starts |
+| `print: <n> frames sent, <ms>ms after the request` | BUF_FULL went; the printer prints |
+| `print: done in <ms>ms: <n> left` | printed or read; `, after a reconnect` when the link dropped during the job |
+| `print: failed after <ms>ms: error <n> (<text>)` | the request ended with the error's English text |
+
 ### Rates
 
 The relay performs at most one exchange per control pass, after the

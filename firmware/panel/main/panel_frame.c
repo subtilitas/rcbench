@@ -40,6 +40,7 @@
 #include "panel_dial.h"
 #include "panel_pnode.h"
 #include "panel_imu.h"
+#include "panel_print.h"
 #include "panel_main.h"
 #include "panel_perf.h"
 #include "panel_sbk.h"
@@ -418,6 +419,8 @@ void panel_frame_loop(void)
          * the AS5600's then dropped.  The IMU screen's view and commands
          * go first, so the reading is this frame's. */
         panel_imu_frame();
+        /* The label printer's requests out and its view in. */
+        panel_print_frame();
         const bool imu_src =
             settings_get_int(SET_ANGLE_SOURCE) == (int)SERVO_ANGLE_IMU;
         static bool s_imu_src_was;

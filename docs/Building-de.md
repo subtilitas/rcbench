@@ -107,7 +107,7 @@ als INTERFACE-Bibliothek `rcbench_<modul>_rp2350`. Includes sind flach:
 | `escwire` · `openyge` | ja | ja | ja |
 | `witmotion` | ja | | ja |
 | `hc05` · `dial` | | | ja |
-| `bleuart` · `dialknob` · `vibe` · `rcnode` · `bleota` · `devupd` · `scanner` | ja | | ja |
+| `bleuart` · `dialknob` · `vibe` · `rcnode` · `bleota` · `devupd` · `scanner` · `supvan` | ja | | ja |
 
 ## Toolchains
 

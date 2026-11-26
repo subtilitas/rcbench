@@ -1341,9 +1341,19 @@ in a chip left of the others (`UI_BAND_CHIP_SERVO`). The panel takes lines
 through a mailbox of one line: the debug console's `scan <text>`, and the
 scanner's, which the frame task moves from the port's queue into the
 mailbox while it is empty (`scan_flow_pull()`, `test_scan_wire`), one a
-frame, a cut line as too long. The card's look-up (new, known with the
-name of its newest run, no card) is a hook no firmware registers yet, so the
-panel's notice names the id alone and DUT NAME stays.
+frame, a cut line as too long. The run check is `servo_screen_run_active()`,
+start sequences included, or the bench ARMED on SERVO. The card's look-up
+(`servo_look.c`, `test_scan_look`) runs on the logger task
+(`panel_servo.c`), which mounts a card put in since the start: the folder
+`Servos/<id>` is listed once and each kind's highest-numbered CSV read for
+2,048 bytes at most, up to 4 reads. A servo with runs sets DUT NAME when
+the kinds' names agree, or, where they differ, from the newest FAT stamp
+when every stamp is a date after 1980; otherwise no name. A servo without
+folder or runs is new on the card, and the answer reaches the band through
+`scan_flow_answer()`, dropped once another id is set or a run starts; a
+DUT NAME typed since the scan stays. The
+look-up's time is logged in us per scan (`servo look: ... in Nus`); not
+measured on the station.
 
 ### M5Stack Dial
 
@@ -1800,8 +1810,8 @@ nothing written) is host-tested against the same model with a horn held at a blo
 
 ### Servo label
 
-The label of a servo id for a Supvan T50M Pro label printer is built and host-tested; no
-screen prints it yet. `shared/ui/label_bitmap.c` holds the printer's column-major bitmap,
+The label of a servo id for a Supvan T50M Pro label printer is built and host-tested; the
+debug console prints it, no screen does yet. `shared/ui/label_bitmap.c` holds the printer's column-major bitmap,
 48 bytes a column, least significant bit first; reading (0, 0) on a 40x30mm roll is column 0,
 head row 351, and (319, 223) is column 223, head row 32 (`test_label_bitmap`).
 `shared/ui/label_layout.c` places the QR (Quick Response) code from the vendored qrcodegen
@@ -1811,6 +1821,18 @@ over the prefix, the serial and DUT NAME, for rolls of 15 to 48mm by 20 to 100mm
 suite compares 8 labels with `test/host/fixtures/label/`, and `test/tools/test_label_qr.py`
 decodes their codes with OpenCV or zbarimg. Print quality and a scan of a printed label are
 not measured.
+
+`shared/ui/print_ctl.c` is the printer's Bluetooth LE client on the `blec` task
+(`firmware/panel/main/panel_print.c`): the bound address, a link made for a request and ended
+30s after the last answer, a QUERY for the roll, the layout and one print buffer encoded each
+5ms poll in one heap block, the PRINT job and the counter's verdict, 23 errors with EN and DE
+texts. It is host-tested against the simulated printer of `test/host/sv_sim.h` behind a
+scripted host stack that serves the GATT table the station read (H0): every error, the
+printer gone at each stage, the MTU at 130 and 131, the linger at 30,000ms, and a
+23-character id and DUT NAME decoded from the stream the printer joined
+(`test_print_ctl`, `test_print_ctl_ends`). The console's `print test` and `print id <id>`
+on the station are step H1; the connect time, the build step's time and the frame loss of an
+IMU during a job are not measured.
 
 ## The tree
 
@@ -1861,8 +1883,8 @@ rcbench/
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` · `passthru` | yes | yes | yes |
 | `escwire` · `openyge` | yes | yes | yes |
 | `witmotion` | yes | | yes |
-| `hc05` · `dial` · `supvan` | | | yes |
-| `bleuart` · `dialknob` · `vibe` · `rcnode` · `bleota` · `devupd` · `scanner` | yes | | yes |
+| `hc05` · `dial` | | | yes |
+| `bleuart` · `dialknob` · `vibe` · `rcnode` · `bleota` · `devupd` · `scanner` · `supvan` | yes | | yes |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
 `ESP_PLATFORM` and a static library otherwise. The panel sets
@@ -1896,7 +1918,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 693 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 694 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1972,7 +1994,7 @@ The host suite is 693 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_fm_recheck`, `test_fm_req`, `test_files_screen`, `test_files_ops`, `test_files_open`,
 `test_files_view`, `test_files_edit`, `test_files_save`, `test_files_changed`,
 `test_files_rescan`, `test_logs_strip`, `test_textkey_editor`, `test_textkey_see`,
-`test_textkey_cursor`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_log_info`, `test_servo_id`, `test_servo_name`, `test_servo_active`, `test_servo_take`, `test_servo_scan`, `test_scan_flow`, `test_scan_input`, `test_log_preset`, `test_log_marks`, `test_servo_runlog`,
+`test_textkey_cursor`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_log_info`, `test_servo_id`, `test_servo_name`, `test_servo_active`, `test_servo_take`, `test_servo_scan`, `test_scan_flow`, `test_scan_look`, `test_scan_input`, `test_log_preset`, `test_log_marks`, `test_servo_runlog`,
 `test_servo_runlog_cols`, `test_servo_log_figures`, `test_log_cadence`, `test_perf_watch`, `test_pass_stats`, `test_report_lines`, `test_report_steps`,
 `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`,
 `test_kst_pio`, `test_kst_port`, `test_kst_port_cut`, `test_kst_link`, `test_prog_port`,
@@ -2027,8 +2049,8 @@ The host suite is 693 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_srv_policy`, `test_node_srv_poll`, `test_node_view`,
 `test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client`, `test_devimg`, `test_devimg_board`, `test_upd_dev`, `test_upd_fetch`,
 `test_upd_wizard`, `test_upd_wizard_map`, `test_upd_wiz_view`, `test_label_bitmap`, `test_label_layout`,
-`test_lzlit`, `test_supvan_frame`, `test_supvan_page`, `test_supvan_job`, `test_supvan_job_ends`
-and `test_harness`.
+`test_lzlit`, `test_supvan_frame`, `test_supvan_page`, `test_supvan_job`, `test_supvan_job_ends`,
+`test_print_ctl`, `test_print_ctl_ends` and `test_harness`.
 
 The harness is `test/host/greatest.h`, written for this project. `CHECK_EQ` compares
 integers and pointers as `long` and does not compile on a floating operand; `CHECK_FEQ`
@@ -2603,7 +2625,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_widgets.c` | 432 | 425 | 98.4% |
 | `shared/ui/ui_icons.c` | 199 | 199 | 100.0% |
 | `shared/ui/ui_band.c` | 421 | 408 | 96.9% |
-| `shared/ui/scan_flow.c` | 117 | 114 | 97.4% |
+| `shared/ui/scan_flow.c` | 147 | 144 | 98.0% |
 | `shared/ui/ui_help.c` | 400 | 389 | 97.2% |
 | `shared/ui/help_outputs.c` | 74 | 72 | 97.3% |
 | `shared/ui/help_setup.c` | 95 | 92 | 96.8% |
@@ -2734,6 +2756,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/text_view_keys.c` | 489 | 471 | 96.3% |
 | `shared/ui/label_bitmap.c` | 104 | 104 | 100.0% |
 | `shared/ui/label_layout.c` | 185 | 174 | 94.0% |
+| `shared/ui/print_ctl.c` | 429 | 392 | 91.4% |
 | `shared/ui/settings_screen.c` | 333 | 324 | 97.3% |
 | `shared/ui/settings_draw.c` | 69 | 69 | 100.0% |
 | `shared/ui/settings_rows.c` | 49 | 48 | 98.0% |
@@ -2821,6 +2844,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/logfile/servo_active.c` | 66 | 66 | 100.0% |
 | `shared/logfile/servo_take.c` | 77 | 77 | 100.0% |
 | `shared/logfile/servo_trend.c` | 8 | 8 | 100.0% |
+| `shared/logfile/servo_look.c` | 128 | 127 | 99.2% |
 | `shared/logfile/fault_log.c` | 58 | 58 | 100.0% |
 | `shared/files/text_buf.c` | 494 | 493 | 99.8% |
 | `shared/files/text_hl.c` | 340 | 340 | 100.0% |
@@ -2917,7 +2941,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `protocols/escwire/ew_file_load.c` | 93 | 93 | 100.0% |
 | `protocols/hc05/hc05.c` | 384 | 383 | 99.7% |
 | `protocols/hc05/hc05_line.c` | 125 | 125 | 100.0% |
-| `protocols/bleuart/bleuart.c` | 524 | 522 | 99.6% |
+| `protocols/bleuart/bleuart.c` | 529 | 527 | 99.6% |
 | `protocols/bleuart/bleuart_adv.c` | 180 | 180 | 100.0% |
 | `protocols/bleuart/bleuart_hub.c` | 317 | 315 | 99.4% |
 | `protocols/i2c_txq/i2c_txq.c` | 379 | 379 | 100.0% |
@@ -2933,7 +2957,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `protocols/supvan/lzlit.c` | 68 | 68 | 100.0% |
 | `protocols/supvan/supvan_frame.c` | 122 | 122 | 100.0% |
 | `protocols/supvan/supvan_page.c` | 65 | 65 | 100.0% |
-| `protocols/supvan/supvan_job.c` | 306 | 301 | 98.4% |
+| `protocols/supvan/supvan_job.c` | 307 | 302 | 98.4% |
 | `shared/logfile/servo_store.c` | 267 | 265 | 99.2% |
 | `shared/outputs/kst_port.c` | 665 | 664 | 99.8% |
 | `shared/outputs/hitec_port.c` | 552 | 549 | 99.5% |
@@ -3110,7 +3134,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/scanner/scan_line.c` | 113 | 113 | 100.0% |
 | `shared/scanner/gm861.c` | 319 | 319 | 100.0% |
 | `shared/scanner/scan_port.c` | 112 | 111 | 99.1% |
-| **total** | **115382** | **112835** | **97.8%** |
+| **total** | **115975** | **113390** | **97.8%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

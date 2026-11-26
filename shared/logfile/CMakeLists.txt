@@ -21,8 +21,9 @@
 # A labelled servo files its runs in a folder of its own, Servos/<id>:
 # servo_id.c checks, builds and counts the ids, servo_name.c names the runs
 # in the folder, servo_active.c holds the servo the next run files under,
-# servo_take.c numbers the runs in a servo's folder, and servo_trend.c
-# hears each run filed there.
+# servo_take.c numbers the runs in a servo's folder, servo_trend.c
+# hears each run filed there, and servo_look.c reads the DUT NAME of a
+# servo's newest run.
 set(SRCS
     log_numbers.c
     log_csv.c
@@ -41,6 +42,7 @@ set(SRCS
     servo_active.c
     servo_take.c
     servo_trend.c
+    servo_look.c
 )
 
 if(ESP_PLATFORM)

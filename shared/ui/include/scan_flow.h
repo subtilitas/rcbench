@@ -26,8 +26,10 @@
  * (scan_flow_set_look()): no card, new on this card, or known with the
  * DUT NAME of its newest run.  A known servo's name becomes DUT NAME
  * (SET_TEXT_DUT_NAME).  Without a hook the notice names the id alone and
- * DUT NAME stays: the card walk that answers the hook belongs to the
- * filing (panel_servo.c), which registers it.
+ * DUT NAME stays.  The panel's hook (panel_servo.c) answers
+ * SCAN_CARD_UNKNOWN: the notice names the id, and the card's answer, no
+ * card among them, comes frames later from its logger task through
+ * scan_flow_answer(), which raises the full notice.
  *
  * State of the frame task, but the mailbox, which any number of tasks
  * may post to.
@@ -43,6 +45,7 @@
 #include <stdint.h>
 
 #include "servo_active.h"
+#include "servo_look.h"
 #include "ui_screen.h"
 
 #ifdef __cplusplus
@@ -73,6 +76,33 @@ typedef scan_card_t (*scan_flow_look_fn)(const char *id, char *name,
  * @param fn The look-up.
  */
 void scan_flow_set_look(scan_flow_look_fn fn);
+
+/**
+ * @brief Frame task: the card's answer for the last id the hook answered
+ *        SCAN_CARD_UNKNOWN.  It raises that id's notice, a known servo's
+ *        name into DUT NAME, as the hook's answer would have.
+ *
+ * Dropped, and false, when @p id is not that id, when another line set an
+ * id since, when the id is no longer active, when a run is active (DUT
+ * NAME is not changed under a run), or for SCAN_CARD_UNKNOWN.  Each id's
+ * answer is taken once.  A DUT NAME changed since the scan (typed by hand)
+ * stays: the notice then names the id alone.
+ *
+ * @param id   The id asked.
+ * @param card What the card knows.
+ * @param name The newest run's DUT NAME; "" or NULL for none.
+ * @return true when it raised the notice.
+ */
+bool scan_flow_answer(const char *id, scan_card_t card, const char *name);
+
+/**
+ * @brief What the card knows, as servo_look() found it: no folder and no
+ *        run are new on this card, runs are known, a folder that does not
+ *        read is unknown.
+ * @param look servo_look()'s result.
+ * @return The card for scan_flow_answer().
+ */
+scan_card_t scan_flow_card_of(servo_look_t look);
 
 /**
  * @brief Hand a line to the frame task, from any task.
@@ -142,9 +172,10 @@ bool scan_flow_line(const char *line, bool too_long, uint32_t now_ms);
 servo_scan_t scan_flow_last(void);
 
 /**
- * @brief Whether a run is active, as the scan and NONE see it: a servo
- *        test, a limit run or RUDDER AUTO under way, or the bench ARMED
- *        with UI_ARMED_SERVO (a SERVO run is logged).
+ * @brief Whether a run is active, as the scan and NONE see it:
+ *        servo_screen_run_active() (a run, its start sequence, its files
+ *        still draining) or the bench ARMED with UI_ARMED_SERVO (a SERVO
+ *        run is logged).
  * @return true while one is.
  */
 bool scan_flow_run_active(void);
@@ -157,8 +188,8 @@ bool scan_flow_run_active(void);
 void scan_flow_status(ui_bench_status_t *st);
 
 /**
- * @brief Forget the mailbox, the hook and the last result; the host
- *        suite's start of a case.
+ * @brief Forget the mailbox, the hook, the pending answer and the last
+ *        result; the host suite's start of a case.
  */
 void scan_flow_reset(void);
 

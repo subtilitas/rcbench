@@ -67,6 +67,13 @@ declares a 16-bit value in its own vendor base matches only through
 | `BLEU_ROLE_PARAM`, at most one | nothing: without READ it is not read | read once after each subscribe; its first 20 bytes (`BLEU_PARAM_MAX`) kept |
 | `BLEU_ROLE_NONE`, any | nothing | never written, read or subscribed |
 
+A profile with `cccd_next` skips the descriptor discovery: the STREAM's
+CCCD is the handle after its value, inside the characteristic. The CCCD
+write is the subscribe's only check; the value is never read back. The
+Supvan T50M Pro needs it: it answers Find Information with an ATT error
+and reads its CCCD back as 00 00 after 01 00 was written (station step
+H0, `test/host/fixtures/supvan/README.md`).
+
 `bleu_profile_valid()` holds a profile to these counts, each entry to a
 `uuid` or a `uuid16`, and the parameters
 to their ranges: interval 6 to 3200 (7.5ms to 4s), minimum up to maximum,
@@ -434,7 +441,9 @@ the drops, the scans beside a connect, OFF in every state and late
 answers; `test_bleuart_adv.c` the advertising data, the list and the
 address text; `test_bleuart_profile.c` the owner in the tokens, a profile
 with other UUIDs, an optional command characteristic, the profile's
-rules at their limits and the busy connect's retry;
+rules at their limits, the busy connect's retry and `cccd_next`
+subscribing the handle after the STREAM's value with no descriptor
+discovery and no read;
 `test_bleuart_hub.c` one client through the hub against the same run
 without it, three clients coming up one connect at a time, routing by
 token and by handle, a scan during another client's connect, a second

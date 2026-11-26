@@ -115,6 +115,8 @@ typedef enum {
                             DEVUPD_STALL_MS */
     DEVUPD_E_NO_SERVICE, /**< the device connected without the update
                               service: its firmware predates the update */
+    DEVUPD_E_PRINT,    /**< a label print ran at the start: the panel's
+                            refusal, as both use the spare link */
 } devupd_err_t;
 
 /** @brief What devupd_step() gives. */

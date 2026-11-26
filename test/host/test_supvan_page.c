@@ -4,13 +4,16 @@
  *        print buffers of 84, 84 and 56 columns, byte for byte against
  *        test/host/fixtures/supvan/label-bufs.bin, with the page flags on
  *        the first and the last; 1, 84 and 85 columns; the checksum's
- *        256-byte block at its edge; the data frames against
- *        label-frames.bin, the frame count at 1, 500, 501 and 255 frames;
- *        the speed byte at each threshold.
+ *        256-byte block at its edge; the data frames of label.lz against
+ *        label-dataframes.bin; the captured commands of label-frames.bin
+ *        against sv_cmd_build(), BULK and BUF_FULL with the stream's
+ *        frame count, length and speed; the frame count at 1, 500, 501 and
+ *        255 frames; the speed byte at each threshold.
  *
- * The fixtures are written by tools/gen_supvan_fixtures.py from the
- * report's rules (protocols/supvan/README.md, "Test fixtures"); station
- * step H0's captures replace them.
+ * label-bufs.bin, label.lz, label-frames.bin and label-dataframes.bin are
+ * station step H0's captures of one 40 x 30mm label
+ * (test/host/fixtures/supvan/README.md); the label's image is read back
+ * out of the captured buffers.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -45,20 +48,20 @@ static uint8_t *fixture(const char *name, size_t *n)
 }
 
 /**
- * @brief The test label's bitmap, as gen_supvan_fixtures.py's
- *        label_bits() draws it.
+ * @brief The captured label's image: the data columns of the 3 buffers
+ *        in label-bufs.bin, as gen_supvan_fixtures.py's captured_bits()
+ *        reads them.
+ * @param bufs the 3 captured buffers
  * @param bits LABEL_COLS * 48 bytes
  */
-static void label_bits(uint8_t *bits)
+static void label_bits(const uint8_t *bufs, uint8_t *bits)
 {
-    memset(bits, 0, LABEL_COLS * SV_LINE_BYTES);
-    for (unsigned col = 0; col < LABEL_COLS; ++col) {
-        for (unsigned row = 32; row < 352; ++row) {
-            if ((col * 7u + row * 3u) % 23u < 8u) {
-                bits[col * SV_LINE_BYTES + row / 8u] |=
-                    (uint8_t)(1u << (row % 8u));
-            }
-        }
+    static const unsigned cols[3] = { 84u, 84u, 56u };
+    size_t at = 0u;
+    for (unsigned i = 0; i < 3u; ++i) {
+        memcpy(bits + at, bufs + i * SV_BUF_SIZE + SV_BUF_HEAD,
+               cols[i] * SV_LINE_BYTES);
+        at += cols[i] * SV_LINE_BYTES;
     }
 }
 
@@ -93,11 +96,11 @@ TEST_CASE(buffers_per_columns)
 TEST_CASE(the_label_is_three_buffers_equal_to_the_fixture)
 {
     static uint8_t bits[LABEL_COLS * SV_LINE_BYTES];
-    label_bits(bits);
     size_t n = 0u;
     uint8_t *want = fixture("label-bufs.bin", &n);
     REQUIRE_ALLOC(want);
     CHECK_EQ(n, 3u * SV_BUF_SIZE);
+    label_bits(want, bits);
     static uint8_t buf[SV_BUF_SIZE];
     const unsigned cols[3] = { 84u, 84u, 56u };
     const uint8_t page[3] = { SV_PAGE_START, 0u,
@@ -205,10 +208,12 @@ TEST_CASE(the_label_stream_frames_equal_the_fixture)
     size_t zn = 0u;
     size_t fn = 0u;
     uint8_t *z = fixture("label.lz", &zn);
-    uint8_t *want = fixture("label-frames.bin", &fn);
+    uint8_t *want = fixture("label-dataframes.bin", &fn);
     REQUIRE_ALLOC(z);
     REQUIRE_ALLOC(want);
+    CHECK_EQ(zn, 813u);
     const uint16_t count = sv_chunk_count((uint32_t)zn);
+    CHECK_EQ(count, 2u);
     CHECK_EQ(count * SV_FRAME_LEN, fn);
     uint8_t frame[SV_FRAME_LEN];
     for (uint16_t i = 0; i < count; ++i) {
@@ -220,6 +225,50 @@ TEST_CASE(the_label_stream_frames_equal_the_fixture)
     CHECK(!sv_chunk_build(frame, z, (uint32_t)zn, (uint8_t)count));
     free(z);
     free(want);
+}
+
+TEST_CASE(the_captured_commands_are_what_sv_cmd_build_writes)
+{
+    /* label-frames.bin: every write to FFE9 as <u16 LE length><bytes> */
+    size_t fn = 0u;
+    uint8_t *f = fixture("label-frames.bin", &fn);
+    REQUIRE_ALLOC(f);
+    CHECK_EQ(fn, 1418u);
+    unsigned cmds = 0u;
+    unsigned frags = 0u;
+    size_t o = 0u;
+    while (o + 2u <= fn) {
+        const unsigned len = (unsigned)(f[o] | (f[o + 1u] << 8));
+        const uint8_t *r = f + o + 2u;
+        o += 2u + len;
+        if (len == SV_FRAGMENT) {
+            frags++;
+            continue;
+        }
+        CHECK_EQ(len, SV_CMD_LEN);
+        cmds++;
+        const uint8_t cmd = r[SV_CMD_AT];
+        const uint16_t p0 = (uint16_t)(r[12] | (r[13] << 8));
+        const uint16_t p1 = (uint16_t)(r[14] | (r[15] << 8));
+        uint8_t c[SV_CMD_LEN];
+        sv_cmd_build(c, cmd, p0, p1);
+        CHECK(memcmp(c, r, SV_CMD_LEN) == 0);
+        if (cmd == SV_C_BULK) {
+            CHECK_EQ(p0, SV_FRAME_LEN);
+            CHECK_EQ(p1, 2u);
+        } else if (cmd == SV_C_BUF_FULL) {
+            /* 813 stream bytes over 3 buffers: a mean of 271 */
+            CHECK_EQ(p0, 813u);
+            CHECK_EQ(p1, sv_speed(813u / 3u));
+        } else {
+            CHECK_EQ(p0, 0u);
+            CHECK_EQ(p1, 0u);
+        }
+    }
+    CHECK_EQ(o, fn);
+    CHECK_EQ(cmds, 21u);
+    CHECK_EQ(frags, 8u);
+    free(f);
 }
 
 TEST_CASE(the_last_frame_is_padded_with_zeros)
@@ -270,6 +319,7 @@ int main(void)
     RUN(a_buffer_past_the_end_or_without_memory_is_refused);
     RUN(frames_per_stream);
     RUN(the_label_stream_frames_equal_the_fixture);
+    RUN(the_captured_commands_are_what_sv_cmd_build_writes);
     RUN(the_last_frame_is_padded_with_zeros);
     RUN(the_speed_byte_at_each_threshold);
     return test_summary("supvan_page");
