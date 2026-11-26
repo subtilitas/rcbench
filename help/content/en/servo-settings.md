@@ -157,7 +157,7 @@ SERVO ID and NEW ID are locked while a run holds the active servo, `RUN ACTIVE`.
 ![PRINT, the printer bound](view:servo-label-print)
 ![The label printed: PRINT AGAIN](view:servo-label-printed)
 
-PRINT reads PRINT AGAIN once a label of the active servo has printed, and for a servo whose id was scanned or typed; the tap is the same. PRINT is locked with no servo active, with no printer bound, while a request runs, while ARMED or a run holds the servo (`SAFE ONLY`) and while a device update runs. A result stays on the row until the next request or another servo, also after the list was left.
+PRINT reads PRINT AGAIN for a servo whose label printed in this session, one of the last 8 ids printed, and for a servo whose id was scanned or typed; the tap is the same. PRINT is locked with no servo active, with no printer bound, while a request runs, while ARMED or a run holds the servo (`SAFE ONLY`) and while a device update runs. A result stays on the row until the next request or another servo, also after the list was left.
 
 ## RUDDER's list and KST's page
 

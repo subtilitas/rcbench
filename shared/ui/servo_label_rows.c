@@ -281,12 +281,14 @@ const ui_setlist_custom_t svl_new_row = {
 /* --------------------------------------------------------------- PRINT */
 
 /** @brief PRINT AGAIN's case: a label of the active servo printed in this
- *         session, or its id came from its label, scanned or typed. */
+ *         session, while it was active or not, or its id came from its
+ *         label, scanned or typed. */
 static bool printed_before(void)
 {
     const servo_active_from_t from = servo_active_from();
-    return servo_active_printed() || from == SERVO_ACTIVE_SCAN
-           || from == SERVO_ACTIVE_TYPED;
+    return servo_active_printed()
+           || wireless_printer_printed(servo_active_id())
+           || from == SERVO_ACTIVE_SCAN || from == SERVO_ACTIVE_TYPED;
 }
 
 /** @brief PRINT's name: PRINT, or PRINT AGAIN. */

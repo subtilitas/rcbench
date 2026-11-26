@@ -490,7 +490,7 @@ task runs it. The printer is the one bound in SETUP's `prn_ble`
 | `print query` | reads the roll and the label counter, prints nothing |
 | `print scan` | scans 10s for printers (addresses `A4:93:40:...`); `print` lists them |
 | `print stop` | ends the request in work: STOP_PRINT after START, `PRINT STOPPED` |
-| `print bind <address>` | keeps `A4:93:40:30:FA:71` in `prn_ble`, ` P` added when no type follows, and asks a save |
+| `print bind <address>` | keeps `A4:93:40:30:FA:71` in `prn_ble`, ` P` added when no type follows, and asks a save; a random address (` R`) is refused |
 | `print unbind` | clears `prn_ble` and `prn_name` |
 
 A request while one is in work is refused; a scan also while one runs. The `print` lines of the

@@ -511,4 +511,32 @@ static inline void pr_adv(pr_rig_t *r, const char *addr, const char *name,
     e->len = (uint8_t)(5u + k);
 }
 
+/**
+ * @brief One advertising report, due now, that carries the Supvan
+ *        service's 128-bit UUID and a name.
+ * @param r    the rig
+ * @param addr the advertiser
+ * @param rssi its RSSI, dBm
+ */
+static inline void pr_adv_svc(pr_rig_t *r, const char *addr, int8_t rssi)
+{
+    static const uint8_t svc[16] = { 0x12, 0xA2, 0x4D, 0x2E, 0xFE, 0x14,
+                                     0x48, 0x8E, 0x93, 0xD2, 0x17, 0x3C,
+                                     0xFF, 0xE0, 0x00, 0x00 };
+    bleu_evt_t *e = pr_ev(r, BLEU_EV_ADV, 0u, r->now);
+    if (e == NULL) {
+        return;
+    }
+    (void)bleu_addr_parse(addr, &e->addr);
+    e->rssi = rssi;
+    uint8_t *d = e->data;
+    d[0] = 17u;
+    d[1] = 0x07u;
+    memcpy(&d[2], svc, sizeof(svc));
+    d[18] = 5u;
+    d[19] = 0x09u;
+    memcpy(&d[20], "FAKE", 4u);
+    e->len = 24u;
+}
+
 #endif /* PRINT_RIG_H */

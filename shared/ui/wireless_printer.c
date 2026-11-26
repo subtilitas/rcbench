@@ -35,10 +35,57 @@ static struct {
     uint16_t refused;  /**< its scan_refused */
 } s_seen; /**< the one instance */
 
-bool wireless_printer_bound(void)
+/** @brief The ids whose label printed this session, oldest first. */
+static char     s_printed[WL_PRINTED_MAX][SERVO_ID_SIZE];
+/** @brief The ids in s_printed. */
+static unsigned s_printed_n;
+
+/**
+ * @brief Keep @p id as printed: moved to the newest place when held,
+ *        else added, the oldest given up when the list is full.
+ * @param id The id.
+ */
+static void printed_add(const char *id)
+{
+    unsigned i = 0u;
+    while (i < s_printed_n && strcmp(s_printed[i], id) != 0) {
+        ++i;
+    }
+    if (i == s_printed_n && s_printed_n < WL_PRINTED_MAX) {
+        ++s_printed_n;
+    } else if (i == s_printed_n) {
+        i = 0u;
+    }
+    memmove(s_printed[i], s_printed[i + 1u],
+            (s_printed_n - 1u - i) * sizeof(s_printed[0]));
+    snprintf(s_printed[s_printed_n - 1u], sizeof(s_printed[0]), "%s", id);
+}
+
+bool wireless_printer_printed(const char *id)
+{
+    for (unsigned i = 0u; id != NULL && i < s_printed_n; ++i) {
+        if (strcmp(s_printed[i], id) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * @brief Whether @p text is a printer's address: public, as the scan
+ *        lists them.
+ * @param text The address text.
+ * @return true then.
+ */
+static bool printer_addr(const char *text)
 {
     bleu_addr_t a;
-    return bleu_addr_parse(settings_text(SET_TEXT_PRN_ADDR), &a);
+    return bleu_addr_parse(text, &a) && a.type == BLEU_ADDR_PUBLIC;
+}
+
+bool wireless_printer_bound(void)
+{
+    return printer_addr(settings_text(SET_TEXT_PRN_ADDR));
 }
 
 /** @brief Whether the bench is ARMED or a SERVO run holds it. */
@@ -181,7 +228,7 @@ static void search_bind(uint8_t i)
         ui_router_set_alert(why);
         return;
     }
-    if (i >= v->found_n) {
+    if (i >= v->found_n || !printer_addr(v->found[i].addr)) {
         ui_router_set_alert(TR(PRN_BIND_GONE));
         return;
     }
@@ -443,13 +490,15 @@ void wireless_printer_opened(void)
 /* --------------------------------------------------------------- tick */
 
 /**
- * @brief A request that ended since the last tick: the active servo's
- *        label printed marks it printed; an error goes to the band.
+ * @brief A request that ended since the last tick: a label printed is
+ *        kept in the session's list, and marks the active servo printed
+ *        when it is that one's; an error goes to the band.
  * @param v The view.
  */
 static void job_ended(const print_view_t *v)
 {
     if (v->phase == PRINT_DONE && v->kind == PRINT_REQ_LABEL) {
+        printed_add(v->id);
         const char *id = servo_active_id();
         if (id != NULL && strcmp(id, v->id) == 0) {
             servo_active_set_printed();
@@ -490,4 +539,5 @@ void wireless_printer_tick(void)
 void wireless_printer_reset(void)
 {
     memset(&s_seen, 0, sizeof(s_seen));
+    s_printed_n = 0u;
 }

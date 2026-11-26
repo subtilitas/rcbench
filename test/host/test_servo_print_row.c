@@ -4,7 +4,8 @@
  *        every list that carries the block; each lock with its reason; a
  *        tap hands print_ctl the active servo's id and DUT NAME, 23
  *        characters each with spaces; PRINT against PRINT AGAIN for a new,
- *        a picked, a scanned, a typed and a printed servo; the job's phase
+ *        a picked, a scanned, a typed and a printed servo, and a printed
+ *        servo picked again after another (the session's last 8 ids); the job's phase
  *        and progress, its verdict and every error's text on the row and
  *        the band; a print that ends while the list is shut keeps its
  *        verdict for the next visit.  The bench is servo_bench_rig.h; the
@@ -275,6 +276,49 @@ TEST_CASE(print_against_print_again)
     CHECK_STR_EQ(name(), "PRINT");
 }
 
+TEST_CASE(print_again_survives_another_servo_in_between)
+{
+    /* A printed, B picked, A picked again */
+    fresh_bench("KST-00011", SERVO_ACTIVE_NEW);
+    sl_tap(HL_PRINT);
+    CHECK_EQ(taken().kind, PRINT_REQ_LABEL);
+    job_starts("KST-00011");
+    s_v.phase = PRINT_DONE;
+    s_v.left = 293;
+    show();
+    CHECK_STR_EQ(name(), "PRINT AGAIN");
+    CHECK(servo_active_set("KST-00012", SERVO_ACTIVE_PICK, false));
+    CHECK_STR_EQ(name(), "PRINT");
+    CHECK(servo_active_set("KST-00011", SERVO_ACTIVE_PICK, false));
+    CHECK_STR_EQ(name(), "PRINT AGAIN");
+    CHECK_STR_EQ(value(), "PRINTED, 293 LEFT");
+    /* C asked, D picked before C's DONE, C picked again */
+    CHECK(servo_active_set("KST-00013", SERVO_ACTIVE_NEW, false));
+    sl_tap(HL_PRINT);
+    CHECK_EQ(taken().kind, PRINT_REQ_LABEL);
+    job_starts("KST-00013");
+    CHECK(servo_active_set("KST-00014", SERVO_ACTIVE_PICK, false));
+    s_v.phase = PRINT_DONE;
+    s_v.left = 292;
+    show();
+    CHECK_STR_EQ(name(), "PRINT");
+    CHECK(servo_active_set("KST-00013", SERVO_ACTIVE_PICK, false));
+    CHECK_STR_EQ(name(), "PRINT AGAIN");
+    CHECK_STR_EQ(value(), "PRINTED, 292 LEFT");
+    /* the session keeps the last 8: a ninth gives up the oldest */
+    for (int k = 0; k < 8; ++k) {
+        char id[SERVO_ID_SIZE];
+        snprintf(id, sizeof(id), "KST-0002%d", k);
+        job_starts(id);
+        s_v.phase = PRINT_DONE;
+        show();
+    }
+    CHECK(servo_active_set("KST-00011", SERVO_ACTIVE_PICK, false));
+    CHECK_STR_EQ(name(), "PRINT");
+    CHECK(servo_active_set("KST-00027", SERVO_ACTIVE_PICK, false));
+    CHECK_STR_EQ(name(), "PRINT AGAIN");
+}
+
 TEST_CASE(the_row_shows_the_phase_the_progress_and_the_verdict)
 {
     fresh_bench("KST-00006", SERVO_ACTIVE_PICK);
@@ -380,6 +424,7 @@ int main(void)
     RUN(each_lock_says_its_reason);
     RUN(print_hands_the_active_id_and_dut_name);
     RUN(print_against_print_again);
+    RUN(print_again_survives_another_servo_in_between);
     RUN(the_row_shows_the_phase_the_progress_and_the_verdict);
     RUN(a_print_that_ends_while_the_list_is_shut_keeps_its_verdict);
     return test_summary("servo_print_row");

@@ -2443,9 +2443,10 @@ LIMIT RUN's and RUDDER AUTO's) ends with the SERVO LABEL block:
 - PRINT prints the active servo's label on the printer bound on SETUP >
   WIRELESS > PRINTER (Screens.md, WIRELESS: the label printer): the QR
   code of the id, the id and DUT NAME, laid out for the roll the printer
-  reports. The row reads PRINT AGAIN once a label of the active servo has
-  printed in this session, and for a servo whose id came from its label,
-  scanned or typed; the tap is the same. A label counts as printed when
+  reports. The row reads PRINT AGAIN for a servo whose label printed in
+  this session, whichever servo was active when the job ended (the
+  panel keeps the last 8 ids printed), and for a servo whose id came from
+  its label, scanned or typed; the tap is the same. A label counts as printed when
   the printer's label counter falls by 1.
 - PRINT's value follows the job from the tap: `CONNECTING`, `READING
   ROLL`, `BUILDING LABEL`, `SENDING 3/5`, `PRINTING`, `CHECKING COUNT`,

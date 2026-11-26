@@ -2595,9 +2595,10 @@ und RUDDER AUTO) endet mit dem Block SERVO-ETIKETT:
   SETUP > WIRELESS > DRUCKER gebunden ist (Screens-de.md, WIRELESS: der
   Etikettendrucker): den QR-Code der ID, die ID und DUT NAME, gesetzt für
   die Rolle, die der Drucker meldet. Die Zeile heißt NOCHMAL DRUCKEN,
-  sobald in dieser Sitzung ein Etikett des aktiven Servos gedruckt ist,
-  und für ein Servo, dessen ID von seinem Etikett kam, gescannt oder
-  getippt; das Tippen ist dasselbe. Ein Etikett gilt als gedruckt, wenn
+  für ein Servo, dessen Etikett in dieser Sitzung gedruckt wurde, gleich
+  welches Servo beim Ende des Auftrags aktiv war (das Panel behält die
+  letzten 8 gedruckten IDs), und für ein Servo, dessen ID von seinem
+  Etikett kam, gescannt oder getippt; das Tippen ist dasselbe. Ein Etikett gilt als gedruckt, wenn
   der Etikettenzähler des Druckers um 1 fällt.
 - Der Wert von DRUCKEN folgt dem Auftrag ab dem Tippen: `VERBINDET`,
   `LIEST ROLLE`, `BAUT ETIKETT`, `SENDET 3/5`, `DRUCKT`, `PRÜFT ZÄHLER`,

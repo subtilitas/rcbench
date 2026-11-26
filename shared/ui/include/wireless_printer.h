@@ -14,8 +14,9 @@
  * | Read printer | the bound printer's name | a QUERY job |
  * | Test label | the bound printer's name | the test label |
  *
- * The printer is bound by its address and name in SETUP's text settings
- * `prn_ble` and `prn_name`; SEARCH's BIND writes them and asks a save,
+ * The printer is bound by its public address and name in SETUP's text
+ * settings `prn_ble` and `prn_name` (a random address binds nothing);
+ * SEARCH's BIND writes them and asks a save,
  * its UNBIND (a 2s hold) clears them.  The printer advertises no service:
  * the scan lists the public addresses A4:93:40:xx:xx:xx (print_ctl.h).
  *
@@ -51,6 +52,8 @@ extern "C" {
 
 /** @brief The entry's rows, 8. */
 #define WL_PRINTER_ROWS 8
+/** @brief The ids the session keeps as printed, the oldest given up. */
+#define WL_PRINTED_MAX 8u
 
 /**
  * @brief The entry's rows, in the table's order.
@@ -99,11 +102,20 @@ bool wireless_printer_bound(void);
  */
 void wireless_printer_name(char *out, size_t n);
 
+/**
+ * @brief Whether a label of @p id printed this session: one of the last
+ *        WL_PRINTED_MAX ids whose label ended DONE, whichever servo was
+ *        active then.
+ * @param id The id; NULL is none.
+ * @return true then.
+ */
+bool wireless_printer_printed(const char *id);
+
 /** @brief Frame task, every frame: the printed mark, the band's notices
  *         and SETUP's repaint from the view's changes. */
 void wireless_printer_tick(void);
 
-/** @brief Forget what the tick saw (the tests). */
+/** @brief Forget what the tick saw and the printed ids (the tests). */
 void wireless_printer_reset(void);
 
 /** @brief Scan for printer; public for the tests. */

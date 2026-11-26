@@ -250,7 +250,9 @@ void print_ctl_bind(print_ctl_t *c, const char *addr, const char *name,
                     uint32_t now_ms)
 {
     bleu_addr_t a;
-    const bool ok = addr != NULL && bleu_addr_parse(addr, &a);
+    /* A printer's address is public: a random one binds nothing. */
+    const bool ok = addr != NULL && bleu_addr_parse(addr, &a)
+                    && a.type == BLEU_ADDR_PUBLIC;
     const char *text = ok ? addr : "";
     if (strcmp(text, c->addr) == 0 && strcmp(name != NULL ? name : "",
                                              c->name) == 0) {

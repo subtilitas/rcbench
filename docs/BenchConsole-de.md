@@ -515,7 +515,7 @@ gekoppelte (`shared/ui/include/print_ctl.h`).
 | `print query` | liest Rolle und Etikettenzähler, druckt nichts |
 | `print scan` | sucht 10s nach Druckern (Adressen `A4:93:40:...`); `print` listet sie |
 | `print stop` | beendet die laufende Anforderung: STOP_PRINT nach START, `DRUCK GESTOPPT` |
-| `print bind <address>` | legt `A4:93:40:30:FA:71` in `prn_ble` ab, ` P` angehängt ohne Typ, und fordert das Speichern an |
+| `print bind <address>` | legt `A4:93:40:30:FA:71` in `prn_ble` ab, ` P` angehängt ohne Typ, und fordert das Speichern an; eine zufällige Adresse (` R`) wird abgelehnt |
 | `print unbind` | leert `prn_ble` und `prn_name` |
 
 Eine Anforderung, während eine läuft, wird abgelehnt; eine Suche auch, während eine läuft. Die `print`-Zeilen

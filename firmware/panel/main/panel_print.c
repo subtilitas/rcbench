@@ -290,8 +290,8 @@ static void console_bind(const char *text)
     } else {
         addr[0] = '\0';
     }
-    if (!bleu_addr_parse(addr, &a)) {
-        printf("print: bind: not an address: %s\n", text);
+    if (!bleu_addr_parse(addr, &a) || a.type != BLEU_ADDR_PUBLIC) {
+        printf("print: bind: not a public address: %s\n", text);
         return;
     }
     settings_set_text(SET_TEXT_PRN_ADDR, addr);

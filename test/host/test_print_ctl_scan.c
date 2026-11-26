@@ -2,8 +2,9 @@
  * @file test_print_ctl_scan.c
  * @brief The label printer's scan (print_ctl.h, PRINT_REQ_SCAN) on the
  *        scripted stack of print_rig.h: the list holds only public
- *        addresses A4:93:40:xx:xx:xx, with their names and RSSI, and no
- *        connect follows the scan; the refusals while a job or a scan
+ *        addresses A4:93:40:xx:xx:xx, with their names and RSSI, never a
+ *        device for the service it advertises, and no connect follows the
+ *        scan; a random address binds nothing; the refusals while a job or a scan
  *        runs, while ARMED and while a device update runs, and the busy
  *        flag the update reads; a switch to ARMED stops the scan; a label
  *        stops it and prints; the wait for Bluetooth and its end at 10s; a
@@ -75,6 +76,10 @@ TEST_CASE(a_scan_lists_only_the_ouis_printers_and_connects_nothing)
     pr_adv(r, "A4:93:40:00:00:01 P", "T0205C2600000001", -70);
     pr_adv(r, "11:22:33:44:55:66 P", "T0205C2608247368", -40);
     pr_adv(r, "A4:93:40:30:FA:72 R", "T0205C2608247368", -45);
+    /* the printer's service UUID from a random and from a public address
+     * of another maker: listed by the prefix alone, so neither */
+    pr_adv_svc(r, "5A:11:22:33:44:55 R", -30);
+    pr_adv_svc(r, "00:1B:DC:01:02:03 P", -35);
     run_ms(r, 2000u);
     const print_view_t *v = view(r);
     CHECK(v->scanning);
@@ -215,6 +220,20 @@ TEST_CASE(a_lingering_link_stays_through_a_scan)
     CHECK_EQ(r->discs, 1u);
 }
 
+TEST_CASE(a_random_address_binds_nothing)
+{
+    pr_rig_t *r = &s_r;
+    pr_init(r);
+    CHECK(view(r)->bound);
+    print_ctl_bind(&r->c, "A4:93:40:30:FA:71 R", "T0205C2608247368", r->now);
+    CHECK(!view(r)->bound);
+    CHECK_STR_EQ(view(r)->addr, "");
+    CHECK(pr_ask(r, PRINT_REQ_QUERY, NULL, NULL));
+    CHECK_EQ(r->c.phase, PRINT_FAILED);
+    CHECK_EQ(r->c.err, PRINT_ERR_NO_PRINTER);
+    CHECK_EQ(r->connects, 0u);
+}
+
 TEST_CASE(the_frame_task_asks_a_scan_once)
 {
     print_ctl_reset();
@@ -244,6 +263,7 @@ int main(void)
     RUN(a_label_stops_the_scan_and_prints);
     RUN(a_scan_waits_up_to_10s_for_bluetooth);
     RUN(a_lingering_link_stays_through_a_scan);
+    RUN(a_random_address_binds_nothing);
     RUN(the_frame_task_asks_a_scan_once);
     return test_summary("print_ctl_scan");
 }

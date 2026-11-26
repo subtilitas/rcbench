@@ -157,7 +157,7 @@ SERVO-ID und NEUE ID sind gesperrt, solange ein Lauf das aktive Servo hält, `LA
 ![DRUCKEN, der Drucker gebunden](view:servo-label-print)
 ![Das Etikett gedruckt: NOCHMAL DRUCKEN](view:servo-label-printed)
 
-DRUCKEN heißt NOCHMAL DRUCKEN, sobald ein Etikett des aktiven Servos gedruckt ist, und für ein Servo, dessen ID gescannt oder getippt wurde; das Tippen ist dasselbe. DRUCKEN ist gesperrt ohne aktives Servo, ohne gebundenen Drucker, während einer Anfrage, bei ARMED oder wenn ein Lauf das Servo hält (`NUR BEI SAFE`) und während eines Geräte-Updates. Ein Ergebnis bleibt bis zur nächsten Anfrage oder einem anderen Servo, auch nachdem die Liste verlassen wurde.
+DRUCKEN heißt NOCHMAL DRUCKEN für ein Servo, dessen Etikett in dieser Sitzung gedruckt wurde, eine der letzten 8 gedruckten IDs, und für ein Servo, dessen ID gescannt oder getippt wurde; das Tippen ist dasselbe. DRUCKEN ist gesperrt ohne aktives Servo, ohne gebundenen Drucker, während einer Anfrage, bei ARMED oder wenn ein Lauf das Servo hält (`NUR BEI SAFE`) und während eines Geräte-Updates. Ein Ergebnis bleibt bis zur nächsten Anfrage oder einem anderen Servo, auch nachdem die Liste verlassen wurde.
 
 ## Die Liste von RUDER und die Seite von KST
 

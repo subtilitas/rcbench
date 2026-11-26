@@ -1861,7 +1861,7 @@ fed by the controller's scan (`PRINT_REQ_SCAN`: public addresses `A4:93:40`, 10s
 ARMED, while a job, a scan or a device update runs, waiting up to 10s for Bluetooth LE), the
 bind into `prn_ble` and `prn_name`, and the frame-task tick that marks a printed servo and puts a
 request's error on the band. SERVO LABEL's PRINT row (`servo_label_rows.c`) sends the active
-servo's id and DUT NAME, reads PRINT AGAIN after a print and for a scanned or typed id, follows
+servo's id and DUT NAME, reads PRINT AGAIN for one of the session's last 8 ids printed and for a scanned or typed id, follows
 the job and keeps its verdict, and is locked with its reason. `print_ctl_busy()` counts a scan,
 so a device update is refused while one runs (`test_wireless_printer`, `test_print_ctl_scan`,
 `test_servo_print_row`; `test_print_ctl_ends` holds that a printer gone after a silent job is

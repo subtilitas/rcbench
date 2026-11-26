@@ -442,6 +442,31 @@ TEST_CASE(the_entry_opened_reads_an_unknown_roll_once)
     CHECK_EQ(taken(), PRINT_REQ_NONE);
 }
 
+TEST_CASE(a_random_address_is_not_bound)
+{
+    open_printer(false);
+    print_view_t v = idle_view();
+    v.bound = false;
+    v.scan_done = true;
+    v.found_n = 1u;
+    snprintf(v.found[0].addr, sizeof v.found[0].addr, "A4:93:40:30:FA:71 R");
+    show(&v);
+    tap_row(&wireless_printer_bind_row);
+    gfx_rect_t row;
+    REQUIRE(wbr_found(0, &row));
+    tap(row.x + row.w / 2, row.y + row.h / 2);
+    REQUIRE(wl_search_asking());
+    const gfx_rect_t b = wbr_part(WLS_PART_BIND);
+    ui_router_set_alert("");
+    tap(b.x + b.w / 2, b.y + b.h / 2);
+    CHECK_STR_EQ(wbr_band(), ui_tr(TX_PRN_BIND_GONE));
+    CHECK_STR_EQ(settings_text(SET_TEXT_PRN_ADDR), "");
+    /* one kept in SETUP by hand reads as none bound */
+    bind_to("A4:93:40:30:FA:71 R", NAME_A);
+    CHECK(!wireless_printer_bound());
+    CHECK_STR_EQ(wbr_value(&wireless_printer_bind_row), "NONE");
+}
+
 int main(void)
 {
     RUN(the_entry_holds_eight_rows_and_says_not_bound);
@@ -452,5 +477,6 @@ int main(void)
     RUN(a_scan_is_refused_while_armed_or_running);
     RUN(read_printer_and_test_label_ask_and_lock);
     RUN(the_entry_opened_reads_an_unknown_roll_once);
+    RUN(a_random_address_is_not_bound);
     return test_summary("wireless_printer");
 }

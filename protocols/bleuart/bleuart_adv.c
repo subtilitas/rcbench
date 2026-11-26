@@ -260,7 +260,9 @@ void bleu_list_report_for(bleu_list_t *l, const bleu_profile_t *p,
     ++l->reports;
     bleu_adv_t adv;
     const bool oui = oui_is(p, addr);
-    const bool match = bleu_adv_parse_for(p, ad, len, &adv) || oui;
+    const bool svc = bleu_adv_parse_for(p, ad, len, &adv);
+    /* A profile with a prefix lists by the prefix alone. */
+    const bool match = (p != NULL && p->adv_oui != NULL) ? oui : svc;
     for (size_t i = 0; i < l->found_n; ++i) {
         if (bleu_addr_eq(&l->found[i].addr, addr)) {
             merge(&l->found[i], rssi, &adv, oui);

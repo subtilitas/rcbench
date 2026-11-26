@@ -42,7 +42,7 @@
  *   print_ctl_busy() tells the update a job or a scan runs.
  * - A scan (PRINT_REQ_SCAN) lists printers for SETUP > WIRELESS > PRINTER:
  *   devices whose public address starts with A4:93:40, as the printer
- *   advertises no service, BLEU_SCAN_MS long.  It is refused while a job
+ *   advertises no service, and no device for a service it advertises, BLEU_SCAN_MS long.  It is refused while a job
  *   or a scan runs, while the bench is ARMED and while a device update
  *   runs; it waits up to PRINT_FIND_MS for Bluetooth to be ready.  A
  *   switch to ARMED stops it (scan_cut); a label, test label or query
@@ -265,8 +265,8 @@ void print_ctl_init(print_ctl_t *c, const char *version);
  *        that runs keeps its link and ends first; the new address is taken
  *        at the next request.
  * @param c      The controller.
- * @param addr   `A4:93:40:30:FA:71 P`; "" or text bleu_addr_parse()
- *               refuses unbinds.
+ * @param addr   `A4:93:40:30:FA:71 P`; "", a random address or text
+ *               bleu_addr_parse() refuses unbinds.
  * @param name   The name the scan gave, "" none.
  * @param now_ms The clock.
  */
