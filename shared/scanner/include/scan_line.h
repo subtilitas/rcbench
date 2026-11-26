@@ -12,9 +12,9 @@
  *   after the CR is dropped; a LF alone ends a line too.  An empty line is
  *   dropped without a count.
  * - A byte outside 0x20 to 0x7E inside a line poisons it: the line is
- *   dropped at its end and counted as noise.  The UART glue feeds a byte
- *   with a framing or parity error as 0x00, which poisons the line the
- *   same way.
+ *   dropped at its end and counted as noise.  A UART framing or parity
+ *   error never reaches the framer: the port (scan_port.h) drops the open
+ *   line and the burst around the error.
  * - Byte SCAN_LINE_MAX + 1 of a line makes it too long: the bytes up to
  *   its end are not kept, and the end hands out SCAN_OUT_LONG.
  * - A byte 0x02 or 0x03 at the start of a line opens an answer frame:

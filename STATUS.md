@@ -1302,8 +1302,10 @@ the zone named until a recheck, so the module's flash takes no write every 5s. T
 a servo id.
 
 The port (`scan_port.c`, `test_scan_port`) moves the bytes between them: answer frames to the
-sequencer, code lines to a queue of 4 that drops its oldest when full, a byte with a UART
-framing or parity error fed as 0x00, and the rate the sequencer asks for back to the UART. The
+sequencer, code lines to a queue of 4 that drops its oldest when full, and the rate the
+sequencer asks for back to the UART. Lost input (a FIFO or buffer overflow) and a UART framing
+or parity error drop the open line or frame and every byte until 100ms pass without one, so no
+part of a line around a loss is queued; a change of rate drops the open line. The
 panel's task `scan` (`panel_scan.c`, core 0, priority 2, every 20ms) runs the port on UART1,
 TX IO4 and RX IO5 of header P3 (wiring in [Building](docs/Building.md#qr-scanner-wiring)),
 while SETUP's Scanner row (`scan_en`, default OFF) is ON; READ MODE (`scan_mode`) is SENSING

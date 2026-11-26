@@ -27,6 +27,7 @@ void scan_port_start(scan_port_t *p, gm861_mode_t mode)
     gm861_init(&p->g, mode);
     p->on = true;
     p->baud = 0u;
+    p->discard = false;
 }
 
 void scan_port_stop(scan_port_t *p)
@@ -87,14 +88,56 @@ static void feed(scan_port_t *p, uint8_t b, uint32_t now)
     }
 }
 
+/**
+ * @brief The framer back between lines with its counts kept: scan_line.h
+ *        has no call that drops the open line alone.
+ * @param p The port.
+ */
+static void drop_open(scan_port_t *p)
+{
+    const scan_counts_t kept = scan_line_counts(&p->line);
+    scan_line_init(&p->line);
+    p->line.counts = kept;
+}
+
+/**
+ * @brief End the discard once SCAN_GAP_MS passed since the loss or the last
+ *        byte dropped.
+ * @param p   The port.
+ * @param now The clock.
+ */
+static void quiet_check(scan_port_t *p, uint32_t now)
+{
+    if (p->discard && (uint32_t)(now - p->quiet_from) >= SCAN_GAP_MS) {
+        p->discard = false;
+    }
+}
+
 void scan_port_rx(scan_port_t *p, const uint8_t *b, size_t n, uint32_t now_ms)
 {
     if (p == NULL || !p->on || b == NULL) {
         return;
     }
     for (size_t i = 0; i < n; ++i) {
-        feed(p, b[i], now_ms);
+        quiet_check(p, now_ms);
+        if (p->discard) {
+            ++p->discarded;
+            p->quiet_from = now_ms;
+        } else {
+            feed(p, b[i], now_ms);
+        }
     }
+}
+
+void scan_port_flush(scan_port_t *p, uint32_t now_ms)
+{
+    if (p == NULL || !p->on) {
+        return;
+    }
+    drop_open(p);
+    p->discard = true;
+    p->quiet_from = now_ms;
+    ++p->flushes;
 }
 
 void scan_port_error(scan_port_t *p, uint32_t now_ms)
@@ -103,7 +146,7 @@ void scan_port_error(scan_port_t *p, uint32_t now_ms)
         return;
     }
     ++p->errors;
-    feed(p, 0x00u, now_ms);
+    scan_port_flush(p, now_ms);
 }
 
 size_t scan_port_step(scan_port_t *p, uint32_t now_ms, bool rx_high,
@@ -115,10 +158,14 @@ size_t scan_port_step(scan_port_t *p, uint32_t now_ms, bool rx_high,
     if (p == NULL || !p->on) {
         return 0u;
     }
+    quiet_check(p, now_ms);
     (void)scan_line_idle(&p->line, now_ms);
     const size_t n = gm861_step(&p->g, now_ms, rx_high, tx, tx_max);
     const uint32_t want = gm861_baud(&p->g);
     if (want != p->baud) {
+        /* The caller re-opens and flushes the UART: what is open was
+         * read at the old rate. */
+        drop_open(p);
         p->baud = want;
         if (reopen != NULL) {
             *reopen = want;

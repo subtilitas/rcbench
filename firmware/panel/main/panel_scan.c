@@ -148,28 +148,44 @@ static void apply(bool on, gm861_mode_t mode)
 
 /**
  * @brief The UART's bytes and errors to the port.
+ *
+ * The bytes are read before the driver's events are drained.  The driver
+ * posts a framing or parity error, or a FIFO overflow, when it happens, and
+ * moves the bytes later, so a bad byte or a byte after a loss in this read
+ * has its event drained here; one still in the FIFO comes within the burst
+ * scan_port_flush() drops.  On any of them the read is dropped whole.
+ *
  * @param now The clock.
  */
 static void receive(uint32_t now)
 {
+    uint8_t buf[PANEL_SCAN_READ_MAX];
+    const int n = uart_read_bytes(BOARD_SCAN_UART, buf, sizeof(buf), 0);
+    bool lost = false;
+    bool error = false;
     uart_event_t ev;
     while (xQueueReceive(s_events, &ev, 0) == pdTRUE) {
         if (ev.type == UART_FRAME_ERR || ev.type == UART_PARITY_ERR) {
-            portENTER_CRITICAL(&s_mux);
-            scan_port_error(&s_port, now);
-            portEXIT_CRITICAL(&s_mux);
+            error = true;
         } else if (ev.type == UART_FIFO_OVF || ev.type == UART_BUFFER_FULL) {
-            (void)uart_flush_input(BOARD_SCAN_UART);
-            xQueueReset(s_events);
+            lost = true;
         }
     }
-    uint8_t buf[PANEL_SCAN_READ_MAX];
-    const int n = uart_read_bytes(BOARD_SCAN_UART, buf, sizeof(buf), 0);
-    if (n > 0) {
-        portENTER_CRITICAL(&s_mux);
-        scan_port_rx(&s_port, buf, (size_t)n, now);
-        portEXIT_CRITICAL(&s_mux);
+    if (lost) {
+        (void)uart_flush_input(BOARD_SCAN_UART);
+        xQueueReset(s_events);
     }
+    portENTER_CRITICAL(&s_mux);
+    if (error) {
+        scan_port_error(&s_port, now);
+    } else if (lost) {
+        scan_port_flush(&s_port, now);
+    }
+    if (n > 0) {
+        /* After a loss the port drops these too: it is in its discard. */
+        scan_port_rx(&s_port, buf, (size_t)n, now);
+    }
+    portEXIT_CRITICAL(&s_mux);
 }
 
 /**

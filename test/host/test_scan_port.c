@@ -2,7 +2,8 @@
  * @file test_scan_port.c
  * @brief shared/scanner's port: lines to the queue, frames to the
  *        sequencer, the rate the UART is asked to open at, the queue of 4
- *        dropping its oldest, a UART error byte poisoning its line, a line
+ *        dropping its oldest, lost input (a flush or a UART error)
+ *        dropping the open line and every byte up to 100ms of quiet, a line
  *        past 64 bytes, a stopped port, the console's injected line, the
  *        gap that drops a partial line, and NULL.
  *
@@ -162,19 +163,110 @@ TEST_CASE(a_full_queue_drops_its_oldest_and_counts_it)
     CHECK(!scan_port_take(&s_p, &e));
 }
 
-TEST_CASE(a_uart_error_byte_poisons_its_line_only)
+/* Half a line, the input flushed, then the other half of another id: no
+ * line comes out of the two halves, nor of the second half alone; the
+ * next line after 100ms of quiet comes out whole. */
+TEST_CASE(a_flush_mid_line_joins_nothing_and_drops_the_suffix)
 {
     scan_port_init(&s_p);
     scan_port_start(&s_p, GM861_MODE_SENSING);
     feed_str("KST-", 10u);
-    scan_port_error(&s_p, 11u);
-    feed_str("00001\r", 12u);
-    feed_str("KST-00002\r", 13u);
-    CHECK_EQ(s_p.errors, 1u);
-    CHECK_EQ(scan_line_counts(&s_p.line).noise, 1u);
+    scan_port_flush(&s_p, 11u);
+    feed_str("00002\r", 20u);
+    feed_str("KST-00003\r", 30u);
+    scan_event_t e;
+    CHECK(!scan_port_take(&s_p, &e));
+    CHECK_EQ(s_p.flushes, 1u);
+    CHECK_EQ(s_p.discarded, 16u);
+    /* 100ms without a byte ends the discard; the step sees it too */
+    (void)run(31u, 131u, NULL, NULL);
+    CHECK(!s_p.discard);
+    feed_str("KST-00004\r", 140u);
+    CHECK(scan_port_take(&s_p, &e));
+    CHECK_STR_EQ(e.text, "KST-00004");
+    CHECK(!scan_port_take(&s_p, &e));
+}
+
+/* A flush between two whole lines: the first stays queued, the second,
+ * after 100ms of quiet, comes out whole.  A byte at 99ms still counts as
+ * the burst that lost bytes. */
+TEST_CASE(a_flush_between_whole_lines_leaves_both_whole)
+{
+    scan_port_init(&s_p);
+    scan_port_start(&s_p, GM861_MODE_SENSING);
+    feed_str("KST-00001\r", 10u);
+    scan_port_flush(&s_p, 11u);
+    feed_str("K", 110u);
+    CHECK_EQ(s_p.discarded, 1u);
+    feed_str("KST-00002\r", 210u);
     scan_event_t e;
     CHECK(scan_port_take(&s_p, &e));
+    CHECK_STR_EQ(e.text, "KST-00001");
+    CHECK(scan_port_take(&s_p, &e));
     CHECK_STR_EQ(e.text, "KST-00002");
+    CHECK(!scan_port_take(&s_p, &e));
+}
+
+/* A flush inside an answer frame drops the frame: the sequencer never sees
+ * its head joined to later bytes. */
+TEST_CASE(a_flush_mid_frame_drops_the_frame)
+{
+    scan_port_init(&s_p);
+    scan_port_start(&s_p, GM861_MODE_SENSING);
+    (void)run(0u, 320u, NULL, NULL);
+    const uint8_t zone0 = 0x83u;
+    uint8_t f[16];
+    const size_t n = answer(f, &zone0, 1u);
+    scan_port_rx(&s_p, f, 3u, 321u);
+    scan_port_flush(&s_p, 322u);
+    scan_port_rx(&s_p, f + 3, n - 3u, 323u);
+    CHECK_EQ(scan_line_counts(&s_p.line).frames, 0u);
+    CHECK_EQ(s_p.discarded, n - 3u);
+}
+
+/* A change of rate drops the open line: bytes read at the old rate never
+ * join bytes at the new one. */
+TEST_CASE(a_new_rate_drops_the_open_line)
+{
+    scan_port_init(&s_p);
+    scan_port_start(&s_p, GM861_MODE_SENSING);
+    (void)run(0u, 320u, NULL, NULL);
+    feed_str("KST-", 550u);
+    uint32_t r = 0u;
+    uint32_t t = 551u;
+    uint8_t buf[GM861_REQ_LEN];
+    while (r == 0u && t < 1000u) {
+        (void)scan_port_step(&s_p, t++, true, buf, sizeof buf, &r);
+    }
+    CHECK_EQ(r, gm861_rates()[1]);
+    CHECK(t < 650u);
+    feed_str("00002\r", t);
+    scan_event_t e;
+    CHECK(scan_port_take(&s_p, &e));
+    CHECK_STR_EQ(e.text, "00002");
+    CHECK(!s_p.discard);
+}
+
+/* A UART error is lost input: the line the bad byte falls in, open or
+ * still to come in the same burst, is dropped, and counted. */
+TEST_CASE(a_uart_error_drops_the_burst_it_falls_in)
+{
+    scan_port_init(&s_p);
+    scan_port_start(&s_p, GM861_MODE_SENSING);
+    /* the bad byte read already, its line open */
+    feed_str("KST-0", 10u);
+    scan_port_error(&s_p, 11u);
+    feed_str("0001\r", 12u);
+    /* the bad byte still to come, after a line end in the same burst:
+     * the X of the second line stands for a printable bad byte */
+    feed_str("KST-00005\r", 300u);
+    scan_port_error(&s_p, 301u);
+    feed_str("KST-00007\rKST-0X008\r", 302u);
+    CHECK_EQ(s_p.errors, 2u);
+    CHECK_EQ(s_p.flushes, 2u);
+    scan_event_t e;
+    CHECK(scan_port_take(&s_p, &e));
+    CHECK_STR_EQ(e.text, "KST-00005");
     CHECK(!scan_port_take(&s_p, &e));
 }
 
@@ -197,6 +289,7 @@ TEST_CASE(a_partial_line_is_dropped_after_100ms_by_the_step)
 {
     scan_port_init(&s_p);
     scan_port_start(&s_p, GM861_MODE_SENSING);
+    (void)run(0u, 1u, NULL, NULL);   /* the UART opened at 9600 */
     feed_str("KST-000", 10u);
     (void)run(11u, 111u, NULL, NULL);
     CHECK_EQ(scan_line_counts(&s_p.line).partial, 1u);
@@ -215,7 +308,9 @@ TEST_CASE(a_stopped_port_takes_and_sends_nothing_and_keeps_its_queue)
     CHECK_EQ(gm861_state(&s_p.g), GM861_OFF);
     feed_str("A-00002\r", 2u);
     scan_port_error(&s_p, 3u);
+    scan_port_flush(&s_p, 3u);
     CHECK_EQ(s_p.errors, 0u);
+    CHECK_EQ(s_p.flushes, 0u);
     uint32_t r = 7u;
     CHECK_EQ(run(0u, 1000u, NULL, &r), 0u);
     CHECK_EQ(r, 7u);
@@ -263,6 +358,7 @@ TEST_CASE(null_is_taken_everywhere)
     scan_port_set_mode(NULL, GM861_MODE_SENSING);
     scan_port_rx(NULL, (const uint8_t *)"A", 1u, 0u);
     scan_port_error(NULL, 0u);
+    scan_port_flush(NULL, 0u);
     uint32_t r = 5u;
     uint8_t buf[GM861_REQ_LEN];
     CHECK_EQ(scan_port_step(NULL, 0u, true, buf, sizeof buf, &r), 0u);
@@ -283,7 +379,11 @@ int main(void)
     RUN(an_answer_frame_reaches_the_sequencer_and_not_the_queue);
     RUN(lines_go_to_the_queue_in_order);
     RUN(a_full_queue_drops_its_oldest_and_counts_it);
-    RUN(a_uart_error_byte_poisons_its_line_only);
+    RUN(a_flush_mid_line_joins_nothing_and_drops_the_suffix);
+    RUN(a_flush_between_whole_lines_leaves_both_whole);
+    RUN(a_flush_mid_frame_drops_the_frame);
+    RUN(a_new_rate_drops_the_open_line);
+    RUN(a_uart_error_drops_the_burst_it_falls_in);
     RUN(a_line_past_64_bytes_is_handed_out_as_long);
     RUN(a_partial_line_is_dropped_after_100ms_by_the_step);
     RUN(a_stopped_port_takes_and_sends_nothing_and_keeps_its_queue);

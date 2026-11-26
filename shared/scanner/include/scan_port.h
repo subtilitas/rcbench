@@ -5,9 +5,9 @@
  *        lines, and the sequencer's requests and rate back to the UART.
  *
  * The panel's `scan` task owns one port and the UART.  Each pass it hands
- * the bytes read to scan_port_rx(), a byte the UART received with a
- * framing or parity error to scan_port_error(), then calls scan_port_step()
- * and writes the bytes it returns, after re-opening the UART at the rate it
+ * the bytes read to scan_port_rx(), a framing or parity error to
+ * scan_port_error(), lost input to scan_port_flush(), then calls
+ * scan_port_step() and writes the bytes it returns, after re-opening the UART at the rate it
  * names when that rate changed.  The frame task takes the lines with
  * scan_port_take() (under the caller's lock).
  *
@@ -15,7 +15,11 @@
  * - A code line, or a line past SCAN_LINE_MAX with its first SCAN_LINE_MAX
  *   bytes, goes to a queue of SCAN_PORT_QUEUE events.  A full queue drops
  *   its oldest event and counts it in drops.
- * - A UART error byte is fed as 0x00: it poisons the line it falls in.
+ * - Lost input (a FIFO or buffer overflow, a flush) and a UART error drop
+ *   the open line or frame and every byte after it until SCAN_GAP_MS
+ *   (100ms) pass without one: the bad byte, read already or still to come,
+ *   falls in what is dropped, and no prefix joins a later suffix.  A line
+ *   that follows within 100ms of the burst is dropped with it.
  * - Stopped, the port sends nothing, takes no byte and keeps its queue.
  *
  * Pure C, no SDK.  Host-tested in test_scan_port.
@@ -61,7 +65,11 @@ typedef struct {
     uint8_t      q_head;                 /**< the oldest of them */
     uint8_t      q_n;                    /**< their count */
     uint32_t     drops;                  /**< events a full queue dropped */
-    uint32_t     errors;                 /**< UART error bytes */
+    uint32_t     errors;                 /**< UART errors */
+    bool         discard;                /**< input was lost: bytes are dropped until SCAN_GAP_MS of quiet */
+    uint32_t     quiet_from;             /**< the flush or the last byte dropped since */
+    uint32_t     flushes;                /**< losses of input: flushes and UART errors */
+    uint32_t     discarded;              /**< bytes dropped after them */
 } scan_port_t;
 
 /**
@@ -102,12 +110,22 @@ void scan_port_set_mode(scan_port_t *p, gm861_mode_t mode);
 void scan_port_rx(scan_port_t *p, const uint8_t *b, size_t n, uint32_t now_ms);
 
 /**
- * @brief A byte the UART received with a framing or parity error: fed as
- *        0x00, and counted.
+ * @brief The UART received a byte with a framing or parity error: counted,
+ *        and taken as lost input (scan_port_flush()).
  * @param p      The port; NULL or stopped does nothing.
  * @param now_ms The millisecond clock.
  */
 void scan_port_error(scan_port_t *p, uint32_t now_ms);
+
+/**
+ * @brief UART input was lost (a FIFO or buffer overflow, the input flushed):
+ *        the open line or frame is dropped, and every byte after it until
+ *        SCAN_GAP_MS pass without one.  No part of a line around the loss
+ *        is queued or answers the sequencer.
+ * @param p      The port; NULL or stopped does nothing.
+ * @param now_ms The millisecond clock.
+ */
+void scan_port_flush(scan_port_t *p, uint32_t now_ms);
 
 /**
  * @brief One pass: the framer's gap, then the sequencer's step.
@@ -117,7 +135,9 @@ void scan_port_error(scan_port_t *p, uint32_t now_ms);
  * @param tx      Receives the bytes to send, after the re-open.
  * @param tx_max  Room in @p tx.
  * @param reopen  Receives the rate to open the UART at when it differs
- *                from the rate open, else 0; may be NULL.
+ *                from the rate open, else 0; may be NULL.  The open line
+ *                or frame, read at the old rate, is dropped then; the
+ *                caller flushes the UART's input as it re-opens.
  * @return Bytes to send, 0 or GM861_REQ_LEN.
  */
 size_t scan_port_step(scan_port_t *p, uint32_t now_ms, bool rx_high,

@@ -5,8 +5,9 @@
  *
  * The task runs every PANEL_SCAN_PERIOD_MS (20ms) on core 0 at priority 2.
  * Each pass it takes SETUP's values (SET_SCANNER_ENABLE, SET_SCANNER_MODE),
- * reads up to PANEL_SCAN_READ_MAX (64) bytes without waiting, hands them and
- * every framing or parity error to the port (scan_port.h), steps the GM861
+ * reads up to PANEL_SCAN_READ_MAX (64) bytes without waiting, hands them,
+ * every framing or parity error and every overflow (scan_port_flush()) to
+ * the port (scan_port.h), steps the GM861
  * sequence, re-opens the UART at the rate the sequence asks for, writes its
  * request, and publishes the view.
  *
