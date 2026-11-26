@@ -34,8 +34,6 @@ Openings:
              2.0 on 3 sides; the wall bulges out 1.3 behind it, its edges
              rounded 3.2 round the same centres, so 1.2 of wall stays
              everywhere; the bulge's top reaches 0.57 into the bezel
-    speaker  4 slots of 1.6 x 7.0 in the other long wall beside the
-             speaker socket; the room behind them is 18 x 14 x 10
     mic      a hole of 1.6 in the bezel over the board's microphone
              hole
     display  a window of 59.1 x 44.6 over the view area
@@ -45,7 +43,7 @@ front on the bed, the plate with its underside on the bed. No part
 needs support: the columns and the notches start on the bed, the XT90
 openings are bridges of 21.4.
 
-Not drawn: the 8 screws and inserts, the wires, the speaker, and the
+Not drawn: the 8 screws and inserts, the wires, and the
 foam pad of 1.5 that carries the converter over the board. A USB plug
 thicker than 7.0 meets the plug in the XT90 housing under it: the
 socket's axis is 3.6 over that housing's top.
@@ -145,7 +143,6 @@ XT90 = (9.05, 30.45, 1.3, 11.8)
 TOOL = (6.8, 33.4, 14.4)
 USB = (13.6, 26.6, 18.8)
 CARD = (-32.15, -16.15, 13.9)
-GRILLE = ((-7.8, -4.6, -1.4, 1.8), 1.6, 3.5, 10.5)
 WINDOW = (-48.5, -2.2, 10.6, 42.4)
 MIC = (-55.11, 35.1, 1.6)
 # Room for the plug in the display board's I2C socket, a side-entry
@@ -472,10 +469,6 @@ def frame():
                       Z_SPLIT + 1))
     holes.append(_box(CARD[0], Y0 - WALL - 1, CARD[2], CARD[1], Y0 + 1,
                       Z_SPLIT + 1))
-    xs, wide, z0, z1 = GRILLE
-    for x in xs:
-        holes.append(_box(x - wide / 2, Y1 - 1, z0, x + wide / 2,
-                          Y1 + WALL + 1, z1))
     holes.append(ring(LIP[0] + LIP[2], Z_FLOOR - 1,
                       Z_FLOOR + LIP[1] + LIP[3]))
     # No groove for the bezel's wedge over the pocket's ceiling.

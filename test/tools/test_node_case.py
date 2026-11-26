@@ -141,11 +141,10 @@ def test_openings_are_open(built):
             (bezel, _cylinder(case.MIC[0], case.MIC[1],
                               case.MIC[2] / 2 - 0.01, 22.0, 25.0))):
         assert filled(part, tool) == pytest.approx(0.0, abs=1e-6)
-    xs, wide, z0, z1 = case.GRILLE
-    for gx in xs:
-        slot = _box(gx - wide / 2, case.Y1, z0, gx + wide / 2,
-                    case.Y1 + case.WALL, z1)
-        assert filled(frame, slot) == pytest.approx(0.0, abs=1e-6)
+    # The long wall at +y has no speaker slots.
+    wall = _box(-7.0, case.Y1 + 0.01, 3.5, 3.0, case.Y1 + case.WALL - 0.01,
+                10.5)
+    assert filled(frame, wall) == pytest.approx(volume(wall), rel=1e-6)
 
 
 def test_window_shows_the_view_area():

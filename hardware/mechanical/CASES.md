@@ -218,8 +218,7 @@ parts that hang 0.9mm down from that board.
 | USB Type-C | end wall over the socket half's opening, through frame and bezel | 13.0 x 4.4 |
 | RESET, BOOT | a slot under the USB notch | 26.6 x 2.6 |
 | microSD | long wall at the header's side | 16.0 x 2.8 |
-| I2C plug | pocket in the speaker's long wall in front of the display board's I2C socket (x -28.1 to -17.95, its face 0.8 from the wall), under the board; every inside edge and its edge in the wall's inner face rounded 2.0; the wall bulges out 1.3 behind it and keeps 1.2 | 10.15 wide, 2.5 deep, 8.0 high |
-| Speaker | 4 slots in the other long wall | 1.6 x 7.0 each, 3.2 apart |
+| I2C plug | pocket in the other long wall in front of the display board's I2C socket (x -28.1 to -17.95, its face 0.8 from the wall), under the board; every inside edge and its edge in the wall's inner face rounded 2.0; the wall bulges out 1.3 behind it and keeps 1.2 | 10.15 wide, 2.5 deep, 8.0 high |
 | Microphone | bezel, over the board's microphone hole | 1.6 round |
 | Display | bezel, 0.5 round the view area | 59.1 x 44.6 |
 
@@ -230,8 +229,6 @@ Limits:
   slot, 5.9mm in from the wall's outer face, and levers the plunger up.
 - The USB socket's axis is 3.6mm over the top of the XT90 housing under
   it. A USB plug thicker than 7.0mm meets the plug in that housing.
-- The speaker is not chosen and not drawn. The room behind its slots is
-  18mm x 14mm x 10mm, beside the speaker socket.
 - The converter has no seat in the case. A foam pad of 1.5mm on the
   INA228 board carries it; pad and wires are not drawn.
 - The touch panel lies 0.2mm under the bezel's plate, which is 1.2mm
