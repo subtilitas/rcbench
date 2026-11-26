@@ -21,6 +21,11 @@
  * | 2 | the power node | panel_pnode.c |
  * | 3 | the balance node | panel_bal.c |
  * | 4 | a wireless device's update | panel_devupd.c |
+ * | 5 | the label printer | a stub in panel_blec.c: no machine, no action |
+ *
+ * A BLEU_ACT_WRITE_EXT (bleu_send_ext()) carries no bytes: the task asks
+ * the action's owner for them and writes them with panel_ble_write_long().
+ * An owner without them gets the write answered as refused.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -34,8 +39,10 @@
 #define PANEL_BLEC_PNODE 2u
 /** @brief The balance node's owner (bal_ctl.h, BAL_BLE_OWNER). */
 #define PANEL_BLEC_BAL 3u
-/** @brief A wireless device's update (panel_devupd.h): the last owner. */
+/** @brief A wireless device's update (panel_devupd.h). */
 #define PANEL_BLEC_UPD 4u
+/** @brief The label printer: the last owner. */
+#define PANEL_BLEC_PRINT 5u
 
 /**
  * @brief Start the task, once, after every client's start function.  Later

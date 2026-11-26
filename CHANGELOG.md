@@ -8,6 +8,16 @@ history is in git.
 
 ### Added
 
+- The Bluetooth LE central gains what a label printer's link needs
+  (`protocols/bleuart`): a write with response of up to 244 bytes whose
+  bytes the client supplies (`bleu_send_ext()`, `BLEU_ACT_WRITE_EXT`),
+  refused past the link's MTU less 3; characteristics named by a 16-bit
+  UUID as well, matched in 16 bits and in the Bluetooth base's 128 bits
+  (`uuid16`); a scan that lists a device by its public address prefix
+  (`adv_oui`); and a sixth client of the hub (`BLEU_HUB_CLIENTS` 6). The
+  panel writes such a write with `panel_ble_write_long()` and holds owner
+  5 (`PANEL_BLEC_PRINT`) for the label printer, a stub until its client
+  is built. Connections stay at 5.
 - The QR scanner's core for a GM861 module on a panel UART (universal
   asynchronous receiver-transmitter), pure C in `shared/scanner/`: a framer
   for code lines (0x20 to 0x7E, at most 64 bytes, CR, CR LF or LF) and
