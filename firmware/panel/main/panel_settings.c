@@ -33,6 +33,7 @@
 #include "panel_pnode.h"
 #include "panel_scan.h"
 #include "panel_imu.h"
+#include "panel_print.h"
 #include "panel_main.h"
 #include "sdkconfig.h"
 #include "settings.h"
@@ -172,6 +173,7 @@ void settings_text_changed(setting_text_id_t id)
     panel_dial_text_changed(id);
     panel_pnode_text_changed(id);
     panel_bal_text_changed(id);
+    panel_print_text_changed(id);
 }
 
 void publish_log_folder(setting_text_id_t id)

@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Write the fixtures of the Supvan label printer's host tests.
 
-The files under test/host/fixtures/supvan/ are built here from rules
-written a second time, apart from the C in protocols/supvan/: the literal
-encoder of tools/lzlit.py, and the print buffer and data frame as the
-station's report and heeen/supvan-cups (MIT) describe them.  test_lzlit.c
-and test_supvan_page.c compare the C output with them byte for byte.
+The generated files under test/host/fixtures/supvan/ are built here from
+rules written a second time, apart from the C in protocols/supvan/: the
+literal encoder of tools/lzlit.py, and the print buffer and data frame as
+the station's report and heeen/supvan-cups (MIT) describe them.
+test_lzlit.c and test_supvan_page.c compare the C output with them byte
+for byte.
 
 | File | Content |
 | --- | --- |
@@ -14,15 +15,13 @@ and test_supvan_page.c compare the C output with them byte for byte.
 | lzlit-zeros.bin | the stream of 12,288 bytes 0x00 |
 | lzlit-pattern.bin | bytes 0 to 255 16 times, then 4,096 bytes 0x00 |
 | lzlit-random.bin | 5,000 bytes of lcg_bytes(1) |
-| label-bufs.bin | the 3 print buffers of label_bits(), 4,096 bytes each |
-| label.lz | their stream |
-| label-frames.bin | its data frames, 512 bytes each |
+| label-lit.lz | the literal stream of the captured label-bufs.bin |
 
-The label files stand in for the station's captures of one label from
-bleprint.py --lit (station step H0).  When H0's files arrive they replace
-label-bufs.bin, label.lz and label-frames.bin, together with
-label_bits() here and in test_supvan_page.c, which then draw the
-captured label's bitmap; the C tests stay as they are.
+label-bufs.bin, label.lz, label-frames.bin, label-dataframes.bin and
+label-cmds.tsv are the station's captures (station step H0, the folder's
+README.md) and are never written here; captured_bits() reads the label's
+image back out of label-bufs.bin, and print_buffer() and data_frames()
+rebuild the captures from it for test/tools/test_lzlit.py.
 
     tools/gen_supvan_fixtures.py            write the files
     tools/gen_supvan_fixtures.py --check    exit 1 when one differs
@@ -50,6 +49,7 @@ MARGIN = 8
 DENSITY = 4
 CHUNK = 500
 LABEL_COLS = 224
+LABEL_BUFS = 3
 
 
 def lcg_bytes(seed: int, n: int) -> bytes:
@@ -73,20 +73,22 @@ def lcg_bytes(seed: int, n: int) -> bytes:
     return bytes(out)
 
 
-def label_bits() -> bytes:
-    """Return the test label's bitmap: 224 columns of 48 bytes.
+def captured_bits() -> bytes:
+    """Return the captured label's image: 224 columns of 48 bytes.
 
-    Dot (col, row) is black inside the 40mm label (rows 32 to 351) where
-    (col * 7 + row * 3) % 23 < 8.  The C test draws the same bitmap.
+    The columns are the data bytes of label-bufs.bin's 3 print buffers,
+    84 + 84 + 56 columns after each 14-byte header.
 
     Returns:
         The bitmap, column-major, least significant bit first.
     """
-    bits = bytearray(LABEL_COLS * LINE_BYTES)
-    for col in range(LABEL_COLS):
-        for row in range(32, 352):
-            if (col * 7 + row * 3) % 23 < 8:
-                bits[col * LINE_BYTES + row // 8] |= 1 << (row % 8)
+    bufs = (OUT / 'label-bufs.bin').read_bytes()
+    bits = bytearray()
+    for i in range(LABEL_BUFS):
+        buf = bufs[i * BUF_SIZE:(i + 1) * BUF_SIZE]
+        cols = struct.unpack_from('<H', buf, 4)[0]
+        bits += buf[BUF_HEAD:BUF_HEAD + cols * LINE_BYTES]
+    assert len(bits) == LABEL_COLS * LINE_BYTES
     return bytes(bits)
 
 
@@ -147,9 +149,6 @@ def fixtures() -> dict[str, bytes]:
     Returns:
         The files' contents.
     """
-    bits = label_bits()
-    bufs = b''.join(print_buffer(bits, LABEL_COLS, i) for i in range(3))
-    stream = lzlit.encode(bufs)
     return {
         'lzlit-empty.bin': lzlit.encode(b''),
         'lzlit-one.bin': lzlit.encode(b'\0'),
@@ -157,9 +156,7 @@ def fixtures() -> dict[str, bytes]:
         'lzlit-pattern.bin': lzlit.encode(bytes(range(256)) * 16
                                           + bytes(4096)),
         'lzlit-random.bin': lzlit.encode(lcg_bytes(1, 5000)),
-        'label-bufs.bin': bufs,
-        'label.lz': stream,
-        'label-frames.bin': data_frames(stream),
+        'label-lit.lz': lzlit.encode((OUT / 'label-bufs.bin').read_bytes()),
     }
 
 

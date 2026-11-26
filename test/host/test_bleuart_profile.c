@@ -10,7 +10,8 @@
  * refusing and keeping what it had; a connect answered BLEU_STATUS_BUSY
  * tried again after 1,000ms, not 999ms, with the error before it kept; a
  * scan that lists what its own profile advertises and not the ISSC
- * service; a PARAM read of 20 bytes kept whole.
+ * service; a PARAM read of 20 bytes kept whole; cccd_next subscribing
+ * the handle after the STREAM's value with no descriptor discovery.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -165,6 +166,32 @@ TEST_CASE(a_profile_finds_its_characteristics_by_role)
     (void)up_with(&s, &b, &bleu_profile_issc, 0u, 0);
     CHECK_EQ(b.st, BLEU_ST_NOT_PEER);
     CHECK_EQ(b.err, BLEU_ERR_NOT_PEER);
+}
+
+/* A peer whose Find Information fails (the Supvan printers, H0): the
+ * profile's cccd_next takes the handle after the STREAM's value with no
+ * descriptor discovery, writes 01 00 there and never reads it back. */
+TEST_CASE(cccd_next_subscribes_the_handle_after_the_value_without_discovery)
+{
+    static bleu_profile_t next;
+    next = k_node;
+    next.cccd_next = true;
+    bsim_t s;
+    bleu_t b;
+    bsim_init(&s);
+    node_table(&s);
+    (void)up_with(&s, &b, &next, 2u, 0);
+    CHECK(bleu_can_send(&b));
+    CHECK_EQ(bsim_count(&s, BLEU_ACT_DISC_DSCS), 0u);
+    CHECK_EQ(b.cccd, H_TX_VAL + 1u);
+    CHECK_EQ(bsim_last(&s, BLEU_ACT_SUBSCRIBE)->a.h1, H_TX_VAL + 1u);
+    CHECK_EQ(bsim_count(&s, BLEU_ACT_READ), 1u);   /* the PARAM, not the CCCD */
+    CHECK(bsim_last(&s, BLEU_ACT_READ)->a.h1 != H_TX_VAL + 1u);
+    /* Without the flag, the same peer goes through discovery. */
+    bsim_init(&s);
+    node_table(&s);
+    (void)up_with(&s, &b, &k_node, 2u, 0);
+    CHECK_EQ(bsim_count(&s, BLEU_ACT_DISC_DSCS), 1u);
 }
 
 TEST_CASE(an_optional_cmd_may_be_missing_a_required_one_may_not)
@@ -491,6 +518,7 @@ int main(void)
     RUN(owner_0_counts_as_before_the_owner_bits);
     RUN(disc_svc_asks_the_profiles_service);
     RUN(a_profile_finds_its_characteristics_by_role);
+    RUN(cccd_next_subscribes_the_handle_after_the_value_without_discovery);
     RUN(an_optional_cmd_may_be_missing_a_required_one_may_not);
     RUN(a_profile_without_a_cmd_comes_up_and_takes_no_command);
     RUN(the_connect_asks_the_profiles_parameters);

@@ -210,6 +210,12 @@ typedef struct {
                                      A4 93 40: a scan lists a device with a
                                      public address that starts with them
                                      whatever it advertises; NULL none */
+    bool               cccd_next; /**< no descriptor discovery: the
+                                     STREAM's CCCD is the handle after its
+                                     value, as for a peer whose Find
+                                     Information fails (the Supvan
+                                     printers); the CCCD write is the
+                                     check, its value is never read */
 } bleu_profile_t;
 
 /** @brief The ISSC Transparent UART profile, every machine's default:

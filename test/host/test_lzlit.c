@@ -1,7 +1,8 @@
 /**
  * @file test_lzlit.c
  * @brief protocols/supvan's literal-only LZMA encoder against golden
- *        streams of tools/lzlit.py (test/host/fixtures/supvan/lzlit-*.bin),
+ *        streams of tools/lzlit.py (test/host/fixtures/supvan/lzlit-*.bin,
+ *        and label-lit.lz of the captured print buffers label-bufs.bin),
  *        byte for byte, fed whole and in uneven pieces; the header; the
  *        overflow answer at one byte short and at the exact size; the
  *        bound on input that grows.
@@ -144,7 +145,7 @@ TEST_CASE(the_print_buffers_of_the_test_label_match_lzlit_py)
     uint8_t *bufs = fixture("label-bufs.bin", &n);
     REQUIRE_ALLOC(bufs);
     CHECK_EQ(n, 3u * 4096u);
-    CHECK_EQ(against("label.lz", bufs, n), 0);
+    CHECK_EQ(against("label-lit.lz", bufs, n), 0);
     free(bufs);
 }
 

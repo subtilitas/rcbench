@@ -352,6 +352,7 @@ TEST_CASE(the_link_down_after_start_and_never_back_is_link_after_5s)
         CHECK(rig_run(r, 10000u));
         CHECK_EQ(r->job.err, SV_ERR_LINK);
         CHECK(!r->job.relinked);
+        CHECK(!r->job.counted);
         CHECK_EQ(r->now - 1u - t0, SV_RELINK_MS);
         CHECK_EQ(sim_count(&r->sim, SV_C_STOP), 0u);
     }
@@ -377,6 +378,8 @@ TEST_CASE(the_link_back_inside_5s_reads_the_counter_for_the_verdict)
          * job is never sent again */
         const bool full = k_after_start[i] >= SV_STEP_FULL;
         CHECK_EQ(r->job.err, (full ? SV_OK : SV_ERR_LINK));
+        /* the counter read 3 times and unchanged: a verdict */
+        CHECK_EQ(r->job.counted, !full);
         CHECK_EQ(sim_count(&r->sim, SV_C_START), 1u);
         CHECK_EQ(sim_count(&r->sim, SV_C_BULK),
                  ((k_after_start[i] >= SV_STEP_DATA) ? 1u : 0u));
@@ -398,10 +401,11 @@ TEST_CASE(the_link_down_in_step_12_relinks_once)
     /* BUF_FULL was written: step 11 checks the printer is idle first */
     CHECK_EQ(r->job.step, SV_STEP_DONE);
     CHECK(rig_run_to(r, SV_STEP_COUNTER, 1000u));
-    /* a second drop after the relink ends the job */
+    /* a second drop after the relink ends the job, with no verdict */
     rig_link(r, false);
     CHECK(sv_job_ended(&r->job));
     CHECK_EQ(r->job.err, SV_ERR_LINK);
+    CHECK(!r->job.counted);
     /* the link back with the printed label: PRINTED */
     CHECK(rig_start(r, SV_JOB_PRINT, 0u));
     CHECK(run_to(r, SV_STEP_COUNTER));

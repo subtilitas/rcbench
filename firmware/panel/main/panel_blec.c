@@ -24,6 +24,7 @@
 #include "panel_dial.h"
 #include "panel_imu.h"
 #include "panel_pnode.h"
+#include "panel_print.h"
 
 /** @brief The console lines' tag. */
 static const char *TAG = "blec";
@@ -48,18 +49,6 @@ static bleu_hub_t s_hub;
 static bool s_started;
 
 /**
- * @brief The label printer's client until it is built: it takes no event,
- *        gives no action and holds no bytes for a long write.
- * @param a The BLEU_ACT_WRITE_EXT.
- * @return NULL: none.
- */
-static const uint8_t *print_stub_ext(const bleu_act_t *a)
-{
-    (void)a;
-    return NULL;
-}
-
-/**
  * @brief The bytes of a long write of the client @p owner.
  * @param owner The client, the action token's owner.
  * @param a     The BLEU_ACT_WRITE_EXT; a->h2 bytes are asked for.
@@ -68,7 +57,7 @@ static const uint8_t *print_stub_ext(const bleu_act_t *a)
 static const uint8_t *client_ext(uint8_t owner, const bleu_act_t *a)
 {
     if (owner == PANEL_BLEC_PRINT) {
-        return print_stub_ext(a);
+        return panel_print_blec_ext(a);
     }
     return NULL;
 }
@@ -91,6 +80,8 @@ static void client_event(uint8_t owner, const bleu_evt_t *e, uint32_t now)
         panel_bal_blec_event(e, now);
     } else if (owner == PANEL_BLEC_UPD) {
         panel_devupd_blec_event(e, now);
+    } else if (owner == PANEL_BLEC_PRINT) {
+        panel_print_blec_event(e, now);
     }
 }
 
@@ -117,6 +108,9 @@ static bool client_step(uint8_t owner, uint32_t now, bleu_act_t *out)
     }
     if (owner == PANEL_BLEC_UPD) {
         return panel_devupd_blec_step(now, out);
+    }
+    if (owner == PANEL_BLEC_PRINT) {
+        return panel_print_blec_step(now, out);
     }
     return false;
 }
@@ -171,6 +165,7 @@ static void blec_task(void *arg)
         panel_pnode_blec_poll(now);
         panel_bal_blec_poll(now);
         panel_devupd_blec_poll(now);
+        panel_print_blec_poll(now);
         bleu_evt_t e;
         for (unsigned i = 0; i < BLEC_EVTS_MAX && panel_ble_get(&e); ++i) {
             bleu_hub_event(&s_hub, &e, now);
@@ -192,6 +187,7 @@ static void blec_task(void *arg)
         panel_pnode_blec_publish(now);
         panel_bal_blec_publish(now);
         panel_devupd_blec_publish(now);
+        panel_print_blec_publish(now);
     }
 }
 
@@ -211,8 +207,9 @@ void panel_blec_start(void)
     /*
      * Core 0 beside the renderer, at the knob's priority 2: polls of 5ms,
      * nothing with a deadline.  Stack 4096 bytes: the clients and the hub
-     * are static; the deepest chain is a NimBLE call of panel_ble_do() or
-     * the IMU's reading line, tools/stack_check.py holds it.
+     * are static; the deepest chain is a NimBLE call of panel_ble_do(), the
+     * IMU's reading line or the label's layout (panel_print.c),
+     * tools/stack_check.py holds it.
      */
     if (xTaskCreatePinnedToCore(blec_task, "blec", 4096, NULL, 2, NULL, 0)
         != pdPASS) {
