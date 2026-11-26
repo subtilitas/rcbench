@@ -8,6 +8,16 @@ history is in git.
 
 ### Added
 
+- Print protocol for Supvan T50-series thermal label printers
+  (`protocols/supvan`), the first part of labelled servos: the 16-byte
+  commands, the answer joiner, the status and material record, the
+  4,096-byte print buffers, the 512-byte data frames, the speed byte and the
+  job machine for a QUERY and a PRINT. A PRINT counts as printed only when
+  the label counter falls by 1. A literal-only LZMA encoder writes the
+  stream (12,336 bytes of state, no dictionary), byte-identical to
+  `tools/lzlit.py`. The protocol follows heeen/supvan-cups (MIT) and the
+  station's captures. No screen uses it yet
+  ([README](protocols/supvan/README.md)).
 - `hardware/mechanical/`: models of 4 parts measured from owner photos on
   millimetre paper: `supvan_t50m_pro.step`, the Supvan KATASYMBOL T50M
   Pro label printer (120.0 x 86.3 x 56.0mm); `usbc_plug_breakout.step`,
