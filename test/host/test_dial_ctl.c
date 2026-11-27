@@ -656,6 +656,59 @@ TEST_CASE(a_k518_names_its_board_and_its_empty_cell)
     CHECK_EQ(v.st_flags, DK_ST_BATT_LOW | DK_ST_BATT_EMPTY);
 }
 
+/* The board belongs to the Dial it came from: a bind to another Dial and
+ * an unbind drop it, so the update screen never picks the image of the
+ * Dial bound before (devimg_dial_image()). */
+TEST_CASE(a_bind_or_an_unbind_forgets_the_last_dials_board)
+{
+    drig_t r;
+    drig_init(&r);
+    r.hw = DK_HW_K518;
+    drig_run(&r, 50u);
+    CHECK(r.c.linked);
+    CHECK_EQ(dial_ctl_board(&r.c), DK_HW_K518);
+    CHECK_EQ(dial_ctl_scan(&r.c, false, r.now), DIAL_SCAN_STARTED);
+    drig_run(&r, 1u);
+    uint8_t dial[21] = { 2u, 0x01u, 0x06u, 17u, 0x07u, DK_UUID_LE(0) };
+    adv(&r, 2u, dial, sizeof dial);
+    bleu_evt_t end = drig_ev(BLEU_EV_SCAN_END, r.c.b.tok_scan);
+    dial_ctl_event(&r.c, &end, r.now);
+    CHECK_EQ(r.c.found_n, 1u);
+    CHECK(dial_ctl_bind(&r.c, 0u, r.now));
+    CHECK_EQ(dial_ctl_board(&r.c), 0u);
+    r.hw = DK_HW_DIAL11;
+    drig_run(&r, 50u);
+    CHECK(r.c.linked);
+    CHECK_EQ(dial_ctl_board(&r.c), DK_HW_DIAL11);
+    CHECK(dial_ctl_unbind(&r.c, r.now));
+    CHECK_EQ(dial_ctl_board(&r.c), 0u);
+}
+
+/* Switched OFF on the panel, the Dial's cell is no longer shown: the
+ * STATUS read before the switch goes with the link. */
+TEST_CASE(dial_off_drops_the_last_status)
+{
+    drig_t r;
+    dial_view_t v;
+    drig_up(&r);
+    r.st.batt_mv = 3450u;
+    r.st.flags = DK_ST_BATT_LOW;
+    drig_run(&r, DIAL_STATUS_READ_MS + 1u);
+    dial_ctl_view(&r.c, r.now, &v);
+    CHECK(v.have_status);
+    CHECK_EQ(v.batt_mv, 3450u);
+    dial_cfg_t cfg = r.c.cfg;
+    cfg.en = false;
+    dial_ctl_config(&r.c, &cfg, r.now);
+    dial_ctl_view(&r.c, r.now, &v);
+    CHECK(!v.have_status);
+    CHECK_EQ(v.batt_mv, 0u);
+    CHECK_EQ(v.st_flags, 0u);
+    drig_run(&r, DIAL_STATUS_READ_MS + 1u);
+    dial_ctl_view(&r.c, r.now, &v);
+    CHECK(!v.have_status);
+}
+
 int main(void)
 {
     RUN(the_link_comes_up_and_the_model_streams);
@@ -680,5 +733,7 @@ int main(void)
     RUN(the_panel_streams_before_an_event_and_never_pauses_500ms);
     RUN(status_is_read_every_5000ms_and_shows_the_board_and_the_cell);
     RUN(a_k518_names_its_board_and_its_empty_cell);
+    RUN(a_bind_or_an_unbind_forgets_the_last_dials_board);
+    RUN(dial_off_drops_the_last_status);
     return test_summary("dial_ctl");
 }

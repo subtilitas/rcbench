@@ -235,6 +235,9 @@ void dial_ctl_config(dial_ctl_t *c, const dial_cfg_t *cfg, uint32_t now_ms)
             dk_link_off(&c->link);
             dk_track_reset(&c->track);
             c->linked = false;
+            /* follow_link() sees no link end now: the cell goes here. */
+            c->status_ok = false;
+            c->status_asked = false;
             c->scan_open = false;
             c->scan_done = false;
             c->scan_cut = false;
@@ -293,6 +296,7 @@ bool dial_ctl_bind(dial_ctl_t *c, uint8_t i, uint32_t now_ms)
     }
     snprintf(c->cfg.addr, sizeof(c->cfg.addr), "%s", c->found[i].addr);
     snprintf(c->cfg.name, sizeof(c->cfg.name), "%s", c->found[i].name);
+    c->board = 0u;      /* another Dial: its board comes with its INFO */
     bleu_bind(&c->b, &a, now_ms);
     bleu_hurry(&c->b);
     ++c->bind_seq;
@@ -308,6 +312,7 @@ bool dial_ctl_unbind(dial_ctl_t *c, uint32_t now_ms)
     }
     memset(c->cfg.addr, 0, sizeof(c->cfg.addr));
     memset(c->cfg.name, 0, sizeof(c->cfg.name));
+    c->board = 0u;      /* no Dial bound: no board */
     bleu_bind(&c->b, NULL, now_ms);
     ++c->bind_seq;
     c->cfg.bind_seq = c->bind_seq;
