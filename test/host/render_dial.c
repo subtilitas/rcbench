@@ -7,11 +7,14 @@
  *
  *     render_dial <out.ppm> <name> <en|de>
  *     render_dial <out.ppm> packets <en|de> <file>
+ *     render_dial <out.ppm> k518-boot <en|de>
  *
  * packets is for tools/video, which shows the Dial beside the panel: the
  * file holds the panel's packets, one a line in hex, as the panel's
  * renderer writes them (render_screen.c, RCBENCH_VIDEO_DIAL); the face is
- * what a linked Dial shows after them.
+ * what a linked Dial shows after them.  k518-boot is the Guition
+ * JC3636K518C's boot face at its 360 x 360 (dk518_face.h); it has no words
+ * to translate, so both languages draw the same image.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -21,26 +24,29 @@
 
 #include "dial_face.h"
 #include "dial_models.h"
+#include "dk518_face.h"
 
-/** @brief The frame. */
-static gfx_color_t s_fb[DIAL_FACE_SIZE * DIAL_FACE_SIZE];
+/** @brief The frame, the K518's size: the M5Stack Dial's faces take its
+ *         first 240 x 240 pixels. */
+static gfx_color_t s_fb[DK518_SIZE * DK518_SIZE];
 /** @brief The renderer. */
 static dial_render_t s_r;
 
 /**
  * @brief Write the frame as a binary PPM.
  * @param path the file
+ * @param size the frame's width and height, pixels
  * @return 0, or 1 when it cannot be written
  */
-static int write_ppm(const char *path)
+static int write_ppm(const char *path, int size)
 {
     FILE *f = fopen(path, "wb");
     if (f == NULL) {
         perror(path);
         return 1;
     }
-    fprintf(f, "P6\n%d %d\n255\n", DIAL_FACE_SIZE, DIAL_FACE_SIZE);
-    for (int i = 0; i < DIAL_FACE_SIZE * DIAL_FACE_SIZE; ++i) {
+    fprintf(f, "P6\n%d %d\n255\n", size, size);
+    for (int i = 0; i < size * size; ++i) {
         uint8_t rgb[3];
         gfx_unpack(s_fb[i], &rgb[0], &rgb[1], &rgb[2]);
         fwrite(rgb, 1, 3, f);
@@ -96,6 +102,11 @@ int main(int argc, char **argv)
                         "[<file>]\n");
         return 1;
     }
+    if (strcmp(argv[2], "k518-boot") == 0 && argc == 4) {
+        const dk518_boot_t b = { "DIAL-3A10", "0.23.18" };
+        gfx_canvas_init(&c, s_fb, DK518_SIZE, DK518_SIZE, 0);
+        return dk518_boot_draw(&c, &b) ? write_ppm(argv[1], DK518_SIZE) : 1;
+    }
     const bool live = strcmp(argv[2], "packets") == 0 && argc == 5;
     for (int k = 0; k < DM_COUNT; ++k) {
         if (strcmp(argv[2], k_dial_model_name[k]) == 0) {
@@ -122,5 +133,5 @@ int main(int argc, char **argv)
     }
     gfx_canvas_init(&c, s_fb, DIAL_FACE_SIZE, DIAL_FACE_SIZE, 0);
     dial_render(&s_r, &c, &m.face, &m.view);
-    return write_ppm(argv[1]);
+    return write_ppm(argv[1], DIAL_FACE_SIZE);
 }

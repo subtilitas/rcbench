@@ -4,8 +4,9 @@
 # board the image is built for (main/dial_board.h, main/Kconfig.projbuild).
 set(SRCS "dial_main.c" "dial_ble.c" "dial_console.c" "dial_screen.c")
 if(CONFIG_RCBENCH_DIAL_BOARD_K518)
-    # The Guition JC3636K518C: its parts do nothing yet (dial_k518.c).
-    list(APPEND SRCS "dial_k518.c")
+    # The Guition JC3636K518C: the display and its boot face
+    # (dial_k518_lcd.c); its other parts do nothing yet (dial_k518.c).
+    list(APPEND SRCS "dial_k518.c" "dial_k518_lcd.c")
 else()
     list(APPEND SRCS "dial_power.c" "dial_buzz.c" "dial_lcd.c"
                      "dial_touch.c" "dial_input.c")

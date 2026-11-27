@@ -24,6 +24,13 @@ history is in git.
   `rcbench-dial-k518-<version>.bin` and its merged image, artifact
   `dial-k518`; a release does not carry them. `status` on the Dial's
   console names the board ([The M5Stack Dial](docs/Dial.md)).
+- The K518 build drives its display: an ST77916 over QSPI (quad SPI) at
+  40MHz with the vendor's set-up from Guition's demo, the
+  `espressif/esp_lcd_st77916` 2.0.2 component, a 360 x 360 frame in PSRAM
+  and the backlight on GPIO47. It shows a boot face drawn at 360 x 360
+  (`shared/dial/dk518_boot.c`): GUITION K518, rcbench, DIAL, the BLE name
+  and the firmware version, inside a ring at the rim
+  ([The M5Stack Dial](docs/Dial.md)).
 
 ### Changed
 
