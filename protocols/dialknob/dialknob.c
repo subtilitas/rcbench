@@ -356,7 +356,7 @@ bool dk_info_decode(const uint8_t *buf, size_t len, dk_info_t *out)
     i.hw = buf[6];
     if (i.proto == 0u
         || (i.flags & (uint8_t)~(DK_INFO_BOUND | DK_INFO_HOOKS)) != 0u
-        || i.hw != DK_HW_DIAL11 || buf[7] != 0u
+        || i.hw == 0u || i.hw > DK_HW_MAX || buf[7] != 0u
         || !get_text(buf + 8, DK_NAME_MAX, i.name)) {
         return false;
     }

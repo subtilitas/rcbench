@@ -81,6 +81,7 @@ static carried_t s_img[DEVIMG_COUNT] = {
     [DEVIMG_PNODE] = { .word = "power node" },
     [DEVIMG_BAL] = { .word = "balance node" },
     [DEVIMG_PNODE_S3] = { .word = "display node" },
+    [DEVIMG_DIAL_K518] = { .word = "Dial K518" },
 };
 
 /**

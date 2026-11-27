@@ -1,16 +1,21 @@
 name: Dial image
 
-# The M5Stack Dial v1.1's firmware (firmware/dial): the wireless knob for
-# the panel, an ESP32-S3 with the dialknob BLE service.  Two builds: the
-# released image, and the test build whose USB console injects input
-# (RCBENCH_DIAL_HOOKS=ON, docs/Dial.md).  The released image holds none of
-# the hooks' code.
+# The Dial firmware (firmware/dial): the wireless knob for the panel, an
+# ESP32-S3 with the dialknob BLE service.  Three builds: the M5Stack Dial
+# v1.1's released image, its test build whose USB console injects input
+# (RCBENCH_DIAL_HOOKS=ON, docs/Dial.md), and the image for the Guition
+# JC3636K518C knob (sdkconfig.k518).  The released image holds none of the
+# hooks' code.
 #
-# Called by ci.yml and by release.yml, which publishes the released image.
+# Called by ci.yml and by release.yml, which publishes the M5Stack Dial's
+# released image.
 # Artifact "dial": rcbench-dial-<version>.bin, the application, and
 # rcbench-dial-merged-<version>.bin, bootloader, partition table and
 # application for 0x0 over USB; rcbench-dial-hooks-merged-<version>.bin,
 # the test build for 0x0.
+# Artifact "dial-k518": rcbench-dial-k518-<version>.bin and
+# rcbench-dial-k518-merged-<version>.bin, the K518's application and its
+# image for 0x0.
 
 on:
   workflow_call:
@@ -56,6 +61,19 @@ jobs:
             && idf.py -B build-hooks -D RCBENCH_DIAL_HOOKS=ON build
             && idf.py -B build-hooks merge-bin -o rcbench-dial-merged.bin
 
+      # The K518 board: sdkconfig.k518 appended to the defaults, its own
+      # build folder and sdkconfig.
+      - name: Build the K518 image
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v6.1
+          target: esp32s3
+          path: 'firmware/dial'
+          command: >-
+            idf.py -B build-k518 -D SDKCONFIG=build-k518/sdkconfig
+            -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.k518" build
+            && idf.py -B build-k518 merge-bin -o rcbench-dial-k518-merged.bin
+
       # A build that rewrites the lock file resolved a version the commit
       # does not pin.
       - name: The build leaves the lock file as committed
@@ -66,10 +84,17 @@ jobs:
           python3 tools/check_sdkconfig.py --check --project firmware/dial
           --sdkconfig firmware/dial/sdkconfig
 
-      - name: Both images fit their update slot
+      - name: The K518's generated sdkconfig holds its defaults files
+        run: >-
+          python3 tools/check_sdkconfig.py --check --project firmware/dial
+          --defaults sdkconfig.defaults --defaults sdkconfig.k518
+          --sdkconfig firmware/dial/build-k518/sdkconfig
+
+      - name: Every image fits its update slot
         run: |
           python3 tools/image_slot.py firmware/dial/build rcbench-dial.bin
           python3 tools/image_slot.py firmware/dial/build-hooks rcbench-dial.bin
+          python3 tools/image_slot.py firmware/dial/build-k518 rcbench-dial.bin
 
       # The symbol table names the injection when the hooks are built in.
       - name: The hooks are in the test build only
@@ -90,11 +115,27 @@ jobs:
              "dial-dist/rcbench-dial-merged-$v.bin"
           cp firmware/dial/build-hooks/rcbench-dial-merged.bin \
              "dial-dist/rcbench-dial-hooks-merged-$v.bin"
-          ls -l dial-dist
-          sha256sum dial-dist/*.bin
+          mkdir -p dial-k518-dist
+          cp firmware/dial/build-k518/rcbench-dial.bin \
+             "dial-k518-dist/rcbench-dial-k518-$v.bin"
+          cp firmware/dial/build-k518/rcbench-dial-k518-merged.bin \
+             "dial-k518-dist/rcbench-dial-k518-merged-$v.bin"
+          # Each board's image names its own update kind: neither Dial
+          # takes the other's image.
+          python3 tools/c6_image.py device dial "dial-dist/rcbench-dial-$v.bin"
+          python3 tools/c6_image.py device dial-k518 \
+            "dial-k518-dist/rcbench-dial-k518-$v.bin"
+          ls -l dial-dist dial-k518-dist
+          sha256sum dial-dist/*.bin dial-k518-dist/*.bin
 
       - uses: actions/upload-artifact@v7
         with:
           name: dial
           path: dial-dist/*.bin
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dial-k518
+          path: dial-k518-dist/*.bin
           if-no-files-found: error

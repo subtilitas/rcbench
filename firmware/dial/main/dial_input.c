@@ -582,3 +582,8 @@ void dial_input_start(void)
 #endif
     xTaskCreate(input_task, "input", INPUT_STACK, NULL, 5, NULL);
 }
+
+bool dial_input_update_key(void)
+{
+    return gpio_get_level(DIAL_PIN_BTN) == 0;
+}

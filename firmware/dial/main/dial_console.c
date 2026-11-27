@@ -43,6 +43,7 @@ static int cmd_status(int argc, char **argv)
     printf("%s %s, firmware %s, protocol %u%s\n", dial_ble_name(), own,
            esp_app_get_description()->version, (unsigned)DK_PROTOCOL,
            RCBENCH_DIAL_HOOKS ? ", test build" : "");
+    printf("board %s\n", DIAL_BOARD_NAME);
     printf("panel %s, link %s, rssi %d\n", panel[0] ? panel : "not bound",
            dial_ble_ready() ? "up" : "down", (int)dial_ble_rssi());
     printf("event seq %u counter %d sent %lu unsent %lu, sound %s\n",

@@ -6,6 +6,21 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- The Dial firmware builds for a second board, the Guition JC3636K518C
+  knob: the board is a choice of `firmware/dial/main/Kconfig.projbuild`,
+  `sdkconfig.k518` picks it, and `dial_board_m5.h` and
+  `dial_board_k518.h` hold each board's pins. The K518 build runs the BLE
+  peripheral, the bind, the face task and the console; its display,
+  touch, encoder, vibration and battery reading do nothing yet
+  (`dial_k518.c`). Its INFO names hardware 2 (`DK_HW_K518`), which the
+  panel takes; its image names update kind 5 (`BLEOTA_KIND_DIAL_K518`), so
+  neither Dial takes the other's image. CI builds it as
+  `rcbench-dial-k518-<version>.bin` and its merged image, artifact
+  `dial-k518`; a release does not carry them. `status` on the Dial's
+  console names the board ([The M5Stack Dial](docs/Dial.md)).
+
 ### Changed
 
 - The KST programmer draws through the common servo programmer frame
