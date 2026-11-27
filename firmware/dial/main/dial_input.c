@@ -167,6 +167,9 @@ static atomic_uint_least32_t s_key;
 #define KEY_DOWN  0x80000000u
 #define KEY_OFFER 0x7FFFFFFFu /**< the offer's identity, low 31 bits */
 /** @} */
+/** @brief The offer whose question the face last sent whole: KEY_DOWN
+ *         set once one was, the identity in KEY_OFFER. */
+static atomic_uint_least32_t s_shown;
 #else
 /** @brief The screen button's gestures. */
 #define BUTTON (&s_in.button)
@@ -381,7 +384,10 @@ static void screen_button(uint32_t now)
     s_in.local_turns = 0;
     /* The update takes the still touch's events, never the raw touch:
      * a swipe, or a touch from before the offer, must not answer it. */
-    if (dk518_key_step(&s_in.key, open, id, empty, &o, now)) {
+    const uint32_t shown = (uint32_t)atomic_load(&s_shown);
+    const bool seen = (shown & KEY_DOWN) != 0u
+                      && (shown & KEY_OFFER) == (id & KEY_OFFER);
+    if (dk518_key_step(&s_in.key, open, id, seen, empty, &o, now)) {
         dial_buzz_cue(DIAL_CUE_ACCEPT);
     }
     /* The key and its offer in one word, so the `ota` task never pairs
@@ -698,6 +704,11 @@ void dial_input_start(void)
 bool dial_input_update_key(void)
 {
     return (atomic_load(&s_key) & KEY_DOWN) != 0u;
+}
+
+void dial_input_offer_shown(uint32_t offer)
+{
+    atomic_store(&s_shown, KEY_DOWN | (offer & KEY_OFFER));
 }
 
 bool dial_input_offer_key(uint32_t *offer)

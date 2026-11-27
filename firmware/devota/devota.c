@@ -278,6 +278,7 @@ static void take_view(void)
 {
     const uint32_t now = now_ms();
     s_view.st = s_dev.st;
+    s_view.offer = s_dev.offer;
     s_view.code = s_dev.code;
     s_view.secs = bleota_dev_secs(&s_dev, now);
     s_view.percent = bleota_dev_percent(&s_dev);
