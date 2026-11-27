@@ -386,7 +386,7 @@ const char *kst_panel_button(int page, int row, int col)
  * @brief The texts the frame's view points at: kpn_view() writes them and
  *        the frame draws them after it returns.
  */
-static struct {
+typedef struct {
     char state[KST_PANEL_LINE];         /**< the state line */
     char backup[KST_PANEL_LINE];        /**< the backup file's line */
     char pair[2][KST_PANEL_LINE];       /**< LOCKED's pairing lines */
@@ -396,7 +396,10 @@ static struct {
     int  lines;                         /**< the message's lines shown */
     /** @brief The same lines, one after the other, a '\n' between two */
     char bottom[KST_PANEL_MSG_LINES * KST_PANEL_LINE];
-} s_view;
+} view_text_t;
+
+/** @brief The view's texts, static: the frame draws them after kpn_view(). */
+static view_text_t s_view;
 
 /**
  * @brief The frame's level of a message's level.
@@ -511,7 +514,8 @@ static void bottom_line(void)
     s_view.lines = n;
 
     s_view.bottom[0] = '\0';
-    for (int i = 0; i < n && at < sizeof(s_view.bottom); ++i) {
+    for (int i = 0; i < n && i < KST_PANEL_MSG_LINES
+                    && at < sizeof(s_view.bottom); ++i) {
         const int w = snprintf(s_view.bottom + at, sizeof(s_view.bottom) - at,
                                "%s%s", i > 0 ? "\n" : "", s_view.msg[i]);
 
@@ -755,7 +759,7 @@ int kst_panel_shown_message_lines(void)
 
     kpn_view();
     notes_plan(&p);
-    for (int i = 0; i < s_view.lines; ++i) {
+    for (int i = 0; i < s_view.lines && i < KST_PANEL_MSG_LINES; ++i) {
         rows += sprog_text_rows(&k.f, s_view.msg[i]);
         if (p.bottom_y + rows * LINE_H > sprog_foot(&k.f)) {
             break;

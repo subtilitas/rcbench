@@ -36,8 +36,8 @@
  * names the state, which no header included after it may meet. */
 #include "kst_panel_int.h"
 
-/*
- * The rows, one table for both views of it: kpn_rows for the overlay's
+/**
+ * @brief The rows, one table for both views of it: kpn_rows for the overlay's
  * files (page, row and column with every row shown, the overlay's kind),
  * k_srows for the frame (tab, the frame's kind, show bits, the control's
  * width).  An index is the same row in both.
