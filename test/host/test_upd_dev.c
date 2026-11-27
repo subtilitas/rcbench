@@ -563,6 +563,42 @@ TEST_CASE(an_unsigned_image_in_memory_warns_on_the_card_and_the_band)
     CHECK(!upd_fetch_warn(&f));
 }
 
+/* The Dial's row while its Dial is the Guition K518: the line names it
+ * and the accept asks for a tap, in both languages and inside their
+ * fields; an M5Stack Dial's row stays as it was. */
+TEST_CASE(the_k518_names_its_row_and_asks_for_a_tap)
+{
+    char line[96];
+    upd_dev_view_t v = view_of(DEVUPD_ROW_READY);
+    v.k518 = true;
+    upd_dev_line(UPD_DEV_DIAL, &v, line, sizeof(line));
+    CHECK_STR_EQ(line, "Dial K518: 0.24.0. Release: 0.25.0.");
+    v = view_of(DEVUPD_ROW_UPDATING);
+    v.k518 = true;
+    v.phase = DEVUPD_CONFIRM;
+    v.secs = 27u;
+    upd_dev_label(UPD_DEV_DIAL, &v, line, sizeof(line));
+    CHECK_STR_EQ(line, "TAP THE DIAL TO ACCEPT: 27s");
+    v.k518 = false;
+    upd_dev_label(UPD_DEV_DIAL, &v, line, sizeof(line));
+    CHECK_STR_EQ(line, "PRESS THE DIAL TO ACCEPT: 27s");
+    v.k518 = true;
+    ui_text_set_language(UI_LANG_DE);
+    upd_dev_label(UPD_DEV_DIAL, &v, line, sizeof(line));
+    CHECK_STR_EQ(line, "AM DIAL TIPPEN ZUM ANNEHMEN: 27s");
+    for (int lang = 0; lang < 2; ++lang) {
+        ui_text_set_language(lang ? UI_LANG_DE : UI_LANG_EN);
+        v.running = (fw_version_t){ 255u, 255u, 255u };
+        v.carried = (fw_version_t){ 255u, 255u, 255u };
+        v.secs = 30u;
+        fits(UPD_DEV_DIAL, &v);
+        v.row = DEVUPD_ROW_READY;
+        fits(UPD_DEV_DIAL, &v);
+        v.row = DEVUPD_ROW_UPDATING;
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 /* The power node's row while its node is the ES3C28P display node: the
  * heading, the line and UPDATES' step name it in both languages and fit
  * their fields; the hold, its ask and the other rows stay as they are.  A
@@ -627,5 +663,6 @@ int main(void)
     RUN(cancel_is_a_tap_before_end_and_grey_through_the_install);
     RUN(an_unsigned_image_in_memory_warns_on_the_card_and_the_band);
     RUN(the_display_node_names_its_row_and_its_step);
+    RUN(the_k518_names_its_row_and_asks_for_a_tap);
     return test_summary("upd_dev");
 }

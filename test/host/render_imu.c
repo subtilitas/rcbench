@@ -114,7 +114,7 @@ static void connected(imu_view_t *v)
  * @brief WIRELESS on the DIAL entry: the Dial on and linked, two Dials
  *        found, the second bound.
  */
-static void pose_dial(void)
+static void pose_dial(bool k518)
 {
     dial_view_t d;
     memset(&d, 0, sizeof(d));
@@ -130,6 +130,10 @@ static void pose_dial(void)
     snprintf(d.bound_addr, sizeof(d.bound_addr), "%s", d.found[0].addr);
     snprintf(d.bound_name, sizeof(d.bound_name), "%s", d.found[0].name);
     d.proto = 1u;
+    d.hw = k518 ? DK_HW_K518 : DK_HW_DIAL11;
+    d.have_status = true;
+    d.batt_mv = k518 ? 3450u : 0u;
+    d.st_flags = k518 ? DK_ST_BATT_LOW : DK_ST_USB | DK_ST_BATT_UNKNOWN;
     settings_set(SET_DIAL_EN, 1.0f);
     wireless_pane_set_dial(&d);
     settings_screen_open_on(SET_CAT_WIRELESS, WL_ENTRY_DIAL);
@@ -306,8 +310,9 @@ void render_imu_pose(const char *view)
         pose_search_scan();
         return;
     }
-    if (strcmp(view, "setup-wireless-dial") == 0) {
-        pose_dial();
+    if (strcmp(view, "setup-wireless-dial") == 0
+        || strcmp(view, "setup-wireless-dial-k518") == 0) {
+        pose_dial(strcmp(view, "setup-wireless-dial-k518") == 0);
         return;
     }
     if (strcmp(view, "setup-wireless-pnode") == 0) {

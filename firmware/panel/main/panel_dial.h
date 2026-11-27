@@ -95,6 +95,13 @@ bool panel_dial_blec_target(bleu_addr_t *addr, bool *linked,
 bool panel_dial_blec_off(void);
 
 /**
+ * @brief The board the bound Dial's INFO named (dial_ctl_board()), which
+ *        picks the image its update sends.  `blec` task only.
+ * @return DK_HW_*; 0 before any INFO of the bound address
+ */
+uint8_t panel_dial_blec_board(void);
+
+/**
  * @brief A value changed: SET_DIAL_* go to the task.
  * @param id The setting.
  */

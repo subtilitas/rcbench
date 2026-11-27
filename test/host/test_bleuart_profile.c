@@ -512,6 +512,50 @@ TEST_CASE(a_param_of_20_bytes_is_kept_whole)
     CHECK_EQ(b.param[19], 20);
 }
 
+/* An entry read: the Dial's STATUS, a NONE entry with READ, read on
+ * demand after the PARAM's own read, into its own buffer. */
+TEST_CASE(an_entry_read_takes_its_own_handle_after_the_param)
+{
+    bsim_t s;
+    bleu_t b;
+    bleu_profile_t p = k_node;
+    p.chr[3] = (bleu_chr_spec_t){ .uuid = bleu_uuid_air, .role = BLEU_ROLE_NONE,
+                                  .flags = 0u };
+    p.chr_n = 4u;
+    bsim_init(&s);
+    node_table(&s);
+    bleu_init(&b);
+    CHECK(bleu_setup(&b, &p, 1u));
+    CHECK(!bleu_read_entry(&b, 3u));            /* no link */
+    const uint32_t t = up_with(&s, &b, &p, 1u, 0);
+    CHECK(bleu_can_send(&b));
+    CHECK_EQ(b.ent_reads, 0u);
+    CHECK(!bleu_read_entry(&b, 1u));            /* the CMD has no READ */
+    CHECK(!bleu_read_entry(&b, 4u));            /* past the profile */
+    CHECK(bleu_reread(&b));
+    CHECK(bleu_read_entry(&b, 3u));
+    CHECK(!bleu_read_entry(&b, 3u));            /* one is due */
+    CHECK(!bleu_can_send(&b));
+    bsim_run(&s, &b, t, t + 200u);
+    CHECK_EQ(b.ent_reads, 1u);
+    CHECK_EQ(b.ent_status, 0u);
+    CHECK_EQ(b.ent_len, sizeof k_param);
+    unsigned reads = 0;
+    uint16_t first = 0u, last = 0u;
+    for (unsigned i = 0; i < s.nlog; ++i) {
+        if (s.log[i].a.kind == BLEU_ACT_READ) {
+            first = reads == 0u ? s.log[i].a.h1 : first;
+            last = s.log[i].a.h1;
+            ++reads;
+        }
+    }
+    CHECK_EQ(reads, 3u);                        /* subscribe's, PARAM, entry */
+    CHECK_EQ(first, H_PAR_VAL);
+    CHECK_EQ(last, H_AIR_VAL);
+    CHECK(bleu_can_send(&b));
+    CHECK(bleu_read_entry(&b, 3u));             /* again, once ended */
+}
+
 int main(void)
 {
     RUN(tokens_carry_the_owner_in_their_top_3_bits);
@@ -528,5 +572,6 @@ int main(void)
     RUN(a_busy_scan_end_ends_the_scan_with_its_status);
     RUN(a_scan_lists_what_its_own_profile_advertises);
     RUN(a_param_of_20_bytes_is_kept_whole);
+    RUN(an_entry_read_takes_its_own_handle_after_the_param);
     return test_summary("bleuart_profile");
 }

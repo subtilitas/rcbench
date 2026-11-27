@@ -377,9 +377,23 @@ von ESP-IDF; seine Tiefe ist nicht gemessen. Ihr statischer RAM sind
 
 SETUP > WIRELESS > DIAL enthält die Zeilen des Dial
 ([Bildschirme](Screens-de.md#wireless-die-imu-und-das-dial)): Dial EIN oder AUS
-(ab Werk AUS), DIAL SUCHEN, GEBUNDENES DIAL und die Schritte einer Rastung,
-0.5%, 1%, 2% oder 5% Gas (ab Werk 1%) und 0.5°, 1°, 2° oder 5° Hornwinkel (ab
-Werk 1°). Das erste Dial EIN startet Bluetooth LE auf dem ESP32-C6 des
+(ab Werk AUS), DIAL SUCHEN, GEBUNDENES DIAL, DIAL-MODELL, DIAL-AKKU und die
+Schritte einer Rastung, 0.5%, 1%, 2% oder 5% Gas (ab Werk 1%) und 0.5°, 1°,
+2° oder 5° Hornwinkel (ab Werk 1°). DIAL-MODELL nennt das Board, das das
+INFO des verbundenen Dials nennt, `M5STACK DIAL` (Hardware 1) oder
+`GUITION K518` (Hardware 2). DIAL-AKKU liest den STATUS des Dials, nach
+INFO und alle 5.000ms, solange es verbunden ist: die Spannung der Zelle,
+davor `SCHWACH` (Bit4) oder `LEER` (Bit5), `USB`, solange USB es versorgt,
+`NICHT GEMESSEN` bei einem Dial ohne Messung (dem M5Stack Dial). Ein
+STATUS-Lesen wartet auf das PARAM-Lesen der Verbindung und hält die Pakete
+des Panels an das Dial für seine Laufzeit an; ein fehlgeschlagenes Lesen
+behält den letzten STATUS. Ein Dial eines älteren Releases sendet nur die
+Flags Bit0 bis Bit3, die wie bisher dekodiert werden. Das Update bietet
+jedem Dial das Image seines Boards an: `rcbench-dial-<Version>.bin` dem
+M5Stack Dial und einem Dial, dessen INFO noch aussteht,
+`rcbench-dial-k518-<Version>.bin` dem K518, und das Panel prüft den Kopf
+des Images gegen das Board, bevor das erste Byte geht. Die Annahme des K518
+auf UPDATES lautet `AM DIAL TIPPEN ZUM ANNEHMEN`. Das erste Dial EIN startet Bluetooth LE auf dem ESP32-C6 des
 Boards, wie das erste IMU EIN; es läuft bis zum Neustart des Panels. Das
 Dial, die IMU und die Knoten sind Clients der Bluetooth-LE-Central des
 Panels, mit einem Connect oder Scan zur Zeit zwischen ihnen.

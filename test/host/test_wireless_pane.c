@@ -50,12 +50,14 @@ TEST_CASE(the_dial_entry_shows_its_rows_under_on)
     CHECK_EQ(rows[0].id, SET_DIAL_EN);
     CHECK(!settings_get_bool(SET_DIAL_EN));
     settings_set(SET_DIAL_EN, 1.0f);
-    CHECK_EQ(wireless_pane_rows(WL_ENTRY_DIAL, rows, WL_ENTRY_ROWS_MAX), 5);
+    CHECK_EQ(wireless_pane_rows(WL_ENTRY_DIAL, rows, WL_ENTRY_ROWS_MAX), 7);
     CHECK_EQ(rows[0].id, SET_DIAL_EN);
     CHECK(rows[1].custom == &wireless_pane_scan_row);
     CHECK(rows[2].custom == &wireless_pane_bind_row);
-    CHECK_EQ(rows[3].id, SET_DIAL_THR);
-    CHECK_EQ(rows[4].id, SET_DIAL_SRV);
+    CHECK(rows[3].custom == &wireless_pane_dial_model_row);
+    CHECK(rows[4].custom == &wireless_pane_dial_batt_row);
+    CHECK_EQ(rows[5].id, SET_DIAL_THR);
+    CHECK_EQ(rows[6].id, SET_DIAL_SRV);
     CHECK_EQ(wireless_pane_entry_of(SET_DIAL_THR), WL_ENTRY_DIAL);
     CHECK_EQ(wireless_pane_entry_of(SET_MOTOR_POLES), -1);
     CHECK_EQ(wireless_pane_rows(WL_ENTRY_COUNT, rows, WL_ENTRY_ROWS_MAX), 0);
@@ -69,7 +71,56 @@ TEST_CASE(the_dial_entry_shows_its_rows_under_on)
     open_wireless(SET_DIAL_EN);
     CHECK_EQ(settings_screen_category(), SET_CAT_WIRELESS);
     CHECK_EQ(wireless_pane_selected(), WL_ENTRY_DIAL);
-    CHECK_EQ(settings_screen_rows(SET_CAT_WIRELESS), 5);
+    CHECK_EQ(settings_screen_rows(SET_CAT_WIRELESS), 7);
+}
+
+/* DIAL MODEL and DIAL BATTERY from INFO's board and STATUS: an M5Stack
+ * Dial of any release reads USB or NOT MEASURED; a K518 reads its cell,
+ * LOW and EMPTY; nothing read reads NOT LINKED. */
+TEST_CASE(the_dial_rows_show_its_board_and_its_cell)
+{
+    char out[32];
+    dial_view_t v;
+    memset(&v, 0, sizeof v);
+    wireless_pane_set_dial(&v);
+    wireless_pane_dial_model_row.value_text(out, sizeof out);
+    CHECK_STR_EQ(out, "NOT LINKED");
+    wireless_pane_dial_batt_row.value_text(out, sizeof out);
+    CHECK_STR_EQ(out, "NOT LINKED");
+    v.hw = DK_HW_DIAL11;
+    v.have_status = true;
+    v.st_flags = DK_ST_USB | DK_ST_BATT_UNKNOWN;
+    wireless_pane_set_dial(&v);
+    wireless_pane_dial_model_row.value_text(out, sizeof out);
+    CHECK_STR_EQ(out, "M5STACK DIAL");
+    wireless_pane_dial_batt_row.value_text(out, sizeof out);
+    CHECK_STR_EQ(out, "USB");
+    v.st_flags = DK_ST_BATT_UNKNOWN;
+    wireless_pane_set_dial(&v);
+    wireless_pane_dial_batt_row.value_text(out, sizeof out);
+    CHECK_STR_EQ(out, "NOT MEASURED");
+    v.hw = DK_HW_K518;
+    v.st_flags = 0u;
+    v.batt_mv = 3920u;
+    wireless_pane_set_dial(&v);
+    wireless_pane_dial_model_row.value_text(out, sizeof out);
+    CHECK_STR_EQ(out, "GUITION K518");
+    wireless_pane_dial_batt_row.value_text(out, sizeof out);
+    CHECK_STR_EQ(out, "3.92V");
+    v.st_flags = DK_ST_BATT_LOW;
+    v.batt_mv = 3450u;
+    wireless_pane_set_dial(&v);
+    wireless_pane_dial_batt_row.value_text(out, sizeof out);
+    CHECK_STR_EQ(out, "LOW 3.45V");
+    v.st_flags = DK_ST_BATT_LOW | DK_ST_BATT_EMPTY;
+    v.batt_mv = 3330u;
+    wireless_pane_set_dial(&v);
+    wireless_pane_dial_batt_row.value_text(out, sizeof out);
+    CHECK_STR_EQ(out, "EMPTY 3.33V");
+    ui_text_set_language(UI_LANG_DE);
+    wireless_pane_dial_batt_row.value_text(out, sizeof out);
+    CHECK_STR_EQ(out, "LEER 3.33V");
+    ui_text_set_language(UI_LANG_EN);
 }
 
 TEST_CASE(a_scan_while_armed_is_refused_with_a_band_text)
@@ -307,5 +358,6 @@ int main(void)
     RUN(every_state_word_fits_25_cells_in_its_colour);
     RUN(reset_keeps_the_bind);
     RUN(every_wireless_row_fits_left_of_its_keys);
+    RUN(the_dial_rows_show_its_board_and_its_cell);
     return test_summary("wireless_pane");
 }

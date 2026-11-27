@@ -6714,12 +6714,14 @@ restarts.
 | Entry | State while on | Rows |
 | --- | --- | --- |
 | IMU | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO SENSOR BOUND`, `SCANNING`, `CONNECTING`, `BOUND`, `CONNECTED 50Hz`, `NO FRAMES` ([The Bluetooth IMU](#the-bluetooth-imu)) | 2 while off: IMU and ANGLE SOURCE; 20 while on, 21 with LAST ERROR |
-| DIAL | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO DIAL BOUND`, `SCANNING`, `CONNECTING`, `BOUND: NOT A DIAL`, `CONNECTED, NO EVENT`, `OTHER PROTOCOL n`, `CONNECTED`, `DEGRADED`, `DIAL LOST` | 1 while off; 5 while on |
+| DIAL | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO DIAL BOUND`, `SCANNING`, `CONNECTING`, `BOUND: NOT A DIAL`, `CONNECTED, NO EVENT`, `OTHER PROTOCOL n`, `CONNECTED`, `DEGRADED`, `DIAL LOST` | 1 while off; 7 while on |
 | BALANCE NODE | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO NODE BOUND`, `SCANNING`, `CONNECTING`, `BOUND: NOT A NODE`, `CONNECTED, READING INFO`, `ROLE r, PROTOCOL p`, `CONNECTED, NO REPORT`, `REPORTING` | 1 while off; 5 while on |
 | PRINTER | `NOT BOUND`, the bound printer's name while idle, `SCANNING`, `LINK UP`, a request's phase or its result ([WIRELESS: the label printer](#wireless-the-label-printer)) | 8 |
 | POWER NODE | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO NODE BOUND`, `SCANNING`, `CONNECTING`, `NOT A POWER NODE`, `CONNECTED, NO READING`, `OTHER PROTOCOL n`, `INA228 SET-UP REFUSED`, `NO INA228 ON THE NODE`, `CONNECTED`, `NO READING FOR 300ms`, `NODE LOST` ([WIRELESS: the power node](#wireless-the-power-node)) | 2 while off: Power node and INA228 SOURCE; 5 while on |
 
 ![WIRELESS on the DIAL entry](img/setup-wireless-dial.png)
+
+![WIRELESS on the DIAL entry with a Guition K518 on a low cell](img/setup-wireless-dial-k518.png)
 
 The DIAL entry's rows ([The M5Stack Dial](Dial.md#the-panel)):
 
@@ -6728,6 +6730,8 @@ The DIAL entry's rows ([The M5Stack Dial](Dial.md#the-panel)):
 | Dial | ON, OFF | OFF | the link to the bound Dial; OFF ends it without an error |
 | Scan for Dial | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | a tap opens SEARCH ([WIRELESS: SEARCH](#wireless-search)) and scans 10s; a switch to ARMED stops the scan; while ARMED it scans nothing and the band reads `NO DIAL SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; while a scan runs it starts none and the band reads `A SCAN IS RUNNING: IT ENDS WITHIN 10s`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO DIAL SCAN`. SEARCH opens in each case |
 | Bound Dial | the bound Dial's name, else its address, else `NONE` | `NONE` | a tap opens SEARCH on the last scan's list, without a scan |
+| Dial model | `M5STACK DIAL`, `GUITION K518`, `NOT LINKED` | | the board the linked Dial's INFO names; read only |
+| Dial battery | `3.92V`, `LOW 3.45V` (STATUS bit4), `EMPTY 3.33V` (bit5), `USB`, `NOT MEASURED`, `NOT LINKED` | | the cell from the Dial's STATUS, read after INFO and every 5s while linked; `USB` while USB powers it, `NOT MEASURED` for a Dial that has no reading (the M5Stack Dial); read only |
 | Dial step, throttle | 0.5%, 1%, 2%, 5% | 1% | the throttle a detent moves on MOTOR & ESC |
 | Dial step, servo | 0.5°, 1°, 2°, 5° | 1° | the horn angle a detent moves on SERVO |
 
@@ -8077,6 +8081,7 @@ version, which the web flasher and the release page offer as well:
 | --- | --- | ---: |
 | C6 RADIO | `rcbench-c6-<esp_hosted version>.bin`, `rcbench-c6-2.13.0.bin` | 1,966,080 |
 | DIAL | `rcbench-dial-<version>.bin` | 3,145,728 |
+| DIAL, while the linked Dial's INFO names the Guition K518 | `rcbench-dial-k518-<version>.bin` | 3,145,728 |
 | POWER NODE | `rcbench-node-pwr-<version>.bin` | 1,572,864 |
 | BALANCE NODE | `rcbench-node-bal-<version>.bin` | 1,572,864 |
 | DISPLAY NODE, the POWER NODE step while the bound power node is the ES3C28P display node | `rcbench-node-display-<version>.bin` | 1,572,864 |

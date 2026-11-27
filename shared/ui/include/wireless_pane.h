@@ -271,6 +271,12 @@ void wireless_pane_imu_tick(float dt_s, bool shown);
 extern const ui_setlist_custom_t wireless_pane_scan_row;
 /** @brief BOUND DIAL, the DIAL entry's third row; public for the tests. */
 extern const ui_setlist_custom_t wireless_pane_bind_row;
+/** @brief DIAL MODEL: the board the linked Dial's INFO names, read only;
+ *         public for the tests. */
+extern const ui_setlist_custom_t wireless_pane_dial_model_row;
+/** @brief DIAL BATTERY: the cell from the Dial's last STATUS, read only;
+ *         public for the tests. */
+extern const ui_setlist_custom_t wireless_pane_dial_batt_row;
 
 #ifdef __cplusplus
 }

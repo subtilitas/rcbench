@@ -601,6 +601,61 @@ TEST_CASE(the_panel_streams_before_an_event_and_never_pauses_500ms)
     }
 }
 
+/* STATUS: read after INFO, then every 5,000ms while the link stands, into
+ * the view with INFO's board; an M5Stack Dial of an older release, which
+ * sends USB and an unknown cell, reads as before; a K518's LOW and EMPTY
+ * come through; a failed read keeps the last STATUS; the link's end
+ * drops it. */
+TEST_CASE(status_is_read_every_5000ms_and_shows_the_board_and_the_cell)
+{
+    drig_t r;
+    dial_view_t v;
+    drig_up(&r);
+    CHECK_EQ(r.st_reads, 1u);
+    dial_ctl_view(&r.c, r.now, &v);
+    CHECK_EQ(v.hw, DK_HW_DIAL11);
+    CHECK(v.have_status);
+    CHECK_EQ(v.batt_mv, 0u);
+    CHECK_EQ(v.st_flags, DK_ST_USB | DK_ST_BATT_UNKNOWN);
+    const uint32_t t0 = r.c.status_ms;
+    drig_run(&r, t0 + DIAL_STATUS_READ_MS - 1u - r.now);
+    CHECK_EQ(r.st_reads, 1u);
+    r.st.flags = DK_ST_BATT_LOW;
+    r.st.batt_mv = 3450u;
+    drig_run(&r, 2u);
+    CHECK_EQ(r.st_reads, 2u);
+    dial_ctl_view(&r.c, r.now, &v);
+    CHECK_EQ(v.batt_mv, 3450u);
+    CHECK_EQ(v.st_flags, DK_ST_BATT_LOW);
+    r.fail_status = 1u;
+    drig_run(&r, DIAL_STATUS_READ_MS);
+    CHECK_EQ(r.st_reads, 3u);
+    CHECK_EQ(r.c.status_bad, 1u);
+    dial_ctl_view(&r.c, r.now, &v);
+    CHECK_EQ(v.batt_mv, 3450u);             /* the last one stays */
+    CHECK(r.c.linked);                      /* no reconnect for it */
+    drig_drop(&r);
+    drig_step(&r);
+    dial_ctl_view(&r.c, r.now, &v);
+    CHECK(!v.have_status);
+    CHECK_EQ(v.hw, 0u);
+}
+
+TEST_CASE(a_k518_names_its_board_and_its_empty_cell)
+{
+    drig_t r;
+    dial_view_t v;
+    drig_init(&r);
+    r.hw = DK_HW_K518;
+    r.st.flags = DK_ST_BATT_LOW | DK_ST_BATT_EMPTY;
+    r.st.batt_mv = 3330u;
+    drig_run(&r, 50u);
+    dial_ctl_view(&r.c, r.now, &v);
+    CHECK_EQ(v.hw, DK_HW_K518);
+    CHECK_EQ(v.batt_mv, 3330u);
+    CHECK_EQ(v.st_flags, DK_ST_BATT_LOW | DK_ST_BATT_EMPTY);
+}
+
 int main(void)
 {
     RUN(the_link_comes_up_and_the_model_streams);
@@ -623,5 +678,7 @@ int main(void)
     RUN(an_info_that_fails_ends_the_link_and_it_comes_back);
     RUN(input_is_taken_only_while_the_link_is_up_or_degraded);
     RUN(the_panel_streams_before_an_event_and_never_pauses_500ms);
+    RUN(status_is_read_every_5000ms_and_shows_the_board_and_the_cell);
+    RUN(a_k518_names_its_board_and_its_empty_cell);
     return test_summary("dial_ctl");
 }

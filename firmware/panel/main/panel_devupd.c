@@ -5,11 +5,13 @@
  *        (panel_devimg.h), the `blec` task's update client, and the
  *        frame's rows of UPDATES' devices' page.
  *
- * Three rows, four images: the power node's row sends the image of the
+ * Three rows, five images: the power node's row sends the image of the
  * board its INFO names, the ESP32-C6-Zero's (BLEOTA_KIND_NODE_POWER) or
  * the ES3C28P display node's (BLEOTA_KIND_NODE_POWER_S3), chosen by
- * devimg_pnode_image() and held to that board by devimg_fits() before
- * the first byte goes out.
+ * devimg_pnode_image(); the Dial's row the M5Stack Dial's
+ * (BLEOTA_KIND_DIAL) or the Guition JC3636K518C's (BLEOTA_KIND_DIAL_K518),
+ * chosen by devimg_dial_image().  devimg_fits() holds either to its
+ * board before the first byte goes out.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -85,17 +87,19 @@ static carried_t s_img[DEVIMG_COUNT] = {
 };
 
 /**
- * @brief The image row @p dev sends: the power node's row the one of the
- *        board its INFO named (devimg_pnode_image()).
+ * @brief The image row @p dev sends: the power node's and the Dial's rows
+ *        the one of the board their INFO named (devimg_pnode_image(),
+ *        devimg_dial_image()).
  * @param dev   the row, by BLEOTA_KIND_* - 1
- * @param board the power node's RCNODE_BOARD_*, 0 before INFO
+ * @param board the power node's RCNODE_BOARD_* or the Dial's DK_HW_*, 0
+ *              before INFO
  * @return the image; DEVIMG_COUNT for a board no release image is for
  */
 static devimg_id_t row_img(unsigned dev, uint8_t board)
 {
     switch (dev) {
     case UPD_DEV_DIAL:
-        return DEVIMG_DIAL;
+        return devimg_dial_image(board);
     case UPD_DEV_PNODE:
         return devimg_pnode_image(board);
     case UPD_DEV_BAL:
@@ -125,7 +129,7 @@ typedef struct {
 /** @brief The devices, by BLEOTA_KIND_* - 1, as s_img. */
 static const dev_hooks_t k_dev[DEV_N] = {
     { TX_DEV_NAME_DIAL, TX_ALERT_DIAL_ASK, panel_dial_blec_hold,
-      panel_dial_blec_target, NULL, panel_dial_blec_off },
+      panel_dial_blec_target, panel_dial_blec_board, panel_dial_blec_off },
     { TX_DEV_NAME_PNODE, TX_ALERT_NODE_ASK, panel_pnode_blec_hold,
       panel_pnode_blec_target, panel_pnode_blec_board,
       panel_pnode_blec_off },
@@ -439,12 +443,12 @@ static void begin(unsigned dev, const seen_t *t, uint32_t now)
         return;
     }
     const carried_t *c = &s_img[t->img];
-    if (dev == UPD_DEV_PNODE) {
+    if (dev == UPD_DEV_PNODE || dev == UPD_DEV_DIAL) {
         const devimg_err_t fit = devimg_fits((devimg_id_t)t->img, t->board,
                                              c->p, c->n);
         if (fit != DEVIMG_OK) {
             ESP_LOGW(TAG, "%s update refused: the image does not fit the "
-                          "node's board %u (check %u)", cur_word(),
+                          "device's board %u (check %u)", cur_word(),
                      (unsigned)t->board, (unsigned)fit);
             s_t0 = now;
             finish(false, DEVUPD_E_IMAGE, 0u, now);
@@ -737,6 +741,7 @@ void devupd_service(bool armed)
             .no_ble = no_ble, .known = d->linked,
             .running = d->running, .have_image = !d->other,
             .display = id == DEVIMG_PNODE_S3,
+            .k518 = id == DEVIMG_DIAL_K518,
             .carried = rel, .phase = mine ? p.phase : 0u,
             .percent = mine ? p.percent : 0u, .secs = mine ? p.secs : 0u,
         };
@@ -793,7 +798,11 @@ void devupd_service(bool armed)
     }
     const unsigned dev = p.dev < DEV_N ? p.dev : 0u;
     if (busy && p.phase == DEVUPD_CONFIRM && s_seen_phase != DEVUPD_CONFIRM) {
-        ui_router_set_notice(ui_tr(k_dev[dev].ask));
+        /* The K518 has no button: its ask names the tap. */
+        const bool k518 = dev == UPD_DEV_DIAL
+                          && s_row_img[dev] == DEVIMG_DIAL_K518;
+        ui_router_set_notice(ui_tr(k518 ? TX_ALERT_DIAL_K518_ASK
+                                        : k_dev[dev].ask));
     }
     s_seen_phase = p.phase;
     if (upd_dev_take_cancel()) {

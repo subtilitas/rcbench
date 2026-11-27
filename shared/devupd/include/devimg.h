@@ -16,11 +16,12 @@
  *   display node  rcbench-node-display-VERSION.bin, the power role on the
  *                 ES3C28P (ESP32-S3) board
  *   Dial K518     rcbench-dial-k518-VERSION.bin, the Dial firmware on the
- *                 Guition JC3636K518C knob (ESP32-S3); no row sends it yet
+ *                 Guition JC3636K518C knob (ESP32-S3)
  *
  * The power node's row sends the image of the board the node's INFO names
- * (devimg_pnode_image()), and only after devimg_fits() holds the image's
- * head to that board's chip and BLEOTA_KIND_*.
+ * (devimg_pnode_image()), the Dial's row the image of the board the Dial's
+ * INFO names (devimg_dial_image()), and each only after devimg_fits()
+ * holds the image's head to that board's chip and BLEOTA_KIND_*.
  *
  * An update's hold takes its image from one of three places
  * (devimg_src()): the memory, when an earlier hold fetched it; GitHub,
@@ -123,6 +124,16 @@ uint32_t devimg_slot(devimg_id_t id);
 devimg_id_t devimg_pnode_image(uint8_t board);
 
 /**
+ * @brief The image the Dial's row offers for the board the Dial's INFO
+ *        names (DK_HW_*, protocols/dialknob).
+ * @param hw the board; 0 before an INFO of the panel's protocol
+ * @return DEVIMG_DIAL for the M5Stack Dial and for 0, DEVIMG_DIAL_K518
+ *         for the Guition JC3636K518C, DEVIMG_COUNT for a board no
+ *         release image is for
+ */
+devimg_id_t devimg_dial_image(uint8_t hw);
+
+/**
  * @brief A row's image follows its node's board: @p row takes @p now.
  *        The board is pnode_ctl_board()'s, which a reconnect of the same
  *        address does not change, so only a new INFO or an address change
@@ -206,13 +217,16 @@ devimg_err_t devimg_verify(devimg_id_t id, const uint8_t *img, uint32_t n,
                            uint8_t sha[FW_SHA256_BYTES], fw_err_t *why);
 
 /**
- * @brief The last check before the power node's image is sent: the board
- *        the bound node's INFO names takes image @p id
- *        (devimg_pnode_image()), and the image's head names that board's
- *        chip and BLEOTA_KIND_* (bleota_head_check()).
+ * @brief The last check before a power node's or a Dial's image is sent:
+ *        the board the device's INFO names takes image @p id
+ *        (devimg_pnode_image(), devimg_dial_image()), and the image's
+ *        head names that board's chip and BLEOTA_KIND_*
+ *        (bleota_head_check()).
  * @param id    the image about to be sent
- * @param board the board the node's INFO named on the link that reported
- *              its version; 0 is no INFO
+ * @param board the board the device's INFO named on the link that
+ *              reported its version: RCNODE_BOARD_* for a node's image,
+ *              DK_HW_* for a Dial's; 0 is no INFO, which a node's image
+ *              refuses and a Dial's takes as the M5Stack Dial
  * @param img   the image's bytes
  * @param n     their count
  * @return DEVIMG_OK; DEVIMG_E_ID for an @p id out of range, a board no

@@ -1035,8 +1035,12 @@ SCREENS = {
     # under IMU.
     "setup-wireless-imu-off": ("setup-wireless-imu-off.png", "setup", "dark"),
     # SETUP > WIRELESS on the DIAL entry: the Dial linked, two found by a
-    # scan, the first bound.
+    # scan, the first bound, an M5Stack Dial on USB.
     "setup-wireless-dial": ("setup-wireless-dial.png", "setup", "dark"),
+    # The same with a Guition JC3636K518C linked: its model, and its cell
+    # LOW at 3.45V from STATUS.
+    "setup-wireless-dial-k518": ("setup-wireless-dial-k518.png", "setup",
+                                 "dark"),
     # SETUP > WIRELESS on the POWER NODE entry: the node connected, INA228
     # SOURCE NODE, one node found and bound, named XT90 MAIN, its cell at
     # 3.92V, its INA228 found at 0x40 on NODE SHUNT 500uΩ, its address AUTO.

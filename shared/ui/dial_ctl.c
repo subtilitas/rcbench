@@ -103,11 +103,16 @@ static void follow_link(dial_ctl_t *c, uint32_t now_ms)
         c->info_ok = false;
         c->info_proto = 0u;
         c->rtt_valid = false;
+        c->status_ok = false;
+        c->status_asked = false;
+        c->status_seen = c->b.ent_reads;
     } else if (!up && c->linked) {
         dk_link_disconnect(&c->link);
         dk_track_reset(&c->track);
         c->info_read = false;
         c->info_ok = false;
+        c->status_ok = false;
+        c->status_asked = false;
     }
     c->linked = up;
     if (up && !c->info_read && !c->b.param_due && !c->b.rd_busy) {
@@ -118,6 +123,9 @@ static void follow_link(dial_ctl_t *c, uint32_t now_ms)
             c->info = i;
             c->info_proto = i.proto;
             c->info_ok = i.proto == DK_PROTOCOL;
+            if (c->info_ok) {
+                c->board = i.hw;
+            }
         } else {
             /* INFO that would not read or decode: a failed GATT step.
              * The link ends and comes back after the backoff, rather than
@@ -126,6 +134,36 @@ static void follow_link(dial_ctl_t *c, uint32_t now_ms)
             bleu_fail_link(&c->b, c->b.param_status, now_ms);
             follow_link(c, now_ms);
         }
+    }
+}
+
+/**
+ * @brief STATUS: the last read taken once it ended, and the next one
+ *        asked every DIAL_STATUS_READ_MS while INFO named DK_PROTOCOL.
+ *        A read waits for the PARAM's and holds the stream for its round
+ *        trip.  A Dial of an older release sends flags bit0 to bit3 alone,
+ *        which decode as they did.
+ * @param c      The controller.
+ * @param now_ms The clock.
+ */
+static void follow_status(dial_ctl_t *c, uint32_t now_ms)
+{
+    if (c->b.ent_reads != c->status_seen) {
+        dk_status_t s;
+        c->status_seen = c->b.ent_reads;
+        if (c->b.ent_status == 0u
+            && dk_status_decode(c->b.ent, c->b.ent_len, &s)) {
+            c->status = s;
+            c->status_ok = true;
+        } else {
+            ++c->status_bad;
+        }
+    }
+    if (c->info_ok && bleu_link_up(&c->b)
+        && (!c->status_asked || now_ms - c->status_ms >= DIAL_STATUS_READ_MS)
+        && bleu_read_entry(&c->b, DIAL_CHR_STATUS)) {
+        c->status_asked = true;
+        c->status_ms = now_ms;
     }
 }
 
@@ -163,6 +201,7 @@ static void take_scan(dial_ctl_t *c)
 static void set_addr(dial_ctl_t *c, uint32_t now_ms)
 {
     bleu_addr_t a;
+    c->board = 0u;      /* another Dial: its board comes with its INFO */
     if (bleu_addr_parse(c->cfg.addr, &a)) {
         bleu_bind(&c->b, &a, now_ms);
     } else {
@@ -361,6 +400,10 @@ bool dial_ctl_step(dial_ctl_t *c, uint32_t now_ms, bool armed,
         return true;
     }
     take_scan(c);
+    follow_status(c, now_ms);
+    if (bleu_step(&c->b, now_ms, out)) {
+        return true;
+    }
     if (!c->info_ok || !bleu_can_send(&c->b)) {
         return false;
     }
@@ -454,6 +497,11 @@ dial_link_t dial_ctl_link(const dial_ctl_t *c)
     }
 }
 
+uint8_t dial_ctl_board(const dial_ctl_t *c)
+{
+    return c != NULL ? c->board : 0u;
+}
+
 void dial_ctl_view(const dial_ctl_t *c, uint32_t now_ms, dial_view_t *out)
 {
     if (out == NULL) {
@@ -476,5 +524,9 @@ void dial_ctl_view(const dial_ctl_t *c, uint32_t now_ms, dial_view_t *out)
         memcpy(out->bound_name, c->cfg.name, sizeof(out->bound_name));
     }
     out->proto = c->info_proto;
+    out->hw = c->info_ok ? c->info.hw : 0u;
+    out->have_status = c->status_ok;
+    out->batt_mv = c->status_ok ? c->status.batt_mv : 0u;
+    out->st_flags = c->status_ok ? c->status.flags : 0u;
     out->bind_refused = (uint16_t)c->bind_refused;
 }

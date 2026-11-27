@@ -315,7 +315,11 @@ void upd_dev_line(upd_dev_id_t id, const upd_dev_view_t *v, char *out,
         break;
     case UPD_DEV_DIAL:
     default:
-        snprintf(out, n, TR(UPD_DIAL_LINE), run, car);
+        if (v->k518) {
+            snprintf(out, n, TR(UPD_K518_LINE), run, car);
+        } else {
+            snprintf(out, n, TR(UPD_DIAL_LINE), run, car);
+        }
         break;
     }
 }
@@ -323,11 +327,13 @@ void upd_dev_line(upd_dev_id_t id, const upd_dev_view_t *v, char *out,
 /**
  * @brief The label while the device asks for its confirmation.
  * @param id   the row
+ * @param k518 the Dial is the Guition JC3636K518C: a tap, not a press
  * @param secs the seconds the device gave
  * @param out  receives it
  * @param n    its bytes
  */
-static void press_label(upd_dev_id_t id, unsigned secs, char *out, size_t n)
+static void press_label(upd_dev_id_t id, bool k518, unsigned secs,
+                        char *out, size_t n)
 {
     switch (id) {
     case UPD_DEV_PNODE:
@@ -336,7 +342,11 @@ static void press_label(upd_dev_id_t id, unsigned secs, char *out, size_t n)
         break;
     case UPD_DEV_DIAL:
     default:
-        snprintf(out, n, TR(UPD_DIAL_PRESS), secs);
+        if (k518) {
+            snprintf(out, n, TR(UPD_K518_PRESS), secs);
+        } else {
+            snprintf(out, n, TR(UPD_DIAL_PRESS), secs);
+        }
         break;
     }
 }
@@ -374,7 +384,7 @@ void upd_dev_label(upd_dev_id_t id, const upd_dev_view_t *v, char *out,
     }
     if (v->row == DEVUPD_ROW_UPDATING) {
         if (v->phase == DEVUPD_CONFIRM) {
-            press_label(in_range(id), v->secs, out, n);
+            press_label(in_range(id), v->k518, v->secs, out, n);
         } else if (v->phase >= DEVUPD_SEND) {
             progress_label(in_range(id),
                            v->percent > 100u ? 100u : v->percent, out, n);
