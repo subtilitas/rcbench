@@ -8878,17 +8878,20 @@ UI_TEXT(HP_HOLD_RELEASE, 30,
     "HOLD 2s TO RELEASE",
     "2s HALTEN ZUM FREIGEBEN")
 UI_TEXT(HP_HELD, 20,
-    "HELD ELSEWHERE",
-    "ANDERWEITIG BELEGT")
+    "IN USE",
+    "BELEGT")
 UI_TEXT(HP_OTHER_LINE, 44,
     "Another Hitec session holds it.",
-    "Eine andere Hitec-Sitzung belegt ihn.")
+    "Andere Hitec-Sitzung belegt ihn.")
 UI_TEXT(HP_SUPPLY_5V_FIXED, 20,
     "5V FIXED",
     "5V FEST")
 UI_TEXT(HP_SUPPLY_AS_IS, 26,
     "SUPPLY AS IT IS",
     "VERSORGUNG UNVERÄNDERT")
+UI_TEXT(HP_SUPPLY_KEPT, 19,
+    "SUPPLY AS IT IS",
+    "VERSORGUNG BLEIBT")
 UI_TEXT(HP_PORT_NONE, 44,
     "NO PROG PORT SET",
     "KEIN PROG-PORT GESETZT")
@@ -9143,9 +9146,6 @@ UI_TEXT(HP_HOLD_REPAIR, 30,
 UI_TEXT(HP_MORE_REPAIR, 58,
     "REPAIR CHECKSUM: write the balance in stored value 0x1C.",
     "PRÜFSUMME REPARIEREN: Schreibe den Ausgleich in 0x1C.")
-UI_TEXT(HP_EDIT_NOTE, 116,
-    "Tap a value to edit it. * marks a change. WRITE n VALUES on SERVO writes the changes.",
-    "Tippe zum Ändern auf einen Wert. * markiert Änderungen. n WERTE SCHREIBEN auf SERVO schreibt sie.")
 UI_TEXT(HP_SUM_HINT, 116,
     "MORE > REPAIR CHECKSUM writes stored value 0x1C.",
     "WEITERES > PRÜFSUMME REPARIEREN schreibt den gespeicherten Wert 0x1C.")

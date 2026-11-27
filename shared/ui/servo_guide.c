@@ -504,10 +504,10 @@ static ui_text_id_t prg_port_text(const char *label, bool kst)
 }
 
 /** @brief KST's or HITEC's SERVO tab: the tabs, CONNECT (LEAVE once it
- *         holds the port), the read, TYPE or SERIES (FILES on HITEC once
- *         its CONNECT opened the port), the notes.
- *         The port's button takes the text of what it reads
- *         (prg_port_text()).
+ *         holds the port), READ ALL, the brand's slot beside it (KST's
+ *         TYPE; HITEC's SERIES, AFTER STOP once its CONNECT opened the
+ *         port), the notes.  The port's button takes the text of what it
+ *         reads (prg_port_text()).
  *  @param p The page. */
 static void page_prg_connect(ui_help_page_t *p)
 {
@@ -516,41 +516,28 @@ static void page_prg_connect(ui_help_page_t *p)
     prg_add_tabs(p, PRG_PG_CONNECT);
     const char *port = prg_button(PRG_TAB_SERVO, 0, 0);
     prg_add_row(p, PRG_PG_CONNECT, port, prg_port_text(port, kst), 0, 0);
-    if (kst) {
-        prg_add_row(p, PRG_PG_CONNECT, prg_button(PRG_TAB_SERVO, 1, 0),
-                    TX_HG_PRG_READ, 1, 0);
-        prg_add_row(p, PRG_PG_CONNECT, prg_label(PRG_TAB_SERVO, 1, 1),
-                    TX_HG_KST_TYPE, 1, 1);
-    } else {
-        /* SERIES until this panel's CONNECT opened the port, FILES in its
-         * place then: the text follows the row shown. */
-        prg_add_row(p, PRG_PG_CONNECT, prg_label(PRG_TAB_SERVO, 1, 0),
-                    hitec_panel_files_shown() ? TX_HG_HT_FILES
-                                              : TX_HG_HT_SERIES, 1, 0);
-        prg_add_row(p, PRG_PG_CONNECT, prg_button(PRG_TAB_SERVO, 1, 1),
-                    TX_HG_PRG_READ, 1, 1);
-    }
+    prg_add_row(p, PRG_PG_CONNECT, prg_button(PRG_TAB_SERVO, 1, 0),
+                TX_HG_PRG_READ, 1, 0);
+    /* The brand's slot: the text follows the row shown. */
+    prg_add_row(p, PRG_PG_CONNECT, prg_label(PRG_TAB_SERVO, 1, 1),
+                kst                         ? TX_HG_KST_TYPE
+                : hitec_panel_files_shown() ? TX_HG_HT_CLEAR
+                                            : TX_HG_HT_SERIES,
+                1, 1);
     prg_add_notes(p, PRG_PG_CONNECT);
 }
 
-/** @brief KST's or HITEC's SERVO tab, its lower rows: FILES and MORE on
- *         KST, MORE and AFTER STOP on HITEC; RESTORE and WRITE n VALUES.
+/** @brief KST's or HITEC's SERVO tab, its lower rows: FILES and MORE,
+ *         RESTORE and WRITE n VALUES.
  *  @param p The page. */
 static void page_prg_write(ui_help_page_t *p)
 {
     const bool kst = prg_kst();
     prg_page_init(p, kst ? TX_HG_KST_TITLE_WRITE : TX_HG_HT_TITLE_WRITE);
-    if (kst) {
-        prg_add_row(p, PRG_PG_WRITE, prg_label(PRG_TAB_SERVO, 2, 0),
-                    TX_HG_KST_FILES, 2, 0);
-        prg_add_row(p, PRG_PG_WRITE, prg_label(PRG_TAB_SERVO, 2, 1),
-                    TX_HG_KST_MORE, 2, 1);
-    } else {
-        prg_add_row(p, PRG_PG_WRITE, prg_label(PRG_TAB_SERVO, 2, 0),
-                    TX_HG_HT_MORE, 2, 0);
-        prg_add_row(p, PRG_PG_WRITE, prg_label(PRG_TAB_SERVO, 2, 1),
-                    TX_HG_HT_CLEAR, 2, 1);
-    }
+    prg_add_row(p, PRG_PG_WRITE, prg_label(PRG_TAB_SERVO, 2, 0),
+                kst ? TX_HG_KST_FILES : TX_HG_HT_FILES, 2, 0);
+    prg_add_row(p, PRG_PG_WRITE, prg_label(PRG_TAB_SERVO, 2, 1),
+                kst ? TX_HG_KST_MORE : TX_HG_HT_MORE, 2, 1);
     prg_add_row(p, PRG_PG_WRITE, prg_label(PRG_TAB_SERVO, 3, 0),
                 kst ? TX_HG_KST_RESTORE : TX_HG_HT_RESTORE, 3, 0);
     prg_add_row(p, PRG_PG_WRITE, prg_button(PRG_TAB_SERVO, 3, 1),

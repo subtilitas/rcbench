@@ -432,7 +432,7 @@ Die Aufgabe auf der linken Karte bestimmt die ersten Hilfeseiten:
 | SERVO RUDER | LÄNGE, die Fahrtasten, NULLPUNKT, MAX LÖSCHEN und ohne antwortenden Drehknopf -10us und +10us (4 oder 5); AUSSCHLAG, HINTERKANTE und die Statuszeilen (3) |
 | SERVO RUDER AUTO | die Sollwerte, RESERVE und TOLERANZ, NULLPUNKT und GRAFIK nach einem Lauf (3 oder 4); AUSSCHLAG und HINTERKANTE (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
 | SERVO LIVE, SWEEP und RUDER, SAFE | PORT, BEREIT, die Schienenzeile, ARM und OPTIONEN (5); SET V, die Grafik, TEMPO, Typ und die Tasten auf LIVE und SWEEP (5), SET V, die Grafik, Typ und Seitenansicht auf RUDER (4); SET V nicht am Programmierport des rbmod-Carriers |
-| SERVO KST und HITEC, Reiter SERVO | die Reiter, VERBINDEN, ALLES AUSLESEN und TYP auf KST, SERIE (DATEIEN bei gehaltenem Port) und ALLES AUSLESEN auf HITEC, die Hinweise (5); DATEIEN und WEITERES auf KST, WEITERES und NACH STOP auf HITEC, ZURÜCKSPIELEN, n WERTE SCHREIBEN (4); PORT, BEREIT, die Schienenzeile, SCHREIBEN und OPTIONEN (5) |
+| SERVO KST und HITEC, Reiter SERVO | die Reiter, VERBINDEN, ALLES AUSLESEN, der Platz daneben (TYP auf KST, SERIE auf HITEC, NACH STOP, solange HITEC den Port hält), die Hinweise (5); DATEIEN, WEITERES, ZURÜCKSPIELEN, n WERTE SCHREIBEN (4); PORT, BEREIT, die Schienenzeile, SCHREIBEN und OPTIONEN (5) |
 | SERVO KST und HITEC, ein anderer Reiter | die Reiter, der erste Wert des Reiters, sein `-` und `+` in einer KST-Zeile mit Schritten, SERVO BEWEGEN auf TRAVEL der D-Serie von HITEC, die Hinweise (2 bis 4); PORT, BEREIT, die Schienenzeile, SCHREIBEN und OPTIONEN (5) |
 | die Listen von SERVO (Hub, SWEEP, RUDER, RUDER AUTO, HITEC) | wie eine Optionsliste |
 | SUPPLY LIVE | GRAFIK und TABELLE, SPANNUNG und STROMBEGRENZUNG (3) |
@@ -3001,19 +3001,25 @@ Bestätigungsseiten haben eine 300 x 56px große Halte-Taste und
 ABBRECHEN mit 180 x 56px, PROGRAMMIERMODUS VERLASSEN mit ungeschriebenen
 Änderungen eine 380 x 56px große Halte-Taste und ZURÜCK.
 
-Sie liest das Servo aus und schreibt bearbeitete Werte zurück. Tippe auf
-einen schreibbaren Wert, um eine Liste mit bis zu 6 Einträgen oder das
-Tastenfeld zu öffnen. n WERTE SCHREIBEN, 220px breit, schreibt nach 2s
-Halten. Wähle SERIE vor
-VERBINDEN als D-SERIE oder KLASSISCH. PORT zeigt Port, GPIO, Serie,
-Empfangsart und die von VERBINDEN eingestellte Versorgung.
+Sie zeichnet über den Rahmen der Servoprogrammierung, mit der Reihenfolge
+des Reiters SERVO von KST: der Kopf, der Port, GPIO, Serie, Empfangsart und
+die von VERBINDEN eingestellte Versorgung neben der 260px breiten Taste
+VERBINDEN zeigt; SERVO: ALLES AUSLESEN neben SERIE (D-SERIE oder
+KLASSISCH, vor VERBINDEN gewählt) oder, bei gehaltenem Port, NACH STOP;
+DATEIEN und WEITERES; ZURÜCKSPIELEN und n WERTE SCHREIBEN, 220px breit,
+das nach 2s Halten schreibt. Sie liest das Servo aus und schreibt
+bearbeitete Werte zurück. Tippe auf einen schreibbaren Wert, um eine
+Liste mit bis zu 7 Einträgen, ab 6 zu zweit in einer Zeile, oder das
+Tastenfeld zu öffnen. Die Hinweise beginnen 8px unter den Zeilen;
+brauchen sie mehr Platz, blättern sie mit `1/2` und einem Tipp.
 
 Bei gehaltenem Port gelten dieselben Regeln für ARM und Netzteilbedienung
 wie bei KST, einschließlich der getrennten 5V am Carrier. Ein gesperrtes
 Netzteilelement meldet beim Antippen
 `Servoprogrammierung belegt das Netzteil: Sollwerte und EIN gesperrt.`
-DATEIEN ersetzt SERIE und öffnet `BENCH/HITEC/CONF`, mit 5 Dateien pro
-Seite unter dem Speichereintrag. Ein neuer Name öffnet die Tastatur;
+DATEIEN nimmt bei gehaltenem Port einen Druck an und öffnet
+`BENCH/HITEC/CONF`, mit 5 Dateien pro Seite, zu zweit in einer Zeile,
+unter dem Speichereintrag. Ein neuer Name öffnet die Tastatur;
 Dateien für andere Modelle oder außerhalb weicher Regeln öffnen
 DIESE DATEI PRÜFEN.
 

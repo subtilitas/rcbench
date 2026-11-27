@@ -140,7 +140,7 @@ void hpn_move_act(void)
 void hpn_move_follow(void)
 {
     if (hitec_prog_move_on(&hp.prog)
-        && (!hp.open || hp.tabs.selected != HITEC_PANEL_TRAVEL)) {
+        && (!hp.open || hp.f.tabs.selected != HITEC_PANEL_TRAVEL)) {
         hitec_prog_move_stop(&hp.prog);
     }
 }
@@ -288,7 +288,7 @@ int hpn_move_notes(const char **s, gfx_color_t *color, int max)
     int n = 0;
 
     if (!hitec_prog_move_view(&hp.prog, &v)
-        || hp.tabs.selected != HITEC_PANEL_TRAVEL || max < 5) {
+        || hp.f.tabs.selected != HITEC_PANEL_TRAVEL || max < 5) {
         return -1;
     }
     /* The output the loop drives, as the PORT row names it. */

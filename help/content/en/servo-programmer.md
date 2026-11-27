@@ -133,6 +133,13 @@ The type belongs to the session and is included in saved files. Loading requires
 ![The TYPE list](view:servo-kst-type)
 ![A type set](view:servo-kst-type-set)
 
+HITEC's SERVO tab has the same order. The head names the port, its GPIO and the series over the receive mode and the supply, `PROG PORT 1 GPIO 13  D SERIES` and `RX PULL-UP  5.0V 1000mA`, beside the 260px CONNECT button. READ ALL stands under it with the label SERVO; the model read is on the READY card's SERVO row and on the bottom line. Beside READ ALL stands SERIES before CONNECT, and AFTER STOP with CLEAR while the session holds the port. FILES and MORE follow, then RESTORE and WRITE n VALUES. FILES takes a press while the port is held.
+
+![HITEC's SERVO tab before CONNECT](view:servo-hitec)
+![A D485HW read](view:servo-hitec-read)
+
+HITEC's notes flow and page as KST's. Each value tab ends its notes with `Tap a value to edit it. * marks a change. WRITE n VALUES writes the changes.` while the values take an edit. A list of more than 5 entries, FILES with its files included, stands two to a line.
+
 ![A servo of unknown layout: read only](view:servo-kst-readonly)
 
 A servo whose registers do not fit the known layout is shown and never written: `Read only. This servo type is unknown.`

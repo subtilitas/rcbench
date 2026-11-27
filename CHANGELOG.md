@@ -20,6 +20,20 @@ history is in git.
   VALUES writes the changes.`, which replaces the two lines that named the
   SERVO tab (`kst_panel.c`, `kst_panel_draw.c`;
   [Servo programmer](docs/ServoProgrammer.md#servo-tab)).
+- HITEC's programmer draws through the common servo programmer frame
+  (`sprog`). Its SERVO tab takes KST's order: the head (port, GPIO and
+  series over the receive mode and supply) with a 260px CONNECT button,
+  then SERVO: READ ALL beside SERIES, or AFTER STOP while the port is held,
+  then FILES and MORE, then RESTORE and WRITE n VALUES. READ ALL's label
+  is SERVO; the model stays on the READY card and the bottom line. Notes
+  flow from under the rows; the page count `1/2` stands at the right of
+  the last note row, and a tap turns the page. The value tabs end with the
+  common hint `Tap a value to edit it. * marks a change. WRITE n VALUES
+  writes the changes.` Lists of more than 5 entries and FILES stand two to
+  a line, clear of CANCEL. The head's texts fit 33 cells: `IN USE` (DE
+  `BELEGT`) for a port held elsewhere, `Andere Hitec-Sitzung belegt ihn.`,
+  `VERSORGUNG BLEIBT` (`hitec_panel.c`, `hitec_panel_draw.c`,
+  `servo_guide.c`).
 
 ## 0.23.18 - 2026-11-27
 
