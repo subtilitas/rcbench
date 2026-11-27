@@ -6,6 +6,16 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- STEP model of the Guition JC3636K518 knob display (SKU 10160002, model
+  JC3636K518C_I_YR1), `hardware/mechanical/models/parts/guition_jc3636k518.step`,
+  from `guition_jc3636k518.py`: red ring with 24 facets, cover glass
+  55.00mm across from Guition's display drawing, black base with the
+  USB-C opening, a 3.5mm jack, a slide switch and a small hole;
+  64.0mm x 16.5mm, the housing estimated from owner photos
+  ([Mechanical parts](hardware/mechanical/README.md#guition-jc3636k518-knob-display)).
+
 ### Changed
 
 - The KST programmer draws through the common servo programmer frame

@@ -9,6 +9,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | --- | --- |
 | `estop_m16.py` | spec of the M16 emergency stop button: dimensions, sources, estimates |
 | `m5dial.py` | spec of the M5Stack Dial: dimensions, sources, estimates |
+| `guition_jc3636k518.py` | spec of the Guition JC3636K518 knob display: dimensions, sources, estimates |
 | `_gen_dial_base.py` | builds the two parts of a hand-held base for the M5Stack Dial with OpenCASCADE, checks their fit round dial, nut and cell, writes STEP and STL |
 | `_gen_bench.py` | builds the hardware test bench from the owner's photos as a GLB with named nodes for the video, `tools/video/cad/bench.glb` |
 | `_gen_knob.py` | builds a rotary knob round a fixed round display on the dial base's bottom part with OpenCASCADE, checks the fit of all its parts, writes STEP and STL |
@@ -70,7 +71,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `check_refit.py` | holds the dial's solids, read back with OpenCASCADE, against the mesh |
 | `models/pcb/` | 18 models: 17 boards with their parts and the sensor node's layout; STEP |
 | `models/casing/` | 12 models: 11 printed parts (the Dial's base, the display node's case in 2 variants, the sensor node's case, the INA228 module's case, the flap drive's frame; STEP, and STL for 9 of them) and the bench's enclosure from Onshape, STEP only |
-| `models/parts/` | 20 models of bought parts and of assemblies: acrylic disc, 6704-2RS ball bearing, emergency stop button, M5Stack Dial and its nut, 3 servos, an ESC, a motor, the set of both and a motor simulator, 2 cells, inertial sensor, the flap drive's assembly and wing; STEP |
+| `models/parts/` | 21 models of bought parts and of assemblies: acrylic disc, 6704-2RS ball bearing, emergency stop button, M5Stack Dial and its nut, Guition JC3636K518 knob display, 3 servos, an ESC, a motor, the set of both and a motor simulator, 2 cells, inertial sensor, the flap drive's assembly and wing; STEP |
 | `renders/` | OpenCASCADE renders in the folders of `models/`: `pcb/`, `casing/`, `parts/`; a view of several models lies in the folder `_models.py` names for it. The contact sheet `all.png` lies beside the folders |
 | `vendor/` | third-party meshes, unchanged, each with its licence |
 
@@ -245,6 +246,58 @@ fits the whole file shows the assembled dial small. The 2 STEP files hold
 M5Stack's geometry and are under the same licence.
 
 ![Mechanical models](renders/all.png)
+
+## Guition JC3636K518 knob display
+
+A rotary knob with a round 1.8in 360 x 360 touch display, Guition SKU
+(stock keeping unit) 10160002, model JC3636K518C_I_YR1: an ESP32-S3, a
+red aluminium ring with 24 facets that turns about a fixed cover glass,
+and a black base with a USB-C socket (CH340 serial bridge), a 3.5mm audio
+jack, a slide power switch and a small hole on its side. Model size 64.0mm across the ring's corners, 16.5mm
+tall.
+
+![Guition JC3636K518](renders/parts/guition_jc3636k518.png)
+
+| File | Content | Origin |
+| --- | --- | --- |
+| `guition_jc3636k518.step` | base with the USB-C pocket and receptacle, neck, ring, fixed carrier, display and cover glass, switch, jack and small hole marks; 31 solids, 0.2MB | z = 0 on the base's underside, the glass to +z; the USB-C opening faces -y |
+
+Sources: the display's drawing in Guition's archive
+`JC3636K518CN_knob_EN.zip` (pan.jczn1688.com, folder `3-Specification`):
+cover glass 55.00mm +/- 0.1mm across and 0.70mm thick, display 49.95mm
+across, 3.25mm thick in all. Guition publishes no drawing of the housing
+and no 3D file; its size picture gives 66mm x 22mm, hand-measured with
+2mm to 5mm tolerance. The archive holds no licence; the model uses the
+numbers only.
+
+Estimated from 2 owner photos with the 55.00mm glass as the scale (11.87
+pixels a mm), each to about 1mm:
+
+| Dimension | Value | Photo |
+| --- | --- | --- |
+| ring across the corners | 64.0mm | `knob-top.jpg` |
+| ring height, facets, bore | 9.0mm, 24, 55.6mm | both |
+| base across, height | 62.0mm, 7.0mm | both |
+| neck between base and ring | 61.0mm across, 0.5mm | both |
+| glass top under the ring's top | 0.5mm | both |
+| small hole | 1.0mm at -111 degrees, 4.5mm high | `knob-side.jpg` |
+| USB-C opening | 9.8mm x 3.6mm at -90 degrees, 3.5mm high | both |
+| jack opening | 2.6mm at -56 degrees, 4.0mm high | `knob-side.jpg` |
+| slide switch | 5.0mm x 2.6mm, 0.6mm proud, at -31 degrees, 3.0mm high | `knob-side.jpg` |
+
+Angles are counter-clockwise from +x seen from above; heights are the
+feature's middle over the underside. The spec's docstring gives the
+pixel readings.
+
+Current limitations: the model's 16.5mm height is the photo estimate,
+5.5mm under Guition's 22mm; a case drawn round it needs the device
+checked for height. The ring's facets are twisted about the axis on
+the part and parallel to it in the model; the ring's top chamfer is
+not modelled. The jack's opening and the small hole are dark discs
+0.05mm thick on the surface, their depth not known. The photo reads the
+jack's opening 2.6mm across, less than the 3.5mm of its plug. The switch
+is a block in its middle position; its lever travel is not known. The underside and any mounting feature on it
+are not modelled: no photo shows them.
 
 ## Hand-held base for the M5Stack Dial
 
