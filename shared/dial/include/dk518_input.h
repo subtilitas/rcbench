@@ -42,9 +42,14 @@
  * - Moved over 20px before 1,000ms: the key stays up.
  * - A window never shortens or merges: a still lift while a window runs,
  *   or within 30ms (DK518_KEY_GAP_MS) of its end, moves nothing.
- * - The offer opening or closing (an answer, its time out, a lost link)
- *   ends the window, and the touch under way moves nothing until it
- *   lifts; the key is up while no offer is open.
+ * - The offer opening or closing (an answer, its time out, a lost link),
+ *   or another offer in its place (bleota's offer count), ends the
+ *   window, and the touch under way moves nothing until it lifts; the key
+ *   is up while no offer is open.
+ * - The key names the offer its window was opened in
+ *   (dk518_key_offer()); the `ota` task takes it for that offer alone
+ *   (bleota_dev_key_for()), so an offer that replaces another between two
+ *   steps gets no key from the first one's touch.
  *
  * Points are the panel's native 0 to 359; EVENT carries 0 to 239
  * (dk518_touch_scale()).
@@ -110,6 +115,7 @@ typedef struct {
 /** @brief The update's confirming key. */
 typedef struct {
     bool     offer;    /**< the offer is open, as the last step saw */
+    uint32_t id;       /**< its identity, bleota's offer count */
     bool     touch_ok; /**< the touch under way started in this offer */
     bool     hold;     /**< its window lasts until the touch lifts */
     bool     on;       /**< a window was opened in this offer */
@@ -169,12 +175,20 @@ void dk518_key_init(dk518_key_t *k);
  *        dk518_still_step().
  * @param k     the key
  * @param offer the offer is open (bleota's CONFIRM)
+ * @param id    its identity (bleota_dev_offer()), read with @p offer
  * @param o     the still touch's events of this step
  * @param now   the time, ms
  * @return true when this step opened a press window: the accept's cue
  */
-bool dk518_key_step(dk518_key_t *k, bool offer,
+bool dk518_key_step(dk518_key_t *k, bool offer, uint32_t id,
                     const dk518_still_out_t *o, uint32_t now);
+
+/**
+ * @brief The offer the key belongs to, for bleota_dev_key_for().
+ * @param k the key
+ * @return the identity the last step saw
+ */
+uint32_t dk518_key_offer(const dk518_key_t *k);
 
 /**
  * @brief The update's confirming key, for the `ota` task.

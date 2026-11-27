@@ -160,8 +160,13 @@ typedef struct {
 #if CONFIG_RCBENCH_DIAL_BOARD_K518
 /** @brief The screen button's gestures: the still touch's. */
 #define BUTTON (&s_in.still.button)
-/** @brief The update's key (dk518_key_down()), for the `ota` task. */
-static atomic_bool s_key;
+/** @brief The update's key for the `ota` task: KEY_DOWN while
+ *         dk518_key_down(), and the offer it belongs to in KEY_OFFER. */
+static atomic_uint_least32_t s_key;
+/** @brief s_key's fields. @{ */
+#define KEY_DOWN  0x80000000u
+#define KEY_OFFER 0x7FFFFFFFu /**< the offer's identity, low 31 bits */
+/** @} */
 #else
 /** @brief The screen button's gestures. */
 #define BUTTON (&s_in.button)
@@ -352,7 +357,6 @@ static void button_acts(unsigned act, uint32_t now)
 static void screen_button(uint32_t now)
 {
     dk518_still_out_t o;
-    devota_view_t dv;
     if (now - s_in.touch_poll_ms >= TOUCH_MS) {
         s_in.touch_poll_ms = now;
         s_in.touch_down = dial_k518_touch(&s_in.nx, &s_in.ny);
@@ -371,11 +375,15 @@ static void screen_button(uint32_t now)
     s_in.local_turns = 0;
     /* The update takes the still touch's events, never the raw touch:
      * a swipe, or a touch from before the offer, must not answer it. */
-    devota_view(&dv);
-    if (dk518_key_step(&s_in.key, dv.st == BLEOTA_DEV_CONFIRM, &o, now)) {
+    uint32_t id = 0u;
+    const bool open = devota_offer(&id);
+    if (dk518_key_step(&s_in.key, open, id, &o, now)) {
         dial_buzz_cue(DIAL_CUE_ACCEPT);
     }
-    atomic_store(&s_key, dk518_key_down(&s_in.key, now));
+    /* The key and its offer in one word, so the `ota` task never pairs
+     * one offer's key with another's identity. */
+    atomic_store(&s_key, (dk518_key_down(&s_in.key, now) ? KEY_DOWN : 0u)
+                             | (dk518_key_offer(&s_in.key) & KEY_OFFER));
     if (o.tap) {
         gesture_push(DK_G_TAP, o.tap_x, o.tap_y);
     }
@@ -685,7 +693,14 @@ void dial_input_start(void)
 
 bool dial_input_update_key(void)
 {
-    return atomic_load(&s_key);
+    return (atomic_load(&s_key) & KEY_DOWN) != 0u;
+}
+
+bool dial_input_offer_key(uint32_t *offer)
+{
+    const uint32_t w = (uint32_t)atomic_load(&s_key);
+    *offer = w & KEY_OFFER;
+    return (w & KEY_DOWN) != 0u;
 }
 #else
 /** @brief Set up PCNT for the encoder, x4 with the glitch filter.

@@ -223,6 +223,8 @@ bool        bleota_dev_init(bleota_dev_t *d, const bleota_dev_cfg_t *cfg,
 void        bleota_dev_ctrl(bleota_dev_t *d, const uint8_t *b, size_t n, uint32_t now);
 void        bleota_dev_data(bleota_dev_t *d, const uint8_t *b, size_t n, uint32_t now);
 void        bleota_dev_key(bleota_dev_t *d, bool down, uint32_t now);
+void        bleota_dev_key_for(bleota_dev_t *d, bool down, uint32_t offer, uint32_t now);
+bool        bleota_dev_offer(const bleota_dev_t *d, uint32_t *offer);
 void        bleota_dev_lost(bleota_dev_t *d);
 bleota_do_t bleota_dev_poll(bleota_dev_t *d, uint32_t now);
 void        bleota_dev_opened(bleota_dev_t *d, bool ok, uint32_t now);

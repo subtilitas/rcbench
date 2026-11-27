@@ -50,8 +50,10 @@ answer), read every 20ms; EVENT carries its point scaled from 0-359 to
 TAP: SELECT. The update takes the still touch alone: a still lift before
 1,000ms accepts it, a still touch of 1,000ms refuses it, and a swipe does
 neither. Only a touch that starts while the question stands answers it; a
-touch from before it, or from before a lost link, answers nothing until
-it lifts. A DRV2605 at 0x5A vibrates instead of a buzzer, with its ROM
+touch from before it, from before a lost link, or from a question that
+another one replaced, answers nothing until it lifts. Each question has
+its own number, and the update takes the key only for the question it
+was made in. A DRV2605 at 0x5A vibrates instead of a buzzer, with its ROM
 effects for an LRA (library 6): a detent "Sharp Tick 3" (26), PRESS
 "Sharp Click 100%" (4), HOLD and an accepted update "Strong Click 100%"
 (1), the 5s warning "Buzz 1 100%" (47), the forget "Double Click 100%"
