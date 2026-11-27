@@ -47,7 +47,7 @@ static const sprog_row_t rig_rows[R_COUNT] = {
 };
 
 static const sprog_def_t rig_def = {
-    rig_tabs, rig_tab_show, 2, rig_rows, R_COUNT, TX_KP_EDIT_NOTE_1,
+    rig_tabs, rig_tab_show, 2, rig_rows, R_COUNT, TX_SPROG_EDIT_NOTE,
 };
 
 /* The canvas: SERVO's left card and room around it. */

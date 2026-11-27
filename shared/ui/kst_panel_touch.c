@@ -127,7 +127,7 @@ static void down(const touch_event_t *evt)
     }
     if (gfx_rect_contains(kpn_tabs_rect(), x, y)) {
         take(evt, P_TAB, -1);
-        (void)ui_tabs_event(&k.tabs, evt);
+        (void)ui_tabs_event(&k.f.tabs, evt);
         return;
     }
     for (int i = 0; i < ROW_COUNT; ++i) {
@@ -194,7 +194,7 @@ void kst_panel_close(void)
     if (!kst_panel_holds_port()) {
         kpn_close_editors();
         k.open = false;
-        k.note_page = 0;
+        k.f.note_page = 0;
     } else if (kpn_programming() && !k.warn.open) {
         kpn_close_editors();
         kpn_warn_leave();
@@ -267,11 +267,11 @@ static void rest(const touch_event_t *evt)
         return;
     }
     case P_TAB: {
-        const int was_tab = k.tabs.selected;
+        const int was_tab = k.f.tabs.selected;
 
-        (void)ui_tabs_event(&k.tabs, evt);
-        if (k.tabs.selected != was_tab) {
-            k.note_page = 0;
+        (void)ui_tabs_event(&k.f.tabs, evt);
+        if (k.f.tabs.selected != was_tab) {
+            k.f.note_page = 0;
         }
         if (up) {
             let_go();
@@ -368,7 +368,7 @@ static void rest(const touch_event_t *evt)
         break;
     case P_NOTES:
         if (kpn_notes_paged_at(x, y)) {
-            k.note_page = (uint8_t)((k.note_page + 1)
+            k.f.note_page = (uint8_t)((k.f.note_page + 1)
                                     % kst_panel_note_pages());
         }
         break;
@@ -437,7 +437,7 @@ void kst_panel_cancel(void)
 {
     ui_keypad_cancel_press(&k.kp);
     ui_textkey_cancel_press(&k.tk);
-    ui_tabs_cancel(&k.tabs);
+    ui_tabs_cancel(&k.f.tabs);
     ui_hold_reset(&k.warn.hold);
     ui_hold_reset(&k.conn);
     k.conn_due = false;
@@ -453,7 +453,7 @@ void kst_panel_leave(void)
     kst_panel_cancel();
     kpn_close_editors();
     k.open = false;
-    k.note_page = 0;
+    k.f.note_page = 0;
 }
 
 /**

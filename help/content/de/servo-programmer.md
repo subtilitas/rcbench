@@ -44,7 +44,7 @@ Ein Tippen auf eine nicht erfüllte Zeile nennt sie im Alarmband. Die Mitte der 
 
 - IOmcu 0.17.0 oder neuer, mit Protokoll 4.15 einschließlich LEAVE.
 - Ein Servo an einem IOmcu-Programmierport, PROG-PORT 1 bis 4, mit Pin und FUNKTION SERVO PWM. Bei manueller Verdrahtung verwendet Port 1 standardmäßig GPIO 13, Pad 17. Andere Pins werden im jeweiligen PROG-PORT-Eintrag auf Ausgänge gewählt. Carrier-Pins sind fest; siehe [Der Port und die Versorgung](#der-port-und-die-versorgung).
-- SERVO-TESTER auf diesem Port: PORT 1, PORT 2, PORT 3 oder PORT 4. Die [Taste PORT](servo-settings.md#die-taste-port) der anderen Funktionsseiten wählt ihn. Ab Carrier-Protokoll 4.36 kannst du den Port auch über die PORT-Zeile der Servoprogrammierung wählen.
+- SERVO-TESTER auf diesem Port: PORT 1, PORT 2, PORT 3 oder PORT 4. Die [Taste PORT](servo-settings.md#die-taste-port) der anderen Funktionsseiten wählt ihn. Ab Carrier-Protokoll 4.36 kannst du den Port auch über die Portzeile im Reiter SERVO der Servoprogrammierung wählen.
 - Prüfstand in SAFE. Bei ARMED wird VERBINDEN mit `Tippe zuerst auf DISARM. Bei ARMED kann der Port nicht übernommen werden.` abgelehnt. Solange der Port belegt ist, kann keine Seite auf ARMED schalten, und der Arm-Chip des Bands zeigt auf jeder Seite bernsteinfarben `SAFE PROG 1` bis `SAFE PROG 4`, ob SERVO verlassen ist oder nicht.
 
 ![Ein IOmcu ohne Programmierport](view:servo-kst-nopage)
@@ -83,7 +83,7 @@ Nur VERLASSEN löst die Frage aus. PORT FREIGEBEN, STOP, Fehler, Verbindungsverl
 
 Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) verwenden Programmierports eine eigene feste 5V-Versorgung über GPIO 21. WEITERES zeigt `PROGRAMMIERSPANNUNG: 5V FEST, GPIO 21`. Die Sitzung schaltet diese Schiene dort, wo die folgende Tabelle den PD-mini-Ausgang nennt. Währenddessen zeigt das Feld PROG 5V auf SUPPLY `BELEGT VON PROG-PORT n` und nimmt keinen Druck an. Außerhalb einer Sitzung kannst du dort PROG 5V EIN 2s halten oder PROG 5V AUS antippen.
 
-Ab Carrier-Protokoll 4.36 öffnet ein Tipp auf die PORT-Beschriftung vor VERBINDEN die Auswahl: PROGP01 (GPIO 13), PROGP02 (GPIO 14), PROGP03 (GPIO 15) oder PROGP04 (GPIO 0). Die Wahl setzt SERVO-TESTER und fordert SERVO PWM am gewählten Port sowie KEINE an den anderen drei an. Bis zur Bestätigung sendet der Tester keine Befehle. Bei ARMED oder ausstehender ARM-Anfrage, während Test, Sweep oder Endlagenlauf sowie bei belegtem Programmierport ist die Auswahl gesperrt. Auch ein PWM-Ausgang auf demselben Slice sperrt den betreffenden Port.
+Ab Carrier-Protokoll 4.36 öffnet ein Tipp auf den Kopf des Reiters SERVO, links von VERBINDEN, vor VERBINDEN die Auswahl: PROGP01 (GPIO 13), PROGP02 (GPIO 14), PROGP03 (GPIO 15) oder PROGP04 (GPIO 0). Die Wahl setzt SERVO-TESTER und fordert SERVO PWM am gewählten Port sowie KEINE an den anderen drei an. Bis zur Bestätigung sendet der Tester keine Befehle. Bei ARMED oder ausstehender ARM-Anfrage, während Test, Sweep oder Endlagenlauf sowie bei belegtem Programmierport ist die Auswahl gesperrt. Auch ein PWM-Ausgang auf demselben Slice sperrt den betreffenden Port.
 
 ![Der KST-Programmer hält die 5V](view:servo-kst-rbmod)
 
@@ -114,13 +114,17 @@ Bei ausgeschaltetem Ausgang schaltet VERBINDEN ihn ein und öffnet den Programmi
 
 | Zeile | Taste | Wirkung |
 |---|---|---|
-| PORT | VERBINDEN (2s halten, wo es eine Versorgung einschaltet), ABBRECHEN, VERLASSEN | nimmt den Port, beendet den laufenden Vorgang, gibt den Port zurück |
+| Kopf: Port und Versorgung | VERBINDEN (2s halten, wo es eine Versorgung einschaltet), ABBRECHEN, VERLASSEN | nimmt den Port, beendet den laufenden Vorgang, gibt den Port zurück |
 | SERVO | ALLES AUSLESEN | liest die 32 Register, jedes, bis 3 von höchstens 5 Lesungen übereinstimmen |
 | TYP | V6?, V8?, V6, V8 | der Servotyp, V6 oder V8, wie der Bediener ihn setzt |
 | DATEIEN | WÄHLEN | speichert die Werte des Servos auf die Karte, lädt eine Datei |
 | WEITERES | WÄHLEN | im Programmiermodus: PRÜFEN, ÄNDERUNGEN VERWERFEN und, bei KST EXPERT MODE EIN, PAIRING LÖSEN |
 | ZURÜCKSPIELEN | WÄHLEN | schreibt ein Backup zurück |
 | (keine Beschriftung) | n WERTE SCHREIBEN | schreibt die geänderten Werte nach 2s Halten |
+
+Der Kopf nennt den Port und sein GPIO, `PROG-PORT 1 GPIO 13`, oder `KEIN PROG-PORT GESETZT` in der Warnfarbe. Darunter steht die Versorgung, die VERBINDEN stellt: `PD MINI  5.0V 1000mA`, `5V FEST` am Carrier oder `VERSORGUNG UNVERÄNDERT`, wo du das Servo versorgst.
+
+Die Hinweise folgen unter den Zeilen: der Zustand des Ports, der Typ oder was der Zustand verlangt, was bis zu seiner Erledigung stehen bleibt, und die Backup-Datei der Sitzung. Die letzte Meldung bleibt in der untersten Zeile. Hinweise, die mehr Zeilen brauchen, nehmen weitere Seiten; die Seitenzahl, etwa `1/2`, steht über der Meldung, und ein Tipp auf die Hinweise blättert um.
 
 Kein Register identifiziert die Serie. Bei V8-Flächenservos kann 20k_sel wie bei V6 gesetzt sein. Nach dem Auslesen zeigt TYP daher einen Vorschlag mit Fragezeichen, etwa `V6?`, und fordert zum Prüfen des Servoetiketts auf. Tippe auf TYP, um V6 oder V8 zu bestätigen.
 
@@ -137,7 +141,7 @@ Passt die Registerbelegung nicht zum bekannten Layout, bleibt das Servo schreibg
 
 ![Geänderte Werte auf ABSTIMMEN](view:servo-kst-tune)
 
-Änderungen bleiben bis zum Schreiben im Entwurf auf dem Panel. Ein `*` und die Akzentfarbe markieren geänderte Werte. Tippe auf eine Zahl für das Tastenfeld innerhalb der harten Grenzen, auf STRETCH für die Auswahlliste oder auf einen Schalter zum Umschalten.
+Änderungen bleiben bis zum Schreiben im Entwurf auf dem Panel. Ein `*` und die Akzentfarbe markieren geänderte Werte. Tippe auf eine Zahl für das Tastenfeld innerhalb der harten Grenzen, auf STRETCH für die Auswahlliste oder auf einen Schalter zum Umschalten. ABSTIMMEN, PULS und FAILSAFE enden mit dem Hinweis, den die HITEC-Programmierung teilt: `Tippe zum Ändern auf einen Wert. * markiert Änderungen. n WERTE SCHREIBEN schreibt sie.`
 
 ![Das Tastenfeld mit dem Bereich, den die Grenzen annehmen](view:servo-kst-keypad)
 ![Die Liste von STRETCH](view:servo-kst-stretch)

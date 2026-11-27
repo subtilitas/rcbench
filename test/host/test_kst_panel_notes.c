@@ -1,11 +1,11 @@
 /**
  * @file test_kst_panel_notes.c
- * @brief The programmer overlay's notes: pages, the standing lines and what the
- * first page holds.
+ * @brief The programmer overlay's notes: their flow under the rows, the
+ * value tabs' hint, pages, the standing lines and the message.
  *
  * Cases:
- * - notes_that_do_not_fit_take_pages_and_none_is_lost
- * - standing_notes_are_on_the_first_page_whole
+ * - the_notes_flow_from_under_the_rows
+ * - value_tabs_end_with_the_common_hint
  * - every_message_fits_whole_under_the_servo_tab
  * - a_servo_in_doubt_keeps_every_line_of_its_message
  * - the_notes_start_on_their_first_page_again
@@ -16,71 +16,56 @@
 
 #include "kst_panel_screen_rig.h"
 
-/* Notes that fit take one page.  Notes that do not take pages that keep
- * their last row for the count: no page holds more than room - 1 rows,
- * no note is split, and every note is on a page. */
-TEST_CASE(notes_that_do_not_fit_take_pages_and_none_is_lost)
+/* The @p i-th note on the page shown, "" past the last. */
+static const char *shown(int i)
 {
-    int page[5];
-    const int fit[3] = { 2, 1, 2 };
-    const bool none[5] = { false, false, false, false, false };
-    const int many[5] = { 2, 2, 1, 2, 1 };
+    const char *s = kst_panel_shown_note(i);
 
-    CHECK(kst_panel_pack_notes(fit, none, 3, 5, page) == 1);
-    CHECK(page[0] == 0 && page[1] == 0 && page[2] == 0);
-    for (int room = 3; room <= 7; ++room) {
-        const int pages = kst_panel_pack_notes(many, none, 5, room, page);
-        int used[5] = { 0 };
+    return s != NULL ? s : "";
+}
 
-        CHECK(pages >= 2);
-        for (int i = 0; i < 5; ++i) {
-            CHECK(page[i] >= 0 && page[i] < pages);
-            CHECK(i == 0 || page[i] >= page[i - 1]);
-            used[page[i]] += many[i];
-        }
-        for (int pg = 0; pg < pages; ++pg) {
-            CHECK(used[pg] > 0 && used[pg] <= room - 1);
-        }
+/* The SERVO tab's notes flow from 8px under its last row, the state line
+ * first; the last message is pinned to the foot, 8px above the area's
+ * bottom. */
+TEST_CASE(the_notes_flow_from_under_the_rows)
+{
+    fresh();
+    connected();
+    show();
+    {
+        const gfx_rect_t last = val(PG_SERVO, 3, 1);
+        const gfx_rect_t drawn = kst_panel_notes_drawn();
+
+        CHECK_STR_EQ(shown(0), kst_panel_status_line(0));
+        CHECK_EQ(drawn.y, last.y + last.h + 8);
+        CHECK(kst_panel_shown_message_lines() > 0);
+        CHECK_EQ(drawn.y + drawn.h, AREA.y + AREA.h - 8);
     }
 }
 
-/* State, type, the standing pair and the backup: the SERVO tab's notes
- * at their widest in German. */
-TEST_CASE(standing_notes_are_on_the_first_page_whole)
+/* A value tab's note, then the hint every servo programmer shares; the
+ * LOCKED tab takes no edit and has no hint. */
+TEST_CASE(value_tabs_end_with_the_common_hint)
 {
-    const int rows[5] = { 1, 1, 2, 2, 1 };
-    const bool held[5] = { false, false, true, true, false };
-    int page[5];
-
-    /* Room for all: one page. */
-    CHECK(kst_panel_pack_notes(rows, held, 5, 7, page) == 1);
-    for (int i = 0; i < 5; ++i) {
-        CHECK_EQ(page[i], 0);
+    fresh();
+    settings_set(SET_KST_EXPERT, 1.0f);
+    connected();
+    tap(kst_panel_tab_rect(PG_TUNE));
+    CHECK_STR_EQ(shown(0), TR(SPROG_EDIT_NOTE));
+    CHECK_STR_EQ(shown(1), "");
+    tap(kst_panel_tab_rect(PG_PULSE));
+    CHECK_STR_EQ(shown(0), TR(KP_ANGLE_NOTE));
+    CHECK_STR_EQ(shown(1), TR(SPROG_EDIT_NOTE));
+    tap(kst_panel_tab_rect(PG_FAILSAFE));
+    CHECK_STR_EQ(shown(0), TR(KP_FS_NOTE_1));
+    CHECK_STR_EQ(shown(1), TR(KP_FS_NOTE_2));
+    CHECK_STR_EQ(shown(2), TR(SPROG_EDIT_NOTE));
+    tap(kst_panel_tab_rect(PG_LOCKED));
+    CHECK_STR_EQ(shown(0), TR(KP_LOCKED_NOTE));
+    for (int i = 0; kst_panel_shown_note(i) != NULL; ++i) {
+        CHECK(strcmp(shown(i), TR(SPROG_EDIT_NOTE)) != 0);
     }
-    /* The standing pair and the count row fill page 0; the others page. */
-    CHECK(kst_panel_pack_notes(rows, held, 5, 5, page) == 2);
-    CHECK(page[0] == 1 && page[1] == 1 && page[2] == 0 && page[3] == 0
-          && page[4] == 1);
-    /* One row more: the state goes on page 0 with the pair. */
-    CHECK(kst_panel_pack_notes(rows, held, 5, 6, page) == 2);
-    CHECK(page[0] == 0 && page[1] == 1 && page[2] == 0 && page[3] == 0
-          && page[4] == 1);
-    /* No row beside the pair for a count: the pair yields, every note
-     * pages in pages of room - 1 rows, the pair first. */
-    CHECK(kst_panel_pack_notes(rows, held, 5, 4, page) == 3);
-    CHECK(page[2] == 0 && page[3] == 1 && page[0] == 1 && page[1] == 2
-          && page[4] == 2);
-    CHECK(kst_panel_pack_notes(rows, held, 5, 3, page) == 4);
-    CHECK(page[2] == 0 && page[3] == 1 && page[0] == 2 && page[1] == 2
-          && page[4] == 3);
-    /* A note taller than a page waits for the room to grow. */
-    CHECK(kst_panel_pack_notes(rows, held, 5, 2, page) == 3);
-    CHECK(page[2] == -1 && page[3] == -1 && page[0] == 0 && page[1] == 1
-          && page[4] == 2);
-    CHECK(kst_panel_pack_notes(rows, held, 5, 1, page) == 1);
-    for (int i = 0; i < 5; ++i) {
-        CHECK_EQ(page[i], -1);
-    }
+    settings_set(SET_KST_EXPERT, 0.0f);
 }
 
 /* Whether @p s is a note on the page shown. */
@@ -202,9 +187,6 @@ TEST_CASE(every_message_fits_whole_under_the_servo_tab)
     ui_text_set_language(UI_LANG_EN);
 }
 
-/* An area 460px tall: 8 rows of notes under the SERVO tab. */
-static const gfx_rect_t k_short = { UI_MARGIN, UI_MARGIN, 620, 460 };
-
 /* An area 524px tall, a left card down to the body's foot: 10 rows of
  * notes under the SERVO tab.  SERVO's KST screen hands the session 428px,
  * the card over the footer: 6 rows, where the longest message, 5 rows, is
@@ -287,12 +269,11 @@ TEST_CASE(a_servo_in_doubt_keeps_every_line_of_its_message)
     ui_text_set_language(UI_LANG_EN);
 }
 
-/* The notes of a servo in doubt with no message, in German, in the area
- * 460px tall: two pages. */
-static void doubt_no_message(void)
+/* The notes of a servo in doubt after READ ALL, in German, on SERVO's
+ * left card: the standing pair and the message take two pages. */
+static void doubt_paged(void)
 {
     fresh();
-    kst_panel_init(k_short);
     kst_panel_open();
     ui_text_set_language(UI_LANG_DE);
     g_rig.card = true;
@@ -301,14 +282,12 @@ static void doubt_no_message(void)
     tap(kst_panel_tab_rect(PG_SERVO));
     tap(val(PG_SERVO, 1, 0));          /* READ ALL */
     settle();
-    M->msg = (kst_prog_msg_t){ .id = KST_PROG_MSG_NONE,
-                               .seq = M->msg.seq + 1u };
     show();
 }
 
 TEST_CASE(the_notes_start_on_their_first_page_again)
 {
-    doubt_no_message();
+    doubt_paged();
     CHECK(kst_panel_note_pages() > 1);
 
     /* Leaving the programmer and opening it again. */
@@ -353,8 +332,8 @@ TEST_CASE(a_text_before_the_area_is_set_still_ends)
 
 int main(void)
 {
-    RUN(notes_that_do_not_fit_take_pages_and_none_is_lost);
-    RUN(standing_notes_are_on_the_first_page_whole);
+    RUN(the_notes_flow_from_under_the_rows);
+    RUN(value_tabs_end_with_the_common_hint);
     RUN(every_message_fits_whole_under_the_servo_tab);
     RUN(a_servo_in_doubt_keeps_every_line_of_its_message);
     RUN(the_notes_start_on_their_first_page_again);

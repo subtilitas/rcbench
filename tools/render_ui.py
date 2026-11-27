@@ -433,7 +433,6 @@ SCREENS = {
     "servo-kst-working": ("servo-kst-working.png", "servo", "dark"),
     "servo-kst-read": ("servo-kst-read.png", "servo", "dark"),
     # The notes turned to their second page: a tap on them.
-    "servo-kst-read-p2": ("servo-kst-read-p2.png", "servo", "dark"),
     "servo-kst-readonly": ("servo-kst-readonly.png", "servo", "dark"),
     "servo-kst-locked": ("servo-kst-locked.png", "servo", "dark"),
     "servo-kst-failsafe": ("servo-kst-failsafe.png", "servo", "dark"),
@@ -488,8 +487,8 @@ SCREENS = {
     "servo-kst-write-nocard": ("servo-kst-write-nocard.png", "servo", "dark"),
     "servo-kst-nofile": ("servo-kst-nofile.png", "servo", "dark"),
     "servo-kst-doubt": ("servo-kst-doubt.png", "servo", "dark"),
-    "servo-kst-doubt-p2": ("servo-kst-doubt-p2.png", "servo", "dark"),
     "servo-kst-journal": ("servo-kst-journal.png", "servo", "dark"),
+    "servo-kst-journal-p2": ("servo-kst-journal-p2.png", "servo", "dark"),
     "servo-kst-restore-list": ("servo-kst-restore-list.png", "servo", "dark"),
     "servo-kst-restore": ("servo-kst-restore.png", "servo", "dark"),
     "servo-kst-restore-check": ("servo-kst-restore-check.png", "servo",
@@ -1483,9 +1482,11 @@ FIT_ONLY = {
     "supply-port":      (None, "supply", "dark"),
     "supply-offline-settings": (None, "supply", "dark"),
     # The SERVO PROGRAMMER's notes turned to their second page, where they
-    # take more rows than there are above the message.
+    # take more rows than there are above the message; a tap on notes that
+    # fit on one page, which turns nothing.
     "servo-kst-file-locked-p2": (None, "servo", "dark"),
-    "servo-kst-journal-p2": (None, "servo", "dark"),
+    "servo-kst-read-p2": (None, "servo", "dark"),
+    "servo-kst-doubt-p2": (None, "servo", "dark"),
     # The analyser on a frame the receiver flags as lost.
     "analyser-lost":    (None, "analyser", "dark"),
     # The SERVO screen's OUTPUT page with the frame rate refused and with an

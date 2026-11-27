@@ -2920,7 +2920,8 @@ PROG-PORT 3 und PROG-PORT 4 nennen. Bei OUTPUTS bleibt VERBINDEN gesperrt; es er
 und `Tippe auf PORT und wähle einen PROG-PORT.`
 
 Am rbmod-Carrier mit IOmcu-Protokoll ab 4.36 kannst du vor VERBINDEN auf
-die Beschriftung PORT tippen und einen Programmierport wählen. Die Pins
+den Kopf des Reiters SERVO von KST (die Beschriftung PORT bei HITEC)
+tippen und einen Programmierport wählen. Die Pins
 sind fest: PROGP01 GPIO13, PROGP02 GPIO14, PROGP03 GPIO15, PROGP04 GPIO0.
 Die Wahl setzt SERVO-TESTER und fordert für diesen Port SERVO PWM, für
 die anderen drei KEINE an. Der Tester wartet auf die Auslesebestätigung.
@@ -2938,8 +2939,11 @@ Ein Druck zeigt `ARMED gesperrt: Die Servoprogrammierung belegt einen Port.`
 STOP bleibt überall aktiv, ZENTRIEREN und FREIGEBEN auf LIVE. SOLL-PULSBREITE zeigt `---`,
 weil der Tester keine Pulse an den gehaltenen Port sendet.
 
-In PWM mit antwortendem PD mini nennt PORT die von VERBINDEN eingestellte
-Spannung und Strombegrenzung: `PORT  5.0V  1000mA`. Während der
+Der Reiter SERVO von KST beginnt mit einem Kopf: Port und GPIO,
+`PROG-PORT 1 GPIO 13` (ohne Port `KEIN PROG-PORT GESETZT` in der
+Warnfarbe), über der Versorgung, die VERBINDEN stellt: `PD MINI  5.0V
+1000mA` mit antwortendem PD mini, `5V FEST` am Carrier oder
+`VERSORGUNG UNVERÄNDERT`. Während der
 Portbelegung sind die Sollwerte und AUSGANG EIN auf SUPPLY und den anderen
 SERVO-Bildschirmen gesperrt; AUSGANG AUS und ein Druck auf die Zeile PD
 MINI von KST oder HITEC, solange sie EIN liest, bleiben aktiv. Am rbmod-Carrier haben die Ports
@@ -2956,7 +2960,8 @@ Bedienelemente sind mindestens 48px hoch und enden 8px über dem Feldboden:
 | Registerkarten | eine Zeile oben, 48px hoch: fünf Registerkarten von 120px, vier von 151px auf KST mit KST EXPERT MODE AUS |
 | Zeilen | 48px hoch im Abstand von 56px, bis zu 5 je Registerkarte, in zwei Spalten von 295px; eine breite Zeile nimmt beide |
 | Werte | 150px (15 Zeichen der Schrift 10 x 20); bei einer breiten Zeile 260px, darin ihre Tasten `-` und `+` von 56px |
-| Hinweise und Meldungen | unter der letzten Zeile, Schrift 10 x 20, 60 Zeichen je Zeile, 20px je Zeile, bis 6px über dem Feldboden: 6 Zeilen unter der Registerkarte SERVO |
+| Kopf der Registerkarte SERVO | Zeile 0: links zwei Zeilen der Schrift 10 x 20, Port und Versorgung; rechts VERBINDEN, ABBRECHEN oder VERLASSEN mit 260 x 48px |
+| Hinweise und Meldungen | ab 8px unter der letzten Zeile abwärts, Schrift 10 x 20, 60 Zeichen je Zeile, 20px je Zeile; die letzte Meldung in der untersten Zeile, ihre letzte Zeile 8px über dem Feldboden: 6 Zeilen unter der Registerkarte SERVO |
 | Listen (DATEIEN, ZURÜCKSPIELEN, WEITERES, ein Faktor) | ein Titel, dann bis zu 7 Einträge, 48px hoch im Abstand von 56px, ABBRECHEN 150 x 48px am Fuß |
 | Warnseiten | der Titel in der Schrift 20 x 36, bis zu 16 Zeilen in der Schrift 10 x 20 (in einem niedrigeren Bereich weniger: die Zeilen, die 8px über den Tasten Platz haben), die Halte-Taste 300 x 56px, 380 x 56px auf PROGRAMMIERMODUS VERLASSEN mit ungeschriebenen Änderungen, und ABBRECHEN oder ZURÜCK 180 x 56px am Fuß |
 
@@ -2968,11 +2973,11 @@ Zeilen im Abstand von 56px über ABBRECHEN. Kommen mehr Einträge, als eine
 Spalte fasst, stehen je zwei in Spalten von 295px nebeneinander; ein
 Eintrag, der breiter als eine Spalte ist, nimmt eine eigene Zeile.
 
-Lassen die beiden festen Hinweiszeilen neben einer Meldung keinen Platz
-für eine Seitenzahl, werden sie zuerst mit den übrigen Hinweisen
-geblättert. Ein Hinweis, der höher als die verfügbare Seite ist, wartet
-auf das Ende der Meldung. Lässt die Meldung keine Zeile für einen
-Hinweis, warten alle Hinweise auf ihr Ende. Weder Hinweis noch Meldung
+Hinweise, die mehr Zeilen brauchen, als über der Meldung frei sind,
+nehmen Seiten, deren letzte Zeile jeweils der Seitenzahl bleibt; ein
+Hinweis, der in die freien Zeilen einer Seite nicht passt, beginnt
+die nächste. Lässt die Meldung keine Zeile für einen Hinweis und die
+Seitenzahl, erscheint kein Hinweis, bis sie geht. Weder Hinweis noch Meldung
 reichen über die letzte Zeile der Registerkarte SERVO.
 
 Eine Meldung belegt bis zu 5 Zeilen und steht ganz in den 6 Zeilen unter

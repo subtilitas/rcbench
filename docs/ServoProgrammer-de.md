@@ -58,8 +58,9 @@ bevor man sich auf ein Schreiben verlässt.
 - **SERVO-TESTER** muss diesen Port auswählen: PORT 1, PORT 2, PORT 3 oder
   PORT 4 ([das Ziel](#das-ziel)). Mit den Standardausgängen OUTPUTS als
   Ziel kann keine Programmiersitzung starten. Auf dem rbmod-Carrier ab
-  Protokoll 4.36 wählst du den Port direkt über die Zeile PORT der
-  Servoprogrammierung; dabei wird seine Funktion SERVO PWM angefordert.
+  Protokoll 4.36 wählst du den Port direkt über die Portzeile im Reiter
+  SERVO der Servoprogrammierung; dabei wird seine Funktion SERVO PWM
+  angefordert.
   Auf anderen Platinen verwendest du SETUP > OUTPUTS.
 - Schließe jeweils nur ein Servo an.
 - Der Port verwendet entweder PWM (Pulsweitenmodulation) oder den
@@ -175,8 +176,9 @@ PORT 3 oder PORT 4, dem Port, den SERVO-TESTER nennt, mit dessen Pin.
 ### Der Port auf dem rbmod-Carrier
 
 Auf dem [rbmod-Carrier](Carrier-de.md#der-programmierport) mit einem IOmcu
-ab Protokoll 4.36 kannst du den Port auch direkt in der Zeile PORT wählen. Vor **VERBINDEN**
-öffnet ein Tipp auf die Beschriftung der Zeile **PROGRAMMIERPORT** mit
+ab Protokoll 4.36 kannst du den Port auch direkt in der Servoprogrammierung
+wählen. Vor **VERBINDEN** öffnet ein Tipp auf den Kopf des Reiters SERVO,
+links von **VERBINDEN**, **PROGRAMMIERPORT** mit
 `PROGP01  GPIO 13`, `PROGP02  GPIO 14`, `PROGP03  GPIO 15` und
 `PROGP04  GPIO 0`. Der gewählte Eintrag setzt SERVO-TESTER, dieselbe
 Einstellung wie die Einträge PROG PORT von **OUTPUTS**, und bleibt über
@@ -187,8 +189,9 @@ einen Neustart erhalten.
   Hubs und die Endlagensuche von KST folgen, sobald der Port
   beim Auslesen SERVO PWM meldet. Bis dahin sendet der Tester keinen Befehl: an Stelle
   des Ports erreicht nichts die Servoausgänge.
-- Die Zeile PORT nennt den Port, `PROGP02 GPIO 14  5V FEST` in der Zeile
-  von KST und `PROG-PORT 2 GPIO 14  D-SERIE` in der Zeile von Hitec, oder
+- Der Kopf von KST nennt den Port über seiner Versorgung,
+  `PROG-PORT 2 GPIO 14` über `5V FEST`; die Zeile PORT von Hitec lautet
+  `PROG-PORT 2 GPIO 14  D-SERIE`. Ohne Port lauten beide
   `KEIN PROG-PORT GESETZT`.
 - **VERBINDEN** ohne Port sagt
   `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.`
@@ -524,7 +527,7 @@ Versorgungszyklus eines **VERLASSEN** einer ab 4.30.
 
 | Zeile | Taste | Wirkung |
 | --- | --- | --- |
-| PORT | **VERBINDEN** (2s halten, wo es eine Versorgung einschaltet), **ABBRECHEN**, **VERLASSEN** | nimmt den Port, beendet den laufenden Vorgang, [gibt den Port zurück](#verlassen) |
+| Kopf: Port und Versorgung | **VERBINDEN** (2s halten, wo es eine Versorgung einschaltet), **ABBRECHEN**, **VERLASSEN**, 260px | nimmt den Port, beendet den laufenden Vorgang, [gibt den Port zurück](#verlassen) |
 | SERVO | **ALLES AUSLESEN** | liest die 32 Register, jedes, bis 3 von höchstens 5 Lesungen übereinstimmen |
 | TYP | `--`, `V6?`, `V8?`, **V6**, **V8** | [der Servotyp](#der-servotyp), den der Bediener setzt; `V6?` ist die Vermutung aus 20k_sel |
 | DATEIEN | **WÄHLEN** | [speichert die Werte des Servos auf die Karte und lädt eine Datei](#servodateien) |
@@ -532,9 +535,13 @@ Versorgungszyklus eines **VERLASSEN** einer ab 4.30.
 | ZURÜCKSPIELEN | **WÄHLEN** | [schreibt ein Backup zurück](#zurückspielen) |
 | (keine Beschriftung) | **n WERTE SCHREIBEN**, **1 WERT SCHREIBEN** | [schreibt die geänderten Werte nach 2s Halten](#schreiben) |
 
-In PWM mit einem antwortenden PD mini lautet die Zeile PORT
-`PORT  5.0V  1000mA`: die Spannung und die Stromgrenze, die **VERBINDEN**
-stellt. Eine Zeile, deren Taste abgedunkelt ist, nimmt keinen Tipp an:
+Die erste Zeile des Kopfs nennt den Port und sein GPIO,
+`PROG-PORT 1 GPIO 13`; ohne Port lautet sie `KEIN PROG-PORT GESETZT` in
+der Warnfarbe. Die zweite Zeile ist die Versorgung: mit einem antwortenden
+PD mini `PD MINI  5.0V 1000mA`, die Spannung und die Stromgrenze, die
+**VERBINDEN** stellt; `5V FEST` an PROG 5V des Carriers;
+`VERSORGUNG UNVERÄNDERT`, wo der Bediener das Servo versorgt. Eine Zeile,
+deren Taste abgedunkelt ist, nimmt keinen Tipp an:
 **DATEIEN** außerhalb des Programmiermodus und solange das Servo unklar
 ist, **ZURÜCKSPIELEN**, solange ein Vorgang läuft, **n WERTE SCHREIBEN**
 ohne Änderung.
@@ -542,19 +549,22 @@ ohne Änderung.
 Die Zahlen auf dem Bildschirm haben in beiden Sprachen einen Dezimalpunkt:
 `5.0V`. Diese Seite schreibt Zahlen im Text mit Komma.
 
-Unter den Zeilen stehen der Zustand des Ports, der Servotyp oder was der
-Zustand verlangt, der Name der
-Backup-Datei der Sitzung und die letzte Meldung. Eine Meldung in der
-Warnfarbe ist eine Ablehnung oder ein Ergebnis, das einen zweiten Blick
-braucht; eine in der Gefahrenfarbe sagt, dass der Inhalt des Servos unklar
-ist.
+Die Hinweise folgen 8px unter den Zeilen untereinander: der Zustand des
+Ports, der Servotyp oder was der Zustand verlangt, was bis zu seiner
+Erledigung stehen bleibt, und der Name der Backup-Datei der Sitzung. Die
+letzte Meldung steht in der untersten Zeile, ihre letzte Zeile 8px über dem
+Fuß der Karte. Eine Meldung in der Warnfarbe ist eine Ablehnung oder ein
+Ergebnis, das einen zweiten Blick braucht; eine in der Gefahrenfarbe sagt,
+dass der Inhalt des Servos unklar ist.
 
 Hinweise, die mehr Zeilen brauchen, als die Karte über der Meldung hat,
-nehmen eine zweite Seite. Die Seitenzahl, `1/2` oder `2/2`, steht am rechten
-Rand über der Meldung; ein Tippen auf die Hinweise zeigt die nächste Seite,
-nach der letzten wieder die erste.
+nehmen weitere Seiten, deren letzte Zeile jeweils der Seitenzahl bleibt.
+Die Seitenzahl, `1/2` oder `2/2`, steht am rechten Rand über der Meldung;
+ein Tippen auf die Hinweise zeigt die nächste Seite, nach der letzten
+wieder die erste. Ein Hinweis, der in die freien Zeilen einer
+Seite nicht passt, beginnt die nächste.
 
-![Die Hinweise eines gelesenen Servos, Seite 2](img/de/servo-kst-read-p2.png)
+![Die Hinweise eines Servos mit gemischten Werten, Seite 2](img/de/servo-kst-journal-p2.png)
 
 Endet die Sitzung durch Verbindungsverlust, einen Neustart des IOmcu oder
 die Rückkehr des Ports zu PWM, verschwinden Meldungen zu ihrem bisherigen
@@ -579,7 +589,11 @@ nehmen keinen Tipp an, der Reiter behält `Nur Auslesen möglich. Dieser Servoty
 Ein Wert wird in einem Entwurf auf dem Panel geändert. Vor
 [**n WERTE SCHREIBEN**](#schreiben) erreicht nichts das Servo. Ein Wert,
 der von dem des Servos abweicht, ist doppelt markiert: durch `*` davor und
-durch die Akzentfüllung.
+durch die Akzentfüllung. Unter den Zeilen von ABSTIMMEN, PULS und
+FAILSAFE steht nach dem eigenen Hinweis des Reiters der Hinweis, den die
+Hitec-Programmierung teilt: `Tippe zum Ändern auf einen Wert. * markiert
+Änderungen. n WERTE SCHREIBEN schreibt sie.` n WERTE SCHREIBEN steht in
+der Fußzeile unter jedem Reiter.
 
 ![Geänderte Werte auf ABSTIMMEN](img/de/servo-kst-tune.png)
 
@@ -1398,7 +1412,6 @@ Der vor dem Schreiben angelegte Vermerk bleibt erhalten. Auf der Karte
 übersteht er auch ein Aus- und Einschalten des Prüfstands.
 
 ![Ein unterbrochenes Schreiben](img/de/servo-kst-doubt.png)
-![Ein unterbrochenes Schreiben, die Hinweise auf Seite 2](img/de/servo-kst-doubt-p2.png)
 
 `Schreiben wurde unterbrochen. Die Einstellungen können unvollständig sein.` bleibt stehen,
 bis das Servo gelesen ist, darunter der Pin des Schreibens: `Benutze das Servo nicht. Schließe es an GPIO 13 an und tippe auf ALLES AUSLESEN.` Ein Vermerk ohne Pin nennt
@@ -1844,7 +1857,7 @@ und das Halten, das sie verwirft, ein weiches Limit, das
 für einen Wert weiter vom Wert des Servos erneut gefragt wird, die
 Zustandszeile und die Zeile des Reiters bei einem laufenden Schreiben, eine
 Meldung, die geht, wenn ihre Bedingung endet, die Zeilen, die keinen Tipp
-annehmen, die Beschriftung der Zeile PORT, kein Komma in einer Zahl der
+annehmen, den Kopf des Reiters SERVO, kein Komma in einer Zahl der
 deutschen Tabelle, ein Schreiben, das ein Link-Ausfall, ein Neustart,
 **ABBRECHEN** und **STOP** abschneiden, eine Karte, die versagt, und die
 Timeouts über den Überlauf der Uhr bei 2^32ms. `test_kst_panel_files` fährt die
