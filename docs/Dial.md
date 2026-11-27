@@ -342,7 +342,7 @@ BEGIN in protocol 2 with code 4 (`BLEOTA_E_PROTO`) before any question.
 The panel then waits 500ms and starts once more in protocol 1, without
 the signature; the console logs it. That happens once per update and only
 on code 4 answering BEGIN. The Dial takes the new firmware this one time
-as before, with the SHA-256 alone; from then on it refuses protocol 1 with
+without a signature, with the SHA-256 alone; from then on it refuses protocol 1 with
 code 15. A panel of a release before the check sends protocol 1: a Dial
 with the check refuses it, and that panel shows the code as an unknown
 error or a timeout.
@@ -379,7 +379,13 @@ Any central in range can send BEGIN; the press on the Dial is what
 accepts it ([SECURITY.md](../SECURITY.md)). Each check is one ECDSA
 verification with Mbed TLS on the `ota` task, outside the transfer's
 lock; the console logs its time. The time on the ESP32-S3 is not
-measured yet.
+measured yet; on the host (AMD EPYC 7402P, Mbed TLS built without
+optimisation) one check, the key's parse included, takes 6.7ms. The
+check adds 70,144 bytes to the M5Stack Dial's image (851,552 to 921,696)
+and 70,128 bytes to the K518's (863,024 to 933,152), 2.2% of the
+3,145,728-byte slot. The nodes link the same check without calling it:
+80,720 bytes more on the power node (ESP32-C6) and 68,784 bytes on the
+display node (ESP32-S3).
 
 The device side runs on the task `ota`, priority 3, every 10ms, with a
 stack of 8,192 bytes from the heap at start, the size of ESP-IDF's OTA

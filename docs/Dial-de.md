@@ -363,7 +363,7 @@ lehnt BEGIN in Protokoll 2 mit Code 4 (`BLEOTA_E_PROTO`) vor jeder Frage
 ab. Das Panel wartet dann 500ms und beginnt noch einmal in Protokoll 1,
 ohne Signatur; die Konsole schreibt es mit. Das geschieht einmal je Update
 und nur bei Code 4 als Antwort auf BEGIN. Das Dial nimmt die neue Firmware
-dieses eine Mal wie bisher an, mit dem SHA-256 allein; danach lehnt es
+dieses eine Mal ohne Signatur an, mit dem SHA-256 allein; danach lehnt es
 Protokoll 1 mit Code 15 ab. Ein Panel eines Release vor der Prüfung sendet
 Protokoll 1: Ein Dial mit der Prüfung lehnt es ab, und dieses Panel zeigt
 den Code als unbekannten Fehler oder als Zeitüberschreitung.
@@ -402,7 +402,13 @@ BEGIN prüft die Übertragung. Jedes Central in Reichweite kann BEGIN
 senden; der Druck am Dial nimmt es an ([SECURITY.md](../SECURITY.md)).
 Jede Prüfung ist eine ECDSA-Verifikation mit Mbed TLS im Task `ota`,
 außerhalb der Sperre der Übertragung; die Konsole schreibt ihre Zeit mit.
-Die Zeit auf dem ESP32-S3 ist noch nicht gemessen.
+Die Zeit auf dem ESP32-S3 ist noch nicht gemessen; auf dem Host (AMD EPYC
+7402P, Mbed TLS ohne Optimierung gebaut) dauert eine Prüfung samt Parsen
+des Schlüssels 6,7ms. Die Prüfung macht das Image des M5Stack Dial
+70.144 Bytes größer (851.552 auf 921.696) und das des K518 70.128 Bytes
+(863.024 auf 933.152), 2,2% des Slots von 3.145.728 Bytes. Die Nodes
+linken dieselbe Prüfung, ohne sie aufzurufen: 80.720 Bytes mehr auf der
+Power-Node (ESP32-C6) und 68.784 Bytes auf der Display-Node (ESP32-S3).
 
 Die Geräteseite läuft im Task `ota`, Priorität 3, alle 10ms, mit einem
 Stack von 8.192 Bytes aus dem Heap beim Start, der Größe der OTA-Beispiele

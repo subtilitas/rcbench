@@ -31,6 +31,7 @@ rcbench/
     esc/                  ESC-Programmierprofile, ihr JSON-Leser und die Registry
     sense/                Treiber für die Strommonitore INA228 und INA3221
     fwupdate/             Prüfung des Panel-Firmware-Images · Upload-Puffer · Installer · Update-Slots und BUY des IOmcu
+    relsig/               die Rohform der Release-Signatur für bleota Protokoll 2 und ihre Prüfung über einen SHA-256 (Mbed TLS)
     devupd/               das Update der Funkgeräte auf dem Panel: die Übertragung und ihr Bluetooth-LE-Client
     webaccess/            WLAN-Sitzung · Kartenliste und ZIP-Strom · die Seite · mDNS
     clock/                Regeln der Uhr: echtes Datum oder nicht · Zeitstempel · Zeitzonen · die NTP-Anfrage
@@ -104,6 +105,7 @@ als INTERFACE-Bibliothek `rcbench_<modul>_rp2350`. Includes sind flach:
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `files` · `sbus` | ja | | ja |
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` · `mstime` · `fwupdate` | ja | ja | ja |
 | `artwork` · `esc` · `webaccess` · `clock` | ja | | ja |
+| `relsig` | ja | | ja |
 | `ppm` · `i2c_txq` | | ja | ja |
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` · `passthru` | ja | ja | ja |
 | `escwire` · `openyge` | ja | ja | ja |

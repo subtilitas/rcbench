@@ -356,7 +356,7 @@ protocol 2) has no pairing and no encryption.
   more in protocol 1, without the signature, and that Dial installs it
   after the confirmation with the SHA-256 alone. From then on the Dial
   refuses protocol 1. A central that speaks protocol 1 to an older Dial
-  can so still install any image of the Dial's kind, as before.
+  can so still install any image of the Dial's kind.
 - The key cannot be changed on a Dial without a Dial release signed with
   the old key, or a USB flash; no key is revoked.
 - The sensor nodes check no signature: an image is tied to its transfer by
