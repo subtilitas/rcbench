@@ -24,7 +24,10 @@ which no firmware links yet. MOTOR & ESC > PROGRAM programs YGE ESCs
 bench as a graph with the columns of its kind, LIMIT RUN and RUDDER AUTO
 over the pulse, and GRAPH on the result cards opens the last run. Every
 CSV the bench writes ends in an `info` column. SETUP > PANEL > About
-rcbench opens ABOUT with the versions and the licences, and the splash's
+rcbench opens ABOUT with the versions and the licences. The Bluetooth
+IMU has no screen and no SETUP tile of its own: SETUP > WIRELESS > IMU
+holds its search, binding, live angles, ZERO and CALIBRATE, and the SETUP
+hub holds 7 tiles. The splash's
 credit reads `JuWi made`. The power node finds its INA228 at any address
 from 0x40 to 0x4F and takes NODE SHUNT, 50 to 10000µΩ, from SETUP; the
 display node shows a boot splash for 10s and has a setup page of its own;
@@ -33,7 +36,7 @@ the display node over Bluetooth LE. The IOmcu's board 3, the remote servo
 node, gains pass-through, KST, Hitec and ESC wire sessions and throttle
 outputs on S1 to S9. `tools/video` gains the storyboards `wurstblinker`,
 `origin`, `hitec-rbmod` and `stop`. The panel image with both IOmcu images is
-4,671,488 bytes, 3,454,976 bytes (42.5%) under
+4,670,592 bytes, 3,455,872 bytes (42.5%) under
 its slot of 8,126,464. Its minor number, 23, is odd. GitHub publishes it as a
 pre-release and does not mark it as latest. It runs on the ESP32-P4
 panel, as 0.23.17 does; an ESP32-S3 panel stays on the 0.22 line and is
@@ -64,8 +67,8 @@ boards over USB (Universal Serial Bus) as
 [First run, §1](docs/FirstRun.md#1-flash-both-boards) describes, or with
 the [web flasher](flasher/README.md).
 
-The entries below cover the 60 pull requests merged since v0.23.17: #936
-to #995.
+The entries below cover the 62 pull requests merged since v0.23.17: #936
+to #996 and #998.
 
 ### Added
 
@@ -639,7 +642,6 @@ to #995.
   the carrier's LAYOUT. WIRELESS' line reads `IMU, DIAL, NODES, PRINTER`
   (`imu_view.c`, `wireless_imu.c`, `wireless_pane.c`,
   `settings_screen_int.h`; `test_wireless_imu`, `test_imu_pane`).
-
 - A servo label whose height drops a DUT NAME line shows the id joined in
   one line over DUT NAME in smaller faces: the pair of 16x28, 12x24, 10x20,
   8x16 and 6x12 with the larger DUT NAME face that fits. Where no pair
