@@ -221,18 +221,14 @@ void hpn_place(void)
     }
 }
 
-/**
- * @brief The frame's mask as the state is now: the rows' places follow
- *        it, the cells of the view do not (hpn_place()).
- */
-static void mask_now(void)
+void hpn_mask_set(void)
 {
     hp.f.view.mask = hpn_mask();
 }
 
 const hpn_row_t *hpn_row_at(int page, int row, int col)
 {
-    mask_now();
+    hpn_mask_set();
     for (int i = 0; i < HP_ROW_COUNT; ++i) {
         const hpn_row_t *r = &hpn_rows[i];
         gfx_rect_t rr;
@@ -251,110 +247,9 @@ const hpn_row_t *hpn_row_at(int page, int row, int col)
 
 /* --------------------------------------------------------------- geometry */
 
-gfx_rect_t hpn_tabs_rect(void)
-{
-    return (gfx_rect_t){ (int16_t)(hp.area.x + 8), (int16_t)(hp.area.y
-                                                             + HP_TAB_Y),
-                         (int16_t)(hp.area.w - 16),
-                         HP_TAB_H };
-}
-
-int hpn_foot(void)
-{
-    return sprog_foot(&hp.f);
-}
-
-gfx_rect_t hpn_row_rect(const hpn_row_t *r)
-{
-    mask_now();
-    return sprog_row_rect(&hp.f, (int)(r - hpn_rows));
-}
-
-gfx_rect_t hpn_value_rect(const hpn_row_t *r)
-{
-    gfx_rect_t lo, hi, v;
-
-    /* The control from the left edge of its - key to the right edge of
-     * its + key: the row's whole control, the frame's width rule. */
-    mask_now();
-    lo = sprog_step_rect(&hp.f, (int)(r - hpn_rows), false);
-    hi = sprog_step_rect(&hp.f, (int)(r - hpn_rows), true);
-    v = gfx_rect_make(lo.x, lo.y, hi.x + hi.w - lo.x, lo.h);
-    if (lo.w > 0 && hpn_stepped(r)) {
-        /* Between its -/+ keys (hpn_step_rect()). */
-        v = gfx_rect_make(v.x + HP_STEP_W + 4, v.y,
-                          v.w - 2 * (HP_STEP_W + 4), v.h);
-    }
-    return lo.w > 0 ? v : lo;
-}
-
-int hpn_cells(void)
-{
-    const int cells = (hp.area.w - 20) / HP_CELL;
-
-    return cells > 0 ? cells : 1;
-}
-
-/**
- * @brief The bytes of @p s its first row takes: all of it where it fits,
- *        else up to the last space that leaves the row no wider than the
- *        line; a word longer than the line is cut.
- * @param s the text
- * @return the bytes
- */
-static size_t row_len(const char *s)
-{
-    const size_t fit = gfx_text_prefix(s, hpn_cells());
-    size_t cut = fit;
-
-    if (s[fit] == '\0' || s[fit] == ' ') {
-        return fit;
-    }
-    while (cut > 0u && s[cut] != ' ') {
-        --cut;
-    }
-    return cut > 0u ? cut : fit;
-}
-
-/**
- * @brief The start of the row after one of @p len bytes at @p s.
- * @param s   the row
- * @param len its bytes
- * @return the next row
- */
-static const char *next_row(const char *s, size_t len)
-{
-    s += len;
-    while (*s == ' ') {
-        ++s;
-    }
-    return s;
-}
-
 int hitec_panel_text_rows(const char *s)
 {
-    int n = 0;
-
-    while (s != NULL && *s != '\0') {
-        s = next_row(s, row_len(s));
-        ++n;
-    }
-    return n;
-}
-
-int hpn_text_rows(gfx_canvas_t *c, int x, int y, const char *s,
-                  gfx_color_t color)
-{
-    while (*s != '\0') {
-        char row[HITEC_PANEL_LINE];
-        const size_t len = row_len(s);
-
-        snprintf(row, sizeof(row), "%.*s", (int)len, s);
-        gfx_text(c, x, y, row, HP_FONT, color, 1);
-        s = next_row(s, len);
-        y += HP_LINE_H;
-    }
-    return y;
+    return sprog_text_rows(&hp.f, s);
 }
 
 gfx_rect_t hitec_panel_tab_rect(int page)
@@ -366,7 +261,12 @@ gfx_rect_t hitec_panel_value_rect(int page, int row, int col)
 {
     const hpn_row_t *r = hpn_row_at(page, row, col);
 
-    return r != NULL ? hpn_value_rect(r) : (gfx_rect_t){ 0, 0, 0, 0 };
+    if (r == NULL) {
+        return (gfx_rect_t){ 0, 0, 0, 0 };
+    }
+    /* Between its -/+ keys while stepped: the view's kind. */
+    hpn_view();
+    return sprog_value_rect(&hp.f, (int)(r - hpn_rows));
 }
 
 gfx_rect_t hitec_panel_choice_rect(int i)
@@ -381,20 +281,12 @@ gfx_rect_t hitec_panel_choice_cancel_rect(void)
 
 gfx_rect_t hitec_panel_apply_rect(void)
 {
-    /* HOLD 2s TO LEAVE WITHOUT WRITING takes the width up to 20px left
-     * of BACK: 380px on a card of 620px. */
-    const int w = hp.page.open && hp.page.drop ? hp.area.w - 240 : 300;
-
-    return (gfx_rect_t){ (int16_t)(hp.area.x + 20),
-                         (int16_t)(hpn_foot() - UI_BTN_H_TALL), (int16_t)w,
-                         UI_BTN_H_TALL };
+    return sprog_apply_rect(&hp.f);
 }
 
 gfx_rect_t hitec_panel_cancel_rect(void)
 {
-    return (gfx_rect_t){ (int16_t)(hp.area.x + hp.area.w - 20 - 180),
-                         (int16_t)(hpn_foot() - UI_BTN_H_TALL), 180,
-                         UI_BTN_H_TALL };
+    return sprog_page_cancel_rect(&hp.f);
 }
 
 /* ---------------------------------------------------------- for the tests */
@@ -411,7 +303,7 @@ void hitec_panel_settings_changed(void)
 
 ui_keypad_t *hitec_panel_keypad(void)
 {
-    return &hp.kp;
+    return &hp.f.kp;
 }
 
 const char *hitec_panel_label(int page, int row, int col)
@@ -450,13 +342,13 @@ const char *hitec_panel_port_line(int i)
 
 int hitec_panel_editor(void)
 {
-    return hp.kp.open ? 1 : hp.tk.open ? 4 : hp.f.list.open ? 2
-         : hp.page.open ? 3 : 0;
+    return hp.f.kp.open ? 1 : hp.f.tk.open ? 4 : hp.f.list.open ? 2
+         : hp.f.page.open ? 3 : 0;
 }
 
 ui_textkey_t *hitec_panel_textkey(void)
 {
-    return &hp.tk;
+    return &hp.f.tk;
 }
 
 int hitec_panel_page(void)
@@ -471,12 +363,12 @@ const char *hitec_panel_choice_label(int i)
 
 const char *hitec_panel_apply_label(void)
 {
-    return hp.page.open ? hp.page.apply : NULL;
+    return hp.f.page.open ? hp.f.page.apply : NULL;
 }
 
 const char *hitec_panel_cancel_label(void)
 {
-    return !hp.page.open ? NULL : hp.page.drop ? TR(KP_BACK) : TR(CANCEL);
+    return hp.f.page.open ? hp.f.page.cancel : NULL;
 }
 
 const char *hitec_panel_choice_title(void)
@@ -486,10 +378,10 @@ const char *hitec_panel_choice_title(void)
 
 const char *hitec_panel_page_line(int i)
 {
-    if (!hp.page.open || i < 0 || i > hp.page.count) {
+    if (!hp.f.page.open || i < 0 || i > hp.f.page.count) {
         return NULL;
     }
-    return i == 0 ? hp.page.title : hp.page.lines[i - 1];
+    return i == 0 ? hp.f.page.title : hp.f.page.line[i - 1];
 }
 
 /* --------------------------------------------------------------- the caller */
@@ -510,8 +402,6 @@ void hitec_panel_init(gfx_rect_t area)
     hitec_prog_gate_set(&hp.prog, hp.gate);
     hp.area = area;
     sprog_init(&hp.f, &k_def, area);
-    hp.kp.pressed = -1;
-    hp.tk.pressed = -1;
 }
 
 /**
@@ -541,6 +431,7 @@ void hitec_panel_open(void)
 {
     if (!hp.open) {
         hp.open = true;
+        hp.f.open = true;
         options_fresh();
         ++hp.rev;
     }
@@ -572,12 +463,12 @@ uint8_t hitec_panel_pin(void)
 
 uint32_t hitec_panel_revision(void)
 {
-    return hp.rev + hp.kp.revision + hp.tk.revision;
+    return hp.rev + sprog_revision(&hp.f);
 }
 
 uint32_t hitec_panel_hold_revision(void)
 {
-    return hp.hold_rev;
+    return sprog_hold_revision(&hp.f);
 }
 
 /**
@@ -638,11 +529,12 @@ void hpn_moved(void)
     if (st != hp.state_seen) {
         /* An editor asks for something of the state it was opened in. */
         hpn_close_editors();
-        /* CONNECT's and WRITE's presses keep their holds, for the
-         * release to end. */
-        if (hp.pressed != P_TAB && hp.pressed != P_CONNECT
-            && hp.pressed != P_WRITE) {
-            hp.pressed = P_NONE;
+        /* A press on a row or a -/+ key taps nothing on its release;
+         * CONNECT's and WRITE's presses keep their holds, for the release
+         * to end, and a tab's press its tab. */
+        if (hp.f.have && hp.f.on != SPROG_ON_HOLD
+            && hp.f.on != SPROG_ON_TAB) {
+            hp.f.on = SPROG_ON_ABSORB;
         }
         hp.state_seen = st;
     }
@@ -729,15 +621,8 @@ bool hitec_panel_file_load(const char *text, size_t len)
  */
 static gfx_rect_t hitec_panel_hold_rect(void)
 {
-    const hpn_row_t *w = hpn_row_at(HITEC_PANEL_SERVO, 3, 1);
-
-    if (hp.conn.down || ui_hold_flashing(&hp.conn)) {
-        return hpn_value_rect(&hpn_rows[0]);
-    }
-    if (w != NULL && (hp.wr.down || ui_hold_flashing(&hp.wr))) {
-        return hpn_value_rect(w);
-    }
-    return hitec_panel_apply_rect();
+    hpn_mask_set();
+    return sprog_hold_rect(&hp.f);
 }
 
 /* The session SERVO > PROGRAM opens from its row (prog_registry.h). */

@@ -1,9 +1,10 @@
 /**
  * @file hitec_panel_draw.c
- * @brief The drawing of the Hitec programmer's overlay: the frame's view of
- *        the tab shown (its cells, the head, the notes and the last
- *        message), drawn by the frame with the tabs and the list, and the
- *        hold pages.
+ * @brief The frame's view of the Hitec programmer's tab shown: its cells
+ *        (text, fill, how each takes a press: a tap, a 2s hold, a stop on
+ *        the press, off), the head, the notes and the last message.  The
+ *        frame draws it with the tabs, the list, the keypad, the keyboard
+ *        and the hold page.
  *
  * Hitec is a name or trademark of its owner; it is used here only to say
  * which servos this overlay works with.  The state and the seam are
@@ -18,6 +19,7 @@
 
 #include "hitec_move.h"
 #include "hitec_reg.h"
+#include "prog5v_box.h"
 #include "prog_choice.h"
 #include "sprog.h"
 #include "ui_text.h"
@@ -49,18 +51,6 @@ typedef struct {
  *        view points at them until the next one.
  */
 static texts_t s_txt;
-
-/**
- * @brief The text colour of a message's level.
- * @param level hitec_prog_level_t
- * @return the colour
- */
-static gfx_color_t level_color(unsigned level)
-{
-    return level == HITEC_PROG_DANGER ? ui_theme_color(UI_C_DANGER)
-         : level == HITEC_PROG_WARN   ? ui_theme_color(UI_C_WARN)
-                                      : ui_theme_color(UI_C_TEXT);
-}
 
 /**
  * @brief The frame's level of a message's level.
@@ -335,6 +325,26 @@ static uint8_t port_fill(void)
 }
 
 /**
+ * @brief Whether the PORT button reads ABORT: the entry, a read or a write
+ *        is under way (act_value() in hitec_panel_text.c).
+ * @return true while it does
+ */
+static bool abort_shows(void)
+{
+    switch (hitec_prog_state(&hp.prog)) {
+    case HITEC_PROG_OPENING:
+    case HITEC_PROG_ENTERING:
+    case HITEC_PROG_READING:
+    case HITEC_PROG_RECORDING:
+    case HITEC_PROG_BACKUP:
+    case HITEC_PROG_WRITING:
+        return true;
+    default:
+        return false;
+    }
+}
+
+/**
  * @brief The head: the port, its pin and the series over the receive mode
  *        and the supply, in the warning colour with no pin; CONNECT green,
  *        a 2s hold fading to the red of a held port.
@@ -352,10 +362,19 @@ static void head_cell(sprog_cell_t *cl)
     hp.f.view.port_pick = hpn_port_pick_row() != NULL;
     cl->fill = port_fill();
     cl->fill_to = SPROG_F_ACTIVE;
-    if (cl->press != SPROG_P_OFF && hpn_switches_supply()
-        && hitec_prog_state(&hp.prog) == HITEC_PROG_PWM) {
+    if (cl->press == SPROG_P_OFF) {
+        return;
+    }
+    if (abort_shows()) {
+        cl->press = SPROG_P_STOP;           /* ABORT acts on the press */
+    } else if (hpn_switches_supply()
+               && hitec_prog_state(&hp.prog) == HITEC_PROG_PWM) {
+        /* CONNECT that switches the port's supply on: a 2s hold, and no
+         * hold from a low carrier input.  A servo the operator powers
+         * takes a tap. */
         cl->press = SPROG_P_HOLD;
         cl->hint = TX_HOLD_HINT_CONNECT;
+        cl->why = prog5v_box_input_why();
     }
 }
 
@@ -488,142 +507,10 @@ gfx_rect_t hitec_panel_notes_drawn(void)
                          (int16_t)(y - top) };
 }
 
-/**
- * @brief The press and the hold of the overlay as the frame draws them:
- *        the row, list entry or key the finger holds, and CONNECT's or
- *        WRITE n VALUES' hold while it runs or flashes.
- * @return the hold the frame draws, to take back after the draw; NULL
- */
-static ui_hold_t *press_to_frame(void)
-{
-    sprog_t *f = &hp.f;
-    ui_hold_t *h = NULL;
-
-    f->have = hp.have;
-    f->id = hp.id;
-    f->row = (int16_t)hp.row;
-    f->key = (int16_t)(hp.pressed == P_ROW && hp.row >= 0
-                               && hpn_rows[hp.row].kind == K_ACT
-                               && hpn_rows[hp.row].what == A_FIND
-                               && hp.find_right
-                           ? 1 : 0);
-    switch (hp.pressed) {
-    case P_ROW:           f->on = SPROG_ON_ROW;         break;
-    case P_CONNECT:
-    case P_WRITE:         f->on = SPROG_ON_HOLD;        break;
-    case P_PLUS:          f->on = SPROG_ON_PLUS;        break;
-    case P_MINUS:         f->on = SPROG_ON_MINUS;       break;
-    case P_CHOICE:        f->on = SPROG_ON_LIST;        break;
-    case P_CHOICE_CANCEL: f->on = SPROG_ON_LIST_CANCEL; break;
-    case P_TAB:           f->on = SPROG_ON_TAB;         break;
-    default:              f->on = SPROG_ON_NONE;        break;
-    }
-    f->hold_row = -1;
-    if (hp.conn.down || ui_hold_flashing(&hp.conn)) {
-        h = &hp.conn;
-        f->hold_row = 0;            /* PORT, hpn_rows[0] */
-    } else if (hp.wr.down || ui_hold_flashing(&hp.wr)) {
-        const hpn_row_t *w = hpn_row_at(HITEC_PANEL_SERVO, 3, 1);
-
-        h = w != NULL ? &hp.wr : NULL;
-        f->hold_row = w != NULL ? (int16_t)(w - hpn_rows) : -1;
-    }
-    if (h != NULL) {
-        f->hold = *h;
-    }
-    return h;
-}
-
-/**
- * @brief The page's hold button: sunk, fading to the page's edge colour
- *        across its hold, flashing as it fires.
- * @param c the canvas
- */
-static void draw_apply(gfx_canvas_t *c)
-{
-    const gfx_color_t edge = ui_theme_color(hp.page.danger ? UI_C_DANGER
-                                                           : UI_C_WARN);
-    ui_hold_button(c, hitec_panel_apply_rect(), hp.page.apply,
-                   ui_theme_color(UI_C_PANEL_SUNK), edge, &hp.page.hold,
-                   hp.page.down, true, HP_FONT);
-}
-
-/**
- * @brief Draws a hold page: its title, its lines and the two buttons.
- * @param c the canvas
- */
-static void draw_hold(gfx_canvas_t *c)
-{
-    const gfx_rect_t a = hp.area;
-    const gfx_color_t edge = ui_theme_color(hp.page.danger ? UI_C_DANGER
-                                                           : UI_C_WARN);
-    int y = a.y + HP_PAGE_TOP;
-
-    gfx_draw_rect(c, a.x, a.y, a.w, a.h, edge);
-    gfx_draw_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2, edge);
-    gfx_draw_rect(c, a.x + 2, a.y + 2, a.w - 4, a.h - 4, edge);
-    gfx_text(c, a.x + 12, a.y + 16, hp.page.title, HP_TITLE_FONT, edge, 1);
-    /* 8px between the lines, less where that would take them under the
-     * buttons: SERVO's left card is 428px tall. */
-    int rows = 0;
-    for (int i = 0; i < hp.page.count; ++i) {
-        rows += hitec_panel_text_rows(hp.page.lines[i]);
-    }
-    const int room = hitec_panel_apply_rect().y - 8 - y - rows * HP_LINE_H;
-    int gap = 8;
-    if (hp.page.count > 1 && room < 8 * (hp.page.count - 1)) {
-        gap = room > 0 ? room / (hp.page.count - 1) : 0;
-    }
-    for (int i = 0; i < hp.page.count; ++i) {
-        y = hpn_text_rows(c, a.x + 12, y, hp.page.lines[i],
-                          level_color(hp.page.level[i]))
-            + gap;
-    }
-    draw_apply(c);
-    /* BACK on the LEAVE page that lists unwritten edits: they stay. */
-    ui_button_font(c, hitec_panel_cancel_rect(), hitec_panel_cancel_label(),
-                   ui_theme_color(UI_C_PANEL_SUNK),
-                   hp.have && hp.pressed == P_CANCEL, true, HP_FONT);
-}
-
-/**
- * @brief The overlay less the flash of a page that closed as its hold
- *        fired (hitec_panel_render()).
- * @param c the canvas
- */
-static void render_body(gfx_canvas_t *c)
-{
-    const gfx_rect_t a = hp.area;
-    ui_hold_t *h;
-
-    if (hp.kp.open) {
-        ui_keypad_render(&hp.kp, c);
-        return;
-    }
-    if (hp.tk.open) {
-        ui_textkey_render(&hp.tk, c);
-        return;
-    }
-    if (hp.page.open) {
-        gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_PANEL));
-        draw_hold(c);
-        return;
-    }
-    /* The tab or the list, drawn by the frame from the view. */
-    hpn_view();
-    h = press_to_frame();
-    sprog_render(&hp.f, c);
-    if (h != NULL) {
-        *h = hp.f.hold;             /* where the hold was drawn */
-    }
-}
-
 void hitec_panel_render(gfx_canvas_t *c)
 {
-    render_body(c);
-    /* A page closes as its hold fires: its button flashes where it was
-     * until the flash ends (hitec_panel_tick()). */
-    if (!hp.page.open && ui_hold_flashing(&hp.page.hold)) {
-        draw_apply(c);
-    }
+    /* The tab, the list, the keypad, the keyboard or the page, and the
+     * flash of a page that closed as its hold fired. */
+    hpn_view();
+    sprog_render(&hp.f, c);
 }

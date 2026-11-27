@@ -2,11 +2,12 @@
  * @file kst_panel_edit.c
  * @brief The editors of the programmer's overlay.
  *
- * The editors of the programmer's overlay for KST and Chaservo servos: the
- * list of choices, the keypad, the keyboard for a file's name, the
- * steppers, the actions of the SERVO page's rows and the options kept;
- * and whether a row takes input now.  The state and the seam are
- * kst_panel_int.h.
+ * The editors of the programmer's overlay for KST and Chaservo servos: what
+ * the lists of choices, the keypad and the keyboard for a file's name hold
+ * and what their results do (the frame, sprog.h, draws them and takes
+ * their presses), the steppers, the actions of the SERVO page's rows and
+ * the options kept; and whether a row takes input now.  The state and the
+ * seam are kst_panel_int.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -27,8 +28,7 @@
 #include "ui_textkey.h"
 #include "ui_widgets.h"
 
-/* Last: its layout macros have short names (ROW0, PITCH, ROW_H) and k
- * names the state, which no header included after it may meet. */
+/* Last: k names the state, which no header included after it may meet. */
 #include "kst_panel_int.h"
 
 /* ------------------------------------------------------------------ editors */
@@ -49,58 +49,50 @@ void kpn_supply_limits(kst_prog_t *p)
 
 void kpn_close_editors(void)
 {
-    if (k.warn.open && k.warn.kind == W_SOFT) {
+    if (k.f.page.open && k.f.page.what == W_SOFT) {
         kst_prog_soft_cancel(&k.prog);
     }
-    ui_keypad_close(&k.kp);
-    ui_textkey_close(&k.tk);
+    sprog_close_editors(&k.f);         /* a page's flash under way runs on */
     k.name_wait = false;
     k.files_wait = false;
     k.type_file[0] = '\0';
-    k.ch.open = false;
-    k.warn.open = false;
-    k.warn.down = false;
-    ui_hold_spend(&k.warn.hold);       /* a flash under way runs on */
 }
 
 /**
- * @brief Opens the list of choices of kind @p kind with its title; the entries
- *        follow in choice_add().
+ * @brief Opens the list of choices of kind @p kind with its title; the
+ *        entries follow in choice_add().
+ * @param kind  the list, C_*
+ * @param title its title
  */
 static void choice_open(int kind, const char *title)
 {
-    k.ch.open = true;
-    k.ch.kind = kind;
-    k.ch.count = 0;
-    snprintf(k.ch.title, sizeof(k.ch.title), "%s", title);
+    sprog_list_open(&k.f, (int16_t)kind, title, kind == C_FILES);
 }
 
 /* The FILES list is whole, with the entries around its files.  STRETCH's
- * list of every factor the hard limit leaves is held to CHOICE_MAX by
+ * list of every factor the hard limit leaves is held to SPROG_LIST_MAX by
  * test_kst_panel_layout. */
-_Static_assert(KST_PROG_FILES_MAX + 2u <= CHOICE_MAX,
-               "the FILES list fits CHOICE_MAX entries");
+_Static_assert(KST_PROG_FILES_MAX + 2u <= SPROG_LIST_MAX,
+               "the FILES list fits SPROG_LIST_MAX entries");
 
 /**
- * @brief Adds an entry to the open list while it has room, CHOICE_MAX at most.
+ * @brief Adds an entry to the open list while it has room.
+ * @param label the entry's label
+ * @param value its value
  */
 static void choice_add(const char *label, int value)
 {
-    if (k.ch.count < CHOICE_MAX) {
-        snprintf(k.ch.labels[k.ch.count], sizeof(k.ch.labels[0]), "%s",
-                 label);
-        k.ch.values[k.ch.count++] = value;
-    }
+    (void)sprog_list_add(&k.f, label, NULL, value);
 }
 
 /** @brief Opens the file-name keyboard for the reason @p why. */
 static void name_open(unsigned why)
 {
-    ui_textkey_open(&k.tk, k.area,
-                    why == KST_PROG_MSG_NAME_EXISTS ? TR(KP_NAME_EXISTS)
-                    : why == KST_PROG_MSG_NAME_BAD  ? TR(KP_NAME_BAD)
-                                                    : TR(KP_NAME_TITLE),
-                    k.name, KST_PANEL_NAME_TYPED);
+    sprog_name(&k.f,
+               why == KST_PROG_MSG_NAME_EXISTS ? TR(KP_NAME_EXISTS)
+               : why == KST_PROG_MSG_NAME_BAD  ? TR(KP_NAME_BAD)
+                                               : TR(KP_NAME_TITLE),
+               k.name);
 }
 
 /* The name is typed: the save, and the keyboard again for a name the card's
@@ -136,16 +128,13 @@ static void files_open(void)
     choice_open(C_FILES, title);
     choice_add(TR(KP_FILE_SAVE), FILES_SAVE);
     for (unsigned i = 0; i < n; ++i) {
-        char label[KST_PANEL_LINE];
         const unsigned type = kst_prog_file_type(p, i);
+        char sub[8];
 
-        if (type != 0u) {
-            snprintf(label, sizeof(label), "%-16s V%u",
-                     kst_prog_file_name(p, i), type);
-        } else {
-            snprintf(label, sizeof(label), "%s", kst_prog_file_name(p, i));
-        }
-        choice_add(label, (int)i);
+        /* The name in a column of SPROG_FILE_CELLS, its type beside it. */
+        snprintf(sub, sizeof(sub), "V%u", type);
+        (void)sprog_list_add(&k.f, kst_prog_file_name(p, i),
+                             type != 0u ? sub : NULL, (int)i);
     }
     if (total > n) {
         choice_add(TR(KP_FILES_NEXT), FILES_NEXT);
@@ -212,11 +201,8 @@ void kpn_card_moved(void)
         }
     }
     if (kst_prog_soft_is_load(p) && kst_prog_soft_rules(p) != 0u
-        && !k.warn.open) {
-        ui_keypad_close(&k.kp);
-        ui_textkey_close(&k.tk);
-        k.ch.open = false;
-        kpn_warn_file();
+        && !k.f.page.open) {
+        kpn_warn_file();                /* the page takes over the editors */
     }
 }
 
@@ -259,15 +245,15 @@ void kpn_edit_field(const row_t *r)
             kpn_fmt_field(id, (uint16_t)v, label, sizeof(label));
             choice_add(label, (int)v);
         }
+        sprog_list_current(&k.f, (int32_t)raw);
         k.kp_row = (int)(r - kpn_rows);
         return;
     }
     scale = kpn_decimals_of(id) != 0 ? 10.0f : 1.0f;
-    ui_keypad_open(&k.kp, k.area, kpn_row_label(r), kpn_unit_of(id),
-                   (float)dv / scale,
-                   (float)(dlo < dhi ? dlo : dhi) / scale,
-                   (float)(dlo < dhi ? dhi : dlo) / scale, kpn_decimals_of(id));
     k.kp_row = (int)(r - kpn_rows);
+    sprog_keypad(&k.f, (int16_t)k.kp_row, kpn_row_label(r), kpn_unit_of(id),
+                 (float)dv / scale, (float)(dlo < dhi ? dlo : dhi) / scale,
+                 (float)(dlo < dhi ? dhi : dlo) / scale, kpn_decimals_of(id));
 }
 
 /**
@@ -325,10 +311,11 @@ void kpn_options_load(void)
     (void)kst_prog_wait_set(&k.prog, (uint32_t)wait);
 }
 
-void kpn_keypad_done(float v)
+void kpn_keypad_done(int32_t scaled)
 {
     if (k.kp_row == KP_VOLTAGE) {
-        const long mv = lroundf(v * 10.0f) * 100L;
+        /* Tenths of a volt. */
+        const long mv = (long)scaled * 100L;
 
         if (mv < (long)KST_PORT_SUPPLY_MIN_MV || mv > (long)supply_max_mv()) {
             return;
@@ -343,31 +330,28 @@ void kpn_keypad_done(float v)
         return;
     }
     if (k.kp_row == KP_CURRENT) {
-        const long ma = lroundf(v);
-
-        if (ma >= (long)PDMINI_I_MIN_MA && ma <= (long)PDMINI_I_MAX_MA) {
+        if (scaled >= (int32_t)PDMINI_I_MIN_MA
+            && scaled <= (int32_t)PDMINI_I_MAX_MA) {
             kst_prog_supply_set(&k.prog, kst_prog_supply_mv(&k.prog),
-                                (uint16_t)ma);
+                                (uint16_t)scaled);
             kpn_options_keep();
         }
         return;
     }
     if (k.kp_row == KP_WAIT) {
-        const long ms = lroundf(v);
-
-        if (ms >= 0L && kst_prog_wait_set(&k.prog, (uint32_t)ms)) {
+        if (scaled >= 0 && kst_prog_wait_set(&k.prog, (uint32_t)scaled)) {
             kpn_options_keep();
         }
         return;
     }
-    {
+    if (k.kp_row >= 0 && k.kp_row < ROW_COUNT) {
+        /* The field's displayed value, its digits after the point
+         * included, as the keypad was opened with them. */
         const row_t *r = &kpn_rows[k.kp_row];
         const kst_field_id_t id = (kst_field_id_t)r->what;
-        const float scale = kpn_decimals_of(id) != 0 ? 10.0f : 1.0f;
         uint16_t raw = 0;
 
-        if (!kst_field_raw_from_display(id, (int32_t)lroundf(v * scale),
-                                        &raw)) {
+        if (!kst_field_raw_from_display(id, scaled, &raw)) {
             raw = 0xFFFFu;      /* outside the field: the model says so */
         }
         edited(r, kst_prog_edit(&k.prog, id, raw));
@@ -608,14 +592,13 @@ void kpn_port_list(void)
         }
         choice_add(label, (int)port);
     }
+    sprog_list_current(&k.f, (int32_t)prog_choice_port());
 }
 
-void kpn_choice_done(int value)
+void kpn_choice_done(int kind, int value)
 {
     kst_prog_t *p = &k.prog;
-    const int kind = k.ch.kind;
 
-    k.ch.open = false;
     if (kind == C_PORT) {
         (void)prog_choice_pick((uint8_t)value);
     } else if (kind == C_STRETCH) {
@@ -662,21 +645,21 @@ void kpn_choice_done(int value)
             (void)kst_prog_load(p, name);
         }
     } else if (value == MORE_VOLTAGE) {
-        ui_keypad_open(&k.kp, k.area, TR(KP_PROG_VOLTAGE), "V",
-                       (float)kst_prog_supply_mv(p) / 1000.0f,
-                       (float)KST_PORT_SUPPLY_MIN_MV / 1000.0f,
-                       (float)supply_max_mv() / 1000.0f, 1);
         k.kp_row = KP_VOLTAGE;
+        sprog_keypad(&k.f, KP_VOLTAGE, TR(KP_PROG_VOLTAGE), "V",
+                     (float)kst_prog_supply_mv(p) / 1000.0f,
+                     (float)KST_PORT_SUPPLY_MIN_MV / 1000.0f,
+                     (float)supply_max_mv() / 1000.0f, 1);
     } else if (value == MORE_CURRENT) {
-        ui_keypad_open(&k.kp, k.area, TR(KP_PROG_CURRENT), "mA",
-                       (float)kst_prog_supply_ma(p), (float)PDMINI_I_MIN_MA,
-                       (float)PDMINI_I_MAX_MA, 0);
         k.kp_row = KP_CURRENT;
+        sprog_keypad(&k.f, KP_CURRENT, TR(KP_PROG_CURRENT), "mA",
+                     (float)kst_prog_supply_ma(p), (float)PDMINI_I_MIN_MA,
+                     (float)PDMINI_I_MAX_MA, 0);
     } else if (value == MORE_WAIT) {
-        ui_keypad_open(&k.kp, k.area, TR(KP_PWM_WAIT_TITLE), "ms",
-                       (float)kst_prog_wait_ms(p), 0.0f,
-                       (float)KST_PROG_WAIT_MAX_MS, 0);
         k.kp_row = KP_WAIT;
+        sprog_keypad(&k.f, KP_WAIT, TR(KP_PWM_WAIT_TITLE), "ms",
+                     (float)kst_prog_wait_ms(p), 0.0f,
+                     (float)KST_PROG_WAIT_MAX_MS, 0);
     } else if (value == MORE_VERIFY) {
         (void)kst_prog_verify(p);
     } else if (value == MORE_DISCARD) {

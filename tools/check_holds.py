@@ -43,24 +43,6 @@ EXCEPTIONS = {
     ("stop_hold.c", "hold"): "STOP is drawn by ui_band.c's stop_body() "
                                "from stop_hold_flash_ms(), its own red and "
                                "frame around the flash",
-    ("kst_panel_touch.c", "conn"): "CONNECT's hold is drawn by the servo "
-                                   "programmers' frame (sprog_draw.c) from "
-                                   "sprog_t.hold, which kst_panel_draw.c's "
-                                   "press_view() copies it into",
-    ("kst_panel_touch.c", "wr"): "WRITE n VALUES' hold is drawn by the "
-                                 "servo programmers' frame (sprog_draw.c) "
-                                 "from sprog_t.hold, which kst_panel_draw.c's "
-                                 "press_view() copies it into",
-    ("hitec_panel_touch.c", "conn"): "CONNECT's hold is drawn by the servo "
-                                     "programmers' frame (sprog_draw.c) "
-                                     "from sprog_t.hold, which "
-                                     "hitec_panel_draw.c's press_to_frame() "
-                                     "copies it into",
-    ("hitec_panel_touch.c", "wr"): "WRITE n VALUES' hold is drawn by the "
-                                   "servo programmers' frame (sprog_draw.c) "
-                                   "from sprog_t.hold, which "
-                                   "hitec_panel_draw.c's press_to_frame() "
-                                   "copies it into",
 }
 
 DRAWS = ("ui_hold_button", "ui_hold_button_fill", "ui_hold_ghost")

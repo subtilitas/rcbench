@@ -14,8 +14,7 @@
 #include "kst_port.h"
 #include "kst_reg.h"
 
-/* Last: its layout macros have short names (ROW0, PITCH, ROW_H) and k
- * names the state, which no header included after it may meet. */
+/* Last: k names the state, which no header included after it may meet. */
 #include "kst_panel_int.h"
 
 enum { RUN_OP_NONE = 0, RUN_OP_CONNECT, RUN_OP_WRITE, RUN_OP_LEAVE };
