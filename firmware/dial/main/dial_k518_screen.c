@@ -46,10 +46,15 @@ bool dial_screen_show(const dk_face_t *f, const dial_face_view_t *v,
         s_boot = false;
         if (!dial_k518_send()) {
             s_render.valid = false;
-        } else if (v->upd == DIAL_UPD_ASK) {
-            /* The question stands on the glass, whole: touches may now
-             * answer this offer (dk518_key_step()). */
-            dial_input_offer_shown(v->upd_offer);
+            dial_input_offer_shown(false, 0u);
+        } else {
+            /* Touches answer an offer only while its question stands on
+             * the glass, whole (dk518_key_step()): the update's own face,
+             * not EMPTY drawn over it. */
+            dial_input_offer_shown(v->upd == DIAL_UPD_ASK
+                                       && s_render.shown.face
+                                              == DIAL_FACE_UPDATE,
+                                   v->upd_offer);
         }
         return true;
     case DK518_SAME:

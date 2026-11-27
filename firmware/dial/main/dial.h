@@ -221,9 +221,13 @@ bool dial_input_update_key(void);
  *  @param offer receives the offer's identity
  *  @return true while it is pressed */
 bool dial_input_offer_key(uint32_t *offer);
-/** @brief The K518's face sent the update's question for @p offer whole;
- *         the K518 build only.  @param offer the confirmation's identity */
-void dial_input_offer_shown(uint32_t offer);
+/**
+ * @brief What the K518's face last sent whole; the K518 build only.
+ * @param shown the update's question for @p offer is on the display;
+ *              false for any other face, the battery's EMPTY included
+ * @param offer the confirmation's identity
+ */
+void dial_input_offer_shown(bool shown, uint32_t offer);
 
 /** @brief Whether the Dial clicks per detent.  Default ON; the panel's
  *         SCREEN flag and the console's `sound` set it. @param on ON */
