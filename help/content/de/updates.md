@@ -103,7 +103,7 @@ Das Panel verbindet sich mit dem Heimnetz, sendet eine HTTPS-Anfrage (HTTP über
 | RELEASES | Anfrage | Auswertung |
 |---|---|---|
 | STABLE | `GET https://github.com/subtilitas/rcbench/releases/latest` | Tag aus dem `Location`-Header. GitHubs Latest-Release ist kein Pre-Release. Ist es neuer als der laufende Build und liegt außerhalb der Release-Linie, folgt einmal die TESTING-Anfrage. |
-| TESTING | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` | `tag_name` der 10 nach Datum neuesten Releases, Testing oder Stable, aus der JSON-Antwort (JavaScript Object Notation). Gewählt wird die höchste Version, die kein Entwurf ist, unabhängig von der Reihenfolge. Die Antwort wird in Blöcken von 4096 Bytes bis höchstens 262.144 Bytes verarbeitet und nicht gespeichert. Ein ungültiger Release-Eintrag verwirft die gesamte Antwort. |
+| TESTING | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=5` | `tag_name` der 5 nach Datum neuesten Releases, Testing oder Stable, aus der JSON-Antwort (JavaScript Object Notation). Gewählt wird die höchste Version, die kein Entwurf ist, unabhängig von der Reihenfolge. Die Antwort wird in Blöcken von 4096 Bytes bis höchstens 1.310.720 Bytes verarbeitet und nicht gespeichert. Ein ungültiger Release-Eintrag verwirft die gesamte Antwort. |
 
 In beiden Einstellungen wird ein Release nur angeboten, wenn es zur Release-Linie des Panels gehört und neuer als der laufende Build ist. Die Linie des ESP32-P4-Panels enthält jedes Release, siehe [Die Release-Linie](#die-release-linie).
 
@@ -151,7 +151,7 @@ Das ESP32-S3-Panel akzeptiert nur 0.22.x. Die ersten Zeilen im Kartenfuß nennen
 | `v0.23.0`, `v0.24.0`, `v1.0.0` | `Kein neueres Release für das ESP32-S3-Panel.` |
 | ein ungültiger Tag, etwa `v0.22.1-rc1` | `Unerwartete Antwort von GitHub.` |
 
-Liegt unter TESTING die höchste Version der 10 neuesten Releases außerhalb der Panel-Linie, wird stattdessen die höchste passende Version aus dieser Liste angeboten, sofern sie neuer als der laufende Build ist. Liegt unter STABLE GitHubs Latest-Release außerhalb der Linie und über der laufenden Version, fragt das Panel einmal dieselbe Liste mit 10 Releases ab und sucht darin nach einem neueren 0.22.x. Scheitert die Anfrage, bleibt das Ergebnis der ersten Prüfung.
+Liegt unter TESTING die höchste Version der 5 neuesten Releases außerhalb der Panel-Linie, wird stattdessen die höchste passende Version aus dieser Liste angeboten, sofern sie neuer als der laufende Build ist. Liegt unter STABLE GitHubs Latest-Release außerhalb der Linie und über der laufenden Version, fragt das Panel einmal dieselbe Liste mit 10 Releases ab und sucht darin nach einem neueren 0.22.x. Scheitert die Anfrage, bleibt das Ergebnis der ersten Prüfung.
 
 ## Der Download
 
@@ -305,7 +305,8 @@ Ein fehlgeschlagener Versuch steht mit einem Code auf der Karte: `Download fehlg
 - Die Dauer eines Knoten-Updates ist nicht gemessen.
 - Ein nicht antwortender erster DNS-Server (Domain Name System) verzögert nach dem Verbinden jede Namensauflösung um etwa 7s innerhalb der Suchfrist von 30s. lwIP fragt diesen Server 4-mal für insgesamt bis zu 7s ab, bevor es den nächsten versucht.
 - Unter TESTING erlaubt GitHub ohne Konto 60 API-Anfragen pro Stunde und öffentlicher Adresse, gemeinsam für alle Geräte dahinter. Das Panel wiederholt keine Anfrage.
-- TESTING liest die 10 nach Datum neuesten Releases. Ältere Veröffentlichungen werden unabhängig von ihrer Versionsnummer nicht erfasst.
-- Die Liste ist auf diese 10 Releases begrenzt (`per_page=10`). Ein Patch-Release 0.22.x wird in keiner Einstellung gefunden, wenn danach mindestens 10 Releases veröffentlicht wurden.
+- TESTING liest die 5 nach Datum neuesten Releases. Ältere Veröffentlichungen werden unabhängig von ihrer Versionsnummer nicht erfasst.
+- Die Liste ist auf diese 5 Releases begrenzt (`per_page=5`). Ein Patch-Release 0.22.x wird in keiner Einstellung gefunden, wenn danach mindestens 5 Releases veröffentlicht wurden.
+- Panels auf 0.21.0 bis 0.23.18 fragen nach 10 Releases und lehnen eine Antwort über 262.144 Bytes ab. GitHubs Antwort ist seit v0.23.18 größer, daher endet TESTING dort mit `Der Download ist zu groß für das Panel.`. Ein solches Panel bekommt das nächste Release einmal von Hand: `rcbench-panel-p4-vX.Y.Z.bin` und seine `.sig`, auf der WLAN-Seite hochgeladen, oder der Web-Flasher über USB.
 - Die zeitliche Gültigkeit von Zertifikaten wird nicht geprüft. mbedTLS ist ohne Ablaufprüfung gebaut (`CONFIG_MBEDTLS_HAVE_TIME_DATE` aus, die Vorgabe von ESP-IDF).
 - Zum Download müssen die Release-Dateien `rcbench-panel-p4-vX.Y.Z.bin` und `SHA256SUMS` heißen.

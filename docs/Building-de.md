@@ -738,7 +738,7 @@ python3 tools/release_kind.py v0.22.0 v0.20.0 v0.24.0   # kind=stable prerelease
 Stable-Release. 0.22 ist die letzte Release-Linie für das ESP32-S3-Panel,
 und spätere Releases sind für das 7-Zoll-Display-Board mit ESP32-P4 von
 Waveshare. Die Suche des Panels liest mit RELEASES auf STABLE unter SETUP >
-UPDATES, dem Standard, das Latest-Release von GitHub und mit TESTING die 10
+UPDATES, dem Standard, das Latest-Release von GitHub und mit TESTING die 5
 neuesten Releases. Die Linie des ESP32-P4-Panels hat keine Obergrenze: In beiden Einstellungen
 bietet das Panel jedes Release an, das neuer ist als seine laufende Version. Die
 Grenze 0.22.x mit dem zweiten Lesen, das STABLE dafür macht, gehört nur zur

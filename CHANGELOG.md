@@ -50,6 +50,24 @@ history is in git.
   `VERSORGUNG BLEIBT` (`hitec_panel.c`, `hitec_panel_draw.c`,
   `servo_guide.c`).
 
+### Fixed
+
+- CHECK FOR UPDATES with RELEASES on TESTING no longer ends with
+  `Unexpected response from GitHub.` and `The download is too large for
+  the panel.` (UPD_REL_TOO_BIG). GitHub's answer for the 10 newest
+  releases was 332,374 bytes on 2026-11-27, over the bound of 262,144. The
+  request asks for 5 releases (`per_page=5`, `FW_REL_API_RELEASES`), and the
+  answer's bound, by `Content-Length` and by the scan, is 1,310,720 bytes
+  (`FW_REL_API_MAX`, 5 times 256KiB). The answer passes through the
+  fetch's 4096-byte PSRAM buffer and is not stored. The 5 newest releases
+  were 181,626 bytes; 5 releases of 152 assets and 8,113 bytes of notes
+  each fit. `test_wa_fetch_size` holds answers of GitHub's shape: 10
+  releases of 367,570 bytes are read to the 5th release, 5 of 152 assets
+  are taken, 5 of 160 are refused. Current limitation: panels on 0.21.0 to
+  0.23.18 keep the old request and bound; they take the next release once
+  by hand, on the Wi-Fi page or with the web flasher
+  ([Updates: The check](docs/Screens.md#the-check)).
+
 ## 0.23.18 - 2026-11-27
 
 0.23.18 is a testing release. A servo gets an id, `<prefix>-<serial>` of
