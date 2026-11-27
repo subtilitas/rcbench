@@ -96,6 +96,9 @@ typedef struct {
     uint8_t     upd_pct; /**< DIAL_UPD_SEND: the share taken, 0 to 100 */
     uint16_t    upd_from[3]; /**< the version the Dial runs */
     uint16_t    upd_to[3];   /**< the version offered */
+    uint32_t    upd_offer;   /**< DIAL_UPD_ASK: the confirmation's identity
+                                  (bleota_dev_offer()); the face does not
+                                  draw it */
     uint8_t     off;     /**< the switch-off on the screen button:
                               DIAL_OFF_*, DIAL_OFF_NONE for none */
     bool        off_lit; /**< DIAL_OFF_WARN: the blink's red half */

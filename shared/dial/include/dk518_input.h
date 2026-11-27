@@ -46,6 +46,10 @@
  *   or another offer in its place (bleota's offer count), ends the
  *   window, and the touch under way moves nothing until it lifts; the key
  *   is up while no offer is open.
+ * - The face must have sent that offer's question whole before a touch
+ *   can count for it: an empty read of the glass counts only while the
+ *   question for the offer standing is on the display (@p shown of
+ *   dk518_key_step()), so no tap aimed at an earlier screen answers it.
  * - The offer and its identity are read before the touch controller is,
  *   on every step, and a touch counts for an offer only when a read of
  *   the glass found no finger while that offer already stood: so a
@@ -184,14 +188,16 @@ void dk518_key_init(dk518_key_t *k);
  * @param offer the offer is open (bleota's CONFIRM), read before this
  *              step's touch read
  * @param id    its identity (bleota_dev_offer()), read with @p offer
+ * @param shown the face sent the question of offer @p id whole, read
+ *              with @p offer
  * @param empty this step read the touch controller, after @p offer, and
  *              found no finger
  * @param o     the still touch's events of this step
  * @param now   the time, ms
  * @return true when this step opened a press window: the accept's cue
  */
-bool dk518_key_step(dk518_key_t *k, bool offer, uint32_t id, bool empty,
-                    const dk518_still_out_t *o, uint32_t now);
+bool dk518_key_step(dk518_key_t *k, bool offer, uint32_t id, bool shown,
+                    bool empty, const dk518_still_out_t *o, uint32_t now);
 
 /**
  * @brief The offer the key belongs to, for bleota_dev_key_for().

@@ -137,8 +137,8 @@ static bool key_free(const dk518_key_t *k, uint32_t now)
                && (int32_t)(now - k->until) >= (int32_t)DK518_KEY_GAP_MS);
 }
 
-bool dk518_key_step(dk518_key_t *k, bool offer, uint32_t id, bool empty,
-                    const dk518_still_out_t *o, uint32_t now)
+bool dk518_key_step(dk518_key_t *k, bool offer, uint32_t id, bool shown,
+                    bool empty, const dk518_still_out_t *o, uint32_t now)
 {
     bool press = false;
     if (offer != k->offer || id != k->id) {
@@ -151,7 +151,8 @@ bool dk518_key_step(dk518_key_t *k, bool offer, uint32_t id, bool empty,
         k->on = false;
         k->clear = false;
     }
-    if (empty && offer) {
+    if (empty && offer && shown) {
+        /* The glass empty while this offer's question was on display. */
         k->clear = true;
     }
     if (o->began) {

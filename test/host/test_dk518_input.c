@@ -24,6 +24,9 @@
 
 /** @brief The input task's period, ms. */
 #define STEP 5u
+/** @brief The face task's period: the question draws this long after
+ *         the offer opens, ms. */
+#define FACE_MS 50u
 
 /** @brief What a run of steps gave. */
 typedef struct {
@@ -276,6 +279,9 @@ typedef struct {
     uint32_t      key_offer; /**< the offer of the debounced key */
     uint32_t      t;   /**< the clock */
     int           cues; /**< accept cues */
+    uint32_t      draw_at; /**< when the face draws the offer's question */
+    bool          drawn;   /**< the face sent a question whole */
+    uint32_t      drawn_id; /**< the offer whose question it sent */
 } offer_t;
 
 /** @brief No offer yet.  @param o the rig */
@@ -293,6 +299,7 @@ static void offer_init(offer_t *o)
  *  @param o the rig */
 static void offer_open(offer_t *o)
 {
+    o->draw_at = o->t + FACE_MS;
     ++o->d.offer;
     o->d.st = BLEOTA_DEV_CONFIRM;
     o->d.key_armed = !o->d.key_down;
@@ -310,14 +317,19 @@ static void input_step_at(offer_t *o, bool down, uint16_t x, uint16_t y,
 {
     dk518_still_out_t e;
     uint32_t id = 0u;
+    if (o->d.st == BLEOTA_DEV_CONFIRM && (int32_t)(o->t - o->draw_at) >= 0) {
+        o->drawn = true;                    /* the face task's draw */
+        o->drawn_id = o->d.offer;
+    }
     const bool open = bleota_dev_offer(&o->d, &id);
+    const bool shown = o->drawn && o->drawn_id == id;
     const bool yield = o->d.st != BLEOTA_DEV_IDLE;
     const bool empty = !down;               /* the glass, read after */
     if (opens) {
         offer_open(o);
     }
     (void)dk518_still_step(&o->s, down, x, y, 0, yield, o->t, &e);
-    o->cues += dk518_key_step(&o->k, open, id, empty, &e, o->t);
+    o->cues += dk518_key_step(&o->k, open, id, shown, empty, &e, o->t);
 }
 
 /** @brief input_step_at() with no offer opening inside it.
@@ -365,11 +377,11 @@ static void offer_run(offer_t *o, bool down, uint16_t x, uint16_t y,
     }
 }
 
-/** @brief The glass up 20ms, a still tap of 100ms, and 200ms up after
+/** @brief The glass up 60ms, a still tap of 100ms, and 200ms up after
  *         it.  @param o the rig */
 static void tap(offer_t *o)
 {
-    offer_run(o, false, 0, 0, 20);
+    offer_run(o, false, 0, 0, 60);
     offer_run(o, true, 180, 180, 100);
     offer_run(o, false, 0, 0, 200);
 }
@@ -389,7 +401,7 @@ TEST_CASE(a_swipe_neither_accepts_nor_refuses_the_update)
     offer_t o;
     offer_init(&o);
     offer_open(&o);
-    offer_run(&o, false, 0, 0, 20);
+    offer_run(&o, false, 0, 0, 60);
     offer_run(&o, true, 180, 180, 100);
     offer_run(&o, true, 260, 180, 200);
     offer_run(&o, false, 0, 0, 3000);
@@ -406,14 +418,14 @@ TEST_CASE(a_still_hold_refuses_the_update_whenever_it_lifts)
     offer_t o;
     offer_init(&o);
     offer_open(&o);
-    offer_run(&o, false, 0, 0, 20);
+    offer_run(&o, false, 0, 0, 60);
     offer_run(&o, true, 180, 180, 1200);  /* lifted before 2,000ms */
     offer_run(&o, false, 0, 0, 2000);
     CHECK_EQ(o.d.st, BLEOTA_DEV_IDLE);
     CHECK_EQ(o.d.code, BLEOTA_E_REFUSED);
     offer_init(&o);
     offer_open(&o);
-    offer_run(&o, false, 0, 0, 20);
+    offer_run(&o, false, 0, 0, 60);
     offer_run(&o, true, 180, 180, 1100);  /* moved after 1,000ms */
     offer_run(&o, true, 250, 250, 1400);
     offer_run(&o, false, 0, 0, 500);
@@ -425,7 +437,7 @@ TEST_CASE(a_tap_inside_a_holds_window_neither_shortens_it_nor_accepts)
     offer_t o;
     offer_init(&o);
     offer_open(&o);
-    offer_run(&o, false, 0, 0, 20);
+    offer_run(&o, false, 0, 0, 60);
     offer_run(&o, true, 180, 180, 1200);
     offer_run(&o, false, 0, 0, 100);      /* the hold's window runs on */
     offer_run(&o, true, 180, 180, 100);   /* a tap at 1,300 to 1,400ms */
@@ -442,7 +454,7 @@ TEST_CASE(two_quick_taps_accept_once_and_never_make_a_hold)
     offer_open(&o);
     for (int i = 0; i < 20; ++i) {        /* a tap every 60ms for 1.2s */
         offer_run(&o, true, 180, 180, 40);
-        offer_run(&o, false, 0, 0, 20);
+        offer_run(&o, false, 0, 0, 60);
     }
     offer_run(&o, false, 0, 0, 500);
     CHECK_EQ(o.d.st, BLEOTA_DEV_OPEN);
@@ -474,7 +486,7 @@ TEST_CASE(a_touch_across_a_lost_link_answers_no_later_offer)
     offer_t o;
     offer_init(&o);
     offer_open(&o);
-    offer_run(&o, false, 0, 0, 20);
+    offer_run(&o, false, 0, 0, 60);
     offer_run(&o, true, 180, 180, 300);
     bleota_dev_lost(&o.d);                /* the link drops */
     offer_run(&o, true, 180, 180, 100);
@@ -491,7 +503,7 @@ TEST_CASE(a_holds_window_ends_with_its_offer_and_the_next_offer_starts_up)
     offer_t o;
     offer_init(&o);
     offer_open(&o);
-    offer_run(&o, false, 0, 0, 20);
+    offer_run(&o, false, 0, 0, 60);
     offer_run(&o, true, 180, 180, 1500);  /* the key down since 1,000ms */
     CHECK(dk518_key_down(&o.k, o.t));
     bleota_dev_lost(&o.d);                /* lost before the refusal */
@@ -511,7 +523,7 @@ TEST_CASE(an_offer_replaced_between_two_steps_gets_no_answer_from_the_touch)
     offer_t o;
     offer_init(&o);
     offer_open(&o);                       /* offer A */
-    offer_run(&o, false, 0, 0, 20);
+    offer_run(&o, false, 0, 0, 60);
     offer_run(&o, true, 180, 180, 100);
     bleota_dev_lost(&o.d);                /* A ends and B opens before */
     offer_open(&o);                       /* the input task's next step */
@@ -527,7 +539,7 @@ TEST_CASE(a_key_of_an_ended_offer_answers_no_later_one_in_the_ota_task)
     offer_t o;
     offer_init(&o);
     offer_open(&o);                       /* offer A */
-    offer_run(&o, false, 0, 0, 20);
+    offer_run(&o, false, 0, 0, 60);
     offer_run(&o, true, 180, 180, 100);
     input_step(&o, false, 0, 0);          /* the lift: A's 50ms window */
     CHECK(dk518_key_down(&o.k, o.t));
@@ -570,6 +582,37 @@ TEST_CASE(a_finger_first_read_with_the_offer_needs_an_empty_read_before)
     offer_run(&o, false, 0, 0, 500);
     CHECK_EQ(o.d.st, BLEOTA_DEV_CONFIRM);
     tap(&o);                              /* after an empty read: taken */
+    CHECK_EQ(o.d.st, BLEOTA_DEV_OPEN);
+}
+
+TEST_CASE(a_tap_before_the_question_is_drawn_answers_nothing)
+{
+    offer_t o;
+    offer_init(&o);
+    offer_run(&o, false, 0, 0, 100);
+    offer_open(&o);                       /* the question draws at 50ms */
+    offer_run(&o, false, 0, 0, 30);       /* empty reads, nothing drawn */
+    offer_run(&o, true, 180, 180, 100);   /* aimed at the old screen */
+    offer_run(&o, false, 0, 0, 500);
+    CHECK_EQ(o.d.st, BLEOTA_DEV_CONFIRM);
+    CHECK_EQ(o.cues, 0);
+    tap(&o);                              /* after the question: taken */
+    CHECK_EQ(o.d.st, BLEOTA_DEV_OPEN);
+}
+
+TEST_CASE(a_question_drawn_for_another_offer_arms_nothing)
+{
+    offer_t o;
+    offer_init(&o);
+    offer_open(&o);                       /* A, drawn at 50ms */
+    offer_run(&o, false, 0, 0, 60);
+    bleota_dev_lost(&o.d);
+    offer_open(&o);                       /* B, its question not yet out */
+    offer_run(&o, false, 0, 0, 20);
+    offer_run(&o, true, 180, 180, 100);
+    offer_run(&o, false, 0, 0, 500);
+    CHECK_EQ(o.d.st, BLEOTA_DEV_CONFIRM);
+    tap(&o);
     CHECK_EQ(o.d.st, BLEOTA_DEV_OPEN);
 }
 
@@ -645,6 +688,8 @@ int main(void)
     RUN(a_key_of_an_ended_offer_answers_no_later_one_in_the_ota_task);
     RUN(an_offer_that_opens_while_the_glass_is_read_gets_no_answer);
     RUN(a_finger_first_read_with_the_offer_needs_an_empty_read_before);
+    RUN(a_tap_before_the_question_is_drawn_answers_nothing);
+    RUN(a_question_drawn_for_another_offer_arms_nothing);
     RUN(bleota_takes_a_key_for_the_offer_standing_alone);
     RUN(no_offer_keeps_the_key_up);
     RUN(native_points_scale_to_0_to_239);
