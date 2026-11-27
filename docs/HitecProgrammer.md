@@ -105,6 +105,7 @@ and ends 4px above the alert band, as in the KST programmer
 ![A D485HW read](img/servo-hitec-read.png)
 ![The SERIES list](img/servo-hitec-series.png)
 ![A read under way](img/servo-hitec-reading.png)
+![CONNECT at 1s of its hold](img/servo-hitec-connect-hold.png)
 
 ## CONNECT
 
@@ -259,6 +260,8 @@ compared, so every change to it requires confirmation.
 ![An edited value](img/servo-hitec-edit.png)
 ![SPEED on the keypad](img/servo-hitec-keypad.png)
 ![CHECK THIS CHANGE](img/servo-hitec-soft.png)
+![OVERLOAD PROTECTION's list of 6 entries](img/servo-hitec-overload.png)
+![SPEED under the finger](img/servo-hitec-row-down.png)
 
 ## MOVE SERVO
 
@@ -848,6 +851,7 @@ WITHOUT WRITING** drops the edits, writes nothing and leaves as above;
 **BACK** closes the page and keeps them.
 
 ![LEAVE PROGRAMMING with two unwritten edits](img/servo-hitec-leave-edits.png)
+![The hold of LEAVE PROGRAMMING at 1s](img/servo-hitec-leave-hold.png)
 
 When the PD mini supplies the servo, both series normally end LEAVE with
 its output on at the session's programming voltage and current limit. If

@@ -112,6 +112,7 @@ KST-Servoprogrammierung ([Seiten](Screens-de.md#programmierer)).
 ![Ein D485HW gelesen](img/de/servo-hitec-read.png)
 ![Die Liste SERIE](img/de/servo-hitec-series.png)
 ![Ein laufendes Lesen](img/de/servo-hitec-reading.png)
+![VERBINDEN nach 1s des Haltens](img/de/servo-hitec-connect-hold.png)
 
 ## VERBINDEN
 
@@ -273,6 +274,8 @@ jede Änderung daran bestätigen.
 ![Ein geänderter Wert](img/de/servo-hitec-edit.png)
 ![TEMPO auf dem Tastenfeld](img/de/servo-hitec-keypad.png)
 ![ÄNDERUNG PRÜFEN](img/de/servo-hitec-soft.png)
+![Die Liste von ÜBERLASTSCHUTZ mit 6 Einträgen](img/de/servo-hitec-overload.png)
+![TEMPO unter dem Finger](img/de/servo-hitec-row-down.png)
 
 ## SERVO BEWEGEN
 
@@ -910,6 +913,7 @@ ohne Einstellung zählt `Nicht geschrieben: 1 Werte außerhalb der Einstellungen
 und verlässt wie oben; **ZURÜCK** schließt die Seite und behält sie.
 
 ![PROGRAMMIERMODUS VERLASSEN mit zwei ungeschriebenen Änderungen](img/de/servo-hitec-leave-edits.png)
+![Das Halten von PROGRAMMIERMODUS VERLASSEN nach 1s](img/de/servo-hitec-leave-hold.png)
 
 Wenn der PD mini das Servo versorgt, endet VERLASSEN bei beiden Serien
 normalerweise mit eingeschaltetem Ausgang bei Programmierspannung und

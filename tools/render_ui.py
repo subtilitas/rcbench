@@ -402,6 +402,15 @@ SCREENS = {
                                     "servo", "dark"),
     "servo-hitec-classic-factory-done": (
         "servo-hitec-classic-factory-done.png", "servo", "dark"),
+    # The press states no other Hitec view shows: CONNECT and LEAVE's page
+    # hold under the finger for 1s, MOTION's SPEED pressed, and
+    # PROTECT's OVERLOAD list of 6 entries.
+    "servo-hitec-connect-hold": ("servo-hitec-connect-hold.png", "servo",
+                                 "dark"),
+    "servo-hitec-leave-hold": ("servo-hitec-leave-hold.png", "servo",
+                               "dark"),
+    "servo-hitec-row-down": ("servo-hitec-row-down.png", "servo", "dark"),
+    "servo-hitec-overload": ("servo-hitec-overload.png", "servo", "dark"),
     "servo-kst": ("servo-kst.png", "servo", "dark"),
     "servo-kst-nopage": ("servo-kst-nopage.png", "servo", "dark"),
     # The tester drives the standard outputs: PROGRAM is locked.
@@ -409,6 +418,9 @@ SCREENS = {
     # A PD mini answers: the voltage and limit CONNECT sets, the list
     # that holds them, their keypads and the hold above 6.0V.
     "servo-kst-supply": ("servo-kst-supply.png", "servo", "dark"),
+    # CONNECT under the finger for 1s of its 2s hold.
+    "servo-kst-connect-hold": ("servo-kst-connect-hold.png", "servo",
+                               "dark"),
     "servo-kst-options": ("servo-kst-options.png", "servo", "dark"),
     "servo-kst-voltage": ("servo-kst-voltage.png", "servo", "dark"),
     "servo-kst-hv": ("servo-kst-hv.png", "servo", "dark"),
@@ -421,10 +433,14 @@ SCREENS = {
     "servo-kst-nopin": ("servo-kst-nopin.png", "servo", "dark"),
     "servo-kst-working": ("servo-kst-working.png", "servo", "dark"),
     "servo-kst-read": ("servo-kst-read.png", "servo", "dark"),
+    # The notes turned to their second page: a tap on them.
+    "servo-kst-read-p2": ("servo-kst-read-p2.png", "servo", "dark"),
     "servo-kst-readonly": ("servo-kst-readonly.png", "servo", "dark"),
     "servo-kst-locked": ("servo-kst-locked.png", "servo", "dark"),
     "servo-kst-failsafe": ("servo-kst-failsafe.png", "servo", "dark"),
     "servo-kst-leave": ("servo-kst-leave.png", "servo", "dark"),
+    # LEAVE's page with its hold under the finger for 1s.
+    "servo-kst-leave-hold": ("servo-kst-leave-hold.png", "servo", "dark"),
     "servo-kst-more": ("servo-kst-more.png", "servo", "dark"),
     "servo-kst-release": ("servo-kst-release.png", "servo", "dark"),
     "servo-kst-keypad": ("servo-kst-keypad.png", "servo", "dark"),
@@ -432,6 +448,8 @@ SCREENS = {
     "servo-kst-soft": ("servo-kst-soft.png", "servo", "dark"),
     "servo-kst-hard": ("servo-kst-hard.png", "servo", "dark"),
     "servo-kst-tune": ("servo-kst-tune.png", "servo", "dark"),
+    # TUNE's MAX. DUTY under the finger: a pressed value.
+    "servo-kst-row-down": ("servo-kst-row-down.png", "servo", "dark"),
     # KST EXPERT MODE OFF: TUNE closed up, MORE without RELEASE PAIRING,
     # and LEAVE's page that names the hidden values the draft changes.
     "servo-kst-tune-expert-off": ("servo-kst-tune-expert-off.png", "servo",
@@ -444,6 +462,8 @@ SCREENS = {
     "servo-kst-files": ("servo-kst-files.png", "servo", "dark"),
     "servo-kst-files-none": ("servo-kst-files-none.png", "servo", "dark"),
     "servo-kst-files-next": ("servo-kst-files-next.png", "servo", "dark"),
+    # 5 files: SAVE and the files fill 6 entries, two to a line.
+    "servo-kst-files-five": ("servo-kst-files-five.png", "servo", "dark"),
     "servo-kst-name": ("servo-kst-name.png", "servo", "dark"),
     "servo-kst-name-exists": ("servo-kst-name-exists.png", "servo", "dark"),
     "servo-kst-name-bad": ("servo-kst-name-bad.png", "servo", "dark"),
@@ -469,6 +489,7 @@ SCREENS = {
     "servo-kst-write-nocard": ("servo-kst-write-nocard.png", "servo", "dark"),
     "servo-kst-nofile": ("servo-kst-nofile.png", "servo", "dark"),
     "servo-kst-doubt": ("servo-kst-doubt.png", "servo", "dark"),
+    "servo-kst-doubt-p2": ("servo-kst-doubt-p2.png", "servo", "dark"),
     "servo-kst-journal": ("servo-kst-journal.png", "servo", "dark"),
     "servo-kst-restore-list": ("servo-kst-restore-list.png", "servo", "dark"),
     "servo-kst-restore": ("servo-kst-restore.png", "servo", "dark"),
