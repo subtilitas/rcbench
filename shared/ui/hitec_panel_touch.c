@@ -1,11 +1,14 @@
 /**
  * @file hitec_panel_touch.c
- * @brief The presses on the Hitec programmer's overlay: a DOWN, its moves
- *        and its release, the home tag, each frame's hold, and the
- *        supply's lock while a port is held.
+ * @brief The presses on the Hitec programmer's overlay: the switch on what
+ *        the servo frame returns for a touch and for a frame, the home
+ *        tag, and the supply's lock while a port is held.
  *
- * Hitec is a name or trademark of its owner; it is used here only to say
- * which servos this overlay works with.  The state and the seam are
+ * The frame (sprog.h) takes the presses, the CONNECT and WRITE n VALUES
+ * holds, the -/+ keys' repeat, the stops on the press, the keypad, the
+ * keyboard, the list and the hold page; this file says what each result
+ * does.  Hitec is a name or trademark of its owner; it is used here only to
+ * say which servos this overlay works with.  The state and the seam are
  * hitec_panel_int.h.
  *
  * SPDX-License-Identifier: MIT
@@ -14,259 +17,167 @@
 
 #include "hitec_live.h"
 #include "hitec_move.h"
-#include "prog5v_box.h"
 #include "supply_screen.h"
-#include "ui_tabs.h"
-#include "ui_textkey.h"
 #include "ui_widgets.h"
 
 /* Last: its layout macros and hp, the state, which no header included
  * after it may meet. */
 #include "hitec_panel_int.h"
 
-/**
- * @brief Takes a press: its contact, what it is on and its row.
- * @param evt  the DOWN
- * @param what P_*
- * @param row  the row or entry, -1 none
- */
-static void take(const touch_event_t *evt, int what, int row)
-{
-    hp.have = true;
-    hp.id = evt->point.id;
-    hp.pressed = what;
-    hp.row = row;
-}
-
-/** @brief Ends the press. */
-static void let_go(void)
-{
-    hp.have = false;
-    hp.pressed = P_NONE;
-}
-
-/** @brief What a press stops: nothing, MOVE SERVO's loop, a FIND STOP
- *         search, the operation the PORT row's ABORT ends. */
-enum { STOP_NONE = 0, STOP_MOVE, STOP_FIND, STOP_ABORT };
-
-/**
- * @brief Whether the PORT row's button reads ABORT: the entry, a read or
- *        a write is under way (act_value() in hitec_panel_text.c).
- * @return true while it does
- */
-static bool abort_shows(void)
-{
-    switch (hitec_prog_state(&hp.prog)) {
-    case HITEC_PROG_OPENING:
-    case HITEC_PROG_ENTERING:
-    case HITEC_PROG_READING:
-    case HITEC_PROG_RECORDING:
-    case HITEC_PROG_BACKUP:
-    case HITEC_PROG_WRITING:
-        return true;
-    default:
-        return false;
-    }
-}
-
-/**
- * @brief The control that stops under (@p x, @p y): MOVE SERVO's value
- *        while the loop is on, the FIND STOP key whose side searches, and
- *        the PORT row's button while it reads ABORT.  None while the page,
- *        the keypad, the keyboard or a list covers the rows.
- * @param x the column, px
- * @param y the line, px
- * @return STOP_MOVE, STOP_FIND, STOP_ABORT or STOP_NONE
- */
-static int stop_at(int x, int y)
-{
-    const hitec_prog_t *p = &hp.prog;
-
-    if (!hp.open || hp.page.open || hp.kp.open || hp.tk.open
-        || hp.f.list.open) {
-        return STOP_NONE;
-    }
-    for (int i = 0; i < HP_ROW_COUNT; ++i) {
-        const hpn_row_t *r = &hpn_rows[i];
-
-        if (r->kind != K_ACT || r->page != hp.f.tabs.selected
-            || !hpn_row_shown(r) || !hpn_row_live(r)) {
-            continue;
-        }
-        if (r->what == A_MOVE && hitec_prog_move_on(p)
-            && gfx_rect_contains(hpn_value_rect(r), x, y)) {
-            return STOP_MOVE;
-        }
-        if (r->what == A_PORT && abort_shows()
-            && gfx_rect_contains(hpn_value_rect(r), x, y)) {
-            return STOP_ABORT;
-        }
-        if (r->what == A_FIND && hitec_prog_find_side(p) >= 0
-            && gfx_rect_contains(
-                   hpn_find_rect(r, hitec_prog_find_side(p)
-                                        == (int)HITEC_FIND_RIGHT), x, y)) {
-            return STOP_FIND;
-        }
-    }
-    return STOP_NONE;
-}
-
 bool hitec_panel_safe_at(int x, int y)
 {
-    return stop_at(x, y) != STOP_NONE;
-}
-
-/**
- * @brief Stops what the control under (@p x, @p y) stops: MOVE SERVO's
- *        loop, the search of the FIND STOP key there, or the operation
- *        under way where the PORT row reads ABORT.
- * @param x the column, px
- * @param y the line, px
- * @return true when the press was on such a control and stopped it
- */
-static bool stop_act(int x, int y)
-{
-    switch (stop_at(x, y)) {
-    case STOP_MOVE:
-        hitec_prog_move_stop(&hp.prog);
-        return true;
-    case STOP_FIND:
-        hpn_find_act(hitec_prog_find_side(&hp.prog)
-                     == (int)HITEC_FIND_RIGHT);
-        return true;
-    case STOP_ABORT:
-        hitec_prog_abort(&hp.prog);
-        return true;
-    default:
+    if (!hp.open) {
         return false;
     }
+    hpn_view();
+    return sprog_safe_at(&hp.f, x, y);
 }
 
 /**
- * @brief A DOWN: the control under it takes the press.  A control that
- *        stops the servo acts on it at once, and the press it keeps taps
- *        nothing on its release: a finger that slides off, or a touch
- *        that is lost, has stopped already.
- * @param evt the event
+ * @brief A stop on the press: MOVE SERVO's loop ends, the FIND STOP key's
+ *        search ends, ABORT ends the operation under way.
+ * @param r   the row
+ * @param key the key of FIND STOP's pair: 1 for RIGHT END
  */
-static void down(const touch_event_t *evt)
+static void stop(const hpn_row_t *r, int key)
 {
-    const int x = evt->point.x, y = evt->point.y;
+    switch (r->what) {
+    case A_MOVE:
+        hitec_prog_move_stop(&hp.prog);
+        break;
+    case A_FIND:
+        hpn_find_act(key != 0);
+        break;
+    default:
+        hitec_prog_abort(&hp.prog);
+        break;
+    }
+    hpn_moved();
+}
 
-    if (stop_act(x, y)) {
-        take(evt, P_NONE, -1);
+/**
+ * @brief A tap on a row: FIND STOP's key, or the row's action.
+ * @param r   the row
+ * @param key the key of FIND STOP's pair: 1 for RIGHT END
+ */
+static void tap(const hpn_row_t *r, int key)
+{
+    if (r->kind == K_ACT && r->what == A_FIND) {
+        hpn_find_act(key != 0);
         hpn_moved();
         return;
     }
+    hpn_act(r);
+}
 
-    if (hp.page.open) {
-        if (gfx_rect_contains(hitec_panel_apply_rect(), x, y)) {
-            take(evt, P_APPLY, -1);
-            hp.page.down = true;
-            ui_hold_begin(&hp.page.hold, hp.page.hint);
-        } else if (gfx_rect_contains(hitec_panel_cancel_rect(), x, y)) {
-            take(evt, P_CANCEL, -1);
-        }
-        return;
-    }
-    if (hp.kp.open) {
-        take(evt, P_KEYPAD, -1);
-        (void)ui_keypad_event(&hp.kp, evt, NULL);
-        return;
-    }
-    if (hp.tk.open) {
-        take(evt, P_TEXTKEY, -1);
-        (void)ui_textkey_event(&hp.tk, evt, NULL, 0);
-        return;
-    }
-    if (hp.f.list.open) {
-        for (int i = 0; i < hp.f.list.count; ++i) {
-            if (gfx_rect_contains(hitec_panel_choice_rect(i), x, y)) {
-                take(evt, P_CHOICE, i);
-                return;
-            }
-        }
-        if (gfx_rect_contains(hitec_panel_choice_cancel_rect(), x, y)) {
-            take(evt, P_CHOICE_CANCEL, -1);
-        }
-        return;
-    }
-    if (gfx_rect_contains(hpn_tabs_rect(), x, y)) {
-        take(evt, P_TAB, -1);
-        (void)ui_tabs_event(&hp.f.tabs, evt);
-        return;
-    }
-    for (int i = 0; i < HP_ROW_COUNT; ++i) {
-        const hpn_row_t *r = &hpn_rows[i];
-
-        if (r->page != hp.f.tabs.selected || !hpn_row_shown(r)
-            || !hpn_row_live(r)) {
-            continue;
-        }
-        if (hpn_stepped(r)) {
-            /* A step on the press, the repeat while held. */
-            const bool plus = gfx_rect_contains(hpn_step_rect(r, true), x, y);
-
-            if (plus || gfx_rect_contains(hpn_step_rect(r, false), x, y)) {
-                take(evt, plus ? P_PLUS : P_MINUS, i);
-                hp.held_s = 0.0f;
-                if (!hpn_step(r, plus)) {
-                    let_go();
-                }
-                return;
-            }
-        }
-        if (gfx_rect_contains(hpn_value_rect(r), x, y)) {
-            if (r->kind == K_ACT && r->what == A_FIND) {
-                /* The key under the finger, if it takes a tap. */
-                hp.find_right = gfx_rect_contains(hpn_find_rect(r, true), x, y);
-                if (!gfx_rect_contains(hpn_find_rect(r, hp.find_right), x, y)
-                    || !hpn_find_live(hp.find_right)) {
-                    return;
-                }
-            }
-            if (r->kind == K_ACT && r->what == A_PORT
-                && hitec_prog_state(&hp.prog) == HITEC_PROG_PWM
-                && hpn_switches_supply()) {
-                /* CONNECT that switches the port's supply on: a 2s hold,
-                 * and no hold from a low carrier input.  A servo the
-                 * operator powers takes a tap. */
-                if (prog5v_box_input_why() != NULL) {
-                    ui_action_refused(prog5v_box_input_why());
-                    return;
-                }
-                take(evt, P_CONNECT, i);
-                ui_hold_reset(&hp.conn);
-                ui_hold_begin(&hp.conn, TX_HOLD_HINT_CONNECT);
-                return;
-            }
-            if (r->kind == K_ACT && r->what == A_WRITE) {
-                /* WRITE n VALUES writes after a 2s hold; a tap shows the
-                 * hint and sends nothing.  A write the session refuses
-                 * says why at once. */
-                if (hpn_write_refused()) {
-                    hpn_moved();
-                    return;
-                }
-                take(evt, P_WRITE, i);
-                ui_hold_reset(&hp.wr);
-                ui_hold_begin(&hp.wr, TX_HOLD_HINT_WRITE);
-                return;
-            }
-            take(evt, P_ROW, i);
+/**
+ * @brief A press of a -/+ key, or its repeat: @p n steps, until one is
+ *        refused or MOVE SERVO goes off, which ends the press.
+ * @param r    the row
+ * @param plus true for +
+ * @param n    the steps owed
+ */
+static void step(const hpn_row_t *r, bool plus, int n)
+{
+    for (int i = 0; i < n; ++i) {
+        if (!hpn_step(r, plus)) {
+            sprog_refuse(&hp.f);
             return;
         }
     }
-    /* On the carrier the PORT row's label opens the ports' list. */
-    const hpn_row_t *pr = hpn_port_pick_row();
-    if (pr != NULL && gfx_rect_contains(hpn_row_rect(pr), x, y)) {
-        take(evt, P_PORT, -1);
+}
+
+/**
+ * @brief A row hold that completed: CONNECT connects while the port is
+ *        still in PWM and switches a supply, WRITE n VALUES writes while
+ *        it still takes a write.
+ * @param r the row
+ */
+static void hold_due(const hpn_row_t *r)
+{
+    if (r->what == A_PORT) {
+        if (hitec_prog_state(&hp.prog) == HITEC_PROG_PWM
+            && hpn_switches_supply() && hpn_row_shown(r)
+            && hpn_row_live(r)) {
+            hpn_act(r);         /* refuses a low carrier input itself */
+            hpn_supply_sync();
+        }
         return;
     }
-    /* Notes of more than one page: a tap turns the page. */
-    hpn_view();
-    if (gfx_rect_contains(sprog_notes_rect(&hp.f), x, y)) {
-        take(evt, P_NOTES, -1);
+    if (hpn_row_live(r)) {
+        (void)hpn_write_go((uint8_t)HITEC_PROG_WR_EDITS);
+        hpn_moved();
+    }
+}
+
+/**
+ * @brief The keypad's value, x 10^decimals, back to its unit.
+ * @param value the frame's value
+ * @return the value
+ */
+static float keypad_value(int32_t value)
+{
+    float v = (float)value;
+
+    for (int i = 0; i < hp.f.kp_dec; ++i) {
+        v /= 10.0f;
+    }
+    return v;
+}
+
+/**
+ * @brief What the frame returned.
+ * @param r the result
+ */
+static void act(sprog_result_t r)
+{
+    const hpn_row_t *row = r.row >= 0 && r.row < HP_ROW_COUNT
+                               ? &hpn_rows[r.row] : &hpn_rows[0];
+
+    switch (r.kind) {
+    case SPROG_R_TAP:
+        tap(row, r.key);
+        break;
+    case SPROG_R_STEP:
+        step(row, r.key > 0, (int)r.value);
+        break;
+    case SPROG_R_STOP:
+        stop(row, r.key);
+        break;
+    case SPROG_R_HOLD_BEGIN:
+        /* WRITE n VALUES that the session refuses says why and starts no
+         * hold; CONNECT's refusal is the cell's why. */
+        if (row->what == A_WRITE && hpn_write_refused()) {
+            sprog_refuse(&hp.f);
+            hpn_moved();
+        }
+        break;
+    case SPROG_R_HOLD_DUE:
+        hold_due(row);
+        break;
+    case SPROG_R_PORT:
+        hpn_port_list();
+        break;
+    case SPROG_R_KEYPAD:
+        hpn_keypad_done(keypad_value(r.value));
+        break;
+    case SPROG_R_KEYPAD_CANCEL:
+        hp.kp_what = KP_NONE;
+        break;
+    case SPROG_R_LIST:
+        hpn_choice_done((int)r.value);
+        break;
+    case SPROG_R_NAME:
+        hpn_name_done(hp.f.name);
+        break;
+    case SPROG_R_PAGE_APPLY:
+        hpn_page_apply(r.what, hp.f.page.drop);
+        break;
+    case SPROG_R_PAGE_CANCEL:
+        hpn_page_dropped(r.what);
+        break;
+    default:
+        break;
     }
 }
 
@@ -279,9 +190,10 @@ void hitec_panel_close(void)
     if (!hitec_panel_holds_port()) {
         hpn_close_editors();
         hp.open = false;
-    } else if (st == HITEC_PROG_HELD && !hp.page.open) {
+        hp.f.open = false;
+    } else if (st == HITEC_PROG_HELD && !hp.f.page.open) {
         hpn_page_leave();
-    } else if (st == HITEC_PROG_OTHER && !hp.page.open) {
+    } else if (st == HITEC_PROG_OTHER && !hp.f.page.open) {
         hpn_page_release();
     }
     ++hp.rev;
@@ -299,167 +211,14 @@ void hitec_panel_back(void)
     hitec_panel_close();
 }
 
-/**
- * @brief The rest of the press held: a move or its release.
- * @param evt the event
- */
-static void rest(const touch_event_t *evt)
-{
-    const int x = evt->point.x, y = evt->point.y;
-    const bool up = evt->type == TOUCH_EVENT_UP;
-    const int was = hp.pressed;
-    const int which = hp.row;
-
-    if (was == P_KEYPAD) {
-        float v = 0.0f;
-        const ui_keypad_result_t r = ui_keypad_event(&hp.kp, evt, &v);
-
-        if (up) {
-            let_go();
-        }
-        if (r == UI_KEYPAD_OK) {
-            hpn_keypad_done(v);
-        } else if (r == UI_KEYPAD_CANCEL) {
-            hp.kp_what = KP_NONE;
-        }
-        return;
-    }
-    if (was == P_TEXTKEY) {
-        char name[UI_TEXTKEY_MAX + 1];
-        const ui_textkey_result_t r = ui_textkey_event(&hp.tk, evt, name,
-                                                       sizeof(name));
-
-        if (up) {
-            let_go();
-        }
-        if (r == UI_TEXTKEY_OK) {
-            hpn_name_done(name);
-        }
-        return;
-    }
-    if (was == P_TAB) {
-        (void)ui_tabs_event(&hp.f.tabs, evt);
-        if (up) {
-            let_go();
-        }
-        return;
-    }
-    if (was == P_PLUS || was == P_MINUS) {
-        /* A finger that leaves the key ends the repeat. */
-        if (up || !gfx_rect_contains(hpn_step_rect(&hpn_rows[which],
-                                                   was == P_PLUS), x, y)) {
-            let_go();
-        }
-        return;
-    }
-    if (was == P_APPLY) {
-        if (!up) {
-            /* A finger that leaves the button abandons the hold. */
-            if (!gfx_rect_contains(hitec_panel_apply_rect(), x, y)
-                && ui_hold_leave(&hp.page.hold)) {
-                hp.page.down = false;
-                let_go();
-            }
-            return;
-        }
-        (void)ui_hold_end(&hp.page.hold, evt, hitec_panel_apply_rect());
-        hp.page.down = false;
-        let_go();
-        return;
-    }
-    if (was == P_CONNECT) {
-        const gfx_rect_t vr = hpn_value_rect(&hpn_rows[which]);
-
-        if (!up) {
-            /* A finger that leaves CONNECT abandons its hold. */
-            if (!gfx_rect_contains(vr, x, y) && ui_hold_leave(&hp.conn)) {
-                let_go();
-            }
-            return;
-        }
-        /* The hold has connected, or a short release shows the hint; the
-         * release is no tap on what the button shows now. */
-        (void)ui_hold_end(&hp.conn, evt, vr);
-        let_go();
-        return;
-    }
-    if (was == P_WRITE) {
-        const gfx_rect_t vr = hpn_value_rect(&hpn_rows[which]);
-
-        if (!up) {
-            /* A finger that leaves WRITE abandons its hold. */
-            if (!gfx_rect_contains(vr, x, y) && ui_hold_leave(&hp.wr)) {
-                let_go();
-            }
-            return;
-        }
-        /* The hold has written, or a short release shows the hint. */
-        (void)ui_hold_end(&hp.wr, evt, vr);
-        let_go();
-        return;
-    }
-    if (!up) {
-        return;
-    }
-    let_go();
-    switch (was) {
-    case P_ROW:
-        if (hpn_rows[which].what == A_FIND && hpn_rows[which].kind == K_ACT
-            && !gfx_rect_contains(hpn_find_rect(&hpn_rows[which],
-                                                hp.find_right), x, y)) {
-            /* A finger that left its key taps nothing. */
-            break;
-        }
-        if (gfx_rect_contains(hpn_value_rect(&hpn_rows[which]), x, y)
-            && hpn_row_shown(&hpn_rows[which])
-            && hpn_row_live(&hpn_rows[which])) {
-            hpn_act(&hpn_rows[which]);
-        }
-        break;
-    case P_PORT: {
-        const hpn_row_t *pr = hpn_port_pick_row();
-
-        if (pr != NULL && gfx_rect_contains(hpn_row_rect(pr), x, y)) {
-            hpn_port_list();
-        }
-        break;
-    }
-    case P_NOTES:
-        hpn_view();
-        if (gfx_rect_contains(sprog_notes_rect(&hp.f), x, y)) {
-            hp.f.note_page = (uint8_t)((hp.f.note_page + 1)
-                                       % sprog_note_pages(&hp.f));
-        }
-        break;
-    case P_CHOICE:
-        if (hp.f.list.open && which < hp.f.list.count
-            && gfx_rect_contains(hitec_panel_choice_rect(which), x, y)) {
-            hpn_choice_done(hp.f.list.value[which]);
-        }
-        break;
-    case P_CHOICE_CANCEL:
-        if (gfx_rect_contains(hitec_panel_choice_cancel_rect(), x, y)) {
-            hp.f.list.open = false;
-        }
-        break;
-    case P_CANCEL:
-        if (gfx_rect_contains(hitec_panel_cancel_rect(), x, y)) {
-            hpn_close_editors();
-        }
-        break;
-    default:
-        break;
-    }
-}
-
 bool hitec_panel_has_press(uint8_t id)
 {
-    return hp.have && hp.id == id;
+    return sprog_has_press(&hp.f, id);
 }
 
 bool hitec_panel_pressed(void)
 {
-    return hp.have;
+    return hp.f.have;
 }
 
 void hpn_supply_sync(void)
@@ -480,51 +239,13 @@ void hpn_supply_sync(void)
     supply_screen_set_page_held(p->fed && p->f.supply_held);
 }
 
-/**
- * @brief A stop taken from a further contact: the press held on a row
- *        loses its tap.  Its release would act on the row it came down on,
- *        and on MOVE SERVO or a FIND STOP key that release would start
- *        again what the stop ended.  A release never switches on what a
- *        stop switched off.
- */
-static void stop_taken(void)
-{
-    if (hp.have && hp.pressed == P_ROW) {
-        let_go();
-    }
-    hpn_moved();
-}
-
-/**
- * @brief A DOWN while another contact holds the press: the controls that
- *        stop the servo act on it at once, as on the first contact's press
- *        (down()): a stop counts on the press whatever other fingers hold.
- *        MOVE SERVO while it is on ends the loop; the FIND STOP key whose
- *        side searches ends the search.  A press held on another control
- *        stays its contact's, one held on a row loses its tap
- *        (stop_taken()), and any other DOWN takes nothing.
- * @param evt the DOWN
- */
-static void stop_down(const touch_event_t *evt)
-{
-    if (stop_act(evt->point.x, evt->point.y)) {
-        stop_taken();
-    }
-}
-
 void hitec_panel_event(const touch_event_t *evt)
 {
     if (evt == NULL || !hp.open) {
         return;
     }
-    if (hp.have && evt->point.id == hp.id && evt->type != TOUCH_EVENT_DOWN) {
-        rest(evt);
-    } else if (evt->type == TOUCH_EVENT_DOWN && !hp.have) {
-        /* One press at a time in the overlay. */
-        down(evt);
-    } else if (evt->type == TOUCH_EVENT_DOWN) {
-        stop_down(evt);
-    }
+    hpn_view();
+    act(sprog_event(&hp.f, evt));
     hpn_move_follow();
     hpn_supply_sync();
     ++hp.rev;
@@ -532,16 +253,7 @@ void hitec_panel_event(const touch_event_t *evt)
 
 void hitec_panel_cancel(void)
 {
-    ui_keypad_cancel_press(&hp.kp);
-    ui_textkey_cancel_press(&hp.tk);
-    ui_tabs_cancel(&hp.f.tabs);
-    ui_hold_reset(&hp.page.hold);
-    ui_hold_reset(&hp.conn);
-    hp.conn_due = false;
-    ui_hold_reset(&hp.wr);
-    hp.wr_due = false;
-    hp.page.down = false;
-    let_go();
+    sprog_cancel(&hp.f);
     ++hp.rev;
 }
 
@@ -551,129 +263,14 @@ void hitec_panel_leave(void)
     hitec_panel_cancel();
     hpn_close_editors();
     hp.open = false;
-}
-
-/**
- * @brief A frame of CONNECT's hold: it connects on the tick after it
- *        completes; the port gone from PWM or its row from the page ends
- *        it, a low carrier input ends it with the reason.
- *
- * The connect waits a tick: the frame's drains run between the two, so a
- * touch loss that the hold completed over is found first, and
- * hitec_panel_cancel() takes the connect back before its command is
- * queued.
- * @param dt_s the frame's time, s
- */
-static void connect_tick(float dt_s)
-{
-    if (hp.conn_due) {
-        const hpn_row_t *r = &hpn_rows[0];
-
-        hp.conn_due = false;
-        if (hitec_prog_state(&hp.prog) == HITEC_PROG_PWM
-            && hpn_switches_supply() && r->page == hp.f.tabs.selected
-            && hpn_row_shown(r) && hpn_row_live(r)) {
-            hpn_act(r);         /* refuses a low carrier input itself */
-            hpn_supply_sync();
-        }
-        ++hp.rev;
-    }
-    if (hp.have && hp.pressed == P_CONNECT && !hp.conn.fired) {
-        const hpn_row_t *r = &hpn_rows[hp.row];
-
-        if (hitec_prog_state(&hp.prog) != HITEC_PROG_PWM
-            || !hpn_switches_supply() || hp.page.open
-            || hitec_panel_editor() != 0 || r->page != hp.f.tabs.selected
-            || !hpn_row_shown(r) || !hpn_row_live(r)) {
-            (void)ui_hold_left(&hp.conn);
-            let_go();
-            ++hp.rev;
-        } else if (prog5v_box_input_why() != NULL) {
-            ui_hold_reset(&hp.conn);
-            let_go();
-            ui_action_refused(prog5v_box_input_why());
-            ++hp.rev;
-        } else {
-            if (ui_hold_tick(&hp.conn, dt_s)) {
-                hp.conn_due = true;
-                ++hp.rev;
-            }
-            ++hp.hold_rev;
-        }
-    }
-    if (ui_hold_flashing(&hp.conn)) {
-        ui_hold_flash_step(&hp.conn, dt_s);
-        ++hp.hold_rev;
-        if (!ui_hold_flashing(&hp.conn)) {
-            ++hp.rev;           /* the row under the flash, whole */
-        }
-    }
-}
-
-/**
- * @brief A frame of WRITE n VALUES' hold: it writes on the tick after it
- *        completes, as CONNECT connects; the row taking no press any more,
- *        an editor or a page ends it.
- * @param dt_s the frame's time, s
- */
-static void write_tick(float dt_s)
-{
-    if (hp.wr_due) {
-        const hpn_row_t *r = hpn_row_at(HITEC_PANEL_SERVO, 3, 1);
-
-        hp.wr_due = false;
-        if (r != NULL && hpn_row_live(r)) {
-            (void)hpn_write_go((uint8_t)HITEC_PROG_WR_EDITS);
-            hpn_moved();
-        }
-        ++hp.rev;
-    }
-    if (hp.have && hp.pressed == P_WRITE && !hp.wr.fired) {
-        const hpn_row_t *r = &hpn_rows[hp.row];
-
-        if (hp.page.open || hitec_panel_editor() != 0
-            || r->page != hp.f.tabs.selected || !hpn_row_shown(r)
-            || !hpn_row_live(r)) {
-            (void)ui_hold_left(&hp.wr);
-            let_go();
-            ++hp.rev;
-        } else {
-            if (ui_hold_tick(&hp.wr, dt_s)) {
-                hp.wr_due = true;
-                ++hp.rev;
-            }
-            ++hp.hold_rev;
-        }
-    }
-    if (ui_hold_flashing(&hp.wr)) {
-        ui_hold_flash_step(&hp.wr, dt_s);
-        ++hp.hold_rev;
-        if (!ui_hold_flashing(&hp.wr)) {
-            ++hp.rev;           /* the row under the flash, whole */
-        }
-    }
+    hp.f.open = false;
 }
 
 void hitec_panel_tick(float dt_s)
 {
-    hpn_step_tick(dt_s);
-    connect_tick(dt_s);
-    write_tick(dt_s);
+    hpn_view();
+    act(sprog_tick(&hp.f, dt_s));
     hpn_gate_follow();
-    if (hp.page.open && hp.page.down) {
-        if (ui_hold_tick(&hp.page.hold, dt_s)) {
-            hpn_page_apply();
-            ++hp.rev;
-        }
-        ++hp.hold_rev;
-    }
-    if (ui_hold_flashing(&hp.page.hold)) {
-        ui_hold_flash_step(&hp.page.hold, dt_s);
-        ++hp.hold_rev;
-        if (!ui_hold_flashing(&hp.page.hold)) {
-            ++hp.rev;           /* the tab under the flash, whole */
-        }
-    }
 }
 
 bool hitec_panel_write_refused(void)
@@ -688,13 +285,16 @@ bool hitec_panel_write_go(void)
 {
     const hpn_row_t *w = hpn_row_at(HITEC_PANEL_SERVO, 3, 1);
 
-    if (!hp.open || hp.have || hitec_panel_editor() != 0 || w == NULL
+    if (!hp.open || hp.f.have || hitec_panel_editor() != 0 || w == NULL
         || !hpn_row_live(w)) {
         return false;
     }
     /* Sent on the next tick, as the tab's hold is: a touch loss drained
      * before it cancels the write. */
-    hp.wr_due = true;
+    hpn_view();
+    if (!sprog_due(&hp.f, (int)(w - hpn_rows))) {
+        return false;
+    }
     ++hp.rev;
     return true;
 }
