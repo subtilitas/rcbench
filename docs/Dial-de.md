@@ -64,7 +64,8 @@ Circuit) des Glases behält den letzten Zustand: Es beendet keine
 Berührung und zählt nie als leeres Glas. Das 5. fehlgeschlagene Lesen in
 Folge (100ms) bricht die laufende Berührung ab, ohne PRESS, TAP oder
 Antwort auf die Frage; der Finger, wieder gelesen, startet nichts, bis
-das Glas leer gelesen wird. Jede Frage hat ihre eigene Nummer,
+das Glas leer gelesen wird. Solange AKKU LEER eine offene Frage
+verdeckt, beantwortet keine Berührung sie. Jede Frage hat ihre eigene Nummer,
 und das Update nimmt die Taste nur für die Frage, in der sie entstand. Statt eines
 Summers vibriert ein DRV2605 auf 0x5A mit seinen ROM-Effekten für einen
 LRA (Bibliothek 6): eine Rastung "Sharp Tick 3" (26), PRESS "Sharp Click
@@ -93,7 +94,9 @@ ist bekannt, also setzt STATUS nie CHARGING.
 
 Der Schiebeschalter trennt die Versorgung. AUS in der Ausschalt-Wahl und
 ein leerer Akku schicken den K518 in den Deep Sleep: der ST77916 aus und
-im Schlaf (DISPOFF, dann SLPIN und 120ms), der Pin des Hintergrundlichts
+im Schlaf (DISPOFF, dann SLPIN und 120ms, gesendet, sobald das Bild
+des Face-Tasks auf der Leitung zu Ende ist, bis zu 2000ms, und danach kein
+Bild mehr), der Pin des Hintergrundlichts
 auf low gehalten, Touch-Controller und DRV2605 in ihrem eigenen Schlaf.
 Ein Dreh am Knopf (eine Encoder-Leitung low) weckt ihn zu einem neuen
 Start, ebenso der Schiebeschalter. Der Strom im Deep Sleep ist nicht
