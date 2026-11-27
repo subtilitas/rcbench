@@ -6,13 +6,14 @@
    "*BLINKER"
   ],
   "crop": [
-   330,
-   230,
+   200,
+   236,
    1500
   ],
   "side": "r",
   "accent": "#ffb000",
-  "size": 150
+  "size": 150,
+  "v": "b"
  },
  "name": "wurstblinker",
  "lang": "en",

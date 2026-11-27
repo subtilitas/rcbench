@@ -13,6 +13,8 @@ A storyboard's ``thumb`` block names the frame and the text:
   fills the thumbnail. Default: the whole frame.
 - ``side``: ``l`` or ``r``, the side the text and its dark wedge stand
   on. Default ``l``.
+- ``v``: ``t``, ``m`` or ``b``, the text at the top, in the middle or
+  at the bottom. Default ``m``.
 - ``accent``: the colour of the marked lines and of the bar 14 pixels
   high at the bottom, ``#rrggbb``. Default ``#ffb000``.
 - ``size``: the text's height in pixels, 60 to 220. Default 132.
@@ -129,7 +131,9 @@ def compose(frame, thumb: dict, font: pathlib.Path):
     face = ImageFont.truetype(str(font), size)
     lines = thumb["lines"]
     step = round(size * 1.02)
-    top = (h - step * len(lines)) // 2 + 6
+    room = h - step * len(lines)
+    top = {"t": 112, "m": room // 2 + 6,
+           "b": room - 44}[thumb.get("v", "m")]
     for n, line in enumerate(lines):
         marked = line.startswith("*")
         text = line.lstrip("*")

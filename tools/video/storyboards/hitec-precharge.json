@@ -3,12 +3,13 @@
   "at": 15,
   "lines": [
    "ONE PIN",
-   "*READS BACK"
+   "*READS",
+   "*BACK"
   ],
   "crop": [
    0,
-   150,
-   1500
+   90,
+   1750
   ],
   "side": "l",
   "accent": "#34d399",

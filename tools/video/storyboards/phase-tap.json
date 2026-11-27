@@ -1,14 +1,14 @@
 {
  "thumb": {
-  "at": 45,
+  "at": 15,
   "lines": [
    "PHASE",
    "*TAP"
   ],
   "crop": [
    0,
-   0,
-   1920
+   60,
+   1620
   ],
   "side": "l",
   "accent": "#ffb000",

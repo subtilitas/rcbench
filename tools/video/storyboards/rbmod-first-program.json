@@ -6,13 +6,13 @@
    "*FLASH"
   ],
   "crop": [
-   100,
-   200,
+   0,
+   170,
    1500
   ],
   "side": "l",
   "accent": "#34d399",
-  "size": 150
+  "size": 140
  },
  "name": "rbmod-first-program",
  "lang": "en",

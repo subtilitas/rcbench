@@ -905,6 +905,8 @@ def check_thumb(thumb) -> list:
                       "frame, w at least 320")
     if thumb.get("side", "l") not in ("l", "r"):
         errors.append("thumb: side is l or r")
+    if thumb.get("v", "m") not in ("t", "m", "b"):
+        errors.append("thumb: v is t, m or b")
     accent = thumb.get("accent", "#ffb000")
     if not (isinstance(accent, str) and len(accent) == 7
             and accent[0] == "#"

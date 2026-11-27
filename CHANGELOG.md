@@ -11,7 +11,7 @@ history is in git.
 - `tools/make_thumb.py` writes a thumbnail of 1280 x 720 pixels per video
   from the storyboard's `thumb` block: a bare frame of the player under 1
   to 3 lines of text. 14 storyboards carry a block. The storyboard
-  `thumbnail` is removed; its scene is the `thumb` scene of `features`.
+  `thumbnail` is removed.
 - SETUP > PANEL's last row, About rcbench, opens ABOUT: the panel and the
   IOmcu firmware's versions, `Design: Julian Wingert`,
   `Implemented by Claude and Julian`, `Copyright 2026 Julian Wingert`,

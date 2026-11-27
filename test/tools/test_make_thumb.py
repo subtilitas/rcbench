@@ -35,6 +35,7 @@ def test_a_full_block_passes():
     ({"crop": [100, 0, 1920]}, "crop is"),
     ({"crop": [0, 100, 1920]}, "crop is"),
     ({"side": "m"}, "side is"),
+    ({"v": "x"}, "v is"),
     ({"accent": "red"}, "accent is"),
     ({"size": 20}, "size is"),
     ({"of": 3}, "of names"),
