@@ -62,7 +62,7 @@ rcbench/
   firmware/
     panel/                ESP-IDF-Projekt (ESP32-P4)
     iomcu/                pico-sdk-Projekt (RP2350)
-    dial/                 ESP-IDF-Projekt (ESP32-S3): das M5Stack Dial ([Das M5Stack Dial](Dial-de.md))
+    dial/                 ESP-IDF-Projekt (ESP32-S3): das M5Stack Dial und mit sdkconfig.k518 der Guition JC3636K518C ([Das M5Stack Dial](Dial-de.md))
     node/                 ESP-IDF-Projekt (ESP32-C6): die Sensorknoten ([Die Sensorknoten](Nodes-de.md))
     devota/               ESP-IDF-Komponente: die Geräteseite des Updates auf dem Dial und den Knoten
   test/host/              die Host-Suite, eine Binary je Modul oder Bildschirm

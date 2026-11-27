@@ -386,6 +386,7 @@ ASSERTED = {
             " && DEVIMG_PNODE == BLEOTA_KIND_NODE_POWER"
             " && DEVIMG_BAL == BLEOTA_KIND_NODE_BAL"
             " && DEVIMG_PNODE_S3 == BLEOTA_KIND_NODE_POWER_S3"
+            " && DEVIMG_DIAL_K518 == BLEOTA_KIND_DIAL_K518"
             " && DEVIMG_COUNT == BLEOTA_KIND_MAX + 1",
         ),
         "shared/devupd/devupd_client.c": (

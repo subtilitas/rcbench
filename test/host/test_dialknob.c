@@ -220,7 +220,14 @@ TEST_CASE(info_carries_the_protocol_and_an_ascii_name)
     i.proto = 0;
     CHECK_EQ(dk_info_encode(&i, b), 0u);
     i.proto = DK_PROTOCOL;
-    i.hw = 2;
+    i.hw = DK_HW_K518;                          /* the second board */
+    CHECK_EQ(dk_info_encode(&i, b), DK_LEN_INFO);
+    CHECK_EQ(b[6], DK_HW_K518);
+    CHECK(dk_info_decode(b, sizeof b, &o));
+    CHECK_EQ(o.hw, DK_HW_K518);
+    i.hw = DK_HW_MAX + 1u;                      /* no such board */
+    CHECK_EQ(dk_info_encode(&i, b), 0u);
+    i.hw = 0u;
     CHECK_EQ(dk_info_encode(&i, b), 0u);
     i.hw = DK_HW_DIAL11;
     i.flags = 0x04;

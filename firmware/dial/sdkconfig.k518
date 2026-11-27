@@ -1,0 +1,19 @@
+# The Guition JC3636K518C knob: ESP32-S3R8 with 8MB octal PSRAM (pseudo-
+# static RAM) in the package and 16MB QIO flash.  Appended to
+# sdkconfig.defaults:
+#   idf.py -B build-k518 -D SDKCONFIG=build-k518/sdkconfig \
+#     -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.k518" build
+CONFIG_RCBENCH_DIAL_BOARD_M5DIAL=n
+CONFIG_RCBENCH_DIAL_BOARD_K518=y
+# The flash size is a choice: the 8MB of sdkconfig.defaults is named off,
+# so tools/check_sdkconfig.py reads the two files as one list.  The
+# partition table stays partitions.csv: two slots of 3,072kB, the same as
+# the M5Stack Dial's, and the flash above 0x620000 not allocated.
+CONFIG_ESPTOOLPY_FLASHSIZE_8MB=n
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+# The PSRAM is for allocations that ask for it only, so Bluetooth LE keeps
+# the internal RAM; a board that reports none still starts.
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_USE_CAPS_ALLOC=y
+CONFIG_SPIRAM_IGNORE_NOTFOUND=y
