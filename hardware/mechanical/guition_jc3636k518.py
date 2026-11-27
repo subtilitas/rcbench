@@ -7,8 +7,8 @@ JC3636K518C_I_YR1, "ESP32 1.8-inch IPS capacitive touch": an ESP32-S3
 behind a round 360 x 360 display under a round cover glass. A red
 aluminium ring with 24 facets turns about the glass; the glass and the
 black base below the ring stand still. The base carries a USB-C socket
-(a CH340 serial bridge behind it), a round hole, a button and a small
-hole on its side.
+(a CH340 serial bridge behind it), a 3.5mm audio jack, a slide power
+switch and a small hole on its side.
 
 Sources:
 
@@ -19,7 +19,7 @@ Sources:
   archive holds no licence; the model takes the numbers, not the file.
 - Guition's size picture (same archive, folder 5-Dimension, and page 9
   of "JC3636K518 Instructions-EN.pdf"): 66 across and 22 tall,
-  "hand-measured dimensions with 0.2-0.5 cm tolerance". No drawing of
+  hand-measured, the picture says, to 2 to 5mm. No drawing of
   the housing and no 3D file are published.
 - Two owner photos, 2026-11-27, 1440 x 1920 pixels, not in the
   repository: knob-top.jpg, from the front about 41 degrees above the
@@ -49,16 +49,20 @@ Estimated from the photos, at that scale; each value is good to about
   knob-top.jpg (small hole and USB-C, 20 degrees apart there, 21 in
   knob-side.jpg):
 
-      small hole    -111 deg, 1.0 across, 4.5 over the underside
-      USB-C         -90 deg, opening 9.8 x 3.6, 3.5 over the underside
-      round hole    -56 deg, 2.6 across, 4.0 over the underside
-      button        -31 deg, 5.0 x 2.6, 0.6 proud, 3.0 over the
-                    underside
+      small hole    at -111 degrees, 1.0 across, 4.5 high
+      USB-C         at -90 degrees, opening 9.8 x 3.6, 3.5 high
+      jack          at -56 degrees, 2.6 across, 4.0 high
+      switch        at -31 degrees, 5.0 x 2.6, 0.6 proud, 3.0 high
+
+  Heights are the feature's middle over the underside.
 
   The USB-C receptacle in the opening is _parts.usb_c (8.94 x 3.16),
-  its front 0.6 behind the base's surface. The round hole and the
+  its front 0.6 behind the base's surface. The jack's opening and the
   small hole are dark discs 0.05 thick on the surface: their depth is
-  not known. What the round hole holds is not known.
+  not known. The photo reads the jack's opening 2.6 across, less than
+  the 3.5 of its plug; the photo's reading stands until the part is
+  measured. The switch is a block in its middle position; its lever
+  travel is not known.
 
 Not modelled, because neither photo shows it: the underside, and any
 foot, screw or mounting feature on it. The board, the ESP32-S3, the
@@ -94,9 +98,9 @@ DISPLAY_D, STACK_T = 49.95, 3.25
 # Side features: angle (degrees from +x), z of the middle, size.
 USB_AT, USB_Z, USB_W, USB_H, USB_IN = -90.0, 3.5, 9.8, 3.6, 0.6
 USB_POCKET = 8.4                  # the pocket's depth behind the surface
-HOLE_AT, HOLE_Z, HOLE_D = -56.0, 4.0, 2.6
+JACK_AT, JACK_Z, JACK_D = -56.0, 4.0, 2.6
 PIN_AT, PIN_Z, PIN_D = -111.0, 4.5, 1.0
-BUTTON_AT, BUTTON_Z, BUTTON_W, BUTTON_H, BUTTON_OUT = -31.0, 3.0, 5.0, 2.6, 0.6
+SWITCH_AT, SWITCH_Z, SWITCH_W, SWITCH_H, SWITCH_OUT = -31.0, 3.0, 5.0, 2.6, 0.6
 MARK = 0.05                       # thickness of a hole's dark disc
 
 
@@ -156,19 +160,19 @@ def _radial(shapes, angle):
 
 
 def side():
-    """USB-C receptacle, button and the two holes on the base's side."""
+    """USB-C receptacle, jack, switch and small hole on the base's side."""
     r = BASE_D / 2
     usb = s.place(p.usb_c(), y=-(r - USB_IN) + 7.35, z=USB_Z - 1.67)
     out = _radial(usb, USB_AT)
     # Frame s.Y pushes a profile in (x, z) along -y: d = -y.
-    for at, z, d in ((HOLE_AT, HOLE_Z, HOLE_D), (PIN_AT, PIN_Z, PIN_D)):
+    for at, z, d in ((JACK_AT, JACK_Z, JACK_D), (PIN_AT, PIN_Z, PIN_D)):
         disc = s.ext(s.circle(0.0, z, d / 2), r, r + MARK, DARK,
                      frame=s.Y)
         out += _radial([disc], at)
-    cap = s.ext(s.rounded(-BUTTON_W / 2, BUTTON_Z - BUTTON_H / 2,
-                          BUTTON_W / 2, BUTTON_Z + BUTTON_H / 2, 0.8),
-                r - 0.1, r + BUTTON_OUT, BLACK, frame=s.Y)
-    out += _radial([cap], BUTTON_AT)
+    lever = s.ext(s.rounded(-SWITCH_W / 2, SWITCH_Z - SWITCH_H / 2,
+                            SWITCH_W / 2, SWITCH_Z + SWITCH_H / 2, 0.8),
+                  r - 0.1, r + SWITCH_OUT, BLACK, frame=s.Y)
+    out += _radial([lever], SWITCH_AT)
     return out
 
 

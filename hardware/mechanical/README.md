@@ -252,15 +252,15 @@ M5Stack's geometry and are under the same licence.
 A rotary knob with a round 1.8in 360 x 360 touch display, Guition SKU
 (stock keeping unit) 10160002, model JC3636K518C_I_YR1: an ESP32-S3, a
 red aluminium ring with 24 facets that turns about a fixed cover glass,
-and a black base with a USB-C socket (CH340 serial bridge), a button and
-2 holes on its side. Model size 64.0mm across the ring's corners, 16.5mm
+and a black base with a USB-C socket (CH340 serial bridge), a 3.5mm audio
+jack, a slide power switch and a small hole on its side. Model size 64.0mm across the ring's corners, 16.5mm
 tall.
 
 ![Guition JC3636K518](renders/parts/guition_jc3636k518.png)
 
 | File | Content | Origin |
 | --- | --- | --- |
-| `guition_jc3636k518.step` | base with the USB-C pocket and receptacle, neck, ring, fixed carrier, display and cover glass, button, 2 hole marks; 31 solids, 0.2MB | z = 0 on the base's underside, the glass to +z; the USB-C opening faces -y |
+| `guition_jc3636k518.step` | base with the USB-C pocket and receptacle, neck, ring, fixed carrier, display and cover glass, switch, jack and small hole marks; 31 solids, 0.2MB | z = 0 on the base's underside, the glass to +z; the USB-C opening faces -y |
 
 Sources: the display's drawing in Guition's archive
 `JC3636K518CN_knob_EN.zip` (pan.jczn1688.com, folder `3-Specification`):
@@ -282,8 +282,8 @@ pixels a mm), each to about 1mm:
 | glass top under the ring's top | 0.5mm | both |
 | small hole | 1.0mm at -111 degrees, 4.5mm high | `knob-side.jpg` |
 | USB-C opening | 9.8mm x 3.6mm at -90 degrees, 3.5mm high | both |
-| round hole | 2.6mm at -56 degrees, 4.0mm high | `knob-side.jpg` |
-| button | 5.0mm x 2.6mm, 0.6mm proud, at -31 degrees, 3.0mm high | `knob-side.jpg` |
+| jack opening | 2.6mm at -56 degrees, 4.0mm high | `knob-side.jpg` |
+| slide switch | 5.0mm x 2.6mm, 0.6mm proud, at -31 degrees, 3.0mm high | `knob-side.jpg` |
 
 Angles are counter-clockwise from +x seen from above; heights are the
 feature's middle over the underside. The spec's docstring gives the
@@ -293,8 +293,10 @@ Current limitations: the model's 16.5mm height is the photo estimate,
 5.5mm under Guition's 22mm; a case drawn round it needs the device
 checked for height. The ring's facets are twisted about the axis on
 the part and parallel to it in the model; the ring's top chamfer is
-not modelled. The holes are dark discs 0.05mm thick on the surface,
-their depth not known. The underside and any mounting feature on it
+not modelled. The jack's opening and the small hole are dark discs
+0.05mm thick on the surface, their depth not known. The photo reads the
+jack's opening 2.6mm across, less than the 3.5mm of its plug. The switch
+is a block in its middle position; its lever travel is not known. The underside and any mounting feature on it
 are not modelled: no photo shows them.
 
 ## Hand-held base for the M5Stack Dial

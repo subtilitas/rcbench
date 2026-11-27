@@ -12,8 +12,8 @@ history is in git.
   JC3636K518C_I_YR1), `hardware/mechanical/models/parts/guition_jc3636k518.step`,
   from `guition_jc3636k518.py`: red ring with 24 facets, cover glass
   55.00mm across from Guition's display drawing, black base with the
-  USB-C opening, a button and 2 holes; 64.0mm x 16.5mm, the housing
-  estimated from owner photos
+  USB-C opening, a 3.5mm jack, a slide switch and a small hole;
+  64.0mm x 16.5mm, the housing estimated from owner photos
   ([Mechanical parts](hardware/mechanical/README.md#guition-jc3636k518-knob-display)).
 
 ### Changed
