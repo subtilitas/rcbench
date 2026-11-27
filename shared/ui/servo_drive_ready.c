@@ -83,7 +83,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "imu_screen.h"
+#include "imu_view.h"
 #include "prog5v_box.h"
 #include "prog_choice.h"
 #include "prog_registry.h"
@@ -487,7 +487,7 @@ bool drive_enc_center_take(void)
 bool drive_zero_set(void)
 {
     if (enc_src() == SERVO_ANGLE_IMU) {
-        return imu_screen_view()->r.zeroed;
+        return imu_view_get()->r.zeroed;
     }
     return s.enc_taken || settings_get_int(SET_ENC_CENTER) != 0;
 }
@@ -495,7 +495,7 @@ bool drive_zero_set(void)
 /**
  * @brief LIVE's ZERO: the zero MEASURED reads from, taken at the reading
  *        on show -- ENC CENTER from the AS5600's count, saved; the IMU's
- *        own zero, as the IMU screen's ZERO takes it.
+ *        own zero, as SETUP > WIRELESS > IMU's ZERO takes it.
  * @return whether it was taken
  */
 static bool live_zero_take(void)
@@ -504,7 +504,7 @@ static bool live_zero_take(void)
         return false;
     }
     if (enc_src() == SERVO_ANGLE_IMU) {
-        return imu_screen_zero();
+        return imu_view_zero();
     }
     if (!drive_enc_center_take()) {
         return false;

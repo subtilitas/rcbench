@@ -219,5 +219,4 @@ SETUP CODE zeigt den Einstellcode "Serial Output" des Moduls. Halte den Scanner 
 - [Setup](setup.md)
 - [Netzteil](supply.md): die Verdrahtung des PD mini, in der Optionsliste von SUPPLY.
 - [Servo](servo.md)
-- [IMU](imu.md)
-- [Wireless](setup-wireless.md): die Einstellungen der IMU
+- [Wireless](setup-wireless.md): die IMU, ihre Suche, ihre Winkel und ihre Kalibrierung

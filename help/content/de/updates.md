@@ -270,12 +270,12 @@ Das Image trägt keine Signatur: Das Dial nimmt jedes Dial-Image an, das ein Ger
 
 ![Der Leistungsknoten fragt nach seiner BOOT-Taste](view:updates-node)
 
-Die Zeilen LEISTUNGSKNOTEN-FIRMWARE und AUSWUCHTKNOTEN-FIRMWARE zeigen die Version des Knotens, aus seinem STATUS-Paket auf der laufenden Verbindung, und die Version des Release, das das Panel ausführt: `Knoten: 0.23.16. Release: 0.23.17.` Das Halten braucht den Prüfstand in SAFE, den Knoten gebunden und verbunden mit gelesener Version und kein anderes laufendes Update.
+Die Zeilen LEISTUNGSKNOTEN-FIRMWARE und AUSWUCHTKNOTEN-FIRMWARE zeigen die Version des Knotens, aus seinem STATUS-Paket auf der laufenden Verbindung, und die Version des Release, das das Panel ausführt: `Knoten: 0.23.17. Release: 0.23.18.` Das Halten braucht den Prüfstand in SAFE, den Knoten gebunden und verbunden mit gelesener Version und kein anderes laufendes Update.
 
 1. Das Halten beendet den eigenen Link des Knotens; WIRELESS zeigt den Knoten AUS, bis das Update endet. Die Taste zeigt `LEISTUNGSKNOTEN-UPDATE: VERBINDET`.
 2. Der Knoten wartet 30s auf seine BOOT-Taste, 1s gehalten; die Taste zeigt `BOOT AM KNOTEN 1s HALTEN: 27s` und das Band `Halte innerhalb von 30s die BOOT-Taste am Knoten 1s, um das Update anzunehmen.` Kein Halten lehnt ab. Vor dem Halten wird nichts gelöscht.
 3. Der Knoten schreibt das Image; die Taste zeigt `LEISTUNGSKNOTEN-UPDATE 37%`.
-4. Der Knoten prüft das Image, installiert es und startet neu. Der Alarm lautet `Leistungsknoten auf 0.23.17 aktualisiert. Verbindet sich von selbst neu.` Der Link des Knotens verbindet sich wieder aus den Werten von SETUP, und die Zeile liest die neue Version aus dem ersten STATUS-Paket des Knotens.
+4. Der Knoten prüft das Image, installiert es und startet neu. Der Alarm lautet `Leistungsknoten auf 0.23.18 aktualisiert. Verbindet sich von selbst neu.` Der Link des Knotens verbindet sich wieder aus den Werten von SETUP, und die Zeile liest die neue Version aus dem ersten STATUS-Paket des Knotens.
 
 Die Zeile des Leistungsknotens sendet das Image des Boards, das der Knoten in seinem INFO nennt: `rcbench-node-pwr-<Version>.bin` an einen ESP32-C6-Zero, `rcbench-node-display-<Version>.bin` an den Anzeigeknoten ES3C28P. Für den Anzeigeknoten zeigt die Zeile ANZEIGEKNOTEN-FIRMWARE und `Anzeigeknoten: 0.23.17. Release: 0.23.18.`, der Schritt ANZEIGEKNOTEN; seine BOOT-Taste ist IO0. Ein Image, das nicht zum Board des Knotens passt, endet vor dem ersten Byte mit `Anzeigeknoten-Update abgebrochen: Image für eine andere Platine. Vorherige Firmware läuft.` Ein Board, für das das Release kein Image hat, zeigt KEINE FIRMWARE.
 
@@ -287,15 +287,15 @@ Das Panel-Image bringt nur die IOmcu-Images mit. Die Images des C6-Funks, des Di
 
 | Zeile der Karte | Woher das Halten es nimmt |
 |---|---|
-| `Das Halten lädt zuerst rcbench-dial-0.23.17.bin von GitHub.` | GitHub, mit gespeichertem Heimnetz: `SHA256SUMS` und die Datei über HTTPS, die Länge der Datei an den Slot des Geräts gebunden und ihr SHA-256 an ihre Zeile in `SHA256SUMS` |
-| `Das Halten liest BENCH/UPDATES/rcbench-dial-0.23.17.bin von der SD-Karte.` | `BENCH/UPDATES` der SD-Karte, nach einem fehlgeschlagenen Download oder ohne Heimnetz; das Bedienelement zeigt 2s HALTEN: UPDATE VON DER SD-KARTE. Eine `SHA256SUMS` neben der Datei wird geprüft, wenn sie sie nennt |
-| `rcbench-dial-0.23.17.bin ist geladen und geprüft.` | der Speicher, bis das Panel neu startet |
+| `Das Halten lädt zuerst rcbench-dial-0.23.18.bin von GitHub.` | GitHub, mit gespeichertem Heimnetz: `SHA256SUMS` und die Datei über HTTPS, die Länge der Datei an den Slot des Geräts gebunden und ihr SHA-256 an ihre Zeile in `SHA256SUMS` |
+| `Das Halten liest BENCH/UPDATES/rcbench-dial-0.23.18.bin von der SD-Karte.` | `BENCH/UPDATES` der SD-Karte, nach einem fehlgeschlagenen Download oder ohne Heimnetz; das Bedienelement zeigt 2s HALTEN: UPDATE VON DER SD-KARTE. Eine `SHA256SUMS` neben der Datei wird geprüft, wenn sie sie nennt |
+| `rcbench-dial-0.23.18.bin ist geladen und geprüft.` | der Speicher, bis das Panel neu startet |
 
 Das Bedienelement zeigt `DOWNLOAD 43%`, `DATEI WIRD GEPRÜFT` oder `SD-KARTE WIRD GELESEN`. Das Image besteht die Prüfungen der Sender: Chip und Projekt des Geräts, sein eigener SHA-256, die Rolle bei Dial und Knoten, die Version des Release. Danach startet das Update von selbst, sobald der Funk aus ist, innerhalb von 20s. ARMED, das Netzteil, ein Log-Lauf, STOP, WI-FI und UPDATE ABBRECHEN beenden einen Download; solange ARMED gilt, startet keiner. UPDATE ABBRECHEN verwirft auch das Update, das das Halten angefordert hat; ein Image, das noch besteht, bleibt für das nächste Halten. Kein Ausgang ändert sich dabei.
 
 ![Der Schritt des Dial nach einem fehlgeschlagenen Download](view:updates-step-dial-card)
 
-Ein fehlgeschlagener Versuch steht mit einem Code auf der Karte: `Download fehlgeschlagen (D10): Keine Verbindung zu GitHub.`, `SD-Karte fehlgeschlagen (S02): BENCH/UPDATES/rcbench-dial-0.23.17.bin fehlt auf der SD-Karte.`, `Prüfung fehlgeschlagen (V05): Die Datei hat Version 0.23.16, dieses Release 0.23.17.` Das nächste Halten nimmt die nächste Stelle: die Karte nach einem Download, GitHub nach der Karte. Die Codes stehen in der [Bildschirm-Referenz](https://github.com/subtilitas/rcbench/wiki/Screens-de#geräte-images).
+Ein fehlgeschlagener Versuch steht mit einem Code auf der Karte: `Download fehlgeschlagen (D10): Keine Verbindung zu GitHub.`, `SD-Karte fehlgeschlagen (S02): BENCH/UPDATES/rcbench-dial-0.23.18.bin fehlt auf der SD-Karte.`, `Prüfung fehlgeschlagen (V05): Die Datei hat Version 0.23.17, dieses Release 0.23.18.` Das nächste Halten nimmt die nächste Stelle: die Karte nach einem Download, GitHub nach der Karte. Die Codes stehen in der [Bildschirm-Referenz](https://github.com/subtilitas/rcbench/wiki/Screens-de#geräte-images).
 
 ## Aktuelle Einschränkungen
 

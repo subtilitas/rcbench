@@ -461,8 +461,7 @@ and 2 on PROGRAM's list with 9 items each, and the OPTIONS
 list's 2 (`shared/ui/motor_guide.c`; `test_help_motor`); none unless the bench is SAFE, as
 either dock covers part of DISARM. ESC STICK has 2 pages on its list and 2 on a profile, the
 note that says why RUN does not start among them (`shared/ui/esc_stick_guide.c`;
-`test_help_stick`); none while a run is under way or its result shows. IMU has 2 pages with
-8 items, both while ARMED (`shared/ui/imu_guide.c`; `test_help_imu`). The other screens have
+`test_help_stick`); none while a run is under way or its result shows. The other screens have
 none yet. PREV and NEXT stand in the band, in the home tag's place, the
 same on every page.
 
@@ -651,8 +650,8 @@ or a stretch of arc outside the clip and walks the antialiased shapes row by row
 own pixels (`test_gfx_clip`). ARMED at rest draws what SAFE at rest draws plus the band's
 run clock once a second, a held position draws the grip's box, and a moving arm stays under
 140,000 pixel visits a frame (`test_frame_work`; host suite only).
-The IMU screen repaints the card lines a new reading changes and CALIBRATE's button while
-its hold fills, SUPPLY repaints neither the PLOT and TABLE tabs nor its heading row for a
+SETUP > WIRELESS > IMU repaints the value box of each live row a new reading changes and
+the list whole for a change of the link, SUPPLY repaints neither the PLOT and TABLE tabs nor its heading row for a
 sample, and WI-FI repaints nothing for an idle second inside the minute it shows; the KST
 and Hitec sessions count a PD mini reading as their state line writes it
 (`test_repaint_parts`: both buffers pixel for pixel the same as frames drawn whole).
@@ -1275,8 +1274,10 @@ write path, the retries and every timeout (`test_bleuart`, `test_bleuart_link` a
 (`shared/bench/imu.c`, `test_imu`), the sensor's side: its commands, the calibration and the
 gaps (`shared/ui/imu_sensor.c`, `test_imu_sensor` without a radio), the BLE link
 (`shared/ui/imu_ble.c`), the controller that joins the two (`shared/ui/imu_ctl.c`,
-`test_imu_ctl` against `ble_sim.h`), the IMU screen on SETUP's IMU tile (`test_imu_screen`),
-SETUP > WIRELESS > IMU (`test_imu_pane`) and the IMU's side of the panel's `blec` task
+`test_imu_ctl` against `ble_sim.h`), SETUP > WIRELESS > IMU with its scan and bind through
+SEARCH, its live rows, ZERO, CLEAR ZERO and CALIBRATE's 2s hold on a hold row of the
+settings list (`shared/ui/imu_view.c`, `shared/ui/wireless_imu.c`,
+`shared/ui/ui_setlist_hold.c`; `test_wireless_imu`, `test_imu_pane`); SETUP has no IMU tile and the IMU's side of the panel's `blec` task
 (`firmware/panel/main/panel_imu.c`, `panel_blec.c`), which runs it through the hub of
 `protocols/bleuart` (`test_bleuart_hub`). The angle's low-pass, IMU filter, its seed, its wrap
 at ±180° and the still time that waits for it, kept per axis (`test_imu`, `test_imu_filter`),
@@ -2041,7 +2042,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 719 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 718 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -2050,7 +2051,7 @@ The host suite is 719 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_band_hwstop`,
 `test_help_router`, `test_help_pages`, `test_help_guides`, `test_help_setup`,
 `test_help_outputs`, `test_help_logs`, `test_help_files`, `test_help_net`, `test_help_motor`,
-`test_help_stick`, `test_help_imu`, `test_widgets`, `test_slider_fingers`, `test_footer`, `test_setlist`, `test_hold_hint`, `test_hold_flash`, `test_hold_button`, `test_action_fill`,
+`test_help_stick`, `test_widgets`, `test_slider_fingers`, `test_footer`, `test_setlist`, `test_hold_hint`, `test_hold_flash`, `test_hold_button`, `test_action_fill`,
 `test_workbench`, `test_prog_registry`,
 `test_keypad`, `test_keypad_sign`, `test_keypad_rows_setup`, `test_keypad_rows_stick`,
 `test_keypad_rows_motor`, `test_keypad_rows_supply`, `test_keypad_rows_servo`,
@@ -2164,7 +2165,7 @@ The host suite is 719 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_motor_balance`,
 `test_dial_face`, `test_dial_fit`, `test_dial_button`,
 `test_imu`, `test_imu_filter`, `test_imu_angles`,
-`test_imu_sensor`, `test_imu_ctl`, `test_imu_groups`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
+`test_imu_sensor`, `test_imu_ctl`, `test_imu_groups`, `test_wireless_imu`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_effect`,
 `test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_verify`, `test_servo_rauto_settle`, `test_servo_rauto_margin`, `test_servo_rauto_search`, `test_servo_settle`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_live_zero`, `test_servo_drive_supply`, `test_servo_power_view`, `test_servo_settings_rows`, `test_servo_profile_live`, `test_servo_angle_pick`, `test_servo_start_seq`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`, `test_servo_dial_runs`,
@@ -2714,7 +2715,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-1190 committed screenshots to the current render, 595 in English and the same 595 in German, and `render_ui.py --fit` fails on a string that
+1186 committed screenshots to the current render, 593 in English and the same 593 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -2758,7 +2759,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/about_draw.c` | 137 | 132 | 96.3% |
 | `shared/ui/ui_help.c` | 400 | 389 | 97.2% |
 | `shared/ui/help_outputs.c` | 74 | 72 | 97.3% |
-| `shared/ui/help_setup.c` | 96 | 93 | 96.9% |
+| `shared/ui/help_setup.c` | 95 | 92 | 96.8% |
 | `shared/ui/help_logs.c` | 74 | 72 | 97.3% |
 | `shared/ui/help_files.c` | 24 | 23 | 95.8% |
 | `shared/ui/help_upd.c` | 78 | 75 | 96.2% |
@@ -2773,7 +2774,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_text.c` | 140 | 139 | 99.3% |
 | `shared/ui/ui_router.c` | 612 | 600 | 98.0% |
 | `shared/ui/ui_router_alert.c` | 36 | 36 | 100.0% |
-| `shared/ui/ui_router_screens.c` | 66 | 66 | 100.0% |
+| `shared/ui/ui_router_screens.c` | 64 | 64 | 100.0% |
 | `shared/ui/ui_alert_slot.c` | 39 | 39 | 100.0% |
 | `shared/ui/ui_value_ask.c` | 8 | 8 | 100.0% |
 | `shared/ui/splash_screen.c` | 72 | 69 | 95.8% |
@@ -2892,11 +2893,12 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/label_layout.c` | 267 | 254 | 95.1% |
 | `shared/ui/print_ctl.c` | 463 | 428 | 92.4% |
 | `shared/ui/print_req.c` | 73 | 70 | 95.9% |
-| `shared/ui/settings_screen.c` | 336 | 327 | 97.3% |
-| `shared/ui/settings_draw.c` | 69 | 69 | 100.0% |
-| `shared/ui/settings_rows.c` | 61 | 59 | 96.7% |
-| `shared/ui/ui_setlist.c` | 649 | 635 | 97.8% |
-| `shared/ui/ui_setlist_draw.c` | 283 | 264 | 93.3% |
+| `shared/ui/settings_screen.c` | 343 | 334 | 97.4% |
+| `shared/ui/settings_draw.c` | 109 | 105 | 96.3% |
+| `shared/ui/settings_rows.c` | 61 | 60 | 98.4% |
+| `shared/ui/ui_setlist.c` | 678 | 663 | 97.8% |
+| `shared/ui/ui_setlist_draw.c` | 304 | 286 | 94.1% |
+| `shared/ui/ui_setlist_hold.c` | 67 | 66 | 98.5% |
 | `shared/ui/ui_footer.c` | 42 | 41 | 97.6% |
 | `shared/ui/sensors_pane.c` | 107 | 107 | 100.0% |
 | `shared/ui/sensors_rows.c` | 250 | 250 | 100.0% |
@@ -2933,21 +2935,20 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/upd_wiz_view.c` | 324 | 312 | 96.3% |
 | `shared/ui/upd_wiz_card.c` | 214 | 213 | 99.5% |
 | `shared/ui/imu_ctl.c` | 108 | 108 | 100.0% |
-| `shared/ui/imu_ble.c` | 141 | 140 | 99.3% |
+| `shared/ui/imu_ble.c` | 150 | 149 | 99.3% |
 | `shared/ui/imu_sensor.c` | 234 | 234 | 100.0% |
-| `shared/ui/imu_screen.c` | 373 | 364 | 97.6% |
-| `shared/ui/imu_screen_draw.c` | 132 | 131 | 99.2% |
-| `shared/ui/imu_guide.c` | 33 | 32 | 97.0% |
+| `shared/ui/imu_view.c` | 117 | 113 | 96.6% |
 | `shared/ui/dial_ctl.c` | 266 | 250 | 94.0% |
 | `shared/ui/dial_stream.c` | 242 | 234 | 96.7% |
 | `shared/ui/dial_panel.c` | 231 | 219 | 94.8% |
 | `shared/ui/ui_focus.c` | 430 | 381 | 88.6% |
 | `shared/ui/ui_focus_list.c` | 72 | 68 | 94.4% |
 | `shared/ui/ui_focus_screens.c` | 23 | 22 | 95.7% |
-| `shared/ui/wireless_pane.c` | 259 | 256 | 98.8% |
+| `shared/ui/wireless_pane.c` | 265 | 262 | 98.9% |
 | `shared/ui/wireless_pnode.c` | 238 | 234 | 98.3% |
-| `shared/ui/wl_search.c` | 219 | 205 | 93.6% |
-| `shared/ui/wl_search_draw.c` | 147 | 140 | 95.2% |
+| `shared/ui/wireless_imu.c` | 173 | 167 | 96.5% |
+| `shared/ui/wl_search.c` | 219 | 206 | 94.1% |
+| `shared/ui/wl_search_draw.c` | 153 | 146 | 95.4% |
 | `shared/ui/pnode_ctl.c` | 400 | 388 | 97.0% |
 | `shared/ui/node_cfg_link.c` | 114 | 107 | 93.9% |
 | `shared/ui/pnode_meter.c` | 261 | 257 | 98.5% |
@@ -3279,7 +3280,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/scanner/scan_line.c` | 113 | 113 | 100.0% |
 | `shared/scanner/gm861.c` | 319 | 319 | 100.0% |
 | `shared/scanner/scan_port.c` | 112 | 111 | 99.1% |
-| **total** | **121392** | **118607** | **97.7%** |
+| **total** | **121280** | **118493** | **97.7%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

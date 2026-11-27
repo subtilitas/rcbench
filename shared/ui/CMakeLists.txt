@@ -151,12 +151,14 @@ set(SRCS
     settings_rows.c
     ui_setlist.c
     ui_setlist_draw.c
+    ui_setlist_hold.c
     ui_footer.c
     prog5v_box.c
     prog_choice.c
     sensors_pane.c
     wireless_pane.c
     wireless_pnode.c
+    wireless_imu.c
     wl_search.c
     wl_search_draw.c
     sbk_ctl.c
@@ -203,9 +205,7 @@ set(SRCS
     imu_ctl.c
     imu_ble.c
     imu_sensor.c
-    imu_screen.c
-    imu_screen_draw.c
-    imu_guide.c
+    imu_view.c
     dial_ctl.c
     pnode_ctl.c
     node_cfg_link.c

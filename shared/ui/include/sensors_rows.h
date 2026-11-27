@@ -22,7 +22,7 @@
 #include <stdint.h>
 
 #include "gfx.h"
-#include "imu_screen.h"
+#include "imu_view.h"
 #include "sense_limit_link.h"
 #include "sense_map_link.h"
 #include "settings.h"

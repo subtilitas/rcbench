@@ -2,8 +2,8 @@
  * @file
  * @brief The Bluetooth IMU's controller: joins the Bluetooth LE link
  *        (imu_ble.h) and the sensor side (imu_sensor.h), takes SETUP's
- *        values, the panel's Bluetooth state and the screen's commands, and
- *        gives the view the IMU screen and SETUP > SENSORS show.  Pure C:
+ *        values, the panel's Bluetooth state and the screens' commands, and
+ *        gives the view SETUP > WIRELESS > IMU and SERVO show (imu_view.h).  Pure C:
  *        the panel's `blec` task (firmware/panel/main/panel_imu.c and
  *        panel_blec.c) hands in the host stack's events and performs the
  *        actions.
@@ -26,7 +26,7 @@
 #include "bleuart.h"
 #include "imu.h"
 #include "imu_ble.h"
-#include "imu_screen.h"
+#include "imu_view.h"
 #include "imu_sensor.h"
 #include "witmotion.h"
 
@@ -94,7 +94,7 @@ void imu_ctl_radio(imu_ctl_t *c, imu_radio_t radio, const char *version,
 void imu_ctl_live(imu_ctl_t *c, bool armed);
 
 /**
- * @brief A command of the IMU screen.  SCAN starts with IMU ON, Bluetooth
+ * @brief A command of the screens (imu_view.h).  SCAN starts with IMU ON, Bluetooth
  *        synced, the bench not ARMED (imu_ctl_live()) and no scan running;
  *        BIND takes an index of the last scan;
  *        CALIBRATE only while connected and not calibrating; ZERO only

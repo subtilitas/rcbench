@@ -248,9 +248,7 @@ SOURCES = [
     "shared/ui/imu_ctl.c",
     "shared/ui/imu_ble.c",
     "shared/ui/imu_sensor.c",
-    "shared/ui/imu_screen.c",
-    "shared/ui/imu_screen_draw.c",
-    "shared/ui/imu_guide.c",
+    "shared/ui/imu_view.c",
     "shared/bench/imu.c",
     "protocols/witmotion/witmotion.c",
     "protocols/bleuart/bleuart.c",
@@ -266,6 +264,7 @@ SOURCES = [
     "shared/ui/settings_panes.c",
     # The power node's entry on WIRELESS.
     "shared/ui/wireless_pnode.c",
+    "shared/ui/wireless_imu.c",
     # SEARCH: the scan and bind screen of the Dial and the nodes.
     "shared/ui/wl_search.c",
     "shared/ui/wl_search_draw.c",
@@ -354,6 +353,7 @@ SOURCES = [
     "shared/ui/settings_rows.c",
     "shared/ui/ui_setlist.c",
     "shared/ui/ui_setlist_draw.c",
+    "shared/ui/ui_setlist_hold.c",
     "shared/ui/ui_footer.c",
     "shared/ui/prog5v_box.c",
     "shared/ui/prog_choice.c",

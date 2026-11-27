@@ -677,7 +677,7 @@ sind:
 RCBENCH SERVO-ENDLAGEN-BERICHT
 Ergebnis:        BESTANDEN
 Prüfling:        SERVO
-Firmware:        rcbench 0.23.17
+Firmware:        rcbench 0.23.18
 Modus:           Suche, dann LEFT ANGLE und RIGHT ANGLE programmiert
 Ausgang:         PROG-PORT 1 GPIO 13, 50Hz
 Pulsbereich:     Mitte 1500us, 1000-2000us
@@ -1310,7 +1310,7 @@ offen ist, beendet den Lauf sofort mit dem Grund des INA3221.
 WINKELQUELLE legt fest, woher Servotest, LIMIT RUN und
 SERVO-Aufzeichnung den Hornwinkel beziehen: `AS5600` als Vorgabe oder
 `IMU`. Bei `IMU` wird die gewählte IMU-Achse mit dem IMU-Vorzeichen
-verwendet, bezogen auf den NULLPUNKT, den die IMU-Seite oder die Zeile
+verwendet, bezogen auf den NULLPUNKT, den SETUP > WIRELESS > IMU oder die Zeile
 NULLPUNKT auf LIVE setzt. Die
 Einstellung ist die zweite Zeile unter SETUP > WIRELESS > IMU, auch bei
 ausgeschalteter IMU gezeigt, und steht in der Liste WINKELQUELLE.
@@ -1760,8 +1760,8 @@ aus“ ohne Lineal am Modell. Die Geometrie steht in
   Quelle. Eine spätere Änderung von SENSOR-MITTE verändert den Ausschlag
   deshalb nicht. Änderst du WINKELQUELLE, IMU-Achse oder IMU-Vorzeichen,
   werden Nullpunkt und MAX verworfen, ebenso bei einem anderen
-  IMU-Algorithmus. Dasselbe gilt für NULLPUNKT und NULLPUNKT LÖSCHEN auf
-  der IMU-Seite. Die Anzeige entspricht dann wieder dem Zustand vor dem
+  IMU-Algorithmus. Dasselbe gilt für NULLPUNKT und NULLPUNKT LÖSCHEN in
+  SETUP > WIRELESS > IMU. Die Anzeige entspricht dann wieder dem Zustand vor dem
   Setzen des RUDER-Nullpunkts.
 - Ein Nullpunkt am AS5600 übersteht einen Neustart. NULLPUNKT speichert
   ihn (Einstellungen `rud_zero` und `rud_zero_key`), und beim Start kommt
