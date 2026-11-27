@@ -83,8 +83,9 @@ Faces ist linear von 3.300mV (0%) bis 4.200mV (100%). Kein Ladestatus-Pin
 ist bekannt, also setzt STATUS nie CHARGING.
 
 Der Schiebeschalter trennt die Versorgung. AUS in der Ausschalt-Wahl und
-ein leerer Akku schicken den K518 in den Deep Sleep: Display und
-Hintergrundlicht aus, Touch-Controller und DRV2605 in ihrem eigenen Schlaf.
+ein leerer Akku schicken den K518 in den Deep Sleep: der ST77916 aus und
+im Schlaf (DISPOFF, dann SLPIN und 120ms), der Pin des Hintergrundlichts
+auf low gehalten, Touch-Controller und DRV2605 in ihrem eigenen Schlaf.
 Ein Dreh am Knopf (eine Encoder-Leitung low) weckt ihn zu einem neuen
 Start, ebenso der Schiebeschalter. Der Strom im Deep Sleep ist nicht
 gemessen; der Teiler allein zieht etwa 190µA aus einem Akku mit 3,8V. Die

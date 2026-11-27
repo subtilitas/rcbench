@@ -40,6 +40,7 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
+#include "freertos/task.h"
 
 /** @brief The SPI host, its clock and the rows of one bounce buffer. @{ */
 #define LCD_HOST    SPI2_HOST
@@ -59,6 +60,15 @@ static const char *TAG = "lcd";
 /** @brief The panel, its IO, the frame and the bounce buffer. @{ */
 static esp_lcd_panel_handle_t s_panel;
 static esp_lcd_panel_io_handle_t s_io; /**< the panel IO */
+/** @brief An ST77916 command on QSPI: write opcode 0x02, the command in
+ *         bits 8-15. */
+#define QSPI_CMD(c) ((int)((0x02u << 24) | ((unsigned)(c) << 8)))
+/** @brief ST77916 commands. @{ */
+#define ST_DISPOFF 0x28u /**< display off */
+#define ST_SLPIN   0x10u /**< sleep in */
+/** @} */
+/** @brief The wait after SLPIN, ms: the controller's sleep-in time. */
+#define ST_SLPIN_MS 120u
 static gfx_color_t *s_fb;              /**< the frame, in PSRAM */
 static uint16_t *s_strip;              /**< the DMA bounce buffer */
 /** @} */
@@ -255,9 +265,13 @@ void dial_lcd_flush(const uint16_t *fb, int y0, int y1)
 
 void dial_k518_lcd_sleep(void)
 {
-    if (s_panel != NULL) {
-        (void)esp_lcd_panel_disp_on_off(s_panel, false);
-        (void)esp_lcd_panel_disp_sleep(s_panel, true);
+    if (s_io != NULL) {
+        /* esp_lcd_st77916 2.0.2 has no sleep call over QSPI: DISPOFF and
+         * SLPIN go through the panel IO, coded as its own commands are
+         * (opcode 0x02 in bits 24-31, the command in bits 8-15). */
+        (void)esp_lcd_panel_io_tx_param(s_io, QSPI_CMD(ST_DISPOFF), NULL, 0);
+        (void)esp_lcd_panel_io_tx_param(s_io, QSPI_CMD(ST_SLPIN), NULL, 0);
+        vTaskDelay(pdMS_TO_TICKS(ST_SLPIN_MS));
     }
     /* A digital pad loses its level in deep sleep unless it is held. */
     ledc_stop(LEDC_LOW_SPEED_MODE, BL_CHANNEL, 0);

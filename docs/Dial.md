@@ -78,8 +78,9 @@ to 4,200mV (100%). No charge status pin is known, so STATUS never sets
 CHARGING.
 
 The slide switch cuts the power. OFF in the switch-off choice and an empty
-cell put the K518 into deep sleep: the display and its backlight off, the
-touch controller and the DRV2605 in their own sleep. A turn of the knob
+cell put the K518 into deep sleep: the ST77916 off and asleep (DISPOFF,
+then SLPIN and 120ms), its backlight's pin held low, the touch controller
+and the DRV2605 in their own sleep. A turn of the knob
 (either encoder line low) wakes it into a new start, as does the slide
 switch. The deep sleep current is not measured; the divider alone draws
 about 190µA from a 3.8V cell. The ADC's accuracy against a meter is not run on

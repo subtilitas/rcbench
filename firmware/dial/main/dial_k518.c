@@ -18,7 +18,9 @@
  * backlight's pin held low, the touch controller and the haptic driver in
  * their own sleep, and a wake on either encoder line going low (ext1 on
  * GPIO7 and GPIO8, their RTC pull-ups on), so a turn wakes it into a new
- * start.  A line that is low already is waited out for up to 200ms
+ * start, which gives both lines back to the digital GPIO matrix
+ * (rtc_gpio_deinit()) before the input task's PCNT units take them.  A
+ * line that is low already is waited out for up to 200ms
  * (DK518_WAKE_WAIT_MS).  The deep sleep current is not measured; the
  * divider alone draws about 190µA from a 3.8V cell.
  *
@@ -114,9 +116,13 @@ static uint16_t rail_read(void)
 
 void dial_power_hold(void)
 {
-    /* A wake from the soft OFF: the backlight's pin is still held low. */
+    /* A wake from the soft OFF: the backlight's pin is still held low, and
+     * the encoder's lines are still RTC IO for the ext1 wake.  PCNT takes
+     * them as digital GPIO only once their RTC mux is cleared. */
     gpio_deep_sleep_hold_dis();
     gpio_hold_dis(DIAL_PIN_LCD_BL);
+    (void)rtc_gpio_deinit(DIAL_PIN_ENC_CW);
+    (void)rtc_gpio_deinit(DIAL_PIN_ENC_CCW);
     dk518_supply_init(&s_sup);
     s_lock = xSemaphoreCreateMutex();
     adc_start();
