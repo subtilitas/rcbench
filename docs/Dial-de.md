@@ -25,15 +25,21 @@ einen ESP32-S3R8 mit rundem Display von 360 x 360 Pixeln, Touch, einem
 Encoder ohne Drucktaster und einem Vibrationsmotor. Sein Build
 ([Flashen über USB](#flashen-über-usb)) startet das BLE-Peripheral, die
 Bindung, den Face-Task, die Konsole und das Display. Das Display, ein
-ST77916 über QSPI (Quad-SPI) mit 40MHz, zeigt das Start-Face, gezeichnet
-mit 360 x 360: den BLE-Namen und die Firmware-Version. Touch, Encoder,
-Vibration und Akkumessung tun noch nichts: Er sendet kein EVENT, sein STATUS nennt den
+ST77916 über QSPI (Quad-SPI) mit 40MHz, zeigt seine eigenen Faces,
+gezeichnet mit 360 x 360: MOTOR & ESC und SERVO mit den sechs Messwerten,
+sechs Ringen, Titel, Pille und Hinweisen der M5-Faces, und für jedes andere
+Face das Start-Face mit dem BLE-Namen und der Firmware-Version. Eine
+Änderung eines Face zeichnet und sendet den ganzen Frame von 259.200 Bytes.
+Touch, Encoder, Vibration und Akkumessung tun noch nichts: Er sendet kein EVENT, sein STATUS nennt den
 Akku unbekannt, und er lehnt jedes Update ab, weil keine Taste es
 bestätigt. Sein INFO nennt Hardware 2 (`DK_HW_K518`); sein Image nennt die
 Update-Art 5 (`BLEOTA_KIND_DIAL_K518`), also nimmt keines der beiden Geräte
 das Image des anderen.
 
 ![Das Start-Face des K518](img/de/dial-k518-boot.png)
+![MOTOR & ESC auf dem K518, ARMED](img/de/dial-k518-motor-armed.png)
+![MOTOR & ESC auf dem K518, SAFE](img/de/dial-k518-motor-safe.png)
+![SERVO LIVE auf dem K518, ARMED](img/de/dial-k518-servo-live.png)
 
 M5Stack, Dial und Stamp-S3A sind Namen ihres Inhabers und seiner Produkte,
 Guition und JC3636K518C sind Namen ihres Inhabers und seines Produkts,

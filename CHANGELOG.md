@@ -27,6 +27,14 @@ history is in git.
   (`shared/dial/dk518_boot.c`): GUITION K518, rcbench, DIAL, the BLE name
   and the firmware version, inside a ring at the rim
   ([The M5Stack Dial](docs/Dial.md)).
+- The K518 draws MOTOR & ESC and SERVO natively at 360 x 360
+  (`shared/dial/dk518_draw.c`): the M5 faces' scene, its six readings in
+  three rows of two, six rings of 2px from radius 176 inward, the title
+  tag, the pill with the link bars and the battery, and the two hints,
+  every string inside radius 150. A change of the scene draws and sends
+  the whole frame; every other face shows the boot face
+  (`dial_k518_screen.c`). The M5Stack Dial keeps its own frame; the K518
+  build holds none of its 115,200 bytes.
 
 ### Changed
 
