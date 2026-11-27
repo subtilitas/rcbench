@@ -27,6 +27,10 @@ history is in git.
 
 ### Changed
 
+- Storyboard `kst-rbmod` follows the panel's KST programmer as it is:
+  CONNECT and WRITE n VALUES as 2s holds, no ENABLE WRITE page, the
+  ports' 5V switched off for 1s at CONNECT and at LEAVE. It carries a
+  narration and a bed; 28 screen steps, 156.2s as written.
 - The KST programmer draws through the common servo programmer frame
   (`sprog`). The SERVO tab's first line is a head: the port and its GPIO
   (`PROG PORT 1 GPIO 13`) over the supply CONNECT sets (`PD MINI  5.0V
