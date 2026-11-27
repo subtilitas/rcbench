@@ -184,7 +184,7 @@ static void hwait(hitec_prog_state_t s)
  */
 static void hseries(int i)
 {
-    htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 1, 0));
+    htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 1, 1));
     if (i >= 0) {
         htap(hitec_panel_choice_rect(i));
     }
@@ -366,7 +366,7 @@ static bool write_view(const char *v)
         htap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
         hwrite();
         hwait(HITEC_PROG_HELD);
-        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 1, 1));
+        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 1, 0));
         hwait(HITEC_PROG_HELD);
         htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 3, 0));
         return true;
@@ -382,7 +382,7 @@ static bool write_view(const char *v)
         return true;
     }
     if (strcmp(v, "-classic-repair") == 0) {
-        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 2, 0));
+        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 2, 1));
         hpick(TR(HP_MORE_REPAIR));
         return true;
     }
@@ -419,7 +419,7 @@ static void hfile(const char *name)
 static void hfiles(void)
 {
     htap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-    htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 1, 0));
+    htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 2, 0));
     hsettle();
 }
 
@@ -657,7 +657,7 @@ static bool files_view(const char *v)
         hwait(HITEC_PROG_HELD);
         servo_d485();
         g_drv.dreg[0x4Eu] = 4u;
-        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 1, 1));
+        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 1, 0));
         for (unsigned i = 0; i < 60000u && pstate() == HITEC_PROG_READING;
              ++i) {
             pms();
@@ -676,7 +676,7 @@ static bool files_view(const char *v)
     if (strcmp(v, "-classic-file-backup") == 0) {
         /* FACTORY DEFAULT changes cell 0x1D; the backup file HITEC001 of
          * the servo as found brings it back. */
-        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 2, 0));
+        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 2, 1));
         hpick(TR(HP_MORE_FACTORY));
         hhold();
         hwait(HITEC_PROG_HELD);
@@ -687,7 +687,7 @@ static bool files_view(const char *v)
         || strcmp(v, "-classic-factory") == 0
         || strcmp(v, "-classic-factory-done") == 0
         || strcmp(v, "-classic-factory-cell") == 0) {
-        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 2, 0));
+        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 2, 1));
         if (strcmp(v, "-classic-more-factory") != 0) {
             hpick(TR(HP_MORE_FACTORY));
         }
@@ -920,12 +920,12 @@ static void hitec_view_steps(const char *view)
         return;
     }
     if (strcmp(v, "-more") == 0) {
-        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 2, 0));
+        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 2, 1));
         return;
     }
     if (strcmp(v, "-rx") == 0) {
         /* MORE's third entry in PWM: Hitec D receive's list. */
-        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 2, 0));
+        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 2, 1));
         htap(hitec_panel_choice_rect(2));
         return;
     }

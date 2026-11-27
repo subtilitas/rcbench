@@ -2,11 +2,12 @@
  * @file hitec_panel_int.h
  * @brief The seam between the files of the Hitec programmer's overlay.
  *
- * hitec_panel.c holds the state, the rows, the geometry and the caller's
- * side; hitec_panel_text.c the texts of the messages and the values;
+ * hitec_panel.c holds the state, the rows, the geometry (wrappers onto
+ * the servo frame, sprog.h) and the caller's side; hitec_panel_text.c the texts of the messages and the values;
  * hitec_panel_edit.c the actions, the lists and the keypad;
  * hitec_panel_page.c the hold pages; hitec_panel_touch.c the presses;
- * hitec_panel_draw.c the notes and the pages drawn; hitec_panel_file.c the
+ * hitec_panel_draw.c the frame's view (cells, head, notes, bottom line)
+ * and the pages drawn; hitec_panel_file.c the
  * FILES list, the name keyboard, the pages of a file, a backup and FACTORY
  * DEFAULT and their texts; hitec_panel_move.c MOVE SERVO: its row, its
  * page, the -/+ keys of the positions and the live lines.  The functions
@@ -25,6 +26,7 @@
 #include "gfx.h"
 #include "hitec_panel.h"
 #include "hitec_prog.h"
+#include "sprog.h"
 #include "touch_types.h"
 #include "ui_keypad.h"
 #include "ui_layout.h"
@@ -72,6 +74,8 @@
 /** @brief The entries a list holds: FILES' save, 5 files and the next
  *         page. */
 #define HP_CHOICE_MAX 7
+_Static_assert(HP_CHOICE_MAX <= SPROG_LIST_MAX,
+               "the frame's list holds HP_CHOICE_MAX entries");
 /** @brief The characters the name keyboard takes, KST's. */
 #define HP_NAME_TYPED 16
 
@@ -85,12 +89,23 @@ enum { A_PORT = 0, A_SERIES, A_READ, A_MORE, A_CLEAR, A_RESTORE, A_WRITE,
 /** @brief The series a row is for. */
 enum { S_D = 1, S_C = 2, S_ANY = 3 };
 
-/** @brief One row: where it sits, what it shows, what it is called. */
+/**
+ * @brief The frame's show bits of the rows (sprog_row_t.show): the view's
+ *        mask has the bits of the state shown (hpn_mask()).
+ */
+enum {
+    HT_SHOW_D     = 0x01, /**< the D series                              */
+    HT_SHOW_C     = 0x02, /**< the CLASSIC series                        */
+    HT_SHOW_FREE  = 0x04, /**< this panel holds no port: SERIES          */
+    HT_SHOW_HELD  = 0x08, /**< this panel holds the port: AFTER STOP     */
+    HT_SHOW_STILL = 0x10, /**< the D series, MOVE SERVO off: DIRECTION   */
+    HT_SHOW_MOVE  = 0x20, /**< the D series, MOVE SERVO on: FIND STOP    */
+};
+
+/** @brief One row: its tab, what it shows, what it is called.  Where it
+ *         sits is the frame's flow of the tab's rows (sprog.h). */
 typedef struct {
     uint8_t page;     /**< hitec_panel_page_t                          */
-    uint8_t row;      /**< from the top                                */
-    uint8_t col;      /**< 0 left, 1 right                             */
-    uint8_t wide;     /**< 1: both columns                             */
     uint8_t kind;     /**< K_ACT or K_SHOW                             */
     uint8_t what;     /**< A_* or hitec_param_t                        */
     uint8_t series;   /**< S_D, S_C, S_ANY                             */
@@ -109,7 +124,7 @@ extern const hpn_row_t hpn_rows[HP_ROW_COUNT];
 enum {
     P_NONE = 0, P_TAB, P_ROW, P_KEYPAD, P_CHOICE, P_CHOICE_CANCEL,
     P_APPLY, P_CANCEL, P_TEXTKEY, P_PORT, P_PLUS, P_MINUS, P_CONNECT,
-    P_WRITE
+    P_WRITE, P_NOTES
 };
 
 /** @brief A position's -/+ keys while MOVE SERVO is on, KST's 56px. */
@@ -145,7 +160,9 @@ typedef struct {
     gfx_rect_t   area;          /**< the overlay's area, body pixels      */
     bool         open;          /**< the overlay is shown                 */
     bool         loaded;        /**< the options were read                */
-    ui_tabs_t    tabs;          /**< the five tabs                        */
+    /** @brief The frame: the tabs, the rows' places, the drawing of the
+     *         tab and of the list; the list's entries are its list. */
+    sprog_t      f;
     ui_keypad_t  kp;            /**< the keypad of the supply or a value  */
     int          kp_what;       /**< KP_*                                 */
     uint8_t      ed_id;         /**< the hitec_param_t a value editor is
@@ -153,17 +170,6 @@ typedef struct {
     float        held_s;        /**< how long a -/+ key is held, s        */
     bool         find_right;    /**< the press on FIND STOP is on its
                                      right key                            */
-
-    struct {
-        bool open;              /**< the list shows                       */
-        int  kind;              /**< C_*                                  */
-        int  count;             /**< entries                              */
-        char title[64];         /**< its title                            */
-        char labels[HP_CHOICE_MAX][HITEC_PANEL_LINE]; /**< the entries    */
-        int  values[HP_CHOICE_MAX]; /**< their values                     */
-        int  current;           /**< the value drawn as chosen; INT_MIN
-                                     none                                 */
-    } ch;                       /**< the list                             */
 
     struct {
         bool      open;         /**< the page shows                       */
@@ -246,14 +252,27 @@ extern hpn_state_t hitec_panel_h;
 /* hitec_panel.c */
 
 /**
- * @brief Whether row @p r is on the tab shown in the series and layout in
- *        use.
+ * @brief The frame's show bits of the state now: the series, whether this
+ *        panel holds the port, whether MOVE SERVO runs (HT_SHOW_*).
+ * @return the mask
+ */
+uint8_t hpn_mask(void);
+/**
+ * @brief Whether row @p r shows in the series, the state and the layout in
+ *        use; a parameter the layout lacks leaves its place empty.
  * @param r the row
  * @return true when shown
  */
 bool hpn_row_shown(const hpn_row_t *r);
 /**
- * @brief The row at (@p page, @p row, @p col) shown now, or NULL.
+ * @brief Begins the frame's view of the tab shown: its cells placed by the
+ *        mask, an empty place where the layout lacks the parameter, the
+ *        -/+ keys of a position MOVE SERVO steps.
+ */
+void hpn_place(void);
+/**
+ * @brief The row shown now at line @p row, column @p col of tab @p page,
+ *        as the frame places it, or NULL.
  * @param page the tab
  * @param row  the row
  * @param col  the column
@@ -284,12 +303,6 @@ gfx_rect_t hpn_tabs_rect(void);
  */
 int hpn_foot(void);
 /**
- * @brief Where the notes end: 6px above the area's foot, and HP_FOOT_GAP
- *        above the alert band at the most.
- * @return the y, body pixels
- */
-int hpn_notes_foot(void);
-/**
  * @brief The cells of HP_FONT a note's row has: the area less 10px a side.
  * @return the cells, 1 at least
  */
@@ -311,14 +324,26 @@ int hpn_text_rows(gfx_canvas_t *c, int x, int y, const char *s,
  */
 void hpn_moved(void);
 
+/* hitec_panel_draw.c */
+
+/** @brief Fills the frame's view of the tab shown: the cells, the head,
+ *         the notes and the bottom line. */
+void hpn_view(void);
+
 /* hitec_panel_text.c */
 
 /**
- * @brief A row's label as it is drawn now.
+ * @brief A row's label.
  * @param r the row
- * @return the label, static for the PORT and SERVO rows
+ * @return the label
  */
 const char *hpn_label(const hpn_row_t *r);
+/**
+ * @brief The name of the servo read: its model, the name it reports, or
+ *        "SERVO n"; "" before a read.
+ * @return the name, static
+ */
+const char *hpn_servo_name(void);
 /**
  * @brief The text in a row's control into @p out.
  * @param r     the row

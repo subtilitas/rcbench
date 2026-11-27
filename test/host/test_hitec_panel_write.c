@@ -140,8 +140,8 @@ TEST_CASE(a_value_edited_by_its_list_is_marked_and_counted)
     CHECK_STR_EQ(hitec_panel_value(HITEC_PANEL_SERVO, 3, 1), "WRITE 1 VALUE");
     CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 3, 1));
     /* MORE now offers DISCARD EDITS, which takes it back. */
-    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 2, 0));
-    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 2, 1));
+    tap(val(HITEC_PANEL_SERVO, 2, 1));
     /* And no Hitec D receive: the IOmcu takes it at its next OPEN. */
     for (int e = 0; hitec_panel_choice_label(e) != NULL; ++e) {
         CHECK(strstr(hitec_panel_choice_label(e),
@@ -279,7 +279,7 @@ TEST_CASE(leave_with_edits_lists_them_back_keeps_them_the_hold_drops_them)
         open_en();
         if (is_classic != 0) {
             servo_hs5645();
-            tap(val(HITEC_PANEL_SERVO, 1, 0));
+            tap(val(HITEC_PANEL_SERVO, 1, 1));
             tap(hitec_panel_choice_rect(1));
         } else {
             servo_d485();
@@ -417,12 +417,12 @@ TEST_CASE(repair_checksum_comes_from_more_on_a_wrong_sum)
     open_en();
     servo_hs5645();
     g_drv.eeprom[HITEC_C_SUM_LAST] ^= 0x01u;
-    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(val(HITEC_PANEL_SERVO, 1, 1));
     tap(hitec_panel_choice_rect(1));
     tap_connect();
     CHECK(note_has(TR(HP_SUM_BAD)));
     CHECK(note_has(TR(HP_SUM_HINT)));
-    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    tap(val(HITEC_PANEL_SERVO, 2, 1));
     pick(TR(HP_MORE_REPAIR));
     /* Its own page, no switch's before it. */
     CHECK_STR_EQ(hitec_panel_page_line(0), TR(HP_REPAIR));
@@ -451,7 +451,7 @@ TEST_CASE(restore_offers_the_record_after_an_interrupted_write)
     tap(val(HITEC_PANEL_SERVO, 3, 0));
     CHECK_STR_EQ(hitec_panel_choice_label(0), TR(KP_FORGET));
     hitec_panel_back();
-    tap(val(HITEC_PANEL_SERVO, 1, 1));
+    tap(val(HITEC_PANEL_SERVO, 1, 0));
     until(HITEC_PROG_HELD);
     show();
     CHECK(note_has(TR(HP_RECORD_HELD)));
@@ -476,7 +476,7 @@ TEST_CASE(a_latched_stop_offers_no_clear_anywhere)
     open_en();
     servo_d485();
     tap_connect();
-    tap(val(HITEC_PANEL_SERVO, 1, 1));   /* READ ALL */
+    tap(val(HITEC_PANEL_SERVO, 1, 0));   /* READ ALL */
     prun(30u);
     press_stop();
     until(HITEC_PROG_HELD);
@@ -489,19 +489,19 @@ TEST_CASE(a_latched_stop_offers_no_clear_anywhere)
     for (int i = 0; hitec_panel_note(i) != NULL; ++i) {
         CHECK(strstr(hitec_panel_note(i), "CLEAR") == NULL);
     }
-    CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 2, 1));
+    CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 1, 1));
     /* A switch to SAFE alone still offers CLEAR. */
     open_en();
     servo_d485();
     tap_connect();
-    tap(val(HITEC_PANEL_SERVO, 1, 1));
+    tap(val(HITEC_PANEL_SERVO, 1, 0));
     prun(30u);
     disarm();
     until(HITEC_PROG_HELD);
     prun(50u);
     show();
     CHECK(note_has(TR(HP_ST_STOPPED)));
-    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 2, 1));
+    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 1, 1));
 }
 
 /* Every page's lines inside it, above its buttons, in both languages. */
@@ -691,12 +691,12 @@ TEST_CASE(repair_waits_for_the_edits)
     open_en();
     servo_hs5645();
     g_drv.eeprom[HITEC_C_SUM_LAST] ^= 0x01u;
-    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(val(HITEC_PANEL_SERVO, 1, 1));
     tap(hitec_panel_choice_rect(1));
     tap_connect();
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_C_SPEED, 50),
              HITEC_PROG_EDIT_OK);
-    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    tap(val(HITEC_PANEL_SERVO, 2, 1));
     pick(TR(HP_MORE_REPAIR));
     CHECK_EQ(hitec_panel_editor(), 0);
     CHECK_STR_EQ(said(), TR(HP_EDITS_PENDING));
@@ -787,7 +787,7 @@ TEST_CASE(each_keypad_opens_on_its_value_or_its_range)
     /* A classic CENTER in quarter microseconds, read and raw. */
     open_en();
     servo_hs5645();
-    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(val(HITEC_PANEL_SERVO, 1, 1));
     tap(hitec_panel_choice_rect(1));
     tap_connect();
     tap(hitec_panel_tab_rect(HITEC_PANEL_TRAVEL));
@@ -800,7 +800,7 @@ TEST_CASE(each_keypad_opens_on_its_value_or_its_range)
     servo_hs5645();
     g_drv.eeprom[0x07] = 0u;   /* 2052 quarters: below 900us, raw */
     g_drv.eeprom[0x08] = 0u;
-    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(val(HITEC_PANEL_SERVO, 1, 1));
     tap(hitec_panel_choice_rect(1));
     tap_connect();
     tap(hitec_panel_tab_rect(HITEC_PANEL_TRAVEL));

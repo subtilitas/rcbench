@@ -96,8 +96,8 @@ static void settle(void)
 static void files(void)
 {
     tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-    CHECK_STR_EQ(hitec_panel_label(HITEC_PANEL_SERVO, 1, 0), TR(KP_FILES));
-    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    CHECK_STR_EQ(hitec_panel_label(HITEC_PANEL_SERVO, 2, 0), TR(KP_FILES));
+    tap(val(HITEC_PANEL_SERVO, 2, 0));
     settle();
 }
 
@@ -152,7 +152,7 @@ static void c_open(void)
 {
     open_en();
     servo_hs5645();
-    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(val(HITEC_PANEL_SERVO, 1, 1));
     tap(hitec_panel_choice_rect(1));
     tap_connect();
     g_card = true;
@@ -208,6 +208,7 @@ TEST_CASE(files_lists_the_card_in_pages_of_5_under_the_entry_that_saves)
     }
     files();
     CHECK_EQ(choices(), 7);
+    CHECK_EQ(list_clear(), 7);
     snprintf(want, sizeof(want), TR(KP_FILES_TITLE_N), 1u, 5u, 7u);
     CHECK_STR_EQ(hitec_panel_choice_title(), want);
     snprintf(want, sizeof(want), "%-16s  %s", "F1", "D485HW");
@@ -241,11 +242,11 @@ TEST_CASE(files_without_a_card_or_without_its_answer)
     prun(20u);
     files();
     CHECK_EQ(hitec_panel_editor(), 0);
-    CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 1, 0));
+    CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 2, 0));
     prun(HITEC_PROG_FILES_MS);
     show();
     CHECK_STR_EQ(said(), TR(KP_M_CARD_READ));
-    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 1, 0));
+    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 2, 0));
     /* Its late answer opens nothing. */
     files_answer();
     show();
@@ -492,7 +493,7 @@ TEST_CASE(restore_and_factory_default_with_an_edit_standing_say_why)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_C_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    tap(val(HITEC_PANEL_SERVO, 2, 1));
     pick(TR(HP_MORE_FACTORY));
     CHECK_EQ(hitec_panel_editor(), 0);
     CHECK_EQ(msg(), HITEC_PROG_MSG_EDITS_PENDING);
@@ -518,14 +519,14 @@ TEST_CASE(restore_after_factory_default_counts_the_cells_of_no_setting)
     servo_hs5645();
     /* The factory block holds another cell 0x00, which no setting names. */
     g_drv.eeprom[0x30] = (uint8_t)(g_drv.eeprom[0x00] + 1u);
-    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(val(HITEC_PANEL_SERVO, 1, 1));
     tap(hitec_panel_choice_rect(1));
     tap_connect();
     g_card = true;
     prun(20u);
     card_in();
     tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    tap(val(HITEC_PANEL_SERVO, 2, 1));
     pick(TR(HP_MORE_FACTORY));
     hold(2.1f);
     until(HITEC_PROG_HELD);
@@ -555,14 +556,14 @@ TEST_CASE(factory_default_counts_the_cells_of_no_setting_it_writes)
         g_drv.eeprom[0x30u + c] = g_drv.eeprom[c];
     }
     g_drv.eeprom[0x30u + 0x1Du] ^= 0x01u;
-    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(val(HITEC_PANEL_SERVO, 1, 1));
     tap(hitec_panel_choice_rect(1));
     tap_connect();
     g_card = true;
     prun(20u);
     card_in();
     tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    tap(val(HITEC_PANEL_SERVO, 2, 1));
     pick(TR(HP_MORE_FACTORY));
     CHECK_STR_EQ(hitec_panel_page_line(0), TR(HP_FACTORY));
     snprintf(want, sizeof(want), TR(HP_FACTORY_RAW), 1u);
@@ -590,7 +591,7 @@ TEST_CASE(a_backup_file_names_the_stored_values_it_brings_back_and_leave_counts_
             g_drv.eeprom[0x30u + c] = g_drv.eeprom[c];
         }
         g_drv.eeprom[0x30u + 0x1Du] ^= 0x01u;
-        tap(val(HITEC_PANEL_SERVO, 1, 0));
+        tap(val(HITEC_PANEL_SERVO, 1, 1));
         tap(hitec_panel_choice_rect(1));
         tap_connect();
         g_card = true;
@@ -598,7 +599,7 @@ TEST_CASE(a_backup_file_names_the_stored_values_it_brings_back_and_leave_counts_
         /* PRE, saved by hand before the first write: a backup file. */
         card_in();
         tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-        tap(val(HITEC_PANEL_SERVO, 2, 0));
+        tap(val(HITEC_PANEL_SERVO, 2, 1));
         pick(TR(HP_MORE_FACTORY));
         hold(2.1f);
         until(HITEC_PROG_HELD);
@@ -678,13 +679,13 @@ TEST_CASE(the_servo_tab_says_what_the_write_of_waiting_edits_does)
             g_drv.eeprom[0x30u + c] = g_drv.eeprom[c];
         }
         g_drv.eeprom[0x30u + 0x1Du] ^= 0x01u;
-        tap(val(HITEC_PANEL_SERVO, 1, 0));
+        tap(val(HITEC_PANEL_SERVO, 1, 1));
         tap(hitec_panel_choice_rect(1));
         tap_connect();
         card_in();
         tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
         CHECK(!note_has(TR(HP_WRITE_C)));
-        tap(val(HITEC_PANEL_SERVO, 2, 0));
+        tap(val(HITEC_PANEL_SERVO, 2, 1));
         pick(TR(HP_MORE_FACTORY));
         hold(2.1f);
         until(HITEC_PROG_HELD);
@@ -773,7 +774,7 @@ TEST_CASE(factory_default_comes_from_more_for_a_classic_servo)
     c_open();
     card_in();
     tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    tap(val(HITEC_PANEL_SERVO, 2, 1));
     pick(TR(HP_MORE_FACTORY));
     /* Its own page, no switch's before it. */
     CHECK_STR_EQ(hitec_panel_page_line(0), TR(HP_FACTORY));
@@ -789,7 +790,7 @@ TEST_CASE(factory_default_comes_from_more_for_a_classic_servo)
     /* The D series has none. */
     d_open(UI_LANG_EN);
     tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    tap(val(HITEC_PANEL_SERVO, 2, 1));
     for (int i = 0; hitec_panel_choice_label(i) != NULL; ++i) {
         CHECK(strcmp(hitec_panel_choice_label(i), TR(HP_MORE_FACTORY)) != 0);
     }
@@ -890,14 +891,14 @@ TEST_CASE(every_new_page_fits_in_both_languages)
         /* RESTORE of the backup and FACTORY DEFAULT of a classic servo. */
         open_at(SUPPLY_ON, langs[k]);
         servo_hs5645();
-        tap(val(HITEC_PANEL_SERVO, 1, 0));
+        tap(val(HITEC_PANEL_SERVO, 1, 1));
         tap(hitec_panel_choice_rect(1));
         tap_connect();
         g_card = true;
         prun(20u);
         card_in();
         tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-        tap(val(HITEC_PANEL_SERVO, 2, 0));
+        tap(val(HITEC_PANEL_SERVO, 2, 1));
         pick(TR(HP_MORE_FACTORY));
         CHECK_STR_EQ(hitec_panel_page_line(0), TR(HP_FACTORY));
         CHECK(page_fits());

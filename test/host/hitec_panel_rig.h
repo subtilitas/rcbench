@@ -167,6 +167,41 @@ static inline void press_port(void)
     }
 }
 
+/* The open list stands clear of CANCEL: each entry 48px or more, its
+ * label inside it, none over another or over CANCEL, the last 8px above
+ * CANCEL.  Returns its entries. */
+static inline int list_clear(void)
+{
+    const gfx_rect_t cancel = hitec_panel_choice_cancel_rect();
+    int n = 0;
+
+    while (hitec_panel_choice_label(n) != NULL) {
+        const gfx_rect_t r = hitec_panel_choice_rect(n);
+
+        CHECK(r.w >= UI_TAP_MIN && r.h >= UI_TAP_MIN);
+        CHECK(r.x >= AREA.x && r.x + r.w <= AREA.x + AREA.w);
+        CHECK(gfx_text_cells(hitec_panel_choice_label(n)) * 10 + 8 <= r.w);
+        CHECK(r.y + r.h <= cancel.y - 8);
+        for (int j = 0; j < n; ++j) {
+            const gfx_rect_t o = hitec_panel_choice_rect(j);
+
+            CHECK(!(r.x < o.x + o.w && o.x < r.x + r.w && r.y < o.y + o.h
+                    && o.y < r.y + r.h));
+        }
+        ++n;
+    }
+    return n;
+}
+
+/* The servo read as the session names it: the READY card's SERVO row. */
+static inline const char *servo_name(void)
+{
+    static prog_session_t ps;
+
+    hitec_panel_session(&ps);
+    return ps.servo;
+}
+
 /* CONNECT by its button, run to HELD. */
 static inline void tap_connect(void)
 {
