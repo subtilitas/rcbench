@@ -128,7 +128,7 @@ voice of Piper. The set in use is kokoro-onnx 0.6.1, misaki 0.9.4,
 spacy 3.8.18, num2words 0.5.14, espeakng-loader 0.2.4, phonemizer 3.6.0
 and piper-tts 1.8.0 on Python 3.12. `--check` needs only Python; the
 pytest case `test/tools/test_make_video.py` runs it in CI (continuous
-integration). The 156.2s of `kst-rbmod` as written are 4686 frames. `features` is
+integration). The 165.2s of `kst-rbmod` as written are 4956 frames. `features` is
 755.92s with its narration, 22678 frames. On a software rasteriser its render
 takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 
@@ -164,7 +164,7 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `boards/p4-7b-back.json` | the back of the 7 inch ESP32-P4 display board, drawn by hand in the format `video_board.py` writes: its connectors, modules and sockets as boxes, the pads of the 4-pin and 12-pin headers |
 | `boards/minircbench-wiring.json` | the parts of a MiniRcBench laid out flat: the rear of the RP2350-Touch-LCD-2.8 with its sockets, the 5V boost board, the INA219 board, the cell and the two male servo connectors, with the pads the wires go to |
 | `player/capture.js` | steps the player through the frames and pipes them to ffmpeg |
-| `storyboards/kst-rbmod.json` | programming a KST servo on the rbmod carrier in 8 steps, 28 screen steps: the port, the 2s hold on CONNECT and the power-up, the type V6 or V8, the tabs FAILSAFE and LOCKED, 3 edits on TUNE, the 2s hold on WRITE 3 VALUES with the backup file KST001, and LEAVE with the 5V off for 1s; narrated, bed `pachelbel-canon` at half level; 156.2s as written, not rendered with the narration. The views are those of a carrier with PROG 5V on before CONNECT; the PORT list alone shows it off. The PULSE tab is named and not shown: its view carries a fourth edit |
+| `storyboards/kst-rbmod.json` | programming a KST servo on the rbmod carrier in 8 steps, 29 screen steps, with KST EXPERT MODE on and one step that says so: the port, the 2s hold on CONNECT and the power-up, the type V6 or V8, the tabs FAILSAFE and LOCKED, 3 edits on TUNE, the 2s hold on WRITE 3 VALUES with the backup file KST001, and LEAVE with the 5V off for 1s; narrated, bed `pachelbel-canon` at half level; 165.2s as written, not rendered with the narration. The views are those of a carrier with PROG 5V on before CONNECT; the PORT list alone shows it off. The PULSE tab is named and not shown: its view carries a fourth edit |
 | `storyboards/features.json` | every screen of the bench in 8 chapters: where it opens from and what it does on the rbmod carrier, narrated, 755.92s |
 | `storyboards/rbmod-rework.json` | the rework of a rev 1 rbmod carrier in 4 steps: the track cut at R1, the wire from GP15, the pull-down on M7's EN and the zener on M7's output; 83s, no narration |
 | `storyboards/rbmod-build.json` | building a rev 1 rbmod carrier in 13 steps, the 4 rework steps among them: the bare board, D1 and R9, the connectors, the headers, the 5 modules on pin strips, the large holes closed with wire and solder, the 4 wires from J6's pads to a USB-C plug board for the PD mini, and the panel's back with the heartbeat wires of header P3, the CAN cable and the supply on the RS485 header; narrated, 347.32s, Pachelbel's Canon as its bed at half level |
