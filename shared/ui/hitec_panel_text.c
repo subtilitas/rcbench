@@ -43,24 +43,29 @@ static const char *series_name(uint8_t series)
                                             : TR(HP_SERIES_D);
 }
 
-const char *hpn_label(const hpn_row_t *r)
+const char *hpn_servo_name(void)
 {
     const hitec_model_t *m = hitec_prog_model(&hp.prog);
+    /* Static: the caller copies it. */
+    static char servo[24];
+    const char *name;
 
-    if (r->kind == K_ACT && r->what == A_READ && m != NULL) {
-        /* Static: the caller draws the label after this returns. */
-        static char servo[24];
-        const char *name = hitec_model_name(m->model);
-
-        if (name[0] != '\0') {
-            snprintf(servo, sizeof(servo), "%s", name);
-        } else if (m->name[0] != '\0') {
-            snprintf(servo, sizeof(servo), "%.14s", m->name);
-        } else {
-            snprintf(servo, sizeof(servo), "SERVO %u", (unsigned)m->number);
-        }
-        return servo;
+    if (m == NULL) {
+        return "";
     }
+    name = hitec_model_name(m->model);
+    if (name[0] != '\0') {
+        snprintf(servo, sizeof(servo), "%s", name);
+    } else if (m->name[0] != '\0') {
+        snprintf(servo, sizeof(servo), "%.14s", m->name);
+    } else {
+        snprintf(servo, sizeof(servo), "SERVO %u", (unsigned)m->number);
+    }
+    return servo;
+}
+
+const char *hpn_label(const hpn_row_t *r)
+{
     return r->label >= 0 ? ui_tr((ui_text_id_t)r->label) : r->name;
 }
 
@@ -957,11 +962,7 @@ void hitec_panel_session(prog_session_t *out)
                 || st == HITEC_PROG_BACKUP || st == HITEC_PROG_MOVING;
     out->read = hitec_prog_model(p) != NULL;
     if (out->read) {
-        /* The SERVO row's label names the servo read (hpn_label()). */
-        const hpn_row_t *r = hpn_row_at(HITEC_PANEL_SERVO, 1, 1);
-
-        snprintf(out->servo, sizeof(out->servo), "%s",
-                 r != NULL ? hpn_label(r) : "");
+        snprintf(out->servo, sizeof(out->servo), "%s", hpn_servo_name());
     }
     if (w != NULL) {
         char v[HITEC_PANEL_LINE];

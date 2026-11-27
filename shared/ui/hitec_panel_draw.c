@@ -1,12 +1,13 @@
 /**
  * @file hitec_panel_draw.c
- * @brief The drawing of the Hitec programmer's overlay: the tabs, the rows
- *        of the tab shown, its notes and the last message, the list of
- *        choices and the hold pages.
+ * @brief The drawing of the Hitec programmer's overlay: the frame's view of
+ *        the tab shown (its cells, the head, the notes and the last
+ *        message), drawn by the frame with the tabs and the list, and the
+ *        hold pages.
  *
  * Hitec is a name or trademark of its owner; it is used here only to say
  * which servos this overlay works with.  The state and the seam are
- * hitec_panel_int.h.
+ * hitec_panel_int.h; the frame is sprog.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -17,8 +18,8 @@
 
 #include "hitec_move.h"
 #include "hitec_reg.h"
-#include "ui_tabs.h"
 #include "prog_choice.h"
+#include "sprog.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
 #include "ui_theme.h"
@@ -28,35 +29,26 @@
  * after it may meet. */
 #include "hitec_panel_int.h"
 
-/** @brief The notes a tab holds at most. */
-#define NOTES_MAX 6
-
-/** @brief One note: its text and its colour. */
+/** @brief The texts the view points at until the next view. */
 typedef struct {
-    const char *s;       /**< the text, static          */
-    gfx_color_t color;   /**< its colour                */
-} note_t;
-
-/** @brief Where the notes and the message of the tab shown go. */
-typedef struct {
-    note_t n[NOTES_MAX];          /**< the notes, from the top         */
-    int    count;                 /**< notes used                      */
-    int    y[NOTES_MAX];          /**< each note's top; -1 not drawn   */
-    /** @brief The notes' own texts */
-    char   buf[3][HITEC_PANEL_LINE];
-    /** @brief The message's lines */
-    char   msg[HITEC_PANEL_MSG_LINES][HITEC_PANEL_LINE];
-    int    lines;                 /**< the message's lines in msg      */
-    int    msg_y;                 /**< the message's top               */
-    int    top;                   /**< the first note's top            */
-    int    foot;                  /**< under the last line drawn       */
-} plan_t;
+    /** @brief The notes' own texts: the state line, the layout guess, the
+     *         stored values outside the settings */
+    char buf[3][HITEC_PANEL_LINE];
+    /** @brief The head's two lines */
+    char head[2][HITEC_PANEL_LINE];
+    /** @brief The message's lines a note does not say already */
+    char msg[HITEC_PANEL_MSG_LINES][HITEC_PANEL_LINE];
+    int  lines;                   /**< lines in msg                       */
+    bool loop;                    /**< MOVE SERVO's lines are the notes   */
+    /** @brief The bottom line: msg's lines, one row each */
+    char bottom[HITEC_PANEL_MSG_LINES * HITEC_PANEL_LINE];
+} texts_t;
 
 /**
- * @brief Static: the notes, their texts and the message's lines are planned
- *        on the UI task's path.  One plan serves the draw and every query.
+ * @brief Static: the view's texts are built on the UI task's path, and the
+ *        view points at them until the next one.
  */
-static plan_t s_plan;
+static texts_t s_txt;
 
 /**
  * @brief The text colour of a message's level.
@@ -71,17 +63,47 @@ static gfx_color_t level_color(unsigned level)
 }
 
 /**
- * @brief Adds a note.
- * @param p     the plan
- * @param s     its text
- * @param color its colour
+ * @brief The frame's level of a message's level.
+ * @param level hitec_prog_level_t
+ * @return the sprog_level_t
  */
-static void note(plan_t *p, const char *s, gfx_color_t color)
+static uint8_t msg_level(unsigned level)
 {
-    if (p->count < NOTES_MAX && s != NULL && s[0] != '\0') {
-        p->n[p->count].s = s;
-        p->n[p->count].color = color;
-        ++p->count;
+    return level == HITEC_PROG_DANGER ? (uint8_t)SPROG_LV_DANGER
+         : level == HITEC_PROG_WARN   ? (uint8_t)SPROG_LV_WARN
+                                      : (uint8_t)SPROG_LV_TEXT;
+}
+
+/**
+ * @brief The frame's level of a note's colour (hpn_move_notes()).
+ * @param color the colour
+ * @return the sprog_level_t
+ */
+static uint8_t color_level(gfx_color_t color)
+{
+    static const uint8_t lv[] = { SPROG_LV_DANGER, SPROG_LV_WARN,
+                                  SPROG_LV_ACCENT, SPROG_LV_FAINT,
+                                  SPROG_LV_DIM };
+    static const ui_color_id_t id[] = { UI_C_DANGER, UI_C_WARN, UI_C_ACCENT,
+                                        UI_C_TEXT_FAINT, UI_C_TEXT_DIM };
+
+    for (size_t i = 0; i < sizeof(lv); ++i) {
+        if (color == ui_theme_color(id[i])) {
+            return lv[i];
+        }
+    }
+    return SPROG_LV_TEXT;
+}
+
+/**
+ * @brief Adds a note that says something.
+ * @param s     its text
+ * @param level its sprog_level_t
+ */
+static void note(const char *s, uint8_t level)
+{
+    if (s != NULL && s[0] != '\0') {
+        sprog_note(&hp.f, s, level);
     }
 }
 
@@ -89,12 +111,10 @@ static void note(plan_t *p, const char *s, gfx_color_t color)
  * @brief What stands of a write: a record of one interrupted, and a READ
  *        ALL owed before the next.  Nothing of the record a running write
  *        made itself.
- * @param p the plan
  */
-static void record_notes(plan_t *p)
+static void record_notes(void)
 {
     const hitec_prog_t *pr = &hp.prog;
-    const gfx_color_t danger = ui_theme_color(UI_C_DANGER);
     const hitec_prog_state_t st = hitec_prog_state(pr);
 
     if (pr->wr_own_rec
@@ -108,21 +128,21 @@ static void record_notes(plan_t *p)
     if (hitec_prog_record(pr)) {
         switch (hitec_prog_record_verdict(pr)) {
         case HITEC_PROG_REC_NONE:
-            note(p, TR(KP_M_JOURNAL), danger);
+            note(TR(KP_M_JOURNAL), SPROG_LV_DANGER);
             break;
         case HITEC_PROG_REC_OTHER:
-            note(p, TR(KP_M_JOURNAL_OTHER), danger);
+            note(TR(KP_M_JOURNAL_OTHER), SPROG_LV_DANGER);
             break;
         case HITEC_PROG_REC_MIX:
-            note(p, TR(KP_M_INCONSISTENT), danger);
+            note(TR(KP_M_INCONSISTENT), SPROG_LV_DANGER);
             break;
         default:
-            note(p, TR(HP_RECORD_HELD), ui_theme_color(UI_C_WARN));
+            note(TR(HP_RECORD_HELD), SPROG_LV_WARN);
             break;
         }
     } else if (pr->must_read && hitec_prog_state(pr) == HITEC_PROG_HELD) {
-        note(p, pr->mv.owed ? TR(HP_LIVE_OWED) : TR(HP_MUST_READ),
-             ui_theme_color(UI_C_WARN));
+        note(pr->mv.owed ? TR(HP_LIVE_OWED) : TR(HP_MUST_READ),
+             SPROG_LV_WARN);
     }
 }
 
@@ -131,55 +151,50 @@ static void record_notes(plan_t *p)
  *        the D series' save and restart, or the classic checksum after each
  *        stored value, and the stored values outside the settings it writes
  *        too.  Only while edits wait; last, so a note above keeps its place.
- * @param p the plan
  */
-static void write_notes(plan_t *p)
+static void write_notes(void)
 {
     const hitec_prog_t *pr = &hp.prog;
     const hitec_image_t *to = hitec_prog_draft(pr);
-    const gfx_color_t faint = ui_theme_color(UI_C_TEXT_FAINT);
     unsigned raw;
 
     if (hitec_prog_state(pr) != HITEC_PROG_HELD || to == NULL
         || hitec_prog_changes(pr) == 0u) {
         return;
     }
-    note(p, hitec_prog_series(pr) == (uint8_t)HITEC_D ? TR(HP_WRITE_D)
-                                                       : TR(HP_WRITE_C),
-         faint);
+    note(hitec_prog_series(pr) == (uint8_t)HITEC_D ? TR(HP_WRITE_D)
+                                                   : TR(HP_WRITE_C),
+         SPROG_LV_FAINT);
     raw = hitec_prog_raw_cells(pr, to);
     if (raw != 0u) {
-        snprintf(p->buf[2], sizeof(p->buf[2]), TR(HP_FACTORY_RAW), raw);
-        note(p, p->buf[2], faint);
+        snprintf(s_txt.buf[2], sizeof(s_txt.buf[2]), TR(HP_FACTORY_RAW),
+                 raw);
+        note(s_txt.buf[2], SPROG_LV_FAINT);
     }
 }
 
-/**
- * @brief The SERVO tab's notes: the state, what it needs, what stands.
- * @param p the plan
- */
-static void servo_notes(plan_t *p)
+/** @brief The SERVO tab's notes: the state, what it needs, what stands. */
+static void servo_notes(void)
 {
     const hitec_prog_t *pr = &hp.prog;
     const hitec_prog_state_t st = hitec_prog_state(pr);
     const hitec_model_t *m = hitec_prog_model(pr);
-    const gfx_color_t faint = ui_theme_color(UI_C_TEXT_FAINT);
 
-    hpn_state_line(p->buf[0], sizeof(p->buf[0]));
-    note(p, p->buf[0], ui_theme_color(hitec_prog_stopped(pr)
-                                         ? UI_C_WARN : UI_C_TEXT));
+    hpn_state_line(s_txt.buf[0], sizeof(s_txt.buf[0]));
+    note(s_txt.buf[0], hitec_prog_stopped(pr) ? SPROG_LV_WARN
+                                              : SPROG_LV_TEXT);
     if (st == HITEC_PROG_NO_PAGE) {
-        note(p, TR(HP_NO_PAGE_2), faint);
+        note(TR(HP_NO_PAGE_2), SPROG_LV_FAINT);
     } else if (st == HITEC_PROG_PWM && !hitec_prog_on_port(pr)) {
-        note(p, ui_tr((ui_text_id_t)prog_choice_text(TX_KP_NEED_TARGET_2)),
-             faint);
+        note(ui_tr((ui_text_id_t)prog_choice_text(TX_KP_NEED_TARGET_2)),
+             SPROG_LV_FAINT);
     } else if (st == HITEC_PROG_OTHER) {
-        note(p, TR(HP_RELEASE_HINT), faint);
+        note(TR(HP_RELEASE_HINT), SPROG_LV_FAINT);
     }
     if (hitec_prog_sum_bad(pr)) {
-        note(p, TR(HP_SUM_BAD), ui_theme_color(UI_C_DANGER));
+        note(TR(HP_SUM_BAD), SPROG_LV_DANGER);
         if (st == HITEC_PROG_HELD) {
-            note(p, TR(HP_SUM_HINT), faint);
+            note(TR(HP_SUM_HINT), SPROG_LV_FAINT);
         }
     }
     if (m != NULL && hitec_model_name(m->model)[0] == '\0') {
@@ -187,215 +202,106 @@ static void servo_notes(plan_t *p)
                        : m->layout == (uint8_t)HITEC_LAYOUT_HS7 ? "HS-7955TG"
                                                                : "HS-5645MG";
 
-        snprintf(p->buf[1], sizeof(p->buf[1]), TR(HP_LAYOUT_GUESS), as);
-        note(p, p->buf[1], ui_theme_color(UI_C_WARN));
+        snprintf(s_txt.buf[1], sizeof(s_txt.buf[1]), TR(HP_LAYOUT_GUESS),
+                 as);
+        note(s_txt.buf[1], SPROG_LV_WARN);
     }
     if (hitec_prog_mv_capped(pr)
         && (st == HITEC_PROG_PWM || pr->owned)) {
-        note(p, TR(HP_V_CAPPED), ui_theme_color(UI_C_WARN));
+        note(TR(HP_V_CAPPED), SPROG_LV_WARN);
     }
-    record_notes(p);
-    note(p, hpn_backup_note(), hitec_prog_backup_ram_only(pr)
-                                       || hpn_backup_unsaved()
-                                   ? ui_theme_color(UI_C_WARN)
-                                   : faint);
-    write_notes(p);
+    record_notes();
+    note(hpn_backup_note(), hitec_prog_backup_ram_only(pr)
+                                    || hpn_backup_unsaved()
+                                ? SPROG_LV_WARN
+                                : SPROG_LV_FAINT);
+    write_notes();
 }
 
 /**
- * @brief The notes of a value tab.
- * @param p the plan
+ * @brief The notes of a value tab: the tab's own, then the frame's hint
+ *        while the values take an edit.
  */
-static void value_notes(plan_t *p)
+static void value_notes(void)
 {
     const bool d = hitec_prog_series(&hp.prog) == (uint8_t)HITEC_D;
-    const gfx_color_t faint = ui_theme_color(UI_C_TEXT_FAINT);
-    const char *ms[NOTES_MAX];
-    gfx_color_t mc[NOTES_MAX];
-    const int mn = hpn_move_notes(ms, mc, NOTES_MAX);
+    const char *ms[SPROG_NOTES];
+    gfx_color_t mc[SPROG_NOTES];
+    const int mn = hpn_move_notes(ms, mc, SPROG_NOTES);
 
     /* MOVE SERVO's loop: its own lines take the notes' place. */
+    s_txt.loop = mn >= 0;
     for (int i = 0; i < mn; ++i) {
-        note(p, ms[i], mc[i]);
+        note(ms[i], color_level(mc[i]));
     }
     if (mn >= 0) {
         return;
     }
-
     if (hitec_prog_servo(&hp.prog) == NULL) {
-        note(p, TR(HP_NOT_READ), faint);
-    } else if (hitec_prog_can_edit(&hp.prog)) {
-        note(p, TR(HP_EDIT_NOTE), faint);
+        note(TR(HP_NOT_READ), SPROG_LV_FAINT);
     }
-    switch (hp.tabs.selected) {
+    switch (sprog_tab(&hp.f)) {
     case HITEC_PANEL_MOTION:
     case HITEC_PANEL_PROTECT:
-        note(p, TR(HP_RAW_BESIDE), faint);
+        note(TR(HP_RAW_BESIDE), SPROG_LV_FAINT);
         break;
     case HITEC_PANEL_TRAVEL:
         if (d) {
-            note(p, TR(HP_POS_NOTE), faint);
-            note(p, TR(HP_DEG_NOTE), faint);
-            note(p, TR(HP_DIR_NOTE), faint);
+            note(TR(HP_POS_NOTE), SPROG_LV_FAINT);
+            note(TR(HP_DEG_NOTE), SPROG_LV_FAINT);
+            note(TR(HP_DIR_NOTE), SPROG_LV_FAINT);
         } else {
-            note(p, TR(HP_END_UNIT), faint);
+            note(TR(HP_END_UNIT), SPROG_LV_FAINT);
         }
         break;
     default:
         if (d) {
-            note(p, TR(HP_RAW_NOTE), faint);
+            note(TR(HP_RAW_NOTE), SPROG_LV_FAINT);
         }
         break;
     }
+    if (hitec_prog_servo(&hp.prog) != NULL && hitec_prog_can_edit(&hp.prog)) {
+        sprog_hint(&hp.f);
+    }
 }
 
 /**
- * @brief The top of the notes: 8px under the lowest row of the tab shown.
- * @return the y, body pixels
+ * @brief The bottom line: the message's lines a note does not say
+ *        already, in their order, one row each.  While MOVE SERVO's loop
+ *        runs only a warning or a danger stands there: the row goes to the
+ *        loop's lines, the port and the live position first.
  */
-static int rows_foot(void)
+static void bottom_line(void)
 {
-    int y = hp.area.y + HP_ROW0;
+    const hitec_prog_msg_t *m = hitec_prog_message(&hp.prog);
+    char lines[HITEC_PANEL_MSG_LINES][HITEC_PANEL_LINE];
+    const int n = hitec_panel_message_lines(m, lines);
+    size_t at = 0;
 
-    for (int i = 0; i < HP_ROW_COUNT; ++i) {
-        const hpn_row_t *r = &hpn_rows[i];
-
-        if (r->page == hp.tabs.selected && hpn_row_shown(r)) {
-            const gfx_rect_t rr = hpn_row_rect(r);
-
-            y = rr.y + rr.h + 8 > y ? rr.y + rr.h + 8 : y;
-        }
-    }
-    return y;
-}
-
-/**
- * @brief Plans the notes and the message of the tab shown: the notes from
- *        the rows down, the message's lines under them at the foot.  A note
- *        that does not fit above the message is not drawn.
- * @param p the plan
- */
-static void plan(plan_t *p)
-{
-    int msg_rows = 0;
-    int n;
-    int y;
-
-    memset(p, 0, sizeof(*p));
-    if (hp.tabs.selected == HITEC_PANEL_SERVO) {
-        servo_notes(p);
-    } else {
-        value_notes(p);
-    }
-    n = hitec_panel_message_lines(hitec_prog_message(&hp.prog), p->msg);
-    /* A message line that says what a note says is said once; the
-     * message's other lines stay, in their order. */
+    s_txt.lines = 0;
+    s_txt.bottom[0] = '\0';
     for (int i = 0; i < n; ++i) {
         bool said = false;
 
-        for (int j = 0; j < p->count; ++j) {
-            said = said || strcmp(p->msg[i], p->n[j].s) == 0;
+        for (int j = 0; j < hp.f.view.notes; ++j) {
+            said = said || strcmp(lines[i], hp.f.view.note[j]) == 0;
         }
-        if (!said) {
-            memmove(p->msg[p->lines++], p->msg[i], sizeof(p->msg[0]));
-        }
-    }
-    for (int i = 0; i < p->lines; ++i) {
-        msg_rows += hitec_panel_text_rows(p->msg[i]);
-    }
-    p->top = rows_foot();
-    p->msg_y = hpn_notes_foot() - msg_rows * HP_LINE_H;
-    y = p->top;
-    for (int i = 0; i < p->count; ++i) {
-        const int rows = hitec_panel_text_rows(p->n[i].s);
-
-        if (y + rows * HP_LINE_H > p->msg_y) {
-            p->y[i] = -1;
+        if (said) {
             continue;
         }
-        p->y[i] = y;
-        y += rows * HP_LINE_H;
+        memcpy(s_txt.msg[s_txt.lines++], lines[i], sizeof(lines[i]));
+        at += (size_t)snprintf(s_txt.bottom + at, sizeof(s_txt.bottom) - at,
+                               "%s%s", at > 0u ? "\n" : "", lines[i]);
+        at = at < sizeof(s_txt.bottom) ? at : sizeof(s_txt.bottom) - 1u;
     }
-    p->foot = msg_rows > 0 ? hpn_notes_foot() : y;
-}
-
-/**
- * @brief Draws the notes and the message of the tab shown.
- * @param c the canvas
- */
-static void draw_notes(gfx_canvas_t *c)
-{
-    plan_t *p = &s_plan;
-    const hitec_prog_msg_t *m = hitec_prog_message(&hp.prog);
-    int y;
-
-    plan(p);
-    for (int i = 0; i < p->count; ++i) {
-        if (p->y[i] >= 0) {
-            (void)hpn_text_rows(c, hp.area.x + 10, p->y[i], p->n[i].s,
-                                p->n[i].color);
-        }
+    if (s_txt.loop && m->level != HITEC_PROG_WARN
+        && m->level != HITEC_PROG_DANGER) {
+        s_txt.lines = 0;
+        return;
     }
-    y = p->msg_y;
-    for (int i = 0; i < p->lines; ++i) {
-        y = hpn_text_rows(c, hp.area.x + 10, y, p->msg[i],
-                          level_color(m->level));
-    }
-}
-
-const char *hitec_panel_note(int i)
-{
-    plan(&s_plan);
-    for (int j = 0; j < s_plan.count; ++j) {
-        if (s_plan.y[j] >= 0 && i-- == 0) {
-            return s_plan.n[j].s;
-        }
-    }
-    return i >= 0 && i < s_plan.lines ? s_plan.msg[i] : NULL;
-}
-
-gfx_rect_t hitec_panel_notes_drawn(void)
-{
-    /* Every tab has a note or a message: a value tab with no note is a
-     * classic INFO tab after a read, and a read leaves its message. */
-    plan(&s_plan);
-    return (gfx_rect_t){ hp.area.x, (int16_t)s_plan.top, hp.area.w,
-                         (int16_t)(s_plan.foot - s_plan.top) };
-}
-
-/**
- * @brief A button of the overlay in HP_FONT.
- * @param c       the canvas
- * @param r       the button
- * @param label   its label
- * @param fill    its colour
- * @param pressed lightens the fill
- * @param enabled false dims it
- */
-static void button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
-                   gfx_color_t fill, bool pressed, bool enabled)
-{
-    ui_button_font(c, r, label, fill, pressed, enabled, HP_FONT);
-}
-
-/**
- * @brief Draws the PORT row's label: the port, the pin and the series over
- *        the receive mode and the supply, in the warning colour with no pin.
- * @param c  the canvas
- * @param rr the row
- */
-static void draw_port_label(gfx_canvas_t *c, gfx_rect_t rr)
-{
-    const gfx_color_t col = hpn_port_unbound() ? ui_theme_color(UI_C_WARN)
-                                               : ui_theme_color(UI_C_TEXT);
-    char line[HITEC_PANEL_LINE];
-
-    if (hpn_port_line(0, line, sizeof(line))) {
-        gfx_text(c, rr.x, rr.y + 4, line, HP_FONT, col, 1);
-    }
-    if (hpn_port_line(1, line, sizeof(line))) {
-        gfx_text(c, rr.x, rr.y + 4 + HP_LINE_H, line, HP_FONT,
-                 ui_theme_color(UI_C_TEXT_DIM), 1);
+    if (s_txt.lines > 0) {
+        hp.f.view.bottom = s_txt.bottom;
+        hp.f.view.bottom_level = msg_level(m->level);
     }
 }
 
@@ -403,15 +309,13 @@ static void draw_port_label(gfx_canvas_t *c, gfx_rect_t rr)
  * @brief The PORT button's fill by the programmer's state: CONNECT green,
  *        ABORT and LEAVE red while the port is the programmer's, WAIT
  *        amber while it is let go, RELEASE neutral.
- * @return the colour
+ * @return the sprog_fill_t
  */
-static gfx_color_t port_fill(void)
+static uint8_t port_fill(void)
 {
-    const hitec_prog_state_t st = hitec_prog_state(&hp.prog);
-
-    switch (st) {
+    switch (hitec_prog_state(&hp.prog)) {
     case HITEC_PROG_PWM:
-        return ui_action_fill(UI_ACTION_AVAILABLE);
+        return SPROG_F_GO;
     case HITEC_PROG_HELD:
     case HITEC_PROG_OPENING:
     case HITEC_PROG_ENTERING:
@@ -419,130 +323,212 @@ static gfx_color_t port_fill(void)
     case HITEC_PROG_RECORDING:
     case HITEC_PROG_BACKUP:
     case HITEC_PROG_WRITING:
-        return ui_action_fill(UI_ACTION_ACTIVE);
+        return SPROG_F_ACTIVE;
     case HITEC_PROG_CLEARING:
     case HITEC_PROG_LEAVING:
     case HITEC_PROG_RELEASING:
     case HITEC_PROG_MOVING:
-        return ui_action_fill(UI_ACTION_WAITING);
+        return SPROG_F_WAITING;
     default:
-        return ui_theme_color(UI_C_PANEL_SUNK);
+        return SPROG_F_SUNK;
     }
 }
 
 /**
- * @brief Draws row @p i: its label and its control.
- * @param c the canvas
- * @param i the row's index
+ * @brief The head: the port, its pin and the series over the receive mode
+ *        and the supply, in the warning colour with no pin; CONNECT green,
+ *        a 2s hold fading to the red of a held port.
+ * @param cl its cell
  */
-static void draw_row(gfx_canvas_t *c, int i)
+static void head_cell(sprog_cell_t *cl)
 {
-    const hpn_row_t *r = &hpn_rows[i];
-    const gfx_rect_t rr = hpn_row_rect(r);
-    const gfx_rect_t vr = hpn_value_rect(r);
-    const bool live = hpn_row_live(r);
-    const bool pressed = hp.have && (hp.pressed == P_ROW
-                                     || hp.pressed == P_CONNECT
-                                     || hp.pressed == P_WRITE)
-                         && hp.row == i;
-    char v[HITEC_PANEL_LINE];
+    hp.f.view.head[0] = hpn_port_line(0, s_txt.head[0],
+                                      sizeof(s_txt.head[0]))
+                            ? s_txt.head[0] : NULL;
+    hp.f.view.head[1] = hpn_port_line(1, s_txt.head[1],
+                                      sizeof(s_txt.head[1]))
+                            ? s_txt.head[1] : NULL;
+    hp.f.view.head_warn = hpn_port_unbound();
+    hp.f.view.port_pick = hpn_port_pick_row() != NULL;
+    cl->fill = port_fill();
+    cl->fill_to = SPROG_F_ACTIVE;
+    if (cl->press != SPROG_P_OFF && hpn_switches_supply()
+        && hitec_prog_state(&hp.prog) == HITEC_PROG_PWM) {
+        cl->press = SPROG_P_HOLD;
+        cl->hint = TX_HOLD_HINT_CONNECT;
+    }
+}
+
+/**
+ * @brief An action's cell: its fill and how it takes a press.
+ * @param r  the row
+ * @param cl its cell
+ */
+static void act_cell(const hpn_row_t *r, sprog_cell_t *cl)
+{
+    const hitec_prog_t *p = &hp.prog;
+    const int side = hitec_prog_find_side(p);
+
+    switch (r->what) {
+    case A_PORT:
+        head_cell(cl);
+        break;
+    case A_MOVE:
+        /* Red while it drives the horn, amber while it ends. */
+        cl->fill = hitec_prog_move_on(p) ? SPROG_F_ACTIVE
+                   : hitec_prog_state(p) == HITEC_PROG_MOVING
+                       ? SPROG_F_WAITING : SPROG_F_GO;
+        cl->look = SPROG_L_LABEL_DIM;
+        if (hitec_prog_move_on(p)) {
+            cl->press = SPROG_P_STOP;
+        }
+        break;
+    case A_WRITE:
+        /* Green fading to the amber of the write's steps. */
+        cl->fill = SPROG_F_GO;
+        cl->fill_to = SPROG_F_WAITING;
+        if (cl->press != SPROG_P_OFF) {
+            cl->press = SPROG_P_HOLD;
+            cl->hint = TX_HOLD_HINT_WRITE;
+        }
+        break;
+    case A_CLEAR:
+        cl->fill = cl->press != SPROG_P_OFF ? SPROG_F_WARN : SPROG_F_SUNK;
+        break;
+    case A_FIND:
+        /* LEFT END and RIGHT END; the side that searches in warn. */
+        snprintf(cl->value, sizeof(cl->value), "%s", TR(HP_END_L));
+        cl->value2 = TR(HP_END_R);
+        cl->fill = side == (int)HITEC_FIND_LEFT ? SPROG_F_WARN : SPROG_F_SUNK;
+        cl->fill2 = side == (int)HITEC_FIND_RIGHT ? SPROG_F_WARN
+                                                  : SPROG_F_SUNK;
+        cl->press = !hpn_find_live(false) ? SPROG_P_OFF
+                    : side == (int)HITEC_FIND_LEFT ? SPROG_P_STOP
+                                                   : SPROG_P_TAP;
+        cl->press2 = !hpn_find_live(true) ? SPROG_P_OFF
+                     : side == (int)HITEC_FIND_RIGHT ? SPROG_P_STOP
+                                                     : SPROG_P_TAP;
+        cl->look = SPROG_L_LABEL_DIM;
+        break;
+    default:
+        break;
+    }
+}
+
+/**
+ * @brief Cell @p i of the tab shown: its label, its text, its fill and
+ *        how it takes a press.
+ * @param i the cell
+ */
+static void fill_cell(int i)
+{
+    const hpn_row_t *r = &hpn_rows[hp.f.cell_row[i]];
+    sprog_cell_t *cl = &hp.f.view.cell[i];
     bool warn = false;
 
-    if (r->kind == K_ACT && r->what == A_PORT) {
-        draw_port_label(c, rr);
-    } else {
-        /* The position MOVE SERVO's horn follows: its label in the
-         * accent colour. */
-        const bool follows = hpn_stepped(r)
-                             && hp.prog.mv.follow == r->what;
-
-        gfx_text(c, rr.x, rr.y + (HP_ROW_H - HP_LINE_H) / 2, hpn_label(r),
-                 HP_FONT, ui_theme_color(follows ? UI_C_ACCENT
-                                                 : UI_C_TEXT_DIM), 1);
-    }
-    if (r->kind == K_ACT && r->what == A_FIND) {
-        hpn_find_draw(c, r, i);
+    if (cl->kind == SPROG_K_GAP) {
         return;
     }
-    hpn_value_text(r, v, sizeof(v), &warn);
+    cl->label = hpn_label(r);
+    hpn_value_text(r, cl->value, sizeof(cl->value), &warn);
+    cl->press = hpn_row_live(r) ? SPROG_P_TAP : SPROG_P_OFF;
     if (r->kind == K_ACT) {
-        gfx_color_t fill = ui_theme_color(UI_C_PANEL_SUNK);
-
-        /* The buttons that start a port action: green while a press
-         * starts it, red while it drives the port (ABORT, LEAVE or MOVE
-         * SERVO on), amber while the port is let go. */
-        if (r->what == A_PORT) {
-            /* CONNECT is a 2s hold: green fading to the red of a held
-             * port, flashing as it connects. */
-            ui_hold_button(c, vr, v, port_fill(),
-                           ui_action_fill(UI_ACTION_ACTIVE), &hp.conn,
-                           pressed, live, HP_FONT);
-            return;
-        } else if (r->what == A_MOVE) {
-            fill = ui_action_fill(
-                hitec_prog_move_on(&hp.prog) ? UI_ACTION_ACTIVE
-                : hitec_prog_state(&hp.prog) == HITEC_PROG_MOVING
-                    ? UI_ACTION_WAITING : UI_ACTION_AVAILABLE);
-        } else if (r->what == A_WRITE) {
-            /* WRITE n VALUES is a 2s hold: green fading to the amber of
-             * the write's steps, flashing as it fires. */
-            ui_hold_button(c, vr, v, ui_action_fill(UI_ACTION_AVAILABLE),
-                           ui_action_fill(UI_ACTION_WAITING), &hp.wr,
-                           pressed, live, HP_FONT);
-            return;
-        } else if (r->what == A_CLEAR && live) {
-            fill = ui_theme_color(UI_C_WARN);
-        }
-        button(c, vr, v, fill, pressed, live);
+        act_cell(r, cl);
         return;
     }
-    /* A value the draft changes: the accent fill beside its `*`. */
-    gfx_fill_round_rect(c, vr.x, vr.y, vr.w, vr.h, UI_R_CTL,
-                        hpn_row_edited(r) ? ui_theme_color(UI_C_ACCENT)
-                        : pressed         ? ui_theme_color(UI_C_PANEL)
-                                          : ui_theme_color(UI_C_PANEL_SUNK));
-    gfx_text_in(c, vr, v, HP_FONT,
-                warn ? ui_theme_color(UI_C_WARN) : ui_theme_color(UI_C_TEXT),
-                1, GFX_ALIGN_CENTER);
-    if (hpn_stepped(r)) {
-        hpn_step_draw(c, r, i);
+    /* A value: flat, its label dim; the accent fill beside its `*` where
+     * the draft changes it, the position MOVE SERVO's horn follows with
+     * its label in the accent. */
+    cl->fill = hpn_row_edited(r) ? SPROG_F_ACCENT : SPROG_F_SUNK;
+    cl->look = SPROG_L_FLAT | SPROG_L_LABEL_DIM
+               | (warn ? SPROG_L_INK_WARN : 0u)
+               | (cl->kind == SPROG_K_STEP && hp.prog.mv.follow == r->what
+                      ? SPROG_L_LABEL_ACCENT : 0u);
+}
+
+void hpn_view(void)
+{
+    s_txt.loop = false;
+    hpn_place();
+    for (int i = 0; i < hp.f.cells; ++i) {
+        fill_cell(i);
     }
+    if (sprog_tab(&hp.f) == HITEC_PANEL_SERVO) {
+        servo_notes();
+    } else {
+        value_notes();
+    }
+    bottom_line();
+}
+
+const char *hitec_panel_note(int i)
+{
+    hpn_view();
+    if (i >= 0 && i < hp.f.view.notes) {
+        return hp.f.view.note[i];
+    }
+    i -= hp.f.view.notes;
+    return i >= 0 && i < s_txt.lines ? s_txt.msg[i] : NULL;
+}
+
+gfx_rect_t hitec_panel_notes_drawn(void)
+{
+    const int top = hp.area.y + HP_ROW0;
+    int y;
+
+    hpn_view();
+    y = top + hp.f.lines * HP_PITCH;
+    if (hp.f.view.notes == 0 && hp.f.view.bottom == NULL) {
+        return (gfx_rect_t){ 0, 0, 0, 0 };
+    }
+    return (gfx_rect_t){ hp.area.x, (int16_t)y, hp.area.w,
+                         (int16_t)(hpn_foot() - y) };
 }
 
 /**
- * @brief Draws the tab shown: the tabs, its rows and its notes.
- * @param c the canvas
+ * @brief The press and the hold of the overlay as the frame draws them:
+ *        the row, list entry or key the finger holds, and CONNECT's or
+ *        WRITE n VALUES' hold while it runs or flashes.
+ * @return the hold the frame draws, to take back after the draw; NULL
  */
-static void draw_tab(gfx_canvas_t *c)
+static ui_hold_t *press_to_frame(void)
 {
-    ui_tabs_render(&hp.tabs, c);
-    for (int i = 0; i < HP_ROW_COUNT; ++i) {
-        if (hpn_rows[i].page == hp.tabs.selected && hpn_row_shown(&hpn_rows[i])) {
-            draw_row(c, i);
-        }
-    }
-    draw_notes(c);
-}
+    sprog_t *f = &hp.f;
+    ui_hold_t *h = NULL;
 
-/**
- * @brief Draws the list: its title, its entries and CANCEL.
- * @param c the canvas
- */
-static void draw_choice(gfx_canvas_t *c)
-{
-    gfx_text(c, hp.area.x + 10, hp.area.y + 14, hp.ch.title, HP_FONT,
-             ui_theme_color(UI_C_TEXT), 1);
-    for (int i = 0; i < hp.ch.count; ++i) {
-        const bool current = hp.ch.values[i] == hp.ch.current;
-
-        button(c, hitec_panel_choice_rect(i), hp.ch.labels[i],
-               current ? ui_theme_color(UI_C_ACCENT)
-                       : ui_theme_color(UI_C_PANEL_SUNK),
-               hp.have && hp.pressed == P_CHOICE && hp.row == i, true);
+    f->have = hp.have;
+    f->id = hp.id;
+    f->row = (int16_t)hp.row;
+    f->key = (int16_t)(hp.pressed == P_ROW && hp.row >= 0
+                               && hpn_rows[hp.row].kind == K_ACT
+                               && hpn_rows[hp.row].what == A_FIND
+                               && hp.find_right
+                           ? 1 : 0);
+    switch (hp.pressed) {
+    case P_ROW:           f->on = SPROG_ON_ROW;         break;
+    case P_CONNECT:
+    case P_WRITE:         f->on = SPROG_ON_HOLD;        break;
+    case P_PLUS:          f->on = SPROG_ON_PLUS;        break;
+    case P_MINUS:         f->on = SPROG_ON_MINUS;       break;
+    case P_CHOICE:        f->on = SPROG_ON_LIST;        break;
+    case P_CHOICE_CANCEL: f->on = SPROG_ON_LIST_CANCEL; break;
+    case P_TAB:           f->on = SPROG_ON_TAB;         break;
+    default:              f->on = SPROG_ON_NONE;        break;
     }
-    button(c, hitec_panel_choice_cancel_rect(), TR(CANCEL),
-           ui_theme_color(UI_C_PANEL_SUNK),
-           hp.have && hp.pressed == P_CHOICE_CANCEL, true);
+    f->hold_row = -1;
+    if (hp.conn.down || ui_hold_flashing(&hp.conn)) {
+        h = &hp.conn;
+        f->hold_row = 0;            /* PORT, hpn_rows[0] */
+    } else if (hp.wr.down || ui_hold_flashing(&hp.wr)) {
+        const hpn_row_t *w = hpn_row_at(HITEC_PANEL_SERVO, 3, 1);
+
+        h = w != NULL ? &hp.wr : NULL;
+        f->hold_row = w != NULL ? (int16_t)(w - hpn_rows) : -1;
+    }
+    if (h != NULL) {
+        f->hold = *h;
+    }
+    return h;
 }
 
 /**
@@ -592,9 +578,9 @@ static void draw_hold(gfx_canvas_t *c)
     }
     draw_apply(c);
     /* BACK on the LEAVE page that lists unwritten edits: they stay. */
-    button(c, hitec_panel_cancel_rect(), hitec_panel_cancel_label(),
-           ui_theme_color(UI_C_PANEL_SUNK), hp.have && hp.pressed == P_CANCEL,
-           true);
+    ui_button_font(c, hitec_panel_cancel_rect(), hitec_panel_cancel_label(),
+                   ui_theme_color(UI_C_PANEL_SUNK),
+                   hp.have && hp.pressed == P_CANCEL, true, HP_FONT);
 }
 
 /**
@@ -605,6 +591,7 @@ static void draw_hold(gfx_canvas_t *c)
 static void render_body(gfx_canvas_t *c)
 {
     const gfx_rect_t a = hp.area;
+    ui_hold_t *h;
 
     if (hp.kp.open) {
         ui_keypad_render(&hp.kp, c);
@@ -614,17 +601,18 @@ static void render_body(gfx_canvas_t *c)
         ui_textkey_render(&hp.tk, c);
         return;
     }
-    gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_PANEL));
     if (hp.page.open) {
+        gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_PANEL));
         draw_hold(c);
         return;
     }
-    gfx_draw_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_ACCENT));
-    if (hp.ch.open) {
-        draw_choice(c);
-        return;
+    /* The tab or the list, drawn by the frame from the view. */
+    hpn_view();
+    h = press_to_frame();
+    sprog_render(&hp.f, c);
+    if (h != NULL) {
+        *h = hp.f.hold;             /* where the hold was drawn */
     }
-    draw_tab(c);
 }
 
 void hitec_panel_render(gfx_canvas_t *c)

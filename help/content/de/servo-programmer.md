@@ -133,6 +133,13 @@ Der Typ gilt für die Sitzung und wird in Dateien mitgespeichert. Laden erforder
 ![Die Liste TYP](view:servo-kst-type)
 ![Ein gesetzter Typ](view:servo-kst-type-set)
 
+Der Reiter SERVO von HITEC hat dieselbe Reihenfolge. Der Kopf nennt den Port, seinen GPIO und die Serie über der Empfangsart und der Versorgung, `PROG-PORT 1 GPIO 13  D-SERIE` und `RX PULL-UP  5.0V 1000mA`, neben der 260px breiten Taste VERBINDEN. Darunter steht ALLES AUSLESEN mit der Beschriftung SERVO; das ausgelesene Modell steht in der Zeile SERVO der Karte BEREIT und in der untersten Zeile. Neben ALLES AUSLESEN steht vor VERBINDEN SERIE, solange die Sitzung den Port hält NACH STOP mit AUFHEBEN. Es folgen DATEIEN und WEITERES, dann ZURÜCKSPIELEN und n WERTE SCHREIBEN. DATEIEN nimmt einen Druck an, solange der Port gehalten ist.
+
+![Der Reiter SERVO von HITEC vor VERBINDEN](view:servo-hitec)
+![Ein ausgelesenes D485HW](view:servo-hitec-read)
+
+Die Hinweise stehen unter den Zeilen, die letzte Meldung oder die Zeile des Servos ganz unten. Brauchen die Hinweise mehr Platz, als der Reiter hat, blättern sie: `1/2` steht über der untersten Zeile, ein Tipp auf die Hinweise zeigt die nächste Seite. Jeder Werte-Reiter schließt seine Hinweise mit `Tippe zum Ändern auf einen Wert. * markiert Änderungen. n WERTE SCHREIBEN schreibt sie.`, solange die Werte eine Änderung annehmen. Eine Liste mit mehr als 5 Einträgen, auch DATEIEN mit seinen Dateien, steht zu zweit in einer Zeile.
+
 ![Ein Servo unbekannter Belegung: nur lesen](view:servo-kst-readonly)
 
 Passt die Registerbelegung nicht zum bekannten Layout, bleibt das Servo schreibgeschützt: `Nur Auslesen möglich. Dieser Servotyp ist unbekannt.`

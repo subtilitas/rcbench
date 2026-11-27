@@ -50,7 +50,7 @@ void hpn_close_editors(void)
     ui_keypad_close(&hp.kp);
     ui_textkey_close(&hp.tk);
     hp.kp_what = KP_NONE;
-    hp.ch.open = false;
+    hp.f.list.open = false;
     hp.page.open = false;
     hp.page.down = false;
     ui_hold_spend(&hp.page.hold);      /* a flash under way runs on */
@@ -63,11 +63,13 @@ void hpn_close_editors(void)
  */
 void hpn_choice_open(int kind, const char *title)
 {
-    hp.ch.open = true;
-    hp.ch.kind = kind;
-    hp.ch.count = 0;
-    hp.ch.current = INT_MIN;
-    snprintf(hp.ch.title, sizeof(hp.ch.title), "%s", title);
+    /* The frame's list, filled here: its rule places the entries. */
+    hp.f.list.open = true;
+    hp.f.list.files = kind == C_FILES;
+    hp.f.list.what = (int16_t)kind;
+    hp.f.list.count = 0;
+    hp.f.list.current = SPROG_NO_VALUE;
+    snprintf(hp.f.list.title, sizeof(hp.f.list.title), "%s", title);
 }
 
 /**
@@ -77,10 +79,12 @@ void hpn_choice_open(int kind, const char *title)
  */
 void hpn_choice_add(const char *label, int value)
 {
-    if (hp.ch.count < HP_CHOICE_MAX) {
-        snprintf(hp.ch.labels[hp.ch.count], sizeof(hp.ch.labels[0]), "%s",
-                 label);
-        hp.ch.values[hp.ch.count++] = value;
+    if (hp.f.list.count < HP_CHOICE_MAX) {
+        /* The frame's 63 bytes: a label longer is cut. */
+        snprintf(hp.f.list.label[hp.f.list.count],
+                 sizeof(hp.f.list.label[0]), "%.*s",
+                 (int)(sizeof(hp.f.list.label[0]) - 1u), label);
+        hp.f.list.value[hp.f.list.count++] = value;
     }
 }
 
@@ -156,7 +160,7 @@ static void value_list(const char *title, const hitec_param_info_t *info,
     char label[HITEC_PANEL_LINE];
 
     hpn_choice_open(C_VALUE, title);
-    hp.ch.current = now != INT32_MIN ? (int)now : INT_MIN;
+    hp.f.list.current = now;
     for (int32_t v = info->min; v <= info->max; v += info->step) {
         hpn_fmt_param(hp.ed_id, v, label, sizeof(label));
         hpn_choice_add(label, (int)v);
@@ -191,10 +195,10 @@ static void editor_for(const hpn_row_t *r, const hitec_param_info_t *info,
         break;
     case HITEC_UNIT_FS_US:
         hpn_choice_open(C_VALUE, title);
-        hp.ch.current = now == HITEC_FS_OFF || now == HITEC_FS_LIMP
+        hp.f.list.current = now == HITEC_FS_OFF || now == HITEC_FS_LIMP
                             ? (int)now
                         : now != INT32_MIN ? HP_FS_POSITION
-                                           : INT_MIN;
+                                           : SPROG_NO_VALUE;
         hpn_choice_add(TR(OFF), HITEC_FS_OFF);
         hpn_choice_add(TR(HP_FS_LIMP), HITEC_FS_LIMP);
         hpn_choice_add(TR(HP_POSITION), HP_FS_POSITION);
@@ -548,7 +552,7 @@ static void rx_open(const hitec_prog_t *p)
     const uint8_t mark = p->f.rx_mark;
 
     hpn_choice_open(C_RX, ui_setting_label(SET_HITEC_RX));
-    hp.ch.current = settings_get_int(SET_HITEC_RX);
+    hp.f.list.current = settings_get_int(SET_HITEC_RX);
     hpn_choice_add(ui_setting_help(SET_HITEC_RX), (int)LINK_HITEC_RX_PULL_UP);
     hpn_choice_add(TR(SET_HITEC_RX_PRE), (int)LINK_HITEC_RX_PRECHARGE);
     if (mark == (uint8_t)HITEC_RX_LINK_OLD) {
@@ -614,7 +618,7 @@ void hpn_act(const hpn_row_t *r)
         break;
     case A_SERIES:
         hpn_choice_open(C_SERIES, TR(HP_SERIES));
-        hp.ch.current = (int)hitec_prog_series(p);
+        hp.f.list.current = (int)hitec_prog_series(p);
         hpn_choice_add(TR(HP_SERIES_D), (int)HITEC_D);
         snprintf(label, sizeof(label), "%s  %s", TR(HP_SERIES_C),
                  TR(HP_SERIES_C_HELP));
@@ -712,7 +716,7 @@ const hpn_row_t *hpn_port_pick_row(void)
         const hpn_row_t *r = &hpn_rows[i];
 
         if (r->kind == K_ACT && r->what == A_PORT
-            && r->page == hp.tabs.selected && hpn_row_shown(r)) {
+            && r->page == hp.f.tabs.selected && hpn_row_shown(r)) {
             return r;
         }
     }
@@ -727,7 +731,7 @@ void hpn_port_list(void)
         return;                 /* the state line says why */
     }
     hpn_choice_open(C_PORT, TR(PC_TITLE));
-    hp.ch.current = (int)prog_choice_port();
+    hp.f.list.current = (int)prog_choice_port();
     for (uint8_t port = 1u; port <= LINK_PG_PORTS_MAX; ++port) {
         /* A port an output's slice holds says so in its entry. */
         if (!prog_choice_refusal(port, label, sizeof(label))) {
@@ -740,9 +744,9 @@ void hpn_port_list(void)
 void hpn_choice_done(int value)
 {
     hitec_prog_t *p = &hp.prog;
-    const int kind = hp.ch.kind;
+    const int kind = hp.f.list.what;
 
-    hp.ch.open = false;
+    hp.f.list.open = false;
     if (kind == C_PORT) {
         (void)prog_choice_pick((uint8_t)value);
     } else if (kind == C_SERIES) {

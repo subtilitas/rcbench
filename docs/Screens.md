@@ -404,7 +404,7 @@ on the left card decides the first pages:
 | SERVO RUDDER | LENGTH, the drive buttons, ZERO, RESET MAX and, without a knob that answers, -10us and +10us (4 or 5); DEFLECTION, TRAILING EDGE and the state lines (3) |
 | SERVO RUDDER AUTO | the targets, MARGIN and TOLERANCE, ZERO and GRAPH after a run (3 or 4); DEFLECTION and TRAILING EDGE (2); PORT, READY, the rail line, ARM + START and OPTIONS (5) |
 | SERVO LIVE, SWEEP and RUDDER, SAFE | PORT, READY, the rail line, ARM and OPTIONS (5); SET V, the plot, SPEED, the type and the buttons on LIVE and SWEEP (5), SET V, the plot, the type and the side view on RUDDER (4); SET V not on the rbmod carrier's programming port |
-| SERVO KST and HITEC, SERVO tab | the tabs, CONNECT, READ ALL and TYPE on KST, SERIES (FILES while the port is held) and READ ALL on HITEC, the notes (5); FILES and MORE on KST, MORE and AFTER STOP on HITEC, RESTORE, WRITE n VALUES (4); PORT, READY, the rail line, WRITE and OPTIONS (5) |
+| SERVO KST and HITEC, SERVO tab | the tabs, CONNECT, READ ALL, the slot beside it (TYPE on KST, SERIES on HITEC, AFTER STOP while HITEC holds the port), the notes (5); FILES, MORE, RESTORE, WRITE n VALUES (4); PORT, READY, the rail line, WRITE and OPTIONS (5) |
 | SERVO KST and HITEC, another tab | the tabs, the tab's first value, its `-` and `+` on a stepped KST row, MOVE SERVO on HITEC's D series TRAVEL, the notes (2 to 4); PORT, READY, the rail line, WRITE and OPTIONS (5) |
 | SERVO's lists (the hub, SWEEP, RUDDER, RUDDER AUTO, HITEC) | as a settings list |
 | SUPPLY LIVE | PLOT and TABLE, VOLTAGE and CURRENT LIMIT (3) |
@@ -2772,18 +2772,22 @@ the same frame: five tabs (SERVO, MOTION, TRAVEL, PROTECT, INFO) of
 and 180 x 56px CANCEL, on LEAVE PROGRAMMING with unwritten edits a
 380 x 56px hold button and BACK.
 
-It reads the servo and writes edited values back. Tap a writable value to
-open a list of up to 6 entries or the keypad. WRITE n VALUES, 220px wide,
-writes after a 2s hold. Set SERIES to
-D SERIES or CLASSIC before CONNECT. PORT shows the port, GPIO, series,
-receive mode and the supply CONNECT will set.
+It draws through the servo programmer frame with KST's SERVO tab order:
+the head, which shows the port, GPIO, series, receive mode and the supply
+CONNECT will set beside the 260px CONNECT button; SERVO: READ ALL beside
+SERIES (D SERIES or CLASSIC, set before CONNECT), or AFTER STOP while the
+port is held; FILES and MORE; RESTORE and WRITE n VALUES, 220px wide, which
+writes after a 2s hold. It reads the servo and writes edited values back.
+Tap a writable value to open a list of up to 7 entries, over 5 two to a
+line, or the keypad. Notes flow from 8px under the rows; notes that need
+more room turn over with `1/2` and a tap.
 
 While the port is held, ARM and the supply controls follow the same rules
 as the KST programmer, including the carrier's separate 5V. Pressing a
 locked supply control shows
 `Servo programming holds the supply: set points and ON are locked.`
-FILES replaces SERIES and opens `BENCH/HITEC/CONF`, with 5 files per page
-below the save entry. A new name uses the keyboard; files for another
+FILES takes a press while the port is held and opens `BENCH/HITEC/CONF`,
+with 5 files per page, two to a line, below the save entry. A new name uses the keyboard; files for another
 model or beyond a soft rule open CHECK THIS FILE.
 
 RESTORE writes the session backup back; where the bench cannot check that

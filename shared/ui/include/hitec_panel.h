@@ -95,10 +95,10 @@ void hitec_panel_back(void);
  */
 bool hitec_panel_holds_port(void);
 /**
- * @brief Whether the SERVO tab's second row shows FILES, not SERIES:
- *        FILES once this panel's CONNECT opened the port, SERIES until
- *        then, a request on its way included.
- * @return true while FILES shows
+ * @brief Whether this panel's CONNECT opened the port: FILES takes a
+ *        press and AFTER STOP stands beside READ ALL; SERIES stands there
+ *        until then, a request on its way included.
+ * @return true while the port is this panel's
  */
 bool hitec_panel_files_shown(void);
 /**
@@ -334,23 +334,23 @@ const char *hitec_panel_value(int page, int row, int col);
  */
 bool hitec_panel_row_live(int page, int row, int col);
 /**
- * @brief Line @p i of the PORT row's label: 0 the port, the pin and the
+ * @brief Line @p i of the SERVO tab's head: 0 the port, the pin and the
  *        series, 1 the receive mode and the supply CONNECT asks.
  * @param i the line
  * @return the line; NULL past the last
  */
 const char *hitec_panel_port_line(int i);
 /**
- * @brief The note lines of the tab shown, from the top, the message's
- *        lines after them.
+ * @brief The notes of the tab shown, every page of them, from the top,
+ *        then the bottom line's message lines.
  * @param i the line
  * @return the line; NULL past the last
  */
 const char *hitec_panel_note(int i);
 /**
- * @brief The rows the notes and the message of the tab shown take, from
- *        the first note's top to the last line's foot.
- * @return the rectangle; 0 high when nothing is drawn
+ * @brief Where the notes and the bottom line of the tab shown stand: from
+ *        8px under the last line of rows to the foot.
+ * @return the rectangle; empty when neither is drawn
  */
 gfx_rect_t hitec_panel_notes_drawn(void);
 /**
@@ -380,7 +380,8 @@ int hitec_panel_editor(void);
  */
 int hitec_panel_page(void);
 /**
- * @brief Entry @p i of the open list, 48px tall at a 56px pitch.
+ * @brief Entry @p i of the open list, 48px tall at a 56px pitch: up to 5
+ *        one to a line, more two to a line (sprog_list_rect()).
  * @param i the entry
  * @return its rectangle
  */
