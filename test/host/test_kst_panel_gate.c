@@ -238,9 +238,16 @@ TEST_CASE(the_home_tag_under_the_hold_ends_it_with_the_leave_page)
     ticks(1.0f);
     kst_panel_back();
     CHECK_EQ(kst_panel_editor(), 3);
-    ticks(1.5f);
-    CHECK(!kst_panel_pressed());
+    {
+        /* The page took the press: its hold no longer counts, and its
+         * release taps nothing. */
+        const uint32_t held = kst_panel_hold_revision();
+
+        ticks(1.5f);
+        CHECK_EQ(kst_panel_hold_revision(), held);
+    }
     ev(cx(r), cy(r), TOUCH_EVENT_UP, 1);
+    CHECK(!kst_panel_pressed());
     rig_frames(50);
     CHECK_EQ(g_rig.sim.n_writes, 0);
     CHECK_EQ(kst_prog_changes(M), 3);

@@ -32,8 +32,7 @@
 #include "ui_textkey.h"
 #include "ui_widgets.h"
 
-/* Last: its layout macros have short names (ROW0, PITCH, ROW_H) and k
- * names the state, which no header included after it may meet. */
+/* Last: k names the state, which no header included after it may meet. */
 #include "kst_panel_int.h"
 
 /**
@@ -359,87 +358,12 @@ bool kpn_changed(kst_field_id_t id)
 
 /* --------------------------------------------------------------- wrapping */
 
-/** @brief The cells of KP_FONT a line of text has: the area less 10px on
- *         each side, 60 on SERVO's left card of 620px. */
-static int text_cells(void)
-{
-    return (k.area.w - 20) / KP_CELL;
-}
-
-/**
- * @brief The bytes of @p s its first row takes: all of it where it fits, else up
- * to the last space that leaves the row no wider than the line, and a word
- * longer than the line is cut.
- */
-static size_t row_len(const char *s)
-{
-    /* At least one cell: an area narrower than one, as before
-     * kst_panel_init(), still ends every row. */
-    const int cells = text_cells();
-    const size_t fit = gfx_text_prefix(s, cells > 0 ? cells : 1);
-    size_t cut = fit;
-
-    if (s[fit] == '\0' || s[fit] == ' ') {
-        return fit;
-    }
-    while (cut > 0u && s[cut] != ' ') {
-        --cut;
-    }
-    return cut > 0u ? cut : fit;
-}
-
-/**
- * @brief The start of the row after the one of @p len bytes at @p s.
- */
-static const char *next_row(const char *s, size_t len)
-{
-    s += len;
-    while (*s == ' ') {
-        ++s;
-    }
-    return s;
-}
-
 int kst_panel_text_rows(const char *s)
 {
-    int n = 0;
-
-    while (s != NULL && *s != '\0') {
-        s = next_row(s, row_len(s));
-        ++n;
-    }
-    return n;
-}
-
-/* @p s from @p y down, a row each LINE_H.  Returns the y under it. */
-int kpn_text_rows(gfx_canvas_t *c, int x, int y, const char *s,
-                     gfx_color_t color)
-{
-    while (*s != '\0') {
-        char row[KST_PANEL_LINE];
-        const size_t len = row_len(s);
-
-        snprintf(row, sizeof(row), "%.*s", (int)len, s);
-        gfx_text(c, x, y, row, KP_FONT, color, 1);
-        s = next_row(s, len);
-        y += LINE_H;
-    }
-    return y;
+    return sprog_text_rows(&k.f, s);
 }
 
 /* ----------------------------------------------------------------- geometry */
-
-gfx_rect_t kpn_tabs_rect(void)
-{
-    /* The row less 8px each side: the home tag is the way back. */
-    return (gfx_rect_t){ (int16_t)(k.area.x + 8), (int16_t)(k.area.y + TAB_Y),
-                         (int16_t)(k.area.w - 16), TAB_H };
-}
-
-int kpn_foot(void)
-{
-    return sprog_foot(&k.f);
-}
 
 /** @brief Row @p r's index, the frame's row. */
 static int row_no(const row_t *r)
@@ -447,17 +371,19 @@ static int row_no(const row_t *r)
     return (int)(r - kpn_rows);
 }
 
-gfx_rect_t kpn_row_rect(const row_t *r)
-{
-    return sprog_row_rect(&k.f, row_no(r));
-}
-
-gfx_rect_t kpn_value_rect(const row_t *r)
+/** @brief Row @p r's control, between a step's keys.
+ * @param r the row
+ * @return the rectangle */
+static gfx_rect_t kpn_value_rect(const row_t *r)
 {
     return sprog_value_rect(&k.f, row_no(r));
 }
 
-gfx_rect_t kpn_step_rect(const row_t *r, bool up)
+/** @brief Row @p r's + key (@p up) or - key.
+ * @param r the row
+ * @param up true for +
+ * @return the rectangle */
+static gfx_rect_t kpn_step_rect(const row_t *r, bool up)
 {
     return sprog_step_rect(&k.f, row_no(r), up);
 }
@@ -508,75 +434,27 @@ gfx_rect_t kst_panel_step_rect(int page, int row, bool up)
 
 gfx_rect_t kst_panel_choice_rect(int i)
 {
-    /* Under the title, 48px tall at a 56px pitch, ending 8px above
-     * CANCEL.  When one column does not hold them all -- the 7 entries of
-     * the fullest list, FILES, in an area 428px tall -- two to a row in
-     * columns 10px apart, in their order, and an entry whose label is
-     * wider than a column on a row of its own. */
-    const int top = k.area.y + 44;
-    const int fit = (kst_panel_choice_cancel_rect().y - 8 - top + 8) / PITCH;
-    const int per = (fit < 1) ? 1 : fit;
-    const int16_t fx = (int16_t)(k.area.x + 10);
-    const int16_t fw = (int16_t)(k.area.w - 20);
-    if (i < 0 || i >= k.ch.count) {
-        return (gfx_rect_t){ 0, 0, 0, 0 };
-    }
-    if (k.ch.count <= per) {
-        return (gfx_rect_t){ fx, (int16_t)(top + i * PITCH), fw, ROW_H };
-    }
-    const int cw = (k.area.w - 30) / 2;
-    int row = 0, col = 0;
-    for (int j = 0; j <= i; ++j) {
-        const bool wide =
-            gfx_text_width(KP_FONT, k.ch.labels[j], 1) > cw - 20;
-        if (wide && col != 0) {
-            ++row;              /* a wide entry starts a row of its own */
-            col = 0;
-        }
-        if (j == i) {
-            return wide ? (gfx_rect_t){ fx, (int16_t)(top + row * PITCH), fw,
-                                        ROW_H }
-                        : (gfx_rect_t){ (int16_t)(fx + col * (cw + 10)),
-                                        (int16_t)(top + row * PITCH),
-                                        (int16_t)cw, ROW_H };
-        }
-        if (wide || col == 1) {
-            ++row;
-            col = 0;
-        } else {
-            col = 1;
-        }
-    }
-    return (gfx_rect_t){ 0, 0, 0, 0 };
+    return sprog_list_rect(&k.f, i);
 }
 
 gfx_rect_t kst_panel_choice_cancel_rect(void)
 {
-    return (gfx_rect_t){ (int16_t)(k.area.x + k.area.w - 10 - 150),
-                         (int16_t)(kpn_foot() - UI_BTN_H), 150, UI_BTN_H };
+    return sprog_list_cancel_rect(&k.f);
 }
 
 gfx_rect_t kst_panel_apply_rect(void)
 {
-    /* HOLD 2s TO LEAVE WITHOUT WRITING takes the width up to 20px left
-     * of BACK: 380px on a card of 620px. */
-    const int w = k.warn.open && k.warn.drop ? k.area.w - 240 : 300;
-
-    return (gfx_rect_t){ (int16_t)(k.area.x + 20),
-                         (int16_t)(kpn_foot() - UI_BTN_H_TALL), (int16_t)w,
-                         UI_BTN_H_TALL };
+    return sprog_apply_rect(&k.f);
 }
 
 gfx_rect_t kst_panel_cancel_rect(void)
 {
-    return (gfx_rect_t){ (int16_t)(k.area.x + k.area.w - 20 - 180),
-                         (int16_t)(kpn_foot() - UI_BTN_H_TALL), 180,
-                         UI_BTN_H_TALL };
+    return sprog_page_cancel_rect(&k.f);
 }
 
 ui_keypad_t *kst_panel_keypad(void)
 {
-    return &k.kp;
+    return &k.f.kp;
 }
 
 /* A file name as a line shows it: whole up to KST_PANEL_NAME_TYPED
@@ -594,28 +472,33 @@ const char *kpn_shown(const char *name)
 
 ui_textkey_t *kst_panel_textkey(void)
 {
-    return &k.tk;
+    return &k.f.tk;
 }
 
 const char *kst_panel_warning_line(int i)
 {
-    return k.warn.open && i >= 0 && i < k.warn.count ? k.warn.lines[i] : NULL;
+    return k.f.page.open && i >= 0 && i < k.f.page.count ? k.f.page.line[i]
+                                                         : NULL;
 }
 
 const char *kst_panel_apply_label(void)
 {
-    return k.warn.open ? k.warn.apply : NULL;
+    return k.f.page.open ? k.f.page.apply : NULL;
 }
 
 const char *kst_panel_cancel_label(void)
 {
-    return !k.warn.open ? NULL : k.warn.drop ? TR(KP_BACK) : TR(CANCEL);
+    return k.f.page.open ? k.f.page.cancel : NULL;
 }
 
 int kst_panel_warning_level(int i)
 {
-    return k.warn.open && i >= 0 && i < k.warn.count ? (int)k.warn.level[i]
-                                                     : (int)KST_PROG_INFO;
+    if (!k.f.page.open || i < 0 || i >= k.f.page.count) {
+        return (int)KST_PROG_INFO;
+    }
+    return k.f.page.level[i] == SPROG_LV_DANGER ? (int)KST_PROG_DANGER
+         : k.f.page.level[i] == SPROG_LV_WARN   ? (int)KST_PROG_WARN
+                                                : (int)KST_PROG_INFO;
 }
 
 const char *kst_panel_label(int page, int row, int col)
@@ -627,12 +510,13 @@ const char *kst_panel_label(int page, int row, int col)
 
 const char *kst_panel_choice_title(void)
 {
-    return k.ch.open ? k.ch.title : NULL;
+    return k.f.list.open ? k.f.list.title : NULL;
 }
 
 const char *kst_panel_choice_label(int i)
 {
-    return k.ch.open && i >= 0 && i < k.ch.count ? k.ch.labels[i] : NULL;
+    return k.f.list.open && i >= 0 && i < k.f.list.count ? k.f.list.label[i]
+                                                         : NULL;
 }
 
 int kst_panel_page(void)
@@ -690,23 +574,17 @@ void kpn_mode_sync(void)
     /* An editor, a page or a press -- a held step key repeats -- may be
      * about a row that goes. */
     kpn_close_editors();
-    k.have = false;
-    k.pressed = P_NONE;
-    ui_hold_reset(&k.conn);
-    k.conn_due = false;
-    ui_hold_reset(&k.wr);
-    k.wr_due = false;
     k.expert = on;
     /* The frame builds its strip again, the tab shown kept where it is
-     * still there and SERVO otherwise. */
+     * still there and SERVO otherwise; its press ends and its holds go. */
     sprog_view_begin(&k.f, kpn_mask());
     ++k.rev;
 }
 
 int kst_panel_editor(void)
 {
-    return k.kp.open ? 1 : k.tk.open ? 4 : k.ch.open ? 2
-         : k.warn.open ? 3 : 0;
+    return k.f.kp.open ? 1 : k.f.tk.open ? 4 : k.f.list.open ? 2
+         : k.f.page.open ? 3 : 0;
 }
 
 /* --------------------------------------------------------------- the caller */
@@ -741,8 +619,6 @@ void kst_panel_init(gfx_rect_t area)
     k.expert = settings_get_bool(SET_KST_EXPERT);
     sprog_init(&k.f, &k_def, area);
     sprog_view_begin(&k.f, kpn_mask());
-    k.kp.pressed = -1;
-    k.tk.pressed = -1;
 }
 
 /**
@@ -770,8 +646,8 @@ void kst_panel_screen_entry(void)
 void kst_panel_open(void)
 {
     kpn_mode_sync();
-    if (!k.open) {
-        k.open = true;
+    if (!k.f.open) {
+        k.f.open = true;
         k.f.note_page = 0;
         /* The settings may have gone back to their defaults. */
         options_fresh();
@@ -782,7 +658,7 @@ void kst_panel_open(void)
 
 bool kst_panel_is_open(void)
 {
-    return k.open;
+    return k.f.open;
 }
 
 bool kst_panel_holds_port(void)
@@ -795,12 +671,12 @@ bool kst_panel_holds_port(void)
 
 uint32_t kst_panel_revision(void)
 {
-    return k.rev + k.kp.revision + k.tk.revision;
+    return k.rev + sprog_revision(&k.f);
 }
 
 uint32_t kst_panel_hold_revision(void)
 {
-    return k.hold_rev;
+    return sprog_hold_revision(&k.f);
 }
 
 /**
@@ -862,10 +738,11 @@ static void model_moved(void)
         if (st != KST_PROG_PROGRAMMING) {
             kpn_close_editors();
             /* CONNECT's and WRITE's presses keep their holds, for the
-             * release to end. */
-            if (k.pressed != P_TAB && k.pressed != P_CONNECT
-                && k.pressed != P_WRITE) {
-                k.pressed = P_NONE;
+             * release to end, and a tab its press; any other press taps
+             * nothing on its release. */
+            if (k.f.have && k.f.on != SPROG_ON_TAB
+                && k.f.on != SPROG_ON_HOLD) {
+                k.f.on = SPROG_ON_ABSORB;
             }
         }
         k.state_seen = st;
@@ -898,13 +775,9 @@ void kst_panel_set_hv(bool on)
                                 kst_prog_supply_ma(&k.prog));
         }
         /* An editor that offers what HV SERVO allowed. */
-        if (k.kp.open && k.kp_row == KP_VOLTAGE) {
-            k.kp.open = false;
-        }
-        if (k.warn.open && k.warn.kind == W_HV) {
-            k.warn.open = false;
-            k.warn.down = false;
-            ui_hold_reset(&k.warn.hold);
+        if ((k.f.kp.open && k.f.kp_what == KP_VOLTAGE)
+            || (k.f.page.open && k.f.page.what == W_HV)) {
+            sprog_close_editors(&k.f);
         }
     }
     model_moved();
@@ -969,21 +842,12 @@ bool kst_panel_file_late(const char *text, size_t len)
 
 /**
  * @brief Where hold_revision shows: CONNECT or WRITE n VALUES while its
- *        hold runs or flashes, else the warning page's hold button.
+ *        hold runs or flashes, else the hold page's button.
  * @return the rectangle, body pixels
  */
 static gfx_rect_t kst_panel_hold_rect(void)
 {
-    const row_t *r = kpn_row_at(PG_SERVO, 0, 0);
-    const row_t *w = kpn_row_at(PG_SERVO, 3, 1);
-
-    if (r != NULL && (k.conn.down || ui_hold_flashing(&k.conn))) {
-        return kpn_value_rect(r);
-    }
-    if (w != NULL && (k.wr.down || ui_hold_flashing(&k.wr))) {
-        return kpn_value_rect(w);
-    }
-    return kst_panel_apply_rect();
+    return sprog_hold_rect(&k.f);
 }
 
 /* The session SERVO > PROGRAM opens from its row (prog_registry.h). */
