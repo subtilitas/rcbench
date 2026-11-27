@@ -556,6 +556,10 @@ history is in git.
   repaints the hold's button alone while its fill moves
   (`ui_setlist_hold.c`, `ui_setlist_draw.c`, `settings_draw.c`;
   `test_wireless_imu`, `test_repaint_parts`).
+- A settings list ends a press held on a row, and closes an open choice
+  list, when its rows change under it: the row index the press holds
+  names another row then, so the release acts on none (`ui_setlist.c`;
+  `test_setlist`).
 - SEARCH shows the bound device's address under its name, and for the IMU
   the count of the devices the last scan heard and did not list
   (`wl_search_draw.c`).

@@ -209,6 +209,29 @@ void sl_hold_press(ui_setlist_t *sl, int index);
 void sl_hold_tick(ui_setlist_t *sl, float dt_s);
 
 /**
+ * @brief No press in progress, and no repeat or hold running for one.
+ * @param sl The list.
+ */
+void sl_drop_press(ui_setlist_t *sl);
+
+/**
+ * @brief The rows as they stand, hashed (FNV-1a): their count and each
+ *        row's kind, setting, string, heading and custom row.
+ * @param sl The list.
+ * @return The hash.
+ */
+uint32_t sl_layout_key(const ui_setlist_t *sl);
+
+/**
+ * @brief A press or a choice list holds a row by its index: when a row
+ *        comes or goes under it (an error line, a bind, a setting another
+ *        screen changed), the index names another row, so the press ends
+ *        and the choice list closes.  Neither acts.
+ * @param sl The list.
+ */
+void sl_layout_follow(ui_setlist_t *sl);
+
+/**
  * @brief A hold row's button at the row's right: its label, its fill
  *        following the hold, grey while the row is locked.
  * @param sl    The list.

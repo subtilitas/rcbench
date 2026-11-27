@@ -27,6 +27,7 @@
 #include "kst_panel.h"
 #include "settings.h"
 #include "settings_screen.h"
+#include "touch_types.h"
 #include "wireless_pane.h"
 #include "link_pages.h"
 #include "supply.h"
@@ -52,6 +53,8 @@ static gfx_canvas_t cv[2];
 typedef enum {
     RUN_IMU,       /**< a new angle frame in every frame, on SETUP >
                         WIRELESS > IMU; NO FRAMES from frame 90 */
+    RUN_IMU_ACTS,  /**< the same, the list scrolled to ZERO and CLEAR
+                        ZERO */
     RUN_SUPPLY,    /**< a sample in every frame, the supply silent for 10 */
     RUN_WIFI,      /**< the idle time 1s shorter in every frame */
 } run_t;
@@ -135,7 +138,8 @@ static wifi_view_t wifi_at(uint32_t idle_s)
 /** @brief Frame @p i's input of @p run. */
 static void feed(run_t run, int i)
 {
-    if (run == RUN_IMU && (i <= IMU_LAST || i == IMU_LOST)) {
+    if ((run == RUN_IMU || run == RUN_IMU_ACTS)
+        && (i <= IMU_LAST || i == IMU_LOST)) {
         imu_view_t v = imu_view(i);
         if (i == IMU_LOST) {
             v.link = IMU_LINK_NO_FRAMES;
@@ -148,6 +152,27 @@ static void feed(run_t run, int i)
         const wifi_view_t v = wifi_at(605u - (uint32_t)i);
         wifi_screen_set(&v);
     }
+}
+
+/** @brief A finger drags SETUP's list up by @p dy px, in 10 steps. */
+static void drag_list(int dy)
+{
+    const gfx_rect_t pane = settings_screen_list_rect();
+    const int x = pane.x + 20;
+    int y = UI_BAND_H + pane.y + pane.h - 20;
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = (int16_t)x,
+                                   .y = (int16_t)y } };
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_MOVE;
+    for (int k = 0; k < 10; ++k) {
+        y -= dy / 10;
+        e.point.y = (int16_t)y;
+        ui_router_event(&e);
+    }
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+    ui_router_tick(DT);
 }
 
 /**
@@ -169,9 +194,14 @@ static void draw_run(run_t run, bool whole, uint64_t *hash,
     }
     switch (run) {
     case RUN_IMU:
+    case RUN_IMU_ACTS:
         settings_set(SET_IMU_EN, 1.0f);
         ui_router_goto(SCREEN_SETUP);
         settings_screen_open_on(SET_CAT_WIRELESS, WL_ENTRY_IMU);
+        if (run == RUN_IMU_ACTS) {
+            drag_list(240);
+            drag_list(240);
+        }
         break;
     case RUN_SUPPLY:
         ui_router_goto(SCREEN_SUPPLY);
@@ -236,6 +266,23 @@ static bool same_as_whole(run_t run, int upto, double share, int *parts)
 }
 
 /* ------------------------------------------------------------ the frames */
+
+/* ZERO's and CLEAR ZERO's locks follow the reading: a zero taken at frame
+ * 40 and the reading gone at frames 60 to 64 come in views that change the
+ * reading alone, and the rows show it as a whole repaint does. */
+TEST_CASE(zero_and_clear_zero_repaint_as_the_reading_flags_change)
+{
+    imu_view_t v = imu_view(0);
+    imu_view_set(&v);
+    int parts = 0;
+    CHECK(same_as_whole(RUN_IMU_ACTS, IMU_LAST + 1, 0.1, &parts));
+    /* The run did show both rows: ZERO is row 10, CLEAR ZERO row 11. */
+    const gfx_rect_t pane = settings_screen_list_rect();
+    for (int row = 10; row <= 11; ++row) {
+        const gfx_rect_t r = settings_screen_row_rect(row);
+        CHECK(r.y >= pane.y && r.y + r.h <= pane.y + pane.h);
+    }
+}
 
 /* A new reading in every frame: SETUP repaints the value boxes of the
  * live rows that read differently, the angle and the frame rate's age,
@@ -393,6 +440,7 @@ int main(int argc, char **argv)
     (void)argc;
     (void)argv;
     RUN(the_imu_entry_repaints_its_live_values_as_the_whole_frame);
+    RUN(zero_and_clear_zero_repaint_as_the_reading_flags_change);
     RUN(a_supply_sample_repaints_what_it_shows_as_the_whole_frame);
     RUN(an_idle_second_repaints_wifi_only_when_its_minute_changes);
     RUN(a_supply_reading_moves_the_kst_page_only_as_its_state_line_shows_it);

@@ -34,6 +34,9 @@ static uint32_t s_drawn_rev;
 static uint32_t s_drawn_read;
 /** @brief The time since the live rows last repainted, s. */
 static float    s_live_s;
+/** @brief The reading's flags the list was drawn with: bit 0 a valid
+ *         reading (ZERO's lock), bit 1 a zero set (CLEAR ZERO's). */
+static uint8_t  s_drawn_flags;
 
 /* ------------------------------------------------------ SCAN FOR SENSOR */
 
@@ -462,16 +465,23 @@ void wireless_pane_imu_tick(float dt_s, bool shown)
 {
     imu_view_tick(dt_s);
     s_live_s += dt_s;
+    const imu_reading_t *r = &imu_view_get()->r;
+    const uint8_t flags = (uint8_t)((r->valid ? 1u : 0u)
+                                    | (r->zeroed ? 2u : 0u));
     if (!shown || wireless_pane_selected() != WL_ENTRY_IMU
         || !settings_get_bool(SET_IMU_EN)) {
         s_drawn_rev = imu_view_rev();
         s_drawn_read = imu_view_read_rev();
+        s_drawn_flags = flags;
         return;
     }
     /* A change of the link, the scan, the bind or the calibration
-     * repaints the list; a new reading the live values that read
-     * differently, and the age on FRAMES 10 times a second at most. */
-    if (imu_view_rev() != s_drawn_rev) {
+     * repaints the list, and so does a reading that comes, goes, or takes
+     * or drops its zero: ZERO's and CLEAR ZERO's locks follow it.  A new
+     * reading repaints the live values that read differently, and the age
+     * on FRAMES 10 times a second at most. */
+    if (imu_view_rev() != s_drawn_rev || flags != s_drawn_flags) {
+        s_drawn_flags = flags;
         s_drawn_rev = imu_view_rev();
         s_drawn_read = imu_view_read_rev();
         s_live_s = 0.0f;

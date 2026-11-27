@@ -452,6 +452,40 @@ TEST_CASE(zero_and_clear_zero_are_taps_locked_without_their_state)
     CHECK(!imu_view_zero());
 }
 
+/* An error that comes between the DOWN and the UP on CLEAR ZERO puts
+ * LAST ERROR in above it, and CLEAR ZERO's place is now ZERO's: the
+ * release acts on neither.  The same when the error goes. */
+TEST_CASE(an_error_row_that_comes_or_goes_under_a_press_ends_it)
+{
+    imu_view_t v = view_connected();
+    v.r.zeroed = true;
+    on_imu(&v);
+    const int row = wbr_row(WL_ENTRY_IMU, &wireless_pane_imu_unzero_row);
+    REQUIRE(row >= 0);
+    show_row(row);
+    int x = 0;
+    int y = 0;
+    wbr_row_at(row, &x, &y);
+    wbr_down(x, y);
+    v.err = IMU_ERR_WRITE;
+    imu_view_set(&v);
+    REQUIRE(wbr_row(WL_ENTRY_IMU, &wireless_pane_imu_unzero_row) == row + 1);
+    wbr_up(x, y);
+    CHECK_EQ(took().kind, IMU_CMD_NONE);
+    /* The error goes under a press on CLEAR ZERO, one row lower now. */
+    show_row(row + 1);
+    wbr_row_at(row + 1, &x, &y);
+    wbr_down(x, y);
+    v.err = IMU_ERR_NONE;
+    imu_view_set(&v);
+    ui_router_tick(0.016f);
+    wbr_up(x, y);
+    CHECK_EQ(took().kind, IMU_CMD_NONE);
+    /* Without a change under it the tap acts. */
+    tap_row(&wireless_pane_imu_unzero_row);
+    CHECK_EQ(took().kind, IMU_CMD_UNZERO);
+}
+
 TEST_CASE(calibrate_needs_a_2s_hold_and_the_band_hint_on_a_short_press)
 {
     imu_view_t v = view_connected();
@@ -611,6 +645,7 @@ int main(void)
     RUN(a_search_while_bluetooth_starts_scans_once_it_runs);
     RUN(unbind_in_search_forgets_the_sensor_with_a_save_asked);
     RUN(zero_and_clear_zero_are_taps_locked_without_their_state);
+    RUN(an_error_row_that_comes_or_goes_under_a_press_ends_it);
     RUN(calibrate_needs_a_2s_hold_and_the_band_hint_on_a_short_press);
     RUN(a_hold_that_leaves_the_button_or_locks_fires_nothing);
     RUN(last_error_shows_only_with_an_error_and_names_it);

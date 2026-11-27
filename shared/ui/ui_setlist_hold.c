@@ -4,6 +4,8 @@
  *        held() draws a 2s hold button at its right; a press on it fills
  *        the button for UI_HOLD_S and calls held() once, and the button
  *        flashes as it fires.  ui_setlist.c routes the touches here.
+ *        And the end of a press or a choice list whose row the host's
+ *        rows moved (sl_layout_follow()).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -118,5 +120,38 @@ void sl_hold_draw(ui_setlist_t *sl, gfx_canvas_t *c, int index,
         ui_hold_t idle;
         ui_hold_reset(&idle);
         hold_button(c, r, label, &idle, down, live);
+    }
+}
+
+/* ------------------------------------------------- rows that move */
+
+uint32_t sl_layout_key(const ui_setlist_t *sl)
+{
+    const int n = ui_setlist_count(sl);
+    uint32_t h = 2166136261u;
+    h = (h ^ (uint32_t)n) * 16777619u;
+    for (int i = 0; i < n; ++i) {
+        const ui_setlist_row_t r = sl_row(sl, i);
+        const uint32_t parts[5] = {
+            r.kind, (uint32_t)(uint8_t)r.text, (uint32_t)r.id,
+            (uint32_t)r.heading, (uint32_t)(uintptr_t)r.custom,
+        };
+        for (size_t k = 0; k < sizeof(parts) / sizeof(parts[0]); ++k) {
+            h = (h ^ parts[k]) * 16777619u;
+        }
+    }
+    return h;
+}
+
+void sl_layout_follow(ui_setlist_t *sl)
+{
+    if ((!sl->have_press && sl->choice_row < 0)
+        || sl_layout_key(sl) == sl->layout) {
+        return;
+    }
+    sl_drop_press(sl);
+    sl->choice_row = -1;
+    if (sl->host->invalidate != NULL) {
+        sl->host->invalidate();
     }
 }

@@ -6683,8 +6683,12 @@ ZERO drop RUDDER's zero and MAX taken on the IMU. The reading is stale
 A new reading repaints the value box of each of Angle X, Angle Y, Angle
 Z, Frames and Sensor battery whose text changed, 278 x 24px each; the
 age on Frames counts on 10 times a second between readings. A change of
-the link, the scan, the bind or the calibration repaints the list. The
-fill of CALIBRATE's hold repaints its button alone.
+the link, the scan, the bind or the calibration repaints the list, and
+so does a reading that comes or goes and a zero taken or cleared, which
+lock or free ZERO and CLEAR ZERO. The fill of CALIBRATE's hold repaints
+its button alone. LAST ERROR moves the rows under it: a press held on
+any row of the list when it comes or goes ends without acting, and an
+open choice list closes.
 
 ![The same at ZERO, CLEAR ZERO and CALIBRATE](img/setup-wireless-imu-cal.png)
 

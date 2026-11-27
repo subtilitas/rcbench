@@ -267,6 +267,9 @@ typedef struct ui_setlist {
     int      hold_row;                  /**< the row the hold last took, -1   */
     uint32_t hold_rev;                  /**< frames the hold's fill or flash
                                              moved in, counted           */
+    uint32_t layout;                    /**< the rows as the press or the
+                                             choice list found them, a
+                                             hash                        */
 } ui_setlist_t;
 
 /** @brief The list's own hit kinds. */

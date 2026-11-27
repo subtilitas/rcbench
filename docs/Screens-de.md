@@ -7243,8 +7243,13 @@ Ein neuer Messwert zeichnet das Wertfeld von Winkel X, Winkel Y, Winkel
 Z, Frames und Sensorakku neu, dessen Text sich änderte, je 278 x 24px;
 das Alter auf Frames zählt zwischen den Messwerten 10-mal pro Sekunde
 weiter. Eine Änderung der Verbindung, der Suche, der Bindung oder der
-Kalibrierung zeichnet die Liste neu. Die Füllung des Holds von
-KALIBRIEREN zeichnet nur seinen Knopf neu.
+Kalibrierung zeichnet die Liste neu, ebenso ein Messwert, der kommt
+oder geht, und ein gesetzter oder gelöschter Nullpunkt, die NULLPUNKT
+und NULLPUNKT LÖSCHEN sperren oder freigeben. Die Füllung des Holds von
+KALIBRIEREN zeichnet nur seinen Knopf neu. LETZTER FEHLER verschiebt die
+Zeilen darunter: Ein Druck, der beim Kommen oder Gehen auf einer Zeile
+der Liste liegt, endet, ohne zu wirken, und eine offene Auswahlliste
+schließt sich.
 
 ![Dasselbe bei NULLPUNKT, NULLPUNKT LÖSCHEN und KALIBRIEREN](img/de/setup-wireless-imu-cal.png)
 
