@@ -10493,8 +10493,8 @@ UI_TEXT(UPD_REL_TAG_FORM, 81,
     "The response is not in the expected JSON format.",
     "Die Antwort hat nicht das erwartete JSON-Format.")
 UI_TEXT(UPD_REL_SCAN_LONG, 81,
-    "The releases do not end within 262144 bytes.",
-    "Die Releases enden nicht innerhalb von 262144 Bytes.")
+    "The releases do not end within 1310720 bytes.",
+    "Die Releases enden nicht innerhalb von 1310720 Bytes.")
 UI_TEXT(UPD_R_TITLE, 0,
     "PANEL UPDATE AVAILABLE",
     "PANEL-UPDATE VERFÜGBAR")

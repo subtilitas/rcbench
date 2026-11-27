@@ -7949,7 +7949,7 @@ RELEASES sets the request:
 | RELEASES | Request | What is read |
 | --- | --- | --- |
 | `STABLE` | `GET https://github.com/subtilitas/rcbench/releases/latest` | The `Location` header of the redirect, which names the tag (`.../releases/tag/v0.20.0`). The body is not read. GitHub's latest release is never a pre-release. When that release is past the release line and newer than the running build, the `TESTING` request follows once ([The release line](#the-release-line)). |
-| `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` with `Accept: application/vnd.github+json` and `X-GitHub-Api-Version: 2022-11-28` | `tag_name` and `draft` of each of the 10 newest releases by date in the JSON (JavaScript Object Notation) answer, testing or stable. The highest version among those that are no draft is the newest release, whatever their order; the highest of the release line among them is kept beside it. The answer is read in pieces of 4096 bytes up to the 10th release's end, and is not stored. |
+| `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=5` with `Accept: application/vnd.github+json` and `X-GitHub-Api-Version: 2022-11-28` | `tag_name` and `draft` of each of the 5 newest releases by date in the JSON (JavaScript Object Notation) answer, testing or stable. The highest version among those that are no draft is the newest release, whatever their order; the highest of the release line among them is kept beside it. The answer is read in pieces of 4096 bytes up to the 5th release's end, and is not stored. |
 
 Then the radio goes off. The join, the address and the request take 30s at
 most, together. The join also asks an NTP server for the time; an answer
@@ -7966,8 +7966,22 @@ about 7s, out of the check's 30s
 Current limitations of `TESTING`: GitHub answers 60 API requests an hour for
 each public IP (Internet Protocol) address without an account, and the
 devices behind one address share them. Each check is one request, and the
-panel sends no retry. A release older by date than the 10 newest is not
+panel sends no retry. A release older by date than the 5 newest is not
 seen, however high its version.
+
+Current limitation of panels on 0.21.0 to 0.23.18, 0.23.17 and 0.23.18
+among them: their `TESTING` check asks for 10 releases and refuses an
+answer over 262,144 bytes. Whenever GitHub's answer for the 10 newest
+releases is over 262,144 bytes, their check ends with `Unexpected response
+from GitHub.` and `The download is too large for the panel.`. On
+2026-11-27 that answer was 158,473 bytes. `STABLE` reads a redirect only
+and is not affected. Such a panel then takes the next release by hand,
+once: the release assets
+`rcbench-panel-p4-vX.Y.Z.bin` and `rcbench-panel-p4-vX.Y.Z.bin.sig`
+uploaded on the Wi-Fi page ([Wi-Fi: The page](#the-page)), or the
+[web flasher](https://subtilitas.github.io/rcbench/flash/) over USB
+([FirstRun.md](FirstRun.md)). The panel image has no SD card path: the
+card's `BENCH/UPDATES` holds images for the wireless devices only.
 
 ![A check under way](img/updates-checking.png)
 
@@ -8015,28 +8029,34 @@ equal and PATCH is higher.
 | `The version text has an invalid format.` | The tag fails the rule above. |
 
 The API response under `TESTING` is parsed with the same strict checks. It needs status 200
-and either a `Content-Length` from 1 to 262,144 bytes or the chunked
-coding (`Transfer-Encoding: chunked`) with its releases ending within
-262,144 bytes. GitHub sends the chunked form when its cache does not hold
+and either a `Content-Length` from 1 to 1,310,720 bytes (5 times 256KiB)
+or the chunked coding (`Transfer-Encoding: chunked`) with its releases
+ending within 1,310,720 bytes. Nothing of it is stored: it passes through
+the fetch's 4096-byte buffer in PSRAM. GitHub sends the chunked form when its cache does not hold
 the request (`Cache-Control: max-age=60`) and the `Content-Length` form
-from its cache. The 10 newest releases on 2026-10-18, v0.12.0 to v0.20.0,
-were 108,198 bytes, the largest one 13,734. Of each release, only its own `tag_name` and `draft` count: a
+from its cache. The 5 newest releases on 2026-11-27, v0.21.1 to v0.23.18,
+were 95,618 bytes, the largest one, v0.23.18, 53,413 with 26 assets and
+8,113 bytes of notes. An asset takes about 1,648 bytes of the answer: 5 releases of 152
+assets and 8,113 bytes of notes each fit, 1,303,986 bytes. Reading
+1,310,720 bytes within the check's 30s needs more than 44kB/s, as the
+join and the address share the 30s; the panel's transfer rate is not
+measured. Of each release, only its own `tag_name` and `draft` count: a
 key in a nested object or inside a string is passed over. A release with
 `draft` true is passed over. A malformed release, including a draft, causes the entire response to be
 rejected. No update is offered: the second line says
-why. An 11th release and anything after the 10th is not read.
+why. A 6th release and anything after the 5th is not read.
 
 | Second line | Meaning |
 | --- | --- |
 | `The response does not specify a size.` | Neither a `Content-Length` nor the chunked coding. |
 | `The response is empty.` | A `Content-Length` of 0, or a chunked answer without a byte. |
-| `The download is too large for the panel.` | A `Content-Length` over 262,144 bytes. |
+| `The download is too large for the panel.` | A `Content-Length` over 1,310,720 bytes. |
 | `Received less data than expected.` | The answer ended before its `Content-Length`. |
 | `Received more data than expected.` | A read returned more bytes than asked for. |
-| `The response has no tag_name.` | A release has no `tag_name`, there is no release but drafts, or the answer ended before its array or its 10th release did. |
+| `The response has no tag_name.` | A release has no `tag_name`, there is no release but drafts, or the answer ended before its array or its 5th release did. |
 | `The tag_name is too long.` | A `tag_name` over 18 bytes. |
 | `The response is not in the expected JSON format.` | Not an array of objects; a `tag_name` that is not a plain string (an escape, a control character, a number); a `draft` other than `true` or `false`; either key twice in a release; a control character in another string; a bracket closed by the other kind; nesting deeper than 32 levels. |
-| `The releases do not end within 262144 bytes.` | The scan's own bound of 262,144 bytes: a chunked answer whose array or 10th release does not end within it. An answer within its `Content-Length` bound does not pass it. |
+| `The releases do not end within 1310720 bytes.` | The scan's own bound of 1,310,720 bytes: a chunked answer whose array or 5th release does not end within it. An answer within its `Content-Length` bound does not pass it. |
 | `The version text has an invalid format.` | A tag fails the rule above. |
 
 ### The release line
@@ -8072,14 +8092,14 @@ its last line reads `TESTING also offers test releases. Both offer only 0.22.x.`
 | `v0.23.0`, `v0.24.0`, `v1.0.0` | `No newer release for the ESP32-S3 panel. Panel version: 0.22.0.` | `No newer release for the ESP32-S3 panel. Panel version: 0.22.1.` |
 | a tag out of form, such as `v0.22.1-rc1` | `Unexpected response from GitHub.` and `The version text has an invalid format.` | the same |
 
-With `TESTING`, when the highest of the 10 newest releases is past the
+With `TESTING`, when the highest of the 5 newest releases is past the
 line, the highest release of the line among them stands in for it once it
 is newer than the running build: beside a 0.23.0 pre-release, 0.22.1 is
 offered to a panel on 0.22.0. `STABLE` reads GitHub's latest release; a
 stable release older than a published one is not marked latest
 ([Building: Releases](Building.md#releases)). When the latest release is
 past the line and newer than the running build, `STABLE` sends one request
-more, the one `TESTING` sends, and offers the newest 0.22.x among the 10
+more, the one `TESTING` sends, and offers the newest 0.22.x among the 5
 newest releases when it is newer than the running build. That request counts
 against GitHub's limit of 60 API requests an hour; when it fails, the card
 reads as without it: `No newer release for the ESP32-S3 panel.`. With
@@ -8087,8 +8107,8 @@ nothing on the line newer than the running build, both settings end with
 that line and name the newest release. The IOmcu takes the image this panel
 carries, from the same release ([The IOmcu](#the-iomcu)).
 
-Current limitation of the 0.22 line: the list holds the 10 newest releases
-by date (`per_page=10`). A 0.22.x patch release with 10 or more releases
+Current limitation of the 0.22 line: the list holds the 5 newest releases
+by date (`per_page=5`). A 0.22.x patch release with 5 or more releases
 published after it is not found, on either setting.
 
 ### Single updates
