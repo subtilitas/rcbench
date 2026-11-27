@@ -1,4 +1,64 @@
 {
+ "thumb": {
+  "at": 5,
+  "lines": [
+   "PROGRAM",
+   "*HITEC",
+   "SERVOS"
+  ],
+  "crop": [
+   0,
+   0,
+   1920
+  ],
+  "side": "l",
+  "accent": "#34d399",
+  "size": 128,
+  "scene": {
+   "type": "case",
+   "model": "part",
+   "part": "servo_standard",
+   "dur": 10,
+   "camera": [
+    [
+     0,
+     [
+      -90,
+      80,
+      130
+     ],
+     [
+      -25,
+      15,
+      0
+     ]
+    ],
+    [
+     10,
+     [
+      -90,
+      80,
+      130
+     ],
+     [
+      -25,
+      15,
+      0
+     ]
+    ]
+   ],
+   "spin": [
+    [
+     0,
+     20
+    ],
+    [
+     10,
+     20
+    ]
+   ]
+  }
+ },
  "name": "hitec-rbmod",
  "lang": "en",
  "music": "pachelbel-canon",
