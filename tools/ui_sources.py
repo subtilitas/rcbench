@@ -121,6 +121,10 @@ SOURCES = [
     "shared/ui/servo_label_rows.c",
     "shared/ui/servo_run_supply.c",
     "shared/ui/servo_angle_pick.c",
+    # The servo programmers' common frame (sprog.h).
+    "shared/ui/sprog.c",
+    "shared/ui/sprog_draw.c",
+    "shared/ui/sprog_page.c",
     # The programmer for KST and Chaservo servos SERVO opens, and the
     # core its model takes fields and limits from.
     "shared/ui/kst_panel.c",
