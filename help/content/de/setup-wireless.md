@@ -15,10 +15,41 @@ Die linke, 220px breite Liste hat 5 Einträge: IMU, DIAL, AUSWUCHTKNOTEN, DRUCKE
 ## Die IMU
 
 ![WIRELESS auf dem IMU-Eintrag, verbunden](view:setup-wireless-imu)
+![Dasselbe bei Nullpunkt, Nullpunkt löschen und Kalibrieren](view:setup-wireless-imu-cal)
 
 ![Die IMU aus: IMU und Winkelquelle](view:setup-wireless-imu-off)
 
-Der Winkelsensor WitMotion BWT901CL wird über Bluetooth LE durch den ESP32-C6 des Boards verbunden. Suche, Zuordnung und Kalibrierung erfolgen über die Kachel [IMU](imu.md) in SETUP. Dieser Eintrag enthält seine Einstellungen.
+Der WitMotion BWT901CL ist ein Winkelsensor für ein Ruder. Er wird über Bluetooth LE durch den ESP32-C6 des Boards verbunden: ohne Kabel, ohne Pairing, ohne PIN. Dieser Eintrag sucht und bindet ihn, zeigt seine aktuellen Winkel, setzt seinen Nullpunkt, kalibriert ihn und enthält seine Einstellungen. Nichts hier steuert einen Ausgang an. Die Wiki-Seite [Die Bluetooth-IMU](https://github.com/subtilitas/rcbench/wiki/IMU-de) beschreibt die Verbindung und die Befehle des Sensors.
+
+Bei ausgeschalteter IMU zeigt der Eintrag nur IMU und Winkelquelle. Eingeschaltet stehen diese Zeilen zwischen Winkelquelle und IMU-Achse:
+
+| Zeile | Wert | Was sie tut |
+|---|---|---|
+| Sensor suchen | `SUCHEN`, `BLUETOOTH STARTET`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | Tippen öffnet [Search](#search) und sucht 10s lang nach Sensoren in Reichweite. Startet Bluetooth LE noch, wartet die Suche darauf, `BLUETOOTH STARTET`. Abgelehnt bei ARMED, `KEINE IMU-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; während einer Suche, `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`; und ohne Bluetooth am C6, `BLUETOOTH NICHT BEREIT: KEINE SENSORSUCHE` |
+| Gebundener Sensor | der Name des Sensors, sonst seine Adresse, sonst `KEINS` | Tippen öffnet [Search](#search) mit der Liste der letzten Suche |
+| Letzter Fehler | | nur sichtbar, solange die letzte Suche, Verbindung oder ein Schreibzugriff fehlschlug; die Hilfezeile nennt den Fehler (Tabelle unten) |
+| Winkel X, Winkel Y, Winkel Z | `+12.30°` | die Winkel ab dem Nullpunkt durch den IMU-Filter, 0,01°, ohne Messwert `---`. Die Achse, die IMU-Achse nennt, heißt `Winkel X: für Läufe` |
+| Frames | `RATE 50.0Hz  ALTER 20ms` | die Winkel-Frames der letzten Sekunde und die Zeit seit dem jüngsten auf dem Panel; ohne Messwert `RATE 0.0Hz  KEIN WINKEL` |
+| Sensorakku | `3.95V` | der Akku des Sensors aus Frame 0x52, `---` ohne Wert oder über 6,0V |
+| C6-Version | `2.13.0` | die Firmware des ESP32-C6, `---`, wenn der C6 keine meldet |
+| Nullpunkt | | Tippen übernimmt die aktuellen Winkel als 0°. Mit Winkelquelle IMU löscht es den Nullpunkt und MAX von RUDER. Ohne Messwert gesperrt, `NOCH KEIN WINKEL VOM SENSOR` |
+| Nullpunkt löschen | | Tippen zeigt die Winkel wieder ab dem 0° des Sensors; es löscht ebenfalls den Nullpunkt und MAX von RUDER auf der IMU. Gesperrt, solange kein Nullpunkt gesetzt ist, `KEIN NULLPUNKT GESETZT` |
+| Kalibrieren | `2s HALTEN: KALIBRIEREN` | 2s Halten auf dem Knopf startet die Kalibrierung des Beschleunigungssensors; halte den Sensor während der 3s still und waagerecht. Vor 2s losgelassen, startet nichts, und das Band zeigt `Halte 2s, um den Beschleunigungssensor zu kalibrieren.`. Gesperrt, solange der Sensor keine Frames sendet, `DER SENSOR SENDET KEINE FRAMES`, und während sie läuft, `HALTE DEN SENSOR 3s STILL UND WAAGERECHT` mit dem Countdown. Ihr Ende zeigt das Band: `BESCHLEUNIGUNGSSENSOR KALIBRIERT UND GESPEICHERT` oder `KALIBRIERUNG OHNE FRAMES BEENDET. VERSUCHE ES ERNEUT` |
+
+Ein Messwert gilt 300ms nach dem letzten Winkel-Frame als veraltet. Mit Winkelquelle IMU toleriert ein Servolauf eine Lücke von bis zu 300ms je 10s, wie beim AS5600 ([Servo-Optionen](servo-settings.md)). Eine längere Lücke beendet den Lauf mit `IMU antwortet nicht`, eine zweite innerhalb von 10s mit `IMU 2x in 10s ausgefallen`.
+
+![Kein Sensor gebunden nach einer Suche ohne Fund](view:setup-wireless-imu-error)
+
+| Letzter Fehler | Bedeutung |
+|---|---|
+| `KEINE VERBINDUNG: SENSOR AN, NAH, KEIN HANDY DRAN?` | ein Verbindungsaufbau, seine Einrichtung oder die Verbindung schlug fehl; das Panel versucht es jede 1s erneut. Ein mit dem Sensor verbundenes Handy sperrt das Panel aus |
+| `KEIN WITMOTION-SENSOR: KEIN ISSC-UART-DIENST` | dem gebundenen Gerät fehlt der Dienst des Sensors; kein neuer Versuch bis zum nächsten Binden |
+| `DER SENSOR HAT DEN BEFEHL NICHT ANGENOMMEN` | das Schreiben eines Befehls wurde abgelehnt oder nicht binnen 1s beantwortet; der Rest seiner Gruppe entfällt und geht bei der nächsten Verbindung erneut |
+| `KEIN SENSOR GEFUNDEN: IST ER AN, KEIN HANDY DRAN?` | die Suche listete keinen Sensor |
+| `KEIN ANDERER SENSOR: DER GEBUNDENE IST VERBUNDEN` | die Suche listete keinen Sensor, während der gebundene verbunden ist; ein verbundener Sensor sendet keine Advertisements |
+| `DIE SUCHE STARTETE NICHT: CODE <n>` | Bluetooth lehnte die Suche mit diesem Code ab |
+
+Die Einstellungen:
 
 | Einstellung | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
@@ -32,7 +63,7 @@ Der Winkelsensor WitMotion BWT901CL wird über Bluetooth LE durch den ESP32-C6 d
 | IMU-Einschwingzeit | 0,5 bis 10,0s, Schritte von 0,5s | 3,0s | RUDER AUTO an der IMU: so lange muss der Winkel halten, bevor eine Messung ihn nimmt |
 | IMU-Genauigkeit | 0,05 bis 1,00°, Schritte von 0,05° | 0,10° | RUDER AUTO an der IMU: die Spanne, die der Winkel in dieser Zeit überstreichen darf |
 
-IMU-Filter glättet den Winkel auf dem Panel, je Frame und Achse: der Winkel rückt um 1/k der Differenz zum neuen Frame vor, mit k dem eingestellten Wert. 63% eines Sprungs erreicht er nach etwa k Frames, bei 10Hz also mit IMU-Filter 10 nach etwa 1s. Die Frames je Sekunde sind die Rate, mit der der Sensor läuft und die `VERBUNDEN` zeigt, nicht die erfragte IMU-Rate. Der IMU-Bildschirm, RUDER, AUTO und die Servoläufe lesen den gefilterten Winkel. Der erste Frame nach einem Verbinden setzt den Filter auf seinen eigenen Wert, und ein Übergang über 180° nimmt den kurzen Weg. AUTO wartet, bis der gefilterte Winkel eingeschwungen ist, bis zu 3000ms plus die Zeit, die der Wert brauchen kann ([Die Bluetooth-IMU](https://github.com/subtilitas/rcbench/wiki/IMU-de#der-filter)).
+IMU-Filter glättet den Winkel auf dem Panel, je Frame und Achse: der Winkel rückt um 1/k der Differenz zum neuen Frame vor, mit k dem eingestellten Wert. 63% eines Sprungs erreicht er nach etwa k Frames, bei 10Hz also mit IMU-Filter 10 nach etwa 1s. Die Frames je Sekunde sind die Rate, mit der der Sensor läuft und die `VERBUNDEN` zeigt, nicht die erfragte IMU-Rate. Die Winkelzeilen, RUDER, AUTO und die Servoläufe lesen den gefilterten Winkel. Der erste Frame nach einem Verbinden setzt den Filter auf seinen eigenen Wert, und ein Übergang über 180° nimmt den kurzen Weg. AUTO wartet, bis der gefilterte Winkel eingeschwungen ist, bis zu 3000ms plus die Zeit, die der Wert brauchen kann ([Die Bluetooth-IMU](https://github.com/subtilitas/rcbench/wiki/IMU-de#der-filter)).
 
 IMU-Einschwingzeit und IMU-Genauigkeit sind die Regel, die eine Messung von RUDER AUTO an der IMU einhält: Sie nimmt den Winkel, sobald die Messwerte über die letzte Einschwingzeit höchstens die Genauigkeit überspannen. Die BWT901CL im 6-AXIS kriecht nach einem Servoschritt noch 5s bis 10s; mit den Vorgaben liegt der genommene Winkel höchstens 0,07° von dem Wert, auf dem der Messwert zur Ruhe kommt. Eine längere Einschwingzeit oder eine kleinere Genauigkeit macht jede Messung langsamer und genauer; die Wartezeit der Messung wächst mit der Einschwingzeit ([Die Einschwingregel](https://github.com/subtilitas/rcbench/wiki/IMU-de#die-einschwingregel)).
 
@@ -192,15 +223,17 @@ Drucker lesen und Testetikett sind ohne gebundenen Drucker, während einer Anfra
 ![SEARCH beim Leistungsknoten, zwei Knoten gefunden](view:setup-wireless-search)
 ![SEARCH für den Drucker während einer Suche](view:printer-search)
 
-SEARCH findet und bindet das Dial, den Leistungsknoten, den Auswuchtknoten oder den Etikettendrucker. Dial suchen, Knoten suchen und Drucker suchen öffnen es und suchen 10s lang; Gebundenes Dial, Gebundener Knoten und Gebundener Drucker öffnen es mit der Liste der letzten Suche. Bindung und BINDUNG LÖSEN des Druckers werden während eines Drucks oder Geräte-Updates abgelehnt. Eine abgelehnte Suche nennt den Grund im Band, und SEARCH öffnet mit der letzten Liste. Das Home-Feld führt zurück zu WIRELESS auf den Eintrag des Geräts.
+![SEARCH bei der IMU, zwei Sensoren gefunden, vier andere Geräte ausgeblendet](view:setup-wireless-imu-search)
+
+SEARCH findet und bindet die IMU, das Dial, den Leistungsknoten, den Auswuchtknoten oder den Etikettendrucker. Sensor suchen, Dial suchen, Knoten suchen und Drucker suchen öffnen es und suchen 10s lang; Gebundener Sensor, Gebundenes Dial, Gebundener Knoten und Gebundener Drucker öffnen es mit der Liste der letzten Suche. Die Suche der IMU listet die Geräte, die den Dienst des WitMotion-Sensors anbieten; das Funkmodul des Sensors heißt `HC-06`. Bindung und BINDUNG LÖSEN des Druckers werden während eines Drucks oder Geräte-Updates abgelehnt. Eine abgelehnte Suche nennt den Grund im Band, und SEARCH öffnet mit der letzten Liste. Das Home-Feld führt zurück zu WIRELESS auf den Eintrag des Geräts.
 
 - Die Zeile über der Liste: `SUCHE LÄUFT: NOCH 7s`, `2 GEFUNDEN: ZUM BINDEN EINES ANTIPPEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` oder `NOCH KEINE SUCHE: AKTUALISIEREN ANTIPPEN`.
 - Die Liste: bis zu 8 Geräte, das stärkste zuerst, jedes mit Name oder Adresse und Signal in dBm. Das gebundene ist hervorgehoben. Die Liste leert sich beim Start einer Suche und füllt sich an ihrem Ende.
-- Rechts: die Art des Geräts, seine Verbindung, das gebundene Gerät und AKTUALISIEREN, eine neue Suche von 10s. AKTUALISIEREN ist grau, solange eine Suche läuft.
+- Rechts: die Art des Geräts, seine Verbindung, das gebundene Gerät mit seiner Adresse unter dem Namen (`P` öffentlich, `R` zufällig) und AKTUALISIEREN, eine neue Suche von 10s. AKTUALISIEREN ist grau, solange eine Suche läuft. Bei der IMU die Geräte, die die letzte Suche hörte und nicht listete: `4 ANDERE GERÄTE AUSGEBLENDET`.
 
 ![Die Bindungsfrage](view:setup-wireless-search-bind)
 
-Tippe auf ein Gerät, um es zu binden: Die Frage zeigt Name, Adresse und Signal und das Gerät, das es ersetzt. BINDEN bindet es; SETUP behält es und fordert Speichern an, und SEARCH bleibt und hebt es hervor, sobald es gebunden ist. ABBRECHEN oder das Home-Feld binden nichts. BINDEN bindet nichts, solange eine Suche läuft, `SUCHE LÄUFT: DEN KNOTEN NACH DEM ENDE WÄHLEN`, oder wenn eine neue Suche die Liste unter der Frage änderte, `KNOTEN NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`; die Texte des Dials nennen das Dial.
+Tippe auf ein Gerät, um es zu binden: Die Frage zeigt Name, Adresse und Signal und das Gerät, das es ersetzt. BINDEN bindet es; SETUP behält es und fordert Speichern an, und SEARCH bleibt und hebt es hervor, sobald es gebunden ist. ABBRECHEN oder das Home-Feld binden nichts. BINDEN bindet nichts, solange eine Suche läuft, `SUCHE LÄUFT: DEN KNOTEN NACH DEM ENDE WÄHLEN`, oder wenn eine neue Suche die Liste unter der Frage änderte, `KNOTEN NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`; die Texte des Dials nennen das Dial, die der IMU den Sensor. BINDEN der IMU bindet nichts, während ihre Kalibrierung läuft oder Bluetooth LE startet, `JETZT KEINE BINDUNG: KALIBRIERUNG LÄUFT ODER BLUETOOTH STARTET`. Nach einem Binden verbindet sich das Panel sofort mit dem Sensor und nach einer verlorenen Verbindung nach 1s erneut.
 
 ### Bindung lösen
 
@@ -211,11 +244,12 @@ ARMED lehnt es nicht ab. Ein Lauf, der das Gerät nutzt, trifft es wie eine verl
 - Dial: sofort verloren; bei ARMED ist das ein Fehler, und jeder Ausgang geht aus.
 - Leistungsknoten: Ein Lauf, der seinen INA228 liest, bekommt keinen Messwert und endet nach 300ms als Fehler, jeder Ausgang aus.
 - Auswuchtknoten: Seine Messwerte veralten.
+- IMU: Ein Lauf, der ihren Winkel liest, trifft eine Lücke über 300ms und endet mit `IMU antwortet nicht`.
 
 ## Verwandte Seiten
 
 - [Setup](setup.md)
-- [IMU](imu.md)
+- [Die Bildschirmhilfe](band.md#die-bildschirmhilfe)
 - [Sensoren](setup-sensors.md)
 - [Motor und ESC](motor.md)
 - [Balance](balance.md)

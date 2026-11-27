@@ -1,13 +1,17 @@
 /**
  * @file
- * @brief The IMU screen (SETUP's IMU tile): the bound sensor, the Bluetooth
- *        LE (BLE) scan and its list, the C6's version and the link state,
- *        the calibration hold, ZERO, battery and the live angles.  Fed a
- *        view each frame; its commands are taken by the panel's `blec`
- *        task.
+ * @brief The Bluetooth IMU as the panel's screens see it: the view the
+ *        panel hands over each frame (the bound sensor, the Bluetooth LE
+ *        (BLE) scan and its list, the C6's version, the link state, the
+ *        calibration, the battery and the live angles) and the commands
+ *        the screens queue for the panel's `blec` task.
  *
- * The view's types name no radio: the link under the controller
- * (imu_ble.h) converts its devices, errors and version into them.
+ * SETUP > WIRELESS > IMU (wireless_imu.c) shows the view and queues SCAN,
+ * BIND, ZERO, CLEAR ZERO and CALIBRATE; SERVO's angle source picker
+ * (servo_angle_pick.c) and the READY tags (servo_drive_ready.c) read it
+ * and queue SCAN, BIND and ZERO.  The view's types name no radio: the
+ * link under the controller (imu_ble.h) converts its devices, errors and
+ * version into them.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -17,7 +21,6 @@
 #include <stdint.h>
 
 #include "imu.h"
-#include "ui_screen.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -86,6 +89,11 @@ typedef struct {
     char          version[IMU_VERSION_MAX];  /**< the C6's, "" unknown */
     char          bound_addr[IMU_ADDR_MAX];  /**< "" none */
     char          bound_name[IMU_NAME_MAX];  /**< from the scan, "" none */
+    uint8_t       scan_left_s;     /**< the scan's time left, s; 0 when
+                                        none runs */
+    bool          scan_done;       /**< a scan ended since IMU ON */
+    bool          scan_cut;        /**< that scan was stopped by ARMED or
+                                        IMU OFF */
     uint8_t       found_n;         /**< sensors of the last scan */
     imu_dev_t     found[IMU_FOUND_MAX];      /**< those sensors */
     uint16_t      hidden;          /**< other devices the scan heard */
@@ -96,7 +104,7 @@ typedef struct {
     /**
      * @brief Scans the controller refused while ARMED or while an arm
      *        waits (imu_ctl_live()), counted: a change raises
-     *        IMU_SCAN_ARMED on the band (imu_screen_set()).
+     *        IMU_SCAN_ARMED on the band (imu_view_set()).
      */
     uint16_t      scan_armed;
     imu_reading_t r;               /**< the reading */
@@ -118,31 +126,42 @@ typedef struct {
     uint8_t        arg;    /**< BIND's index into found */
 } imu_cmd_t;
 
-/** @brief The frame's view. @param v The view, copied; NULL does nothing. */
-void imu_screen_set(const imu_view_t *v);
+/**
+ * @brief The frame's view.  A calibration that ends says so on the band:
+ *        DONE as a notice, FAILED as an alert.
+ * @param v The view, copied; NULL does nothing.
+ */
+void imu_view_set(const imu_view_t *v);
 /** @brief Take the next command. @param out Receives it.
  *  @return false when there is none. */
-bool imu_screen_take(imu_cmd_t *out);
-/** @brief The view the panel handed over last (imu_screen_set()), for
- *         the screens that list the sensors outside this one.
+bool imu_view_take(imu_cmd_t *out);
+/** @brief The view the panel handed over last (imu_view_set()).
  *  @return The view; never NULL. */
-const imu_view_t *imu_screen_view(void);
+const imu_view_t *imu_view_get(void);
 /**
- * @brief Bind sensor @p i of the last scan, as a tap on it in the found
- *        list does.
+ * @brief Bind sensor @p i of the last scan.
  * @param i The index into the view's found list.
  * @return Whether the BIND was queued: @p i is listed, Bluetooth runs, no
  *         scan and no calibration runs.
  */
-bool imu_screen_bind(uint8_t i);
-/** @brief ZERO, as the screen's ZERO button takes it: the current angles
- *         as the IMU's zero.
- *  @return Whether the ZERO was queued: the view holds a valid reading. */
-bool imu_screen_zero(void);
+bool imu_view_bind(uint8_t i);
 /** @brief Whether a BIND is taken now: Bluetooth runs, no scan and no
- *         calibration runs (imu_screen_bind()).
+ *         calibration runs (imu_view_bind()).
  *  @return Whether it is. */
-bool imu_screen_bind_free(void);
+bool imu_view_bind_free(void);
+/** @brief ZERO: the current angles as the IMU's zero.
+ *  @return Whether the ZERO was queued: the view holds a valid reading. */
+bool imu_view_zero(void);
+/** @brief CLEAR ZERO: the IMU's zero forgotten.
+ *  @return Whether the UNZERO was queued: the reading is zeroed. */
+bool imu_view_unzero(void);
+/** @brief Whether CALIBRATE is taken now: the sensor sends frames
+ *         (CONNECTED) and no calibration runs.
+ *  @return Whether it is. */
+bool imu_view_cal_free(void);
+/** @brief CALIBRATE, the accelerometer's calibration of 3s.
+ *  @return Whether it was queued (imu_view_cal_free()). */
+bool imu_view_calibrate(void);
 /**
  * @brief Whether a sensor is bound and holds the link: subscribed, with
  *        frames or without.  A connected Bluetooth LE sensor does not
@@ -154,35 +173,40 @@ bool imu_view_bound_linked(const imu_view_t *v);
 /**
  * @brief Search for sensors: IMU ON in SETUP when it is off (saved), and
  *        the SCAN queued once Bluetooth LE runs and no scan or calibration
- *        does.  A scan already under way, no sync with the C6 and a C6
- *        that failed take none; a search owed waits through them.
+ *        does.  Refused while ARMED, with IMU_SCAN_ARMED on the band.  A
+ *        scan already under way, no sync with the C6 and a C6 that failed
+ *        take none; a search owed waits through them.
  * @return Whether a scan is queued or owed.
  */
-bool imu_screen_search(void);
+bool imu_view_search(void);
 /** @brief Whether a search waits for Bluetooth LE to start before its SCAN
- *         is queued (imu_screen_search()).
+ *         is queued (imu_view_search()).
  *  @return Whether it waits. */
-bool imu_screen_search_owed(void);
-/** @brief The IMU screen, for the router. @return The screen. */
-const ui_screen_t *imu_screen(void);
-/** @brief Repaint on the next frame. */
-void imu_screen_invalidate(void);
-/* --- for the tests: rows by index, the list, the hold button --- */
-/** @brief A control of the screen. @param row Its index (imu_screen_int.h).
- *  @return Its rectangle in the body; empty for none. */
-gfx_rect_t imu_screen_row_rect(int row);
-/** @brief Row @p i of the found list. @param i 0 to IMU_FOUND_MAX - 1.
- *  @return Its rectangle in the body; empty past the list. */
-gfx_rect_t imu_screen_choice_rect(int i);
-/** @brief The calibration's hold. @return Its rectangle in the body. */
-gfx_rect_t imu_screen_hold_rect(void);
-/** @brief Card line @p i's box, as the card draws it and repaints it alone.
- *  @param i The line, 0 (the sensor) to 8 (the battery).
- *  @return Its rectangle in the body; empty for any other line. */
-gfx_rect_t imu_screen_line_rect(int i);
-/** @brief State line @p i as it reads now. @param i The line.
- *  @return The line; NULL past the last. */
-const char *imu_screen_line(int i);    /**< state lines; NULL past the last */
+bool imu_view_search_owed(void);
+/**
+ * @brief The time since the newest angle frame reached the panel, ms,
+ *        99999 at most; moved on by imu_view_tick().
+ * @return The age.
+ */
+uint32_t imu_view_age_ms(void);
+/**
+ * @brief Time passed: the reading's age moves on while it is valid.
+ * @param dt_s The frame's time, s.
+ */
+void imu_view_tick(float dt_s);
+/**
+ * @brief Counts the views that changed more than the reading: the link,
+ *        the scan, the bind, the calibration, the error.
+ * @return The count.
+ */
+uint32_t imu_view_rev(void);
+/**
+ * @brief Counts the views that changed the reading alone.
+ * @return The count.
+ */
+uint32_t imu_view_read_rev(void);
+/** @brief Back to the start: no view, no command, no search owed. */
+void imu_view_reset(void);
 
 #ifdef __cplusplus
 }

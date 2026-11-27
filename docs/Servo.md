@@ -1689,7 +1689,7 @@ the screen is `shared/ui/servo_rudder_panel.c`.
   IMU's AXIS and SIGN.
 - ZERO stores its reference relative to the source's raw count 0. Changing
   ENC CENTER afterwards therefore leaves the measured deflection unchanged. Another ANGLE SOURCE, the IMU's other AXIS,
-  SIGN or algorithm, or a ZERO or CLEAR ZERO on the IMU screen, drops the
+  SIGN or algorithm, or a ZERO or CLEAR ZERO in SETUP > WIRELESS > IMU, drops the
   zero and MAX: the screen reads as before ZERO.
 - A zero on the AS5600 survives a restart. ZERO saves it (settings
   `rud_zero` and `rud_zero_key`), and at the start it comes back while

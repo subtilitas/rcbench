@@ -609,8 +609,36 @@ to #995.
   (`firmware/panel/main/panel_servo.c`). Debug console lines `servo`,
   `servo new`, `servo id <id>`, `servo none`
   ([Servo](docs/Servo.md#labelled-servos-filing)).
+- The settings list takes hold rows: a custom row with `held()` draws a
+  278 x 48px button at its right that fires once after a 2s hold, flashes
+  as it fires, shows its hint on a release before 2s and ends unfired when
+  the finger slides off or the row locks. A custom row marked `live`
+  repaints its 278 x 24px value box alone when its text changes; SETUP
+  repaints the hold's button alone while its fill moves
+  (`ui_setlist_hold.c`, `ui_setlist_draw.c`, `settings_draw.c`;
+  `test_wireless_imu`, `test_repaint_parts`).
+- A settings list ends a press held on a row, and closes an open choice
+  list, when its rows change under it: the row index the press holds
+  names another row then, so the release acts on none (`ui_setlist.c`;
+  `test_setlist`).
+- SEARCH shows the bound device's address under its name, and for the IMU
+  the count of the devices the last scan heard and did not list
+  (`wl_search_draw.c`).
 
 ### Changed
+
+- The Bluetooth IMU has no screen and no SETUP tile of its own: SETUP >
+  WIRELESS > IMU holds all of it. With the IMU on the entry shows Scan for
+  sensor and Bound sensor, which open SEARCH as the Dial's and the nodes'
+  rows do (bind, and UNBIND as a 2s hold); Last error while the last scan,
+  connect or write failed; the live Angle X, Y and Z (the axis the runs
+  read named so), Frames (rate and age), Sensor battery and C6 version;
+  ZERO and CLEAR ZERO as taps; and CALIBRATE as a 2s hold, then the
+  settings. A calibration's end shows in the band. The SETUP hub holds 7
+  tiles: PANEL, SENSORS, OUTPUTS; SD CARD, WI-FI, WIRELESS; UPDATES, and
+  the carrier's LAYOUT. WIRELESS' line reads `IMU, DIAL, NODES, PRINTER`
+  (`imu_view.c`, `wireless_imu.c`, `wireless_pane.c`,
+  `settings_screen_int.h`; `test_wireless_imu`, `test_imu_pane`).
 
 - A servo label whose height drops a DUT NAME line shows the id joined in
   one line over DUT NAME in smaller faces: the pair of 16x28, 12x24, 10x20,

@@ -33,7 +33,7 @@
  * sensor is its address and its type, public or random --
  * switches the IMU on when it is off and sets SET_ANGLE_SOURCE to IMU; all
  * three save at once and close the list.  SEARCH FOR IMU switches the IMU
- * on when it is off and scans once Bluetooth LE runs (imu_screen_search());
+ * on when it is off and scans once Bluetooth LE runs (imu_view_search());
  * the list stays open and follows the scan.
  *
  * TEST's and LIMIT RUN's cards draw an ANGLE row with angle_pick_run_row():
@@ -41,8 +41,8 @@
  * NO READING` in amber while it does not.  It is never a refusal: a run
  * without an angle runs without its angle columns.
  *
- * The entries are built from the view the panel hands the IMU screen each
- * frame, whatever screen shows, so the list needs no panel code of its own.
+ * The entries are built from the view the panel hands over each frame
+ * (imu_view.h), whatever screen shows, so the list needs no panel code of its own.
  *
  * RUDDER AUTO refuses the IMU's yaw, AXIS Z, in either ALGORITHM
  * (angle_pick_yaw_why()).  On a BWT901CL on the bench yaw drifts 2.4° in
@@ -63,7 +63,7 @@
 #include <string.h>
 
 #include "imu.h"
-#include "imu_screen.h"
+#include "imu_view.h"
 #include "sensors_pane.h"
 #include "sensors_rows.h"
 #include "settings.h"
@@ -161,7 +161,7 @@ static int find_sensor(const imu_view_t *v, const char *addr, uint8_t type)
 static const char *bind_why(const imu_view_t *v)
 {
     static char word[48];
-    if (imu_screen_bind_free()) {
+    if (imu_view_bind_free()) {
         return NULL;
     }
     if (v->cal == IMU_CAL_RUNNING) {
@@ -245,7 +245,7 @@ static void add_search(const imu_view_t *v)
             AP_SEARCH, true);
     } else if (v->link == IMU_LINK_SCANNING) {
         add(TR(IMU_SCANNING), AP_SEARCH, true);
-    } else if (imu_screen_search_owed()) {
+    } else if (imu_view_search_owed()) {
         /* Bluetooth LE starts for it: the state word until it runs. */
         add(TR(IMU_ST_STARTING), AP_SEARCH, true);
     } else {
@@ -257,7 +257,7 @@ static void add_search(const imu_view_t *v)
  *         title and the list's place kept. */
 static void build(void)
 {
-    const imu_view_t *v = imu_screen_view();
+    const imu_view_t *v = imu_view_get();
     s.ch.count = 0;
     s.ch.refused = 0u;
     memset(s_ap.split, 0, sizeof(s_ap.split));
@@ -300,7 +300,7 @@ static void build(void)
         s_ap.type[i] = v->found[i].addr_type;
     }
     const bool idle = v->link != IMU_LINK_SCANNING
-                      && !imu_screen_search_owed();
+                      && !imu_view_search_owed();
     if (found == 0 && idle && v->err == IMU_ERR_NONE_FOUND) {
         /* A connected sensor does not advertise: the scan cannot list
          * the bound one, which stays above. */
@@ -370,10 +370,10 @@ void angle_pick_open(void)
     open_choice(CH_ANGLE, SETTING_COUNT, TR(SV_ANG_TITLE));
     /* Nothing bound and nothing scanned yet: the list fills by itself.  A
      * bound sensor is not scanned under: the user's SEARCH does that. */
-    const imu_view_t *v = imu_screen_view();
+    const imu_view_t *v = imu_view_get();
     if (v->link == IMU_LINK_READY && v->found_n == 0u
         && v->err == IMU_ERR_NONE && !ui_router_status()->armed) {
-        (void)imu_screen_search();
+        (void)imu_view_search();
     }
     build();
     repaint();
@@ -404,11 +404,11 @@ void angle_pick_choose(int value)
     if (svs_list_bench_why() != NULL) {
         return;
     }
-    const imu_view_t *v = imu_screen_view();
+    const imu_view_t *v = imu_view_get();
     if (value == AP_AS5600) {
         set_source(SERVO_ANGLE_AS5600);
     } else if (value == AP_SEARCH) {
-        (void)imu_screen_search();
+        (void)imu_view_search();
         open_choice(CH_ANGLE, SETTING_COUNT, TR(SV_ANG_TITLE));
         build();
     } else if (value == AP_BOUND) {
@@ -418,7 +418,7 @@ void angle_pick_choose(int value)
         const int k = value - AP_IMU0;
         const int i = find_sensor(v, s_ap.addr[k], s_ap.type[k]);
         if (i >= 0 && !same_dev(v->bound_addr, &v->found[i])
-            && !imu_screen_bind((uint8_t)i)) {
+            && !imu_view_bind((uint8_t)i)) {
             /* No bind taken now: nothing changes, the list stays, the
              * band names why. */
             const char *why = bind_why(v);
@@ -447,12 +447,12 @@ void angle_pick_refused(int k)
     }
     if (s.ch.values[k] >= AP_IMU0) {
         /* A sensor while no bind is taken: why. */
-        const char *why = bind_why(imu_screen_view());
+        const char *why = bind_why(imu_view_get());
         ui_router_set_alert(why != NULL ? why : s.ch.labels[k]);
         return;
     }
     if (s.ch.values[k] == AP_NONE) {
-        ui_router_set_alert(imu_view_bound_linked(imu_screen_view())
+        ui_router_set_alert(imu_view_bound_linked(imu_view_get())
                                 ? TR(IMU_ERR_NONE_OTHER)
                                 : TR(IMU_ERR_NONE_FOUND));
         return;
@@ -469,7 +469,7 @@ bool angle_pick_current(int k)
     if (enc_src() == SERVO_ANGLE_AS5600) {
         return value == AP_AS5600;
     }
-    const imu_view_t *v = imu_screen_view();
+    const imu_view_t *v = imu_view_get();
     if (value == AP_BOUND) {
         return true;
     }

@@ -40,16 +40,16 @@ enthält den Hinweis des Projekts.
 | die Seite des Sensors: der Messwert, seine Befehle, die Kalibrierung, die Lücken, die Übergabe an SERVO; ohne Funk | `shared/ui/imu_sensor.c` |
 | die BLE-Verbindung: die Central für die IMU, ihre Geräte, Fehler und die Version des C6 in den Typen der Ansicht | `shared/ui/imu_ble.c` |
 | die Steuerung: verbindet die Verbindung mit der Seite des Sensors, der Verbindungszustand, die Ansicht | `shared/ui/imu_ctl.c` |
-| die Seite IMU und ihr Eintrag unter SETUP | `shared/ui/imu_screen.c`, `shared/ui/sensors_pane.c` |
+| die Sicht und die Befehle, die die Bildschirme teilen | `shared/ui/imu_view.c` |
+| SETUP > WIRELESS > IMU: Suche, Bindung, aktuelle Zeilen, NULLPUNKT, NULLPUNKT LÖSCHEN, KALIBRIEREN und die Einstellungen | `shared/ui/wireless_imu.c`, `shared/ui/wireless_pane.c` |
 | der Task `blec`: Events hinein und Aktionen hinaus für jeden Client über den Hub, alle 5ms | `firmware/panel/main/panel_blec.c` |
 | die Seite der IMU in diesem Task und die Anbindung an den Frame-Task | `firmware/panel/main/panel_imu.c` |
 | der Start von NimBLE, seine Aufrufe und seine Callbacks | `firmware/panel/main/panel_ble.c` |
 
 ## Start
 
-Das erste IMU EIN (SETUP > WIRELESS > IMU, SENSOREN SUCHEN auf der
-IMU-Seite oder IMU SUCHEN in der Liste WINKELQUELLE von SERVO bei
-ausgeschalteter IMU, und beim Einschalten mit gespeichertem IMU EIN)
+Das erste IMU EIN (SETUP > WIRELESS > IMU oder IMU SUCHEN in der Liste
+WINKELQUELLE von SERVO bei ausgeschalteter IMU, und beim Einschalten mit gespeichertem IMU EIN)
 startet Bluetooth LE: die Verbindung zum C6, den
 Host-Task `nimble_host` und das Warten von 3 000ms auf seinen Sync
 ([Der Funk über den ESP32-C6, Bluetooth LE über den
@@ -73,42 +73,49 @@ des Panels im Reset: WLAN und Bluetooth sind aus.
 
 ## Suchen und binden
 
-SENSOREN SUCHEN startet eine aktive Suche von 10 000ms mit dem
+Sensor suchen (SETUP > WIRELESS > IMU) öffnet SEARCH und startet eine
+aktive Suche von 10 000ms mit dem
 Duplikatfilter des Controllers. Ein Gerät wird gelistet, wenn seine
 Advertising-Daten die 16-Bit-UUID 0x18F0 oder die 128-Bit-UUID des
 ISSC-Transparent-UART-Dienstes enthalten; jedes andere Gerät wird als
 ausgeblendet gezählt. 0x18F0 ist keine Vergabe der Bluetooth SIG, deshalb
 prüft das Verbinden den Dienst. Die Liste fasst 8 Geräte, das stärkste
 zuerst: Name, Adresse und RSSI (Received Signal Strength Indication), zum
-Beispiel `HC-06  00:0C:BF:08:19:29  -50dBm`. Das Funkmodul des Sensors
-meldet den Namen `HC-06`.
+Beispiel `HC-06  -50dBm`, die Adresse unter dem Namen des gebundenen auf
+der Karte von SEARCH. SEARCH zählt die Geräte, die es hörte und nicht
+listete, `4 ANDERE GERÄTE AUSGEBLENDET`. Das Funkmodul des Sensors meldet
+den Namen `HC-06`.
 
-Bei ausgeschalteter IMU schaltet SENSOREN SUCHEN in SETUP IMU EIN
-(gespeichert) und öffnet die Liste; ihre Überschrift zeigt `BLUETOOTH
-STARTET`, bis Bluetooth LE läuft, dann startet die Suche. Ohne Sync mit
-dem C6 (`KEIN BLUETOOTH AM C6`) und bei ausgefallenem C6 nimmt SENSOREN
-SUCHEN keinen Druck an. Die Zustandszeile der Karte zeigt `IMU AUS: SUCHEN
-SCHALTET SIE EIN`, solange die IMU aus ist. Eine Suche, die auf Bluetooth
-LE wartet, endet ohne Scan, wenn der Start in `KEIN BLUETOOTH AM C6`
-endet, wenn die Liste geschlossen wird und wenn die Bench auf ARMED
-schaltet.
+Sensor suchen steht, solange die IMU an ist. Startet Bluetooth LE noch,
+zeigt sein Wert `BLUETOOTH STARTET`, und die Suche geht hinaus, sobald
+Bluetooth LE läuft. Ohne Sync mit dem C6 (`KEIN BLUETOOTH AM C6`) und bei
+ausgefallenem C6 zeigt das Band `BLUETOOTH NICHT BEREIT: KEINE
+SENSORSUCHE`, und keine Suche startet. IMU SUCHEN auf SERVO schaltet in
+SETUP IMU EIN (gespeichert), wenn sie aus ist, und wartet ebenso. Eine
+Suche, die auf Bluetooth LE wartet, endet ohne Scan, wenn der Start in
+`KEIN BLUETOOTH AM C6` endet und wenn die Bench auf ARMED schaltet.
 
-Solange die Bench ARMED ist, starten SENSOREN SUCHEN, AKTUALISIEREN und
-IMU SUCHEN auf SERVO keinen Scan, und das Band zeigt `KEINE IMU-SUCHE BEI
-ARMED: ERST AUF SAFE SCHALTEN`. Dasselbe gilt, solange ein ARM wartet:
-vom Ende des ARM-Haltens bis zur ersten ARMED-Meldung des IOmcu öffnet
-sich die Liste, kein Scan läuft, und das Band zeigt denselben Text. Ein Scan, der beim Schalten auf ARMED
+Solange die Bench ARMED ist, starten Sensor suchen, AKTUALISIEREN von
+SEARCH und IMU SUCHEN auf SERVO keinen Scan, und das Band zeigt `KEINE
+IMU-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`. Dasselbe gilt, solange ein
+ARM wartet: vom Ende des ARM-Haltens bis zur ersten ARMED-Meldung des
+IOmcu öffnet SEARCH, kein Scan läuft, und das Band zeigt denselben Text. Ein Scan, der beim Schalten auf ARMED
 läuft, wird beendet; die Liste behält, was er bis dahin gehört hat. Die
 Scans des Dial und der Knoten folgen derselben Regel
 ([Dial](Dial-de.md)).
 
-Ein Tippen auf eine Zeile bindet diesen Sensor sofort. SETUP behält seine
+Ein Tippen auf eine Zeile von SEARCH öffnet seine Bindungsfrage, und
+BINDEN bindet diesen Sensor sofort; BINDEN bindet nichts, während die
+Kalibrierung läuft oder Bluetooth LE startet, `JETZT KEINE BINDUNG:
+KALIBRIERUNG LÄUFT ODER BLUETOOTH STARTET`. SETUP behält seine
 Adresse mit dem Adresstyp, `00:0C:BF:08:19:29 P` (öffentlich) oder `... R`
 (zufällig), als `imu_ble` und seinen Namen als `imu_name`, 23 Zeichen, und
 fordert das Speichern an. Gespeichert wird in nvs im nächsten Frame mit
 SAFE und ohne Versorgung an oder im Anlauf. IMU AUS behält die Bindung;
 bei IMU EIN nach einem Neustart verbindet sich das Panel ohne Suche mit
-ihr. Nur eine neue Bindung ersetzt sie. Eine HC-05-Bindung wird nicht
+ihr. Eine neue Bindung ersetzt sie, und `2s HALTEN: BINDUNG LÖSEN` auf
+SEARCH leert `imu_ble` und `imu_name` und fordert Speichern an, was die
+Verbindung beendet. Eine HC-05-Bindung wird nicht
 übernommen; einmal suchen und binden. Den Schlüssel `imu_addr` des HC-05
 löscht der erste Start aus nvs.
 Ein neu gebundener Sensor ersetzt den vorigen.
@@ -117,7 +124,7 @@ eines laufenden Verbindungsaufbaus bricht diesen ab, und die Versuche gehen
 nach der Suche weiter. Ein verbundener Sensor sendet keine Advertisements,
 also listet keine Suche den gebundenen, solange er verbunden ist (BOUND,
 CONNECTED oder NO FRAMES). Eine Suche ohne Fund zeigt dann `KEIN ANDERER
-SENSOR: DER GEBUNDENE IST VERBUNDEN` auf der IMU-Seite und `KEINE ANDERE IMU
+SENSOR: DER GEBUNDENE IST VERBUNDEN` in der Zeile LETZTER FEHLER des IMU-Eintrags und `KEINE ANDERE IMU
 GEFUNDEN` in der Liste WINKELQUELLE von SERVO, die Zeile des gebundenen
 Sensors darüber.
 
@@ -228,7 +235,7 @@ Messwerts (°C x 100), die kein Bildschirm und keine Konsolenzeile zeigt;
 | --- | --- | --- |
 | Entsperren | `FF AA 69 88 B5` | vor jedem anderen Befehl; auf der älteren Firmware harmlos (an diesem Sensor nicht gemessen) |
 | RSW, SAVE | `FF AA 02 0C 00`, `FF AA 00 00 00` | einmal je Verbindung, wenn deren erste 8 gültige Frames andere Typen als 0x52 und 0x53 zeigen |
-| CALSW 1, 3s, CALSW 0, SAVE | `FF AA 01 01 00`, `FF AA 01 00 00`, `FF AA 00 00 00` | `2s HALTEN: KALIBRIEREN`, verbunden |
+| CALSW 1, 3s, CALSW 0, SAVE | `FF AA 01 01 00`, `FF AA 01 00 00`, `FF AA 00 00 00` | `2s HALTEN: KALIBRIEREN` in SETUP > WIRELESS > IMU, verbunden |
 | RATE, SAVE | `FF AA 03 <code> 00`, `FF AA 00 00 00` | eine Änderung von IMU-Rate: 0x06 10Hz, 0x07 20Hz, 0x08 50Hz, 0x09 100Hz, 0x0B 200Hz |
 | AXIS6, SAVE | `FF AA 24 01 00` (6-AXIS) oder `FF AA 24 00 00` (9-AXIS), `FF AA 00 00 00` | eine Änderung von IMU-Algorithmus |
 
@@ -261,7 +268,7 @@ RATE geht nur bei einer Änderung zum Sensor, nicht bei jedem Verbinden:
 jede RATE kommt mit einem SAVE in den Flash des Sensors, und die Rate gilt
 erst nach dem Aus- und Einschalten. RATE in SETUP ist das, was das Panel
 erfragt, Vorgabe 50Hz. Der Sensor läuft mit der zuletzt gespeicherten
-Rate, ab Werk 10Hz. Der IMU-Bildschirm und SETUP > WIRELESS > IMU zeigen
+Rate, ab Werk 10Hz. Die Zeile Frames und der Zustand des IMU-Eintrags, SETUP > WIRELESS > IMU, zeigen
 die Rate, mit der die Winkel-Frames ankommen, gemessen am Panel. Welche
 RATE-Werte über die BLE-Verbindung passen, hängt von den Frames je
 Messung ab (RSW, unten).
@@ -332,7 +339,7 @@ mit der der Sensor läuft: seiner gespeicherten Rate, nicht der RATE in
 SETUP (siehe oben). Bei 10Hz braucht IMU-Filter 10 etwa 1s bis 63% eines
 Sprungs, bei 50Hz etwa 0,2s.
 
-- Jeder Messwert nutzt den gefilterten Winkel: der IMU-Bildschirm,
+- Jeder Messwert nutzt den gefilterten Winkel: die Winkelzeilen des IMU-Eintrags,
   NULLPUNKT, RUDER, AUTO, der Servotest und der LIMIT RUN.
 - Der erste Winkel-Frame nach einem Verbinden, einem Neuverbinden, einem
   Binden, IMU EIN oder einem veralteten Messwert setzt den Filter: der

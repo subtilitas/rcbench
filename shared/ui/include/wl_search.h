@@ -1,11 +1,11 @@
 /**
  * @file
- * @brief SEARCH: the search screen of SETUP > WIRELESS, one for the Dial,
- *        the power node and the balance node.
+ * @brief SEARCH: the search screen of SETUP > WIRELESS, one for the IMU,
+ *        the Dial, the power node and the balance node.
  *
- * A tap on SCAN FOR DIAL or SCAN FOR NODE opens it and asks for a scan of
- * BLEU_SCAN_MS (10s); a tap on BOUND DIAL or BOUND NODE opens it without
- * one, on the last scan's list.  A scan the device's entry refuses (ARMED,
+ * A tap on SCAN FOR SENSOR, SCAN FOR DIAL or SCAN FOR NODE opens it and
+ * asks for a scan of BLEU_SCAN_MS (10s); a tap on BOUND SENSOR, BOUND DIAL
+ * or BOUND NODE opens it without one, on the last scan's list.  A scan the device's entry refuses (ARMED,
  * a scan running, Bluetooth not ready) says why on the band, as the row
  * did, and the screen opens on the last list.
  *
@@ -13,7 +13,9 @@
  * left, FOUND n, NONE FOUND, STOPPED BY ARM or NO SCAN YET) over the
  * devices the scan found, up to BLEU_FOUND_MAX (8), each with its name or
  * address and its RSSI, the bound one marked; right, the device's kind,
- * its link state, the bound device and SCAN AGAIN.  The home tag returns
+ * its link state, the bound device (its name and address), SCAN AGAIN,
+ * UNBIND and, for an entry that counts them (the IMU), the devices the
+ * last scan heard and did not list.  The home tag returns
  * to SETUP > WIRELESS on the device's entry.
  *
  * A tap on a found device opens the bind question in place of the list: the
@@ -82,6 +84,8 @@ typedef struct {
     wls_dev_t   found[WLS_FOUND_MAX]; /**< strongest first */
     char        bound_addr[WLS_ADDR_MAX]; /**< the bound one, "" none */
     char        bound_name[WLS_NAME_MAX]; /**< its name, "" none */
+    uint16_t    hidden;      /**< devices the scan heard and did not
+                                  list; 0 shows no count */
     char        word[WLS_WORD_MAX];       /**< the link state in words */
     gfx_color_t word_ink;                 /**< their colour */
 } wls_view_t;

@@ -2138,9 +2138,6 @@ UI_TEXT(HG_SET_WIFI, 0,
 UI_TEXT(HG_SET_UPDATES, 0,
     "Looks for a newer panel firmware on GitHub and installs it.",
     "Sucht auf GitHub eine neuere Firmware für das Panel und installiert sie.")
-UI_TEXT(HG_SET_IMU, 0,
-    "The Bluetooth angle sensor: Bluetooth LE through the ESP32-C6, the scan for it and its angles.",
-    "Der Bluetooth-Winkelsensor: Bluetooth LE über den ESP32-C6, die Suche nach ihm und seine Winkel.")
 UI_TEXT(HG_SET_LAYOUT, 0,
     "The carrier's connectors and the soldered pin of each, and what each one drives now.",
     "Die Stecker des Trägers, der verlötete Pin jedes Steckers und was er gerade ansteuert.")
@@ -2175,8 +2172,8 @@ UI_TEXT(HG_SET_ENTRY_PRINTER, 0,
     "The label printer, a Supvan T50M Pro over Bluetooth LE. A tap shows its rows on the right.",
     "Der Etikettendrucker, ein Supvan T50M Pro über Bluetooth LE. Tippen zeigt rechts seine Zeilen.")
 UI_TEXT(HG_SET_ENTRY_IMU, 0,
-    "The panel reads it over Bluetooth LE through the ESP32-C6. A tap shows its rows on the right.",
-    "Das Panel liest sie per Bluetooth LE über den ESP32-C6. Tippen zeigt rechts ihre Zeilen.")
+    "Over Bluetooth LE through the ESP32-C6. A tap shows its scan, angles, ZERO, calibration and settings.",
+    "Per Bluetooth LE über den ESP32-C6. Tippen zeigt Suche, Winkel, NULLPUNKT, Kalibrierung und Werte.")
 /* ------------------------------------------------ plots and hero cards */
 UI_TEXT(PLOT_NOW, 0,
     "NOW",
@@ -2584,8 +2581,8 @@ UI_TEXT(HG_SU_RESET, 0,
 UI_TEXT(HG_SU_OUTPUT, 0,
     "OUTPUT ON is a 2s hold, OUTPUT OFF a press. Leaving SUPPLY switches off an output it switched on.",
     "AUSGANG EIN: 2s halten, AUSGANG AUS: Druck. Verlassen von SUPPLY schaltet einen hier eingeschalteten aus.")
-/* MOTOR & ESC's, ESC STICK's and the IMU screen's guides (motor_guide.c,
- * esc_stick_guide.c, imu_guide.c), as SERVO's. */
+/* MOTOR & ESC's and ESC STICK's guides (motor_guide.c,
+ * esc_stick_guide.c), as SERVO's. */
 UI_TEXT(HG_MO_TITLE_LIVE, 0,
     "MOTOR & ESC: LIVE",
     "MOTOR & ESC: LIVE")
@@ -2688,36 +2685,6 @@ UI_TEXT(HG_ES_RUN, 0,
 UI_TEXT(HG_ES_OPTIONS, 0,
     "Supply voltage and current limit, and the beep timings. SAFE only, no run under way.",
     "Spannung und Strombegrenzung des Netzteils sowie die Pieptonzeiten. Nur bei SAFE, ohne Lauf.")
-UI_TEXT(HG_IM_TITLE_CTL, 0,
-    "IMU: SCAN AND ZERO",
-    "IMU: SUCHE UND NULLPUNKT")
-UI_TEXT(HG_IM_TITLE_READ, 0,
-    "IMU: READINGS",
-    "IMU: MESSWERTE")
-UI_TEXT(HG_IM_SCAN, 0,
-    "Lists the sensors in range for 10s; a tap binds one. Switches the IMU on when it is off.",
-    "Listet 10s lang Sensoren in Reichweite; Tippen bindet einen. Schaltet die IMU dafür ein.")
-UI_TEXT(HG_IM_ZERO, 0,
-    "Takes the angles now as zero. With ANGLE SOURCE IMU it clears RUDDER's zero and MAX.",
-    "Nimmt die Winkel jetzt als Nullpunkt. Mit WINKELQUELLE IMU löscht er den Nullpunkt und MAX von RUDER.")
-UI_TEXT(HG_IM_UNZERO, 0,
-    "Angles from the sensor's own zero again. With ANGLE SOURCE IMU it clears RUDDER's zero and MAX.",
-    "Winkel wieder vom Sensor-Nullpunkt. Mit WINKELQUELLE IMU löscht es den RUDER-Nullpunkt und MAX.")
-UI_TEXT(HG_IM_CARD, 0,
-    "The bound sensor and its address, the C6's firmware and the link's state.",
-    "Der gebundene Sensor mit Adresse, die Firmware des C6 und der Zustand der Verbindung.")
-UI_TEXT(HG_IM_ANGLES, 0,
-    "Angles from the zero, 0.01°. The axis a servo run reads is in the accent colour.",
-    "Winkel vom Nullpunkt, 0.01°. Die Achse, die ein Servolauf liest, steht in der Akzentfarbe.")
-UI_TEXT(HG_IM_RATE, 0,
-    "Frames in the last second, the newest's age and the battery. Stale 300ms after a frame.",
-    "Frames der letzten Sekunde, Alter des neuesten und Akku. Veraltet 300ms nach einem Frame.")
-UI_TEXT(HG_IM_CAL, 0,
-    "Calibrates the accelerometer while connected. Keep the sensor still and level for 3s.",
-    "Kalibriert den Beschleunigungssensor bei Verbindung. Halte den Sensor 3s still und waagerecht.")
-UI_TEXT(HG_IM_OPTIONS, 0,
-    "Opens the IMU entry of SENSORS on SETUP; its home tag returns here.",
-    "Öffnet den IMU-Eintrag von SENSORS in SETUP; sein Home-Feld führt hierher zurück.")
 /* SEARCH's guide (wl_search_draw.c): the list, then the card and SCAN
  * AGAIN. */
 UI_TEXT(HG_WLS_TITLE_LIST, 0,
@@ -13750,8 +13717,8 @@ UI_SETTING_HELP(SET_RUDDER_LEN_MM,
     "Hinge line to trailing edge for the mm on RUDDER, 0 or 10 to 500mm",
     "Scharnier bis Hinterkante für die mm, 0 oder 10 bis 500mm")
 
-/* --- slice 3: the Bluetooth IMU (imu_screen.c, sensors_rows.c) --------- */
-/* SETUP > SENSORS > IMU's rows and their option lists.  RATE's options are
+/* --- slice 3: the Bluetooth IMU (wireless_imu.c, sensors_rows.c) ------- */
+/* SETUP > WIRELESS > IMU's settings and their option lists.  RATE's options are
  * imu_ctl_rate_code()'s order. */
 UI_SETTING_LABEL(SET_IMU_EN,
     "IMU",
@@ -13821,8 +13788,8 @@ UI_OPTIONS(imu_algo)
 UI_OPTION("6-AXIS", NULL)
 UI_OPTION("9-AXIS", NULL)
 UI_OPTIONS_END(imu_algo)
-/* The IMU entry's state words (25 cells of 8 x 16), the IMU screen's state
- * line, and the notices a RATE or an ALGORITHM change gives. */
+/* The IMU entry's state words (25 cells of 8 x 16), SEARCH's link state
+ * for the IMU, and the notices a RATE or an ALGORITHM change gives. */
 UI_TEXT(IMU_ST_STARTING, 25,
     "STARTING BLUETOOTH",
     "BLUETOOTH STARTET")
@@ -13868,36 +13835,17 @@ UI_TEXT(IMU_RATE_AFTER_CAL, 94,
 UI_TEXT(IMU_ALGO_AFTER_CAL, 94,
     "ALGORITHM IS SENT AFTER CALIBRATION",
     "ALGORITHMUS WIRD NACH DER KALIBRIERUNG AN DEN SENSOR GESENDET")
-/* SETUP's IMU tile, and the IMU screen: its buttons (46 cells of 10 x 20),
- * the card's lines (41 cells of 12 x 24), the calibration's and the last
- * error's lines (2 lines of 46 cells), the found list's heading (53 cells
- * of 12 x 24, an error among them) and its hidden count (2 lines of 32
- * cells of 10 x 20). */
-UI_TEXT(SET_HUB_IMU, 0,
-    "BLUETOOTH ANGLE SENSOR",
-    "BLUETOOTH-WINKELSENSOR")
-UI_TEXT(IMU_SCAN, 0,
-    "SCAN FOR SENSORS",
-    "SENSOREN SUCHEN")
-UI_TEXT(IMU_RESCAN, 0,
-    "SCAN AGAIN",
-    "AKTUALISIEREN")
-UI_TEXT(IMU_CLOSE, 0,
-    "CLOSE",
-    "SCHLIESSEN")
+/* SETUP > WIRELESS > IMU (wireless_imu.c): the calibration's button
+ * label, its hint and its lines, the frame rate's value, the errors LAST
+ * ERROR shows in its help line and the band's refusals; SEARCH's hidden
+ * count (32 cells of 10 x 20); SERVO's picker's words. */
 UI_TEXT(IMU_CAL_HOLD, 0,
     "HOLD 2s: CALIBRATE",
     "2s HALTEN: KALIBRIEREN")
 UI_TEXT(HOLD_HINT_IMU_CAL, 94,
     "Hold 2s to calibrate the accelerometer.",
     "Halte 2s, um den Beschleunigungssensor zu kalibrieren.")
-UI_TEXT(IMU_ZERO, 0,
-    "ZERO",
-    "NULLPUNKT")
-UI_TEXT(IMU_UNZERO, 0,
-    "CLEAR ZERO",
-    "NULLPUNKT LÖSCHEN")
-UI_TEXT(IMU_CAL_STILL, 92,
+UI_TEXT(IMU_CAL_STILL, 43,
     "KEEP IT STILL AND LEVEL FOR %us",
     "HALTE DEN SENSOR %us STILL UND WAAGERECHT")
 UI_TEXT(IMU_CAL_DONE, 92,
@@ -13906,36 +13854,18 @@ UI_TEXT(IMU_CAL_DONE, 92,
 UI_TEXT(IMU_CAL_FAILED, 92,
     "CALIBRATION ENDED WITHOUT FRAMES: TRY AGAIN",
     "KALIBRIERUNG OHNE FRAMES BEENDET. VERSUCHE ES ERNEUT")
-UI_TEXT(IMU_SENSOR, 0,
-    "SENSOR: %s",
-    "SENSOR: %s")
-UI_TEXT(IMU_NONE_BOUND, 41,
-    "SENSOR: NONE BOUND",
-    "SENSOR: KEINER GEBUNDEN")
 UI_TEXT(IMU_NO_NAME, 0,
     "NO NAME",
     "OHNE NAMEN")
-UI_TEXT(IMU_OFF_LINE, 41,
-    "IMU OFF: SCAN SWITCHES IT ON",
-    "IMU AUS: SUCHEN SCHALTET SIE EIN")
 UI_TEXT(IMU_RATE_AGE, 0,
     "RATE %.1fHz  AGE %ums",
     "RATE %.1fHz  ALTER %ums")
 UI_TEXT(IMU_RATE_NONE, 41,
     "RATE %.1fHz  NO ANGLE",
     "RATE %.1fHz  KEIN WINKEL")
-UI_TEXT(IMU_BATTERY, 0,
-    "BATTERY %.2fV",
-    "AKKU %.2fV")
 UI_TEXT(IMU_SCANNING, 53,
     "SCANNING: 10s",
     "SUCHE: 10s")
-UI_TEXT(IMU_FOUND, 0,
-    "FOUND %u: TAP ONE TO BIND IT",
-    "%u GEFUNDEN: TIPPE ZUM BINDEN AUF EINEN")
-UI_TEXT(IMU_LIST_EMPTY, 53,
-    "NO SCAN YET",
-    "NOCH KEINE SUCHE")
 UI_TEXT(IMU_HIDDEN, 0,
     "%u OTHER DEVICES HIDDEN",
     "%u ANDERE GERÄTE AUSGEBLENDET")
@@ -13960,13 +13890,109 @@ UI_TEXT(IMU_ERR_NONE_OTHER, 53,
 UI_TEXT(IMU_ERR_SCAN, 53,
     "THE SCAN DID NOT START: CODE %u",
     "DIE SUCHE STARTETE NICHT: CODE %u")
+UI_TEXT(IMU_ENTRY, 16,
+    "IMU",
+    "IMU")
+UI_TEXT(IMU_ROW_SCAN, 43,
+    "Scan for sensor",
+    "Sensor suchen")
+UI_TEXT(IMU_ROW_SCAN_HELP, 43,
+    "Opens SEARCH and scans 10s for sensors",
+    "Öffnet SEARCH, sucht 10s nach Sensoren")
+UI_TEXT(IMU_ROW_BIND, 43,
+    "Bound sensor",
+    "Gebundener Sensor")
+UI_TEXT(IMU_ROW_BIND_HELP, 43,
+    "Opens SEARCH on the last scan's sensors",
+    "Öffnet SEARCH mit den Sensoren der Suche")
+UI_TEXT(IMU_ROW_ERR, 43,
+    "Last error",
+    "Letzter Fehler")
+UI_TEXT(IMU_ROW_ANG_X, 31,
+    "Angle X",
+    "Winkel X")
+UI_TEXT(IMU_ROW_ANG_X_RUN, 31,
+    "Angle X: read by runs",
+    "Winkel X: für Läufe")
+UI_TEXT(IMU_ROW_ANG_Y, 31,
+    "Angle Y",
+    "Winkel Y")
+UI_TEXT(IMU_ROW_ANG_Y_RUN, 31,
+    "Angle Y: read by runs",
+    "Winkel Y: für Läufe")
+UI_TEXT(IMU_ROW_ANG_Z, 31,
+    "Angle Z",
+    "Winkel Z")
+UI_TEXT(IMU_ROW_ANG_Z_RUN, 31,
+    "Angle Z: read by runs",
+    "Winkel Z: für Läufe")
+UI_TEXT(IMU_ROW_ANGLE_HELP, 43,
+    "From the zero, 0.01°",
+    "Ab dem Nullpunkt, 0.01°")
+UI_TEXT(IMU_ROW_FRAMES, 31,
+    "Frames",
+    "Frames")
+UI_TEXT(IMU_ROW_FRAMES_HELP, 43,
+    "Frames in the last second, newest's age",
+    "Frames der letzten Sekunde, Alter")
+UI_TEXT(IMU_ROW_BAT, 31,
+    "Sensor battery",
+    "Sensorakku")
+UI_TEXT(IMU_ROW_BAT_HELP, 43,
+    "The sensor's cell as it reports it",
+    "Die Zelle des Sensors, wie er sie meldet")
+UI_TEXT(IMU_ROW_C6, 31,
+    "C6 version",
+    "C6-Version")
+UI_TEXT(IMU_ROW_C6_HELP, 43,
+    "Firmware of the ESP32-C6 for Bluetooth LE",
+    "Firmware des ESP32-C6 für Bluetooth LE")
+UI_TEXT(IMU_ROW_ZERO, 31,
+    "Zero",
+    "Nullpunkt")
+UI_TEXT(IMU_ROW_ZERO_HELP, 43,
+    "Takes the current angles as 0°",
+    "Nimmt die aktuellen Winkel als 0°")
+UI_TEXT(IMU_ROW_UNZERO, 31,
+    "Clear zero",
+    "Nullpunkt löschen")
+UI_TEXT(IMU_ROW_UNZERO_HELP, 43,
+    "Angles from the sensor's own 0° again",
+    "Winkel wieder ab dem 0° des Sensors")
+UI_TEXT(IMU_ROW_CAL, 31,
+    "Calibrate",
+    "Kalibrieren")
+UI_TEXT(IMU_ROW_CAL_HELP, 43,
+    "Accelerometer: 3s still and level",
+    "Beschleunigung: 3s still, waagerecht")
+UI_TEXT(IMU_LOCK_NO_ANGLE, 43,
+    "NO ANGLE FROM THE SENSOR YET",
+    "NOCH KEIN WINKEL VOM SENSOR")
+UI_TEXT(IMU_LOCK_NO_ZERO, 43,
+    "NO ZERO SET",
+    "KEIN NULLPUNKT GESETZT")
+UI_TEXT(IMU_LOCK_NO_FRAMES, 43,
+    "THE SENSOR SENDS NO FRAMES",
+    "DER SENSOR SENDET KEINE FRAMES")
+UI_TEXT(IMU_BIND_SCANNING, 94,
+    "A SCAN IS RUNNING: PICK THE SENSOR WHEN IT ENDS",
+    "SUCHE LÄUFT: DEN SENSOR NACH DEM ENDE WÄHLEN")
+UI_TEXT(IMU_BIND_GONE, 94,
+    "SENSOR NOT BOUND: THE LIST CHANGED, PICK IT AGAIN",
+    "SENSOR NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN")
+UI_TEXT(IMU_BIND_BUSY, 94,
+    "NO BIND NOW: THE CALIBRATION RUNS OR BLUETOOTH STARTS",
+    "JETZT KEINE BINDUNG: KALIBRIERUNG LÄUFT ODER BLUETOOTH STARTET")
+UI_TEXT(IMU_SCAN_OFF, 94,
+    "BLUETOOTH IS NOT READY: NO SENSOR SCAN",
+    "BLUETOOTH NICHT BEREIT: KEINE SENSORSUCHE")
 
 /* --- the M5Stack Dial (dial_ctl.c, wireless_pane.c, panel_dial.c) ------ */
 /* SETUP > WIRELESS: the tile's line, the DIAL entry's rows and options,
  * its state words (25 cells of 8 x 16), the scan's and the bind's rows. */
 UI_TEXT(SET_HUB_WIRELESS, 0,
-    "IMU, DIAL, POWER, BALANCE NODES",
-    "IMU, DIAL, SENSORKNOTEN")
+    "IMU, DIAL, NODES, PRINTER",
+    "IMU, DIAL, KNOTEN, DRUCKER")
 UI_SETTING_LABEL(SET_DIAL_EN,
     "Dial",
     "Dial")
