@@ -28,16 +28,23 @@
  *   at the point it started, as the M5Stack Dial's glass sends one beside
  *   the screen button's PRESS.
  *
- * The update's confirming key (dk518_still_key()) is the validated still
- * touch, never the raw one, since the update's own rule (bleota) takes
- * any short down and up as its accept:
+ * The update's confirming key (dk518_key_step(), dk518_key_down()) is
+ * made from the still touch's events, never from the raw touch, since the
+ * update's own rule (bleota) takes any short down and up as its accept and
+ * any 1,000ms down as its refusal.  Only a touch that starts while the
+ * offer is open (bleota's CONFIRM) moves the key:
  * - A still lift before 1,000ms: the key goes down for 50ms
- *   (DK518_KEY_PRESS_MS), which the `ota` task's 10ms polls take as a
- *   press: the accept.
- * - A touch held still for 1,000ms: the key goes down until the lift, and
- *   for 1,100ms (DK518_KEY_HOLD_MS) at least, so bleota's own 1,000ms
- *   hold ends in the refusal whenever the finger lifts.
- * - A touch that moved over 20px before 1,000ms: the key stays up.
+ *   (DK518_KEY_PRESS_MS), which the `ota` task's 10ms polls with their
+ *   2-poll debounce take as a press: the accept.
+ * - Held still for 1,000ms: the key goes down until the lift, and for
+ *   1,100ms (DK518_KEY_HOLD_MS) at least, so bleota's 1,000ms hold ends in
+ *   the refusal whenever the finger lifts.
+ * - Moved over 20px before 1,000ms: the key stays up.
+ * - A window never shortens or merges: a still lift while a window runs,
+ *   or within 30ms (DK518_KEY_GAP_MS) of its end, moves nothing.
+ * - The offer opening or closing (an answer, its time out, a lost link)
+ *   ends the window, and the touch under way moves nothing until it
+ *   lifts; the key is up while no offer is open.
  *
  * Points are the panel's native 0 to 359; EVENT carries 0 to 239
  * (dk518_touch_scale()).
@@ -65,6 +72,9 @@ extern "C" {
 #define DK518_KEY_PRESS_MS 50u
 /** @brief The confirming key's least time down after a still hold, ms. */
 #define DK518_KEY_HOLD_MS 1100u
+/** @brief The confirming key's least time up between two windows, ms:
+ *         three of the `ota` task's 10ms polls. */
+#define DK518_KEY_GAP_MS 30u
 /** @brief The panel's native size, px. */
 #define DK518_TOUCH_SIZE 360u
 
@@ -94,16 +104,26 @@ typedef struct {
     uint16_t      x0;      /**< where it started, native px */
     uint16_t      y0;      /**< where it started, native px */
     uint32_t      down_ms; /**< when it started */
-    bool          key_hold; /**< this touch was held still 1,000ms */
-    bool          key_on;   /**< the confirming key's window runs */
-    uint32_t      key_until; /**< the window's end, while not key_hold */
+    bool          held;    /**< this touch was held still 1,000ms */
 } dk518_still_t;
+
+/** @brief The update's confirming key. */
+typedef struct {
+    bool     offer;    /**< the offer is open, as the last step saw */
+    bool     touch_ok; /**< the touch under way started in this offer */
+    bool     hold;     /**< its window lasts until the touch lifts */
+    bool     on;       /**< a window was opened in this offer */
+    uint32_t until;    /**< the window's end, past the lift */
+} dk518_key_t;
 
 /** @brief What a step of the still touch gives beside DIAL_BTN_* bits. */
 typedef struct {
     bool    tap;   /**< a TAP: lifted within DK518_TAP_MS, still */
     uint8_t tap_x; /**< TAP: its column, 0 to 239 */
     uint8_t tap_y; /**< TAP: its row, 0 to 239 */
+    bool    began; /**< a finger came down this step */
+    bool    held;  /**< the touch reached DK_HOLD_MS still this step */
+    bool    lifted; /**< the finger lifted this step */
     bool    still_lift; /**< lifted before DK_HOLD_MS, still: the press
                              an update's offer takes as its accept */
 } dk518_still_out_t;
@@ -141,14 +161,28 @@ unsigned dk518_still_step(dk518_still_t *s, bool touch, uint16_t x,
                           uint16_t y, int32_t turns, bool yield,
                           uint32_t now, dk518_still_out_t *out);
 
+/** @brief Start with the key up and no offer.  @param k the key */
+void dk518_key_init(dk518_key_t *k);
+
 /**
- * @brief The update's confirming key, for the `ota` task: down after a
- *        validated still touch alone.
- * @param s   the state, as dk518_still_step() left it
- * @param now the time, ms
- * @return true while the key is down
+ * @brief One step of the update's confirming key, after
+ *        dk518_still_step().
+ * @param k     the key
+ * @param offer the offer is open (bleota's CONFIRM)
+ * @param o     the still touch's events of this step
+ * @param now   the time, ms
+ * @return true when this step opened a press window: the accept's cue
  */
-bool dk518_still_key(const dk518_still_t *s, uint32_t now);
+bool dk518_key_step(dk518_key_t *k, bool offer,
+                    const dk518_still_out_t *o, uint32_t now);
+
+/**
+ * @brief The update's confirming key, for the `ota` task.
+ * @param k   the key
+ * @param now the time, ms
+ * @return true while it is down
+ */
+bool dk518_key_down(const dk518_key_t *k, uint32_t now);
 
 /**
  * @brief A native coordinate on EVENT's scale.
