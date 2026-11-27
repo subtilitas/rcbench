@@ -405,8 +405,9 @@ radio and the display up, a scan and the C6's firmware version.
 
 Built and host-tested: the strict reading of the release tag, the redirects and `SHA256SUMS`
 (`shared/fwupdate/fw_release.c`, `test_fw_release`), the scan of GitHub's API answer for the
-highest of its 10 newest releases and the rule that offers only a newer release
-(`test_fw_release_scan`), the check and the download with their budgets, aborts and a
+highest of its 5 newest releases and the rule that offers only a newer release
+(`test_fw_release_scan`), answers of GitHub's shape up to the bound of 1,310,720
+bytes and past it (`test_wa_fetch_size`), the check and the download with their budgets, aborts and a
 scripted HTTP client (`shared/webaccess/wa_fetch.c`, `test_wa_fetch`), RELEASES' two
 channels and GitHub's request limit (`test_wa_fetch_channel`), a job's task that outlives
 the radio in a name lookup (`test_wa_fetch_task`), UPDATES, the reminder and the
@@ -2152,7 +2153,7 @@ The host suite is 719 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`,
 `test_wifi_kept`, `test_wifi_layout`, `test_update_sig`, `test_fw_image`, `test_fw_c6`, `test_fw_install`, `test_fw_run`, `test_fw_trial`,
 `test_fw_slots`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_fw_sig`, `test_fw_sign`, `test_wa_session`,
-`test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_sig`, `test_wa_fetch_dev`, `test_wa_fetch_channel`, `test_wa_fetch_task`,
+`test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_sig`, `test_wa_fetch_dev`, `test_wa_fetch_channel`, `test_wa_fetch_size`, `test_wa_fetch_task`,
 `test_upd_screen`, `test_upd_settings`, `test_upd_single`, `test_upd_c6`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`,
 `test_wa_page`, `test_wa_page_de`, `test_wa_hl`, `test_wa_edit`, `test_wa_mdns`,
 `test_wa_guard`, `test_wa_kept`, `test_wa_cookie`, `test_wa_api`, `test_wa_api_file`,
