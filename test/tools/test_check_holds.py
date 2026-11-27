@@ -39,6 +39,22 @@ def test_a_hold_drawn_and_stepped_in_its_module_passes(tmp_path):
     assert ch.check(ui) == []
 
 
+def test_a_file_named_as_its_module_shares_it(tmp_path):
+    """sprog.c begins, sprog_draw.c draws and sprog_page.c steps, as the
+    servo programmers' frame holds sprog_t.hold and page.hold."""
+    begin = ("void d(sprog_t *f) { ui_hold_begin(&f->hold, 1);"
+             " ui_hold_begin(&f->page.hold, 2); }\n")
+    draw = ("void r(sprog_t *f) { ui_hold_button(c, r, l, a, b, &f->hold,"
+            " false, true, x); ui_hold_ghost(c, &f->page.hold); }\n")
+    step = ("void t(sprog_t *f) { ui_hold_flash_step(&f->hold, 1.0f);"
+            " ui_hold_flash_step(&f->page.hold, 1.0f); }\n")
+    ui = tree(tmp_path, {"sprog.c": begin, "sprog_draw.c": draw,
+                         "sprog_page.c": step})
+    assert ch.check(ui) == []
+    ui = tree(tmp_path, {"sprog_draw.c": "\n"})
+    assert len(ch.check(ui)) == 2
+
+
 def test_a_hold_never_stepped_fails(tmp_path):
     """A flash nobody steps stays white: named."""
     ui = tree(tmp_path, {"servo_a.c": BEGIN + DRAW})

@@ -13,7 +13,8 @@ Its path after the root, `arm` of `s.arm`, `page.hold` of `hp.page.hold`,
 must appear as the last part of the hold argument of a ui_hold_flash_step()
 call and of a ui_hold_button(), ui_hold_button_fill() or ui_hold_ghost()
 call in a file of the same module: the files that share the name's first
-word (servo_*.c, kst_*.c, prog5v_*.c).  A function of the module that
+word (servo_*.c, kst_*.c, prog5v_*.c; sprog.c with sprog_*.c, whose
+holds are `hold` of `sprog_t.hold` and `page.hold` of `sprog_t.page.hold`).  A function of the module that
 takes a `ui_hold_t *` and hands it to one of those calls counts as that
 call (upd_screen.c's hold_fill(), servo_screen_sweep.c's flash_frame()), and
 so does a function that hands it to such a function.
@@ -159,8 +160,9 @@ def closure(texts: list[str], names: tuple[str, ...]) -> tuple[str, ...]:
 
 
 def module(name: str) -> str:
-    """Returns a file's module: the first word of its name."""
-    return name.split("_", 1)[0]
+    """Returns a file's module: the first word of its name, the extension
+    left out, so sprog.c and sprog_draw.c are one module."""
+    return name.removesuffix(".c").split("_", 1)[0]
 
 
 def check(ui: pathlib.Path = UI) -> list[str]:

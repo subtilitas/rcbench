@@ -1832,6 +1832,14 @@ against the same model with a servo that enters programming from a power-up only
 ports](docs/Link.md#the-programming-ports), [the protocol on a port](docs/LinkKST.md), [what
 a bench has to measure](protocols/kst/README.md#what-is-measured-and-what-is-not).
 
+The programmers' common frame (`shared/ui/include/sprog.h`, `shared/ui/sprog.c`,
+`sprog_draw.c`, `sprog_page.c`): one page shape (tabs, a row grid of 5 lines at a 56px pitch,
+the SERVO head, notes with a pager, the bottom line), the presses (tap, 2s hold due on the
+next tick, STOP on the press from any contact, step keys with repeat), the keypad, the
+keyboard, lists of up to 7 entries and hold pages with folding and parts. It is built and
+host-tested on a fake brand of 2 tabs and 9 rows (`test_sprog`, `test_sprog_draw`,
+`test_sprog_page`); neither programmer draws through it yet.
+
 Hitec servos: the wire core, the RP2350 pin driver and link page 0x34 (raw transactions on a
 programming port, with a POWER cycle at 4800 to 6000mV) are built and host-tested against a
 line and servo model; the register models of both families (parameters, encodings, model
@@ -2033,7 +2041,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 716 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 719 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -2131,6 +2139,7 @@ The host suite is 716 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_hitec_prog_backup`, `test_hitec_prog_chain`, `test_hitec_prog_unit`,
 `test_hitec_prog_reread`, `test_hitec_panel_unit`, `test_hitec_card`, `test_hitec_card_run`, `test_servo_store`,
 `test_hitec_panel`, `test_hitec_panel_states`, `test_hitec_panel_stop_fingers`, `test_hitec_panel_write`, `test_hitec_panel_gate`,
+`test_sprog`, `test_sprog_draw`, `test_sprog_page`,
 `test_hitec_panel_file`, `test_page_console`, `test_kst_card`, `test_prog_link`,
 `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`,
 `test_wifi_kept`, `test_wifi_layout`, `test_update_sig`, `test_fw_image`, `test_fw_c6`, `test_fw_install`, `test_fw_run`, `test_fw_trial`,

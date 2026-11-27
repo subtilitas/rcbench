@@ -94,6 +94,9 @@ set(SRCS
     servo_label_rows.c
     servo_run_supply.c
     servo_angle_pick.c
+    sprog.c
+    sprog_draw.c
+    sprog_page.c
     kst_panel.c
     kst_panel_text.c
     kst_panel_warn.c
