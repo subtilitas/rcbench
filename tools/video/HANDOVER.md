@@ -199,7 +199,7 @@ How the modules are mounted (owner, 2026-11-13):
   L only; its GND and 5V wires are taken out. Ground reaches the panel
   through J7 and no other wire.
 - The owner found the modules too plain as rectangles. They carry the
-  parts and prints of the module specs under `hardware/kicad/modules/`;
+  parts and prints of the module specs (`video_board.py --modules`);
   the panel's headers are labelled in its drawing.
 - The owner asked for the pins to be named, with the number on each
   pad and the name under it, and for the pin strips to

@@ -4,18 +4,17 @@ Copyright (c) 2026 subtilitas
 The files in hardware/mechanical/ and below are licensed under the Creative
 Commons Attribution-NonCommercial-ShareAlike 4.0 International licence
 (CC BY-NC-SA 4.0): https://creativecommons.org/licenses/by-nc-sa/4.0/
-This covers the STEP and STL models, the renders and the Python scripts that
-draw, check and render them. Commercial use needs a separate licence from the
-copyright holder.
+This covers the STEP and STL models and the renders. The generators that
+write them are maintained outside this repository.
 
 Not covered, each under its own terms:
 
-- vendor/m5stack_dial/Dial.stl: M5Stack's mesh, MIT licence,
+- models/parts/m5dial.step and models/parts/m5dial_nut.step: M5Stack's
+  geometry, fitted to M5Stack's Dial mesh, MIT licence,
   vendor/m5stack_dial/LICENSE.
-- models/m5dial.step and models/m5dial_nut.step: M5Stack's geometry, fitted
-  to Dial.stl, under the same MIT licence.
-- _font.py: letter outlines traced from OpenCV's single-stroke Hershey font,
-  MIT licence as the rest of rcbench (../../LICENSE).
+- The letter outlines printed on the board models: traced from OpenCV's
+  single-stroke Hershey font, MIT licence as the rest of rcbench
+  (../../LICENSE).
 
 The licence text follows.
 

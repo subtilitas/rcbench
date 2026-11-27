@@ -4,9 +4,9 @@ Copyright (c) 2026 subtilitas
 The files in hardware/kicad/ and below are licensed under the Creative
 Commons Attribution-NonCommercial-ShareAlike 4.0 International licence
 (CC BY-NC-SA 4.0): https://creativecommons.org/licenses/by-nc-sa/4.0/
-This covers the symbols, footprints and 3D models of the library, the module
-specs, the renders and the Python scripts that generate, check and render
-them. Commercial use needs a separate licence from the copyright holder.
+This covers the symbols, footprints and 3D models of the library and the
+renders. The tools that generate them are maintained outside this
+repository. Commercial use needs a separate licence from the copyright holder.
 
 The licence text follows.
 

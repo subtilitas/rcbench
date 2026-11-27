@@ -214,16 +214,6 @@ jobs:
       - name: The checked-in scanner setup code matches its generator
         run: python3 tools/gen_scanner_codes.py --check
 
-      # The KiCad library of the modules is generated from the specs in
-      # hardware/kicad/modules and checked in, so KiCad users need no Python.
-      - name: The checked-in KiCad library matches its specs
-        run: python3 hardware/kicad/tools/gen_all.py --check
-
-      # The STEP models of the mechanical parts are generated from the specs
-      # in hardware/mechanical and checked in.
-      - name: The checked-in mechanical models match their specs
-        run: python3 hardware/mechanical/gen_models.py --check
-
       # The ESC programming profiles are JSON; the panel carries them as C
       # tables generated from that JSON and checked in.
       - name: The checked-in ESC profile tables match their JSON
@@ -550,7 +540,7 @@ jobs:
       # rules ask for a Google-style docstring on every module, public
       # function, class and method; no file is excused them.
       - name: ruff
-        run: ruff check tools/ test/tools/ test/host/ hardware/kicad/ hardware/mechanical/ testbench/
+        run: ruff check tools/ test/tools/ test/host/ testbench/
 
   # cppcheck runs in a job of its own beside clang-tidy, which checks every
   # file on every run: 4min to 9min (minutes) on the runners measured.
@@ -709,19 +699,17 @@ jobs:
       # The runner image carries git, cmake and a C compiler, which the
       # end-to-end cases of the mutation tool build a three-file project
       # with.  test_gen_cats.py draws the cats with the Pillow the
-      # checked-in tables were made with.  numpy, OpenCASCADE (cadquery-ocp)
-      # and OpenCV are what the cases of test_make_video.py,
-      # test_dial_base.py, test_panel_7b.py and test_ina228_xt90.py import;
-      # shapely is what test_rbmod_v2.py's reader cases import; pyserial
-      # is what test_ygesim.py's loop:// case opens;
-      # the model checks below the pytest step use the first two as well.
+      # checked-in tables were made with.  numpy is what the cases of
+      # test_make_video.py import, OpenCV what test_label_qr.py reads its
+      # codes back with; pyserial is what test_ygesim.py's loop:// case
+      # opens.
       # A case whose tool or module is missing fails here and skips on a
       # developer's machine (conftest.py, skip_or_fail and import_or_fail).
       - name: Install pytest and the modules the cases import
         run: >-
           python3 -m pip install --quiet pytest==9.1.1 markdown-it-py==3.0.0
-          pillow==12.3.0 numpy==2.5.3 cadquery-ocp==8.0.1.1.0
-          opencv-python-headless==5.0.0.93 shapely==2.2.0 pyserial==3.5
+          pillow==12.3.0 numpy==2.5.3
+          opencv-python-headless==5.0.0.93 pyserial==3.5
 
       # test_check_protocols.py holds the check's reading of a .pio file
       # to the C pioasm writes.  pioasm is built from the pinned pico-sdk
@@ -772,65 +760,6 @@ jobs:
       # every skipped case with its reason.
       - name: pytest
         run: python3 -m pytest test/tools -q -rs
-
-      # The STEP models of the KiCad library and of hardware/mechanical are
-      # text the generators write; OpenCASCADE reads each back and checks
-      # its solids and colours, and a module's bounding box, against the
-      # spec.
-      - name: The KiCad STEP models load in OpenCASCADE
-        run: python3 hardware/kicad/tools/step_check.py
-
-      # The models of the panel board and of the INA228 module in its case
-      # are drawn part by part from measured boxes and from shapes of
-      # hardware/mechanical/_parts.py. Two parts that share volume are a
-      # part placed or sized wrongly.
-      - name: No two solids of a model drawn part by part share volume
-        run: python3 hardware/mechanical/check_overlap.py
-
-      # The two parts of the M5Stack Dial's base are built with
-      # OpenCASCADE: the files match their spec, each is a valid solid,
-      # and neither shares volume with the dial, its nut or the cell.
-      # The base's tests are test/tools/test_dial_base.py, in the pytest
-      # step above.
-      - name: Dial base matches its spec and clears dial, nut and cell
-        run: python3 hardware/mechanical/_gen_dial_base.py --check
-
-      # The rotary knob on the dial base's bottom part is built with
-      # OpenCASCADE: the files match their spec, each printed part is
-      # one valid solid, the case fills no flute, and no two solids of
-      # the knob share volume.
-      - name: Knob matches its spec and no two of its solids collide
-        run: python3 hardware/mechanical/_gen_knob.py --check
-
-      # The KST X10's frame, its linkage and the slice of wing with the
-      # flap are built with OpenCASCADE round the servo's model: the
-      # files match their spec, each solid is valid and in one piece,
-      # and no two solids of the assembly share volume. Its tests are
-      # test/tools/test_flap_drive.py, in the pytest step above.
-      - name: Flap drive matches its spec and no two of its solids collide
-        run: python3 hardware/mechanical/_gen_flap_drive.py --check
-
-      # The 3 parts of the sensor node's case are built with OpenCASCADE
-      # round the layout of its boards: the files match their spec, each
-      # part is a valid solid in one piece, and none shares volume with
-      # another or with a solid of the layout. Its tests are
-      # test/tools/test_node_case.py, in the pytest step above.
-      - name: Sensor node case matches its spec and clears the boards
-        run: python3 hardware/mechanical/_gen_node_case.py --check
-
-      # The 2 parts of the display node's case with XT30 openings: the
-      # files match their spec, each part is a valid solid in one piece,
-      # none shares volume with the other or with the display board, and
-      # the lid closes on the box's rim. Its tests are
-      # test/tools/test_display_case.py, in the pytest step above.
-      - name: Display node case matches its spec and its lid closes
-        run: python3 hardware/mechanical/_gen_display_case.py --check
-
-      # The M5Stack Dial's solids are surfaces fitted to M5Stack's mesh.
-      # OpenCASCADE meshes each solid again; the two meshes are within
-      # 0.15mm of each other both ways and 1% in volume.
-      - name: The M5Stack Dial's solids follow M5Stack's mesh
-        run: python3 hardware/mechanical/check_refit.py
 
   # The Doxygen comments of the C sources (CONTRIBUTING.md, "Comments").
   # Fails on a warning tools/doc_check_baseline.txt does not hold, on a

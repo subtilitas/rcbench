@@ -7,18 +7,18 @@ are licensed under the Creative Commons Attribution-NonCommercial-ShareAlike
 https://creativecommons.org/licenses/by-nc-sa/4.0/
 This covers everything for the boards and the case: board and pin documents,
 part lists and sourcing, the component research, the 3D models, the KiCad
-module library, the renders and the Python scripts that draw, check and
-render them. Commercial use needs a separate licence from the copyright
-holder.
+module library and the renders. The scripts that draw, check and render
+them are maintained outside this repository. Commercial use needs a
+separate licence from the copyright holder.
 
 Not covered, each under its own terms:
 
-- mechanical/vendor/m5stack_dial/Dial.stl: M5Stack's mesh, MIT licence,
-  mechanical/vendor/m5stack_dial/LICENSE.
-- mechanical/models/m5dial.step and mechanical/models/m5dial_nut.step:
-  M5Stack's geometry, fitted to Dial.stl, under the same MIT licence.
-- mechanical/_font.py: letter outlines traced from OpenCV's single-stroke
-  Hershey font, MIT licence as the rest of rcbench (../LICENSE).
+- mechanical/models/parts/m5dial.step and
+  mechanical/models/parts/m5dial_nut.step: M5Stack's geometry, fitted to
+  M5Stack's Dial mesh, MIT licence, mechanical/vendor/m5stack_dial/LICENSE.
+- The letter outlines printed on the board models: traced from OpenCV's
+  single-stroke Hershey font, MIT licence as the rest of rcbench
+  (../LICENSE).
 
 The licence text follows.
 

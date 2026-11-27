@@ -13,12 +13,14 @@ The drawing is the board seen from its front, turned a quarter clockwise
 by default, so that the edge at the board file's highest x lies at the
 bottom.  All lengths are mm from the drawing's top left corner.
 
-A footprint whose name is that of a module under hardware/kicad/modules/
-takes the module's board outline as its box and, as details, the parts
-of the module's model, each a box or a circle with the colour name of the
-model, the texts of the module's drawing, such as USB-C and CAN, on each
-pad its number and under each pad the name of its pin where the drawing
-does not print it.
+With --modules DIR, the module specs of the hardware tools repository
+(its hardware/kicad/modules/, not public), a footprint whose name is
+that of a module there takes the module's board outline as its box
+and, as details, the parts of the module's model, each a box or a
+circle with the colour name of the model, the texts of the module's
+drawing, such as USB-C and CAN, on each pad its number and under each
+pad the name of its pin where the drawing does not print it. Without
+--modules a footprint is drawn as its courtyard box.
 A JST or Molex connector carries a short name of each pad's net, and a
 3-row pin header the names of its rows.
 
@@ -28,7 +30,6 @@ M7.2a, M7.2b.
 
 Attributes:
     LAYER: The copper layer whose tracks are drawn.
-    MODULES: The directory of the module specs.
     SHORT: The short name of a net on a connector, as (pattern, name),
         first match.
 
@@ -45,8 +46,6 @@ import re
 import sys
 
 LAYER = "F.Cu"
-MODULES = (pathlib.Path(__file__).resolve().parent.parent / "hardware"
-           / "kicad" / "modules")
 SHORT = (
     (r"HEARTBEAT", "HB"), (r"SCL", "SCL"), (r"SDA", "SDA"),
     (r"PDMINI_TX", "TX"), (r"PDMINI_RX", "RX"), (r"^GND$", "GND"),
@@ -103,11 +102,12 @@ def _xy(node: list) -> tuple:
     return float(node[1]), float(node[2])
 
 
-def modules(where: pathlib.Path = MODULES) -> dict:
+def modules(where: pathlib.Path | None = None) -> dict:
     """Read the module specs.
 
     Args:
-        where: The directory of the specs, one Python file a module.
+        where: The directory of the specs, one Python file a module;
+            None for none.
 
     Returns:
         Per footprint name the module's board size, the footprint's origin
@@ -117,6 +117,8 @@ def modules(where: pathlib.Path = MODULES) -> dict:
     import importlib.util
 
     found = {}
+    if where is None:
+        return found
     for path in sorted(where.glob("*.py")):
         spec = importlib.util.spec_from_file_location(path.stem, path)
         mod = importlib.util.module_from_spec(spec)
@@ -319,12 +321,16 @@ def main() -> int:
                     help="the .json file under tools/video/cad/")
     ap.add_argument("--turn", type=int, default=90, choices=(0, 90, 180, 270),
                     help="degrees the drawing is turned clockwise")
+    ap.add_argument("--modules", type=pathlib.Path,
+                    help="the hardware tools' hardware/kicad/modules/")
     args = ap.parse_args()
     try:
         text = args.board.read_text(encoding="utf-8")
     except OSError as err:
         sys.exit(f"{args.board}: {err}")
-    out = convert(text, args.turn, modules())
+    if args.modules and not args.modules.is_dir():
+        sys.exit(f"{args.modules}: not a directory")
+    out = convert(text, args.turn, modules(args.modules))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(out), encoding="utf-8")
     print(f"{args.output}: {out['size'][0]} x {out['size'][1]}mm, "

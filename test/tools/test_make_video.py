@@ -417,8 +417,22 @@ def test_a_module_brings_its_board_and_its_parts():
         {"text": "GP7", "at": [20.0, 11.27], "size": 0.6, "name": True}]
     assert next(p for p in plan["parts"]
                 if p["ref"] == "R1")["details"] == []
-    texts = [said for said, *_ in video_board.modules()["RP2350-CAN"][3]]
-    assert "USB-C" in texts and "CAN" in texts
+
+
+def test_board_reads_module_specs_from_a_directory(tmp_path):
+    """--modules names the specs; without it no module is read."""
+    import video_board
+
+    (tmp_path / "can.py").write_text(
+        'FOOTPRINT = {"name": "RP2350-CAN", "board": (21.0, 51.0),\n'
+        '             "origin": (1.0, 1.0), "pads": [\n'
+        '                 {"num": "1", "x": 0.0, "y": 0.0}],\n'
+        '             "fab": [("text", "USB-C", 2.0, 3.0, 0.8)],\n'
+        '             "silk": [("text", "CAN", 4.0, 5.0, 0.8)]}\n')
+    texts = [said for said, *_ in video_board.modules(tmp_path)[
+        "RP2350-CAN"][3]]
+    assert texts == ["USB-C", "CAN"]
+    assert video_board.modules() == {}
 
 
 def test_a_dial_scene_shows_faces_and_turns_its_knob():
