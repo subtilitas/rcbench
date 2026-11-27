@@ -35,7 +35,7 @@
  * @param danger true for a danger page
  * @param title  its title
  * @param apply  its hold button's label
- * @param hint   the hint, TX_HOLD_HINT_*
+ * @param hint   the hint, a hold hint's text id
  * @param drop   true for the drop page
  */
 static void warn_open(int kind, bool danger, const char *title,
