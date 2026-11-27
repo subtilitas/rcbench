@@ -46,6 +46,11 @@
  *   or another offer in its place (bleota's offer count), ends the
  *   window, and the touch under way moves nothing until it lifts; the key
  *   is up while no offer is open.
+ * - The offer and its identity are read before the touch controller is,
+ *   on every step, and a touch counts for an offer only when a read of
+ *   the glass found no finger while that offer already stood: so a
+ *   finger that came down before the offer opened, however close, never
+ *   answers it.
  * - The key names the offer its window was opened in
  *   (dk518_key_offer()); the `ota` task takes it for that offer alone
  *   (bleota_dev_key_for()), so an offer that replaces another between two
@@ -116,6 +121,8 @@ typedef struct {
 typedef struct {
     bool     offer;    /**< the offer is open, as the last step saw */
     uint32_t id;       /**< its identity, bleota's offer count */
+    bool     clear;    /**< a read found the glass empty while this offer
+                            stood */
     bool     touch_ok; /**< the touch under way started in this offer */
     bool     hold;     /**< its window lasts until the touch lifts */
     bool     on;       /**< a window was opened in this offer */
@@ -174,13 +181,16 @@ void dk518_key_init(dk518_key_t *k);
  * @brief One step of the update's confirming key, after
  *        dk518_still_step().
  * @param k     the key
- * @param offer the offer is open (bleota's CONFIRM)
+ * @param offer the offer is open (bleota's CONFIRM), read before this
+ *              step's touch read
  * @param id    its identity (bleota_dev_offer()), read with @p offer
+ * @param empty this step read the touch controller, after @p offer, and
+ *              found no finger
  * @param o     the still touch's events of this step
  * @param now   the time, ms
  * @return true when this step opened a press window: the accept's cue
  */
-bool dk518_key_step(dk518_key_t *k, bool offer, uint32_t id,
+bool dk518_key_step(dk518_key_t *k, bool offer, uint32_t id, bool empty,
                     const dk518_still_out_t *o, uint32_t now);
 
 /**

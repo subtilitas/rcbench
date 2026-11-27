@@ -357,27 +357,31 @@ static void button_acts(unsigned act, uint32_t now)
 static void screen_button(uint32_t now)
 {
     dk518_still_out_t o;
+    /* The offer first, then the glass: a touch is judged against the
+     * offer that stood before it was read, never one that opened after
+     * (dk518_key_step()).  Nothing below reads the offer again. */
+    uint32_t id = 0u;
+    const bool open = devota_offer(&id);
+    /* While an update runs, its key takes the touch: no press may answer
+     * a hidden choice. */
+    const bool yield = devota_active();
+    bool empty = false;
     if (now - s_in.touch_poll_ms >= TOUCH_MS) {
         s_in.touch_poll_ms = now;
         s_in.touch_down = dial_k518_touch(&s_in.nx, &s_in.ny);
+        empty = !s_in.touch_down;
         if (s_in.touch_down) {
             s_in.tx = dk518_touch_scale(s_in.nx);
             s_in.ty = dk518_touch_scale(s_in.ny);
         }
     }
-    /* The update's offer reads the touch itself (dial_ble.c,
-     * dial_input_update_key()): its press must not answer a hidden
-     * choice. */
-    const bool yield = devota_active();
     const unsigned act = dk518_still_step(&s_in.still, s_in.touch_down,
                                           s_in.nx, s_in.ny,
                                           s_in.local_turns, yield, now, &o);
     s_in.local_turns = 0;
     /* The update takes the still touch's events, never the raw touch:
      * a swipe, or a touch from before the offer, must not answer it. */
-    uint32_t id = 0u;
-    const bool open = devota_offer(&id);
-    if (dk518_key_step(&s_in.key, open, id, &o, now)) {
+    if (dk518_key_step(&s_in.key, open, id, empty, &o, now)) {
         dial_buzz_cue(DIAL_CUE_ACCEPT);
     }
     /* The key and its offer in one word, so the `ota` task never pairs
