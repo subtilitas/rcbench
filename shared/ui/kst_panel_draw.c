@@ -7,8 +7,9 @@
  * kpn_view() fills its view -- the rows' values, fills and presses, the
  * SERVO tab's head, the notes (the state line, what stands until it is
  * dealt with, a tab's own note and the value tabs' hint) and the last
- * message on the bottom line.  The list of choices and the warning pages
- * are drawn here.  The state and the seam are kst_panel_int.h.
+ * message on the bottom line.  The frame draws them, the keypad, the
+ * keyboard, the list of choices and the hold page.  The state and the seam
+ * are kst_panel_int.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -22,51 +23,15 @@
 #include "kst_session.h"
 #include "link_pages.h"
 #include "ui_board.h"
+#include "prog5v_box.h"
 #include "prog_choice.h"
 #include "sprog.h"
 #include "ui_card_text.h"
-#include "ui_tabs.h"
 #include "ui_text.h"
-#include "ui_textkey.h"
-#include "ui_theme.h"
 #include "ui_widgets.h"
 
-/* Last: its layout macros have short names (ROW0, PITCH, ROW_H) and k
- * names the state, which no header included after it may meet. */
+/* Last: k names the state, which no header included after it may meet. */
 #include "kst_panel_int.h"
-
-/** @brief A warning page's pitches between its lines, the widest that
- *         fits first: a line of one row at 28px leaves 8px under a row
- *         of KP_FONT. */
-static const uint8_t k_warn_pitch[] = { 28, 26, 24, 22, LINE_H };
-
-/**
- * @brief A button of the overlay, its label in KP_FONT.
- * @param c the canvas
- * @param r the button
- * @param label its label
- * @param fill its colour
- * @param pressed lightens the fill
- * @param enabled false dims it
- */
-static void kp_button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
-                      gfx_color_t fill, bool pressed, bool enabled)
-{
-    ui_button_font(c, r, label, fill, pressed, enabled, KP_FONT);
-}
-
-/* --------------------------------------------------------------------- draw */
-
-/**
- * @brief Returns the text colour of a warning level: danger, warning or plain.
- */
-static gfx_color_t level_color(unsigned level)
-{
-    return level == KST_PROG_DANGER ? ui_theme_color(UI_C_DANGER)
-         : level == KST_PROG_WARN   ? ui_theme_color(UI_C_WARN)
-                                    : ui_theme_color(UI_C_TEXT);
-}
-
 
 /**
  * @brief What stands until it is dealt with: up to two lines on the SERVO tab.
@@ -549,8 +514,11 @@ static void act_press(const row_t *r, sprog_cell_t *cl)
             || kpn_leave_waits(p)) {
             cl->press = SPROG_P_STOP;
         } else if (st == KST_PROG_PWM && kpn_switches_supply()) {
+            /* A 2s hold that switches the supply on; none from a low
+             * carrier input, which the press names. */
             cl->press = SPROG_P_HOLD;
             cl->hint = TX_HOLD_HINT_CONNECT;
+            cl->why = prog5v_box_input_why();
         }
     } else if (r->what == A_WRITE) {
         /* Green fading to the amber of the write's steps. */
@@ -624,33 +592,6 @@ void kpn_view(void)
     bottom_line();
 }
 
-/**
- * @brief The overlay's press as the frame draws it: the row, the step key
- *        or the row hold pressed, and CONNECT's or WRITE's hold where it
- *        runs or flashes.  The presses and the holds are the overlay's
- *        own (kst_panel_touch.c); the frame only draws them.
- */
-static void press_view(void)
-{
-    const row_t *conn = kpn_row_at(PG_SERVO, 0, 0);
-    const row_t *wr = kpn_row_at(PG_SERVO, 3, 1);
-    const bool write = k.wr.down || ui_hold_flashing(&k.wr);
-
-    k.f.have = k.have;
-    k.f.row = (int16_t)k.row;
-    k.f.key = 0;
-    switch (k.pressed) {
-    case P_ROW:     k.f.on = SPROG_ON_ROW;   break;
-    case P_CONNECT:
-    case P_WRITE:   k.f.on = SPROG_ON_HOLD;  break;
-    case P_MINUS:   k.f.on = SPROG_ON_MINUS; break;
-    case P_PLUS:    k.f.on = SPROG_ON_PLUS;  break;
-    default:        k.f.on = SPROG_ON_ABSORB; break;
-    }
-    k.f.hold = write ? k.wr : k.conn;
-    k.f.hold_row = (int16_t)((write ? wr : conn) - kpn_rows);
-}
-
 /* --------------------------------------------------------------- the notes */
 
 /**
@@ -662,11 +603,6 @@ static void shown(sprog_notes_shown_t *sh)
 {
     kpn_view();
     sprog_notes_shown(&k.f, -1, sh);
-}
-
-bool kpn_notes_paged_at(int x, int y)
-{
-    return gfx_rect_contains(kst_panel_notes_rect(), x, y);
 }
 
 gfx_rect_t kst_panel_notes_rect(void)
@@ -729,134 +665,14 @@ gfx_rect_t kst_panel_notes_drawn(void)
 }
 
 /**
- * @brief Draws the list of choices: its title, an entry per value and CANCEL.
- */
-static void draw_choice(gfx_canvas_t *c)
-{
-    const row_t *r = &kpn_rows[k.kp_row >= 0 ? k.kp_row : 0];
-
-    gfx_text(c, k.area.x + 10, k.area.y + 14, k.ch.title, KP_FONT,
-             ui_theme_color(UI_C_TEXT), 1);
-    for (int i = 0; i < k.ch.count; ++i) {
-        const bool current = (k.ch.kind == C_STRETCH
-            && k.ch.values[i]
-               == (int)kst_field_get(kst_prog_draft(&k.prog),
-                                     (kst_field_id_t)r->what))
-            || (k.ch.kind == C_PORT
-                && k.ch.values[i] == (int)prog_choice_port());
-
-        kp_button(c, kst_panel_choice_rect(i), k.ch.labels[i],
-                  current ? ui_theme_color(UI_C_ACCENT)
-                          : ui_theme_color(UI_C_PANEL_SUNK),
-                  k.have && k.pressed == P_CHOICE && k.row == i, true);
-    }
-    kp_button(c, kst_panel_choice_cancel_rect(), TR(CANCEL),
-              ui_theme_color(UI_C_PANEL_SUNK),
-              k.have && k.pressed == P_CHOICE_CANCEL, true);
-}
-
-/**
- * @brief The warning page's hold button: sunk, fading to the page's edge
- *        colour across its hold, flashing as it fires.
- * @param c the canvas
- */
-static void draw_apply(gfx_canvas_t *c)
-{
-    const gfx_color_t edge = k.warn.danger ? ui_theme_color(UI_C_DANGER)
-                                           : ui_theme_color(UI_C_WARN);
-    ui_hold_button(c, kst_panel_apply_rect(), k.warn.apply,
-                   ui_theme_color(UI_C_PANEL_SUNK), edge, &k.warn.hold,
-                   k.warn.down, true, KP_FONT);
-}
-
-/** @brief Draws the warning page: the title, its lines and the hold button. */
-static void draw_warning(gfx_canvas_t *c)
-{
-    const gfx_rect_t a = k.area;
-    const gfx_color_t edge = k.warn.danger ? ui_theme_color(UI_C_DANGER)
-                                           : ui_theme_color(UI_C_WARN);
-
-    gfx_draw_rect(c, a.x, a.y, a.w, a.h, edge);
-    gfx_draw_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2, edge);
-    gfx_draw_rect(c, a.x + 2, a.y + 2, a.w - 4, a.h - 4, edge);
-    gfx_text(c, a.x + 12, a.y + 16, k.warn.title, KP_TITLE_FONT, edge, 1);
-    {
-        /* The widest pitch at which the lines end 8px above the buttons;
-         * the builders keep them to kpn_warn_room(), which fit at
-         * LINE_H. */
-        const int rows = kpn_warn_rows();
-        const int room = kst_panel_apply_rect().y - 8 - (a.y + WARN_TOP)
-                       - LINE_H - (rows - k.warn.count) * LINE_H;
-        int pitch = LINE_H;
-        int y = a.y + WARN_TOP;
-
-        for (unsigned i = 0; i < sizeof(k_warn_pitch); ++i) {
-            if ((k.warn.count - 1) * k_warn_pitch[i] <= room) {
-                pitch = k_warn_pitch[i];
-                break;
-            }
-        }
-        for (int i = 0; i < k.warn.count; ++i) {
-            y = kpn_text_rows(c, a.x + 12, y, k.warn.lines[i],
-                          level_color(k.warn.level[i]))
-              + pitch - LINE_H;
-        }
-    }
-    draw_apply(c);
-    /* BACK on the LEAVE page that lists unwritten edits: they stay. */
-    kp_button(c, kst_panel_cancel_rect(), kst_panel_cancel_label(),
-              ui_theme_color(UI_C_PANEL_SUNK),
-              k.have && k.pressed == P_CANCEL, true);
-}
-
-/**
- * @brief The overlay less the flash of a warning that closed as its hold
- *        fired (kst_panel_render()).
- * @param c the canvas
- */
-static void render_body(gfx_canvas_t *c)
-{
-    const gfx_rect_t a = k.area;
-
-    kpn_mode_sync();
-
-    if (k.kp.open) {
-        ui_keypad_render(&k.kp, c);
-        return;
-    }
-    if (k.tk.open) {
-        ui_textkey_render(&k.tk, c);
-        return;
-    }
-    if (k.warn.open) {
-        gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_PANEL));
-        draw_warning(c);
-        return;
-    }
-    if (k.ch.open) {
-        gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_PANEL));
-        gfx_draw_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_ACCENT));
-        draw_choice(c);
-        return;
-    }
-    /* The tab shown: the frame draws the tabs, the rows, the head, the
-     * notes and the bottom line. */
-    kpn_view();
-    press_view();
-    sprog_render(&k.f, c);
-}
-
-/**
  * @brief Draws the overlay: the keypad or the keyboard alone while one is
- *        open, else the warning, the list of choices or the tab shown.
+ *        open, else the hold page, the list of choices or the tab shown,
+ *        all through the frame.
  * @param c the canvas
  */
 void kst_panel_render(gfx_canvas_t *c)
 {
-    render_body(c);
-    /* A warning closes as its hold fires: its button flashes where it
-     * was until the flash ends (kst_panel_tick()). */
-    if (!k.warn.open && ui_hold_flashing(&k.warn.hold)) {
-        draw_apply(c);
-    }
+    kpn_mode_sync();
+    kpn_view();
+    sprog_render(&k.f, c);
 }

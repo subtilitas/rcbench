@@ -207,10 +207,13 @@ TEST_CASE(the_home_tag_under_the_hold_ends_it_with_the_leave_page)
     }
     hitec_panel_back();
     CHECK_EQ(hitec_panel_editor(), 3);
+    /* The hold has ended: it counts no more; the finger still down is
+     * absorbed until its release. */
+    const uint32_t held = hitec_panel_hold_revision();
     for (int i = 0; i < 75; ++i) {
         step();
     }
-    CHECK(!hitec_panel_pressed());
+    CHECK_EQ(hitec_panel_hold_revision(), held);
     ev(cx(r), cy(r), TOUCH_EVENT_UP);
     prun(500u);
     CHECK_EQ(g_drv.d_writes, 0u);
