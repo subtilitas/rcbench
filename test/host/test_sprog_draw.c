@@ -95,7 +95,7 @@ TEST_CASE(the_flow_rule_closes_up_and_stops_at_the_grid)
 {
     static const ui_text_id_t tabs[] = { TX_KP_TAB_SERVO };
     static sprog_row_t rows[13];
-    sprog_def_t def = { tabs, NULL, 1, rows, 13, TX_KP_EDIT_NOTE_1 };
+    sprog_def_t def = { tabs, NULL, 1, rows, 13, TX_SPROG_EDIT_NOTE };
     sprog_t *f = &rig.f;
 
     rig_start();

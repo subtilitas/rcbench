@@ -591,7 +591,8 @@ const char *kst_panel_status_line(int i);
  */
 const char *kst_panel_button(int page, int row, int col);
 /**
- * @brief The label of the row at @p page, @p row, @p col as it is drawn now.
+ * @brief The label of the row at @p page, @p row, @p col as it is drawn now;
+ *        for the SERVO tab's head (row 0) its first line.
  *
  * @param page the tab
  * @param row the row, from the top
@@ -599,6 +600,17 @@ const char *kst_panel_button(int page, int row, int col);
  * @return the label; NULL for no such row
  */
 const char *kst_panel_label(int page, int row, int col);
+/**
+ * @brief Line @p i of the SERVO tab's head, beside CONNECT: 0 the port
+ *        and its GPIO (`PROG PORT 1 GPIO 13`, `NO PROG PORT SET` while
+ *        none is bound), 1 the supply CONNECT sets (`PD MINI  5.0V
+ *        1000mA`, `5V FIXED` on the carrier, `SUPPLY AS IT IS` where the
+ *        operator powers the servo).
+ *
+ * @param i the line, 0 or 1
+ * @return the line; NULL for none
+ */
+const char *kst_panel_head_line(int i);
 /**
  * @brief Gives an entry of the open list.
  *
@@ -614,28 +626,8 @@ const char *kst_panel_choice_label(int i);
 const char *kst_panel_choice_title(void);
 
 /**
- * @brief The page each of @p count notes takes in @p room rows.
- *
- * Every note is on page 0 when they fit, else on pages that keep their
- * last row for the page count, a note never split.  A note marked in
- * @p standing is on page 0, and the others fill the rows left after the
- * standing ones.  With no row left beside the standing notes for the
- * count, they yield: every note pages in pages of @p room - 1 rows, the
- * standing ones first, and a note taller than that gets page -1, shown on
- * no page until the room grows.
- * @param rows each note's rows
- * @param standing whether each note stands
- * @param count the notes
- * @param room the rows they have
- * @param page out: each note's page, -1 for none
- * @return the number of pages
- */
-int kst_panel_pack_notes(const int *rows, const bool *standing, int count,
-                         int room, int *page);
-
-/**
- * @brief The pages the open tab's notes take: 1 when they fit above the message;
- *  a tap on the notes shows the next.
+ * @brief The pages the open tab's notes take: 1 when they fit above the
+ *  bottom line, the last message; a tap on the notes shows the next.
  *
  * @return the pages, at least 1
  */
@@ -643,8 +635,8 @@ int kst_panel_note_pages(void);
 
 /**
  * @brief The notes' area, a tap on which shows the next page.
- * @return the area; empty while the notes take one page or wait for the
- *         message
+ * @return the area; empty while the notes take one page or the bottom line
+ *         leaves them no row
  */
 gfx_rect_t kst_panel_notes_rect(void);
 

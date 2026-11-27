@@ -6,6 +6,21 @@ history is in git.
 
 ## Unreleased
 
+### Changed
+
+- The KST programmer draws through the common servo programmer frame
+  (`sprog`). The SERVO tab's first line is a head: the port and its GPIO
+  (`PROG PORT 1 GPIO 13`) over the supply CONNECT sets (`PD MINI  5.0V
+  1000mA`, `5V FIXED`, `SUPPLY AS IT IS`), in the warning colour as
+  `NO PROG PORT SET` without a port, beside the 260px CONNECT, ABORT or
+  LEAVE. The notes flow from 8px under the rows; the last message stands
+  on the bottom line; the page count `1/2` stands at the right of the
+  last note row. TUNE, PULSE and
+  FAILSAFE end with `Tap a value to edit it. * marks a change. WRITE n
+  VALUES writes the changes.`, which replaces the two lines that named the
+  SERVO tab (`kst_panel.c`, `kst_panel_draw.c`;
+  [Servo programmer](docs/ServoProgrammer.md#servo-tab)).
+
 ## 0.23.18 - 2026-11-27
 
 0.23.18 is a testing release. A servo gets an id, `<prefix>-<serial>` of

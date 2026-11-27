@@ -8148,9 +8148,12 @@ UI_TEXT(KP_DOUBT, 116,
 UI_TEXT(KP_JOURNAL_KEPT, 116,
     "Settings from before the interrupted write are available under RESTORE.",
     "Unter ZURÜCKSPIELEN findest du die Werte vor dem unterbrochenen Schreibvorgang.")
-UI_TEXT(KP_EDIT_NOTE_1, 116,
-    "* marks a value that differs from the servo's setting.",
-    "* markiert einen Wert, der vom Wert im Servo abweicht.")
+/* The servo programmers' value tabs: the hint under their notes
+ * (sprog_hint(), shared/ui/sprog.c).  WRITE n VALUES stands in the footer
+ * under every tab. */
+UI_TEXT(SPROG_EDIT_NOTE, 116,
+    "Tap a value to edit it. * marks a change. WRITE n VALUES writes the changes.",
+    "Tippe zum Ändern auf einen Wert. * markiert Änderungen. n WERTE SCHREIBEN schreibt sie.")
 UI_TEXT(KP_EDIT_NOTE_2, 116,
     "Write these values with WRITE VALUES on the SERVO tab.",
     "Schreibe diese Werte mit WERTE SCHREIBEN im Reiter SERVO.")

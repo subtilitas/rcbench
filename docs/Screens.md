@@ -2698,8 +2698,9 @@ PROG PORT 4. With OUTPUTS picked, CONNECT is locked and the page says
 `Use the programming port to program a servo.` and
 `Tap PORT and pick a PROG PORT.`
 
-On an rbmod carrier with IOmcu protocol 4.36 or later, tap the programmer's
-PORT label before CONNECT to choose a programming port. The fixed pins
+On an rbmod carrier with IOmcu protocol 4.36 or later, tap the head of
+KST's SERVO tab (HITEC's PORT label) before CONNECT to choose a
+programming port. The fixed pins
 are PROGP01 GPIO13, PROGP02 GPIO14, PROGP03 GPIO15 and PROGP04 GPIO0. The
 choice sets SERVO TESTER and requests SERVO PWM for that port and NONE
 for the other three. The tester waits for readback confirmation.
@@ -2715,8 +2716,10 @@ other SERVO screens and on MOTOR & ESC; pressing it shows
 STOP remains active everywhere, CENTER and RELEASE on LIVE. COMMANDED
 shows `---`, because the tester sends no pulse to the held port.
 
-In PWM with a responding PD mini, the PORT row shows the voltage and
-current limit CONNECT will set: `PORT  5.0V  1000mA`. While the port is
+KST's SERVO tab opens with a head: the port and its GPIO,
+`PROG PORT 1 GPIO 13` (`NO PROG PORT SET` in the warning colour without a
+port), over the supply CONNECT sets, `PD MINI  5.0V 1000mA` with a
+responding PD mini, `5V FIXED` on the carrier or `SUPPLY AS IT IS`. While the port is
 held, the set points and OUTPUT ON are locked on SUPPLY and on SERVO's
 other screens; OUTPUT OFF and a press on KST's or HITEC's PD MINI row while
 it reads ON still work. On the rbmod carrier, the ports have
@@ -2733,7 +2736,8 @@ tall or more and ending 8px above the card floor:
 | tabs | one row at the top, 48px tall: five tabs of 120px, four of 151px on KST with KST EXPERT MODE OFF |
 | rows | 48px tall at a 56px pitch, up to 5 a tab, in two columns of 295px; a wide row spans both |
 | values | 150px (15 cells of the 10 x 20 face); a wide row's 260px, with its `-` and `+` keys of 56px inside it |
-| notes and messages | under the last row, 10 x 20 face, 60 cells a row, 20px a row, to 6px above the card floor: 6 rows under the SERVO tab |
+| SERVO tab's head | line 0: two lines of the 10 x 20 face at the left, the port and the supply; CONNECT, ABORT or LEAVE 260 x 48px at the right |
+| notes and messages | from 8px under the last row down, 10 x 20 face, 60 cells a row, 20px a row; the last message on the bottom line, its last row 8px above the card floor: 6 rows under the SERVO tab |
 | lists (FILES, RESTORE, MORE, a factor) | a title, then up to 7 entries 48px tall at a 56px pitch, CANCEL 150 x 48px at the foot |
 | warning pages | the title in the 20 x 36 face, up to 16 rows of lines in the 10 x 20 face (fewer in a shorter area: the rows that fit 8px above the buttons), the hold button 300 x 56px, 380 x 56px on LEAVE PROGRAMMING with unwritten edits, and CANCEL or BACK 180 x 56px at the foot |
 
@@ -2743,10 +2747,10 @@ tab, as in English, and in the 8 x 16 face when one does not, as German
 list of choices takes one column of 48px rows at a 56px pitch above
 CANCEL. When more choices come than one column holds, they take two to a
 row in columns of 295px, and an entry wider than a column takes a row of
-its own. Where the two standing lines leave no row beside the message for a
-page count, they yield to it: they page with the other notes, first, and
-a line taller than a page waits for the message to go. Where the message
-leaves no row for a note, every note waits for it to go. Neither a note
+its own. Notes that need more rows than there are above the message take
+pages, the last row of each kept for the count; a note that does not fit
+in the rows a page has left starts the next. Where the message leaves no
+row for a note and the count, no note shows until it goes. Neither a note
 nor the message rises over the SERVO tab's last row.
 
 A message takes up to 5 rows and is drawn whole in the 6 rows under the

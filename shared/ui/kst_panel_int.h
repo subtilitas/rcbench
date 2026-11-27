@@ -10,7 +10,10 @@
  * the actions; kst_panel_touch.c, the presses; kst_panel_run.c, the limit
  * run's sessions; and kst_panel_draw.c, the notes and the pages drawn.
  * The layout they draw on, the rows, the state they read and write, and
- * the functions one calls of another, prefixed kpn_.  Nothing outside
+ * the functions one calls of another, prefixed kpn_.  The tab shown, its
+ * rows, the SERVO tab's head and the notes draw through the servo
+ * programmers' frame (sprog.h), k.f; the presses, the holds, the editors
+ * and the pages are the overlay's own.  Nothing outside
  * these seven files includes this header; the interface is kst_panel.h.
  *
  * SPDX-License-Identifier: MIT
@@ -24,6 +27,7 @@
 #include "gfx.h"
 #include "kst_panel.h"
 #include "kst_prog.h"
+#include "sprog.h"
 #include "touch_types.h"
 #include "ui_card_text.h"
 #include "ui_keypad.h"
@@ -76,6 +80,10 @@
 enum { PG_SERVO = 0, PG_TUNE, PG_PULSE, PG_FAILSAFE, PG_LOCKED, PG_COUNT };
 
 enum { K_FIELD = 0, K_STEP, K_LOCKED, K_ACT };
+
+/** @brief The show bit of the rows and the tab KST EXPERT MODE ON shows:
+ *         DEAD BAND, BOOST, STRETCH and the LOCKED tab (sprog_row_t.show). */
+#define KST_SHOW_EXPERT 0x01u
 
 enum {
     A_PORT = 0, A_READ, A_FILES, A_RESTORE, A_MORE, A_WRITE, A_TYPE
@@ -160,15 +168,13 @@ typedef struct {
     kst_prog_gate_t *gate;
     gfx_rect_t area;                    /**< the overlay's area, body pixels */
     bool       open;                    /**< whether the overlay is open */
-    uint8_t    note_page;               /**< notes page shown, when the notes take more than one */
-    /** @brief Signature of the notes' places and rows the page is of */
-    uint32_t   note_sig;
-    ui_tabs_t  tabs;                    /**< the page tabs shown: five, four with KST EXPERT MODE OFF */
+    /** @brief The frame the tabs, the rows, the head and the notes draw
+     *         through: its tabs (five, four with KST EXPERT MODE OFF), its
+     *         notes' page and its view, filled by kpn_view() */
+    sprog_t    f;
     /** @brief Whether KST EXPERT MODE is ON, as kpn_mode_sync() last read
      *         SET_KST_EXPERT */
     bool       expert;
-    uint8_t    tab_count;               /**< the tabs shown; 0 before the first kpn_mode_sync() */
-    uint8_t    tab_page[PG_COUNT];      /**< the page, PG_*, each tab shown is of */
     bool       hv;                      /**< HV SERVO: above KST_PANEL_STD_MV may be set */
     bool       loaded;                  /**< whether the options were read from the settings */
     bool       card_look;               /**< whether the card in the slot is asked for */
@@ -316,7 +322,7 @@ bool kpn_programming(void);
  * @return true when CONNECT switches a supply on
  */
 bool kpn_switches_supply(void);
-/** @brief A row's label: its text, or for PORT what it holds now.
+/** @brief A row's label: its text, or for PORT the head's first line.
  * @param r the row
  * @return the label
  */
@@ -394,13 +400,6 @@ gfx_rect_t kpn_tabs_rect(void);
  */
 int kpn_foot(void);
 /**
- * @brief Where the notes and the message under a page end.
- * @return the lower of 6px above the area's foot and FOOT_GAP above the
- *         alert band, in the area's coordinates (body pixels): no text
- *         lies under the band
- */
-int kpn_notes_foot(void);
-/**
  * @brief Row @p r, its label and its control, at its place on the page as
  *        it shows (rows closed up with KST EXPERT MODE OFF).
  * @param r the row
@@ -430,6 +429,21 @@ gfx_rect_t kpn_step_rect(const row_t *r, bool up);
  */
 const row_t *kpn_row_at(int page, int row, int col);
 /**
+ * @brief The frame's show bits now: KST_SHOW_EXPERT with KST EXPERT MODE
+ *        ON, else none.
+ * @return the mask
+ */
+uint8_t kpn_mask(void);
+/**
+ * @brief Line @p i of the SERVO tab's head: 0 the port and its GPIO
+ *        (`PROG PORT 1 GPIO 13`, or `NO PROG PORT SET`), 1 the supply
+ *        CONNECT sets (`PD MINI  5.0V 1000mA`, `5V FIXED`, `SUPPLY AS IT
+ *        IS`).
+ * @param i the line, 0 or 1
+ * @return the line; NULL for none
+ */
+const char *kpn_head_line(int i);
+/**
  * @brief Whether KST EXPERT MODE is ON, as kpn_mode_sync() last read it.
  * @return true while the expert rows and actions show
  */
@@ -437,8 +451,8 @@ bool kpn_expert(void);
 /**
  * @brief Follows SET_KST_EXPERT: on a change every editor closes, the
  *        press ends and the tab strip is built again from the pages that
- *        keep a row, the page shown kept where it is still there and SERVO
- *        otherwise.  The first call builds the strip.
+ *        keep a row (the frame's tabs of kpn_mask()), the page shown kept
+ *        where it is still there and SERVO otherwise.
  */
 void kpn_mode_sync(void);
 /**
@@ -665,6 +679,12 @@ void kpn_port_list(void);
 void kpn_supply_sync(void);
 
 /* kst_panel_draw.c */
+
+/** @brief Fills the frame's view of the tab shown: the cells' values,
+ *         fills and presses, the head, the notes and the last message on
+ *         the bottom line.  Its texts are static: the frame draws them
+ *         after this returns. */
+void kpn_view(void);
 
 /** @brief Whether (@p x, @p y) is on notes that take more than one
  *         page.

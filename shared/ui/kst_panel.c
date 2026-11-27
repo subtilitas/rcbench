@@ -22,7 +22,6 @@
 
 #include "kst_port.h"
 #include "kst_reg.h"
-#include "outputs_screen.h"
 #include "link_pages.h"
 #include "prog_choice.h"
 #include "ui_board.h"
@@ -37,57 +36,115 @@
  * names the state, which no header included after it may meet. */
 #include "kst_panel_int.h"
 
-const row_t kpn_rows[] = {
-    { PG_SERVO, 0, 0, 1, K_ACT, A_PORT, -1, "PORT" },
-    { PG_SERVO, 1, 0, 0, K_ACT, A_READ, -1, "SERVO" },
-    /* The operator's type beside the servo it is of, as the Hitec
-     * programmer's SERIES. */
-    { PG_SERVO, 1, 1, 0, K_ACT, A_TYPE, TX_KP_TYPE, NULL },
-    { PG_SERVO, 2, 0, 0, K_ACT, A_FILES, TX_KP_FILES, NULL },
-    { PG_SERVO, 2, 1, 0, K_ACT, A_MORE, TX_KP_MORE, NULL },
-    { PG_SERVO, 3, 0, 0, K_ACT, A_RESTORE, TX_KP_RESTORE, NULL },
-    /* WRITE n VALUES says what it writes: no label beside it.  A 2s
-     * hold. */
-    { PG_SERVO, 3, 1, 0, K_ACT, A_WRITE, -1, "" },
+/**
+ * @brief The rows, one table for both views of it: kpn_rows for the overlay's
+ * files (page, row and column with every row shown, the overlay's kind),
+ * k_srows for the frame (tab, the frame's kind, show bits, the control's
+ * width).  An index is the same row in both.
+ *
+ * ROW(page, row, col, wide, kind, frame kind, what, show, w, label, name)
+ *
+ * The SERVO tab: the head (port and supply, CONNECT), READ ALL with the
+ * operator's TYPE beside it (as the Hitec programmer's SERIES), FILES and
+ * MORE, RESTORE and WRITE n VALUES, which says what it writes: no label
+ * beside it, 220px, a 2s hold.  LOCKED's 20K SEL is a drive setting, not
+ * the series: the type is SERVO's TYPE row.
+ */
+#define KPN_ROWS(ROW)                                                      \
+    ROW(PG_SERVO, 0, 0, 1, K_ACT, SPROG_K_HEAD, A_PORT, 0, 0, -1, "PORT")  \
+    ROW(PG_SERVO, 1, 0, 0, K_ACT, SPROG_K_ACT, A_READ, 0, 0, -1, "SERVO")  \
+    ROW(PG_SERVO, 1, 1, 0, K_ACT, SPROG_K_ACT, A_TYPE, 0, 0, TX_KP_TYPE,   \
+        NULL)                                                              \
+    ROW(PG_SERVO, 2, 0, 0, K_ACT, SPROG_K_ACT, A_FILES, 0, 0, TX_KP_FILES, \
+        NULL)                                                              \
+    ROW(PG_SERVO, 2, 1, 0, K_ACT, SPROG_K_ACT, A_MORE, 0, 0, TX_KP_MORE,   \
+        NULL)                                                              \
+    ROW(PG_SERVO, 3, 0, 0, K_ACT, SPROG_K_ACT, A_RESTORE, 0, 0,            \
+        TX_KP_RESTORE, NULL)                                               \
+    ROW(PG_SERVO, 3, 1, 0, K_ACT, SPROG_K_ACT, A_WRITE, 0, WRITE_W, -1, "")\
+                                                                           \
+    ROW(PG_TUNE, 0, 0, 1, K_STEP, SPROG_K_STEP, KST_F_DEAD_BAND,           \
+        KST_SHOW_EXPERT, 0, -1, "DEAD BAND")                               \
+    ROW(PG_TUNE, 1, 0, 0, K_FIELD, SPROG_K_VALUE, KST_F_DUTY, 0, 0, -1,    \
+        "MAX. DUTY")                                                       \
+    ROW(PG_TUNE, 1, 1, 0, K_FIELD, SPROG_K_VALUE, KST_F_BOOST,             \
+        KST_SHOW_EXPERT, 0, -1, "BOOST")                                   \
+    ROW(PG_TUNE, 2, 0, 0, K_FIELD, SPROG_K_VALUE, KST_F_STRETCH,           \
+        KST_SHOW_EXPERT, 0, -1, "STRETCH")                                 \
+    ROW(PG_TUNE, 2, 1, 0, K_FIELD, SPROG_K_VALUE, KST_F_SOFT_START, 0, 0,  \
+        -1, "SOFT START")                                                  \
+    ROW(PG_TUNE, 3, 0, 0, K_FIELD, SPROG_K_VALUE, KST_F_SPD_SEL, 0, 0,     \
+        TX_KP_SPEED_LIMIT, NULL)                                           \
+    ROW(PG_TUNE, 3, 1, 0, K_FIELD, SPROG_K_VALUE, KST_F_SPD, 0, 0,         \
+        TX_KP_SPEED, NULL)                                                 \
+                                                                           \
+    ROW(PG_PULSE, 0, 0, 1, K_STEP, SPROG_K_STEP, KST_F_NEUTRAL, 0, 0, -1,  \
+        "NEUTRAL")                                                         \
+    ROW(PG_PULSE, 1, 0, 0, K_FIELD, SPROG_K_VALUE, KST_F_PULSE_LOWER, 0,   \
+        0, -1, "PULSE LOWER")                                              \
+    ROW(PG_PULSE, 1, 1, 0, K_FIELD, SPROG_K_VALUE, KST_F_PULSE_UPPER, 0,   \
+        0, -1, "PULSE UPPER")                                              \
+    ROW(PG_PULSE, 2, 0, 0, K_FIELD, SPROG_K_VALUE, KST_F_LEFT_ANGLE, 0, 0, \
+        -1, "LEFT ANGLE")                                                  \
+    ROW(PG_PULSE, 2, 1, 0, K_FIELD, SPROG_K_VALUE, KST_F_RIGHT_ANGLE, 0,   \
+        0, -1, "RIGHT ANGLE")                                              \
+    ROW(PG_PULSE, 3, 0, 0, K_FIELD, SPROG_K_VALUE, KST_F_REVERSION, 0, 0,  \
+        -1, "REVERSION")                                                   \
+                                                                           \
+    ROW(PG_FAILSAFE, 0, 0, 1, K_FIELD, SPROG_K_VALUE, KST_F_ALLOW_UNCONT,  \
+        0, 0, TX_KP_FS_MOVE, NULL)                                         \
+    ROW(PG_FAILSAFE, 1, 0, 0, K_FIELD, SPROG_K_VALUE, KST_F_UNCONT_POS, 0, \
+        0, -1, "POSITION")                                                 \
+    ROW(PG_FAILSAFE, 1, 1, 0, K_FIELD, SPROG_K_VALUE, KST_F_UNCONT_TIME,   \
+        0, 0, TX_KP_FS_AFTER, NULL)                                        \
+                                                                           \
+    ROW(PG_LOCKED, 0, 0, 0, K_LOCKED, SPROG_K_SHOW, KST_F_20K_SEL,         \
+        KST_SHOW_EXPERT, 0, -1, "20K SEL")                                 \
+    ROW(PG_LOCKED, 0, 1, 0, K_LOCKED, SPROG_K_SHOW, KST_F_LOCK,            \
+        KST_SHOW_EXPERT, 0, -1, "LOCK")                                    \
+    ROW(PG_LOCKED, 1, 0, 0, K_LOCKED, SPROG_K_SHOW, KST_F_GYRO,            \
+        KST_SHOW_EXPERT, 0, -1, "MODE")                                    \
+    ROW(PG_LOCKED, 1, 1, 0, K_LOCKED, SPROG_K_SHOW, KST_F_PROT1_EN,        \
+        KST_SHOW_EXPERT, 0, -1, "PROT1 EN")                                \
+    ROW(PG_LOCKED, 2, 0, 0, K_LOCKED, SPROG_K_SHOW, KST_F_PROT1_CANCLE,    \
+        KST_SHOW_EXPERT, 0, -1, "PROT1 CANCLE")                            \
+    ROW(PG_LOCKED, 2, 1, 0, K_LOCKED, SPROG_K_SHOW, KST_F_PROT1_TIME,      \
+        KST_SHOW_EXPERT, 0, -1, "PROT1 TIME")                              \
+    ROW(PG_LOCKED, 3, 0, 0, K_LOCKED, SPROG_K_SHOW, KST_F_PROT1_PWM,       \
+        KST_SHOW_EXPERT, 0, -1, "PROT1 PWM")                               \
+    ROW(PG_LOCKED, 3, 1, 0, K_LOCKED, SPROG_K_SHOW, KST_F_PROT_POT_ERR,    \
+        KST_SHOW_EXPERT, 0, -1, "POT ERR")                                 \
+    ROW(PG_LOCKED, 4, 0, 0, K_LOCKED, SPROG_K_SHOW, KST_F_POT_SAM_TIMES,   \
+        KST_SHOW_EXPERT, 0, -1, "POT SAMPLES")                             \
+    ROW(PG_LOCKED, 4, 1, 0, K_LOCKED, SPROG_K_SHOW, KST_F_PROT_PWM_ERR,    \
+        KST_SHOW_EXPERT, 0, -1, "PWM ERR")
 
-    { PG_TUNE, 0, 0, 1, K_STEP, KST_F_DEAD_BAND, -1, "DEAD BAND" },
-    { PG_TUNE, 1, 0, 0, K_FIELD, KST_F_DUTY, -1, "MAX. DUTY" },
-    { PG_TUNE, 1, 1, 0, K_FIELD, KST_F_BOOST, -1, "BOOST" },
-    { PG_TUNE, 2, 0, 0, K_FIELD, KST_F_STRETCH, -1, "STRETCH" },
-    { PG_TUNE, 2, 1, 0, K_FIELD, KST_F_SOFT_START, -1, "SOFT START" },
-    { PG_TUNE, 3, 0, 0, K_FIELD, KST_F_SPD_SEL, TX_KP_SPEED_LIMIT, NULL },
-    { PG_TUNE, 3, 1, 0, K_FIELD, KST_F_SPD, TX_KP_SPEED, NULL },
+/** @brief A row of KPN_ROWS as the overlay's files see it. */
+#define ROW_OF_PANEL(pg, rw, cl, wd, kk, sk, wh, sh, w, lb, nm) \
+    { pg, rw, cl, wd, kk, wh, lb, nm },
+/** @brief A row of KPN_ROWS as the frame sees it. */
+#define ROW_OF_FRAME(pg, rw, cl, wd, kk, sk, wh, sh, w, lb, nm) \
+    { pg, wd, sk, wh, sh, w, lb, nm },
 
-    { PG_PULSE, 0, 0, 1, K_STEP, KST_F_NEUTRAL, -1, "NEUTRAL" },
-    { PG_PULSE, 1, 0, 0, K_FIELD, KST_F_PULSE_LOWER, -1, "PULSE LOWER" },
-    { PG_PULSE, 1, 1, 0, K_FIELD, KST_F_PULSE_UPPER, -1, "PULSE UPPER" },
-    { PG_PULSE, 2, 0, 0, K_FIELD, KST_F_LEFT_ANGLE, -1, "LEFT ANGLE" },
-    { PG_PULSE, 2, 1, 0, K_FIELD, KST_F_RIGHT_ANGLE, -1, "RIGHT ANGLE" },
-    { PG_PULSE, 3, 0, 0, K_FIELD, KST_F_REVERSION, -1, "REVERSION" },
-
-    { PG_FAILSAFE, 0, 0, 1, K_FIELD, KST_F_ALLOW_UNCONT, TX_KP_FS_MOVE, NULL },
-    { PG_FAILSAFE, 1, 0, 0, K_FIELD, KST_F_UNCONT_POS, -1, "POSITION" },
-    { PG_FAILSAFE, 1, 1, 0, K_FIELD, KST_F_UNCONT_TIME, TX_KP_FS_AFTER, NULL },
-
-    /* A drive setting, not the series: the type is SERVO's TYPE row. */
-    { PG_LOCKED, 0, 0, 0, K_LOCKED, KST_F_20K_SEL, -1, "20K SEL" },
-    { PG_LOCKED, 0, 1, 0, K_LOCKED, KST_F_LOCK, -1, "LOCK" },
-    { PG_LOCKED, 1, 0, 0, K_LOCKED, KST_F_GYRO, -1, "MODE" },
-    { PG_LOCKED, 1, 1, 0, K_LOCKED, KST_F_PROT1_EN, -1, "PROT1 EN" },
-    { PG_LOCKED, 2, 0, 0, K_LOCKED, KST_F_PROT1_CANCLE, -1, "PROT1 CANCLE" },
-    { PG_LOCKED, 2, 1, 0, K_LOCKED, KST_F_PROT1_TIME, -1, "PROT1 TIME" },
-    { PG_LOCKED, 3, 0, 0, K_LOCKED, KST_F_PROT1_PWM, -1, "PROT1 PWM" },
-    { PG_LOCKED, 3, 1, 0, K_LOCKED, KST_F_PROT_POT_ERR, -1, "POT ERR" },
-    { PG_LOCKED, 4, 0, 0, K_LOCKED, KST_F_POT_SAM_TIMES, -1, "POT SAMPLES" },
-    { PG_LOCKED, 4, 1, 0, K_LOCKED, KST_F_PROT_PWM_ERR, -1, "PWM ERR" },
-};
+const row_t kpn_rows[] = { KPN_ROWS(ROW_OF_PANEL) };
 _Static_assert(sizeof(kpn_rows) / sizeof(kpn_rows[0]) == ROW_COUNT,
                "ROW_COUNT in kst_panel_int.h counts kpn_rows");
+
+/** @brief The rows as the frame lays them out, by kpn_rows' index. */
+static const sprog_row_t k_srows[] = { KPN_ROWS(ROW_OF_FRAME) };
 
 /** @brief The tab titles, in tab order. */
 static const ui_text_id_t k_pages[PG_COUNT] = {
     TX_KP_TAB_SERVO, TX_KP_TAB_TUNE, TX_KP_TAB_PULSE, TX_KP_TAB_FAILSAFE,
     TX_KP_TAB_LOCKED,
+};
+
+/** @brief Each tab's show bits: LOCKED with KST EXPERT MODE ON. */
+static const uint8_t k_tab_show[PG_COUNT] = { 0, 0, 0, 0, KST_SHOW_EXPERT };
+
+/** @brief The overlay's table for the frame. */
+static const sprog_def_t k_def = {
+    k_pages, k_tab_show, PG_COUNT, k_srows, ROW_COUNT, TX_SPROG_EDIT_NOTE,
 };
 
 /* The state, its type in kst_panel_int.h. */
@@ -150,36 +207,54 @@ bool kpn_programming(void)
     return kst_prog_state(&k.prog) == KST_PROG_PROGRAMMING;
 }
 
-/* A row's label: its text, or for PORT what CONNECT asks of the supply. */
-const char *kpn_row_label(const row_t *r)
+const char *kpn_head_line(int i)
 {
-    if (r->kind == K_ACT && r->what == A_PORT && prog_choice_offered()) {
-        /* The carrier's port, chosen on this row, at its fixed 5V. */
-        static char port[KST_PANEL_LINE];
-        const outbind_roles_t *roles = ui_board_roles();
+    static char line[2][KST_PANEL_LINE];
 
-        if (!kpn_on_port() || roles == NULL) {
-            return TR(HP_PORT_NONE);
-        }
-        char name[12];
-        const uint8_t gpio = roles->prog[kpn_port_no()];
-
-        (void)outputs_role_name(ui_board(), gpio, name, sizeof(name));
-        snprintf(port, sizeof(port), TR(PC_ROW), name, (unsigned)gpio);
-        return port;
+    if (!kpn_on_port()) {
+        return i == 0 ? TR(HP_PORT_NONE) : NULL;
     }
-    if (r->kind == K_ACT && r->what == A_PORT && kpn_on_port()
-        && kpn_flag(LINK_KS_F_RAIL)) {
-        /* What CONNECT asks of the supply, and what it holds after. */
-        static char port[KST_PANEL_LINE];
+    if (i == 0) {
+        /* The GPIO the port's feed names, else the carrier's. */
+        const outbind_roles_t *roles = ui_board_roles();
+        unsigned pin = kst_panel_pin();
+
+        if (pin == PROG_REG_NO_PIN && prog_choice_offered() && roles != NULL) {
+            pin = roles->prog[kpn_port_no()];
+        }
+        if (pin == PROG_REG_NO_PIN) {
+            snprintf(line[0], sizeof(line[0]), TR(SV_TARGET_PN),
+                     (unsigned)kpn_port_no() + 1u);
+        } else {
+            snprintf(line[0], sizeof(line[0]), TR(SV_TARGET_PN_PIN),
+                     (unsigned)kpn_port_no() + 1u, pin);
+        }
+        return line[0];
+    }
+    if (ui_board_prog_5v_pin() >= 0) {
+        return TR(HP_SUPPLY_5V_FIXED);
+    }
+    if (kpn_flag(LINK_KS_F_RAIL)) {
+        /* What CONNECT asks of the PD mini, and what it holds after. */
         const unsigned mv = kst_prog_supply_mv(&k.prog);
 
-        if (ui_board_prog_5v_pin() >= 0) {
-            return TR(KP_PORT_5V_FIXED);
-        }
-        snprintf(port, sizeof(port), TR(KP_PORT_SUPPLY), mv / 1000u,
+        snprintf(line[1], sizeof(line[1]), "PD MINI  %u.%uV %umA", mv / 1000u,
                  mv % 1000u / 100u, (unsigned)kst_prog_supply_ma(&k.prog));
-        return port;
+        return line[1];
+    }
+    return TR(HP_SUPPLY_AS_IS);
+}
+
+const char *kst_panel_head_line(int i)
+{
+    return i == 0 || i == 1 ? kpn_head_line(i) : NULL;
+}
+
+/* A row's label: its text, or for PORT the head's first line. */
+const char *kpn_row_label(const row_t *r)
+{
+    if (r->kind == K_ACT && r->what == A_PORT) {
+        return kpn_head_line(0);
     }
     return r->label >= 0 ? ui_tr((ui_text_id_t)r->label) : r->name;
 }
@@ -363,105 +438,28 @@ gfx_rect_t kpn_tabs_rect(void)
 
 int kpn_foot(void)
 {
-    const int area = k.area.y + k.area.h - 8;
-    const int band = UI_ALERT_Y - UI_BAND_H - FOOT_GAP;
-
-    return area < band ? area : band;
+    return sprog_foot(&k.f);
 }
 
-int kpn_notes_foot(void)
+/** @brief Row @p r's index, the frame's row. */
+static int row_no(const row_t *r)
 {
-    const int area = k.area.y + k.area.h - 6;
-    const int band = UI_ALERT_Y - UI_BAND_H - FOOT_GAP;
-
-    return area < band ? area : band;
-}
-
-/**
- * @brief Where row @p r is drawn: the page's rows that show, in the order
- *        of kpn_rows, closed up from the top.  A wide row takes a line of
- *        its own, the others two to a line.  With every row shown that is
- *        each row's own row and column (test_kst_panel_expert).
- * @param r the row, one of kpn_rows
- * @param line the line it is drawn on, from 0
- * @param col the column it is drawn in, 0 or 1
- */
-static void packed(const row_t *r, int *line, int *col)
-{
-    int ln = 0, c = 0;
-
-    for (const row_t *q = kpn_rows; q < r; ++q) {
-        if (q->page != r->page || !kpn_row_shown(q)) {
-            continue;
-        }
-        if (q->wide != 0u) {
-            ln += c != 0 ? 2 : 1;       /* the line begun, and its own */
-            c = 0;
-        } else if (c == 1) {
-            ++ln;
-            c = 0;
-        } else {
-            c = 1;
-        }
-    }
-    if (r->wide != 0u && c != 0) {
-        ++ln;
-        c = 0;
-    }
-    *line = ln;
-    *col = c;
+    return (int)(r - kpn_rows);
 }
 
 gfx_rect_t kpn_row_rect(const row_t *r)
 {
-    const int col_w = (k.area.w - 30) / 2;
-    int line = 0, col = 0;
-
-    if (!kpn_row_shown(r)) {
-        return (gfx_rect_t){ 0, 0, 0, 0 };
-    }
-    packed(r, &line, &col);
-    return (gfx_rect_t){ (int16_t)(col == 0 ? k.area.x + 10
-                                            : k.area.x + 20 + col_w),
-                         (int16_t)(k.area.y + ROW0 + line * PITCH),
-                         (int16_t)(r->wide != 0u ? k.area.w - 20 : col_w),
-                         ROW_H };
-}
-
-/**
- * @brief A row's controls: the value, and for a stepped row its keys beside
- *        it.  WRITE n VALUES is WRITE_W wide, a wide row's WIDE_W, any other
- *        VAL_W.
- * @param r the row
- * @return the rectangle, body pixels
- */
-static gfx_rect_t control_rect(const row_t *r)
-{
-    const gfx_rect_t rr = kpn_row_rect(r);
-    const int w = r->kind == K_ACT && r->what == A_WRITE ? WRITE_W
-                : r->wide != 0u                          ? WIDE_W
-                                                         : VAL_W;
-
-    return (gfx_rect_t){ (int16_t)(rr.x + rr.w - w), rr.y, (int16_t)w, rr.h };
+    return sprog_row_rect(&k.f, row_no(r));
 }
 
 gfx_rect_t kpn_value_rect(const row_t *r)
 {
-    const gfx_rect_t v = control_rect(r);
-
-    if (r->kind != K_STEP) {
-        return v;
-    }
-    return (gfx_rect_t){ (int16_t)(v.x + STEP_W + 4), v.y,
-                         (int16_t)(v.w - 2 * (STEP_W + 4)), v.h };
+    return sprog_value_rect(&k.f, row_no(r));
 }
 
 gfx_rect_t kpn_step_rect(const row_t *r, bool up)
 {
-    const gfx_rect_t v = control_rect(r);
-
-    return (gfx_rect_t){ (int16_t)(up ? v.x + v.w - STEP_W : v.x), v.y,
-                         STEP_W, v.h };
+    return sprog_step_rect(&k.f, row_no(r), up);
 }
 
 const row_t *kpn_row_at(int page, int row, int col)
@@ -491,14 +489,7 @@ static const row_t *shown_at(int page, int row, int col)
 
 gfx_rect_t kst_panel_tab_rect(int page)
 {
-    const int want = (unsigned)page < PG_COUNT ? page : PG_SERVO;
-
-    for (int t = 0; t < k.tab_count; ++t) {
-        if (k.tab_page[t] == want) {
-            return k.tabs.rect[t];
-        }
-    }
-    return (gfx_rect_t){ 0, 0, 0, 0 };
+    return sprog_tab_rect(&k.f, (unsigned)page < PG_COUNT ? page : PG_SERVO);
 }
 
 gfx_rect_t kst_panel_value_rect(int page, int row, int col)
@@ -651,37 +642,26 @@ int kst_panel_page(void)
 
 int kpn_page(void)
 {
-    return k.tabs.selected >= 0 && k.tabs.selected < k.tab_count
-         ? k.tab_page[k.tabs.selected] : PG_SERVO;
+    return sprog_tab(&k.f);
 }
 
 /* ------------------------------------------------------------ expert mode */
-
-/** @brief The fields whose rows KST EXPERT MODE OFF hides beside the
- *         LOCKED tab's: DEAD BAND, BOOST and STRETCH. */
-static const uint8_t k_expert_fields[] = {
-    KST_F_DEAD_BAND, KST_F_BOOST, KST_F_STRETCH,
-};
 
 bool kpn_expert(void)
 {
     return k.expert;
 }
 
+uint8_t kpn_mask(void)
+{
+    return k.expert ? KST_SHOW_EXPERT : 0u;
+}
+
 bool kpn_row_shown(const row_t *r)
 {
-    if (k.expert || r->kind == K_ACT) {
-        return true;
-    }
-    if (r->page == PG_LOCKED) {
-        return false;
-    }
-    for (unsigned i = 0; i < sizeof(k_expert_fields); ++i) {
-        if (r->what == k_expert_fields[i]) {
-            return false;
-        }
-    }
-    return true;
+    const uint8_t show = k_srows[row_no(r)].show;
+
+    return show == 0u || (show & kpn_mask()) != 0u;
 }
 
 bool kpn_field_hidden(unsigned id)
@@ -700,57 +680,26 @@ bool kpn_field_hidden(unsigned id)
     return false;
 }
 
-/**
- * @brief Whether page @p page keeps a row that shows.
- * @param page the page
- * @return true when its tab is in the strip
- */
-static bool page_shown(int page)
-{
-    for (int i = 0; i < ROW_COUNT; ++i) {
-        if (kpn_rows[i].page == page && kpn_row_shown(&kpn_rows[i])) {
-            return true;
-        }
-    }
-    return false;
-}
-
 void kpn_mode_sync(void)
 {
     const bool on = settings_get_bool(SET_KST_EXPERT);
-    ui_text_id_t ids[PG_COUNT] = {0};
-    int page;
-    int n = 0;
 
-    if (k.tab_count != 0u && on == k.expert) {
+    if (on == k.expert) {
         return;
     }
-    page = kpn_page();
-    if (k.tab_count != 0u) {
-        /* An editor, a page or a press -- a held step key repeats -- may
-         * be about a row that goes. */
-        kpn_close_editors();
-        k.have = false;
-        k.pressed = P_NONE;
-        ui_hold_reset(&k.conn);
-        k.conn_due = false;
-        ui_hold_reset(&k.wr);
-        k.wr_due = false;
-    }
+    /* An editor, a page or a press -- a held step key repeats -- may be
+     * about a row that goes. */
+    kpn_close_editors();
+    k.have = false;
+    k.pressed = P_NONE;
+    ui_hold_reset(&k.conn);
+    k.conn_due = false;
+    ui_hold_reset(&k.wr);
+    k.wr_due = false;
     k.expert = on;
-    for (int p = 0; p < PG_COUNT; ++p) {
-        if (page_shown(p)) {
-            k.tab_page[n] = (uint8_t)p;
-            ids[n++] = k_pages[p];
-        }
-    }
-    k.tab_count = (uint8_t)n;
-    ui_tabs_init_text(&k.tabs, ids, n, kpn_tabs_rect());
-    for (int t = 0; t < n; ++t) {
-        if (k.tab_page[t] == page) {
-            k.tabs.selected = t;
-        }
-    }
+    /* The frame builds its strip again, the tab shown kept where it is
+     * still there and SERVO otherwise. */
+    sprog_view_begin(&k.f, kpn_mask());
     ++k.rev;
 }
 
@@ -789,7 +738,9 @@ void kst_panel_init(gfx_rect_t area)
     settings_set_hold(holds_setting);
     kst_prog_gate_set(&k.prog, k.gate);
     k.area = area;
-    kpn_mode_sync();
+    k.expert = settings_get_bool(SET_KST_EXPERT);
+    sprog_init(&k.f, &k_def, area);
+    sprog_view_begin(&k.f, kpn_mask());
     k.kp.pressed = -1;
     k.tk.pressed = -1;
 }
@@ -821,7 +772,7 @@ void kst_panel_open(void)
     kpn_mode_sync();
     if (!k.open) {
         k.open = true;
-        k.note_page = 0;
+        k.f.note_page = 0;
         /* The settings may have gone back to their defaults. */
         options_fresh();
         k.card_look = k.card_look || k.prog.fed;
