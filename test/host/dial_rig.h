@@ -64,6 +64,10 @@ typedef struct {
     dk_status_t st;         /**< the STATUS a read returns */
     unsigned   st_reads;    /**< STATUS reads answered */
     unsigned   fail_status; /**< the next STATUS reads that fail */
+    bool       hold_status; /**< keep the next STATUS read's answer in
+                                 held instead of delivering it */
+    bool       have_held;   /**< held holds an answer */
+    bleu_evt_t held;       /**< the STATUS answer kept */
     unsigned   npkt;        /**< panel packets kept */
     uint8_t    pkt[DRIG_PKTS][DK_PKT_MAX]; /**< their bytes */
     uint8_t    len[DRIG_PKTS]; /**< their lengths */
@@ -162,6 +166,12 @@ static inline void drig_act(drig_t *r, const bleu_act_t *a)
                 --r->fail_status;
                 e.len = 0u;
                 e.status = 0x10Eu;
+            }
+            if (r->hold_status) {
+                r->hold_status = false;
+                r->held = e;
+                r->have_held = true;
+                break;
             }
             dial_ctl_event(&r->c, &e, r->now);
             break;

@@ -709,6 +709,54 @@ TEST_CASE(dial_off_drops_the_last_status)
     CHECK(!v.have_status);
 }
 
+/* A STATUS answer and the link's end that come in one drain, before the
+ * next step: the answer belongs to the link that ended, and no cell is
+ * shown. */
+TEST_CASE(a_status_answer_with_the_links_end_is_dropped)
+{
+    drig_t r;
+    dial_view_t v;
+    drig_up(&r);
+    r.st.batt_mv = 3450u;
+    r.st.flags = DK_ST_BATT_LOW;
+    r.hold_status = true;
+    drig_run(&r, DIAL_STATUS_READ_MS + 1u);
+    CHECK(r.have_held);
+    dial_ctl_event(&r.c, &r.held, r.now);
+    drig_drop(&r);
+    drig_step(&r);
+    CHECK(!r.c.linked);
+    dial_ctl_view(&r.c, r.now, &v);
+    CHECK(!v.have_status);
+    CHECK_EQ(v.batt_mv, 0u);
+}
+
+/* The Dial bound and linked, picked again from the scan's list: the same
+ * address, no new INFO, and its board stays. */
+TEST_CASE(binding_the_bound_dial_again_keeps_its_board)
+{
+    drig_t r;
+    drig_init(&r);
+    r.hw = DK_HW_K518;
+    dial_cfg_t cfg = r.c.cfg;
+    cfg.addr[0] = '\0';
+    dial_ctl_config(&r.c, &cfg, r.now);
+    CHECK_EQ(dial_ctl_scan(&r.c, false, r.now), DIAL_SCAN_STARTED);
+    drig_run(&r, 1u);
+    uint8_t dial[21] = { 2u, 0x01u, 0x06u, 17u, 0x07u, DK_UUID_LE(0) };
+    adv(&r, 2u, dial, sizeof dial);
+    bleu_evt_t end = drig_ev(BLEU_EV_SCAN_END, r.c.b.tok_scan);
+    dial_ctl_event(&r.c, &end, r.now);
+    CHECK(dial_ctl_bind(&r.c, 0u, r.now));
+    drig_run(&r, 50u);
+    CHECK(r.c.linked);
+    CHECK_EQ(dial_ctl_board(&r.c), DK_HW_K518);
+    CHECK(dial_ctl_bind(&r.c, 0u, r.now));
+    drig_run(&r, 50u);
+    CHECK(r.c.linked);
+    CHECK_EQ(dial_ctl_board(&r.c), DK_HW_K518);
+}
+
 int main(void)
 {
     RUN(the_link_comes_up_and_the_model_streams);
@@ -735,5 +783,7 @@ int main(void)
     RUN(a_k518_names_its_board_and_its_empty_cell);
     RUN(a_bind_or_an_unbind_forgets_the_last_dials_board);
     RUN(dial_off_drops_the_last_status);
+    RUN(a_status_answer_with_the_links_end_is_dropped);
+    RUN(binding_the_bound_dial_again_keeps_its_board);
     return test_summary("dial_ctl");
 }

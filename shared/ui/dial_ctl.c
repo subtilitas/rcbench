@@ -151,11 +151,13 @@ static void follow_status(dial_ctl_t *c, uint32_t now_ms)
     if (c->b.ent_reads != c->status_seen) {
         dk_status_t s;
         c->status_seen = c->b.ent_reads;
-        if (c->b.ent_status == 0u
+        /* An answer taken after its link ended belongs to a link that is
+         * gone: it is dropped. */
+        if (c->linked && c->b.ent_status == 0u
             && dk_status_decode(c->b.ent, c->b.ent_len, &s)) {
             c->status = s;
             c->status_ok = true;
-        } else {
+        } else if (c->linked) {
             ++c->status_bad;
         }
     }
@@ -294,9 +296,11 @@ bool dial_ctl_bind(dial_ctl_t *c, uint8_t i, uint32_t now_ms)
         ++c->bind_refused;
         return false;
     }
+    if (strcmp(c->cfg.addr, c->found[i].addr) != 0) {
+        c->board = 0u;  /* another Dial: its board comes with its INFO */
+    }
     snprintf(c->cfg.addr, sizeof(c->cfg.addr), "%s", c->found[i].addr);
     snprintf(c->cfg.name, sizeof(c->cfg.name), "%s", c->found[i].name);
-    c->board = 0u;      /* another Dial: its board comes with its INFO */
     bleu_bind(&c->b, &a, now_ms);
     bleu_hurry(&c->b);
     ++c->bind_seq;
