@@ -36,24 +36,24 @@
 
 /* ---------------------------------------------------------------- editors */
 
-void hpn_close_editors(void)
+void hpn_page_dropped(int kind)
 {
-    if (hp.page.open && hp.page.kind == W_SOFT) {
+    if (kind == W_SOFT) {
         /* CHECK THIS CHANGE closed without its hold: the edit is dropped. */
         hitec_prog_cancel(&hp.prog);
-    }
-    if (hp.page.open
-        && (hp.page.kind == W_LOAD || hp.page.kind == W_LOAD_MORE)) {
+    } else if (kind == W_LOAD || kind == W_LOAD_MORE) {
         /* CHECK THIS FILE closed without its hold: the file is dropped. */
         hitec_prog_load_cancel(&hp.prog);
     }
-    ui_keypad_close(&hp.kp);
-    ui_textkey_close(&hp.tk);
+}
+
+void hpn_close_editors(void)
+{
+    if (hp.f.page.open) {
+        hpn_page_dropped(hp.f.page.what);
+    }
     hp.kp_what = KP_NONE;
-    hp.f.list.open = false;
-    hp.page.open = false;
-    hp.page.down = false;
-    ui_hold_spend(&hp.page.hold);      /* a flash under way runs on */
+    sprog_close_editors(&hp.f);     /* a page hold's flash runs on */
 }
 
 /**
@@ -63,13 +63,8 @@ void hpn_close_editors(void)
  */
 void hpn_choice_open(int kind, const char *title)
 {
-    /* The frame's list, filled here: its rule places the entries. */
-    hp.f.list.open = true;
-    hp.f.list.files = kind == C_FILES;
-    hp.f.list.what = (int16_t)kind;
-    hp.f.list.count = 0;
-    hp.f.list.current = SPROG_NO_VALUE;
-    snprintf(hp.f.list.title, sizeof(hp.f.list.title), "%s", title);
+    /* The frame's list: up to 5 one to a line, more two to a line. */
+    sprog_list_open(&hp.f, (int16_t)kind, title, kind == C_FILES);
 }
 
 /**
@@ -79,13 +74,7 @@ void hpn_choice_open(int kind, const char *title)
  */
 void hpn_choice_add(const char *label, int value)
 {
-    if (hp.f.list.count < HP_CHOICE_MAX) {
-        /* The frame's 63 bytes: a label longer is cut. */
-        snprintf(hp.f.list.label[hp.f.list.count],
-                 sizeof(hp.f.list.label[0]), "%.*s",
-                 (int)(sizeof(hp.f.list.label[0]) - 1u), label);
-        hp.f.list.value[hp.f.list.count++] = value;
-    }
+    (void)sprog_list_add(&hp.f, label, NULL, value);
 }
 
 /* ---------------------------------------------------------------- options */
@@ -144,8 +133,8 @@ hitec_prog_edit_t hpn_edit_take(int32_t value)
 static void value_keypad(const char *title, const char *unit, float value,
                          float min, float max, int decimals)
 {
-    ui_keypad_open(&hp.kp, hp.area, title, unit, value, min, max, decimals);
     hp.kp_what = KP_VALUE;
+    sprog_keypad(&hp.f, KP_VALUE, title, unit, value, min, max, decimals);
 }
 
 /**
@@ -656,9 +645,6 @@ void hpn_act(const hpn_row_t *r)
     case A_MOVE:
         hpn_move_act();
         break;
-    case A_FIND:
-        hpn_find_act(hp.find_right);
-        break;
     default:
         (void)hitec_prog_clear(p);
         break;
@@ -693,16 +679,16 @@ static void list_done(hitec_prog_t *p, int kind, int value)
     } else if (value == MORE_RX) {
         rx_open(p);
     } else if (value == MORE_VOLTAGE) {
-        ui_keypad_open(&hp.kp, hp.area, TR(KP_PROG_VOLTAGE), "V",
-                       (float)hitec_prog_mv(p) / 1000.0f,
-                       (float)HITEC_PROG_MV_MIN / 1000.0f,
-                       (float)HITEC_PROG_MV_MAX / 1000.0f, 1);
         hp.kp_what = KP_VOLTAGE;
+        sprog_keypad(&hp.f, KP_VOLTAGE, TR(KP_PROG_VOLTAGE), "V",
+                     (float)hitec_prog_mv(p) / 1000.0f,
+                     (float)HITEC_PROG_MV_MIN / 1000.0f,
+                     (float)HITEC_PROG_MV_MAX / 1000.0f, 1);
     } else {
-        ui_keypad_open(&hp.kp, hp.area, TR(KP_PROG_CURRENT), "mA",
-                       (float)hitec_prog_ma(p), (float)PDMINI_I_MIN_MA,
-                       (float)PDMINI_I_MAX_MA, 0);
         hp.kp_what = KP_CURRENT;
+        sprog_keypad(&hp.f, KP_CURRENT, TR(KP_PROG_CURRENT), "mA",
+                     (float)hitec_prog_ma(p), (float)PDMINI_I_MIN_MA,
+                     (float)PDMINI_I_MAX_MA, 0);
     }
 }
 
@@ -795,7 +781,7 @@ static void value_done(float v)
             hitec_panel_message_lines(hitec_prog_message(&hp.prog), lines);
 
         /* A refusal always says why; NULL keeps the keypad's own line. */
-        ui_keypad_refuse_why(&hp.kp, n > 0 ? lines[0] : NULL);
+        ui_keypad_refuse_why(&hp.f.kp, n > 0 ? lines[0] : NULL);
         return;
     }
     hp.kp_what = KP_NONE;

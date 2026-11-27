@@ -2,10 +2,13 @@
  * @file kst_panel_touch.c
  * @brief The presses on the programmer's overlay.
  *
- * The presses on the programmer's overlay for KST and Chaservo servos: a
- * DOWN, its moves and its release, the repeat of a held stepper, the home
- * tag, and each frame's hold and repeat.  The state and the seam
- * are kst_panel_int.h.
+ * The presses on the programmer's overlay for KST and Chaservo servos.
+ * The frame (sprog.h) takes every touch and every frame's time and says
+ * what happened; this file fills the frame's view first and acts on the
+ * result: a tap's action or editor, a step, ABORT, CONNECT's and WRITE n
+ * VALUES' completed holds, a value typed or chosen, a page's hold.  And
+ * the home tag and the page-set hooks.  The state and the seam are
+ * kst_panel_int.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -13,189 +16,20 @@
 
 #include "kst_port.h"
 #include "link_pages.h"
-#include "prog5v_box.h"
 #include "supply_screen.h"
-#include "ui_tabs.h"
-#include "ui_textkey.h"
-#include "ui_widgets.h"
 
-/* Last: its layout macros have short names (ROW0, PITCH, ROW_H) and k
- * names the state, which no header included after it may meet. */
+/* Last: k names the state, which no header included after it may meet. */
 #include "kst_panel_int.h"
 
 /* -------------------------------------------------------------------- touch */
-
-/**
- * @brief Takes a press: remembers its contact, what it is on and its row, and
- *        starts counting its hold.
- */
-static void take(const touch_event_t *evt, int what, int row)
-{
-    k.have = true;
-    k.id = evt->point.id;
-    k.pressed = what;
-    k.row = row;
-    k.held_s = 0.0f;
-}
-
-/** @brief Ends the press. */
-static void let_go(void)
-{
-    k.have = false;
-    k.pressed = P_NONE;
-}
-
-/**
- * @brief Whether a press at (@p x, @p y) is on the PORT row's button while
- *        it reads ABORT: the entry, an operation or the wait to leave is
- *        under way (act_value() in kst_panel_draw.c).  Not while the
- *        warning, the keypad, the keyboard or a list covers the rows.
- * @param x the column, px
- * @param y the line, px
- * @return true on ABORT
- */
-static bool abort_at(int x, int y)
-{
-    const kst_prog_t *p = &k.prog;
-    const kst_prog_state_t st = kst_prog_state(p);
-
-    if (!k.open || k.warn.open || k.kp.open || k.tk.open || k.ch.open) {
-        return false;
-    }
-    if (st != KST_PROG_ENTERING && st != KST_PROG_WORKING
-        && !kpn_leave_waits(p)) {
-        return false;
-    }
-    for (int i = 0; i < ROW_COUNT; ++i) {
-        const row_t *r = &kpn_rows[i];
-
-        if (r->kind == K_ACT && r->what == A_PORT && r->page == kpn_page()
-            && kpn_row_live(r)
-            && gfx_rect_contains(kpn_value_rect(r), x, y)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-/**
- * @brief Takes a DOWN event: finds the control under it and takes the press.
- *        ABORT acts on it at once, and the press it keeps taps nothing on
- *        its release.
- */
-static void down(const touch_event_t *evt)
-{
-    const int x = evt->point.x, y = evt->point.y;
-
-    if (abort_at(x, y)) {
-        kst_prog_abort(&k.prog);
-        take(evt, P_NONE, -1);
-        return;
-    }
-
-    if (k.warn.open) {
-        if (gfx_rect_contains(kst_panel_apply_rect(), x, y)) {
-            take(evt, P_APPLY, -1);
-            k.warn.down = true;
-            ui_hold_begin(&k.warn.hold, k.warn.hint);
-        } else if (gfx_rect_contains(kst_panel_cancel_rect(), x, y)) {
-            take(evt, P_CANCEL, -1);
-        }
-        return;
-    }
-    if (k.kp.open) {
-        take(evt, P_KEYPAD, -1);
-        (void)ui_keypad_event(&k.kp, evt, NULL);
-        return;
-    }
-    if (k.tk.open) {
-        take(evt, P_TEXTKEY, -1);
-        (void)ui_textkey_event(&k.tk, evt, NULL, 0);
-        return;
-    }
-    if (k.ch.open) {
-        for (int i = 0; i < k.ch.count; ++i) {
-            if (gfx_rect_contains(kst_panel_choice_rect(i), x, y)) {
-                take(evt, P_CHOICE, i);
-                return;
-            }
-        }
-        if (gfx_rect_contains(kst_panel_choice_cancel_rect(), x, y)) {
-            take(evt, P_CHOICE_CANCEL, -1);
-        }
-        return;
-    }
-    if (gfx_rect_contains(kpn_tabs_rect(), x, y)) {
-        take(evt, P_TAB, -1);
-        (void)ui_tabs_event(&k.f.tabs, evt);
-        return;
-    }
-    for (int i = 0; i < ROW_COUNT; ++i) {
-        const row_t *r = &kpn_rows[i];
-
-        if (r->page != kpn_page() || !kpn_row_live(r)) {
-            continue;
-        }
-        if (r->kind == K_STEP) {
-            /* The steps act on the press and repeat while it is held. */
-            const bool up = gfx_rect_contains(kpn_step_rect(r, true), x, y);
-
-            if (up || gfx_rect_contains(kpn_step_rect(r, false), x, y)) {
-                take(evt, up ? P_PLUS : P_MINUS, i);
-                kpn_step(r, up);
-                return;
-            }
-        }
-        if (gfx_rect_contains(kpn_value_rect(r), x, y)) {
-            if (r->kind == K_ACT && r->what == A_PORT
-                && kst_prog_state(&k.prog) == KST_PROG_PWM
-                && kpn_switches_supply()) {
-                /* CONNECT that switches the port's supply on: a 2s hold,
-                 * and no hold from a low carrier input.  A servo the
-                 * operator powers takes a tap, its sync 250ms after it. */
-                if (prog5v_box_input_why() != NULL) {
-                    ui_action_refused(prog5v_box_input_why());
-                    return;
-                }
-                take(evt, P_CONNECT, i);
-                ui_hold_reset(&k.conn);
-                ui_hold_begin(&k.conn, TX_HOLD_HINT_CONNECT);
-                return;
-            }
-            if (r->kind == K_ACT && r->what == A_WRITE) {
-                /* WRITE n VALUES writes after a 2s hold; a tap shows the
-                 * hint and sends nothing.  A write the session refuses
-                 * says why at once. */
-                if (kpn_write_refused()) {
-                    return;
-                }
-                take(evt, P_WRITE, i);
-                ui_hold_reset(&k.wr);
-                ui_hold_begin(&k.wr, TX_HOLD_HINT_WRITE);
-                return;
-            }
-            take(evt, P_ROW, i);
-            return;
-        }
-    }
-    /* On the carrier the PORT row's label opens the ports' list. */
-    const row_t *pr = kpn_port_pick_row();
-    if (pr != NULL && gfx_rect_contains(kpn_row_rect(pr), x, y)) {
-        take(evt, P_PORT, -1);
-        return;
-    }
-    if (kpn_notes_paged_at(x, y)) {
-        take(evt, P_NOTES, -1);
-    }
-}
 
 void kst_panel_close(void)
 {
     if (!kst_panel_holds_port()) {
         kpn_close_editors();
-        k.open = false;
+        k.f.open = false;
         k.f.note_page = 0;
-    } else if (kpn_programming() && !k.warn.open) {
+    } else if (kpn_programming() && !k.f.page.open) {
         kpn_close_editors();
         kpn_warn_leave();
     }
@@ -217,7 +51,8 @@ void kst_panel_back(void)
 
 bool kst_panel_safe_at(int x, int y)
 {
-    return abort_at(x, y);
+    kpn_view();
+    return sprog_safe_at(&k.f, x, y);
 }
 
 uint8_t kst_panel_pin(void)
@@ -232,164 +67,14 @@ uint8_t kst_panel_pin(void)
     return k.prog.f.port_pin[port];
 }
 
-/** @brief Takes a MOVE or UP event of the press held. */
-static void rest(const touch_event_t *evt)
-{
-    const int x = evt->point.x, y = evt->point.y;
-    const bool up = evt->type == TOUCH_EVENT_UP;
-    const int was = k.pressed;
-    const int which = k.row;
-
-    switch (was) {
-    case P_KEYPAD: {
-        float v = 0.0f;
-        const ui_keypad_result_t r = ui_keypad_event(&k.kp, evt, &v);
-
-        if (up) {
-            let_go();
-        }
-        if (r == UI_KEYPAD_OK) {
-            kpn_keypad_done(v);
-        }
-        return;
-    }
-    case P_TEXTKEY: {
-        char name[UI_TEXTKEY_MAX + 1];
-        const ui_textkey_result_t r = ui_textkey_event(&k.tk, evt, name,
-                                                       sizeof(name));
-
-        if (up) {
-            let_go();
-        }
-        if (r == UI_TEXTKEY_OK) {
-            kpn_name_done(name);
-        }
-        return;
-    }
-    case P_TAB: {
-        const int was_tab = k.f.tabs.selected;
-
-        (void)ui_tabs_event(&k.f.tabs, evt);
-        if (k.f.tabs.selected != was_tab) {
-            k.f.note_page = 0;
-        }
-        if (up) {
-            let_go();
-        }
-        return;
-    }
-    case P_APPLY:
-        if (!up) {
-            /* A finger that leaves the button abandons the hold. */
-            if (!gfx_rect_contains(kst_panel_apply_rect(), x, y)
-                && ui_hold_leave(&k.warn.hold)) {
-                k.warn.down = false;
-                let_go();
-            }
-            return;
-        }
-        (void)ui_hold_end(&k.warn.hold, evt, kst_panel_apply_rect());
-        k.warn.down = false;
-        let_go();
-        return;
-    case P_CONNECT:
-        if (!up) {
-            /* A finger that leaves CONNECT abandons its hold. */
-            if (!gfx_rect_contains(kpn_value_rect(&kpn_rows[which]), x, y)
-                && ui_hold_leave(&k.conn)) {
-                let_go();
-            }
-            return;
-        }
-        /* The hold has connected, or a short release shows the hint; the
-         * release is no tap on what the button shows now. */
-        (void)ui_hold_end(&k.conn, evt, kpn_value_rect(&kpn_rows[which]));
-        let_go();
-        return;
-    case P_WRITE:
-        if (!up) {
-            /* A finger that leaves WRITE abandons its hold. */
-            if (!gfx_rect_contains(kpn_value_rect(&kpn_rows[which]), x, y)
-                && ui_hold_leave(&k.wr)) {
-                let_go();
-            }
-            return;
-        }
-        /* The hold has written, or a short release shows the hint. */
-        (void)ui_hold_end(&k.wr, evt, kpn_value_rect(&kpn_rows[which]));
-        let_go();
-        return;
-    case P_PLUS:
-    case P_MINUS:
-        /* A finger that leaves the key ends the repeat. */
-        if (up || !gfx_rect_contains(kpn_step_rect(&kpn_rows[which],
-                                               was == P_PLUS), x, y)) {
-            let_go();
-        }
-        return;
-    default:
-        break;
-    }
-    if (!up) {
-        return;
-    }
-    let_go();
-    switch (was) {
-    case P_ROW:
-        if (gfx_rect_contains(kpn_value_rect(&kpn_rows[which]), x, y)
-            && kpn_row_live(&kpn_rows[which])) {
-            if (kpn_rows[which].kind == K_ACT) {
-                kpn_act(&kpn_rows[which]);
-            } else {
-                kpn_edit_field(&kpn_rows[which]);
-            }
-        }
-        break;
-    case P_PORT: {
-        const row_t *pr = kpn_port_pick_row();
-
-        if (pr != NULL && gfx_rect_contains(kpn_row_rect(pr), x, y)) {
-            kpn_port_list();
-        }
-        break;
-    }
-    case P_CHOICE:
-        if (k.ch.open && which < k.ch.count
-            && gfx_rect_contains(kst_panel_choice_rect(which), x, y)) {
-            kpn_choice_done(k.ch.values[which]);
-        }
-        break;
-    case P_CHOICE_CANCEL:
-        if (gfx_rect_contains(kst_panel_choice_cancel_rect(), x, y)) {
-            /* A load that waited for the type is not made. */
-            k.ch.open = false;
-            k.type_file[0] = '\0';
-        }
-        break;
-    case P_NOTES:
-        if (kpn_notes_paged_at(x, y)) {
-            k.f.note_page = (uint8_t)((k.f.note_page + 1)
-                                    % kst_panel_note_pages());
-        }
-        break;
-    case P_CANCEL:
-        if (gfx_rect_contains(kst_panel_cancel_rect(), x, y)) {
-            kpn_close_editors();
-        }
-        break;
-    default:
-        break;
-    }
-}
-
 bool kst_panel_has_press(uint8_t id)
 {
-    return k.have && k.id == id;
+    return sprog_has_press(&k.f, id);
 }
 
 bool kst_panel_pressed(void)
 {
-    return k.have;
+    return k.f.have;
 }
 
 /* The supply's own controls follow the port: while one is out of PWM the
@@ -408,43 +93,118 @@ void kpn_supply_sync(void)
     supply_screen_set_port_held(kst_prog_holds_port(&k.prog));
 }
 
+/**
+ * @brief A completed 2s hold of row @p row, due a tick after it completed
+ *        so a touch loss drained in between has cancelled it: CONNECT
+ *        connects where the port is still in PWM and the session
+ *        switches its supply, WRITE n VALUES writes where it still takes
+ *        a press.
+ * @param row the row
+ */
+static void hold_due(int row)
+{
+    const row_t *r = row >= 0 && row < ROW_COUNT ? &kpn_rows[row] : NULL;
+
+    if (r == NULL || r->kind != K_ACT || !kpn_row_live(r)) {
+        return;
+    }
+    if (r->what == A_PORT && kst_prog_state(&k.prog) == KST_PROG_PWM
+        && kpn_switches_supply()) {
+        kpn_act(r);                 /* refuses a low carrier input itself */
+        kpn_supply_sync();
+    } else if (r->what == A_WRITE) {
+        (void)kpn_write_go();
+    }
+}
+
+/**
+ * @brief @p n steps of row @p row, while no page takes over: a soft limit
+ *        opens one, and the repeat ends.
+ * @param row the row
+ * @param up  true for plus
+ * @param n   the steps owed
+ */
+static void steps(int row, bool up, int n)
+{
+    for (int i = 0; i < n && !k.f.page.open; ++i) {
+        kpn_step(&kpn_rows[row], up);
+    }
+}
+
+/**
+ * @brief Acts on what the frame says happened.
+ * @param r the result
+ */
+static void act_on(sprog_result_t r)
+{
+    switch (r.kind) {
+    case SPROG_R_TAP:
+        if (kpn_rows[r.row].kind == K_ACT) {
+            kpn_act(&kpn_rows[r.row]);
+        } else {
+            kpn_edit_field(&kpn_rows[r.row]);
+        }
+        break;
+    case SPROG_R_STEP:
+        steps(r.row, r.key > 0, (int)r.value);
+        break;
+    case SPROG_R_STOP:
+        kst_prog_abort(&k.prog);
+        break;
+    case SPROG_R_HOLD_BEGIN:
+        /* WRITE n VALUES: a write the session refuses says why at once,
+         * and no hold starts. */
+        if (kpn_rows[r.row].what == A_WRITE && kpn_write_refused()) {
+            sprog_refuse(&k.f);
+        }
+        break;
+    case SPROG_R_HOLD_DUE:
+        hold_due(r.row);
+        break;
+    case SPROG_R_PORT:
+        kpn_port_list();
+        break;
+    case SPROG_R_KEYPAD:
+        kpn_keypad_done(r.value);
+        break;
+    case SPROG_R_LIST:
+        kpn_choice_done(r.what, (int)r.value);
+        break;
+    case SPROG_R_LIST_CANCEL:
+        k.type_file[0] = '\0';      /* a load that waited for the type */
+        break;
+    case SPROG_R_NAME:
+        kpn_name_done(k.f.name);
+        break;
+    case SPROG_R_PAGE_APPLY:
+        kpn_warn_apply(r.what);
+        break;
+    case SPROG_R_PAGE_CANCEL:
+        if (r.what == W_SOFT) {
+            kst_prog_soft_cancel(&k.prog);
+        }
+        kpn_close_editors();
+        break;
+    default:
+        break;
+    }
+}
+
 void kst_panel_event(const touch_event_t *evt)
 {
     kpn_mode_sync();
-    if (evt == NULL || !k.open) {
+    if (evt == NULL || !k.f.open) {
         return;
     }
-    if (k.have && evt->point.id == k.id && evt->type != TOUCH_EVENT_DOWN) {
-        rest(evt);
-    } else if (evt->type == TOUCH_EVENT_DOWN && !k.have) {
-        /* One press at a time in the overlay. */
-        down(evt);
-    } else if (evt->type == TOUCH_EVENT_DOWN
-               && abort_at(evt->point.x, evt->point.y)) {
-        /* ABORT counts on the press whatever other fingers hold.  A press
-         * held on a row loses its tap: its release would act on what the
-         * row reads after the abort. */
-        kst_prog_abort(&k.prog);
-        if (k.pressed == P_ROW) {
-            let_go();
-        }
-    }
+    kpn_view();
+    act_on(sprog_event(&k.f, evt));
     kpn_supply_sync();
     ++k.rev;
 }
 
 void kst_panel_cancel(void)
 {
-    ui_keypad_cancel_press(&k.kp);
-    ui_textkey_cancel_press(&k.tk);
-    ui_tabs_cancel(&k.f.tabs);
-    ui_hold_reset(&k.warn.hold);
-    ui_hold_reset(&k.conn);
-    k.conn_due = false;
-    ui_hold_reset(&k.wr);
-    k.wr_due = false;
-    k.warn.down = false;
-    let_go();
+    sprog_cancel(&k.f);
     ++k.rev;
 }
 
@@ -452,141 +212,24 @@ void kst_panel_leave(void)
 {
     kst_panel_cancel();
     kpn_close_editors();
-    k.open = false;
+    k.f.open = false;
     k.f.note_page = 0;
-}
-
-/**
- * @brief A frame of CONNECT's hold: it connects on the tick after it
- *        completes; the port gone from PWM or its row from the page ends
- *        it, a low carrier input ends it with the reason.
- *
- * The connect waits a tick: the frame's drains run between the two, so a
- * touch loss that the hold completed over is found first, and
- * kst_panel_cancel() takes the connect back before its START is queued.
- * @param dt_s the frame's time, s
- */
-static void connect_tick(float dt_s)
-{
-    if (k.conn_due) {
-        const row_t *r = kpn_row_at(PG_SERVO, 0, 0);
-
-        k.conn_due = false;
-        if (r != NULL && kst_prog_state(&k.prog) == KST_PROG_PWM
-            && kpn_switches_supply() && kpn_row_live(r)) {
-            kpn_act(r);         /* refuses a low carrier input itself */
-            kpn_supply_sync();
-        }
-        ++k.rev;
-    }
-    if (k.have && k.pressed == P_CONNECT && !k.conn.fired) {
-        const row_t *r = &kpn_rows[k.row];
-
-        if (kst_prog_state(&k.prog) != KST_PROG_PWM
-            || !kpn_switches_supply() || k.warn.open
-            || kst_panel_editor() != 0 || r->page != kpn_page()
-            || !kpn_row_live(r)) {
-            (void)ui_hold_left(&k.conn);
-            let_go();
-            ++k.rev;
-        } else if (prog5v_box_input_why() != NULL) {
-            ui_hold_reset(&k.conn);
-            let_go();
-            ui_action_refused(prog5v_box_input_why());
-            ++k.rev;
-        } else {
-            if (ui_hold_tick(&k.conn, dt_s)) {
-                k.conn_due = true;
-                ++k.rev;
-            }
-            ++k.hold_rev;
-        }
-    }
-    if (ui_hold_flashing(&k.conn)) {
-        ui_hold_flash_step(&k.conn, dt_s);
-        ++k.hold_rev;
-        if (!ui_hold_flashing(&k.conn)) {
-            ++k.rev;            /* the row under the flash, whole */
-        }
-    }
-}
-
-/**
- * @brief A frame of WRITE n VALUES' hold: it writes on the tick after it
- *        completes, as CONNECT connects; the row taking no press any more,
- *        an editor or a page ends it.
- * @param dt_s the frame's time, s
- */
-static void write_tick(float dt_s)
-{
-    if (k.wr_due) {
-        const row_t *r = kpn_row_at(PG_SERVO, 3, 1);
-
-        k.wr_due = false;
-        if (r != NULL && kpn_row_live(r)) {
-            (void)kpn_write_go();
-        }
-        ++k.rev;
-    }
-    if (k.have && k.pressed == P_WRITE && !k.wr.fired) {
-        const row_t *r = &kpn_rows[k.row];
-
-        if (k.warn.open || kst_panel_editor() != 0 || r->page != kpn_page()
-            || !kpn_row_live(r)) {
-            (void)ui_hold_left(&k.wr);
-            let_go();
-            ++k.rev;
-        } else {
-            if (ui_hold_tick(&k.wr, dt_s)) {
-                k.wr_due = true;
-                ++k.rev;
-            }
-            ++k.hold_rev;
-        }
-    }
-    if (ui_hold_flashing(&k.wr)) {
-        ui_hold_flash_step(&k.wr, dt_s);
-        ++k.hold_rev;
-        if (!ui_hold_flashing(&k.wr)) {
-            ++k.rev;            /* the row under the flash, whole */
-        }
-    }
 }
 
 void kst_panel_tick(float dt_s)
 {
+    sprog_result_t r;
+
     /* SERVO > SETTINGS may have turned KST EXPERT MODE on or off. */
     kpn_mode_sync();
-    connect_tick(dt_s);
-    write_tick(dt_s);
+    kpn_view();
+    r = sprog_tick(&k.f, dt_s);
+    act_on(r);
+    if (r.kind == SPROG_R_HOLD_DUE || r.kind == SPROG_R_PAGE_APPLY
+        || r.kind == SPROG_R_STEP) {
+        ++k.rev;
+    }
     kpn_gate_follow();
-    if (k.warn.open && k.warn.down) {
-        if (ui_hold_tick(&k.warn.hold, dt_s)) {
-            kpn_warn_apply();
-            ++k.rev;
-        }
-        ++k.hold_rev;
-    }
-    if (ui_hold_flashing(&k.warn.hold)) {
-        ui_hold_flash_step(&k.warn.hold, dt_s);
-        ++k.hold_rev;
-        if (!ui_hold_flashing(&k.warn.hold)) {
-            ++k.rev;            /* the page under the flash, whole */
-        }
-    }
-    if (k.have && (k.pressed == P_PLUS || k.pressed == P_MINUS)) {
-        /* The plus and minus keys repeat as SETUP's do. */
-        const int n = ui_key_repeat(&k.held_s, dt_s);
-
-        for (int i = 0; i < n && k.pressed != P_NONE; ++i) {
-            kpn_step(&kpn_rows[k.row], k.pressed == P_PLUS);
-            if (k.warn.open) {
-                /* A soft limit: the page takes over and the repeat ends. */
-                let_go();
-            }
-            ++k.rev;
-        }
-    }
 }
 
 bool kst_panel_write_refused(void)
@@ -598,13 +241,14 @@ bool kst_panel_write_go(void)
 {
     const row_t *w = kpn_row_at(PG_SERVO, 3, 1);
 
-    if (!k.open || k.have || kst_panel_editor() != 0 || w == NULL
-        || !kpn_row_live(w)) {
+    if (w == NULL || !kpn_row_live(w)) {
         return false;
     }
-    /* Sent on the next tick, as the tab's hold is: a touch loss drained
+    /* Due on the next tick, as the tab's hold is: a touch loss drained
      * before it cancels the write. */
-    k.wr_due = true;
+    if (!sprog_due(&k.f, (int)(w - kpn_rows))) {
+        return false;
+    }
     ++k.rev;
     return true;
 }
