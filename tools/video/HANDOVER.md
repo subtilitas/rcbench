@@ -27,7 +27,7 @@ a new session needs beyond it.
 | `tools/video_audio.py` | sound track: music bed, event sounds, record brake at freezes, ducking under the narrator |
 | `tools/video_voice.py` | narration with the Kokoro model, steps stretched to their sentences |
 | `tools/video_cad.py`, `player/case_cad.js` | the case from its STEP assembly, 12 movable components |
-| `storyboards/kst-rbmod.json` | programming a KST servo on the rbmod carrier in 8 steps, 29 screen steps, narrated; 165.2s as written; not rendered with the narration, not seen by the owner. The file `kst-rbmod.mp4` of 2026-11-13 shows the 100.4s form without narration and with an ENABLE WRITE page the panel no longer has |
+| `storyboards/kst-rbmod.json` | programming a KST servo on the rbmod carrier in 8 steps, 29 screen steps, narrated; 169.4s as written; not rendered with the narration, not seen by the owner. The file `kst-rbmod.mp4` of 2026-11-13 shows the 100.4s form without narration and with an ENABLE WRITE page the panel no longer has |
 | `storyboards/features.json` | feature tour, 755.92s, approved by the owner on 2026-11-13 |
 | `tools/video_board.py`, `player/board.js` | a KiCad board drawn flat, with a net lit up, a cut, a wire and a part across two pads |
 | `storyboards/rbmod-rework.json` | the rev 1 rework in 4 steps, 83s, no narration |

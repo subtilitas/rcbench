@@ -412,12 +412,12 @@
     },
     {
      "view": "servo-kst-supply-on-rbmod",
-     "dur": 4.4,
+     "dur": 8.6,
      "n": 3,
      "chip": "Connect",
      "title": "The port and its supply",
-     "text": "The head names the port, <b>PROG PORT 1 GPIO 13</b>, and its supply, <b>5V FIXED</b>.",
-     "say": "The head of the tab names the port and its supply, 5 volts fixed.",
+     "text": "The head names the port, <b>PROG PORT 1 GPIO 13</b>, and its supply, <b>5V FIXED</b>. The carrier makes that 5V from its 15V input: under 13.5V the bench refuses <b>CONNECT</b>.",
+     "say": "The head of the tab names the port and its supply, 5 volts fixed. The carrier makes them from its 15 volt input. With an input under 13.5 volts, the bench refuses connect.",
      "target": [
       110,
       152
