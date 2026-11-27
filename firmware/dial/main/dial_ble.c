@@ -32,7 +32,6 @@
 #include "dial.h"
 
 #include "devota.h"
-#include "driver/gpio.h"
 #include "esp_app_desc.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
@@ -45,8 +44,9 @@
 #include "services/gap/ble_svc_gap.h"
 #include "services/gatt/ble_svc_gatt.h"
 
-/** @brief The image's role, which an update over Bluetooth LE checks. */
-DEVOTA_ROLE(BLEOTA_KIND_DIAL);
+/** @brief The image's role, which an update over Bluetooth LE checks: the
+ *         board's own kind (dial_board.h). */
+DEVOTA_ROLE(DIAL_BOARD_KIND);
 
 /** @brief The panel's packets waiting for the face task. */
 #define PANEL_QUEUE 32u
@@ -136,7 +136,7 @@ static size_t info_value(uint8_t *out)
     }
     i.flags = (uint8_t)((atomic_load(&s_bound) ? DK_INFO_BOUND : 0u)
                         | (RCBENCH_DIAL_HOOKS ? DK_INFO_HOOKS : 0u));
-    i.hw = DK_HW_DIAL11;
+    i.hw = DIAL_BOARD_HW;
     dk_text_copy(i.name, sizeof i.name, s_name);
     return dk_info_encode(&i, out);
 }
@@ -416,14 +416,6 @@ static void on_reset(int reason)
     ESP_LOGW(TAG, "host reset, reason %d", reason);
 }
 
-/** @brief The screen button, the update's confirming key: a press accepts,
- *         a hold of 1,000ms refuses (protocols/bleota).
- *  @return true while it is pressed */
-static bool update_key(void)
-{
-    return gpio_get_level(DIAL_PIN_BTN) == 0;
-}
-
 /** @brief NimBLE's host task. @param arg unused */
 static void host_task(void *arg)
 {
@@ -448,7 +440,8 @@ void dial_ble_start(void)
         ESP_LOGE(TAG, "the GATT service was refused");
         return;
     }
-    (void)devota_start(BLEOTA_KIND_DIAL, BLEOTA_CONFIRM_PRESS, update_key);
+    (void)devota_start(DIAL_BOARD_KIND, BLEOTA_CONFIRM_PRESS,
+                       dial_input_update_key);
     nimble_port_freertos_init(host_task);
 }
 

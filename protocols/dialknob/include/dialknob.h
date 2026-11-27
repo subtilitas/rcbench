@@ -217,8 +217,11 @@ typedef struct {
 #define DK_INFO_BOUND 0x01u /**< the Dial holds a bound panel */
 #define DK_INFO_HOOKS 0x02u /**< a test build: the console injects input */
 /** @} */
-/** @brief INFO hardware: the M5Stack Dial v1.1. */
-#define DK_HW_DIAL11 1u
+/** @brief INFO hardware: the board the Dial firmware runs on. @{ */
+#define DK_HW_DIAL11 1u /**< the M5Stack Dial v1.1 */
+#define DK_HW_K518   2u /**< the Guition JC3636K518C knob */
+#define DK_HW_MAX    2u /**< the highest hardware value */
+/** @} */
 
 /** @brief Dial to panel: INFO, read once after connect. */
 typedef struct {

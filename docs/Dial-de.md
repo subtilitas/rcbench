@@ -20,7 +20,19 @@ Firmware-Update über BLE von SETUP > UPDATES > EINZELNE UPDATES ([Update über 
 LE](#update-über-bluetooth-le)). Die Bildschirme der Programmer (KST,
 Hitec, ESC) und das Pairing folgen in späteren Schritten.
 
+Dieselbe Firmware baut für ein zweites Gerät, den Guition-JC3636K518C-Knopf:
+einen ESP32-S3R8 mit rundem Display von 360 x 360 Pixeln, Touch, einem
+Encoder ohne Drucktaster und einem Vibrationsmotor. Sein Build
+([Flashen über USB](#flashen-über-usb)) startet das BLE-Peripheral, die
+Bindung, den Face-Task und die Konsole. Display, Touch, Encoder, Vibration
+und Akkumessung tun noch nichts: Er sendet kein EVENT, sein STATUS nennt den
+Akku unbekannt, und er lehnt jedes Update ab, weil keine Taste es
+bestätigt. Sein INFO nennt Hardware 2 (`DK_HW_K518`); sein Image nennt die
+Update-Art 5 (`BLEOTA_KIND_DIAL_K518`), also nimmt keines der beiden Geräte
+das Image des anderen.
+
 M5Stack, Dial und Stamp-S3A sind Namen ihres Inhabers und seiner Produkte,
+Guition und JC3636K518C sind Namen ihres Inhabers und seines Produkts,
 Bluetooth ist eine Marke ihres Inhabers. rcbench ist unabhängig: Es ist
 nicht mit ihnen verbunden, nicht von ihnen empfohlen und nicht von ihnen
 gefördert. Die Namen sagen, mit welchem Gerät das Panel spricht.
@@ -123,11 +135,19 @@ idf.py -B build -D SDKCONFIG=build/sdkconfig build
 idf.py -B build -p /dev/ttyACM0 flash monitor
 # der Test-Build mit den Hooks der Konsole
 idf.py -B build-hooks -D SDKCONFIG=build-hooks/sdkconfig -D RCBENCH_DIAL_HOOKS=ON build
+# das Image des Guition JC3636K518C
+idf.py -B build-k518 -D SDKCONFIG=build-k518/sdkconfig \
+  -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.k518" build
 ```
+
+Die Platine ist eine Auswahl in `firmware/dial/main/Kconfig.projbuild`;
+`sdkconfig.k518` wählt den K518 mit seinen 16MB Flash und 8MB Octal-PSRAM.
+CI nennt die Images des K518 `rcbench-dial-k518-<version>.bin` und
+`rcbench-dial-k518-merged-<version>.bin`; ein Release enthält sie nicht.
 
 Die Partitionstabelle (`firmware/dial/partitions.csv`) enthält den NVS, zwei
 Anwendungsslots von 3.072kB und ihre otadata. Das Image hat
-850.800 Bytes, 27,0% eines Slots; die acht Fonts der Faces sind 250.716
+850.864 Bytes, 27,0% eines Slots; die acht Fonts der Faces sind 250.716
 Bytes davon und die Ring-Tabellen 25.044. Sein statischer RAM: 216.550 von
 341.760 Bytes internem DRAM und IRAM, darunter der Frame von 115.200 Bytes.
 Den Heap, den NimBLE zur Laufzeit nimmt, hat niemand gemessen; das Log beim
@@ -697,7 +717,7 @@ Die Konsole ist der USB-Serial/JTAG-Port der USB-C-Buchse, mit dem Prompt
 
 | Befehl | Was er tut |
 | --- | --- |
-| `status` | Name, Adresse, Firmware- und Protokollversion, das gebundene Panel, der Link und sein RSSI (Received Signal Strength Indication), die EVENT-Zähler, die Klick-Einstellung, der Akkuwert, der freie interne Heap und sein Tiefstwert seit dem Start |
+| `status` | Name, Adresse, Firmware- und Protokollversion, die Platine, das gebundene Panel, der Link und sein RSSI (Received Signal Strength Indication), die EVENT-Zähler, die Klick-Einstellung, der Akkuwert, der freie interne Heap und sein Tiefstwert seit dem Start |
 | `sound on` / `sound off` | der Klick pro Rastung; das SCREEN-Paket des Panels setzt ihn ebenfalls, Standard ON |
 | `forget` | das gebundene Panel vergessen, wie das Halten von 10s |
 | `help` | die Befehle |
