@@ -5,8 +5,9 @@
  * The warning pages of the programmer's overlay for KST and Chaservo
  * servos: what a restore, a soft limit, a file, a release, a leave, a
  * check and HV SERVO each say before they act, and APPLY's hold that
- * acts.  WRITE n VALUES has no page: its own 2s hold writes.  The state and the seam are
- * kst_panel_int.h.
+ * acts.  The frame (sprog.h) holds, draws and presses the page; this file
+ * writes its lines and acts on its hold.  WRITE n VALUES has no page: its
+ * own 2s hold writes.  The state and the seam are kst_panel_int.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -22,46 +23,66 @@
 #include "ui_text.h"
 #include "ui_widgets.h"
 
-/* Last: its layout macros have short names (ROW0, PITCH, ROW_H) and k
- * names the state, which no header included after it may meet. */
+/* Last: k names the state, which no header included after it may meet. */
 #include "kst_panel_int.h"
 
 /**
- * @brief Opens the warning page of kind @p kind with its title, the label
- *        of its hold button and the hint a short release shows.
+ * @brief Opens the warning page of kind @p kind: its title, the label of
+ *        its hold button and the hint a short release shows.  A drop page
+ *        lists unwritten edits: its hold leaves without them and BACK
+ *        keeps them.
+ * @param kind   the page, W_*
+ * @param danger true for a danger page
+ * @param title  its title
+ * @param apply  its hold button's label
+ * @param hint   the hint, TX_HOLD_HINT_*
+ * @param drop   true for the drop page
  */
 static void warn_open(int kind, bool danger, const char *title,
-                      const char *apply, int hint)
+                      const char *apply, int hint, bool drop)
 {
-    /* A page the last one's hold opens keeps that hold's flash. */
-    ui_hold_t hold = k.warn.hold;
-    ui_hold_spend(&hold);
-    memset(&k.warn, 0, sizeof(k.warn));
-    k.warn.hold = hold;
-    k.warn.open = true;
-    k.warn.kind = kind;
-    k.warn.danger = danger;
-    snprintf(k.warn.title, sizeof(k.warn.title), "%s", title);
-    snprintf(k.warn.apply, sizeof(k.warn.apply), "%s", apply);
-    k.warn.hint = hint;
+    sprog_page_open(&k.f, (int16_t)kind, danger, title, apply,
+                    drop ? TR(KP_BACK) : TR(CANCEL), (int16_t)hint, drop);
+    k.pg.no_file = false;
 }
 
 /**
- * @brief Takes the next line of the warning page at @p level and returns its
- *        buffer.
+ * @brief The frame's level of a page line's level.
+ * @param level the kst_prog_level_t
+ * @return the sprog_level_t
+ */
+static uint8_t page_level(kst_prog_level_t level)
+{
+    return level == KST_PROG_DANGER ? SPROG_LV_DANGER
+         : level == KST_PROG_WARN   ? SPROG_LV_WARN
+                                    : SPROG_LV_TEXT;
+}
+
+/**
+ * @brief Takes the next line of the page at @p level and returns its
+ *        buffer, SPROG_LINE bytes; the page's last line again once it is
+ *        full.
+ * @param level the line's level
+ * @return the line's buffer
  */
 static char *warn_line(kst_prog_level_t level)
 {
-    const int i = k.warn.count < WARN_LINES ? k.warn.count++ : WARN_LINES - 1;
+    sprog_t *f = &k.f;
 
-    k.warn.level[i] = (uint8_t)level;
-    return k.warn.lines[i];
+    if (!sprog_page_line(f, "", page_level(level))) {
+        f->page.level[SPROG_PAGE_LINES - 1] = page_level(level);
+    }
+    return f->page.line[f->page.count - 1];
 }
 
-/** @brief Adds the line @p s to the warning page at @p level. */
+/**
+ * @brief Adds the line @p s to the page at @p level.
+ * @param level the line's level
+ * @param s     the text
+ */
 static void warn_text(kst_prog_level_t level, const char *s)
 {
-    snprintf(warn_line(level), KST_PANEL_LINE, "%s", s);
+    snprintf(warn_line(level), SPROG_LINE, "%s", s);
 }
 
 /**
@@ -97,27 +118,8 @@ static void value_line(kst_field_id_t id, const kst_image_t *to,
     }
     snprintf(warn_line(kpn_in_set(soft, id) || hidden ? KST_PROG_WARN
                                                        : KST_PROG_INFO),
-             KST_PANEL_LINE, hidden ? TR(KP_HIDDEN_VALUE) : "%s: %s -> %s",
+             SPROG_LINE, hidden ? TR(KP_HIDDEN_VALUE) : "%s: %s -> %s",
              name, was, now);
-}
-
-int kpn_warn_room(void)
-{
-    const int fit = (kst_panel_apply_rect().y - 8 - (k.area.y + WARN_TOP))
-                  / LINE_H;
-
-    return fit < WARN_ROWS ? fit : WARN_ROWS;
-}
-
-/* The rows the page's lines take. */
-int kpn_warn_rows(void)
-{
-    int n = 0;
-
-    for (int i = 0; i < k.warn.count; ++i) {
-        n += kst_panel_text_rows(k.warn.lines[i]);
-    }
-    return n;
 }
 
 /**
@@ -162,12 +164,12 @@ static void warn_values(const kst_image_t *to, int room, int room_rows)
     }
     for (int i = 0, used = 0; i < n; ++i) {
         if (!warn_room(i, n, 1, used, room, room_rows)) {
-            snprintf(warn_line(KST_PROG_INFO), KST_PANEL_LINE,
+            snprintf(warn_line(KST_PROG_INFO), SPROG_LINE,
                      TR(KP_VALUES_MORE), (unsigned)(n - i));
             break;
         }
         value_line((kst_field_id_t)ids[i], to, soft);
-        used += kst_panel_text_rows(k.warn.lines[k.warn.count - 1]);
+        used += kst_panel_text_rows(k.f.page.line[k.f.page.count - 1]);
     }
 }
 
@@ -202,7 +204,7 @@ static void warn_rules(kst_rules_t rules, int room, int room_rows)
             if (n - i == 1) {
                 warn_text(KST_PROG_WARN, TR(KP_CHECK_MORE_ONE));
             } else {
-                snprintf(warn_line(KST_PROG_WARN), KST_PANEL_LINE,
+                snprintf(warn_line(KST_PROG_WARN), SPROG_LINE,
                          TR(KP_CHECK_MORE), (unsigned)(n - i));
             }
             break;
@@ -216,11 +218,12 @@ void kpn_warn_soft(const row_t *r)
 {
     const kst_field_id_t id = (kst_field_id_t)r->what;
 
-    warn_open(W_SOFT, false, TR(KP_SOFT_TITLE),  TR(SV_HOLD_TO_APPLY), TX_HOLD_HINT_APPLY);
+    warn_open(W_SOFT, false, TR(KP_SOFT_TITLE), TR(SV_HOLD_TO_APPLY),
+              TX_HOLD_HINT_APPLY, false);
     /* From the servo's value, not from an edit before this one. */
     value_line(id, kst_prog_soft_image(&k.prog), 0u);
     warn_rules(kst_prog_soft_rules(&k.prog), WARN_RULES - 1,
-               kpn_warn_room() - kpn_warn_rows());
+               sprog_page_room(&k.f));
 }
 
 /**
@@ -240,7 +243,7 @@ static bool warn_no_file(void)
     if (!no_card()) {
         return false;
     }
-    k.warn.no_file = true;
+    k.pg.no_file = true;
     warn_text(KST_PROG_WARN, kpn_card_tr(UI_CARD_AT_KP_NO_FILE));
     warn_text(KST_PROG_WARN, TR(KP_NO_FILE_2));
     warn_text(KST_PROG_WARN, TR(KP_NO_FILE_3));
@@ -299,12 +302,13 @@ void kpn_warn_file(void)
     const kst_prog_t *p = &k.prog;
     const int kind = kind_text(kst_prog_load_kind(p));
 
-    warn_open(W_SOFT, false, TR(KP_FILE_TITLE),  TR(KP_HOLD_LOAD), TX_HOLD_HINT_LOAD);
+    warn_open(W_SOFT, false, TR(KP_FILE_TITLE), TR(KP_HOLD_LOAD),
+              TX_HOLD_HINT_LOAD, false);
     if (differing(kst_prog_soft_image(p)) == 1u) {
-        snprintf(warn_line(KST_PROG_INFO), KST_PANEL_LINE,
+        snprintf(warn_line(KST_PROG_INFO), SPROG_LINE,
                  TR(KP_FILE_DIFF_ONE), kpn_shown(kst_prog_card_name(p)));
     } else {
-        snprintf(warn_line(KST_PROG_INFO), KST_PANEL_LINE, TR(KP_FILE_DIFF),
+        snprintf(warn_line(KST_PROG_INFO), SPROG_LINE, TR(KP_FILE_DIFF),
                  kpn_shown(kst_prog_card_name(p)),
                  differing(kst_prog_soft_image(p)));
     }
@@ -312,8 +316,8 @@ void kpn_warn_file(void)
         kpn_kind_line(warn_line(KST_PROG_INFO), kind);
     }
     warn_values(kst_prog_soft_image(p), FILE_VALUES, FILE_VALUES);
-    warn_rules(kst_prog_soft_rules(p), WARN_LINES - k.warn.count,
-               kpn_warn_room() - kpn_warn_rows());
+    warn_rules(kst_prog_soft_rules(p), SPROG_PAGE_LINES - k.f.page.count,
+               sprog_page_room(&k.f));
 }
 
 ui_text_id_t kpn_from_text(unsigned from)
@@ -370,16 +374,16 @@ static void warn_hidden_restore(const kst_prog_restore_t *plan)
 
 void kpn_warn_restore(const kst_prog_restore_t *plan)
 {
-
-    warn_open(W_RESTORE, true, TR(KP_RESTORE_TITLE),  TR(KP_HOLD_RESTORE), TX_HOLD_HINT_RESTORE);
-    k.warn.plan = *plan;
+    warn_open(W_RESTORE, true, TR(KP_RESTORE_TITLE), TR(KP_HOLD_RESTORE),
+              TX_HOLD_HINT_RESTORE, false);
+    k.pg.plan = *plan;
     warn_text(KST_PROG_INFO, ui_tr(kpn_from_text(plan->from)));
     if (plan->writes == 0xFFu) {
         warn_text(KST_PROG_INFO, TR(KP_RESTORE_ALL));
     } else if (plan->writes == 1u) {
         warn_text(KST_PROG_INFO, TR(KP_RESTORE_ONE));
     } else {
-        snprintf(warn_line(KST_PROG_INFO), KST_PANEL_LINE, TR(KP_RESTORE_N),
+        snprintf(warn_line(KST_PROG_INFO), SPROG_LINE, TR(KP_RESTORE_N),
                  (unsigned)plan->writes);
     }
     if (plan->stay != 0u) {
@@ -401,16 +405,18 @@ void kpn_warn_restore(const kst_prog_restore_t *plan)
  * warnings first, and the restore's page after the hold. */
 void kpn_warn_check(const kst_prog_restore_t *plan)
 {
-    warn_open(W_CHECK, false, TR(KP_CHECK_TITLE),  TR(KP_HOLD_NEXT), TX_HOLD_HINT_CONTINUE);
-    k.warn.plan = *plan;
+    warn_open(W_CHECK, false, TR(KP_CHECK_TITLE), TR(KP_HOLD_NEXT),
+              TX_HOLD_HINT_CONTINUE, false);
+    k.pg.plan = *plan;
     warn_text(KST_PROG_INFO, ui_tr(kpn_from_text(plan->from)));
     warn_text(KST_PROG_INFO, TR(KP_CHECK_1));
-    warn_rules(plan->soft, WARN_RULES - 2, kpn_warn_room() - kpn_warn_rows());
+    warn_rules(plan->soft, WARN_RULES - 2, sprog_page_room(&k.f));
 }
 
 void kpn_warn_release(void)
 {
-    warn_open(W_RELEASE, true, TR(KP_RELEASE_TITLE),  TR(KP_HOLD_WRITE), TX_HOLD_HINT_WRITE);
+    warn_open(W_RELEASE, true, TR(KP_RELEASE_TITLE), TR(KP_HOLD_WRITE),
+              TX_HOLD_HINT_WRITE, false);
     warn_text(KST_PROG_WARN, TR(KP_RELEASE_1));
     warn_text(KST_PROG_INFO, TR(KP_RELEASE_2));
     warn_text(KST_PROG_INFO, TR(KP_RELEASE_3));
@@ -445,11 +451,10 @@ void kpn_warn_leave(void)
         /* The edits listed: the hold leaves without writing them, BACK
          * keeps them. */
         warn_open(W_LEAVE, false, TR(KP_LEAVE_TITLE), TR(KP_HOLD_LEAVE_DROP),
-                  TX_HOLD_HINT_LEAVE_DROP);
-        k.warn.drop = true;
+                  TX_HOLD_HINT_LEAVE_DROP, true);
     } else {
         warn_open(W_LEAVE, false, TR(KP_LEAVE_TITLE), TR(KP_HOLD_LEAVE),
-                  TX_HOLD_HINT_LEAVE);
+                  TX_HOLD_HINT_LEAVE, false);
     }
     if (doubt) {
         warn_text(KST_PROG_DANGER, TR(KP_LEAVE_DOUBT_1));
@@ -459,8 +464,9 @@ void kpn_warn_leave(void)
         warn_text(KST_PROG_WARN, TR(KP_LEAVE_CHANGES));
     }
     if (drop) {
-        warn_values(kst_prog_draft(p), WARN_LINES - k.warn.count - tail,
-                    kpn_warn_room() - kpn_warn_rows() - tail_rows);
+        warn_values(kst_prog_draft(p),
+                    SPROG_PAGE_LINES - k.f.page.count - tail,
+                    sprog_page_room(&k.f) - tail_rows);
     }
     if (cycles) {
         /* The written values act after this power-up. */
@@ -477,9 +483,10 @@ void kpn_warn_leave(void)
 /* A programming voltage above what a standard servo is rated for. */
 void kpn_warn_hv(uint16_t mv)
 {
-    warn_open(W_HV, true, TR(KP_PROG_VOLTAGE),  TR(SV_HOLD_TO_APPLY), TX_HOLD_HINT_APPLY);
-    k.warn.mv = mv;
-    snprintf(warn_line(KST_PROG_INFO), KST_PANEL_LINE, TR(KP_SUPPLY_V),
+    warn_open(W_HV, true, TR(KP_PROG_VOLTAGE), TR(SV_HOLD_TO_APPLY),
+              TX_HOLD_HINT_APPLY, false);
+    k.pg.mv = mv;
+    snprintf(warn_line(KST_PROG_INFO), SPROG_LINE, TR(KP_SUPPLY_V),
              (unsigned)(mv / 1000u), (unsigned)(mv % 1000u / 100u));
     warn_text(KST_PROG_WARN, TR(SV_HV_1));
     warn_text(KST_PROG_WARN, TR(SV_HV_2));
@@ -488,22 +495,19 @@ void kpn_warn_hv(uint16_t mv)
     warn_text(KST_PROG_INFO, TR(SV_HV_5));
 }
 
-/* The hold completed: what the page asked for. */
-void kpn_warn_apply(void)
+/* The hold completed: what the page asked for.  The frame has closed the
+ * page; its flash runs on. */
+void kpn_warn_apply(int what)
 {
-    const int kind = k.warn.kind;
-    const kst_prog_restore_t plan = k.warn.plan;
-    const uint16_t mv = k.warn.mv;
-    const bool drop = k.warn.drop;
+    const int kind = what;
+    const kst_prog_restore_t plan = k.pg.plan;
+    const uint16_t mv = k.pg.mv;
+    const bool drop = k.f.page.drop;
     /* The card left the slot under a page that promised a file: the page
      * comes back with what a write without one leaves out, and nothing is
      * sent before its own hold. */
-    const bool unsaid = no_card() && !k.warn.no_file;
+    const bool unsaid = no_card() && !k.pg.no_file;
 
-    k.warn.open = false;
-    k.warn.down = false;
-    ui_hold_spend(&k.warn.hold);       /* its flash runs on */
-    k.pressed = P_NONE;
     switch (kind) {
     case W_SOFT:
         kst_prog_soft_confirm(&k.prog);
