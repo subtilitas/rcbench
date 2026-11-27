@@ -9,11 +9,13 @@
  * - check 1, after the last HASH part and before WAIT: a signature of
  *   another image or under another key ends the transfer with
  *   BLEOTA_E_SIG, no confirmation is asked and nothing opens;
- * - check 2, after the last write and before the install: the SHA-256 it
- *   checks is the one the device computed of what it wrote, never the
- *   central's.  A central whose HASH and signature belong together but
- *   whose bytes are another image's passes check 1 and is refused at
- *   check 2, with no install;
+ * - END compares the SHA-256 the device computed of what it wrote with
+ *   BEGIN's first: bytes damaged on the way, or another image's bytes
+ *   behind a HASH and signature that belong together, end with
+ *   BLEOTA_E_SHA (10), no install;
+ * - check 2 then verifies the signature over the device's own SHA-256,
+ *   never the central's: a refusal there ends with BLEOTA_E_SIG (15), no
+ *   install;
  * - a transfer that ends while the signature is verified takes no
  *   verdict afterwards.
  *
@@ -48,6 +50,7 @@ typedef struct {
     uint32_t     flash_n;             /**< how many bytes */
     uint32_t     t;                   /**< the clock */
     int          sigs;                /**< BLEOTA_DO_SIG answered */
+    bool         refuse_end;          /**< the stand-in refuses check 2 */
     uint8_t      asked[2][32];        /**< the SHA-256 each check named */
 } sim_t;
 
@@ -134,7 +137,8 @@ static void answer_sig(sim_t *s, verifier_t pem)
 {
     uint8_t sha[32];
     uint8_t sig[BLEOTA_SIG_LEN];
-    CHECK(bleota_dev_sig_job(&s->d, sha, sig));
+    uint32_t gen = 0u;
+    CHECK(bleota_dev_sig_job(&s->d, sha, sig, &gen));
     if (s->sigs < 2) {
         memcpy(s->asked[s->sigs], sha, 32u);
     }
@@ -146,9 +150,10 @@ static void answer_sig(sim_t *s, verifier_t pem)
         uint8_t want[32];
         fw_sha256(s_img, IMG, want);
         ok = memcmp(sha, want, 32u) == 0
-             && memcmp(sig, k_fake, sizeof k_fake) == 0;
+             && memcmp(sig, k_fake, sizeof k_fake) == 0
+             && !(s->refuse_end && s->d.st == BLEOTA_DEV_SIG_END);
     }
-    bleota_dev_sig(&s->d, ok, s->t);
+    bleota_dev_sig(&s->d, ok, gen, s->t);
 }
 
 /** @brief The last notification's FAIL code, BLEOTA_OK for none.
@@ -304,7 +309,7 @@ TEST_CASE(check_1_refuses_before_the_confirmation)
     CHECK_EQ(s.d.st, BLEOTA_DEV_CONFIRM);
 }
 
-TEST_CASE(a_matching_pair_with_other_bytes_is_refused_at_check_2)
+TEST_CASE(a_matching_pair_with_other_bytes_ends_with_code_10)
 {
     sim_t s;
     uint8_t sha[32];
@@ -323,12 +328,37 @@ TEST_CASE(a_matching_pair_with_other_bytes_is_refused_at_check_2)
     CHECK_EQ(drain(&s, &wait), BLEOTA_OK);
     CHECK(wait);
     press(&s);
-    /* The bytes are s_img, not vector image 0. */
+    /* The bytes are s_img, not vector image 0: the compare ends it
+     * before check 2 is asked, and the device's own SHA-256 is the one
+     * it held against BEGIN's. */
+    CHECK_EQ(run(&s, s_img, IMG), BLEOTA_DO_NONE);
+    CHECK(memcmp(s.d.digest, mine, 32u) == 0);
+    CHECK_EQ(drain(&s, NULL), BLEOTA_E_SHA);
+    CHECK_EQ(s.sigs, 1);
+    CHECK_EQ(s.d.st, BLEOTA_DEV_IDLE);
+    CHECK(!s.d.open);
+    CHECK_EQ(bleota_dev_poll(&s.d, s.t), BLEOTA_DO_NONE);
+}
+
+/* Check 2 is asked about the SHA-256 the device computed, and a refusal
+ * there ends with code 15 and no install. */
+TEST_CASE(a_refusal_at_check_2_ends_with_code_15)
+{
+    sim_t s;
+    uint8_t sha[32];
+    img_make();
+    fw_sha256(s_img, IMG, sha);
+    dev_init(&s, BLEOTA_KIND_DIAL_K518, TEST_CHIP_S3, true);
+    s.refuse_end = true;
+    begin(&s, BLEOTA_KIND_DIAL_K518, BLEOTA_PROTO);
+    parts(&s, sha, k_fake);
+    CHECK_EQ(run(&s, NULL, 0u), BLEOTA_DO_SIG);
+    answer_sig(&s, NULL);                     /* check 1 passes */
+    press(&s);
     CHECK_EQ(run(&s, s_img, IMG), BLEOTA_DO_SIG);
     CHECK_EQ(s.d.st, BLEOTA_DEV_SIG_END);
-    answer_sig(&s, sv_pem_a);
-    CHECK(memcmp(s.asked[1], mine, 32u) == 0);  /* the device's own */
-    CHECK(memcmp(s.asked[1], sha, 32u) != 0);
+    answer_sig(&s, NULL);
+    CHECK(memcmp(s.asked[1], s.d.digest, 32u) == 0);
     CHECK_EQ(drain(&s, NULL), BLEOTA_E_SIG);
     CHECK_EQ(s.d.st, BLEOTA_DEV_IDLE);
     CHECK_EQ(bleota_dev_poll(&s.d, s.t), BLEOTA_DO_CLOSE);
@@ -358,8 +388,8 @@ TEST_CASE(a_signed_image_installs_after_both_checks)
     bleota_dev_installed(&s.d, true, BLEOTA_OK, s.t);
     CHECK_EQ(drain(&s, NULL), BLEOTA_OK);
     CHECK_EQ(bleota_dev_poll(&s.d, s.t), BLEOTA_DO_RESTART);
-    /* The same image with one byte changed on the way: check 2 refuses
-     * it before the compare could. */
+    /* The same image with one byte changed on the way: the compare ends
+     * it with code 10, and check 2 is never asked. */
     dev_init(&s, BLEOTA_KIND_DIAL_K518, TEST_CHIP_S3, true);
     begin(&s, BLEOTA_KIND_DIAL_K518, BLEOTA_PROTO);
     parts(&s, sha, k_fake);
@@ -369,9 +399,9 @@ TEST_CASE(a_signed_image_installs_after_both_checks)
     uint8_t bent[IMG];
     memcpy(bent, s_img, IMG);
     bent[IMG - 1u] ^= 1u;
-    CHECK_EQ(run(&s, bent, IMG), BLEOTA_DO_SIG);
-    answer_sig(&s, NULL);
-    CHECK_EQ(drain(&s, NULL), BLEOTA_E_SIG);
+    CHECK_EQ(run(&s, bent, IMG), BLEOTA_DO_NONE);
+    CHECK_EQ(drain(&s, NULL), BLEOTA_E_SHA);
+    CHECK_EQ(s.sigs, 1);
 }
 
 TEST_CASE(a_transfer_that_ends_during_a_check_takes_no_verdict)
@@ -385,12 +415,13 @@ TEST_CASE(a_transfer_that_ends_during_a_check_takes_no_verdict)
     parts(&s, sha, k_fake);
     CHECK_EQ(run(&s, NULL, 0u), BLEOTA_DO_SIG);
     bleota_dev_lost(&s.d);
-    bleota_dev_sig(&s.d, true, s.t);
+    bleota_dev_sig(&s.d, true, s.d.gen, s.t);
     CHECK_EQ(s.d.st, BLEOTA_DEV_IDLE);
     CHECK_EQ(s.d.offer, 0u);
     uint8_t got[32];
     uint8_t sig[BLEOTA_SIG_LEN];
-    CHECK(!bleota_dev_sig_job(&s.d, got, sig));
+    uint32_t g = 0u;
+    CHECK(!bleota_dev_sig_job(&s.d, got, sig, &g));
     /* An ABORT while check 2 runs: the slot is released, no install. */
     dev_init(&s, BLEOTA_KIND_DIAL_K518, TEST_CHIP_S3, true);
     begin(&s, BLEOTA_KIND_DIAL_K518, BLEOTA_PROTO);
@@ -402,17 +433,59 @@ TEST_CASE(a_transfer_that_ends_during_a_check_takes_no_verdict)
     uint8_t a[1];
     (void)bleota_op_encode(BLEOTA_OP_ABORT, a);
     bleota_dev_ctrl(&s.d, a, 1u, s.t);
-    bleota_dev_sig(&s.d, true, s.t);
+    bleota_dev_sig(&s.d, true, s.d.gen, s.t);
     CHECK_EQ(drain(&s, NULL), BLEOTA_E_ABORTED);
     CHECK_EQ(bleota_dev_poll(&s.d, s.t), BLEOTA_DO_CLOSE);
+}
+
+/* The verify runs outside the caller's lock: transfer A's check 1 is
+ * taken, A is aborted, and B begins with all its parts before A's verdict
+ * comes.  A's "valid" must not answer B: B waits for its own check, and a
+ * bad signature of B is refused. */
+TEST_CASE(a_verdict_for_an_ended_transfer_answers_no_later_one)
+{
+    sim_t s;
+    uint8_t sha[32];
+    uint8_t got[32];
+    uint8_t sig[BLEOTA_SIG_LEN];
+    uint32_t gen_a = 0u;
+    uint32_t gen_b = 0u;
+    bool wait = false;
+    img_make();
+    fw_sha256(s_img, IMG, sha);
+    dev_init(&s, BLEOTA_KIND_DIAL_K518, TEST_CHIP_S3, true);
+    begin(&s, BLEOTA_KIND_DIAL_K518, BLEOTA_PROTO);
+    parts(&s, sha, k_fake);
+    CHECK_EQ(run(&s, NULL, 0u), BLEOTA_DO_SIG);
+    CHECK(bleota_dev_sig_job(&s.d, got, sig, &gen_a));   /* A's verify */
+    uint8_t a[1];
+    (void)bleota_op_encode(BLEOTA_OP_ABORT, a);
+    bleota_dev_ctrl(&s.d, a, 1u, s.t);
+    static const uint8_t bad[BLEOTA_SIG_LEN] = { 0x11u };
+    begin(&s, BLEOTA_KIND_DIAL_K518, BLEOTA_PROTO);      /* B */
+    parts(&s, sha, bad);
+    CHECK_EQ(s.d.st, BLEOTA_DEV_SIG);
+    bleota_dev_sig(&s.d, true, gen_a, s.t);              /* A's verdict */
+    CHECK_EQ(s.d.st, BLEOTA_DEV_SIG);
+    CHECK_EQ(s.d.offer, 0u);
+    (void)drain(&s, &wait);
+    CHECK(!wait);
+    CHECK(bleota_dev_sig_job(&s.d, got, sig, &gen_b));
+    CHECK(gen_b != gen_a);
+    CHECK(memcmp(sig, bad, sizeof bad) == 0);
+    bleota_dev_sig(&s.d, false, gen_b, s.t);             /* B's own */
+    CHECK_EQ(drain(&s, &wait), BLEOTA_E_SIG);
+    CHECK(!wait);
 }
 
 int main(void)
 {
     RUN(protocol_1_is_refused_where_the_signature_is_needed);
     RUN(check_1_refuses_before_the_confirmation);
-    RUN(a_matching_pair_with_other_bytes_is_refused_at_check_2);
+    RUN(a_matching_pair_with_other_bytes_ends_with_code_10);
+    RUN(a_refusal_at_check_2_ends_with_code_15);
     RUN(a_signed_image_installs_after_both_checks);
     RUN(a_transfer_that_ends_during_a_check_takes_no_verdict);
+    RUN(a_verdict_for_an_ended_transfer_answers_no_later_one);
     return test_summary("bleota_sig");
 }

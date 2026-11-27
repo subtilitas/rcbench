@@ -21,7 +21,6 @@
 #include "freertos/task.h"
 #include "host/ble_hs.h"
 #include "psa/crypto.h"
-#include "relsig.h"
 
 /** @brief The log's tag. */
 static const char *TAG = "ota";
@@ -71,10 +70,8 @@ static psa_hash_operation_t s_hash;
 /** @brief Bytes taken from the buffer, `ota`'s own. */
 static uint8_t s_buf[WRITE_MAX];
 
-/** @brief The release key, firmware/panel/main/keys/release_signing_pub.pem,
- *         embedded by CMakeLists.txt (EMBED_TXTFILES) with a terminating
- *         NUL. */
-extern const char _binary_release_signing_pub_pem_start[];
+/** @brief The release signature's check; NULL checks none. */
+static devota_sig_fn s_sig;
 
 /** @brief The ms clock, low 32 bits. @return ms since the start */
 static uint32_t now_ms(void)
@@ -224,19 +221,21 @@ static void check_sig(void)
 {
     uint8_t sha[32];
     uint8_t sig[BLEOTA_SIG_LEN];
+    uint32_t gen = 0u;
     xSemaphoreTake(s_lock, portMAX_DELAY);
-    const bool job = bleota_dev_sig_job(&s_dev, sha, sig);
+    const bool job = bleota_dev_sig_job(&s_dev, sha, sig, &gen);
     const bool end = s_dev.st == BLEOTA_DEV_SIG_END;
     xSemaphoreGive(s_lock);
     if (!job) {
         return;
     }
     const int64_t t0 = esp_timer_get_time();
-    const char *pem = _binary_release_signing_pub_pem_start;
-    const bool ok = relsig_verify(pem, strlen(pem), sha, sig);
+    const bool ok = s_sig != NULL && s_sig(sha, sig);
     const unsigned us = (unsigned)(esp_timer_get_time() - t0);
     xSemaphoreTake(s_lock, portMAX_DELAY);
-    bleota_dev_sig(&s_dev, ok, now_ms());
+    /* The transfer may have ended, and another begun, while the check
+     * ran outside the lock: the verdict counts only for its own. */
+    bleota_dev_sig(&s_dev, ok, gen, now_ms());
     xSemaphoreGive(s_lock);
     if (ok) {
         ESP_LOGI(TAG, "release signature verified over %s SHA-256 in %uus",
@@ -394,9 +393,9 @@ bool devota_start(uint8_t kind, uint8_t confirm, devota_key_fn key)
         .slot = next != NULL ? next->size : 0u,
         .ver = { (uint16_t)v[0], (uint16_t)v[1], (uint16_t)v[2] },
         .chip = (uint16_t)CONFIG_IDF_FIRMWARE_CHIP_ID,
-        /* The Dials install only a release-signed image; the nodes check
-         * the SHA-256 alone. */
-        .need_sig = kind == BLEOTA_KIND_DIAL || kind == BLEOTA_KIND_DIAL_K518,
+        /* Only an image that passes a verifier needs the signature (the
+         * Dials); the nodes check the SHA-256 alone. */
+        .need_sig = s_sig != NULL,
     };
     if (devota_role.magic != BLEOTA_ROLE_MAGIC || devota_role.kind != kind) {
         ESP_LOGE(TAG, "this image's role is kind %u, not %u: updates over "
@@ -471,6 +470,11 @@ bool devota_offer(uint32_t *offer)
     open = bleota_dev_offer(&s_dev, offer);
     xSemaphoreGive(s_lock);
     return open;
+}
+
+void devota_need_sig(devota_sig_fn fn)
+{
+    s_sig = fn;
 }
 
 void devota_offer_key(devota_offer_key_fn key)

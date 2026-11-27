@@ -440,6 +440,8 @@ void dial_ble_start(void)
         ESP_LOGE(TAG, "the GATT service was refused");
         return;
     }
+    /* Only a release-signed image installs (bleota protocol 2). */
+    devota_need_sig(dial_sig_verify);
     (void)devota_start(DIAL_BOARD_KIND, BLEOTA_CONFIRM_PRESS,
                        dial_input_update_key);
 #if CONFIG_RCBENCH_DIAL_BOARD_K518

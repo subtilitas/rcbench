@@ -325,11 +325,12 @@ it are done, its card holds the same hold
 ![The update's question on the Dial](img/dial-update-ask.png)
 ![The update's progress on the Dial](img/dial-update-send.png)
 
-5. The panel sends END. The Dial verifies the release signature again,
-   this time over the SHA-256 it computed of every byte it wrote (check
-   2), never over BEGIN's. It then compares that SHA-256 with BEGIN's,
-   lets ESP-IDF check the image, sets the boot slot, shows `RESTARTING`
-   and restarts 500ms later.
+5. The panel sends END. The Dial compares the SHA-256 it computed of every
+   byte it wrote with BEGIN's: a difference is damage on the way, code 10
+   (`BLEOTA_E_SHA`). It then verifies the release signature again, over
+   its own SHA-256 (check 2), never over BEGIN's: a refusal is code 15. It
+   lets ESP-IDF check the image, sets the boot slot, shows `RESTARTING` and
+   restarts 500ms later.
 
 A refused signature shows `SIGNATURE REFUSED` and `FIRMWARE KEPT` for 5s
 (`DIAL_UPD_BADSIG_MS`); the Dial keeps the image it runs. The panel's row
@@ -381,11 +382,12 @@ verification with Mbed TLS on the `ota` task, outside the transfer's
 lock; the console logs its time. The time on the ESP32-S3 is not
 measured yet; on the host (AMD EPYC 7402P, Mbed TLS built without
 optimisation) one check, the key's parse included, takes 6.7ms. The
-check adds 70,144 bytes to the M5Stack Dial's image (851,552 to 921,696)
-and 70,128 bytes to the K518's (863,024 to 933,152), 2.2% of the
-3,145,728-byte slot. The nodes link the same check without calling it:
-80,720 bytes more on the power node (ESP32-C6) and 68,784 bytes on the
-display node (ESP32-S3).
+check adds 70,256 bytes to the M5Stack Dial's image (851,552 to 921,808)
+and to the K518's (863,024 to 933,280), 2.2% of the 3,145,728-byte slot.
+The verifier is the Dial's own (`dial_sig_verify()`, passed to
+`devota_need_sig()`), so the nodes link none: protocol 2 adds 1,088 bytes
+to the power node (ESP32-C6, 652,080 to 653,168) and 896 bytes to the
+display node (ESP32-S3, 696,336 to 697,232).
 
 The device side runs on the task `ota`, priority 3, every 10ms, with a
 stack of 8,192 bytes from the heap at start, the size of ESP-IDF's OTA

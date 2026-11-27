@@ -328,7 +328,7 @@ static void device_work(sim_t *s)
             (void)bleota_dev_verify(&s->d, digest, s->now);
             break;
         case BLEOTA_DO_SIG:
-            bleota_dev_sig(&s->d, s->sig_ok, s->now);
+            bleota_dev_sig(&s->d, s->sig_ok, s->d.gen, s->now);
             break;
         case BLEOTA_DO_INSTALL:
             bleota_dev_installed(&s->d, true, BLEOTA_OK, s->now);

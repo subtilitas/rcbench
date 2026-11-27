@@ -27,10 +27,11 @@
  * confirmation opens the slot and notifies CREDIT.
  * The central sends chunks up to the CREDIT's limit; the device notifies
  * CREDIT as it writes, and at once with its next offset when a chunk
- * skipped ahead (a chunk was lost).  END: a device that needs the
- * signature verifies it again, over the SHA-256 it computed of what it
- * wrote (check 2); then the device compares that SHA-256 with the one
- * given, sets the boot slot, notifies DONE and restarts.  Any
+ * skipped ahead (a chunk was lost).  END: the device compares the SHA-256
+ * of what it wrote with the one given (BLEOTA_E_SHA when they differ); a
+ * device that needs the signature then verifies it again, over the
+ * SHA-256 it computed (check 2); it sets the boot slot, notifies DONE and
+ * restarts.  Any
  * refusal, timeout or loss notifies FAIL with a code where the link
  * stands, and the device keeps the slot it runs.
  *
@@ -394,9 +395,11 @@ typedef enum {
     BLEOTA_DEV_OPEN,     /**< confirmed: the slot is being opened */
     BLEOTA_DEV_RECV,     /**< taking chunks */
     BLEOTA_DEV_VERIFY,   /**< every byte written: the SHA-256 is due */
-    BLEOTA_DEV_SIG_END,  /**< the SHA-256 is computed: check 2, the
-                              signature over it, is due */
-    BLEOTA_DEV_INSTALL,  /**< the SHA-256 matches: the boot slot is set */
+    BLEOTA_DEV_SIG_END,  /**< the SHA-256 of what was written matches
+                              BEGIN's: check 2, the signature over it, is
+                              due */
+    BLEOTA_DEV_INSTALL,  /**< the SHA-256 matches, and the signature where
+                              one is needed: the boot slot is set */
     BLEOTA_DEV_DONE,     /**< installed: the restart is due */
 } bleota_dev_state_t;
 
@@ -433,6 +436,8 @@ typedef struct {
                                  idle as it was */
     uint8_t  flags;         /**< BEGIN's flags */
     uint8_t  proto;         /**< BEGIN's protocol version */
+    uint32_t gen;           /**< BEGINs taken, counted: the identity of the
+                                 transfer a BLEOTA_DO_SIG verdict is for */
     uint8_t  halves;        /**< HASH parts taken: bit n for part n */
     uint32_t size;          /**< BEGIN's size */
     uint16_t ver[3];        /**< BEGIN's version */
@@ -583,14 +588,15 @@ uint32_t bleota_dev_take(bleota_dev_t *d, uint8_t *out, uint32_t max);
 void bleota_dev_written(bleota_dev_t *d, bool ok, uint32_t now);
 
 /**
- * @brief The SHA-256 of every byte written.  A device that needs the
- *        signature keeps it for check 2 (BLEOTA_DEV_SIG_END) and compares
- *        after bleota_dev_sig(); any other compares it with BEGIN's now.
+ * @brief The SHA-256 of every byte written, compared with BEGIN's: a
+ *        mismatch ends the transfer with BLEOTA_E_SHA.  On a match a
+ *        device that needs the signature asks for check 2 over this
+ *        SHA-256 (BLEOTA_DEV_SIG_END); any other is due to install.
  * @param d      the device
  * @param digest the SHA-256 of what was written
  * @param now    the clock
  * @return true when they are equal and the install is due; false for a
- *         mismatch (BLEOTA_E_SHA) and while check 2 is due
+ *         mismatch and while check 2 is due
  */
 bool bleota_dev_verify(bleota_dev_t *d, const uint8_t digest[32],
                        uint32_t now);
@@ -603,21 +609,25 @@ bool bleota_dev_verify(bleota_dev_t *d, const uint8_t digest[32],
  * @param d   the device
  * @param sha receives the SHA-256
  * @param sig receives the signature, r then s
+ * @param gen receives the transfer's identity, for bleota_dev_sig()
  * @return false outside BLEOTA_DEV_SIG and BLEOTA_DEV_SIG_END
  */
 bool bleota_dev_sig_job(const bleota_dev_t *d, uint8_t sha[32],
-                        uint8_t sig[BLEOTA_SIG_LEN]);
+                        uint8_t sig[BLEOTA_SIG_LEN], uint32_t *gen);
 
 /**
  * @brief The verdict of BLEOTA_DO_SIG.  Check 1: a valid signature asks
  *        for the confirmation.  Check 2: a valid one goes on to the
- *        compare with BEGIN's SHA-256 (BLEOTA_E_SHA) and the install.  An
- *        invalid one ends the transfer with BLEOTA_E_SIG either way.
+ *        install.  An invalid one ends the transfer with BLEOTA_E_SIG
+ *        either way.  The caller verifies outside its lock, so the
+ *        transfer may have ended, and another begun, meanwhile: a verdict
+ *        whose @p gen is not the transfer's standing one is dropped.
  * @param d   the device
  * @param ok  the signature verifies under the release key
+ * @param gen the transfer it is for, from bleota_dev_sig_job()
  * @param now the clock
  */
-void bleota_dev_sig(bleota_dev_t *d, bool ok, uint32_t now);
+void bleota_dev_sig(bleota_dev_t *d, bool ok, uint32_t gen, uint32_t now);
 
 /**
  * @brief The image is installed and the boot slot set, or not.

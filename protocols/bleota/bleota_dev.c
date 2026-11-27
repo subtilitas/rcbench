@@ -147,6 +147,7 @@ static void begin(bleota_dev_t *d, const bleota_ctrl_t *c, uint32_t now)
     d->size = c->size;
     d->flags = c->flags;
     d->proto = c->proto;
+    ++d->gen;
     memcpy(d->ver, c->ver, sizeof d->ver);
     memset(d->sig, 0, sizeof d->sig);
     memset(d->digest, 0, sizeof d->digest);
@@ -531,7 +532,7 @@ void bleota_dev_written(bleota_dev_t *d, bool ok, uint32_t now)
 
 /**
  * @brief The SHA-256 of what was written against BEGIN's: equal goes on
- *        to the install, different ends the transfer.
+ *        to check 2 or the install, different ends the transfer.
  * @param d the device
  * @return true when they are equal
  */
@@ -553,33 +554,38 @@ bool bleota_dev_verify(bleota_dev_t *d, const uint8_t digest[32],
     }
     d->t = now;
     memcpy(d->digest, digest, sizeof d->digest);
+    if (!compare(d)) {
+        return false;   /* the transfer's damage: BLEOTA_E_SHA */
+    }
     if (d->cfg.need_sig) {
-        /* Check 2 first, over what was written: an image other than the
-         * signed one fails here even when the SHA-256 and the signature
-         * the central gave belong together. */
+        /* Check 2, over the SHA-256 of what was written: the signature
+         * covers the bytes on flash, not only BEGIN's word for them. */
         d->st = BLEOTA_DEV_SIG_END;
         return false;
     }
-    return compare(d);
+    return true;
 }
 
 bool bleota_dev_sig_job(const bleota_dev_t *d, uint8_t sha[32],
-                        uint8_t sig[BLEOTA_SIG_LEN])
+                        uint8_t sig[BLEOTA_SIG_LEN], uint32_t *gen)
 {
-    if (d == NULL || sha == NULL || sig == NULL
+    if (d == NULL || sha == NULL || sig == NULL || gen == NULL
         || (d->st != BLEOTA_DEV_SIG && d->st != BLEOTA_DEV_SIG_END)) {
         return false;
     }
     memcpy(sha, d->st == BLEOTA_DEV_SIG ? d->sha : d->digest, 32u);
     memcpy(sig, d->sig, BLEOTA_SIG_LEN);
+    *gen = d->gen;
     return true;
 }
 
-void bleota_dev_sig(bleota_dev_t *d, bool ok, uint32_t now)
+void bleota_dev_sig(bleota_dev_t *d, bool ok, uint32_t gen, uint32_t now)
 {
-    if (d == NULL
+    if (d == NULL || gen != d->gen
         || (d->st != BLEOTA_DEV_SIG && d->st != BLEOTA_DEV_SIG_END)) {
-        return; /* ended while it was verified */
+        /* Ended while it was verified, or another transfer stands: the
+         * verdict is none of its business. */
+        return;
     }
     d->t = now;
     if (!ok) {
@@ -589,7 +595,7 @@ void bleota_dev_sig(bleota_dev_t *d, bool ok, uint32_t now)
     if (d->st == BLEOTA_DEV_SIG) {
         ask_confirm(d, now);
     } else {
-        (void)compare(d);
+        d->st = BLEOTA_DEV_INSTALL;
     }
 }
 

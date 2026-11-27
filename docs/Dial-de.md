@@ -346,11 +346,13 @@ und sind die Schritte davor erledigt, trägt seine Karte dasselbe Halten
 ![Die Frage des Updates am Dial](img/de/dial-update-ask.png)
 ![Der Fortschritt des Updates am Dial](img/de/dial-update-send.png)
 
-5. Das Panel sendet END. Das Dial prüft die Release-Signatur noch einmal,
-   diesmal über den SHA-256, den es selbst über jedes geschriebene Byte
-   berechnet hat (Prüfung 2), nie über den aus BEGIN. Dann vergleicht es
-   diesen SHA-256 mit dem aus BEGIN, lässt ESP-IDF das Image prüfen, setzt
-   den Boot-Slot, zeigt `STARTET NEU` und startet 500ms später neu.
+5. Das Panel sendet END. Das Dial vergleicht den SHA-256, den es selbst
+   über jedes geschriebene Byte berechnet hat, mit dem aus BEGIN: Ein
+   Unterschied ist ein Schaden auf dem Weg, Code 10 (`BLEOTA_E_SHA`). Dann
+   prüft es die Release-Signatur noch einmal, über seinen eigenen SHA-256
+   (Prüfung 2), nie über den aus BEGIN: Eine Ablehnung ist Code 15. Es
+   lässt ESP-IDF das Image prüfen, setzt den Boot-Slot, zeigt `STARTET NEU`
+   und startet 500ms später neu.
 
 Eine abgelehnte Signatur zeigt 5s lang `SIGNATUR ABGELEHNT` und
 `FIRMWARE BLEIBT` (`DIAL_UPD_BADSIG_MS`); das Dial behält sein Image. Die
@@ -405,10 +407,12 @@ außerhalb der Sperre der Übertragung; die Konsole schreibt ihre Zeit mit.
 Die Zeit auf dem ESP32-S3 ist noch nicht gemessen; auf dem Host (AMD EPYC
 7402P, Mbed TLS ohne Optimierung gebaut) dauert eine Prüfung samt Parsen
 des Schlüssels 6,7ms. Die Prüfung macht das Image des M5Stack Dial
-70.144 Bytes größer (851.552 auf 921.696) und das des K518 70.128 Bytes
-(863.024 auf 933.152), 2,2% des Slots von 3.145.728 Bytes. Die Nodes
-linken dieselbe Prüfung, ohne sie aufzurufen: 80.720 Bytes mehr auf der
-Power-Node (ESP32-C6) und 68.784 Bytes auf der Display-Node (ESP32-S3).
+70.256 Bytes größer (851.552 auf 921.808) und das des K518 ebenso
+(863.024 auf 933.280), 2,2% des Slots von 3.145.728 Bytes. Die Prüfung
+gehört dem Dial (`dial_sig_verify()`, an `devota_need_sig()` übergeben),
+also linken die Nodes keine: Protokoll 2 macht die Power-Node (ESP32-C6)
+1.088 Bytes größer (652.080 auf 653.168) und die Display-Node (ESP32-S3)
+896 Bytes (696.336 auf 697.232).
 
 Die Geräteseite läuft im Task `ota`, Priorität 3, alle 10ms, mit einem
 Stack von 8.192 Bytes aus dem Heap beim Start, der Größe der OTA-Beispiele

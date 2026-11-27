@@ -2,7 +2,7 @@
 # the console and the face renderer for every board; the input task, the
 # display, the touch controller, the buzzer and the power latch of the
 # board the image is built for (main/dial_board.h, main/Kconfig.projbuild).
-set(SRCS "dial_main.c" "dial_ble.c" "dial_console.c")
+set(SRCS "dial_main.c" "dial_ble.c" "dial_console.c" "dial_sig.c")
 if(CONFIG_RCBENCH_DIAL_BOARD_K518)
     # The Guition JC3636K518C: the display, its boot face and its reading
     # faces at 360 x 360 (dial_k518_lcd.c, dial_k518_screen.c); the input
@@ -20,9 +20,12 @@ endif()
 idf_component_register(
     SRCS ${SRCS}
     INCLUDE_DIRS "."
-    REQUIRES dial dialknob devota bleota gfx bt nvs_flash console esp_app_format esp_timer
+    REQUIRES dial dialknob devota bleota relsig gfx bt nvs_flash console esp_app_format esp_timer
              esp_lcd esp_driver_gpio esp_driver_pcnt esp_driver_ledc
              esp_driver_spi esp_driver_i2c esp_driver_usb_serial_jtag esp_adc
+    # The release key the Dial verifies an update's signature with: the
+    # panel's own (dial_sig.c, bleota protocol 2).
+    EMBED_TXTFILES "../../panel/main/keys/release_signing_pub.pem"
 )
 
 # The console's test hooks; see RCBENCH_DIAL_HOOKS in firmware/dial/CMakeLists.txt.

@@ -126,13 +126,14 @@ FAIL's codes:
    ring. Once 296 bytes are in, it checks the head; then the caller writes
    them to flash and adds them to the SHA-256, and the device notifies
    CREDIT as the limit moves.
-5. The central writes END after the last byte. A device that needs the
-   signature asks for check 2 first: the signature over the SHA-256 its
-   caller computed of the bytes written (`bleota_dev_sig_job()` names that
-   one, never BEGIN's). Then the device compares the SHA-256, the caller
-   checks the image and sets the boot slot, the device notifies DONE, and
-   the caller restarts. An image other than the signed one fails check 2
-   even when BEGIN's SHA-256 and signature belong together.
+5. The central writes END after the last byte. The device compares the
+   SHA-256 its caller computed of the bytes written with BEGIN's: a
+   difference is `E_SHA`, also for another image's bytes behind a HASH and
+   signature that belong together. A device that needs the signature then
+   asks for check 2: the signature over that computed SHA-256
+   (`bleota_dev_sig_job()` names it, never BEGIN's); a refusal is `E_SIG`.
+   The caller checks the image and sets the boot slot, the device
+   notifies DONE, and the caller restarts.
 
 A refusal, a timeout, a lost link or an ABORT closes the open slot. The
 device keeps running the image it started with. A new transfer starts with
@@ -282,8 +283,8 @@ uint32_t    bleota_dev_take(bleota_dev_t *d, uint8_t *out, uint32_t max);
 void        bleota_dev_written(bleota_dev_t *d, bool ok, uint32_t now);
 bool        bleota_dev_verify(bleota_dev_t *d, const uint8_t digest[32], uint32_t now);
 bool        bleota_dev_sig_job(const bleota_dev_t *d, uint8_t sha[32],
-                               uint8_t sig[BLEOTA_SIG_LEN]);
-void        bleota_dev_sig(bleota_dev_t *d, bool ok, uint32_t now);
+                               uint8_t sig[BLEOTA_SIG_LEN], uint32_t *gen);
+void        bleota_dev_sig(bleota_dev_t *d, bool ok, uint32_t gen, uint32_t now);
 void        bleota_dev_installed(bleota_dev_t *d, bool ok, uint8_t code, uint32_t now);
 void        bleota_dev_closed(bleota_dev_t *d);
 bool        bleota_dev_status(bleota_dev_t *d, uint8_t *out);
@@ -301,7 +302,10 @@ The steps run outside the caller's lock, so a lost link or an ABORT can end
 the transfer while one runs. The slot counts as open from `BLEOTA_DO_OPEN`
 on. Until `bleota_dev_opened()` reports, `bleota_dev_poll()` hands out
 nothing and BEGIN is refused with `E_BUSY`. A step's report after the end
-changes nothing. An open that worked is then dropped by exactly one
+changes nothing. A signature's verdict names the transfer it was asked
+for (`gen`, counted per BEGIN taken): one that comes after an ABORT and a
+new BEGIN is dropped, and the new transfer waits for its own. An open
+that worked is then dropped by exactly one
 `BLEOTA_DO_CLOSE`; an open that failed holds nothing and gets none. BEGIN
 stays refused until that CLOSE is reported.
 
@@ -348,7 +352,9 @@ link during the install, a lost link and a new BEGIN after it.
 (`shared/relsig`) and the throw-away keys of `test/host/sign_vectors.h`:
 protocol 1 refused where the signature is needed, check 1 before any
 question, a HASH and signature that belong together with other bytes
-refused at check 2, and a transfer that ends during a check.
+ending with `E_SHA` before check 2, a refusal at check 2 ending with
+`E_SIG`, a transfer that ends during a check, and a verdict that comes
+after an ABORT and a new BEGIN answering nothing.
 `test_devupd.c` runs the fallback to protocol 1 against a device of
 protocol 1, once only, and never after `E_SIG`.
 
