@@ -1,11 +1,11 @@
 /**
  * @file
- * @brief The Dial firmware's pins and the calls its parts make on each
- *        other.
+ * @brief The calls the Dial firmware's parts make on each other.
  *
- * Pins from the M5Stack Dial v1.1's documentation, confirmed against the
- * board support package and M5GFX (RESEARCH-DIAL.md, "Pin map").  The
- * battery's reading pin is named by no source and is not used.
+ * The board's pins, its INFO hardware value and its update kind are in
+ * dial_board.h, by the board the image is built for.  The K518 build runs
+ * the BLE peripheral, the console and the face task; dial_k518.c holds its
+ * display, touch, input, buzzer and power calls, which do nothing yet.
  *
  * Tasks: the input task (dial_input.c) polls the encoder, the buttons and
  * the touch controller every 5ms and sends EVENT; the face task
@@ -26,28 +26,9 @@
 #include "dialknob.h"
 #include "gfx.h"
 
-/** @brief GPIO numbers. @{ */
-#define DIAL_PIN_HOLD      46 /**< power latch: high keeps the Dial on */
-#define DIAL_PIN_ENC_A     41 /**< encoder channel A */
-#define DIAL_PIN_ENC_B     40 /**< encoder channel B */
-#define DIAL_PIN_BTN       42 /**< the screen button, low when pressed */
-#define DIAL_PIN_STAMP_BTN 0  /**< the Stamp-S3A's button, low when pressed;
-                                   the download mode strap at reset */
-#define DIAL_PIN_BUZZER    3  /**< buzzer, LEDC (LED controller) PWM */
-#define DIAL_PIN_LCD_DC    4  /**< GC9A01 data/command */
-#define DIAL_PIN_LCD_MOSI  5  /**< GC9A01 data */
-#define DIAL_PIN_LCD_SCLK  6  /**< GC9A01 clock */
-#define DIAL_PIN_LCD_CS    7  /**< GC9A01 chip select */
-#define DIAL_PIN_LCD_RST   8  /**< GC9A01 reset, shared with the touch and
-                                   RFID parts */
-#define DIAL_PIN_LCD_BL    9  /**< backlight, LEDC PWM */
-#define DIAL_PIN_I2C_SDA   11 /**< internal I2C: touch, RTC, RFID */
-#define DIAL_PIN_I2C_SCL   12 /**< internal I2C clock */
-#define DIAL_PIN_TOUCH_INT 14 /**< FT3267 interrupt, low on a touch */
-#define DIAL_PIN_MARK      1  /**< PORT.B G1: the test hooks' 1ms mark */
-/** @} */
+#include "dial_board.h"
 
-/** @brief The display's size in pixels. */
+/** @brief The face frame's size in pixels: the M5Stack Dial's display. */
 #define DIAL_LCD_SIZE 240
 
 /** @brief The input task's period, in ms. */
@@ -168,6 +149,12 @@ typedef enum {
  * @return false when the queue is full
  */
 bool dial_input_inject(uint8_t kind, int32_t arg, uint8_t x, uint8_t y);
+
+/** @brief The update's confirming key (protocols/bleota): a press
+ *         accepts, a hold of 1,000ms refuses.  The M5Stack Dial's screen
+ *         button; the K518 has none yet and refuses every update.
+ *  @return true while it is pressed */
+bool dial_input_update_key(void);
 
 /** @brief Whether the Dial clicks per detent.  Default ON; the panel's
  *         SCREEN flag and the console's `sound` set it. @param on ON */

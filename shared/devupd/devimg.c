@@ -34,12 +34,15 @@ static const devimg_fact_t k_fact[DEVIMG_COUNT] = {
       DEVUPD_PROJECT_NODE, BLEOTA_KIND_NODE_BAL },
     { "rcbench-node-display-", DEVUPD_SLOT_NODE, DEVUPD_CHIP_ESP32S3,
       DEVUPD_PROJECT_NODE, BLEOTA_KIND_NODE_POWER_S3 },
+    { "rcbench-dial-k518-", DEVUPD_SLOT_DIAL, DEVUPD_CHIP_ESP32S3,
+      DEVUPD_PROJECT_DIAL, BLEOTA_KIND_DIAL_K518 },
 };
 
 _Static_assert(DEVIMG_DIAL == BLEOTA_KIND_DIAL
                    && DEVIMG_PNODE == BLEOTA_KIND_NODE_POWER
                    && DEVIMG_BAL == BLEOTA_KIND_NODE_BAL
                    && DEVIMG_PNODE_S3 == BLEOTA_KIND_NODE_POWER_S3
+                   && DEVIMG_DIAL_K518 == BLEOTA_KIND_DIAL_K518
                    && DEVIMG_COUNT == BLEOTA_KIND_MAX + 1,
                "a wireless device's image number is its BLEOTA_KIND_*");
 
@@ -146,8 +149,9 @@ devimg_err_t devimg_verify(devimg_id_t id, const uint8_t *img, uint32_t n,
     }
     if (f->kind != 0u
         && bleota_head_check(img, n, f->chip, f->kind) != BLEOTA_OK) {
-        /* The two node roles share chip and project: the role in the
-         * head's .rodata_custom_desc tells them apart. */
+        /* The two node roles share chip and project, and so do the two
+         * Dial boards: the role in the head's .rodata_custom_desc tells
+         * them apart. */
         return DEVIMG_E_ROLE;
     }
     if (fw_version_cmp(out->version, want) != 0) {

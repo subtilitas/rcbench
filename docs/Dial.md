@@ -20,7 +20,19 @@ BLE from SETUP > UPDATES > SINGLE UPDATES ([Update over Bluetooth
 LE](#update-over-bluetooth-le)). The programmers' screens (KST, Hitec,
 ESC) and pairing are later slices.
 
-M5Stack, Dial and Stamp-S3A are names of their owner and its products, and
+The same firmware builds for a second board, the Guition JC3636K518C
+knob: an ESP32-S3R8 with a round 360 x 360 display, touch, an encoder
+without a push switch and a vibration motor. Its build
+([Flashing over USB](#flashing-over-usb)) runs the BLE peripheral, the
+bind, the face task and the console. Its display, touch, encoder,
+vibration and battery reading do nothing yet: it sends no EVENT, its
+STATUS names the battery unknown, and it refuses every update, since no key
+confirms one. Its INFO names hardware 2 (`DK_HW_K518`); its image names
+update kind 5 (`BLEOTA_KIND_DIAL_K518`), so neither board takes the other's
+image.
+
+M5Stack, Dial and Stamp-S3A are names of their owner and its products,
+Guition and JC3636K518C are names of their owner and its product, and
 Bluetooth is a trademark of its owner. rcbench is independent: it is not
 affiliated with, endorsed by or sponsored by them. The names say which
 device the panel talks to.
@@ -115,11 +127,19 @@ idf.py -B build -D SDKCONFIG=build/sdkconfig build
 idf.py -B build -p /dev/ttyACM0 flash monitor
 # the test build, with the console's hooks
 idf.py -B build-hooks -D SDKCONFIG=build-hooks/sdkconfig -D RCBENCH_DIAL_HOOKS=ON build
+# the Guition JC3636K518C's image
+idf.py -B build-k518 -D SDKCONFIG=build-k518/sdkconfig \
+  -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.k518" build
 ```
+
+The board is a choice of `firmware/dial/main/Kconfig.projbuild`;
+`sdkconfig.k518` picks the K518 and its 16MB flash and 8MB octal PSRAM.
+CI names the K518's images `rcbench-dial-k518-<version>.bin` and
+`rcbench-dial-k518-merged-<version>.bin`; a release does not carry them.
 
 The partition table (`firmware/dial/partitions.csv`) holds NVS, two
 application slots of 3,072kB and their otadata. The image is
-850,800 bytes, 27.0% of a slot; the eight fonts of the faces are 250,716
+850,864 bytes, 27.0% of a slot; the eight fonts of the faces are 250,716
 bytes of it and the ring tables 25,044. Its static RAM: 216,550 of 341,760
 bytes of internal DRAM and IRAM, the frame of 115,200 bytes among them. The
 heap that NimBLE takes at run time is not measured; the log at start and
@@ -653,7 +673,7 @@ prompt `dial>` and the log on the same port.
 
 | Command | What it does |
 | --- | --- |
-| `status` | name, address, firmware and protocol version, the bound panel, the link and its RSSI (received signal strength indication), the EVENT counts, the click setting, the battery reading, the internal heap free and its lowest since the start |
+| `status` | name, address, firmware and protocol version, the board, the bound panel, the link and its RSSI (received signal strength indication), the EVENT counts, the click setting, the battery reading, the internal heap free and its lowest since the start |
 | `sound on` / `sound off` | the click per detent; the panel's SCREEN packet sets it as well, default ON |
 | `forget` | forget the bound panel, as the 10s hold |
 | `help` | the commands |

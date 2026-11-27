@@ -362,6 +362,20 @@ def test_the_display_node_image_and_the_c6_power_image_do_not_cross():
         c6.check_device("node-display", s3_kind2, "0.23.12", 4096)
 
 
+def test_the_two_dial_boards_images_do_not_cross():
+    """The M5Stack Dial's and the K518's images pass as their own role only."""
+    m5 = image(chip=c6.CHIP_ESP32S3, version="0.23.12",
+               project="rcbench-dial", kind=1)
+    k518 = image(chip=c6.CHIP_ESP32S3, version="0.23.12",
+                 project="rcbench-dial", kind=5)
+    assert "dial-k518 0.23.12" in c6.check_device(
+        "dial-k518", k518, "0.23.12", 4096)
+    with pytest.raises(c6.C6Error, match="role is kind 1"):
+        c6.check_device("dial-k518", m5, "0.23.12", 4096)
+    with pytest.raises(c6.C6Error, match="role is kind 5"):
+        c6.check_device("dial", k518, "0.23.12", 4096)
+
+
 def test_the_tree_version_and_the_device_call(tmp_path, capsys):
     """The version comes from rcbench_version.h; device checks a file."""
     assert c6.tree_version("#define RCBENCH_VERSION_MAJOR 1\n"
