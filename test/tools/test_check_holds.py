@@ -40,8 +40,10 @@ def test_a_hold_drawn_and_stepped_in_its_module_passes(tmp_path):
 
 
 def test_a_file_named_as_its_module_shares_it(tmp_path):
-    """sprog.c begins, sprog_draw.c draws and sprog_page.c steps, as the
-    servo programmers' frame holds sprog_t.hold and page.hold."""
+    """Counts sprog.c, sprog_draw.c and sprog_page.c as one module.
+
+    The servo programmers' frame holds sprog_t.hold and page.hold.
+    """
     begin = ("void d(sprog_t *f) { ui_hold_begin(&f->hold, 1);"
              " ui_hold_begin(&f->page.hold, 2); }\n")
     draw = ("void r(sprog_t *f) { ui_hold_button(c, r, l, a, b, &f->hold,"
