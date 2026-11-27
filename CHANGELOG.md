@@ -8,6 +8,10 @@ history is in git.
 
 ### Added
 
+- `tools/make_thumb.py` writes a thumbnail of 1280 x 720 pixels per video
+  from the storyboard's `thumb` block: a bare frame of the player under 1
+  to 3 lines of text. 14 storyboards carry a block. The storyboard
+  `thumbnail` is removed.
 - The Dial firmware builds for a second board, the Guition JC3636K518C
   knob: the board is a choice of `firmware/dial/main/Kconfig.projbuild`,
   `sdkconfig.k518` picks it, and `dial_board_m5.h` and

@@ -1,4 +1,64 @@
 {
+ "thumb": {
+  "at": 5,
+  "lines": [
+   "PROGRAM",
+   "*KST",
+   "SERVOS"
+  ],
+  "crop": [
+   0,
+   0,
+   1920
+  ],
+  "side": "r",
+  "accent": "#ffb000",
+  "size": 128,
+  "scene": {
+   "type": "case",
+   "model": "part",
+   "part": "kst_x10",
+   "dur": 10,
+   "camera": [
+    [
+     0,
+     [
+      -40,
+      80,
+      130
+     ],
+     [
+      30,
+      12,
+      0
+     ]
+    ],
+    [
+     10,
+     [
+      -40,
+      80,
+      130
+     ],
+     [
+      30,
+      12,
+      0
+     ]
+    ]
+   ],
+   "spin": [
+    [
+     0,
+     20
+    ],
+    [
+     10,
+     20
+    ]
+   ]
+  }
+ },
  "name": "kst-rbmod",
  "lang": "en",
  "brand": "KST servo programmer",
