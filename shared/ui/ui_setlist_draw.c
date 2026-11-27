@@ -215,8 +215,9 @@ static void draw_setting_row(const ui_setlist_t *sl, gfx_canvas_t *c,
 }
 
 /**
- * @brief A custom row: its name and help, its value between its keys, or
- *        at the right with a ">" where a tap acts on it.  Its edge takes the
+ * @brief A custom row: its name and help, its value between its keys, at
+ *        the right with a ">" where a tap acts on it, or a hold row's
+ *        button (sl_hold_draw()) labelled with it.  Its edge takes the
  *        accent while a tap on it is pressed.
  * @param sl    The list.
  * @param c     The canvas.
@@ -224,7 +225,7 @@ static void draw_setting_row(const ui_setlist_t *sl, gfx_canvas_t *c,
  * @param r     Its rectangle.
  * @param cu    The row's hooks.
  */
-static void draw_custom_row(const ui_setlist_t *sl, gfx_canvas_t *c,
+static void draw_custom_row(ui_setlist_t *sl, gfx_canvas_t *c,
                             int index, gfx_rect_t r,
                             const ui_setlist_custom_t *cu)
 {
@@ -245,6 +246,20 @@ static void draw_custom_row(const ui_setlist_t *sl, gfx_canvas_t *c,
     char value[48] = "";
     if (cu->value_text != NULL) {
         cu->value_text(value, sizeof(value));
+    }
+    if (cu->held != NULL) {
+        gfx_rect_t saved = gfx_clip_get(c);
+        gfx_clip_intersect(c, gfx_rect_make(r.x, r.y, MINUS_X - 10 - r.x,
+                                            r.h));
+        gfx_text(c, r.x + 16, r.y + ROW_NAME_DY,
+                 ui_tr(ui_setlist_custom_label(cu)), SL_F_HEAD, UI_TEXT, 1);
+        const char *help = (lock != NULL) ? lock
+                           : (cu->help != TX_COUNT) ? ui_tr(cu->help) : "";
+        gfx_text(c, r.x + 16, r.y + ROW_HELP_DY, help, SL_F_LABEL,
+                 (lock != NULL) ? UI_WARN : UI_TEXT_FAINT, 1);
+        c->clip = saved;
+        sl_hold_draw(sl, c, index, value, lock == NULL);
+        return;
     }
     /* With keys the value sits between them, as a setting's; without, at
      * the row's right edge, a ">" after it where a tap acts and no key
@@ -319,7 +334,7 @@ static void draw_heading(gfx_canvas_t *c, gfx_rect_t r,
  * @param c     The canvas.
  * @param index The row.
  */
-static void draw_row(const ui_setlist_t *sl, gfx_canvas_t *c, int index)
+static void draw_row(ui_setlist_t *sl, gfx_canvas_t *c, int index)
 {
     const gfx_rect_t r = ui_setlist_row_rect(sl, index);
     if (r.y + r.h <= LIST_Y || r.y >= LIST_Y + LIST_H) {
@@ -344,6 +359,18 @@ static void draw_row(const ui_setlist_t *sl, gfx_canvas_t *c, int index)
     default:
         break;
     }
+}
+
+void ui_setlist_draw_part(ui_setlist_t *sl, gfx_canvas_t *c, int i,
+                          gfx_rect_t part)
+{
+    gfx_rect_t saved = gfx_clip_get(c);
+    if (gfx_clip_intersect(c, ui_setlist_pane(sl))
+        && gfx_clip_intersect(c, part)) {
+        gfx_fill_rect(c, part.x, part.y, part.w, part.h, UI_BG);
+        draw_row(sl, c, i);
+    }
+    c->clip = saved;
 }
 
 void ui_setlist_draw_rows(ui_setlist_t *sl, gfx_canvas_t *c)

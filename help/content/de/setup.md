@@ -19,12 +19,11 @@ SETUP enthält die prüfstandsweiten Paneleinstellungen in den Kategorien PANEL,
 | OUTPUTS | `PROTOKOLLE, PINS, PLATINE` | [Ausgänge](outputs.md): Funktion der IOmcu-Pins auf einer Platinenzeichnung. |
 | SD CARD | `LOGS, BROWSER-SCHREIBEN, BACKUP` | Aufzeichnungsarten, Speicherordner, Voraussetzungen für Browser-Schreibzugriffe und die Sicherung der Einstellungen. |
 | WI-FI | `NETZWERK, DATEIEN, UPLOAD` | [WLAN](wifi.md): Funkverbindung für Kartendateien und Firmware-Images im Browser. |
+| WIRELESS | `IMU, DIAL, KNOTEN, DRUCKER` | [Wireless](setup-wireless.md): die IMU mit Suche, Bindung, aktuellen Winkeln, NULLPUNKT und dem 2s-Hold der Kalibrierung, das M5Stack Dial, der Leistungsknoten mit INA228-Quelle, der Auswuchtknoten mit seiner Testmasse und der Etikettendrucker. |
 | UPDATES | `VERSIONEN AUF GITHUB` | [Updates](updates.md): Suche nach neuerer Panel-Firmware und Update-Erinnerung. |
-| IMU | `BLUETOOTH-WINKELSENSOR` | [IMU](imu.md): WitMotion BWT901CL über Bluetooth LE, Sensorsuche und Binden, Kalibrierung und aktuelle Winkel. |
-| WIRELESS | `IMU, DIAL, SENSORKNOTEN` | [Wireless](setup-wireless.md): die Einstellungen der IMU, das M5Stack Dial, seine Suche, seine Bindung und seine Schritte, der Leistungsknoten mit INA228-Quelle und der Auswuchtknoten mit seiner Testmasse. |
 | LAYOUT | `STECKER UND PINS` | [Layout](layout.md): nur auf dem rbmod-Carrier mit fest verlöteten Pins. |
 
-1 Platz bleibt frei; auf dem Carrier belegt ihn LAYOUT. Wie bei den Listen steht unten rechts die Speichertaste. Sie zeigt ungespeicherte Änderungen aus allen Kategorien an:
+2 Plätze bleiben frei; auf dem Carrier belegt LAYOUT den ersten. Wie bei den Listen steht unten rechts die Speichertaste. Sie zeigt ungespeicherte Änderungen aus allen Kategorien an:
 
 ![Die Kacheln mit einem ungespeicherten Wert](view:setup-hub-dirty)
 
@@ -34,7 +33,7 @@ Das Home-Feld oben links führt jeweils eine Ebene zurück:
 |---|---|
 | Kategorieliste | Kacheln; die Listenposition bleibt erhalten. |
 | Kacheln | Menü; bei ungespeicherten Werten erscheint zuerst eine [Warnung](#mit-ungespeicherten-werten-verlassen). |
-| OUTPUTS, WI-FI, UPDATES, IMU | Kacheln. Wurde OUTPUTS über ZIEL auf MOTOR & ESC oder SERVO geöffnet, führt es dorthin zurück; WI-FI kehrt entsprechend zu LOGS oder UPDATES zurück. Offene Listen oder Tastaturen schließen zuerst. |
+| OUTPUTS, WI-FI, UPDATES | Kacheln. Wurde OUTPUTS über ZIEL auf MOTOR & ESC oder SERVO geöffnet, führt es dorthin zurück; WI-FI kehrt entsprechend zu LOGS oder UPDATES zurück. Offene Listen oder Tastaturen schließen zuerst. |
 
 ## Einen Wert ändern
 

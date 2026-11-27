@@ -37,15 +37,16 @@ the project's notice.
 | the sensor's side: the reading, its commands, the calibration, the gaps, the handout to SERVO; no radio | `shared/ui/imu_sensor.c` |
 | the BLE link: the central for the IMU, its devices, errors and the C6's version in the view's types | `shared/ui/imu_ble.c` |
 | the controller: joins the link and the sensor's side, the link state, the view | `shared/ui/imu_ctl.c` |
-| the screen and SETUP's IMU entry | `shared/ui/imu_screen.c`, `shared/ui/sensors_pane.c` |
+| the view and the commands the screens share | `shared/ui/imu_view.c` |
+| SETUP > WIRELESS > IMU: the scan, the bind, the live rows, ZERO, CLEAR ZERO, CALIBRATE and the settings | `shared/ui/wireless_imu.c`, `shared/ui/wireless_pane.c` |
 | the `blec` task: every client's events in and actions out through the hub, every 5ms | `firmware/panel/main/panel_blec.c` |
 | the IMU's side of that task and the frame task's glue | `firmware/panel/main/panel_imu.c` |
 | NimBLE's start, its calls and its callbacks | `firmware/panel/main/panel_ble.c` |
 
 ## Start
 
-The first IMU ON (SETUP > WIRELESS > IMU, SCAN FOR SENSORS on the IMU
-screen or SEARCH FOR IMU in SERVO's ANGLE SOURCE list with the IMU off, and
+The first IMU ON (SETUP > WIRELESS > IMU, or SEARCH FOR IMU in SERVO's
+ANGLE SOURCE list with the IMU off, and
 at power-up with IMU stored ON) starts Bluetooth LE: the C6's link, the host task `nimble_host` and the
 wait of 3,000ms for its sync ([The ESP32-C6 radio, Bluetooth LE through the
 ESP32-C6](C6.md#bluetooth-le-through-the-esp32-c6)). It stays until
@@ -67,39 +68,46 @@ C6 in reset until the panel restarts: Wi-Fi and Bluetooth are off.
 
 ## Scan and bind
 
-SCAN FOR SENSORS runs an active scan of 10,000ms with the controller's
+Scan for sensor (SETUP > WIRELESS > IMU) opens SEARCH and runs an active
+scan of 10,000ms with the controller's
 duplicate filter. A device is listed when its advertising data has the
 16-bit UUID 0x18F0 or the ISSC Transparent UART service's 128-bit UUID;
 every other device is counted as hidden. 0x18F0 is not a Bluetooth SIG
 assignment, so the connect checks the service. The list holds 8 devices,
 strongest first: name, address and RSSI (received signal strength
-indication), for example `HC-06  00:0C:BF:08:19:29  -50dBm`. The sensor's
-radio advertises the name `HC-06`.
+indication), for example `HC-06  -50dBm`, the address under the bound
+one's name on SEARCH's card. SEARCH counts the devices it heard and did
+not list, `4 OTHER DEVICES HIDDEN`. The sensor's radio advertises the name
+`HC-06`.
 
-With the IMU off, SCAN FOR SENSORS switches IMU ON in SETUP (saved) and
-opens the list; its heading reads `STARTING BLUETOOTH` until Bluetooth LE
-runs, and the scan starts then. Without sync with the C6 (`NO BLUETOOTH ON
-C6`) and on a failed C6, SCAN takes no press. The card's state line reads
-`IMU OFF: SCAN SWITCHES IT ON` while the IMU is off. A scan that waits
-for Bluetooth LE ends without scanning when the start ends in `NO
-BLUETOOTH ON C6`, when the list is closed and when the bench switches to
-ARMED.
+Scan for sensor stands while the IMU is on. While Bluetooth LE starts,
+its value reads `STARTING BLUETOOTH` and the scan goes out once Bluetooth
+LE runs. Without sync with the C6 (`NO BLUETOOTH ON C6`) and on a failed
+C6 the band reads `BLUETOOTH IS NOT READY: NO SENSOR SCAN` and no scan
+starts. SERVO's SEARCH FOR IMU switches IMU ON in SETUP (saved) when it is
+off and waits the same way. A scan that waits for Bluetooth LE ends
+without scanning when the start ends in `NO BLUETOOTH ON C6` and when the
+bench switches to ARMED.
 
-While the bench is ARMED, SCAN FOR SENSORS, SCAN AGAIN and SERVO's SEARCH
-FOR IMU start no scan and the band reads `NO IMU SCAN WHILE ARMED: SWITCH
-TO SAFE FIRST`. The same holds while an arm waits: from the end of the
-ARM hold to the IOmcu's first ARMED report the found list opens, no scan
-runs and the band reads the same text. A scan that runs at the switch to ARMED is stopped; the
+While the bench is ARMED, Scan for sensor, SEARCH's SCAN AGAIN and SERVO's
+SEARCH FOR IMU start no scan and the band reads `NO IMU SCAN WHILE ARMED:
+SWITCH TO SAFE FIRST`. The same holds while an arm waits: from the end of
+the ARM hold to the IOmcu's first ARMED report SEARCH opens, no scan runs
+and the band reads the same text. A scan that runs at the switch to ARMED is stopped; the
 list keeps what it heard until then. The Dial's and the nodes' scans
 follow the same rule ([Dial](Dial.md)).
 
-A tap on a row binds that sensor at once. SETUP keeps its address with the
+A tap on a row of SEARCH opens its bind question, and BIND binds that
+sensor at once; BIND binds nothing while the calibration runs or
+Bluetooth LE starts, `NO BIND NOW: THE CALIBRATION RUNS OR BLUETOOTH
+STARTS`. SETUP keeps its address with the
 address type, `00:0C:BF:08:19:29 P` (public) or `... R` (random), as
 `imu_ble`, and its name as `imu_name`, 23 characters, and asks for a save.
 The save goes to nvs at the next frame with the bench SAFE and no supply
 on or starting.
 IMU OFF keeps the bind; at IMU ON after a restart the panel connects to it
-without a scan. Only a new bind replaces it. An HC-05 binding is not
+without a scan. A new bind replaces it, and SEARCH's `HOLD 2s: UNBIND`
+clears `imu_ble` and `imu_name` with a save asked, which ends the link. An HC-05 binding is not
 carried over; scan and bind once. The HC-05's key `imu_addr` is erased
 from nvs at the first start.
 Binding another sensor replaces the one before. A scan while a sensor is
@@ -107,7 +115,7 @@ connected keeps the link; a scan while a connect is pending cancels it,
 and the connects go on after the scan. A connected sensor does not
 advertise, so no scan lists the bound one while it holds the link (BOUND,
 CONNECTED or NO FRAMES). A scan that lists nothing then reads `NO OTHER
-SENSOR FOUND: THE BOUND ONE IS LINKED` on the IMU screen and `NO OTHER IMU
+SENSOR FOUND: THE BOUND ONE IS LINKED` in the IMU entry's LAST ERROR row and `NO OTHER IMU
 FOUND` on SERVO's ANGLE SOURCE list, the bound sensor's row above it.
 
 SERVO's ANGLE SOURCE list, from RUDDER's and RUDDER AUTO's ANGLE rows,
@@ -208,7 +216,7 @@ reading valid.
 | --- | --- | --- |
 | unlock | `FF AA 69 88 B5` | before every other command; harmless on the older firmware (not measured on this sensor) |
 | RSW, SAVE | `FF AA 02 0C 00`, `FF AA 00 00 00` | once on a connection whose first 8 good frames show other types than 0x52 and 0x53 |
-| CALSW 1, 3s, CALSW 0, SAVE | `FF AA 01 01 00`, `FF AA 01 00 00`, `FF AA 00 00 00` | `HOLD 2s: CALIBRATE`, connected |
+| CALSW 1, 3s, CALSW 0, SAVE | `FF AA 01 01 00`, `FF AA 01 00 00`, `FF AA 00 00 00` | `HOLD 2s: CALIBRATE` in SETUP > WIRELESS > IMU, connected |
 | RATE, SAVE | `FF AA 03 <code> 00`, `FF AA 00 00 00` | a change of IMU rate: 0x06 10Hz, 0x07 20Hz, 0x08 50Hz, 0x09 100Hz, 0x0B 200Hz |
 | AXIS6, SAVE | `FF AA 24 01 00` (6-AXIS) or `FF AA 24 00 00` (9-AXIS), `FF AA 00 00 00` | a change of IMU algorithm |
 
@@ -237,7 +245,7 @@ RATE goes to the sensor only when it changes, not at each connect: each
 RATE comes with a SAVE to the sensor's flash, and the rate takes effect
 only after a power cycle. SETUP's RATE is what the panel asks for, 50Hz
 by default. The sensor runs the rate it last saved, 10Hz as shipped. The
-IMU screen and SETUP > WIRELESS > IMU show the rate the angle frames
+IMU entry's Frames row and its state, SETUP > WIRELESS > IMU, show the rate the angle frames
 arrive at, as measured on the panel. Which RATE values fit the BLE link
 depends on the frames a sample (RSW, below).
 
@@ -298,7 +306,7 @@ The time constant is about k frames, so it depends on the rate the sensor
 runs, which is its saved rate and not SETUP's RATE (see above). At 10Hz,
 IMU filter 10 takes about 1s to 63% of a step; at 50Hz about 0.2s.
 
-- Every reading uses the filtered angle: the IMU screen, ZERO, RUDDER,
+- Every reading uses the filtered angle: the IMU entry's angle rows, ZERO, RUDDER,
   AUTO, the servo test and the LIMIT RUN.
 - The first angle frame after a connect, a reconnect, a bind, IMU ON or a
   stale reading seeds the filter: the angle starts at that frame's value,

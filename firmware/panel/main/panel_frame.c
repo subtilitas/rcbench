@@ -416,8 +416,8 @@ void panel_frame_loop(void)
                                            : 0u);
         /* The angle source: the AS5600's readings as the control task
          * queued them, or with ANGLE SOURCE IMU the IMU's, each once, and
-         * the AS5600's then dropped.  The IMU screen's view and commands
-         * go first, so the reading is this frame's. */
+         * the AS5600's then dropped.  The IMU's view and commands
+         * (imu_view.h) go first, so the reading is this frame's. */
         panel_imu_frame();
         /* The label printer's requests out and its view in. */
         panel_print_frame();

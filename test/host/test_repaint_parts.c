@@ -1,8 +1,9 @@
 /*
  * Screens that repaint a part of themselves for what changed on it.
  *
- * The IMU screen repaints the card lines a new reading changes and the
- * calibration's button while its hold fills; SUPPLY repaints neither
+ * SETUP > WIRELESS > IMU repaints the values of its live rows a new reading
+ * changes, and the list whole for a change of the link; SUPPLY
+ * repaints neither
  * PLOT | TABLE nor its heading row for a sample; WI-FI repaints nothing
  * for an idle second inside the minute it shows.  Each is held against
  * the same frames drawn whole: both buffers, pixel for pixel, in every
@@ -22,8 +23,11 @@
 #include "gfx.h"
 #include "gfx_work.h"
 #include "hitec_panel.h"
-#include "imu_screen.h"
+#include "imu_view.h"
 #include "kst_panel.h"
+#include "settings.h"
+#include "settings_screen.h"
+#include "wireless_pane.h"
 #include "link_pages.h"
 #include "supply.h"
 #include "supply_screen.h"
@@ -46,11 +50,8 @@ static gfx_canvas_t cv[2];
 
 /** @brief What a run of frames feeds. */
 typedef enum {
-    RUN_IMU,       /**< a new angle frame in every frame */
-    RUN_IMU_HOLD,  /**< a finger on CALIBRATE ACCELEROMETER's hold, lifted
-                        at frame 60, a reading on show */
-    RUN_IMU_CAL,   /**< the same hold to its end and its flash, lifted at
-                        frame 95, no reading */
+    RUN_IMU,       /**< a new angle frame in every frame, on SETUP >
+                        WIRELESS > IMU; NO FRAMES from frame 90 */
     RUN_SUPPLY,    /**< a sample in every frame, the supply silent for 10 */
     RUN_WIFI,      /**< the idle time 1s shorter in every frame */
 } run_t;
@@ -126,25 +127,20 @@ static wifi_view_t wifi_at(uint32_t idle_s)
     return v;
 }
 
-/** @brief A contact on (@p x, @p y) of the body, through the router. */
-static void touch(touch_event_type_t type, int x, int y)
-{
-    const touch_event_t e = {
-        .type = type,
-        .point = { .id = 1, .x = (int16_t)x, .y = (int16_t)(UI_BAND_H + y),
-                   .strength = 40 } };
-    ui_router_event(&e);
-}
-
-/** @brief The last frame RUN_IMU hands a view in. */
+/** @brief The last frame RUN_IMU hands a new reading in. */
 #define IMU_LAST 80
+/** @brief The frame RUN_IMU's link reads NO FRAMES. */
+#define IMU_LOST 90
 
 /** @brief Frame @p i's input of @p run. */
 static void feed(run_t run, int i)
 {
-    if (run == RUN_IMU && i <= IMU_LAST) {
-        const imu_view_t v = imu_view(i);
-        imu_screen_set(&v);
+    if (run == RUN_IMU && (i <= IMU_LAST || i == IMU_LOST)) {
+        imu_view_t v = imu_view(i);
+        if (i == IMU_LOST) {
+            v.link = IMU_LINK_NO_FRAMES;
+        }
+        imu_view_set(&v);
     } else if (run == RUN_SUPPLY) {
         const supply_state_t st = supply_at(i);
         supply_screen_push(&st);
@@ -173,9 +169,9 @@ static void draw_run(run_t run, bool whole, uint64_t *hash,
     }
     switch (run) {
     case RUN_IMU:
-    case RUN_IMU_HOLD:
-    case RUN_IMU_CAL:
-        ui_router_goto(SCREEN_IMU);
+        settings_set(SET_IMU_EN, 1.0f);
+        ui_router_goto(SCREEN_SETUP);
+        settings_screen_open_on(SET_CAT_WIRELESS, WL_ENTRY_IMU);
         break;
     case RUN_SUPPLY:
         ui_router_goto(SCREEN_SUPPLY);
@@ -187,21 +183,10 @@ static void draw_run(run_t run, bool whole, uint64_t *hash,
         break;
     }
     feed(run, 0);
-    const bool hold = run == RUN_IMU_HOLD || run == RUN_IMU_CAL;
-    const gfx_rect_t r = imu_screen_hold_rect();
-    if (hold) {
-        /* RUN_IMU_CAL's view has the reading gone: its age is not shown. */
-        const imu_view_t v = imu_view(run == RUN_IMU_CAL ? 60 : 0);
-        imu_screen_set(&v);
-        touch(TOUCH_EVENT_DOWN, r.x + r.w / 2, r.y + r.h / 2);
-    }
     ui_router_render(&cv[0], 0);
     ui_router_render(&cv[1], 1);
     for (int i = 0; i < FRAMES; ++i) {
         feed(run, i + 1);
-        if (hold && i == (run == RUN_IMU_CAL ? 95 : 60)) {
-            touch(TOUCH_EVENT_UP, r.x + r.w / 2, r.y + r.h / 2);
-        }
         ui_router_tick(DT);
         if (whole) {
             ui_router_invalidate();
@@ -252,69 +237,21 @@ static bool same_as_whole(run_t run, int upto, double share, int *parts)
 
 /* ------------------------------------------------------------ the frames */
 
-/* A new angle repaints its line, and the battery's change its own, two
- * lines at frame 49; the frame's time alone repaints nothing;
- * ZERO taken and the reading gone change the rows and repaint whole.  Once
- * the views stop, nothing repaints and RATE's age stands, as before a
- * reading came: compared up to the frame after the last view, and nothing
- * drawn after it.  Every card line is drawn in its box. */
-TEST_CASE(a_new_imu_reading_repaints_its_lines_as_the_whole_frame)
+/* A new reading in every frame: SETUP repaints the value boxes of the
+ * live rows that read differently, the angle and the frame rate's age,
+ * each a part of the frame, and the pixels are a whole repaint's.  The
+ * link's change repaints the list whole. */
+TEST_CASE(the_imu_entry_repaints_its_live_values_as_the_whole_frame)
 {
     static uint64_t hash[FRAMES];
     static unsigned long work[FRAMES];
     int parts = 0;
-    CHECK(same_as_whole(RUN_IMU, IMU_LAST + 1, 0.15, &parts));
-    CHECK(parts > FRAMES / 2);
+    CHECK(same_as_whole(RUN_IMU, IMU_LAST + 1, 0.1, &parts));
+    CHECK(parts > IMU_LAST / 2);
     draw_run(RUN_IMU, false, hash, work);
-    for (int i = IMU_LAST + 1; i < FRAMES; ++i) {
-        CHECK_EQ(work[i], 0ul);
-    }
-    for (int k = 0; k < 9; ++k) {
-        const gfx_rect_t r = imu_screen_line_rect(k);
-        const gfx_color_t *px = fb[0] + (size_t)(UI_BAND_H + r.y) * W + r.x;
-        int inked = 0, accent = 0;
-        for (int y = 0; y < r.h; ++y) {
-            for (int x = 0; x < r.w; ++x) {
-                inked += px[(size_t)y * W + x] != px[0];
-                accent += px[(size_t)y * W + x] == UI_ACCENT;
-            }
-        }
-        CHECK(inked > 20);
-        /* X, the axis the runs read by default, in the accent alone. */
-        CHECK_EQ(accent > 0, k == 4);
-    }
-}
-
-/* The hold's fill repaints the button, and the reading's age on RATE as
- * it counts on; the release repaints whole.  After it nothing repaints, and
- * the age stands, as before the hold: compared up to the release's two
- * frames. */
-TEST_CASE(the_calibration_hold_repaints_its_button_as_the_whole_frame)
-{
-    int parts = 0;
-    CHECK(same_as_whole(RUN_IMU_HOLD, 62, 0.1, &parts));
-    CHECK(parts > 50);
-}
-
-/* The hold to its end: the fill, the flash, then nothing until the
- * release repaints whole. */
-TEST_CASE(the_calibration_hold_and_its_flash_are_the_whole_frame)
-{
-    int parts = 0;
-    CHECK(same_as_whole(RUN_IMU_CAL, FRAMES, 0.1, &parts));
-    CHECK(parts > 70);
-    /* The release at frame 95 repaints both buffers whole, and nothing
-     * after them. */
-    static uint64_t hash[FRAMES];
-    static unsigned long work[FRAMES];
-    draw_run(RUN_IMU_CAL, false, hash, work);
-    CHECK(work[95] > 0ul && work[96] > 0ul);
-    for (int i = 97; i < FRAMES; ++i) {
-        CHECK_EQ(work[i], 0ul);
-    }
+    CHECK(work[IMU_LOST - 1] > 0ul);
     imu_cmd_t cmd = { IMU_CMD_NONE, 0u };
-    CHECK(imu_screen_take(&cmd));
-    CHECK_EQ(cmd.kind, IMU_CMD_CALIBRATE);
+    CHECK(!imu_view_take(&cmd));
 }
 
 /* A sample repaints the plot and the cards; the supply falling silent and
@@ -455,9 +392,7 @@ int main(int argc, char **argv)
 {
     (void)argc;
     (void)argv;
-    RUN(a_new_imu_reading_repaints_its_lines_as_the_whole_frame);
-    RUN(the_calibration_hold_repaints_its_button_as_the_whole_frame);
-    RUN(the_calibration_hold_and_its_flash_are_the_whole_frame);
+    RUN(the_imu_entry_repaints_its_live_values_as_the_whole_frame);
     RUN(a_supply_sample_repaints_what_it_shows_as_the_whole_frame);
     RUN(an_idle_second_repaints_wifi_only_when_its_minute_changes);
     RUN(a_supply_reading_moves_the_kst_page_only_as_its_state_line_shows_it);

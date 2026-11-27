@@ -2,7 +2,7 @@
  * LIVE's ZERO row (servo_drive_ready.c): the zero MEASURED reads from,
  * taken by a tap with a reading on show.  With ANGLE SOURCE AS5600 the
  * tap stores the live count as ENC CENTER and asks a save; with ANGLE
- * SOURCE IMU it asks the IMU's own ZERO (imu_screen_zero()).  No reading
+ * SOURCE IMU it asks the IMU's own ZERO (imu_view_zero()).  No reading
  * from the current link, no magnet, or an IMU without a valid reading
  * take nothing.  The tap is taken ARMED as on RUDDER: the surface is at
  * neutral while the servo holds CENTER.  The rig is servo_rauto_kst_rig.h.
@@ -18,7 +18,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "servo_rauto_kst_rig.h"
-#include "imu_screen.h"
+#include "imu_view.h"
 
 /* LIVE's rows, as the card orders them. */
 enum { LZ_PORT = 0, LZ_ZERO, LZ_SUPPLY, LZ_ARM };
@@ -60,7 +60,7 @@ static unsigned imu_zeros(void)
 {
     unsigned n = 0u;
     imu_cmd_t c;
-    while (imu_screen_take(&c)) {
+    while (imu_view_take(&c)) {
         n += (c.kind == IMU_CMD_ZERO) ? 1u : 0u;
     }
     return n;
@@ -76,7 +76,7 @@ static void imu_view(bool valid, bool zeroed)
     v.r.valid = valid;
     v.r.zeroed = zeroed;
     v.r.taken_ms = g_rig.ms;
-    imu_screen_set(&v);
+    imu_view_set(&v);
 }
 
 /** @brief LIVE on a SAFE bench, the AS5600 reading the horn at 1500us,
@@ -215,8 +215,8 @@ TEST_CASE(a_center_kept_from_before_reads_set)
     settings_cancel_save();
 }
 
-/* ANGLE SOURCE IMU: the tap asks the IMU's ZERO, as the IMU screen's ZERO
- * does, and leaves ENC CENTER; the row reads SET once the IMU reports its
+/* ANGLE SOURCE IMU: the tap asks the IMU's ZERO, as SETUP > WIRELESS >
+ * IMU's ZERO does, and leaves ENC CENTER; the row reads SET once the IMU reports its
  * zero.  An IMU view without a valid reading queues nothing. */
 TEST_CASE(the_imu_takes_its_own_zero)
 {
@@ -243,7 +243,7 @@ TEST_CASE(the_imu_takes_its_own_zero)
     imu_view(false, true);
     row_tap(LZ_ZERO, 2);
     CHECK_EQ(imu_zeros(), 0u);
-    CHECK(!imu_screen_zero());
+    CHECK(!imu_view_zero());
     imu_view(false, false);
     settings_cancel_save();
 }

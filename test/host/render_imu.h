@@ -1,8 +1,8 @@
 /**
  * @file render_imu.h
- * @brief The Bluetooth views for render_screen.c: the IMU screen opened by
- *        the router with a view handed to it, the found list opened by
- *        SCAN, and SETUP > WIRELESS on the IMU entry and on the DIAL entry.
+ * @brief The Bluetooth views for render_screen.c: SETUP > WIRELESS on each
+ *        entry with a view handed to it, and SEARCH opened from an entry's
+ *        rows.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -14,7 +14,7 @@
 /**
  * @brief Whether @p view is one of the IMU's.
  * @param view the view's name
- * @return true for imu, imu-..., setup-wireless-... and help-imu...
+ * @return true for setup-wireless-...
  */
 bool render_imu_view(const char *view);
 

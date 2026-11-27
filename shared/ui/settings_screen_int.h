@@ -100,6 +100,9 @@ _Static_assert(STRIP_Y == UI_FOOTER_Y && STRIP_H == UI_FOOTER_H,
 #define ENTRY_STATE_DY 28 /**< the state's top, px */
 #define PANE_X (HUB_M + ENTRY_W + HUB_M) /**< the pane's left edge, px: 240 */
 
+/** @brief The rows whose live value SETUP repaints alone: the first 32. */
+#define STG_LIVE_ROWS 32
+
 /** @brief A press that moves further than DRAG_SLOP px, 8px, is a scroll and
  *         no tap: an entry of a split pane's left list is given up. */
 #define DRAG_SLOP 8
@@ -125,7 +128,9 @@ _Static_assert(SENS_ENTRY_COUNT <= STG_PANE_ENTRIES
  * the screen by its title, English always, as the menu does.  The home tag
  * of a screen a tile opens leads back here (settings_screen_opens()).
  * The hub holds the bench-wide tools only: ESC / BENCH's rows are MOTOR &
- * ESC > SETTINGS', beside the throttle they set.
+ * ESC > SETTINGS', beside the throttle they set.  WIRELESS stands beside
+ * WI-FI, the two radios together; the Bluetooth IMU is WIRELESS' first
+ * entry and has no tile of its own.
  *
  * Nine fit the grid.  A tenth needs a second page, through ui_tabs in the
  * strip's free columns, which is not built: the build stops at a tenth
@@ -161,9 +166,8 @@ static const hub_tile_t k_tiles[] = {
     HUB_SCREEN(SCREEN_OUTPUTS, TX_SET_HUB_OUTPUTS, ui_icon_list),
     HUB_CATEGORY_LINE(SET_CAT_CARD, TX_SET_HUB_CARD, ui_icon_chart),
     HUB_SCREEN(SCREEN_WIFI, TX_SET_HUB_WIFI, ui_icon_wifi),
-    HUB_SCREEN(SCREEN_UPDATES, TX_SET_HUB_UPDATES, ui_icon_record),
-    HUB_SCREEN(SCREEN_IMU, TX_SET_HUB_IMU, ui_icon_chip),
     HUB_CATEGORY_LINE(SET_CAT_WIRELESS, TX_SET_HUB_WIRELESS, ui_icon_dial),
+    HUB_SCREEN(SCREEN_UPDATES, TX_SET_HUB_UPDATES, ui_icon_record),
 };
 
 /** @brief Tiles of every board; a board that solders its pins adds LAYOUT. */
@@ -212,6 +216,13 @@ typedef struct {
      *         does not change with it. */
     uint16_t sense_unheld;
     uint8_t  tone_unheld;   /**< the tap's rows the IOmcu does not hold, TONE_LINK_ROWS_*; kept as sense_unheld */
+    uint32_t live_rev;      /**< settings_screen_live() calls, counted */
+    uint32_t drawn_live[MAX_FBS];  /**< live_rev as each buffer last drew */
+    uint32_t drawn_hold[MAX_FBS];  /**< the list's hold_rev as each buffer
+                                        last drew it */
+    /** @brief Each live row's value text, hashed, as each buffer last drew
+     *         it; rows from STG_LIVE_ROWS on repaint whole. */
+    uint32_t live_key[MAX_FBS][STG_LIVE_ROWS];
 } stg_state_t;
 
 /* Defined in settings_screen.c. */

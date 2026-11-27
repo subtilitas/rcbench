@@ -219,5 +219,4 @@ SETUP CODE shows the module's "Serial Output" setup code. Hold the scanner 10cm 
 - [Setup](setup.md)
 - [Supply](supply.md): the PD mini's wiring, in SUPPLY's settings list.
 - [Servo](servo.md)
-- [IMU](imu.md)
-- [Wireless](setup-wireless.md): the IMU's settings
+- [Wireless](setup-wireless.md): the IMU, its scan, its angles and its calibration

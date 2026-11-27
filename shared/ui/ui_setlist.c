@@ -222,10 +222,20 @@ gfx_rect_t ui_setlist_row_part(const ui_setlist_t *sl, int i,
         return gfx_rect_make(MINUS_X, r.y, BTN_W, ROW_H);
     case UI_SL_PART_VALUE:
         return gfx_rect_make(VALUE_X, r.y, VALUE_W, ROW_H);
+    case UI_SL_PART_HOLD:
+        return gfx_rect_make(MINUS_X, r.y + (ROW_H - BTN_H) / 2,
+                             PLUS_X + BTN_W - MINUS_X, BTN_H);
     case UI_SL_PART_PLUS:
     default:
         return gfx_rect_make(PLUS_X, r.y, BTN_W, ROW_H);
     }
+}
+
+gfx_rect_t ui_setlist_value_rect(const ui_setlist_t *sl, int i)
+{
+    const gfx_rect_t r = ui_setlist_row_rect(sl, i);
+    return gfx_rect_make(MINUS_X, r.y + (ROW_H - 24) / 2,
+                         PLUS_X + BTN_W - MINUS_X, 24);
 }
 
 int ui_setlist_row_at(const ui_setlist_t *sl, int x, int y)
@@ -547,6 +557,9 @@ void ui_setlist_type_name(ui_setlist_t *sl, const char *title,
  *  @param sl The list. */
 static void drop_press(ui_setlist_t *sl)
 {
+    if (sl->hit_kind == UI_SL_HIT_HOLD) {
+        (void)ui_hold_left(&sl->hold);
+    }
     sl->have_press = false;
     sl->hit_kind  = UI_SL_HIT_NONE;
     sl->hit_index = -1;
@@ -563,6 +576,8 @@ void ui_setlist_init(ui_setlist_t *sl, const ui_setlist_host_t *host)
     sl->tk.pressed = -1;
     sl->kp.pressed = -1;
     sl->choice_row = -1;
+    ui_hold_reset(&sl->hold);
+    sl->hold_row = -1;
 }
 
 void ui_setlist_drop(ui_setlist_t *sl)
@@ -753,6 +768,7 @@ void ui_setlist_tick(ui_setlist_t *sl, float dt_s)
                         || sl_locked(sl, sl->kp_id) != NULL)) {
         close_keypad(sl);
     }
+    sl_hold_tick(sl, dt_s);
 
     if (sl->hit_kind != UI_SL_HIT_MINUS && sl->hit_kind != UI_SL_HIT_PLUS) {
         sl->held_for = 0.0f;
@@ -874,8 +890,12 @@ static void press(ui_setlist_t *sl, const touch_event_t *evt, int x, int y)
                        : on_key(sl, UI_SL_HIT_PLUS, row, x, y)
                            ? UI_SL_HIT_PLUS
                        : on_value(sl, row, x, y)   ? UI_SL_HIT_VALUE
+                       : sl_hold_on(sl, row, x, y) ? UI_SL_HIT_HOLD
                        : tappable(sl, row)         ? UI_SL_HIT_ROW
                                                    : UI_SL_HIT_LIST;
+        if (sl->hit_kind == UI_SL_HIT_HOLD) {
+            sl_hold_press(sl, row);
+        }
         if (sl->hit_kind != UI_SL_HIT_LIST) {
             invalidate(sl);   /* the key draws pressed */
         }
@@ -1143,6 +1163,17 @@ void ui_setlist_event(ui_setlist_t *sl, const touch_event_t *evt)
         if (sl->hit_kind == UI_SL_HIT_NONE || sl->hit_kind == UI_SL_HIT_CHOICE) {
             break;
         }
+        if (sl->hit_kind == UI_SL_HIT_HOLD) {
+            /* Off the button the hold is over; the contact can still
+             * scroll.  Sliding back does not resume it. */
+            if (!gfx_rect_contains(ui_setlist_row_part(sl, sl->hit_index,
+                                                       UI_SL_PART_HOLD), x, y)
+                && ui_hold_leave(&sl->hold)) {
+                sl->hit_kind = UI_SL_HIT_LIST;
+                invalidate(sl);
+            }
+            break;
+        }
         if (sl->hit_kind >= UI_SL_HIT_HOST) {
             /* Slid off: the press ends and this contact selects nothing and
              * scrolls nothing. */
@@ -1185,6 +1216,17 @@ void ui_setlist_event(ui_setlist_t *sl, const touch_event_t *evt)
     }
 
     case TOUCH_EVENT_UP:
+        if (sl->hit_kind == UI_SL_HIT_HOLD) {
+            /* The hold acts when it completes; the release only ends it,
+             * with its hint when let go early. */
+            (void)ui_hold_end(&sl->hold, evt,
+                              ui_setlist_row_part(sl, sl->hit_index,
+                                                  UI_SL_PART_HOLD));
+            sl->hit_kind = UI_SL_HIT_NONE;
+            drop_press(sl);
+            invalidate(sl);
+            break;
+        }
         /* A contact that scrolled activates nothing, and neither does a
          * release the finger did not make: it ends the press.  The press
          * is dropped before it acts, so what it opens starts clean. */

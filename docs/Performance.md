@@ -99,8 +99,8 @@ wifi                             0       0 KiB
 wifi-chrome                 22,502    2813 KiB
 wifi-keys                   36,944    4618 KiB
 wifi-idle                        0       0 KiB
-imu                            137      17 KiB
-imu-hold                       626      78 KiB
+imu                              3       0 KiB
+imu-hold                       183      23 KiB
 balance-node                   683      85 KiB
 clear                       19,207    2401 KiB
 vlines                      10,201    1275 KiB
@@ -134,8 +134,8 @@ est. ms and est. fps: not measured
 | `settings-list` | SETUP with PANEL's list open, chrome cached |
 | `wifi-keys` | WI-FI with the Wi-Fi keyboard open, a key typed every frame |
 | `wifi-idle` | WI-FI with the access point up, the idle time 1s shorter in every frame: the page shows it in whole minutes, so nothing is repainted |
-| `imu` | the IMU screen with an angle frame in every frame, X 0.1° from the one before: the X line repainted, clipped to itself |
-| `imu-hold` | the IMU screen, a finger on HOLD 2s: CALIBRATE in the footer: the button and the age on the RATE line repainted, each clipped to itself |
+| `imu` | SETUP > WIRELESS > IMU with an angle frame in every frame, X 0.1° from the one before: the value boxes of Angle X and Frames repainted, each clipped to itself |
+| `imu-hold` | SETUP > WIRELESS > IMU scrolled to CALIBRATE, a finger on its HOLD 2s: CALIBRATE: the button repainted, clipped to itself |
 | `balance-node` | BALANCE with a balance node linked and a report in every frame whose magnitude, angle, rpm and quality differ from the one before: the four values VIBRATION, ANGLE, SPEED and SIGNAL repainted in their boxes |
 | `<screen>-sim` | the same screen with the SIMULATION watermark |
 | `<screen>-chrome` | the same screen invalidated on every frame |
@@ -258,7 +258,7 @@ increased drawing work in the model; it does not detect a missed display deadlin
 | `servo-current` | 4,000 | a changed digit of the current that repaints the whole card |
 | `servo-rudder` | 4,600 | a new angle on RUDDER that repaints more than the readout, the state lines and the flap's two boxes |
 | `servo-test` | 1,000 | a moving arm or a new reading that repaints the TEST page |
-| `servo-kst`, `servo-hitec`, `wifi-idle`, `imu`, `imu-hold`, `balance-node` | 1,000 | a PD mini reading the state line does not show that repaints the session, an idle second inside the minute shown that repaints WI-FI, a reading or the hold's fill that repaints the IMU screen whole, or a balance node's report that repaints BALANCE whole |
+| `servo-kst`, `servo-hitec`, `wifi-idle`, `imu`, `imu-hold`, `balance-node` | 1,000 | a PD mini reading the state line does not show that repaints the session, an idle second inside the minute shown that repaints WI-FI, a reading or the hold's fill that repaints SETUP > WIRELESS > IMU whole, or a balance node's report that repaints BALANCE whole |
 | `motor-stick` | 2,000 | a growing steady frame of ESC STICK, 1,713 fills in the table above |
 | the three `-sim` modes | 3,600 | a watermark that has grown past the full canvas |
 | the eleven `-chrome` modes | 72,000 | a growing full repaint |
@@ -412,7 +412,7 @@ its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 5,328 | 1,824 |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 5,520 | 1,632 |
 | `control` | `control_task` | 6,144 | 3,648 | 1,456 |
 | `runlog` | `log_task` | 6,656 | 4,128 | 1,488 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |

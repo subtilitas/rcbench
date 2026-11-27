@@ -507,9 +507,7 @@ x 348 bis 676:
   Bedienelement zum Anhalten und erscheinen auch bei ARMED.
 - Keine Hilfeseite über der Tastatur von LOG UMBENENNEN, der Sitzung über
   die Signalleitung, der Tastatur der Suche, der Warnung vor dem Start
-  oder den Handgriffen von ESC STICK oder der Fundliste von IMU.
-
-![Die Hilfe von IMU auf Seite 1](img/de/help-imu.png)
+  oder den Handgriffen von ESC STICK.
 
 ## Screenshot
 
@@ -2143,7 +2141,7 @@ Winkelquellen:
 | WINKELQUELLE | Ein Tippen mit Messwert | Zeigt GESETZT |
 | --- | --- | --- |
 | AS5600 | nimmt den aktuellen Zählerstand, 0 bis 4095, als SENSOR-MITTE und fordert ein Speichern an: dieselbe Einstellung wie SENSOR-MITTE in den Listen von LIVE und RUDER und SETUP > SENSORS > AS5600-Mitte | SENSOR-MITTE ist nicht 0, ihre Vorgabe, oder seit dem Start des Panels wurde ein Zählerstand übernommen; eine Mitte von vor einem Neustart zeigt GESETZT |
-| IMU | fordert den eigenen NULLPUNKT der IMU an, den der IMU-Seite: alle IMU-Winkel, Rollen, Nicken und Gieren, ab der aktuellen Stellung. Er verwirft den Nullpunkt und MAX von RUDER auf der IMU, wie NULLPUNKT der IMU-Seite | die IMU meldet ihren Nullpunkt gesetzt; der Nullpunkt der IMU gilt bis zum Neustart |
+| IMU | fordert den eigenen NULLPUNKT der IMU an, den von SETUP > WIRELESS > IMU: alle IMU-Winkel, Rollen, Nicken und Gieren, ab der aktuellen Stellung. Er verwirft den Nullpunkt und MAX von RUDER auf der IMU, wie jener NULLPUNKT | die IMU meldet ihren Nullpunkt gesetzt; der Nullpunkt der IMU gilt bis zum Neustart |
 
 Ohne Messwert seit dem aktuellen Verbindungsaufbau, nach einem
 Verbindungsverlust bis ein neuer Messwert eintrifft, solange der AS5600
@@ -6129,17 +6127,19 @@ Zeile in der Schrift 10 x 20px.
 - PANEL, SENSORS, WIRELESS und SD CARD enthalten die Einstellungen für den
   gesamten Prüfstand. Jede Kachel nennt die Zahl der Einstellungen in ihrer
   Liste; SENSORS nennt stattdessen die verfügbaren Gruppen,
-  `STROM, WINKEL, PHASENABGRIFF`, und WIRELESS `IMU, DIAL, SENSORKNOTEN`. Ein Tippen öffnet die Liste der Kategorie. Die Einstellungen von Akku,
+  `STROM, WINKEL, PHASENABGRIFF`, und WIRELESS `IMU, DIAL, KNOTEN, DRUCKER`. Ein Tippen öffnet die Liste der Kategorie. Die Einstellungen von Akku,
   Motor und Gasausgang stehen unter MOTOR & ESC > OPTIONEN
   ([MOTOR & ESC, Optionen](#motor--esc-optionen)).
-- Vier eigene Bildschirme: OUTPUTS ([Outputs](#outputs)), WI-FI ([WLAN](#wlan)),
-  UPDATES ([Updates](#updates)) und IMU ([Die Bluetooth-IMU](#die-bluetooth-imu)).
-  Das Band jedes Bildschirms nennt ihn wie
-  seine Kachel, und das Band dieser Seite zeigt SETUP. [Files](#files) ist ein
+- Drei eigene Bildschirme: OUTPUTS ([Outputs](#outputs)), WI-FI ([WLAN](#wlan))
+  und UPDATES ([Updates](#updates)). Das Band jedes Bildschirms nennt ihn
+  wie seine Kachel, und das Band dieser Seite zeigt SETUP. Die Kacheln
+  zeilenweise: PANEL, SENSORS, OUTPUTS; SD CARD, WI-FI, WIRELESS; UPDATES.
+  Die Bluetooth-IMU hat keine Kachel: Sie ist der erste Eintrag von
+  WIRELESS ([Die Bluetooth-IMU](#die-bluetooth-imu)). [Files](#files) ist ein
   Tab der Kachel [LOGS](#logs).
 - LAYOUT ([Layout](#layout)) als letzte Kachel auf einem Board mit verlöteten
-  Pins, dem [rbmod-Carrier](Carrier-de.md). Auf jedem anderen Board ist 1 Platz
-  frei, auf diesem keiner. Die Seite bietet 9 Plätze; ein zehnter
+  Pins, dem [rbmod-Carrier](Carrier-de.md). Auf jedem anderen Board sind 2
+  Plätze frei, auf diesem 1. Die Seite bietet 9 Plätze; ein zehnter
   Eintrag lässt den Build fehlschlagen.
 - SPEICHERN, unten rechts, ist dieselbe Taste wie auf den Listen
   ([Werte behalten](#werte-behalten)). Eine ungespeicherte Änderung in
@@ -7207,34 +7207,48 @@ KEINES.
 
 ### Die Bluetooth-IMU
 
-![IMU, verbunden mit 50Hz, NULLPUNKT gesetzt](img/de/imu-connected.png)
+![WIRELESS auf dem IMU-Eintrag, verbunden mit 50Hz, NULLPUNKT gesetzt](img/de/setup-wireless-imu.png)
 
-Die IMU-Kachel unter SETUP öffnet den Bildschirm für den Winkelsensor
-WitMotion BWT901CL. Er ist über Bluetooth LE durch den ESP32-C6 des Boards
-mit dem Panel verbunden ([Die Bluetooth-IMU](IMU-de.md)); das erste IMU EIN
-startet Bluetooth LE. Seine Einstellungen
-stehen im IMU-Eintrag unter WIRELESS: IMU EIN oder AUS, ACHSE (X, Y, Z), VORZEICHEN (+, -), RATE (10, 20,
-50, 100 oder 200Hz, ab Werk 50Hz), ALGORITHMUS (6-AXIS oder 9-AXIS) und
-WINKELQUELLE. Die Bedienelemente links, 460 x 56px im Abstand von 64px ab
-Body-y 16: SENSOREN SUCHEN, dann NULLPUNKT und NULLPUNKT LÖSCHEN
-nebeneinander. Die Fußleiste
-([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste))
-lautet `[IMU] [2s HALTEN: KALIBRIEREN] [OPTIONEN]`; OPTIONEN öffnet WIRELESS
-auf dem IMU-Eintrag, dessen Home-Feld führt zurück. Die Karte rechts, x 484
-bis 1016, Body-y 16 bis 436, nennt den gebundenen Sensor
-und seine Adresse mit ihrem Typ, die Firmware des C6, den Zustand, die Winkel X, Y und Z
-relativ zum Nullpunkt in der Schrift 16 x 28px (die von den Läufen
-verwendete Achse in der Akzentfarbe), die Rate der Winkel-Frames, das Alter des neuesten und den Akku
-des Sensors. SENSOREN SUCHEN öffnet die Liste für eine Suche von 10s: bis zu
-8 Sensoren von 640 x 48px im Abstand von 52px mit Name, Adresse und RSSI,
-unter AKTUALISIEREN die Zahl der übrigen Geräte, die die Suche hörte; ein
-Tippen bindet einen und schließt die Liste. Das Home-Feld schließt zuerst die Liste. Der Messwert ist
-300ms nach dem letzten Winkel-Frame veraltet, die Aussetzer-Toleranz eines
-Laufs ([Servoverfahren](Servo-de.md)).
+Der Winkelsensor WitMotion BWT901CL ist über Bluetooth LE durch den
+ESP32-C6 des Boards mit dem Panel verbunden
+([Die Bluetooth-IMU](IMU-de.md)); das erste IMU EIN startet Bluetooth LE.
+Der IMU-Eintrag von SETUP > WIRELESS enthält alles: Suche und Bindung,
+die aktuellen Werte, NULLPUNKT, NULLPUNKT LÖSCHEN, den 2s-Hold der
+Kalibrierung und die Einstellungen. Bei ausgeschalteter IMU zeigt der
+Eintrag IMU und WINKELQUELLE; eingeschaltet 18 Zeilen mehr, 19 mit
+LETZTER FEHLER:
 
-![Die Liste nach SENSOREN SUCHEN](img/de/imu-scan.png)
+| Zeile | Wert | Was sie tut |
+| --- | --- | --- |
+| Sensor suchen | `SUCHEN`, `BLUETOOTH STARTET`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | Tippen öffnet SEARCH ([WIRELESS: SEARCH](#wireless-search)) und fordert eine Suche von 10s an. Startet Bluetooth LE noch, wartet die Suche und geht hinaus, sobald es läuft. Bei ARMED zeigt das Band `KEINE IMU-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; während einer Suche `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`; ohne Bluetooth am C6 oder mit ausgefallenem C6 `BLUETOOTH NICHT BEREIT: KEINE SENSORSUCHE`. SEARCH öffnet in jedem Fall |
+| Gebundener Sensor | der Name des gebundenen Sensors, sonst seine Adresse, sonst `KEINS` | Tippen öffnet SEARCH mit der Liste der letzten Suche, ohne Suche |
+| Letzter Fehler | | nur, solange die letzte Suche, Verbindung oder ein Schreibzugriff fehlschlug: der Fehler in der Hilfezeile, in der Warnfarbe ([Die Bluetooth-IMU](IMU-de.md)) |
+| Winkel X, Winkel Y, Winkel Z | `+12.30°`, `---` ohne Messwert | die Winkel ab dem Nullpunkt durch den IMU-Filter, 0,01°. Die Achse, die IMU-Achse nennt, heißt `Winkel X: für Läufe` |
+| Frames | `RATE 50.0Hz  ALTER 20ms`, `RATE 0.0Hz  KEIN WINKEL` | die Winkel-Frames der letzten Sekunde und das Alter des neuesten |
+| Sensorakku | `3.95V`, `---` über 6,0V oder ohne Wert | der Akku des Sensors aus Frame 0x52 |
+| C6-Version | `2.13.0`, `---` | die Firmware des ESP32-C6 |
+| Nullpunkt | | Tippen übernimmt die aktuellen Winkel als Nullpunkt; ohne Messwert gesperrt, `NOCH KEIN WINKEL VOM SENSOR` |
+| Nullpunkt löschen | | Tippen vergisst den Nullpunkt; gesperrt, solange keiner gesetzt ist, `KEIN NULLPUNKT GESETZT` |
+| Kalibrieren | `2s HALTEN: KALIBRIEREN`, ein Knopf von 278 x 48px rechts in der Zeile | 2s Halten startet die Kalibrierung des Beschleunigungssensors von 3s; vor 2000ms losgelassen zeigt das Band `Halte 2s, um den Beschleunigungssensor zu kalibrieren.`. Gesperrt, solange der Sensor keine Frames sendet, `DER SENSOR SENDET KEINE FRAMES`, und während sie läuft, `HALTE DEN SENSOR 3s STILL UND WAAGERECHT` mit dem Countdown. Das Band zeigt an ihrem Ende `BESCHLEUNIGUNGSSENSOR KALIBRIERT UND GESPEICHERT` oder den Alarm `KALIBRIERUNG OHNE FRAMES BEENDET. VERSUCHE ES ERNEUT` |
 
-![WIRELESS auf dem IMU-Eintrag](img/de/setup-wireless-imu.png)
+Es folgen die Einstellungen: IMU-Achse (X, Y, Z), IMU-Vorzeichen (+, -),
+IMU-Rate (10, 20, 50, 100 oder 200Hz, ab Werk 50Hz), IMU-Algorithmus
+(6-AXIS oder 9-AXIS), IMU-Filter, IMU-Einschwingzeit und
+IMU-Genauigkeit. NULLPUNKT und NULLPUNKT LÖSCHEN verwerfen den Nullpunkt
+und MAX von RUDER auf der IMU. Der Messwert ist 300ms nach dem letzten
+Winkel-Frame veraltet, die Aussetzer-Toleranz eines Laufs
+([Servoverfahren](Servo-de.md)).
+
+Ein neuer Messwert zeichnet das Wertfeld von Winkel X, Winkel Y, Winkel
+Z, Frames und Sensorakku neu, dessen Text sich änderte, je 278 x 24px;
+das Alter auf Frames zählt zwischen den Messwerten 10-mal pro Sekunde
+weiter. Eine Änderung der Verbindung, der Suche, der Bindung oder der
+Kalibrierung zeichnet die Liste neu. Die Füllung des Holds von
+KALIBRIEREN zeichnet nur seinen Knopf neu.
+
+![Dasselbe bei NULLPUNKT, NULLPUNKT LÖSCHEN und KALIBRIEREN](img/de/setup-wireless-imu-cal.png)
+
+![Kein Sensor gebunden nach einer Suche ohne Fund](img/de/setup-wireless-imu-error.png)
 
 ### WIRELESS: die IMU und das Dial
 
@@ -7247,7 +7261,7 @@ Neustart des Panels.
 
 | Eintrag | Zustand im Betrieb | Zeilen |
 | --- | --- | --- |
-| IMU | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN SENSOR GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN`, `VERBUNDEN 50Hz`, `KEINE FRAMES` ([Die Bluetooth-IMU](#die-bluetooth-imu)) | 2 bei AUS: IMU und WINKELQUELLE; 7 bei EIN |
+| IMU | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN SENSOR GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN`, `VERBUNDEN 50Hz`, `KEINE FRAMES` ([Die Bluetooth-IMU](#die-bluetooth-imu)) | 2 bei AUS: IMU und WINKELQUELLE; 20 bei EIN, 21 mit LETZTER FEHLER |
 | DIAL | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN DIAL GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN: KEIN DIAL`, `VERBUNDEN, KEIN EREIGNIS`, `ANDERES PROTOKOLL n`, `VERBUNDEN`, `GESTÖRT`, `DIAL VERLOREN` | 1 bei AUS; 5 bei EIN |
 | AUSWUCHTKNOTEN | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN KNOTEN GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN: KEIN KNOTEN`, `VERBUNDEN, LIEST INFO`, `ROLLE r, PROTOKOLL p`, `VERBUNDEN, KEIN BERICHT`, `BERICHTET` | 1 bei AUS; 5 bei EIN |
 | DRUCKER | `NICHT GEBUNDEN`, im Leerlauf der Name des gebundenen Druckers, `SUCHE LÄUFT`, `VERBUNDEN`, die Phase einer Anfrage oder ihr Ergebnis ([WIRELESS: der Etikettendrucker](#wireless-der-etikettendrucker)) | 8 |
@@ -7424,11 +7438,11 @@ Anfrage, die mit einem Fehler endet, zeigt seinen Text im Band:
 
 ![SEARCH beim Leistungsknoten, zwei Knoten gefunden](img/de/setup-wireless-search.png)
 
-SEARCH findet und bindet das Dial, den Leistungsknoten, den
-Auswuchtknoten oder den Etikettendrucker. Dial suchen, Knoten suchen und
-Drucker suchen öffnen es und fordern eine Suche von 10s an; Gebundenes
-Dial, Gebundener Knoten und Gebundener Drucker öffnen es mit der Liste der
-letzten Suche, ohne Suche. Eine Suche, die die Zeile ablehnt
+SEARCH findet und bindet die IMU, das Dial, den Leistungsknoten, den
+Auswuchtknoten oder den Etikettendrucker. Sensor suchen, Dial suchen,
+Knoten suchen und Drucker suchen öffnen es und fordern eine Suche von 10s
+an; Gebundener Sensor, Gebundenes Dial, Gebundener Knoten und Gebundener
+Drucker öffnen es mit der Liste der letzten Suche, ohne Suche. Eine Suche, die die Zeile ablehnt
 (ARMED, eine laufende Suche, Bluetooth nicht bereit), nennt den Grund im
 Band, und SEARCH öffnet mit der letzten Liste. Das Home-Feld
 führt zurück zu SETUP > WIRELESS auf den Eintrag des Geräts.
@@ -7437,15 +7451,18 @@ führt zurück zu SETUP > WIRELESS auf den Eintrag des Geräts.
 | --- | --- | --- |
 | Zustandszeile | x 16, y 12 | `SUCHE LÄUFT: NOCH 7s` während einer Suche, von 10s abwärts gezählt; `n GEFUNDEN: ZUM BINDEN EINES ANTIPPEN`; `KEINS GEFUNDEN`; `DURCH ARM BEENDET`; `NOCH KEINE SUCHE: AKTUALISIEREN ANTIPPEN` |
 | Fundliste | Zeilen von 640 x 48px im Abstand von 52px ab x 16, y 44 | die Geräte der letzten Suche, das stärkste zuerst, bis zu 8: der Name, sonst die Adresse, und der RSSI, `rcbench-pwr-3456  -58dBm`; das gebundene in der Akzentfarbe hervorgehoben. Der Controller leert die Liste beim Start einer Suche und füllt sie an ihrem Ende |
-| Karte | x 680, 328px breit, y 12 bis 136 | die Art des Geräts, seine Verbindung wie in der linken Liste, `GEBUNDEN` und der Name des gebundenen Geräts, sonst seine Adresse, sonst `KEINS` |
+| Karte | x 680, 328px breit, y 12 bis 154 | die Art des Geräts, seine Verbindung wie in der linken Liste, `GEBUNDEN` und der Name des gebundenen Geräts, sonst seine Adresse, sonst `KEINS`; unter einem Namen seine Adresse mit ihrem Typ in der Schrift 8 x 16px bei y 138 |
 | AKTUALISIEREN | 328 x 56px bei x 680, y 156 | eine neue Suche von 10s mit den Regeln von Dial suchen und Knoten suchen; grau während einer Suche, dort zeigt Tippen `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s` |
 | BINDUNG LÖSEN | 328 x 56px bei x 680, y 228 | `2s HALTEN: BINDUNG LÖSEN`, ein Halten von 2s, das das gebundene Gerät vergisst (unten); vor 2000ms losgelassen zeigt das Band `Halte 2s, um die Bindung zu lösen.`; grau, solange nichts gebunden ist, dort zeigt Tippen `NICHTS GEBUNDEN: KEINE BINDUNG ZU LÖSEN` |
+| Ausgeblendete | x 680, y 300, Schrift 10 x 20px | nur bei der IMU: die Geräte, die die letzte Suche hörte und nicht listete, `4 ANDERE GERÄTE AUSGEBLENDET`; keine während einer Suche oder ohne solche |
+
+![SEARCH bei der IMU, zwei Sensoren gefunden und vier ausgeblendet](img/de/setup-wireless-imu-search.png)
 
 ![Die Bindungsfrage von SEARCH](img/de/setup-wireless-search-bind.png)
 
 Tippen auf ein gefundenes Gerät öffnet die Bindungsfrage anstelle der
 Liste, 700 x 280px bei x 162, y 100: `LEISTUNGSKNOTEN BINDEN?`
-(`DIAL BINDEN?`, `AUSWUCHTKNOTEN BINDEN?`), der Name des Geräts, seine
+(`IMU BINDEN?`, `DIAL BINDEN?`, `AUSWUCHTKNOTEN BINDEN?`), der Name des Geräts, seine
 Adresse und sein RSSI, das gebundene Gerät, das es ersetzt,
 `SETUP BEHÄLT DIE BINDUNG UND FORDERT SPEICHERN AN`, dann ABBRECHEN und
 BINDEN, je 300 x 56px. ABBRECHEN und das Home-Feld schließen sie und binden
@@ -7457,10 +7474,14 @@ das Panel behält Adresse und Name in SETUP und fordert Speichern an.
 BINDEN bindet nichts, schließt die Frage und nennt den Grund im Band:
 
 - während einer Suche: `SUCHE LÄUFT: DEN KNOTEN NACH DEM ENDE WÄHLEN`,
-  beim Dial `SUCHE LÄUFT: DAS DIAL NACH DEM ENDE WÄHLEN`;
+  beim Dial `SUCHE LÄUFT: DAS DIAL NACH DEM ENDE WÄHLEN`, bei der IMU
+  `SUCHE LÄUFT: DEN SENSOR NACH DEM ENDE WÄHLEN`;
 - wenn das angetippte Gerät nicht an seinem Platz in der Liste steht:
   `KNOTEN NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`, beim Dial
-  `DIAL NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`;
+  `DIAL NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`, bei der IMU
+  `SENSOR NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`;
+- bei der IMU, während ihre Kalibrierung läuft oder Bluetooth LE startet:
+  `JETZT KEINE BINDUNG: KALIBRIERUNG LÄUFT ODER BLUETOOTH STARTET`;
 - beim Drucker während einer Anfrage: `DRUCK LÄUFT: BINDUNG NACH DEM ENDE
   ÄNDERN`; während eines Geräte-Updates: `UPDATE LÄUFT: BINDUNG DANACH
   ÄNDERN`. BINDUNG LÖSEN, 2000ms gehalten, wird mit denselben Texten
@@ -7469,7 +7490,10 @@ BINDEN bindet nichts, schließt die Frage und nennt den Grund im Band:
 Die Bindung des Druckers gehört keinem Controller: BINDEN schreibt
 Adresse und Name in SETUP (`prn_ble`, `prn_name`) und fordert sofort
 Speichern an, BINDUNG LÖSEN leert beide. Die nächste Anfrage verbindet
-mit der neuen Adresse.
+mit der neuen Adresse. BINDUNG LÖSEN der IMU leert ihre Adresse und
+ihren Namen in SETUP (`imu_ble`, `imu_name`) und fordert Speichern an;
+der Controller trennt die Verbindung, sobald er die leere Adresse
+übernimmt.
 
 Tippen auf ein Gerät während einer Suche öffnet keine Frage und zeigt den
 Text der Suche. Eine Bindung, die der Controller nach BINDEN ablehnt, hinter

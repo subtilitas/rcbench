@@ -178,3 +178,44 @@ const char *sl_text_help(setting_text_id_t id);
  * @return The box.
  */
 gfx_rect_t sl_choice_box(const ui_setlist_t *sl);
+
+/* --- ui_setlist_hold.c: a hold row's 2s hold ---------------------------- */
+
+/**
+ * @brief Whether (x, y) is on the button of row @p index, a hold row
+ *        (held()) that is not locked.
+ * @param sl    The list.
+ * @param index The row.
+ * @param x     The point's x.
+ * @param y     Its y.
+ * @return True where a press starts the hold.
+ */
+bool sl_hold_on(const ui_setlist_t *sl, int index, int x, int y);
+
+/**
+ * @brief A press landed on row @p index's button: its hold starts.
+ * @param sl    The list.
+ * @param index The row.
+ */
+void sl_hold_press(ui_setlist_t *sl, int index);
+
+/**
+ * @brief A frame of the hold: its flash steps, a press on a row that went
+ *        or locked ends unfired, and a press held to UI_HOLD_S calls the
+ *        row's held() once.  A running fill or flash repaints the list.
+ * @param sl   The list.
+ * @param dt_s The frame's time, s.
+ */
+void sl_hold_tick(ui_setlist_t *sl, float dt_s);
+
+/**
+ * @brief A hold row's button at the row's right: its label, its fill
+ *        following the hold, grey while the row is locked.
+ * @param sl    The list.
+ * @param c     The canvas.
+ * @param index The row.
+ * @param label The button's label.
+ * @param live  Whether the row takes a press: not locked.
+ */
+void sl_hold_draw(ui_setlist_t *sl, gfx_canvas_t *c, int index,
+                  const char *label, bool live);
