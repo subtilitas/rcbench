@@ -140,6 +140,27 @@ static void hconnect_hold(void)
 }
 
 /**
+ * @brief The control at @p r held down for @p ticks of 20ms with the bench
+ *        still, the finger left on it: a press or a hold part-way.
+ * @param r     the control, body pixels
+ * @param ticks the ticks
+ */
+static void hpress(gfx_rect_t r, int ticks)
+{
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1,
+                                   .x = (int16_t)(r.x + r.w / 2),
+                                   .y = (int16_t)(UI_BAND_H + r.y
+                                                  + r.h / 2),
+                                   .strength = 40 } };
+
+    ui_router_event(&e);
+    for (int i = 0; i < ticks; ++i) {
+        ui_router_tick(0.02f);
+    }
+}
+
+/**
  * @brief Run the bench until the model is in @p s, or end the render.
  * @param s the state
  */
@@ -192,23 +213,34 @@ static void hconnect(void)
 }
 
 /**
- * @brief The row of @p page whose label is @p label, tapped.
+ * @brief The tab @p page tapped, and the value of its row labelled
+ *        @p label; ends the render where no row has it.
  * @param page  the tab
  * @param label the row's label
+ * @return the row's value, body pixels
  */
-static void hrow(int page, const char *label)
+static gfx_rect_t hrow_rect(int page, const char *label)
 {
     htap(hitec_panel_tab_rect(page));
     for (int row = 0; row < 6; ++row) {
         const char *l = hitec_panel_label(page, row, 0);
 
         if (l != NULL && strcmp(l, label) == 0) {
-            htap(hitec_panel_value_rect(page, row, 0));
-            return;
+            return hitec_panel_value_rect(page, row, 0);
         }
     }
     fprintf(stderr, "render_hitec: no row %s\n", label);
     exit(1);
+}
+
+/**
+ * @brief The row of @p page whose label is @p label, tapped.
+ * @param page  the tab
+ * @param label the row's label
+ */
+static void hrow(int page, const char *label)
+{
+    htap(hrow_rect(page, label));
 }
 
 /**
@@ -944,6 +976,11 @@ static void hitec_view_steps(const char *view)
         ui_router_tick(0.02f);
         return;
     }
+    if (strcmp(v, "-connect-hold") == 0) {
+        /* CONNECT under the finger for 1s: half its hold. */
+        hpress(hitec_panel_value_rect(HITEC_PANEL_SERVO, 0, 0), 50);
+        return;
+    }
     if (strncmp(v, "-restore-", 9) == 0) {
         /* The operator's set points before the session. */
         settings_set(SET_SUPPLY_V_MAX, 8.4f);
@@ -970,8 +1007,23 @@ static void hitec_view_steps(const char *view)
         hwait(HITEC_PROG_HELD);
         return;
     }
-    if (strcmp(v, "-leave") == 0 || strcmp(v, "-classic-leave") == 0) {
+    if (strcmp(v, "-leave") == 0 || strcmp(v, "-classic-leave") == 0
+        || strcmp(v, "-leave-hold") == 0) {
         hhome();
+        if (strcmp(v, "-leave-hold") == 0) {
+            /* The page's hold button under the finger for 1s. */
+            hpress(hitec_panel_apply_rect(), 50);
+        }
+        return;
+    }
+    if (strcmp(v, "-row-down") == 0) {
+        /* MOTION's SPEED under the finger: the pressed value. */
+        hpress(hrow_rect(HITEC_PANEL_MOTION, TR(HP_SPEED)), 5);
+        return;
+    }
+    if (strcmp(v, "-overload") == 0) {
+        /* OVERLOAD's list: 0% to 50% in steps of 10%, 6 entries. */
+        hrow(HITEC_PANEL_PROTECT, TR(HP_OVERLOAD));
         return;
     }
     if (strcmp(v, "-leaving") == 0) {

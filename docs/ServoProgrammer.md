@@ -462,6 +462,7 @@ port set.
 
 ![A PD mini answers](img/servo-kst-supply.png)
 ![The supply in programming mode](img/servo-kst-supplied.png)
+![CONNECT at 1s of its hold](img/servo-kst-connect-hold.png)
 
 Without a PD mini the voltage and the current limit are stored and not
 applied. **WAIT BEFORE PWM** is applied at [leaving](#leaving) with and
@@ -493,6 +494,13 @@ needs, the name of the
 session's backup file and the last message. A message in the warning colour is a refusal or a result
 that needs a second look; one in the danger colour says the servo's content
 is in doubt.
+
+Notes that need more rows than the card has above the message take a second
+page. The page count, `1/2` or `2/2`, stands at the right edge above the
+message; a tap on the notes shows the next page, and after the last the
+first.
+
+![The notes of a servo read, page 2](img/servo-kst-read-p2.png)
 
 A session that goes, by a lost link, an IOmcu that starts again or the port
 back in PWM, takes the lines about what it held with it: `All 32 registers
@@ -527,6 +535,7 @@ further 1.8s.
 
 ![The keypad with the range the limits accept](img/servo-kst-keypad.png)
 ![The stretch list](img/servo-kst-stretch.png)
+![MAX. DUTY under the finger](img/servo-kst-row-down.png)
 
 ### TUNE
 
@@ -883,6 +892,7 @@ the page, back to the first after the last. The panel asks the card for
 each page and waits at most 5s for it.
 
 ![The second page of 7 files](img/servo-kst-files-next.png)
+![5 files, two to a line](img/servo-kst-files-five.png)
 ![A card without servo files](img/servo-kst-files-none.png)
 
 ### The servo type
@@ -1257,6 +1267,7 @@ restarts, **ABORT** or a stop ends it, or no result arrives
 If saved on the card, it survives a power cycle of the bench.
 
 ![An interrupted write](img/servo-kst-doubt.png)
+![An interrupted write, the notes on page 2](img/servo-kst-doubt-p2.png)
 
 `Writing was interrupted. The settings may be incomplete.` stays until the
 servo is read, with the pin of the write below it: `Do not use the servo. Connect it to GPIO 13 and tap READ ALL.` A record that holds no pin names the
@@ -1364,6 +1375,7 @@ as above. With a servo in doubt the page keeps `Unwritten changes will be
 lost.` without the list, and **CANCEL**.
 
 ![LEAVE with three unwritten edits](img/servo-kst-leave.png)
+![The hold of LEAVE at 1s](img/servo-kst-leave-hold.png)
 
 The state line reads `Leaving programming mode. PWM is still off.` and the
 tester's controls stay off until the port reports PWM. The button reads

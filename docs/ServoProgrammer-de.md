@@ -511,6 +511,7 @@ BEREIT folgen dem, was der Port gestellt hat.
 
 ![Ein PD mini antwortet](img/de/servo-kst-supply.png)
 ![Die Versorgung im Programmiermodus](img/de/servo-kst-supplied.png)
+![VERBINDEN nach 1s des Haltens](img/de/servo-kst-connect-hold.png)
 
 Ohne PD mini werden die Spannung und die Stromgrenze gespeichert und nicht
 angewendet. **WARTEZEIT VOR PWM** wendet ein IOmcu ab Link-Version 4.15
@@ -548,6 +549,13 @@ Warnfarbe ist eine Ablehnung oder ein Ergebnis, das einen zweiten Blick
 braucht; eine in der Gefahrenfarbe sagt, dass der Inhalt des Servos unklar
 ist.
 
+Hinweise, die mehr Zeilen brauchen, als die Karte über der Meldung hat,
+nehmen eine zweite Seite. Die Seitenzahl, `1/2` oder `2/2`, steht am rechten
+Rand über der Meldung; ein Tippen auf die Hinweise zeigt die nächste Seite,
+nach der letzten wieder die erste.
+
+![Die Hinweise eines gelesenen Servos, Seite 2](img/de/servo-kst-read-p2.png)
+
 Endet die Sitzung durch Verbindungsverlust, einen Neustart des IOmcu oder
 die Rückkehr des Ports zu PWM, verschwinden Meldungen zu ihrem bisherigen
 Zustand: `Alle 32 Register ausgelesen.`, `KST004 geladen.`, der Vergleich
@@ -584,6 +592,7 @@ Sekunde und nach weiteren 1,8s 30 je Sekunde.
 
 ![Die Tastatur mit dem Bereich, den die Limits annehmen](img/de/servo-kst-keypad.png)
 ![Die Stretch-Liste](img/de/servo-kst-stretch.png)
+![MAX. DUTY unter dem Finger](img/de/servo-kst-row-down.png)
 
 ### ABSTIMMEN
 
@@ -967,6 +976,7 @@ ersten. Das Panel fragt die Karte für jede Seite und wartet höchstens 5s
 darauf.
 
 ![Die zweite Seite von 7 Dateien](img/de/servo-kst-files-next.png)
+![5 Dateien, zwei je Zeile](img/de/servo-kst-files-five.png)
 ![Eine Karte ohne Servodateien](img/de/servo-kst-files-none.png)
 
 ### Der Servotyp
@@ -1388,6 +1398,7 @@ Der vor dem Schreiben angelegte Vermerk bleibt erhalten. Auf der Karte
 übersteht er auch ein Aus- und Einschalten des Prüfstands.
 
 ![Ein unterbrochenes Schreiben](img/de/servo-kst-doubt.png)
+![Ein unterbrochenes Schreiben, die Hinweise auf Seite 2](img/de/servo-kst-doubt-p2.png)
 
 `Schreiben wurde unterbrochen. Die Einstellungen können unvollständig sein.` bleibt stehen,
 bis das Servo gelesen ist, darunter der Pin des Schreibens: `Benutze das Servo nicht. Schließe es an GPIO 13 an und tippe auf ALLES AUSLESEN.` Ein Vermerk ohne Pin nennt
@@ -1510,6 +1521,7 @@ Servo behält die Seite `Noch nicht geschriebene Änderungen gehen verloren.`
 ohne die Liste, und **ABBRECHEN**.
 
 ![VERLASSEN mit drei ungeschriebenen Änderungen](img/de/servo-kst-leave.png)
+![Das Halten von VERLASSEN nach 1s](img/de/servo-kst-leave-hold.png)
 
 Die Zustandszeile zeigt
 `Programmiermodus wird verlassen. PWM ist noch aus.`, und die
