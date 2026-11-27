@@ -458,8 +458,8 @@ static void update(dial_scene_t *s, const dk_face_t *f,
              (unsigned)v->upd_to[2]);
     block(s, 0, line, 92, DIAL_FONT_SMALL, UI_C_TEXT_DIM, 1, DIAL_B_TEXT);
     if (v->upd == DIAL_UPD_ASK) {
-        block(s, 1, DF(DIAL_UPD_PRESS), 128, DIAL_FONT_MID, UI_C_ACCENT, 2,
-              DIAL_B_TEXT);
+        block(s, 1, v->touch_press ? DF(DIAL_UPD_TAP) : DF(DIAL_UPD_PRESS),
+              128, DIAL_FONT_MID, UI_C_ACCENT, 2, DIAL_B_TEXT);
         snprintf(line, sizeof line, DF(DIAL_UPD_SECS),
                  (unsigned)v->upd_secs);
         block(s, 2, line, 162, DIAL_FONT_SMALL, UI_C_TEXT, 1, DIAL_B_TEXT);
@@ -522,7 +522,8 @@ static void switch_off(dial_scene_t *s, const dk_face_t *f,
           (uint8_t)(v->off_focus ? UI_C_DANGER : UI_C_TEXT_DIM), 1,
           (uint8_t)(v->off_focus ? DIAL_B_FOCUS : DIAL_B_TEXT));
     snprintf(line, sizeof line, DF(DIAL_UPD_SECS), (unsigned)v->off_secs);
-    hints(s, DF(DIAL_SWOFF_SELECT), line, UI_C_TEXT_FAINT);
+    hints(s, v->touch_press ? DF(DIAL_SWOFF_TAP) : DF(DIAL_SWOFF_SELECT),
+          line, UI_C_TEXT_FAINT);
 }
 
 void dial_scene_build(dial_scene_t *s, const dk_face_t *f,

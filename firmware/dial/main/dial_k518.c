@@ -1,25 +1,18 @@
 /**
  * @file
- * @brief The Guition JC3636K518C's touch, input, click and power calls
- *        (dial.h), which do nothing yet.
+ * @brief The Guition JC3636K518C's power calls (dial.h), which do nothing
+ *        yet.
  *
- * The K518 build runs the BLE peripheral, its bind, the console, the face
- * task and the display with its boot face (dial_k518_lcd.c).  The touch,
- * the encoder, the haptic driver and the battery reading are later slices;
- * none of their pins is driven.
- * Until then the Dial sends no EVENT, its STATUS names the battery unknown,
- * and every update is refused, since no key confirms one.
+ * The battery reading, the LOW and EMPTY flags and the soft OFF are a
+ * later slice; GPIO1 is not read.  Until then the Dial's STATUS names the
+ * battery unknown.
  *
  * SPDX-License-Identifier: MIT
  */
-#include <stdatomic.h>
 #include <string.h>
 
 #include "dial.h"
 #include "driver/usb_serial_jtag.h"
-
-/** @brief The click per detent, as the panel's SCREEN flag sets it. */
-static atomic_bool s_sound = true;
 
 /* --- power ----------------------------------------------------------- */
 
@@ -42,85 +35,4 @@ void dial_supply_read(dial_supply_t *out)
 void dial_supply_inject(uint16_t mv)
 {
     (void)mv;
-}
-
-/* --- click ----------------------------------------------------------- */
-
-void dial_buzz_init(void)
-{
-}
-
-void dial_buzz_click(void)
-{
-}
-
-void dial_buzz_tone(uint32_t hz, uint32_t ms)
-{
-    (void)hz;
-    (void)ms;
-}
-
-/* --- touch ----------------------------------------------------------- */
-
-bool dial_touch_init(void)
-{
-    return false;
-}
-
-bool dial_touch_read(uint8_t *x, uint8_t *y)
-{
-    *x = 0u;
-    *y = 0u;
-    return false;
-}
-
-/* --- input ----------------------------------------------------------- */
-
-void dial_input_start(void)
-{
-}
-
-#if RCBENCH_DIAL_HOOKS
-bool dial_input_inject(uint8_t kind, int32_t arg, uint8_t x, uint8_t y)
-{
-    (void)kind;
-    (void)arg;
-    (void)x;
-    (void)y;
-    return false;
-}
-#endif
-
-void dial_input_sound(bool on)
-{
-    atomic_store(&s_sound, on);
-}
-
-bool dial_input_sound_on(void)
-{
-    return atomic_load(&s_sound);
-}
-
-void dial_input_link(bool any, uint32_t last_ms)
-{
-    (void)any;
-    (void)last_ms;
-}
-
-void dial_input_off(dial_face_view_t *v)
-{
-    v->off = 0u;
-    v->off_lit = false;
-    v->off_focus = false;
-    v->off_secs = 0u;
-}
-
-void dial_input_stats(dial_input_stats_t *out)
-{
-    memset(out, 0, sizeof *out);
-}
-
-bool dial_input_update_key(void)
-{
-    return false;
 }

@@ -44,6 +44,9 @@
 #define DIAL_PIN_LCD_D2    17 /**< ST77916 QSPI data 2 */
 #define DIAL_PIN_LCD_D3    18 /**< ST77916 QSPI data 3 */
 #define DIAL_PIN_LCD_RST   21 /**< ST77916 reset, low active */
+#define DIAL_PIN_HAPTIC_EN 38 /**< DRV2605 enable on V1.0 boards, high on;
+                                   V2.0 ties it to 3.3V and uses GPIO38
+                                   for the UART to the ESP32-U4WDH */
 #define DIAL_PIN_LCD_BL    47 /**< backlight, LEDC PWM, high on */
 /** @} */
 

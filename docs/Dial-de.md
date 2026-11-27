@@ -34,9 +34,33 @@ M5-Face, um die Mitte mit 3/2 genommen, eine Schriftgröße größer, jeder
 String innerhalb von Radius 150. Das Start-Face mit dem BLE-Namen und der
 Firmware-Version steht bis zum ersten Face. Eine Änderung eines Face
 zeichnet und sendet den ganzen Frame von 259.200 Bytes.
-Touch, Encoder, Vibration und Akkumessung tun noch nichts: Er sendet kein EVENT, sein STATUS nennt den
-Akku unbekannt, und er lehnt jedes Update ab, weil keine Taste es
-bestätigt. Sein INFO nennt Hardware 2 (`DK_HW_K518`); sein Image nennt die
+
+Der Encoder des K518 hat zwei Pulsleitungen, keine Quadratur: GPIO8 pulst
+je Rastung im Uhrzeigersinn einmal low, GPIO7 je Rastung gegen den
+Uhrzeigersinn. Je eine PCNT-Einheit (Pulszähler) zählt die fallenden
+Flanken einer Leitung; der Input-Task liest beide alle 5ms, und eine
+Leitung, die nach einem 5ms-Schritt ohne Puls pulst, ist eine Rastung.
+Zwei Rastungen einer Leitung mit weniger als 10ms Abstand zählen als eine.
+Der K518 hat keine Taste: Ein ruhig auf dem Glas liegender Finger ist die
+Bildschirmtaste. Vor 1.000ms abgehoben ohne Bewegung über 20px ist das
+PRESS; 1.000ms gehalten HOLD; 5s und 10s sind die Warnung zum Ausschalten
+und das Vergessen, wie beim M5. Eine Bewegung über 20px vor 1.000ms sendet
+nichts. Ein Abheben innerhalb von 500ms ist zusätzlich ein TAP an seinem
+Startpunkt, wie ihn das Glas des M5 sendet. Der Touch-Controller ist ein
+CST816S auf 0x15 (0x2A, wenn 0x15 nicht antwortet), alle 20ms gelesen;
+EVENT trägt seinen Punkt von 0-359 auf 0-239 skaliert. Die Update-Frage
+lautet TIPPEN: ANNEHMEN, die Ausschalt-Wahl TIPPEN: WÄHLEN. Statt eines
+Summers vibriert ein DRV2605 auf 0x5A mit seinen ROM-Effekten für einen
+LRA (Bibliothek 6): eine Rastung "Sharp Tick 3" (26), PRESS "Sharp Click
+100%" (4), HOLD und ein angenommenes Update "Strong Click 100%" (1), die
+5s-Warnung "Buzz 1 100%" (47), das Vergessen zweimal "Double Click 100%"
+(10). SOUND aus stoppt nur das Ticken der Rastung. Antwortet kein DRV2605
+auf 0x5A, geht GPIO38 auf high (der Enable der V1.0-Boards) und es folgt
+ein zweiter Versuch; ohne Antwort dann vibriert der K518 nicht. Die Zahl
+der Rastungen je Umdrehung (24 laut Guitions Demo-Code), die Ausrichtung
+der Touch-Achsen und die Stärke der Vibration sind noch nicht auf dem
+Gerät gelaufen. Akkumessung und Ausschalten tun noch nichts: Sein STATUS
+nennt den Akku unbekannt, und AUS lässt ihn an. Sein INFO nennt Hardware 2 (`DK_HW_K518`); sein Image nennt die
 Update-Art 5 (`BLEOTA_KIND_DIAL_K518`), also nimmt keines der beiden Geräte
 das Image des anderen.
 

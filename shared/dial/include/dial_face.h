@@ -102,6 +102,9 @@ typedef struct {
     bool        off_focus; /**< DIAL_OFF_ASK: the focus is on OFF, not on
                                 KEEP ON */
     uint8_t     off_secs; /**< DIAL_OFF_ASK: seconds left until KEEP ON */
+    bool        touch_press; /**< the press is a still touch on the glass
+                                  (the Guition JC3636K518C): the update
+                                  and the switch-off's choice say TAP */
 } dial_face_view_t;
 
 /** @brief Where a firmware update stands on the Dial. @{ */

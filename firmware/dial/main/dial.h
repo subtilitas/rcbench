@@ -6,7 +6,8 @@
  * dial_board.h, by the board the image is built for.  The K518 build runs
  * the BLE peripheral, the console, the face task and its display, which
  * shows the reading faces and otherwise the boot face (dial_k518_lcd.c,
- * dial_k518_screen.c); dial_k518.c holds its touch, input, buzzer and
+ * dial_k518_screen.c), and the input task with its encoder, still touch
+ * and vibration (dial_input.c, dial_k518_io.c); dial_k518.c holds its
  * power calls, which do nothing yet.
  *
  * Tasks: the input task (dial_input.c) polls the encoder, the buttons and
@@ -84,6 +85,23 @@ void dial_buzz_click(void);
  */
 void dial_buzz_tone(uint32_t hz, uint32_t ms);
 
+/** @brief What a cue confirms (dial_buzz_cue()). */
+typedef enum {
+    DIAL_CUE_PRESS,  /**< PRESS taken */
+    DIAL_CUE_HOLD,   /**< HOLD taken */
+    DIAL_CUE_WARN,   /**< the switch-off's warning at 5,000ms */
+    DIAL_CUE_FORGET, /**< the bound panel forgotten at 10,000ms */
+    DIAL_CUE_ACCEPT, /**< an update accepted */
+} dial_cue_t;
+
+/**
+ * @brief A confirmation.  The M5Stack Dial beeps for the warning (600Hz,
+ *        150ms) and the forget (1,000Hz, 200ms) and is silent for the
+ *        rest; the K518 vibrates for each (dial_k518_io.c).
+ * @param cue dial_cue_t
+ */
+void dial_buzz_cue(dial_cue_t cue);
+
 /* --- dial_lcd.c ------------------------------------------------------ */
 
 /**
@@ -133,7 +151,8 @@ bool dial_k518_boot(bool force);
 
 /* --- dial_touch.c ---------------------------------------------------- */
 
-/** @brief Set up the internal I2C bus and the FT3267 at 0x38.
+/** @brief Set up the internal I2C bus and the touch controller: the
+ *         FT3267 at 0x38, on the K518 the CST816S at 0x15 or 0x2A.
  *  @return true when the controller answered */
 bool dial_touch_init(void);
 /**
@@ -143,6 +162,14 @@ bool dial_touch_init(void);
  * @return true when a finger is on the glass
  */
 bool dial_touch_read(uint8_t *x, uint8_t *y);
+/**
+ * @brief The K518's touch point at the panel's native 0 to 359; the K518
+ *        build only (dial_k518_io.c).
+ * @param x the column, when touched
+ * @param y the row, when touched
+ * @return true when a finger is on the glass
+ */
+bool dial_k518_touch(uint16_t *x, uint16_t *y);
 
 /* --- dial_input.c ---------------------------------------------------- */
 

@@ -32,10 +32,32 @@ text blocks, a list's rim ticks and the rim decorations. A text block
 stands on the M5 face's row taken about the middle at 3/2, one font size
 up, every string inside radius 150. The boot face with the BLE name and
 the firmware version stands until the first face. A change of a face
-draws and sends the whole frame of 259,200 bytes. Its touch, encoder, vibration and battery reading
-do nothing yet: it sends no EVENT, its
-STATUS names the battery unknown, and it refuses every update, since no key
-confirms one. Its INFO names hardware 2 (`DK_HW_K518`); its image names
+draws and sends the whole frame of 259,200 bytes.
+
+The K518's encoder has two pulse lines, no quadrature: GPIO8 pulses low
+once per clockwise detent, GPIO7 once per anticlockwise detent. A PCNT
+(pulse counter) unit counts each line's falling edges; the input task
+reads both every 5ms, and a line that pulsed after a 5ms step without a
+pulse is one detent. Two detents of one line less than 10ms apart count
+as one. The K518 has no button: a finger held still on the glass is the
+screen button. Lifted before 1,000ms with no move over 20px it is PRESS;
+held 1,000ms it is HOLD; 5s and 10s are the switch-off's warning and the
+forget, as on the M5. A move over 20px before 1,000ms sends nothing. A
+lift within 500ms is also a TAP at its start, as the M5's glass sends one.
+The touch controller is a CST816S at 0x15 (0x2A when 0x15 does not
+answer), read every 20ms; EVENT carries its point scaled from 0-359 to
+0-239. The update's question reads TAP TO ACCEPT, the switch-off's choice
+TAP: SELECT. A DRV2605 at 0x5A vibrates instead of a buzzer, with its ROM
+effects for an LRA (library 6): a detent "Sharp Tick 3" (26), PRESS
+"Sharp Click 100%" (4), HOLD and an accepted update "Strong Click 100%"
+(1), the 5s warning "Buzz 1 100%" (47), the forget "Double Click 100%"
+(10) twice. SOUND off stops the detent's tick only. A DRV2605 that does
+not answer at 0x5A gets GPIO38 high (the enable of V1.0 boards) and a
+second probe; with no answer then, the K518 does not vibrate. The count
+of detents a turn (24 by Guition's demo code), the touch axes'
+orientation and the vibration strength are not run on the device yet.
+Its battery reading and the switch-off do nothing yet: its STATUS names
+the battery unknown, and OFF leaves it on. Its INFO names hardware 2 (`DK_HW_K518`); its image names
 update kind 5 (`BLEOTA_KIND_DIAL_K518`), so neither board takes the other's
 image.
 

@@ -32,6 +32,16 @@
  * panel.  A tap on the glass is a touch of at most 500ms that moves at
  * most 24px; it is TAP at the point it started.
  *
+ * The Guition JC3636K518C (CONFIG_RCBENCH_DIAL_BOARD_K518) runs the same
+ * task with its own sources (shared/dial/dk518_input.h): the encoder's two
+ * pulse lines on a PCNT unit each, GPIO8 clockwise and GPIO7
+ * anticlockwise, falling edges, the glitch filter at 1,000ns, decoded by
+ * dk518_enc_step(); the CST816S read every 20ms (dial_k518_io.c); and the
+ * still touch as the screen button (dk518_still_step()), which sends
+ * DK_BTN_TOUCH alone, never DK_BTN_SCREEN or DK_BTN_STAMP.  The cues
+ * vibrate: PRESS, HOLD, the warning, the forget, and a still lift while
+ * an update waits for its accept.  It has no mark pin.
+ *
  * A test build (RCBENCH_DIAL_HOOKS) takes input from the console as well:
  * an injected turn moves the counter one detent every 20ms, and the packet
  * of each injected detent raises GPIO1 (PORT.B G1) for 1ms when it is
@@ -46,6 +56,10 @@
 #include "dial.h"
 #include "dial_button.h"
 #include "devota.h"
+#if CONFIG_RCBENCH_DIAL_BOARD_K518
+#include "bleota.h"
+#include "dk518_input.h"
+#endif
 
 #include "driver/gpio.h"
 #include "driver/pulse_cnt.h"
@@ -101,20 +115,29 @@ typedef struct {
 
 /** @brief The input task's state. */
 typedef struct {
+#if CONFIG_RCBENCH_DIAL_BOARD_K518
+    pcnt_unit_handle_t pcnt_cw;  /**< the clockwise line's unit */
+    pcnt_unit_handle_t pcnt_ccw; /**< the anticlockwise line's unit */
+    dk518_enc_t   enc;           /**< the two lines' decode */
+    dk518_still_t still;         /**< the still touch: the screen button */
+    uint16_t      nx;            /**< the touch point, native px */
+    uint16_t      ny;            /**< the touch point, native px */
+#else
     pcnt_unit_handle_t pcnt;     /**< the encoder's unit */
     int32_t   detent;            /**< the last detent read from PCNT */
-    int16_t   counter;           /**< EVENT's counter, wrapping */
-    button_t  screen;            /**< GPIO42 */
-    button_t  stamp;             /**< GPIO0 */
     dial_button_t button;        /**< the screen button's gestures */
-    int32_t   local_turns;       /**< detents the switch-off's choice takes */
-    bool      touch_down;        /**< a finger is on the glass */
     bool      touch_moved;       /**< it moved more than TAP_MOVE */
-    uint8_t   tx;                /**< the touch point */
-    uint8_t   ty;                /**< the touch point */
     uint8_t   tx0;               /**< where the touch started */
     uint8_t   ty0;               /**< where the touch started */
     uint32_t  touch_ms;          /**< when it started */
+#endif
+    int16_t   counter;           /**< EVENT's counter, wrapping */
+    button_t  screen;            /**< GPIO42; never down on the K518 */
+    button_t  stamp;             /**< GPIO0; never down on the K518 */
+    int32_t   local_turns;       /**< detents the switch-off's choice takes */
+    bool      touch_down;        /**< a finger is on the glass */
+    uint8_t   tx;                /**< the touch point */
+    uint8_t   ty;                /**< the touch point */
     uint32_t  touch_poll_ms;     /**< the last touch read */
     pending_t queue[GESTURE_QUEUE]; /**< gestures waiting */
     unsigned  queued;            /**< how many */
@@ -132,6 +155,16 @@ typedef struct {
     bool      inj_mark;          /**< the next packet carries one */
 #endif
 } input_t;
+
+#if CONFIG_RCBENCH_DIAL_BOARD_K518
+/** @brief The screen button's gestures: the still touch's. */
+#define BUTTON (&s_in.still.button)
+/** @brief The update's key: a finger on the glass, for the `ota` task. */
+static atomic_bool s_key;
+#else
+/** @brief The screen button's gestures. */
+#define BUTTON (&s_in.button)
+#endif
 
 /** @brief The task's state; the task alone touches it. */
 static input_t s_in;
@@ -160,8 +193,10 @@ typedef struct {
 } inject_t;
 /** @brief The console's queue to the task. */
 static QueueHandle_t s_inject;
+#ifdef DIAL_PIN_MARK
 /** @brief The timer that ends the mark on GPIO1. */
 static esp_timer_handle_t s_mark_off;
+#endif
 #endif
 
 /** @brief The ms clock, low 32 bits. @return ms since start */
@@ -244,7 +279,7 @@ static void turned(int32_t d, uint32_t now)
     if (atomic_load(&s_sound)) {
         dial_buzz_click();
     }
-    if (dial_button_local(&s_in.button)) {
+    if (dial_button_local(BUTTON)) {
         s_in.local_turns += d;
         return;
     }
@@ -252,6 +287,7 @@ static void turned(int32_t d, uint32_t now)
     dial_ble_turned(now);
 }
 
+#if !CONFIG_RCBENCH_DIAL_BOARD_K518
 /**
  * @brief Debounce one button.
  * @param b   the button
@@ -271,13 +307,85 @@ static bool button_poll(button_t *b, uint32_t now)
     }
     return false;
 }
+#endif
 
-/** @brief The screen button: PRESS and HOLD for the panel, the
- *         switch-off's warning and choice, the forget; and the
- *         switch-off's state for the face.  @param now the time */
-static void screen_button(uint32_t now)
+/** @brief The screen button's actions, and the switch-off's state for
+ *         the face.  @param act DIAL_BTN_* bits  @param now the time */
+static void button_acts(unsigned act, uint32_t now)
 {
     dial_face_view_t v;
+    if ((act & DIAL_BTN_PRESS) != 0u) {
+        gesture_push(DK_G_PRESS, 0, 0);
+        dial_buzz_cue(DIAL_CUE_PRESS);
+    }
+    if ((act & DIAL_BTN_HOLD) != 0u) {
+        gesture_push(DK_G_HOLD, 0, 0);
+        dial_buzz_cue(DIAL_CUE_HOLD);
+    }
+    if ((act & DIAL_BTN_WARN) != 0u) {
+        ESP_LOGI(TAG, "5s hold: release to switch off, hold on to unbind");
+        dial_buzz_cue(DIAL_CUE_WARN);
+    }
+    if ((act & DIAL_BTN_FORGET) != 0u) {
+        ESP_LOGI(TAG, "10s hold: the bound panel is forgotten");
+        dial_ble_forget();
+        dial_buzz_cue(DIAL_CUE_FORGET);
+    }
+    if ((act & DIAL_BTN_KEEP) != 0u) {
+        ESP_LOGI(TAG, "switch-off: KEEP ON");
+    }
+    if ((act & DIAL_BTN_OFF) != 0u) {
+        ESP_LOGI(TAG, "switch-off: OFF");
+        dial_power_off();
+    }
+    dial_button_view(BUTTON, now, &v);
+    atomic_store(&s_off, (uint_least32_t)v.off | (v.off_lit ? 4u : 0u)
+                             | (v.off_focus ? 8u : 0u)
+                             | ((uint32_t)v.off_secs << 8));
+}
+
+#if CONFIG_RCBENCH_DIAL_BOARD_K518
+/** @brief The touch, read every TOUCH_MS, stepped every DIAL_INPUT_MS as
+ *         the still touch: the screen button, the TAP, and the update's
+ *         accept.  @param now the time */
+static void screen_button(uint32_t now)
+{
+    dk518_still_out_t o;
+    devota_view_t dv;
+    if (now - s_in.touch_poll_ms >= TOUCH_MS) {
+        s_in.touch_poll_ms = now;
+        s_in.touch_down = dial_k518_touch(&s_in.nx, &s_in.ny);
+        atomic_store(&s_key, s_in.touch_down);
+        if (s_in.touch_down) {
+            s_in.tx = dk518_touch_scale(s_in.nx);
+            s_in.ty = dk518_touch_scale(s_in.ny);
+        }
+    }
+    /* The update's offer reads the touch itself (dial_ble.c,
+     * dial_input_update_key()): its press must not answer a hidden
+     * choice. */
+    const bool yield = devota_active();
+    const unsigned act = dk518_still_step(&s_in.still, s_in.touch_down,
+                                          s_in.nx, s_in.ny,
+                                          s_in.local_turns, yield, now, &o);
+    s_in.local_turns = 0;
+    if (o.tap) {
+        gesture_push(DK_G_TAP, o.tap_x, o.tap_y);
+    }
+    if (yield && o.still_lift) {
+        devota_view(&dv);
+        if (dv.st == BLEOTA_DEV_CONFIRM) {
+            dial_buzz_cue(DIAL_CUE_ACCEPT);
+        }
+    }
+    button_acts(act, now);
+}
+#else
+/** @brief The screen button: PRESS and HOLD for the panel, the
+ *         switch-off's warning and choice, the forget.  @param now the
+ *         time */
+static void screen_button(uint32_t now)
+{
     unsigned act = 0u;
     (void)button_poll(&s_in.screen, now);
     if (devota_active()) {
@@ -289,32 +397,7 @@ static void screen_button(uint32_t now)
                                s_in.local_turns, now);
     }
     s_in.local_turns = 0;
-    if ((act & DIAL_BTN_PRESS) != 0u) {
-        gesture_push(DK_G_PRESS, 0, 0);
-    }
-    if ((act & DIAL_BTN_HOLD) != 0u) {
-        gesture_push(DK_G_HOLD, 0, 0);
-    }
-    if ((act & DIAL_BTN_WARN) != 0u) {
-        ESP_LOGI(TAG, "5s hold: release to switch off, hold on to unbind");
-        dial_buzz_tone(600, 150);
-    }
-    if ((act & DIAL_BTN_FORGET) != 0u) {
-        ESP_LOGI(TAG, "10s hold: the bound panel is forgotten");
-        dial_ble_forget();
-        dial_buzz_tone(1000, 200);
-    }
-    if ((act & DIAL_BTN_KEEP) != 0u) {
-        ESP_LOGI(TAG, "switch-off: KEEP ON");
-    }
-    if ((act & DIAL_BTN_OFF) != 0u) {
-        ESP_LOGI(TAG, "switch-off: OFF");
-        dial_power_off();
-    }
-    dial_button_view(&s_in.button, now, &v);
-    atomic_store(&s_off, (uint_least32_t)v.off | (v.off_lit ? 4u : 0u)
-                             | (v.off_focus ? 8u : 0u)
-                             | ((uint32_t)v.off_secs << 8));
+    button_acts(act, now);
 }
 
 /** @brief Read the touch controller every TOUCH_MS; a short touch that
@@ -350,8 +433,10 @@ static void touch_poll(uint32_t now)
         s_in.ty = y;
     }
 }
+#endif
 
 #if RCBENCH_DIAL_HOOKS
+#ifdef DIAL_PIN_MARK
 /** @brief End the mark on GPIO1. @param arg unused */
 static void mark_off(void *arg)
 {
@@ -366,6 +451,12 @@ static void mark(void)
     esp_timer_stop(s_mark_off);
     esp_timer_start_once(s_mark_off, MARK_US);
 }
+#else
+/** @brief The K518 has no mark pin: GPIO1 is its cell's divider. */
+static void mark(void)
+{
+}
+#endif
 
 bool dial_input_inject(uint8_t kind, int32_t arg, uint8_t x, uint8_t y)
 {
@@ -477,6 +568,38 @@ static void send_poll(uint32_t now)
     s_stats.counter = e.counter;
 }
 
+#if CONFIG_RCBENCH_DIAL_BOARD_K518
+/** @brief Read both lines' counts and turn by the detents they give.
+ *  @param now the time */
+static void encoder_poll(uint32_t now)
+{
+    int cw = 0;
+    int ccw = 0;
+    if (pcnt_unit_get_count(s_in.pcnt_cw, &cw) == ESP_OK
+        && pcnt_unit_get_count(s_in.pcnt_ccw, &ccw) == ESP_OK) {
+        const int32_t d = dk518_enc_step(&s_in.enc, cw, ccw);
+        if (d != 0) {
+            turned(d, now);
+        }
+    }
+}
+#else
+/** @brief Read the count and turn when the detent moved.
+ *  @param now the time */
+static void encoder_poll(uint32_t now)
+{
+    int count = 0;
+    if (pcnt_unit_get_count(s_in.pcnt, &count) == ESP_OK) {
+        const int32_t d = dk_detent_follow(s_in.detent,
+                                           (int32_t)count * DIAL_ENC_SIGN);
+        if (d != s_in.detent) {
+            turned(d - s_in.detent, now);
+            s_in.detent = d;
+        }
+    }
+}
+#endif
+
 /** @brief The input task: every DIAL_INPUT_MS. @param arg unused */
 static void input_task(void *arg)
 {
@@ -484,26 +607,85 @@ static void input_task(void *arg)
     (void)arg;
     for (;;) {
         const uint32_t now = now_ms();
-        int count = 0;
-        if (pcnt_unit_get_count(s_in.pcnt, &count) == ESP_OK) {
-            const int32_t d = dk_detent_follow(s_in.detent,
-                                               (int32_t)count * DIAL_ENC_SIGN);
-            if (d != s_in.detent) {
-                turned(d - s_in.detent, now);
-                s_in.detent = d;
-            }
-        }
+        encoder_poll(now);
 #if RCBENCH_DIAL_HOOKS
         inject_poll(now);
 #endif
         screen_button(now);
+#if !CONFIG_RCBENCH_DIAL_BOARD_K518
         (void)button_poll(&s_in.stamp, now);
         touch_poll(now);
+#endif
         send_poll(now);
         vTaskDelayUntil(&wake, pdMS_TO_TICKS(DIAL_INPUT_MS));
     }
 }
 
+#if CONFIG_RCBENCH_DIAL_BOARD_K518
+/**
+ * @brief One line's PCNT unit: its falling edges counted up, the glitch
+ *        filter at ENC_GLITCH_NS, the pull-up on.
+ * @param pin  the line
+ * @param unit its unit
+ * @return true when the unit runs
+ */
+static bool line_init(int pin, pcnt_unit_handle_t *unit)
+{
+    const pcnt_unit_config_t cfg = {
+        .low_limit = -ENC_LIMIT,
+        .high_limit = ENC_LIMIT,
+        .flags.accum_count = 1,
+    };
+    const pcnt_glitch_filter_config_t filter = {
+        .max_glitch_ns = ENC_GLITCH_NS,
+    };
+    const pcnt_chan_config_t ch = {
+        .edge_gpio_num = pin,
+        .level_gpio_num = -1,
+    };
+    pcnt_channel_handle_t c = NULL;
+    if (pcnt_new_unit(&cfg, unit) != ESP_OK
+        || pcnt_unit_set_glitch_filter(*unit, &filter) != ESP_OK
+        || pcnt_new_channel(*unit, &ch, &c) != ESP_OK
+        || pcnt_channel_set_edge_action(c, PCNT_CHANNEL_EDGE_ACTION_HOLD,
+                                        PCNT_CHANNEL_EDGE_ACTION_INCREASE)
+               != ESP_OK) {
+        return false;
+    }
+    gpio_pullup_en(pin);
+    return pcnt_unit_add_watch_point(*unit, ENC_LIMIT) == ESP_OK
+           && pcnt_unit_enable(*unit) == ESP_OK
+           && pcnt_unit_clear_count(*unit) == ESP_OK
+           && pcnt_unit_start(*unit) == ESP_OK;
+}
+
+/** @brief Set up a PCNT unit for each of the encoder's lines.
+ *  @return true when both run */
+static bool encoder_init(void)
+{
+    return line_init(DIAL_PIN_ENC_CW, &s_in.pcnt_cw)
+           && line_init(DIAL_PIN_ENC_CCW, &s_in.pcnt_ccw);
+}
+
+void dial_input_start(void)
+{
+    memset(&s_in, 0, sizeof s_in);
+    dk518_enc_init(&s_in.enc);
+    dk518_still_init(&s_in.still);
+    if (!encoder_init()) {
+        ESP_LOGE(TAG, "the encoder's PCNT units did not start");
+    }
+#if RCBENCH_DIAL_HOOKS
+    s_inject = xQueueCreate(8, sizeof(inject_t));
+#endif
+    xTaskCreate(input_task, "input", INPUT_STACK, NULL, 5, NULL);
+}
+
+bool dial_input_update_key(void)
+{
+    return atomic_load(&s_key);
+}
+#else
 /** @brief Set up PCNT for the encoder, x4 with the glitch filter.
  *  @return true when the unit runs */
 static bool encoder_init(void)
@@ -587,3 +769,4 @@ bool dial_input_update_key(void)
 {
     return gpio_get_level(DIAL_PIN_BTN) == 0;
 }
+#endif
