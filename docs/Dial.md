@@ -1,12 +1,20 @@
-# The M5Stack Dial
+# The Dial
 
 <sub>**English** · [Deutsch](Dial-de.md)</sub>
 
-The M5Stack Dial v1.1 is a round knob with a 240 x 240 pixel display. In
-rcbench it is a wireless knob for the panel over Bluetooth LE (Low Energy,
-BLE). Its display shows what the knob acts on. This page covers its
-firmware (`firmware/dial`) and the protocol between it and the panel
-(`protocols/dialknob`).
+The Dial is a round wireless knob for the panel over Bluetooth LE (Low
+Energy, BLE). Its display shows what the knob acts on. One firmware
+(`firmware/dial`) builds for two boards:
+
+| Board | Display | Button | Click | Image |
+| --- | --- | --- | --- | --- |
+| M5Stack Dial v1.1 | 240 x 240, GC9A01 | the screen button under the glass | buzzer | `rcbench-dial-<version>.bin` |
+| Guition JC3636K518C ("K518") | 360 x 360, ST77916 | none: a still finger on the glass | vibration motor | `rcbench-dial-k518-<version>.bin` |
+
+This page covers the firmware and the protocol between the Dial and the
+panel (`protocols/dialknob`). Where it names no board, a section holds for
+both; [The Guition K518](#the-guition-k518) holds what differs on the
+K518.
 
 What exists: the protocol module with its host tests; the Dial's
 firmware: the power latch, the encoder, the buttons, the touch glass, the
@@ -20,102 +28,6 @@ BLE from SETUP > UPDATES > SINGLE UPDATES ([Update over Bluetooth
 LE](#update-over-bluetooth-le)). The programmers' screens (KST, Hitec,
 ESC) and pairing are later slices.
 
-The same firmware builds for a second board, the Guition JC3636K518C
-knob: an ESP32-S3R8 with a round 360 x 360 display, touch, an encoder
-without a push switch and a vibration motor. Its build
-([Flashing over USB](#flashing-over-usb)) runs the BLE peripheral, the
-bind, the face task, the console and the display. The display, an ST77916
-over QSPI (quad SPI) at 40MHz, shows its own faces, drawn at 360 x 360:
-every face of the M5, from the same scene: MOTOR & ESC and SERVO with six
-readings, six rings, title, pill and hints, and the other faces with their
-text blocks, a list's rim ticks and the rim decorations. A text block
-stands on the M5 face's row taken about the middle at 3/2, one font size
-up, every string inside radius 150. The boot face with the BLE name and
-the firmware version stands until the first face. A change of a face
-draws and sends the whole frame of 259,200 bytes.
-
-The K518's encoder has two pulse lines, no quadrature: GPIO8 pulses low
-once per clockwise detent, GPIO7 once per anticlockwise detent. A PCNT
-(pulse counter) unit counts each line's falling edges; the input task
-reads both every 5ms, and a line that pulsed after a 5ms step without a
-pulse is one detent. Two detents of one line less than 10ms apart count
-as one. The K518 has no button: a finger held still on the glass is the
-screen button. Lifted before 1,000ms with no move over 20px it is PRESS;
-held 1,000ms it is HOLD; 5s and 10s are the switch-off's warning and the
-forget, as on the M5. A move over 20px before 1,000ms sends nothing. A
-lift within 500ms is also a TAP at its start, as the M5's glass sends one.
-The touch controller is a CST816S at 0x15 (0x2A when 0x15 does not
-answer), read every 20ms; EVENT carries its point scaled from 0-359 to
-0-239. The update's question reads TAP TO ACCEPT, the switch-off's choice
-TAP: SELECT. The update takes the still touch alone: a still lift before
-1,000ms accepts it, a still touch of 1,000ms refuses it, and a swipe does
-neither. Only a touch that starts while the question stands answers it; a
-touch from before it, from before a lost link, or from a question that
-another one replaced, answers nothing until it lifts. A touch counts only
-when a read of the glass, every 20ms, found no finger while the question
-of that offer was already on the display, sent whole by the face task
-(every 50ms): a tap within the question's first 20ms on the glass needs a
-second tap. A failed I2C (inter-integrated circuit) read of the glass
-keeps the last state: it never ends a touch and never counts as an empty
-glass. The 5th failed read in a row (100ms) cancels the touch under way
-without PRESS, TAP or an answer to the question; the finger, read again,
-starts nothing until the glass reads empty. While BATTERY EMPTY covers
-an open question, no touch answers it. Each question has
-its own number, and the update takes the key only for the question it
-was made in. A DRV2605 at 0x5A vibrates instead of a buzzer, with its ROM
-effects for an LRA (library 6): a detent "Sharp Tick 3" (26), PRESS
-"Sharp Click 100%" (4), HOLD and an accepted update "Strong Click 100%"
-(1), the 5s warning "Buzz 1 100%" (47), the forget "Double Click 100%"
-(10) twice. SOUND off stops the detent's tick only. A DRV2605 that does
-not answer at 0x5A gets GPIO38 high (the enable of V1.0 boards) and a
-second probe; with no answer then, the K518 does not vibrate. The count
-of detents a turn (24 by Guition's demo code), the touch axes'
-orientation and the vibration strength are not run on the device yet.
-
-The K518 reads its supply on GPIO1 (ADC1 channel 0, 12dB, calibrated)
-through a 10k/10k divider once a second: 16 samples, the lowest and
-highest dropped, the rest averaged, times 2. The divider sits on the rail
-behind the power path, so on USB it reads VBUS less a diode, not the cell.
-A reading above 4,450mV, or a USB host on the console's port, is USB: STATUS
-sets its USB flag and names the battery unknown. A reading below 2,500mV
-is no plausible cell and unknown as well. Otherwise STATUS carries the
-cell's voltage. LOW (STATUS bit4) sets after 3 readings in a row below
-3,500mV and ends after 3 at 3,600mV or more; EMPTY (bit5) the same at
-3,350mV and 3,450mV. EMPTY shows BATTERY EMPTY for 3s, then the K518
-switches itself off. The faces' battery share is linear from 3,300mV (0%)
-to 4,200mV (100%). No charge status pin is known, so STATUS never sets
-CHARGING.
-
-The slide switch cuts the power. OFF in the switch-off choice and an empty
-cell put the K518 into deep sleep: the ST77916 off and asleep (DISPOFF,
-then SLPIN and 120ms, sent once the face task's frame on the wire has
-ended, up to 2000ms, and no frame after them), its backlight's pin held low, the touch controller
-and the DRV2605 in their own sleep. A turn of the knob
-(either encoder line low) wakes it into a new start, as does the slide
-switch. The deep sleep current is not measured; the divider alone draws
-about 190µA from a 3.8V cell. The ADC's accuracy against a meter is not run on
-the device yet. Its INFO names hardware 2 (`DK_HW_K518`); its image names
-update kind 5 (`BLEOTA_KIND_DIAL_K518`), so neither board takes the other's
-image.
-
-![The K518's boot face](img/dial-k518-boot.png)
-![MOTOR & ESC on the K518, ARMED](img/dial-k518-motor-armed.png)
-![MOTOR & ESC on the K518, SAFE](img/dial-k518-motor-safe.png)
-![SERVO LIVE on the K518, ARMED](img/dial-k518-servo-live.png)
-![a list on the K518](img/dial-k518-navigation.png)
-![a value being set on the K518](img/dial-k518-value-set.png)
-![LINK LOST on the K518](img/dial-k518-link-lost.png)
-![the ended link on the K518](img/dial-k518-link-ended.png)
-![waiting for the panel on the K518](img/dial-k518-waiting.png)
-![no bound panel on the K518](img/dial-k518-bind.png)
-![a screen the knob does nothing on on the K518](img/dial-k518-other.png)
-![the update offered on the K518](img/dial-k518-update-ask.png)
-![the update coming in on the K518](img/dial-k518-update-send.png)
-![a signature refused on the K518](img/dial-k518-update-sig.png)
-![the switch-off warning on the K518](img/dial-k518-off-warn.png)
-![the switch-off choice on the K518](img/dial-k518-off-ask.png)
-![an empty cell on the K518](img/dial-k518-batt-empty.png)
-
 M5Stack, Dial and Stamp-S3A are names of their owner and its products,
 Guition and JC3636K518C are names of their owner and its product, and
 Bluetooth is a trademark of its owner. rcbench is independent: it is not
@@ -124,7 +36,7 @@ device the panel talks to.
 [Legal notice and disclaimer](../README.md#legal-notice-and-disclaimer) holds
 the project's notice.
 
-## The device
+## The M5Stack Dial
 
 | Part | What it is | Pins |
 | --- | --- | --- |
@@ -142,6 +54,214 @@ the project's notice.
 The cell is held to 1,000mAh or less until the charge current is measured:
 the charger (TP4057 in the schematic text) and its current are not
 confirmed.
+
+## The Guition K518
+
+The Guition JC3636K518C ("K518" in the code, `GUITION K518` on the panel)
+is a round knob with an ESP32-S3R8, a 360 x 360 display, a touch glass, an
+encoder without a push switch, a vibration motor and a LiPo cell. It runs
+the Dial's firmware built with `sdkconfig.k518`: the same protocol, bind,
+link, navigation, faces, switch-off and update as the M5Stack Dial. Its
+INFO names hardware 2 (`DK_HW_K518`); its image names update kind 5
+(`BLEOTA_KIND_DIAL_K518`), so neither board takes the other's image.
+
+| Part | What it is | Pins |
+| --- | --- | --- |
+| Module | ESP32-S3R8: 8MB octal PSRAM (pseudo-static RAM) in the package, 16MB flash | |
+| Display | ST77916, 1.8 inch, 360 x 360, QSPI (quad SPI) at 40MHz, RGB565 | SCLK GPIO13, CS GPIO14, D0 to D3 GPIO15 to GPIO18, reset GPIO21, backlight GPIO47 (LEDC PWM, high on) |
+| Touch | CST816S at I2C address 0x15 (0x2A when 0x15 does not answer), 400kHz, read every 20ms | SDA GPIO11, SCL GPIO12, reset GPIO10, interrupt GPIO9 (not used) |
+| Encoder | two pulse lines, no quadrature, one low pulse a detent; no push switch | clockwise GPIO8, anticlockwise GPIO7 |
+| Vibration | DRV2605 at I2C address 0x5A with an LRA (linear resonant actuator) | the touch's I2C bus; enable GPIO38 on V1.0 boards |
+| Buttons | none on the glass or the knob; BOOT behind the pinhole beside USB-C, read at reset | GPIO0 |
+| Power | slide switch on the base (left is ON), USB-C, one LiPo cell on an MX1.25 socket, TP4055 charger | |
+| Supply reading | the rail behind the power path through a 10k/10k divider | GPIO1, ADC1 (analog-to-digital converter 1) channel 0 |
+| Also on the board | an ESP32-U4WDH with its factory audio image, a DAC (digital-to-analog converter) to a 3.5mm jack, microSD, a microphone | not used by rcbench |
+
+The image is 933,280 bytes, 29.7% of the 3,145,728-byte update slot. The
+upper 8MB of the flash stay free. The cell's capacity, the TP4055's
+charge current and the board revision (V1.0 or V2.0) are unknown.
+
+### Power and the cable
+
+Power the K518 from a USB-A port with a USB-A to USB-C cable, 5V and 1A or
+more. Guition's leaflet asks for the A-to-C cable and a stable 5V/1A supply.
+
+- A USB-C to USB-C cable gives the K518 no power and no charge from a
+  USB-C source: by inference, the board lacks the 5.1k CC (configuration
+  channel) pull-downs that make a USB-C source switch on its 5V.
+- One plug orientation reaches the USB Serial/JTAG port of the Dial's
+  ESP32-S3, the console and the flashing port. The other reaches the
+  ESP32-U4WDH through a CH340 USB-UART bridge. When the computer shows
+  no port of the Dial's ESP32-S3 (`/dev/ttyACM0` on Linux), turn the plug
+  over.
+- The 1A covers the run current, about 1.3W by Guition's data, and the
+  charge current.
+- The slide switch cuts the power. Whether the TP4055 charges the cell
+  with the switch OFF is not run on the device yet.
+
+The K518 reads its supply on GPIO1 (12dB, calibrated) once a second: 16
+samples, the lowest and highest dropped, the rest averaged, times 2. The
+divider sits on the rail behind the power path, so on USB it reads VBUS
+(the USB supply line) less a diode, not the cell.
+
+| Reading | STATUS | DIAL BATTERY on the panel |
+| --- | --- | --- |
+| above 4,450mV, or a USB host on the console's port | USB flag, battery unknown | `USB` |
+| below 2,500mV | battery unknown | `NOT MEASURED` |
+| 2,500mV to 4,450mV | the cell's voltage | the volts, for example `3.92V` |
+| 3 readings in a row below 3,500mV, until 3 at 3,600mV or more | LOW, bit4 | `LOW 3.45V` |
+| 3 readings in a row below 3,350mV, until 3 at 3,450mV or more | EMPTY, bit5 | `EMPTY 3.30V` |
+
+EMPTY shows `BATTERY EMPTY` for 3s, then the K518 switches itself off
+([Switching off the K518](#switching-off-the-k518)). The link drops, and
+the panel's loss rule switches an ARMED bench SAFE ([Safety](#safety)).
+The battery on the faces shows a share, linear from 3,300mV (0%) to
+4,200mV (100%).
+No charge status pin is known, so STATUS never sets CHARGING.
+
+### The display and the faces
+
+The K518 draws its own faces at 360 x 360, every face of the M5, from the
+same scene: MOTOR & ESC and SERVO with six readings, six rings, title,
+pill and hints, and the other faces with their text blocks, a list's rim
+ticks and the rim decorations. A text block stands on the M5 face's row
+taken about the middle at 3/2, one font size up, every string inside
+radius 150. The boot face with the BLE name and the firmware version
+stands until the first face. A change of a face draws and sends the whole
+frame of 259,200 bytes from PSRAM, about 13ms on the wire at 40MHz.
+
+![The K518's boot face](img/dial-k518-boot.png)
+![MOTOR & ESC on the K518, ARMED](img/dial-k518-motor-armed.png)
+![MOTOR & ESC on the K518, SAFE](img/dial-k518-motor-safe.png)
+![SERVO LIVE on the K518, ARMED](img/dial-k518-servo-live.png)
+![a list on the K518](img/dial-k518-navigation.png)
+![a value being set on the K518](img/dial-k518-value-set.png)
+![LINK LOST on the K518](img/dial-k518-link-lost.png)
+![the ended link on the K518](img/dial-k518-link-ended.png)
+![waiting for the panel on the K518](img/dial-k518-waiting.png)
+![no bound panel on the K518](img/dial-k518-bind.png)
+![a screen the knob does nothing on on the K518](img/dial-k518-other.png)
+
+### The encoder
+
+GPIO8 pulses low once per clockwise detent, GPIO7 once per anticlockwise
+detent. A PCNT (pulse counter) unit counts each line's falling edges; the
+input task reads both every 5ms, and a line that pulsed after a 5ms step
+without a pulse is one detent. Two detents of one line less than 10ms
+apart count as one. The count of detents a turn is not measured; Guition's
+demo code says 24.
+
+### The touch as the button
+
+The K518 has no button: a finger held still on the glass is the screen
+button.
+
+| A still finger on the glass | What follows |
+| --- | --- |
+| lifted before 1,000ms, no move over 20px | PRESS |
+| lifted within 500ms | also a TAP at its start, as the M5's glass sends one |
+| held 1,000ms | HOLD, once |
+| held 5,000ms and 10,000ms | the switch-off's warning and the forget, as on the M5 ([Switching off](#switching-off)) |
+| moved over 20px before 1,000ms | nothing |
+
+HOLD disarms on MOTOR & ESC and SERVO LIVE, so a hand resting still on the
+glass for 1s while ARMED disarms the bench. EVENT carries the touch point
+scaled from 0-359 to 0-239. The update's question reads `TAP TO ACCEPT`,
+the switch-off's choice `TAP: SELECT`.
+
+The update takes the still touch alone: a still lift before 1,000ms
+accepts it, a still touch of 1,000ms refuses it, and a swipe does neither.
+Only a touch that starts while the question stands answers it; a touch
+from before it, from before a lost link, or from a question that another
+one replaced, answers nothing until it lifts. A touch counts only when a
+read of the glass, every 20ms, found no finger while the question of that
+offer was already on the display, sent whole by the face task (every
+50ms): a tap within the question's first 20ms on the glass needs a second
+tap. Each question has its own number, and the update takes the key only
+for the question it was made in. While `BATTERY EMPTY` covers an open
+question, no touch answers it.
+
+A failed I2C (inter-integrated circuit) read of the glass keeps the last
+state: it never ends a touch and never counts as an empty glass. The 5th
+failed read in a row (100ms) cancels the touch under way without PRESS,
+TAP or an answer to the question; the finger, read again, starts nothing
+until the glass reads empty.
+
+### Vibration
+
+The DRV2605 plays its ROM effects for an LRA (library 6) in place of the
+M5's buzzer:
+
+| Event | Effect |
+| --- | --- |
+| a detent | "Sharp Tick 3" (26) |
+| PRESS | "Sharp Click 100%" (4) |
+| HOLD, an accepted update | "Strong Click 100%" (1) |
+| the 5s warning | "Buzz 1 100%" (47) |
+| the forget | "Double Click 100%" (10), twice |
+
+SOUND off stops the detent's tick only. A DRV2605 that does not answer at
+0x5A gets GPIO38 high (the enable of V1.0 boards) and a second probe; with
+no answer then, the K518 does not vibrate.
+
+### Switching off the K518
+
+The slide switch cuts the power. `OFF` in the switch-off's choice and an
+empty cell put the K518 into deep sleep: the ST77916 off and asleep
+(DISPOFF, then SLPIN and 120ms, sent once the face task's frame on the
+wire has ended, up to 2000ms, and no frame after them), its backlight's
+pin held low, the touch controller and the DRV2605 in their own sleep. A
+turn of the knob (either encoder line low) wakes it into a new start, as
+does the slide switch. With the switch ON the cell keeps feeding the deep
+sleep: the divider alone draws about 190µA from a 3.8V cell, the whole
+board's deep sleep current is not measured. For storage, slide the switch
+OFF.
+
+![the switch-off warning on the K518](img/dial-k518-off-warn.png)
+![the switch-off choice on the K518](img/dial-k518-off-ask.png)
+![an empty cell on the K518](img/dial-k518-batt-empty.png)
+
+### Flashing the K518
+
+The release carries `rcbench-dial-k518-merged-<version>.bin` for offset
+0x0 and `rcbench-dial-k518-<version>.bin`, the application alone, each
+with its `.sig`, and their SHA-256 sums in `SHA256SUMS`. The web flasher
+lists the merged image as "Dial on the Guition JC3636K518C knob".
+
+1. Check the image: `sha256sum -c SHA256SUMS --ignore-missing`.
+2. Connect the K518 with the USB-A to USB-C cable
+   ([Power and the cable](#power-and-the-cable)). A K518 that runs this
+   firmware is reset into the ROM download mode by esptool. A K518 that
+   does not: hold BOOT behind the pinhole beside USB-C with a pin while
+   plugging in the cable.
+3. Flash:
+
+   ```bash
+   python -m esptool --chip esp32s3 -p /dev/ttyACM0 -b 460800 \
+     write-flash 0x0 rcbench-dial-k518-merged-0.23.18.bin
+   ```
+
+4. The K518 restarts and shows `NOT BOUND` and its name, `DIAL-` and the
+   last 4 hex digits of its address.
+
+The merged image writes the partition table, so the NVS at 0x9000 is
+written anew and the bound panel is forgotten. The ESP32-U4WDH keeps its
+factory image; rcbench does not flash it.
+
+### The update and the signature
+
+The panel offers the K518 `rcbench-dial-k518-<version>.bin`, picked by the
+hardware its INFO names ([The panel](#the-panel)); the panel image carries
+the M5's image only, so the K518's is downloaded from the release or read
+from `BENCH/UPDATES` on the SD card. The K518 checks the release signature
+twice, as the M5Stack Dial does ([Update over Bluetooth
+LE](#update-over-bluetooth-le)): over BEGIN's SHA-256 before the question,
+and over its own SHA-256 after the last byte. A refused signature shows
+`SIGNATURE REFUSED` and `FIRMWARE KEPT` for 5s.
+
+![the update offered on the K518](img/dial-k518-update-ask.png)
+![the update coming in on the K518](img/dial-k518-update-send.png)
+![a signature refused on the K518](img/dial-k518-update-sig.png)
 
 ## Safety
 
@@ -219,8 +339,11 @@ idf.py -B build-k518 -D SDKCONFIG=build-k518/sdkconfig \
 
 The board is a choice of `firmware/dial/main/Kconfig.projbuild`;
 `sdkconfig.k518` picks the K518 and its 16MB flash and 8MB octal PSRAM.
-CI names the K518's images `rcbench-dial-k518-<version>.bin` and
-`rcbench-dial-k518-merged-<version>.bin`; a release does not carry them.
+The release carries the K518's images as `rcbench-dial-k518-<version>.bin`
+and `rcbench-dial-k518-merged-<version>.bin`
+([Flashing the K518](#flashing-the-k518)). The test builds with the
+console's hooks, `rcbench-dial-hooks-merged-<version>.bin` and
+`rcbench-dial-k518-hooks-merged-<version>.bin`, stay CI artifacts.
 
 The partition table (`firmware/dial/partitions.csv`) holds NVS, two
 application slots of 3,072kB and their otadata. The image is
@@ -247,7 +370,11 @@ shows the switch-off's warning ([Switching off](#switching-off)).
 
 ## Switching off
 
-The screen button is the Dial's WAKE button: on the cell alone, a press
+The holds and the choice below hold for both boards; the power differs.
+On the K518, `OFF` and an empty cell mean deep sleep
+([Switching off the K518](#switching-off-the-k518)).
+
+The screen button is the M5Stack Dial's WAKE button: on the cell alone, a press
 switches the Dial on, and the firmware holds the power with GPIO46 high.
 While the button is down the Dial has power, so the power drops only once
 the button is up.
@@ -284,7 +411,7 @@ range that connects first, or that spoofs the bound address, is taken.
 
 The panel sends the Dial's application image over BLE. The panel image
 does not carry it: the DIAL step's hold downloads `rcbench-dial-<version>.bin`
-of the release the panel runs, or reads it from the SD card's
+(the K518's `rcbench-dial-k518-<version>.bin`) of the release the panel runs, or reads it from the SD card's
 `BENCH/UPDATES`, and checks it first
 ([Screens: Device images](Screens.md#device-images)). The
 protocol is `protocols/bleota`
@@ -830,6 +957,10 @@ documentation and by M5Unified; GPIO1 is the pin by number either way.
 
 ## Limits
 
+The items name the M5Stack Dial where they name a part of its board; the
+others hold for both boards. The K518's own follow in [Limits of the
+K518](#limits-of-the-k518).
+
 - The Dial navigates the screens of [Navigation and SET](#navigation-and-set)
   only. On LOGS, FILES, WI-FI, UPDATES, IMU, OUTPUTS' grid view, the
   programmers (KST, Hitec, ESC) and the bench screens' own lists and tabs it
@@ -850,7 +981,7 @@ documentation and by M5Unified; GPIO1 is the pin by number either way.
   their track only.
 - The panel has no console command that injects a Dial turn or press; the
   Dial's test build does that from the Dial's side.
-- The battery's voltage is unknown: no source names the pin it reaches.
+- The M5Stack Dial's battery voltage is unknown: no source names the pin it reaches.
   STATUS carries 0 and its "battery unknown" flag. The charger's state is
   unknown as well.
 - The encoder's count falls clockwise on the Dial v1.1; the firmware
@@ -877,8 +1008,35 @@ documentation and by M5Unified; GPIO1 is the pin by number either way.
 - The rate of the update over BLE over the panel's
   ESP32-C6 link, the time of an 840kB transfer and a rollback on the Dial
   are not measured.
-- The Dial checks the image's kind, chip and segments, not its origin: a
-  central in range can offer any Dial image, older ones included, and a
-  press installs it.
-- No sleep, no backlight steps and no auto-off: the Dial stays on until
-  `OFF` in the switch-off's choice, RST or an empty cell. Runtime on a cell is not measured.
+- The Dial checks the image's release signature, kind, chip and segments,
+  not its version's order: a central in range can offer any signed image
+  of the Dial's board, an older release's included, and a press installs
+  it.
+- No sleep, no backlight steps and no auto-off: the M5Stack Dial stays on
+  until `OFF` in the switch-off's choice, RST or an empty cell. Runtime on
+  a cell is not measured.
+
+### Limits of the K518
+
+- No rcbench image has run on a K518 yet. Its pins and parts come from
+  Guition's data and community sources; its faces, decode, gestures,
+  battery thresholds and update are checked by host tests and renders.
+- Not run on the device yet: the display's init and orientation, the
+  touch axes' orientation, the encoder's direction, the vibration
+  strength, the deep sleep and its wake by a turn, the ADC reading against
+  a meter, and an update over BLE with its rollback.
+- Not measured: the detents a turn (24 in Guition's demo code), the deep
+  sleep current, the run current, runtime on a cell, the cell's capacity
+  and the TP4055's charge current.
+- A USB-C to USB-C cable from a USB-C source gives no power
+  ([Power and the cable](#power-and-the-cable)). A C-to-C cable from a PD
+  (USB Power Delivery) source is not run on the device yet, nor charging
+  with the slide switch OFF.
+- No charge state: STATUS never sets CHARGING, and on USB the cell's
+  voltage is unknown.
+- With the slide switch ON, a K518 put to sleep by `OFF` keeps drawing from
+  the cell, the divider alone about 190µA.
+- A hand resting still on the glass for 1s sends HOLD, which disarms an
+  ARMED bench on MOTOR & ESC and SERVO LIVE.
+- The board revision, V1.0 or V2.0, is not read by the firmware; the
+  DRV2605's second probe with GPIO38 high covers the V1.0 enable.

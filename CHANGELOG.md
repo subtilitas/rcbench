@@ -8,6 +8,20 @@ history is in git.
 
 ### Added
 
+- Each release carries the Guition JC3636K518C's Dial images,
+  `rcbench-dial-k518-<version>.bin` for the panel's update and
+  `rcbench-dial-k518-merged-<version>.bin` for 0x0, each with its `.sig`
+  and in `SHA256SUMS`. CI builds the K518's test build with the console's
+  hooks as `rcbench-dial-k518-hooks-merged-<version>.bin`, a CI artifact.
+  The web flasher lists the K518 as its own board (`dial-k518`, role
+  kind 5) beside the M5Stack Dial
+  ([The Dial](docs/Dial.md#flashing-the-k518)).
+
+- The Dial page names both boards and holds the K518's section: its
+  parts and pins, the USB-A to USB-C cable from a 5V/1A port, the still
+  touch as the button, deep sleep on `OFF`, the supply reading, the
+  signature, and its limits ([The Dial](docs/Dial.md#the-guition-k518)).
+
 - The Dial, on the M5Stack Dial and on the Guition JC3636K518C, installs
   only an image signed with the release key. The firmware update over
   Bluetooth LE (`protocols/bleota`) is protocol 2: BEGIN's HASH writes

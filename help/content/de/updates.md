@@ -241,7 +241,7 @@ Der Eintrag FUNKGERÄTE auf EINZELNE UPDATES zählt die Geräte, die eine Versio
 
 | Bedienelement | Wirkung |
 |---|---|
-| 2s HALTEN ZUM DIAL-UPDATE | Holt das Image des M5Stack Dial aus dem Release und sendet es über Bluetooth LE an das verbundene Dial, siehe [Das Dial](#das-dial). |
+| 2s HALTEN ZUM DIAL-UPDATE | Holt das Image für das Board des verbundenen Dial aus dem Release, das des M5Stack Dial oder des Guition K518, und sendet es über Bluetooth LE an das Dial, siehe [Das Dial](#das-dial). |
 | 2s HALTEN: DIAL-FIRMWARE NEU INSTALLIEREN | Dasselbe, solange das Dial die Version des Release meldet. |
 | 2s HALTEN ZUM LEISTUNGSKNOTEN-UPDATE | Sendet das Image des Leistungsknotens an den gebundenen Leistungsknoten, siehe [Die Sensorknoten](#die-sensorknoten). |
 | 2s HALTEN: LEISTUNGSKNOTEN NEU INSTALLIEREN | Dasselbe, solange der Knoten die Version des Release meldet. |
@@ -264,7 +264,7 @@ Die Zeile DIAL-FIRMWARE zeigt die Version des verbundenen Dial und die Version d
 
 Jedes andere Ende lautet `Dial-Update abgebrochen: <Grund>. Vorherige Firmware läuft.`, zum Beispiel `nicht innerhalb von 30s angenommen` oder `Image beschädigt angekommen`; das Dial behält die Firmware, mit der es lief. Bricht der Link nach dem letzten Byte ab, kann das Dial gerade installieren: Das Panel wartet bis zu 60s auf seine Version und meldet, was es findet, oder `Dial hat sich nach dem Update nicht gemeldet. Prüfe seine Version auf UPDATES.` Während das Update läuft, wird ARM mit `ARMED gesperrt: Ein Update eines Funkgeräts läuft.` abgelehnt, und das Update des C6-Funks wartet. AUSGANG EIN des Netzteils, PROG 5V EIN und der Start einer Programmierung werden mit einem Alarm abgelehnt, der das Update nennt, zum Beispiel `Netzteilausgang nicht eingeschaltet: Das Dial-Update läuft.` Der Knopf steuert das Panel nicht, bis sich sein Link wieder verbindet; diese Lücke ist kein Verlustfehler.
 
-Das Image trägt keine Signatur: Das Dial nimmt jedes Dial-Image an, das ein Gerät in der Nähe sendet, sobald seine Bildschirmtaste gedrückt wird. Das Image eines anderen Geräts lehnt es ab, bevor es etwas schreibt. Ein neues Image, das vor seiner ersten Verbindung neu startet, geht zum Image davor zurück; ein Dial, das zuletzt vor dieser Firmware über USB geflasht wurde, hat diesen Rollback erst nach einem USB-Flash.
+Das Dial installiert nur ein Image, das mit dem rcbench-Release-Schlüssel signiert ist: Es prüft die Signatur vor seiner Frage und noch einmal nach dem letzten Byte. Eine abgelehnte Signatur lautet `Signatur vom Gerät abgelehnt`; das Dial zeigt `SIGNATUR ABGELEHNT` und behält seine Firmware. Das Image eines anderen Boards lehnt es ab, bevor es etwas schreibt: Das M5Stack Dial nimmt kein Image des K518, der K518 keines des M5Stack Dial. Beim K518 nimmt ein Tippen an: Die Taste zeigt `AM DIAL TIPPEN ZUM ANNEHMEN: 27s`. Ein neues Image, das vor seiner ersten Verbindung neu startet, geht zum Image davor zurück; ein Dial, das zuletzt vor dieser Firmware über USB geflasht wurde, hat diesen Rollback erst nach einem USB-Flash.
 
 ## Die Sensorknoten
 

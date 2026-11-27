@@ -1,12 +1,20 @@
-# Das M5Stack Dial
+# Das Dial
 
 <sub>[English](Dial.md) · **Deutsch**</sub>
 
-Das M5Stack Dial v1.1 ist ein runder Drehknopf mit einem Display von
-240 x 240 Pixeln. In rcbench ist es ein kabelloser Knopf für das Panel über
-Bluetooth LE (Low Energy, BLE). Sein Display zeigt, worauf der Knopf wirkt.
-Diese Seite beschreibt seine Firmware (`firmware/dial`) und das Protokoll
-zwischen ihm und dem Panel (`protocols/dialknob`).
+Das Dial ist ein runder kabelloser Drehknopf für das Panel über Bluetooth
+LE (Low Energy, BLE). Sein Display zeigt, worauf der Knopf wirkt. Eine
+Firmware (`firmware/dial`) baut für zwei Boards:
+
+| Board | Display | Taste | Klick | Image |
+| --- | --- | --- | --- | --- |
+| M5Stack Dial v1.1 | 240 x 240, GC9A01 | die Bildschirmtaste unter dem Glas | Summer | `rcbench-dial-<version>.bin` |
+| Guition JC3636K518C ("K518") | 360 x 360, ST77916 | keine: ein ruhiger Finger auf dem Glas | Vibrationsmotor | `rcbench-dial-k518-<version>.bin` |
+
+Diese Seite beschreibt die Firmware und das Protokoll zwischen dem Dial und
+dem Panel (`protocols/dialknob`). Wo ein Abschnitt kein Board nennt, gilt
+er für beide; [Der Guition K518](#der-guition-k518) enthält, was beim K518
+anders ist.
 
 Was es gibt: das Protokollmodul mit seinen Host-Tests und die Firmware des
 Dial: die Selbsthaltung, den Encoder, die Tasten, das Touch-Glas, den Klick
@@ -20,110 +28,6 @@ Firmware-Update über BLE von SETUP > UPDATES > EINZELNE UPDATES ([Update über 
 LE](#update-über-bluetooth-le)). Die Bildschirme der Programmer (KST,
 Hitec, ESC) und das Pairing folgen in späteren Schritten.
 
-Dieselbe Firmware baut für ein zweites Gerät, den Guition-JC3636K518C-Knopf:
-einen ESP32-S3R8 mit rundem Display von 360 x 360 Pixeln, Touch, einem
-Encoder ohne Drucktaster und einem Vibrationsmotor. Sein Build
-([Flashen über USB](#flashen-über-usb)) startet das BLE-Peripheral, die
-Bindung, den Face-Task, die Konsole und das Display. Das Display, ein
-ST77916 über QSPI (Quad-SPI) mit 40MHz, zeigt seine eigenen Faces,
-gezeichnet mit 360 x 360: jedes Face des M5 aus derselben Szene, MOTOR &
-ESC und SERVO mit sechs Messwerten, sechs Ringen, Titel, Pille und
-Hinweisen, die anderen Faces mit ihren Textblöcken, den Randstrichen einer
-Liste und den Randdekorationen. Ein Textblock steht auf der Zeile des
-M5-Face, um die Mitte mit 3/2 genommen, eine Schriftgröße größer, jeder
-String innerhalb von Radius 150. Das Start-Face mit dem BLE-Namen und der
-Firmware-Version steht bis zum ersten Face. Eine Änderung eines Face
-zeichnet und sendet den ganzen Frame von 259.200 Bytes.
-
-Der Encoder des K518 hat zwei Pulsleitungen, keine Quadratur: GPIO8 pulst
-je Rastung im Uhrzeigersinn einmal low, GPIO7 je Rastung gegen den
-Uhrzeigersinn. Je eine PCNT-Einheit (Pulszähler) zählt die fallenden
-Flanken einer Leitung; der Input-Task liest beide alle 5ms, und eine
-Leitung, die nach einem 5ms-Schritt ohne Puls pulst, ist eine Rastung.
-Zwei Rastungen einer Leitung mit weniger als 10ms Abstand zählen als eine.
-Der K518 hat keine Taste: Ein ruhig auf dem Glas liegender Finger ist die
-Bildschirmtaste. Vor 1.000ms abgehoben ohne Bewegung über 20px ist das
-PRESS; 1.000ms gehalten HOLD; 5s und 10s sind die Warnung zum Ausschalten
-und das Vergessen, wie beim M5. Eine Bewegung über 20px vor 1.000ms sendet
-nichts. Ein Abheben innerhalb von 500ms ist zusätzlich ein TAP an seinem
-Startpunkt, wie ihn das Glas des M5 sendet. Der Touch-Controller ist ein
-CST816S auf 0x15 (0x2A, wenn 0x15 nicht antwortet), alle 20ms gelesen;
-EVENT trägt seinen Punkt von 0-359 auf 0-239 skaliert. Die Update-Frage
-lautet TIPPEN: ANNEHMEN, die Ausschalt-Wahl TIPPEN: WÄHLEN. Das Update
-nimmt nur die ruhige Berührung: Ein ruhiges Abheben vor 1.000ms nimmt es
-an, eine ruhige Berührung von 1.000ms lehnt es ab, und ein Wischen tut
-keins von beiden. Nur eine Berührung, die beginnt, während die Frage
-steht, beantwortet sie; eine Berührung von vorher, von vor einem
-verlorenen Link oder zu einer Frage, die eine andere ersetzt hat,
-beantwortet nichts, bis sie abhebt. Eine Berührung zählt nur, wenn ein
-Lesen des Glases, alle 20ms, keinen Finger fand, während die Frage dieses
-Angebots schon ganz auf dem Display stand, vom Face-Task gesendet (alle
-50ms); ein Tippen in den ersten 20ms der Frage auf dem Glas braucht also
-ein zweites Tippen. Ein fehlgeschlagenes I2C-Lesen (Inter-Integrated
-Circuit) des Glases behält den letzten Zustand: Es beendet keine
-Berührung und zählt nie als leeres Glas. Das 5. fehlgeschlagene Lesen in
-Folge (100ms) bricht die laufende Berührung ab, ohne PRESS, TAP oder
-Antwort auf die Frage; der Finger, wieder gelesen, startet nichts, bis
-das Glas leer gelesen wird. Solange AKKU LEER eine offene Frage
-verdeckt, beantwortet keine Berührung sie. Jede Frage hat ihre eigene Nummer,
-und das Update nimmt die Taste nur für die Frage, in der sie entstand. Statt eines
-Summers vibriert ein DRV2605 auf 0x5A mit seinen ROM-Effekten für einen
-LRA (Bibliothek 6): eine Rastung "Sharp Tick 3" (26), PRESS "Sharp Click
-100%" (4), HOLD und ein angenommenes Update "Strong Click 100%" (1), die
-5s-Warnung "Buzz 1 100%" (47), das Vergessen zweimal "Double Click 100%"
-(10). SOUND aus stoppt nur das Ticken der Rastung. Antwortet kein DRV2605
-auf 0x5A, geht GPIO38 auf high (der Enable der V1.0-Boards) und es folgt
-ein zweiter Versuch; ohne Antwort dann vibriert der K518 nicht. Die Zahl
-der Rastungen je Umdrehung (24 laut Guitions Demo-Code), die Ausrichtung
-der Touch-Achsen und die Stärke der Vibration sind noch nicht auf dem
-Gerät gelaufen. 
-
-Der K518 misst seine Versorgung an GPIO1 (ADC1 Kanal 0, 12dB, kalibriert)
-über einen 10k/10k-Teiler einmal pro Sekunde: 16 Messungen, die
-niedrigste und die höchste verworfen, der Rest gemittelt, mal 2. Der
-Teiler liegt an der Schiene hinter dem Power-Pfad, also misst er mit USB
-VBUS weniger eine Diode, nicht den Akku. Ein Wert über 4.450mV oder ein
-USB-Host am Konsolen-Port ist USB: STATUS setzt sein USB-Flag und nennt den
-Akku unbekannt. Ein Wert unter 2.500mV ist kein plausibler Akku und
-ebenfalls unbekannt. Sonst trägt STATUS die Akkuspannung. LOW (STATUS
-Bit4) setzt nach 3 Messungen in Folge unter 3.500mV und endet nach 3 ab
-3.600mV; EMPTY (Bit5) ebenso bei 3.350mV und 3.450mV. EMPTY zeigt 3s lang
-AKKU LEER, dann schaltet sich der K518 selbst aus. Der Akkuanteil der
-Faces ist linear von 3.300mV (0%) bis 4.200mV (100%). Kein Ladestatus-Pin
-ist bekannt, also setzt STATUS nie CHARGING.
-
-Der Schiebeschalter trennt die Versorgung. AUS in der Ausschalt-Wahl und
-ein leerer Akku schicken den K518 in den Deep Sleep: der ST77916 aus und
-im Schlaf (DISPOFF, dann SLPIN und 120ms, gesendet, sobald das Bild
-des Face-Tasks auf der Leitung zu Ende ist, bis zu 2000ms, und danach kein
-Bild mehr), der Pin des Hintergrundlichts
-auf low gehalten, Touch-Controller und DRV2605 in ihrem eigenen Schlaf.
-Ein Dreh am Knopf (eine Encoder-Leitung low) weckt ihn zu einem neuen
-Start, ebenso der Schiebeschalter. Der Strom im Deep Sleep ist nicht
-gemessen; der Teiler allein zieht etwa 190µA aus einem Akku mit 3,8V. Die
-Genauigkeit des ADC gegen ein Messgerät ist noch nicht auf dem Gerät
-gelaufen. Sein INFO nennt Hardware 2 (`DK_HW_K518`); sein Image nennt die
-Update-Art 5 (`BLEOTA_KIND_DIAL_K518`), also nimmt keines der beiden Geräte
-das Image des anderen.
-
-![Das Start-Face des K518](img/de/dial-k518-boot.png)
-![MOTOR & ESC auf dem K518, ARMED](img/de/dial-k518-motor-armed.png)
-![MOTOR & ESC auf dem K518, SAFE](img/de/dial-k518-motor-safe.png)
-![SERVO LIVE auf dem K518, ARMED](img/de/dial-k518-servo-live.png)
-![eine Liste auf dem K518](img/de/dial-k518-navigation.png)
-![ein Wert beim Setzen auf dem K518](img/de/dial-k518-value-set.png)
-![LINK LOST auf dem K518](img/de/dial-k518-link-lost.png)
-![der beendete Link auf dem K518](img/de/dial-k518-link-ended.png)
-![warten auf das Panel auf dem K518](img/de/dial-k518-waiting.png)
-![kein gebundenes Panel auf dem K518](img/de/dial-k518-bind.png)
-![ein Bildschirm ohne Wirkung des Knopfs auf dem K518](img/de/dial-k518-other.png)
-![das angebotene Update auf dem K518](img/de/dial-k518-update-ask.png)
-![das ankommende Update auf dem K518](img/de/dial-k518-update-send.png)
-![eine abgelehnte Signatur auf dem K518](img/de/dial-k518-update-sig.png)
-![die Warnung vor dem Ausschalten auf dem K518](img/de/dial-k518-off-warn.png)
-![die Wahl beim Ausschalten auf dem K518](img/de/dial-k518-off-ask.png)
-![ein leerer Akku auf dem K518](img/de/dial-k518-batt-empty.png)
-
 M5Stack, Dial und Stamp-S3A sind Namen ihres Inhabers und seiner Produkte,
 Guition und JC3636K518C sind Namen ihres Inhabers und seines Produkts,
 Bluetooth ist eine Marke ihres Inhabers. rcbench ist unabhängig: Es ist
@@ -132,7 +36,7 @@ gefördert. Die Namen sagen, mit welchem Gerät das Panel spricht.
 [Rechtliche Hinweise und Haftungsausschluss](../README-de.md#rechtliche-hinweise-und-haftungsausschluss)
 enthält den Hinweis des Projekts.
 
-## Das Gerät
+## Das M5Stack Dial
 
 | Teil | Was es ist | Pins |
 | --- | --- | --- |
@@ -150,6 +54,226 @@ enthält den Hinweis des Projekts.
 Die Zelle bleibt bei 1.000mAh oder weniger, bis der Ladestrom gemessen ist:
 Der Lader (TP4057 im Text des Schaltplans) und sein Strom sind nicht
 bestätigt.
+
+## Der Guition K518
+
+Der Guition JC3636K518C ("K518" im Code, `GUITION K518` am Panel) ist ein
+runder Drehknopf mit einem ESP32-S3R8, einem Display von 360 x 360
+Pixeln, einem Touch-Glas, einem Encoder ohne Drucktaster, einem
+Vibrationsmotor und einem LiPo-Akku. Er führt die Firmware des Dial aus,
+gebaut mit `sdkconfig.k518`: dasselbe Protokoll, dieselbe Bindung,
+derselbe Link, dieselbe Navigation, dieselben Faces, dasselbe Ausschalten
+und Update wie beim M5Stack Dial. Sein INFO nennt Hardware 2
+(`DK_HW_K518`); sein Image nennt die Update-Art 5
+(`BLEOTA_KIND_DIAL_K518`), also nimmt keines der beiden Geräte das Image
+des anderen.
+
+| Teil | Was es ist | Pins |
+| --- | --- | --- |
+| Modul | ESP32-S3R8: 8MB Octal-PSRAM (Pseudo-Static RAM) im Gehäuse, 16MB Flash | |
+| Display | ST77916, 1,8 Zoll, 360 x 360, QSPI (Quad-SPI) mit 40MHz, RGB565 | SCLK GPIO13, CS GPIO14, D0 bis D3 GPIO15 bis GPIO18, Reset GPIO21, Hintergrundlicht GPIO47 (LEDC-PWM, high an) |
+| Touch | CST816S auf I2C-Adresse 0x15 (0x2A, wenn 0x15 nicht antwortet), 400kHz, alle 20ms gelesen | SDA GPIO11, SCL GPIO12, Reset GPIO10, Interrupt GPIO9 (nicht benutzt) |
+| Encoder | zwei Pulsleitungen, keine Quadratur, ein Low-Puls je Rastung; kein Drucktaster | im Uhrzeigersinn GPIO8, gegen den Uhrzeigersinn GPIO7 |
+| Vibration | DRV2605 auf I2C-Adresse 0x5A mit einem LRA (Linear Resonant Actuator) | der I2C-Bus des Touch; Enable GPIO38 auf V1.0-Boards |
+| Tasten | keine auf dem Glas oder am Knopf; BOOT hinter dem Loch neben USB-C, beim Reset gelesen | GPIO0 |
+| Versorgung | Schiebeschalter am Sockel (links ist EIN), USB-C, ein LiPo-Akku an einer MX1.25-Buchse, Lader TP4055 | |
+| Versorgungsmessung | die Schiene hinter dem Power-Pfad über einen 10k/10k-Teiler | GPIO1, ADC1 (Analog-Digital-Wandler 1) Kanal 0 |
+| Außerdem auf dem Board | ein ESP32-U4WDH mit seinem Audio-Image ab Werk, ein DAC (Digital-Analog-Wandler) an einer 3,5mm-Buchse, microSD, ein Mikrofon | von rcbench nicht benutzt |
+
+Das Image hat 933.280 Bytes, 29,7% des Update-Slots von 3.145.728 Bytes.
+Die oberen 8MB des Flashs bleiben frei. Die Kapazität des Akkus, der
+Ladestrom des TP4055 und die Board-Revision (V1.0 oder V2.0) sind
+unbekannt.
+
+### Versorgung und Kabel
+
+Versorge den K518 von einem USB-A-Anschluss mit einem Kabel USB-A auf
+USB-C, 5V und mindestens 1A. Guitions Beipackzettel verlangt das Kabel A
+auf C und eine stabile Versorgung mit 5V/1A.
+
+- Ein Kabel USB-C auf USB-C versorgt und lädt den K518 an einer USB-C-Quelle
+  nicht: Vermutlich fehlen dem Board die Pull-downs von 5,1k an CC
+  (Configuration Channel), mit denen eine USB-C-Quelle ihre 5V einschaltet.
+- Eine Steckrichtung erreicht am Dial den USB-Serial/JTAG-Port seines
+  ESP32-S3, die Konsole und den Flash-Port. Die andere erreicht den
+  ESP32-U4WDH über eine USB-UART-Brücke CH340. Zeigt der Rechner keinen
+  Port des ESP32-S3 des Dial (`/dev/ttyACM0` unter Linux), drehe den
+  Stecker um.
+- Das 1A deckt den Betriebsstrom, laut Guition etwa 1,3W, und den
+  Ladestrom.
+- Der Schiebeschalter trennt die Versorgung. Ob der TP4055 den Akku bei
+  Schalter AUS lädt, ist noch nicht auf dem Gerät gelaufen.
+
+Der K518 misst seine Versorgung an GPIO1 (12dB, kalibriert) einmal pro
+Sekunde: 16 Messungen, die niedrigste und die höchste verworfen, der Rest
+gemittelt, mal 2. Der Teiler liegt an der Schiene hinter dem Power-Pfad,
+also misst er mit USB VBUS (die Versorgungsleitung des USB) weniger eine
+Diode, nicht den Akku.
+
+| Messung | STATUS | Dial-Akku am Panel |
+| --- | --- | --- |
+| über 4.450mV oder ein USB-Host am Konsolen-Port | USB-Flag, Akku unbekannt | `USB` |
+| unter 2.500mV | Akku unbekannt | `NICHT GEMESSEN` |
+| 2.500mV bis 4.450mV | die Akkuspannung | die Volt, zum Beispiel `3.92V` |
+| 3 Messungen in Folge unter 3.500mV, bis 3 ab 3.600mV | LOW, Bit4 | `SCHWACH 3.45V` |
+| 3 Messungen in Folge unter 3.350mV, bis 3 ab 3.450mV | EMPTY, Bit5 | `LEER 3.30V` |
+
+EMPTY zeigt 3s lang `AKKU LEER`, dann schaltet sich der K518 selbst aus
+([Den K518 ausschalten](#den-k518-ausschalten)). Der Link bricht ab, und
+die Verlustregel des Panels schaltet eine ARMED-Bench auf SAFE
+([Sicherheit](#sicherheit)). Der Akku auf den Faces zeigt einen Anteil,
+linear von 3.300mV (0%) bis 4.200mV (100%). Kein Ladestatus-Pin ist
+bekannt, also setzt STATUS nie CHARGING.
+
+### Das Display und die Faces
+
+Der K518 zeichnet seine eigenen Faces mit 360 x 360, jedes Face des M5 aus
+derselben Szene: MOTOR & ESC und SERVO mit sechs Messwerten, sechs Ringen,
+Titel, Pille und Hinweisen, die anderen Faces mit ihren Textblöcken, den
+Randstrichen einer Liste und den Randdekorationen. Ein Textblock steht auf
+der Zeile des M5-Face, um die Mitte mit 3/2 genommen, eine Schriftgröße
+größer, jeder String innerhalb von Radius 150. Das Start-Face mit dem
+BLE-Namen und der Firmware-Version steht bis zum ersten Face. Eine
+Änderung eines Face zeichnet und sendet den ganzen Frame von 259.200 Bytes
+aus dem PSRAM, etwa 13ms auf der Leitung bei 40MHz.
+
+![Das Start-Face des K518](img/de/dial-k518-boot.png)
+![MOTOR & ESC auf dem K518, ARMED](img/de/dial-k518-motor-armed.png)
+![MOTOR & ESC auf dem K518, SAFE](img/de/dial-k518-motor-safe.png)
+![SERVO LIVE auf dem K518, ARMED](img/de/dial-k518-servo-live.png)
+![eine Liste auf dem K518](img/de/dial-k518-navigation.png)
+![ein Wert beim Setzen auf dem K518](img/de/dial-k518-value-set.png)
+![LINK LOST auf dem K518](img/de/dial-k518-link-lost.png)
+![der beendete Link auf dem K518](img/de/dial-k518-link-ended.png)
+![warten auf das Panel auf dem K518](img/de/dial-k518-waiting.png)
+![kein gebundenes Panel auf dem K518](img/de/dial-k518-bind.png)
+![ein Bildschirm ohne Wirkung des Knopfs auf dem K518](img/de/dial-k518-other.png)
+
+### Der Encoder
+
+GPIO8 pulst je Rastung im Uhrzeigersinn einmal low, GPIO7 je Rastung
+gegen den Uhrzeigersinn. Je eine PCNT-Einheit (Pulszähler) zählt die
+fallenden Flanken einer Leitung; der Input-Task liest beide alle 5ms, und
+eine Leitung, die nach einem 5ms-Schritt ohne Puls pulst, ist eine
+Rastung. Zwei Rastungen einer Leitung mit weniger als 10ms Abstand zählen
+als eine. Die Zahl der Rastungen je Umdrehung ist nicht gemessen;
+Guitions Demo-Code nennt 24.
+
+### Das Touch als Taste
+
+Der K518 hat keine Taste: Ein ruhig auf dem Glas liegender Finger ist die
+Bildschirmtaste.
+
+| Ein ruhiger Finger auf dem Glas | Was folgt |
+| --- | --- |
+| vor 1.000ms abgehoben, keine Bewegung über 20px | PRESS |
+| innerhalb von 500ms abgehoben | zusätzlich ein TAP an seinem Startpunkt, wie ihn das Glas des M5 sendet |
+| 1.000ms gehalten | HOLD, einmal |
+| 5.000ms und 10.000ms gehalten | die Warnung zum Ausschalten und das Vergessen, wie beim M5 ([Ausschalten](#ausschalten)) |
+| vor 1.000ms über 20px bewegt | nichts |
+
+HOLD entschärft auf MOTOR & ESC und SERVO LIVE, also entschärft eine Hand,
+die bei ARMED 1s ruhig auf dem Glas liegt, die Bench. EVENT trägt den
+Berührungspunkt von 0-359 auf 0-239 skaliert. Die Update-Frage lautet
+`TIPPEN: ANNEHMEN`, die Ausschalt-Wahl `TIPPEN: WÄHLEN`.
+
+Das Update nimmt nur die ruhige Berührung: Ein ruhiges Abheben vor
+1.000ms nimmt es an, eine ruhige Berührung von 1.000ms lehnt es ab, und
+ein Wischen tut keins von beiden. Nur eine Berührung, die beginnt,
+während die Frage steht, beantwortet sie; eine Berührung von vorher, von
+vor einem verlorenen Link oder zu einer Frage, die eine andere ersetzt
+hat, beantwortet nichts, bis sie abhebt. Eine Berührung zählt nur, wenn
+ein Lesen des Glases, alle 20ms, keinen Finger fand, während die Frage
+dieses Angebots schon ganz auf dem Display stand, vom Face-Task gesendet
+(alle 50ms); ein Tippen in den ersten 20ms der Frage auf dem Glas braucht
+also ein zweites Tippen. Jede Frage hat ihre eigene Nummer, und das
+Update nimmt die Taste nur für die Frage, in der sie entstand. Solange
+`AKKU LEER` eine offene Frage verdeckt, beantwortet keine Berührung sie.
+
+Ein fehlgeschlagenes I2C-Lesen (Inter-Integrated Circuit) des Glases
+behält den letzten Zustand: Es beendet keine Berührung und zählt nie als
+leeres Glas. Das 5. fehlgeschlagene Lesen in Folge (100ms) bricht die
+laufende Berührung ab, ohne PRESS, TAP oder Antwort auf die Frage; der
+Finger, wieder gelesen, startet nichts, bis das Glas leer gelesen wird.
+
+### Vibration
+
+Der DRV2605 spielt statt des Summers des M5 seine ROM-Effekte für einen
+LRA (Bibliothek 6):
+
+| Ereignis | Effekt |
+| --- | --- |
+| eine Rastung | "Sharp Tick 3" (26) |
+| PRESS | "Sharp Click 100%" (4) |
+| HOLD, ein angenommenes Update | "Strong Click 100%" (1) |
+| die 5s-Warnung | "Buzz 1 100%" (47) |
+| das Vergessen | "Double Click 100%" (10), zweimal |
+
+SOUND aus stoppt nur das Ticken der Rastung. Antwortet kein DRV2605 auf
+0x5A, geht GPIO38 auf high (der Enable der V1.0-Boards) und es folgt ein
+zweiter Versuch; ohne Antwort dann vibriert der K518 nicht.
+
+### Den K518 ausschalten
+
+Der Schiebeschalter trennt die Versorgung. `AUS` in der Ausschalt-Wahl und
+ein leerer Akku schicken den K518 in den Deep Sleep: der ST77916 aus und
+im Schlaf (DISPOFF, dann SLPIN und 120ms, gesendet, sobald das Bild des
+Face-Tasks auf der Leitung zu Ende ist, bis zu 2000ms, und danach kein
+Bild mehr), der Pin des Hintergrundlichts auf low gehalten,
+Touch-Controller und DRV2605 in ihrem eigenen Schlaf. Ein Dreh am Knopf
+(eine Encoder-Leitung low) weckt ihn zu einem neuen Start, ebenso der
+Schiebeschalter. Mit Schalter EIN speist der Akku den Deep Sleep weiter:
+Der Teiler allein zieht etwa 190µA aus einem Akku mit 3,8V, der Strom des
+ganzen Boards im Deep Sleep ist nicht gemessen. Zum Lagern den Schalter
+auf AUS schieben.
+
+![die Warnung vor dem Ausschalten auf dem K518](img/de/dial-k518-off-warn.png)
+![die Wahl beim Ausschalten auf dem K518](img/de/dial-k518-off-ask.png)
+![ein leerer Akku auf dem K518](img/de/dial-k518-batt-empty.png)
+
+### Den K518 flashen
+
+Das Release enthält `rcbench-dial-k518-merged-<version>.bin` für Offset
+0x0 und `rcbench-dial-k518-<version>.bin`, die Anwendung allein, jedes
+mit seiner `.sig`, und ihre SHA-256-Summen in `SHA256SUMS`. Der
+Web-Flasher listet das zusammengeführte Image als "Dial auf dem Knopf
+Guition JC3636K518C".
+
+1. Das Image prüfen: `sha256sum -c SHA256SUMS --ignore-missing`.
+2. Den K518 mit dem Kabel USB-A auf USB-C verbinden
+   ([Versorgung und Kabel](#versorgung-und-kabel)). Einen K518, auf dem
+   diese Firmware läuft, setzt esptool in den ROM-Download-Modus. Einen,
+   auf dem sie nicht läuft: BOOT hinter dem Loch neben USB-C mit einem
+   Stift beim Einstecken des Kabels halten.
+3. Flashen:
+
+   ```bash
+   python -m esptool --chip esp32s3 -p /dev/ttyACM0 -b 460800 \
+     write-flash 0x0 rcbench-dial-k518-merged-0.23.18.bin
+   ```
+
+4. Der K518 startet neu und zeigt `NICHT GEBUNDEN` und seinen Namen,
+   `DIAL-` und die letzten 4 Hex-Ziffern seiner Adresse.
+
+Das zusammengeführte Image schreibt die Partitionstabelle, also wird der
+NVS bei 0x9000 neu geschrieben, und das gebundene Panel ist vergessen.
+Der ESP32-U4WDH behält sein Image ab Werk; rcbench flasht ihn nicht.
+
+### Das Update und die Signatur
+
+Das Panel bietet dem K518 `rcbench-dial-k518-<Version>.bin` an, gewählt
+nach der Hardware, die sein INFO nennt ([Das Panel](#das-panel)); das
+Panel-Image bringt nur das Image des M5 mit, also wird das des K518 aus
+dem Release geladen oder aus `BENCH/UPDATES` der SD-Karte gelesen. Der
+K518 prüft die Release-Signatur zweimal wie das M5Stack Dial ([Update über
+Bluetooth LE](#update-über-bluetooth-le)): über den SHA-256 aus BEGIN vor
+der Frage und über seinen eigenen SHA-256 nach dem letzten Byte. Eine
+abgelehnte Signatur zeigt 5s lang `SIGNATUR ABGELEHNT` und `FIRMWARE
+BLEIBT`.
+
+![das angebotene Update auf dem K518](img/de/dial-k518-update-ask.png)
+![das ankommende Update auf dem K518](img/de/dial-k518-update-send.png)
+![eine abgelehnte Signatur auf dem K518](img/de/dial-k518-update-sig.png)
 
 ## Sicherheit
 
@@ -235,8 +359,12 @@ idf.py -B build-k518 -D SDKCONFIG=build-k518/sdkconfig \
 
 Die Platine ist eine Auswahl in `firmware/dial/main/Kconfig.projbuild`;
 `sdkconfig.k518` wählt den K518 mit seinen 16MB Flash und 8MB Octal-PSRAM.
-CI nennt die Images des K518 `rcbench-dial-k518-<version>.bin` und
-`rcbench-dial-k518-merged-<version>.bin`; ein Release enthält sie nicht.
+Das Release enthält die Images des K518 als
+`rcbench-dial-k518-<version>.bin` und
+`rcbench-dial-k518-merged-<version>.bin`
+([Den K518 flashen](#den-k518-flashen)). Die Test-Builds mit den Hooks der
+Konsole, `rcbench-dial-hooks-merged-<version>.bin` und
+`rcbench-dial-k518-hooks-merged-<version>.bin`, bleiben CI-Artefakte.
 
 Die Partitionstabelle (`firmware/dial/partitions.csv`) enthält den NVS, zwei
 Anwendungsslots von 3.072kB und ihre otadata. Das Image hat
@@ -264,7 +392,11 @@ zeigt das Face die Warnung vor dem Ausschalten ([Ausschalten](#ausschalten)).
 
 ## Ausschalten
 
-Die Bildschirmtaste ist die WAKE-Taste des Dials: Nur an der Zelle schaltet
+Die Haltezeiten und die Wahl unten gelten für beide Boards; die
+Versorgung ist verschieden. Beim K518 bedeuten `AUS` und ein leerer Akku
+Deep Sleep ([Den K518 ausschalten](#den-k518-ausschalten)).
+
+Die Bildschirmtaste ist die WAKE-Taste des M5Stack Dial: Nur an der Zelle schaltet
 ein Druck das Dial ein, und die Firmware hält die Versorgung mit GPIO46 auf
 high. Solange die Taste gedrückt ist, hat das Dial Versorgung; sie fällt
 erst ab, wenn die Taste oben ist.
@@ -304,7 +436,8 @@ wird angenommen.
 
 Das Panel sendet das Anwendungs-Image des Dial über BLE. Das Panel-Image
 bringt es nicht mit: Das Halten des Schritts DIAL lädt
-`rcbench-dial-<Version>.bin` aus dem Release, das das Panel ausführt, oder
+`rcbench-dial-<Version>.bin` (beim K518 `rcbench-dial-k518-<Version>.bin`)
+aus dem Release, das das Panel ausführt, oder
 liest es aus `BENCH/UPDATES` der SD-Karte, und prüft es vorher
 ([Bildschirme: Geräte-Images](Screens-de.md#geräte-images)).
 Das Protokoll ist `protocols/bleota`
@@ -885,6 +1018,10 @@ verschiedener Reihenfolge; GPIO1 ist in beiden Fällen der Pin dieser Nummer.
 
 ## Grenzen
 
+Die Punkte nennen das M5Stack Dial, wo sie ein Teil seines Boards nennen;
+die anderen gelten für beide Boards. Die eigenen des K518 folgen in
+[Grenzen des K518](#grenzen-des-k518).
+
 - Das Dial navigiert nur die Bildschirme aus
   [Navigation und SET](#navigation-und-set). Auf LOGS, FILES, WI-FI,
   UPDATES, IMU, der Rasteransicht von OUTPUTS, den Programmern (KST, Hitec,
@@ -907,8 +1044,8 @@ verschiedener Reihenfolge; GPIO1 ist in beiden Fällen der Pin dieser Nummer.
   0, ihre Ringe zeigen nur ihre Spur.
 - Das Panel hat keinen Konsolenbefehl, der eine Drehung oder einen Druck des
   Dial einspeist; das macht der Test-Build des Dial von seiner Seite aus.
-- Die Spannung des Akkus ist unbekannt: Keine Quelle nennt den Pin, den sie
-  erreicht. STATUS trägt 0 und das Flag "Akku unbekannt". Der Zustand des
+- Die Akkuspannung des M5Stack Dial ist unbekannt: Keine Quelle nennt den
+  Pin, den sie erreicht. STATUS trägt 0 und das Flag "Akku unbekannt". Der Zustand des
   Laders ist ebenfalls unbekannt.
 - Der Zähler des Encoders fällt beim Dial v1.1 im Uhrzeigersinn; die
   Firmware dreht ihn um, sodass im Uhrzeigersinn hochgezählt wird, die
@@ -939,9 +1076,39 @@ verschiedener Reihenfolge; GPIO1 ist in beiden Fällen der Pin dieser Nummer.
 - Die Rate des Updates über BLE über die
   ESP32-C6-Verbindung des Panels, die Dauer einer Übertragung von 840kB und
   ein Rollback am Dial sind nicht gemessen.
-- Das Dial prüft Art, Chip und Segmente des Images, nicht seine Herkunft:
-  Ein Central in Reichweite kann jedes Dial-Image anbieten, auch ältere,
-  und ein Druck installiert es.
+- Das Dial prüft Release-Signatur, Art, Chip und Segmente des Images,
+  nicht die Reihenfolge der Versionen: Ein Central in Reichweite kann
+  jedes signierte Image des Dial-Boards anbieten, auch das eines älteren
+  Release, und ein Druck installiert es.
 - Kein Schlaf, keine Stufen des Hintergrundlichts und keine automatische
-  Abschaltung: Das Dial bleibt an bis `AUS` in der Wahl beim Ausschalten,
-  bis RST oder bis die Zelle leer ist. Die Laufzeit mit einer Zelle ist nicht gemessen.
+  Abschaltung: Das M5Stack Dial bleibt an bis `AUS` in der Wahl beim
+  Ausschalten, bis RST oder bis die Zelle leer ist. Die Laufzeit mit einer
+  Zelle ist nicht gemessen.
+
+### Grenzen des K518
+
+- Noch kein rcbench-Image ist auf einem K518 gelaufen. Seine Pins und
+  Teile stammen aus Guitions Daten und aus Quellen der Community; seine
+  Faces, die Dekodierung, die Gesten, die Akku-Schwellen und das Update
+  prüfen Host-Tests und Renderings.
+- Noch nicht auf dem Gerät gelaufen: die Initialisierung und Ausrichtung
+  des Displays, die Ausrichtung der Touch-Achsen, die Richtung des
+  Encoders, die Stärke der Vibration, der Deep Sleep und sein Wecken durch
+  einen Dreh, die ADC-Messung gegen ein Messgerät und ein Update über BLE
+  mit seinem Rollback.
+- Nicht gemessen: die Rastungen je Umdrehung (24 in Guitions Demo-Code),
+  der Strom im Deep Sleep, der Betriebsstrom, die Laufzeit mit einem
+  Akku, die Kapazität des Akkus und der Ladestrom des TP4055.
+- Ein Kabel USB-C auf USB-C an einer USB-C-Quelle versorgt nicht
+  ([Versorgung und Kabel](#versorgung-und-kabel)). Ein Kabel C auf C an
+  einer PD-Quelle (USB Power Delivery) ist noch nicht auf dem Gerät
+  gelaufen, ebenso das Laden bei Schiebeschalter AUS.
+- Kein Ladezustand: STATUS setzt nie CHARGING, und mit USB ist die
+  Akkuspannung unbekannt.
+- Mit Schiebeschalter EIN zieht ein K518, den `AUS` schlafen gelegt hat,
+  weiter Strom aus dem Akku, der Teiler allein etwa 190µA.
+- Eine Hand, die 1s ruhig auf dem Glas liegt, sendet HOLD, und das
+  entschärft eine ARMED-Bench auf MOTOR & ESC und SERVO LIVE.
+- Die Board-Revision, V1.0 oder V2.0, liest die Firmware nicht; der
+  zweite Versuch des DRV2605 mit GPIO38 auf high deckt den Enable von V1.0
+  ab.
