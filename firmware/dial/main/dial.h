@@ -26,6 +26,7 @@
 #include <stdint.h>
 
 #include "dial_face.h"
+#include "dk518_input.h"
 #include "dialknob.h"
 #include "gfx.h"
 
@@ -177,11 +178,13 @@ bool dial_touch_read(uint8_t *x, uint8_t *y);
 /**
  * @brief The K518's touch point at the panel's native 0 to 359; the K518
  *        build only (dial_k518_io.c).
- * @param x the column, when touched
- * @param y the row, when touched
- * @return true when a finger is on the glass
+ * @param x the column, written for DK518_READ_DOWN
+ * @param y the row, written for DK518_READ_DOWN
+ * @return DK518_READ_DOWN with a finger on the glass, DK518_READ_UP
+ *         without one, DK518_READ_FAIL when the I2C read failed or no
+ *         controller answered at start
  */
-bool dial_k518_touch(uint16_t *x, uint16_t *y);
+dk518_read_t dial_k518_touch(uint16_t *x, uint16_t *y);
 
 /* --- dial_input.c ---------------------------------------------------- */
 

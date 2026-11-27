@@ -60,6 +60,15 @@
  *   (bleota_dev_key_for()), so an offer that replaces another between two
  *   steps gets no key from the first one's touch.
  *
+ * A read of the touch controller has three results (dk518_read_t):
+ * touched, not touched, failed.  dk518_glass_read() keeps the last
+ * state through a failed read, so an I2C (inter-integrated circuit)
+ * error never ends a press and never counts as an empty glass.  The
+ * 5th failed read in a row (DK518_READ_FAILS, 100ms at the 20ms reads)
+ * cancels the touch under way: dk518_still_lost() ends it without PRESS,
+ * TAP or the update's accept.  A finger read after that is the same
+ * touch and starts nothing until a read finds the glass empty.
+ *
  * Points are the panel's native 0 to 359; EVENT carries 0 to 239
  * (dk518_touch_scale()).
  *
@@ -89,6 +98,9 @@ extern "C" {
 /** @brief The confirming key's least time up between two windows, ms:
  *         three of the `ota` task's 10ms polls. */
 #define DK518_KEY_GAP_MS 30u
+/** @brief Failed reads of the touch controller in a row that cancel the
+ *         touch under way. */
+#define DK518_READ_FAILS 5u
 /** @brief The panel's native size, px. */
 #define DK518_TOUCH_SIZE 360u
 
@@ -100,6 +112,24 @@ extern "C" {
 #define DK518_FX_BUZZ   47u /**< "Buzz 1 100%": the 5s warning */
 #define DK518_FX_DOUBLE 10u /**< "Double Click 100%": the forget, twice */
 /** @} */
+
+/** @brief One read of the touch controller. */
+typedef enum {
+    DK518_READ_UP = 0, /**< read: no finger on the glass */
+    DK518_READ_DOWN,   /**< read: a finger, at the point given */
+    DK518_READ_FAIL,   /**< the read failed: nothing is known */
+} dk518_read_t;
+
+/** @brief The glass as the reads tell it. */
+typedef struct {
+    bool     down;  /**< a finger is on the glass, as last known */
+    uint16_t x;     /**< its column, native px */
+    uint16_t y;     /**< its row, native px */
+    uint8_t  fails; /**< failed reads in a row */
+    bool     lost;  /**< a touch was lost and no read found the glass
+                         empty since: a finger read now is still that
+                         touch, not a new one */
+} dk518_glass_t;
 
 /** @brief The encoder's decode. */
 typedef struct {
@@ -177,6 +207,32 @@ void dk518_still_init(dk518_still_t *s);
 unsigned dk518_still_step(dk518_still_t *s, bool touch, uint16_t x,
                           uint16_t y, int32_t turns, bool yield,
                           uint32_t now, dk518_still_out_t *out);
+
+/** @brief Start with no finger and no failed read.  @param g the glass */
+void dk518_glass_init(dk518_glass_t *g);
+
+/**
+ * @brief Take one read of the touch controller.
+ * @param g the glass
+ * @param r the read's result
+ * @param x the finger's column, native px; read for DK518_READ_DOWN
+ * @param y its row, native px; read for DK518_READ_DOWN
+ * @return true when this read is the DK518_READ_FAILS-th failure in a row
+ *         while a finger was down: the touch is lost, g->down is false
+ *         until a read finds the glass empty, and the caller ends the
+ *         touch with dk518_still_lost()
+ */
+bool dk518_glass_read(dk518_glass_t *g, dk518_read_t r, uint16_t x,
+                      uint16_t y);
+
+/**
+ * @brief End the touch under way without an answer: its lift, in the next
+ *        dk518_still_step(), gives no PRESS, no TAP and no still lift,
+ *        and the button takes it as yielded.  No effect without a finger.
+ * @param s   the state
+ * @param now the time, ms
+ */
+void dk518_still_lost(dk518_still_t *s, uint32_t now);
 
 /** @brief Start with the key up and no offer.  @param k the key */
 void dk518_key_init(dk518_key_t *k);
