@@ -81,7 +81,7 @@ static void files_open(void)
  */
 static void name_open(const char *title)
 {
-    ui_textkey_open(&hp.tk, hp.area, title, hp.name, HP_NAME_TYPED);
+    sprog_name(&hp.f, title, hp.name);
 }
 
 void hpn_files_choice(int value)
@@ -144,7 +144,7 @@ void hpn_file_answer(void)
             return;
         }
     }
-    if (hitec_prog_load_waits(p) && !hp.page.open) {
+    if (hitec_prog_load_waits(p) && !hp.f.page.open) {
         hpn_page_load();
     }
 }
@@ -210,21 +210,21 @@ void hpn_page_load_at(int from)
     for (unsigned r = 0; r < (unsigned)HITEC_RULE_COUNT; ++r) {
         fixed += (rules & HITEC_RULE_BIT(r)) != 0u ? 1 : 0;
     }
-    hpn_page_values(to, HP_PAGE_LINES - fixed < HP_PAGE_VALUES
-                            ? HP_PAGE_LINES - fixed
+    hpn_page_values(to, SPROG_PAGE_LINES - fixed < HP_PAGE_VALUES
+                            ? SPROG_PAGE_LINES - fixed
                             : HP_PAGE_VALUES);
     hpn_page_rules(rules);
     /* The values give way to the warnings; warnings that still do not fit
      * go to a next part, behind HOLD 2s TO CONTINUE: every warning stands
      * above a hold before the one that loads. */
     if (!hpn_page_fit() || from > 0) {
-        const int all = hp.page.count;
+        const int all = hp.f.page.count;
         const int end = hpn_page_part(from);
 
         if (end < all) {
-            hp.page.kind = W_LOAD_MORE;
-            hp.page.next = end;
-            snprintf(hp.page.apply, sizeof(hp.page.apply), "%s",
+            hp.f.page.what = W_LOAD_MORE;
+            hp.page_next = end;
+            snprintf(hp.f.page.apply, sizeof(hp.f.page.apply), "%s",
                      TR(KP_HOLD_NEXT));
         }
     }
