@@ -397,7 +397,7 @@ davor `SCHWACH` (Bit4) oder `LEER` (Bit5), `USB`, solange USB es versorgt,
 STATUS-Lesen wartet auf das PARAM-Lesen der Verbindung und hält die Pakete
 des Panels an das Dial für seine Laufzeit an; ein fehlgeschlagenes Lesen
 behält den letzten STATUS. Ein Dial eines älteren Releases sendet nur die
-Flags Bit0 bis Bit3, die wie bisher dekodiert werden. Das Update bietet
+Flags Bit0 bis Bit3; das Panel liest sie in beiden Releases mit derselben Bedeutung. Das Update bietet
 jedem Dial das Image seines Boards an: `rcbench-dial-<Version>.bin` dem
 M5Stack Dial und einem Dial, dessen INFO noch aussteht,
 `rcbench-dial-k518-<Version>.bin` dem K518, und das Panel prüft den Kopf
