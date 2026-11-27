@@ -51,6 +51,30 @@
  *      and NAME take the value, PAGE_APPLY does what the page asked.
  *   4. sprog_render() draws it all.
  *
+ * Steps of a new brand, BRAND standing for its name (docs/Screens.md,
+ * "Servo programmer frame"):
+ *   1. The protocol in protocols/BRAND/ and the session model in
+ *      shared/bench/: connect, read, edit with limits, write with verify,
+ *      backup, files.  None of it is in shared/ui.
+ *   2. BRAND_panel.c: the sprog_def_t with its tab and row tables, the
+ *      state with a sprog_t in it, the 18 hooks of a prog_page_set_t, most
+ *      of them one call onto sprog_*, the session the footer and the READY
+ *      card read, and a prog_reg_row_t in prog_registry.c.
+ *   3. BRAND_panel_draw.c: the view fill (step 2 of the list above): each
+ *      row's value, fill, press and why, the head, the notes, the bottom
+ *      line.
+ *   4. BRAND_panel_touch.c: the switch on sprog_result_t.
+ *   5. BRAND_panel_edit.c: the values of the keypad, the lists and the
+ *      keyboard into the draft, with the files and the backup.
+ *   6. BRAND_panel_warn.c: the soft limits as hold pages
+ *      (sprog_page_open(), sprog_page_line()).
+ *   7. The texts in shared/text/include/ui_text.def, EN and DE, and
+ *      BRAND_panel_text.c for the lines built from them.
+ *   8. BRAND_panel_run.c where LIMIT RUN and RUDDER AUTO write through it.
+ *   9. The brand's function in each of the 18 PROG_CALLS entries of
+ *      tools/stack_check.py, its views in tools/render_ui.py, a docs page,
+ *      a help page and its hub tile.
+ *
  * SPDX-License-Identifier: MIT
  */
 #pragma once
