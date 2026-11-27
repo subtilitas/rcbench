@@ -553,6 +553,7 @@ TRACKED = [
     "shared/dial/dial_draw.c",
     "shared/dial/dial_text.c",
     "shared/dial/dial_button.c",
+    "shared/dial/dial_batt.c",
     "shared/dial/dk518_boot.c",
     "shared/dial/dk518_draw.c",
     "shared/dial/dk518_input.c",

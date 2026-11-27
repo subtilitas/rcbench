@@ -52,6 +52,14 @@ history is in git.
   ACCEPT and the switch-off's choice TAP: SELECT on the K518 alone. The
   M5Stack Dial's input task, buzzer and faces are unchanged
   ([The M5Stack Dial](docs/Dial.md)).
+- The K518 reads its supply on GPIO1 once a second: USB when the rail
+  reads above 4,450mV or a USB host is on its port, else the cell's
+  voltage from 2,500mV. STATUS gains two flags, LOW (bit4: 3 readings
+  below 3,500mV) and EMPTY (bit5: 3 readings below 3,350mV). An empty
+  cell shows BATTERY EMPTY for 3s, then the K518 switches itself off. OFF
+  in the switch-off choice puts it into deep sleep, and a turn of the knob
+  wakes it ([The M5Stack Dial](docs/Dial.md),
+  [dialknob](protocols/dialknob/README.md)).
 
 ### Changed
 

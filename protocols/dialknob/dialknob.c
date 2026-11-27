@@ -292,7 +292,8 @@ bool dk_status_decode(const uint8_t *buf, size_t len, dk_status_t *out)
 {
     dk_status_t s;
     const uint8_t known = DK_ST_USB | DK_ST_CHARGING | DK_ST_BATT_UNKNOWN
-                          | DK_ST_PANEL_LOST;
+                          | DK_ST_PANEL_LOST | DK_ST_BATT_LOW
+                          | DK_ST_BATT_EMPTY;
     if (!head_ok(buf, len, DK_LEN_STATUS, DK_K_STATUS) || out == NULL) {
         return false;
     }

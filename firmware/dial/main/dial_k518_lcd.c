@@ -29,6 +29,7 @@
 #include "dial_k518_init.h"
 #include "dk518_face.h"
 
+#include "driver/gpio.h"
 #include "driver/ledc.h"
 #include "driver/spi_master.h"
 #include "esp_app_desc.h"
@@ -250,4 +251,18 @@ void dial_lcd_flush(const uint16_t *fb, int y0, int y1)
     (void)fb;
     (void)y0;
     (void)y1;
+}
+
+void dial_k518_lcd_sleep(void)
+{
+    if (s_panel != NULL) {
+        (void)esp_lcd_panel_disp_on_off(s_panel, false);
+        (void)esp_lcd_panel_disp_sleep(s_panel, true);
+    }
+    /* A digital pad loses its level in deep sleep unless it is held. */
+    ledc_stop(LEDC_LOW_SPEED_MODE, BL_CHANNEL, 0);
+    gpio_set_direction(DIAL_PIN_LCD_BL, GPIO_MODE_OUTPUT);
+    gpio_set_level(DIAL_PIN_LCD_BL, 0);
+    gpio_hold_en(DIAL_PIN_LCD_BL);
+    gpio_deep_sleep_hold_en();
 }

@@ -33,6 +33,9 @@
 #define TOUCH_START_MS 300u
 /** @brief The whole frame is drawn and sent at least this often, ms. */
 #define FACE_REFRESH_MS 10000u
+/** @brief How long BATTERY EMPTY stands before the Dial switches itself
+ *         off, ms. */
+#define DIAL_EMPTY_SHOW_MS 3000u
 
 /** @brief The log's tag. */
 static const char *TAG = "dial";
@@ -68,6 +71,7 @@ static void view_read(dial_face_view_t *v, char *addr, uint32_t now)
     v->rssi = dial_ble_rssi();
     v->batt_mv = sup.known ? sup.mv : 0u;
     v->usb = sup.usb;
+    v->batt_empty = sup.empty;
     devota_view_t u;
     devota_view(&u);
     v->upd = u.st == BLEOTA_DEV_IDLE ? DIAL_UPD_NONE
@@ -120,7 +124,9 @@ static void send_status(uint8_t seq, bool lost)
     st.flags = (uint8_t)((sup.usb ? DK_ST_USB : 0u)
                          | (sup.charging ? DK_ST_CHARGING : 0u)
                          | (sup.known ? 0u : DK_ST_BATT_UNKNOWN)
-                         | (lost ? DK_ST_PANEL_LOST : 0u));
+                         | (lost ? DK_ST_PANEL_LOST : 0u)
+                         | (sup.low ? DK_ST_BATT_LOW : 0u)
+                         | (sup.empty ? DK_ST_BATT_EMPTY : 0u));
     for (unsigned k = 0; k < 3u; ++k) {
         st.fw[k] = (uint8_t)(v[k] > 255u ? 255u : v[k]);
     }
@@ -158,6 +164,7 @@ void app_main(void)
     uint32_t links = 0;
     uint32_t drawn_ms = 0;
     uint32_t status_ms = 0;
+    uint32_t empty_ms = 0;
     uint8_t status_seq = 0;
     bool status_lost = true;
     bool was_lost = true;
@@ -197,6 +204,15 @@ void app_main(void)
         take_packets(now);
         dial_input_link(s_face.any, s_face.last_ms);
         view_read(&view, addr, now);
+        if (!view.batt_empty) {
+            empty_ms = 0u;
+        } else if (empty_ms == 0u) {
+            empty_ms = now | 1u;
+            ESP_LOGW(TAG, "battery empty: switching off in %ums",
+                     (unsigned)DIAL_EMPTY_SHOW_MS);
+        } else if (now - empty_ms >= DIAL_EMPTY_SHOW_MS) {
+            dial_power_off();
+        }
         if (view.ready && !devota_active() && dk_face_drop(&s_face, now)) {
             /* LINK LOST has held for 500ms: end the link, so the panel
              * sees the disconnect.  No EVENT has gone since LINK LOST
