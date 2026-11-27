@@ -116,6 +116,7 @@ das Image des anderen.
 ![ein Bildschirm ohne Wirkung des Knopfs auf dem K518](img/de/dial-k518-other.png)
 ![das angebotene Update auf dem K518](img/de/dial-k518-update-ask.png)
 ![das ankommende Update auf dem K518](img/de/dial-k518-update-send.png)
+![eine abgelehnte Signatur auf dem K518](img/de/dial-k518-update-sig.png)
 ![die Warnung vor dem Ausschalten auf dem K518](img/de/dial-k518-off-warn.png)
 ![die Wahl beim Ausschalten auf dem K518](img/de/dial-k518-off-ask.png)
 ![ein leerer Akku auf dem K518](img/de/dial-k518-batt-empty.png)
@@ -317,10 +318,16 @@ und sind die Schritte davor erledigt, trägt seine Karte dasselbe Halten
 1. Das Dial ist gebunden und verbunden, der Prüfstand ist SAFE. Die Zeile
    zeigt `Dial: 0.23.17. Release: 0.23.18.` und `2s HALTEN ZUM DIAL-UPDATE`.
 2. Das Halten von 2s beendet den Knopf-Link des Dial. Das Panel verbindet
-   sich mit dem Update-Dienst des Dial und sendet BEGIN: Art DIAL, Größe,
-   Version und den SHA-256 des Images.
+   sich mit dem Update-Dienst des Dial und sendet BEGIN in Protokoll 2:
+   Art DIAL, Größe, Version, den SHA-256 des Images und seine
+   Release-Signatur, die `.sig`, die mit dem Image kam, als r und s mit je
+   32 Bytes.
 3. Das Dial prüft die Art, die Größe gegen seinen Slot von 3.145.728 Bytes
-   und die Version. Dann zeigt es 30s lang `UPDATE`, `v0.23.17 AUF
+   und die Version. Es prüft die Release-Signatur über den SHA-256 aus
+   BEGIN (Prüfung 1), mit dem Release-Schlüssel, der in seine Firmware
+   eingebaut ist: `firmware/panel/main/keys/release_signing_pub.pem`,
+   ECDSA P-256, der des Panels. Eine fehlende oder falsche Signatur wird
+   mit Code 15 (`BLEOTA_E_SIG`) vor jeder Frage abgelehnt. Dann zeigt es 30s lang `UPDATE`, `v0.23.17 AUF
    v0.23.18`, `DRÜCKEN: ANNEHMEN`, die verbleibenden Sekunden und
    `HALTEN: ABLEHNEN`. Vor der Antwort wird nichts gelöscht.
    - Ein Druck der Bildschirmtaste, innerhalb von 1s losgelassen, nimmt an.
@@ -336,9 +343,27 @@ und sind die Schritte davor erledigt, trägt seine Karte dasselbe Halten
 ![Die Frage des Updates am Dial](img/de/dial-update-ask.png)
 ![Der Fortschritt des Updates am Dial](img/de/dial-update-send.png)
 
-5. Das Panel sendet END. Das Dial vergleicht den SHA-256 jedes
-   geschriebenen Bytes mit dem aus BEGIN, lässt ESP-IDF das Image prüfen,
-   setzt den Boot-Slot, zeigt `STARTET NEU` und startet 500ms später neu.
+5. Das Panel sendet END. Das Dial prüft die Release-Signatur noch einmal,
+   diesmal über den SHA-256, den es selbst über jedes geschriebene Byte
+   berechnet hat (Prüfung 2), nie über den aus BEGIN. Dann vergleicht es
+   diesen SHA-256 mit dem aus BEGIN, lässt ESP-IDF das Image prüfen, setzt
+   den Boot-Slot, zeigt `STARTET NEU` und startet 500ms später neu.
+
+Eine abgelehnte Signatur zeigt 5s lang `SIGNATUR ABGELEHNT` und
+`FIRMWARE BLEIBT` (`DIAL_UPD_BADSIG_MS`); das Dial behält sein Image. Die
+Zeile des Panels sagt `Signatur vom Gerät abgelehnt`.
+
+![Eine abgelehnte Signatur am Dial](img/de/dial-update-sig.png)
+
+Ein Dial, dessen Firmware älter ist als die Signaturprüfung (Protokoll 1),
+lehnt BEGIN in Protokoll 2 mit Code 4 (`BLEOTA_E_PROTO`) vor jeder Frage
+ab. Das Panel wartet dann 500ms und beginnt noch einmal in Protokoll 1,
+ohne Signatur; die Konsole schreibt es mit. Das geschieht einmal je Update
+und nur bei Code 4 als Antwort auf BEGIN. Das Dial nimmt die neue Firmware
+dieses eine Mal wie bisher an, mit dem SHA-256 allein; danach lehnt es
+Protokoll 1 mit Code 15 ab. Ein Panel eines Release vor der Prüfung sendet
+Protokoll 1: Ein Dial mit der Prüfung lehnt es ab, und dieses Panel zeigt
+den Code als unbekannten Fehler oder als Zeitüberschreitung.
 6. Das neue Image startet auf Probe. Es markiert sich bei seiner ersten
    Verbindung als gültig, die es nur mit laufendem BLE-Stack annimmt. Der
    Knopf-Link des Panels verbindet sich wieder aus den Werten von SETUP.
@@ -368,10 +393,13 @@ kein Verlustfehler, denn der Prüfstand ist SAFE, und ARM wird abgelehnt,
 solange das Update läuft. Das Dial hält seinen Link, solange eine
 Übertragung läuft: Das Trennen nach 500ms ohne Paket des Panels wartet.
 
-Sicherheit: kein Pairing, keine Verschlüsselung und keine Signatur. Die
-Unversehrtheit stützt sich auf den SHA-256 in BEGIN. Jedes Central in
-Reichweite kann BEGIN senden; der Druck am Dial nimmt es an
-([SECURITY.md](../SECURITY.md)).
+Sicherheit: kein Pairing und keine Verschlüsselung. Das Dial installiert
+nur ein Image, das mit dem Release-Schlüssel signiert ist; der SHA-256 in
+BEGIN prüft die Übertragung. Jedes Central in Reichweite kann BEGIN
+senden; der Druck am Dial nimmt es an ([SECURITY.md](../SECURITY.md)).
+Jede Prüfung ist eine ECDSA-Verifikation mit Mbed TLS im Task `ota`,
+außerhalb der Sperre der Übertragung; die Konsole schreibt ihre Zeit mit.
+Die Zeit auf dem ESP32-S3 ist noch nicht gemessen.
 
 Die Geräteseite läuft im Task `ota`, Priorität 3, alle 10ms, mit einem
 Stack von 8.192 Bytes aus dem Heap beim Start, der Größe der OTA-Beispiele

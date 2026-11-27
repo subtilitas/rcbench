@@ -595,9 +595,9 @@ TEST_CASE(a_device_job_keeps_the_panels_ended_check_readable)
 }
 
 /* NAME.sig beside the file: its bytes go to the release key with the
- * file's buffer, at FW_SIG_MIN and FW_SIG_MAX bytes; the verdict comes back
- * with the staged file. */
-TEST_CASE(a_devices_file_carries_the_verdict_on_its_sig)
+ * file's buffer, at FW_SIG_MIN and FW_SIG_MAX bytes; the verdict and the
+ * bytes come back with the staged file. */
+TEST_CASE(a_devices_file_carries_its_sig_and_the_verdict_on_it)
 {
     static const fw_sig_t k_says[] = { FW_SIG_OK, FW_SIG_BAD };
     static const uint32_t k_len[] = { FW_SIG_MIN, FW_SIG_MAX };
@@ -620,6 +620,10 @@ TEST_CASE(a_devices_file_carries_the_verdict_on_its_sig)
         CHECK_EQ(g_v_bytes, g_img_n);
         CHECK_EQ(g_v_sig_n, k_len[i]);
         CHECK_EQ(memcmp(g_v_sig, g_sig_body, k_len[i]), 0);
+        /* The bytes come with the file as well, for the device's own
+         * check (bleota protocol 2), whatever the panel's verdict. */
+        CHECK_EQ(out.sig_n, k_len[i]);
+        CHECK_EQ(memcmp(out.sig_der, g_sig_body, k_len[i]), 0);
         CHECK_STR_EQ(g.urls[4], FW_REL_DL_PREFIX "v0.23.16/" NAME ".sig");
         CHECK_EQ(g.opens, g.closes);
     }
@@ -637,6 +641,7 @@ TEST_CASE(a_missing_or_misshapen_sig_leaves_the_file_unsigned)
     wa_fetch_res_t out = fetch_dev(0u, DSLOT);
     CHECK_EQ(out.got, WA_GOT_STAGED);
     CHECK_EQ(out.sig, FW_SIG_NONE);
+    CHECK_EQ(out.sig_n, 0u);
     CHECK_EQ(g_verifies, 0u);
     static const uint32_t k_len[] = { FW_SIG_MIN - 1u, FW_SIG_MAX + 1u };
     for (unsigned i = 0; i < 2u; ++i) {
@@ -650,6 +655,7 @@ TEST_CASE(a_missing_or_misshapen_sig_leaves_the_file_unsigned)
         out = fetch_dev(0u, DSLOT);
         CHECK_EQ(out.got, WA_GOT_STAGED);
         CHECK_EQ(out.sig, FW_SIG_FORM);
+        CHECK_EQ(out.sig_n, 0u);
         CHECK_EQ(g_verifies, 0u);
     }
 }
@@ -690,7 +696,7 @@ int main(void)
     RUN(a_device_job_keeps_its_release_and_asks_sums_after_the_join);
     RUN(a_device_job_is_refused_while_armed_or_without_a_network);
     RUN(a_device_job_keeps_the_panels_ended_check_readable);
-    RUN(a_devices_file_carries_the_verdict_on_its_sig);
+    RUN(a_devices_file_carries_its_sig_and_the_verdict_on_it);
     RUN(a_missing_or_misshapen_sig_leaves_the_file_unsigned);
     RUN(a_broken_connection_on_the_sig_ends_the_job);
     free(g.alloc_buf);

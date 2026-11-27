@@ -58,6 +58,18 @@ bool panel_devimg_get(devimg_id_t id, const uint8_t **p, uint32_t *n,
                       fw_image_info_t *info, uint8_t sha[FW_SHA256_BYTES]);
 
 /**
+ * @brief The release signature that came with @p id's image, from GitHub
+ *        or the card: its DER bytes, which the panel turns into the raw
+ *        form a device checks itself (bleota protocol 2, relsig.h).
+ *        Any of the frame's tasks may call it once the image is READY.
+ * @param id  the image
+ * @param der takes the bytes
+ * @param n   takes their count
+ * @return false while the image is not in memory, or it came without one
+ */
+bool panel_devimg_sig(devimg_id_t id, uint8_t der[FW_SIG_MAX], uint8_t *n);
+
+/**
  * @brief The version @p id's image of this release carries: the C6's
  *        esp_hosted version, else the panel's own.
  * @param id the image

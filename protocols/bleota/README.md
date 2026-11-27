@@ -6,8 +6,10 @@ M5Stack Dial and the sensor nodes are the peripherals. The module holds the
 GATT (generic attribute profile) service's UUIDs (universally unique
 identifiers), the codec of every control write, notification and chunk, and
 the device's side of a transfer (`bleota_dev_t`): the checks before
-anything is erased, the physical confirmation, the credit window, the
-SHA-256 compare and the timeouts. The panel's side is `shared/devupd`.
+anything is erased, the release signature's two checks, the physical
+confirmation, the credit window, the SHA-256 compare and the timeouts.
+The panel's side is `shared/devupd`. The protocol is version 2; version 1
+is the same without the signature ([Protocol 2](#protocol-2)).
 
 | Part | Files | Depends on |
 |---|---|---|
@@ -15,7 +17,8 @@ SHA-256 compare and the timeouts. The panel's side is `shared/devupd`.
 | RP2350 pin driver | none | |
 
 The module has no pin driver. Both ends run their own Bluetooth stack; the
-caller moves the bytes, writes the flash and computes the SHA-256. The core
+caller moves the bytes, writes the flash, computes the SHA-256 and
+verifies the signature (`shared/relsig`, Mbed TLS). The core
 reads no clock, does no I/O and takes no heap. Times are unsigned
 differences of a free-running 32-bit ms clock.
 
@@ -39,7 +42,7 @@ differences of a free-running 32-bit ms clock.
 
 | Time | ms | Ends with |
 |---|---:|---|
-| `BLEOTA_HASH_MS`, BEGIN to the second HASH | 5,000 | FAIL `E_STATE` |
+| `BLEOTA_HASH_MS`, BEGIN to the last HASH part | 5,000 | FAIL `E_TIMEOUT` |
 | `BLEOTA_CONFIRM_MS`, the confirmation window | 30,000 | FAIL `E_NO_CONFIRM` |
 | `BLEOTA_HOLD_MS`, a hold of the confirming key | 1,000 | accept or refuse |
 | `BLEOTA_IDLE_MS`, a transfer without a write | 10,000 | FAIL `E_TIMEOUT` |
@@ -58,8 +61,8 @@ Base UUID `706E340C-76DB-4FB2-AEF1-A89F7CBDF9xx`:
 
 | Op | Name | Length | Bytes |
 |---|---|---:|---|
-| 0x01 | BEGIN | 14 | op, protocol 1, kind, flags, size u32, version u16 x 3 (MAJOR, MINOR, PATCH) |
-| 0x02 | HASH | 18 | op, part 0 or 1, 16 bytes of the SHA-256 |
+| 0x01 | BEGIN | 14 | op, protocol 2 (or 1), kind, flags, size u32, version u16 x 3 (MAJOR, MINOR, PATCH) |
+| 0x02 | HASH | 18 | op, part, 16 bytes: parts 0 and 1 the SHA-256; in protocol 2 parts 2 to 5 the signature, r then s, 32 bytes each, big-endian |
 | 0x03 | END | 1 | op |
 | 0x04 | ABORT | 1 | op |
 | 0x05 | POLL | 1 | op |
@@ -99,12 +102,18 @@ FAIL's codes:
 | 12 | `E_SHORT` | END before the last byte |
 | 13 | `E_ABORTED` | the central's ABORT |
 | 14 | `E_IMAGE` | the head is no application with a role, or the device's own image check refused the image |
+| 15 | `E_SIG` | a device that needs the signature: protocol 1, or a signature that does not verify over BEGIN's SHA-256 (check 1) or over the SHA-256 of the bytes written (check 2) |
 
 ## A transfer
 
-1. The central writes BEGIN and both HASH parts. The device checks the
-   protocol and flags, the kind, the size against its slot and the version,
-   in that order. A refusal is a FAIL with its code. Nothing is erased.
+1. The central writes BEGIN and the HASH parts: two in protocol 1, six in
+   protocol 2, in any order. The device checks the protocol and flags,
+   the kind, the size against its slot and the version, in that order. A
+   refusal is a FAIL with its code; the HASH parts after a refused BEGIN
+   are dropped without an answer. Nothing is erased.
+   - A device that needs the signature (`need_sig`, the Dials) then asks
+     its caller for check 1 (`BLEOTA_DO_SIG`): the signature over the
+     SHA-256 BEGIN gave. A signature that does not verify is `E_SIG`.
 2. The device notifies WAIT and asks for the confirmation, for 30s.
    - `BLEOTA_CONFIRM_PRESS` (the Dial): a press released within 1s
      accepts, a hold of 1s refuses.
@@ -117,9 +126,13 @@ FAIL's codes:
    ring. Once 296 bytes are in, it checks the head; then the caller writes
    them to flash and adds them to the SHA-256, and the device notifies
    CREDIT as the limit moves.
-5. The central writes END after the last byte. The device compares the
-   SHA-256, the caller checks the image and sets the boot slot, the device
-   notifies DONE, and the caller restarts.
+5. The central writes END after the last byte. A device that needs the
+   signature asks for check 2 first: the signature over the SHA-256 its
+   caller computed of the bytes written (`bleota_dev_sig_job()` names that
+   one, never BEGIN's). Then the device compares the SHA-256, the caller
+   checks the image and sets the boot slot, the device notifies DONE, and
+   the caller restarts. An image other than the signed one fails check 2
+   even when BEGIN's SHA-256 and signature belong together.
 
 A refusal, a timeout, a lost link or an ABORT closes the open slot. The
 device keeps running the image it started with. A new transfer starts with
@@ -145,7 +158,7 @@ The device reads the image's first 296 bytes before its first flash write:
 | 32 | 4 | `esp_app_desc_t`'s magic | 0xABCD5432 |
 | 288 | 4 | the role's magic | `BLEOTA_ROLE_MAGIC`, "rcbR" |
 | 292 | 1 | the role's kind | the device's, else `E_KIND` |
-| 293 | 1 | the role's protocol | 1 |
+| 293 | 1 | the role's format, `BLEOTA_ROLE_PROTO` | 1 |
 
 The role (`bleota_role_t`) sits in ESP-IDF's `.rodata_custom_desc`
 section, which the linker places right after the 256-byte
@@ -153,6 +166,33 @@ section, which the linker places right after the 256-byte
 `DEVOTA_ROLE(kind)`. The two node roles share chip and project name, and
 so do the two Dial boards, so the role is what tells them apart. Any other field failing is `E_IMAGE`.
 An image without the role, such as one built before it, is refused.
+
+## Protocol 2
+
+Protocol 2 adds the release signature in HASH parts 2 to 5: ECDSA P-256
+over the SHA-256 of the image file, the `.sig` the release publishes beside
+it, as r and s of 32 bytes each. The writes stay 18 bytes long. The
+panel turns the DER form into this raw one (`relsig_der_to_raw()`); the
+device turns it back and verifies with the release key compiled into its
+firmware (`firmware/panel/main/keys/release_signing_pub.pem`).
+
+| Device | Protocol 1 | Protocol 2 |
+|---|---|---|
+| of protocol 1 | takes it | `E_PROTO` at BEGIN; its decoder drops parts 2 to 5 |
+| of protocol 2, `need_sig` (the Dials) | `E_SIG` at BEGIN | both checks |
+| of protocol 2, no `need_sig` (the nodes) | takes it | takes the parts, checks no signature |
+
+The image head's format byte (`BLEOTA_ROLE_PROTO`) stays 1, so a device of
+protocol 1 takes an image built for protocol 2.
+
+Transition: the central starts in protocol 2. On `E_PROTO` answering that
+BEGIN, and only then, it waits 500ms (`DEVUPD_RETRY_MS`), drops the FAILs
+that answer the HASH writes after BEGIN, and starts once more in protocol
+1. That happens once per transfer; `E_SIG` never leads to it. A device of
+protocol 1 so takes the update to protocol 2 one time, with the SHA-256
+alone. From then on a Dial refuses protocol 1. A central of protocol 1
+decodes no FAIL code above 14: it reads `E_SIG` from a Dial of protocol 2
+as no answer and ends on its timeout.
 
 ## Credit window
 
@@ -188,8 +228,13 @@ and the nodes. The window caps the rate at 2,048 bytes per round trip:
 
 ## Security
 
-- No pairing, no encryption and no signature. Integrity is the SHA-256
-  the central gives in BEGIN's HASH writes.
+- No pairing and no encryption. A device that needs the signature
+  installs only an image signed with the release key, checked twice: over
+  BEGIN's SHA-256 before the confirmation, and over the SHA-256 of the
+  bytes written before the boot slot is set. On the nodes integrity is the
+  SHA-256 the central gives in BEGIN's HASH writes.
+- A device of protocol 1 checks no signature, and takes the update to
+  protocol 2 without one ([Protocol 2](#protocol-2)).
 - Any central in range can write BEGIN. The physical confirmation on the
   device is what keeps another central from installing an image: nothing
   is erased before it.
@@ -208,7 +253,12 @@ and the nodes. The window caps the rate at 2,048 bytes per round trip:
 ```c
 size_t      bleota_begin_encode(uint8_t kind, uint32_t size, const uint16_t ver[3],
                                 uint8_t flags, uint8_t *out);
+size_t      bleota_begin_encode_proto(uint8_t proto, uint8_t kind, uint32_t size,
+                                      const uint16_t ver[3], uint8_t flags,
+                                      uint8_t *out);
 size_t      bleota_hash_encode(const uint8_t sha[32], uint8_t part, uint8_t *out);
+size_t      bleota_sig_encode(const uint8_t sig[BLEOTA_SIG_LEN], uint8_t quarter,
+                              uint8_t *out);
 size_t      bleota_op_encode(uint8_t op, uint8_t *out);
 bool        bleota_ctrl_decode(const uint8_t *b, size_t n, bleota_ctrl_t *out);
 size_t      bleota_status_encode(const bleota_status_t *s, uint8_t *out);
@@ -231,6 +281,9 @@ void        bleota_dev_opened(bleota_dev_t *d, bool ok, uint32_t now);
 uint32_t    bleota_dev_take(bleota_dev_t *d, uint8_t *out, uint32_t max);
 void        bleota_dev_written(bleota_dev_t *d, bool ok, uint32_t now);
 bool        bleota_dev_verify(bleota_dev_t *d, const uint8_t digest[32], uint32_t now);
+bool        bleota_dev_sig_job(const bleota_dev_t *d, uint8_t sha[32],
+                               uint8_t sig[BLEOTA_SIG_LEN]);
+void        bleota_dev_sig(bleota_dev_t *d, bool ok, uint32_t now);
 void        bleota_dev_installed(bleota_dev_t *d, bool ok, uint8_t code, uint32_t now);
 void        bleota_dev_closed(bleota_dev_t *d);
 bool        bleota_dev_status(bleota_dev_t *d, uint8_t *out);
@@ -240,7 +293,8 @@ unsigned    bleota_dev_percent(const bleota_dev_t *d);
 
 The device's caller runs `bleota_dev_poll()` on its own task and does what
 it returns (`bleota_do_t`): open the slot, write what `bleota_dev_take()`
-hands it, finish the SHA-256, install, close or restart. Each step reports
+hands it, finish the SHA-256, verify the signature, install, close or
+restart. Each step reports
 back with its own call. `bleota_dev_status()` gives the next notification.
 
 The steps run outside the caller's lock, so a lost link or an ABORT can end
@@ -290,6 +344,13 @@ confirmation window in both modes at its limits, the HASH timeout, the idle
 timeout, a lost chunk, a chunk past the limit, the gap mark, the head
 checked before the first write, the SHA-256 compare, an ABORT and a lost
 link during the install, a lost link and a new BEGIN after it.
+`test_bleota_sig.c` runs the two signature checks with the real verifier
+(`shared/relsig`) and the throw-away keys of `test/host/sign_vectors.h`:
+protocol 1 refused where the signature is needed, check 1 before any
+question, a HASH and signature that belong together with other bytes
+refused at check 2, and a transfer that ends during a check.
+`test_devupd.c` runs the fallback to protocol 1 against a device of
+protocol 1, once only, and never after `E_SIG`.
 
 ```sh
 cmake -S test/host -B test/host/build

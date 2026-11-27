@@ -74,6 +74,7 @@ static void fail(bleota_dev_t *d, uint8_t code)
     s.next = d->rx;
     notify(d, &s);
     d->code = code;
+    ++d->fails;
     d->st = BLEOTA_DEV_IDLE;
     d->close_due = d->open;
 }
@@ -102,8 +103,12 @@ bool bleota_dev_init(bleota_dev_t *d, const bleota_dev_cfg_t *cfg,
  */
 static uint8_t begin_refusal(const bleota_dev_t *d, const bleota_ctrl_t *c)
 {
-    if (c->proto != BLEOTA_PROTO || (c->flags & (uint8_t)~BLEOTA_F_ALL) != 0u) {
+    if ((c->proto != BLEOTA_PROTO && c->proto != BLEOTA_PROTO_1)
+        || (c->flags & (uint8_t)~BLEOTA_F_ALL) != 0u) {
         return BLEOTA_E_PROTO;
+    }
+    if (c->proto == BLEOTA_PROTO_1 && d->cfg.need_sig) {
+        return BLEOTA_E_SIG; /* protocol 1 carries no signature */
     }
     if (c->kind != d->cfg.kind) {
         return BLEOTA_E_KIND;
@@ -141,7 +146,10 @@ static void begin(bleota_dev_t *d, const bleota_ctrl_t *c, uint32_t now)
     }
     d->size = c->size;
     d->flags = c->flags;
+    d->proto = c->proto;
     memcpy(d->ver, c->ver, sizeof d->ver);
+    memset(d->sig, 0, sizeof d->sig);
+    memset(d->digest, 0, sizeof d->digest);
     d->halves = 0u;
     d->rx = d->wr = d->taken = d->told = 0u;
     d->nak_at = NAK_NONE;
@@ -169,6 +177,57 @@ static void ask_confirm(bleota_dev_t *d, uint32_t now)
     s.ev = BLEOTA_EV_WAIT;
     s.secs = (uint16_t)(BLEOTA_CONFIRM_MS / 1000u);
     notify(d, &s);
+}
+
+/**
+ * @brief The HASH parts this transfer takes, one bit each: the SHA-256's
+ *        two, and in protocol 2 the signature's four.
+ * @param d the device
+ * @return the mask of every part due
+ */
+static uint8_t parts_due(const bleota_dev_t *d)
+{
+    return d->proto == BLEOTA_PROTO_1
+               ? (uint8_t)((1u << BLEOTA_HASH_PARTS) - 1u)
+               : (uint8_t)((1u << BLEOTA_PARTS_MAX) - 1u);
+}
+
+/**
+ * @brief One HASH write: a part of the SHA-256 or of the signature.  The
+ *        last one due asks for check 1 on a device that needs the
+ *        signature, the confirmation on any other.
+ * @param d   the device
+ * @param c   the write
+ * @param now the clock
+ */
+static void hash_part(bleota_dev_t *d, const bleota_ctrl_t *c, uint32_t now)
+{
+    const uint8_t bit = (uint8_t)(1u << c->part);
+    if (d->st == BLEOTA_DEV_IDLE) {
+        /* The parts that follow a refused BEGIN: its FAIL already went,
+         * and six more would push it out of the notification queue. */
+        return;
+    }
+    if (d->st != BLEOTA_DEV_HASH || (bit & parts_due(d)) == 0u) {
+        fail(d, BLEOTA_E_STATE);
+        return;
+    }
+    if (c->part < BLEOTA_HASH_PARTS) {
+        memcpy(d->sha + (size_t)16u * c->part, c->half, 16u);
+    } else {
+        memcpy(d->sig + (size_t)16u * (c->part - BLEOTA_HASH_PARTS),
+               c->half, 16u);
+    }
+    d->halves |= bit;
+    if (d->halves != parts_due(d)) {
+        return;
+    }
+    if (d->cfg.need_sig) {
+        d->st = BLEOTA_DEV_SIG;
+        d->t = now;
+    } else {
+        ask_confirm(d, now);
+    }
 }
 
 /**
@@ -200,15 +259,7 @@ void bleota_dev_ctrl(bleota_dev_t *d, const uint8_t *b, size_t n,
         begin(d, &c, now);
         break;
     case BLEOTA_OP_HASH:
-        if (d->st != BLEOTA_DEV_HASH) {
-            fail(d, BLEOTA_E_STATE);
-            break;
-        }
-        memcpy(d->sha + (size_t)16u * c.part, c.half, 16u);
-        d->halves |= (uint8_t)(1u << c.part);
-        if (d->halves == 3u) {
-            ask_confirm(d, now);
-        }
+        hash_part(d, &c, now);
         break;
     case BLEOTA_OP_END:
         end(d);
@@ -405,6 +456,9 @@ bleota_do_t bleota_dev_poll(bleota_dev_t *d, uint32_t now)
         return BLEOTA_DO_NONE;
     case BLEOTA_DEV_VERIFY:
         return BLEOTA_DO_VERIFY;
+    case BLEOTA_DEV_SIG:
+    case BLEOTA_DEV_SIG_END:
+        return BLEOTA_DO_SIG;
     case BLEOTA_DEV_INSTALL:
         return BLEOTA_DO_INSTALL;
     case BLEOTA_DEV_DONE:
@@ -475,6 +529,22 @@ void bleota_dev_written(bleota_dev_t *d, bool ok, uint32_t now)
     }
 }
 
+/**
+ * @brief The SHA-256 of what was written against BEGIN's: equal goes on
+ *        to the install, different ends the transfer.
+ * @param d the device
+ * @return true when they are equal
+ */
+static bool compare(bleota_dev_t *d)
+{
+    if (memcmp(d->digest, d->sha, sizeof d->sha) != 0) {
+        fail(d, BLEOTA_E_SHA);
+        return false;
+    }
+    d->st = BLEOTA_DEV_INSTALL;
+    return true;
+}
+
 bool bleota_dev_verify(bleota_dev_t *d, const uint8_t digest[32],
                        uint32_t now)
 {
@@ -482,12 +552,45 @@ bool bleota_dev_verify(bleota_dev_t *d, const uint8_t digest[32],
         return false;
     }
     d->t = now;
-    if (memcmp(digest, d->sha, sizeof d->sha) != 0) {
-        fail(d, BLEOTA_E_SHA);
+    memcpy(d->digest, digest, sizeof d->digest);
+    if (d->cfg.need_sig) {
+        /* Check 2 first, over what was written: an image other than the
+         * signed one fails here even when the SHA-256 and the signature
+         * the central gave belong together. */
+        d->st = BLEOTA_DEV_SIG_END;
         return false;
     }
-    d->st = BLEOTA_DEV_INSTALL;
+    return compare(d);
+}
+
+bool bleota_dev_sig_job(const bleota_dev_t *d, uint8_t sha[32],
+                        uint8_t sig[BLEOTA_SIG_LEN])
+{
+    if (d == NULL || sha == NULL || sig == NULL
+        || (d->st != BLEOTA_DEV_SIG && d->st != BLEOTA_DEV_SIG_END)) {
+        return false;
+    }
+    memcpy(sha, d->st == BLEOTA_DEV_SIG ? d->sha : d->digest, 32u);
+    memcpy(sig, d->sig, BLEOTA_SIG_LEN);
     return true;
+}
+
+void bleota_dev_sig(bleota_dev_t *d, bool ok, uint32_t now)
+{
+    if (d == NULL
+        || (d->st != BLEOTA_DEV_SIG && d->st != BLEOTA_DEV_SIG_END)) {
+        return; /* ended while it was verified */
+    }
+    d->t = now;
+    if (!ok) {
+        fail(d, BLEOTA_E_SIG);
+        return;
+    }
+    if (d->st == BLEOTA_DEV_SIG) {
+        ask_confirm(d, now);
+    } else {
+        (void)compare(d);
+    }
 }
 
 void bleota_dev_installed(bleota_dev_t *d, bool ok, uint8_t code,

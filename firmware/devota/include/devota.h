@@ -65,7 +65,7 @@ extern "C" {
 #define DEVOTA_ROLE(k)                                                     \
     __attribute__((section(".rodata_custom_desc"), used))                  \
     const bleota_role_t devota_role = { BLEOTA_ROLE_MAGIC, (k),             \
-                                        BLEOTA_PROTO, { 0u, 0u } }
+                                        BLEOTA_ROLE_PROTO, { 0u, 0u } }
 
 /** @brief The role DEVOTA_ROLE() defines. */
 extern const bleota_role_t devota_role;
@@ -94,6 +94,8 @@ typedef struct {
     uint16_t from[3]; /**< the version running */
     uint16_t to[3];   /**< the version BEGIN names */
     uint32_t ends;    /**< transfers ended without an install, counted */
+    uint32_t fails;   /**< FAILs notified, counted (bleota_dev_t.fails):
+                           with code, the refusal the face shows */
     uint32_t offer;   /**< the confirmation's identity (bleota_dev_offer()),
                            as st was taken */
 } devota_view_t;

@@ -91,6 +91,15 @@ typedef struct {
     uint64_t       sent;       /**< image bytes the engine gave out */
     air_t          air;        /**< chunks in flight */
     air_t          back;       /**< notifications in flight */
+    bool           old;        /**< the device runs protocol 1: it refuses
+                                    protocol 2 with BLEOTA_E_PROTO, answers
+                                    HASH parts 0 and 1 after that with
+                                    BLEOTA_E_STATE, and its decoder drops
+                                    parts 2 to 5 */
+    bool           old_both;   /**< it refuses protocol 1 as well */
+    bool           old_refused; /**< it refused the last BEGIN */
+    unsigned       begins;     /**< BEGINs written */
+    bool           sig_ok;     /**< BLEOTA_DO_SIG's verdict */
 } sim_t;
 
 /** @brief Fill the image with a pattern no shift repeats. */
@@ -154,6 +163,49 @@ static void link_down(sim_t *s)
 }
 
 /**
+ * @brief Tell the engine a FAIL with @p code, as a device notifies it.
+ * @param s    the simulation
+ * @param code BLEOTA_E_*
+ */
+static void old_fail(sim_t *s, uint8_t code)
+{
+    bleota_status_t st;
+    uint8_t b[BLEOTA_LEN_STATUS];
+    memset(&st, 0, sizeof st);
+    st.ev = BLEOTA_EV_FAIL;
+    st.code = code;
+    (void)bleota_status_encode(&st, b);
+    devupd_notify(&s->e, b, sizeof b, s->now);
+}
+
+/**
+ * @brief A device of protocol 1 takes a control write.
+ * @param s the simulation
+ * @param o the write
+ * @return true when it answered itself; false hands it to the device
+ */
+static bool old_device(sim_t *s, const devupd_out_t *o)
+{
+    if (o->ctrl[0] == BLEOTA_OP_BEGIN) {
+        s->old_refused = o->ctrl[1] != BLEOTA_PROTO_1 || s->old_both;
+        if (s->old_refused) {
+            old_fail(s, BLEOTA_E_PROTO);
+        }
+        return s->old_refused;
+    }
+    if (o->ctrl[0] == BLEOTA_OP_HASH) {
+        if (o->ctrl[1] > 1u) {
+            return true;                /* its decoder drops the write */
+        }
+        if (s->old_refused) {
+            old_fail(s, BLEOTA_E_STATE);
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * @brief The engine's writes of one step, over the link to the device.
  * @param s the simulation
  */
@@ -171,7 +223,12 @@ static void panel_writes(sim_t *s)
                 devupd_written(&s->e, 0x0Eu, s->now);
                 continue;
             }
-            bleota_dev_ctrl(&s->d, o.ctrl, o.len, s->now);
+            if (o.ctrl[0] == BLEOTA_OP_BEGIN) {
+                ++s->begins;
+            }
+            if (!s->old || !old_device(s, &o)) {
+                bleota_dev_ctrl(&s->d, o.ctrl, o.len, s->now);
+            }
             devupd_written(&s->e, 0u, s->now);
             continue;
         }
@@ -269,6 +326,9 @@ static void device_work(sim_t *s)
         case BLEOTA_DO_VERIFY:
             fw_sha256_done(&s->sha, digest);
             (void)bleota_dev_verify(&s->d, digest, s->now);
+            break;
+        case BLEOTA_DO_SIG:
+            bleota_dev_sig(&s->d, s->sig_ok, s->now);
             break;
         case BLEOTA_DO_INSTALL:
             bleota_dev_installed(&s->d, true, BLEOTA_OK, s->now);
@@ -524,11 +584,12 @@ TEST_CASE(no_link_and_no_answer_end_it_at_their_limits)
     CHECK_EQ(s.e.phase, DEVUPD_FAILED);
     CHECK_EQ(s.e.err, DEVUPD_E_LINK);
 
-    /* BEGIN and both halves taken, then nothing from the device. */
+    /* BEGIN and its six HASH parts taken, then nothing from the
+     * device. */
     devupd_init(&s.e);
     CHECK(devupd_start(&s.e, &s.im, 0u));
     devupd_link(&s.e, true, 247u, 0u);
-    for (int i = 0; i < 3; ++i) {
+    for (unsigned i = 0; i < 1u + BLEOTA_PARTS_MAX; ++i) {
         CHECK(devupd_step(&s.e, 10u, true, &o));
         CHECK_EQ(o.kind, DEVUPD_OUT_CTRL);
         devupd_written(&s.e, 0u, 10u);
@@ -1048,6 +1109,97 @@ TEST_CASE(the_settle_reads_its_own_device_and_reports_before_a_new_start)
     CHECK(!devupd_settler_step(NULL, seen, 3u, 0u, true, &out));
 }
 
+/**
+ * @brief The simulated Dial needs the signature, as the Dial's firmware
+ *        does; the verdict is s->sig_ok.
+ * @param s the simulation
+ */
+static void need_sig(sim_t *s)
+{
+    s->d.cfg.need_sig = true;
+}
+
+/* A device of protocol 1 refuses protocol 2 with BLEOTA_E_PROTO before
+ * anything opens: the engine drops the answers to the HASH writes that
+ * followed and starts once more, in protocol 1, and the image installs. */
+TEST_CASE(an_older_device_takes_the_update_once_in_protocol_1)
+{
+    static sim_t s;
+    sim_init(&s);
+    s.old = true;
+    sim_start(&s);
+    CHECK_EQ(sim_run(&s, 120000u), DEVUPD_DONE);
+    CHECK(s.e.fell_back);
+    CHECK_EQ(s.e.proto, BLEOTA_PROTO_1);
+    CHECK_EQ(s.begins, 2u);
+    CHECK_EQ(s.flash_n, IMG);
+    CHECK(memcmp(s_flash, s_img, IMG) == 0);
+    CHECK(s.restarted);
+}
+
+/* The fallback happens once: a device that refuses protocol 1 too ends
+ * the transfer with its code after the second BEGIN. */
+TEST_CASE(the_fallback_happens_once)
+{
+    static sim_t s;
+    sim_init(&s);
+    s.old = true;
+    s.old_both = true;
+    sim_start(&s);
+    CHECK_EQ(sim_run(&s, 20000u), DEVUPD_FAILED);
+    CHECK_EQ(s.e.err, DEVUPD_E_DEVICE);
+    CHECK_EQ(s.e.dev_code, BLEOTA_E_PROTO);
+    CHECK_EQ(s.begins, 2u);
+    CHECK_EQ(s.flash_n, 0u);
+}
+
+/* A refused signature ends the transfer: no protocol 1 BEGIN follows. */
+TEST_CASE(a_refused_signature_never_falls_back)
+{
+    static sim_t s;
+    sim_init(&s);
+    need_sig(&s);
+    s.sig_ok = false;
+    sim_start(&s);
+    CHECK_EQ(sim_run(&s, 20000u), DEVUPD_FAILED);
+    CHECK_EQ(s.e.err, DEVUPD_E_DEVICE);
+    CHECK_EQ(s.e.dev_code, BLEOTA_E_SIG);
+    CHECK(!s.e.fell_back);
+    CHECK_EQ(s.begins, 1u);
+    CHECK_EQ(s.flash_n, 0u);
+    CHECK(!s.d.open);
+}
+
+/* The signature goes in HASH parts 2 to 5 as given, and a device that
+ * needs it installs after both checks. */
+TEST_CASE(the_signature_reaches_the_device_and_it_installs)
+{
+    static sim_t s;
+    sim_init(&s);
+    need_sig(&s);
+    s.sig_ok = true;
+    for (unsigned i = 0; i < BLEOTA_SIG_LEN; ++i) {
+        s.im.sig[i] = (uint8_t)(0xC0u ^ i);
+    }
+    s.im.has_sig = true;
+    sim_start(&s);
+    CHECK_EQ(sim_run(&s, 120000u), DEVUPD_DONE);
+    CHECK(memcmp(s.d.sig, s.im.sig, BLEOTA_SIG_LEN) == 0);
+    CHECK_EQ(s.begins, 1u);
+    CHECK(!s.e.fell_back);
+    CHECK(s.restarted);
+    /* Without one, zeros go, and the device refuses them at check 1. */
+    sim_init(&s);
+    need_sig(&s);
+    s.sig_ok = false;
+    sim_start(&s);
+    CHECK_EQ(sim_run(&s, 20000u), DEVUPD_FAILED);
+    CHECK_EQ(s.e.dev_code, BLEOTA_E_SIG);
+    uint8_t zero[BLEOTA_SIG_LEN];
+    memset(zero, 0, sizeof zero);
+    CHECK(memcmp(s.d.sig, zero, sizeof zero) == 0);
+}
+
 int main(void)
 {
     RUN(a_whole_image_goes_in_order_and_installs);
@@ -1070,5 +1222,9 @@ int main(void)
     RUN(a_transfer_that_makes_no_progress_ends_at_30s);
     RUN(an_abort_ends_each_phase_before_end_and_waits_through_the_install);
     RUN(the_settle_reads_its_own_device_and_reports_before_a_new_start);
+    RUN(an_older_device_takes_the_update_once_in_protocol_1);
+    RUN(the_fallback_happens_once);
+    RUN(a_refused_signature_never_falls_back);
+    RUN(the_signature_reaches_the_device_and_it_installs);
     return test_summary("devupd");
 }

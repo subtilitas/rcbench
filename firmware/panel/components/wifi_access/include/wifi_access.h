@@ -232,10 +232,13 @@ wa_got_t wifi_access_fetch_dev(uint8_t asset, fw_version_t rel,
  * @param buf   takes the buffer
  * @param bytes takes the file's length
  * @param sig   takes the release key's verdict on its .sig
+ * @param der   takes the .sig's bytes, for the device's own check
+ * @param der_n takes their count, 0 for none or one out of form
  * @return true when the job's file was there
  */
 bool wifi_access_dev_take(uint32_t gen, uint8_t **buf, uint32_t *bytes,
-                          fw_sig_t *sig);
+                          fw_sig_t *sig, uint8_t der[FW_SIG_MAX],
+                          uint8_t *der_n);
 
 /**
  * @brief The release key's verdict on @p bytes at @p img and the @p sig_n

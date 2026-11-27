@@ -22,6 +22,15 @@
  * version after it reconnects says (devupd_settle()).  A new
  * devupd_start() runs from the first byte.
  *
+ * A transfer starts in bleota protocol 2: BEGIN, the SHA-256's two HASH
+ * parts and the release signature's four (devupd_image_t.sig).  A device
+ * of protocol 1 refuses that BEGIN with BLEOTA_E_PROTO before anything
+ * opens; the engine then waits DEVUPD_RETRY_MS, drops the answers to the
+ * writes that followed BEGIN, and starts once more in protocol 1 without
+ * the signature (devupd_t.fell_back).  That happens once per transfer and
+ * only on BLEOTA_E_PROTO answering BEGIN: a refused signature
+ * (BLEOTA_E_SIG) ends the transfer.
+ *
  * Pure C, no ESP-IDF (Espressif Internet-of-Things Development
  * Framework).  Times are differences of a free-running 32-bit ms clock.
  *
@@ -55,6 +64,10 @@ extern "C" {
                                       this long, answers or not: ended */
 #define DEVUPD_END_MS     15000u /**< END written to DONE */
 #define DEVUPD_RESTART_MS  5000u /**< DONE to the device's disconnect */
+#define DEVUPD_RETRY_MS     500u /**< BLEOTA_E_PROTO to the BEGIN of
+                                      protocol 1: the answers to the writes
+                                      after the first BEGIN come and are
+                                      dropped */
 /** @} */
 
 /** @brief esp_chip_id_t of the ESP32-S3, the Dial's chip:
@@ -71,7 +84,7 @@ extern "C" {
 /** @} */
 
 /** @brief Control writes the engine holds before the caller takes them. */
-#define DEVUPD_CTRL_Q 4u
+#define DEVUPD_CTRL_Q 8u /**< BEGIN and six HASH parts, and one more */
 
 /** @brief The image a transfer sends. */
 typedef struct {
@@ -82,6 +95,11 @@ typedef struct {
     uint8_t        sha[32];  /**< the SHA-256 of all its bytes */
     bool           reinstall; /**< BLEOTA_F_REINSTALL: the device runs this
                                    version */
+    uint8_t        sig[BLEOTA_SIG_LEN]; /**< the release signature, r then
+                                   s (shared/relsig/relsig.h) */
+    bool           has_sig;  /**< sig holds one; without it parts 2 to 5
+                                  go as zeros, which a device that needs the
+                                  signature refuses (BLEOTA_E_SIG) */
 } devupd_image_t;
 
 /** @brief Where a transfer stands. */
@@ -163,6 +181,13 @@ typedef struct {
     uint32_t rewinds;         /**< times the sending went back to the
                                    device's next offset */
     uint32_t polls_sent;      /**< POLLs sent */
+    uint8_t  proto;           /**< the protocol BEGIN went in: BLEOTA_PROTO,
+                                   or BLEOTA_PROTO_1 after the fallback */
+    bool     fell_back;       /**< the device refused protocol 2 with
+                                   BLEOTA_E_PROTO: this transfer runs in
+                                   protocol 1, without the signature */
+    bool     retry_due;       /**< BEGIN: the BEGIN of protocol 1 waits for
+                                   DEVUPD_RETRY_MS; FAILs are dropped */
 } devupd_t;
 
 /** @brief Clear: idle.  @param e the transfer; NULL does nothing */

@@ -766,15 +766,23 @@ static void sig_add(const wa_run_t *r, void *ctx, const uint8_t *d,
  * @param img     the file the signature is of
  * @param bytes   its length
  * @param verdict takes the verdict
+ * @param der     takes the signature's bytes, FW_SIG_MAX at most; NULL
+ *                for none
+ * @param der_n   takes their count, 0 for none or one out of form; NULL
+ *                with @p der
  * @param out     takes the result when the job ends here
  * @return false when the job ends: an abort, the budget, or a connection
  *         that broke
  */
 static bool fetch_sig_of(const wa_run_t *r, fw_version_t v, const char *name,
                          const uint8_t *img, uint32_t bytes,
-                         fw_sig_t *verdict, wa_fetch_res_t *out)
+                         fw_sig_t *verdict, uint8_t *der, uint8_t *der_n,
+                         wa_fetch_res_t *out)
 {
     *verdict = FW_SIG_NONE;
+    if (der_n != NULL) {
+        *der_n = 0u;
+    }
     if (fw_release_url(v, name, r->url, FW_REL_URL_MAX + 1u)) {
         sigbuf_t sb = { { 0u }, 0u };
         const sink_t ks = { sig_begin, sig_add, &sb, FW_SIG_MAX,
@@ -782,6 +790,11 @@ static bool fetch_sig_of(const wa_run_t *r, fw_version_t v, const char *name,
         wa_fetch_res_t got;
         memset(&got, 0, sizeof(got));
         if (fetch(r, &ks, &got)) {
+            if (der != NULL && der_n != NULL && sb.n >= FW_SIG_MIN
+                && sb.n <= FW_SIG_MAX) {
+                memcpy(der, sb.b, sb.n);
+                *der_n = (uint8_t)sb.n;
+            }
             *verdict = (sb.n < FW_SIG_MIN) ? FW_SIG_FORM
                        : (r->verify != NULL)
                            ? r->verify(r->ctx, img, bytes, sb.b, sb.n)
@@ -813,7 +826,7 @@ static bool fetch_sig(const wa_run_t *r, fw_version_t v, wa_fetch_res_t *out)
     fw_release_sig_name(v, name);
     fw_sig_t verdict = FW_SIG_NONE;
     const bool go = fetch_sig_of(r, v, name, r->up->buf, r->up->bytes,
-                                 &verdict, out);
+                                 &verdict, NULL, NULL, out);
     r->up->info.sig = verdict;
     return go;
 }
@@ -972,7 +985,7 @@ void wa_run_device(const wa_run_t *r, fw_version_t v, wa_fetch_res_t *out)
     const int sn = snprintf(sig_name, sizeof(sig_name), "%s.sig", r->name);
     if (sn > 0 && (size_t)sn < sizeof(sig_name)) {
         if (!fetch_sig_of(r, v, sig_name, dev.buf, dev.bytes, &verdict,
-                          out)) {
+                          out->sig_der, &out->sig_n, out)) {
             out->buf = dev.buf;
             return;
         }

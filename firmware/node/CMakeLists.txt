@@ -27,6 +27,7 @@ set(EXTRA_COMPONENT_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../protocols/rcnode"
                          "${CMAKE_CURRENT_LIST_DIR}/../../shared/gfx"
                          "${CMAKE_CURRENT_LIST_DIR}/../../shared/vibe"
                          "${CMAKE_CURRENT_LIST_DIR}/../../protocols/bleota"
+                         "${CMAKE_CURRENT_LIST_DIR}/../../shared/relsig"
                          "${CMAKE_CURRENT_LIST_DIR}/../devota")
 
 # The application's version, as the panel's: MAJOR.MINOR.PATCH from the one

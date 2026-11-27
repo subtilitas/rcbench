@@ -21,6 +21,7 @@
 #include "freertos/task.h"
 #include "host/ble_hs.h"
 #include "psa/crypto.h"
+#include "relsig.h"
 
 /** @brief The log's tag. */
 static const char *TAG = "ota";
@@ -69,6 +70,12 @@ static esp_ota_handle_t s_handle; /**< its handle */
 static psa_hash_operation_t s_hash;
 /** @brief Bytes taken from the buffer, `ota`'s own. */
 static uint8_t s_buf[WRITE_MAX];
+
+/** @brief The release key, firmware/panel/main/keys/release_signing_pub.pem,
+ *         embedded by CMakeLists.txt with a terminating NUL. @{ */
+extern const char _binary_release_signing_pub_pem_start[];
+extern const char _binary_release_signing_pub_pem_end[]; /**< its end */
+/** @} */
 
 /** @brief The ms clock, low 32 bits. @return ms since the start */
 static uint32_t now_ms(void)
@@ -188,8 +195,10 @@ static void write_some(void)
     xSemaphoreGive(s_lock);
 }
 
-/** @brief The compare, then the image's own check and the boot slot. */
-static void verify_and_install(void)
+/** @brief The SHA-256 of what was written, to the device side: the compare
+ *         with BEGIN's, or, on a device that needs the signature, check 2
+ *         first (bleota_dev_verify()). */
+static void finish_hash(void)
 {
     uint8_t digest[32];
     size_t len = 0;
@@ -199,18 +208,54 @@ static void verify_and_install(void)
         memset(digest, 0, sizeof digest);
     }
     xSemaphoreTake(s_lock, portMAX_DELAY);
-    const bool same = bleota_dev_verify(&s_dev, digest, now_ms());
+    (void)bleota_dev_verify(&s_dev, digest, now_ms());
     const uint8_t why = s_dev.code;
     xSemaphoreGive(s_lock);
-    if (!same) {
-        /* A mismatch or an end while the SHA-256 finished: the device
-         * left a CLOSE due either way. */
-        if (why == BLEOTA_E_SHA) {
-            ESP_LOGW(TAG, "the SHA-256 of what was written differs from "
-                          "BEGIN's");
-        }
+    if (why == BLEOTA_E_SHA) {
+        ESP_LOGW(TAG, "the SHA-256 of what was written differs from BEGIN's");
+    }
+}
+
+/**
+ * @brief Verify the release signature the device side names
+ *        (bleota_dev_sig_job()) outside the lock: check 1 over the
+ *        SHA-256 BEGIN gave, check 2 over the one of what was written.
+ */
+static void check_sig(void)
+{
+    uint8_t sha[32];
+    uint8_t sig[BLEOTA_SIG_LEN];
+    xSemaphoreTake(s_lock, portMAX_DELAY);
+    const bool job = bleota_dev_sig_job(&s_dev, sha, sig);
+    const bool end = s_dev.st == BLEOTA_DEV_SIG_END;
+    xSemaphoreGive(s_lock);
+    if (!job) {
         return;
     }
+    const int64_t t0 = esp_timer_get_time();
+    const bool ok = relsig_verify(
+        _binary_release_signing_pub_pem_start,
+        (size_t)(_binary_release_signing_pub_pem_end
+                 - _binary_release_signing_pub_pem_start),
+        sha, sig);
+    const unsigned us = (unsigned)(esp_timer_get_time() - t0);
+    xSemaphoreTake(s_lock, portMAX_DELAY);
+    bleota_dev_sig(&s_dev, ok, now_ms());
+    xSemaphoreGive(s_lock);
+    if (ok) {
+        ESP_LOGI(TAG, "release signature verified over %s SHA-256 in %uus",
+                 end ? "the written image's" : "BEGIN's", us);
+    } else {
+        ESP_LOGW(TAG, "release signature refused over %s SHA-256 (%uus): "
+                      "code %u, the running image stays",
+                 end ? "the written image's" : "BEGIN's", us,
+                 (unsigned)BLEOTA_E_SIG);
+    }
+}
+
+/** @brief The image's own check and the boot slot, after the compare. */
+static void install(void)
+{
     uint8_t code = BLEOTA_OK;
     esp_err_t e = esp_ota_end(s_handle);
     if (e != ESP_OK) {
@@ -250,7 +295,13 @@ static bool run_step(bleota_do_t act)
         write_some();
         return true;
     case BLEOTA_DO_VERIFY:
-        verify_and_install();
+        finish_hash();
+        return true;
+    case BLEOTA_DO_SIG:
+        check_sig();
+        return true;
+    case BLEOTA_DO_INSTALL:
+        install();
         return true;
     case BLEOTA_DO_CLOSE:
         (void)esp_ota_abort(s_handle);
@@ -266,7 +317,6 @@ static bool run_step(bleota_do_t act)
         vTaskDelay(pdMS_TO_TICKS(DEVOTA_RESTART_MS));
         esp_restart();
         return false;
-    case BLEOTA_DO_INSTALL:
     case BLEOTA_DO_NONE:
     default:
         return false;
@@ -280,6 +330,7 @@ static void take_view(void)
     s_view.st = s_dev.st;
     s_view.offer = s_dev.offer;
     s_view.code = s_dev.code;
+    s_view.fails = s_dev.fails;
     s_view.secs = bleota_dev_secs(&s_dev, now);
     s_view.percent = bleota_dev_percent(&s_dev);
     memcpy(s_view.from, s_dev.cfg.ver, sizeof s_view.from);
@@ -347,6 +398,9 @@ bool devota_start(uint8_t kind, uint8_t confirm, devota_key_fn key)
         .slot = next != NULL ? next->size : 0u,
         .ver = { (uint16_t)v[0], (uint16_t)v[1], (uint16_t)v[2] },
         .chip = (uint16_t)CONFIG_IDF_FIRMWARE_CHIP_ID,
+        /* The Dials install only a release-signed image; the nodes check
+         * the SHA-256 alone. */
+        .need_sig = kind == BLEOTA_KIND_DIAL || kind == BLEOTA_KIND_DIAL_K518,
     };
     if (devota_role.magic != BLEOTA_ROLE_MAGIC || devota_role.kind != kind) {
         ESP_LOGE(TAG, "this image's role is kind %u, not %u: updates over "
@@ -369,8 +423,10 @@ bool devota_start(uint8_t kind, uint8_t confirm, devota_key_fn key)
         ESP_LOGE(TAG, "the update task did not start");
         return false;
     }
-    ESP_LOGI(TAG, "updates over Bluetooth LE: kind %u, slot %s of %lu bytes",
-             (unsigned)kind, next->label, (unsigned long)next->size);
+    ESP_LOGI(TAG, "updates over Bluetooth LE: kind %u, slot %s of %lu "
+                  "bytes, protocol %u, release signature %s",
+             (unsigned)kind, next->label, (unsigned long)next->size,
+             (unsigned)BLEOTA_PROTO, cfg.need_sig ? "needed" : "not needed");
     return true;
 }
 

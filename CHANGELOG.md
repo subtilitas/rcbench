@@ -8,6 +8,24 @@ history is in git.
 
 ### Added
 
+- The Dial, on the M5Stack Dial and on the Guition JC3636K518C, installs
+  only an image signed with the release key. The firmware update over
+  Bluetooth LE (`protocols/bleota`) is protocol 2: BEGIN's HASH writes
+  carry the image's release signature in parts 2 to 5, as r and s of 32
+  bytes each, from the `.sig` the panel downloads or reads from the SD
+  card. The Dial verifies it with the public key compiled into its
+  firmware (`firmware/panel/main/keys/release_signing_pub.pem`, ECDSA
+  P-256, `shared/relsig`): over BEGIN's SHA-256 before the question, and
+  over the SHA-256 of the bytes it wrote before it sets the boot slot. A
+  missing or bad signature is refused with code 15 (`BLEOTA_E_SIG`), the
+  face `SIGNATURE REFUSED` for 5s and the panel's
+  `signature refused by the device`. A Dial of an older release refuses
+  protocol 2 with code 4; the panel then sends the image once more in
+  protocol 1, once per update, and logs it. The nodes take protocol 2 and
+  check no signature
+  ([The M5Stack Dial](docs/Dial.md#update-over-bluetooth-le),
+  [SECURITY.md](SECURITY.md)).
+
 - The Dial firmware builds for a second board, the Guition JC3636K518C
   knob: the board is a choice of `firmware/dial/main/Kconfig.projbuild`,
   `sdkconfig.k518` picks it, and `dial_board_m5.h` and

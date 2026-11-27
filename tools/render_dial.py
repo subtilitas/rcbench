@@ -79,6 +79,8 @@ FACES = {
     "other": "a screen the knob does nothing on",
     "update-ask": "a firmware update offered: a press accepts it",
     "update-send": "a firmware update coming in, 42% taken",
+    "update-sig": "an update refused for its release signature: the Dial "
+                  "keeps its firmware",
     "off-warn": "the screen button held 5,000ms: blinks red, release to "
                 "switch off, hold on to unbind",
     "off-ask": "the screen button released after 5,000ms: OFF or KEEP ON",
@@ -96,6 +98,8 @@ FACES = {
     "k518-other": "a screen the knob does nothing on, as the K518 draws it",
     "k518-update-ask": "a firmware update offered, as the K518 draws it",
     "k518-update-send": "a firmware update coming in, as the K518 draws it",
+    "k518-update-sig": "an update refused for its release signature, as the "
+                       "K518 draws it",
     "k518-off-warn": "the switch-off's warning, as the K518 draws it",
     "k518-off-ask": "the switch-off's choice, as the K518 draws it",
     "k518-batt-empty": "the cell is empty: BATTERY EMPTY for 3s, then the "

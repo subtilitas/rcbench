@@ -7303,6 +7303,9 @@ UI_TEXT(DEV_FAIL_FLASH, 36,
 UI_TEXT(DEV_FAIL_IMAGE, 36,
     "the device refused the image",
     "Gerät hat das Image abgelehnt")
+UI_TEXT(DEV_FAIL_SIG, 36,
+    "signature refused by the device",
+    "Signatur vom Gerät abgelehnt")
 UI_TEXT(DEV_FAIL_ARMED, 36,
     "the bench is not SAFE",
     "der Prüfstand ist nicht SAFE")
@@ -15031,6 +15034,15 @@ UI_DIAL_TEXT(DIAL_UPD_KEEP_ON,
 UI_DIAL_TEXT(DIAL_UPD_RESTART,
     "RESTARTING",
     "STARTET NEU")
+UI_DIAL_TEXT(DIAL_UPD_SIG,
+    "SIGNATURE",
+    "SIGNATUR")
+UI_DIAL_TEXT(DIAL_UPD_SIG_REFUSED,
+    "REFUSED",
+    "ABGELEHNT")
+UI_DIAL_TEXT(DIAL_UPD_SIG_KEPT,
+    "FIRMWARE KEPT",
+    "FIRMWARE BLEIBT")
 UI_DIAL_TEXT(DIAL_BATT_EMPTY,
     "BATTERY EMPTY",
     "AKKU LEER")

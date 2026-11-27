@@ -37,6 +37,7 @@
 #include "panel_dial.h"
 #include "panel_pnode.h"
 #include "panel_print.h"
+#include "relsig.h"
 #include "ui_screen.h"
 #include "ui_text.h"
 #include "upd_dev.h"
@@ -74,6 +75,8 @@ typedef struct {
     uint32_t        n;       /**< its length */
     fw_image_info_t info;    /**< what it says */
     uint8_t         sha[32]; /**< the SHA-256 of every byte */
+    uint8_t         sig[BLEOTA_SIG_LEN]; /**< its release signature, raw */
+    bool            has_sig; /**< sig holds one */
 } carried_t;
 
 /** @brief The images, by devimg_id_t, which is their BLEOTA_KIND_*
@@ -281,6 +284,13 @@ static bool adopt(unsigned id)
         && panel_devimg_get((devimg_id_t)id, &c->p, &c->n, &c->info,
                             c->sha)) {
         c->ready = true;
+        /* The .sig in the raw form the device checks itself (bleota
+         * protocol 2): whatever the panel's own verdict, the device
+         * decides. */
+        uint8_t der[FW_SIG_MAX];
+        uint8_t der_n = 0u;
+        c->has_sig = panel_devimg_sig((devimg_id_t)id, der, &der_n)
+                     && relsig_der_to_raw(der, der_n, c->sig);
         ESP_LOGI(TAG, "the %s image %s, %lu bytes, %lu%% of its slot, "
                       "SHA-256 %02x%02x%02x%02x", c->word,
                  c->info.version_text, (unsigned long)c->n,
@@ -461,13 +471,16 @@ static void begin(unsigned dev, const seen_t *t, uint32_t now)
     s_im.kind = devimg_kind((devimg_id_t)t->img);
     s_im.version = c->info.version;
     memcpy(s_im.sha, c->sha, sizeof(s_im.sha));
+    memcpy(s_im.sig, c->sig, sizeof(s_im.sig));
+    s_im.has_sig = c->has_sig;
     const fw_version_t run = { t->ver[0], t->ver[1], t->ver[2] };
     s_im.reinstall = fw_version_cmp(run, s_im.version) == 0;
-    ESP_LOGI(TAG, "%s update%s: %s, %lu bytes; it runs %u.%u.%u; its link "
-                  "is held off", cur_word(),
+    ESP_LOGI(TAG, "%s update%s: %s, %lu bytes, %s; it runs %u.%u.%u; its "
+                  "link is held off", cur_word(),
              s_im.reinstall ? " (reinstall)" : "", c->info.version_text,
-             (unsigned long)s_im.size, (unsigned)t->ver[0],
-             (unsigned)t->ver[1], (unsigned)t->ver[2]);
+             (unsigned long)s_im.size,
+             s_im.has_sig ? "its signature sent" : "no signature to send",
+             (unsigned)t->ver[0], (unsigned)t->ver[1], (unsigned)t->ver[2]);
     s_t0 = now;
     s_logged_pct = 0u;
     s_logged_phase = DEVUPD_IDLE;
@@ -482,6 +495,17 @@ static void begin(unsigned dev, const seen_t *t, uint32_t now)
 static void log_progress(void)
 {
     const devupd_t *e = &s_cli.e;
+    static bool fell_logged;
+    if (e->fell_back != fell_logged) {
+        fell_logged = e->fell_back;
+        if (e->fell_back) {
+            ESP_LOGW(TAG, "%s update: the device refused protocol %u "
+                          "(code %u): its firmware predates the signature; "
+                          "once more in protocol %u, without it",
+                     cur_word(), (unsigned)BLEOTA_PROTO,
+                     (unsigned)BLEOTA_E_PROTO, (unsigned)BLEOTA_PROTO_1);
+        }
+    }
     if (e->phase != s_logged_phase) {
         s_logged_phase = e->phase;
         if (e->phase == DEVUPD_BEGIN) {
@@ -685,6 +709,7 @@ static const char *fail_text(const end_t *p, char *buf, size_t n)
     case BLEOTA_E_SHA:        return TR(DEV_FAIL_SHA);
     case BLEOTA_E_FLASH:      return TR(DEV_FAIL_FLASH);
     case BLEOTA_E_IMAGE:      return TR(DEV_FAIL_IMAGE);
+    case BLEOTA_E_SIG:        return TR(DEV_FAIL_SIG);
     case BLEOTA_E_TIMEOUT:    return TR(DEV_FAIL_TIMEOUT);
     default:
         snprintf(buf, n, TR(DEV_FAIL_OTHER), (unsigned)p->code);

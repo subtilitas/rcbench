@@ -311,7 +311,7 @@ TEST_CASE(an_update_connects_finds_data_sends_and_switches_off)
     CHECK_EQ(h.addr.val[0], 1);
     CHECK_EQ(h.flash_n, IMG);
     CHECK(h.restarted);
-    CHECK_EQ(h.ctrl_writes, 4u);   /* BEGIN, two HASH halves, END */
+    CHECK_EQ(h.ctrl_writes, 8u);   /* BEGIN, six HASH parts, END */
     CHECK(h.chunks >= IMG / BLEOTA_CHUNK_MAX);
     CHECK_EQ(h.owner, 4u);
     /* Switched off: no reconnect after the device's restart. */
@@ -388,7 +388,7 @@ TEST_CASE(a_link_lost_before_ends_answer_leaves_the_install_unknown)
     for (int i = 0; i < 20000 && devupd_busy(&h.c.e); ++i) {
         poll(&h);
     }
-    CHECK_EQ(h.ctrl_writes, 4u);   /* BEGIN, two HASH halves, END */
+    CHECK_EQ(h.ctrl_writes, 8u);   /* BEGIN, six HASH parts, END */
     CHECK_EQ(h.c.e.phase, DEVUPD_FAILED);
     CHECK_EQ(h.c.e.err, DEVUPD_E_UNSURE);
     CHECK_EQ(h.flash_n, IMG);

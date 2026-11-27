@@ -66,6 +66,8 @@ typedef struct {
     devimg_card_t   card_err;  /**< the card's answer */
     devimg_err_t    err;       /**< the checks' answer */
     fw_sig_t        sig;       /**< the release key's verdict on its .sig */
+    uint8_t         der[FW_SIG_MAX]; /**< the .sig's bytes */
+    uint8_t         der_n;     /**< their count, 0 for none */
     fw_image_info_t info;      /**< what the image says */
     uint8_t         sha[FW_SHA256_BYTES]; /**< of every byte */
 } job_t;
@@ -82,6 +84,10 @@ static fw_image_info_t s_info[DEVIMG_COUNT];
 static uint8_t         s_sha[DEVIMG_COUNT][FW_SHA256_BYTES];
 /** @brief Each READY image's signature verdict (fw_sig.h). */
 static fw_sig_t        s_sig[DEVIMG_COUNT];
+/** @brief Each READY image's .sig bytes, for the device's own check. */
+static uint8_t         s_der[DEVIMG_COUNT][FW_SIG_MAX];
+/** @brief Their count, 0 for none. */
+static uint8_t         s_der_n[DEVIMG_COUNT];
 /** @brief Set once an image's fields above are written: other tasks read
  *         them only after it. */
 static atomic_bool     s_ready[DEVIMG_COUNT];
@@ -142,6 +148,18 @@ bool panel_devimg_get(devimg_id_t id, const uint8_t **p, uint32_t *n,
     if (sha != NULL) {
         memcpy(sha, s_sha[id], FW_SHA256_BYTES);
     }
+    return true;
+}
+
+bool panel_devimg_sig(devimg_id_t id, uint8_t der[FW_SIG_MAX],
+                      uint8_t *n)
+{
+    if ((unsigned)id >= DEVIMG_COUNT || !atomic_load(&s_ready[id])
+        || s_der_n[id] == 0u) {
+        return false;
+    }
+    memcpy(der, s_der[id], FW_SIG_MAX);
+    *n = s_der_n[id];
     return true;
 }
 
@@ -246,13 +264,16 @@ void panel_devimg_view(devimg_id_t id, upd_fetch_t *out)
 
 /**
  * @brief The verdict on the card's "<file>.sig" beside the job's file
- *        (devimg_card_sig()): `devimg`'s, with the card held.
+ *        (devimg_card_sig()): `devimg`'s, with the card held.  Its bytes,
+ *        FW_SIG_MIN to FW_SIG_MAX of them, go into the job for the
+ *        device's own check.
  * @param j    the job, its file read
  * @param path the file's path on the card
  * @return the verdict
  */
-static fw_sig_t card_sig(const job_t *j, const char *path)
+static fw_sig_t card_sig(job_t *j, const char *path)
 {
+    j->der_n = 0u;
     char sp[sizeof(STORAGE_MOUNT_POINT) + DEVIMG_PATH_MAX + 8u];
     const int k = snprintf(sp, sizeof(sp), "%s.sig", path);
     if (k <= 0 || (size_t)k >= sizeof(sp)) {
@@ -272,6 +293,10 @@ static fw_sig_t card_sig(const job_t *j, const char *path)
     if (f != NULL) {
         got = fread(sig, 1u, sizeof(sig), f);
         (void)fclose(f);
+    }
+    if (got >= FW_SIG_MIN && got <= FW_SIG_MAX) {
+        memcpy(j->der, sig, got);
+        j->der_n = (uint8_t)got;
     }
     /* The panel image's verifier and key, called by name so that the
      * stack check follows it into `devimg`'s depth. */
@@ -496,6 +521,7 @@ bool panel_devimg_request(devimg_id_t id, bool armed)
             return false;
         }
         s_job.card = true;
+        s_job.der_n = 0u;
         (void)devimg_begin(s, DEVIMG_SRC_CARD);
         atomic_store(&s_busy, true);
         if (!task_start()) {
@@ -553,7 +579,8 @@ static void fetch_service(void)
     uint32_t n = 0u;
     fw_sig_t sig = FW_SIG_NONE;
     if (f.got != WA_GOT_STAGED
-        || !wifi_access_dev_take(s_gen, &buf, &n, &sig)) {
+        || !wifi_access_dev_take(s_gen, &buf, &n, &sig, s_job.der,
+                                 &s_job.der_n)) {
         fail_download(&f);
         return;
     }
@@ -605,6 +632,8 @@ static void job_service(void)
     s_info[id] = j->info;
     memcpy(s_sha[id], j->sha, FW_SHA256_BYTES);
     s_sig[id] = j->sig;
+    memcpy(s_der[id], j->der, FW_SIG_MAX);
+    s_der_n[id] = j->der_n;
     atomic_store(&s_ready[id], true);
     j->buf = NULL;
     devimg_ready(&s_sl[id], now_ms());

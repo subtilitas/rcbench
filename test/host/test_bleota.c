@@ -52,7 +52,7 @@ TEST_CASE(begin_round_trips_at_the_largest_values)
     CHECK_EQ(bleota_begin_encode(1u, 1u, ver, 0u, NULL), 0u);
 }
 
-TEST_CASE(hash_carries_each_half_and_refuses_a_third_part)
+TEST_CASE(hash_carries_each_half_and_the_signatures_quarters)
 {
     uint8_t sha[32];
     for (unsigned i = 0; i < 32u; ++i) {
@@ -68,10 +68,41 @@ TEST_CASE(hash_carries_each_half_and_refuses_a_third_part)
         CHECK(memcmp(c.half, sha + 16u * part, 16u) == 0);
     }
     CHECK_EQ(bleota_hash_encode(sha, 2u, b), 0u);
-    b[1] = 2u;
+    /* Protocol 2: the signature's quarters are parts 2 to 5. */
+    uint8_t sig[BLEOTA_SIG_LEN];
+    for (unsigned i = 0; i < BLEOTA_SIG_LEN; ++i) {
+        sig[i] = (uint8_t)(0x10u + i);
+    }
+    for (uint8_t q = 0; q < 4u; ++q) {
+        CHECK_EQ(bleota_sig_encode(sig, q, b), BLEOTA_LEN_HASH);
+        CHECK(bleota_ctrl_decode(b, sizeof b, &c));
+        CHECK_EQ(c.op, BLEOTA_OP_HASH);
+        CHECK_EQ(c.part, 2u + q);
+        CHECK(memcmp(c.half, sig + 16u * q, 16u) == 0);
+    }
+    CHECK_EQ(bleota_sig_encode(sig, 4u, b), 0u);
+    CHECK_EQ(bleota_sig_encode(NULL, 0u, b), 0u);
+    b[1] = BLEOTA_PARTS_MAX;
     CHECK(!bleota_ctrl_decode(b, sizeof b, &c));
     b[1] = 1u;
     CHECK(!bleota_ctrl_decode(b, sizeof b - 1u, &c));
+}
+
+TEST_CASE(begin_carries_either_protocol)
+{
+    uint8_t b[BLEOTA_LEN_BEGIN];
+    const uint16_t ver[3] = { 0u, 24u, 1u };
+    bleota_ctrl_t c;
+    CHECK_EQ(BLEOTA_PROTO, 2u);
+    CHECK_EQ(BLEOTA_ROLE_PROTO, 1u);
+    CHECK_EQ(bleota_begin_encode_proto(BLEOTA_PROTO_1, BLEOTA_KIND_DIAL, 9u,
+                                       ver, 0u, b), BLEOTA_LEN_BEGIN);
+    CHECK(bleota_ctrl_decode(b, sizeof b, &c));
+    CHECK_EQ(c.proto, BLEOTA_PROTO_1);
+    CHECK_EQ(bleota_begin_encode(BLEOTA_KIND_DIAL, 9u, ver, 0u, b),
+             BLEOTA_LEN_BEGIN);
+    CHECK(bleota_ctrl_decode(b, sizeof b, &c));
+    CHECK_EQ(c.proto, BLEOTA_PROTO);
 }
 
 TEST_CASE(the_one_byte_ops_take_one_byte_and_nothing_else)
@@ -200,11 +231,17 @@ static uint32_t rnd(uint32_t *s)
 static size_t ctrl_encode(const bleota_ctrl_t *c, uint8_t *out)
 {
     if (c->op == BLEOTA_OP_BEGIN) {
-        return c->proto == BLEOTA_PROTO
-            ? bleota_begin_encode(c->kind, c->size, c->ver, c->flags, out)
-            : 0u;
+        return bleota_begin_encode_proto(c->proto, c->kind, c->size, c->ver,
+                                         c->flags, out);
     }
     if (c->op == BLEOTA_OP_HASH) {
+        if (c->part >= BLEOTA_HASH_PARTS) {
+            uint8_t sig[BLEOTA_SIG_LEN];
+            memset(sig, 0, sizeof sig);
+            const uint8_t q = (uint8_t)(c->part - BLEOTA_HASH_PARTS);
+            memcpy(sig + (size_t)16u * q, c->half, 16u);
+            return bleota_sig_encode(sig, q, out);
+        }
         uint8_t sha[32];
         memset(sha, 0, sizeof sha);
         memcpy(sha + (size_t)16u * c->part, c->half, 16u);
@@ -221,7 +258,7 @@ TEST_CASE(random_writes_decode_only_to_their_own_bytes)
      * CTRL and as DATA, with its key toggled at random. */
     static uint8_t ring[BLEOTA_WINDOW];
     const bleota_dev_cfg_t cfg = { BLEOTA_KIND_DIAL, BLEOTA_CONFIRM_HOLD,
-                                   4096u, { 0u, 23u, 12u }, 9u };
+                                   4096u, { 0u, 23u, 12u }, 9u, false };
     bleota_dev_t d;
     CHECK(bleota_dev_init(&d, &cfg, ring, sizeof ring));
     uint32_t seed = 0x6D2B79F5u;
@@ -390,7 +427,8 @@ int main(void)
 {
     RUN(the_uuids_share_the_base_and_differ_in_their_first_byte);
     RUN(begin_round_trips_at_the_largest_values);
-    RUN(hash_carries_each_half_and_refuses_a_third_part);
+    RUN(hash_carries_each_half_and_the_signatures_quarters);
+    RUN(begin_carries_either_protocol);
     RUN(the_one_byte_ops_take_one_byte_and_nothing_else);
     RUN(a_notification_round_trips_and_its_limits_hold);
     RUN(a_chunk_holds_one_to_240_image_bytes);

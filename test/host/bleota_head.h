@@ -50,7 +50,7 @@ static inline void test_head_write(uint8_t *img, uint16_t chip, uint8_t kind)
     test_head_put32(img + BLEOTA_HEAD_DESC, BLEOTA_DESC_MAGIC);
     test_head_put32(img + BLEOTA_HEAD_ROLE, BLEOTA_ROLE_MAGIC);
     img[BLEOTA_HEAD_ROLE + 4u] = kind;
-    img[BLEOTA_HEAD_ROLE + 5u] = BLEOTA_PROTO;
+    img[BLEOTA_HEAD_ROLE + 5u] = BLEOTA_ROLE_PROTO;
 }
 
 #endif

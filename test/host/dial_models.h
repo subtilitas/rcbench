@@ -35,6 +35,7 @@ typedef enum {
     DM_OFF_WARN,
     DM_OFF_ASK,
     DM_BATT_EMPTY,
+    DM_UPDATE_SIG,
     DM_COUNT
 } dial_model_id_t;
 
@@ -42,7 +43,7 @@ typedef enum {
 static const char *const k_dial_model_name[DM_COUNT] = {
     "navigation", "value-set", "servo-live", "motor-armed", "motor-safe",
     "link-lost", "link-ended", "waiting", "bind", "other", "update-ask",
-    "update-send", "off-warn", "off-ask", "batt-empty",
+    "update-send", "off-warn", "off-ask", "batt-empty", "update-sig",
 };
 
 /** @brief A model and the view beside it. */
@@ -251,6 +252,14 @@ static inline void dial_model(dial_model_t *m, int id, uint8_t lang)
     case DM_WAITING:
         /* No panel packet yet: the language is the renderer's last. */
         m->view.lost = true;
+        break;
+    case DM_UPDATE_SIG:
+        /* The update client's link: the image's release signature was
+         * refused, the Dial keeps 0.24.0. */
+        m->view.ready = false;
+        m->view.upd = DIAL_UPD_BADSIG;
+        m->view.upd_from[1] = 24u;
+        m->view.upd_to[1] = 25u;
         break;
     case DM_UPDATE_ASK:
     case DM_UPDATE_SEND:
