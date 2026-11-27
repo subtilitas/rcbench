@@ -2827,6 +2827,104 @@ A stop found sets that end in the draft:
 ![FIND STOP searching on the left](img/servo-hitec-move-find.png)
 ![A stop found on the left](img/servo-hitec-move-found.png)
 
+#### Servo programmer frame
+
+KST and HITEC draw through one frame, `sprog` (`shared/ui/include/sprog.h`,
+`sprog.c`, `sprog_draw.c`, `sprog_page.c`). The frame owns the layout, the
+drawing, the presses, the 2s holds, the keypad, the keyboard, the lists and
+the hold pages. A brand owns its model, a const table of tabs and rows, a
+view fill and a `switch` on the result the frame returns. The frame calls
+no brand and holds no function pointer. It uses no heap: its state,
+`sprog_t`, is a member of the brand's static state. One overlay shows at a
+time.
+
+Each event, tick and draw takes three steps. The brand fills the view:
+every shown row's value, fill, press kind and refusal, the head's two
+lines, the notes and the bottom line. It hands the event or tick to the
+frame. It acts on the result: a tap, a step, a stop, a completed hold, a
+value from the keypad, a list or the keyboard, an applied or cancelled
+page, a tab change.
+
+Regions, in pixels inside the 620 x 428px left card:
+
+| Region | Where | Holds |
+| --- | --- | --- |
+| Tab strip | x 8, y 8, 604 x 48px | up to 5 tabs; a tab whose show bits are off is left out and the rest close up: 4 tabs on KST with KST EXPERT MODE OFF |
+| Row grid | lines at y 64 + 56 x n, n 0 to 4, rows 48px tall | the tab's rows in table order: a wide row takes a line, two narrow rows share one. Column 0 at x 10, column 1 at x 315, each 295px wide |
+| Head | the SERVO tab's line 0 | the port and its GPIO over the supply CONNECT sets, at x 10; line 1 in the warning colour while no port is bound; CONNECT, ABORT or LEAVE, 260 x 48px, at the right. A tap on the text opens the PORT list where the brand offers it |
+| Notes | from 8px under the last line of rows to the bottom line | the brand's notes, top-down, each in text, dim, faint, accent, warning or danger colour, 60 cells a row, 20px a row; the page count `1/2` at the right end of a page's last row; a tap turns the page |
+| Bottom line | its last row ending 8px above the card floor or above the alert band, whichever is higher | the last message, else the brand's identity line of the servo read |
+| Overlays | the whole card | keypad, keyboard, list, hold page |
+
+The SERVO tab follows the order of the work, CONNECT, READ ALL, edit, WRITE:
+
+| Line | Column 0 | Column 1 |
+| --- | --- | --- |
+| 0 | head: port and supply | CONNECT, ABORT or LEAVE |
+| 1 | SERVO: READ ALL | the brand's slot: KST TYPE; Hitec SERIES before CONNECT, AFTER STOP while the port is held |
+| 2 | FILES: CHOOSE | MORE: CHOOSE |
+| 3 | RESTORE: CHOOSE | WRITE n VALUES, 220px, a 2s hold |
+
+A brand with no row of its own leaves the slot empty. Lines 4 and down hold
+the notes.
+
+Row kinds the frame draws; the view can change a row's kind by state, as
+Hitec's NEUTRAL and ends turn into steps while MOVE SERVO runs:
+
+| Kind | Control | Press |
+| --- | --- | --- |
+| value | the value, 150px, 260px in a wide row; `* ` and the accent fill when it differs from the servo | a tap opens the brand's editor |
+| step | `-`, the value, `+` | `-` and `+` act on the press and repeat after 0.45s at 8Hz, at 30Hz from 2.25s; the value opens the editor |
+| pair | two keys in the value's place: Hitec FIND STOP's LEFT END and RIGHT END | per key: tap or stop |
+| button | the brand's label | tap, 2s hold, stop on the press, or off |
+| show | a value that takes no press: the rows of KST's LOCKED tab | none |
+| gap | a place kept empty | none |
+
+How a control takes a press:
+
+| Press | Acts |
+| --- | --- |
+| tap | on the release inside the control |
+| 2s hold | on the tick after the hold completes; a touch loss before that cancels it. CONNECT that switches a supply on, WRITE n VALUES |
+| stop | on the DOWN, from any contact, also while another press is held: ABORT, MOVE SERVO's stop, FIND STOP |
+| off | drawn off; takes no press |
+
+A control the brand refuses carries the reason: a press shows it in the alert
+band, starts no hold and acts on nothing.
+
+A value tab's notes are the brand's tab note, then the common hint, dim:
+`Tap a value to edit it. * marks a change. WRITE n VALUES writes the changes.`
+
+The list rule: a list holds up to 7 entries. Up to 5 take one column of
+48px rows at a 56px pitch above CANCEL. More take two to a line in columns
+of 295px; an entry wider than a column takes a line of its own. The entry
+equal to the current value has the accent fill. A file list fills the 7
+entries with `Save this servo's settings in a new file.` on a line of its
+own, 5 files a page, each name with its type or model, and
+`Show more files.` as the last entry.
+
+A new brand, for example AGFRC, supplies these parts; the layout, presses,
+holds, editors and pages come from the frame. The estimate is for a brand
+of few rows; KST's measured figures are code lines counted by
+`tools/check_sizes.py`:
+
+| Part | Where | Estimate, lines | KST, lines |
+| --- | --- | ---: | ---: |
+| the protocol and the session model: connect, read, edit with limits, write with verify, backup, files | `protocols/<brand>/`, `shared/bench/` | outside `shared/ui` | outside `shared/ui` |
+| the tab and row tables, the 18 page-set hooks, the state, the session for the footer and the READY card, a row in the registry | `<brand>_panel.c`, `<brand>_panel_int.h`, `include/<brand>_panel.h`, `shared/ui/prog_registry.c` | 140 to 180 | 901 |
+| the view fill: values, fills, presses, refusals, head, notes, bottom line | `<brand>_panel_draw.c` | 150 to 250 | 506 |
+| the result switch | `<brand>_panel_touch.c` | 150 to 200 | 183 |
+| the editors' values into the draft, files and backup glue | `<brand>_panel_edit.c` | 150 to 250 | 554 |
+| texts: rows, messages, page lines | `<brand>_panel_text.c`; the strings in `shared/text/include/ui_text.def` | 300 to 500 | 483 |
+| soft limits and their page lines | `<brand>_panel_warn.c` | 150 to 250 | 382 |
+| LIMIT RUN and RUDDER AUTO seams, where wanted | `<brand>_panel_run.c` | about 200 | 219 |
+| goldens EN and DE, a docs page, a help page, the hub tile | `tools/render_ui.py`, `docs/`, `help/` | | |
+
+In sum 1,300 to 1,600 lines for a brand of few rows; KST takes 3,228 lines
+on the frame and Hitec 3,706, with MOVE SERVO and FIND STOP.
+`tools/stack_check.py` needs the brand's function in each of the 18 entries
+of `PROG_CALLS`.
+
 ### Settings
 
 The footer's OPTIONS opens the list of the screen it sits on, in

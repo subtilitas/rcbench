@@ -1840,7 +1840,14 @@ the SERVO head, notes with a pager, the bottom line), the presses (tap, 2s hold 
 next tick, STOP on the press from any contact, step keys with repeat), the keypad, the
 keyboard, lists of up to 7 entries and hold pages with folding and parts. It is built and
 host-tested on a fake brand of 2 tabs and 9 rows (`test_sprog`, `test_sprog_draw`,
-`test_sprog_page`); neither programmer draws through it yet.
+`test_sprog_page`). Both programmers draw, take presses and open their editors and pages
+through it: a brand fills the view and switches on the frame's result; the frame calls no
+brand: [the frame and what a new brand supplies](docs/Screens.md#servo-programmer-frame).
+Code lines in `shared/ui` (`tools/check_sizes.py`) at main `abb5849b8`: the frame 1,798,
+KST 3,228, Hitec 3,706, 8,732 in sum, against 8,382 for KST (4,080) and Hitec (4,302) at
+`6f1449dc2` with no frame. The sum is 350 lines more than the two brands held without it; the design's
+estimate of 7,090 (frame 1,450, KST 2,650, Hitec 2,990) is 1,642 below it. `shared/ui`
+holds 110,776 code lines in all.
 
 Hitec servos: the wire core, the RP2350 pin driver and link page 0x34 (raw transactions on a
 programming port, with a POWER cycle at 4800 to 6000mV) are built and host-tested against a
