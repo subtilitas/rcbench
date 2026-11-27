@@ -138,7 +138,7 @@ Der Reiter SERVO von HITEC hat dieselbe Reihenfolge. Der Kopf nennt den Port, se
 ![Der Reiter SERVO von HITEC vor VERBINDEN](view:servo-hitec)
 ![Ein ausgelesenes D485HW](view:servo-hitec-read)
 
-Die Hinweise stehen unter den Zeilen, die letzte Meldung oder die Zeile des Servos ganz unten. Brauchen die Hinweise mehr Platz, als der Reiter hat, blättern sie: `1/2` steht über der untersten Zeile, ein Tipp auf die Hinweise zeigt die nächste Seite. Jeder Werte-Reiter schließt seine Hinweise mit `Tippe zum Ändern auf einen Wert. * markiert Änderungen. n WERTE SCHREIBEN schreibt sie.`, solange die Werte eine Änderung annehmen. Eine Liste mit mehr als 5 Einträgen, auch DATEIEN mit seinen Dateien, steht zu zweit in einer Zeile.
+Die Hinweise von HITEC folgen und blättern wie bei KST. Jeder Werte-Reiter schließt seine Hinweise mit `Tippe zum Ändern auf einen Wert. * markiert Änderungen. n WERTE SCHREIBEN schreibt sie.`, solange die Werte eine Änderung annehmen. Eine Liste mit mehr als 5 Einträgen, auch DATEIEN mit seinen Dateien, steht zu zweit in einer Zeile.
 
 ![Ein Servo unbekannter Belegung: nur lesen](view:servo-kst-readonly)
 

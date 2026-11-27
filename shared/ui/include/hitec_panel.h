@@ -348,8 +348,8 @@ const char *hitec_panel_port_line(int i);
  */
 const char *hitec_panel_note(int i);
 /**
- * @brief Where the notes and the bottom line of the tab shown stand: from
- *        8px under the last line of rows to the foot.
+ * @brief Where the notes page shown and the bottom line stand, from the
+ *        first note row drawn to the foot (sprog_notes_shown()).
  * @return the rectangle; empty when neither is drawn
  */
 gfx_rect_t hitec_panel_notes_drawn(void);

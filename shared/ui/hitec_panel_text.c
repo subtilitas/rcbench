@@ -393,7 +393,8 @@ static void supply_text(char *out, size_t n)
         snprintf(out, n, "%s", TR(HP_SUPPLY_5V_FIXED));
     } else if (hitec_prog_series(p) == (uint8_t)HITEC_D
                && !hitec_prog_rail(p)) {
-        snprintf(out, n, "%s", TR(HP_SUPPLY_AS_IS));
+        /* After the receive mode: 19 cells, as the head's line holds. */
+        snprintf(out, n, "%s", TR(HP_SUPPLY_KEPT));
     } else {
         snprintf(out, n, "%u.%uV %umA", mv / 1000u, mv % 1000u / 100u, ma);
     }

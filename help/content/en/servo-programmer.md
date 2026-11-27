@@ -138,7 +138,7 @@ HITEC's SERVO tab has the same order. The head names the port, its GPIO and the 
 ![HITEC's SERVO tab before CONNECT](view:servo-hitec)
 ![A D485HW read](view:servo-hitec-read)
 
-The notes stand under the rows, the last message or the servo's line at the bottom. Notes that need more room than the tab has turn over: `1/2` stands above the bottom line, and a tap on the notes shows the next page. Each value tab ends its notes with `Tap a value to edit it. * marks a change. WRITE n VALUES writes the changes.` while the values take an edit. A list of more than 5 entries, FILES with its files included, stands two to a line.
+HITEC's notes flow and page as KST's. Each value tab ends its notes with `Tap a value to edit it. * marks a change. WRITE n VALUES writes the changes.` while the values take an edit. A list of more than 5 entries, FILES with its files included, stands two to a line.
 
 ![A servo of unknown layout: read only](view:servo-kst-readonly)
 

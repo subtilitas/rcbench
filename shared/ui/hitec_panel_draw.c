@@ -473,16 +473,19 @@ const char *hitec_panel_note(int i)
 
 gfx_rect_t hitec_panel_notes_drawn(void)
 {
-    const int top = hp.area.y + HP_ROW0;
+    sprog_notes_shown_t sh;
+    int top;
     int y;
 
     hpn_view();
-    y = top + hp.f.lines * HP_PITCH;
-    if (hp.f.view.notes == 0 && hp.f.view.bottom == NULL) {
+    sprog_notes_shown(&hp.f, -1, &sh);
+    if (sh.notes == 0 && sh.bottom_rows == 0) {
         return (gfx_rect_t){ 0, 0, 0, 0 };
     }
-    return (gfx_rect_t){ hp.area.x, (int16_t)y, hp.area.w,
-                         (int16_t)(hpn_foot() - y) };
+    top = sh.notes != 0 ? sh.top : sh.bottom_y;
+    y = sh.bottom_rows != 0 ? sprog_foot(&hp.f) : sh.end;
+    return (gfx_rect_t){ hp.area.x, (int16_t)top, hp.area.w,
+                         (int16_t)(y - top) };
 }
 
 /**

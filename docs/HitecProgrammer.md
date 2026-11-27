@@ -110,8 +110,8 @@ and the brand's slot, FILES and MORE, RESTORE and WRITE n VALUES.
 The notes start 8px under the last line of rows: the state line with the
 port's current operation first. The last message stands on the bottom line
 above the footer. Notes that need more rows than stand between the two
-turn over: `1/2` stands right above the bottom line, and a tap on the
-notes shows the next page. Every control is at least 48px tall and ends
+turn over: `1/2` stands at the right of the last note row, and a tap on
+the notes shows the next page. Every control is at least 48px tall and ends
 4px above the alert band, as in the KST programmer
 ([Screens](Screens.md#programmer)).
 

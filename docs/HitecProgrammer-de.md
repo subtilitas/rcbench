@@ -118,8 +118,8 @@ ZURÜCKSPIELEN und n WERTE SCHREIBEN.
 Die Hinweise beginnen 8px unter der letzten Zeile: zuerst die Statuszeile
 mit dem aktuellen Vorgang des Ports. Die letzte Meldung steht in der
 untersten Zeile über der Fußleiste. Brauchen die Hinweise mehr Zeilen, als
-zwischen beiden stehen, blättern sie: `1/2` steht rechts über der
-untersten Zeile, ein Tipp auf die Hinweise zeigt die nächste Seite. Jedes
+zwischen beiden stehen, blättern sie: `1/2` steht rechts in der letzten
+Zeile der Hinweise, ein Tipp auf die Hinweise zeigt die nächste Seite. Jedes
 Bedienelement ist mindestens 48px hoch und endet 4px über dem
 Meldungsband, wie bei der KST-Servoprogrammierung
 ([Seiten](Screens-de.md#programmierer)).

@@ -58,7 +58,8 @@ While it is on:
    reach where the followed value lies outside it, and for an end point
    `LEFT END: the horn stands where 850us puts it. At 1000us it stops at 77% of that side.`
    The port and the position line stand on the first page of the notes;
-   the rest turns over with `1/3` above the foot and a tap on the notes.
+   the rest turns over with `1/2` at the right of the last note row and a
+   tap on the notes.
    The bottom line holds only a warning or a danger message while the
    loop runs.
 
