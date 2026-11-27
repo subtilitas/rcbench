@@ -28,7 +28,7 @@ stehen in [Die Sensorknoten](Nodes-de.md).
 Nach dem Einschalten zeigt der Anzeigeknoten 10s lang den Startbildschirm
 (`NS_SPLASH_MS`, 10.000ms): den Produktnamen `rcbench`, die Rolle
 `LEISTUNGSKNOTEN`, den eigenen Namen des Knotens, wenn er einen hat, die
-Firmware (`FIRMWARE 0.23.17`) und `JuWi made`. Ein Balken unten wird über
+Firmware (`FIRMWARE 0.23.18`) und `JuWi made`. Ein Balken unten wird über
 die 10s kürzer. Nach den 10s zeigt der Knoten das Messbild.
 
 Der Startbildschirm trägt eine SETUP-Taste von 200 × 52px. Ein Tippen

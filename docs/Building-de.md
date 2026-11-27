@@ -412,7 +412,7 @@ python3 tools/c6_image.py device dial firmware/dial/build/rcbench-dial.bin
 python3 tools/c6_image.py device node-pwr firmware/node/build-pwr/rcbench-node.bin
 python3 tools/c6_image.py device node-bal firmware/node/build-bal/rcbench-node.bin
 python3 tools/c6_image.py device node-display firmware/node/build-display/rcbench-node.bin
-v=0.23.17   # die Version des Baums, shared/link/include/rcbench_version.h
+v=0.23.18   # die Version des Baums, shared/link/include/rcbench_version.h
 cp firmware/dial/build/rcbench-dial.bin /media/sdcard/BENCH/UPDATES/rcbench-dial-$v.bin
 cp firmware/node/build-pwr/rcbench-node.bin /media/sdcard/BENCH/UPDATES/rcbench-node-pwr-$v.bin
 cp firmware/node/build-bal/rcbench-node.bin /media/sdcard/BENCH/UPDATES/rcbench-node-bal-$v.bin

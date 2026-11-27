@@ -8052,9 +8052,9 @@ the file and the place:
 
 | Card line | Where the hold takes it |
 | --- | --- |
-| `The hold downloads rcbench-dial-0.23.17.bin from GitHub first.` | GitHub: the default with a home network kept. |
-| `The hold reads BENCH/UPDATES/rcbench-dial-0.23.17.bin from the SD card.` | The SD card, folder `BENCH/UPDATES`: after a failed download, and always without a home network. The control reads `HOLD 2s TO UPDATE FROM THE SD CARD`. A failed card read sends the next hold to GitHub again. |
-| `rcbench-dial-0.23.17.bin is downloaded and checked.` | The memory: an earlier hold fetched it. It stays in PSRAM (pseudo-static random-access memory) until the panel restarts. |
+| `The hold downloads rcbench-dial-0.23.18.bin from GitHub first.` | GitHub: the default with a home network kept. |
+| `The hold reads BENCH/UPDATES/rcbench-dial-0.23.18.bin from the SD card.` | The SD card, folder `BENCH/UPDATES`: after a failed download, and always without a home network. The control reads `HOLD 2s TO UPDATE FROM THE SD CARD`. A failed card read sends the next hold to GitHub again. |
+| `rcbench-dial-0.23.18.bin is downloaded and checked.` | The memory: an earlier hold fetched it. It stays in PSRAM (pseudo-static random-access memory) until the panel restarts. |
 
 The download takes the panel's own download path ([The download](#the-download)):
 the home network, `SHA256SUMS` of the release, then the file, each through
@@ -8077,8 +8077,8 @@ the file, and a card read takes `<file>.sig` beside the file in
 bytes, or one that does not verify under the release key, does not match.
 While the build warns (`RCBENCH_SIGN_ENFORCE` 0, every build up to the
 stable release that enforces it) such an image is kept and sent: the band
-says `rcbench-dial-0.23.17.bin is not signed by the rcbench release key.`,
-and the step's card reads `rcbench-dial-0.23.17.bin: not signed by the
+says `rcbench-dial-0.23.18.bin is not signed by the rcbench release key.`,
+and the step's card reads `rcbench-dial-0.23.18.bin: not signed by the
 rcbench release key. The image comes with no signature.`, or `The
 signature does not match.`, in the warning colour. A build that
 enforces it refuses the image with `V07`.
@@ -8112,14 +8112,14 @@ the retry from the next place:
 | Line | Codes |
 | --- | --- |
 | `Download failed (D10): No connection to GitHub.` | `D` and the download's result, worded as the panel's own download ([The download](#the-download)): `D04` no home network kept, `D05` the gate, `D06` ended from outside (ARMED, the supply, a log run, STOP, WI-FI, CANCEL UPDATE), `D07` the join failed, `D08` the radio did not come up, `D09` the 180s ran out, `D10` no connection, `D11` an HTTP status refused, `D12` an answer out of form, `D13` `SHA256SUMS` missing or without the file's line, `D14` the SHA-256 differs from `SHA256SUMS`, `D16` no memory |
-| `SD card failed (S02): BENCH/UPDATES/rcbench-dial-0.23.17.bin is not on the SD card.` | `S01` no card, `S02` no such file, `S03` the read failed, `S04` empty or over the step's most bytes, `S05` no memory, `S06` the card's `SHA256SUMS` out of form or naming the file twice |
-| `Check failed (V05): The file is version 0.23.16; this release has 0.23.17.` | `V01` empty or over the most bytes, `V02` the SHA-256 differs from the card's `SHA256SUMS`, `V03` no application of the device's chip and project, or its own SHA-256 differs, `V04` another device's role, `V05` another version, `V07` no valid release signature in a build that enforces it |
+| `SD card failed (S02): BENCH/UPDATES/rcbench-dial-0.23.18.bin is not on the SD card.` | `S01` no card, `S02` no such file, `S03` the read failed, `S04` empty or over the step's most bytes, `S05` no memory, `S06` the card's `SHA256SUMS` out of form or naming the file twice |
+| `Check failed (V05): The file is version 0.23.17; this release has 0.23.18.` | `V01` empty or over the most bytes, `V02` the SHA-256 differs from the card's `SHA256SUMS`, `V03` no application of the device's chip and project, or its own SHA-256 differs, `V04` another device's role, `V05` another version, `V07` no valid release signature in a build that enforces it |
 
 The console names each step:
 
-    I (…) devimg: rcbench-dial-0.23.17.bin: download of v0.23.17's file, job 3
-    I (…) devimg: rcbench-dial-0.23.17.bin: 850816 bytes, SHA-256 as SHA256SUMS; checking
-    I (…) devimg: rcbench-dial-0.23.17.bin: 0.23.17 850816 bytes, SHA-256 1a2b3c4d, from GitHub
+    I (…) devimg: rcbench-dial-0.23.18.bin: download of v0.23.18's file, job 3
+    I (…) devimg: rcbench-dial-0.23.18.bin: 850816 bytes, SHA-256 as SHA256SUMS; checking
+    I (…) devimg: rcbench-dial-0.23.18.bin: 0.23.18 850816 bytes, SHA-256 1a2b3c4d, from GitHub
     W (…) devimg: image 1: Download failed (D10): No connection to GitHub.
 
 Current limitations:
@@ -8309,7 +8309,7 @@ gap is no loss error. The transfer time is not measured.
 ### The sensor nodes
 
 The POWER NODE FIRMWARE and BALANCE NODE FIRMWARE rows show a node's
-firmware: `Node: 0.23.16. Release: 0.23.17.`, the version the node's
+firmware: `Node: 0.23.17. Release: 0.23.18.`, the version the node's
 STATUS packet named on the current link, or `not connected`, and the
 version of the release the panel runs. The two roles'
 images differ: the power node's row sends the power image, the balance
@@ -8360,7 +8360,7 @@ back. Once the update ends the node's client connects again from SETUP's
 values, and the row's version comes from the first STATUS packet on the
 new link.
 
-The alert band's lines name the node: `Power node updated to 0.23.17.
+The alert band's lines name the node: `Power node updated to 0.23.18.
 It connects again by itself.`, `Balance node update stopped: <reason>.
 Previous firmware is running.`, `Power node did not report after its
 update. Check its version on UPDATES.` The reasons are the Dial's;

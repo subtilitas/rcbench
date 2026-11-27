@@ -270,12 +270,12 @@ The image carries no signature: the Dial accepts any Dial image a nearby device 
 
 ![The power node asks for its BOOT key](view:updates-node)
 
-The POWER NODE FIRMWARE and BALANCE NODE FIRMWARE rows show the node's version, from its STATUS packet on the current link, and the version of the release the panel runs: `Node: 0.23.16. Release: 0.23.17.` The hold needs the bench SAFE, the node bound and linked with its version read, and no other update running.
+The POWER NODE FIRMWARE and BALANCE NODE FIRMWARE rows show the node's version, from its STATUS packet on the current link, and the version of the release the panel runs: `Node: 0.23.17. Release: 0.23.18.` The hold needs the bench SAFE, the node bound and linked with its version read, and no other update running.
 
 1. The hold ends the node's own link; WIRELESS shows the node OFF until the update ends. The button reads `POWER NODE UPDATE: CONNECTING`.
 2. The node waits 30s for its BOOT key held 1s; the button reads `HOLD BOOT 1s ON THE NODE: 27s` and the band `Hold the node's BOOT key 1s within 30s to accept the update.` No hold refuses. Nothing is erased before the hold.
 3. The node writes the image; the button reads `POWER NODE UPDATE 37%`.
-4. The node checks the image, installs it and restarts. The alert reads `Power node updated to 0.23.17. It connects again by itself.` The node's link connects again from SETUP's values, and the row reads the new version from the node's first STATUS packet.
+4. The node checks the image, installs it and restarts. The alert reads `Power node updated to 0.23.18. It connects again by itself.` The node's link connects again from SETUP's values, and the row reads the new version from the node's first STATUS packet.
 
 The power node's row sends the image of the board the node names in its INFO: `rcbench-node-pwr-<version>.bin` to an ESP32-C6-Zero, `rcbench-node-display-<version>.bin` to the ES3C28P display node. For the display node the row reads DISPLAY NODE FIRMWARE and `Display node: 0.23.17. Release: 0.23.18.`, the step DISPLAY NODE; its BOOT key is IO0. An image that does not fit the node's board ends before the first byte with `Display node update stopped: image for another board. Previous firmware is running.` A board the release has no image for reads NO FIRMWARE.
 
@@ -287,15 +287,15 @@ The panel image carries the IOmcu images only. The C6 radio's, the Dial's and th
 
 | Card line | Where the hold takes it |
 |---|---|
-| `The hold downloads rcbench-dial-0.23.17.bin from GitHub first.` | GitHub, with a home network kept: `SHA256SUMS` and the file over HTTPS, the file's length held to the device's slot and its SHA-256 to its `SHA256SUMS` line |
-| `The hold reads BENCH/UPDATES/rcbench-dial-0.23.17.bin from the SD card.` | the SD card's `BENCH/UPDATES`, after a failed download or without a home network; the control reads HOLD 2s TO UPDATE FROM THE SD CARD. A `SHA256SUMS` beside the file is checked when it names it |
-| `rcbench-dial-0.23.17.bin is downloaded and checked.` | the memory, until the panel restarts |
+| `The hold downloads rcbench-dial-0.23.18.bin from GitHub first.` | GitHub, with a home network kept: `SHA256SUMS` and the file over HTTPS, the file's length held to the device's slot and its SHA-256 to its `SHA256SUMS` line |
+| `The hold reads BENCH/UPDATES/rcbench-dial-0.23.18.bin from the SD card.` | the SD card's `BENCH/UPDATES`, after a failed download or without a home network; the control reads HOLD 2s TO UPDATE FROM THE SD CARD. A `SHA256SUMS` beside the file is checked when it names it |
+| `rcbench-dial-0.23.18.bin is downloaded and checked.` | the memory, until the panel restarts |
 
 The control shows `DOWNLOADING 43%`, `CHECKING THE FILE` or `READING THE SD CARD`. The image passes the senders' checks: the device's chip and project, its own SHA-256, the role for the Dial and the nodes, the release's version. Then the update starts by itself, once the radio is off, within 20s. ARMED, the supply, a log run, STOP, WI-FI and CANCEL UPDATE end a download; no download starts while ARMED. CANCEL UPDATE also drops the update the hold asked for; an image that still passes stays for the next hold. No output changes for any of it.
 
 ![The Dial's step after a failed download](view:updates-step-dial-card)
 
-A failed attempt shows on the card with a code: `Download failed (D10): No connection to GitHub.`, `SD card failed (S02): BENCH/UPDATES/rcbench-dial-0.23.17.bin is not on the SD card.`, `Check failed (V05): The file is version 0.23.16; this release has 0.23.17.` The next hold takes the next place: the card after a download, GitHub after the card. The codes are listed in the [Screens reference](https://github.com/subtilitas/rcbench/wiki/Screens#device-images).
+A failed attempt shows on the card with a code: `Download failed (D10): No connection to GitHub.`, `SD card failed (S02): BENCH/UPDATES/rcbench-dial-0.23.18.bin is not on the SD card.`, `Check failed (V05): The file is version 0.23.17; this release has 0.23.18.` The next hold takes the next place: the card after a download, GitHub after the card. The codes are listed in the [Screens reference](https://github.com/subtilitas/rcbench/wiki/Screens#device-images).
 
 ## Current limitations
 

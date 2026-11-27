@@ -8713,9 +8713,9 @@ die Karte nennt die Datei und die Stelle:
 
 | Zeile der Karte | Woher das Halten es nimmt |
 | --- | --- |
-| `Das Halten lädt zuerst rcbench-dial-0.23.17.bin von GitHub.` | GitHub: der Normalfall mit gespeichertem Heimnetz. |
-| `Das Halten liest BENCH/UPDATES/rcbench-dial-0.23.17.bin von der SD-Karte.` | Die SD-Karte, Ordner `BENCH/UPDATES`: nach einem fehlgeschlagenen Download, und immer ohne Heimnetz. Das Bedienelement zeigt `2s HALTEN: UPDATE VON DER SD-KARTE`. Ein fehlgeschlagenes Lesen der Karte schickt das nächste Halten wieder zu GitHub. |
-| `rcbench-dial-0.23.17.bin ist geladen und geprüft.` | Der Speicher: Ein früheres Halten hat es geholt. Es bleibt im PSRAM (pseudo-statischer Arbeitsspeicher), bis das Panel neu startet. |
+| `Das Halten lädt zuerst rcbench-dial-0.23.18.bin von GitHub.` | GitHub: der Normalfall mit gespeichertem Heimnetz. |
+| `Das Halten liest BENCH/UPDATES/rcbench-dial-0.23.18.bin von der SD-Karte.` | Die SD-Karte, Ordner `BENCH/UPDATES`: nach einem fehlgeschlagenen Download, und immer ohne Heimnetz. Das Bedienelement zeigt `2s HALTEN: UPDATE VON DER SD-KARTE`. Ein fehlgeschlagenes Lesen der Karte schickt das nächste Halten wieder zu GitHub. |
+| `rcbench-dial-0.23.18.bin ist geladen und geprüft.` | Der Speicher: Ein früheres Halten hat es geholt. Es bleibt im PSRAM (pseudo-statischer Arbeitsspeicher), bis das Panel neu startet. |
 
 Der Download nimmt den eigenen Download-Weg des Panels ([Der Download](#der-download)):
 das Heimnetz, `SHA256SUMS` des Release, dann die Datei, jede über höchstens
@@ -8740,8 +8740,8 @@ von 8 bis 72 Bytes, oder eine, die sich mit dem Release-Schlüssel nicht
 bestätigen lässt, passt nicht. Solange der Build warnt
 (`RCBENCH_SIGN_ENFORCE` 0, jeder Build bis zum stabilen Release, das sie
 erzwingt), wird ein solches Image behalten und gesendet: Das Band sagt
-`rcbench-dial-0.23.17.bin ist nicht vom rcbench-Release-Schlüssel
-signiert.`, und die Karte des Schritts zeigt `rcbench-dial-0.23.17.bin:
+`rcbench-dial-0.23.18.bin ist nicht vom rcbench-Release-Schlüssel
+signiert.`, und die Karte des Schritts zeigt `rcbench-dial-0.23.18.bin:
 nicht vom rcbench-Release-Schlüssel signiert. Das Image hat keine
 Signatur.` oder `Die Signatur passt nicht.` in der Warnfarbe.
 Ein Build, der sie erzwingt, lehnt das Image mit `V07` ab.
@@ -8779,14 +8779,14 @@ nächsten Stelle:
 | Zeile | Codes |
 | --- | --- |
 | `Download fehlgeschlagen (D10): Keine Verbindung zu GitHub.` | `D` und das Ergebnis des Downloads, in den Worten des eigenen Downloads des Panels ([Der Download](#der-download)): `D04` kein Heimnetz gespeichert, `D05` das Gate, `D06` von außen beendet (ARMED, Netzteil, Log-Lauf, STOP, WI-FI, UPDATE ABBRECHEN), `D07` das Verbinden schlug fehl, `D08` der Funk kam nicht hoch, `D09` die 180s sind abgelaufen, `D10` keine Verbindung, `D11` ein HTTP-Status abgelehnt, `D12` eine Antwort außer Form, `D13` `SHA256SUMS` fehlt oder ohne Zeile der Datei, `D14` der SHA-256 weicht von `SHA256SUMS` ab, `D16` kein Speicher |
-| `SD-Karte fehlgeschlagen (S02): BENCH/UPDATES/rcbench-dial-0.23.17.bin fehlt auf der SD-Karte.` | `S01` keine Karte, `S02` keine solche Datei, `S03` das Lesen schlug fehl, `S04` leer oder größer als die Bytes des Schritts, `S05` kein Speicher, `S06` die `SHA256SUMS` der Karte ist außer Form oder nennt die Datei zweimal |
-| `Prüfung fehlgeschlagen (V05): Die Datei hat Version 0.23.16, dieses Release 0.23.17.` | `V01` leer oder größer als die Bytes, `V02` der SHA-256 weicht von der `SHA256SUMS` der Karte ab, `V03` keine Anwendung für Chip und Projekt des Geräts, oder ihr eigener SHA-256 weicht ab, `V04` die Rolle eines anderen Geräts, `V05` eine andere Version, `V07` keine gültige Release-Signatur in einem Build, der sie erzwingt |
+| `SD-Karte fehlgeschlagen (S02): BENCH/UPDATES/rcbench-dial-0.23.18.bin fehlt auf der SD-Karte.` | `S01` keine Karte, `S02` keine solche Datei, `S03` das Lesen schlug fehl, `S04` leer oder größer als die Bytes des Schritts, `S05` kein Speicher, `S06` die `SHA256SUMS` der Karte ist außer Form oder nennt die Datei zweimal |
+| `Prüfung fehlgeschlagen (V05): Die Datei hat Version 0.23.17, dieses Release 0.23.18.` | `V01` leer oder größer als die Bytes, `V02` der SHA-256 weicht von der `SHA256SUMS` der Karte ab, `V03` keine Anwendung für Chip und Projekt des Geräts, oder ihr eigener SHA-256 weicht ab, `V04` die Rolle eines anderen Geräts, `V05` eine andere Version, `V07` keine gültige Release-Signatur in einem Build, der sie erzwingt |
 
 Die Konsole nennt jeden Schritt:
 
-    I (…) devimg: rcbench-dial-0.23.17.bin: download of v0.23.17's file, job 3
-    I (…) devimg: rcbench-dial-0.23.17.bin: 850816 bytes, SHA-256 as SHA256SUMS; checking
-    I (…) devimg: rcbench-dial-0.23.17.bin: 0.23.17 850816 bytes, SHA-256 1a2b3c4d, from GitHub
+    I (…) devimg: rcbench-dial-0.23.18.bin: download of v0.23.18's file, job 3
+    I (…) devimg: rcbench-dial-0.23.18.bin: 850816 bytes, SHA-256 as SHA256SUMS; checking
+    I (…) devimg: rcbench-dial-0.23.18.bin: 0.23.18 850816 bytes, SHA-256 1a2b3c4d, from GitHub
     W (…) devimg: image 1: Download failed (D10): No connection to GitHub.
 
 Aktuelle Einschränkungen:
@@ -8984,7 +8984,7 @@ gemessen.
 ### Die Sensorknoten
 
 Die Zeilen LEISTUNGSKNOTEN-FIRMWARE und AUSWUCHTKNOTEN-FIRMWARE zeigen die
-Firmware eines Knotens: `Knoten: 0.23.16. Release: 0.23.17.`, die
+Firmware eines Knotens: `Knoten: 0.23.17. Release: 0.23.18.`, die
 Version, die das STATUS-Paket des Knotens auf der laufenden Verbindung
 genannt hat, oder `nicht verbunden`, und die Version des Release, das
 das Panel ausführt. Die Images der beiden Rollen
@@ -9041,7 +9041,7 @@ an, bis der Knoten zurück ist. Endet das Update, verbindet sich der Client
 des Knotens wieder aus den Werten von SETUP, und die Version der Zeile
 kommt aus dem ersten STATUS-Paket auf der neuen Verbindung.
 
-Die Zeilen des Alarmbands nennen den Knoten: `Leistungsknoten auf 0.23.17
+Die Zeilen des Alarmbands nennen den Knoten: `Leistungsknoten auf 0.23.18
 aktualisiert. Verbindet sich von selbst neu.`, `Auswuchtknoten-Update
 abgebrochen: <Grund>. Vorherige Firmware läuft.`, `Leistungsknoten hat
 sich nach dem Update nicht gemeldet. Prüfe seine Version auf UPDATES.` Die
