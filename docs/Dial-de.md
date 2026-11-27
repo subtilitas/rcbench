@@ -55,7 +55,10 @@ an, eine ruhige Berührung von 1.000ms lehnt es ab, und ein Wischen tut
 keins von beiden. Nur eine Berührung, die beginnt, während die Frage
 steht, beantwortet sie; eine Berührung von vorher, von vor einem
 verlorenen Link oder zu einer Frage, die eine andere ersetzt hat,
-beantwortet nichts, bis sie abhebt. Jede Frage hat ihre eigene Nummer,
+beantwortet nichts, bis sie abhebt. Eine Berührung zählt nur, wenn ein
+Lesen des Glases, alle 20ms, keinen Finger fand, während die Frage schon
+stand; ein Tippen in den ersten 20ms der Frage braucht also ein zweites
+Tippen. Jede Frage hat ihre eigene Nummer,
 und das Update nimmt die Taste nur für die Frage, in der sie entstand. Statt eines
 Summers vibriert ein DRV2605 auf 0x5A mit seinen ROM-Effekten für einen
 LRA (Bibliothek 6): eine Rastung "Sharp Tick 3" (26), PRESS "Sharp Click

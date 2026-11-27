@@ -137,21 +137,27 @@ static bool key_free(const dk518_key_t *k, uint32_t now)
                && (int32_t)(now - k->until) >= (int32_t)DK518_KEY_GAP_MS);
 }
 
-bool dk518_key_step(dk518_key_t *k, bool offer, uint32_t id,
+bool dk518_key_step(dk518_key_t *k, bool offer, uint32_t id, bool empty,
                     const dk518_still_out_t *o, uint32_t now)
 {
     bool press = false;
     if (offer != k->offer || id != k->id) {
         /* Opened, closed or replaced: the window ends, the touch under
-         * way is nobody's. */
+         * way is nobody's, and the glass must read empty again. */
         k->offer = offer;
         k->id = id;
         k->touch_ok = false;
         k->hold = false;
         k->on = false;
+        k->clear = false;
+    }
+    if (empty && offer) {
+        k->clear = true;
     }
     if (o->began) {
-        k->touch_ok = offer;
+        /* The finger came down after a read that found the glass empty
+         * with this offer standing. */
+        k->touch_ok = offer && k->clear;
     }
     if (o->held && k->touch_ok) {
         const uint32_t until = now + DK518_KEY_HOLD_MS;
