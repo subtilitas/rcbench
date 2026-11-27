@@ -1,16 +1,17 @@
 /**
  * @file
  * @brief The Guition JC3636K518C's faces, drawn natively at 360 x 360: the
- *        boot face and the reading faces.
+ *        boot face and every face of the panel's model.
  *
  * The K518 draws its own faces at its display's size; the M5Stack Dial's
  * faces (dial_face.h, 240 x 240) are not scaled onto it.  What a face shows
  * is the M5 faces' scene (dial_scene_build()); where it stands is the
  * K518's own (dk518_draw.c).  The boot face (dk518_boot.c) stands from the
- * display's start and while the panel's face is one the K518 does not draw
- * yet: the product's name, the board, the Dial's BLE name and its firmware
- * version, inside a ring at the rim.  The reading faces, MOTOR & ESC and
- * SERVO, show the M5 faces' six cells, six rings, title, pill and hints.
+ * display's start until the face task's first draw: the product's name,
+ * the board, the Dial's BLE name and its firmware version, inside a ring
+ * at the rim.  The reading faces, MOTOR & ESC and SERVO, show the M5 faces'
+ * six cells, six rings, title, pill and hints; the others their body
+ * blocks, rim ticks and rim decorations.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -92,8 +93,7 @@ typedef struct {
 
 /** @brief What dk518_render() did. */
 typedef enum {
-    DK518_NONE = 0, /**< not a face the K518 draws yet, or a bad
-                         argument: nothing drawn, show the boot face */
+    DK518_NONE = 0, /**< a bad argument: nothing drawn */
     DK518_SAME,     /**< the canvas holds the face already */
     DK518_DRAWN,    /**< the face was drawn in full */
 } dk518_draw_t;
@@ -106,8 +106,8 @@ typedef enum {
 bool dk518_render_init(dk518_render_t *r);
 
 /**
- * @brief Make the canvas show the face of a model and a view: a reading
- *        face (MOTOR & ESC, SERVO) is drawn in full when its scene changed.
+ * @brief Make the canvas show the face of a model and a view, drawn in
+ *        full when its scene changed.
  * @param r the renderer
  * @param c the canvas, DK518_SIZE square
  * @param f the panel's model

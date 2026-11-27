@@ -35,6 +35,14 @@ history is in git.
   the whole frame; every other face shows the boot face
   (`dial_k518_screen.c`). The M5Stack Dial keeps its own frame; the K518
   build holds none of its 115,200 bytes.
+- The K518 draws every other face natively as well: lists with their rim
+  ticks and focus brackets, a value being set with its numeral, LINK LOST
+  with its 24 dashes, waiting, bind, a screen the knob does nothing on,
+  the update's question and progress, and the switch-off's warning and
+  choice. A text block stands on the M5 face's row taken about the middle
+  at 3/2, one font size up, wrapped and cut by the M5 faces' rules; every
+  string lies inside radius 150. The boot face stands until the first
+  face.
 
 ### Changed
 
