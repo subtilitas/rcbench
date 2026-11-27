@@ -25,27 +25,6 @@
 /** @brief The space a line leaves under it at the widest pitch, px. */
 #define GAP      8
 
-void sprog_page_open(sprog_t *f, int16_t what, bool danger,
-                     const char *title, const char *apply,
-                     const char *cancel, int16_t hint, bool drop)
-{
-    /* A page the last one's hold opens keeps that hold's flash. */
-    ui_hold_t hold = f->page.hold;
-
-    ui_hold_spend(&hold);
-    memset(&f->page, 0, sizeof(f->page));
-    f->page.hold = hold;
-    f->page.open = true;
-    f->page.what = what;
-    f->page.danger = danger;
-    f->page.drop = drop;
-    f->page.hint = hint;
-    snprintf(f->page.title, sizeof(f->page.title), "%s", title);
-    snprintf(f->page.apply, sizeof(f->page.apply), "%s", apply);
-    snprintf(f->page.cancel, sizeof(f->page.cancel), "%s", cancel);
-    ++f->rev;
-}
-
 bool sprog_page_line(sprog_t *f, const char *s, uint8_t level)
 {
     if (f->page.count >= SPROG_PAGE_LINES) {

@@ -307,6 +307,7 @@ typedef struct {
     ui_hold_t    hold;       /**< the hold of a SPROG_P_HOLD control        */
     int16_t      hold_row;   /**< its row, -1 before the first              */
     bool         hold_due;   /**< completed: SPROG_R_HOLD_DUE on the next tick */
+    int16_t      due_row;    /**< the row of that SPROG_R_HOLD_DUE          */
     /* the editors */
     ui_keypad_t  kp;         /**< the keypad                                */
     int16_t      kp_what;    /**< the brand's code of what it edits         */
@@ -370,7 +371,8 @@ void sprog_refuse(sprog_t *f);
  *        the footer's WRITE n VALUES.  A touch loss before it cancels it.
  * @param f   the frame
  * @param row the row
- * @return false while a press, an editor or the page is on the frame
+ * @return false while a press, an editor or the page is on the frame, or
+ *         another due waits
  */
 bool sprog_due(sprog_t *f, int row);
 
@@ -460,7 +462,9 @@ void sprog_tab_set(sprog_t *f, int tab);
 /* ---------------------------------------------------------- the editors */
 
 /**
- * @brief Opens the keypad over the area; ENTER returns SPROG_R_KEYPAD with
+ * @brief Opens the keypad over the area, closing every other overlay (as
+ *        each editor and the page do: one overlay at a time) and ending a
+ *        press held under it; ENTER returns SPROG_R_KEYPAD with
  *        @p what and the value x 10^@p decimals.
  * @param f        the frame
  * @param what     the brand's code

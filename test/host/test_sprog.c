@@ -189,8 +189,10 @@ TEST_CASE(a_hold_ends_without_a_due)
     (void)rig_down(w, 1);
     sprog_keypad(&rig.f, 1, "X", "", 1.0f, 0.0f, 9.0f, 0);
     (void)rig_tick(0.05f);
-    CHECK(!rig.f.have);
+    CHECK(!rig.f.hold.down);
     sprog_close_editors(&rig.f);
+    CHECK_EQ(rig_up(w, 1).kind, SPROG_R_NONE);
+    CHECK(!rig.f.have);
 
     (void)rig_down(w, 1);
     rig.cell[R_WRITE].why = "Card pulled.";
@@ -610,6 +612,93 @@ TEST_CASE(a_drop_pages_flash_keeps_its_hold_rect)
     CHECK_EQ(h.w, 380);
 }
 
+/* A completed hold's due survives its release and a press on another
+ * hold before the next tick: the due is the first row's, the second hold
+ * counts its own 2s (review of #996). */
+TEST_CASE(a_due_keeps_its_row_when_another_hold_begins)
+{
+    rig_start();
+    const gfx_rect_t h = sprog_value_rect(&rig.f, R_HEAD);
+    const gfx_rect_t w = sprog_value_rect(&rig.f, R_WRITE);
+
+    (void)rig_down(h, 1);
+    int ticks = 0;
+    while (!rig.f.hold_due && ticks < 100) {
+        (void)rig_tick(0.05f);
+        ++ticks;
+    }
+    CHECK(rig.f.hold_due);
+    (void)rig_up(h, 1);
+    CHECK_EQ(rig_down(w, 2).kind, SPROG_R_HOLD_BEGIN);
+    sprog_result_t r = rig_tick(0.05f);
+    CHECK_EQ(r.kind, SPROG_R_HOLD_DUE);
+    CHECK_EQ(r.row, R_HEAD);
+    CHECK_EQ(rig_run(1.0f).kind, SPROG_R_NONE);
+    (void)rig_up(w, 2);
+    CHECK_EQ(rig_run(2.5f).kind, SPROG_R_NONE);
+    /* A due asked while one waits is refused. */
+    CHECK(sprog_due(&rig.f, R_WRITE));
+    CHECK(!sprog_due(&rig.f, R_HEAD));
+    r = rig_tick(0.05f);
+    CHECK_EQ(r.row, R_WRITE);
+}
+
+/* One overlay at a time: opening one closes the others, so the input goes
+ * to the overlay that is drawn (review of #996). */
+TEST_CASE(one_overlay_at_a_time_takes_the_input)
+{
+    rig_start();
+    sprog_page_open(&rig.f, 7, false, "CHECK", "HOLD", "CANCEL", -1, false);
+    sprog_keypad(&rig.f, 3, "SPEED", "%", 50.0f, 0.0f, 100.0f, 0);
+    CHECK(!rig.f.page.open);
+    (void)rig_tap(ui_keypad_key_rect(&rig.f.kp, UI_KEY_5));
+    sprog_result_t r = rig_tap(ui_keypad_key_rect(&rig.f.kp, UI_KEY_OK));
+    CHECK_EQ(r.kind, SPROG_R_KEYPAD);
+    CHECK_EQ(r.what, 3);
+    CHECK_EQ(r.value, 5);
+    sprog_page_open(&rig.f, 7, false, "CHECK", "HOLD", "CANCEL", -1, false);
+    sprog_name(&rig.f, "NAME", "HAND");
+    CHECK(!rig.f.page.open);
+    CHECK_EQ(rig_tap(ui_textkey_key_rect(&rig.f.tk, UI_TK_OK)).kind,
+             SPROG_R_NAME);
+    sprog_keypad(&rig.f, 3, "SPEED", "%", 50.0f, 0.0f, 100.0f, 0);
+    sprog_name(&rig.f, "NAME", "HAND");
+    CHECK(!rig.f.kp.open);
+    sprog_list_open(&rig.f, 4, "MORE", false);
+    CHECK(!rig.f.tk.open);
+    (void)sprog_list_add(&rig.f, "VERIFY", NULL, 0);
+    sprog_page_open(&rig.f, 8, true, "RESTORE", "HOLD", "CANCEL", -1, false);
+    CHECK(!rig.f.list.open);
+    CHECK_EQ(rig_tap(sprog_page_cancel_rect(&rig.f)).kind,
+             SPROG_R_PAGE_CANCEL);
+}
+
+/* An overlay opened under a hold's press ends the hold: no fade stays
+ * behind, the release taps nothing and nothing is due. */
+TEST_CASE(an_overlay_ends_a_hold_under_it)
+{
+    rig_start();
+    const gfx_rect_t w = sprog_value_rect(&rig.f, R_WRITE);
+
+    (void)rig_down(w, 1);
+    (void)rig_run(0.5f);
+    sprog_list_open(&rig.f, 1, "MORE", false);
+    CHECK(!rig.f.hold.down);
+    CHECK_EQ(rig_up(w, 1).kind, SPROG_R_NONE);
+    sprog_close_editors(&rig.f);
+    CHECK_EQ(rig_run(2.5f).kind, SPROG_R_NONE);
+    /* The page's own hold, when the brand opens another page under it. */
+    sprog_page_open(&rig.f, 1, false, "A", "HOLD", "CANCEL", -1, false);
+    const gfx_rect_t a = sprog_apply_rect(&rig.f);
+    (void)rig_down(a, 1);
+    (void)rig_run(0.5f);
+    sprog_page_open(&rig.f, 2, false, "B", "HOLD", "CANCEL", -1, false);
+    CHECK(!rig.f.page.down);
+    CHECK_EQ(rig_run(2.5f).kind, SPROG_R_NONE);
+    CHECK_EQ(rig_up(a, 1).kind, SPROG_R_NONE);
+    CHECK(rig.f.page.open);
+}
+
 int main(void)
 {
     RUN(a_tap_acts_on_its_release_inside_the_control);
@@ -632,5 +721,8 @@ int main(void)
     RUN(a_why_ends_a_held_steps_repeat);
     RUN(an_overlay_opened_under_a_press_takes_its_tap);
     RUN(a_drop_pages_flash_keeps_its_hold_rect);
+    RUN(a_due_keeps_its_row_when_another_hold_begins);
+    RUN(one_overlay_at_a_time_takes_the_input);
+    RUN(an_overlay_ends_a_hold_under_it);
     return test_summary("sprog");
 }

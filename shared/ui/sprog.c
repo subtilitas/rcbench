@@ -219,10 +219,10 @@ void sprog_refuse(sprog_t *f)
 bool sprog_due(sprog_t *f, int row)
 {
     if (!f->open || f->have || editor_open(f) || f->page.open
-        || row < 0 || row >= f->def->row_count) {
+        || f->hold_due || row < 0 || row >= f->def->row_count) {
         return false;
     }
-    f->hold_row = (int16_t)row;
+    f->due_row = (int16_t)row;
     f->hold_due = true;
     ++f->rev;
     return true;
@@ -442,16 +442,6 @@ static sprog_result_t down(sprog_t *f, const touch_event_t *evt)
         take(f, evt, SPROG_ON_ABSORB, -1, 0);
         return result(SPROG_R_STOP, stop, key, 0, 0);
     }
-    if (f->page.open) {
-        if (gfx_rect_contains(sprog_apply_rect(f), x, y)) {
-            take(f, evt, SPROG_ON_APPLY, -1, 0);
-            f->page.down = true;
-            ui_hold_begin(&f->page.hold, f->page.hint);
-        } else if (gfx_rect_contains(sprog_page_cancel_rect(f), x, y)) {
-            take(f, evt, SPROG_ON_CANCEL, -1, 0);
-        }
-        return nothing();
-    }
     if (f->kp.open) {
         take(f, evt, SPROG_ON_KEYPAD, -1, 0);
         (void)ui_keypad_event(&f->kp, evt, NULL);
@@ -460,6 +450,16 @@ static sprog_result_t down(sprog_t *f, const touch_event_t *evt)
     if (f->tk.open) {
         take(f, evt, SPROG_ON_TEXTKEY, -1, 0);
         (void)ui_textkey_event(&f->tk, evt, NULL, 0);
+        return nothing();
+    }
+    if (f->page.open) {
+        if (gfx_rect_contains(sprog_apply_rect(f), x, y)) {
+            take(f, evt, SPROG_ON_APPLY, -1, 0);
+            f->page.down = true;
+            ui_hold_begin(&f->page.hold, f->page.hint);
+        } else if (gfx_rect_contains(sprog_page_cancel_rect(f), x, y)) {
+            take(f, evt, SPROG_ON_CANCEL, -1, 0);
+        }
         return nothing();
     }
     if (f->list.open) {
@@ -758,6 +758,7 @@ static void hold_frame(sprog_t *f, float dt_s)
     } else {
         if (ui_hold_tick(&f->hold, dt_s)) {
             f->hold_due = true;
+            f->due_row = f->hold_row;
             ++f->rev;
         }
         ++f->hold_rev;
@@ -792,7 +793,7 @@ sprog_result_t sprog_tick(sprog_t *f, float dt_s)
          * so a touch loss over the hold has cancelled it already. */
         f->hold_due = false;
         ++f->rev;
-        r = result(SPROG_R_HOLD_DUE, f->hold_row, 0, 0, 0);
+        r = result(SPROG_R_HOLD_DUE, f->due_row, 0, 0, 0);
     }
     if (f->have && f->on == SPROG_ON_HOLD && !f->hold.fired) {
         hold_frame(f, dt_s);
@@ -872,10 +873,36 @@ gfx_rect_t sprog_hold_rect(const sprog_t *f)
 
 /* --------------------------------------------------------------- editors */
 
+/**
+ * @brief An overlay opens: every other overlay closes, and a press held on
+ *        what it covers ends, its hold left, its release tapping nothing.
+ * @param f the frame
+ */
+static void take_over(sprog_t *f)
+{
+    ui_keypad_close(&f->kp);
+    ui_textkey_close(&f->tk);
+    f->list.open = false;
+    if (!f->have) {
+        return;
+    }
+    if (f->on == SPROG_ON_HOLD) {
+        (void)ui_hold_left(&f->hold);
+    } else if (f->on == SPROG_ON_APPLY) {
+        (void)ui_hold_left(&f->page.hold);
+        f->page.down = false;
+    } else if (f->on == SPROG_ON_TAB) {
+        ui_tabs_cancel(&f->tabs);
+    }
+    f->on = SPROG_ON_ABSORB;
+}
+
 void sprog_keypad(sprog_t *f, int16_t what, const char *title,
                   const char *unit, float value, float lo, float hi,
                   int decimals)
 {
+    take_over(f);
+    f->page.open = false;
     ui_keypad_open(&f->kp, f->area, title, unit, value, lo, hi, decimals);
     f->kp_what = what;
     f->kp_dec = (uint8_t)(decimals > 0 ? decimals : 0);
@@ -885,6 +912,8 @@ void sprog_keypad(sprog_t *f, int16_t what, const char *title,
 void sprog_list_open(sprog_t *f, int16_t what, const char *title,
                      bool files)
 {
+    take_over(f);
+    f->page.open = false;
     f->list.open = true;
     f->list.files = files;
     f->list.what = what;
@@ -931,6 +960,31 @@ void sprog_list_current(sprog_t *f, int32_t value)
 
 void sprog_name(sprog_t *f, const char *title, const char *preset)
 {
+    take_over(f);
+    f->page.open = false;
     ui_textkey_open(&f->tk, f->area, title, preset, SPROG_NAME_MAX);
+    ++f->rev;
+}
+
+void sprog_page_open(sprog_t *f, int16_t what, bool danger,
+                     const char *title, const char *apply,
+                     const char *cancel, int16_t hint, bool drop)
+{
+    /* A page the last one's hold opens keeps that hold's flash. */
+    ui_hold_t hold;
+
+    take_over(f);
+    hold = f->page.hold;
+    ui_hold_spend(&hold);
+    memset(&f->page, 0, sizeof(f->page));
+    f->page.hold = hold;
+    f->page.open = true;
+    f->page.what = what;
+    f->page.danger = danger;
+    f->page.drop = drop;
+    f->page.hint = hint;
+    snprintf(f->page.title, sizeof(f->page.title), "%s", title);
+    snprintf(f->page.apply, sizeof(f->page.apply), "%s", apply);
+    snprintf(f->page.cancel, sizeof(f->page.cancel), "%s", cancel);
     ++f->rev;
 }
