@@ -3065,6 +3065,111 @@ Ein gefundener Anschlag setzt diese Endlage im Entwurf:
 ![ANSCHLAG SUCHEN links bei der Suche](img/de/servo-hitec-move-find.png)
 ![Ein Anschlag links gefunden](img/de/servo-hitec-move-found.png)
 
+#### Rahmen der Servoprogrammierung
+
+KST und HITEC zeichnen über einen Rahmen, `sprog`
+(`shared/ui/include/sprog.h`, `sprog.c`, `sprog_draw.c`, `sprog_page.c`).
+Der Rahmen besitzt das Layout, das Zeichnen, die Drücke, das 2s Halten,
+das Tastenfeld, die Tastatur, die Listen und die Halteseiten. Eine Marke
+besitzt ihr Modell, eine feste Tabelle der Registerkarten und Zeilen, eine
+Ansichtsfüllung und ein `switch` über das Ergebnis, das der Rahmen
+zurückgibt. Der Rahmen ruft keine Marke auf und hält keinen
+Funktionszeiger. Er nutzt keinen Heap: sein Zustand, `sprog_t`, ist ein
+Teil des statischen Zustands der Marke. Es ist immer nur eine Überlagerung
+offen.
+
+Jedes Ereignis, jeder Tick und jedes Zeichnen hat drei Schritte. Die Marke
+füllt die Ansicht: Wert, Füllung, Druckart und Ablehnung jeder gezeigten
+Zeile, die zwei Zeilen des Kopfs, die Hinweise und die untere Zeile. Sie
+gibt das Ereignis oder den Tick an den Rahmen. Sie handelt nach dem
+Ergebnis: ein Tipp, ein Schritt, ein Stopp, ein beendetes Halten, ein Wert
+aus Tastenfeld, Liste oder Tastatur, eine angewendete oder abgebrochene
+Seite, ein Wechsel der Registerkarte.
+
+Bereiche, in Pixeln im linken Feld von 620 x 428px:
+
+| Bereich | Wo | Enthält |
+| --- | --- | --- |
+| Registerkarten | x 8, y 8, 604 x 48px | bis zu 5 Registerkarten; eine Registerkarte, deren Anzeigebits aus sind, fällt weg und die übrigen rücken zusammen: 4 auf KST mit KST EXPERT MODE AUS |
+| Zeilenraster | Zeilen bei y 64 + 56 x n, n 0 bis 4, 48px hoch | die Zeilen der Registerkarte in Tabellenfolge: eine breite Zeile nimmt eine Zeile, zwei schmale teilen sich eine. Spalte 0 bei x 10, Spalte 1 bei x 315, je 295px breit |
+| Kopf | Zeile 0 des Reiters SERVO | Port und GPIO über der Versorgung, die VERBINDEN einstellt, bei x 10; Zeile 1 in der Warnfarbe, solange kein Port gebunden ist; VERBINDEN, ABBRECHEN oder VERLASSEN, 260 x 48px, rechts. Ein Tipp auf den Text öffnet die Liste PORT, wo die Marke sie anbietet |
+| Hinweise | ab 8px unter der letzten Zeile bis zur unteren Zeile | die Hinweise der Marke, von oben nach unten, jeder in Text-, gedimmter, blasser, Akzent-, Warn- oder Gefahrenfarbe, 60 Zeichen je Zeile, 20px je Zeile; die Seitenzahl `1/2` am rechten Ende der letzten Zeile einer Seite; ein Tipp blättert |
+| Untere Zeile | ihre letzte Zeile endet 8px über dem Boden des Felds oder über dem Alarmband, je nachdem, was höher liegt | die letzte Meldung, sonst die Kennzeile der Marke zum gelesenen Servo |
+| Überlagerungen | das ganze Feld | Tastenfeld, Tastatur, Liste, Halteseite |
+
+Der Reiter SERVO folgt der Reihenfolge der Arbeit, VERBINDEN, ALLES
+AUSLESEN, ändern, SCHREIBEN:
+
+| Zeile | Spalte 0 | Spalte 1 |
+| --- | --- | --- |
+| 0 | Kopf: Port und Versorgung | VERBINDEN, ABBRECHEN oder VERLASSEN |
+| 1 | SERVO: ALLES AUSLESEN | der Platz der Marke: KST TYP; Hitec SERIE vor VERBINDEN, NACH STOP bei gehaltenem Port |
+| 2 | DATEIEN: WÄHLEN | WEITERES: WÄHLEN |
+| 3 | ZURÜCKSPIELEN: WÄHLEN | n WERTE SCHREIBEN, 220px, 2s Halten |
+
+Eine Marke ohne eigene Zeile lässt den Platz leer. Ab Zeile 4 stehen die
+Hinweise.
+
+Zeilenarten, die der Rahmen zeichnet; die Ansicht kann die Art einer Zeile
+je nach Zustand ändern, so werden NEUTRAL und die Endlagen bei Hitec zu
+Schritten, solange SERVO BEWEGEN läuft:
+
+| Art | Bedienelement | Druck |
+| --- | --- | --- |
+| Wert | der Wert, 150px, 260px in einer breiten Zeile; `* ` und die Akzentfüllung, wenn er vom Servo abweicht | ein Tipp öffnet den Editor der Marke |
+| Schritt | `-`, der Wert, `+` | `-` und `+` wirken beim Drücken und wiederholen nach 0.45s mit 8Hz, ab 2.25s mit 30Hz; der Wert öffnet den Editor |
+| Paar | zwei Tasten an der Stelle des Werts: ENDE LINKS und ENDE RECHTS von ANSCHLAG SUCHEN bei Hitec | je Taste: Tipp oder Stopp |
+| Taste | die Beschriftung der Marke | Tipp, 2s Halten, Stopp beim Drücken oder aus |
+| Anzeige | ein Wert ohne Druck: die Zeilen des Reiters GESPERRT bei KST | keiner |
+| Lücke | ein frei gehaltener Platz | keiner |
+
+Wie ein Bedienelement einen Druck nimmt:
+
+| Druck | Wirkt |
+| --- | --- |
+| Tipp | beim Loslassen im Bedienelement |
+| 2s Halten | im Tick nach dem beendeten Halten; ein Verlust der Berührung davor bricht es ab. VERBINDEN, das eine Versorgung einschaltet, n WERTE SCHREIBEN |
+| Stopp | beim Aufsetzen, von jedem Kontakt, auch während ein anderer Druck gehalten wird: ABBRECHEN, der Stopp von SERVO BEWEGEN, ANSCHLAG SUCHEN |
+| aus | aus gezeichnet; nimmt keinen Druck |
+
+Ein Bedienelement, das die Marke ablehnt, trägt den Grund: ein Druck zeigt
+ihn im Alarmband, startet kein Halten und bewirkt nichts.
+
+Die Hinweise einer Werte-Registerkarte sind der Hinweis der Marke zu
+dieser Registerkarte, dann der gemeinsame Hinweis, gedimmt:
+`Tippe zum Ändern auf einen Wert. * markiert Änderungen. n WERTE SCHREIBEN schreibt sie.`
+
+Die Listenregel: eine Liste hat bis zu 7 Einträge. Bis zu 5 nehmen eine
+Spalte aus 48px hohen Zeilen mit 56px Abstand über ABBRECHEN. Mehr stehen
+zu zweit in einer Zeile, in Spalten von 295px; ein Eintrag, der breiter
+als eine Spalte ist, nimmt eine eigene Zeile. Der Eintrag mit dem
+aktuellen Wert hat die Akzentfüllung. Eine Dateiliste füllt die 7 Einträge
+mit `Speichere die Servowerte in einer neuen Datei.` in einer eigenen
+Zeile, 5 Dateien je Seite, jede mit Name und Typ oder Modell, und
+`Zeige weitere Dateien an.` als letztem Eintrag.
+
+Eine neue Marke, zum Beispiel AGFRC, liefert diese Teile; Layout, Drücke,
+Halten, Editoren und Seiten kommen vom Rahmen. Die Schätzung gilt für eine
+Marke mit wenigen Zeilen; die gemessenen Zahlen von KST sind Codezeilen,
+gezählt von `tools/check_sizes.py`:
+
+| Teil | Wo | Schätzung, Zeilen | KST, Zeilen |
+| --- | --- | ---: | ---: |
+| das Protokoll und das Sitzungsmodell: verbinden, lesen, ändern mit Grenzen, schreiben mit Prüfung, Backup, Dateien | `protocols/<brand>/`, `shared/bench/` | außerhalb von `shared/ui` | außerhalb von `shared/ui` |
+| die Tabellen der Registerkarten und Zeilen, die 18 Funktionen des Page-Sets, der Zustand, die Sitzung für Fußleiste und Karte BEREIT, eine Zeile im Register | `<brand>_panel.c`, `<brand>_panel_int.h`, `include/<brand>_panel.h`, `shared/ui/prog_registry.c` | 140 bis 180 | 901 |
+| die Ansichtsfüllung: Werte, Füllungen, Drücke, Ablehnungen, Kopf, Hinweise, untere Zeile | `<brand>_panel_draw.c` | 150 bis 250 | 506 |
+| der Switch über das Ergebnis | `<brand>_panel_touch.c` | 150 bis 200 | 183 |
+| die Werte der Editoren in den Entwurf, Dateien und Backup | `<brand>_panel_edit.c` | 150 bis 250 | 554 |
+| Texte: Zeilen, Meldungen, Seitenzeilen | `<brand>_panel_text.c`; die Texte in `shared/text/include/ui_text.def` | 300 bis 500 | 483 |
+| weiche Grenzen und ihre Seitenzeilen | `<brand>_panel_warn.c` | 150 bis 250 | 382 |
+| Anschlüsse an LIMIT RUN und RUDDER AUTO, wo gewünscht | `<brand>_panel_run.c` | etwa 200 | 219 |
+| Referenzbilder EN und DE, eine Docs-Seite, eine Hilfeseite, die Hub-Kachel | `tools/render_ui.py`, `docs/`, `help/` | | |
+
+In Summe 1.300 bis 1.600 Zeilen für eine Marke mit wenigen Zeilen; KST
+braucht auf dem Rahmen 3.228 Zeilen und Hitec 3.706, mit SERVO BEWEGEN und
+ANSCHLAG SUCHEN. `tools/stack_check.py` braucht die Funktion der Marke in
+jedem der 18 Einträge von `PROG_CALLS`.
+
 ### Einstellungen
 
 OPTIONEN in der Fußleiste öffnet die Liste des Bildschirms, auf dem es

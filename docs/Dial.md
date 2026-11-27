@@ -59,7 +59,8 @@ second tap. A failed I2C (inter-integrated circuit) read of the glass
 keeps the last state: it never ends a touch and never counts as an empty
 glass. The 5th failed read in a row (100ms) cancels the touch under way
 without PRESS, TAP or an answer to the question; the finger, read again,
-starts nothing until the glass reads empty. Each question has
+starts nothing until the glass reads empty. While BATTERY EMPTY covers
+an open question, no touch answers it. Each question has
 its own number, and the update takes the key only for the question it
 was made in. A DRV2605 at 0x5A vibrates instead of a buzzer, with its ROM
 effects for an LRA (library 6): a detent "Sharp Tick 3" (26), PRESS
@@ -87,7 +88,8 @@ CHARGING.
 
 The slide switch cuts the power. OFF in the switch-off choice and an empty
 cell put the K518 into deep sleep: the ST77916 off and asleep (DISPOFF,
-then SLPIN and 120ms), its backlight's pin held low, the touch controller
+then SLPIN and 120ms, sent once the face task's frame on the wire has
+ended, up to 2000ms, and no frame after them), its backlight's pin held low, the touch controller
 and the DRV2605 in their own sleep. A turn of the knob
 (either encoder line low) wakes it into a new start, as does the slide
 switch. The deep sleep current is not measured; the divider alone draws

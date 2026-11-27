@@ -74,6 +74,16 @@ static uint16_t *s_strip;              /**< the DMA bounce buffer */
 /** @} */
 /** @brief Given when a strip's transfer ends. */
 static SemaphoreHandle_t s_done;
+/** @brief The panel IO's owner: the face task for a frame, the input
+ *         task for the shutdown.  One SPI device is not safe to use from
+ *         two tasks at once. */
+static SemaphoreHandle_t s_io_lock;
+/** @brief The shutdown sent DISPOFF and SLPIN: no frame goes after it.
+ *         Written and read under s_io_lock. */
+static bool s_off;
+/** @brief How long the shutdown waits for a frame on the wire, ms: a
+ *         frame of 18 strips at LCD_STRIP_TIMEOUT_MS each is 900ms. */
+#define LCD_OFF_WAIT_MS 2000u
 /** @brief A strip's transfer was queued and its end not yet taken: the
  *         DMA may still read s_strip. */
 static bool s_busy;
@@ -137,11 +147,12 @@ gfx_color_t *dial_k518_frame(void)
     return s_panel != NULL ? s_fb : NULL;
 }
 
-bool dial_k518_send(void)
+/**
+ * @brief Send the frame while the caller holds s_io_lock.
+ * @return true when every strip went
+ */
+static bool send_locked(void)
 {
-    if (s_panel == NULL) {
-        return false;
-    }
     /* A strip of the frame before that timed out may still be on the wire:
      * s_strip is not written before its end is taken, and a late end taken
      * here cannot count as the end of a strip of this frame. */
@@ -173,6 +184,17 @@ bool dial_k518_send(void)
         s_busy = false;
     }
     return true;
+}
+
+bool dial_k518_send(void)
+{
+    if (s_panel == NULL || s_io_lock == NULL) {
+        return false;
+    }
+    xSemaphoreTake(s_io_lock, portMAX_DELAY);
+    const bool ok = !s_off && send_locked();
+    xSemaphoreGive(s_io_lock);
+    return ok;
 }
 
 bool dial_k518_boot(bool force)
@@ -219,11 +241,13 @@ bool dial_lcd_init(void)
 
     backlight_init();
     s_done = xSemaphoreCreateBinary();
+    s_io_lock = xSemaphoreCreateMutex();
     s_fb = heap_caps_malloc((size_t)DK518_SIZE * DK518_SIZE
                                 * sizeof(gfx_color_t), MALLOC_CAP_SPIRAM);
     s_strip = heap_caps_malloc(strip_bytes,
                                MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
-    if (s_done == NULL || s_fb == NULL || s_strip == NULL) {
+    if (s_done == NULL || s_io_lock == NULL || s_fb == NULL
+        || s_strip == NULL) {
         ESP_LOGE(TAG, "no memory for the frame (PSRAM) or the strip");
         return false;
     }
@@ -265,13 +289,32 @@ void dial_lcd_flush(const uint16_t *fb, int y0, int y1)
 
 void dial_k518_lcd_sleep(void)
 {
-    if (s_io != NULL) {
-        /* esp_lcd_st77916 2.0.2 has no sleep call over QSPI: DISPOFF and
-         * SLPIN go through the panel IO, coded as its own commands are
-         * (opcode 0x02 in bits 24-31, the command in bits 8-15). */
-        (void)esp_lcd_panel_io_tx_param(s_io, QSPI_CMD(ST_DISPOFF), NULL, 0);
-        (void)esp_lcd_panel_io_tx_param(s_io, QSPI_CMD(ST_SLPIN), NULL, 0);
-        vTaskDelay(pdMS_TO_TICKS(ST_SLPIN_MS));
+    /* The face task may be sending a frame: the shutdown waits for it to
+     * end, takes the panel IO, and no frame goes after it (s_off). */
+    if (s_io != NULL && s_io_lock != NULL
+        && xSemaphoreTake(s_io_lock, pdMS_TO_TICKS(LCD_OFF_WAIT_MS))
+               == pdTRUE) {
+        s_off = true;
+        if (!s_busy
+            || xSemaphoreTake(s_done, pdMS_TO_TICKS(LCD_LATE_MS)) == pdTRUE) {
+            s_busy = false;
+            /* esp_lcd_st77916 2.0.2 has no sleep call over QSPI: DISPOFF
+             * and SLPIN go through the panel IO, coded as its own commands
+             * are (opcode 0x02 in bits 24-31, the command in bits 8-15). */
+            (void)esp_lcd_panel_io_tx_param(s_io, QSPI_CMD(ST_DISPOFF), NULL,
+                                            0);
+            (void)esp_lcd_panel_io_tx_param(s_io, QSPI_CMD(ST_SLPIN), NULL,
+                                            0);
+            vTaskDelay(pdMS_TO_TICKS(ST_SLPIN_MS));
+        } else {
+            ESP_LOGW(TAG, "a strip is still on the wire: the ST77916 is "
+                          "left awake, the backlight goes off");
+        }
+        xSemaphoreGive(s_io_lock);
+    } else if (s_io != NULL) {
+        ESP_LOGW(TAG, "the face task held the display %ums: the ST77916 is "
+                      "left awake, the backlight goes off",
+                 (unsigned)LCD_OFF_WAIT_MS);
     }
     /* A digital pad loses its level in deep sleep unless it is held. */
     ledc_stop(LEDC_LOW_SPEED_MODE, BL_CHANNEL, 0);

@@ -757,6 +757,32 @@ TEST_CASE(binding_the_bound_dial_again_keeps_its_board)
     CHECK_EQ(dial_ctl_board(&r.c), DK_HW_K518);
 }
 
+/* OFF, then ON while the Dial is away: no model is shown without a link,
+ * and the board for the update's image stays (dial_ctl_board()). */
+TEST_CASE(off_then_on_without_the_dial_shows_no_model)
+{
+    drig_t r;
+    dial_view_t v;
+    drig_init(&r);
+    r.hw = DK_HW_K518;
+    drig_run(&r, 50u);
+    dial_ctl_view(&r.c, r.now, &v);
+    CHECK_EQ(v.hw, DK_HW_K518);
+    r.refuse = true;                       /* the Dial is away */
+    dial_cfg_t cfg = r.c.cfg;
+    cfg.en = false;
+    dial_ctl_config(&r.c, &cfg, r.now);
+    drig_run(&r, 10u);
+    cfg.en = true;
+    dial_ctl_config(&r.c, &cfg, r.now);
+    drig_run(&r, 100u);
+    CHECK(!r.c.linked);
+    dial_ctl_view(&r.c, r.now, &v);
+    CHECK_EQ(v.hw, 0u);
+    CHECK_EQ(v.proto, 0u);
+    CHECK_EQ(dial_ctl_board(&r.c), DK_HW_K518);
+}
+
 int main(void)
 {
     RUN(the_link_comes_up_and_the_model_streams);
@@ -785,5 +811,6 @@ int main(void)
     RUN(dial_off_drops_the_last_status);
     RUN(a_status_answer_with_the_links_end_is_dropped);
     RUN(binding_the_bound_dial_again_keeps_its_board);
+    RUN(off_then_on_without_the_dial_shows_no_model);
     return test_summary("dial_ctl");
 }

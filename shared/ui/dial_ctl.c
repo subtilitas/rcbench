@@ -237,7 +237,12 @@ void dial_ctl_config(dial_ctl_t *c, const dial_cfg_t *cfg, uint32_t now_ms)
             dk_link_off(&c->link);
             dk_track_reset(&c->track);
             c->linked = false;
-            /* follow_link() sees no link end now: the cell goes here. */
+            /* follow_link() sees no link end now: INFO and the cell go
+             * here.  The board stays: it names the bound Dial for the
+             * update's image (dial_ctl_board()). */
+            c->info_read = false;
+            c->info_ok = false;
+            c->info_proto = 0u;
             c->status_ok = false;
             c->status_asked = false;
             c->scan_open = false;
@@ -532,8 +537,9 @@ void dial_ctl_view(const dial_ctl_t *c, uint32_t now_ms, dial_view_t *out)
         memcpy(out->bound_addr, c->cfg.addr, sizeof(out->bound_addr));
         memcpy(out->bound_name, c->cfg.name, sizeof(out->bound_name));
     }
-    out->proto = c->info_proto;
-    out->hw = c->info_ok ? c->info.hw : 0u;
+    /* INFO describes the link that stands, and only that one. */
+    out->proto = c->linked ? c->info_proto : 0u;
+    out->hw = c->linked && c->info_ok ? c->info.hw : 0u;
     out->have_status = c->status_ok;
     out->batt_mv = c->status_ok ? c->status.batt_mv : 0u;
     out->st_flags = c->status_ok ? c->status.flags : 0u;
