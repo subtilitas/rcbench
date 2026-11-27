@@ -121,8 +121,8 @@ typedef struct {
     dk518_enc_t   enc;           /**< the two lines' decode */
     dk518_still_t still;         /**< the still touch: the screen button */
     dk518_key_t   key;           /**< the update's confirming key */
-    uint16_t      nx;            /**< the touch point, native px */
-    uint16_t      ny;            /**< the touch point, native px */
+    dk518_glass_t glass;         /**< the glass as the reads tell it: a
+                                      failed read keeps the last state */
 #else
     pcnt_unit_handle_t pcnt;     /**< the encoder's unit */
     int32_t   detent;            /**< the last detent read from PCNT */
@@ -371,15 +371,25 @@ static void screen_button(uint32_t now)
     bool empty = false;
     if (now - s_in.touch_poll_ms >= TOUCH_MS) {
         s_in.touch_poll_ms = now;
-        s_in.touch_down = dial_k518_touch(&s_in.nx, &s_in.ny);
-        empty = !s_in.touch_down;
+        uint16_t nx = 0u;
+        uint16_t ny = 0u;
+        const dk518_read_t r = dial_k518_touch(&nx, &ny);
+        /* Only a read that worked and found no finger is an empty
+         * glass; a failed one says nothing (dk518_glass_read()). */
+        empty = r == DK518_READ_UP;
+        if (dk518_glass_read(&s_in.glass, r, nx, ny)) {
+            ESP_LOGW(TAG, "touch: %u failed reads, the touch is cancelled",
+                     (unsigned)DK518_READ_FAILS);
+            dk518_still_lost(&s_in.still, now);
+        }
+        s_in.touch_down = s_in.glass.down;
         if (s_in.touch_down) {
-            s_in.tx = dk518_touch_scale(s_in.nx);
-            s_in.ty = dk518_touch_scale(s_in.ny);
+            s_in.tx = dk518_touch_scale(s_in.glass.x);
+            s_in.ty = dk518_touch_scale(s_in.glass.y);
         }
     }
     const unsigned act = dk518_still_step(&s_in.still, s_in.touch_down,
-                                          s_in.nx, s_in.ny,
+                                          s_in.glass.x, s_in.glass.y,
                                           s_in.local_turns, yield, now, &o);
     s_in.local_turns = 0;
     /* The update takes the still touch's events, never the raw touch:
@@ -692,6 +702,7 @@ void dial_input_start(void)
     dk518_enc_init(&s_in.enc);
     dk518_still_init(&s_in.still);
     dk518_key_init(&s_in.key);
+    dk518_glass_init(&s_in.glass);
     if (!encoder_init()) {
         ESP_LOGE(TAG, "the encoder's PCNT units did not start");
     }

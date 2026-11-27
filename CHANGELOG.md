@@ -49,7 +49,9 @@ history is in git.
   before 1,000ms, HOLD at 1,000ms, the switch-off's warning at 5s and the
   forget at 10s) and a TAP within 500ms; and its DRV2605 vibration as the
   detent's tick and the confirmations. The update's question reads TAP TO
-  ACCEPT and the switch-off's choice TAP: SELECT on the K518 alone. The
+  ACCEPT and the switch-off's choice TAP: SELECT on the K518 alone. A
+  failed I2C read of the touch controller keeps the last touch state; the
+  5th in a row (100ms) cancels the touch without an answer. The
   M5Stack Dial's input task, buzzer and faces are unchanged
   ([The M5Stack Dial](docs/Dial.md)).
 

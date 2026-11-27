@@ -59,7 +59,12 @@ beantwortet nichts, bis sie abhebt. Eine Berührung zählt nur, wenn ein
 Lesen des Glases, alle 20ms, keinen Finger fand, während die Frage dieses
 Angebots schon ganz auf dem Display stand, vom Face-Task gesendet (alle
 50ms); ein Tippen in den ersten 20ms der Frage auf dem Glas braucht also
-ein zweites Tippen. Jede Frage hat ihre eigene Nummer,
+ein zweites Tippen. Ein fehlgeschlagenes I2C-Lesen (Inter-Integrated
+Circuit) des Glases behält den letzten Zustand: Es beendet keine
+Berührung und zählt nie als leeres Glas. Das 5. fehlgeschlagene Lesen in
+Folge (100ms) bricht die laufende Berührung ab, ohne PRESS, TAP oder
+Antwort auf die Frage; der Finger, wieder gelesen, startet nichts, bis
+das Glas leer gelesen wird. Jede Frage hat ihre eigene Nummer,
 und das Update nimmt die Taste nur für die Frage, in der sie entstand. Statt eines
 Summers vibriert ein DRV2605 auf 0x5A mit seinen ROM-Effekten für einen
 LRA (Bibliothek 6): eine Rastung "Sharp Tick 3" (26), PRESS "Sharp Click

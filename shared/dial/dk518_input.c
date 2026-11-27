@@ -118,6 +118,52 @@ unsigned dk518_still_step(dk518_still_t *s, bool touch, uint16_t x,
     return act;
 }
 
+void dk518_glass_init(dk518_glass_t *g)
+{
+    memset(g, 0, sizeof *g);
+}
+
+bool dk518_glass_read(dk518_glass_t *g, dk518_read_t r, uint16_t x,
+                      uint16_t y)
+{
+    if (r != DK518_READ_FAIL) {
+        g->fails = 0u;
+        if (r == DK518_READ_UP) {
+            g->lost = false;
+        }
+        /* After a loss, the finger read again is the same touch: it
+         * counts once the glass read empty. */
+        g->down = r == DK518_READ_DOWN && !g->lost;
+        if (g->down) {
+            g->x = x;
+            g->y = y;
+        }
+        return false;
+    }
+    /* A failure says nothing about the finger: the last state stands
+     * until DK518_READ_FAILS of them in a row. */
+    if (g->fails < DK518_READ_FAILS) {
+        ++g->fails;
+    }
+    if (g->fails == DK518_READ_FAILS && g->down) {
+        g->down = false;
+        g->lost = true;
+        return true;
+    }
+    return false;
+}
+
+void dk518_still_lost(dk518_still_t *s, uint32_t now)
+{
+    if (!s->down) {
+        return;
+    }
+    /* Taken as a move: the lift gives no PRESS, TAP or still lift, and
+     * the button owns the press, so no stage answers it. */
+    s->moved = true;
+    dial_button_yield(&s->button, true, now);
+}
+
 void dk518_key_init(dk518_key_t *k)
 {
     memset(k, 0, sizeof *k);

@@ -55,7 +55,11 @@ another one replaced, answers nothing until it lifts. A touch counts only
 when a read of the glass, every 20ms, found no finger while the question
 of that offer was already on the display, sent whole by the face task
 (every 50ms): a tap within the question's first 20ms on the glass needs a
-second tap. Each question has
+second tap. A failed I2C (inter-integrated circuit) read of the glass
+keeps the last state: it never ends a touch and never counts as an empty
+glass. The 5th failed read in a row (100ms) cancels the touch under way
+without PRESS, TAP or an answer to the question; the finger, read again,
+starts nothing until the glass reads empty. Each question has
 its own number, and the update takes the key only for the question it
 was made in. A DRV2605 at 0x5A vibrates instead of a buzzer, with its ROM
 effects for an LRA (library 6): a detent "Sharp Tick 3" (26), PRESS
