@@ -29,7 +29,9 @@ test('the fixture is the Pages data of 2026-11-23', () => {
 test('one release for the visit: the panel image\'s default, written to every board it carries', () => {
   const visit = visitRelease(RELEASES, MANIFESTS);
   assert.equal(visit, 'v0.23.16');
-  for (const b of BOARDS.filter((x) => !x.planned)) assert.equal(releaseFor(b.id, RELEASES, MANIFESTS, simple(visit)), 'v0.23.16', b.id);
+  // The K518's image comes with the releases after the fixture's.
+  for (const b of BOARDS.filter((x) => !x.planned && x.id !== 'dial-k518')) assert.equal(releaseFor(b.id, RELEASES, MANIFESTS, simple(visit)), 'v0.23.16', b.id);
+  assert.equal(releaseFor('dial-k518', RELEASES, MANIFESTS, simple(visit)), null);
   // The per-board rule alone gives the IOmcu the stable v0.22.1; the visit
   // release keeps panel and IOmcu on one release.
   assert.equal(boardDefault('iomcu', RELEASES, MANIFESTS), 'v0.22.1');

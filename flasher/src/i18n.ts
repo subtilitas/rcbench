@@ -62,6 +62,10 @@ const S = {
     'A Dial without rcbench firmware: hold the Stamp button (GPIO0) while you plug in the cable.',
     'Ein Dial ohne rcbench-Firmware: Halte die Stamp-Taste (GPIO0), während du das Kabel einsteckst.',
   ],
+  'cn_dial-k518': [
+    'Use a USB-A to USB-C cable and a 5V/1A port; a C-to-C cable gives the knob no power. One plug orientation reaches the ESP32-S3: when the browser lists no port, turn the plug over. A knob without rcbench firmware: hold BOOT behind the pinhole next to USB-C while you plug in the cable.',
+    'Nimm ein Kabel USB-A auf USB-C und einen Anschluss mit 5V/1A; ein Kabel C auf C versorgt den Knopf nicht. Nur eine Steckrichtung erreicht den ESP32-S3: Listet der Browser keinen Port, drehe den Stecker um. Ein Knopf ohne rcbench-Firmware: Halte BOOT hinter dem Loch neben USB-C, während du das Kabel einsteckst.',
+  ],
   'cn_node-display': [
     'Take the pack off the XT60 first. A board without rcbench firmware: hold BOOT (IO0) while you plug in the cable.',
     'Nimm zuerst den Akku vom XT60. Ein Board ohne rcbench-Firmware: Halte BOOT (IO0), während du das Kabel einsteckst.',
@@ -93,6 +97,14 @@ const S = {
   nx_dial: [
     'Next: the Dial shows NOT BOUND and its name, DIAL- and 4 hex digits. Bind it on the panel: SETUP > WIRELESS > DIAL.',
     'Weiter: Das Dial zeigt NOT BOUND und seinen Namen, DIAL- und 4 Hex-Ziffern. Binde es am Panel: SETUP > WIRELESS > DIAL.',
+  ],
+  'nx_dial-k518': [
+    'Next: the knob shows NOT BOUND and its name, DIAL- and 4 hex digits. Bind it on the panel: SETUP > WIRELESS > DIAL.',
+    'Weiter: Der Knopf zeigt NOT BOUND und seinen Namen, DIAL- und 4 Hex-Ziffern. Binde ihn am Panel: SETUP > WIRELESS > DIAL.',
+  ],
+  'nk_dial-k518': [
+    'Next: the knob keeps its settings and its binding to the panel. A knob never bound shows NOT BOUND: bind it on the panel: SETUP > WIRELESS > DIAL.',
+    'Weiter: Der Knopf behält seine Einstellungen und seine Bindung an das Panel. Ein nie gebundener Knopf zeigt NOT BOUND: Binde ihn am Panel: SETUP > WIRELESS > DIAL.',
   ],
   nk_dial: [
     'Next: the Dial keeps its settings and its binding to the panel. A Dial never bound shows NOT BOUND: bind it on the panel: SETUP > WIRELESS > DIAL.',
@@ -132,6 +144,7 @@ const S = {
   b_core2350b: ['Remote servo node: Waveshare Core2350B (RP2350B)', 'Servo-Fernknoten: Waveshare Core2350B (RP2350B)'],
   'b_node-display': ['Display node: ES3C28P', 'Anzeigeknoten: ES3C28P'],
   b_dial: ['M5Stack Dial', 'M5Stack Dial'],
+  'b_dial-k518': ['Dial on the Guition JC3636K518C knob', 'Dial auf dem Knopf Guition JC3636K518C'],
   'b_node-pwr': ['Power node', 'Leistungsknoten'],
   'b_node-bal': ['Balance node', 'Auswuchtknoten'],
   b_c6: ['C6 radio of the panel, over header H4 and a USB-to-UART adapter', 'C6-Funk des Panels, über Stiftleiste H4 und einen USB-UART-Adapter'],

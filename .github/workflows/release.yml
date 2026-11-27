@@ -265,7 +265,8 @@ jobs:
     with:
       ref: ${{ needs.version.outputs.sha }}
 
-  # The M5Stack Dial's image from the pinned commit (dial.yml).
+  # The Dial's images, the M5Stack Dial's and the Guition JC3636K518C's,
+  # from the pinned commit (dial.yml).
   dial:
     needs: [version]
     uses: ./.github/workflows/dial.yml
@@ -428,6 +429,8 @@ jobs:
         run: |
           python3 tools/c6_image.py device dial \
             "$(ls artifacts/dial/rcbench-dial-[0-9]*.bin)"
+          python3 tools/c6_image.py device dial-k518 \
+            "$(ls artifacts/dial-k518/rcbench-dial-k518-[0-9]*.bin)"
           python3 tools/c6_image.py device node-pwr \
             "$(ls artifacts/node/rcbench-node-pwr-[0-9]*.bin)"
           python3 tools/c6_image.py device node-bal \
@@ -506,6 +509,15 @@ jobs:
              artifacts/dial/rcbench-dial-merged-*.bin dist/
           cp artifacts/dial/rcbench-dial-[0-9]*.bin.sig \
              artifacts/dial/rcbench-dial-merged-*.bin.sig dist/
+          # The Dial firmware for the Guition JC3636K518C knob, the same
+          # pair: the application a panel downloads when the linked Dial
+          # names the K518 (INFO hw 2, devimg_dial_image()), and the merged
+          # image for 0x0 over its USB-C socket.  Its hooks build stays a
+          # CI artifact as well.
+          cp artifacts/dial-k518/rcbench-dial-k518-[0-9]*.bin \
+             artifacts/dial-k518/rcbench-dial-k518-merged-*.bin dist/
+          cp artifacts/dial-k518/rcbench-dial-k518-[0-9]*.bin.sig \
+             artifacts/dial-k518/rcbench-dial-k518-merged-*.bin.sig dist/
           # The signatures are assets of their own and not in SHA256SUMS:
           # the panel reads its image's line there (fw_release.c).
           (cd dist && sha256sum ./*.zip ./*.bin > SHA256SUMS)

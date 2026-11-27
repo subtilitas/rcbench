@@ -51,6 +51,7 @@ const I = {
   ],
   'n_panel': ['Panel', 'Panel'],
   'n_dial': ['M5Stack Dial', 'M5Stack Dial'],
+  'n_dial-k518': ['Dial on the Guition K518', 'Dial auf dem Guition K518'],
   'n_node-display': ['Display node', 'Anzeigeknoten'],
   'n_node-pwr': ['Power node', 'Leistungsknoten'],
   'n_node-bal': ['Balance node', 'Auswuchtknoten'],

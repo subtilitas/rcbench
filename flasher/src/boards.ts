@@ -22,6 +22,7 @@ export const BOARDS: readonly Board[] = [
   { id: 'core2350b', chip: 'rp2350', group: 'iomcu', planned: true },
   { id: 'node-display', chip: 'esp32s3', group: 'wireless' },
   { id: 'dial', chip: 'esp32s3', group: 'wireless' },
+  { id: 'dial-k518', chip: 'esp32s3', group: 'wireless' },
   { id: 'node-pwr', chip: 'esp32c6', group: 'wireless' },
   { id: 'node-bal', chip: 'esp32c6', group: 'wireless' },
   { id: 'c6', chip: 'esp32c6', group: 'wireless' },

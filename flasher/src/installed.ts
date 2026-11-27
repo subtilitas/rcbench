@@ -28,11 +28,17 @@ export interface Known {
   project: string;
   /** The BLEOTA_KIND_* of the role record; null for a firmware without one. */
   kind: number | null;
+  /**
+   * True for a board whose every image carries the role record: an
+   * application without one (releases before v0.23.13) is not its firmware.
+   */
+  roleAlways?: boolean;
 }
 
 /**
  * The firmware of each ESP32 board: firmware/panel (project rcbench-panel),
- * firmware/dial (rcbench-dial, DEVOTA_ROLE(BLEOTA_KIND_DIAL)),
+ * firmware/dial (rcbench-dial, DEVOTA_ROLE(BLEOTA_KIND_DIAL) on the M5Stack
+ * Dial, BLEOTA_KIND_DIAL_K518 5 on the Guition JC3636K518C),
  * firmware/node (rcbench-node, the role per build: power 2 on the C6,
  * balance 3, power on the ES3C28P display board 4), the C6 radio from
  * esp_hosted's slave/ folder (network_adapter, tools/c6_image.py).
@@ -40,6 +46,7 @@ export interface Known {
 export const KNOWN: readonly Known[] = [
   { board: 'panel', chip: 'esp32p4', project: 'rcbench-panel', kind: null },
   { board: 'dial', chip: 'esp32s3', project: 'rcbench-dial', kind: 1 },
+  { board: 'dial-k518', chip: 'esp32s3', project: 'rcbench-dial', kind: 5, roleAlways: true },
   { board: 'node-pwr', chip: 'esp32c6', project: 'rcbench-node', kind: 2 },
   { board: 'node-bal', chip: 'esp32c6', project: 'rcbench-node', kind: 3 },
   { board: 'node-display', chip: 'esp32s3', project: 'rcbench-node', kind: 4 },
@@ -128,7 +135,7 @@ export type Verdict =
 /** The boards whose firmware an application head can be: the role decides where it is there. */
 export function boardsOf(head: AppHead): string[] {
   return KNOWN.filter((k) => k.chip === head.chip && k.project === head.project
-    && (head.kind === null || k.kind === null || k.kind === head.kind)).map((k) => k.board);
+    && (head.kind === null ? !k.roleAlways : k.kind === null || k.kind === head.kind)).map((k) => k.board);
 }
 
 /**

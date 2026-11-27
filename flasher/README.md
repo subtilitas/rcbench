@@ -64,7 +64,7 @@ bound panel there (namespace `dial`, key `panel`).
 
 | Board | NVS kept (simple mode, Advanced with "Keep settings" on) | NVS written (Advanced with "Keep settings" off, an image without an nvs partition) |
 | --- | --- | --- |
-| M5Stack Dial | the Dial keeps its settings and its binding; a Dial never bound shows NOT BOUND and is bound on the panel, SETUP > WIRELESS > DIAL | the Dial shows NOT BOUND; bind it on the panel, SETUP > WIRELESS > DIAL |
+| M5Stack Dial, Dial on the Guition K518 | the Dial keeps its settings and its binding; a Dial never bound shows NOT BOUND and is bound on the panel, SETUP > WIRELESS > DIAL | the Dial shows NOT BOUND; bind it on the panel, SETUP > WIRELESS > DIAL |
 | Display node, power node | a node bound before stays bound: the panel binds a node by its address, kept in SETUP; a node never bound is bound on the panel, SETUP > WIRELESS > POWER NODE | the same |
 | Balance node | as the power node, SETUP > WIRELESS > BALANCE NODE | the same |
 | Panel, IOmcu, rbmod carrier, C6 radio | the start of the bench or the C6 radio's version on the console | the same |
@@ -123,6 +123,7 @@ repository's sources:
 | --- | --- | --- | --- | --- |
 | panel | ESP32-P4 | `rcbench-panel` | none | `firmware/panel/CMakeLists.txt` |
 | M5Stack Dial (`dial`) | ESP32-S3 | `rcbench-dial` | 1 | `firmware/dial` |
+| Dial on the Guition JC3636K518C (`dial-k518`) | ESP32-S3 | `rcbench-dial` | 5 | `firmware/dial`, `sdkconfig.k518` |
 | display node (`node-display`) | ESP32-S3 | `rcbench-node` | 4 | `firmware/node`, `sdkconfig.s3_es3c28p` |
 | node-pwr | ESP32-C6 | `rcbench-node` | 2 | `firmware/node` |
 | node-bal | ESP32-C6 | `rcbench-node` | 3 | `firmware/node`, `sdkconfig.balance` |
@@ -215,6 +216,7 @@ same site (see "How releases reach the page").
 | Remote servo node, Waveshare Core2350B | RP2350B | WebUSB | not in a release yet; a local file in Advanced only | its UF2 addresses, or 0x10000000 for a `.bin` |
 | Display node, ES3C28P | ESP32-S3 | Web Serial | `rcbench-node-display-merged-<version>.bin` | 0x0 |
 | M5Stack Dial | ESP32-S3 | Web Serial | `rcbench-dial-merged-<version>.bin` | 0x0 |
+| Dial on the Guition JC3636K518C | ESP32-S3 | Web Serial | `rcbench-dial-k518-merged-<version>.bin`, from the release after v0.23.18 | 0x0 |
 | Power node | ESP32-C6 | Web Serial | `rcbench-node-pwr-merged-<version>.bin` | 0x0 |
 | Balance node | ESP32-C6 | Web Serial | `rcbench-node-bal-merged-<version>.bin` | 0x0 |
 | C6 radio of the panel, over header H4 and a USB-to-UART adapter ([C6](../docs/C6.md)) | ESP32-C6 | Web Serial | `rcbench-c6-merged-<esp_hosted version>.bin` | 0x0 |

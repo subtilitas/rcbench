@@ -65,6 +65,7 @@ const HEADS: [string, AppHead][] = [
   ['panel', head('esp32p4', 'rcbench-panel', null)],
   ['dial', head('esp32s3', 'rcbench-dial', 1)],
   ['dial, no role', head('esp32s3', 'rcbench-dial', null)],
+  ['dial K518', head('esp32s3', 'rcbench-dial', 5)],
   ['display node', head('esp32s3', 'rcbench-node', 4)],
   ['display node, no role', head('esp32s3', 'rcbench-node', null)],
   ['power node', head('esp32c6', 'rcbench-node', 2)],
@@ -75,22 +76,25 @@ const HEADS: [string, AppHead][] = [
   ['node on the P4', head('esp32p4', 'rcbench-node', null)],
   ['node of an unknown role', head('esp32c6', 'rcbench-node', 9)],
 ];
-//                                panel  dial  node-display  node-pwr  node-bal  c6
+// The K518 came after the role record: an rcbench-dial without one is the
+// M5Stack Dial's.
+//                                panel  dial  dial-k518  node-display  node-pwr  node-bal  c6
 const WANT: Record<string, string> = {
-  panel: /*                    */ 'm o o o o o',
-  dial: /*                     */ 'o m o o o o',
-  'dial, no role': /*          */ 'o m o o o o',
-  'display node': /*           */ 'o o m o o o',
-  'display node, no role': /*  */ 'o o m o o o',
-  'power node': /*             */ 'o o o m o o',
-  'balance node': /*           */ 'o o o o m o',
-  'C6 node, no role': /*       */ 'o o o ? ? o',
-  'C6 radio': /*               */ 'o o o o o m',
-  'another project': /*        */ '? ? ? ? ? ?',
-  'node on the P4': /*         */ '? ? ? ? ? ?',
-  'node of an unknown role': /**/ '? ? ? ? ? ?',
+  panel: /*                    */ 'm o o o o o o',
+  dial: /*                     */ 'o m o o o o o',
+  'dial, no role': /*          */ 'o m o o o o o',
+  'dial K518': /*              */ 'o o m o o o o',
+  'display node': /*           */ 'o o o m o o o',
+  'display node, no role': /*  */ 'o o o m o o o',
+  'power node': /*             */ 'o o o o m o o',
+  'balance node': /*           */ 'o o o o o m o',
+  'C6 node, no role': /*       */ 'o o o o ? ? o',
+  'C6 radio': /*               */ 'o o o o o o m',
+  'another project': /*        */ '? ? ? ? ? ? ?',
+  'node on the P4': /*         */ '? ? ? ? ? ? ?',
+  'node of an unknown role': /**/ '? ? ? ? ? ? ?',
 };
-const COLS = ['panel', 'dial', 'node-display', 'node-pwr', 'node-bal', 'c6'];
+const COLS = ['panel', 'dial', 'dial-k518', 'node-display', 'node-pwr', 'node-bal', 'c6'];
 
 test('every board against every installed firmware: matches, another device, cannot tell', () => {
   assert.deepEqual([...COLS].sort(), [...ESP_BOARDS].sort());
@@ -109,6 +113,8 @@ test('another device names its boards; the ambiguous pair is the power and the b
   assert.deepEqual(a.kind === 'unknown' && [a.why, a.boards], ['ambiguous', ['node-pwr', 'node-bal']]);
   const d = judge('node-display', head('esp32s3', 'rcbench-dial', 1));
   assert.deepEqual(d.kind === 'other' && d.boards, ['dial']);
+  const k = judge('dial', head('esp32s3', 'rcbench-dial', 5));
+  assert.deepEqual(k.kind === 'other' && k.boards, ['dial-k518']);
   assert.deepEqual(judge('dial', null), { kind: 'unknown', why: 'no-app' });
 });
 

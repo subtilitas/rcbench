@@ -28,12 +28,12 @@ test('every board a task names is in BOARDS, and every board of BOARDS is in a t
 test('the boards of each task, simple and Advanced', () => {
   assert.deepEqual(ids(boardsFor('panel', false)), ['panel']);
   assert.deepEqual(ids(boardsFor('iomcu', false)), ['iomcu', 'iomcu-rbmod']);
-  assert.deepEqual(ids(boardsFor('wireless', false)), ['node-display', 'dial', 'node-pwr', 'node-bal']);
+  assert.deepEqual(ids(boardsFor('wireless', false)), ['node-display', 'dial', 'dial-k518', 'node-pwr', 'node-bal']);
   assert.deepEqual(ids(boardsFor('c6', false)), ['c6']);
   assert.deepEqual(ids(boardsFor('file', false)), []);
   assert.deepEqual(ids(boardsFor('iomcu', true)), ['iomcu', 'iomcu-rbmod', 'core2350b']);
   assert.deepEqual(ids(boardsFor('file', true)), ids(BOARDS));
-  assert.equal(boardsFor('file', true).length, 9);
+  assert.equal(boardsFor('file', true).length, 10);
 });
 
 test('the Core2350B shows in Advanced only and takes a local file only', () => {
