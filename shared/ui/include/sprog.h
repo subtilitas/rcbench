@@ -443,7 +443,8 @@ uint32_t sprog_revision(const sprog_t *f);
  * @return the revision */
 uint32_t sprog_hold_revision(const sprog_t *f);
 /** @brief Where the hold revision shows: the row hold's control while it
- *         runs or flashes, else the page's hold button.
+ *         runs or flashes, the page's hold button where its flash is drawn
+ *         after the page closed, else the page's hold button.
  * @param f the frame
  * @return the rectangle */
 gfx_rect_t sprog_hold_rect(const sprog_t *f);
@@ -490,7 +491,8 @@ void sprog_list_open(sprog_t *f, int16_t what, const char *title,
  * @param label the label
  * @param sub   the type or model beside it, or NULL
  * @param value the value returned on its choice
- * @return false when the list is full
+ * @return false when the list is full, or the entry would end less than
+ *         8px above CANCEL
  */
 bool sprog_list_add(sprog_t *f, const char *label, const char *sub,
                     int32_t value);

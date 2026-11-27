@@ -659,6 +659,10 @@ static sprog_result_t rest(sprog_t *f, const touch_event_t *evt)
     if (!touch_event_is_tap_up(evt)) {
         return nothing();
     }
+    if ((on == SPROG_ON_ROW || on == SPROG_ON_PORT || on == SPROG_ON_NOTES)
+        && (f->page.open || editor_open(f))) {
+        return nothing();       /* an overlay opened under the press */
+    }
     switch (on) {
     case SPROG_ON_ROW:
         return row_tap(f, which, key, x, y);
@@ -814,6 +818,11 @@ sprog_result_t sprog_tick(sprog_t *f, float dt_s)
         if (f->page.open || editor_open(f) || cl == NULL
             || cl->press == SPROG_P_OFF) {
             let_go(f);          /* a page took over: the repeat ends */
+        } else if (cl->why != NULL) {
+            /* Refused now: the repeat ends as a fresh press would. */
+            let_go(f);
+            ui_action_refused(cl->why);
+            ++f->rev;
         } else {
             const int n = ui_key_repeat(&f->held_s, dt_s);
 
@@ -846,6 +855,11 @@ uint32_t sprog_hold_revision(const sprog_t *f)
 
 gfx_rect_t sprog_hold_rect(const sprog_t *f)
 {
+    if (!f->page.open && ui_hold_flashing(&f->page.hold)
+        && f->page.hold.drawn_f != NULL) {
+        /* A page that closed as its hold fired: where its flash is drawn. */
+        return f->page.hold.drawn_r;
+    }
     if (f->hold_row >= 0 && (f->hold.down || ui_hold_flashing(&f->hold))) {
         const gfx_rect_t r = sprog_value_rect(f, f->hold_row);
 
@@ -898,6 +912,15 @@ bool sprog_list_add(sprog_t *f, const char *label, const char *sub,
         snprintf(out, SPROG_LIST_LABEL, "%s  %s", label, sub);
     }
     f->list.value[f->list.count++] = value;
+    {
+        /* An entry that would reach CANCEL is not taken. */
+        const gfx_rect_t r = sprog_list_rect(f, f->list.count - 1);
+
+        if (r.y + r.h > sprog_list_cancel_rect(f).y - 8) {
+            --f->list.count;
+            return false;
+        }
+    }
     return true;
 }
 

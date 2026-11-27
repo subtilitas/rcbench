@@ -409,22 +409,25 @@ gfx_rect_t sprog_page_cancel_rect(const sprog_t *f)
 
 /* ----------------------------------------------------------------- notes */
 
-/** @brief Where the notes and the bottom line go. */
+/** @brief Where the notes and the bottom line go: each note's first row
+ *         in a run of pages of @c per rows. */
 typedef struct {
     int top;                  /**< the first note's row                    */
     int bottom_y;             /**< the bottom line's first row             */
     int room;                 /**< rows from top to the bottom line        */
+    int per;                  /**< note rows a page holds; 0: none shows   */
     int pages;                /**< pages the notes take                    */
     int on;                   /**< the page shown                          */
-    int limit;                /**< the lowest a note's row may end at      */
-    int rows[SPROG_NOTES];    /**< rows each note takes                    */
-    int page[SPROG_NOTES];    /**< page each note is on; -1 none           */
+    int start[SPROG_NOTES];   /**< each note's first row, counted over the
+                                   pages                                   */
 } plan_t;
 
 /**
  * @brief Plans the notes of the view: their rows, pages and the bottom
  *        line's place.  Notes that need more rows than there are above the
- *        bottom line page, the last row of the room kept for the pager; a
+ *        bottom line page, the last row of the room kept for the pager: a
+ *        note that does not fit in what is left of a page starts the next,
+ *        and a note taller than a page goes on over the pages after it.  A
  *        room of one row shows no note.
  * @param f the frame
  * @param p the plan
@@ -433,7 +436,8 @@ static void plan(const sprog_t *f, plan_t *p)
 {
     const int foot = sprog_foot(f);
     const int n = f->view.notes;
-    int need = 0, used = 0, pg = 0;
+    int rows[SPROG_NOTES];
+    int need = 0, at = 0;
 
     p->top = f->area.y + ROW0 + f->lines * PITCH;
     p->bottom_y = foot - sprog_text_rows(f, f->view.bottom) * LINE_H;
@@ -441,35 +445,30 @@ static void plan(const sprog_t *f, plan_t *p)
         p->bottom_y = p->top;   /* a bottom line taller shows its first rows */
     }
     p->room = (p->bottom_y - p->top) / LINE_H;
-    p->limit = p->bottom_y;
     for (int i = 0; i < n; ++i) {
-        p->rows[i] = sprog_text_rows(f, f->view.note[i]);
-        need += p->rows[i];
-        p->page[i] = 0;
+        rows[i] = sprog_text_rows(f, f->view.note[i]);
+        need += rows[i];
     }
     p->pages = 1;
+    p->on = 0;
     if (need <= p->room) {
-        p->on = 0;
-        return;
+        p->per = p->room;
+    } else {
+        p->per = p->room < 2 ? 0 : p->room - 1;
     }
-    if (p->room < 2) {
-        for (int i = 0; i < n; ++i) {
-            p->page[i] = -1;
-        }
-        p->on = 0;
-        return;
-    }
-    p->limit = p->bottom_y - LINE_H;
     for (int i = 0; i < n; ++i) {
-        if (used > 0 && used + p->rows[i] > p->room - 1) {
-            ++pg;
-            used = 0;
+        const int used = p->per > 0 ? at % p->per : 0;
+
+        if (p->per > 0 && used > 0 && used + rows[i] > p->per) {
+            at += p->per - used;            /* the next page */
         }
-        p->page[i] = pg;
-        used += p->rows[i];
+        p->start[i] = at;
+        at += rows[i];
     }
-    p->pages = pg + 1;
-    p->on = f->note_page < p->pages ? f->note_page : 0;
+    if (p->per > 0 && need > p->room) {
+        p->pages = (at + p->per - 1) / p->per;
+        p->on = f->note_page < p->pages ? f->note_page : 0;
+    }
 }
 
 int sprog_note_pages(const sprog_t *f)
@@ -518,15 +517,23 @@ static void notes_follow(sprog_t *f)
 static void draw_notes(sprog_t *f, gfx_canvas_t *c)
 {
     plan_t p;
-    int y;
 
     notes_follow(f);
     plan(f, &p);
-    y = p.top;
-    for (int i = 0; i < f->view.notes; ++i) {
-        if (p.page[i] == p.on) {
-            y = text_rows(f, c, f->area.x + 10, y, f->view.note[i],
-                          level_color(f->view.note_level[i]), p.limit);
+    for (int i = 0; i < f->view.notes && p.per > 0; ++i) {
+        const char *s = f->view.note[i];
+
+        for (int r = p.start[i]; s != NULL && *s != '\0'; ++r) {
+            const size_t len = row_len(f, s);
+
+            if (r / p.per == p.on) {
+                char row[SPROG_LINE];
+
+                snprintf(row, sizeof(row), "%.*s", (int)len, s);
+                gfx_text(c, f->area.x + 10, p.top + (r % p.per) * LINE_H,
+                         row, FONT, level_color(f->view.note_level[i]), 1);
+            }
+            s = next_row(s, len);
         }
     }
     if (p.pages > 1) {

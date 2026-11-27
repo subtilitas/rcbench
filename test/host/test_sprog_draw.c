@@ -476,6 +476,73 @@ TEST_CASE(the_page_draws_its_lines_at_the_widest_pitch)
     CHECK_EQ(rig_px(40, 460), GFX_WHITE);
 }
 
+/* A list whose wide entries would reach CANCEL takes no more: every entry
+ * ends 8px above CANCEL (review of #996). */
+TEST_CASE(a_list_of_wide_entries_stays_clear_of_cancel)
+{
+    rig_start();
+    const gfx_rect_t cancel = sprog_list_cancel_rect(&rig.f);
+    int n = 0;
+
+    sprog_list_open(&rig.f, 1, "T", false);
+    for (int i = 0; i < SPROG_LIST_MAX; ++i) {
+        n += sprog_list_add(&rig.f, "A label wider than one column", NULL, i)
+                 ? 1 : 0;
+    }
+    CHECK_EQ(n, 5);
+    for (int i = 0; i < rig.f.list.count; ++i) {
+        const gfx_rect_t r = sprog_list_rect(&rig.f, i);
+        CHECK(r.y + r.h <= cancel.y - 8);
+    }
+    /* Narrow ones after them still fill the room left. */
+    sprog_list_open(&rig.f, 1, "T", false);
+    for (int i = 0; i < 4; ++i) {
+        CHECK(sprog_list_add(&rig.f, "A label wider than one column", NULL, i));
+    }
+    CHECK(sprog_list_add(&rig.f, "N", NULL, 4));
+    CHECK(sprog_list_add(&rig.f, "N", NULL, 5));
+    CHECK(!sprog_list_add(&rig.f, "A label wider than one column", NULL, 6));
+    CHECK_EQ(rig.f.list.count, 6);
+}
+
+/* A note taller than a page of notes goes on over the next pages: every
+ * row of it shows on some page (review of #996). */
+TEST_CASE(a_note_taller_than_a_page_goes_on_over_pages)
+{
+    rig_start();
+    static char tall[800];
+    int n = 0;
+
+    for (int i = 0; i < 70; ++i) {
+        n += snprintf(tall + n, sizeof(tall) - (size_t)n, "%sw%04d", i > 0 ? " " : "",
+                      i);
+    }
+    CHECK_EQ(sprog_text_rows(&rig.f, tall), 7);
+    rig.note[0] = tall;
+    rig.notes = 1;
+    rig.bottom = "All 32 registers read.";
+    rig_view();
+    /* 5 rows above the bottom line, 4 a page beside the pager: 2 pages. */
+    CHECK_EQ(sprog_note_pages(&rig.f), 2);
+    CHECK(sprog_notes_rect(&rig.f).w > 0);
+    rig_render();
+    CHECK(count(gfx_rect_make(18, 356, 600, 80), UI_TEXT) > 400);
+    (void)rig_tap(sprog_notes_rect(&rig.f));
+    CHECK_EQ(rig.f.note_page, 1);
+    rig_render();
+    /* Page 2: the last 3 rows from the top, the fourth row empty. */
+    CHECK(count(gfx_rect_make(18, 356, 600, 60), UI_TEXT) > 300);
+    CHECK_EQ(count(gfx_rect_make(18, 416, 600, 20), UI_TEXT), 0);
+    /* A short note after it starts on the page its rows end on. */
+    rig.note[1] = "Short.";
+    rig.notes = 2;
+    rig_view();
+    CHECK_EQ(sprog_note_pages(&rig.f), 2);
+    rig.f.note_page = 1;
+    rig_render();
+    CHECK(count(gfx_rect_make(18, 416, 600, 20), UI_TEXT) > 20);
+}
+
 int main(void)
 {
     RUN(the_servo_tab_flows_in_table_order);
@@ -489,5 +556,7 @@ int main(void)
     RUN(the_rows_draw_their_controls);
     RUN(the_keypad_and_the_keyboard_draw_alone);
     RUN(the_page_draws_its_lines_at_the_widest_pitch);
+    RUN(a_list_of_wide_entries_stays_clear_of_cancel);
+    RUN(a_note_taller_than_a_page_goes_on_over_pages);
     return test_summary("sprog_draw");
 }

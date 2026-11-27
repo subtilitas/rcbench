@@ -546,6 +546,70 @@ TEST_CASE(the_revision_follows_events_and_the_signature)
     CHECK_EQ(sprog_event(&rig.f, NULL).kind, SPROG_R_NONE);
 }
 
+/* A step key held while its cell takes a why: the repeat ends with the
+ * refusal, as a fresh press on it is refused (review of #996). */
+TEST_CASE(a_why_ends_a_held_steps_repeat)
+{
+    rig_start();
+    sprog_tab_set(&rig.f, 1);
+    rig_view();
+    const gfx_rect_t plus = sprog_step_rect(&rig.f, R_DEAD, true);
+
+    CHECK_EQ(rig_down(plus, 1).kind, SPROG_R_STEP);
+    rig_cell(R_DEAD, SPROG_K_STEP, SPROG_P_TAP)->why = "Locked.";
+    CHECK_EQ(rig_run(1.5f).kind, SPROG_R_NONE);
+    CHECK(!rig.f.have);
+}
+
+/* A row's press held when the brand opens an overlay: its release taps
+ * nothing under the page or the editor (review of #996). */
+TEST_CASE(an_overlay_opened_under_a_press_takes_its_tap)
+{
+    rig_start();
+    const gfx_rect_t rd = sprog_value_rect(&rig.f, R_READ);
+
+    (void)rig_down(rd, 1);
+    sprog_page_open(&rig.f, 1, false, "CHECK", "HOLD", "CANCEL", -1, false);
+    CHECK_EQ(rig_up(rd, 1).kind, SPROG_R_NONE);
+    sprog_close_editors(&rig.f);
+    (void)rig_down(rd, 1);
+    sprog_keypad(&rig.f, 1, "X", "", 1.0f, 0.0f, 9.0f, 0);
+    CHECK_EQ(rig_up(rd, 1).kind, SPROG_R_NONE);
+    sprog_close_editors(&rig.f);
+    (void)rig_down(rd, 1);
+    sprog_list_open(&rig.f, 1, "MORE", false);
+    CHECK_EQ(rig_up(rd, 1).kind, SPROG_R_NONE);
+    sprog_close_editors(&rig.f);
+    /* The head's text and the notes as well. */
+    rig.port_pick = true;
+    (void)rig_down(sprog_head_rect(&rig.f), 1);
+    sprog_name(&rig.f, "NAME", "X");
+    CHECK_EQ(rig_up(sprog_head_rect(&rig.f), 1).kind, SPROG_R_NONE);
+    sprog_close_editors(&rig.f);
+    CHECK_EQ(rig_tap(rd).kind, SPROG_R_TAP);
+}
+
+/* The hold rectangle of a drop page that closed as its hold fired: the
+ * 380px button its flash is drawn on (review of #996). */
+TEST_CASE(a_drop_pages_flash_keeps_its_hold_rect)
+{
+    rig_start();
+    sprog_page_open(&rig.f, 1, false, "LEAVE", "HOLD", "BACK", -1, true);
+    rig_render();
+    const gfx_rect_t a = sprog_apply_rect(&rig.f);
+    CHECK_EQ(a.w, 380);
+    (void)rig_down(a, 1);
+    sprog_result_t got = { 0 };
+    for (int i = 0; i < 60 && got.kind == SPROG_R_NONE; ++i) {
+        got = rig_tick(0.05f);
+    }
+    CHECK_EQ(got.kind, SPROG_R_PAGE_APPLY);
+    CHECK(ui_hold_flashing(&rig.f.page.hold));
+    const gfx_rect_t h = sprog_hold_rect(&rig.f);
+    CHECK_EQ(h.x, a.x);
+    CHECK_EQ(h.w, 380);
+}
+
 int main(void)
 {
     RUN(a_tap_acts_on_its_release_inside_the_control);
@@ -565,5 +629,8 @@ int main(void)
     RUN(a_list_returns_the_entry_chosen);
     RUN(a_pages_hold_applies_and_cancel_cancels);
     RUN(the_revision_follows_events_and_the_signature);
+    RUN(a_why_ends_a_held_steps_repeat);
+    RUN(an_overlay_opened_under_a_press_takes_its_tap);
+    RUN(a_drop_pages_flash_keeps_its_hold_rect);
     return test_summary("sprog");
 }
