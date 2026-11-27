@@ -409,7 +409,7 @@ before them, `USB` while USB powers it, `NOT MEASURED` for a Dial without
 a reading (the M5Stack Dial). A STATUS read waits for the link's PARAM
 read and holds the panel's packets to the Dial for its round trip; a read
 that fails keeps the last STATUS. A Dial of an older release sends flags
-bit0 to bit3 only, which decode as before. The update offers each Dial
+bit0 to bit3 only; the panel reads them with the same meaning in both releases. The update offers each Dial
 the image of its board: `rcbench-dial-<version>.bin` to the M5Stack Dial
 and to a Dial whose INFO came before, `rcbench-dial-k518-<version>.bin` to
 the K518, and the panel checks the image's head against the board before
