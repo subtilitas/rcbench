@@ -64,9 +64,10 @@ TEST_CASE(on_the_carrier_the_port_row_chooses_the_port)
 /* --------------------------------------------------------------- series */
 
 /* The SERVO screen's guide over the SERVO tab: its CONNECT page marks the
- * second row with the text of the row shown.  While CONNECT's request
- * opens the port the port is held and the row still reads SERIES; FILES
- * takes its place once the port is this panel's. */
+ * brand's slot beside READ ALL with the text of the row shown.  While
+ * CONNECT's request opens the port the port is held and the slot still
+ * reads SERIES; AFTER STOP takes its place once the port is this panel's,
+ * and the write page names FILES. */
 TEST_CASE(the_guide_names_series_or_files_as_the_row_shows)
 {
     const ui_screen_t *sv = servo_fn_screen(SERVO_FN_HITEC);
@@ -84,7 +85,7 @@ TEST_CASE(the_guide_names_series_or_files_as_the_row_shows)
     CHECK_EQ(pstate(), HITEC_PROG_OPENING);
     CHECK(hitec_panel_holds_port());
     CHECK(!hitec_panel_files_shown());
-    CHECK_STR_EQ(hitec_panel_label(HITEC_PANEL_SERVO, 1, 0), TR(HP_SERIES));
+    CHECK_STR_EQ(hitec_panel_label(HITEC_PANEL_SERVO, 1, 1), TR(HP_SERIES));
     CHECK(sv->help_count() >= 1);
     CHECK(sv->help_page(0, &p));
     CHECK_EQ(p.title, TX_HG_HT_TITLE_CONNECT);
@@ -98,8 +99,16 @@ TEST_CASE(the_guide_names_series_or_files_as_the_row_shows)
     settled();
     show();
     CHECK(hitec_panel_files_shown());
-    CHECK_STR_EQ(hitec_panel_label(HITEC_PANEL_SERVO, 1, 0), TR(KP_FILES));
+    CHECK_STR_EQ(hitec_panel_label(HITEC_PANEL_SERVO, 2, 0), TR(KP_FILES));
     CHECK(sv->help_page(0, &p));
+    for (i = 0;
+         i < p.count && strcmp(p.item[i].label, TR(HP_STOP_ROW)) != 0; ++i) {
+    }
+    CHECK(i < p.count);
+    if (i < p.count) {
+        CHECK_EQ(p.item[i].text, TX_HG_HT_CLEAR);
+    }
+    CHECK(sv->help_page(1, &p));
     for (i = 0; i < p.count && strcmp(p.item[i].label, TR(KP_FILES)) != 0;
          ++i) {
     }
@@ -205,14 +214,14 @@ TEST_CASE(the_series_is_chosen_before_connect_and_kept_in_the_settings)
 {
     open_en();
     CHECK_EQ(hitec_prog_series(model()), HITEC_D);
-    CHECK_EQ(strcmp(hitec_panel_label(HITEC_PANEL_SERVO, 1, 0),
+    CHECK_EQ(strcmp(hitec_panel_label(HITEC_PANEL_SERVO, 1, 1),
                     TR(HP_SERIES)),
              0);
-    CHECK_EQ(strcmp(hitec_panel_value(HITEC_PANEL_SERVO, 1, 0),
+    CHECK_EQ(strcmp(hitec_panel_value(HITEC_PANEL_SERVO, 1, 1),
                     TR(HP_SERIES_D)),
              0);
-    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 1, 0));
-    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 1, 1));
+    tap(val(HITEC_PANEL_SERVO, 1, 1));
     CHECK_EQ(hitec_panel_editor(), 2);
     CHECK_EQ(strcmp(hitec_panel_choice_label(0), TR(HP_SERIES_D)), 0);
     CHECK(strstr(hitec_panel_choice_label(1), TR(HP_SERIES_C)) != NULL);
@@ -228,7 +237,7 @@ TEST_CASE(the_series_is_chosen_before_connect_and_kept_in_the_settings)
     CHECK_EQ(hitec_prog_series(model()), HITEC_CLASSIC);
     /* CANCEL keeps it. */
     rig_at(SUPPLY_ON, true);
-    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(val(HITEC_PANEL_SERVO, 1, 1));
     tap(hitec_panel_choice_cancel_rect());
     CHECK_EQ(hitec_panel_editor(), 0);
     CHECK_EQ(hitec_prog_series(model()), HITEC_CLASSIC);
@@ -238,22 +247,24 @@ TEST_CASE(the_series_row_and_more_take_no_tap_while_the_port_is_held)
 {
     open_en();
     servo_d485();
-    CHECK_STR_EQ(hitec_panel_label(HITEC_PANEL_SERVO, 1, 0), TR(HP_SERIES));
+    CHECK_STR_EQ(hitec_panel_label(HITEC_PANEL_SERVO, 1, 1), TR(HP_SERIES));
     tap_connect();
-    /* The PORT row names the series; FILES takes SERIES' place. */
-    CHECK_STR_EQ(hitec_panel_label(HITEC_PANEL_SERVO, 1, 0), TR(KP_FILES));
+    /* The head names the series; AFTER STOP takes SERIES' place. */
+    CHECK_STR_EQ(hitec_panel_label(HITEC_PANEL_SERVO, 2, 0), TR(KP_FILES));
+    CHECK_STR_EQ(hitec_panel_label(HITEC_PANEL_SERVO, 1, 1),
+                 TR(HP_STOP_ROW));
     CHECK(strstr(hitec_panel_port_line(0), TR(HP_SERIES_D)) != NULL);
-    CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 2, 0));
-    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 2, 1));
+    tap(val(HITEC_PANEL_SERVO, 2, 1));
     CHECK_EQ(hitec_panel_editor(), 0);
-    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 1, 1));   /* READ ALL */
+    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 1, 0));   /* READ ALL */
     /* LEAVE gives SERIES back. */
     press_port();
     hold(2.1f);
     until(HITEC_PROG_PWM);
     show();
-    CHECK_STR_EQ(hitec_panel_label(HITEC_PANEL_SERVO, 1, 0), TR(HP_SERIES));
-    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 1, 0));
+    CHECK_STR_EQ(hitec_panel_label(HITEC_PANEL_SERVO, 1, 1), TR(HP_SERIES));
+    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 1, 1));
 }
 
 /**
@@ -285,7 +296,7 @@ TEST_CASE(hitec_d_receive_is_set_on_more_in_pwm)
 {
     open_en();
     CHECK_EQ(settings_get_int(SET_HITEC_RX), 0);
-    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    tap(val(HITEC_PANEL_SERVO, 2, 1));
     CHECK_EQ(hitec_panel_editor(), 2);
     CHECK(strstr(hitec_panel_choice_label(2), "PULL-UP") != NULL);
     CHECK(strstr(hitec_panel_choice_label(2), ui_setting_label(SET_HITEC_RX))
@@ -301,7 +312,7 @@ TEST_CASE(hitec_d_receive_is_set_on_more_in_pwm)
     CHECK_EQ(settings_get_int(SET_HITEC_RX), 1);
     CHECK(settings_save_asked());
     /* MORE names what is set; CANCEL keeps it. */
-    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    tap(val(HITEC_PANEL_SERVO, 2, 1));
     CHECK(strstr(hitec_panel_choice_label(2), "PRECHARGE") != NULL);
     tap(hitec_panel_choice_rect(2));
     tap(hitec_panel_choice_cancel_rect());
@@ -316,7 +327,7 @@ TEST_CASE(a_session_closes_hitec_d_receives_list)
 {
     open_en();
     servo_d485();
-    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    tap(val(HITEC_PANEL_SERVO, 2, 1));
     tap(hitec_panel_choice_rect(2));
     CHECK_EQ(hitec_panel_editor(), 2);
     CHECK_EQ(hitec_prog_connect(model()), HITEC_PROG_MSG_NONE);
@@ -343,7 +354,7 @@ TEST_CASE(hitec_d_receive_says_what_the_iomcu_does_not_hold)
             settings_set(SET_HITEC_RX, 1.0f);
             g_rx_mark = k[i].mark;
             prun(20u);
-            tap(val(HITEC_PANEL_SERVO, 2, 0));
+            tap(val(HITEC_PANEL_SERVO, 2, 1));
             tap(hitec_panel_choice_rect(2));
             CHECK_STR_EQ(hitec_panel_choice_label(2), ui_tr(k[i].why));
             tap(hitec_panel_choice_rect(2));        /* a line to read */
@@ -368,16 +379,14 @@ TEST_CASE(a_change_of_series_drops_what_the_other_series_read)
     until(HITEC_PROG_PWM);
     show();
     CHECK(hitec_prog_servo(model()) != NULL);    /* kept on its own series */
-    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(val(HITEC_PANEL_SERVO, 1, 1));
     tap(hitec_panel_choice_rect(1));
     CHECK_EQ(hitec_prog_series(model()), HITEC_CLASSIC);
     CHECK(hitec_prog_servo(model()) == NULL);
     CHECK(hitec_prog_model(model()) == NULL);
     CHECK_EQ(hitec_prog_layout(model()), HITEC_LAYOUT_HS5);
     show();
-    CHECK(hitec_panel_label(HITEC_PANEL_SERVO, 1, 1) == NULL
-          || strcmp(hitec_panel_label(HITEC_PANEL_SERVO, 1, 1), "D485HW")
-                 != 0);
+    CHECK(strcmp(servo_name(), "D485HW") != 0);
     tabs_not_read();
     /* Classic read, LEAVE, then D SERIES: nothing of the HS-5645MG. */
     servo_hs5645();
@@ -392,7 +401,7 @@ TEST_CASE(a_change_of_series_drops_what_the_other_series_read)
     /* The same series again keeps the read. */
     CHECK(hitec_prog_series_set(model(), HITEC_CLASSIC));
     CHECK(hitec_prog_servo(model()) != NULL);
-    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(val(HITEC_PANEL_SERVO, 1, 1));
     tap(hitec_panel_choice_rect(0));
     CHECK_EQ(hitec_prog_series(model()), HITEC_D);
     CHECK(hitec_prog_servo(model()) == NULL);
@@ -417,7 +426,7 @@ TEST_CASE(connect_reads_the_d485hw_and_the_tabs_show_its_values)
     tap_connect();
     CHECK_EQ(msg(), HITEC_PROG_MSG_READ);
     CHECK(strstr(said(), "34485") != NULL);
-    CHECK_EQ(strcmp(hitec_panel_label(HITEC_PANEL_SERVO, 1, 1), "D485HW"),
+    CHECK_EQ(strcmp(servo_name(), "D485HW"),
              0);
     CHECK_EQ(strcmp(hitec_panel_value(HITEC_PANEL_SERVO, 0, 0),
                     TR(KP_LEAVE)),
@@ -476,7 +485,7 @@ TEST_CASE(before_a_read_the_value_tabs_say_so)
 TEST_CASE(a_classic_connect_without_a_pd_mini_is_refused_with_its_reason)
 {
     open_at(SUPPLY_NONE, UI_LANG_EN);
-    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(val(HITEC_PANEL_SERVO, 1, 1));
     tap(hitec_panel_choice_rect(1));
     press_port();
     CHECK_EQ(msg(), HITEC_PROG_MSG_NEED_PD_C);
@@ -618,7 +627,7 @@ TEST_CASE(a_classic_leave_page_says_the_supply_cycles)
 {
     open_en();
     servo_hs5645();
-    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(val(HITEC_PANEL_SERVO, 1, 1));
     tap(hitec_panel_choice_rect(1));
     tap_connect();
     press_port();
@@ -875,7 +884,7 @@ TEST_CASE(every_control_label_value_and_note_fits_in_both_languages)
         check_layout();
         /* The HS-5645MG read. */
         open_at(SUPPLY_ON, langs[k]);
-        tap(val(HITEC_PANEL_SERVO, 1, 0));
+        tap(val(HITEC_PANEL_SERVO, 1, 1));
         tap(hitec_panel_choice_rect(1));
         servo_hs5645();
         tap_connect();
@@ -893,6 +902,48 @@ TEST_CASE(every_control_label_value_and_note_fits_in_both_languages)
         CHECK(!overlap(hitec_panel_apply_rect(), hitec_panel_cancel_rect()));
         show();
     }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/* Every list of the overlay stands clear of CANCEL in both languages: the
+ * SERIES and MORE lists and each value's list, those over 5 entries two to
+ * a line. */
+TEST_CASE(every_list_stands_clear_of_cancel_in_both_languages)
+{
+    static const ui_lang_t langs[] = { UI_LANG_EN, UI_LANG_DE };
+    static const int tabs[] = { HITEC_PANEL_MOTION, HITEC_PANEL_TRAVEL,
+                                HITEC_PANEL_PROTECT };
+    int most = 0;
+
+    for (size_t k = 0; k < sizeof(langs) / sizeof(langs[0]); ++k) {
+        open_at(SUPPLY_ON, langs[k]);
+        tap(val(HITEC_PANEL_SERVO, 1, 1));          /* SERIES */
+        CHECK_EQ(hitec_panel_editor(), 2);
+        CHECK_EQ(list_clear(), 2);
+        hitec_panel_back();
+        tap(val(HITEC_PANEL_SERVO, 2, 1));          /* MORE */
+        CHECK_EQ(hitec_panel_editor(), 2);
+        CHECK(list_clear() >= 3);
+        hitec_panel_back();
+        servo_d485();
+        tap_connect();
+        for (size_t t = 0; t < sizeof(tabs) / sizeof(tabs[0]); ++t) {
+            for (int row = 0; row < 5; ++row) {
+                tap(hitec_panel_tab_rect(tabs[t]));
+                if (val(tabs[t], row, 0).w == 0) {
+                    continue;
+                }
+                tap(val(tabs[t], row, 0));
+                if (hitec_panel_editor() == 2) {
+                    const int n = list_clear();
+
+                    most = n > most ? n : most;
+                }
+                hitec_panel_back();
+            }
+        }
+    }
+    CHECK(most > 5);
     ui_text_set_language(UI_LANG_EN);
 }
 
@@ -1100,6 +1151,7 @@ int main(void)
     RUN(only_a_leave_offers_the_operators_set_points_back);
     RUN(the_supply_pages_word_after_a_kst_leave_asks);
     RUN(every_control_label_value_and_note_fits_in_both_languages);
+    RUN(every_list_stands_clear_of_cancel_in_both_languages);
     RUN(every_message_fits_its_line_in_both_languages);
     free(fb);
     return test_summary("hitec_panel");

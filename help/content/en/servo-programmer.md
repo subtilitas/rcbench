@@ -44,7 +44,7 @@ A tap on a row that is not met names it in the alert band. The footer's middle s
 
 - IOmcu 0.17.0 or later (protocol 4.15, including LEAVE).
 - A servo connected to an IOmcu programming port, PROG PORT 1 to 4, with a pin and FUNCTION SERVO PWM. On a manually wired board, port 1 defaults to GPIO 13, pad 17; set other pins in each PROG PORT entry on Outputs. Carrier pins are fixed; see [The port and the supply](#the-port-and-the-supply).
-- SERVO TESTER set to that port: PORT 1, PORT 2, PORT 3 or PORT 4. The [PORT button](servo-settings.md#the-port-button) on the other function screens picks it. On a carrier with protocol 4.36 or later, you can also choose it from the programmer's PORT row.
+- SERVO TESTER set to that port: PORT 1, PORT 2, PORT 3 or PORT 4. The [PORT button](servo-settings.md#the-port-button) on the other function screens picks it. On a carrier with protocol 4.36 or later, you can also choose it from the port line of the programmer's SERVO tab.
 - A SAFE bench. While ARMED, CONNECT is refused with `Tap DISARM first. The port cannot be taken over while ARMED.` While the port is held, no screen can switch the bench to ARMED, and the band's arm chip reads `SAFE PROG 1` to `SAFE PROG 4` in amber on every screen, SERVO left or not.
 
 ![An IOmcu without the programming port](view:servo-kst-nopage)
@@ -83,7 +83,7 @@ Only LEAVE triggers this question. RELEASE PORT, STOP, an error, link loss, pane
 
 On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), programming ports use a separate fixed 5V supply switched by GPIO 21. MORE shows `PROGRAMMING VOLTAGE: 5V FIXED, GPIO 21`. The session switches this rail wherever the table below describes switching the PD mini output. During ownership, the PROG 5V box on SUPPLY reads `HELD BY PROG PORT n` and accepts no press. Outside a session, hold PROG 5V ON there for 2s or tap PROG 5V OFF to control it.
 
-With carrier protocol 4.36 or later, tap the PORT label before CONNECT to choose PROGP01 (GPIO 13), PROGP02 (GPIO 14), PROGP03 (GPIO 15) or PROGP04 (GPIO 0). This sets SERVO TESTER and requests SERVO PWM on that port, NONE on the other three. The tester waits for confirmation before sending commands. Port selection is locked while ARMED or arming, during a test, sweep or limit run, or while a programmer holds a port. A conflicting PWM output on the same slice also blocks the port choice.
+With carrier protocol 4.36 or later, tap the SERVO tab's head, left of CONNECT, before CONNECT to choose PROGP01 (GPIO 13), PROGP02 (GPIO 14), PROGP03 (GPIO 15) or PROGP04 (GPIO 0). This sets SERVO TESTER and requests SERVO PWM on that port, NONE on the other three. The tester waits for confirmation before sending commands. Port selection is locked while ARMED or arming, during a test, sweep or limit run, or while a programmer holds a port. A conflicting PWM output on the same slice also blocks the port choice.
 
 ![The KST programmer holding the 5V](view:servo-kst-rbmod)
 
@@ -114,7 +114,7 @@ If the output is off, CONNECT switches it on and enters programming. ABORT or ST
 
 | Row | Button | Does |
 |---|---|---|
-| PORT | CONNECT (a 2s hold where it switches a supply on), ABORT, LEAVE | takes the port, ends the running operation, gives the port back |
+| head: the port and the supply | CONNECT (a 2s hold where it switches a supply on), ABORT, LEAVE | takes the port, ends the running operation, gives the port back |
 | SERVO | READ ALL | reads the 32 registers, each until 3 of at most 5 reads agree |
 | TYPE | V6?, V8?, V6, V8 | the servo type, V6 or V8, as the operator sets it |
 | FILES | CHOOSE | saves the servo's values to the card, loads a file |
@@ -122,12 +122,23 @@ If the output is off, CONNECT switches it on and enters programming. ABORT or ST
 | RESTORE | CHOOSE | writes a backup back |
 | (no label) | WRITE n VALUES | writes the changed values after a 2s hold |
 
+The head names the port and its GPIO, `PROG PORT 1 GPIO 13`, or `NO PROG PORT SET` in the warning colour. Under it stands the supply CONNECT sets: `PD MINI  5.0V 1000mA`, `5V FIXED` on the carrier or `SUPPLY AS IT IS` where you power the servo.
+
+The notes flow from under the rows: the port's state, the type or what the state needs, what stands until it is dealt with and the session's backup file. The last message stays on the bottom line. Notes that need more rows take more pages; the count, such as `1/2`, stands above the message, and a tap on the notes turns the page.
+
 No register identifies the series. V8 wing servos can have 20k_sel set as on V6. After reading, TYPE shows the type suggested by that bit with a question mark, such as `V6?`, and asks you to check the servo label. Tap TYPE to confirm V6 or V8.
 
 The type belongs to the session and is included in saved files. Loading requires a matching type; if none is set, selecting a file asks for it first. The type is never written to the servo.
 
 ![The TYPE list](view:servo-kst-type)
 ![A type set](view:servo-kst-type-set)
+
+HITEC's SERVO tab has the same order. The head names the port, its GPIO and the series over the receive mode and the supply, `PROG PORT 1 GPIO 13  D SERIES` and `RX PULL-UP  5.0V 1000mA`, beside the 260px CONNECT button. READ ALL stands under it with the label SERVO; the model read is on the READY card's SERVO row and on the bottom line. Beside READ ALL stands SERIES before CONNECT, and AFTER STOP with CLEAR while the session holds the port. FILES and MORE follow, then RESTORE and WRITE n VALUES. FILES takes a press while the port is held.
+
+![HITEC's SERVO tab before CONNECT](view:servo-hitec)
+![A D485HW read](view:servo-hitec-read)
+
+HITEC's notes flow and page as KST's. Each value tab ends its notes with `Tap a value to edit it. * marks a change. WRITE n VALUES writes the changes.` while the values take an edit. A list of more than 5 entries, FILES with its files included, stands two to a line.
 
 ![A servo of unknown layout: read only](view:servo-kst-readonly)
 
@@ -137,7 +148,7 @@ A servo whose registers do not fit the known layout is shown and never written: 
 
 ![Edited values on TUNE](view:servo-kst-tune)
 
-Edits remain in a draft on the panel until WRITE. Changed values have an `*` and accent fill. Tap a number for a keypad constrained by the hard limits, STRETCH for a choice list, or a switch to toggle it.
+Edits remain in a draft on the panel until WRITE. Changed values have an `*` and accent fill. Tap a number for a keypad constrained by the hard limits, STRETCH for a choice list, or a switch to toggle it. TUNE, PULSE and FAILSAFE end with the hint the HITEC programmer shares: `Tap a value to edit it. * marks a change. WRITE n VALUES writes the changes.`
 
 ![The keypad with the range the limits accept](view:servo-kst-keypad)
 ![The STRETCH list](view:servo-kst-stretch)

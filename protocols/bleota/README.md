@@ -65,7 +65,8 @@ Base UUID `706E340C-76DB-4FB2-AEF1-A89F7CBDF9xx`:
 | 0x05 | POLL | 1 | op |
 
 Kinds: 1 the Dial, 2 the power node, 3 the balance node, 4 the power node on
-the ES3C28P display board (ESP32-S3). Flags: bit 0
+the ES3C28P display board (ESP32-S3), 5 the Dial firmware on the Guition
+JC3636K518C knob (ESP32-S3). Flags: bit 0
 `BLEOTA_F_REINSTALL`; the other bits are refused.
 
 ### Notifications
@@ -149,8 +150,8 @@ The device reads the image's first 296 bytes before its first flash write:
 The role (`bleota_role_t`) sits in ESP-IDF's `.rodata_custom_desc`
 section, which the linker places right after the 256-byte
 `esp_app_desc_t` at offset 32. `firmware/devota` defines it with
-`DEVOTA_ROLE(kind)`. The two node roles share chip and project name, so
-the role is what tells them apart. Any other field failing is `E_IMAGE`.
+`DEVOTA_ROLE(kind)`. The two node roles share chip and project name, and
+so do the two Dial boards, so the role is what tells them apart. Any other field failing is `E_IMAGE`.
 An image without the role, such as one built before it, is refused.
 
 ## Credit window

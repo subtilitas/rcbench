@@ -5,9 +5,16 @@
  *        (sensors_pane.h), the rows each one shows, its state word and its
  *        reset.
  *
- * IMU: the rows SENSORS held before, IMU and ANGLE SOURCE while it is off,
- * AXIS, SIGN, RATE, ALGORITHM and FILTER under them while it is on; its
- * state is the panel's (sensors_rows_set_imu()).  DIAL: Dial alone while it
+ * IMU: IMU and ANGLE SOURCE while it is off; on, SCAN FOR SENSOR and
+ * BOUND SENSOR, which open SEARCH as the Dial's rows do (a scan with the
+ * IMU's refusals: IMU_SCAN_ARMED, NODE_SCAN_RUNNING, IMU_SCAN_OFF; a bind
+ * with IMU_BIND_SCANNING, IMU_BIND_GONE, IMU_BIND_BUSY), LAST ERROR while
+ * the last scan, connect or write failed, the live ANGLE X, ANGLE Y and
+ * ANGLE Z (the axis IMU AXIS names marked as the runs'), FRAMES, SENSOR
+ * BATTERY and C6 VERSION, ZERO and CLEAR ZERO (taps), CALIBRATE (a
+ * 2s hold, ui_setlist.h), then AXIS, SIGN, RATE, ALGORITHM, FILTER,
+ * SETTLING TIME and PRECISION (wireless_imu.c).  Its state is the panel's
+ * (sensors_rows_set_imu()), its view and commands imu_view.h's.  DIAL: Dial alone while it
  * is off; on, SCAN FOR DIAL, BOUND DIAL and the two steps.  A tap on SCAN
  * FOR DIAL opens SEARCH (wl_search.h) and asks for a scan of 10s, refused
  * while ARMED with the band's DIAL_SCAN_ARMED and while one runs with
@@ -42,21 +49,24 @@ extern "C" {
 
 /** @brief The left list's entries, top to bottom. */
 enum {
-    WL_ENTRY_IMU = 0, /**< enable, angle source, axis, sign, rate,
+    WL_ENTRY_IMU = 0, /**< enable, angle source, scan, bind, last error,
+                           angles X, Y, Z, frames, battery, C6 version, zero,
+                           clear zero, calibrate, axis, sign, rate,
                            algorithm, filter, settling time, precision */
     WL_ENTRY_DIAL,    /**< enable, scan, bind, two steps */
-    WL_ENTRY_BAL,     /**< enable, scan, bind, battery, trial mass
+    WL_ENTRY_BAL,     /**< enable, scan, bind, name, battery, trial mass
                            (wireless_bal.h) */
     WL_ENTRY_PRINTER, /**< scan, bind, address, state, roll, labels
                            left, read, test label (wireless_printer.h) */
-    WL_ENTRY_PNODE,   /**< enable, INA228 source, scan, bind, battery: last,
+    WL_ENTRY_PNODE,   /**< enable, INA228 source, scan, bind, name,
+                           battery, INA228, address, shunt: last,
                            where its guide badge finds room under the long
                            German name */
     WL_ENTRY_COUNT
 };
 
-/** @brief The most rows an entry has: the IMU's 9. */
-#define WL_ENTRY_ROWS_MAX 9
+/** @brief The most rows an entry has: the IMU's 21. */
+#define WL_ENTRY_ROWS_MAX 21
 
 /** @brief One row of an entry: a setting, or a custom row (custom set). */
 typedef struct {
@@ -191,6 +201,70 @@ extern const ui_setlist_custom_t wireless_pane_pnode_bat_row;
 /** @brief NODE INA228: the address the node found its INA228 at and the
  *         shunt it holds, read only. */
 extern const ui_setlist_custom_t wireless_pane_pnode_i228_row;
+/** @brief NODE NAME: the node's own name (node_cfg_link.h); a tap opens
+ *         the name keyboard while SAFE with the node's settings known. */
+extern const ui_setlist_custom_t wireless_pane_pnode_name_row;
+/** @brief INA228 ADDRESS: AUTO or 0x40 to 0x4F on the node; each step
+ *         writes the next while SAFE. */
+extern const ui_setlist_custom_t wireless_pane_pnode_addr_row;
+
+/**
+ * @brief The address setting a step of INA228 ADDRESS goes to: AUTO, then
+ *        0x40 to 0x4F, then AUTO again; back the other way.
+ * @param from The setting now; one out of range counts as AUTO.
+ * @param dir  -1 or +1.
+ * @return The next setting.
+ */
+uint8_t wireless_pane_pnode_addr_next(uint8_t from, int dir);
+
+/** @brief SCAN FOR SENSOR, the IMU entry's third row while it is on;
+ *         public for the tests. */
+extern const ui_setlist_custom_t wireless_pane_imu_scan_row;
+/** @brief BOUND SENSOR, its fourth row. */
+extern const ui_setlist_custom_t wireless_pane_imu_bind_row;
+/** @brief LAST ERROR, read only, while wireless_pane_imu_err(). */
+extern const ui_setlist_custom_t wireless_pane_imu_err_row;
+/** @brief ANGLE X: the angle about X from the zero, read only; named
+ *         for the runs while IMU AXIS is X.  ANGLE Y and ANGLE Z alike. */
+extern const ui_setlist_custom_t wireless_pane_imu_x_row;
+/** @brief ANGLE Y. */
+extern const ui_setlist_custom_t wireless_pane_imu_y_row;
+/** @brief ANGLE Z. */
+extern const ui_setlist_custom_t wireless_pane_imu_z_row;
+/** @brief FRAMES: the frame rate and the newest angle's age, read only. */
+extern const ui_setlist_custom_t wireless_pane_imu_frames_row;
+/** @brief SENSOR BATTERY: the sensor's cell, read only. */
+extern const ui_setlist_custom_t wireless_pane_imu_bat_row;
+/** @brief C6 VERSION: the ESP32-C6's firmware, read only. */
+extern const ui_setlist_custom_t wireless_pane_imu_c6_row;
+/** @brief ZERO: a tap takes the angles now as 0°; locked without a
+ *         reading (IMU_LOCK_NO_ANGLE). */
+extern const ui_setlist_custom_t wireless_pane_imu_zero_row;
+/** @brief CLEAR ZERO: a tap forgets the zero; locked while none is set
+ *         (IMU_LOCK_NO_ZERO). */
+extern const ui_setlist_custom_t wireless_pane_imu_unzero_row;
+/** @brief CALIBRATE: a 2s hold starts the accelerometer's calibration of
+ *         3s; locked while it runs (IMU_CAL_STILL with the seconds left)
+ *         and while the sensor sends no frames (IMU_LOCK_NO_FRAMES). */
+extern const ui_setlist_custom_t wireless_pane_imu_cal_row;
+
+/**
+ * @brief Whether the IMU's last scan, connect or write failed: LAST ERROR
+ *        shows.
+ * @return Whether it did.
+ */
+bool wireless_pane_imu_err(void);
+
+/**
+ * @brief A frame of SETUP: the reading's age moves on (imu_view_tick()),
+ *        and while the IMU entry shows with the IMU on, a change of the
+ *        view repaints the list, and a new reading the live values that
+ *        read differently (settings_screen_live()); the age on FRAMES
+ *        repaints 10 times a second at most between readings.
+ * @param dt_s  The frame's time, s.
+ * @param shown SETUP shows WIRELESS' list.
+ */
+void wireless_pane_imu_tick(float dt_s, bool shown);
 
 /** @brief SCAN FOR DIAL, the DIAL entry's second row; public for the
  *         tests. */

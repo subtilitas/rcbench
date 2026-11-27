@@ -26,30 +26,29 @@
  * after it may meet. */
 #include "hitec_panel_int.h"
 
+/**
+ * @brief The frame's level of a page line's level.
+ * @param level hitec_prog_level_t
+ * @return the sprog_level_t
+ */
+static uint8_t page_level(unsigned level)
+{
+    return level == HITEC_PROG_DANGER ? (uint8_t)SPROG_LV_DANGER
+         : level == HITEC_PROG_WARN   ? (uint8_t)SPROG_LV_WARN
+                                      : (uint8_t)SPROG_LV_TEXT;
+}
+
 void hpn_page_open(int kind, bool danger, const char *title,
                    const char *apply, int hint)
 {
     hpn_close_editors();
-    hp.page.open = true;
-    hp.page.kind = kind;
-    hp.page.danger = danger;
-    hp.page.count = 0;
-    hp.page.vfirst = 0;
-    hp.page.vcount = 0;
-    hp.page.vtotal = 0;
-    hp.page.drop = false;
-    snprintf(hp.page.title, sizeof(hp.page.title), "%s", title);
-    snprintf(hp.page.apply, sizeof(hp.page.apply), "%s", apply);
-    hp.page.hint = hint;
+    sprog_page_open(&hp.f, (int16_t)kind, danger, title, apply, TR(CANCEL),
+                    (int16_t)hint, false);
 }
 
 void hpn_page_add(unsigned level, const char *s)
 {
-    if (hp.page.count < HP_PAGE_LINES) {
-        hp.page.level[hp.page.count] = (uint8_t)level;
-        snprintf(hp.page.lines[hp.page.count++], sizeof(hp.page.lines[0]),
-                 "%s", s);
-    }
+    (void)sprog_page_line(&hp.f, s, page_level(level));
 }
 
 /**
@@ -79,9 +78,10 @@ void hpn_page_leave(void)
     if (drop) {
         /* The edits listed: the hold leaves without writing them, BACK
          * keeps them. */
-        hpn_page_open(W_LEAVE, false, TR(KP_LEAVE_TITLE),
-                      TR(KP_HOLD_LEAVE_DROP), TX_HOLD_HINT_LEAVE_DROP);
-        hp.page.drop = true;
+        hpn_close_editors();
+        sprog_page_open(&hp.f, W_LEAVE, false, TR(KP_LEAVE_TITLE),
+                        TR(KP_HOLD_LEAVE_DROP), TR(KP_BACK),
+                        TX_HOLD_HINT_LEAVE_DROP, true);
         hpn_page_add(HITEC_PROG_WARN, TR(KP_LEAVE_CHANGES));
         hpn_page_values(draft, HP_PAGE_VALUES);
         leave_raw(draft);
@@ -128,96 +128,34 @@ void hpn_page_values(const hitec_image_t *to, int room)
             ids[n++] = r->what;
         }
     }
-    hp.page.vfirst = hp.page.count;
-    hp.page.vtotal = n;
-    for (int i = 0; i < n && room > 0; ++i) {
+    /* The values fold into "and n more" past @p room lines, and again
+     * where the page does not fit (hpn_page_fit()). */
+    sprog_page_group(&hp.f, n, room, SPROG_ALL, SPROG_FOLD_VALUES,
+                     SPROG_LV_TEXT);
+    for (int i = 0; i < n; ++i) {
         hitec_value_t v;
         unsigned level = HITEC_PROG_INFO;
 
-        if (i == room - 1 && n > room) {
-            snprintf(line, sizeof(line), TR(KP_VALUES_MORE),
-                     (unsigned)(n - i));
-            hpn_page_add(HITEC_PROG_INFO, line);
-            break;
-        }
         if (hitec_param_get(to, hitec_prog_layout(&hp.prog), ids[i], &v)
                 == HITEC_GET_OK
             && hitec_prog_rules(&hp.prog, ids[i], v.value) != 0u) {
             level = HITEC_PROG_WARN;
         }
         hpn_change_line(ids[i], to, line, sizeof(line));
-        hpn_page_add(level, line);
+        if (!sprog_page_item(&hp.f, line, page_level(level))) {
+            break;
+        }
     }
-    hp.page.vcount = hp.page.count - hp.page.vfirst;
-}
-
-/**
- * @brief The bottom of the open page's last line as draw_hold() places it,
- *        px.
- * @return the bottom
- */
-static int page_bottom(void)
-{
-    int y = hp.area.y + HP_PAGE_TOP;
-
-    for (int i = 0; i < hp.page.count; ++i) {
-        y += hitec_panel_text_rows(hp.page.lines[i]) * HP_LINE_H + 8;
-    }
-    return y - 8;
-}
-
-/**
- * @brief Drop line @p at of the open page, the lines below it moving up.
- * @param at the line
- */
-static void page_drop(int at)
-{
-    for (int i = at; i + 1 < hp.page.count; ++i) {
-        memcpy(hp.page.lines[i], hp.page.lines[i + 1],
-               sizeof(hp.page.lines[0]));
-        hp.page.level[i] = hp.page.level[i + 1];
-    }
-    hp.page.count--;
 }
 
 bool hpn_page_fit(void)
 {
-    const int limit = hitec_panel_apply_rect().y - HP_FOOT_GAP;
-
-    while (page_bottom() > limit && hp.page.vcount > 0) {
-        /* One line fewer for the values: the last real one gives way to
-         * the count of the rest, or the count goes where none is left. */
-        const int keep = hp.page.vcount - 1;
-        const int last = hp.page.vfirst + hp.page.vcount - 1;
-
-        page_drop(last);
-        hp.page.vcount--;
-        if (keep > 0) {
-            snprintf(hp.page.lines[last - 1], sizeof(hp.page.lines[0]),
-                     TR(KP_VALUES_MORE),
-                     (unsigned)(hp.page.vtotal - (keep - 1)));
-            hp.page.level[last - 1] = HITEC_PROG_INFO;
-        }
-    }
-    return page_bottom() <= limit;
+    return sprog_page_fit(&hp.f);
 }
 
 int hpn_page_part(int from)
 {
-    const int limit = hitec_panel_apply_rect().y - HP_FOOT_GAP;
-    const int all = hp.page.count;
-    /* A later part keeps the first line, which names what it is about. */
-    const int head = from > 0 ? 1 : 0;
-    int end;
-
-    for (int i = head; i < from && hp.page.count > head; ++i) {
-        page_drop(head);
-    }
-    while (hp.page.count > head + 1 && page_bottom() > limit) {
-        page_drop(hp.page.count - 1);
-    }
-    end = from + hp.page.count - head;
-    return end < all ? end : all;
+    return sprog_page_part(&hp.f, from);
 }
 
 /**
@@ -319,15 +257,12 @@ void hpn_page_restore(void)
     (void)hpn_page_fit();
 }
 
-void hpn_page_apply(void)
+void hpn_page_apply(int kind, bool drop)
 {
     hitec_prog_t *p = &hp.prog;
-    const int kind = hp.page.kind;
-    const bool drop = hp.page.drop;
 
-    /* Shut first, and not as a CANCEL: the edit CHECK THIS CHANGE asked
-     * for is taken below, not dropped. */
-    hp.page.open = false;
+    /* The frame has shut the page, and not as a CANCEL: the edit CHECK
+     * THIS CHANGE asked for is taken below, not dropped. */
     hpn_close_editors();
     switch (kind) {
     case W_LEAVE:
@@ -353,7 +288,7 @@ void hpn_page_apply(void)
         break;
     case W_LOAD_MORE:
         /* The next part of CHECK THIS FILE; the load waits for its hold. */
-        hpn_page_load_at(hp.page.next);
+        hpn_page_load_at(hp.page_next);
         break;
     case W_FACTORY:
         (void)hpn_write_go((uint8_t)HITEC_PROG_WR_FACTORY);

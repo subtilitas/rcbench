@@ -56,7 +56,6 @@ static ui_text_id_t tile_text(const hub_tile_t *t)
     case SCREEN_OUTPUTS: return TX_HG_SET_OUTPUTS;
     case SCREEN_WIFI:    return TX_HG_SET_WIFI;
     case SCREEN_UPDATES: return TX_HG_SET_UPDATES;
-    case SCREEN_IMU:     return TX_HG_SET_IMU;
     case SCREEN_LAYOUT:  return TX_HG_SET_LAYOUT;
     default:             return TX_COUNT;
     }

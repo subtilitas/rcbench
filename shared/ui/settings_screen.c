@@ -34,6 +34,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "imu_view.h"
 #include "sense_link.h"
 #include "sensors_pane.h"
 #include "sensors_rows.h"
@@ -61,6 +62,11 @@ stg_state_t stg_s;
 void settings_screen_invalidate(void)
 {
     memset(s.chrome_valid, 0, sizeof(s.chrome_valid));
+}
+
+void settings_screen_live(void)
+{
+    ++s.live_rev;
 }
 
 void settings_apply_ui(void)
@@ -337,6 +343,8 @@ gfx_rect_t settings_screen_row_part(int row, settings_row_part_t part)
         return ui_setlist_row_part(&s.sl, row, UI_SL_PART_MINUS);
     case SETTINGS_ROW_VALUE:
         return ui_setlist_row_part(&s.sl, row, UI_SL_PART_VALUE);
+    case SETTINGS_ROW_HOLD:
+        return ui_setlist_row_part(&s.sl, row, UI_SL_PART_HOLD);
     case SETTINGS_ROW_PLUS:
     default:
         return ui_setlist_row_part(&s.sl, row, UI_SL_PART_PLUS);
@@ -559,13 +567,15 @@ static const ui_setlist_host_t k_host = {
     .press       = host_press,
     .still       = host_still,
     .release     = host_release,
+    .parts       = true,
 };
 
 /* ------------------------------------------------------------------- input */
 
 /**
  * @brief The screen's state cleared: the tiles, PANEL's list kept for the
- *        first tap, no press, the keyboard and the keypad closed.
+ *        first tap, no press, the keyboard and the keypad closed, the IMU's
+ *        view and commands empty.
  */
 static void reset(void)
 {
@@ -579,6 +589,9 @@ static void reset(void)
     s.cat = SET_CAT_APP;
     sensors_pane_select(SENS_ENTRY_BUS);
     wireless_pane_select(WL_ENTRY_IMU);
+    /* WIRELESS > IMU shows the IMU's view and queues its commands: both
+     * start empty with the screen. */
+    imu_view_reset();
     stg_clamp_scroll();
 }
 
@@ -646,12 +659,14 @@ static bool back(void)
 
 /**
  * @brief A frame: the save button's inputs followed, a keypad whose row is
- *        held since it opened closed, and a held "-" or "+" repeated.
+ *        held since it opened closed, a held "-" or "+" repeated, a hold
+ *        row's hold moved on, and WIRELESS > IMU's live rows repainted.
  * @param dt_s The frame's time, s.
  */
 static void tick(float dt_s)
 {
     ui_setlist_tick(&s.sl, dt_s);
+    wireless_pane_imu_tick(dt_s, s.sl.open && s.cat == SET_CAT_WIRELESS);
 }
 
 /**
@@ -776,6 +791,12 @@ const ui_textkey_t *settings_screen_textkey(void)
 const ui_keypad_t *settings_screen_keypad(void)
 {
     return &s.sl.kp;
+}
+
+void settings_screen_type_name(const char *title, const char *text,
+                               void (*done)(const char *name))
+{
+    ui_setlist_type_name(&s.sl, title, text, done);
 }
 
 int settings_screen_keypad_setting(void)

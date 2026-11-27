@@ -432,7 +432,7 @@ Die Aufgabe auf der linken Karte bestimmt die ersten Hilfeseiten:
 | SERVO RUDER | LÄNGE, die Fahrtasten, NULLPUNKT, MAX LÖSCHEN und ohne antwortenden Drehknopf -10us und +10us (4 oder 5); AUSSCHLAG, HINTERKANTE und die Statuszeilen (3) |
 | SERVO RUDER AUTO | die Sollwerte, RESERVE und TOLERANZ, NULLPUNKT und GRAFIK nach einem Lauf (3 oder 4); AUSSCHLAG und HINTERKANTE (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
 | SERVO LIVE, SWEEP und RUDER, SAFE | PORT, BEREIT, die Schienenzeile, ARM und OPTIONEN (5); SET V, die Grafik, TEMPO, Typ und die Tasten auf LIVE und SWEEP (5), SET V, die Grafik, Typ und Seitenansicht auf RUDER (4); SET V nicht am Programmierport des rbmod-Carriers |
-| SERVO KST und HITEC, Reiter SERVO | die Reiter, VERBINDEN, ALLES AUSLESEN und TYP auf KST, SERIE (DATEIEN bei gehaltenem Port) und ALLES AUSLESEN auf HITEC, die Hinweise (5); DATEIEN und WEITERES auf KST, WEITERES und NACH STOP auf HITEC, ZURÜCKSPIELEN, n WERTE SCHREIBEN (4); PORT, BEREIT, die Schienenzeile, SCHREIBEN und OPTIONEN (5) |
+| SERVO KST und HITEC, Reiter SERVO | die Reiter, VERBINDEN, ALLES AUSLESEN, der Platz daneben (TYP auf KST, SERIE auf HITEC, NACH STOP, solange HITEC den Port hält), die Hinweise (5); DATEIEN, WEITERES, ZURÜCKSPIELEN, n WERTE SCHREIBEN (4); PORT, BEREIT, die Schienenzeile, SCHREIBEN und OPTIONEN (5) |
 | SERVO KST und HITEC, ein anderer Reiter | die Reiter, der erste Wert des Reiters, sein `-` und `+` in einer KST-Zeile mit Schritten, SERVO BEWEGEN auf TRAVEL der D-Serie von HITEC, die Hinweise (2 bis 4); PORT, BEREIT, die Schienenzeile, SCHREIBEN und OPTIONEN (5) |
 | die Listen von SERVO (Hub, SWEEP, RUDER, RUDER AUTO, HITEC) | wie eine Optionsliste |
 | SUPPLY LIVE | GRAFIK und TABELLE, SPANNUNG und STROMBEGRENZUNG (3) |
@@ -507,9 +507,7 @@ x 348 bis 676:
   Bedienelement zum Anhalten und erscheinen auch bei ARMED.
 - Keine Hilfeseite über der Tastatur von LOG UMBENENNEN, der Sitzung über
   die Signalleitung, der Tastatur der Suche, der Warnung vor dem Start
-  oder den Handgriffen von ESC STICK oder der Fundliste von IMU.
-
-![Die Hilfe von IMU auf Seite 1](img/de/help-imu.png)
+  oder den Handgriffen von ESC STICK.
 
 ## Screenshot
 
@@ -2143,7 +2141,7 @@ Winkelquellen:
 | WINKELQUELLE | Ein Tippen mit Messwert | Zeigt GESETZT |
 | --- | --- | --- |
 | AS5600 | nimmt den aktuellen Zählerstand, 0 bis 4095, als SENSOR-MITTE und fordert ein Speichern an: dieselbe Einstellung wie SENSOR-MITTE in den Listen von LIVE und RUDER und SETUP > SENSORS > AS5600-Mitte | SENSOR-MITTE ist nicht 0, ihre Vorgabe, oder seit dem Start des Panels wurde ein Zählerstand übernommen; eine Mitte von vor einem Neustart zeigt GESETZT |
-| IMU | fordert den eigenen NULLPUNKT der IMU an, den der IMU-Seite: alle IMU-Winkel, Rollen, Nicken und Gieren, ab der aktuellen Stellung. Er verwirft den Nullpunkt und MAX von RUDER auf der IMU, wie NULLPUNKT der IMU-Seite | die IMU meldet ihren Nullpunkt gesetzt; der Nullpunkt der IMU gilt bis zum Neustart |
+| IMU | fordert den eigenen NULLPUNKT der IMU an, den von SETUP > WIRELESS > IMU: alle IMU-Winkel, Rollen, Nicken und Gieren, ab der aktuellen Stellung. Er verwirft den Nullpunkt und MAX von RUDER auf der IMU, wie jener NULLPUNKT | die IMU meldet ihren Nullpunkt gesetzt; der Nullpunkt der IMU gilt bis zum Neustart |
 
 Ohne Messwert seit dem aktuellen Verbindungsaufbau, nach einem
 Verbindungsverlust bis ein neuer Messwert eintrifft, solange der AS5600
@@ -2922,7 +2920,8 @@ PROG-PORT 3 und PROG-PORT 4 nennen. Bei OUTPUTS bleibt VERBINDEN gesperrt; es er
 und `Tippe auf PORT und wähle einen PROG-PORT.`
 
 Am rbmod-Carrier mit IOmcu-Protokoll ab 4.36 kannst du vor VERBINDEN auf
-die Beschriftung PORT tippen und einen Programmierport wählen. Die Pins
+den Kopf des Reiters SERVO von KST (die Beschriftung PORT bei HITEC)
+tippen und einen Programmierport wählen. Die Pins
 sind fest: PROGP01 GPIO13, PROGP02 GPIO14, PROGP03 GPIO15, PROGP04 GPIO0.
 Die Wahl setzt SERVO-TESTER und fordert für diesen Port SERVO PWM, für
 die anderen drei KEINE an. Der Tester wartet auf die Auslesebestätigung.
@@ -2940,8 +2939,11 @@ Ein Druck zeigt `ARMED gesperrt: Die Servoprogrammierung belegt einen Port.`
 STOP bleibt überall aktiv, ZENTRIEREN und FREIGEBEN auf LIVE. SOLL-PULSBREITE zeigt `---`,
 weil der Tester keine Pulse an den gehaltenen Port sendet.
 
-In PWM mit antwortendem PD mini nennt PORT die von VERBINDEN eingestellte
-Spannung und Strombegrenzung: `PORT  5.0V  1000mA`. Während der
+Der Reiter SERVO von KST beginnt mit einem Kopf: Port und GPIO,
+`PROG-PORT 1 GPIO 13` (ohne Port `KEIN PROG-PORT GESETZT` in der
+Warnfarbe), über der Versorgung, die VERBINDEN stellt: `PD MINI  5.0V
+1000mA` mit antwortendem PD mini, `5V FEST` am Carrier oder
+`VERSORGUNG UNVERÄNDERT`. Während der
 Portbelegung sind die Sollwerte und AUSGANG EIN auf SUPPLY und den anderen
 SERVO-Bildschirmen gesperrt; AUSGANG AUS und ein Druck auf die Zeile PD
 MINI von KST oder HITEC, solange sie EIN liest, bleiben aktiv. Am rbmod-Carrier haben die Ports
@@ -2958,7 +2960,8 @@ Bedienelemente sind mindestens 48px hoch und enden 8px über dem Feldboden:
 | Registerkarten | eine Zeile oben, 48px hoch: fünf Registerkarten von 120px, vier von 151px auf KST mit KST EXPERT MODE AUS |
 | Zeilen | 48px hoch im Abstand von 56px, bis zu 5 je Registerkarte, in zwei Spalten von 295px; eine breite Zeile nimmt beide |
 | Werte | 150px (15 Zeichen der Schrift 10 x 20); bei einer breiten Zeile 260px, darin ihre Tasten `-` und `+` von 56px |
-| Hinweise und Meldungen | unter der letzten Zeile, Schrift 10 x 20, 60 Zeichen je Zeile, 20px je Zeile, bis 6px über dem Feldboden: 6 Zeilen unter der Registerkarte SERVO |
+| Kopf der Registerkarte SERVO | Zeile 0: links zwei Zeilen der Schrift 10 x 20, Port und Versorgung; rechts VERBINDEN, ABBRECHEN oder VERLASSEN mit 260 x 48px |
+| Hinweise und Meldungen | ab 8px unter der letzten Zeile abwärts, Schrift 10 x 20, 60 Zeichen je Zeile, 20px je Zeile; die letzte Meldung in der untersten Zeile, ihre letzte Zeile 8px über dem Feldboden: 6 Zeilen unter der Registerkarte SERVO |
 | Listen (DATEIEN, ZURÜCKSPIELEN, WEITERES, ein Faktor) | ein Titel, dann bis zu 7 Einträge, 48px hoch im Abstand von 56px, ABBRECHEN 150 x 48px am Fuß |
 | Warnseiten | der Titel in der Schrift 20 x 36, bis zu 16 Zeilen in der Schrift 10 x 20 (in einem niedrigeren Bereich weniger: die Zeilen, die 8px über den Tasten Platz haben), die Halte-Taste 300 x 56px, 380 x 56px auf PROGRAMMIERMODUS VERLASSEN mit ungeschriebenen Änderungen, und ABBRECHEN oder ZURÜCK 180 x 56px am Fuß |
 
@@ -2970,11 +2973,11 @@ Zeilen im Abstand von 56px über ABBRECHEN. Kommen mehr Einträge, als eine
 Spalte fasst, stehen je zwei in Spalten von 295px nebeneinander; ein
 Eintrag, der breiter als eine Spalte ist, nimmt eine eigene Zeile.
 
-Lassen die beiden festen Hinweiszeilen neben einer Meldung keinen Platz
-für eine Seitenzahl, werden sie zuerst mit den übrigen Hinweisen
-geblättert. Ein Hinweis, der höher als die verfügbare Seite ist, wartet
-auf das Ende der Meldung. Lässt die Meldung keine Zeile für einen
-Hinweis, warten alle Hinweise auf ihr Ende. Weder Hinweis noch Meldung
+Hinweise, die mehr Zeilen brauchen, als über der Meldung frei sind,
+nehmen Seiten, deren letzte Zeile jeweils der Seitenzahl bleibt; ein
+Hinweis, der in die freien Zeilen einer Seite nicht passt, beginnt
+die nächste. Lässt die Meldung keine Zeile für einen Hinweis und die
+Seitenzahl, erscheint kein Hinweis, bis sie geht. Weder Hinweis noch Meldung
 reichen über die letzte Zeile der Registerkarte SERVO.
 
 Eine Meldung belegt bis zu 5 Zeilen und steht ganz in den 6 Zeilen unter
@@ -2998,19 +3001,25 @@ Bestätigungsseiten haben eine 300 x 56px große Halte-Taste und
 ABBRECHEN mit 180 x 56px, PROGRAMMIERMODUS VERLASSEN mit ungeschriebenen
 Änderungen eine 380 x 56px große Halte-Taste und ZURÜCK.
 
-Sie liest das Servo aus und schreibt bearbeitete Werte zurück. Tippe auf
-einen schreibbaren Wert, um eine Liste mit bis zu 6 Einträgen oder das
-Tastenfeld zu öffnen. n WERTE SCHREIBEN, 220px breit, schreibt nach 2s
-Halten. Wähle SERIE vor
-VERBINDEN als D-SERIE oder KLASSISCH. PORT zeigt Port, GPIO, Serie,
-Empfangsart und die von VERBINDEN eingestellte Versorgung.
+Sie zeichnet über den Rahmen der Servoprogrammierung, mit der Reihenfolge
+des Reiters SERVO von KST: der Kopf, der Port, GPIO, Serie, Empfangsart und
+die von VERBINDEN eingestellte Versorgung neben der 260px breiten Taste
+VERBINDEN zeigt; SERVO: ALLES AUSLESEN neben SERIE (D-SERIE oder
+KLASSISCH, vor VERBINDEN gewählt) oder, bei gehaltenem Port, NACH STOP;
+DATEIEN und WEITERES; ZURÜCKSPIELEN und n WERTE SCHREIBEN, 220px breit,
+das nach 2s Halten schreibt. Sie liest das Servo aus und schreibt
+bearbeitete Werte zurück. Tippe auf einen schreibbaren Wert, um eine
+Liste mit bis zu 7 Einträgen, ab 6 zu zweit in einer Zeile, oder das
+Tastenfeld zu öffnen. Die Hinweise beginnen 8px unter den Zeilen;
+brauchen sie mehr Platz, blättern sie mit `1/2` und einem Tipp.
 
 Bei gehaltenem Port gelten dieselben Regeln für ARM und Netzteilbedienung
 wie bei KST, einschließlich der getrennten 5V am Carrier. Ein gesperrtes
 Netzteilelement meldet beim Antippen
 `Servoprogrammierung belegt das Netzteil: Sollwerte und EIN gesperrt.`
-DATEIEN ersetzt SERIE und öffnet `BENCH/HITEC/CONF`, mit 5 Dateien pro
-Seite unter dem Speichereintrag. Ein neuer Name öffnet die Tastatur;
+DATEIEN nimmt bei gehaltenem Port einen Druck an und öffnet
+`BENCH/HITEC/CONF`, mit 5 Dateien pro Seite, zu zweit in einer Zeile,
+unter dem Speichereintrag. Ein neuer Name öffnet die Tastatur;
 Dateien für andere Modelle oder außerhalb weicher Regeln öffnen
 DIESE DATEI PRÜFEN.
 
@@ -3055,6 +3064,111 @@ Ein gefundener Anschlag setzt diese Endlage im Entwurf:
 ![SERVO BEWEGEN an, ENDE LINKS verfolgt](img/de/servo-hitec-move-on.png)
 ![ANSCHLAG SUCHEN links bei der Suche](img/de/servo-hitec-move-find.png)
 ![Ein Anschlag links gefunden](img/de/servo-hitec-move-found.png)
+
+#### Rahmen der Servoprogrammierung
+
+KST und HITEC zeichnen über einen Rahmen, `sprog`
+(`shared/ui/include/sprog.h`, `sprog.c`, `sprog_draw.c`, `sprog_page.c`).
+Der Rahmen besitzt das Layout, das Zeichnen, die Drücke, das 2s Halten,
+das Tastenfeld, die Tastatur, die Listen und die Halteseiten. Eine Marke
+besitzt ihr Modell, eine feste Tabelle der Registerkarten und Zeilen, eine
+Ansichtsfüllung und ein `switch` über das Ergebnis, das der Rahmen
+zurückgibt. Der Rahmen ruft keine Marke auf und hält keinen
+Funktionszeiger. Er nutzt keinen Heap: sein Zustand, `sprog_t`, ist ein
+Teil des statischen Zustands der Marke. Es ist immer nur eine Überlagerung
+offen.
+
+Jedes Ereignis, jeder Tick und jedes Zeichnen hat drei Schritte. Die Marke
+füllt die Ansicht: Wert, Füllung, Druckart und Ablehnung jeder gezeigten
+Zeile, die zwei Zeilen des Kopfs, die Hinweise und die untere Zeile. Sie
+gibt das Ereignis oder den Tick an den Rahmen. Sie handelt nach dem
+Ergebnis: ein Tipp, ein Schritt, ein Stopp, ein beendetes Halten, ein Wert
+aus Tastenfeld, Liste oder Tastatur, eine angewendete oder abgebrochene
+Seite, ein Wechsel der Registerkarte.
+
+Bereiche, in Pixeln im linken Feld von 620 x 428px:
+
+| Bereich | Wo | Enthält |
+| --- | --- | --- |
+| Registerkarten | x 8, y 8, 604 x 48px | bis zu 5 Registerkarten; eine Registerkarte, deren Anzeigebits aus sind, fällt weg und die übrigen rücken zusammen: 4 auf KST mit KST EXPERT MODE AUS |
+| Zeilenraster | Zeilen bei y 64 + 56 x n, n 0 bis 4, 48px hoch | die Zeilen der Registerkarte in Tabellenfolge: eine breite Zeile nimmt eine Zeile, zwei schmale teilen sich eine. Spalte 0 bei x 10, Spalte 1 bei x 315, je 295px breit |
+| Kopf | Zeile 0 des Reiters SERVO | Port und GPIO über der Versorgung, die VERBINDEN einstellt, bei x 10; Zeile 1 in der Warnfarbe, solange kein Port gebunden ist; VERBINDEN, ABBRECHEN oder VERLASSEN, 260 x 48px, rechts. Ein Tipp auf den Text öffnet die Liste PORT, wo die Marke sie anbietet |
+| Hinweise | ab 8px unter der letzten Zeile bis zur unteren Zeile | die Hinweise der Marke, von oben nach unten, jeder in Text-, gedimmter, blasser, Akzent-, Warn- oder Gefahrenfarbe, 60 Zeichen je Zeile, 20px je Zeile; die Seitenzahl `1/2` am rechten Ende der letzten Zeile einer Seite; ein Tipp blättert |
+| Untere Zeile | ihre letzte Zeile endet 8px über dem Boden des Felds oder über dem Alarmband, je nachdem, was höher liegt | die letzte Meldung, sonst die Kennzeile der Marke zum gelesenen Servo |
+| Überlagerungen | das ganze Feld | Tastenfeld, Tastatur, Liste, Halteseite |
+
+Der Reiter SERVO folgt der Reihenfolge der Arbeit, VERBINDEN, ALLES
+AUSLESEN, ändern, SCHREIBEN:
+
+| Zeile | Spalte 0 | Spalte 1 |
+| --- | --- | --- |
+| 0 | Kopf: Port und Versorgung | VERBINDEN, ABBRECHEN oder VERLASSEN |
+| 1 | SERVO: ALLES AUSLESEN | der Platz der Marke: KST TYP; Hitec SERIE vor VERBINDEN, NACH STOP bei gehaltenem Port |
+| 2 | DATEIEN: WÄHLEN | WEITERES: WÄHLEN |
+| 3 | ZURÜCKSPIELEN: WÄHLEN | n WERTE SCHREIBEN, 220px, 2s Halten |
+
+Eine Marke ohne eigene Zeile lässt den Platz leer. Ab Zeile 4 stehen die
+Hinweise.
+
+Zeilenarten, die der Rahmen zeichnet; die Ansicht kann die Art einer Zeile
+je nach Zustand ändern, so werden NEUTRAL und die Endlagen bei Hitec zu
+Schritten, solange SERVO BEWEGEN läuft:
+
+| Art | Bedienelement | Druck |
+| --- | --- | --- |
+| Wert | der Wert, 150px, 260px in einer breiten Zeile; `* ` und die Akzentfüllung, wenn er vom Servo abweicht | ein Tipp öffnet den Editor der Marke |
+| Schritt | `-`, der Wert, `+` | `-` und `+` wirken beim Drücken und wiederholen nach 0.45s mit 8Hz, ab 2.25s mit 30Hz; der Wert öffnet den Editor |
+| Paar | zwei Tasten an der Stelle des Werts: ENDE LINKS und ENDE RECHTS von ANSCHLAG SUCHEN bei Hitec | je Taste: Tipp oder Stopp |
+| Taste | die Beschriftung der Marke | Tipp, 2s Halten, Stopp beim Drücken oder aus |
+| Anzeige | ein Wert ohne Druck: die Zeilen des Reiters GESPERRT bei KST | keiner |
+| Lücke | ein frei gehaltener Platz | keiner |
+
+Wie ein Bedienelement einen Druck nimmt:
+
+| Druck | Wirkt |
+| --- | --- |
+| Tipp | beim Loslassen im Bedienelement |
+| 2s Halten | im Tick nach dem beendeten Halten; ein Verlust der Berührung davor bricht es ab. VERBINDEN, das eine Versorgung einschaltet, n WERTE SCHREIBEN |
+| Stopp | beim Aufsetzen, von jedem Kontakt, auch während ein anderer Druck gehalten wird: ABBRECHEN, der Stopp von SERVO BEWEGEN, ANSCHLAG SUCHEN |
+| aus | aus gezeichnet; nimmt keinen Druck |
+
+Ein Bedienelement, das die Marke ablehnt, trägt den Grund: ein Druck zeigt
+ihn im Alarmband, startet kein Halten und bewirkt nichts.
+
+Die Hinweise einer Werte-Registerkarte sind der Hinweis der Marke zu
+dieser Registerkarte, dann der gemeinsame Hinweis, gedimmt:
+`Tippe zum Ändern auf einen Wert. * markiert Änderungen. n WERTE SCHREIBEN schreibt sie.`
+
+Die Listenregel: eine Liste hat bis zu 7 Einträge. Bis zu 5 nehmen eine
+Spalte aus 48px hohen Zeilen mit 56px Abstand über ABBRECHEN. Mehr stehen
+zu zweit in einer Zeile, in Spalten von 295px; ein Eintrag, der breiter
+als eine Spalte ist, nimmt eine eigene Zeile. Der Eintrag mit dem
+aktuellen Wert hat die Akzentfüllung. Eine Dateiliste füllt die 7 Einträge
+mit `Speichere die Servowerte in einer neuen Datei.` in einer eigenen
+Zeile, 5 Dateien je Seite, jede mit Name und Typ oder Modell, und
+`Zeige weitere Dateien an.` als letztem Eintrag.
+
+Eine neue Marke, zum Beispiel AGFRC, liefert diese Teile; Layout, Drücke,
+Halten, Editoren und Seiten kommen vom Rahmen. Die Schätzung gilt für eine
+Marke mit wenigen Zeilen; die gemessenen Zahlen von KST sind Codezeilen,
+gezählt von `tools/check_sizes.py`:
+
+| Teil | Wo | Schätzung, Zeilen | KST, Zeilen |
+| --- | --- | ---: | ---: |
+| das Protokoll und das Sitzungsmodell: verbinden, lesen, ändern mit Grenzen, schreiben mit Prüfung, Backup, Dateien | `protocols/<brand>/`, `shared/bench/` | außerhalb von `shared/ui` | außerhalb von `shared/ui` |
+| die Tabellen der Registerkarten und Zeilen, die 18 Funktionen des Page-Sets, der Zustand, die Sitzung für Fußleiste und Karte BEREIT, eine Zeile im Register | `<brand>_panel.c`, `<brand>_panel_int.h`, `include/<brand>_panel.h`, `shared/ui/prog_registry.c` | 140 bis 180 | 901 |
+| die Ansichtsfüllung: Werte, Füllungen, Drücke, Ablehnungen, Kopf, Hinweise, untere Zeile | `<brand>_panel_draw.c` | 150 bis 250 | 506 |
+| der Switch über das Ergebnis | `<brand>_panel_touch.c` | 150 bis 200 | 183 |
+| die Werte der Editoren in den Entwurf, Dateien und Backup | `<brand>_panel_edit.c` | 150 bis 250 | 554 |
+| Texte: Zeilen, Meldungen, Seitenzeilen | `<brand>_panel_text.c`; die Texte in `shared/text/include/ui_text.def` | 300 bis 500 | 483 |
+| weiche Grenzen und ihre Seitenzeilen | `<brand>_panel_warn.c` | 150 bis 250 | 382 |
+| Anschlüsse an LIMIT RUN und RUDDER AUTO, wo gewünscht | `<brand>_panel_run.c` | etwa 200 | 219 |
+| Referenzbilder EN und DE, eine Docs-Seite, eine Hilfeseite, die Hub-Kachel | `tools/render_ui.py`, `docs/`, `help/` | | |
+
+In Summe 1.300 bis 1.600 Zeilen für eine Marke mit wenigen Zeilen; KST
+braucht auf dem Rahmen 3.228 Zeilen und Hitec 3.706, mit SERVO BEWEGEN und
+ANSCHLAG SUCHEN. `tools/stack_check.py` braucht die Funktion der Marke in
+jedem der 18 Einträge von `PROG_CALLS`.
 
 ### Einstellungen
 
@@ -6129,17 +6243,19 @@ Zeile in der Schrift 10 x 20px.
 - PANEL, SENSORS, WIRELESS und SD CARD enthalten die Einstellungen für den
   gesamten Prüfstand. Jede Kachel nennt die Zahl der Einstellungen in ihrer
   Liste; SENSORS nennt stattdessen die verfügbaren Gruppen,
-  `STROM, WINKEL, PHASENABGRIFF`, und WIRELESS `IMU, DIAL, SENSORKNOTEN`. Ein Tippen öffnet die Liste der Kategorie. Die Einstellungen von Akku,
+  `STROM, WINKEL, PHASENABGRIFF`, und WIRELESS `IMU, DIAL, KNOTEN, DRUCKER`. Ein Tippen öffnet die Liste der Kategorie. Die Einstellungen von Akku,
   Motor und Gasausgang stehen unter MOTOR & ESC > OPTIONEN
   ([MOTOR & ESC, Optionen](#motor--esc-optionen)).
-- Vier eigene Bildschirme: OUTPUTS ([Outputs](#outputs)), WI-FI ([WLAN](#wlan)),
-  UPDATES ([Updates](#updates)) und IMU ([Die Bluetooth-IMU](#die-bluetooth-imu)).
-  Das Band jedes Bildschirms nennt ihn wie
-  seine Kachel, und das Band dieser Seite zeigt SETUP. [Files](#files) ist ein
+- Drei eigene Bildschirme: OUTPUTS ([Outputs](#outputs)), WI-FI ([WLAN](#wlan))
+  und UPDATES ([Updates](#updates)). Das Band jedes Bildschirms nennt ihn
+  wie seine Kachel, und das Band dieser Seite zeigt SETUP. Die Kacheln
+  zeilenweise: PANEL, SENSORS, OUTPUTS; SD CARD, WI-FI, WIRELESS; UPDATES.
+  Die Bluetooth-IMU hat keine Kachel: Sie ist der erste Eintrag von
+  WIRELESS ([Die Bluetooth-IMU](#die-bluetooth-imu)). [Files](#files) ist ein
   Tab der Kachel [LOGS](#logs).
 - LAYOUT ([Layout](#layout)) als letzte Kachel auf einem Board mit verlöteten
-  Pins, dem [rbmod-Carrier](Carrier-de.md). Auf jedem anderen Board ist 1 Platz
-  frei, auf diesem keiner. Die Seite bietet 9 Plätze; ein zehnter
+  Pins, dem [rbmod-Carrier](Carrier-de.md). Auf jedem anderen Board sind 2
+  Plätze frei, auf diesem 1. Die Seite bietet 9 Plätze; ein zehnter
   Eintrag lässt den Build fehlschlagen.
 - SPEICHERN, unten rechts, ist dieselbe Taste wie auf den Listen
   ([Werte behalten](#werte-behalten)). Eine ungespeicherte Änderung in
@@ -7207,34 +7323,53 @@ KEINES.
 
 ### Die Bluetooth-IMU
 
-![IMU, verbunden mit 50Hz, NULLPUNKT gesetzt](img/de/imu-connected.png)
+![WIRELESS auf dem IMU-Eintrag, verbunden mit 50Hz, NULLPUNKT gesetzt](img/de/setup-wireless-imu.png)
 
-Die IMU-Kachel unter SETUP öffnet den Bildschirm für den Winkelsensor
-WitMotion BWT901CL. Er ist über Bluetooth LE durch den ESP32-C6 des Boards
-mit dem Panel verbunden ([Die Bluetooth-IMU](IMU-de.md)); das erste IMU EIN
-startet Bluetooth LE. Seine Einstellungen
-stehen im IMU-Eintrag unter WIRELESS: IMU EIN oder AUS, ACHSE (X, Y, Z), VORZEICHEN (+, -), RATE (10, 20,
-50, 100 oder 200Hz, ab Werk 50Hz), ALGORITHMUS (6-AXIS oder 9-AXIS) und
-WINKELQUELLE. Die Bedienelemente links, 460 x 56px im Abstand von 64px ab
-Body-y 16: SENSOREN SUCHEN, dann NULLPUNKT und NULLPUNKT LÖSCHEN
-nebeneinander. Die Fußleiste
-([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste))
-lautet `[IMU] [2s HALTEN: KALIBRIEREN] [OPTIONEN]`; OPTIONEN öffnet WIRELESS
-auf dem IMU-Eintrag, dessen Home-Feld führt zurück. Die Karte rechts, x 484
-bis 1016, Body-y 16 bis 436, nennt den gebundenen Sensor
-und seine Adresse mit ihrem Typ, die Firmware des C6, den Zustand, die Winkel X, Y und Z
-relativ zum Nullpunkt in der Schrift 16 x 28px (die von den Läufen
-verwendete Achse in der Akzentfarbe), die Rate der Winkel-Frames, das Alter des neuesten und den Akku
-des Sensors. SENSOREN SUCHEN öffnet die Liste für eine Suche von 10s: bis zu
-8 Sensoren von 640 x 48px im Abstand von 52px mit Name, Adresse und RSSI,
-unter AKTUALISIEREN die Zahl der übrigen Geräte, die die Suche hörte; ein
-Tippen bindet einen und schließt die Liste. Das Home-Feld schließt zuerst die Liste. Der Messwert ist
-300ms nach dem letzten Winkel-Frame veraltet, die Aussetzer-Toleranz eines
-Laufs ([Servoverfahren](Servo-de.md)).
+Der Winkelsensor WitMotion BWT901CL ist über Bluetooth LE durch den
+ESP32-C6 des Boards mit dem Panel verbunden
+([Die Bluetooth-IMU](IMU-de.md)); das erste IMU EIN startet Bluetooth LE.
+Der IMU-Eintrag von SETUP > WIRELESS enthält alles: Suche und Bindung,
+die aktuellen Werte, NULLPUNKT, NULLPUNKT LÖSCHEN, den 2s-Hold der
+Kalibrierung und die Einstellungen. Bei ausgeschalteter IMU zeigt der
+Eintrag IMU und WINKELQUELLE; eingeschaltet 18 Zeilen mehr, 19 mit
+LETZTER FEHLER:
 
-![Die Liste nach SENSOREN SUCHEN](img/de/imu-scan.png)
+| Zeile | Wert | Was sie tut |
+| --- | --- | --- |
+| Sensor suchen | `SUCHEN`, `BLUETOOTH STARTET`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | Tippen öffnet SEARCH ([WIRELESS: SEARCH](#wireless-search)) und fordert eine Suche von 10s an. Startet Bluetooth LE noch, wartet die Suche und geht hinaus, sobald es läuft. Bei ARMED zeigt das Band `KEINE IMU-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; während einer Suche `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`; ohne Bluetooth am C6 oder mit ausgefallenem C6 `BLUETOOTH NICHT BEREIT: KEINE SENSORSUCHE`. SEARCH öffnet in jedem Fall |
+| Gebundener Sensor | der Name des gebundenen Sensors, sonst seine Adresse, sonst `KEINS` | Tippen öffnet SEARCH mit der Liste der letzten Suche, ohne Suche |
+| Letzter Fehler | | nur, solange die letzte Suche, Verbindung oder ein Schreibzugriff fehlschlug: der Fehler in der Hilfezeile, in der Warnfarbe ([Die Bluetooth-IMU](IMU-de.md)) |
+| Winkel X, Winkel Y, Winkel Z | `+12.30°`, `---` ohne Messwert | die Winkel ab dem Nullpunkt durch den IMU-Filter, 0,01°. Die Achse, die IMU-Achse nennt, heißt `Winkel X: für Läufe` |
+| Frames | `RATE 50.0Hz  ALTER 20ms`, `RATE 0.0Hz  KEIN WINKEL` | die Winkel-Frames der letzten Sekunde und das Alter des neuesten |
+| Sensorakku | `3.95V`, `---` über 6,0V oder ohne Wert | der Akku des Sensors aus Frame 0x52 |
+| C6-Version | `2.13.0`, `---` | die Firmware des ESP32-C6 |
+| Nullpunkt | | Tippen übernimmt die aktuellen Winkel als Nullpunkt; ohne Messwert gesperrt, `NOCH KEIN WINKEL VOM SENSOR` |
+| Nullpunkt löschen | | Tippen vergisst den Nullpunkt; gesperrt, solange keiner gesetzt ist, `KEIN NULLPUNKT GESETZT` |
+| Kalibrieren | `2s HALTEN: KALIBRIEREN`, ein Knopf von 278 x 48px rechts in der Zeile | 2s Halten startet die Kalibrierung des Beschleunigungssensors von 3s; vor 2000ms losgelassen zeigt das Band `Halte 2s, um den Beschleunigungssensor zu kalibrieren.`. Gesperrt, solange der Sensor keine Frames sendet, `DER SENSOR SENDET KEINE FRAMES`, und während sie läuft, `HALTE DEN SENSOR 3s STILL UND WAAGERECHT` mit dem Countdown. Das Band zeigt an ihrem Ende `BESCHLEUNIGUNGSSENSOR KALIBRIERT UND GESPEICHERT` oder den Alarm `KALIBRIERUNG OHNE FRAMES BEENDET. VERSUCHE ES ERNEUT` |
 
-![WIRELESS auf dem IMU-Eintrag](img/de/setup-wireless-imu.png)
+Es folgen die Einstellungen: IMU-Achse (X, Y, Z), IMU-Vorzeichen (+, -),
+IMU-Rate (10, 20, 50, 100 oder 200Hz, ab Werk 50Hz), IMU-Algorithmus
+(6-AXIS oder 9-AXIS), IMU-Filter, IMU-Einschwingzeit und
+IMU-Genauigkeit. NULLPUNKT und NULLPUNKT LÖSCHEN verwerfen den Nullpunkt
+und MAX von RUDER auf der IMU. Der Messwert ist 300ms nach dem letzten
+Winkel-Frame veraltet, die Aussetzer-Toleranz eines Laufs
+([Servoverfahren](Servo-de.md)).
+
+Ein neuer Messwert zeichnet das Wertfeld von Winkel X, Winkel Y, Winkel
+Z, Frames und Sensorakku neu, dessen Text sich änderte, je 278 x 24px;
+das Alter auf Frames zählt zwischen den Messwerten 10-mal pro Sekunde
+weiter. Eine Änderung der Verbindung, der Suche, der Bindung oder der
+Kalibrierung zeichnet die Liste neu, ebenso ein Messwert, der kommt
+oder geht, und ein gesetzter oder gelöschter Nullpunkt, die NULLPUNKT
+und NULLPUNKT LÖSCHEN sperren oder freigeben. Die Füllung des Holds von
+KALIBRIEREN zeichnet nur seinen Knopf neu. LETZTER FEHLER verschiebt die
+Zeilen darunter: Ein Druck, der beim Kommen oder Gehen auf einer Zeile
+der Liste liegt, endet, ohne zu wirken, und eine offene Auswahlliste
+schließt sich.
+
+![Dasselbe bei NULLPUNKT, NULLPUNKT LÖSCHEN und KALIBRIEREN](img/de/setup-wireless-imu-cal.png)
+
+![Kein Sensor gebunden nach einer Suche ohne Fund](img/de/setup-wireless-imu-error.png)
 
 ### WIRELESS: die IMU und das Dial
 
@@ -7247,7 +7382,7 @@ Neustart des Panels.
 
 | Eintrag | Zustand im Betrieb | Zeilen |
 | --- | --- | --- |
-| IMU | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN SENSOR GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN`, `VERBUNDEN 50Hz`, `KEINE FRAMES` ([Die Bluetooth-IMU](#die-bluetooth-imu)) | 2 bei AUS: IMU und WINKELQUELLE; 7 bei EIN |
+| IMU | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN SENSOR GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN`, `VERBUNDEN 50Hz`, `KEINE FRAMES` ([Die Bluetooth-IMU](#die-bluetooth-imu)) | 2 bei AUS: IMU und WINKELQUELLE; 20 bei EIN, 21 mit LETZTER FEHLER |
 | DIAL | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN DIAL GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN: KEIN DIAL`, `VERBUNDEN, KEIN EREIGNIS`, `ANDERES PROTOKOLL n`, `VERBUNDEN`, `GESTÖRT`, `DIAL VERLOREN` | 1 bei AUS; 5 bei EIN |
 | AUSWUCHTKNOTEN | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN KNOTEN GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN: KEIN KNOTEN`, `VERBUNDEN, LIEST INFO`, `ROLLE r, PROTOKOLL p`, `VERBUNDEN, KEIN BERICHT`, `BERICHTET` | 1 bei AUS; 5 bei EIN |
 | DRUCKER | `NICHT GEBUNDEN`, im Leerlauf der Name des gebundenen Druckers, `SUCHE LÄUFT`, `VERBUNDEN`, die Phase einer Anfrage oder ihr Ergebnis ([WIRELESS: der Etikettendrucker](#wireless-der-etikettendrucker)) | 8 |
@@ -7285,7 +7420,9 @@ Spannung, Strom, Leistung und Summen von MOTOR & ESC liefert.
 | INA228-Quelle | WIRED, NODE | WIRED | WIRED: der INA228 des IOmcu unter SENSORS; NODE: die Messwerte des Leistungsknotens. Auch bei ausgeschaltetem Knoten sichtbar, damit die Quelle ohne Einschalten des Knotens auf WIRED zurück kann |
 | Knoten suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | Tippen öffnet SEARCH ([WIRELESS: SEARCH](#wireless-search)) und sucht 10s lang nach Leistungsknoten; das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE KNOTENSUCHE`; während einer Suche `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`. SEARCH öffnet in jedem Fall. Ein Auswuchtknoten wird nicht gelistet |
 | Gebundener Knoten | der Name des gebundenen Knotens, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen öffnet SEARCH mit der Liste der letzten Suche, ohne Suche |
+| Knotenname | der Name des Knotens, `ALTE FIRMWARE`, `NICHT VERBUNDEN` | | Tippen öffnet die Namenstastatur; OK schreibt NAME bei SAFE zum Knoten ([Die eigenen Einstellungen der Knoten](Nodes-setup-de.md#die-einstellungen-über-die-verbindung)) |
 | Knotenakku | `3.92V`, `SCHWACH 3.41V`, `KEINE ZELLE`, `LESEFEHLER`, `NICHT VERBUNDEN` | | die Zellspannung aus dem letzten STATUS des Knotens, alle 1000ms gesendet; `SCHWACH` unter 3.5V, `KEINE ZELLE` an USB allein |
+| INA228-Adresse | `AUTO`, `0x40` bis `0x4F`, `ALTE FIRMWARE`, `NICHT VERBUNDEN` | `AUTO` | `<` und `>` schalten sie; jeder Schritt schreibt I228 bei SAFE zum Knoten |
 
 LEISTUNGSKNOTEN ZURÜCKSETZEN setzt Leistungsknoten auf AUS und
 INA228-Quelle auf WIRED zurück; der gebundene Knoten bleibt. Die
@@ -7331,6 +7468,7 @@ Die Zeilen des AUSWUCHTKNOTEN-Eintrags ([Auswuchten](Balance-de.md#messen-mit-de
 | Auswuchtknoten | EIN, AUS | AUS | die Verbindung zum gebundenen Knoten; AUS beendet sie, und sein Verlust ist kein Fehler: der Knoten misst und steuert nichts |
 | Knoten suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | Tippen öffnet SEARCH ([WIRELESS: SEARCH](#wireless-search)) und sucht 10s lang nach Knoten, die die Rolle Auswuchten anzeigen; das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE KNOTENSUCHE`; während einer Suche `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`. SEARCH öffnet in jedem Fall |
 | Gebundener Knoten | der Name des gebundenen Knotens, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen öffnet SEARCH mit der Liste der letzten Suche, ohne Suche |
+| Knotenname | der Name des Knotens, `ALTE FIRMWARE`, `NICHT VERBUNDEN` | | Tippen öffnet die Namenstastatur; OK schreibt NAME bei SAFE zum Knoten ([Die eigenen Einstellungen der Knoten](Nodes-setup-de.md#die-einstellungen-über-die-verbindung)) |
 | Knotenakku | `3.91V`, `3.40V NIEDRIG` (unter 3.50V), `KEIN WERT`, `--` | | die Zelle des Knotens aus dem STATUS, den er auf STREAM neben seinen Berichten sendet; `--` vor dem ersten auf einer Verbindung |
 | Testmasse | 0.01g bis 20.00g in Schritten von 0.01g | 0.50g | die Masse, die für die Testläufe von MOTOR & ESC > WUCHTEN aufgeklebt wird |
 
@@ -7421,11 +7559,11 @@ Anfrage, die mit einem Fehler endet, zeigt seinen Text im Band:
 
 ![SEARCH beim Leistungsknoten, zwei Knoten gefunden](img/de/setup-wireless-search.png)
 
-SEARCH findet und bindet das Dial, den Leistungsknoten, den
-Auswuchtknoten oder den Etikettendrucker. Dial suchen, Knoten suchen und
-Drucker suchen öffnen es und fordern eine Suche von 10s an; Gebundenes
-Dial, Gebundener Knoten und Gebundener Drucker öffnen es mit der Liste der
-letzten Suche, ohne Suche. Eine Suche, die die Zeile ablehnt
+SEARCH findet und bindet die IMU, das Dial, den Leistungsknoten, den
+Auswuchtknoten oder den Etikettendrucker. Sensor suchen, Dial suchen,
+Knoten suchen und Drucker suchen öffnen es und fordern eine Suche von 10s
+an; Gebundener Sensor, Gebundenes Dial, Gebundener Knoten und Gebundener
+Drucker öffnen es mit der Liste der letzten Suche, ohne Suche. Eine Suche, die die Zeile ablehnt
 (ARMED, eine laufende Suche, Bluetooth nicht bereit), nennt den Grund im
 Band, und SEARCH öffnet mit der letzten Liste. Das Home-Feld
 führt zurück zu SETUP > WIRELESS auf den Eintrag des Geräts.
@@ -7434,15 +7572,18 @@ führt zurück zu SETUP > WIRELESS auf den Eintrag des Geräts.
 | --- | --- | --- |
 | Zustandszeile | x 16, y 12 | `SUCHE LÄUFT: NOCH 7s` während einer Suche, von 10s abwärts gezählt; `n GEFUNDEN: ZUM BINDEN EINES ANTIPPEN`; `KEINS GEFUNDEN`; `DURCH ARM BEENDET`; `NOCH KEINE SUCHE: AKTUALISIEREN ANTIPPEN` |
 | Fundliste | Zeilen von 640 x 48px im Abstand von 52px ab x 16, y 44 | die Geräte der letzten Suche, das stärkste zuerst, bis zu 8: der Name, sonst die Adresse, und der RSSI, `rcbench-pwr-3456  -58dBm`; das gebundene in der Akzentfarbe hervorgehoben. Der Controller leert die Liste beim Start einer Suche und füllt sie an ihrem Ende |
-| Karte | x 680, 328px breit, y 12 bis 136 | die Art des Geräts, seine Verbindung wie in der linken Liste, `GEBUNDEN` und der Name des gebundenen Geräts, sonst seine Adresse, sonst `KEINS` |
+| Karte | x 680, 328px breit, y 12 bis 154 | die Art des Geräts, seine Verbindung wie in der linken Liste, `GEBUNDEN` und der Name des gebundenen Geräts, sonst seine Adresse, sonst `KEINS`; unter einem Namen seine Adresse mit ihrem Typ in der Schrift 8 x 16px bei y 138 |
 | AKTUALISIEREN | 328 x 56px bei x 680, y 156 | eine neue Suche von 10s mit den Regeln von Dial suchen und Knoten suchen; grau während einer Suche, dort zeigt Tippen `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s` |
 | BINDUNG LÖSEN | 328 x 56px bei x 680, y 228 | `2s HALTEN: BINDUNG LÖSEN`, ein Halten von 2s, das das gebundene Gerät vergisst (unten); vor 2000ms losgelassen zeigt das Band `Halte 2s, um die Bindung zu lösen.`; grau, solange nichts gebunden ist, dort zeigt Tippen `NICHTS GEBUNDEN: KEINE BINDUNG ZU LÖSEN` |
+| Ausgeblendete | x 680, y 300, Schrift 10 x 20px | nur bei der IMU: die Geräte, die die letzte Suche hörte und nicht listete, `4 ANDERE GERÄTE AUSGEBLENDET`; keine während einer Suche oder ohne solche |
+
+![SEARCH bei der IMU, zwei Sensoren gefunden und vier ausgeblendet](img/de/setup-wireless-imu-search.png)
 
 ![Die Bindungsfrage von SEARCH](img/de/setup-wireless-search-bind.png)
 
 Tippen auf ein gefundenes Gerät öffnet die Bindungsfrage anstelle der
 Liste, 700 x 280px bei x 162, y 100: `LEISTUNGSKNOTEN BINDEN?`
-(`DIAL BINDEN?`, `AUSWUCHTKNOTEN BINDEN?`), der Name des Geräts, seine
+(`IMU BINDEN?`, `DIAL BINDEN?`, `AUSWUCHTKNOTEN BINDEN?`), der Name des Geräts, seine
 Adresse und sein RSSI, das gebundene Gerät, das es ersetzt,
 `SETUP BEHÄLT DIE BINDUNG UND FORDERT SPEICHERN AN`, dann ABBRECHEN und
 BINDEN, je 300 x 56px. ABBRECHEN und das Home-Feld schließen sie und binden
@@ -7454,10 +7595,14 @@ das Panel behält Adresse und Name in SETUP und fordert Speichern an.
 BINDEN bindet nichts, schließt die Frage und nennt den Grund im Band:
 
 - während einer Suche: `SUCHE LÄUFT: DEN KNOTEN NACH DEM ENDE WÄHLEN`,
-  beim Dial `SUCHE LÄUFT: DAS DIAL NACH DEM ENDE WÄHLEN`;
+  beim Dial `SUCHE LÄUFT: DAS DIAL NACH DEM ENDE WÄHLEN`, bei der IMU
+  `SUCHE LÄUFT: DEN SENSOR NACH DEM ENDE WÄHLEN`;
 - wenn das angetippte Gerät nicht an seinem Platz in der Liste steht:
   `KNOTEN NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`, beim Dial
-  `DIAL NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`;
+  `DIAL NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`, bei der IMU
+  `SENSOR NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`;
+- bei der IMU, während ihre Kalibrierung läuft oder Bluetooth LE startet:
+  `JETZT KEINE BINDUNG: KALIBRIERUNG LÄUFT ODER BLUETOOTH STARTET`;
 - beim Drucker während einer Anfrage: `DRUCK LÄUFT: BINDUNG NACH DEM ENDE
   ÄNDERN`; während eines Geräte-Updates: `UPDATE LÄUFT: BINDUNG DANACH
   ÄNDERN`. BINDUNG LÖSEN, 2000ms gehalten, wird mit denselben Texten
@@ -7466,7 +7611,10 @@ BINDEN bindet nichts, schließt die Frage und nennt den Grund im Band:
 Die Bindung des Druckers gehört keinem Controller: BINDEN schreibt
 Adresse und Name in SETUP (`prn_ble`, `prn_name`) und fordert sofort
 Speichern an, BINDUNG LÖSEN leert beide. Die nächste Anfrage verbindet
-mit der neuen Adresse.
+mit der neuen Adresse. BINDUNG LÖSEN der IMU leert ihre Adresse und
+ihren Namen in SETUP (`imu_ble`, `imu_name`) und fordert Speichern an;
+der Controller trennt die Verbindung, sobald er die leere Adresse
+übernimmt.
 
 Tippen auf ein Gerät während einer Suche öffnet keine Frage und zeigt den
 Text der Suche. Eine Bindung, die der Controller nach BINDEN ablehnt, hinter
@@ -8464,7 +8612,7 @@ der Antwort. RELEASES legt die Anfrage fest:
 | RELEASES | Anfrage | Was gelesen wird |
 | --- | --- | --- |
 | `STABLE` | `GET https://github.com/subtilitas/rcbench/releases/latest` | Der `Location`-Header des Redirects, der den Tag nennt (`.../releases/tag/v0.20.0`). Den Body liest das Panel nicht. Das Latest-Release von GitHub ist nie ein Pre-Release. Liegt dieses Release hinter der Release-Linie und ist neuer als der laufende Build, folgt einmal die Anfrage von `TESTING` ([Die Release-Linie](#die-release-linie)). |
-| `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` mit `Accept: application/vnd.github+json` und `X-GitHub-Api-Version: 2022-11-28` | `tag_name` und `draft` jedes der 10 nach Datum neuesten Releases in der JSON-Antwort (JavaScript Object Notation), Testing oder Stable. Die höchste Version unter denen, die kein Entwurf sind, ist das neueste Release, gleich in welcher Reihenfolge; das höchste Release der Release-Linie unter ihnen wird daneben gehalten. Die Antwort wird in Stücken von 4096 Bytes bis zum Ende des 10. Release gelesen und nicht gespeichert. |
+| `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=5` mit `Accept: application/vnd.github+json` und `X-GitHub-Api-Version: 2022-11-28` | `tag_name` und `draft` jedes der 5 nach Datum neuesten Releases in der JSON-Antwort (JavaScript Object Notation), Testing oder Stable. Die höchste Version unter denen, die kein Entwurf sind, ist das neueste Release, gleich in welcher Reihenfolge; das höchste Release der Release-Linie unter ihnen wird daneben gehalten. Die Antwort wird in Stücken von 4096 Bytes bis zum Ende des 5. Release gelesen und nicht gespeichert. |
 
 Verbindungsaufbau, Adressvergabe und Anfrage dauern zusammen höchstens 30s.
 Danach schaltet sich das WLAN aus. Die Verbindung fragt auch einen
@@ -8483,8 +8631,23 @@ Aktuelle Einschränkungen von `TESTING`: GitHub beantwortet ohne Konto 60
 API-Anfragen pro Stunde und öffentlicher IP-Adresse (Internet Protocol), und
 die Geräte hinter einer Adresse teilen sie sich. Jede Suche ist eine
 Anfrage, und das Panel wiederholt keine. Ein Release, das nach Datum älter
-als die 10 neuesten ist, sieht das Panel nicht, wie hoch seine Version auch
+als die 5 neuesten ist, sieht das Panel nicht, wie hoch seine Version auch
 ist.
+
+Aktuelle Einschränkung von Panels auf 0.21.0 bis 0.23.18, darunter 0.23.17
+und 0.23.18: Ihre Suche unter `TESTING` fragt nach 10 Releases und lehnt
+eine Antwort über 262.144 Bytes ab. Immer wenn GitHubs Antwort für die 10
+neuesten Releases über 262.144 Bytes liegt, endet ihre Suche mit
+`Unerwartete Antwort von GitHub.` und `Der Download ist zu groß für das
+Panel.`. Am 2026-11-27 war diese Antwort 158.473 Bytes groß. `STABLE` liest
+nur eine Weiterleitung und ist nicht betroffen. Ein solches Panel bekommt
+das nächste Release dann einmal von Hand: die Release-Assets
+`rcbench-panel-p4-vX.Y.Z.bin` und `rcbench-panel-p4-vX.Y.Z.bin.sig`, auf der
+WLAN-Seite hochgeladen ([WLAN: Die Seite](#die-seite)), oder der
+[Web-Flasher](https://subtilitas.github.io/rcbench/flash/) über USB
+([FirstRun-de.md](FirstRun-de.md)). Für das Panel-Image gibt es keinen Weg
+über die SD-Karte: `BENCH/UPDATES` der Karte hält nur Images der
+Funkgeräte.
 
 ![Eine laufende Suche](img/de/updates-checking.png)
 
@@ -8532,29 +8695,35 @@ beide gleich und PATCH größer.
 | `Der Versionstext hat ein ungültiges Format.` | Der Tag verletzt die Regel oben. |
 
 Die Antwort der API unter `TESTING` wird ebenso streng gelesen. Sie braucht
-Status 200 und entweder eine `Content-Length` von 1 bis 262.144 Bytes oder
-die Chunked-Kodierung (`Transfer-Encoding: chunked`), deren Releases
-innerhalb von 262.144 Bytes enden. GitHub sendet die Chunked-Form, wenn
+Status 200 und entweder eine `Content-Length` von 1 bis 1.310.720 Bytes
+(5-mal 256KiB) oder die Chunked-Kodierung (`Transfer-Encoding: chunked`),
+deren Releases innerhalb von 1.310.720 Bytes enden. Nichts davon wird
+gespeichert: Sie läuft durch den 4096-Byte-Puffer des Abrufs im PSRAM. GitHub sendet die Chunked-Form, wenn
 sein Cache die Anfrage nicht hält (`Cache-Control: max-age=60`), und die
-Form mit `Content-Length` aus seinem Cache. Die 10 neuesten Releases am 2026-10-18, v0.12.0 bis v0.20.0, waren
-108.198 Bytes, das größte 13.734. Aus jedem Release werden nur die eigenen Felder `tag_name` und `draft`
+Form mit `Content-Length` aus seinem Cache. Die 5 neuesten Releases am
+2026-11-27, v0.21.1 bis v0.23.18, waren 95.618 Bytes, das größte, v0.23.18,
+53.413 mit 26 Assets und 8.113 Bytes Notizen. Ein Asset belegt etwa 1.648 Bytes der
+Antwort: 5 Releases mit je 152 Assets und 8.113 Bytes Notizen passen,
+1.303.986 Bytes. 1.310.720 Bytes in den 30s der Suche zu lesen braucht mehr
+als 44kB/s, da Einwahl und Adresse sich die 30s teilen; die
+Übertragungsrate des Panels ist nicht gemessen. Aus jedem Release werden nur die eigenen Felder `tag_name` und `draft`
 ausgewertet. Schlüssel in verschachtelten Objekten oder Strings werden
 übergangen, ebenso Releases mit `draft` true. Ein ungültiges Release macht
 jedoch die gesamte Antwort ungültig, auch wenn es ein Entwurf ist. Dann
-wird nichts angeboten; die zweite Zeile nennt den Grund. Ein 11.
-Release und alles nach dem 10. liest das Panel nicht.
+wird nichts angeboten; die zweite Zeile nennt den Grund. Ein 6.
+Release und alles nach dem 5. liest das Panel nicht.
 
 | Zweite Zeile | Bedeutung |
 | --- | --- |
 | `Die Antwort enthält keine Größenangabe.` | Weder eine `Content-Length` noch die Chunked-Kodierung. |
 | `Die Antwort ist leer.` | Eine `Content-Length` von 0, oder eine Antwort mit Chunked-Kodierung ohne ein Byte. |
-| `Der Download ist zu groß für das Panel.` | Eine `Content-Length` über 262.144 Bytes. |
+| `Der Download ist zu groß für das Panel.` | Eine `Content-Length` über 1.310.720 Bytes. |
 | `Weniger Daten als angekündigt empfangen.` | Die Antwort endete vor ihrer `Content-Length`. |
 | `Mehr Daten als angekündigt empfangen.` | Ein Lesen lieferte mehr Bytes als verlangt. |
-| `In der Antwort fehlt tag_name.` | Ein Release hat keinen `tag_name`, es gibt nur Entwürfe, oder die Antwort endete vor ihrem Array oder ihrem 10. Release. |
+| `In der Antwort fehlt tag_name.` | Ein Release hat keinen `tag_name`, es gibt nur Entwürfe, oder die Antwort endete vor ihrem Array oder ihrem 5. Release. |
 | `Der tag_name ist zu lang.` | Ein `tag_name` über 18 Bytes. |
 | `Die Antwort hat nicht das erwartete JSON-Format.` | Kein Array von Objekten; ein `tag_name`, der kein einfacher String ist (ein Escape, ein Steuerzeichen, eine Zahl); ein `draft` anders als `true` oder `false`; ein Schlüssel zweimal in einem Release; ein Steuerzeichen in einem anderen String; eine Klammer, die die andere Art schließt; Verschachtelung tiefer als 32 Ebenen. |
-| `Die Releases enden nicht innerhalb von 262144 Bytes.` | Die eigene Grenze des Scans von 262.144 Bytes: eine Antwort mit Chunked-Kodierung, deren Array oder 10. Release nicht innerhalb davon endet. Eine Antwort innerhalb ihrer `Content-Length`-Grenze überschreitet sie nicht. |
+| `Die Releases enden nicht innerhalb von 1310720 Bytes.` | Die eigene Grenze des Scans von 1.310.720 Bytes: eine Antwort mit Chunked-Kodierung, deren Array oder 5. Release nicht innerhalb davon endet. Eine Antwort innerhalb ihrer `Content-Length`-Grenze überschreitet sie nicht. |
 | `Der Versionstext hat ein ungültiges Format.` | Ein Tag verletzt die Regel oben. |
 
 ### Die Release-Linie
@@ -8587,7 +8756,7 @@ in seinen ersten Zeilen, `0.22 ist das letzte Release für das ESP32-S3-Panel. S
 | `v0.23.0`, `v0.24.0`, `v1.0.0` | `Kein neueres Release für das ESP32-S3-Panel. Panel-Version: 0.22.0.` | `Kein neueres Release für das ESP32-S3-Panel. Panel-Version: 0.22.1.` |
 | ein ungültiger Tag, etwa `v0.22.1-rc1` | `Unerwartete Antwort von GitHub.` und `Der Versionstext hat ein ungültiges Format.` | dasselbe |
 
-Liegt mit `TESTING` das höchste der 10 neuesten Releases hinter der Linie,
+Liegt mit `TESTING` das höchste der 5 neuesten Releases hinter der Linie,
 tritt das höchste Release der Linie unter ihnen an seine Stelle, sobald es
 neuer als der laufende Build ist: neben einem Pre-Release 0.23.0 wird einem
 Panel mit 0.22.0 das Release 0.22.1 angeboten. `STABLE` liest das
@@ -8595,7 +8764,7 @@ Latest-Release von GitHub; ein Stable-Release, das älter als ein
 veröffentlichtes ist, wird nicht Latest
 ([Bauen: Releases](Building-de.md#releases)). Liegt das Latest-Release
 hinter der Linie und ist neuer als der laufende Build, sendet `STABLE` zusätzlich dieselbe Anfrage wie `TESTING`. Es bietet das
-neueste 0.22.x unter den 10 neuesten Releases an, sofern es neuer als der
+neueste 0.22.x unter den 5 neuesten Releases an, sofern es neuer als der
 laufende Build ist. Diese
 Anfrage zählt gegen GitHubs Grenze von 60 API-Anfragen pro Stunde; scheitert
 sie, lautet die Karte wie ohne sie: `Kein neueres Release für das
@@ -8604,8 +8773,8 @@ enden beide Einstellungen mit dieser Zeile und nennen das neueste Release.
 Der IOmcu bekommt das Image, das dieses Panel mitbringt, aus demselben
 Release ([Der IOmcu](#der-iomcu)).
 
-Aktuelle Einschränkung der Linie 0.22: Die Liste enthält die 10 nach Datum
-neuesten Releases (`per_page=10`). Ein Patch-Release 0.22.x, nach dem 10 oder mehr
+Aktuelle Einschränkung der Linie 0.22: Die Liste enthält die 5 nach Datum
+neuesten Releases (`per_page=5`). Ein Patch-Release 0.22.x, nach dem 5 oder mehr
 Releases veröffentlicht wurden, wird in keiner Einstellung gefunden.
 
 ### Einzelne Updates
@@ -8710,9 +8879,9 @@ die Karte nennt die Datei und die Stelle:
 
 | Zeile der Karte | Woher das Halten es nimmt |
 | --- | --- |
-| `Das Halten lädt zuerst rcbench-dial-0.23.17.bin von GitHub.` | GitHub: der Normalfall mit gespeichertem Heimnetz. |
-| `Das Halten liest BENCH/UPDATES/rcbench-dial-0.23.17.bin von der SD-Karte.` | Die SD-Karte, Ordner `BENCH/UPDATES`: nach einem fehlgeschlagenen Download, und immer ohne Heimnetz. Das Bedienelement zeigt `2s HALTEN: UPDATE VON DER SD-KARTE`. Ein fehlgeschlagenes Lesen der Karte schickt das nächste Halten wieder zu GitHub. |
-| `rcbench-dial-0.23.17.bin ist geladen und geprüft.` | Der Speicher: Ein früheres Halten hat es geholt. Es bleibt im PSRAM (pseudo-statischer Arbeitsspeicher), bis das Panel neu startet. |
+| `Das Halten lädt zuerst rcbench-dial-0.23.18.bin von GitHub.` | GitHub: der Normalfall mit gespeichertem Heimnetz. |
+| `Das Halten liest BENCH/UPDATES/rcbench-dial-0.23.18.bin von der SD-Karte.` | Die SD-Karte, Ordner `BENCH/UPDATES`: nach einem fehlgeschlagenen Download, und immer ohne Heimnetz. Das Bedienelement zeigt `2s HALTEN: UPDATE VON DER SD-KARTE`. Ein fehlgeschlagenes Lesen der Karte schickt das nächste Halten wieder zu GitHub. |
+| `rcbench-dial-0.23.18.bin ist geladen und geprüft.` | Der Speicher: Ein früheres Halten hat es geholt. Es bleibt im PSRAM (pseudo-statischer Arbeitsspeicher), bis das Panel neu startet. |
 
 Der Download nimmt den eigenen Download-Weg des Panels ([Der Download](#der-download)):
 das Heimnetz, `SHA256SUMS` des Release, dann die Datei, jede über höchstens
@@ -8737,8 +8906,8 @@ von 8 bis 72 Bytes, oder eine, die sich mit dem Release-Schlüssel nicht
 bestätigen lässt, passt nicht. Solange der Build warnt
 (`RCBENCH_SIGN_ENFORCE` 0, jeder Build bis zum stabilen Release, das sie
 erzwingt), wird ein solches Image behalten und gesendet: Das Band sagt
-`rcbench-dial-0.23.17.bin ist nicht vom rcbench-Release-Schlüssel
-signiert.`, und die Karte des Schritts zeigt `rcbench-dial-0.23.17.bin:
+`rcbench-dial-0.23.18.bin ist nicht vom rcbench-Release-Schlüssel
+signiert.`, und die Karte des Schritts zeigt `rcbench-dial-0.23.18.bin:
 nicht vom rcbench-Release-Schlüssel signiert. Das Image hat keine
 Signatur.` oder `Die Signatur passt nicht.` in der Warnfarbe.
 Ein Build, der sie erzwingt, lehnt das Image mit `V07` ab.
@@ -8776,14 +8945,14 @@ nächsten Stelle:
 | Zeile | Codes |
 | --- | --- |
 | `Download fehlgeschlagen (D10): Keine Verbindung zu GitHub.` | `D` und das Ergebnis des Downloads, in den Worten des eigenen Downloads des Panels ([Der Download](#der-download)): `D04` kein Heimnetz gespeichert, `D05` das Gate, `D06` von außen beendet (ARMED, Netzteil, Log-Lauf, STOP, WI-FI, UPDATE ABBRECHEN), `D07` das Verbinden schlug fehl, `D08` der Funk kam nicht hoch, `D09` die 180s sind abgelaufen, `D10` keine Verbindung, `D11` ein HTTP-Status abgelehnt, `D12` eine Antwort außer Form, `D13` `SHA256SUMS` fehlt oder ohne Zeile der Datei, `D14` der SHA-256 weicht von `SHA256SUMS` ab, `D16` kein Speicher |
-| `SD-Karte fehlgeschlagen (S02): BENCH/UPDATES/rcbench-dial-0.23.17.bin fehlt auf der SD-Karte.` | `S01` keine Karte, `S02` keine solche Datei, `S03` das Lesen schlug fehl, `S04` leer oder größer als die Bytes des Schritts, `S05` kein Speicher, `S06` die `SHA256SUMS` der Karte ist außer Form oder nennt die Datei zweimal |
-| `Prüfung fehlgeschlagen (V05): Die Datei hat Version 0.23.16, dieses Release 0.23.17.` | `V01` leer oder größer als die Bytes, `V02` der SHA-256 weicht von der `SHA256SUMS` der Karte ab, `V03` keine Anwendung für Chip und Projekt des Geräts, oder ihr eigener SHA-256 weicht ab, `V04` die Rolle eines anderen Geräts, `V05` eine andere Version, `V07` keine gültige Release-Signatur in einem Build, der sie erzwingt |
+| `SD-Karte fehlgeschlagen (S02): BENCH/UPDATES/rcbench-dial-0.23.18.bin fehlt auf der SD-Karte.` | `S01` keine Karte, `S02` keine solche Datei, `S03` das Lesen schlug fehl, `S04` leer oder größer als die Bytes des Schritts, `S05` kein Speicher, `S06` die `SHA256SUMS` der Karte ist außer Form oder nennt die Datei zweimal |
+| `Prüfung fehlgeschlagen (V05): Die Datei hat Version 0.23.17, dieses Release 0.23.18.` | `V01` leer oder größer als die Bytes, `V02` der SHA-256 weicht von der `SHA256SUMS` der Karte ab, `V03` keine Anwendung für Chip und Projekt des Geräts, oder ihr eigener SHA-256 weicht ab, `V04` die Rolle eines anderen Geräts, `V05` eine andere Version, `V07` keine gültige Release-Signatur in einem Build, der sie erzwingt |
 
 Die Konsole nennt jeden Schritt:
 
-    I (…) devimg: rcbench-dial-0.23.17.bin: download of v0.23.17's file, job 3
-    I (…) devimg: rcbench-dial-0.23.17.bin: 850816 bytes, SHA-256 as SHA256SUMS; checking
-    I (…) devimg: rcbench-dial-0.23.17.bin: 0.23.17 850816 bytes, SHA-256 1a2b3c4d, from GitHub
+    I (…) devimg: rcbench-dial-0.23.18.bin: download of v0.23.18's file, job 3
+    I (…) devimg: rcbench-dial-0.23.18.bin: 850816 bytes, SHA-256 as SHA256SUMS; checking
+    I (…) devimg: rcbench-dial-0.23.18.bin: 0.23.18 850816 bytes, SHA-256 1a2b3c4d, from GitHub
     W (…) devimg: image 1: Download failed (D10): No connection to GitHub.
 
 Aktuelle Einschränkungen:
@@ -8981,7 +9150,7 @@ gemessen.
 ### Die Sensorknoten
 
 Die Zeilen LEISTUNGSKNOTEN-FIRMWARE und AUSWUCHTKNOTEN-FIRMWARE zeigen die
-Firmware eines Knotens: `Knoten: 0.23.16. Release: 0.23.17.`, die
+Firmware eines Knotens: `Knoten: 0.23.17. Release: 0.23.18.`, die
 Version, die das STATUS-Paket des Knotens auf der laufenden Verbindung
 genannt hat, oder `nicht verbunden`, und die Version des Release, das
 das Panel ausführt. Die Images der beiden Rollen
@@ -9038,7 +9207,7 @@ an, bis der Knoten zurück ist. Endet das Update, verbindet sich der Client
 des Knotens wieder aus den Werten von SETUP, und die Version der Zeile
 kommt aus dem ersten STATUS-Paket auf der neuen Verbindung.
 
-Die Zeilen des Alarmbands nennen den Knoten: `Leistungsknoten auf 0.23.17
+Die Zeilen des Alarmbands nennen den Knoten: `Leistungsknoten auf 0.23.18
 aktualisiert. Verbindet sich von selbst neu.`, `Auswuchtknoten-Update
 abgebrochen: <Grund>. Vorherige Firmware läuft.`, `Leistungsknoten hat
 sich nach dem Update nicht gemeldet. Prüfe seine Version auf UPDATES.` Die

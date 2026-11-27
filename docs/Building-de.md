@@ -62,7 +62,7 @@ rcbench/
   firmware/
     panel/                ESP-IDF-Projekt (ESP32-P4)
     iomcu/                pico-sdk-Projekt (RP2350)
-    dial/                 ESP-IDF-Projekt (ESP32-S3): das M5Stack Dial ([Das M5Stack Dial](Dial-de.md))
+    dial/                 ESP-IDF-Projekt (ESP32-S3): das M5Stack Dial und mit sdkconfig.k518 der Guition JC3636K518C ([Das M5Stack Dial](Dial-de.md))
     node/                 ESP-IDF-Projekt (ESP32-C6): die Sensorknoten ([Die Sensorknoten](Nodes-de.md))
     devota/               ESP-IDF-Komponente: die Geräteseite des Updates auf dem Dial und den Knoten
   test/host/              die Host-Suite, eine Binary je Modul oder Bildschirm
@@ -412,7 +412,7 @@ python3 tools/c6_image.py device dial firmware/dial/build/rcbench-dial.bin
 python3 tools/c6_image.py device node-pwr firmware/node/build-pwr/rcbench-node.bin
 python3 tools/c6_image.py device node-bal firmware/node/build-bal/rcbench-node.bin
 python3 tools/c6_image.py device node-display firmware/node/build-display/rcbench-node.bin
-v=0.23.17   # die Version des Baums, shared/link/include/rcbench_version.h
+v=0.23.18   # die Version des Baums, shared/link/include/rcbench_version.h
 cp firmware/dial/build/rcbench-dial.bin /media/sdcard/BENCH/UPDATES/rcbench-dial-$v.bin
 cp firmware/node/build-pwr/rcbench-node.bin /media/sdcard/BENCH/UPDATES/rcbench-node-pwr-$v.bin
 cp firmware/node/build-bal/rcbench-node.bin /media/sdcard/BENCH/UPDATES/rcbench-node-bal-$v.bin
@@ -738,7 +738,7 @@ python3 tools/release_kind.py v0.22.0 v0.20.0 v0.24.0   # kind=stable prerelease
 Stable-Release. 0.22 ist die letzte Release-Linie für das ESP32-S3-Panel,
 und spätere Releases sind für das 7-Zoll-Display-Board mit ESP32-P4 von
 Waveshare. Die Suche des Panels liest mit RELEASES auf STABLE unter SETUP >
-UPDATES, dem Standard, das Latest-Release von GitHub und mit TESTING die 10
+UPDATES, dem Standard, das Latest-Release von GitHub und mit TESTING die 5
 neuesten Releases. Die Linie des ESP32-P4-Panels hat keine Obergrenze: In beiden Einstellungen
 bietet das Panel jedes Release an, das neuer ist als seine laufende Version. Die
 Grenze 0.22.x mit dem zweiten Lesen, das STABLE dafür macht, gehört nur zur

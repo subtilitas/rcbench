@@ -63,7 +63,7 @@ rcbench/
   firmware/
     panel/                ESP-IDF project (ESP32-P4)
     iomcu/                pico-sdk project (RP2350)
-    dial/                 ESP-IDF project (ESP32-S3): the M5Stack Dial ([The M5Stack Dial](Dial.md))
+    dial/                 ESP-IDF project (ESP32-S3): the M5Stack Dial, and the Guition JC3636K518C with sdkconfig.k518 ([The M5Stack Dial](Dial.md))
     node/                 ESP-IDF project (ESP32-C6): the sensor nodes ([The sensor nodes](Nodes.md))
     devota/               ESP-IDF component: the update's device side on the Dial and the nodes
   test/host/              the host suite, one binary per module or screen
@@ -394,7 +394,7 @@ python3 tools/c6_image.py device dial firmware/dial/build/rcbench-dial.bin
 python3 tools/c6_image.py device node-pwr firmware/node/build-pwr/rcbench-node.bin
 python3 tools/c6_image.py device node-bal firmware/node/build-bal/rcbench-node.bin
 python3 tools/c6_image.py device node-display firmware/node/build-display/rcbench-node.bin
-v=0.23.17   # the tree's version, shared/link/include/rcbench_version.h
+v=0.23.18   # the tree's version, shared/link/include/rcbench_version.h
 cp firmware/dial/build/rcbench-dial.bin /media/sdcard/BENCH/UPDATES/rcbench-dial-$v.bin
 cp firmware/node/build-pwr/rcbench-node.bin /media/sdcard/BENCH/UPDATES/rcbench-node-pwr-$v.bin
 cp firmware/node/build-bal/rcbench-node.bin /media/sdcard/BENCH/UPDATES/rcbench-node-bal-$v.bin
@@ -701,7 +701,7 @@ python3 tools/release_kind.py v0.22.0 v0.20.0 v0.24.0   # kind=stable prerelease
 stable release. 0.22 is the last release line for the ESP32-S3 panel, and
 later releases are for the 7-inch ESP32-P4 display board from Waveshare.
 The panel's check reads GitHub's latest release with RELEASES set to
-STABLE on SETUP > UPDATES, the default, and the 10 newest releases with
+STABLE on SETUP > UPDATES, the default, and the 5 newest releases with
 TESTING. The ESP32-P4 panel's line is uncapped: on both settings
 it offers any release newer than the version it runs. The 0.22.x cap, with
 the second read STABLE makes for it, belongs to the ESP32-S3 panel's

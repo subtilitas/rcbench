@@ -15,6 +15,8 @@
  *   balance node  rcbench-node-bal-VERSION.bin
  *   display node  rcbench-node-display-VERSION.bin, the power role on the
  *                 ES3C28P (ESP32-S3) board
+ *   Dial K518     rcbench-dial-k518-VERSION.bin, the Dial firmware on the
+ *                 Guition JC3636K518C knob (ESP32-S3); no row sends it yet
  *
  * The power node's row sends the image of the board the node's INFO names
  * (devimg_pnode_image()), and only after devimg_fits() holds the image's
@@ -62,6 +64,8 @@ typedef enum {
     DEVIMG_BAL,    /**< the balance node, over Bluetooth LE */
     DEVIMG_PNODE_S3, /**< the display node: the power node on the ES3C28P,
                           over Bluetooth LE */
+    DEVIMG_DIAL_K518, /**< the Dial firmware on the Guition JC3636K518C,
+                           over Bluetooth LE */
     DEVIMG_COUNT,  /**< the count */
 } devimg_id_t;
 

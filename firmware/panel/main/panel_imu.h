@@ -89,8 +89,8 @@ void panel_imu_text_changed(setting_text_id_t id);
 void panel_imu_set_live(bool live);
 
 /**
- * @brief The frame task's turn: the view to the IMU screen and to SETUP >
- *        SENSORS, the screen's commands to the task, and a bind that ended
+ * @brief The frame task's turn: the view to imu_view.h and to SETUP >
+ *        WIRELESS, the screens' commands to the task, and a bind that ended
  *        into SETUP's strings with a save asked.
  */
 void panel_imu_frame(void);

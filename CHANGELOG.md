@@ -12,6 +12,155 @@ history is in git.
   from the storyboard's `thumb` block: a bare frame of the player under 1
   to 3 lines of text. 14 storyboards carry a block. The storyboard
   `thumbnail` is removed.
+- The Dial firmware builds for a second board, the Guition JC3636K518C
+  knob: the board is a choice of `firmware/dial/main/Kconfig.projbuild`,
+  `sdkconfig.k518` picks it, and `dial_board_m5.h` and
+  `dial_board_k518.h` hold each board's pins. The K518 build runs the BLE
+  peripheral, the bind, the face task and the console; its display,
+  touch, encoder, vibration and battery reading do nothing yet
+  (`dial_k518.c`). Its INFO names hardware 2 (`DK_HW_K518`), which the
+  panel takes; its image names update kind 5 (`BLEOTA_KIND_DIAL_K518`), so
+  neither Dial takes the other's image. CI builds it as
+  `rcbench-dial-k518-<version>.bin` and its merged image, artifact
+  `dial-k518`; a release does not carry them. `status` on the Dial's
+  console names the board ([The M5Stack Dial](docs/Dial.md)).
+
+### Changed
+
+- The KST programmer draws through the common servo programmer frame
+  (`sprog`). The SERVO tab's first line is a head: the port and its GPIO
+  (`PROG PORT 1 GPIO 13`) over the supply CONNECT sets (`PD MINI  5.0V
+  1000mA`, `5V FIXED`, `SUPPLY AS IT IS`), in the warning colour as
+  `NO PROG PORT SET` without a port, beside the 260px CONNECT, ABORT or
+  LEAVE. The notes flow from 8px under the rows; the last message stands
+  on the bottom line; the page count `1/2` stands at the right of the
+  last note row. TUNE, PULSE and
+  FAILSAFE end with `Tap a value to edit it. * marks a change. WRITE n
+  VALUES writes the changes.`, which replaces the two lines that named the
+  SERVO tab (`kst_panel.c`, `kst_panel_draw.c`;
+  [Servo programmer](docs/ServoProgrammer.md#servo-tab)).
+- HITEC's programmer draws through the common servo programmer frame
+  (`sprog`). Its SERVO tab takes KST's order: the head (port, GPIO and
+  series over the receive mode and supply) with a 260px CONNECT button,
+  then SERVO: READ ALL beside SERIES, or AFTER STOP while the port is held,
+  then FILES and MORE, then RESTORE and WRITE n VALUES. READ ALL's label
+  is SERVO; the model stays on the READY card and the bottom line. Notes
+  flow from under the rows; the page count `1/2` stands at the right of
+  the last note row, and a tap turns the page. The value tabs end with the
+  common hint `Tap a value to edit it. * marks a change. WRITE n VALUES
+  writes the changes.` Lists of more than 5 entries and FILES stand two to
+  a line, clear of CANCEL. The head's texts fit 33 cells: `IN USE` (DE
+  `BELEGT`) for a port held elsewhere, `Andere Hitec-Sitzung belegt ihn.`,
+  `VERSORGUNG BLEIBT` (`hitec_panel.c`, `hitec_panel_draw.c`,
+  `servo_guide.c`).
+
+### Fixed
+
+- CHECK FOR UPDATES with RELEASES on TESTING no longer ends with
+  `Unexpected response from GitHub.` and `The download is too large for
+  the panel.` (UPD_REL_TOO_BIG) whenever GitHub's answer for the 10 newest
+  releases is over the bound of 262,144 bytes (332,374 bytes measured on
+  2026-11-27, before older releases were removed from GitHub). The
+  request asks for 5 releases (`per_page=5`, `FW_REL_API_RELEASES`), and the
+  answer's bound, by `Content-Length` and by the scan, is 1,310,720 bytes
+  (`FW_REL_API_MAX`, 5 times 256KiB). The answer passes through the
+  fetch's 4096-byte PSRAM buffer and is not stored. The 5 newest releases
+  are 95,618 bytes on 2026-11-27; 5 releases of 152 assets and 8,113 bytes of notes
+  each fit. `test_wa_fetch_size` holds answers of GitHub's shape: 10
+  releases of 367,570 bytes are read to the 5th release, 5 of 152 assets
+  are taken, 5 of 160 are refused. Current limitation: panels on 0.21.0 to
+  0.23.18 keep the old request and bound. Whenever GitHub's answer for the
+  10 newest releases is over 262,144 bytes, their TESTING check fails; they
+  then take the next release once by hand, on the Wi-Fi page or with the web flasher
+  ([Updates: The check](docs/Screens.md#the-check)).
+
+## 0.23.18 - 2026-11-27
+
+0.23.18 is a testing release. A servo gets an id, `<prefix>-<serial>` of
+23 characters at most, and its LIMIT RUN, RUDDER AUTO, automatic test and
+servo run files go to `Servos/<id>/` on the SD card. SERVO LABEL on the
+SERVO lists makes an id with NEW ID, picks one of the card's 6 newest, or
+takes one typed with TYPE ID; its PRINT row prints the id as a QR (Quick
+Response) code with DUT NAME on a Supvan T50M Pro label printer over
+Bluetooth LE. A GM861S scanner on UART1 (universal asynchronous
+receiver-transmitter), TX IO4 and RX IO5 of header P3, reads a label at
+9600 baud: the scan sets the active servo and takes DUT NAME from the
+servo's runs on the card. Printers are also described by files in
+`protocols/printers/`, read by the printer engine `protocols/prnengine`,
+which no firmware links yet. MOTOR & ESC > PROGRAM programs YGE ESCs
+(electronic speed controllers) over OpenYGE. LOGS draws a run file of the
+bench as a graph with the columns of its kind, LIMIT RUN and RUDDER AUTO
+over the pulse, and GRAPH on the result cards opens the last run. Every
+CSV the bench writes ends in an `info` column. SETUP > PANEL > About
+rcbench opens ABOUT with the versions and the licences. The Bluetooth
+IMU has no screen and no SETUP tile of its own: SETUP > WIRELESS > IMU
+holds its search, binding, live angles, ZERO and CALIBRATE, and the SETUP
+hub holds 7 tiles. The splash's
+credit reads `JuWi made`. The power node finds its INA228 at any address
+from 0x40 to 0x4F and takes NODE SHUNT, 50 to 10000µΩ, from SETUP; the
+display node shows a boot splash for 10s and has a setup page of its own;
+a node takes a name, which SEARCH and Bound node show. The panel updates
+the display node over Bluetooth LE. The IOmcu's board 3, the remote servo
+node, gains pass-through, KST, Hitec and ESC wire sessions and throttle
+outputs on S1 to S9. `tools/video` gains the storyboards `wurstblinker`,
+`origin`, `hitec-rbmod` and `stop`. The panel image with both IOmcu images is
+4,670,592 bytes, 3,455,872 bytes (42.5%) under
+its slot of 8,126,464. Its minor number, 23, is odd. GitHub publishes it as a
+pre-release and does not mark it as latest. It runs on the ESP32-P4
+panel, as 0.23.17 does; an ESP32-S3 panel stays on the 0.22 line and is
+not offered it. The link protocol is 4.42, up from 4.41 in 0.23.17: the
+YGE_PROG and YGE_DATA pages (0x44, 0x45) and capability bit 9,
+`LINK_CAP_YGE`; board 3 adds the PASS and PASS_STAT pages (0x41, 0x42). The assets are `rcbench-panel-p4-v0.23.18.zip`,
+`rcbench-panel-p4-v0.23.18.bin`, `rcbench-iomcu-v0.23.18.zip`,
+`rcbench-iomcu-rbmod-v0.23.18.zip`, `rcbench-c6-2.13.0.bin`,
+`rcbench-c6-merged-2.13.0.bin`, `rcbench-node-pwr-0.23.18.bin`,
+`rcbench-node-pwr-merged-0.23.18.bin`, `rcbench-node-bal-0.23.18.bin`,
+`rcbench-node-bal-merged-0.23.18.bin`, `rcbench-node-display-0.23.18.bin`,
+`rcbench-node-display-merged-0.23.18.bin`, `rcbench-dial-0.23.18.bin`,
+`rcbench-dial-merged-0.23.18.bin`, a `.sig` beside each of these 11
+`.bin` files, and `SHA256SUMS`, which lists the ZIP archives and the `.bin`
+files and no signature. Each ZIP archive holds a `.sig` beside each image
+in it. After the publish, `release.yml` starts `pages.yml` on `main`,
+which copies the images and their signatures to the web flasher.
+
+A bench on 0.23.17 gets 0.23.18 over Wi-Fi: SETUP > UPDATES, RELEASES: TESTING,
+CHECK FOR UPDATES, then hold the install button for 2s. With RELEASES: STABLE the
+check reads `releases/latest`, which names 0.22.1, and offers nothing. At
+link-up the panel offers to update the IOmcu over CAN (Controller Area Network)
+when the IOmcu runs a different build. The Dial and the power, balance and
+display nodes get their images over Bluetooth LE from SETUP > UPDATES; the
+panel downloads each one when its step's hold asks for it, and needs a home
+network or the file on the SD card for that. To set up a new bench, load both
+boards over USB (Universal Serial Bus) as
+[First run, §1](docs/FirstRun.md#1-flash-both-boards) describes, or with
+the [web flasher](flasher/README.md).
+
+The entries below cover the 62 pull requests merged since v0.23.17: #936
+to #996 and #998.
+
+### Added
+
+- The display node shows a boot splash for 10s: `rcbench`, the role, its
+  name, the firmware and `JuWi made`, with a SETUP button until a panel
+  links; a link goes to the meter at once. The node's SETUP sets NAME (16
+  characters), INA228 ADDRESS (AUTO or a fixed 0x40 to 0x4F) and SHUNT
+  (50 to 10,000µΩ), runs an I2C SCAN of 0x08 to 0x77 that writes no
+  register (address-only probes; a 1-byte register pointer and a 2-byte
+  read only at answering 0x40 to 0x4F) and marks the INA228s, and leaves without saving on BACK or after
+  60s idle. The node does not advertise while SETUP is open
+  (`node_setup.c`, `node_setup_view.c`, `node_scan.c`, `node_store.c`,
+  `node_set.c`; `test_node_setup`, `test_node_scan`, `test_node_store`;
+  `docs/Nodes-setup.md`).
+- rcnode: CONTROL ops CONFIG (0x08), NAME (0x09) and I228 (0x0A), and the
+  30-byte `RCNODE_T_CONFIG` on STREAM, sent only after CONFIG on the link.
+  A named node advertises its name. `rcnode_shunt_sync()` keeps the
+  panel's NODE SHUNT and the node's own shunt in step: the last change
+  wins (`rcnode_cfg.c`; `test_rcnode_cfg`).
+- SETUP > WIRELESS: POWER NODE gets Node name and INA228 address, BALANCE
+  NODE gets Node name; the writes go over the link while SAFE. Bound node
+  and SEARCH show the node's name (`node_cfg_link.c`, `pnode_ctl.c`,
+  `bal_ctl.c`, `wireless_pnode.c`, `wireless_bal.c`; `test_pnode_cfg`,
+  `test_wireless_pnode_cfg`, `test_bal_cfg`).
 - SETUP > PANEL's last row, About rcbench, opens ABOUT: the panel and the
   IOmcu firmware's versions, `Design: Julian Wingert`,
   `Implemented by Claude and Julian`, `Copyright 2026 Julian Wingert`,
@@ -531,9 +680,36 @@ history is in git.
   (`firmware/panel/main/panel_servo.c`). Debug console lines `servo`,
   `servo new`, `servo id <id>`, `servo none`
   ([Servo](docs/Servo.md#labelled-servos-filing)).
+- The settings list takes hold rows: a custom row with `held()` draws a
+  278 x 48px button at its right that fires once after a 2s hold, flashes
+  as it fires, shows its hint on a release before 2s and ends unfired when
+  the finger slides off or the row locks. A custom row marked `live`
+  repaints its 278 x 24px value box alone when its text changes; SETUP
+  repaints the hold's button alone while its fill moves
+  (`ui_setlist_hold.c`, `ui_setlist_draw.c`, `settings_draw.c`;
+  `test_wireless_imu`, `test_repaint_parts`).
+- A settings list ends a press held on a row, and closes an open choice
+  list, when its rows change under it: the row index the press holds
+  names another row then, so the release acts on none (`ui_setlist.c`;
+  `test_setlist`).
+- SEARCH shows the bound device's address under its name, and for the IMU
+  the count of the devices the last scan heard and did not list
+  (`wl_search_draw.c`).
 
 ### Changed
 
+- The Bluetooth IMU has no screen and no SETUP tile of its own: SETUP >
+  WIRELESS > IMU holds all of it. With the IMU on the entry shows Scan for
+  sensor and Bound sensor, which open SEARCH as the Dial's and the nodes'
+  rows do (bind, and UNBIND as a 2s hold); Last error while the last scan,
+  connect or write failed; the live Angle X, Y and Z (the axis the runs
+  read named so), Frames (rate and age), Sensor battery and C6 version;
+  ZERO and CLEAR ZERO as taps; and CALIBRATE as a 2s hold, then the
+  settings. A calibration's end shows in the band. The SETUP hub holds 7
+  tiles: PANEL, SENSORS, OUTPUTS; SD CARD, WI-FI, WIRELESS; UPDATES, and
+  the carrier's LAYOUT. WIRELESS' line reads `IMU, DIAL, NODES, PRINTER`
+  (`imu_view.c`, `wireless_imu.c`, `wireless_pane.c`,
+  `settings_screen_int.h`; `test_wireless_imu`, `test_imu_pane`).
 - A servo label whose height drops a DUT NAME line shows the id joined in
   one line over DUT NAME in smaller faces: the pair of 16x28, 12x24, 10x20,
   8x16 and 6x12 with the larger DUT NAME face that fits. Where no pair

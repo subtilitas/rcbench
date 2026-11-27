@@ -1081,6 +1081,21 @@ static void kwrite_press(int ticks, bool up)
     }
 }
 
+/* The control at @p r held down for @p ticks of 20ms, the finger still on
+ * it: a press or a hold part-way. */
+static void kpress(gfx_rect_t r, int ticks)
+{
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = (int16_t)(r.x + r.w / 2),
+                                   .y = (int16_t)(UI_BAND_H + r.y + r.h / 2),
+                                   .strength = 40 } };
+
+    ui_router_event(&e);
+    for (int i = 0; i < ticks; ++i) {
+        ui_router_tick(0.02f);
+    }
+}
+
 /* WRITE n VALUES held 2.1s, its write asked for, and its flash. */
 static void kwrite(void)
 {
@@ -1188,6 +1203,10 @@ static bool kst_file_view(const char *v)
     f = fake_card_put(fc, "HAND", &low);
     f->kind = KST_PROG_FILE_UNTYPED;
     f->type = 0;
+    if (strcmp(v, "-files-five") == 0) {
+        /* 5 files: SAVE and the files fill 6 entries, no next page. */
+        (void)fake_card_put(fc, "KST003", &low);
+    }
     if (strcmp(v, "-files-next") == 0) {
         (void)fake_card_put(fc, "KST003", &low);
         (void)fake_card_put(fc, "KST004", &low);
@@ -1207,7 +1226,8 @@ static bool kst_file_view(const char *v)
         return true;
     }
     kfiles();
-    if (strcmp(v, "-files") == 0 || strcmp(v, "-files-next") == 0) {
+    if (strcmp(v, "-files") == 0 || strcmp(v, "-files-next") == 0
+        || strcmp(v, "-files-five") == 0) {
         return true;
     }
     if (strncmp(v, "-name", 5) == 0) {
@@ -1348,7 +1368,8 @@ static void kst_view_steps(const char *view)
                      || strcmp(v, "-voltage") == 0 || strcmp(v, "-hv") == 0
                      || strcmp(v, "-wait") == 0
                      || strcmp(v, "-supplied") == 0
-                     || strcmp(v, "-leave-supply") == 0;
+                     || strcmp(v, "-leave-supply") == 0
+                     || strcmp(v, "-connect-hold") == 0;
     /* The PD mini's output on before CONNECT: the views of the cycle. */
     const bool on = strcmp(v, "-supply-on") == 0
                  || strcmp(v, "-cycling") == 0
@@ -1435,6 +1456,11 @@ static void kst_view_steps(const char *view)
         ui_router_tick(0.02f);
         return;
     }
+    if (strcmp(v, "-connect-hold") == 0) {
+        /* CONNECT under the finger for 1s: half its hold. */
+        kpress(kst_panel_value_rect(0, 0, 0), 50);
+        return;
+    }
     kconnect();
     if (strcmp(v, "-nopin") == 0) {
         ksettle();
@@ -1508,9 +1534,13 @@ static void kst_view_steps(const char *view)
         ktap(kst_panel_tab_rect(3));
         return;
     }
-    if (strcmp(v, "-leave") == 0) {
+    if (strcmp(v, "-leave") == 0 || strcmp(v, "-leave-hold") == 0) {
         kedits();
         ktap(kst_panel_value_rect(0, 0, 0));
+        if (strcmp(v, "-leave-hold") == 0) {
+            /* The page's hold button under the finger for 1s. */
+            kpress(kst_panel_apply_rect(), 50);
+        }
         return;
     }
     if (strcmp(v, "-leave-plain") == 0) {
@@ -1548,6 +1578,13 @@ static void kst_view_steps(const char *view)
         /* SPEED LIMIT on with SPEED below the least the core takes. */
         ktap(kst_panel_tab_rect(1));
         ktap(kst_panel_value_rect(1, 3, 0));
+        return;
+    }
+    if (strcmp(v, "-row-down") == 0) {
+        /* TUNE's MAX. DUTY under the finger: the pressed value. */
+        kedits();
+        ktap(kst_panel_tab_rect(1));
+        kpress(kst_panel_value_rect(1, 1, 0), 5);
         return;
     }
     if (strcmp(v, "-tune") == 0 || strcmp(v, "-pulse") == 0) {
@@ -2461,7 +2498,6 @@ static ui_screen_id_t id_of(const char *name)
         { "updates",    SCREEN_UPDATES },
         { "upd-remind", SCREEN_UPD_REMIND },
         { "layout",     SCREEN_LAYOUT },
-        { "imu",        SCREEN_IMU },
         { "set-load",   SCREEN_SET_LOAD },
         { "scan-code",  SCREEN_SCAN_CODE },
         { "about",      SCREEN_ABOUT },

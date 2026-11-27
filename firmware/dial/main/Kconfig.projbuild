@@ -1,0 +1,17 @@
+menu "rcbench Dial"
+
+    choice RCBENCH_DIAL_BOARD
+        prompt "Board"
+        default RCBENCH_DIAL_BOARD_M5DIAL
+        help
+            The board the Dial image runs on: its pins, its INFO hardware
+            value and its update kind (main/dial_board.h).  The K518 build
+            is sdkconfig.k518 appended to sdkconfig.defaults.
+
+        config RCBENCH_DIAL_BOARD_M5DIAL
+            bool "M5Stack Dial v1.1"
+        config RCBENCH_DIAL_BOARD_K518
+            bool "Guition JC3636K518C knob"
+    endchoice
+
+endmenu

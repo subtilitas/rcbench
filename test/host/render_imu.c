@@ -2,24 +2,28 @@
  * @file render_imu.c
  * @brief The Bluetooth IMU's views for tools/render_ui.py (render_imu.h).
  *
- * imu: Bluetooth LE synced on a C6 that reports 2.13.0, no sensor bound.
- * imu-scan: SCAN tapped, two sensors listed, the nearer first, and four
- * other devices hidden.
- * imu-connected: bound to it, 50Hz, ZERO taken, the surface at +12.3° on
- * X, the battery at 3.95V and the calibration done.  setup-wireless-imu:
- * WIRELESS on the IMU entry, the IMU on and connected at 50Hz.  imu-off:
- * the IMU off in SETUP since the start, SCAN offered.
+ * setup-wireless-imu: WIRELESS on the IMU entry, the IMU on, bound to an
+ * HC-06 and connected at 50Hz, ZERO taken, the surface at +12.3° on X, the
+ * battery at 3.95V, the C6 at 2.13.0.  setup-wireless-imu-cal: the same,
+ * the list dragged up to ZERO, CLEAR ZERO and CALIBRATE.
+ * setup-wireless-imu-error: the IMU on with no sensor bound after a scan
+ * that found none: LAST ERROR under BOUND SENSOR.
+ * setup-wireless-imu-search: SEARCH from SCAN FOR SENSOR, two sensors
+ * listed, the nearer first, and four other devices hidden.
  * setup-wireless-imu-off: WIRELESS on the IMU entry with the IMU off,
  * ANGLE SOURCE under it.  setup-wireless-dial: WIRELESS on the DIAL entry,
  * the Dial on and linked, a scan that found two Dials, the second bound.
  * setup-wireless-pnode: WIRELESS on the POWER NODE entry, the node on and
- * connected, INA228 SOURCE NODE, a scan that found one node, bound, its
- * cell at 3.92V, its INA228 found at 0x40 on NODE SHUNT 500uΩ.
+ * connected, INA228 SOURCE NODE, a scan that found one node named
+ * XT90 MAIN, bound, its cell at 3.92V, its INA228 found at 0x40 on NODE
+ * SHUNT 500uΩ, its address setting AUTO.
  * setup-wireless-pnode-shunt: the same, the list dragged to its end,
- * NODE INA228 and NODE SHUNT in view.
+ * NODE INA228, INA228 ADDRESS and NODE SHUNT in view.
+ * setup-wireless-pnode-name: the same, NODE NAME tapped, the name keyboard
+ * open on XT90 MAIN.
  * setup-wireless-bal: WIRELESS on the BALANCE NODE entry, the node on and
- * reporting, a scan that found two nodes, the first bound, its cell at
- * 3.91V.
+ * reporting, a scan that found two nodes, the first bound and named
+ * PROP 13X6, its cell at 3.91V.
  * setup-wireless-search: SEARCH from BOUND NODE of the power node, two
  * nodes found, the first bound and connected.  setup-wireless-search-bind:
  * the same with the second node tapped, the bind question open.
@@ -34,7 +38,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "imu_screen.h"
+#include "imu_view.h"
 #include "sensors_rows.h"
 #include "settings.h"
 #include "settings_screen.h"
@@ -46,8 +50,7 @@
 
 bool render_imu_view(const char *view)
 {
-    return strcmp(view, "imu") == 0 || strncmp(view, "imu-", 4) == 0
-           || strncmp(view, "setup-wireless", 14) == 0;
+    return strncmp(view, "setup-wireless", 14) == 0;
 }
 
 /**
@@ -143,13 +146,16 @@ static void pose_pnode(void)
     p.scan_done = true;
     p.found_n = 1u;
     snprintf(p.found[0].addr, sizeof(p.found[0].addr), "7C:DF:A1:12:34:56 P");
-    snprintf(p.found[0].name, sizeof(p.found[0].name), "rcbench-pwr-3456");
+    snprintf(p.found[0].name, sizeof(p.found[0].name), "XT90 MAIN");
     p.found[0].rssi = -58;
     snprintf(p.bound_addr, sizeof(p.bound_addr), "%s", p.found[0].addr);
     snprintf(p.bound_name, sizeof(p.bound_name), "%s", p.found[0].name);
     p.proto = 1u;
     p.have_status = true;
     p.vbat_mv = 3920u;
+    p.have_cfg = true;
+    snprintf(p.node_name, sizeof(p.node_name), "XT90 MAIN");
+    p.i228_set = 0u;
     p.have_info = true;
     p.i228_addr = 0x40u;
     p.shunt_uohm = 500u;
@@ -182,6 +188,35 @@ static void drag_list_up(void)
 }
 
 /**
+ * @brief The open SETUP list dragged up by @p dy px, 10px at the least
+ *        and its pane's height less 16px at the most, 1px at a time from
+ *        8px above the pane's foot, through the router.
+ * @param dy The drag, px.
+ */
+static void drag_list_by(int dy)
+{
+    const gfx_rect_t pane = settings_screen_list_rect();
+    const int y0 = UI_BAND_H + pane.y + pane.h - 8;
+    if (dy > pane.h - 16) {
+        dy = pane.h - 16;
+    }
+    if (dy < 10) {
+        dy = 10;            /* past the 8px slop, or the list stays */
+    }
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = 300, .y = (int16_t)y0,
+                                   .strength = 40 } };
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_MOVE;
+    for (int y = y0 - 1; y >= y0 - dy; --y) {
+        e.point.y = (int16_t)y;
+        ui_router_event(&e);
+    }
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+}
+
+/**
  * @brief WIRELESS on the BALANCE NODE entry: the node on and reporting,
  *        two nodes found, the first bound, its cell at 3.91V.
  */
@@ -193,7 +228,7 @@ static void pose_bal(void)
     b.scan_done = true;
     b.found_n = 2u;
     snprintf(b.found[0].addr, sizeof(b.found[0].addr), "7C:DF:A1:12:34:56 R");
-    snprintf(b.found[0].name, sizeof(b.found[0].name), "rcbench-bal-3456");
+    snprintf(b.found[0].name, sizeof(b.found[0].name), "PROP 13X6");
     b.found[0].rssi = -58;
     snprintf(b.found[1].addr, sizeof(b.found[1].addr), "7C:DF:A1:12:9A:0E R");
     snprintf(b.found[1].name, sizeof(b.found[1].name), "rcbench-bal-9A0E");
@@ -204,6 +239,8 @@ static void pose_bal(void)
     b.info_proto = 1u;
     b.bat_known = true;
     b.bat_mv = 3912u;
+    b.have_cfg = true;
+    snprintf(b.node_name, sizeof(b.node_name), "PROP 13X6");
     settings_set(SET_BNODE_EN, 1.0f);
     wireless_pane_set_bal(&b);
     settings_screen_open_on(SET_CAT_WIRELESS, WL_ENTRY_BAL);
@@ -282,6 +319,11 @@ void render_imu_pose(const char *view)
         drag_list_up();
         return;
     }
+    if (strcmp(view, "setup-wireless-pnode-name") == 0) {
+        pose_pnode();
+        wireless_pane_pnode_name_row.tap();
+        return;
+    }
     if (strcmp(view, "setup-wireless-bal") == 0) {
         pose_bal();
         return;
@@ -292,35 +334,50 @@ void render_imu_pose(const char *view)
     snprintf(v.version, sizeof(v.version), "2.13.0");
     v.r.battery_v = NAN;
     v.r.temp_c = NAN;
-    if (strcmp(view, "imu-off") == 0
-        || strcmp(view, "setup-wireless-imu-off") == 0) {
-        v.link = IMU_LINK_OFF;
-        v.version[0] = '\0';     /* Bluetooth LE not started since boot */
-        if (strcmp(view, "setup-wireless-imu-off") == 0) {
-            settings_screen_open_on(SET_CAT_WIRELESS, WL_ENTRY_IMU);
-            return;
-        }
-        imu_screen_set(&v);
-        return;
-    }
-    settings_set(SET_IMU_EN, 1.0f);
-    if (strcmp(view, "setup-wireless-imu") == 0) {
-        sensors_rows_set_imu(IMU_LINK_CONNECTED, 500u);
+    if (strcmp(view, "setup-wireless-imu-off") == 0) {
         settings_screen_open_on(SET_CAT_WIRELESS, WL_ENTRY_IMU);
         return;
     }
-    if (strcmp(view, "imu-connected") == 0) {
+    settings_set(SET_IMU_EN, 1.0f);
+    if (strcmp(view, "setup-wireless-imu-error") == 0) {
+        v.scan_done = true;
+        v.err = IMU_ERR_NONE_FOUND;
+        v.hidden = 4u;
+    } else {
         connected(&v);
     }
-    imu_screen_set(&v);
-    if (strcmp(view, "imu-scan") == 0) {
-        tap_rect(imu_screen_row_rect(0));   /* SCAN FOR SENSORS */
+    imu_view_set(&v);
+    sensors_rows_set_imu(v.link, v.r.rate_dhz);
+    settings_screen_open_on(SET_CAT_WIRELESS, WL_ENTRY_IMU);
+    if (strcmp(view, "setup-wireless-imu-cal") == 0) {
+        /* Dragged until CALIBRATE, the last of the IMU's own rows, stands
+         * at the pane's foot. */
+        wl_row_t rows[WL_ENTRY_ROWS_MAX];
+        const int n = wireless_pane_rows(WL_ENTRY_IMU, rows,
+                                         WL_ENTRY_ROWS_MAX);
+        int row = 0;
+        while (row < n && rows[row].custom != &wireless_pane_imu_cal_row) {
+            ++row;
+        }
+        const gfx_rect_t pane = settings_screen_list_rect();
+        for (int k = 0; k < 4; ++k) {
+            const gfx_rect_t r = settings_screen_row_rect(row);
+            if (r.y + r.h <= pane.y + pane.h) {
+                break;
+            }
+            drag_list_by(r.y + r.h - (pane.y + pane.h));
+        }
+        return;
+    }
+    if (strcmp(view, "setup-wireless-imu-search") == 0) {
+        wireless_pane_imu_scan_row.tap();
         imu_cmd_t c;
-        while (imu_screen_take(&c)) { }
+        while (imu_view_take(&c)) { }
+        v.scan_done = true;
         v.found_n = 2u;
         device(&v.found[0], "00:0C:BF:08:19:29", "HC-06", -50);
         device(&v.found[1], "00:0C:BF:0A:44:17", "", -71);
         v.hidden = 4u;
-        imu_screen_set(&v);
+        imu_view_set(&v);
     }
 }

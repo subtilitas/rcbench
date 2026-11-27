@@ -615,7 +615,7 @@ PULSE LOWER and PULSE UPPER are 1000.0µs and 2000.0µs:
 RCBENCH SERVO LIMIT REPORT
 Result:         PASS
 Device:         SERVO
-Firmware:       rcbench 0.23.17
+Firmware:       rcbench 0.23.18
 Mode:           search, then LEFT ANGLE and RIGHT ANGLE programmed
 Output:         PROG PORT 1 GPIO 13, 50Hz
 Pulse range:    center 1500us, 1000-2000us
@@ -1442,7 +1442,7 @@ TRAVEL TIME set to 800ms:
 RCBENCH SERVO TEST REPORT
 Result:         PASS
 Device:         MG90S
-Firmware:       rcbench 0.23.17
+Firmware:       rcbench 0.23.18
 Log:            .CSV with the same file number; one row per supply reading
 Supply:         PD mini
 Current:        PD mini
@@ -1689,7 +1689,7 @@ the screen is `shared/ui/servo_rudder_panel.c`.
   IMU's AXIS and SIGN.
 - ZERO stores its reference relative to the source's raw count 0. Changing
   ENC CENTER afterwards therefore leaves the measured deflection unchanged. Another ANGLE SOURCE, the IMU's other AXIS,
-  SIGN or algorithm, or a ZERO or CLEAR ZERO on the IMU screen, drops the
+  SIGN or algorithm, or a ZERO or CLEAR ZERO in SETUP > WIRELESS > IMU, drops the
   zero and MAX: the screen reads as before ZERO.
 - A zero on the AS5600 survives a restart. ZERO saves it (settings
   `rud_zero` and `rud_zero_key`), and at the start it comes back while

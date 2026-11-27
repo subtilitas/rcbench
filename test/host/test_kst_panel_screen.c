@@ -8,7 +8,7 @@
  * - connect_is_refused_over_the_supplys_limits
  * - the_carriers_fixed_5v_is_not_held_to_the_supplys_limits
  * - a_panel_that_starts_under_a_session_reads_its_options_at_the_entry
- * - the_port_row_names_the_programming_voltage_and_current
+ * - the_head_names_the_port_and_the_programming_supply
  * - commanded_shows_no_pulse_while_the_programmer_holds_the_port
  * - program_lists_the_programmer_and_its_row_opens_it_a_level_down
  * - the_home_tag_in_a_held_session_asks_for_leave_then_climbs
@@ -38,10 +38,10 @@
 #include "ui_board.h"
 #include "ui_help.h"
 
-/* The PORT row carries what CONNECT asks of the supply, where the bench
- * sets the supply; the labels of the rows that are no register's name are
- * the language's. */
-TEST_CASE(the_port_row_names_the_programming_voltage_and_current)
+/* The SERVO tab's head names the port and, under it, what CONNECT asks
+ * of the supply where the bench sets the supply; the labels of the rows
+ * that are no register's name are the language's. */
+TEST_CASE(the_head_names_the_port_and_the_programming_supply)
 {
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         char want[KST_PANEL_LINE];
@@ -50,16 +50,20 @@ TEST_CASE(the_port_row_names_the_programming_voltage_and_current)
         fresh();
         ui_text_set_language((ui_lang_t)lang);
         link_up();
-        CHECK_STR_EQ(kst_panel_label(PG_SERVO, 0, 0), "PORT");
+        snprintf(want, sizeof(want), TR(SV_TARGET_PN_PIN), 1u,
+                 (unsigned)kst_panel_pin());
+        CHECK_STR_EQ(kst_panel_label(PG_SERVO, 0, 0), want);
+        CHECK_STR_EQ(kst_panel_head_line(1), TR(HP_SUPPLY_AS_IS));
         f = M->f;
         f.rd.flags |= LINK_KS_F_RAIL;
         kst_panel_feed(&f);
         show();
-        snprintf(want, sizeof(want), "PORT  %u.%uV  %umA",
+        snprintf(want, sizeof(want), "PD MINI  %u.%uV %umA",
                  kst_prog_supply_mv(M) / 1000u,
                  kst_prog_supply_mv(M) % 1000u / 100u,
                  (unsigned)kst_prog_supply_ma(M));
-        CHECK_STR_EQ(kst_panel_label(PG_SERVO, 0, 0), want);
+        CHECK_STR_EQ(kst_panel_head_line(1), want);
+        CHECK(kst_panel_head_line(2) == NULL);
         /* Inside the row, left of its button. */
         CHECK(kst_panel_value_rect(PG_SERVO, 0, 0).x - AREA.x - 10
               > (int)strlen(want) * 8);
@@ -1085,7 +1089,7 @@ int main(void)
     RUN(connect_is_refused_over_the_supplys_limits);
     RUN(the_carriers_fixed_5v_is_not_held_to_the_supplys_limits);
     RUN(a_panel_that_starts_under_a_session_reads_its_options_at_the_entry);
-    RUN(the_port_row_names_the_programming_voltage_and_current);
+    RUN(the_head_names_the_port_and_the_programming_supply);
     RUN(commanded_shows_no_pulse_while_the_programmer_holds_the_port);
     RUN(kst_opens_its_session_and_close_ends_it);
     RUN(the_home_tag_in_a_held_session_asks_for_leave_then_climbs);

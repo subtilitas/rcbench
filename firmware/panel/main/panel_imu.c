@@ -26,7 +26,7 @@
 #include "freertos/task.h"
 
 #include "imu_ctl.h"
-#include "imu_screen.h"
+#include "imu_view.h"
 #include "panel.h"
 #include "panel_ble.h"
 #include "panel_blec.h"
@@ -289,7 +289,7 @@ void panel_imu_frame(void)
     taskENTER_CRITICAL(&s_mux);
     s_seen = s_pub;
     taskEXIT_CRITICAL(&s_mux);
-    imu_screen_set(&s_seen.v);
+    imu_view_set(&s_seen.v);
     sensors_rows_set_imu(s_seen.v.link, s_seen.v.r.rate_dhz);
     sensors_rows_set_imu_cal(s_seen.v.cal == IMU_CAL_RUNNING);
     /* A new IMU zero drops RUDDER's zero and MAX taken on the IMU. */
@@ -306,7 +306,7 @@ void panel_imu_frame(void)
         settings_request_save();
     }
     imu_msg_t m = { .is_cfg = false };
-    while (imu_screen_take(&m.cmd)) {
+    while (imu_view_take(&m.cmd)) {
         if (xQueueSend(s_q, &m, 0) != pdTRUE) {
             ESP_LOGW(TAG, "queue full: command %d dropped", (int)m.cmd.kind);
         }

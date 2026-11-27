@@ -131,7 +131,7 @@ TEST_CASE(the_state_line_names_each_entry_and_the_read)
     /* Classic. */
     open_en();
     servo_hs5645();
-    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(val(HITEC_PANEL_SERVO, 1, 1));
     tap(hitec_panel_choice_rect(1));
     press_port();
     reach(HITEC_PROG_ENTERING);
@@ -147,14 +147,14 @@ TEST_CASE(the_state_line_names_clear_leave_and_release)
     open_en();
     servo_d485();
     tap_connect();
-    CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 2, 1));
+    CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 1, 1));
     disarm();
     prun(200u);
     show();
     CHECK(hitec_prog_stopped(model()));
     CHECK_EQ(strcmp(line(), TR(HP_ST_STOPPED)), 0);
-    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 2, 1));
-    tap(val(HITEC_PANEL_SERVO, 2, 1));
+    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 1, 1));
+    tap(val(HITEC_PANEL_SERVO, 1, 1));
     CHECK_EQ(pstate(), HITEC_PROG_CLEARING);
     CHECK_EQ(strcmp(line(), TR(HP_ST_CLEARING)), 0);
     CHECK_EQ(strcmp(hitec_panel_value(HITEC_PANEL_SERVO, 0, 0), TR(KP_WAIT)),
@@ -166,7 +166,7 @@ TEST_CASE(the_state_line_names_clear_leave_and_release)
     prun(50u);
     show();
     CHECK_EQ(strcmp(line(), TR(HP_ST_STOP_LATCHED)), 0);
-    CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 2, 1));
+    CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 1, 1));
 
     /* LEAVE, D series and classic. */
     open_en();
@@ -181,7 +181,7 @@ TEST_CASE(the_state_line_names_clear_leave_and_release)
     reach(HITEC_PROG_PWM);
     open_en();
     servo_hs5645();
-    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(val(HITEC_PANEL_SERVO, 1, 1));
     tap(hitec_panel_choice_rect(1));
     tap_connect();
     press_port();
@@ -212,7 +212,7 @@ TEST_CASE(an_abort_in_the_entry_leaves_the_servo_out_of_programming)
     press_port();            /* ABORT */
     reach(HITEC_PROG_HELD);
     CHECK_EQ(strcmp(line(), fmt1(TX_HP_ST_NOT_IN_MODE, 1u)), 0);
-    CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 1, 1));
+    CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 1, 0));
 }
 
 TEST_CASE(read_all_and_abort_by_their_buttons)
@@ -221,7 +221,7 @@ TEST_CASE(read_all_and_abort_by_their_buttons)
     servo_d485();
     g_drv.dreg[0x32] = 3u;
     tap_connect();
-    tap(val(HITEC_PANEL_SERVO, 1, 1));            /* READ ALL */
+    tap(val(HITEC_PANEL_SERVO, 1, 0));            /* READ ALL */
     CHECK_EQ(pstate(), HITEC_PROG_READING);
     CHECK_EQ(strcmp(hitec_panel_value(HITEC_PANEL_SERVO, 0, 0),
                     TR(KP_ABORT)),
@@ -231,7 +231,7 @@ TEST_CASE(read_all_and_abort_by_their_buttons)
     reach(HITEC_PROG_HELD);
     CHECK_EQ(msg(), HITEC_PROG_MSG_ABORTED);
     CHECK_EQ(strcmp(said(), TR(HP_ABORTED)), 0);
-    tap(val(HITEC_PANEL_SERVO, 1, 1));
+    tap(val(HITEC_PANEL_SERVO, 1, 0));
     reach(HITEC_PROG_HELD);
     CHECK_EQ(hitec_prog_message(model())->reg, 3u);
 }
@@ -261,7 +261,7 @@ TEST_CASE(the_carrier_shows_the_ports_5v_as_fixed)
     ui_board_set((uint16_t)OUTBIND_BOARD_RBMOD);
     show();
     CHECK(strstr(hitec_panel_port_line(1), TR(HP_SUPPLY_5V_FIXED)) != NULL);
-    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    tap(val(HITEC_PANEL_SERVO, 2, 1));
     CHECK_EQ(hitec_panel_editor(), 2);
     snprintf(want, sizeof(want), TR(KP_SUPPLY_5V_FIXED), 21u);
     CHECK_STR_EQ(hitec_panel_choice_label(0), want);
@@ -306,8 +306,8 @@ TEST_CASE(more_sets_the_voltage_and_current_on_the_keypad)
     char want[HITEC_PANEL_LINE];
 
     open_en();
-    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 2, 0));
-    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 2, 1));
+    tap(val(HITEC_PANEL_SERVO, 2, 1));
     CHECK_EQ(hitec_panel_editor(), 2);
     snprintf(want, sizeof(want), TR(KP_SUPPLY_V), 5u, 0u);
     CHECK_EQ(strcmp(hitec_panel_choice_label(0), want), 0);
@@ -327,7 +327,7 @@ TEST_CASE(more_sets_the_voltage_and_current_on_the_keypad)
           && settings_get(SET_SERVO_PROG_V) < 5.51f);
     CHECK(strstr(hitec_panel_port_line(1), "5.5V") != NULL);
     /* 500mA. */
-    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    tap(val(HITEC_PANEL_SERVO, 2, 1));
     tap(hitec_panel_choice_rect(1));
     CHECK_EQ(hitec_panel_editor(), 1);
     key(UI_KEY_CLR);
@@ -338,13 +338,13 @@ TEST_CASE(more_sets_the_voltage_and_current_on_the_keypad)
     CHECK_EQ(hitec_prog_ma(model()), 500u);
     CHECK(strstr(hitec_panel_port_line(1), "500mA") != NULL);
     /* The limits: 6.0V and 4.8V take; CANCEL keeps the value. */
-    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    tap(val(HITEC_PANEL_SERVO, 2, 1));
     tap(hitec_panel_choice_rect(0));
     key(UI_KEY_CLR);
     key(UI_KEY_6);
     key(UI_KEY_OK);
     CHECK_EQ(hitec_prog_mv(model()), 6000u);
-    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    tap(val(HITEC_PANEL_SERVO, 2, 1));
     tap(hitec_panel_choice_rect(0));
     key(UI_KEY_CLR);
     key(UI_KEY_4);
@@ -352,7 +352,7 @@ TEST_CASE(more_sets_the_voltage_and_current_on_the_keypad)
     key(UI_KEY_8);
     key(UI_KEY_OK);
     CHECK_EQ(hitec_prog_mv(model()), 4800u);
-    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    tap(val(HITEC_PANEL_SERVO, 2, 1));
     tap(hitec_panel_choice_rect(0));
     key(UI_KEY_CLR);
     key(UI_KEY_5);
@@ -369,7 +369,7 @@ TEST_CASE(more_sets_the_voltage_and_current_on_the_keypad)
 TEST_CASE(the_home_tag_closes_an_editor_then_the_overlay)
 {
     open_en();
-    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(val(HITEC_PANEL_SERVO, 1, 1));
     CHECK_EQ(hitec_panel_editor(), 2);
     hitec_panel_back();
     CHECK_EQ(hitec_panel_editor(), 0);
@@ -484,7 +484,7 @@ TEST_CASE(a_classic_resolution_and_an_unknown_name_show_as_read)
     g_drv.boot_byte = HITEC_C_ACK;
     g_drv.boot_ns = 59000000u;
     g_drv.version = 0x26u;
-    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(val(HITEC_PANEL_SERVO, 1, 1));
     tap(hitec_panel_choice_rect(1));
     tap_connect();
     CHECK_EQ(hitec_prog_model(model())->model, HITEC_MODEL_HS7955TG);
@@ -497,10 +497,10 @@ TEST_CASE(a_classic_resolution_and_an_unknown_name_show_as_read)
     open_en();
     servo_hs5645();
     memcpy(&g_drv.eeprom[0x60], "XQ1234\0\0\0\0\0\0\0\0\0\0", 16);
-    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(val(HITEC_PANEL_SERVO, 1, 1));
     tap(hitec_panel_choice_rect(1));
     tap_connect();
-    CHECK_EQ(strcmp(hitec_panel_label(HITEC_PANEL_SERVO, 1, 1), "XQ1234"), 0);
+    CHECK_EQ(strcmp(servo_name(), "XQ1234"), 0);
     tap(hitec_panel_tab_rect(HITEC_PANEL_INFO));
     CHECK_EQ(strcmp(hitec_panel_value(HITEC_PANEL_INFO, 0, 0), "XQ1234"), 0);
 }
@@ -515,8 +515,7 @@ TEST_CASE(a_d_series_servo_no_model_has_is_named_by_its_number)
     g_drv.dreg[2u * HITEC_D_REG_MODEL] = 12345u;
     tap_connect();
     CHECK_EQ(hitec_prog_model(model())->number, 12345u);
-    CHECK_EQ(strcmp(hitec_panel_label(HITEC_PANEL_SERVO, 1, 1),
-                    "SERVO 12345"),
+    CHECK_EQ(strcmp(servo_name(), "SERVO 12345"),
              0);
     snprintf(want, sizeof(want), TR(HP_LAYOUT_GUESS), "D485HW");
     for (int i = 0; hitec_panel_note(i) != NULL; ++i) {
@@ -532,7 +531,7 @@ TEST_CASE(a_classic_checksum_that_does_not_balance_is_said)
     open_en();
     servo_hs5645();
     g_drv.eeprom[HITEC_C_SUM_LAST] ^= 0x01u;
-    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(val(HITEC_PANEL_SERVO, 1, 1));
     tap(hitec_panel_choice_rect(1));
     tap_connect();
     for (int i = 0; hitec_panel_note(i) != NULL; ++i) {
@@ -557,7 +556,7 @@ TEST_CASE(a_voltage_above_6v_is_said_capped_and_a_classic_name_waits)
     }
     CHECK(capped);
     /* The classic name row before a read. */
-    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(val(HITEC_PANEL_SERVO, 1, 1));
     tap(hitec_panel_choice_rect(1));
     tap(hitec_panel_tab_rect(HITEC_PANEL_INFO));
     CHECK_EQ(strcmp(hitec_panel_value(HITEC_PANEL_INFO, 0, 0), "--"), 0);
@@ -598,13 +597,13 @@ TEST_CASE(the_registry_hooks_count_what_a_render_shows)
     hitec_panel_open();
     /* A press that moves on its button still acts where it lifts. */
     rev = hitec_panel_revision();
-    ev(cx(val(HITEC_PANEL_SERVO, 1, 0)), cy(val(HITEC_PANEL_SERVO, 1, 0)),
+    ev(cx(val(HITEC_PANEL_SERVO, 1, 1)), cy(val(HITEC_PANEL_SERVO, 1, 1)),
        TOUCH_EVENT_DOWN);
-    ev(cx(val(HITEC_PANEL_SERVO, 1, 0)) + 2,
-       cy(val(HITEC_PANEL_SERVO, 1, 0)), TOUCH_EVENT_MOVE);
+    ev(cx(val(HITEC_PANEL_SERVO, 1, 1)) + 2,
+       cy(val(HITEC_PANEL_SERVO, 1, 1)), TOUCH_EVENT_MOVE);
     CHECK_EQ(hitec_panel_editor(), 0);
-    ev(cx(val(HITEC_PANEL_SERVO, 1, 0)) + 2,
-       cy(val(HITEC_PANEL_SERVO, 1, 0)), TOUCH_EVENT_UP);
+    ev(cx(val(HITEC_PANEL_SERVO, 1, 1)) + 2,
+       cy(val(HITEC_PANEL_SERVO, 1, 1)), TOUCH_EVENT_UP);
     CHECK_EQ(hitec_panel_editor(), 2);
     CHECK(hitec_panel_revision() != rev);
     tap(hitec_panel_choice_cancel_rect());

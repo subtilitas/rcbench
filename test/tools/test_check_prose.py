@@ -178,6 +178,7 @@ def test_esp32s3_said_of_the_dial_is_no_hit():
 def test_esp32s3_said_of_the_round_display_board_is_no_hit():
     """The ESP32-S3-Touch-LCD-1.85 is an ESP32-S3: near its names it passes."""
     assert rules("The Waveshare ESP32-S3-Touch-LCD-1.85.\n") == []
+    assert rules("The Guition JC3636K518C: an ESP32-S3R8.\n") == []
     assert rules("esp32_s3_lcd_185.py draws the ESP32-S3.\n") == []
     assert rules("An LCD-1.8.\n" + "x" * 301 + " ESP32-S3.\n") == [
         "stale-esp32s3"]

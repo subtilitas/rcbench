@@ -405,8 +405,9 @@ radio and the display up, a scan and the C6's firmware version.
 
 Built and host-tested: the strict reading of the release tag, the redirects and `SHA256SUMS`
 (`shared/fwupdate/fw_release.c`, `test_fw_release`), the scan of GitHub's API answer for the
-highest of its 10 newest releases and the rule that offers only a newer release
-(`test_fw_release_scan`), the check and the download with their budgets, aborts and a
+highest of its 5 newest releases and the rule that offers only a newer release
+(`test_fw_release_scan`), answers of GitHub's shape up to the bound of 1,310,720
+bytes and past it (`test_wa_fetch_size`), the check and the download with their budgets, aborts and a
 scripted HTTP client (`shared/webaccess/wa_fetch.c`, `test_wa_fetch`), RELEASES' two
 channels and GitHub's request limit (`test_wa_fetch_channel`), a job's task that outlives
 the radio in a name lookup (`test_wa_fetch_task`), UPDATES, the reminder and the
@@ -461,8 +462,7 @@ and 2 on PROGRAM's list with 9 items each, and the OPTIONS
 list's 2 (`shared/ui/motor_guide.c`; `test_help_motor`); none unless the bench is SAFE, as
 either dock covers part of DISARM. ESC STICK has 2 pages on its list and 2 on a profile, the
 note that says why RUN does not start among them (`shared/ui/esc_stick_guide.c`;
-`test_help_stick`); none while a run is under way or its result shows. IMU has 2 pages with
-8 items, both while ARMED (`shared/ui/imu_guide.c`; `test_help_imu`). The other screens have
+`test_help_stick`); none while a run is under way or its result shows. The other screens have
 none yet. PREV and NEXT stand in the band, in the home tag's place, the
 same on every page.
 
@@ -651,8 +651,8 @@ or a stretch of arc outside the clip and walks the antialiased shapes row by row
 own pixels (`test_gfx_clip`). ARMED at rest draws what SAFE at rest draws plus the band's
 run clock once a second, a held position draws the grip's box, and a moving arm stays under
 140,000 pixel visits a frame (`test_frame_work`; host suite only).
-The IMU screen repaints the card lines a new reading changes and CALIBRATE's button while
-its hold fills, SUPPLY repaints neither the PLOT and TABLE tabs nor its heading row for a
+SETUP > WIRELESS > IMU repaints the value box of each live row a new reading changes and
+the list whole for a change of the link, SUPPLY repaints neither the PLOT and TABLE tabs nor its heading row for a
 sample, and WI-FI repaints nothing for an idle second inside the minute it shows; the KST
 and Hitec sessions count a PD mini reading as their state line writes it
 (`test_repaint_parts`: both buffers pixel for pixel the same as frames drawn whole).
@@ -1275,8 +1275,10 @@ write path, the retries and every timeout (`test_bleuart`, `test_bleuart_link` a
 (`shared/bench/imu.c`, `test_imu`), the sensor's side: its commands, the calibration and the
 gaps (`shared/ui/imu_sensor.c`, `test_imu_sensor` without a radio), the BLE link
 (`shared/ui/imu_ble.c`), the controller that joins the two (`shared/ui/imu_ctl.c`,
-`test_imu_ctl` against `ble_sim.h`), the IMU screen on SETUP's IMU tile (`test_imu_screen`),
-SETUP > WIRELESS > IMU (`test_imu_pane`) and the IMU's side of the panel's `blec` task
+`test_imu_ctl` against `ble_sim.h`), SETUP > WIRELESS > IMU with its scan and bind through
+SEARCH, its live rows, ZERO, CLEAR ZERO and CALIBRATE's 2s hold on a hold row of the
+settings list (`shared/ui/imu_view.c`, `shared/ui/wireless_imu.c`,
+`shared/ui/ui_setlist_hold.c`; `test_wireless_imu`, `test_imu_pane`); SETUP has no IMU tile and the IMU's side of the panel's `blec` task
 (`firmware/panel/main/panel_imu.c`, `panel_blec.c`), which runs it through the hub of
 `protocols/bleuart` (`test_bleuart_hub`). The angle's low-pass, IMU filter, its seed, its wrap
 at ±180° and the still time that waits for it, kept per axis (`test_imu`, `test_imu_filter`),
@@ -1499,7 +1501,7 @@ board's 0x38 and 0x18 never asked, another maker and another TI die
 skipped and never written, a part found reset searched again 1000ms on
 at its new address, a stuck bus holding the search; CURRENT and POWER on
 50µΩ, 200µΩ, 500µΩ, 1000µΩ and 10,000µΩ against the datasheet's equations 2, 4 and 5, a
-live shunt change, the range 50 to 10,000µΩ, the store; the MATEK on the
+live shunt change, the range 50 to 10,000µΩ, a fixed address asked alone; the MATEK on the
 default shunt byte for byte the fixed 0x45 set-up's windows and INFO);
 the SHUNT write (`test_rcnode`); the panel's write once a link and once a
 change when INFO names another shunt, held while ARMED, INFO read again
@@ -1509,6 +1511,30 @@ lost with the link left to the next INFO (`test_pnode_shunt`); the sleep's
 shutdown written only to an INA228; NODE INA228
 and NODE SHUNT on the entry (`test_wireless_pnode`). The current against
 a known load on a board other than the MATEK is not measured.
+
+The display node's splash and SETUP and the nodes' own settings, built
+and host-tested, not run on an ES3C28P: the splash's 10s, SETUP offered
+only before a link and a link during the splash going to the meter, the
+60s idle end, each row's edits, BACK dropping them, SAVE's changes and
+the drawing of each screen (`test_node_setup`); the I2C SCAN over fake
+parts at every address 0x08 to 0x77, INA228s by maker and die, the ID
+reads only at 0x40 to 0x4F, each data write a 1-byte register pointer
+there (`test_node_scan`); the names, addresses and shunts stored and read
+back, a bad stored value read as its default, the agreed shunt and the
+change's age, CONFIG sent only after a central asked and on its own seq
+(`test_node_store`); CONFIG, NAME and I228 encoded and
+decoded, the name rule and the sync rule both ways with the last change
+winning, ages past 65,534s equal (`test_rcnode_cfg`); the panel's CONFIG
+asked twice, held SHUNT, ADOPT and ACK, the same node value taken again
+after a panel change, a late CONFIG decided again, no lost packet counted
+for a CONFIG, NAME and I228 writes held while ARMED, refused requests and
+writes a drop ended counted, a node built before CONFIG (`test_pnode_cfg`,
+`test_bal_cfg`); the WIRELESS rows, the name keyboard, address steps from
+the value asked, the band's notices and the name on Bound node
+(`test_wireless_pnode_cfg`, `test_wireless_bal`). The splash, the
+SETUP screens and the panel rows are rendered (`render_node.py`,
+`render_ui.py`); the touch on a delivered board is not measured
+([The nodes' own settings](docs/Nodes-setup.md)).
 
 ### The display node
 
@@ -1808,6 +1834,21 @@ against the same model with a servo that enters programming from a power-up only
 ports](docs/Link.md#the-programming-ports), [the protocol on a port](docs/LinkKST.md), [what
 a bench has to measure](protocols/kst/README.md#what-is-measured-and-what-is-not).
 
+The programmers' common frame (`shared/ui/include/sprog.h`, `shared/ui/sprog.c`,
+`sprog_draw.c`, `sprog_page.c`): one page shape (tabs, a row grid of 5 lines at a 56px pitch,
+the SERVO head, notes with a pager, the bottom line), the presses (tap, 2s hold due on the
+next tick, STOP on the press from any contact, step keys with repeat), the keypad, the
+keyboard, lists of up to 7 entries and hold pages with folding and parts. It is built and
+host-tested on a fake brand of 2 tabs and 9 rows (`test_sprog`, `test_sprog_draw`,
+`test_sprog_page`). Both programmers draw, take presses and open their editors and pages
+through it: a brand fills the view and switches on the frame's result; the frame calls no
+brand: [the frame and what a new brand supplies](docs/Screens.md#servo-programmer-frame).
+Code lines in `shared/ui` (`tools/check_sizes.py`) at main `abb5849b8`: the frame 1,798,
+KST 3,228, Hitec 3,706, 8,732 in sum, against 8,382 for KST (4,080) and Hitec (4,302) at
+`6f1449dc2` with no frame. The sum is 350 lines more than the two brands held without it; the design's
+estimate of 7,090 (frame 1,450, KST 2,650, Hitec 2,990) is 1,642 below it. `shared/ui`
+holds 110,776 code lines in all.
+
 Hitec servos: the wire core, the RP2350 pin driver and link page 0x34 (raw transactions on a
 programming port, with a POWER cycle at 4800 to 6000mV) are built and host-tested against a
 line and servo model; the register models of both families (parameters, encodings, model
@@ -2009,7 +2050,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 709 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 719 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -2018,7 +2059,7 @@ The host suite is 709 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_band_hwstop`,
 `test_help_router`, `test_help_pages`, `test_help_guides`, `test_help_setup`,
 `test_help_outputs`, `test_help_logs`, `test_help_files`, `test_help_net`, `test_help_motor`,
-`test_help_stick`, `test_help_imu`, `test_widgets`, `test_slider_fingers`, `test_footer`, `test_setlist`, `test_hold_hint`, `test_hold_flash`, `test_hold_button`, `test_action_fill`,
+`test_help_stick`, `test_widgets`, `test_slider_fingers`, `test_footer`, `test_setlist`, `test_hold_hint`, `test_hold_flash`, `test_hold_button`, `test_action_fill`,
 `test_workbench`, `test_prog_registry`,
 `test_keypad`, `test_keypad_sign`, `test_keypad_rows_setup`, `test_keypad_rows_stick`,
 `test_keypad_rows_motor`, `test_keypad_rows_supply`, `test_keypad_rows_servo`,
@@ -2107,11 +2148,12 @@ The host suite is 709 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_hitec_prog_backup`, `test_hitec_prog_chain`, `test_hitec_prog_unit`,
 `test_hitec_prog_reread`, `test_hitec_panel_unit`, `test_hitec_card`, `test_hitec_card_run`, `test_servo_store`,
 `test_hitec_panel`, `test_hitec_panel_states`, `test_hitec_panel_stop_fingers`, `test_hitec_panel_write`, `test_hitec_panel_gate`,
+`test_sprog`, `test_sprog_draw`, `test_sprog_page`,
 `test_hitec_panel_file`, `test_page_console`, `test_kst_card`, `test_prog_link`,
 `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`,
 `test_wifi_kept`, `test_wifi_layout`, `test_update_sig`, `test_fw_image`, `test_fw_c6`, `test_fw_install`, `test_fw_run`, `test_fw_trial`,
 `test_fw_slots`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_fw_sig`, `test_fw_sign`, `test_wa_session`,
-`test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_sig`, `test_wa_fetch_dev`, `test_wa_fetch_channel`, `test_wa_fetch_task`,
+`test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_sig`, `test_wa_fetch_dev`, `test_wa_fetch_channel`, `test_wa_fetch_size`, `test_wa_fetch_task`,
 `test_upd_screen`, `test_upd_settings`, `test_upd_single`, `test_upd_c6`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`,
 `test_wa_page`, `test_wa_page_de`, `test_wa_hl`, `test_wa_edit`, `test_wa_mdns`,
 `test_wa_guard`, `test_wa_kept`, `test_wa_cookie`, `test_wa_api`, `test_wa_api_file`,
@@ -2126,18 +2168,18 @@ The host suite is 709 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_bleuart_hub`, `test_bleuart_backoff`, `test_bleuart_fair`, `test_bleuart_ext`, `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`,
 `test_dial_ctl`, `test_dial_stream`, `test_dial_motor`, `test_dial_servo`, `test_dial_nav`,
 `test_dial_nav_hold`, `test_dial_bind`, `test_wireless_pane`,
-`test_pnode_meter`, `test_pnode_ctl`, `test_pnode_shunt`, `test_wireless_pnode`, `test_pnode_bind`,
-`test_settings_panes`, `test_bal_ctl`, `test_node_balance`, `test_wireless_bal`, `test_bal_bind`, `test_wl_search`,
+`test_pnode_meter`, `test_pnode_ctl`, `test_pnode_shunt`, `test_pnode_cfg`, `test_wireless_pnode`, `test_wireless_pnode_cfg`, `test_pnode_bind`,
+`test_settings_panes`, `test_bal_ctl`, `test_bal_cfg`, `test_node_balance`, `test_wireless_bal`, `test_bal_bind`, `test_wl_search`,
 `test_motor_balance`,
 `test_dial_face`, `test_dial_fit`, `test_dial_button`,
 `test_imu`, `test_imu_filter`, `test_imu_angles`,
-`test_imu_sensor`, `test_imu_ctl`, `test_imu_groups`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
+`test_imu_sensor`, `test_imu_ctl`, `test_imu_groups`, `test_wireless_imu`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_effect`,
 `test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_verify`, `test_servo_rauto_settle`, `test_servo_rauto_margin`, `test_servo_rauto_search`, `test_servo_settle`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_live_zero`, `test_servo_drive_supply`, `test_servo_power_view`, `test_servo_settings_rows`, `test_servo_profile_live`, `test_servo_angle_pick`, `test_servo_start_seq`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`, `test_servo_dial_runs`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
-`test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_pwr_sens`, `test_node_srv_policy`, `test_node_srv_poll`, `test_node_view`,
+`test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_rcnode_cfg`, `test_node_policy`, `test_node_pwr_sens`, `test_node_store`, `test_node_scan`, `test_node_setup`, `test_node_srv_policy`, `test_node_srv_poll`, `test_node_view`,
 `test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client`, `test_devimg`, `test_devimg_board`, `test_upd_dev`, `test_upd_fetch`,
 `test_upd_wizard`, `test_upd_wizard_map`, `test_upd_wiz_view`, `test_label_bitmap`, `test_label_layout`,
 `test_lzlit`, `test_supvan_frame`, `test_supvan_page`, `test_supvan_job`, `test_supvan_job_ends`,
@@ -2681,7 +2723,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-1156 committed screenshots to the current render, 578 in English and the same 578 in German, and `render_ui.py --fit` fails on a string that
+1184 committed screenshots to the current render, 592 in English and the same 592 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -2725,7 +2767,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/about_draw.c` | 137 | 132 | 96.3% |
 | `shared/ui/ui_help.c` | 400 | 389 | 97.2% |
 | `shared/ui/help_outputs.c` | 74 | 72 | 97.3% |
-| `shared/ui/help_setup.c` | 96 | 93 | 96.9% |
+| `shared/ui/help_setup.c` | 95 | 92 | 96.8% |
 | `shared/ui/help_logs.c` | 74 | 72 | 97.3% |
 | `shared/ui/help_files.c` | 24 | 23 | 95.8% |
 | `shared/ui/help_upd.c` | 78 | 75 | 96.2% |
@@ -2740,7 +2782,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_text.c` | 140 | 139 | 99.3% |
 | `shared/ui/ui_router.c` | 612 | 600 | 98.0% |
 | `shared/ui/ui_router_alert.c` | 36 | 36 | 100.0% |
-| `shared/ui/ui_router_screens.c` | 66 | 66 | 100.0% |
+| `shared/ui/ui_router_screens.c` | 64 | 64 | 100.0% |
 | `shared/ui/ui_alert_slot.c` | 39 | 39 | 100.0% |
 | `shared/ui/ui_value_ask.c` | 8 | 8 | 100.0% |
 | `shared/ui/splash_screen.c` | 72 | 69 | 95.8% |
@@ -2762,7 +2804,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/prog_choice.c` | 127 | 126 | 99.2% |
 | `shared/ui/ui_keypad.c` | 312 | 307 | 98.4% |
 | `shared/ui/ui_setting_keypad.c` | 138 | 135 | 97.8% |
-| `shared/ui/ui_textkey.c` | 608 | 585 | 96.2% |
+| `shared/ui/ui_textkey.c` | 613 | 590 | 96.2% |
 | `shared/ui/ui_textkey_cursor.c` | 111 | 109 | 98.2% |
 | `shared/ui/ui_shot.c` | 245 | 245 | 100.0% |
 | `shared/ui/shot_gate.c` | 65 | 65 | 100.0% |
@@ -2795,7 +2837,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_prog_ready.c` | 247 | 242 | 98.0% |
 | `shared/ui/servo_drive_ready.c` | 517 | 491 | 95.0% |
 | `shared/ui/servo_rudder_flap.c` | 101 | 99 | 98.0% |
-| `shared/ui/servo_guide.c` | 312 | 307 | 98.4% |
+| `shared/ui/servo_guide.c` | 306 | 301 | 98.4% |
 | `shared/ui/servo_fn.c` | 85 | 84 | 98.8% |
 | `shared/ui/servo_hub.c` | 215 | 208 | 96.7% |
 | `shared/ui/servo_footer.c` | 161 | 158 | 98.1% |
@@ -2805,23 +2847,26 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_label_rows.c` | 177 | 176 | 99.4% |
 | `shared/ui/servo_run_supply.c` | 82 | 81 | 98.8% |
 | `shared/ui/servo_angle_pick.c` | 260 | 252 | 96.9% |
-| `shared/ui/kst_panel.c` | 474 | 463 | 97.7% |
+| `shared/ui/sprog.c` | 542 | 537 | 99.1% |
+| `shared/ui/sprog_draw.c` | 427 | 426 | 99.8% |
+| `shared/ui/sprog_page.c` | 88 | 88 | 100.0% |
+| `shared/ui/kst_panel.c` | 341 | 333 | 97.7% |
 | `shared/ui/kst_panel_text.c` | 196 | 196 | 100.0% |
-| `shared/ui/kst_panel_warn.c` | 277 | 272 | 98.2% |
-| `shared/ui/kst_panel_edit.c` | 418 | 402 | 96.2% |
-| `shared/ui/kst_panel_touch.c` | 358 | 357 | 99.7% |
+| `shared/ui/kst_panel_warn.c` | 259 | 253 | 97.7% |
+| `shared/ui/kst_panel_edit.c` | 401 | 385 | 96.0% |
+| `shared/ui/kst_panel_touch.c` | 136 | 136 | 100.0% |
 | `shared/ui/kst_panel_run.c` | 154 | 148 | 96.1% |
-| `shared/ui/kst_panel_draw.c` | 565 | 563 | 99.7% |
+| `shared/ui/kst_panel_draw.c` | 353 | 348 | 98.6% |
 | `shared/ui/esc_wire_panel.c` | 578 | 549 | 95.0% |
-| `shared/ui/hitec_panel.c` | 282 | 281 | 99.7% |
-| `shared/ui/hitec_panel_text.c` | 505 | 500 | 99.0% |
-| `shared/ui/hitec_panel_edit.c` | 432 | 426 | 98.6% |
-| `shared/ui/hitec_panel_page.c` | 201 | 199 | 99.0% |
-| `shared/ui/hitec_panel_touch.c` | 381 | 375 | 98.4% |
-| `shared/ui/hitec_panel_draw.c` | 304 | 303 | 99.7% |
+| `shared/ui/hitec_panel.c` | 228 | 228 | 100.0% |
+| `shared/ui/hitec_panel_text.c` | 505 | 502 | 99.4% |
+| `shared/ui/hitec_panel_edit.c` | 420 | 414 | 98.6% |
+| `shared/ui/hitec_panel_page.c` | 153 | 151 | 98.7% |
+| `shared/ui/hitec_panel_touch.c` | 161 | 158 | 98.1% |
+| `shared/ui/hitec_panel_draw.c` | 240 | 239 | 99.6% |
 | `shared/ui/hitec_panel_file.c` | 237 | 236 | 99.6% |
 | `shared/ui/hitec_panel_run.c` | 107 | 107 | 100.0% |
-| `shared/ui/hitec_panel_move.c` | 210 | 204 | 97.1% |
+| `shared/ui/hitec_panel_move.c` | 172 | 170 | 98.8% |
 | `shared/ui/analyser_screen.c` | 287 | 286 | 99.7% |
 | `shared/ui/balance_screen.c` | 470 | 468 | 99.6% |
 | `shared/ui/battery_screen.c` | 226 | 221 | 97.8% |
@@ -2856,11 +2901,12 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/label_layout.c` | 267 | 254 | 95.1% |
 | `shared/ui/print_ctl.c` | 463 | 428 | 92.4% |
 | `shared/ui/print_req.c` | 73 | 70 | 95.9% |
-| `shared/ui/settings_screen.c` | 333 | 324 | 97.3% |
-| `shared/ui/settings_draw.c` | 69 | 69 | 100.0% |
-| `shared/ui/settings_rows.c` | 61 | 59 | 96.7% |
-| `shared/ui/ui_setlist.c` | 642 | 628 | 97.8% |
-| `shared/ui/ui_setlist_draw.c` | 283 | 264 | 93.3% |
+| `shared/ui/settings_screen.c` | 343 | 334 | 97.4% |
+| `shared/ui/settings_draw.c` | 109 | 105 | 96.3% |
+| `shared/ui/settings_rows.c` | 61 | 60 | 98.4% |
+| `shared/ui/ui_setlist.c` | 678 | 663 | 97.8% |
+| `shared/ui/ui_setlist_draw.c` | 304 | 286 | 94.1% |
+| `shared/ui/ui_setlist_hold.c` | 67 | 66 | 98.5% |
 | `shared/ui/ui_footer.c` | 42 | 41 | 97.6% |
 | `shared/ui/sensors_pane.c` | 107 | 107 | 100.0% |
 | `shared/ui/sensors_rows.c` | 250 | 250 | 100.0% |
@@ -2897,27 +2943,27 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/upd_wiz_view.c` | 324 | 312 | 96.3% |
 | `shared/ui/upd_wiz_card.c` | 214 | 213 | 99.5% |
 | `shared/ui/imu_ctl.c` | 108 | 108 | 100.0% |
-| `shared/ui/imu_ble.c` | 141 | 140 | 99.3% |
+| `shared/ui/imu_ble.c` | 150 | 149 | 99.3% |
 | `shared/ui/imu_sensor.c` | 234 | 234 | 100.0% |
-| `shared/ui/imu_screen.c` | 373 | 364 | 97.6% |
-| `shared/ui/imu_screen_draw.c` | 132 | 131 | 99.2% |
-| `shared/ui/imu_guide.c` | 33 | 32 | 97.0% |
+| `shared/ui/imu_view.c` | 117 | 113 | 96.6% |
 | `shared/ui/dial_ctl.c` | 266 | 250 | 94.0% |
 | `shared/ui/dial_stream.c` | 242 | 234 | 96.7% |
 | `shared/ui/dial_panel.c` | 231 | 219 | 94.8% |
 | `shared/ui/ui_focus.c` | 430 | 381 | 88.6% |
 | `shared/ui/ui_focus_list.c` | 72 | 68 | 94.4% |
 | `shared/ui/ui_focus_screens.c` | 23 | 22 | 95.7% |
-| `shared/ui/wireless_pane.c` | 257 | 254 | 98.8% |
-| `shared/ui/wireless_pnode.c` | 168 | 166 | 98.8% |
-| `shared/ui/wl_search.c` | 219 | 205 | 93.6% |
-| `shared/ui/wl_search_draw.c` | 147 | 140 | 95.2% |
-| `shared/ui/pnode_ctl.c` | 356 | 345 | 96.9% |
+| `shared/ui/wireless_pane.c` | 265 | 262 | 98.9% |
+| `shared/ui/wireless_pnode.c` | 238 | 234 | 98.3% |
+| `shared/ui/wireless_imu.c` | 173 | 167 | 96.5% |
+| `shared/ui/wl_search.c` | 219 | 206 | 94.1% |
+| `shared/ui/wl_search_draw.c` | 153 | 146 | 95.4% |
+| `shared/ui/pnode_ctl.c` | 400 | 388 | 97.0% |
+| `shared/ui/node_cfg_link.c` | 114 | 107 | 93.9% |
 | `shared/ui/pnode_meter.c` | 261 | 257 | 98.5% |
 | `shared/ui/settings_panes.c` | 43 | 43 | 100.0% |
-| `shared/ui/bal_ctl.c` | 374 | 357 | 95.5% |
+| `shared/ui/bal_ctl.c` | 397 | 380 | 95.7% |
 | `shared/ui/node_balance.c` | 346 | 339 | 98.0% |
-| `shared/ui/wireless_bal.c` | 193 | 190 | 98.5% |
+| `shared/ui/wireless_bal.c` | 237 | 205 | 86.5% |
 | `shared/ui/wireless_printer.c` | 280 | 270 | 96.4% |
 | `shared/ui/motor_balance.c` | 184 | 181 | 98.4% |
 | `shared/ui/sbk_ctl.c` | 290 | 264 | 91.0% |
@@ -3046,9 +3092,10 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `protocols/bleuart/bleuart_hub.c` | 317 | 315 | 99.4% |
 | `protocols/i2c_txq/i2c_txq.c` | 379 | 379 | 100.0% |
 | `protocols/witmotion/witmotion.c` | 118 | 118 | 100.0% |
-| `protocols/rcnode/rcnode.c` | 319 | 317 | 99.4% |
+| `protocols/rcnode/rcnode.c` | 372 | 370 | 99.5% |
 | `protocols/rcnode/rcnode_win.c` | 97 | 96 | 99.0% |
-| `protocols/rcnode/rcnode_adv.c` | 105 | 104 | 99.0% |
+| `protocols/rcnode/rcnode_adv.c` | 111 | 110 | 99.1% |
+| `protocols/rcnode/rcnode_cfg.c` | 32 | 32 | 100.0% |
 | `protocols/bleota/bleota.c` | 115 | 115 | 100.0% |
 | `protocols/bleota/bleota_dev.c` | 313 | 309 | 98.7% |
 | `protocols/dialknob/dialknob.c` | 530 | 520 | 98.1% |
@@ -3241,7 +3288,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/scanner/scan_line.c` | 113 | 113 | 100.0% |
 | `shared/scanner/gm861.c` | 319 | 319 | 100.0% |
 | `shared/scanner/scan_port.c` | 112 | 111 | 99.1% |
-| **total** | **119932** | **117195** | **97.7%** |
+| **total** | **120282** | **117508** | **97.7%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

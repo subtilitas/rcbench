@@ -19,7 +19,6 @@
 #include "busfault_screen.h"
 #include "coproc_update_screen.h"
 #include "files_screen.h"
-#include "imu_screen.h"
 #include "layout_screen.h"
 #include "log_viewer_screen.h"
 #include "motor_screen.h"
@@ -78,7 +77,6 @@ static const struct {
     { SCREEN_SETUP,   SCREEN_SERVO_LIMRUN },
     { SCREEN_WIFI,    SCREEN_UPDATES },
     { SCREEN_WIFI,    SCREEN_LOGS },
-    { SCREEN_SETUP,   SCREEN_IMU },
     { SCREEN_SETUP,   SCREEN_LOGS },
     { SCREEN_SETUP,   SCREEN_FILES },
     { SCREEN_WL_SEARCH, SCREEN_SETUP },
@@ -124,7 +122,6 @@ const ui_screen_t *ui_router_screen(ui_screen_id_t id)
     case SCREEN_UPD_REMIND: return upd_remind_screen();
     case SCREEN_FILES:    return files_screen();
     case SCREEN_LAYOUT:   return layout_screen();
-    case SCREEN_IMU:      return imu_screen();
     case SCREEN_SERVO_LIVE:   return servo_fn_screen(SERVO_FN_LIVE);
     case SCREEN_SERVO_SWEEP:  return servo_fn_screen(SERVO_FN_SWEEP);
     case SCREEN_SERVO_TEST:   return servo_fn_screen(SERVO_FN_TEST);
@@ -165,6 +162,5 @@ void ui_router_screens_invalidate(void)
     upd_screen_invalidate();
     files_screen_invalidate();
     layout_screen_invalidate();
-    imu_screen_invalidate();
     wl_search_invalidate();
 }

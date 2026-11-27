@@ -53,9 +53,10 @@
  *   motor-wire  the ESC signal-wire session at rest on a read ESC: the outputs read
  *             again and the session fed every frame, nothing shown changing
  *   motor-wire-hold  the same on LEAVE's page, a finger on its 2s hold
- *   imu       the IMU screen with an angle frame in every frame, X 0.1°
- *             from the one before
- *   imu-hold  the IMU screen, a finger on CALIBRATE ACCELEROMETER's hold
+ *   imu       SETUP > WIRELESS > IMU with an angle frame in every frame, X
+ *             0.1° from the one before: the values that read differently
+ *   imu-hold  the same with no new frame, a finger on CALIBRATE's 2s hold:
+ *             its button
  *   balance-node  BALANCE with a balance node linked and a report in every
  *             frame whose magnitude, angle and rpm differ from the one
  *             before
@@ -85,7 +86,7 @@
 
 #include "gfx.h"
 #include "hitec_panel.h"
-#include "imu_screen.h"
+#include "imu_view.h"
 #include "kst_panel.h"
 #include "node_balance.h"
 #include "out_bind.h"
@@ -94,6 +95,7 @@
 #include "picker_screen.h"
 #include "prog_registry.h"
 #include "settings_screen.h"
+#include "wireless_pane.h"
 #include "esc_wire_panel.h"
 #include "ew_map.h"
 #include "link_pages.h"
@@ -376,7 +378,7 @@ static void imu_frame(int i, bool move)
     v.r.battery_v = 3.95f;
     v.r.temp_c = NAN;
     v.r.frames = 100u + 3u * (uint32_t)i;
-    imu_screen_set(&v);
+    imu_view_set(&v);
 }
 
 /**
@@ -403,15 +405,41 @@ static void node_frame(int i)
 }
 
 /**
- * @brief A finger down on CALIBRATE ACCELEROMETER's hold.
+ * @brief SETUP's list dragged until CALIBRATE's row shows whole, then a
+ *        finger down on its 2s hold.
  */
 static void imu_hold(void)
 {
-    const gfx_rect_t r = imu_screen_hold_rect();
+    wl_row_t rows[WL_ENTRY_ROWS_MAX];
+    const int n = wireless_pane_rows(WL_ENTRY_IMU, rows, WL_ENTRY_ROWS_MAX);
+    int row = 0;
+    while (row < n && rows[row].custom != &wireless_pane_imu_cal_row) {
+        ++row;
+    }
+    const gfx_rect_t pane = settings_screen_list_rect();
+    for (int k = 0; k < 8; ++k) {
+        const gfx_rect_t r = settings_screen_row_rect(row);
+        if (r.y >= pane.y && r.y + r.h <= pane.y + pane.h) {
+            break;
+        }
+        touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                            .point = { .id = 1, .x = (int16_t)(pane.x + 20),
+                                       .y = (int16_t)(UI_BAND_H + pane.y
+                                                      + pane.h / 2) } };
+        ui_router_event(&e);
+        e.type = TOUCH_EVENT_MOVE;
+        for (int s = 0; s < 7; ++s) {
+            e.point.y = (int16_t)(e.point.y - 20);
+            ui_router_event(&e);
+        }
+        e.type = TOUCH_EVENT_UP;
+        ui_router_event(&e);
+    }
+    const gfx_rect_t b = settings_screen_row_part(row, SETTINGS_ROW_HOLD);
     const touch_event_t e = {
         .type = TOUCH_EVENT_DOWN,
-        .point = { .id = 1, .x = (int16_t)(r.x + r.w / 2),
-                   .y = (int16_t)(UI_BAND_H + r.y + r.h / 2) } };
+        .point = { .id = 1, .x = (int16_t)(b.x + b.w / 2),
+                   .y = (int16_t)(UI_BAND_H + b.y + b.h / 2) } };
     ui_router_event(&e);
 }
 
@@ -524,8 +552,8 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
         { "wifi-keys",  SCREEN_WIFI },
         { "wifi-idle",  SCREEN_WIFI },
         { "wifi",       SCREEN_WIFI },
-        { "imu-hold",   SCREEN_IMU },
-        { "imu",        SCREEN_IMU },
+        { "imu-hold",   SCREEN_SETUP },
+        { "imu",        SCREEN_SETUP },
     };
     bool plain = false;
     bool plain_chrome = false;
@@ -674,11 +702,16 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
         s_wifi = v;
     }
 
-    const bool imu = start == SCREEN_IMU;
+    const bool imu = strcmp(mode, "imu") == 0
+                     || strcmp(mode, "imu-hold") == 0;
     if (imu) {
+        settings_set(SET_IMU_EN, 1.0f);
+        settings_screen_open_on(SET_CAT_WIRELESS, WL_ENTRY_IMU);
         imu_frame(0, false);
+        ui_router_tick(0.026f);
         if (strcmp(mode, "imu-hold") == 0) {
             imu_hold();
+            ui_router_tick(0.026f);
         }
     }
 

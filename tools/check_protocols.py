@@ -386,6 +386,7 @@ ASSERTED = {
             " && DEVIMG_PNODE == BLEOTA_KIND_NODE_POWER"
             " && DEVIMG_BAL == BLEOTA_KIND_NODE_BAL"
             " && DEVIMG_PNODE_S3 == BLEOTA_KIND_NODE_POWER_S3"
+            " && DEVIMG_DIAL_K518 == BLEOTA_KIND_DIAL_K518"
             " && DEVIMG_COUNT == BLEOTA_KIND_MAX + 1",
         ),
         "shared/devupd/devupd_client.c": (
@@ -413,6 +414,10 @@ ASSERTED = {
             "BLEU_NAME_MAX <= IMU_NAME_MAX",
             "BLEU_FOUND_MAX <= IMU_FOUND_MAX",
             "WIT_CMD_LEN <= BLEU_WRITE_MAX",
+        ),
+        "shared/ui/node_cfg_link.c": (
+            "RCNODE_CONFIG_LEN <= BLEU_EVT_DATA",
+            "RCNODE_CTL_MAX <= BLEU_WRITE_MAX",
         ),
         "shared/ui/dial_ctl.c": (
             "DIAL_BLE_OWNER < BLEU_OWNER_MAX",
@@ -549,6 +554,15 @@ ASSERTED = {
             "RCNODE_INFO_LEN <= BLEU_PARAM_MAX",
             "RCNODE_PKT_MAX <= BLEU_EVT_DATA",
             "RCNODE_CTL_MAX <= BLEU_WRITE_MAX",
+        ),
+        # A node's own settings come in one event and go in one write.
+        "shared/ui/node_cfg_link.c": (
+            "RCNODE_CONFIG_LEN <= BLEU_EVT_DATA",
+            "RCNODE_CTL_MAX <= BLEU_WRITE_MAX",
+        ),
+        # The panel's name keyboard holds a node's name and no more.
+        "shared/ui/wireless_pnode.c": (
+            "UI_TEXTKEY_NODE_MAX == RCNODE_UNAME_MAX",
         ),
         # The panel's client keeps INFO and STATUS whole, takes a report in
         # one event and a CONTROL write in one write.

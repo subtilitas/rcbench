@@ -21,8 +21,7 @@
 #include "ui_board.h"
 #include "ui_text.h"
 
-/* Last: its layout macros have short names (ROW0, PITCH, ROW_H) and k
- * names the state, which no header included after it may meet. */
+/* Last: k names the state, which no header included after it may meet. */
 #include "kst_panel_int.h"
 
 /* ---------------------------------------------------------------- the texts */

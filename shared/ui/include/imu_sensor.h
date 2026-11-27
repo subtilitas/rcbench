@@ -31,7 +31,7 @@
 #include <stdint.h>
 
 #include "imu.h"
-#include "imu_screen.h"
+#include "imu_view.h"
 #include "servo_angle.h"
 #include "witmotion.h"
 

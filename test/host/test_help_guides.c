@@ -588,14 +588,14 @@ TEST_CASE(a_session_names_its_controls_as_they_read)
     REQUIRE(ui_help_page(scr, false, 0, &p));
     CHECK_EQ(p.title, TX_HG_HT_TITLE_CONNECT);
     CHECK_STR_EQ(p.item[1].label, hitec_panel_value(0, 0, 0));
-    CHECK_STR_EQ(p.item[2].label, TR(HP_SERIES));
-    CHECK_EQ(p.item[2].text, TX_HG_HT_SERIES);
-    CHECK_EQ(p.item[3].text, TX_HG_PRG_READ);
+    CHECK_EQ(p.item[2].text, TX_HG_PRG_READ);
+    CHECK_STR_EQ(p.item[3].label, TR(HP_SERIES));
+    CHECK_EQ(p.item[3].text, TX_HG_HT_SERIES);
     REQUIRE(ui_help_page(scr, false, 1, &p));
-    CHECK_STR_EQ(p.item[0].label, TR(KP_MORE));
-    CHECK_EQ(p.item[0].text, TX_HG_HT_MORE);
-    CHECK_STR_EQ(p.item[1].label, TR(HP_STOP_ROW));
-    CHECK_EQ(p.item[1].text, TX_HG_HT_CLEAR);
+    CHECK_STR_EQ(p.item[0].label, TR(KP_FILES));
+    CHECK_EQ(p.item[0].text, TX_HG_HT_FILES);
+    CHECK_STR_EQ(p.item[1].label, TR(KP_MORE));
+    CHECK_EQ(p.item[1].text, TX_HG_HT_MORE);
     CHECK_EQ(p.item[2].text, TX_HG_HT_RESTORE);
     CHECK_EQ(p.item[3].text, TX_HG_PRG_WRITE);
 }

@@ -2,16 +2,19 @@
  * @file kst_panel_draw.c
  * @brief The drawing of the programmer's overlay.
  *
- * The drawing of the programmer's overlay for KST and Chaservo servos: the
- * notes under a page -- the standing message, the state line, a page of
- * notes and the message -- and the pages, their rows, the list of choices
- * and the warning pages.  The state and the seam are kst_panel_int.h.
+ * The drawing of the programmer's overlay for KST and Chaservo servos.
+ * The tab shown draws through the servo programmers' frame (sprog.h):
+ * kpn_view() fills its view -- the rows' values, fills and presses, the
+ * SERVO tab's head, the notes (the state line, what stands until it is
+ * dealt with, a tab's own note and the value tabs' hint) and the last
+ * message on the bottom line.  The frame draws them, the keypad, the
+ * keyboard, the list of choices and the hold page.  The state and the seam
+ * are kst_panel_int.h.
  *
  * SPDX-License-Identifier: MIT
  */
 #include "kst_panel.h"
 
-#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -20,73 +23,15 @@
 #include "kst_session.h"
 #include "link_pages.h"
 #include "ui_board.h"
+#include "prog5v_box.h"
 #include "prog_choice.h"
+#include "sprog.h"
 #include "ui_card_text.h"
-#include "ui_tabs.h"
 #include "ui_text.h"
-#include "ui_textkey.h"
-#include "ui_theme.h"
 #include "ui_widgets.h"
 
-/* Last: its layout macros have short names (ROW0, PITCH, ROW_H) and k
- * names the state, which no header included after it may meet. */
+/* Last: k names the state, which no header included after it may meet. */
 #include "kst_panel_int.h"
-
-/** @brief A warning page's pitches between its lines, the widest that
- *         fits first: a line of one row at 28px leaves 8px under a row
- *         of KP_FONT. */
-static const uint8_t k_warn_pitch[] = { 28, 26, 24, 22, LINE_H };
-
-/**
- * @brief A button of the overlay, its label in KP_FONT.
- * @param c the canvas
- * @param r the button
- * @param label its label
- * @param fill its colour
- * @param pressed lightens the fill
- * @param enabled false dims it
- */
-static void kp_button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
-                      gfx_color_t fill, bool pressed, bool enabled)
-{
-    ui_button_font(c, r, label, fill, pressed, enabled, KP_FONT);
-}
-
-/* --------------------------------------------------------------------- draw */
-
-/**
- * @brief Returns the text colour of a warning level: danger, warning or plain.
- */
-static gfx_color_t level_color(unsigned level)
-{
-    return level == KST_PROG_DANGER ? ui_theme_color(UI_C_DANGER)
-         : level == KST_PROG_WARN   ? ui_theme_color(UI_C_WARN)
-                                    : ui_theme_color(UI_C_TEXT);
-}
-
-/**
- * @brief A note under a page's rows.  Its place is @p slot rows under the last
- *        row of the SERVO tab; a note above it that wraps, or the message under
- *        it, moves it.
- */
-typedef struct {
-    const char *s;                      /**< the note's text */
-    int         slot;                   /**< place in rows under the last row of the SERVO tab */
-    gfx_color_t color;                  /**< the text colour */
-    bool        standing;               /**< stays on the first page, whole */
-} note_t;
-
-/** @brief Most notes a page holds. */
-#define NOTES_MAX 5
-/** @brief The notes' first place: 8px under the SERVO tab's fifth row. */
-#define NOTE_Y    (ROW0 + 4 * PITCH + ROW_H + 8)
-
-/** @brief Writes note @p i of @p n and returns the next index. */
-static int note(note_t *n, int i, int slot, const char *s, gfx_color_t color)
-{
-    n[i] = (note_t){ .s = s, .slot = slot, .color = color };
-    return i + 1;
-}
 
 /**
  * @brief What stands until it is dealt with: up to two lines on the SERVO tab.
@@ -339,452 +284,6 @@ const char *kst_panel_status_line(int i)
     return i == 1 ? state_second(&level) : NULL;
 }
 
-/** @brief What stands until it is dealt with, over the last message. */
-static int notes_standing(note_t *n, int i)
-{
-    const char *st[2];
-    bool warn;
-    const int lines = standing(st, &warn);
-
-    for (int j = 0; j < lines; ++j) {
-        i = note(n, i, 2 + j, st[j],
-                 ui_theme_color(warn ? UI_C_WARN : UI_C_DANGER));
-        n[i - 1].standing = true;
-    }
-    return i;
-}
-
-/**
- * @brief The notes of the page shown, in their order down the page.  Their text
- *        is static: the caller draws it after this returns.
- * @param n the notes, NOTES_MAX of them
- * @return the notes written
- */
-static int page_notes(note_t *n)
-{
-    static char buf[3][KST_PANEL_LINE];
-    const kst_prog_t *p = &k.prog;
-    const gfx_color_t faint = ui_theme_color(UI_C_TEXT_FAINT);
-    second_t level;
-    const char *second;
-    int i = 0;
-
-    switch (kpn_page()) {
-    case PG_SERVO:
-        state_line(buf[0], sizeof(buf[0]));
-        i = note(n, i, 0, buf[0], ui_theme_color(UI_C_TEXT));
-        second = state_second(&level);
-        if (second != NULL) {
-            /* The type is the TYPE row's value too. */
-            i = note(n, i, 1, second,
-                     level == SECOND_TYPE   ? ui_theme_color(UI_C_ACCENT)
-                     : level == SECOND_WARN ? ui_theme_color(UI_C_WARN)
-                                            : faint);
-        }
-        i = notes_standing(n, i);
-        if (kst_prog_backed_up(p)) {
-            snprintf(buf[1], sizeof(buf[1]), TR(KP_BACKUP_FILE),
-                     kpn_shown(kst_prog_backup_name(p)));
-            i = note(n, i, 4, buf[1], faint);
-        } else if (kst_prog_no_file(p)) {
-            i = note(n, i, 4, kpn_card_tr(UI_CARD_AT_KP_NO_BACKUP),
-                     ui_theme_color(UI_C_WARN));
-        } else if (kst_prog_changes(p) != 0u && kst_prog_save_none(p)) {
-            /* WRITE's hold sends the edits with no page before them: the
-             * file the write goes without is named here. */
-            i = note(n, i, 4, kpn_card_tr(UI_CARD_AT_KP_NO_FILE),
-                     ui_theme_color(UI_C_WARN));
-        }
-        break;
-    case PG_FAILSAFE:
-        i = note(n, i, -3, TR(KP_FS_NOTE_1), faint);
-        i = note(n, i, -2, TR(KP_FS_NOTE_2), faint);
-        i = note(n, i, 0, TR(KP_EDIT_NOTE_1), faint);
-        i = note(n, i, 1, TR(KP_EDIT_NOTE_2), faint);
-        break;
-    case PG_LOCKED:
-        i = note(n, i, 0, TR(KP_LOCKED_NOTE), faint);
-        if (kst_prog_have_servo(p)) {
-            const unsigned pair = kst_prog_servo(p)->r[KST_REG_NODE_ADDR];
-
-            snprintf(buf[0], sizeof(buf[0]), TR(KP_PAIRING), pair);
-            i = note(n, i, 1, buf[0], ui_theme_color(UI_C_TEXT_DIM));
-            if (pair != 0x00u && pair != 0xFFu) {
-                snprintf(buf[1], sizeof(buf[1]), TR(KP_PAIRING_CARD), pair);
-                i = note(n, i, 2, buf[1], faint);
-            }
-        }
-        if (kst_prog_load_skipped(p) != 0u) {
-            if (kpn_ones(kst_prog_load_skipped(p)) == 1u) {
-                snprintf(buf[2], sizeof(buf[2]), "%s",
-                         TR(KP_LOCKED_SKIPPED_ONE));
-            } else {
-                snprintf(buf[2], sizeof(buf[2]), TR(KP_LOCKED_SKIPPED),
-                         kpn_ones(kst_prog_load_skipped(p)));
-            }
-            i = note(n, i, 3, buf[2], ui_theme_color(UI_C_WARN));
-        }
-        break;
-    case PG_PULSE:
-        i = note(n, i, -1, TR(KP_ANGLE_NOTE), faint);
-        i = note(n, i, 0, TR(KP_EDIT_NOTE_1), faint);
-        i = note(n, i, 1, TR(KP_EDIT_NOTE_2), faint);
-        break;
-    default:
-        i = note(n, i, 0, TR(KP_EDIT_NOTE_1), faint);
-        i = note(n, i, 1, TR(KP_EDIT_NOTE_2), faint);
-        break;
-    }
-    return i;
-}
-
-int kst_panel_pack_notes(const int *rows, const bool *standing, int count,
-                         int room, int *page)
-{
-    int need = 0;
-    int held = 0;
-    int pages = 1;
-    int used;
-
-    for (int i = 0; i < count; ++i) {
-        need += rows[i];
-        held += standing[i] ? rows[i] : 0;
-    }
-    if (need <= room) {
-        for (int i = 0; i < count; ++i) {
-            page[i] = 0;
-        }
-        return 1;
-    }
-    /* The standing notes take the first page before any other.  With no
-     * row left beside them for the page count, they yield to the message:
-     * every note pages in pages of room - 1 rows, the standing ones first,
-     * and a note taller than a page waits for the message to go. */
-    if (held > 0 && held > room - 1) {
-        used = 0;
-        for (int pass = 0; pass < 2; ++pass) {
-            for (int i = 0; i < count; ++i) {
-                if (standing[i] != (pass == 0)) {
-                    continue;
-                }
-                if (rows[i] > room - 1) {
-                    page[i] = -1;
-                    continue;
-                }
-                if (used > 0 && used + rows[i] > room - 1) {
-                    ++pages;
-                    used = 0;
-                }
-                page[i] = pages - 1;
-                used += rows[i];
-            }
-        }
-        return pages;
-    }
-    /* A page keeps its last row for the page count. */
-    used = held;
-    for (int i = 0; i < count; ++i) {
-        if (standing[i]) {
-            page[i] = 0;
-            continue;
-        }
-        if (used > 0 && used + rows[i] > room - 1) {
-            ++pages;
-            used = 0;
-        }
-        page[i] = pages - 1;
-        used += rows[i];
-    }
-    return pages;
-}
-
-/**
- * @brief Where the notes go: their rows from the first note's place to the
- *        message, the page each takes, and where the shown page puts each line.
- */
-typedef struct {
-    note_t n[NOTES_MAX];                /**< the notes, in their order down the page */
-    int    count;                       /**< notes used */
-    int    rows[NOTES_MAX];             /**< rows each note takes */
-    /** @brief The message's lines */
-    char   msg[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
-    int    lines;                       /**< the message's lines in msg */
-    int    msg_rows;                    /**< rows the message takes */
-    int    top;                         /**< the first note's place */
-    int    bottom;                      /**< the lowest row the notes may reach */
-    int    room;                        /**< rows for the notes above the message */
-    int    page[NOTES_MAX];             /**< page each note is on */
-    int    pages;                       /**< pages in all */
-    int    on;                          /**< the page shown */
-    int    y[NOTES_MAX];                /**< each note's first row; -1 off the page */
-    int    count_y;                     /**< the page count's row; -1 for none */
-    int    msg_y;                       /**< the message's first row; -1 for none */
-    int    msg_shown;                   /**< the message's lines that are drawn */
-} notes_plan_t;
-
-/**
- * @brief Static: the notes and the message's lines are planned on the UI
- *        task's deepest path.  One plan serves the draw and every query; none
- *        of them calls another.
- */
-static notes_plan_t s_plan;
-
-/**
- * @brief Plans the notes of the page shown: their rows, pages and places, and
- *        the message's.
- */
-static void plan_notes(notes_plan_t *p)
-{
-    bool held[NOTES_MAX] = { false };
-    uint32_t sig = 2166136261u;
-
-    p->count = page_notes(p->n);
-    p->lines = message_shown(p->msg);
-    p->msg_rows = 0;
-    p->bottom = kpn_notes_foot();
-    p->top = p->bottom;
-    for (int i = 0; i < p->lines; ++i) {
-        p->msg_rows += kst_panel_text_rows(p->msg[i]);
-    }
-    for (int i = 0; i < p->count; ++i) {
-        const int at = k.area.y + NOTE_Y + p->n[i].slot * LINE_H;
-
-        p->rows[i] = kst_panel_text_rows(p->n[i].s);
-        held[i] = p->n[i].standing;
-        p->top = at < p->top ? at : p->top;
-        sig = (sig ^ (uint32_t)(p->n[i].slot + 8)) * 16777619u;
-        sig = (sig ^ (uint32_t)p->rows[i]) * 16777619u;
-    }
-    p->room = (p->bottom - p->top) / LINE_H - p->msg_rows;
-    p->pages = kst_panel_pack_notes(p->rows, held, p->count, p->room,
-                                    p->page);
-    /* Another set of notes starts on its first page. */
-    sig = (sig ^ (uint32_t)p->count) * 16777619u;
-    sig = (sig ^ (uint32_t)p->msg_rows) * 16777619u;
-    sig = (sig ^ (uint32_t)kpn_page()) * 16777619u;
-    if (sig != k.note_sig) {
-        k.note_sig = sig;
-        k.note_page = 0;
-    }
-}
-
-/**
- * @brief The highest a note rises to: 4px under the lowest row of the tab
- *        shown, the area's top for a tab with none.
- * @return the y, body pixels
- */
-static int rows_foot(void)
-{
-    int y = k.area.y;
-
-    for (int i = 0; i < ROW_COUNT; ++i) {
-        if (kpn_rows[i].page == kpn_page() && kpn_row_shown(&kpn_rows[i])) {
-            const gfx_rect_t r = kpn_row_rect(&kpn_rows[i]);
-
-            y = r.y + r.h + 4 > y ? r.y + r.h + 4 : y;
-        }
-    }
-    return y;
-}
-
-/**
- * @brief The page's notes from the top, each at its place or under the one above,
- *        and the last message from the area's last row up: three rows for one
- *        that takes fewer.  Notes that need more rows than there are above the
- *        message take pages: the standing notes are on the first, whole, the
- *        other notes page after them, the area's last notes row counts the pages,
- *        and a tap on the notes shows the next.  Where the standing notes and the
- *        message leave no row for the count, the other notes wait for the message
- *        to go.  Where the standing notes leave no row for the count beside the
- *        message, they yield to it: they page with the others, first, and one
- *        taller than a page waits for the message to go, as every note does
- *        where the message leaves no row for a note and the count.  The
- *        longest message takes 5 rows.  KST's screen hands the session the
- *        left card, 428px, with 4 rows under the SERVO tab's last row
- *        (kpn_notes_foot()): a message taller than that shows its first
- *        lines.  Neither a note nor the message rises above 4px under the
- *        tab's last row.
- */
-static void layout_notes(notes_plan_t *p)
-{
-    int y = rows_foot();
-
-    plan_notes(p);
-    p->on = k.note_page < p->pages ? k.note_page : 0;
-    p->count_y = -1;
-    if (p->pages == 1) {
-        int need = 0;
-
-        for (int i = 0; i < p->count; ++i) {
-            need += p->page[i] == 0 ? p->rows[i] : 0;
-        }
-        for (int i = 0; i < p->count; ++i) {
-            const int at = k.area.y + NOTE_Y + p->n[i].slot * LINE_H;
-            const int last = p->bottom - (p->msg_rows + need) * LINE_H;
-
-            p->y[i] = -1;
-            if (p->page[i] != 0) {
-                continue;
-            }
-            if (y < (at < last ? at : last)) {
-                y = at < last ? at : last;
-            }
-            need -= p->rows[i];
-            p->y[i] = y;
-            y += p->rows[i] * LINE_H;
-        }
-    } else if (p->room < 2) {
-        /* The message leaves no row for a note beside the count: the
-         * notes wait for it to go. */
-        for (int i = 0; i < p->count; ++i) {
-            p->y[i] = -1;
-        }
-    } else {
-        y = p->top;
-        for (int i = 0; i < p->count; ++i) {
-            p->y[i] = -1;
-            if (p->page[i] == p->on) {
-                p->y[i] = y;
-                y += p->rows[i] * LINE_H;
-            }
-        }
-        p->count_y = p->top + (p->room - 1) * LINE_H;
-        y = p->count_y + LINE_H;
-    }
-    {
-        const int at = p->bottom - (p->msg_rows > KST_PANEL_MSG_LINES
-                                        ? p->msg_rows : KST_PANEL_MSG_LINES)
-                                   * LINE_H;
-        const int foot = rows_foot();
-
-        y = y > at ? y : at;
-        /* Never over the tab's rows: a message taller than the rows under
-         * them shows its first lines. */
-        y = y > foot ? y : foot;
-    }
-    p->msg_y = y;
-    p->msg_shown = 0;
-    while (p->msg_shown < p->lines) {
-        const int rows = kst_panel_text_rows(p->msg[p->msg_shown]);
-
-        if (y + rows * LINE_H > p->bottom) {
-            break;
-        }
-        y += rows * LINE_H;
-        ++p->msg_shown;
-    }
-}
-
-/** @brief Draws the notes and the message of the page shown. */
-static void draw_notes(gfx_canvas_t *c)
-{
-    notes_plan_t *p = &s_plan;
-    const kst_prog_msg_t *m = kst_prog_message(&k.prog);
-    int y;
-
-    layout_notes(p);
-    for (int i = 0; i < p->count; ++i) {
-        if (p->y[i] >= 0) {
-            (void)kpn_text_rows(c, k.area.x + 10, p->y[i], p->n[i].s,
-                            p->n[i].color);
-        }
-    }
-    if (p->count_y >= 0) {
-        char count[12];
-
-        /* At most NOTES_MAX pages: the bytes keep the count's width. */
-        snprintf(count, sizeof(count), "%u/%u", (unsigned)(uint8_t)(p->on + 1),
-                 (unsigned)(uint8_t)p->pages);
-        gfx_text_in(c, gfx_rect_make(k.area.x + 10, p->count_y,
-                                     k.area.w - 20, LINE_H),
-                    count, KP_FONT, ui_theme_color(UI_C_TEXT_FAINT),
-                    1, GFX_ALIGN_RIGHT);
-    }
-    y = p->msg_y;
-    for (int i = 0; i < p->msg_shown; ++i) {
-        y = kpn_text_rows(c, k.area.x + 10, y, p->msg[i],
-                          level_color(m->level));
-    }
-}
-
-/** @brief Returns the area the notes take, for the page-turning press. */
-static gfx_rect_t notes_rect(const notes_plan_t *p)
-{
-    return (gfx_rect_t){ k.area.x, (int16_t)p->top, k.area.w,
-                         (int16_t)((p->room > 1 ? p->room : 0) * LINE_H) };
-}
-
-/* Whether (x, y) is on notes that take more than one page. */
-bool kpn_notes_paged_at(int x, int y)
-{
-    plan_notes(&s_plan);
-    return s_plan.pages > 1 && gfx_rect_contains(notes_rect(&s_plan), x, y);
-}
-
-gfx_rect_t kst_panel_notes_rect(void)
-{
-    plan_notes(&s_plan);
-    /* Notes that wait for the message take no tap. */
-    return (s_plan.pages > 1 && s_plan.room > 1)
-               ? notes_rect(&s_plan)
-               : (gfx_rect_t){ 0, 0, 0, 0 };
-}
-
-int kst_panel_note_pages(void)
-{
-    plan_notes(&s_plan);
-    return s_plan.pages;
-}
-
-int kst_panel_note_page(void)
-{
-    layout_notes(&s_plan);
-    return s_plan.on;
-}
-
-const char *kst_panel_shown_note(int i)
-{
-    layout_notes(&s_plan);
-    for (int j = 0; j < s_plan.count; ++j) {
-        if (s_plan.y[j] >= 0 && i-- == 0) {
-            return s_plan.n[j].s;
-        }
-    }
-    return NULL;
-}
-
-int kst_panel_shown_message_lines(void)
-{
-    layout_notes(&s_plan);
-    return s_plan.msg_shown;
-}
-
-gfx_rect_t kst_panel_notes_drawn(void)
-{
-    int top = INT_MAX;
-    int y;
-
-    layout_notes(&s_plan);
-    y = s_plan.msg_y;
-    if (s_plan.msg_shown > 0) {
-        top = s_plan.msg_y;
-    }
-    for (int i = 0; i < s_plan.msg_shown; ++i) {
-        y += kst_panel_text_rows(s_plan.msg[i]) * LINE_H;
-    }
-    for (int i = 0; i < s_plan.count; ++i) {
-        const int end = s_plan.y[i] + s_plan.rows[i] * LINE_H;
-
-        if (s_plan.y[i] >= 0) {
-            top = s_plan.y[i] < top ? s_plan.y[i] : top;
-            y = end > y ? end : y;
-        }
-    }
-    return top == INT_MAX ? (gfx_rect_t){ 0, 0, 0, 0 }
-                          : (gfx_rect_t){ k.area.x, (int16_t)top, k.area.w,
-                                          (int16_t)(y - top) };
-}
-
 /**
  * @brief Writes the value of an action row, from the programmer's state, into
  *        @p out: for TYPE the operator's type, or the guess with its mark.
@@ -845,229 +344,335 @@ const char *kst_panel_button(int page, int row, int col)
     return buf;
 }
 
+/* ---------------------------------------------------------------- the view */
+
 /**
- * @brief Draws row @p i of the page shown: its label and its control,
- *        highlighted while pressed.
- * @param c the canvas
- * @param i the row's index in kpn_rows
+ * @brief The texts the frame's view points at: kpn_view() writes them and
+ *        the frame draws them after it returns.
  */
-static void draw_row(gfx_canvas_t *c, int i)
+typedef struct {
+    char state[KST_PANEL_LINE];         /**< the state line */
+    char backup[KST_PANEL_LINE];        /**< the backup file's line */
+    char pair[2][KST_PANEL_LINE];       /**< LOCKED's pairing lines */
+    char skipped[KST_PANEL_LINE];       /**< LOCKED's values never written */
+    /** @brief The last message's lines */
+    char msg[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
+    int  lines;                         /**< the message's lines shown */
+    /** @brief The same lines, one after the other, a '\n' between two */
+    char bottom[KST_PANEL_MSG_LINES * KST_PANEL_LINE];
+} view_text_t;
+
+/** @brief The view's texts, static: the frame draws them after kpn_view(). */
+static view_text_t s_view;
+
+/**
+ * @brief The frame's level of a message's level.
+ * @param level the kst_prog_level_t
+ * @return the sprog_level_t
+ */
+static uint8_t msg_level(unsigned level)
+{
+    return level == KST_PROG_DANGER ? SPROG_LV_DANGER
+         : level == KST_PROG_WARN   ? SPROG_LV_WARN
+                                    : SPROG_LV_TEXT;
+}
+
+/** @brief The SERVO tab's notes, top-down: the state, the line under it,
+ *         what stands until it is dealt with and the backup file. */
+static void servo_notes(void)
+{
+    const kst_prog_t *p = &k.prog;
+    const char *st[2];
+    bool warn;
+    const int n = standing(st, &warn);
+    second_t level;
+    const char *second;
+
+    state_line(s_view.state, sizeof(s_view.state));
+    sprog_note(&k.f, s_view.state, SPROG_LV_TEXT);
+    second = state_second(&level);
+    /* The type is the TYPE row's value too. */
+    sprog_note(&k.f, second,
+               level == SECOND_TYPE   ? SPROG_LV_ACCENT
+               : level == SECOND_WARN ? SPROG_LV_WARN
+                                      : SPROG_LV_FAINT);
+    for (int j = 0; j < n; ++j) {
+        sprog_note(&k.f, st[j], warn ? SPROG_LV_WARN : SPROG_LV_DANGER);
+    }
+    if (kst_prog_backed_up(p)) {
+        snprintf(s_view.backup, sizeof(s_view.backup), TR(KP_BACKUP_FILE),
+                 kpn_shown(kst_prog_backup_name(p)));
+        sprog_note(&k.f, s_view.backup, SPROG_LV_FAINT);
+    } else if (kst_prog_no_file(p)) {
+        sprog_note(&k.f, kpn_card_tr(UI_CARD_AT_KP_NO_BACKUP), SPROG_LV_WARN);
+    } else if (kst_prog_changes(p) != 0u && kst_prog_save_none(p)) {
+        /* WRITE's hold sends the edits with no page before them: the file
+         * the write goes without is named here. */
+        sprog_note(&k.f, kpn_card_tr(UI_CARD_AT_KP_NO_FILE), SPROG_LV_WARN);
+    }
+}
+
+/** @brief The LOCKED tab's notes: what it is, the pairing value and the
+ *         values a loaded file has that are never written. */
+static void locked_notes(void)
+{
+    const kst_prog_t *p = &k.prog;
+
+    sprog_note(&k.f, TR(KP_LOCKED_NOTE), SPROG_LV_FAINT);
+    if (kst_prog_have_servo(p)) {
+        const unsigned pair = kst_prog_servo(p)->r[KST_REG_NODE_ADDR];
+
+        snprintf(s_view.pair[0], sizeof(s_view.pair[0]), TR(KP_PAIRING), pair);
+        sprog_note(&k.f, s_view.pair[0], SPROG_LV_DIM);
+        if (pair != 0x00u && pair != 0xFFu) {
+            snprintf(s_view.pair[1], sizeof(s_view.pair[1]),
+                     TR(KP_PAIRING_CARD), pair);
+            sprog_note(&k.f, s_view.pair[1], SPROG_LV_FAINT);
+        }
+    }
+    if (kst_prog_load_skipped(p) != 0u) {
+        if (kpn_ones(kst_prog_load_skipped(p)) == 1u) {
+            snprintf(s_view.skipped, sizeof(s_view.skipped), "%s",
+                     TR(KP_LOCKED_SKIPPED_ONE));
+        } else {
+            snprintf(s_view.skipped, sizeof(s_view.skipped),
+                     TR(KP_LOCKED_SKIPPED),
+                     kpn_ones(kst_prog_load_skipped(p)));
+        }
+        sprog_note(&k.f, s_view.skipped, SPROG_LV_WARN);
+    }
+}
+
+/** @brief The notes of the tab shown: SERVO's and LOCKED's own; a value
+ *         tab's note, then the common hint. */
+static void tab_notes(void)
+{
+    switch (kpn_page()) {
+    case PG_SERVO:
+        servo_notes();
+        break;
+    case PG_LOCKED:
+        locked_notes();
+        break;
+    case PG_FAILSAFE:
+        sprog_note(&k.f, TR(KP_FS_NOTE_1), SPROG_LV_FAINT);
+        sprog_note(&k.f, TR(KP_FS_NOTE_2), SPROG_LV_FAINT);
+        sprog_hint(&k.f);
+        break;
+    case PG_PULSE:
+        sprog_note(&k.f, TR(KP_ANGLE_NOTE), SPROG_LV_FAINT);
+        sprog_hint(&k.f);
+        break;
+    default:
+        sprog_hint(&k.f);
+        break;
+    }
+}
+
+/** @brief The bottom line: the last message's lines, one under the other. */
+static void bottom_line(void)
+{
+    const int n = message_shown(s_view.msg);
+    size_t at = 0;
+
+    s_view.lines = n;
+
+    s_view.bottom[0] = '\0';
+    for (int i = 0; i < n && i < KST_PANEL_MSG_LINES
+                    && at < sizeof(s_view.bottom); ++i) {
+        const int w = snprintf(s_view.bottom + at, sizeof(s_view.bottom) - at,
+                               "%s%s", i > 0 ? "\n" : "", s_view.msg[i]);
+
+        at += w > 0 ? (size_t)w : 0u;
+    }
+    k.f.view.bottom = n > 0 ? s_view.bottom : NULL;
+    k.f.view.bottom_level = msg_level(kst_prog_message(&k.prog)->level);
+}
+
+/**
+ * @brief The press a row's control takes now: PORT's CONNECT a 2s hold
+ *        where it switches a supply on, its ABORT a stop; WRITE n VALUES a
+ *        2s hold; any other a tap.
+ * @param r the row, live
+ * @param cl its cell
+ */
+static void act_press(const row_t *r, sprog_cell_t *cl)
+{
+    const kst_prog_t *p = &k.prog;
+    const kst_prog_state_t st = kst_prog_state(p);
+
+    if (r->what == A_PORT) {
+        const bool held = st == KST_PROG_ENTERING || st == KST_PROG_WORKING
+                          || st == KST_PROG_PROGRAMMING
+                          || st == KST_PROG_LEAVING || kpn_leave_waits(p);
+
+        /* Green while a press starts it, red while the port is the
+         * programmer's (ABORT, LEAVE); CONNECT fades to that red. */
+        cl->fill = held ? SPROG_F_ACTIVE : SPROG_F_GO;
+        cl->fill_to = SPROG_F_ACTIVE;
+        if (st == KST_PROG_ENTERING || st == KST_PROG_WORKING
+            || kpn_leave_waits(p)) {
+            cl->press = SPROG_P_STOP;
+        } else if (st == KST_PROG_PWM && kpn_switches_supply()) {
+            /* A 2s hold that switches the supply on; none from a low
+             * carrier input, which the press names. */
+            cl->press = SPROG_P_HOLD;
+            cl->hint = TX_HOLD_HINT_CONNECT;
+            cl->why = prog5v_box_input_why();
+        }
+    } else if (r->what == A_WRITE) {
+        /* Green fading to the amber of the write's steps. */
+        cl->fill = SPROG_F_GO;
+        cl->fill_to = SPROG_F_WAITING;
+        cl->press = SPROG_P_HOLD;
+        cl->hint = TX_HOLD_HINT_WRITE;
+    }
+}
+
+/**
+ * @brief Cell @p cl of row @p i: its value, fill and press.
+ * @param i  the row's index in kpn_rows
+ * @param cl its cell
+ */
+static void fill_cell(int i, sprog_cell_t *cl)
 {
     const row_t *r = &kpn_rows[i];
     const kst_prog_t *p = &k.prog;
-    const gfx_rect_t rr = kpn_row_rect(r);
-    const gfx_rect_t vr = kpn_value_rect(r);
     const bool live = kpn_row_live(r);
-    const bool pressed = k.have && (k.pressed == P_ROW
-                                    || k.pressed == P_CONNECT
-                                    || k.pressed == P_WRITE)
-                         && k.row == i;
-    gfx_color_t fill = ui_theme_color(UI_C_PANEL_SUNK);
-    char v[KST_PANEL_LINE];
 
-    gfx_text(c, rr.x, rr.y + (ROW_H - LINE_H) / 2, kpn_row_label(r), KP_FONT,
-             live || r->kind == K_LOCKED ? ui_theme_color(UI_C_TEXT_DIM)
-                                         : ui_theme_color(UI_C_TEXT_FAINT),
-             1);
+    cl->press = live ? SPROG_P_TAP : SPROG_P_OFF;
     if (r->kind == K_ACT) {
-        act_value(r, v, sizeof(v));
-        /* The buttons that start a port action: green while a press
-         * starts it, red while the port is the programmer's (ABORT,
-         * LEAVE). */
-        if (r->what == A_PORT) {
-            const kst_prog_state_t st = kst_prog_state(p);
-            const bool held = st == KST_PROG_ENTERING
-                              || st == KST_PROG_WORKING
-                              || st == KST_PROG_PROGRAMMING
-                              || st == KST_PROG_LEAVING
-                              || kpn_leave_waits(p);
-            fill = ui_action_fill(held ? UI_ACTION_ACTIVE
-                                       : UI_ACTION_AVAILABLE);
-            /* CONNECT is a 2s hold: green fading to the red of a held
-             * port, flashing as it connects. */
-            ui_hold_button(c, vr, v, fill, ui_action_fill(UI_ACTION_ACTIVE),
-                           &k.conn, pressed, live, KP_FONT);
-            return;
-        } else if (r->what == A_WRITE) {
-            /* WRITE n VALUES is a 2s hold: green fading to the amber of
-             * the write's steps, flashing as it fires. */
-            ui_hold_button(c, vr, v, ui_action_fill(UI_ACTION_AVAILABLE),
-                           ui_action_fill(UI_ACTION_WAITING), &k.wr,
-                           pressed, live, KP_FONT);
-            return;
+        act_value(r, cl->value, sizeof(cl->value));
+        act_press(r, cl);
+        if (!live) {
+            cl->press = SPROG_P_OFF;
         }
-        kp_button(c, vr, v, fill, pressed, live);
         return;
     }
+    if (r->kind == K_LOCKED) {
+        cl->press = SPROG_P_OFF;
+    }
     if (!kst_prog_have_servo(p)) {
-        kp_button(c, vr, "--", fill, false, false);
+        snprintf(cl->value, sizeof(cl->value), "--");
+        cl->look = (uint8_t)(SPROG_L_NO_KEYS | (live ? SPROG_L_LABEL_DIM : 0u));
+        cl->press = SPROG_P_OFF;
         return;
     }
     {
         const kst_field_id_t id = (kst_field_id_t)r->what;
         const bool diff = kpn_changed(id);
-        char num[32];
-
         const bool skipped = kpn_in_set(kst_prog_load_skipped(p), id);
+        char num[20];
 
         kpn_fmt_field(id, kst_field_get(kst_prog_draft(p), id), num,
                       sizeof(num));
         /* A value that differs from the servo's: marked twice, by the fill
          * and by the star.  One the loaded file has otherwise and that is
          * never written: by the fill and the mark of the note below. */
-        snprintf(v, sizeof(v), "%s%s", diff ? "* " : skipped ? "! " : "", num);
-        if (diff) {
-            fill = ui_theme_color(UI_C_ACCENT);
-        } else if (skipped) {
-            fill = ui_theme_color(UI_C_WARN);
-        }
-        kp_button(c, vr, v, fill, pressed, live);
-        if (r->kind != K_STEP) {
-            return;
-        }
-        kp_button(c, kpn_step_rect(r, false), "-", ui_theme_color(UI_C_PANEL_HI),
-                  k.have && k.pressed == P_MINUS && k.row == i, live);
-        kp_button(c, kpn_step_rect(r, true), "+", ui_theme_color(UI_C_PANEL_HI),
-                  k.have && k.pressed == P_PLUS && k.row == i, live);
+        snprintf(cl->value, sizeof(cl->value), "%s%s",
+                 diff ? "* " : skipped ? "! " : "", num);
+        cl->fill = diff ? SPROG_F_ACCENT : skipped ? SPROG_F_WARN
+                                                   : SPROG_F_SUNK;
     }
 }
 
-/** @brief Draws the page shown: the tabs, its rows and its notes. */
-static void draw_page(gfx_canvas_t *c)
+void kpn_view(void)
 {
-    ui_tabs_render(&k.tabs, c);
-    for (int i = 0; i < ROW_COUNT; ++i) {
-        if (kpn_rows[i].page == kpn_page() && kpn_row_shown(&kpn_rows[i])) {
-            draw_row(c, i);
-        }
+    const row_t *pick = kpn_port_pick_row();
+
+    sprog_view_begin(&k.f, kpn_mask());
+    for (int c = 0; c < k.f.cells; ++c) {
+        fill_cell(k.f.cell_row[c], &k.f.view.cell[c]);
     }
-    draw_notes(c);
+    k.f.view.head[0] = kpn_head_line(0);
+    k.f.view.head[1] = kpn_head_line(1);
+    k.f.view.head_warn = !kpn_on_port();
+    k.f.view.port_pick = pick != NULL;
+    tab_notes();
+    bottom_line();
 }
+
+/* --------------------------------------------------------------- the notes */
 
 /**
- * @brief Draws the list of choices: its title, an entry per value and CANCEL.
+ * @brief The page of notes shown, as the frame draws it, of the view just
+ *        filled.
+ * @param sh receives the page
  */
-static void draw_choice(gfx_canvas_t *c)
+static void shown(sprog_notes_shown_t *sh)
 {
-    const row_t *r = &kpn_rows[k.kp_row >= 0 ? k.kp_row : 0];
-
-    gfx_text(c, k.area.x + 10, k.area.y + 14, k.ch.title, KP_FONT,
-             ui_theme_color(UI_C_TEXT), 1);
-    for (int i = 0; i < k.ch.count; ++i) {
-        const bool current = (k.ch.kind == C_STRETCH
-            && k.ch.values[i]
-               == (int)kst_field_get(kst_prog_draft(&k.prog),
-                                     (kst_field_id_t)r->what))
-            || (k.ch.kind == C_PORT
-                && k.ch.values[i] == (int)prog_choice_port());
-
-        kp_button(c, kst_panel_choice_rect(i), k.ch.labels[i],
-                  current ? ui_theme_color(UI_C_ACCENT)
-                          : ui_theme_color(UI_C_PANEL_SUNK),
-                  k.have && k.pressed == P_CHOICE && k.row == i, true);
-    }
-    kp_button(c, kst_panel_choice_cancel_rect(), TR(CANCEL),
-              ui_theme_color(UI_C_PANEL_SUNK),
-              k.have && k.pressed == P_CHOICE_CANCEL, true);
+    kpn_view();
+    sprog_notes_shown(&k.f, -1, sh);
 }
 
-/**
- * @brief The warning page's hold button: sunk, fading to the page's edge
- *        colour across its hold, flashing as it fires.
- * @param c the canvas
- */
-static void draw_apply(gfx_canvas_t *c)
+gfx_rect_t kst_panel_notes_rect(void)
 {
-    const gfx_color_t edge = k.warn.danger ? ui_theme_color(UI_C_DANGER)
-                                           : ui_theme_color(UI_C_WARN);
-    ui_hold_button(c, kst_panel_apply_rect(), k.warn.apply,
-                   ui_theme_color(UI_C_PANEL_SUNK), edge, &k.warn.hold,
-                   k.warn.down, true, KP_FONT);
+    kpn_view();
+    return sprog_notes_rect(&k.f);
 }
 
-/** @brief Draws the warning page: the title, its lines and the hold button. */
-static void draw_warning(gfx_canvas_t *c)
+int kst_panel_note_pages(void)
 {
-    const gfx_rect_t a = k.area;
-    const gfx_color_t edge = k.warn.danger ? ui_theme_color(UI_C_DANGER)
-                                           : ui_theme_color(UI_C_WARN);
+    kpn_view();
+    return sprog_note_pages(&k.f);
+}
 
-    gfx_draw_rect(c, a.x, a.y, a.w, a.h, edge);
-    gfx_draw_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2, edge);
-    gfx_draw_rect(c, a.x + 2, a.y + 2, a.w - 4, a.h - 4, edge);
-    gfx_text(c, a.x + 12, a.y + 16, k.warn.title, KP_TITLE_FONT, edge, 1);
-    {
-        /* The widest pitch at which the lines end 8px above the buttons;
-         * the builders keep them to kpn_warn_room(), which fit at
-         * LINE_H. */
-        const int rows = kpn_warn_rows();
-        const int room = kst_panel_apply_rect().y - 8 - (a.y + WARN_TOP)
-                       - LINE_H - (rows - k.warn.count) * LINE_H;
-        int pitch = LINE_H;
-        int y = a.y + WARN_TOP;
+int kst_panel_note_page(void)
+{
+    const int pages = kst_panel_note_pages();
 
-        for (unsigned i = 0; i < sizeof(k_warn_pitch); ++i) {
-            if ((k.warn.count - 1) * k_warn_pitch[i] <= room) {
-                pitch = k_warn_pitch[i];
-                break;
-            }
+    return k.f.note_page < pages ? k.f.note_page : 0;
+}
+
+const char *kst_panel_shown_note(int i)
+{
+    sprog_notes_shown_t sh;
+
+    shown(&sh);
+    return i >= 0 && i < sh.notes ? k.f.view.note[sh.note[i]] : NULL;
+}
+
+int kst_panel_shown_message_lines(void)
+{
+    sprog_notes_shown_t sh;
+    int rows = 0;
+    int n = 0;
+
+    shown(&sh);
+    for (int i = 0; i < s_view.lines && i < KST_PANEL_MSG_LINES; ++i) {
+        rows += sprog_text_rows(&k.f, s_view.msg[i]);
+        if (rows > sh.bottom_rows) {
+            break;
         }
-        for (int i = 0; i < k.warn.count; ++i) {
-            y = kpn_text_rows(c, a.x + 12, y, k.warn.lines[i],
-                          level_color(k.warn.level[i]))
-              + pitch - LINE_H;
-        }
+        ++n;
     }
-    draw_apply(c);
-    /* BACK on the LEAVE page that lists unwritten edits: they stay. */
-    kp_button(c, kst_panel_cancel_rect(), kst_panel_cancel_label(),
-              ui_theme_color(UI_C_PANEL_SUNK),
-              k.have && k.pressed == P_CANCEL, true);
+    return n;
 }
 
-/**
- * @brief The overlay less the flash of a warning that closed as its hold
- *        fired (kst_panel_render()).
- * @param c the canvas
- */
-static void render_body(gfx_canvas_t *c)
+gfx_rect_t kst_panel_notes_drawn(void)
 {
-    const gfx_rect_t a = k.area;
+    sprog_notes_shown_t sh;
+    int top;
+    int y;
 
-    kpn_mode_sync();
-
-    if (k.kp.open) {
-        ui_keypad_render(&k.kp, c);
-        return;
+    shown(&sh);
+    if (sh.notes == 0 && sh.bottom_rows == 0) {
+        return (gfx_rect_t){ 0, 0, 0, 0 };
     }
-    if (k.tk.open) {
-        ui_textkey_render(&k.tk, c);
-        return;
-    }
-    gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_PANEL));
-    if (k.warn.open) {
-        draw_warning(c);
-        return;
-    }
-    gfx_draw_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_ACCENT));
-    if (k.ch.open) {
-        draw_choice(c);
-        return;
-    }
-    draw_page(c);
+    top = sh.notes != 0 ? sh.top : sh.bottom_y;
+    y = sh.bottom_rows != 0 ? sprog_foot(&k.f) : sh.end;
+    return (gfx_rect_t){ k.area.x, (int16_t)top, k.area.w, (int16_t)(y - top) };
 }
 
 /**
  * @brief Draws the overlay: the keypad or the keyboard alone while one is
- *        open, else the warning, the list of choices or the page.
+ *        open, else the hold page, the list of choices or the tab shown,
+ *        all through the frame.
  * @param c the canvas
  */
 void kst_panel_render(gfx_canvas_t *c)
 {
-    render_body(c);
-    /* A warning closes as its hold fires: its button flashes where it
-     * was until the flash ends (kst_panel_tick()). */
-    if (!k.warn.open && ui_hold_flashing(&k.warn.hold)) {
-        draw_apply(c);
-    }
+    kpn_mode_sync();
+    kpn_view();
+    sprog_render(&k.f, c);
 }

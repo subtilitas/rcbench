@@ -176,6 +176,15 @@ static void run_command(const bal_cmd_t *cmd, uint32_t now)
                      s_ctl.b.scanning ? "a scan runs" : "not in the list",
                      (unsigned)s_ctl.found_n, (unsigned)s_ctl.bind_refused);
         }
+    } else if (cmd->kind == BAL_CMD_NAME) {
+        const ncl_req_t r = bal_ctl_name(&s_ctl, cmd->text,
+                                         atomic_load(&s_live));
+        if (r != NCL_REQ_OK) {
+            ESP_LOGW(TAG, "NAME refused: %s", r == NCL_REQ_ARMED ? "ARMED"
+                     : r == NCL_REQ_BAD ? "value" : "no settings from the node");
+        } else {
+            ESP_LOGI(TAG, "NAME to the node");
+        }
     } else if (cmd->kind == BAL_CMD_UNBIND) {
         char was[sizeof(s_ctl.cfg.addr)];
         memcpy(was, s_ctl.cfg.addr, sizeof(was));
@@ -358,6 +367,13 @@ void panel_bal_frame(bool armed, int blades, uint32_t rpm)
         s_kept_seq = s_seen.bind_seq;
         settings_set_text(SET_TEXT_BNODE_ADDR, s_seen.v.bound_addr);
         settings_set_text(SET_TEXT_BNODE_NAME, s_seen.v.bound_name);
+        settings_request_save();
+    }
+    /* The node's own name into BOUND NODE's text while SAFE, so it shows
+     * while the node is away. */
+    if (!armed && s_seen.v.have_cfg && s_seen.v.bound_addr[0] != '\0'
+        && strcmp(s_seen.v.node_name, settings_text(SET_TEXT_BNODE_NAME)) != 0) {
+        settings_set_text(SET_TEXT_BNODE_NAME, s_seen.v.node_name);
         settings_request_save();
     }
     bal_msg_t m = { .is_cfg = false };

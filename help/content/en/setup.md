@@ -19,12 +19,11 @@ SETUP contains bench-wide panel settings under PANEL, SENSORS, WIRELESS and SD C
 | OUTPUTS | `PROTOCOLS, PINS, BOARD` | [Outputs](outputs.md): the role of each IOmcu pin, on a drawing of the board |
 | SD CARD | `LOGS, BROWSER WRITES, BACKUP` | the list of SD CARD: which logs the panel writes, and where, what a browser needs to write, and the settings backup |
 | WI-FI | `NETWORK, FILES, UPLOAD` | [Wi-Fi](wifi.md): the panel's radio, for the card's files and a firmware image in a browser |
+| WIRELESS | `IMU, DIAL, NODES, PRINTER` | [Wireless](setup-wireless.md): the IMU with its scan, its bind, its live angles, ZERO and the calibration's 2s hold, the M5Stack Dial, the power node with INA228 source, the balance node with its trial mass, and the label printer |
 | UPDATES | `RELEASES ON GITHUB` | [Updates](updates.md): the check for a newer panel firmware release and the reminder switch |
-| IMU | `BLUETOOTH ANGLE SENSOR` | [IMU](imu.md): the WitMotion BWT901CL over Bluetooth LE, the scan and the bind, the calibration and the live angles |
-| WIRELESS | `IMU, DIAL, POWER, BALANCE NODES` | [Wireless](setup-wireless.md): the IMU's settings, the M5Stack Dial, its scan, its bind and its steps, the power node with INA228 source, and the balance node with its trial mass |
 | LAYOUT | `CONNECTORS AND PINS` | [Layout](layout.md), on the rbmod carrier only, whose pins are soldered |
 
-1 slot is free, and the carrier's LAYOUT takes it. The save button sits at the bottom right, as on every list. A change left unsaved in any category shows on it:
+2 slots are free, and the carrier's LAYOUT takes the first. The save button sits at the bottom right, as on every list. A change left unsaved in any category shows on it:
 
 ![The tiles with a value unsaved](view:setup-hub-dirty)
 
@@ -34,7 +33,7 @@ The home tag at the top left returns one level at a time:
 |---|---|
 | a category's list | the tiles; the list keeps its position |
 | the tiles | the menu; with a value unsaved, the warning first ([Leaving with values unsaved](#leaving-with-values-unsaved)) |
-| OUTPUTS, WI-FI, UPDATES, IMU | the tiles; OUTPUTS opened from TARGET on MOTOR & ESC or SERVO goes back there, WI-FI opened from the button of LOGS or UPDATES likewise. A list or a keyboard open on one of them closes first |
+| OUTPUTS, WI-FI, UPDATES | the tiles; OUTPUTS opened from TARGET on MOTOR & ESC or SERVO goes back there, WI-FI opened from the button of LOGS or UPDATES likewise. A list or a keyboard open on one of them closes first |
 
 ## Changing a value
 

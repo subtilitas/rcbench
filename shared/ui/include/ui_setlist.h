@@ -18,11 +18,16 @@
  * - a string: its text at the right, a tap opens the keyboard;
  * - a custom row, {label, help, value_text(), step(dir), tap()} for what is
  *   not a setting: a value with keys, a row that does something on a tap,
- *   or a choice list that opens over the list;
+ *   a choice list that opens over the list, or a 2s hold (held()): a
+ *   button of 278 x 48px at the row's right, its label value_text()'s,
+ *   whose fill follows the hold and which flashes as it fires;
  * - a heading over the rows of a section, with a line beside its name.
  *
  * A key is a tap: its release steps it once; held, it repeats after 0.45s
- * at 8Hz, at 30Hz 1.8s later.  The list scrolls by a drag that starts
+ * at 8Hz, at 30Hz 1.8s later.  A hold row's button calls held() once when
+ * the press on it reaches UI_HOLD_S (2s); a release before it shows the
+ * row's hint on the band, and a press that slides off the button ends the
+ * hold unfired.  The list scrolls by a drag that starts
  * anywhere on it.  One contact holds the list from its DOWN to its UP.
  *
  * SAVE asks for a write (settings_request_save()) and reads SAVED, SAVE,
@@ -51,6 +56,7 @@
 #include "ui_keypad.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
+#include "ui_widgets.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -87,7 +93,9 @@ typedef enum {
  * With step() the row draws "-" and "+" keys ("<" and ">" with cycles); with
  * tap() a tap on the row calls it; with choices() a tap opens a choice list
  * of that many rows over the list, choice() names one, chosen() is the one
- * in force and pick() takes a tap on one.  locked() names why the row takes
+ * in force and pick() takes a tap on one.  With held() the row's button is a
+ * 2s hold that calls it once and hold_hint is the band's text for a
+ * release before UI_HOLD_S.  locked() names why the row takes
  * no press now; its help line shows it in the warning colour.  label_of()
  * names the row in place of label where the name follows a state.  On a
  * heading only value_text() and locked() are read: the line beside its
@@ -115,6 +123,14 @@ typedef struct ui_setlist_custom {
     const char *(*locked)(void);
     /** @brief The row's name now; NULL for label. */
     ui_text_id_t (*label_of)(void);
+    /** @brief The row's 2s hold, reached; NULL for none. */
+    void (*held)(void);
+    /** @brief The band's hint for a hold let go early (a HOLD_HINT_
+     *         text). */
+    ui_text_id_t hold_hint;
+    /** @brief Its value changes on its own, a live reading: a host with
+     *         parts repaints the value alone when it reads differently. */
+    bool live;
 } ui_setlist_custom_t;
 
 /**
@@ -203,6 +219,10 @@ typedef struct ui_setlist_host {
     bool (*still)(int kind, int index, int x, int y);
     /** @brief The tap UP of a host's press. */
     void (*release)(int kind, int index, int x, int y);
+    /** @brief The host repaints a hold row's button alone as hold_rev
+     *         moves (ui_setlist_draw_part()); false: a moving hold asks
+     *         invalidate() for the whole list. */
+    bool parts;
 } ui_setlist_host_t;
 
 /** @brief A list's state; zero it with ui_setlist_init(). */
@@ -243,6 +263,13 @@ typedef struct ui_setlist {
     uint32_t drawn_kp_rev;              /**< its revision as last drawn       */
 
     int      choice_row;                /**< the row whose choices show, -1   */
+    ui_hold_t hold;                     /**< a hold row's 2s hold             */
+    int      hold_row;                  /**< the row the hold last took, -1   */
+    uint32_t hold_rev;                  /**< frames the hold's fill or flash
+                                             moved in, counted           */
+    uint32_t layout;                    /**< the rows as the press or the
+                                             choice list found them, a
+                                             hash                        */
 } ui_setlist_t;
 
 /** @brief The list's own hit kinds. */
@@ -260,6 +287,7 @@ enum {
     UI_SL_HIT_VALUE,      /**< a number's value                       */
     UI_SL_HIT_ROW,        /**< a custom row's tap or choice           */
     UI_SL_HIT_CHOICE,     /**< a row of the open choice list          */
+    UI_SL_HIT_HOLD,       /**< a hold row's button                    */
 };
 
 /** @brief The parts of a row a test aims at. */
@@ -267,6 +295,7 @@ typedef enum {
     UI_SL_PART_MINUS = 0, /**< the "-" key's column over the row's height */
     UI_SL_PART_VALUE,     /**< the value between the keys                */
     UI_SL_PART_PLUS,      /**< the "+" key's column                      */
+    UI_SL_PART_HOLD,      /**< a hold row's button, 278 x 48px            */
 } ui_sl_part_t;
 
 /**
@@ -326,6 +355,19 @@ bool ui_setlist_warn(ui_setlist_t *sl);
  */
 void ui_setlist_type_id(ui_setlist_t *sl, const char *title,
                         const char *text, void (*done)(const char *id));
+
+/**
+ * @brief The keyboard of a node's own name over the list, opened on @p text
+ *        (ui_textkey_open_node_name()): OK hands the name, spaces at its
+ *        ends dropped, "" for none, to @p done; CANCEL takes nothing.  A
+ *        choice list open closes.
+ * @param sl    The list.
+ * @param title The keyboard's title.
+ * @param text  What it starts with.
+ * @param done  Takes the name typed.
+ */
+void ui_setlist_type_name(ui_setlist_t *sl, const char *title,
+                          const char *text, void (*done)(const char *name));
 
 /**
  * @brief Whether something covers the list: the keypad, the keyboard, the
@@ -468,8 +510,31 @@ gfx_rect_t ui_setlist_pane(const ui_setlist_t *sl);
 gfx_rect_t ui_setlist_row_rect(const ui_setlist_t *sl, int i);
 
 /**
+ * @brief The box a custom row's value is drawn in: from the "-" key's left
+ *        edge to the "+" key's right edge, the body face's 24px centered in
+ *        the row.
+ * @param sl The list.
+ * @param i  The row.
+ * @return Its rectangle.
+ */
+gfx_rect_t ui_setlist_value_rect(const ui_setlist_t *sl, int i);
+
+/**
+ * @brief Row @p i drawn again inside @p part alone, cut at the list's pane:
+ *        the pixels a whole draw of the list gives there.  For a live
+ *        row's value (ui_setlist_value_rect()) and a hold row's button
+ *        (UI_SL_PART_HOLD).
+ * @param sl   The list.
+ * @param c    The canvas.
+ * @param i    The row.
+ * @param part The box to draw again.
+ */
+void ui_setlist_draw_part(ui_setlist_t *sl, gfx_canvas_t *c, int i,
+                          gfx_rect_t part);
+
+/**
  * @brief A part of row @p i: a key's column or the value between them, over
- *        the row's height.
+ *        the row's height, or a hold row's button.
  * @param sl   The list.
  * @param i    The row.
  * @param part The part.

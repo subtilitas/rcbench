@@ -13,7 +13,7 @@
  * the devices that advertise the 16-bit UUID 0x18F0 or the ISSC service;
  * the others are counted.  A tap on a listed sensor binds it at once: no
  * pairing, no PIN.  The link converts the scan's devices, its errors and
- * the C6's version into the view's types (imu_screen.h).
+ * the C6's version into the view's types (imu_view.h).
  *
  * For the sensor side the link is up once 1E4D's notifications are
  * subscribed; a 5-byte command can go while up, no write is in flight and
@@ -32,7 +32,7 @@
 #include <stdint.h>
 
 #include "bleuart.h"
-#include "imu_screen.h"
+#include "imu_view.h"
 #include "witmotion.h"
 
 #ifdef __cplusplus
@@ -63,6 +63,9 @@ typedef struct {
     bool        scan_open;      /**< a scan started, its end unread */
     bool        scan_cut;       /**< that scan was stopped: an empty list
                                      is no error */
+    bool        scan_done;      /**< a scan ended since IMU ON */
+    uint32_t    now_ms;         /**< the clock at the last event or step,
+                                     for the scan's time left */
     imu_dev_t   found[IMU_FOUND_MAX]; /**< the last scan's sensors */
     uint8_t     found_n;        /**< their count */
     uint16_t    hidden;         /**< other devices the last scan heard */
@@ -190,11 +193,13 @@ bool imu_ble_send(imu_ble_t *l, const uint8_t cmd[WIT_CMD_LEN],
                   uint32_t now_ms);
 
 /**
- * @brief The link's part of the view: the C6's version, the last scan's
- *        sensors and hidden count, the error.  A scan's or a write's error
- *        comes before the link's.
+ * @brief The link's part of the view: the C6's version, the scan's time
+ *        left, whether a scan ended and whether it was stopped, the last
+ *        scan's sensors and hidden count, the error.  A scan's or a
+ *        write's error comes before the link's.
  * @param l   The link, not NULL.
- * @param out Takes version, found_n, found, hidden, err, err_code.
+ * @param out Takes version, scan_left_s, scan_done, scan_cut, found_n,
+ *            found, hidden, err, err_code.
  */
 void imu_ble_view(const imu_ble_t *l, imu_view_t *out);
 

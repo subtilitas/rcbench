@@ -7,8 +7,8 @@
  * the IMU on and scanning once Bluetooth LE runs; NO IMU FOUND and NO
  * OTHER IMU FOUND; RUDDER AUTO's refusal of the IMU's yaw in 6-AXIS and
  * its IMU YAW list; and the list following the IMU's view while it is open.  The rig is
- * servo_rauto_kst_rig.h; the IMU's view is handed to the IMU screen as the
- * panel hands it over (imu_screen_set()).
+ * servo_rauto_kst_rig.h; the IMU's view is handed over as the panel hands
+ * it over (imu_view_set()).
  *
  * Cases:
  * - the_angle_row_opens_the_list_with_a_reading_and_without
@@ -33,20 +33,20 @@
  * SPDX-License-Identifier: MIT
  */
 #include "servo_rauto_kst_rig.h"
-#include "imu_screen.h"
+#include "imu_view.h"
 #include "servo_angle_pick.h"
 #include "ui_setlist.h"
 
 /** @brief RUDDER's card rows (test_servo_drive_ready.c). */
 enum { RD_PORT = 0, RD_ANGLE };
 
-/** @brief The IMU's view as the cases hand it to the IMU screen. */
+/** @brief The IMU's view as the cases hand it over (imu_view_set()). */
 static imu_view_t g_v;
 
 /** @brief The view handed over now. */
 static void view_now(void)
 {
-    imu_screen_set(&g_v);
+    imu_view_set(&g_v);
 }
 
 /**
@@ -66,19 +66,19 @@ static void found(int i, const char *addr, const char *name, int8_t rssi)
 }
 
 /**
- * @brief The next command the IMU screen queued for the panel.
+ * @brief The next command queued for the panel (imu_view_take()).
  * @return it; IMU_CMD_NONE when none is queued
  */
 static imu_cmd_t imu_took(void)
 {
     imu_cmd_t c = { IMU_CMD_NONE, 0u };
-    (void)imu_screen_take(&c);
+    (void)imu_view_take(&c);
     return c;
 }
 
 /**
  * @brief The rig's bench SAFE on function @p fn, the AS5600 reading at the
- *        center and ZERO taken; the IMU screen reset and the view @p link
+ *        center and ZERO taken; the IMU's view reset and the view @p link
  *        with nothing found and nothing bound.
  * @param fn   the function
  * @param link the IMU's link state
@@ -88,7 +88,7 @@ static void safe_on(servo_fn_t fn, imu_link_t link)
     ra_setup(true, true);
     ra.armed = false;
     servo_screen_set_armed(false);
-    imu_screen()->reset();
+    imu_view_reset();
     memset(&g_v, 0, sizeof(g_v));
     g_v.link = link;
     if (link != IMU_LINK_OFF) {
@@ -248,7 +248,7 @@ TEST_CASE(search_switches_the_imu_on_and_scans_once_bluetooth_runs)
     CHECK_STR_EQ(entry(1, NULL), TR(IMU_ST_NO_BT));
     /* NO BLUETOOTH ON C6 ends the search: a sync that comes later starts
      * no scan by itself. */
-    CHECK(!imu_screen_search_owed());
+    CHECK(!imu_view_search_owed());
     g_v.link = IMU_LINK_READY;
     view_now();
     CHECK_EQ(imu_took().kind, IMU_CMD_NONE);
@@ -557,19 +557,19 @@ TEST_CASE(a_scan_beside_a_linked_sensor_reads_no_other_imu_found)
 TEST_CASE(a_search_owed_is_dropped_by_imu_off_and_refused_on_a_failed_c6)
 {
     safe_on(SERVO_FN_RUDDER, IMU_LINK_OFF);
-    CHECK(imu_screen_search());
-    CHECK(imu_screen_search_owed());
+    CHECK(imu_view_search());
+    CHECK(imu_view_search_owed());
     settings_set(SET_IMU_EN, 0.0f);
     g_v.link = IMU_LINK_STARTING;
     view_now();
-    CHECK(!imu_screen_search_owed());
+    CHECK(!imu_view_search_owed());
     g_v.link = IMU_LINK_READY;
     view_now();
     CHECK_EQ(imu_took().kind, IMU_CMD_NONE);
 
     g_v.link = IMU_LINK_NO_BT;
     view_now();
-    CHECK(!imu_screen_search());
+    CHECK(!imu_view_search());
     tap_angle_row();
     bool refused = false;
     CHECK_STR_EQ(entry(1, &refused), TR(IMU_ST_NO_BT));
@@ -578,8 +578,8 @@ TEST_CASE(a_search_owed_is_dropped_by_imu_off_and_refused_on_a_failed_c6)
 
     g_v.link = IMU_LINK_C6_FAILED;
     view_now();
-    CHECK(!imu_screen_search());
-    CHECK(!imu_screen_bind(0u));
+    CHECK(!imu_view_search());
+    CHECK(!imu_view_bind(0u));
     tap_angle_row();
     CHECK_STR_EQ(entry(1, &refused), TR(IMU_ST_C6_FAILED));
     CHECK(refused);

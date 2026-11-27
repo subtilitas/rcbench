@@ -9,10 +9,10 @@
  * board's touch controller at 0x38 and codec at 0x18) or counts its NACKs
  * as bus errors; a part of another maker, or a TI part of another die,
  * taken for the INA228 or written to; a shunt that does not scale CURRENT
- * and POWER by the datasheet's equations; a shunt out of range taken, or
- * one that does not survive a restart; and a MATEK on the default shunt
- * whose set-up or windows differ by a byte from the fixed 0x45, 200µΩ,
- * 204,800mA set-up the node ran before the search.
+ * and POWER by the datasheet's equations; a shunt out of range taken; a
+ * fixed address that asks another address; and a MATEK on the default
+ * shunt whose set-up or windows differ by a byte from the fixed 0x45,
+ * 200µΩ, 204,800mA set-up the node ran before the search.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -309,58 +309,6 @@ TEST_CASE(a_shunt_out_of_range_is_refused_and_changes_nothing)
     CHECK_EQ(s.shunt_uohm, RCNODE_SHUNT_DEF_UOHM);
 }
 
-/** The fake store: a value and whether one is held. */
-typedef struct {
-    bool     held;
-    uint16_t v;
-    bool     fail;
-    unsigned saves;
-} fake_store_t;
-
-// cppcheck-suppress constParameterCallback
-static bool store_load(void *ctx, uint16_t *uohm)
-{
-    const fake_store_t *f = (const fake_store_t *)ctx;
-    if (!f->held) {
-        return false;
-    }
-    *uohm = f->v;
-    return true;
-}
-
-static bool store_save(void *ctx, uint16_t uohm)
-{
-    fake_store_t *f = (fake_store_t *)ctx;
-    ++f->saves;
-    if (f->fail) {
-        return false;
-    }
-    f->held = true;
-    f->v = uohm;
-    return true;
-}
-
-TEST_CASE(the_shunt_persists_and_a_value_out_of_range_is_never_stored)
-{
-    fake_store_t f = { false, 0u, false, 0u };
-    const psens_store_t st = { store_load, store_save, &f };
-    CHECK_EQ(psens_shunt_load(&st), RCNODE_SHUNT_DEF_UOHM);
-    CHECK_EQ(psens_shunt_load(NULL), RCNODE_SHUNT_DEF_UOHM);
-    CHECK(psens_shunt_save(&st, 500u));
-    /* A restart: the store is read again. */
-    CHECK_EQ(psens_shunt_load(&st), 500u);
-    CHECK(!psens_shunt_save(&st, 49u));
-    CHECK(!psens_shunt_save(&st, 10001u));
-    CHECK(!psens_shunt_save(&st, 70000u));
-    CHECK_EQ(f.saves, 1u);
-    CHECK_EQ(psens_shunt_load(&st), 500u);
-    /* A stored value out of range reads as the default. */
-    f.v = 7u;
-    CHECK_EQ(psens_shunt_load(&st), RCNODE_SHUNT_DEF_UOHM);
-    f.fail = true;
-    CHECK(!psens_shunt_save(&st, 1000u));
-}
-
 /* ------------------------------------------------- the MATEK default */
 
 /** Samples from a driver into windows, encoded, for 3 windows. */
@@ -409,7 +357,7 @@ TEST_CASE(the_matek_on_the_default_shunt_gives_byte_identical_frames)
     fake_part_t *p = fake_add(&fb, FAKE_INA228, 0x45u, 200e-6);
     p->amps[0] = 87.6;
     p->volts[0] = 24.1;
-    psens_init(&s, &bus, psens_shunt_load(NULL));
+    psens_init(&s, &bus, RCNODE_SHUNT_DEF_UOHM);
     uint32_t now = 0u;
     CHECK_EQ(step_online(&now, 40u), 7u);
     CHECK_EQ(psens_addr(&s), 0x45u);
@@ -495,6 +443,51 @@ TEST_CASE(sleep_writes_shutdown_only_to_an_ina228)
     CHECK_EQ(touched(codec), 0u);
 }
 
+TEST_CASE(a_fixed_address_asks_that_address_alone)
+{
+    display_bus();
+    const fake_part_t *low = fake_add(&fb, FAKE_INA228, 0x40u, 200e-6);
+    (void)fake_add(&fb, FAKE_INA228, 0x45u, 200e-6);
+    psens_init(&s, &bus, RCNODE_SHUNT_DEF_UOHM);
+    CHECK(psens_set_addr(&s, 0x45u));
+    CHECK(!psens_set_addr(&s, 0x45u));
+    uint32_t now = 0u;
+    CHECK_EQ(step_online(&now, 40u), 2u);
+    CHECK_EQ(psens_addr(&s), 0x45u);
+    /* The part at 0x40, first in the AUTO search, was never asked. */
+    CHECK_EQ(touched(low), 0u);
+    CHECK_EQ(touched(touch), 0u);
+    CHECK_EQ(touched(codec), 0u);
+}
+
+TEST_CASE(a_fixed_address_without_an_ina228_is_absent_and_back_to_auto_finds)
+{
+    display_bus();
+    (void)fake_add(&fb, FAKE_INA228, 0x40u, 200e-6);
+    psens_init(&s, &bus, RCNODE_SHUNT_DEF_UOHM);
+    (void)psens_set_addr(&s, 0x4Au);
+    uint32_t now = 0u;
+    const unsigned before = fb.transactions;
+    CHECK(!psens_step(&s, now++));
+    CHECK_EQ(fb.transactions - before, 1u);   /* one NACK */
+    CHECK_EQ(psens_state(&s), SENSE_PART_ABSENT);
+    CHECK_EQ(psens_addr(&s), 0u);
+    /* The next search waits SENSE_RETRY_MS and asks 0x4A again only. */
+    for (unsigned i = 0u; i < 50u; ++i) {
+        CHECK(!psens_step(&s, now++));
+    }
+    CHECK_EQ(fb.transactions - before, 1u);
+    /* AUTO (a setting out of range is AUTO) searches at once. */
+    CHECK(psens_set_addr(&s, 0x77u));
+    CHECK_EQ(s.fixed, 0u);
+    CHECK(step_online(&now, 40u) <= 3u);
+    CHECK_EQ(psens_addr(&s), 0x40u);
+    /* A change ends the binding: the part is searched at the new one. */
+    CHECK(psens_set_addr(&s, 0x4Au));
+    CHECK(!s.bound);
+    CHECK_EQ(psens_state(&s), SENSE_PART_UNPROBED);
+}
+
 int main(void)
 {
     RUN(an_ina228_at_0x40_is_found_at_the_first_address_and_probed_next);
@@ -507,9 +500,10 @@ int main(void)
     RUN(the_shunt_scales_current_and_power_by_the_datasheet_equations);
     RUN(a_shunt_change_sets_the_part_up_again_and_rescales_the_same_code);
     RUN(a_shunt_out_of_range_is_refused_and_changes_nothing);
-    RUN(the_shunt_persists_and_a_value_out_of_range_is_never_stored);
     RUN(the_matek_on_the_default_shunt_gives_byte_identical_frames);
     RUN(the_wake_check_asks_one_address_and_takes_only_an_ina228);
     RUN(sleep_writes_shutdown_only_to_an_ina228);
+    RUN(a_fixed_address_asks_that_address_alone);
+    RUN(a_fixed_address_without_an_ina228_is_absent_and_back_to_auto_finds);
     return test_summary("node_pwr_sens");
 }

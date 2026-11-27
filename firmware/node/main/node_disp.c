@@ -26,6 +26,16 @@
  * The screen's texts are English unless a linked panel wrote LANG German
  * (node_disp_lang()); without a link they are English again.
  *
+ * At the start the screen shows the boot splash (node_setup.h) for 10s,
+ * then the meter.  A tap on its SETUP before a panel links opens the
+ * node's own SETUP; while it is open, advertising is held off
+ * (node_ble_hold_adv()), so no panel links and the bench sees no node.
+ * SETUP's scan runs here, on the bus `pwr` samples on (node_pwr_scan());
+ * SAVE stores the values (node_set_setup_save()), which sets the part up
+ * again, and clears the highest and lowest.  Nothing on the splash or in
+ * SETUP reaches the bench: the node has no part in the bench's STOP, and
+ * the panel takes no reading from a node it is not linked to.
+ *
  * SPDX-License-Identifier: MIT
  */
 #include "node.h"
@@ -43,7 +53,10 @@
 #include "freertos/task.h"
 #include "gfx_damage.h"
 
+#include "node_setup.h"
+#include "node_setup_view.h"
 #include "node_view.h"
+#include "rcbench_version.h"
 
 /** @brief The task's period, ms, and its stack and priority. @{ */
 #define DISP_TICK_MS  20u
@@ -78,6 +91,9 @@ static gfx_damage_t  s_damage;        /**< what the drawing wrote */
 static nv_view_t     s_view;          /**< what the frame shows */
 static nv_touch_t    s_touch;         /**< the press */
 static nv_frame_t    s_frame;         /**< the last frame's values */
+static ns_t          s_ns;            /**< the splash's and SETUP's state */
+static nsv_t         s_nsv;           /**< what the frame shows of them */
+static bool          s_adv_held;      /**< SETUP holds advertising off */
 
 void node_disp_window(const rcnode_pwr_win_t *w)
 {
@@ -187,6 +203,29 @@ static bool touch_act(nv_touch_ev_t ev)
     return true;
 }
 
+/** @brief Send the rectangles the drawing wrote to the display. */
+static void flush_damage(void)
+{
+    gfx_rect_t box[GFX_DAMAGE_MAX_RECTS];
+    const int n = gfx_damage_rects(&s_damage, box, GFX_DAMAGE_MAX_RECTS);
+    for (int i = 0; i < n; ++i) {
+        node_lcd_flush_rect(s_fb, box[i].x, box[i].y, box[i].w, box[i].h);
+    }
+}
+
+/**
+ * @brief Draw the splash or SETUP and send what the drawing wrote.
+ * @param now The clock, for the splash's bar.
+ */
+static void show_setup(uint32_t now)
+{
+    gfx_damage_reset(&s_damage);
+    gfx_damage_attach(&s_damage);
+    (void)nsv_render(&s_nsv, &s_canvas, &s_ns, now);
+    gfx_damage_attach(NULL);
+    flush_damage();
+}
+
 /**
  * @brief Draw the model and send what the drawing wrote.
  * @param hold_pm The hold's progress, per mille.
@@ -199,14 +238,62 @@ static void show(uint16_t hold_pm)
     m.lang = m.linked ? (uint8_t)atomic_load(&s_lang) : RCNODE_LANG_EN;
     m.f = s_frame;
     m.hold_pm = hold_pm;
-    gfx_rect_t box[GFX_DAMAGE_MAX_RECTS];
     gfx_damage_reset(&s_damage);
     gfx_damage_attach(&s_damage);
     (void)nv_render(&s_view, &s_canvas, &m);
     gfx_damage_attach(NULL);
-    const int n = gfx_damage_rects(&s_damage, box, GFX_DAMAGE_MAX_RECTS);
-    for (int i = 0; i < n; ++i) {
-        node_lcd_flush_rect(s_fb, box[i].x, box[i].y, box[i].w, box[i].h);
+    flush_damage();
+}
+
+/** @brief The splash and SETUP start: the values in force, the last
+ *  panel's language, the firmware. */
+static void setup_init(void)
+{
+    nst_vals_t v;
+    node_set_vals(&v);
+    const uint8_t fw[3] = { RCBENCH_VERSION_MAJOR, RCBENCH_VERSION_MINOR,
+                            RCBENCH_VERSION_PATCH };
+    ns_init(&s_ns, &v, node_set_lang(), fw, (uint32_t)(node_us() / 1000u));
+    nsv_init(&s_nsv);
+}
+
+/**
+ * @brief One step of the splash or SETUP: the timers, a tap, what they
+ *        ask (the scan, SAVE), advertising held while SETUP is open, the
+ *        meter drawn whole when they end.
+ * @param ev  The touch's event.
+ * @param now The clock.
+ */
+static void setup_step(nv_touch_ev_t ev, uint32_t now)
+{
+    const bool linked = node_ble_linked();
+    ns_act_t act = ns_tick(&s_ns, now, linked);
+    if (act == NS_ACT_NONE && ev == NV_TOUCH_TAP) {
+        act = ns_tap(&s_ns, s_touch.x, s_touch.y, now, linked);
+    }
+    if (act == NS_ACT_SCAN) {
+        nscan_t r;
+        node_pwr_scan(&r);
+        ns_scan_done(&s_ns, &r);
+    } else if (act == NS_ACT_SAVE) {
+        (void)node_set_setup_save(&s_ns.edit);
+        taskENTER_CRITICAL(&s_mux);
+        nv_stats_init(&s_stats);
+        taskEXIT_CRITICAL(&s_mux);
+        memset(&s_frame, 0, sizeof s_frame);
+    } else if (act == NS_ACT_LEAVE) {
+        ESP_LOGI(TAG, "SETUP left without saving");
+    }
+    const bool in = ns_in_setup(&s_ns);
+    if (in != s_adv_held) {
+        s_adv_held = in;
+        node_ble_hold_adv(in);
+    }
+    if (s_ns.mode == NS_METER) {
+        nv_view_init(&s_view);
+        show(0u);
+    } else {
+        show_setup(now);
     }
 }
 
@@ -228,7 +315,8 @@ static void disp_task(void *arg)
     gfx_canvas_init(&s_canvas, s_fb, NV_W, NV_H, 0);
     gfx_damage_init(&s_damage, &s_canvas);
     nv_view_init(&s_view);
-    show(0u);
+    setup_init();
+    show_setup((uint32_t)(node_us() / 1000u));
     node_lcd_backlight(true);
     if (!touch_init()) {
         ESP_LOGW(TAG, "no touch: the values show, the resets do not work");
@@ -242,7 +330,12 @@ static void disp_task(void *arg)
         int x = 0;
         int y = 0;
         const bool down = touch_read(&x, &y);
-        const bool acted = touch_act(nv_touch_step(&s_touch, down, x, y, now));
+        const nv_touch_ev_t ev = nv_touch_step(&s_touch, down, x, y, now);
+        if (s_ns.mode != NS_METER) {
+            setup_step(ev, now);
+            continue;
+        }
+        const bool acted = touch_act(ev);
         const uint16_t pm = nv_touch_progress(&s_touch, now);
         const bool due = (int32_t)(now - next_frame) >= 0;
         if (due) {
