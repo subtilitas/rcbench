@@ -17,7 +17,9 @@
  * and the firmware version.  The M5Stack Dial's 240 x 240 faces are not
  * shown: dial_lcd_flush() and dial_lcd_flush_rect() take them as the face
  * task's tick, draw the boot face again when the BLE name changed, and send
- * it whole.
+ * it whole.  A frame that did not go whole is drawn and sent again at the
+ * next call; a strip that timed out is waited for before the bounce buffer
+ * is written again.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -61,6 +63,12 @@ static uint16_t *s_strip;              /**< the DMA bounce buffer */
 /** @} */
 /** @brief Given when a strip's transfer ends. */
 static SemaphoreHandle_t s_done;
+/** @brief A strip's transfer was queued and its end not yet taken: the
+ *         DMA may still read s_strip. */
+static bool s_busy;
+/** @brief How long a frame waits for a strip left from the frame before,
+ *         ms, before it gives up. */
+#define LCD_LATE_MS 200u
 /** @brief The BLE name the boot face shows; "" before the first draw. */
 static char s_shown[DK_NAME_MAX + 1u];
 
@@ -114,9 +122,20 @@ void dial_lcd_backlight(unsigned pct)
 }
 
 /** @brief Send the whole frame, a strip at a time; a strip that does not
- *         end in LCD_STRIP_TIMEOUT_MS ends the frame. */
-static void send_frame(void)
+ *         end in LCD_STRIP_TIMEOUT_MS ends the frame.
+ *  @return true when every strip went */
+static bool send_frame(void)
 {
+    /* A strip of the frame before that timed out may still be on the wire:
+     * s_strip is not written before its end is taken, and a late end taken
+     * here cannot count as the end of a strip of this frame. */
+    if (s_busy) {
+        if (xSemaphoreTake(s_done, pdMS_TO_TICKS(LCD_LATE_MS)) != pdTRUE) {
+            ESP_LOGW(TAG, "the strip before has not gone: frame skipped");
+            return false;
+        }
+        s_busy = false;
+    }
     for (int y = 0; y < DK518_SIZE; y += LCD_STRIP) {
         const int rows = DK518_SIZE - y < LCD_STRIP ? DK518_SIZE - y
                                                     : LCD_STRIP;
@@ -125,30 +144,40 @@ static void send_frame(void)
             s_strip[i] = (uint16_t)((src[i] << 8) | (src[i] >> 8));
         }
         if (esp_lcd_panel_draw_bitmap(s_panel, 0, y, DK518_SIZE, y + rows,
-                                      s_strip) != ESP_OK
-            || xSemaphoreTake(s_done, pdMS_TO_TICKS(LCD_STRIP_TIMEOUT_MS))
-                   != pdTRUE) {
-            ESP_LOGW(TAG, "a strip at row %d did not go", y);
-            return;
+                                      s_strip) != ESP_OK) {
+            ESP_LOGW(TAG, "a strip at row %d was refused", y);
+            return false;
         }
+        s_busy = true;
+        if (xSemaphoreTake(s_done, pdMS_TO_TICKS(LCD_STRIP_TIMEOUT_MS))
+            != pdTRUE) {
+            ESP_LOGW(TAG, "a strip at row %d did not go", y);
+            return false;   /* s_busy stays: the next frame waits for it */
+        }
+        s_busy = false;
     }
+    return true;
 }
 
-/** @brief Draw the boot face and send it when the BLE name changed since
- *         the last draw. */
+/** @brief Draw the boot face and send it when the BLE name differs from
+ *         the one of the last frame that went whole: a frame that failed
+ *         goes again at the next call. */
 static void boot_show(void)
 {
-    const char *name = dial_ble_name();
-    if (s_panel == NULL || strncmp(name, s_shown, sizeof s_shown) == 0) {
+    char name[sizeof s_shown];
+    if (s_panel == NULL) {
         return;
     }
-    strncpy(s_shown, name, sizeof s_shown - 1u);
-    s_shown[sizeof s_shown - 1u] = '\0';
+    strncpy(name, dial_ble_name(), sizeof name - 1u);
+    name[sizeof name - 1u] = '\0';
+    if (strcmp(name, s_shown) == 0) {
+        return;
+    }
     gfx_canvas_t c;
     gfx_canvas_init(&c, s_fb, DK518_SIZE, DK518_SIZE, 0);
-    const dk518_boot_t b = { s_shown, esp_app_get_description()->version };
-    if (dk518_boot_draw(&c, &b)) {
-        send_frame();
+    const dk518_boot_t b = { name, esp_app_get_description()->version };
+    if (dk518_boot_draw(&c, &b) && send_frame()) {
+        memcpy(s_shown, name, sizeof s_shown);
     }
 }
 
