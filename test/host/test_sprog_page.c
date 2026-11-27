@@ -220,6 +220,29 @@ TEST_CASE(a_long_page_takes_parts)
     CHECK_EQ(sprog_page_part(&rig.f, SPROG_PAGE_LINES), 2);
 }
 
+/* The notes' pages in rooms of 1, 2 and 3 rows: every row of the room
+ * holds a note, the last one beside the counter. */
+TEST_CASE(the_notes_take_every_row_of_their_room)
+{
+    static const int pages[3] = { 5, 3, 2 };
+
+    for (int room = 1; room <= 3; ++room) {
+        sprog_notes_shown_t sh;
+
+        rig_start();
+        for (int i = 0; i < 5; ++i) {
+            rig.note[i] = "One row.";
+        }
+        rig.notes = 5;
+        rig.bottom = rows_of(6 - room);  /* 132px less 20px a row */
+        rig_view();
+        CHECK_EQ(sprog_note_pages(&rig.f), pages[room - 1]);
+        sprog_notes_shown(&rig.f, 0, &sh);
+        CHECK_EQ(sh.notes, room);
+        CHECK_EQ(sh.end - sh.top, room * 20);
+    }
+}
+
 int main(void)
 {
     RUN(a_text_wraps_at_the_areas_cells);
@@ -228,5 +251,6 @@ int main(void)
     RUN(a_group_folds_by_its_rows_and_the_page_left);
     RUN(the_fit_folds_the_last_group_until_the_page_fits);
     RUN(a_long_page_takes_parts);
+    RUN(the_notes_take_every_row_of_their_room);
     return test_summary("sprog_page");
 }

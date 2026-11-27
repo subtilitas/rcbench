@@ -202,9 +202,9 @@ static const char *rows_of(int rows)
     return t;
 }
 
-/* Notes that need more rows than there are page: the pager right above
- * the bottom line, a tap on the notes turns the page and wraps, a new set
- * of notes starts on page 1, and a room of one row shows no note. */
+/* Notes that need more rows than there are page: the counter on the
+ * page's last row, a tap on the notes turns the page and wraps, a new set
+ * of notes starts on page 1, and a room of one row shows a row a page. */
 TEST_CASE(notes_that_need_more_rows_page)
 {
     rig_start();
@@ -219,8 +219,8 @@ TEST_CASE(notes_that_need_more_rows_page)
     const gfx_rect_t n = sprog_notes_rect(&rig.f);
     CHECK(same(n, 8, 356, 620, 100));
     rig_render();
-    /* The pager "1/2" faint at the right of the row above the bottom line. */
-    CHECK(count(gfx_rect_make(568, 448, 50, 20), UI_TEXT_FAINT) > 10);
+    /* The counter "1/2" faint at the right of the page's last row. */
+    CHECK(count(gfx_rect_make(568, 436, 50, 20), UI_TEXT_FAINT) > 10);
     CHECK(count(gfx_rect_make(18, 356, 600, 60), UI_TEXT) > 200);
     CHECK_EQ(rig.f.note_page, 0);
     CHECK_EQ(rig_tap(n).kind, SPROG_R_NONE);
@@ -240,14 +240,16 @@ TEST_CASE(notes_that_need_more_rows_page)
     rig.notes = 3;
     rig_render();
     CHECK_EQ(rig.f.note_page, 0);
-    /* A bottom line of 5 rows leaves a room of 1 row: no note shows. */
+    /* A bottom line of 5 rows leaves a room of 1 row: a row a page beside
+     * the counter, 56 cells each, 130 characters in 3 rows. */
     rig.note[0] = k_three;
     rig.notes = 1;
     rig.bottom = rows_of(5);
     rig_render();
-    CHECK_EQ(sprog_note_pages(&rig.f), 1);
-    CHECK_EQ(sprog_notes_rect(&rig.f).w, 0);
-    CHECK_EQ(count(gfx_rect_make(18, 356, 600, 32), UI_TEXT), 0);
+    CHECK_EQ(sprog_note_pages(&rig.f), 3);
+    CHECK(sprog_notes_rect(&rig.f).w > 0);
+    CHECK(count(gfx_rect_make(18, 356, 560, 20), UI_TEXT) > 50);
+    CHECK(count(gfx_rect_make(588, 356, 30, 20), UI_TEXT_FAINT) > 10);
     CHECK(count(gfx_rect_make(18, 388, 600, 20), UI_TEXT) > 50);
     /* A bottom line taller than the room under the rows shows its first
      * rows from 8px under them, and none past the foot. */
@@ -522,7 +524,8 @@ TEST_CASE(a_note_taller_than_a_page_goes_on_over_pages)
     rig.notes = 1;
     rig.bottom = "All 32 registers read.";
     rig_view();
-    /* 5 rows above the bottom line, 4 a page beside the pager: 2 pages. */
+    /* 5 rows above the bottom line, the fifth beside the counter: 2
+     * pages. */
     CHECK_EQ(sprog_note_pages(&rig.f), 2);
     CHECK(sprog_notes_rect(&rig.f).w > 0);
     rig_render();
@@ -543,6 +546,114 @@ TEST_CASE(a_note_taller_than_a_page_goes_on_over_pages)
     CHECK(count(gfx_rect_make(18, 416, 600, 20), UI_TEXT) > 20);
 }
 
+/* A notes area of 2 rows, as under a tab of 5 lines: both rows hold
+ * notes, the counter shares the second; 3 notes of a row take 2 pages. */
+TEST_CASE(a_notes_area_of_2_rows_holds_2_rows_a_page)
+{
+    sprog_notes_shown_t sh;
+
+    rig_start();
+    rig.note[0] = "Tap a value to change it.";
+    rig.note[1] = "Travel is in degrees.";
+    rig.note[2] = "Third.";
+    rig.notes = 3;
+    rig.bottom = rows_of(4);            /* the bottom line at y 408 */
+    rig_render();
+    CHECK_EQ(sprog_note_pages(&rig.f), 2);
+    sprog_notes_shown(&rig.f, -1, &sh);
+    CHECK_EQ(sh.notes, 2);
+    CHECK_EQ(sh.note[1], 1);
+    CHECK_EQ(sh.row[1], 1);
+    CHECK_EQ(sh.top, 356);
+    CHECK_EQ(sh.end, 396);
+    CHECK_EQ(sh.bottom_y, 408);
+    CHECK_EQ(sh.bottom_rows, 4);
+    /* The second row: its note at the left, "1/2" at the right. */
+    CHECK(count(gfx_rect_make(18, 376, 300, 20), UI_TEXT) > 50);
+    CHECK(count(gfx_rect_make(588, 376, 30, 20), UI_TEXT_FAINT) > 10);
+    sprog_notes_shown(&rig.f, 1, &sh);
+    CHECK_EQ(sh.notes, 1);
+    CHECK_EQ(sh.note[0], 2);
+    CHECK_EQ(sh.end, 376);
+    sprog_notes_shown(&rig.f, 2, &sh);
+    CHECK_EQ(sh.notes, 0);
+    CHECK_EQ(sh.end, 356);
+}
+
+/* A note longer than the row beside the counter wraps there: 10 words of
+ * 59 characters fill a row of 60 cells but take 2 beside "1/2", and the
+ * text stays 10px clear of the counter. */
+TEST_CASE(a_note_beside_the_counter_wraps_clear_of_it)
+{
+    sprog_notes_shown_t sh;
+
+    rig_start();
+    rig.note[0] = "Short.";
+    rig.note[1] = rows_of(1);
+    rig.note[2] = "Last.";
+    rig.notes = 3;
+    rig.bottom = rows_of(4);
+    rig_view();
+    /* Row 1 is narrow: the 59 characters do not fit and start page 2. */
+    CHECK_EQ(sprog_note_pages(&rig.f), 2);
+    sprog_notes_shown(&rig.f, 0, &sh);
+    CHECK_EQ(sh.notes, 1);
+    /* A note of 2 rows first wraps its second row at 56 cells and goes
+     * on over the next page. */
+    rig.note[0] = rows_of(2);
+    rig.note[1] = "Last.";
+    rig.notes = 2;
+    rig_render();
+    CHECK_EQ(sprog_note_pages(&rig.f), 2);
+    sprog_notes_shown(&rig.f, 0, &sh);
+    CHECK_EQ(sh.notes, 1);
+    CHECK_EQ(sh.rows[0], 2);
+    sprog_notes_shown(&rig.f, 1, &sh);
+    CHECK_EQ(sh.notes, 2);
+    CHECK_EQ(sh.rows[0], 1);
+    CHECK_EQ(sh.row[1], 1);
+    CHECK(count(gfx_rect_make(18, 376, 560, 20), UI_TEXT) > 100);
+    CHECK_EQ(count(gfx_rect_make(578, 376, 40, 20), UI_TEXT), 0);
+    CHECK(count(gfx_rect_make(588, 376, 30, 20), UI_TEXT_FAINT) > 10);
+    (void)rig_tap(sprog_notes_rect(&rig.f));
+    rig_render();
+    CHECK(count(gfx_rect_make(18, 356, 600, 20), UI_TEXT) > 10);
+    CHECK_EQ(count(gfx_rect_make(578, 376, 40, 20), UI_TEXT), 0);
+    CHECK(count(gfx_rect_make(588, 376, 30, 20), UI_TEXT_FAINT) > 10);
+}
+
+/* The counter never meets the text: on every page of rooms of 1 to 5
+ * rows, under notes of full rows, no note pixel in its cells and the cell
+ * before them. */
+TEST_CASE(the_counter_never_overlaps_the_text)
+{
+    for (int k = 1; k <= 5; ++k) {
+        rig_start();
+        for (int i = 0; i < 6; ++i) {
+            rig.note[i] = rows_of(1 + i % 2);
+        }
+        rig.notes = 6;
+        rig.bottom = rows_of(k);
+        rig_view();
+        const int pages = sprog_note_pages(&rig.f);
+        CHECK(pages > 1);
+        for (int pg = 0; pg < pages; ++pg) {
+            sprog_notes_shown_t sh;
+            char cnt[12];
+
+            rig.f.note_page = (uint8_t)pg;
+            rig_render();
+            sprog_notes_shown(&rig.f, -1, &sh);
+            const int w = snprintf(cnt, sizeof(cnt), "%d/%d", pg + 1, pages)
+                          * 10;
+            const int y = sh.top + (sprog_notes_rect(&rig.f).h / 20 - 1) * 20;
+            CHECK_EQ(count(gfx_rect_make(618 - w - 10, y, w + 10, 20),
+                           UI_TEXT), 0);
+            CHECK(count(gfx_rect_make(618 - w, y, w, 20), UI_TEXT_FAINT) > 5);
+        }
+    }
+}
+
 int main(void)
 {
     RUN(the_servo_tab_flows_in_table_order);
@@ -558,5 +669,8 @@ int main(void)
     RUN(the_page_draws_its_lines_at_the_widest_pitch);
     RUN(a_list_of_wide_entries_stays_clear_of_cancel);
     RUN(a_note_taller_than_a_page_goes_on_over_pages);
+    RUN(a_notes_area_of_2_rows_holds_2_rows_a_page);
+    RUN(a_note_beside_the_counter_wraps_clear_of_it);
+    RUN(the_counter_never_overlaps_the_text);
     return test_summary("sprog_draw");
 }
