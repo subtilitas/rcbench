@@ -47,14 +47,6 @@ bool hpn_stepped(const hpn_row_t *r)
            && hitec_prog_move_live(&hp.prog, r->what);
 }
 
-gfx_rect_t hpn_step_rect(const hpn_row_t *r, bool plus)
-{
-    const gfx_rect_t rr = hpn_row_rect(r);
-    const int x = plus ? rr.x + rr.w - HP_STEP_W : rr.x + rr.w - HP_WIDE_W;
-
-    return (gfx_rect_t){ (int16_t)x, rr.y, HP_STEP_W, rr.h };
-}
-
 bool hpn_step(const hpn_row_t *r, bool plus)
 {
     hitec_value_t v;
@@ -70,37 +62,6 @@ bool hpn_step(const hpn_row_t *r, bool plus)
               : v.value - (int32_t)HITEC_MOVE_STEP;
     ++hp.rev;
     return hitec_prog_move_edit(&hp.prog, r->what, to) == HITEC_PROG_EDIT_OK;
-}
-
-void hpn_step_draw(gfx_canvas_t *c, const hpn_row_t *r, int i)
-{
-    const gfx_color_t fill = ui_theme_color(UI_C_PANEL_HI);
-
-    ui_button_font(c, hpn_step_rect(r, false), "-", fill,
-                   hp.have && hp.pressed == P_MINUS && hp.row == i, true,
-                   HP_FONT);
-    ui_button_font(c, hpn_step_rect(r, true), "+", fill,
-                   hp.have && hp.pressed == P_PLUS && hp.row == i, true,
-                   HP_FONT);
-}
-
-void hpn_step_tick(float dt_s)
-{
-    int n;
-
-    if (!hp.have || (hp.pressed != P_PLUS && hp.pressed != P_MINUS)) {
-        return;
-    }
-    /* The -/+ keys repeat as KST's and SETUP's do. */
-    n = ui_key_repeat(&hp.held_s, dt_s);
-    for (int i = 0; i < n; ++i) {
-        if (!hpn_step(&hpn_rows[hp.row], hp.pressed == P_PLUS)) {
-            /* Refused, or MOVE SERVO went off: the repeat ends. */
-            hp.have = false;
-            hp.pressed = P_NONE;
-            return;
-        }
-    }
 }
 
 /* ------------------------------------------------------------- the switch */
@@ -147,15 +108,6 @@ void hpn_move_follow(void)
 
 /* ------------------------------------------------------------- FIND STOP */
 
-gfx_rect_t hpn_find_rect(const hpn_row_t *r, bool right)
-{
-    const gfx_rect_t vr = hpn_value_rect(r);
-    const int w = (vr.w - 8) / 2;
-
-    return (gfx_rect_t){ (int16_t)(right ? vr.x + vr.w - w : vr.x), vr.y,
-                         (int16_t)w, vr.h };
-}
-
 bool hpn_find_live(bool right)
 {
     const hitec_prog_t *p = &hp.prog;
@@ -165,33 +117,6 @@ bool hpn_find_live(bool right)
     return hitec_prog_move_on(p)
            && hitec_prog_move_phase(p) != HITEC_MOVE_START
            && (side < 0 || side == mine);
-}
-
-/**
- * @brief Draws one key of the FIND STOP row.
- * @param c     the canvas
- * @param r     the row
- * @param i     its index in hpn_rows, for the key pressed
- * @param right true for RIGHT END's
- */
-static void find_key(gfx_canvas_t *c, const hpn_row_t *r, int i, bool right)
-{
-    const bool runs = hitec_prog_find_side(&hp.prog)
-                      == (right ? (int)HITEC_FIND_RIGHT
-                                : (int)HITEC_FIND_LEFT);
-
-    ui_button_font(c, hpn_find_rect(r, right),
-                   right ? TR(HP_END_R) : TR(HP_END_L),
-                   ui_theme_color(runs ? UI_C_WARN : UI_C_PANEL_SUNK),
-                   hp.have && hp.pressed == P_ROW && hp.row == i
-                       && hp.find_right == right,
-                   hpn_find_live(right), HP_FONT);
-}
-
-void hpn_find_draw(gfx_canvas_t *c, const hpn_row_t *r, int i)
-{
-    find_key(c, r, i, false);
-    find_key(c, r, i, true);
 }
 
 void hpn_find_act(bool right)
@@ -386,8 +311,10 @@ gfx_rect_t hitec_panel_step_rect(int page, int row, bool plus)
 {
     const hpn_row_t *r = hpn_row_at(page, row, 0);
 
-    return r != NULL && hpn_stepped(r) ? hpn_step_rect(r, plus)
-                                       : (gfx_rect_t){ 0, 0, 0, 0 };
+    hpn_mask_set();
+    return r != NULL && hpn_stepped(r)
+               ? sprog_step_rect(&hp.f, (int)(r - hpn_rows), plus)
+               : (gfx_rect_t){ 0, 0, 0, 0 };
 }
 
 gfx_rect_t hitec_panel_find_rect(bool right)
@@ -396,7 +323,8 @@ gfx_rect_t hitec_panel_find_rect(bool right)
         const hpn_row_t *r = &hpn_rows[i];
 
         if (r->kind == K_ACT && r->what == A_FIND && hpn_row_shown(r)) {
-            return hpn_find_rect(r, right);
+            hpn_mask_set();
+            return sprog_pair_rect(&hp.f, i, right ? 1 : 0);
         }
     }
     return (gfx_rect_t){ 0, 0, 0, 0 };
@@ -404,5 +332,5 @@ gfx_rect_t hitec_panel_find_rect(bool right)
 
 int hitec_panel_page_hint(void)
 {
-    return hp.page.open ? hp.page.hint : -1;
+    return hp.f.page.open ? hp.f.page.hint : -1;
 }
