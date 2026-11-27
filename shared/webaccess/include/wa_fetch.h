@@ -15,11 +15,12 @@
  *             line is offered in its place when it is newer than the
  *             running build, and which leaves the result as it was when it
  *             fails.  TESTING: FW_REL_API_URL with
- *             GitHub's API headers, whose answer's 10 newest releases by
- *             date name it, the highest version among them that is no
- *             draft (fw_release_scan_feed()), read up to the 10th
- *             release's end and no further, with a Content-Length or in
- *             chunks; 403 and 429, GitHub's request limit, end as LIMIT.
+ *             GitHub's API headers, whose answer's FW_REL_API_RELEASES
+ *             newest releases by date name it, the highest version among
+ *             them that is no draft (fw_release_scan_feed()), read up to
+ *             the last of them and no further, at most FW_REL_SCAN_MAX
+ *             bytes, with a Content-Length or in chunks; 403 and 429,
+ *             GitHub's request limit, end as LIMIT.
  *             Where the highest is past the panel's release line, the
  *             highest of the line among them stands in for it when it is
  *             offered.  Either way a release is NEWER only when
