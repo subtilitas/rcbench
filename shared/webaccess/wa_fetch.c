@@ -477,9 +477,11 @@ static void found(const wa_run_t *r, wa_fetch_res_t *out, fw_version_t v)
  * @brief One request of FW_REL_API_URL, its answer read a piece at a time
  *        into the scan until it ends.
  *
- * The bytes after the 10th release are not read: the connection closes.  A
- * chunked answer has no length to hold it to: it is read until the scan
- * ends, its last chunk, or FW_REL_SCAN_MAX bytes.
+ * The bytes after the FW_REL_API_RELEASES-th release are not read: the
+ * connection closes.  Nothing of the answer is kept: it passes through
+ * r->io a piece at a time.  A chunked answer has no length to hold it to:
+ * it is read until the scan ends, its last chunk, or FW_REL_SCAN_MAX
+ * bytes.
  *
  * @param r         the run
  * @param left      ms of the budget left
@@ -581,9 +583,9 @@ static bool api_scan(const wa_run_t *r, uint32_t left, wa_fetch_res_t *out,
 }
 
 /**
- * @brief TESTING: the 10 newest releases by date, their highest offered,
- *        or in its place the highest of the panel's release line when that
- *        one is offered.
+ * @brief TESTING: the FW_REL_API_RELEASES newest releases by date, their
+ *        highest offered, or in its place the highest of the panel's
+ *        release line when that one is offered.
  * @param r    the run
  * @param left ms of the budget left
  * @param out  the result

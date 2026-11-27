@@ -703,7 +703,7 @@ python3 tools/release_kind.py v0.22.0 v0.20.0 v0.24.0   # kind=stable prerelease
 stable release. 0.22 is the last release line for the ESP32-S3 panel, and
 later releases are for the 7-inch ESP32-P4 display board from Waveshare.
 The panel's check reads GitHub's latest release with RELEASES set to
-STABLE on SETUP > UPDATES, the default, and the 10 newest releases with
+STABLE on SETUP > UPDATES, the default, and the 5 newest releases with
 TESTING. The ESP32-P4 panel's line is uncapped: on both settings
 it offers any release newer than the version it runs. The 0.22.x cap, with
 the second read STABLE makes for it, belongs to the ESP32-S3 panel's
