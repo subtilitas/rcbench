@@ -2,12 +2,14 @@
  * @file hitec_panel_int.h
  * @brief The seam between the files of the Hitec programmer's overlay.
  *
- * hitec_panel.c holds the state, the rows, the geometry (wrappers onto
- * the servo frame, sprog.h) and the caller's side; hitec_panel_text.c the texts of the messages and the values;
+ * The servo frame (sprog.h) lays out, draws and presses it all: the tab,
+ * the holds, the keypad, the keyboard, the list and the hold page.
+ * hitec_panel.c holds the state, the rows and the caller's side;
+ * hitec_panel_text.c the texts of the messages and the values;
  * hitec_panel_edit.c the actions, the lists and the keypad;
- * hitec_panel_page.c the hold pages; hitec_panel_touch.c the presses;
- * hitec_panel_draw.c the frame's view (cells, head, notes, bottom line)
- * and the pages drawn; hitec_panel_file.c the
+ * hitec_panel_page.c the hold pages' content; hitec_panel_touch.c the
+ * switch on the frame's results; hitec_panel_draw.c the frame's view
+ * (cells, head, notes, bottom line); hitec_panel_file.c the
  * FILES list, the name keyboard, the pages of a file, a backup and FACTORY
  * DEFAULT and their texts; hitec_panel_move.c MOVE SERVO: its row, its
  * page, the -/+ keys of the positions and the live lines.  The functions
@@ -38,36 +40,16 @@
 /* ------------------------------------------------------------------ geometry */
 
 /**
- * @brief The overlay's layout, in pixels from the area's top left, the KST
- *        overlay's: on SERVO's left card of 620px five tabs of 120px in
- *        one row 48px tall (the home tag is the way back), rows 48px tall at a 56px
- *        pitch, two columns of 295px, a button or value of 150px, a wide
- *        row's of 260px.  Every control ends at hpn_foot().
+ * @brief The rows' places, as the frame lays them out (sprog.h): lines at
+ *        y 64 + 56 x n of the area.  hpn_row_at() reads a row's line from
+ *        them.
  */
-#define HP_TAB_Y   8            /**< the tabs' top                      */
-#define HP_TAB_H   UI_TAP_MIN   /**< their height, 48px                 */
-#define HP_ROW0    64           /**< the first row's top                */
-#define HP_PITCH   56           /**< a row's pitch: 8px between two     */
-#define HP_ROW_H   UI_TAP_MIN   /**< a row's height, 48px               */
-#define HP_VAL_W   150          /**< a button or value, 15 cells        */
-#define HP_WIDE_W  260          /**< a wide row's, 26 cells             */
+#define HP_ROW0    64           /**< the first line's top               */
+#define HP_PITCH   56           /**< a line's pitch                     */
+#define HP_VAL_W   150          /**< MOVE SERVO's button, 15 cells      */
 /** @brief WRITE n VALUES, a row with no label: 22 cells, "20 WERTE
  *         SCHREIBEN" and room. */
 #define HP_WRITE_W 220
-/** @brief The face of labels, buttons, values, notes and pages' lines:
- *         the type scale's LABEL face, 10 x 20. */
-#define HP_FONT    (&gfx_font_10x20)
-/** @brief A hold page's title: the HEAD face, 20 x 36. */
-#define HP_TITLE_FONT (&gfx_font_20x36)
-#define HP_CELL    10           /**< HP_FONT's cell, px                 */
-#define HP_LINE_H  20           /**< a wrapped row's pitch, px          */
-/** @brief The space between a control at the foot and the alert band. */
-#define HP_FOOT_GAP 4
-/** @brief A hold page's first line: under its title, 36px from 16px, and
- *         12px. */
-#define HP_PAGE_TOP 64
-/** @brief The lines a hold page holds. */
-#define HP_PAGE_LINES 12
 /** @brief The changed values a write page lists, the count of the rest
  *         after them. */
 #define HP_PAGE_VALUES 6
@@ -76,8 +58,6 @@
 #define HP_CHOICE_MAX 7
 _Static_assert(HP_CHOICE_MAX <= SPROG_LIST_MAX,
                "the frame's list holds HP_CHOICE_MAX entries");
-/** @brief The characters the name keyboard takes, KST's. */
-#define HP_NAME_TYPED 16
 
 /** @brief What a row is. */
 enum { K_ACT = 0, K_SHOW };
@@ -120,16 +100,6 @@ extern const hpn_row_t hpn_rows[HP_ROW_COUNT];
 
 /* -------------------------------------------------------------------- state */
 
-/** @brief What a press is on. */
-enum {
-    P_NONE = 0, P_TAB, P_ROW, P_KEYPAD, P_CHOICE, P_CHOICE_CANCEL,
-    P_APPLY, P_CANCEL, P_TEXTKEY, P_PORT, P_PLUS, P_MINUS, P_CONNECT,
-    P_WRITE, P_NOTES
-};
-
-/** @brief A position's -/+ keys while MOVE SERVO is on, KST's 56px. */
-#define HP_STEP_W 56
-
 /** @brief A line of Hitec D receive's list that sets nothing. */
 #define HP_RX_LINE (-1)
 
@@ -160,40 +130,16 @@ typedef struct {
     gfx_rect_t   area;          /**< the overlay's area, body pixels      */
     bool         open;          /**< the overlay is shown                 */
     bool         loaded;        /**< the options were read                */
-    /** @brief The frame: the tabs, the rows' places, the drawing of the
-     *         tab and of the list; the list's entries are its list. */
+    /** @brief The frame: the tabs, the rows' places, the presses, the
+     *         CONNECT and WRITE holds, the keypad, the keyboard, the list
+     *         and the hold page, and their drawing. */
     sprog_t      f;
-    ui_keypad_t  kp;            /**< the keypad of the supply or a value  */
-    int          kp_what;       /**< KP_*                                 */
+    int          kp_what;       /**< KP_*: what the keypad edits          */
     uint8_t      ed_id;         /**< the hitec_param_t a value editor is
                                      for                                  */
-    float        held_s;        /**< how long a -/+ key is held, s        */
-    bool         find_right;    /**< the press on FIND STOP is on its
-                                     right key                            */
+    /** @brief W_LOAD_MORE: the first line of CHECK THIS FILE's next part */
+    int          page_next;
 
-    struct {
-        bool      open;         /**< the page shows                       */
-        int       kind;         /**< W_*                                  */
-        bool      down;         /**< its hold button is down              */
-        ui_hold_t hold;         /**< the hold                             */
-        int       count;        /**< lines used                           */
-        bool      danger;       /**< the edge in the danger colour        */
-        char      title[64];    /**< the title                            */
-        char      apply[64];    /**< the hold button's label              */
-        int hint;      /**< the band's hint for a short release  */
-        char      lines[HP_PAGE_LINES][HITEC_PANEL_LINE]; /**< the lines */
-        uint8_t   level[HP_PAGE_LINES]; /**< each line's hitec_prog_level_t */
-        int       vfirst;       /**< the first line of the changed values */
-        int       vcount;       /**< their lines, "and n more" included    */
-        int       vtotal;       /**< the changed values in all             */
-        int       next;         /**< W_LOAD_MORE: the first line of the
-                                     next part                            */
-        bool      drop;         /**< W_LEAVE with unwritten edits: they
-                                     are listed, the hold leaves without
-                                     writing them and BACK keeps them     */
-    } page;                     /**< the hold page                        */
-
-    ui_textkey_t tk;            /**< the keyboard of a new file's name    */
     char     name[HITEC_CARD_NAME_MAX]; /**< the name typed               */
     bool     name_wait;         /**< a save by name waits for the card    */
     bool     files_wait;        /**< FILES waits for the card's list      */
@@ -201,27 +147,11 @@ typedef struct {
     bool     card_look;         /**< a tap asks the panel to look at the
                                      card slot                            */
 
-    bool     have;              /**< a press is on the glass              */
-    uint8_t  id;                /**< its touch id                         */
-    int      pressed;           /**< P_*                                  */
-    int      row;               /**< the row or entry it is on            */
-
     hitec_prog_state_t state_seen; /**< the state as last drawn           */
     uint32_t leaves_seen;          /**< hitec_prog_leaves() as last told
                                         to the supply screen              */
     uint32_t sig;               /**< signature of the last draw           */
     uint32_t rev;               /**< counts the picture's changes         */
-    uint32_t hold_rev;          /**< counts a hold's steps                */
-    ui_hold_t conn;             /**< CONNECT's 2s hold: it switches the
-                                     port's supply on                    */
-    bool     conn_due;          /**< CONNECT's hold completed: it acts on
-                                     the next tick, after that frame's
-                                     drains, unless a touch loss cancels
-                                     it first                            */
-    ui_hold_t wr;               /**< WRITE n VALUES' 2s hold: it writes
-                                     the edits                           */
-    bool     wr_due;            /**< WRITE's hold completed: it writes on
-                                     the next tick, as CONNECT connects  */
     bool     wr_on;             /**< the model's write gate
                                      (hitec_prog_write_enable()) is open
                                      for a write a hold started: it shuts
@@ -257,6 +187,9 @@ extern hpn_state_t hitec_panel_h;
  * @return the mask
  */
 uint8_t hpn_mask(void);
+/** @brief The frame's mask as the state is now: the rows' places follow
+ *         it, the cells of the view do not (hpn_place()). */
+void hpn_mask_set(void);
 /**
  * @brief Whether row @p r shows in the series, the state and the layout in
  *        use; a parameter the layout lacks leaves its place empty.
@@ -279,45 +212,6 @@ void hpn_place(void);
  * @return the row
  */
 const hpn_row_t *hpn_row_at(int page, int row, int col);
-/**
- * @brief Row @p r's whole rectangle.
- * @param r the row
- * @return the rectangle
- */
-gfx_rect_t hpn_row_rect(const hpn_row_t *r);
-/**
- * @brief Row @p r's control.
- * @param r the row
- * @return the rectangle
- */
-gfx_rect_t hpn_value_rect(const hpn_row_t *r);
-/**
- * @brief The tabs' row.
- * @return its rectangle
- */
-gfx_rect_t hpn_tabs_rect(void);
-/**
- * @brief Where a control at the foot ends: 8px above the area's foot, and
- *        HP_FOOT_GAP above the alert band at the most.
- * @return the y, body pixels
- */
-int hpn_foot(void);
-/**
- * @brief The cells of HP_FONT a note's row has: the area less 10px a side.
- * @return the cells, 1 at least
- */
-int hpn_cells(void);
-/**
- * @brief @p s in rows of the area's width from (@p x, @p y).
- * @param c     the canvas
- * @param x     the left, px
- * @param y     the top, px
- * @param s     the text
- * @param color its colour
- * @return the y under the last row
- */
-int hpn_text_rows(gfx_canvas_t *c, int x, int y, const char *s,
-                  gfx_color_t color);
 /**
  * @brief The state changed or an operation started: editors that asked
  *        for the state they were opened in close and the revision counts.
@@ -537,8 +431,19 @@ void hpn_edit_open(const hpn_row_t *r);
  * @return what the edit came to
  */
 hitec_prog_edit_t hpn_edit_take(int32_t value);
-/** @brief A page's hold completed: what it asked for. */
-void hpn_page_apply(void);
+/**
+ * @brief A page's hold completed: what it asked for.  The frame has shut
+ *        the page.
+ * @param kind W_*: the page's code
+ * @param drop the page listed unwritten edits: LEAVE drops them
+ */
+void hpn_page_apply(int kind, bool drop);
+/**
+ * @brief A page that closed without its hold: CHECK THIS CHANGE drops its
+ *        edit, CHECK THIS FILE its load.
+ * @param kind W_*: the page's code
+ */
+void hpn_page_dropped(int kind);
 /** @brief The programmer's options from the settings. */
 void hpn_options_load(void);
 /** @brief The supply limits a CONNECT is held to: none on the rbmod
@@ -624,13 +529,6 @@ void hpn_page_rules(uint16_t rules);
  */
 bool hpn_stepped(const hpn_row_t *r);
 /**
- * @brief A -/+ key of row @p r.
- * @param r    the row
- * @param plus true for +
- * @return the key's rectangle
- */
-gfx_rect_t hpn_step_rect(const hpn_row_t *r, bool plus);
-/**
  * @brief One step of row @p r's position: HITEC_MOVE_STEP counts up or
  *        down, through hitec_prog_move_edit().
  * @param r    the row
@@ -638,14 +536,6 @@ gfx_rect_t hpn_step_rect(const hpn_row_t *r, bool plus);
  * @return true when the draft took it
  */
 bool hpn_step(const hpn_row_t *r, bool plus);
-/**
- * @brief Draws row @p r's -/+ keys; hpn_value_rect() is its value between
- *        them.
- * @param c the canvas
- * @param r the row
- * @param i its index in hpn_rows, for the key pressed
- */
-void hpn_step_draw(gfx_canvas_t *c, const hpn_row_t *r, int i);
 /** @brief The tap on MOVE SERVO: off while on, else its page or the
  *         refusal. */
 void hpn_move_act(void);
@@ -674,18 +564,6 @@ int hpn_move_notes(const char **s, gfx_color_t *color, int max);
  */
 int hpn_move_lines(const hitec_prog_msg_t *m,
                    char out[HITEC_PANEL_MSG_LINES][HITEC_PANEL_LINE]);
-/** @brief The repeat of a -/+ key held, as KST's: 0.45s, then 8Hz, 30Hz
- *         from 2.25s after the press.
- * @param dt_s the frame's time, s
- */
-void hpn_step_tick(float dt_s);
-/**
- * @brief A key of the FIND STOP row: the two halves of its value.
- * @param r     the row
- * @param right true for RIGHT END's
- * @return the key's rectangle
- */
-gfx_rect_t hpn_find_rect(const hpn_row_t *r, bool right);
 /**
  * @brief Whether FIND STOP's key of one side takes a tap: MOVE SERVO's
  *        passes run, and no search runs on the other side.
@@ -693,14 +571,6 @@ gfx_rect_t hpn_find_rect(const hpn_row_t *r, bool right);
  * @return true when it does
  */
 bool hpn_find_live(bool right);
-/**
- * @brief Draws the FIND STOP row's keys, LEFT END and RIGHT END; the side
- *        that searches in the warning colour.
- * @param c the canvas
- * @param r the row
- * @param i its index in hpn_rows, for the key pressed
- */
-void hpn_find_draw(gfx_canvas_t *c, const hpn_row_t *r, int i);
 /**
  * @brief The tap on a FIND STOP key: the search on that side, or its end
  *        where it runs.
