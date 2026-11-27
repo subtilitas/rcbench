@@ -264,79 +264,213 @@ TEST_CASE(under_an_update_offer_only_the_still_lift_counts)
     CHECK_EQ(0, v.press);
 }
 
-/** @brief An update waiting for its confirmation, as bleota holds it. */
-static void offer(bleota_dev_t *d)
+/** @brief The update's offer under the still touch: the key as the
+ *         `ota` task takes it, into bleota's own confirmation. */
+typedef struct {
+    dk518_still_t s;   /**< the still touch */
+    dk518_key_t   k;   /**< the confirming key */
+    bleota_dev_t  d;   /**< bleota's device side */
+    bool          raw; /**< the `ota` task's last key read */
+    bool          key; /**< its debounced key */
+    uint32_t      t;   /**< the clock */
+    int           cues; /**< accept cues */
+} offer_t;
+
+/** @brief No offer yet.  @param o the rig */
+static void offer_init(offer_t *o)
 {
-    memset(d, 0, sizeof *d);
-    d->cfg.confirm = BLEOTA_CONFIRM_PRESS;
-    d->st = BLEOTA_DEV_CONFIRM;
-    d->key_armed = true;
+    memset(o, 0, sizeof *o);
+    dk518_still_init(&o->s);
+    dk518_key_init(&o->k);
+    o->d.cfg.confirm = BLEOTA_CONFIRM_PRESS;
+    o->d.st = BLEOTA_DEV_IDLE;
+    o->t = 0xFFFFF000u;
+}
+
+/** @brief The offer opens, as bleota's ask_confirm() opens it.
+ *  @param o the rig */
+static void offer_open(offer_t *o)
+{
+    o->d.st = BLEOTA_DEV_CONFIRM;
+    o->d.key_armed = !o->d.key_down;
+    o->d.code = BLEOTA_OK;
 }
 
 /**
- * @brief A touch under the offer: still at (x, y) for @p still_ms, then
- *        at (x2, y2) until @p ms, then lifted; the key goes to bleota as
- *        the `ota` task takes it, for 3,000ms in all.
- * @param d the offer
- * @param x2 the column it moves to
- * @param y2 the row it moves to
- * @param still_ms how long it stays at the start
- * @param ms how long the finger is down
+ * @brief Run the rig every STEP ms for @p ms with the finger as given.
+ * @param o    the rig
+ * @param down a finger is on the glass
+ * @param x    its column
+ * @param y    its row
+ * @param ms   how long
  */
-static void touch_offer(bleota_dev_t *d, uint16_t x2, uint16_t y2,
-                        uint32_t still_ms, uint32_t ms)
+static void offer_run(offer_t *o, bool down, uint16_t x, uint16_t y,
+                      uint32_t ms)
 {
-    dk518_still_t s;
-    bool raw = false;
-    bool key = false;
-    dk518_still_init(&s);
-    for (uint32_t t = 0; t < 3000u; t += STEP) {
-        const bool down = t < ms;
-        const bool at = t < still_ms;
-        (void)dk518_still_step(&s, down, at ? 180 : x2, at ? 180 : y2, 0,
-                               true, s_now + t, NULL);
-        if (t % 10u == 0u) {
-            const bool now_raw = dk518_still_key(&s, s_now + t);
-            if (now_raw == raw) {
-                key = raw;
+    for (uint32_t i = 0; i < ms; i += STEP) {
+        dk518_still_out_t e;
+        const bool open = o->d.st == BLEOTA_DEV_CONFIRM;
+        (void)dk518_still_step(&o->s, down, x, y, 0,
+                               o->d.st != BLEOTA_DEV_IDLE, o->t, &e);
+        o->cues += dk518_key_step(&o->k, open, &e, o->t);
+        if ((o->t / STEP) % 2u == 0u) {
+            const bool now_raw = dk518_key_down(&o->k, o->t);
+            if (now_raw == o->raw) {
+                o->key = o->raw;
             }
-            raw = now_raw;
-            bleota_dev_key(d, key, s_now + t);
+            o->raw = now_raw;
+            bleota_dev_key(&o->d, o->key, o->t);
         }
+        o->t += STEP;
     }
+}
+
+/** @brief A still tap of 100ms and 200ms up after it.  @param o the rig */
+static void tap(offer_t *o)
+{
+    offer_run(o, true, 180, 180, 100);
+    offer_run(o, false, 0, 0, 200);
 }
 
 TEST_CASE(a_still_tap_accepts_the_update)
 {
-    bleota_dev_t d;
-    s_now = 0xFFFFF000u;
-    offer(&d);
-    touch_offer(&d, 180, 180, 200, 200);
-    CHECK_EQ(d.st, BLEOTA_DEV_OPEN);
+    offer_t o;
+    offer_init(&o);
+    offer_open(&o);
+    tap(&o);
+    CHECK_EQ(o.d.st, BLEOTA_DEV_OPEN);
+    CHECK_EQ(o.cues, 1);
 }
 
 TEST_CASE(a_swipe_neither_accepts_nor_refuses_the_update)
 {
-    bleota_dev_t d;
-    s_now = 0xFFFFF000u;
-    offer(&d);
-    touch_offer(&d, 260, 180, 100, 300);
-    CHECK_EQ(d.st, BLEOTA_DEV_CONFIRM);
-    offer(&d);
-    touch_offer(&d, 180, 40, 600, 1500);  /* moved before 1,000ms */
-    CHECK_EQ(d.st, BLEOTA_DEV_CONFIRM);
+    offer_t o;
+    offer_init(&o);
+    offer_open(&o);
+    offer_run(&o, true, 180, 180, 100);
+    offer_run(&o, true, 260, 180, 200);
+    offer_run(&o, false, 0, 0, 3000);
+    CHECK_EQ(o.d.st, BLEOTA_DEV_CONFIRM);
+    offer_run(&o, true, 180, 180, 600);   /* moved before 1,000ms */
+    offer_run(&o, true, 180, 40, 900);
+    offer_run(&o, false, 0, 0, 3000);
+    CHECK_EQ(o.d.st, BLEOTA_DEV_CONFIRM);
+    CHECK_EQ(o.cues, 0);
 }
 
 TEST_CASE(a_still_hold_refuses_the_update_whenever_it_lifts)
 {
-    bleota_dev_t d;
-    s_now = 0xFFFFF000u;
-    offer(&d);
-    touch_offer(&d, 180, 180, 1200, 1200);  /* lifted before 2,000ms */
-    CHECK_EQ(d.st, BLEOTA_DEV_IDLE);
-    offer(&d);
-    touch_offer(&d, 250, 250, 1100, 2500);  /* moved after 1,000ms */
-    CHECK_EQ(d.st, BLEOTA_DEV_IDLE);
+    offer_t o;
+    offer_init(&o);
+    offer_open(&o);
+    offer_run(&o, true, 180, 180, 1200);  /* lifted before 2,000ms */
+    offer_run(&o, false, 0, 0, 2000);
+    CHECK_EQ(o.d.st, BLEOTA_DEV_IDLE);
+    CHECK_EQ(o.d.code, BLEOTA_E_REFUSED);
+    offer_init(&o);
+    offer_open(&o);
+    offer_run(&o, true, 180, 180, 1100);  /* moved after 1,000ms */
+    offer_run(&o, true, 250, 250, 1400);
+    offer_run(&o, false, 0, 0, 500);
+    CHECK_EQ(o.d.code, BLEOTA_E_REFUSED);
+}
+
+TEST_CASE(a_tap_inside_a_holds_window_neither_shortens_it_nor_accepts)
+{
+    offer_t o;
+    offer_init(&o);
+    offer_open(&o);
+    offer_run(&o, true, 180, 180, 1200);
+    offer_run(&o, false, 0, 0, 100);      /* the hold's window runs on */
+    offer_run(&o, true, 180, 180, 100);   /* a tap at 1,300 to 1,400ms */
+    offer_run(&o, false, 0, 0, 2000);
+    CHECK_EQ(o.d.st, BLEOTA_DEV_IDLE);
+    CHECK_EQ(o.d.code, BLEOTA_E_REFUSED);
+    CHECK_EQ(o.cues, 0);
+}
+
+TEST_CASE(two_quick_taps_accept_once_and_never_make_a_hold)
+{
+    offer_t o;
+    offer_init(&o);
+    offer_open(&o);
+    for (int i = 0; i < 20; ++i) {        /* a tap every 60ms for 1.2s */
+        offer_run(&o, true, 180, 180, 40);
+        offer_run(&o, false, 0, 0, 20);
+    }
+    offer_run(&o, false, 0, 0, 500);
+    CHECK_EQ(o.d.st, BLEOTA_DEV_OPEN);
+}
+
+TEST_CASE(a_touch_from_before_the_offer_answers_nothing)
+{
+    offer_t o;
+    offer_init(&o);
+    offer_run(&o, true, 180, 180, 200);   /* down at 0ms */
+    offer_open(&o);                       /* the offer at 200ms */
+    offer_run(&o, true, 180, 180, 100);
+    offer_run(&o, false, 0, 0, 500);      /* lifted at 300ms */
+    CHECK_EQ(o.d.st, BLEOTA_DEV_CONFIRM);
+    offer_run(&o, true, 180, 180, 300);   /* held across the opening */
+    offer_init(&o);
+    offer_run(&o, true, 180, 180, 500);
+    offer_open(&o);
+    offer_run(&o, true, 180, 180, 2500);
+    offer_run(&o, false, 0, 0, 500);
+    CHECK_EQ(o.d.st, BLEOTA_DEV_CONFIRM);
+    tap(&o);                              /* a fresh touch answers */
+    CHECK_EQ(o.d.st, BLEOTA_DEV_OPEN);
+    CHECK_EQ(o.cues, 1);
+}
+
+TEST_CASE(a_touch_across_a_lost_link_answers_no_later_offer)
+{
+    offer_t o;
+    offer_init(&o);
+    offer_open(&o);
+    offer_run(&o, true, 180, 180, 300);
+    bleota_dev_lost(&o.d);                /* the link drops */
+    offer_run(&o, true, 180, 180, 100);
+    offer_open(&o);                       /* a new offer, same finger */
+    offer_run(&o, true, 180, 180, 100);
+    offer_run(&o, false, 0, 0, 500);
+    CHECK_EQ(o.d.st, BLEOTA_DEV_CONFIRM);
+    tap(&o);
+    CHECK_EQ(o.d.st, BLEOTA_DEV_OPEN);
+}
+
+TEST_CASE(a_holds_window_ends_with_its_offer_and_the_next_offer_starts_up)
+{
+    offer_t o;
+    offer_init(&o);
+    offer_open(&o);
+    offer_run(&o, true, 180, 180, 1500);  /* the key down since 1,000ms */
+    CHECK(dk518_key_down(&o.k, o.t));
+    bleota_dev_lost(&o.d);                /* lost before the refusal */
+    offer_run(&o, true, 180, 180, 50);
+    CHECK(!dk518_key_down(&o.k, o.t));
+    offer_run(&o, false, 0, 0, 100);
+    offer_open(&o);                       /* the window would still run */
+    CHECK(o.d.key_armed);
+    offer_run(&o, false, 0, 0, 100);
+    CHECK_EQ(o.d.st, BLEOTA_DEV_CONFIRM);
+    tap(&o);
+    CHECK_EQ(o.d.st, BLEOTA_DEV_OPEN);
+}
+
+TEST_CASE(no_offer_keeps_the_key_up)
+{
+    offer_t o;
+    offer_init(&o);
+    for (int i = 0; i < 3; ++i) {
+        offer_run(&o, true, 180, 180, 100);
+        CHECK(!dk518_key_down(&o.k, o.t));
+        offer_run(&o, false, 0, 0, 30);
+        CHECK(!dk518_key_down(&o.k, o.t));
+    }
+    offer_run(&o, true, 180, 180, 1500);
+    CHECK(!dk518_key_down(&o.k, o.t));
+    CHECK_EQ(o.cues, 0);
 }
 
 TEST_CASE(native_points_scale_to_0_to_239)
@@ -367,6 +501,12 @@ int main(void)
     RUN(a_still_tap_accepts_the_update);
     RUN(a_swipe_neither_accepts_nor_refuses_the_update);
     RUN(a_still_hold_refuses_the_update_whenever_it_lifts);
+    RUN(a_tap_inside_a_holds_window_neither_shortens_it_nor_accepts);
+    RUN(two_quick_taps_accept_once_and_never_make_a_hold);
+    RUN(a_touch_from_before_the_offer_answers_nothing);
+    RUN(a_touch_across_a_lost_link_answers_no_later_offer);
+    RUN(a_holds_window_ends_with_its_offer_and_the_next_offer_starts_up);
+    RUN(no_offer_keeps_the_key_up);
     RUN(native_points_scale_to_0_to_239);
     return test_summary("dk518_input");
 }

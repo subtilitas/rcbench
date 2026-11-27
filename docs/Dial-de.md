@@ -52,7 +52,9 @@ EVENT trägt seinen Punkt von 0-359 auf 0-239 skaliert. Die Update-Frage
 lautet TIPPEN: ANNEHMEN, die Ausschalt-Wahl TIPPEN: WÄHLEN. Das Update
 nimmt nur die ruhige Berührung: Ein ruhiges Abheben vor 1.000ms nimmt es
 an, eine ruhige Berührung von 1.000ms lehnt es ab, und ein Wischen tut
-keins von beiden. Statt eines
+keins von beiden. Nur eine Berührung, die beginnt, während die Frage
+steht, beantwortet sie; eine Berührung von vorher oder von vor einem
+verlorenen Link beantwortet nichts, bis sie abhebt. Statt eines
 Summers vibriert ein DRV2605 auf 0x5A mit seinen ROM-Effekten für einen
 LRA (Bibliothek 6): eine Rastung "Sharp Tick 3" (26), PRESS "Sharp Click
 100%" (4), HOLD und ein angenommenes Update "Strong Click 100%" (1), die

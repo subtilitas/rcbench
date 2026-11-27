@@ -76,20 +76,17 @@ unsigned dk518_still_step(dk518_still_t *s, bool touch, uint16_t x,
     if (touch && !s->down) {
         s->down = true;
         s->moved = false;
-        s->key_hold = false;
+        s->held = false;
+        o.began = true;
         s->x0 = x;
         s->y0 = y;
         s->down_ms = now;
     } else if (!touch && s->down) {
         const uint32_t t = now - s->down_ms;
         s->down = false;
-        s->key_hold = false;
+        o.lifted = true;
         if (!s->moved) {
             o.still_lift = t < DK_HOLD_MS;
-            if (o.still_lift) {
-                s->key_on = true;
-                s->key_until = now + DK518_KEY_PRESS_MS;
-            }
             if (t <= DK518_TAP_MS) {
                 o.tap = true;
                 o.tap_x = dk518_touch_scale(s->x0);
@@ -106,11 +103,9 @@ unsigned dk518_still_step(dk518_still_t *s, bool touch, uint16_t x,
             dial_button_yield(&s->button, true, now);
         }
     }
-    if (touch && !s->moved && !s->key_hold
-        && now - s->down_ms >= DK_HOLD_MS) {
-        s->key_hold = true;
-        s->key_on = true;
-        s->key_until = now + DK518_KEY_HOLD_MS;
+    if (touch && !s->moved && !s->held && now - s->down_ms >= DK_HOLD_MS) {
+        s->held = true;
+        o.held = true;
     }
     if (yield) {
         dial_button_yield(&s->button, touch, now);
@@ -123,10 +118,64 @@ unsigned dk518_still_step(dk518_still_t *s, bool touch, uint16_t x,
     return act;
 }
 
-bool dk518_still_key(const dk518_still_t *s, uint32_t now)
+void dk518_key_init(dk518_key_t *k)
 {
-    return s->key_on
-           && (s->key_hold || (int32_t)(s->key_until - now) > 0);
+    memset(k, 0, sizeof *k);
+}
+
+/**
+ * @brief Whether a new window may open: none was opened in this offer,
+ *        or the last one ended DK518_KEY_GAP_MS ago.
+ * @param k   the key
+ * @param now the time
+ * @return true when it may
+ */
+static bool key_free(const dk518_key_t *k, uint32_t now)
+{
+    return !k->on
+           || (!k->hold
+               && (int32_t)(now - k->until) >= (int32_t)DK518_KEY_GAP_MS);
+}
+
+bool dk518_key_step(dk518_key_t *k, bool offer,
+                    const dk518_still_out_t *o, uint32_t now)
+{
+    bool press = false;
+    if (offer != k->offer) {
+        /* Opened or closed: the window ends, the touch under way is
+         * nobody's. */
+        k->offer = offer;
+        k->touch_ok = false;
+        k->hold = false;
+        k->on = false;
+    }
+    if (o->began) {
+        k->touch_ok = offer;
+    }
+    if (o->held && k->touch_ok) {
+        const uint32_t until = now + DK518_KEY_HOLD_MS;
+        if (!k->on || (int32_t)(until - k->until) > 0) {
+            k->until = until;
+        }
+        k->on = true;
+        k->hold = true;
+    }
+    if (o->still_lift && k->touch_ok && key_free(k, now)) {
+        k->on = true;
+        k->until = now + DK518_KEY_PRESS_MS;
+        press = true;
+    }
+    if (o->lifted) {
+        k->touch_ok = false;
+        k->hold = false;
+    }
+    return press;
+}
+
+bool dk518_key_down(const dk518_key_t *k, uint32_t now)
+{
+    return k->offer && k->on
+           && (k->hold || (int32_t)(k->until - now) > 0);
 }
 
 uint8_t dk518_touch_scale(uint16_t v)

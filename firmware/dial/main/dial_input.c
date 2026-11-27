@@ -120,6 +120,7 @@ typedef struct {
     pcnt_unit_handle_t pcnt_ccw; /**< the anticlockwise line's unit */
     dk518_enc_t   enc;           /**< the two lines' decode */
     dk518_still_t still;         /**< the still touch: the screen button */
+    dk518_key_t   key;           /**< the update's confirming key */
     uint16_t      nx;            /**< the touch point, native px */
     uint16_t      ny;            /**< the touch point, native px */
 #else
@@ -159,8 +160,7 @@ typedef struct {
 #if CONFIG_RCBENCH_DIAL_BOARD_K518
 /** @brief The screen button's gestures: the still touch's. */
 #define BUTTON (&s_in.still.button)
-/** @brief The update's key: the validated still touch
- *         (dk518_still_key()), for the `ota` task. */
+/** @brief The update's key (dk518_key_down()), for the `ota` task. */
 static atomic_bool s_key;
 #else
 /** @brief The screen button's gestures. */
@@ -369,17 +369,15 @@ static void screen_button(uint32_t now)
                                           s_in.nx, s_in.ny,
                                           s_in.local_turns, yield, now, &o);
     s_in.local_turns = 0;
-    /* The update takes the validated still touch, never the raw one: a
-     * swipe must not accept it. */
-    atomic_store(&s_key, dk518_still_key(&s_in.still, now));
+    /* The update takes the still touch's events, never the raw touch:
+     * a swipe, or a touch from before the offer, must not answer it. */
+    devota_view(&dv);
+    if (dk518_key_step(&s_in.key, dv.st == BLEOTA_DEV_CONFIRM, &o, now)) {
+        dial_buzz_cue(DIAL_CUE_ACCEPT);
+    }
+    atomic_store(&s_key, dk518_key_down(&s_in.key, now));
     if (o.tap) {
         gesture_push(DK_G_TAP, o.tap_x, o.tap_y);
-    }
-    if (yield && o.still_lift) {
-        devota_view(&dv);
-        if (dv.st == BLEOTA_DEV_CONFIRM) {
-            dial_buzz_cue(DIAL_CUE_ACCEPT);
-        }
     }
     button_acts(act, now);
 }
@@ -675,6 +673,7 @@ void dial_input_start(void)
     memset(&s_in, 0, sizeof s_in);
     dk518_enc_init(&s_in.enc);
     dk518_still_init(&s_in.still);
+    dk518_key_init(&s_in.key);
     if (!encoder_init()) {
         ESP_LOGE(TAG, "the encoder's PCNT units did not start");
     }
