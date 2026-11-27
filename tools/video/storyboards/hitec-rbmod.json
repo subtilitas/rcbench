@@ -425,12 +425,12 @@
     },
     {
      "view": "servo-hitec-rbmod",
-     "dur": 5.2,
+     "dur": 9.4,
      "n": 3,
      "chip": "Connect",
      "title": "Connect",
-     "text": "Hold <b>CONNECT</b> for 2s. The bench switches the ports' 5V on and takes the port out of PWM.",
-     "say": "Hold connect for two seconds. The bench switches the ports' 5 volts on and takes the port out of P W M.",
+     "text": "The carrier makes the ports' 5V from its 15V input: under 13.5V the bench refuses <b>CONNECT</b>. Hold <b>CONNECT</b> for 2s. The bench switches the ports' 5V on and takes the port out of PWM.",
+     "say": "The carrier makes the ports' 5 volts from its 15 volt input. With an input under 13.5 volts, the bench refuses connect. Hold connect for two seconds. The bench switches the ports' 5 volts on and takes the port out of P W M.",
      "target": [
       542,
       156
