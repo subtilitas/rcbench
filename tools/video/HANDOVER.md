@@ -27,7 +27,7 @@ a new session needs beyond it.
 | `tools/video_audio.py` | sound track: music bed, event sounds, record brake at freezes, ducking under the narrator |
 | `tools/video_voice.py` | narration with the Kokoro model, steps stretched to their sentences |
 | `tools/video_cad.py`, `player/case_cad.js` | the case from its STEP assembly, 12 movable components |
-| `storyboards/kst-rbmod.json` | programming a KST servo on the rbmod carrier in 8 steps, 29 screen steps, narrated; 169.4s as written; not rendered with the narration, not seen by the owner. The file `kst-rbmod.mp4` of 2026-11-13 shows the 100.4s form without narration and with an ENABLE WRITE page the panel no longer has |
+| `storyboards/kst-rbmod.json` | programming a KST servo on the rbmod carrier in 8 steps, 29 screen steps, narrated; 169.4s as written; rendered with its narration, 248.87s; not seen by the owner. The file `kst-rbmod.mp4` of 2026-11-13 shows the 100.4s form without narration and with an ENABLE WRITE page the panel no longer has |
 | `storyboards/features.json` | feature tour, 755.92s, approved by the owner on 2026-11-13 |
 | `tools/video_board.py`, `player/board.js` | a KiCad board drawn flat, with a net lit up, a cut, a wire and a part across two pads |
 | `storyboards/rbmod-rework.json` | the rev 1 rework in 4 steps, 83s, no narration |
@@ -36,7 +36,7 @@ a new session needs beyond it.
 | `player/mini3d.js`, `boards/minircbench-wiring.json` | the `mini` model and the wiring drawing of the MiniRcBench; its storyboards `minircbench-build` and `minircbench-features` and their stills are in the MiniRcBench repository under `docs/video/` and render here by path; `tools/video_cad.py --parts` converts its assembly |
 | `storyboards/rbmod-first-program.json`, `player/part3d.js`, `player/windows.js`, `web/capture.js` | first programming of a bench with the rbmod carrier in 6 chapters, 321.22s, narrated, bed `pachelbel-canon` at half level; STEP models of the panel, the carrier and the RP2350-CAN, captures of the releases page and of the ESP Web Tool, a drawn Windows desktop for the drive RP2350 |
 | `storyboards/auto-rudder.json`, `player/rudder3d.js`, `test/host/video_rauto.c` | setting a rudder's end points with RUDDER AUTO in 4 steps, 300.77s, narrated, bed `pachelbel-canon` at half level; the wing slice, the IMU on Gecko Tape, the Dial in its base and the cased bench in one 3D scene, the display and the flap following one run of the host suites' rig |
-| `storyboards/hitec-rbmod.json` | programming a Hitec D series servo on the rbmod carrier in 8 steps, 46 screen steps; rendered with its narration, 299.47s; not heard and not seen by the owner |
+| `storyboards/hitec-rbmod.json` | programming a Hitec D series servo on the rbmod carrier in 8 steps, 46 screen steps; rendered with its narration, 310.07s; not heard and not seen by the owner |
 | `storyboards/origin.json` | the project's origin in 7 chapters; rendered with its narration, 474.90s; not heard and not seen by the owner |
 | `storyboards/stop.json` | STOP as an emergency stop in 4 steps, 12 screen steps, each touch on STOP as press and release, and the red stop button pressed and released in a case scene; 113.9s as written, 131.53s rendered with the narration; not heard and not seen by the owner in this form |
 | `storyboards/wurstblinker.json` | the Wurstblinker node and the kinetic Wurstblinker, 4 chapters, with a dog that jumps below the first node on its mast, the sausage's bounce off a traffic light and the kinetic node again for approval, beta test and Senfglas update; 115.34s as written; rendered in Blender by `blender/wurstblinker/` with its narration, 115.34s, 3460 frames, on 2026-11-26 from 0d7bac3c2 with Senfglas spoken as /zˈɛnfɡlɑs/; the owner saw its stills and chose that pronunciation |
@@ -268,7 +268,7 @@ Owner, 2026-11-14:
 - In the screen scenes of `hitec-rbmod` a card's leader line crosses
   text on the display where the target is a button's centre; a step's
   `point` moves the line's end, as in `stop`. The narration stretches
-  `hitec-rbmod` by 40% over the written length.
+  `hitec-rbmod` by 43% over the written length.
 - `origin` shows the test bench in 3 frames of the bench's camera,
   `origin-bench-host`, `-panel` and `-top`, 2560 x 1440 with labels drawn
   on, released by the owner for the tree; the camera's other frames are
