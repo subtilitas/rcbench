@@ -1,4 +1,19 @@
 {
+ "thumb": {
+  "at": 12,
+  "lines": [
+   "WIRELESS",
+   "*KNOB"
+  ],
+  "crop": [
+   0,
+   130,
+   1600
+  ],
+  "side": "l",
+  "accent": "#ffb000",
+  "size": 140
+ },
  "name": "dial",
  "lang": "en",
  "brand": "M5Stack Dial",

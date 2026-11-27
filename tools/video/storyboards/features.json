@@ -1,4 +1,67 @@
 {
+ "thumb": {
+  "at": 3,
+  "lines": [
+   "EVERY",
+   "*SCREEN"
+  ],
+  "crop": [
+   0,
+   0,
+   1920
+  ],
+  "side": "r",
+  "accent": "#22d3ee",
+  "size": 150,
+  "scene": {
+   "type": "case",
+   "model": "cad",
+   "dur": 900,
+   "display": {
+    "view": "overview"
+   },
+   "camera": [
+    [
+     0,
+     [
+      -285,
+      275,
+      385
+     ],
+     [
+      -112,
+      58,
+      0
+     ]
+    ],
+    [
+     900,
+     [
+      -285,
+      275,
+      385
+     ],
+     [
+      -112,
+      58,
+      0
+     ]
+    ]
+   ],
+   "parts": {
+    "lid": [
+     [
+      0,
+      0.22
+     ],
+     [
+      900,
+      0.22
+     ]
+    ]
+   }
+  }
+ },
  "name": "features",
  "lang": "en",
  "brand": "feature tour",

@@ -1,4 +1,19 @@
 {
+ "thumb": {
+  "at": 82,
+  "lines": [
+   "FIRST",
+   "*FLASH"
+  ],
+  "crop": [
+   100,
+   200,
+   1500
+  ],
+  "side": "l",
+  "accent": "#34d399",
+  "size": 150
+ },
  "name": "rbmod-first-program",
  "lang": "en",
  "brand": "First programming",

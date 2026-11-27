@@ -1,4 +1,19 @@
 {
+ "thumb": {
+  "at": 80,
+  "lines": [
+   "EMERGENCY",
+   "*STOP"
+  ],
+  "crop": [
+   250,
+   170,
+   1250
+  ],
+  "side": "r",
+  "accent": "#ff3b4e",
+  "size": 140
+ },
  "name": "stop",
  "lang": "en",
  "music": "bach-cello",

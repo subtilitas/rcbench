@@ -1,4 +1,19 @@
 {
+ "thumb": {
+  "at": 190,
+  "lines": [
+   "HOW IT",
+   "*BEGAN"
+  ],
+  "crop": [
+   60,
+   330,
+   1150
+  ],
+  "side": "r",
+  "accent": "#22d3ee",
+  "size": 150
+ },
  "name": "origin",
  "lang": "en",
  "brand": "How it began",
