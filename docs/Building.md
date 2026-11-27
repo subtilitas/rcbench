@@ -31,6 +31,7 @@ rcbench/
     esc/                  ESC programming profiles, their JSON reader and registry
     sense/                INA228 and INA3221 current monitor drivers
     fwupdate/             panel firmware image check · upload staging · installer · IOmcu update slots and BUY
+    relsig/               the release signature's raw form for bleota protocol 2 and its check over a SHA-256 (Mbed TLS)
     devupd/               the wireless devices' update on the panel: the transfer engine and its Bluetooth LE client
     webaccess/            Wi-Fi session · card listing and ZIP stream · the page · mDNS
     clock/                wall clock rules: real date or not · file stamps · time zones · the NTP request
@@ -104,6 +105,7 @@ in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `files` · `sbus` | yes | | yes |
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` · `mstime` · `fwupdate` | yes | yes | yes |
 | `artwork` · `esc` · `webaccess` · `clock` | yes | | yes |
+| `relsig` | yes | | yes |
 | `ppm` · `i2c_txq` | | yes | yes |
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` · `passthru` | yes | yes | yes |
 | `escwire` · `openyge` | yes | yes | yes |

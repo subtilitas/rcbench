@@ -72,10 +72,9 @@ static psa_hash_operation_t s_hash;
 static uint8_t s_buf[WRITE_MAX];
 
 /** @brief The release key, firmware/panel/main/keys/release_signing_pub.pem,
- *         embedded by CMakeLists.txt with a terminating NUL. @{ */
+ *         embedded by CMakeLists.txt (EMBED_TXTFILES) with a terminating
+ *         NUL. */
 extern const char _binary_release_signing_pub_pem_start[];
-extern const char _binary_release_signing_pub_pem_end[]; /**< its end */
-/** @} */
 
 /** @brief The ms clock, low 32 bits. @return ms since the start */
 static uint32_t now_ms(void)
@@ -233,11 +232,8 @@ static void check_sig(void)
         return;
     }
     const int64_t t0 = esp_timer_get_time();
-    const bool ok = relsig_verify(
-        _binary_release_signing_pub_pem_start,
-        (size_t)(_binary_release_signing_pub_pem_end
-                 - _binary_release_signing_pub_pem_start),
-        sha, sig);
+    const char *pem = _binary_release_signing_pub_pem_start;
+    const bool ok = relsig_verify(pem, strlen(pem), sha, sig);
     const unsigned us = (unsigned)(esp_timer_get_time() - t0);
     xSemaphoreTake(s_lock, portMAX_DELAY);
     bleota_dev_sig(&s_dev, ok, now_ms());
