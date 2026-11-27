@@ -1,12 +1,12 @@
 /**
  * @file
- * @brief The Guition JC3636K518C's display, touch, input, click and power
- *        calls (dial.h), which do nothing yet.
+ * @brief The Guition JC3636K518C's touch, input, click and power calls
+ *        (dial.h), which do nothing yet.
  *
- * The K518 build runs the BLE peripheral, its bind, the console and the
- * face task; the face task draws its 240 x 240 frame and the flush sends
- * nothing.  No pin of dial_board_k518.h is driven: the display, the touch,
- * the encoder, the haptic driver and the battery reading are later slices.
+ * The K518 build runs the BLE peripheral, its bind, the console, the face
+ * task and the display with its boot face (dial_k518_lcd.c).  The touch,
+ * the encoder, the haptic driver and the battery reading are later slices;
+ * none of their pins is driven.
  * Until then the Dial sends no EVENT, its STATUS names the battery unknown,
  * and every update is refused, since no key confirms one.
  *
@@ -58,34 +58,6 @@ void dial_buzz_tone(uint32_t hz, uint32_t ms)
 {
     (void)hz;
     (void)ms;
-}
-
-/* --- display --------------------------------------------------------- */
-
-bool dial_lcd_init(void)
-{
-    return false;
-}
-
-void dial_lcd_flush(const uint16_t *fb, int y0, int y1)
-{
-    (void)fb;
-    (void)y0;
-    (void)y1;
-}
-
-void dial_lcd_flush_rect(const uint16_t *fb, int x, int y, int w, int h)
-{
-    (void)fb;
-    (void)x;
-    (void)y;
-    (void)w;
-    (void)h;
-}
-
-void dial_lcd_backlight(unsigned pct)
-{
-    (void)pct;
 }
 
 /* --- touch ----------------------------------------------------------- */

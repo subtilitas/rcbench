@@ -24,12 +24,16 @@ The same firmware builds for a second board, the Guition JC3636K518C
 knob: an ESP32-S3R8 with a round 360 x 360 display, touch, an encoder
 without a push switch and a vibration motor. Its build
 ([Flashing over USB](#flashing-over-usb)) runs the BLE peripheral, the
-bind, the face task and the console. Its display, touch, encoder,
-vibration and battery reading do nothing yet: it sends no EVENT, its
+bind, the face task, the console and the display. The display, an ST77916
+over QSPI (quad SPI) at 40MHz, shows the boot face, drawn at 360 x 360:
+the BLE name and the firmware version. Its touch, encoder, vibration and
+battery reading do nothing yet: it sends no EVENT, its
 STATUS names the battery unknown, and it refuses every update, since no key
 confirms one. Its INFO names hardware 2 (`DK_HW_K518`); its image names
 update kind 5 (`BLEOTA_KIND_DIAL_K518`), so neither board takes the other's
 image.
+
+![The K518's boot face](img/dial-k518-boot.png)
 
 M5Stack, Dial and Stamp-S3A are names of their owner and its products,
 Guition and JC3636K518C are names of their owner and its product, and

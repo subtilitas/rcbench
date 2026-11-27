@@ -146,8 +146,14 @@ downloads it into firmware/dial/managed_components/. A Dial image contains
 its compiled code.
 
   espressif/esp_lcd_gc9a01 2.0.4         Apache License 2.0
+  espressif/esp_lcd_st77916 2.0.2        Apache License 2.0
   espressif/cmake_utilities 0.5.3        Apache License 2.0 (build scripts,
                                          not linked)
+
+The M5Stack Dial's image links the GC9A01 driver, the Guition
+JC3636K518C's the ST77916 driver.  firmware/dial/main/dial_k518_init.h
+holds the ST77916 set-up bytes of Guition's Arduino demo for that board
+(demo_arduino/JC3636K518), under the Apache License 2.0.
 
   Copyright Espressif Systems (Shanghai) CO LTD.  The Apache License 2.0 is
   published at https://www.apache.org/licenses/LICENSE-2.0 and is shipped in

@@ -4,8 +4,9 @@
  *
  * The board's pins, its INFO hardware value and its update kind are in
  * dial_board.h, by the board the image is built for.  The K518 build runs
- * the BLE peripheral, the console and the face task; dial_k518.c holds its
- * display, touch, input, buzzer and power calls, which do nothing yet.
+ * the BLE peripheral, the console, the face task and its display, which
+ * shows the boot face (dial_k518_lcd.c); dial_k518.c holds its touch,
+ * input, buzzer and power calls, which do nothing yet.
  *
  * Tasks: the input task (dial_input.c) polls the encoder, the buttons and
  * the touch controller every 5ms and sends EVENT; the face task

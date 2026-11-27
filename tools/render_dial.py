@@ -4,7 +4,8 @@
 The faces are drawn by shared/dial, the code the Dial's firmware runs,
 from the fixed models in test/host/dial_models.h.  A PNG (Portable
 Network Graphics) image is written for each face, 240 x 240 as the Dial's
-frame holds it, English into docs/img/dial-<name>.png and German into
+frame holds it (the Guition JC3636K518C's boot face at its 360 x 360),
+English into docs/img/dial-<name>.png and German into
 docs/img/de/dial-<name>.png.
 
     python3 tools/render_dial.py                 # every face, both languages
@@ -44,6 +45,7 @@ SOURCES = [
     "shared/dial/dial_draw.c",
     "shared/dial/dial_text.c",
     "shared/dial/dial_rings.c",
+    "shared/dial/dk518_boot.c",
     "shared/ui/ui_theme.c",
     "protocols/dialknob/dialknob.c",
     "protocols/dialknob/dk_face.c",
@@ -78,6 +80,8 @@ FACES = {
     "off-warn": "the screen button held 5,000ms: blinks red, release to "
                 "switch off, hold on to unbind",
     "off-ask": "the screen button released after 5,000ms: OFF or KEEP ON",
+    "k518-boot": "the Guition JC3636K518C's boot face, 360 x 360; no words "
+                 "to translate, the same in both languages",
 }
 
 LANGS = {"en": ".", "de": "de"}
