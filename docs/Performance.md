@@ -779,8 +779,8 @@ image carries neither these devices' images nor the C6's: an update
 downloads its device's file into PSRAM ([Screens: Device images](Screens.md#device-images)).
 At 0.23.16 the four files are 850,816 (Dial), 646,336 (power node),
 642,768 (balance node) and 1,283,616 (C6) bytes. The release build of
-the panel at 0.23.17 with both IOmcu images is 4,088,176 bytes, 4,038,288
-(49.7%) under the slot of 8,126,464.
+the panel at 0.23.18 with both IOmcu images is 4,670,592 bytes, 3,455,872
+(42.5%) under the slot of 8,126,464.
 The event queue's 4,096 bytes, the kept DISCONNECTs and the hub are in the
 DIRAM figure, outside `libbt.a`. The hub and 5 connections add 3,704 bytes
 of DIRAM and 3,570 bytes of `libbleuart.a` to the default build of one

@@ -6,6 +6,70 @@ history is in git.
 
 ## Unreleased
 
+## 0.23.18 - 2026-11-27
+
+0.23.18 is a testing release. A servo gets an id, `<prefix>-<serial>` of
+23 characters at most, and its LIMIT RUN, RUDDER AUTO, automatic test and
+servo run files go to `Servos/<id>/` on the SD card. SERVO LABEL on the
+SERVO lists makes an id with NEW ID, picks one of the card's 6 newest, or
+takes one typed with TYPE ID; its PRINT row prints the id as a QR (Quick
+Response) code with DUT NAME on a Supvan T50M Pro label printer over
+Bluetooth LE. A GM861S scanner on UART1 (universal asynchronous
+receiver-transmitter), TX IO4 and RX IO5 of header P3, reads a label at
+9600 baud: the scan sets the active servo and takes DUT NAME from the
+servo's runs on the card. Printers are also described by files in
+`protocols/printers/`, read by the printer engine `protocols/prnengine`,
+which no firmware links yet. MOTOR & ESC > PROGRAM programs YGE ESCs
+(electronic speed controllers) over OpenYGE. LOGS draws a run file of the
+bench as a graph with the columns of its kind, LIMIT RUN and RUDDER AUTO
+over the pulse, and GRAPH on the result cards opens the last run. Every
+CSV the bench writes ends in an `info` column. SETUP > PANEL > About
+rcbench opens ABOUT with the versions and the licences. The Bluetooth
+IMU has no screen and no SETUP tile of its own: SETUP > WIRELESS > IMU
+holds its search, binding, live angles, ZERO and CALIBRATE, and the SETUP
+hub holds 7 tiles. The splash's
+credit reads `JuWi made`. The power node finds its INA228 at any address
+from 0x40 to 0x4F and takes NODE SHUNT, 50 to 10000µΩ, from SETUP; the
+display node shows a boot splash for 10s and has a setup page of its own;
+a node takes a name, which SEARCH and Bound node show. The panel updates
+the display node over Bluetooth LE. The IOmcu's board 3, the remote servo
+node, gains pass-through, KST, Hitec and ESC wire sessions and throttle
+outputs on S1 to S9. `tools/video` gains the storyboards `wurstblinker`,
+`origin`, `hitec-rbmod` and `stop`. The panel image with both IOmcu images is
+4,670,592 bytes, 3,455,872 bytes (42.5%) under
+its slot of 8,126,464. Its minor number, 23, is odd. GitHub publishes it as a
+pre-release and does not mark it as latest. It runs on the ESP32-P4
+panel, as 0.23.17 does; an ESP32-S3 panel stays on the 0.22 line and is
+not offered it. The link protocol is 4.42, up from 4.41 in 0.23.17: the
+YGE_PROG and YGE_DATA pages (0x44, 0x45) and capability bit 9,
+`LINK_CAP_YGE`; board 3 adds the PASS and PASS_STAT pages (0x41, 0x42). The assets are `rcbench-panel-p4-v0.23.18.zip`,
+`rcbench-panel-p4-v0.23.18.bin`, `rcbench-iomcu-v0.23.18.zip`,
+`rcbench-iomcu-rbmod-v0.23.18.zip`, `rcbench-c6-2.13.0.bin`,
+`rcbench-c6-merged-2.13.0.bin`, `rcbench-node-pwr-0.23.18.bin`,
+`rcbench-node-pwr-merged-0.23.18.bin`, `rcbench-node-bal-0.23.18.bin`,
+`rcbench-node-bal-merged-0.23.18.bin`, `rcbench-node-display-0.23.18.bin`,
+`rcbench-node-display-merged-0.23.18.bin`, `rcbench-dial-0.23.18.bin`,
+`rcbench-dial-merged-0.23.18.bin`, a `.sig` beside each of these 11
+`.bin` files, and `SHA256SUMS`, which lists the ZIP archives and the `.bin`
+files and no signature. Each ZIP archive holds a `.sig` beside each image
+in it. After the publish, `release.yml` starts `pages.yml` on `main`,
+which copies the images and their signatures to the web flasher.
+
+A bench on 0.23.17 gets 0.23.18 over Wi-Fi: SETUP > UPDATES, RELEASES: TESTING,
+CHECK FOR UPDATES, then hold the install button for 2s. With RELEASES: STABLE the
+check reads `releases/latest`, which names 0.22.1, and offers nothing. At
+link-up the panel offers to update the IOmcu over CAN (Controller Area Network)
+when the IOmcu runs a different build. The Dial and the power, balance and
+display nodes get their images over Bluetooth LE from SETUP > UPDATES; the
+panel downloads each one when its step's hold asks for it, and needs a home
+network or the file on the SD card for that. To set up a new bench, load both
+boards over USB (Universal Serial Bus) as
+[First run, §1](docs/FirstRun.md#1-flash-both-boards) describes, or with
+the [web flasher](flasher/README.md).
+
+The entries below cover the 62 pull requests merged since v0.23.17: #936
+to #996 and #998.
+
 ### Added
 
 - The display node shows a boot splash for 10s: `rcbench`, the role, its
@@ -578,7 +642,6 @@ history is in git.
   the carrier's LAYOUT. WIRELESS' line reads `IMU, DIAL, NODES, PRINTER`
   (`imu_view.c`, `wireless_imu.c`, `wireless_pane.c`,
   `settings_screen_int.h`; `test_wireless_imu`, `test_imu_pane`).
-
 - A servo label whose height drops a DUT NAME line shows the id joined in
   one line over DUT NAME in smaller faces: the pair of 16x28, 12x24, 10x20,
   8x16 and 6x12 with the larger DUT NAME face that fits. Where no pair

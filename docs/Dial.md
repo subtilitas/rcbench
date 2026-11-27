@@ -96,7 +96,7 @@ sums in `SHA256SUMS`.
 
    ```bash
    python -m esptool --chip esp32s3 -p /dev/ttyACM0 -b 460800 \
-     write-flash 0x0 rcbench-dial-merged-0.23.17.bin
+     write-flash 0x0 rcbench-dial-merged-0.23.18.bin
    ```
 
    esptool 5 spells the command `write-flash`; esptool 4 `write_flash`.
@@ -194,12 +194,12 @@ it are done, its card holds the same hold
 ([Screens, The steps](Screens.md#the-steps)).
 
 1. The Dial is bound and linked, and the bench is SAFE. The row shows
-   `Dial: 0.23.16. Release: 0.23.17.` and `HOLD 2s TO UPDATE THE DIAL`.
+   `Dial: 0.23.17. Release: 0.23.18.` and `HOLD 2s TO UPDATE THE DIAL`.
 2. The 2s hold ends the Dial's knob link. The panel connects to the Dial's
    update service and sends BEGIN: kind DIAL, size, version and the
    image's SHA-256.
 3. The Dial checks the kind, the size against its slot of 3,145,728 bytes
-   and the version. It then shows `UPDATE`, `v0.23.16 TO v0.23.17`, `PRESS
+   and the version. It then shows `UPDATE`, `v0.23.17 TO v0.23.18`, `PRESS
    TO ACCEPT`, the seconds left and `HOLD TO REFUSE` for 30s. Nothing is
    erased before the answer.
    - A press of the screen button released within 1s accepts.

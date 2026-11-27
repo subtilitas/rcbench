@@ -26,7 +26,7 @@ wiring and packets are on [The sensor nodes](Nodes.md).
 
 After power-on the display node shows the splash for 10s (`NS_SPLASH_MS`,
 10,000ms): the product name `rcbench`, the role `POWER NODE`, the node's
-own name when it has one, the firmware (`FIRMWARE 0.23.17`) and
+own name when it has one, the firmware (`FIRMWARE 0.23.18`) and
 `JuWi made`. A bar along the foot shortens over the 10s. When the 10s end,
 the meter shows.
 
