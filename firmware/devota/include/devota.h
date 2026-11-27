@@ -94,6 +94,8 @@ typedef struct {
     uint16_t from[3]; /**< the version running */
     uint16_t to[3];   /**< the version BEGIN names */
     uint32_t ends;    /**< transfers ended without an install, counted */
+    uint32_t offer;   /**< the confirmation's identity (bleota_dev_offer()),
+                           as st was taken */
 } devota_view_t;
 
 /**

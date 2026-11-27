@@ -53,8 +53,9 @@ neither. Only a touch that starts while the question stands answers it; a
 touch from before it, from before a lost link, or from a question that
 another one replaced, answers nothing until it lifts. A touch counts only
 when a read of the glass, every 20ms, found no finger while the question
-already stood, so a tap within the question's first 20ms needs a second
-tap. Each question has
+of that offer was already on the display, sent whole by the face task
+(every 50ms): a tap within the question's first 20ms on the glass needs a
+second tap. Each question has
 its own number, and the update takes the key only for the question it
 was made in. A DRV2605 at 0x5A vibrates instead of a buzzer, with its ROM
 effects for an LRA (library 6): a detent "Sharp Tick 3" (26), PRESS
