@@ -1,4 +1,19 @@
 {
+ "thumb": {
+  "at": 15,
+  "lines": [
+   "PHASE",
+   "*TAP"
+  ],
+  "crop": [
+   0,
+   60,
+   1620
+  ],
+  "side": "l",
+  "accent": "#ffb000",
+  "size": 150
+ },
  "name": "phase-tap",
  "lang": "en",
  "brand": "the phase tap",

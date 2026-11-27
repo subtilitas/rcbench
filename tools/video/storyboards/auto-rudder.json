@@ -1,4 +1,19 @@
 {
+ "thumb": {
+  "at": 95,
+  "lines": [
+   "AUTO",
+   "*RUDDER"
+  ],
+  "crop": [
+   40,
+   90,
+   1400
+  ],
+  "side": "l",
+  "accent": "#ffb000",
+  "size": 150
+ },
  "name": "auto-rudder",
  "lang": "en",
  "brand": "Auto rudder",
