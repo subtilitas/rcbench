@@ -103,7 +103,7 @@ The panel joins the home network, sends an HTTPS (HTTP over Transport Layer Secu
 | RELEASES | Request | What is read |
 |---|---|---|
 | STABLE | `GET https://github.com/subtilitas/rcbench/releases/latest` | the tag from the `Location` header of the answer; GitHub's latest release is never a pre-release; when it is past the release line and newer than the running build, the TESTING request follows once |
-| TESTING | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` | `tag_name` of each of the 10 newest releases by date, testing or stable, from the JSON (JavaScript Object Notation) answer; the highest version among those that are no draft is taken, whatever their order; read in pieces of 4096 bytes, 262,144 bytes at most, and not stored; one release out of form refuses the whole answer |
+| TESTING | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=5` | `tag_name` of each of the 5 newest releases by date, testing or stable, from the JSON (JavaScript Object Notation) answer; the highest version among those that are no draft is taken, whatever their order; read in pieces of 4096 bytes, 1,310,720 bytes at most, and not stored; one release out of form refuses the whole answer |
 
 On both settings a release is offered only when it is of the panel's release line and newer than the running build. The ESP32-P4 panel's line holds every release, see [The release line](#the-release-line).
 
@@ -151,7 +151,7 @@ The ESP32-S3 panel accepts only 0.22.x. The first footer lines state this restri
 | `v0.23.0`, `v0.24.0`, `v1.0.0` | `No newer release for the ESP32-S3 panel.` |
 | a tag out of form, such as `v0.22.1-rc1` | `Unexpected response from GitHub.` |
 
-With TESTING, if the highest version among the 10 newest releases is beyond the panel's line, the highest compatible version in that list is offered instead, provided it is newer than the running build. With STABLE, if GitHub's latest release is beyond the line and newer than the running build, the panel requests that same 10-release list once and looks for a newer 0.22.x. If the request fails, it keeps the result from the initial check.
+With TESTING, if the highest version among the 5 newest releases is beyond the panel's line, the highest compatible version in that list is offered instead, provided it is newer than the running build. With STABLE, if GitHub's latest release is beyond the line and newer than the running build, the panel requests that same 5-release list once and looks for a newer 0.22.x. If the request fails, it keeps the result from the initial check.
 
 ## The download
 
@@ -305,7 +305,8 @@ A failed attempt shows on the card with a code: `Download failed (D10): No conne
 - How long a node's update takes is not measured.
 - A first DNS (Domain Name System) server of the home network that does not answer delays each name lookup by about 7s after a join, out of the check's 30s: lwIP asks that server 4 times, up to 7s, before the next.
 - TESTING: GitHub answers 60 API requests an hour for each public address without an account, shared by every device behind it. The panel sends no retry.
-- TESTING reads the 10 newest releases by date. A release older by date than those is not seen, however high its version.
-- The release list holds the 10 newest releases by date (`per_page=10`). A 0.22.x patch release with 10 or more releases published after it is not found, on either setting.
+- TESTING reads the 5 newest releases by date. A release older by date than those is not seen, however high its version.
+- The release list holds the 5 newest releases by date (`per_page=5`). A 0.22.x patch release with 5 or more releases published after it is not found, on either setting.
+- Panels on 0.21.0 to 0.23.18 ask for 10 releases and refuse an answer over 262,144 bytes. Whenever GitHub's answer for the 10 newest releases is over 262,144 bytes, TESTING ends with `The download is too large for the panel.` there. Such a panel then takes the next release once by hand: `rcbench-panel-p4-vX.Y.Z.bin` and its `.sig` uploaded on the Wi-Fi page, or the web flasher over USB.
 - No certificate's dates are checked: mbedTLS is built without its expiry check (`CONFIG_MBEDTLS_HAVE_TIME_DATE` off, ESP-IDF's default).
 - A release whose assets are not named `rcbench-panel-p4-vX.Y.Z.bin` and `SHA256SUMS` cannot be downloaded.

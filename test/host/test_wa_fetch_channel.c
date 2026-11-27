@@ -9,7 +9,7 @@
  * of the channel, and an API (application programming interface) answer
  * acted on that should not be -- over its size, out of form, without a
  * tag, the first release by date taken over the highest -- or one read on
- * past its 10th release, past the budget or past an abort; and an answer
+ * past its 5th release, past the budget or past an abort; and an answer
  * in chunks without a Content-Length, as GitHub sends one its cache does
  * not hold, refused instead of read.  GitHub's request limit, 403 and 429, ends
  * as its own result and asks nothing more.  The HTTP (hypertext transfer
@@ -208,18 +208,17 @@ static wa_fetch_res_t check(wa_channel_t ch, fw_version_t running, bool ok)
 
 /* ------------------------------------------------------- the channels */
 
-TEST_CASE(testing_asks_the_api_with_its_headers_and_stops_at_the_10th)
+TEST_CASE(testing_asks_the_api_with_its_headers_and_stops_at_the_5th)
 {
-    /* 10 releases by date, 0.22.1 newest and 0.23.1 the highest, then an
-     * 11th of 40000 bytes that is never read.  0.23.1 is past the panel's
+    /* 5 releases by date, 0.22.1 newest and 0.23.1 the highest, then a
+     * 6th of 40000 bytes that is never read.  0.23.1 is past the panel's
      * release line: 0.22.1, the line's highest, is offered in its place. */
     static char body[60000];
     static const char *const tags[] = {
         "v0.22.1", "v0.23.1", "v0.23.0", "v0.22.0", "v0.21.1",
-        "v0.21.0", "v0.20.0", "v0.19.0", "v0.18.0", "v0.17.0",
     };
     uint32_t n = (uint32_t)sprintf(body, "[");
-    for (size_t i = 0; i < 10u; ++i) {
+    for (size_t i = 0; i < FW_REL_API_RELEASES; ++i) {
         n += (uint32_t)sprintf(body + n, "%s{\"tag_name\":\"%s\"}",
                                (i == 0u) ? "" : ",", tags[i]);
     }
@@ -240,7 +239,7 @@ TEST_CASE(testing_asks_the_api_with_its_headers_and_stops_at_the_10th)
     CHECK(g.api);
     CHECK_EQ(g.opens, 1u);
     CHECK_EQ(g.closes, 1u);
-    /* Read up to the piece that closes the 10th release, and no further. */
+    /* Read up to the piece that closes the 5th release, and no further. */
     CHECK(g.sent < 400u);
     CHECK_EQ(g.last_timeout, WA_FETCH_OP_MS);
     /* A panel on 0.22.1: nothing of the line newer; 0.23.1 named, not
@@ -578,12 +577,12 @@ TEST_CASE(a_chunked_answer_is_read_to_its_releases_end)
     CHECK_EQ(check(WA_CH_TESTING, V(0, 22, 0), true).got, WA_GOT_NEWER);
     free(body);
 
-    /* 10 releases and an 11th of 40000 bytes: in chunks too, the read
-     * stops at the piece that closes the 10th.  0.30.0, the highest, is
+    /* 5 releases and a 6th of 40000 bytes: in chunks too, the read
+     * stops at the piece that closes the 5th.  0.30.0, the highest, is
      * past the line, and 0.22.0, its own, is the running build. */
     static char ten[60000];
     uint32_t k = (uint32_t)sprintf(ten, "[");
-    for (unsigned i = 0; i < 10u; ++i) {
+    for (unsigned i = 0; i < FW_REL_API_RELEASES; ++i) {
         k += (uint32_t)sprintf(ten + k, "%s{\"tag_name\":\"v0.%u.0\"}",
                                (i == 0u) ? "" : ",", 30u - i);
     }
@@ -942,7 +941,7 @@ int main(void)
     RUN(the_p4_panel_is_offered_0_23_0_and_later_on_either_channel);
     /* Every case after this one holds the ESP32-S3 panel's 0.22 line. */
     fw_release_set_line_capped(true);
-    RUN(testing_asks_the_api_with_its_headers_and_stops_at_the_10th);
+    RUN(testing_asks_the_api_with_its_headers_and_stops_at_the_5th);
     RUN(stable_keeps_the_latest_redirect);
     RUN(stable_past_the_line_reads_the_list_once_for_the_lines_newest);
     RUN(only_a_newer_release_of_the_line_is_offered_on_either_channel);
