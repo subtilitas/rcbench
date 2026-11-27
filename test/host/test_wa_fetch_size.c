@@ -261,8 +261,8 @@ TEST_CASE(the_request_asks_for_the_releases_the_scan_reads)
 
 TEST_CASE(an_answer_of_todays_size_is_read_to_its_5th_release)
 {
-    /* The 10 releases GitHub listed on 2026-11-27, their asset counts as
-     * then, all with v0.23.18's notes: over 340000 bytes, past the old
+    /* 10 releases with 26, 24 and 14 assets, as v0.23.18 to v0.23.9 had
+     * them, all with v0.23.18's notes: over 340000 bytes, past the old
      * bound of 262144.  Only the 5 the request asks for are read. */
     static const unsigned assets[] = { 26, 24, 14, 14, 14, 14, 14, 14, 14,
                                        14 };

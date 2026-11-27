@@ -307,6 +307,6 @@ A failed attempt shows on the card with a code: `Download failed (D10): No conne
 - TESTING: GitHub answers 60 API requests an hour for each public address without an account, shared by every device behind it. The panel sends no retry.
 - TESTING reads the 5 newest releases by date. A release older by date than those is not seen, however high its version.
 - The release list holds the 5 newest releases by date (`per_page=5`). A 0.22.x patch release with 5 or more releases published after it is not found, on either setting.
-- Panels on 0.21.0 to 0.23.18 ask for 10 releases and refuse an answer over 262,144 bytes. GitHub's answer is over that since v0.23.18, so TESTING ends with `The download is too large for the panel.` there. Such a panel takes the next release once by hand: `rcbench-panel-p4-vX.Y.Z.bin` and its `.sig` uploaded on the Wi-Fi page, or the web flasher over USB.
+- Panels on 0.21.0 to 0.23.18 ask for 10 releases and refuse an answer over 262,144 bytes. Whenever GitHub's answer for the 10 newest releases is over 262,144 bytes, TESTING ends with `The download is too large for the panel.` there. Such a panel then takes the next release once by hand: `rcbench-panel-p4-vX.Y.Z.bin` and its `.sig` uploaded on the Wi-Fi page, or the web flasher over USB.
 - No certificate's dates are checked: mbedTLS is built without its expiry check (`CONFIG_MBEDTLS_HAVE_TIME_DATE` off, ESP-IDF's default).
 - A release whose assets are not named `rcbench-panel-p4-vX.Y.Z.bin` and `SHA256SUMS` cannot be downloaded.

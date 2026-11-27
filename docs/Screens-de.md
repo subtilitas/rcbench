@@ -8531,11 +8531,12 @@ ist.
 
 Aktuelle Einschränkung von Panels auf 0.21.0 bis 0.23.18, darunter 0.23.17
 und 0.23.18: Ihre Suche unter `TESTING` fragt nach 10 Releases und lehnt
-eine Antwort über 262.144 Bytes ab. GitHubs Antwort für 10 Releases ist
-seit v0.23.18 größer (332.374 Bytes am 2026-11-27), daher endet die Suche
-mit `Unerwartete Antwort von GitHub.` und `Der Download ist zu groß für das
-Panel.`. `STABLE` liest nur eine Weiterleitung und ist nicht betroffen. Ein
-solches Panel bekommt das nächste Release einmal von Hand: die Release-Assets
+eine Antwort über 262.144 Bytes ab. Immer wenn GitHubs Antwort für die 10
+neuesten Releases über 262.144 Bytes liegt, endet ihre Suche mit
+`Unerwartete Antwort von GitHub.` und `Der Download ist zu groß für das
+Panel.`. Am 2026-11-27 war diese Antwort 158.473 Bytes groß. `STABLE` liest
+nur eine Weiterleitung und ist nicht betroffen. Ein solches Panel bekommt
+das nächste Release dann einmal von Hand: die Release-Assets
 `rcbench-panel-p4-vX.Y.Z.bin` und `rcbench-panel-p4-vX.Y.Z.bin.sig`, auf der
 WLAN-Seite hochgeladen ([WLAN: Die Seite](#die-seite)), oder der
 [Web-Flasher](https://subtilitas.github.io/rcbench/flash/) über USB
@@ -8595,8 +8596,8 @@ deren Releases innerhalb von 1.310.720 Bytes enden. Nichts davon wird
 gespeichert: Sie läuft durch den 4096-Byte-Puffer des Abrufs im PSRAM. GitHub sendet die Chunked-Form, wenn
 sein Cache die Anfrage nicht hält (`Cache-Control: max-age=60`), und die
 Form mit `Content-Length` aus seinem Cache. Die 5 neuesten Releases am
-2026-11-27, v0.23.14 bis v0.23.18, waren 181.626 Bytes, das größte 53.413
-mit 26 Assets und 8.113 Bytes Notizen. Ein Asset belegt etwa 1.648 Bytes der
+2026-11-27, v0.21.1 bis v0.23.18, waren 95.618 Bytes, das größte, v0.23.18,
+53.413 mit 26 Assets und 8.113 Bytes Notizen. Ein Asset belegt etwa 1.648 Bytes der
 Antwort: 5 Releases mit je 152 Assets und 8.113 Bytes Notizen passen,
 1.303.986 Bytes. 1.310.720 Bytes in den 30s der Suche zu lesen braucht mehr
 als 44kB/s, da Einwahl und Adresse sich die 30s teilen; die

@@ -7869,11 +7869,12 @@ seen, however high its version.
 
 Current limitation of panels on 0.21.0 to 0.23.18, 0.23.17 and 0.23.18
 among them: their `TESTING` check asks for 10 releases and refuses an
-answer over 262,144 bytes. GitHub's answer for 10 releases is over that
-since v0.23.18 (332,374 bytes on 2026-11-27), so the check ends with
-`Unexpected response from GitHub.` and `The download is too large for the
-panel.`. `STABLE` reads a redirect only and is not affected. Such a panel
-takes the next release by hand, once: the release assets
+answer over 262,144 bytes. Whenever GitHub's answer for the 10 newest
+releases is over 262,144 bytes, their check ends with `Unexpected response
+from GitHub.` and `The download is too large for the panel.`. On
+2026-11-27 that answer was 158,473 bytes. `STABLE` reads a redirect only
+and is not affected. Such a panel then takes the next release by hand,
+once: the release assets
 `rcbench-panel-p4-vX.Y.Z.bin` and `rcbench-panel-p4-vX.Y.Z.bin.sig`
 uploaded on the Wi-Fi page ([Wi-Fi: The page](#the-page)), or the
 [web flasher](https://subtilitas.github.io/rcbench/flash/) over USB
@@ -7931,9 +7932,9 @@ or the chunked coding (`Transfer-Encoding: chunked`) with its releases
 ending within 1,310,720 bytes. Nothing of it is stored: it passes through
 the fetch's 4096-byte buffer in PSRAM. GitHub sends the chunked form when its cache does not hold
 the request (`Cache-Control: max-age=60`) and the `Content-Length` form
-from its cache. The 5 newest releases on 2026-11-27, v0.23.14 to v0.23.18,
-were 181,626 bytes, the largest one 53,413 with 26 assets and 8,113 bytes
-of notes. An asset takes about 1,648 bytes of the answer: 5 releases of 152
+from its cache. The 5 newest releases on 2026-11-27, v0.21.1 to v0.23.18,
+were 95,618 bytes, the largest one, v0.23.18, 53,413 with 26 assets and
+8,113 bytes of notes. An asset takes about 1,648 bytes of the answer: 5 releases of 152
 assets and 8,113 bytes of notes each fit, 1,303,986 bytes. Reading
 1,310,720 bytes within the check's 30s needs more than 44kB/s, as the
 join and the address share the 30s; the panel's transfer rate is not

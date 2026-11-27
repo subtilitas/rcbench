@@ -137,9 +137,9 @@ extern "C" {
 /** @brief The API's answer at most, by its Content-Length, in bytes: 5 times
  *  256KiB.  The answer is not kept but read through the fetch's piece
  *  buffer.  Each release carries its notes and its assets, about 1648
- *  bytes an asset: the 5 newest on 2026-11-27, v0.23.14 to v0.23.18, are
- *  181626 bytes, the largest one 53413 with 26 assets and 8113 bytes of
- *  notes.  5 releases of 152 assets and 8113 bytes of notes each fit. */
+ *  bytes an asset: the 5 newest on 2026-11-27, v0.21.1 to v0.23.18, are
+ *  95618 bytes, the largest one, v0.23.18, 53413 with 26 assets and 8113
+ *  bytes of notes.  5 releases of 152 assets and 8113 bytes of notes each fit. */
 #define FW_REL_API_MAX     1310720u
 /** Bytes of the API's answer scanned at most: the whole of the largest
  *  answer taken. */
