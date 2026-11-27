@@ -137,14 +137,15 @@ static bool key_free(const dk518_key_t *k, uint32_t now)
                && (int32_t)(now - k->until) >= (int32_t)DK518_KEY_GAP_MS);
 }
 
-bool dk518_key_step(dk518_key_t *k, bool offer,
+bool dk518_key_step(dk518_key_t *k, bool offer, uint32_t id,
                     const dk518_still_out_t *o, uint32_t now)
 {
     bool press = false;
-    if (offer != k->offer) {
-        /* Opened or closed: the window ends, the touch under way is
-         * nobody's. */
+    if (offer != k->offer || id != k->id) {
+        /* Opened, closed or replaced: the window ends, the touch under
+         * way is nobody's. */
         k->offer = offer;
+        k->id = id;
         k->touch_ok = false;
         k->hold = false;
         k->on = false;
@@ -170,6 +171,11 @@ bool dk518_key_step(dk518_key_t *k, bool offer,
         k->hold = false;
     }
     return press;
+}
+
+uint32_t dk518_key_offer(const dk518_key_t *k)
+{
+    return k->id;
 }
 
 bool dk518_key_down(const dk518_key_t *k, uint32_t now)

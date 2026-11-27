@@ -272,6 +272,8 @@ typedef struct {
     bleota_dev_t  d;   /**< bleota's device side */
     bool          raw; /**< the `ota` task's last key read */
     bool          key; /**< its debounced key */
+    uint32_t      raw_offer; /**< the offer of the last read */
+    uint32_t      key_offer; /**< the offer of the debounced key */
     uint32_t      t;   /**< the clock */
     int           cues; /**< accept cues */
 } offer_t;
@@ -291,9 +293,41 @@ static void offer_init(offer_t *o)
  *  @param o the rig */
 static void offer_open(offer_t *o)
 {
+    ++o->d.offer;
     o->d.st = BLEOTA_DEV_CONFIRM;
     o->d.key_armed = !o->d.key_down;
     o->d.code = BLEOTA_OK;
+}
+
+/** @brief The input task's step: the still touch, then the key with the
+ *         offer and its identity read together (devota_offer()).
+ *  @param o the rig @param down a finger is down @param x its column
+ *  @param y its row */
+static void input_step(offer_t *o, bool down, uint16_t x, uint16_t y)
+{
+    dk518_still_out_t e;
+    uint32_t id = 0u;
+    const bool open = bleota_dev_offer(&o->d, &id);
+    (void)dk518_still_step(&o->s, down, x, y, 0, o->d.st != BLEOTA_DEV_IDLE,
+                           o->t, &e);
+    o->cues += dk518_key_step(&o->k, open, id, &e, o->t);
+}
+
+/** @brief The `ota` task's 10ms poll: the key with the offer it belongs
+ *         to, debounced over 2 polls of the same level and offer, into
+ *         bleota_dev_key_for().
+ *  @param o the rig */
+static void ota_poll(offer_t *o)
+{
+    const bool now_raw = dk518_key_down(&o->k, o->t);
+    const uint32_t offer = dk518_key_offer(&o->k);
+    if (now_raw == o->raw && offer == o->raw_offer) {
+        o->key = o->raw;
+        o->key_offer = offer;
+    }
+    o->raw = now_raw;
+    o->raw_offer = offer;
+    bleota_dev_key_for(&o->d, o->key, o->key_offer, o->t);
 }
 
 /**
@@ -308,18 +342,9 @@ static void offer_run(offer_t *o, bool down, uint16_t x, uint16_t y,
                       uint32_t ms)
 {
     for (uint32_t i = 0; i < ms; i += STEP) {
-        dk518_still_out_t e;
-        const bool open = o->d.st == BLEOTA_DEV_CONFIRM;
-        (void)dk518_still_step(&o->s, down, x, y, 0,
-                               o->d.st != BLEOTA_DEV_IDLE, o->t, &e);
-        o->cues += dk518_key_step(&o->k, open, &e, o->t);
+        input_step(o, down, x, y);
         if ((o->t / STEP) % 2u == 0u) {
-            const bool now_raw = dk518_key_down(&o->k, o->t);
-            if (now_raw == o->raw) {
-                o->key = o->raw;
-            }
-            o->raw = now_raw;
-            bleota_dev_key(&o->d, o->key, o->t);
+            ota_poll(o);
         }
         o->t += STEP;
     }
@@ -458,6 +483,61 @@ TEST_CASE(a_holds_window_ends_with_its_offer_and_the_next_offer_starts_up)
     CHECK_EQ(o.d.st, BLEOTA_DEV_OPEN);
 }
 
+TEST_CASE(an_offer_replaced_between_two_steps_gets_no_answer_from_the_touch)
+{
+    offer_t o;
+    offer_init(&o);
+    offer_open(&o);                       /* offer A */
+    offer_run(&o, true, 180, 180, 100);
+    bleota_dev_lost(&o.d);                /* A ends and B opens before */
+    offer_open(&o);                       /* the input task's next step */
+    offer_run(&o, false, 0, 0, 500);      /* the lift */
+    CHECK_EQ(o.d.st, BLEOTA_DEV_CONFIRM);
+    CHECK_EQ(o.cues, 0);
+    tap(&o);
+    CHECK_EQ(o.d.st, BLEOTA_DEV_OPEN);
+}
+
+TEST_CASE(a_key_of_an_ended_offer_answers_no_later_one_in_the_ota_task)
+{
+    offer_t o;
+    offer_init(&o);
+    offer_open(&o);                       /* offer A */
+    offer_run(&o, true, 180, 180, 100);
+    input_step(&o, false, 0, 0);          /* the lift: A's 50ms window */
+    CHECK(dk518_key_down(&o.k, o.t));
+    bleota_dev_lost(&o.d);
+    offer_open(&o);                       /* B, before the next step */
+    for (int i = 0; i < 3; ++i) {         /* the `ota` task polls first */
+        ota_poll(&o);
+        o.t += 10u;
+    }
+    offer_run(&o, false, 0, 0, 500);
+    CHECK_EQ(o.d.st, BLEOTA_DEV_CONFIRM);
+    tap(&o);
+    CHECK_EQ(o.d.st, BLEOTA_DEV_OPEN);
+}
+
+TEST_CASE(bleota_takes_a_key_for_the_offer_standing_alone)
+{
+    bleota_dev_t d;
+    uint32_t id = 0u;
+    memset(&d, 0, sizeof d);
+    d.cfg.confirm = BLEOTA_CONFIRM_PRESS;
+    CHECK(!bleota_dev_offer(&d, &id));
+    d.st = BLEOTA_DEV_CONFIRM;
+    d.offer = 7u;
+    d.key_armed = true;
+    CHECK(bleota_dev_offer(&d, &id));
+    CHECK_EQ(id, 7u);
+    bleota_dev_key_for(&d, true, 6u, 100u);
+    bleota_dev_key_for(&d, false, 6u, 150u);
+    CHECK_EQ(d.st, BLEOTA_DEV_CONFIRM);
+    bleota_dev_key_for(&d, true, 7u, 200u);
+    bleota_dev_key_for(&d, false, 7u, 250u);
+    CHECK_EQ(d.st, BLEOTA_DEV_OPEN);
+}
+
 TEST_CASE(no_offer_keeps_the_key_up)
 {
     offer_t o;
@@ -506,6 +586,9 @@ int main(void)
     RUN(a_touch_from_before_the_offer_answers_nothing);
     RUN(a_touch_across_a_lost_link_answers_no_later_offer);
     RUN(a_holds_window_ends_with_its_offer_and_the_next_offer_starts_up);
+    RUN(an_offer_replaced_between_two_steps_gets_no_answer_from_the_touch);
+    RUN(a_key_of_an_ended_offer_answers_no_later_one_in_the_ota_task);
+    RUN(bleota_takes_a_key_for_the_offer_standing_alone);
     RUN(no_offer_keeps_the_key_up);
     RUN(native_points_scale_to_0_to_239);
     return test_summary("dk518_input");

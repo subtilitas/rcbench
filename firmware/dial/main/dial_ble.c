@@ -442,6 +442,10 @@ void dial_ble_start(void)
     }
     (void)devota_start(DIAL_BOARD_KIND, BLEOTA_CONFIRM_PRESS,
                        dial_input_update_key);
+#if CONFIG_RCBENCH_DIAL_BOARD_K518
+    /* The K518's key names the offer it was made for. */
+    devota_offer_key(dial_input_offer_key);
+#endif
     nimble_port_freertos_init(host_task);
 }
 

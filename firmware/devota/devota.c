@@ -53,6 +53,8 @@ static uint8_t s_ring[BLEOTA_WINDOW];
 static SemaphoreHandle_t s_lock;
 /** @brief The confirming key's reader. */
 static devota_key_fn s_key;
+/** @brief The confirming key that names its confirmation; NULL none. */
+static devota_offer_key_fn s_offer_key;
 /** @brief The connection and CTRL's subscription. @{ */
 static atomic_uint_least16_t s_conn = CONN_NONE;
 static atomic_bool s_sub; /**< notifications on */
@@ -291,19 +293,33 @@ static void ota_task(void *arg)
 {
     (void)arg;
     bool raw = false, key = false;
+    uint32_t raw_offer = 0u, key_offer = 0u;
     uint8_t last_st = BLEOTA_DEV_IDLE;
     for (;;) {
         vTaskDelay(pdMS_TO_TICKS(DEVOTA_POLL_MS));
-        const bool now_raw = s_key != NULL && s_key();
-        if (now_raw == raw) {
-            key = raw;          /* the same level twice: taken */
+        uint32_t offer = 0u;
+        const devota_offer_key_fn ok = s_offer_key;
+        const bool now_raw = ok != NULL ? ok(&offer)
+                                        : s_key != NULL && s_key();
+        if (now_raw == raw && offer == raw_offer) {
+            /* The same level for the same offer twice: taken, with the
+             * offer it belongs to. */
+            key = raw;
+            key_offer = offer;
         }
         raw = now_raw;
+        raw_offer = offer;
         bleota_do_t act;
         int steps = 0;
         do {
             xSemaphoreTake(s_lock, portMAX_DELAY);
-            bleota_dev_key(&s_dev, key, now_ms());
+            if (ok != NULL) {
+                /* Read under the lock the GATT callbacks change it
+                 * under: a key of an offer that ended answers none. */
+                bleota_dev_key_for(&s_dev, key, key_offer, now_ms());
+            } else {
+                bleota_dev_key(&s_dev, key, now_ms());
+            }
             act = bleota_dev_poll(&s_dev, now_ms());
             if (s_dev.st != last_st) {
                 if (last_st != BLEOTA_DEV_IDLE
@@ -387,6 +403,26 @@ void devota_subscribe(uint16_t attr, bool notify)
     if (attr == s_h_ctrl && s_h_ctrl != 0u) {
         atomic_store(&s_sub, notify);
     }
+}
+
+bool devota_offer(uint32_t *offer)
+{
+    bool open = false;
+    if (offer != NULL) {
+        *offer = 0u;
+    }
+    if (s_lock == NULL) {
+        return false;
+    }
+    xSemaphoreTake(s_lock, portMAX_DELAY);
+    open = bleota_dev_offer(&s_dev, offer);
+    xSemaphoreGive(s_lock);
+    return open;
+}
+
+void devota_offer_key(devota_offer_key_fn key)
+{
+    s_offer_key = key;
 }
 
 void devota_view(devota_view_t *out)

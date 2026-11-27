@@ -377,6 +377,8 @@ typedef struct {
     bool     key_down;      /**< the confirming key is down */
     bool     key_armed;     /**< the key was up since the window opened */
     uint32_t key_t;         /**< when it went down */
+    uint32_t offer;         /**< confirmations asked, counted: the
+                                 identity of the one standing */
     uint8_t *ring;          /**< the caller's buffer */
     uint32_t ring_size;     /**< its size, a power of two of at least
                                  BLEOTA_WINDOW */
@@ -439,6 +441,26 @@ void bleota_dev_data(bleota_dev_t *d, const uint8_t *b, size_t n,
  * @param now  the clock
  */
 void bleota_dev_key(bleota_dev_t *d, bool down, uint32_t now);
+
+/**
+ * @brief bleota_dev_key() for a key that belongs to one confirmation: it
+ *        counts as up unless @p offer is the one standing, so a key meant
+ *        for an offer that ended answers no later one.
+ * @param d     the device
+ * @param down  the key is down
+ * @param offer the confirmation it belongs to (bleota_dev_offer())
+ * @param now   the clock
+ */
+void bleota_dev_key_for(bleota_dev_t *d, bool down, uint32_t offer,
+                        uint32_t now);
+
+/**
+ * @brief The confirmation standing and its identity, read together.
+ * @param d     the device
+ * @param offer receives d->offer
+ * @return true while BLEOTA_DEV_CONFIRM stands
+ */
+bool bleota_dev_offer(const bleota_dev_t *d, uint32_t *offer);
 
 /**
  * @brief The link to the central ended: an open slot is dropped with no

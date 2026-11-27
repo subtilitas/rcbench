@@ -210,9 +210,14 @@ bool dial_input_inject(uint8_t kind, int32_t arg, uint8_t x, uint8_t y);
 
 /** @brief The update's confirming key (protocols/bleota): a press
  *         accepts, a hold of 1,000ms refuses.  The M5Stack Dial's screen
- *         button; the K518 has none yet and refuses every update.
+ *         button; on the K518 the key made from its still touch.
  *  @return true while it is pressed */
 bool dial_input_update_key(void);
+/** @brief The K518's confirming key with the offer it belongs to, for
+ *         devota_offer_key(); the K518 build only.
+ *  @param offer receives the offer's identity
+ *  @return true while it is pressed */
+bool dial_input_offer_key(uint32_t *offer);
 
 /** @brief Whether the Dial clicks per detent.  Default ON; the panel's
  *         SCREEN flag and the console's `sound` set it. @param on ON */
