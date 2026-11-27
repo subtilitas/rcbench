@@ -7,7 +7,9 @@
  * detent lost or turned the wrong way; a count at start that turns the
  * counter; a swipe that sends PRESS; a touch short of 1,000ms that sends
  * HOLD; a hold that never reaches the switch-off or the forget; a TAP that
- * lands at the wrong point; and an update's accept taken from a swipe.
+ * lands at the wrong point; and an update's accept taken from a swipe,
+ * run through bleota's own confirmation and the `ota` task's 10ms polls
+ * with their 2-poll debounce (firmware/devota/devota.c).
  * The input task steps both every 5ms; so do these cases.
  *
  * SPDX-License-Identifier: MIT
@@ -16,6 +18,7 @@
 
 #include "greatest.h"
 
+#include "bleota.h"
 #include "dk518_input.h"
 #include "dialknob.h"
 
@@ -261,6 +264,81 @@ TEST_CASE(under_an_update_offer_only_the_still_lift_counts)
     CHECK_EQ(0, v.press);
 }
 
+/** @brief An update waiting for its confirmation, as bleota holds it. */
+static void offer(bleota_dev_t *d)
+{
+    memset(d, 0, sizeof *d);
+    d->cfg.confirm = BLEOTA_CONFIRM_PRESS;
+    d->st = BLEOTA_DEV_CONFIRM;
+    d->key_armed = true;
+}
+
+/**
+ * @brief A touch under the offer: still at (x, y) for @p still_ms, then
+ *        at (x2, y2) until @p ms, then lifted; the key goes to bleota as
+ *        the `ota` task takes it, for 3,000ms in all.
+ * @param d the offer
+ * @param x2 the column it moves to
+ * @param y2 the row it moves to
+ * @param still_ms how long it stays at the start
+ * @param ms how long the finger is down
+ */
+static void touch_offer(bleota_dev_t *d, uint16_t x2, uint16_t y2,
+                        uint32_t still_ms, uint32_t ms)
+{
+    dk518_still_t s;
+    bool raw = false;
+    bool key = false;
+    dk518_still_init(&s);
+    for (uint32_t t = 0; t < 3000u; t += STEP) {
+        const bool down = t < ms;
+        const bool at = t < still_ms;
+        (void)dk518_still_step(&s, down, at ? 180 : x2, at ? 180 : y2, 0,
+                               true, s_now + t, NULL);
+        if (t % 10u == 0u) {
+            const bool now_raw = dk518_still_key(&s, s_now + t);
+            if (now_raw == raw) {
+                key = raw;
+            }
+            raw = now_raw;
+            bleota_dev_key(d, key, s_now + t);
+        }
+    }
+}
+
+TEST_CASE(a_still_tap_accepts_the_update)
+{
+    bleota_dev_t d;
+    s_now = 0xFFFFF000u;
+    offer(&d);
+    touch_offer(&d, 180, 180, 200, 200);
+    CHECK_EQ(d.st, BLEOTA_DEV_OPEN);
+}
+
+TEST_CASE(a_swipe_neither_accepts_nor_refuses_the_update)
+{
+    bleota_dev_t d;
+    s_now = 0xFFFFF000u;
+    offer(&d);
+    touch_offer(&d, 260, 180, 100, 300);
+    CHECK_EQ(d.st, BLEOTA_DEV_CONFIRM);
+    offer(&d);
+    touch_offer(&d, 180, 40, 600, 1500);  /* moved before 1,000ms */
+    CHECK_EQ(d.st, BLEOTA_DEV_CONFIRM);
+}
+
+TEST_CASE(a_still_hold_refuses_the_update_whenever_it_lifts)
+{
+    bleota_dev_t d;
+    s_now = 0xFFFFF000u;
+    offer(&d);
+    touch_offer(&d, 180, 180, 1200, 1200);  /* lifted before 2,000ms */
+    CHECK_EQ(d.st, BLEOTA_DEV_IDLE);
+    offer(&d);
+    touch_offer(&d, 250, 250, 1100, 2500);  /* moved after 1,000ms */
+    CHECK_EQ(d.st, BLEOTA_DEV_IDLE);
+}
+
 TEST_CASE(native_points_scale_to_0_to_239)
 {
     CHECK_EQ(0, dk518_touch_scale(0));
@@ -286,6 +364,9 @@ int main(void)
     RUN(the_5s_hold_warns_and_the_10s_hold_forgets);
     RUN(a_lift_after_the_warning_opens_the_choice);
     RUN(under_an_update_offer_only_the_still_lift_counts);
+    RUN(a_still_tap_accepts_the_update);
+    RUN(a_swipe_neither_accepts_nor_refuses_the_update);
+    RUN(a_still_hold_refuses_the_update_whenever_it_lifts);
     RUN(native_points_scale_to_0_to_239);
     return test_summary("dk518_input");
 }

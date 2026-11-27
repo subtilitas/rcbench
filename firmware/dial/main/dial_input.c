@@ -159,7 +159,8 @@ typedef struct {
 #if CONFIG_RCBENCH_DIAL_BOARD_K518
 /** @brief The screen button's gestures: the still touch's. */
 #define BUTTON (&s_in.still.button)
-/** @brief The update's key: a finger on the glass, for the `ota` task. */
+/** @brief The update's key: the validated still touch
+ *         (dk518_still_key()), for the `ota` task. */
 static atomic_bool s_key;
 #else
 /** @brief The screen button's gestures. */
@@ -355,7 +356,6 @@ static void screen_button(uint32_t now)
     if (now - s_in.touch_poll_ms >= TOUCH_MS) {
         s_in.touch_poll_ms = now;
         s_in.touch_down = dial_k518_touch(&s_in.nx, &s_in.ny);
-        atomic_store(&s_key, s_in.touch_down);
         if (s_in.touch_down) {
             s_in.tx = dk518_touch_scale(s_in.nx);
             s_in.ty = dk518_touch_scale(s_in.ny);
@@ -369,6 +369,9 @@ static void screen_button(uint32_t now)
                                           s_in.nx, s_in.ny,
                                           s_in.local_turns, yield, now, &o);
     s_in.local_turns = 0;
+    /* The update takes the validated still touch, never the raw one: a
+     * swipe must not accept it. */
+    atomic_store(&s_key, dk518_still_key(&s_in.still, now));
     if (o.tap) {
         gesture_push(DK_G_TAP, o.tap_x, o.tap_y);
     }

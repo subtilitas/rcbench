@@ -76,14 +76,20 @@ unsigned dk518_still_step(dk518_still_t *s, bool touch, uint16_t x,
     if (touch && !s->down) {
         s->down = true;
         s->moved = false;
+        s->key_hold = false;
         s->x0 = x;
         s->y0 = y;
         s->down_ms = now;
     } else if (!touch && s->down) {
         const uint32_t t = now - s->down_ms;
         s->down = false;
+        s->key_hold = false;
         if (!s->moved) {
             o.still_lift = t < DK_HOLD_MS;
+            if (o.still_lift) {
+                s->key_on = true;
+                s->key_until = now + DK518_KEY_PRESS_MS;
+            }
             if (t <= DK518_TAP_MS) {
                 o.tap = true;
                 o.tap_x = dk518_touch_scale(s->x0);
@@ -100,6 +106,12 @@ unsigned dk518_still_step(dk518_still_t *s, bool touch, uint16_t x,
             dial_button_yield(&s->button, true, now);
         }
     }
+    if (touch && !s->moved && !s->key_hold
+        && now - s->down_ms >= DK_HOLD_MS) {
+        s->key_hold = true;
+        s->key_on = true;
+        s->key_until = now + DK518_KEY_HOLD_MS;
+    }
     if (yield) {
         dial_button_yield(&s->button, touch, now);
     } else {
@@ -109,6 +121,12 @@ unsigned dk518_still_step(dk518_still_t *s, bool touch, uint16_t x,
         *out = o;
     }
     return act;
+}
+
+bool dk518_still_key(const dk518_still_t *s, uint32_t now)
+{
+    return s->key_on
+           && (s->key_hold || (int32_t)(s->key_until - now) > 0);
 }
 
 uint8_t dk518_touch_scale(uint16_t v)
