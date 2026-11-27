@@ -283,7 +283,7 @@ TEST_CASE(scan_opens_search_posts_the_scan_and_a_found_sensor_binds)
     wls_view_t sv;
     wl_search_view(&sv);
     CHECK_EQ(sv.hidden, 3u);
-    CHECK_STR_EQ(sv.found[1].addr, "00:0C:BF:08:19:30");
+    CHECK_STR_EQ(sv.found[1].addr, "00:0C:BF:08:19:30 P");
     ui_router_render(&s_c, 0);
     /* The second one tapped, then BIND: its index goes out. */
     gfx_rect_t r;
@@ -316,6 +316,31 @@ TEST_CASE(scan_opens_search_posts_the_scan_and_a_found_sensor_binds)
     tap_row(&wireless_pane_imu_bind_row);
     CHECK_EQ(ui_router_current(), SCREEN_WL_SEARCH);
     CHECK_EQ(took().kind, IMU_CMD_NONE);
+}
+
+/* SEARCH knows the bound sensor among the found ones by its address as
+ * text: the found entries carry the type, as the bind keeps it, so the
+ * bound one is marked and another one of the same address but the other
+ * type is not. */
+TEST_CASE(search_knows_the_bound_sensor_by_its_address_and_type)
+{
+    imu_view_t v = view_connected();
+    v.link = IMU_LINK_READY;
+    on_imu(&v);
+    tap_row(&wireless_pane_imu_bind_row);
+    REQUIRE(ui_router_current() == SCREEN_WL_SEARCH);
+    v.scan_done = true;
+    v.found_n = 2u;
+    snprintf(v.found[0].addr, sizeof v.found[0].addr, "00:0C:BF:08:19:29");
+    v.found[0].addr_type = 0u;
+    snprintf(v.found[1].addr, sizeof v.found[1].addr, "00:0C:BF:08:19:29");
+    v.found[1].addr_type = 1u;
+    imu_view_set(&v);
+    wls_view_t sv;
+    wl_search_view(&sv);
+    CHECK_STR_EQ(sv.bound_addr, "00:0C:BF:08:19:29 P");
+    CHECK_STR_EQ(sv.found[0].addr, sv.bound_addr);
+    CHECK_STR_EQ(sv.found[1].addr, "00:0C:BF:08:19:29 R");
 }
 
 TEST_CASE(a_scan_is_refused_on_the_band_while_armed_scanning_or_without_c6)
@@ -640,6 +665,7 @@ int main(void)
     RUN(the_hub_has_no_imu_tile_and_wireless_stands_beside_wifi);
     RUN(the_imu_entry_holds_every_control_of_the_imu_while_on);
     RUN(scan_opens_search_posts_the_scan_and_a_found_sensor_binds);
+    RUN(search_knows_the_bound_sensor_by_its_address_and_type);
     RUN(a_scan_is_refused_on_the_band_while_armed_scanning_or_without_c6);
     RUN(a_scan_refused_while_an_arm_waits_says_why_on_the_band);
     RUN(a_search_while_bluetooth_starts_scans_once_it_runs);

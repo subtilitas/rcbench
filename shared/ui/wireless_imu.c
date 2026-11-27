@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "bleuart.h"
 #include "imu.h"
 #include "imu_view.h"
 #include "sensors_rows.h"
@@ -99,6 +100,25 @@ static void bind_value(char *out, size_t n)
 }
 
 /**
+ * @brief Found sensor @p d's address as SETUP keeps a bound one:
+ *        `00:0C:BF:08:19:29 P` or `... R` (bleu_addr_format()).
+ * @param d   The sensor.
+ * @param out Receives the text; the bare address when it does not parse.
+ * @param n   Its size.
+ */
+static void found_addr(const imu_dev_t *d, char *out, size_t n)
+{
+    char text[IMU_ADDR_MAX + 2u];
+    snprintf(text, sizeof(text), "%s %c", d->addr,
+             d->addr_type == BLEU_ADDR_RANDOM ? 'R' : 'P');
+    bleu_addr_t a;
+    if (!bleu_addr_parse(text, &a)
+        || bleu_addr_format(&a, true, out, n) == 0u) {
+        snprintf(out, n, "%s", d->addr);
+    }
+}
+
+/**
  * @brief SEARCH's view of the sensors: the scan, the found sensors, the
  *        devices the scan heard and did not list, the bound one and the
  *        link state.
@@ -115,8 +135,11 @@ static void search_view(wls_view_t *out)
                                                   : IMU_FOUND_MAX;
     out->found_n = (uint8_t)n;
     for (unsigned i = 0u; i < n; ++i) {
-        wl_search_put(out, i, v->found[i].addr, v->found[i].name,
-                      v->found[i].rssi);
+        /* The address in the bound one's form, with its type, as
+         * imu_ble_bind() keeps it: SEARCH matches the two as text. */
+        char addr[WLS_ADDR_MAX];
+        found_addr(&v->found[i], addr, sizeof(addr));
+        wl_search_put(out, i, addr, v->found[i].name, v->found[i].rssi);
     }
     out->hidden = out->scanning ? 0u : v->hidden;
     snprintf(out->bound_addr, sizeof(out->bound_addr), "%s", v->bound_addr);
