@@ -9,6 +9,7 @@
 #include "sprog.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #include "ui_layout.h"
 #include "ui_theme.h"
@@ -53,16 +54,16 @@ static int text_cells(const sprog_t *f)
 }
 
 /**
- * @brief The bytes of @p s its first row takes: up to a line break, else
- *        all of it where it fits, else up to the last space that keeps it
- *        in the line; a word longer than the line is cut.
- * @param f the frame
- * @param s the text
+ * @brief The bytes of @p s its first row takes in @p cells cells: up to a
+ *        line break, else all of it where it fits, else up to the last
+ *        space that keeps it in the row; a word longer than the row is cut.
+ * @param s     the text
+ * @param cells the row's cells, 1 or more
  * @return the bytes
  */
-static size_t row_len(const sprog_t *f, const char *s)
+static size_t row_cut(const char *s, int cells)
 {
-    const size_t fit = gfx_text_prefix(s, text_cells(f));
+    const size_t fit = gfx_text_prefix(s, cells);
     size_t cut = fit;
 
     for (size_t i = 0; i < fit; ++i) {
@@ -77,6 +78,17 @@ static size_t row_len(const sprog_t *f, const char *s)
         --cut;
     }
     return cut > 0u ? cut : fit;
+}
+
+/**
+ * @brief The bytes of @p s its first row takes in a line of the area.
+ * @param f the frame
+ * @param s the text
+ * @return the bytes
+ */
+static size_t row_len(const sprog_t *f, const char *s)
+{
+    return row_cut(s, text_cells(f));
 }
 
 /**
@@ -416,28 +428,84 @@ typedef struct {
     int bottom_y;             /**< the bottom line's first row             */
     int room;                 /**< rows from top to the bottom line        */
     int per;                  /**< note rows a page holds; 0: none shows   */
+    int cells;                /**< cells of a row                          */
+    int narrow;               /**< cells of a page's last row: the counter's
+                                   cells and one of gap less while paging  */
     int pages;                /**< pages the notes take                    */
     int on;                   /**< the page shown                          */
     int start[SPROG_NOTES];   /**< each note's first row, counted over the
                                    pages                                   */
+    int rows[SPROG_NOTES];    /**< the rows each note takes from there     */
 } plan_t;
 
 /**
+ * @brief The cells of row @p at, counted over the pages.
+ * @param p  the plan
+ * @param at the row
+ * @return the cells
+ */
+static int slot_cells(const plan_t *p, int at)
+{
+    return p->per > 0 && at % p->per == p->per - 1 ? p->narrow : p->cells;
+}
+
+/**
+ * @brief The rows @p s takes from row @p at, each wrapped at its cells.
+ * @param p  the plan
+ * @param s  the text
+ * @param at its first row
+ * @return the rows
+ */
+static int rows_from(const plan_t *p, const char *s, int at)
+{
+    int n = 0;
+
+    while (s != NULL && *s != '\0') {
+        s = next_row(s, row_cut(s, slot_cells(p, at + n)));
+        ++n;
+    }
+    return n;
+}
+
+/**
+ * @brief Lays the notes out over pages of @c p->per rows: a note that does
+ *        not fit in what is left of a page starts the next, and a note
+ *        taller than a page goes on over the pages after it.
+ * @param f the frame
+ * @param p the plan, its per, cells and narrow set
+ * @return the rows the notes take, counted over the pages
+ */
+static int lay_out(const sprog_t *f, plan_t *p)
+{
+    int at = 0;
+
+    for (int i = 0; i < f->view.notes; ++i) {
+        const int used = at % p->per;
+
+        p->rows[i] = rows_from(p, f->view.note[i], at);
+        if (used > 0 && used + p->rows[i] > p->per) {
+            at += p->per - used;            /* the next page */
+            p->rows[i] = rows_from(p, f->view.note[i], at);
+        }
+        p->start[i] = at;
+        at += p->rows[i];
+    }
+    return at;
+}
+
+/**
  * @brief Plans the notes of the view: their rows, pages and the bottom
- *        line's place.  Notes that need more rows than there are above the
- *        bottom line page, the last row of the room kept for the pager: a
- *        note that does not fit in what is left of a page starts the next,
- *        and a note taller than a page goes on over the pages after it.  A
- *        room of one row shows no note.
+ *        line's place.  Notes that fit above the bottom line take full
+ *        rows.  Notes that need more page, every row of the room in use:
+ *        the last row of a page leaves the counter's cells and one cell of
+ *        gap at its right free, the counter as wide as "pages/pages".
  * @param f the frame
  * @param p the plan
  */
 static void plan(const sprog_t *f, plan_t *p)
 {
     const int foot = sprog_foot(f);
-    const int n = f->view.notes;
-    int rows[SPROG_NOTES];
-    int need = 0, at = 0;
+    int need = 0;
 
     p->top = f->area.y + ROW0 + f->lines * PITCH;
     p->bottom_y = foot - sprog_text_rows(f, f->view.bottom) * LINE_H;
@@ -445,30 +513,33 @@ static void plan(const sprog_t *f, plan_t *p)
         p->bottom_y = p->top;   /* a bottom line taller shows its first rows */
     }
     p->room = (p->bottom_y - p->top) / LINE_H;
-    for (int i = 0; i < n; ++i) {
-        rows[i] = sprog_text_rows(f, f->view.note[i]);
-        need += rows[i];
-    }
+    p->cells = text_cells(f);
+    p->narrow = p->cells;
+    p->per = p->room;
     p->pages = 1;
     p->on = 0;
+    for (int i = 0; i < f->view.notes; ++i) {
+        need += sprog_text_rows(f, f->view.note[i]);
+    }
+    if (p->room < 1) {
+        p->per = 0;
+        return;
+    }
     if (need <= p->room) {
-        p->per = p->room;
-    } else {
-        p->per = p->room < 2 ? 0 : p->room - 1;
+        (void)lay_out(f, p);
+        return;
     }
-    for (int i = 0; i < n; ++i) {
-        const int used = p->per > 0 ? at % p->per : 0;
-
-        if (p->per > 0 && used > 0 && used + rows[i] > p->per) {
-            at += p->per - used;            /* the next page */
-        }
-        p->start[i] = at;
-        at += rows[i];
-    }
-    if (p->per > 0 && need > p->room) {
+    /* The counter's width sets the pages and the pages its width: grow
+     * it from "n/n" until it holds "pages/pages". */
+    for (int digits = 1, used = 0; digits > used; ) {
+        used = digits;
+        p->narrow = p->cells - (2 * used + 1) - 1;
+        p->narrow = p->narrow > 0 ? p->narrow : 1;
+        const int at = lay_out(f, p);
         p->pages = (at + p->per - 1) / p->per;
-        p->on = f->note_page < p->pages ? f->note_page : 0;
+        digits = p->pages >= 100 ? 3 : p->pages >= 10 ? 2 : 1;
     }
+    p->on = f->note_page < p->pages ? f->note_page : 0;
 }
 
 int sprog_note_pages(const sprog_t *f)
@@ -487,6 +558,38 @@ gfx_rect_t sprog_notes_rect(const sprog_t *f)
     return p.pages > 1 ? gfx_rect_make(f->area.x, p.top, f->area.w,
                                        p.room * LINE_H)
                        : none();
+}
+
+void sprog_notes_shown(const sprog_t *f, int page, sprog_notes_shown_t *s)
+{
+    plan_t p;
+    int last = -1;
+
+    plan(f, &p);
+    page = page < 0 ? p.on : page;
+    memset(s, 0, sizeof(*s));
+    s->top = (int16_t)p.top;
+    s->bottom_y = (int16_t)p.bottom_y;
+    for (int i = 0; i < f->view.notes && p.per > 0 && page < p.pages; ++i) {
+        const int lo = page * p.per, hi = lo + p.per;
+        const int a = p.start[i] > lo ? p.start[i] : lo;
+        const int b = p.start[i] + p.rows[i] < hi ? p.start[i] + p.rows[i]
+                                                  : hi;
+
+        if (a < b) {
+            s->note[s->notes] = (uint8_t)i;
+            s->row[s->notes] = (uint8_t)(a - lo);
+            s->rows[s->notes++] = (uint8_t)(b - a);
+            last = b - lo;
+        }
+    }
+    s->end = (int16_t)(p.top + (last > 0 ? last : 0) * LINE_H);
+    if (f->view.bottom != NULL) {
+        const int fit = (sprog_foot(f) - p.bottom_y) / LINE_H;
+        const int rows = sprog_text_rows(f, f->view.bottom);
+
+        s->bottom_rows = (uint8_t)(rows < fit ? rows : fit);
+    }
 }
 
 /**
@@ -511,7 +614,8 @@ static void notes_follow(sprog_t *f)
     }
 }
 
-/** @brief Draws the notes of the page shown, the pager and the bottom line.
+/** @brief Draws the notes of the page shown, the counter at the right end
+ *         of its last row, and the bottom line.
  * @param f the frame
  * @param c the canvas */
 static void draw_notes(sprog_t *f, gfx_canvas_t *c)
@@ -524,7 +628,7 @@ static void draw_notes(sprog_t *f, gfx_canvas_t *c)
         const char *s = f->view.note[i];
 
         for (int r = p.start[i]; s != NULL && *s != '\0'; ++r) {
-            const size_t len = row_len(f, s);
+            const size_t len = row_cut(s, slot_cells(&p, r));
 
             if (r / p.per == p.on) {
                 char row[SPROG_LINE];
@@ -541,7 +645,8 @@ static void draw_notes(sprog_t *f, gfx_canvas_t *c)
 
         snprintf(count, sizeof(count), "%u/%u", (unsigned)(uint8_t)(p.on + 1),
                  (unsigned)(uint8_t)p.pages);
-        gfx_text_in(c, gfx_rect_make(f->area.x + 10, p.bottom_y - LINE_H,
+        gfx_text_in(c, gfx_rect_make(f->area.x + 10,
+                                     p.top + (p.per - 1) * LINE_H,
                                      f->area.w - 20, LINE_H),
                     count, FONT, ui_theme_color(UI_C_TEXT_FAINT), 1,
                     GFX_ALIGN_RIGHT);

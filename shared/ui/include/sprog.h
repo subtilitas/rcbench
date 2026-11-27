@@ -31,8 +31,10 @@
  *     where the view offers the PORT list.
  *   - Notes: from 8px under the last line of rows down to the bottom line,
  *     wrapped at (w - 20) / 10 cells of the 10x20 face, one row each 20px.
- *     Notes that need more rows page: the row above the bottom line shows
- *     "1/2" at the right and a tap on the notes turns the page.
+ *     Notes that need more rows page: every row of the room holds note
+ *     text, the last row of each page shares its right end with the page
+ *     counter "1/2" (its cells and one cell of gap kept free of text, so
+ *     that row wraps narrower), and a tap on the notes turns the page.
  *   - Bottom line: the view's last message or identity line, its last row
  *     ending at sprog_foot().
  *   A '\n' in a note, the bottom line or a page line starts a new row.
@@ -665,6 +667,31 @@ gfx_rect_t sprog_notes_rect(const sprog_t *f);
  * @param f the frame
  * @return the pages, 1 or more */
 int sprog_note_pages(const sprog_t *f);
+
+/** @brief What one page of the notes draws, from the plan sprog_render()
+ *         draws by. */
+typedef struct {
+    uint8_t notes;                /**< notes on the page                   */
+    uint8_t note[SPROG_NOTES];    /**< each one's index in view.note,
+                                       top-down                            */
+    uint8_t row[SPROG_NOTES];     /**< each one's first row on the page    */
+    uint8_t rows[SPROG_NOTES];    /**< the rows it takes on the page       */
+    int16_t top;                  /**< y of the page's first row           */
+    int16_t end;                  /**< y under its last note row; top with
+                                       no note                             */
+    int16_t bottom_y;             /**< y of the bottom line's first row    */
+    uint8_t bottom_rows;          /**< the bottom line's rows drawn, 0:
+                                       none                                */
+} sprog_notes_shown_t;
+/**
+ * @brief The notes, their rows and the bottom line's rows that page
+ *        @p page of the view draws.  A note longer than a page shows on
+ *        each page it reaches.
+ * @param f    the frame, its view filled
+ * @param page the notes' page from 0; -1: the page shown
+ * @param s    receives the page; no note past the last page
+ */
+void sprog_notes_shown(const sprog_t *f, int page, sprog_notes_shown_t *s);
 
 #ifdef __cplusplus
 }
