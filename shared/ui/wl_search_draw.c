@@ -117,7 +117,8 @@ static void draw_list(gfx_canvas_t *c, const wls_view_t *v)
 
 /**
  * @brief The right column: the device's kind, its link state, the bound
- *        device, SCAN AGAIN and UNBIND, grey with nothing bound.
+ *        device and its address under a name, SCAN AGAIN, UNBIND, grey with
+ *        nothing bound, and the hidden count when there is one.
  * @param c The canvas.
  * @param v The view.
  */
@@ -133,6 +134,10 @@ static void draw_card(gfx_canvas_t *c, const wls_view_t *v)
                                                    : TR(DIAL_BIND_NONE);
     line(c, WLS_SX, WLS_NAME_Y, WLS_SW, bound, WLS_F_BODY,
          v->bound_addr[0] != '\0' ? UI_TEXT : UI_TEXT_DIM);
+    if (v->bound_name[0] != '\0' && v->bound_addr[0] != '\0') {
+        line(c, WLS_SX, WLS_ADDR_Y, WLS_SW, v->bound_addr, &gfx_font_8x16,
+             UI_TEXT_DIM);
+    }
     ui_button_font(c, wl_search_part(WLS_PART_AGAIN), TR(WL_SCAN_AGAIN),
                    UI_PANEL_HI,
                    !wls.asking && wls.have_press && wls.hit == WLS_HIT_AGAIN,
@@ -142,6 +147,11 @@ static void draw_card(gfx_canvas_t *c, const wls_view_t *v)
                    !wls.asking && wls.have_press
                        && wls.hit == WLS_HIT_UNBIND,
                    v->bound_addr[0] != '\0', WLS_F_LABEL);
+    if (v->hidden > 0u) {
+        char buf[48];
+        snprintf(buf, sizeof(buf), TR(IMU_HIDDEN), (unsigned)v->hidden);
+        line(c, WLS_SX, WLS_HIDDEN_Y, WLS_SW, buf, WLS_F_LABEL, UI_TEXT_DIM);
+    }
 }
 
 /**

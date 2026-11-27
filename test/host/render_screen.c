@@ -2498,7 +2498,6 @@ static ui_screen_id_t id_of(const char *name)
         { "updates",    SCREEN_UPDATES },
         { "upd-remind", SCREEN_UPD_REMIND },
         { "layout",     SCREEN_LAYOUT },
-        { "imu",        SCREEN_IMU },
         { "set-load",   SCREEN_SET_LOAD },
         { "scan-code",  SCREEN_SCAN_CODE },
         { "about",      SCREEN_ABOUT },

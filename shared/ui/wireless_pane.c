@@ -30,9 +30,10 @@ static dial_cmd_t s_q[CMD_Q];
 /** @brief The commands in s_q. */
 static unsigned   s_q_n;
 
-/** @brief The IMU's rows, the enable row first and ANGLE SOURCE second:
- *         both stand while the IMU is off, so the source can go back to
- *         the AS5600 without switching the IMU on. */
+/** @brief The IMU's settings, the enable row first and ANGLE SOURCE
+ *         second: both stand while the IMU is off, so the source can go
+ *         back to the AS5600 without switching the IMU on.  The custom
+ *         rows stand between ANGLE SOURCE and AXIS while it is on. */
 static const setting_id_t k_imu[] = { SET_IMU_EN, SET_ANGLE_SOURCE,
                                       SET_IMU_AXIS, SET_IMU_SIGN,
                                       SET_IMU_RATE, SET_IMU_ALGO,
@@ -46,7 +47,20 @@ static const setting_id_t k_dial[] = { SET_DIAL_EN, SET_DIAL_THR,
 static const setting_id_t k_pnode[] = { SET_PNODE_EN, SET_I228_SRC,
                                          SET_PNODE_UOHM };
 
-_Static_assert(sizeof(k_imu) / sizeof(k_imu[0]) <= WL_ENTRY_ROWS_MAX,
+/** @brief The IMU's custom rows while it is on, LAST ERROR's place
+ *         (third) kept only while there is an error. */
+static const ui_setlist_custom_t *const k_imu_live[] = {
+    &wireless_pane_imu_scan_row, &wireless_pane_imu_bind_row,
+    &wireless_pane_imu_err_row, &wireless_pane_imu_x_row,
+    &wireless_pane_imu_y_row, &wireless_pane_imu_z_row,
+    &wireless_pane_imu_frames_row, &wireless_pane_imu_bat_row,
+    &wireless_pane_imu_c6_row, &wireless_pane_imu_zero_row,
+    &wireless_pane_imu_unzero_row, &wireless_pane_imu_cal_row,
+};
+
+_Static_assert(sizeof(k_imu) / sizeof(k_imu[0])
+                   + sizeof(k_imu_live) / sizeof(k_imu_live[0])
+                   <= WL_ENTRY_ROWS_MAX,
                "the IMU's rows fit an entry");
 
 /**
@@ -280,10 +294,19 @@ int wireless_pane_rows(int entry, wl_row_t *out, int max)
     int n = 0;
     if (entry == WL_ENTRY_IMU) {
         /* Off: IMU and ANGLE SOURCE. */
-        const int shown = settings_get_bool(SET_IMU_EN)
-                              ? (int)(sizeof(k_imu) / sizeof(k_imu[0])) : 2;
-        for (int i = 0; i < shown; ++i) {
-            n = add_id(out, max, n, k_imu[i]);
+        n = add_id(out, max, n, k_imu[0]);
+        n = add_id(out, max, n, k_imu[1]);
+        if (settings_get_bool(SET_IMU_EN)) {
+            for (size_t i = 0; i < sizeof(k_imu_live) / sizeof(k_imu_live[0]);
+                 ++i) {
+                if (k_imu_live[i] != &wireless_pane_imu_err_row
+                    || wireless_pane_imu_err()) {
+                    n = add_custom(out, max, n, k_imu_live[i]);
+                }
+            }
+            for (size_t i = 2; i < sizeof(k_imu) / sizeof(k_imu[0]); ++i) {
+                n = add_id(out, max, n, k_imu[i]);
+            }
         }
     } else if (entry == WL_ENTRY_DIAL) {
         n = add_id(out, max, n, SET_DIAL_EN);
@@ -321,7 +344,7 @@ const char *wireless_pane_name(int entry, char *buf, size_t n)
     }
     buf[0] = '\0';
     if (entry == WL_ENTRY_IMU) {
-        snprintf(buf, n, "IMU");
+        snprintf(buf, n, "%s", TR(IMU_ENTRY));
     } else if (entry == WL_ENTRY_DIAL) {
         snprintf(buf, n, "%s", TR(DIAL_ENTRY));
     } else if (entry == WL_ENTRY_PNODE) {

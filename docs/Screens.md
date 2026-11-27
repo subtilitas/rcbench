@@ -469,10 +469,7 @@ Either dock covers part of the footer's middle slot, x 348 to 676:
   or its result shows, as the slot is ABORT or OK then. The list's pages
   cover no control that stops an output and show while ARMED.
 - No page over RENAME LOG's keyboard, the signal-wire session, ESC
-  STICK's search keyboard, its RUN warning or its manual steps, or IMU's
-  found list.
-
-![IMU's guide at page 1](img/help-imu.png)
+  STICK's search keyboard, its RUN warning or its manual steps.
 
 ## Screenshot
 
@@ -1985,7 +1982,7 @@ LIVE's ZERO is the zero MEASURED reads from; after the tap MEASURED reads
 | ANGLE SOURCE | A tap with a reading on show | Reads SET |
 | --- | --- | --- |
 | AS5600 | takes the live count, 0 to 4095, as ENC CENTER and asks a save: the setting of ENC CENTER on LIVE's and RUDDER's lists and of SETUP > SENSORS > AS5600 center | ENC CENTER is not 0, its default, or a count was taken since the panel started; a center kept from before a restart reads SET |
-| IMU | asks the IMU's own ZERO, the IMU screen's: every IMU angle, roll, pitch and yaw, from the current position. It drops RUDDER's zero and MAX taken on the IMU, as the IMU screen's ZERO does | the IMU reports its zero taken; the IMU's zero lasts until the restart |
+| IMU | asks the IMU's own ZERO, the one of SETUP > WIRELESS > IMU: every IMU angle, roll, pitch and yaw, from the current position. It drops RUDDER's zero and MAX taken on the IMU, as that ZERO does | the IMU reports its zero taken; the IMU's zero lasts until the restart |
 
 Without a reading from the current link, after a link loss until a new
 reading arrives, while the AS5600 reports no magnet, or without a valid
@@ -5642,18 +5639,20 @@ over its name in the 12 x 24px face, and a line in the 10 x 20px face.
 
 - Four categories: PANEL, SENSORS, WIRELESS and SD CARD, the bench-wide
   settings. A tile names the number of settings its list shows; SENSORS'
-  says what it holds, `CURRENT, ANGLE, PHASE TAP`, and WIRELESS' `IMU, DIAL, POWER, BALANCE NODES`.
+  says what it holds, `CURRENT, ANGLE, PHASE TAP`, and WIRELESS' `IMU, DIAL, NODES, PRINTER`.
   A tap opens the category's list.
   The pack, motor and throttle-output settings are on
   MOTOR & ESC > OPTIONS
   ([MOTOR & ESC settings](#motor--esc-settings)).
-- Four screens of their own: OUTPUTS ([Outputs](#outputs)), WI-FI
-  ([Wi-Fi](#wi-fi)), UPDATES ([Updates](#updates)) and IMU
-  ([The Bluetooth IMU](#the-bluetooth-imu)). The band of each names it
-  as its tile does, and the band of this page reads SETUP. [Files](#files) is a
+- Three screens of their own: OUTPUTS ([Outputs](#outputs)), WI-FI
+  ([Wi-Fi](#wi-fi)) and UPDATES ([Updates](#updates)). The band of each
+  names it as its tile does, and the band of this page reads SETUP. The
+  tiles read row by row PANEL, SENSORS, OUTPUTS; SD CARD, WI-FI,
+  WIRELESS; UPDATES. The Bluetooth IMU has no tile: it is WIRELESS'
+  first entry ([The Bluetooth IMU](#the-bluetooth-imu)). [Files](#files) is a
   tab of the [LOGS](#logs) tile.
 - LAYOUT ([Layout](#layout)) as the last tile on a board with soldered pins,
-  the [rbmod carrier](Carrier.md). 1 slot is free on any other board and none
+  the [rbmod carrier](Carrier.md). 2 slots are free on any other board and 1
   on that one. The page holds 9, and the build fails at a tenth entry.
 - SAVE, bottom right, is the same button the lists show
   ([Keeping the values](#keeping-the-values)). A change left unsaved in any
@@ -6652,31 +6651,48 @@ with the SERVO LABEL rows; Active servo's list offers NONE until then.
 
 ### The Bluetooth IMU
 
-![IMU, connected at 50Hz with ZERO taken](img/imu-connected.png)
+![WIRELESS on the IMU entry, connected at 50Hz with ZERO taken](img/setup-wireless-imu.png)
 
-SETUP's IMU tile opens the screen for a WitMotion BWT901CL angle sensor,
-connected to the panel over Bluetooth LE through the board's ESP32-C6
-([The Bluetooth IMU](IMU.md)); the first IMU ON starts Bluetooth LE. WIRELESS' IMU entry holds its rows: IMU ON or
-OFF, AXIS (X, Y, Z), SIGN (+, -), RATE (10, 20, 50, 100 or 200Hz, 50Hz by
-default), ALGORITHM (6-AXIS or 9-AXIS) and ANGLE SOURCE. The screen's
-controls, left, 460 x 56px at a 64px pitch from body y 16: SCAN FOR SENSORS,
-then ZERO and CLEAR ZERO side by side. The footer
-([The footer and the settings list](#the-footer-and-the-settings-list))
-reads `[IMU] [HOLD 2s: CALIBRATE] [OPTIONS]`; OPTIONS opens WIRELESS on
-the IMU entry, and its home tag comes back. The card on the right, x 484 to
-1016, body y 16 to 436, names the bound sensor and
-its address with its type, the C6's firmware, the state, the angles X, Y and Z from the
-zero in the 16 x 28px face (the axis the runs read in the accent), the rate
-of angle frames, the age of the newest one and the sensor's battery. SCAN
-opens the found list for a scan of 10s: up to 8 sensors of 640 x 48px at a
-52px pitch with name, address and RSSI, and the count of the other devices
-the scan heard under SCAN AGAIN; a tap binds one and closes the list. The home tag closes the list first. The
-reading is stale 300ms after the last angle frame, the dropout allowance of
-a run ([Servo procedures](Servo.md)).
+The WitMotion BWT901CL angle sensor connects to the panel over Bluetooth
+LE through the board's ESP32-C6 ([The Bluetooth IMU](IMU.md)); the first
+IMU ON starts Bluetooth LE. SETUP > WIRELESS' IMU entry holds all of it:
+the scan and the bind, the live values, ZERO, CLEAR ZERO, the
+calibration's 2s hold and the settings. With the IMU off the entry shows
+IMU and ANGLE SOURCE; on, 18 rows more, 19 while LAST ERROR shows:
 
-![The found list after SCAN](img/imu-scan.png)
+| Row | Value | What it does |
+| --- | --- | --- |
+| Scan for sensor | `SCAN`, `STARTING BLUETOOTH`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | a tap opens SEARCH ([WIRELESS: SEARCH](#wireless-search)) and asks a scan of 10s. While Bluetooth LE starts the scan waits for it and goes out once it runs. While ARMED the band reads `NO IMU SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; while a scan runs `A SCAN IS RUNNING: IT ENDS WITHIN 10s`; with no Bluetooth on the C6 or a C6 that failed `BLUETOOTH IS NOT READY: NO SENSOR SCAN`. SEARCH opens in each case |
+| Bound sensor | the bound sensor's name, else its address, else `NONE` | a tap opens SEARCH on the last scan's list, without a scan |
+| Last error | | only while the last scan, connect or write failed: the error in the help line, in the warning colour ([The Bluetooth IMU](IMU.md)) |
+| Angle X, Angle Y, Angle Z | `+12.30°`, `---` without a reading | the angles from the zero through IMU filter, 0.01°. The axis IMU axis names reads `Angle X: read by runs` |
+| Frames | `RATE 50.0Hz  AGE 20ms`, `RATE 0.0Hz  NO ANGLE` | the angle frames of the last second and the age of the newest |
+| Sensor battery | `3.95V`, `---` above 6.0V or without one | the sensor's battery from its 0x52 frame |
+| C6 version | `2.13.0`, `---` | the ESP32-C6's firmware |
+| Zero | | a tap takes the current angles as the zero; locked without a reading, `NO ANGLE FROM THE SENSOR YET` |
+| Clear zero | | a tap forgets the zero; locked while none is set, `NO ZERO SET` |
+| Calibrate | `HOLD 2s: CALIBRATE`, a button of 278 x 48px at the row's right | a 2s hold starts the accelerometer's calibration of 3s; released before 2000ms the band reads `Hold 2s to calibrate the accelerometer.`. Locked while the sensor sends no frames, `THE SENSOR SENDS NO FRAMES`, and while it runs, `KEEP IT STILL AND LEVEL FOR 3s` counting down. The band reads `ACCELEROMETER CALIBRATED AND SAVED` at its end, or the alert `CALIBRATION ENDED WITHOUT FRAMES: TRY AGAIN` |
 
-![WIRELESS on the IMU entry](img/setup-wireless-imu.png)
+The settings follow: IMU axis (X, Y, Z), IMU sign (+, -), IMU rate (10,
+20, 50, 100 or 200Hz, 50Hz by default), IMU algorithm (6-AXIS or
+9-AXIS), IMU filter, IMU settling time and IMU precision. ZERO and CLEAR
+ZERO drop RUDDER's zero and MAX taken on the IMU. The reading is stale
+300ms after the last angle frame, the dropout allowance of a run
+([Servo procedures](Servo.md)).
+
+A new reading repaints the value box of each of Angle X, Angle Y, Angle
+Z, Frames and Sensor battery whose text changed, 278 x 24px each; the
+age on Frames counts on 10 times a second between readings. A change of
+the link, the scan, the bind or the calibration repaints the list, and
+so does a reading that comes or goes and a zero taken or cleared, which
+lock or free ZERO and CLEAR ZERO. The fill of CALIBRATE's hold repaints
+its button alone. LAST ERROR moves the rows under it: a press held on
+any row of the list when it comes or goes ends without acting, and an
+open choice list closes.
+
+![The same at ZERO, CLEAR ZERO and CALIBRATE](img/setup-wireless-imu-cal.png)
+
+![No sensor bound after a scan that found none](img/setup-wireless-imu-error.png)
 
 ### WIRELESS: the IMU and the Dial
 
@@ -6689,7 +6705,7 @@ restarts.
 
 | Entry | State while on | Rows |
 | --- | --- | --- |
-| IMU | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO SENSOR BOUND`, `SCANNING`, `CONNECTING`, `BOUND`, `CONNECTED 50Hz`, `NO FRAMES` ([The Bluetooth IMU](#the-bluetooth-imu)) | 2 while off: IMU and ANGLE SOURCE; 7 while on |
+| IMU | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO SENSOR BOUND`, `SCANNING`, `CONNECTING`, `BOUND`, `CONNECTED 50Hz`, `NO FRAMES` ([The Bluetooth IMU](#the-bluetooth-imu)) | 2 while off: IMU and ANGLE SOURCE; 20 while on, 21 with LAST ERROR |
 | DIAL | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO DIAL BOUND`, `SCANNING`, `CONNECTING`, `BOUND: NOT A DIAL`, `CONNECTED, NO EVENT`, `OTHER PROTOCOL n`, `CONNECTED`, `DEGRADED`, `DIAL LOST` | 1 while off; 5 while on |
 | BALANCE NODE | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO NODE BOUND`, `SCANNING`, `CONNECTING`, `BOUND: NOT A NODE`, `CONNECTED, READING INFO`, `ROLE r, PROTOCOL p`, `CONNECTED, NO REPORT`, `REPORTING` | 1 while off; 5 while on |
 | PRINTER | `NOT BOUND`, the bound printer's name while idle, `SCANNING`, `LINK UP`, a request's phase or its result ([WIRELESS: the label printer](#wireless-the-label-printer)) | 8 |
@@ -6857,10 +6873,11 @@ puts its text on the band:
 
 ![SEARCH on the power node, two nodes found](img/setup-wireless-search.png)
 
-SEARCH finds and binds the Dial, the power node, the balance node or the
-label printer. SCAN FOR DIAL, SCAN FOR NODE and Scan for printer open it
-and ask for a scan of 10s; BOUND DIAL, BOUND NODE and Bound printer open
-it on the last scan's list without one. A
+SEARCH finds and binds the IMU, the Dial, the power node, the balance
+node or the label printer. Scan for sensor, SCAN FOR DIAL, SCAN FOR NODE
+and Scan for printer open it and ask for a scan of 10s; Bound sensor,
+BOUND DIAL, BOUND NODE and Bound printer open it on the last scan's list
+without one. A
 scan the row refuses (ARMED, a scan running, Bluetooth not ready) says
 why on the band, and SEARCH opens on the last list. The home
 tag returns to SETUP > WIRELESS on the device's entry.
@@ -6869,15 +6886,18 @@ tag returns to SETUP > WIRELESS on the device's entry.
 | --- | --- | --- |
 | State line | x 16, y 12 | `SCANNING: 7s LEFT` while a scan runs, counted down from 10s; `FOUND n: TAP ONE TO BIND IT`; `NONE FOUND`; `STOPPED BY ARM`; `NO SCAN YET: TAP SCAN AGAIN` |
 | Found list | rows of 640 x 48px at a 52px pitch from x 16, y 44 | the devices the last scan found, strongest first, up to 8: the name, else the address, and the RSSI, `rcbench-pwr-3456  -58dBm`; the bound one lit in the accent colour. The controller empties the list when a scan starts and fills it when the scan ends |
-| Card | x 680, 328px wide, y 12 to 136 | the device's kind, its link state as on the left list, `BOUND` and the bound device's name, else its address, else `NONE` |
+| Card | x 680, 328px wide, y 12 to 154 | the device's kind, its link state as on the left list, `BOUND` and the bound device's name, else its address, else `NONE`; under a name its address with its type in the 8 x 16px face at y 138 |
 | SCAN AGAIN | 328 x 56px at x 680, y 156 | a new scan of 10s with the rules of SCAN FOR DIAL and SCAN FOR NODE; grey while a scan runs, where a tap reads `A SCAN IS RUNNING: IT ENDS WITHIN 10s` |
 | UNBIND | 328 x 56px at x 680, y 228 | `HOLD 2s: UNBIND`, a 2s hold that forgets the bound device (below); released before 2000ms the band reads `Hold 2s to unbind the device.`; grey while nothing is bound, where a tap reads `NOTHING IS BOUND: NOTHING TO UNBIND` |
+| Hidden count | x 680, y 300, the 10 x 20px face | the IMU's only: the devices the last scan heard and did not list, `4 OTHER DEVICES HIDDEN`; none while a scan runs or with none |
+
+![SEARCH on the IMU, two sensors found and four hidden](img/setup-wireless-imu-search.png)
 
 ![SEARCH's bind question](img/setup-wireless-search-bind.png)
 
 A tap on a found device opens the bind question in place of the list,
-700 x 280px at x 162, y 100: `BIND POWER NODE?` (`BIND DIAL?`,
-`BIND BALANCE NODE?`), the device's name, its address and RSSI, the bound
+700 x 280px at x 162, y 100: `BIND POWER NODE?` (`BIND IMU?`,
+`BIND DIAL?`, `BIND BALANCE NODE?`), the device's name, its address and RSSI, the bound
 device it takes the place of, `SETUP KEEPS THE BIND AND ASKS FOR A SAVE`,
 then CANCEL and BIND, 300 x 56px each. CANCEL and the home tag close it
 and bind nothing. BIND asks the controller to bind the device by its
@@ -6888,10 +6908,14 @@ the address and the name in SETUP and asks for a save.
 BIND binds nothing, closes the question and says why on the band:
 
 - while a scan runs: `A SCAN IS RUNNING: PICK THE NODE WHEN IT ENDS`,
-  `A SCAN IS RUNNING: PICK THE DIAL WHEN IT ENDS` for the Dial;
+  `A SCAN IS RUNNING: PICK THE DIAL WHEN IT ENDS` for the Dial,
+  `A SCAN IS RUNNING: PICK THE SENSOR WHEN IT ENDS` for the IMU;
 - when the tapped device is not at its place in the list:
   `NODE NOT BOUND: THE LIST CHANGED, PICK IT AGAIN`,
-  `DIAL NOT BOUND: THE LIST CHANGED, PICK IT AGAIN` for the Dial;
+  `DIAL NOT BOUND: THE LIST CHANGED, PICK IT AGAIN` for the Dial,
+  `SENSOR NOT BOUND: THE LIST CHANGED, PICK IT AGAIN` for the IMU;
+- for the IMU, while its calibration runs or Bluetooth LE starts:
+  `NO BIND NOW: THE CALIBRATION RUNS OR BLUETOOTH STARTS`;
 - for the printer, while a request runs: `A PRINT IS RUNNING: CHANGE THE
   BIND WHEN IT ENDS`; while a device update runs: `AN UPDATE IS RUNNING:
   CHANGE THE BIND AFTER IT`. UNBIND held to 2000ms is refused with the
@@ -6899,7 +6923,9 @@ BIND binds nothing, closes the question and says why on the band:
 
 The printer's bind is no controller's: BIND writes the address and the
 name into SETUP (`prn_ble`, `prn_name`) and asks a save at once, and
-UNBIND clears both. The next request links to the new address.
+UNBIND clears both. The IMU's UNBIND clears its address and name in SETUP
+(`imu_ble`, `imu_name`) and asks a save; the controller ends the link as
+it takes the empty address. The next request links to the new address.
 
 A tap on a device while a scan runs opens no question and reads the
 scan's text. A bind the controller refuses after BIND, behind a scan

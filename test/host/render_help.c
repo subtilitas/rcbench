@@ -5,7 +5,7 @@
  * help-overview is the menu's guide at page 1, help-overview-2 to
  * help-overview-4 its other pages, each opened and turned by taps through
  * the router as a person does.  help-setup, help-outputs, help-logs,
- * help-files, help-servo, help-supply, help-motor, help-imu, help-wifi,
+ * help-files, help-servo, help-supply, help-motor, help-wifi,
  * help-updates and their states' views open the guide over the view
  * render_help_base() names, posed as that view is: SERVO's on a task or
  * SETTINGS' page, SUPPLY's with the output off and MOTOR & ESC's SAFE, as
@@ -123,7 +123,6 @@ static const struct {
     { "help-motor-stick-models", "motor-stick-hand-list" },
     { "help-motor-stick-hand", "motor-stick-hand" },
     { "help-motor-stick-timing", "motor-stick-timing" },
-    { "help-imu", "imu-connected" },
 };
 
 const char *render_help_base(const char *view)
