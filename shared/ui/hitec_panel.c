@@ -32,98 +32,132 @@
 /** @brief The classic model name row: no parameter of hitec_reg. */
 #define W_NAME ((uint8_t)HITEC_P_COUNT)
 
+/**
+ * @brief The rows of every tab and both series, in the frame's flow order
+ *        per tab: a wide row on a line of its own, two narrow rows to a
+ *        line (sprog.h).  Rows of one place that never show together (the
+ *        series, SERIES and AFTER STOP, DIRECTION and FIND STOP) follow
+ *        each other.  X(tab, wide, kind, what, series, show bits, control
+ *        width or 0, label, name).
+ */
+#define HP_ROWS(X)                                                           \
+    /* The head: the port, the series, the supply; CONNECT, ABORT, LEAVE */ \
+    X(HITEC_PANEL_SERVO, 1, K_ACT, A_PORT, S_ANY, 0, 0, -1, "PORT")          \
+    X(HITEC_PANEL_SERVO, 0, K_ACT, A_READ, S_ANY, 0, 0, -1, "SERVO")         \
+    /* The brand slot: SERIES before CONNECT, AFTER STOP while held. */      \
+    X(HITEC_PANEL_SERVO, 0, K_ACT, A_SERIES, S_ANY, HT_SHOW_FREE, 0,         \
+      TX_HP_SERIES, NULL)                                                    \
+    X(HITEC_PANEL_SERVO, 0, K_ACT, A_CLEAR, S_ANY, HT_SHOW_HELD, 0,          \
+      TX_HP_STOP_ROW, NULL)                                                  \
+    X(HITEC_PANEL_SERVO, 0, K_ACT, A_FILES, S_ANY, 0, 0, TX_KP_FILES, NULL)  \
+    X(HITEC_PANEL_SERVO, 0, K_ACT, A_MORE, S_ANY, 0, 0, TX_KP_MORE, NULL)    \
+    X(HITEC_PANEL_SERVO, 0, K_ACT, A_RESTORE, S_ANY, 0, 0, TX_KP_RESTORE,    \
+      NULL)                                                                  \
+    /* WRITE n VALUES says what it writes: no label.  A 2s hold. */          \
+    X(HITEC_PANEL_SERVO, 0, K_ACT, A_WRITE, S_ANY, 0, HP_WRITE_W, -1, "")    \
+                                                                             \
+    X(HITEC_PANEL_MOTION, 1, K_SHOW, HITEC_P_D_SPEED, S_D, HT_SHOW_D, 0,     \
+      TX_HP_SPEED, NULL)                                                     \
+    X(HITEC_PANEL_MOTION, 1, K_SHOW, HITEC_P_D_DEAD_BAND, S_D, HT_SHOW_D, 0, \
+      TX_HP_DEADBAND, NULL)                                                  \
+    X(HITEC_PANEL_MOTION, 1, K_SHOW, HITEC_P_D_SOFT_START, S_D, HT_SHOW_D,   \
+      0, TX_HP_SOFTSTART, NULL)                                              \
+    X(HITEC_PANEL_MOTION, 1, K_SHOW, HITEC_P_C_SPEED, S_C, HT_SHOW_C, 0,     \
+      TX_HP_SPEED, NULL)                                                     \
+    X(HITEC_PANEL_MOTION, 1, K_SHOW, HITEC_P_C_DEAD_BAND, S_C, HT_SHOW_C, 0, \
+      TX_HP_DEADBAND, NULL)                                                  \
+    X(HITEC_PANEL_MOTION, 1, K_SHOW, HITEC_P_C_RESOLUTION, S_C, HT_SHOW_C,   \
+      0, TX_HP_RESOLUTION, NULL)                                             \
+                                                                             \
+    /* The positions' unit in the label: the value narrows to its keys      \
+     * while MOVE SERVO runs. */                                             \
+    X(HITEC_PANEL_TRAVEL, 1, K_SHOW, HITEC_P_D_NEUTRAL, S_D, HT_SHOW_D, 0,   \
+      TX_HP_NEUTRAL_N, NULL)                                                 \
+    X(HITEC_PANEL_TRAVEL, 1, K_SHOW, HITEC_P_D_LEFT_END, S_D, HT_SHOW_D, 0,  \
+      TX_HP_END_L_N, NULL)                                                   \
+    X(HITEC_PANEL_TRAVEL, 1, K_SHOW, HITEC_P_D_RIGHT_END, S_D, HT_SHOW_D, 0, \
+      TX_HP_END_R_N, NULL)                                                   \
+    X(HITEC_PANEL_TRAVEL, 1, K_SHOW, HITEC_P_D_DIRECTION, S_D,               \
+      HT_SHOW_STILL, 0, TX_HP_DIRECTION, NULL)                               \
+    /* FIND STOP: LEFT END and RIGHT END keys in DIRECTION's place while    \
+     * MOVE SERVO's loop runs, which holds DIRECTION at CW. */               \
+    X(HITEC_PANEL_TRAVEL, 1, K_ACT, A_FIND, S_D, HT_SHOW_MOVE, 0,            \
+      TX_HP_FIND, NULL)                                                      \
+    /* MOVE SERVO: the horn follows the position edited (hitec_move.h). */  \
+    X(HITEC_PANEL_TRAVEL, 1, K_ACT, A_MOVE, S_D, HT_SHOW_D, HP_VAL_W,        \
+      TX_HP_MOVE, NULL)                                                      \
+    X(HITEC_PANEL_TRAVEL, 1, K_SHOW, HITEC_P_C_CENTER, S_C, HT_SHOW_C, 0,    \
+      TX_HP_CENTER, NULL)                                                    \
+    X(HITEC_PANEL_TRAVEL, 1, K_SHOW, HITEC_P_C_LEFT_END, S_C, HT_SHOW_C, 0,  \
+      TX_HP_END_L, NULL)                                                     \
+    X(HITEC_PANEL_TRAVEL, 1, K_SHOW, HITEC_P_C_RIGHT_END, S_C, HT_SHOW_C, 0, \
+      TX_HP_END_R, NULL)                                                     \
+    X(HITEC_PANEL_TRAVEL, 1, K_SHOW, HITEC_P_C_DIRECTION, S_C, HT_SHOW_C, 0, \
+      TX_HP_DIRECTION, NULL)                                                 \
+                                                                             \
+    X(HITEC_PANEL_PROTECT, 1, K_SHOW, HITEC_P_D_FAILSAFE, S_D, HT_SHOW_D, 0, \
+      TX_HP_FAILSAFE, NULL)                                                  \
+    X(HITEC_PANEL_PROTECT, 1, K_SHOW, HITEC_P_D_OVERLOAD, S_D, HT_SHOW_D, 0, \
+      TX_HP_OVERLOAD, NULL)                                                  \
+    X(HITEC_PANEL_PROTECT, 1, K_SHOW, HITEC_P_D_SMART_SENSOR, S_D,           \
+      HT_SHOW_D, 0, -1, "SMART SENSOR")                                      \
+    X(HITEC_PANEL_PROTECT, 1, K_SHOW, HITEC_P_D_SENSITIVITY, S_D, HT_SHOW_D, \
+      0, TX_HP_SENS, NULL)                                                   \
+    X(HITEC_PANEL_PROTECT, 1, K_SHOW, HITEC_P_C_FAILSAFE, S_C, HT_SHOW_C, 0, \
+      TX_HP_FAILSAFE, NULL)                                                  \
+    X(HITEC_PANEL_PROTECT, 1, K_SHOW, HITEC_P_C_FS_POSITION, S_C, HT_SHOW_C, \
+      0, TX_HP_FS_POS, NULL)                                                 \
+    X(HITEC_PANEL_PROTECT, 1, K_SHOW, HITEC_P_C_OVERLOAD, S_C, HT_SHOW_C, 0, \
+      TX_HP_OVERLOAD, NULL)                                                  \
+                                                                             \
+    X(HITEC_PANEL_INFO, 0, K_SHOW, HITEC_P_D_MODEL, S_D, HT_SHOW_D, 0,       \
+      TX_HP_MODEL, NULL)                                                     \
+    X(HITEC_PANEL_INFO, 0, K_SHOW, HITEC_P_D_ID, S_D, HT_SHOW_D, 0, -1, "ID") \
+    X(HITEC_PANEL_INFO, 0, K_SHOW, HITEC_P_D_POSITION, S_D, HT_SHOW_D, 0,    \
+      TX_HP_POSITION, NULL)                                                  \
+    X(HITEC_PANEL_INFO, 0, K_SHOW, HITEC_P_D_R04, S_D, HT_SHOW_D, 0, -1,     \
+      "REG 04")                                                              \
+    X(HITEC_PANEL_INFO, 0, K_SHOW, HITEC_P_D_R22, S_D, HT_SHOW_D, 0, -1,     \
+      "REG 22")                                                              \
+    X(HITEC_PANEL_INFO, 0, K_SHOW, HITEC_P_D_R8A, S_D, HT_SHOW_D, 0, -1,     \
+      "REG 8A")                                                              \
+    X(HITEC_PANEL_INFO, 0, K_SHOW, HITEC_P_D_R8C, S_D, HT_SHOW_D, 0, -1,     \
+      "REG 8C")                                                              \
+    X(HITEC_PANEL_INFO, 0, K_SHOW, HITEC_P_D_RD4, S_D, HT_SHOW_D, 0, -1,     \
+      "REG D4")                                                              \
+    X(HITEC_PANEL_INFO, 0, K_SHOW, HITEC_P_D_RD6, S_D, HT_SHOW_D, 0, -1,     \
+      "REG D6")                                                              \
+    X(HITEC_PANEL_INFO, 1, K_SHOW, W_NAME, S_C, HT_SHOW_C, 0, TX_HP_MODEL,   \
+      NULL)                                                                  \
+    X(HITEC_PANEL_INFO, 1, K_SHOW, HITEC_P_C_VERSION, S_C, HT_SHOW_C, 0,     \
+      TX_HP_VERSION, NULL)                                                   \
+    X(HITEC_PANEL_INFO, 1, K_SHOW, HITEC_P_C_DATE, S_C, HT_SHOW_C, 0,        \
+      TX_HP_DATE, NULL)                                                      \
+    X(HITEC_PANEL_INFO, 1, K_SHOW, HITEC_P_C_SERIAL, S_C, HT_SHOW_C, 0,      \
+      TX_HP_SERIAL, NULL)                                                    \
+    X(HITEC_PANEL_INFO, 1, K_SHOW, HITEC_P_C_CHECKSUM, S_C, HT_SHOW_C, 0,    \
+      TX_HP_CHECKSUM, NULL)
+
+/** @brief A row of hpn_rows. */
+#define HP_ROW(tab, wide, kind, what, series, show, w, label, name)          \
+    { (tab), (kind), (what), (series), (label), (name) },
+/** @brief A row of the frame's table: PORT the head, FIND STOP a pair of
+ *         keys, every other action a button, every parameter a value. */
+#define HP_FROW(tab, wide, kind, what, series, show, w, label, name)         \
+    { (tab), (wide),                                                         \
+      (kind) != K_ACT              ? SPROG_K_VALUE                           \
+      : (int)(what) == (int)A_PORT ? SPROG_K_HEAD                            \
+      : (int)(what) == (int)A_FIND ? SPROG_K_PAIR                            \
+                                   : SPROG_K_ACT,                            \
+      (what), (show), (w), (label), (name) },
+
 /** @brief The rows of every tab and both series; hitec_panel_int.h. */
-const hpn_row_t hpn_rows[] = {
-    { HITEC_PANEL_SERVO, 0, 0, 1, K_ACT, A_PORT, S_ANY, -1, "PORT" },
-    /* SERIES is chosen before CONNECT; while this panel holds the port
-     * the PORT row names the series and FILES takes its place. */
-    { HITEC_PANEL_SERVO, 1, 0, 0, K_ACT, A_SERIES, S_ANY, TX_HP_SERIES, NULL },
-    { HITEC_PANEL_SERVO, 1, 0, 0, K_ACT, A_FILES, S_ANY, TX_KP_FILES, NULL },
-    { HITEC_PANEL_SERVO, 1, 1, 0, K_ACT, A_READ, S_ANY, -1, "SERVO" },
-    { HITEC_PANEL_SERVO, 2, 0, 0, K_ACT, A_MORE, S_ANY, TX_KP_MORE, NULL },
-    { HITEC_PANEL_SERVO, 2, 1, 0, K_ACT, A_CLEAR, S_ANY, TX_HP_STOP_ROW,
-      NULL },
-    { HITEC_PANEL_SERVO, 3, 0, 0, K_ACT, A_RESTORE, S_ANY, TX_KP_RESTORE,
-      NULL },
-    /* WRITE n VALUES says what it writes: no label beside it.  A 2s
-     * hold. */
-    { HITEC_PANEL_SERVO, 3, 1, 0, K_ACT, A_WRITE, S_ANY, -1, "" },
-
-    { HITEC_PANEL_MOTION, 0, 0, 1, K_SHOW, HITEC_P_D_SPEED, S_D,
-      TX_HP_SPEED, NULL },
-    { HITEC_PANEL_MOTION, 1, 0, 1, K_SHOW, HITEC_P_D_DEAD_BAND, S_D,
-      TX_HP_DEADBAND, NULL },
-    { HITEC_PANEL_MOTION, 2, 0, 1, K_SHOW, HITEC_P_D_SOFT_START, S_D,
-      TX_HP_SOFTSTART, NULL },
-    { HITEC_PANEL_MOTION, 0, 0, 1, K_SHOW, HITEC_P_C_SPEED, S_C,
-      TX_HP_SPEED, NULL },
-    { HITEC_PANEL_MOTION, 1, 0, 1, K_SHOW, HITEC_P_C_DEAD_BAND, S_C,
-      TX_HP_DEADBAND, NULL },
-    { HITEC_PANEL_MOTION, 2, 0, 1, K_SHOW, HITEC_P_C_RESOLUTION, S_C,
-      TX_HP_RESOLUTION, NULL },
-
-    /* The positions' unit in the label: the value's field narrows to its
-     * keys while MOVE SERVO runs. */
-    { HITEC_PANEL_TRAVEL, 0, 0, 1, K_SHOW, HITEC_P_D_NEUTRAL, S_D,
-      TX_HP_NEUTRAL_N, NULL },
-    { HITEC_PANEL_TRAVEL, 1, 0, 1, K_SHOW, HITEC_P_D_LEFT_END, S_D,
-      TX_HP_END_L_N, NULL },
-    { HITEC_PANEL_TRAVEL, 2, 0, 1, K_SHOW, HITEC_P_D_RIGHT_END, S_D,
-      TX_HP_END_R_N, NULL },
-    { HITEC_PANEL_TRAVEL, 3, 0, 1, K_SHOW, HITEC_P_D_DIRECTION, S_D,
-      TX_HP_DIRECTION, NULL },
-    /* MOVE SERVO: the horn follows the position edited (hitec_move.h). */
-    { HITEC_PANEL_TRAVEL, 4, 0, 1, K_ACT, A_MOVE, S_D, TX_HP_MOVE, NULL },
-    /* FIND STOP: LEFT END and RIGHT END keys in DIRECTION's place while
-     * MOVE SERVO's loop runs, which holds DIRECTION at CW. */
-    { HITEC_PANEL_TRAVEL, 3, 0, 1, K_ACT, A_FIND, S_D, TX_HP_FIND, NULL },
-    { HITEC_PANEL_TRAVEL, 0, 0, 1, K_SHOW, HITEC_P_C_CENTER, S_C,
-      TX_HP_CENTER, NULL },
-    { HITEC_PANEL_TRAVEL, 1, 0, 1, K_SHOW, HITEC_P_C_LEFT_END, S_C,
-      TX_HP_END_L, NULL },
-    { HITEC_PANEL_TRAVEL, 2, 0, 1, K_SHOW, HITEC_P_C_RIGHT_END, S_C,
-      TX_HP_END_R, NULL },
-    { HITEC_PANEL_TRAVEL, 3, 0, 1, K_SHOW, HITEC_P_C_DIRECTION, S_C,
-      TX_HP_DIRECTION, NULL },
-
-    { HITEC_PANEL_PROTECT, 0, 0, 1, K_SHOW, HITEC_P_D_FAILSAFE, S_D,
-      TX_HP_FAILSAFE, NULL },
-    { HITEC_PANEL_PROTECT, 1, 0, 1, K_SHOW, HITEC_P_D_OVERLOAD, S_D,
-      TX_HP_OVERLOAD, NULL },
-    { HITEC_PANEL_PROTECT, 2, 0, 1, K_SHOW, HITEC_P_D_SMART_SENSOR, S_D,
-      -1, "SMART SENSOR" },
-    { HITEC_PANEL_PROTECT, 3, 0, 1, K_SHOW, HITEC_P_D_SENSITIVITY, S_D,
-      TX_HP_SENS, NULL },
-    { HITEC_PANEL_PROTECT, 0, 0, 1, K_SHOW, HITEC_P_C_FAILSAFE, S_C,
-      TX_HP_FAILSAFE, NULL },
-    { HITEC_PANEL_PROTECT, 1, 0, 1, K_SHOW, HITEC_P_C_FS_POSITION, S_C,
-      TX_HP_FS_POS, NULL },
-    { HITEC_PANEL_PROTECT, 2, 0, 1, K_SHOW, HITEC_P_C_OVERLOAD, S_C,
-      TX_HP_OVERLOAD, NULL },
-
-    { HITEC_PANEL_INFO, 0, 0, 0, K_SHOW, HITEC_P_D_MODEL, S_D, TX_HP_MODEL,
-      NULL },
-    { HITEC_PANEL_INFO, 0, 1, 0, K_SHOW, HITEC_P_D_ID, S_D, -1, "ID" },
-    { HITEC_PANEL_INFO, 1, 0, 0, K_SHOW, HITEC_P_D_POSITION, S_D,
-      TX_HP_POSITION, NULL },
-    { HITEC_PANEL_INFO, 1, 1, 0, K_SHOW, HITEC_P_D_R04, S_D, -1, "REG 04" },
-    { HITEC_PANEL_INFO, 2, 0, 0, K_SHOW, HITEC_P_D_R22, S_D, -1, "REG 22" },
-    { HITEC_PANEL_INFO, 2, 1, 0, K_SHOW, HITEC_P_D_R8A, S_D, -1, "REG 8A" },
-    { HITEC_PANEL_INFO, 3, 0, 0, K_SHOW, HITEC_P_D_R8C, S_D, -1, "REG 8C" },
-    { HITEC_PANEL_INFO, 3, 1, 0, K_SHOW, HITEC_P_D_RD4, S_D, -1, "REG D4" },
-    { HITEC_PANEL_INFO, 4, 0, 0, K_SHOW, HITEC_P_D_RD6, S_D, -1, "REG D6" },
-    { HITEC_PANEL_INFO, 0, 0, 1, K_SHOW, W_NAME, S_C, TX_HP_MODEL, NULL },
-    { HITEC_PANEL_INFO, 1, 0, 1, K_SHOW, HITEC_P_C_VERSION, S_C,
-      TX_HP_VERSION, NULL },
-    { HITEC_PANEL_INFO, 2, 0, 1, K_SHOW, HITEC_P_C_DATE, S_C, TX_HP_DATE,
-      NULL },
-    { HITEC_PANEL_INFO, 3, 0, 1, K_SHOW, HITEC_P_C_SERIAL, S_C,
-      TX_HP_SERIAL, NULL },
-    { HITEC_PANEL_INFO, 4, 0, 1, K_SHOW, HITEC_P_C_CHECKSUM, S_C,
-      TX_HP_CHECKSUM, NULL },
-};
+const hpn_row_t hpn_rows[] = { HP_ROWS(HP_ROW) };
 _Static_assert(sizeof(hpn_rows) / sizeof(hpn_rows[0]) == HP_ROW_COUNT,
                "HP_ROW_COUNT in hitec_panel_int.h counts hpn_rows");
+
+/** @brief The same rows as the frame lays them out, index for index. */
+static const sprog_row_t k_frows[] = { HP_ROWS(HP_FROW) };
 
 /** @brief The tabs' labels. */
 static const ui_text_id_t k_tabs[HITEC_PANEL_PAGES] = {
@@ -131,42 +165,84 @@ static const ui_text_id_t k_tabs[HITEC_PANEL_PAGES] = {
     TX_HP_TAB_INFO,
 };
 
+/** @brief The frame's data: five tabs, always shown; the rows. */
+static const sprog_def_t k_def = {
+    .tabs = k_tabs,
+    .tab_show = NULL,
+    .tab_count = HITEC_PANEL_PAGES,
+    .rows = k_frows,
+    .row_count = HP_ROW_COUNT,
+    .hint = TX_SPROG_EDIT_NOTE,
+};
+
 /* The state, its type in hitec_panel_int.h. */
 hpn_state_t hitec_panel_h;
 
 /* ------------------------------------------------------------------- rows */
 
+uint8_t hpn_mask(void)
+{
+    const bool d = hitec_prog_series(&hp.prog) == (uint8_t)HITEC_D;
+    unsigned bits = d ? HT_SHOW_D : HT_SHOW_C;
+
+    bits |= hp.prog.owned ? HT_SHOW_HELD : HT_SHOW_FREE;
+    if (d) {
+        bits |= hitec_prog_move_phase(&hp.prog) != HITEC_MOVE_OFF
+                    ? HT_SHOW_MOVE : HT_SHOW_STILL;
+    }
+    return (uint8_t)bits;
+}
+
 bool hpn_row_shown(const hpn_row_t *r)
 {
-    const uint8_t series = hitec_prog_series(&hp.prog);
-    const uint8_t mask = series == (uint8_t)HITEC_D ? (uint8_t)S_D
-                                                    : (uint8_t)S_C;
+    const sprog_row_t *fr = &k_frows[r - hpn_rows];
 
-    if ((r->series & mask) == 0u) {
+    if (fr->show != 0u && (fr->show & hpn_mask()) == 0u) {
         return false;
     }
-    if (r->kind == K_ACT && (r->what == A_SERIES || r->what == A_FILES)) {
-        return (r->what == A_FILES) == hp.prog.owned;
-    }
-    if ((r->kind == K_ACT && r->what == A_FIND)
-        || (r->kind == K_SHOW && r->what == (uint8_t)HITEC_P_D_DIRECTION)) {
-        /* One of the two: FIND STOP while the loop runs. */
-        return (r->kind == K_ACT)
-               == (hitec_prog_move_phase(&hp.prog) != HITEC_MOVE_OFF);
-    }
     if (r->kind == K_SHOW && r->what < (uint8_t)HITEC_P_COUNT) {
+        /* A parameter the layout lacks keeps its place, empty. */
         return hitec_param(hitec_prog_layout(&hp.prog), r->what) != NULL;
     }
     return true;
 }
 
+void hpn_place(void)
+{
+    sprog_view_begin(&hp.f, hpn_mask());
+    for (int i = 0; i < hp.f.cells; ++i) {
+        const hpn_row_t *r = &hpn_rows[hp.f.cell_row[i]];
+
+        if (!hpn_row_shown(r)) {
+            hp.f.view.cell[i].kind = SPROG_K_GAP;
+        } else if (hpn_stepped(r)) {
+            hp.f.view.cell[i].kind = SPROG_K_STEP;
+        }
+    }
+}
+
+/**
+ * @brief The frame's mask as the state is now: the rows' places follow
+ *        it, the cells of the view do not (hpn_place()).
+ */
+static void mask_now(void)
+{
+    hp.f.view.mask = hpn_mask();
+}
+
 const hpn_row_t *hpn_row_at(int page, int row, int col)
 {
+    mask_now();
     for (int i = 0; i < HP_ROW_COUNT; ++i) {
         const hpn_row_t *r = &hpn_rows[i];
+        gfx_rect_t rr;
 
-        if (r->page == page && r->row == row && r->col == col
-            && hpn_row_shown(r)) {
+        if (r->page != page || !hpn_row_shown(r)) {
+            continue;
+        }
+        rr = sprog_row_rect(&hp.f, i);
+        if (rr.w > 0 && (rr.y - hp.area.y - HP_ROW0) / HP_PITCH == row
+            && (rr.x > hp.area.x + 10) == (col != 0)) {
             return r;
         }
     }
@@ -185,54 +261,31 @@ gfx_rect_t hpn_tabs_rect(void)
 
 int hpn_foot(void)
 {
-    const int area = hp.area.y + hp.area.h - 8;
-    const int band = UI_ALERT_Y - UI_BAND_H - HP_FOOT_GAP;
-
-    return area < band ? area : band;
-}
-
-int hpn_notes_foot(void)
-{
-    const int area = hp.area.y + hp.area.h - 6;
-    const int band = UI_ALERT_Y - UI_BAND_H - HP_FOOT_GAP;
-
-    return area < band ? area : band;
+    return sprog_foot(&hp.f);
 }
 
 gfx_rect_t hpn_row_rect(const hpn_row_t *r)
 {
-    const int col_w = (hp.area.w - 30) / 2;
-    const int x = r->col == 0u ? hp.area.x + 10 : hp.area.x + 20 + col_w;
-
-    return (gfx_rect_t){ (int16_t)x,
-                         (int16_t)(hp.area.y + HP_ROW0 + r->row * HP_PITCH),
-                         (int16_t)(r->wide != 0u ? hp.area.w - 20 : col_w),
-                         HP_ROW_H };
+    mask_now();
+    return sprog_row_rect(&hp.f, (int)(r - hpn_rows));
 }
 
 gfx_rect_t hpn_value_rect(const hpn_row_t *r)
 {
-    const gfx_rect_t rr = hpn_row_rect(r);
-    int w = HP_VAL_W;
+    gfx_rect_t lo, hi, v;
 
-    if (r->kind == K_ACT) {
-        if (r->what == A_WRITE) {
-            w = HP_WRITE_W;
-        } else if (r->what == A_FIND) {
-            w = HP_WIDE_W;
-        }
-    } else if (r->wide != 0u) {
-        w = HP_WIDE_W;
-    }
-
-    if (hpn_stepped(r)) {
+    /* The control from the left edge of its - key to the right edge of
+     * its + key: the row's whole control, the frame's width rule. */
+    mask_now();
+    lo = sprog_step_rect(&hp.f, (int)(r - hpn_rows), false);
+    hi = sprog_step_rect(&hp.f, (int)(r - hpn_rows), true);
+    v = gfx_rect_make(lo.x, lo.y, hi.x + hi.w - lo.x, lo.h);
+    if (lo.w > 0 && hpn_stepped(r)) {
         /* Between its -/+ keys (hpn_step_rect()). */
-        return (gfx_rect_t){ (int16_t)(rr.x + rr.w - w + HP_STEP_W + 4),
-                             rr.y, (int16_t)(w - 2 * (HP_STEP_W + 4)),
-                             rr.h };
+        v = gfx_rect_make(v.x + HP_STEP_W + 4, v.y,
+                          v.w - 2 * (HP_STEP_W + 4), v.h);
     }
-    return (gfx_rect_t){ (int16_t)(rr.x + rr.w - w), rr.y, (int16_t)w,
-                         rr.h };
+    return lo.w > 0 ? v : lo;
 }
 
 int hpn_cells(void)
@@ -306,7 +359,7 @@ int hpn_text_rows(gfx_canvas_t *c, int x, int y, const char *s,
 
 gfx_rect_t hitec_panel_tab_rect(int page)
 {
-    return hp.tabs.rect[page >= 0 && page < HITEC_PANEL_PAGES ? page : 0];
+    return hp.f.tabs.rect[page >= 0 && page < HITEC_PANEL_PAGES ? page : 0];
 }
 
 gfx_rect_t hitec_panel_value_rect(int page, int row, int col)
@@ -318,15 +371,12 @@ gfx_rect_t hitec_panel_value_rect(int page, int row, int col)
 
 gfx_rect_t hitec_panel_choice_rect(int i)
 {
-    return (gfx_rect_t){ (int16_t)(hp.area.x + 10),
-                         (int16_t)(hp.area.y + 44 + i * HP_PITCH),
-                         (int16_t)(hp.area.w - 20), HP_ROW_H };
+    return sprog_list_rect(&hp.f, i);
 }
 
 gfx_rect_t hitec_panel_choice_cancel_rect(void)
 {
-    return (gfx_rect_t){ (int16_t)(hp.area.x + hp.area.w - 10 - 150),
-                         (int16_t)(hpn_foot() - UI_BTN_H), 150, UI_BTN_H };
+    return sprog_list_cancel_rect(&hp.f);
 }
 
 gfx_rect_t hitec_panel_apply_rect(void)
@@ -400,7 +450,7 @@ const char *hitec_panel_port_line(int i)
 
 int hitec_panel_editor(void)
 {
-    return hp.kp.open ? 1 : hp.tk.open ? 4 : hp.ch.open ? 2
+    return hp.kp.open ? 1 : hp.tk.open ? 4 : hp.f.list.open ? 2
          : hp.page.open ? 3 : 0;
 }
 
@@ -411,12 +461,12 @@ ui_textkey_t *hitec_panel_textkey(void)
 
 int hitec_panel_page(void)
 {
-    return hp.tabs.selected;
+    return hp.f.tabs.selected;
 }
 
 const char *hitec_panel_choice_label(int i)
 {
-    return hp.ch.open && i >= 0 && i < hp.ch.count ? hp.ch.labels[i] : NULL;
+    return hp.f.list.open && i >= 0 && i < hp.f.list.count ? hp.f.list.label[i] : NULL;
 }
 
 const char *hitec_panel_apply_label(void)
@@ -431,7 +481,7 @@ const char *hitec_panel_cancel_label(void)
 
 const char *hitec_panel_choice_title(void)
 {
-    return hp.ch.open ? hp.ch.title : NULL;
+    return hp.f.list.open ? hp.f.list.title : NULL;
 }
 
 const char *hitec_panel_page_line(int i)
@@ -459,7 +509,7 @@ void hitec_panel_init(gfx_rect_t area)
     hitec_prog_init(&hp.prog);
     hitec_prog_gate_set(&hp.prog, hp.gate);
     hp.area = area;
-    ui_tabs_init_text(&hp.tabs, k_tabs, HITEC_PANEL_PAGES, hpn_tabs_rect());
+    sprog_init(&hp.f, &k_def, area);
     hp.kp.pressed = -1;
     hp.tk.pressed = -1;
 }
@@ -508,9 +558,9 @@ bool hitec_panel_holds_port(void)
 
 bool hitec_panel_files_shown(void)
 {
-    const hpn_row_t *r = hpn_row_at(HITEC_PANEL_SERVO, 1, 0);
-
-    return r != NULL && r->kind == K_ACT && r->what == A_FILES;
+    /* FILES stands on the SERVO tab always; it is offered while this
+     * panel holds the port, where SERIES gives way to AFTER STOP. */
+    return hp.prog.owned;
 }
 
 uint8_t hitec_panel_pin(void)

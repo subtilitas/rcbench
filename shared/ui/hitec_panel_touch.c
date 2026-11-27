@@ -82,13 +82,14 @@ static int stop_at(int x, int y)
 {
     const hitec_prog_t *p = &hp.prog;
 
-    if (!hp.open || hp.page.open || hp.kp.open || hp.tk.open || hp.ch.open) {
+    if (!hp.open || hp.page.open || hp.kp.open || hp.tk.open
+        || hp.f.list.open) {
         return STOP_NONE;
     }
     for (int i = 0; i < HP_ROW_COUNT; ++i) {
         const hpn_row_t *r = &hpn_rows[i];
 
-        if (r->kind != K_ACT || r->page != hp.tabs.selected
+        if (r->kind != K_ACT || r->page != hp.f.tabs.selected
             || !hpn_row_shown(r) || !hpn_row_live(r)) {
             continue;
         }
@@ -178,8 +179,8 @@ static void down(const touch_event_t *evt)
         (void)ui_textkey_event(&hp.tk, evt, NULL, 0);
         return;
     }
-    if (hp.ch.open) {
-        for (int i = 0; i < hp.ch.count; ++i) {
+    if (hp.f.list.open) {
+        for (int i = 0; i < hp.f.list.count; ++i) {
             if (gfx_rect_contains(hitec_panel_choice_rect(i), x, y)) {
                 take(evt, P_CHOICE, i);
                 return;
@@ -192,13 +193,13 @@ static void down(const touch_event_t *evt)
     }
     if (gfx_rect_contains(hpn_tabs_rect(), x, y)) {
         take(evt, P_TAB, -1);
-        (void)ui_tabs_event(&hp.tabs, evt);
+        (void)ui_tabs_event(&hp.f.tabs, evt);
         return;
     }
     for (int i = 0; i < HP_ROW_COUNT; ++i) {
         const hpn_row_t *r = &hpn_rows[i];
 
-        if (r->page != hp.tabs.selected || !hpn_row_shown(r)
+        if (r->page != hp.f.tabs.selected || !hpn_row_shown(r)
             || !hpn_row_live(r)) {
             continue;
         }
@@ -260,6 +261,12 @@ static void down(const touch_event_t *evt)
     const hpn_row_t *pr = hpn_port_pick_row();
     if (pr != NULL && gfx_rect_contains(hpn_row_rect(pr), x, y)) {
         take(evt, P_PORT, -1);
+        return;
+    }
+    /* Notes of more than one page: a tap turns the page. */
+    hpn_view();
+    if (gfx_rect_contains(sprog_notes_rect(&hp.f), x, y)) {
+        take(evt, P_NOTES, -1);
     }
 }
 
@@ -331,7 +338,7 @@ static void rest(const touch_event_t *evt)
         return;
     }
     if (was == P_TAB) {
-        (void)ui_tabs_event(&hp.tabs, evt);
+        (void)ui_tabs_event(&hp.f.tabs, evt);
         if (up) {
             let_go();
         }
@@ -417,15 +424,22 @@ static void rest(const touch_event_t *evt)
         }
         break;
     }
+    case P_NOTES:
+        hpn_view();
+        if (gfx_rect_contains(sprog_notes_rect(&hp.f), x, y)) {
+            hp.f.note_page = (uint8_t)((hp.f.note_page + 1)
+                                       % sprog_note_pages(&hp.f));
+        }
+        break;
     case P_CHOICE:
-        if (hp.ch.open && which < hp.ch.count
+        if (hp.f.list.open && which < hp.f.list.count
             && gfx_rect_contains(hitec_panel_choice_rect(which), x, y)) {
-            hpn_choice_done(hp.ch.values[which]);
+            hpn_choice_done(hp.f.list.value[which]);
         }
         break;
     case P_CHOICE_CANCEL:
         if (gfx_rect_contains(hitec_panel_choice_cancel_rect(), x, y)) {
-            hp.ch.open = false;
+            hp.f.list.open = false;
         }
         break;
     case P_CANCEL:
@@ -520,7 +534,7 @@ void hitec_panel_cancel(void)
 {
     ui_keypad_cancel_press(&hp.kp);
     ui_textkey_cancel_press(&hp.tk);
-    ui_tabs_cancel(&hp.tabs);
+    ui_tabs_cancel(&hp.f.tabs);
     ui_hold_reset(&hp.page.hold);
     ui_hold_reset(&hp.conn);
     hp.conn_due = false;
@@ -557,7 +571,7 @@ static void connect_tick(float dt_s)
 
         hp.conn_due = false;
         if (hitec_prog_state(&hp.prog) == HITEC_PROG_PWM
-            && hpn_switches_supply() && r->page == hp.tabs.selected
+            && hpn_switches_supply() && r->page == hp.f.tabs.selected
             && hpn_row_shown(r) && hpn_row_live(r)) {
             hpn_act(r);         /* refuses a low carrier input itself */
             hpn_supply_sync();
@@ -569,7 +583,7 @@ static void connect_tick(float dt_s)
 
         if (hitec_prog_state(&hp.prog) != HITEC_PROG_PWM
             || !hpn_switches_supply() || hp.page.open
-            || hitec_panel_editor() != 0 || r->page != hp.tabs.selected
+            || hitec_panel_editor() != 0 || r->page != hp.f.tabs.selected
             || !hpn_row_shown(r) || !hpn_row_live(r)) {
             (void)ui_hold_left(&hp.conn);
             let_go();
@@ -618,7 +632,7 @@ static void write_tick(float dt_s)
         const hpn_row_t *r = &hpn_rows[hp.row];
 
         if (hp.page.open || hitec_panel_editor() != 0
-            || r->page != hp.tabs.selected || !hpn_row_shown(r)
+            || r->page != hp.f.tabs.selected || !hpn_row_shown(r)
             || !hpn_row_live(r)) {
             (void)ui_hold_left(&hp.wr);
             let_go();
