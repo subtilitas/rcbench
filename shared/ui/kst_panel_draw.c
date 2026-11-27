@@ -14,7 +14,6 @@
  */
 #include "kst_panel.h"
 
-#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -654,67 +653,15 @@ static void press_view(void)
 
 /* --------------------------------------------------------------- the notes */
 
-/** @brief The notes as the frame lays them out (sprog_draw.c's plan): the
- *         rows from 8px under the tab's last line to the bottom line, and
- *         the rows a page of notes holds. */
-typedef struct {
-    int top;                            /**< the first note's row, px */
-    int bottom_y;                       /**< the bottom line's first row, px */
-    int room;                           /**< rows between the two */
-    int per;                            /**< note rows a page holds; 0: none */
-    int on;                             /**< the page shown */
-} notes_plan_t;
-
 /**
- * @brief Plans the notes of the view just filled, as the frame does.
- * @param p the plan
+ * @brief The page of notes shown, as the frame draws it, of the view just
+ *        filled.
+ * @param sh receives the page
  */
-static void notes_plan(notes_plan_t *p)
+static void shown(sprog_notes_shown_t *sh)
 {
-    const int foot = sprog_foot(&k.f);
-    const int pages = sprog_note_pages(&k.f);
-    int need = 0;
-
-    p->top = k.area.y + ROW0 + k.f.lines * PITCH;
-    p->bottom_y = foot - sprog_text_rows(&k.f, k.f.view.bottom) * LINE_H;
-    p->bottom_y = p->bottom_y > p->top ? p->bottom_y : p->top;
-    p->room = (p->bottom_y - p->top) / LINE_H;
-    for (int i = 0; i < k.f.view.notes; ++i) {
-        need += sprog_text_rows(&k.f, k.f.view.note[i]);
-    }
-    p->per = need <= p->room ? p->room : p->room < 2 ? 0 : p->room - 1;
-    p->on = k.f.note_page < pages ? k.f.note_page : 0;
-}
-
-/**
- * @brief Note @p i on the page shown, and the row under it.
- * @param p   the plan
- * @param i   the note on the page, from 0
- * @param end receives the y under its last row on the page
- * @return the note; NULL past the last
- */
-static const char *note_on_page(const notes_plan_t *p, int i, int *end)
-{
-    int at = 0;
-
-    for (int j = 0; j < k.f.view.notes && p->per > 0; ++j) {
-        const int rows = sprog_text_rows(&k.f, k.f.view.note[j]);
-        const int used = at % p->per;
-
-        if (used > 0 && used + rows > p->per) {
-            at += p->per - used;        /* the next page */
-        }
-        if (at / p->per <= p->on && (at + rows - 1) / p->per >= p->on
-            && i-- == 0) {
-            const int last = at + rows - 1 < (p->on + 1) * p->per - 1
-                                 ? at + rows - 1 : (p->on + 1) * p->per - 1;
-
-            *end = p->top + (last % p->per + 1) * LINE_H;
-            return k.f.view.note[j];
-        }
-        at += rows;
-    }
-    return NULL;
+    kpn_view();
+    sprog_notes_shown(&k.f, -1, sh);
 }
 
 bool kpn_notes_paged_at(int x, int y)
@@ -743,25 +690,22 @@ int kst_panel_note_page(void)
 
 const char *kst_panel_shown_note(int i)
 {
-    notes_plan_t p;
-    int end;
+    sprog_notes_shown_t sh;
 
-    kpn_view();
-    notes_plan(&p);
-    return note_on_page(&p, i, &end);
+    shown(&sh);
+    return i >= 0 && i < sh.notes ? k.f.view.note[sh.note[i]] : NULL;
 }
 
 int kst_panel_shown_message_lines(void)
 {
-    notes_plan_t p;
+    sprog_notes_shown_t sh;
     int rows = 0;
     int n = 0;
 
-    kpn_view();
-    notes_plan(&p);
+    shown(&sh);
     for (int i = 0; i < s_view.lines && i < KST_PANEL_MSG_LINES; ++i) {
         rows += sprog_text_rows(&k.f, s_view.msg[i]);
-        if (p.bottom_y + rows * LINE_H > sprog_foot(&k.f)) {
+        if (rows > sh.bottom_rows) {
             break;
         }
         ++n;
@@ -771,24 +715,17 @@ int kst_panel_shown_message_lines(void)
 
 gfx_rect_t kst_panel_notes_drawn(void)
 {
-    notes_plan_t p;
-    int top = INT_MAX;
-    int y = 0;
-    int end;
+    sprog_notes_shown_t sh;
+    int top;
+    int y;
 
-    kpn_view();
-    notes_plan(&p);
-    for (int i = 0; note_on_page(&p, i, &end) != NULL; ++i) {
-        top = p.top < top ? p.top : top;
-        y = end > y ? end : y;
+    shown(&sh);
+    if (sh.notes == 0 && sh.bottom_rows == 0) {
+        return (gfx_rect_t){ 0, 0, 0, 0 };
     }
-    if (k.f.view.bottom != NULL) {
-        top = p.bottom_y < top ? p.bottom_y : top;
-        y = sprog_foot(&k.f);
-    }
-    return top == INT_MAX ? (gfx_rect_t){ 0, 0, 0, 0 }
-                          : (gfx_rect_t){ k.area.x, (int16_t)top, k.area.w,
-                                          (int16_t)(y - top) };
+    top = sh.notes != 0 ? sh.top : sh.bottom_y;
+    y = sh.bottom_rows != 0 ? sprog_foot(&k.f) : sh.end;
+    return (gfx_rect_t){ k.area.x, (int16_t)top, k.area.w, (int16_t)(y - top) };
 }
 
 /**
