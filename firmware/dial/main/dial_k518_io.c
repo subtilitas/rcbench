@@ -165,28 +165,30 @@ bool dial_touch_init(void)
     return true;
 }
 
-bool dial_k518_touch(uint16_t *x, uint16_t *y)
+dk518_read_t dial_k518_touch(uint16_t *x, uint16_t *y)
 {
     const uint8_t reg = TOUCH_REG_FINGERS;
     uint8_t d[5];
     if (s_touch == NULL
         || i2c_master_transmit_receive(s_touch, &reg, 1, d, sizeof d,
-                                       BUS_TIMEOUT_MS) != ESP_OK
-        || (d[0] & 0x0Fu) == 0u) {
-        return false;
+                                       BUS_TIMEOUT_MS) != ESP_OK) {
+        return DK518_READ_FAIL;
+    }
+    if ((d[0] & 0x0Fu) == 0u) {
+        return DK518_READ_UP;
     }
     const unsigned px = ((unsigned)(d[1] & 0x0Fu) << 8) | d[2];
     const unsigned py = ((unsigned)(d[3] & 0x0Fu) << 8) | d[4];
     *x = (uint16_t)(px >= DK518_TOUCH_SIZE ? DK518_TOUCH_SIZE - 1u : px);
     *y = (uint16_t)(py >= DK518_TOUCH_SIZE ? DK518_TOUCH_SIZE - 1u : py);
-    return true;
+    return DK518_READ_DOWN;
 }
 
 bool dial_touch_read(uint8_t *x, uint8_t *y)
 {
     uint16_t nx;
     uint16_t ny;
-    if (!dial_k518_touch(&nx, &ny)) {
+    if (dial_k518_touch(&nx, &ny) != DK518_READ_DOWN) {
         return false;
     }
     *x = dk518_touch_scale(nx);
