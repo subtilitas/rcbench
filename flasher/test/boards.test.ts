@@ -8,6 +8,7 @@ test('every board of the page has a chip, and the planned Core2350B is the one b
   assert.deepEqual(BOARDS.filter((b) => b.planned).map((b) => b.id), ['core2350b']);
   assert.equal(BOARDS.find((b) => b.id === 'panel')?.chip, 'esp32p4');
   assert.equal(BOARDS.find((b) => b.id === 'dial')?.chip, 'esp32s3');
+  assert.equal(BOARDS.find((b) => b.id === 'dial-k518')?.chip, 'esp32s3');
   assert.equal(BOARDS.find((b) => b.id === 'node-display')?.chip, 'esp32s3');
   assert.equal(BOARDS.find((b) => b.id === 'node-pwr')?.chip, 'esp32c6');
   assert.equal(BOARDS.find((b) => b.id === 'node-bal')?.chip, 'esp32c6');

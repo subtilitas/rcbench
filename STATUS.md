@@ -1415,7 +1415,7 @@ firmware (`firmware/dial`, ESP-IDF v6.1 for the ESP32-S3; CI's `dial.yml`)
 with the power latch, the encoder on PCNT, the buttons, the FT3267 touch
 glass, the click per detent, the GC9A01 display with the faces and its
 dirty-rectangle flush, the NimBLE peripheral with its bound panel, and the
-USB console with the test build's hooks ([The M5Stack Dial](docs/Dial.md)).
+USB console with the test build's hooks ([The Dial](docs/Dial.md)).
 Built and host-tested, not run with a Dial: the panel's side. The controller
 on the panel's Bluetooth LE hub (`shared/ui/dial_ctl.c`, `test_dial_ctl`
 against a scripted host stack and Dial: the link, INFO's protocol, the loss

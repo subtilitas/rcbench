@@ -59,6 +59,10 @@ test('Done: the Dial names its kept binding after a write that kept the NVS, and
   assert.match(strings('nx_dial')[0], /shows NOT BOUND/);
   assert.match(strings('nk_dial')[0], /keeps its settings and its binding/);
   assert.match(strings('nk_dial')[1], /behält seine Einstellungen und seine Bindung/);
+  // The K518 keeps its binding in the same NVS key as the M5Stack Dial.
+  assert.equal(nextKey('dial-k518', false), 'nx_dial-k518');
+  assert.equal(nextKey('dial-k518', true), 'nk_dial-k518');
+  assert.match(strings('cn_dial-k518' as never)[0], /USB-A to USB-C.*5V\/1A/);
   // A node is bound by its address on the panel: the same line either way, naming both cases.
   for (const id of ['node-display', 'node-pwr', 'node-bal']) {
     assert.equal(nextKey(id, true), `nx_${id}`, id);

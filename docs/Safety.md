@@ -195,7 +195,7 @@ either goes.
 | A step of SERVO's start sequence fails on LIVE, SWEEP, RUDDER or RUDDER AUTO: PORT PWM, PROG 5V or the PD mini not read back within 1000ms, not ARMED within 500ms, a tap on the hold, a STOP ([Servo: AUTO end points](Servo.md#auto-end-points)) | SAFE | none open: ARM is refused while a session holds a port | off; PROG 5V off as well | the SERVO screen (`svs_all_off()`) |
 | The PD mini's own protection, its input sagging, no answer, no reading, an ON refused or let go, an output or set point that would not take, an ON taken across lost touch events | SAFE | the port's supply off, after a write that runs | off where it can be switched: the module's protection and a sagging input at once, a write included; the rest after a port's write, 10000ms at most | the IOmcu's driver for the output, the panel for SAFE |
 | A KST or Hitec operation ends in a fault of the servo or the wire (`kst_link_outcome_fault()`, `hitec_prog_ses_fault()`), or the ESC_WIRE page reports `FAULT` or reaches `NOT_BACK` (`esc_link_faults()`) | SAFE already: a session runs on a SAFE bench | the port's supply off; the operation has ended | off | the panel (`prog_faults_follow()`) |
-| The M5Stack Dial lost while ARMED or while an arm waits: 1000ms without an EVENT after its first one, or the disconnect ([The M5Stack Dial](Dial.md#the-link)); each loss one error | SAFE | none open: a session runs on a SAFE bench | off | the panel's control task (`dial_faults_follow()`), from the count the Bluetooth task keeps |
+| The M5Stack Dial lost while ARMED or while an arm waits: 1000ms without an EVENT after its first one, or the disconnect ([The Dial](Dial.md#the-link)); each loss one error | SAFE | none open: a session runs on a SAFE bench | off | the panel's control task (`dial_faults_follow()`), from the count the Bluetooth task keeps |
 | The power node's readings lost in a run that reads BENCH, MOTOR & ESC's or ESC STICK's, while ARMED or while its arm waits, with INA228 SOURCE NODE: no reading for more than 300ms, or a second gap less than 10s after the start of the last, the rule of the measurement sensors; a SERVO or OUTPUTS run reads no INA228 and does not end on the node; such an ARM is refused while the node is OFF or sent no reading in the last 100ms ([The sensor nodes](Nodes.md#the-panel)); the readings feed no protection | SAFE | none open: a session runs on a SAFE bench | off | the panel's control task (`pnode_faults_follow()`), from the count the Bluetooth task keeps |
 
 SAFE means the panel asks DISARM. The request withholds the heartbeat while
@@ -1042,7 +1042,7 @@ reads the state and shows the alert, is not in the coverage figure.
 - The M5Stack Dial, a second knob over Bluetooth LE, takes the rotary knob's
   path and rules; no Dial event switches anything on, a Dial lost while ARMED
   is an error ([Errors](#errors)), and no Dial scan runs while ARMED ([The
-  M5Stack Dial](Dial.md#safety)).
+  Dial](Dial.md#safety)).
 - If the touch controller stops answering for 500ms, the bench switches to SAFE and
   refuses to switch to ARMED. The panel is the only place a STOP button exists.
 - After a link failsafe the IOmcu does not switch back to ARMED when traffic returns.

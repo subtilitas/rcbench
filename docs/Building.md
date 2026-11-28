@@ -64,7 +64,7 @@ rcbench/
   firmware/
     panel/                ESP-IDF project (ESP32-P4)
     iomcu/                pico-sdk project (RP2350)
-    dial/                 ESP-IDF project (ESP32-S3): the M5Stack Dial, and the Guition JC3636K518C with sdkconfig.k518 ([The M5Stack Dial](Dial.md))
+    dial/                 ESP-IDF project (ESP32-S3): the M5Stack Dial, and the Guition JC3636K518C with sdkconfig.k518 ([The Dial](Dial.md))
     node/                 ESP-IDF project (ESP32-C6): the sensor nodes ([The sensor nodes](Nodes.md))
     devota/               ESP-IDF component: the update's device side on the Dial and the nodes
   test/host/              the host suite, one binary per module or screen
@@ -717,7 +717,8 @@ commit. So are `rcbench-c6-2.13.0.bin`, the C6 image a panel of the release
 downloads for its C6 update, and
 `rcbench-c6-merged-2.13.0.bin`, the one for header H4; their names carry
 esp_hosted's version, and SHA256SUMS lists both. The release's
-`rcbench-dial-<version>.bin` and `rcbench-node-<role>-<version>.bin` are the images a panel of the
-release downloads for the Dial's and the nodes' updates; SHA256SUMS holds
+`rcbench-dial-<version>.bin`, `rcbench-dial-k518-<version>.bin` and
+`rcbench-node-<role>-<version>.bin` are the images a panel of the
+release downloads for the Dial's, the K518's and the nodes' updates; SHA256SUMS holds
 the SHA-256 each download is checked against
 ([Screens: Device images](Screens.md#device-images)).

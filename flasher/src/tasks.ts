@@ -25,7 +25,7 @@ export interface Task {
 export const TASKS: readonly Task[] = [
   { id: 'panel', boards: ['panel'], advancedOnly: false, prepare: false },
   { id: 'iomcu', boards: ['iomcu', 'iomcu-rbmod', 'core2350b'], advancedOnly: false, prepare: false },
-  { id: 'wireless', boards: ['node-display', 'dial', 'node-pwr', 'node-bal'], advancedOnly: false, prepare: false },
+  { id: 'wireless', boards: ['node-display', 'dial', 'dial-k518', 'node-pwr', 'node-bal'], advancedOnly: false, prepare: false },
   { id: 'c6', boards: ['c6'], advancedOnly: false, prepare: true },
   { id: 'file', boards: BOARDS.map((b) => b.id), advancedOnly: true, prepare: false },
 ];

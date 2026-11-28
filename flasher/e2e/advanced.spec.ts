@@ -37,7 +37,7 @@ async function backToBoard(page: Page): Promise<void> {
   await expectStep(page, 'board');
 }
 
-test('the Advanced switch adds "Write a file of my own" with all 9 boards, and the source and the checkbox on Check; off resets them', async ({ page }) => {
+test('the Advanced switch adds "Write a file of my own" with all 10 boards, and the source and the checkbox on Check; off resets them', async ({ page }) => {
   await setup(page, { esp: { chipId: 18 } });
   await expect(page.locator('[data-task="file"]')).toHaveCount(0);
   await expect(page.locator('#adv')).not.toBeChecked();
@@ -45,7 +45,7 @@ test('the Advanced switch adds "Write a file of my own" with all 9 boards, and t
   await expect(page.locator('#log-box')).toHaveAttribute('open', '');
   await page.locator('[data-task="file"]').click();
   await expectStep(page, 'board');
-  await expect(page.locator('[data-board]')).toHaveCount(9);
+  await expect(page.locator('[data-board]')).toHaveCount(10);
   await expect(page.locator('[data-board="core2350b"]')).toBeEnabled();
   await page.locator('#cancel').click();
   await expectStep(page, 'task');

@@ -22,6 +22,7 @@ Format) addresses:
                   rcbench-iomcu-rbmod-<tag>.zip, RP2350
     node-display  rcbench-node-display-merged-<version>.bin, ESP32-S3
     dial          rcbench-dial-merged-<version>.bin, ESP32-S3
+    dial-k518     rcbench-dial-k518-merged-<version>.bin, ESP32-S3
     node-pwr      rcbench-node-pwr-merged-<version>.bin, ESP32-C6
     node-bal      rcbench-node-bal-merged-<version>.bin, ESP32-C6
     c6            rcbench-c6-merged-<esp_hosted version>.bin, ESP32-C6
@@ -99,6 +100,8 @@ IMAGES = (
     ("node-display", "esp32s3", "rcbench-node-display-merged-[0-9]*.bin",
      None, None, False),
     ("dial", "esp32s3", "rcbench-dial-merged-[0-9]*.bin", None, None, False),
+    ("dial-k518", "esp32s3", "rcbench-dial-k518-merged-[0-9]*.bin",
+     None, None, False),
     ("node-pwr", "esp32c6", "rcbench-node-pwr-merged-[0-9]*.bin",
      None, None, False),
     ("node-bal", "esp32c6", "rcbench-node-bal-merged-[0-9]*.bin",

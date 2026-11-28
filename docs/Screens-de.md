@@ -7392,7 +7392,7 @@ Neustart des Panels.
 
 ![WIRELESS auf dem DIAL-Eintrag mit einem Guition K518 bei schwachem Akku](img/de/setup-wireless-dial-k518.png)
 
-Die Zeilen des DIAL-Eintrags ([Das M5Stack Dial](Dial-de.md#das-panel)):
+Die Zeilen des DIAL-Eintrags ([Das Dial](Dial-de.md#das-panel)):
 
 | Zeile | Werte | Vorgabe | Wirkung |
 | --- | --- | --- | --- |

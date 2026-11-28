@@ -62,7 +62,8 @@ def block(addr, no, count, family, flags):
 
 
 def write_release(root, tag, *, panel=True, dial=True, sums=True,
-                  dial_chip=9, panel_member="rcbench-panel-merged.bin"):
+                  dial_chip=9, panel_member="rcbench-panel-merged.bin",
+                  k518=False):
     """Write the assets of one release into root/<tag>/."""
     folder = root / tag
     folder.mkdir(parents=True)
@@ -84,6 +85,11 @@ def write_release(root, tag, *, panel=True, dial=True, sums=True,
         (folder / f"rcbench-dial-merged-{ver}.bin").write_bytes(
             esp_image(dial_chip))
         (folder / f"rcbench-dial-{ver}.bin").write_bytes(
+            esp_image(9, app=True))
+    if k518:
+        (folder / f"rcbench-dial-k518-merged-{ver}.bin").write_bytes(
+            esp_image(9) + b"k518")
+        (folder / f"rcbench-dial-k518-{ver}.bin").write_bytes(
             esp_image(9, app=True))
     (folder / f"rcbench-node-pwr-merged-{ver}.bin").write_bytes(
         esp_image(13))
@@ -153,6 +159,27 @@ def test_build_writes_manifest_images_and_index(tmp_path):
         "iomcu", "iomcu-rbmod", "node-pwr", "c6"]
     assert sorted(p.name for p in (out / "v0.23.15").iterdir()) == sorted(
         [i["file"] for i in m["images"]] + ["manifest.json"])
+
+
+def test_both_dial_boards_get_their_own_entry(tmp_path):
+    """The M5Stack Dial's and the K518's merged images, each its board."""
+    rel = tmp_path / "rel"
+    folder = write_release(rel, "v0.24.1", k518=True)
+    (folder / "rcbench-dial-k518-merged-0.24.1.bin.sig").write_bytes(b"k-sig")
+    out = tmp_path / "fw"
+    fm.build(rel, listing("v0.24.1"), out)
+    m = json.loads((out / "v0.24.1" / "manifest.json").read_text())
+    boards = {i["board"]: i for i in m["images"]}
+    assert list(boards) == ["panel", "iomcu", "iomcu-rbmod", "dial",
+                            "dial-k518", "node-pwr", "c6"]
+    assert boards["dial"]["file"] == "rcbench-dial-merged-0.24.1.bin"
+    k518 = boards["dial-k518"]
+    assert k518["file"] == "rcbench-dial-k518-merged-0.24.1.bin"
+    assert k518["chip"] == "esp32s3" and k518["offset"] == 0
+    data = (folder / k518["file"]).read_bytes()
+    assert k518["sha256"] == hashlib.sha256(data).hexdigest()
+    assert (out / "v0.24.1" / "rcbench-dial-k518-merged-0.24.1.bin.sig") \
+        .read_bytes() == b"k-sig"
 
 
 def test_signatures_are_copied_beside_their_images(tmp_path):

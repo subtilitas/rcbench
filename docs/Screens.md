@@ -6821,7 +6821,7 @@ restarts.
 
 ![WIRELESS on the DIAL entry with a Guition K518 on a low cell](img/setup-wireless-dial-k518.png)
 
-The DIAL entry's rows ([The M5Stack Dial](Dial.md#the-panel)):
+The DIAL entry's rows ([The Dial](Dial.md#the-panel)):
 
 | Row | Values | Default | What it does |
 | --- | --- | --- | --- |
