@@ -76,6 +76,15 @@ extern const bleota_role_t devota_role;
  */
 typedef bool (*devota_key_fn)(void);
 
+/**
+ * @brief A confirming key that belongs to one confirmation; called from
+ *        the `ota` task.
+ * @param offer receives the confirmation the key belongs to
+ *              (devota_offer())
+ * @return true while it is pressed
+ */
+typedef bool (*devota_offer_key_fn)(uint32_t *offer);
+
 /** @brief What the device's face or console shows of an update. */
 typedef struct {
     uint8_t  st;      /**< bleota_dev_state_t */
@@ -85,6 +94,8 @@ typedef struct {
     uint16_t from[3]; /**< the version running */
     uint16_t to[3];   /**< the version BEGIN names */
     uint32_t ends;    /**< transfers ended without an install, counted */
+    uint32_t offer;   /**< the confirmation's identity (bleota_dev_offer()),
+                           as st was taken */
 } devota_view_t;
 
 /**
@@ -124,6 +135,23 @@ void devota_subscribe(uint16_t attr, bool notify);
  * @param out the view
  */
 void devota_view(devota_view_t *out);
+
+/**
+ * @brief The confirmation standing and its identity, read together under
+ *        the device's lock, as the GATT callbacks change them.
+ * @param offer receives the confirmation's identity (bleota_dev_offer())
+ * @return true while the device waits for its confirmation
+ */
+bool devota_offer(uint32_t *offer);
+
+/**
+ * @brief Take the confirming key from @p key in place of devota_start()'s:
+ *        the `ota` task, under the device's lock, counts it as up unless
+ *        the confirmation it belongs to is the one standing
+ *        (bleota_dev_key_for()).  Called once, after devota_start().
+ * @param key the key's reader
+ */
+void devota_offer_key(devota_offer_key_fn key);
 
 /**
  * @brief Whether a transfer stands, from BEGIN to its end: the device's

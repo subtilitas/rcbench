@@ -32,6 +32,20 @@
  * panel.  A tap on the glass is a touch of at most 500ms that moves at
  * most 24px; it is TAP at the point it started.
  *
+ * The Guition JC3636K518C (CONFIG_RCBENCH_DIAL_BOARD_K518) runs the same
+ * task with its own sources (shared/dial/dk518_input.h, dk518_enc.h): the
+ * encoder is quadrature, A on GPIO8 and B on GPIO7 with their pull-ups;
+ * an interrupt on every edge of either line reads both levels into a ring
+ * of ENC_RING edges, and the task hands them to dk518_enc_edge() and
+ * calls dk518_enc_poll() every 5ms.  The test build logs each detent's
+ * A/B pairs and edges (`input: detent CW 1, 4 edges, ...`), and `status`
+ * shows the last one in every build, so the edges a detent has get
+ * measured on the device.  The CST816S read every 20ms (dial_k518_io.c); and the
+ * still touch as the screen button (dk518_still_step()), which sends
+ * DK_BTN_TOUCH alone, never DK_BTN_SCREEN or DK_BTN_STAMP.  The cues
+ * vibrate: PRESS, HOLD, the warning, the forget, and a still lift while
+ * an update waits for its accept.  It has no mark pin.
+ *
  * A test build (RCBENCH_DIAL_HOOKS) takes input from the console as well:
  * an injected turn moves the counter one detent every 20ms, and the packet
  * of each injected detent raises GPIO1 (PORT.B G1) for 1ms when it is
@@ -41,11 +55,17 @@
  * SPDX-License-Identifier: MIT
  */
 #include <stdatomic.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "dial.h"
 #include "dial_button.h"
 #include "devota.h"
+#if CONFIG_RCBENCH_DIAL_BOARD_K518
+#include "bleota.h"
+#include "dk518_enc.h"
+#include "dk518_input.h"
+#endif
 
 #include "driver/gpio.h"
 #include "driver/pulse_cnt.h"
@@ -101,20 +121,30 @@ typedef struct {
 
 /** @brief The input task's state. */
 typedef struct {
+#if CONFIG_RCBENCH_DIAL_BOARD_K518
+    dk518_enc_t   enc;           /**< the quadrature decode */
+    char          trace[96];     /**< the last detent's trace as text */
+    bool          trace_ok;      /**< a detent was counted */
+    dk518_still_t still;         /**< the still touch: the screen button */
+    dk518_key_t   key;           /**< the update's confirming key */
+    dk518_glass_t glass;         /**< the glass as the reads tell it: a
+                                      failed read keeps the last state */
+#else
     pcnt_unit_handle_t pcnt;     /**< the encoder's unit */
     int32_t   detent;            /**< the last detent read from PCNT */
-    int16_t   counter;           /**< EVENT's counter, wrapping */
-    button_t  screen;            /**< GPIO42 */
-    button_t  stamp;             /**< GPIO0 */
     dial_button_t button;        /**< the screen button's gestures */
-    int32_t   local_turns;       /**< detents the switch-off's choice takes */
-    bool      touch_down;        /**< a finger is on the glass */
     bool      touch_moved;       /**< it moved more than TAP_MOVE */
-    uint8_t   tx;                /**< the touch point */
-    uint8_t   ty;                /**< the touch point */
     uint8_t   tx0;               /**< where the touch started */
     uint8_t   ty0;               /**< where the touch started */
     uint32_t  touch_ms;          /**< when it started */
+#endif
+    int16_t   counter;           /**< EVENT's counter, wrapping */
+    button_t  screen;            /**< GPIO42; never down on the K518 */
+    button_t  stamp;             /**< GPIO0; never down on the K518 */
+    int32_t   local_turns;       /**< detents the switch-off's choice takes */
+    bool      touch_down;        /**< a finger is on the glass */
+    uint8_t   tx;                /**< the touch point */
+    uint8_t   ty;                /**< the touch point */
     uint32_t  touch_poll_ms;     /**< the last touch read */
     pending_t queue[GESTURE_QUEUE]; /**< gestures waiting */
     unsigned  queued;            /**< how many */
@@ -132,6 +162,24 @@ typedef struct {
     bool      inj_mark;          /**< the next packet carries one */
 #endif
 } input_t;
+
+#if CONFIG_RCBENCH_DIAL_BOARD_K518
+/** @brief The screen button's gestures: the still touch's. */
+#define BUTTON (&s_in.still.button)
+/** @brief The update's key for the `ota` task: KEY_DOWN while
+ *         dk518_key_down(), and the offer it belongs to in KEY_OFFER. */
+static atomic_uint_least32_t s_key;
+/** @brief s_key's fields. @{ */
+#define KEY_DOWN  0x80000000u
+#define KEY_OFFER 0x7FFFFFFFu /**< the offer's identity, low 31 bits */
+/** @} */
+/** @brief The offer whose question the face last sent whole: KEY_DOWN
+ *         set once one was, the identity in KEY_OFFER. */
+static atomic_uint_least32_t s_shown;
+#else
+/** @brief The screen button's gestures. */
+#define BUTTON (&s_in.button)
+#endif
 
 /** @brief The task's state; the task alone touches it. */
 static input_t s_in;
@@ -160,8 +208,10 @@ typedef struct {
 } inject_t;
 /** @brief The console's queue to the task. */
 static QueueHandle_t s_inject;
+#ifdef DIAL_PIN_MARK
 /** @brief The timer that ends the mark on GPIO1. */
 static esp_timer_handle_t s_mark_off;
+#endif
 #endif
 
 /** @brief The ms clock, low 32 bits. @return ms since start */
@@ -244,7 +294,7 @@ static void turned(int32_t d, uint32_t now)
     if (atomic_load(&s_sound)) {
         dial_buzz_click();
     }
-    if (dial_button_local(&s_in.button)) {
+    if (dial_button_local(BUTTON)) {
         s_in.local_turns += d;
         return;
     }
@@ -252,6 +302,7 @@ static void turned(int32_t d, uint32_t now)
     dial_ble_turned(now);
 }
 
+#if !CONFIG_RCBENCH_DIAL_BOARD_K518
 /**
  * @brief Debounce one button.
  * @param b   the button
@@ -271,13 +322,105 @@ static bool button_poll(button_t *b, uint32_t now)
     }
     return false;
 }
+#endif
 
-/** @brief The screen button: PRESS and HOLD for the panel, the
- *         switch-off's warning and choice, the forget; and the
- *         switch-off's state for the face.  @param now the time */
-static void screen_button(uint32_t now)
+/** @brief The screen button's actions, and the switch-off's state for
+ *         the face.  @param act DIAL_BTN_* bits  @param now the time */
+static void button_acts(unsigned act, uint32_t now)
 {
     dial_face_view_t v;
+    if ((act & DIAL_BTN_PRESS) != 0u) {
+        gesture_push(DK_G_PRESS, 0, 0);
+        dial_buzz_cue(DIAL_CUE_PRESS);
+    }
+    if ((act & DIAL_BTN_HOLD) != 0u) {
+        gesture_push(DK_G_HOLD, 0, 0);
+        dial_buzz_cue(DIAL_CUE_HOLD);
+    }
+    if ((act & DIAL_BTN_WARN) != 0u) {
+        ESP_LOGI(TAG, "5s hold: release to switch off, hold on to unbind");
+        dial_buzz_cue(DIAL_CUE_WARN);
+    }
+    if ((act & DIAL_BTN_FORGET) != 0u) {
+        ESP_LOGI(TAG, "10s hold: the bound panel is forgotten");
+        dial_ble_forget();
+        dial_buzz_cue(DIAL_CUE_FORGET);
+    }
+    if ((act & DIAL_BTN_KEEP) != 0u) {
+        ESP_LOGI(TAG, "switch-off: KEEP ON");
+    }
+    if ((act & DIAL_BTN_OFF) != 0u) {
+        ESP_LOGI(TAG, "switch-off: OFF");
+        dial_power_off();
+    }
+    dial_button_view(BUTTON, now, &v);
+    atomic_store(&s_off, (uint_least32_t)v.off | (v.off_lit ? 4u : 0u)
+                             | (v.off_focus ? 8u : 0u)
+                             | ((uint32_t)v.off_secs << 8));
+}
+
+#if CONFIG_RCBENCH_DIAL_BOARD_K518
+/** @brief The touch, read every TOUCH_MS, stepped every DIAL_INPUT_MS as
+ *         the still touch: the screen button, the TAP, and the update's
+ *         accept.  @param now the time */
+static void screen_button(uint32_t now)
+{
+    dk518_still_out_t o;
+    /* The offer first, then the glass: a touch is judged against the
+     * offer that stood before it was read, never one that opened after
+     * (dk518_key_step()).  Nothing below reads the offer again. */
+    uint32_t id = 0u;
+    const bool open = devota_offer(&id);
+    /* While an update runs, its key takes the touch: no press may answer
+     * a hidden choice. */
+    const bool yield = devota_active();
+    bool empty = false;
+    if (now - s_in.touch_poll_ms >= TOUCH_MS) {
+        s_in.touch_poll_ms = now;
+        uint16_t nx = 0u;
+        uint16_t ny = 0u;
+        const dk518_read_t r = dial_k518_touch(&nx, &ny);
+        /* Only a read that worked and found no finger is an empty
+         * glass; a failed one says nothing (dk518_glass_read()). */
+        empty = r == DK518_READ_UP;
+        if (dk518_glass_read(&s_in.glass, r, nx, ny)) {
+            ESP_LOGW(TAG, "touch: %u failed reads, the touch is cancelled",
+                     (unsigned)DK518_READ_FAILS);
+            dk518_still_lost(&s_in.still, now);
+        }
+        s_in.touch_down = s_in.glass.down;
+        if (s_in.touch_down) {
+            s_in.tx = dk518_touch_scale(s_in.glass.x);
+            s_in.ty = dk518_touch_scale(s_in.glass.y);
+        }
+    }
+    const unsigned act = dk518_still_step(&s_in.still, s_in.touch_down,
+                                          s_in.glass.x, s_in.glass.y,
+                                          s_in.local_turns, yield, now, &o);
+    s_in.local_turns = 0;
+    /* The update takes the still touch's events, never the raw touch:
+     * a swipe, or a touch from before the offer, must not answer it. */
+    const uint32_t shown = (uint32_t)atomic_load(&s_shown);
+    const bool seen = (shown & KEY_DOWN) != 0u
+                      && (shown & KEY_OFFER) == (id & KEY_OFFER);
+    if (dk518_key_step(&s_in.key, open, id, seen, empty, &o, now)) {
+        dial_buzz_cue(DIAL_CUE_ACCEPT);
+    }
+    /* The key and its offer in one word, so the `ota` task never pairs
+     * one offer's key with another's identity. */
+    atomic_store(&s_key, (dk518_key_down(&s_in.key, now) ? KEY_DOWN : 0u)
+                             | (dk518_key_offer(&s_in.key) & KEY_OFFER));
+    if (o.tap) {
+        gesture_push(DK_G_TAP, o.tap_x, o.tap_y);
+    }
+    button_acts(act, now);
+}
+#else
+/** @brief The screen button: PRESS and HOLD for the panel, the
+ *         switch-off's warning and choice, the forget.  @param now the
+ *         time */
+static void screen_button(uint32_t now)
+{
     unsigned act = 0u;
     (void)button_poll(&s_in.screen, now);
     if (devota_active()) {
@@ -289,32 +432,7 @@ static void screen_button(uint32_t now)
                                s_in.local_turns, now);
     }
     s_in.local_turns = 0;
-    if ((act & DIAL_BTN_PRESS) != 0u) {
-        gesture_push(DK_G_PRESS, 0, 0);
-    }
-    if ((act & DIAL_BTN_HOLD) != 0u) {
-        gesture_push(DK_G_HOLD, 0, 0);
-    }
-    if ((act & DIAL_BTN_WARN) != 0u) {
-        ESP_LOGI(TAG, "5s hold: release to switch off, hold on to unbind");
-        dial_buzz_tone(600, 150);
-    }
-    if ((act & DIAL_BTN_FORGET) != 0u) {
-        ESP_LOGI(TAG, "10s hold: the bound panel is forgotten");
-        dial_ble_forget();
-        dial_buzz_tone(1000, 200);
-    }
-    if ((act & DIAL_BTN_KEEP) != 0u) {
-        ESP_LOGI(TAG, "switch-off: KEEP ON");
-    }
-    if ((act & DIAL_BTN_OFF) != 0u) {
-        ESP_LOGI(TAG, "switch-off: OFF");
-        dial_power_off();
-    }
-    dial_button_view(&s_in.button, now, &v);
-    atomic_store(&s_off, (uint_least32_t)v.off | (v.off_lit ? 4u : 0u)
-                             | (v.off_focus ? 8u : 0u)
-                             | ((uint32_t)v.off_secs << 8));
+    button_acts(act, now);
 }
 
 /** @brief Read the touch controller every TOUCH_MS; a short touch that
@@ -350,8 +468,10 @@ static void touch_poll(uint32_t now)
         s_in.ty = y;
     }
 }
+#endif
 
 #if RCBENCH_DIAL_HOOKS
+#ifdef DIAL_PIN_MARK
 /** @brief End the mark on GPIO1. @param arg unused */
 static void mark_off(void *arg)
 {
@@ -366,6 +486,12 @@ static void mark(void)
     esp_timer_stop(s_mark_off);
     esp_timer_start_once(s_mark_off, MARK_US);
 }
+#else
+/** @brief The K518 has no mark pin: GPIO1 is its cell's divider. */
+static void mark(void)
+{
+}
+#endif
 
 bool dial_input_inject(uint8_t kind, int32_t arg, uint8_t x, uint8_t y)
 {
@@ -477,6 +603,193 @@ static void send_poll(uint32_t now)
     s_stats.counter = e.counter;
 }
 
+#if CONFIG_RCBENCH_DIAL_BOARD_K518
+/** @brief Edges the interrupt holds for the task; a power of 2. */
+#define ENC_RING 64u
+
+/** @brief One edge: both lines' levels after it and its time. */
+typedef struct {
+    uint8_t  pair; /**< (A << 1) | B */
+    uint32_t ms;   /**< when, ms */
+} enc_edge_t;
+
+/** @brief The edges, written by the interrupt, read by the task. */
+static enc_edge_t s_ring[ENC_RING];
+/** @brief Edges written; the interrupt's alone. */
+static atomic_uint s_ring_head;
+/** @brief Edges read; the task's alone. */
+static atomic_uint s_ring_tail;
+/** @brief Edges dropped on a full ring since the task last looked. */
+static atomic_uint s_ring_lost;
+/** @brief Guards the trace text and the edge history between the input
+ *         task and the console. */
+static portMUX_TYPE s_trace_lock = portMUX_INITIALIZER_UNLOCKED;
+
+/** @brief Raw edges the console's `enc` shows. */
+#define ENC_HIST 32u
+
+/** @brief One raw edge as the interrupt read it, for `enc`. */
+typedef struct {
+    uint32_t dt;   /**< ms since the edge before */
+    uint8_t  from; /**< the pair before it */
+    uint8_t  to;   /**< the pair after it */
+} enc_hist_t;
+
+/** @brief The last ENC_HIST edges, oldest at s_hist_n - ENC_HIST. */
+static enc_hist_t s_hist[ENC_HIST];
+/** @brief Edges put in s_hist since the start. */
+static uint32_t s_hist_n;
+/** @brief The last edge's pair and time, for the next one's entry. */
+static uint8_t s_hist_pair;
+static uint32_t s_hist_ms; /**< its time, ms */
+/** @brief Edges a full ring dropped since the start. */
+static uint32_t s_lost_total;
+
+/**
+ * @brief Keep a raw edge for `enc`.
+ * @param e the edge
+ */
+static void hist_add(const enc_edge_t *e)
+{
+    portENTER_CRITICAL(&s_trace_lock);
+    s_hist[s_hist_n % ENC_HIST] = (enc_hist_t){
+        s_hist_n == 0u ? 0u : e->ms - s_hist_ms, s_hist_pair, e->pair
+    };
+    ++s_hist_n;
+    s_hist_pair = e->pair;
+    s_hist_ms = e->ms;
+    portEXIT_CRITICAL(&s_trace_lock);
+}
+
+/** @brief Both lines now.  @return (A << 1) | B, 1 for high */
+static uint8_t enc_pair(void)
+{
+    return (uint8_t)((gpio_get_level(DIAL_PIN_ENC_A) != 0 ? 2u : 0u)
+                     | (gpio_get_level(DIAL_PIN_ENC_B) != 0 ? 1u : 0u));
+}
+
+/** @brief An edge on either line: both levels into the ring.
+ *  @param arg unused */
+static void enc_isr(void *arg)
+{
+    (void)arg;
+    const unsigned h = atomic_load_explicit(&s_ring_head,
+                                            memory_order_relaxed);
+    const unsigned t = atomic_load_explicit(&s_ring_tail,
+                                            memory_order_acquire);
+    if (h - t >= ENC_RING) {
+        atomic_fetch_add_explicit(&s_ring_lost, 1u, memory_order_relaxed);
+        return;
+    }
+    s_ring[h & (ENC_RING - 1u)] = (enc_edge_t){
+        enc_pair(), (uint32_t)(esp_timer_get_time() / 1000)
+    };
+    atomic_store_explicit(&s_ring_head, h + 1u, memory_order_release);
+}
+
+/** @brief Take a counted detent's trace: the test build logs it, and
+ *         `status` shows the last one. */
+static void encoder_trace(void)
+{
+    dk518_trace_t t;
+    if (!dk518_enc_last(&s_in.enc, &t)) {
+        return;
+    }
+    char text[sizeof s_in.trace];
+    dk518_enc_text(&t, text, sizeof text);
+    portENTER_CRITICAL(&s_trace_lock);
+    memcpy(s_in.trace, text, sizeof text);
+    s_in.trace_ok = true;
+    portEXIT_CRITICAL(&s_trace_lock);
+#if RCBENCH_DIAL_HOOKS
+    ESP_LOGI(TAG, "detent %s", text);
+#endif
+}
+
+/** @brief Hand the ring's edges to the decode, then poll it; turn by the
+ *         detents they give.  A full ring takes both lines anew.
+ *  @param now the time */
+static void encoder_poll(uint32_t now)
+{
+    unsigned t = atomic_load_explicit(&s_ring_tail, memory_order_relaxed);
+    const unsigned h = atomic_load_explicit(&s_ring_head,
+                                            memory_order_acquire);
+    int32_t d = 0;
+    while (t != h) {
+        const enc_edge_t e = s_ring[t & (ENC_RING - 1u)];
+        ++t;
+        hist_add(&e);
+        d += dk518_enc_edge(&s_in.enc, e.pair, e.ms);
+        encoder_trace();
+    }
+    atomic_store_explicit(&s_ring_tail, t, memory_order_release);
+    const unsigned lost = atomic_exchange_explicit(&s_ring_lost, 0u,
+                                                   memory_order_relaxed);
+    if (lost != 0u) {
+        s_lost_total += lost;
+        d += dk518_enc_edge(&s_in.enc, enc_pair(), now_ms());
+    }
+    d += dk518_enc_poll(&s_in.enc, now_ms());
+    encoder_trace();
+    if (d != 0) {
+        turned(d, now);
+    }
+}
+
+void dial_input_enc_dump(void)
+{
+    static const char *const k_pair[4] = { "00", "01", "10", "11" };
+    enc_hist_t h[ENC_HIST];
+    uint32_t n;
+    portENTER_CRITICAL(&s_trace_lock);
+    n = s_hist_n;
+    memcpy(h, s_hist, sizeof h);
+    portEXIT_CRITICAL(&s_trace_lock);
+    const uint32_t k = n < ENC_HIST ? n : ENC_HIST;
+    printf("encoder: %lu edges since the start, the last %lu, %u lost\n",
+           (unsigned long)n, (unsigned long)k,
+           (unsigned)s_lost_total);
+    for (uint32_t i = n - k; i != n; ++i) {
+        const enc_hist_t *e = &h[i % ENC_HIST];
+        printf("+%lu %s>%s%s", (unsigned long)e->dt, k_pair[e->from & 3u],
+               k_pair[e->to & 3u], (i + 1u - (n - k)) % 8u == 0u ? "\n" : "  ");
+    }
+    if (k % 8u != 0u) {
+        printf("\n");
+    }
+    printf("now A %d B %d\n", gpio_get_level(DIAL_PIN_ENC_A),
+           gpio_get_level(DIAL_PIN_ENC_B));
+}
+
+bool dial_input_enc_trace(char *out, unsigned n)
+{
+    bool ok = false;
+    if (out == NULL || n == 0u) {
+        return false;
+    }
+    portENTER_CRITICAL(&s_trace_lock);
+    ok = s_in.trace_ok;
+    snprintf(out, n, "%s", s_in.trace);
+    portEXIT_CRITICAL(&s_trace_lock);
+    return ok;
+}
+#else
+/** @brief Read the count and turn when the detent moved.
+ *  @param now the time */
+static void encoder_poll(uint32_t now)
+{
+    int count = 0;
+    if (pcnt_unit_get_count(s_in.pcnt, &count) == ESP_OK) {
+        const int32_t d = dk_detent_follow(s_in.detent,
+                                           (int32_t)count * DIAL_ENC_SIGN);
+        if (d != s_in.detent) {
+            turned(d - s_in.detent, now);
+            s_in.detent = d;
+        }
+    }
+}
+#endif
+
 /** @brief The input task: every DIAL_INPUT_MS. @param arg unused */
 static void input_task(void *arg)
 {
@@ -484,26 +797,78 @@ static void input_task(void *arg)
     (void)arg;
     for (;;) {
         const uint32_t now = now_ms();
-        int count = 0;
-        if (pcnt_unit_get_count(s_in.pcnt, &count) == ESP_OK) {
-            const int32_t d = dk_detent_follow(s_in.detent,
-                                               (int32_t)count * DIAL_ENC_SIGN);
-            if (d != s_in.detent) {
-                turned(d - s_in.detent, now);
-                s_in.detent = d;
-            }
-        }
+        encoder_poll(now);
 #if RCBENCH_DIAL_HOOKS
         inject_poll(now);
 #endif
         screen_button(now);
+#if !CONFIG_RCBENCH_DIAL_BOARD_K518
         (void)button_poll(&s_in.stamp, now);
         touch_poll(now);
+#endif
         send_poll(now);
         vTaskDelayUntil(&wake, pdMS_TO_TICKS(DIAL_INPUT_MS));
     }
 }
 
+#if CONFIG_RCBENCH_DIAL_BOARD_K518
+/** @brief Both encoder lines as inputs with their pull-ups and an
+ *         interrupt on every edge; the decode takes their levels now.
+ *  @return true when both interrupts are on */
+static bool encoder_init(void)
+{
+    const gpio_config_t lines = {
+        .pin_bit_mask = (1ULL << DIAL_PIN_ENC_A) | (1ULL << DIAL_PIN_ENC_B),
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
+        .intr_type = GPIO_INTR_ANYEDGE,
+    };
+    if (gpio_config(&lines) != ESP_OK) {
+        return false;
+    }
+    const esp_err_t svc = gpio_install_isr_service(0);
+    if (svc != ESP_OK && svc != ESP_ERR_INVALID_STATE) {
+        return false;
+    }
+    s_hist_pair = enc_pair();
+    (void)dk518_enc_edge(&s_in.enc, s_hist_pair, now_ms());
+    return gpio_isr_handler_add(DIAL_PIN_ENC_A, enc_isr, NULL) == ESP_OK
+           && gpio_isr_handler_add(DIAL_PIN_ENC_B, enc_isr, NULL) == ESP_OK;
+}
+
+void dial_input_start(void)
+{
+    memset(&s_in, 0, sizeof s_in);
+    dk518_enc_init(&s_in.enc);
+    dk518_still_init(&s_in.still);
+    dk518_key_init(&s_in.key);
+    dk518_glass_init(&s_in.glass);
+    if (!encoder_init()) {
+        ESP_LOGE(TAG, "the encoder's interrupts did not start");
+    }
+#if RCBENCH_DIAL_HOOKS
+    s_inject = xQueueCreate(8, sizeof(inject_t));
+#endif
+    xTaskCreate(input_task, "input", INPUT_STACK, NULL, 5, NULL);
+}
+
+bool dial_input_update_key(void)
+{
+    return (atomic_load(&s_key) & KEY_DOWN) != 0u;
+}
+
+void dial_input_offer_shown(uint32_t offer)
+{
+    atomic_store(&s_shown, KEY_DOWN | (offer & KEY_OFFER));
+}
+
+bool dial_input_offer_key(uint32_t *offer)
+{
+    const uint32_t w = (uint32_t)atomic_load(&s_key);
+    *offer = w & KEY_OFFER;
+    return (w & KEY_DOWN) != 0u;
+}
+#else
 /** @brief Set up PCNT for the encoder, x4 with the glitch filter.
  *  @return true when the unit runs */
 static bool encoder_init(void)
@@ -587,3 +952,4 @@ bool dial_input_update_key(void)
 {
     return gpio_get_level(DIAL_PIN_BTN) == 0;
 }
+#endif

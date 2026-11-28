@@ -37,7 +37,7 @@ rcbench/
     text/                 die Wörter der Oberfläche, alle Sprachen in einer Tabelle (nur Header)
     mstime/               überlaufsichere Vergleiche eines 32-Bit-Millisekundenzählers (nur Header)
     vibe/                 Messung der Unwucht: Index-Komparator · Demodulator für 1x, 2x und Blattfrequenz · Löser für zwei und vier Läufe
-    dial/                 die Faces des M5Stack Dial: Listen, Werte, Messwerte und Ringe, Link und Binden; das Start-Face des Guition JC3636K518C; auf dem Host gerendert
+    dial/                 die Faces des M5Stack Dial: Listen, Werte, Messwerte und Ringe, Link und Binden; Start-Face, Faces, Encoder-Dekodierung und ruhige Berührung des Guition JC3636K518C; auf dem Host gerendert
     scanner/              QR-Scanner: Framer für Zeilen und Antworten · GM861-Befehlsframes, CRC, gewünschte Zonen und Startablauf · der Port zwischen ihnen und dem UART-Task des Panels
   protocols/              ein Modul je externem Interface: ein Kern in reinem C, sein RP2350-Pin-Treiber in rp2350/, eine README.md
     dshot/                DShot-Frames · GCR-Dekodierung · eRPM · PIO-Treiber, einfach und bidirektional

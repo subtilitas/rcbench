@@ -77,6 +77,7 @@ static void view_read(dial_face_view_t *v, char *addr, uint32_t now)
     v->upd_pct = (uint8_t)(u.percent > 100u ? 100u : u.percent);
     memcpy(v->upd_from, u.from, sizeof v->upd_from);
     memcpy(v->upd_to, u.to, sizeof v->upd_to);
+    v->upd_offer = u.offer;
     dial_input_off(v);
 }
 
@@ -153,7 +154,7 @@ static void take_packets(uint32_t now)
 /** @brief The start, then the face task's loop; never returns. */
 void app_main(void)
 {
-    dial_face_view_t view;
+    dial_face_view_t view = { 0 };
     char addr[20];
     uint32_t links = 0;
     uint32_t drawn_ms = 0;

@@ -32,10 +32,56 @@ text blocks, a list's rim ticks and the rim decorations. A text block
 stands on the M5 face's row taken about the middle at 3/2, one font size
 up, every string inside radius 150. The boot face with the BLE name and
 the firmware version stands until the first face. A change of a face
-draws and sends the whole frame of 259,200 bytes. Its touch, encoder, vibration and battery reading
-do nothing yet: it sends no EVENT, its
-STATUS names the battery unknown, and it refuses every update, since no key
-confirms one. Its INFO names hardware 2 (`DK_HW_K518`); its image names
+draws and sends the whole frame of 259,200 bytes.
+
+The K518's encoder is quadrature: line A on GPIO8 and line B on GPIO7,
+both on pull-ups. One detent pulses both lines, one after the other. An
+interrupt on every edge of either line reads both levels; the input task
+decodes them every 5ms (`shared/dial/dk518_enc.c`). Each change of one
+line is a quarter step, and the line that falls first gives the
+direction. The first pair of levels that stays 30ms without an edge is
+the home rest: arriving there with quarter steps in one direction counts
+one detent. Any other pair quiet for 30ms is a rest as well and counts
+there, so an encoder with 2 edges a detent counts too. Bounce and a half
+turn that goes back count nothing; a change of both lines at once moves
+nothing. The edges a detent has, and which way A leads when turned
+clockwise, are not measured yet: the test build logs each detent's
+pairs and edges, for example `detent CW 1, 4 edges, 6ms:
+11>01>00>10>11`, and `status` shows the last one in every build. A hand
+that holds the knob between two detents for 30ms makes that pair a rest,
+so that detent counts twice. The K518 has no button: a finger held still on the glass is the
+screen button. Lifted before 1,000ms with no move over 20px it is PRESS;
+held 1,000ms it is HOLD; 5s and 10s are the switch-off's warning and the
+forget, as on the M5. A move over 20px before 1,000ms sends nothing. A
+lift within 500ms is also a TAP at its start, as the M5's glass sends one.
+The touch controller is a CST816S at 0x15 (0x2A when 0x15 does not
+answer), read every 20ms; EVENT carries its point scaled from 0-359 to
+0-239. The update's question reads TAP TO ACCEPT, the switch-off's choice
+TAP: SELECT. The update takes the still touch alone: a still lift before
+1,000ms accepts it, a still touch of 1,000ms refuses it, and a swipe does
+neither. Only a touch that starts while the question stands answers it; a
+touch from before it, from before a lost link, or from a question that
+another one replaced, answers nothing until it lifts. A touch counts only
+when a read of the glass, every 20ms, found no finger while the question
+of that offer was already on the display, sent whole by the face task
+(every 50ms): a tap within the question's first 20ms on the glass needs a
+second tap. A failed I2C (inter-integrated circuit) read of the glass
+keeps the last state: it never ends a touch and never counts as an empty
+glass. The 5th failed read in a row (100ms) cancels the touch under way
+without PRESS, TAP or an answer to the question; the finger, read again,
+starts nothing until the glass reads empty. Each question has
+its own number, and the update takes the key only for the question it
+was made in. A DRV2605 at 0x5A vibrates instead of a buzzer, with its ROM
+effects for an LRA (library 6): a detent "Sharp Tick 3" (26), PRESS
+"Sharp Click 100%" (4), HOLD and an accepted update "Strong Click 100%"
+(1), the 5s warning "Buzz 1 100%" (47), the forget "Double Click 100%"
+(10) twice. SOUND off stops the detent's tick only. A DRV2605 that does
+not answer at 0x5A gets GPIO38 high (the enable of V1.0 boards) and a
+second probe; with no answer then, the K518 does not vibrate. The count
+of detents a turn (24 by Guition's demo code), the touch axes'
+orientation and the vibration strength are not run on the device yet.
+Its battery reading and the switch-off do nothing yet: its STATUS names
+the battery unknown, and OFF leaves it on. Its INFO names hardware 2 (`DK_HW_K518`); its image names
 update kind 5 (`BLEOTA_KIND_DIAL_K518`), so neither board takes the other's
 image.
 
@@ -697,9 +743,10 @@ prompt `dial>` and the log on the same port.
 
 | Command | What it does |
 | --- | --- |
-| `status` | name, address, firmware and protocol version, the board, the bound panel, the link and its RSSI (received signal strength indication), the EVENT counts, the click setting, the battery reading, the internal heap free and its lowest since the start |
+| `status` | name, address, firmware and protocol version, the board, the bound panel, the link and its RSSI (received signal strength indication), the connections since the start, the last disconnect's reason and the parameter requests the host refused, the EVENT counts, the click setting, on the K518 the encoder's last detent, the battery reading, the internal heap free and its lowest since the start |
 | `sound on` / `sound off` | the click per detent; the panel's SCREEN packet sets it as well, default ON |
 | `forget` | forget the bound panel, as the 10s hold |
+| `enc` | the K518 only: the encoder's last 32 raw edges, each as the ms since the previous edge and the A/B pair it went from and to (`+85 01>11`), the edges a full ring dropped, and both lines' levels at the call |
 | `help` | the commands |
 
 The test build (`RCBENCH_DIAL_HOOKS=ON`) adds the hooks. Each injects as if

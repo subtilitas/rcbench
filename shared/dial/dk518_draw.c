@@ -840,7 +840,10 @@ dk518_draw_t dk518_render(dk518_render_t *r, gfx_canvas_t *c,
         return DK518_NONE;
     }
     dial_scene_t s;
-    dial_scene_build(&s, f, v, r->lang);
+    /* The K518's press is a still touch on the glass: its faces say TAP. */
+    dial_face_view_t tv = *v;
+    tv.touch_press = true;
+    dial_scene_build(&s, f, &tv, r->lang);
     r->lang = s.lang;
     if (r->valid && same(&s, &r->shown)) {
         return DK518_SAME;

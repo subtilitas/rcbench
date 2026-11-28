@@ -29,10 +29,8 @@
                                    the download mode strap at reset */
 #define DIAL_PIN_BATT      1  /**< the cell through a 10k/10k divider,
                                    ADC1 channel 0 */
-#define DIAL_PIN_ENC_CCW   7  /**< encoder: one low pulse per
-                                   anticlockwise detent */
-#define DIAL_PIN_ENC_CW    8  /**< encoder: one low pulse per clockwise
-                                   detent */
+#define DIAL_PIN_ENC_B     7  /**< encoder: quadrature line B */
+#define DIAL_PIN_ENC_A     8  /**< encoder: quadrature line A */
 #define DIAL_PIN_TOUCH_INT 9  /**< CST816S interrupt */
 #define DIAL_PIN_TOUCH_RST 10 /**< CST816S reset, low active */
 #define DIAL_PIN_I2C_SDA   11 /**< I2C: touch (0x15) and DRV2605 (0x5A) */
@@ -44,6 +42,9 @@
 #define DIAL_PIN_LCD_D2    17 /**< ST77916 QSPI data 2 */
 #define DIAL_PIN_LCD_D3    18 /**< ST77916 QSPI data 3 */
 #define DIAL_PIN_LCD_RST   21 /**< ST77916 reset, low active */
+#define DIAL_PIN_HAPTIC_EN 38 /**< DRV2605 enable on V1.0 boards, high on;
+                                   V2.0 ties it to 3.3V and uses GPIO38
+                                   for the UART to the ESP32-U4WDH */
 #define DIAL_PIN_LCD_BL    47 /**< backlight, LEDC PWM, high on */
 /** @} */
 

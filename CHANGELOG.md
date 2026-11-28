@@ -47,6 +47,19 @@ history is in git.
   at 3/2, one font size up, wrapped and cut by the M5 faces' rules; every
   string lies inside radius 150. The boot face stands until the first
   face.
+- The K518 takes input: its encoder as quadrature on GPIO8 (A) and GPIO7
+  (B), an interrupt per edge and a detent at each rest
+  (`shared/dial/dk518_enc.c`), with each detent's A/B pairs in the test
+  build's log and in `status`; its CST816S
+  touch, a finger held still on the glass as the screen button (PRESS
+  before 1,000ms, HOLD at 1,000ms, the switch-off's warning at 5s and the
+  forget at 10s) and a TAP within 500ms; and its DRV2605 vibration as the
+  detent's tick and the confirmations. The update's question reads TAP TO
+  ACCEPT and the switch-off's choice TAP: SELECT on the K518 alone. A
+  failed I2C read of the touch controller keeps the last touch state; the
+  5th in a row (100ms) cancels the touch without an answer. The
+  M5Stack Dial's input task, buzzer and faces are unchanged
+  ([The M5Stack Dial](docs/Dial.md)).
 
 ### Changed
 

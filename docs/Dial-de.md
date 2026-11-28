@@ -34,9 +34,61 @@ M5-Face, um die Mitte mit 3/2 genommen, eine Schriftgröße größer, jeder
 String innerhalb von Radius 150. Das Start-Face mit dem BLE-Namen und der
 Firmware-Version steht bis zum ersten Face. Eine Änderung eines Face
 zeichnet und sendet den ganzen Frame von 259.200 Bytes.
-Touch, Encoder, Vibration und Akkumessung tun noch nichts: Er sendet kein EVENT, sein STATUS nennt den
-Akku unbekannt, und er lehnt jedes Update ab, weil keine Taste es
-bestätigt. Sein INFO nennt Hardware 2 (`DK_HW_K518`); sein Image nennt die
+
+Der Encoder des K518 ist ein Quadratur-Encoder: Leitung A an GPIO8 und
+Leitung B an GPIO7, beide an Pull-ups. Eine Rastung pulst beide
+Leitungen nacheinander. Ein Interrupt auf jeder Flanke einer der beiden
+Leitungen liest beide Pegel; der Input-Task dekodiert sie alle 5ms
+(`shared/dial/dk518_enc.c`). Jeder Wechsel einer Leitung ist ein
+Viertelschritt, und die Leitung, die zuerst fällt, gibt die Richtung.
+Das erste Pegelpaar, das 30ms ohne Flanke bleibt, ist die Ruhelage:
+Kommen die Viertelschritte in einer Richtung dort an, zählt eine
+Rastung. Jedes andere Paar, das 30ms ruhig bleibt, ist ebenfalls eine
+Ruhelage und zählt dort, also zählt auch ein Encoder mit 2 Flanken je
+Rastung. Prellen und eine halbe Drehung, die zurückgeht, zählen nichts;
+ein Wechsel beider Leitungen zugleich bewegt nichts. Die Flanken je
+Rastung und welche Leitung im Uhrzeigersinn vorangeht, sind noch nicht
+gemessen: Der Test-Build protokolliert die Paare und Flanken jeder
+Rastung, zum Beispiel `detent CW 1, 4 edges, 6ms: 11>01>00>10>11`, und
+`status` zeigt die letzte in jedem Build. Hält eine Hand den Knopf 30ms
+zwischen zwei Rastungen, wird dieses Paar eine Ruhelage, und die Rastung
+zählt doppelt.
+Der K518 hat keine Taste: Ein ruhig auf dem Glas liegender Finger ist die
+Bildschirmtaste. Vor 1.000ms abgehoben ohne Bewegung über 20px ist das
+PRESS; 1.000ms gehalten HOLD; 5s und 10s sind die Warnung zum Ausschalten
+und das Vergessen, wie beim M5. Eine Bewegung über 20px vor 1.000ms sendet
+nichts. Ein Abheben innerhalb von 500ms ist zusätzlich ein TAP an seinem
+Startpunkt, wie ihn das Glas des M5 sendet. Der Touch-Controller ist ein
+CST816S auf 0x15 (0x2A, wenn 0x15 nicht antwortet), alle 20ms gelesen;
+EVENT trägt seinen Punkt von 0-359 auf 0-239 skaliert. Die Update-Frage
+lautet TIPPEN: ANNEHMEN, die Ausschalt-Wahl TIPPEN: WÄHLEN. Das Update
+nimmt nur die ruhige Berührung: Ein ruhiges Abheben vor 1.000ms nimmt es
+an, eine ruhige Berührung von 1.000ms lehnt es ab, und ein Wischen tut
+keins von beiden. Nur eine Berührung, die beginnt, während die Frage
+steht, beantwortet sie; eine Berührung von vorher, von vor einem
+verlorenen Link oder zu einer Frage, die eine andere ersetzt hat,
+beantwortet nichts, bis sie abhebt. Eine Berührung zählt nur, wenn ein
+Lesen des Glases, alle 20ms, keinen Finger fand, während die Frage dieses
+Angebots schon ganz auf dem Display stand, vom Face-Task gesendet (alle
+50ms); ein Tippen in den ersten 20ms der Frage auf dem Glas braucht also
+ein zweites Tippen. Ein fehlgeschlagenes I2C-Lesen (Inter-Integrated
+Circuit) des Glases behält den letzten Zustand: Es beendet keine
+Berührung und zählt nie als leeres Glas. Das 5. fehlgeschlagene Lesen in
+Folge (100ms) bricht die laufende Berührung ab, ohne PRESS, TAP oder
+Antwort auf die Frage; der Finger, wieder gelesen, startet nichts, bis
+das Glas leer gelesen wird. Jede Frage hat ihre eigene Nummer,
+und das Update nimmt die Taste nur für die Frage, in der sie entstand. Statt eines
+Summers vibriert ein DRV2605 auf 0x5A mit seinen ROM-Effekten für einen
+LRA (Bibliothek 6): eine Rastung "Sharp Tick 3" (26), PRESS "Sharp Click
+100%" (4), HOLD und ein angenommenes Update "Strong Click 100%" (1), die
+5s-Warnung "Buzz 1 100%" (47), das Vergessen zweimal "Double Click 100%"
+(10). SOUND aus stoppt nur das Ticken der Rastung. Antwortet kein DRV2605
+auf 0x5A, geht GPIO38 auf high (der Enable der V1.0-Boards) und es folgt
+ein zweiter Versuch; ohne Antwort dann vibriert der K518 nicht. Die Zahl
+der Rastungen je Umdrehung (24 laut Guitions Demo-Code), die Ausrichtung
+der Touch-Achsen und die Stärke der Vibration sind noch nicht auf dem
+Gerät gelaufen. Akkumessung und Ausschalten tun noch nichts: Sein STATUS
+nennt den Akku unbekannt, und AUS lässt ihn an. Sein INFO nennt Hardware 2 (`DK_HW_K518`); sein Image nennt die
 Update-Art 5 (`BLEOTA_KIND_DIAL_K518`), also nimmt keines der beiden Geräte
 das Image des anderen.
 
@@ -742,9 +794,10 @@ Die Konsole ist der USB-Serial/JTAG-Port der USB-C-Buchse, mit dem Prompt
 
 | Befehl | Was er tut |
 | --- | --- |
-| `status` | Name, Adresse, Firmware- und Protokollversion, die Platine, das gebundene Panel, der Link und sein RSSI (Received Signal Strength Indication), die EVENT-Zähler, die Klick-Einstellung, der Akkuwert, der freie interne Heap und sein Tiefstwert seit dem Start |
+| `status` | Name, Adresse, Firmware- und Protokollversion, die Platine, das gebundene Panel, der Link und sein RSSI (Received Signal Strength Indication), die Verbindungen seit dem Start, der Grund der letzten Trennung und die vom Host abgelehnten Parameteranfragen, die EVENT-Zähler, die Klick-Einstellung, beim K518 die letzte Rastung des Encoders, der Akkuwert, der freie interne Heap und sein Tiefstwert seit dem Start |
 | `sound on` / `sound off` | der Klick pro Rastung; das SCREEN-Paket des Panels setzt ihn ebenfalls, Standard ON |
 | `forget` | das gebundene Panel vergessen, wie das Halten von 10s |
+| `enc` | nur beim K518: die letzten 32 rohen Flanken des Encoders, jede mit den ms seit der vorigen Flanke und dem A/B-Paar, von dem und zu dem sie wechselte (`+85 01>11`), die Flanken, die ein voller Ring verworfen hat, und die Pegel beider Leitungen beim Aufruf |
 | `help` | die Befehle |
 
 Der Test-Build (`RCBENCH_DIAL_HOOKS=ON`) fügt die Hooks hinzu. Jeder speist

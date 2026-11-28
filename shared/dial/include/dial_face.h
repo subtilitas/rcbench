@@ -96,12 +96,18 @@ typedef struct {
     uint8_t     upd_pct; /**< DIAL_UPD_SEND: the share taken, 0 to 100 */
     uint16_t    upd_from[3]; /**< the version the Dial runs */
     uint16_t    upd_to[3];   /**< the version offered */
+    uint32_t    upd_offer;   /**< DIAL_UPD_ASK: the confirmation's identity
+                                  (bleota_dev_offer()); the face does not
+                                  draw it */
     uint8_t     off;     /**< the switch-off on the screen button:
                               DIAL_OFF_*, DIAL_OFF_NONE for none */
     bool        off_lit; /**< DIAL_OFF_WARN: the blink's red half */
     bool        off_focus; /**< DIAL_OFF_ASK: the focus is on OFF, not on
                                 KEEP ON */
     uint8_t     off_secs; /**< DIAL_OFF_ASK: seconds left until KEEP ON */
+    bool        touch_press; /**< the press is a still touch on the glass
+                                  (the Guition JC3636K518C): the update
+                                  and the switch-off's choice say TAP */
 } dial_face_view_t;
 
 /** @brief Where a firmware update stands on the Dial. @{ */

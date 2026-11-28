@@ -6,7 +6,8 @@
  * dial_board.h, by the board the image is built for.  The K518 build runs
  * the BLE peripheral, the console, the face task and its display, which
  * shows the reading faces and otherwise the boot face (dial_k518_lcd.c,
- * dial_k518_screen.c); dial_k518.c holds its touch, input, buzzer and
+ * dial_k518_screen.c), and the input task with its encoder, still touch
+ * and vibration (dial_input.c, dial_k518_io.c); dial_k518.c holds its
  * power calls, which do nothing yet.
  *
  * Tasks: the input task (dial_input.c) polls the encoder, the buttons and
@@ -25,6 +26,7 @@
 #include <stdint.h>
 
 #include "dial_face.h"
+#include "dk518_input.h"
 #include "dialknob.h"
 #include "gfx.h"
 
@@ -84,6 +86,23 @@ void dial_buzz_click(void);
  */
 void dial_buzz_tone(uint32_t hz, uint32_t ms);
 
+/** @brief What a cue confirms (dial_buzz_cue()). */
+typedef enum {
+    DIAL_CUE_PRESS,  /**< PRESS taken */
+    DIAL_CUE_HOLD,   /**< HOLD taken */
+    DIAL_CUE_WARN,   /**< the switch-off's warning at 5,000ms */
+    DIAL_CUE_FORGET, /**< the bound panel forgotten at 10,000ms */
+    DIAL_CUE_ACCEPT, /**< an update accepted */
+} dial_cue_t;
+
+/**
+ * @brief A confirmation.  The M5Stack Dial beeps for the warning (600Hz,
+ *        150ms) and the forget (1,000Hz, 200ms) and is silent for the
+ *        rest; the K518 vibrates for each (dial_k518_io.c).
+ * @param cue dial_cue_t
+ */
+void dial_buzz_cue(dial_cue_t cue);
+
 /* --- dial_lcd.c ------------------------------------------------------ */
 
 /**
@@ -133,7 +152,8 @@ bool dial_k518_boot(bool force);
 
 /* --- dial_touch.c ---------------------------------------------------- */
 
-/** @brief Set up the internal I2C bus and the FT3267 at 0x38.
+/** @brief Set up the internal I2C bus and the touch controller: the
+ *         FT3267 at 0x38, on the K518 the CST816S at 0x15 or 0x2A.
  *  @return true when the controller answered */
 bool dial_touch_init(void);
 /**
@@ -143,6 +163,16 @@ bool dial_touch_init(void);
  * @return true when a finger is on the glass
  */
 bool dial_touch_read(uint8_t *x, uint8_t *y);
+/**
+ * @brief The K518's touch point at the panel's native 0 to 359; the K518
+ *        build only (dial_k518_io.c).
+ * @param x the column, written for DK518_READ_DOWN
+ * @param y the row, written for DK518_READ_DOWN
+ * @return DK518_READ_DOWN with a finger on the glass, DK518_READ_UP
+ *         without one, DK518_READ_FAIL when the I2C read failed or no
+ *         controller answered at start
+ */
+dk518_read_t dial_k518_touch(uint16_t *x, uint16_t *y);
 
 /* --- dial_input.c ---------------------------------------------------- */
 
@@ -171,9 +201,17 @@ bool dial_input_inject(uint8_t kind, int32_t arg, uint8_t x, uint8_t y);
 
 /** @brief The update's confirming key (protocols/bleota): a press
  *         accepts, a hold of 1,000ms refuses.  The M5Stack Dial's screen
- *         button; the K518 has none yet and refuses every update.
+ *         button; on the K518 the key made from its still touch.
  *  @return true while it is pressed */
 bool dial_input_update_key(void);
+/** @brief The K518's confirming key with the offer it belongs to, for
+ *         devota_offer_key(); the K518 build only.
+ *  @param offer receives the offer's identity
+ *  @return true while it is pressed */
+bool dial_input_offer_key(uint32_t *offer);
+/** @brief The K518's face sent the update's question for @p offer whole;
+ *         the K518 build only.  @param offer the confirmation's identity */
+void dial_input_offer_shown(uint32_t offer);
 
 /** @brief Whether the Dial clicks per detent.  Default ON; the panel's
  *         SCREEN flag and the console's `sound` set it. @param on ON */
@@ -204,6 +242,20 @@ typedef struct {
 } dial_input_stats_t;
 /** @brief Copy the input task's counts. @param out the counts */
 void dial_input_stats(dial_input_stats_t *out);
+#if CONFIG_RCBENCH_DIAL_BOARD_K518
+/**
+ * @brief The K518 encoder's last detent: its direction, edges, time and
+ *        the A/B pairs (dk518_enc_text()), for `status`.
+ * @param out the text
+ * @param n   its size
+ * @return false before the first detent
+ */
+bool dial_input_enc_trace(char *out, unsigned n);
+/** @brief Print the K518 encoder's last 32 raw edges, each as the ms since
+ *         the edge before and the A/B pair before and after it, then both
+ *         lines now: the console's `enc`. */
+void dial_input_enc_dump(void);
+#endif
 
 /* --- dial_ble.c ------------------------------------------------------ */
 
@@ -250,6 +302,12 @@ bool dial_ble_bound(void);
 /** @brief The connection count: it changes at every connect, so the face
  *         task resets its model. @return the count */
 uint32_t dial_ble_link_count(void);
+/** @brief The last disconnect's reason.
+ *  @return NimBLE's code, 0 before the first disconnect */
+uint16_t dial_ble_last_reason(void);
+/** @brief Parameter requests the host refused.
+ *  @return the count since the start */
+uint32_t dial_ble_param_fails(void);
 /** @brief The link's RSSI on the Dial. @return dBm, or DK_RSSI_NONE */
 int8_t dial_ble_rssi(void);
 /** @brief The advertised name, "DIAL-3A10". @return the name */

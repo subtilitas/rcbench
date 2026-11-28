@@ -5,9 +5,12 @@
 set(SRCS "dial_main.c" "dial_ble.c" "dial_console.c")
 if(CONFIG_RCBENCH_DIAL_BOARD_K518)
     # The Guition JC3636K518C: the display, its boot face and its reading
-    # faces at 360 x 360 (dial_k518_lcd.c, dial_k518_screen.c); its other
-    # parts do nothing yet (dial_k518.c).
-    list(APPEND SRCS "dial_k518.c" "dial_k518_lcd.c" "dial_k518_screen.c")
+    # faces at 360 x 360 (dial_k518_lcd.c, dial_k518_screen.c); the input
+    # task with its encoder and still touch (dial_input.c), the touch
+    # controller and the vibration (dial_k518_io.c); its power calls do
+    # nothing yet (dial_k518.c).
+    list(APPEND SRCS "dial_k518.c" "dial_k518_lcd.c" "dial_k518_screen.c"
+                     "dial_k518_io.c" "dial_input.c")
 else()
     list(APPEND SRCS "dial_screen.c" "dial_power.c" "dial_buzz.c"
                      "dial_lcd.c" "dial_touch.c" "dial_input.c")

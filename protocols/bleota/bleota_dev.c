@@ -164,6 +164,7 @@ static void ask_confirm(bleota_dev_t *d, uint32_t now)
     memset(&s, 0, sizeof s);
     d->st = BLEOTA_DEV_CONFIRM;
     d->t = now;
+    ++d->offer;
     d->key_armed = !d->key_down;
     s.ev = BLEOTA_EV_WAIT;
     s.secs = (uint16_t)(BLEOTA_CONFIRM_MS / 1000u);
@@ -309,6 +310,25 @@ void bleota_dev_key(bleota_dev_t *d, bool down, uint32_t now)
         d->key_armed = false;
         fail(d, BLEOTA_E_REFUSED);
     }
+}
+
+void bleota_dev_key_for(bleota_dev_t *d, bool down, uint32_t offer,
+                        uint32_t now)
+{
+    if (d != NULL) {
+        bleota_dev_key(d, down && offer == d->offer, now);
+    }
+}
+
+bool bleota_dev_offer(const bleota_dev_t *d, uint32_t *offer)
+{
+    if (d == NULL) {
+        return false;
+    }
+    if (offer != NULL) {
+        *offer = d->offer;
+    }
+    return d->st == BLEOTA_DEV_CONFIRM;
 }
 
 void bleota_dev_lost(bleota_dev_t *d)

@@ -77,3 +77,12 @@ void dial_buzz_click(void)
 {
     dial_buzz_tone(CLICK_HZ, CLICK_MS);
 }
+
+void dial_buzz_cue(dial_cue_t cue)
+{
+    if (cue == DIAL_CUE_WARN) {
+        dial_buzz_tone(600, 150);
+    } else if (cue == DIAL_CUE_FORGET) {
+        dial_buzz_tone(1000, 200);
+    }
+}

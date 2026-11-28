@@ -99,6 +99,10 @@ static atomic_uint_least32_t s_links; /**< connections since start */
 static atomic_uint_least16_t s_echo; /**< the last STATE's panel ms */
 static atomic_bool s_idle; /**< the link runs at DK_LATENCY_IDLE */
 static atomic_uint_least32_t s_last_turn; /**< the last turn, ms */
+static atomic_uint_least16_t s_last_reason; /**< the last disconnect's
+                                                 reason, 0 before one */
+static atomic_uint_least32_t s_param_fails; /**< parameter requests the
+                                                 host refused */
 /** @} */
 /** @brief The bound panel. @{ */
 static atomic_bool s_bound;
@@ -303,8 +307,14 @@ static void ask_params(uint16_t latency)
         .supervision_timeout = DK_SUPERVISION,
     };
     const uint16_t conn = (uint16_t)atomic_load(&s_conn);
-    if (conn != CONN_NONE && ble_gap_update_params(conn, &p) != 0) {
-        ESP_LOGW(TAG, "the parameter request did not go");
+    if (conn == CONN_NONE) {
+        return;
+    }
+    const int rc = ble_gap_update_params(conn, &p);
+    if (rc != 0) {
+        atomic_fetch_add(&s_param_fails, 1u);
+        ESP_LOGW(TAG, "the parameter request (latency %u) did not go: %d",
+                 (unsigned)latency, rc);
     }
 }
 
@@ -352,6 +362,7 @@ static int gap_event(struct ble_gap_event *ev, void *arg)
     case BLE_GAP_EVENT_DISCONNECT:
         ESP_LOGI(TAG, "disconnected, reason 0x%03X",
                  (unsigned)ev->disconnect.reason);
+        atomic_store(&s_last_reason, (uint16_t)ev->disconnect.reason);
         atomic_store(&s_conn, CONN_NONE);
         atomic_store(&s_sub_event, false);
         atomic_store(&s_sub_status, false);
@@ -442,6 +453,10 @@ void dial_ble_start(void)
     }
     (void)devota_start(DIAL_BOARD_KIND, BLEOTA_CONFIRM_PRESS,
                        dial_input_update_key);
+#if CONFIG_RCBENCH_DIAL_BOARD_K518
+    /* The K518's key names the offer it was made for. */
+    devota_offer_key(dial_input_offer_key);
+#endif
     nimble_port_freertos_init(host_task);
 }
 
@@ -534,6 +549,16 @@ void dial_ble_drop(void)
 bool dial_ble_bound(void)
 {
     return atomic_load(&s_bound);
+}
+
+uint16_t dial_ble_last_reason(void)
+{
+    return (uint16_t)atomic_load(&s_last_reason);
+}
+
+uint32_t dial_ble_param_fails(void)
+{
+    return (uint32_t)atomic_load(&s_param_fails);
 }
 
 uint32_t dial_ble_link_count(void)
