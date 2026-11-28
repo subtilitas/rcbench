@@ -72,6 +72,15 @@ extern "C" {
  *         every protocol version, so a device of protocol 1 takes an image
  *         built for protocol 2 (bleota_head_check()). */
 #define BLEOTA_ROLE_PROTO 1u
+/** @brief The image head's security epoch, bleota_role_t.epoch: 1 for an
+ *         image whose firmware checks release signatures.  Images of
+ *         releases before the check carry 0 there (the byte was reserved
+ *         and 0), and a device that needs the signature refuses them with
+ *         BLEOTA_E_EPOCH, so a signed older image cannot turn the check
+ *         off.  An image at the epoch installs whatever its version: a
+ *         downgrade to another release with the check stays possible.
+ *         A device of protocol 1 ignores the byte. */
+#define BLEOTA_SIG_EPOCH 1u
 
 /** @brief The 128-bit UUIDs (universally unique identifiers), base
  *         706E340C-76DB-4FB2-AEF1-A89F7CBDF9xx.  BLEOTA_UUID_LE(xx) is the
@@ -168,7 +177,13 @@ extern const uint8_t bleota_uuid_data[16];
                                     not verify: over the SHA-256 given
                                     (check 1) or over the SHA-256 of what
                                     was written (check 2) */
-#define BLEOTA_E_MAX       15u /**< the highest code */
+#define BLEOTA_E_EPOCH     16u /**< a device that needs the signature and
+                                    an image whose role record names a
+                                    security epoch below BLEOTA_SIG_EPOCH:
+                                    a release without the check, which
+                                    would install without one from then
+                                    on */
+#define BLEOTA_E_MAX       16u /**< the highest code */
 /** @} */
 
 /** @brief A chunk: its offset, then the image's bytes. @{ */
@@ -348,7 +363,8 @@ typedef struct {
     uint32_t magic;       /**< BLEOTA_ROLE_MAGIC */
     uint8_t  kind;        /**< BLEOTA_KIND_* */
     uint8_t  proto;       /**< BLEOTA_ROLE_PROTO */
-    uint8_t  reserved[2]; /**< 0 */
+    uint8_t  epoch;       /**< BLEOTA_SIG_EPOCH; 0 before the check */
+    uint8_t  reserved;    /**< 0 */
 } bleota_role_t;
 
 /**
@@ -363,6 +379,14 @@ typedef struct {
  */
 uint8_t bleota_head_check(const uint8_t *b, size_t n, uint16_t chip,
                           uint8_t kind);
+
+/**
+ * @brief The security epoch of an image's role record (bleota_role_t.epoch).
+ * @param b the image's first bytes
+ * @param n their count
+ * @return the epoch; 0 for fewer than BLEOTA_HEAD_LEN bytes
+ */
+uint8_t bleota_head_epoch(const uint8_t *b, size_t n);
 
 /* ---------------------------------------------------------- the device */
 

@@ -103,6 +103,7 @@ FAIL's codes:
 | 13 | `E_ABORTED` | the central's ABORT |
 | 14 | `E_IMAGE` | the head is no application with a role, or the device's own image check refused the image |
 | 15 | `E_SIG` | a device that needs the signature: protocol 1, or a signature that does not verify over BEGIN's SHA-256 (check 1) or over the SHA-256 of the bytes written (check 2) |
+| 16 | `E_EPOCH` | a device that needs the signature: the head's security epoch is below `BLEOTA_SIG_EPOCH` (1), an image of a release without the check |
 
 ## A transfer
 
@@ -160,6 +161,7 @@ The device reads the image's first 296 bytes before its first flash write:
 | 288 | 4 | the role's magic | `BLEOTA_ROLE_MAGIC`, "rcbR" |
 | 292 | 1 | the role's kind | the device's, else `E_KIND` |
 | 293 | 1 | the role's format, `BLEOTA_ROLE_PROTO` | 1 |
+| 294 | 1 | the role's security epoch, `BLEOTA_SIG_EPOCH` | 1 or more on a device that needs the signature, else `E_EPOCH`; any value elsewhere |
 
 The role (`bleota_role_t`) sits in ESP-IDF's `.rodata_custom_desc`
 section, which the linker places right after the 256-byte
@@ -167,6 +169,17 @@ section, which the linker places right after the 256-byte
 `DEVOTA_ROLE(kind)`. The two node roles share chip and project name, and
 so do the two Dial boards, so the role is what tells them apart. Any other field failing is `E_IMAGE`.
 An image without the role, such as one built before it, is refused.
+
+The security epoch is 1 in every image whose firmware checks release
+signatures (`DEVOTA_ROLE()`); releases before the check carry 0 in that
+byte, which was reserved. A device that needs the signature refuses an
+epoch below 1 with `E_EPOCH` before the first flash write. The signature
+covers the head, so check 1, the SHA-256 compare and check 2 tie the
+checked byte to the image that installs. Without this, a signed image of
+an older release would install, and its firmware takes any image without
+a signature. The rule is a floor only: an image at the epoch installs
+whatever its version, so a downgrade to another release with the check
+stays possible. A device of protocol 1 ignores the byte.
 
 ## Protocol 2
 
@@ -192,8 +205,8 @@ that answer the HASH writes after BEGIN, and starts once more in protocol
 1. That happens once per transfer; `E_SIG` never leads to it. A device of
 protocol 1 so takes the update to protocol 2 one time, with the SHA-256
 alone. From then on a Dial refuses protocol 1. A central of protocol 1
-decodes no FAIL code above 14: it reads `E_SIG` from a Dial of protocol 2
-as no answer and ends on its timeout.
+decodes no FAIL code above 14: it reads `E_SIG` and `E_EPOCH` from a Dial
+of protocol 2 as no answer and ends on its timeout.
 
 ## Credit window
 

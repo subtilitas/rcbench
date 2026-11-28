@@ -273,7 +273,9 @@ from `BENCH/UPDATES` on the SD card. The K518 checks the release signature
 twice, as the M5Stack Dial does ([Update over Bluetooth
 LE](#update-over-bluetooth-le)): over BEGIN's SHA-256 before the question,
 and over its own SHA-256 after the last byte. A refused signature shows
-`SIGNATURE REFUSED` and `FIRMWARE KEPT` for 5s.
+`SIGNATURE REFUSED` and `FIRMWARE KEPT` for 5s. Every K518 image carries
+the security epoch 1, so the K518 has no image without the check to fall
+back to.
 
 ![the update offered on the K518](img/dial-k518-update-ask.png)
 ![the update coming in on the K518](img/dial-k518-update-send.png)
@@ -478,6 +480,16 @@ it are done, its card holds the same hold
 A refused signature shows `SIGNATURE REFUSED` and `FIRMWARE KEPT` for 5s
 (`DIAL_UPD_BADSIG_MS`); the Dial keeps the image it runs. The panel's row
 says `signature refused by the device`.
+
+A signed image of a release without the check would turn the check off
+once installed. The image head's role record carries a security epoch,
+1 in every image with the check and 0 in the images before it. After the
+press, the Dial reads the head in the first 296 bytes and refuses an epoch
+below 1 with code 16 (`BLEOTA_E_EPOCH`) before anything is written; the
+face is the same as for a refused signature, and the panel's row says
+`image predates the signature check`. The epoch is a floor, not a
+version rule: a signed image of another release with the check, an older
+one included, installs.
 
 ![A signature refused on the Dial](img/dial-update-sig.png)
 
@@ -1024,10 +1036,10 @@ K518](#limits-of-the-k518).
 - The rate of the update over BLE over the panel's
   ESP32-C6 link, the time of an 840kB transfer and a rollback on the Dial
   are not measured.
-- The Dial checks the image's release signature, kind, chip and segments,
-  not its version's order: a central in range can offer any signed image
-  of the Dial's board, an older release's included, and a press installs
-  it.
+- The Dial checks the image's release signature, security epoch, kind,
+  chip and segments, not its version's order: a central in range can
+  offer any signed image of the Dial's board from a release with the
+  check, an older one included, and a press installs it.
 - No sleep, no backlight steps and no auto-off: the M5Stack Dial stays on
   until `OFF` in the switch-off's choice, RST or an empty cell. Runtime on
   a cell is not measured.

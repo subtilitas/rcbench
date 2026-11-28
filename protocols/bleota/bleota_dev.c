@@ -435,8 +435,12 @@ bleota_do_t bleota_dev_poll(bleota_dev_t *d, uint32_t now)
     case BLEOTA_DEV_RECV:
         if (!d->head_ok && (d->rx >= BLEOTA_HEAD_LEN || d->rx == d->size)) {
             /* Nothing is written before the head names this device. */
-            const uint8_t why = bleota_head_check(d->ring, d->rx,
-                                                  d->cfg.chip, d->cfg.kind);
+            uint8_t why = bleota_head_check(d->ring, d->rx, d->cfg.chip,
+                                            d->cfg.kind);
+            if (why == BLEOTA_OK && d->cfg.need_sig
+                && bleota_head_epoch(d->ring, d->rx) < BLEOTA_SIG_EPOCH) {
+                why = BLEOTA_E_EPOCH; /* it would turn the check off */
+            }
             if (why != BLEOTA_OK) {
                 fail(d, why);
                 return d->close_due ? BLEOTA_DO_CLOSE : BLEOTA_DO_NONE;

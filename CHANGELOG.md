@@ -35,8 +35,11 @@ history is in git.
   face `SIGNATURE REFUSED` for 5s and the panel's
   `signature refused by the device`. A Dial of an older release refuses
   protocol 2 with code 4; the panel then sends the image once more in
-  protocol 1, once per update, and logs it. The nodes take protocol 2 and
-  check no signature
+  protocol 1, once per update, and logs it. The image head's role record
+  carries a security epoch, 1 in every image with the check: the Dial
+  refuses a signed image of an earlier release (epoch 0) with code 16
+  (`BLEOTA_E_EPOCH`) before anything is written, so no signed downgrade
+  turns the check off. The nodes take protocol 2 and check no signature
   ([The M5Stack Dial](docs/Dial.md#update-over-bluetooth-le),
   [SECURITY.md](SECURITY.md)).
 

@@ -7306,6 +7306,9 @@ UI_TEXT(DEV_FAIL_IMAGE, 36,
 UI_TEXT(DEV_FAIL_SIG, 36,
     "signature refused by the device",
     "Signatur vom Gerät abgelehnt")
+UI_TEXT(DEV_FAIL_EPOCH, 36,
+    "image predates the signature check",
+    "Image älter als die Signaturprüfung")
 UI_TEXT(DEV_FAIL_ARMED, 36,
     "the bench is not SAFE",
     "der Prüfstand ist nicht SAFE")

@@ -349,8 +349,15 @@ protocol 2) has no pairing and no encryption.
   `esp_ota_set_boot_partition()` (check 2). A missing or bad signature is
   refused with code 15 (`BLEOTA_E_SIG`); nothing is erased before check 1,
   and nothing becomes the boot slot without check 2. The confirmation on
-  the Dial still applies to a signed image: any release image, an older
-  one included, installs after a press.
+  the Dial still applies to a signed image: a release image installs after
+  a press.
+- No signed downgrade turns the check off. The image head's role record
+  carries a security epoch (`BLEOTA_SIG_EPOCH`, 1 since the check); the
+  images of earlier releases carry 0 there. The Dial refuses an epoch
+  below 1 with code 16 (`BLEOTA_E_EPOCH`) before anything is written, and
+  the signature covers the head. The rule is a floor: a signed image of
+  another release with the check, an older one included, installs after a
+  press.
 - Transition: a Dial running firmware from before the check (protocol 1)
   refuses protocol 2 with code 4. The panel then sends the same image once
   more in protocol 1, without the signature, and that Dial installs it

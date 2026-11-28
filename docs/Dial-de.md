@@ -285,7 +285,8 @@ K518 prüft die Release-Signatur zweimal wie das M5Stack Dial ([Update über
 Bluetooth LE](#update-über-bluetooth-le)): über den SHA-256 aus BEGIN vor
 der Frage und über seinen eigenen SHA-256 nach dem letzten Byte. Eine
 abgelehnte Signatur zeigt 5s lang `SIGNATUR ABGELEHNT` und `FIRMWARE
-BLEIBT`.
+BLEIBT`. Jedes Image des K518 trägt die Sicherheitsepoche 1, also gibt es
+für den K518 kein Image ohne die Prüfung, auf das er zurückfallen könnte.
 
 ![das angebotene Update auf dem K518](img/de/dial-k518-update-ask.png)
 ![das ankommende Update auf dem K518](img/de/dial-k518-update-send.png)
@@ -506,6 +507,17 @@ und sind die Schritte davor erledigt, trägt seine Karte dasselbe Halten
 Eine abgelehnte Signatur zeigt 5s lang `SIGNATUR ABGELEHNT` und
 `FIRMWARE BLEIBT` (`DIAL_UPD_BADSIG_MS`); das Dial behält sein Image. Die
 Zeile des Panels sagt `Signatur vom Gerät abgelehnt`.
+
+Ein signiertes Image eines Release ohne die Prüfung schaltete die Prüfung
+nach der Installation ab. Der Rollen-Eintrag im Kopf des Images trägt
+eine Sicherheitsepoche, 1 in jedem Image mit der Prüfung und 0 in den
+Images davor. Nach dem Druck liest das Dial den Kopf in den ersten 296
+Bytes und lehnt eine Epoche unter 1 mit Code 16 (`BLEOTA_E_EPOCH`) ab,
+bevor etwas geschrieben ist; das Face ist dasselbe wie bei einer
+abgelehnten Signatur, und die Zeile des Panels sagt `Image älter als die
+Signaturprüfung`. Die Epoche ist eine Untergrenze, keine Versionsregel:
+Ein signiertes Image eines anderen Release mit der Prüfung, auch ein
+älteres, installiert.
 
 ![Eine abgelehnte Signatur am Dial](img/de/dial-update-sig.png)
 
@@ -1092,10 +1104,11 @@ die anderen gelten für beide Boards. Die eigenen des K518 folgen in
 - Die Rate des Updates über BLE über die
   ESP32-C6-Verbindung des Panels, die Dauer einer Übertragung von 840kB und
   ein Rollback am Dial sind nicht gemessen.
-- Das Dial prüft Release-Signatur, Art, Chip und Segmente des Images,
-  nicht die Reihenfolge der Versionen: Ein Central in Reichweite kann
-  jedes signierte Image des Dial-Boards anbieten, auch das eines älteren
-  Release, und ein Druck installiert es.
+- Das Dial prüft Release-Signatur, Sicherheitsepoche, Art, Chip und
+  Segmente des Images, nicht die Reihenfolge der Versionen: Ein Central
+  in Reichweite kann jedes signierte Image des Dial-Boards aus einem
+  Release mit der Prüfung anbieten, auch ein älteres, und ein Druck
+  installiert es.
 - Kein Schlaf, keine Stufen des Hintergrundlichts und keine automatische
   Abschaltung: Das M5Stack Dial bleibt an bis `AUS` in der Wahl beim
   Ausschalten, bis RST oder bis die Zelle leer ist. Die Laufzeit mit einer
