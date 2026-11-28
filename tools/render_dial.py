@@ -4,7 +4,8 @@
 The faces are drawn by shared/dial, the code the Dial's firmware runs,
 from the fixed models in test/host/dial_models.h.  A PNG (Portable
 Network Graphics) image is written for each face, 240 x 240 as the Dial's
-frame holds it, English into docs/img/dial-<name>.png and German into
+frame holds it (the Guition JC3636K518C's boot face at its 360 x 360),
+English into docs/img/dial-<name>.png and German into
 docs/img/de/dial-<name>.png.
 
     python3 tools/render_dial.py                 # every face, both languages
@@ -44,6 +45,8 @@ SOURCES = [
     "shared/dial/dial_draw.c",
     "shared/dial/dial_text.c",
     "shared/dial/dial_rings.c",
+    "shared/dial/dk518_boot.c",
+    "shared/dial/dk518_draw.c",
     "shared/ui/ui_theme.c",
     "protocols/dialknob/dialknob.c",
     "protocols/dialknob/dk_face.c",
@@ -78,6 +81,22 @@ FACES = {
     "off-warn": "the screen button held 5,000ms: blinks red, release to "
                 "switch off, hold on to unbind",
     "off-ask": "the screen button released after 5,000ms: OFF or KEEP ON",
+    "k518-boot": "the Guition JC3636K518C's boot face, 360 x 360; no words "
+                 "to translate, the same in both languages",
+    "k518-motor-armed": "MOTOR & ESC, ARMED, as the K518 draws it, 360 x 360",
+    "k518-motor-safe": "MOTOR & ESC, SAFE, as the K518 draws it",
+    "k518-servo-live": "SERVO, ARMED, as the K518 draws it",
+    "k518-navigation": "a list on SETUP, as the K518 draws it",
+    "k518-value-set": "a setting's value being set, as the K518 draws it",
+    "k518-link-lost": "LINK LOST, as the K518 draws it",
+    "k518-link-ended": "the Dial ended the link, as the K518 draws it",
+    "k518-waiting": "connected, no panel packet yet, as the K518 draws it",
+    "k518-bind": "no bound panel, as the K518 draws it",
+    "k518-other": "a screen the knob does nothing on, as the K518 draws it",
+    "k518-update-ask": "a firmware update offered, as the K518 draws it",
+    "k518-update-send": "a firmware update coming in, as the K518 draws it",
+    "k518-off-warn": "the switch-off's warning, as the K518 draws it",
+    "k518-off-ask": "the switch-off's choice, as the K518 draws it",
 }
 
 LANGS = {"en": ".", "de": "de"}

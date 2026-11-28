@@ -134,7 +134,7 @@ Testabdeckung muss sowohl die Gesamtuntergrenze als auch die Untergrenze
 für jede Datei erreichen.
 
 <!-- coverage:start -->
-Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,7%**, 117 508 von 120 282 Zeilen in 542 Dateien. CI schlägt unter 94% gesamt oder unter 85% in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
+Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,7%**, 117 933 von 120 724 Zeilen in 544 Dateien. CI schlägt unter 94% gesamt oder unter 85% in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
 <!-- coverage:end -->
 
 Sicherheitsmeldungen: [SECURITY.md](SECURITY.md).
@@ -150,13 +150,13 @@ BY-NC-SA 4.0 (Creative Commons Namensnennung - Nicht kommerziell - Weitergabe
 unter gleichen Bedingungen 4.0 International): die Platinen- und
 Pin-Dokumente, die Teilelisten und Bezugsquellen, die Bauteilrecherche, die
 STEP- und STL-Modelle, die KiCad-Symbole, -Footprints und -3D-Formen, die
-Renderbilder und die Python-Skripte, die sie zeichnen. Sie dürfen für nicht
+Renderbilder. Sie dürfen für nicht
 kommerzielle Zwecke genutzt, geändert und weitergegeben werden, mit
 Namensnennung und unter derselben Lizenz. Eine kommerzielle Nutzung braucht
 eine eigene Lizenz des Rechteinhabers. Die Bedingungen stehen in
 [hardware/LICENSE](hardware/LICENSE). Das Dial-Mesh von M5Stack, die beiden
-daran angepassten Dial-STEP-Dateien und die Buchstabenumrisse in
-`hardware/mechanical/_font.py` bleiben unter der MIT-Lizenz.
+daran angepassten Dial-STEP-Dateien und die Buchstabenumrisse auf den
+Platinenmodellen bleiben unter der MIT-Lizenz.
 
 - **DejaVu Sans Mono.** Die sieben Fonttabellen unter `shared/gfx/` sind
   Glyphen-Bitmaps, die `tools/gen_font.py` aus DejaVu Sans Mono erzeugt, unter

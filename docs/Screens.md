@@ -4478,7 +4478,7 @@ The card task loads the whole file in 16KiB chunks while the screen shows
 
 The header spans body y 4 to 52. It shows the folder and file name
 (shortened at the front to `..` beyond 44 cells), size and READ-ONLY.
-At the right, `LINE 23 OF 57` gives the top visible line and total line
+On the right, `LINE 23 OF 57` shows the top visible line and total line
 count. A final line ending does not create an extra empty line.
 
 Text occupies 1008 x 372px from body y 60: 18 rows of 92 cells in the
@@ -5039,7 +5039,7 @@ The password appears as `*` until you tap SHOW; HIDE masks it again. OK
 saves the network name and password in NVS (non-volatile storage), then
 the screen offers JOIN HOME NETWORK.
 
-![A home network is kept](img/wifi-home.png)
+![A home network is saved](img/wifi-home.png)
 
 ![Joining](img/wifi-joining.png)
 ![Joined](img/wifi-joined.png)
@@ -5054,7 +5054,7 @@ task, no socket, no multicast group) is tried again 3 times, 5s apart
 (`WA_MDNS_RETRIES`, `WA_MDNS_RETRY_MS`); after that the name stays silent
 until the next join, and the address still works.
 
-If the connection fails, the screen gives the reason and offers ACCESS
+If the connection fails, the screen shows the reason and offers ACCESS
 POINT, which works without the home network:
 
 | Line on the card | Condition |

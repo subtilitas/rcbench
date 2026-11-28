@@ -5,8 +5,10 @@
 # and tools/render_dial.py writes the committed images; the Dial's
 # firmware (firmware/dial) draws with the same code.  dial_button.c is the
 # screen button's gestures, the switch-off and the forget, tested on the
-# host as well.
-set(SRCS dial_scene.c dial_draw.c dial_text.c dial_rings.c dial_button.c)
+# host as well.  dk518_boot.c and dk518_draw.c are the Guition
+# JC3636K518C's boot face and reading faces, drawn at its own 360 x 360.
+set(SRCS dial_scene.c dial_draw.c dial_text.c dial_rings.c dial_button.c
+         dk518_boot.c dk518_draw.c)
 
 if(ESP_PLATFORM)
     # The Dial builds the theme alone of shared/ui: ui_theme.c needs gfx.h

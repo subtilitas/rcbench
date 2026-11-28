@@ -2,13 +2,15 @@
 # the console and the face renderer for every board; the input task, the
 # display, the touch controller, the buzzer and the power latch of the
 # board the image is built for (main/dial_board.h, main/Kconfig.projbuild).
-set(SRCS "dial_main.c" "dial_ble.c" "dial_console.c" "dial_screen.c")
+set(SRCS "dial_main.c" "dial_ble.c" "dial_console.c")
 if(CONFIG_RCBENCH_DIAL_BOARD_K518)
-    # The Guition JC3636K518C: its parts do nothing yet (dial_k518.c).
-    list(APPEND SRCS "dial_k518.c")
+    # The Guition JC3636K518C: the display, its boot face and its reading
+    # faces at 360 x 360 (dial_k518_lcd.c, dial_k518_screen.c); its other
+    # parts do nothing yet (dial_k518.c).
+    list(APPEND SRCS "dial_k518.c" "dial_k518_lcd.c" "dial_k518_screen.c")
 else()
-    list(APPEND SRCS "dial_power.c" "dial_buzz.c" "dial_lcd.c"
-                     "dial_touch.c" "dial_input.c")
+    list(APPEND SRCS "dial_screen.c" "dial_power.c" "dial_buzz.c"
+                     "dial_lcd.c" "dial_touch.c" "dial_input.c")
 endif()
 # The requirements are the same for every board: ESP-IDF expands them
 # before it reads the sdkconfig, so a CONFIG_ test cannot choose them.

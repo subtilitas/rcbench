@@ -35,14 +35,14 @@ handles the user interface on a 1024x600 MIPI DSI display, settings, the SD
 protocol with timing requirements. CAN (Controller Area Network) at 1Mbit/s
 connects the two.
 
-Releases up to 0.22.1 run on the ESP32-S3 panel. What each panel's update
-check offers is in [Screens: The release line](docs/Screens.md#the-release-line).
+Releases up to 0.22.1 run on the ESP32-S3 panel. See which updates each
+panel offers in [Screens: The release line](docs/Screens.md#the-release-line).
 
 **Status.** The panel and the IOmcu run together over CAN at 1Mbit/s on a
 bench with a PD mini supply, servos and one ESC, and a beta tester runs
 release builds. Output timing (bit widths, frame periods, reply delays) has
-not been measured with an instrument. [STATUS.md](STATUS.md) records what is built,
-what is open and what is not planned.
+not been measured with an instrument. [STATUS.md](STATUS.md) records
+implemented features, open work and features outside the project scope.
 
 ## Safety
 
@@ -53,10 +53,11 @@ To switch to ARMED, hold ARM for two seconds. The command is sent when the
 hold completes. DISARM and STOP act on a single press, as soon as the
 finger touches the screen; they do not wait for release.
 
-The design has three stop mechanisms: a heartbeat whose absence disables
-the outputs, the IOmcu's own link watchdog, and a STOP command over the
-link. The heartbeat line runs from the panel's IO28 (`PANEL_HEARTBEAT_PIN`,
-on the 12-pin header P3 of the 7-inch ESP32-P4 board) to the IOmcu's GPIO 3.
+Three mechanisms stop the outputs. The outputs are disabled if
+the heartbeat is lost, the IOmcu link watchdog expires or the IOmcu
+receives a STOP command. The heartbeat line runs from the panel's IO28
+(`PANEL_HEARTBEAT_PIN`, on the 12-pin header P3 of the 7-inch ESP32-P4
+board) to the IOmcu's GPIO 3.
 Neither board has the heartbeat's retriggerable monostable. Firmware at
 both ends gates the outputs; there is no hardware backup for this function.
 [Safety](https://github.com/subtilitas/rcbench/wiki/Safety) specifies all
@@ -128,7 +129,7 @@ this is a licensing requirement. Test coverage must meet both the overall
 minimum and the minimum for each file.
 
 <!-- coverage:start -->
-Host-suite line coverage of `shared/` and `protocols/`: **97.7%**, 117,508 of 120,282 lines in 542 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
+Host-suite line coverage of `shared/` and `protocols/`: **97.7%**, 117,933 of 120,724 lines in 544 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
 <!-- coverage:end -->
 
 Security and safety reports: [SECURITY.md](SECURITY.md).
@@ -142,12 +143,12 @@ carrier board's page ([Carrier](docs/Carrier.md)) is under CC BY-NC-SA 4.0
 (Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International):
 the board and pin documents, the part lists and sourcing, the component
 research, the STEP and STL models, the KiCad symbols, footprints and 3D
-shapes, the renders and the Python scripts that draw them. They may be used,
+shapes and the renders. They may be used,
 changed and shared for non-commercial purposes, with credit and under the
 same licence. Commercial use needs a separate licence from the copyright
 holder. The terms are in [hardware/LICENSE](hardware/LICENSE). M5Stack's Dial mesh, the
-two Dial STEP files fitted to it and the letter outlines in
-`hardware/mechanical/_font.py` keep the MIT licence.
+two Dial STEP files fitted to it and the letter outlines printed on the
+board models keep the MIT licence.
 
 - **DejaVu Sans Mono.** The seven font tables under `shared/gfx/` are glyph
   bitmaps rendered from DejaVu Sans Mono by `tools/gen_font.py`, under the

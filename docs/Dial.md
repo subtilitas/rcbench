@@ -24,12 +24,36 @@ The same firmware builds for a second board, the Guition JC3636K518C
 knob: an ESP32-S3R8 with a round 360 x 360 display, touch, an encoder
 without a push switch and a vibration motor. Its build
 ([Flashing over USB](#flashing-over-usb)) runs the BLE peripheral, the
-bind, the face task and the console. Its display, touch, encoder,
-vibration and battery reading do nothing yet: it sends no EVENT, its
+bind, the face task, the console and the display. The display, an ST77916
+over QSPI (quad SPI) at 40MHz, shows its own faces, drawn at 360 x 360:
+every face of the M5, from the same scene: MOTOR & ESC and SERVO with six
+readings, six rings, title, pill and hints, and the other faces with their
+text blocks, a list's rim ticks and the rim decorations. A text block
+stands on the M5 face's row taken about the middle at 3/2, one font size
+up, every string inside radius 150. The boot face with the BLE name and
+the firmware version stands until the first face. A change of a face
+draws and sends the whole frame of 259,200 bytes. Its touch, encoder, vibration and battery reading
+do nothing yet: it sends no EVENT, its
 STATUS names the battery unknown, and it refuses every update, since no key
 confirms one. Its INFO names hardware 2 (`DK_HW_K518`); its image names
 update kind 5 (`BLEOTA_KIND_DIAL_K518`), so neither board takes the other's
 image.
+
+![The K518's boot face](img/dial-k518-boot.png)
+![MOTOR & ESC on the K518, ARMED](img/dial-k518-motor-armed.png)
+![MOTOR & ESC on the K518, SAFE](img/dial-k518-motor-safe.png)
+![SERVO LIVE on the K518, ARMED](img/dial-k518-servo-live.png)
+![a list on the K518](img/dial-k518-navigation.png)
+![a value being set on the K518](img/dial-k518-value-set.png)
+![LINK LOST on the K518](img/dial-k518-link-lost.png)
+![the ended link on the K518](img/dial-k518-link-ended.png)
+![waiting for the panel on the K518](img/dial-k518-waiting.png)
+![no bound panel on the K518](img/dial-k518-bind.png)
+![a screen the knob does nothing on on the K518](img/dial-k518-other.png)
+![the update offered on the K518](img/dial-k518-update-ask.png)
+![the update coming in on the K518](img/dial-k518-update-send.png)
+![the switch-off warning on the K518](img/dial-k518-off-warn.png)
+![the switch-off choice on the K518](img/dial-k518-off-ask.png)
 
 M5Stack, Dial and Stamp-S3A are names of their owner and its products,
 Guition and JC3636K518C are names of their owner and its product, and

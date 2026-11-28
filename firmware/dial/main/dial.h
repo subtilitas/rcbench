@@ -4,8 +4,10 @@
  *
  * The board's pins, its INFO hardware value and its update kind are in
  * dial_board.h, by the board the image is built for.  The K518 build runs
- * the BLE peripheral, the console and the face task; dial_k518.c holds its
- * display, touch, input, buzzer and power calls, which do nothing yet.
+ * the BLE peripheral, the console, the face task and its display, which
+ * shows the reading faces and otherwise the boot face (dial_k518_lcd.c,
+ * dial_k518_screen.c); dial_k518.c holds its touch, input, buzzer and
+ * power calls, which do nothing yet.
  *
  * Tasks: the input task (dial_input.c) polls the encoder, the buttons and
  * the touch controller every 5ms and sends EVENT; the face task
@@ -111,6 +113,23 @@ void dial_lcd_flush_rect(const uint16_t *fb, int x, int y, int w, int h);
  * @param pct 0 to 100%
  */
 void dial_lcd_backlight(unsigned pct);
+
+/* --- dial_k518_lcd.c, the K518 build only --------------------------- */
+
+/** @brief The K518's frame, DK518_SIZE x DK518_SIZE RGB565 pixels in
+ *         PSRAM.  @return the frame; NULL without a display */
+gfx_color_t *dial_k518_frame(void);
+/** @brief Send the K518's whole frame.  @return true when every strip
+ *         went */
+bool dial_k518_send(void);
+/**
+ * @brief Draw the boot face into the frame and send it: with @p force,
+ *        or when the BLE name differs from that of the last boot face that
+ *        went whole.
+ * @param force draw and send whatever was shown
+ * @return true when it drew
+ */
+bool dial_k518_boot(bool force);
 
 /* --- dial_touch.c ---------------------------------------------------- */
 
