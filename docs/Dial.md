@@ -77,7 +77,7 @@ INFO names hardware 2 (`DK_HW_K518`); its image names update kind 5
 | Supply reading | the rail behind the power path through a 10k/10k divider | GPIO1, ADC1 (analog-to-digital converter 1) channel 0 |
 | Also on the board | an ESP32-U4WDH with its factory audio image, a DAC (digital-to-analog converter) to a 3.5mm jack, microSD, a microphone | not used by rcbench |
 
-The image is 930,112 bytes, 29.6% of the 3,145,728-byte update slot. The
+The image is 930,992 bytes, 29.6% of the 3,145,728-byte update slot. The
 upper 8MB of the flash stay free. The cell's capacity, the TP4055's
 charge current and the board revision (V1.0 or V2.0) are unknown.
 

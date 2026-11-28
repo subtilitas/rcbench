@@ -80,7 +80,7 @@ des anderen.
 | Versorgungsmessung | die Schiene hinter dem Power-Pfad über einen 10k/10k-Teiler | GPIO1, ADC1 (Analog-Digital-Wandler 1) Kanal 0 |
 | Außerdem auf dem Board | ein ESP32-U4WDH mit seinem Audio-Image ab Werk, ein DAC (Digital-Analog-Wandler) an einer 3,5mm-Buchse, microSD, ein Mikrofon | von rcbench nicht benutzt |
 
-Das Image hat 930.112 Bytes, 29,6% des Update-Slots von 3.145.728 Bytes.
+Das Image hat 930.992 Bytes, 29,6% des Update-Slots von 3.145.728 Bytes.
 Die oberen 8MB des Flashs bleiben frei. Die Kapazität des Akkus, der
 Ladestrom des TP4055 und die Board-Revision (V1.0 oder V2.0) sind
 unbekannt.
