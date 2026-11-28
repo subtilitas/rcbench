@@ -119,6 +119,7 @@ TEST_CASE(every_fixed_model_shows_its_face)
         DIAL_FACE_READING, DIAL_FACE_LOST, DIAL_FACE_LOST, DIAL_FACE_WAITING,
         DIAL_FACE_BIND, DIAL_FACE_OTHER, DIAL_FACE_UPDATE, DIAL_FACE_UPDATE,
         DIAL_FACE_OFF_WARN, DIAL_FACE_OFF_ASK, DIAL_FACE_EMPTY,
+        DIAL_FACE_UPDATE,
     };
     dial_model_t m;
     dial_scene_t s;

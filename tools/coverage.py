@@ -592,6 +592,7 @@ TRACKED = [
     "shared/devupd/devupd.c",
     "shared/devupd/devupd_client.c",
     "shared/devupd/devimg.c",
+    "shared/relsig/relsig.c",
     "shared/webaccess/wa_session.c",
     "shared/webaccess/wa_fetch.c",
     "shared/webaccess/wa_text.c",

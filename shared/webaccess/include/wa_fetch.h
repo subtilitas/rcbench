@@ -394,6 +394,10 @@ typedef struct {
     uint8_t     *buf;
     uint32_t     bytes;   /**< DEVICE, STAGED: the file's length */
     fw_sig_t     sig;     /**< DEVICE, STAGED: the verdict on its .sig */
+    uint8_t      sig_der[FW_SIG_MAX]; /**< DEVICE, STAGED: the .sig's
+                                           bytes, for the device's own
+                                           check (bleota protocol 2) */
+    uint8_t      sig_n;   /**< their count; 0 for none or one out of form */
 } wa_fetch_res_t;
 
 /**

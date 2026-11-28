@@ -64,11 +64,19 @@ static uint32_t get32(const uint8_t *p)
 size_t bleota_begin_encode(uint8_t kind, uint32_t size, const uint16_t ver[3],
                            uint8_t flags, uint8_t *out)
 {
+    return bleota_begin_encode_proto(BLEOTA_PROTO, kind, size, ver, flags,
+                                     out);
+}
+
+size_t bleota_begin_encode_proto(uint8_t proto, uint8_t kind, uint32_t size,
+                                 const uint16_t ver[3], uint8_t flags,
+                                 uint8_t *out)
+{
     if (ver == NULL || out == NULL) {
         return 0u;
     }
     out[0] = BLEOTA_OP_BEGIN;
-    out[1] = BLEOTA_PROTO;
+    out[1] = proto;
     out[2] = kind;
     out[3] = flags;
     put32(out + 4, size);
@@ -86,6 +94,18 @@ size_t bleota_hash_encode(const uint8_t sha[32], uint8_t part, uint8_t *out)
     out[0] = BLEOTA_OP_HASH;
     out[1] = part;
     memcpy(out + 2, sha + (size_t)16u * part, 16u);
+    return BLEOTA_LEN_HASH;
+}
+
+size_t bleota_sig_encode(const uint8_t sig[BLEOTA_SIG_LEN], uint8_t quarter,
+                         uint8_t *out)
+{
+    if (sig == NULL || out == NULL || quarter > 3u) {
+        return 0u;
+    }
+    out[0] = BLEOTA_OP_HASH;
+    out[1] = (uint8_t)(BLEOTA_HASH_PARTS + quarter);
+    memcpy(out + 2, sig + (size_t)16u * quarter, 16u);
     return BLEOTA_LEN_HASH;
 }
 
@@ -120,7 +140,7 @@ bool bleota_ctrl_decode(const uint8_t *b, size_t n, bleota_ctrl_t *out)
         out->ver[2] = get16(b + 12);
         return true;
     case BLEOTA_OP_HASH:
-        if (n != BLEOTA_LEN_HASH || b[1] > 1u) {
+        if (n != BLEOTA_LEN_HASH || b[1] >= BLEOTA_PARTS_MAX) {
             return false;
         }
         out->part = b[1];
@@ -208,8 +228,13 @@ uint8_t bleota_head_check(const uint8_t *b, size_t n, uint16_t chip,
         return BLEOTA_E_KIND;
     }
     const uint8_t *r = b + BLEOTA_HEAD_ROLE;
-    if (get32(r) != BLEOTA_ROLE_MAGIC || r[5] != BLEOTA_PROTO) {
+    if (get32(r) != BLEOTA_ROLE_MAGIC || r[5] != BLEOTA_ROLE_PROTO) {
         return BLEOTA_E_IMAGE;
     }
     return r[4] == kind ? (uint8_t)BLEOTA_OK : (uint8_t)BLEOTA_E_KIND;
+}
+
+uint8_t bleota_head_epoch(const uint8_t *b, size_t n)
+{
+    return b == NULL || n < BLEOTA_HEAD_LEN ? 0u : b[BLEOTA_HEAD_ROLE + 6u];
 }

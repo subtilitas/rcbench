@@ -87,7 +87,9 @@ static void send_begin(devsim_t *t, uint8_t kind, uint32_t size,
 }
 
 /**
- * @brief Send both HASH halves of @p sha.
+ * @brief Send both HASH halves of @p sha, then the four quarters of a
+ *        signature of zeros: protocol 2's six parts.  The tests' node
+ *        needs no signature and takes them unread.
  * @param t   the device
  * @param sha the SHA-256
  * @param now the clock
@@ -95,8 +97,13 @@ static void send_begin(devsim_t *t, uint8_t kind, uint32_t size,
 static void send_hash(devsim_t *t, const uint8_t sha[32], uint32_t now)
 {
     uint8_t b[BLEOTA_LEN_HASH];
+    static const uint8_t sig[BLEOTA_SIG_LEN];
     for (uint8_t p = 0; p < 2u; ++p) {
         (void)bleota_hash_encode(sha, p, b);
+        bleota_dev_ctrl(&t->d, b, sizeof b, now);
+    }
+    for (uint8_t q = 0; q < 4u; ++q) {
+        (void)bleota_sig_encode(sig, q, b);
         bleota_dev_ctrl(&t->d, b, sizeof b, now);
     }
 }
@@ -260,10 +267,8 @@ TEST_CASE(the_hash_halves_open_the_window_and_writes_out_of_order_fail)
     uint8_t sha[32] = { 1 };
     dev_init(&t, BLEOTA_CONFIRM_PRESS);
     send_hash(&t, sha, 0u);
-    CHECK(next_status(&t, &s));
-    CHECK_EQ(s.code, BLEOTA_E_STATE);
-    CHECK(next_status(&t, &s));
-    CHECK_EQ(s.code, BLEOTA_E_STATE);
+    /* Parts with no transfer standing are dropped: after a refused BEGIN
+     * its FAIL is the answer, and it stays the only one. */
     CHECK(!next_status(&t, &s));
     const uint16_t v[3] = { 1u, 0u, 0u };
     send_begin(&t, BLEOTA_KIND_NODE_POWER, 100u, v, 0u, 0u);
@@ -274,6 +279,14 @@ TEST_CASE(the_hash_halves_open_the_window_and_writes_out_of_order_fail)
     CHECK_EQ(t.d.st, BLEOTA_DEV_HASH);
     (void)bleota_hash_encode(sha, 0u, b);
     bleota_dev_ctrl(&t.d, b, sizeof b, 3u);
+    /* Protocol 2: the signature's quarters, in any order, end the parts;
+     * the tests' node needs no signature and asks at once. */
+    static const uint8_t sig[BLEOTA_SIG_LEN];
+    for (uint8_t q = 4u; q-- > 0u;) {
+        CHECK_EQ(t.d.st, BLEOTA_DEV_HASH);
+        (void)bleota_sig_encode(sig, q, b);
+        bleota_dev_ctrl(&t.d, b, sizeof b, 3u);
+    }
     CHECK_EQ(t.d.st, BLEOTA_DEV_CONFIRM);
     CHECK(next_status(&t, &s));
     CHECK_EQ(s.ev, BLEOTA_EV_WAIT);

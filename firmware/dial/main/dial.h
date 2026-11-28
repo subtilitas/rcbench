@@ -186,6 +186,19 @@ bool dial_touch_read(uint8_t *x, uint8_t *y);
  */
 dk518_read_t dial_k518_touch(uint16_t *x, uint16_t *y);
 
+/* --- dial_sig.c ------------------------------------------------------ */
+
+/**
+ * @brief Whether @p sig, r then s, is a signature of @p sha under the
+ *        release key compiled into this image
+ *        (firmware/panel/main/keys/release_signing_pub.pem): the Dial's
+ *        verifier for devota_need_sig().
+ * @param sha the SHA-256 that was signed
+ * @param sig the signature, BLEOTA_SIG_LEN bytes
+ * @return true when it verifies
+ */
+bool dial_sig_verify(const uint8_t sha[32], const uint8_t sig[64]);
+
 /* --- dial_input.c ---------------------------------------------------- */
 
 /** @brief Set up the encoder, the buttons and the mark pin, and start the

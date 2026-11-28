@@ -17,20 +17,34 @@
  * BLEOTA_CHUNK_MAX bytes of image.  All fields are little-endian.
  *
  * A transfer: BEGIN (kind, size, version, flags), then the image's
- * SHA-256 in two HASH writes.  The device checks the kind, the size
- * against its slot and the version, then asks for a physical confirmation
- * and notifies WAIT; a confirmation opens the slot and notifies CREDIT.
+ * SHA-256 in two HASH writes (parts 0 and 1) and, in protocol 2, its
+ * release signature in four more (parts 2 to 5): ECDSA (Elliptic Curve
+ * Digital Signature Algorithm) P-256 over the SHA-256 of the image file,
+ * as raw r then s, 32 bytes each, big-endian.  The device checks the kind,
+ * the size against its slot and the version; a device that needs the
+ * signature (bleota_dev_cfg_t.need_sig) verifies it over the SHA-256 given
+ * (check 1), then asks for a physical confirmation and notifies WAIT; a
+ * confirmation opens the slot and notifies CREDIT.
  * The central sends chunks up to the CREDIT's limit; the device notifies
  * CREDIT as it writes, and at once with its next offset when a chunk
  * skipped ahead (a chunk was lost).  END: the device compares the SHA-256
- * of what it wrote, sets the boot slot, notifies DONE and restarts.  Any
+ * of what it wrote with the one given (BLEOTA_E_SHA when they differ); a
+ * device that needs the signature then verifies it again, over the
+ * SHA-256 it computed (check 2); it sets the boot slot, notifies DONE and
+ * restarts.  Any
  * refusal, timeout or loss notifies FAIL with a code where the link
  * stands, and the device keeps the slot it runs.
  *
- * No pairing and no signature: integrity is the SHA-256 the central
- * gives, and the physical confirmation on the device is what keeps
- * another central in range from starting an update (README.md,
- * "Security").
+ * No pairing.  On a device that needs the signature, only an image signed
+ * with the release key installs; on one that does not (the nodes),
+ * integrity is the SHA-256 the central gives.  The physical confirmation
+ * on the device is what keeps another central in range from starting an
+ * update (README.md, "Security").
+ * Protocol 1 has no signature.  A device of this version takes protocol 1
+ * and 2, but refuses protocol 1 with BLEOTA_E_SIG when it needs the
+ * signature; a device of protocol 1 refuses protocol 2 with
+ * BLEOTA_E_PROTO, after which the central may start once more in
+ * protocol 1 (README.md, "Protocol 2").
  *
  * Pure C: no clock read, no I/O, no heap.  Times are unsigned differences
  * of a free-running 32-bit ms clock.
@@ -48,8 +62,25 @@
 extern "C" {
 #endif
 
-/** @brief The protocol's version, BEGIN's second byte. */
-#define BLEOTA_PROTO 1u
+/** @brief The protocol's version, BEGIN's second byte: 2, with the
+ *         signature in HASH parts 2 to 5. */
+#define BLEOTA_PROTO 2u
+/** @brief The first protocol, without the signature: what a device of
+ *         protocol 1 takes. */
+#define BLEOTA_PROTO_1 1u
+/** @brief The image head's format, bleota_role_t.proto.  It stays 1 with
+ *         every protocol version, so a device of protocol 1 takes an image
+ *         built for protocol 2 (bleota_head_check()). */
+#define BLEOTA_ROLE_PROTO 1u
+/** @brief The image head's security epoch, bleota_role_t.epoch: 1 for an
+ *         image whose firmware checks release signatures.  Images of
+ *         releases before the check carry 0 there (the byte was reserved
+ *         and 0), and a device that needs the signature refuses them with
+ *         BLEOTA_E_EPOCH, so a signed older image cannot turn the check
+ *         off.  An image at the epoch installs whatever its version: a
+ *         downgrade to another release with the check stays possible.
+ *         A device of protocol 1 ignores the byte. */
+#define BLEOTA_SIG_EPOCH 1u
 
 /** @brief The 128-bit UUIDs (universally unique identifiers), base
  *         706E340C-76DB-4FB2-AEF1-A89F7CBDF9xx.  BLEOTA_UUID_LE(xx) is the
@@ -91,6 +122,10 @@ extern const uint8_t bleota_uuid_data[16];
 /** @brief Control write lengths. @{ */
 #define BLEOTA_LEN_BEGIN 14u /**< BEGIN */
 #define BLEOTA_LEN_HASH  18u /**< HASH: op, part, 16 bytes */
+#define BLEOTA_HASH_PARTS 2u /**< HASH parts of the SHA-256: 0 and 1 */
+#define BLEOTA_PARTS_MAX  6u /**< HASH parts in protocol 2: the SHA-256,
+                                  then the signature in parts 2 to 5 */
+#define BLEOTA_SIG_LEN   64u /**< the signature: r then s, 32 bytes each */
 #define BLEOTA_LEN_OP     1u /**< END, ABORT, POLL */
 #define BLEOTA_CTRL_MAX  18u /**< the longest control write */
 /** @} */
@@ -138,7 +173,17 @@ extern const uint8_t bleota_uuid_data[16];
 #define BLEOTA_E_ABORTED   13u /**< the central's ABORT */
 #define BLEOTA_E_IMAGE     14u /**< the device's own check refused the
                                     image */
-#define BLEOTA_E_MAX       14u /**< the highest code */
+#define BLEOTA_E_SIG       15u /**< no release signature, or one that does
+                                    not verify: over the SHA-256 given
+                                    (check 1) or over the SHA-256 of what
+                                    was written (check 2) */
+#define BLEOTA_E_EPOCH     16u /**< a device that needs the signature and
+                                    an image whose role record names a
+                                    security epoch below BLEOTA_SIG_EPOCH:
+                                    a release without the check, which
+                                    would install without one from then
+                                    on */
+#define BLEOTA_E_MAX       16u /**< the highest code */
 /** @} */
 
 /** @brief A chunk: its offset, then the image's bytes. @{ */
@@ -172,7 +217,9 @@ typedef struct {
     uint8_t  flags;     /**< BEGIN: BLEOTA_F_* */
     uint32_t size;      /**< BEGIN: the image, bytes */
     uint16_t ver[3];    /**< BEGIN: MAJOR, MINOR, PATCH */
-    uint8_t  part;      /**< HASH: 0 the first 16 bytes, 1 the last */
+    uint8_t  part;      /**< HASH: 0 the SHA-256's first 16 bytes, 1 its
+                             last; 2 to 5 the signature's 16-byte
+                             quarters */
     uint8_t  half[16];  /**< HASH: those bytes */
 } bleota_ctrl_t;
 
@@ -198,6 +245,21 @@ size_t bleota_begin_encode(uint8_t kind, uint32_t size, const uint16_t ver[3],
                            uint8_t flags, uint8_t *out);
 
 /**
+ * @brief Encode BEGIN in a given protocol version: BLEOTA_PROTO, or
+ *        BLEOTA_PROTO_1 for a device of protocol 1.
+ * @param proto the version
+ * @param kind  BLEOTA_KIND_*
+ * @param size  the image, bytes
+ * @param ver   MAJOR, MINOR, PATCH
+ * @param flags BLEOTA_F_*
+ * @param out   BLEOTA_LEN_BEGIN bytes
+ * @return BLEOTA_LEN_BEGIN, or 0 for NULL
+ */
+size_t bleota_begin_encode_proto(uint8_t proto, uint8_t kind, uint32_t size,
+                                 const uint16_t ver[3], uint8_t flags,
+                                 uint8_t *out);
+
+/**
  * @brief Encode one half of the SHA-256.
  * @param sha  the 32 bytes
  * @param part 0 or 1
@@ -205,6 +267,16 @@ size_t bleota_begin_encode(uint8_t kind, uint32_t size, const uint16_t ver[3],
  * @return BLEOTA_LEN_HASH, or 0 for NULL or a part over 1
  */
 size_t bleota_hash_encode(const uint8_t sha[32], uint8_t part, uint8_t *out);
+
+/**
+ * @brief Encode one quarter of the signature: HASH part 2 + @p quarter.
+ * @param sig     the BLEOTA_SIG_LEN bytes, r then s
+ * @param quarter 0 to 3
+ * @param out     BLEOTA_LEN_HASH bytes
+ * @return BLEOTA_LEN_HASH, or 0 for NULL or a quarter over 3
+ */
+size_t bleota_sig_encode(const uint8_t sig[BLEOTA_SIG_LEN], uint8_t quarter,
+                         uint8_t *out);
 
 /**
  * @brief Encode END, ABORT or POLL.
@@ -290,8 +362,9 @@ bool bleota_chunk_decode(const uint8_t *b, size_t n, uint32_t *off,
 typedef struct {
     uint32_t magic;       /**< BLEOTA_ROLE_MAGIC */
     uint8_t  kind;        /**< BLEOTA_KIND_* */
-    uint8_t  proto;       /**< BLEOTA_PROTO */
-    uint8_t  reserved[2]; /**< 0 */
+    uint8_t  proto;       /**< BLEOTA_ROLE_PROTO */
+    uint8_t  epoch;       /**< BLEOTA_SIG_EPOCH; 0 before the check */
+    uint8_t  reserved;    /**< 0 */
 } bleota_role_t;
 
 /**
@@ -301,10 +374,19 @@ typedef struct {
  * @param chip the device's ESP chip ID
  * @param kind the device's BLEOTA_KIND_*
  * @return BLEOTA_OK; BLEOTA_E_KIND for another chip or another role;
- *         BLEOTA_E_IMAGE for a head that is no application with a role
+ *         BLEOTA_E_IMAGE for a head that is no application with a role of
+ *         format BLEOTA_ROLE_PROTO
  */
 uint8_t bleota_head_check(const uint8_t *b, size_t n, uint16_t chip,
                           uint8_t kind);
+
+/**
+ * @brief The security epoch of an image's role record (bleota_role_t.epoch).
+ * @param b the image's first bytes
+ * @param n their count
+ * @return the epoch; 0 for fewer than BLEOTA_HEAD_LEN bytes
+ */
+uint8_t bleota_head_epoch(const uint8_t *b, size_t n);
 
 /* ---------------------------------------------------------- the device */
 
@@ -322,17 +404,26 @@ typedef struct {
     uint32_t slot;    /**< the slot an image goes into, bytes */
     uint16_t ver[3];  /**< the version it runs */
     uint16_t chip;    /**< its ESP chip ID, for bleota_head_check() */
+    bool     need_sig; /**< only a signed image installs: protocol 1 is
+                            refused with BLEOTA_E_SIG, and the signature is
+                            verified twice (BLEOTA_DO_SIG) */
 } bleota_dev_cfg_t;
 
 /** @brief Where a device's transfer stands. */
 typedef enum {
     BLEOTA_DEV_IDLE = 0, /**< none */
-    BLEOTA_DEV_HASH,     /**< BEGIN taken: the SHA-256's halves due */
+    BLEOTA_DEV_HASH,     /**< BEGIN taken: the HASH parts due */
+    BLEOTA_DEV_SIG,      /**< every part taken: check 1, the signature
+                              over the SHA-256 given, is due */
     BLEOTA_DEV_CONFIRM,  /**< waiting for the confirmation */
     BLEOTA_DEV_OPEN,     /**< confirmed: the slot is being opened */
     BLEOTA_DEV_RECV,     /**< taking chunks */
     BLEOTA_DEV_VERIFY,   /**< every byte written: the SHA-256 is due */
-    BLEOTA_DEV_INSTALL,  /**< the SHA-256 matches: the boot slot is set */
+    BLEOTA_DEV_SIG_END,  /**< the SHA-256 of what was written matches
+                              BEGIN's: check 2, the signature over it, is
+                              due */
+    BLEOTA_DEV_INSTALL,  /**< the SHA-256 matches, and the signature where
+                              one is needed: the boot slot is set */
     BLEOTA_DEV_DONE,     /**< installed: the restart is due */
 } bleota_dev_state_t;
 
@@ -346,6 +437,9 @@ typedef enum {
                              only once the image's head passed
                              bleota_head_check() */
     BLEOTA_DO_VERIFY,   /**< finish the SHA-256, bleota_dev_verify() */
+    BLEOTA_DO_SIG,      /**< verify the signature of bleota_dev_sig_job()
+                             over its SHA-256 with the release key,
+                             bleota_dev_sig() */
     BLEOTA_DO_INSTALL,  /**< check the image, set the boot slot,
                              bleota_dev_installed() */
     BLEOTA_DO_CLOSE,    /**< drop the open slot, bleota_dev_closed() */
@@ -361,11 +455,20 @@ typedef struct {
     bleota_dev_cfg_t cfg;   /**< what the device is */
     uint8_t  st;            /**< bleota_dev_state_t */
     uint8_t  code;          /**< the last FAIL's code, BLEOTA_OK before */
+    uint32_t fails;         /**< FAILs notified, counted: a refusal at
+                                 BEGIN included, which leaves the state
+                                 idle as it was */
     uint8_t  flags;         /**< BEGIN's flags */
-    uint8_t  halves;        /**< HASH parts taken: bit 0 and bit 1 */
+    uint8_t  proto;         /**< BEGIN's protocol version */
+    uint32_t gen;           /**< BEGINs taken, counted: the identity of the
+                                 transfer a BLEOTA_DO_SIG verdict is for */
+    uint8_t  halves;        /**< HASH parts taken: bit n for part n */
     uint32_t size;          /**< BEGIN's size */
     uint16_t ver[3];        /**< BEGIN's version */
     uint8_t  sha[32];       /**< the SHA-256 BEGIN's HASH writes gave */
+    uint8_t  sig[BLEOTA_SIG_LEN]; /**< the signature, HASH parts 2 to 5 */
+    uint8_t  digest[32];    /**< the SHA-256 of what was written, from
+                                 bleota_dev_verify(): check 2's input */
     uint32_t t;             /**< the state's start, or the last write */
     bool     open;          /**< the slot is open, or being opened: a CLOSE
                                  is due on a fail */
@@ -509,14 +612,46 @@ uint32_t bleota_dev_take(bleota_dev_t *d, uint8_t *out, uint32_t max);
 void bleota_dev_written(bleota_dev_t *d, bool ok, uint32_t now);
 
 /**
- * @brief Compare the SHA-256 of every byte written with BEGIN's.
+ * @brief The SHA-256 of every byte written, compared with BEGIN's: a
+ *        mismatch ends the transfer with BLEOTA_E_SHA.  On a match a
+ *        device that needs the signature asks for check 2 over this
+ *        SHA-256 (BLEOTA_DEV_SIG_END); any other is due to install.
  * @param d      the device
  * @param digest the SHA-256 of what was written
  * @param now    the clock
- * @return true when they are equal: the install is due
+ * @return true when they are equal and the install is due; false for a
+ *         mismatch and while check 2 is due
  */
 bool bleota_dev_verify(bleota_dev_t *d, const uint8_t digest[32],
                        uint32_t now);
+
+/**
+ * @brief What BLEOTA_DO_SIG verifies: the signature from HASH parts 2 to
+ *        5, and the SHA-256 it must sign.  Check 1 (BLEOTA_DEV_SIG) names
+ *        the SHA-256 the central gave; check 2 (BLEOTA_DEV_SIG_END) the
+ *        one the device computed of what it wrote, never the central's.
+ * @param d   the device
+ * @param sha receives the SHA-256
+ * @param sig receives the signature, r then s
+ * @param gen receives the transfer's identity, for bleota_dev_sig()
+ * @return false outside BLEOTA_DEV_SIG and BLEOTA_DEV_SIG_END
+ */
+bool bleota_dev_sig_job(const bleota_dev_t *d, uint8_t sha[32],
+                        uint8_t sig[BLEOTA_SIG_LEN], uint32_t *gen);
+
+/**
+ * @brief The verdict of BLEOTA_DO_SIG.  Check 1: a valid signature asks
+ *        for the confirmation.  Check 2: a valid one goes on to the
+ *        install.  An invalid one ends the transfer with BLEOTA_E_SIG
+ *        either way.  The caller verifies outside its lock, so the
+ *        transfer may have ended, and another begun, meanwhile: a verdict
+ *        whose @p gen is not the transfer's standing one is dropped.
+ * @param d   the device
+ * @param ok  the signature verifies under the release key
+ * @param gen the transfer it is for, from bleota_dev_sig_job()
+ * @param now the clock
+ */
+void bleota_dev_sig(bleota_dev_t *d, bool ok, uint32_t gen, uint32_t now);
 
 /**
  * @brief The image is installed and the boot slot set, or not.

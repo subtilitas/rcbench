@@ -92,31 +92,49 @@ bool devupd_start(devupd_t *e, const devupd_image_t *im, uint32_t now)
         return true;
     }
     e->im = *im;
+    e->proto = BLEOTA_PROTO;
     go(e, DEVUPD_LINK, now);
     return true;
 }
 
 /**
- * @brief The link is up in DEVUPD_LINK: queue BEGIN and the SHA-256's two
- *        halves.
+ * @brief Queue BEGIN in e->proto, the SHA-256's two halves and, in
+ *        protocol 2, the signature's four quarters.
+ * @param e the transfer
+ */
+static void queue_begin(devupd_t *e)
+{
+    static const uint8_t none[BLEOTA_SIG_LEN];
+    uint8_t b[BLEOTA_CTRL_MAX];
+    const uint16_t ver[3] = { e->im.version.major, e->im.version.minor,
+                              e->im.version.patch };
+    size_t n = bleota_begin_encode_proto(
+        e->proto, e->im.kind, e->im.size, ver,
+        e->im.reinstall ? BLEOTA_F_REINSTALL : 0u, b);
+    queue(e, b, n);
+    for (uint8_t p = 0; p < BLEOTA_HASH_PARTS; ++p) {
+        n = bleota_hash_encode(e->im.sha, p, b);
+        queue(e, b, n);
+    }
+    if (e->proto == BLEOTA_PROTO_1) {
+        return;
+    }
+    for (uint8_t q = 0; q < 4u; ++q) {
+        n = bleota_sig_encode(e->im.has_sig ? e->im.sig : none, q, b);
+        queue(e, b, n);
+    }
+}
+
+/**
+ * @brief The link is up in DEVUPD_LINK: queue BEGIN and its HASH parts.
  * @param e   the transfer
  * @param mtu the agreed MTU
  * @param now the clock
  */
 static void begin(devupd_t *e, uint16_t mtu, uint32_t now)
 {
-    uint8_t b[BLEOTA_CTRL_MAX];
-    const uint16_t ver[3] = { e->im.version.major, e->im.version.minor,
-                              e->im.version.patch };
     e->chunk = bleota_chunk_bytes(mtu);
-    size_t n = bleota_begin_encode(e->im.kind, e->im.size, ver,
-                                   e->im.reinstall ? BLEOTA_F_REINSTALL : 0u,
-                                   b);
-    queue(e, b, n);
-    n = bleota_hash_encode(e->im.sha, 0u, b);
-    queue(e, b, n);
-    n = bleota_hash_encode(e->im.sha, 1u, b);
-    queue(e, b, n);
+    queue_begin(e);
     go(e, DEVUPD_BEGIN, now);
 }
 
@@ -227,6 +245,20 @@ void devupd_notify(devupd_t *e, const uint8_t *b, size_t n, uint32_t now)
         }
         break;
     case BLEOTA_EV_FAIL:
+        if (e->phase == DEVUPD_BEGIN && e->retry_due) {
+            break; /* an answer to a write after the refused BEGIN */
+        }
+        if (e->phase == DEVUPD_BEGIN && s.code == BLEOTA_E_PROTO
+            && e->proto == BLEOTA_PROTO && !e->fell_back) {
+            /* A device of protocol 1: once more in protocol 1, after its
+             * answers to the HASH writes that followed. */
+            e->fell_back = true;
+            e->retry_due = true;
+            e->proto = BLEOTA_PROTO_1;
+            e->q_n = 0u;
+            e->t = now;
+            break;
+        }
         if (e->phase != DEVUPD_RESTART) {
             fail(e, DEVUPD_E_DEVICE, s.code, now);
         }
@@ -257,7 +289,15 @@ static void times(devupd_t *e, uint32_t now)
         }
         break;
     case DEVUPD_BEGIN:
-        /* The answer is due once the three writes are taken. */
+        if (e->retry_due) {
+            if (!e->ctrl_busy && age >= DEVUPD_RETRY_MS) {
+                e->retry_due = false;
+                queue_begin(e);
+                e->t = now;
+            }
+            break;
+        }
+        /* The answer is due once BEGIN's writes are taken. */
         if (e->q_n == 0u && !e->ctrl_busy && age >= DEVUPD_ANSWER_MS) {
             fail(e, DEVUPD_E_TIMEOUT, 0u, now);
         }

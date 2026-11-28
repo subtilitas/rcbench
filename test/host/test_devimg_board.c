@@ -49,7 +49,7 @@ static uint32_t make(uint16_t chip, const char *project, const char *version,
     memset(role, 0, sizeof(role));
     fw_put32(role, BLEOTA_ROLE_MAGIC);
     role[4] = kind;
-    role[5] = BLEOTA_PROTO;
+    role[5] = BLEOTA_ROLE_PROTO;
     uint8_t x = 0u;
     for (unsigned i = 0; i < BLEOTA_ROLE_LEN; ++i) {
         x ^= (uint8_t)(g_img[BLEOTA_HEAD_ROLE + i] ^ role[i]);

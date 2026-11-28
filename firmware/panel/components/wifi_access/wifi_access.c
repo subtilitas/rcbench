@@ -146,6 +146,8 @@ static struct {
     uint8_t        *dev_buf;      /**< DEVICE: a file fetched, not taken */
     uint32_t        dev_bytes;    /**< its length */
     fw_sig_t        dev_sig;      /**< the verdict on its .sig */
+    uint8_t         dev_der[FW_SIG_MAX]; /**< the .sig's bytes */
+    uint8_t         dev_der_n;    /**< their count, 0 for none */
     uint32_t        dev_gen;      /**< the job that fetched it */
 
     /* Set once. */
@@ -1173,6 +1175,8 @@ static void fetch_task(void *arg)
             s.dev_buf = res.buf;
             s.dev_bytes = res.bytes;
             s.dev_sig = res.sig;
+            memcpy(s.dev_der, res.sig_der, sizeof(s.dev_der));
+            s.dev_der_n = res.sig_n;
             s.dev_gen = gen;
             res.buf = old;
         }
@@ -2072,7 +2076,8 @@ wa_got_t wifi_access_fetch_dev(uint8_t asset, fw_version_t rel,
 }
 
 bool wifi_access_dev_take(uint32_t gen, uint8_t **buf, uint32_t *bytes,
-                          fw_sig_t *sig)
+                          fw_sig_t *sig, uint8_t der[FW_SIG_MAX],
+                          uint8_t *der_n)
 {
     lock();
     const bool ok = s.dev_buf != NULL && s.dev_gen == gen;
@@ -2080,6 +2085,8 @@ bool wifi_access_dev_take(uint32_t gen, uint8_t **buf, uint32_t *bytes,
         *buf = s.dev_buf;
         *bytes = s.dev_bytes;
         *sig = s.dev_sig;
+        memcpy(der, s.dev_der, FW_SIG_MAX);
+        *der_n = s.dev_der_n;
         s.dev_buf = NULL;
     }
     unlock();

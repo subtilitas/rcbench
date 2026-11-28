@@ -117,6 +117,12 @@ typedef struct {
 #define DIAL_UPD_ASK  1u /**< offered: a press accepts, a hold refuses */
 #define DIAL_UPD_SEND 2u /**< accepted: the image comes in */
 #define DIAL_UPD_DONE 3u /**< installed: the Dial restarts */
+#define DIAL_UPD_BADSIG 4u /**< refused for its release signature
+                                (BLEOTA_E_SIG): the running image
+                                stays;
+                                shown DIAL_UPD_BADSIG_MS */
+/** @brief How long the signature's refusal stays on the Dial, ms. */
+#define DIAL_UPD_BADSIG_MS 5000u
 /** @} */
 
 /** @brief Where the switch-off on the screen button stands

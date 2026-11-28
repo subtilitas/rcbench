@@ -451,6 +451,16 @@ static void update(dial_scene_t *s, const dk_face_t *f,
              (unsigned)v->upd_to[0], (unsigned)v->upd_to[1],
              (unsigned)v->upd_to[2]);
     block(s, 0, line, 92, DIAL_FONT_SMALL, UI_C_TEXT_DIM, 1, DIAL_B_TEXT);
+    if (v->upd == DIAL_UPD_BADSIG) {
+        /* The image's release signature did not verify: refused, and the
+         * Dial keeps the image it runs. */
+        block(s, 1, DF(DIAL_UPD_SIG), 124, DIAL_FONT_MID, UI_C_DANGER, 1,
+              DIAL_B_TEXT);
+        block(s, 2, DF(DIAL_UPD_SIG_REFUSED), 150, DIAL_FONT_MID,
+              UI_C_DANGER, 1, DIAL_B_TEXT);
+        hints(s, DF(DIAL_UPD_SIG_KEPT), NULL, UI_C_TEXT);
+        return;
+    }
     if (v->upd == DIAL_UPD_ASK) {
         block(s, 1, v->touch_press ? DF(DIAL_UPD_TAP) : DF(DIAL_UPD_PRESS),
               128, DIAL_FONT_MID, UI_C_ACCENT, 2, DIAL_B_TEXT);

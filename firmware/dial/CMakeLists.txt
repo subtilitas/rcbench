@@ -6,7 +6,8 @@ cmake_minimum_required(VERSION 3.16)
 
 # The bench's rasteriser, the Dial's faces, the interface's words, the
 # knob protocol, and the firmware update over Bluetooth LE (protocols/bleota
-# and its device end, firmware/devota) are components from here; each one's CMakeLists registers
+# and its device end, firmware/devota, with the release signature's check,
+# shared/relsig) are components from here; each one's CMakeLists registers
 # an IDF component under ESP_PLATFORM.
 set(EXTRA_COMPONENT_DIRS
     "${CMAKE_CURRENT_LIST_DIR}/../../shared/gfx"
@@ -14,6 +15,7 @@ set(EXTRA_COMPONENT_DIRS
     "${CMAKE_CURRENT_LIST_DIR}/../../shared/text"
     "${CMAKE_CURRENT_LIST_DIR}/../../protocols/dialknob"
     "${CMAKE_CURRENT_LIST_DIR}/../../protocols/bleota"
+    "${CMAKE_CURRENT_LIST_DIR}/../../shared/relsig"
     "${CMAKE_CURRENT_LIST_DIR}/../devota")
 
 # The application's version is the bench's: MAJOR.MINOR.PATCH from the one

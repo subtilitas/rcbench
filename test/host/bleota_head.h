@@ -50,7 +50,19 @@ static inline void test_head_write(uint8_t *img, uint16_t chip, uint8_t kind)
     test_head_put32(img + BLEOTA_HEAD_DESC, BLEOTA_DESC_MAGIC);
     test_head_put32(img + BLEOTA_HEAD_ROLE, BLEOTA_ROLE_MAGIC);
     img[BLEOTA_HEAD_ROLE + 4u] = kind;
-    img[BLEOTA_HEAD_ROLE + 5u] = BLEOTA_PROTO;
+    img[BLEOTA_HEAD_ROLE + 5u] = BLEOTA_ROLE_PROTO;
+    img[BLEOTA_HEAD_ROLE + 6u] = BLEOTA_SIG_EPOCH;
+}
+
+/**
+ * @brief Set the role record's security epoch of a head test_head_write()
+ *        wrote: 0 is an image of a release without the signature check.
+ * @param img   the image
+ * @param epoch the epoch
+ */
+static inline void test_head_epoch(uint8_t *img, uint8_t epoch)
+{
+    img[BLEOTA_HEAD_ROLE + 6u] = epoch;
 }
 
 #endif

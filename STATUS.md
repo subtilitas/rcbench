@@ -1617,7 +1617,9 @@ progress, the node rows' HOLD BOOT 1s ON THE NODE, one press at a time
 device that answers the gap mark at one offset, an abort in every phase
 that waits through the install from END on, and the settle of an unknown
 install read from its own device and reported before a second device's
-start (`test_devupd`); CANCEL UPDATE as a tap before END and grey from
+start (`test_devupd`); protocol 2's release signature in HASH parts 2 to
+5, a refused signature without a fallback, and the one fallback to
+protocol 1 for an older device (`test_devupd_sig`); CANCEL UPDATE as a tap before END and grey from
 END on (`test_upd_dev`); UPDATES' step model:
 every IOmcu section state, C6 row and reason, and device row with
 not bound, bound and not connected, and connected mapped to one step
@@ -1988,7 +1990,7 @@ rcbench/
 
   shared/                 pure C: no ESP-IDF, no pico-sdk, no FreeRTOS types
     artwork/ gfx/ touch/ ui/ settings/ logfile/ link/ bench/ outputs/
-    safety/ servo/ can/ esc/ sense/ fwupdate/ webaccess/ text/ files/
+    safety/ servo/ can/ esc/ sense/ fwupdate/ relsig/ webaccess/ text/ files/
     clock/ vibe/ dial/ scanner/
 
   protocols/              one module per external interface: a pure C core,
@@ -2011,6 +2013,7 @@ rcbench/
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `files` · `sbus` | yes | | yes |
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` · `mstime` · `fwupdate` | yes | yes | yes |
 | `artwork` · `esc` · `webaccess` · `clock` | yes | | yes |
+| `relsig` | yes | | yes |
 | `ppm` · `i2c_txq` | | yes | yes |
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` · `passthru` | yes | yes | yes |
 | `escwire` · `openyge` | yes | yes | yes |
@@ -2050,7 +2053,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 724 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 727 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -2180,7 +2183,7 @@ The host suite is 724 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
 `test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_rcnode_cfg`, `test_node_policy`, `test_node_pwr_sens`, `test_node_store`, `test_node_scan`, `test_node_setup`, `test_node_srv_policy`, `test_node_srv_poll`, `test_node_view`,
-`test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client`, `test_devimg`, `test_devimg_board`, `test_upd_dev`, `test_upd_fetch`,
+`test_bleota`, `test_bleota_dev`, `test_bleota_sig`, `test_relsig`, `test_devupd`, `test_devupd_sig`, `test_devupd_client`, `test_devimg`, `test_devimg_board`, `test_upd_dev`, `test_upd_fetch`,
 `test_upd_wizard`, `test_upd_wizard_map`, `test_upd_wiz_view`, `test_label_bitmap`, `test_label_layout`,
 `test_lzlit`, `test_supvan_frame`, `test_supvan_page`, `test_supvan_job`, `test_supvan_job_ends`,
 `test_prn_job_vs_sv`, `test_prn_image`, `test_prn_tmpl`, `test_prn_parse`, `test_prn_job`, `test_prn_fuzz`,
@@ -2723,7 +2726,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-1218 committed screenshots to the current render, 609 in English and the same 609 in German, and `render_ui.py --fit` fails on a string that
+1222 committed screenshots to the current render, 611 in English and the same 611 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

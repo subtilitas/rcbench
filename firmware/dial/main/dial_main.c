@@ -74,7 +74,22 @@ static void view_read(dial_face_view_t *v, char *addr, uint32_t now)
     v->batt_empty = sup.empty;
     devota_view_t u;
     devota_view(&u);
-    v->upd = u.st == BLEOTA_DEV_IDLE ? DIAL_UPD_NONE
+    static uint32_t fails_seen;
+    static uint32_t sig_ms;
+    static bool sig_on;
+    if (u.fails != fails_seen) {
+        /* A FAIL went: a refused signature, or an image without the
+         * check, shows DIAL_UPD_BADSIG_MS. */
+        fails_seen = u.fails;
+        sig_on = u.code == BLEOTA_E_SIG || u.code == BLEOTA_E_EPOCH;
+        sig_ms = now;
+    }
+    if (sig_on
+        && (u.st != BLEOTA_DEV_IDLE || now - sig_ms >= DIAL_UPD_BADSIG_MS)) {
+        sig_on = false;
+    }
+    v->upd = sig_on ? DIAL_UPD_BADSIG
+             : u.st == BLEOTA_DEV_IDLE ? DIAL_UPD_NONE
              : u.st <= BLEOTA_DEV_CONFIRM ? DIAL_UPD_ASK
              : u.st == BLEOTA_DEV_DONE ? DIAL_UPD_DONE : DIAL_UPD_SEND;
     v->upd_secs = u.secs;

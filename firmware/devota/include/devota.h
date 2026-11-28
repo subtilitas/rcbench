@@ -65,7 +65,8 @@ extern "C" {
 #define DEVOTA_ROLE(k)                                                     \
     __attribute__((section(".rodata_custom_desc"), used))                  \
     const bleota_role_t devota_role = { BLEOTA_ROLE_MAGIC, (k),             \
-                                        BLEOTA_PROTO, { 0u, 0u } }
+                                        BLEOTA_ROLE_PROTO,                  \
+                                        BLEOTA_SIG_EPOCH, 0u }
 
 /** @brief The role DEVOTA_ROLE() defines. */
 extern const bleota_role_t devota_role;
@@ -85,6 +86,15 @@ typedef bool (*devota_key_fn)(void);
  */
 typedef bool (*devota_offer_key_fn)(uint32_t *offer);
 
+/**
+ * @brief The release signature's check, the image's own (the Dials pass
+ *        dial_sig_verify()): whether @p sig, r then s, is a signature of
+ *        @p sha under the release key.  A device without one checks no
+ *        signature and links no verifier.
+ */
+typedef bool (*devota_sig_fn)(const uint8_t sha[32],
+                              const uint8_t sig[BLEOTA_SIG_LEN]);
+
 /** @brief What the device's face or console shows of an update. */
 typedef struct {
     uint8_t  st;      /**< bleota_dev_state_t */
@@ -94,6 +104,8 @@ typedef struct {
     uint16_t from[3]; /**< the version running */
     uint16_t to[3];   /**< the version BEGIN names */
     uint32_t ends;    /**< transfers ended without an install, counted */
+    uint32_t fails;   /**< FAILs notified, counted (bleota_dev_t.fails):
+                           with code, the refusal the face shows */
     uint32_t offer;   /**< the confirmation's identity (bleota_dev_offer()),
                            as st was taken */
 } devota_view_t;
@@ -109,6 +121,16 @@ typedef struct {
  *         @p kind is not devota_role's; the device then takes no update
  */
 bool devota_start(uint8_t kind, uint8_t confirm, devota_key_fn key);
+
+/**
+ * @brief Install only images signed with the release key, verified by
+ *        @p fn (bleota_dev_cfg_t.need_sig): protocol 1 is refused, and the
+ *        signature is checked over BEGIN's SHA-256 before the question and
+ *        over the written image's after the compare.  Called once, before
+ *        devota_start(); a device that never calls it checks no signature.
+ * @param fn the verifier
+ */
+void devota_need_sig(devota_sig_fn fn);
 
 /**
  * @brief A central connected: the running image is marked valid when the

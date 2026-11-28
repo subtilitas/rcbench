@@ -467,6 +467,8 @@ ENGLISH_QUOTES = {
     ("LinkEsc-de.md", "RESULT"),
     ("LinkEsc-de.md", "RUN"),
     ("LinkEsc-de.md", "STOPPED"),
+    # The link's register name, not the Dial's SIGNATURE face line.
+    ("LinkEsc-de.md", "SIGNATURE"),
     ("LinkEsc-de.md", "SUPPLY"),
     ("LinkEsc-de.md", "TARGET"),
     ("LinkEsc-de.md", "TIMEOUT"),

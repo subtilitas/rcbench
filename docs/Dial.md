@@ -121,6 +121,7 @@ image.
 ![a screen the knob does nothing on on the K518](img/dial-k518-other.png)
 ![the update offered on the K518](img/dial-k518-update-ask.png)
 ![the update coming in on the K518](img/dial-k518-update-send.png)
+![a signature refused on the K518](img/dial-k518-update-sig.png)
 ![the switch-off warning on the K518](img/dial-k518-off-warn.png)
 ![the switch-off choice on the K518](img/dial-k518-off-ask.png)
 ![an empty cell on the K518](img/dial-k518-batt-empty.png)
@@ -310,10 +311,15 @@ it are done, its card holds the same hold
 1. The Dial is bound and linked, and the bench is SAFE. The row shows
    `Dial: 0.23.17. Release: 0.23.18.` and `HOLD 2s TO UPDATE THE DIAL`.
 2. The 2s hold ends the Dial's knob link. The panel connects to the Dial's
-   update service and sends BEGIN: kind DIAL, size, version and the
-   image's SHA-256.
+   update service and sends BEGIN in protocol 2: kind DIAL, size, version,
+   the image's SHA-256 and its release signature, the `.sig` that came
+   with the image, as r and s of 32 bytes each.
 3. The Dial checks the kind, the size against its slot of 3,145,728 bytes
-   and the version. It then shows `UPDATE`, `v0.23.17 TO v0.23.18`, `PRESS
+   and the version. It verifies the release signature over the SHA-256
+   BEGIN gave (check 1), with the release key compiled into its firmware:
+   `firmware/panel/main/keys/release_signing_pub.pem`, ECDSA P-256, the
+   panel's own. A missing or bad signature is refused with code 15
+   (`BLEOTA_E_SIG`) before any question. It then shows `UPDATE`, `v0.23.17 TO v0.23.18`, `PRESS
    TO ACCEPT`, the seconds left and `HOLD TO REFUSE` for 30s. Nothing is
    erased before the answer.
    - A press of the screen button released within 1s accepts.
@@ -329,9 +335,38 @@ it are done, its card holds the same hold
 ![The update's question on the Dial](img/dial-update-ask.png)
 ![The update's progress on the Dial](img/dial-update-send.png)
 
-5. The panel sends END. The Dial compares the SHA-256 of every byte it
-   wrote with BEGIN's, lets ESP-IDF check the image, sets the boot slot,
-   shows `RESTARTING` and restarts 500ms later.
+5. The panel sends END. The Dial compares the SHA-256 it computed of every
+   byte it wrote with BEGIN's: a difference is damage on the way, code 10
+   (`BLEOTA_E_SHA`). It then verifies the release signature again, over
+   its own SHA-256 (check 2), never over BEGIN's: a refusal is code 15. It
+   lets ESP-IDF check the image, sets the boot slot, shows `RESTARTING` and
+   restarts 500ms later.
+
+A refused signature shows `SIGNATURE REFUSED` and `FIRMWARE KEPT` for 5s
+(`DIAL_UPD_BADSIG_MS`); the Dial keeps the image it runs. The panel's row
+says `signature refused by the device`.
+
+A signed image of a release without the check would turn the check off
+once installed. The image head's role record carries a security epoch,
+1 in every image with the check and 0 in the images before it. After the
+press, the Dial reads the head in the first 296 bytes and refuses an epoch
+below 1 with code 16 (`BLEOTA_E_EPOCH`) before anything is written; the
+face is the same as for a refused signature, and the panel's row says
+`image predates the signature check`. The epoch is a floor, not a
+version rule: a signed image of another release with the check, an older
+one included, installs.
+
+![A signature refused on the Dial](img/dial-update-sig.png)
+
+A Dial whose firmware predates the signature check (protocol 1) refuses
+BEGIN in protocol 2 with code 4 (`BLEOTA_E_PROTO`) before any question.
+The panel then waits 500ms and starts once more in protocol 1, without
+the signature; the console logs it. That happens once per update and only
+on code 4 answering BEGIN. The Dial takes the new firmware this one time
+without a signature, with the SHA-256 alone; from then on it refuses protocol 1 with
+code 15. A panel of a release before the check sends protocol 1: a Dial
+with the check refuses it, and that panel shows the code as an unknown
+error or a timeout.
 6. The new image starts on trial. It marks itself valid at its first
    connection, which it takes only with its BLE stack running. The panel's
    knob link connects again from SETUP's values.
@@ -359,9 +394,20 @@ since the bench is SAFE and ARM is refused while the update runs. The Dial
 holds its link while a transfer runs: the drop after 500ms without a panel
 packet waits.
 
-Security: no pairing, no encryption and no signature. Integrity rests on
-the SHA-256 in BEGIN. Any central in range can send BEGIN; the press on the
-Dial is what accepts it ([SECURITY.md](../SECURITY.md)).
+Security: no pairing and no encryption. The Dial installs only an image
+signed with the release key; the SHA-256 in BEGIN checks the transfer.
+Any central in range can send BEGIN; the press on the Dial is what
+accepts it ([SECURITY.md](../SECURITY.md)). Each check is one ECDSA
+verification with Mbed TLS on the `ota` task, outside the transfer's
+lock; the console logs its time. The time on the ESP32-S3 is not
+measured yet; on the host (AMD EPYC 7402P, Mbed TLS built without
+optimisation) one check, the key's parse included, takes 6.7ms. The
+check adds 70,256 bytes to the M5Stack Dial's image (851,552 to 921,808)
+and to the K518's (863,024 to 933,280), 2.2% of the 3,145,728-byte slot.
+The verifier is the Dial's own (`dial_sig_verify()`, passed to
+`devota_need_sig()`), so the nodes link none: protocol 2 adds 1,088 bytes
+to the power node (ESP32-C6, 652,080 to 653,168) and 896 bytes to the
+display node (ESP32-S3, 696,336 to 697,232).
 
 The device side runs on the task `ota`, priority 3, every 10ms, with a
 stack of 8,192 bytes from the heap at start, the size of ESP-IDF's OTA
@@ -852,8 +898,9 @@ documentation and by M5Unified; GPIO1 is the pin by number either way.
 - The rate of the update over BLE over the panel's
   ESP32-C6 link, the time of an 840kB transfer and a rollback on the Dial
   are not measured.
-- The Dial checks the image's kind, chip and segments, not its origin: a
-  central in range can offer any Dial image, older ones included, and a
-  press installs it.
+- The Dial checks the image's release signature, security epoch, kind,
+  chip and segments, not its version's order: a central in range can
+  offer any signed image of the Dial's board from a release with the
+  check, an older one included, and a press installs it.
 - No sleep, no backlight steps and no auto-off: the Dial stays on until
   `OFF` in the switch-off's choice, RST or an empty cell. Runtime on a cell is not measured.

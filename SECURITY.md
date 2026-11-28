@@ -195,10 +195,11 @@ Current limitations:
 - The IOmcu images the panel carries are part of the panel application
   image and covered by its signature. The IOmcu checks no signature of the
   image the panel sends it over CAN (controller area network).
-- The panel does not verify the signatures of the C6 radio, Dial and node
-  images, neither of the ones it carries nor of ones it downloads; those
-  updates check the SHA-256 the panel sends (see the wireless devices
-  below).
+- The panel's verdict on a device image's signature warns and does not
+  refuse while `RCBENCH_SIGN_ENFORCE` is 0. The M5Stack Dial and the
+  Guition JC3636K518C refuse an unsigned image themselves (see the
+  wireless devices below). The C6 radio and the nodes check only the
+  SHA-256 the panel sends.
 - The web flasher (`/rcbench/flash/`) downloads each release image's
   `.sig` and verifies it in the browser with Web Crypto against the
   embedded release public key, by the panel's rules (P-256 DER signature,
@@ -335,14 +336,45 @@ The planned remedy is pairing with bonding (LE Secure Connections), a
 planned slice that is not built.
 
 Current limitation, the wireless devices' firmware update: the update
-service on the M5Stack Dial and the sensor nodes (`protocols/bleota`) has
-no pairing, no encryption and no signature. An image is tied to its
-transfer by the SHA-256 the central sends in BEGIN, nothing more. The
-trigger is any BLE central in range that connects while no other central
-holds the device and writes BEGIN with an image of the device's kind: the
-device then asks for the physical confirmation, and a person who presses
-the Dial's screen button, or holds a node's BOOT key for 1s, within 30s
-installs that central's image. Nothing is erased before the confirmation,
+service on the M5Stack Dial and the sensor nodes (`protocols/bleota`,
+protocol 2) has no pairing and no encryption.
+
+- The Dial, on the M5Stack Dial and on the Guition JC3636K518C, installs
+  only an image signed with the release key. The public key is compiled
+  into its firmware: `firmware/panel/main/keys/release_signing_pub.pem`,
+  ECDSA P-256, the panel's own (`shared/relsig`, Mbed TLS). The signature
+  travels in BEGIN's HASH parts 2 to 5 and is checked twice: over BEGIN's
+  SHA-256 before the confirmation is asked (check 1), and over the
+  SHA-256 the Dial computed of the bytes it wrote, before
+  `esp_ota_set_boot_partition()` (check 2). A missing or bad signature is
+  refused with code 15 (`BLEOTA_E_SIG`); nothing is erased before check 1,
+  and nothing becomes the boot slot without check 2. The confirmation on
+  the Dial still applies to a signed image: a release image installs after
+  a press.
+- No signed downgrade turns the check off. The image head's role record
+  carries a security epoch (`BLEOTA_SIG_EPOCH`, 1 since the check); the
+  images of earlier releases carry 0 there. The Dial refuses an epoch
+  below 1 with code 16 (`BLEOTA_E_EPOCH`) before anything is written, and
+  the signature covers the head. The rule is a floor: a signed image of
+  another release with the check, an older one included, installs after a
+  press.
+- Transition: a Dial running firmware from before the check (protocol 1)
+  refuses protocol 2 with code 4. The panel then sends the same image once
+  more in protocol 1, without the signature, and that Dial installs it
+  after the confirmation with the SHA-256 alone. From then on the Dial
+  refuses protocol 1. A central that speaks protocol 1 to an older Dial
+  can so still install any image of the Dial's kind.
+- The key cannot be changed on a Dial without a Dial release signed with
+  the old key, or a USB flash; no key is revoked.
+- The sensor nodes check no signature: an image is tied to its transfer by
+  the SHA-256 the central sends in BEGIN, nothing more.
+
+The trigger is any BLE central in range that connects while no other
+central holds the device and writes BEGIN with an image of the device's
+kind (on a Dial, a release-signed one): the device then asks for the
+physical confirmation, and a person who presses the Dial's screen button,
+or holds a node's BOOT key for 1s, within 30s installs that central's
+image. Nothing is erased before the confirmation,
 and no confirmation is a refusal. What limits it: the confirmation names
 the running and the offered version on the Dial; nothing is written before
 the image's head names the device's chip and role; ESP-IDF checks the
@@ -423,7 +455,7 @@ The following modules parse input from outside their own trusted state:
 | `protocols/hc05` | answer lines of an HC-05 Bluetooth module on its UART (universal asynchronous receiver-transmitter): a line held to 95 bytes, the rest dropped; `OK`, `FAIL`, `ERROR:(hh)` with 1 or 2 hex digits; `+INQ:` lines (an address of 1 to 4, 1 to 2 and 1 to 6 hex digits, a class of 1 to 6 and an RSSI of 1 to 4, any other form dropped, at most 8 devices kept); the remote device names of `+RNAME:`, cut to 31 bytes with each byte outside printable ASCII shown as `?`; the version text, cut to 23 bytes the same way |
 | `protocols/rcnode` | packets from a sensor node over BLE, and on the node the CONTROL writes from any central: every packet's length fixed by its type byte, an unknown type refused, a balance phase of 3600 or more and a quality over 100 refused (and never encoded), a status's sensor state past the last refused, an info's protocol or role of 0 refused; a control write's length fixed by its operation, a RUN tag of 0, a blade count outside 1 to 12 and an rpm over 60000 refused, an operation the node's role does not take refused; advertising reports: each AD (advertising data) structure held to the report, a length past the end refusing the report |
 | `protocols/bleuart` | advertising reports and GATT (generic attribute profile) answers from any BLE (Bluetooth Low Energy) device in range, passed in by the host stack: each AD (advertising data) structure held to the report (a length 0 ends it, a length past the end drops the rest), a 16-bit UUID (universally unique identifier) list read in pairs and a 128-bit list in 16-byte steps, names ended at their first NUL and cut to 23 bytes with each other byte outside printable ASCII shown as `?`, a report listed only when it advertises the machine's profile's service; at most 8 devices listed and 32 other addresses remembered; an event of more than 40 data bytes taken as at most 40, a notification longer than that and one on another handle or connection not passed on; a GATT answer whose token is not the step's under way dropped; only the STREAM characteristic's CCCD and the CMD characteristic's value are ever written (the ISSC profile's 1E4D and 8841, the Dial's EVENT and SCREEN, the update service's CTRL for both); the update service's DATA chunks are written by the panel's own code beside the machine; a PARAM value kept to its first 20 bytes; the stored address text read only in the form `00:0C:BF:08:19:29 P` |
-| `protocols/bleota` | on a device (the M5Stack Dial, a sensor node), the CTRL and DATA writes of any central in range: a control write's length fixed by its op (BEGIN 14 bytes, HASH 18, END, ABORT and POLL 1), an unknown op refused, a HASH part over 1 refused; BEGIN refused with a code before anything is erased for another protocol version or a flag not defined, another device's kind, a size of 0 or over the slot (3,145,728 bytes on the Dial, 1,572,864 on a node), and the running version without the reinstall flag; a BEGIN while a transfer stands refused; nothing erased before a press on the device within 30s; a chunk of 5 to 244 bytes, taken only at the next offset and below the credit limit, the rest dropped and counted; nothing written before the image's first 296 bytes name the device's chip ID and its role (`bleota_head_check()`: the image magic, a segment count of 1 or more, the application descriptor's magic, the role's magic, kind and protocol after it), another chip or role refused as `E_KIND` and anything else as `E_IMAGE`; the SHA-256 of every byte written compared with BEGIN's before the boot slot is set, and ESP-IDF's own image check after it; 10s without a write, a lost link or an ABORT closes the slot and keeps the running image, except during the install, whose result decides (200,000 random writes in `test_bleota`). On the panel, the device's notifications: 12 bytes exactly, an event other than 0x81 to 0x84 refused, a FAIL code past 14 refused, a CREDIT code past 1 (the gap mark) refused, a CREDIT whose limit lies before its next offset refused |
+| `protocols/bleota` | on a device (the M5Stack Dial, a sensor node), the CTRL and DATA writes of any central in range: a control write's length fixed by its op (BEGIN 14 bytes, HASH 18, END, ABORT and POLL 1), an unknown op refused, a HASH part over 5 refused, and over 1 in protocol 1; BEGIN refused with a code before anything is erased for a protocol other than 1 and 2 or a flag not defined, protocol 1 on a Dial (`E_SIG`), another device's kind, a size of 0 or over the slot (3,145,728 bytes on the Dial, 1,572,864 on a node), and the running version without the reinstall flag; a BEGIN while a transfer stands refused; nothing erased before a press on the device within 30s; a chunk of 5 to 244 bytes, taken only at the next offset and below the credit limit, the rest dropped and counted; nothing written before the image's first 296 bytes name the device's chip ID and its role (`bleota_head_check()`: the image magic, a segment count of 1 or more, the application descriptor's magic, the role's magic, kind and format after it), another chip or role refused as `E_KIND` and anything else as `E_IMAGE`; on a Dial the release signature verified over BEGIN's SHA-256 before the confirmation and over the SHA-256 of the bytes written after the compare (`E_SIG`, `test_bleota_sig`); the SHA-256 of every byte written compared with BEGIN's before the boot slot is set (`E_SHA`), and ESP-IDF's own image check after it; 10s without a write, a lost link or an ABORT closes the slot and keeps the running image, except during the install, whose result decides (200,000 random writes in `test_bleota`). On the panel, the device's notifications: 12 bytes exactly, an event other than 0x81 to 0x84 refused, a FAIL code past 15 refused, a CREDIT code past 1 (the gap mark) refused, a CREDIT whose limit lies before its next offset refused |
 | `protocols/dialknob` | packets between the panel and an M5Stack Dial over BLE (Bluetooth Low Energy), in both directions: each of the eleven kinds held to its exact length, 20 bytes at most; every field to its range (touch 0 to 239, battery 2,000 to 5,000mV or 0 with its flag, throttle 0 to 10,000, temperatures -40 to 125°C, pulses 0 or 400 to 2,500us, angles, steps 1 to 100, a VALUE_META's min at most its max and its step at least 1, a SCALE's travel 0 to 1,800 and its two pulse ends both 0 or 400 to 2,500us in order); reserved bits and bytes 0; a reading without its valid bit 0; text fields UTF-8 without an overlong form, a surrogate, a code point above U+10FFFF or a control character, and NUL after their first NUL; a decoded packet encodes to the same bytes (1,000,000 random packets in `test_dialknob`); the panel's turn tracker drops a repeated seq and takes a counter difference of more than 16 detents, a packet more than 300ms after the last and the first after a connect as a reference that moves nothing |
 
 The table combines modules detected from public-header function names
