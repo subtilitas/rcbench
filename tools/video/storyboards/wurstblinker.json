@@ -1,4 +1,20 @@
 {
+ "thumb": {
+  "at": 12,
+  "lines": [
+   "WURST",
+   "*BLINKER"
+  ],
+  "crop": [
+   200,
+   236,
+   1500
+  ],
+  "side": "r",
+  "accent": "#ffb000",
+  "size": 150,
+  "v": "b"
+ },
  "name": "wurstblinker",
  "lang": "en",
  "brand": "Wurstblinker",
