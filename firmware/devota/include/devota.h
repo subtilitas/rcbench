@@ -65,7 +65,8 @@ extern "C" {
 #define DEVOTA_ROLE(k)                                                     \
     __attribute__((section(".rodata_custom_desc"), used))                  \
     const bleota_role_t devota_role = { BLEOTA_ROLE_MAGIC, (k),             \
-                                        BLEOTA_ROLE_PROTO, { 0u, 0u } }
+                                        BLEOTA_ROLE_PROTO,                  \
+                                        BLEOTA_SIG_EPOCH, 0u }
 
 /** @brief The role DEVOTA_ROLE() defines. */
 extern const bleota_role_t devota_role;

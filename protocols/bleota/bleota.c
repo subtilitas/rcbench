@@ -233,3 +233,8 @@ uint8_t bleota_head_check(const uint8_t *b, size_t n, uint16_t chip,
     }
     return r[4] == kind ? (uint8_t)BLEOTA_OK : (uint8_t)BLEOTA_E_KIND;
 }
+
+uint8_t bleota_head_epoch(const uint8_t *b, size_t n)
+{
+    return b == NULL || n < BLEOTA_HEAD_LEN ? 0u : b[BLEOTA_HEAD_ROLE + 6u];
+}

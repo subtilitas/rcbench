@@ -710,6 +710,7 @@ static const char *fail_text(const end_t *p, char *buf, size_t n)
     case BLEOTA_E_FLASH:      return TR(DEV_FAIL_FLASH);
     case BLEOTA_E_IMAGE:      return TR(DEV_FAIL_IMAGE);
     case BLEOTA_E_SIG:        return TR(DEV_FAIL_SIG);
+    case BLEOTA_E_EPOCH:      return TR(DEV_FAIL_EPOCH);
     case BLEOTA_E_TIMEOUT:    return TR(DEV_FAIL_TIMEOUT);
     default:
         snprintf(buf, n, TR(DEV_FAIL_OTHER), (unsigned)p->code);

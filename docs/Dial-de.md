@@ -370,6 +370,17 @@ Eine abgelehnte Signatur zeigt 5s lang `SIGNATUR ABGELEHNT` und
 `FIRMWARE BLEIBT` (`DIAL_UPD_BADSIG_MS`); das Dial behält sein Image. Die
 Zeile des Panels sagt `Signatur vom Gerät abgelehnt`.
 
+Ein signiertes Image eines Release ohne die Prüfung schaltete die Prüfung
+nach der Installation ab. Der Rollen-Eintrag im Kopf des Images trägt
+eine Sicherheitsepoche, 1 in jedem Image mit der Prüfung und 0 in den
+Images davor. Nach dem Druck liest das Dial den Kopf in den ersten 296
+Bytes und lehnt eine Epoche unter 1 mit Code 16 (`BLEOTA_E_EPOCH`) ab,
+bevor etwas geschrieben ist; das Face ist dasselbe wie bei einer
+abgelehnten Signatur, und die Zeile des Panels sagt `Image älter als die
+Signaturprüfung`. Die Epoche ist eine Untergrenze, keine Versionsregel:
+Ein signiertes Image eines anderen Release mit der Prüfung, auch ein
+älteres, installiert.
+
 ![Eine abgelehnte Signatur am Dial](img/de/dial-update-sig.png)
 
 Ein Dial, dessen Firmware älter ist als die Signaturprüfung (Protokoll 1),
@@ -951,9 +962,11 @@ verschiedener Reihenfolge; GPIO1 ist in beiden Fällen der Pin dieser Nummer.
 - Die Rate des Updates über BLE über die
   ESP32-C6-Verbindung des Panels, die Dauer einer Übertragung von 840kB und
   ein Rollback am Dial sind nicht gemessen.
-- Das Dial prüft Art, Chip und Segmente des Images, nicht seine Herkunft:
-  Ein Central in Reichweite kann jedes Dial-Image anbieten, auch ältere,
-  und ein Druck installiert es.
+- Das Dial prüft Release-Signatur, Sicherheitsepoche, Art, Chip und
+  Segmente des Images, nicht die Reihenfolge der Versionen: Ein Central
+  in Reichweite kann jedes signierte Image des Dial-Boards aus einem
+  Release mit der Prüfung anbieten, auch ein älteres, und ein Druck
+  installiert es.
 - Kein Schlaf, keine Stufen des Hintergrundlichts und keine automatische
   Abschaltung: Das Dial bleibt an bis `AUS` in der Wahl beim Ausschalten,
   bis RST oder bis die Zelle leer ist. Die Laufzeit mit einer Zelle ist nicht gemessen.

@@ -346,6 +346,16 @@ A refused signature shows `SIGNATURE REFUSED` and `FIRMWARE KEPT` for 5s
 (`DIAL_UPD_BADSIG_MS`); the Dial keeps the image it runs. The panel's row
 says `signature refused by the device`.
 
+A signed image of a release without the check would turn the check off
+once installed. The image head's role record carries a security epoch,
+1 in every image with the check and 0 in the images before it. After the
+press, the Dial reads the head in the first 296 bytes and refuses an epoch
+below 1 with code 16 (`BLEOTA_E_EPOCH`) before anything is written; the
+face is the same as for a refused signature, and the panel's row says
+`image predates the signature check`. The epoch is a floor, not a
+version rule: a signed image of another release with the check, an older
+one included, installs.
+
 ![A signature refused on the Dial](img/dial-update-sig.png)
 
 A Dial whose firmware predates the signature check (protocol 1) refuses
@@ -887,8 +897,9 @@ documentation and by M5Unified; GPIO1 is the pin by number either way.
 - The rate of the update over BLE over the panel's
   ESP32-C6 link, the time of an 840kB transfer and a rollback on the Dial
   are not measured.
-- The Dial checks the image's kind, chip and segments, not its origin: a
-  central in range can offer any Dial image, older ones included, and a
-  press installs it.
+- The Dial checks the image's release signature, security epoch, kind,
+  chip and segments, not its version's order: a central in range can
+  offer any signed image of the Dial's board from a release with the
+  check, an older one included, and a press installs it.
 - No sleep, no backlight steps and no auto-off: the Dial stays on until
   `OFF` in the switch-off's choice, RST or an empty cell. Runtime on a cell is not measured.

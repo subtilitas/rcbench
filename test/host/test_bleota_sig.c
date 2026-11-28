@@ -175,6 +175,23 @@ static uint8_t drain(sim_t *s, bool *saw_wait)
     return code;
 }
 
+/** @brief Drain the notifications and keep the first FAIL's code: the
+ *  rig's run() sends END after a refusal, which a central does not.
+ *  @param s the rig @return the first FAIL's code, BLEOTA_OK for none */
+static uint8_t drain_first(sim_t *s)
+{
+    uint8_t b[BLEOTA_LEN_STATUS];
+    uint8_t code = BLEOTA_OK;
+    while (bleota_dev_status(&s->d, b)) {
+        bleota_status_t st;
+        CHECK(bleota_status_decode(b, sizeof b, &st));
+        if (st.ev == BLEOTA_EV_FAIL && code == BLEOTA_OK) {
+            code = st.code;
+        }
+    }
+    return code;
+}
+
 /** @brief A press shorter than BLEOTA_HOLD_MS.  @param s the rig */
 static void press(sim_t *s)
 {
@@ -404,6 +421,53 @@ TEST_CASE(a_signed_image_installs_after_both_checks)
     CHECK_EQ(s.sigs, 1);
 }
 
+/* A signed image of a release without the signature check (role epoch 0)
+ * would turn the check off once installed: the device that needs the
+ * signature refuses it at its head with code 16, before anything is
+ * written; the same image at epoch BLEOTA_SIG_EPOCH installs. */
+TEST_CASE(a_signed_image_below_the_epoch_is_refused_and_one_at_it_installs)
+{
+    sim_t s;
+    uint8_t sha[32];
+    img_make();
+    test_head_epoch(s_img, 0u);
+    fw_sha256(s_img, IMG, sha);
+    dev_init(&s, BLEOTA_KIND_DIAL_K518, TEST_CHIP_S3, true);
+    begin(&s, BLEOTA_KIND_DIAL_K518, BLEOTA_PROTO);
+    parts(&s, sha, k_fake);
+    CHECK_EQ(run(&s, NULL, 0u), BLEOTA_DO_SIG);
+    answer_sig(&s, NULL);
+    press(&s);
+    (void)run(&s, s_img, IMG);
+    CHECK_EQ(drain_first(&s), BLEOTA_E_EPOCH);
+    CHECK_EQ(s.flash_n, 0u);
+    CHECK_EQ(s.sigs, 1);
+    CHECK(!s.d.open);
+    /* At the epoch: written, both checks, installed. */
+    img_make();
+    CHECK_EQ(s_img[BLEOTA_HEAD_ROLE + 6u], BLEOTA_SIG_EPOCH);
+    fw_sha256(s_img, IMG, sha);
+    dev_init(&s, BLEOTA_KIND_DIAL_K518, TEST_CHIP_S3, true);
+    begin(&s, BLEOTA_KIND_DIAL_K518, BLEOTA_PROTO);
+    parts(&s, sha, k_fake);
+    (void)run(&s, NULL, 0u);
+    answer_sig(&s, NULL);
+    press(&s);
+    CHECK_EQ(run(&s, s_img, IMG), BLEOTA_DO_SIG);
+    answer_sig(&s, NULL);
+    CHECK_EQ(s.flash_n, IMG);
+    CHECK_EQ(bleota_dev_poll(&s.d, s.t), BLEOTA_DO_INSTALL);
+    /* A device that needs no signature (a node) takes epoch 0. */
+    img_make();
+    test_head_epoch(s_img, 0u);
+    CHECK_EQ(bleota_head_check(s_img, IMG, TEST_CHIP_S3,
+                               BLEOTA_KIND_DIAL_K518), BLEOTA_OK);
+    CHECK_EQ(bleota_head_epoch(s_img, IMG), 0u);
+    CHECK_EQ(bleota_head_epoch(s_img, BLEOTA_HEAD_LEN - 1u), 0u);
+    test_head_epoch(s_img, 7u);
+    CHECK_EQ(bleota_head_epoch(s_img, IMG), 7u);
+}
+
 TEST_CASE(a_transfer_that_ends_during_a_check_takes_no_verdict)
 {
     sim_t s;
@@ -485,6 +549,7 @@ int main(void)
     RUN(a_matching_pair_with_other_bytes_ends_with_code_10);
     RUN(a_refusal_at_check_2_ends_with_code_15);
     RUN(a_signed_image_installs_after_both_checks);
+    RUN(a_signed_image_below_the_epoch_is_refused_and_one_at_it_installs);
     RUN(a_transfer_that_ends_during_a_check_takes_no_verdict);
     RUN(a_verdict_for_an_ended_transfer_answers_no_later_one);
     return test_summary("bleota_sig");

@@ -78,9 +78,10 @@ static void view_read(dial_face_view_t *v, char *addr, uint32_t now)
     static uint32_t sig_ms;
     static bool sig_on;
     if (u.fails != fails_seen) {
-        /* A FAIL went: a refused signature shows DIAL_UPD_BADSIG_MS. */
+        /* A FAIL went: a refused signature, or an image without the
+         * check, shows DIAL_UPD_BADSIG_MS. */
         fails_seen = u.fails;
-        sig_on = u.code == BLEOTA_E_SIG;
+        sig_on = u.code == BLEOTA_E_SIG || u.code == BLEOTA_E_EPOCH;
         sig_ms = now;
     }
     if (sig_on
