@@ -251,6 +251,10 @@ void dial_input_stats(dial_input_stats_t *out);
  * @return false before the first detent
  */
 bool dial_input_enc_trace(char *out, unsigned n);
+/** @brief Print the K518 encoder's last 32 raw edges, each as the ms since
+ *         the edge before and the A/B pair before and after it, then both
+ *         lines now: the console's `enc`. */
+void dial_input_enc_dump(void);
 #endif
 
 /* --- dial_ble.c ------------------------------------------------------ */
@@ -298,6 +302,10 @@ bool dial_ble_bound(void);
 /** @brief The connection count: it changes at every connect, so the face
  *         task resets its model. @return the count */
 uint32_t dial_ble_link_count(void);
+/** @brief The last disconnect's reason (NimBLE's code), 0 before one. */
+uint16_t dial_ble_last_reason(void);
+/** @brief Parameter requests the host refused since the start. */
+uint32_t dial_ble_param_fails(void);
 /** @brief The link's RSSI on the Dial. @return dBm, or DK_RSSI_NONE */
 int8_t dial_ble_rssi(void);
 /** @brief The advertised name, "DIAL-3A10". @return the name */

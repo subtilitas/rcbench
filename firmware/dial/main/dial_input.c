@@ -621,8 +621,45 @@ static atomic_uint s_ring_head;
 static atomic_uint s_ring_tail;
 /** @brief Edges dropped on a full ring since the task last looked. */
 static atomic_uint s_ring_lost;
-/** @brief Guards the trace text between the input task and `status`. */
+/** @brief Guards the trace text and the edge history between the input
+ *         task and the console. */
 static portMUX_TYPE s_trace_lock = portMUX_INITIALIZER_UNLOCKED;
+
+/** @brief Raw edges the console's `enc` shows. */
+#define ENC_HIST 32u
+
+/** @brief One raw edge as the interrupt read it, for `enc`. */
+typedef struct {
+    uint32_t dt;   /**< ms since the edge before */
+    uint8_t  from; /**< the pair before it */
+    uint8_t  to;   /**< the pair after it */
+} enc_hist_t;
+
+/** @brief The last ENC_HIST edges, oldest at s_hist_n - ENC_HIST. */
+static enc_hist_t s_hist[ENC_HIST];
+/** @brief Edges put in s_hist since the start. */
+static uint32_t s_hist_n;
+/** @brief The last edge's pair and time, for the next one's entry. */
+static uint8_t s_hist_pair;
+static uint32_t s_hist_ms; /**< its time, ms */
+/** @brief Edges a full ring dropped since the start. */
+static uint32_t s_lost_total;
+
+/**
+ * @brief Keep a raw edge for `enc`.
+ * @param e the edge
+ */
+static void hist_add(const enc_edge_t *e)
+{
+    portENTER_CRITICAL(&s_trace_lock);
+    s_hist[s_hist_n % ENC_HIST] = (enc_hist_t){
+        s_hist_n == 0u ? 0u : e->ms - s_hist_ms, s_hist_pair, e->pair
+    };
+    ++s_hist_n;
+    s_hist_pair = e->pair;
+    s_hist_ms = e->ms;
+    portEXIT_CRITICAL(&s_trace_lock);
+}
 
 /** @brief Both lines now.  @return (A << 1) | B, 1 for high */
 static uint8_t enc_pair(void)
@@ -681,12 +718,15 @@ static void encoder_poll(uint32_t now)
     while (t != h) {
         const enc_edge_t e = s_ring[t & (ENC_RING - 1u)];
         ++t;
+        hist_add(&e);
         d += dk518_enc_edge(&s_in.enc, e.pair, e.ms);
         encoder_trace();
     }
     atomic_store_explicit(&s_ring_tail, t, memory_order_release);
-    if (atomic_exchange_explicit(&s_ring_lost, 0u, memory_order_relaxed)
-        != 0u) {
+    const unsigned lost = atomic_exchange_explicit(&s_ring_lost, 0u,
+                                                   memory_order_relaxed);
+    if (lost != 0u) {
+        s_lost_total += lost;
         d += dk518_enc_edge(&s_in.enc, enc_pair(), now_ms());
     }
     d += dk518_enc_poll(&s_in.enc, now_ms());
@@ -694,6 +734,31 @@ static void encoder_poll(uint32_t now)
     if (d != 0) {
         turned(d, now);
     }
+}
+
+void dial_input_enc_dump(void)
+{
+    static const char *const k_pair[4] = { "00", "01", "10", "11" };
+    enc_hist_t h[ENC_HIST];
+    uint32_t n;
+    portENTER_CRITICAL(&s_trace_lock);
+    n = s_hist_n;
+    memcpy(h, s_hist, sizeof h);
+    portEXIT_CRITICAL(&s_trace_lock);
+    const uint32_t k = n < ENC_HIST ? n : ENC_HIST;
+    printf("encoder: %lu edges since the start, the last %lu, %u lost\n",
+           (unsigned long)n, (unsigned long)k,
+           (unsigned)s_lost_total);
+    for (uint32_t i = n - k; i != n; ++i) {
+        const enc_hist_t *e = &h[i % ENC_HIST];
+        printf("+%lu %s>%s%s", (unsigned long)e->dt, k_pair[e->from & 3u],
+               k_pair[e->to & 3u], (i + 1u - (n - k)) % 8u == 0u ? "\n" : "  ");
+    }
+    if (k % 8u != 0u) {
+        printf("\n");
+    }
+    printf("now A %d B %d\n", gpio_get_level(DIAL_PIN_ENC_A),
+           gpio_get_level(DIAL_PIN_ENC_B));
 }
 
 bool dial_input_enc_trace(char *out, unsigned n)
@@ -765,7 +830,8 @@ static bool encoder_init(void)
     if (svc != ESP_OK && svc != ESP_ERR_INVALID_STATE) {
         return false;
     }
-    (void)dk518_enc_edge(&s_in.enc, enc_pair(), now_ms());
+    s_hist_pair = enc_pair();
+    (void)dk518_enc_edge(&s_in.enc, s_hist_pair, now_ms());
     return gpio_isr_handler_add(DIAL_PIN_ENC_A, enc_isr, NULL) == ESP_OK
            && gpio_isr_handler_add(DIAL_PIN_ENC_B, enc_isr, NULL) == ESP_OK;
 }
