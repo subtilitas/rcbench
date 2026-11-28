@@ -48,6 +48,8 @@ void dial_supply_read(dial_supply_t *out)
     out->known = mv != 0u;
     out->charging = false;
     out->usb = usb_serial_jtag_is_connected();
+    out->low = false;
+    out->empty = false;
 }
 
 void dial_supply_inject(uint16_t mv)

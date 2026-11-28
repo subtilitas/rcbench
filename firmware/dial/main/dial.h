@@ -6,9 +6,9 @@
  * dial_board.h, by the board the image is built for.  The K518 build runs
  * the BLE peripheral, the console, the face task and its display, which
  * shows the reading faces and otherwise the boot face (dial_k518_lcd.c,
- * dial_k518_screen.c), and the input task with its encoder, still touch
- * and vibration (dial_input.c, dial_k518_io.c); dial_k518.c holds its
- * power calls, which do nothing yet.
+ * dial_k518_screen.c), the input task with its encoder, still touch
+ * and vibration (dial_input.c, dial_k518_io.c), and its supply reading
+ * and soft OFF (dial_k518.c).
  *
  * Tasks: the input task (dial_input.c) polls the encoder, the buttons and
  * the touch controller every 5ms and sends EVENT; the face task
@@ -43,12 +43,14 @@
 /* --- dial_power.c ---------------------------------------------------- */
 
 /** @brief Drive GPIO46 high: the Dial stays on after the WAKE button is
- *         let go.  The first call of app_main(). */
+ *         let go.  On the K518: release the backlight pin's sleep hold
+ *         and start the supply reading.  The first call of app_main(). */
 void dial_power_hold(void);
 
 /** @brief Drive GPIO46 low: on the cell alone the power drops once the
- *         WAKE button is up; on USB the Dial stays on.  The switch-off's
- *         OFF calls it (dial_button.h). */
+ *         WAKE button is up; on USB the Dial stays on.  On the K518: deep
+ *         sleep until a turn.  The switch-off's OFF calls it
+ *         (dial_button.h), and an empty cell after 3s of BATTERY EMPTY. */
 void dial_power_off(void);
 
 /** @brief What the Dial knows of its supply. */
@@ -56,13 +58,17 @@ typedef struct {
     uint16_t mv;       /**< the cell's voltage, mV; 0 unknown */
     bool     known;    /**< mv is a reading */
     bool     charging; /**< the charger reports charging; false unknown */
-    bool     usb;      /**< a USB host reads the console port */
+    bool     usb;      /**< USB powers the Dial or reads its console */
+    bool     low;      /**< the cell is low (the K518 alone) */
+    bool     empty;    /**< the cell is empty: the Dial switches itself
+                            off (the K518 alone) */
 } dial_supply_t;
 
 /**
- * @brief Read the supply.  No source names the pin the cell's voltage
- *        reaches, so the reading is unknown unless a test build's console
- *        injected one (`batt <mV>`).
+ * @brief Read the supply.  On the M5Stack Dial no source names the pin
+ *        the cell's voltage reaches, so the reading is unknown unless a
+ *        test build's console injected one (`batt <mV>`).  The K518 reads
+ *        GPIO1 once a second (dial_k518.c).
  * @param out the supply
  */
 void dial_supply_read(dial_supply_t *out);
@@ -149,6 +155,12 @@ bool dial_k518_send(void);
  * @return true when it drew
  */
 bool dial_k518_boot(bool force);
+/** @brief Before deep sleep: the display's sleep, and the backlight's pin
+ *         held low through it (dial_k518_lcd.c). */
+void dial_k518_lcd_sleep(void);
+/** @brief Before deep sleep: the CST816S and the DRV2605 into their own
+ *         sleep (dial_k518_io.c). */
+void dial_k518_io_sleep(void);
 
 /* --- dial_touch.c ---------------------------------------------------- */
 
@@ -209,9 +221,13 @@ bool dial_input_update_key(void);
  *  @param offer receives the offer's identity
  *  @return true while it is pressed */
 bool dial_input_offer_key(uint32_t *offer);
-/** @brief The K518's face sent the update's question for @p offer whole;
- *         the K518 build only.  @param offer the confirmation's identity */
-void dial_input_offer_shown(uint32_t offer);
+/**
+ * @brief What the K518's face last sent whole; the K518 build only.
+ * @param shown the update's question for @p offer is on the display;
+ *              false for any other face, the battery's EMPTY included
+ * @param offer the confirmation's identity
+ */
+void dial_input_offer_shown(bool shown, uint32_t offer);
 
 /** @brief Whether the Dial clicks per detent.  Default ON; the panel's
  *         SCREEN flag and the console's `sound` set it. @param on ON */

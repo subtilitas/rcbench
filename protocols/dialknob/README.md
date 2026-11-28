@@ -91,7 +91,7 @@ STATUS, kind 0x02, 12 bytes (`DK_LEN_STATUS`), every 1,000ms
 |---|---|---|
 | 1 | seq | 0 to 255, a count of its own |
 | 2 to 3 | battery | mV, 2,000 to 5,000; 0 with flag bit2 only |
-| 4 | flags | bit0 a USB host reads the Dial's port, bit1 charging, bit2 battery unknown, bit3 no panel packet for 500ms; bits 4 to 7 are 0 |
+| 4 | flags | bit0 a USB host reads the Dial's port, bit1 charging, bit2 battery unknown, bit3 no panel packet for 500ms, bit4 the cell is low, bit5 the cell is empty and the Dial switches itself off; bits 6 to 7 are 0 |
 | 5 to 7 | firmware | major, minor, patch |
 | 8 to 9 | uptime | s, wrapping |
 | 10 | RSSI | int8, dBm, -127 to 20; 127 not known (`DK_RSSI_NONE`) |

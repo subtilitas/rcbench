@@ -199,6 +199,9 @@ typedef struct {
 #define DK_ST_CHARGING     0x02u /**< the charger reports charging */
 #define DK_ST_BATT_UNKNOWN 0x04u /**< no battery reading: batt_mv is 0 */
 #define DK_ST_PANEL_LOST   0x08u /**< no panel packet for DK_DIAL_LOST_MS */
+#define DK_ST_BATT_LOW     0x10u /**< the cell is low: charge it soon */
+#define DK_ST_BATT_EMPTY   0x20u /**< the cell is empty: the Dial switches
+                                      itself off */
 /** @} */
 
 /** @brief Dial to panel: STATUS, every DK_STATUS_MS and on a change. */

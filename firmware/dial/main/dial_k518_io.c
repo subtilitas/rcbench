@@ -51,6 +51,7 @@
 /** @brief CST816S registers. @{ */
 #define TOUCH_REG_FINGERS  0x02u
 #define TOUCH_REG_NO_SLEEP 0xFEu /**< DisAutoSleep: 1 keeps it awake */
+#define TOUCH_REG_SLEEP    0xA5u /**< 3: deep sleep until a reset */
 /** @} */
 /** @brief The CST816S's reset pulse and start, ms. @{ */
 #define TOUCH_RESET_MS 10u
@@ -60,6 +61,7 @@
 #define HAPTIC_ADDR 0x5Au
 /** @brief DRV2605 registers. @{ */
 #define DRV_MODE     0x01u /**< 0: internal trigger, out of standby */
+#define DRV_STANDBY  0x40u /**< MODE: standby */
 #define DRV_RTP      0x02u /**< real-time playback input */
 #define DRV_LIBRARY  0x03u /**< the ROM library */
 #define DRV_SEQ0     0x04u /**< the waveform sequence, 8 slots */
@@ -272,5 +274,15 @@ void dial_buzz_cue(dial_cue_t cue)
     default:
         play(DK518_FX_STRONG, 0u);
         break;
+    }
+}
+
+void dial_k518_io_sleep(void)
+{
+    if (s_haptic != NULL) {
+        (void)put(s_haptic, DRV_MODE, DRV_STANDBY);
+    }
+    if (s_touch != NULL) {
+        (void)put(s_touch, TOUCH_REG_SLEEP, 3u);
     }
 }

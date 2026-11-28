@@ -45,6 +45,7 @@ SOURCES = [
     "shared/dial/dial_draw.c",
     "shared/dial/dial_text.c",
     "shared/dial/dial_rings.c",
+    "shared/dial/dial_batt.c",
     "shared/dial/dk518_boot.c",
     "shared/dial/dk518_draw.c",
     "shared/ui/ui_theme.c",
@@ -97,6 +98,8 @@ FACES = {
     "k518-update-send": "a firmware update coming in, as the K518 draws it",
     "k518-off-warn": "the switch-off's warning, as the K518 draws it",
     "k518-off-ask": "the switch-off's choice, as the K518 draws it",
+    "k518-batt-empty": "the cell is empty: BATTERY EMPTY for 3s, then the "
+                       "K518 switches itself off",
 }
 
 LANGS = {"en": ".", "de": "de"}

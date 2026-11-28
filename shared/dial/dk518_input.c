@@ -162,7 +162,13 @@ bool dk518_key_step(dk518_key_t *k, bool offer, uint32_t id, bool shown,
         k->on = false;
         k->clear = false;
     }
-    if (empty && offer && shown) {
+    if (offer && !shown) {
+        /* The question is not on the display, or another face covers it
+         * (EMPTY): nothing on the glass answers it, and once it shows
+         * again the glass must read empty first. */
+        k->clear = false;
+        k->touch_ok = false;
+    } else if (empty && offer) {
         /* The glass empty while this offer's question was on display. */
         k->clear = true;
     }

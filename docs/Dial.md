@@ -69,7 +69,8 @@ second tap. A failed I2C (inter-integrated circuit) read of the glass
 keeps the last state: it never ends a touch and never counts as an empty
 glass. The 5th failed read in a row (100ms) cancels the touch under way
 without PRESS, TAP or an answer to the question; the finger, read again,
-starts nothing until the glass reads empty. Each question has
+starts nothing until the glass reads empty. While BATTERY EMPTY covers
+an open question, no touch answers it. Each question has
 its own number, and the update takes the key only for the question it
 was made in. A DRV2605 at 0x5A vibrates instead of a buzzer, with its ROM
 effects for an LRA (library 6): a detent "Sharp Tick 3" (26), PRESS
@@ -80,8 +81,30 @@ not answer at 0x5A gets GPIO38 high (the enable of V1.0 boards) and a
 second probe; with no answer then, the K518 does not vibrate. The count
 of detents a turn (24 by Guition's demo code), the touch axes'
 orientation and the vibration strength are not run on the device yet.
-Its battery reading and the switch-off do nothing yet: its STATUS names
-the battery unknown, and OFF leaves it on. Its INFO names hardware 2 (`DK_HW_K518`); its image names
+
+The K518 reads its supply on GPIO1 (ADC1 channel 0, 12dB, calibrated)
+through a 10k/10k divider once a second: 16 samples, the lowest and
+highest dropped, the rest averaged, times 2. The divider sits on the rail
+behind the power path, so on USB it reads VBUS less a diode, not the cell.
+A reading above 4,450mV, or a USB host on the console's port, is USB: STATUS
+sets its USB flag and names the battery unknown. A reading below 2,500mV
+is no plausible cell and unknown as well. Otherwise STATUS carries the
+cell's voltage. LOW (STATUS bit4) sets after 3 readings in a row below
+3,500mV and ends after 3 at 3,600mV or more; EMPTY (bit5) the same at
+3,350mV and 3,450mV. EMPTY shows BATTERY EMPTY for 3s, then the K518
+switches itself off. The faces' battery share is linear from 3,300mV (0%)
+to 4,200mV (100%). No charge status pin is known, so STATUS never sets
+CHARGING.
+
+The slide switch cuts the power. OFF in the switch-off choice and an empty
+cell put the K518 into deep sleep: the ST77916 off and asleep (DISPOFF,
+then SLPIN and 120ms, sent once the face task's frame on the wire has
+ended, up to 2000ms, and no frame after them), its backlight's pin held low, the touch controller
+and the DRV2605 in their own sleep. A turn of the knob
+(either encoder line low) wakes it into a new start, as does the slide
+switch. The deep sleep current is not measured; the divider alone draws
+about 190µA from a 3.8V cell. The ADC's accuracy against a meter is not run on
+the device yet. Its INFO names hardware 2 (`DK_HW_K518`); its image names
 update kind 5 (`BLEOTA_KIND_DIAL_K518`), so neither board takes the other's
 image.
 
@@ -100,6 +123,7 @@ image.
 ![the update coming in on the K518](img/dial-k518-update-send.png)
 ![the switch-off warning on the K518](img/dial-k518-off-warn.png)
 ![the switch-off choice on the K518](img/dial-k518-off-ask.png)
+![an empty cell on the K518](img/dial-k518-batt-empty.png)
 
 M5Stack, Dial and Stamp-S3A are names of their owner and its products,
 Guition and JC3636K518C are names of their owner and its product, and

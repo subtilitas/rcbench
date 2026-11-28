@@ -2050,7 +2050,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 723 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 724 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -2171,7 +2171,7 @@ The host suite is 723 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_pnode_meter`, `test_pnode_ctl`, `test_pnode_shunt`, `test_pnode_cfg`, `test_wireless_pnode`, `test_wireless_pnode_cfg`, `test_pnode_bind`,
 `test_settings_panes`, `test_bal_ctl`, `test_bal_cfg`, `test_node_balance`, `test_wireless_bal`, `test_bal_bind`, `test_wl_search`,
 `test_motor_balance`,
-`test_dial_face`, `test_dial_fit`, `test_dial_button`, `test_dk518_boot`, `test_dk518_face`, `test_dk518_input`, `test_dk518_enc`,
+`test_dial_face`, `test_dial_fit`, `test_dial_button`, `test_dial_batt`, `test_dk518_boot`, `test_dk518_face`, `test_dk518_input`, `test_dk518_enc`,
 `test_imu`, `test_imu_filter`, `test_imu_angles`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_groups`, `test_wireless_imu`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_effect`,
@@ -2723,7 +2723,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-1214 committed screenshots to the current render, 607 in English and the same 607 in German, and `render_ui.py --fit` fails on a string that
+1216 committed screenshots to the current render, 608 in English and the same 608 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

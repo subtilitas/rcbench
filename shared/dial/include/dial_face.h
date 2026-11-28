@@ -105,6 +105,8 @@ typedef struct {
     bool        off_focus; /**< DIAL_OFF_ASK: the focus is on OFF, not on
                                 KEEP ON */
     uint8_t     off_secs; /**< DIAL_OFF_ASK: seconds left until KEEP ON */
+    bool        batt_empty; /**< the cell is empty: BATTERY EMPTY until
+                                 the Dial switches itself off */
     bool        touch_press; /**< the press is a still touch on the glass
                                   (the Guition JC3636K518C): the update
                                   and the switch-off's choice say TAP */
@@ -137,6 +139,7 @@ typedef enum {
     DIAL_FACE_UPDATE,      /**< a firmware update over Bluetooth LE */
     DIAL_FACE_OFF_WARN,    /**< the screen button held 5,000ms: blinks */
     DIAL_FACE_OFF_ASK,     /**< then released: OFF or KEEP ON */
+    DIAL_FACE_EMPTY,       /**< the cell is empty: the Dial switches off */
 } dial_face_id_t;
 
 /** @brief Kinds of body block. @{ */

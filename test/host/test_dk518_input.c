@@ -217,6 +217,8 @@ typedef struct {
     uint32_t      draw_at; /**< when the face draws the offer's question */
     bool          drawn;   /**< the face sent a question whole */
     uint32_t      drawn_id; /**< the offer whose question it sent */
+    bool          hidden;  /**< another face covers the question: the
+                                battery's EMPTY */
 } offer_t;
 
 /** @brief No offer yet.  @param o the rig */
@@ -253,7 +255,10 @@ static void input_read_at(offer_t *o, dk518_read_t r, uint16_t x,
 {
     dk518_still_out_t e;
     uint32_t id = 0u;
-    if (o->d.st == BLEOTA_DEV_CONFIRM && (int32_t)(o->t - o->draw_at) >= 0) {
+    if (o->hidden) {
+        o->drawn = false;                   /* the face drew EMPTY */
+    } else if (o->d.st == BLEOTA_DEV_CONFIRM
+               && (int32_t)(o->t - o->draw_at) >= 0) {
         o->drawn = true;                    /* the face task's draw */
         o->drawn_id = o->d.offer;
     }
@@ -699,6 +704,32 @@ TEST_CASE(the_glass_counts_failed_reads_in_a_row)
     }
 }
 
+/* EMPTY covers the update's question while the offer stands: the key
+ * disarms.  A finger already down, or one that comes down while EMPTY
+ * shows, answers nothing; once the question shows again, the glass must
+ * read empty before a tap counts. */
+TEST_CASE(a_question_hidden_by_another_face_disarms_the_key)
+{
+    offer_t o;
+    offer_init(&o);
+    offer_open(&o);
+    offer_run(&o, false, 0, 0, 60);        /* drawn, the glass empty */
+    offer_run(&o, true, 180, 180, 40);     /* a finger, still */
+    o.hidden = true;
+    offer_run(&o, true, 180, 180, 40);
+    offer_run(&o, false, 0, 0, 300);       /* lifts under EMPTY */
+    CHECK_EQ(o.d.st, BLEOTA_DEV_CONFIRM);
+    CHECK_EQ(o.cues, 0);
+    tap(&o);                               /* a tap under EMPTY */
+    CHECK_EQ(o.d.st, BLEOTA_DEV_CONFIRM);
+    CHECK_EQ(o.cues, 0);
+    o.hidden = false;
+    o.draw_at = o.t + FACE_MS;             /* drawn again */
+    tap(&o);
+    CHECK_EQ(o.d.st, BLEOTA_DEV_OPEN);
+    CHECK_EQ(o.cues, 1);
+}
+
 int main(void)
 {
     RUN(a_short_still_touch_is_press_and_tap_at_its_start);
@@ -722,6 +753,7 @@ int main(void)
     RUN(an_offer_that_opens_while_the_glass_is_read_gets_no_answer);
     RUN(a_finger_first_read_with_the_offer_needs_an_empty_read_before);
     RUN(a_tap_before_the_question_is_drawn_answers_nothing);
+    RUN(a_question_hidden_by_another_face_disarms_the_key);
     RUN(a_question_drawn_for_another_offer_arms_nothing);
     RUN(bleota_takes_a_key_for_the_offer_standing_alone);
     RUN(no_offer_keeps_the_key_up);

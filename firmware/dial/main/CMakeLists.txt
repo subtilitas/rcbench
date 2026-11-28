@@ -7,8 +7,8 @@ if(CONFIG_RCBENCH_DIAL_BOARD_K518)
     # The Guition JC3636K518C: the display, its boot face and its reading
     # faces at 360 x 360 (dial_k518_lcd.c, dial_k518_screen.c); the input
     # task with its encoder and still touch (dial_input.c), the touch
-    # controller and the vibration (dial_k518_io.c); its power calls do
-    # nothing yet (dial_k518.c).
+    # controller and the vibration (dial_k518_io.c); its supply reading
+    # and soft OFF (dial_k518.c).
     list(APPEND SRCS "dial_k518.c" "dial_k518_lcd.c" "dial_k518_screen.c"
                      "dial_k518_io.c" "dial_input.c")
 else()
@@ -22,7 +22,7 @@ idf_component_register(
     INCLUDE_DIRS "."
     REQUIRES dial dialknob devota bleota gfx bt nvs_flash console esp_app_format esp_timer
              esp_lcd esp_driver_gpio esp_driver_pcnt esp_driver_ledc
-             esp_driver_spi esp_driver_i2c esp_driver_usb_serial_jtag
+             esp_driver_spi esp_driver_i2c esp_driver_usb_serial_jtag esp_adc
 )
 
 # The console's test hooks; see RCBENCH_DIAL_HOOKS in firmware/dial/CMakeLists.txt.

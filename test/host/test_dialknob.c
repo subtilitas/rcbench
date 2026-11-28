@@ -182,7 +182,10 @@ TEST_CASE(a_status_holds_its_battery_and_rssi_bounds)
     CHECK(!dk_status_decode(b, sizeof b, &s));
     st_bytes(b, 3700, DK_ST_BATT_UNKNOWN, 0);   /* the flag needs 0 */
     CHECK(!dk_status_decode(b, sizeof b, &s));
-    st_bytes(b, 3700, 0x10, 0);
+    st_bytes(b, 3400, DK_ST_BATT_LOW | DK_ST_BATT_EMPTY, 0);
+    CHECK(dk_status_decode(b, sizeof b, &s));
+    CHECK_EQ(s.flags, DK_ST_BATT_LOW | DK_ST_BATT_EMPTY);
+    st_bytes(b, 3700, 0x40, 0);
     CHECK(!dk_status_decode(b, sizeof b, &s));
     st_bytes(b, 3700, 0, 21);
     CHECK(!dk_status_decode(b, sizeof b, &s));

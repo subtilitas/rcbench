@@ -857,9 +857,9 @@ bool dial_input_update_key(void)
     return (atomic_load(&s_key) & KEY_DOWN) != 0u;
 }
 
-void dial_input_offer_shown(uint32_t offer)
+void dial_input_offer_shown(bool shown, uint32_t offer)
 {
-    atomic_store(&s_shown, KEY_DOWN | (offer & KEY_OFFER));
+    atomic_store(&s_shown, shown ? KEY_DOWN | (offer & KEY_OFFER) : 0u);
 }
 
 bool dial_input_offer_key(uint32_t *offer)

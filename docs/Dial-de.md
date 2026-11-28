@@ -76,7 +76,8 @@ Circuit) des Glases behält den letzten Zustand: Es beendet keine
 Berührung und zählt nie als leeres Glas. Das 5. fehlgeschlagene Lesen in
 Folge (100ms) bricht die laufende Berührung ab, ohne PRESS, TAP oder
 Antwort auf die Frage; der Finger, wieder gelesen, startet nichts, bis
-das Glas leer gelesen wird. Jede Frage hat ihre eigene Nummer,
+das Glas leer gelesen wird. Solange AKKU LEER eine offene Frage
+verdeckt, beantwortet keine Berührung sie. Jede Frage hat ihre eigene Nummer,
 und das Update nimmt die Taste nur für die Frage, in der sie entstand. Statt eines
 Summers vibriert ein DRV2605 auf 0x5A mit seinen ROM-Effekten für einen
 LRA (Bibliothek 6): eine Rastung "Sharp Tick 3" (26), PRESS "Sharp Click
@@ -87,8 +88,33 @@ auf 0x5A, geht GPIO38 auf high (der Enable der V1.0-Boards) und es folgt
 ein zweiter Versuch; ohne Antwort dann vibriert der K518 nicht. Die Zahl
 der Rastungen je Umdrehung (24 laut Guitions Demo-Code), die Ausrichtung
 der Touch-Achsen und die Stärke der Vibration sind noch nicht auf dem
-Gerät gelaufen. Akkumessung und Ausschalten tun noch nichts: Sein STATUS
-nennt den Akku unbekannt, und AUS lässt ihn an. Sein INFO nennt Hardware 2 (`DK_HW_K518`); sein Image nennt die
+Gerät gelaufen. 
+
+Der K518 misst seine Versorgung an GPIO1 (ADC1 Kanal 0, 12dB, kalibriert)
+über einen 10k/10k-Teiler einmal pro Sekunde: 16 Messungen, die
+niedrigste und die höchste verworfen, der Rest gemittelt, mal 2. Der
+Teiler liegt an der Schiene hinter dem Power-Pfad, also misst er mit USB
+VBUS weniger eine Diode, nicht den Akku. Ein Wert über 4.450mV oder ein
+USB-Host am Konsolen-Port ist USB: STATUS setzt sein USB-Flag und nennt den
+Akku unbekannt. Ein Wert unter 2.500mV ist kein plausibler Akku und
+ebenfalls unbekannt. Sonst trägt STATUS die Akkuspannung. LOW (STATUS
+Bit4) setzt nach 3 Messungen in Folge unter 3.500mV und endet nach 3 ab
+3.600mV; EMPTY (Bit5) ebenso bei 3.350mV und 3.450mV. EMPTY zeigt 3s lang
+AKKU LEER, dann schaltet sich der K518 selbst aus. Der Akkuanteil der
+Faces ist linear von 3.300mV (0%) bis 4.200mV (100%). Kein Ladestatus-Pin
+ist bekannt, also setzt STATUS nie CHARGING.
+
+Der Schiebeschalter trennt die Versorgung. AUS in der Ausschalt-Wahl und
+ein leerer Akku schicken den K518 in den Deep Sleep: der ST77916 aus und
+im Schlaf (DISPOFF, dann SLPIN und 120ms, gesendet, sobald das Bild
+des Face-Tasks auf der Leitung zu Ende ist, bis zu 2000ms, und danach kein
+Bild mehr), der Pin des Hintergrundlichts
+auf low gehalten, Touch-Controller und DRV2605 in ihrem eigenen Schlaf.
+Ein Dreh am Knopf (eine Encoder-Leitung low) weckt ihn zu einem neuen
+Start, ebenso der Schiebeschalter. Der Strom im Deep Sleep ist nicht
+gemessen; der Teiler allein zieht etwa 190µA aus einem Akku mit 3,8V. Die
+Genauigkeit des ADC gegen ein Messgerät ist noch nicht auf dem Gerät
+gelaufen. Sein INFO nennt Hardware 2 (`DK_HW_K518`); sein Image nennt die
 Update-Art 5 (`BLEOTA_KIND_DIAL_K518`), also nimmt keines der beiden Geräte
 das Image des anderen.
 
@@ -107,6 +133,7 @@ das Image des anderen.
 ![das ankommende Update auf dem K518](img/de/dial-k518-update-send.png)
 ![die Warnung vor dem Ausschalten auf dem K518](img/de/dial-k518-off-warn.png)
 ![die Wahl beim Ausschalten auf dem K518](img/de/dial-k518-off-ask.png)
+![ein leerer Akku auf dem K518](img/de/dial-k518-batt-empty.png)
 
 M5Stack, Dial und Stamp-S3A sind Namen ihres Inhabers und seiner Produkte,
 Guition und JC3636K518C sind Namen ihres Inhabers und seines Produkts,

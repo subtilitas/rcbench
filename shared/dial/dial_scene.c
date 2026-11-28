@@ -13,15 +13,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "dial_batt.h"
 #include "dial_face.h"
 #include "dial_text.h"
 #include "ui_theme.h"
 
-/** @brief The cell voltage of an empty and of a full LiPo cell, mV: the
- *         battery glyph's 0% and 100%. @{ */
-#define BATT_EMPTY_MV 3300
-#define BATT_FULL_MV  4200 /**< full */
-/** @} */
 /** @brief RSSI at or above which 4, 3 and 2 link bars light, dBm; below
  *         the last, 1. @{ */
 #define RSSI_4 (-60)
@@ -175,9 +171,7 @@ static void furniture(dial_scene_t *s, const dk_face_t *f,
                         ? UI_C_WARN : UI_C_OK;
     s->batt_known = v->batt_mv != 0u;
     if (s->batt_known) {
-        int pct = ((int)v->batt_mv - BATT_EMPTY_MV) * 100
-                  / (BATT_FULL_MV - BATT_EMPTY_MV);
-        s->batt_pct = (uint8_t)(pct < 0 ? 0 : pct > 100 ? 100 : pct);
+        s->batt_pct = dial_batt_pct(v->batt_mv);
     }
     s->usb = !s->batt_known && v->usb;
 }
@@ -538,6 +532,17 @@ void dial_scene_build(dial_scene_t *s, const dk_face_t *f,
     s->lang = f->have_screen ? f->screen.lang : lang_last;
     const uint8_t l = s->lang;
 
+    if (v->batt_empty) {
+        s->face = DIAL_FACE_EMPTY;
+        s->has_title = name[0] != '\0';
+        dk_text_copy(s->title, sizeof s->title, name);
+        furniture(s, f, v, true);
+        block(s, 0, dial_text(l, DIAL_BATT_EMPTY), 104, DIAL_FONT_MID,
+              UI_C_DANGER, 2, DIAL_B_TEXT);
+        block(s, 1, dial_text(l, DIAL_SWITCHING_OFF), 152, DIAL_FONT_SMALL,
+              UI_C_TEXT, 1, DIAL_B_TEXT);
+        return;
+    }
     if (v->upd != DIAL_UPD_NONE) {
         update(s, f, v);
         return;

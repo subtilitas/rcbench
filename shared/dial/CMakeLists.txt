@@ -8,8 +8,9 @@
 # host as well.  dk518_boot.c and dk518_draw.c are the Guition
 # JC3636K518C's boot face and reading faces, drawn at its own 360 x 360;
 # dk518_input.c its still touch, dk518_enc.c its encoder decode.
+# dial_batt.c is the battery's share and the K518's supply reading.
 set(SRCS dial_scene.c dial_draw.c dial_text.c dial_rings.c dial_button.c
-         dk518_boot.c dk518_draw.c dk518_input.c dk518_enc.c)
+         dial_batt.c dk518_boot.c dk518_draw.c dk518_input.c dk518_enc.c)
 
 if(ESP_PLATFORM)
     # The Dial builds the theme alone of shared/ui: ui_theme.c needs gfx.h
