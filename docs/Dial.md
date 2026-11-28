@@ -746,7 +746,7 @@ prompt `dial>` and the log on the same port.
 | `status` | name, address, firmware and protocol version, the board, the bound panel, the link and its RSSI (received signal strength indication), the connections since the start, the last disconnect's reason and the parameter requests the host refused, the EVENT counts, the click setting, on the K518 the encoder's last detent, the battery reading, the internal heap free and its lowest since the start |
 | `sound on` / `sound off` | the click per detent; the panel's SCREEN packet sets it as well, default ON |
 | `forget` | forget the bound panel, as the 10s hold |
-| `enc` | the K518 only: the encoder's last 32 raw edges, each as the ms since the edge before and the A/B pair before and after it (`+85 01>11`), the edges a full ring dropped, and both lines now |
+| `enc` | the K518 only: the encoder's last 32 raw edges, each as the ms since the previous edge and the A/B pair it went from and to (`+85 01>11`), the edges a full ring dropped, and both lines' levels at the call |
 | `help` | the commands |
 
 The test build (`RCBENCH_DIAL_HOOKS=ON`) adds the hooks. Each injects as if
