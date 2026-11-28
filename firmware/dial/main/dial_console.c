@@ -3,7 +3,8 @@
  * @brief The USB console, `dial>`: the Dial's state, its settings and, in a
  *        test build, the hooks that inject input as if the hardware did.
  *
- * Every build: `status`, `sound on|off`, `forget`, `help`.  A test build
+ * Every build: `status`, `sound on|off`, `forget`, `help`, and on the
+ * Guition JC3636K518C `enc`, the encoder's last 32 raw edges.  A test build
  * (RCBENCH_DIAL_HOOKS=ON) adds `turn <n>`, `press`, `hold`, `tap <x> <y>`,
  * `batt <mV>`, `drop` and `ping` (PLAN-DIAL section 6); the released image
  * holds none of their code.  The console runs on the USB Serial/JTAG port
@@ -46,6 +47,11 @@ static int cmd_status(int argc, char **argv)
     printf("board %s\n", DIAL_BOARD_NAME);
     printf("panel %s, link %s, rssi %d\n", panel[0] ? panel : "not bound",
            dial_ble_ready() ? "up" : "down", (int)dial_ble_rssi());
+    printf("connections %lu, last disconnect reason 0x%03X, parameter "
+           "requests refused %lu\n",
+           (unsigned long)dial_ble_link_count(),
+           (unsigned)dial_ble_last_reason(),
+           (unsigned long)dial_ble_param_fails());
     printf("event seq %u counter %d sent %lu unsent %lu, sound %s\n",
            (unsigned)st.seq, (int)st.counter, (unsigned long)st.sent,
            (unsigned long)st.unsent, dial_input_sound_on() ? "on" : "off");
@@ -94,6 +100,19 @@ static int cmd_forget(int argc, char **argv)
     printf("not bound\n");
     return 0;
 }
+
+#if CONFIG_RCBENCH_DIAL_BOARD_K518
+/** @brief `enc`: the K518 encoder's last 32 raw edges, each as the ms
+ *         since the edge before and its A/B pairs, then both lines now.
+ *  @param argc unused @param argv unused @return 0 */
+static int cmd_enc(int argc, char **argv)
+{
+    (void)argc;
+    (void)argv;
+    dial_input_enc_dump();
+    return 0;
+}
+#endif
 
 #if RCBENCH_DIAL_HOOKS
 /**
@@ -221,6 +240,10 @@ static const esp_console_cmd_t k_cmds[] = {
       .func = cmd_sound },
     { .command = "forget", .help = "forget the bound panel",
       .func = cmd_forget },
+#if CONFIG_RCBENCH_DIAL_BOARD_K518
+    { .command = "enc", .help = "the encoder's last 32 raw edges",
+      .func = cmd_enc },
+#endif
 #if RCBENCH_DIAL_HOOKS
     { .command = "turn", .help = "inject detents, one every 20ms",
       .hint = "<n>", .func = cmd_turn },

@@ -884,9 +884,10 @@ Die Konsole ist der USB-Serial/JTAG-Port der USB-C-Buchse, mit dem Prompt
 
 | Befehl | Was er tut |
 | --- | --- |
-| `status` | Name, Adresse, Firmware- und Protokollversion, die Platine, das gebundene Panel, der Link und sein RSSI (Received Signal Strength Indication), die EVENT-Zähler, die Klick-Einstellung, der Akkuwert, der freie interne Heap und sein Tiefstwert seit dem Start |
+| `status` | Name, Adresse, Firmware- und Protokollversion, die Platine, das gebundene Panel, der Link und sein RSSI (Received Signal Strength Indication), die Verbindungen seit dem Start, der Grund der letzten Trennung und die vom Host abgelehnten Parameteranfragen, die EVENT-Zähler, die Klick-Einstellung, beim K518 die letzte Rastung des Encoders, der Akkuwert, der freie interne Heap und sein Tiefstwert seit dem Start |
 | `sound on` / `sound off` | der Klick pro Rastung; das SCREEN-Paket des Panels setzt ihn ebenfalls, Standard ON |
 | `forget` | das gebundene Panel vergessen, wie das Halten von 10s |
+| `enc` | nur beim K518: die letzten 32 rohen Flanken des Encoders, jede mit den ms seit der vorigen Flanke und dem A/B-Paar, von dem und zu dem sie wechselte (`+85 01>11`), die Flanken, die ein voller Ring verworfen hat, und die Pegel beider Leitungen beim Aufruf |
 | `help` | die Befehle |
 
 Der Test-Build (`RCBENCH_DIAL_HOOKS=ON`) fügt die Hooks hinzu. Jeder speist
