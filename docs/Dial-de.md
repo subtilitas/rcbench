@@ -26,10 +26,14 @@ Encoder ohne Drucktaster und einem Vibrationsmotor. Sein Build
 ([Flashen über USB](#flashen-über-usb)) startet das BLE-Peripheral, die
 Bindung, den Face-Task, die Konsole und das Display. Das Display, ein
 ST77916 über QSPI (Quad-SPI) mit 40MHz, zeigt seine eigenen Faces,
-gezeichnet mit 360 x 360: MOTOR & ESC und SERVO mit den sechs Messwerten,
-sechs Ringen, Titel, Pille und Hinweisen der M5-Faces, und für jedes andere
-Face das Start-Face mit dem BLE-Namen und der Firmware-Version. Eine
-Änderung eines Face zeichnet und sendet den ganzen Frame von 259.200 Bytes.
+gezeichnet mit 360 x 360: jedes Face des M5 aus derselben Szene, MOTOR &
+ESC und SERVO mit sechs Messwerten, sechs Ringen, Titel, Pille und
+Hinweisen, die anderen Faces mit ihren Textblöcken, den Randstrichen einer
+Liste und den Randdekorationen. Ein Textblock steht auf der Zeile des
+M5-Face, um die Mitte mit 3/2 genommen, eine Schriftgröße größer, jeder
+String innerhalb von Radius 150. Das Start-Face mit dem BLE-Namen und der
+Firmware-Version steht bis zum ersten Face. Eine Änderung eines Face
+zeichnet und sendet den ganzen Frame von 259.200 Bytes.
 Touch, Encoder, Vibration und Akkumessung tun noch nichts: Er sendet kein EVENT, sein STATUS nennt den
 Akku unbekannt, und er lehnt jedes Update ab, weil keine Taste es
 bestätigt. Sein INFO nennt Hardware 2 (`DK_HW_K518`); sein Image nennt die
@@ -40,6 +44,17 @@ das Image des anderen.
 ![MOTOR & ESC auf dem K518, ARMED](img/de/dial-k518-motor-armed.png)
 ![MOTOR & ESC auf dem K518, SAFE](img/de/dial-k518-motor-safe.png)
 ![SERVO LIVE auf dem K518, ARMED](img/de/dial-k518-servo-live.png)
+![eine Liste auf dem K518](img/de/dial-k518-navigation.png)
+![ein Wert beim Setzen auf dem K518](img/de/dial-k518-value-set.png)
+![LINK LOST auf dem K518](img/de/dial-k518-link-lost.png)
+![der beendete Link auf dem K518](img/de/dial-k518-link-ended.png)
+![warten auf das Panel auf dem K518](img/de/dial-k518-waiting.png)
+![kein gebundenes Panel auf dem K518](img/de/dial-k518-bind.png)
+![ein Bildschirm ohne Wirkung des Knopfs auf dem K518](img/de/dial-k518-other.png)
+![das angebotene Update auf dem K518](img/de/dial-k518-update-ask.png)
+![das ankommende Update auf dem K518](img/de/dial-k518-update-send.png)
+![die Warnung vor dem Ausschalten auf dem K518](img/de/dial-k518-off-warn.png)
+![die Wahl beim Ausschalten auf dem K518](img/de/dial-k518-off-ask.png)
 
 M5Stack, Dial und Stamp-S3A sind Namen ihres Inhabers und seiner Produkte,
 Guition und JC3636K518C sind Namen ihres Inhabers und seines Produkts,

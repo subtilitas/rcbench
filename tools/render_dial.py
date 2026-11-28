@@ -86,6 +86,17 @@ FACES = {
     "k518-motor-armed": "MOTOR & ESC, ARMED, as the K518 draws it, 360 x 360",
     "k518-motor-safe": "MOTOR & ESC, SAFE, as the K518 draws it",
     "k518-servo-live": "SERVO, ARMED, as the K518 draws it",
+    "k518-navigation": "a list on SETUP, as the K518 draws it",
+    "k518-value-set": "a setting's value being set, as the K518 draws it",
+    "k518-link-lost": "LINK LOST, as the K518 draws it",
+    "k518-link-ended": "the Dial ended the link, as the K518 draws it",
+    "k518-waiting": "connected, no panel packet yet, as the K518 draws it",
+    "k518-bind": "no bound panel, as the K518 draws it",
+    "k518-other": "a screen the knob does nothing on, as the K518 draws it",
+    "k518-update-ask": "a firmware update offered, as the K518 draws it",
+    "k518-update-send": "a firmware update coming in, as the K518 draws it",
+    "k518-off-warn": "the switch-off's warning, as the K518 draws it",
+    "k518-off-ask": "the switch-off's choice, as the K518 draws it",
 }
 
 LANGS = {"en": ".", "de": "de"}

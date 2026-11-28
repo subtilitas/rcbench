@@ -1,17 +1,15 @@
 /**
  * @file
- * @brief The Guition JC3636K518C's face on its display: the reading faces
- *        drawn natively at 360 x 360 (shared/dial, dk518_render()), the
- *        boot face for every other face, and the whole frame sent at each
- *        change.
+ * @brief The Guition JC3636K518C's face on its display: every face drawn
+ *        natively at 360 x 360 (shared/dial, dk518_render()), and the
+ *        whole frame sent at each change.
  *
- * A reading face is drawn and sent when its scene changed, about every
- * 50ms on MOTOR & ESC and SERVO LIVE while the readings move: a draw of
- * 259,200 bytes into PSRAM and about 13ms on the wire (arithmetic, not
- * measured).  A face the K518 does not draw yet shows the boot face, drawn
- * again only when the BLE name changes or the face before was a reading
- * face.  A frame that did not go whole is drawn and sent again at the next
- * call.
+ * A face is drawn and sent when its scene changed, about every 50ms on
+ * MOTOR & ESC and SERVO LIVE while the readings move: a draw of 259,200
+ * bytes into PSRAM and about 13ms on the wire (arithmetic, not measured).
+ * The boot face (dial_k518_lcd.c) stands until the first draw; a renderer
+ * that draws nothing shows it again.  A frame that did not go whole is
+ * drawn and sent again at the next call.
  *
  * SPDX-License-Identifier: MIT
  */

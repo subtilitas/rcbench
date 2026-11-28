@@ -1,13 +1,12 @@
 /*
- * The Guition JC3636K518C's reading faces (shared/dial/dk518_draw.c),
- * drawn natively at 360 x 360 from the scene the M5Stack Dial's faces use.
+ * The Guition JC3636K518C's faces (shared/dial/dk518_draw.c), drawn
+ * natively at 360 x 360 from the scene the M5Stack Dial's faces use.
  *
  * The failures this is about: a string whose cells reach past radius 150,
  * where the rings run; a cell's text outside its cell; ink past the
  * outermost ring; a face drawn again although nothing changed, or not
- * drawn after a reading changed; a face the K518 does not draw yet taken
- * as drawn; a long title outside the shapes' radius; and a canvas of the
- * M5's 240 x 240 written to.
+ * drawn after a reading changed or the face changed; a long title or list
+ * row outside the radius; and a canvas of the M5's 240 x 240 written to.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -80,25 +79,37 @@ static void start(seen_t *s)
     gfx_canvas_init(&s_c, s_fb, DK518_SIZE, DK518_SIZE, 0);
 }
 
-TEST_CASE(every_reading_face_keeps_its_strings_inside_radius_150)
+TEST_CASE(every_face_keeps_its_strings_inside_radius_150)
 {
-    static const int ids[] = { DM_MOTOR_ARMED, DM_MOTOR_SAFE, DM_SERVO_LIVE };
     for (int lang = 0; lang < 2; ++lang) {
-        for (unsigned i = 0; i < sizeof ids / sizeof ids[0]; ++i) {
+        for (int id = 0; id < DM_COUNT; ++id) {
             dial_model_t m;
             seen_t s;
             start(&s);
-            dial_model(&m, ids[i], (uint8_t)lang);
+            dial_model(&m, id, (uint8_t)lang);
             CHECK_EQ(dk518_render(&s_r, &s_c, &m.face, &m.view), DK518_DRAWN);
-            /* Title, pill, six labels, six values, units and two hints. */
-            CHECK(s.strings >= 16);
+            CHECK(s.strings >= 2);
             CHECK_EQ(s.outside, 0);
             CHECK_EQ(s.off_cell, 0);
             CHECK_EQ(s_r.shortened, 0u);
             /* Nothing past the outermost ring's outer edge. */
             CHECK_EQ(ink_outside(DK518_RING_R0 + 2), 0);
-            CHECK(ink_outside(DK518_RING_R0 - 2) > 0);
         }
+    }
+}
+
+TEST_CASE(every_reading_face_draws_its_grid_and_rings)
+{
+    static const int ids[] = { DM_MOTOR_ARMED, DM_MOTOR_SAFE, DM_SERVO_LIVE };
+    for (unsigned i = 0; i < sizeof ids / sizeof ids[0]; ++i) {
+        dial_model_t m;
+        seen_t s;
+        start(&s);
+        dial_model(&m, ids[i], DK_LANG_EN);
+        CHECK_EQ(dk518_render(&s_r, &s_c, &m.face, &m.view), DK518_DRAWN);
+        /* Title, pill, six labels, six values, units and two hints. */
+        CHECK(s.strings >= 16);
+        CHECK(ink_outside(DK518_RING_R0 - 2) > 0);
     }
 }
 
@@ -128,7 +139,7 @@ TEST_CASE(an_unchanged_scene_draws_nothing_and_a_new_reading_draws_again)
     CHECK_EQ(dk518_render(&s_r, &s_c, &m.face, &m.view), DK518_DRAWN);
 }
 
-TEST_CASE(a_face_the_k518_does_not_draw_yet_is_none_and_forgets_the_frame)
+TEST_CASE(a_new_face_draws_in_full_and_a_lost_link_shows_the_dashed_rim)
 {
     dial_model_t m;
     seen_t s;
@@ -136,15 +147,70 @@ TEST_CASE(a_face_the_k518_does_not_draw_yet_is_none_and_forgets_the_frame)
     dial_model(&m, DM_MOTOR_ARMED, DK_LANG_EN);
     CHECK_EQ(dk518_render(&s_r, &s_c, &m.face, &m.view), DK518_DRAWN);
     static const int others[] = { DM_NAVIGATION, DM_VALUE_SET, DM_BIND,
-                                  DM_LINK_LOST, DM_OFF_ASK, DM_UPDATE_ASK };
+                                  DM_WAITING, DM_LINK_LOST, DM_OFF_ASK,
+                                  DM_UPDATE_ASK, DM_UPDATE_SEND };
     for (unsigned i = 0; i < sizeof others / sizeof others[0]; ++i) {
         dial_model(&m, others[i], DK_LANG_EN);
-        CHECK_EQ(dk518_render(&s_r, &s_c, &m.face, &m.view), DK518_NONE);
-        CHECK(!s_r.valid);
+        CHECK_EQ(dk518_render(&s_r, &s_c, &m.face, &m.view), DK518_DRAWN);
+        CHECK_EQ(dk518_render(&s_r, &s_c, &m.face, &m.view), DK518_SAME);
     }
-    /* Back on a reading face: drawn in full, the boot face is gone. */
-    dial_model(&m, DM_MOTOR_ARMED, DK_LANG_EN);
+    /* LINK LOST's dashes lie between radius 165 and 174: ink at 170 on
+     * some angle, none past 176. */
+    dial_model(&m, DM_LINK_LOST, DK_LANG_EN);
     CHECK_EQ(dk518_render(&s_r, &s_c, &m.face, &m.view), DK518_DRAWN);
+    CHECK(ink_outside(160) > 0);
+    CHECK_EQ(ink_outside(DK518_RING_R0), 0);
+}
+
+TEST_CASE(the_widest_list_row_steps_down_the_chain_inside_radius_150)
+{
+    dial_model_t m;
+    seen_t s;
+    start(&s);
+    dial_model(&m, DM_OTHER, DK_LANG_EN);
+    CHECK_EQ(dk518_render(&s_r, &s_c, &m.face, &m.view), DK518_DRAWN);
+    const uint32_t before = s_r.shortened;
+    /* DK_ITEM_MAX characters of the widest letter: too wide for 20x36 in
+     * the focus's row, whole in a smaller font. */
+    dial_model(&m, DM_NAVIGATION, DK_LANG_EN);
+    dk_text_copy(m.face.nav[DK_SLOT_FOCUS].item,
+                 sizeof m.face.nav[DK_SLOT_FOCUS].item,
+                 "WWWWWWWWWWWWWWW");
+    CHECK_EQ(dk518_render(&s_r, &s_c, &m.face, &m.view), DK518_DRAWN);
+    CHECK_EQ(s_r.shortened, before);
+    CHECK_EQ(s.outside, 0);
+}
+
+/** @brief Draw the bind face with @p addr in the address's block.
+ *  @param s the counts @param addr the text @return strings drawn */
+static int bind_with(seen_t *s, const char *addr)
+{
+    dial_model_t m;
+    start(s);
+    dial_model(&m, DM_BIND, DK_LANG_EN);
+    m.view.addr = addr;
+    CHECK_EQ(dk518_render(&s_r, &s_c, &m.face, &m.view), DK518_DRAWN);
+    CHECK_EQ(s->outside, 0);
+    return s->strings;
+}
+
+TEST_CASE(a_text_too_wide_drops_its_last_part_and_never_cuts_a_number)
+{
+    seen_t s;
+    const int whole = bind_with(&s, "A0:B1:C2:7F:3A:10");
+    CHECK_EQ(s_r.shortened, 0u);
+    /* A last part, two spaces apart, that fits nowhere: dropped whole. */
+    CHECK_EQ(bind_with(&s, "A0:B1:C2:7F:3A:10  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"),
+             whole);
+    CHECK_EQ(s_r.shortened, 1u);
+    /* One part of 40 digits, 320px in 8x16, too wide for the row: not
+     * drawn at all. */
+    CHECK_EQ(bind_with(&s, "1234567890123456789012345678901234567890"),
+             whole - 1);
+    CHECK_EQ(s_r.shortened, 1u);
+    /* One part without digits: cut by characters in 8x16. */
+    CHECK_EQ(bind_with(&s, "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"), whole);
+    CHECK_EQ(s_r.shortened, 1u);
 }
 
 TEST_CASE(the_longest_title_steps_down_a_font_inside_the_shapes_radius)
@@ -203,9 +269,12 @@ TEST_CASE(the_geometry_answers_at_its_edges)
 
 int main(void)
 {
-    RUN(every_reading_face_keeps_its_strings_inside_radius_150);
+    RUN(every_face_keeps_its_strings_inside_radius_150);
+    RUN(every_reading_face_draws_its_grid_and_rings);
     RUN(an_unchanged_scene_draws_nothing_and_a_new_reading_draws_again);
-    RUN(a_face_the_k518_does_not_draw_yet_is_none_and_forgets_the_frame);
+    RUN(a_new_face_draws_in_full_and_a_lost_link_shows_the_dashed_rim);
+    RUN(the_widest_list_row_steps_down_the_chain_inside_radius_150);
+    RUN(a_text_too_wide_drops_its_last_part_and_never_cuts_a_number);
     RUN(the_longest_title_steps_down_a_font_inside_the_shapes_radius);
     RUN(a_canvas_of_another_size_or_no_argument_draws_nothing);
     RUN(the_geometry_answers_at_its_edges);
