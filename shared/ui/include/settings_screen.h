@@ -50,6 +50,14 @@ const ui_screen_t *settings_screen(void);
 void settings_screen_invalidate(void);
 
 /**
+ * @brief A live row's value may read differently (ui_setlist_custom_t's
+ *        live): on the next frame of each framebuffer SETUP repaints the
+ *        value box of each live row in view whose text changed, and
+ *        nothing else.
+ */
+void settings_screen_live(void);
+
+/**
  * @brief Sets the SENSORS rows whose value the IOmcu does not hold.
  *
  * Such a row is drawn marked -- its edge and its value in the warning colour,
@@ -114,12 +122,14 @@ gfx_rect_t settings_screen_entry_rect(int entry);
 /**
  * @brief The parts of list row @p row a tap acts on, in the screen's own
  *        coordinates at the list's present scroll: the "-" key, the value
- *        between the keys and the "+" key, each over the row's height.
+ *        between the keys and the "+" key, each over the row's height, or
+ *        a hold row's button.
  */
 typedef enum {
     SETTINGS_ROW_MINUS = 0,   /**< the "-" or "<" key                  */
     SETTINGS_ROW_VALUE,       /**< the value: a tap opens the keypad    */
     SETTINGS_ROW_PLUS,        /**< the "+" or ">" key                  */
+    SETTINGS_ROW_HOLD,        /**< a hold row's button                 */
 } settings_row_part_t;
 
 /**
@@ -181,6 +191,17 @@ const ui_textkey_t *settings_screen_textkey(void);
  * @return The keypad, open or closed.
  */
 const ui_keypad_t *settings_screen_keypad(void);
+
+/**
+ * @brief A node's own name typed over the list (ui_setlist_type_name()):
+ *        a row of WIRELESS' node entries opens it; OK hands the name to
+ *        @p done.
+ * @param title The keyboard's title.
+ * @param text  What it starts with.
+ * @param done  Takes the name typed; "" clears it.
+ */
+void settings_screen_type_name(const char *title, const char *text,
+                               void (*done)(const char *name));
 
 /**
  * @brief The setting the open keypad types.

@@ -4,9 +4,9 @@
 
 Ein Sensorknoten ist ein ESP32-C6-Board an einer eigenen LiPo-Zelle, das
 fertige Messwerte über Bluetooth LE (Low Energy, BLE) sendet. Er hat kein
-Kabel zum Prüfstand. Der Leistungsknoten liest den INA228 eines MATEK
-I2C-INA-BM im XT60-Leistungspfad des ESC (Electronic Speed Controller,
-Motorregler). Der Auswuchtknoten liest eine Achse eines
+Kabel zum Prüfstand. Der Leistungsknoten liest ein INA228-Board im
+Leistungspfad des ESC (Electronic Speed Controller, Motorregler): das
+MATEK I2C-INA-BM oder ein anderes auf 0x40 bis 0x4F ([Der INA228](#der-ina228)). Der Auswuchtknoten liest eine Achse eines
 Beschleunigungssensors und einen Indexsensor und sendet alle 250ms einen
 Auswuchtbericht. Der Anzeigeknoten ist der Leistungsknoten auf einem
 2,8"-Touch-Display-Board mit ESP32-S3, versorgt aus dem Pack, das seine
@@ -34,18 +34,22 @@ enthält den Hinweis des Projekts.
 | die Entscheidungen zu Akku und Schlaf, in der Host-Suite getestet | `firmware/node/main/node_policy.c` |
 | der GATT-Server (Generic Attribute Profile) und das Advertising auf NimBLE | `firmware/node/main/node_ble.c` |
 | die Rolle Leistung: der INA228, die Fenster, die Akkumulatoren | `firmware/node/main/node_pwr.c` |
+| die Suche der Adresse des INA228 und die Shunt-Einstellung der Rolle Leistung, in der Host-Suite getestet | `firmware/node/main/node_pwr_sens.c` |
 | der INA228-Treiber, derselbe wie im IOmcu | `shared/sense/ina228.c`, `shared/sense/sense_bus.c` |
 | die Rolle Auswuchten: der ADC-Datenstrom, der Index, der Bericht, der Akku | `firmware/node/main/node_bal.c` |
 | die ADC-Frames, die Skala, der Index und der Demodulator, in der Host-Suite getestet | `shared/vibe` |
 | die Akkumessung des Leistungsknotens | `firmware/node/main/node_bat.c` |
 | Pins, INFO-Board-Byte und Update-Art jedes Boards | `firmware/node/main/node_board.h` |
 | der Bildschirm des Anzeigeknotens: Werte, Höchst- und Tiefstwert, Touch, Formate, Zeichnen, in der Host-Suite getestet | `firmware/node/main/node_view.c` |
+| Startbildschirm und SETUP des Anzeigeknotens, der I2C-SCAN, in der Host-Suite getestet | `firmware/node/main/node_setup.c`, `firmware/node/main/node_setup_view.c`, `firmware/node/main/node_scan.c` |
+| die eigenen Einstellungen des Knotens (NAME, INA228-ADRESSE, SHUNT) und RCNODE_T_CONFIG, die Regeln in der Host-Suite getestet | `firmware/node/main/node_store.c`, `firmware/node/main/node_set.c` |
+| die Seite des Panels für die eigenen Einstellungen des Knotens, in der Host-Suite getestet | `shared/ui/node_cfg_link.c` |
 | Display und Touch des Anzeigeknotens | `firmware/node/main/node_lcd.c`, `firmware/node/main/node_disp.c` |
 | die Konsole | `firmware/node/main/node_console.c` |
 | die Servo-Rolle: die UART-Verbindung zum Core2350B, die Pumpe, `srv` auf der Konsole | `firmware/node/main/node_srv_link.c`, `firmware/node/main/node_srv.c` |
 | die Sicherheitsentscheidungen und die Abfrage des Servoknotens, unter der Host-Testsuite | `firmware/node/main/node_srv_policy.c`, `firmware/node/main/node_srv_poll.c` |
 | die Heartbeat- und RUN-Pins des Servoknotens | `firmware/node/main/node_srv_hb.c` |
-| die Central des Panels für den Leistungsknoten: Suche, Bindung, Prüfung von INFO, der RUN-Marker, in der Host-Suite getestet | `shared/ui/pnode_ctl.c` |
+| die Central des Panels für den Leistungsknoten: Suche, Bindung, Prüfung von INFO, der RUN-Marker, der SHUNT-Write, in der Host-Suite getestet | `shared/ui/pnode_ctl.c` |
 | Messwerte, Summen, Spitzen und Aussetzerregel des Panels, in der Host-Suite getestet | `shared/ui/pnode_meter.c` |
 | der Eintrag LEISTUNGSKNOTEN unter SETUP > WIRELESS | `shared/ui/wireless_pnode.c` |
 | der Client der `blec`-Task des Panels und die Anbindung an die Control-Task | `firmware/panel/main/panel_pnode.c` |
@@ -57,7 +61,7 @@ enthält den Hinweis des Projekts.
 | Waveshare ESP32-C6-Zero | ESP32-C6FH4 mit 4MB Flash im Gehäuse, USB-C (USB Serial/JTAG), LDO (Low-Dropout-Regler) vom 5V-Pin auf 3,3V: ME6217C33M5G laut Schaltplan von Waveshare, ME6217C33M6G laut Angebot des Händlers; welches Teil auf den gelieferten Boards sitzt, ist nicht bestätigt, RGB-LED WS2812 an GPIO8, Taste BOOT an GPIO9, Taste RESET |
 | Lade- und Boost-Modul GERUI CD42 | lädt die Zelle über VIN (4,5V bis 5V) und erzeugt aus ihr 5V an OUT |
 | eine 1S-LiPo-Zelle | an BAT des Moduls |
-| MATEK I2C-INA-BM | INA228, Shunt 200µΩ, Adresse 0x45, XT60 ein und aus |
+| ein INA228-Board | das MATEK I2C-INA-BM: INA228, Shunt 200µΩ, Adresse 0x45, XT60 ein und aus; oder ein anderes INA228-Board: Adresse 0x40 bis 0x4F, sein Shunt als KNOTEN-SHUNT eingestellt, 50 bis 10.000µΩ |
 | 2 × 200kΩ, 1 × 100nF | der Akku-Spannungsteiler |
 | 2 × 2,2kΩ | I2C-Pull-ups (Inter-Integrated Circuit) auf 3,3V |
 
@@ -196,8 +200,33 @@ bei 30mA, dazu der Strom im Schlaf.
 
 Der Knoten schreibt die Einstellung des Prüfstands (`INA228_ADC_BENCH`):
 Bus- und Shuntspannung je 540µs, Temperatur 50µs, Mittelung 1, ein
-Ergebnis alle 1130µs. ADCRANGE 1 (±40,96mV) für 204,8A am 200µΩ-Shunt:
-390,625µA je Schritt. Der Treiber ist derselbe wie im IOmcu.
+Ergebnis alle 1130µs. ADCRANGE 1 (±40,96mV) für jeden Shunt: 204,8A am
+200µΩ-Shunt des MATEK, 390,625µA je Schritt. Der Treiber ist derselbe wie
+im IOmcu.
+
+**Die Adresse.** Der INA228 liegt auf einer von 0x40 bis 0x4F: das MATEK
+auf 0x45, die meisten anderen Boards auf 0x40. Beim Start und bei jeder
+neuen Prüfung liest der Knoten MANUFACTURER_ID (3Eh) und DEVICE_ID (3Fh)
+ab 0x40 aufwärts, eine Adresse je Takt von 1130µs, und nimmt die erste mit
+5449h und Die 228h; ein anderes Bauteil wird nie beschrieben, FT6336G
+(0x38) und ES8311 (0x18) nie gefragt. Die NACKs der Suche zählen nicht in
+`errors`. Ohne Fund nennt STATUS `absent` oder `wrong id`, und die Suche
+beginnt 1000ms später neu, wie nach einem zurückgesetzten Bauteil. INFO
+nennt die gefundene Adresse, 0 für keine. INA228-ADRESSE (ab Werk AUTO,
+oder fest 0x40 bis 0x4F, NVS-Namespace `node`, Schlüssel `i228`) begrenzt
+die Suche mit derselben Prüfung auf eine Adresse; das SETUP des
+Anzeigeknotens und der Eintrag LEISTUNGSKNOTEN des Panels setzen sie
+([Nodes-setup](Nodes-setup-de.md#die-einstellungen-über-die-verbindung)).
+
+**Der Shunt.** KNOTEN-SHUNT am Panel, 50 bis 10.000µΩ, Vorgabe 200µΩ, geht
+als SHUNT zum Knoten. Er hält ihn im NVS (Namespace `pwr`, Schlüssel
+`shunt_uohm`), nennt ihn sofort in INFO und stellt das Bauteil im nächsten
+Takt damit ein. Das SETUP des Anzeigeknotens setzt ihn auch; die letzte
+Änderung gewinnt ([Der Shunt im Gleichschritt](Nodes-setup-de.md#der-shunt-im-gleichschritt)). ADCRANGE 1 und SHUNT_CAL 4096 gelten für jeden Shunt, der
+Vollausschlag ist 40,96mV über dem Shunt: 819,2A bei 50µΩ, 204,8A bei
+200µΩ, 4,096A bei 10.000µΩ. Eine Änderung löscht CHARGE und ENERGY und
+zählt in `epoch`. Das MATEK auf 200µΩ ergibt Fenster und INFO der festen
+Einstellung 0x45 Byte für Byte (`test_node_pwr_sens`).
 
 | Alle | Gelesen | Wohin |
 | --- | --- | --- |
@@ -433,7 +462,7 @@ darauf nicht.
 | Teil | Zweck |
 | --- | --- |
 | LCDWIKI ES3C28P | ESP32-S3R8: 8MB Octal-PSRAM im Gehäuse, 16MB QSPI-Flash; 2,8" IPS 240 × 320, ILI9341V über 4-Draht-SPI; kapazitiver Touch FT6336G an I2C-Adresse 0x38; Audio-Codec ES8311 an 0x18, nicht benutzt; USB-C (USB Serial/JTAG des Chips); 1,25mm-Buchsen für I2C, UART, 4 GPIO, eine 3,7V-Zelle und einen Lautsprecher; BOOT-Taste an IO0; RESET-Taste |
-| MATEK I2C-INA-BM | INA228, 200µΩ-Shunt, Adresse 0x45, XT60 ein und aus |
+| ein INA228-Board | das MATEK I2C-INA-BM: INA228, 200µΩ-Shunt, Adresse 0x45, XT60 ein und aus; oder ein anderes INA228-Board: Adresse 0x40 bis 0x4F, sein Shunt als KNOTEN-SHUNT eingestellt, 50 bis 10.000µΩ |
 | ein 5V-Abwärtswandler | aus dem Pack an seinem Stecker gespeist, vor dem Shunt; sein Strom wird nicht gemessen |
 
 ### Pins
@@ -483,70 +512,18 @@ Pinfolge ist nicht bestätigt, darum gehen die 5V in die USB-C-Buchse. Eine
 Zelle an der Akkubuchse braucht es nicht; der Knoten überwacht sie nicht,
 und STATUS meldet, was IO9 liest.
 
-### Der Bildschirm
+### Der Bildschirm und das SETUP des Knotens
 
-![Der Anzeigeknoten, verbunden mit einem Panel auf Deutsch](img/de/node-values.png)
+![Der Startbildschirm](img/de/node-splash.png)
 
-Der Bildschirm ist 320 × 240 groß, im Querformat. Das Band oben nennt die
-Verbindung: ohne Verbindung `STANDALONE`, `VERBUNDEN`, sobald ein Central
-verbunden ist und abonniert hat. Darunter liegen drei Zeilen: Spannung,
-Strom und Leistung. Jede Zeile zeigt ihren aktuellen Wert in 32x44-Ziffern
-und rechts der Linie ihren Höchstwert (rotes Dreieck) und Tiefstwert
-(blaues Dreieck).
-
-| Wert | Anzeige | Bereich |
-| --- | --- | --- |
-| Spannung | 2 Nachkommastellen | 0.00V bis 99.99V |
-| Strom | 1 Nachkommastelle | -999.9A bis 999.9A |
-| Leistung | 1 Nachkommastelle unter 100W, sonst ganze Watt | -99999W bis 99999W |
-
-Der Bildschirm schreibt Zahlen mit Punkt, wie das Panel. Jeder Wert wird
-kaufmännisch von null weg gerundet und auf seinen Bereich begrenzt; die
-Einheit folgt ohne Leerzeichen (`12.60V`, `35.2A`, `443W`). Die aktuellen
-Werte sind der Mittelwert der 20ms-Fenster des INA228 seit dem letzten
-Bild, 5 Bilder je Sekunde (`NV_FRAME_MS`, 200ms): etwa 10 Fenster je Bild.
-Die Leistung eines Fensters ist seine mittlere Spannung mal seinem
-mittleren Strom. Höchst- und Tiefstwert sind die einzelner Fenster seit
-dem Start oder dem letzten Zurücksetzen; sie liegen im RAM, ein Neustart
-löscht sie. Ein Fenster ohne Sample oder mit nur übersteuerten
-Stromsamples zählt nicht. Ohne Fenster seit dem letzten Bild zeigen die
-Werte `--`, und das Band zeigt `KEIN SENSOR`.
-
-![Kein Fenster vom INA228](img/de/node-no-sensor.png)
-
-Nur was sich geändert hat, wird gezeichnet und zum Display gesendet: Ein
-Bild mit einem neuen Wert sendet den Teil seiner Zeile, nicht das ganze
-Bild von 153.600 Byte.
-
-### Touch
-
-| Berührung | Wirkung |
-| --- | --- |
-| ein Tippen auf Höchst- und Tiefstwert einer Zeile (x 220 bis 319) | setzt die beiden dieser Zeile zurück |
-| 2s Halten an beliebiger Stelle | setzt alle sechs zurück, einmal, noch während des Haltens |
-
-Sonst hat der Touch keine Funktion. Das Halten löst beim ersten Lesen aus,
-das den Finger 2s oder später nach Beginn des Drucks sieht. Ein Druck, dessen
-letzter gelesener Kontakt vor 2s liegt, ist ein Tippen; der Druck endet 60ms
-nach dem letzten gelesenen Kontakt, und der Touch wird alle 20ms gelesen. Ab 300ms Druck füllt sich unten im Band ein
-Balken bis zu den 2s, und das Band zeigt `ALLE ZURÜCKSETZEN`.
-
-![1,2s Halten](img/de/node-hold.png)
-
-Der FT6336G meldet das Hochformat des Panels; die Firmware dreht es für den
-Bildschirm im Querformat. Dass die Drehung zum Board passt, ist nicht
-bestätigt: Jedes Tippen schreibt seinen Punkt auf die Konsole (`disp: tap
-at 260,60: highest and lowest reset`). `NODE_LCD_TURN` 1 in `node_board.h`
-dreht Bildschirm und Touch um 180°.
-
-### Sprache
-
-Die Texte sind englisch. Solange ein Panel verbunden ist, folgen sie seiner
-Sprache: Das Panel schreibt LANG nach CONTROL, nach INFO bei jeder
-Verbindung und bei jedem Wechsel seiner Sprache
-([protocols/rcnode](../protocols/rcnode/README.md)). Auf Deutsch zeigt der
-Bildschirm `VERBUNDEN`, `KEIN SENSOR` und `ALLE ZURÜCKSETZEN`. Ohne
-Verbindung sind die Texte wieder englisch.
+Der Bildschirm zeigt nach dem Einschalten 10s lang einen Startbildschirm
+mit einer SETUP-Taste, die es gibt, bis sich ein Panel verbindet, dann das
+Messbild: Spannung, Strom und Leistung, jede mit Höchst- und Tiefstwert.
+Das eigene SETUP des Knotens setzt NAME, INA228-ADRESSE (AUTO oder fest)
+und SHUNT und hat einen I2C-SCAN, der kein Register beschreibt.
+Bildschirme, Touch, Sprache und wie der Shunt mit KNOTEN-SHUNT am Panel
+gleich bleibt, stehen in
+[Der Bildschirm des Anzeigeknotens und die eigenen Einstellungen der Knoten](Nodes-setup-de.md).
 
 ### Versorgung und Schlaf
 
@@ -669,8 +646,8 @@ von 247 an und keine eigenen Verbindungsparameter.
 | --- | --- | --- |
 | STREAM | NOTIFY | Leistung: Fenster alle 20ms, Akkumulatoren und Extremwerte alle 500ms; Auswuchten: ein Bericht alle 250ms; beide: das STATUS-Paket alle 1000ms |
 | STATUS | READ, NOTIFY | Akku, Flags, Firmwareversion, Zähler, alle 1000ms |
-| CONTROL | WRITE, WRITE WITHOUT RESPONSE | RUN mit einem Tag von 1 bis 255, SLEEP, OFF; LANG (0 Englisch, 1 Deutsch) am Leistungsknoten; BLADES (1 bis 12) und RPM am Auswuchtknoten |
-| INFO | READ | Protokoll, Rolle, Board, Adresse, die Einstellung des INA228 (0 am Auswuchtknoten) |
+| CONTROL | WRITE, WRITE WITHOUT RESPONSE | RUN mit einem Tag von 1 bis 255, SLEEP, OFF; LANG (0 Englisch, 1 Deutsch) und SHUNT (50 bis 10.000µΩ) am Leistungsknoten; BLADES (1 bis 12) und RPM am Auswuchtknoten |
+| INFO | READ | Protokoll, Rolle, Board, Adresse; die gefundene Adresse des INA228 (0 keine), ADCRANGE und Shunt (0 am Auswuchtknoten) |
 
 Ein Write, den die Rolle nicht annimmt oder der eine andere Länge hat,
 wird mit dem ATT-Fehler 0x13 oder 0x0D abgelehnt.
@@ -760,6 +737,17 @@ Panels. Der Auswuchtknoten ist der vierte Client, Owner 3
   nicht ergibt, sendet nichts, was das Panel nimmt. Die Central abonniert
   eine Characteristic, deshalb sendet der Knoten sein STATUS-Paket auch auf
   STREAM; die Akkuzeile liest es.
+- **Der Shunt.** Nach INFO auf jeder Verbindung und jeder Änderung von
+  KNOTEN-SHUNT schreibt das Panel SHUNT, wenn INFO einen anderen nennt,
+  nach einem ausstehenden RUN-Write, nie bei ARMED, und liest INFO bei
+  SAFE neu; ein Timeout liest INFO und schreibt erneut. ATT-Fehler 0x13
+  gibt `LEISTUNGSKNOTEN NIMMT KEINEN SHUNT: FIRMWARE AKTUALISIEREN`. Ein
+  Knoten, der CONFIG nimmt, bekommt den Write erst nach seinem CONFIG, und
+  die letzte Änderung beider Enden gewinnt
+  ([Der Shunt im Gleichschritt](Nodes-setup-de.md#der-shunt-im-gleichschritt)).
+- **Die eigenen Einstellungen des Knotens.** Nach INFO schreibt das Panel
+  CONFIG; KNOTENNAME und INA228-ADRESSE schreiben NAME und I228 bei SAFE
+  ([Nodes-setup](Nodes-setup-de.md#die-einstellungen-über-die-verbindung)).
 - **Der RUN-Marker.** Bei jedem Schalten auf ARMED schreibt das Panel RUN
   mit dem Tag des Laufs, 1 bis 255, auf CONTROL. Eine Verbindung, die dann
   nicht steht, bekommt den Write, wenn sie innerhalb des Laufs wiederkommt.
@@ -771,8 +759,8 @@ INA228-QUELLE (WIRED, NODE; Vorgabe WIRED) legt fest, wessen INA228 MOTOR &
 ESC speist. Sie ändert sich nur bei SAFE: bei ARMED hat ihre Zeile keine
 Tasten, ein Druck darauf zeigt `Nur bei SAFE einstellbar` auf dem Band, und
 `settings_set()` und Zurücksetzen lassen sie stehen
-(`settings_safe_only()`). Mit NODE nach jedem Lesen der BENCH-Page des
-IOmcu:
+(`settings_safe_only()`), ebenso KNOTEN-SHUNT. Mit NODE nach jedem Lesen
+der BENCH-Page des IOmcu:
 
 | Wert | Vom Knoten |
 | --- | --- |
@@ -1025,7 +1013,7 @@ starten, oder BOOT halten und RESET drücken für den Download-Modus des ROM.
 USB Serial/JTAG an USB-C des Boards. Eine Zeile je Sekunde:
 
 ```text
-I (5123) node: pwr 50 win/s, n 18, 22.18V 14.300A, part online, epoch 1; link up -58dBm, sub 1, bat 3.92V, errors 0, resets 0, dropped 0
+I (5123) node: pwr 50 win/s, n 18, 22.18V 14.300A, part online at 0x45, 200uOhm, epoch 1; link up -58dBm, sub 1, bat 3.92V, errors 0, resets 0, dropped 0
 ```
 
 | Feld | Bedeutung |
@@ -1033,7 +1021,7 @@ I (5123) node: pwr 50 win/s, n 18, 22.18V 14.300A, part online, epoch 1; link up
 | `win/s` | in der letzten Sekunde geschlossene Fenster, 50, wenn jedes Fenster ein Sample hat |
 | `n` | Samples im letzten Fenster |
 | Volt und Ampere | die Mittelwerte des letzten Fensters |
-| `part` | `online` oder `not answering` |
+| `part` | `online` oder `not answering`; `at` und die Adresse des letzten Funds; der aktive Shunt |
 | `epoch` | Einstellungen des INA228 seit dem Start |
 | `link` | none ohne Verbindung, sonst up und der RSSI (Received Signal Strength Indication) |
 | `sub` | 1, wenn STREAM abonniert ist |
@@ -1095,6 +1083,10 @@ I (5123) node: srv iomcu up, panel LINKED, SAFE, beat on, faults 0x0000, answere
 | `srv stop` | STOP, wie das des Panels |
 
 ## Aktuelle Einschränkungen
+
+- Ein Panel aus der Zeit vor CONFIG überschreibt einen im SETUP des
+  Anzeigeknotens geänderten Shunt bei seiner nächsten Verbindung
+  ([Nodes-setup](Nodes-setup-de.md#aktuelle-einschränkungen)).
 
 - Der Servoknoten hat in `protocols/rcnode` noch keine eigenen Pakete und
   keine eigenen Steuerbefehle: KEEPALIVE, STOP, ARM, SAFE und THROTTLE

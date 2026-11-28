@@ -14,8 +14,13 @@
 #include "settings_screen.h"
 #include "ui_screen.h"
 #include "ui_text.h"
+#include "node_cfg_link.h"
+#include "ui_textkey.h"
 #include "ui_theme.h"
 #include "wl_search.h"
+
+_Static_assert(UI_TEXTKEY_NODE_MAX == RCNODE_UNAME_MAX,
+               "the name keyboard types a node's whole name");
 
 /** @brief The node as the panel last read it. */
 static pnode_view_t s_node;
@@ -25,6 +30,10 @@ static pnode_view_t s_node;
 static pnode_cmd_t s_q[CMD_Q];
 /** @brief The commands in s_q. */
 static unsigned    s_q_n;
+/** @brief The INA228 ADDRESS last asked for, until the node echoes it. */
+static uint8_t     s_addr_asked;
+/** @brief s_addr_asked waits for its echo. */
+static bool        s_addr_ask;
 
 /**
  * @brief Queue a command; a full queue drops it.
@@ -33,6 +42,7 @@ static unsigned    s_q_n;
 static void push(uint8_t kind, uint8_t arg)
 {
     if (s_q_n < CMD_Q) {
+        memset(&s_q[s_q_n], 0, sizeof(s_q[0]));
         s_q[s_q_n].kind = kind;
         s_q[s_q_n].arg = arg;
         ++s_q_n;
@@ -78,6 +88,13 @@ static bool view_same(const pnode_view_t *a, const pnode_view_t *b)
         || a->have_status != b->have_status || a->bat_low != b->bat_low
         || a->bat_none != b->bat_none || a->bat_err != b->bat_err
         || a->vbat_mv != b->vbat_mv || a->bind_refused != b->bind_refused
+        || a->have_info != b->have_info || a->i228_addr != b->i228_addr
+        || a->shunt_uohm != b->shunt_uohm
+        || a->shunt_refused != b->shunt_refused
+        || a->have_cfg != b->have_cfg || a->i228_set != b->i228_set
+        || a->cfg_refused != b->cfg_refused || a->adopt_seq != b->adopt_seq
+        || a->cfg_req_no != b->cfg_req_no || a->cfg_dropped != b->cfg_dropped
+        || strncmp(a->node_name, b->node_name, sizeof a->node_name) != 0
         || a->scan_armed != b->scan_armed
         || a->scan_unready != b->scan_unready
         || strncmp(a->bound_addr, b->bound_addr, sizeof a->bound_addr) != 0
@@ -111,6 +128,16 @@ void wireless_pane_set_pnode(const pnode_view_t *v)
     const bool armed_no = v != NULL && next.scan_armed != s_node.scan_armed;
     const bool scan_no = v != NULL
                          && next.scan_unready != s_node.scan_unready;
+    const bool shunt_no = v != NULL
+                          && next.shunt_refused != s_node.shunt_refused;
+    const bool cfg_no = v != NULL && next.cfg_refused != s_node.cfg_refused;
+    const bool req_no = v != NULL && next.cfg_req_no != s_node.cfg_req_no;
+    const bool dropped = v != NULL && next.cfg_dropped != s_node.cfg_dropped;
+    if (v == NULL || !next.have_cfg || next.i228_set == s_addr_asked
+        || next.i228_set != s_node.i228_set || cfg_no || req_no || dropped) {
+        s_addr_ask = false;     /* the node's echo or answer, a refusal, a
+                                   drop, or no link: steps go from CONFIG */
+    }
     s_node = next;
     settings_screen_invalidate();
     const bool scanning = s_node.link == PNODE_LINK_SCANNING;
@@ -122,6 +149,17 @@ void wireless_pane_set_pnode(const pnode_view_t *v)
     } else if (scan_no) {
         ui_router_set_alert(scanning ? TR(NODE_SCAN_RUNNING)
                                      : TR(PNODE_SCAN_OFF));
+    } else if (shunt_no) {
+        ui_router_set_alert(TR(PNODE_SHUNT_REFUSED));
+    } else if (cfg_no) {
+        ui_router_set_alert(TR(PNODE_CFG_REFUSED));
+    } else if (req_no) {
+        ui_router_set_alert(
+            s_node.cfg_req_why == NCL_REQ_ARMED ? TR(PNODE_CFG_ARMED)
+            : s_node.cfg_req_why == NCL_REQ_BAD ? TR(PNODE_CFG_REFUSED)
+            : s_node.have_info ? TR(PNODE_CFG_NONE) : TR(PNODE_CFG_UNLINKED));
+    } else if (dropped) {
+        ui_router_set_alert(TR(PNODE_CFG_DROPPED));
     }
 }
 
@@ -282,6 +320,158 @@ const ui_setlist_custom_t wireless_pane_pnode_bat_row = {
     .label = TX_PNODE_ROW_BAT,
     .help = TX_PNODE_ROW_BAT_HELP,
     .value_text = bat_value,
+};
+
+/* ------------------------------------------------------------ NODE INA228 */
+
+/** @brief NODE INA228's value: "0x40, 500uΩ" from INFO, NOT FOUND when the
+ *         node names no address, NOT LINKED before INFO.
+ *  @param out The text. @param n Its size. */
+static void i228_value(char *out, size_t n)
+{
+    if (!s_node.have_info) {
+        snprintf(out, n, "%s", TR(PNODE_BAT_UNKNOWN));
+    } else if (s_node.i228_addr == 0u) {
+        snprintf(out, n, "%s", TR(PNODE_I228_NONE));
+    } else {
+        snprintf(out, n, TR(PNODE_I228_AT), (unsigned)s_node.i228_addr,
+                 (unsigned)s_node.shunt_uohm);
+    }
+}
+
+/** @brief NODE INA228: the node's part and shunt, read only. */
+const ui_setlist_custom_t wireless_pane_pnode_i228_row = {
+    .label = TX_PNODE_ROW_I228,
+    .help = TX_PNODE_ROW_I228_HELP,
+    .value_text = i228_value,
+};
+
+/* ------------------------------------------------- NODE NAME, ADDRESS */
+
+/**
+ * @brief Whether a node setting may change now: the band says why not.
+ * @return true while SAFE with the node's settings known.
+ */
+static bool cfg_may(void)
+{
+    if (ui_router_status()->armed) {
+        ui_router_set_alert(TR(PNODE_CFG_ARMED));
+        return false;
+    }
+    if (!s_node.have_cfg) {
+        ui_router_set_alert(s_node.have_info ? TR(PNODE_CFG_NONE)
+                                             : TR(PNODE_CFG_UNLINKED));
+        return false;
+    }
+    return true;
+}
+
+/** @brief The rows' lock line while ARMED.  @return Why, or NULL. */
+static const char *cfg_locked(void)
+{
+    return ui_router_status()->armed ? TR(MO_SET_SAFE_ONLY) : NULL;
+}
+
+/** @brief A value of the node's settings before they are known: NOT
+ *         LINKED, or OLD FIRMWARE for a linked node without them.
+ *  @param out The text. @param n Its size. */
+static void cfg_unknown(char *out, size_t n)
+{
+    snprintf(out, n, "%s", s_node.have_info ? TR(PNODE_CFG_OLD)
+                                            : TR(PNODE_BAT_UNKNOWN));
+}
+
+/** @brief NODE NAME's value: the node's name.
+ *  @param out The text. @param n Its size. */
+static void name_value(char *out, size_t n)
+{
+    if (!s_node.have_cfg) {
+        cfg_unknown(out, n);
+    } else {
+        snprintf(out, n, "%s", s_node.node_name);
+    }
+}
+
+/** @brief The keyboard's OK: the name to the node.  @param name It. */
+static void name_typed(const char *name)
+{
+    if (!cfg_may() || s_q_n >= CMD_Q) {
+        return;
+    }
+    push(PNODE_CMD_NAME, 0u);
+    snprintf(s_q[s_q_n - 1u].text, sizeof(s_q[0].text), "%s", name);
+}
+
+/** @brief NODE NAME tapped: the keyboard on the node's own name, empty
+ *         while it has none. */
+static void name_tap(void)
+{
+    if (!cfg_may()) {
+        return;
+    }
+    const bool own = rcnode_name_role(s_node.node_name) == 0u;
+    settings_screen_type_name(TR(PNODE_ROW_NAME), own ? s_node.node_name : "",
+                              name_typed);
+}
+
+/** @brief NODE NAME: the node's own name, kept on the node; a tap types
+ *         it while SAFE. */
+const ui_setlist_custom_t wireless_pane_pnode_name_row = {
+    .label = TX_PNODE_ROW_NAME,
+    .help = TX_PNODE_ROW_NAME_HELP,
+    .value_text = name_value,
+    .tap = name_tap,
+    .locked = cfg_locked,
+};
+
+/** @brief INA228 ADDRESS's value: AUTO or the fixed address.
+ *  @param out The text. @param n Its size. */
+static void addr_value(char *out, size_t n)
+{
+    if (!s_node.have_cfg) {
+        cfg_unknown(out, n);
+    } else if (s_node.i228_set == RCNODE_I228_AUTO) {
+        snprintf(out, n, "%s", TR(PNODE_ADDR_AUTO));
+    } else {
+        snprintf(out, n, "0x%02X", (unsigned)s_node.i228_set);
+    }
+}
+
+uint8_t wireless_pane_pnode_addr_next(uint8_t from, int dir)
+{
+    /* Index 0 is AUTO, 1 to 16 are 0x40 to 0x4F. */
+    int i = from == RCNODE_I228_AUTO ? 0 : (int)from - (int)RCNODE_I228_MIN + 1;
+    if (i < 0 || i > 16) {
+        i = 0;
+    }
+    i = (i + (dir < 0 ? 16 : 1)) % 17;
+    return i == 0 ? (uint8_t)RCNODE_I228_AUTO
+                  : (uint8_t)(RCNODE_I228_MIN + (unsigned)i - 1u);
+}
+
+/** @brief A step of INA228 ADDRESS: the next setting to the node.
+ *  @param dir -1 or +1. */
+static void addr_step(int dir)
+{
+    if (cfg_may()) {
+        /* From the value last asked for until the node's CONFIG echoes
+         * it, so two quick steps go two addresses on. */
+        const uint8_t from = s_addr_ask ? s_addr_asked : s_node.i228_set;
+        s_addr_asked = wireless_pane_pnode_addr_next(from, dir);
+        s_addr_ask = true;
+        push(PNODE_CMD_I228, s_addr_asked);
+    }
+}
+
+/** @brief INA228 ADDRESS: AUTO or a fixed address, written to the node at
+ *         each step while SAFE. */
+const ui_setlist_custom_t wireless_pane_pnode_addr_row = {
+    .label = TX_PNODE_ROW_ADDR,
+    .help = TX_PNODE_ROW_ADDR_HELP,
+    .cycles = true,
+    .value_text = addr_value,
+    .step = addr_step,
+    .locked = cfg_locked,
 };
 
 /* ------------------------------------------------------------- the word */

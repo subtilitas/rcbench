@@ -91,6 +91,8 @@ bounding box, x by y by z.
 | `supvan_t50m_pro.step` | Supvan KATASYMBOL T50M Pro label printer: lid and base with the joint, sloping top, ribbed grip, orange lid lever, USB-C socket, label slit, control panel with power and print buttons and the LED bar, 4 feet, end slot; 87 solids | 88.8 x 120.8 x 56.0 |
 | `tmotor_at2814.step` | T-Motor AT2814 brushless motor | 135.2 x 35.2 x 54.5 |
 | `wit_imu.step` | WitMotion BWT901CL inertial sensor: base with 2 slotted ears, body, label with its print; 51 solids | 36.1 x 51.5 x 15.0 |
+| `wurstblinker_kinetic.step` | kinetic Wurstblinker node, a joke model for the video `wurstblinker`, not bench hardware: stand, board, antenna, lamp, tank, valve block, barrel, sausage; 18 solids | 341.0 x 110.0 x 159.0 |
+| `wurstblinker_node.step` | Wurstblinker node, a joke model for the video `wurstblinker`, not bench hardware: stand, node board, antenna, lamp, servo, arm, sausage in 2 clips; 16 solids | 233.0 x 110.0 x 322.0 |
 ## Licence
 
 The models and renders are under CC BY-NC-SA 4.0

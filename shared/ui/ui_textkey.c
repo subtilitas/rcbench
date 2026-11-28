@@ -133,6 +133,15 @@ void ui_textkey_open(ui_textkey_t *k, gfx_rect_t area, const char *title,
     k->len = (int)strlen(k->text);
 }
 
+void ui_textkey_open_node_name(ui_textkey_t *k, gfx_rect_t area,
+                               const char *title, const char *text)
+{
+    ui_textkey_open(k, area, title, text, UI_TEXTKEY_NODE_MAX);
+    if (k != NULL) {
+        k->may_empty = true;
+    }
+}
+
 void ui_textkey_open_search(ui_textkey_t *k, gfx_rect_t area,
                             const char *title, const char *text,
                             int max_len)
@@ -656,7 +665,7 @@ static ui_textkey_result_t press(ui_textkey_t *k, int key, char *out,
         while (len > 0u && a[len - 1u] == ' ') {
             --len;
         }
-        if (len == 0u) {
+        if (len == 0u && !k->may_empty) {
             k->refused = true;       /* a name is what a report is filed under */
             return UI_TEXTKEY_NONE;
         }

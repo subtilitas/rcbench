@@ -1,0 +1,87 @@
+rcbench printer, format 1
+# SPDX-License-Identifier: MIT
+#
+# A printer of the engine's suites, not a real one: one row frame a head
+# line, writes without response, a notify joiner, fixed rolls and the
+# verdict "done".
+id rows-test
+name ROWS TEST
+version 3
+licence MIT
+source https://example.invalid/rows-test
+
+match name ROW
+match iname rows
+match svc FF00
+
+service FF00
+chr cmd FF02 write_nr
+chr data FF04 write_nr
+chr rx FF03 notify
+mtu_min 64
+conn 16 32 0 400
+
+head_dots 96
+dots_mm 8
+line 12 msb 0 yes
+label feed left
+label dot0 top
+label align 8
+label margin 0 4
+roll source fixed
+roll fixed 12 30 3
+roll fixed 10 20 2
+roll limits 10 12 10 200
+density 3
+
+rows 55 55 85 {line_no:be16} {len:u8:0:-1} {data} {ck:xor8:2:-2}
+write cmd nr
+write data nr 20 5
+table speed stream_len 4000:1 2000:2 else 3
+
+tmpl go 55 55 {a:u8} {density:u8} {p0:be16} {ck:crc8:0:-2}
+tmpl end 55 55 F3 {lines:le32} {ck:crc16ccitt_be:0:-3}
+
+rx join notify 3 12
+rx key 0
+answer 1A 3
+answer 1B 6
+field 1A cover 1 bit 0
+field 1A paper_out 1 bit 1
+field 1A battery 2 u8
+field 1B page_index 1 be16
+field 1B result 3 u8
+field 1B x0 4 bytes 2
+error cover COVER
+error paper_out NO_LABEL
+
+step go
+  send go a=1 p0=speed
+  within 100
+step state
+  send go a=2
+  expect 1A
+  within 300
+  tries 3
+  flags on
+  check battery != 0 else BATTERY
+  save v0 battery
+step rows
+  data
+  within 500
+step settle
+  wait 50
+step end
+  send end
+  expect 1B
+  delay 10
+  poll 50
+  until page_index = 1 and result != v0
+  within 2000
+  else NOT_PRINTED
+
+job query go state
+job print go state rows settle end
+abort go a=9 from rows to end
+verdict done
+end

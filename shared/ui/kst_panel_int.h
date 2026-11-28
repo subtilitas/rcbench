@@ -10,7 +10,10 @@
  * the actions; kst_panel_touch.c, the presses; kst_panel_run.c, the limit
  * run's sessions; and kst_panel_draw.c, the notes and the pages drawn.
  * The layout they draw on, the rows, the state they read and write, and
- * the functions one calls of another, prefixed kpn_.  Nothing outside
+ * the functions one calls of another, prefixed kpn_.  The overlay draws
+ * and takes its presses through the servo programmers' frame (sprog.h),
+ * k.f: the tabs, the rows, the head, the notes, the presses and holds,
+ * the keypad, the keyboard, the list and the hold page.  Nothing outside
  * these seven files includes this header; the interface is kst_panel.h.
  *
  * SPDX-License-Identifier: MIT
@@ -24,6 +27,7 @@
 #include "gfx.h"
 #include "kst_panel.h"
 #include "kst_prog.h"
+#include "sprog.h"
 #include "touch_types.h"
 #include "ui_card_text.h"
 #include "ui_keypad.h"
@@ -35,47 +39,18 @@
 
 /* ------------------------------------------------------------------ geometry */
 
-/**
- * @brief The overlay's layout, in pixels from the area's top left.  Every
- *        width that is not a control's own comes from the area's width.
- *
- * On SERVO's left card of 620px: five tabs of 120px (four of 151px with
- * KST EXPERT MODE OFF) in one row 48px tall; the home tag is the way
- * back.  Rows 48px tall at a 56px pitch, two columns of
- * 295px, a value of 150px (15 cells of KP_FONT), a wide row's of 260px
- * with minus and plus keys of 56px.  Every control ends at kpn_foot().
- */
-#define TAB_Y    8            /**< the tabs' top */
-#define TAB_H    UI_TAP_MIN   /**< their height, 48px, as every row's */
-#define ROW0     64           /**< the first row's top: the tabs and 8px */
-#define PITCH    56           /**< a row's pitch: 8px between two */
-#define ROW_H    UI_TAP_MIN   /**< a row's height, 48px */
-#define VAL_W    150          /**< a value, 15 cells of KP_FONT */
-#define WIDE_W   260          /**< a wide row's value, keys included */
-#define STEP_W   56           /**< a stepped row's minus and plus keys */
 /** @brief WRITE n VALUES, a row with no label: 22 cells, "20 WERTE
- *         SCHREIBEN" and room, as the Hitec programmer's. */
+ *         SCHREIBEN" and room, as the Hitec programmer's.  Every other
+ *         size is the frame's (sprog.h). */
 #define WRITE_W  220
-
-/**
- * @brief The faces: KP_FONT, the type scale's LABEL face (10 x 20), for
- *        the labels, the buttons, the notes and the warning pages' lines;
- *        KP_TITLE_FONT, the HEAD face (20 x 36), for a warning page's
- *        title.  LINE_H is a wrapped row's pitch in KP_FONT and KP_CELL
- *        its cell's width.
- */
-#define KP_FONT       (&gfx_font_10x20) /**< labels, buttons, lines */
-#define KP_TITLE_FONT (&gfx_font_20x36) /**< a warning page's title    */
-#define KP_CELL       10                /**< KP_FONT's cell, px        */
-#define LINE_H        20                /**< a wrapped row's pitch, px */
-
-/** @brief The space between the bottom of a control at the foot and the
- *         alert band's top: 4px, as every screen's footer. */
-#define FOOT_GAP 4
 
 enum { PG_SERVO = 0, PG_TUNE, PG_PULSE, PG_FAILSAFE, PG_LOCKED, PG_COUNT };
 
 enum { K_FIELD = 0, K_STEP, K_LOCKED, K_ACT };
+
+/** @brief The show bit of the rows and the tab KST EXPERT MODE ON shows:
+ *         DEAD BAND, BOOST, STRETCH and the LOCKED tab (sprog_row_t.show). */
+#define KST_SHOW_EXPERT 0x01u
 
 enum {
     A_PORT = 0, A_READ, A_FILES, A_RESTORE, A_MORE, A_WRITE, A_TYPE
@@ -106,12 +81,6 @@ extern const int16_t kpn_rule[KST_RULE_COUNT];
 
 /* -------------------------------------------------------------------- state */
 
-enum {
-    P_NONE = 0, P_TAB, P_ROW, P_MINUS, P_PLUS, P_KEYPAD, P_CHOICE,
-    P_CHOICE_CANCEL, P_APPLY, P_CANCEL, P_TEXTKEY, P_NOTES, P_PORT,
-    P_CONNECT, P_WRITE
-};
-
 enum { C_STRETCH = 0, C_RESTORE, C_MORE, C_FILES, C_TYPE, C_PORT };
 #define FILES_SAVE (-1)                 /**< list entry value: the entry that saves a new file */
 /**
@@ -130,28 +99,12 @@ enum { W_SOFT = 0, W_RESTORE, W_RELEASE, W_LEAVE, W_CHECK, W_HV };
 /** @brief Keypad target: the supply current limit an ENTER asks for */
 #define KP_CURRENT (-2)
 #define KP_WAIT    (-3)                 /**< keypad target: the wait before ENTER */
-/** @brief The entries a list holds: the fullest, FILES, has
- *         KST_PROG_FILES_MAX files between the entry that saves and the one
- *         that pages on; 7 rows of ROW_H at PITCH fit above CANCEL on
- *         SERVO's left card. */
-#define CHOICE_MAX 7
-/** @brief Lines a warning page holds, WARN_LINES of KST_PANEL_LINE bytes. */
-#define WARN_LINES 12
-/** @brief The rows a page's lines take at most, wrapped to the page's
- *         width: 16 rows at LINE_H take 320px of the 356px from WARN_TOP
- *         to 8px above the buttons on SERVO's left card.  A shorter area
- *         takes fewer (kpn_warn_room()). */
-#define WARN_ROWS 16
 /* The lines a page gives to the warnings of soft limits. */
 /** @brief Lines of a warning page given to the soft limits' warnings. */
 #define WARN_RULES 7
 /* The lines the page of a file gives to its values. */
 /** @brief Lines of a file's page given to its values. */
 #define FILE_VALUES 4
-/** @brief A warning page's first line under the area's top: the title in
- *         KP_TITLE_FONT from 16px, 36px tall, and 12px. */
-#define WARN_TOP 64
-
 /** @brief The overlay's state. */
 typedef struct {
     kst_prog_t prog;                    /**< the programmer's session */
@@ -159,25 +112,22 @@ typedef struct {
      *         a start of the screens leaves it */
     kst_prog_gate_t *gate;
     gfx_rect_t area;                    /**< the overlay's area, body pixels */
-    bool       open;                    /**< whether the overlay is open */
-    uint8_t    note_page;               /**< notes page shown, when the notes take more than one */
-    /** @brief Signature of the notes' places and rows the page is of */
-    uint32_t   note_sig;
-    ui_tabs_t  tabs;                    /**< the page tabs shown: five, four with KST EXPERT MODE OFF */
+    /** @brief The frame the overlay draws and takes its presses through:
+     *         its open flag, its tabs (five, four with KST EXPERT MODE
+     *         OFF), its view (filled by kpn_view()), the press, the
+     *         CONNECT and WRITE n VALUES holds, the keypad, the keyboard,
+     *         the list and the hold page */
+    sprog_t    f;
     /** @brief Whether KST EXPERT MODE is ON, as kpn_mode_sync() last read
      *         SET_KST_EXPERT */
     bool       expert;
-    uint8_t    tab_count;               /**< the tabs shown; 0 before the first kpn_mode_sync() */
-    uint8_t    tab_page[PG_COUNT];      /**< the page, PG_*, each tab shown is of */
     bool       hv;                      /**< HV SERVO: above KST_PANEL_STD_MV may be set */
     bool       loaded;                  /**< whether the options were read from the settings */
     bool       card_look;               /**< whether the card in the slot is asked for */
 
-    ui_keypad_t kp;                     /**< the keypad that edits a field or the supply */
     /** @brief Row the keypad edits, or KP_VOLTAGE, KP_CURRENT, KP_WAIT */
     int        kp_row;
 
-    ui_textkey_t tk;                    /**< keyboard that types a new file's name */
     char       name[KST_PROG_NAME_MAX];  /**< the name typed */
     bool       name_wait;               /**< whether the save of that name is on its way */
     bool       files_wait;              /**< whether the files list was asked for */
@@ -186,57 +136,19 @@ typedef struct {
      *         is open for it, and the load follows the choice */
     char       type_file[KST_PROG_NAME_MAX];
 
+    /** @brief What the hold page shown (k.f.page, its what a W_*) acts
+     *         on when its hold completes */
     struct {
-        bool open;                      /**< whether the list shows */
-        int  kind;                      /**< what the list was opened for, C_* */
-        int  count;                     /**< entries */
-        char title[KST_PANEL_LINE];     /**< the list's title */
-        char labels[CHOICE_MAX][KST_PANEL_LINE];  /**< the entries' labels */
-        int  values[CHOICE_MAX];        /**< the entries' values */
-    } ch;                               /**< the list of choices */
-
-    struct {
-        bool      open;                 /**< whether the page shows */
-        int       kind;                 /**< which page, W_* */
-        bool      danger;               /**< whether the page is a danger page */
-        bool      down;                 /**< whether the hold button is down */
-        ui_hold_t hold;                 /**< the hold counter */
-        int       count;                /**< lines used */
-        char      title[KST_PANEL_LINE];  /**< the page's title */
-        char      apply[KST_PANEL_LINE];  /**< the label of the hold button */
-        int hint;              /**< the band's hint for a short release */
-        char      lines[WARN_LINES][KST_PANEL_LINE];  /**< the page's lines */
-        uint8_t   level[WARN_LINES];    /**< each line's level */
         bool      no_file;              /**< the page says: no card, no file */
-        /** @brief W_LEAVE with unwritten edits: the page lists them, its
-         *         hold leaves without writing them and BACK keeps them */
-        bool      drop;
         uint16_t  mv;                   /**< W_HV: the voltage the hold sets, mV */
         kst_prog_restore_t plan;        /**< the restore the page asks for */
-    } warn;                             /**< the warning page */
-
-    bool    have;                       /**< whether a press is on the glass */
-    uint8_t id;                         /**< touch id of the press */
-    int     pressed;                    /**< what the press is on, P_* */
-    int     row;                        /**< row the press is on */
-    float   held_s;                     /**< seconds a plus or minus key has been held */
+    } pg;                               /**< the page's own values */
 
     kst_prog_state_t state_seen;        /**< the programmer's state as last drawn */
     uint32_t leaves_seen;               /**< kst_prog_leaves() as last told to the supply screen */
     uint32_t sig;                       /**< signature of the last draw */
     /** @brief Revision, counted up when the overlay's picture changes */
     uint32_t rev;
-    uint32_t hold_rev;                  /**< revision, counted up when a hold advances */
-    /** @brief CONNECT's 2s hold: it switches the port's supply on */
-    ui_hold_t conn;
-    /** @brief CONNECT's hold completed: it acts on the next tick, after
-     *         that frame's drains, unless a touch loss cancels it first */
-    bool conn_due;
-    /** @brief WRITE n VALUES' 2s hold: it writes the edits */
-    ui_hold_t wr;
-    /** @brief WRITE's hold completed: it writes on the next tick, as
-     *         CONNECT's connects */
-    bool wr_due;
     /** @brief The model's write gate (kst_prog_enable()) is open for a
      *         write, restore or release a hold started: it closes when
      *         that operation ends (kpn_gate_follow()) */
@@ -316,7 +228,7 @@ bool kpn_programming(void);
  * @return true when CONNECT switches a supply on
  */
 bool kpn_switches_supply(void);
-/** @brief A row's label: its text, or for PORT what it holds now.
+/** @brief A row's label: its text, or for PORT the head's first line.
  * @param r the row
  * @return the label
  */
@@ -372,56 +284,6 @@ void kpn_fmt_field(kst_field_id_t id, uint16_t raw, char *out, size_t n);
  */
 bool kpn_changed(kst_field_id_t id);
 /**
- * @brief @p s in rows of the area's width, a row each LINE_H.
- * @return the y under the last row
- * @param c the canvas
- * @param x the left edge, px
- * @param y the top edge, px
- * @param s the text
- * @param color the text colour
- */
-int kpn_text_rows(gfx_canvas_t *c, int x, int y, const char *s,
-                  gfx_color_t color);
-/**
- * @brief The tabs.
- * @return the tabs' rectangle
- */
-gfx_rect_t kpn_tabs_rect(void);
-/**
- * @brief Where a control at the area's foot ends.
- * @return the lower of 8px above the area's foot and FOOT_GAP above the
- *         alert band, in the area's coordinates (body pixels)
- */
-int kpn_foot(void);
-/**
- * @brief Where the notes and the message under a page end.
- * @return the lower of 6px above the area's foot and FOOT_GAP above the
- *         alert band, in the area's coordinates (body pixels): no text
- *         lies under the band
- */
-int kpn_notes_foot(void);
-/**
- * @brief Row @p r, its label and its control, at its place on the page as
- *        it shows (rows closed up with KST EXPERT MODE OFF).
- * @param r the row
- * @return the rectangle; empty for a row hidden (kpn_row_shown())
- */
-gfx_rect_t kpn_row_rect(const row_t *r);
-/**
- * @brief Row @p r's value, between its keys where it has them.  For a row
- *        that shows: the callers ask of none other.
- * @param r the row
- * @return the rectangle
- */
-gfx_rect_t kpn_value_rect(const row_t *r);
-/**
- * @brief Row @p r's plus key (@p up) or minus key.
- * @param r the row
- * @param up true for the plus key, false for the minus key
- * @return the key's rectangle
- */
-gfx_rect_t kpn_step_rect(const row_t *r, bool up);
-/**
  * @brief The row at (@p row, @p col) of page @p page, or NULL.
  * @param page the page
  * @param row the row on the page
@@ -430,6 +292,21 @@ gfx_rect_t kpn_step_rect(const row_t *r, bool up);
  */
 const row_t *kpn_row_at(int page, int row, int col);
 /**
+ * @brief The frame's show bits now: KST_SHOW_EXPERT with KST EXPERT MODE
+ *        ON, else none.
+ * @return the mask
+ */
+uint8_t kpn_mask(void);
+/**
+ * @brief Line @p i of the SERVO tab's head: 0 the port and its GPIO
+ *        (`PROG PORT 1 GPIO 13`, or `NO PROG PORT SET`), 1 the supply
+ *        CONNECT sets (`PD MINI  5.0V 1000mA`, `5V FIXED`, `SUPPLY AS IT
+ *        IS`).
+ * @param i the line, 0 or 1
+ * @return the line; NULL for none
+ */
+const char *kpn_head_line(int i);
+/**
  * @brief Whether KST EXPERT MODE is ON, as kpn_mode_sync() last read it.
  * @return true while the expert rows and actions show
  */
@@ -437,8 +314,8 @@ bool kpn_expert(void);
 /**
  * @brief Follows SET_KST_EXPERT: on a change every editor closes, the
  *        press ends and the tab strip is built again from the pages that
- *        keep a row, the page shown kept where it is still there and SERVO
- *        otherwise.  The first call builds the strip.
+ *        keep a row (the frame's tabs of kpn_mask()), the page shown kept
+ *        where it is still there and SERVO otherwise.
  */
 void kpn_mode_sync(void);
 /**
@@ -502,18 +379,6 @@ void kpn_write_n(char *out, size_t size, unsigned n);
 /* kst_panel_warn.c */
 
 /**
- * @brief The rows the page's lines take.
- * @return the number of rows
- */
-int kpn_warn_rows(void);
-/**
- * @brief The rows a warning page's lines may take in the area: those that
- *        fit between WARN_TOP and 8px above the buttons, WARN_ROWS at
- *        most; 14 in an area 420px tall.
- * @return the rows
- */
-int kpn_warn_room(void);
-/**
  * @brief The page of an edit of row @p r that passes a soft limit.
  * @param r the row
  */
@@ -548,8 +413,11 @@ void kpn_warn_leave(void);
  * @param mv the voltage, mV
  */
 void kpn_warn_hv(uint16_t mv);
-/** @brief The hold completed: what the page asked for. */
-void kpn_warn_apply(void);
+/**
+ * @brief The page's hold completed: what page @p what asked for.
+ * @param what the page, W_*
+ */
+void kpn_warn_apply(int what);
 
 /* kst_panel_edit.c */
 
@@ -583,10 +451,10 @@ void kpn_options_keep(void);
 /** @brief The programmer's options from the settings. */
 void kpn_options_load(void);
 /**
- * @brief The keypad's value @p v for the row or the supply it edits.
- * @param v the value
+ * @brief The keypad's value for the row or the supply it edits.
+ * @param scaled the value x 10^decimals, as SPROG_R_KEYPAD gives it
  */
-void kpn_keypad_done(float v);
+void kpn_keypad_done(int32_t scaled);
 /**
  * @brief One step of a plus (@p up) or minus key on row @p r.
  * @param r the row
@@ -633,10 +501,11 @@ void kpn_gated(bool release, const kst_prog_restore_t *plan);
  */
 void kpn_gate_follow(void);
 /**
- * @brief The list's choice @p value for what the list was opened for.
+ * @brief The choice @p value of the list @p kind was opened for.
+ * @param kind  the list, C_*
  * @param value the entry's value
  */
-void kpn_choice_done(int value);
+void kpn_choice_done(int kind, int value);
 /**
  * @brief Whether row @p r's control takes a tap now.
  * @param r the row
@@ -666,10 +535,9 @@ void kpn_supply_sync(void);
 
 /* kst_panel_draw.c */
 
-/** @brief Whether (@p x, @p y) is on notes that take more than one
- *         page.
- * @param x the column, px
- * @param y the row, px
- * @return true when the point is on paged notes
- */
-bool kpn_notes_paged_at(int x, int y);
+/** @brief Fills the frame's view of the tab shown: the cells' values,
+ *         fills and presses, the head, the notes and the last message on
+ *         the bottom line.  Its texts are static: the frame draws them
+ *         after this returns. */
+void kpn_view(void);
+

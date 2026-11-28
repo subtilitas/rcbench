@@ -30,17 +30,20 @@ TEST_CASE(the_imu_entry_shows_its_rows_under_on)
     CHECK_EQ(rows[0].id, SET_IMU_EN);
     CHECK_EQ(rows[1].id, SET_ANGLE_SOURCE);
     settings_set(SET_IMU_EN, 1.0f);
-    /* ON: ANGLE SOURCE second, AXIS, SIGN, RATE, ALGORITHM, FILTER,
-     * SETTLING TIME and PRECISION under it. */
+    /* ON: ANGLE SOURCE second, the 11 rows of the scan, the bind, the
+     * live values, ZERO, CLEAR ZERO and CALIBRATE (test_wireless_imu),
+     * then AXIS, SIGN, RATE, ALGORITHM, FILTER, SETTLING TIME and
+     * PRECISION. */
     static const setting_id_t want[] = { SET_IMU_EN, SET_ANGLE_SOURCE,
                                          SET_IMU_AXIS, SET_IMU_SIGN,
                                          SET_IMU_RATE, SET_IMU_ALGO,
                                          SET_IMU_FILTER, SET_IMU_SETTLE,
                                          SET_IMU_PREC };
-    CHECK_EQ(wireless_pane_rows(WL_ENTRY_IMU, rows, WL_ENTRY_ROWS_MAX), 9);
+    CHECK_EQ(wireless_pane_rows(WL_ENTRY_IMU, rows, WL_ENTRY_ROWS_MAX), 20);
     for (int i = 0; i < 9; ++i) {
-        CHECK_EQ(rows[i].id, want[i]);
-        CHECK(rows[i].custom == NULL);
+        const int row = (i < 2) ? i : i + 11;
+        CHECK_EQ(rows[row].id, want[i]);
+        CHECK(rows[row].custom == NULL);
         CHECK_EQ(wireless_pane_entry_of(want[i]), WL_ENTRY_IMU);
         CHECK_EQ(sensors_pane_entry_of(want[i]), -1);
         CHECK_EQ(settings_def(want[i])->cat, SET_CAT_WIRELESS);
@@ -73,7 +76,7 @@ TEST_CASE(the_imu_entry_shows_its_rows_under_on)
     open_wireless(SET_IMU_EN);
     CHECK_EQ(settings_screen_category(), SET_CAT_WIRELESS);
     CHECK_EQ(wireless_pane_selected(), WL_ENTRY_IMU);
-    CHECK_EQ(settings_screen_rows(SET_CAT_WIRELESS), 9);
+    CHECK_EQ(settings_screen_rows(SET_CAT_WIRELESS), 20);
     setting_id_t ids[96];
     const int n = settings_in_category(SET_CAT_WIRELESS, ids, 96);
     for (int i = 0; i < n; ++i) {
@@ -81,9 +84,9 @@ TEST_CASE(the_imu_entry_shows_its_rows_under_on)
             CHECK(settings_screen_row_of(SET_CAT_WIRELESS, i) >= 0);
         }
     }
-    /* The IMU's 9, the Dial's 3, the power node's 2 and the balance
+    /* The IMU's 9, the Dial's 3, the power node's 3 and the balance
      * node's 2. */
-    CHECK_EQ(n, 16);
+    CHECK_EQ(n, 17);
     /* SENSORS holds no IMU row: 65 less the IMU's 7, and the QR
      * scanner's 2. */
     CHECK_EQ(settings_in_category(SET_CAT_SENSORS, ids, 96), 60);

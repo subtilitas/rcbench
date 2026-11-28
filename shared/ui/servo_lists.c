@@ -223,7 +223,8 @@ static void enc_value(char *out, size_t n)
 }
 
 /** @brief A tap on ENC CENTER: the live count is the center.  An IMU's
- *         zero is taken on the IMU screen or by LIVE's ZERO, not here. */
+ *         zero is taken in SETUP > WIRELESS > IMU or by LIVE's ZERO, not
+ *         here. */
 static void enc_tap(void)
 {
     if (drive_enc_center_take()) {

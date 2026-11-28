@@ -1,7 +1,8 @@
 # The node: start-up, Bluetooth LE, the battery, the console, the policy,
 # the role this image is built for, and the board's display when it has
 # one (main/node_board.h).
-set(SRCS node_main.c node_ble.c node_console.c node_policy.c)
+set(SRCS node_main.c node_ble.c node_console.c node_policy.c node_set.c
+         node_store.c node_scan.c)
 # The requirements are the same for every role and board: ESP-IDF expands
 # them before it reads the sdkconfig, so a CONFIG_ test cannot choose them.
 # The image links only what its files call.
@@ -17,11 +18,12 @@ elseif(CONFIG_RCNODE_ROLE_SERVO)
     list(APPEND SRCS node_bat.c node_srv.c node_srv_link.c node_srv_hb.c
                      node_srv_policy.c node_srv_poll.c)
 else()
-    list(APPEND SRCS node_bat.c node_pwr.c)
+    list(APPEND SRCS node_bat.c node_pwr.c node_pwr_sens.c)
 endif()
 if(CONFIG_RCNODE_BOARD_ES3C28P AND NOT CONFIG_RCNODE_ROLE_SERVO)
     # The display node: the screen's logic, the display, the touch.
-    list(APPEND SRCS node_view.c node_lcd.c node_disp.c)
+    list(APPEND SRCS node_view.c node_lcd.c node_disp.c node_setup.c
+                     node_setup_view.c)
 endif()
 
 idf_component_register(SRCS ${SRCS}

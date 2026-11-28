@@ -2,7 +2,8 @@
  * @file settings_rows.c
  * @brief SETUP's list rows: a category's settings in schema order and the
  * category's strings after its settings; SD CARD's last two rows are SAVE
- * SETTINGS and LOAD SETTINGS (sbk_screen.h).
+ * SETTINGS and LOAD SETTINGS (sbk_screen.h), PANEL's last row About rcbench
+ * (about_screen.h).
  * SENSORS and WIRELESS list the rows of the left list's selected entry and
  * nothing else (sensors_pane.h, wireless_pane.h); a WIRELESS row may be a
  * custom one.
@@ -12,6 +13,7 @@
 
 #include "settings_rows_int.h"
 
+#include "about_screen.h"
 #include "sbk_screen.h"
 #include "scanner_pane.h"
 #include "sensors_pane.h"
@@ -26,7 +28,7 @@
 /** @brief The most rows a list has: its settings, its strings and SD
  *         CARD's rows of the settings backup. */
 #define MAX_ENTRIES (MAX_ROWS + SETTING_TEXT_COUNT + SBK_SETUP_ROWS \
-                     + SCANNER_ROWS_MAX)
+                     + SCANNER_ROWS_MAX + 1)
 
 /**
  * @brief The list of @p cat in row order, its strings after its settings; the
@@ -84,6 +86,14 @@ static int entries(setting_cat_t cat, settings_row_t *out, int max)
         if (out != NULL && rows < max) {
             out[rows] = (settings_row_t){ (setting_id_t)0, -1,
                                           sbk_setup_row(i) };
+        }
+        ++rows;
+    }
+    /* PANEL ends on About rcbench. */
+    if (cat == SET_CAT_APP) {
+        if (out != NULL && rows < max) {
+            out[rows] = (settings_row_t){ (setting_id_t)0, -1,
+                                          about_setup_row() };
         }
         ++rows;
     }

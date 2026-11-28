@@ -55,7 +55,7 @@ from 1 HS-5645MG, 1 HS-7955TG and 1 HS-5955TG (2026-10-18 to 2026-10-20)
   `Update the IOmcu to version 0.21.1 or later.`
 - SERVO TESTER on SETUP > OUTPUTS is set to a port, PORT 1, PORT 2,
   PORT 3 or PORT 4, and
-  the port names a pin. With OUTPUTS the PORT row reads `NO PROG PORT SET`
+  the port names a pin. With OUTPUTS the head reads `NO PROG PORT SET`
   and CONNECT says `Use the programming port to program a servo.`
   On the rbmod carrier with an IOmcu of protocol 4.36 or later the PORT
   row chooses the port: a tap on its label opens PROGP01 to PROGP04, and
@@ -86,25 +86,39 @@ from 1 HS-5645MG, 1 HS-7955TG and 1 HS-5955TG (2026-10-18 to 2026-10-20)
 
 ## The SERVO tab
 
+The rows stand in the order of the work, as on KST: the head, READ ALL
+and the brand's slot, FILES and MORE, RESTORE and WRITE n VALUES.
+
+| Line | Column 0 | Column 1 |
+| --- | --- | --- |
+| 0 | head: port and supply | CONNECT, ABORT, WAIT, LEAVE, RELEASE PORT, 260px |
+| 1 | SERVO: READ ALL | SERIES before CONNECT, AFTER STOP while the port is held |
+| 2 | FILES | MORE |
+| 3 | RESTORE | WRITE n VALUES, 220px |
+
 | Row | What it does |
 | --- | --- |
-| PORT | Two lines: the port and its GPIO with the series, `PROG PORT 1 GPIO 13  D SERIES`, on the rbmod carrier a tap on them before CONNECT opens the list of the programming ports, then the receive mode and the supply CONNECT sets, `RX PRECHARGE  5.0V 1000mA` (`SUPPLY AS IT IS` for a D series servo with neither a PD mini nor the carrier's fixed 5V supply). The button reads CONNECT, ABORT while the port moves into programming or a read runs, WAIT, LEAVE while the port is held, and RELEASE PORT while another session holds it |
-| SERIES | D SERIES or CLASSIC, chosen before CONNECT; kept with the SERVO settings (SET_HITEC_SERIES), the same value as the READY card's SERIES row. While the port is held the PORT row names the series and FILES takes this place |
-| FILES | While the port is held: the servo files on the card, a save and a load ([Servo files](#servo-files)) |
-| SERVO | The model read, `D485HW` or `HS-5645MG`; READ ALL reads the series' set again |
+| Head | Two lines: the port and its GPIO with the series, `PROG PORT 1 GPIO 13  D SERIES`, on the rbmod carrier a tap on them before CONNECT opens the list of the programming ports, then the receive mode and the supply CONNECT sets, `RX PRECHARGE  5.0V 1000mA` (`SUPPLY AS IT IS` for a D series servo with neither a PD mini nor the carrier's fixed 5V supply). The first line is in the warning colour while no port is set. The 260px button reads CONNECT, ABORT while the port moves into programming or a read runs, WAIT, LEAVE while the port is held, and RELEASE PORT while another session holds it |
+| SERVO | READ ALL reads the series' set again. The model read, `D485HW` or `HS-5645MG`, stands on the READY card's SERVO row and on the bottom line |
+| SERIES | Before CONNECT: D SERIES or CLASSIC; kept with the SERVO settings (SET_HITEC_SERIES), the same value as the READY card's SERIES row. While the port is held the head names the series and AFTER STOP takes this place |
+| AFTER STOP | While the port is held: CLEAR after a switch to SAFE at the bench: the IOmcu clears the port's STOPPED flag and the read goes on, or the entry again where the supply went off |
+| FILES | The servo files on the card, a save and a load ([Servo files](#servo-files)); off until the port is held |
 | MORE | The programming voltage and current limit, each on the keypad, and [Hitec D receive](#hitec-d-receive), while the tester holds the port. While the port is held: DISCARD EDITS with an edit standing, REPAIR CHECKSUM with a classic checksum that is wrong, and FACTORY DEFAULT for a classic servo read ([FACTORY DEFAULT](#factory-default)) |
-| AFTER STOP | CLEAR after a switch to SAFE at the bench: the IOmcu clears the port's STOPPED flag and the read goes on, or the entry again where the supply went off |
 | RESTORE | The session's backup back to the servo, while it differs from the servo; the unit confirmed where the bench cannot check it ([Restore of the session's backup](#restore-of-the-sessions-backup)); while a record of an interrupted write stands: the values before it back to the servo, or the record discarded ([The record of a write](#the-record-of-a-write)) |
 | WRITE n VALUES | The draft to the servo after a 2s hold ([Writing](#writing)); `WRITE 1 VALUE` for one, off with none |
 
-Below the rows, the state line shows the port's current operation. The
-last message appears below the notes. Every control is at least 48px tall
-and ends 4px above the alert band, as in the KST programmer
+The notes start 8px under the last line of rows: the state line with the
+port's current operation first. The last message stands on the bottom line
+above the footer. Notes that need more rows than stand between the two
+turn over: `1/2` stands at the right of the last note row, and a tap on
+the notes shows the next page. Every control is at least 48px tall and ends
+4px above the alert band, as in the KST programmer
 ([Screens](Screens.md#programmer)).
 
 ![A D485HW read](img/servo-hitec-read.png)
 ![The SERIES list](img/servo-hitec-series.png)
 ![A read under way](img/servo-hitec-reading.png)
+![CONNECT at 1s of its hold](img/servo-hitec-connect-hold.png)
 
 ## CONNECT
 
@@ -168,7 +182,9 @@ found, with the edits not written yet. A value that fits its encoding shows
 decoded with the stored value in brackets beside it, `CW (0)`; one that
 fits no known encoding shows as `RAW 1234` in the warning colour. A
 writable value takes a tap while the port is held and not stopped
-([Editing](#editing)).
+([Editing](#editing)). While the values take an edit, the tab's notes end
+with the hint every servo programmer shows:
+`Tap a value to edit it. * marks a change. WRITE n VALUES writes the changes.`
 
 | Tab | D series | Classic |
 | --- | --- | --- |
@@ -259,6 +275,8 @@ compared, so every change to it requires confirmation.
 ![An edited value](img/servo-hitec-edit.png)
 ![SPEED on the keypad](img/servo-hitec-keypad.png)
 ![CHECK THIS CHANGE](img/servo-hitec-soft.png)
+![OVERLOAD PROTECTION's list of 6 entries](img/servo-hitec-overload.png)
+![SPEED under the finger](img/servo-hitec-row-down.png)
 
 ## MOVE SERVO
 
@@ -387,7 +405,7 @@ It compares them with the values on which the plan is based:
 
 A D series reply carries a sum, and the D series is read twice all the same.
 The state line reads `Second read before the write: 5 of 36.`, and
-**ABORT** is on the PORT row.
+**ABORT** is the head's button.
 
 - The reads agree in every address: the write goes on with the backup file,
   the record and the plan.
@@ -498,8 +516,11 @@ stopped, the bench SAFE and no STOP latched; otherwise the tap says why.
 Saving and loading open no write gate: a file changes the
 draft on the panel, never the servo.
 
-The first entry saves. Below it stand the files sorted by name, 5 a page,
-each with the model its file names. The files with a proposed name,
+The first entry saves, on a line of its own. Below it stand the files
+sorted by name, 5 a page, two to a line, each with the model its file
+names; `Show more files.` takes the cell after the last file, clear of
+CANCEL. Any list of more than 5 entries stands two to a line, an entry
+wider than a column on a line of its own. The files with a proposed name,
 `HITEC` and 3 digits, stand together at the place of `HITEC000`, the
 highest number first. With more than 5 files the title counts them,
 `FILES 1 TO 5 OF 7`, and `Show more files.` turns the page, back to the
@@ -818,7 +839,7 @@ with the edits) and no record.
 
 ## LEAVE
 
-The home tag or LEAVE on the PORT row opens LEAVE PROGRAMMING; a
+The home tag or LEAVE in the head opens LEAVE PROGRAMMING; a
 hold of 2s on `HOLD 2s TO LEAVE` leaves:
 
 - D series: a reboot of the servo (register 0x46 = 1), which then ignores
@@ -848,6 +869,7 @@ WITHOUT WRITING** drops the edits, writes nothing and leaves as above;
 **BACK** closes the page and keeps them.
 
 ![LEAVE PROGRAMMING with two unwritten edits](img/servo-hitec-leave-edits.png)
+![The hold of LEAVE PROGRAMMING at 1s](img/servo-hitec-leave-hold.png)
 
 When the PD mini supplies the servo, both series normally end LEAVE with
 its output on at the session's programming voltage and current limit. If
@@ -911,8 +933,8 @@ message.
 
 A port the HITEC page holds and this panel did not open, one the bench
 console opened or one held over a lost link or a panel restart, keeps the
-Hitec row live: the overlay opens with the PORT row
-`PROG PORT 1 GPIO 13  HELD ELSEWHERE` and `Another Hitec session holds it.`
+Hitec row live: the overlay opens with the head
+`PROG PORT 1 GPIO 13  IN USE` and `Another Hitec session holds it.`
 RELEASE PORT opens a page; a hold of 2s on `HOLD 2s TO RELEASE` sends CLOSE,
 which the IOmcu takes whether or not it trusts the heartbeat. The supply
 stays as it is. The port must be released before ARM can succeed. If the

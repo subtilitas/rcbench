@@ -159,7 +159,7 @@ def test_a_hold_sounds_for_its_two_seconds():
     events = video_audio.events(_board())
     holds = [t for t, kind, _ in events if kind == "hold"]
     done = [t for t, kind, _ in events if kind == "done"]
-    assert len(holds) == len(done) == 4
+    assert len(holds) == len(done) == 3
     assert all(abs(d - h - 2.03) < 1e-6 for h, d in zip(holds, done,
                                                         strict=True))
 

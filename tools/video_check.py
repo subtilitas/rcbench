@@ -49,7 +49,8 @@ VIDEO = REPO / "tools" / "video"
 CACHE = REPO / "build" / "video" / "cache"
 PANEL = (1024, 600)
 FRAME = (1920, 1080)
-ANCHORS = ("wing", "servo", "hinge", "rod", "flap", "edge", "imu", "tape",
+ANCHORS = ("node", "antenna", "sausage", "tank", "barrel", "light", "dog",
+           "wing", "servo", "hinge", "rod", "flap", "edge", "imu", "tape",
            "horn", "lead", "port", "display", "rbmod", "pdmini", "J1", "J2",
            "xt60", "usbc",
            "estop", "side", "plug", "panel", "case", "mcu",
@@ -233,9 +234,11 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
         return
     _keys(scene.get("camera"), 3, f"{where} camera", errors)
     if scene.get("model", "mockup") not in ("mockup", "cad", "dial", "duo",
-                                            "mini", "part", "rudder"):
+                                            "mini", "part", "rudder",
+                                            "wurst", "wurst-kinetic",
+                                            "wurst-dog"):
         errors.append(f"{where}: model must be mockup, cad, dial, duo, "
-                      "mini, part or rudder")
+                      "mini, part, rudder, wurst, wurst-kinetic or wurst-dog")
     if scene.get("model") == "part" and not (
             isinstance(scene.get("part"), str) and scene["part"]
             and all(c.isalnum() or c in "-_" for c in scene["part"])):
@@ -262,13 +265,16 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
                 and isinstance(key[1], str)):
             errors.append(f"{where} faces: a key is [t, the face's name]")
             break
-    for key in scene.get("estop", []):
-        if not (isinstance(key, list) and len(key) == 2
-                and _number(key[0]) and _number(key[1])
-                and 0 <= key[1] <= 1):
-            errors.append(f"{where} estop: a key is [t, k] with k from 0, "
-                          "out, to 1, pressed")
-            break
+    for name, ends in (("estop", "out, to 1, pressed"),
+                       ("swing", "in, to 1, out"),
+                       ("fire", "loaded, to 1, on the ground")):
+        for key in scene.get(name, []):
+            if not (isinstance(key, list) and len(key) == 2
+                    and _number(key[0]) and _number(key[1])
+                    and 0 <= key[1] <= 1):
+                errors.append(f"{where} {name}: a key is [t, k] with k "
+                              f"from 0, {ends}")
+                break
     last = -1.0
     for key in scene.get("panel", []):
         if not (isinstance(key, list) and len(key) in (2, 3)
@@ -869,6 +875,58 @@ DIAL_BASE = ("dial_base_top", "dial_base_bottom", "m5dial_nut")
 DIAL_UNITS = ("upper", "dial", "nut", "cell", "pad", "screws")
 
 
+def check_thumb(thumb) -> list:
+    """Find what tools/make_thumb.py would not compose.
+
+    Args:
+        thumb: A storyboard's ``thumb`` block.
+
+    Returns:
+        One line per fault.
+    """
+    if not isinstance(thumb, dict):
+        return ["thumb is an object"]
+    errors = []
+    at = thumb.get("at")
+    if not (_number(at) and at >= 0):
+        errors.append("thumb: at is a time in s, 0 or more")
+    lines = thumb.get("lines")
+    if not (isinstance(lines, list) and 1 <= len(lines) <= 3
+            and all(isinstance(ln, str) and ln.strip("*") for ln in lines)):
+        errors.append("thumb: lines holds 1 to 3 texts; a leading * "
+                      "gives a line the accent colour")
+    crop = thumb.get("crop", [0, 0, FRAME[0]])
+    if not (isinstance(crop, list) and len(crop) == 3
+            and all(_number(v) for v in crop) and crop[2] >= 320
+            and crop[0] >= 0 and crop[1] >= 0
+            and crop[0] + crop[2] <= FRAME[0]
+            and crop[1] + crop[2] * 9 / 16 <= FRAME[1]):
+        errors.append("thumb: crop is [x, y, w] of a 16:9 part of the "
+                      "frame, w at least 320")
+    if thumb.get("side", "l") not in ("l", "r"):
+        errors.append("thumb: side is l or r")
+    if thumb.get("v", "m") not in ("t", "m", "b"):
+        errors.append("thumb: v is t, m or b")
+    accent = thumb.get("accent", "#ffb000")
+    if not (isinstance(accent, str) and len(accent) == 7
+            and accent[0] == "#"
+            and all(c in "0123456789abcdefABCDEF" for c in accent[1:])):
+        errors.append("thumb: accent is a colour as #rrggbb")
+    size = thumb.get("size", 132)
+    if not (_number(size) and 60 <= size <= 220):
+        errors.append("thumb: size is the text's height in pixels, "
+                      "60 to 220")
+    if "of" in thumb and not isinstance(thumb["of"], str):
+        errors.append("thumb: of names another storyboard")
+    scene = thumb.get("scene")
+    if scene is not None:
+        if "of" in thumb:
+            errors.append("thumb: scene and of exclude each other")
+        errors += [f"thumb scene: {line}" for line in check(
+            {"lang": "en", "scenes": [scene]})]
+    return errors
+
+
 def check(board: dict) -> list:
     """Find what the player would not draw.
 
@@ -903,6 +961,10 @@ def check(board: dict) -> list:
         errors.append("voice blend holds a positive part per voice")
     if not isinstance(board.get("dial_base", False), bool):
         errors.append("dial_base is true or false")
+    if not isinstance(board.get("bare", False), bool):
+        errors.append("bare is true or false")
+    if "thumb" in board:
+        errors += check_thumb(board["thumb"])
     chapters = board.get("chapters")
     if chapters is not None and not (
             isinstance(chapters, list) and len(chapters) == steps

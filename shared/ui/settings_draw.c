@@ -97,6 +97,72 @@ static void draw_list(gfx_canvas_t *c)
     ui_setlist_draw_strip(&s.sl, c);
 }
 
+/**
+ * @brief Row @p i's live value text, hashed (FNV-1a).
+ * @param i The row.
+ * @return The hash; 0 for a row that is no live row.
+ */
+static uint32_t live_key(int i)
+{
+    const settings_row_t e = stg_row_entry(i);
+    if (e.custom == NULL || !e.custom->live || e.custom->value_text == NULL) {
+        return 0u;
+    }
+    char text[48] = "";
+    e.custom->value_text(text, sizeof(text));
+    uint32_t h = 2166136261u;
+    for (const char *p = text; *p != '\0'; ++p) {
+        h = (h ^ (uint8_t)*p) * 16777619u;
+    }
+    return h | 1u;
+}
+
+/**
+ * @brief What changed since buffer @p b was drawn and nothing else: a hold
+ *        row's button while its fill or flash moves, and each live row's
+ *        value that reads differently.
+ * @param c The canvas.
+ * @param b The framebuffer.
+ */
+static void draw_parts(gfx_canvas_t *c, int b)
+{
+    ui_setlist_t *sl = &s.sl;
+    if (s.drawn_hold[b] != sl->hold_rev) {
+        s.drawn_hold[b] = sl->hold_rev;
+        if (sl->hold_row >= 0 && sl->hold_row < stg_row_count()) {
+            ui_setlist_draw_part(sl, c, sl->hold_row,
+                                 ui_setlist_row_part(sl, sl->hold_row,
+                                                     UI_SL_PART_HOLD));
+        }
+    }
+    if (s.drawn_live[b] == s.live_rev) {
+        return;
+    }
+    s.drawn_live[b] = s.live_rev;
+    const int n = stg_row_count();
+    for (int i = 0; i < n && i < STG_LIVE_ROWS; ++i) {
+        const uint32_t k = live_key(i);
+        if (k != s.live_key[b][i]) {
+            s.live_key[b][i] = k;
+            ui_setlist_draw_part(sl, c, i, ui_setlist_value_rect(sl, i));
+        }
+    }
+}
+
+/**
+ * @brief After a whole draw of buffer @p b: the parts as it drew them.
+ * @param b The framebuffer.
+ */
+static void parts_drawn(int b)
+{
+    s.drawn_hold[b] = s.sl.hold_rev;
+    s.drawn_live[b] = s.live_rev;
+    const int n = stg_row_count();
+    for (int i = 0; i < STG_LIVE_ROWS; ++i) {
+        s.live_key[b][i] = (s.sl.open && i < n) ? live_key(i) : 0u;
+    }
+}
+
 void stg_render(gfx_canvas_t *c, int buffer_index)
 {
     /* The keyboard and the keypad move on their own events: every change
@@ -116,8 +182,18 @@ void stg_render(gfx_canvas_t *c, int buffer_index)
     if (buffer_index >= 0 && buffer_index < MAX_FBS) {
         stale = !s.chrome_valid[buffer_index] || s.drawn_cat != s.cat
                 || s.drawn_list != sl->open || s.drawn_warn != sl->warn;
+        /* A part under a covering keypad, keyboard, warning or choice
+         * list repaints with the whole. */
+        const bool covered = sl->warn || sl->kp.open || sl->tk.open
+                             || sl->choice_row >= 0 || !sl->open;
+        if (!stale && covered
+            && (s.drawn_live[buffer_index] != s.live_rev
+                || s.drawn_hold[buffer_index] != sl->hold_rev)) {
+            stale = true;
+        }
     }
     if (!stale) {
+        draw_parts(c, buffer_index);
         return;
     }
 
@@ -146,6 +222,7 @@ void stg_render(gfx_canvas_t *c, int buffer_index)
     ui_textkey_render(&sl->tk, c);
 
     if (buffer_index >= 0 && buffer_index < MAX_FBS) {
+        parts_drawn(buffer_index);
         s.chrome_valid[buffer_index] = true;
         s.drawn_cat = s.cat;
         s.drawn_list = sl->open;

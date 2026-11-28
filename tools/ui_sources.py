@@ -40,6 +40,9 @@ SOURCES = [
     "shared/ui/scan_flow.c",
     "shared/ui/scanner_pane.c",
     "shared/ui/scanner_code.c",
+    "shared/ui/about_screen.c",
+    "shared/ui/about_draw.c",
+    "shared/ui/about_gen.c",
     "shared/ui/ui_plot.c",
     "shared/ui/ui_slider.c",
     "shared/ui/ui_tabs.c",
@@ -118,6 +121,10 @@ SOURCES = [
     "shared/ui/servo_label_rows.c",
     "shared/ui/servo_run_supply.c",
     "shared/ui/servo_angle_pick.c",
+    # The servo programmers' common frame (sprog.h).
+    "shared/ui/sprog.c",
+    "shared/ui/sprog_draw.c",
+    "shared/ui/sprog_page.c",
     # The programmer for KST and Chaservo servos SERVO opens, and the
     # core its model takes fields and limits from.
     "shared/ui/kst_panel.c",
@@ -241,9 +248,7 @@ SOURCES = [
     "shared/ui/imu_ctl.c",
     "shared/ui/imu_ble.c",
     "shared/ui/imu_sensor.c",
-    "shared/ui/imu_screen.c",
-    "shared/ui/imu_screen_draw.c",
-    "shared/ui/imu_guide.c",
+    "shared/ui/imu_view.c",
     "shared/bench/imu.c",
     "protocols/witmotion/witmotion.c",
     "protocols/bleuart/bleuart.c",
@@ -259,6 +264,7 @@ SOURCES = [
     "shared/ui/settings_panes.c",
     # The power node's entry on WIRELESS.
     "shared/ui/wireless_pnode.c",
+    "shared/ui/wireless_imu.c",
     # SEARCH: the scan and bind screen of the Dial and the nodes.
     "shared/ui/wl_search.c",
     "shared/ui/wl_search_draw.c",
@@ -272,6 +278,7 @@ SOURCES = [
     # The balance node: its controller, its readings and runs, its WIRELESS
     # entry, MOTOR & ESC's BALANCE pane, and the packets and the solver.
     "shared/ui/bal_ctl.c",
+    "shared/ui/node_cfg_link.c",
     "shared/ui/node_balance.c",
     "shared/ui/wireless_bal.c",
     "shared/ui/motor_balance.c",
@@ -281,6 +288,7 @@ SOURCES = [
     "shared/ui/print_req.c",
     "protocols/rcnode/rcnode.c",
     "protocols/rcnode/rcnode_adv.c",
+    "protocols/rcnode/rcnode_cfg.c",
     "shared/vibe/vibe_solve.c",
     "shared/scanner/scanner_codes.c",
     # FILES, and the file manager's core it starts its jobs and keeps its
@@ -345,6 +353,7 @@ SOURCES = [
     "shared/ui/settings_rows.c",
     "shared/ui/ui_setlist.c",
     "shared/ui/ui_setlist_draw.c",
+    "shared/ui/ui_setlist_hold.c",
     "shared/ui/ui_footer.c",
     "shared/ui/prog5v_box.c",
     "shared/ui/prog_choice.c",

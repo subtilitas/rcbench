@@ -143,12 +143,13 @@ TEST_CASE(on_the_carrier_the_port_row_chooses_the_port)
     CHECK_EQ(kst_panel_editor(), 2);
     tap(kst_panel_choice_rect(3));
     CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 4);
-    /* The tester on PROGP02: the row names it at its fixed 5V. */
+    /* The tester on PROGP02: the head names it, at its fixed 5V. */
     settings_set(SET_SERVO_TARGET, 2.0f);
     g_rig.target = 2u;
     g_rig.pin_of[1] = 14u;
     settle();
-    CHECK_STR_EQ(kst_panel_label(PG_SERVO, 0, 0), "PROGP02 GPIO 14  5V FIXED");
+    CHECK_STR_EQ(kst_panel_label(PG_SERVO, 0, 0), "PROG PORT 2 GPIO 14");
+    CHECK_STR_EQ(kst_panel_head_line(1), TR(HP_SUPPLY_5V_FIXED));
     prog_choice_reset();
     ui_board_set(OUTBIND_BOARD_PICO_HEADER);
 }

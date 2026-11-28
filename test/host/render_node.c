@@ -8,14 +8,19 @@
  *
  *     render_node <out.ppm> <scene> <en|de>
  *
- * Scenes: values, no-sensor, hold.  English is the node without a link;
- * German is the node linked to a panel set to German.
+ * Scenes: values, no-sensor, hold (node_view.c); splash, setup-list,
+ * setup-name, setup-scan, setup-addr, setup-shunt (node_setup_view.c).
+ * English is the node without a link; German is the node linked to a
+ * panel set to German, or on the splash and SETUP the last panel's
+ * language.
  *
  * SPDX-License-Identifier: MIT
  */
 #include <stdio.h>
 #include <string.h>
 
+#include "node_setup.h"
+#include "node_setup_view.h"
 #include "node_view.h"
 
 /** @brief The frame. */
@@ -59,6 +64,86 @@ static void run_values(nv_model_t *m)
 }
 
 /**
+ * @brief A scan of the display board's bus: the codec at 0x18, the touch
+ *        controller at 0x38, INA228s at 0x40 and 0x45, an ADS1115 at 0x48.
+ * @param r Receives it.
+ */
+static void bus_scan(nscan_t *r)
+{
+    static const uint8_t k_addr[] = { 0x18u, 0x38u, 0x40u, 0x45u, 0x48u };
+    memset(r, 0, sizeof *r);
+    r->done = true;
+    for (size_t i = 0; i < sizeof k_addr; ++i) {
+        const uint8_t a = k_addr[i];
+        r->answered[a >> 3] = (uint8_t)(r->answered[a >> 3] | (1u << (a & 7u)));
+    }
+    r->ina228[0x40 >> 3] = (uint8_t)((1u << (0x40 & 7u)) | (1u << (0x45 & 7u)));
+    r->n = (uint8_t)sizeof k_addr;
+    r->n_ina228 = 2u;
+}
+
+/**
+ * @brief Tap a target's middle.
+ * @param s The state.  @param t The target.  @param now The clock.
+ */
+static void tap(ns_t *s, int t, uint32_t now)
+{
+    gfx_rect_t r;
+    if (ns_box(s, t, &r)) {
+        (void)ns_tap(s, r.x + r.w / 2, r.y + r.h / 2, now, false);
+    }
+}
+
+/**
+ * @brief Render a splash or SETUP scene.
+ * @param scene The scene's name.
+ * @param lang  RCNODE_LANG_*.
+ * @return 0, or 1 for a scene that is none of these.
+ */
+static int setup_scene(const char *scene, uint8_t lang)
+{
+    nst_vals_t v;
+    memset(&v, 0, sizeof v);
+    strcpy(v.name, "XT90 MAIN");
+    v.i228 = 0x45u;
+    v.shunt = 500u;
+    const uint8_t fw[3] = { 0u, 23u, 17u };
+    ns_t s;
+    ns_init(&s, &v, lang, fw, 0u);
+    uint32_t now = 3500u;
+    if (strcmp(scene, "splash") != 0) {
+        tap(&s, NS_T_SETUP, now);
+        nscan_t r;
+        bus_scan(&r);
+        ns_scan_done(&s, &r);
+    }
+    if (strcmp(scene, "setup-name") == 0) {
+        tap(&s, NS_T_ROW0, now);
+        tap(&s, NS_T_KEY0 + NS_KB_SPACE, now);
+        tap(&s, NS_T_KEY0 + 1, now);           /* "2" */
+    } else if (strcmp(scene, "setup-scan") == 0) {
+        tap(&s, NS_T_ROW0 + 1, now);
+    } else if (strcmp(scene, "setup-addr") == 0) {
+        tap(&s, NS_T_ROW0 + 2, now);
+    } else if (strcmp(scene, "setup-shunt") == 0) {
+        tap(&s, NS_T_ROW3, now);
+        tap(&s, NS_T_KEY0 + NS_KP_CLR, now);
+        tap(&s, NS_T_KEY0 + 2, now);
+        tap(&s, NS_T_KEY0 + 0, now);
+        tap(&s, NS_T_KEY0 + NS_KP_OK, now);    /* 20uΩ: refused */
+    } else if (strcmp(scene, "setup-list") != 0
+               && strcmp(scene, "splash") != 0) {
+        return 1;
+    }
+    gfx_canvas_t c;
+    nsv_t view;
+    gfx_canvas_init(&c, s_fb, NV_W, NV_H, 0);
+    nsv_init(&view);
+    (void)nsv_render(&view, &c, &s, now);
+    return 0;
+}
+
+/**
  * @brief Render one scene.
  * @param argc 4
  * @param argv the program, the image, the scene, the language
@@ -80,6 +165,13 @@ int main(int argc, char **argv)
     } else if (strcmp(argv[3], "en") != 0) {
         fprintf(stderr, "unknown language %s\n", argv[3]);
         return 1;
+    }
+    if (strncmp(argv[2], "setup", 5) == 0 || strcmp(argv[2], "splash") == 0) {
+        if (setup_scene(argv[2], m.lang) != 0) {
+            fprintf(stderr, "unknown scene %s\n", argv[2]);
+            return 1;
+        }
+        return write_ppm(argv[1]);
     }
     if (strcmp(argv[2], "values") == 0) {
         run_values(&m);

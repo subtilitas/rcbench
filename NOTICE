@@ -57,9 +57,11 @@ The panel firmware for the ESP32-P4 reaches the board's ESP32-C6 radio
 through components from the Espressif component registry. They are not in
 this repository: firmware/panel/dependencies.lock names them with their
 hashes, and a build downloads them into firmware/panel/managed_components/.
-A panel image contains their compiled code.
+A panel image contains the compiled code of those not marked "not
+linked"; tools/gen_licenses.py --check holds this list to
+firmware/panel/dependencies.lock and to the components the image links.
 
-  espressif/esp_wifi_remote 1.6.5        Apache License 2.0
+  espressif/esp_wifi_remote 1.6.5        Apache License 2.0 (not linked)
   espressif/esp_hosted 2.13.0            Apache License 2.0, except the
                                          protobuf-c runtime below
   espressif/wifi_remote_over_eppp 0.3.3  Apache License 2.0 (not linked)
@@ -102,8 +104,7 @@ which serialises its messages to the C6, under these terms:
 
 esp_hosted's message code generated from its .proto file
 (common/proto/esp_hosted_rpc.pb-c.c and .h) belongs to Espressif under the
-Apache License 2.0. esp_wifi_remote's dummy_src.c is an empty file without a
-licence line.
+Apache License 2.0.
 
 
 QR Code generator library (qrcodegen)
@@ -145,8 +146,14 @@ downloads it into firmware/dial/managed_components/. A Dial image contains
 its compiled code.
 
   espressif/esp_lcd_gc9a01 2.0.4         Apache License 2.0
+  espressif/esp_lcd_st77916 2.0.2        Apache License 2.0
   espressif/cmake_utilities 0.5.3        Apache License 2.0 (build scripts,
                                          not linked)
+
+The M5Stack Dial's image links the GC9A01 driver, the Guition
+JC3636K518C's the ST77916 driver.  firmware/dial/main/dial_k518_init.h
+holds the ST77916 set-up bytes of Guition's Arduino demo for that board
+(demo_arduino/JC3636K518), under the Apache License 2.0.
 
   Copyright Espressif Systems (Shanghai) CO LTD.  The Apache License 2.0 is
   published at https://www.apache.org/licenses/LICENSE-2.0 and is shipped in
@@ -217,8 +224,11 @@ Vite, TypeScript and Playwright build and test the page and are not shipped.
 Design and protocol references
 ------------------------------
 
-No third-party source code is vendored in this tree. The following informed the
-design and were read as documentation rather than copied:
+The third-party source code stored in this tree is qrcodegen
+(third_party/qrcodegen, above) and the two PIO programs of pico-examples in
+protocols/pdmini/rp2350/pd_uart.pio, whose licence stands in that file. The
+following informed the design and were read as documentation rather than
+copied:
 
   ArduPilot IOMCU     the two-processor split and the watchdog ratio
   YGE                 the OpenYGE material the specification here is written
@@ -232,6 +242,10 @@ design and were read as documentation rather than copied:
                       by that project from the vendor's app; MIT License.
                       protocols/supvan is written from that description and
                       from captures of the station's printer
+  LZMA SDK            the LZMA specification and LzmaEnc.c by Igor Pavlov,
+                      public domain: protocols/supvan/lzlit.c and
+                      tools/lzlit.py write a literal-only LZMA stream from
+                      that description
 
 Every protocol implementation here is written from a published specification
 or, where none is published, from captures of the wire, rather than from

@@ -294,8 +294,10 @@ static const ui_text_id_t k_routed[] = {
     TX_HOLD_HINT_CONTINUE,
     TX_HOLD_HINT_LEAVE, TX_HOLD_HINT_LEAVE_DROP, TX_HOLD_HINT_LOAD,
     TX_HOLD_HINT_RESTORE, TX_HOLD_HINT_WRITE, TX_HP_PORT_NONE,
-    TX_OFF,             TX_ON,                TX_SV_HOLD_TO_APPLY, TX_SV_HV_1,          TX_SV_HV_2,
-    TX_SV_HV_3,         TX_SV_HV_4,           TX_SV_HV_5,
+    TX_HP_SUPPLY_5V_FIXED, TX_HP_SUPPLY_AS_IS, TX_OFF,  TX_ON,
+    TX_SPROG_EDIT_NOTE, TX_SV_HOLD_TO_APPLY,  TX_SV_HV_1,  TX_SV_HV_2,
+    TX_SV_HV_3,         TX_SV_HV_4,           TX_SV_HV_5,  TX_SV_TARGET_PN,
+    TX_SV_TARGET_PN_PIN,
 };
 
 /* Whether the overlay copies text @p id into one of its buffers. */

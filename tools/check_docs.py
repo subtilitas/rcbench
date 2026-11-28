@@ -668,13 +668,16 @@ def check_quoted_labels(problems: list[str]) -> None:
 # modules, and the protocol modules that are also built outside this
 # repository (CONTRIBUTING.md, "Where code goes").
 MODULE_ROOTS = ("shared", "protocols")
+# Folders of data beside the modules: no build compiles them, so the compile
+# tables leave them out; Building.md's tree still lists them.
+DATA_DIRS = ("protocols/printers",)
 
 
 def module_dirs() -> dict[str, pathlib.Path]:
     """Module name -> its directory, over MODULE_ROOTS.
 
     The three builds name a module by its last path element, so a name is in
-    one root.
+    one root.  DATA_DIRS are no modules.
     """
     found: dict[str, pathlib.Path] = {}
     for root in MODULE_ROOTS:
@@ -682,7 +685,7 @@ def module_dirs() -> dict[str, pathlib.Path]:
         if not base.is_dir():
             continue
         for p in sorted(base.iterdir()):
-            if p.is_dir():
+            if p.is_dir() and f"{root}/{p.name}" not in DATA_DIRS:
                 found.setdefault(p.name, p)
     return found
 

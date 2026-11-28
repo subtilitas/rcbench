@@ -178,6 +178,7 @@ TEST_CASE(each_image_names_the_kind_its_device_takes)
     CHECK_EQ(devimg_kind(DEVIMG_PNODE), BLEOTA_KIND_NODE_POWER);
     CHECK_EQ(devimg_kind(DEVIMG_BAL), BLEOTA_KIND_NODE_BAL);
     CHECK_EQ(devimg_kind(DEVIMG_PNODE_S3), BLEOTA_KIND_NODE_POWER_S3);
+    CHECK_EQ(devimg_kind(DEVIMG_DIAL_K518), BLEOTA_KIND_DIAL_K518);
     CHECK_EQ(devimg_kind(DEVIMG_COUNT), 0u);
 }
 
@@ -342,6 +343,42 @@ TEST_CASE(the_display_files_card_sig_takes_the_path_of_every_image)
     CHECK(strlen(s) < sizeof(s));
 }
 
+/* ------------------------------------------------- the two Dial boards */
+
+TEST_CASE(the_k518_image_has_its_release_asset_name_card_path_and_slot)
+{
+    char n[DEVIMG_NAME_MAX];
+    CHECK(devimg_name(DEVIMG_DIAL_K518, k_rel, n, sizeof(n)));
+    CHECK_STR_EQ(n, "rcbench-dial-k518-0.23.18.bin");
+    char p[DEVIMG_PATH_MAX];
+    CHECK(devimg_card_path(DEVIMG_DIAL_K518, k_rel, p, sizeof(p)));
+    CHECK_STR_EQ(p, "BENCH/UPDATES/rcbench-dial-k518-0.23.18.bin");
+    CHECK_EQ(devimg_slot(DEVIMG_DIAL_K518), DEVUPD_SLOT_DIAL);
+    /* The widest version's name stays inside DEVIMG_NAME_MAX. */
+    const fw_version_t wide = { 65535u, 65535u, 65535u };
+    CHECK(devimg_name(DEVIMG_DIAL_K518, wide, n, sizeof(n)));
+    CHECK_EQ(strlen(n), 39u);
+    /* The M5Stack Dial keeps its own name. */
+    CHECK(devimg_name(DEVIMG_DIAL, k_rel, n, sizeof(n)));
+    CHECK_STR_EQ(n, "rcbench-dial-0.23.18.bin");
+}
+
+TEST_CASE(each_dial_boards_image_passes_as_its_own_and_not_as_the_other)
+{
+    uint32_t len = make(DEVUPD_CHIP_ESP32S3, DEVUPD_PROJECT_DIAL, "0.23.18",
+                        BLEOTA_KIND_DIAL_K518);
+    CHECK_EQ(devimg_verify(DEVIMG_DIAL_K518, g_img, len, k_rel, NULL, NULL,
+                           NULL, NULL), DEVIMG_OK);
+    CHECK_EQ(devimg_verify(DEVIMG_DIAL, g_img, len, k_rel, NULL, NULL, NULL,
+                           NULL), DEVIMG_E_ROLE);
+    len = make(DEVUPD_CHIP_ESP32S3, DEVUPD_PROJECT_DIAL, "0.23.18",
+               BLEOTA_KIND_DIAL);
+    CHECK_EQ(devimg_verify(DEVIMG_DIAL, g_img, len, k_rel, NULL, NULL, NULL,
+                           NULL), DEVIMG_OK);
+    CHECK_EQ(devimg_verify(DEVIMG_DIAL_K518, g_img, len, k_rel, NULL, NULL,
+                           NULL, NULL), DEVIMG_E_ROLE);
+}
+
 int main(void)
 {
     g_img = malloc(DEVUPD_SLOT_DIAL);
@@ -359,6 +396,8 @@ int main(void)
     RUN(a_display_image_of_another_version_is_refused_as_the_c6_nodes);
     RUN(the_display_image_is_held_to_the_node_slot_at_one_byte_over);
     RUN(the_display_files_card_sig_takes_the_path_of_every_image);
+    RUN(the_k518_image_has_its_release_asset_name_card_path_and_slot);
+    RUN(each_dial_boards_image_passes_as_its_own_and_not_as_the_other);
     free(g_img);
     return test_summary("devimg_board");
 }

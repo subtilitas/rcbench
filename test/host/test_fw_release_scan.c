@@ -1,10 +1,10 @@
 /*
- * The highest release's tag out of GitHub's API answer of up to 10
+ * The highest release's tag out of GitHub's API answer of up to 5
  * releases, and which release a panel is offered.
  *
  * The failure under test is a tag that is taken and should not be: one
- * deeper in the answer than a release's own keys, a draft's, one of an
- * 11th release, the first by date instead of the highest, one past the
+ * deeper in the answer than a release's own keys, a draft's, one of a
+ * 6th release, the first by date instead of the highest, one past the
  * scan's bound, one too long, one in an escaped or non-string form, one
  * that is not v + MAJOR.MINOR.PATCH, or one read out of an answer whose
  * JSON (JavaScript Object Notation) is out of form, a single release of
@@ -166,7 +166,7 @@ TEST_CASE(an_answer_that_ends_before_the_tag_has_none)
     CHECK_EQ(scan("[", NULL), FW_REL_TAG_NONE);
     CHECK_EQ(scan("[{\"tag_name\":\"v0.21", NULL), FW_REL_TAG_NONE);
     CHECK_EQ(scan("[{\"tag_name\":", NULL), FW_REL_TAG_NONE);
-    /* A release whole, but not the array, and not 10 releases. */
+    /* A release whole, but not the array, and not 5 releases. */
     CHECK_EQ(scan("[{\"tag_name\":\"v0.21.0\"}", NULL), FW_REL_TAG_NONE);
     CHECK_EQ(scan("[{\"tag_name\":\"v0.21.0\"},", NULL), FW_REL_TAG_NONE);
     CHECK_EQ(scan("[{\"author\":{\"login\":\"x\"", NULL), FW_REL_TAG_NONE);
@@ -327,7 +327,8 @@ TEST_CASE(the_scan_keeps_little)
     CHECK_STR_EQ(fw_rel_err_str(FW_REL_SCAN_LONG),
                  "no tag_name within the scan");
     CHECK_STR_EQ(FW_REL_API_URL, "https://api.github.com/repos/subtilitas/"
-                                 "rcbench/releases?per_page=10");
+                                 "rcbench/releases?per_page=5");
+    CHECK_EQ(FW_REL_API_RELEASES, 5u);
 }
 
 /* An answer of @p n releases tagged @p tags, each with @p extra before its
@@ -390,37 +391,35 @@ TEST_CASE(the_highest_of_the_releases_is_taken_not_the_newest_by_date)
     CHECK_EQ(v.minor, 22u);
 }
 
-TEST_CASE(ten_releases_are_read_and_an_eleventh_is_not)
+TEST_CASE(five_releases_are_read_and_a_sixth_is_not)
 {
     static const char *const tags[] = {
-        "v0.1.0", "v0.2.0", "v0.3.0", "v0.4.0", "v0.5.0",
-        "v0.6.0", "v0.7.0", "v0.8.0", "v0.9.0", "v0.10.0", "v9.0.0",
+        "v0.1.0", "v0.2.0", "v0.3.0", "v0.4.0", "v0.5.0", "v9.0.0",
     };
     fw_version_t v = { 0u, 0u, 0u };
-    /* The highest is the 10th: taken. */
-    CHECK_EQ(scan_tags(tags, 10u, "", &v), FW_REL_OK);
-    CHECK_EQ(v.minor, 10u);
-    /* An 11th, higher still, is not looked at, nor anything after the
-     * 10th release's close. */
-    CHECK_EQ(scan_tags(tags, 11u, "", &v), FW_REL_OK);
+    /* The highest is the 5th: taken. */
+    CHECK_EQ(scan_tags(tags, 5u, "", &v), FW_REL_OK);
+    CHECK_EQ(v.minor, 5u);
+    /* A 6th, higher still, is not looked at, nor anything after the
+     * 5th release's close. */
+    CHECK_EQ(scan_tags(tags, 6u, "", &v), FW_REL_OK);
     CHECK_EQ(v.major, 0u);
-    CHECK_EQ(v.minor, 10u);
-    char *t = releases(tags, 11u, "");
+    CHECK_EQ(v.minor, 5u);
+    char *t = releases(tags, 6u, "");
     REQUIRE_ALLOC(t);
     fw_rel_scan_t s;
     fw_release_scan_init(&s);
     CHECK(fw_release_scan_feed(&s, (const uint8_t *)t, strlen(t)));
-    CHECK_EQ(s.releases, 10u);
+    CHECK_EQ(s.releases, FW_REL_API_RELEASES);
     CHECK(t[s.seen - 1u] == '}');
     CHECK(t[s.seen] == ',');
     free(t);
-    /* An 11th out of form is not looked at either. */
-    static const char *const bad11[] = {
-        "v0.1.0", "v0.1.0", "v0.1.0", "v0.1.0", "v0.1.0",
+    /* A 6th out of form is not looked at either. */
+    static const char *const bad6[] = {
         "v0.1.0", "v0.1.0", "v0.1.0", "v0.1.0", "v0.1.0", "junk",
     };
-    CHECK_EQ(scan_tags(bad11, 11u, "", &v), FW_REL_OK);
-    CHECK_EQ(scan_tags(bad11, 10u, "", &v), FW_REL_OK);
+    CHECK_EQ(scan_tags(bad6, 6u, "", &v), FW_REL_OK);
+    CHECK_EQ(scan_tags(bad6, 5u, "", &v), FW_REL_OK);
 }
 
 TEST_CASE(one_release_out_of_form_refuses_the_whole_answer)
@@ -650,18 +649,17 @@ TEST_CASE(the_lines_highest_release_is_kept_beside_the_highest)
     /* An answer that ends before its array does: none. */
     CHECK(!scan_line("[{\"tag_name\":\"v0.22.1\"}", 4096u, &e, &v, &l));
     CHECK_EQ(e, FW_REL_TAG_NONE);
-    /* The line's release as the 11th is not read. */
+    /* The line's release as the 6th is not read. */
     static const char *const late[] = {
-        "v0.23.0", "v0.23.1", "v0.23.2", "v0.23.3", "v0.23.4",
-        "v0.24.0", "v0.24.1", "v0.24.2", "v0.25.0", "v0.25.1", "v0.22.9",
+        "v0.23.0", "v0.23.1", "v0.24.0", "v0.25.0", "v0.25.1", "v0.22.9",
     };
-    t = releases(late, 11u, "");
+    t = releases(late, 6u, "");
     REQUIRE_ALLOC(t);
     CHECK(!scan_line(t, 4096u, &e, &v, &l));
     CHECK_EQ(e, FW_REL_OK);
     CHECK_EQ(v.minor, 25u);
     free(t);
-    t = releases(late + 1, 10u, "");
+    t = releases(late + 1, 5u, "");
     REQUIRE_ALLOC(t);
     CHECK(scan_line(t, 4096u, &e, &v, &l));
     CHECK_EQ(l.patch, 9u);
@@ -693,7 +691,7 @@ int main(void)
     RUN(the_scan_stops_at_its_bound);
     RUN(the_scan_keeps_little);
     RUN(the_highest_of_the_releases_is_taken_not_the_newest_by_date);
-    RUN(ten_releases_are_read_and_an_eleventh_is_not);
+    RUN(five_releases_are_read_and_a_sixth_is_not);
     RUN(one_release_out_of_form_refuses_the_whole_answer);
     RUN(a_draft_is_passed_over_wherever_its_key_stands);
     RUN(only_a_newer_release_of_the_line_is_offered);

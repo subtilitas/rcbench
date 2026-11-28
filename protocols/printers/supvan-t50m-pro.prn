@@ -1,0 +1,188 @@
+rcbench printer, format 1
+# SPDX-License-Identifier: MIT
+#
+# Supvan T50M Pro thermal label printer.  Supvan and Katasymbol are names
+# of their owners, used only to say which printer this file describes.
+# Facts: heeen/supvan-cups (MIT), docs/PROTOCOL.md, and the station's
+# capture H0 of 2026-11-26 (test/host/fixtures/supvan/README.md).
+# The engine runs this file byte for byte as protocols/supvan's sv_job
+# (test/host/test_prn_job_vs_sv.c).
+id supvan-t50m-pro
+name T50M PRO
+version 1
+licence MIT
+source https://github.com/heeen/supvan-cups
+
+match oui A4:93:40
+
+service 0000e0ff-3c17-d293-8e48-14fe2e4da212
+chr rx FFE1 notify write write_nr
+chr cmd FFE9 write write_nr
+chr other FFEA notify
+cccd next
+mtu_min 131
+conn 16 32 0 400
+
+head_dots 384
+dots_mm 8
+line 48 lsb 1 no
+label feed top
+label dot0 right
+label align center
+label margin 8 8
+roll source record
+roll limits 15 48 20 100
+density 4
+
+# 4,096B print buffers of 84 head lines, the 14B header first
+page size 4096
+page lines 84
+page head {ck:svpage:le16} {pflags:u8} 50 {lines:le16} {line_bytes:u8} 00 {mlead:le16} {mtrail:le16} {density:u8} 00
+page flags 02 0C
+compress lzma_lit 8192
+chunk size 500
+chunk pad 00
+chunk max 255
+chunk frame 7E 5A FC 01 10 02 AA BB {ck:sum16le:10:-1} {idx:u8} {total:u8} {data}
+write cmd req
+write data req 128 10
+table speed mean_page 3000:10 2800:15 2500:20 2000:25 1500:40 1000:45 500:55 else 60
+
+tmpl cmd 7E 5A 0C 00 10 01 AA {a:u8} {ck:sum16le:10:15} 00 01 {p0:le16} {p1:le16}
+
+rx join magic_len 7E5A 2 le16 4 8 128
+rx key 7
+answer 11 20
+answer 30 47
+field 11 buf_full 14 bit 0
+field 11 label_err 14 bit 1
+field 11 label_end 14 bit 2
+field 11 label_mode 14 bit 3
+field 11 battery_low 14 bit 6
+field 11 busy 15 bit 2
+field 11 head_hot 15 bit 3
+field 11 cover 16 bit 3
+field 11 printing 16 bit 6
+field 11 no_label 17 bit 0
+field 11 count 18 le16
+field 30 uid 22 bytes 7
+field 30 roll_type 39 u8
+field 30 roll_w 40 u8
+field 30 roll_h 41 u8
+field 30 roll_gap 42 u8
+field 30 left 43 le32
+error cover COVER
+error no_label NO_LABEL
+error label_end NO_LABEL
+error label_err LABEL
+error label_mode LABEL
+error battery_low BATTERY
+error head_hot HOT
+answer_ms 1000
+
+# CHECK_DEVICE, one retry
+step check
+  send cmd a=0x12
+  expect 12
+  within 1000
+  tries 2
+  else SILENT
+# RETURN_MAT: the roll and the counter c0, one retry
+step material
+  send cmd a=0x30
+  expect 30
+  within 1000
+  tries 2
+  else SILENT
+  roll
+  check roll_w = lay_w else ROLL
+  check roll_h = lay_h else ROLL
+  save c0 left
+  save uid0 uid
+  save w0 roll_w
+  save h0 roll_h
+# INQUIRY_STA every 100ms until idle, 5s
+step ready
+  send cmd a=0x11
+  expect 11
+  poll 100
+  until busy clear and printing clear
+  within 5000
+  else BUSY
+  flags on
+# RETURN_MAT again once idle: the counter c0 just before START
+step rebase
+  send cmd a=0x30
+  expect 30
+  within 1000
+  else SILENT
+  check uid = uid0 else ROLL
+  check roll_w = w0 else ROLL
+  check roll_h = h0 else ROLL
+  save c0 left
+step start
+  send cmd a=0x13
+  expect 13
+  within 1000
+  else SILENT
+  flags on
+  relink verdict
+step printing
+  send cmd a=0x11
+  expect 11
+  poll 100
+  until printing set
+  within 3000
+  else SILENT
+  flags on
+  relink verdict
+step buffer
+  send cmd a=0x11
+  expect 11
+  poll 100
+  until buf_full clear
+  within 3000
+  else SILENT
+  flags on
+  relink verdict
+# NEXT_ZIPPEDBULK: 512B frames, their count
+step bulk
+  send cmd a=0x5C p0=512 p1=frames
+  expect 5C
+  within 1000
+  else SILENT
+  flags on
+  relink verdict
+step data
+  data
+  within 1000
+  else SILENT
+  relink verdict
+step pause
+  wait 20
+  relink verdict
+# BUF_FULL: the stream's length and the speed byte
+step full
+  send cmd a=0x10 p0=stream_len p1=speed
+  expect 10
+  within 1000
+  else SILENT
+  flags on
+  relink done
+step done
+  send cmd a=0x11
+  expect 11
+  delay 100
+  poll 100
+  until printing clear and busy clear
+  within 15000
+  else SILENT
+  flags on
+  relink done
+
+job query check material ready
+job print check material ready rebase start printing buffer bulk data pause full done
+abort cmd a=0x14 from start to done
+relink_ms 5000
+verdict counter left 3 300 cmd a=0x30
+end

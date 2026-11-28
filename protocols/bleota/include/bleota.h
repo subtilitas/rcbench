@@ -70,12 +70,14 @@ extern const uint8_t bleota_uuid_ctrl[16];
 extern const uint8_t bleota_uuid_data[16];
 
 /** @brief What an image is for: BEGIN's kind. @{ */
-#define BLEOTA_KIND_DIAL       1u /**< the M5Stack Dial */
+#define BLEOTA_KIND_DIAL       1u /**< the M5Stack Dial v1.1 */
 #define BLEOTA_KIND_NODE_POWER 2u /**< the power node */
 #define BLEOTA_KIND_NODE_BAL   3u /**< the balance node */
 #define BLEOTA_KIND_NODE_POWER_S3 4u /**< the power node on the ES3C28P
                                          display board (ESP32-S3) */
-#define BLEOTA_KIND_MAX        4u /**< the highest kind */
+#define BLEOTA_KIND_DIAL_K518  5u /**< the Dial firmware on the Guition
+                                       JC3636K518C knob (ESP32-S3) */
+#define BLEOTA_KIND_MAX        5u /**< the highest kind */
 /** @} */
 
 /** @brief Control writes, the first byte of a CTRL write. @{ */

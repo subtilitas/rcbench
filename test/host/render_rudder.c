@@ -37,7 +37,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "imu_screen.h"
+#include "imu_view.h"
 #include "servo_screen.h"
 #include "servo_spots.h"
 #include "servo_test.h"
@@ -133,10 +133,10 @@ static void angle_list(const char *view)
         settings_set(SET_ENC_EN, 0.0f);
         v.err = IMU_ERR_NONE_FOUND;
     }
-    imu_screen_set(&v);
+    imu_view_set(&v);
     tap_body(826, 96 + 30 + 15);            /* READY's ANGLE row */
     imu_cmd_t c;
-    while (imu_screen_take(&c)) { }
+    while (imu_view_take(&c)) { }
 }
 
 /**

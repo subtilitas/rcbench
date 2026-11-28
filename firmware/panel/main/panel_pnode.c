@@ -12,6 +12,12 @@
  * (panel_pnode_blec_publish()).  The first POWER NODE ON starts Bluetooth
  * (panel_ble_start()), as the first IMU ON does.
  *
+ * The node's own settings (node_cfg_link.h): SETUP's NAME and INA228
+ * ADDRESS rows queue their writes here.  The frame task keeps the node's
+ * name in SET_TEXT_PNODE_NAME, so BOUND NODE shows it while the node is
+ * away, and takes a node-side shunt the controller found newer into
+ * SET_PNODE_UOHM; both only while the bench is SAFE.
+ *
  * SPDX-License-Identifier: MIT
  */
 #include "panel_pnode.h"
@@ -76,6 +82,8 @@ static pnode_link_t    s_was = PNODE_LINK_OFF;
 static pnode_view_t    s_seen;
 /** @brief The binds the frame task kept in SETUP. */
 static uint32_t        s_kept_seq;
+/** @brief The node-side shunts the frame task took into SETUP. */
+static uint32_t        s_adopted_seq;
 /** @brief The frame task's last link state, for the band's notices. */
 static pnode_link_t    s_frame_was = PNODE_LINK_OFF;
 /** @brief The control task's copy of the last take. */
@@ -99,6 +107,7 @@ static void cfg_from_settings(pnode_cfg_t *out)
     memset(out, 0, sizeof(*out));
     out->en = settings_get_bool(SET_PNODE_EN);
     out->src_node = settings_get_int(SET_I228_SRC) == 1;
+    out->shunt_uohm = (uint16_t)settings_get_int(SET_PNODE_UOHM);
     strncpy(out->addr, settings_text(SET_TEXT_PNODE_ADDR),
             sizeof(out->addr) - 1u);
     strncpy(out->name, settings_text(SET_TEXT_PNODE_NAME),
@@ -160,6 +169,20 @@ static void run_command(const pnode_cmd_t *cmd, uint32_t now)
                      (unsigned)cmd->arg,
                      s_ctl.b.scanning ? "a scan runs" : "not in the list",
                      (unsigned)s_ctl.found_n, (unsigned)s_ctl.bind_refused);
+        }
+    } else if (cmd->kind == PNODE_CMD_NAME || cmd->kind == PNODE_CMD_I228) {
+        const bool armed = atomic_load(&s_live);
+        const ncl_req_t r = cmd->kind == PNODE_CMD_NAME
+                            ? pnode_ctl_name(&s_ctl, cmd->text, armed)
+                            : pnode_ctl_i228(&s_ctl, cmd->arg, armed);
+        if (r != NCL_REQ_OK) {
+            ESP_LOGW(TAG, "%s refused: %s", cmd->kind == PNODE_CMD_NAME
+                     ? "NAME" : "INA228 ADDRESS",
+                     r == NCL_REQ_ARMED ? "ARMED" : r == NCL_REQ_BAD
+                     ? "value" : "no settings from the node");
+        } else {
+            ESP_LOGI(TAG, "%s to the node", cmd->kind == PNODE_CMD_NAME
+                     ? "NAME" : "INA228 ADDRESS");
         }
     } else if (cmd->kind == PNODE_CMD_UNBIND) {
         char was[sizeof(s_ctl.cfg.addr)];
@@ -315,7 +338,7 @@ void panel_pnode_start(void)
 
 void panel_pnode_settings_changed(setting_id_t id)
 {
-    if (id == SET_PNODE_EN || id == SET_I228_SRC) {
+    if (id == SET_PNODE_EN || id == SET_I228_SRC || id == SET_PNODE_UOHM) {
         post_cfg();
     }
 }
@@ -345,6 +368,34 @@ static void link_notices(pnode_link_t link, bool armed)
         ui_router_set_notice(TR(PNODE_LOST_SAFE));
     }
     s_frame_was = link;
+}
+
+/**
+ * @brief The node's own settings into SETUP while SAFE: its name into
+ *        BOUND NODE's text, and a node-side shunt the controller found
+ *        newer into NODE SHUNT, each with a save asked.
+ * @param armed The bench is ARMED.
+ */
+static void node_settings(bool armed)
+{
+    if (armed) {
+        return;
+    }
+    if (s_seen.have_cfg && s_seen.bound_addr[0] != '\0'
+        && strcmp(s_seen.node_name, settings_text(SET_TEXT_PNODE_NAME)) != 0) {
+        settings_set_text(SET_TEXT_PNODE_NAME, s_seen.node_name);
+        settings_request_save();
+    }
+    if (s_seen.adopt_seq != s_adopted_seq) {
+        s_adopted_seq = s_seen.adopt_seq;
+        if (s_seen.adopt_uohm != 0u
+            && (int)s_seen.adopt_uohm != settings_get_int(SET_PNODE_UOHM)) {
+            ESP_LOGI(TAG, "NODE SHUNT %uuOhm from the node, its change the later",
+                     (unsigned)s_seen.adopt_uohm);
+            settings_set(SET_PNODE_UOHM, (float)s_seen.adopt_uohm);
+            settings_request_save();
+        }
+    }
 }
 
 /**
@@ -380,6 +431,7 @@ void panel_pnode_frame(bool armed)
         settings_set_text(SET_TEXT_PNODE_NAME, s_seen.bound_name);
         settings_request_save();
     }
+    node_settings(armed);
     pnode_msg_t m = { .is_cfg = false };
     while (wireless_pane_take_pnode(&m.cmd)) {
         if (m.cmd.kind == PNODE_CMD_SCAN && armed) {

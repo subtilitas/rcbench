@@ -54,7 +54,8 @@ before a write is relied on.
 - **SERVO TESTER** must select that port: PORT 1, PORT 2, PORT 3 or PORT 4
   ([the target](#the-target)). With the standard OUTPUTS selected, no
   programming session can start. On the rbmod carrier with protocol 4.36
-  or later, the programmer's PORT row selects the port and requests its
+  or later, the port line of the programmer's SERVO tab selects the port
+  and requests its
   SERVO PWM function; other boards use SETUP > OUTPUTS.
 - One servo at a time.
 - The port is in PWM (pulse-width modulation) or in programming, never both.
@@ -157,8 +158,9 @@ On boards without the carrier PORT chooser, selecting the standard outputs
 ### The port on the rbmod carrier
 
 On the [rbmod carrier](Carrier.md#the-programming-port) with an IOmcu of
-protocol 4.36 or later, the PORT row chooses the port as well. Before
-**CONNECT**, a tap on the row's label opens **PROGRAMMING PORT** with
+protocol 4.36 or later, the programmer chooses the port as well. Before
+**CONNECT**, a tap on the SERVO tab's head, left of **CONNECT**, opens
+**PROGRAMMING PORT** with
 `PROGP01  GPIO 13`, `PROGP02  GPIO 14`, `PROGP03  GPIO 15` and
 `PROGP04  GPIO 0`. The entry chosen sets SERVO TESTER, the same setting
 as the PROG PORT entries of **OUTPUTS**, and is kept over a restart.
@@ -168,9 +170,9 @@ as the PROG PORT entries of **OUTPUTS**, and is kept over a restart.
   the KST limit search follow once the port reads SERVO PWM. Until then
   the tester sends no command: nothing reaches the servo outputs in the
   port's place.
-- The PORT row reads the port, `PROGP02 GPIO 14  5V FIXED` on the KST
-  row and `PROG PORT 2 GPIO 14  D SERIES` on the Hitec row, or
-  `NO PROG PORT SET`.
+- The KST head reads the port over its supply, `PROG PORT 2 GPIO 14` over
+  `5V FIXED`; the Hitec PORT row reads `PROG PORT 2 GPIO 14  D SERIES`.
+  Without a port both read `NO PROG PORT SET`.
 - **CONNECT** without a port says `Use the programming port to program a
   servo.` and `Tap the PORT row and choose a programming port.`; with an
   IOmcu older than 4.36 the second line is
@@ -462,6 +464,7 @@ port set.
 
 ![A PD mini answers](img/servo-kst-supply.png)
 ![The supply in programming mode](img/servo-kst-supplied.png)
+![CONNECT at 1s of its hold](img/servo-kst-connect-hold.png)
 
 Without a PD mini the voltage and the current limit are stored and not
 applied. **WAIT BEFORE PWM** is applied at [leaving](#leaving) with and
@@ -474,7 +477,7 @@ power cycle of a **LEAVE** by one of 4.30 or later.
 
 | Row | Button | Does |
 | --- | --- | --- |
-| PORT | **CONNECT** (a 2s hold where it switches a supply on), **ABORT**, **LEAVE** | takes the port, ends the running operation, [gives the port back](#leaving) |
+| head: the port and the supply | **CONNECT** (a 2s hold where it switches a supply on), **ABORT**, **LEAVE**, 260px | takes the port, ends the running operation, [gives the port back](#leaving) |
 | SERVO | **READ ALL** | reads the 32 registers, each until 3 of at most 5 reads agree |
 | TYPE | `--`, `V6?`, `V8?`, **V6**, **V8** | [the servo type](#the-servo-type) the operator sets; `V6?` is the guess from 20k_sel |
 | FILES | **CHOOSE** | [saves the servo's values to the card and loads a file](#servo-files) |
@@ -482,17 +485,30 @@ power cycle of a **LEAVE** by one of 4.30 or later.
 | RESTORE | **CHOOSE** | [writes a backup back](#restore) |
 | (no label) | **WRITE n VALUES**, **WRITE 1 VALUE** | [writes the changed values after a 2s hold](#writing) |
 
-In PWM with a PD mini answering the PORT row reads `PORT  5.0V  1000mA`:
-the voltage and the current limit that **CONNECT** sets. A row whose button
+The head's first line names the port and its GPIO, `PROG PORT 1 GPIO 13`;
+without a port it reads `NO PROG PORT SET` in the warning colour. Its
+second line is the supply: with a PD mini answering `PD MINI  5.0V
+1000mA`, the voltage and the current limit that **CONNECT** sets; `5V
+FIXED` on the carrier's PROG 5V; `SUPPLY AS IT IS` where the operator
+powers the servo. A row whose button
 is drawn off takes no tap: **FILES** outside programming mode and while the
 servo is in doubt, **RESTORE** while an operation runs, **WRITE n VALUES**
 without a change.
 
-Below the rows stand the port's state, the servo type or what the state
-needs, the name of the
-session's backup file and the last message. A message in the warning colour is a refusal or a result
-that needs a second look; one in the danger colour says the servo's content
-is in doubt.
+The notes flow from 8px under the rows, one under the other: the port's
+state, the servo type or what the state needs, what stands until it is
+dealt with and the name of the session's backup file. The last message
+stands on the bottom line, its last row 8px above the card's foot. A
+message in the warning colour is a refusal or a result that needs a second
+look; one in the danger colour says the servo's content is in doubt.
+
+Notes that need more rows than the card has above the message take more
+pages, the last row of each kept for the page count. The count, `1/2` or
+`2/2`, stands at the right edge above the message; a tap on the notes shows
+the next page, and after the last the first. A note that does not fit in
+the rows a page has left starts the next page.
+
+![The notes of a servo that holds a mix, page 2](img/servo-kst-journal-p2.png)
 
 A session that goes, by a lost link, an IOmcu that starts again or the port
 back in PWM, takes the lines about what it held with it: `All 32 registers
@@ -514,7 +530,11 @@ and **WRITE n VALUES** are off and take no tap, the tab keeps `Read only. This s
 
 A value is edited in a draft on the panel. Nothing reaches the servo before
 [**WRITE n VALUES**](#writing). A value that differs from the servo's is
-marked twice: by `*` before it and by the accent fill.
+marked twice: by `*` before it and by the accent fill. Under the rows of
+TUNE, PULSE and FAILSAFE, after the tab's own note, stands the hint the
+Hitec programmer shares: `Tap a value to edit it. * marks a change. WRITE
+n VALUES writes the changes.` WRITE n VALUES stands in the footer under
+every tab.
 
 ![Edited values on TUNE](img/servo-kst-tune.png)
 
@@ -527,6 +547,7 @@ further 1.8s.
 
 ![The keypad with the range the limits accept](img/servo-kst-keypad.png)
 ![The stretch list](img/servo-kst-stretch.png)
+![MAX. DUTY under the finger](img/servo-kst-row-down.png)
 
 ### TUNE
 
@@ -883,6 +904,7 @@ the page, back to the first after the last. The panel asks the card for
 each page and waits at most 5s for it.
 
 ![The second page of 7 files](img/servo-kst-files-next.png)
+![5 files, two to a line](img/servo-kst-files-five.png)
 ![A card without servo files](img/servo-kst-files-none.png)
 
 ### The servo type
@@ -1364,6 +1386,7 @@ as above. With a servo in doubt the page keeps `Unwritten changes will be
 lost.` without the list, and **CANCEL**.
 
 ![LEAVE with three unwritten edits](img/servo-kst-leave.png)
+![The hold of LEAVE at 1s](img/servo-kst-leave-hold.png)
 
 The state line reads `Leaving programming mode. PWM is still off.` and the
 tester's controls stay off until the port reports PWM. The button reads
@@ -1648,7 +1671,7 @@ value past a soft limit, **BACK** that keeps the edits and the hold that
 drops them, a soft limit asked again for a value further from
 the servo's, the
 state line and the tab's line of a running write, a message that goes when
-its condition ends, the rows that take no tap, the PORT row's label, no
+its condition ends, the rows that take no tap, the SERVO tab's head, no
 comma in a number of the German table, a
 write cut by a link loss, a restart, **ABORT** and **STOP**, a card that
 fails, and the timeouts across the 2^32ms wrap of the clock. `test_kst_panel_files` runs the

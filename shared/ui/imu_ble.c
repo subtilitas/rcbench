@@ -50,6 +50,7 @@ void imu_ble_on(imu_ble_t *l, bool on, uint32_t now_ms)
     apply(l, now_ms);
     if (!on) {
         l->scan_open = false;
+        l->scan_done = false;
         l->found_n = 0u;
         l->hidden = 0u;
         l->op_err = IMU_ERR_NONE;
@@ -91,6 +92,7 @@ bool imu_ble_scan(imu_ble_t *l, uint32_t now_ms)
     l->op_err = IMU_ERR_NONE;
     l->op_code = 0u;
     l->scan_cut = false;
+    l->now_ms = now_ms;
     l->scan_open = bleu_scan(&l->b, now_ms);
     return l->scan_open;
 }
@@ -136,6 +138,7 @@ static void take_scan(imu_ble_t *l)
         return;
     }
     l->scan_open = false;
+    l->scan_done = true;
     const bleu_list_t *s = &l->b.list;
     memset(l->found, 0, sizeof(l->found));
     l->found_n = (s->found_n > BLEU_FOUND_MAX) ? (uint8_t)BLEU_FOUND_MAX
@@ -178,6 +181,7 @@ static void follow_write(imu_ble_t *l)
 
 bool imu_ble_event(imu_ble_t *l, const bleu_evt_t *e, uint32_t now_ms)
 {
+    l->now_ms = now_ms;
     const bool stream = bleu_event(&l->b, e, now_ms);
     take_scan(l);
     follow_write(l);
@@ -186,6 +190,7 @@ bool imu_ble_event(imu_ble_t *l, const bleu_evt_t *e, uint32_t now_ms)
 
 bool imu_ble_act(imu_ble_t *l, uint32_t now_ms, bleu_act_t *out)
 {
+    l->now_ms = now_ms;
     const bool acted = bleu_step(&l->b, now_ms, out);
     take_scan(l);
     follow_write(l);
@@ -255,6 +260,11 @@ static imu_err_t link_err(const imu_ble_t *l, uint16_t *code)
 void imu_ble_view(const imu_ble_t *l, imu_view_t *out)
 {
     memcpy(out->version, l->version, sizeof(out->version));
+    out->scan_done = l->scan_done;
+    out->scan_cut = l->scan_cut;
+    out->scan_left_s = l->b.scanning
+        ? (uint8_t)((bleu_scan_left_ms(&l->b, l->now_ms) + 999u) / 1000u)
+        : 0u;
     out->found_n = l->found_n;
     memcpy(out->found, l->found, sizeof(out->found));
     out->hidden = l->hidden;

@@ -1,19 +1,22 @@
 /*
  * SETUP > WIRELESS > POWER NODE (wireless_pane.h, wireless_pnode.c): the
  * entry's rows, its settings and their defaults, its state words, SCAN FOR
- * NODE, BOUND NODE and NODE BATTERY.
+ * NODE, BOUND NODE, NODE BATTERY, NODE INA228 and NODE SHUNT.
  *
  * The failures this is about: a scan asked while ARMED (the radio's scan
  * window would starve the links), a refusal the operator does not see, a
  * found node that binds another one, INA228 SOURCE hidden while the node
  * is off (no way back to WIRED), a state word wider than its 25 cells in
  * either language, a battery read as a voltage when the node said it has
- * none, and a RESET that drops the bind.
+ * none, a RESET that drops the bind, a node's INA228 address or shunt
+ * not shown as its INFO names them, a SHUNT the node refused that the
+ * operator does not see, and NODE SHUNT changed while ARMED.
  *
  * SPDX-License-Identifier: MIT
  */
 #include "settings_rig.h"
 
+#include "rcnode.h"
 #include "wl_search.h"
 
 /** @brief The band's status with the bench ARMED or SAFE. */
@@ -68,18 +71,31 @@ TEST_CASE(the_entry_shows_on_and_source_off_and_its_rows_on)
     CHECK_EQ(settings_def(SET_I228_SRC)->cat, SET_CAT_WIRELESS);
     CHECK_STR_EQ(settings_text(SET_TEXT_PNODE_ADDR), "");
     CHECK_STR_EQ(settings_text(SET_TEXT_PNODE_NAME), "");
+    /* NODE SHUNT: the MATEK's 200uΩ by default, 50 to 10000uΩ. */
+    CHECK_EQ(settings_get_int(SET_PNODE_UOHM), RCNODE_SHUNT_DEF_UOHM);
+    CHECK_STR_EQ(settings_def(SET_PNODE_UOHM)->key, "pnode_uohm");
+    CHECK_EQ(settings_def(SET_PNODE_UOHM)->cat, SET_CAT_WIRELESS);
+    CHECK_EQ(settings_def(SET_PNODE_UOHM)->type, SET_TYPE_INT);
+    CHECK_EQ((int)settings_def(SET_PNODE_UOHM)->min, RCNODE_SHUNT_MIN_UOHM);
+    CHECK_EQ((int)settings_def(SET_PNODE_UOHM)->max, RCNODE_SHUNT_MAX_UOHM);
     settings_set(SET_PNODE_EN, 1.0f);
-    CHECK_EQ(wireless_pane_rows(WL_ENTRY_PNODE, rows, WL_ENTRY_ROWS_MAX), 5);
+    CHECK_EQ(wireless_pane_rows(WL_ENTRY_PNODE, rows, WL_ENTRY_ROWS_MAX), 9);
     CHECK(rows[2].custom == &wireless_pane_pnode_scan_row);
     CHECK(rows[3].custom == &wireless_pane_pnode_bind_row);
-    CHECK(rows[4].custom == &wireless_pane_pnode_bat_row);
+    CHECK(rows[4].custom == &wireless_pane_pnode_name_row);
+    CHECK(rows[5].custom == &wireless_pane_pnode_bat_row);
+    CHECK(rows[6].custom == &wireless_pane_pnode_i228_row);
+    CHECK(rows[7].custom == &wireless_pane_pnode_addr_row);
+    CHECK(rows[8].custom == NULL);
+    CHECK_EQ(rows[8].id, SET_PNODE_UOHM);
+    CHECK_EQ(wireless_pane_entry_of(SET_PNODE_UOHM), WL_ENTRY_PNODE);
     CHECK_EQ(wireless_pane_entry_of(SET_I228_SRC), WL_ENTRY_PNODE);
     CHECK_EQ(wireless_pane_entry_of(SET_PNODE_EN), WL_ENTRY_PNODE);
     /* Opened from its tile, on its entry. */
     open_wireless(SET_PNODE_EN);
     CHECK_EQ(settings_screen_category(), SET_CAT_WIRELESS);
     CHECK_EQ(wireless_pane_selected(), WL_ENTRY_PNODE);
-    CHECK_EQ(settings_screen_rows(SET_CAT_WIRELESS), 5);
+    CHECK_EQ(settings_screen_rows(SET_CAT_WIRELESS), 9);
 }
 
 TEST_CASE(a_node_scan_while_armed_is_refused_with_a_band_text)
@@ -194,6 +210,44 @@ TEST_CASE(the_battery_row_says_what_the_status_says)
     CHECK_STR_EQ(val, TR(PNODE_BAT_UNKNOWN));
 }
 
+/* NODE INA228 reads INFO: the address found and the shunt in force, NOT
+ * FOUND for address 0, NOT LINKED before INFO. */
+TEST_CASE(the_ina228_row_says_what_info_says)
+{
+    fresh_hub();
+    pnode_view_t v = two_found();
+    char val[32];
+    wireless_pane_set_pnode(&v);
+    wireless_pane_pnode_i228_row.value_text(val, sizeof val);
+    CHECK_STR_EQ(val, TR(PNODE_BAT_UNKNOWN));
+    v.have_info = true;
+    v.i228_addr = 0x40u;
+    v.shunt_uohm = 500u;
+    wireless_pane_set_pnode(&v);
+    wireless_pane_pnode_i228_row.value_text(val, sizeof val);
+    CHECK_STR_EQ(val, "0x40, 500uΩ");
+    v.i228_addr = 0x4Fu;
+    v.shunt_uohm = 10000u;
+    wireless_pane_set_pnode(&v);
+    wireless_pane_pnode_i228_row.value_text(val, sizeof val);
+    CHECK_STR_EQ(val, "0x4F, 10000uΩ");
+    v.i228_addr = 0u;
+    wireless_pane_set_pnode(&v);
+    wireless_pane_pnode_i228_row.value_text(val, sizeof val);
+    CHECK_STR_EQ(val, TR(PNODE_I228_NONE));
+    CHECK(wireless_pane_pnode_i228_row.tap == NULL);
+    CHECK(wireless_pane_pnode_i228_row.step == NULL);
+    /* A SHUNT the node refused: the band says so, once a refusal. */
+    const uint32_t n0 = ui_router_alert_number();
+    v.shunt_refused = 1u;
+    wireless_pane_set_pnode(&v);
+    CHECK(ui_router_alert_number() != n0);
+    CHECK_STR_EQ(ui_router_alert(), TR(PNODE_SHUNT_REFUSED));
+    const uint32_t n1 = ui_router_alert_number();
+    wireless_pane_set_pnode(&v);
+    CHECK_EQ(ui_router_alert_number(), n1);
+}
+
 TEST_CASE(every_node_state_word_fits_25_cells_in_its_colour)
 {
     fresh_hub();
@@ -286,6 +340,24 @@ TEST_CASE(the_source_does_not_change_while_armed)
     settings_set_armed(NULL);
 }
 
+/* NODE SHUNT is held while ARMED, as INA228 SOURCE: a change would rescale
+ * a run's readings.  Out of its range it is clamped by the schema. */
+TEST_CASE(the_node_shunt_does_not_change_while_armed)
+{
+    fresh_hub();
+    settings_set_armed(pn_armed);
+    s_pn_armed = true;
+    CHECK(settings_safe_only(SET_PNODE_UOHM));
+    CHECK(settings_held(SET_PNODE_UOHM));
+    settings_set(SET_PNODE_UOHM, 500.0f);
+    settings_adjust(SET_PNODE_UOHM, 1);
+    CHECK_EQ(settings_get_int(SET_PNODE_UOHM), 200);
+    s_pn_armed = false;
+    settings_set(SET_PNODE_UOHM, 500.0f);
+    CHECK_EQ(settings_get_int(SET_PNODE_UOHM), 500);
+    settings_set_armed(NULL);
+}
+
 /* INA228 SOURCE's "+" pressed on the glass while ARMED: the value stays,
  * and the band says why instead of nothing.  SAFE, the same press steps
  * it with no band text. */
@@ -375,6 +447,8 @@ int main(void)
     RUN(a_found_node_shows_on_search_and_binds_by_its_row);
     RUN(the_rows_open_search);
     RUN(the_battery_row_says_what_the_status_says);
+    RUN(the_ina228_row_says_what_info_says);
+    RUN(the_node_shunt_does_not_change_while_armed);
     RUN(every_node_state_word_fits_25_cells_in_its_colour);
     RUN(reset_keeps_the_bound_node);
     RUN(the_source_does_not_change_while_armed);

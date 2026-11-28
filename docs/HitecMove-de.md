@@ -65,6 +65,10 @@ Solange es an ist:
    und dem Strom des PD mini, die Reichweite, wo der verfolgte Wert
    außerhalb liegt, und bei einer Endlage
    `ENDE LINKS: Das Ruderhorn steht, wo 850us es hinstellt. Bei 1000us hält es bei 77% dieser Seite.`
+   Der Port und die Positionszeile stehen auf der ersten Seite der
+   Hinweise; der Rest blättert mit `1/2` rechts in der letzten
+   Hinweiszeile und einem Tipp auf die Hinweise. Die unterste Zeile zeigt, solange die Schleife läuft, nur
+   eine Warnung oder eine Gefahrenmeldung.
 
 ![SERVO BEWEGEN an, ENDE LINKS verfolgt](img/de/servo-hitec-move-on.png)
 ![ENDE LINKS außerhalb der Reichweite](img/de/servo-hitec-move-reach.png)

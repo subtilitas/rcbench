@@ -65,9 +65,6 @@ typedef enum {
     /* LAYOUT, from SETUP on a board with soldered pins: its
      * connectors and the role of each position. */
     SCREEN_LAYOUT,
-    /* IMU, from SETUP's IMU tile: the Bluetooth IMU's BLE link, the scan
-     * and the bind, the calibration, ZERO and the live angles (imu_screen.h). */
-    SCREEN_IMU,
     /* SERVO's function screens, each from a tile of the SERVO hub
      * (SCREEN_SERVO, servo_screen.h); their home tag returns to the hub. */
     SCREEN_SERVO_LIVE,
@@ -78,9 +75,9 @@ typedef enum {
     SCREEN_SERVO_RAUTO,
     SCREEN_SERVO_KST,
     SCREEN_SERVO_HITEC,
-    /* SEARCH, from SETUP > WIRELESS' scan and bound rows of the Dial and
-     * the nodes: the found devices and the bind (wl_search.h); its home
-     * tag returns to WIRELESS on the device's entry. */
+    /* SEARCH, from SETUP > WIRELESS' scan and bound rows of the IMU, the
+     * Dial and the nodes: the found devices and the bind (wl_search.h);
+     * its home tag returns to WIRELESS on the device's entry. */
     SCREEN_WL_SEARCH,
     /* BACKUP, from SETUP > SD CARD's row LOAD SETTINGS and, as the
      * restore offer, over OVERVIEW at start (sbk_screen.h): the card's
@@ -90,6 +87,10 @@ typedef enum {
      * Factory reset (scanner_code.h): the scanner's setup code and the
      * factory reset's hold. */
     SCREEN_SCAN_CODE,
+    /* ABOUT, from SETUP > PANEL's row About rcbench (about_screen.h): the
+     * versions, the designer, the licences, the trademark notice and the
+     * third-party components with their notice texts. */
+    SCREEN_ABOUT,
     SCREEN_COUNT
 } ui_screen_id_t;
 

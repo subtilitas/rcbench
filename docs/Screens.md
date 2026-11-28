@@ -404,7 +404,7 @@ on the left card decides the first pages:
 | SERVO RUDDER | LENGTH, the drive buttons, ZERO, RESET MAX and, without a knob that answers, -10us and +10us (4 or 5); DEFLECTION, TRAILING EDGE and the state lines (3) |
 | SERVO RUDDER AUTO | the targets, MARGIN and TOLERANCE, ZERO and GRAPH after a run (3 or 4); DEFLECTION and TRAILING EDGE (2); PORT, READY, the rail line, ARM + START and OPTIONS (5) |
 | SERVO LIVE, SWEEP and RUDDER, SAFE | PORT, READY, the rail line, ARM and OPTIONS (5); SET V, the plot, SPEED, the type and the buttons on LIVE and SWEEP (5), SET V, the plot, the type and the side view on RUDDER (4); SET V not on the rbmod carrier's programming port |
-| SERVO KST and HITEC, SERVO tab | the tabs, CONNECT, READ ALL and TYPE on KST, SERIES (FILES while the port is held) and READ ALL on HITEC, the notes (5); FILES and MORE on KST, MORE and AFTER STOP on HITEC, RESTORE, WRITE n VALUES (4); PORT, READY, the rail line, WRITE and OPTIONS (5) |
+| SERVO KST and HITEC, SERVO tab | the tabs, CONNECT, READ ALL, the slot beside it (TYPE on KST, SERIES on HITEC, AFTER STOP while HITEC holds the port), the notes (5); FILES, MORE, RESTORE, WRITE n VALUES (4); PORT, READY, the rail line, WRITE and OPTIONS (5) |
 | SERVO KST and HITEC, another tab | the tabs, the tab's first value, its `-` and `+` on a stepped KST row, MOVE SERVO on HITEC's D series TRAVEL, the notes (2 to 4); PORT, READY, the rail line, WRITE and OPTIONS (5) |
 | SERVO's lists (the hub, SWEEP, RUDDER, RUDDER AUTO, HITEC) | as a settings list |
 | SUPPLY LIVE | PLOT and TABLE, VOLTAGE and CURRENT LIMIT (3) |
@@ -469,10 +469,7 @@ Either dock covers part of the footer's middle slot, x 348 to 676:
   or its result shows, as the slot is ABORT or OK then. The list's pages
   cover no control that stops an output and show while ARMED.
 - No page over RENAME LOG's keyboard, the signal-wire session, ESC
-  STICK's search keyboard, its RUN warning or its manual steps, or IMU's
-  found list.
-
-![IMU's guide at page 1](img/help-imu.png)
+  STICK's search keyboard, its RUN warning or its manual steps.
 
 ## Screenshot
 
@@ -1985,7 +1982,7 @@ LIVE's ZERO is the zero MEASURED reads from; after the tap MEASURED reads
 | ANGLE SOURCE | A tap with a reading on show | Reads SET |
 | --- | --- | --- |
 | AS5600 | takes the live count, 0 to 4095, as ENC CENTER and asks a save: the setting of ENC CENTER on LIVE's and RUDDER's lists and of SETUP > SENSORS > AS5600 center | ENC CENTER is not 0, its default, or a count was taken since the panel started; a center kept from before a restart reads SET |
-| IMU | asks the IMU's own ZERO, the IMU screen's: every IMU angle, roll, pitch and yaw, from the current position. It drops RUDDER's zero and MAX taken on the IMU, as the IMU screen's ZERO does | the IMU reports its zero taken; the IMU's zero lasts until the restart |
+| IMU | asks the IMU's own ZERO, the one of SETUP > WIRELESS > IMU: every IMU angle, roll, pitch and yaw, from the current position. It drops RUDDER's zero and MAX taken on the IMU, as that ZERO does | the IMU reports its zero taken; the IMU's zero lasts until the restart |
 
 Without a reading from the current link, after a link loss until a new
 reading arrives, while the AS5600 reports no magnet, or without a valid
@@ -2701,8 +2698,9 @@ PROG PORT 4. With OUTPUTS picked, CONNECT is locked and the page says
 `Use the programming port to program a servo.` and
 `Tap PORT and pick a PROG PORT.`
 
-On an rbmod carrier with IOmcu protocol 4.36 or later, tap the programmer's
-PORT label before CONNECT to choose a programming port. The fixed pins
+On an rbmod carrier with IOmcu protocol 4.36 or later, tap the head of
+KST's SERVO tab (HITEC's PORT label) before CONNECT to choose a
+programming port. The fixed pins
 are PROGP01 GPIO13, PROGP02 GPIO14, PROGP03 GPIO15 and PROGP04 GPIO0. The
 choice sets SERVO TESTER and requests SERVO PWM for that port and NONE
 for the other three. The tester waits for readback confirmation.
@@ -2718,8 +2716,10 @@ other SERVO screens and on MOTOR & ESC; pressing it shows
 STOP remains active everywhere, CENTER and RELEASE on LIVE. COMMANDED
 shows `---`, because the tester sends no pulse to the held port.
 
-In PWM with a responding PD mini, the PORT row shows the voltage and
-current limit CONNECT will set: `PORT  5.0V  1000mA`. While the port is
+KST's SERVO tab opens with a head: the port and its GPIO,
+`PROG PORT 1 GPIO 13` (`NO PROG PORT SET` in the warning colour without a
+port), over the supply CONNECT sets, `PD MINI  5.0V 1000mA` with a
+responding PD mini, `5V FIXED` on the carrier or `SUPPLY AS IT IS`. While the port is
 held, the set points and OUTPUT ON are locked on SUPPLY and on SERVO's
 other screens; OUTPUT OFF and a press on KST's or HITEC's PD MINI row while
 it reads ON still work. On the rbmod carrier, the ports have
@@ -2736,7 +2736,8 @@ tall or more and ending 8px above the card floor:
 | tabs | one row at the top, 48px tall: five tabs of 120px, four of 151px on KST with KST EXPERT MODE OFF |
 | rows | 48px tall at a 56px pitch, up to 5 a tab, in two columns of 295px; a wide row spans both |
 | values | 150px (15 cells of the 10 x 20 face); a wide row's 260px, with its `-` and `+` keys of 56px inside it |
-| notes and messages | under the last row, 10 x 20 face, 60 cells a row, 20px a row, to 6px above the card floor: 6 rows under the SERVO tab |
+| SERVO tab's head | line 0: two lines of the 10 x 20 face at the left, the port and the supply; CONNECT, ABORT or LEAVE 260 x 48px at the right |
+| notes and messages | from 8px under the last row down, 10 x 20 face, 60 cells a row, 20px a row; the last message on the bottom line, its last row 8px above the card floor: 6 rows under the SERVO tab |
 | lists (FILES, RESTORE, MORE, a factor) | a title, then up to 7 entries 48px tall at a 56px pitch, CANCEL 150 x 48px at the foot |
 | warning pages | the title in the 20 x 36 face, up to 16 rows of lines in the 10 x 20 face (fewer in a shorter area: the rows that fit 8px above the buttons), the hold button 300 x 56px, 380 x 56px on LEAVE PROGRAMMING with unwritten edits, and CANCEL or BACK 180 x 56px at the foot |
 
@@ -2746,10 +2747,10 @@ tab, as in English, and in the 8 x 16 face when one does not, as German
 list of choices takes one column of 48px rows at a 56px pitch above
 CANCEL. When more choices come than one column holds, they take two to a
 row in columns of 295px, and an entry wider than a column takes a row of
-its own. Where the two standing lines leave no row beside the message for a
-page count, they yield to it: they page with the other notes, first, and
-a line taller than a page waits for the message to go. Where the message
-leaves no row for a note, every note waits for it to go. Neither a note
+its own. Notes that need more rows than there are above the message take
+pages, the last row of each kept for the count; a note that does not fit
+in the rows a page has left starts the next. Where the message leaves no
+row for a note and the count, no note shows until it goes. Neither a note
 nor the message rises over the SERVO tab's last row.
 
 A message takes up to 5 rows and is drawn whole in the 6 rows under the
@@ -2771,18 +2772,22 @@ the same frame: five tabs (SERVO, MOTION, TRAVEL, PROTECT, INFO) of
 and 180 x 56px CANCEL, on LEAVE PROGRAMMING with unwritten edits a
 380 x 56px hold button and BACK.
 
-It reads the servo and writes edited values back. Tap a writable value to
-open a list of up to 6 entries or the keypad. WRITE n VALUES, 220px wide,
-writes after a 2s hold. Set SERIES to
-D SERIES or CLASSIC before CONNECT. PORT shows the port, GPIO, series,
-receive mode and the supply CONNECT will set.
+It draws through the servo programmer frame with KST's SERVO tab order:
+the head, which shows the port, GPIO, series, receive mode and the supply
+CONNECT will set beside the 260px CONNECT button; SERVO: READ ALL beside
+SERIES (D SERIES or CLASSIC, set before CONNECT), or AFTER STOP while the
+port is held; FILES and MORE; RESTORE and WRITE n VALUES, 220px wide, which
+writes after a 2s hold. It reads the servo and writes edited values back.
+Tap a writable value to open a list of up to 7 entries, over 5 two to a
+line, or the keypad. Notes flow from 8px under the rows; notes that need
+more room turn over with `1/2` and a tap.
 
 While the port is held, ARM and the supply controls follow the same rules
 as the KST programmer, including the carrier's separate 5V. Pressing a
 locked supply control shows
 `Servo programming holds the supply: set points and ON are locked.`
-FILES replaces SERIES and opens `BENCH/HITEC/CONF`, with 5 files per page
-below the save entry. A new name uses the keyboard; files for another
+FILES takes a press while the port is held and opens `BENCH/HITEC/CONF`,
+with 5 files per page, two to a line, below the save entry. A new name uses the keyboard; files for another
 model or beyond a soft rule open CHECK THIS FILE.
 
 RESTORE writes the session backup back; where the bench cannot check that
@@ -2821,6 +2826,104 @@ A stop found sets that end in the draft:
 ![MOVE SERVO on, LEFT END followed](img/servo-hitec-move-on.png)
 ![FIND STOP searching on the left](img/servo-hitec-move-find.png)
 ![A stop found on the left](img/servo-hitec-move-found.png)
+
+#### Servo programmer frame
+
+KST and HITEC draw through one frame, `sprog` (`shared/ui/include/sprog.h`,
+`sprog.c`, `sprog_draw.c`, `sprog_page.c`). The frame owns the layout, the
+drawing, the presses, the 2s holds, the keypad, the keyboard, the lists and
+the hold pages. A brand owns its model, a const table of tabs and rows, a
+view fill and a `switch` on the result the frame returns. The frame calls
+no brand and holds no function pointer. It uses no heap: its state,
+`sprog_t`, is a member of the brand's static state. One overlay shows at a
+time.
+
+Each event, tick and draw takes three steps. The brand fills the view:
+every shown row's value, fill, press kind and refusal, the head's two
+lines, the notes and the bottom line. It hands the event or tick to the
+frame. It acts on the result: a tap, a step, a stop, a completed hold, a
+value from the keypad, a list or the keyboard, an applied or cancelled
+page, a tab change.
+
+Regions, in pixels inside the 620 x 428px left card:
+
+| Region | Where | Holds |
+| --- | --- | --- |
+| Tab strip | x 8, y 8, 604 x 48px | up to 5 tabs; a tab whose show bits are off is left out and the rest close up: 4 tabs on KST with KST EXPERT MODE OFF |
+| Row grid | lines at y 64 + 56 x n, n 0 to 4, rows 48px tall | the tab's rows in table order: a wide row takes a line, two narrow rows share one. Column 0 at x 10, column 1 at x 315, each 295px wide |
+| Head | the SERVO tab's line 0 | the port and its GPIO over the supply CONNECT sets, at x 10; line 1 in the warning colour while no port is bound; CONNECT, ABORT or LEAVE, 260 x 48px, at the right. A tap on the text opens the PORT list where the brand offers it |
+| Notes | from 8px under the last line of rows to the bottom line | the brand's notes, top-down, each in text, dim, faint, accent, warning or danger colour, 60 cells a row, 20px a row; the page count `1/2` at the right end of a page's last row; a tap turns the page |
+| Bottom line | its last row ending 8px above the card floor or above the alert band, whichever is higher | the last message, else the brand's identity line of the servo read |
+| Overlays | the whole card | keypad, keyboard, list, hold page |
+
+The SERVO tab follows the order of the work, CONNECT, READ ALL, edit, WRITE:
+
+| Line | Column 0 | Column 1 |
+| --- | --- | --- |
+| 0 | head: port and supply | CONNECT, ABORT or LEAVE |
+| 1 | SERVO: READ ALL | the brand's slot: KST TYPE; Hitec SERIES before CONNECT, AFTER STOP while the port is held |
+| 2 | FILES: CHOOSE | MORE: CHOOSE |
+| 3 | RESTORE: CHOOSE | WRITE n VALUES, 220px, a 2s hold |
+
+A brand with no row of its own leaves the slot empty. Lines 4 and down hold
+the notes.
+
+Row kinds the frame draws; the view can change a row's kind by state, as
+Hitec's NEUTRAL and ends turn into steps while MOVE SERVO runs:
+
+| Kind | Control | Press |
+| --- | --- | --- |
+| value | the value, 150px, 260px in a wide row; `* ` and the accent fill when it differs from the servo | a tap opens the brand's editor |
+| step | `-`, the value, `+` | `-` and `+` act on the press and repeat after 0.45s at 8Hz, at 30Hz from 2.25s; the value opens the editor |
+| pair | two keys in the value's place: Hitec FIND STOP's LEFT END and RIGHT END | per key: tap or stop |
+| button | the brand's label | tap, 2s hold, stop on the press, or off |
+| show | a value that takes no press: the rows of KST's LOCKED tab | none |
+| gap | a place kept empty | none |
+
+How a control takes a press:
+
+| Press | Acts |
+| --- | --- |
+| tap | on the release inside the control |
+| 2s hold | on the tick after the hold completes; a touch loss before that cancels it. CONNECT that switches a supply on, WRITE n VALUES |
+| stop | on the DOWN, from any contact, also while another press is held: ABORT, MOVE SERVO's stop, FIND STOP |
+| off | drawn off; takes no press |
+
+A control the brand refuses carries the reason: a press shows it in the alert
+band, starts no hold and acts on nothing.
+
+A value tab's notes are the brand's tab note, then the common hint, dim:
+`Tap a value to edit it. * marks a change. WRITE n VALUES writes the changes.`
+
+The list rule: a list holds up to 7 entries. Up to 5 take one column of
+48px rows at a 56px pitch above CANCEL. More take two to a line in columns
+of 295px; an entry wider than a column takes a line of its own. The entry
+equal to the current value has the accent fill. A file list fills the 7
+entries with `Save this servo's settings in a new file.` on a line of its
+own, 5 files a page, each name with its type or model, and
+`Show more files.` as the last entry.
+
+A new brand, for example AGFRC, supplies these parts; the layout, presses,
+holds, editors and pages come from the frame. The estimate is for a brand
+of few rows; KST's measured figures are code lines counted by
+`tools/check_sizes.py`:
+
+| Part | Where | Estimate, lines | KST, lines |
+| --- | --- | ---: | ---: |
+| the protocol and the session model: connect, read, edit with limits, write with verify, backup, files | `protocols/<brand>/`, `shared/bench/` | outside `shared/ui` | outside `shared/ui` |
+| the tab and row tables, the 18 page-set hooks, the state, the session for the footer and the READY card, a row in the registry | `<brand>_panel.c`, `<brand>_panel_int.h`, `include/<brand>_panel.h`, `shared/ui/prog_registry.c` | 140 to 180 | 901 |
+| the view fill: values, fills, presses, refusals, head, notes, bottom line | `<brand>_panel_draw.c` | 150 to 250 | 506 |
+| the result switch | `<brand>_panel_touch.c` | 150 to 200 | 183 |
+| the editors' values into the draft, files and backup glue | `<brand>_panel_edit.c` | 150 to 250 | 554 |
+| texts: rows, messages, page lines | `<brand>_panel_text.c`; the strings in `shared/text/include/ui_text.def` | 300 to 500 | 483 |
+| soft limits and their page lines | `<brand>_panel_warn.c` | 150 to 250 | 382 |
+| LIMIT RUN and RUDDER AUTO seams, where wanted | `<brand>_panel_run.c` | about 200 | 219 |
+| goldens EN and DE, a docs page, a help page, the hub tile | `tools/render_ui.py`, `docs/`, `help/` | | |
+
+In sum 1,300 to 1,600 lines for a brand of few rows; KST takes 3,228 lines
+on the frame and Hitec 3,706, with MOVE SERVO and FIND STOP.
+`tools/stack_check.py` needs the brand's function in each of the 18 entries
+of `PROG_CALLS`.
 
 ### Settings
 
@@ -5642,18 +5745,20 @@ over its name in the 12 x 24px face, and a line in the 10 x 20px face.
 
 - Four categories: PANEL, SENSORS, WIRELESS and SD CARD, the bench-wide
   settings. A tile names the number of settings its list shows; SENSORS'
-  says what it holds, `CURRENT, ANGLE, PHASE TAP`, and WIRELESS' `IMU, DIAL, POWER, BALANCE NODES`.
+  says what it holds, `CURRENT, ANGLE, PHASE TAP`, and WIRELESS' `IMU, DIAL, NODES, PRINTER`.
   A tap opens the category's list.
   The pack, motor and throttle-output settings are on
   MOTOR & ESC > OPTIONS
   ([MOTOR & ESC settings](#motor--esc-settings)).
-- Four screens of their own: OUTPUTS ([Outputs](#outputs)), WI-FI
-  ([Wi-Fi](#wi-fi)), UPDATES ([Updates](#updates)) and IMU
-  ([The Bluetooth IMU](#the-bluetooth-imu)). The band of each names it
-  as its tile does, and the band of this page reads SETUP. [Files](#files) is a
+- Three screens of their own: OUTPUTS ([Outputs](#outputs)), WI-FI
+  ([Wi-Fi](#wi-fi)) and UPDATES ([Updates](#updates)). The band of each
+  names it as its tile does, and the band of this page reads SETUP. The
+  tiles read row by row PANEL, SENSORS, OUTPUTS; SD CARD, WI-FI,
+  WIRELESS; UPDATES. The Bluetooth IMU has no tile: it is WIRELESS'
+  first entry ([The Bluetooth IMU](#the-bluetooth-imu)). [Files](#files) is a
   tab of the [LOGS](#logs) tile.
 - LAYOUT ([Layout](#layout)) as the last tile on a board with soldered pins,
-  the [rbmod carrier](Carrier.md). 1 slot is free on any other board and none
+  the [rbmod carrier](Carrier.md). 2 slots are free on any other board and 1
   on that one. The page holds 9, and the build fails at a tenth entry.
 - SAVE, bottom right, is the same button the lists show
   ([Keeping the values](#keeping-the-values)). A change left unsaved in any
@@ -5698,11 +5803,12 @@ default and is described under [Logs](#logs). Keyboard transparency sets how
 much of the text shows through the text editor's keyboard: OFF, 25% or 50%,
 OFF by default; described under [The text editor](#the-text-editor). Demo mode
 hides the SIMULATION watermark and leaves the band's SIM chip
-([The status band](#the-status-band)). Hardware stop, the last row and OFF
-by default, shows the heartbeat fault as HWSTOP in place of FAULT 10
-([HWSTOP](#hwstop)).
+([The status band](#the-status-band)). Hardware stop, OFF by default,
+shows the heartbeat fault as HWSTOP in place of FAULT 10
+([HWSTOP](#hwstop)). The last row, About rcbench, opens ABOUT
+([PANEL: About rcbench](#panel-about-rcbench)).
 
-![PANEL scrolled to Hardware stop, stored ON](img/setup-hw-stop.png)
+![PANEL scrolled to its end: Hardware stop stored ON, About rcbench](img/setup-hw-stop.png)
 
 Seven settings are stored without affecting firmware operation. Cells,
 Capacity and Internal R appear on MOTOR & ESC. Units has a stored key but no
@@ -6065,6 +6171,44 @@ home tag does. A number the keypad takes is set by turning on its keypad:
 PRESS is OK, HOLD is CANCEL. No ring shows while the Dial is OFF or not
 linked, while ARMED, with the guide, the screenshot popup or a keyboard
 open, and on every other screen.
+
+### PANEL: About rcbench
+
+![ABOUT at its top](img/setup-about.png)
+
+About rcbench, PANEL's last row, opens ABOUT across the body. Its column
+holds 17 rows of 24px, from body y 8 to 416, and a scroll bar 56px wide at
+x 960. From the top:
+
+| Part | Rows |
+| --- | --- |
+| rcbench | the panel firmware's version, as UPDATES shows it; the IOmcu firmware's, once the IOmcu has named it, else `not known: no IOmcu has answered` |
+| The designer | `Design: Julian Wingert`, `Implemented by Claude and Julian`, `Copyright 2026 Julian Wingert`, `RCBench@doesnt.fly` |
+| LICENCES | firmware and software under the MIT License, the hardware designs in `hardware/` under CC BY-NC-SA 4.0 (`hardware/LICENSE`), the repository `github.com/subtilitas/rcbench` |
+| TRADEMARKS | the referential-use notice of `NOTICE`: KST, CHASERVO and Hitec and every other name are their owners' and describe compatibility only |
+| THIRD-PARTY COMPONENTS: PANEL FIRMWARE | 18 components: name and version, SPDX identifier, copyright lines |
+| THIRD-PARTY COMPONENTS: IOMCU FIRMWARE | 7 components; the panel image carries the IOmcu image |
+| DESIGN AND PROTOCOL REFERENCES | the LZMA specification and heeen/supvan-cups; neither firmware holds code of theirs |
+| LICENCE TEXTS AND NOTICES | each component's copyright lines and licence text, the Apache License 2.0 once at the end |
+
+![ABOUT scrolled 8 rows: the licences, the trademark notice, the first component](img/setup-about-licences.png)
+
+[Licences](Licenses.md#where-the-notice-texts-are) counts the rows
+the list gives the column. A drag on it moves it a row per
+24px from where it stood at the press. A press on the bar puts the thumb's
+middle under the finger, a press on the thumb takes it where it is held,
+and a drag moves it: the bar's travel spans the whole column. PAGE UP and
+PAGE DOWN in the footer move 17 rows and are dimmed at the first and the
+last screen. BACK and the home tag return to PANEL's list at the scroll it
+was left at. Every control acts on the release of a tap within 8px of its
+press.
+
+![ABOUT at its end: the last rows of the Apache License 2.0](img/setup-about-end.png)
+
+The table and the texts are `shared/ui/about_gen.c`, which
+`tools/gen_licenses.py` writes from one list; [Licences](Licenses.md)
+holds the same table, and `tools/gen_licenses.py --check` fails when the
+screen's rows and the page differ from that list.
 
 ### SENSORS: the split pane
 
@@ -6613,31 +6757,48 @@ with the SERVO LABEL rows; Active servo's list offers NONE until then.
 
 ### The Bluetooth IMU
 
-![IMU, connected at 50Hz with ZERO taken](img/imu-connected.png)
+![WIRELESS on the IMU entry, connected at 50Hz with ZERO taken](img/setup-wireless-imu.png)
 
-SETUP's IMU tile opens the screen for a WitMotion BWT901CL angle sensor,
-connected to the panel over Bluetooth LE through the board's ESP32-C6
-([The Bluetooth IMU](IMU.md)); the first IMU ON starts Bluetooth LE. WIRELESS' IMU entry holds its rows: IMU ON or
-OFF, AXIS (X, Y, Z), SIGN (+, -), RATE (10, 20, 50, 100 or 200Hz, 50Hz by
-default), ALGORITHM (6-AXIS or 9-AXIS) and ANGLE SOURCE. The screen's
-controls, left, 460 x 56px at a 64px pitch from body y 16: SCAN FOR SENSORS,
-then ZERO and CLEAR ZERO side by side. The footer
-([The footer and the settings list](#the-footer-and-the-settings-list))
-reads `[IMU] [HOLD 2s: CALIBRATE] [OPTIONS]`; OPTIONS opens WIRELESS on
-the IMU entry, and its home tag comes back. The card on the right, x 484 to
-1016, body y 16 to 436, names the bound sensor and
-its address with its type, the C6's firmware, the state, the angles X, Y and Z from the
-zero in the 16 x 28px face (the axis the runs read in the accent), the rate
-of angle frames, the age of the newest one and the sensor's battery. SCAN
-opens the found list for a scan of 10s: up to 8 sensors of 640 x 48px at a
-52px pitch with name, address and RSSI, and the count of the other devices
-the scan heard under SCAN AGAIN; a tap binds one and closes the list. The home tag closes the list first. The
-reading is stale 300ms after the last angle frame, the dropout allowance of
-a run ([Servo procedures](Servo.md)).
+The WitMotion BWT901CL angle sensor connects to the panel over Bluetooth
+LE through the board's ESP32-C6 ([The Bluetooth IMU](IMU.md)); the first
+IMU ON starts Bluetooth LE. SETUP > WIRELESS' IMU entry holds all of it:
+the scan and the bind, the live values, ZERO, CLEAR ZERO, the
+calibration's 2s hold and the settings. With the IMU off the entry shows
+IMU and ANGLE SOURCE; on, 18 rows more, 19 while LAST ERROR shows:
 
-![The found list after SCAN](img/imu-scan.png)
+| Row | Value | What it does |
+| --- | --- | --- |
+| Scan for sensor | `SCAN`, `STARTING BLUETOOTH`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | a tap opens SEARCH ([WIRELESS: SEARCH](#wireless-search)) and asks a scan of 10s. While Bluetooth LE starts the scan waits for it and goes out once it runs. While ARMED the band reads `NO IMU SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; while a scan runs `A SCAN IS RUNNING: IT ENDS WITHIN 10s`; with no Bluetooth on the C6 or a C6 that failed `BLUETOOTH IS NOT READY: NO SENSOR SCAN`. SEARCH opens in each case |
+| Bound sensor | the bound sensor's name, else its address, else `NONE` | a tap opens SEARCH on the last scan's list, without a scan |
+| Last error | | only while the last scan, connect or write failed: the error in the help line, in the warning colour ([The Bluetooth IMU](IMU.md)) |
+| Angle X, Angle Y, Angle Z | `+12.30°`, `---` without a reading | the angles from the zero through IMU filter, 0.01°. The axis IMU axis names reads `Angle X: read by runs` |
+| Frames | `RATE 50.0Hz  AGE 20ms`, `RATE 0.0Hz  NO ANGLE` | the angle frames of the last second and the age of the newest |
+| Sensor battery | `3.95V`, `---` above 6.0V or without one | the sensor's battery from its 0x52 frame |
+| C6 version | `2.13.0`, `---` | the ESP32-C6's firmware |
+| Zero | | a tap takes the current angles as the zero; locked without a reading, `NO ANGLE FROM THE SENSOR YET` |
+| Clear zero | | a tap forgets the zero; locked while none is set, `NO ZERO SET` |
+| Calibrate | `HOLD 2s: CALIBRATE`, a button of 278 x 48px at the row's right | a 2s hold starts the accelerometer's calibration of 3s; released before 2000ms the band reads `Hold 2s to calibrate the accelerometer.`. Locked while the sensor sends no frames, `THE SENSOR SENDS NO FRAMES`, and while it runs, `KEEP IT STILL AND LEVEL FOR 3s` counting down. The band reads `ACCELEROMETER CALIBRATED AND SAVED` at its end, or the alert `CALIBRATION ENDED WITHOUT FRAMES: TRY AGAIN` |
 
-![WIRELESS on the IMU entry](img/setup-wireless-imu.png)
+The settings follow: IMU axis (X, Y, Z), IMU sign (+, -), IMU rate (10,
+20, 50, 100 or 200Hz, 50Hz by default), IMU algorithm (6-AXIS or
+9-AXIS), IMU filter, IMU settling time and IMU precision. ZERO and CLEAR
+ZERO drop RUDDER's zero and MAX taken on the IMU. The reading is stale
+300ms after the last angle frame, the dropout allowance of a run
+([Servo procedures](Servo.md)).
+
+A new reading repaints the value box of each of Angle X, Angle Y, Angle
+Z, Frames and Sensor battery whose text changed, 278 x 24px each; the
+age on Frames counts on 10 times a second between readings. A change of
+the link, the scan, the bind or the calibration repaints the list, and
+so does a reading that comes or goes and a zero taken or cleared, which
+lock or free ZERO and CLEAR ZERO. The fill of CALIBRATE's hold repaints
+its button alone. LAST ERROR moves the rows under it: a press held on
+any row of the list when it comes or goes ends without acting, and an
+open choice list closes.
+
+![The same at ZERO, CLEAR ZERO and CALIBRATE](img/setup-wireless-imu-cal.png)
+
+![No sensor bound after a scan that found none](img/setup-wireless-imu-error.png)
 
 ### WIRELESS: the IMU and the Dial
 
@@ -6650,7 +6811,7 @@ restarts.
 
 | Entry | State while on | Rows |
 | --- | --- | --- |
-| IMU | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO SENSOR BOUND`, `SCANNING`, `CONNECTING`, `BOUND`, `CONNECTED 50Hz`, `NO FRAMES` ([The Bluetooth IMU](#the-bluetooth-imu)) | 2 while off: IMU and ANGLE SOURCE; 7 while on |
+| IMU | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO SENSOR BOUND`, `SCANNING`, `CONNECTING`, `BOUND`, `CONNECTED 50Hz`, `NO FRAMES` ([The Bluetooth IMU](#the-bluetooth-imu)) | 2 while off: IMU and ANGLE SOURCE; 20 while on, 21 with LAST ERROR |
 | DIAL | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO DIAL BOUND`, `SCANNING`, `CONNECTING`, `BOUND: NOT A DIAL`, `CONNECTED, NO EVENT`, `OTHER PROTOCOL n`, `CONNECTED`, `DEGRADED`, `DIAL LOST` | 1 while off; 5 while on |
 | BALANCE NODE | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO NODE BOUND`, `SCANNING`, `CONNECTING`, `BOUND: NOT A NODE`, `CONNECTED, READING INFO`, `ROLE r, PROTOCOL p`, `CONNECTED, NO REPORT`, `REPORTING` | 1 while off; 5 while on |
 | PRINTER | `NOT BOUND`, the bound printer's name while idle, `SCANNING`, `LINK UP`, a request's phase or its result ([WIRELESS: the label printer](#wireless-the-label-printer)) | 8 |
@@ -6688,7 +6849,9 @@ ESC's voltage, current, power and totals.
 | INA228 source | WIRED, NODE | WIRED | WIRED: the IOmcu's INA228 on SENSORS; NODE: the power node's readings. Shown while the node is off too, so the source can go back to WIRED without switching the node on |
 | Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | a tap opens SEARCH ([WIRELESS: SEARCH](#wireless-search)) and scans 10s for power nodes; a switch to ARMED stops the scan; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN`; while a scan runs, `A SCAN IS RUNNING: IT ENDS WITHIN 10s`. SEARCH opens in each case. A balance node is not listed |
 | Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap opens SEARCH on the last scan's list, without a scan |
+| Node name | the node's name, `OLD FIRMWARE`, `NOT LINKED` | | a tap opens the name keyboard; OK writes NAME to the node while SAFE ([The nodes' own settings](Nodes-setup.md#the-settings-over-the-link)) |
 | Node battery | `3.92V`, `LOW 3.41V`, `NO CELL`, `READ FAILED`, `NOT LINKED` | | the cell voltage of the node's last STATUS, sent every 1000ms; `LOW` under 3.5V, `NO CELL` on USB alone |
+| INA228 address | `AUTO`, `0x40` to `0x4F`, `OLD FIRMWARE`, `NOT LINKED` | `AUTO` | `<` and `>` step it; each step writes I228 to the node while SAFE |
 
 RESET POWER NODE sets Power node back to OFF and INA228 source to WIRED;
 the bound node stays. The signal strength of a linked node is not shown:
@@ -6730,6 +6893,7 @@ The BALANCE NODE entry's rows ([Balancing](Balance.md#measuring-with-the-balance
 | Balance node | ON, OFF | OFF | the link to the bound node; OFF ends it, and its loss is no error: the node measures and drives nothing |
 | Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | a tap opens SEARCH ([WIRELESS: SEARCH](#wireless-search)) and scans 10s for nodes that advertise the balance role; a switch to ARMED stops the scan; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN`; while a scan runs, `A SCAN IS RUNNING: IT ENDS WITHIN 10s`. SEARCH opens in each case |
 | Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap opens SEARCH on the last scan's list, without a scan |
+| Node name | the node's name, `OLD FIRMWARE`, `NOT LINKED` | | a tap opens the name keyboard; OK writes NAME to the node while SAFE ([The nodes' own settings](Nodes-setup.md#the-settings-over-the-link)) |
 | Node battery | `3.91V`, `3.40V LOW` (under 3.50V), `NO READING`, `--` | | the node's cell from the STATUS it sends on STREAM beside its reports; `--` before the first on a link |
 | Trial mass | 0.01g to 20.00g in 0.01g steps | 0.50g | the mass taped on for the trial runs of MOTOR & ESC > BALANCE |
 
@@ -6749,7 +6913,18 @@ spare connection a device update also uses, so a request is refused
 while an update runs, and an update is refused while a request or a scan
 for printers runs. The printer advertises no service: a scan lists the
 devices whose public address starts with `A4:93:40`, never a device for
-the service it advertises, and a random address binds nothing.
+the service it advertises, and a random address binds nothing. A linked
+printer does not advertise: a scan inside the 30s linger ends the link
+first and starts once the disconnect is through, 2s later at most, so
+the bound printer is listed too. A request that runs refuses the scan.
+A BIND on SEARCH reads the roll at once while SAFE, so Roll and Labels
+left fill in: for a new printer, and for the same one after UNBIND. A
+request in work ends first; the bound printer with its roll known is
+not read again. UNBIND sets State to `NOT BOUND` and Roll and Labels
+left to `--`, all three together. A
+bind of another address clears Roll and Labels left also while a request
+for the old printer runs, and its end leaves them clear. SEARCH marks the
+bound printer whatever letter case SETUP holds its address in.
 
 On the station (station step H1, a 40x30mm roll): the first link of a
 session took 4.94s, later ones 0.1s to 0.8s; the MTU was 240; the label
@@ -6804,10 +6979,11 @@ puts its text on the band:
 
 ![SEARCH on the power node, two nodes found](img/setup-wireless-search.png)
 
-SEARCH finds and binds the Dial, the power node, the balance node or the
-label printer. SCAN FOR DIAL, SCAN FOR NODE and Scan for printer open it
-and ask for a scan of 10s; BOUND DIAL, BOUND NODE and Bound printer open
-it on the last scan's list without one. A
+SEARCH finds and binds the IMU, the Dial, the power node, the balance
+node or the label printer. Scan for sensor, SCAN FOR DIAL, SCAN FOR NODE
+and Scan for printer open it and ask for a scan of 10s; Bound sensor,
+BOUND DIAL, BOUND NODE and Bound printer open it on the last scan's list
+without one. A
 scan the row refuses (ARMED, a scan running, Bluetooth not ready) says
 why on the band, and SEARCH opens on the last list. The home
 tag returns to SETUP > WIRELESS on the device's entry.
@@ -6816,15 +6992,18 @@ tag returns to SETUP > WIRELESS on the device's entry.
 | --- | --- | --- |
 | State line | x 16, y 12 | `SCANNING: 7s LEFT` while a scan runs, counted down from 10s; `FOUND n: TAP ONE TO BIND IT`; `NONE FOUND`; `STOPPED BY ARM`; `NO SCAN YET: TAP SCAN AGAIN` |
 | Found list | rows of 640 x 48px at a 52px pitch from x 16, y 44 | the devices the last scan found, strongest first, up to 8: the name, else the address, and the RSSI, `rcbench-pwr-3456  -58dBm`; the bound one lit in the accent colour. The controller empties the list when a scan starts and fills it when the scan ends |
-| Card | x 680, 328px wide, y 12 to 136 | the device's kind, its link state as on the left list, `BOUND` and the bound device's name, else its address, else `NONE` |
+| Card | x 680, 328px wide, y 12 to 154 | the device's kind, its link state as on the left list, `BOUND` and the bound device's name, else its address, else `NONE`; under a name its address with its type in the 8 x 16px face at y 138 |
 | SCAN AGAIN | 328 x 56px at x 680, y 156 | a new scan of 10s with the rules of SCAN FOR DIAL and SCAN FOR NODE; grey while a scan runs, where a tap reads `A SCAN IS RUNNING: IT ENDS WITHIN 10s` |
 | UNBIND | 328 x 56px at x 680, y 228 | `HOLD 2s: UNBIND`, a 2s hold that forgets the bound device (below); released before 2000ms the band reads `Hold 2s to unbind the device.`; grey while nothing is bound, where a tap reads `NOTHING IS BOUND: NOTHING TO UNBIND` |
+| Hidden count | x 680, y 300, the 10 x 20px face | the IMU's only: the devices the last scan heard and did not list, `4 OTHER DEVICES HIDDEN`; none while a scan runs or with none |
+
+![SEARCH on the IMU, two sensors found and four hidden](img/setup-wireless-imu-search.png)
 
 ![SEARCH's bind question](img/setup-wireless-search-bind.png)
 
 A tap on a found device opens the bind question in place of the list,
-700 x 280px at x 162, y 100: `BIND POWER NODE?` (`BIND DIAL?`,
-`BIND BALANCE NODE?`), the device's name, its address and RSSI, the bound
+700 x 280px at x 162, y 100: `BIND POWER NODE?` (`BIND IMU?`,
+`BIND DIAL?`, `BIND BALANCE NODE?`), the device's name, its address and RSSI, the bound
 device it takes the place of, `SETUP KEEPS THE BIND AND ASKS FOR A SAVE`,
 then CANCEL and BIND, 300 x 56px each. CANCEL and the home tag close it
 and bind nothing. BIND asks the controller to bind the device by its
@@ -6835,10 +7014,14 @@ the address and the name in SETUP and asks for a save.
 BIND binds nothing, closes the question and says why on the band:
 
 - while a scan runs: `A SCAN IS RUNNING: PICK THE NODE WHEN IT ENDS`,
-  `A SCAN IS RUNNING: PICK THE DIAL WHEN IT ENDS` for the Dial;
+  `A SCAN IS RUNNING: PICK THE DIAL WHEN IT ENDS` for the Dial,
+  `A SCAN IS RUNNING: PICK THE SENSOR WHEN IT ENDS` for the IMU;
 - when the tapped device is not at its place in the list:
   `NODE NOT BOUND: THE LIST CHANGED, PICK IT AGAIN`,
-  `DIAL NOT BOUND: THE LIST CHANGED, PICK IT AGAIN` for the Dial;
+  `DIAL NOT BOUND: THE LIST CHANGED, PICK IT AGAIN` for the Dial,
+  `SENSOR NOT BOUND: THE LIST CHANGED, PICK IT AGAIN` for the IMU;
+- for the IMU, while its calibration runs or Bluetooth LE starts:
+  `NO BIND NOW: THE CALIBRATION RUNS OR BLUETOOTH STARTS`;
 - for the printer, while a request runs: `A PRINT IS RUNNING: CHANGE THE
   BIND WHEN IT ENDS`; while a device update runs: `AN UPDATE IS RUNNING:
   CHANGE THE BIND AFTER IT`. UNBIND held to 2000ms is refused with the
@@ -6846,7 +7029,9 @@ BIND binds nothing, closes the question and says why on the band:
 
 The printer's bind is no controller's: BIND writes the address and the
 name into SETUP (`prn_ble`, `prn_name`) and asks a save at once, and
-UNBIND clears both. The next request links to the new address.
+UNBIND clears both. The IMU's UNBIND clears its address and name in SETUP
+(`imu_ble`, `imu_name`) and asks a save; the controller ends the link as
+it takes the empty address. The next request links to the new address.
 
 A tap on a device while a scan runs opens no question and reads the
 scan's text. A bind the controller refuses after BIND, behind a scan
@@ -7760,7 +7945,7 @@ RELEASES sets the request:
 | RELEASES | Request | What is read |
 | --- | --- | --- |
 | `STABLE` | `GET https://github.com/subtilitas/rcbench/releases/latest` | The `Location` header of the redirect, which names the tag (`.../releases/tag/v0.20.0`). The body is not read. GitHub's latest release is never a pre-release. When that release is past the release line and newer than the running build, the `TESTING` request follows once ([The release line](#the-release-line)). |
-| `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` with `Accept: application/vnd.github+json` and `X-GitHub-Api-Version: 2022-11-28` | `tag_name` and `draft` of each of the 10 newest releases by date in the JSON (JavaScript Object Notation) answer, testing or stable. The highest version among those that are no draft is the newest release, whatever their order; the highest of the release line among them is kept beside it. The answer is read in pieces of 4096 bytes up to the 10th release's end, and is not stored. |
+| `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=5` with `Accept: application/vnd.github+json` and `X-GitHub-Api-Version: 2022-11-28` | `tag_name` and `draft` of each of the 5 newest releases by date in the JSON (JavaScript Object Notation) answer, testing or stable. The highest version among those that are no draft is the newest release, whatever their order; the highest of the release line among them is kept beside it. The answer is read in pieces of 4096 bytes up to the 5th release's end, and is not stored. |
 
 Then the radio goes off. The join, the address and the request take 30s at
 most, together. The join also asks an NTP server for the time; an answer
@@ -7777,8 +7962,22 @@ about 7s, out of the check's 30s
 Current limitations of `TESTING`: GitHub answers 60 API requests an hour for
 each public IP (Internet Protocol) address without an account, and the
 devices behind one address share them. Each check is one request, and the
-panel sends no retry. A release older by date than the 10 newest is not
+panel sends no retry. A release older by date than the 5 newest is not
 seen, however high its version.
+
+Current limitation of panels on 0.21.0 to 0.23.18, 0.23.17 and 0.23.18
+among them: their `TESTING` check asks for 10 releases and refuses an
+answer over 262,144 bytes. Whenever GitHub's answer for the 10 newest
+releases is over 262,144 bytes, their check ends with `Unexpected response
+from GitHub.` and `The download is too large for the panel.`. On
+2026-11-27 that answer was 158,473 bytes. `STABLE` reads a redirect only
+and is not affected. Such a panel then takes the next release by hand,
+once: the release assets
+`rcbench-panel-p4-vX.Y.Z.bin` and `rcbench-panel-p4-vX.Y.Z.bin.sig`
+uploaded on the Wi-Fi page ([Wi-Fi: The page](#the-page)), or the
+[web flasher](https://subtilitas.github.io/rcbench/flash/) over USB
+([FirstRun.md](FirstRun.md)). The panel image has no SD card path: the
+card's `BENCH/UPDATES` holds images for the wireless devices only.
 
 ![A check under way](img/updates-checking.png)
 
@@ -7826,28 +8025,34 @@ equal and PATCH is higher.
 | `The version text has an invalid format.` | The tag fails the rule above. |
 
 The API response under `TESTING` is parsed with the same strict checks. It needs status 200
-and either a `Content-Length` from 1 to 262,144 bytes or the chunked
-coding (`Transfer-Encoding: chunked`) with its releases ending within
-262,144 bytes. GitHub sends the chunked form when its cache does not hold
+and either a `Content-Length` from 1 to 1,310,720 bytes (5 times 256KiB)
+or the chunked coding (`Transfer-Encoding: chunked`) with its releases
+ending within 1,310,720 bytes. Nothing of it is stored: it passes through
+the fetch's 4096-byte buffer in PSRAM. GitHub sends the chunked form when its cache does not hold
 the request (`Cache-Control: max-age=60`) and the `Content-Length` form
-from its cache. The 10 newest releases on 2026-10-18, v0.12.0 to v0.20.0,
-were 108,198 bytes, the largest one 13,734. Of each release, only its own `tag_name` and `draft` count: a
+from its cache. The 5 newest releases on 2026-11-27, v0.21.1 to v0.23.18,
+were 95,618 bytes, the largest one, v0.23.18, 53,413 with 26 assets and
+8,113 bytes of notes. An asset takes about 1,648 bytes of the answer: 5 releases of 152
+assets and 8,113 bytes of notes each fit, 1,303,986 bytes. Reading
+1,310,720 bytes within the check's 30s needs more than 44kB/s, as the
+join and the address share the 30s; the panel's transfer rate is not
+measured. Of each release, only its own `tag_name` and `draft` count: a
 key in a nested object or inside a string is passed over. A release with
 `draft` true is passed over. A malformed release, including a draft, causes the entire response to be
 rejected. No update is offered: the second line says
-why. An 11th release and anything after the 10th is not read.
+why. A 6th release and anything after the 5th is not read.
 
 | Second line | Meaning |
 | --- | --- |
 | `The response does not specify a size.` | Neither a `Content-Length` nor the chunked coding. |
 | `The response is empty.` | A `Content-Length` of 0, or a chunked answer without a byte. |
-| `The download is too large for the panel.` | A `Content-Length` over 262,144 bytes. |
+| `The download is too large for the panel.` | A `Content-Length` over 1,310,720 bytes. |
 | `Received less data than expected.` | The answer ended before its `Content-Length`. |
 | `Received more data than expected.` | A read returned more bytes than asked for. |
-| `The response has no tag_name.` | A release has no `tag_name`, there is no release but drafts, or the answer ended before its array or its 10th release did. |
+| `The response has no tag_name.` | A release has no `tag_name`, there is no release but drafts, or the answer ended before its array or its 5th release did. |
 | `The tag_name is too long.` | A `tag_name` over 18 bytes. |
 | `The response is not in the expected JSON format.` | Not an array of objects; a `tag_name` that is not a plain string (an escape, a control character, a number); a `draft` other than `true` or `false`; either key twice in a release; a control character in another string; a bracket closed by the other kind; nesting deeper than 32 levels. |
-| `The releases do not end within 262144 bytes.` | The scan's own bound of 262,144 bytes: a chunked answer whose array or 10th release does not end within it. An answer within its `Content-Length` bound does not pass it. |
+| `The releases do not end within 1310720 bytes.` | The scan's own bound of 1,310,720 bytes: a chunked answer whose array or 5th release does not end within it. An answer within its `Content-Length` bound does not pass it. |
 | `The version text has an invalid format.` | A tag fails the rule above. |
 
 ### The release line
@@ -7883,14 +8088,14 @@ its last line reads `TESTING also offers test releases. Both offer only 0.22.x.`
 | `v0.23.0`, `v0.24.0`, `v1.0.0` | `No newer release for the ESP32-S3 panel. Panel version: 0.22.0.` | `No newer release for the ESP32-S3 panel. Panel version: 0.22.1.` |
 | a tag out of form, such as `v0.22.1-rc1` | `Unexpected response from GitHub.` and `The version text has an invalid format.` | the same |
 
-With `TESTING`, when the highest of the 10 newest releases is past the
+With `TESTING`, when the highest of the 5 newest releases is past the
 line, the highest release of the line among them stands in for it once it
 is newer than the running build: beside a 0.23.0 pre-release, 0.22.1 is
 offered to a panel on 0.22.0. `STABLE` reads GitHub's latest release; a
 stable release older than a published one is not marked latest
 ([Building: Releases](Building.md#releases)). When the latest release is
 past the line and newer than the running build, `STABLE` sends one request
-more, the one `TESTING` sends, and offers the newest 0.22.x among the 10
+more, the one `TESTING` sends, and offers the newest 0.22.x among the 5
 newest releases when it is newer than the running build. That request counts
 against GitHub's limit of 60 API requests an hour; when it fails, the card
 reads as without it: `No newer release for the ESP32-S3 panel.`. With
@@ -7898,8 +8103,8 @@ nothing on the line newer than the running build, both settings end with
 that line and name the newest release. The IOmcu takes the image this panel
 carries, from the same release ([The IOmcu](#the-iomcu)).
 
-Current limitation of the 0.22 line: the list holds the 10 newest releases
-by date (`per_page=10`). A 0.22.x patch release with 10 or more releases
+Current limitation of the 0.22 line: the list holds the 5 newest releases
+by date (`per_page=5`). A 0.22.x patch release with 5 or more releases
 published after it is not found, on either setting.
 
 ### Single updates
@@ -7999,9 +8204,9 @@ the file and the place:
 
 | Card line | Where the hold takes it |
 | --- | --- |
-| `The hold downloads rcbench-dial-0.23.17.bin from GitHub first.` | GitHub: the default with a home network kept. |
-| `The hold reads BENCH/UPDATES/rcbench-dial-0.23.17.bin from the SD card.` | The SD card, folder `BENCH/UPDATES`: after a failed download, and always without a home network. The control reads `HOLD 2s TO UPDATE FROM THE SD CARD`. A failed card read sends the next hold to GitHub again. |
-| `rcbench-dial-0.23.17.bin is downloaded and checked.` | The memory: an earlier hold fetched it. It stays in PSRAM (pseudo-static random-access memory) until the panel restarts. |
+| `The hold downloads rcbench-dial-0.23.18.bin from GitHub first.` | GitHub: the default with a home network kept. |
+| `The hold reads BENCH/UPDATES/rcbench-dial-0.23.18.bin from the SD card.` | The SD card, folder `BENCH/UPDATES`: after a failed download, and always without a home network. The control reads `HOLD 2s TO UPDATE FROM THE SD CARD`. A failed card read sends the next hold to GitHub again. |
+| `rcbench-dial-0.23.18.bin is downloaded and checked.` | The memory: an earlier hold fetched it. It stays in PSRAM (pseudo-static random-access memory) until the panel restarts. |
 
 The download takes the panel's own download path ([The download](#the-download)):
 the home network, `SHA256SUMS` of the release, then the file, each through
@@ -8024,8 +8229,8 @@ the file, and a card read takes `<file>.sig` beside the file in
 bytes, or one that does not verify under the release key, does not match.
 While the build warns (`RCBENCH_SIGN_ENFORCE` 0, every build up to the
 stable release that enforces it) such an image is kept and sent: the band
-says `rcbench-dial-0.23.17.bin is not signed by the rcbench release key.`,
-and the step's card reads `rcbench-dial-0.23.17.bin: not signed by the
+says `rcbench-dial-0.23.18.bin is not signed by the rcbench release key.`,
+and the step's card reads `rcbench-dial-0.23.18.bin: not signed by the
 rcbench release key. The image comes with no signature.`, or `The
 signature does not match.`, in the warning colour. A build that
 enforces it refuses the image with `V07`.
@@ -8059,14 +8264,14 @@ the retry from the next place:
 | Line | Codes |
 | --- | --- |
 | `Download failed (D10): No connection to GitHub.` | `D` and the download's result, worded as the panel's own download ([The download](#the-download)): `D04` no home network kept, `D05` the gate, `D06` ended from outside (ARMED, the supply, a log run, STOP, WI-FI, CANCEL UPDATE), `D07` the join failed, `D08` the radio did not come up, `D09` the 180s ran out, `D10` no connection, `D11` an HTTP status refused, `D12` an answer out of form, `D13` `SHA256SUMS` missing or without the file's line, `D14` the SHA-256 differs from `SHA256SUMS`, `D16` no memory |
-| `SD card failed (S02): BENCH/UPDATES/rcbench-dial-0.23.17.bin is not on the SD card.` | `S01` no card, `S02` no such file, `S03` the read failed, `S04` empty or over the step's most bytes, `S05` no memory, `S06` the card's `SHA256SUMS` out of form or naming the file twice |
-| `Check failed (V05): The file is version 0.23.16; this release has 0.23.17.` | `V01` empty or over the most bytes, `V02` the SHA-256 differs from the card's `SHA256SUMS`, `V03` no application of the device's chip and project, or its own SHA-256 differs, `V04` another device's role, `V05` another version, `V07` no valid release signature in a build that enforces it |
+| `SD card failed (S02): BENCH/UPDATES/rcbench-dial-0.23.18.bin is not on the SD card.` | `S01` no card, `S02` no such file, `S03` the read failed, `S04` empty or over the step's most bytes, `S05` no memory, `S06` the card's `SHA256SUMS` out of form or naming the file twice |
+| `Check failed (V05): The file is version 0.23.17; this release has 0.23.18.` | `V01` empty or over the most bytes, `V02` the SHA-256 differs from the card's `SHA256SUMS`, `V03` no application of the device's chip and project, or its own SHA-256 differs, `V04` another device's role, `V05` another version, `V07` no valid release signature in a build that enforces it |
 
 The console names each step:
 
-    I (…) devimg: rcbench-dial-0.23.17.bin: download of v0.23.17's file, job 3
-    I (…) devimg: rcbench-dial-0.23.17.bin: 850816 bytes, SHA-256 as SHA256SUMS; checking
-    I (…) devimg: rcbench-dial-0.23.17.bin: 0.23.17 850816 bytes, SHA-256 1a2b3c4d, from GitHub
+    I (…) devimg: rcbench-dial-0.23.18.bin: download of v0.23.18's file, job 3
+    I (…) devimg: rcbench-dial-0.23.18.bin: 850816 bytes, SHA-256 as SHA256SUMS; checking
+    I (…) devimg: rcbench-dial-0.23.18.bin: 0.23.18 850816 bytes, SHA-256 1a2b3c4d, from GitHub
     W (…) devimg: image 1: Download failed (D10): No connection to GitHub.
 
 Current limitations:
@@ -8256,7 +8461,7 @@ gap is no loss error. The transfer time is not measured.
 ### The sensor nodes
 
 The POWER NODE FIRMWARE and BALANCE NODE FIRMWARE rows show a node's
-firmware: `Node: 0.23.16. Release: 0.23.17.`, the version the node's
+firmware: `Node: 0.23.17. Release: 0.23.18.`, the version the node's
 STATUS packet named on the current link, or `not connected`, and the
 version of the release the panel runs. The two roles'
 images differ: the power node's row sends the power image, the balance
@@ -8307,7 +8512,7 @@ back. Once the update ends the node's client connects again from SETUP's
 values, and the row's version comes from the first STATUS packet on the
 new link.
 
-The alert band's lines name the node: `Power node updated to 0.23.17.
+The alert band's lines name the node: `Power node updated to 0.23.18.
 It connects again by itself.`, `Balance node update stopped: <reason>.
 Previous firmware is running.`, `Power node did not report after its
 update. Check its version on UPDATES.` The reasons are the Dial's;

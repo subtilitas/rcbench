@@ -19,12 +19,11 @@ SETUP enthält die prüfstandsweiten Paneleinstellungen in den Kategorien PANEL,
 | OUTPUTS | `PROTOKOLLE, PINS, PLATINE` | [Ausgänge](outputs.md): Funktion der IOmcu-Pins auf einer Platinenzeichnung. |
 | SD CARD | `LOGS, BROWSER-SCHREIBEN, BACKUP` | Aufzeichnungsarten, Speicherordner, Voraussetzungen für Browser-Schreibzugriffe und die Sicherung der Einstellungen. |
 | WI-FI | `NETZWERK, DATEIEN, UPLOAD` | [WLAN](wifi.md): Funkverbindung für Kartendateien und Firmware-Images im Browser. |
+| WIRELESS | `IMU, DIAL, KNOTEN, DRUCKER` | [Wireless](setup-wireless.md): die IMU mit Suche, Bindung, aktuellen Winkeln, NULLPUNKT und dem 2s-Hold der Kalibrierung, das M5Stack Dial, der Leistungsknoten mit INA228-Quelle, der Auswuchtknoten mit seiner Testmasse und der Etikettendrucker. |
 | UPDATES | `VERSIONEN AUF GITHUB` | [Updates](updates.md): Suche nach neuerer Panel-Firmware und Update-Erinnerung. |
-| IMU | `BLUETOOTH-WINKELSENSOR` | [IMU](imu.md): WitMotion BWT901CL über Bluetooth LE, Sensorsuche und Binden, Kalibrierung und aktuelle Winkel. |
-| WIRELESS | `IMU, DIAL, SENSORKNOTEN` | [Wireless](setup-wireless.md): die Einstellungen der IMU, das M5Stack Dial, seine Suche, seine Bindung und seine Schritte, der Leistungsknoten mit INA228-Quelle und der Auswuchtknoten mit seiner Testmasse. |
 | LAYOUT | `STECKER UND PINS` | [Layout](layout.md): nur auf dem rbmod-Carrier mit fest verlöteten Pins. |
 
-1 Platz bleibt frei; auf dem Carrier belegt ihn LAYOUT. Wie bei den Listen steht unten rechts die Speichertaste. Sie zeigt ungespeicherte Änderungen aus allen Kategorien an:
+2 Plätze bleiben frei; auf dem Carrier belegt LAYOUT den ersten. Wie bei den Listen steht unten rechts die Speichertaste. Sie zeigt ungespeicherte Änderungen aus allen Kategorien an:
 
 ![Die Kacheln mit einem ungespeicherten Wert](view:setup-hub-dirty)
 
@@ -34,7 +33,7 @@ Das Home-Feld oben links führt jeweils eine Ebene zurück:
 |---|---|
 | Kategorieliste | Kacheln; die Listenposition bleibt erhalten. |
 | Kacheln | Menü; bei ungespeicherten Werten erscheint zuerst eine [Warnung](#mit-ungespeicherten-werten-verlassen). |
-| OUTPUTS, WI-FI, UPDATES, IMU | Kacheln. Wurde OUTPUTS über ZIEL auf MOTOR & ESC oder SERVO geöffnet, führt es dorthin zurück; WI-FI kehrt entsprechend zu LOGS oder UPDATES zurück. Offene Listen oder Tastaturen schließen zuerst. |
+| OUTPUTS, WI-FI, UPDATES | Kacheln. Wurde OUTPUTS über ZIEL auf MOTOR & ESC oder SERVO geöffnet, führt es dorthin zurück; WI-FI kehrt entsprechend zu LOGS oder UPDATES zurück. Offene Listen oder Tastaturen schließen zuerst. |
 
 ## Einen Wert ändern
 
@@ -154,6 +153,21 @@ Nach den eingestellten Minuten ohne Touch sinkt das Tastverhältnis der PWM (Pul
 - Der Sensor wird alle 10ms ausgelesen. Änderungen über 90° zwischen zwei Messwerten werden verworfen.
 
 Der MT6701 arbeitet im I2C-Modus mit MODE auf High unter Adresse 0x06. Sein Bus wird von keinem anderen Bauteil der Platine genutzt. Das Panel fragt dafür weder die GT911-Adressen 0x14 und 0x5D des Touch-Busses noch die reservierten I2C-Adressen 0x00 bis 0x03 und 0x78 bis 0x7F ab. Ohne Sensor prüft `Drehknopf` EIN alle 100ms, ob 0x06 antwortet. Die Host-Tests zeigen keine weiteren Auswirkungen; am Panel wurde dies nicht gemessen. Zur Verdrahtung siehe [Bauen](https://github.com/subtilitas/rcbench/blob/main/docs/Building-de.md#verdrahtung-des-drehknopfs).
+
+### Über rcbench
+
+![ABOUT oben](view:setup-about)
+
+Die letzte Zeile von PANEL, Über rcbench, öffnet ABOUT. Es zeigt die Version der Panel-Firmware und die des IOmcu, den Designer, die Lizenzen des Projekts (MIT für Firmware und Software, CC BY-NC-SA 4.0 für die Hardware-Entwürfe), den Markenhinweis, jede Fremdkomponente der Panel- und der IOmcu-Firmware mit Lizenz und Copyright-Zeilen und die Lizenztexte, die diese Lizenzen zur Firmware verlangen.
+
+- **Scrollen**: auf den Zeilen ziehen; je 24px eine Zeile.
+- **Balken**: auf den Balken rechts drücken, um dorthin zu springen, oder seinen Griff ziehen. Sein Weg umfasst die ganze Spalte.
+- **SEITE HOCH**, **SEITE RUNTER**: 17 Zeilen, eine Seite.
+- **ZURÜCK** oder das Home-Tag: zurück zur Liste von PANEL, wo sie verlassen wurde.
+
+![ABOUT bis zu den Lizenzen gescrollt](view:setup-about-licences)
+
+Dieselbe Tabelle steht auf der [Seite Lizenzen](https://github.com/subtilitas/rcbench/blob/main/docs/Licenses-de.md).
 
 ## SD CARD
 

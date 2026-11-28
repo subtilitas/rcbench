@@ -207,10 +207,13 @@ TEST_CASE(the_home_tag_under_the_hold_ends_it_with_the_leave_page)
     }
     hitec_panel_back();
     CHECK_EQ(hitec_panel_editor(), 3);
+    /* The hold has ended: it counts no more; the finger still down is
+     * absorbed until its release. */
+    const uint32_t held = hitec_panel_hold_revision();
     for (int i = 0; i < 75; ++i) {
         step();
     }
-    CHECK(!hitec_panel_pressed());
+    CHECK_EQ(hitec_panel_hold_revision(), held);
     ev(cx(r), cy(r), TOUCH_EVENT_UP);
     prun(500u);
     CHECK_EQ(g_drv.d_writes, 0u);
@@ -329,8 +332,8 @@ TEST_CASE(the_taps_that_look_at_the_card_slot)
         int row, col;
         bool looks;
     } k_rows[] = {
-        { 1, 1, false },    /* READ ALL */
-        { 1, 0, true },     /* FILES */
+        { 1, 0, false },    /* READ ALL */
+        { 2, 0, true },     /* FILES */
     };
 
     open_en();
@@ -338,7 +341,7 @@ TEST_CASE(the_taps_that_look_at_the_card_slot)
     /* MORE in PWM, before CONNECT. */
     tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
     (void)hitec_panel_card_look();
-    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    tap(val(HITEC_PANEL_SERVO, 2, 1));
     CHECK(hitec_panel_card_look());
     CHECK_EQ(hitec_panel_editor(), 2);
     hitec_panel_back();

@@ -60,7 +60,7 @@ und von je 1 HS-5645MG, HS-7955TG und HS-5955TG (18.10. bis 20.10.2026)
   Reiter SERVO `Nicht verfügbar: Der IOmcu hat keinen Hitec-Port.` und
   `Aktualisiere den IOmcu auf Version 0.21.1 oder neuer.`
 - SERVO-TESTER unter SETUP > OUTPUTS steht auf einem Port, PORT 1, PORT 2,
-  PORT 3 oder PORT 4, und der Port nennt einen Pin. Mit OUTPUTS lautet die Zeile PORT
+  PORT 3 oder PORT 4, und der Port nennt einen Pin. Mit OUTPUTS lautet der Kopf
   `KEIN PROG-PORT GESETZT`, und VERBINDEN sagt `Zum Programmieren muss das
   Servo am Programmierport angeschlossen sein.`
   Auf dem rbmod-Carrier mit einem IOmcu ab Protokoll 4.36 wählt die Zeile
@@ -93,25 +93,41 @@ und von je 1 HS-5645MG, HS-7955TG und HS-5955TG (18.10. bis 20.10.2026)
 
 ## Der Reiter SERVO
 
+Die Zeilen stehen in der Reihenfolge der Arbeit, wie bei KST: der Kopf,
+ALLES AUSLESEN und der Platz der Marke, DATEIEN und WEITERES,
+ZURÜCKSPIELEN und n WERTE SCHREIBEN.
+
+| Zeile | Spalte 0 | Spalte 1 |
+| --- | --- | --- |
+| 0 | Kopf: Port und Versorgung | VERBINDEN, ABBRECHEN, WARTEN, VERLASSEN, PORT FREIGEBEN, 260px |
+| 1 | SERVO: ALLES AUSLESEN | SERIE vor VERBINDEN, NACH STOP, solange der Port gehalten ist |
+| 2 | DATEIEN | WEITERES |
+| 3 | ZURÜCKSPIELEN | n WERTE SCHREIBEN, 220px |
+
 | Zeile | Was sie tut |
 | --- | --- |
-| PORT | Zwei Zeilen: der Port und sein GPIO mit der Serie, `PROG-PORT 1 GPIO 13  D-SERIE`, auf dem rbmod-Carrier öffnet ein Tipp darauf vor VERBINDEN die Liste der Programmierports, dann die Empfangsart und die Versorgung, die VERBINDEN einstellt, `RX PRECHARGE  5.0V 1000mA` (`VERSORGUNG UNVERÄNDERT` bei einem Servo der D-Serie ohne PD mini und ohne feste 5V-Versorgung des Carriers). Die Taste lautet VERBINDEN, ABBRECHEN, während der Port in den Programmiermodus wechselt oder Werte ausgelesen werden, WARTEN, VERLASSEN, solange der Port gehalten ist, und PORT FREIGEBEN, solange eine andere Sitzung ihn hält |
-| SERIE | D-SERIE oder KLASSISCH, vor VERBINDEN gewählt; in den SERVO-Einstellungen gespeichert (SET_HITEC_SERIES), derselbe Wert wie die Zeile SERIE der Karte BEREIT. Solange der Port gehalten ist, nennt die Zeile PORT die Serie, und DATEIEN steht an dieser Stelle |
-| DATEIEN | Solange der Port gehalten ist: die Servodateien auf der Karte, Speichern und Laden ([Servodateien](#servodateien)) |
-| SERVO | Das ausgelesene Modell, `D485HW` oder `HS-5645MG`; ALLES AUSLESEN liest die Werte der Serie erneut aus |
-| WEITERES | Programmierspannung und Strombegrenzung, jede auf dem Tastenfeld, solange der Tester den Port hat. Solange der Port gehalten ist: ÄNDERUNGEN VERWERFEN, wenn eine Änderung besteht, PRÜFSUMME REPARIEREN bei einer falschen klassischen Prüfsumme und WERKSEINSTELLUNG für ein gelesenes klassisches Servo ([WERKSEINSTELLUNG](#werkseinstellung)) |
-| NACH STOP | AUFHEBEN nach dem Schalten auf SAFE am Prüfstand: Der IOmcu löscht das Flag STOPPED des Ports. Das Auslesen geht weiter; war die Versorgung ausgeschaltet, beginnt der Einstieg erneut |
+| Kopf | Zwei Zeilen: der Port und sein GPIO mit der Serie, `PROG-PORT 1 GPIO 13  D-SERIE`, auf dem rbmod-Carrier öffnet ein Tipp darauf vor VERBINDEN die Liste der Programmierports, dann die Empfangsart und die Versorgung, die VERBINDEN einstellt, `RX PRECHARGE  5.0V 1000mA` (`VERSORGUNG BLEIBT` bei einem Servo der D-Serie ohne PD mini und ohne feste 5V-Versorgung des Carriers). Die erste Zeile steht in der Warnfarbe, solange kein Port gesetzt ist. Die 260px breite Taste lautet VERBINDEN, ABBRECHEN, während der Port in den Programmiermodus wechselt oder Werte ausgelesen werden, WARTEN, VERLASSEN, solange der Port gehalten ist, und PORT FREIGEBEN, solange eine andere Sitzung ihn hält |
+| SERVO | ALLES AUSLESEN liest die Werte der Serie erneut aus. Das ausgelesene Modell, `D485HW` oder `HS-5645MG`, steht in der Zeile SERVO der Karte BEREIT und in der untersten Zeile |
+| SERIE | Vor VERBINDEN: D-SERIE oder KLASSISCH; in den SERVO-Einstellungen gespeichert (SET_HITEC_SERIES), derselbe Wert wie die Zeile SERIE der Karte BEREIT. Solange der Port gehalten ist, nennt der Kopf die Serie, und NACH STOP steht an dieser Stelle |
+| NACH STOP | Solange der Port gehalten ist: AUFHEBEN nach dem Schalten auf SAFE am Prüfstand: Der IOmcu löscht das Flag STOPPED des Ports. Das Auslesen geht weiter; war die Versorgung ausgeschaltet, beginnt der Einstieg erneut |
+| DATEIEN | Die Servodateien auf der Karte, Speichern und Laden ([Servodateien](#servodateien)); aus, bis der Port gehalten ist |
+| WEITERES | Programmierspannung und Strombegrenzung, jede auf dem Tastenfeld, und [Hitec-D-Empfang](#hitec-d-empfang), solange der Tester den Port hat. Solange der Port gehalten ist: ÄNDERUNGEN VERWERFEN, wenn eine Änderung besteht, PRÜFSUMME REPARIEREN bei einer falschen klassischen Prüfsumme und WERKSEINSTELLUNG für ein gelesenes klassisches Servo ([WERKSEINSTELLUNG](#werkseinstellung)) |
 | ZURÜCKSPIELEN | Das Backup der Sitzung zurück ins Servo, solange es vom Servo abweicht; das Exemplar bestätigt, wo der Prüfstand es nicht prüfen kann ([Zurückspielen des Backups der Sitzung](#zurückspielen-des-backups-der-sitzung)); solange ein Vermerk zu einem unterbrochenen Schreibvorgang besteht: die Werte davor zurück ins Servo, oder der Vermerk verworfen ([Der Vermerk eines Schreibvorgangs](#der-vermerk-eines-schreibvorgangs)) |
 | n WERTE SCHREIBEN | Der Entwurf ins Servo nach 2s Halten ([Schreiben](#schreiben)); `1 WERT SCHREIBEN` für einen, aus ohne |
 
-Unter den Zeilen zeigt die Statuszeile den aktuellen Vorgang des Ports.
-Die letzte Meldung steht unter den Hinweisen. Jedes Bedienelement ist
-mindestens 48px hoch und endet 4px über dem Meldungsband, wie bei der
-KST-Servoprogrammierung ([Seiten](Screens-de.md#programmierer)).
+Die Hinweise beginnen 8px unter der letzten Zeile: zuerst die Statuszeile
+mit dem aktuellen Vorgang des Ports. Die letzte Meldung steht in der
+untersten Zeile über der Fußleiste. Brauchen die Hinweise mehr Zeilen, als
+zwischen beiden stehen, blättern sie: `1/2` steht rechts in der letzten
+Zeile der Hinweise, ein Tipp auf die Hinweise zeigt die nächste Seite. Jedes
+Bedienelement ist mindestens 48px hoch und endet 4px über dem
+Meldungsband, wie bei der KST-Servoprogrammierung
+([Seiten](Screens-de.md#programmierer)).
 
 ![Ein D485HW gelesen](img/de/servo-hitec-read.png)
 ![Die Liste SERIE](img/de/servo-hitec-series.png)
 ![Ein laufendes Lesen](img/de/servo-hitec-reading.png)
+![VERBINDEN nach 1s des Haltens](img/de/servo-hitec-connect-hold.png)
 
 ## VERBINDEN
 
@@ -178,7 +194,10 @@ Codierungen werden decodiert angezeigt, mit dem gespeicherten Wert in
 Klammern daneben, etwa `CW (0)`. Ein Wert mit unbekannter Codierung erscheint
 als `RAW 1234` in der Warnfarbe. Du kannst einen schreibbaren Wert antippen,
 solange der Port gehalten und nicht gestoppt ist
-([Ändern](#ändern)).
+([Ändern](#ändern)). Solange die Werte eine Änderung annehmen,
+schließen die Hinweise des Reiters mit dem Hinweis, den jede
+Servoprogrammierung zeigt:
+`Tippe zum Ändern auf einen Wert. * markiert Änderungen. n WERTE SCHREIBEN schreibt sie.`
 
 | Reiter | D-Serie | Klassisch |
 | --- | --- | --- |
@@ -273,6 +292,8 @@ jede Änderung daran bestätigen.
 ![Ein geänderter Wert](img/de/servo-hitec-edit.png)
 ![TEMPO auf dem Tastenfeld](img/de/servo-hitec-keypad.png)
 ![ÄNDERUNG PRÜFEN](img/de/servo-hitec-soft.png)
+![Die Liste von ÜBERLASTSCHUTZ mit 6 Einträgen](img/de/servo-hitec-overload.png)
+![TEMPO unter dem Finger](img/de/servo-hitec-row-down.png)
 
 ## SERVO BEWEGEN
 
@@ -412,7 +433,7 @@ Werte werden mit denen verglichen, aus denen der Plan erstellt wurde:
 | D-Serie: jedes Schreiben | die 12 Register, die ein Plan schreibt (`hitec_writable()`): 0x32, 0x44, 0x4C, 0x4E, 0x54, 0x5E, 0x60, 0x6C, 0x9C, 0xB0, 0xB2, 0xC2 |
 
 Eine Antwort der D-Serie trägt eine Summe, und die D-Serie wird trotzdem
-zweimal gelesen. Die Statuszeile lautet `Zweites Auslesen vor dem Schreiben: 5 von 36.`, und **ABBRECHEN** steht in der Zeile PORT.
+zweimal gelesen. Die Statuszeile lautet `Zweites Auslesen vor dem Schreiben: 5 von 36.`, und **ABBRECHEN** ist die Taste des Kopfs.
 
 - Die Lesevorgänge stimmen in jeder Adresse überein: das Schreiben geht
   weiter mit der Backup-Datei, dem Vermerk und dem Plan.
@@ -530,8 +551,12 @@ kein STOP gesetzt ist; sonst sagt der Tipp, warum nicht. Speichern und
 Laden öffnen keine Schreibfreigabe: eine Datei ändert den
 Entwurf im Panel, nie das Servo.
 
-Der erste Eintrag speichert. Darunter stehen die Dateien nach Namen
-sortiert, 5 je Seite, jede mit dem Modell, das ihre Datei nennt. Die
+Der erste Eintrag speichert, in einer eigenen Zeile. Darunter stehen die
+Dateien nach Namen sortiert, 5 je Seite, zu zweit in einer Zeile, jede mit
+dem Modell, das ihre Datei nennt; `Zeige weitere Dateien an.` nimmt das
+Feld nach der letzten Datei, frei von ABBRECHEN. Jede Liste mit mehr als 5
+Einträgen steht zu zweit in einer Zeile, ein Eintrag breiter als eine
+Spalte in einer eigenen Zeile. Die
 Dateien mit einem vorgeschlagenen Namen, `HITEC` und 3 Ziffern, stehen
 zusammen an der Stelle von `HITEC000`, die höchste Nummer zuerst. Bei mehr
 als 5 Dateien zählt sie der Titel, `DATEIEN 1 BIS 5 VON 7`, und `Zeige weitere Dateien an.` blättert weiter, nach der letzten zurück zur ersten
@@ -878,7 +903,7 @@ SCHREIBEN schreibt den Ausgleich mit den Änderungen) und keinen Vermerk.
 
 ## VERLASSEN
 
-Das Home-Feld oder VERLASSEN in der Zeile PORT öffnet
+Das Home-Feld oder VERLASSEN im Kopf öffnet
 PROGRAMMIERMODUS VERLASSEN; 2s Halten auf `2s HALTEN ZUM VERLASSEN`
 verlässt ihn:
 
@@ -910,6 +935,7 @@ ohne Einstellung zählt `Nicht geschrieben: 1 Werte außerhalb der Einstellungen
 und verlässt wie oben; **ZURÜCK** schließt die Seite und behält sie.
 
 ![PROGRAMMIERMODUS VERLASSEN mit zwei ungeschriebenen Änderungen](img/de/servo-hitec-leave-edits.png)
+![Das Halten von PROGRAMMIERMODUS VERLASSEN nach 1s](img/de/servo-hitec-leave-hold.png)
 
 Wenn der PD mini das Servo versorgt, endet VERLASSEN bei beiden Serien
 normalerweise mit eingeschaltetem Ausgang bei Programmierspannung und
@@ -979,9 +1005,8 @@ der Abschluss eines Vorgangs und jede Meldung in der Gefahrenfarbe.
 Ein Port, den die HITEC-Page hält und den dieses Panel nicht geöffnet hat,
 von der Prüfstandskonsole geöffnet oder über eine verlorene Verbindung oder
 einen Neustart des Panels gehalten, lässt die Hitec-Zeile aktiv: die
-Programmierung öffnet sich mit der Zeile PORT
-`PROG-PORT 1 GPIO 13  ANDERWEITIG BELEGT` und `Eine andere Hitec-Sitzung
-belegt ihn.` PORT FREIGEBEN öffnet eine Seite; 2s Halten auf
+Programmierung öffnet sich mit dem Kopf
+`PROG-PORT 1 GPIO 13  BELEGT` und `Andere Hitec-Sitzung belegt ihn.` PORT FREIGEBEN öffnet eine Seite; 2s Halten auf
 `2s HALTEN ZUM FREIGEBEN` sendet CLOSE, das der IOmcu annimmt, ob er dem
 Heartbeat traut oder nicht. Die Versorgung bleibt unverändert. Der Port
 muss freigegeben sein, bevor ARM möglich ist. Ist am Panel ein

@@ -255,7 +255,7 @@ static void reading(void)
     servo_d485();
     g_drv.dreg[0x32] = 3u;
     tap_connect();
-    tap(val(HITEC_PANEL_SERVO, 1, 1));            /* READ ALL */
+    tap(val(HITEC_PANEL_SERVO, 1, 0));            /* READ ALL */
     CHECK_EQ(hitec_prog_state(model()), HITEC_PROG_READING);
     prun(200u);
     show();
@@ -302,7 +302,7 @@ TEST_CASE(abort_ends_a_read_under_two_other_contacts)
     reading();
     const gfx_rect_t ab = val(HITEC_PANEL_SERVO, 0, 0);
     const gfx_rect_t tab = hitec_panel_tab_rect(HITEC_PANEL_SERVO);
-    const gfx_rect_t rd = val(HITEC_PANEL_SERVO, 1, 1);
+    const gfx_rect_t rd = val(HITEC_PANEL_SERVO, 1, 0);
 
     evi(cx(tab), cy(tab), TOUCH_EVENT_DOWN, 1);
     evi(cx(rd), cy(rd), TOUCH_EVENT_DOWN, 2);

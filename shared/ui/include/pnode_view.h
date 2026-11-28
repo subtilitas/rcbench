@@ -13,6 +13,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "rcnode.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -23,10 +25,13 @@ extern "C" {
 #define PNODE_FOUND_MAX 8u  /**< nodes a scan lists: BLEU_FOUND_MAX */
 /** @} */
 
-/** @brief What SETUP sets: SET_PNODE_EN, the bound node, SET_I228_SRC. */
+/** @brief What SETUP sets: SET_PNODE_EN, the bound node, SET_I228_SRC,
+ *         SET_PNODE_UOHM. */
 typedef struct {
     bool en;                    /**< POWER NODE ON */
     bool src_node;              /**< INA228 SOURCE is NODE */
+    uint16_t shunt_uohm;        /**< NODE SHUNT, µΩ, for the node's SHUNT
+                                     write; 0 sends none */
     char addr[PNODE_ADDR_MAX];  /**< SET_TEXT_PNODE_ADDR: "" none */
     char name[PNODE_NAME_MAX];  /**< SET_TEXT_PNODE_NAME */
     uint32_t bind_seq;          /**< the binds SETUP had kept when these
@@ -85,6 +90,29 @@ typedef struct {
     char        bound_addr[PNODE_ADDR_MAX]; /**< the bound node, "" none */
     char        bound_name[PNODE_NAME_MAX]; /**< its name, "" none */
     uint8_t     proto;      /**< the protocol its INFO named, 0 unread */
+    bool        have_info;  /**< INFO was taken on this link */
+    uint8_t     i228_addr;  /**< the INA228's address INFO named, 0 none
+                                 found */
+    uint16_t    shunt_uohm; /**< the shunt INFO named, µΩ */
+    uint16_t    shunt_refused; /**< SHUNT writes the node refused, counted:
+                                    a change is a refusal to show */
+    bool        have_cfg;   /**< the node's own settings came on this link
+                                 (node_cfg_link.h) */
+    char        node_name[RCNODE_NAME_MAX]; /**< its name, or
+                                 "rcbench-pwr-XXXX" without one */
+    uint8_t     i228_set;   /**< its INA228 ADDRESS: 0 AUTO, else fixed */
+    uint16_t    adopt_uohm; /**< the node's shunt the panel is to take into
+                                 NODE SHUNT, 0 none */
+    uint32_t    adopt_seq;  /**< counts the values to take: a change is one
+                                 to write while SAFE */
+    uint16_t    cfg_refused; /**< NAME and ADDRESS writes the node refused,
+                                  counted: a change is a refusal to show */
+    uint16_t    cfg_req_no; /**< NAME and ADDRESS requests the controller
+                                 refused, counted: a change is a refusal
+                                 to show */
+    uint8_t     cfg_req_why; /**< the last one's ncl_req_t */
+    uint16_t    cfg_dropped; /**< NAME and ADDRESS writes a link's drop
+                                  ended, counted: a change is a notice */
     bool        have_status; /**< a STATUS came on this link */
     bool        bat_low;    /**< it says RCNODE_ST_BAT_LOW: under 3.5V */
     bool        bat_none;   /**< it says RCNODE_ST_BAT_NONE: no cell */
@@ -105,12 +133,16 @@ typedef enum {
     PNODE_CMD_SCAN,     /**< SCAN FOR NODE */
     PNODE_CMD_BIND,     /**< bind the found node arg */
     PNODE_CMD_UNBIND,   /**< forget the bound node, end its link */
+    PNODE_CMD_NAME,     /**< NAME: text to the linked node */
+    PNODE_CMD_I228,     /**< INA228 ADDRESS: arg to the linked node */
 } pnode_cmd_kind_t;
 
 /** @brief One command. */
 typedef struct {
     uint8_t kind; /**< pnode_cmd_kind_t */
-    uint8_t arg;  /**< PNODE_CMD_BIND: the index in the found list */
+    uint8_t arg;  /**< PNODE_CMD_BIND: the index in the found list;
+                       PNODE_CMD_I228: 0 AUTO or 0x40 to 0x4F */
+    char    text[RCNODE_UNAME_MAX + 1u]; /**< PNODE_CMD_NAME: the name */
 } pnode_cmd_t;
 
 #ifdef __cplusplus

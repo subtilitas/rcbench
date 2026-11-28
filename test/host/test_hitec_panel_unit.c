@@ -190,7 +190,7 @@ TEST_CASE(a_classic_servo_without_a_serial_is_asked_for_too)
     for (unsigned c = 0; c < HITEC_C_SERIAL_LEN; ++c) {
         g_drv.eeprom[HITEC_C_SERIAL + c] = 0xFFu;
     }
-    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(val(HITEC_PANEL_SERVO, 1, 1));
     tap(hitec_panel_choice_rect(1));
     tap_connect();
     g_card = true;
@@ -242,7 +242,7 @@ TEST_CASE(a_model_the_table_does_not_know_is_named_as_read)
     for (unsigned c = 0; c < HITEC_C_SERIAL_LEN; ++c) {
         g_drv.eeprom[HITEC_C_SERIAL + c] = 0xFFu;
     }
-    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(val(HITEC_PANEL_SERVO, 1, 1));
     tap(hitec_panel_choice_rect(1));
     tap_connect();
     g_card = true;

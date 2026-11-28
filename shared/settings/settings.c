@@ -210,7 +210,7 @@ bool settings_safe_only(setting_id_t id)
 {
     return id == SET_SCREEN_ROT || id == SET_PDMINI_EN || id == SET_PDMINI_TX
            || id == SET_PDMINI_RX || id == SET_PDMINI_BAUD
-           || id == SET_I228_SRC;
+           || id == SET_I228_SRC || id == SET_PNODE_UOHM;
 }
 
 bool settings_held(setting_id_t id)

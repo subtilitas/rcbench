@@ -80,6 +80,8 @@ SOURCES = [
     "test/host/render_imu.c",
     # The QR scanner: SETUP > SENSORS > SCANNER handed a view, SETUP CODE.
     "test/host/render_scanner.c",
+    # ABOUT: the IOmcu's version named, the column scrolled.
+    "test/host/render_about.c",
     # The label printer: SETUP > WIRELESS > PRINTER handed a view, SEARCH.
     "test/host/render_printer.c",
     # The settings backup: its files on a folder in memory, the driver's
@@ -154,11 +156,10 @@ SCREENS = {
     "help-servo-kst": ("help-servo-kst.png", "servo", "dark"),
     "help-wifi": ("help-wifi.png", "wifi", "dark"),
     "help-updates": ("help-updates.png", "updates", "dark"),
-    # MOTOR & ESC's guide at page 1 on LIVE after a run, ESC STICK's on a
-    # profile's page and the IMU screen's on a connected sensor.
+    # MOTOR & ESC's guide at page 1 on LIVE after a run and ESC STICK's on a
+    # profile's page.
     "help-motor": ("help-motor.png", "motor", "dark"),
     "help-motor-stick": ("help-motor-stick.png", "motor", "dark"),
-    "help-imu": ("help-imu.png", "imu", "dark"),
     # The screenshot's popup over the menu, a save under way and a card that
     # was full.
     "shot-popup": ("shot-popup.png", "shot", "dark"),
@@ -400,6 +401,15 @@ SCREENS = {
                                     "servo", "dark"),
     "servo-hitec-classic-factory-done": (
         "servo-hitec-classic-factory-done.png", "servo", "dark"),
+    # The press states no other Hitec view shows: CONNECT and LEAVE's page
+    # hold under the finger for 1s, MOTION's SPEED pressed, and
+    # PROTECT's OVERLOAD list of 6 entries.
+    "servo-hitec-connect-hold": ("servo-hitec-connect-hold.png", "servo",
+                                 "dark"),
+    "servo-hitec-leave-hold": ("servo-hitec-leave-hold.png", "servo",
+                               "dark"),
+    "servo-hitec-row-down": ("servo-hitec-row-down.png", "servo", "dark"),
+    "servo-hitec-overload": ("servo-hitec-overload.png", "servo", "dark"),
     "servo-kst": ("servo-kst.png", "servo", "dark"),
     "servo-kst-nopage": ("servo-kst-nopage.png", "servo", "dark"),
     # The tester drives the standard outputs: PROGRAM is locked.
@@ -407,6 +417,9 @@ SCREENS = {
     # A PD mini answers: the voltage and limit CONNECT sets, the list
     # that holds them, their keypads and the hold above 6.0V.
     "servo-kst-supply": ("servo-kst-supply.png", "servo", "dark"),
+    # CONNECT under the finger for 1s of its 2s hold.
+    "servo-kst-connect-hold": ("servo-kst-connect-hold.png", "servo",
+                               "dark"),
     "servo-kst-options": ("servo-kst-options.png", "servo", "dark"),
     "servo-kst-voltage": ("servo-kst-voltage.png", "servo", "dark"),
     "servo-kst-hv": ("servo-kst-hv.png", "servo", "dark"),
@@ -419,10 +432,13 @@ SCREENS = {
     "servo-kst-nopin": ("servo-kst-nopin.png", "servo", "dark"),
     "servo-kst-working": ("servo-kst-working.png", "servo", "dark"),
     "servo-kst-read": ("servo-kst-read.png", "servo", "dark"),
+    # The notes turned to their second page: a tap on them.
     "servo-kst-readonly": ("servo-kst-readonly.png", "servo", "dark"),
     "servo-kst-locked": ("servo-kst-locked.png", "servo", "dark"),
     "servo-kst-failsafe": ("servo-kst-failsafe.png", "servo", "dark"),
     "servo-kst-leave": ("servo-kst-leave.png", "servo", "dark"),
+    # LEAVE's page with its hold under the finger for 1s.
+    "servo-kst-leave-hold": ("servo-kst-leave-hold.png", "servo", "dark"),
     "servo-kst-more": ("servo-kst-more.png", "servo", "dark"),
     "servo-kst-release": ("servo-kst-release.png", "servo", "dark"),
     "servo-kst-keypad": ("servo-kst-keypad.png", "servo", "dark"),
@@ -430,6 +446,8 @@ SCREENS = {
     "servo-kst-soft": ("servo-kst-soft.png", "servo", "dark"),
     "servo-kst-hard": ("servo-kst-hard.png", "servo", "dark"),
     "servo-kst-tune": ("servo-kst-tune.png", "servo", "dark"),
+    # TUNE's MAX. DUTY under the finger: a pressed value.
+    "servo-kst-row-down": ("servo-kst-row-down.png", "servo", "dark"),
     # KST EXPERT MODE OFF: TUNE closed up, MORE without RELEASE PAIRING,
     # and LEAVE's page that names the hidden values the draft changes.
     "servo-kst-tune-expert-off": ("servo-kst-tune-expert-off.png", "servo",
@@ -442,6 +460,8 @@ SCREENS = {
     "servo-kst-files": ("servo-kst-files.png", "servo", "dark"),
     "servo-kst-files-none": ("servo-kst-files-none.png", "servo", "dark"),
     "servo-kst-files-next": ("servo-kst-files-next.png", "servo", "dark"),
+    # 5 files: SAVE and the files fill 6 entries, two to a line.
+    "servo-kst-files-five": ("servo-kst-files-five.png", "servo", "dark"),
     "servo-kst-name": ("servo-kst-name.png", "servo", "dark"),
     "servo-kst-name-exists": ("servo-kst-name-exists.png", "servo", "dark"),
     "servo-kst-name-bad": ("servo-kst-name-bad.png", "servo", "dark"),
@@ -468,6 +488,7 @@ SCREENS = {
     "servo-kst-nofile": ("servo-kst-nofile.png", "servo", "dark"),
     "servo-kst-doubt": ("servo-kst-doubt.png", "servo", "dark"),
     "servo-kst-journal": ("servo-kst-journal.png", "servo", "dark"),
+    "servo-kst-journal-p2": ("servo-kst-journal-p2.png", "servo", "dark"),
     "servo-kst-restore-list": ("servo-kst-restore-list.png", "servo", "dark"),
     "servo-kst-restore": ("servo-kst-restore.png", "servo", "dark"),
     "servo-kst-restore-check": ("servo-kst-restore-check.png", "servo",
@@ -763,6 +784,11 @@ SCREENS = {
                                 "dark"),
     "setup-scanner-setup-code": ("setup-scanner-setup-code.png",
                                  "scan-code", "dark"),
+    # ABOUT from PANEL's About rcbench: its top, scrolled 8 rows to the
+    # licences and the trademark notice, and its end.
+    "setup-about": ("setup-about.png", "about", "dark"),
+    "setup-about-licences": ("setup-about-licences.png", "about", "dark"),
+    "setup-about-end": ("setup-about-end.png", "about", "dark"),
     "setup-sensors-old": ("setup-sensors-old.png", "setup", "dark"),
     "setup-sensors-limit": ("setup-sensors-limit.png", "setup", "dark"),
     # SENSORS on the rbmod carrier: 0x40 soldered, its rows on the rails.
@@ -994,25 +1020,37 @@ SCREENS = {
                                 "dark"),
     "servo-rudder-angle-none": ("servo-rudder-angle-none.png", "servo",
                                 "dark"),
-    # The IMU tile's screen: the HC-05 answering with no sensor bound; the
-    # found list after SCAN; bound and connected at 50Hz with ZERO taken.
-    # SETUP > WIRELESS on the IMU entry, connected.
-    "imu": ("imu.png", "imu", "dark"),
-    "imu-scan": ("imu-scan.png", "imu", "dark"),
-    "imu-connected": ("imu-connected.png", "imu", "dark"),
+    # SETUP > WIRELESS on the IMU entry: bound to an HC-06 and connected at
+    # 50Hz with ZERO taken, the scan and bind rows and the live angles; the
+    # same dragged to ZERO, CLEAR ZERO and CALIBRATE; no sensor bound after
+    # a scan that found none, LAST ERROR in view; SEARCH from SCAN FOR
+    # SENSOR with two sensors listed and four other devices hidden.
     "setup-wireless-imu": ("setup-wireless-imu.png", "setup", "dark"),
-    # The IMU off in SETUP: the IMU screen with SCAN offered, and WIRELESS
-    # on the IMU entry with ANGLE SOURCE under IMU.
-    "imu-off": ("imu-off.png", "imu", "dark"),
+    "setup-wireless-imu-cal": ("setup-wireless-imu-cal.png", "setup", "dark"),
+    "setup-wireless-imu-error": ("setup-wireless-imu-error.png", "setup",
+                                 "dark"),
+    "setup-wireless-imu-search": ("setup-wireless-imu-search.png", "setup",
+                                  "dark"),
+    # The IMU off in SETUP: WIRELESS on the IMU entry with ANGLE SOURCE
+    # under IMU.
     "setup-wireless-imu-off": ("setup-wireless-imu-off.png", "setup", "dark"),
     # SETUP > WIRELESS on the DIAL entry: the Dial linked, two found by a
     # scan, the first bound.
     "setup-wireless-dial": ("setup-wireless-dial.png", "setup", "dark"),
     # SETUP > WIRELESS on the POWER NODE entry: the node connected, INA228
-    # SOURCE NODE, one node found and bound, its cell at 3.92V.
+    # SOURCE NODE, one node found and bound, named XT90 MAIN, its cell at
+    # 3.92V, its INA228 found at 0x40 on NODE SHUNT 500uΩ, its address AUTO.
     "setup-wireless-pnode": ("setup-wireless-pnode.png", "setup", "dark"),
+    # The same, the list dragged to its end: NODE INA228, INA228 ADDRESS and
+    # NODE SHUNT.
+    "setup-wireless-pnode-shunt": ("setup-wireless-pnode-shunt.png", "setup",
+                                   "dark"),
+    # The same, NODE NAME tapped: the name keyboard on XT90 MAIN.
+    "setup-wireless-pnode-name": ("setup-wireless-pnode-name.png", "setup",
+                                  "dark"),
     # SETUP > WIRELESS on the BALANCE NODE entry: the node reporting, two
-    # found by a scan, the first bound, its cell at 3.91V.
+    # found by a scan, the first bound and named PROP 13X6, its cell at
+    # 3.91V.
     "setup-wireless-bal": ("setup-wireless-bal.png", "setup", "dark"),
     # SEARCH, opened by BOUND NODE of the power node: two nodes found, the
     # first bound; the second tapped, its bind question open; and opened
@@ -1204,7 +1242,7 @@ FIT_ONLY = {
     "help-supply-pdmini-2":    (None, "supply", "dark"),
     # MOTOR & ESC's guide: the rail's page, PROGRAM's and the OPTIONS
     # list's; ESC STICK's on the makers, a maker's models, a profile with
-    # manual steps and the OPTIONS list; the IMU screen's card page.
+    # manual steps and the OPTIONS list.
     "help-motor-2":            (None, "motor", "dark"),
     "help-motor-program":      (None, "motor", "dark"),
     "help-motor-program-2":    (None, "motor", "dark"),
@@ -1217,7 +1255,6 @@ FIT_ONLY = {
     "help-motor-stick-hand-2": (None, "motor", "dark"),
     "help-motor-stick-timing": (None, "motor", "dark"),
     "help-motor-stick-timing-2": (None, "motor", "dark"),
-    "help-imu-2":              (None, "imu", "dark"),
     # ESC STICK > Great Planes: model rows with the MANUAL tag and the
     # longest reason beside their family.
     "motor-stick-greatplanes": (None, "motor", "dark"),
@@ -1445,9 +1482,11 @@ FIT_ONLY = {
     "supply-port":      (None, "supply", "dark"),
     "supply-offline-settings": (None, "supply", "dark"),
     # The SERVO PROGRAMMER's notes turned to their second page, where they
-    # take more rows than there are above the message.
+    # take more rows than there are above the message; a tap on notes that
+    # fit on one page, which turns nothing.
     "servo-kst-file-locked-p2": (None, "servo", "dark"),
-    "servo-kst-journal-p2": (None, "servo", "dark"),
+    "servo-kst-read-p2": (None, "servo", "dark"),
+    "servo-kst-doubt-p2": (None, "servo", "dark"),
     # The analyser on a frame the receiver flags as lost.
     "analyser-lost":    (None, "analyser", "dark"),
     # The SERVO screen's OUTPUT page with the frame rate refused and with an
@@ -1525,6 +1564,7 @@ OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot", "outputs-take",
                  "overview-alert", "hold-hint-arm", "hold-hint-output",
                  "setup-dim-stored",
                  "setup-folder", "servo-name", "files-new",
+                 "setup-wireless-pnode-name",
                  "servo-label-pick", "servo-label-type",
                  "servo-label-refused",
                  "logs-plot-more",
@@ -1534,7 +1574,7 @@ OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot", "outputs-take",
     name for name in (*SCREENS, *FIT_ONLY) if name.startswith("band-")}
 
 # The screen guide's views over SETUP, OUTPUTS, LOGS, FILES, SERVO,
-# SUPPLY, MOTOR & ESC, IMU, WI-FI and UPDATES: the dock takes half the
+# SUPPLY, MOTOR & ESC, WI-FI and UPDATES: the dock takes half the
 # body, so the screen's strings on the other half are cut at its edge and
 # the marks are drawn over them by design.  The fit check measures their
 # dock, band and marks; the screen's own strings are measured in the view
@@ -1542,7 +1582,7 @@ OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot", "outputs-take",
 GUIDE_VIEWS = {name for name in (*SCREENS, *FIT_ONLY)
                if name.startswith(("help-setup", "help-outputs", "help-logs",
                                    "help-files", "help-servo", "help-supply",
-                                   "help-motor", "help-imu", "help-wifi",
+                                   "help-motor", "help-wifi",
                                    "help-updates"))}
 
 # English overflows the layout has for a time: (view, string, finding), word

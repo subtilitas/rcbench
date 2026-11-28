@@ -33,6 +33,36 @@
  *   owed: a display node (docs/Nodes.md, "The display node") shows its
  *   texts in it.  A node that refuses the write (one built before LANG)
  *   gets it again only at the next link or change.
+ * - After INFO is taken on each link, and at each change of NODE SHUNT,
+ *   SHUNT goes to CONTROL with the setting when INFO names another shunt,
+ *   after any RUN write owed and never while the bench is ARMED or a
+ *   switch to ARMED waits: a shunt changed under a run would rescale its
+ *   readings.  A write the node takes is followed by a read of INFO, whose
+ *   shunt the view shows and the meter calibrates with; that read waits
+ *   while the bench is ARMED or the meter's run is live, so a run keeps
+ *   its full scale.  A write refused with ATT error 0x13 (a node built
+ *   before SHUNT, PNODE_ATT_NOT_ALLOWED) is counted for the band and sent
+ *   again only at the next link or change.  A write that times out or
+ *   fails otherwise may have been taken: INFO is read again (as above),
+ *   and SHUNT goes again when INFO still names another shunt.  A write the
+ *   link's drop ends leaves it to the next link's INFO.
+ * - The node's own settings (node_cfg_link.h): after INFO, CONFIG is
+ *   asked, twice at most a link.  Until CONFIG, its refusal or the wait
+ *   decides it, no SHUNT goes.  With CONFIG known, the last change of the shunt wins
+ *   (rcnode_shunt_sync()): the panel's NODE SHUNT against CONFIG's shunt,
+ *   agreed shunt and age.  WRITE sends SHUNT with the setting; ADOPT
+ *   names the node's shunt in the view (adopt_uohm, adopt_seq), which the
+ *   frame task writes into NODE SHUNT while the bench is SAFE; ACK sends
+ *   SHUNT with the value both hold, so the node marks it agreed.  Each
+ *   CONFIG taken decides again, also one that comes after the fallback to
+ *   INFO's rule.  adopt_uohm clears on a new link and once NODE SHUNT
+ *   holds it, so the same node value is taken again after a panel change.
+ *   The setting's age is the time since pnode_ctl_config() saw it change, not
+ *   known before the first change since the panel's start.  A node that
+ *   refuses CONFIG (one built before it) gets the rule above: SHUNT when
+ *   INFO names another shunt.  Nothing of this runs while the bench is
+ *   ARMED or a switch to ARMED waits.  NAME and INA228 ADDRESS are
+ *   written on SETUP's request (pnode_ctl_name(), pnode_ctl_i228()).
  *
  * Every function of one controller is called from one task.  Times are
  * unsigned differences of a free-running 32-bit ms clock.
@@ -47,6 +77,7 @@
 
 #include "bleuart.h"
 #include "imu_ble.h"
+#include "node_cfg_link.h"
 #include "pnode_meter.h"
 #include "pnode_view.h"
 #include "rcnode.h"
@@ -67,6 +98,11 @@ extern const bleu_profile_t pnode_profile;
 /** @brief pnode_ctl_t's lang_sent before a LANG write on the link. */
 #define PNODE_LANG_NONE 0xFFu
 
+/** @brief A write's status for ATT error 0x13, "value not allowed", as the
+ *         host stack reports it (NimBLE's BLE_HS_ATT_ERR(0x13)): the node
+ *         does not take the operation. */
+#define PNODE_ATT_NOT_ALLOWED 0x113u
+
 /** @brief Devices a scan keeps the role of (rcnode_adv_match()). */
 #define PNODE_ROLES_MAX 16u
 
@@ -84,6 +120,15 @@ typedef struct {
     uint8_t       info_proto;  /**< the protocol INFO named, 0 unread */
     uint8_t       info_role;   /**< the role INFO named, 0 unread */
     uint8_t       info_board;  /**< the board INFO named, 0 unread */
+    uint8_t       info_i228;   /**< the INA228's address INFO named, 0 none
+                                    found */
+    uint16_t      info_shunt;  /**< the shunt INFO named, µΩ, 0 unread */
+    uint16_t      shunt_sent;  /**< the shunt the SHUNT write last went
+                                    with on this link; 0 before */
+    bool          shunt_wr;    /**< a SHUNT write is in flight */
+    bool          info_owed;   /**< INFO to read again once the bench is
+                                    SAFE and the meter's run not live */
+    uint32_t      shunt_refused; /**< SHUNT writes the node refused */
     uint8_t       known_board; /**< the board the bound address's last
                                     accepted INFO named; kept over link
                                     ends and reconnects, 0 after an
@@ -117,6 +162,16 @@ typedef struct {
                                     reconnect */
     bool          held;        /**< an update holds the link off
                                     (pnode_ctl_hold()) */
+    ncl_t         nc;          /**< the node's own settings on this link */
+    uint8_t       info_addr[6]; /**< the address INFO named */
+    bool          shunt_set_known; /**< NODE SHUNT changed since the start */
+    uint32_t      shunt_set_ms; /**< ...when */
+    uint16_t      adopt_uohm;  /**< the node's shunt the panel is to take, 0
+                                    none; cleared on a new link and once
+                                    NODE SHUNT holds it */
+    uint32_t      sync_taken;  /**< nc.taken the shunt was last decided on:
+                                    a CONFIG after it decides again */
+    uint32_t      adopt_seq;   /**< counts each value to take */
 } pnode_ctl_t;
 
 /** @brief Clear: POWER NODE OFF, nothing bound.  @param c NULL does
@@ -234,8 +289,9 @@ void pnode_ctl_event(pnode_ctl_t *c, const bleu_evt_t *e, uint32_t now_ms);
 /**
  * @brief Advance to @p now_ms: the meter's run and dropout rule, a running
  *        scan stopped while @p armed, then the central's next action, else
- *        the RUN write owed, else the LANG write owed.  Call until it returns false, at least every
- *        10ms.
+ *        the RUN write owed, else the node's own settings' write owed
+ *        (node_cfg_link.h), else the SHUNT write owed, else the LANG
+ *        write owed.  Call until it returns false, at least every 10ms.
  * @param c         The controller.
  * @param now_ms    The clock.
  * @param armed     The bench is ARMED, or a switch to ARMED waits.
@@ -252,6 +308,25 @@ bool pnode_ctl_step(pnode_ctl_t *c, uint32_t now_ms, bool armed,
  * @param lang RCNODE_LANG_EN or RCNODE_LANG_DE; another value is English.
  */
 void pnode_ctl_lang(pnode_ctl_t *c, uint8_t lang);
+
+/**
+ * @brief SETUP's NAME for the linked node (node_cfg_link.h).
+ * @param c     The controller.
+ * @param name  The name; "" clears it.
+ * @param armed The bench is ARMED, or a switch to ARMED waits.
+ * @return NCL_REQ_OK when queued, or the refusal; NCL_REQ_UNKNOWN for a
+ *         NULL controller.
+ */
+ncl_req_t pnode_ctl_name(pnode_ctl_t *c, const char *name, bool armed);
+
+/**
+ * @brief SETUP's INA228 ADDRESS for the linked node.
+ * @param c     The controller.
+ * @param a     RCNODE_I228_AUTO or 0x40 to 0x4F.
+ * @param armed The bench is ARMED, or a switch to ARMED waits.
+ * @return As pnode_ctl_name().
+ */
+ncl_req_t pnode_ctl_i228(pnode_ctl_t *c, uint8_t a, bool armed);
 
 /**
  * @brief Where the node stands.

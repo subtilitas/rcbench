@@ -17,6 +17,7 @@ Using the bench
 - [MOVE SERVO on the Hitec programmer](HitecMove.md)
 - [The Bluetooth IMU](IMU.md)
 - [The sensor nodes](Nodes.md)
+- [The nodes' own settings](Nodes-setup.md)
 - [The M5Stack Dial](Dial.md)
 - [Stick programming](StickProgramming.md)
 - [Receiver buses](Receivers.md)
@@ -41,6 +42,7 @@ Reference
 - [YGE ESC programming](YgeProgramming.md)
 - [Performance](Performance.md)
 - [Interface language](Language.md)
+- [Licences](Licenses.md)
 
 _Deutsch_
 
@@ -59,6 +61,7 @@ Den Prüfstand benutzen
 - [SERVO BEWEGEN in der Hitec-Programmierung](HitecMove-de.md)
 - [Die Bluetooth-IMU](IMU-de.md)
 - [Die Sensorknoten](Nodes-de.md)
+- [Die eigenen Einstellungen der Knoten](Nodes-setup-de.md)
 - [Das M5Stack Dial](Dial-de.md)
 - [Stick-Programmierung](StickProgramming-de.md)
 - [Empfängerbusse](Receivers-de.md)
@@ -83,3 +86,4 @@ Referenz
 - [YGE-ESC-Programmierung](YgeProgramming-de.md)
 - [Performance](Performance-de.md)
 - [Sprache der Oberfläche](Language-de.md)
+- [Lizenzen](Licenses-de.md)

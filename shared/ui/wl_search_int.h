@@ -27,8 +27,10 @@
  *
  * Right, from x 680, 328px wide: the device's kind in the heading face
  * (16 x 28) at y 12, its link state in the label face (10 x 20) at y 52,
- * BOUND at y 88 and the bound device in the body face at y 112, SCAN AGAIN
- * 328 x 56px at y 156, UNBIND 328 x 56px at y 228.
+ * BOUND at y 88 and the bound device in the body face at y 112, its
+ * address under a name in the 8 x 16 face at y 138, SCAN AGAIN 328 x 56px
+ * at y 156, UNBIND 328 x 56px at y 228, and the devices the scan heard and
+ * did not list in the label face at y 300 (the IMU's count).
  *
  * The question: a box of 700 x 280px at (162, 100), the kind in its title,
  * the device's name at y 144, its address and RSSI at y 180, the bound one
@@ -47,8 +49,11 @@
 #define WLS_WORD_Y  52   /**< the link state's top, px */
 #define WLS_BOUND_Y 88   /**< BOUND's top, px */
 #define WLS_NAME_Y  112  /**< the bound device's top, px */
+#define WLS_ADDR_Y  138  /**< the bound device's address under its name,
+                              px */
 #define WLS_AGAIN_Y 156  /**< SCAN AGAIN's top, px */
 #define WLS_UNBIND_Y 228 /**< UNBIND's top, px */
+#define WLS_HIDDEN_Y 300 /**< the hidden count's top, px */
 #define WLS_BTN_H   56   /**< SCAN AGAIN's and the question's buttons'
                               height, px */
 #define WLS_BOX_X   162  /**< the question's left edge, px */
@@ -70,6 +75,11 @@
 
 _Static_assert(WLS_LY + (WLS_FOUND_MAX - 1) * WLS_LP + WLS_LH <= WLS_FLOOR,
                "the eighth row ends over the alert band");
+_Static_assert(WLS_NAME_Y + 24 <= WLS_ADDR_Y && WLS_ADDR_Y + 16 <= WLS_AGAIN_Y,
+               "the address stands between the name and SCAN AGAIN");
+_Static_assert(WLS_HIDDEN_Y >= WLS_UNBIND_Y + WLS_BTN_H + 16
+               && WLS_HIDDEN_Y + 20 <= WLS_FLOOR,
+               "the hidden count sits 16px under UNBIND");
 _Static_assert(WLS_UNBIND_Y >= WLS_AGAIN_Y + WLS_BTN_H + 16
                && WLS_UNBIND_Y + WLS_BTN_H <= WLS_FLOOR,
                "UNBIND sits 16px under SCAN AGAIN, over the alert band");

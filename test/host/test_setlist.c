@@ -22,6 +22,7 @@
  * - a_discard_brings_supplys_limits_back_from_any_list
  * - a_pulse_step_keeps_the_throttle_gap
  * - a_closed_list_asks_for_no_repaint
+ * - a_row_that_comes_under_a_press_ends_it_unacted
  *
  * SPDX-License-Identifier: MIT
  */
@@ -94,9 +95,19 @@ static int s_way_out;
 static int s_invalidated;
 static bool s_lock_cells;
 
-static int host_count(void) { return N_ROWS; }
+/* A row the host puts in after the first heading, as an error line comes:
+ * every row under it moves down one. */
+static bool s_inserted;
+
+static int host_count(void) { return N_ROWS + (s_inserted ? 1 : 0); }
 static ui_setlist_row_t host_row(int i)
 {
+    if (s_inserted && i >= 1) {
+        if (i == 1) {
+            return (ui_setlist_row_t)UI_SL_ROW_SETTING(SET_MOTOR_KV);
+        }
+        --i;
+    }
     return ui_setlist_table_row(k_rows, N_ROWS, i);
 }
 static const char *host_name(void) { return "TEST"; }
@@ -153,6 +164,7 @@ static void fresh(bool headings)
     s_way_out = 0;
     s_invalidated = 0;
     s_lock_cells = false;
+    s_inserted = false;
     s_headings = headings;
     s_host.headings = headings;
     ui_router_set_alert(NULL);
@@ -508,6 +520,49 @@ TEST_CASE(a_locked_row_takes_no_press_and_says_why)
     ui_router_set_alert(NULL);
 }
 
+/* The host puts a row in while a finger holds a key, or while a choice
+ * list shows: the press and the list held their row by its index, which
+ * now names the row above.  The press ends and the list closes; nothing
+ * steps, repeats or is picked. */
+TEST_CASE(a_row_that_comes_under_a_press_ends_it_unacted)
+{
+    fresh(true);
+    const int mah = settings_get_int(SET_PACK_MAH);
+    const int cells = settings_get_int(SET_PACK_CELLS);
+    const int kv = settings_get_int(SET_MOTOR_KV);
+    const gfx_rect_t p = ui_setlist_row_part(&sl, 2, UI_SL_PART_PLUS);
+    ev(p.x + p.w / 2, p.y + p.h / 2, TOUCH_EVENT_DOWN);
+    s_inserted = true;
+    ev(p.x + p.w / 2, p.y + p.h / 2, TOUCH_EVENT_UP);
+    CHECK_EQ(settings_get_int(SET_PACK_MAH), mah);
+    CHECK_EQ(settings_get_int(SET_PACK_CELLS), cells);
+    CHECK_EQ(settings_get_int(SET_MOTOR_KV), kv);
+
+    /* Held: the repeat stops with the row change, the release steps
+     * nothing. */
+    s_inserted = false;
+    ev(p.x + p.w / 2, p.y + p.h / 2, TOUCH_EVENT_DOWN);
+    s_inserted = true;
+    for (int k = 0; k < 30; ++k) {
+        ui_setlist_tick(&sl, 0.05f);
+    }
+    ev(p.x + p.w / 2, p.y + p.h / 2, TOUCH_EVENT_UP);
+    CHECK_EQ(settings_get_int(SET_PACK_MAH), mah);
+    CHECK_EQ(settings_get_int(SET_PACK_CELLS), cells);
+
+    /* A choice list open on the chooser closes when the row goes away
+     * under it, with nothing picked. */
+    s_inserted = false;
+    ui_setlist_scroll_to(&sl, N_ROWS - 1);
+    tap_rect(ui_setlist_row_rect(&sl, 8));
+    CHECK_EQ(sl.choice_row, 8);
+    s_inserted = true;
+    ui_setlist_tick(&sl, 0.016f);
+    CHECK_EQ(sl.choice_row, -1);
+    tap_rect(ui_setlist_choice_rect(&sl, 1));
+    CHECK_EQ(s_picked, -1);
+}
+
 int main(void)
 {
     RUN(without_headings_the_rows_are_setups);
@@ -523,5 +578,6 @@ int main(void)
     RUN(a_discard_brings_supplys_limits_back_from_any_list);
     RUN(a_pulse_step_keeps_the_throttle_gap);
     RUN(a_closed_list_asks_for_no_repaint);
+    RUN(a_row_that_comes_under_a_press_ends_it_unacted);
     return test_summary("setlist");
 }

@@ -138,6 +138,7 @@ int ui_setlist_count(const ui_setlist_t *sl)
     return sl->host->count();
 }
 
+
 gfx_rect_t ui_setlist_strip_rect(int col)
 {
     return ui_footer_rect((ui_footer_slot_t)col);
@@ -222,10 +223,20 @@ gfx_rect_t ui_setlist_row_part(const ui_setlist_t *sl, int i,
         return gfx_rect_make(MINUS_X, r.y, BTN_W, ROW_H);
     case UI_SL_PART_VALUE:
         return gfx_rect_make(VALUE_X, r.y, VALUE_W, ROW_H);
+    case UI_SL_PART_HOLD:
+        return gfx_rect_make(MINUS_X, r.y + (ROW_H - BTN_H) / 2,
+                             PLUS_X + BTN_W - MINUS_X, BTN_H);
     case UI_SL_PART_PLUS:
     default:
         return gfx_rect_make(PLUS_X, r.y, BTN_W, ROW_H);
     }
+}
+
+gfx_rect_t ui_setlist_value_rect(const ui_setlist_t *sl, int i)
+{
+    const gfx_rect_t r = ui_setlist_row_rect(sl, i);
+    return gfx_rect_make(MINUS_X, r.y + (ROW_H - 24) / 2,
+                         PLUS_X + BTN_W - MINUS_X, 24);
 }
 
 int ui_setlist_row_at(const ui_setlist_t *sl, int x, int y)
@@ -533,10 +544,21 @@ void ui_setlist_type_id(ui_setlist_t *sl, const char *title,
     invalidate(sl);
 }
 
-/** @brief No press in progress, and no repeat running for one.
- *  @param sl The list. */
-static void drop_press(ui_setlist_t *sl)
+void ui_setlist_type_name(ui_setlist_t *sl, const char *title,
+                          const char *text, void (*done)(const char *name))
 {
+    sl->choice_row = -1;
+    ui_textkey_open_node_name(&sl->tk, TK_AREA, title, text);
+    sl->tk_text = SETTING_TEXT_COUNT;
+    sl->tk_done = done;
+    invalidate(sl);
+}
+
+void sl_drop_press(ui_setlist_t *sl)
+{
+    if (sl->hit_kind == UI_SL_HIT_HOLD) {
+        (void)ui_hold_left(&sl->hold);
+    }
     sl->have_press = false;
     sl->hit_kind  = UI_SL_HIT_NONE;
     sl->hit_index = -1;
@@ -553,6 +575,8 @@ void ui_setlist_init(ui_setlist_t *sl, const ui_setlist_host_t *host)
     sl->tk.pressed = -1;
     sl->kp.pressed = -1;
     sl->choice_row = -1;
+    ui_hold_reset(&sl->hold);
+    sl->hold_row = -1;
 }
 
 void ui_setlist_drop(ui_setlist_t *sl)
@@ -561,7 +585,7 @@ void ui_setlist_drop(ui_setlist_t *sl)
     sl->choice_row = -1;
     ui_textkey_close(&sl->tk);  /* what was typed is not taken */
     ui_keypad_close(&sl->kp);
-    drop_press(sl);
+    sl_drop_press(sl);
 }
 
 void ui_setlist_open(ui_setlist_t *sl)
@@ -582,7 +606,7 @@ void ui_setlist_close(ui_setlist_t *sl)
 
 bool ui_setlist_back(ui_setlist_t *sl)
 {
-    drop_press(sl);
+    sl_drop_press(sl);
     if (sl->kp.open) {
         close_keypad(sl);
         return true;
@@ -614,7 +638,7 @@ bool ui_setlist_warn(ui_setlist_t *sl)
 {
     /* A save asked for is the operator saying keep, and holds nothing; a
      * save refused (NOT SAVED) leaves the values dirty and holds it. */
-    drop_press(sl);
+    sl_drop_press(sl);
     if (!ui_setlist_save_offered()) {
         return false;
     }
@@ -743,6 +767,8 @@ void ui_setlist_tick(ui_setlist_t *sl, float dt_s)
                         || sl_locked(sl, sl->kp_id) != NULL)) {
         close_keypad(sl);
     }
+    sl_layout_follow(sl);
+    sl_hold_tick(sl, dt_s);
 
     if (sl->hit_kind != UI_SL_HIT_MINUS && sl->hit_kind != UI_SL_HIT_PLUS) {
         sl->held_for = 0.0f;
@@ -864,8 +890,12 @@ static void press(ui_setlist_t *sl, const touch_event_t *evt, int x, int y)
                        : on_key(sl, UI_SL_HIT_PLUS, row, x, y)
                            ? UI_SL_HIT_PLUS
                        : on_value(sl, row, x, y)   ? UI_SL_HIT_VALUE
+                       : sl_hold_on(sl, row, x, y) ? UI_SL_HIT_HOLD
                        : tappable(sl, row)         ? UI_SL_HIT_ROW
                                                    : UI_SL_HIT_LIST;
+        if (sl->hit_kind == UI_SL_HIT_HOLD) {
+            sl_hold_press(sl, row);
+        }
         if (sl->hit_kind != UI_SL_HIT_LIST) {
             invalidate(sl);   /* the key draws pressed */
         }
@@ -894,6 +924,7 @@ static void tap_row(ui_setlist_t *sl, int index)
     }
     if (r.custom->choices != NULL && r.custom->choices() > 0) {
         sl->choice_row = index;
+        sl->layout = sl_layout_key(sl);
         invalidate(sl);
         return;
     }
@@ -1092,6 +1123,7 @@ void ui_setlist_event(ui_setlist_t *sl, const touch_event_t *evt)
     if (sl == NULL || evt == NULL) {
         return;
     }
+    sl_layout_follow(sl);
     const int x = evt->point.x;
     const int y = evt->point.y;
 
@@ -1124,6 +1156,7 @@ void ui_setlist_event(ui_setlist_t *sl, const touch_event_t *evt)
         sl->dragging = false;
         sl->repeating = false;
         sl->held_for = 0.0f;
+        sl->layout = sl_layout_key(sl);
         press(sl, evt, x, y);
         break;
 
@@ -1131,6 +1164,17 @@ void ui_setlist_event(ui_setlist_t *sl, const touch_event_t *evt)
         const int dy = y - sl->last_y;
         sl->last_y = y;
         if (sl->hit_kind == UI_SL_HIT_NONE || sl->hit_kind == UI_SL_HIT_CHOICE) {
+            break;
+        }
+        if (sl->hit_kind == UI_SL_HIT_HOLD) {
+            /* Off the button the hold is over; the contact can still
+             * scroll.  Sliding back does not resume it. */
+            if (!gfx_rect_contains(ui_setlist_row_part(sl, sl->hit_index,
+                                                       UI_SL_PART_HOLD), x, y)
+                && ui_hold_leave(&sl->hold)) {
+                sl->hit_kind = UI_SL_HIT_LIST;
+                invalidate(sl);
+            }
             break;
         }
         if (sl->hit_kind >= UI_SL_HIT_HOST) {
@@ -1175,6 +1219,17 @@ void ui_setlist_event(ui_setlist_t *sl, const touch_event_t *evt)
     }
 
     case TOUCH_EVENT_UP:
+        if (sl->hit_kind == UI_SL_HIT_HOLD) {
+            /* The hold acts when it completes; the release only ends it,
+             * with its hint when let go early. */
+            (void)ui_hold_end(&sl->hold, evt,
+                              ui_setlist_row_part(sl, sl->hit_index,
+                                                  UI_SL_PART_HOLD));
+            sl->hit_kind = UI_SL_HIT_NONE;
+            sl_drop_press(sl);
+            invalidate(sl);
+            break;
+        }
         /* A contact that scrolled activates nothing, and neither does a
          * release the finger did not make: it ends the press.  The press
          * is dropped before it acts, so what it opens starts clean. */
@@ -1182,11 +1237,11 @@ void ui_setlist_event(ui_setlist_t *sl, const touch_event_t *evt)
             const int kind = sl->hit_kind;
             const int index = sl->hit_index;
             const bool repeated = sl->repeating;
-            drop_press(sl);
+            sl_drop_press(sl);
             invalidate(sl);
             release(sl, kind, index, repeated, x, y);
         } else {
-            drop_press(sl);
+            sl_drop_press(sl);
             invalidate(sl);
         }
         break;
@@ -1203,7 +1258,7 @@ void ui_setlist_cancel(ui_setlist_t *sl)
      * stands, so it stops here too.  A key held on the keyboard or the
      * keypad is let go; what was typed stays.
      */
-    drop_press(sl);
+    sl_drop_press(sl);
     ui_textkey_cancel_press(&sl->tk);
     ui_keypad_cancel_press(&sl->kp);
     invalidate(sl);

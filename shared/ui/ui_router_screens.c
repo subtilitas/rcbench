@@ -12,13 +12,13 @@
 
 #include <stddef.h>
 
+#include "about_screen.h"
 #include "analyser_screen.h"
 #include "balance_screen.h"
 #include "battery_screen.h"
 #include "busfault_screen.h"
 #include "coproc_update_screen.h"
 #include "files_screen.h"
-#include "imu_screen.h"
 #include "layout_screen.h"
 #include "log_viewer_screen.h"
 #include "motor_screen.h"
@@ -48,8 +48,9 @@
  * CARD list from the footer's SETTINGS on LOGS and FILES; WI-FI from
  * UPDATES' button and LOGS' WI-FI button; SEARCH from the scan and bound
  * rows of SETUP > WIRELESS; LOAD SETTINGS from SETUP > SD CARD's row of that
- * name; LOGS from GRAPH on the result cards of LIMIT RUN, RUDDER AUTO,
- * TEST, MOTOR & ESC and SUPPLY (graph_key.h).  SETUP's WI-FI tile needs no
+ * name; ABOUT from SETUP > PANEL's row About rcbench; LOGS from GRAPH on
+ * the result cards of LIMIT RUN, RUDDER AUTO, TEST, MOTOR & ESC and SUPPLY
+ * (graph_key.h).  SETUP's WI-FI tile needs no
  * row: WI-FI's parent is SETUP.
  * A screen with no row here, or entered from a screen not on its row, leaves
  * to its tile's parent (ui_router_parent()): a SERVO function screen to the
@@ -76,12 +77,12 @@ static const struct {
     { SCREEN_SETUP,   SCREEN_SERVO_LIMRUN },
     { SCREEN_WIFI,    SCREEN_UPDATES },
     { SCREEN_WIFI,    SCREEN_LOGS },
-    { SCREEN_SETUP,   SCREEN_IMU },
     { SCREEN_SETUP,   SCREEN_LOGS },
     { SCREEN_SETUP,   SCREEN_FILES },
     { SCREEN_WL_SEARCH, SCREEN_SETUP },
     { SCREEN_SET_LOAD, SCREEN_SETUP },
     { SCREEN_SCAN_CODE, SCREEN_SETUP },
+    { SCREEN_ABOUT,   SCREEN_SETUP },
     { SCREEN_LOGS,    SCREEN_SERVO_LIMRUN },
     { SCREEN_LOGS,    SCREEN_SERVO_RAUTO },
     { SCREEN_LOGS,    SCREEN_SERVO_TEST },
@@ -121,7 +122,6 @@ const ui_screen_t *ui_router_screen(ui_screen_id_t id)
     case SCREEN_UPD_REMIND: return upd_remind_screen();
     case SCREEN_FILES:    return files_screen();
     case SCREEN_LAYOUT:   return layout_screen();
-    case SCREEN_IMU:      return imu_screen();
     case SCREEN_SERVO_LIVE:   return servo_fn_screen(SERVO_FN_LIVE);
     case SCREEN_SERVO_SWEEP:  return servo_fn_screen(SERVO_FN_SWEEP);
     case SCREEN_SERVO_TEST:   return servo_fn_screen(SERVO_FN_TEST);
@@ -133,6 +133,7 @@ const ui_screen_t *ui_router_screen(ui_screen_id_t id)
     case SCREEN_WL_SEARCH:    return wl_search_screen();
     case SCREEN_SET_LOAD:     return sbk_screen();
     case SCREEN_SCAN_CODE:    return scanner_code_screen();
+    case SCREEN_ABOUT:        return about_screen();
     default:              return overview_screen();
     }
 }
@@ -146,6 +147,7 @@ void ui_router_screens_invalidate(void)
     settings_screen_invalidate();
     sbk_screen_invalidate();
     scanner_code_invalidate();
+    about_screen_invalidate();
     analyser_invalidate();
     balance_invalidate();
     battery_invalidate();
@@ -160,6 +162,5 @@ void ui_router_screens_invalidate(void)
     upd_screen_invalidate();
     files_screen_invalidate();
     layout_screen_invalidate();
-    imu_screen_invalidate();
     wl_search_invalidate();
 }

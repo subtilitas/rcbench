@@ -36,24 +36,24 @@
 
 /* ---------------------------------------------------------------- editors */
 
-void hpn_close_editors(void)
+void hpn_page_dropped(int kind)
 {
-    if (hp.page.open && hp.page.kind == W_SOFT) {
+    if (kind == W_SOFT) {
         /* CHECK THIS CHANGE closed without its hold: the edit is dropped. */
         hitec_prog_cancel(&hp.prog);
-    }
-    if (hp.page.open
-        && (hp.page.kind == W_LOAD || hp.page.kind == W_LOAD_MORE)) {
+    } else if (kind == W_LOAD || kind == W_LOAD_MORE) {
         /* CHECK THIS FILE closed without its hold: the file is dropped. */
         hitec_prog_load_cancel(&hp.prog);
     }
-    ui_keypad_close(&hp.kp);
-    ui_textkey_close(&hp.tk);
+}
+
+void hpn_close_editors(void)
+{
+    if (hp.f.page.open) {
+        hpn_page_dropped(hp.f.page.what);
+    }
     hp.kp_what = KP_NONE;
-    hp.ch.open = false;
-    hp.page.open = false;
-    hp.page.down = false;
-    ui_hold_spend(&hp.page.hold);      /* a flash under way runs on */
+    sprog_close_editors(&hp.f);     /* a page hold's flash runs on */
 }
 
 /**
@@ -63,11 +63,8 @@ void hpn_close_editors(void)
  */
 void hpn_choice_open(int kind, const char *title)
 {
-    hp.ch.open = true;
-    hp.ch.kind = kind;
-    hp.ch.count = 0;
-    hp.ch.current = INT_MIN;
-    snprintf(hp.ch.title, sizeof(hp.ch.title), "%s", title);
+    /* The frame's list: up to 5 one to a line, more two to a line. */
+    sprog_list_open(&hp.f, (int16_t)kind, title, kind == C_FILES);
 }
 
 /**
@@ -77,11 +74,7 @@ void hpn_choice_open(int kind, const char *title)
  */
 void hpn_choice_add(const char *label, int value)
 {
-    if (hp.ch.count < HP_CHOICE_MAX) {
-        snprintf(hp.ch.labels[hp.ch.count], sizeof(hp.ch.labels[0]), "%s",
-                 label);
-        hp.ch.values[hp.ch.count++] = value;
-    }
+    (void)sprog_list_add(&hp.f, label, NULL, value);
 }
 
 /* ---------------------------------------------------------------- options */
@@ -140,8 +133,8 @@ hitec_prog_edit_t hpn_edit_take(int32_t value)
 static void value_keypad(const char *title, const char *unit, float value,
                          float min, float max, int decimals)
 {
-    ui_keypad_open(&hp.kp, hp.area, title, unit, value, min, max, decimals);
     hp.kp_what = KP_VALUE;
+    sprog_keypad(&hp.f, KP_VALUE, title, unit, value, min, max, decimals);
 }
 
 /**
@@ -156,7 +149,7 @@ static void value_list(const char *title, const hitec_param_info_t *info,
     char label[HITEC_PANEL_LINE];
 
     hpn_choice_open(C_VALUE, title);
-    hp.ch.current = now != INT32_MIN ? (int)now : INT_MIN;
+    hp.f.list.current = now;
     for (int32_t v = info->min; v <= info->max; v += info->step) {
         hpn_fmt_param(hp.ed_id, v, label, sizeof(label));
         hpn_choice_add(label, (int)v);
@@ -191,10 +184,10 @@ static void editor_for(const hpn_row_t *r, const hitec_param_info_t *info,
         break;
     case HITEC_UNIT_FS_US:
         hpn_choice_open(C_VALUE, title);
-        hp.ch.current = now == HITEC_FS_OFF || now == HITEC_FS_LIMP
+        hp.f.list.current = now == HITEC_FS_OFF || now == HITEC_FS_LIMP
                             ? (int)now
                         : now != INT32_MIN ? HP_FS_POSITION
-                                           : INT_MIN;
+                                           : SPROG_NO_VALUE;
         hpn_choice_add(TR(OFF), HITEC_FS_OFF);
         hpn_choice_add(TR(HP_FS_LIMP), HITEC_FS_LIMP);
         hpn_choice_add(TR(HP_POSITION), HP_FS_POSITION);
@@ -548,7 +541,7 @@ static void rx_open(const hitec_prog_t *p)
     const uint8_t mark = p->f.rx_mark;
 
     hpn_choice_open(C_RX, ui_setting_label(SET_HITEC_RX));
-    hp.ch.current = settings_get_int(SET_HITEC_RX);
+    hp.f.list.current = settings_get_int(SET_HITEC_RX);
     hpn_choice_add(ui_setting_help(SET_HITEC_RX), (int)LINK_HITEC_RX_PULL_UP);
     hpn_choice_add(TR(SET_HITEC_RX_PRE), (int)LINK_HITEC_RX_PRECHARGE);
     if (mark == (uint8_t)HITEC_RX_LINK_OLD) {
@@ -614,7 +607,7 @@ void hpn_act(const hpn_row_t *r)
         break;
     case A_SERIES:
         hpn_choice_open(C_SERIES, TR(HP_SERIES));
-        hp.ch.current = (int)hitec_prog_series(p);
+        hp.f.list.current = (int)hitec_prog_series(p);
         hpn_choice_add(TR(HP_SERIES_D), (int)HITEC_D);
         snprintf(label, sizeof(label), "%s  %s", TR(HP_SERIES_C),
                  TR(HP_SERIES_C_HELP));
@@ -652,9 +645,6 @@ void hpn_act(const hpn_row_t *r)
     case A_MOVE:
         hpn_move_act();
         break;
-    case A_FIND:
-        hpn_find_act(hp.find_right);
-        break;
     default:
         (void)hitec_prog_clear(p);
         break;
@@ -689,16 +679,16 @@ static void list_done(hitec_prog_t *p, int kind, int value)
     } else if (value == MORE_RX) {
         rx_open(p);
     } else if (value == MORE_VOLTAGE) {
-        ui_keypad_open(&hp.kp, hp.area, TR(KP_PROG_VOLTAGE), "V",
-                       (float)hitec_prog_mv(p) / 1000.0f,
-                       (float)HITEC_PROG_MV_MIN / 1000.0f,
-                       (float)HITEC_PROG_MV_MAX / 1000.0f, 1);
         hp.kp_what = KP_VOLTAGE;
+        sprog_keypad(&hp.f, KP_VOLTAGE, TR(KP_PROG_VOLTAGE), "V",
+                     (float)hitec_prog_mv(p) / 1000.0f,
+                     (float)HITEC_PROG_MV_MIN / 1000.0f,
+                     (float)HITEC_PROG_MV_MAX / 1000.0f, 1);
     } else {
-        ui_keypad_open(&hp.kp, hp.area, TR(KP_PROG_CURRENT), "mA",
-                       (float)hitec_prog_ma(p), (float)PDMINI_I_MIN_MA,
-                       (float)PDMINI_I_MAX_MA, 0);
         hp.kp_what = KP_CURRENT;
+        sprog_keypad(&hp.f, KP_CURRENT, TR(KP_PROG_CURRENT), "mA",
+                     (float)hitec_prog_ma(p), (float)PDMINI_I_MIN_MA,
+                     (float)PDMINI_I_MAX_MA, 0);
     }
 }
 
@@ -712,7 +702,7 @@ const hpn_row_t *hpn_port_pick_row(void)
         const hpn_row_t *r = &hpn_rows[i];
 
         if (r->kind == K_ACT && r->what == A_PORT
-            && r->page == hp.tabs.selected && hpn_row_shown(r)) {
+            && r->page == hp.f.tabs.selected && hpn_row_shown(r)) {
             return r;
         }
     }
@@ -727,7 +717,7 @@ void hpn_port_list(void)
         return;                 /* the state line says why */
     }
     hpn_choice_open(C_PORT, TR(PC_TITLE));
-    hp.ch.current = (int)prog_choice_port();
+    hp.f.list.current = (int)prog_choice_port();
     for (uint8_t port = 1u; port <= LINK_PG_PORTS_MAX; ++port) {
         /* A port an output's slice holds says so in its entry. */
         if (!prog_choice_refusal(port, label, sizeof(label))) {
@@ -740,9 +730,9 @@ void hpn_port_list(void)
 void hpn_choice_done(int value)
 {
     hitec_prog_t *p = &hp.prog;
-    const int kind = hp.ch.kind;
+    const int kind = hp.f.list.what;
 
-    hp.ch.open = false;
+    hp.f.list.open = false;
     if (kind == C_PORT) {
         (void)prog_choice_pick((uint8_t)value);
     } else if (kind == C_SERIES) {
@@ -791,7 +781,7 @@ static void value_done(float v)
             hitec_panel_message_lines(hitec_prog_message(&hp.prog), lines);
 
         /* A refusal always says why; NULL keeps the keypad's own line. */
-        ui_keypad_refuse_why(&hp.kp, n > 0 ? lines[0] : NULL);
+        ui_keypad_refuse_why(&hp.f.kp, n > 0 ? lines[0] : NULL);
         return;
     }
     hp.kp_what = KP_NONE;

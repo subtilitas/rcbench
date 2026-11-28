@@ -47,8 +47,8 @@
  *   length     SHA256SUMS and the image: a Content-Length, not chunked,
  *              1 byte to the cap
  *   API answer status 200; a Content-Length of 1 to FW_REL_API_MAX bytes,
- *              or chunked (Transfer-Encoding: chunked) and its releases
- *              read within FW_REL_SCAN_MAX bytes; an array of
+ *              or chunked (Transfer-Encoding: chunked); by either, its
+ *              releases read within FW_REL_SCAN_MAX bytes; an array of
  *              objects, the first FW_REL_API_RELEASES of them read, each
  *              with exactly one "tag_name", a JSON string of at most
  *              FW_REL_TAG_MAX bytes without escapes or control bytes, "v"
@@ -93,7 +93,7 @@ extern "C" {
 #define FW_REL_SUMS_NAME   "SHA256SUMS"
 /** The newest release, testing or stable: GitHub's REST API. */
 #define FW_REL_API_URL     "https://api.github.com/repos/" FW_REL_REPO \
-                           "/releases?per_page=10"
+                           "/releases?per_page=5"
 /** The headers the API request carries besides the User-Agent. */
 #define FW_REL_API_ACCEPT  "application/vnd.github+json"
 #define FW_REL_API_VERSION "2022-11-28" /**< the X-GitHub-Api-Version value */
@@ -131,12 +131,16 @@ extern "C" {
 #define FW_REL_HOPS_MAX    3u
 /** SHA256SUMS at most, in bytes. */
 #define FW_REL_SUMS_MAX    4096u
-/** Releases the API's answer holds, and the scan reads, at most. */
-#define FW_REL_API_RELEASES 10u
-/** The API's answer at most, by its Content-Length, in bytes.  Each
- *  release carries its notes and its assets: the 10 newest on 2026-10-18,
- *  v0.12.0 to v0.20.0, are 108198 bytes, the largest one 13734. */
-#define FW_REL_API_MAX     262144u
+/** @brief Releases the API's answer holds, and the scan reads, at most: the
+ *  per_page of FW_REL_API_URL. */
+#define FW_REL_API_RELEASES 5u
+/** @brief The API's answer at most, by its Content-Length, in bytes: 5 times
+ *  256KiB.  The answer is not kept but read through the fetch's piece
+ *  buffer.  Each release carries its notes and its assets, about 1648
+ *  bytes an asset: the 5 newest on 2026-11-27, v0.21.1 to v0.23.18, are
+ *  95618 bytes, the largest one, v0.23.18, 53413 with 26 assets and 8113
+ *  bytes of notes.  5 releases of 152 assets and 8113 bytes of notes each fit. */
+#define FW_REL_API_MAX     1310720u
 /** Bytes of the API's answer scanned at most: the whole of the largest
  *  answer taken. */
 #define FW_REL_SCAN_MAX    FW_REL_API_MAX

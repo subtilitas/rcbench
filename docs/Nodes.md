@@ -4,8 +4,9 @@
 
 A sensor node is an ESP32-C6 board on its own LiPo cell that sends finished
 readings over Bluetooth LE (Low Energy, BLE). It has no wire to the bench.
-The power node reads the INA228 of a MATEK I2C-INA-BM on the ESC's
-(electronic speed controller's) XT60 power path. The balance node reads an
+The power node reads an INA228 board in the ESC's (electronic speed
+controller's) power path: the MATEK I2C-INA-BM, or another at 0x40 to
+0x4F ([The INA228](#the-ina228)). The balance node reads an
 accelerometer axis and an index sensor and sends a balance report every
 250ms. The display node is the power node on a 2.8" ESP32-S3 touch display
 board, powered from the pack, which also shows its readings on its own
@@ -31,18 +32,22 @@ the project's notice.
 | the battery and sleep decisions, under the host suite | `firmware/node/main/node_policy.c` |
 | the GATT (generic attribute profile) server and the advertising on NimBLE | `firmware/node/main/node_ble.c` |
 | the power role: the INA228, the windows, the accumulators | `firmware/node/main/node_pwr.c` |
+| the power role's search of the INA228's address and its shunt setting, under the host suite | `firmware/node/main/node_pwr_sens.c` |
 | the INA228 driver, the IOmcu's own | `shared/sense/ina228.c`, `shared/sense/sense_bus.c` |
 | the balance role: the ADC stream, the index, the report, the battery | `firmware/node/main/node_bal.c` |
 | the ADC frames, the scale, the index and the demodulator, under the host suite | `shared/vibe` |
 | the power node's battery reading | `firmware/node/main/node_bat.c` |
 | each board's pins, INFO board byte and update kind | `firmware/node/main/node_board.h` |
 | the display node's screen: values, highest and lowest, touch, formats, drawing, under the host suite | `firmware/node/main/node_view.c` |
+| the display node's splash and SETUP, the I2C SCAN, under the host suite | `firmware/node/main/node_setup.c`, `firmware/node/main/node_setup_view.c`, `firmware/node/main/node_scan.c` |
+| the node's own settings (NAME, INA228 ADDRESS, SHUNT) and RCNODE_T_CONFIG, the rules under the host suite | `firmware/node/main/node_store.c`, `firmware/node/main/node_set.c` |
+| the panel's side of the node's own settings, under the host suite | `shared/ui/node_cfg_link.c` |
 | the display node's display and touch | `firmware/node/main/node_lcd.c`, `firmware/node/main/node_disp.c` |
 | the console | `firmware/node/main/node_console.c` |
 | the servo role: the UART link to the Core2350B, the pump, the console's `srv` | `firmware/node/main/node_srv_link.c`, `firmware/node/main/node_srv.c` |
 | the servo node's safety decisions and its poll, under the host suite | `firmware/node/main/node_srv_policy.c`, `firmware/node/main/node_srv_poll.c` |
 | the servo node's heartbeat and RUN pins | `firmware/node/main/node_srv_hb.c` |
-| the panel's central for the power node: scan, bind, INFO's check, the RUN marker, under the host suite | `shared/ui/pnode_ctl.c` |
+| the panel's central for the power node: scan, bind, INFO's check, the RUN marker, the SHUNT write, under the host suite | `shared/ui/pnode_ctl.c` |
 | the panel's readings, totals, peaks and dropout rule, under the host suite | `shared/ui/pnode_meter.c` |
 | SETUP > WIRELESS' POWER NODE entry | `shared/ui/wireless_pnode.c` |
 | the panel's `blec` task client and the control task's glue | `firmware/panel/main/panel_pnode.c` |
@@ -54,7 +59,7 @@ the project's notice.
 | Waveshare ESP32-C6-Zero | ESP32-C6FH4 with 4MB flash in the package, USB-C (USB Serial/JTAG), LDO (low-dropout regulator) from the 5V pin to 3.3V: ME6217C33M5G on Waveshare's schematic, ME6217C33M6G on the seller's listing; the part on the delivered boards is not confirmed, WS2812 RGB LED on GPIO8, BOOT key on GPIO9, RESET key |
 | GERUI CD42 charge and boost module | charges the cell from VIN (4.5V to 5V) and boosts it to 5V on OUT |
 | a 1S LiPo cell | on the module's BAT |
-| MATEK I2C-INA-BM | INA228, 200µΩ shunt, address 0x45, XT60 in and out |
+| an INA228 board | the MATEK I2C-INA-BM: INA228, 200µΩ shunt, address 0x45, XT60 in and out; or another INA228 board: address 0x40 to 0x4F, its shunt set as NODE SHUNT, 50 to 10,000µΩ |
 | 2 × 200kΩ, 1 × 100nF | the battery divider |
 | 2 × 2.2kΩ | I2C (Inter-Integrated Circuit) pull-ups to 3.3V |
 
@@ -188,8 +193,32 @@ estimate is 100µA: 30ms awake at 30mA every 10s, plus the current asleep.
 
 The node writes the bench's own set-up (`INA228_ADC_BENCH`): bus and shunt
 voltage 540µs each, temperature 50µs, averaging 1, a result every 1130µs.
-ADCRANGE 1 (±40.96mV) for 204.8A on the 200µΩ shunt: 390.625µA a step.
-The driver is the IOmcu's.
+ADCRANGE 1 (±40.96mV) for every shunt: 204.8A on the MATEK's 200µΩ,
+390.625µA a step. The driver is the IOmcu's.
+
+**The address.** The INA228 sits at one of 0x40 to 0x4F: the MATEK at
+0x45, most other boards at 0x40. At the start, and each time the part is
+to be probed again, the node reads MANUFACTURER_ID (3Eh) and DEVICE_ID
+(3Fh) from 0x40 upwards, one address each 1130µs tick, and takes the first
+that answers 5449h with die 228h; another part is never written to, the
+FT6336G (0x38) and ES8311 (0x18) never asked. The search's NACKs (not
+acknowledged) do not count in `errors`. Without a find STATUS names
+`absent` or `wrong id`, and the search starts again 1000ms on, as after a
+part found reset. INFO names the address found, 0 for none. INA228 ADDRESS
+(AUTO by default, or a fixed 0x40 to 0x4F, NVS namespace `node`, key
+`i228`) restricts the search to one address with the same check; the
+display node's SETUP and the panel's POWER NODE entry set it
+([Nodes-setup](Nodes-setup.md#the-settings-over-the-link)).
+
+**The shunt.** NODE SHUNT on the panel, 50 to 10,000µΩ, 200µΩ by default,
+goes to the node as SHUNT. The node keeps it in NVS (non-volatile storage,
+namespace `pwr`, key `shunt_uohm`), names it in INFO at once and sets the
+part up with it at the next tick. The display node's SETUP sets it too; the
+last change wins ([The shunt in step](Nodes-setup.md#the-shunt-in-step)). ADCRANGE 1 and SHUNT_CAL 4096 hold for
+every shunt, the full scale is 40.96mV over the shunt: 819.2A on 50µΩ,
+204.8A on 200µΩ, 4.096A on 10,000µΩ. A change clears CHARGE and ENERGY and
+counts in `epoch`. The MATEK on 200µΩ gives the windows and INFO of the
+fixed 0x45 set-up byte for byte (`test_node_pwr_sens`).
 
 | Every | Read | Into |
 | --- | --- | --- |
@@ -406,7 +435,7 @@ another design: this image does not run on it.
 | Part | Use |
 | --- | --- |
 | LCDWIKI ES3C28P | ESP32-S3R8: 8MB octal PSRAM in the package, 16MB QSPI flash; 2.8" IPS 240 × 320, ILI9341V over 4-wire SPI; FT6336G capacitive touch at I2C address 0x38; ES8311 audio codec at 0x18, not used; USB-C (the chip's USB Serial/JTAG); 1.25mm sockets for I2C, UART, 4 GPIO, a 3.7V cell and a speaker; BOOT key on IO0; RESET key |
-| MATEK I2C-INA-BM | INA228, 200µΩ shunt, address 0x45, XT60 in and out |
+| an INA228 board | the MATEK I2C-INA-BM: INA228, 200µΩ shunt, address 0x45, XT60 in and out; or another INA228 board: address 0x40 to 0x4F, its shunt set as NODE SHUNT, 50 to 10,000µΩ |
 | a 5V buck converter | fed from the pack at its connector, before the shunt; its current is not measured |
 
 ### Pins
@@ -456,65 +485,17 @@ unconfirmed, so the 5V goes into the USB-C socket. A cell on the battery
 socket is not needed; the node does not watch it, and STATUS reports what
 IO9 reads.
 
-### The screen
+### The screen and the node's SETUP
 
-![The display node without a link](img/node-values.png)
+![The boot splash](img/node-splash.png)
 
-The screen is 320 × 240, landscape. The band at the top names the link:
-`STANDALONE` without one, `CONNECTED` once a central is connected and
-subscribed. Under it are three rows: voltage, current and power. Each
-row shows its live value in 32x44 digits and, right of the line, its
-highest (red triangle) and lowest (blue triangle).
-
-| Value | Shown | Range |
-| --- | --- | --- |
-| voltage | 2 decimals | 0.00V to 99.99V |
-| current | 1 decimal | -999.9A to 999.9A |
-| power | 1 decimal under 100W, else whole watts | -99999W to 99999W |
-
-Each value is rounded half away from zero and clamped to its range; units
-follow without a space (`12.60V`, `35.2A`, `443W`). The live values are the
-mean of the INA228's 20ms windows since the last frame, 5 frames a second
-(`NV_FRAME_MS`, 200ms): about 10 windows a frame. A window's power is its
-mean voltage times its mean current. The highest and lowest are those of
-single windows since the start or the last reset; they live in RAM and a
-restart clears them. A window without a sample, or whose current samples
-all clipped, counts for nothing. Without a window since the last frame the
-values read `--` and the band reads `NO SENSOR`.
-
-![No window from the INA228](img/node-no-sensor.png)
-
-Only what changed is drawn and sent to the display: a frame with one new
-value sends that value's part of its row, not the frame of 153,600 bytes.
-
-### Touch
-
-| Touch | Does |
-| --- | --- |
-| a tap on a row's highest and lowest (x 220 to 319) | resets that row's two |
-| a hold of 2s anywhere | resets all six, once, while still held |
-
-Nothing else is a touch function. The hold fires on the first touch read
-that sees the finger 2s or more into the press. A press whose last touch
-read comes before 2s is a tap; the press ends 60ms after the last touch
-read, and the touch is read every 20ms. From 300ms of a press on, a bar at the band's foot fills toward the
-2s and the band reads `RESET ALL`.
-
-![A hold of 1.2s](img/node-hold.png)
-
-The FT6336G reports the panel's portrait frame; the firmware turns it for
-the landscape screen. That the turn matches the board is unconfirmed: each
-tap prints its point on the console (`disp: tap at 260,60: highest and
-lowest reset`). `NODE_LCD_TURN` 1 in `node_board.h` turns screen and touch
-by 180°.
-
-### Language
-
-The texts are English. While a panel is linked, they follow the panel's
-language: the panel writes LANG to CONTROL after INFO on each link and at
-each change of its language ([protocols/rcnode](../protocols/rcnode/README.md)).
-German shows `VERBUNDEN`, `KEIN SENSOR` and `ALLE ZURÜCKSETZEN`. Without a
-link the texts are English again.
+The screen shows a boot splash for 10s after power-on, with a SETUP button
+offered until a panel links, then the meter: voltage, current and power,
+each with its highest and lowest. The node's own SETUP sets its NAME, its
+INA228 ADDRESS (AUTO or fixed) and its SHUNT, and runs an I2C SCAN that
+writes no register. The screens, the touch, the language and how the shunt
+stays in step with the panel's NODE SHUNT are on
+[The display node's screen and the nodes' own settings](Nodes-setup.md).
 
 ### Power and sleep
 
@@ -628,8 +609,8 @@ its own.
 | --- | --- | --- |
 | STREAM | NOTIFY | power: windows every 20ms, accumulators and run extremes every 500ms; balance: a report every 250ms; both: the STATUS packet every 1000ms |
 | STATUS | READ, NOTIFY | battery, flags, firmware version, counters, every 1000ms |
-| CONTROL | WRITE, WRITE WITHOUT RESPONSE | RUN with a tag of 1 to 255, SLEEP, OFF; LANG (0 English, 1 German) on the power node; BLADES (1 to 12) and RPM on the balance node |
-| INFO | READ | protocol, role, board, address, the INA228's set-up (0 on the balance node) |
+| CONTROL | WRITE, WRITE WITHOUT RESPONSE | RUN with a tag of 1 to 255, SLEEP, OFF; LANG (0 English, 1 German) and SHUNT (50 to 10,000µΩ) on the power node; BLADES (1 to 12) and RPM on the balance node |
+| INFO | READ | protocol, role, board, address; the INA228's address found (0 none), ADCRANGE and shunt (0 on the balance node) |
 
 A write the role does not take, or of another length, is refused with ATT
 error 0x13 or 0x0D.
@@ -708,6 +689,16 @@ fourth client, owner 3
   give for that shunt at that range's full scale sends nothing the panel
   takes. The central subscribes to one characteristic, so the node sends
   its STATUS packet on STREAM as well; the battery row reads it.
+- **The shunt.** After INFO on each link and at each change of NODE SHUNT,
+  the panel writes SHUNT when INFO names another shunt, after a RUN write
+  owed and never while ARMED, then reads INFO again once SAFE; a timeout
+  reads INFO and writes again. ATT error 0x13 (a node built before SHUNT)
+  gives `POWER NODE TAKES NO SHUNT: UPDATE ITS FIRMWARE`. A node that
+  takes CONFIG holds the write until its CONFIG came, and the last change
+  of the two ends wins ([The shunt in step](Nodes-setup.md#the-shunt-in-step)).
+- **The node's own settings.** After INFO the panel writes CONFIG; NODE
+  NAME and INA228 ADDRESS write NAME and I228 while SAFE
+  ([Nodes-setup](Nodes-setup.md#the-settings-over-the-link)).
 - **The RUN marker.** At each switch to ARMED the panel writes RUN with the
   run's tag, 1 to 255, to CONTROL. A link that is down then gets the write
   when it comes back within the run. A link that comes back within the run
@@ -717,7 +708,8 @@ fourth client, owner 3
 INA228 SOURCE (WIRED, NODE; WIRED by default) says whose INA228 feeds MOTOR
 & ESC. It changes only while SAFE: while ARMED its row has no keys, a
 press on it shows `Set on a SAFE bench only` on the band, and
-`settings_set()` and RESET leave it (`settings_safe_only()`). With NODE,
+`settings_set()` and RESET leave it (`settings_safe_only()`), as NODE
+SHUNT. With NODE,
 after each read of the IOmcu's BENCH page:
 
 | Figure | From the node |
@@ -953,7 +945,7 @@ and press RESET for the ROM's download mode.
 USB Serial/JTAG on the board's USB-C. A line every second:
 
 ```text
-I (5123) node: pwr 50 win/s, n 18, 22.18V 14.300A, part online, epoch 1; link up -58dBm, sub 1, bat 3.92V, errors 0, resets 0, dropped 0
+I (5123) node: pwr 50 win/s, n 18, 22.18V 14.300A, part online at 0x45, 200uOhm, epoch 1; link up -58dBm, sub 1, bat 3.92V, errors 0, resets 0, dropped 0
 ```
 
 | Field | Meaning |
@@ -961,7 +953,7 @@ I (5123) node: pwr 50 win/s, n 18, 22.18V 14.300A, part online, epoch 1; link up
 | `win/s` | windows closed in the last second, 50 when every window has a sample |
 | `n` | samples in the last window |
 | the volts and amperes | the last window's means |
-| `part` | `online`, or `not answering` |
+| `part` | `online`, or `not answering`; `at` and the address of the last find; the shunt in force |
 | `epoch` | set-ups of the INA228 since the start |
 | `link` | `none`, `up` and the RSSI (received signal strength indication) |
 | `sub` | 1 when STREAM is subscribed |
@@ -1022,6 +1014,10 @@ I (5123) node: srv iomcu up, panel LINKED, SAFE, beat on, faults 0x0000, answere
 | `srv stop` | STOP, as the panel's |
 
 ## Current limitations
+
+- A panel built before CONFIG overwrites a shunt changed on the display
+  node's SETUP at its next link
+  ([Nodes-setup](Nodes-setup.md#current-limitations)).
 
 - The servo node has no panel packets and no control ops of its own yet in
   `protocols/rcnode`: its KEEPALIVE, STOP, ARM, SAFE and THROTTLE come

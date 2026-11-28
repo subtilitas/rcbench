@@ -150,7 +150,7 @@ TEST_CASE(the_tiles_pages_mark_every_tile_once)
         CHECK_EQ(p.item[0].text, TX_HG_SET_PANEL);
         /* The hub holds no tile past its last: page 2 ends on SAVE. */
         REQUIRE(ui_help_page(settings_screen(), false, 1, &p));
-        CHECK_EQ(p.count, (settings_hub_tiles() > 8) ? 5 : 4);
+        CHECK_EQ(p.count, (settings_hub_tiles() > 7) ? 4 : 3);
         CHECK(!ui_help_page(settings_screen(), false, 2, &p));
     }
     s_board = (uint16_t)OUTBIND_BOARD_UNKNOWN;
@@ -234,7 +234,6 @@ TEST_CASE(the_imu_entry_says_the_panel_reads_it)
         CHECK(strstr(s, "IOmcu") == NULL);
         CHECK(strstr(s, "Bluetooth LE") != NULL);
         CHECK(strstr(s, "ESP32-C6") != NULL);
-        CHECK(strstr(ui_tr_in((ui_lang_t)l, TX_HG_SET_IMU), "HC-05") == NULL);
     }
 }
 
