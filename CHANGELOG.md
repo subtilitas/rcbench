@@ -40,6 +40,10 @@ history is in git.
   ([The M5Stack Dial](docs/Dial.md#update-over-bluetooth-le),
   [SECURITY.md](SECURITY.md)).
 
+- `tools/make_thumb.py` writes a thumbnail of 1280 x 720 pixels per video
+  from the storyboard's `thumb` block: a bare frame of the player under 1
+  to 3 lines of text. 14 storyboards carry a block. The storyboard
+  `thumbnail` is removed.
 - The Dial firmware builds for a second board, the Guition JC3636K518C
   knob: the board is a choice of `firmware/dial/main/Kconfig.projbuild`,
   `sdkconfig.k518` picks it, and `dial_board_m5.h` and
@@ -75,8 +79,10 @@ history is in git.
   at 3/2, one font size up, wrapped and cut by the M5 faces' rules; every
   string lies inside radius 150. The boot face stands until the first
   face.
-- The K518 takes input: its encoder's two pulse lines on a PCNT unit
-  each, one detent per pulse (`shared/dial/dk518_input.c`); its CST816S
+- The K518 takes input: its encoder as quadrature on GPIO8 (A) and GPIO7
+  (B), an interrupt per edge and a detent at each rest
+  (`shared/dial/dk518_enc.c`), with each detent's A/B pairs in the test
+  build's log and in `status`; its CST816S
   touch, a finger held still on the glass as the screen button (PRESS
   before 1,000ms, HOLD at 1,000ms, the switch-off's warning at 5s and the
   forget at 10s) and a TAP within 500ms; and its DRV2605 vibration as the
@@ -105,6 +111,10 @@ history is in git.
 
 ### Changed
 
+- Storyboard `kst-rbmod` follows the panel's KST programmer as it is:
+  CONNECT and WRITE n VALUES as 2s holds, no ENABLE WRITE page, the
+  ports' 5V switched off for 1s at CONNECT and at LEAVE. It carries a
+  narration and a bed; 29 screen steps, 169.4s as written.
 - The KST programmer draws through the common servo programmer frame
   (`sprog`). The SERVO tab's first line is a head: the port and its GPIO
   (`PROG PORT 1 GPIO 13`) over the supply CONNECT sets (`PD MINI  5.0V

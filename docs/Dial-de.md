@@ -73,7 +73,7 @@ des anderen.
 | Modul | ESP32-S3R8: 8MB Octal-PSRAM (Pseudo-Static RAM) im Gehäuse, 16MB Flash | |
 | Display | ST77916, 1,8 Zoll, 360 x 360, QSPI (Quad-SPI) mit 40MHz, RGB565 | SCLK GPIO13, CS GPIO14, D0 bis D3 GPIO15 bis GPIO18, Reset GPIO21, Hintergrundlicht GPIO47 (LEDC-PWM, high an) |
 | Touch | CST816S auf I2C-Adresse 0x15 (0x2A, wenn 0x15 nicht antwortet), 400kHz, alle 20ms gelesen | SDA GPIO11, SCL GPIO12, Reset GPIO10, Interrupt GPIO9 (nicht benutzt) |
-| Encoder | zwei Pulsleitungen, keine Quadratur, ein Low-Puls je Rastung; kein Drucktaster | im Uhrzeigersinn GPIO8, gegen den Uhrzeigersinn GPIO7 |
+| Encoder | Quadratur, beide Leitungen an Pull-ups, ein Interrupt auf jeder Flanke; Flanken je Rastung noch nicht gemessen; kein Drucktaster | A GPIO8, B GPIO7 |
 | Vibration | DRV2605 auf I2C-Adresse 0x5A mit einem LRA (Linear Resonant Actuator) | der I2C-Bus des Touch; Enable GPIO38 auf V1.0-Boards |
 | Tasten | keine auf dem Glas oder am Knopf; BOOT hinter dem Loch neben USB-C, beim Reset gelesen | GPIO0 |
 | Versorgung | Schiebeschalter am Sockel (links ist EIN), USB-C, ein LiPo-Akku an einer MX1.25-Buchse, Lader TP4055 | |
@@ -151,13 +151,29 @@ aus dem PSRAM, etwa 13ms auf der Leitung bei 40MHz.
 
 ### Der Encoder
 
-GPIO8 pulst je Rastung im Uhrzeigersinn einmal low, GPIO7 je Rastung
-gegen den Uhrzeigersinn. Je eine PCNT-Einheit (Pulszähler) zählt die
-fallenden Flanken einer Leitung; der Input-Task liest beide alle 5ms, und
-eine Leitung, die nach einem 5ms-Schritt ohne Puls pulst, ist eine
-Rastung. Zwei Rastungen einer Leitung mit weniger als 10ms Abstand zählen
-als eine. Die Zahl der Rastungen je Umdrehung ist nicht gemessen;
-Guitions Demo-Code nennt 24.
+Der Encoder ist ein Quadratur-Encoder: Eine Rastung pulst beide
+Leitungen, A (GPIO8) und B (GPIO7), nacheinander. Ein Interrupt auf jeder
+Flanke einer der beiden Leitungen liest beide Pegel; der Input-Task
+dekodiert sie alle 5ms (`shared/dial/dk518_enc.c`).
+
+- Jeder Wechsel einer Leitung ist ein Viertelschritt; die Leitung, die
+  zuerst fällt, gibt die Richtung. Ein Wechsel beider Leitungen zugleich
+  bewegt nichts.
+- Das erste Pegelpaar, das 30ms ohne Flanke bleibt, ist die Ruhelage.
+  Kommen die Viertelschritte in einer Richtung dort an, zählt eine
+  Rastung.
+- Jedes andere Paar, das 30ms ruhig bleibt, ist ebenfalls eine Ruhelage
+  und zählt dort, also zählt auch ein Encoder mit 2 Flanken je Rastung.
+- Prellen und eine halbe Drehung, die zurückgeht, zählen nichts.
+
+Die Flanken je Rastung, welche Leitung im Uhrzeigersinn vorangeht, und
+die Rastungen je Umdrehung (24 laut Guitions Demo-Code) sind noch nicht
+gemessen. Der Test-Build protokolliert Paare und Flanken jeder Rastung,
+und `status` zeigt die letzte in jedem Build:
+
+```text
+I (…) input: detent CW 1, 4 edges, 6ms: 11>01>00>10>11
+```
 
 ### Das Touch als Taste
 
@@ -1087,15 +1103,22 @@ die anderen gelten für beide Boards. Die eigenen des K518 folgen in
 
 ### Grenzen des K518
 
-- Noch kein rcbench-Image ist auf einem K518 gelaufen. Seine Pins und
+- Auf einem K518 startet das Image, zeigt seine Faces, hält den BLE-Link
+  zum Panel, und eine Drehung erreicht das Panel. Seine übrigen Pins und
   Teile stammen aus Guitions Daten und aus Quellen der Community; seine
-  Faces, die Dekodierung, die Gesten, die Akku-Schwellen und das Update
-  prüfen Host-Tests und Renderings.
-- Noch nicht auf dem Gerät gelaufen: die Initialisierung und Ausrichtung
-  des Displays, die Ausrichtung der Touch-Achsen, die Richtung des
-  Encoders, die Stärke der Vibration, der Deep Sleep und sein Wecken durch
-  einen Dreh, die ADC-Messung gegen ein Messgerät und ein Update über BLE
-  mit seinem Rollback.
+  Dekodierung, die Gesten, die Akku-Schwellen und das Update prüfen
+  Host-Tests und Renderings.
+- Noch nicht auf dem Gerät gelaufen: die Quadratur-Dekodierung, die
+  Ausrichtung des Displays, die Ausrichtung der Touch-Achsen, die Stärke
+  der Vibration, der Deep Sleep und sein Wecken durch einen Dreh, die
+  ADC-Messung gegen ein Messgerät und ein Update über BLE mit seinem
+  Rollback.
+- Die Flanken je Rastung des Encoders und welche Leitung im
+  Uhrzeigersinn vorangeht, sind noch nicht gemessen. Hält eine Hand den
+  Knopf 30ms zwischen zwei Rastungen, wird dieses Paar eine Ruhelage, und
+  die Rastung zählt doppelt; bei einem Encoder mit 2 Flanken je Rastung
+  zählt eine Drehung, die seine mittlere Ruhelage ohne 30ms Pause
+  passiert, ihre zwei Rastungen als eine.
 - Nicht gemessen: die Rastungen je Umdrehung (24 in Guitions Demo-Code),
   der Strom im Deep Sleep, der Betriebsstrom, die Laufzeit mit einem
   Akku, die Kapazität des Akkus und der Ladestrom des TP4055.

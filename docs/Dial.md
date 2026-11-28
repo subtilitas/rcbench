@@ -70,7 +70,7 @@ INFO names hardware 2 (`DK_HW_K518`); its image names update kind 5
 | Module | ESP32-S3R8: 8MB octal PSRAM (pseudo-static RAM) in the package, 16MB flash | |
 | Display | ST77916, 1.8 inch, 360 x 360, QSPI (quad SPI) at 40MHz, RGB565 | SCLK GPIO13, CS GPIO14, D0 to D3 GPIO15 to GPIO18, reset GPIO21, backlight GPIO47 (LEDC PWM, high on) |
 | Touch | CST816S at I2C address 0x15 (0x2A when 0x15 does not answer), 400kHz, read every 20ms | SDA GPIO11, SCL GPIO12, reset GPIO10, interrupt GPIO9 (not used) |
-| Encoder | two pulse lines, no quadrature, one low pulse a detent; no push switch | clockwise GPIO8, anticlockwise GPIO7 |
+| Encoder | quadrature, both lines on pull-ups, an interrupt on every edge; edges a detent not measured yet; no push switch | A GPIO8, B GPIO7 |
 | Vibration | DRV2605 at I2C address 0x5A with an LRA (linear resonant actuator) | the touch's I2C bus; enable GPIO38 on V1.0 boards |
 | Buttons | none on the glass or the knob; BOOT behind the pinhole beside USB-C, read at reset | GPIO0 |
 | Power | slide switch on the base (left is ON), USB-C, one LiPo cell on an MX1.25 socket, TP4055 charger | |
@@ -144,12 +144,28 @@ frame of 259,200 bytes from PSRAM, about 13ms on the wire at 40MHz.
 
 ### The encoder
 
-GPIO8 pulses low once per clockwise detent, GPIO7 once per anticlockwise
-detent. A PCNT (pulse counter) unit counts each line's falling edges; the
-input task reads both every 5ms, and a line that pulsed after a 5ms step
-without a pulse is one detent. Two detents of one line less than 10ms
-apart count as one. The count of detents a turn is not measured; Guition's
-demo code says 24.
+The encoder is quadrature: one detent pulses both lines, A (GPIO8) and B
+(GPIO7), one after the other. An interrupt on every edge of either line
+reads both levels; the input task decodes them every 5ms
+(`shared/dial/dk518_enc.c`).
+
+- Each change of one line is a quarter step; the line that falls first
+  gives the direction. A change of both lines at once moves nothing.
+- The first pair of levels that stays 30ms without an edge is the home
+  rest. Arriving there with quarter steps in one direction counts one
+  detent.
+- Any other pair quiet for 30ms is a rest as well and counts there, so an
+  encoder with 2 edges a detent counts too.
+- Bounce and a half turn that goes back count nothing.
+
+The edges a detent has, which way A leads when turned clockwise, and the
+detents a turn (24 by Guition's demo code) are not measured yet. The test
+build logs each detent's pairs and edges, and `status` shows the last one
+in every build:
+
+```text
+I (…) input: detent CW 1, 4 edges, 6ms: 11>01>00>10>11
+```
 
 ### The touch as the button
 
@@ -1018,13 +1034,19 @@ K518](#limits-of-the-k518).
 
 ### Limits of the K518
 
-- No rcbench image has run on a K518 yet. Its pins and parts come from
-  Guition's data and community sources; its faces, decode, gestures,
-  battery thresholds and update are checked by host tests and renders.
-- Not run on the device yet: the display's init and orientation, the
-  touch axes' orientation, the encoder's direction, the vibration
-  strength, the deep sleep and its wake by a turn, the ADC reading against
-  a meter, and an update over BLE with its rollback.
+- On a K518 the image starts, shows its faces, holds the BLE link to the
+  panel, and a turn reaches the panel. Its other pins and parts come from
+  Guition's data and community sources; its decode, gestures, battery
+  thresholds and update are checked by host tests and renders.
+- Not run on the device yet: the quadrature decode, the display's
+  orientation, the touch axes' orientation, the vibration strength, the
+  deep sleep and its wake by a turn, the ADC reading against a meter, and
+  an update over BLE with its rollback.
+- The encoder's edges a detent and which line leads clockwise are not
+  measured yet. A hand that holds the knob between two detents for 30ms
+  makes that pair a rest, so that detent counts twice; on an encoder with
+  2 edges a detent, a turn that passes its middle rest without a 30ms
+  pause counts its two detents as one.
 - Not measured: the detents a turn (24 in Guition's demo code), the deep
   sleep current, the run current, runtime on a cell, the cell's capacity
   and the TP4055's charge current.
