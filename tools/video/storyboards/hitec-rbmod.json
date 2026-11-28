@@ -419,7 +419,7 @@
      "text": "<b>SERIES</b> reads <b>D SERIES</b> or <b>CLASSIC</b>, the HS-5xxx and HS-7xxx servos. A tap changes it.",
      "say": "The series row reads D series or classic. This servo is a D 485, a D series servo.",
      "target": [
-      237,
+      542,
       211
      ]
     },
@@ -432,7 +432,7 @@
      "text": "The carrier makes the ports' 5V from its 15V input: under 13.5V the bench refuses <b>CONNECT</b>. Hold <b>CONNECT</b> for 2s. The bench switches the ports' 5V on and takes the port out of PWM.",
      "say": "The carrier makes the ports' 5 volts from its 15 volt input. With an input under 13.5 volts, the bench refuses connect. Hold connect for two seconds. The bench switches the ports' 5 volts on and takes the port out of P W M.",
      "target": [
-      542,
+      487,
       156
      ],
      "action": "hold"
@@ -446,7 +446,7 @@
      "text": "The 21 registers of a D series servo, each with 3 tries. <b>ABORT</b> stops the read.",
      "say": "The bench reads the 21 registers of the servo.",
      "target": [
-      542,
+      487,
       156
      ]
     },
@@ -720,7 +720,7 @@
      "say": "The note says what the write does besides the values: the servo saves, restarts, and ignores signals for one second.",
      "target": [
       300,
-      372
+      385
      ]
     },
     {
@@ -759,8 +759,8 @@
      "text": "Do not unplug the servo or the bench while writing.",
      "say": "Then it writes. Do not unplug the servo or the bench meanwhile.",
      "target": [
-      150,
-      334
+      280,
+      365
      ],
      "style": "warn",
      "tag": "DO NOT UNPLUG"
@@ -885,8 +885,8 @@
      "text": "The horn met a stop at 4840 and moved back 1.0°. <b>LEFT END</b> reads 4915 in the edits.",
      "say": "The horn meets a stop and moves back by one degree. The bench sets left end to that position in the edits.",
      "target": [
-      300,
-      480
+      487,
+      211
      ],
      "style": "ok"
     },
@@ -968,7 +968,7 @@
      "text": "Tap <b>LEAVE</b>.",
      "say": "Step 8. Tap leave.",
      "target": [
-      542,
+      487,
       156
      ],
      "action": "tap"
