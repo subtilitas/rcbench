@@ -302,9 +302,11 @@ bool dial_ble_bound(void);
 /** @brief The connection count: it changes at every connect, so the face
  *         task resets its model. @return the count */
 uint32_t dial_ble_link_count(void);
-/** @brief The last disconnect's reason (NimBLE's code), 0 before one. */
+/** @brief The last disconnect's reason.
+ *  @return NimBLE's code, 0 before the first disconnect */
 uint16_t dial_ble_last_reason(void);
-/** @brief Parameter requests the host refused since the start. */
+/** @brief Parameter requests the host refused.
+ *  @return the count since the start */
 uint32_t dial_ble_param_fails(void);
 /** @brief The link's RSSI on the Dial. @return dBm, or DK_RSSI_NONE */
 int8_t dial_ble_rssi(void);
