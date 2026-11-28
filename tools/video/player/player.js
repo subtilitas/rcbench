@@ -159,6 +159,8 @@ for (const sc of sb.scenes) {
   if (sc.servo) sc.rig.setServoPort(sc.servo.connector, sc.servo.position);
 }
 
+// A bare board draws the scene alone: tools/make_thumb.py's frames.
+if (sb.bare) document.body.classList.add('bare');
 $('#brand').innerHTML =
   `<b>${sb.product || 'rcbench'}</b> · ${sb.brand || ''}`;
 const dots = $('#dots'), nav = $('#nav');
