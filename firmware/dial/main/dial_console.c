@@ -49,6 +49,16 @@ static int cmd_status(int argc, char **argv)
     printf("event seq %u counter %d sent %lu unsent %lu, sound %s\n",
            (unsigned)st.seq, (int)st.counter, (unsigned long)st.sent,
            (unsigned long)st.unsent, dial_input_sound_on() ? "on" : "off");
+#if CONFIG_RCBENCH_DIAL_BOARD_K518
+    {
+        char trace[96];
+        if (dial_input_enc_trace(trace, sizeof trace)) {
+            printf("encoder last detent %s\n", trace);
+        } else {
+            printf("encoder no detent yet\n");
+        }
+    }
+#endif
     if (sup.known) {
         printf("battery %umV\n", (unsigned)sup.mv);
     } else {
@@ -204,7 +214,8 @@ static int cmd_ping(int argc, char **argv)
 
 /** @brief The commands. */
 static const esp_console_cmd_t k_cmds[] = {
-    { .command = "status", .help = "name, addresses, link, counts, heap",
+    { .command = "status",
+      .help = "name, addresses, link, counts, encoder, heap",
       .func = cmd_status },
     { .command = "sound", .help = "the click per detent", .hint = "on|off",
       .func = cmd_sound },

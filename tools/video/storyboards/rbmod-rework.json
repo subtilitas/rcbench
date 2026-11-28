@@ -1,4 +1,19 @@
 {
+ "thumb": {
+  "at": 40,
+  "lines": [
+   "REV 1",
+   "*REWORK"
+  ],
+  "crop": [
+   0,
+   0,
+   1920
+  ],
+  "side": "l",
+  "accent": "#ff3b4e",
+  "size": 150
+ },
  "name": "rbmod-rework",
  "lang": "en",
  "brand": "rbmod rev 1 rework",

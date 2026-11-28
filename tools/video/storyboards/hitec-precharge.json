@@ -1,4 +1,20 @@
 {
+ "thumb": {
+  "at": 15,
+  "lines": [
+   "ONE PIN",
+   "*READS",
+   "*BACK"
+  ],
+  "crop": [
+   0,
+   90,
+   1750
+  ],
+  "side": "l",
+  "accent": "#34d399",
+  "size": 120
+ },
  "name": "hitec-precharge",
  "lang": "en",
  "product": "RP2350",
