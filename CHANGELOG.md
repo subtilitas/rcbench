@@ -43,8 +43,10 @@ history is in git.
   at 3/2, one font size up, wrapped and cut by the M5 faces' rules; every
   string lies inside radius 150. The boot face stands until the first
   face.
-- The K518 takes input: its encoder's two pulse lines on a PCNT unit
-  each, one detent per pulse (`shared/dial/dk518_input.c`); its CST816S
+- The K518 takes input: its encoder as quadrature on GPIO8 (A) and GPIO7
+  (B), an interrupt per edge and a detent at each rest
+  (`shared/dial/dk518_enc.c`), with each detent's A/B pairs in the test
+  build's log and in `status`; its CST816S
   touch, a finger held still on the glass as the screen button (PRESS
   before 1,000ms, HOLD at 1,000ms, the switch-off's warning at 5s and the
   forget at 10s) and a TAP within 500ms; and its DRV2605 vibration as the

@@ -1,16 +1,14 @@
 /*
- * The Guition JC3636K518C's input (shared/dial/dk518_input.c): the
- * encoder's two pulse lines turned into detents, and the still touch that
- * is its screen button.
+ * The Guition JC3636K518C's input (shared/dial/dk518_input.c): the still
+ * touch that is its screen button.  The encoder's decode is in
+ * test_dk518_enc.c.
  *
- * The failures this is about: a pulse's bounce that counts two detents; a
- * detent lost or turned the wrong way; a count at start that turns the
- * counter; a swipe that sends PRESS; a touch short of 1,000ms that sends
+ * The failures this is about: a swipe that sends PRESS; a touch short of 1,000ms that sends
  * HOLD; a hold that never reaches the switch-off or the forget; a TAP that
  * lands at the wrong point; and an update's accept taken from a swipe,
  * run through bleota's own confirmation and the `ota` task's 10ms polls
  * with their 2-poll debounce (firmware/devota/devota.c).
- * The input task steps both every 5ms; so do these cases.
+ * The input task steps every 5ms; so do these cases.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -77,70 +75,6 @@ static void start(dk518_still_t *s, seen_t *out)
     dk518_still_init(s);
     memset(out, 0, sizeof *out);
     s_now = 0xFFFFF000u;
-}
-
-TEST_CASE(the_first_step_takes_the_totals_and_turns_nothing)
-{
-    dk518_enc_t e;
-    dk518_enc_init(&e);
-    CHECK_EQ(0, dk518_enc_step(&e, 517, -3));
-    CHECK_EQ(0, dk518_enc_step(&e, 517, -3));
-}
-
-TEST_CASE(one_pulse_is_one_detent_each_way)
-{
-    dk518_enc_t e;
-    dk518_enc_init(&e);
-    (void)dk518_enc_step(&e, 0, 0);
-    CHECK_EQ(1, dk518_enc_step(&e, 1, 0));
-    CHECK_EQ(0, dk518_enc_step(&e, 1, 0));
-    CHECK_EQ(-1, dk518_enc_step(&e, 1, 1));
-    CHECK_EQ(0, dk518_enc_step(&e, 1, 1));
-}
-
-TEST_CASE(a_pulse_and_its_bounce_count_once)
-{
-    /* Four edges in one step, then two more in the next: one pulse. */
-    dk518_enc_t e;
-    dk518_enc_init(&e);
-    (void)dk518_enc_step(&e, 10, 20);
-    CHECK_EQ(1, dk518_enc_step(&e, 14, 20));
-    CHECK_EQ(0, dk518_enc_step(&e, 16, 20));
-    CHECK_EQ(0, dk518_enc_step(&e, 16, 20));
-    CHECK_EQ(-1, dk518_enc_step(&e, 16, 23));
-    CHECK_EQ(0, dk518_enc_step(&e, 16, 24));
-}
-
-TEST_CASE(pulses_10ms_apart_all_count)
-{
-    /* 20 clockwise detents 10ms apart: every one counts. */
-    dk518_enc_t e;
-    int32_t sum = 0;
-    int32_t cw = 0;
-    dk518_enc_init(&e);
-    (void)dk518_enc_step(&e, 0, 0);
-    for (int i = 0; i < 20; ++i) {
-        cw += 2;
-        sum += dk518_enc_step(&e, cw, 0);
-        sum += dk518_enc_step(&e, cw, 0);
-    }
-    CHECK_EQ(20, sum);
-}
-
-TEST_CASE(both_lines_in_one_step_cancel)
-{
-    dk518_enc_t e;
-    dk518_enc_init(&e);
-    (void)dk518_enc_step(&e, 0, 0);
-    CHECK_EQ(0, dk518_enc_step(&e, 1, 1));
-}
-
-TEST_CASE(a_total_that_wraps_still_counts)
-{
-    dk518_enc_t e;
-    dk518_enc_init(&e);
-    (void)dk518_enc_step(&e, INT32_MAX, 0);
-    CHECK_EQ(1, dk518_enc_step(&e, INT32_MIN, 0));
 }
 
 TEST_CASE(a_short_still_touch_is_press_and_tap_at_its_start)
@@ -767,12 +701,6 @@ TEST_CASE(the_glass_counts_failed_reads_in_a_row)
 
 int main(void)
 {
-    RUN(the_first_step_takes_the_totals_and_turns_nothing);
-    RUN(one_pulse_is_one_detent_each_way);
-    RUN(a_pulse_and_its_bounce_count_once);
-    RUN(pulses_10ms_apart_all_count);
-    RUN(both_lines_in_one_step_cancel);
-    RUN(a_total_that_wraps_still_counts);
     RUN(a_short_still_touch_is_press_and_tap_at_its_start);
     RUN(a_still_touch_past_500ms_is_press_alone);
     RUN(a_drift_within_20px_stays_a_press);
