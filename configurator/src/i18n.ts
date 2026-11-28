@@ -36,7 +36,7 @@ const S = {
     'These functions need no additional bench parts. Select a function to include its test device in the setup.',
     'Diese Funktionen brauchen keine zusätzlichen Teile des Prüfstands. Wähle eine Funktion aus, um ihren Prüfling in den Aufbau aufzunehmen.',
   ],
-  withParts: ['With the parts and test objects of this setup', 'Mit den Teilen und Prüflingen dieses Aufbaus'],
+  withParts: ['With the parts and devices under test in this setup', 'Mit den Teilen und Prüflingen dieses Aufbaus'],
   adds: ['Adds: ', 'Kommt dazu: '],
   stOwn: ['Selected by you.', 'Von dir gewählt.'],
   stInc: [
@@ -59,7 +59,7 @@ const S = {
     '{f} ist nicht mehr in deiner Auswahl. Die Funktion bleibt aktiv.',
   ],
   dsOff: ['{f} is off.', '{f} ist aus.'],
-  dsBase: ['The base setup runs it.', 'Der Grundaufbau führt sie aus.'],
+  dsBase: ['This function is available in the base setup.', 'Diese Funktion ist im Grundaufbau verfügbar.'],
   dsConn: ['{x} stays connected.', '{x} bleibt angeschlossen.'],
   outObjects: ['No longer connected: {x}.', 'Nicht mehr angeschlossen: {x}.'],
   dsStay: [
@@ -97,7 +97,7 @@ const S = {
     'All functions and other parts remain in the setup.',
     'Alle Funktionen und übrigen Teile bleiben im Aufbau.',
   ],
-  rmVar: ['Variant that changes: {x}.', 'Variante, die wechselt: {x}.'],
+  rmVar: ['Variant affected: {x}.', 'Betroffene Variante: {x}.'],
   rmKept: [
     'Parts kept because you selected them under "Parts you own": {x}.',
     'Diese Teile bleiben, weil du sie unter „Vorhandene Teile“ ausgewählt hast: {x}.',
@@ -110,7 +110,7 @@ const S = {
     'Parts you own',
     'Vorhandene Teile',
   ],
-  ownN: ['{n} ticked', '{n} angekreuzt'],
+  ownN: ['{n} selected', '{n} ausgewählt'],
   ownHint: [
     'Select a part to add it. Clear its checkbox to remove it; the page asks for confirmation first.',
     'Wähle ein Teil aus, um es hinzuzufügen. Entferne den Haken, um es aus dem Aufbau zu nehmen. Die Seite fragt vorher nach.',

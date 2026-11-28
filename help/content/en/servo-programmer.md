@@ -230,7 +230,7 @@ RESTORE offers the session backup (the first values read after CONNECT), the val
 ![MORE in programming mode](view:servo-kst-more)
 
 - VERIFY reads all registers and compares them with the image held.
-- DISCARD EDITS sets the draft back to the servo's values.
+- DISCARD EDITS restores the values read from the servo to the draft.
 - RELEASE PAIRING, with KST EXPERT MODE ON, sets register 1D to 00 after a 2s hold. What the servo does with the value is not known.
 
 ## An interrupted write
@@ -274,7 +274,7 @@ MOVE SERVO on the Hitec programmer's TRAVEL tab moves a D series servo's horn to
 - It needs a PD mini answering with its output on: STOP switches the servo's supply off. Without one, the rbmod carrier's fixed 5V included, it says `Moving the servo needs a PD mini with its output on.`
 - DIRECTION is CW in the servo and in the draft; the CCW mapping is not measured.
 - NEUTRAL, LEFT END and RIGHT END get `-` and `+` keys of 8 counts, 0.11°, repeating while held. The horn follows the row last stepped, its label in the accent colour; it starts on NEUTRAL. A tap on the value opens the keypad.
-- The horn moves 2.0° at most a pass and stays inside the reach of the stored end points, 2606 to 13743 on a factory D485HW.
+- The horn moves at most 2.0° per pass and stays within the stored endpoints. The factory range for the D485HW is 2606 to 13743.
 - A horn that lags more than 2.0° on 2 passes, a current at 80% of the current limit for 0.4s, or an AS5600 angle that does not follow moves the horn back 1.0° and ends the loop: `Servo blocked at 6000. Moved back to 6167.`
 - While it is on, the band's arm chip reads `SAFE MOVE` in amber.
 - A press on ON, a tab change or the home tag ends it: target 3000, a restart of the servo, and a read held against the start, about 2.6s in the host model. `MOVE SERVO is OFF. The stored values read back unchanged.`
@@ -282,15 +282,15 @@ MOVE SERVO on the Hitec programmer's TRAVEL tab moves a D series servo's horn to
 
 ### FIND STOP
 
-While MOVE SERVO is on, FIND STOP takes DIRECTION's row. It searches for the mechanical stop of one side and sets that end in the draft; it writes nothing.
+While MOVE SERVO is on, FIND STOP appears in the DIRECTION row. It searches for the mechanical stop of one side and sets that end in the draft; it writes nothing.
 
 ![FIND STOP searching on the left](view:servo-hitec-move-find)
 ![A stop found on the left](view:servo-hitec-move-found)
 
 - Tap LEFT END or RIGHT END. The horn goes to NEUTRAL, then 0.5° outward every 2 passes, up to the edge of the reach.
 - A bind sets that end 1.0° inside the stop, marked `*`: `Stop at 4840. LEFT END set to 4915 in the edits.` The horn then follows that end.
-- No bind up to the edge, 40s passed, or a second tap on the key: the edits stay as they were.
-- WRITE n VALUES after MOVE OFF writes the end found.
+- The draft keeps its existing values if the search reaches the end of travel without detecting a bind, times out after 40s or is cancelled with a second tap.
+- Switch MOVE SERVO off, then use WRITE n VALUES to save the endpoint.
 
 The thresholds are chosen, not measured with a horn against a block. [MOVE SERVO on the Hitec programmer](https://github.com/subtilitas/rcbench/wiki/HitecMove) holds every message and limit.
 

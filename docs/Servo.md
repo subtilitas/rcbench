@@ -333,7 +333,7 @@ register each, in a unit that is not known. The smallest value the
 programmer's hard rules take is 1 on a KST: 0 is refused. A value under 50
 is a soft limit; the run's 2s hold is the consent to it.
 
-The run takes the servo as linear. PULSE LOWER and PULSE UPPER are the
+The run assumes a linear relationship between pulse width and servo travel. PULSE LOWER and PULSE UPPER are the
 input pulses at which the servo reaches the full travel that LEFT ANGLE and
 RIGHT ANGLE set. Between NEUTRAL and that pulse the travel is linear in the
 pulse; past it the servo holds full travel. The share of a side at pulse p
@@ -1375,7 +1375,7 @@ compared by its magnitude and in whole mA: see
 
 ### Files
 
-A run takes the next run number of the folder `USER/LOGS`, and the SD card's
+A run uses the next run number in `USER/LOGS`, and the SD card's
 own task writes its files there: `ATESTnnn.CSV`, one row per reading of the
 run's meter, and with DUT's REPORT on, `ATESTnnn.TXT`. The number belongs to
 one series with the limit runs' `LIMITnnn` files in that folder

@@ -55,7 +55,7 @@ fault.
 
 On board 3, whose link runs on the UART (universal asynchronous
 receiver-transmitter, [The UART transport](Link.md#the-uart-transport)),
-one line takes the place of the CAN lines:
+the IOmcu prints one line in place of the CAN lines:
 
     rcbench-iomcu: UART up, 1000000 baud, 0 requests served, 0 self-test echoes, crc 0 resync 0 laps 0 overruns 0 tx_drop 0 txq_max 0
 
@@ -96,7 +96,7 @@ from flash. The station's medians per 3s at SAFE on HOME: `loop max`
 204us, `can max` 165us, `report max` 94us, 80,367 passes, all at most
 250us. With
 no USB host connected no report starts, and the figures run on to the next
-report that does. The report hands out one line a pass, and only when the
+report that does. The report prints one line per pass, and only when the
 USB transmit buffer has room for 256 bytes: a host that holds the port
 open and stops reading gets no line and holds no pass. A report not
 finished 3s after its start is dropped and the next one starts.

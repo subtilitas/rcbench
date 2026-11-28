@@ -267,7 +267,7 @@ test('the question names a variant that changes and a function that comes on', (
   const v: View = { ...view({ functions: ['esc', 'servotest', 'tap'] }), pending: { part: 'batt', at: 'result' } };
   const said = text(removalWarning(v));
   assert.ok(said.includes('All functions remain available.'), said);
-  assert.ok(said.includes('Variant that changes: ESC power B.'), said);
+  assert.ok(said.includes('Variant affected: ESC power B.'), said);
   assert.ok(said.includes(`Functions enabled: ${fnName('stick', 'en')}.`), said);
   assert.ok(said.endsWith('Remove part Keep'), said);
 });

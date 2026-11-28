@@ -3,9 +3,9 @@
 [Deutsch](Language-de.md)
 
 The panel interface is available in English and German. Select ENGLISH
-or DEUTSCH under SETUP > PANEL > Language. The choice is applied with the
-theme, so the next frame uses the selected language without a restart.
-SAVE stores the choice in NVS (non-volatile storage), like other settings.
+or DEUTSCH under SETUP > PANEL > Language. The panel applies the
+language and theme on the next frame.
+Tap SAVE to store the language in NVS (non-volatile storage).
 
 ![SETUP in German](img/de/setup.png)
 
@@ -21,16 +21,16 @@ SAVE stores the choice in NVS (non-volatile storage), like other settings.
 
 Current limitations:
 
-- An alert already on the band keeps the language it was raised in until
-  it is replaced, tapped away or cleared after 30s (`UI_ALERT_SHOW_S`).
+- An alert keeps the language it first appears in. A new alert, a tap on
+  the band or the 30s timeout (`UI_ALERT_SHOW_S`) clears it.
   The alert held for a touch controller that did not answer at start is
   raised in the language kept in NVS and stays until restart; without touch
   the language cannot change meanwhile.
 - The LOGS message line, such as an open/delete error or a deletion
   confirmation, keeps its language until the next open or delete operation
   replaces or clears it.
-- The title of a keypad or a choice list already open keeps its language
-  until it closes.
+- An open keypad or choice list keeps its title in the original language
+  until you close it.
 - The stick engine reports refusals in English. The screen uses the
   English text to look up the translation and falls back to English if
   there is no matching entry. `test_text` checks that every refusal from

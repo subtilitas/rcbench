@@ -145,7 +145,7 @@ OPEN reads the file's header. A run file the bench wrote opens in the plot at on
 | MOTOR run | `MOTORnnn.CSV`, `ESCnnn.CSV` | `throttle`, `rpm`, `current`, `voltage` |
 | SERVO run | `SERVOnnn.CSV`, `BENCHnnn.CSV` | `pulse`, `angle`, `current`, `voltage` |
 
-An AUTOMATIC TEST, SUPPLY, MOTOR or SERVO run that lacks a column takes the first numeric column whose name ends in that name: a run with empty `current` and `voltage` cells plots INA3221 channel 1's `ch1 current` and `ch1 voltage`. Any other column the file lacks is left out. A LIMIT RUN or RUDDER AUTO file opens in [the graph](#the-graph-of-a-limit-run-or-rudder-auto) over its pulse, the other kinds in [the graph over their time](#a-run-over-its-time). Any other CSV, and a run's name over columns of no kind, opens in the import view.
+An AUTOMATIC TEST, SUPPLY, MOTOR or SERVO run that lacks a column takes the first numeric column whose name ends in that name: a run with empty `current` and `voltage` cells plots INA3221 channel 1's `ch1 current` and `ch1 voltage`. Any other column the file lacks is left out. A LIMIT RUN or RUDDER AUTO file opens in [the graph](#the-graph-of-a-limit-run-or-rudder-auto) over its pulse, the other kinds in [the graph over their time](#a-run-over-its-time). Other CSV files open in the import view. A file with a run name but without recognised run columns also opens there.
 
 ## The import view
 

@@ -163,7 +163,7 @@ protocol 4.36 or later, the programmer chooses the port as well. Before
 **PROGRAMMING PORT** with
 `PROGP01  GPIO 13`, `PROGP02  GPIO 14`, `PROGP03  GPIO 15` and
 `PROGP04  GPIO 0`. The entry chosen sets SERVO TESTER, the same setting
-as the PROG PORT entries of **OUTPUTS**, and is kept over a restart.
+as the PROG PORT entries of **OUTPUTS**, and persists across restarts.
 
 - The panel asks the IOmcu for FUNC SERVO PWM on the chosen port and NONE
   on the other three. The IOmcu's TARGET, the hub's port line and
@@ -1006,7 +1006,7 @@ restore or a pairing release carries three more lines:
 
 ```
 No card. No backup file will be saved.
-This session's backup is kept only in the bench's memory. It is lost when the session ends or the bench loses power.
+The backup exists only in the bench's memory. Ending the session or losing power clears it.
 ```
 
 The page's one hold of 2s confirms them; no second hold is asked for. A

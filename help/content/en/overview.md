@@ -25,7 +25,7 @@ Eight tiles, 243 x 255px each, in 4 columns and 2 rows: the workbenches in the f
 | BALANCE | vibration, phase | [Balance](balance.md) |
 | SETUP | panel, pins, card, Wi-Fi | [Setup](setup.md) |
 
-Programming has no separate tile. Electronic speed controllers (ESCs): [PROGRAM](motor.md#program) on MOTOR & ESC. Servos: the KST and HITEC tiles of [SERVO](servo-programmer.md).
+To program an electronic speed controller (ESC), open [PROGRAM](motor.md#program) on MOTOR & ESC. To program a servo, open KST or HITEC on [SERVO](servo-programmer.md).
 
 A tile opens when you lift your finger on the same tile you pressed. Sliding off the tile cancels the tap.
 
@@ -65,8 +65,8 @@ At power-on, the splash lists each subsystem as it starts: board, display, touch
 
 - A missing SD (Secure Digital) card or an unusable NVS (non-volatile storage) is a warning.
 - A touch controller that does not answer, or an IOmcu with another protocol major version, is a failure. The bench then does not switch to ARMED.
-- When every step has answered, the menu follows after 1.6s. A tap skips the wait.
-- At every start the panel runs a CAN (Controller Area Network) self-test for 1200ms. A bus that fails it opens the [bus-fault screen](busfault.md) instead of the menu.
+- Once every step reports its result, the menu opens after 1.6s. Tap to skip the wait.
+- At every start the panel runs a CAN (Controller Area Network) self-test for 1200ms. If the self-test fails, the panel opens the [bus-fault screen](busfault.md).
 
 ## Related pages
 
