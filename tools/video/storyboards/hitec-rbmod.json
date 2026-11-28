@@ -882,7 +882,7 @@
      "n": 7,
      "chip": "Move the servo",
      "title": "Stop found",
-     "text": "The horn met a stop at 4840 and moved back 1.0°. <b>LEFT END</b> reads 4915 in the edits.",
+     "text": "The horn met a stop and moved back 1.0°. <b>LEFT END</b> reads <b>*4915</b> in the edits.",
      "say": "The horn meets a stop and moves back by one degree. The bench sets left end to that position in the edits.",
      "target": [
       487,
