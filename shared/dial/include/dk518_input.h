@@ -1,18 +1,8 @@
 /**
  * @file
- * @brief The Guition JC3636K518C's input, pure: the encoder's two pulse
- *        lines turned into detents, the still touch on the glass that is
- *        the K518's button, and the vibration effects it plays.
- *
- * The encoder is the two-line "bidirectional switch" type, not
- * quadrature: GPIO8 gives one low pulse per clockwise detent, GPIO7 one
- * per anticlockwise detent.  A PCNT (pulse counter) unit per line counts
- * its falling edges.  dk518_enc_step() reads both totals every
- * DIAL_INPUT_MS (5ms): a line whose total moved after a step without an
- * edge on it is one detent; edges in consecutive steps are one pulse and
- * its bounce.  The quiet step between two pulses is the 4ms debounce of
- * Guition's code, rounded up to the 5ms step.  Limit: two detents of one
- * line less than 10ms apart (more than 100 detents/s) count as one.
+ * @brief The Guition JC3636K518C's input, pure: the still touch on the
+ *        glass that is the K518's button, and the vibration effects it
+ *        plays.  The encoder's decode is dk518_enc.h.
  *
  * The still touch (owner's answer Q2): a finger held still on the glass
  * is the screen button of shared/dial/dial_button.c.
@@ -134,15 +124,6 @@ typedef struct {
                          touch, not a new one */
 } dk518_glass_t;
 
-/** @brief The encoder's decode. */
-typedef struct {
-    bool    primed;  /**< the first totals were taken */
-    int32_t cw;      /**< the clockwise line's last total */
-    int32_t ccw;     /**< the anticlockwise line's last total */
-    bool    cw_run;  /**< the last step saw a clockwise edge */
-    bool    ccw_run; /**< the last step saw an anticlockwise edge */
-} dk518_enc_t;
-
 /** @brief The still touch: the button's state and the touch's. */
 typedef struct {
     dial_button_t button;  /**< PRESS, HOLD, the switch-off, the forget */
@@ -177,19 +158,6 @@ typedef struct {
     bool    still_lift; /**< lifted before DK_HOLD_MS, still: the press
                              an update's offer takes as its accept */
 } dk518_still_out_t;
-
-/** @brief Start the decode with no totals.  @param e the decode */
-void dk518_enc_init(dk518_enc_t *e);
-
-/**
- * @brief One step: both lines' falling-edge totals, as their PCNT units
- *        count them.  The first step takes the totals and turns nothing.
- * @param e   the decode
- * @param cw  the clockwise line's total
- * @param ccw the anticlockwise line's total
- * @return detents since the last step, clockwise positive
- */
-int32_t dk518_enc_step(dk518_enc_t *e, int32_t cw, int32_t ccw);
 
 /** @brief Start with no finger on the glass.  @param s the state */
 void dk518_still_init(dk518_still_t *s);
