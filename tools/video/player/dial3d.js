@@ -7,7 +7,7 @@
 // The knob ring is one solid and turns alone.  The display shows a face of
 // the Dial, a 240 x 240 image, on the round glass; two faces cross-fade.
 //
-// The hand-held base (hardware/mechanical/_gen_dial_base.py), when given,
+// The hand-held base (_gen_dial_base.py of the hardware tools), when given,
 // is two printed parts in the Dial's own frame: z = 0 where the Dial's
 // flange seats.  The Dial then stands on the base's foot.
 //
@@ -17,7 +17,7 @@
 // takes a number per part, 0 seated and 1 fully out; setFlip() rolls the
 // whole over, so that the foot and its 4 screws show.  The cell, the pad
 // and the screws are drawn here as plain solids from the numbers of
-// hardware/mechanical/README.md.
+// the hardware tools' design notes.
 //
 // SPDX-License-Identifier: MIT
 import * as THREE from 'three';

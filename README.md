@@ -128,7 +128,7 @@ this is a licensing requirement. Test coverage must meet both the overall
 minimum and the minimum for each file.
 
 <!-- coverage:start -->
-Host-suite line coverage of `shared/` and `protocols/`: **97.7%**, 117,754 of 120,547 lines in 544 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
+Host-suite line coverage of `shared/` and `protocols/`: **97.7%**, 117,933 of 120,724 lines in 544 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
 <!-- coverage:end -->
 
 Security and safety reports: [SECURITY.md](SECURITY.md).
@@ -142,12 +142,12 @@ carrier board's page ([Carrier](docs/Carrier.md)) is under CC BY-NC-SA 4.0
 (Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International):
 the board and pin documents, the part lists and sourcing, the component
 research, the STEP and STL models, the KiCad symbols, footprints and 3D
-shapes, the renders and the Python scripts that draw them. They may be used,
+shapes and the renders. They may be used,
 changed and shared for non-commercial purposes, with credit and under the
 same licence. Commercial use needs a separate licence from the copyright
 holder. The terms are in [hardware/LICENSE](hardware/LICENSE). M5Stack's Dial mesh, the
-two Dial STEP files fitted to it and the letter outlines in
-`hardware/mechanical/_font.py` keep the MIT licence.
+two Dial STEP files fitted to it and the letter outlines printed on the
+board models keep the MIT licence.
 
 - **DejaVu Sans Mono.** The seven font tables under `shared/gfx/` are glyph
   bitmaps rendered from DejaVu Sans Mono by `tools/gen_font.py`, under the

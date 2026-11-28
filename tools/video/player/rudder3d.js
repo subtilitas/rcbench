@@ -1,6 +1,6 @@
 // A servo setting up a flap, in one scene: a slice of wing with its flap,
 // the servo on its frame and the linkage (flap_drive_assembly of
-// hardware/mechanical/_gen_flap_drive.py), an inertial sensor on a pad of
+// the hardware tools' _gen_flap_drive.py), an inertial sensor on a pad of
 // double-sided gel tape on the flap (wit_imu), the bench and the M5Stack
 // Dial.  Units are mm; x
 // runs right, y up, z towards the viewer.
