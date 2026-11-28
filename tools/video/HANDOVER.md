@@ -261,6 +261,12 @@ Owner, 2026-11-14:
   `STATUS.md` lists the firmware change under its open items. The
   video's texts say nothing of this (owner's rule on test state).
 - `hitec-rbmod`, `stop` and `origin` are in English only.
+- The thumbnail of `hitec-rbmod` shows the part `servo_standard`, a
+  generic servo labelled "Standard Servo", not the Hitec D485HW the
+  video programs. `tools/video/cad/servo_standard.glb` and the other
+  models of a thumb scene are not in the tree: `make_thumb.py` writes no
+  frame until `tools/video_cad.py --solids` has made them from
+  `hardware/mechanical/models/parts/*.step`.
 - `hardware/mechanical/models/parts/estop_m16_button.step` has the head's
   underside on the bezel's front face: the model leaves no room for the
   5mm of travel, and the pressed head passes through the bezel. The head
