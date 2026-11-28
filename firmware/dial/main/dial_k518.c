@@ -19,7 +19,7 @@
  * their own sleep, and a wake on either encoder line going low (ext1 on
  * GPIO7 and GPIO8, their RTC pull-ups on), so a turn wakes it into a new
  * start, which gives both lines back to the digital GPIO matrix
- * (rtc_gpio_deinit()) before the input task's PCNT units take them.  A
+ * (rtc_gpio_deinit()) before the input task's edge interrupt takes them.  A
  * line that is low already is waited out for up to 200ms
  * (DK518_WAKE_WAIT_MS).  The deep sleep current is not measured; the
  * divider alone draws about 190µA from a 3.8V cell.
@@ -117,12 +117,13 @@ static uint16_t rail_read(void)
 void dial_power_hold(void)
 {
     /* A wake from the soft OFF: the backlight's pin is still held low, and
-     * the encoder's lines are still RTC IO for the ext1 wake.  PCNT takes
-     * them as digital GPIO only once their RTC mux is cleared. */
+     * the encoder's lines are still RTC IO for the ext1 wake.  Their edge
+     * interrupt sees them as digital GPIO only once their RTC mux is
+     * cleared. */
     gpio_deep_sleep_hold_dis();
     gpio_hold_dis(DIAL_PIN_LCD_BL);
-    (void)rtc_gpio_deinit(DIAL_PIN_ENC_CW);
-    (void)rtc_gpio_deinit(DIAL_PIN_ENC_CCW);
+    (void)rtc_gpio_deinit(DIAL_PIN_ENC_A);
+    (void)rtc_gpio_deinit(DIAL_PIN_ENC_B);
     dk518_supply_init(&s_sup);
     s_lock = xSemaphoreCreateMutex();
     adc_start();
@@ -136,8 +137,8 @@ void dial_power_hold(void)
 static bool lines_high(void)
 {
     for (uint32_t t = 0u; t < DK518_WAKE_WAIT_MS; t += 10u) {
-        if (gpio_get_level(DIAL_PIN_ENC_CW) != 0
-            && gpio_get_level(DIAL_PIN_ENC_CCW) != 0) {
+        if (gpio_get_level(DIAL_PIN_ENC_A) != 0
+            && gpio_get_level(DIAL_PIN_ENC_B) != 0) {
             return true;
         }
         vTaskDelay(pdMS_TO_TICKS(10));
@@ -147,18 +148,18 @@ static bool lines_high(void)
 
 void dial_power_off(void)
 {
-    const uint64_t lines = (1ULL << DIAL_PIN_ENC_CW)
-                           | (1ULL << DIAL_PIN_ENC_CCW);
+    const uint64_t lines = (1ULL << DIAL_PIN_ENC_A)
+                           | (1ULL << DIAL_PIN_ENC_B);
     ESP_LOGI(TAG, "soft OFF: deep sleep, a turn wakes the K518");
     if (!lines_high()) {
         ESP_LOGW(TAG, "an encoder line stays low: the K518 may wake at once");
     }
     dial_k518_io_sleep();
     dial_k518_lcd_sleep();
-    rtc_gpio_pullup_en(DIAL_PIN_ENC_CW);
-    rtc_gpio_pulldown_dis(DIAL_PIN_ENC_CW);
-    rtc_gpio_pullup_en(DIAL_PIN_ENC_CCW);
-    rtc_gpio_pulldown_dis(DIAL_PIN_ENC_CCW);
+    rtc_gpio_pullup_en(DIAL_PIN_ENC_A);
+    rtc_gpio_pulldown_dis(DIAL_PIN_ENC_A);
+    rtc_gpio_pullup_en(DIAL_PIN_ENC_B);
+    rtc_gpio_pulldown_dis(DIAL_PIN_ENC_B);
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
     if (esp_sleep_enable_ext1_wakeup_io(lines, ESP_EXT1_WAKEUP_ANY_LOW)
         != ESP_OK) {

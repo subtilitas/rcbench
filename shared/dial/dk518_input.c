@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief The Guition JC3636K518C's encoder decode and still touch
+ * @brief The Guition JC3636K518C's still touch and update key
  *        (dk518_input.h).
  *
  * SPDX-License-Identifier: MIT
@@ -10,41 +10,6 @@
 #include <string.h>
 
 #include "dialknob.h"
-
-void dk518_enc_init(dk518_enc_t *e)
-{
-    memset(e, 0, sizeof *e);
-}
-
-/**
- * @brief One line's step: a detent when its total moved after a quiet
- *        step.
- * @param last  the line's last total, updated
- * @param run   whether the last step saw an edge, updated
- * @param total its total now
- * @return 1 for a detent, else 0
- */
-static int32_t line_step(int32_t *last, bool *run, int32_t total)
-{
-    const bool edge = total != *last;
-    const int32_t d = edge && !*run ? 1 : 0;
-    *last = total;
-    *run = edge;
-    return d;
-}
-
-int32_t dk518_enc_step(dk518_enc_t *e, int32_t cw, int32_t ccw)
-{
-    if (!e->primed) {
-        e->primed = true;
-        e->cw = cw;
-        e->ccw = ccw;
-        return 0;
-    }
-    const int32_t up = line_step(&e->cw, &e->cw_run, cw);
-    const int32_t down = line_step(&e->ccw, &e->ccw_run, ccw);
-    return up - down;
-}
 
 void dk518_still_init(dk518_still_t *s)
 {

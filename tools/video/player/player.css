@@ -173,3 +173,4 @@ svg#ov{position:absolute;inset:0;width:1920px;height:1080px;pointer-events:none}
 .win.explorer .cp u{display:block;height:16px;background:#e6e9ee;border:1px solid #c5cad2;overflow:hidden}
 .win.explorer .cp s{background:#26a340}
 .win.explorer .ctl .box{display:inline-block;width:10px;height:10px;border:1.3px solid #333}
+body.bare #title,body.bare #card,body.bare #cap,body.bare #pin,body.bare #bubs,body.bare #ov,body.bare #end,body.bare #top,body.bare #dots,body.bare #nav,body.bare #bar{display:none!important}

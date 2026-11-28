@@ -1,4 +1,20 @@
 {
+ "thumb": {
+  "at": 9,
+  "of": "stop",
+  "lines": [
+   "EVERY",
+   "*SCREEN"
+  ],
+  "crop": [
+   60,
+   330,
+   1200
+  ],
+  "side": "r",
+  "accent": "#22d3ee",
+  "size": 150
+ },
  "name": "features",
  "lang": "en",
  "brand": "feature tour",

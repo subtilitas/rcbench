@@ -35,12 +35,24 @@ String innerhalb von Radius 150. Das Start-Face mit dem BLE-Namen und der
 Firmware-Version steht bis zum ersten Face. Eine Änderung eines Face
 zeichnet und sendet den ganzen Frame von 259.200 Bytes.
 
-Der Encoder des K518 hat zwei Pulsleitungen, keine Quadratur: GPIO8 pulst
-je Rastung im Uhrzeigersinn einmal low, GPIO7 je Rastung gegen den
-Uhrzeigersinn. Je eine PCNT-Einheit (Pulszähler) zählt die fallenden
-Flanken einer Leitung; der Input-Task liest beide alle 5ms, und eine
-Leitung, die nach einem 5ms-Schritt ohne Puls pulst, ist eine Rastung.
-Zwei Rastungen einer Leitung mit weniger als 10ms Abstand zählen als eine.
+Der Encoder des K518 ist ein Quadratur-Encoder: Leitung A an GPIO8 und
+Leitung B an GPIO7, beide an Pull-ups. Eine Rastung pulst beide
+Leitungen nacheinander. Ein Interrupt auf jeder Flanke einer der beiden
+Leitungen liest beide Pegel; der Input-Task dekodiert sie alle 5ms
+(`shared/dial/dk518_enc.c`). Jeder Wechsel einer Leitung ist ein
+Viertelschritt, und die Leitung, die zuerst fällt, gibt die Richtung.
+Das erste Pegelpaar, das 30ms ohne Flanke bleibt, ist die Ruhelage:
+Kommen die Viertelschritte in einer Richtung dort an, zählt eine
+Rastung. Jedes andere Paar, das 30ms ruhig bleibt, ist ebenfalls eine
+Ruhelage und zählt dort, also zählt auch ein Encoder mit 2 Flanken je
+Rastung. Prellen und eine halbe Drehung, die zurückgeht, zählen nichts;
+ein Wechsel beider Leitungen zugleich bewegt nichts. Die Flanken je
+Rastung und welche Leitung im Uhrzeigersinn vorangeht, sind noch nicht
+gemessen: Der Test-Build protokolliert die Paare und Flanken jeder
+Rastung, zum Beispiel `detent CW 1, 4 edges, 6ms: 11>01>00>10>11`, und
+`status` zeigt die letzte in jedem Build. Hält eine Hand den Knopf 30ms
+zwischen zwei Rastungen, wird dieses Paar eine Ruhelage, und die Rastung
+zählt doppelt.
 Der K518 hat keine Taste: Ein ruhig auf dem Glas liegender Finger ist die
 Bildschirmtaste. Vor 1.000ms abgehoben ohne Bewegung über 20px ist das
 PRESS; 1.000ms gehalten HOLD; 5s und 10s sind die Warnung zum Ausschalten

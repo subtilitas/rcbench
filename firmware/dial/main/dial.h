@@ -258,6 +258,16 @@ typedef struct {
 } dial_input_stats_t;
 /** @brief Copy the input task's counts. @param out the counts */
 void dial_input_stats(dial_input_stats_t *out);
+#if CONFIG_RCBENCH_DIAL_BOARD_K518
+/**
+ * @brief The K518 encoder's last detent: its direction, edges, time and
+ *        the A/B pairs (dk518_enc_text()), for `status`.
+ * @param out the text
+ * @param n   its size
+ * @return false before the first detent
+ */
+bool dial_input_enc_trace(char *out, unsigned n);
+#endif
 
 /* --- dial_ble.c ------------------------------------------------------ */
 

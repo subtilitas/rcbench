@@ -34,12 +34,22 @@ up, every string inside radius 150. The boot face with the BLE name and
 the firmware version stands until the first face. A change of a face
 draws and sends the whole frame of 259,200 bytes.
 
-The K518's encoder has two pulse lines, no quadrature: GPIO8 pulses low
-once per clockwise detent, GPIO7 once per anticlockwise detent. A PCNT
-(pulse counter) unit counts each line's falling edges; the input task
-reads both every 5ms, and a line that pulsed after a 5ms step without a
-pulse is one detent. Two detents of one line less than 10ms apart count
-as one. The K518 has no button: a finger held still on the glass is the
+The K518's encoder is quadrature: line A on GPIO8 and line B on GPIO7,
+both on pull-ups. One detent pulses both lines, one after the other. An
+interrupt on every edge of either line reads both levels; the input task
+decodes them every 5ms (`shared/dial/dk518_enc.c`). Each change of one
+line is a quarter step, and the line that falls first gives the
+direction. The first pair of levels that stays 30ms without an edge is
+the home rest: arriving there with quarter steps in one direction counts
+one detent. Any other pair quiet for 30ms is a rest as well and counts
+there, so an encoder with 2 edges a detent counts too. Bounce and a half
+turn that goes back count nothing; a change of both lines at once moves
+nothing. The edges a detent has, and which way A leads when turned
+clockwise, are not measured yet: the test build logs each detent's
+pairs and edges, for example `detent CW 1, 4 edges, 6ms:
+11>01>00>10>11`, and `status` shows the last one in every build. A hand
+that holds the knob between two detents for 30ms makes that pair a rest,
+so that detent counts twice. The K518 has no button: a finger held still on the glass is the
 screen button. Lifted before 1,000ms with no move over 20px it is PRESS;
 held 1,000ms it is HOLD; 5s and 10s are the switch-off's warning and the
 forget, as on the M5. A move over 20px before 1,000ms sends nothing. A

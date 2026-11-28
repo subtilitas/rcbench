@@ -1,8 +1,88 @@
 {
+ "thumb": {
+  "at": 5,
+  "lines": [
+   "PROGRAM",
+   "*KST",
+   "SERVOS"
+  ],
+  "crop": [
+   0,
+   0,
+   1920
+  ],
+  "side": "r",
+  "accent": "#ffb000",
+  "size": 128,
+  "scene": {
+   "type": "case",
+   "model": "part",
+   "part": "kst_x10",
+   "dur": 10,
+   "camera": [
+    [
+     0,
+     [
+      -40,
+      80,
+      130
+     ],
+     [
+      30,
+      12,
+      0
+     ]
+    ],
+    [
+     10,
+     [
+      -40,
+      80,
+      130
+     ],
+     [
+      30,
+      12,
+      0
+     ]
+    ]
+   ],
+   "spin": [
+    [
+     0,
+     20
+    ],
+    [
+     10,
+     20
+    ]
+   ]
+  }
+ },
  "name": "kst-rbmod",
  "lang": "en",
+ "music": "pachelbel-canon",
+ "music_gain": 0.5,
+ "voice": {
+  "blend": {
+   "af_heart": 0.6,
+   "af_nicole": 0.4
+  },
+  "lang": "en-us",
+  "speed": 0.94
+ },
  "brand": "KST servo programmer",
  "steps": 8,
+ "chapters": [
+  "Plug in",
+  "Open the programmer",
+  "Connect",
+  "Set the servo type",
+  "The tabs",
+  "Edit",
+  "Write",
+  "Leave programming"
+ ],
  "scenes": [
   {
    "type": "case",
@@ -264,7 +344,25 @@
     "connector": "J1",
     "select": 2,
     "subtitle": "Seen from outside the case, display up"
-   }
+   },
+   "say": [
+    {
+     "at": 0.6,
+     "text": "This video shows how the R C bench reads and writes the settings of a K S T servo, on a bench with the R B mod carrier."
+    },
+    {
+     "at": 7.1,
+     "text": "The carrier sits under the display."
+    },
+    {
+     "at": 14.6,
+     "text": "Its header J 1 holds the four programming ports. The bench switches their 5 volts."
+    },
+    {
+     "at": 21.2,
+     "text": "Step 1. Plug the servo into one position, with the ground wire at the top, towards the display."
+    }
+   ]
   },
   {
    "type": "screen",
@@ -277,230 +375,392 @@
      "chip": "Open the programmer",
      "title": "Open the KST programmer",
      "text": "On the <b>SERVO</b> hub, tap <b>KST</b>.",
+     "say": "Step 2. On the servo hub, tap K S T.",
      "target": [
-      174,
-      415
+      173,
+      413
      ],
      "action": "tap"
     },
     {
-     "view": "servo-kst-idle-rbmod",
-     "dur": 3.6,
+     "view": "servo-kst-supply-on-rbmod",
+     "dur": 3.0,
      "n": 3,
-     "chip": "Choose the port",
+     "chip": "Connect",
      "title": "Choose the port",
      "text": "Tap <b>PORT</b> on the READY card.",
+     "say": "Step 3. Tap port on the ready card.",
      "target": [
       880,
-      186
+      169
      ],
      "action": "tap"
     },
     {
      "view": "servo-kst-portlist-rbmod",
-     "dur": 3.8,
+     "dur": 3.6,
      "n": 3,
-     "chip": "Choose the port",
+     "chip": "Connect",
      "title": "Choose the port",
      "text": "Pick the position the servo is plugged into: <b>PROGP01</b> to <b>PROGP04</b>.",
+     "say": "Pick the position the servo is plugged into.",
      "target": [
-      310,
-      218
+      316,
+      200
      ],
      "action": "tap"
     },
     {
-     "view": "servo-kst-idle-rbmod",
-     "dur": 5.2,
-     "n": 4,
+     "view": "servo-kst-supply-on-rbmod",
+     "dur": 8.6,
+     "n": 3,
+     "chip": "Connect",
+     "title": "The port and its supply",
+     "text": "The head names the port, <b>PROG PORT 1 GPIO 13</b>, and its supply, <b>5V FIXED</b>. The carrier makes that 5V from its 15V input: under 13.5V the bench refuses <b>CONNECT</b>.",
+     "say": "The head of the tab names the port and its supply, 5 volts fixed. The carrier makes them from its 15 volt input. With an input under 13.5 volts, the bench refuses connect.",
+     "target": [
+      110,
+      152
+     ]
+    },
+    {
+     "view": "servo-kst-supply-on-rbmod",
+     "dur": 9.0,
+     "n": 3,
+     "chip": "Connect",
+     "title": "KST EXPERT MODE",
+     "text": "This video shows the programmer with <b>KST EXPERT MODE</b> on. <b>OPTIONS</b> opens its row; a 2s hold switches it on. With it off, the <b>LOCKED</b> tab and the rows <b>DEAD BAND</b>, <b>BOOST</b> and <b>STRETCH</b> are hidden.",
+     "say": "This video shows the programmer with K S T expert mode on. Options opens its row, and a two second hold switches it on. With it off, which is the default, the locked tab and three rows of tune are hidden.",
+     "target": [
+      846,
+      525
+     ]
+    },
+    {
+     "view": "servo-kst-connect-hold-rbmod",
+     "dur": 4.6,
+     "n": 3,
      "chip": "Connect",
      "title": "Connect",
-     "text": "Hold <b>CONNECT</b> for 2 s. The bench switches the port's 5 V on and reads the servo's 32 registers. The carrier input needs 15 V.",
+     "text": "Hold <b>CONNECT</b> for 2s. The button fades from green to red.",
+     "say": "Hold connect for two seconds. The button fades from green to red.",
      "target": [
-      476,
-      171
+      486,
+      155
      ],
      "action": "hold"
     },
     {
+     "view": "servo-kst-cycling-rbmod",
+     "dur": 6.0,
+     "n": 3,
+     "chip": "Connect",
+     "title": "The power-up",
+     "text": "The bench switches the ports' 5V off for 1s, then on. A KST servo enters programming mode only after a power-up.",
+     "say": "The bench switches the ports' 5 volts off for one second, then on. A K S T servo enters programming mode only after a power-up.",
+     "target": [
+      300,
+      357
+     ]
+    },
+    {
      "view": "servo-kst-working-rbmod",
-     "dur": 1.6,
-     "n": 4,
+     "dur": 4.0,
+     "n": 3,
      "chip": "Connect",
      "title": "Reading the servo",
-     "text": "PROG 5V is on. <b>ABORT</b> stops the read.",
+     "text": "The port is out of PWM. The bench reads the servo's 32 registers. <b>ABORT</b> stops the read.",
+     "say": "The port is out of P W M, and the bench reads the 32 registers of the servo.",
      "target": [
-      870,
-      245
+      486,
+      155
      ]
     },
     {
      "view": "servo-kst-read-rbmod",
-     "dur": 4.2,
-     "n": 5,
+     "dur": 6.4,
+     "n": 4,
+     "chip": "Set the servo type",
+     "title": "The type is a guess",
+     "text": "<b>V6?</b> is a suggestion from one register. The servo's label names the type.",
+     "say": "Step 4. All 32 registers are read. The type, V 6 with a question mark, is a suggestion from one register. The servo's label names the type.",
+     "target": [
+      300,
+      385
+     ]
+    },
+    {
+     "view": "servo-kst-read-rbmod",
+     "dur": 2.4,
+     "n": 4,
      "chip": "Set the servo type",
      "title": "Set the servo type",
-     "text": "<b>V6?</b> is a guess from one register. Tap <b>TYPE</b>.",
+     "text": "Tap <b>TYPE</b>.",
+     "say": "Tap type.",
      "target": [
-      530,
-      226
+      540,
+      210
      ],
      "action": "tap"
     },
     {
      "view": "servo-kst-type-rbmod",
      "dur": 3.4,
-     "n": 5,
+     "n": 4,
      "chip": "Set the servo type",
      "title": "Set the servo type",
-     "text": "Pick <b>V6</b> or <b>V8</b>, as printed on the servo's label.",
+     "text": "Pick <b>V6</b> or <b>V8</b>, as on the servo's label.",
+     "say": "Pick V 6 or V 8, as on the servo's label.",
      "target": [
-      310,
-      152
+      316,
+      130
      ],
      "action": "tap"
     },
     {
      "view": "servo-kst-typed-rbmod",
-     "dur": 3.4,
-     "n": 6,
-     "chip": "Edit the settings",
-     "title": "Edit the settings",
-     "text": "Open a tab: <b>TUNE</b>, <b>PULSE</b> or <b>FAILSAFE</b>.",
+     "dur": 2.8,
+     "n": 4,
+     "chip": "Set the servo type",
+     "title": "The type is set",
+     "text": "The tab reads <b>Servo type V6, selected under TYPE.</b>",
+     "say": "The type is set.",
      "target": [
       190,
-      116
+      376
+     ],
+     "style": "ok"
+    },
+    {
+     "view": "servo-kst-typed-rbmod",
+     "dur": 6.4,
+     "n": 5,
+     "chip": "The tabs",
+     "title": "The tabs",
+     "text": "<b>TUNE</b>, <b>PULSE</b> and <b>FAILSAFE</b> hold the settings. <b>PULSE</b>: the neutral, the pulse range, both angles and the reversion.",
+     "say": "Step 5. The settings are on the tabs tune, pulse and failsafe. Pulse holds the neutral, the pulse range, both angles and the reversion.",
+     "target": [
+      314,
+      99
+     ]
+    },
+    {
+     "view": "servo-kst-typed-rbmod",
+     "dur": 2.4,
+     "n": 5,
+     "chip": "The tabs",
+     "title": "FAILSAFE",
+     "text": "Tap <b>FAILSAFE</b>.",
+     "say": "Tap failsafe.",
+     "target": [
+      435,
+      99
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-kst-failsafe-rbmod",
+     "dur": 5.0,
+     "n": 5,
+     "chip": "The tabs",
+     "title": "FAILSAFE",
+     "text": "<b>MOVE ON SIGNAL LOSS</b>, the <b>POSITION</b> and the time <b>AFTER</b> which the servo moves there.",
+     "say": "Failsafe holds the move on signal loss, its position, and the time after which the servo moves there.",
+     "target": [
+      486,
+      155
+     ]
+    },
+    {
+     "view": "servo-kst-failsafe-rbmod",
+     "dur": 2.4,
+     "n": 5,
+     "chip": "The tabs",
+     "title": "LOCKED",
+     "text": "Tap <b>LOCKED</b>.",
+     "say": "Tap locked.",
+     "target": [
+      556,
+      99
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-kst-locked-rbmod",
+     "dur": 5.0,
+     "n": 5,
+     "chip": "The tabs",
+     "title": "LOCKED",
+     "text": "Shown with <b>KST EXPERT MODE</b> on: registers whose function or data format is not confirmed. Display only.",
+     "say": "Locked shows registers whose function or data format is not confirmed. They are display only.",
+     "target": [
+      280,
+      415
+     ]
+    },
+    {
+     "view": "servo-kst-locked-rbmod",
+     "dur": 3.0,
+     "n": 6,
+     "chip": "Edit",
+     "title": "TUNE",
+     "text": "Tap <b>TUNE</b>.",
+     "say": "Step 6. To change a value, tap tune.",
+     "target": [
+      194,
+      99
      ],
      "action": "tap"
     },
     {
      "view": "servo-kst-tune-rbmod",
-     "dur": 4.4,
+     "dur": 4.8,
      "n": 6,
-     "chip": "Edit the settings",
-     "title": "Edit the settings",
-     "text": "Tap a value to change it. A <b>*</b> marks a value that differs from the servo. Nothing is written yet.",
+     "chip": "Edit",
+     "title": "Edit a value",
+     "text": "A tap on a value opens a keypad or a list. <b>-</b> and <b>+</b> step <b>DEAD BAND</b>.",
+     "say": "A tap on a value opens a keypad or a list. Minus and plus step the dead band.",
      "target": [
-      476,
-      171
+      588,
+      155
      ]
     },
     {
      "view": "servo-kst-tune-rbmod",
-     "dur": 2.4,
+     "dur": 4.8,
      "n": 6,
-     "chip": "Edit the settings",
+     "chip": "Edit",
+     "title": "Three edits",
+     "text": "<b>DEAD BAND</b> 2.0 to 1.6us, <b>BOOST</b> 300.0 to 262.5us, <b>SOFT START</b> ON to OFF.",
+     "say": "Here three values are edited: the dead band, the boost and the soft start.",
+     "target": [
+      540,
+      210
+     ]
+    },
+    {
+     "view": "servo-kst-tune-rbmod",
+     "dur": 6.4,
+     "n": 6,
+     "chip": "Edit",
+     "title": "Marked, not written",
+     "text": "A <b>*</b> and the accent fill mark a value that differs from the servo's. The footer reads <b>WRITE 3 VALUES</b>. Nothing has reached the servo.",
+     "say": "A star and the bright fill mark a value that differs from the servo's, and the footer counts three values to write. Nothing has reached the servo yet.",
+     "target": [
+      510,
+      525
+     ]
+    },
+    {
+     "view": "servo-kst-tune-rbmod",
+     "dur": 2.6,
+     "n": 7,
+     "chip": "Write",
      "title": "Back to SERVO",
      "text": "Tap the <b>SERVO</b> tab.",
+     "say": "Step 7. Tap the servo tab.",
      "target": [
-      72,
-      116
+      73,
+      99
      ],
      "action": "tap"
     },
     {
      "view": "servo-kst-edited-rbmod",
-     "dur": 3.6,
+     "dur": 5.4,
      "n": 7,
-     "chip": "Enable and write",
-     "title": "Enable writing",
-     "text": "Tap <b>ENABLE WRITE TO SERVO</b>.",
+     "chip": "Write",
+     "title": "Hold to write",
+     "text": "Hold <b>WRITE 3 VALUES</b> for 2s. The hold is the consent: no other switch enables the write.",
+     "say": "Hold write 3 values for two seconds. The hold is the consent. No other switch enables the write.",
      "target": [
-      476,
-      335
-     ],
-     "action": "tap"
-    },
-    {
-     "view": "servo-kst-enable-rbmod",
-     "dur": 4.8,
-     "n": 7,
-     "chip": "Enable and write",
-     "title": "Enable writing",
-     "text": "Read the risks. Then hold <b>HOLD 2s TO ENABLE</b> for 2 s.",
-     "target": [
-      174,
-      468
-     ],
-     "action": "hold"
-    },
-    {
-     "view": "servo-kst-changes-rbmod",
-     "dur": 3.6,
-     "n": 7,
-     "chip": "Enable and write",
-     "title": "Write",
-     "text": "Tap <b>WRITE 3 VALUES</b>.",
-     "target": [
-      496,
-      390
-     ],
-     "action": "tap"
+      506,
+      322
+     ]
     },
     {
      "view": "servo-kst-write-rbmod",
-     "dur": 5.4,
+     "dur": 3.4,
      "n": 7,
-     "chip": "Enable and write",
-     "title": "Write",
-     "text": "The page lists each change. Hold <b>HOLD 2s TO WRITE</b> for 2 s. The servo's current settings are saved to the SD card first.",
+     "chip": "Write",
+     "title": "Hold to write",
+     "text": "The button fades from green to amber.",
+     "say": "The button fades from green to amber.",
      "target": [
-      174,
-      468
+      506,
+      322
      ],
      "action": "hold"
     },
     {
      "view": "servo-kst-writing-rbmod",
-     "dur": 2.6,
+     "dur": 7.0,
      "n": 7,
-     "chip": "Enable and write",
+     "chip": "Write",
      "title": "Writing",
-     "text": "Do not unplug the servo or the bench while writing.",
+     "text": "The servo's values as read are in the backup file <b>KST001</b> on the card. Do not unplug the servo or the bench while writing.",
+     "say": "Before the first write of a session, the bench saves the values it read in a backup file on the card. Then it writes. Do not unplug the servo or the bench meanwhile.",
      "target": [
       150,
-      451
+      402
      ],
      "style": "warn",
      "tag": "DO NOT UNPLUG"
     },
     {
-     "view": "servo-kst-written-rbmod",
-     "dur": 4.4,
-     "n": 8,
-     "chip": "Leave programming",
+     "view": "servo-kst-written-supply-rbmod",
+     "dur": 5.4,
+     "n": 7,
+     "chip": "Write",
      "title": "Written and verified",
-     "text": "Each written value is read back. Tap <b>LEAVE</b>.",
+     "text": "<b>3 values written and verified.</b> They take effect after the servo's next power-up.",
+     "say": "Three values are written and verified. A K S T servo acts on them from its next power-up.",
      "target": [
-      476,
-      171
+      170,
+      428
      ],
-     "action": "tap",
      "style": "ok"
     },
     {
-     "view": "servo-kst-leave-note-rbmod",
-     "dur": 4.8,
+     "view": "servo-kst-written-supply-rbmod",
+     "dur": 2.6,
+     "n": 8,
+     "chip": "Leave programming",
+     "title": "Leave",
+     "text": "Tap <b>LEAVE</b>.",
+     "say": "Step 8. Tap leave.",
+     "target": [
+      486,
+      155
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-kst-leave-cycle-rbmod",
+     "dur": 7.4,
      "n": 8,
      "chip": "Leave programming",
      "title": "Leave programming",
-     "text": "Hold <b>HOLD 2s TO LEAVE</b> for 2 s. The port returns to servo PWM and the servo may move.",
+     "text": "Hold <b>HOLD 2s TO LEAVE</b> for 2s. The bench switches the 5V off for 1s, then on. The servo then receives the tester's signal and may move.",
+     "say": "Hold for two seconds to leave. The bench switches the 5 volts off for one second, then on. The servo then receives the tester's signal and may move.",
      "target": [
-      174,
-      468
+      177,
+      455
      ],
-     "action": "hold"
+     "action": "hold",
+     "style": "warn"
     },
     {
-     "view": "servo-kst-left-note-rbmod",
-     "dur": 4.6,
+     "view": "servo-kst-left-cycled-rbmod",
+     "dur": 4.0,
      "n": 8,
      "chip": "Leave programming",
      "title": "Done",
-     "text": "The port is back in tester mode. The written values act from the servo's next power-up: switch its supply off and on.",
+     "text": "The port is back in tester mode. The written values act.",
+     "say": "The port is back in tester mode, and the written values act.",
      "target": [
-      290,
-      468
+      300,
+      428
      ],
      "style": "ok"
     }
@@ -508,19 +768,20 @@
   },
   {
    "type": "end",
-   "dur": 5,
+   "dur": 8,
    "heading": "KST servo programmed",
    "items": [
     "Plug into J1",
     "SERVO › KST",
-    "Choose the port",
-    "Hold CONNECT",
-    "Set V6 or V8",
-    "Edit values",
-    "Enable, WRITE",
-    "LEAVE"
+    "PORT, hold CONNECT",
+    "TYPE: V6 or V8",
+    "TUNE, PULSE, FAILSAFE",
+    "Edit: * marks a change",
+    "Hold WRITE n VALUES",
+    "LEAVE: 5V off for 1s, then on"
    ],
-   "note": "Written values act from the servo's next power-up."
+   "say": "The servo holds its new values, and the card holds the values it had before.",
+   "note": "Reference: docs/ServoProgrammer.md."
   }
  ]
 }
