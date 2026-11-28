@@ -67,6 +67,11 @@ extern const bleu_profile_t dial_profile;
  *         before it is dropped. */
 #define DIAL_SEND_TRIES 3u
 /** @} */
+/** @brief STATUS is read every this long while the link stands, ms; the
+ *         first read follows INFO's. */
+#define DIAL_STATUS_READ_MS 5000u
+/** @brief STATUS's entry in dial_profile. */
+#define DIAL_CHR_STATUS 3u
 
 /** @brief What SETUP sets: SET_DIAL_EN, the bound Dial, the two steps. */
 typedef struct {
@@ -137,6 +142,11 @@ typedef struct {
     char       bound_addr[DIAL_ADDR_MAX]; /**< the bound Dial, "" none */
     char       bound_name[DIAL_NAME_MAX]; /**< its name, "" none */
     uint8_t    proto;      /**< the protocol its INFO named, 0 unread */
+    uint8_t    hw;         /**< the board its INFO named, DK_HW_*; 0
+                                before an INFO of DK_PROTOCOL */
+    bool       have_status; /**< a STATUS was read on this link */
+    uint16_t   batt_mv;    /**< its cell, mV; 0 unknown */
+    uint8_t    st_flags;   /**< its DK_ST_* flags */
     uint16_t   bind_refused; /**< binds the controller refused, counted:
                                   a change is a refusal to show */
 } dial_view_t;
@@ -199,7 +209,26 @@ typedef struct {
                                     the Dial's next EVENT */
     bool          rtt_valid;   /**< rtt_ms is a measurement */
     uint16_t      echo_seen;   /**< the echo the last EVENT carried */
+    uint8_t       board;       /**< the board the bound Dial's last INFO of
+                                    DK_PROTOCOL named, DK_HW_*; 0 none */
+    bool          status_ok;   /**< a STATUS was read on this link */
+    dk_status_t   status;      /**< the last one, with status_ok */
+    bool          status_asked; /**< a STATUS read was asked on this link */
+    uint32_t      status_ms;   /**< when it was asked */
+    uint32_t      status_seen; /**< b.ent_reads when last taken */
+    uint32_t      status_bad;  /**< STATUS reads that failed or would not
+                                    decode */
 } dial_ctl_t;
+
+/**
+ * @brief The board the bound Dial's INFO named (DK_HW_*), which picks the
+ *        image its update sends (devimg_dial_image()).  It stays over a
+ *        link's end; a bind of another address clears it.
+ * @param c The controller.
+ * @return the board; 0 before any INFO of the bound address, or when @p c
+ *         is NULL
+ */
+uint8_t dial_ctl_board(const dial_ctl_t *c);
 
 /** @brief Clear: Dial OFF, nothing bound.  @param c NULL does nothing. */
 void dial_ctl_init(dial_ctl_t *c);

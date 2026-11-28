@@ -235,6 +235,11 @@ bool panel_dial_blec_off(void)
     return !s_cfg_in.en;
 }
 
+uint8_t panel_dial_blec_board(void)
+{
+    return s_q != NULL ? dial_ctl_board(&s_ctl) : 0u;
+}
+
 void panel_dial_blec_event(const bleu_evt_t *e, uint32_t now)
 {
     if (s_q != NULL) {

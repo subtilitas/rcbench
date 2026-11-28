@@ -11,6 +11,7 @@
 
 #include "bleota.h"
 #include "devupd.h"
+#include "dialknob.h"
 #include "fw_c6.h"
 #include "rcnode.h"
 
@@ -59,6 +60,19 @@ devimg_id_t devimg_pnode_image(uint8_t board)
     }
 }
 
+devimg_id_t devimg_dial_image(uint8_t hw)
+{
+    switch (hw) {
+    case 0u:
+    case DK_HW_DIAL11:
+        return DEVIMG_DIAL;
+    case DK_HW_K518:
+        return DEVIMG_DIAL_K518;
+    default:
+        return DEVIMG_COUNT;
+    }
+}
+
 devimg_id_t devimg_follow(devimg_id_t *row, devimg_id_t now)
 {
     if (row == NULL || *row == now) {
@@ -77,8 +91,10 @@ uint8_t devimg_kind(devimg_id_t id)
 devimg_err_t devimg_fits(devimg_id_t id, uint8_t board, const uint8_t *img,
                          uint32_t n)
 {
-    if ((unsigned)id >= DEVIMG_COUNT || board == 0u
-        || devimg_pnode_image(board) != id) {
+    const bool dial = id == DEVIMG_DIAL || id == DEVIMG_DIAL_K518;
+    if ((unsigned)id >= DEVIMG_COUNT
+        || (dial ? devimg_dial_image(board) != id
+                 : board == 0u || devimg_pnode_image(board) != id)) {
         return DEVIMG_E_ID;
     }
     const devimg_fact_t *f = &k_fact[id];

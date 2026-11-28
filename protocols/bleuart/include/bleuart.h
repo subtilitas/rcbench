@@ -438,6 +438,15 @@ typedef struct {
     uint8_t      param_len; /**< its length; 0 before the read */
     uint16_t     param_status; /**< the read's status */
     bool         param_due; /**< private: the read waits for the slot */
+    uint8_t      ent[BLEU_PARAM_MAX]; /**< an entry's value as
+                                 bleu_read_entry() read it */
+    uint8_t      ent_len;   /**< its length; 0 before a read or on error */
+    uint16_t     ent_status; /**< that read's status */
+    uint32_t     ent_reads; /**< entry reads ended, counted */
+    bool         ent_due;   /**< private: an entry read waits for the slot */
+    uint8_t      ent_idx;   /**< private: the entry it reads */
+    bool         rd_ent;    /**< private: the read under way is an entry's,
+                                 not the PARAM's */
     bleu_wr_t    wr;        /**< the last command write */
     uint16_t     wr_status; /**< its status */
     uint32_t     t_connect; /**< ms from CONNECT to the connect event */
@@ -647,6 +656,18 @@ bool bleu_can_send(const bleu_t *b);
  *         nothing changes.
  */
 bool bleu_reread(bleu_t *b);
+
+/**
+ * @brief Read profile entry @p i's value on the link that stands, such as
+ *        a NONE entry with READ: the read waits for a command write in
+ *        flight and for the PARAM's read, then ent, ent_len and
+ *        ent_status hold its result and ent_reads counts it.
+ * @param b The machine.
+ * @param i The entry, 0 to chr_n - 1.
+ * @return false with no link, an entry not found or without READ, or a
+ *         read due or under way: nothing changes.
+ */
+bool bleu_read_entry(bleu_t *b, uint8_t i);
 
 /**
  * @brief Parse one advertising report's AD (advertising data) structures.

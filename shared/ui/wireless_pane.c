@@ -217,6 +217,62 @@ const ui_setlist_custom_t wireless_pane_bind_row = {
     .tap = bind_open,
 };
 
+/** @brief DIAL MODEL's value: M5STACK DIAL or GUITION K518 from INFO,
+ *         NOT LINKED before it.  @param out The text. @param n Its size. */
+static void model_value(char *out, size_t n)
+{
+    switch (s_dial.hw) {
+    case DK_HW_DIAL11:
+        snprintf(out, n, "%s", TR(DIAL_MODEL_M5));
+        break;
+    case DK_HW_K518:
+        snprintf(out, n, "%s", TR(DIAL_MODEL_K518));
+        break;
+    default:
+        snprintf(out, n, "%s", TR(DIAL_NOT_LINKED));
+        break;
+    }
+}
+
+/** @brief DIAL MODEL: the linked Dial's board, read only. */
+const ui_setlist_custom_t wireless_pane_dial_model_row = {
+    .label = TX_DIAL_ROW_MODEL,
+    .help = TX_DIAL_ROW_MODEL_HELP,
+    .value_text = model_value,
+    .live = true,
+};
+
+/** @brief DIAL BATTERY's value from the last STATUS: EMPTY, LOW or the
+ *         cell's volts; USB while USB powers it and the cell is unknown;
+ *         NOT MEASURED for an unknown cell on its own (the M5Stack Dial);
+ *         NOT LINKED before a STATUS.  @param out The text. @param n Its
+ *         size. */
+static void batt_value(char *out, size_t n)
+{
+    const unsigned mv = s_dial.batt_mv;
+    const uint8_t f = s_dial.st_flags;
+    if (!s_dial.have_status) {
+        snprintf(out, n, "%s", TR(DIAL_NOT_LINKED));
+    } else if ((f & DK_ST_BATT_UNKNOWN) != 0u) {
+        snprintf(out, n, "%s", (f & DK_ST_USB) != 0u ? TR(DIAL_BAT_USB)
+                                                    : TR(DIAL_BAT_UNKNOWN));
+    } else if ((f & DK_ST_BATT_EMPTY) != 0u) {
+        snprintf(out, n, TR(DIAL_BAT_EMPTY), mv / 1000u, (mv % 1000u) / 10u);
+    } else if ((f & DK_ST_BATT_LOW) != 0u) {
+        snprintf(out, n, TR(DIAL_BAT_LOW), mv / 1000u, (mv % 1000u) / 10u);
+    } else {
+        snprintf(out, n, TR(DIAL_BAT_V), mv / 1000u, (mv % 1000u) / 10u);
+    }
+}
+
+/** @brief DIAL BATTERY: the Dial's cell, read only. */
+const ui_setlist_custom_t wireless_pane_dial_batt_row = {
+    .label = TX_DIAL_ROW_BATT,
+    .help = TX_DIAL_ROW_BATT_HELP,
+    .value_text = batt_value,
+    .live = true,
+};
+
 /* ------------------------------------------------------------- the pane */
 
 int wireless_pane_selected(void)
@@ -313,6 +369,8 @@ int wireless_pane_rows(int entry, wl_row_t *out, int max)
         if (settings_get_bool(SET_DIAL_EN)) {
             n = add_custom(out, max, n, &wireless_pane_scan_row);
             n = add_custom(out, max, n, &wireless_pane_bind_row);
+            n = add_custom(out, max, n, &wireless_pane_dial_model_row);
+            n = add_custom(out, max, n, &wireless_pane_dial_batt_row);
             n = add_id(out, max, n, SET_DIAL_THR);
             n = add_id(out, max, n, SET_DIAL_SRV);
         }
@@ -496,7 +554,9 @@ static bool view_eq(const dial_view_t *a, const dial_view_t *b)
         || a->scan_cut != b->scan_cut || a->found_n != b->found_n
         || a->scan_left_s != b->scan_left_s
         || a->hidden != b->hidden || a->proto != b->proto
-        || a->bind_refused != b->bind_refused
+        || a->bind_refused != b->bind_refused || a->hw != b->hw
+        || a->have_status != b->have_status || a->batt_mv != b->batt_mv
+        || a->st_flags != b->st_flags
         || memcmp(a->bound_addr, b->bound_addr, sizeof(a->bound_addr)) != 0
         || memcmp(a->bound_name, b->bound_name, sizeof(a->bound_name)) != 0) {
         return false;

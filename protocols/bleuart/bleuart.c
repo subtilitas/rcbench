@@ -158,6 +158,7 @@ static void unlinked(bleu_t *b, bool on, uint32_t gap, uint32_t now_ms)
     b->tok_link = 0;
     b->conn = 0;
     b->param_due = false;
+    b->ent_due = false;
     b->rd_busy = false;
     if (b->wr == BLEU_WR_BUSY) {
         b->wr = BLEU_WR_FAILED;
@@ -405,7 +406,7 @@ bool bleu_link_up(const bleu_t *b)
 bool bleu_can_send(const bleu_t *b)
 {
     return bleu_link_up(b) && b->rx_val != 0u && b->wr != BLEU_WR_BUSY
-           && !b->rd_busy && !b->param_due;
+           && !b->rd_busy && !b->param_due && !b->ent_due;
 }
 
 bool bleu_reread(bleu_t *b)
@@ -415,6 +416,18 @@ bool bleu_reread(bleu_t *b)
         return false;
     }
     b->param_due = true;
+    return true;
+}
+
+bool bleu_read_entry(bleu_t *b, uint8_t i)
+{
+    if (!bleu_link_up(b) || i >= prof_of(b)->chr_n || b->chr_val[i] == 0u
+        || (b->chr_props[i] & BLEU_PROP_READ) == 0u || b->ent_due
+        || b->rd_busy) {
+        return false;
+    }
+    b->ent_due = true;
+    b->ent_idx = i;
     return true;
 }
 
@@ -679,7 +692,19 @@ static void link_event(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms)
         }
         break;
     case BLEU_EV_READ:
-        if (b->rd_busy) {
+        if (b->rd_busy && b->rd_ent) {
+            const size_t n = e->len < BLEU_PARAM_MAX ? e->len
+                                                     : BLEU_PARAM_MAX;
+            b->rd_busy = false;
+            b->tok_link = 0;
+            b->ent_status = e->status;
+            b->ent_len = 0;
+            if (e->status == 0u) {
+                memcpy(b->ent, e->data, n);
+                b->ent_len = (uint8_t)n;
+            }
+            ++b->ent_reads;
+        } else if (b->rd_busy) {
             b->rd_busy = false;
             b->tok_link = 0;
             b->param_status = e->status;
@@ -917,15 +942,23 @@ static void run_timers(bleu_t *b, uint32_t now_ms)
                && elapsed(now_ms, b->t_link, BLEU_GATT_MS)) {
         fail(b, BLEU_ERR_GATT, 0, now_ms);
     }
-    if (b->st == BLEU_ST_UP && b->param_due && b->wr != BLEU_WR_BUSY) {
-        b->param_due = false;
+    if (b->st == BLEU_ST_UP && (b->param_due || b->ent_due)
+        && b->wr != BLEU_WR_BUSY && !b->rd_busy) {
+        /* The PARAM first: an entry read waits for it. */
+        b->rd_ent = !b->param_due;
+        const uint16_t h = b->rd_ent ? b->chr_val[b->ent_idx] : b->param_val;
+        if (b->rd_ent) {
+            b->ent_due = false;
+        } else {
+            b->param_due = false;
+        }
         b->rd_busy = true;
         b->t_link = now_ms;
         b->tok_link = next_token(b);
         bleu_act_t *a = push(b, BLEU_ACT_READ);
         if (a != NULL) {
             a->token = b->tok_link;
-            a->h1 = b->param_val;
+            a->h1 = h;
         }
     }
     if (b->settle != SETTLE_NONE) {

@@ -104,6 +104,7 @@ static uint8_t         s_pct;
 static const unsigned  k_step[DEVIMG_COUNT] = {
     UPD_WIZ_C6, UPD_WIZ_DIAL, UPD_WIZ_PNODE, UPD_WIZ_BAL,
     UPD_WIZ_PNODE, /* the display node: the power node's step */
+    UPD_WIZ_DIAL,  /* the Dial on the K518: the Dial's step */
 };
 
 fw_version_t panel_devimg_want(devimg_id_t id)

@@ -7383,12 +7383,14 @@ Neustart des Panels.
 | Eintrag | Zustand im Betrieb | Zeilen |
 | --- | --- | --- |
 | IMU | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN SENSOR GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN`, `VERBUNDEN 50Hz`, `KEINE FRAMES` ([Die Bluetooth-IMU](#die-bluetooth-imu)) | 2 bei AUS: IMU und WINKELQUELLE; 20 bei EIN, 21 mit LETZTER FEHLER |
-| DIAL | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN DIAL GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN: KEIN DIAL`, `VERBUNDEN, KEIN EREIGNIS`, `ANDERES PROTOKOLL n`, `VERBUNDEN`, `GESTÖRT`, `DIAL VERLOREN` | 1 bei AUS; 5 bei EIN |
+| DIAL | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN DIAL GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN: KEIN DIAL`, `VERBUNDEN, KEIN EREIGNIS`, `ANDERES PROTOKOLL n`, `VERBUNDEN`, `GESTÖRT`, `DIAL VERLOREN` | 1 bei AUS; 7 bei EIN |
 | AUSWUCHTKNOTEN | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN KNOTEN GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN: KEIN KNOTEN`, `VERBUNDEN, LIEST INFO`, `ROLLE r, PROTOKOLL p`, `VERBUNDEN, KEIN BERICHT`, `BERICHTET` | 1 bei AUS; 5 bei EIN |
 | DRUCKER | `NICHT GEBUNDEN`, im Leerlauf der Name des gebundenen Druckers, `SUCHE LÄUFT`, `VERBUNDEN`, die Phase einer Anfrage oder ihr Ergebnis ([WIRELESS: der Etikettendrucker](#wireless-der-etikettendrucker)) | 8 |
 | LEISTUNGSKNOTEN | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN KNOTEN GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `KEIN LEISTUNGSKNOTEN`, `VERBUNDEN, KEIN MESSWERT`, `ANDERES PROTOKOLL n`, `INA228-SETUP ABGELEHNT`, `KEIN INA228 AM KNOTEN`, `VERBUNDEN`, `300ms KEIN MESSWERT`, `KNOTEN VERLOREN` ([WIRELESS: der Leistungsknoten](#wireless-der-leistungsknoten)) | 2 bei AUS: Leistungsknoten und INA228-QUELLE; 5 bei EIN |
 
 ![WIRELESS auf dem DIAL-Eintrag](img/de/setup-wireless-dial.png)
+
+![WIRELESS auf dem DIAL-Eintrag mit einem Guition K518 bei schwachem Akku](img/de/setup-wireless-dial-k518.png)
 
 Die Zeilen des DIAL-Eintrags ([Das M5Stack Dial](Dial-de.md#das-panel)):
 
@@ -7397,6 +7399,8 @@ Die Zeilen des DIAL-Eintrags ([Das M5Stack Dial](Dial-de.md#das-panel)):
 | Dial | EIN, AUS | AUS | die Verbindung zum gebundenen Dial; AUS beendet sie ohne Fehler |
 | Dial suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | Tippen öffnet SEARCH ([WIRELESS: SEARCH](#wireless-search)) und sucht 10s lang; das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE DIAL-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; während eine Suche läuft, startet Tippen keine, und das Band zeigt `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE DIAL-SUCHE`. SEARCH öffnet in jedem Fall |
 | Gebundenes Dial | der Name des gebundenen Dials, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen öffnet SEARCH mit der Liste der letzten Suche, ohne Suche |
+| Dial-Modell | `M5STACK DIAL`, `GUITION K518`, `NICHT VERBUNDEN` | | das Board, das das INFO des verbundenen Dials nennt; nur lesbar |
+| Dial-Akku | `3.92V`, `SCHWACH 3.45V` (STATUS Bit4), `LEER 3.33V` (Bit5), `USB`, `NICHT GEMESSEN`, `NICHT VERBUNDEN` | | die Zelle aus dem STATUS des Dials, gelesen nach INFO und alle 5s, solange es verbunden ist; `USB`, solange USB es versorgt, `NICHT GEMESSEN` bei einem Dial ohne Messung (dem M5Stack Dial); nur lesbar |
 | Dial-Schritt, Gas | 0.5%, 1%, 2%, 5% | 1% | das Gas, das eine Raste auf MOTOR & ESC verstellt |
 | Dial-Schritt, Servo | 0.5°, 1°, 2°, 5° | 1° | der Hornwinkel, den eine Raste auf SERVO verstellt |
 
@@ -8870,6 +8874,7 @@ anbieten:
 | --- | --- | ---: |
 | C6-FUNK | `rcbench-c6-<esp_hosted-Version>.bin`, `rcbench-c6-2.13.0.bin` | 1.966.080 |
 | DIAL | `rcbench-dial-<Version>.bin` | 3.145.728 |
+| DIAL, solange das INFO des verbundenen Dials den Guition K518 nennt | `rcbench-dial-k518-<Version>.bin` | 3.145.728 |
 | LEISTUNGSKNOTEN | `rcbench-node-pwr-<Version>.bin` | 1.572.864 |
 | AUSWUCHTKNOTEN | `rcbench-node-bal-<Version>.bin` | 1.572.864 |
 | ANZEIGEKNOTEN, der Schritt LEISTUNGSKNOTEN, solange der gebundene Leistungsknoten der Anzeigeknoten ES3C28P ist | `rcbench-node-display-<Version>.bin` | 1.572.864 |

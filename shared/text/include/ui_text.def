@@ -7243,6 +7243,9 @@ UI_TEXT(ALERT_DEV_UNKNOWN, 94,
 UI_TEXT(ALERT_DIAL_ASK, 94,
     "Press the Dial's screen button within 30s to accept the update.",
     "Drücke innerhalb von 30s die Taste am Dial, um das Update anzunehmen.")
+UI_TEXT(ALERT_DIAL_K518_ASK, 94,
+    "Tap the Dial's glass and lift within 30s to accept the update.",
+    "Tippe innerhalb von 30s auf das Glas des Dials, um das Update anzunehmen.")
 UI_TEXT(ALERT_NODE_ASK, 94,
     "Hold the node's BOOT key 1s within 30s to accept the update.",
     "Halte innerhalb von 30s die BOOT-Taste am Knoten 1s, um das Update anzunehmen.")
@@ -9991,6 +9994,12 @@ UI_TEXT(UPD_DIAL_CONNECTING, 0,
 UI_TEXT(UPD_DIAL_PRESS, 0,
     "PRESS THE DIAL TO ACCEPT: %us",
     "AM DIAL DRÜCKEN ZUM ANNEHMEN: %us")
+UI_TEXT(UPD_K518_PRESS, 0,
+    "TAP THE DIAL TO ACCEPT: %us",
+    "AM DIAL TIPPEN ZUM ANNEHMEN: %us")
+UI_TEXT(UPD_K518_LINE, 0,
+    "Dial K518: %s. Release: %s.",
+    "Dial K518: %s. Release: %s.")
 UI_TEXT(UPD_DIAL_PROGRESS, 0,
     "DIAL UPDATE %u%%",
     "DIAL-UPDATE %u%%")
@@ -14080,6 +14089,42 @@ UI_TEXT(DIAL_SCAN_CUT, 18,
 UI_TEXT(DIAL_BIND_NONE, 18,
     "NONE",
     "KEINS")
+UI_TEXT(DIAL_ROW_MODEL, 43,
+    "Dial model",
+    "Dial-Modell")
+UI_TEXT(DIAL_ROW_MODEL_HELP, 43,
+    "The board the linked Dial names",
+    "Das Board, das das verbundene Dial nennt")
+UI_TEXT(DIAL_MODEL_M5, 18,
+    "M5STACK DIAL",
+    "M5STACK DIAL")
+UI_TEXT(DIAL_MODEL_K518, 18,
+    "GUITION K518",
+    "GUITION K518")
+UI_TEXT(DIAL_ROW_BATT, 43,
+    "Dial battery",
+    "Dial-Akku")
+UI_TEXT(DIAL_ROW_BATT_HELP, 43,
+    "The cell the Dial reports, read every 5s",
+    "Die Zelle, die das Dial meldet, alle 5s")
+UI_TEXT(DIAL_BAT_V, 18,
+    "%u.%02uV",
+    "%u.%02uV")
+UI_TEXT(DIAL_BAT_LOW, 18,
+    "LOW %u.%02uV",
+    "SCHWACH %u.%02uV")
+UI_TEXT(DIAL_BAT_EMPTY, 18,
+    "EMPTY %u.%02uV",
+    "LEER %u.%02uV")
+UI_TEXT(DIAL_BAT_USB, 18,
+    "USB",
+    "USB")
+UI_TEXT(DIAL_BAT_UNKNOWN, 18,
+    "NOT MEASURED",
+    "NICHT GEMESSEN")
+UI_TEXT(DIAL_NOT_LINKED, 18,
+    "NOT LINKED",
+    "NICHT VERBUNDEN")
 UI_TEXT(DIAL_FOUND_ROW, 40,
     "%s  %ddBm",
     "%s  %ddBm")

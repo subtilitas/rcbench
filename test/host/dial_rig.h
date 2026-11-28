@@ -60,6 +60,14 @@ typedef struct {
     unsigned   stops;       /**< SCAN_STOP actions */
     unsigned   refuse_writes; /**< the next writes the host refuses, ENOMEM */
     unsigned   fail_info;   /**< the next INFO reads that fail */
+    uint8_t    hw;          /**< the board INFO names, DK_HW_* */
+    dk_status_t st;         /**< the STATUS a read returns */
+    unsigned   st_reads;    /**< STATUS reads answered */
+    unsigned   fail_status; /**< the next STATUS reads that fail */
+    bool       hold_status; /**< keep the next STATUS read's answer in
+                                 held instead of delivering it */
+    bool       have_held;   /**< held holds an answer */
+    bleu_evt_t held;       /**< the STATUS answer kept */
     unsigned   npkt;        /**< panel packets kept */
     uint8_t    pkt[DRIG_PKTS][DK_PKT_MAX]; /**< their bytes */
     uint8_t    len[DRIG_PKTS]; /**< their lengths */
@@ -150,11 +158,29 @@ static inline void drig_act(drig_t *r, const bleu_act_t *a)
         dial_ctl_event(&r->c, &e, r->now);
         break;
     case BLEU_ACT_READ: {
+        if (a->h1 == DRIG_STATUS_VAL) {
+            e = drig_ev(BLEU_EV_READ, a->token);
+            e.len = (uint8_t)dk_status_encode(&r->st, e.data);
+            ++r->st_reads;
+            if (r->fail_status > 0u) {
+                --r->fail_status;
+                e.len = 0u;
+                e.status = 0x10Eu;
+            }
+            if (r->hold_status) {
+                r->hold_status = false;
+                r->held = e;
+                r->have_held = true;
+                break;
+            }
+            dial_ctl_event(&r->c, &e, r->now);
+            break;
+        }
         dk_info_t i;
         memset(&i, 0, sizeof i);
         i.proto = r->proto;
         i.fw[1] = 1u;
-        i.hw = DK_HW_DIAL11;
+        i.hw = r->hw;
         memcpy(i.name, "DIAL-3A10", 10u);
         e = drig_ev(BLEU_EV_READ, a->token);
         e.len = (uint8_t)dk_info_encode(&i, e.data);
@@ -220,6 +246,10 @@ static inline void drig_init(drig_t *r)
     memset(r, 0, sizeof *r);
     r->now = 1000u;
     r->proto = DK_PROTOCOL;
+    r->hw = DK_HW_DIAL11;
+    r->st.flags = DK_ST_USB | DK_ST_BATT_UNKNOWN;
+    r->st.fw[1] = 23u;
+    r->st.rssi = DK_RSSI_NONE;
     dial_ctl_init(&r->c);
     dial_cfg_t cfg;
     memset(&cfg, 0, sizeof cfg);

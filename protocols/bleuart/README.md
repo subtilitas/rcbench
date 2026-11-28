@@ -65,7 +65,7 @@ declares a 16-bit value in its own vendor base matches only through
 | `BLEU_ROLE_STREAM`, exactly one | NOTIFY and a CCCD (client characteristic configuration descriptor) | subscribed; every notification is stream bytes |
 | `BLEU_ROLE_CMD`, at most one | WRITE or WRITE NO RESPONSE; with `BLEU_CHR_OPTIONAL` it may be missing, and `bleu_send()` then refuses | `bleu_send()` |
 | `BLEU_ROLE_PARAM`, at most one | nothing: without READ it is not read | read once after each subscribe; its first 20 bytes (`BLEU_PARAM_MAX`) kept |
-| `BLEU_ROLE_NONE`, any | nothing | never written, read or subscribed |
+| `BLEU_ROLE_NONE`, any | nothing | never written or subscribed; read on demand by `bleu_read_entry()` when it has READ, after a PARAM read due, into `ent` (its first 20 bytes) with `ent_status`, `ent_reads` counting the reads ended |
 
 A profile with `cccd_next` skips the descriptor discovery: the STREAM's
 CCCD is the handle after its value, inside the characteristic. The CCCD

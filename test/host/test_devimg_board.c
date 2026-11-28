@@ -23,6 +23,7 @@
 #include "bleota.h"
 #include "devimg.h"
 #include "devupd.h"
+#include "dialknob.h"
 #include "fw_c6.h"
 #include "fw_fixture.h"
 #include "fw_release.h"
@@ -197,6 +198,41 @@ TEST_CASE(each_board_takes_its_own_image_before_sending)
              DEVIMG_OK);
     CHECK_EQ(devimg_fits(DEVIMG_PNODE, RCNODE_BOARD_ES3C28P, g_img, len),
              DEVIMG_E_ID);
+}
+
+/* The Dial's row: the M5Stack Dial's image for an M5 (and for no INFO
+ * yet, as before the K518 existed), the K518's image for a K518, never
+ * the other's. */
+TEST_CASE(the_dial_row_picks_the_image_of_its_boards_info)
+{
+    CHECK_EQ(devimg_dial_image(0u), DEVIMG_DIAL);
+    CHECK_EQ(devimg_dial_image(DK_HW_DIAL11), DEVIMG_DIAL);
+    CHECK_EQ(devimg_dial_image(DK_HW_K518), DEVIMG_DIAL_K518);
+    CHECK_EQ(devimg_dial_image(DK_HW_MAX + 1u), DEVIMG_COUNT);
+    CHECK_EQ(devimg_dial_image(0xFFu), DEVIMG_COUNT);
+}
+
+TEST_CASE(each_dial_takes_its_own_image_before_sending)
+{
+    uint32_t len = make(DEVUPD_CHIP_ESP32S3, DEVUPD_PROJECT_DIAL, "0.23.18",
+                        BLEOTA_KIND_DIAL);
+    CHECK_EQ(devimg_fits(DEVIMG_DIAL, DK_HW_DIAL11, g_img, len), DEVIMG_OK);
+    CHECK_EQ(devimg_fits(DEVIMG_DIAL, 0u, g_img, len), DEVIMG_OK);
+    /* The M5's image for a K518: the board takes the other image. */
+    CHECK_EQ(devimg_fits(DEVIMG_DIAL, DK_HW_K518, g_img, len), DEVIMG_E_ID);
+    /* The M5's bytes in the K518's place: the head names another kind. */
+    CHECK_EQ(devimg_fits(DEVIMG_DIAL_K518, DK_HW_K518, g_img, len),
+             DEVIMG_E_ROLE);
+    len = make(DEVUPD_CHIP_ESP32S3, DEVUPD_PROJECT_DIAL, "0.23.18",
+               BLEOTA_KIND_DIAL_K518);
+    CHECK_EQ(devimg_fits(DEVIMG_DIAL_K518, DK_HW_K518, g_img, len),
+             DEVIMG_OK);
+    CHECK_EQ(devimg_fits(DEVIMG_DIAL_K518, DK_HW_DIAL11, g_img, len),
+             DEVIMG_E_ID);
+    CHECK_EQ(devimg_fits(DEVIMG_DIAL_K518, 0u, g_img, len), DEVIMG_E_ID);
+    CHECK_EQ(devimg_fits(DEVIMG_DIAL, DK_HW_DIAL11, g_img, len),
+             DEVIMG_E_ROLE);
+    CHECK_EQ(devimg_fits(DEVIMG_DIAL, 0xFFu, g_img, len), DEVIMG_E_ID);
 }
 
 TEST_CASE(a_head_of_another_chip_or_kind_is_refused_before_sending)
@@ -390,6 +426,8 @@ int main(void)
     RUN(the_power_node_row_picks_the_image_of_its_boards_info);
     RUN(each_image_names_the_kind_its_device_takes);
     RUN(each_board_takes_its_own_image_before_sending);
+    RUN(the_dial_row_picks_the_image_of_its_boards_info);
+    RUN(each_dial_takes_its_own_image_before_sending);
     RUN(a_head_of_another_chip_or_kind_is_refused_before_sending);
     RUN(no_board_no_image_or_a_short_head_is_refused_before_sending);
     RUN(a_display_image_passes_its_checks_and_the_c6_ones_do_not);

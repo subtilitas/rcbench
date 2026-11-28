@@ -106,6 +106,10 @@ typedef struct {
                                   display node, its image
                                   rcbench-node-display-VERSION.bin: the
                                   row's heading and line name it         */
+    bool         k518;       /**< UPD_DEV_DIAL: the Dial is the Guition
+                                  JC3636K518C, its image
+                                  rcbench-dial-k518-VERSION.bin: the
+                                  row's line and its accept name it      */
     fw_version_t carried;    /**< its version                             */
     uint8_t      phase;      /**< DEVUPD_ROW_UPDATING: devupd_phase_t     */
     unsigned     percent;    /**< DEVUPD_SEND: the share taken, 0-100     */

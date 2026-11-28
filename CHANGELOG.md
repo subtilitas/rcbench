@@ -68,6 +68,14 @@ history is in git.
   in the switch-off choice puts it into deep sleep, and a turn of the knob
   wakes it ([The M5Stack Dial](docs/Dial.md),
   [dialknob](protocols/dialknob/README.md)).
+- The panel tells the two Dials apart by INFO's hardware (1 the M5Stack
+  Dial, 2 the K518): UPDATES and SINGLE UPDATES offer the K518
+  `rcbench-dial-k518-<version>.bin` and the M5Stack Dial its own image,
+  each checked against the board before the first byte
+  (`devimg_dial_image()`, `devimg_fits()`). WIRELESS > DIAL gains DIAL
+  MODEL and DIAL BATTERY, the second from the Dial's STATUS, which the
+  panel reads every 5,000ms (`bleu_read_entry()`), with LOW and EMPTY
+  ([The M5Stack Dial](docs/Dial.md#the-panel)).
 
 ### Changed
 

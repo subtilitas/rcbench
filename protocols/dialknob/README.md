@@ -85,7 +85,8 @@ a change and every 200ms while idle (`DK_KEEPALIVE_MS`).
 | 10 to 11 | echo | the low 16 bits of the last STATE's panel ms |
 
 STATUS, kind 0x02, 12 bytes (`DK_LEN_STATUS`), every 1,000ms
-(`DK_STATUS_MS`) and on a change.
+(`DK_STATUS_MS`) and on a change. The panel reads it after INFO and every
+5,000ms while linked (`DIAL_STATUS_READ_MS`).
 
 | Byte | Field | Range |
 |---|---|---|

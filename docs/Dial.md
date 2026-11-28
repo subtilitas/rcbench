@@ -373,9 +373,22 @@ state.
 
 SETUP > WIRELESS > DIAL holds the Dial's rows
 ([Screens](Screens.md#wireless-the-imu-and-the-dial)): Dial ON or OFF (OFF by
-default), SCAN FOR DIAL, BOUND DIAL, and the steps of a detent, 0.5%, 1%, 2%
-or 5% of throttle (1% by default) and 0.5°, 1°, 2° or 5° of horn angle (1° by
-default). The first Dial ON starts Bluetooth LE on the board's ESP32-C6,
+default), SCAN FOR DIAL, BOUND DIAL, DIAL MODEL, DIAL BATTERY, and the
+steps of a detent, 0.5%, 1%, 2% or 5% of throttle (1% by default) and 0.5°,
+1°, 2° or 5° of horn angle (1° by default). DIAL MODEL names the board the
+linked Dial's INFO names, `M5STACK DIAL` (hardware 1) or `GUITION K518`
+(hardware 2). DIAL BATTERY reads the Dial's STATUS, after INFO and every
+5,000ms while linked: the cell's volts, `LOW` (bit4) or `EMPTY` (bit5)
+before them, `USB` while USB powers it, `NOT MEASURED` for a Dial without
+a reading (the M5Stack Dial). A STATUS read waits for the link's PARAM
+read and holds the panel's packets to the Dial for its round trip; a read
+that fails keeps the last STATUS. A Dial of an older release sends flags
+bit0 to bit3 only; the panel reads them with the same meaning in both releases. The update offers each Dial
+the image of its board: `rcbench-dial-<version>.bin` to the M5Stack Dial
+and to a Dial whose INFO came before, `rcbench-dial-k518-<version>.bin` to
+the K518, and the panel checks the image's head against the board before
+the first byte goes. The K518's accept on UPDATES reads `TAP THE DIAL TO
+ACCEPT`. The first Dial ON starts Bluetooth LE on the board's ESP32-C6,
 as the first IMU ON does; it runs until the panel restarts. The Dial, the
 IMU and the nodes are clients of the panel's Bluetooth LE central, one
 connect or scan at a time between them.
