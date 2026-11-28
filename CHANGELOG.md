@@ -355,7 +355,7 @@ to #996 and #998.
   a USB-C plug on a breakout board; `charger_boost_2s4s.step`, a 2S to
   4S USB-C boost charger board; `pd_trigger_pd31.step`, a purple USB-C
   PD3.1 trigger board
-  ([Mechanical parts](hardware/mechanical/README.md#parts-measured-on-millimetre-paper)).
+  ([Mechanical parts](hardware/mechanical/README.md)).
 - The servo label's bitmap and layout for a label printer for Supvan
   T50M Pro labels (`shared/ui/label_bitmap.c`, `label_layout.c`): the QR
   code of the servo id at level M, versions 1 to 3, quiet zone 2 modules,
@@ -566,14 +566,14 @@ to #996 and #998.
   over the display's glass, to try the touch panel as the encoder.
   `--check` runs in CI and also moves the carrier through the
   bayonet's path
-  ([Mechanical parts](hardware/mechanical/README.md#rotary-knob-with-a-round-display)).
+  ([Mechanical parts](hardware/mechanical/README.md)).
 - `hardware/mechanical/`: `esp32_s3_lcd_185.step`, the Waveshare
   ESP32-S3-Touch-LCD-1.85, a round 1.85" display board 55.00mm across and
   9.70mm over all, measured from Waveshare's STEP file with
   `_measure_esp32_s3_lcd_185.py`; `bearing_6704_2rs.step`, a ball bearing
   20 x 27 x 4mm; `acrylic_disc_49_5.step`, a clear acrylic disc 49.5mm
   across and 2mm thick
-  ([Mechanical parts](hardware/mechanical/README.md#round-display-board-waveshare-esp32-s3-touch-lcd-185)).
+  ([Mechanical parts](hardware/mechanical/README.md)).
 - Screen steps of `tools/video` take the actions `press`, `down` and
   `release`, one touch over three steps, and `point`, the end of the
   bubble's line. The storyboard `stop` shows each touch on STOP that way,
@@ -717,6 +717,16 @@ to #996 and #998.
 
 ### Changed
 
+- `hardware/kicad/` and `hardware/mechanical/` hold the generated files
+  only: the KiCad library, the STEP and STL models and their renders. The
+  module specs, the generators, the checks, their 18 test files and the
+  design notes (`CASES.md`, `ESC_MOTOR.md`, the model sections of the
+  mechanical README) are kept in a separate hardware tools repository.
+  `hardware/mechanical/README.md` lists each model with its bounding box.
+  CI no longer runs the generator checks; it drops cadquery-ocp and
+  shapely. `tools/video_board.py` reads module specs only from a
+  directory given with `--modules`.
+
 - The Bluetooth IMU has no screen and no SETUP tile of its own: SETUP >
   WIRELESS > IMU holds all of it. With the IMU on the entry shows Scan for
   sensor and Bound sensor, which open SEARCH as the Dial's and the nodes'
@@ -785,7 +795,7 @@ to #996 and #998.
   ring and a tip with a groove, and is drawn at 0.6 of its size: a shaft
   of 2.1mm x 8.4mm. 39 solids, 51.05mm x 20.0mm x 62.71mm; the plug
   stands at x -11.8mm in place of -45.3mm
-  ([ESC and motor](hardware/mechanical/ESC_MOTOR.md#motor-simulator)).
+  (design notes now kept with the hardware tools).
 - Web flasher, Done: the next-step line follows what the write kept. After
   a Dial write that kept the NVS (non-volatile storage) partition, the line
   reads that the Dial keeps its settings and its binding; after a write
@@ -945,7 +955,7 @@ to #908, #910 to #927, #930, #931, #933 and #934.
   between any 2 of its 3 crocodile clips, with the phase tap's lead on one
   clip, ending in a 3.5mm mono plug. 32 solids, 51.05mm x 20.0mm x
   78.06mm; every size is estimated from one owner photo
-  ([ESC and motor](hardware/mechanical/ESC_MOTOR.md#motor-simulator)).
+  (design notes now kept with the hardware tools).
 - `hardware/mechanical/`: `flycolor_flydragon_lite_40a.step`, the ESC with
   its capacitor, print, power leads with an XT60 plug, 3 motor leads and
   signal lead with plug (44 solids); `tmotor_at2814.step`, the outrunner
@@ -953,7 +963,7 @@ to #908, #910 to #927, #930, #931, #933 and #934.
   lead to lead, 398.2mm long. The ESC's size follows the maker's manual,
   the motor the maker's drawing; lead lengths and diameters of the ESC are
   estimated from a picture. The overlap check covers the 3 models
-  ([ESC and motor](hardware/mechanical/ESC_MOTOR.md#flycolor-flydragon-lite-40a-and-t-motor-at2814)).
+  (design notes now kept with the hardware tools).
 - IOmcu: the link on a UART (universal asynchronous receiver-transmitter)
   beside CAN (Controller Area Network), the transport of board 3, the
   remote servo node's Core2350B. UART0 at 1Mbaud 8N1 on GPIO 0 (TX) and
@@ -1011,7 +1021,7 @@ to #908, #910 to #927, #930, #931, #933 and #934.
   36.0mm x 46.35mm over all, 37 solids. Case, ears and mounting holes
   follow the maker's dimension drawing, the rest its STEP model and data
   sheets. The overlap check covers it
-  ([Mechanical parts](hardware/mechanical/README.md#hitec-d485hw)).
+  ([Mechanical parts](hardware/mechanical/README.md)).
 - `hardware/mechanical/`: a variant of the display node's case for
   panel-mount XT60 with 2 screws, 59.8mm x 105.6mm x 24.4mm:
   `display_node_xt60_box` and `display_node_xt60_lid`, each as STEP and
@@ -1020,7 +1030,7 @@ to #908, #910 to #927, #930, #931, #933 and #934.
   x 12.4mm for the body and 2 insert holes 25.6mm apart in bosses behind
   the wall. The check holds the connectors' flange, body and contacts
   clear of box and board. No part is printed
-  ([Cases](hardware/mechanical/CASES.md#case-of-the-display-node-xt60)).
+  (design notes now kept with the hardware tools).
 - `hardware/mechanical/`: a printed case of 2 parts for the display node
   with XT30 connectors, 59.8mm x 101.2mm x 17.8mm: `display_node_box` and
   `display_node_lid`, each as STEP and STL. It follows a tester's case,
@@ -1032,7 +1042,7 @@ to #908, #910 to #927, #930, #931, #933 and #934.
   hole of 3.5mm in the floor holds the current sensor board. `_gen_display_case.py --check`, which CI runs, fails when a part
   meets the display board or the stack does not close. A tester's print
   of 2026-11-22 fits the node and goes together without binding
-  ([Cases](hardware/mechanical/CASES.md#case-of-the-display-node-xt30)).
+  (design notes now kept with the hardware tools).
 - Settings backup on the card, `BENCH/SETUP`. SETUP > SD CARD ends on Save
   settings, which writes the stored settings as `SETTINGS.TXT`, and Load
   settings, which opens BACKUP: the card's settings files with their date
@@ -1059,7 +1069,7 @@ to #908, #910 to #927, #930, #931, #933 and #934.
   4 speaker slots, microphone, display window. `_gen_node_case.py` builds
   the parts with OpenCASCADE and CI checks them against the 1139 solids of
   the layout. No part is printed
-  ([Cases](hardware/mechanical/CASES.md#case-of-the-sensor-node)).
+  (design notes now kept with the hardware tools).
 - `hardware/mechanical/`: `ina228_node_layout.step`, the boards of the
   remote INA228 sensor node in place: the INA228 module with its 2 XT90PW
   connectors at the bottom, the ES3C28P display board 0.5mm over the
@@ -1068,7 +1078,7 @@ to #908, #910 to #927, #930, #931, #933 and #934.
   23.7mm over all, 1139 solids, no two sharing volume. `matek_mbec12s.step`
   is the converter alone, 18.0mm x 15.0mm x 4.5mm, drawn from seller
   pictures within about 0.5mm
-  ([Mechanical parts](hardware/mechanical/README.md#remote-ina228-sensor-node-layout)).
+  ([Mechanical parts](hardware/mechanical/README.md)).
 - `hardware/mechanical/`: the rbmod carrier's models carry the copper of
   the 2 outer layers, read from the board file by `_read_kicad_pcb.py`:
   280 pads, gold for their ENEPIG finish, and the tracks and vias in a
@@ -1083,7 +1093,7 @@ to #908, #910 to #927, #930, #931, #933 and #934.
   of sellers, laid onto each board's frame, within 0.2mm to 0.5mm. The
   same models are the 3D models of the 4 footprints in the KiCad library
   and stand on `rbmod_v2.step`. The overlap check covers them
-  ([Mechanical parts](hardware/mechanical/README.md#module-boards-of-the-rbmod-carrier)).
+  ([Mechanical parts](hardware/mechanical/README.md)).
 - `hardware/mechanical/`: `rbmod_v2_smd.step` and `rbmod_v2.step`, the
   rbmod carrier board, version 2 (80.0mm x 89.0mm): the board with its 17
   surface-mounted parts, and the same with 7 connectors and 5 modules,
@@ -1091,7 +1101,7 @@ to #908, #910 to #927, #930, #931, #933 and #934.
   `_read_kicad_pcb.py` reads outline, holes and footprints from the KiCad
   board file into `_rbmod_v2_data.py`; the
   overlap check covers both models
-  ([Mechanical parts](hardware/mechanical/README.md#rbmod-carrier-board-version-2)).
+  ([Mechanical parts](hardware/mechanical/README.md)).
 - Link protocol 4.41: the IOmcu's bank has 16 slots and 16 channels.
   CHANNELS_HI, CHAN_CFG_HI and OUTPUTS_HI (0x3C to 0x3E) carry channels 9
   to 16 and slots 9 to 16, BIND_CFG_HI and BIND_OUT_HI (0x3F, 0x40)
@@ -1137,7 +1147,7 @@ to #908, #910 to #927, #930, #931, #933 and #934.
   RESET and 103 chip parts, from LCDWIKI's STEP file and outline drawing,
   checked against tester photos within 0.3mm. The overlap check covers
   it; it has no KiCad entry, as no carrier mounts the board
-  ([Mechanical parts](hardware/mechanical/README.md#display-node-board-lcdwiki-es3c28p)).
+  ([Mechanical parts](hardware/mechanical/README.md)).
 - `hardware/kicad/tools/step_render.py`: `--from` picks the corner the
   view looks from, `--suffix` names the PNGs of a second view.
 
@@ -1185,7 +1195,7 @@ to #908, #910 to #927, #930, #931, #933 and #934.
   1.2mm under the bezel's rim lie in the cut. On a printed case without
   the joints the walls shift sideways (owner, 2026-11-22). The parts with
   the joints are not printed
-  ([Cases](hardware/mechanical/CASES.md#case-of-the-sensor-node)).
+  (design notes now kept with the hardware tools).
 - `hardware/mechanical/models/` is sorted into 3 folders: `pcb/` (17
   models: 16 boards and the sensor node's layout), `casing/` (7 printed
   parts) and `parts/` (13 bought parts and assemblies). `_models.py` names
@@ -1361,7 +1371,7 @@ The entries below cover the 11 pull requests merged since v0.23.15: #893 to
   board (18.0mm x 18.0mm, USB-C, BOOT, RESET, 4 holes of 2.0mm), from
   Waveshare's drawings, schematic, photos and the RP2350-Tiny adapter's
   STEP file. The overlap check covers both
-  ([Mechanical parts](hardware/mechanical/README.md#module-boards-and-cells)).
+  ([Mechanical parts](hardware/mechanical/README.md)).
 - `hardware/kicad/`: `Core2350B_Waveshare_25.4x25.4mm`, footprint, symbol
   and 3D model on four 2 x 8 headers; pads numbered as Waveshare's headers
   P1 to P4 ([KiCad library](hardware/kicad/README.md#core2350b)).
@@ -1392,11 +1402,11 @@ The entries below cover the 11 pull requests merged since v0.23.15: #893 to
   sketch with dimensions: case 40.5mm x 20.0mm x 36.3mm, 2 ears with 2 open
   mounting holes each, 49.5mm x 10.0mm apart, horn 21.0mm across. The
   overlap check covers it
-  ([Mechanical parts](hardware/mechanical/README.md#standard-servo)).
+  ([Mechanical parts](hardware/mechanical/README.md)).
 - `hardware/mechanical/`: `wit_imu.step`, a WitMotion inertial sensor in
   its case with two slotted ears, 36.1mm x 51.5mm x 15.0mm, with the
   label's print, from a product picture with dimensions
-  ([Mechanical parts](hardware/mechanical/README.md#witmotion-inertial-sensor)).
+  ([Mechanical parts](hardware/mechanical/README.md)).
 - `hardware/mechanical/`: `kst_x10.step`, the KST X10 wing servo from a
   dimension drawing, and a reference layout round it built by
   `_gen_flap_drive.py`: `flap_drive.step` (carbon frame with counter
@@ -1405,7 +1415,7 @@ The entries below cover the 11 pull requests merged since v0.23.15: #893 to
   with a flap hinged in the lower skin) and `flap_drive_assembly.step`. The script's `--check`, run in CI,
   fails when a file differs from the script or two solids share volume;
   `travel()` gives the flap's angle for an angle of the arm
-  ([Mechanical parts](hardware/mechanical/README.md#kst-x10-with-frame-and-flap-drive)).
+  ([Mechanical parts](hardware/mechanical/README.md)).
 - SERVO LIVE: a ZERO row (NULLPUNKT) on the READY card between PORT and
   SUPPLY, RUDDER's label and texts. It sets the zero MEASURED reads from:
   with ANGLE SOURCE AS5600 a tap takes the live count as ENC CENTER and
@@ -2081,7 +2091,7 @@ The entries below cover the 7 pull requests merged since v0.23.13: #847,
   underside for the palm and 18 flutes round the belly. `_gen_dial_base.py`
   builds it with OpenCASCADE and its `--check`, run in CI, fails when a part
   shares volume with the dial, its nut or the cell
-  ([Mechanical parts](hardware/mechanical/README.md#hand-held-base-for-the-m5stack-dial)).
+  ([Mechanical parts](hardware/mechanical/README.md)).
 
 ### Changed
 
@@ -2171,7 +2181,7 @@ The entries below cover the 52 pull requests merged since v0.23.12: #803 to
   Waveshare's drawing. `_font.py` holds letter outlines for board print,
   written by `_gen_font.py`; `_board.py` places parts by their position on a
   board
-  ([Mechanical parts](hardware/mechanical/README.md#module-boards-and-cells)).
+  ([Mechanical parts](hardware/mechanical/README.md)).
 - `hardware/mechanical/`: STEP models of the INA228 current sensor module
   with its two XT90PW connectors (`ina228_xt90.step`, 225 solids,
   83.95mm x 48.6mm x 12.6mm) and of its printed case with 4 screws
@@ -2184,7 +2194,7 @@ The entries below cover the 52 pull requests merged since v0.23.12: #803 to
   `_solid.py` writes round rods along a path of lines and arcs as cylinders
   and pieces of tori, used for the connectors' bent tails.
   `check_overlap.py` checks the module together with its case
-  ([Mechanical parts](hardware/mechanical/README.md#ina228-module-with-xt90-connectors)).
+  ([Mechanical parts](hardware/mechanical/README.md)).
 - `hardware/mechanical/`: a STEP model of the panel board, the Waveshare
   ESP32-P4-WIFI6-Touch-LCD-7B, generated from `panel_7b.py`: 164.28mm x
   99.18mm of glass, 15.1mm thick, 1497 solids. `_measure_step.py` measures
@@ -2195,7 +2205,7 @@ The entries below cover the 52 pull requests merged since v0.23.12: #803 to
   other sockets than the board carries. `_solid.py` writes profiles of
   straight sides and arcs as solids with flat and cylindrical faces;
   `check_overlap.py` fails in CI on two solids that share volume
-  ([Mechanical parts](hardware/mechanical/README.md#panel-board)).
+  ([Mechanical parts](hardware/mechanical/README.md)).
 - Firmware update over Bluetooth LE for the M5Stack Dial and both sensor
   node roles. Protocol module `protocols/bleota`: a GATT service with CTRL
   (write with response, notify) and DATA (write without response); BEGIN
@@ -2489,7 +2499,7 @@ The entries below cover the 52 pull requests merged since v0.23.12: #803 to
   and module, the main board and the 2 M2 screw heads from the mesh's
   pockets and estimates. `step_gen.py` writes solids with faces on
   curved surfaces (`"brep"`) besides prisms and turned profiles
-  ([Mechanical parts](hardware/mechanical/README.md#m5stack-dial)).
+  ([Mechanical parts](hardware/mechanical/README.md)).
 - `protocols/sbus` encodes frames. `sbus_encode()` packs an
   `sbus_frame_t` into the 25 bytes the decoder reads: header 0x0F, 16
   channels of 11 bits, the flag byte with CH17, CH18, frame lost and
