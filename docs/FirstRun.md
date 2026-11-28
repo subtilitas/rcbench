@@ -224,7 +224,7 @@ it, and the C6 as shipped reports none (`not reported`).
    then switch it off.
 2. On SETUP > UPDATES the C6 RADIO row reads `C6 radio: not reported.
    Release: 2.13.0.`. Hold `HOLD 2s TO UPDATE THE C6 RADIO` for 2s with the
-   bench SAFE and the supply output off. With a home network kept on
+   bench SAFE and the supply output off. With a home network saved on
    WI-FI the button counts `DOWNLOADING 0%` to `100%` while the panel
    downloads the image; without one, copy `rcbench-c6-2.13.0.bin` from the
    release to the SD card's `BENCH/UPDATES` first, and the hold reads
@@ -514,7 +514,7 @@ GPIO 32 and the channel is the pin's low bit, so GPIO 0 and GPIO 16, GPIO 1 and 
 and GPIO 18, GPIO 4 and GPIO 20, GPIO 5 and GPIO 21, GPIO 6 and GPIO 22 are pairs that share one
 compare register. The second of a pair is refused rather than muxed onto the
 first one's pulse width. The OUTPUTS page carries no bit saying "bound", so
-the screen goes on looking configured while the lead produces no pulse.
+the screen still shows the output as configured, but the lead carries no pulse.
 
 On the panel: **SETUP > OUTPUTS**, choose `SERVO PWM` in its list. On a
 board with a drawing, tap the pin's key on the drawing

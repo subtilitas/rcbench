@@ -17,9 +17,9 @@ Within a network list or keyboard, home acts like CANCEL: it discards keyboard i
 | Button | What it does |
 |---|---|
 | ACCESS POINT | starts the panel's own network |
-| JOIN HOME NETWORK | joins the network kept; grey while none is kept |
-| CHOOSE HOME NETWORK | scans and lists the networks in reach |
-| FORGET HOME NETWORK | erases the kept network and sets the access code back to on; grey while none is kept |
+| JOIN HOME NETWORK | joins the saved home network; dimmed if no network is saved |
+| CHOOSE HOME NETWORK | lists the networks the panel detects |
+| FORGET HOME NETWORK | forgets the saved network and switches the access code back on; dimmed if no network is saved |
 | ACCESS CODE: ON, OFF | whether the browser page asks for the access code |
 | HOTSPOT PASSWORD: RANDOM, KEPT | opens the [hotspot password](#hotspot-password-and-access-code) |
 | ACCESS CODE: RANDOM, KEPT | opens the [access code](#hotspot-password-and-access-code) |
@@ -30,7 +30,7 @@ Within a network list or keyboard, home acts like CANCEL: it discards keyboard i
 
 The radio requires a SAFE bench, supply output off and no open log run. Otherwise its start buttons are grey and the card explains why. On the rbmod carrier, the programming ports' 5V rail at GPIO 21 also counts as a supply output: it blocks Wi-Fi while a programmer holds a port and until SUPPLY reports it `OFF`.
 
-The radio goes off on its own, and the card names the reason in one line:
+The radio switches off under the conditions below. The card displays the reason.
 
 | Line | Cause |
 |---|---|

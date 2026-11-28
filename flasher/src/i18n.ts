@@ -6,8 +6,8 @@ export type Lang = 'en' | 'de';
 const S = {
   title: ['rcbench web flasher', 'rcbench-Web-Flasher'],
   sub: [
-    'Writes rcbench firmware to the panel, the IOmcu and the wireless devices, from the browser.',
-    'Schreibt rcbench-Firmware auf das Panel, die IOmcu und die Funkgeräte, aus dem Browser.',
+    'Install rcbench firmware on the panel, the IOmcu or a wireless device from your browser.',
+    'Installiere rcbench-Firmware direkt im Browser auf dem Panel, der IOmcu oder einem Funkgerät.',
   ],
   langGroup: ['Language / Sprache', 'Language / Sprache'],
   sTask: ['What do you want to do?', 'Was möchtest du tun?'],
@@ -28,9 +28,9 @@ const S = {
     'A running bench updates the IOmcu, the C6 radio, the Dial and the nodes from the panel. This page is for a first install and for a board that does not start.',
     'Ein laufender Prüfstand aktualisiert IOmcu, C6-Funk, Dial und Knoten vom Panel aus. Diese Seite ist für eine Erstinstallation und für ein Board, das nicht startet.',
   ],
-  task_file: ['Write a file of my own', 'Eigene Datei schreiben'],
+  task_file: ['Write a local firmware file', 'Lokale Firmware-Datei schreiben'],
   tsub_file: ['any of the 9 boards, a .bin or .uf2 file from this computer', 'eines der 9 Boards, eine .bin- oder .uf2-Datei von diesem Computer'],
-  advSwitch: ['Advanced: own firmware, older releases, a write that erases the settings', 'Erweitert: eigene Firmware, ältere Releases, ein Schreiben, das die Einstellungen löscht'],
+  advSwitch: ['Advanced: local firmware, older releases, or erase settings during installation', 'Erweitert: lokale Firmware, ältere Releases oder Einstellungen bei der Installation löschen'],
   hintFile: ['Advanced mode on the first screen writes a local file.', 'Der erweiterte Modus auf der ersten Seite schreibt eine lokale Datei.'],
   hintErase: [
     'Advanced mode on the first screen writes the whole image; that erases the settings.',
@@ -57,22 +57,22 @@ const S = {
     'The drawing names the signals of H4; the order of its pins is on the board\'s silkscreen. The dashed line ties IO9 to GND.',
     'Die Zeichnung nennt die Signale von H4; die Reihenfolge der Pins steht im Bestückungsdruck des Boards. Die gestrichelte Linie verbindet IO9 mit GND.',
   ],
-  cn_panel: ['Either of the 2 USB-C sockets of the panel board works.', 'Beide USB-C-Buchsen des Panel-Boards gehen.'],
+  cn_panel: ['Use either USB-C port on the panel board.', 'Verwende eine der beiden USB-C-Buchsen am Panel-Board.'],
   cn_dial: [
     'A Dial without rcbench firmware: hold the Stamp button (GPIO0) while you plug in the cable.',
     'Ein Dial ohne rcbench-Firmware: Halte die Stamp-Taste (GPIO0), während du das Kabel einsteckst.',
   ],
   'cn_node-display': [
-    'Take the pack off the XT60 first. A board without rcbench firmware: hold BOOT (IO0) while you plug in the cable.',
-    'Nimm zuerst den Akku vom XT60. Ein Board ohne rcbench-Firmware: Halte BOOT (IO0), während du das Kabel einsteckst.',
+    'Disconnect the battery from the XT60 connector first. A board without rcbench firmware: hold BOOT (IO0) while you plug in the cable.',
+    'Trenne zuerst den Akku vom XT60-Stecker. Ein Board ohne rcbench-Firmware: Halte BOOT (IO0), während du das Kabel einsteckst.',
   ],
   'cn_node-pwr': [
-    'Take the pack off the XT60 first. A board without rcbench firmware: hold BOOT (GPIO9) while you plug in the cable.',
-    'Nimm zuerst den Akku vom XT60. Ein Board ohne rcbench-Firmware: Halte BOOT (GPIO9), während du das Kabel einsteckst.',
+    'Disconnect the battery from the XT60 connector first. A board without rcbench firmware: hold BOOT (GPIO9) while you plug in the cable.',
+    'Trenne zuerst den Akku vom XT60-Stecker. Ein Board ohne rcbench-Firmware: Halte BOOT (GPIO9), während du das Kabel einsteckst.',
   ],
   'cn_node-bal': [
-    'Take the pack off the XT60 first. A board without rcbench firmware: hold BOOT (GPIO9) while you plug in the cable.',
-    'Nimm zuerst den Akku vom XT60. Ein Board ohne rcbench-Firmware: Halte BOOT (GPIO9), während du das Kabel einsteckst.',
+    'Disconnect the battery from the XT60 connector first. A board without rcbench firmware: hold BOOT (GPIO9) while you plug in the cable.',
+    'Trenne zuerst den Akku vom XT60-Stecker. Ein Board ohne rcbench-Firmware: Halte BOOT (GPIO9), während du das Kabel einsteckst.',
   ],
   cn_c6: [
     'Plug the USB-to-UART adapter into this computer. The browser lists the serial ports; choose the adapter\'s port.',
@@ -161,7 +161,7 @@ const S = {
   connectEsp: ['CONNECT', 'VERBINDEN'],
   connectPico: ['CONNECT', 'VERBINDEN'],
   disconnect: ['DISCONNECT', 'TRENNEN'],
-  writeKeep: ['Keep the cable in until the page reports the end.', 'Lass das Kabel stecken, bis die Seite das Ende meldet.'],
+  writeKeep: ['Keep the cable connected until the page reports that writing has finished.', 'Lass das Kabel stecken, bis die Seite meldet, dass der Schreibvorgang beendet ist.'],
   testing: ['testing', 'Testing'],
   stable: ['stable', 'Stable'],
   loading: ['Loading the list of releases …', 'Lade die Liste der Releases …'],
@@ -174,7 +174,7 @@ const S = {
   imgCheck: ['Check', 'Prüfung'],
   imgOk: ['matches the manifest of the release', 'stimmt mit dem Manifest des Releases überein'],
   imgErase: ['Also erases', 'Löscht außerdem'],
-  imgEraseB: ['slot B, {x}: the written image is the one that starts', 'Slot B, {x}: das geschriebene Image ist das, das startet'],
+  imgEraseB: ['slot B, {x}: the board boots from the image you write', 'Slot B, {x}: Das Board startet mit dem Image, das du schreibst'],
   bytes: ['{n} bytes', '{n} Bytes'],
   hashBad: [
     'The download does not match the manifest: SHA-256 {got}, {want} expected. Nothing is written. Reload the page and try again.',
@@ -213,8 +213,8 @@ const S = {
   chipUnknown: ['a chip the page does not flash', 'ein Chip, den die Seite nicht beschreibt'],
   write: ['WRITE', 'SCHREIBEN'],
   writeHint: [
-    'WRITE erases, writes, reads back and restarts the board. Keep the cable in until the page reports the end.',
-    'SCHREIBEN löscht, schreibt, liest zurück und startet das Board neu. Lass das Kabel stecken, bis die Seite das Ende meldet.',
+    'WRITE erases, writes, reads back and restarts the board. Keep the cable connected until the page reports that writing has finished.',
+    'SCHREIBEN löscht, schreibt, liest zurück und startet das Board neu. Lass das Kabel stecken, bis die Seite meldet, dass der Schreibvorgang beendet ist.',
   ],
   keepList: ['Not written, kept on the board (partition table at {x}):', 'Nicht geschrieben, bleibt auf dem Board (Partitionstabelle bei {x}):'],
   keepItem: ['{name} ({sub}) at {offset}, {n} bytes', '{name} ({sub}) bei {offset}, {n} Bytes'],

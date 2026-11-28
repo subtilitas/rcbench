@@ -18,9 +18,9 @@ two.
 
 | Task | Page |
 | --- | --- |
-| Go from the parts to the menu with the release assets, no instrument needed | [Quick start](FirstRun.md#quick-start-from-the-release-assets) |
+| Set up the bench from release files without an instrument | [Quick start](FirstRun.md#quick-start-from-the-release-assets) |
 | Feature list | [What this is for](Manifest.md) |
-| Choose the parts of a bench and wire them | [Bench configurator](https://subtilitas.github.io/rcbench/) (web page: parts list, shopping list with manufacturer pages and web search links, wiring diagram and pin-to-pin table for the selected setup) |
+| Choose and wire the bench components | [Bench configurator](https://subtilitas.github.io/rcbench/) (web page: parts list, shopping list with manufacturer pages and web search links, wiring diagram and pin-to-pin table for the selected setup) |
 | Build and flash both boards | [Building](Building.md) |
 | Wire the two boards and verify the bus | [Bringing up the link](Bringup.md) |
 | Flash both boards and run the bench for the first time | [First run on hardware](FirstRun.md) |
@@ -32,7 +32,7 @@ two.
 | Program an ESC through its throttle-stick menu | [Stick programming](StickProgramming.md) |
 | Connect a receiver and inspect its output | [Receiver buses](Receivers.md) |
 | Stop mechanisms and the external circuit they require | [Safety](Safety.md) |
-| Stop with STOP, and reset it | [STOP as an emergency stop](Stop.md) |
+| Use STOP and clear the latched stop | [STOP as an emergency stop](Stop.md) |
 | ESCs with BLHeli_32 firmware: what is and is not supported | [Parameters of ESCs with BLHeli_32 firmware](BLHeli32.md) |
 
 ## Reference

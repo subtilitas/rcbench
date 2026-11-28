@@ -42,7 +42,7 @@ While it is on:
    `The servo stands at 2555, outside its reach. MOVE SERVO is OFF.`
 2. Each pass writes 0x1E, waits 20ms and reads 0x0C. The commanded
    position is the draft's value of the followed row, NEUTRAL at the
-   start. It moves 150 counts (2.0°) a pass at most and stays inside the
+   start. It moves at most 150 counts (2.0°) per pass and stays inside the
    reach: the positions of targets 0 and 6000 through the stored ends,
    2606 to 13743 on a factory D485HW. In the host model a pass takes
    106ms at a frame of 16ms and 132ms at one of 33ms.
@@ -119,11 +119,11 @@ otherwise. The row has two keys of 126 x 48px, LEFT END and RIGHT END.
 1. A tap on a key starts the search after the pass under way. The key
    turns the warning colour. The other key, the `-` and `+` keys and the
    keypad take no tap until the search ends.
-2. The horn moves to NEUTRAL at 150 counts a pass.
+2. The horn moves to NEUTRAL at 150 counts per pass.
 3. From NEUTRAL the command moves 37 counts (0.5°) outward every 2
    passes, up to the reach's edge: 2606 or 13743 on a factory D485HW.
-   Each pass is judged as a pass of MOVE SERVO. From NEUTRAL to the left
-   edge of a factory D485HW that is 151 steps, 32s at 106ms a pass.
+   Each pass uses the same checks as MOVE SERVO. From NEUTRAL to the left
+   edge of a factory D485HW that is 151 steps, 32s at 106ms per pass.
 4. The note says
    `FIND STOP toward LEFT END: 37 counts every 2 passes from NEUTRAL, at most 40s. Tap it again to stop.`
 

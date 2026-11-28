@@ -56,7 +56,7 @@ The keyboard accepts names of up to 59 bytes; each of Ä Ö Ü ä ö ü ß uses 
 
 ![RENAME with " 2" typed before the extension](view:files-rename-cursor)
 
-- A key types at the cursor, the bar in the name. DEL takes the character before it.
+- The bar inside the name marks the cursor. Keys insert text at the cursor. DEL deletes the preceding character.
 - `<-` and `->` move the cursor one character; Ä or ß is one character. A tap in the name puts the cursor in the nearest gap, a tap right of the name at its end.
 - CLR empties the name. A key that would take the name past 59 bytes types nothing.
 - A name longer than the field's 48 characters shows the part around the cursor.
@@ -84,14 +84,14 @@ The viewer opens files read-only, up to 1MiB and 65,536 lines. While reading, it
 
 EDIT in the viewer opens the editor and its keyboard. The text changes in the panel's memory; SAVE writes it to the card.
 
-- 8 rows of the text show over the keyboard, 10 with SMALL. The keyboard has no digit row: `ABC` gives capitals, `123` gives the digits and the common marks, and `#+=` on that page the other marks; `abc` goes back. DEL takes the character before the cursor. ENTER starts a new line with the file's own line end. `<-` and `->` move the cursor; a tap on the text puts it there. DONE closes the keyboard, KEYBOARD opens it again.
+- 8 rows of the text show over the keyboard, 10 with SMALL. The keyboard has no digit row: `ABC` gives capitals, `123` gives the digits and the common marks, and `#+=` on that page the other marks; `abc` goes back. DEL deletes the character before the cursor. ENTER inserts a line break using the file's line endings. `<-` and `->` move the cursor; a tap on the text puts it there. DONE closes the keyboard, KEYBOARD opens it again.
 - The header shows MODIFIED once the text differs from the card, and the cursor's line.
-- SAVE writes the text as `<name>.NEW`, deletes the old file and gives the new one its name. SAVE is shut while the bench is ARMED or a run is logged; the text stays. A switch to ARMED during a save stops it, and the old file stays.
+- SAVE writes the text to `<name>.NEW`, deletes the old file and renames the new file. While the bench is ARMED or a run is being logged, SAVE is disabled and the editor keeps the draft. If the bench switches to ARMED during a save, the save stops and the original file is kept.
 - A KST file of the servo programmer loses its checksum line when it is saved changed, in every form the programmer reads as one (`checksum`, `CHECKSUM=`, `Checksum:`): the programmer then reads it as a file a person edited.
 - SAVE refuses a text with a NUL byte in its first 4kB, as FILES would not open the file again: `Not saved: a NUL byte in the first 4kB. FILES would not open the file again.`
 - An ESC profile in `BENCH/ESC/CONF` is read at the panel's next start.
 - SAVE writes only over the file as the editor opened it. A file changed on the card since, by the Wi-Fi page's editor or an upload, is not written: the note says `<name> changed on the card since it was read.`, and the question offers STAY, which keeps the text, READ AGAIN, which drops it and reads the file from the card, and OVERWRITE, held 2s, which saves the text over the file that the refused SAVE found. A further change during that time is refused the same way. A file that is gone cannot be overwritten: OVERWRITE is dimmed.
-- REVERT puts the text back to the file on the card. It asks first, as the home tag does while the text is unsaved: STAY keeps the text, DISCARD drops the changes.
+- REVERT reloads the file from the card after confirmation. The home tag also asks for confirmation if there are unsaved edits. STAY keeps the draft. DISCARD drops the edits.
 - The text holds up to 1MiB and 65,536 line ends. The keyboard types ASCII; there is no undo of single keys.
 - SETUP > PANEL > Keyboard transparency at 25% or 50% lets the rest of the text show through the keyboard; the cursor stays on the 8 rows over it.
 
