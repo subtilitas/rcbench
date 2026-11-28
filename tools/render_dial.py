@@ -46,6 +46,7 @@ SOURCES = [
     "shared/dial/dial_text.c",
     "shared/dial/dial_rings.c",
     "shared/dial/dk518_boot.c",
+    "shared/dial/dk518_draw.c",
     "shared/ui/ui_theme.c",
     "protocols/dialknob/dialknob.c",
     "protocols/dialknob/dk_face.c",
@@ -82,6 +83,9 @@ FACES = {
     "off-ask": "the screen button released after 5,000ms: OFF or KEEP ON",
     "k518-boot": "the Guition JC3636K518C's boot face, 360 x 360; no words "
                  "to translate, the same in both languages",
+    "k518-motor-armed": "MOTOR & ESC, ARMED, as the K518 draws it, 360 x 360",
+    "k518-motor-safe": "MOTOR & ESC, SAFE, as the K518 draws it",
+    "k518-servo-live": "SERVO, ARMED, as the K518 draws it",
 }
 
 LANGS = {"en": ".", "de": "de"}

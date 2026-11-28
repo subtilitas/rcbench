@@ -13,13 +13,13 @@
  * lines (arithmetic, not measured).  The vendor's demo clocks the panel at
  * 80MHz; 40MHz is the component's default.
  *
- * The display shows the boot face (shared/dial, dk518_face.h): the BLE name
- * and the firmware version.  The M5Stack Dial's 240 x 240 faces are not
- * shown: dial_lcd_flush() and dial_lcd_flush_rect() take them as the face
- * task's tick, draw the boot face again when the BLE name changed, and send
- * it whole.  A frame that did not go whole is drawn and sent again at the
- * next call; a strip that timed out is waited for before the bounce buffer
- * is written again.
+ * The faces are drawn into the frame by dial_k518_screen.c, which sends it
+ * with dial_k518_send(); the boot face (shared/dial, dk518_face.h), the BLE
+ * name and the firmware version, is drawn here at the start and by
+ * dial_k518_boot().  The M5Stack Dial's 240 x 240 faces and their flush
+ * calls are not used on this board.  A boot face that did not go whole is
+ * drawn and sent again at the next call; a strip that timed out is waited
+ * for before the bounce buffer is written again.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -121,11 +121,16 @@ void dial_lcd_backlight(unsigned pct)
     ledc_update_duty(LEDC_LOW_SPEED_MODE, BL_CHANNEL);
 }
 
-/** @brief Send the whole frame, a strip at a time; a strip that does not
- *         end in LCD_STRIP_TIMEOUT_MS ends the frame.
- *  @return true when every strip went */
-static bool send_frame(void)
+gfx_color_t *dial_k518_frame(void)
 {
+    return s_panel != NULL ? s_fb : NULL;
+}
+
+bool dial_k518_send(void)
+{
+    if (s_panel == NULL) {
+        return false;
+    }
     /* A strip of the frame before that timed out may still be on the wire:
      * s_strip is not written before its end is taken, and a late end taken
      * here cannot count as the end of a strip of this frame. */
@@ -159,26 +164,25 @@ static bool send_frame(void)
     return true;
 }
 
-/** @brief Draw the boot face and send it when the BLE name differs from
- *         the one of the last frame that went whole: a frame that failed
- *         goes again at the next call. */
-static void boot_show(void)
+bool dial_k518_boot(bool force)
 {
     char name[sizeof s_shown];
     if (s_panel == NULL) {
-        return;
+        return false;
     }
     strncpy(name, dial_ble_name(), sizeof name - 1u);
     name[sizeof name - 1u] = '\0';
-    if (strcmp(name, s_shown) == 0) {
-        return;
+    if (!force && strcmp(name, s_shown) == 0) {
+        return false;
     }
+    s_shown[0] = '\0';
     gfx_canvas_t c;
     gfx_canvas_init(&c, s_fb, DK518_SIZE, DK518_SIZE, 0);
     const dk518_boot_t b = { name, esp_app_get_description()->version };
-    if (dk518_boot_draw(&c, &b) && send_frame()) {
+    if (dk518_boot_draw(&c, &b) && dial_k518_send()) {
         memcpy(s_shown, name, sizeof s_shown);
     }
+    return true;
 }
 
 bool dial_lcd_init(void)
@@ -227,18 +231,18 @@ bool dial_lcd_init(void)
         s_panel = NULL;
         return false;
     }
-    boot_show();
+    (void)dial_k518_boot(true);
     return true;
 }
 
 void dial_lcd_flush_rect(const uint16_t *fb, int x, int y, int w, int h)
 {
+    /* The M5Stack Dial's frame: not used on this board. */
     (void)fb;
     (void)x;
     (void)y;
     (void)w;
     (void)h;
-    boot_show();
 }
 
 void dial_lcd_flush(const uint16_t *fb, int y0, int y1)
@@ -246,5 +250,4 @@ void dial_lcd_flush(const uint16_t *fb, int y0, int y1)
     (void)fb;
     (void)y0;
     (void)y1;
-    boot_show();
 }

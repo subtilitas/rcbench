@@ -21,25 +21,11 @@
 
 #include "ui_theme.h"
 
-/**
- * @brief A theme colour of the Dial's dark theme, mixed onto its
- *        background.
- * @param id ui_color_id_t
- * @param k  its weight, 0 (the background) to 255 (itself)
- * @return the mix
- */
+/** @brief A theme colour. @param id ui_color_id_t @param k its weight
+ *  @return dk518_color() */
 static gfx_color_t col(ui_color_id_t id, unsigned k)
 {
-    const uint32_t a = ui_theme_rgb24(UI_THEME_DARK, id);
-    const uint32_t b = ui_theme_rgb24(UI_THEME_DARK, UI_C_BG);
-    unsigned ch[3];
-    for (int i = 0; i < 3; ++i) {
-        const unsigned sh = (unsigned)(16 - 8 * i);
-        const unsigned fa = (a >> sh) & 0xFFu;
-        const unsigned fb = (b >> sh) & 0xFFu;
-        ch[i] = (fb * (255u - k) + fa * k + 127u) / 255u;
-    }
-    return GFX_RGB(ch[0], ch[1], ch[2]);
+    return dk518_color((uint8_t)id, k);
 }
 
 /**

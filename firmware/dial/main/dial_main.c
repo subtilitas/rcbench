@@ -9,6 +9,8 @@
  * (DIAL_FACE_MS): shared/dial draws what changed, and only the rectangles
  * it wrote are sent.  The whole frame is drawn and sent again every
  * 10,000ms, so a display that lost its contents shows the face again.
+ * The Guition JC3636K518C draws into its own frame of 360 x 360 in PSRAM
+ * instead (dial_k518_screen.c).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -34,8 +36,15 @@
 
 /** @brief The log's tag. */
 static const char *TAG = "dial";
+#if CONFIG_RCBENCH_DIAL_BOARD_K518
+/** @brief The K518 draws into its own frame in PSRAM (dial_k518_lcd.c). */
+#define FRAME NULL
+#else
 /** @brief The frame. */
 static gfx_color_t s_fb[DIAL_LCD_SIZE * DIAL_LCD_SIZE];
+/** @brief The frame the face is drawn into. */
+#define FRAME s_fb
+#endif
 /** @brief The panel's model. */
 static dk_face_t s_face;
 
@@ -162,7 +171,7 @@ void app_main(void)
     nvs_start();
     dial_buzz_init();
     dk_face_init(&s_face);
-    (void)dial_screen_init(s_fb);
+    (void)dial_screen_init(FRAME);
     if (dial_lcd_init()) {
         dial_lcd_backlight(100);
     }

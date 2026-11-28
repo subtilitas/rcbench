@@ -25,15 +25,21 @@ knob: an ESP32-S3R8 with a round 360 x 360 display, touch, an encoder
 without a push switch and a vibration motor. Its build
 ([Flashing over USB](#flashing-over-usb)) runs the BLE peripheral, the
 bind, the face task, the console and the display. The display, an ST77916
-over QSPI (quad SPI) at 40MHz, shows the boot face, drawn at 360 x 360:
-the BLE name and the firmware version. Its touch, encoder, vibration and
-battery reading do nothing yet: it sends no EVENT, its
+over QSPI (quad SPI) at 40MHz, shows its own faces, drawn at 360 x 360:
+MOTOR & ESC and SERVO with the M5 faces' six readings, six rings, title,
+pill and hints, and for every other face the boot face with the BLE name
+and the firmware version. A change of a face draws and sends the whole
+frame of 259,200 bytes. Its touch, encoder, vibration and battery reading
+do nothing yet: it sends no EVENT, its
 STATUS names the battery unknown, and it refuses every update, since no key
 confirms one. Its INFO names hardware 2 (`DK_HW_K518`); its image names
 update kind 5 (`BLEOTA_KIND_DIAL_K518`), so neither board takes the other's
 image.
 
 ![The K518's boot face](img/dial-k518-boot.png)
+![MOTOR & ESC on the K518, ARMED](img/dial-k518-motor-armed.png)
+![MOTOR & ESC on the K518, SAFE](img/dial-k518-motor-safe.png)
+![SERVO LIVE on the K518, ARMED](img/dial-k518-servo-live.png)
 
 M5Stack, Dial and Stamp-S3A are names of their owner and its products,
 Guition and JC3636K518C are names of their owner and its product, and
