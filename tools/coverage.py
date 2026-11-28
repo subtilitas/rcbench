@@ -556,6 +556,7 @@ TRACKED = [
     "shared/dial/dk518_boot.c",
     "shared/dial/dk518_draw.c",
     "shared/dial/dk518_input.c",
+    "shared/dial/dk518_enc.c",
     "shared/bench/report_lines.c",
     "shared/bench/report_steps.c",
     "shared/bench/imu.c",
