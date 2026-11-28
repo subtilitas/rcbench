@@ -1,8 +1,8 @@
 r"""Build the Wurstblinker video's 3D scenes in Blender, cel shaded.
 
 The player draws the cartoon with tools/video/player/wurst3d.js.  This
-script builds the same scene from the two STEP models of
-hardware/mechanical/wurstblinker.py, converted to .glb by
+script builds the same scene from the two STEP models
+hardware/mechanical/models/parts/wurstblinker_*.step, converted to .glb by
 tools/video_cad.py --solids, and keys it per video frame from a timeline
 (wurst_timeline.py): camera, the arm's swing, the lamp, the three
 strokes, the dog's jump, the shot, its hit on the traffic light, its

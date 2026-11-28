@@ -20,7 +20,7 @@
 exclude hardware/research/* | the component research's run records, written by the research tool
 exclude *.json | data: drawings, anchors, profiles and the configurator's package lock
 exclude test/host/fixtures/* | recorded bench captures the host suite replays as they were taken
-exclude hardware/kicad/rcbench_modules.* | generated: the KiCad library hardware/kicad/tools/gen_all.py writes from the specs and CI holds with --check
+exclude hardware/kicad/rcbench_modules.* | generated: the KiCad library the hardware tools repository writes from its module specs and holds with --check
 exclude *.step | CAD data: STEP models are geometry, not code, and no line count applies to them
 exclude third_party/notices/* | licence texts copied verbatim from the toolchains by tools/gen_licenses.py --refresh
 
@@ -53,7 +53,6 @@ configurator/core/test/catalogue.test.ts | none | row 33 moved the Osoyoo strip 
 # Docs.
 CHANGELOG.md | none | F22: archived at 5,000 lines; row 32 moved 0.9.1 and older out
 CHANGELOG-0.9.md | none | F22: the archive row 32 created
-hardware/mechanical/README.md | none | the manual of the mechanical models, one section for each model or group of models; ESC_MOTOR.md and CASES.md hold the largest groups
 docs/Screens.md | none | F20: the web help carries the per-screen pages
 docs/Screens-de.md | none | F20: the web help carries the per-screen pages
 docs/Link.md | none | F23: the optional firmware update page is not split now; row 28 moved the KST port out

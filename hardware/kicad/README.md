@@ -10,27 +10,10 @@ loads both files. KiCad 9 and older refuse both files.
 | `rcbench_modules.pretty/` | 21 footprints, one `.kicad_mod` each |
 | `rcbench_modules.kicad_sym` | 21 symbols; each Footprint field names `rcbench_modules:<footprint>` |
 | `rcbench_modules.3dshapes/` | 21 STEP (AP214) models, one per footprint; each footprint names `${RCBENCH_MODULES_3D}/<footprint>.step` |
-| `modules/*.py` | one spec per module or socket: geometry, pads, drawings, symbol, and in its docstring the source, scale, accuracy and unknowns |
-| `modules/_jst_ph.py` | footprint, symbol and 3D model of a JST PH top-entry header, shared by the 4 ES3C28P socket specs |
-| `tools/kicad_gen.py` | writes footprints and symbols from a spec |
-| `tools/step_gen.py` | writes a STEP model from a spec's `MODEL` |
-| `tools/step_check.py` | reads every STEP model with OpenCASCADE and checks it; `--png DIR` draws each with matplotlib |
-| `tools/step_render.py` | renders every STEP model with OpenCASCADE to `renders/` |
-| `renders/` | one PNG per model and the contact sheet `all.png`, from `step_render.py` |
-| `tools/gen_all.py` | writes the library from all specs; `--check` fails on drift |
-| `tools/render.py` | PNG preview of a spec, or the footprint drawn over a photo |
-| `tools/kicad_render.py` | loads the library with kicad-cli and renders every footprint and symbol to PNG |
+| `renders/` | one PNG per model and the contact sheet `all.png` |
 
-The `.kicad_mod`, `.kicad_sym` and `.step` files are generated. Edit the spec, then
-run the generator:
-
-```sh
-python3 hardware/kicad/tools/gen_all.py          # write
-python3 hardware/kicad/tools/gen_all.py --check  # CI: exit 1 on drift
-KICAD_CLI=kicad-cli python3 hardware/kicad/tools/kicad_render.py /tmp/renders
-pip install cadquery-ocp==8.0.1.1.0                 # for step_check.py only
-python3 hardware/kicad/tools/step_check.py       # CI: exit 1 on a bad model
-```
+The library files are generated from module specs by tools maintained
+outside this repository. Edit them only through those tools.
 
 ## Use in KiCad
 
@@ -51,7 +34,7 @@ everything drawn plus 0.25mm.
 Positions come from maker drawings or 3D models where these exist, and from
 photos scaled by a known pitch otherwise. No geometry is taken from another
 KiCad library. The photos and drawings used for measuring stay outside the
-repository; each spec names them.
+repository.
 
 | Footprint | Module | Pads | Dimension source | Accuracy |
 | --- | --- | --- | --- | --- |
@@ -85,27 +68,26 @@ four different sizes.
 ## 3D models
 
 `rcbench_modules.3dshapes/` holds one STEP model per footprint, AP214
-(ISO 10303-21, automotive design schema), units mm. Each spec's `MODEL`
-gives the board thickness, the mount and one box, cylinder or prism per
-part with its height. The generator writes one solid per part with
-planar faces only; circles are polygons of 16 to 32 sides. Each drilled
+(ISO 10303-21, automotive design schema), units mm. A model holds the
+board, the mount and one box, cylinder or prism per part with its
+height: one solid per part with planar faces only; circles are polygons
+of 16 to 32 sides. Each drilled
 pad is a hole through the module board. The model uses the
 footprint's coordinate system: origin at pad 1, z = 0 on the carrier's top side, so the
 footprint places it with no offset, scale or rotation.
 
-Nine modules have a `MODEL` of the one key `detail`: the INA219 board with
+Nine modules have a detailed model: the INA219 board with
 the print CJMCU, the charger board, the boost board, the ESP32-C6-Zero,
 the Core2350B, the RP2350-CAN, the INA3221 board, the mini buck (Mini560)
-and the PD trigger. Their models come from the specs of the same name in
-[hardware/mechanical](../mechanical/README.md#module-boards-and-cells),
-which draw each board part by part with its print, in the board's own
+and the PD trigger. Their models are those of the same name in
+[hardware/mechanical](../mechanical/README.md), which draw each board
+part by part with its print, in the board's own
 colour, with round holes and arcs as cylinders. The INA219 board stands
 on a 6-pin header, the INA3221 board on an 8-pin header, the RP2350-CAN on
 two headers of 20 pins, the mini buck on four headers of 2 pins, the
 Core2350B on four 2 x 8 headers; the other four lie flat.
 
-The 4 ES3C28P socket headers share one model builder in
-`modules/_jst_ph.py`: a floor 0.6mm thick with the pin holes, four walls
+The 4 ES3C28P socket headers share one model: a floor 0.6mm thick with the pin holes, four walls
 0.6mm thick to 6.0mm, and 0.5mm square pins from 3.4mm under the
 carrier's top side to 4.6mm over it.
 
@@ -116,7 +98,7 @@ carrier's top side to 4.6mm over it.
 | flat | MATEK INA228, XT90 INA228, PD Power Mini, PD trigger, T-plug | wired; the module's underside rests on the carrier |
 | flat | the 4 ES3C28P socket headers | the header's floor rests on the carrier, its pins through it |
 
-Sources of the heights, as each spec lists them:
+Sources of the heights:
 
 | Source | Modules |
 | --- | --- |
@@ -132,27 +114,15 @@ models are drawn green (owner, 2026-10-28), whatever the colour of the real
 board. The nine `detail` models keep the real board's colour (owner,
 2026-11-21): the RP2350-CAN and the mini buck are blue, the INA3221 board
 black, the PD trigger purple, as three owner photos show it. Parts omitted
-from a spec
-are also absent from its model: bottom-side parts (the detail models
+from a footprint are also absent from its model: bottom-side parts (the detail models
 draw them), the RP2350-CAN
 castellations, the XT90 board's milled slots and the AS5600 magnet.
 
 ### Renders
 
-`tools/step_render.py` reads each STEP file with OpenCASCADE, the
-geometry kernel KiCad uses to read STEP. It renders a shaded view with face edges
-from above and to the front left; `--from XposYnegZneg` looks from below
-and to the front right, and `--suffix` adds a text to each PNG's name for
-such a second view. The images below are its output, 640 x 480px:
-
-```sh
-pip install cadquery-ocp==8.0.1.1.0 pillow
-xvfb-run -a python3 hardware/kicad/tools/step_render.py \
-    hardware/kicad/renders --size 640 480
-```
-
-The renders are not checked by CI; run the command after changing a
-`MODEL`.
+Each STEP file rendered with OpenCASCADE, the geometry kernel KiCad uses
+to read STEP: a shaded view with face edges from above and to the front
+left, 640 x 480px.
 
 | | | |
 | --- | --- | --- |
@@ -195,7 +165,7 @@ The USB adapter board (USB-C, BOOT, RESET, 4 holes of 2.0mm) is not in
 the library. It plugs into the Core2350B through the 6-way flat cable
 and is not soldered to a carrier; the Core2350B's pads carry USB_DP,
 USB_DM, VBUS, RUN and BOOTSEL, so a carrier reaches USB without it. Its
-3D model is in [hardware/mechanical](../mechanical/README.md#module-boards-and-cells).
+3D model is in [hardware/mechanical](../mechanical/README.md).
 
 ## ES3C28P sockets
 
@@ -221,7 +191,7 @@ The headers are JST PH top entry, B2B-PH-K-S and B4B-PH-K-S, from JST's
 catalogue `ePH.pdf`: 4.5mm deep against 7.6mm for the side-entry
 S4B-PH-K-S, and the cable leaves upward to any side, so a header needs
 no place at the carrier's edge. Each socket has its own footprint, also
-the three 4-pin ones: the same geometry from `_jst_ph.py`, with the
+the three 4-pin ones: the same geometry, with the
 socket's pin names on F.SilkS under the pads.
 
 Power: the ES3C28P's +5 rail has three feeds (schematic). USB-C VBUS
@@ -272,8 +242,8 @@ the tester's photos.
 ## Licence
 
 CC BY-NC-SA 4.0 (Creative Commons Attribution-NonCommercial-ShareAlike 4.0
-International): the symbols, footprints and 3D shapes, the module specs, the
-renders and the scripts in `tools/`. They may be used, changed and shared for
+International): the symbols, footprints and 3D shapes and the
+renders. They may be used, changed and shared for
 non-commercial purposes, with credit and under the same licence. Commercial
 use needs a separate licence from the copyright holder. Terms:
 [LICENSE](LICENSE), as for all of `hardware/` ([../LICENSE](../LICENSE)). The
